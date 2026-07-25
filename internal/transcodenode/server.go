@@ -19,6 +19,7 @@ import (
 	"golang.org/x/sync/singleflight"
 
 	"github.com/prairie-server/prairie-server/internal/chapterthumbs"
+	"github.com/prairie-server/prairie-server/internal/httpheaders"
 	"github.com/prairie-server/prairie-server/internal/nodeconfig"
 	"github.com/prairie-server/prairie-server/internal/nodesessions"
 	"github.com/prairie-server/prairie-server/internal/playback"
