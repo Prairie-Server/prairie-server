@@ -490,7 +490,7 @@ func TestSeriesRulesApplyAndCRUD(t *testing.T) {
 		t.Fatalf("recordings after apply = %+v", recs)
 	}
 
-	// Second apply should not duplicate.
+	// Second apply should not duplicate (pair set is preloaded once per apply).
 	if err := svc.ApplySeriesRules(context.Background()); err != nil {
 		t.Fatalf("ApplySeriesRules second: %v", err)
 	}
@@ -511,6 +511,127 @@ func TestSeriesRulesApplyAndCRUD(t *testing.T) {
 		t.Fatalf("rules after delete = %+v", rules)
 	}
 }
+
+func TestApplySeriesRulesSkipsPreloadedPairs(t *testing.T) {
+	store := newMemoryStore()
+	fixed := time.Date(2026, 7, 25, 12, 0, 0, 0, time.UTC)
+	svc := NewServiceWithStore(store)
+	svc.now = func() time.Time { return fixed }
+	store.now = func() time.Time { return fixed }
+
+	channelID := "ch1"
+	rule, err := svc.CreateSeriesRule(context.Background(), &SeriesRule{
+		TitleMatch: "news", Enabled: true, ChannelID: &channelID,
+	})
+	if err != nil {
+		t.Fatalf("CreateSeriesRule: %v", err)
+	}
+	store.programs["p1"] = Program{
+		ID: "p1", ChannelID: channelID, Title: "News Hour", SeriesID: "news-hour", IsNew: true,
+		Start: fixed.Add(time.Hour), Stop: fixed.Add(2 * time.Hour),
+	}
+	store.recordings["r1"] = Recording{
+		ID: "r1", ProgramID: "p1", ChannelID: channelID, SeriesRuleID: rule.ID,
+		Status: "scheduled", Start: fixed.Add(time.Hour), Stop: fixed.Add(2 * time.Hour), Title: "News Hour",
+	}
+
+	if err := svc.ApplySeriesRules(context.Background()); err != nil {
+		t.Fatalf("ApplySeriesRules: %v", err)
+	}
+	recs, err := svc.ListRecordings(context.Background(), "")
+	if err != nil {
+		t.Fatalf("ListRecordings: %v", err)
+	}
+	if len(recs) != 1 {
+		t.Fatalf("expected no double-schedule with preloaded pair, got %+v", recs)
+	}
+}
+
+func TestReplaceChannelsForTunerPreservesIDAndDeletesRemoved(t *testing.T) {
+	store := newMemoryStore()
+	store.tuners["t1"] = Tuner{ID: "t1", Type: TunerTypeHDHomeRun, DeviceID: "d1", TunerCount: 2, Status: "ready"}
+	override := "99.1"
+	if err := store.ReplaceChannelsForTuner(context.Background(), "t1", []Channel{
+		{Number: "5.1", Callsign: "KING", Name: "KING", Enabled: true, StreamURL: "http://x/auto/v5.1"},
+		{Number: "7.1", Callsign: "KIRO", Name: "KIRO", Enabled: true, StreamURL: "http://x/auto/v7.1"},
+	}); err != nil {
+		t.Fatalf("initial replace: %v", err)
+	}
+	channels, err := store.ListChannels(context.Background(), "t1")
+	if err != nil || len(channels) != 2 {
+		t.Fatalf("initial channels = %+v err=%v", channels, err)
+	}
+	var keptID, removedID string
+	for _, ch := range channels {
+		switch ch.Number {
+		case "5.1":
+			keptID = ch.ID
+			enabled := false
+			_, err := store.UpdateChannel(context.Background(), ch.ID, ChannelPatch{
+				Enabled: &enabled, NumberOverride: &override, GuideStationID: strPtr("GUIDE-KING"),
+			})
+			if err != nil {
+				t.Fatalf("UpdateChannel: %v", err)
+			}
+		case "7.1":
+			removedID = ch.ID
+		}
+	}
+	if keptID == "" || removedID == "" {
+		t.Fatalf("missing channel ids: kept=%q removed=%q", keptID, removedID)
+	}
+
+	if err := store.ReplaceChannelsForTuner(context.Background(), "t1", []Channel{
+		{Number: "5.1", Callsign: "KING", Name: "KING HD", Enabled: true, StreamURL: "http://x/auto/v5.1", HD: true},
+		{Number: "9.1", Callsign: "KCTS", Name: "KCTS", Enabled: true, StreamURL: "http://x/auto/v9.1"},
+	}); err != nil {
+		t.Fatalf("second replace: %v", err)
+	}
+	channels, err = store.ListChannels(context.Background(), "t1")
+	if err != nil {
+		t.Fatalf("ListChannels: %v", err)
+	}
+	if len(channels) != 2 {
+		t.Fatalf("after replace channels = %+v", channels)
+	}
+	var foundKept, foundNew bool
+	for _, ch := range channels {
+		switch ch.Number {
+		case "5.1":
+			foundKept = true
+			if ch.ID != keptID {
+				t.Fatalf("kept channel id changed: got %q want %q", ch.ID, keptID)
+			}
+			if ch.Enabled {
+				t.Fatalf("expected enabled override preserved as false: %+v", ch)
+			}
+			if ch.NumberOverride == nil || *ch.NumberOverride != override {
+				t.Fatalf("number_override not preserved: %+v", ch)
+			}
+			if ch.GuideStationID != "GUIDE-KING" {
+				t.Fatalf("guide_station_id not preserved: %+v", ch)
+			}
+			if ch.Name != "KING HD" || !ch.HD {
+				t.Fatalf("scanned fields not updated: %+v", ch)
+			}
+		case "9.1":
+			foundNew = true
+			if ch.ID == "" || ch.ID == keptID || ch.ID == removedID {
+				t.Fatalf("new channel unexpected id: %+v", ch)
+			}
+		case "7.1":
+			t.Fatalf("removed channel still present: %+v", ch)
+		}
+	}
+	if !foundKept || !foundNew {
+		t.Fatalf("expected kept+new channels, got %+v", channels)
+	}
+	if _, ok := store.channels[removedID]; ok {
+		t.Fatalf("removed channel id %q still in store", removedID)
+	}
+}
+
+func strPtr(v string) *string { return &v }
 
 func TestMatchesRuleHelpers(t *testing.T) {
 	ch := "ch1"
@@ -675,17 +796,33 @@ func (s *memoryStore) DeleteTuner(_ context.Context, id string) error {
 func (s *memoryStore) ReplaceChannelsForTuner(_ context.Context, tunerID string, channels []Channel) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	for id, ch := range s.channels {
+	existing := map[string]Channel{}
+	for _, ch := range s.channels {
 		if ch.TunerID == tunerID {
-			delete(s.channels, id)
+			existing[channelKey(ch.Number, ch.Callsign, ch.StreamURL)] = ch
 		}
 	}
+	kept := map[string]struct{}{}
 	for i := range channels {
-		if channels[i].ID == "" {
-			channels[i].ID = s.id()
+		ch := channels[i]
+		ch.TunerID = tunerID
+		key := channelKey(ch.Number, ch.Callsign, ch.StreamURL)
+		if prev, ok := existing[key]; ok {
+			ch.ID = prev.ID
+			ch.NumberOverride = prev.NumberOverride
+			ch.Enabled = prev.Enabled
+			ch.GuideStationID = prev.GuideStationID
+			kept[key] = struct{}{}
+		} else if ch.ID == "" {
+			ch.ID = s.id()
 		}
-		channels[i].TunerID = tunerID
-		s.channels[channels[i].ID] = channels[i]
+		s.channels[ch.ID] = ch
+	}
+	for key, prev := range existing {
+		if _, ok := kept[key]; ok {
+			continue
+		}
+		delete(s.channels, prev.ID)
 	}
 	tuner := s.tuners[tunerID]
 	tuner.Status = "ready"
@@ -884,6 +1021,11 @@ func (s *memoryStore) ActiveSessionTunerIndices(_ context.Context, tunerID strin
 func (s *memoryStore) CreateSession(_ context.Context, input SessionCreate) (*LiveSession, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+	for _, existing := range s.sessions {
+		if existing.TunerID == input.TunerID && existing.TunerIndex == input.TunerIndex && existing.Status == "active" {
+			return nil, ErrTunerIndexConflict
+		}
+	}
 	session := LiveSession{
 		ID:                s.id(),
 		ChannelID:         input.ChannelID,
@@ -971,6 +1113,19 @@ func (s *memoryStore) RecordingExists(_ context.Context, programID, seriesRuleID
 		}
 	}
 	return false, nil
+}
+
+func (s *memoryStore) ListActiveRecordingPairs(context.Context) (map[string]struct{}, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	out := map[string]struct{}{}
+	for _, rec := range s.recordings {
+		if rec.Status == "cancelled" {
+			continue
+		}
+		out[recordingPairKey(rec.ProgramID, rec.SeriesRuleID)] = struct{}{}
+	}
+	return out, nil
 }
 
 func (s *memoryStore) FailDueRecordings(_ context.Context, now time.Time, message string) (int, error) {

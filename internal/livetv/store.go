@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/idgen"
@@ -47,6 +48,9 @@ type Store interface {
 	CreateRecording(ctx context.Context, rec *Recording) (*Recording, error)
 	CancelRecording(ctx context.Context, id string) (*Recording, error)
 	RecordingExists(ctx context.Context, programID, seriesRuleID string) (bool, error)
+	// ListActiveRecordingPairs returns keys of (program_id, series_rule_id) for
+	// non-cancelled recordings, for bulk series-rule matching without N×M lookups.
+	ListActiveRecordingPairs(ctx context.Context) (map[string]struct{}, error)
 	FailDueRecordings(ctx context.Context, now time.Time, message string) (int, error)
 
 	ListSeriesRules(ctx context.Context) ([]SeriesRule, error)
@@ -154,7 +158,7 @@ func (s *PgStore) ReplaceChannelsForTuner(ctx context.Context, tunerID string, c
 	}
 	defer tx.Rollback(ctx)
 
-	existingRows, err := tx.Query(ctx, `SELECT id, number, callsign, stream_url, number_override, enabled, guide_station_id FROM livetv_channels WHERE tuner_id = $1`, tunerID)
+	existingRows, err := tx.Query(ctx, `SELECT id, number, callsign, stream_url, number_override, enabled, guide_station_id, name, logo_url, hd FROM livetv_channels WHERE tuner_id = $1`, tunerID)
 	if err != nil {
 		return fmt.Errorf("replace channels: load existing: %w", err)
 	}
@@ -162,7 +166,7 @@ func (s *PgStore) ReplaceChannelsForTuner(ctx context.Context, tunerID string, c
 	for existingRows.Next() {
 		var ch Channel
 		var override sql.NullString
-		if err := existingRows.Scan(&ch.ID, &ch.Number, &ch.Callsign, &ch.StreamURL, &override, &ch.Enabled, &ch.GuideStationID); err != nil {
+		if err := existingRows.Scan(&ch.ID, &ch.Number, &ch.Callsign, &ch.StreamURL, &override, &ch.Enabled, &ch.GuideStationID, &ch.Name, &ch.LogoURL, &ch.HD); err != nil {
 			existingRows.Close()
 			return fmt.Errorf("replace channels: scan existing: %w", err)
 		}
@@ -174,16 +178,28 @@ func (s *PgStore) ReplaceChannelsForTuner(ctx context.Context, tunerID string, c
 		return err
 	}
 
-	if _, err := tx.Exec(ctx, `DELETE FROM livetv_channels WHERE tuner_id = $1`, tunerID); err != nil {
-		return fmt.Errorf("replace channels: clear: %w", err)
-	}
+	// Upsert matched channels in place so programs/sessions/recordings that
+	// reference kept IDs are not CASCADE-deleted by a wipe-and-reinsert.
+	kept := map[string]struct{}{}
 	for i := range channels {
 		ch := channels[i]
-		if prev, ok := existing[channelKey(ch.Number, ch.Callsign, ch.StreamURL)]; ok {
+		key := channelKey(ch.Number, ch.Callsign, ch.StreamURL)
+		if prev, ok := existing[key]; ok {
 			ch.ID = prev.ID
 			ch.NumberOverride = prev.NumberOverride
 			ch.Enabled = prev.Enabled
 			ch.GuideStationID = prev.GuideStationID
+			_, err := tx.Exec(ctx, `
+				UPDATE livetv_channels SET
+					number = $2, callsign = $3, name = $4, logo_url = $5, hd = $6,
+					stream_url = $7, sort_key = $8, updated_at = now()
+				WHERE id = $1`,
+				ch.ID, ch.Number, ch.Callsign, ch.Name, ch.LogoURL, ch.HD, ch.StreamURL, sortKey(ch.Number, i))
+			if err != nil {
+				return fmt.Errorf("replace channels: update: %w", err)
+			}
+			kept[key] = struct{}{}
+			continue
 		}
 		if ch.ID == "" {
 			id, err := idgen.NextID()
@@ -198,6 +214,14 @@ func (s *PgStore) ReplaceChannelsForTuner(ctx context.Context, tunerID string, c
 			ch.ID, tunerID, ch.Number, ch.NumberOverride, ch.Callsign, ch.Name, ch.LogoURL, ch.HD, ch.Enabled, ch.StreamURL, ch.GuideStationID, sortKey(ch.Number, i))
 		if err != nil {
 			return fmt.Errorf("replace channels: insert: %w", err)
+		}
+	}
+	for key, prev := range existing {
+		if _, ok := kept[key]; ok {
+			continue
+		}
+		if _, err := tx.Exec(ctx, `DELETE FROM livetv_channels WHERE id = $1`, prev.ID); err != nil {
+			return fmt.Errorf("replace channels: delete removed: %w", err)
 		}
 	}
 	if _, err := tx.Exec(ctx, `UPDATE livetv_tuners SET status = 'ready', last_error = '', last_scan_at = now(), updated_at = now() WHERE id = $1`, tunerID); err != nil {
@@ -485,6 +509,9 @@ func (s *PgStore) CreateSession(ctx context.Context, input SessionCreate) (*Live
 		RETURNING id, channel_id, tuner_id, tuner_index, user_id, profile_id, playback_session_id, status, created_at, released_at`,
 		id, input.ChannelID, input.TunerID, input.TunerIndex, nullInt(input.UserID), input.ProfileID, input.PlaybackSessionID))
 	if err != nil {
+		if isUniqueViolation(err) {
+			return nil, ErrTunerIndexConflict
+		}
 		return nil, fmt.Errorf("create session: %w", err)
 	}
 	return &session, nil
@@ -579,6 +606,26 @@ func (s *PgStore) RecordingExists(ctx context.Context, programID, seriesRuleID s
 	var exists bool
 	err := s.db.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM livetv_recordings WHERE program_id IS NOT DISTINCT FROM $1 AND series_rule_id IS NOT DISTINCT FROM $2 AND status <> 'cancelled')`, nullString(programID), nullString(seriesRuleID)).Scan(&exists)
 	return exists, err
+}
+
+func (s *PgStore) ListActiveRecordingPairs(ctx context.Context) (map[string]struct{}, error) {
+	rows, err := s.db.Query(ctx, `
+		SELECT COALESCE(program_id, ''), COALESCE(series_rule_id, '')
+		FROM livetv_recordings
+		WHERE status <> 'cancelled'`)
+	if err != nil {
+		return nil, fmt.Errorf("list active recording pairs: %w", err)
+	}
+	defer rows.Close()
+	out := map[string]struct{}{}
+	for rows.Next() {
+		var programID, seriesRuleID string
+		if err := rows.Scan(&programID, &seriesRuleID); err != nil {
+			return nil, err
+		}
+		out[recordingPairKey(programID, seriesRuleID)] = struct{}{}
+	}
+	return out, rows.Err()
 }
 
 func (s *PgStore) FailDueRecordings(ctx context.Context, now time.Time, message string) (int, error) {
@@ -768,6 +815,11 @@ func valueOrEmpty(v *string) string {
 
 func channelKey(number, callsign, streamURL string) string {
 	return strings.ToLower(strings.TrimSpace(number) + "|" + strings.TrimSpace(callsign) + "|" + strings.TrimSpace(streamURL))
+}
+
+func isUniqueViolation(err error) bool {
+	var pgErr *pgconn.PgError
+	return errors.As(err, &pgErr) && pgErr.Code == "23505"
 }
 
 func sortKey(number string, fallback int) int {

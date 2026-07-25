@@ -16,12 +16,13 @@ import (
 )
 
 var (
-	ErrNotFound        = errors.New("livetv: not found")
-	ErrInvalidArgument = errors.New("livetv: invalid argument")
-	ErrLimitExceeded   = errors.New("livetv: limit exceeded")
-	ErrNoTuner         = errors.New("livetv: no tuner available")
-	ErrNotImplemented  = errors.New("livetv: not implemented")
-	ErrNotConfigured   = errors.New("livetv service not configured")
+	ErrNotFound           = errors.New("livetv: not found")
+	ErrInvalidArgument    = errors.New("livetv: invalid argument")
+	ErrLimitExceeded      = errors.New("livetv: limit exceeded")
+	ErrNoTuner            = errors.New("livetv: no tuner available")
+	ErrTunerIndexConflict = errors.New("livetv: tuner index conflict")
+	ErrNotImplemented     = errors.New("livetv: not implemented")
+	ErrNotConfigured      = errors.New("livetv service not configured")
 )
 
 type HDHomeRunClient interface {
@@ -437,14 +438,6 @@ func (s *Service) StartChannelSession(ctx context.Context, channelID string, use
 	if tuner == nil {
 		return nil, ErrNotFound
 	}
-	indices, err := s.store.ActiveSessionTunerIndices(ctx, tuner.ID)
-	if err != nil {
-		return nil, err
-	}
-	index, ok := firstFreeIndex(tuner.TunerCount, indices)
-	if !ok {
-		return nil, ErrNoTuner
-	}
 	playbackID := ""
 	streamURL := channel.StreamURL
 	note := "raw HDHomeRun stream URL; playback bridge not configured"
@@ -456,15 +449,37 @@ func (s *Service) StartChannelSession(ctx context.Context, channelID string, use
 		}
 		note = ""
 	}
-	session, err := s.store.CreateSession(ctx, SessionCreate{
-		ChannelID:         channel.ID,
-		TunerID:           tuner.ID,
-		TunerIndex:        index,
-		UserID:            userID,
-		ProfileID:         profileID,
-		PlaybackSessionID: playbackID,
-	})
-	if err != nil {
+
+	// Allocate a free tuner index, then insert. A concurrent StartChannelSession
+	// can race past ActiveSessionTunerIndices; the partial unique index turns
+	// that into ErrTunerIndexConflict — retry once, then surface ErrNoTuner.
+	var session *LiveSession
+	for attempt := 0; attempt < 2; attempt++ {
+		indices, err := s.store.ActiveSessionTunerIndices(ctx, tuner.ID)
+		if err != nil {
+			return nil, err
+		}
+		index, ok := firstFreeIndex(tuner.TunerCount, indices)
+		if !ok {
+			return nil, ErrNoTuner
+		}
+		session, err = s.store.CreateSession(ctx, SessionCreate{
+			ChannelID:         channel.ID,
+			TunerID:           tuner.ID,
+			TunerIndex:        index,
+			UserID:            userID,
+			ProfileID:         profileID,
+			PlaybackSessionID: playbackID,
+		})
+		if err == nil {
+			break
+		}
+		if errors.Is(err, ErrTunerIndexConflict) && attempt == 0 {
+			continue
+		}
+		if errors.Is(err, ErrTunerIndexConflict) {
+			return nil, ErrNoTuner
+		}
 		return nil, err
 	}
 	session.StreamURL = streamURL
@@ -573,19 +588,28 @@ func (s *Service) ApplySeriesRules(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+	existingPairs, err := s.store.ListActiveRecordingPairs(ctx)
+	if err != nil {
+		return err
+	}
+	byChannel := map[string][]Program{}
+	for _, p := range programs {
+		byChannel[p.ChannelID] = append(byChannel[p.ChannelID], p)
+	}
 	for _, rule := range rules {
 		if !rule.Enabled {
 			continue
 		}
-		for _, p := range programs {
+		candidates := programs
+		if rule.ChannelID != nil {
+			candidates = byChannel[*rule.ChannelID]
+		}
+		for _, p := range candidates {
 			if !matchesRule(rule, p) {
 				continue
 			}
-			exists, err := s.store.RecordingExists(ctx, p.ID, rule.ID)
-			if err != nil {
-				return err
-			}
-			if exists {
+			key := recordingPairKey(p.ID, rule.ID)
+			if _, exists := existingPairs[key]; exists {
 				continue
 			}
 			_, err = s.store.CreateRecording(ctx, &Recording{
@@ -600,9 +624,14 @@ func (s *Service) ApplySeriesRules(ctx context.Context) error {
 			if err != nil {
 				return err
 			}
+			existingPairs[key] = struct{}{}
 		}
 	}
 	return nil
+}
+
+func recordingPairKey(programID, seriesRuleID string) string {
+	return programID + "\x00" + seriesRuleID
 }
 
 func (s *Service) FailDueRecordings(ctx context.Context) (int, error) {
