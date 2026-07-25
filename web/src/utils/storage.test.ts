@@ -55,6 +55,7 @@ describe("storage upgrade persistence", () => {
       "profile_token",
       "current_profile",
       "prairie-device-id",
+      "impersonation_admin_session",
     ]);
     for (const key of UPGRADE_PRESERVED_KEYS) {
       expect(isUpgradePreservedKey(key)).toBe(true);
@@ -68,6 +69,10 @@ describe("storage upgrade persistence", () => {
     storage.set(storage.KEYS.PROFILE_TOKEN, "profile-tok");
     storage.set(storage.KEYS.CURRENT_PROFILE, '{"id":"profile-7"}');
     storage.set(storage.KEYS.DEVICE_ID, "device-abc");
+    storage.set(
+      storage.KEYS.IMPERSONATION_ADMIN_SESSION,
+      '{"accessToken":"a","refreshToken":"r","returnPath":"/admin"}',
+    );
     storage.set(storage.KEYS.THEME, "dark");
 
     expect(ensureStorageSchema()).toBe(STORAGE_SCHEMA_VERSION);
@@ -80,6 +85,7 @@ describe("storage upgrade persistence", () => {
     expect(storage.get(storage.KEYS.PROFILE_TOKEN)).toBe("profile-tok");
     expect(storage.get(storage.KEYS.CURRENT_PROFILE)).toBe('{"id":"profile-7"}');
     expect(storage.get(storage.KEYS.DEVICE_ID)).toBe("device-abc");
+    expect(storage.get(storage.KEYS.IMPERSONATION_ADMIN_SESSION)).toContain("refreshToken");
     expect(storage.get(storage.KEYS.THEME)).toBe("dark");
     expect(localStorage.getItem("prairie-storage-schema-version")).toBe(
       String(STORAGE_SCHEMA_VERSION),

@@ -89,6 +89,22 @@ func (s *Service) AddTuner(ctx context.Context, discoverURL, deviceID string) (*
 	if s.hdhr == nil {
 		return nil, ErrNotConfigured
 	}
+	discoverURL = strings.TrimSpace(discoverURL)
+	deviceID = strings.TrimSpace(deviceID)
+	switch {
+	case discoverURL != "":
+		if err := ValidateMediaFetchURL(discoverURL); err != nil {
+			return nil, err
+		}
+	case strings.HasPrefix(deviceID, "http://"), strings.HasPrefix(deviceID, "https://"):
+		if err := ValidateMediaFetchURL(deviceID); err != nil {
+			return nil, err
+		}
+	case deviceID != "":
+		if err := ValidateMediaFetchURL("http://" + deviceID + "/discover.json"); err != nil {
+			return nil, err
+		}
+	}
 	info, err := s.hdhr.Discover(ctx, discoverURL, deviceID)
 	if err != nil {
 		return nil, fmt.Errorf("discover hdhomerun: %w", err)
@@ -125,6 +141,9 @@ func (s *Service) ScanTuner(ctx context.Context, tunerID string) error {
 	}
 	if tuner == nil {
 		return ErrNotFound
+	}
+	if err := ValidateMediaFetchURL(tuner.BaseURL); err != nil {
+		return err
 	}
 	lineup, err := s.hdhr.FetchLineup(ctx, tuner.BaseURL)
 	if err != nil {
@@ -328,6 +347,9 @@ func (s *Service) syncXMLTV(ctx context.Context, source *GuideSource) error {
 	if url == "" {
 		return fmt.Errorf("%w: xmltv url is required", ErrInvalidArgument)
 	}
+	if err := ValidateMediaFetchURL(url); err != nil {
+		return err
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err
@@ -488,9 +510,28 @@ func (s *Service) StartChannelSession(ctx context.Context, channelID string, use
 	return session, nil
 }
 
-func (s *Service) ReleaseSession(ctx context.Context, id string) (*LiveSession, error) {
+// ReleaseSession releases a live tuner session.
+// When enforceOwner is true, the caller must own the session (matching user_id,
+// and profile_id when the session recorded one). Pass enforceOwner=false for
+// trusted internal teardown (e.g. jellycompat after opener-token checks).
+func (s *Service) ReleaseSession(ctx context.Context, id string, userID int, profileID string, enforceOwner bool) (*LiveSession, error) {
 	if err := s.requireStore(); err != nil {
 		return nil, err
+	}
+	if enforceOwner {
+		existing, err := s.store.GetSession(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		if existing == nil {
+			return nil, ErrNotFound
+		}
+		if existing.UserID != 0 && existing.UserID != userID {
+			return nil, ErrNotFound
+		}
+		if existing.ProfileID != "" && profileID != "" && existing.ProfileID != profileID {
+			return nil, ErrNotFound
+		}
 	}
 	session, err := s.store.ReleaseSession(ctx, id)
 	if err != nil {

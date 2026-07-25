@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -625,11 +626,26 @@ func (h *LiveTVHandler) HandleLiveStreamFile(w http.ResponseWriter, r *http.Requ
 	if streamID == "" {
 		streamID = chi.URLParam(r, "streamId")
 	}
+	session := SessionFromContext(r.Context())
+	if session == nil {
+		writeError(w, http.StatusUnauthorized, "Unauthorized", "Missing authentication token")
+		return
+	}
 	h.mu.Lock()
 	stream, ok := h.streams[streamID]
 	h.mu.Unlock()
 	if !ok || stream == nil || stream.SourceURL == "" {
 		writeError(w, http.StatusNotFound, "NotFound", "Live stream not found")
+		return
+	}
+	// Same ownership gate as Close: knowing the UUID is not enough to pull or
+	// terminate another client's upstream tuner session.
+	if stream.OpenerToken != "" && stream.OpenerToken != session.Token {
+		writeError(w, http.StatusForbidden, "Forbidden", "Live stream belongs to another session")
+		return
+	}
+	if err := livetv.ValidateMediaFetchURL(stream.SourceURL); err != nil {
+		writeError(w, http.StatusBadGateway, "BadGateway", "Live stream source is not allowed")
 		return
 	}
 
@@ -744,6 +760,9 @@ func (h *LiveTVHandler) mediaSourceForOpenStream(ctx context.Context, liveStream
 		name = channelDisplayName(*ch)
 	}
 	directURL := "/LiveTv/LiveStreamFiles/" + liveStreamID + "/stream.ts"
+	if stream.OpenerToken != "" {
+		directURL += "?api_key=" + url.QueryEscape(stream.OpenerToken)
+	}
 	return mediaSourceDTO{
 		Protocol:             "Http",
 		ID:                   h.codec.EncodeStringID(EncodedIDLiveTVChannel, channelID),
@@ -810,6 +829,9 @@ func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session,
 		name = channelDisplayName(*ch)
 	}
 	directURL := "/LiveTv/LiveStreamFiles/" + liveStreamID + "/stream.ts"
+	if openerToken != "" {
+		directURL += "?api_key=" + url.QueryEscape(openerToken)
+	}
 	return mediaSourceDTO{
 		Protocol:             "Http",
 		ID:                   h.codec.EncodeStringID(EncodedIDLiveTVChannel, channelID),
@@ -848,7 +870,7 @@ func (h *LiveTVHandler) closeLiveStream(ctx context.Context, liveStreamID string
 		return
 	}
 	if stream.NativeSession != "" {
-		_, _ = h.service.ReleaseSession(ctx, stream.NativeSession)
+		_, _ = h.service.ReleaseSession(ctx, stream.NativeSession, 0, "", false)
 	}
 }
 

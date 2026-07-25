@@ -16,6 +16,8 @@ const STORAGE_KEYS = {
   PROFILE_TOKEN: "profile_token",
   CURRENT_PROFILE: "current_profile",
   DEVICE_ID: "prairie-device-id",
+  /** Admin session stash while impersonating — must survive schema bumps. */
+  IMPERSONATION_ADMIN_SESSION: "impersonation_admin_session",
   VOLUME: "player-volume",
   MUTED: "player-muted",
   AUDIOBOOK_SKIP_BACK: "audiobook-skip-back",
@@ -46,6 +48,7 @@ export const UPGRADE_PRESERVED_KEYS = [
   STORAGE_KEYS.PROFILE_TOKEN,
   STORAGE_KEYS.CURRENT_PROFILE,
   STORAGE_KEYS.DEVICE_ID,
+  STORAGE_KEYS.IMPERSONATION_ADMIN_SESSION,
 ] as const;
 
 export type UpgradePreservedKey = (typeof UPGRADE_PRESERVED_KEYS)[number];

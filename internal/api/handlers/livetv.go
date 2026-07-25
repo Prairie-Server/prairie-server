@@ -299,7 +299,18 @@ func (h *LiveTVHandler) HandleStartChannelSession(w http.ResponseWriter, r *http
 }
 
 func (h *LiveTVHandler) HandleReleaseSession(w http.ResponseWriter, r *http.Request) {
-	session, err := h.service.ReleaseSession(r.Context(), chi.URLParam(r, "sessionId"))
+	userID := apimw.GetUserID(r.Context())
+	profileID := apimw.GetProfileID(r.Context())
+	// Admins may release any session (tuner capacity recovery); everyone else
+	// may only release sessions they own.
+	enforceOwner := !apimw.IsAdmin(r.Context())
+	session, err := h.service.ReleaseSession(
+		r.Context(),
+		chi.URLParam(r, "sessionId"),
+		userID,
+		profileID,
+		enforceOwner,
+	)
 	if err != nil {
 		writeLiveTVError(w, err)
 		return

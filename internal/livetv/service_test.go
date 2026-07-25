@@ -344,7 +344,7 @@ func TestStartAndReleaseChannelSession(t *testing.T) {
 		t.Fatalf("second session error = %v, want ErrNoTuner", err)
 	}
 
-	released, err := svc.ReleaseSession(context.Background(), session.ID)
+	released, err := svc.ReleaseSession(context.Background(), session.ID, 7, "profile-1", true)
 	if err != nil || released == nil || released.Status != "released" {
 		t.Fatalf("ReleaseSession = %+v err=%v", released, err)
 	}
@@ -361,9 +361,18 @@ func TestStartAndReleaseChannelSession(t *testing.T) {
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("missing channel = %v", err)
 	}
-	_, err = svc.ReleaseSession(context.Background(), "missing")
+	_, err = svc.ReleaseSession(context.Background(), "missing", 1, "p", true)
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("missing session = %v", err)
+	}
+
+	_, err = svc.ReleaseSession(context.Background(), session2.ID, 99, "other-profile", true)
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("cross-user ReleaseSession = %v, want ErrNotFound", err)
+	}
+	_, err = svc.ReleaseSession(context.Background(), session2.ID, 7, "profile-1", true)
+	if err != nil {
+		t.Fatalf("owner ReleaseSession: %v", err)
 	}
 }
 
