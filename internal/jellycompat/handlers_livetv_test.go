@@ -181,6 +181,9 @@ func (s *livetvTestStore) CancelRecording(_ context.Context, id string) (*livetv
 func (s *livetvTestStore) RecordingExists(context.Context, string, string) (bool, error) {
 	return false, nil
 }
+func (s *livetvTestStore) ListActiveRecordingPairs(context.Context) (map[string]struct{}, error) {
+	return map[string]struct{}{}, nil
+}
 func (s *livetvTestStore) FailDueRecordings(context.Context, time.Time, string) (int, error) {
 	return 0, nil
 }
