@@ -273,7 +273,9 @@ func NewRouter(deps Dependencies) chi.Router {
 				r.Get("/LiveTv/Recordings", liveTVHandler.HandleRecordings)
 				r.Post("/LiveStreams/Open", liveTVHandler.HandleOpenLiveStream)
 				r.Post("/LiveStreams/Close", liveTVHandler.HandleCloseLiveStream)
+				r.Method(http.MethodHead, "/LiveTv/LiveStreamFiles/{id}/stream", http.HandlerFunc(liveTVHandler.HandleLiveStreamFile))
 				r.Get("/LiveTv/LiveStreamFiles/{id}/stream", liveTVHandler.HandleLiveStreamFile)
+				r.Method(http.MethodHead, "/LiveTv/LiveStreamFiles/{id}/stream.{container}", http.HandlerFunc(liveTVHandler.HandleLiveStreamFile))
 				r.Get("/LiveTv/LiveStreamFiles/{id}/stream.{container}", liveTVHandler.HandleLiveStreamFile)
 			}
 		})

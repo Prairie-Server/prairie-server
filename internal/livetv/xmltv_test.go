@@ -69,11 +69,7 @@ func TestParseXMLTVAlternateLayoutsAndEpisode(t *testing.T) {
   </programme>
 </tv>`
 
-	// Z / +0000 compact forms: first programme uses invalid Z on purpose via rewrite
-	sampleFixed := strings.Replace(sample, "20260725190000Z", "20260725190000 +0000", 1)
-	sampleFixed = strings.Replace(sampleFixed, "20260725200000+0000", "20260725200000+0000", 1)
-
-	parsed, err := ParseXMLTV(strings.NewReader(sampleFixed))
+	parsed, err := ParseXMLTV(strings.NewReader(sample))
 	if err != nil {
 		t.Fatalf("ParseXMLTV() error = %v", err)
 	}

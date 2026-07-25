@@ -45,6 +45,7 @@ type openLiveStream struct {
 	NativeSession string
 	SourceURL     string
 	OpenedAt      time.Time
+	OpenerToken   string
 }
 
 type liveTVInfoDTO struct {
@@ -597,9 +598,21 @@ func (h *LiveTVHandler) HandleOpenLiveStream(w http.ResponseWriter, r *http.Requ
 
 // HandleCloseLiveStream serves POST /LiveStreams/Close.
 func (h *LiveTVHandler) HandleCloseLiveStream(w http.ResponseWriter, r *http.Request) {
+	session := SessionFromContext(r.Context())
+	if session == nil {
+		writeError(w, http.StatusUnauthorized, "Unauthorized", "Missing authentication token")
+		return
+	}
 	liveStreamID := r.URL.Query().Get("LiveStreamId")
 	if liveStreamID == "" {
 		writeError(w, http.StatusBadRequest, "BadRequest", "LiveStreamId is required")
+		return
+	}
+	h.mu.Lock()
+	stream := h.streams[liveStreamID]
+	h.mu.Unlock()
+	if stream != nil && stream.OpenerToken != "" && stream.OpenerToken != session.Token {
+		writeError(w, http.StatusForbidden, "Forbidden", "Live stream belongs to another session")
 		return
 	}
 	h.closeLiveStream(r.Context(), liveStreamID)
@@ -621,11 +634,17 @@ func (h *LiveTVHandler) HandleLiveStreamFile(w http.ResponseWriter, r *http.Requ
 	}
 
 	w.Header().Set("Content-Type", "video/mp2t")
+	if r.Method == http.MethodHead {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	w.Header().Set("Transfer-Encoding", "chunked")
 	w.WriteHeader(http.StatusOK)
 	flusher, _ := w.(http.Flusher)
 
 	sourceURL := stream.SourceURL
+	defer h.closeLiveStream(r.Context(), streamID)
+
 	err := copyLiveStreamWithReconnect(r.Context(), w, flusher, func(ctx context.Context) (io.ReadCloser, error) {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, sourceURL, nil)
 		if err != nil {
@@ -654,7 +673,7 @@ func (h *LiveTVHandler) HandleLiveStreamFile(w http.ResponseWriter, r *http.Requ
 // When autoOpen is true the upstream tuner session is opened here (Jellyfin
 // AutoOpenLiveStream pattern) so RequiresOpening can be false and DirectStreamUrl
 // is immediately usable.
-func (h *LiveTVHandler) PlaybackMediaSource(ctx context.Context, session *Session, channelRouteID string, autoOpen bool) (mediaSourceDTO, error) {
+func (h *LiveTVHandler) PlaybackMediaSource(ctx context.Context, session *Session, channelRouteID string, autoOpen bool, existingLiveStreamID string) (mediaSourceDTO, error) {
 	channelID, err := h.decodeChannelID(channelRouteID)
 	if err != nil {
 		return mediaSourceDTO{}, err
@@ -692,6 +711,11 @@ func (h *LiveTVHandler) PlaybackMediaSource(ctx context.Context, session *Sessio
 		}},
 	}
 	if autoOpen {
+		if existingLiveStreamID != "" {
+			if reused, ok := h.mediaSourceForOpenStream(ctx, existingLiveStreamID, ch.ID); ok {
+				return reused, nil
+			}
+		}
 		opened, err := h.openChannelStream(ctx, session, ch.ID)
 		if err != nil {
 			return mediaSourceDTO{}, err
@@ -704,6 +728,49 @@ func (h *LiveTVHandler) PlaybackMediaSource(ctx context.Context, session *Sessio
 func (h *LiveTVHandler) DecodeLiveTVChannelID(raw string) (string, bool) {
 	id, err := h.decodeChannelID(raw)
 	return id, err == nil
+}
+
+
+func (h *LiveTVHandler) mediaSourceForOpenStream(ctx context.Context, liveStreamID, channelID string) (mediaSourceDTO, bool) {
+	h.mu.Lock()
+	stream := h.streams[liveStreamID]
+	h.mu.Unlock()
+	if stream == nil || stream.ChannelID != channelID || stream.SourceURL == "" {
+		return mediaSourceDTO{}, false
+	}
+	ch, _ := h.service.GetChannel(ctx, channelID)
+	name := channelID
+	if ch != nil {
+		name = channelDisplayName(*ch)
+	}
+	directURL := "/LiveTv/LiveStreamFiles/" + liveStreamID + "/stream.ts"
+	return mediaSourceDTO{
+		Protocol:             "Http",
+		ID:                   h.codec.EncodeStringID(EncodedIDLiveTVChannel, channelID),
+		Path:                 stream.SourceURL,
+		Type:                 "Default",
+		Container:            "ts",
+		Name:                 name,
+		IsRemote:             true,
+		SupportsTranscoding:  false,
+		SupportsDirectStream: true,
+		SupportsDirectPlay:   true,
+		IsInfiniteStream:     true,
+		RequiresOpening:      false,
+		RequiresClosing:      true,
+		LiveStreamID:         liveStreamID,
+		DirectStreamURL:      directURL,
+		Formats:              []string{},
+		RequiredHTTPHeaders:  map[string]string{},
+		MediaAttachments:     []map[string]any{},
+		MediaStreams: []mediaStreamDTO{{
+			Index:        0,
+			Type:         "Video",
+			Codec:        "mpeg2video",
+			IsDefault:    true,
+			DisplayTitle: "Video",
+		}},
+	}, true
 }
 
 func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session, channelID string) (mediaSourceDTO, error) {
@@ -722,6 +789,10 @@ func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session,
 	if sourceURL == "" {
 		sourceURL = native.HLSURL
 	}
+	openerToken := ""
+	if session != nil {
+		openerToken = session.Token
+	}
 	h.mu.Lock()
 	h.streams[liveStreamID] = &openLiveStream{
 		ID:            liveStreamID,
@@ -729,6 +800,7 @@ func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session,
 		NativeSession: native.ID,
 		SourceURL:     sourceURL,
 		OpenedAt:      h.now(),
+		OpenerToken:   openerToken,
 	}
 	h.mu.Unlock()
 

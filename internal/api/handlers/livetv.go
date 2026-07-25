@@ -146,13 +146,51 @@ func (h *LiveTVHandler) HandleCreateGuideSource(w http.ResponseWriter, r *http.R
 }
 
 func (h *LiveTVHandler) HandleUpdateGuideSource(w http.ResponseWriter, r *http.Request) {
-	var source livetv.GuideSource
-	if err := json.NewDecoder(r.Body).Decode(&source); err != nil {
+	var patch struct {
+		Type        *string            `json:"type"`
+		Priority    *int               `json:"priority"`
+		Enabled     *bool              `json:"enabled"`
+		DisplayName *string            `json:"display_name"`
+		Config      *map[string]string `json:"config"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&patch); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_body", "invalid JSON body")
 		return
 	}
-	source.ID = chi.URLParam(r, "sourceId")
-	updated, err := h.service.UpdateGuideSource(r.Context(), &source)
+	id := chi.URLParam(r, "sourceId")
+	sources, err := h.service.ListGuideSources(r.Context())
+	if err != nil {
+		writeLiveTVError(w, err)
+		return
+	}
+	var existing *livetv.GuideSource
+	for i := range sources {
+		if sources[i].ID == id {
+			existing = &sources[i]
+			break
+		}
+	}
+	if existing == nil {
+		writeLiveTVError(w, livetv.ErrNotFound)
+		return
+	}
+	merged := *existing
+	if patch.Type != nil {
+		merged.Type = *patch.Type
+	}
+	if patch.Priority != nil {
+		merged.Priority = *patch.Priority
+	}
+	if patch.Enabled != nil {
+		merged.Enabled = *patch.Enabled
+	}
+	if patch.DisplayName != nil {
+		merged.DisplayName = *patch.DisplayName
+	}
+	if patch.Config != nil {
+		merged.Config = *patch.Config
+	}
+	updated, err := h.service.UpdateGuideSource(r.Context(), &merged)
 	if err != nil {
 		writeLiveTVError(w, err)
 		return
@@ -284,12 +322,24 @@ func (h *LiveTVHandler) HandleListRecordings(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *LiveTVHandler) HandleScheduleRecording(w http.ResponseWriter, r *http.Request) {
-	var body livetv.Recording
+	var body struct {
+		ProgramID string    `json:"program_id"`
+		ChannelID string    `json:"channel_id"`
+		Start     time.Time `json:"start"`
+		Stop      time.Time `json:"stop"`
+		Title     string    `json:"title"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_body", "invalid JSON body")
 		return
 	}
-	rec, err := h.service.ScheduleRecording(r.Context(), &body)
+	rec, err := h.service.ScheduleRecording(r.Context(), &livetv.Recording{
+		ProgramID: body.ProgramID,
+		ChannelID: body.ChannelID,
+		Start:     body.Start,
+		Stop:      body.Stop,
+		Title:     body.Title,
+	})
 	if err != nil {
 		writeLiveTVError(w, err)
 		return
@@ -321,12 +371,30 @@ func (h *LiveTVHandler) HandleListSeriesRules(w http.ResponseWriter, r *http.Req
 }
 
 func (h *LiveTVHandler) HandleCreateSeriesRule(w http.ResponseWriter, r *http.Request) {
-	var rule livetv.SeriesRule
-	if err := json.NewDecoder(r.Body).Decode(&rule); err != nil {
+	var body struct {
+		SeriesID   string  `json:"series_id"`
+		ChannelID  *string `json:"channel_id"`
+		TitleMatch string  `json:"title_match"`
+		NewOnly    bool    `json:"new_only"`
+		KeepLast   int     `json:"keep_last"`
+		Enabled    *bool   `json:"enabled"`
+	}
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_body", "invalid JSON body")
 		return
 	}
-	created, err := h.service.CreateSeriesRule(r.Context(), &rule)
+	enabled := true
+	if body.Enabled != nil {
+		enabled = *body.Enabled
+	}
+	created, err := h.service.CreateSeriesRule(r.Context(), &livetv.SeriesRule{
+		SeriesID:   body.SeriesID,
+		ChannelID:  body.ChannelID,
+		TitleMatch: body.TitleMatch,
+		NewOnly:    body.NewOnly,
+		KeepLast:   body.KeepLast,
+		Enabled:    enabled,
+	})
 	if err != nil {
 		writeLiveTVError(w, err)
 		return

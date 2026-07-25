@@ -64,11 +64,14 @@ test-coverage:
 
 # Enforce Go coverage for packages listed in .github/coverage-packages.txt.
 # PgStore DB code in store.go is excluded (same as CI).
-check-coverage: $(COVER_PROFILE)
+# Always regenerate coverage.out so the gate never reads a stale profile.
+check-coverage:
+	$(MAKE) $(COVER_PROFILE)
 	@pkgs=$$(grep -vE '^\s*(#|$$)' .github/coverage-packages.txt | tr '\n' ' '); \
 	COVER_PACKAGES="$$pkgs" COVER_EXCLUDE_FILE_REGEX='$(COVER_EXCLUDE_FILE_REGEX)' \
 		./scripts/check-go-coverage.sh $(COVER_PROFILE) $(COVER_MIN)
 
+.PHONY: $(COVER_PROFILE)
 $(COVER_PROFILE):
 	go test ./... -count=1 -covermode=atomic -coverprofile=$(COVER_PROFILE)
 

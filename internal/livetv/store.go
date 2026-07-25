@@ -577,7 +577,7 @@ func (s *PgStore) CancelRecording(ctx context.Context, id string) (*Recording, e
 
 func (s *PgStore) RecordingExists(ctx context.Context, programID, seriesRuleID string) (bool, error) {
 	var exists bool
-	err := s.db.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM livetv_recordings WHERE program_id = $1 AND series_rule_id = $2 AND status <> 'cancelled')`, nullString(programID), nullString(seriesRuleID)).Scan(&exists)
+	err := s.db.QueryRow(ctx, `SELECT EXISTS (SELECT 1 FROM livetv_recordings WHERE program_id IS NOT DISTINCT FROM $1 AND series_rule_id IS NOT DISTINCT FROM $2 AND status <> 'cancelled')`, nullString(programID), nullString(seriesRuleID)).Scan(&exists)
 	return exists, err
 }
 

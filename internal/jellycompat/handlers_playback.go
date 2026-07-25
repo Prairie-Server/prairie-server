@@ -635,7 +635,8 @@ func (h *PlaybackHandler) HandlePlaybackInfo(w http.ResponseWriter, r *http.Requ
 				return
 			}
 			autoOpen := req.AutoOpenLiveStream || r.URL.Query().Get("AutoOpenLiveStream") == "true"
-			source, err := h.liveTV.PlaybackMediaSource(r.Context(), session, routeID, autoOpen)
+			liveStreamID := firstNonEmpty(req.LiveStreamID, r.URL.Query().Get("LiveStreamId"))
+			source, err := h.liveTV.PlaybackMediaSource(r.Context(), session, routeID, autoOpen, liveStreamID)
 			if err != nil {
 				writeLiveTVCompatError(w, err)
 				return

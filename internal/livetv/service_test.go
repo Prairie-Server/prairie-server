@@ -467,19 +467,19 @@ func TestSeriesRulesApplyAndCRUD(t *testing.T) {
 		t.Fatalf("CreateSeriesRule: %v", err)
 	}
 
-	// Use wall-clock-relative times so ListUpcomingPrograms (stop > now()) keeps them.
-	now := time.Now().UTC()
+	// Seed relative to the fixed service clock so this test does not expire.
+	store.now = func() time.Time { return fixed }
 	store.programs["p-new"] = Program{
 		ID: "p-new", ChannelID: channelID, Title: "Evening News", SeriesID: "evening-news", IsNew: true,
-		Start: now.Add(2 * time.Hour), Stop: now.Add(3 * time.Hour),
+		Start: fixed.Add(2 * time.Hour), Stop: fixed.Add(3 * time.Hour),
 	}
 	store.programs["p-old"] = Program{
 		ID: "p-old", ChannelID: channelID, Title: "Evening News", SeriesID: "evening-news", IsNew: false,
-		Start: now.Add(4 * time.Hour), Stop: now.Add(5 * time.Hour),
+		Start: fixed.Add(4 * time.Hour), Stop: fixed.Add(5 * time.Hour),
 	}
 	store.programs["p-other"] = Program{
 		ID: "p-other", ChannelID: "ch2", Title: "Evening News", SeriesID: "evening-news", IsNew: true,
-		Start: now.Add(2 * time.Hour), Stop: now.Add(3 * time.Hour),
+		Start: fixed.Add(2 * time.Hour), Stop: fixed.Add(3 * time.Hour),
 	}
 
 	if err := svc.ApplySeriesRules(context.Background()); err != nil {
@@ -549,8 +549,12 @@ func TestGetChannel(t *testing.T) {
 		t.Fatalf("missing = %v", err)
 	}
 	_, err = NewServiceWithStore(nil).GetChannel(context.Background(), "ch1")
-	if err == nil {
-		t.Fatal("expected not configured error")
+	if !errors.Is(err, ErrNotConfigured) {
+		t.Fatalf("expected ErrNotConfigured, got %v", err)
+	}
+	_, err = NewServiceWithStore(nil).ListTuners(context.Background())
+	if !errors.Is(err, ErrNotConfigured) {
+		t.Fatalf("ListTuners nil store = %v", err)
 	}
 }
 
@@ -578,8 +582,8 @@ func TestCreateGuideSourceInvalidType(t *testing.T) {
 func TestAddTunerRequiresConfiguredService(t *testing.T) {
 	svc := NewServiceWithStore(nil)
 	_, err := svc.AddTuner(context.Background(), "http://x", "")
-	if err == nil {
-		t.Fatal("expected error")
+	if !errors.Is(err, ErrNotConfigured) {
+		t.Fatalf("expected ErrNotConfigured, got %v", err)
 	}
 }
 
@@ -592,6 +596,7 @@ func (stubPlaybackBridge) StartLiveStream(context.Context, string, string, int, 
 type memoryStore struct {
 	mu           sync.Mutex
 	next         int
+	now          func() time.Time
 	tuners       map[string]Tuner
 	channels     map[string]Channel
 	guideSources map[string]GuideSource
@@ -850,7 +855,11 @@ func (s *memoryStore) GetProgram(_ context.Context, id string) (*Program, error)
 func (s *memoryStore) ListUpcomingPrograms(_ context.Context, until time.Time) ([]Program, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
-	now := time.Now()
+	nowFn := s.now
+	if nowFn == nil {
+		nowFn = time.Now
+	}
+	now := nowFn()
 	out := []Program{}
 	for _, p := range s.programs {
 		if p.Stop.After(now) && !p.Start.After(until) {

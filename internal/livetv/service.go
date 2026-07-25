@@ -21,6 +21,7 @@ var (
 	ErrLimitExceeded   = errors.New("livetv: limit exceeded")
 	ErrNoTuner         = errors.New("livetv: no tuner available")
 	ErrNotImplemented  = errors.New("livetv: not implemented")
+	ErrNotConfigured   = errors.New("livetv service not configured")
 )
 
 type HDHomeRunClient interface {
@@ -66,13 +67,26 @@ func (s *Service) SetPlaybackBridge(bridge PlaybackBridge) {
 	s.playbackBridge = bridge
 }
 
+func (s *Service) requireStore() error {
+	if s == nil || s.store == nil {
+		return ErrNotConfigured
+	}
+	return nil
+}
+
 func (s *Service) ListTuners(ctx context.Context) ([]Tuner, error) {
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
 	return s.store.ListTuners(ctx)
 }
 
 func (s *Service) AddTuner(ctx context.Context, discoverURL, deviceID string) (*Tuner, error) {
-	if s.store == nil || s.hdhr == nil {
-		return nil, errors.New("livetv service not configured")
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
+	if s.hdhr == nil {
+		return nil, ErrNotConfigured
 	}
 	info, err := s.hdhr.Discover(ctx, discoverURL, deviceID)
 	if err != nil {
@@ -101,6 +115,9 @@ func (s *Service) AddTuner(ctx context.Context, discoverURL, deviceID string) (*
 }
 
 func (s *Service) ScanTuner(ctx context.Context, tunerID string) error {
+	if err := s.requireStore(); err != nil {
+		return err
+	}
 	tuner, err := s.store.GetTuner(ctx, tunerID)
 	if err != nil {
 		return err
@@ -140,16 +157,22 @@ func (s *Service) ScanTuner(ctx context.Context, tunerID string) error {
 }
 
 func (s *Service) DeleteTuner(ctx context.Context, id string) error {
+	if err := s.requireStore(); err != nil {
+		return err
+	}
 	return s.store.DeleteTuner(ctx, id)
 }
 
 func (s *Service) ListChannels(ctx context.Context, tunerID string) ([]Channel, error) {
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
 	return s.store.ListChannels(ctx, tunerID)
 }
 
 func (s *Service) GetChannel(ctx context.Context, id string) (*Channel, error) {
-	if s.store == nil {
-		return nil, errors.New("livetv service not configured")
+	if err := s.requireStore(); err != nil {
+		return nil, err
 	}
 	channel, err := s.store.GetChannel(ctx, id)
 	if err != nil {
@@ -162,6 +185,9 @@ func (s *Service) GetChannel(ctx context.Context, id string) (*Channel, error) {
 }
 
 func (s *Service) PatchChannel(ctx context.Context, id string, patch ChannelPatch) (*Channel, error) {
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
 	channel, err := s.store.UpdateChannel(ctx, id, patch)
 	if err != nil {
 		return nil, err
@@ -173,10 +199,16 @@ func (s *Service) PatchChannel(ctx context.Context, id string, patch ChannelPatc
 }
 
 func (s *Service) ListGuideSources(ctx context.Context) ([]GuideSource, error) {
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
 	return s.store.ListGuideSources(ctx, false)
 }
 
 func (s *Service) CreateGuideSource(ctx context.Context, source *GuideSource) (*GuideSource, error) {
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
 	if err := validateGuideSource(source); err != nil {
 		return nil, err
 	}
@@ -191,6 +223,9 @@ func (s *Service) CreateGuideSource(ctx context.Context, source *GuideSource) (*
 }
 
 func (s *Service) UpdateGuideSource(ctx context.Context, source *GuideSource) (*GuideSource, error) {
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
 	existing, err := s.store.GetGuideSource(ctx, source.ID)
 	if err != nil {
 		return nil, err
@@ -229,6 +264,9 @@ func (s *Service) UpdateGuideSource(ctx context.Context, source *GuideSource) (*
 }
 
 func (s *Service) DeleteGuideSource(ctx context.Context, id string) error {
+	if err := s.requireStore(); err != nil {
+		return err
+	}
 	if err := s.store.DeleteGuideSource(ctx, id); err != nil {
 		return err
 	}
@@ -236,6 +274,9 @@ func (s *Service) DeleteGuideSource(ctx context.Context, id string) error {
 }
 
 func (s *Service) SyncAllEnabledGuideSources(ctx context.Context) (int, error) {
+	if err := s.requireStore(); err != nil {
+		return 0, err
+	}
 	sources, err := s.store.ListGuideSources(ctx, true)
 	if err != nil {
 		return 0, err
@@ -252,6 +293,9 @@ func (s *Service) SyncAllEnabledGuideSources(ctx context.Context) (int, error) {
 }
 
 func (s *Service) SyncGuideSource(ctx context.Context, id string) error {
+	if err := s.requireStore(); err != nil {
+		return err
+	}
 	source, err := s.store.GetGuideSource(ctx, id)
 	if err != nil {
 		return err
@@ -295,11 +339,7 @@ func (s *Service) syncXMLTV(ctx context.Context, source *GuideSource) error {
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return fmt.Errorf("fetch xmltv: status %d", resp.StatusCode)
 	}
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 64<<20))
-	if err != nil {
-		return fmt.Errorf("read xmltv: %w", err)
-	}
-	parsed, err := ParseXMLTV(strings.NewReader(string(body)))
+	parsed, err := ParseXMLTV(io.LimitReader(resp.Body, 64<<20))
 	if err != nil {
 		return err
 	}
@@ -359,10 +399,16 @@ func (s *Service) syncXMLTV(ctx context.Context, source *GuideSource) error {
 }
 
 func (s *Service) ListGuide(ctx context.Context, channelIDs []string, start, end time.Time) ([]Program, error) {
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
 	return s.store.ListGuide(ctx, channelIDs, start, end)
 }
 
 func (s *Service) GetProgram(ctx context.Context, id string) (*Program, error) {
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
 	program, err := s.store.GetProgram(ctx, id)
 	if err != nil {
 		return nil, err
@@ -374,6 +420,9 @@ func (s *Service) GetProgram(ctx context.Context, id string) (*Program, error) {
 }
 
 func (s *Service) StartChannelSession(ctx context.Context, channelID string, userID int, profileID string) (*LiveSession, error) {
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
 	channel, err := s.store.GetChannel(ctx, channelID)
 	if err != nil {
 		return nil, err
@@ -425,6 +474,9 @@ func (s *Service) StartChannelSession(ctx context.Context, channelID string, use
 }
 
 func (s *Service) ReleaseSession(ctx context.Context, id string) (*LiveSession, error) {
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
 	session, err := s.store.ReleaseSession(ctx, id)
 	if err != nil {
 		return nil, err
@@ -436,10 +488,16 @@ func (s *Service) ReleaseSession(ctx context.Context, id string) (*LiveSession, 
 }
 
 func (s *Service) ListRecordings(ctx context.Context, status string) ([]Recording, error) {
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
 	return s.store.ListRecordings(ctx, status)
 }
 
 func (s *Service) ScheduleRecording(ctx context.Context, rec *Recording) (*Recording, error) {
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
 	if rec.ProgramID != "" {
 		program, err := s.store.GetProgram(ctx, rec.ProgramID)
 		if err != nil {
@@ -456,11 +514,18 @@ func (s *Service) ScheduleRecording(ctx context.Context, rec *Recording) (*Recor
 	if rec.ChannelID == "" || rec.Start.IsZero() || rec.Stop.IsZero() {
 		return nil, fmt.Errorf("%w: channel_id, start, and stop are required", ErrInvalidArgument)
 	}
+	rec.ID = ""
+	rec.Path = ""
+	rec.LibraryItemID = ""
+	rec.LastError = ""
 	rec.Status = "scheduled"
 	return s.store.CreateRecording(ctx, rec)
 }
 
 func (s *Service) CancelRecording(ctx context.Context, id string) (*Recording, error) {
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
 	rec, err := s.store.CancelRecording(ctx, id)
 	if err != nil {
 		return nil, err
@@ -472,21 +537,34 @@ func (s *Service) CancelRecording(ctx context.Context, id string) (*Recording, e
 }
 
 func (s *Service) ListSeriesRules(ctx context.Context) ([]SeriesRule, error) {
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
 	return s.store.ListSeriesRules(ctx)
 }
 
 func (s *Service) CreateSeriesRule(ctx context.Context, rule *SeriesRule) (*SeriesRule, error) {
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
 	if rule.SeriesID == "" && rule.ChannelID == nil && strings.TrimSpace(rule.TitleMatch) == "" {
 		return nil, fmt.Errorf("%w: series_id, channel_id, or title_match is required", ErrInvalidArgument)
 	}
+	rule.ID = ""
 	return s.store.CreateSeriesRule(ctx, rule)
 }
 
 func (s *Service) DeleteSeriesRule(ctx context.Context, id string) error {
+	if err := s.requireStore(); err != nil {
+		return err
+	}
 	return s.store.DeleteSeriesRule(ctx, id)
 }
 
 func (s *Service) ApplySeriesRules(ctx context.Context) error {
+	if err := s.requireStore(); err != nil {
+		return err
+	}
 	rules, err := s.store.ListSeriesRules(ctx)
 	if err != nil {
 		return err
@@ -528,6 +606,9 @@ func (s *Service) ApplySeriesRules(ctx context.Context) error {
 }
 
 func (s *Service) FailDueRecordings(ctx context.Context) (int, error) {
+	if err := s.requireStore(); err != nil {
+		return 0, err
+	}
 	// Placeholder until the actual FFmpeg/DVR recorder lands. This makes due
 	// rows visible as failed instead of silently accumulating as scheduled.
 	return s.store.FailDueRecordings(ctx, s.now(), "Live TV recorder is not implemented yet")

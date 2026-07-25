@@ -2189,9 +2189,7 @@ func NewRouter(deps Dependencies) chi.Router {
 
 				if liveTVHandler != nil {
 					r.Route("/livetv", func(r chi.Router) {
-						r.Get("/tuners", liveTVHandler.HandleListTuners)
 						r.Get("/channels", liveTVHandler.HandleListChannels)
-						r.Get("/guide-sources", liveTVHandler.HandleListGuideSources)
 						r.Get("/guide", liveTVHandler.HandleListGuide)
 						r.Get("/programs/{programId}", liveTVHandler.HandleGetProgram)
 						r.Get("/recordings", liveTVHandler.HandleListRecordings)
@@ -2209,10 +2207,12 @@ func NewRouter(deps Dependencies) chi.Router {
 
 						r.Group(func(r chi.Router) {
 							r.Use(apimw.RequireAdmin)
+							r.Get("/tuners", liveTVHandler.HandleListTuners)
 							r.Post("/tuners", liveTVHandler.HandleAddTuner)
 							r.Delete("/tuners/{tunerId}", liveTVHandler.HandleDeleteTuner)
 							r.Post("/tuners/{tunerId}/scan", liveTVHandler.HandleScanTuner)
 							r.Patch("/channels/{channelId}", liveTVHandler.HandlePatchChannel)
+							r.Get("/guide-sources", liveTVHandler.HandleListGuideSources)
 							r.Post("/guide-sources", liveTVHandler.HandleCreateGuideSource)
 							r.Patch("/guide-sources/{sourceId}", liveTVHandler.HandleUpdateGuideSource)
 							r.Delete("/guide-sources/{sourceId}", liveTVHandler.HandleDeleteGuideSource)
