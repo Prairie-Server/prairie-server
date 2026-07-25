@@ -91,6 +91,9 @@ func (s *fakeLiveTVStore) CancelRecording(context.Context, string) (*livetv.Reco
 func (s *fakeLiveTVStore) RecordingExists(context.Context, string, string) (bool, error) {
 	return false, nil
 }
+func (s *fakeLiveTVStore) ListActiveRecordingPairs(context.Context) (map[string]struct{}, error) {
+	return map[string]struct{}{}, nil
+}
 func (s *fakeLiveTVStore) FailDueRecordings(context.Context, time.Time, string) (int, error) {
 	return 0, nil
 }
