@@ -93,12 +93,12 @@ export default function Signup() {
       <AuthBackground />
       <div className="auth-viewport">
         <AuthBrandHero subtitle="Create a new account to get started." />
-        <Card className="auth-card glass panel-border border-0 shadow-none">
+        <Card className="auth-card border-0 bg-transparent shadow-none">
           <CardHeader className="sr-only">
             <CardTitle>Create account</CardTitle>
             <CardDescription>Create a new account to get started.</CardDescription>
           </CardHeader>
-          <CardContent className="p-0 sm:p-1">
+          <CardContent className="space-y-5 p-0">
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="signup-username">Username</Label>

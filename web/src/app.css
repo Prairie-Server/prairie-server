@@ -1871,6 +1871,13 @@
     background: transparent;
   }
 
+  /* Setup wizard: readable content column on the dusk plane — no frosted glass */
+  .auth-setup-panel {
+    position: relative;
+    z-index: 1;
+    animation: section-fade-in 600ms var(--ease-out) 120ms both;
+  }
+
   .brand-reveal {
     animation: brand-reveal 700ms var(--ease-gentle) both;
   }
