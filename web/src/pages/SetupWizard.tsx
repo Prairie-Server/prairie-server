@@ -45,7 +45,7 @@ function WizardContent() {
   if (profilesLoading || (user && profileComplete && isAdmin && librariesLoading)) {
     return (
       <div className="auth-shell items-start py-10 sm:py-14">
-        <div className="glass panel-border relative z-1 w-full max-w-2xl rounded-2xl p-7 sm:p-10">
+        <div className="auth-setup-panel relative z-1 w-full max-w-2xl p-1 sm:p-2">
           <div className="space-y-3">
             <div className="flex gap-1">
               {Array.from({ length: 8 }).map((_, i) => (
@@ -63,11 +63,11 @@ function WizardContent() {
 
   return (
     <div className="auth-shell items-start py-10 sm:py-14">
-      <div className="glass panel-border relative z-1 w-full max-w-2xl rounded-2xl p-7 sm:p-10">
+      <div className="auth-setup-panel relative z-1 w-full max-w-2xl p-1 sm:p-2">
         {/* Header */}
         <div className="mb-10">
           <StepIndicator steps={steps} />
-          <h1 className="text-foreground mt-6 text-[1.7rem] leading-tight font-bold tracking-[-0.03em] sm:text-3xl">
+          <h1 className="font-display text-foreground mt-6 text-[1.7rem] leading-tight font-semibold tracking-[-0.03em] sm:text-3xl">
             {STEP_TITLES[currentStep]}
           </h1>
           <p className="text-muted-foreground mt-2 text-sm leading-relaxed">

@@ -176,7 +176,7 @@ describe("AppSidebar", () => {
 
     expect(markup).toContain('src="/prairie-icon-1024.png"');
     expect(markup).not.toContain('src="/prairie-wordmark-sidebar.png"');
-    expect(markup).toContain("sidebar-logo flex items-center py-6 justify-center px-2");
+    expect(markup).toContain("sidebar-logo flex items-center py-7 justify-center px-2");
   });
 
   it("uses the cinema highlight text color for active pinned catalog destinations", () => {

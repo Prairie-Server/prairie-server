@@ -124,7 +124,7 @@ export default function Layout({ children }: LayoutProps) {
         Skip to content
       </a>
       <GlobalSearch />
-      <div className="from-primary/8 pointer-events-none fixed inset-x-0 top-0 z-0 h-40 bg-gradient-to-b to-transparent blur-3xl" />
+      <div className="from-primary/12 pointer-events-none fixed inset-x-0 top-0 z-0 h-52 bg-gradient-to-b to-transparent blur-3xl" />
       {/* Desktop sidebar — hidden below lg */}
       <div className="hidden lg:block">
         <AppSidebar collapsed={isDetailImmersion} />
@@ -145,8 +145,8 @@ export default function Layout({ children }: LayoutProps) {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <ViewTransitionLink to="/" className="flex items-center gap-2.5">
-            <PrairieBrand className="h-10 w-[94px]" />
+          <ViewTransitionLink to="/" className="brand-reveal flex items-center gap-2.5">
+            <PrairieBrand className="h-11 w-[108px]" />
           </ViewTransitionLink>
         </div>
         <div className="flex items-center gap-2">

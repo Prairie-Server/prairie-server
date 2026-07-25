@@ -142,7 +142,7 @@ export const TOKEN_GROUP_ORDER: TokenGroup[] = [
 ];
 
 /** Available font families from the loaded Google Fonts. */
-export const AVAILABLE_FONTS = ["Outfit", "Sora", "Urbanist", "Manrope"];
+export const AVAILABLE_FONTS = ["Sora", "Fraunces", "Outfit", "Urbanist", "Manrope"];
 
 /** Read the current computed value of a CSS custom property from the DOM. */
 export function getComputedToken(token: ThemeToken): string {

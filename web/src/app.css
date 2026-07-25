@@ -140,6 +140,28 @@
     opacity: 1;
   }
 }
+@keyframes brand-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+@keyframes section-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 @keyframes slide-up {
   from {
     opacity: 0;
@@ -274,6 +296,15 @@
   .player-rise {
     animation: none !important;
   }
+  .brand-reveal,
+  .section-fade-in,
+  .auth-brand-mark,
+  .auth-brand-copy {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
 }
 
 @media (forced-colors: active) {
@@ -316,6 +347,64 @@
     --warning-foreground: oklch(0.98 0.01 85);
     --info: oklch(0.7 0.15 250);
     --info-foreground: oklch(0.98 0.01 250);
+  }
+
+  /* ── Prairie Dusk (default) ───────────────────────────────── */
+  /* Warm prairie dusk: deep slate/charcoal bases, amber wheat
+     accent, Sora for UI, Fraunces for brand/display moments.     */
+  [data-theme="prairie-dusk"] {
+    --radius: 0.75rem;
+    --font-body: "Sora", sans-serif;
+    --font-display: "Fraunces", "Sora", serif;
+
+    /* Surfaces: deep slate charcoal with warm undertone */
+    --background: #141820;
+    --foreground: #f2eee6;
+    --card: #1c222c;
+    --card-foreground: #f2eee6;
+    --popover: #181d26;
+    --popover-foreground: #f2eee6;
+
+    /* Primary: amber wheat — CTAs, brand accents, active cues */
+    --primary: #e0a84a;
+    --primary-foreground: #1a1408;
+
+    /* Secondary & Muted */
+    --secondary: #242a36;
+    --secondary-foreground: #ddd6c8;
+    --muted: #1c222c;
+    --muted-foreground: #9a9488;
+    --accent: #2a3140;
+    --accent-foreground: #f2eee6;
+
+    --destructive: #ef6b5c;
+    --destructive-foreground: #2a0e08;
+
+    --border: #2e3544;
+    --input: #1c222c;
+    --ring: #e0a84a;
+
+    --chart-1: #e0a84a;
+    --chart-2: #c4b08a;
+    --chart-3: #7eb8a8;
+    --chart-4: #8aa0c6;
+    --chart-5: #d48a6a;
+
+    --sidebar: #0e1116;
+    --sidebar-foreground: #f2eee6;
+    --sidebar-primary: #e0a84a;
+    --sidebar-primary-foreground: #1a1408;
+    --sidebar-accent: #1c222c;
+    --sidebar-accent-foreground: #f2eee6;
+    --sidebar-border: #242a36;
+    --sidebar-section-divider: #343b4a;
+    --sidebar-ring: #e0a84a;
+
+    --surface: #1c222c;
+    --surface-hover: #242a36;
+    --surface-raised: #2a3140;
+    --ambient: #d4a05a;
+    --ambient-glow-opacity: 0.12;
   }
 
   /* ── Midnight Cinema ────────────────────────────────────── */
@@ -714,17 +803,12 @@
     color: var(--foreground);
     font-family: var(--font-body);
     font-weight: var(--font-weight-ui, 400);
-    background-image:
-      radial-gradient(
-        circle at top,
-        color-mix(in srgb, var(--ambient) 10%, transparent),
-        transparent 32%
-      ),
-      linear-gradient(
-        to bottom,
-        color-mix(in srgb, var(--background) 92%, transparent),
-        var(--background)
-      );
+    /* Quiet page wash — no stacked glow orbs (those read as generic AI chrome). */
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--background) 96%, var(--ambient)),
+      var(--background) 42%
+    );
     min-height: 100dvh;
   }
 }
@@ -1682,6 +1766,7 @@
     }
   }
 
+  /* Auth: one quiet dusk plane + brand + form. No glass cards, no glow clusters. */
   .auth-shell {
     min-height: 100dvh;
     position: relative;
@@ -1689,39 +1774,129 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1.5rem;
+    padding: 1.75rem 1.25rem 2.5rem;
   }
 
   .auth-shell::before {
     content: "";
     position: absolute;
     inset: 0;
-    background:
-      radial-gradient(
-        circle at 18% 18%,
-        color-mix(in srgb, var(--primary) 18%, transparent),
-        transparent 28%
-      ),
-      radial-gradient(
-        circle at 82% 12%,
-        color-mix(in srgb, var(--ambient) 15%, transparent),
-        transparent 26%
-      ),
-      linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--background) 96%, transparent),
-        var(--background)
-      );
+    background: linear-gradient(180deg, #1a2230 0%, #161c26 42%, #1c1812 78%, #241c12 100%);
     pointer-events: none;
   }
 
+  /* Single horizon band — readable dusk, not decorative orbs */
+  .auth-shell::after {
+    content: "";
+    position: absolute;
+    inset-inline: -10%;
+    bottom: 18%;
+    height: 42%;
+    background: radial-gradient(
+      ellipse 70% 55% at 50% 100%,
+      color-mix(in srgb, var(--primary) 28%, transparent),
+      color-mix(in srgb, var(--ambient) 10%, transparent) 42%,
+      transparent 72%
+    );
+    pointer-events: none;
+  }
+
+  .auth-viewport {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 22.5rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2rem;
+  }
+
+  .auth-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 1rem;
+  }
+
+  .auth-brand-mark {
+    animation: brand-reveal 700ms var(--ease-gentle) both;
+  }
+
+  .auth-brand-copy {
+    animation: brand-reveal 700ms var(--ease-gentle) 120ms both;
+  }
+
+  .auth-brand-title {
+    font-family: var(--font-display, var(--font-body));
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-weight: 650;
+    letter-spacing: -0.035em;
+    line-height: 1.08;
+    color: var(--foreground);
+  }
+
+  .auth-brand-subtitle {
+    max-width: 20rem;
+    margin-inline: auto;
+    font-size: 0.9375rem;
+    line-height: 1.5;
+    color: color-mix(in srgb, var(--muted-foreground) 92%, var(--foreground));
+  }
+
+  /* Form panel: flat, no glass/border/shadow — fields are the interaction chrome */
   .auth-card {
     position: relative;
     z-index: 1;
     width: 100%;
-    max-width: 28rem;
-    border-radius: 2rem;
-    padding: 1.75rem;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    animation: section-fade-in 600ms var(--ease-out) 160ms both;
+  }
+
+  .auth-card .bg-card,
+  .auth-card[data-slot="card"] {
+    background: transparent;
+  }
+
+  /* Setup wizard: readable content column on the dusk plane — no frosted glass */
+  .auth-setup-panel {
+    position: relative;
+    z-index: 1;
+    animation: section-fade-in 600ms var(--ease-out) 120ms both;
+  }
+
+  .brand-reveal {
+    animation: brand-reveal 700ms var(--ease-gentle) both;
+  }
+
+  .section-fade-in {
+    animation: section-fade-in 550ms var(--ease-out) both;
+  }
+
+  .home-sections .section-fade-in:nth-child(1) {
+    animation-delay: 40ms;
+  }
+  .home-sections .section-fade-in:nth-child(2) {
+    animation-delay: 90ms;
+  }
+  .home-sections .section-fade-in:nth-child(3) {
+    animation-delay: 140ms;
+  }
+  .home-sections .section-fade-in:nth-child(4) {
+    animation-delay: 190ms;
+  }
+  .home-sections .section-fade-in:nth-child(n + 5) {
+    animation-delay: 220ms;
+  }
+
+  .sidebar-logo .brand-reveal {
+    animation: brand-reveal 650ms var(--ease-gentle) both;
   }
 
   .admin-shell {

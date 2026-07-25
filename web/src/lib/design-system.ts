@@ -1,7 +1,7 @@
 /**
  * ═══════════════════════════════════════════════════════════════════
- * SILO DESIGN SYSTEM
- * A cinema-first design language for media streaming interfaces
+ * PRAIRIE DESIGN SYSTEM
+ * A cinema-first design language with Prairie dusk brand identity
  * ═══════════════════════════════════════════════════════════════════
  *
  * Human-facing design guidance lives in `web/docs/design-system.md`.
@@ -28,16 +28,82 @@
  *
  * 4. MOTION: Use duration/easing CSS variables for transitions.
  *      className="transition-all duration-[--duration-normal]"
+ *      Brand surfaces: .brand-reveal · rows: .section-fade-in
  *
  * 5. PATTERNS: Use the utility classes defined in app.css.
  *      .hero-gradient, .glass, .glass-subtle, .media-card, etc.
  */
 
 // ────────────────────────────────────────────────────────────────
+// § 0  PRAIRIE BRAND IDENTITY (Phase 3 foundation)
+// ────────────────────────────────────────────────────────────────
+//
+// Default theme: prairie-dusk (warm prairie dusk).
+// Direction for apps to mirror:
+//   • Bases — deep slate / charcoal (#141820 range), not flat black
+//   • Accent — amber / wheat (#e0a84a), never purple-on-white
+//   • Avoid — cream+#terracotta editorial, broadsheet newspaper chrome
+//   • UI type — Sora (modern sans); brand/display — Fraunces
+//   • First viewport — one composition: brand hero-level, one headline,
+//     one supporting line, one CTA group, one dominant visual plane
+//   • Cards — not in heroes; allowed only as interaction containers
+//   • Motion — .brand-reveal (mark/copy), .section-fade-in (below fold)
+
+export const PRAIRIE_IDENTITY = {
+  defaultThemeId: "prairie-dusk",
+  direction: "warm prairie dusk",
+  surfaces: {
+    background: "#141820",
+    sidebar: "#0e1116",
+    surface: "#1c222c",
+  },
+  accent: {
+    primary: "#e0a84a",
+    ambient: "#d4a05a",
+  },
+  typography: {
+    body: "Sora",
+    display: "Fraunces",
+  },
+  motion: {
+    brandReveal: "brand-reveal 700ms var(--ease-gentle)",
+    sectionFadeIn: "section-fade-in 550ms var(--ease-out)",
+  },
+  brandTest:
+    "If the first viewport could belong to another product after removing nav chrome, the brand is too weak.",
+} as const;
+
+// ────────────────────────────────────────────────────────────────
 // § 1  DESIGN PRINCIPLES
 // ────────────────────────────────────────────────────────────────
 
 export const DESIGN_PRINCIPLES = [
+  {
+    id: "prairie-brand-first",
+    name: "Prairie Brand First",
+    description:
+      "On branded surfaces (login, landing, empty home, shell chrome), the Prairie " +
+      "wordmark or mark is a hero-level signal — not a small nav label. Product " +
+      "headlines must not overpower the brand on those surfaces.",
+    examples: [
+      "Login: PrairieBrand above the form, display-scale server name secondary",
+      "App shell: wordmark sized for recognition in the sidebar and mobile header",
+      "Empty home: brand welcome composition before section rows",
+    ],
+  },
+  {
+    id: "one-composition",
+    name: "One Composition Per Viewport",
+    description:
+      "The first viewport reads as a single scene, not a dashboard of cards. " +
+      "Hero budget: brand (when branded), one headline, one supporting sentence, " +
+      "one CTA group, one dominant image or atmosphere. Discovery rows live below the fold.",
+    examples: [
+      "Home featured hero is full-bleed; carousel rows start below",
+      "Login is brand + atmosphere + form — not stacked promo cards",
+      "No stat strips, pill clusters, or boxed promos in the hero",
+    ],
+  },
   {
     id: "content-first",
     name: "Content is King",
@@ -60,6 +126,7 @@ export const DESIGN_PRINCIPLES = [
       "without harsh contrast. The darkness makes media imagery pop.",
     examples: [
       "Page backgrounds are near-black (#121215 – #1e1e2e range)",
+      "Prairie Dusk uses warm slate charcoal rather than cool pure black",
       "Sidebars are darker than the main background",
       "Cards use a subtle surface lift, not dramatic contrast",
     ],
@@ -131,6 +198,8 @@ export const DESIGN_PRINCIPLES = [
       "cinematic motion uses longer durations and gentler easing than " +
       "interaction motion.",
     examples: [
+      "Brand reveal: .brand-reveal on wordmarks and auth hero copy",
+      "Section enter: .section-fade-in on home rows below the fold",
       "Page transitions: fade + slight slide (300ms ease-out)",
       "Card hover: subtle scale(1.03) + brightness lift (150ms)",
       "Sidebar collapse: smooth width transition (250ms)",
@@ -217,8 +286,10 @@ export const TYPOGRAPHY = {
    * Font stacks — defined per-theme via CSS variables.
    *
    * --font-body:    Primary UI font (nav, body text, labels)
-   * --font-display: Hero titles, cinematic text (defaults to --font-body)
+   * --font-display: Hero titles, cinematic text, brand moments
    * --font-mono:    Code blocks, technical data
+   *
+   * Prairie Dusk default: Sora (body) + Fraunces (display).
    */
   families: {
     body: "var(--font-body)",
@@ -591,6 +662,7 @@ export const PAGE_CONTAINER = "px-4 py-4 sm:px-6 lg:px-12 lg:py-6";
 
 /**
  * Hero banner container sizing — shared between HeroBanner and Home skeletons.
+ * Full-bleed first viewport; no inset rounded media cards.
  */
 export const HERO_BANNER_SIZE = "h-[50vh] min-h-[350px] max-h-[700px] lg:h-[60vh]";
 
@@ -600,3 +672,9 @@ export const HERO_BANNER_SIZE = "h-[50vh] min-h-[350px] max-h-[700px] lg:h-[60vh
  * keep the title block comfortably clear of the nav bar.
  */
 export const HERO_BANNER_SIZE_TALL = "h-[60vh] min-h-[420px] max-h-[760px] lg:h-[72vh]";
+
+/**
+ * Brand welcome hero used when Home has no featured media slot.
+ * Keeps the first viewport as one branded composition.
+ */
+export const HOME_BRAND_HERO_SIZE = "min-h-[42vh] lg:min-h-[48vh]";

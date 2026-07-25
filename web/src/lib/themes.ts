@@ -1,4 +1,5 @@
 export const THEME_IDS = [
+  "prairie-dusk",
   "midnight-cinema",
   "cinema-light",
   "cobalt-studio",
@@ -23,6 +24,15 @@ export interface ThemeDefinition {
 }
 
 export const THEMES: Record<ThemeId, ThemeDefinition> = {
+  "prairie-dusk": {
+    id: "prairie-dusk",
+    label: "Prairie Dusk",
+    fontFamily: "Sora",
+    previewAccent: "#e0a84a",
+    previewBg: "#141820",
+    description: "Warm dusk over open land — simple, amber wheat, brand-first",
+    curated: true,
+  },
   "midnight-cinema": {
     id: "midnight-cinema",
     label: "Cinema Dark",
@@ -70,6 +80,6 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
   },
 };
 
-export const DEFAULT_THEME: ThemeId = "midnight-cinema";
+export const DEFAULT_THEME: ThemeId = "prairie-dusk";
 
 export const CURATED_THEME_IDS = THEME_IDS.filter((id) => THEMES[id].curated);
