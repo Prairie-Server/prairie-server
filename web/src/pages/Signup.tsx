@@ -48,6 +48,7 @@ export default function Signup() {
     return (
       <div className="auth-shell">
         <AuthBackground />
+        <h1 className="sr-only">Public signups are currently closed</h1>
         <div className="auth-viewport">
           <AuthBrandHero subtitle="Public signups are currently closed." />
         </div>
@@ -91,6 +92,7 @@ export default function Signup() {
   return (
     <div className="auth-shell">
       <AuthBackground />
+      <h1 className="sr-only">Create account</h1>
       <div className="auth-viewport">
         <AuthBrandHero subtitle="Create a new account to get started." />
         <Card className="auth-card border-0 bg-transparent shadow-none">

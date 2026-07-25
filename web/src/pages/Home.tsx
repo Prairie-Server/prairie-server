@@ -195,7 +195,7 @@ export default function Home() {
   return (
     <>
       <h1 className="sr-only">Home</h1>
-      <div className={`home-sections space-y-10 ${hasHeroSlot ? "pb-2" : "pb-2"}`}>
+      <div className="home-sections space-y-10 pb-2">
         {hasHeroSlot ? heroSlot : <HomeBrandHero />}
         <TasteSeedBanner />
 
