@@ -32,11 +32,6 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Install libvips (CGO image deps)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libvips-dev pkg-config
-
       - name: Run unit tests with coverage
         run: |
           set -euo pipefail
@@ -48,7 +43,10 @@ jobs:
           #
           # coverage.out must include packages listed in
           # .github/coverage-packages.txt (internal/livetv, …/hdhomerun).
-          go test ./internal/livetv/... ./internal/jellycompat/... \
+          #
+          # imageutil is CGO-free (embedded WASI) — keep a smoke gate here so the
+          # committed .wasm cannot rot without CI noticing.
+          go test ./internal/livetv/... ./internal/jellycompat/... ./internal/imageutil/ \
             -count=1 -covermode=atomic -coverprofile=coverage.out
           # Native Live TV HTTP handlers live in internal/api/handlers; run only
           # those tests so we do not pull in the full handlers suite.

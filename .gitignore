@@ -2,6 +2,9 @@
 /prairie
 *.exe
 
+# Rust tool build outputs (committed artifacts live under internal/)
+tools/imageutil-wasm/target/
+
 # IDE
 .idea/
 .vscode/

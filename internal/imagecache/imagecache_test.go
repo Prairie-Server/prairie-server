@@ -16,7 +16,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/h2non/bimg"
+	"golang.org/x/image/webp"
 
 	"github.com/prairie-server/prairie-server/internal/metadata"
 )
@@ -549,12 +549,12 @@ func TestCache_CapsLargeOriginalVariant(t *testing.T) {
 	if len(original) == 0 {
 		t.Fatal("missing original.webp upload")
 	}
-	size, err := bimg.NewImage(original).Size()
+	cfg, err := webp.DecodeConfig(bytes.NewReader(original))
 	if err != nil {
 		t.Fatalf("reading original.webp size: %v", err)
 	}
-	if size.Width > 1920 {
-		t.Fatalf("original.webp width = %d, want <= 1920", size.Width)
+	if cfg.Width > 1920 {
+		t.Fatalf("original.webp width = %d, want <= 1920", cfg.Width)
 	}
 	if len(original) >= 10*1024*1024 {
 		t.Fatalf("original.webp size = %d bytes, want < 10 MiB", len(original))

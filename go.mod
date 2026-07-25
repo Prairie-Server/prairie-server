@@ -12,7 +12,7 @@ require (
 	github.com/jackc/pgx/v5 v5.9.2
 	github.com/mattn/go-sqlite3 v1.14.34
 	github.com/prometheus/client_golang v1.23.2
-	github.com/prometheus/client_model v0.6.2 // indirect
+	github.com/prometheus/client_model v0.6.2
 	github.com/redis/go-redis/v9 v9.18.0
 	golang.org/x/crypto v0.52.0
 	golang.org/x/sys v0.45.0
@@ -25,7 +25,6 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/s3/manager v1.22.34
 	github.com/go-chi/cors v1.2.2
 	github.com/gorilla/websocket v1.5.3
-	github.com/h2non/bimg v1.1.9
 	github.com/hashicorp/go-hclog v1.6.3
 	github.com/joho/godotenv v1.5.1
 	github.com/mmcdole/gofeed v1.3.0
