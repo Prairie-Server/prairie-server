@@ -61,6 +61,9 @@ type ItemsHandler struct {
 	// unbounded progress scan. It is the section subsystem's read-time fetcher and
 	// is independent of any virtual-library/hub-section exposure.
 	sectionsFetcher *sections.Fetcher
+	// liveTVEnabled appends the Live TV CollectionFolder to UserViews when true.
+	liveTVEnabled bool
+	liveTV        *LiveTVHandler
 }
 
 // NewItemsHandler creates a new items handler.
@@ -120,13 +123,14 @@ func (h *ItemsHandler) handleViewsResponse(w http.ResponseWriter, r *http.Reques
 // userViews builds the session's library views as CollectionFolder items. The
 // synthetic "Collections" view is prepended (first library) when the session
 // can see at least one collection; see collectionsView/collectionsViewVisible.
+// When Live TV is configured, a livetv CollectionFolder is appended.
 func (h *ItemsHandler) userViews(ctx context.Context, session *Session) ([]baseItemDTO, error) {
 	libraries, err := h.content.ListUserLibraries(ctx, session)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]baseItemDTO, 0, len(libraries)+1)
+	items := make([]baseItemDTO, 0, len(libraries)+2)
 	if h.collectionsViewVisible(ctx, libraries) {
 		items = append(items, h.collectionsView())
 	}
@@ -135,7 +139,16 @@ func (h *ItemsHandler) userViews(ctx context.Context, session *Session) ([]baseI
 		h.rememberLibraryImages(library, dto.ID)
 		items = append(items, dto)
 	}
+	if h.liveTVEnabled && h.liveTV != nil {
+		items = append(items, h.liveTV.liveTVView())
+	}
 	return items, nil
+}
+
+// SetLiveTV wires the Live TV CollectionFolder into UserViews.
+func (h *ItemsHandler) SetLiveTV(handler *LiveTVHandler) {
+	h.liveTV = handler
+	h.liveTVEnabled = handler != nil
 }
 
 // HandleItems serves GET /Items.
@@ -168,6 +181,10 @@ func (h *ItemsHandler) HandleItems(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.handleBoxSetsList(w, r, session, query)
+		return
+	}
+	if isLiveTVViewID(newCaseInsensitiveQuery(r.URL.Query()).Get("ParentId")) && h.liveTV != nil {
+		h.liveTV.HandleChannels(w, r)
 		return
 	}
 
@@ -310,6 +327,16 @@ func (h *ItemsHandler) HandleItem(w http.ResponseWriter, r *http.Request) {
 	if isCollectionsViewID(rawID) {
 		writeJSON(w, http.StatusOK, h.collectionsView())
 		return
+	}
+	if isLiveTVViewID(rawID) && h.liveTV != nil {
+		writeJSON(w, http.StatusOK, h.liveTV.liveTVView())
+		return
+	}
+	if h.liveTV != nil {
+		if _, ok := h.liveTV.DecodeLiveTVChannelID(rawID); ok {
+			h.liveTV.HandleChannel(w, r)
+			return
+		}
 	}
 
 	// Handle library IDs — clients like Infuse request /Items/{id} for

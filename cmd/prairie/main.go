@@ -53,6 +53,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/diagnostics"
 	"github.com/prairie-server/prairie-server/internal/downloads"
 	"github.com/prairie-server/prairie-server/internal/ebooks"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	evt "github.com/prairie-server/prairie-server/internal/events"
 	"github.com/prairie-server/prairie-server/internal/historyimport"
 	"github.com/prairie-server/prairie-server/internal/imagecache"
@@ -60,6 +61,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/jellycompat"
 	"github.com/prairie-server/prairie-server/internal/libraryingest"
 	"github.com/prairie-server/prairie-server/internal/literaryworks"
+	"github.com/prairie-server/prairie-server/internal/livetv"
 	"github.com/prairie-server/prairie-server/internal/logfilter"
 	"github.com/prairie-server/prairie-server/internal/logredact"
 	"github.com/prairie-server/prairie-server/internal/logstream"
@@ -1961,6 +1963,13 @@ func main() {
 	}
 	brandingSvc := branding.NewService(settingsRepo, brandingStore)
 
+	// Shared Live TV service (HDHomeRun / guide / DVR). Created whenever a DB is
+	// available so jellycompat and the task manager share one instance.
+	var liveTVSvc *livetv.Service
+	if deps.DB != nil {
+		liveTVSvc = livetv.NewService(deps.DB)
+	}
+
 	// Wire up task manager for admin task API.
 	if needsWorkers && deps.DB != nil {
 		triggerRepo := taskrepository.NewPgTriggerRepository(deps.DB)
@@ -2151,6 +2160,10 @@ func main() {
 		taskMgr.Register(tasks.NewRepairProviderIDIntegrityTask(metadata.NewProviderIDIntegrityRepairer(deps.DB), historyReconciler))
 		taskMgr.Register(tasks.NewReconcileWatchHistoryTask(historyReconciler))
 		taskMgr.Register(tasks.NewSyncPodcastFeedsTask(podcastfeed.New(), podcastfeed.NewDBStore(deps.DB)))
+		if liveTVSvc != nil {
+			taskMgr.Register(tasks.NewSyncLiveTVGuideTask(liveTVSvc))
+			taskMgr.Register(tasks.NewLiveTVDVRTickTask(liveTVSvc))
+		}
 		if audiobookEnricher != nil {
 			taskMgr.Register(tasks.NewSyncAudiobookMetadataTask(audiobookEnricher))
 		}
@@ -2556,6 +2569,7 @@ func main() {
 			}
 
 			compatDeps.SubtitleRepo = subtitles.NewPgRepository(deps.DB, deps.SecretCipher)
+			compatDeps.LiveTV = liveTVSvc
 
 			// Construct auth service for jellycompat login.
 			userRepo := auth.NewUserRepository(deps.DB)

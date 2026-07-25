@@ -6,10 +6,10 @@ import (
 	"errors"
 	"math"
 	"net/http"
-	"os"
 	"strconv"
 	"time"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/notifications"
 )
 

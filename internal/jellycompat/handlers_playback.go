@@ -43,6 +43,8 @@ type playbackInfoRequest struct {
 	EnableTranscoding    *bool           `json:"EnableTranscoding"`
 	AllowVideoStreamCopy *bool           `json:"AllowVideoStreamCopy"`
 	AllowAudioStreamCopy *bool           `json:"AllowAudioStreamCopy"`
+	LiveStreamID         string          `json:"LiveStreamId"`
+	AutoOpenLiveStream   bool            `json:"AutoOpenLiveStream"`
 	DeviceProfile        json.RawMessage `json:"DeviceProfile"`
 }
 
@@ -206,6 +208,13 @@ type PlaybackHandler struct {
 	// server-authoritative store instead (see internal/noderecipe). Optional
 	// (nil disables it — integrated/no-node deployments need no handoff).
 	RecipeNodeStore recipeNodePutter
+
+	liveTV *LiveTVHandler
+}
+
+// SetLiveTV wires Live TV channel PlaybackInfo negotiation.
+func (h *PlaybackHandler) SetLiveTV(handler *LiveTVHandler) {
+	h.liveTV = handler
 }
 
 // recipeNodePutter persists and removes a remote transcode's reconstruction
@@ -613,7 +622,36 @@ func (h *PlaybackHandler) HandlePlaybackInfo(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	contentID, err := decodeItemID(h.codec, chi.URLParam(r, "id"))
+	routeID := chi.URLParam(r, "id")
+	if h.liveTV != nil {
+		if channelID, ok := h.liveTV.DecodeLiveTVChannelID(routeID); ok {
+			req, _, err := h.parsePlaybackRequest(r, session.Token)
+			if err != nil {
+				writeError(w, http.StatusBadRequest, "BadRequest", "Invalid playback request")
+				return
+			}
+			if req.UserID != "" && req.UserID != session.PseudoUserID.String() {
+				writeError(w, http.StatusNotFound, "NotFound", "User not found")
+				return
+			}
+			autoOpen := req.AutoOpenLiveStream || r.URL.Query().Get("AutoOpenLiveStream") == "true"
+			liveStreamID := firstNonEmpty(req.LiveStreamID, r.URL.Query().Get("LiveStreamId"))
+			source, err := h.liveTV.PlaybackMediaSource(r.Context(), session, routeID, autoOpen, liveStreamID)
+			if err != nil {
+				writeLiveTVCompatError(w, err)
+				return
+			}
+			_ = channelID
+			playSessionID := h.codec.EncodeStringID(EncodedIDPlaySession, uuidNewString())
+			writeJSON(w, http.StatusOK, playbackInfoResponseDTO{
+				PlaySessionID: playSessionID,
+				MediaSources:  []mediaSourceDTO{source},
+			})
+			return
+		}
+	}
+
+	contentID, err := decodeItemID(h.codec, routeID)
 	if err != nil {
 		writeError(w, http.StatusNotFound, "NotFound", "Item not found")
 		return

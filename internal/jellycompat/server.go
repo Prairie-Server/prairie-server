@@ -13,6 +13,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/livetv"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
 	"github.com/prairie-server/prairie-server/internal/recommendations"
 	"github.com/prairie-server/prairie-server/internal/scantrigger"
@@ -111,6 +112,11 @@ type Dependencies struct {
 	SubtitleRepo subtitles.Repository // optional; downloaded subtitle support
 	S3Client     subtitles.S3Client   // optional
 	S3Bucket     string               // optional
+
+	// LiveTV is the native Prairie Live TV / OTA / DVR service. When set,
+	// jellycompat exposes Jellyfin LiveTv routes and enables Live TV in user
+	// policy and UserViews.
+	LiveTV *livetv.Service
 }
 
 // CurrentConfig returns the live config when hot reload is wired, falling

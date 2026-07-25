@@ -2245,6 +2245,125 @@ export interface AutoscanScansResponse {
   offset: number;
 }
 
+export interface LiveTVTuner {
+  id: string;
+  type: string;
+  device_id: string;
+  discover_url: string;
+  base_url: string;
+  model: string;
+  firmware: string;
+  tuner_count: number;
+  status: string;
+  channel_count: number;
+  last_error: string;
+  last_scan_at?: string;
+}
+
+export interface LiveTVTunersResponse {
+  tuners: LiveTVTuner[];
+}
+
+export interface LiveTVChannel {
+  id: string;
+  tuner_id: string;
+  number: string;
+  number_override?: string | null;
+  callsign: string;
+  name: string;
+  logo_url: string;
+  hd: boolean;
+  enabled: boolean;
+  stream_url: string;
+  guide_station_id: string;
+}
+
+export interface LiveTVChannelsResponse {
+  channels: LiveTVChannel[];
+}
+
+export interface LiveTVGuideSource {
+  id: string;
+  type: "schedules_direct" | "xmltv_url" | string;
+  priority: number;
+  enabled: boolean;
+  display_name: string;
+  config: Record<string, string>;
+  status: string;
+  last_error: string;
+  last_sync_at?: string;
+  next_sync_at?: string;
+}
+
+export interface LiveTVGuideSourcesResponse {
+  guide_sources: LiveTVGuideSource[];
+}
+
+export interface LiveTVProgram {
+  id: string;
+  channel_id: string;
+  source_id?: string;
+  series_id: string;
+  external_id?: string;
+  start: string;
+  stop: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  season?: number | null;
+  episode?: number | null;
+  genres: string[];
+  image_url: string;
+  is_new: boolean;
+  is_live: boolean;
+}
+
+export interface LiveTVGuideResponse {
+  programs: LiveTVProgram[];
+  start: string;
+  end: string;
+}
+
+export interface LiveTVSessionStartResponse {
+  session_id: string;
+  playback_ticket: string;
+  hls_url: string;
+  stream_url?: string;
+  note?: string;
+}
+
+export interface LiveTVRecording {
+  id: string;
+  program_id?: string;
+  channel_id: string;
+  series_rule_id?: string;
+  status: string;
+  path?: string;
+  library_item_id?: string;
+  start: string;
+  stop: string;
+  title: string;
+  last_error?: string;
+}
+
+export interface LiveTVRecordingsResponse {
+  recordings: LiveTVRecording[];
+}
+
+export interface LiveTVSeriesRule {
+  id: string;
+  series_id: string;
+  channel_id?: string | null;
+  title_match: string;
+  new_only: boolean;
+  keep_last: number;
+  enabled: boolean;
+}
+
+export interface LiveTVSeriesRulesResponse {
+  series_rules: LiveTVSeriesRule[];
+}
+
 export interface RequestListParams {
   status?: MediaRequestStatus | "all";
   outcome?: MediaRequestOutcome | "all";

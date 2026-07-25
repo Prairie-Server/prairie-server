@@ -119,6 +119,19 @@ type baseItemDTO struct {
 	MediaStreams             []mediaStreamDTO             `json:"MediaStreams,omitempty"`
 	Width                    int                          `json:"Width,omitempty"`
 	Height                   int                          `json:"Height,omitempty"`
+	ChannelNumber            string                       `json:"ChannelNumber,omitempty"`
+	Number                   string                       `json:"Number,omitempty"`
+	StartDate                string                       `json:"StartDate,omitempty"`
+	EndDate                  string                       `json:"EndDate,omitempty"`
+	EpisodeTitle             string                       `json:"EpisodeTitle,omitempty"`
+	IsMovie                  bool                         `json:"IsMovie,omitempty"`
+	IsSports                 bool                         `json:"IsSports,omitempty"`
+	IsNews                   bool                         `json:"IsNews,omitempty"`
+	IsKids                   bool                         `json:"IsKids,omitempty"`
+	IsLive                   bool                         `json:"IsLive,omitempty"`
+	IsNew                    bool                         `json:"IsNew,omitempty"`
+	IsPremiere               bool                         `json:"IsPremiere,omitempty"`
+	CurrentProgram           *baseItemDTO                 `json:"CurrentProgram,omitempty"`
 }
 
 type itemUserDataDTO struct {
@@ -229,6 +242,8 @@ type mediaSourceDTO struct {
 	TranscodingURL                      string            `json:"TranscodingUrl,omitempty"`
 	TranscodingSubProtocol              string            `json:"TranscodingSubProtocol"`
 	TranscodingContainer                string            `json:"TranscodingContainer,omitempty"`
+	LiveStreamID                        string            `json:"LiveStreamId,omitempty"`
+	OpenToken                           string            `json:"OpenToken,omitempty"`
 	Bitrate                             int               `json:"Bitrate,omitempty"`
 	DefaultAudioStreamIndex             *int              `json:"DefaultAudioStreamIndex,omitempty"`
 	DefaultSubtitleStreamIndex          *int              `json:"DefaultSubtitleStreamIndex,omitempty"`

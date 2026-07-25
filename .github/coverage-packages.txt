@@ -1,0 +1,6 @@
+# Packages that must meet COVER_MIN (default 75%) in CI.
+# Patterns match exact package-path suffixes of the Go coverprofile.
+# CI also sets COVER_EXCLUDE_FILE_REGEX='(^|/)store\.go$' so PgStore DB code
+# under internal/livetv is omitted from the livetv package total.
+internal/livetv
+internal/livetv/hdhomerun

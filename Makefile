@@ -1,4 +1,4 @@
-.PHONY: frontend build dev-frontend dev-backend dev-proxy dev-transcode lint clean jellyfin-web migrate-continuum-check verify-local-paths install-hooks migrate-create migrate-validate migrate-status migrate-up
+.PHONY: frontend build dev-frontend dev-backend dev-proxy dev-transcode lint clean jellyfin-web migrate-continuum-check verify-local-paths install-hooks migrate-create migrate-validate migrate-status migrate-up test-coverage check-coverage
 
 GIT_COMMON_DIR := $(strip $(shell git rev-parse --git-common-dir 2>/dev/null))
 MAIN_CHECKOUT_ROOT := $(if $(GIT_COMMON_DIR),$(abspath $(GIT_COMMON_DIR)/..))
@@ -8,6 +8,9 @@ SHARED_PLUGIN_SDK_DIR := $(if $(MAIN_CHECKOUT_ROOT),$(abspath $(MAIN_CHECKOUT_RO
 GOOSE := go run github.com/pressly/goose/v3/cmd/goose@v3.27.1
 GOOSE_DIR := migrations/sql
 ENV_FILE ?= .env
+COVER_MIN ?= 75
+COVER_PROFILE ?= coverage.out
+COVER_EXCLUDE_FILE_REGEX ?= (^|/)store\.go$
 
 ifneq ($(wildcard $(DEFAULT_PLUGIN_SDK_DIR)),)
 DEV_PLUGIN_SDK_DIR ?= $(DEFAULT_PLUGIN_SDK_DIR)
@@ -53,6 +56,24 @@ dev-transcode:
 lint:
 	golangci-lint run
 	cd web && pnpm run lint
+
+# Run Go unit tests with a coverprofile, then Vitest coverage for scoped web modules.
+test-coverage:
+	go test ./... -count=1 -covermode=atomic -coverprofile=$(COVER_PROFILE)
+	cd web && pnpm exec vitest run --coverage
+
+# Enforce Go coverage for packages listed in .github/coverage-packages.txt.
+# PgStore DB code in store.go is excluded (same as CI).
+# Always regenerate coverage.out so the gate never reads a stale profile.
+check-coverage:
+	$(MAKE) $(COVER_PROFILE)
+	@pkgs=$$(grep -vE '^\s*(#|$$)' .github/coverage-packages.txt | tr '\n' ' '); \
+	COVER_PACKAGES="$$pkgs" COVER_EXCLUDE_FILE_REGEX='$(COVER_EXCLUDE_FILE_REGEX)' \
+		./scripts/check-go-coverage.sh $(COVER_PROFILE) $(COVER_MIN)
+
+.PHONY: $(COVER_PROFILE)
+$(COVER_PROFILE):
+	go test ./... -count=1 -covermode=atomic -coverprofile=$(COVER_PROFILE)
 
 # Check committed content for local machine path leaks.
 verify-local-paths:

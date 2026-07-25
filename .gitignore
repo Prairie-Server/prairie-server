@@ -16,6 +16,7 @@ Thumbs.db
 *.test
 coverage.out
 coverage.html
+web/coverage/
 
 # Temp
 /tmp/
