@@ -87,10 +87,9 @@ jobs:
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
         with:
-          # packageManager lives in web/package.json; action defaults to repo-root
-          # package.json which has no packageManager field. Match docker.yml.
+          # Match docker.yml: pin major here. Do not also pass package_json_file
+          # (web/package.json packageManager would conflict with "version").
           version: 10
-          package_json_file: web/package.json
 
       - name: Set up Node
         uses: actions/setup-node@v4
