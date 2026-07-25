@@ -12,7 +12,9 @@ concurrency:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_NAME: ${{ github.repository }}
+  # GHCR requires lowercase; pin Prairie's package path explicitly so a
+  # mis-cased github.repository (or a fork) cannot publish to the wrong hub.
+  IMAGE_NAME: prairie-server/prairie-server
   GOPROXY: https://proxy.golang.org,direct
   GOPRIVATE: github.com/prairie-server/*,github.com/Silo-Server/*
   GONOSUMDB: github.com/prairie-server/*,github.com/Silo-Server/*
@@ -39,7 +41,7 @@ jobs:
       - name: Prepare platform slug and lowercase image name
         run: |
           echo "PLATFORM_PAIR=${PLATFORM//\//-}" >> "$GITHUB_ENV"
-          echo "IMAGE_LC=${IMAGE_NAME,,}" >> "$GITHUB_ENV"
+          echo "IMAGE_LC=${IMAGE_NAME}" >> "$GITHUB_ENV"
         env:
           PLATFORM: ${{ matrix.platform }}
 
@@ -142,8 +144,8 @@ jobs:
       packages: write
 
     steps:
-      - name: Prepare lowercase image name
-        run: echo "IMAGE_LC=${IMAGE_NAME,,}" >> "$GITHUB_ENV"
+      - name: Prepare image name
+        run: echo "IMAGE_LC=${IMAGE_NAME}" >> "$GITHUB_ENV"
 
       - name: Download digests
         uses: actions/download-artifact@v4
