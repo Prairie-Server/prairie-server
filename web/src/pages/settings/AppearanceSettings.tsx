@@ -195,10 +195,10 @@ export default function AppearanceSettings() {
           </div>
           <button
             type="button"
-            onClick={() => setTheme("midnight-cinema")}
+            onClick={() => setTheme("prairie-dusk")}
             className="border-border text-foreground hover:bg-accent inline-flex h-8 items-center justify-center rounded-md border px-3 text-sm font-medium transition-colors"
           >
-            Reset to Cinema Dark
+            Reset to Prairie Dusk
           </button>
         </div>
       </SettingsGroup>

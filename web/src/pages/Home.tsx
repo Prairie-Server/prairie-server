@@ -9,7 +9,9 @@ import TasteSeedBanner from "@/components/TasteSeedBanner";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { HomeSectionItemsResponse, ResolvedSection } from "@/api/types";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import { HERO_BANNER_SIZE } from "@/lib/design-system";
+import { HERO_BANNER_SIZE, HOME_BRAND_HERO_SIZE } from "@/lib/design-system";
+import { PrairieBrand } from "@/components/PrairieBrand";
+import { useServerBranding } from "@/hooks/useServerBranding";
 import { sectionKeys } from "@/hooks/queries/keys";
 import { fetchHomeSectionItems, useHomeLayout } from "@/hooks/queries/sections";
 import { planNextHomeSectionBatch } from "./homeSectionQueue";
@@ -193,8 +195,8 @@ export default function Home() {
   return (
     <>
       <h1 className="sr-only">Home</h1>
-      <div className={`space-y-10 ${hasHeroSlot ? "pb-2" : "pt-6 pb-2"}`}>
-        {heroSlot}
+      <div className={`home-sections space-y-10 ${hasHeroSlot ? "pb-2" : "pb-2"}`}>
+        {hasHeroSlot ? heroSlot : <HomeBrandHero />}
         <TasteSeedBanner />
 
         {viewModel.rows.map((slot) => {
@@ -202,22 +204,31 @@ export default function Home() {
             return null;
           }
           if (slot.state === "ready" && slot.section) {
-            return <SectionRow key={slot.layout.id} section={slot.section} />;
+            return (
+              <div key={slot.layout.id} className="section-fade-in">
+                <SectionRow section={slot.section} />
+              </div>
+            );
           }
           if (slot.state === "error") {
             return (
-              <SectionErrorRow
-                key={slot.layout.id}
-                title={slot.layout.title}
-                onRetry={() => retrySection(slot.layout.id)}
-              />
+              <div key={slot.layout.id} className="section-fade-in">
+                <SectionErrorRow
+                  title={slot.layout.title}
+                  onRetry={() => retrySection(slot.layout.id)}
+                />
+              </div>
             );
           }
-          return <SectionLoadingRow key={slot.layout.id} title={slot.layout.title} />;
+          return (
+            <div key={slot.layout.id} className="section-fade-in">
+              <SectionLoadingRow title={slot.layout.title} />
+            </div>
+          );
         })}
 
         {layout.length === 0 && !isLoading && (
-          <div className="surface-panel flex h-64 flex-col items-center justify-center gap-3 rounded-[1.8rem] border-0 px-6 text-center">
+          <div className="section-fade-in surface-panel flex h-64 flex-col items-center justify-center gap-3 rounded-[1.8rem] border-0 px-6 text-center">
             <LayoutDashboard className="text-muted-foreground h-10 w-10" />
             <p className="text-muted-foreground text-sm">
               Your home screen is empty. Customize it by adding sections to display your media.
@@ -232,6 +243,41 @@ export default function Home() {
   );
 }
 
+function HomeBrandHero() {
+  const { serverName } = useServerBranding();
+
+  return (
+    <section
+      className={`home-hero border-border/60 relative mb-10 flex w-full items-end overflow-hidden border-b ${HOME_BRAND_HERO_SIZE}`}
+      aria-label="Welcome"
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: `
+            radial-gradient(ellipse 90% 70% at 50% 0%, color-mix(in srgb, var(--primary) 20%, transparent), transparent 58%),
+            radial-gradient(circle at 18% 80%, color-mix(in srgb, var(--ambient) 14%, transparent), transparent 36%),
+            linear-gradient(165deg, var(--background), color-mix(in srgb, var(--background) 88%, #1a1610))
+          `,
+        }}
+      />
+      <div className="hero-gradient" />
+      <div className="relative z-10 flex w-full flex-col items-start gap-4 px-4 pb-12 sm:px-6 sm:pb-14 lg:px-10 lg:pb-16 xl:px-12">
+        <PrairieBrand className="brand-reveal h-14 w-[148px] sm:h-16 sm:w-[168px]" />
+        <div className="auth-brand-copy max-w-xl space-y-2">
+          <p className="font-display text-3xl font-bold tracking-[-0.03em] sm:text-4xl lg:text-5xl">
+            {serverName}
+          </p>
+          <p className="text-muted-foreground max-w-md text-sm leading-6 sm:text-base">
+            Your library, ready when you are.
+          </p>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 function renderHeroSlot(hero: HomeSectionSlot | null, retrySection: (sectionId: string) => void) {
   if (!hero) return null;
 
@@ -241,9 +287,7 @@ function renderHeroSlot(hero: HomeSectionSlot | null, retrySection: (sectionId: 
 
   if (hero.state === "error") {
     return (
-      <div
-        className={`bg-muted relative ${HERO_BANNER_SIZE} w-full overflow-hidden rounded-[1.8rem]`}
-      >
+      <div className={`bg-muted relative ${HERO_BANNER_SIZE} w-full overflow-hidden`}>
         <div className="from-background via-background/70 absolute inset-0 bg-gradient-to-t to-transparent" />
         <div className="relative flex h-full items-end px-4 pb-10 sm:px-6 sm:pb-12 lg:px-12 lg:pb-16">
           <div className="max-w-xl space-y-3">
@@ -268,15 +312,15 @@ function renderHeroSlot(hero: HomeSectionSlot | null, retrySection: (sectionId: 
     return null;
   }
 
-  return <Skeleton className={`${HERO_BANNER_SIZE} w-full rounded-[1.8rem]`} />;
+  return <Skeleton className={`${HERO_BANNER_SIZE} w-full rounded-none`} />;
 }
 
 function HomePageSkeleton() {
   return (
-    <div className="space-y-8 py-4">
-      <Skeleton className={`${HERO_BANNER_SIZE} w-full rounded-[1.8rem]`} />
+    <div className="home-sections space-y-8">
+      <Skeleton className={`${HERO_BANNER_SIZE} w-full rounded-none`} />
       {Array.from({ length: 3 }).map((_, i) => (
-        <div key={i} className="space-y-3 px-4 sm:px-6 lg:px-12">
+        <div key={i} className="section-fade-in space-y-3 px-4 sm:px-6 lg:px-12">
           <Skeleton className="h-6 w-48" />
           <div className="flex gap-4">
             {Array.from({ length: SKELETON_CARD_COUNT }).map((_, j) => (

@@ -140,6 +140,28 @@
     opacity: 1;
   }
 }
+@keyframes brand-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.98);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+@keyframes section-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 @keyframes slide-up {
   from {
     opacity: 0;
@@ -274,6 +296,15 @@
   .player-rise {
     animation: none !important;
   }
+  .brand-reveal,
+  .section-fade-in,
+  .auth-brand-mark,
+  .auth-brand-copy {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+  }
 }
 
 @media (forced-colors: active) {
@@ -316,6 +347,64 @@
     --warning-foreground: oklch(0.98 0.01 85);
     --info: oklch(0.7 0.15 250);
     --info-foreground: oklch(0.98 0.01 250);
+  }
+
+  /* ── Prairie Dusk (default) ───────────────────────────────── */
+  /* Warm prairie dusk: deep slate/charcoal bases, amber wheat
+     accent, Sora for UI, Fraunces for brand/display moments.     */
+  [data-theme="prairie-dusk"] {
+    --radius: 0.75rem;
+    --font-body: "Sora", sans-serif;
+    --font-display: "Fraunces", "Sora", serif;
+
+    /* Surfaces: deep slate charcoal with warm undertone */
+    --background: #141820;
+    --foreground: #f2eee6;
+    --card: #1c222c;
+    --card-foreground: #f2eee6;
+    --popover: #181d26;
+    --popover-foreground: #f2eee6;
+
+    /* Primary: amber wheat — CTAs, brand accents, active cues */
+    --primary: #e0a84a;
+    --primary-foreground: #1a1408;
+
+    /* Secondary & Muted */
+    --secondary: #242a36;
+    --secondary-foreground: #ddd6c8;
+    --muted: #1c222c;
+    --muted-foreground: #9a9488;
+    --accent: #2a3140;
+    --accent-foreground: #f2eee6;
+
+    --destructive: #ef6b5c;
+    --destructive-foreground: #ffffff;
+
+    --border: #2e3544;
+    --input: #1c222c;
+    --ring: #e0a84a;
+
+    --chart-1: #e0a84a;
+    --chart-2: #c4b08a;
+    --chart-3: #7eb8a8;
+    --chart-4: #8aa0c6;
+    --chart-5: #d48a6a;
+
+    --sidebar: #0e1116;
+    --sidebar-foreground: #f2eee6;
+    --sidebar-primary: #e0a84a;
+    --sidebar-primary-foreground: #1a1408;
+    --sidebar-accent: #1c222c;
+    --sidebar-accent-foreground: #f2eee6;
+    --sidebar-border: #242a36;
+    --sidebar-section-divider: #343b4a;
+    --sidebar-ring: #e0a84a;
+
+    --surface: #1c222c;
+    --surface-hover: #242a36;
+    --surface-raised: #2a3140;
+    --ambient: #d4a05a;
+    --ambient-glow-opacity: 0.12;
   }
 
   /* ── Midnight Cinema ────────────────────────────────────── */
@@ -1698,21 +1787,85 @@
     inset: 0;
     background:
       radial-gradient(
-        circle at 18% 18%,
-        color-mix(in srgb, var(--primary) 18%, transparent),
-        transparent 28%
+        ellipse 80% 55% at 50% 0%,
+        color-mix(in srgb, var(--primary) 22%, transparent),
+        transparent 55%
       ),
       radial-gradient(
-        circle at 82% 12%,
-        color-mix(in srgb, var(--ambient) 15%, transparent),
-        transparent 26%
+        circle at 12% 78%,
+        color-mix(in srgb, var(--ambient) 14%, transparent),
+        transparent 32%
+      ),
+      radial-gradient(
+        circle at 88% 70%,
+        color-mix(in srgb, var(--primary) 10%, transparent),
+        transparent 28%
       ),
       linear-gradient(
-        135deg,
-        color-mix(in srgb, var(--background) 96%, transparent),
-        var(--background)
+        165deg,
+        color-mix(in srgb, var(--background) 92%, #2a2418),
+        var(--background) 48%,
+        color-mix(in srgb, var(--background) 94%, #0a0c10)
       );
     pointer-events: none;
+  }
+
+  /* Soft horizon line — prairie dusk atmosphere without competing with brand */
+  .auth-shell::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    bottom: 0;
+    height: 38%;
+    background: linear-gradient(
+      to top,
+      color-mix(in srgb, var(--primary) 8%, transparent),
+      transparent 70%
+    );
+    pointer-events: none;
+  }
+
+  .auth-viewport {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 26rem;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 1.75rem;
+  }
+
+  .auth-brand {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 0.85rem;
+  }
+
+  .auth-brand-mark {
+    animation: brand-reveal 700ms var(--ease-gentle) both;
+  }
+
+  .auth-brand-copy {
+    animation: brand-reveal 700ms var(--ease-gentle) 120ms both;
+  }
+
+  .auth-brand-title {
+    font-family: var(--font-display, var(--font-body));
+    font-size: clamp(1.75rem, 4vw, 2.35rem);
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    line-height: 1.15;
+    color: var(--foreground);
+  }
+
+  .auth-brand-subtitle {
+    max-width: 22rem;
+    font-size: 0.9375rem;
+    line-height: 1.55;
+    color: var(--muted-foreground);
   }
 
   .auth-card {
@@ -1720,8 +1873,37 @@
     z-index: 1;
     width: 100%;
     max-width: 28rem;
-    border-radius: 2rem;
-    padding: 1.75rem;
+    border-radius: 1.25rem;
+    padding: 1.5rem 1.35rem;
+    animation: section-fade-in 600ms var(--ease-out) 180ms both;
+  }
+
+  .brand-reveal {
+    animation: brand-reveal 700ms var(--ease-gentle) both;
+  }
+
+  .section-fade-in {
+    animation: section-fade-in 550ms var(--ease-out) both;
+  }
+
+  .home-sections .section-fade-in:nth-child(1) {
+    animation-delay: 40ms;
+  }
+  .home-sections .section-fade-in:nth-child(2) {
+    animation-delay: 90ms;
+  }
+  .home-sections .section-fade-in:nth-child(3) {
+    animation-delay: 140ms;
+  }
+  .home-sections .section-fade-in:nth-child(4) {
+    animation-delay: 190ms;
+  }
+  .home-sections .section-fade-in:nth-child(n + 5) {
+    animation-delay: 220ms;
+  }
+
+  .sidebar-logo .brand-reveal {
+    animation: brand-reveal 650ms var(--ease-gentle) both;
   }
 
   .admin-shell {

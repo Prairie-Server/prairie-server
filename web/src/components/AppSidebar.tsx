@@ -349,11 +349,11 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
     >
       {/* Logo */}
       <div
-        className={`sidebar-logo flex items-center py-6 ${showLabels ? "px-5" : "justify-center px-2"}`}
+        className={`sidebar-logo flex items-center py-7 ${showLabels ? "px-5" : "justify-center px-2"}`}
       >
         <PrairieBrand
           variant={showLabels ? "wordmark" : "mark"}
-          className={showLabels ? "h-12 w-[112px]" : "h-9 w-9"}
+          className={showLabels ? "brand-reveal h-14 w-[132px]" : "brand-reveal h-10 w-10"}
         />
       </div>
 
