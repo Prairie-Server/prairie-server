@@ -115,9 +115,10 @@ type loginResolver interface {
 
 // AuthHandler serves Jellyfin login/current-user routes.
 type AuthHandler struct {
-	cfg           func() *config.Config
-	loginResolver loginResolver
-	authenticator *Authenticator
+	cfg             func() *config.Config
+	loginResolver   loginResolver
+	authenticator   *Authenticator
+	liveTVEnabled   bool
 }
 
 // NewAuthHandler creates a new auth handler. The config provider is invoked
@@ -128,6 +129,12 @@ func NewAuthHandler(cfg func() *config.Config, loginResolver loginResolver, auth
 		loginResolver: loginResolver,
 		authenticator: authenticator,
 	}
+}
+
+// SetLiveTVEnabled toggles EnableLiveTvAccess / EnableAllChannels on user policy
+// when Prairie Live TV is configured for this compat server.
+func (h *AuthHandler) SetLiveTVEnabled(enabled bool) {
+	h.liveTVEnabled = enabled
 }
 
 // HandlePublicUsers serves GET /Users/Public.
@@ -242,7 +249,7 @@ func (h *AuthHandler) userDTO(session *Session) userDTOResponse {
 			EnableSharedDeviceControl:       false,
 			EnableRemoteAccess:              true,
 			EnableLiveTVManagement:          false,
-			EnableLiveTVAccess:              false,
+			EnableLiveTVAccess:              h.liveTVEnabled,
 			EnableMediaPlayback:             true,
 			EnableAudioPlaybackTranscoding:  true,
 			EnableVideoPlaybackTranscoding:  true,
@@ -253,7 +260,7 @@ func (h *AuthHandler) userDTO(session *Session) userDTOResponse {
 			EnableSyncTranscoding:           false,
 			EnableMediaConversion:           false,
 			EnableAllDevices:                true,
-			EnableAllChannels:               false,
+			EnableAllChannels:               h.liveTVEnabled,
 			EnableAllFolders:                true,
 			InvalidLoginAttemptCount:        0,
 			LoginAttemptsBeforeLockout:      0,

@@ -8,6 +8,8 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/prairie-server/prairie-server/internal/httpheaders"
 )
 
 func newCompatWebFSFromDirectory(root string) (fs.FS, error) {

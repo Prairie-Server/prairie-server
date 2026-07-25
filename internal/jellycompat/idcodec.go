@@ -25,18 +25,26 @@ const (
 	EncodedIDPerson      EncodedIDType = 8
 	EncodedIDImageProxy  EncodedIDType = 9
 	EncodedIDCollection  EncodedIDType = 10
+	EncodedIDLiveTVChannel     EncodedIDType = 11
+	EncodedIDLiveTVProgram     EncodedIDType = 12
+	EncodedIDLiveTVTimer       EncodedIDType = 13
+	EncodedIDLiveTVSeriesTimer EncodedIDType = 14
 )
 
 var (
 	pseudoUserNamespace = uuid.MustParse("3dfcc388-bf95-5572-bc16-7f1a375992dd")
 	stringIDNamespaces  = map[EncodedIDType]uuid.UUID{
-		EncodedIDItem:        uuid.MustParse("0b6716ca-1f61-5987-b17b-f592f04fd6b3"),
-		EncodedIDSeason:      uuid.MustParse("29831b2b-dad5-5a85-b506-4d1fb2da01ed"),
-		EncodedIDPlaySession: uuid.MustParse("75a69ca8-f95f-5e9d-ac0a-d34a37b93eb4"),
-		EncodedIDGenre:       uuid.MustParse("c0cbb8ea-8331-52c0-b160-15e7cf899fb0"),
-		EncodedIDStudio:      uuid.MustParse("23712982-b769-592d-9360-b4d3f39654db"),
-		EncodedIDPerson:      uuid.MustParse("a4e7c1d6-3b8f-5a2e-9c01-7d6f4e8b2a13"),
-		EncodedIDCollection:  uuid.MustParse("7f3c2a91-5b64-5c1d-8e07-9a2f4d6b1c35"),
+		EncodedIDItem:              uuid.MustParse("0b6716ca-1f61-5987-b17b-f592f04fd6b3"),
+		EncodedIDSeason:            uuid.MustParse("29831b2b-dad5-5a85-b506-4d1fb2da01ed"),
+		EncodedIDPlaySession:       uuid.MustParse("75a69ca8-f95f-5e9d-ac0a-d34a37b93eb4"),
+		EncodedIDGenre:             uuid.MustParse("c0cbb8ea-8331-52c0-b160-15e7cf899fb0"),
+		EncodedIDStudio:            uuid.MustParse("23712982-b769-592d-9360-b4d3f39654db"),
+		EncodedIDPerson:            uuid.MustParse("a4e7c1d6-3b8f-5a2e-9c01-7d6f4e8b2a13"),
+		EncodedIDCollection:        uuid.MustParse("7f3c2a91-5b64-5c1d-8e07-9a2f4d6b1c35"),
+		EncodedIDLiveTVChannel:     uuid.MustParse("1c8e4a2f-6d91-5b3a-9e70-2f4c8a1b5d63"),
+		EncodedIDLiveTVProgram:     uuid.MustParse("2d9f5b30-7e02-5c4b-af81-3a5d9b2c6e74"),
+		EncodedIDLiveTVTimer:       uuid.MustParse("3e0a6c41-8f13-5d5c-b092-4b6e0c3d7f85"),
+		EncodedIDLiveTVSeriesTimer: uuid.MustParse("4f1b7d52-9024-5e6d-c1a3-5c7f1d4e8096"),
 	}
 )
 

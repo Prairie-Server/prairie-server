@@ -147,6 +147,20 @@ func (s *Service) ListChannels(ctx context.Context, tunerID string) ([]Channel, 
 	return s.store.ListChannels(ctx, tunerID)
 }
 
+func (s *Service) GetChannel(ctx context.Context, id string) (*Channel, error) {
+	if s.store == nil {
+		return nil, errors.New("livetv service not configured")
+	}
+	channel, err := s.store.GetChannel(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if channel == nil {
+		return nil, ErrNotFound
+	}
+	return channel, nil
+}
+
 func (s *Service) PatchChannel(ctx context.Context, id string, patch ChannelPatch) (*Channel, error) {
 	channel, err := s.store.UpdateChannel(ctx, id, patch)
 	if err != nil {

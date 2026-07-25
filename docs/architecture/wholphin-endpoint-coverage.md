@@ -71,7 +71,7 @@ Wholphin's Seerr integration (`/api/v1/...` discover/request endpoints) targets 
 | `GET /Items/{id}/LocalTrailers` | Wholphin gates on `localTrailerCount > 0` (`TrailerService.kt`); we never set `LocalTrailerCount`. |
 | `GET /Videos/{id}/AdditionalParts` | Gated on `partCount > 1` (`PlaylistCreator.kt`); we never set `PartCount`. |
 | Quick Connect auth endpoints | Gated by `/QuickConnect/Enabled` = false. |
-| Live TV suite (`/LiveTv/Channels`, `/Programs`, `/Recordings`, timers) | We expose no live-TV views or channels, so the feature never activates. |
+| Live TV suite (`/LiveTv/Channels`, `/Programs`, `/Recordings`, timers) | **Implemented** when `Dependencies.LiveTV` is wired: channels/guide/timers/series-timers/recordings, LiveStreams Open/Close, and MPEG-TS proxy via `/LiveTv/LiveStreamFiles/{id}/stream` with reconnect for jellyfin#11415. UserViews gains a `CollectionType=livetv` folder and user policy enables `EnableLiveTvAccess`. |
 | Playlists (`GET/POST/DELETE /Playlists/{id}/Items`) | We expose no playlist items in the catalog, so playlist screens are unreachable. Becomes a real gap the day silo grows playlists. |
 
 ### Missing and reachable (return 404 today)
