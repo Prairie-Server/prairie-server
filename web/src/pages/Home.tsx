@@ -256,20 +256,19 @@ function HomeBrandHero() {
         className="pointer-events-none absolute inset-0"
         style={{
           background: `
-            radial-gradient(ellipse 90% 70% at 50% 0%, color-mix(in srgb, var(--primary) 20%, transparent), transparent 58%),
-            radial-gradient(circle at 18% 80%, color-mix(in srgb, var(--ambient) 14%, transparent), transparent 36%),
-            linear-gradient(165deg, var(--background), color-mix(in srgb, var(--background) 88%, #1a1610))
+            linear-gradient(180deg, #1a2230 0%, var(--background) 55%, color-mix(in srgb, var(--background) 88%, #241c12) 100%),
+            radial-gradient(ellipse 80% 50% at 50% 100%, color-mix(in srgb, var(--primary) 18%, transparent), transparent 65%)
           `,
         }}
       />
       <div className="hero-gradient" />
-      <div className="relative z-10 flex w-full flex-col items-start gap-4 px-4 pb-12 sm:px-6 sm:pb-14 lg:px-10 lg:pb-16 xl:px-12">
-        <PrairieBrand className="brand-reveal h-14 w-[148px] sm:h-16 sm:w-[168px]" />
-        <div className="auth-brand-copy max-w-xl space-y-2">
-          <p className="font-display text-3xl font-bold tracking-[-0.03em] sm:text-4xl lg:text-5xl">
+      <div className="relative z-10 flex w-full flex-col items-start gap-5 px-4 pb-12 sm:px-6 sm:pb-14 lg:px-10 lg:pb-16 xl:px-12">
+        <PrairieBrand className="brand-reveal h-16 w-[168px] sm:h-[4.5rem] sm:w-[190px]" />
+        <div className="auth-brand-copy max-w-lg space-y-2.5">
+          <p className="font-display text-3xl font-semibold tracking-[-0.035em] sm:text-4xl lg:text-[2.75rem]">
             {serverName}
           </p>
-          <p className="text-muted-foreground max-w-md text-sm leading-6 sm:text-base">
+          <p className="text-muted-foreground max-w-md text-sm leading-6 sm:text-[0.95rem]">
             Your library, ready when you are.
           </p>
         </div>

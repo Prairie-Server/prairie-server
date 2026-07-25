@@ -30,7 +30,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     fontFamily: "Sora",
     previewAccent: "#e0a84a",
     previewBg: "#141820",
-    description: "Warm prairie dusk — deep slate, amber wheat, brand-forward",
+    description: "Warm dusk over open land — simple, amber wheat, brand-first",
     curated: true,
   },
   "midnight-cinema": {

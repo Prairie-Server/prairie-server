@@ -803,17 +803,12 @@
     color: var(--foreground);
     font-family: var(--font-body);
     font-weight: var(--font-weight-ui, 400);
-    background-image:
-      radial-gradient(
-        circle at top,
-        color-mix(in srgb, var(--ambient) 10%, transparent),
-        transparent 32%
-      ),
-      linear-gradient(
-        to bottom,
-        color-mix(in srgb, var(--background) 92%, transparent),
-        var(--background)
-      );
+    /* Quiet page wash — no stacked glow orbs (those read as generic AI chrome). */
+    background-image: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--background) 96%, var(--ambient)),
+      var(--background) 42%
+    );
     min-height: 100dvh;
   }
 }
@@ -1771,6 +1766,7 @@
     }
   }
 
+  /* Auth: one quiet dusk plane + brand + form. No glass cards, no glow clusters. */
   .auth-shell {
     min-height: 100dvh;
     position: relative;
@@ -1778,7 +1774,7 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    padding: 1.5rem;
+    padding: 1.75rem 1.25rem 2.5rem;
   }
 
   .auth-shell::before {
@@ -1786,41 +1782,28 @@
     position: absolute;
     inset: 0;
     background:
-      radial-gradient(
-        ellipse 80% 55% at 50% 0%,
-        color-mix(in srgb, var(--primary) 22%, transparent),
-        transparent 55%
-      ),
-      radial-gradient(
-        circle at 12% 78%,
-        color-mix(in srgb, var(--ambient) 14%, transparent),
-        transparent 32%
-      ),
-      radial-gradient(
-        circle at 88% 70%,
-        color-mix(in srgb, var(--primary) 10%, transparent),
-        transparent 28%
-      ),
       linear-gradient(
-        165deg,
-        color-mix(in srgb, var(--background) 92%, #2a2418),
-        var(--background) 48%,
-        color-mix(in srgb, var(--background) 94%, #0a0c10)
+        180deg,
+        #1a2230 0%,
+        #161c26 42%,
+        #1c1812 78%,
+        #241c12 100%
       );
     pointer-events: none;
   }
 
-  /* Soft horizon line — prairie dusk atmosphere without competing with brand */
+  /* Single horizon band — readable dusk, not decorative orbs */
   .auth-shell::after {
     content: "";
     position: absolute;
-    inset-inline: 0;
-    bottom: 0;
-    height: 38%;
-    background: linear-gradient(
-      to top,
-      color-mix(in srgb, var(--primary) 8%, transparent),
-      transparent 70%
+    inset-inline: -10%;
+    bottom: 18%;
+    height: 42%;
+    background: radial-gradient(
+      ellipse 70% 55% at 50% 100%,
+      color-mix(in srgb, var(--primary) 28%, transparent),
+      color-mix(in srgb, var(--ambient) 10%, transparent) 42%,
+      transparent 72%
     );
     pointer-events: none;
   }
@@ -1829,11 +1812,11 @@
     position: relative;
     z-index: 1;
     width: 100%;
-    max-width: 26rem;
+    max-width: 22.5rem;
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 1.75rem;
+    gap: 2rem;
   }
 
   .auth-brand {
@@ -1841,7 +1824,7 @@
     flex-direction: column;
     align-items: center;
     text-align: center;
-    gap: 0.85rem;
+    gap: 1rem;
   }
 
   .auth-brand-mark {
@@ -1854,28 +1837,38 @@
 
   .auth-brand-title {
     font-family: var(--font-display, var(--font-body));
-    font-size: clamp(1.75rem, 4vw, 2.35rem);
-    font-weight: 700;
-    letter-spacing: -0.03em;
-    line-height: 1.15;
+    font-size: clamp(2rem, 5vw, 2.75rem);
+    font-weight: 650;
+    letter-spacing: -0.035em;
+    line-height: 1.08;
     color: var(--foreground);
   }
 
   .auth-brand-subtitle {
-    max-width: 22rem;
+    max-width: 20rem;
+    margin-inline: auto;
     font-size: 0.9375rem;
-    line-height: 1.55;
-    color: var(--muted-foreground);
+    line-height: 1.5;
+    color: color-mix(in srgb, var(--muted-foreground) 92%, var(--foreground));
   }
 
+  /* Form panel: flat, no glass/border/shadow — fields are the interaction chrome */
   .auth-card {
     position: relative;
     z-index: 1;
     width: 100%;
-    max-width: 28rem;
-    border-radius: 1.25rem;
-    padding: 1.5rem 1.35rem;
-    animation: section-fade-in 600ms var(--ease-out) 180ms both;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    backdrop-filter: none;
+    animation: section-fade-in 600ms var(--ease-out) 160ms both;
+  }
+
+  .auth-card .bg-card,
+  .auth-card[data-slot="card"] {
+    background: transparent;
   }
 
   .brand-reveal {

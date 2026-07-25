@@ -18,8 +18,8 @@ export function AuthBrandHero({ subtitle, className }: AuthBrandHeroProps) {
 
   return (
     <header className={cn("auth-brand", className)}>
-      <PrairieBrand className="auth-brand-mark h-14 w-[148px] sm:h-16 sm:w-[168px]" />
-      <div className="auth-brand-copy space-y-2">
+      <PrairieBrand className="auth-brand-mark h-16 w-[168px] sm:h-[4.5rem] sm:w-[190px]" />
+      <div className="auth-brand-copy space-y-2.5">
         <p className="auth-brand-title">{serverName}</p>
         {supporting ? <p className="auth-brand-subtitle">{supporting}</p> : null}
       </div>

@@ -6,9 +6,10 @@ Code-backed tokens and utility constants live in [../src/lib/design-system.ts](.
 
 ## Philosophy
 
-Prairie uses a cinema-first design language for media streaming, grounded in a **warm prairie dusk** brand identity. Media consumption and discovery remain primary — every design decision should be evaluated against them — while branded surfaces (login, shell chrome, empty home) lead with the Prairie mark.
+Prairie should feel **simple, pretty, and usable** — not like a generic dark SaaS / AI template (the trap Silo fell into). Cinema-first media discovery still leads, but branded surfaces are warm and human: dusk over open land, amber wheat, clear hierarchy, little chrome.
 
-The UI should feel like dusk over open land: deep slate charcoal bases, amber/wheat accents, restrained chrome. Media artwork carries visual weight on browse surfaces. Interface chrome stays quiet so content stays primary. When a user lands on login or an empty home, the brand is hero-level — not a small nav label.
+**Do:** large Prairie wordmark, one quiet atmospheric plane, readable forms, content-forward browse.
+**Don't:** stacked glow orbs, glassmorphism cards, purple gradients, pill clusters, dashboard-dense first viewports, Inter/Roboto defaults.
 
 ### Default theme: Prairie Dusk
 

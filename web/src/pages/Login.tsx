@@ -272,12 +272,12 @@ export default function Login() {
       <h1 className="sr-only">Sign in to {serverName}</h1>
       <div className="auth-viewport">
         <AuthBrandHero subtitle={loginSubtitle} />
-        <Card className="auth-card glass panel-border border-0 shadow-none">
+        <Card className="auth-card border-0 bg-transparent shadow-none">
           <CardHeader className="sr-only">
             <CardTitle>Sign in</CardTitle>
             <CardDescription>{loginSubtitle}</CardDescription>
           </CardHeader>
-          <CardContent className="space-y-6 p-0 sm:p-1">
+          <CardContent className="space-y-5 p-0">
             {oauthError && (
               <div className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
                 Sign-in failed: {decodeURIComponent(oauthError)}
