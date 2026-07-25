@@ -460,4 +460,7 @@ export const adminKeys = {
     ["admin", "autoscan", "scans", params ?? {}] as const,
   autoscanEvents: (params?: Record<string, unknown>) =>
     ["admin", "autoscan", "events", params ?? {}] as const,
+  liveTVTuners: () => ["admin", "livetv", "tuners"] as const,
+  liveTVChannels: (tunerId?: string) => ["admin", "livetv", "channels", tunerId ?? "all"] as const,
+  liveTVGuideSources: () => ["admin", "livetv", "guide-sources"] as const,
 };

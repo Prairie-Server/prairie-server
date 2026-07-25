@@ -60,6 +60,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/jellycompat"
 	"github.com/prairie-server/prairie-server/internal/libraryingest"
 	"github.com/prairie-server/prairie-server/internal/literaryworks"
+	"github.com/prairie-server/prairie-server/internal/livetv"
 	"github.com/prairie-server/prairie-server/internal/logfilter"
 	"github.com/prairie-server/prairie-server/internal/logredact"
 	"github.com/prairie-server/prairie-server/internal/logstream"
@@ -2151,6 +2152,9 @@ func main() {
 		taskMgr.Register(tasks.NewRepairProviderIDIntegrityTask(metadata.NewProviderIDIntegrityRepairer(deps.DB), historyReconciler))
 		taskMgr.Register(tasks.NewReconcileWatchHistoryTask(historyReconciler))
 		taskMgr.Register(tasks.NewSyncPodcastFeedsTask(podcastfeed.New(), podcastfeed.NewDBStore(deps.DB)))
+		liveTVSvc := livetv.NewService(deps.DB)
+		taskMgr.Register(tasks.NewSyncLiveTVGuideTask(liveTVSvc))
+		taskMgr.Register(tasks.NewLiveTVDVRTickTask(liveTVSvc))
 		if audiobookEnricher != nil {
 			taskMgr.Register(tasks.NewSyncAudiobookMetadataTask(audiobookEnricher))
 		}

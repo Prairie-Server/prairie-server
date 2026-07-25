@@ -52,6 +52,7 @@ import AdminAccessGroups from "@/pages/AdminAccessGroups";
 import AdminUsers from "@/pages/AdminUsers";
 import AdminRequests from "@/pages/AdminRequests";
 import AdminAutoscan from "@/pages/AdminAutoscan";
+import AdminLiveTV from "@/pages/AdminLiveTV";
 import AdminDevices from "@/pages/AdminDevices";
 import AdminLibraries from "@/pages/AdminLibraries";
 import AdminSettingsLayout from "@/pages/admin-settings/AdminSettingsLayout";
@@ -421,6 +422,7 @@ function AppRoutes() {
                   <Route path="collections/:id/edit" element={<AdminCollectionEditor />} />
                   <Route path="requests" element={<AdminRequests />} />
                   <Route path="autoscan" element={<AdminAutoscan />} />
+                  <Route path="livetv" element={<AdminLiveTV />} />
                   <Route path="history" element={<AdminPlaybackHistory />} />
                   <Route path="marker-history" element={<AdminMarkerHistory />} />
                   <Route path="history-import" element={<AdminHistoryImport />} />

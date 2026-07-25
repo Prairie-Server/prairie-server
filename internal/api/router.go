@@ -39,6 +39,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/intromarkers"
 	"github.com/prairie-server/prairie-server/internal/libraryingest"
 	"github.com/prairie-server/prairie-server/internal/literaryworks"
+	"github.com/prairie-server/prairie-server/internal/livetv"
 	"github.com/prairie-server/prairie-server/internal/logstream"
 	"github.com/prairie-server/prairie-server/internal/mail"
 	"github.com/prairie-server/prairie-server/internal/markers"
@@ -552,6 +553,7 @@ func NewRouter(deps Dependencies) chi.Router {
 	var webhookSyncHandler *handlers.WebhookSyncHandler
 	var requestHandler *handlers.RequestsHandler
 	var autoscanHandler *handlers.AutoscanHandler
+	var liveTVHandler *handlers.LiveTVHandler
 	var ebookReaderHandler *handlers.EbookReaderHandler
 	var ebookProgressStore *handlers.PGEbookReaderProgressStore
 	var ebookConfigStore *handlers.PGEbookReaderConfigStore
@@ -697,6 +699,8 @@ func NewRouter(deps Dependencies) chi.Router {
 			requestSvc.SetLifecycleNotifier(lifecycle)
 		}
 		requestHandler = handlers.NewRequestsHandler(requestSvc)
+
+		liveTVHandler = handlers.NewLiveTVHandler(livetv.NewService(deps.DB))
 
 		autoscanRepo := autoscan.NewRepository(deps.DB, deps.SecretCipher)
 		if deps.FolderRepo != nil && deps.LibraryScanQueue != nil && deps.PluginService != nil {
@@ -2180,6 +2184,40 @@ func NewRouter(deps Dependencies) chi.Router {
 						r.Get("/mine", requestHandler.HandleListMine)
 						r.Get("/{id}", requestHandler.HandleGet)
 						r.Post("/{id}/cancel", requestHandler.HandleCancel)
+					})
+				}
+
+				if liveTVHandler != nil {
+					r.Route("/livetv", func(r chi.Router) {
+						r.Get("/tuners", liveTVHandler.HandleListTuners)
+						r.Get("/channels", liveTVHandler.HandleListChannels)
+						r.Get("/guide-sources", liveTVHandler.HandleListGuideSources)
+						r.Get("/guide", liveTVHandler.HandleListGuide)
+						r.Get("/programs/{programId}", liveTVHandler.HandleGetProgram)
+						r.Get("/recordings", liveTVHandler.HandleListRecordings)
+						r.Get("/series-rules", liveTVHandler.HandleListSeriesRules)
+
+						r.Group(func(r chi.Router) {
+							r.Use(apimw.RequireProfile)
+							r.Post("/channels/{channelId}/session", liveTVHandler.HandleStartChannelSession)
+							r.Delete("/sessions/{sessionId}", liveTVHandler.HandleReleaseSession)
+							r.Post("/recordings", liveTVHandler.HandleScheduleRecording)
+							r.Delete("/recordings/{recordingId}", liveTVHandler.HandleCancelRecording)
+							r.Post("/series-rules", liveTVHandler.HandleCreateSeriesRule)
+							r.Delete("/series-rules/{ruleId}", liveTVHandler.HandleDeleteSeriesRule)
+						})
+
+						r.Group(func(r chi.Router) {
+							r.Use(apimw.RequireAdmin)
+							r.Post("/tuners", liveTVHandler.HandleAddTuner)
+							r.Delete("/tuners/{tunerId}", liveTVHandler.HandleDeleteTuner)
+							r.Post("/tuners/{tunerId}/scan", liveTVHandler.HandleScanTuner)
+							r.Patch("/channels/{channelId}", liveTVHandler.HandlePatchChannel)
+							r.Post("/guide-sources", liveTVHandler.HandleCreateGuideSource)
+							r.Patch("/guide-sources/{sourceId}", liveTVHandler.HandleUpdateGuideSource)
+							r.Delete("/guide-sources/{sourceId}", liveTVHandler.HandleDeleteGuideSource)
+							r.Post("/guide-sources/{sourceId}/sync", liveTVHandler.HandleSyncGuideSource)
+						})
 					})
 				}
 

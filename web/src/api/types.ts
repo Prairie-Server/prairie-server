@@ -2245,6 +2245,60 @@ export interface AutoscanScansResponse {
   offset: number;
 }
 
+export interface LiveTVTuner {
+  id: string;
+  type: string;
+  device_id: string;
+  discover_url: string;
+  base_url: string;
+  model: string;
+  firmware: string;
+  tuner_count: number;
+  status: string;
+  channel_count: number;
+  last_error: string;
+  last_scan_at?: string;
+}
+
+export interface LiveTVTunersResponse {
+  tuners: LiveTVTuner[];
+}
+
+export interface LiveTVChannel {
+  id: string;
+  tuner_id: string;
+  number: string;
+  number_override?: string | null;
+  callsign: string;
+  name: string;
+  logo_url: string;
+  hd: boolean;
+  enabled: boolean;
+  stream_url: string;
+  guide_station_id: string;
+}
+
+export interface LiveTVChannelsResponse {
+  channels: LiveTVChannel[];
+}
+
+export interface LiveTVGuideSource {
+  id: string;
+  type: "schedules_direct" | "xmltv_url" | string;
+  priority: number;
+  enabled: boolean;
+  display_name: string;
+  config: Record<string, string>;
+  status: string;
+  last_error: string;
+  last_sync_at?: string;
+  next_sync_at?: string;
+}
+
+export interface LiveTVGuideSourcesResponse {
+  guide_sources: LiveTVGuideSource[];
+}
+
 export interface RequestListParams {
   status?: MediaRequestStatus | "all";
   outcome?: MediaRequestOutcome | "all";
