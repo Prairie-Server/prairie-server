@@ -45,9 +45,9 @@ describe("downloadDiagnosticReport", () => {
     const click = vi
       .spyOn(HTMLAnchorElement.prototype, "click")
       .mockImplementation(() => undefined);
-    mocks.apiResponse.mockResolvedValue(
-      new Response(new Blob(["bundle"]), { headers: { "Content-Type": "application/gzip" } }),
-    );
+    mocks.apiResponse.mockResolvedValue({
+      blob: async () => new Blob(["bundle"], { type: "application/gzip" }),
+    });
 
     await downloadDiagnosticReport(report);
 

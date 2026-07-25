@@ -70,6 +70,19 @@ export default defineConfig(({ mode }) => {
       environment: "jsdom",
       globals: true,
       setupFiles: ["./src/test-setup.ts"],
+      // Enforce 75% on Live TV guide helpers. useLiveTV.ts is covered by unit
+      // tests for query wiring but is mostly thin mutation boilerplate, so it is
+      // not gated here yet — expand this include list as more pure helpers land.
+      coverage: {
+        provider: "v8",
+        include: ["src/lib/liveTVGuide.ts"],
+        thresholds: {
+          statements: 75,
+          lines: 75,
+          functions: 75,
+          branches: 75,
+        },
+      },
     },
   };
 });

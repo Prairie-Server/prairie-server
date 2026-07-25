@@ -1,0 +1,104 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  COVER_MIN: "75"
+
+jobs:
+  go-test-coverage:
+    name: Go tests + coverage
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install libvips (CGO image deps)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libvips-dev pkg-config
+
+      - name: Run unit tests with coverage
+        run: |
+          set -euo pipefail
+          # Cover all packages under the module. Integration-only packages that
+          # need live services still compile; their untested code lowers coverage
+          # for packages listed in .github/coverage-packages.txt only.
+          go test ./... -count=1 -covermode=atomic -coverprofile=coverage.out
+
+      - name: Enforce coverage gate
+        run: |
+          set -euo pipefail
+          mapfile -t pkgs < <(grep -vE '^\s*(#|$)' .github/coverage-packages.txt || true)
+          export COVER_PACKAGES="${pkgs[*]}"
+          # PgStore (DB) lives in store.go and is impractical to unit-test here.
+          export COVER_EXCLUDE_FILE_REGEX='(^|/)store\.go$'
+          chmod +x scripts/check-go-coverage.sh
+          ./scripts/check-go-coverage.sh coverage.out "${COVER_MIN}"
+
+      - name: Upload coverage profile
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: go-coverage
+          path: coverage.out
+          if-no-files-found: ignore
+
+  web-test-coverage:
+    name: Web tests + coverage
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Vitest coverage thresholds (75% statements/lines/functions/branches) apply
+      # only to src/lib/liveTVGuide.ts (see vite.config.ts coverage.include).
+      # Expand that list as more modules gain unit tests rather than gating the
+      # entire web tree, which is still well below 75% overall.
+      - name: Run Vitest with coverage
+        run: pnpm exec vitest run --coverage
+
+      - name: Upload web coverage
+        if: always()
+        uses: actions/upload-artifact@v5
+        with:
+          name: web-coverage
+          path: web/coverage
+          if-no-files-found: ignore

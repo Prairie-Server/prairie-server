@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 )
 
@@ -39,6 +40,9 @@ func TestDiscoverAndFetchLineup(t *testing.T) {
 	if info.DeviceID != "12345678" || info.ModelNumber != "HDHR5-4K" || info.TunerCount != 4 || info.BaseURL != srv.URL {
 		t.Fatalf("unexpected info: %+v", info)
 	}
+	if info.LineupURL != srv.URL+"/lineup.json" {
+		t.Fatalf("LineupURL = %q", info.LineupURL)
+	}
 
 	lineup, err := client.FetchLineup(context.Background(), info.BaseURL)
 	if err != nil {
@@ -65,5 +69,94 @@ func TestDiscoverAcceptsLineupJSON(t *testing.T) {
 	}
 	if info.DeviceID != "dev-1" || info.BaseURL != srv.URL || info.TunerCount != 1 {
 		t.Fatalf("unexpected lineup discover info: %+v", info)
+	}
+}
+
+func TestDiscoverFromDeviceID(t *testing.T) {
+	mux := http.NewServeMux()
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+
+	mux.HandleFunc("/discover.json", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"DeviceID":"ABCD","BaseURL":"` + srv.URL + `","TunerCount":2}`))
+	})
+
+	host := strings.TrimPrefix(srv.URL, "http://")
+	info, err := NewClient(srv.Client()).Discover(context.Background(), "", host)
+	if err != nil {
+		t.Fatalf("Discover by host device_id: %v", err)
+	}
+	if info.DeviceID != "ABCD" {
+		t.Fatalf("DeviceID = %q", info.DeviceID)
+	}
+
+	info, err = NewClient(srv.Client()).Discover(context.Background(), "", srv.URL)
+	if err != nil {
+		t.Fatalf("Discover by http device_id: %v", err)
+	}
+	if info.BaseURL != srv.URL {
+		t.Fatalf("BaseURL = %q", info.BaseURL)
+	}
+}
+
+func TestDiscoverErrors(t *testing.T) {
+	client := NewClient(nil)
+	_, err := client.Discover(context.Background(), "", "")
+	if err == nil {
+		t.Fatal("expected missing discover args error")
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "nope", http.StatusBadGateway)
+	}))
+	defer srv.Close()
+	_, err = NewClient(srv.Client()).Discover(context.Background(), srv.URL, "")
+	if err == nil {
+		t.Fatal("expected status error")
+	}
+
+	bad := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`"just a string"`))
+	}))
+	defer bad.Close()
+	_, err = NewClient(bad.Client()).Discover(context.Background(), bad.URL, "")
+	if err == nil {
+		t.Fatal("expected unsupported response")
+	}
+}
+
+func TestFetchLineupErrors(t *testing.T) {
+	client := NewClient(http.DefaultClient)
+	_, err := client.FetchLineup(context.Background(), "")
+	if err == nil {
+		t.Fatal("expected empty base url error")
+	}
+
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"not":"array"}`))
+	}))
+	defer srv.Close()
+	_, err = NewClient(srv.Client()).FetchLineup(context.Background(), srv.URL)
+	if err == nil {
+		t.Fatal("expected decode error")
+	}
+}
+
+func TestNormalizeHelpers(t *testing.T) {
+	info := normalizeDeviceInfo(discoverJSON{
+		FriendlyName: "  Flex  ",
+		TunerCount:   3,
+	}, "http://192.168.1.50:80/discover.json", "fallback")
+	if info.DeviceID != "fallback" || info.BaseURL != "http://192.168.1.50:80" {
+		t.Fatalf("normalize = %+v", info)
+	}
+	if info.LineupURL != "http://192.168.1.50:80/lineup.json" {
+		t.Fatalf("LineupURL = %q", info.LineupURL)
+	}
+	if origin("not a url") != "" {
+		t.Fatal("origin should be empty")
+	}
+	if hostWithoutPort("http://example.com:5004/x") != "example.com" {
+		t.Fatalf("hostWithoutPort unexpected")
 	}
 }

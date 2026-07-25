@@ -34,6 +34,9 @@ func TestParseXMLTV(t *testing.T) {
 	if parsed.Channels[0].ID != "KABC" || parsed.Channels[0].DisplayName != "7.1 KABC-HD" {
 		t.Fatalf("unexpected channel: %+v", parsed.Channels[0])
 	}
+	if parsed.Channels[0].IconURL != "https://example.test/kabc.png" {
+		t.Fatalf("icon = %q", parsed.Channels[0].IconURL)
+	}
 	if len(parsed.Programmes) != 1 {
 		t.Fatalf("programmes = %d, want 1", len(parsed.Programmes))
 	}
@@ -49,5 +52,51 @@ func TestParseXMLTV(t *testing.T) {
 	}
 	if got := programme.Start.Format("2006-01-02T15:04:05-07:00"); got != "2026-07-25T19:00:00-07:00" {
 		t.Fatalf("start = %s", got)
+	}
+}
+
+func TestParseXMLTVAlternateLayoutsAndEpisode(t *testing.T) {
+	const sample = `<?xml version="1.0" encoding="UTF-8"?>
+<tv>
+  <channel id="PBS"><display-name>PBS</display-name></channel>
+  <programme start="20260725190000Z" stop="20260725200000+0000" channel="PBS">
+    <title>Nova</title>
+    <episode-num>S3E12</episode-num>
+  </programme>
+  <programme start="20260725210000" stop="20260725220000" channel="PBS">
+    <title>Bare</title>
+    <episode-num system="onscreen">E7</episode-num>
+  </programme>
+</tv>`
+
+	// Z / +0000 compact forms: first programme uses invalid Z on purpose via rewrite
+	sampleFixed := strings.Replace(sample, "20260725190000Z", "20260725190000 +0000", 1)
+	sampleFixed = strings.Replace(sampleFixed, "20260725200000+0000", "20260725200000+0000", 1)
+
+	parsed, err := ParseXMLTV(strings.NewReader(sampleFixed))
+	if err != nil {
+		t.Fatalf("ParseXMLTV() error = %v", err)
+	}
+	if len(parsed.Programmes) != 2 {
+		t.Fatalf("programmes = %d", len(parsed.Programmes))
+	}
+	if parsed.Programmes[0].Season == nil || *parsed.Programmes[0].Season != 3 {
+		t.Fatalf("season = %v", parsed.Programmes[0].Season)
+	}
+	if parsed.Programmes[0].Episode == nil || *parsed.Programmes[0].Episode != 12 {
+		t.Fatalf("episode = %v", parsed.Programmes[0].Episode)
+	}
+	if parsed.Programmes[1].Episode == nil || *parsed.Programmes[1].Episode != 7 {
+		t.Fatalf("onscreen episode = %v", parsed.Programmes[1].Episode)
+	}
+}
+
+func TestParseXMLTVErrors(t *testing.T) {
+	if _, err := ParseXMLTV(strings.NewReader(`not xml`)); err == nil {
+		t.Fatal("expected parse error")
+	}
+	const badTime = `<?xml version="1.0"?><tv><programme start="bad" stop="20260725200000" channel="x"><title>T</title></programme></tv>`
+	if _, err := ParseXMLTV(strings.NewReader(badTime)); err == nil {
+		t.Fatal("expected bad start time error")
 	}
 }
