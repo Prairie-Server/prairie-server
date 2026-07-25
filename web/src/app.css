@@ -1781,14 +1781,7 @@
     content: "";
     position: absolute;
     inset: 0;
-    background:
-      linear-gradient(
-        180deg,
-        #1a2230 0%,
-        #161c26 42%,
-        #1c1812 78%,
-        #241c12 100%
-      );
+    background: linear-gradient(180deg, #1a2230 0%, #161c26 42%, #1c1812 78%, #241c12 100%);
     pointer-events: none;
   }
 
