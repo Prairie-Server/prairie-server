@@ -1,12 +1,12 @@
 # Restart-resilient playback (TR-lease)
 
-How Silo keeps playback alive across a server restart, reconnect, or partial
+How Prairie keeps playback alive across a server restart, reconnect, or partial
 stream — and how the design arrived at **TR-lease** (token-carried
 reconstruction + a server-side session-deny marker for revocation).
 
 > **Status: the revocation half is deferred to a future PR.** Only the
 > token-carried **reconstruction** core shipped in this PR. The **session-deny /
-> stream-revocation** mechanism described throughout (the `silo:streamauth:<sid>`
+> stream-revocation** mechanism described throughout (the `prairie:streamauth:<sid>`
 > deny marker, the proxy's `Allowed()` enforcement, and the admin
 > Stop/Terminate deny write) is **not present in the current implementation**.
 > Admin Terminate and user Stop tear down the live in-memory session and the
@@ -20,10 +20,10 @@ working notes so a future engineer can see the full evolution, the options
 weighed, the issues raised across review rounds, the variables traded off, and
 why the final shape was chosen. The superseded notes were:
 
-- *unified-playback-reconstruct* — the reconstruct core (PR #174), "RC".
-- *token-carried-playback-reconstruct* — the storage evolution, "TR".
-- *async-recipe-card-playback* — a monitoring-preserving middle path, "RC-async".
-- *playback-reconstruct-options-comparison* — the goals/options matrix.
+- _unified-playback-reconstruct_ — the reconstruct core (PR #174), "RC".
+- _token-carried-playback-reconstruct_ — the storage evolution, "TR".
+- _async-recipe-card-playback_ — a monitoring-preserving middle path, "RC-async".
+- _playback-reconstruct-options-comparison_ — the goals/options matrix.
 
 Paths are repository-relative; assume the repository root is the cwd.
 
@@ -69,14 +69,14 @@ and the revocation model evolved.**
 
 The six routes that must survive a restart:
 
-| # | Route | Tier | How it is rebuilt |
-|---|-------|:----:|-------------------|
-| 1 | native direct | 1 | client `Range` re-serve; descriptor = identity |
-| 2 | native remux | 1 | re-spawn ffmpeg at `?seek`; descriptor = id + audio |
-| 3 | native transcode | 2 | rebuild `Session` + ffmpeg seeked to the requested segment; descriptor = full encode opts |
-| 4 | jellycompat direct | 1 | compat store + `Range` re-serve |
-| 5 | jellycompat remux | 1 | compat store + `?seek` |
-| 6 | jellycompat transcode | 2 | compat store + shared-manager reconstruct |
+| #   | Route                 | Tier | How it is rebuilt                                                                         |
+| --- | --------------------- | :--: | ----------------------------------------------------------------------------------------- |
+| 1   | native direct         |  1   | client `Range` re-serve; descriptor = identity                                            |
+| 2   | native remux          |  1   | re-spawn ffmpeg at `?seek`; descriptor = id + audio                                       |
+| 3   | native transcode      |  2   | rebuild `Session` + ffmpeg seeked to the requested segment; descriptor = full encode opts |
+| 4   | jellycompat direct    |  1   | compat store + `Range` re-serve                                                           |
+| 5   | jellycompat remux     |  1   | compat store + `?seek`                                                                    |
+| 6   | jellycompat transcode |  2   | compat store + shared-manager reconstruct                                                 |
 
 Tier 1 = stateless re-serve (client re-supplies position). Tier 2 = rebuild
 ffmpeg. Routes 4–6 always retain a durable central compat store
@@ -109,7 +109,7 @@ Every option is a point on a 2-D grid: **where the descriptor lives** (vertical)
 ```
 
 **TR-lease is a fourth point off this grid:** bottom row (token-carried, 24h),
-but the revocation column is replaced by a *server-side deny marker* — on an
+but the revocation column is replaced by a _server-side deny marker_ — on an
 admin kill, central would write a per-session deny to Redis that the node
 enforces by withholding bytes. Revocation is decoupled from the token TTL and
 needs no client refresh. (An earlier iteration polled and re-resolved every
@@ -126,28 +126,28 @@ the §8 design note.)
 
 ## 4. Goals weighed
 
-| ID | Goal |
-|----|------|
-| G1 | Hot path (per-segment serve) stays off central/Postgres |
-| G2 | Bytes offloaded to nodes (served from disk, signature-verified, never central) |
-| G3 | Restart resiliency across all 6 routes |
-| G4 | Two-factor ownership (auth caller + ownership rebind; refuse `userID==0`/mismatch) |
-| G5 | Revocation latency (how fast a banned user / pulled access stops playing) |
-| G6 | Single-box: zero external store required for reconstruction |
-| G7 | Restart runway (descriptor stays valid longer than the outage) |
-| G8 | Multi-front-end / verify-anywhere (no integrated-transcode split-brain) |
-| G9 | Observability — durable, identity-rich active-stream record |
-| G10 | Low operational surface (tables, migrations, stores, endpoints) |
-| G11 | Node-restart recovery |
-| G12 | No new client coordination required |
-| G13 | Small signing-key blast radius |
-| G14 | Cleanup correctness (never wipe a live session's segment dir) |
+| ID  | Goal                                                                               |
+| --- | ---------------------------------------------------------------------------------- |
+| G1  | Hot path (per-segment serve) stays off central/Postgres                            |
+| G2  | Bytes offloaded to nodes (served from disk, signature-verified, never central)     |
+| G3  | Restart resiliency across all 6 routes                                             |
+| G4  | Two-factor ownership (auth caller + ownership rebind; refuse `userID==0`/mismatch) |
+| G5  | Revocation latency (how fast a banned user / pulled access stops playing)          |
+| G6  | Single-box: zero external store required for reconstruction                        |
+| G7  | Restart runway (descriptor stays valid longer than the outage)                     |
+| G8  | Multi-front-end / verify-anywhere (no integrated-transcode split-brain)            |
+| G9  | Observability — durable, identity-rich active-stream record                        |
+| G10 | Low operational surface (tables, migrations, stores, endpoints)                    |
+| G11 | Node-restart recovery                                                              |
+| G12 | No new client coordination required                                                |
+| G13 | Small signing-key blast radius                                                     |
+| G14 | Cleanup correctness (never wipe a live session's segment dir)                      |
 
-A note on G9 (observability): the *live* "who is streaming now" view does **not**
+A note on G9 (observability): the _live_ "who is streaming now" view does **not**
 depend on the descriptor strategy. Every offload node calls the Redis-backed
 node-session tracker (`internal/nodesessions/tracker.go`) on every serve, tied to
 actual byte-serving (so a non-cooperative client or replayed token still shows
-up) and surviving a central restart. G9 scores only the *durable, identity-rich*
+up) and surviving a central restart. G9 scores only the _durable, identity-rich_
 (who + what + recipe) slice on top of that.
 
 ---
@@ -156,33 +156,33 @@ up) and surviving a central restart. G9 scores only the *durable, identity-rich*
 
 Legend: ✓ meets · ✓\* minor asterisk · ~ partial · ✗ fails · ✓✓ best-in-class
 
-| Goal | `main` | RC #174 | TR-24h | TR + re-mint | RC-async | **TR-lease** |
-|------|:------:|:-------:|:------:|:------------:|:--------:|:------------:|
-| G1 hot path free of central DB | ✓ | ✓\* | ✓ | ✓ | ✓ | ✓ |
-| G2 bytes offloaded | ✓ | ✓ | ✓✓ | ✓✓ | ✓✓ | ✓✓ |
-| G3 restart resiliency (6/6) | ✗ | ✓ | ✓ | ✓ | ✓ | ✓ |
-| G4 two-factor ownership | ✓ | ✓ | ~ | ~ | ~ | ✓~ |
-| G5 revocation latency | ~ | ~ | ✗ (≤24h) | ✓ (≤TTL) | ✓✓ | ✓✓ |
-| G6 single-box, no external store | ✓ | ✗ | ✓✓ | ~ | ~ | ~ |
-| G7 restart runway | n/a | ✓ (30m) | ✓✓ (24h) | ~ | ~ | ✓✓ (24h) |
-| G8 multi-front-end | ✗ | ~ | ✓~ | ✓~ | ✓~ | ✓~ |
-| G9 durable identity-rich record | ✗ | ✓✓ | ✗ | ✗ | ✓ | ~ |
-| G10 low operational surface | ✓✓ | ~ | ✓ | ~ | ✗ | ~ |
-| G11 node-restart recovery | ✗ | ✗ | ✓ | ✓ | ✓ | ✓ |
-| G12 no new client coordination | ✓ | ✓ | ✓ | ✗ | ✗ | ✓ |
-| G13 small signing-key blast radius | ✓ | ✓ | ✗ | ✗ | ✗ | ✗ |
-| G14 cleanup correctness | ✓ | ✓✓ | ~ | ~ | ~ | ~ |
+| Goal                               | `main` | RC #174 |  TR-24h  | TR + re-mint | RC-async | **TR-lease** |
+| ---------------------------------- | :----: | :-----: | :------: | :----------: | :------: | :----------: |
+| G1 hot path free of central DB     |   ✓    |   ✓\*   |    ✓     |      ✓       |    ✓     |      ✓       |
+| G2 bytes offloaded                 |   ✓    |    ✓    |    ✓✓    |      ✓✓      |    ✓✓    |      ✓✓      |
+| G3 restart resiliency (6/6)        |   ✗    |    ✓    |    ✓     |      ✓       |    ✓     |      ✓       |
+| G4 two-factor ownership            |   ✓    |    ✓    |    ~     |      ~       |    ~     |      ✓~      |
+| G5 revocation latency              |   ~    |    ~    | ✗ (≤24h) |   ✓ (≤TTL)   |    ✓✓    |      ✓✓      |
+| G6 single-box, no external store   |   ✓    |    ✗    |    ✓✓    |      ~       |    ~     |      ~       |
+| G7 restart runway                  |  n/a   | ✓ (30m) | ✓✓ (24h) |      ~       |    ~     |   ✓✓ (24h)   |
+| G8 multi-front-end                 |   ✗    |    ~    |    ✓~    |      ✓~      |    ✓~    |      ✓~      |
+| G9 durable identity-rich record    |   ✗    |   ✓✓    |    ✗     |      ✗       |    ✓     |      ~       |
+| G10 low operational surface        |   ✓✓   |    ~    |    ✓     |      ~       |    ✗     |      ~       |
+| G11 node-restart recovery          |   ✗    |    ✗    |    ✓     |      ✓       |    ✓     |      ✓       |
+| G12 no new client coordination     |   ✓    |    ✓    |    ✓     |      ✗       |    ✗     |      ✓       |
+| G13 small signing-key blast radius |   ✓    |    ✓    |    ✗     |      ✗       |    ✗     |      ✗       |
+| G14 cleanup correctness            |   ✓    |   ✓✓    |    ~     |      ~       |    ~     |      ~       |
 
 The TTL/revocation strategies head-to-head. **Note: the session-deny column is
 the deferred design target — see §7; as shipped, the node path has no revocation
 tighter than the 24h token TTL.**
 
-| Strategy | Revocation latency | Restart runway | Client refresh? | Central on refresh? |
-|----------|--------------------|----------------|-----------------|---------------------|
-| Re-resolve at reconstruct (RC) | on reconstruct; node hop ≤24h | 30 min | no | only on reconstruct |
-| Leave 24h, expire only (TR-24h) | up to 24h | 24h | no | never |
-| Short TTL + refresh + denylist (RC-async / TR item B) | ≤~5 min | ~90 s grace | **yes** | every ~3.5 min/session |
-| 24h token + session-deny marker (TR-lease — **deferred**) | *design target:* admin kill cuts node bytes on next serve; passive ban = next-play / ≤24h. *As shipped:* node path bounded by ≤24h token only | 24h | **no** | nothing on the serve path; one write per admin-kill event |
+| Strategy                                                  | Revocation latency                                                                                                                            | Restart runway | Client refresh? | Central on refresh?                                       |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- | -------------- | --------------- | --------------------------------------------------------- |
+| Re-resolve at reconstruct (RC)                            | on reconstruct; node hop ≤24h                                                                                                                 | 30 min         | no              | only on reconstruct                                       |
+| Leave 24h, expire only (TR-24h)                           | up to 24h                                                                                                                                     | 24h            | no              | never                                                     |
+| Short TTL + refresh + denylist (RC-async / TR item B)     | ≤~5 min                                                                                                                                       | ~90 s grace    | **yes**         | every ~3.5 min/session                                    |
+| 24h token + session-deny marker (TR-lease — **deferred**) | _design target:_ admin kill cuts node bytes on next serve; passive ban = next-play / ≤24h. _As shipped:_ node path bounded by ≤24h token only | 24h            | **no**          | nothing on the serve path; one write per admin-kill event |
 
 ---
 
@@ -193,13 +193,13 @@ tighter than the 24h token TTL.**
   store: a write on every start, per audio/quality change, and a ≤1/min refresh,
   with resilience tied to the DB being reachable. It does not give the single-box
   zero-dependency property, and the node hop's 24h token stays unrevocable
-  anyway. RC's reconstruct *core* was kept; its *storage* was the thing to evolve.
+  anyway. RC's reconstruct _core_ was kept; its _storage_ was the thing to evolve.
 
 - **TR-24h (token-carried, leave the token to expire).** Wins the single-box case
   (zero external dependency) and removes the per-start DB write, but revocation is
-  bounded by *nothing tighter than the 24h token TTL* on the node path — a banned
+  bounded by _nothing tighter than the 24h token TTL_ on the node path — a banned
   user keeps node-served direct/remux for up to 24h. This is actually the
-  *status quo* for the node path even pre-branch (the proxy verifies by signature
+  _status quo_ for the node path even pre-branch (the proxy verifies by signature
   alone, no DB), so TR-24h only adds identity claims to the token without
   improving revocation. Not acceptable as the endpoint.
 
@@ -208,7 +208,7 @@ tighter than the 24h token TTL.**
   for observability).** Both bound revocation to ~5 min by having the client
   refetch a stable `RequireAuth` playlist that re-checks access and re-mints
   short-lived segment URLs. The cost: a **hard client-coordination requirement**
-  (silo-android / silo-apple / Jellyfin clients must implement the refresh flow),
+  (prairie-android / prairie-apple / Jellyfin clients must implement the refresh flow),
   a shrunken restart runway (~90 s grace instead of 30 min — if central is down
   past the grace, playback stalls), and a new authenticated re-mint transport
   that does not exist on the supported proxy/node topology. RC-async additionally
@@ -217,8 +217,8 @@ tighter than the 24h token TTL.**
   shortening the runway — the opposite of the reliability priorities.
 
 The open item across TR and RC-async was always **revocation enforcement** ("item
-B"): bounding revocation needs *either* a per-segment token check on the hot path
-*or* an authenticated re-mint checkpoint the client drives. TR-lease removes that
+B"): bounding revocation needs _either_ a per-segment token check on the hot path
+_or_ an authenticated re-mint checkpoint the client drives. TR-lease removes that
 dilemma.
 
 ---
@@ -230,12 +230,12 @@ refresh flow is needed) and adds a server-side **session-deny marker** for the
 one revocation case the node path cannot otherwise cover — no client
 participation, no steady-state cost.
 
-**Reconstruction (token-carried).** The signed stream token *is* the durable
+**Reconstruction (token-carried).** The signed stream token _is_ the durable
 descriptor. Its claims carry the full byte-affecting recipe plus `uid/pid/mfid`
 ownership lookup keys. A front-end that lost its in-memory session rebuilds
 ffmpeg from the token the client re-presents — no shared per-session store, zero
 external dependency for reconstruction on a single box. `HWAccel`/`HWDevice` are
-deliberately *not* carried; they are re-resolved from live config so an operator
+deliberately _not_ carried; they are re-resolved from live config so an operator
 config change applies to reconstructed sessions too. Ownership re-binds to the
 live authenticated caller and refuses `userID==0` / mismatch — the token's `uid`
 is never trusted alone (a leaked URL is useless without the owner's auth session
@@ -244,7 +244,7 @@ on the native path).
 **Revocation (session-deny marker).**
 
 > **Status: deferred to a future PR.** Everything in this subsection (the
-> `silo:streamauth:<sid>` deny marker, the admin Stop/Terminate deny write, and
+> `prairie:streamauth:<sid>` deny marker, the admin Stop/Terminate deny write, and
 > the node-side `Allowed()` enforcement) describes the design target and is **not
 > present in the current implementation**. As shipped, admin Terminate and user
 > Stop tear down the live in-memory session and the ffmpeg producer, but a
@@ -253,27 +253,27 @@ on the native path).
 > the node path. The design below is retained for when revocation lands.
 
 The revocation surface was deliberately
-kept to the *one* case the offloaded topology cannot otherwise cover, rather than
+kept to the _one_ case the offloaded topology cannot otherwise cover, rather than
 a periodic re-check of every stream. An admin Stop/Terminate would write
-`silo:streamauth:<sid> = deny` (TTL ≥ the 24h token lifetime); the offload node
+`prairie:streamauth:<sid> = deny` (TTL ≥ the 24h token lifetime); the offload node
 would read it (a node-local Redis GET, sub-ms) before serving any bytes and
 return `403` with no bytes on a hit. Enforcement is **byte-withholding, not
 client cooperation** — a revoked client that ignores the 403 keeps hitting a
 wall.
 
-Why this would be sufficient, and what it deliberately does *not* do:
+Why this would be sufficient, and what it deliberately does _not_ do:
 
 - **New playback is already blocked at central** — `/playback/start` is
   `RequireAuth` + access check, so a ban/scope change always takes effect on the
   next play, everywhere, with no marker needed.
 - **Cooperative clients already stop** — central holds the realtime WebSocket and
   can drop it + send a stop on a ban.
-- **The only thing needing a hard node-side cut** is the *explicit, session-scoped
-  admin kill* of a *non-cooperative* client holding a valid token on a
+- **The only thing needing a hard node-side cut** is the _explicit, session-scoped
+  admin kill_ of a _non-cooperative_ client holding a valid token on a
   node-served direct/remux stream (no producer to kill). That is exactly what the
   (deferred) session-deny marker would cover; until it lands this case is bounded
   by the ≤24h token like the passive bans below.
-- **Not covered (accepted limitation):** a *passive* ban or *partial* access
+- **Not covered (accepted limitation):** a _passive_ ban or _partial_ access
   change (lost one library, lowered rating) does NOT hard-revoke an
   already-running, non-cooperative node stream. It is enforced at next play and
   otherwise bounded by the ≤24h token. Closing this would require either a
@@ -282,7 +282,7 @@ Why this would be sufficient, and what it deliberately does *not* do:
   worth the machinery for a self-hosted server. A user-scoped deny was rejected
   too: it over-blocks content the viewer still legitimately has access to.
 
-**Fail-open on absence (deferred).** In the design, the normal case is *no*
+**Fail-open on absence (deferred).** In the design, the normal case is _no_
 marker, which serves; a Redis error also serves; only a present deny withholds
 bytes. This is a deliberate reliability-first choice: availability over
 revocation latency.
@@ -304,6 +304,7 @@ package, the proxy `Allowed()` guard, and the admin deny write described below
 are **not present in the current implementation**.
 
 **Commit 1 — token-carried reconstruction; retire `transcode_recipes`. (shipped)**
+
 - `streamtoken.Claims` gains the recipe + `uid/pid/mfid`
   (`internal/streamtoken/token.go`).
 - `playback.RecipeCard` projects to/from claims (`ToClaims` /
@@ -349,12 +350,12 @@ are **not present in the current implementation**.
   session removal on Terminate is the stop there.
 
 > Design note (about the deferred commit 2): an earlier iteration added a central
-> *revalidator* that re-resolved access for every active stream every ~2 min and
+> _revalidator_ that re-resolved access for every active stream every ~2 min and
 > wrote allow/deny leases. It was dropped in favour of the event-driven
 > session-deny above: the poll re-derived, at a constant all-streams DB cost,
 > signals the
 > system already emits (new playback is gated at `/playback/start`; admin kill is
-> an explicit event), and its only unique coverage — sub-24h *passive* revocation
+> an explicit event), and its only unique coverage — sub-24h _passive_ revocation
 > of an in-flight node stream — was judged not worth the machinery (see §7).
 
 ---
@@ -377,30 +378,30 @@ evolution:
   unrevocable, so admin kill and passive bans / partial access changes are all
   bounded by next-play + the ≤24h token.
 - **Dedicated transcode-node restart (P-3 / tr-10). Fixed for both paths.**
-  *Native:* the proxy forwards the verified stream token to the transcode node
-  (`X-Silo-Stream-Token`); on a manifest/segment miss the node re-verifies the
+  _Native:_ the proxy forwards the verified stream token to the transcode node
+  (`X-Prairie-Stream-Token`); on a manifest/segment miss the node re-verifies the
   token, decodes the recipe, and self-reconstructs ffmpeg seeked to the requested
   segment — single-flighted and concurrency-capped exactly like the integrated
-  reconstruct. *Jellycompat:* the node-hop token is server-minted and *could* carry the
+  reconstruct. _Jellycompat:_ the node-hop token is server-minted and _could_ carry the
   recipe like native, but it deliberately does not — the recipe is mutated in
   place under a stable session id (a Jellyfin audio/subtitle switch can arrive as
   a `/Sessions/Playing/Progress` report that restarts ffmpeg without re-minting
   the client's token), and a third-party Jellyfin client cannot be driven to
-  refresh a stale token, so a token *snapshot* could reconstruct a stale
+  refresh a stale token, so a token _snapshot_ could reconstruct a stale
   rendition. Central instead writes the recipe to a shared Redis recipe store
   (`internal/noderecipe`) keyed by upstream session id and overwrites it on every
-  switch, and the node (which cannot reach Postgres) reads the *current* recipe on
+  switch, and the node (which cannot reach Postgres) reads the _current_ recipe on
   the reconstruct miss — over the same Redis the session tracker already uses (and
   the deferred deny-lease would use), so no central URL is needed. The boot-time
   full segment-dir wipe
   stands; reconstruct re-transcodes from the requested segment. See §10 for the
-  full rationale (and why this is *not* a token-carryable case).
+  full rationale (and why this is _not_ a token-carryable case).
 - **`userID==0` tolerance / "auth optional" (P-5).** Reconstruct hard-rejects
   `userID==0` and a card whose session id does not match the URL.
 - **Mutable recipe under a stable id (D).** A parameter change re-mints a new
   manifest + token and the client reloads, so the common case self-heals. The
-  only residual is a restart *during* the brief switch transition with a prior
-  token in flight: it reconstructs the prior *rendition* (access is re-resolved,
+  only residual is a restart _during_ the brief switch transition with a prior
+  token in flight: it reconstructs the prior _rendition_ (access is re-resolved,
   only the rendition can be stale). TTL-bounded, self-healing on reload; minor,
   accepted.
 - **Cleanup liveness (F / tr-9).** Each process owns its `TranscodeDir`, so the
@@ -419,20 +420,20 @@ evolution:
 ## 10. Residuals and follow-ups
 
 - **Revocation of an in-flight node stream (all cases, until deny-lease ships).**
-  Because the session-deny marker is deferred (§7–§8), *no* ban — admin kill,
+  Because the session-deny marker is deferred (§7–§8), _no_ ban — admin kill,
   passive ban, or partial access change — hard-cuts an already-running,
   non-cooperative node-served stream; all are enforced at next play, bounded by
-  the ≤24h token. The future deny-lease closes the *admin-kill* case; passive
+  the ≤24h token. The future deny-lease closes the _admin-kill_ case; passive
   bans would still need a per-content deny enumeration on the access-change event,
   or accepting it. See §7.
 - **Monitoring.** Two distinct questions:
-  - *Live "who is watching what right now"* — covered. Every node serve writes a
-    record to the Redis tracker (`silo:sessions:*`), now enriched with
+  - _Live "who is watching what right now"_ — covered. Every node serve writes a
+    record to the Redis tracker (`prairie:sessions:*`), now enriched with
     `auth_user_id` / `media_file_id` from the verified token, so the admin
     active-streams view answers who/what/where, tied to real byte-serving and
     surviving a central restart. Integrated (no-node) sessions show in central's
     in-memory session list.
-  - *Durable historical/audit ("who watched what last week")* — NOT provided by
+  - _Durable historical/audit ("who watched what last week")_ — NOT provided by
     this subsystem (there is no longer a durable per-session recipe record, by
     design — G9 was the deliberate trade for token-carried reconstruction). That
     history lives in the separate watch-progress / scrobble system.
@@ -447,7 +448,7 @@ evolution:
 - **Token in logs (tr-1).** Scrub the `?st=` token / path token from request
   loggers (the jellycompat logger logs `RawQuery`; the native logger omits it).
   Short TTL + signature bound the exposure.
-- **Owner-identity (A).** Required before multi-front-end *integrated* transcode
+- **Owner-identity (A).** Required before multi-front-end _integrated_ transcode
   without sticky affinity; defines owner election, self-URL discovery, a
   peer-forward endpoint, and failover.
 - **Node-side reconstruct (P-3). Done** for native (token-forwarded) and
@@ -458,10 +459,10 @@ evolution:
   store is consulted
   only for a jellycompat token, so a node restart still depends on the recipe key
   surviving (24h TTL, ≥ token lifetime).
-  - *Why a server-side store and not the token here (the real rationale).* It is
+  - _Why a server-side store and not the token here (the real rationale)._ It is
     tempting to delete `internal/noderecipe` and let the jellycompat node-hop
     token carry the recipe like native — the token is server-minted and opaque to
-    the Jellyfin client (it follows it only as a redirect target), so it *could*.
+    the Jellyfin client (it follows it only as a redirect target), so it _could_.
     That does **not** work, and the reason is **not** the often-stated "a Jellyfin
     client can't round-trip a token." The reason is that the recipe is **mutated
     in place under a stable session id**: a Jellyfin audio/subtitle switch can
@@ -475,7 +476,7 @@ evolution:
     the **stale** rendition (old audio/subtitle) until the client happens to
     re-fetch the manifest (e.g. on a seek), which for a VOD stream may be never.
     Because the node also cannot reach Postgres (where the authoritative compat
-    recipe lives), the only way the node rebuilds the *current* recipe is a
+    recipe lives), the only way the node rebuilds the _current_ recipe is a
     node-reachable, server-authoritative store that central overwrites on every
     switch — i.e. `internal/noderecipe`. Native has no equivalent path: every
     native audio switch re-mints the manifest + token, so the native client's
@@ -490,7 +491,7 @@ evolution:
 
 - **Persistent `TranscodeDir` (recommended).** With persistence, reconstruct
   serves surviving segments; with an ephemeral dir it re-transcodes from the
-  descriptor (which survives a wiped dir). A node *restart* still loses the
+  descriptor (which survives a wiped dir). A node _restart_ still loses the
   session regardless (P-3).
 - **Re-transcode of one segment beats the buffer runway** on worst-case hardware
   (software decode, subtitle burn-in). Measure.
@@ -508,10 +509,10 @@ ASCII blocks render anywhere.
 
 ### 12.1 Topology — where state lives
 
-> **Deferred:** the `silo:streamauth:<sid> = deny` marker, the "Admin
+> **Deferred:** the `prairie:streamauth:<sid> = deny` marker, the "Admin
 > Stop/Terminate → write session-deny marker" arrow, and the node's "deny GET"
 > are the planned revocation path and are **not** in the current implementation.
-> The tracker (`silo:sessions:*`) and the recipe handoff are shipped.
+> The tracker (`prairie:sessions:*`) and the recipe handoff are shipped.
 
 ```text
                          ┌─────────────────────────── CENTRAL (mode=server) ───────────────────────────┐
@@ -522,8 +523,8 @@ ASCII blocks render anywhere.
                                      │ Postgres                  │ Redis                 │
                                      ▼                           ▼                       │ (multi-node only)
                          ┌───────────────────────┐   ┌──────────────────────────┐       ▼
-                         │ catalog / access       │   │ silo:sessions:*  (tracker)│  ┌────────────────────────┐
-                         │ jellycompat_playback_  │   │ silo:streamauth:<sid>     │  │ Proxy node (mode=proxy) │
+                         │ catalog / access       │   │ prairie:sessions:*  (tracker)│  ┌────────────────────────┐
+                         │ jellycompat_playback_  │   │ prairie:streamauth:<sid>     │  │ Proxy node (mode=proxy) │
                          │   sessions (compat      │   │   = deny  (session kill)  │◀─│ verifyToken + deny GET  │
                          │   store, carries Recipe)│   └──────────────────────────┘  │ serves direct/remux     │
                          └───────────────────────┘                ▲                  │ proxies transcode ──────┼──▶ Transcode node
@@ -535,11 +536,11 @@ Descriptor location by route (the core change). The "lease (node)" revocation
 column is the **deferred** design; as shipped, the node path has no revocation
 tighter than the ≤24h token:
 
-| route family | descriptor (how it reconstructs) | revocation |
-|--------------|----------------------------------|------------|
-| native (1–3) | the signed token the client re-presents | *deferred:* lease (node) / shipped: producer-kill (integrated), ≤24h token (node) |
-| jellycompat (4–6) | `jellycompat_playback_sessions.data.Recipe` (token can't round-trip) | *deferred:* lease (node) / shipped: producer-kill, ≤24h token (node) |
-| ~~all~~ | ~~`transcode_recipes` Postgres row~~ — removed | — |
+| route family      | descriptor (how it reconstructs)                                     | revocation                                                                        |
+| ----------------- | -------------------------------------------------------------------- | --------------------------------------------------------------------------------- |
+| native (1–3)      | the signed token the client re-presents                              | _deferred:_ lease (node) / shipped: producer-kill (integrated), ≤24h token (node) |
+| jellycompat (4–6) | `jellycompat_playback_sessions.data.Recipe` (token can't round-trip) | _deferred:_ lease (node) / shipped: producer-kill, ≤24h token (node)              |
+| ~~all~~           | ~~`transcode_recipes` Postgres row~~ — removed                       | —                                                                                 |
 
 ### 12.2 Where the token rides
 
@@ -587,7 +588,7 @@ session ignores it.
 
 ### 12.4 Normal playback — native, multi-node (offloaded)
 
-> **Deferred:** the `GET silo:streamauth:{sid}` lease guard and its `deny → 403`
+> **Deferred:** the `GET prairie:streamauth:{sid}` lease guard and its `deny → 403`
 > branch are the planned revocation path, **not** in the current implementation.
 > As shipped the node verifies the token, tracks the session, and serves — there
 > is no deny check.
@@ -605,11 +606,11 @@ sequenceDiagram
     loop manifest + segments
         C->>N: GET /stream/transcode/TOKEN/...
         N->>N: verifyToken(TOKEN)
-        N->>R: GET silo:streamauth:{sid}   (lease guard)
+        N->>R: GET prairie:streamauth:{sid}   (lease guard)
         alt deny
             N-->>C: 403 (no bytes)
         else allow / absent
-            N->>R: Track silo:sessions:{node}:{sid}  (uid, mfid from claims)
+            N->>R: Track prairie:sessions:{node}:{sid}  (uid, mfid from claims)
             N->>T: proxy /transcode/{sid}/...
             T-->>N: bytes
             N-->>C: bytes
@@ -639,8 +640,8 @@ sequenceDiagram
   identity token, then `Range` / `?seek` re-serve — no ffmpeg rebuild.
 - multi-node restart: the integrated front-end reconstructs only the `Session`
   (to learn `tnode`) and re-proxies; the transcode node keeps serving. If the
-  transcode *node* itself reboots, the proxy forwards the stream token
-  (`X-Silo-Stream-Token`) and the node self-reconstructs ffmpeg seeked to the
+  transcode _node_ itself reboots, the proxy forwards the stream token
+  (`X-Prairie-Stream-Token`) and the node self-reconstructs ffmpeg seeked to the
   requested segment (native path, P-3). A jellycompat session on a rebooted node
   reconstructs too: the node fetches the recipe central wrote to the shared Redis
   recipe store (`internal/noderecipe`) at transcode start, since the Jellyfin
@@ -667,24 +668,25 @@ flowchart TD
         PB -- yes --> PM[mint token]
     end
     subgraph Admin["Admin Stop/Terminate (event, not a timer)"]
-        K[denyStreamLease] --> WD[SET silo:streamauth:sid = deny<br/>TTL = 24h]
+        K[denyStreamLease] --> WD[SET prairie:streamauth:sid = deny<br/>TTL = 24h]
         K --> WS[realtime WS stop + producer teardown]
     end
     subgraph Node["Offload node — every serve"]
-        G[verifyToken OK] --> L{GET silo:streamauth:sid}
+        G[verifyToken OK] --> L{GET prairie:streamauth:sid}
         L -- present deny --> F[403, no bytes]
         L -- absent / redis-err --> SV[serve bytes  fail-open]
     end
 ```
 
 Invariants:
+
 - No steady-state writes: the marker is set only on an admin kill, never on a
-  timer. The normal serve path finds *no* key and serves.
+  timer. The normal serve path finds _no_ key and serves.
 - Fail-open: absent key or Redis error → serve. The only hard stop is a present
   deny.
 - The integrated box reads no marker — the producer-kill + session removal on
   Terminate is the stop there; the marker only matters where nodes serve.
-- Not covered here (by design): a *passive* ban / partial access change of an
+- Not covered here (by design): a _passive_ ban / partial access change of an
   in-flight non-cooperative node stream — enforced at next play, bounded by the
   ≤24h token (§7).
 
@@ -719,14 +721,14 @@ The "lease" / "SET deny" Redis costs below are **deferred** (the revocation path
 is not shipped); as shipped the node does only the tracker write, and admin
 Stop/Terminate writes no Redis key:
 
-| request | Postgres | Redis | central CPU | reconstruct |
-|---------|----------|-------|-------------|-------------|
-| native segment, live, integrated | — | — | map hit | — |
-| native segment, live, node | — | 1 track (+ deferred: GET lease) | — | — |
-| native segment, after restart, integrated | — | — | verify JWT + ffmpeg respawn (once, single-flight) | yes |
-| jellycompat segment, live | — | track (+ deferred: lease) | map hit | — |
-| jellycompat segment, after restart | 1 Get (compat row) | track (+ deferred: lease) | respawn | yes |
-| admin Stop/Terminate (event, not per-request) | — | deferred: 1 SET deny | one write | — |
+| request                                       | Postgres           | Redis                           | central CPU                                       | reconstruct |
+| --------------------------------------------- | ------------------ | ------------------------------- | ------------------------------------------------- | ----------- |
+| native segment, live, integrated              | —                  | —                               | map hit                                           | —           |
+| native segment, live, node                    | —                  | 1 track (+ deferred: GET lease) | —                                                 | —           |
+| native segment, after restart, integrated     | —                  | —                               | verify JWT + ffmpeg respawn (once, single-flight) | yes         |
+| jellycompat segment, live                     | —                  | track (+ deferred: lease)       | map hit                                           | —           |
+| jellycompat segment, after restart            | 1 Get (compat row) | track (+ deferred: lease)       | respawn                                           | yes         |
+| admin Stop/Terminate (event, not per-request) | —                  | deferred: 1 SET deny            | one write                                         | —           |
 
 ---
 
@@ -737,22 +739,22 @@ each server role. **✅** = the path reconstructs and resumes on the client's ne
 request; **—** = the path never executes on that role (nothing to reconstruct);
 **⚠️** = reconstructs only while a stated precondition holds.
 
-| path | integrated restart | proxy-node restart | transcode-node restart |
-|------|--------------------|--------------------|------------------------|
-| native · direct | ✅ rebuild `Session` from `?st` token → `Range` re-serve | ✅ stateless re-serve from `claims.MediaPath` | — not served on a transcode node |
-| native · remux | ✅ token + `?seek` → re-spawn pipe | ✅ stateless per-request pipe re-spawn | — |
-| native · transcode | ✅ token (full recipe) → respawn ffmpeg seeked to segment | ✅ transparent re-route + token forward | ✅ self-contained — token is recipe-complete |
-| jellycompat · direct | ✅ re-resolve from durable compat row → `Range` re-serve | ✅ stateless re-serve from token `MediaPath` | — |
-| jellycompat · remux | ✅ compat row + `?seek` | ✅ stateless per-request pipe re-spawn | — |
-| jellycompat · transcode | ✅ `ReconstructTranscode(*ps.Recipe)` from compat row | ✅ transparent re-route + token forward | ⚠️ reconstructs **iff** the shared Redis recipe (`internal/noderecipe`, ≤24h TTL) still exists; fails closed (404) otherwise |
+| path                    | integrated restart                                        | proxy-node restart                            | transcode-node restart                                                                                                       |
+| ----------------------- | --------------------------------------------------------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| native · direct         | ✅ rebuild `Session` from `?st` token → `Range` re-serve  | ✅ stateless re-serve from `claims.MediaPath` | — not served on a transcode node                                                                                             |
+| native · remux          | ✅ token + `?seek` → re-spawn pipe                        | ✅ stateless per-request pipe re-spawn        | —                                                                                                                            |
+| native · transcode      | ✅ token (full recipe) → respawn ffmpeg seeked to segment | ✅ transparent re-route + token forward       | ✅ self-contained — token is recipe-complete                                                                                 |
+| jellycompat · direct    | ✅ re-resolve from durable compat row → `Range` re-serve  | ✅ stateless re-serve from token `MediaPath`  | —                                                                                                                            |
+| jellycompat · remux     | ✅ compat row + `?seek`                                   | ✅ stateless per-request pipe re-spawn        | —                                                                                                                            |
+| jellycompat · transcode | ✅ `ReconstructTranscode(*ps.Recipe)` from compat row     | ✅ transparent re-route + token forward       | ⚠️ reconstructs **iff** the shared Redis recipe (`internal/noderecipe`, ≤24h TTL) still exists; fails closed (404) otherwise |
 
 **What carries the recovery state, per role**
 
-| role | native carrier | jellycompat carrier |
-|------|----------------|---------------------|
-| integrated | `?st` stream token — identity for direct/remux, full recipe for transcode | durable compat row `PlaybackSession.Recipe` |
-| proxy node | self-describing path token, re-derived per request — the proxy holds no per-session state | same path token (identity); the recipe is not needed at the proxy |
-| transcode node | forwarded `X-Silo-Stream-Token`, recipe-complete | identity token + Redis `noderecipe` recipe (the Jellyfin token cannot carry it) |
+| role           | native carrier                                                                            | jellycompat carrier                                                             |
+| -------------- | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| integrated     | `?st` stream token — identity for direct/remux, full recipe for transcode                 | durable compat row `PlaybackSession.Recipe`                                     |
+| proxy node     | self-describing path token, re-derived per request — the proxy holds no per-session state | same path token (identity); the recipe is not needed at the proxy               |
+| transcode node | forwarded `X-Prairie-Stream-Token`, recipe-complete                                       | identity token + Redis `noderecipe` recipe (the Jellyfin token cannot carry it) |
 
 **Reading the matrix**
 
@@ -764,7 +766,7 @@ request; **—** = the path never executes on that role (nothing to reconstruct)
 - **The four `—` cells are structural, not gaps.** Direct and remux never run on
   a transcode node — the proxy (or the integrated box) serves them from source
   media — so a transcode-node restart has nothing to reconstruct on those paths.
-- **The one conditional (⚠️)** is jellycompat transcode after a *transcode-node*
+- **The one conditional (⚠️)** is jellycompat transcode after a _transcode-node_
   restart. The node-hop token is identity-only — not because a Jellyfin client
   cannot round-trip it (the token is server-minted and opaque to the client), but
   because the recipe is mutated in place under a stable session id and a

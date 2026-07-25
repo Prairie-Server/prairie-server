@@ -12,8 +12,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	chimw "github.com/go-chi/chi/v5/middleware"
 
-	"github.com/Silo-Server/silo-server/internal/activitylog"
-	"github.com/Silo-Server/silo-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/activitylog"
+	"github.com/prairie-server/prairie-server/internal/clientip"
 )
 
 func RequestLogger(nodeID string) func(http.Handler) http.Handler {

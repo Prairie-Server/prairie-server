@@ -9,10 +9,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/ebookconvert"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/ebookconvert"
 )
 
 // ebookKindleConversionSettingKey is the admin flag that gates Kindle->EPUB

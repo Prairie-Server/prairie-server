@@ -9,16 +9,16 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
-// newWebhookDBTest connects to SILO_TEST_DATABASE_URL (skipping when unset or
+// newWebhookDBTest connects to PRAIRIE_TEST_DATABASE_URL (skipping when unset or
 // unmigrated) and returns a repository plus a fresh webhook-mode source row.
 func newWebhookDBTest(t *testing.T) (context.Context, *Repository, Source) {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)

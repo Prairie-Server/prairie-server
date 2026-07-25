@@ -4,7 +4,7 @@ import (
 	"regexp"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 var introChapterPattern = regexp.MustCompile(`(?i)(^|\s)(intro|introduction|opening)(\s|:|$)`)

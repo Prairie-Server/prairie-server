@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 type stubSettingsReader struct {

@@ -13,18 +13,18 @@ func newSnapshot(name string) Snapshot {
 }
 
 func TestRenderIndexHTMLReplacesTitle(t *testing.T) {
-	in := []byte(`<html><head><title>Silo</title></head><body></body></html>`)
+	in := []byte(`<html><head><title>Prairie</title></head><body></body></html>`)
 	out := string(RenderIndexHTML(in, newSnapshot("Acme Media")))
 	if !strings.Contains(out, "<title>Acme Media</title>") {
 		t.Fatalf("title not replaced: %q", out)
 	}
-	if strings.Contains(out, "<title>Silo</title>") {
+	if strings.Contains(out, "<title>Prairie</title>") {
 		t.Fatalf("default title still present: %q", out)
 	}
 }
 
 func TestRenderIndexHTMLEscapesTitle(t *testing.T) {
-	in := []byte(`<title>Silo</title></head>`)
+	in := []byte(`<title>Prairie</title></head>`)
 	out := string(RenderIndexHTML(in, newSnapshot(`A&B<script>`)))
 	if strings.Contains(out, "<script>") {
 		t.Fatalf("title not escaped: %q", out)
@@ -72,8 +72,8 @@ func TestRenderIndexHTMLAgainstRealShell(t *testing.T) {
 	if err != nil {
 		t.Skipf("index.html not available: %v", err)
 	}
-	if !strings.Contains(string(data), "<title>Silo</title>") {
-		t.Fatalf("web/index.html no longer contains the expected <title>Silo</title>; update RenderIndexHTML")
+	if !strings.Contains(string(data), "<title>Prairie</title>") {
+		t.Fatalf("web/index.html no longer contains the expected <title>Prairie</title>; update RenderIndexHTML")
 	}
 	if !strings.Contains(string(data), indexFaviconLink) {
 		t.Fatalf("web/index.html no longer contains the expected favicon link %q; update indexFaviconLink", indexFaviconLink)

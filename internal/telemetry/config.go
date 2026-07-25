@@ -1,4 +1,4 @@
-// Package telemetry provides the OpenTelemetry SDK bootstrap for Silo: shared
+// Package telemetry provides the OpenTelemetry SDK bootstrap for Prairie: shared
 // resource, tracer provider, logger provider, and W3C propagation. It
 // deliberately does NOT build or register a MeterProvider — metrics stay on the
 // existing Prometheus rail. Leaving the global MeterProvider as the built-in
@@ -11,6 +11,8 @@ import (
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // Protocol identifies the OTLP exporter wire protocol.
@@ -43,7 +45,7 @@ const (
 )
 
 // defaultServiceName is used when OTEL_SERVICE_NAME is unset.
-const defaultServiceName = "silo-server"
+const defaultServiceName = "prairie-server"
 
 // defaultSamplerRatio is the parent-based trace-id ratio applied when
 // OTEL_TRACES_SAMPLER_ARG is unset or unparseable.
@@ -53,7 +55,7 @@ const defaultSamplerRatio = 1.0
 // environment. It is cheap to construct and safe to build even when telemetry
 // is disabled.
 type Config struct {
-	// Enabled gates the entire feature. True when SILO_OTEL_ENABLED is truthy
+	// Enabled gates the entire feature. True when PRAIRIE_OTEL_ENABLED is truthy
 	// OR OTEL_EXPORTER_OTLP_ENDPOINT is set.
 	Enabled bool
 
@@ -93,7 +95,7 @@ type Config struct {
 // attribute.
 func LoadConfig(nodeID string) Config {
 	endpoint := strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"))
-	enabled := truthy(os.Getenv("SILO_OTEL_ENABLED")) || endpoint != ""
+	enabled := truthy(envutil.FirstNonEmpty("PRAIRIE_OTEL_ENABLED", "SILO_OTEL_ENABLED")) || endpoint != ""
 
 	serviceName := strings.TrimSpace(os.Getenv("OTEL_SERVICE_NAME"))
 	if serviceName == "" {

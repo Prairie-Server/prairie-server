@@ -14,8 +14,8 @@ env:
   REGISTRY: ghcr.io
   IMAGE_NAME: ${{ github.repository }}
   GOPROXY: https://proxy.golang.org,direct
-  GOPRIVATE: github.com/Silo-Server/*
-  GONOSUMDB: github.com/Silo-Server/*
+  GOPRIVATE: github.com/prairie-server/*,github.com/Silo-Server/*
+  GONOSUMDB: github.com/prairie-server/*,github.com/Silo-Server/*
 
 jobs:
   build:

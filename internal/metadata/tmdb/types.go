@@ -36,7 +36,7 @@ type CollectionResult struct {
 }
 
 // MediaResult is a normalized TMDB movie or TV result for request search and
-// discovery surfaces. MediaType is Silo-facing: "movie" or "series".
+// discovery surfaces. MediaType is Prairie-facing: "movie" or "series".
 //
 // PosterPath and BackdropPath are raw TMDB path fragments (e.g. "/abc.jpg").
 // Callers must compose the full URL by prepending the TMDB image base
@@ -168,7 +168,7 @@ type apiError struct {
 }
 
 // MediaDetail is a normalized TMDB detail payload for the request system.
-// MediaType is Silo-facing: "movie" or "series". Series-specific fields are
+// MediaType is Prairie-facing: "movie" or "series". Series-specific fields are
 // zero-valued for movies and vice versa.
 type MediaDetail struct {
 	MediaType           string

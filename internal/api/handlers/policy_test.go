@@ -20,10 +20,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/cache"
-	"github.com/Silo-Server/silo-server/internal/policy"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/policy"
 )
 
 func TestPolicyCapabilityShape(t *testing.T) {
@@ -405,9 +405,9 @@ func policyEditorEnabled() bool {
 
 func newPolicyHandlerStoreTest(t *testing.T, ctx context.Context) (*pgxpool.Pool, *policy.PolicyStore) {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
@@ -603,7 +603,7 @@ func TestPolicyActivateReportsLocalReloadFailureDB(t *testing.T) {
 
 	// The system reloads from an unreachable store, so persistence (through
 	// the good store) succeeds while the live apply fails.
-	badPool, err := pgxpool.New(ctx, "postgres://silo:silo@127.0.0.1:1/silo?connect_timeout=1")
+	badPool, err := pgxpool.New(ctx, "postgres://prairie:prairie@127.0.0.1:1/prairie?connect_timeout=1")
 	if err != nil {
 		t.Fatalf("create unreachable pool: %v", err)
 	}

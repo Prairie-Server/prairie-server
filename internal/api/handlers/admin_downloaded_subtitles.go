@@ -13,7 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 )
 
 // AdminDownloadedSubtitle is the admin-facing view of a stored subtitle record.

@@ -10,15 +10,15 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/downloads"
-	"github.com/Silo-Server/silo-server/internal/httpstream"
-	"github.com/Silo-Server/silo-server/internal/playback"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/downloads"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 // DownloadService is the interface that the download handler depends on. A
-// non-empty deviceID (from the X-Silo-Device-Id header) selects the managed
+// non-empty deviceID (from the X-Prairie-Device-Id header) selects the managed
 // device-library lifecycle; empty is the ephemeral/account-level path.
 type DownloadService interface {
 	Capability(ctx context.Context, userID int) (downloads.Capability, error)
@@ -153,7 +153,7 @@ func toDownloadResponse(d *downloads.Download) downloadResponse {
 }
 
 // managedIdentity returns the (profileID, deviceID) the request is acting as.
-// deviceID comes ONLY from the X-Silo-Device-Id header (never the body/query);
+// deviceID comes ONLY from the X-Prairie-Device-Id header (never the body/query);
 // profileID is resolved by the viewer-access middleware from X-Profile-Id.
 func managedIdentity(r *http.Request) (profileID, deviceID, deviceName, devicePlatform string) {
 	device := deviceMetadataFromRequest(r)
@@ -191,7 +191,7 @@ func (h *DownloadHandler) HandleCapability(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-// HandleCreateDownload handles POST /downloads. The X-Silo-Device-Id header
+// HandleCreateDownload handles POST /downloads. The X-Prairie-Device-Id header
 // (if present) makes this a managed device entry; otherwise it is ephemeral.
 func (h *DownloadHandler) HandleCreateDownload(w http.ResponseWriter, r *http.Request) {
 	userID := apimw.GetUserID(r.Context())
@@ -454,7 +454,7 @@ func (h *DownloadHandler) HandleDirectDownload(w http.ResponseWriter, r *http.Re
 
 // requireManaged validates a managed (device-scoped) request: authentication, a
 // configured service, and the device + profile identity (device_id from the
-// X-Silo-Device-Id header only, never the body). On failure it writes the error
+// X-Prairie-Device-Id header only, never the body). On failure it writes the error
 // response and returns ok=false. Shared by every managed-only endpoint — the
 // offline assets and the series-monitoring subscriptions.
 func (h *DownloadHandler) requireManaged(w http.ResponseWriter, r *http.Request) (userID int, profileID, deviceID, deviceName, devicePlatform string, ok bool) {
@@ -469,7 +469,7 @@ func (h *DownloadHandler) requireManaged(w http.ResponseWriter, r *http.Request)
 	}
 	profileID, deviceID, deviceName, devicePlatform = managedIdentity(r)
 	if deviceID == "" {
-		writeError(w, http.StatusBadRequest, "device_id_required", "X-Silo-Device-Id header is required")
+		writeError(w, http.StatusBadRequest, "device_id_required", "X-Prairie-Device-Id header is required")
 		return
 	}
 	if profileID == "" {

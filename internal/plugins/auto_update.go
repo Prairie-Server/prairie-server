@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
 // compareVersions compares two dot-separated version strings numerically.
@@ -217,7 +217,7 @@ func (s *AutoUpdateService) Check(ctx context.Context, opts AutoUpdateOptions) (
 	}
 
 	if opts.AutoInstallDefaults {
-		latestOfficial := latestCatalogEntriesForSource(entries, RepositorySourceSilo)
+		latestOfficial := latestCatalogEntriesForSource(entries, RepositorySourcePrairie)
 		for _, pluginID := range defaultPluginIDs {
 			if _, installed := installedPluginIDs[pluginID]; installed {
 				continue

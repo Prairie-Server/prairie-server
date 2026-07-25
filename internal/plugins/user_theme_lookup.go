@@ -9,9 +9,9 @@ import (
 )
 
 // PgUserThemeLookup reads the user's `ui_theme` setting from
-// public.user_settings. This is the same row silo's web client reads
+// public.user_settings. This is the same row Prairie's web client reads
 // via the /profile/settings API; surfacing it here lets the plugin proxy
-// stamp X-Silo-Theme on every plugin request.
+// stamp X-Prairie-Theme on every plugin request.
 type PgUserThemeLookup struct {
 	pool *pgxpool.Pool
 }

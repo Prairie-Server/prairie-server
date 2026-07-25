@@ -8,8 +8,8 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/Silo-Server/silo-server/internal/collectionutil"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/collectionutil"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 const collectionSelectColumns = `id, profile_id, creator_profile_id, name, description, collection_type, is_shared,

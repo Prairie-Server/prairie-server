@@ -10,22 +10,22 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/oklog/ulid/v2"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 const (
-	PushPlatformApple      = "apple"
-	PushPlatformAndroid    = "android"
-	PushProviderSiloRelay  = "silo_relay"
-	PushModeOff            = "off"
-	PushModeInAppOnly      = "in_app_only"
-	PushModePrivatePush    = "private_push"
-	APNsEnvironmentProd    = "production"
-	APNsEnvironmentSandbox = "sandbox"
-	ApplePushTopicSilo     = "org.siloserver.silo"
+	PushPlatformApple        = "apple"
+	PushPlatformAndroid      = "android"
+	PushProviderPrairieRelay = "silo_relay"
+	PushModeOff              = "off"
+	PushModeInAppOnly        = "in_app_only"
+	PushModePrivatePush      = "private_push"
+	APNsEnvironmentProd      = "production"
+	APNsEnvironmentSandbox   = "sandbox"
+	ApplePushTopicPrairie    = "org.siloserver.silo"
 )
 
 var (
@@ -202,7 +202,7 @@ func normalizeApplePushRegistration(input ApplePushRegistrationInput) (ApplePush
 	if topic == "" {
 		return ApplePushDeviceRegistration{}, fmt.Errorf("%w: apns_topic is required", ErrPushDeviceInvalid)
 	}
-	if topic != ApplePushTopicSilo {
+	if topic != ApplePushTopicPrairie {
 		return ApplePushDeviceRegistration{}, fmt.Errorf("%w: apns_topic is not supported", ErrPushDeviceUnsupported)
 	}
 
@@ -480,7 +480,7 @@ func (r *PushDeviceRepository) insertApple(ctx context.Context, tx pgx.Tx, regis
 		registration.ProfileID,
 		registration.DeviceID,
 		PushPlatformApple,
-		PushProviderSiloRelay,
+		PushProviderPrairieRelay,
 		registration.APNsEnvironment,
 		registration.APNsTopic,
 		ciphertext,
@@ -518,7 +518,7 @@ func (r *PushDeviceRepository) updateApple(ctx context.Context, tx pgx.Tx, regis
 		WHERE id = $8
 		RETURNING `+pushDeviceColumns,
 		registration.UserID,
-		PushProviderSiloRelay,
+		PushProviderPrairieRelay,
 		registration.APNsEnvironment,
 		registration.APNsTopic,
 		ciphertext,
@@ -564,7 +564,7 @@ func (r *PushDeviceRepository) insertFCM(ctx context.Context, tx pgx.Tx, registr
 		registration.ProfileID,
 		registration.DeviceID,
 		PushPlatformAndroid,
-		PushProviderSiloRelay,
+		PushProviderPrairieRelay,
 		ciphertext,
 		fcmTokenHash(registration.FCMToken),
 		serverDeviceID,
@@ -598,7 +598,7 @@ func (r *PushDeviceRepository) updateFCM(ctx context.Context, tx pgx.Tx, registr
 		WHERE id = $6
 		RETURNING `+pushDeviceColumns,
 		registration.UserID,
-		PushProviderSiloRelay,
+		PushProviderPrairieRelay,
 		ciphertext,
 		fcmTokenHash(registration.FCMToken),
 		registration.PushMode,

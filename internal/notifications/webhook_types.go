@@ -28,7 +28,7 @@ const DeliveryTypeWebhookAutoDisabled = "webhook.auto_disabled"
 
 // genericNotificationTitle is the display fallback for delivery types this
 // build does not know (the type registry is extensible).
-const genericNotificationTitle = "Silo notification"
+const genericNotificationTitle = "Prairie notification"
 
 // genericEpisodeTitle is the display fallback for episode.available rows
 // whose catalog metadata is missing or was deleted.

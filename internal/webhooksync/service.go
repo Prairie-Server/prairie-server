@@ -11,9 +11,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/watchstate"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/watchstate"
 )
 
 type Service struct {
@@ -188,10 +188,10 @@ func (s *Service) UpdateProfileMappings(ctx context.Context, userID int, id stri
 		return nil, err
 	}
 	for _, mapping := range input.Mappings {
-		if mapping.SiloProfileID == nil || *mapping.SiloProfileID == "" {
+		if mapping.PrairieProfileID == nil || *mapping.PrairieProfileID == "" {
 			continue
 		}
-		exists, err := s.repo.ProfileExistsForUser(ctx, userID, *mapping.SiloProfileID)
+		exists, err := s.repo.ProfileExistsForUser(ctx, userID, *mapping.PrairieProfileID)
 		if err != nil {
 			return nil, err
 		}
@@ -261,7 +261,7 @@ func (s *Service) ProcessWebhook(ctx context.Context, secret string, r *http.Req
 		result.ProfileID = profileID
 	} else {
 		result.Outcome = OutcomeSkipped
-		result.Summary = "Skipped because external user is not linked to a Silo profile"
+		result.Summary = "Skipped because external user is not linked to a Prairie profile"
 		return result, nil
 	}
 	profileID := result.ProfileID
@@ -273,7 +273,7 @@ func (s *Service) ProcessWebhook(ctx context.Context, secret string, r *http.Req
 	}
 	if match == nil {
 		result.Outcome = OutcomeUnmatched
-		result.Summary = "Received webhook event but found no matching Silo item"
+		result.Summary = "Received webhook event but found no matching Prairie item"
 		return result, nil
 	}
 	result.MatchedMediaItemID = match.MediaItemID
@@ -431,10 +431,10 @@ func shouldSkipEvent(state *ItemState, event *CanonicalEvent) bool {
 }
 
 func resolveWebhookProfileID(mapping *ProfileMapping) (string, bool) {
-	if mapping == nil || mapping.SiloProfileID == nil || strings.TrimSpace(*mapping.SiloProfileID) == "" {
+	if mapping == nil || mapping.PrairieProfileID == nil || strings.TrimSpace(*mapping.PrairieProfileID) == "" {
 		return "", false
 	}
-	return *mapping.SiloProfileID, true
+	return *mapping.PrairieProfileID, true
 }
 
 func buildWebhookURL(baseURL, secret string) string {

@@ -7,8 +7,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 type fakePushDeviceStore struct {
@@ -74,7 +74,7 @@ func validApplePushInput() ApplePushRegistrationInput {
 		DeviceID:        "local-device",
 		APNsToken:       strings.Repeat("a", 64),
 		APNsEnvironment: APNsEnvironmentProd,
-		APNsTopic:       ApplePushTopicSilo,
+		APNsTopic:       ApplePushTopicPrairie,
 		PushMode:        PushModePrivatePush,
 	}
 }
@@ -278,14 +278,14 @@ func TestPushDeviceAPNsTokenEncryptionUsesRowAAD(t *testing.T) {
 	}
 }
 
-// newPushDeviceTestRepo connects to SILO_TEST_DATABASE_URL (skipping when
+// newPushDeviceTestRepo connects to PRAIRIE_TEST_DATABASE_URL (skipping when
 // unset) and shadows push_devices with a session-local temp table, pinning the
 // pool to one connection so every query sees it.
 func newPushDeviceTestRepo(t *testing.T) (*PushDeviceRepository, *pgxpool.Pool) {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("set SILO_TEST_DATABASE_URL to run DB-backed push device repository test")
+		t.Skip("set PRAIRIE_TEST_DATABASE_URL to run DB-backed push device repository test")
 	}
 
 	ctx := context.Background()
@@ -339,7 +339,7 @@ func TestPushDeviceRepositoryUpsertApplePreservesStableIDs(t *testing.T) {
 		DeviceID:        "local-device",
 		APNsToken:       strings.Repeat("a", 64),
 		APNsEnvironment: APNsEnvironmentProd,
-		APNsTopic:       ApplePushTopicSilo,
+		APNsTopic:       ApplePushTopicPrairie,
 		PushMode:        PushModePrivatePush,
 	}
 
@@ -397,7 +397,7 @@ func TestPushDeviceRepositoryUpsertApplePurgesOtherProfiles(t *testing.T) {
 		DeviceID:        "shared-phone",
 		APNsToken:       strings.Repeat("a", 64),
 		APNsEnvironment: APNsEnvironmentProd,
-		APNsTopic:       ApplePushTopicSilo,
+		APNsTopic:       ApplePushTopicPrairie,
 		PushMode:        PushModePrivatePush,
 	}
 	if _, err := repo.UpsertApple(ctx, registration, cipher); err != nil {

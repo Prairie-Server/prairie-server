@@ -513,7 +513,7 @@ function TokenDialog({
               <p className="text-muted-foreground text-sm">
                 {isPlex
                   ? "Paste your Plex auth token directly."
-                  : "This key is used to discover users on the server and import their watch history into Silo."}
+                  : "This key is used to discover users on the server and import their watch history into Prairie."}
               </p>
               <div className="space-y-1.5">
                 <Label htmlFor="admin-token">API key / Token</Label>
@@ -745,12 +745,12 @@ function DiscoverDialog({
               {mappingTarget && (
                 <div className="surface-panel-subtle space-y-4 rounded-xl border-0 p-4">
                   <p className="text-sm font-medium">
-                    Map <span className="text-primary">{mappingTarget.name}</span> to a Silo user
+                    Map <span className="text-primary">{mappingTarget.name}</span> to a Prairie user
                     and profile:
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Silo user</Label>
+                      <Label className="text-xs">Prairie user</Label>
                       <Select
                         value={userId}
                         onValueChange={(v) => {
@@ -1017,7 +1017,7 @@ function MappingsSection({
                 <TableHead className="hidden sm:table-cell">
                   <ArrowRight className="h-3.5 w-3.5" />
                 </TableHead>
-                <TableHead>Silo user</TableHead>
+                <TableHead>Prairie user</TableHead>
                 <TableHead>Last imported</TableHead>
                 <TableHead className="w-24 text-right">Actions</TableHead>
               </TableRow>
@@ -1339,7 +1339,7 @@ export default function AdminHistoryImport() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">History Import</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Import watch history from external servers into Silo user profiles.
+            Import watch history from external servers into Prairie user profiles.
           </p>
         </div>
       </div>

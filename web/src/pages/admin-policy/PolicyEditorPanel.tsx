@@ -429,7 +429,7 @@ const PolicyEditorState = memo(function PolicyEditorState({
         )}
         {!document.enabled && (
           <p className="text-warning mt-3 text-sm">
-            This override is disabled: the Silo baseline applies unchanged until it is re-enabled
+            This override is disabled: the Prairie baseline applies unchanged until it is re-enabled
             from the overrides list.
           </p>
         )}

@@ -15,9 +15,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalogseed"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/notifications"
+	"github.com/prairie-server/prairie-server/internal/catalogseed"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/notifications"
 )
 
 type ArtifactStore interface {

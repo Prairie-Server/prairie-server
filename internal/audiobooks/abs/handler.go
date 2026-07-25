@@ -4,7 +4,7 @@
 // root-level paths real ABS clients build against (e.g. /login, /api/items).
 //
 // Stage 1 lands the package skeleton: Handler struct, interface stubs for
-// silo-side dependencies, and an empty Mount() method. Real route handlers
+// Prairie-side dependencies, and an empty Mount() method. Real route handlers
 // are added in subsequent stages (auth, file serving, progress, browse).
 package abs
 
@@ -19,8 +19,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/httpheaders"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // ---------------------------------------------------------------------------
@@ -272,7 +273,7 @@ type Dependencies struct {
 	// SocketIO is the Socket.io server mounted at /abs/socket.io/. May be nil;
 	// the route is only registered when a non-nil value is supplied.
 	SocketIO SocketIOServer
-	// NativeSessions mirrors ABS playback into Silo's native playback session
+	// NativeSessions mirrors ABS playback into Prairie's native playback session
 	// manager so shared live-session views, limits, and stale-session cleanup
 	// see Audiobookshelf-compatible clients. May be nil; ABS playback still
 	// functions, but admin live-session visibility is unavailable.
@@ -717,7 +718,7 @@ func (h *Handler) broadcast(event string, payload any) {
 // absBaseURL returns the server address prefix ABS clients should use to
 // resolve response-embedded URLs.
 //
-//   - Host-proxied (X-Silo-User-Id header present): returns the plugin-proxy
+//   - Host-proxied (X-Prairie-User-Id header present): returns the plugin-proxy
 //     path "<scheme>://<host>/api/v1/plugins/<installID>".
 //   - Standalone listener: returns "<scheme>://<host>" — origin only.
 //
@@ -735,7 +736,7 @@ func (h *Handler) absBaseURL(r *http.Request) string {
 	if host == "" {
 		host = r.Host
 	}
-	if r.Header.Get("X-Silo-User-Id") != "" {
+	if httpheaders.RequestValue(r, httpheaders.HeaderUserID) != "" {
 		return scheme + "://" + host + "/api/v1/plugins/" + h.deps.InstallID()
 	}
 	return scheme + "://" + host

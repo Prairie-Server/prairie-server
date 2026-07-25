@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 
-	"github.com/Silo-Server/silo-server/internal/logstream"
+	"github.com/prairie-server/prairie-server/internal/logstream"
 )
 
 var popBatchScript = redis.NewScript(`

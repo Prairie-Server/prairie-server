@@ -11,8 +11,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/autoscan"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/autoscan"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 type fakeAutoscanStore struct {

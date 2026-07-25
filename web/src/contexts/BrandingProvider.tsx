@@ -6,7 +6,7 @@ import { api } from "@/api/client";
 import { themeKeys } from "@/hooks/queries/keys";
 import { setAppDocumentTitle } from "@/lib/documentTitle";
 
-const DEFAULT_SERVER_NAME = "Silo";
+const DEFAULT_SERVER_NAME = "Prairie";
 const DEFAULT_LOGIN_SUBTITLE = "Sign in with an existing account.";
 
 /** Raw shape of GET /theme/branding. All fields optional / additive. */
@@ -51,7 +51,7 @@ const DEFAULT_BRANDING: BrandingContextValue = {
 };
 
 // A non-null default means useBranding() is safe to call anywhere (e.g. in
-// SiloBrand rendered outside the provider in tests) and simply yields defaults.
+// PrairieBrand rendered outside the provider in tests) and simply yields defaults.
 export const BrandingContext = createContext<BrandingContextValue>(DEFAULT_BRANDING);
 
 function mapResponse(data: BrandingApiResponse | undefined): BrandingContextValue {

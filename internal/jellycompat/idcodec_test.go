@@ -3,7 +3,7 @@ package jellycompat
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/contentid"
+	"github.com/prairie-server/prairie-server/internal/contentid"
 )
 
 // TestContentIDDecodesWithoutSharedState is the core of the restart-safety fix:

@@ -432,7 +432,7 @@ func TestCoverageRunStopsOnContextCancel(t *testing.T) {
 
 // TestNewSemanticCoverageTrackerCoverageDBSmoke is the single DB-backed test. It
 // proves the default fetch wiring reaches catalogSemanticCoverageByType through
-// a real pool. Skipped unless SILO_TEST_DATABASE_URL is set.
+// a real pool. Skipped unless PRAIRIE_TEST_DATABASE_URL is set.
 func TestNewSemanticCoverageTrackerCoverageDBSmoke(t *testing.T) {
 	pool := newSemanticCoverageTestPool(t)
 	const prefix = "covtrack-smoke-"

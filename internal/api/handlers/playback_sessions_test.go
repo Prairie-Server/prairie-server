@@ -91,7 +91,7 @@ func TestIsJellyfinEcosystemClient(t *testing.T) {
 		{"infuse by user agent only", "", "Infuse-Direct/8.4.6", true},
 		{"kodi addon by name", "Kodi", "Kodi/21.0", true},
 		{"mpv shim by user agent", "", "mpv 0.38.0", true},
-		{"native android client", "Silo Android", "okhttp/4.12", false},
+		{"native android client", "Prairie Android", "okhttp/4.12", false},
 		{"generic browser", "", "Mozilla/5.0 (X11) Chrome/120.0 Safari/537.36", false},
 		{"no metadata", "", "", false},
 	}

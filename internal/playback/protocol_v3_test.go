@@ -6,7 +6,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func hasDegradationWarningV3(warnings []DegradationWarningV3, code string) bool {

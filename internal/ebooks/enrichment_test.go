@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/metadata"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/models"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -59,22 +59,22 @@ func TestFilterEbookPeopleKeepsAuthorsOnly(t *testing.T) {
 }
 
 func TestEbookEnrichWorkersFromEnv(t *testing.T) {
-	t.Setenv("SILO_EBOOK_ENRICH_WORKERS", "12")
+	t.Setenv("PRAIRIE_EBOOK_ENRICH_WORKERS", "12")
 	if got := ebookEnrichWorkers(); got != 12 {
 		t.Fatalf("ebookEnrichWorkers() = %d, want 12", got)
 	}
 
-	t.Setenv("SILO_EBOOK_ENRICH_WORKERS", "0")
+	t.Setenv("PRAIRIE_EBOOK_ENRICH_WORKERS", "0")
 	if got := ebookEnrichWorkers(); got != defaultEnrichWorkers {
 		t.Fatalf("ebookEnrichWorkers() with zero = %d, want default %d", got, defaultEnrichWorkers)
 	}
 
-	t.Setenv("SILO_EBOOK_ENRICH_WORKERS", "5000")
+	t.Setenv("PRAIRIE_EBOOK_ENRICH_WORKERS", "5000")
 	if got := ebookEnrichWorkers(); got != 5000 {
 		t.Fatalf("ebookEnrichWorkers() = %d, want 5000", got)
 	}
 
-	t.Setenv("SILO_EBOOK_ENRICH_WORKERS", "9999")
+	t.Setenv("PRAIRIE_EBOOK_ENRICH_WORKERS", "9999")
 	if got := ebookEnrichWorkers(); got != maxEnrichWorkers {
 		t.Fatalf("ebookEnrichWorkers() capped = %d, want %d", got, maxEnrichWorkers)
 	}

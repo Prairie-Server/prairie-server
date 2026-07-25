@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 func TestSetSubtitlePreferencePreservesOmittedForcedOverride(t *testing.T) {

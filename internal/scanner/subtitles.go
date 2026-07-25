@@ -7,7 +7,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Silo-Server/silo-server/internal/lang"
+	"github.com/prairie-server/prairie-server/internal/lang"
 )
 
 // subtitleExtensions lists the recognized external subtitle file extensions.

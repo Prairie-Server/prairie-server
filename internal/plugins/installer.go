@@ -65,7 +65,7 @@ func NewInstaller(installations installationStore, opts InstallerOptions) *Insta
 	}
 	baseDir := opts.BaseDir
 	if baseDir == "" {
-		baseDir = filepath.Join(os.TempDir(), "silo-plugins")
+		baseDir = filepath.Join(os.TempDir(), "prairie-plugins")
 	}
 	return &Installer{
 		installations: installations,

@@ -13,8 +13,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/autoscan"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/autoscan"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 // autoscanStore is the subset of *autoscan.Repository the handler needs. The
@@ -62,7 +62,7 @@ type autoscanTriggerer interface {
 	TestConnection(ctx context.Context, c autoscan.Connection) (autoscan.ConnectionTestResult, error)
 	TestConnectionByID(ctx context.Context, id string) (autoscan.ConnectionTestResult, error)
 	// SuggestRewrites proposes path rewrites by matching the source's arr root
-	// folders against Silo's media folders.
+	// folders against Prairie's media folders.
 	SuggestRewrites(ctx context.Context, sourceID string) (autoscan.RewriteSuggestions, error)
 	// IngestChanges feeds webhook-delivered changes through the shared
 	// rewrite/resolve/suppress/enqueue pipeline.
@@ -840,7 +840,7 @@ func (h *AutoscanHandler) HandleTestConnection(w http.ResponseWriter, r *http.Re
 // --- Rewrite suggestions (sync from arr) ---
 
 // HandleRewriteSuggestions proposes path rewrites for a source by matching its
-// bound connection's arr root folders against Silo's media folders. The
+// bound connection's arr root folders against Prairie's media folders. The
 // operator applies chosen suggestions via the normal source PUT (path_rewrites).
 func (h *AutoscanHandler) HandleRewriteSuggestions(w http.ResponseWriter, r *http.Request) {
 	id := strings.TrimSpace(chi.URLParam(r, "id"))

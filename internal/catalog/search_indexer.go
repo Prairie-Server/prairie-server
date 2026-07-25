@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/embeddingvectors"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pgvector/pgvector-go"
+	"github.com/prairie-server/prairie-server/internal/embeddingvectors"
 )
 
 type SearchIndexProgressReporter interface {

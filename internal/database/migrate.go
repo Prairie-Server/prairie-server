@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"io/fs"
 	"log/slog"
-	"os"
-	"strings"
 	"time"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
@@ -21,12 +21,13 @@ const (
 	gooseVersionTable            = "public.goose_db_version"
 
 	// migrationTimeoutEnv configures how long a migration run may take.
-	migrationTimeoutEnv     = "SILO_MIGRATE_TIMEOUT"
-	defaultMigrationTimeout = 20 * time.Minute
+	migrationTimeoutEnv       = "PRAIRIE_MIGRATE_TIMEOUT"
+	legacyMigrationTimeoutEnv = "SILO_MIGRATE_TIMEOUT"
+	defaultMigrationTimeout   = 20 * time.Minute
 )
 
 // MigrationTimeout returns the deadline budget for a migration run. It is
-// configurable via SILO_MIGRATE_TIMEOUT (a Go duration such as "60m"). A value
+// configurable via PRAIRIE_MIGRATE_TIMEOUT (a Go duration such as "60m"). A value
 // of 0 or negative disables the deadline entirely — appropriate for a one-off
 // heavy data migration (e.g. a full-table COLLATE rewrite + value remap) that
 // legitimately runs longer than any fixed cap and must not be abandoned
@@ -34,7 +35,7 @@ const (
 // AccessExclusive locks while the next boot retries. Unset or unparseable falls
 // back to defaultMigrationTimeout, preserving prior behavior.
 func MigrationTimeout() time.Duration {
-	raw := strings.TrimSpace(os.Getenv(migrationTimeoutEnv))
+	raw := envutil.FirstNonEmpty(migrationTimeoutEnv, legacyMigrationTimeoutEnv)
 	if raw == "" {
 		return defaultMigrationTimeout
 	}

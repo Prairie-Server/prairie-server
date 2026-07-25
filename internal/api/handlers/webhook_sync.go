@@ -11,9 +11,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/webhooksync"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/webhooksync"
 )
 
 type WebhookSyncHandler struct {
@@ -46,7 +46,7 @@ type legacyPlexSyncActorMapping struct {
 	ConnectionID     string    `json:"connection_id"`
 	PlexAccountID    int64     `json:"plex_account_id"`
 	PlexAccountTitle string    `json:"plex_account_title"`
-	SiloProfileID    string    `json:"silo_profile_id"`
+	PrairieProfileID string    `json:"silo_profile_id"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 }
@@ -84,7 +84,7 @@ type legacyUpdatePlexSyncActorsRequest struct {
 	Mappings []struct {
 		PlexAccountID    int64  `json:"plex_account_id"`
 		PlexAccountTitle string `json:"plex_account_title"`
-		SiloProfileID    string `json:"silo_profile_id"`
+		PrairieProfileID string `json:"silo_profile_id"`
 	} `json:"mappings"`
 }
 
@@ -336,11 +336,11 @@ func (h *WebhookSyncHandler) HandleLegacyUpdateActors(w http.ResponseWriter, r *
 		Mappings: make([]webhooksync.UpdateProfileMapping, 0, len(req.Mappings)),
 	}
 	for _, mapping := range req.Mappings {
-		profileID := mapping.SiloProfileID
+		profileID := mapping.PrairieProfileID
 		input.Mappings = append(input.Mappings, webhooksync.UpdateProfileMapping{
 			ExternalUserID:   strconv.FormatInt(mapping.PlexAccountID, 10),
 			ExternalUserName: mapping.PlexAccountTitle,
-			SiloProfileID:    &profileID,
+			PrairieProfileID: &profileID,
 		})
 	}
 	resp, err := h.service.UpdateProfileMappings(r.Context(), userID, id, input)
@@ -612,7 +612,7 @@ func toLegacyPlexActorMappings(mappings []webhooksync.ProfileMapping) []legacyPl
 			ConnectionID:     mapping.ConnectionID,
 			PlexAccountID:    accountID,
 			PlexAccountTitle: mapping.ExternalUserName,
-			SiloProfileID:    valueOrEmpty(mapping.SiloProfileID),
+			PrairieProfileID: valueOrEmpty(mapping.PrairieProfileID),
 			CreatedAt:        mapping.CreatedAt,
 			UpdatedAt:        mapping.UpdatedAt,
 		})

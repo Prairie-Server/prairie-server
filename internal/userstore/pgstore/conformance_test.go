@@ -11,18 +11,18 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/userstore/storetest"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore/storetest"
 )
 
 // TestPostgresProgressSince runs the offline-sync progress-reconciliation
 // conformance test (invariant 1) against the Postgres backend, exercising the
 // user_watch_progress synced_seq trigger and event_at LWW comparison. Skips
-// unless SILO_TEST_DATABASE_URL is set and the migration is applied.
+// unless PRAIRIE_TEST_DATABASE_URL is set and the migration is applied.
 func TestPostgresProgressSince(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)

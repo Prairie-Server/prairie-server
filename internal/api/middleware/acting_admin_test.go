@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/auth"
 )
 
 func runActingAdminMiddleware(t *testing.T, role, profileID string, check PrimaryProfileChecker) int {

@@ -17,6 +17,8 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"time"
 )
 
@@ -26,7 +28,8 @@ const (
 	DefaultStallWindow = 180 * time.Second
 
 	// stallWindowEnv overrides DefaultStallWindow (integer seconds).
-	stallWindowEnv = "SILO_STREAM_WRITE_STALL_TIMEOUT"
+	stallWindowEnv       = "PRAIRIE_STREAM_WRITE_STALL_TIMEOUT"
+	legacyStallWindowEnv = "SILO_STREAM_WRITE_STALL_TIMEOUT"
 
 	// bumpStep rate-limits deadline updates so a busy stream issues one
 	// SetWriteDeadline per step rather than one per 32 KB chunk.
@@ -48,7 +51,7 @@ const (
 
 // StallWindow returns the configured stall window for streaming responses.
 func StallWindow() time.Duration {
-	if v := os.Getenv(stallWindowEnv); v != "" {
+	if v := envutil.FirstNonEmpty(stallWindowEnv, legacyStallWindowEnv); v != "" {
 		if secs, err := strconv.Atoi(v); err == nil && secs > 0 {
 			return time.Duration(secs) * time.Second
 		}

@@ -109,7 +109,7 @@ export function PolicyVendorViewer() {
   return (
     <div className="space-y-5">
       <p className="text-muted-foreground max-w-prose text-sm">
-        These rules ship with each Silo release and always apply — upgrading Silo updates them
+        These rules ship with each Prairie release and always apply — upgrading Prairie updates them
         without touching your overrides. Summaries below; the Rego source under each card is the
         authoritative version.
       </p>

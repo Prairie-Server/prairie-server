@@ -5,19 +5,21 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/ebooks"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/ebooks"
+	"github.com/prairie-server/prairie-server/internal/envutil"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 const (
-	ebookMetadataExecutionBudget = 4 * time.Minute
-	ebookBackfillMaxClaimsEnv    = "SILO_EBOOK_BACKFILL_MAX_CLAIMS"
-	ebookBackfillBatchDelayEnv   = "SILO_EBOOK_BACKFILL_BATCH_DELAY"
+	ebookMetadataExecutionBudget    = 4 * time.Minute
+	ebookBackfillMaxClaimsEnv       = "PRAIRIE_EBOOK_BACKFILL_MAX_CLAIMS"
+	legacyEbookBackfillMaxClaimsEnv = "SILO_EBOOK_BACKFILL_MAX_CLAIMS"
+	ebookBackfillBatchDelayEnv      = "PRAIRIE_EBOOK_BACKFILL_BATCH_DELAY"
+	legacyEbookBackfillDelayEnv     = "SILO_EBOOK_BACKFILL_BATCH_DELAY"
 )
 
 type ebookMetadataEnricher interface {
@@ -68,8 +70,8 @@ func NewSyncEbookMetadataTask(enricher ebookMetadataEnricher) *SyncEbookMetadata
 }
 
 func NewBackfillEbookMetadataTask(enricher ebookMetadataEnricher) *BackfillEbookMetadataTask {
-	maxClaims, maxClaimsErr := parseEbookBackfillMaxClaims(os.Getenv(ebookBackfillMaxClaimsEnv))
-	batchDelay, batchDelayErr := parseEbookBackfillBatchDelay(os.Getenv(ebookBackfillBatchDelayEnv))
+	maxClaims, maxClaimsErr := parseEbookBackfillMaxClaims(envutil.FirstNonEmpty(ebookBackfillMaxClaimsEnv, legacyEbookBackfillMaxClaimsEnv))
+	batchDelay, batchDelayErr := parseEbookBackfillBatchDelay(envutil.FirstNonEmpty(ebookBackfillBatchDelayEnv, legacyEbookBackfillDelayEnv))
 	return &BackfillEbookMetadataTask{ebookMetadataTask: &ebookMetadataTask{
 		enricher:    enricher,
 		scope:       ebooks.EnrichmentScopeLegacy,

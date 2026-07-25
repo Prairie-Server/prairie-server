@@ -26,11 +26,11 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
-// KeyPrefix namespaces per-session recipe keys: silo:noderecipe:<upstreamSessionID>.
-const KeyPrefix = "silo:noderecipe:"
+// KeyPrefix namespaces per-session recipe keys: prairie:noderecipe:<upstreamSessionID>.
+const KeyPrefix = "prairie:noderecipe:"
 
 // DefaultTTL bounds how long a stored recipe survives. It matches the stream
 // token lifetime (playback.MaxTokenTTL, 24h): past it no surviving token could

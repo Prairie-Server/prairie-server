@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/requests"
+	"github.com/prairie-server/prairie-server/internal/requests"
 )
 
 // serverChannelRequestPostTimeout bounds one detached lifecycle post fan-out

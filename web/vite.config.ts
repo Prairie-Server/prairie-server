@@ -15,6 +15,7 @@ export default defineConfig(({ mode }) => {
   // the dev UI from another device on the tailnet — has to be allowed here.
   // VITE_ALLOWED_HOSTS adds any others (comma-separated).
   const allowedHosts = [
+    "prairie.local",
     "silo.local",
     ".ts.net",
     os.hostname(),

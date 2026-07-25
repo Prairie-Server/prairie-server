@@ -14,7 +14,7 @@ type cachedImage struct {
 }
 
 // ImageCache keeps short-lived mappings from Jellyfin-style image requests to
-// the underlying Silo image URLs.
+// the underlying Prairie image URLs.
 type ImageCache struct {
 	mu      sync.RWMutex
 	byTag   map[string]cachedImage

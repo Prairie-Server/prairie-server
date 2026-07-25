@@ -144,10 +144,10 @@ func TestEmailSubject(t *testing.T) {
 		emailEpisodeRow("01B", "p1", "ep-2", 2, 4),
 		requestFulfilledTestRow(),
 	})
-	if got := emailSubject(EmailModePerEpisode, mixed); got != "Silo: 2 new episodes, 1 request ready" {
+	if got := emailSubject(EmailModePerEpisode, mixed); got != "Prairie: 2 new episodes, 1 request ready" {
 		t.Fatalf("unexpected mixed subject %q", got)
 	}
-	if got := emailSubject(EmailModeDailyDigest, mixed); got != "Silo daily digest: 2 new episodes, 1 request ready" {
+	if got := emailSubject(EmailModeDailyDigest, mixed); got != "Prairie daily digest: 2 new episodes, 1 request ready" {
 		t.Fatalf("unexpected digest subject %q", got)
 	}
 }
@@ -190,7 +190,7 @@ func TestRequestLineLifecycle(t *testing.T) {
 		t.Fatalf("unexpected single-update subject %q", subject)
 	}
 	mixed := collateEmailItems([]DeliveryRow{approved, requestFulfilledTestRow()})
-	if got := emailSubject(EmailModeDailyDigest, mixed); got != "Silo daily digest: 2 request updates" {
+	if got := emailSubject(EmailModeDailyDigest, mixed); got != "Prairie daily digest: 2 request updates" {
 		t.Fatalf("unexpected mixed subject %q", got)
 	}
 }
@@ -298,7 +298,7 @@ func TestComposeNotificationEmailCapsRenderedItems(t *testing.T) {
 			fmt.Sprintf("01%03d", i), "p1", fmt.Sprintf("ep-%d", i), 1, i+1))
 	}
 	content := composeNotificationEmail(EmailModeDailyDigest, rows, emailComposeOptions{})
-	if !strings.Contains(content.Text, "and 10 more in your Silo inbox") {
+	if !strings.Contains(content.Text, "and 10 more in your Prairie inbox") {
 		t.Fatalf("overflow line missing:\n%s", content.Text)
 	}
 	if count := strings.Count(content.HTML, "<li"); count != emailMaxItemsRendered {

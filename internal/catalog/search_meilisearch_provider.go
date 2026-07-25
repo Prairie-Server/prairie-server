@@ -12,8 +12,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/embeddingvectors"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/embeddingvectors"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 const (
@@ -550,7 +550,7 @@ func isMeilisearchFederationUnsupported(err error) bool {
 		// A cached active index can disappear during an atomic rebuild swap.
 		// That is a resource miss, not evidence that this Meilisearch process
 		// lacks federation; caching it would disable mixed hybrid search until
-		// Silo restarts even after the provider refreshes the active index UID.
+		// Prairie restarts even after the provider refreshes the active index UID.
 		if code == "index_not_found" || code == "document_not_found" {
 			return false
 		}
@@ -770,7 +770,7 @@ func (p *MeilisearchSearchProvider) Status() CatalogSearchMeiliStatus {
 }
 
 // evaluateEmbedderSettings checks the active index's embedder configuration
-// against Silo's requirements: the named embedder must exist, declare
+// against Prairie's requirements: the named embedder must exist, declare
 // source=="userProvided", and match the canonical embedding dimension. Each
 // failure yields a distinct, human-readable reason. This is pure so it can be
 // unit-tested without faking the concrete *meilisearchClient.
@@ -802,7 +802,7 @@ func evaluateEmbedderSettings(settings meilisearchIndexSettings, embedder string
 }
 
 // SemanticCapability reports whether the active Meilisearch index is configured
-// to accept Silo's user-provided embedding vectors. The underlying check
+// to accept Prairie's user-provided embedding vectors. The underlying check
 // (settings fetch + evaluation + a unit-vector hybrid probe) is rate-limited to
 // semanticCapabilityProbeTTL and its result cached. This method NEVER trips the
 // circuit, marks a fallback, or modifies unhealthyUntil — a capability failure

@@ -1,4 +1,4 @@
-// Package mail provides Silo's shared outbound email facility. It is
+// Package mail provides Prairie's shared outbound email facility. It is
 // deliberately feature-agnostic: notifications, password resets, invites, and
 // any future feature send through the same Sender so SMTP configuration,
 // security policy, and diagnostics live in exactly one place.
@@ -12,7 +12,7 @@
 //	email.smtp_username  optional
 //	email.smtp_password  optional; encrypted at rest (SensitiveSettingKeys)
 //	email.from_address   required to enable
-//	email.from_name      default "Silo"
+//	email.from_name      default "Prairie"
 package mail
 
 import (
@@ -157,7 +157,7 @@ func (s *SMTPSender) loadConfig(ctx context.Context) (*smtpConfig, error) {
 		return nil, fmt.Errorf("invalid email.smtp_security %q", cfg.security)
 	}
 	if cfg.fromName == "" {
-		cfg.fromName = "Silo"
+		cfg.fromName = "Prairie"
 	}
 	return cfg, nil
 }

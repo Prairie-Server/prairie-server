@@ -12,8 +12,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/lang"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/lang"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // ffprobeOutput represents the top-level JSON output from ffprobe.

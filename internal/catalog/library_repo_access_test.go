@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/access"
 )
 
 // These tests pin the SQL emitted by buildFilterAccessibleContentIDsSQL — the

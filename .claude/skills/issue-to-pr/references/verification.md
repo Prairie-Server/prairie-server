@@ -4,12 +4,12 @@ Commands assume the repository root is the cwd (the new worktree, `$WT`).
 
 ## Why the obvious commands fail here
 
-A `.claude/worktrees/*` checkout lives under the parent Silo workspace, whose
-`go.work` only lists the primary `./silo-server`, not worktree checkouts. So:
+A `.claude/worktrees/*` checkout lives under the parent Prairie workspace, whose
+`go.work` only lists the primary `./prairie-server`, not worktree checkouts. So:
 
 - `go env GOWORK` resolves to the parent workspace from anywhere under `SiloServer/`.
 - Plain `go build ./...` / `go test ./...` fail with
-  *"directory prefix . does not contain modules listed in go.work"*.
+  _"directory prefix . does not contain modules listed in go.work"_.
 - `go build ./...` also needs `web/dist` to exist (the embed directive).
 - `golangci-lint` is not installed locally.
 

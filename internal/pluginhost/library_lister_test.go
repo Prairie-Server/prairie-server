@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
 func TestLibraryLister_AllLibraries(t *testing.T) {

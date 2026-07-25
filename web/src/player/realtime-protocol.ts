@@ -447,7 +447,7 @@ export function buildPlaybackRealtimeHello(sessionId: string): PlaybackRealtimeH
     type: "hello",
     session_id: sessionId,
     client: {
-      name: "silo-web",
+      name: "prairie-web",
       version: "1",
     },
     capabilities: {

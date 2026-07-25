@@ -12,8 +12,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // collectionSource is the subset of *catalog.LibraryCollectionRepository the
@@ -27,7 +27,7 @@ type collectionSource interface {
 
 // collectionsViewID is the canonical Jellyfin "Collections" (boxsets)
 // CollectionFolder GUID. It is stable across all Jellyfin servers, so clients
-// recognise it as the box-set library; Silo reuses the same constant rather
+// recognise it as the box-set library; Prairie reuses the same constant rather
 // than minting a per-server ID. Emitted in the compact 32-char form Jellyfin
 // uses for these views; isCollectionsViewID tolerates the dashed form clients
 // may echo back as a ParentId.

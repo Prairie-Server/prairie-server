@@ -284,7 +284,7 @@ describe("realtime protocol", () => {
       type: "hello",
       session_id: "session-1",
       client: {
-        name: "silo-web",
+        name: "prairie-web",
         version: "1",
       },
       capabilities: {

@@ -7,16 +7,16 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/adminjob"
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/notifications"
-	"github.com/Silo-Server/silo-server/internal/scanqueue"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
 	"github.com/gorilla/websocket"
 	"github.com/oklog/ulid/v2"
+	"github.com/prairie-server/prairie-server/internal/adminjob"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/notifications"
+	"github.com/prairie-server/prairie-server/internal/scanqueue"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 type historyImportActiveLister interface {

@@ -215,7 +215,7 @@ function PolicyDomainCard({ domain, documents, onSelect }: PolicyDomainCardProps
       ) : (
         !creating && (
           <p className="text-muted-foreground border-border mt-4 border-t pt-4 text-sm">
-            The Silo baseline applies unchanged.
+            The Prairie baseline applies unchanged.
             {meta.example && (
               <span className="text-muted-foreground/80">
                 {" "}

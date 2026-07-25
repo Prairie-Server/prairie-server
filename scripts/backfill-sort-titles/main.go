@@ -16,7 +16,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/titleutil"
+	"github.com/prairie-server/prairie-server/internal/titleutil"
 )
 
 const defaultBatchSize = 500

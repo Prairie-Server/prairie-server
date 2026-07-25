@@ -38,7 +38,7 @@ function isLikelyRequestTimeout(error: unknown): boolean {
 
 function applyTemplateBundleErrorMessage(error: unknown): string {
   if (isLikelyRequestTimeout(error)) {
-    return "The apply request timed out. Silo may still be creating collections; refresh in a minute.";
+    return "The apply request timed out. Prairie may still be creating collections; refresh in a minute.";
   }
   return error instanceof Error ? error.message : "Failed to apply defaults";
 }

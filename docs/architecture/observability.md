@@ -1,8 +1,8 @@
 # Observability (OpenTelemetry logs + traces)
 
-Silo emits structured **logs** and distributed **traces** via OpenTelemetry (OTLP),
+Prairie emits structured **logs** and distributed **traces** via OpenTelemetry (OTLP),
 in addition to the existing stderr and `opslog` database pipeline. The feature is
-**opt-in and default-off**: with no `OTEL_*` / `SILO_OTEL_ENABLED` configuration the
+**opt-in and default-off**: with no `OTEL_*` / `PRAIRIE_OTEL_ENABLED` configuration the
 server behaves exactly as before (stderr + `opslog` only).
 
 **Metrics are not part of OpenTelemetry here.** They remain on Prometheus
@@ -11,21 +11,21 @@ server behaves exactly as before (stderr + `opslog` only).
 
 ## Enabling it
 
-Telemetry turns on when **either** `SILO_OTEL_ENABLED` is truthy **or**
+Telemetry turns on when **either** `PRAIRIE_OTEL_ENABLED` is truthy **or**
 `OTEL_EXPORTER_OTLP_ENDPOINT` is set.
 
-| Variable | Purpose | Default |
-| --- | --- | --- |
-| `SILO_OTEL_ENABLED` | Master gate (`1`/`true`/`yes`/`on`). | off |
-| `OTEL_EXPORTER_OTLP_ENDPOINT` | Collector endpoint; also implicitly enables telemetry. | — |
-| `OTEL_EXPORTER_OTLP_PROTOCOL` | `grpc` (default) or `http/protobuf`. | `grpc` |
-| `OTEL_SERVICE_NAME` | `service.name` resource attribute. | `silo-server` |
-| `OTEL_SERVICE_VERSION` | `service.version` resource attribute. | unset |
-| `OTEL_TRACES_SAMPLER` | `always_on`, `always_off`, `traceidratio`, `parentbased_always_on`, `parentbased_always_off`, or `parentbased_traceidratio`. Unsupported values (e.g. `jaeger_remote`) fall back to the default. | `parentbased_traceidratio` |
-| `OTEL_TRACES_SAMPLER_ARG` | Trace-id ratio for the ratio-based samplers (0–1; clamps >1 to 1). | `1.0` |
+| Variable                      | Purpose                                                                                                                                                                                          | Default                    |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------- |
+| `PRAIRIE_OTEL_ENABLED`        | Master gate (`1`/`true`/`yes`/`on`).                                                                                                                                                             | off                        |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Collector endpoint; also implicitly enables telemetry.                                                                                                                                           | —                          |
+| `OTEL_EXPORTER_OTLP_PROTOCOL` | `grpc` (default) or `http/protobuf`.                                                                                                                                                             | `grpc`                     |
+| `OTEL_SERVICE_NAME`           | `service.name` resource attribute.                                                                                                                                                               | `prairie-server`           |
+| `OTEL_SERVICE_VERSION`        | `service.version` resource attribute.                                                                                                                                                            | unset                      |
+| `OTEL_TRACES_SAMPLER`         | `always_on`, `always_off`, `traceidratio`, `parentbased_always_on`, `parentbased_always_off`, or `parentbased_traceidratio`. Unsupported values (e.g. `jaeger_remote`) fall back to the default. | `parentbased_traceidratio` |
+| `OTEL_TRACES_SAMPLER_ARG`     | Trace-id ratio for the ratio-based samplers (0–1; clamps >1 to 1).                                                                                                                               | `1.0`                      |
 
 The node identity is attached as the `service.instance.id` resource attribute, so
-multiple Silo nodes sharing one `service.name` stay distinguishable in the backend.
+multiple Prairie nodes sharing one `service.name` stay distinguishable in the backend.
 
 All other `OTEL_EXPORTER_OTLP_*` knobs (headers, TLS, per-signal endpoints) are read
 directly from the environment by the OTLP exporters — the environment is the single
@@ -41,7 +41,7 @@ and keeps running with telemetry disabled rather than crash-looping.
 The bootstrap lives in `internal/telemetry` (`Setup` in `telemetry.go`). When enabled
 it builds one shared `resource.Resource`, a `TracerProvider` (sampler per
 `OTEL_TRACES_SAMPLER`, batched OTLP exporter), a `LoggerProvider` (batched OTLP exporter), and the W3C
-`TraceContext + Baggage` propagator. Shutdown is deferred in `cmd/silo/main.go` with a
+`TraceContext + Baggage` propagator. Shutdown is deferred in `cmd/prairie/main.go` with a
 flush timeout so buffered spans/logs drain on exit.
 
 ### Log handler chain
@@ -99,11 +99,11 @@ records by that attribute first, falling back to `opslog.InferComponent` (the `s
 prefix in the message) when no attribute is present — bound loggers that already set
 `component` via `.With(...)` are left as-is.
 
-**Limitation:** `sloglint` enforces the *shape* (context variant, snake keys, static
+**Limitation:** `sloglint` enforces the _shape_ (context variant, snake keys, static
 message) but **cannot** enforce that a `component` attribute is present. That convention
 rests on this doc, the canonical list below, and review.
 
-Canonical component values (first path segment under `internal/`; `app` for `cmd/silo`):
+Canonical component values (first path segment under `internal/`; `app` for `cmd/prairie`):
 
 `activitylog`, `adminjob`, `ai`, `api`, `app`, `audiobooks`, `auth`, `autoscan`,
 `catalog`, `chapterthumbs`, `downloads`, `ebooks`, `historyimport`, `jellycompat`,
@@ -119,7 +119,7 @@ existing Prometheus `client_golang` instrumentation to `/metrics`; Grafana scrap
 unaffected.
 
 This is deliberate and guarded: the trace-instrumentation libraries (`otelhttp`, etc.,
-added in later phases) also emit metrics through the *global* MeterProvider. Because none
+added in later phases) also emit metrics through the _global_ MeterProvider. Because none
 is set, that global stays the built-in **no-op**, so those metric calls are silently
 discarded — no double-counting into Prometheus, no second `/metrics` source. A guard test
 asserts `otel.GetMeterProvider()` remains the no-op after `Setup`. Migrating metrics to
@@ -135,8 +135,8 @@ otel-collector:
   volumes:
     - ./otelcol.yaml:/etc/otelcol/config.yaml
   ports:
-    - "4317:4317"   # OTLP gRPC
-    - "4318:4318"   # OTLP HTTP
+    - "4317:4317" # OTLP gRPC
+    - "4318:4318" # OTLP HTTP
 ```
 
 ```yaml
@@ -152,17 +152,17 @@ exporters:
 service:
   pipelines:
     traces: { receivers: [otlp], exporters: [debug] }
-    logs:   { receivers: [otlp], exporters: [debug] }
+    logs: { receivers: [otlp], exporters: [debug] }
 ```
 
-Run Silo with `SILO_OTEL_ENABLED=1 OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317` and watch
+Run Prairie with `PRAIRIE_OTEL_ENABLED=1 OTEL_EXPORTER_OTLP_ENDPOINT=localhost:4317` and watch
 logs + traces arrive at the collector. Swap `debug` for Loki/Tempo (or a vendor OTLP
 endpoint) for real storage; Grafana can then show traces alongside the unchanged
 Prometheus metrics.
 
 ## Log retention & rotation
 
-Silo does **not** write or rotate its own log files. Rotation/retention is handled by the
+Prairie does **not** write or rotate its own log files. Rotation/retention is handled by the
 layer that owns each sink, which is the intended cloud-native split:
 
 - **Console (stderr)** is owned by the container runtime. Under Docker, configure the
@@ -172,12 +172,12 @@ layer that owns each sink, which is the intended cloud-native split:
   ```yaml
   # docker-compose.yml
   services:
-    silo:
+    prairie:
       logging:
         driver: json-file
         options:
-          max-size: "50m"   # rotate at 50 MB
-          max-file: "5"     # keep 5 rotated files
+          max-size: "50m" # rotate at 50 MB
+          max-file: "5" # keep 5 rotated files
   ```
 
   For a non-Docker deployment, run under a supervisor/journald or pipe to `logrotate`.

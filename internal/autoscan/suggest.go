@@ -12,7 +12,7 @@ import (
 var ErrNoConnection = errors.New("autoscan: source has no bound connection")
 
 // SuggestRewrites resolves the source's bound connection, lists the arr root
-// folders and the Silo media-folder paths, and suffix-matches arr roots to Silo
+// folders and the Prairie media-folder paths, and suffix-matches arr roots to Prairie
 // folders to propose path rewrites. The source's existing rewrites are passed so
 // already-covered roots are reported separately. Returns ErrNoConnection when
 // the source has no bound connection (the handler maps it to 400).
@@ -46,7 +46,7 @@ func (s *Service) SuggestRewrites(ctx context.Context, sourceID string) (Rewrite
 	return suggestRewrites(arrRoots, siloFolders, src.PathRewrites), nil
 }
 
-// RewriteSuggestions is the result of matching arr root folders to Silo folders.
+// RewriteSuggestions is the result of matching arr root folders to Prairie folders.
 type RewriteSuggestions struct {
 	Proposed  []ProposedRewrite `json:"proposed"`
 	Unmatched []string          `json:"unmatched"`
@@ -61,7 +61,7 @@ type ProposedRewrite struct {
 	MatchDepth int    `json:"match_depth"`
 }
 
-// AmbiguousRoot is an arr root that tied across multiple Silo folders.
+// AmbiguousRoot is an arr root that tied across multiple Prairie folders.
 type AmbiguousRoot struct {
 	Root       string   `json:"root"`
 	Candidates []string `json:"candidates"`
@@ -115,7 +115,7 @@ func coveredBy(root string, existing []PathRewrite) bool {
 	return false
 }
 
-// suggestRewrites matches each arr root to the Silo folder sharing the most
+// suggestRewrites matches each arr root to the Prairie folder sharing the most
 // trailing path segments (unique winner). Pure: no I/O, no deployment constants.
 func suggestRewrites(arrRoots, siloFolderPaths []string, existing []PathRewrite) RewriteSuggestions {
 	siloNorm := make([]string, 0, len(siloFolderPaths))
@@ -126,7 +126,7 @@ func suggestRewrites(arrRoots, siloFolderPaths []string, existing []PathRewrite)
 		if n == "" {
 			continue
 		}
-		if _, dup := siloSeen[n]; dup { // dedup Silo paths so candidates are distinct
+		if _, dup := siloSeen[n]; dup { // dedup Prairie paths so candidates are distinct
 			continue
 		}
 		siloSeen[n] = struct{}{}
@@ -175,7 +175,7 @@ func suggestRewrites(arrRoots, siloFolderPaths []string, existing []PathRewrite)
 			out.Unmatched = append(out.Unmatched, root)
 		case len(winners) == 1:
 			if winners[0] == root {
-				continue // arr path already equals the Silo path — no rewrite needed
+				continue // arr path already equals the Prairie path — no rewrite needed
 			}
 			out.Proposed = append(out.Proposed, ProposedRewrite{From: root, To: winners[0], MatchDepth: best})
 		default:

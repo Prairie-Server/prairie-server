@@ -1,6 +1,6 @@
 # Diagnostic queries
 
-Run with `scripts/silo-dev psql "<sql>"`.
+Run with `scripts/prairie-dev psql "<sql>"`.
 
 ## Schema traps
 
@@ -62,7 +62,7 @@ ORDER BY type, name;
 
 Read-only node state is better taken from here than from the admin endpoints, which need
 a bearer token. To force a re-check, `POST /api/v1/admin/nodes/{id}/check` — reachable as
-`scripts/silo-dev api /api/v1/admin/nodes/{id}/check -X POST`.
+`scripts/prairie-dev api /api/v1/admin/nodes/{id}/check -X POST`.
 
 ## Jobs
 
@@ -106,5 +106,5 @@ INSERT INTO server_settings (key, value) VALUES ('server.log_level', 'debug')
 ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value;
 ```
 
-Then `scripts/silo-dev compose "up -d --force-recreate silo"`, and set it back to `info`
+Then `scripts/prairie-dev compose "up -d --force-recreate silo"`, and set it back to `info`
 when done.

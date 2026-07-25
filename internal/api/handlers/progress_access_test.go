@@ -5,8 +5,8 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // fakeProgressLookup records the arguments it was called with and returns a

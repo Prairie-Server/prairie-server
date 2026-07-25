@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 // ErrTerminalClaimUnavailable means a staged terminal event still exists but
@@ -17,7 +17,7 @@ import (
 var ErrTerminalClaimUnavailable = errors.New("compat terminal event claim unavailable")
 
 // PlaybackSession stores compat-owned playback negotiation state before the
-// native Silo playback session starts.
+// native Prairie playback session starts.
 type PlaybackSession struct {
 	ID          string
 	CompatToken string

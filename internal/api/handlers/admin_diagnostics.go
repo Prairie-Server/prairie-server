@@ -13,7 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/diagnostics"
+	"github.com/prairie-server/prairie-server/internal/diagnostics"
 )
 
 const diagnosticsDownloadExpiry = 15 * time.Minute

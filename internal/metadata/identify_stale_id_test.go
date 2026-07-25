@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // notFoundMetadataProvider simulates a provider whose recorded external ID no

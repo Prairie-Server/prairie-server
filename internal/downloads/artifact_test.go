@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func TestParamsHashStableAndDistinct(t *testing.T) {
@@ -51,17 +51,17 @@ func TestArtifactOutputPathDeterministic(t *testing.T) {
 
 func TestEffectiveArtifactDir(t *testing.T) {
 	// Explicit config wins verbatim.
-	if got := effectiveArtifactDir("/data/artifacts", "/tmp/silo-transcode"); got != "/data/artifacts" {
+	if got := effectiveArtifactDir("/data/artifacts", "/tmp/prairie-transcode"); got != "/data/artifacts" {
 		t.Fatalf("explicit dir = %q, want /data/artifacts", got)
 	}
 	// Unset: a sibling of the transcode dir, never inside it (the transcode
 	// cleanup sweep would otherwise delete a nested artifact dir) and never the
 	// process cwd (a relative/empty path).
-	got := effectiveArtifactDir("", "/var/lib/silo/transcode")
-	if got != "/var/lib/silo/silo-download-artifacts" {
+	got := effectiveArtifactDir("", "/var/lib/prairie/transcode")
+	if got != "/var/lib/prairie/prairie-download-artifacts" {
 		t.Fatalf("default dir = %q, want sibling of transcode dir", got)
 	}
-	if strings.HasPrefix(got, "/var/lib/silo/transcode/") {
+	if strings.HasPrefix(got, "/var/lib/prairie/transcode/") {
 		t.Fatalf("default dir %q is nested under the transcode dir", got)
 	}
 	// Unset transcode dir falls back to the absolute default root, not "".

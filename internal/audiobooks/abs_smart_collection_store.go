@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abs"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
 )
 
 // ABSSmartCollectionStore implements abs.SmartCollectionStore against the
@@ -22,7 +22,7 @@ import (
 // collection_type = 'smart'.
 //
 // abs.SmartCollection.IsPublic maps to user_personal_collections.is_shared.
-// profile_id is a text column (NOT NULL DEFAULT '') in the canonical
+// profile_id is a text column (NOT NULL DEFAULT ”) in the canonical
 // schema, so the empty string stands in for "primary profile".
 //
 // abs.SmartCollection.Color and abs.SmartCollection.IsPinned have no

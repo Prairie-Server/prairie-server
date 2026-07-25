@@ -18,8 +18,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"google.golang.org/protobuf/types/known/structpb"
 
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // OAuthClient is the host-side gRPC client surface the OAuth handler needs.

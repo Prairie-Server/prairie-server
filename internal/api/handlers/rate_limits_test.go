@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/ratelimit"
+	"github.com/prairie-server/prairie-server/internal/ratelimit"
 )
 
 type fakeRateLimitStore struct {

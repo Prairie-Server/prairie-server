@@ -18,9 +18,9 @@ import (
 // survive so user collections, metadata edits, and artwork are not destroyed
 // by a temporary outage. An orphan with no protected files is still purged.
 func TestReconcileFolderMembershipProtectsUnreachableRoots(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)

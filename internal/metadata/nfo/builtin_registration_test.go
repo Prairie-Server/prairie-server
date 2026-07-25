@@ -7,7 +7,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/metadata"
 )
 
 // Importing the nfo package must register the provider in the builtin

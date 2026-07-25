@@ -1,19 +1,19 @@
 ---
-name: silo-discord-triage
-description: Triage Discord thread URLs, Discord channel/message links, screenshots, or pasted Discord discussions that report bugs, regressions, feature requests, or support issues for Silo projects. Use when the user provides a Discord thread about Silo Server, the Silo Apple clients, the Silo Android app, or an unclear cross-project Silo issue and wants the report fetched with a scoped Discord bot token, summarized, validated, routed to the right repo, converted into a GitHub issue, used as the starting point for a fix, or answered through the bot after approving the exact reply.
+name: prairie-discord-triage
+description: Triage Discord thread URLs, Discord channel/message links, screenshots, or pasted Discord discussions that report bugs, regressions, feature requests, or support issues for Prairie projects. Use when the user provides a Discord thread about Prairie Server, the Prairie Apple clients, the Prairie Android app, or an unclear cross-project Prairie issue and wants the report fetched with a scoped Discord bot token, summarized, validated, routed to the right repo, converted into a GitHub issue, used as the starting point for a fix, or answered through the bot after approving the exact reply.
 ---
 
-# Silo Discord Triage
+# Prairie Discord Triage
 
 ## Overview
 
-Turn one Discord report into a decision-ready Silo intake: extract the concrete problem, route it to the correct project, validate the claim before editing, and produce privacy-safe next actions.
+Turn one Discord report into a decision-ready Prairie intake: extract the concrete problem, route it to the correct project, validate the claim before editing, and produce privacy-safe next actions.
 
 ## Intake Workflow
 
 1. Capture the source thread.
    - If the user provided a Discord URL, run `scripts/parse_discord_url.py <url>` to identify the URL shape and IDs for private working notes.
-   - Prefer `scripts/fetch_discord_thread.py <url>` when the bot token is available. The script reads `DISCORD_BOT_TOKEN` first — set it in the repo's gitignored `.silo-dev.env` — then falls back to `.secrets/discord_bot_token` next to this skill, which is gitignored for the same reason.
+   - Prefer `scripts/fetch_discord_thread.py <url>` when the bot token is available. The script reads `DISCORD_BOT_TOKEN` first — set it in the repo's gitignored `.prairie-dev.env` — then falls back to `.secrets/discord_bot_token` next to this skill, which is gitignored for the same reason.
    - Keep the token out of prompts, command arguments, logs, issues, commits, public summaries, and reusable skill instructions. If a token file is used, keep it local, ignored, and mode `0600`.
    - If bot-token fetch fails because the bot lacks channel/thread access, permissions, or message-content access, report that blocker precisely and fall back to browser access, pasted transcript, screenshots, or exported thread content.
    - Open the Discord URL with whatever browser or Chrome tooling is available only when bot-token ingestion is unavailable or insufficient.
@@ -24,9 +24,9 @@ Turn one Discord report into a decision-ready Silo intake: extract the concrete 
    - Bug/regression: identify observed behavior, expected behavior, affected version or environment, repro steps, frequency, workaround, logs, and user impact.
    - Feature request: identify the user need, affected workflow, proposed behavior, constraints, acceptance criteria, and open product questions.
    - Support/question: separate user configuration or usage help from product defects.
-   - Server/web/API issues belong to Silo Server when they involve API behavior, web UI, auth/profiles, libraries, metadata, downloads, matching, Jellyfin/Jellycompat, database migrations, deploys, or backend logs.
-   - Apple issues belong to the Silo Apple client when they involve iOS, tvOS, macOS, SwiftUI layout, playback, AirPlay, cast remote control, subtitles, native media controls, background behavior, or App Store platform behavior.
-   - Android issues belong to the Silo Android app when they involve Android UI, playback, downloads, platform permissions, notifications, Android TV, or device-specific Android behavior. Locate the owning repo from local workspace or GitHub context before assuming a path.
+   - Server/web/API issues belong to Prairie Server when they involve API behavior, web UI, auth/profiles, libraries, metadata, downloads, matching, Jellyfin/Jellycompat, database migrations, deploys, or backend logs.
+   - Apple issues belong to the Prairie Apple client when they involve iOS, tvOS, macOS, SwiftUI layout, playback, AirPlay, cast remote control, subtitles, native media controls, background behavior, or App Store platform behavior.
+   - Android issues belong to the Prairie Android app when they involve Android UI, playback, downloads, platform permissions, notifications, Android TV, or device-specific Android behavior. Locate the owning repo from local workspace or GitHub context before assuming a path.
    - Cross-project issues need one primary owner plus explicit dependencies. Avoid spreading a fix across repos until the failing boundary is proven.
 
 3. Validate before acting.
@@ -49,7 +49,7 @@ Turn one Discord report into a decision-ready Silo intake: extract the concrete 
    - Add `--confirm` only after approval. The helper disables all allowed mentions, verifies Discord returned the same content, and never prints the token or message content.
    - Fetch the thread again after posting and verify the approved reply is present once. Do not retry a successful post merely because a later verification fetch fails.
    - If posting returns `403`, report the missing Discord permission precisely. A public channel needs `Send Messages`; a thread also needs `Send Messages in Threads`. Private threads must be visible to or joined by the bot.
-   - Prefer the bot helper over browser login for approved Silo thread replies when the bot token is configured and the bot can access the destination.
+   - Prefer the bot helper over browser login for approved Prairie thread replies when the bot token is configured and the bot can access the destination.
 
 ## Issue Draft Shape
 
@@ -57,27 +57,35 @@ Use this structure when the user asks to turn the thread into a GitHub issue:
 
 ```markdown
 ## Summary
+
 Briefly state the user-visible problem or requested capability.
 
 ## Source
+
 Internal Discord thread. Do not include private links or IDs unless the user explicitly asks for a private tracker entry.
 
 ## Steps to Reproduce
+
 1. ...
 
 ## Expected Behavior
+
 ...
 
 ## Actual Behavior
+
 ...
 
 ## Evidence
+
 Summarize screenshots, logs, messages, or validation results without exposing private identifiers.
 
 ## Scope
-Owning project: Silo Server, Silo Apple, Silo Android, or cross-project.
+
+Owning project: Prairie Server, Prairie Apple, Prairie Android, or cross-project.
 
 ## Acceptance Criteria
+
 - ...
 ```
 
@@ -87,7 +95,7 @@ Use `scripts/parse_discord_url.py` to parse Discord URLs without network access.
 
 Use `scripts/fetch_discord_thread.py <url>` to fetch thread or channel messages through the Discord HTTP API. Requirements:
 
-- Put the bot token in `DISCORD_BOT_TOKEN` (via `.silo-dev.env`), or keep it in `.secrets/discord_bot_token` next to this skill. The environment variable overrides the file. Both locations are gitignored; the token must never reach a committed file, a prompt, a command argument, or a log.
+- Put the bot token in `DISCORD_BOT_TOKEN` (via `.prairie-dev.env`), or keep it in `.secrets/discord_bot_token` next to this skill. The environment variable overrides the file. Both locations are gitignored; the token must never reach a committed file, a prompt, a command argument, or a log.
 - Install the Discord app with the `bot` scope only.
 - Grant the bot `View Channel` and `Read Message History` for the specific report channels/threads.
 - Enable the `Message Content` privileged intent when the skill must read user-written content, embeds, attachments, components, or polls from message objects.

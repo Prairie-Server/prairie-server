@@ -11,9 +11,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 const ebookCoverTestThumbhash = "thumb"
@@ -243,8 +243,8 @@ func TestParseEbookEPUBMetadata(t *testing.T) {
 	if got.Year != 2024 {
 		t.Fatalf("Year = %d, want 2024", got.Year)
 	}
-	if got.Publisher != "Silo Press" {
-		t.Fatalf("Publisher = %q, want Silo Press", got.Publisher)
+	if got.Publisher != "Prairie Press" {
+		t.Fatalf("Publisher = %q, want Prairie Press", got.Publisher)
 	}
 	wantPublishedAt := time.Date(2024, 3, 10, 0, 0, 0, 0, time.UTC)
 	if !got.PublishedAt.Equal(wantPublishedAt) {
@@ -1824,7 +1824,7 @@ func writeTestEPUBWithDescriptionAndMeta(t *testing.T, identifiers []string, des
     <dc:creator>Ada Writer</dc:creator>
     <dc:creator>Ben Author</dc:creator>
 `+identifierXML.String()+`
-    <dc:publisher>Silo Press</dc:publisher>
+    <dc:publisher>Prairie Press</dc:publisher>
     <dc:date>2024-03-10</dc:date>
     <dc:language>en</dc:language>
     <dc:subject>Fiction</dc:subject>

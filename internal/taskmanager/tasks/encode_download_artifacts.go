@@ -3,7 +3,7 @@ package tasks
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 // ArtifactProcessor drains the durable download-artifact encode queue (recover

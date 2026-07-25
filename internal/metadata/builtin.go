@@ -16,7 +16,7 @@ import (
 //
 // Providers self-register from their package's init (e.g. internal/metadata/nfo)
 // to avoid an import cycle — this package defines the Provider interfaces the
-// builtin packages implement. cmd/silo blank-imports each builtin package.
+// builtin packages implement. cmd/prairie blank-imports each builtin package.
 // Activating a future builtin (e.g. xattr) is a registration call plus a
 // capability row in a migration.
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 const fallbackMemberName = "Guest"

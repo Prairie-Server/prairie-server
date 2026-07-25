@@ -590,7 +590,7 @@ export default function WebhookSyncSettings() {
 
       <SettingsGroup
         title="Add a connection"
-        description="Create a provider-specific webhook endpoint and choose the default Silo profile."
+        description="Create a provider-specific webhook endpoint and choose the default Prairie profile."
       >
         <div className="flex flex-col gap-3">
           <Label className="text-sm font-medium">Provider</Label>
@@ -941,7 +941,7 @@ export default function WebhookSyncSettings() {
                     <div className="space-y-0.5">
                       <Label className="text-sm font-medium">Profile mapping</Label>
                       <p className="text-muted-foreground text-[13px] leading-relaxed">
-                        Map each external user to a Silo profile. Unmapped users are ignored.
+                        Map each external user to a Prairie profile. Unmapped users are ignored.
                       </p>
                     </div>
 
@@ -1074,7 +1074,7 @@ export default function WebhookSyncSettings() {
                                 items: [
                                   {
                                     event: "Users → Add to Favorites, Remove from Favorites",
-                                    note: "Syncs favorites to the mapped Silo profile.",
+                                    note: "Syncs favorites to the mapped Prairie profile.",
                                   },
                                   {
                                     event: "Users → Mark Played, Mark Unplayed",
@@ -1088,7 +1088,7 @@ export default function WebhookSyncSettings() {
                                 items: [
                                   {
                                     event: "Playback → Start, Pause, Unpause",
-                                    note: "Silo only records completion, not in-progress state.",
+                                    note: "Prairie only records completion, not in-progress state.",
                                   },
                                 ],
                               },
@@ -1119,7 +1119,7 @@ export default function WebhookSyncSettings() {
                               Under <span className="text-foreground">Notification Type</span>,
                               enable only <span className="text-foreground">Playback Stop</span>.
                               Leave <span className="text-foreground">Playback Progress</span> and{" "}
-                              <span className="text-foreground">User Data Saved</span> off — Silo
+                              <span className="text-foreground">User Data Saved</span> off — Prairie
                               ignores them and they generate heavy traffic.
                             </li>
                             <li>

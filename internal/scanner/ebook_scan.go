@@ -16,13 +16,14 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/Silo-Server/silo-server/internal/idgen"
-	"github.com/Silo-Server/silo-server/internal/imageutil"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/rootcheck"
-	"github.com/Silo-Server/silo-server/internal/titleutil"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+	"github.com/prairie-server/prairie-server/internal/envutil"
+	"github.com/prairie-server/prairie-server/internal/idgen"
+	"github.com/prairie-server/prairie-server/internal/imageutil"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/rootcheck"
+	"github.com/prairie-server/prairie-server/internal/titleutil"
 )
 
 type ebookSQLExecutor interface {
@@ -34,7 +35,7 @@ type filesystemMediaItemReader interface {
 }
 
 func ebookScanWorkers() int {
-	if v := os.Getenv("SILO_EBOOK_SCAN_WORKERS"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_EBOOK_SCAN_WORKERS", "SILO_EBOOK_SCAN_WORKERS"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			return n
 		}

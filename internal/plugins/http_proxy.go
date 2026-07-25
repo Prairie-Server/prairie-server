@@ -14,7 +14,8 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
+	"github.com/prairie-server/prairie-server/internal/httpheaders"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
 type httpRouteClient interface {
@@ -27,8 +28,8 @@ type httpProxyService interface {
 	HTTPRoutesClient(ctx context.Context, installationID int, capabilityID string) (httpRouteClient, error)
 }
 
-// UserThemeLookup resolves the active UI theme for a silo user. The
-// proxy uses it to inject X-Silo-Theme on every plugin request so
+// UserThemeLookup resolves the active UI theme for a Prairie user. The
+// proxy uses it to inject X-Prairie-Theme on every plugin request so
 // plugin SPAs can paint in the user's theme on first byte without relying
 // on the URL ?theme= parameter (which is fragile under refresh, direct
 // links, and cross-tab sharing).
@@ -51,7 +52,7 @@ func NewHTTPProxy(service httpProxyService, installations taskInstallationStore)
 }
 
 // WithUserThemeLookup attaches a theme resolver. When set, ServeRoute injects
-// X-Silo-Theme on the upstream plugin request for authenticated users.
+// X-Prairie-Theme on the upstream plugin request for authenticated users.
 // Pass nil to disable.
 func (p *HTTPProxy) WithUserThemeLookup(t UserThemeLookup) *HTTPProxy {
 	p.themes = t
@@ -59,8 +60,8 @@ func (p *HTTPProxy) WithUserThemeLookup(t UserThemeLookup) *HTTPProxy {
 }
 
 // WithUserIdentityLookup attaches a username/profile-name resolver. When set,
-// ServeRoute injects X-Silo-User-Name, X-Silo-Profile-Name, and
-// X-Silo-Profile-Primary headers so plugins can render "user#profile"
+// ServeRoute injects X-Prairie-User-Name, X-Prairie-Profile-Name, and
+// X-Prairie-Profile-Primary headers so plugins can render "user#profile"
 // strings without reaching back into browser localStorage.
 func (p *HTTPProxy) WithUserIdentityLookup(l UserIdentityLookup) *HTTPProxy {
 	p.identity = l
@@ -126,32 +127,32 @@ func (p *HTTPProxy) ServeRoute(w http.ResponseWriter, r *http.Request, installat
 	body, _ := io.ReadAll(r.Body)
 	headers := forwardedRequestHeaders(r.Header)
 	if _, _, userID := pluginAccessUserFromContext(r.Context()); userID > 0 {
-		headers["X-Silo-User-Id"] = strconv.Itoa(userID)
+		httpheaders.SetMap(headers, httpheaders.HeaderUserID, strconv.Itoa(userID))
 		if admin {
-			headers["X-Silo-User-Role"] = "admin"
+			httpheaders.SetMap(headers, httpheaders.HeaderUserRole, "admin")
 		} else {
-			headers["X-Silo-User-Role"] = "user"
+			httpheaders.SetMap(headers, httpheaders.HeaderUserRole, "user")
 		}
 		if p.themes != nil {
 			if theme, err := p.themes.LookupUITheme(r.Context(), userID); err == nil && theme != "" {
-				headers["X-Silo-Theme"] = theme
+				httpheaders.SetMap(headers, httpheaders.HeaderTheme, theme)
 			}
 		}
 		if p.identity != nil {
-			// The browser already sends X-Profile-Id for its own silo
+			// The browser already sends X-Profile-Id for its own Prairie
 			// API calls; reuse that as the active profile. Empty value just
 			// means "no profile selected" — the lookup returns username
 			// only, primary-profile path.
 			profileID := r.Header.Get("X-Profile-Id")
 			if ident, err := p.identity.LookupIdentity(r.Context(), userID, profileID); err == nil {
 				if ident.Username != "" {
-					headers["X-Silo-User-Name"] = ident.Username
+					httpheaders.SetMap(headers, httpheaders.HeaderUserName, ident.Username)
 				}
 				if ident.ProfileName != "" {
-					headers["X-Silo-Profile-Name"] = ident.ProfileName
+					httpheaders.SetMap(headers, httpheaders.HeaderProfileName, ident.ProfileName)
 				}
 				if ident.ProfileIsPrimary {
-					headers["X-Silo-Profile-Primary"] = "true"
+					httpheaders.SetMap(headers, httpheaders.HeaderProfilePrimary, "true")
 				}
 			}
 		}

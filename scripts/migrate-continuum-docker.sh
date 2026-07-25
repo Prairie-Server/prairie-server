@@ -17,7 +17,7 @@ CONTINUUM_COMPOSE_FILE="${CONTINUUM_COMPOSE_FILE:-}"
 CONTINUUM_ENV_FILE="${CONTINUUM_ENV_FILE:-}"
 CONTINUUM_PROJECT="${CONTINUUM_PROJECT:-continuum}"
 CONTINUUM_DATA_ROOT="${CONTINUUM_DATA_ROOT:-/opt/continuum}"
-SILO_DATA_ROOT="${SILO_DATA_ROOT:-/opt/silo}"
+PRAIRIE_DATA_ROOT="${PRAIRIE_DATA_ROOT:-/opt/prairie}"
 BACKUP_DIR="${BACKUP_DIR:-${CONTINUUM_DATA_ROOT}/db-backups}"
 
 usage() {
@@ -30,7 +30,7 @@ Usage:
 Modes:
   check    Read-only preflight. Prints detected containers, paths, env, and risks.
   migrate  Backs up the DB, stops the old Continuum stack, moves bind-mounted
-           state from /opt/continuum to /opt/silo, starts Silo, and applies
+           state from /opt/continuum to /opt/prairie, starts Silo, and applies
            narrow DB compatibility updates.
   db-fix   Only applies DB compatibility updates to a running Silo compose stack.
 
@@ -40,13 +40,13 @@ Important environment overrides:
   CONTINUUM_COMPOSE_FILE=/path/to/old/docker-compose.yml
   CONTINUUM_ENV_FILE=/path/to/old/.env
   CONTINUUM_DATA_ROOT=/opt/continuum
-  SILO_DATA_ROOT=/opt/silo
+  PRAIRIE_DATA_ROOT=/opt/prairie
   BACKUP_DIR=/opt/continuum/db-backups
 
 Flags:
   --apply               Required for modes that modify the host or database.
   --skip-db-dump        Do not run pg_dump before cutover.
-  --keep-old-data-root  Do not move CONTINUUM_DATA_ROOT to SILO_DATA_ROOT.
+  --keep-old-data-root  Do not move CONTINUUM_DATA_ROOT to PRAIRIE_DATA_ROOT.
   --no-compat-symlink   Do not leave CONTINUUM_DATA_ROOT as a symlink to Silo.
   -h, --help            Show this help.
 USAGE
@@ -190,7 +190,7 @@ print_preflight() {
 	postgres_db="$(env_value POSTGRES_DB continuum)"
 	media_root="$(env_value MEDIA_ROOT '')"
 	media_container_root="$(env_value MEDIA_CONTAINER_ROOT /mnt/media)"
-	image="$(env_value SILO_IMAGE 'ghcr.io/silo-server/silo-server:latest')"
+	image="$(env_value PRAIRIE_IMAGE 'ghcr.io/prairie-server/prairie-server:latest')"
 	docker_ready="false"
 	if docker info >/dev/null 2>&1; then
 		docker_ready="true"
@@ -206,7 +206,7 @@ print_preflight() {
 	printf 'image:               %s\n' "${image}"
 	printf 'media root:          %s\n' "${media_root:-<unset>}"
 	printf 'media container root: %s\n' "${media_container_root}"
-	printf 'silo data root:      %s\n' "${SILO_DATA_ROOT}"
+	printf 'silo data root:      %s\n' "${PRAIRIE_DATA_ROOT}"
 	printf 'postgres user/db:    %s / %s\n' "${postgres_user}" "${postgres_db}"
 	printf '\n'
 
@@ -230,8 +230,8 @@ print_preflight() {
 	else
 		warn "old data root not found: ${CONTINUUM_DATA_ROOT}"
 	fi
-	if [ -e "${SILO_DATA_ROOT}" ]; then
-		printf 'found Silo data root: %s\n' "${SILO_DATA_ROOT}"
+	if [ -e "${PRAIRIE_DATA_ROOT}" ]; then
+		printf 'found Silo data root: %s\n' "${PRAIRIE_DATA_ROOT}"
 	fi
 	if [ -n "${media_root}" ] && [ ! -d "${media_root}" ]; then
 		warn "MEDIA_ROOT does not exist on this host: ${media_root}"
@@ -287,7 +287,7 @@ dump_database() {
 
 	postgres_user="$(env_value POSTGRES_USER continuum)"
 	postgres_db="$(env_value POSTGRES_DB continuum)"
-	backup_file="${BACKUP_DIR}/continuum-before-silo-$(date -u +%Y%m%dT%H%M%SZ).dump"
+	backup_file="${BACKUP_DIR}/continuum-before-prairie-$(date -u +%Y%m%dT%H%M%SZ).dump"
 
 	log "Creating PostgreSQL dump at ${backup_file}"
 	mkdir -p "${BACKUP_DIR}"
@@ -306,17 +306,17 @@ move_data_root() {
 		return
 	fi
 
-	if [ -e "${SILO_DATA_ROOT}" ] && [ ! -L "${SILO_DATA_ROOT}" ]; then
-		die "Silo data root already exists: ${SILO_DATA_ROOT}; move or merge it manually before running migrate"
+	if [ -e "${PRAIRIE_DATA_ROOT}" ] && [ ! -L "${PRAIRIE_DATA_ROOT}" ]; then
+		die "Silo data root already exists: ${PRAIRIE_DATA_ROOT}; move or merge it manually before running migrate"
 	fi
 
-	log "Moving ${CONTINUUM_DATA_ROOT} to ${SILO_DATA_ROOT}"
-	mkdir -p "$(dirname "${SILO_DATA_ROOT}")"
-	mv "${CONTINUUM_DATA_ROOT}" "${SILO_DATA_ROOT}"
+	log "Moving ${CONTINUUM_DATA_ROOT} to ${PRAIRIE_DATA_ROOT}"
+	mkdir -p "$(dirname "${PRAIRIE_DATA_ROOT}")"
+	mv "${CONTINUUM_DATA_ROOT}" "${PRAIRIE_DATA_ROOT}"
 
 	if [ "${NO_COMPAT_SYMLINK}" != "true" ]; then
-		ln -s "${SILO_DATA_ROOT}" "${CONTINUUM_DATA_ROOT}"
-		log "Left compatibility symlink ${CONTINUUM_DATA_ROOT} -> ${SILO_DATA_ROOT}"
+		ln -s "${PRAIRIE_DATA_ROOT}" "${CONTINUUM_DATA_ROOT}"
+		log "Left compatibility symlink ${CONTINUUM_DATA_ROOT} -> ${PRAIRIE_DATA_ROOT}"
 	fi
 }
 
@@ -345,7 +345,7 @@ DO $$
 BEGIN
 	IF to_regclass('public.plugin_installations') IS NOT NULL THEN
 		UPDATE plugin_installations
-		SET install_path = replace(install_path, '/var/lib/continuum/plugins/', '/var/lib/silo/plugins/'),
+		SET install_path = replace(install_path, '/var/lib/continuum/plugins/', '/var/lib/prairie/plugins/'),
 		    enabled = CASE WHEN plugin_id LIKE 'continuum.%' THEN false ELSE enabled END,
 		    updated_at = NOW()
 		WHERE install_path LIKE '/var/lib/continuum/plugins/%'
@@ -397,8 +397,8 @@ run_migration() {
 	[ -f "${COMPOSE_FILE}" ] || die "compose file not found: ${COMPOSE_FILE}"
 	[ -f "${ENV_FILE}" ] || die "env file not found: ${ENV_FILE}; copy .env.example to .env and set MEDIA_ROOT plus old POSTGRES_* values first"
 
-	if [ "$(env_value POSTGRES_USER silo)" = "silo" ] || [ "$(env_value POSTGRES_DB silo)" = "silo" ]; then
-		warn "POSTGRES_USER/POSTGRES_DB are set to Silo defaults. If reusing a Continuum PostgreSQL data directory, set them to the old DB values before migrating."
+	if [ "$(env_value POSTGRES_USER prairie)" = "prairie" ] || [ "$(env_value POSTGRES_DB prairie)" = "prairie" ]; then
+		warn "POSTGRES_USER/POSTGRES_DB are set to Prairie defaults. If reusing a Continuum PostgreSQL data directory, set them to the old DB values before migrating."
 	fi
 
 	dump_database

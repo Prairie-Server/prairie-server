@@ -13,7 +13,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/Silo-Server/silo-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
 )
 
 var (

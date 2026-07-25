@@ -24,7 +24,7 @@ from parse_discord_url import parse_discord_url  # noqa: E402
 API_BASE = "https://discord.com/api/v10"
 DEFAULT_TOKEN_ENV = "DISCORD_BOT_TOKEN"
 DEFAULT_TOKEN_FILE = SCRIPT_DIR.parent / ".secrets" / "discord_bot_token"
-USER_AGENT = "silo-discord-triage/1.0"
+USER_AGENT = "prairie-discord-triage/1.0"
 
 
 @dataclass

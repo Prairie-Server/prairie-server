@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// Shared visual tokens for Silo's branded emails, mirroring the web UI's
+// Shared visual tokens for Prairie's branded emails, mirroring the web UI's
 // default "Midnight Cinema" theme (web/src/app.css): a near-black canvas,
 // monochrome type, and a white primary action. Feature packages compose body
 // fragments with these tokens and wrap them with RenderLayout so every email
@@ -44,7 +44,7 @@ type LayoutOptions struct {
 	FooterHTML string
 }
 
-// RenderLayout wraps content in Silo's dark branded email shell: wordmark,
+// RenderLayout wraps content in Prairie's dark branded email shell: wordmark,
 // content card, and footer. It adds no links of its own, so an email whose
 // options carry no hrefs renders fully link-free (some features require
 // that when no external URL is configured).

@@ -8,8 +8,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abs"
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 const (

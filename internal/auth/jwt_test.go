@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/prairie-server/prairie-server/internal/auth"
 )
 
 const testSecret = "super-secret-test-key-for-jwt-testing"

@@ -566,7 +566,7 @@ function RequestSettingsForm({ settings }: { settings: RequestSettings }) {
   );
 }
 
-// Host chrome owned by Silo; everything arr-specific now lives in pluginConfig
+// Host chrome owned by Prairie; everything arr-specific now lives in pluginConfig
 // and is rendered by the plugin's connection descriptor via <SchemaForm>.
 type IntegrationFormState = {
   id: string;

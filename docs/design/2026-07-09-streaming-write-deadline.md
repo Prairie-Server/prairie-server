@@ -1,12 +1,12 @@
 # Streaming write-deadline fix: stop truncating streams at 120s without losing stalled-client protection
 
 **Status:** planned (2026-07-09)
-**Repos:** silo-server (primary), silo-apple (hardening follow-up)
+**Repos:** prairie-server (primary), prairie-apple (hardening follow-up)
 **Root-cause session:** live debugging on Apple TV, 2026-07-09 evening
 
 ## Problem
 
-`cmd/silo/main.go:2373` sets `WriteTimeout: 120 * time.Second` on the main API
+`cmd/prairie/main.go:2373` sets `WriteTimeout: 120 * time.Second` on the main API
 `http.Server`. Go's `WriteTimeout` is an **absolute deadline from the start of each
 request**, not an idle timeout — so every response still being written at T+120s is
 killed mid-body with a clean connection close.
@@ -45,8 +45,8 @@ Goals:
 4. No client changes required for the fix to take effect (Android, web, Infuse/compat
    benefit identically).
 
-Non-goals: CDN edge tuning; silo-server#333 control-plane restart work; the
-silo-apple `.prematureEOF` parking hardening (tracked as follow-up below, it is
+Non-goals: CDN edge tuning; prairie-server#333 control-plane restart work; the
+prairie-apple `.prematureEOF` parking hardening (tracked as follow-up below, it is
 defense-in-depth once this lands).
 
 ## Design: rolling per-write deadline for streaming handlers
@@ -90,10 +90,10 @@ Key points:
   between iterations). Rationale: `http.ServeContent` → `io.Copy` uses the
   `io.ReaderFrom` fast path on the response writer (sendfile for `*os.File`); a naive
   wrapper without `ReadFrom` silently forfeits sendfile and burns CPU copying 15 GB
-  through userspace. Bounded-slice delegation keeps sendfile *and* the rolling
+  through userspace. Bounded-slice delegation keeps sendfile _and_ the rolling
   deadline.
 - First bump happens in `New` (covers the header write + first body bytes).
-- `window` default 180s, overridable via env `SILO_STREAM_WRITE_STALL_TIMEOUT`
+- `window` default 180s, overridable via env `PRAIRIE_STREAM_WRITE_STALL_TIMEOUT`
   (seconds). 180s > the Apple client's longest observed benign backpressure park
   (~20s) and > outage-probe cadence with margin, while still reaping zombies in
   minutes. Note: a paused client that stops reading its socket for >window will have
@@ -103,13 +103,13 @@ Key points:
 
 ### Application points (all on the main listener)
 
-| Path | File | Mechanism | Change |
-|---|---|---|---|
-| Direct play (the tonight failure) | `internal/playback/directplay.go:52` `ServeDirectPlay` | `http.ServeContent` of the full media file | wrap `w` before `ServeContent` |
-| Remux stream | `internal/playback/remux.go:226` `ServeRemux` (write loop `:255`) | manual chunked `Write`+`Flush` | wrap `w` (loop needs no change) |
-| Offline downloads | `internal/api/handlers/downloads.go:401` → `svc.ServeFile` | full media file download | wrap `w` at the handler before delegating |
-| Transcode-node proxy | `internal/api/handlers/playback.go:2998` `io.Copy(w, resp.Body)` | long-lived proxy of remote transcode output | wrap `w` |
-| Ebook/converted serving | `internal/api/handlers/ebook_convert_serve.go:159`, `ebook_reader.go:625` | `ServeContent`, files up to ~100s of MB; slow readers can exceed 120s | wrap `w` (cheap, same helper) |
+| Path                              | File                                                                      | Mechanism                                                             | Change                                    |
+| --------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------------------------------- | ----------------------------------------- |
+| Direct play (the tonight failure) | `internal/playback/directplay.go:52` `ServeDirectPlay`                    | `http.ServeContent` of the full media file                            | wrap `w` before `ServeContent`            |
+| Remux stream                      | `internal/playback/remux.go:226` `ServeRemux` (write loop `:255`)         | manual chunked `Write`+`Flush`                                        | wrap `w` (loop needs no change)           |
+| Offline downloads                 | `internal/api/handlers/downloads.go:401` → `svc.ServeFile`                | full media file download                                              | wrap `w` at the handler before delegating |
+| Transcode-node proxy              | `internal/api/handlers/playback.go:2998` `io.Copy(w, resp.Body)`          | long-lived proxy of remote transcode output                           | wrap `w`                                  |
+| Ebook/converted serving           | `internal/api/handlers/ebook_convert_serve.go:159`, `ebook_reader.go:625` | `ServeContent`, files up to ~100s of MB; slow readers can exceed 120s | wrap `w` (cheap, same helper)             |
 
 Explicitly **unchanged**:
 
@@ -122,7 +122,7 @@ Explicitly **unchanged**:
   protection (follow-up, not required).
 - All JSON/image/API routes — keep the server-level 120s absolute deadline.
 
-`cmd/silo/main.go:2374` itself stays at `WriteTimeout: 120s`. That is the point: the
+`cmd/prairie/main.go:2374` itself stays at `WriteTimeout: 120s`. That is the point: the
 global guard remains, streaming handlers opt out per-response with a better contract.
 
 ## Server tests
@@ -150,7 +150,7 @@ global guard remains, streaming handlers opt out per-response with a better cont
    `prematureSourceEnd` teardowns over a full film.
 4. Spot-check normal API latency/behavior and one Jellyfin-compat client.
 
-## Follow-up workstream: silo-apple client hardening (separate branch)
+## Follow-up workstream: prairie-apple client hardening (separate branch)
 
 Defense-in-depth so any truncating origin/middlebox (not just our own bug) degrades
 to an invisible reconnect instead of a 5s rebuild:
@@ -159,7 +159,7 @@ to an invisible reconnect instead of a 5s rebuild:
    once the cursor-resume retries reproduce the same truncation offset
    (`PlaybackOriginOutagePolicy.shouldPark`, `PlaybackSourceOriginStream.swift:159-173`;
    writer then gets the 240s park allowance instead of the 10s deadline). Keep it
-   kill-switchable alongside `SILO_DISABLE_OUTAGE_RIDE_THROUGH`.
+   kill-switchable alongside `PRAIRIE_DISABLE_OUTAGE_RIDE_THROUGH`.
 2. Add `[CMP-ORIGIN]` logging: one line per origin connection end (cause, HTTP
    status, cursor, bytes delivered, retry streak) — tonight the entire retry-and-give-up
    sequence ran with zero log output.

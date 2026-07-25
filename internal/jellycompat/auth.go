@@ -8,9 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/playback"
 	"github.com/go-chi/chi/v5"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 type sessionContextKey string
@@ -103,7 +103,7 @@ func (a *Authenticator) RequireSession(next http.Handler) http.Handler {
 			return
 		}
 
-		// Refresh underlying Silo tokens if they're about to expire.
+		// Refresh underlying Prairie tokens if they're about to expire.
 		// Use a detached context so a client aborting the request mid-refresh
 		// (common on flaky mobile networks) doesn't revoke the compat session.
 		if a.authService != nil && !session.StreamAppTokenExpiry.IsZero() &&

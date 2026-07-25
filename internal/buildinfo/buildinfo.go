@@ -12,7 +12,7 @@ var (
 	dirtyOverride    string
 )
 
-// Info describes the running Silo build as embedded by Go's VCS metadata.
+// Info describes the running Prairie build as embedded by Go's VCS metadata.
 type Info struct {
 	Display   string `json:"display"`
 	Revision  string `json:"revision"`

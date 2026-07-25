@@ -1,4 +1,4 @@
-module github.com/Silo-Server/silo-server
+module github.com/prairie-server/prairie-server
 
 go 1.26.4
 

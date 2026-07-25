@@ -4,27 +4,28 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 const (
-	defaultEnrichmentLease   = 10 * time.Minute
-	maxEnrichmentRetry       = 24 * time.Hour
-	transientRetryBase       = 5 * time.Minute
-	skippedRetryHorizon      = 15 * time.Minute
-	claimCandidateWindow     = maxEnrichWorkers
-	defaultRateLimitCooldown = 15 * time.Minute
-	rateLimitCooldownEnv     = "SILO_EBOOK_RATE_LIMIT_COOLDOWN"
+	defaultEnrichmentLease     = 10 * time.Minute
+	maxEnrichmentRetry         = 24 * time.Hour
+	transientRetryBase         = 5 * time.Minute
+	skippedRetryHorizon        = 15 * time.Minute
+	claimCandidateWindow       = maxEnrichWorkers
+	defaultRateLimitCooldown   = 15 * time.Minute
+	rateLimitCooldownEnv       = "PRAIRIE_EBOOK_RATE_LIMIT_COOLDOWN"
+	legacyRateLimitCooldownEnv = "SILO_EBOOK_RATE_LIMIT_COOLDOWN"
 )
 
 func rateLimitCooldownFloor() time.Duration {
-	if v := os.Getenv(rateLimitCooldownEnv); v != "" {
+	if v := envutil.FirstNonEmpty(rateLimitCooldownEnv, legacyRateLimitCooldownEnv); v != "" {
 		if parsed, err := time.ParseDuration(v); err == nil && parsed > 0 {
 			return parsed
 		}

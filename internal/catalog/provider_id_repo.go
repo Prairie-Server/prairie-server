@@ -11,7 +11,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 var (
@@ -133,7 +133,7 @@ const providerIDColumns = `content_id, item_type, provider, provider_id, created
 // it neither persists nor deletes them. Two kinds live here:
 //   - ephemeral, query-only inputs (metadb, _filepath, oshash) that must never
 //     be written as durable rows; and
-//   - Silo-internal identity anchors (manga_series) stamped directly by the
+//   - Prairie-internal identity anchors (manga_series) stamped directly by the
 //     scanner to keep manga re-scans idempotent. Replace must leave these rows
 //     intact — otherwise the first manga enrichment (which calls
 //     ReplaceByContentID with only the external IDs) would delete the

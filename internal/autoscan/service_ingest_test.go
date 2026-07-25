@@ -5,7 +5,7 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/scantrigger"
+	"github.com/prairie-server/prairie-server/internal/scantrigger"
 )
 
 func webhookTestStore() *fakeStore {

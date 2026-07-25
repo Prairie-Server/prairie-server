@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	plexClientIdentifier = "silo-history-import"
-	plexProduct          = "Silo"
+	plexClientIdentifier = "prairie-history-import"
+	plexProduct          = "Prairie"
 	plexVersion          = "1.0.0"
 	plexTVBaseURL        = "https://plex.tv"
 	// plexDiscoverBaseURL hosts account-level metadata (the user's

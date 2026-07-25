@@ -1,6 +1,6 @@
 package ai
 
-import "github.com/Silo-Server/silo-server/internal/subtitles"
+import "github.com/prairie-server/prairie-server/internal/subtitles"
 
 // ParseCues keeps the AI package API stable while using the shared parser.
 func ParseCues(data []byte) ([]SubtitleCue, error) {

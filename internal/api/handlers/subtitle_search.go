@@ -11,9 +11,9 @@ import (
 	"strconv"
 	"strings"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
 	"github.com/go-chi/chi/v5"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 )
 
 const (

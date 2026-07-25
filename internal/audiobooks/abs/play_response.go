@@ -13,7 +13,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/oklog/ulid/v2"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // handlePlayStart handles POST /abs/api/items/{libraryItemId}/play.
@@ -24,7 +24,7 @@ import (
 // element: currentTime (resume position), audioTracks, mediaMetadata,
 // libraryItem, chapters, etc.
 //
-// Silo's implementation:
+// Prairie's implementation:
 //   - Looks up the audiobook via MediaStore.GetAudiobookByID.
 //   - Loads all media files via MediaStore.GetMediaFiles (sorted by ID ASC).
 //   - Synthesises a ULID session ID (in-memory; no play-session table yet).
@@ -112,17 +112,17 @@ func (h *Handler) handlePlayStart(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	audioTracks := buildSiloAudioTracks(contentID, files, baseURL, sessionID)
+	audioTracks := buildPrairieAudioTracks(contentID, files, baseURL, sessionID)
 
 	totalDuration := float64(0)
 	for _, t := range audioTracks {
 		totalDuration += t.Duration
 	}
 
-	chapters := buildSiloChapters(files)
+	chapters := buildPrairieChapters(files)
 
-	mediaMetadata := buildSiloPlayMediaMetadata(item)
-	libraryItem := buildSiloPlayLibraryItem(item, contentID, mediaMetadata, audioTracks, chapters, totalDuration, baseURL)
+	mediaMetadata := buildPrairiePlayMediaMetadata(item)
+	libraryItem := buildPrairiePlayLibraryItem(item, contentID, mediaMetadata, audioTracks, chapters, totalDuration, baseURL)
 
 	displayTitle := item.Title
 	displayAuthor := ""
@@ -173,10 +173,10 @@ func (h *Handler) handlePlayStart(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, playbackSession)
 }
 
-// buildSiloAudioTracks converts silo media_files into the ABS AudioTrack
+// buildPrairieAudioTracks converts silo media_files into the ABS AudioTrack
 // slice. Each track's contentUrl points at the short-lived session public
 // track route so bearer tokens are never embedded in URLs.
-func buildSiloAudioTracks(
+func buildPrairieAudioTracks(
 	contentID string,
 	files []*models.MediaFile,
 	baseURL string,
@@ -270,11 +270,11 @@ func buildSiloAudioTracks(
 	return tracks
 }
 
-// buildSiloChapters extracts chapters from the first media file that has them.
+// buildPrairieChapters extracts chapters from the first media file that has them.
 // ABS expects chapters as a flat list spanning the whole book; for multi-file
 // audiobooks we only use the first file's chapters (most single-file M4B
 // audiobooks have embedded chapters; multi-MP3 sets rarely do).
-func buildSiloChapters(files []*models.MediaFile) []map[string]any {
+func buildPrairieChapters(files []*models.MediaFile) []map[string]any {
 	for _, f := range files {
 		if len(f.Chapters) == 0 {
 			continue
@@ -293,10 +293,10 @@ func buildSiloChapters(files []*models.MediaFile) []map[string]any {
 	return []map[string]any{}
 }
 
-// buildSiloPlayMediaMetadata builds the playbackSession.mediaMetadata object
+// buildPrairiePlayMediaMetadata builds the playbackSession.mediaMetadata object
 // from a silo MediaItem. The mobile player reads this for the "Now Playing"
 // widget and playback history; missing keys cause the audio loader to abort.
-func buildSiloPlayMediaMetadata(item *models.MediaItem) map[string]any {
+func buildPrairiePlayMediaMetadata(item *models.MediaItem) map[string]any {
 	title := item.Title
 
 	authors := make([]map[string]any, 0)
@@ -376,11 +376,11 @@ func buildSiloPlayMediaMetadata(item *models.MediaItem) map[string]any {
 	}
 }
 
-// buildSiloPlayLibraryItem builds the playbackSession.libraryItem nested
+// buildPrairiePlayLibraryItem builds the playbackSession.libraryItem nested
 // object. The mobile player reads libraryItem.media.tracks /
 // libraryItem.media.metadata / libraryItem.libraryFiles for offline download
 // decisions and UI rendering.
-func buildSiloPlayLibraryItem(
+func buildPrairiePlayLibraryItem(
 	item *models.MediaItem,
 	contentID string,
 	mediaMetadata map[string]any,

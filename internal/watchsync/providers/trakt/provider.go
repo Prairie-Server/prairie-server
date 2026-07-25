@@ -13,9 +13,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 const defaultBaseURL = "https://api.trakt.tv"
@@ -1048,7 +1048,7 @@ func buildScrobblePayload(event watchsync.ScrobbleEvent) map[string]any {
 	}
 	payload := map[string]any{
 		"progress":    progress,
-		"app_version": "Silo",
+		"app_version": "Prairie",
 		"app_date":    time.Now().UTC().Format("2006-01-02"),
 	}
 	switch event.Kind {

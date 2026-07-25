@@ -15,16 +15,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/catalog/reattribute"
-	"github.com/Silo-Server/silo-server/internal/contentid"
-	"github.com/Silo-Server/silo-server/internal/idgen"
-	"github.com/Silo-Server/silo-server/internal/lang"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/naming"
-	"github.com/Silo-Server/silo-server/internal/scanner"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog/reattribute"
+	"github.com/prairie-server/prairie-server/internal/contentid"
+	"github.com/prairie-server/prairie-server/internal/idgen"
+	"github.com/prairie-server/prairie-server/internal/lang"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/naming"
+	"github.com/prairie-server/prairie-server/internal/scanner"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -1168,7 +1168,7 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 			return nil, fmt.Errorf("initial match requires hints")
 		}
 		selectionHints := sanitizedMatchHintProviderIDs(req.Hints)
-		// Seed external IDs from hints. Hints.ContentID is Silo's local
+		// Seed external IDs from hints. Hints.ContentID is Prairie's local
 		// skeleton item ID, not a searchable provider ID.
 		if selectionHints.FileHash != "" {
 			accumulatedIDs["oshash"] = selectionHints.FileHash

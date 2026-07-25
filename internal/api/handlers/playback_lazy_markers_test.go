@@ -7,10 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/intromarkers"
-	"github.com/Silo-Server/silo-server/internal/markers"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/intromarkers"
+	"github.com/prairie-server/prairie-server/internal/markers"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 type fakePlaybackMarkerProvider struct{}

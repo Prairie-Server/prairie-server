@@ -9,7 +9,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 type Service struct {

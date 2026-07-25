@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 type Capabilities struct {
@@ -22,7 +22,7 @@ type Capabilities struct {
 	ExportWatchlist bool `json:"export_watchlist"`
 	RemoveWatchlist bool `json:"remove_watchlist"`
 	// ProvidesWatchlistOrder is true when the provider returns its watchlist in a
-	// user-configurable order that Silo can mirror locally.
+	// user-configurable order that Prairie can mirror locally.
 	ProvidesWatchlistOrder bool `json:"provides_watchlist_order"`
 	ScrobblePlayback       bool `json:"scrobble_playback"`
 }

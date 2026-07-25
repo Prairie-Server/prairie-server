@@ -9,9 +9,9 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/Silo-Server/silo-server/internal/lang"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/lang"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 )
 
 type chromaprintStartRefiner interface {

@@ -92,9 +92,9 @@ const (
 	// already passed, and the window is what keeps those visible.
 	defaultServerChannelsBatchSeconds = 300
 	minServerChannelsBatchSeconds     = 120
-	// DefaultPushRelayURL is the public Silo relay origin used when no
+	// DefaultPushRelayURL is the public Prairie relay origin used when no
 	// notifications.push_relay_url override is stored.
-	DefaultPushRelayURL = "https://push.siloserver.org"
+	DefaultPushRelayURL = "https://push.prairie-server.org"
 
 	settingsCacheTTL = 15 * time.Second
 )
@@ -443,7 +443,7 @@ func (s *Settings) EnabledPushPlatforms(ctx context.Context) []string {
 	return platforms
 }
 
-// PushRelayURL is the public Silo relay origin.
+// PushRelayURL is the public Prairie relay origin.
 func (s *Settings) PushRelayURL(ctx context.Context) string {
 	value := strings.TrimRight(strings.TrimSpace(s.raw(ctx, SettingPushRelayURL)), "/")
 	if value == "" {
@@ -452,7 +452,7 @@ func (s *Settings) PushRelayURL(ctx context.Context) string {
 	return value
 }
 
-// PushRelayAPIKey is the bearer credential for the Silo relay.
+// PushRelayAPIKey is the bearer credential for the Prairie relay.
 func (s *Settings) PushRelayAPIKey(ctx context.Context) string {
 	return strings.TrimSpace(s.raw(ctx, SettingPushRelayAPIKey))
 }

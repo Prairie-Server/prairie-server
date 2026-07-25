@@ -16,12 +16,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/singleflight"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/overlays"
-	"github.com/Silo-Server/silo-server/internal/recommendations"
-	"github.com/Silo-Server/silo-server/internal/sections/recipes"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/overlays"
+	"github.com/prairie-server/prairie-server/internal/recommendations"
+	"github.com/prairie-server/prairie-server/internal/sections/recipes"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // SectionWithItems is a resolved section populated with query results.

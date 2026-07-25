@@ -11,10 +11,10 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/Silo-Server/silo-server/internal/lang"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/naming"
-	"github.com/Silo-Server/silo-server/internal/providerid"
+	"github.com/prairie-server/prairie-server/internal/lang"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/naming"
+	"github.com/prairie-server/prairie-server/internal/providerid"
 )
 
 // MatchCandidate represents a deduplicated search result grouped by normalized

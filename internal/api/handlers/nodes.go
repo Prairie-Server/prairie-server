@@ -13,9 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
 	"github.com/go-chi/chi/v5"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -309,7 +309,7 @@ func (h *NodeHandler) HandleListSessions(w http.ResponseWriter, r *http.Request)
 	}
 
 	ctx := r.Context()
-	pattern := "silo:sessions:*"
+	pattern := "prairie:sessions:*"
 
 	if nodeIDStr := r.URL.Query().Get("node_id"); nodeIDStr != "" {
 		nodeID, err := strconv.Atoi(nodeIDStr)
@@ -318,7 +318,7 @@ func (h *NodeHandler) HandleListSessions(w http.ResponseWriter, r *http.Request)
 			if err == nil {
 				hashBytes := sha256.Sum256([]byte(node.URL))
 				nodeHash := hex.EncodeToString(hashBytes[:4])
-				pattern = "silo:sessions:" + nodeHash + ":*"
+				pattern = "prairie:sessions:" + nodeHash + ":*"
 			}
 		}
 	}

@@ -1,4 +1,4 @@
-// Package handlers provides HTTP handler functions for the Silo API.
+// Package handlers provides HTTP handler functions for the Prairie API.
 package handlers
 
 import (
@@ -22,7 +22,7 @@ type S3HealthChecker interface {
 
 // healthStatus represents the JSON response for the health endpoint.
 //
-// ServerName and ServerID identify this Silo instance. They are
+// ServerName and ServerID identify this Prairie instance. They are
 // populated from server configuration and are stable across restarts,
 // which allows clients (notably the iOS/tvOS multi-server picker) to
 // display a friendly name and detect the same server reached via

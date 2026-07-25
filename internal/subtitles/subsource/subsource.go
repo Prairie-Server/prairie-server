@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 )
 
 const defaultBaseURL = "https://api.subsource.net/api/v1"

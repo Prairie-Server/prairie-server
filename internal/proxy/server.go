@@ -13,10 +13,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 
-	"github.com/Silo-Server/silo-server/internal/nodeconfig"
-	"github.com/Silo-Server/silo-server/internal/nodesessions"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/httpheaders"
+	"github.com/prairie-server/prairie-server/internal/nodeconfig"
+	"github.com/prairie-server/prairie-server/internal/nodesessions"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 // Server is the HTTP handler for proxy mode.
@@ -352,7 +353,7 @@ func (s *Server) proxyToTranscodeNode(w http.ResponseWriter, r *http.Request, cl
 	// of 404ing (the integrated server already does this from the same token). The
 	// node re-verifies the token independently before trusting it.
 	if token := chi.URLParam(r, "token"); token != "" {
-		req.Header.Set("X-Silo-Stream-Token", token)
+		httpheaders.Set(req.Header, httpheaders.HeaderStreamToken, token)
 	}
 
 	resp, err := s.httpClient.Do(req)

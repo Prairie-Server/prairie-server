@@ -20,7 +20,7 @@ JELLYFIN_WEB_VERSION ?= 10.11.6
 
 # Build version stamping: inject the git revision so the admin Build panel shows a
 # version even when Go's VCS metadata isn't embedded (mirrors the Dockerfile ldflags).
-BUILDINFO_PKG := github.com/Silo-Server/silo-server/internal/buildinfo
+BUILDINFO_PKG := github.com/prairie-server/prairie-server/internal/buildinfo
 BUILD_REVISION ?= $(shell git rev-parse HEAD 2>/dev/null)
 BUILD_DIRTY ?= $(shell test -n "$$(git status --porcelain 2>/dev/null)" && echo true || echo false)
 GO_LDFLAGS := -X $(BUILDINFO_PKG).revisionOverride=$(BUILD_REVISION) -X $(BUILDINFO_PKG).dirtyOverride=$(BUILD_DIRTY)
@@ -31,7 +31,7 @@ frontend:
 
 # Build the Go binary (depends on frontend)
 build: frontend
-	go build -ldflags "$(GO_LDFLAGS)" -o silo ./cmd/silo/
+	go build -ldflags "$(GO_LDFLAGS)" -o prairie ./cmd/prairie/
 
 # Run frontend dev server (proxies API to localhost:8080)
 dev-frontend:
@@ -39,15 +39,15 @@ dev-frontend:
 
 # Run the Go backend (integrated mode)
 dev-backend:
-	go run ./cmd/silo/
+	go run ./cmd/prairie/
 
 # Run a proxy node (stateless stream proxy, no DB required)
 dev-proxy:
-	go run ./cmd/silo/ --mode=proxy
+	go run ./cmd/prairie/ --mode=proxy
 
 # Run a transcode node (HLS transcode worker, no DB required)
 dev-transcode:
-	go run ./cmd/silo/ --mode=transcode
+	go run ./cmd/prairie/ --mode=transcode
 
 # Lint Go and frontend code
 lint:
@@ -67,13 +67,13 @@ migrate-create:
 migrate-validate:
 	$(GOOSE) -dir $(GOOSE_DIR) validate
 
-# Show Goose migration status through Silo's bootstrapping runner.
+# Show Goose migration status through Prairie's bootstrapping runner.
 migrate-status:
-	go run ./cmd/silo/ --env "$(ENV_FILE)" --migrate-status
+	go run ./cmd/prairie/ --env "$(ENV_FILE)" --migrate-status
 
-# Apply pending Goose migrations through Silo's bootstrapping runner.
+# Apply pending Goose migrations through Prairie's bootstrapping runner.
 migrate-up:
-	go run ./cmd/silo/ --env "$(ENV_FILE)" --migrate-only
+	go run ./cmd/prairie/ --env "$(ENV_FILE)" --migrate-only
 
 # Install repo-local git hooks for this checkout/worktree.
 install-hooks:
@@ -85,15 +85,15 @@ install-hooks:
 
 # Fetch and build the pinned Jellyfin Web component into a gitignored local cache.
 jellyfin-web:
-	go run ./cmd/silo/ compat-web install --dir "$(JELLYFIN_WEB_INSTALL_DIR)" --version "$(JELLYFIN_WEB_VERSION)"
+	go run ./cmd/prairie/ compat-web install --dir "$(JELLYFIN_WEB_INSTALL_DIR)" --version "$(JELLYFIN_WEB_VERSION)"
 
-# Read-only preflight for Continuum Docker installs moving to Silo.
+# Read-only preflight for Continuum Docker installs moving to Prairie.
 migrate-continuum-check:
 	scripts/migrate-continuum-docker.sh check
 
 # Clean build artifacts
 clean:
-	rm -rf web/dist web/node_modules silo
+	rm -rf web/dist web/node_modules prairie
 
 # Include developer-specific targets (gitignored, optional).
 # In Git worktrees, fall back to the main checkout's Makefile.local so custom

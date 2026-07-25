@@ -11,7 +11,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/autoscan"
+	"github.com/prairie-server/prairie-server/internal/autoscan"
 )
 
 // Provider names accepted by Parse and stored in source_config.webhook_provider.

@@ -18,10 +18,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/adminjob"
-	"github.com/Silo-Server/silo-server/internal/catalogseed"
-	"github.com/Silo-Server/silo-server/internal/notifications"
-	"github.com/Silo-Server/silo-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/adminjob"
+	"github.com/prairie-server/prairie-server/internal/catalogseed"
+	"github.com/prairie-server/prairie-server/internal/notifications"
+	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
 type CatalogSeedArtifactStore interface {

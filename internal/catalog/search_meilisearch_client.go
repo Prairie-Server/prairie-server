@@ -143,7 +143,7 @@ type meilisearchIndexSettings struct {
 
 // meilisearchEmbedderSettings describes a single configured embedder. The
 // capability check requires Source=="userProvided" and Dimensions to match the
-// canonical embedding dimension so Silo-supplied vectors line up with the index.
+// canonical embedding dimension so Prairie-supplied vectors line up with the index.
 type meilisearchEmbedderSettings struct {
 	Source     string `json:"source"`
 	Dimensions int    `json:"dimensions"`

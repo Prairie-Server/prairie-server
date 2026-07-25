@@ -13,7 +13,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/diagnostics/contract"
+	"github.com/prairie-server/prairie-server/internal/diagnostics/contract"
 )
 
 func TestServiceIngestStoresReadyReport(t *testing.T) {

@@ -86,7 +86,7 @@ export default function GeneralSettings() {
             label="Trusted Proxies"
             hint={
               (trustedProxiesManaged
-                ? "Managed by SILO_TRUSTED_PROXIES. Remove that environment variable to edit here. "
+                ? "Managed by PRAIRIE_TRUSTED_PROXIES. Remove that environment variable to edit here. "
                 : "") +
               "Comma-separated CIDRs of reverse proxies whose X-Forwarded-For is trusted, e.g. " +
               "172.16.0.0/12, 203.0.113.7/32. Applies without a restart."
@@ -104,7 +104,7 @@ export default function GeneralSettings() {
               </li>
               <li>
                 Recommended: keep the defaults, and only add your proxy&apos;s public address as a
-                /32 (e.g. 203.0.113.7/32) if it reaches Silo from outside those ranges.
+                /32 (e.g. 203.0.113.7/32) if it reaches Prairie from outside those ranges.
               </li>
               <li>
                 CDNs such as Cloudflare connect from many published IP ranges — you must list all of

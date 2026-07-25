@@ -19,9 +19,9 @@ import (
 
 	"golang.org/x/time/rate"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 const (
@@ -77,7 +77,7 @@ func (p *Provider) DisplayName() string {
 }
 
 func (p *Provider) Capabilities() watchsync.Capabilities {
-	// MDBList exposes a single list — its watchlist — so it binds to Silo's
+	// MDBList exposes a single list — its watchlist — so it binds to Prairie's
 	// watchlist rather than favorites.
 	return watchsync.Capabilities{
 		ImportWatched:          true,

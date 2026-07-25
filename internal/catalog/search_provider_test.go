@@ -95,17 +95,17 @@ func TestCatalogSearchDocumentVectorsUseEmbedderAndOptOutMissing(t *testing.T) {
 	}
 	count := setCatalogSearchDocumentVectors(docs, map[string][]float32{
 		"movie-1": {0.1, 0.2},
-	}, "silo_recommendations")
+	}, "prairie_recommendations")
 	if count != 1 {
 		t.Fatalf("vectorized docs = %d, want 1", count)
 	}
-	if got := docs[0].Vectors["silo_recommendations"]; !reflect.DeepEqual(got, []float32{0.1, 0.2}) {
+	if got := docs[0].Vectors["prairie_recommendations"]; !reflect.DeepEqual(got, []float32{0.1, 0.2}) {
 		t.Fatalf("doc vector = %#v", got)
 	}
 	if docs[1].Vectors == nil {
 		t.Fatal("missing vector doc should include explicit _vectors opt-out")
 	}
-	if got, ok := docs[1].Vectors["silo_recommendations"]; !ok || got != nil {
+	if got, ok := docs[1].Vectors["prairie_recommendations"]; !ok || got != nil {
 		t.Fatalf("missing vector opt-out = %#v, present=%v; want nil value", got, ok)
 	}
 
@@ -119,7 +119,7 @@ func TestCatalogSearchDocumentVectorsUseEmbedderAndOptOutMissing(t *testing.T) {
 	if strings.Count(string(data), `"_vectors"`) != 2 {
 		t.Fatalf("marshaled docs should include _vectors for both docs: %s", data)
 	}
-	if !strings.Contains(string(data), `"silo_recommendations":null`) {
+	if !strings.Contains(string(data), `"prairie_recommendations":null`) {
 		t.Fatalf("marshaled docs missing null vector opt-out: %s", data)
 	}
 	if got := catalogSearchVectorDocumentCount(docs); got != 1 {
@@ -128,7 +128,7 @@ func TestCatalogSearchDocumentVectorsUseEmbedderAndOptOutMissing(t *testing.T) {
 }
 
 func TestCatalogSearchMeilisearchSettingsOmitEmbeddersWhenSemanticDisabled(t *testing.T) {
-	settings := catalogSearchMeilisearchSettings("silo_recommendations", false, false)
+	settings := catalogSearchMeilisearchSettings("prairie_recommendations", false, false)
 
 	if _, ok := settings["embedders"]; ok {
 		t.Fatalf("semantic-disabled settings should not include embedders: %#v", settings["embedders"])
@@ -210,7 +210,7 @@ func TestMeilisearchSearchRequestBuildsHybridWhenSemanticEnabled(t *testing.T) {
 			MatchingStrategy: DefaultMeilisearchMatchingStrategy,
 			SemanticEnabled:  true,
 			SemanticRatio:    0.4,
-			Embedder:         "silo_recommendations",
+			Embedder:         "prairie_recommendations",
 			Vectorizer:       vectorizer,
 		},
 	}
@@ -223,7 +223,7 @@ func TestMeilisearchSearchRequestBuildsHybridWhenSemanticEnabled(t *testing.T) {
 	if req.Hybrid == nil {
 		t.Fatal("hybrid request missing")
 	}
-	if req.Hybrid.Embedder != "silo_recommendations" {
+	if req.Hybrid.Embedder != "prairie_recommendations" {
 		t.Fatalf("embedder = %q", req.Hybrid.Embedder)
 	}
 	if req.Hybrid.SemanticRatio != 0.4 {
@@ -260,7 +260,7 @@ func TestMeilisearchSearchRequestStaysKeywordWhenCoverageNotReady(t *testing.T) 
 			MatchingStrategy: DefaultMeilisearchMatchingStrategy,
 			SemanticEnabled:  true,
 			SemanticRatio:    0.4,
-			Embedder:         "silo_recommendations",
+			Embedder:         "prairie_recommendations",
 			Vectorizer:       vectorizer,
 			Coverage:         fakeCoverageGate{ready: false, reason: `type "movie" coverage 40% below threshold`},
 		},
@@ -287,7 +287,7 @@ func TestMeilisearchSearchRequestBuildsHybridWhenCoverageReady(t *testing.T) {
 			MatchingStrategy: DefaultMeilisearchMatchingStrategy,
 			SemanticEnabled:  true,
 			SemanticRatio:    0.4,
-			Embedder:         "silo_recommendations",
+			Embedder:         "prairie_recommendations",
 			Vectorizer:       vectorizer,
 			Coverage:         fakeCoverageGate{ready: true},
 		},
@@ -476,7 +476,7 @@ func TestMeilisearchSearchRequestBuildsHybridForApproximateInteractiveSearch(t *
 			MatchingStrategy: DefaultMeilisearchMatchingStrategy,
 			SemanticEnabled:  true,
 			SemanticRatio:    0.4,
-			Embedder:         "silo_recommendations",
+			Embedder:         "prairie_recommendations",
 			Vectorizer:       vectorizer,
 		},
 	}
@@ -502,7 +502,7 @@ func TestMeilisearchSearchRequestBuildsHybridAndStrictMatchingForTwoTermSearch(t
 			MatchingStrategy: DefaultMeilisearchMatchingStrategy,
 			SemanticEnabled:  true,
 			SemanticRatio:    0.3,
-			Embedder:         "silo_recommendations",
+			Embedder:         "prairie_recommendations",
 			Vectorizer:       vectorizer,
 		},
 	}
@@ -533,7 +533,7 @@ func TestMeilisearchSearchRequestUsesStrictMatchingWhenTwoTermHybridNotReady(t *
 			MatchingStrategy: DefaultMeilisearchMatchingStrategy,
 			SemanticEnabled:  true,
 			SemanticRatio:    0.3,
-			Embedder:         "silo_recommendations",
+			Embedder:         "prairie_recommendations",
 			Vectorizer:       vectorizer,
 			Coverage:         fakeCoverageGate{ready: false, reason: `type "movie" coverage 40% below threshold`},
 		},
@@ -566,7 +566,7 @@ func TestMeilisearchSearchRequestSkipsHybridForSingleTermTitleSearch(t *testing.
 			MatchingStrategy: DefaultMeilisearchMatchingStrategy,
 			SemanticEnabled:  true,
 			SemanticRatio:    0.4,
-			Embedder:         "silo_recommendations",
+			Embedder:         "prairie_recommendations",
 			Vectorizer:       vectorizer,
 		},
 	}

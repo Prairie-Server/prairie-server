@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 // DeviceProfile captures the subset of Jellyfin client capabilities the

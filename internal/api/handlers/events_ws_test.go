@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	evt "github.com/Silo-Server/silo-server/internal/events"
+	evt "github.com/prairie-server/prairie-server/internal/events"
 )
 
 type fakeActiveScanSnapshotLister struct {

@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/sections/recipes"
+	"github.com/prairie-server/prairie-server/internal/sections/recipes"
 )
 
 // TestRecipeDispatchEquivalence calls each registered Recipe and asserts that the resulting

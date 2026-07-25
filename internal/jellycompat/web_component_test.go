@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 func TestWebComponentStatusMissing(t *testing.T) {
@@ -103,7 +103,7 @@ func TestWebComponentStatusUsesPersistedSettingsForDisplay(t *testing.T) {
 		"jellyfin_compat.enabled":     "false",
 		"jellyfin_compat.listen":      ":8096",
 		"jellyfin_compat.public_url":  "http://127.0.0.1:8096",
-		"jellyfin_compat.server_name": "Silo",
+		"jellyfin_compat.server_name": "Prairie",
 	})
 	if err != nil {
 		t.Fatalf("LoadFromDB: %v", err)
@@ -113,7 +113,7 @@ func TestWebComponentStatusUsesPersistedSettingsForDisplay(t *testing.T) {
 		"jellyfin_compat.enabled":                 "true",
 		"jellyfin_compat.listen":                  ":19096",
 		"jellyfin_compat.public_url":              "https://compat.example.test",
-		"jellyfin_compat.server_name":             "Silo Compat",
+		"jellyfin_compat.server_name":             "Prairie Compat",
 		"jellyfin_compat.emulated_server_version": "10.11.6",
 		"jellyfin_compat.web_install_dir":         root,
 		"jellyfin_compat.web_dir":                 filepath.Join(root, "current"),
@@ -128,7 +128,7 @@ func TestWebComponentStatusUsesPersistedSettingsForDisplay(t *testing.T) {
 	if status.PublicURL != "https://compat.example.test" {
 		t.Fatalf("PublicURL = %q, want persisted public URL", status.PublicURL)
 	}
-	if status.ServerName != "Silo Compat" {
+	if status.ServerName != "Prairie Compat" {
 		t.Fatalf("ServerName = %q, want persisted server name", status.ServerName)
 	}
 	if !status.RestartRequired {
@@ -142,7 +142,7 @@ func TestWebComponentStatusDoesNotRequireRestartForLiveIdentitySettings(t *testi
 		"jellyfin_compat.enabled":                 "true",
 		"jellyfin_compat.listen":                  ":8096",
 		"jellyfin_compat.public_url":              "http://127.0.0.1:8096",
-		"jellyfin_compat.server_name":             "Silo",
+		"jellyfin_compat.server_name":             "Prairie",
 		"jellyfin_compat.emulated_server_version": "10.11.0",
 		"jellyfin_compat.web_install_dir":         root,
 		"jellyfin_compat.web_dir":                 filepath.Join(root, "current"),
@@ -153,7 +153,7 @@ func TestWebComponentStatusDoesNotRequireRestartForLiveIdentitySettings(t *testi
 
 	status := WebComponentStatusForConfig(cfg, map[string]string{
 		"jellyfin_compat.public_url":              "https://compat.example.test",
-		"jellyfin_compat.server_name":             "Silo Compat",
+		"jellyfin_compat.server_name":             "Prairie Compat",
 		"jellyfin_compat.emulated_server_version": "10.11.6",
 		"jellyfin_compat.web_install_dir":         root,
 		"jellyfin_compat.web_dir":                 filepath.Join(root, "current"),
@@ -162,7 +162,7 @@ func TestWebComponentStatusDoesNotRequireRestartForLiveIdentitySettings(t *testi
 	if status.PublicURL != "https://compat.example.test" {
 		t.Fatalf("PublicURL = %q, want persisted public URL", status.PublicURL)
 	}
-	if status.ServerName != "Silo Compat" {
+	if status.ServerName != "Prairie Compat" {
 		t.Fatalf("ServerName = %q, want persisted server name", status.ServerName)
 	}
 	if status.EmulatedVersion != "10.11.6" {

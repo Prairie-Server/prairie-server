@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 // newTestRepo builds a Repository with a real cipher for scan-method tests.

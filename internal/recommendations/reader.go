@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // SectionKind identifies a single recommendation row reachable via a dedicated

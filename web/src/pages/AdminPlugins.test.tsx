@@ -17,14 +17,14 @@ function makeCatalogEntry(
   overrides: { displayName?: string; summary?: string } = {},
 ): PluginCatalogEntry {
   const suffix = String(index).padStart(2, "0");
-  const repoURL = `https://github.com/Silo-Server/plugin-${suffix}`;
+  const repoURL = `https://github.com/prairie-server/plugin-${suffix}`;
   return {
     repository_id: 1,
     plugin_id: `silo.plugin-${suffix}`,
     version: "1.0.0",
     archive_url: `${repoURL}/releases/download/v1.0.0/plugin-linux-amd64`,
     source_kind: "silo",
-    repository_name: "Silo plugins",
+    repository_name: "Prairie plugins",
     repo_url: repoURL,
     presentation: {
       display_name: overrides.displayName ?? `Plugin ${suffix}`,
@@ -35,8 +35,8 @@ function makeCatalogEntry(
       source_url: repoURL,
       support_url: `${repoURL}/issues`,
       changelog_url: `${repoURL}/releases`,
-      publisher_name: "Silo",
-      publisher_url: "https://github.com/Silo-Server",
+      publisher_name: "Prairie",
+      publisher_url: "https://github.com/prairie-server",
       license_spdx: "AGPL-3.0-or-later",
     },
     capabilities: [],
@@ -57,7 +57,7 @@ function makeInstallation(index: number, displayName: string): PluginInstallatio
     install_path: `/plugins/installed-${suffix}`,
     enabled: true,
     source_kind: "silo",
-    repository_name: "Silo plugins",
+    repository_name: "Prairie plugins",
     updates_paused: false,
     presentation: {
       display_name: displayName,
@@ -65,11 +65,11 @@ function makeInstallation(index: number, displayName: string): PluginInstallatio
       description_markdown: `Installed description ${suffix}.`,
       setup_markdown: "Configure it.",
       homepage_url: "",
-      source_url: `https://github.com/Silo-Server/installed-${suffix}`,
+      source_url: `https://github.com/prairie-server/installed-${suffix}`,
       support_url: "",
       changelog_url: "",
-      publisher_name: "Silo",
-      publisher_url: "https://github.com/Silo-Server",
+      publisher_name: "Prairie",
+      publisher_url: "https://github.com/prairie-server",
       license_spdx: "AGPL-3.0-or-later",
     },
     capabilities: [],
@@ -285,19 +285,19 @@ describe("AdminPlugins", () => {
           version: "1.0.0",
           archive_url: "https://example.com/plugin",
           source_kind: "silo",
-          repository_name: "Silo plugins",
-          repo_url: "https://github.com/Silo-Server/example-plugin",
+          repository_name: "Prairie plugins",
+          repo_url: "https://github.com/prairie-server/example-plugin",
           presentation: {
             display_name: "Example Plugin",
             summary: "Explains the example for a homelab administrator.",
             description_markdown: "Longer description.",
             setup_markdown: "Configure the example.",
             homepage_url: "https://example.com",
-            source_url: "https://github.com/Silo-Server/example-plugin",
-            support_url: "https://github.com/Silo-Server/example-plugin/issues",
-            changelog_url: "https://github.com/Silo-Server/example-plugin/releases",
-            publisher_name: "Silo",
-            publisher_url: "https://github.com/Silo-Server",
+            source_url: "https://github.com/prairie-server/example-plugin",
+            support_url: "https://github.com/prairie-server/example-plugin/issues",
+            changelog_url: "https://github.com/prairie-server/example-plugin/releases",
+            publisher_name: "Prairie",
+            publisher_url: "https://github.com/prairie-server",
             license_spdx: "AGPL-3.0-or-later",
           },
           capabilities: [],
@@ -317,8 +317,8 @@ describe("AdminPlugins", () => {
 
     expect(markup).toContain("Example Plugin");
     expect(markup).toContain("Explains the example for a homelab administrator.");
-    expect(markup).toContain('href="https://github.com/Silo-Server/example-plugin"');
-    expect(markup).toContain('href="https://github.com/Silo-Server/example-plugin/releases"');
+    expect(markup).toContain('href="https://github.com/prairie-server/example-plugin"');
+    expect(markup).toContain('href="https://github.com/prairie-server/example-plugin/releases"');
   });
 
   it("uses catalog presentation metadata for an older installed manifest", () => {
@@ -335,7 +335,7 @@ describe("AdminPlugins", () => {
           install_path: "/plugins/example",
           enabled: true,
           source_kind: "silo",
-          repository_name: "Silo plugins",
+          repository_name: "Prairie plugins",
           updates_paused: false,
           capabilities: [],
           global_config_schema: [],
@@ -355,19 +355,19 @@ describe("AdminPlugins", () => {
           version: "1.0.0",
           archive_url: "https://example.com/plugin",
           source_kind: "silo",
-          repository_name: "Silo plugins",
-          repo_url: "https://github.com/Silo-Server/example-plugin",
+          repository_name: "Prairie plugins",
+          repo_url: "https://github.com/prairie-server/example-plugin",
           presentation: {
             display_name: "Example Plugin",
             summary: "Catalog fallback description.",
             description_markdown: "Longer description.",
             setup_markdown: "Configure the example.",
             homepage_url: "https://example.com",
-            source_url: "https://github.com/Silo-Server/example-plugin",
-            support_url: "https://github.com/Silo-Server/example-plugin/issues",
-            changelog_url: "https://github.com/Silo-Server/example-plugin/releases",
-            publisher_name: "Silo",
-            publisher_url: "https://github.com/Silo-Server",
+            source_url: "https://github.com/prairie-server/example-plugin",
+            support_url: "https://github.com/prairie-server/example-plugin/issues",
+            changelog_url: "https://github.com/prairie-server/example-plugin/releases",
+            publisher_name: "Prairie",
+            publisher_url: "https://github.com/prairie-server",
             license_spdx: "AGPL-3.0-or-later",
           },
           capabilities: [],
@@ -386,7 +386,7 @@ describe("AdminPlugins", () => {
     );
 
     expect(markup).toContain("Catalog fallback description.");
-    expect(markup).toContain('href="https://github.com/Silo-Server/example-plugin"');
+    expect(markup).toContain('href="https://github.com/prairie-server/example-plugin"');
   });
 
   it("searches catalog presentation metadata from the URL", () => {

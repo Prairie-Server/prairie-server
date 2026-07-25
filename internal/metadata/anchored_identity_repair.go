@@ -12,10 +12,10 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/Silo-Server/silo-server/internal/catalog/filesplit"
-	"github.com/Silo-Server/silo-server/internal/catalog/reattribute"
-	"github.com/Silo-Server/silo-server/internal/contentid"
-	"github.com/Silo-Server/silo-server/internal/pathscope"
+	"github.com/prairie-server/prairie-server/internal/catalog/filesplit"
+	"github.com/prairie-server/prairie-server/internal/catalog/reattribute"
+	"github.com/prairie-server/prairie-server/internal/contentid"
+	"github.com/prairie-server/prairie-server/internal/pathscope"
 )
 
 const (

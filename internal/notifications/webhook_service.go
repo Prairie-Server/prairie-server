@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
 	"github.com/oklog/ulid/v2"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 // Webhook service errors surfaced to the API layer.
@@ -351,7 +351,7 @@ func sampleDeliveryRow(profileID string) DeliveryRow {
 			ReasonFlags: []byte(`{"favorite":true,"watchlist":false,"continue_watching":false,"next_up":false}`),
 			CreatedAt:   time.Now(),
 		},
-		SeriesTitle:   "Silo Test Series",
+		SeriesTitle:   "Prairie Test Series",
 		EpisodeTitle:  "This is a test notification",
 		SeasonNumber:  &seasonNumber,
 		EpisodeNumber: &episodeNumber,

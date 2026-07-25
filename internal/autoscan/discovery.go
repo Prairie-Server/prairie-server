@@ -7,7 +7,7 @@ import (
 
 // Built-in source identities are host-discovered scan-source entries that need
 // no plugin installation. The ARR webhook identity backs webhook-mode sources:
-// Sonarr/Radarr POST directly to Silo, the host parses the payload, and the
+// Sonarr/Radarr POST directly to Prairie, the host parses the payload, and the
 // plugin provider is never invoked for it.
 const (
 	BuiltinArrWebhookPluginID     = "silo.autoscan.arr-webhook"

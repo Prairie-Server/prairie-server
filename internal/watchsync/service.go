@@ -11,9 +11,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/watchstate"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/watchstate"
 )
 
 type Service struct {
@@ -833,7 +833,7 @@ func (s *Service) executeSyncRun(ctx context.Context, conn Connection, run SyncR
 
 // deferRateLimitedConnection records when the provider's rate limit is
 // expected to clear so scheduled syncs skip the connection until then. The
-// provider limit applies to the API key/account rather than the Silo profile,
+// provider limit applies to the API key/account rather than the Prairie profile,
 // so the deferral is stamped on every connection bound to the same provider
 // account. The pending export/removal rows are left untouched and picked up
 // by the first run after the deferral expires.

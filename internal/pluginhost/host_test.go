@@ -3,7 +3,7 @@ package pluginhost_test
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
 func TestConfig_AcceptsEventPublisherAndLibraryLister(t *testing.T) {

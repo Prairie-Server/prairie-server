@@ -7,15 +7,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/watchsync"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 func newCompatTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)
@@ -179,7 +179,7 @@ func TestDurableCompatPlaybackStore_EmptyTokenFindByRouteNoDBScan(t *testing.T) 
 	// loadByCompatToken must early-return for an empty token even with a non-nil
 	// pool, so it can never issue a full-table query. Use a closed pool so any
 	// query attempt would error; reaching the early return means no query ran.
-	if dsn := os.Getenv("SILO_TEST_DATABASE_URL"); dsn != "" {
+	if dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL"); dsn != "" {
 		pool := newCompatTestPool(t)
 		s := NewDurableCompatPlaybackStore(pool, time.Hour, nil)
 		// Should be a no-op (no panic, no scan); cache stays empty.

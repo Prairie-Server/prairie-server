@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 func TestFilterSupersededProgressDropsOlderPartialsAfterLaterCompletedEpisode(t *testing.T) {

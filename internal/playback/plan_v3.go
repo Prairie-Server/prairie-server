@@ -7,7 +7,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type PlannerSettingsV3 struct {
@@ -188,7 +188,7 @@ func PlanPlaybackV3(input PlannerInputV3) PlannerResultV3 {
 
 	// Profile 7 is normalized on the client against the original range-capable
 	// source. A decoder profile/max-instance claim alone is not proof of native
-	// dual-layer output, so the default Android route mirrors Silo Apple: P8.1
+	// dual-layer output, so the default Android route mirrors Prairie Apple: P8.1
 	// base-layer Dolby Vision first, then same-file HDR10.
 	if source.DVProfile == 7 && quality.PreservesSource && videoOK && containerOK && audioOK && !subtitle.RequiresBurn {
 		if clientDV81Eligible {
