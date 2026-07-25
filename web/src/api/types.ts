@@ -2299,6 +2299,71 @@ export interface LiveTVGuideSourcesResponse {
   guide_sources: LiveTVGuideSource[];
 }
 
+export interface LiveTVProgram {
+  id: string;
+  channel_id: string;
+  source_id?: string;
+  series_id: string;
+  external_id?: string;
+  start: string;
+  stop: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  season?: number | null;
+  episode?: number | null;
+  genres: string[];
+  image_url: string;
+  is_new: boolean;
+  is_live: boolean;
+}
+
+export interface LiveTVGuideResponse {
+  programs: LiveTVProgram[];
+  start: string;
+  end: string;
+}
+
+export interface LiveTVSessionStartResponse {
+  session_id: string;
+  playback_ticket: string;
+  hls_url: string;
+  stream_url?: string;
+  note?: string;
+}
+
+export interface LiveTVRecording {
+  id: string;
+  program_id?: string;
+  channel_id: string;
+  series_rule_id?: string;
+  status: string;
+  path?: string;
+  library_item_id?: string;
+  start: string;
+  stop: string;
+  title: string;
+  last_error?: string;
+}
+
+export interface LiveTVRecordingsResponse {
+  recordings: LiveTVRecording[];
+}
+
+export interface LiveTVSeriesRule {
+  id: string;
+  series_id: string;
+  channel_id?: string | null;
+  title_match: string;
+  new_only: boolean;
+  keep_last: number;
+  enabled: boolean;
+}
+
+export interface LiveTVSeriesRulesResponse {
+  series_rules: LiveTVSeriesRule[];
+}
+
 export interface RequestListParams {
   status?: MediaRequestStatus | "all";
   outcome?: MediaRequestOutcome | "all";

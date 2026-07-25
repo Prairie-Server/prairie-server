@@ -9,11 +9,13 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useAddLiveTVTuner,
+  useCancelLiveTVRecording,
   useCreateLiveTVGuideSource,
   useDeleteLiveTVGuideSource,
   useDeleteLiveTVTuner,
   useLiveTVChannels,
   useLiveTVGuideSources,
+  useLiveTVRecordings,
   useLiveTVTuners,
   usePatchLiveTVChannel,
   useScanLiveTVTuner,
@@ -21,7 +23,7 @@ import {
   useUpdateLiveTVGuideSource,
 } from "@/hooks/queries/useLiveTV";
 
-const LIVETV_TABS = ["tuners", "channels", "guide"] as const;
+const LIVETV_TABS = ["tuners", "channels", "guide", "recordings"] as const;
 type LiveTVTab = (typeof LIVETV_TABS)[number];
 
 function normalizeTab(value: string | null): LiveTVTab {
@@ -348,6 +350,47 @@ function GuideTab() {
   );
 }
 
+function RecordingsTab() {
+  const recordings = useLiveTVRecordings();
+  const cancelRecording = useCancelLiveTVRecording();
+
+  if (recordings.isLoading) {
+    return <p className="text-muted-foreground text-sm">Loading recordings…</p>;
+  }
+  if ((recordings.data?.length ?? 0) === 0) {
+    return <p className="text-muted-foreground text-sm">No recordings yet.</p>;
+  }
+
+  return (
+    <ul className="divide-border divide-y border-y">
+      {recordings.data?.map((rec) => (
+        <li key={rec.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
+          <div className="min-w-0 space-y-1">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="font-medium">{rec.title || "Untitled"}</span>
+              <Badge variant="secondary">{rec.status}</Badge>
+            </div>
+            <p className="text-muted-foreground text-xs">
+              {new Date(rec.start).toLocaleString()} – {new Date(rec.stop).toLocaleString()}
+              {rec.last_error ? ` · ${rec.last_error}` : ""}
+            </p>
+          </div>
+          {rec.status === "scheduled" ? (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={cancelRecording.isPending}
+              onClick={() => cancelRecording.mutate(rec.id)}
+            >
+              Cancel
+            </Button>
+          ) : null}
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 export default function AdminLiveTV() {
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = normalizeTab(searchParams.get("tab"));
@@ -389,6 +432,7 @@ export default function AdminLiveTV() {
           <TabsTrigger value="tuners">Tuners</TabsTrigger>
           <TabsTrigger value="channels">Channels</TabsTrigger>
           <TabsTrigger value="guide">Guide sources</TabsTrigger>
+          <TabsTrigger value="recordings">Recordings</TabsTrigger>
         </TabsList>
         <TabsContent value="tuners">
           <TunersTab />
@@ -398,6 +442,9 @@ export default function AdminLiveTV() {
         </TabsContent>
         <TabsContent value="guide">
           <GuideTab />
+        </TabsContent>
+        <TabsContent value="recordings">
+          <RecordingsTab />
         </TabsContent>
       </Tabs>
     </div>

@@ -53,6 +53,7 @@ import AdminUsers from "@/pages/AdminUsers";
 import AdminRequests from "@/pages/AdminRequests";
 import AdminAutoscan from "@/pages/AdminAutoscan";
 import AdminLiveTV from "@/pages/AdminLiveTV";
+import LiveTV from "@/pages/LiveTV";
 import AdminDevices from "@/pages/AdminDevices";
 import AdminLibraries from "@/pages/AdminLibraries";
 import AdminSettingsLayout from "@/pages/admin-settings/AdminSettingsLayout";
@@ -571,6 +572,7 @@ function AppRoutes() {
                             element={<RecommendationsSection />}
                           />
                           <Route path="/calendar" element={<Calendar />} />
+                          <Route path="/livetv" element={<LiveTV />} />
                           <Route path="/notifications" element={<Notifications />} />
                           <Route
                             path="/profile/customize-home"

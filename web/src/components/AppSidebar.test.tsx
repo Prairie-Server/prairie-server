@@ -93,6 +93,12 @@ vi.mock("@/hooks/queries/useRequests", () => ({
   }),
 }));
 
+vi.mock("@/hooks/queries/useLiveTV", () => ({
+  useLiveTVChannels: () => ({
+    data: [],
+  }),
+}));
+
 vi.mock("@/hooks/queries/notifications", () => ({
   useUnreadNotificationCount: () => ({ data: 0 }),
 }));

@@ -4,8 +4,12 @@ import { api } from "@/api/client";
 import type {
   LiveTVChannel,
   LiveTVChannelsResponse,
+  LiveTVGuideResponse,
   LiveTVGuideSource,
   LiveTVGuideSourcesResponse,
+  LiveTVRecording,
+  LiveTVRecordingsResponse,
+  LiveTVSessionStartResponse,
   LiveTVTuner,
   LiveTVTunersResponse,
 } from "@/api/types";
@@ -185,9 +189,118 @@ export function useSyncLiveTVGuideSource() {
     onSuccess: () => {
       toast.success("Guide sync started");
       queryClient.invalidateQueries({ queryKey: adminKeys.liveTVGuideSources() });
+      queryClient.invalidateQueries({ queryKey: ["livetv", "guide"] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to sync guide source");
+    },
+  });
+}
+
+export type LiveTVGuideParams = {
+  channelIds?: string[];
+  start?: string;
+  end?: string;
+};
+
+export function useLiveTVGuide(params: LiveTVGuideParams = {}, enabled = true) {
+  const search = new URLSearchParams();
+  if (params.channelIds?.length) search.set("channels", params.channelIds.join(","));
+  if (params.start) search.set("start", params.start);
+  if (params.end) search.set("end", params.end);
+  const qs = search.toString();
+  return useQuery({
+    queryKey: adminKeys.liveTVGuide({
+      channels: params.channelIds?.join(",") ?? "",
+      start: params.start ?? "",
+      end: params.end ?? "",
+    }),
+    queryFn: () =>
+      api<LiveTVGuideResponse>(`/livetv/guide${qs ? `?${qs}` : ""}`).then((data) => ({
+        programs: data.programs ?? [],
+        start: data.start,
+        end: data.end,
+      })),
+    staleTime: LIVETV_STALE_TIME,
+    enabled,
+    placeholderData: keepPreviousData,
+  });
+}
+
+export function useStartLiveTVSession() {
+  return useMutation({
+    mutationFn: (channelId: string) =>
+      api<LiveTVSessionStartResponse>(
+        `/livetv/channels/${encodeURIComponent(channelId)}/session`,
+        { method: "POST" },
+      ),
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Failed to start Live TV session");
+    },
+  });
+}
+
+export function useReleaseLiveTVSession() {
+  return useMutation({
+    mutationFn: (sessionId: string) =>
+      api(`/livetv/sessions/${encodeURIComponent(sessionId)}`, { method: "DELETE" }),
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Failed to release Live TV session");
+    },
+  });
+}
+
+export function useLiveTVRecordings(status?: string) {
+  const params = new URLSearchParams();
+  if (status) params.set("status", status);
+  const qs = params.toString();
+  return useQuery({
+    queryKey: adminKeys.liveTVRecordings(status),
+    queryFn: () =>
+      api<LiveTVRecordingsResponse>(`/livetv/recordings${qs ? `?${qs}` : ""}`).then(
+        (data) => data.recordings ?? [],
+      ),
+    staleTime: LIVETV_STALE_TIME,
+  });
+}
+
+export function useScheduleLiveTVRecording() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: {
+      program_id?: string;
+      channel_id?: string;
+      start?: string;
+      stop?: string;
+      title?: string;
+    }) =>
+      api<LiveTVRecording>("/livetv/recordings", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      toast.success("Recording scheduled");
+      queryClient.invalidateQueries({ queryKey: ["livetv", "recordings"] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Failed to schedule recording");
+    },
+  });
+}
+
+export function useCancelLiveTVRecording() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (recordingId: string) =>
+      api<LiveTVRecording>(`/livetv/recordings/${encodeURIComponent(recordingId)}`, {
+        method: "DELETE",
+      }),
+    onSuccess: () => {
+      toast.success("Recording cancelled");
+      queryClient.invalidateQueries({ queryKey: ["livetv", "recordings"] });
+    },
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Failed to cancel recording");
     },
   });
 }

@@ -18,6 +18,7 @@ import { useUnreadNotificationCount } from "@/hooks/queries/notifications";
 import { useNotificationCapability } from "@/hooks/queries/notificationWebhooks";
 import { usePluginSettingsList } from "@/hooks/queries/pluginSettings";
 import { useRequestFeatureStatus } from "@/hooks/queries/useRequests";
+import { useLiveTVChannels } from "@/hooks/queries/useLiveTV";
 import { useSidebarPins, useToggleSidebarPin } from "@/hooks/queries/sidebarPins";
 import { useViewTransitionNavigate } from "@/hooks/useViewTransition";
 import { pluginRouteHref } from "@/lib/pluginRouteHref";
@@ -52,6 +53,7 @@ import {
   Settings,
   Sparkles,
   CalendarDays,
+  Radio,
   Home,
   UsersRound,
   ChevronDown,
@@ -184,6 +186,10 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
   const { data: pluginSettings } = usePluginSettingsList();
   const requestStatus = useRequestFeatureStatus();
   const showRequestsNav = requestStatus.data?.requests_enabled === true;
+  const liveTVChannels = useLiveTVChannels();
+  const showLiveTVNav =
+    location.pathname.startsWith("/livetv") ||
+    (liveTVChannels.data?.some((ch) => ch.enabled) ?? false);
   // Optimistic while loading (the setting defaults to on, so hiding until the
   // capability resolves would flash); hidden when the admin kill switch is off
   // or the server has no notifications API (worker modes → query errors).
@@ -597,6 +603,25 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                 <SidebarLabel show={showLabels}>Calendar</SidebarLabel>
               </ViewTransitionLink>
             </li>
+            {showLiveTVNav && (
+              <li>
+                <ViewTransitionLink
+                  to="/livetv"
+                  onClick={onNavigate}
+                  className={navLinkClass("/livetv")}
+                  aria-current={isActive("/livetv") ? "page" : undefined}
+                >
+                  {isActive("/livetv") && (
+                    <span
+                      className="absolute top-1/2 left-0 h-[18px] w-[3px] -translate-y-1/2 rounded-r-sm"
+                      style={{ background: "var(--primary)" }}
+                    />
+                  )}
+                  <Radio className="h-[18px] w-[18px] shrink-0" />
+                  <SidebarLabel show={showLabels}>Live TV</SidebarLabel>
+                </ViewTransitionLink>
+              </li>
+            )}
             {showNotificationsNav && (
               <li>
                 <ViewTransitionLink
