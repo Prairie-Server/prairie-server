@@ -331,11 +331,11 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
         id: "notifications",
         label: "Notifications",
         description:
-          "Server notification channels, release events, Silo Push Relay, Discord, web push, and webhooks.",
+          "Server notification channels, release events, Prairie Push Relay, Discord, web push, and webhooks.",
         keywords: [
           "release events",
           "new episode",
-          "silo push relay",
+          "prairie push relay",
           "mobile push",
           "apple push",
           "android push",
@@ -356,7 +356,7 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
           "Delivery Channels",
           "In-App",
           "Web Push",
-          "Silo Push Relay",
+          "Prairie Push Relay",
           "Relay URL",
           "Deployment ID",
           "Register Relay",

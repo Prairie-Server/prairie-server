@@ -2,7 +2,7 @@
 INSERT INTO server_settings (key, value) VALUES
     ('catalog.search.meilisearch.semantic_enabled', 'false'),
     ('catalog.search.meilisearch.semantic_ratio', '0.30'),
-    ('catalog.search.meilisearch.embedder', 'silo_recommendations')
+    ('catalog.search.meilisearch.embedder', 'prairie_recommendations')
 ON CONFLICT (key) DO NOTHING;
 
 -- +goose Down

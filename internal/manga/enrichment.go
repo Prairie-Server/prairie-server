@@ -19,9 +19,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/metadata"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
+	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 const (
@@ -63,7 +64,7 @@ func mangaContentType() string {
 
 func mangaEnrichWorkers() int {
 	n := defaultEnrichWorkers
-	if v := os.Getenv("SILO_MANGA_ENRICH_WORKERS"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_MANGA_ENRICH_WORKERS", "SILO_MANGA_ENRICH_WORKERS"); v != "" {
 		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
 			n = parsed
 		}
@@ -75,7 +76,7 @@ func mangaEnrichWorkers() int {
 }
 
 func mangaEnrichBatchSize() int {
-	if v := os.Getenv("SILO_MANGA_ENRICH_BATCH"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_MANGA_ENRICH_BATCH", "SILO_MANGA_ENRICH_BATCH"); v != "" {
 		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
 			return parsed
 		}
@@ -983,7 +984,7 @@ func isMangaASINProvider(provider string) bool {
 	return normalized == "asin" || normalized == "audibleasin"
 }
 
-// isInternalMangaProvider filters Silo-internal identity providers out of the
+// isInternalMangaProvider filters Prairie-internal identity providers out of the
 // metadata flow. The scanner stamps every manga series with a manga_series
 // identity row for idempotency; passing it to the plugin made the
 // search-skip-when-already-matched guard treat every item as matched, so

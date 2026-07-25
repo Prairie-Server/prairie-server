@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/podcastfeed"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/podcastfeed"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 // SyncPodcastFeedsTask refreshes RSS podcast feeds that are due for a poll.
@@ -18,7 +18,7 @@ type SyncPodcastFeedsTask struct {
 }
 
 // NewSyncPodcastFeedsTask constructs the task. refresher and store come
-// from the audiobooks subsystem wired in cmd/silo/main.go.
+// from the audiobooks subsystem wired in cmd/prairie/main.go.
 func NewSyncPodcastFeedsTask(refresher *podcastfeed.Refresher, store podcastfeed.Store) *SyncPodcastFeedsTask {
 	return &SyncPodcastFeedsTask{refresher: refresher, store: store}
 }

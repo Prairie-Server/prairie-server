@@ -8,8 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // ContributionRow is one submission audit record from marker_contributions.

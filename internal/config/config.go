@@ -198,7 +198,7 @@ type authConfigRaw struct {
 // AudiobookshelfCompatConfig holds the dedicated ABS-compat listener setting.
 // The listener binds its own port (:13378, ABS's
 // conventional port) and serves the full ABS protocol — login, libraries,
-// items, sessions — without colliding with silo's SPA on the main listener.
+// items, sessions — without colliding with Prairie's SPA on the main listener.
 type AudiobookshelfCompatConfig struct {
 	Listen string `yaml:"-"`
 }
@@ -253,7 +253,7 @@ type RecommendationsConfig struct {
 	EmbeddingsJobTimeout time.Duration `yaml:"-"`
 }
 
-// AIConfig holds the shared connection settings for Silo's AI features
+// AIConfig holds the shared connection settings for Prairie's AI features
 // (subtitle translation, metadata translation, Whisper ASR): one
 // OpenAI-compatible endpoint the operator can point at OpenAI, Groq, a local
 // Ollama/llama.cpp server, etc., with an optional separate endpoint for audio
@@ -338,7 +338,7 @@ type ClientIPConfig struct {
 	TrustedProxies string `yaml:"-"`
 }
 
-// Config is the top-level configuration for Silo.
+// Config is the top-level configuration for Prairie.
 type Config struct {
 	Server               ServerConfig               `yaml:"server"`
 	Database             DatabaseConfig             `yaml:"database"`
@@ -392,16 +392,16 @@ var dayRegexp = regexp.MustCompile(`^(\d+)d$`)
 
 var defaultJellyfinCompatServerID = uuid.NewSHA1(
 	uuid.NameSpaceURL,
-	[]byte("https://silo.local/jellycompat"),
+	[]byte("https://prairie.local/jellycompat"),
 ).String()
 
 // DefaultTranscodeDir is the fallback playback.transcode_dir; download
 // artifacts default to a sibling directory (see downloads.effectiveArtifactDir).
-const DefaultTranscodeDir = "/tmp/silo-transcode"
+const DefaultTranscodeDir = "/tmp/prairie-transcode"
 
 const DefaultJellyfinCompatEmulatedServerVersion = "10.12.0"
 const DefaultJellyfinWebVersion = "10.11.6"
-const DefaultJellyfinWebInstallDir = "/var/lib/silo/compat/jellyfin-web"
+const DefaultJellyfinWebInstallDir = "/var/lib/prairie/compat/jellyfin-web"
 const DefaultJellyfinWebDir = DefaultJellyfinWebInstallDir + "/current"
 
 // parseDuration parses a duration string that supports Go's time.ParseDuration
@@ -487,7 +487,7 @@ func setDefaults() *configRaw {
 			PublicURL:             "http://127.0.0.1:8097",
 			EmulatedServerVersion: DefaultJellyfinCompatEmulatedServerVersion,
 			ServerID:              defaultJellyfinCompatServerID,
-			ServerName:            "Silo",
+			ServerName:            "Prairie",
 			WebEnabled:            true,
 			WebVersion:            DefaultJellyfinWebVersion,
 			WebDir:                DefaultJellyfinWebDir,

@@ -5,7 +5,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // GroupPolicyProvider loads the access-group restriction layer for a user.

@@ -14,11 +14,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/nodeconfig"
-	"github.com/Silo-Server/silo-server/internal/nodesessions"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/nodeconfig"
+	"github.com/prairie-server/prairie-server/internal/nodesessions"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 const testSecret = "node-reconstruct-test-secret"
@@ -126,7 +126,7 @@ func signCard(t *testing.T, card playback.RecipeCard) string {
 func requestWithToken(sessionID, token string) *http.Request {
 	r := httptest.NewRequest(http.MethodGet, "/transcode/"+sessionID+"/master.m3u8", nil)
 	if token != "" {
-		r.Header.Set("X-Silo-Stream-Token", token)
+		r.Header.Set("X-Prairie-Stream-Token", token)
 	}
 	return r
 }

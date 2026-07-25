@@ -22,7 +22,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
 type pluginClient interface {
@@ -214,7 +214,7 @@ func catalogEntryPreferredForDiscovery(candidate, current CatalogEntry) bool {
 
 func repositorySourcePrecedence(sourceKind string) int {
 	switch sourceKind {
-	case RepositorySourceSilo:
+	case RepositorySourcePrairie:
 		return 0
 	case RepositorySourceApprovedCommunity:
 		return 1

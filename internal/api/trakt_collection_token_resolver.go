@@ -10,10 +10,10 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/secret"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
-	watchtrakt "github.com/Silo-Server/silo-server/internal/watchsync/providers/trakt"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
+	watchtrakt "github.com/prairie-server/prairie-server/internal/watchsync/providers/trakt"
 )
 
 type traktCollectionTokenResolver struct {

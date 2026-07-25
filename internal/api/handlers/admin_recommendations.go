@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/recommendations"
+	"github.com/prairie-server/prairie-server/internal/recommendations"
 )
 
 // AdminRecommendationsHandler handles admin recommendation status and trigger endpoints.

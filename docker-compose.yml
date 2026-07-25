@@ -4,16 +4,16 @@ services:
     restart: unless-stopped
     shm_size: ${POSTGRES_SHM_SIZE:-8gb}
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-silo}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-silo}
-      POSTGRES_DB: ${POSTGRES_DB:-silo}
+      POSTGRES_USER: ${POSTGRES_USER:-prairie}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prairie}
+      POSTGRES_DB: ${POSTGRES_DB:-prairie}
     ports:
       - "5432:5432"
     volumes:
-      - ${SILO_DATA_ROOT:-/opt/silo}/postgres:/var/lib/postgresql
+      - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/postgres:/var/lib/postgresql
     command: ["postgres", "-c", "listen_addresses=*"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-silo}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-prairie}"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -24,7 +24,7 @@ services:
     ports:
       - "6379:6379"
     volumes:
-      - ${SILO_DATA_ROOT:-/opt/silo}/redis:/data
+      - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -49,10 +49,10 @@ services:
     ports:
       - "${MEILISEARCH_HOST:-127.0.0.1}:${MEILISEARCH_PORT:-7700}:7700"
     volumes:
-      - ${SILO_DATA_ROOT:-/opt/silo}/meilisearch:/meili_data
+      - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/meilisearch:/meili_data
 
-  silo:
-    image: ${SILO_IMAGE:-ghcr.io/silo-server/silo-server:latest}
+  prairie:
+    image: ${PRAIRIE_IMAGE:-ghcr.io/prairie-server/prairie-server:latest}
     restart: unless-stopped
     environment:
       MODE: integrated
@@ -61,9 +61,9 @@ services:
       # Back it up SEPARATELY from your database dumps; losing it makes encrypted
       # secrets unrecoverable. See docs/architecture/secret-encryption.md.
       SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env — generate one with openssl rand -base64 48}
-      DATABASE_URL: postgres://${POSTGRES_USER:-silo}:${POSTGRES_PASSWORD:-silo}@postgres:5432/${POSTGRES_DB:-silo}?sslmode=disable
+      DATABASE_URL: postgres://${POSTGRES_USER:-prairie}:${POSTGRES_PASSWORD:-prairie}@postgres:5432/${POSTGRES_DB:-prairie}?sslmode=disable
       REDIS_URL: redis://redis:6379
-      SILO_PLUGIN_CACHE_DIR: /var/lib/silo/plugins
+      PRAIRIE_PLUGIN_CACHE_DIR: /var/lib/prairie/plugins
       POSTGRES_TUNE: ${POSTGRES_TUNE:-auto}
     ports:
       - "${PORT:-8090}:8080"
@@ -72,11 +72,11 @@ services:
     volumes:
       - ${MEDIA_ROOT:?Set MEDIA_ROOT in .env to the host media path}:${MEDIA_CONTAINER_ROOT:-/mnt/media}:ro
       - ${MEDIA_BOOKS_ROOT:-${MEDIA_ROOT}}:${MEDIA_BOOKS_CONTAINER_ROOT:-${MEDIA_CONTAINER_ROOT:-/mnt/media}/books}:ro
-      - ${SILO_DATA_ROOT:-/opt/silo}/plugins:/var/lib/silo/plugins
-      - ${SILO_DATA_ROOT:-/opt/silo}/compat:/var/lib/silo/compat
-      - ${SILO_DATA_ROOT:-/opt/silo}/transcode:/tmp/silo-transcode
-      - ${SILO_DATA_ROOT:-/opt/silo}/catalog-seeds:/catalog-seeds:ro
-      - ${SILO_DATA_ROOT:-/opt/silo}/audiobook-covers:/var/lib/silo/audiobook-covers
+      - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/plugins:/var/lib/prairie/plugins
+      - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/compat:/var/lib/prairie/compat
+      - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/transcode:/tmp/prairie-transcode
+      - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/catalog-seeds:/catalog-seeds:ro
+      - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/audiobook-covers:/var/lib/prairie/audiobook-covers
       - /proc/meminfo:/host/proc/meminfo:ro
     depends_on:
       postgres:
@@ -91,15 +91,15 @@ services:
 
   # Optional distributed-mode example. Most single-host installs should
   # just use the integrated service above.
-  # silo-proxy:
-  #   image: ${SILO_IMAGE:-ghcr.io/silo-server/silo-server:latest}
+  # prairie-proxy:
+  #   image: ${PRAIRIE_IMAGE:-ghcr.io/prairie-server/prairie-server:latest}
   #   restart: unless-stopped
   #   profiles: [proxy]
   #   environment:
   #     MODE: proxy
   #     # Must be the SAME SECRET_KEY as the primary node (shared encrypted data).
   #     SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env — generate one with openssl rand -base64 48}
-  #     DATABASE_URL: postgres://${POSTGRES_USER:-silo}:${POSTGRES_PASSWORD:-silo}@postgres:5432/${POSTGRES_DB:-silo}?sslmode=disable
+  #     DATABASE_URL: postgres://${POSTGRES_USER:-prairie}:${POSTGRES_PASSWORD:-prairie}@postgres:5432/${POSTGRES_DB:-prairie}?sslmode=disable
   #     REDIS_URL: redis://redis:6379
   #     PORT: "8080"
   #   ports:
@@ -117,24 +117,24 @@ services:
 
   # Optional distributed-mode example. Most single-host installs should
   # just use the integrated service above.
-  # silo-transcode:
-  #   image: ${SILO_IMAGE:-ghcr.io/silo-server/silo-server:latest}
+  # prairie-transcode:
+  #   image: ${PRAIRIE_IMAGE:-ghcr.io/prairie-server/prairie-server:latest}
   #   restart: unless-stopped
   #   profiles: [transcode]
   #   environment:
   #     MODE: transcode
   #     # Must be the SAME SECRET_KEY as the primary node (shared encrypted data).
   #     SECRET_KEY: ${SECRET_KEY:?Set SECRET_KEY in .env — generate one with openssl rand -base64 48}
-  #     DATABASE_URL: postgres://${POSTGRES_USER:-silo}:${POSTGRES_PASSWORD:-silo}@postgres:5432/${POSTGRES_DB:-silo}?sslmode=disable
+  #     DATABASE_URL: postgres://${POSTGRES_USER:-prairie}:${POSTGRES_PASSWORD:-prairie}@postgres:5432/${POSTGRES_DB:-prairie}?sslmode=disable
   #     REDIS_URL: redis://redis:6379
-  #     SILO_PLUGIN_CACHE_DIR: /var/lib/silo/plugins
+  #     PRAIRIE_PLUGIN_CACHE_DIR: /var/lib/prairie/plugins
   #     PORT: "8080"
   #   ports:
   #     - "${TRANSCODE_PORT:-8082}:8080"
   #   volumes:
   #     - ${MEDIA_ROOT:?Set MEDIA_ROOT in .env to the host media path}:${MEDIA_CONTAINER_ROOT:-/mnt/media}:ro
-  #     - ${SILO_DATA_ROOT:-/opt/silo}/plugins:/var/lib/silo/plugins
-  #     - ${SILO_DATA_ROOT:-/opt/silo}/transcode:/tmp/silo-transcode
+  #     - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/plugins:/var/lib/prairie/plugins
+  #     - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/transcode:/tmp/prairie-transcode
   #   depends_on:
   #     postgres:
   #       condition: service_healthy

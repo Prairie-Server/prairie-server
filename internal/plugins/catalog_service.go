@@ -59,10 +59,10 @@ type ResolvedCatalogInstall struct {
 }
 
 type CatalogServiceOptions struct {
-	HTTPClient     *http.Client
-	SiloAPIVersion string
-	CurrentOS      string
-	CurrentArch    string
+	HTTPClient        *http.Client
+	PrairieAPIVersion string
+	CurrentOS         string
+	CurrentArch       string
 }
 
 type CatalogService struct {
@@ -79,9 +79,9 @@ func NewCatalogService(repositories *RepositoryStore, opts CatalogServiceOptions
 		httpClient = http.DefaultClient
 	}
 
-	apiVersion := opts.SiloAPIVersion
+	apiVersion := opts.PrairieAPIVersion
 	if apiVersion == "" {
-		apiVersion = DefaultSiloAPIVersion
+		apiVersion = DefaultPrairieAPIVersion
 	}
 
 	currentOS := opts.CurrentOS

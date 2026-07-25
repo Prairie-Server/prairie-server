@@ -32,8 +32,8 @@ const STEP_DESCRIPTIONS: Record<WizardStepId, string> = {
   integrations: "Configure subtitle providers for automatic subtitle downloading.",
   downloads: "Allow users to download media files for offline viewing.",
   recommendations: "AI-powered recommendations using embeddings. Requires pgvector.",
-  library: "Point Silo at your media files. You can add more libraries later.",
-  nodes: "Silo is ready. Start exploring or fine-tune in admin settings.",
+  library: "Point Prairie at your media files. You can add more libraries later.",
+  nodes: "Prairie is ready. Start exploring or fine-tune in admin settings.",
 };
 
 function WizardContent() {

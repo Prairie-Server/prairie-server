@@ -9,16 +9,16 @@ import (
 	"strings"
 	"testing"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/notifications"
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/notifications"
 )
 
 func TestHandleApplePushDisplayDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("set SILO_TEST_DATABASE_URL to run DB-backed notification display handler test")
+		t.Skip("set PRAIRIE_TEST_DATABASE_URL to run DB-backed notification display handler test")
 	}
 
 	ctx := context.Background()

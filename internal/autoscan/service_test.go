@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/scantrigger"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/scantrigger"
 )
 
 type fakeStore struct {
@@ -282,7 +282,7 @@ func (distinctFolderResolver) ResolveVanishedPath(_ context.Context, path, trigg
 	return nil, &scantrigger.RequestError{Status: 400, Code: "bad_request", Message: "outside media folders"}
 }
 
-// unresolvableResolver treats every path as outside Silo's media folders,
+// unresolvableResolver treats every path as outside Prairie's media folders,
 // returning a RequestError — the "none resolved → misconfiguration" signal.
 type unresolvableResolver struct{}
 
@@ -504,7 +504,7 @@ func TestPollOnceRecordsReusedScanCounts(t *testing.T) {
 func TestPollOnceAppliesSourceRewritesBeforeEnqueue(t *testing.T) {
 	// The provider returns RAW source-namespace paths (/data/tv/...). The source's
 	// rewrite /data/tv -> /mnt/media/tv must be applied host-side so the resolved
-	// target uses the rewritten, Silo-native path. fakeResolver only resolves
+	// target uses the rewritten, Prairie-native path. fakeResolver only resolves
 	// paths under /mnt/media/, so a missing rewrite would resolve to nothing.
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
@@ -525,7 +525,7 @@ func TestPollOnceAppliesSourceRewritesBeforeEnqueue(t *testing.T) {
 		t.Fatalf("expected 1 enqueued target, got %d: %+v", len(q.enqueued), q.enqueued)
 	}
 	// uniqueParentDirs collapses E01.mkv to its parent dir; the rewritten target
-	// must be the Silo-native /mnt/media/tv/Show/S01.
+	// must be the Prairie-native /mnt/media/tv/Show/S01.
 	if got := q.enqueued[0].Path; got != "/mnt/media/tv/Show/S01" {
 		t.Fatalf("expected rewritten target path /mnt/media/tv/Show/S01, got %q", got)
 	}
@@ -801,7 +801,7 @@ func TestPollOnceStoresOpaqueMarkerVerbatim(t *testing.T) {
 
 func TestPollOnceAdvancesMarkerWhenPathsReturnedButNoneResolve(t *testing.T) {
 	// A filesystem watcher (e.g. CephFS) may return paths from folders that are
-	// not registered as Silo libraries. The marker must ADVANCE so autoscan does
+	// not registered as Prairie libraries. The marker must ADVANCE so autoscan does
 	// not stall permanently; no source error is recorded, but the event finishes
 	// as "unresolved" so the condition stays visible in poll history.
 	store := &fakeStore{
@@ -842,7 +842,7 @@ func TestPollOnceAdvancesMarkerWhenPathsReturnedButNoneResolve(t *testing.T) {
 	if event.ChangesReturned != 2 || event.ChangesResolved != 0 || event.TargetsClaimed != 0 {
 		t.Fatalf("event counts = %+v", event)
 	}
-	if !strings.Contains(event.ErrorMessage, "none matched a Silo library folder") {
+	if !strings.Contains(event.ErrorMessage, "none matched a Prairie library folder") {
 		t.Fatalf("event message = %q", event.ErrorMessage)
 	}
 	if event.MarkerAfter != "m1" {
@@ -852,7 +852,7 @@ func TestPollOnceAdvancesMarkerWhenPathsReturnedButNoneResolve(t *testing.T) {
 
 func TestPollOnceHoldsMarkerOnTransientResolveFailure(t *testing.T) {
 	// Nothing resolved because the resolver failed INTERNALLY (e.g. a database
-	// fault), not because the paths are outside Silo's libraries. Advancing
+	// fault), not because the paths are outside Prairie's libraries. Advancing
 	// would silently skip real imports, so the marker must HOLD and an error be
 	// recorded; the window is retried once the fault clears.
 	store := &fakeStore{
@@ -939,7 +939,7 @@ func TestPollOnceHoldsMarkerWhenSomeResolveAndOthersFailTransiently(t *testing.T
 }
 
 func TestPollOnceAdvancesMarkerWhenResolvedButAllSuppressed(t *testing.T) {
-	// Paths DO resolve to a Silo library folder, but every claim is denied by the
+	// Paths DO resolve to a Prairie library folder, but every claim is denied by the
 	// suppressor (recently scanned / debounced). This is NOT a misconfiguration:
 	// the work is effectively done, so the marker must ADVANCE and no error is
 	// recorded. Regression guard for treating "resolved-but-suppressed" as

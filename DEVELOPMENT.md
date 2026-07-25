@@ -1,6 +1,6 @@
-# Developing Silo
+# Developing Prairie
 
-This document covers building, running, and contributing to the Silo server. If you just want to run Silo, see the [README](README.md).
+This document covers building, running, and contributing to the Prairie server. If you just want to run Prairie, see the [README](README.md).
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for contribution expectations, merge request guidance, and the policy for AI-assisted submissions.
 
@@ -28,25 +28,25 @@ make dev-backend
 
 The main compose file expects `MEDIA_ROOT` to be set even if you only want the bundled PostgreSQL and Redis services, so set that in `.env` first (`cp .env.example .env`).
 
-If you are developing `Silo` and `silo-plugin-sdk` together, keep using the local [`go.work`](go.work) workspace. That workspace is a developer convenience only. CI and release builds run with `GOWORK=off`, so any new SDK helper used here must be pushed and tagged in `silo-plugin-sdk` before this repo can merge or release the change.
+If you are developing `Prairie` and `silo-plugin-sdk` together, keep using the local [`go.work`](go.work) workspace. That workspace is a developer convenience only. CI and release builds run with `GOWORK=off`, so any new SDK helper used here must be pushed and tagged in `silo-plugin-sdk` before this repo can merge or release the change.
 
 Plugin authors should start with [docs/architecture/plugin-development.md](docs/architecture/plugin-development.md), which covers the RPC plugin package format, generated proto workflow, SDK import paths, route and asset exposure, and auth or user-config integration points.
 
 ## Make Targets
 
-| Target | Description |
-|---|---|
-| `make build` | Build frontend + Go binary |
-| `make frontend` | Build frontend only |
-| `make dev-frontend` | Vite dev server with HMR |
-| `make dev-backend` | Run Go backend (integrated mode) |
-| `make dev-proxy` | Run a standalone proxy node |
-| `make dev-transcode` | Run a standalone transcode node |
-| `make migrate-create NAME=add_thing` | Create a timestamped Goose SQL migration |
-| `make migrate-validate` | Validate Goose migration files without touching a database |
-| `make migrate-status` | Show Goose migration status using Silo's bootstrapping runner |
-| `make migrate-up` | Apply pending Goose migrations using Silo's bootstrapping runner |
-| `make clean` | Remove build artifacts |
+| Target                               | Description                                                         |
+| ------------------------------------ | ------------------------------------------------------------------- |
+| `make build`                         | Build frontend + Go binary                                          |
+| `make frontend`                      | Build frontend only                                                 |
+| `make dev-frontend`                  | Vite dev server with HMR                                            |
+| `make dev-backend`                   | Run Go backend (integrated mode)                                    |
+| `make dev-proxy`                     | Run a standalone proxy node                                         |
+| `make dev-transcode`                 | Run a standalone transcode node                                     |
+| `make migrate-create NAME=add_thing` | Create a timestamped Goose SQL migration                            |
+| `make migrate-validate`              | Validate Goose migration files without touching a database          |
+| `make migrate-status`                | Show Goose migration status using Prairie's bootstrapping runner    |
+| `make migrate-up`                    | Apply pending Goose migrations using Prairie's bootstrapping runner |
+| `make clean`                         | Remove build artifacts                                              |
 
 ## Database Migrations
 
@@ -96,7 +96,7 @@ cd web && bun run format:check
 ## Project Structure
 
 ```
-cmd/silo/       Entry point
+cmd/prairie/       Entry point
 internal/
   api/               HTTP router, handlers, middleware
   auth/              JWT authentication and sessions

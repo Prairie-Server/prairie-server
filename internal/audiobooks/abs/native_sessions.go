@@ -10,12 +10,13 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/httpheaders"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
-// PlaybackSessionManager is the native Silo playback-session surface ABS needs
+// PlaybackSessionManager is the native Prairie playback-session surface ABS needs
 // to make compatibility playback visible to live admin/session monitoring.
 type PlaybackSessionManager interface {
 	StartSessionWithFilesContext(ctx context.Context, userID int, profileID string, effectiveFileID int, requestedFileID int, method playback.PlayMethod, transcodeAudio bool) (*playback.Session, error)
@@ -187,7 +188,7 @@ func absPlaybackClientInfoFromRequest(r *http.Request) playback.ClientInfo {
 		return playback.ClientInfo{Name: "Audiobookshelf"}
 	}
 	name := firstHeaderValue(r,
-		"X-Silo-Client",
+		httpheaders.HeaderClient,
 		"X-Client-Name",
 		"X-Device-Name",
 		"X-Emby-Client",
@@ -198,7 +199,7 @@ func absPlaybackClientInfoFromRequest(r *http.Request) playback.ClientInfo {
 	return playback.ClientInfo{
 		Name: name,
 		Version: firstHeaderValue(r,
-			"X-Silo-Client-Version",
+			httpheaders.HeaderClientVersion,
 			"X-Client-Version",
 			"X-Emby-Client-Version",
 		),
@@ -208,7 +209,7 @@ func absPlaybackClientInfoFromRequest(r *http.Request) playback.ClientInfo {
 
 func firstHeaderValue(r *http.Request, names ...string) string {
 	for _, name := range names {
-		if value := strings.TrimSpace(r.Header.Get(name)); value != "" {
+		if value := strings.TrimSpace(httpheaders.Get(r.Header, name)); value != "" {
 			return value
 		}
 	}

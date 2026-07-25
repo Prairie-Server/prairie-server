@@ -7,8 +7,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/scantrigger"
 	"github.com/google/uuid"
+	"github.com/prairie-server/prairie-server/internal/scantrigger"
 )
 
 const (
@@ -40,7 +40,7 @@ type Store interface {
 	ClearWebhookError(ctx context.Context, sourceID string) error
 }
 
-// Resolver maps a Silo-native path to a concrete scan target (library folder).
+// Resolver maps a Prairie-native path to a concrete scan target (library folder).
 type Resolver interface {
 	Resolve(ctx context.Context, req scantrigger.Request) (*scantrigger.Target, error)
 	ResolveMissingSubtree(ctx context.Context, subtreePath, trigger string) (*scantrigger.Target, error)
@@ -59,7 +59,7 @@ type resolveStats struct {
 	Suppressed      int
 	// TransientErrors counts resolve attempts that failed with an internal
 	// (non-RequestError) error — resolver/database faults that may clear on a
-	// later poll, as opposed to paths that are simply outside Silo's libraries.
+	// later poll, as opposed to paths that are simply outside Prairie's libraries.
 	TransientErrors int
 }
 
@@ -75,8 +75,8 @@ type RootFolderClient interface {
 	RootFolders(ctx context.Context, baseURL, apiKey string) ([]string, error)
 }
 
-// FolderLister lists every Silo media-folder path (used by the rewrite
-// suggester to match arr roots against Silo folders).
+// FolderLister lists every Prairie media-folder path (used by the rewrite
+// suggester to match arr roots against Prairie folders).
 type FolderLister interface {
 	ListFolderPaths(ctx context.Context) ([]string, error)
 }
@@ -98,7 +98,7 @@ type Service struct {
 }
 
 // SetSuggesterDeps wires the dependencies the rewrite-suggester and
-// connection-test endpoints need: an arr root-folder/status client and a Silo
+// connection-test endpoints need: an arr root-folder/status client and a Prairie
 // media-folder lister. Optional — when unset, SuggestRewrites/TestConnection
 // return an error.
 func (s *Service) SetSuggesterDeps(rootFolders RootFolderClient, folders FolderLister) {
@@ -135,7 +135,7 @@ func NewService(
 // the source/event, and the loop continues; only settings/listing errors
 // propagate. The opaque next marker returned by the provider is stored
 // verbatim once the window's work is consumed — including windows whose paths
-// all resolve OUTSIDE Silo's libraries (routine for whole-volume filesystem
+// all resolve OUTSIDE Prairie's libraries (routine for whole-volume filesystem
 // watchers; the event finishes as "unresolved" so it stays visible). The
 // marker is held only on genuine failures: provider errors, enqueue errors,
 // and windows where any resolve attempt failed internally (possibly
@@ -304,20 +304,20 @@ func (s *Service) consumeSourceChanges(ctx context.Context, src Source, changes 
 	//     once the fault clears. Advancing would silently skip the failed
 	//     paths. Targets that DID resolve were already enqueued above; the
 	//     re-read at worst re-scans them, which is safe.
-	//   - returned paths AND NOTHING resolved  → every path is outside Silo's
+	//   - returned paths AND NOTHING resolved  → every path is outside Prairie's
 	//     libraries (RequestError) — a benign, expected condition for
 	//     whole-volume filesystem watchers (e.g. CephFS), which observe
-	//     folders that are not registered as Silo libraries. Holding here
+	//     folders that are not registered as Prairie libraries. Holding here
 	//     would pin the marker and permanently stall autoscan, so advance;
 	//     finish the event as "unresolved" so the condition stays visible in
 	//     poll history.
 	// (Some-but-not-all resolving still advances when the unresolved
-	// remainder is merely outside Silo's libraries.)
+	// remainder is merely outside Prairie's libraries.)
 	//
 	// Webhook deliveries have no marker: a transient resolve fault still
 	// finishes the event as error (the sender retries the delivery; a
 	// duplicate is at worst suppressed), and the unresolved case is the same
-	// benign "paths outside Silo's libraries" signal.
+	// benign "paths outside Prairie's libraries" signal.
 	//
 	// NOTE: len(targets)==0 alone is NOT misconfiguration — paths can resolve
 	// yet be fully suppressed. Gate on resolvedAny, not targets.
@@ -347,7 +347,7 @@ func (s *Service) consumeSourceChanges(ctx context.Context, src Source, changes 
 	var statusMsg string
 	if len(changes) > 0 && !resolvedAny {
 		status = EventStatusUnresolved
-		statusMsg = fmt.Sprintf("returned %d path(s) but none matched a Silo library folder", len(changes))
+		statusMsg = fmt.Sprintf("returned %d path(s) but none matched a Prairie library folder", len(changes))
 		if opts.AdvanceMarker {
 			statusMsg += " — advanced past them"
 			slog.WarnContext(ctx, "autoscan: returned paths matched no library folder — advancing marker",
@@ -404,7 +404,7 @@ type IngestResult struct {
 	Suppressed int
 	Unresolved bool
 	// Pending reports that the delivery was accepted durably but its immediate
-	// ingest failed. The retry task will process it again inside Silo.
+	// ingest failed. The retry task will process it again inside Prairie.
 	Pending bool
 }
 
@@ -665,14 +665,14 @@ func (s *Service) resolveAndClaim(ctx context.Context, changes []Change, ttl tim
 		if isRequestError(rerr) {
 			// The directory may have been removed (e.g. a deleted movie
 			// folder). Fall back to a reconciling scan of the vanished path so
-			// its files are marked missing promptly. Paths outside Silo's
+			// its files are marked missing promptly. Paths outside Prairie's
 			// media folders still resolve to nothing and are skipped below.
 			target, rerr = s.resolver.ResolveVanishedPath(ctx, dir, scanTrigger)
 		}
 		if rerr != nil {
 			var reqErr *scantrigger.RequestError
 			if errors.As(rerr, &reqErr) {
-				// Path outside Silo's media folders (or otherwise unresolvable)
+				// Path outside Prairie's media folders (or otherwise unresolvable)
 				// — an expected skip, not an error worth logging every cycle.
 				continue
 			}

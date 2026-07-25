@@ -295,8 +295,9 @@ export default function CompatibilityProxiesSettings() {
           <div className="space-y-4 py-3">
             <h3 className="text-sm font-medium">Web Component</h3>
             <p className="text-muted-foreground text-sm leading-relaxed">
-              The Web Component is separate from the API layer. Disabling the Web UI stops Silo from
-              serving the route while keeping installed assets available for later reactivation.
+              The Web Component is separate from the API layer. Disabling the Web UI stops Prairie
+              from serving the route while keeping installed assets available for later
+              reactivation.
             </p>
 
             <div className="grid gap-x-8 md:grid-cols-2">
@@ -448,7 +449,7 @@ export default function CompatibilityProxiesSettings() {
               />
               <SettingField
                 label="Web Install Directory (Optional)"
-                hint="Optional. Defaults to Silo's managed Jellyfin Web install directory."
+                hint="Optional. Defaults to Prairie's managed Jellyfin Web install directory."
                 value={form.getValue("jellyfin_compat.web_install_dir")}
                 onChange={(v) => form.setValue("jellyfin_compat.web_install_dir", v)}
               />

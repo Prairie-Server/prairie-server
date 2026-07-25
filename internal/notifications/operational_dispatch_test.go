@@ -10,9 +10,9 @@ import (
 )
 
 func TestDispatchOperationalEnqueuesApplePushAttempts(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("set SILO_TEST_DATABASE_URL to run DB-backed operational push dispatch test")
+		t.Skip("set PRAIRIE_TEST_DATABASE_URL to run DB-backed operational push dispatch test")
 	}
 
 	ctx := context.Background()
@@ -139,7 +139,7 @@ func TestDispatchOperationalEnqueuesApplePushAttempts(t *testing.T) {
 	if deliveryID != inserted.ID ||
 		pushDeviceID != "device-private" ||
 		triggerType != PushTriggerDelivery ||
-		provider != PushProviderSiloRelay ||
+		provider != PushProviderPrairieRelay ||
 		platform != PushPlatformApple ||
 		outcome != PushOutcomePending {
 		t.Fatalf("unexpected push attempt: delivery=%q device=%q trigger=%q provider=%q platform=%q outcome=%q",

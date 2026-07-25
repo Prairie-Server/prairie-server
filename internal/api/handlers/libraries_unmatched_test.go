@@ -19,9 +19,9 @@ import (
 // do not appear in the admin Unmatched queue, while genuinely pending items
 // still do. Regression test for issue #204.
 func TestHandleListUnmatchedItemsExcludesMangaChapters(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("set SILO_TEST_DATABASE_URL to run DB-backed unmatched items handler test")
+		t.Skip("set PRAIRIE_TEST_DATABASE_URL to run DB-backed unmatched items handler test")
 	}
 
 	ctx := context.Background()

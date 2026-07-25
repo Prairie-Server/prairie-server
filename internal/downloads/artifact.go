@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 // Artifact status constants (download_artifacts.status).
@@ -79,7 +79,7 @@ func effectiveArtifactDir(artifactDir, transcodeDir string) string {
 	if transcodeDir == "" {
 		transcodeDir = defaultTranscodeDir
 	}
-	return filepath.Join(filepath.Dir(transcodeDir), "silo-download-artifacts")
+	return filepath.Join(filepath.Dir(transcodeDir), "prairie-download-artifacts")
 }
 
 // artifactOutputPath derives a deterministic output path from

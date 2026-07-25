@@ -20,7 +20,7 @@ type sessionInfoDTO struct {
 // session state. The route was unregistered, so those polls hit a chi 404 that
 // the jellyfin-sdk could not deserialize — observed as a ~289-per-4h 404 storm.
 //
-// Silo does not yet expose live session/now-playing state through the compat
+// Prairie does not yet expose live session/now-playing state through the compat
 // surface, so this returns a contract-shaped empty list: it stops the 404 storm
 // and lets clients degrade cleanly. Populating it from the playback session
 // store (so the now-playing/transcoding overlay works) is a follow-up.

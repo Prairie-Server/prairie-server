@@ -117,7 +117,7 @@ export async function downloadDiagnosticReport(report: DiagnosticReportSummary) 
   const url = URL.createObjectURL(blob);
   const anchor = document.createElement("a");
   anchor.href = url;
-  anchor.download = `silo-diagnostics-${report.short_id || report.id}.tar.gz`;
+  anchor.download = `prairie-diagnostics-${report.short_id || report.id}.tar.gz`;
   anchor.style.display = "none";
   document.body.appendChild(anchor);
   anchor.click();

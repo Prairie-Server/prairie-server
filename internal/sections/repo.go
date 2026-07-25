@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/idgen"
+	"github.com/prairie-server/prairie-server/internal/idgen"
 )
 
 // ErrSectionNotFound is returned when a section cannot be found.

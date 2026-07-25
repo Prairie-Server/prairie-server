@@ -29,7 +29,7 @@ doing these in order, not from skipping them.
 - The issue reference is passed as `$ARGUMENTS` — a number (`123`), a `#123`
   reference, or a full issue URL. If none is given, ask; do not guess.
 - The repo is the current git repository; PRs target `origin`
-  (`Silo-Server/silo-server`) and base `main`.
+  (`prairie-server/prairie-server`) and base `main`.
 
 ## Operating principles
 
@@ -37,7 +37,7 @@ doing these in order, not from skipping them.
   code in a large fraction of cases because they don't stop to confirm the problem is
   real. Confirm the issue reproduces on current `main` before changing anything.
 - **Verify by execution.** Build/lint/tests are the primary correctness signal. The
-  adversarial review is a *second* layer on top, never a substitute for green checks.
+  adversarial review is a _second_ layer on top, never a substitute for green checks.
 - **Don't trust recall for APIs.** Grep for every symbol and signature you call —
   hallucinated-but-plausible APIs are a common failure here.
 - **Know when to stop.** See [Stop and ask](#stop-and-ask). Autonomy is for execution,
@@ -149,6 +149,7 @@ the iteration cap, and the fallback are in
 **[references/codex-review.md](references/codex-review.md)** — follow it exactly.
 
 The loop, in short:
+
 1. Commit the implementation on the branch.
 2. Run the adversarial review (`--base main`, foreground/`--wait`, extended timeout).
 3. For each finding: **first confirm it's real and grounded in the actual code**

@@ -88,7 +88,7 @@ const REQUEST_PROGRESS_GUIDE: Array<StatusGuideItem & { status: MediaRequestStat
   },
   {
     status: "completed",
-    description: "In your Silo library and ready to watch.",
+    description: "In your Prairie library and ready to watch.",
     tone: "bg-emerald-500/20 text-emerald-100 ring-emerald-400/40",
   },
 ];
@@ -115,7 +115,7 @@ const REQUEST_ISSUE_GUIDE: Array<
     outcome: "failed",
     label: "Failed",
     description:
-      "Silo or the external request automation hit an error. If details are available, they appear on the request card.",
+      "Prairie or the external request automation hit an error. If details are available, they appear on the request card.",
     tone: "bg-red-500/15 text-red-100 ring-red-400/40",
   },
 ];
@@ -373,7 +373,7 @@ function RequestStatusGuide() {
               Status guide
             </h2>
             <p className="text-muted-foreground text-[13px] leading-5">
-              Statuses update automatically as Silo checks the library and connected request
+              Statuses update automatically as Prairie checks the library and connected request
               integrations.
             </p>
           </div>

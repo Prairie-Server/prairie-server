@@ -111,7 +111,7 @@ describe("ServerStorageStep", () => {
     expect(markup).toContain("Web UI layer");
     expect(markup).toContain("Pinned Web version");
     expect(markup).toContain("Web install directory");
-    expect(markup).toContain("/var/lib/silo/compat/jellyfin-web");
+    expect(markup).toContain("/var/lib/prairie/compat/jellyfin-web");
   });
 
   it("uses Jellyfin runtime status when the explicit enabled setting is missing", () => {

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/config"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 // NewPool creates a new PostgreSQL connection pool using the provided

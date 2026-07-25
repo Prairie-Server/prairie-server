@@ -10,7 +10,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 const jellycompatSessionColumns = `token, username, account_username, profile_id, profile_name, pseudo_user_id, streamapp_user_id, streamapp_access_token, streamapp_refresh_token, streamapp_token_expiry, created_at, expires_at`
@@ -56,7 +56,7 @@ func (r *SessionRepository) scanCompatSession(row pgx.Row) (*Session, error) {
 		}
 		return nil, fmt.Errorf("scan compat session: %w", err)
 	}
-	// Decrypt the bridged Silo access/refresh tokens (read-path contract).
+	// Decrypt the bridged Prairie access/refresh tokens (read-path contract).
 	if session.StreamAppAccessToken, err = r.cipher.DecryptIfEncrypted(session.StreamAppAccessToken, jellycompatTokenAAD("streamapp_access_token", session.Token)); err != nil {
 		return nil, fmt.Errorf("decrypt streamapp access token: %w", err)
 	}
@@ -154,7 +154,7 @@ func (r *SessionRepository) DeleteExpired(ctx context.Context, now time.Time) (i
 	return int(tag.RowsAffected()), nil
 }
 
-// DeleteByUserID removes all compat sessions for a given Silo user.
+// DeleteByUserID removes all compat sessions for a given Prairie user.
 func (r *SessionRepository) DeleteByUserID(ctx context.Context, userID int) (int, error) {
 	tag, err := r.pool.Exec(ctx, `DELETE FROM jellycompat_sessions WHERE streamapp_user_id = $1`, userID)
 	if err != nil {

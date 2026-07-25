@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // maxUnpaginatedAuthors / maxUnpaginatedSeries clamp the "return all" forms
@@ -461,7 +461,7 @@ func (h *Handler) handleLibrarySeries(w http.ResponseWriter, r *http.Request) {
 //
 // Matches server/utils/queries/libraryItemsBookFilters.js `search()` (real
 // ABS branches to the book-filter search for a non-podcast library, which
-// is all Silo ever serves). That function returns exactly these keys:
+// is all Prairie ever serves). That function returns exactly these keys:
 // book, narrators, tags, genres, series, authors — there is NO "podcast"
 // key for a book-library search (that only appears from the separate
 // podcast-filter branch). Each book entry is `{ libraryItem }` — real ABS

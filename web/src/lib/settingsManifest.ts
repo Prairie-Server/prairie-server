@@ -37,7 +37,7 @@ const definitions: SettingDefinition[] = [
     key: "playback.preferred_quality",
     scope: "device",
     label: "Preferred quality",
-    description: "Pick the quality Silo should prefer on this device for the current profile.",
+    description: "Pick the quality Prairie should prefer on this device for the current profile.",
     control: "select",
     defaultValue: "auto",
     options: [
@@ -53,7 +53,7 @@ const definitions: SettingDefinition[] = [
     key: "playback.audio_language",
     scope: "device",
     label: "Preferred audio language",
-    description: "Choose which spoken language Silo should prefer first on this device.",
+    description: "Choose which spoken language Prairie should prefer first on this device.",
     control: "select",
     options: LANGUAGE_OPTIONS,
     summary: (value) =>
@@ -63,7 +63,7 @@ const definitions: SettingDefinition[] = [
     key: "playback.auto_skip_intro",
     scope: "device",
     label: "Auto-skip intros",
-    description: "Jump past intros automatically on this device when Silo can detect them.",
+    description: "Jump past intros automatically on this device when Prairie can detect them.",
     control: "switch",
     defaultValue: "false",
   },

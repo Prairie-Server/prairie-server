@@ -1,4 +1,4 @@
-// Package userdb provides per-user SQLite database management for Silo.
+// Package userdb provides per-user SQLite database management for Prairie.
 // Each user gets their own SQLite file storing profiles, watch progress,
 // favorites, collections, playback sessions, and settings.
 package userdb

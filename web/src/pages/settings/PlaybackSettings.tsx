@@ -135,7 +135,7 @@ export default function PlaybackSettings() {
         <div className="space-y-3">
           <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Playback</h2>
           <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
-            Choose the defaults Silo should use when playback starts.
+            Choose the defaults Prairie should use when playback starts.
           </p>
         </div>
       </div>
@@ -239,7 +239,7 @@ export default function PlaybackSettings() {
 
         <SettingRow
           label="Auto-skip intros"
-          description="Jump past intros automatically when Silo can detect them."
+          description="Jump past intros automatically when Prairie can detect them."
           control={(id) => (
             <Switch
               id={id}
@@ -265,7 +265,7 @@ export default function PlaybackSettings() {
 
         <SettingRow
           label="Auto-skip recaps"
-          description="Skip 'previously on…' recaps automatically when Silo can detect them."
+          description="Skip 'previously on…' recaps automatically when Prairie can detect them."
           control={(id) => (
             <Switch
               id={id}

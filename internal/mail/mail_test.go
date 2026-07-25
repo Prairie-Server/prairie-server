@@ -63,7 +63,7 @@ func TestLoadConfigValidation(t *testing.T) {
 		if err != nil {
 			t.Fatalf("loadConfig: %v", err)
 		}
-		if cfg.port != 587 || cfg.security != securityStartTLS || cfg.fromName != "Silo" {
+		if cfg.port != 587 || cfg.security != securityStartTLS || cfg.fromName != "Prairie" {
 			t.Fatalf("unexpected defaults: %+v", cfg)
 		}
 	})
@@ -98,7 +98,7 @@ func TestSendInputValidation(t *testing.T) {
 }
 
 func TestBuildMessageMultipart(t *testing.T) {
-	cfg := &smtpConfig{fromAddress: "silo@example.com", fromName: "Silo"}
+	cfg := &smtpConfig{fromAddress: "silo@example.com", fromName: "Prairie"}
 	message, err := buildMessage(cfg, Message{
 		To:       []string{"user@example.com"},
 		Subject:  "Hello",
@@ -113,7 +113,7 @@ func TestBuildMessageMultipart(t *testing.T) {
 		t.Fatalf("render message: %v", err)
 	}
 	output := rendered.String()
-	for _, want := range []string{"multipart/alternative", "plain", "rich", "Silo", "user@example.com"} {
+	for _, want := range []string{"multipart/alternative", "plain", "rich", "Prairie", "user@example.com"} {
 		if !strings.Contains(output, want) {
 			t.Fatalf("rendered message missing %q:\n%s", want, output)
 		}

@@ -3,7 +3,7 @@ package api
 import (
 	"testing"
 
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 )
 
 // TestCheckRequestIntegrationUsable verifies the Fix 4 gate: a reused Requests

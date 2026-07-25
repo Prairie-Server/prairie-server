@@ -18,8 +18,8 @@ COPY --from=frontend /app/web/dist/. /
 FROM golang:1.26 AS build
 ENV CGO_ENABLED=1
 ENV GOPROXY=https://proxy.golang.org,direct
-ENV GOPRIVATE=github.com/Silo-Server/*
-ENV GONOSUMDB=github.com/Silo-Server/*
+ENV GOPRIVATE=github.com/prairie-server/*,github.com/Silo-Server/*
+ENV GONOSUMDB=github.com/prairie-server/*,github.com/Silo-Server/*
 RUN apt-get update && apt-get install -y --no-install-recommends libvips-dev && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -37,8 +37,8 @@ ARG BUILD_DIRTY=false
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
     go build \
-    -ldflags "-X github.com/Silo-Server/silo-server/internal/buildinfo.revisionOverride=${BUILD_REVISION} -X github.com/Silo-Server/silo-server/internal/buildinfo.dirtyOverride=${BUILD_DIRTY}" \
-    -o /silo ./cmd/silo/
+    -ldflags "-X github.com/prairie-server/prairie-server/internal/buildinfo.revisionOverride=${BUILD_REVISION} -X github.com/prairie-server/prairie-server/internal/buildinfo.dirtyOverride=${BUILD_DIRTY}" \
+    -o /prairie ./cmd/prairie/
 
 # Stage 3: Runtime
 FROM debian:bookworm-slim
@@ -53,13 +53,13 @@ RUN apt-get update && \
     apt-get install -y --no-install-recommends jellyfin-ffmpeg7 git libvips42 fonts-noto-core fonts-noto-cjk && \
     apt-get purge -y gnupg && apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
-RUN mkdir -p /tmp/silo-transcode /var/lib/silo/compat/jellyfin-web
+RUN mkdir -p /tmp/prairie-transcode /var/lib/prairie/compat/jellyfin-web
 COPY --from=frontend /usr/local/bin/node /usr/local/bin/node
 COPY --from=frontend /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
 RUN ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
     ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
-COPY --from=build /silo /usr/local/bin/silo
+COPY --from=build /prairie /usr/local/bin/prairie
 EXPOSE 8080 8096 13378
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8080}/api/v1/health || exit 1
-ENTRYPOINT ["silo"]
+ENTRYPOINT ["prairie"]

@@ -25,7 +25,7 @@ var adminSettingDefaults = map[string]string{
 	"auth.refresh_token_expiry": "30d",
 	"server.log_level":          "info",
 	"server.log_quiet":          "",
-	"branding.server_name":      "Silo",
+	"branding.server_name":      "Prairie",
 	"branding.login_subtitle":   "Sign in with an existing account.",
 	"clientip.trusted_proxies":  "10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, ::1/128",
 	"theme.catalog_url":         DefaultThemeCatalogURL,
@@ -67,7 +67,7 @@ var adminSettingDefaults = map[string]string{
 	"jellyfin_compat.enabled":                 "true",
 	"jellyfin_compat.public_url":              "http://127.0.0.1:8096",
 	"jellyfin_compat.emulated_server_version": DefaultJellyfinCompatEmulatedServerVersion,
-	"jellyfin_compat.server_name":             "Silo",
+	"jellyfin_compat.server_name":             "Prairie",
 	"jellyfin_compat.web_enabled":             "true",
 	"jellyfin_compat.web_version":             DefaultJellyfinWebVersion,
 	"jellyfin_compat.web_install_dir":         DefaultJellyfinWebInstallDir,
@@ -115,7 +115,7 @@ var adminSettingDefaults = map[string]string{
 	"email.enabled":       "false",
 	"email.smtp_port":     "587",
 	"email.smtp_security": "starttls",
-	"email.from_name":     "Silo",
+	"email.from_name":     "Prairie",
 
 	"notifications.release_events_enabled":                     "true",
 	"notifications.fanout_enabled":                             "true",
@@ -152,7 +152,7 @@ var adminSettingDefaults = map[string]string{
 	"signup.enabled":                  "false",
 
 	"catalog.search.provider":                             "postgres",
-	"catalog.search.meilisearch.index":                    "silo_media_items",
+	"catalog.search.meilisearch.index":                    "prairie_media_items",
 	"catalog.search.meilisearch.timeout_ms":               "800",
 	"catalog.search.meilisearch.matching_strategy":        "last",
 	"catalog.search.meilisearch.sync_batch_size":          "500",
@@ -160,7 +160,7 @@ var adminSettingDefaults = map[string]string{
 	"catalog.search.meilisearch.rebuild_task_queue_depth": "4",
 	"catalog.search.meilisearch.semantic_enabled":         "false",
 	"catalog.search.meilisearch.semantic_ratio":           "0.5",
-	"catalog.search.meilisearch.embedder":                 "silo_recommendations",
+	"catalog.search.meilisearch.embedder":                 "prairie_recommendations",
 	"catalog.search.meilisearch.binary_quantized":         "false",
 }
 

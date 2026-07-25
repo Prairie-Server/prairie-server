@@ -3,7 +3,7 @@ package playback
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func TestResolveSubtitlePolicyV3RendersCEA608AsTextArtifact(t *testing.T) {

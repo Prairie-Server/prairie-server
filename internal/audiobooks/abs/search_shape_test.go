@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // searchStubMediaStore backs the /libraries/{id}/search shape tests. It
@@ -111,7 +111,7 @@ func TestLibrarySearch_BookEntryHasLibraryItem(t *testing.T) {
 }
 
 // TestLibrarySearch_EmptyQuery_ReturnsEmptyBuckets covers the q="" short
-// circuit — real ABS 400s on a missing q, but Silo has historically
+// circuit — real ABS 400s on a missing q, but Prairie has historically
 // returned the empty-bucket envelope for an empty query; keep that
 // behavior and just assert the keys survive.
 func TestLibrarySearch_EmptyQuery_ReturnsEmptyBuckets(t *testing.T) {

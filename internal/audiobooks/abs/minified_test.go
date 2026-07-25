@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // TestMinify_ConformsToRealABSKeys asserts the minified list item matches real
@@ -78,9 +78,9 @@ func TestMinify_ConformsToRealABSKeys(t *testing.T) {
 	}
 }
 
-// TestSiloItemToLibraryItem_MediaHasID guards the yaabsa BookMedia.id crash:
+// TestPrairieItemToLibraryItem_MediaHasID guards the yaabsa BookMedia.id crash:
 // the non-minified media object must carry id + libraryItemId = ContentID.
-func TestSiloItemToLibraryItem_MediaHasID(t *testing.T) {
+func TestPrairieItemToLibraryItem_MediaHasID(t *testing.T) {
 	item := &models.MediaItem{ContentID: "book-9", Title: "T"}
 	full := siloItemToLibraryItem(item, AudiobookLibrary{ID: 1}, "http://x")
 	if full.Media.ID != "book-9" {

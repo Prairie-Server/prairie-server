@@ -2,7 +2,7 @@
 
 **Status:** Implemented 2026-06-11
 
-Silo's shared outbound email facility. It is deliberately feature-agnostic: any
+Prairie's shared outbound email facility. It is deliberately feature-agnostic: any
 feature that sends mail (notification emails, account flows, invites) composes
 a `mail.Message` and hands it to the shared `mail.Sender`, so SMTP
 configuration, security policy, and diagnostics live in exactly one place.
@@ -27,16 +27,16 @@ degrade gracefully. The SMTP implementation (`mail.NewSMTPSender`) is backed by
 Live server settings (no restart required; read on every send — volume is
 low):
 
-| Key | Default | Notes |
-|---|---|---|
-| `email.enabled` | `false` | master switch |
-| `email.smtp_host` | — | required |
-| `email.smtp_port` | `587` | |
+| Key                   | Default    | Notes                                              |
+| --------------------- | ---------- | -------------------------------------------------- |
+| `email.enabled`       | `false`    | master switch                                      |
+| `email.smtp_host`     | —          | required                                           |
+| `email.smtp_port`     | `587`      |                                                    |
 | `email.smtp_security` | `starttls` | `starttls` \| `tls` (implicit, port 465) \| `none` |
-| `email.smtp_username` | — | empty = no auth |
-| `email.smtp_password` | — | encrypted at rest (`SensitiveSettingKeys`) |
-| `email.from_address` | — | required |
-| `email.from_name` | `Silo` | |
+| `email.smtp_username` | —          | empty = no auth                                    |
+| `email.smtp_password` | —          | encrypted at rest (`SensitiveSettingKeys`)         |
+| `email.from_address`  | —          | required                                           |
+| `email.from_name`     | `Prairie`  |                                                    |
 
 Admin UI: Admin Settings → Connections → Email, including a synchronous test
 send (`POST /api/v1/admin/email/test`).

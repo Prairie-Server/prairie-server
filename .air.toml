@@ -3,8 +3,8 @@ tmp_dir = "tmp"
 
 [build]
   # Build frontend then Go binary
-  cmd = "cd web && pnpm run build && cd .. && go build -o ./tmp/silo ./cmd/silo/"
-  bin = "./tmp/silo"
+  cmd = "cd web && pnpm run build && cd .. && go build -o ./tmp/prairie ./cmd/prairie/"
+  bin = "./tmp/prairie"
   # Pass no extra args — config comes from .env via godotenv
   args_bin = []
   # Watch these extensions

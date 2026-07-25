@@ -29,7 +29,7 @@ func init() {
 // TranscodeOpts holds configuration for an HLS transcode session.
 type TranscodeOpts struct {
 	InputPath string
-	OutputDir string // e.g., /tmp/silo-transcode/{session_id}/
+	OutputDir string // e.g., /tmp/prairie-transcode/{session_id}/
 	// OutputSubdir is the signed, root-relative reconstruction directory. Empty
 	// retains the legacy flat {session_id} layout.
 	OutputSubdir         string

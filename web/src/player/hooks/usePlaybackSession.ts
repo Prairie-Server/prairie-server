@@ -158,7 +158,7 @@ function describePlaybackSessionError(
     if (error.status >= 500) {
       return {
         title: "Playback unavailable",
-        message: "Silo could not start playback right now. Please try again.",
+        message: "Prairie could not start playback right now. Please try again.",
       };
     }
 
@@ -171,7 +171,7 @@ function describePlaybackSessionError(
   if (error instanceof Error && error.message === "No compatible file version found") {
     return {
       title: "No compatible version found",
-      message: "Silo could not find a playable version for this device.",
+      message: "Prairie could not find a playable version for this device.",
     };
   }
 

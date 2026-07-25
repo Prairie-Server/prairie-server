@@ -10,13 +10,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/auth"
 )
 
-// SiloCredValidator implements abs.ProfileCredentialValidator using silo's
+// PrairieCredValidator implements abs.ProfileCredentialValidator using silo's
 // existing auth.Service. In-process validation avoids the HTTP round-trip
 // the plugin previously made to POST /api/v1/auth/login.
-type SiloCredValidator struct {
+type PrairieCredValidator struct {
 	Auth *auth.Service
 	Pool *pgxpool.Pool
 }
@@ -39,7 +39,7 @@ type SiloCredValidator struct {
 // integer user ID and UUID profile ID accordingly. Users with no profiles at
 // all (newly created accounts pre-setup) get an empty profileID and the ABS
 // handler treats that as "primary".
-func (v *SiloCredValidator) Validate(
+func (v *PrairieCredValidator) Validate(
 	ctx context.Context,
 	username, password string,
 ) (userID, profileID, displayName string, err error) {
@@ -97,7 +97,7 @@ func (v *SiloCredValidator) Validate(
 // mirrors Validate's display-name logic: the profile name when a profile is
 // set and named, otherwise the account username. Returns "" when unresolvable
 // so the caller falls back to the userID.
-func (v *SiloCredValidator) ResolveUsername(ctx context.Context, userID, profileID string) string {
+func (v *PrairieCredValidator) ResolveUsername(ctx context.Context, userID, profileID string) string {
 	if v.Pool == nil {
 		return ""
 	}

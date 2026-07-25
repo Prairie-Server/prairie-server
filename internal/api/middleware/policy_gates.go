@@ -6,14 +6,15 @@ import (
 	"slices"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/policy"
 	"github.com/go-chi/chi/v5"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/httpheaders"
+	"github.com/prairie-server/prairie-server/internal/policy"
 )
 
 const (
-	siloDeviceIDHeader                 = "X-Silo-Device-Id"
+	prairieDeviceIDHeader              = httpheaders.HeaderDeviceID
 	policyInternalErrorCode            = "internal_error"
 	activeProfileVerificationFailedMsg = "Failed to verify active profile"
 	metadataCurationRequiredMsg        = "Metadata curation permission required"
@@ -323,5 +324,5 @@ func policyRequestTime() string {
 }
 
 func policyDeviceID(r *http.Request) string {
-	return r.Header.Get(siloDeviceIDHeader)
+	return httpheaders.Get(r.Header, prairieDeviceIDHeader)
 }

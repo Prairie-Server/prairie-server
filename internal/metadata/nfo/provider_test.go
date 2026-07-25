@@ -7,7 +7,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/metadata"
 )
 
 func TestFindNFO_FilePathFallsBackToDirectoryLevelSidecar(t *testing.T) {

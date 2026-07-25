@@ -20,22 +20,23 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/google/uuid"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/config"
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/httpstream"
-	"github.com/Silo-Server/silo-server/internal/markers"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
-	"github.com/Silo-Server/silo-server/internal/transcodenode"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/watchstate"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/config"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/httpheaders"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/markers"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/transcodenode"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/watchstate"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 // SessionManagerInterface defines the operations the PlaybackHandler needs
@@ -2013,8 +2014,8 @@ func playbackClientInfoFromRequest(r *http.Request) playback.ClientInfo {
 		return playback.ClientInfo{}
 	}
 	return playback.ClientInfo{
-		Name:      strings.TrimSpace(r.Header.Get("X-Silo-Client")),
-		Version:   strings.TrimSpace(r.Header.Get("X-Silo-Client-Version")),
+		Name:      strings.TrimSpace(httpheaders.RequestValue(r, httpheaders.HeaderClient)),
+		Version:   strings.TrimSpace(httpheaders.RequestValue(r, httpheaders.HeaderClientVersion)),
 		UserAgent: r.UserAgent(),
 	}
 }
@@ -3780,7 +3781,7 @@ func (h *PlaybackHandler) proxyToTranscodeNode(w http.ResponseWriter, r *http.Re
 	}
 	req.Header.Set("Authorization", "Bearer "+h.JWTSecret)
 	// Best-effort forward of the stream token as a header so the node's
-	// reconstruct path (X-Silo-Stream-Token) can rebuild after a self-restart.
+	// reconstruct path (X-Prairie-Stream-Token) can rebuild after a self-restart.
 	// Verify at the API boundary and confirm it belongs to this session; an
 	// invalid or missing token never blocks the live proxy. validToken is kept so
 	// the same verified token can be re-injected into the node's manifest segment
@@ -3789,7 +3790,7 @@ func (h *PlaybackHandler) proxyToTranscodeNode(w http.ResponseWriter, r *http.Re
 	if stToken != "" && h.JWTSecret != "" {
 		claims, verifyErr := streamtoken.Verify(stToken, h.JWTSecret)
 		if verifyErr == nil && claims.SessionID == sessionID {
-			req.Header.Set("X-Silo-Stream-Token", stToken)
+			httpheaders.Set(req.Header, httpheaders.HeaderStreamToken, stToken)
 			validToken = stToken
 		} else if verifyErr != nil {
 			slog.WarnContext(r.Context(), "stream token not forwarded to transcode node", "component", "api", "error", verifyErr, "playback_session_id", sessionID)

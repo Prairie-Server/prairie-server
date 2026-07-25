@@ -3,7 +3,7 @@ INSERT INTO server_settings (key, value) VALUES
     ('catalog.search.provider', 'postgres'),
     ('catalog.search.meilisearch.url', ''),
     ('catalog.search.meilisearch.api_key', ''),
-    ('catalog.search.meilisearch.index', 'silo_media_items'),
+    ('catalog.search.meilisearch.index', 'prairie_media_items'),
     ('catalog.search.meilisearch.timeout_ms', '800'),
     ('catalog.search.meilisearch.matching_strategy', 'last')
 ON CONFLICT (key) DO NOTHING;

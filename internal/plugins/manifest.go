@@ -9,7 +9,7 @@ import (
 	publicmanifest "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/manifest"
 )
 
-const DefaultSiloAPIVersion = "v1"
+const DefaultPrairieAPIVersion = "v1"
 
 func ValidateManifest(manifest *pluginv1.PluginManifest) error {
 	if err := validateManifestShared(manifest); err != nil {

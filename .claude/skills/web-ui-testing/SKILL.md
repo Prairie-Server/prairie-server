@@ -1,6 +1,6 @@
 ---
 name: web-ui-testing
-description: Use when verifying a change to the Silo web frontend (`web/`) in a real browser — checking a page renders, a flow works, or a fix actually landed, and capturing screenshots for a PR. Runs the local Vite dev server against a real Silo backend so no build or deploy is needed. Not for backend-only changes, and not a substitute for unit tests in `web/src`.
+description: Use when verifying a change to the Prairie web frontend (`web/`) in a real browser — checking a page renders, a flow works, or a fix actually landed, and capturing screenshots for a PR. Runs the local Vite dev server against a real Prairie backend so no build or deploy is needed. Not for backend-only changes, and not a substitute for unit tests in `web/src`.
 ---
 
 # Verifying web UI changes
@@ -12,11 +12,11 @@ iterate.
 ## Point the dev server at a backend
 
 ```bash
-printf 'VITE_API_PROXY_TARGET=%s\n' "$(scripts/silo-dev env | awk '/^SILO_URL/{print $2}')" > web/.env.local
+printf 'VITE_API_PROXY_TARGET=%s\n' "$(scripts/prairie-dev env | awk '/^PRAIRIE_URL/{print $2}')" > web/.env.local
 make dev-frontend
 ```
 
-Any reachable Silo instance works as the target — the shared `.silo-dev.env` deployment,
+Any reachable Prairie instance works as the target — the shared `.prairie-dev.env` deployment,
 a colleague's server, or `http://localhost:8090` for a backend you are running yourself
 with `make dev-backend`. Vite proxies `/api` (including WebSockets, such as the realtime
 `scans` channel) and sets `changeOrigin` automatically for non-localhost targets, because
@@ -30,9 +30,9 @@ Before debugging anything in the UI, confirm the proxy itself:
 curl -s http://localhost:5173/api/v1/health
 ```
 
-Silo health JSON means the wiring is good and any remaining problem is the frontend. An
+Prairie health JSON means the wiring is good and any remaining problem is the frontend. An
 HTML page or a connection error means the proxy target is wrong or the backend is down —
-`scripts/silo-dev doctor` will say which.
+`scripts/prairie-dev doctor` will say which.
 
 ## Drive it
 
@@ -45,8 +45,8 @@ hostname, so it is also reachable from any device on the tailnet at
 one when starting a dev server for them — it is how they watch the UI you are working on
 from another machine. `tailscale status --json | jq -r .Self.DNSName` gives the name.
 
-Most pages need a session. Sign in through the login form using `SILO_ADMIN_USER` and
-`SILO_ADMIN_PASSWORD` from `.silo-dev.env`; the session then lives in that browser
+Most pages need a session. Sign in through the login form using `PRAIRIE_ADMIN_USER` and
+`PRAIRIE_ADMIN_PASSWORD` from `.prairie-dev.env`; the session then lives in that browser
 profile for the rest of the run. If those are unset, ask the user for an account on the
 target rather than testing only the signed-out shell — and never type credentials the
 user has not given you for that server.

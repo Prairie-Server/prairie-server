@@ -1,4 +1,4 @@
-// Package middleware provides HTTP middleware for the Silo API,
+// Package middleware provides HTTP middleware for the Prairie API,
 // including authentication and authorization.
 package middleware
 
@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/activitylog"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/activitylog"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // contextKey is an unexported type for context keys in this package.

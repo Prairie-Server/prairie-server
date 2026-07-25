@@ -1,23 +1,27 @@
 import { cn } from "@/lib/utils";
 import { useBranding } from "@/hooks/useBranding";
 
-const SILO_WORDMARK_SRC = "/silo-wordmark-sidebar.png";
-const SILO_MARK_SRC = "/silo-icon-1024.png";
+const PRAIRIE_WORDMARK_SRC = "/prairie-wordmark-sidebar.png";
+const PRAIRIE_MARK_SRC = "/prairie-icon-1024.png";
 
-export type SiloBrandVariant = "wordmark" | "mark";
+export type PrairieBrandVariant = "wordmark" | "mark";
 
-interface SiloBrandProps {
+interface PrairieBrandProps {
   className?: string;
   imageClassName?: string;
-  variant?: SiloBrandVariant;
+  variant?: PrairieBrandVariant;
 }
 
-export function SiloBrand({ className, imageClassName, variant = "wordmark" }: SiloBrandProps) {
+export function PrairieBrand({
+  className,
+  imageClassName,
+  variant = "wordmark",
+}: PrairieBrandProps) {
   const isMark = variant === "mark";
   const { serverName, wordmarkUrl, markUrl } = useBranding();
 
   const customSrc = isMark ? markUrl : wordmarkUrl;
-  const src = customSrc ?? (isMark ? SILO_MARK_SRC : SILO_WORDMARK_SRC);
+  const src = customSrc ?? (isMark ? PRAIRIE_MARK_SRC : PRAIRIE_WORDMARK_SRC);
 
   return (
     <span className={cn("block shrink-0", !isMark && "overflow-hidden", className)}>

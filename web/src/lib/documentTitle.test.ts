@@ -15,7 +15,7 @@ describe("formatDocumentTitle", () => {
   });
 
   it("prefixes the current page label", () => {
-    expect(formatDocumentTitle("Inception")).toBe("Inception · Silo");
+    expect(formatDocumentTitle("Inception")).toBe("Inception · Prairie");
   });
 });
 

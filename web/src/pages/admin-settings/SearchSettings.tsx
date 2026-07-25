@@ -111,7 +111,7 @@ export default function SearchSettings() {
           />
           <SettingField
             label="Index Prefix"
-            value={form.getValue("catalog.search.meilisearch.index") || "silo_media_items"}
+            value={form.getValue("catalog.search.meilisearch.index") || "prairie_media_items"}
             onChange={(value) => form.setValue("catalog.search.meilisearch.index", value)}
             disabled={!meiliEnabled}
           />
@@ -187,7 +187,9 @@ export default function SearchSettings() {
           />
           <SettingField
             label="Embedder"
-            value={form.getValue("catalog.search.meilisearch.embedder") || "silo_recommendations"}
+            value={
+              form.getValue("catalog.search.meilisearch.embedder") || "prairie_recommendations"
+            }
             onChange={(value) => form.setValue("catalog.search.meilisearch.embedder", value)}
             disabled={!meiliEnabled}
           />

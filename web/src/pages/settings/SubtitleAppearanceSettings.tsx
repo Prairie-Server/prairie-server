@@ -216,7 +216,7 @@ export default function SubtitleAppearanceSettings() {
 
       <SettingsGroup
         title="Behavior"
-        description="These preferences decide which subtitles Silo chooses by default."
+        description="These preferences decide which subtitles Prairie chooses by default."
       >
         <SettingRow
           label="Subtitle language"

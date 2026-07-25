@@ -7,7 +7,7 @@ import (
 	"net/mail"
 	"time"
 
-	silomail "github.com/Silo-Server/silo-server/internal/mail"
+	silomail "github.com/prairie-server/prairie-server/internal/mail"
 )
 
 // EmailHandler exposes admin operations for the shared outbound email
@@ -53,13 +53,13 @@ func (h *EmailHandler) HandleTest(w http.ResponseWriter, r *http.Request) {
 	started := time.Now()
 	err := h.sender.Send(r.Context(), silomail.Message{
 		To:      []string{req.To},
-		Subject: "Silo test email",
-		TextBody: "This is a test email from your Silo server.\n\n" +
+		Subject: "Prairie test email",
+		TextBody: "This is a test email from your Prairie server.\n\n" +
 			"If you received it, outbound email is configured correctly.",
 		HTMLBody: silomail.RenderLayout(silomail.LayoutOptions{
-			Preheader: "Outbound email from your Silo server is configured correctly.",
+			Preheader: "Outbound email from your Prairie server is configured correctly.",
 			Title:     "Outbound email is working",
-			BodyHTML: silomail.EmailParagraph("This is a test email from your Silo server.") +
+			BodyHTML: silomail.EmailParagraph("This is a test email from your Prairie server.") +
 				silomail.EmailParagraph("If you're reading it, the SMTP settings are correct and "+
 					"notification emails will look like this one."),
 		}),

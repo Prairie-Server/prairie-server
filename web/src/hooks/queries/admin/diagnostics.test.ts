@@ -60,8 +60,10 @@ describe("downloadDiagnosticReport", () => {
     // assert it carried the blob URL and expected filename before cleanup.
     const clickedAnchor = click.mock.contexts[0] as HTMLAnchorElement;
     expect(clickedAnchor.href).toBe("blob:diagnostic");
-    expect(clickedAnchor.download).toBe("silo-diagnostics-ABCDEF123456.tar.gz");
-    expect(document.querySelector('a[download="silo-diagnostics-ABCDEF123456.tar.gz"]')).toBeNull();
+    expect(clickedAnchor.download).toBe("prairie-diagnostics-ABCDEF123456.tar.gz");
+    expect(
+      document.querySelector('a[download="prairie-diagnostics-ABCDEF123456.tar.gz"]'),
+    ).toBeNull();
 
     await new Promise((resolve) => window.setTimeout(resolve, 0));
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:diagnostic");

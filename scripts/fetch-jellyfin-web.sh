@@ -13,4 +13,4 @@ if [[ -n "$version" ]]; then
 fi
 
 cd "$repo_root"
-go run ./cmd/silo/ "${args[@]}"
+go run ./cmd/prairie/ "${args[@]}"

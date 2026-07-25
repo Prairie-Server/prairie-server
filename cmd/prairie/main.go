@@ -33,95 +33,95 @@ import (
 	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
 	sdkcapability "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/capability"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/activitylog"
-	"github.com/Silo-Server/silo-server/internal/adminjob"
-	"github.com/Silo-Server/silo-server/internal/api"
-	"github.com/Silo-Server/silo-server/internal/api/handlers"
-	"github.com/Silo-Server/silo-server/internal/audiobooks"
-	"github.com/Silo-Server/silo-server/internal/audiobooks/podcastfeed"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/autoscan"
-	"github.com/Silo-Server/silo-server/internal/branding"
-	"github.com/Silo-Server/silo-server/internal/cache"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/catalogseed"
-	"github.com/Silo-Server/silo-server/internal/chapterthumbs"
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/database"
-	"github.com/Silo-Server/silo-server/internal/diagnostics"
-	"github.com/Silo-Server/silo-server/internal/downloads"
-	"github.com/Silo-Server/silo-server/internal/ebooks"
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/imagecache"
-	"github.com/Silo-Server/silo-server/internal/intromarkers"
-	"github.com/Silo-Server/silo-server/internal/jellycompat"
-	"github.com/Silo-Server/silo-server/internal/libraryingest"
-	"github.com/Silo-Server/silo-server/internal/literaryworks"
-	"github.com/Silo-Server/silo-server/internal/logfilter"
-	"github.com/Silo-Server/silo-server/internal/logredact"
-	"github.com/Silo-Server/silo-server/internal/logstream"
-	"github.com/Silo-Server/silo-server/internal/mail"
-	"github.com/Silo-Server/silo-server/internal/manga"
-	"github.com/Silo-Server/silo-server/internal/markers"
-	"github.com/Silo-Server/silo-server/internal/mdblist"
-	"github.com/Silo-Server/silo-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/activitylog"
+	"github.com/prairie-server/prairie-server/internal/adminjob"
+	"github.com/prairie-server/prairie-server/internal/api"
+	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/audiobooks"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/podcastfeed"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/autoscan"
+	"github.com/prairie-server/prairie-server/internal/branding"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalogseed"
+	"github.com/prairie-server/prairie-server/internal/chapterthumbs"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/database"
+	"github.com/prairie-server/prairie-server/internal/diagnostics"
+	"github.com/prairie-server/prairie-server/internal/downloads"
+	"github.com/prairie-server/prairie-server/internal/ebooks"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/imagecache"
+	"github.com/prairie-server/prairie-server/internal/intromarkers"
+	"github.com/prairie-server/prairie-server/internal/jellycompat"
+	"github.com/prairie-server/prairie-server/internal/libraryingest"
+	"github.com/prairie-server/prairie-server/internal/literaryworks"
+	"github.com/prairie-server/prairie-server/internal/logfilter"
+	"github.com/prairie-server/prairie-server/internal/logredact"
+	"github.com/prairie-server/prairie-server/internal/logstream"
+	"github.com/prairie-server/prairie-server/internal/mail"
+	"github.com/prairie-server/prairie-server/internal/manga"
+	"github.com/prairie-server/prairie-server/internal/markers"
+	"github.com/prairie-server/prairie-server/internal/mdblist"
+	"github.com/prairie-server/prairie-server/internal/metadata"
 
 	// Built-in metadata providers self-register into the metadata package's
 	// builtin registry on import; buildProviders resolves their seeded chain
 	// entries in-process (no gRPC).
-	_ "github.com/Silo-Server/silo-server/internal/metadata/nfo"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/nodeconfig"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/noderecipe"
-	"github.com/Silo-Server/silo-server/internal/nodesessions"
-	"github.com/Silo-Server/silo-server/internal/notifications"
-	"github.com/Silo-Server/silo-server/internal/opslog"
-	"github.com/Silo-Server/silo-server/internal/partman"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
-	"github.com/Silo-Server/silo-server/internal/plugins"
-	"github.com/Silo-Server/silo-server/internal/policy"
-	"github.com/Silo-Server/silo-server/internal/proxy"
-	"github.com/Silo-Server/silo-server/internal/ratelimit"
-	"github.com/Silo-Server/silo-server/internal/recommendations"
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
-	"github.com/Silo-Server/silo-server/internal/s3client"
-	"github.com/Silo-Server/silo-server/internal/scanner"
-	"github.com/Silo-Server/silo-server/internal/scanqueue"
-	"github.com/Silo-Server/silo-server/internal/secret"
-	"github.com/Silo-Server/silo-server/internal/sections"
-	"github.com/Silo-Server/silo-server/internal/server"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
-	taskrepository "github.com/Silo-Server/silo-server/internal/taskmanager/repository"
-	"github.com/Silo-Server/silo-server/internal/taskmanager/tasks"
-	"github.com/Silo-Server/silo-server/internal/taskmanager/triggers"
-	"github.com/Silo-Server/silo-server/internal/telemetry"
-	"github.com/Silo-Server/silo-server/internal/transcodenode"
-	"github.com/Silo-Server/silo-server/internal/usercollections"
-	"github.com/Silo-Server/silo-server/internal/userdb"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/userstore/pgstore"
-	"github.com/Silo-Server/silo-server/internal/watchlist"
-	"github.com/Silo-Server/silo-server/internal/watchstate"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
-	watchmdblist "github.com/Silo-Server/silo-server/internal/watchsync/providers/mdblist"
-	"github.com/Silo-Server/silo-server/internal/watchsync/providers/simkl"
-	"github.com/Silo-Server/silo-server/internal/watchsync/providers/trakt"
-	"github.com/Silo-Server/silo-server/internal/worker"
-	"github.com/Silo-Server/silo-server/migrations"
-	siloweb "github.com/Silo-Server/silo-server/web"
+	_ "github.com/prairie-server/prairie-server/internal/metadata/nfo"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/nodeconfig"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/noderecipe"
+	"github.com/prairie-server/prairie-server/internal/nodesessions"
+	"github.com/prairie-server/prairie-server/internal/notifications"
+	"github.com/prairie-server/prairie-server/internal/opslog"
+	"github.com/prairie-server/prairie-server/internal/partman"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
+	"github.com/prairie-server/prairie-server/internal/plugins"
+	"github.com/prairie-server/prairie-server/internal/policy"
+	"github.com/prairie-server/prairie-server/internal/proxy"
+	"github.com/prairie-server/prairie-server/internal/ratelimit"
+	"github.com/prairie-server/prairie-server/internal/recommendations"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
+	"github.com/prairie-server/prairie-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/scanner"
+	"github.com/prairie-server/prairie-server/internal/scanqueue"
+	"github.com/prairie-server/prairie-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/sections"
+	"github.com/prairie-server/prairie-server/internal/server"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
+	taskrepository "github.com/prairie-server/prairie-server/internal/taskmanager/repository"
+	"github.com/prairie-server/prairie-server/internal/taskmanager/tasks"
+	"github.com/prairie-server/prairie-server/internal/taskmanager/triggers"
+	"github.com/prairie-server/prairie-server/internal/telemetry"
+	"github.com/prairie-server/prairie-server/internal/transcodenode"
+	"github.com/prairie-server/prairie-server/internal/usercollections"
+	"github.com/prairie-server/prairie-server/internal/userdb"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore/pgstore"
+	"github.com/prairie-server/prairie-server/internal/watchlist"
+	"github.com/prairie-server/prairie-server/internal/watchstate"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
+	watchmdblist "github.com/prairie-server/prairie-server/internal/watchsync/providers/mdblist"
+	"github.com/prairie-server/prairie-server/internal/watchsync/providers/simkl"
+	"github.com/prairie-server/prairie-server/internal/watchsync/providers/trakt"
+	"github.com/prairie-server/prairie-server/internal/worker"
+	"github.com/prairie-server/prairie-server/migrations"
+	siloweb "github.com/prairie-server/prairie-server/web"
 )
 
 // resolveNodeIdentity returns a stable node identifier used by the
 // heartbeat writer, reconciler, and shutdown cleanup. Resolution order:
-// SILO_NODE_NAME > NODE_NAME > os.Hostname().
+// PRAIRIE_NODE_NAME > SILO_NODE_NAME > NODE_NAME > os.Hostname().
 func resolveNodeIdentity() string {
-	if v := os.Getenv("SILO_NODE_NAME"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_NODE_NAME", "SILO_NODE_NAME"); v != "" {
 		return v
 	}
 	if v := os.Getenv("NODE_NAME"); v != "" {
@@ -132,10 +132,10 @@ func resolveNodeIdentity() string {
 }
 
 func resolvePluginCacheDir() string {
-	if v := strings.TrimSpace(os.Getenv("SILO_PLUGIN_CACHE_DIR")); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_PLUGIN_CACHE_DIR", "SILO_PLUGIN_CACHE_DIR"); v != "" {
 		return v
 	}
-	return filepath.Join(os.TempDir(), "silo-plugins")
+	return filepath.Join(os.TempDir(), "prairie-plugins")
 }
 
 func buildBaseHandler(format string, level slog.Leveler, otelHandler slog.Handler) slog.Handler {
@@ -340,7 +340,7 @@ func runCredentialBackfills(ctx context.Context, pool *pgxpool.Pool, cipher *sec
 
 func runCompatWebCommand(ctx context.Context, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: silo compat-web {status|install|update|remove}")
+		return fmt.Errorf("usage: prairie compat-web {status|install|update|remove}")
 	}
 	command := args[0]
 	flags := flag.NewFlagSet("compat-web "+command, flag.ContinueOnError)
@@ -486,8 +486,14 @@ func main() {
 	}
 
 	// Step 4: YAML import (one-time)
-	yamlPath := "silo.yaml"
-	if _, yamlErr := os.Stat(yamlPath); yamlErr == nil {
+	yamlPath := ""
+	for _, candidate := range []string{"prairie.yaml", "silo.yaml"} {
+		if _, yamlErr := os.Stat(candidate); yamlErr == nil {
+			yamlPath = candidate
+			break
+		}
+	}
+	if yamlPath != "" {
 		if settings["_yaml_imported"] == "" {
 			yamlSettings, importErr := config.YAMLToSettingsMap(yamlPath)
 			if importErr != nil {
@@ -501,7 +507,7 @@ func main() {
 				if err := settingsRepo.Set(ctx, "_yaml_imported", "true"); err != nil {
 					slog.Warn("failed to set yaml import flag", "error", err)
 				}
-				log.Println("Imported config from silo.yaml — this file is no longer used")
+				log.Printf("Imported config from %s — this file is no longer used", yamlPath)
 				settings, _ = settingsRepo.GetAll(ctx)
 			}
 		}
@@ -520,7 +526,7 @@ func main() {
 		settings["auth.jwt_secret"] = encoded
 	}
 	if settings["jellyfin_compat.server_id"] == "" {
-		serverID := uuid.NewSHA1(uuid.NameSpaceURL, []byte("https://silo.local/jellycompat")).String()
+		serverID := uuid.NewSHA1(uuid.NameSpaceURL, []byte("https://prairie.local/jellycompat")).String()
 		if err := settingsRepo.Set(ctx, "jellyfin_compat.server_id", serverID); err != nil {
 			slog.Warn("failed to persist generated server ID", "error", err)
 		}
@@ -573,7 +579,7 @@ func main() {
 	logLevelVar.Set(parseLogLevel(cfg.Server.LogLevel))
 
 	// Bootstrap OpenTelemetry (logs + traces) before installing the log handler
-	// chain. Setup depends only on OTEL_* / SILO_OTEL_ENABLED env (not the DB),
+	// chain. Setup depends only on OTEL_* / PRAIRIE_OTEL_ENABLED env (not the DB),
 	// so it is safe to call here. When disabled, this is fully dormant: no
 	// providers are installed and telemetryShutdown is a no-op.
 	telemetryCfg := telemetry.LoadConfig(nodeID)
@@ -604,7 +610,7 @@ func main() {
 
 	mode := cfg.Server.Mode
 	maybeApplyPostgresTuning(ctx, pool, cfg.Database.MaxConnections, mode)
-	slog.Info("silo starting", "mode", mode, "listen", cfg.Server.Listen, "log_level", cfg.Server.LogLevel, "node_id", nodeID)
+	slog.Info("prairie starting", "mode", mode, "listen", cfg.Server.Listen, "log_level", cfg.Server.LogLevel, "node_id", nodeID)
 
 	appCtx, appCancel := context.WithCancel(ctx)
 	defer appCancel()
@@ -771,7 +777,7 @@ func main() {
 		ScanRegistry:                 scanRegistry,
 		OpsLogRepo:                   opsRepo,
 		FFmpegLogSink:                playback.NewSlogFFmpegLogSink(slog.Default(), nodeID),
-		PublicURL:                    os.Getenv("SILO_PUBLIC_URL"),
+		PublicURL:                    envutil.FirstNonEmpty("PRAIRIE_PUBLIC_URL", "SILO_PUBLIC_URL"),
 		RequestServerRestart: func(context.Context) error {
 			if !restartRequested.CompareAndSwap(false, true) {
 				return handlers.ErrServerRestartAlreadyRequested
@@ -967,7 +973,7 @@ func main() {
 		installationStore := plugins.NewInstallationStore(deps.DB)
 		runtimeConfigStore := plugins.NewRuntimeConfigStore(deps.DB, deps.SecretCipher)
 		catalogService := plugins.NewCatalogService(repositoryStore, plugins.CatalogServiceOptions{
-			SiloAPIVersion: plugins.DefaultSiloAPIVersion,
+			PrairieAPIVersion: plugins.DefaultPrairieAPIVersion,
 		})
 		installer := plugins.NewInstaller(installationStore, plugins.InstallerOptions{
 			BaseDir: pluginCacheDir,
@@ -1537,7 +1543,7 @@ func main() {
 			poolConfig := userdb.PoolConfig{
 				MaxOpen:     cfg.UserDB.PoolMaxOpen,
 				IdleTimeout: cfg.UserDB.IdleTimeout,
-				DataDir:     "/var/lib/silo/userdb",
+				DataDir:     "/var/lib/prairie/userdb",
 			}
 			pool := userdb.NewUserDBPool(poolConfig)
 			userStoreProvider = userdb.NewSQLiteProvider(pool)
@@ -2218,7 +2224,7 @@ func main() {
 			Items:    absItemRepo,
 			Files:    deps.FileRepo,
 			Settings: settingsRepo,
-			Auth: &audiobooks.SiloCredValidator{
+			Auth: &audiobooks.PrairieCredValidator{
 				Auth: absAuthSvc,
 				Pool: deps.DB,
 			},
@@ -2363,7 +2369,7 @@ func main() {
 	// ABS-compat is NOT mounted on the main listener — see the "ABS compat
 	// listener" block below. It binds its own port so the discovery probes
 	// (/ping, /healthcheck, /status, /init, /login, /socket.io) own the URL
-	// space without collision with silo's SPA fallback. Mirrors how the
+	// space without collision with Prairie's SPA fallback. Mirrors how the
 	// Jellyfin compat server is set up at :8096.
 	metricsMux.Handle("/", server.FrontendHandler())
 
@@ -2610,7 +2616,7 @@ func main() {
 	// Mirrors the Jellyfin compat layout above. The ABS handler mounts
 	// onto a fresh chi router here so /ping, /healthcheck, /status, /login,
 	// /socket.io, etc. own the URL space at the root — no SPA fallback,
-	// no collision with silo's /api/v1.
+	// no collision with Prairie's /api/v1.
 	var absSrv *http.Server
 	if (mode == "integrated" || mode == "api") && deps.ABSHandler != nil && cfg.AudiobookshelfCompat.Listen != "" {
 		absRouter := chi.NewRouter()
@@ -3233,7 +3239,7 @@ func firstNonEmptyMarkerText(values ...string) string {
 	return ""
 }
 
-// mapFolderTypeToMediaType maps silo's MediaFolder.Type values
+// mapFolderTypeToMediaType maps Prairie's MediaFolder.Type values
 // ("movies", "series", "mixed") to the SDK's MediaType values
 // ("movie", "tv", "mixed"). Unknown values map to "mixed".
 func mapFolderTypeToMediaType(t string) string {

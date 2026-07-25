@@ -517,7 +517,7 @@ function RewriteEditor({
 
               {preview.unmatched.length > 0 && (
                 <CollapsibleList
-                  title={`No Silo match (${preview.unmatched.length})`}
+                  title={`No Prairie match (${preview.unmatched.length})`}
                   items={preview.unmatched}
                 />
               )}
@@ -670,7 +670,7 @@ function CephFSConfigEditor({
               ? "Loading libraries"
               : libraryPathCount === 0
                 ? "No enabled library paths"
-                : "Replace CephFS roots with enabled Silo library paths"
+                : "Replace CephFS roots with enabled Prairie library paths"
           }
         >
           <LibraryIcon className="size-3.5" />

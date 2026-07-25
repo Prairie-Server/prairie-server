@@ -3,7 +3,7 @@ package jellycompat
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 func TestUserDataDTOPlayedReportsZeroPosition(t *testing.T) {

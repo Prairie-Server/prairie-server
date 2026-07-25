@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 	"github.com/redis/go-redis/v9"
 )
 
@@ -17,22 +17,22 @@ import (
 const (
 	// ChannelCatalog is the pub/sub channel for catalog events (scan_complete,
 	// metadata_updated).
-	ChannelCatalog = "silo:catalog"
+	ChannelCatalog = "prairie:catalog"
 
 	// ChannelAdmin is the pub/sub channel for admin events (user_disabled,
 	// user_deleted, settings_changed).
-	ChannelAdmin = "silo:admin"
+	ChannelAdmin = "prairie:admin"
 
 	// ChannelPlayback is the pub/sub channel reserved for future playback
 	// events.
-	ChannelPlayback = "silo:playback"
+	ChannelPlayback = "prairie:playback"
 
 	// ChannelLogs is the pub/sub channel for persisted operational/audit log
 	// entries that should be fanned out to admin WebSocket subscribers.
-	ChannelLogs = "silo:logs"
+	ChannelLogs = "prairie:logs"
 
 	// ChannelEvents is the pub/sub channel for passive websocket events.
-	ChannelEvents = "silo:events"
+	ChannelEvents = "prairie:events"
 )
 
 // ---------------------------------------------------------------------------

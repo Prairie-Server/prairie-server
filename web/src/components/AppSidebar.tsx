@@ -8,7 +8,7 @@ import {
   isSidebarExpanded,
   type AppNavLink,
 } from "@/components/AppSidebar.logic";
-import { SiloBrand } from "@/components/SiloBrand";
+import { PrairieBrand } from "@/components/PrairieBrand";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
@@ -62,6 +62,7 @@ import {
   BookHeadphones,
   Send,
   Bell,
+  ExternalLink,
 } from "lucide-react";
 import { useTheme } from "@/hooks/useTheme";
 import { CURATED_THEME_IDS, THEMES } from "@/lib/themes";
@@ -350,7 +351,7 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
       <div
         className={`sidebar-logo flex items-center py-6 ${showLabels ? "px-5" : "justify-center px-2"}`}
       >
-        <SiloBrand
+        <PrairieBrand
           variant={showLabels ? "wordmark" : "mark"}
           className={showLabels ? "h-12 w-[112px]" : "h-9 w-9"}
         />
@@ -761,6 +762,16 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
             <SidebarLabel show={showLabels}>Admin</SidebarLabel>
           </Link>
         )}
+
+        <a
+          href="https://github.com/prairie-server/prairie-server"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={navLinkClass("/source")}
+        >
+          <ExternalLink className="h-[18px] w-[18px] shrink-0" />
+          <SidebarLabel show={showLabels}>Source</SidebarLabel>
+        </a>
 
         {/* User profile dropdown */}
         <DropdownMenu

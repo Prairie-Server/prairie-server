@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/collections/templates"
+	"github.com/prairie-server/prairie-server/internal/collections/templates"
 )
 
 // CollectionTemplateHandler exposes the curated collection-template catalog

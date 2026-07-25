@@ -1,16 +1,9 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://silo-server.dev/schemas/client-diagnostics/v1/logline.schema.json",
-  "title": "Silo Client Diagnostics Log Line v1",
+  "$id": "https://prairie-server.dev/schemas/client-diagnostics/v1/logline.schema.json",
+  "title": "Prairie Client Diagnostics Log Line v1",
   "type": "object",
-  "required": [
-    "ts",
-    "run",
-    "lvl",
-    "cat",
-    "tag",
-    "msg"
-  ],
+  "required": ["ts", "run", "lvl", "cat", "tag", "msg"],
   "properties": {
     "ts": {
       "type": "string",
@@ -24,13 +17,7 @@
     },
     "lvl": {
       "type": "string",
-      "enum": [
-        "V",
-        "D",
-        "I",
-        "W",
-        "E"
-      ],
+      "enum": ["V", "D", "I", "W", "E"],
       "maxLength": 1
     },
     "cat": {

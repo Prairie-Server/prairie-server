@@ -41,7 +41,7 @@ func TestSetupEnabled(t *testing.T) {
 	cfg := Config{
 		Enabled:      true,
 		Protocol:     ProtocolGRPC,
-		ServiceName:  "silo-server",
+		ServiceName:  "prairie-server",
 		NodeID:       "node-test",
 		SamplerRatio: 1.0,
 	}

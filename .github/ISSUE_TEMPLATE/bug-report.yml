@@ -1,5 +1,5 @@
 name: Bug report
-description: Report something broken in Silo server or web UI
+description: Report something broken in Prairie server or web UI
 title: "[bug] "
 labels: ["bug"]
 body:
@@ -8,7 +8,7 @@ body:
       value: |
         Raw logs only. Never AI-summarize logs. You must have reproduced this yourself on a real deployment before filing.
 
-        Fabricated or AI-hallucinated reports are an instant block. Read [CONTRIBUTING.md](https://github.com/Silo-Server/silo-server/blob/main/CONTRIBUTING.md) first.
+        Fabricated or AI-hallucinated reports are an instant block. Read [CONTRIBUTING.md](https://github.com/prairie-server/prairie-server/blob/main/CONTRIBUTING.md) first.
   - type: textarea
     id: what-happened
     attributes:
@@ -30,9 +30,9 @@ body:
     validations:
       required: true
   - type: input
-    id: silo-version
+    id: prairie-version
     attributes:
-      label: Silo version / commit
+      label: Prairie version / commit
     validations:
       required: true
   - type: dropdown

@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/mail"
+	"github.com/prairie-server/prairie-server/internal/mail"
 )
 
 // emailVerifyTTL bounds how long a verification link stays usable.
@@ -151,13 +151,13 @@ func composeVerificationEmail(profileName, verifyURL string) emailContent {
 	expiry := "The link expires in 24 hours. If you didn't request this, ignore this email — " +
 		"nothing will be sent to this address."
 	text := fmt.Sprintf(
-		"This address was entered as the notification destination for %s on a Silo server.\n\n"+
+		"This address was entered as the notification destination for %s on a Prairie server.\n\n"+
 			"To confirm and start receiving notifications here, open this link:\n\n  %s\n\n"+
 			"%s\n", who, verifyURL, expiry)
 
 	var body strings.Builder
 	body.WriteString(mail.EmailParagraph(fmt.Sprintf(
-		"This address was entered as the notification destination for %s on a Silo server.", who)))
+		"This address was entered as the notification destination for %s on a Prairie server.", who)))
 	body.WriteString(mail.EmailParagraph("To confirm and start receiving notifications here:"))
 	body.WriteString(mail.EmailButton("Confirm this address", verifyURL))
 	body.WriteString(fmt.Sprintf(
@@ -166,10 +166,10 @@ func composeVerificationEmail(profileName, verifyURL string) emailContent {
 		mail.EmailFont, mail.EmailColorMuted, mail.EmailFontMono, html.EscapeString(verifyURL)))
 
 	return emailContent{
-		Subject: "Confirm your Silo notification address",
+		Subject: "Confirm your Prairie notification address",
 		Text:    text,
 		HTML: mail.RenderLayout(mail.LayoutOptions{
-			Preheader:  "Confirm this address to start receiving Silo notifications.",
+			Preheader:  "Confirm this address to start receiving Prairie notifications.",
 			Title:      "Confirm your notification address",
 			BodyHTML:   body.String(),
 			FooterHTML: html.EscapeString(expiry),

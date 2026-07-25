@@ -3,7 +3,7 @@ package scanner
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // Ebook/comic files (epub, pdf, cbz, cbr — including manga chapters, which are

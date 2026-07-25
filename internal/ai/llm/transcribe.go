@@ -86,7 +86,7 @@ type transcriptionResponse struct {
 }
 
 // chatOnlyGatewayHosts lists OpenAI-compatible gateways that cannot serve
-// Silo's transcription needs: they either lack /v1/audio/transcriptions
+// Prairie's transcription needs: they either lack /v1/audio/transcriptions
 // entirely or (OpenRouter) return plain text with no segment timestamps,
 // which subtitle cues require. Matched by host suffix.
 var chatOnlyGatewayHosts = []string{

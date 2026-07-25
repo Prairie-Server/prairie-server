@@ -9,11 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	scannerrepo "github.com/Silo-Server/silo-server/internal/scanner"
 	"github.com/google/uuid"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prairie-server/prairie-server/internal/models"
+	scannerrepo "github.com/prairie-server/prairie-server/internal/scanner"
 )
 
 type MovieMatchQueueRepository struct {

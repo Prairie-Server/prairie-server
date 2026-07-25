@@ -3,7 +3,7 @@ package ai
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 // Notifier surfaces translation progress to clients. It is optional: without

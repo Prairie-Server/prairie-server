@@ -9,9 +9,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func TestHandleItemImageAcceptsSignedTagWithoutSessionOrCache(t *testing.T) {
@@ -421,7 +421,7 @@ func TestRedirectImageURLRejectsNonHTTPURL(t *testing.T) {
 
 // TestHandleItemImageChapterReturns404WithoutSession verifies an anonymous
 // chapter-image request (no auth, cold cache, no tag) degrades to a 404, not a
-// 401: Silo never stores "Chapter" route art, so the cache misses and the
+// 401: Prairie never stores "Chapter" route art, so the cache misses and the
 // session-fallback now returns NotFound per the Jellyfin contract.
 func TestHandleItemImageChapterReturns404WithoutSession(t *testing.T) {
 	codec := NewResourceIDCodec()

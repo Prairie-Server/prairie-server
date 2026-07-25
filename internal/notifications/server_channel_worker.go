@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // serverChannelFetchLimit bounds one sweep batch. Renderers cap how many

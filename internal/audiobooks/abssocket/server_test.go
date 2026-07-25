@@ -5,8 +5,8 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abs"
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abssocket"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abssocket"
 )
 
 // recordingLogger captures Warn/Debug calls so we can assert on auth-reject

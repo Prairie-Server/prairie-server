@@ -3,7 +3,7 @@ package markers
 import (
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // CanWriteMarker reports whether a new marker write should be accepted given

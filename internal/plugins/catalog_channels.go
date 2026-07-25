@@ -1,16 +1,16 @@
 package plugins
 
 const (
-	DefaultRepositoryURL  = "https://raw.githubusercontent.com/Silo-Server/silo-plugins/main/manifest.json"
-	DefaultRepositoryName = "Silo maintained"
+	DefaultRepositoryURL  = "https://raw.githubusercontent.com/prairie-server/prairie-plugins/main/manifest.json"
+	DefaultRepositoryName = "Prairie maintained"
 
-	ApprovedCommunityRepositoryURL  = "https://raw.githubusercontent.com/Silo-Community/silo-plugins/main/manifest.json"
+	ApprovedCommunityRepositoryURL  = "https://raw.githubusercontent.com/Prairie-Community/prairie-plugins/main/manifest.json"
 	ApprovedCommunityRepositoryName = "Approved community"
 
 	OfficialRepositoryManagedKey          = "official"
 	ApprovedCommunityRepositoryManagedKey = "approved-community"
 
-	RepositorySourceSilo              = "silo"
+	RepositorySourcePrairie           = "prairie"
 	RepositorySourceApprovedCommunity = "approved_community"
 	RepositorySourceExternal          = "external"
 
@@ -30,7 +30,7 @@ var managedRepositoryDefinitions = []managedRepositoryDefinition{
 		Key:         OfficialRepositoryManagedKey,
 		URL:         DefaultRepositoryURL,
 		DisplayName: DefaultRepositoryName,
-		SourceKind:  RepositorySourceSilo,
+		SourceKind:  RepositorySourcePrairie,
 	},
 	{
 		Key:         ApprovedCommunityRepositoryManagedKey,

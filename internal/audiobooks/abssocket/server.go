@@ -24,7 +24,7 @@ import (
 
 	"github.com/zishang520/socket.io/v2/socket"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abs"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
 )
 
 // Logger is the narrow logging surface this package needs.

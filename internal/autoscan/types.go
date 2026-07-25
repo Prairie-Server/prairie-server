@@ -21,7 +21,7 @@ type Connection struct {
 }
 
 // PathRewrite is a per-source prefix translation from a raw arr/source-namespace
-// path to a Silo-native path. The merged scan_source contract moved rewrite
+// path to a Prairie-native path. The merged scan_source contract moved rewrite
 // ownership from the plugin to the host, so these are applied host-side before a
 // raw path is resolved/enqueued.
 type PathRewrite struct {
@@ -46,7 +46,7 @@ type Change struct {
 }
 
 // DeliveryMode selects how a source's changes reach the host: the host polls
-// the plugin (`poll`, the default), or the provider POSTs to a Silo webhook
+// the plugin (`poll`, the default), or the provider POSTs to a Prairie webhook
 // endpoint (`webhook`) and the plugin is never invoked.
 const (
 	DeliveryModePoll    = "poll"
@@ -63,7 +63,7 @@ type Source struct {
 	Enabled             bool
 	DeliveryMode        string        // DeliveryModePoll or DeliveryModeWebhook
 	PollIntervalSeconds *int          // nil => use settings default
-	PathRewrites        []PathRewrite // host-owned raw->Silo prefix rewrites
+	PathRewrites        []PathRewrite // host-owned raw->Prairie prefix rewrites
 	SourceConfig        map[string]string
 	Label               string  // operator-set display label; "" = unset
 	Marker              *string // opaque; nil on first run

@@ -10,7 +10,7 @@ func TestCatalogEntriesForDiscoveryUsesApprovedCommunityOwnerForTransferredPlugi
 	entries := []CatalogEntry{
 		{
 			RepositoryID: 1,
-			SourceKind:   RepositorySourceSilo,
+			SourceKind:   RepositorySourcePrairie,
 			Manifest:     &pluginv1.PluginManifest{PluginId: "silo.requests.arr", Version: "0.1.0"},
 		},
 		{
@@ -32,7 +32,7 @@ func TestCatalogEntriesForDiscoveryUsesApprovedCommunityOwnerForTransferredPlugi
 func TestCatalogEntriesForDiscoveryHidesTransferredPluginWhenCommunityIsDisabled(t *testing.T) {
 	result := catalogEntriesForDiscovery([]CatalogEntry{{
 		RepositoryID: 1,
-		SourceKind:   RepositorySourceSilo,
+		SourceKind:   RepositorySourcePrairie,
 		Manifest:     &pluginv1.PluginManifest{PluginId: "silo.requests.seerr", Version: "0.1.0"},
 	}})
 	if len(result) != 0 {
@@ -49,7 +49,7 @@ func TestCatalogEntriesForDiscoveryPreventsExternalSourceShadowing(t *testing.T)
 		},
 		{
 			RepositoryID: 1,
-			SourceKind:   RepositorySourceSilo,
+			SourceKind:   RepositorySourcePrairie,
 			Manifest:     &pluginv1.PluginManifest{PluginId: "silo.tmdb", Version: "1.0.0"},
 		},
 	})
@@ -65,12 +65,12 @@ func TestCatalogEntriesForDiscoveryShowsLatestVersionFromSelectedRepository(t *t
 	result := catalogEntriesForDiscovery([]CatalogEntry{
 		{
 			RepositoryID: 1,
-			SourceKind:   RepositorySourceSilo,
+			SourceKind:   RepositorySourcePrairie,
 			Manifest:     &pluginv1.PluginManifest{PluginId: "silo.tmdb", Version: "1.2.9"},
 		},
 		{
 			RepositoryID: 1,
-			SourceKind:   RepositorySourceSilo,
+			SourceKind:   RepositorySourcePrairie,
 			Manifest:     &pluginv1.PluginManifest{PluginId: "silo.tmdb", Version: "1.2.10"},
 		},
 	})

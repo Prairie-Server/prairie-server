@@ -4,13 +4,13 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 func TestRecipeCardRoundTripOpts(t *testing.T) {
 	opts := TranscodeOpts{
 		InputPath:              "/media/movie.mkv",
-		OutputDir:              "/tmp/silo-transcode/abc",
+		OutputDir:              "/tmp/prairie-transcode/abc",
 		SessionID:              "abc",
 		SourceVideoCodec:       "hevc",
 		VideoBitstreamFilter:   "dovi_rpu=strip=1",
@@ -39,7 +39,7 @@ func TestRecipeCardRoundTripOpts(t *testing.T) {
 	}
 
 	// Rebuild opts; environment-specific fields are re-supplied by the caller.
-	got := card.TranscodeOpts("/tmp/silo-transcode/abc", "/usr/bin/ffmpeg", nil)
+	got := card.TranscodeOpts("/tmp/prairie-transcode/abc", "/usr/bin/ffmpeg", nil)
 	if got.StartSegmentNumber != 450 {
 		t.Errorf("StartSegmentNumber = %d, want 450", got.StartSegmentNumber)
 	}

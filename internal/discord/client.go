@@ -26,7 +26,7 @@ const (
 
 	requestTimeout = 10 * time.Second
 	// Discord asks bot user agents to identify themselves in this format.
-	userAgent = "DiscordBot (https://github.com/Silo-Server/silo-server, 1.0)"
+	userAgent = "DiscordBot (https://github.com/prairie-server/prairie-server, 1.0)"
 
 	// errorBodyLimit bounds how much of an error response is read for
 	// diagnostics.

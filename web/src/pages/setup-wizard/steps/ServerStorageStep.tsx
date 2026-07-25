@@ -132,9 +132,9 @@ function KeyPrefixField({ value, onChange }: { value: string; onChange: (value: 
   return (
     <div className="space-y-1.5">
       <Label className="text-xs">Key Prefix</Label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder="silo/dev" />
+      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder="prairie/dev" />
       <p className="text-muted-foreground/70 text-xs">
-        Optional. Stores all Silo objects under this folder inside the bucket. Leave blank to use
+        Optional. Stores all Prairie objects under this folder inside the bucket. Leave blank to use
         the bucket root.
       </p>
     </div>
@@ -322,7 +322,7 @@ export function ServerStorageStep() {
               id="setup-transcode-dir"
               value={form.getValue("playback.transcode_dir")}
               onChange={(e) => form.setValue("playback.transcode_dir", e.target.value)}
-              placeholder="/tmp/silo-transcode"
+              placeholder="/tmp/prairie-transcode"
             />
           </div>
         </div>
@@ -370,8 +370,8 @@ export function ServerStorageStep() {
           <div className="border-foreground/[0.06] bg-background/40 rounded-lg border px-3 py-3">
             <p className="text-xs font-medium">API layer</p>
             <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-              Lets Jellyfin-compatible apps discover Silo, sign in, browse libraries, fetch
-              metadata, and start playback through Silo's compatibility API.
+              Lets Jellyfin-compatible apps discover Prairie, sign in, browse libraries, fetch
+              metadata, and start playback through Prairie's compatibility API.
             </p>
           </div>
           <div className="border-foreground/[0.06] bg-background/40 rounded-lg border px-3 py-3">
@@ -414,7 +414,7 @@ export function ServerStorageStep() {
               id="setup-jellyfin-name"
               value={form.getValue("jellyfin_compat.server_name")}
               onChange={(e) => form.setValue("jellyfin_compat.server_name", e.target.value)}
-              placeholder="Silo"
+              placeholder="Prairie"
             />
           </div>
         </div>
@@ -442,11 +442,11 @@ export function ServerStorageStep() {
                 id="setup-jellyfin-web-install-dir"
                 value={form.getValue("jellyfin_compat.web_install_dir")}
                 onChange={(e) => form.setValue("jellyfin_compat.web_install_dir", e.target.value)}
-                placeholder="Use Silo managed directory"
+                placeholder="Use Prairie managed directory"
               />
               <p className="text-muted-foreground/70 text-xs">
                 Optional. Defaults to{" "}
-                <span className="font-mono">/var/lib/silo/compat/jellyfin-web</span>.
+                <span className="font-mono">/var/lib/prairie/compat/jellyfin-web</span>.
               </p>
             </div>
           </div>
@@ -627,7 +627,7 @@ export function ServerStorageStep() {
         onToggle={() => setPrivateExpanded((value) => !value)}
       >
         <p className="text-muted-foreground/80 text-xs leading-relaxed">
-          Stores non-public Silo objects such as imports, exports, and internal artifacts.
+          Stores non-public Prairie objects such as imports, exports, and internal artifacts.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">

@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"path"
 
-	"github.com/Silo-Server/silo-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
 // SettingsStore is the subset of the server settings repository the branding
@@ -40,7 +40,7 @@ type Service struct {
 // configured: text branding keeps working while asset upload/serve returns
 // ErrStorageUnavailable. Callers holding a concrete *s3client.Client must pass
 // a nil AssetStore when that client is nil (rather than the typed-nil pointer)
-// to avoid the typed-nil interface trap — see the construction in cmd/silo.
+// to avoid the typed-nil interface trap — see the construction in cmd/prairie.
 func NewService(settings SettingsStore, store AssetStore) *Service {
 	return &Service{settings: settings, store: store}
 }

@@ -21,11 +21,11 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 // Jellyfin Web is sensitive to startup latency. Use shorter compat segments
@@ -767,7 +767,7 @@ func (h *PlaybackHandler) HandleDeleteActiveEncodings(w http.ResponseWriter, r *
 		return
 	}
 	q := newCaseInsensitiveQuery(r.URL.Query())
-	// DeviceId is intentionally ignored: Silo's playback store is keyed by
+	// DeviceId is intentionally ignored: Prairie's playback store is keyed by
 	// PlaySessionId, clients always send it, and Jellyfin's own teardown matches
 	// by playSessionId (ignoring deviceId) whenever playSessionId is non-empty.
 	playSessionID := q.Get("PlaySessionId")
@@ -1862,7 +1862,7 @@ func (h *PlaybackHandler) resolvePlaybackRoute(r *http.Request, compatSession *S
 			// Fall back to the primary source only for the Jellyfin
 			// MediaSource.Id == Item.Id convention: a client that reused the
 			// server's PlaySessionId may send the item id (== routeID) as
-			// mediaSourceId, which never matches Silo's fileID-based source ids.
+			// mediaSourceId, which never matches Prairie's fileID-based source ids.
 			// Any other unmatched id (stale/foreign, or a wrong multi-version
 			// id) keeps source nil so HandleVideoStream rejects it rather than
 			// silently serving the wrong file. Mirrors Jellyfin's

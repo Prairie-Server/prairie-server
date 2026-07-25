@@ -7,8 +7,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	scannerrepo "github.com/Silo-Server/silo-server/internal/scanner"
+	"github.com/prairie-server/prairie-server/internal/models"
+	scannerrepo "github.com/prairie-server/prairie-server/internal/scanner"
 )
 
 const queueStatePending = "pending"

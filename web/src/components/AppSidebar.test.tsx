@@ -107,7 +107,7 @@ vi.mock("@/hooks/useViewTransition", () => ({
 
 vi.mock("@/hooks/useServerBranding", () => ({
   useServerBranding: () => ({
-    serverName: "Silo",
+    serverName: "Prairie",
   }),
 }));
 
@@ -163,19 +163,19 @@ describe("AppSidebar", () => {
     expect(markup).not.toContain("text-sidebar-primary-foreground bg-sidebar-accent");
   });
 
-  it("renders the Silo brand mark instead of the old play glyph", () => {
+  it("renders the Prairie brand mark instead of the old play glyph", () => {
     const markup = renderSidebar("/");
 
-    expect(markup).toContain('src="/silo-wordmark-sidebar.png"');
-    expect(markup).toContain('alt="Silo"');
+    expect(markup).toContain('src="/prairie-wordmark-sidebar.png"');
+    expect(markup).toContain('alt="Prairie"');
     expect(markup).not.toContain("▶");
   });
 
   it("uses the icon-only mark when the sidebar is collapsed", () => {
     const markup = renderSidebar("/", { collapsed: true });
 
-    expect(markup).toContain('src="/silo-icon-1024.png"');
-    expect(markup).not.toContain('src="/silo-wordmark-sidebar.png"');
+    expect(markup).toContain('src="/prairie-icon-1024.png"');
+    expect(markup).not.toContain('src="/prairie-wordmark-sidebar.png"');
     expect(markup).toContain("sidebar-logo flex items-center py-6 justify-center px-2");
   });
 

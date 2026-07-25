@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 var (
@@ -25,7 +25,7 @@ var (
 	ErrInvalidPIN = errors.New("invalid profile PIN")
 )
 
-// LoginResolver performs username#profile login resolution against Silo.
+// LoginResolver performs username#profile login resolution against Prairie.
 type LoginResolver struct {
 	authService    *auth.Service
 	storeProvider  userstore.UserStoreProvider

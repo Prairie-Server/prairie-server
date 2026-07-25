@@ -18,11 +18,11 @@ import (
 	"github.com/go-chi/chi/v5"
 	"golang.org/x/sync/singleflight"
 
-	"github.com/Silo-Server/silo-server/internal/chapterthumbs"
-	"github.com/Silo-Server/silo-server/internal/nodeconfig"
-	"github.com/Silo-Server/silo-server/internal/nodesessions"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/chapterthumbs"
+	"github.com/prairie-server/prairie-server/internal/nodeconfig"
+	"github.com/prairie-server/prairie-server/internal/nodesessions"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 // TranscodeStartRequest is the JSON body for POST /transcode/start.
@@ -588,7 +588,7 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 
 // reconstructFromToken rebuilds a transcode session this node lost to its own
 // restart. The proxy forwards the client's verified stream token in the
-// X-Silo-Stream-Token header; the token carries the full byte-affecting recipe
+// X-Prairie-Stream-Token header; the token carries the full byte-affecting recipe
 // (the former Postgres "recipe card"), so the node can re-spawn ffmpeg seeked to
 // the requested segment rather than 404ing — mirroring the integrated server's
 // token-carried reconstruct. Returns nil when the request carries no usable
@@ -598,7 +598,7 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 // manifest path. Reconstruction is single-flighted per session id so concurrent
 // manifest and segment requests for the same lost session share one ffmpeg.
 func (s *Server) reconstructFromToken(r *http.Request, sessionID string, requestedSegment int) *playback.TranscodeSession {
-	tokenStr := r.Header.Get("X-Silo-Stream-Token")
+	tokenStr := httpheaders.RequestValue(r, httpheaders.HeaderStreamToken)
 	if tokenStr == "" {
 		return nil
 	}

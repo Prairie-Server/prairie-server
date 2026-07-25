@@ -1,6 +1,6 @@
 package catalog
 
-import "github.com/Silo-Server/silo-server/internal/models"
+import "github.com/prairie-server/prairie-server/internal/models"
 
 // applyItemLocalization merges a localization onto a clone of item. Only
 // non-empty localized fields override the base — localization rows are

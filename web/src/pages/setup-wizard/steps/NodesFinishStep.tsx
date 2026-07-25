@@ -162,7 +162,7 @@ export function NodesFinishStep() {
       {/* Finish CTAs */}
       <div className="border-foreground/[0.06] flex flex-col gap-3 border-t pt-6 sm:flex-row">
         <Button onClick={handleFinish} disabled={finishing} className="sm:flex-1">
-          {finishing ? "Starting..." : "Start using Silo"}
+          {finishing ? "Starting..." : "Start using Prairie"}
           <ChevronRight className="ml-1.5 h-4 w-4" />
         </Button>
         <Button

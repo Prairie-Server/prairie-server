@@ -9,7 +9,7 @@ import (
 )
 
 // UserIdentity is the public-facing identity surfaced to plugins via the
-// X-Silo-User-Name / X-Silo-Profile-Name / X-Silo-Profile-Primary
+// X-Prairie-User-Name / X-Prairie-Profile-Name / X-Prairie-Profile-Primary
 // headers. Plugins use it to render "user#profile" strings in app-pairing
 // UIs without reaching back into the browser's localStorage.
 type UserIdentity struct {

@@ -3,7 +3,7 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 func (h *AdminHandler) HandleGetCatalogSearchStatus(w http.ResponseWriter, r *http.Request) {

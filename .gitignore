@@ -1,5 +1,5 @@
 # Binary
-/silo
+/prairie
 *.exe
 
 # IDE
@@ -26,12 +26,13 @@ coverage.html
 .worktrees/
 
 # Config with secrets
+prairie.yaml
 silo.yaml
 .env
 .env.*
 !.env.example
 # Per-developer settings for the agent skills (hosts, credentials, tokens).
-.silo-dev.env
+.prairie-dev.env
 
 # Developer-specific make targets
 Makefile.local

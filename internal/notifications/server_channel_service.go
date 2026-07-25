@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
 	"github.com/oklog/ulid/v2"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 // Server channel service errors surfaced to the API layer.
@@ -271,7 +271,7 @@ func (s *ServerChannelService) Test(ctx context.Context, id string) (*WebhookTes
 func sampleContentGroups() []ContentGroup {
 	groups := make([]ContentGroup, 0, len(flatItemKinds)+1)
 	for _, k := range flatItemKinds {
-		meta := ContentMeta{Title: "Silo Test " + capitalize(k.ItemType), Year: 2026}
+		meta := ContentMeta{Title: "Prairie Test " + capitalize(k.ItemType), Year: 2026}
 		if k.Kind != EventKindMovie {
 			meta.Author = "Test Author"
 		}
@@ -286,7 +286,7 @@ func sampleContentGroups() []ContentGroup {
 		Kind:      EventKindEpisode,
 		LibraryID: 1,
 		SeriesID:  "test-series",
-		Meta:      ContentMeta{Title: "Silo Test Series"},
+		Meta:      ContentMeta{Title: "Prairie Test Series"},
 		Episodes: []ReleaseEvent{
 			{Kind: EventKindEpisode, LibraryID: 1, SeriesID: "test-series",
 				SeasonNumber: 1, EpisodeNumber: 1, EpisodeKey: EpisodeKey(1, 1)},

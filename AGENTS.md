@@ -1,7 +1,7 @@
-# Silo Server
+# Prairie Server
 
-Go backend for Silo: API contracts, auth/session, catalog/scanner/playback services, database
-migrations, Jellyfin compatibility, and the host-side plugin runtime. `cmd/silo` is the
+Go backend for Prairie: API contracts, auth/session, catalog/scanner/playback services, database
+migrations, Jellyfin compatibility, and the host-side plugin runtime. `cmd/prairie` is the
 entrypoint, backend code is under `internal/` by domain, the React frontend is `web/src/`.
 
 This repository is a VERY EARLY WIP. Proposing sweeping changes that improve long-term
@@ -19,14 +19,10 @@ local workaround onto it.
 
 ## Non-goals
 
-Most of this codebase's scope is open; a short list is permanently closed. Read
-[docs/non-goals.md](docs/non-goals.md) before proposing or implementing in those areas.
-
-**Live TV, OTA/DVB tuners, IPTV, EPG/XMLTV, DVR, and `.strm` remote-URL shortcuts will not be
-accepted** — not in core, not as a plugin, not in a client. The first-party clients ship on the
-Apple and Google stores, and a server that plays arbitrary remote stream URLs puts the whole
-client suite at risk. This is settled product direction, not a design problem to solve; do not
-write code for it, and say so plainly if asked.
+Most of this codebase's scope is open. Read [docs/non-goals.md](docs/non-goals.md) before
+proposing or implementing IPTV, arbitrary remote stream URL, or app-store-sensitive playback
+features. Prairie's roadmap may include Live TV/OTA/DVR work, but generic IPTV playlists and
+remote `.strm` URL shortcuts remain out of scope unless product direction changes explicitly.
 
 ## Gotchas
 
@@ -41,7 +37,7 @@ Renaming a row in SQL makes its value undecryptable.
 
 **Profiles vs accounts.** Login accounts (`users`) are separate from household profiles; several
 profiles on one account share a `user_id`. A profile's `is_primary` marks the household parent,
-which is *not* the server-wide `admin` role on the account.
+which is _not_ the server-wide `admin` role on the account.
 
 **Docs hygiene.** Files under `docs/superpowers/{specs,plans}/` must not contain local absolute
 filesystem paths or transient worktree IDs — use repository-relative paths and wording like
@@ -56,12 +52,12 @@ filesystem paths or transient worktree IDs — use repository-relative paths and
 
 Sibling repos are usually checked out side-by-side in the same parent directory.
 
-- `silo-android` — Android phone and TV clients.
-- `silo-apple` — iOS, tvOS, and macOS clients.
-- `silo-plugin-sdk` — public plugin SDK, protobuf contracts, generated plugin API, manifest
+- `prairie-android` — Android phone and TV clients.
+- `prairie-apple` — iOS, tvOS, and macOS clients.
+- `prairie-plugin-sdk` — public plugin SDK, protobuf contracts, generated plugin API, manifest
   helpers, runtime bootstrap.
-- `silo-plugins` — central plugin catalog / repository manifest.
-- First-party plugins (`silo-plugin-metadata-tmdb`, `silo-plugin-metadata-tvdb`, …) each have
+- `prairie-plugins` — central plugin catalog / repository manifest.
+- First-party plugins (`prairie-plugin-metadata-tmdb`, `prairie-plugin-metadata-tvdb`, …) each have
   their own repo.
 
 Client-visible changes to API, auth, playback, session, library, or metadata behavior usually
@@ -90,9 +86,9 @@ Go stays `gofmt`/`goimports` clean; the frontend follows `web/.prettierrc`.
 Task-specific guides live in `.claude/skills/`, also reachable as `.agents/skills/` for agents
 that look there. Read the one that matches the task instead of working from this file alone.
 
-They share one config file: copy `.silo-dev.env.example` to `.silo-dev.env` and fill in how to
-reach your Silo deployment — URL, SSH target, database, an account to debug with. That file is
-gitignored and is the only place hosts, passwords, and tokens belong. `scripts/silo-dev doctor`
+They share one config file: copy `.prairie-dev.env.example` to `.prairie-dev.env` and fill in how to
+reach your Prairie deployment — URL, SSH target, database, an account to debug with. That file is
+gitignored and is the only place hosts, passwords, and tokens belong. `scripts/prairie-dev doctor`
 checks it end to end.
 
 ## v1 API rules

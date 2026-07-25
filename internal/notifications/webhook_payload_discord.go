@@ -85,7 +85,7 @@ type discordWebhookBody struct {
 func BuildDiscordWebhookPayload(row DeliveryRow, test bool) ([]byte, error) {
 	return json.Marshal(discordWebhookBody{
 		Embeds:   []discordEmbed{buildDiscordEmbed(row, test)},
-		Username: siloSenderName,
+		Username: prairieSenderName,
 	})
 }
 
@@ -101,7 +101,7 @@ type discordDMBody struct {
 
 // BuildDiscordDMPayload renders one account's pending deliveries as a single
 // bot DM, one embed per item up to Discord's 10-embed cap. Overflow keeps the
-// newest items and points at the Silo inbox for the rest, mirroring the email
+// newest items and points at the Prairie inbox for the rest, mirroring the email
 // digest's rendering cap.
 func BuildDiscordDMPayload(rows []DeliveryRow) ([]byte, error) {
 	overflow := 0
@@ -115,7 +115,7 @@ func BuildDiscordDMPayload(rows []DeliveryRow) ([]byte, error) {
 	}
 	body := discordDMBody{Embeds: embeds}
 	if overflow > 0 {
-		body.Content = fmt.Sprintf("…and %d more in your Silo inbox", overflow)
+		body.Content = fmt.Sprintf("…and %d more in your Prairie inbox", overflow)
 	}
 	return json.Marshal(body)
 }
@@ -125,13 +125,13 @@ func BuildDiscordDMPayload(rows []DeliveryRow) ([]byte, error) {
 func discordEmbedAuthorLine(deliveryType string) string {
 	switch deliveryType {
 	case DeliveryTypeEpisodeAvailable:
-		return "New episode on Silo"
+		return "New episode on Prairie"
 	case DeliveryTypeRequestFulfilled:
-		return "Your request is now available on Silo"
+		return "Your request is now available on Prairie"
 	case DeliveryTypeRequestApproved:
-		return "Your request was approved on Silo"
+		return "Your request was approved on Prairie"
 	case DeliveryTypeRequestDeclined:
-		return "Your request was declined on Silo"
+		return "Your request was declined on Prairie"
 	default:
 		return genericNotificationTitle
 	}
@@ -141,12 +141,12 @@ func discordEmbedAuthorLine(deliveryType string) string {
 // content rating when known so the advisory rides along unobtrusively.
 func discordEmbedFooterText(contentRating string, test bool) string {
 	if test {
-		return "Silo test notification"
+		return "Prairie test notification"
 	}
 	if contentRating != "" {
-		return siloSenderName + " • " + truncateWithEllipsis(contentRating, 32)
+		return prairieSenderName + " • " + truncateWithEllipsis(contentRating, 32)
 	}
-	return siloSenderName
+	return prairieSenderName
 }
 
 // buildDiscordEmbed renders one delivery as a Discord embed within all of

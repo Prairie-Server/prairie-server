@@ -11,9 +11,9 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // playbackSessionRow represents a live playback row from playback_sessions_sync
@@ -397,7 +397,7 @@ func effectivePlayMethod(videoDecision, audioDecision string) string {
 // behind is_jellyfin_client, which the admin UIs surface as the "JF" pill;
 // keep it in step with the display-labeling rules in
 // playbackClientDisplayName so a client that gets a label also gets the flag.
-// Kodi and mpv reach Silo only through the Jellyfin compat surface today
+// Kodi and mpv reach Prairie only through the Jellyfin compat surface today
 // (jellyfin-kodi/JellyCon, jellyfin-mpv-shim). Generic browser tokens are
 // deliberately excluded: the native web player shares those user agents.
 var jellyfinClientTokens = []string{

@@ -23,9 +23,10 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/metadata"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
+	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 const (
@@ -65,7 +66,7 @@ func ebookContentType() string {
 
 func ebookEnrichWorkers() int {
 	n := defaultEnrichWorkers
-	if v := os.Getenv("SILO_EBOOK_ENRICH_WORKERS"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_EBOOK_ENRICH_WORKERS", "SILO_EBOOK_ENRICH_WORKERS"); v != "" {
 		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
 			n = parsed
 		}

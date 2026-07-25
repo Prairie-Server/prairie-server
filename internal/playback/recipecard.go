@@ -3,7 +3,7 @@ package playback
 import (
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 // RecipeCard is the small, durable "recipe" needed to reconstruct a transcode

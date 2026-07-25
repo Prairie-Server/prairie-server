@@ -5,6 +5,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/prairie-server/prairie-server/internal/httpheaders"
 )
 
 const (
@@ -274,7 +276,7 @@ func TestBuildServerChannelDiscordContent(t *testing.T) {
 	if len(decoded.Embeds) != 2 {
 		t.Fatalf("got %d embeds, want 2", len(decoded.Embeds))
 	}
-	if decoded.Username != "Silo" {
+	if decoded.Username != "Prairie" {
 		t.Fatalf("unexpected username %q", decoded.Username)
 	}
 	if decoded.Content != "" {
@@ -282,7 +284,7 @@ func TestBuildServerChannelDiscordContent(t *testing.T) {
 	}
 
 	episodes := decoded.Embeds[0]
-	if episodes.Author == nil || episodes.Author.Name != "New episodes available on Silo" {
+	if episodes.Author == nil || episodes.Author.Name != "New episodes available on Prairie" {
 		t.Fatalf("unexpected author %+v", episodes.Author)
 	}
 	if episodes.URL != "https://www.themoviedb.org/tv/95396" {
@@ -301,7 +303,7 @@ func TestBuildServerChannelDiscordContent(t *testing.T) {
 		episodes.Fields[1].Value != "Drama, Sci-Fi & Fantasy, Mystery" {
 		t.Fatalf("unexpected fields %+v", episodes.Fields)
 	}
-	if episodes.Footer == nil || episodes.Footer.Text != "Silo • TV-MA" {
+	if episodes.Footer == nil || episodes.Footer.Text != "Prairie • TV-MA" {
 		t.Fatalf("unexpected footer %+v", episodes.Footer)
 	}
 
@@ -343,7 +345,7 @@ func TestBuildServerChannelDiscordContentAudiobook(t *testing.T) {
 	}
 
 	audiobook := decoded.Embeds[0]
-	if audiobook.Author == nil || audiobook.Author.Name != "New audiobook available on Silo" {
+	if audiobook.Author == nil || audiobook.Author.Name != "New audiobook available on Prairie" {
 		t.Fatalf("unexpected author line %+v", audiobook.Author)
 	}
 	if audiobook.Title != "Project Hail Mary (2021)" {
@@ -356,7 +358,7 @@ func TestBuildServerChannelDiscordContentAudiobook(t *testing.T) {
 	}
 
 	ebook := decoded.Embeds[1]
-	if ebook.Author == nil || ebook.Author.Name != "New ebook available on Silo" {
+	if ebook.Author == nil || ebook.Author.Name != "New ebook available on Prairie" {
 		t.Fatalf("unexpected ebook author line %+v", ebook.Author)
 	}
 	if len(ebook.Fields) != 1 || ebook.Fields[0].Name != "Author" {
@@ -488,7 +490,7 @@ func TestBuildServerChannelRequestPayloads(t *testing.T) {
 	if embed.Title != "Dune (2026)" {
 		t.Fatalf("unexpected title %q", embed.Title)
 	}
-	if embed.Author == nil || embed.Author.Name != "New media request on Silo" {
+	if embed.Author == nil || embed.Author.Name != "New media request on Prairie" {
 		t.Fatalf("unexpected author %+v", embed.Author)
 	}
 	if embed.URL != "https://www.themoviedb.org/movie/42" {
@@ -574,15 +576,15 @@ func TestServerChannelHeadersSigned(t *testing.T) {
 	body := []byte(`{"event":"content.added"}`)
 	now := time.Unix(1_700_000_000, 0)
 	headers := serverChannelHeaders(ServerChannelEventContentAdded, "chan-1", "secret", now, body)
-	if headers["X-Silo-Event"] != ServerChannelEventContentAdded {
-		t.Fatalf("unexpected event header %q", headers["X-Silo-Event"])
+	if headers[httpheaders.HeaderEvent] != ServerChannelEventContentAdded {
+		t.Fatalf("unexpected event header %q", headers[httpheaders.HeaderEvent])
 	}
-	if headers["X-Silo-Channel-Id"] != "chan-1" {
-		t.Fatalf("unexpected channel header %q", headers["X-Silo-Channel-Id"])
+	if headers[httpheaders.HeaderChannelID] != "chan-1" {
+		t.Fatalf("unexpected channel header %q", headers[httpheaders.HeaderChannelID])
 	}
 	want := SignGenericWebhook("secret", now.Unix(), body)
-	if headers["X-Silo-Signature"] != want {
-		t.Fatalf("signature mismatch: %q != %q", headers["X-Silo-Signature"], want)
+	if headers[httpheaders.HeaderSignature] != want {
+		t.Fatalf("signature mismatch: %q != %q", headers[httpheaders.HeaderSignature], want)
 	}
 }
 

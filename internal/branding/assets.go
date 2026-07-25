@@ -3,7 +3,7 @@ package branding
 import (
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/imageutil"
+	"github.com/prairie-server/prairie-server/internal/imageutil"
 )
 
 // assetSpec describes how one branding image kind is validated, processed, and

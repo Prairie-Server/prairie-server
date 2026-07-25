@@ -9,10 +9,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // AccessFilterResolver resolves catalog access constraints for a compat user.
@@ -43,7 +43,7 @@ const (
 )
 
 // compatVideoTypes is the media_items type scope the Jellyfin compat surface
-// exposes when a request carries no explicit type filter. Silo serves
+// exposes when a request carries no explicit type filter. Prairie serves
 // audiobooks and podcasts through the audiobookshelf-compat API instead, so
 // those rows must never leak into jellycompat responses.
 const compatVideoTypes = "movie,series,episode"

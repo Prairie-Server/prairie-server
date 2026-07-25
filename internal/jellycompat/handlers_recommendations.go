@@ -6,9 +6,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/recommendations"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/recommendations"
 )
 
 // recommendationDTO mirrors Jellyfin's RecommendationDto.
@@ -20,7 +20,7 @@ type recommendationDTO struct {
 }
 
 // RecommendationsHandler serves the Jellyfin Movies/Recommendations endpoint
-// using the Silo recommendation engine.
+// using the Prairie recommendation engine.
 type RecommendationsHandler struct {
 	recommender  recommendations.Recommender
 	itemRepo     *catalog.ItemRepository

@@ -128,9 +128,9 @@ function detectDeviceName(): string {
 function getDeviceHeaders(): Record<string, string> {
   const deviceId = getOrCreateDeviceId();
   return {
-    "X-Silo-Device-Id": deviceId,
-    "X-Silo-Device-Name": detectDeviceName(),
-    "X-Silo-Device-Platform": detectDevicePlatform(),
+    "X-Prairie-Device-Id": deviceId,
+    "X-Prairie-Device-Name": detectDeviceName(),
+    "X-Prairie-Device-Platform": detectDevicePlatform(),
   };
 }
 

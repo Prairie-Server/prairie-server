@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 // A nil-backed store (single integrated box, no Redis) must be safe: writes
@@ -51,8 +51,8 @@ func TestNilStore_DeleteNoop(t *testing.T) {
 }
 
 func TestKeyNamespacing(t *testing.T) {
-	if got := key("abc"); got != "silo:noderecipe:abc" {
-		t.Fatalf("key(abc) = %q, want silo:noderecipe:abc", got)
+	if got := key("abc"); got != "prairie:noderecipe:abc" {
+		t.Fatalf("key(abc) = %q, want prairie:noderecipe:abc", got)
 	}
 }
 

@@ -93,7 +93,7 @@ func TestPushSenderSendBuildsRelayRequest(t *testing.T) {
 		AttemptNumber:          1,
 	}, &PushDevice{
 		APNsEnvironment: APNsEnvironmentSandbox,
-		APNsTopic:       ApplePushTopicSilo,
+		APNsTopic:       ApplePushTopicPrairie,
 		ServerDeviceID:  "server-device-1",
 	}, token)
 
@@ -141,7 +141,7 @@ func TestPushSenderSendMapsRelayTerminalAPNsRejection(t *testing.T) {
 
 	result := sender.send(context.Background(), PushDeliveryAttempt{ID: "attempt-1"}, &PushDevice{
 		APNsEnvironment: APNsEnvironmentSandbox,
-		APNsTopic:       ApplePushTopicSilo,
+		APNsTopic:       ApplePushTopicPrairie,
 		ServerDeviceID:  "server-device-1",
 	}, strings.Repeat("a", 64))
 
@@ -340,7 +340,7 @@ func TestPushSenderDoesNotDisableDeviceForRequestLevelAPNsRejection(t *testing.T
 
 	result := sender.send(context.Background(), PushDeliveryAttempt{ID: "attempt-1"}, &PushDevice{
 		APNsEnvironment: APNsEnvironmentSandbox,
-		APNsTopic:       ApplePushTopicSilo,
+		APNsTopic:       ApplePushTopicPrairie,
 		ServerDeviceID:  "server-device-1",
 	}, strings.Repeat("a", 64))
 
@@ -377,7 +377,7 @@ func TestPushSenderSendMapsRelayRetryAfter(t *testing.T) {
 
 	result := sender.send(context.Background(), PushDeliveryAttempt{ID: "attempt-1"}, &PushDevice{
 		APNsEnvironment: APNsEnvironmentSandbox,
-		APNsTopic:       ApplePushTopicSilo,
+		APNsTopic:       ApplePushTopicPrairie,
 		ServerDeviceID:  "server-device-1",
 	}, strings.Repeat("a", 64))
 
@@ -450,7 +450,7 @@ func TestPushSenderRenewsExpiredCapabilityAndRetriesStableDelivery(t *testing.T)
 	sender.developmentRelayURL = server.URL
 	result := sender.send(context.Background(), PushDeliveryAttempt{ID: "attempt-renew"}, &PushDevice{
 		APNsEnvironment: APNsEnvironmentSandbox,
-		APNsTopic:       ApplePushTopicSilo,
+		APNsTopic:       ApplePushTopicPrairie,
 		ServerDeviceID:  "server-device-renew",
 	}, token)
 
@@ -488,7 +488,7 @@ func TestPushSenderMapsRelayIdempotencyStatesWithStableKey(t *testing.T) {
 			attempt := PushDeliveryAttempt{ID: "attempt-stable"}
 			device := &PushDevice{
 				APNsEnvironment: APNsEnvironmentSandbox,
-				APNsTopic:       ApplePushTopicSilo,
+				APNsTopic:       ApplePushTopicPrairie,
 				ServerDeviceID:  "server-device-stable",
 			}
 			first := sender.sendWithCapability(context.Background(), attempt, device, strings.Repeat("a", 64), DefaultPushRelayURL, "capability")

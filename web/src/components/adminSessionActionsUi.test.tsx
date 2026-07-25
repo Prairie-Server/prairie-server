@@ -184,7 +184,7 @@ describe("AdminSessionActions", () => {
       method: "POST",
     });
     expect(mocks.toastSuccess).toHaveBeenCalledWith(
-      "Pause could not reach the player directly. Silo will end the session shortly instead.",
+      "Pause could not reach the player directly. Prairie will end the session shortly instead.",
     );
     expect(findButton(container, "Pause")).toBeTruthy();
     expect(findButton(container, "Resume")).toBeUndefined();

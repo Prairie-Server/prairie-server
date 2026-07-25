@@ -7,7 +7,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/worker"
+	"github.com/prairie-server/prairie-server/internal/worker"
 )
 
 type fakeRefreshCandidateFinder struct {

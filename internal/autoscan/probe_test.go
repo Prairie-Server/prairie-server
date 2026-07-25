@@ -66,7 +66,7 @@ func TestTestConnectionNoProbeConfigured(t *testing.T) {
 	}
 }
 
-func TestSuggestRewritesMatchesArrRootsToSiloFolders(t *testing.T) {
+func TestSuggestRewritesMatchesArrRootsToPrairieFolders(t *testing.T) {
 	store := &fakeStore{
 		sources: []Source{
 			{ID: "src-1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1")},

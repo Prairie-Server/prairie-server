@@ -56,7 +56,7 @@ export function ImportExportBar({ currentTheme, vars, customCss, onImport }: Imp
       <input
         ref={fileInputRef}
         type="file"
-        accept=".json,.silo-theme.json"
+        accept=".json,.prairie-theme.json"
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];

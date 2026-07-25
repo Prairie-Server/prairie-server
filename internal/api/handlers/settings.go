@@ -13,9 +13,10 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/cache"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/httpheaders"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // deviceSeenThrottle bounds how often a device's last_seen_at is refreshed from
@@ -40,9 +41,9 @@ const (
 )
 
 const (
-	deviceIDHeader       = "X-Silo-Device-Id"
-	deviceNameHeader     = "X-Silo-Device-Name"
-	devicePlatformHeader = "X-Silo-Device-Platform"
+	deviceIDHeader       = httpheaders.HeaderDeviceID
+	deviceNameHeader     = httpheaders.HeaderDeviceName
+	devicePlatformHeader = httpheaders.HeaderDevicePlatform
 )
 
 // ServerSettingReader reads individual keys from the server_settings table.
@@ -677,9 +678,9 @@ func activeProfileIDFromRequest(w http.ResponseWriter, r *http.Request) (string,
 
 func deviceMetadataFromRequest(r *http.Request) requestDeviceMetadata {
 	return requestDeviceMetadata{
-		DeviceID:       clampHeaderValue(r.Header.Get(deviceIDHeader), 128),
-		DeviceName:     clampHeaderValue(r.Header.Get(deviceNameHeader), 120),
-		DevicePlatform: clampHeaderValue(r.Header.Get(devicePlatformHeader), 40),
+		DeviceID:       clampHeaderValue(httpheaders.Get(r.Header, deviceIDHeader), 128),
+		DeviceName:     clampHeaderValue(httpheaders.Get(r.Header, deviceNameHeader), 120),
+		DevicePlatform: clampHeaderValue(httpheaders.Get(r.Header, devicePlatformHeader), 40),
 	}
 }
 

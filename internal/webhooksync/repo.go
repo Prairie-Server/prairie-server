@@ -8,7 +8,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 var ErrConnectionNotFound = errors.New("webhook sync connection not found")
@@ -211,7 +211,7 @@ func (r *Repository) ListMappings(ctx context.Context, connectionID string) ([]P
 	for rows.Next() {
 		var m ProfileMapping
 		if err := rows.Scan(
-			&m.ID, &m.ConnectionID, &m.ExternalUserID, &m.ExternalUserName, &m.SiloProfileID,
+			&m.ID, &m.ConnectionID, &m.ExternalUserID, &m.ExternalUserName, &m.PrairieProfileID,
 			&m.LastSeenAt, &m.CreatedAt, &m.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scanning webhook sync mapping: %w", err)
@@ -232,7 +232,7 @@ func (r *Repository) GetMappingByUser(ctx context.Context, connectionID, externa
 		WHERE connection_id = $1 AND external_user_id = $2`, connectionID, externalUserID)
 	var m ProfileMapping
 	if err := row.Scan(
-		&m.ID, &m.ConnectionID, &m.ExternalUserID, &m.ExternalUserName, &m.SiloProfileID,
+		&m.ID, &m.ConnectionID, &m.ExternalUserID, &m.ExternalUserName, &m.PrairieProfileID,
 		&m.LastSeenAt, &m.CreatedAt, &m.UpdatedAt,
 	); err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -262,11 +262,11 @@ func (r *Repository) ReplaceMappings(ctx context.Context, connectionID string, m
 			) VALUES ($1, $2, $3, $4, NOW())
 			RETURNING id, connection_id, external_user_id, external_user_name, silo_profile_id,
 			          last_seen_at, created_at, updated_at`,
-			connectionID, input.ExternalUserID, input.ExternalUserName, input.SiloProfileID,
+			connectionID, input.ExternalUserID, input.ExternalUserName, input.PrairieProfileID,
 		)
 		var m ProfileMapping
 		if err := row.Scan(
-			&m.ID, &m.ConnectionID, &m.ExternalUserID, &m.ExternalUserName, &m.SiloProfileID,
+			&m.ID, &m.ConnectionID, &m.ExternalUserID, &m.ExternalUserName, &m.PrairieProfileID,
 			&m.LastSeenAt, &m.CreatedAt, &m.UpdatedAt,
 		); err != nil {
 			return nil, fmt.Errorf("creating webhook sync mapping: %w", err)
@@ -291,7 +291,7 @@ func (r *Repository) CreateDefaultMapping(ctx context.Context, connectionID, ext
 	)
 	var m ProfileMapping
 	if err := row.Scan(
-		&m.ID, &m.ConnectionID, &m.ExternalUserID, &m.ExternalUserName, &m.SiloProfileID,
+		&m.ID, &m.ConnectionID, &m.ExternalUserID, &m.ExternalUserName, &m.PrairieProfileID,
 		&m.LastSeenAt, &m.CreatedAt, &m.UpdatedAt,
 	); err != nil {
 		return nil, fmt.Errorf("creating default webhook mapping: %w", err)

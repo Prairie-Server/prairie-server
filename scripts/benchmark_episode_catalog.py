@@ -2,12 +2,12 @@
 """Benchmark episode catalog sort/filter shapes without embedding credentials.
 
 Required environment:
-  SILO_BASE_URL        Example: https://silo.example.com
-  SILO_BEARER_TOKEN    API access token
-  SILO_PROFILE_ID      Profile id used for personalized filters/sorts
+  PRAIRIE_BASE_URL        Example: https://silo.example.com
+  PRAIRIE_BEARER_TOKEN    API access token
+  PRAIRIE_PROFILE_ID      Profile id used for personalized filters/sorts
 
 Optional environment:
-  SILO_LIBRARY_ID      Defaults to 2
+  PRAIRIE_LIBRARY_ID      Defaults to 2
 """
 
 from __future__ import annotations
@@ -129,7 +129,7 @@ def getenv_required(name: str) -> str:
 def validate_base_url(base_url: str) -> None:
     parsed = urllib.parse.urlparse(base_url)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        raise ValueError("SILO_BASE_URL must be an http or https URL")
+        raise ValueError("PRAIRIE_BASE_URL must be an http or https URL")
 
 
 def build_url(config: Config, params: dict[str, str], include_total: bool) -> str:
@@ -240,10 +240,10 @@ def main() -> int:
     args = parser.parse_args()
 
     config = Config(
-        base_url=getenv_required("SILO_BASE_URL"),
-        token=getenv_required("SILO_BEARER_TOKEN"),
-        profile_id=getenv_required("SILO_PROFILE_ID"),
-        library_id=os.environ.get("SILO_LIBRARY_ID", "2"),
+        base_url=getenv_required("PRAIRIE_BASE_URL"),
+        token=getenv_required("PRAIRIE_BEARER_TOKEN"),
+        profile_id=getenv_required("PRAIRIE_PROFILE_ID"),
+        library_id=os.environ.get("PRAIRIE_LIBRARY_ID", "2"),
         limit=args.limit,
         offset=args.offset,
         timeout=args.timeout,

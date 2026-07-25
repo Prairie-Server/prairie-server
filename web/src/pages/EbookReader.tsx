@@ -70,7 +70,7 @@ import {
   type EbookReaderAnnotation,
 } from "@/reader/ebookReaderApi";
 
-export const EBOOK_READER_SETTINGS_STORAGE_KEY = "silo.ebook.reader.settings";
+export const EBOOK_READER_SETTINGS_STORAGE_KEY = "prairie.ebook.reader.settings";
 
 type ReaderPanel = "toc" | "search" | "notes" | "settings";
 

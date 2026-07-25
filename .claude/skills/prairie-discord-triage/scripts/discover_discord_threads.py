@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Discover new active Discord threads for Silo intake automation."""
+"""Discover new active Discord threads for Prairie intake automation."""
 
 from __future__ import annotations
 
@@ -124,7 +124,7 @@ def mark_thread_ids(state: dict[str, Any], thread_ids: list[str]) -> None:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Discover new active Discord threads visible to the Silo intake bot.")
+    parser = argparse.ArgumentParser(description="Discover new active Discord threads visible to the Prairie intake bot.")
     parser.add_argument("--config-file", default=str(DEFAULT_CONFIG_FILE), help="Discord monitor config JSON")
     parser.add_argument("--state-file", default=str(DEFAULT_STATE_FILE), help="Seen-thread state JSON")
     parser.add_argument("--token-env", default=DEFAULT_TOKEN_ENV, help="Environment variable containing the bot token")

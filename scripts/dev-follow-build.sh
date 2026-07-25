@@ -4,9 +4,9 @@
 # Exits 0 on success, 1 on build failure, 2 on timeout.
 set -euo pipefail
 
-SESSION="${1:-silo-dev}"
+SESSION="${1:-prairie-dev}"
 TIMEOUT="${2:-180}"
-LOG="/tmp/silo-air-build.log"
+LOG="/tmp/prairie-air-build.log"
 
 if ! tmux has-session -t "$SESSION" 2>/dev/null; then
     echo "error: no tmux session '$SESSION'" >&2

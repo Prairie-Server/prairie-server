@@ -5,10 +5,10 @@ import (
 	"net/http"
 	"strconv"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/notifications"
 	"github.com/go-chi/chi/v5"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/notifications"
 )
 
 const (
@@ -396,14 +396,14 @@ func (h *NotificationsHandler) HandleCapability(w http.ResponseWriter, r *http.R
 		if h.system.Settings.ApplePushDeliveryEnabled(r.Context()) {
 			applePush = capabilityPush{
 				Available:      true,
-				Provider:       notifications.PushProviderSiloRelay,
+				Provider:       notifications.PushProviderPrairieRelay,
 				SupportedModes: []string{notifications.PushModePrivatePush, notifications.PushModeInAppOnly},
 			}
 		}
 		if h.system.Settings.AndroidPushDeliveryEnabled(r.Context()) {
 			androidPush = capabilityPush{
 				Available:      true,
-				Provider:       notifications.PushProviderSiloRelay,
+				Provider:       notifications.PushProviderPrairieRelay,
 				SupportedModes: []string{notifications.PushModePrivatePush, notifications.PushModeInAppOnly},
 			}
 		}

@@ -77,7 +77,7 @@ func TestBuildWebPushPayload(t *testing.T) {
 		if err := json.Unmarshal(raw, &payload); err != nil {
 			t.Fatal(err)
 		}
-		if payload.Title != "Silo notification" || payload.URL != "/notifications" {
+		if payload.Title != "Prairie notification" || payload.URL != "/notifications" {
 			t.Fatalf("unexpected payload: %+v", payload)
 		}
 	})

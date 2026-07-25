@@ -75,10 +75,10 @@ function KeyPrefixField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="max-w-md"
-        placeholder="silo/dev"
+        placeholder="prairie/dev"
       />
       <p className="text-muted-foreground text-xs">
-        Optional. Stores all Silo objects under this folder inside the bucket. Leave blank to use
+        Optional. Stores all Prairie objects under this folder inside the bucket. Leave blank to use
         the bucket root.
       </p>
     </div>
@@ -150,7 +150,7 @@ export default function StorageSettings() {
         <h2 className="text-xl font-semibold tracking-tight">Storage</h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
           Configure separate S3-compatible storage for client-facing assets and private internal
-          Silo artifacts.
+          Prairie artifacts.
         </p>
       </div>
 
@@ -205,8 +205,8 @@ export default function StorageSettings() {
                 <div className="text-[13px] leading-relaxed">
                   <p className="font-medium text-amber-500">Storage location change</p>
                   <p className="text-muted-foreground mt-1">
-                    Artwork is cached in this bucket. After the server restarts, Silo verifies the
-                    cache against the new storage and automatically re-caches anything missing.
+                    Artwork is cached in this bucket. After the server restarts, Prairie verifies
+                    the cache against the new storage and automatically re-caches anything missing.
                     Uploaded images (custom posters, collection artwork, branding) cannot be
                     re-downloaded — migrate your bucket contents if you want to keep them.
                   </p>
@@ -290,7 +290,7 @@ export default function StorageSettings() {
 
           <TabsContent value="private" className="space-y-1 pt-4">
             <p className="text-muted-foreground mb-4 text-sm">
-              Stores non-public Silo objects such as imports, exports, and internal artifacts.
+              Stores non-public Prairie objects such as imports, exports, and internal artifacts.
             </p>
             <SettingField
               label="Endpoint"

@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
 )
 
 // HandleAdminSetSourceToken stores an admin token for a source.
@@ -136,7 +136,7 @@ func (h *HistoryImportHandler) HandleAdminCreateMapping(w http.ResponseWriter, r
 	writeJSON(w, http.StatusCreated, mapping)
 }
 
-// HandleAdminUpdateMapping updates the Silo target of a mapping.
+// HandleAdminUpdateMapping updates the Prairie target of a mapping.
 //
 // PUT /admin/history-imports/mappings/{id}
 func (h *HistoryImportHandler) HandleAdminUpdateMapping(w http.ResponseWriter, r *http.Request) {

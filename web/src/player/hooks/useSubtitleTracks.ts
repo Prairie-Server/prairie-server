@@ -194,7 +194,7 @@ export function useSubtitleTracks(
     // and fires `cuechange` synchronously with the media clock, but
     // suppresses the browser's built-in cue renderer so the appearance
     // panel stays in charge of styling.
-    const track = videoEl.addTextTrack("subtitles", "Silo", activeLang || undefined);
+    const track = videoEl.addTextTrack("subtitles", "Prairie", activeLang || undefined);
     track.mode = "hidden";
     trackRef.current = track;
     seenCueKeysRef.current = new Set();

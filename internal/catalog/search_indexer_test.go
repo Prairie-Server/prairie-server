@@ -88,16 +88,16 @@ func TestCoalesceSearchIndexEvents(t *testing.T) {
 
 func TestStaleCatalogSearchIndexUIDs(t *testing.T) {
 	uids := []string{
-		"silo_media_items_rebuild_100", // superseded rebuild
-		"silo_media_items_rebuild_200", // newly active
-		"silo_media_items",             // legacy previously-active index
-		"other_app_index",              // unrelated index on a shared instance
-		"silo_media_items_rebuild_50",  // failed-run leftover
+		"prairie_media_items_rebuild_100", // superseded rebuild
+		"prairie_media_items_rebuild_200", // newly active
+		"prairie_media_items",             // legacy previously-active index
+		"other_app_index",                 // unrelated index on a shared instance
+		"prairie_media_items_rebuild_50",  // failed-run leftover
 		"",
 	}
-	stale := staleCatalogSearchIndexUIDs(uids, "silo_media_items", "silo_media_items_rebuild_200", "silo_media_items")
+	stale := staleCatalogSearchIndexUIDs(uids, "prairie_media_items", "prairie_media_items_rebuild_200", "prairie_media_items")
 	sort.Strings(stale)
-	want := []string{"silo_media_items", "silo_media_items_rebuild_100", "silo_media_items_rebuild_50"}
+	want := []string{"prairie_media_items", "prairie_media_items_rebuild_100", "prairie_media_items_rebuild_50"}
 	if !slices.Equal(stale, want) {
 		t.Fatalf("stale = %v, want %v", stale, want)
 	}
@@ -284,9 +284,9 @@ func TestCatalogSemanticCoverageByTypeStaleEmbeddingRatio(t *testing.T) {
 
 func newSemanticCoverageTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)

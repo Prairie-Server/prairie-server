@@ -3,7 +3,7 @@ package nodeconfig
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 func newTestWatcher(t *testing.T, bootstrap BootstrapOverrides) *Watcher {

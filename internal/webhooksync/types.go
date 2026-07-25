@@ -35,7 +35,7 @@ type ProfileMapping struct {
 	ConnectionID     string    `json:"connection_id"`
 	ExternalUserID   string    `json:"external_user_id"`
 	ExternalUserName string    `json:"external_user_name"`
-	SiloProfileID    *string   `json:"silo_profile_id,omitempty"`
+	PrairieProfileID *string   `json:"silo_profile_id,omitempty"`
 	LastSeenAt       time.Time `json:"last_seen_at"`
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
@@ -93,7 +93,7 @@ type UpdateProfileMappingsInput struct {
 type UpdateProfileMapping struct {
 	ExternalUserID   string  `json:"external_user_id"`
 	ExternalUserName string  `json:"external_user_name"`
-	SiloProfileID    *string `json:"silo_profile_id"`
+	PrairieProfileID *string `json:"silo_profile_id"`
 }
 
 type CanonicalEvent struct {

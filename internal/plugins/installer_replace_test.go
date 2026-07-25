@@ -160,7 +160,7 @@ func testPluginManifest(t *testing.T, pluginID, version string) *pluginv1.Plugin
 		PluginId:       pluginID,
 		Version:        version,
 		Checksum:       "sha256-placeholder",
-		SiloApiVersion: DefaultSiloAPIVersion,
+		SiloApiVersion: DefaultPrairieAPIVersion,
 		SupportedPlatforms: []*pluginv1.SupportedPlatform{
 			{Os: "darwin", Arch: "arm64"},
 		},
