@@ -2,5 +2,19 @@
 # Patterns match exact package-path suffixes of the Go coverprofile.
 # CI also sets COVER_EXCLUDE_FILE_REGEX='(^|/)store\.go$' so PgStore DB code
 # under internal/livetv is omitted from the livetv package total.
+#
+# Prefer packages with solid unit tests over artificially narrow includes.
+# When adding a package here, also add it to the go-test-coverage job in
+# .github/workflows/ci.yml so coverage.out contains its profile data.
 internal/livetv
 internal/livetv/hdhomerun
+internal/contentid
+internal/librarykind
+internal/logredact
+internal/logfilter
+internal/titleutil
+internal/lang
+internal/rootcheck
+internal/secret
+internal/providerid
+internal/buildinfo

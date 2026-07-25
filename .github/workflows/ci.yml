@@ -35,18 +35,36 @@ jobs:
       - name: Run unit tests with coverage
         run: |
           set -euo pipefail
-          # Scope CI to Live TV packages this PR owns. `go test ./...` currently
-          # fails on unrelated suites (playback_v3 seek recovery, web embed
-          # without a built dist/) and is not gated on main (no prior ci.yml).
-          # Full suite remains: `make test-coverage` locally (after `pnpm run build`
-          # in web/ so embed finds dist/).
+          # Scope CI to packages listed in .github/coverage-packages.txt (plus
+          # jellycompat / LiveTV handlers for integration-ish coverage).
+          # `go test ./...` currently fails on unrelated suites (playback_v3
+          # seek recovery, web embed without a built dist/) and is not gated
+          # on main. Full suite remains: `make test-coverage` locally (after
+          # `pnpm run build` in web/ so embed finds dist/).
           #
+<<<<<<< HEAD
           # coverage.out must include packages listed in
           # .github/coverage-packages.txt (internal/livetv, …/hdhomerun).
           #
           # imageutil is CGO-free (embedded WASI) — keep a smoke gate here so the
           # committed .wasm cannot rot without CI noticing.
           go test ./internal/livetv/... ./internal/jellycompat/... ./internal/imageutil/ \
+=======
+          # coverage.out must include every package in coverage-packages.txt.
+          go test \
+            ./internal/livetv/... \
+            ./internal/jellycompat/... \
+            ./internal/contentid/... \
+            ./internal/librarykind/... \
+            ./internal/logredact/... \
+            ./internal/logfilter/... \
+            ./internal/titleutil/... \
+            ./internal/lang/... \
+            ./internal/rootcheck/... \
+            ./internal/secret/... \
+            ./internal/providerid/... \
+            ./internal/buildinfo/... \
+>>>>>>> 7dfd5e55 (test: expand 75% coverage gates and preserve auth storage across upgrades)
             -count=1 -covermode=atomic -coverprofile=coverage.out
           # Native Live TV HTTP handlers live in internal/api/handlers; run only
           # those tests so we do not pull in the full handlers suite.
@@ -100,7 +118,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       # Vitest coverage thresholds (75% statements/lines/functions/branches) apply
-      # only to src/lib/liveTVGuide.ts (see vite.config.ts coverage.include).
+      # to the include list in web/vite.config.ts (pure helpers under src/lib/).
       # Expand that list as more modules gain unit tests rather than gating the
       # entire web tree, which is still well below 75% overall.
       - name: Run Vitest with coverage

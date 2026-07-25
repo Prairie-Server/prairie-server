@@ -68,6 +68,57 @@ describe("impersonationSession", () => {
     });
   });
 
+  it("returns null when nothing is stored", () => {
+    expect(loadStoredImpersonationAdminSession()).toBeNull();
+  });
+
+  it("returns null for malformed or incomplete stored JSON", () => {
+    localStorage.setItem("impersonation_admin_session", "{not-json");
+    expect(loadStoredImpersonationAdminSession()).toBeNull();
+
+    localStorage.setItem(
+      "impersonation_admin_session",
+      JSON.stringify({ accessToken: "a", refreshToken: 1, returnPath: "/x" }),
+    );
+    expect(loadStoredImpersonationAdminSession()).toBeNull();
+
+    localStorage.setItem(
+      "impersonation_admin_session",
+      JSON.stringify({ accessToken: "a", refreshToken: "b" }),
+    );
+    expect(loadStoredImpersonationAdminSession()).toBeNull();
+  });
+
+  it("swallows localStorage failures without throwing", () => {
+    Object.defineProperty(globalThis, "localStorage", {
+      value: {
+        getItem: () => {
+          throw new Error("blocked");
+        },
+        setItem: () => {
+          throw new Error("blocked");
+        },
+        removeItem: () => {
+          throw new Error("blocked");
+        },
+        clear: () => {},
+        key: () => null,
+        length: 0,
+      } satisfies Storage,
+      configurable: true,
+    });
+
+    expect(() =>
+      saveStoredImpersonationAdminSession({
+        accessToken: "a",
+        refreshToken: "b",
+        returnPath: "/",
+      }),
+    ).not.toThrow();
+    expect(loadStoredImpersonationAdminSession()).toBeNull();
+    expect(() => clearStoredImpersonationAdminSession()).not.toThrow();
+  });
+
   it("stores and clears the preserved admin session in localStorage to match auth scope", () => {
     saveStoredImpersonationAdminSession({
       accessToken: "admin-access",

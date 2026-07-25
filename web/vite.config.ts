@@ -70,12 +70,34 @@ export default defineConfig(({ mode }) => {
       environment: "jsdom",
       globals: true,
       setupFiles: ["./src/test-setup.ts"],
-      // Enforce 75% on Live TV guide helpers. useLiveTV.ts is covered by unit
-      // tests for query wiring but is mostly thin mutation boilerplate, so it is
-      // not gated here yet — expand this include list as more pure helpers land.
+      // Enforce 75% on pure helpers under src/lib/. Prefer modules that already
+      // have *.test.ts coverage; write tests before adding a file here.
+      // Thin React Query / mutation wrappers are left out until they are
+      // meaningfully unit-tested.
       coverage: {
         provider: "v8",
-        include: ["src/lib/liveTVGuide.ts"],
+        include: [
+          "src/lib/liveTVGuide.ts",
+          "src/lib/datetime.ts",
+          "src/lib/filterEasyMode.ts",
+          "src/lib/jellyfinCompat.ts",
+          "src/lib/impersonationSession.ts",
+          "src/lib/chunkedUpload.ts",
+          "src/lib/calendarWeek.ts",
+          "src/lib/autoscanLabels.ts",
+          "src/lib/documentTitle.ts",
+          "src/lib/mangaChapters.ts",
+          "src/lib/collectionDisplayFilters.ts",
+          "src/lib/carouselEmbla.ts",
+          "src/lib/mediaFormat.ts",
+          "src/lib/pluginRouteHref.ts",
+          "src/lib/recipes.ts",
+          "src/lib/recommendation-provider-presets.ts",
+          "src/lib/videoRange.ts",
+          "src/lib/webhookSync.ts",
+          "src/lib/queryInvalidation.ts",
+          "src/utils/storage.ts",
+        ],
         thresholds: {
           statements: 75,
           lines: 75,
