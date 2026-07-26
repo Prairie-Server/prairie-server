@@ -122,10 +122,10 @@ const emailShell = `<!DOCTYPE html>
 </head>
 <body style="margin:0;padding:0;background-color:{{canvas}};" bgcolor="{{canvas}}">
 {{preheader}}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="{{canvas}}" style="background-color:{{canvas}};">
-<tr><td align="center" class="silo-shell" style="padding:36px 16px 48px;">
+<tr><td align="center" class="prairie-shell" style="padding:36px 16px 48px;">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
 <tr><td style="padding:0 6px 18px;font:600 12px/1 {{font}};color:{{text}};letter-spacing:7px;"><span style="color:#55555e;">&#9656;&#xFE0E;</span>&nbsp;&nbsp;PRAIRIE</td></tr>
-<tr><td class="silo-card" bgcolor="{{card}}" style="background-color:{{card}};border:1px solid {{border}};border-radius:12px;padding:28px 32px;">
+<tr><td class="prairie-card" bgcolor="{{card}}" style="background-color:{{card}};border:1px solid {{border}};border-radius:12px;padding:28px 32px;">
 {{title}}{{body}}
 </td></tr>
 {{footer}}</table>
