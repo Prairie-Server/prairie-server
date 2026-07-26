@@ -51,13 +51,31 @@ func NewService(db *pgxpool.Pool) *Service {
 }
 
 func NewServiceWithStore(store Store) *Service {
-	httpClient := &http.Client{Timeout: 30 * time.Second}
+	httpClient := NewMediaHTTPClient()
 	return &Service{
 		store:      store,
 		hdhr:       hdhomerun.NewClient(httpClient),
 		httpClient: httpClient,
 		now:        time.Now,
 	}
+}
+
+// PublicSessionStreamPath is the authenticated relative URL clients should play.
+func PublicSessionStreamPath(sessionID string) string {
+	return "/api/v1/livetv/sessions/" + sessionID + "/stream"
+}
+
+// IsClientSafePlayURL reports whether url is safe to return to clients (relative
+// or same-app path). Absolute remote tuner URLs are not.
+func IsClientSafePlayURL(raw string) bool {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return false
+	}
+	if strings.HasPrefix(raw, "/") && !strings.HasPrefix(raw, "//") {
+		return true
+	}
+	return false
 }
 
 func (s *Service) SetHDHomeRunClient(client HDHomeRunClient) {
@@ -88,6 +106,22 @@ func (s *Service) AddTuner(ctx context.Context, discoverURL, deviceID string) (*
 	}
 	if s.hdhr == nil {
 		return nil, ErrNotConfigured
+	}
+	discoverURL = strings.TrimSpace(discoverURL)
+	deviceID = strings.TrimSpace(deviceID)
+	switch {
+	case discoverURL != "":
+		if err := ValidateMediaFetchURL(discoverURL); err != nil {
+			return nil, err
+		}
+	case strings.HasPrefix(deviceID, "http://"), strings.HasPrefix(deviceID, "https://"):
+		if err := ValidateMediaFetchURL(deviceID); err != nil {
+			return nil, err
+		}
+	case deviceID != "":
+		if err := ValidateMediaFetchURL("http://" + deviceID + "/discover.json"); err != nil {
+			return nil, err
+		}
 	}
 	info, err := s.hdhr.Discover(ctx, discoverURL, deviceID)
 	if err != nil {
@@ -125,6 +159,9 @@ func (s *Service) ScanTuner(ctx context.Context, tunerID string) error {
 	}
 	if tuner == nil {
 		return ErrNotFound
+	}
+	if err := ValidateMediaFetchURL(tuner.BaseURL); err != nil {
+		return err
 	}
 	lineup, err := s.hdhr.FetchLineup(ctx, tuner.BaseURL)
 	if err != nil {
@@ -328,6 +365,9 @@ func (s *Service) syncXMLTV(ctx context.Context, source *GuideSource) error {
 	if url == "" {
 		return fmt.Errorf("%w: xmltv url is required", ErrInvalidArgument)
 	}
+	if err := ValidateMediaFetchURL(url); err != nil {
+		return err
+	}
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err
@@ -488,9 +528,25 @@ func (s *Service) StartChannelSession(ctx context.Context, channelID string, use
 	return session, nil
 }
 
-func (s *Service) ReleaseSession(ctx context.Context, id string) (*LiveSession, error) {
+// ReleaseSession releases a live tuner session.
+// When enforceOwner is true, the caller must own the session (matching user_id,
+// and profile_id when the session recorded one). Pass enforceOwner=false for
+// trusted internal teardown (e.g. jellycompat after opener-token checks).
+func (s *Service) ReleaseSession(ctx context.Context, id string, userID int, profileID string, enforceOwner bool) (*LiveSession, error) {
 	if err := s.requireStore(); err != nil {
 		return nil, err
+	}
+	if enforceOwner {
+		existing, err := s.store.GetSession(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		if existing == nil {
+			return nil, ErrNotFound
+		}
+		if !ownerMatches(existing.UserID, existing.ProfileID, userID, profileID) {
+			return nil, ErrNotFound
+		}
 	}
 	session, err := s.store.ReleaseSession(ctx, id)
 	if err != nil {
@@ -502,11 +558,21 @@ func (s *Service) ReleaseSession(ctx context.Context, id string) (*LiveSession, 
 	return session, nil
 }
 
-func (s *Service) ListRecordings(ctx context.Context, status string) ([]Recording, error) {
+func (s *Service) ListRecordings(ctx context.Context, status string, userID int, profileID string, enforceOwner bool) ([]Recording, error) {
 	if err := s.requireStore(); err != nil {
 		return nil, err
 	}
-	return s.store.ListRecordings(ctx, status)
+	all, err := s.store.ListRecordings(ctx, status)
+	if err != nil || !enforceOwner {
+		return all, err
+	}
+	out := make([]Recording, 0, len(all))
+	for _, rec := range all {
+		if ownerMatches(rec.UserID, rec.ProfileID, userID, profileID) {
+			out = append(out, rec)
+		}
+	}
+	return out, nil
 }
 
 func (s *Service) ScheduleRecording(ctx context.Context, rec *Recording) (*Recording, error) {
@@ -537,9 +603,18 @@ func (s *Service) ScheduleRecording(ctx context.Context, rec *Recording) (*Recor
 	return s.store.CreateRecording(ctx, rec)
 }
 
-func (s *Service) CancelRecording(ctx context.Context, id string) (*Recording, error) {
+func (s *Service) CancelRecording(ctx context.Context, id string, userID int, profileID string, enforceOwner bool) (*Recording, error) {
 	if err := s.requireStore(); err != nil {
 		return nil, err
+	}
+	if enforceOwner {
+		existing, err := s.store.GetRecording(ctx, id)
+		if err != nil {
+			return nil, err
+		}
+		if existing == nil || !ownerMatches(existing.UserID, existing.ProfileID, userID, profileID) {
+			return nil, ErrNotFound
+		}
 	}
 	rec, err := s.store.CancelRecording(ctx, id)
 	if err != nil {
@@ -551,11 +626,21 @@ func (s *Service) CancelRecording(ctx context.Context, id string) (*Recording, e
 	return rec, nil
 }
 
-func (s *Service) ListSeriesRules(ctx context.Context) ([]SeriesRule, error) {
+func (s *Service) ListSeriesRules(ctx context.Context, userID int, profileID string, enforceOwner bool) ([]SeriesRule, error) {
 	if err := s.requireStore(); err != nil {
 		return nil, err
 	}
-	return s.store.ListSeriesRules(ctx)
+	all, err := s.store.ListSeriesRules(ctx)
+	if err != nil || !enforceOwner {
+		return all, err
+	}
+	out := make([]SeriesRule, 0, len(all))
+	for _, rule := range all {
+		if ownerMatches(rule.UserID, rule.ProfileID, userID, profileID) {
+			out = append(out, rule)
+		}
+	}
+	return out, nil
 }
 
 func (s *Service) CreateSeriesRule(ctx context.Context, rule *SeriesRule) (*SeriesRule, error) {
@@ -569,11 +654,86 @@ func (s *Service) CreateSeriesRule(ctx context.Context, rule *SeriesRule) (*Seri
 	return s.store.CreateSeriesRule(ctx, rule)
 }
 
-func (s *Service) DeleteSeriesRule(ctx context.Context, id string) error {
+func (s *Service) DeleteSeriesRule(ctx context.Context, id string, userID int, profileID string, enforceOwner bool) error {
 	if err := s.requireStore(); err != nil {
 		return err
 	}
+	if enforceOwner {
+		existing, err := s.store.GetSeriesRule(ctx, id)
+		if err != nil {
+			return err
+		}
+		if existing == nil || !ownerMatches(existing.UserID, existing.ProfileID, userID, profileID) {
+			return ErrNotFound
+		}
+	}
 	return s.store.DeleteSeriesRule(ctx, id)
+}
+
+func (s *Service) GetSession(ctx context.Context, id string) (*LiveSession, error) {
+	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
+	return s.store.GetSession(ctx, id)
+}
+
+// GetSessionForViewer returns a session after applying the centralized ownership
+// check used by ReleaseSession / CancelRecording. Missing or unauthorized
+// sessions surface as ErrNotFound.
+func (s *Service) GetSessionForViewer(
+	ctx context.Context,
+	sessionID string,
+	userID int,
+	profileID string,
+	enforceOwner bool,
+) (*LiveSession, error) {
+	session, err := s.GetSession(ctx, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	if session == nil {
+		return nil, ErrNotFound
+	}
+	if enforceOwner && !ownerMatches(session.UserID, session.ProfileID, userID, profileID) {
+		return nil, ErrNotFound
+	}
+	return session, nil
+}
+
+// ResolveSessionUpstreamURL returns the upstream tuner URL for an active session.
+func (s *Service) ResolveSessionUpstreamURL(ctx context.Context, sessionID string) (string, error) {
+	session, err := s.GetSession(ctx, sessionID)
+	if err != nil {
+		return "", err
+	}
+	if session == nil || session.Status != "active" {
+		return "", ErrNotFound
+	}
+	ch, err := s.GetChannel(ctx, session.ChannelID)
+	if err != nil {
+		return "", err
+	}
+	if ch == nil || strings.TrimSpace(ch.StreamURL) == "" {
+		return "", ErrNotFound
+	}
+	if err := ValidateMediaFetchURL(ch.StreamURL); err != nil {
+		return "", err
+	}
+	return ch.StreamURL, nil
+}
+
+func ownerMatches(ownerUser int, ownerProfile string, userID int, profileID string) bool {
+	// Unscoped legacy rows are not visible to non-admin callers (enforceOwner path).
+	if ownerUser == 0 && ownerProfile == "" {
+		return false
+	}
+	if ownerUser != 0 && ownerUser != userID {
+		return false
+	}
+	if ownerProfile != "" && profileID != "" && ownerProfile != profileID {
+		return false
+	}
+	return true
 }
 
 func (s *Service) ApplySeriesRules(ctx context.Context) error {
@@ -616,6 +776,8 @@ func (s *Service) ApplySeriesRules(ctx context.Context) error {
 				ProgramID:    p.ID,
 				ChannelID:    p.ChannelID,
 				SeriesRuleID: rule.ID,
+				UserID:       rule.UserID,
+				ProfileID:    rule.ProfileID,
 				Status:       "scheduled",
 				Start:        p.Start,
 				Stop:         p.Stop,

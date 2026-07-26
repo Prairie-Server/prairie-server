@@ -1,6 +1,9 @@
 package livetv
 
-import "time"
+import (
+	"encoding/json"
+	"time"
+)
 
 const (
 	MaxGuideSources = 3
@@ -34,9 +37,21 @@ type Channel struct {
 	Name           string  `json:"name"`
 	LogoURL        string  `json:"logo_url"`
 	HD             bool    `json:"hd"`
-	Enabled        bool    `json:"enabled"`
-	StreamURL      string  `json:"stream_url"`
-	GuideStationID string  `json:"guide_station_id"`
+	Enabled bool `json:"enabled"`
+	// StreamURL is the upstream tuner URL. MarshalJSON always emits stream_url
+	// as an empty string so the /api/v1 field remains additive without leaking
+	// private tuner addresses.
+	StreamURL      string `json:"-"`
+	GuideStationID string `json:"guide_station_id"`
+}
+
+// MarshalJSON keeps stream_url in the wire shape while redacting the upstream URL.
+func (c Channel) MarshalJSON() ([]byte, error) {
+	type Alias Channel
+	return json.Marshal(struct {
+		StreamURL string `json:"stream_url"`
+		Alias
+	}{StreamURL: "", Alias: Alias(c)})
 }
 
 type GuideSource struct {
@@ -79,12 +94,36 @@ type LiveSession struct {
 	UserID            int        `json:"user_id,omitempty"`
 	ProfileID         string     `json:"profile_id,omitempty"`
 	PlaybackSessionID string     `json:"playback_session_id,omitempty"`
-	Status            string     `json:"status"`
-	HLSURL            string     `json:"hls_url,omitempty"`
-	StreamURL         string     `json:"stream_url,omitempty"`
-	Note              string     `json:"note,omitempty"`
-	CreatedAt         time.Time  `json:"created_at"`
-	ReleasedAt        *time.Time `json:"released_at,omitempty"`
+	Status string `json:"status"`
+	HLSURL string `json:"hls_url,omitempty"`
+	// StreamURL may hold an upstream URL in memory; MarshalJSON emits the
+	// authenticated proxy path (or empty) so clients never receive tuner URLs.
+	StreamURL  string     `json:"-"`
+	Note       string     `json:"note,omitempty"`
+	CreatedAt  time.Time  `json:"created_at"`
+	ReleasedAt *time.Time `json:"released_at,omitempty"`
+}
+
+// MarshalJSON preserves stream_url for /api/v1 clients using the public proxy path.
+func (s LiveSession) MarshalJSON() ([]byte, error) {
+	publicStream := ""
+	if s.ID != "" {
+		publicStream = PublicSessionStreamPath(s.ID)
+	}
+	hls := s.HLSURL
+	if !IsClientSafePlayURL(hls) {
+		hls = publicStream
+	}
+	type Alias LiveSession
+	return json.Marshal(struct {
+		HLSURL    string `json:"hls_url,omitempty"`
+		StreamURL string `json:"stream_url"`
+		Alias
+	}{
+		HLSURL:    hls,
+		StreamURL: publicStream,
+		Alias:     Alias(s),
+	})
 }
 
 type Recording struct {
@@ -92,6 +131,8 @@ type Recording struct {
 	ProgramID      string    `json:"program_id,omitempty"`
 	ChannelID      string    `json:"channel_id"`
 	SeriesRuleID   string    `json:"series_rule_id,omitempty"`
+	UserID         int       `json:"user_id,omitempty"`
+	ProfileID      string    `json:"profile_id,omitempty"`
 	Status         string    `json:"status"`
 	Path           string    `json:"path,omitempty"`
 	LibraryItemID  string    `json:"library_item_id,omitempty"`
@@ -105,6 +146,8 @@ type SeriesRule struct {
 	ID         string  `json:"id"`
 	SeriesID   string  `json:"series_id"`
 	ChannelID  *string `json:"channel_id,omitempty"`
+	UserID     int     `json:"user_id,omitempty"`
+	ProfileID  string  `json:"profile_id,omitempty"`
 	TitleMatch string  `json:"title_match"`
 	NewOnly    bool    `json:"new_only"`
 	KeepLast   int     `json:"keep_last"`

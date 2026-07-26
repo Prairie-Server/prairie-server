@@ -1,4 +1,4 @@
-const STORED_IMPERSONATION_ADMIN_SESSION_KEY = "impersonation_admin_session";
+import { storage } from "../utils/storage";
 
 export interface StoredImpersonationAdminSession {
   accessToken: string;
@@ -9,16 +9,12 @@ export interface StoredImpersonationAdminSession {
 export function saveStoredImpersonationAdminSession(
   session: StoredImpersonationAdminSession,
 ): void {
-  try {
-    localStorage.setItem(STORED_IMPERSONATION_ADMIN_SESSION_KEY, JSON.stringify(session));
-  } catch {
-    // localStorage is unavailable.
-  }
+  storage.set(storage.KEYS.IMPERSONATION_ADMIN_SESSION, JSON.stringify(session));
 }
 
 export function loadStoredImpersonationAdminSession(): StoredImpersonationAdminSession | null {
   try {
-    const rawSession = localStorage.getItem(STORED_IMPERSONATION_ADMIN_SESSION_KEY);
+    const rawSession = storage.get(storage.KEYS.IMPERSONATION_ADMIN_SESSION);
     if (!rawSession) {
       return null;
     }
@@ -43,9 +39,5 @@ export function loadStoredImpersonationAdminSession(): StoredImpersonationAdminS
 }
 
 export function clearStoredImpersonationAdminSession(): void {
-  try {
-    localStorage.removeItem(STORED_IMPERSONATION_ADMIN_SESSION_KEY);
-  } catch {
-    // localStorage is unavailable.
-  }
+  storage.remove(storage.KEYS.IMPERSONATION_ADMIN_SESSION);
 }

@@ -2,9 +2,47 @@ import { describe, expect, it } from "vitest";
 
 import type { DisplayQueryDefinition } from "@/api/types";
 import {
+  COLLECTION_MEDIA_FILTER_OPTIONS,
+  COLLECTION_WATCH_FILTER_OPTIONS,
+  collectionMediaFilterLabel,
+  collectionMediaFilterOptionsFromPresets,
+  collectionWatchFilterLabel,
+  collectionWatchFilterOptionsFromPresets,
   displayFiltersToQueryDefinition,
   queryDefinitionToDisplayFilters,
 } from "./collectionDisplayFilters";
+
+describe("collection filter labels and presets", () => {
+  it("labels known watch and media presets", () => {
+    expect(collectionWatchFilterLabel("unwatched")).toBe("Unwatched");
+    expect(collectionWatchFilterLabel("watched")).toBe("Watched");
+    expect(collectionMediaFilterLabel("movie")).toBe("Movies");
+    expect(collectionMediaFilterLabel("series")).toBe("Shows");
+  });
+
+  it("falls back to All for unknown values", () => {
+    expect(collectionWatchFilterLabel("nope" as never)).toBe("All");
+    expect(collectionMediaFilterLabel("nope" as never)).toBe("All");
+  });
+
+  it("returns full option lists when presets are undefined", () => {
+    expect(collectionWatchFilterOptionsFromPresets(undefined)).toEqual(
+      COLLECTION_WATCH_FILTER_OPTIONS,
+    );
+    expect(collectionMediaFilterOptionsFromPresets(undefined)).toEqual(
+      COLLECTION_MEDIA_FILTER_OPTIONS,
+    );
+  });
+
+  it("filters option lists to allowed presets", () => {
+    expect(
+      collectionWatchFilterOptionsFromPresets(["all", "unwatched"]).map((o) => o.value),
+    ).toEqual(["all", "unwatched"]);
+    expect(collectionMediaFilterOptionsFromPresets(["movie"]).map((o) => o.value)).toEqual([
+      "movie",
+    ]);
+  });
+});
 
 describe("displayFiltersToQueryDefinition", () => {
   it("returns undefined when both presets are all", () => {

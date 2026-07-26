@@ -230,10 +230,9 @@ export function useLiveTVGuide(params: LiveTVGuideParams = {}, enabled = true) {
 export function useStartLiveTVSession() {
   return useMutation({
     mutationFn: (channelId: string) =>
-      api<LiveTVSessionStartResponse>(
-        `/livetv/channels/${encodeURIComponent(channelId)}/session`,
-        { method: "POST" },
-      ),
+      api<LiveTVSessionStartResponse>(`/livetv/channels/${encodeURIComponent(channelId)}/session`, {
+        method: "POST",
+      }),
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to start Live TV session");
     },

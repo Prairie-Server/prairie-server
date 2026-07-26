@@ -1,12 +1,29 @@
 import { describe, expect, it } from "vitest";
 
-import { mediaKindLabel, type CollectionTemplate } from "./collectionTemplates";
+import {
+  libraryEligibilityForMediaKind,
+  mediaKindLabel,
+  type CollectionTemplate,
+} from "./collectionTemplates";
 
 describe("collectionTemplates lib", () => {
   it("returns human labels for every media kind", () => {
     expect(mediaKindLabel("movie")).toBe("Movies");
     expect(mediaKindLabel("tv")).toBe("TV");
     expect(mediaKindLabel("mixed")).toBe("Movies + TV");
+  });
+
+  it("maps media kinds to library eligibility hints", () => {
+    expect(libraryEligibilityForMediaKind("movie")).toEqual({
+      kinds: ["movies"],
+      hint: expect.stringContaining("Movie-only"),
+    });
+    expect(libraryEligibilityForMediaKind("tv")).toEqual({
+      kinds: ["series"],
+      hint: expect.stringContaining("TV-only"),
+    });
+    expect(libraryEligibilityForMediaKind("mixed")).toEqual({});
+    expect(libraryEligibilityForMediaKind("all")).toEqual({});
   });
 
   it("template type accepts all source variants", () => {

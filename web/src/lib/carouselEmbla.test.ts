@@ -18,4 +18,20 @@ describe("carouselEmbla", () => {
       target,
     });
   });
+
+  it("omits target when none is provided and merges Embla overrides", () => {
+    expect(getCarouselWheelGestureOptions()).toEqual({
+      forceWheelAxis: "x",
+      target: undefined,
+    });
+    expect(getCarouselWheelGestureOptions(null)).toEqual({
+      forceWheelAxis: "x",
+      target: undefined,
+    });
+    expect(getCarouselEmblaOptions({ loop: true, dragFree: false })).toMatchObject({
+      align: "start",
+      loop: true,
+      dragFree: false,
+    });
+  });
 });

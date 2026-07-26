@@ -8,6 +8,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -342,11 +343,28 @@ func (h *LiveTVHandler) HandleRecommendedPrograms(w http.ResponseWriter, r *http
 	})
 }
 
+
+// livetvOwner resolves the mapped Prairie app user for Live TV ownership checks.
+// Fail closed: unmapped / missing sessions are unauthorized (same as stream file).
+func (h *LiveTVHandler) livetvOwner(w http.ResponseWriter, r *http.Request) (userID int, profileID string, ok bool) {
+	session := SessionFromContext(r.Context())
+	if session == nil || session.StreamAppUserID == 0 {
+		writeError(w, http.StatusUnauthorized, "Unauthorized", "Missing authentication token")
+		return 0, "", false
+	}
+	return session.StreamAppUserID, session.ProfileID, true
+}
+
 // HandleTimers serves GET /LiveTv/Timers and POST /LiveTv/Timers.
 func (h *LiveTVHandler) HandleTimers(w http.ResponseWriter, r *http.Request) {
+	userID, profileID, ok := h.livetvOwner(w, r)
+	if !ok {
+		return
+	}
+	enforceOwner := true
 	switch r.Method {
 	case http.MethodGet:
-		recs, err := h.service.ListRecordings(r.Context(), "")
+		recs, err := h.service.ListRecordings(r.Context(), "", userID, profileID, enforceOwner)
 		if err != nil {
 			writeLiveTVCompatError(w, err)
 			return
@@ -374,7 +392,7 @@ func (h *LiveTVHandler) HandleTimers(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "BadRequest", "Invalid request body")
 			return
 		}
-		rec := &livetv.Recording{Title: body.Name}
+		rec := &livetv.Recording{Title: body.Name, UserID: userID, ProfileID: profileID}
 		if body.ProgramID != "" {
 			if id, err := h.decodeProgramID(body.ProgramID); err == nil {
 				rec.ProgramID = id
@@ -406,6 +424,11 @@ func (h *LiveTVHandler) HandleTimers(w http.ResponseWriter, r *http.Request) {
 
 // HandleTimer serves GET|POST|DELETE /LiveTv/Timers/{id}.
 func (h *LiveTVHandler) HandleTimer(w http.ResponseWriter, r *http.Request) {
+	userID, profileID, ok := h.livetvOwner(w, r)
+	if !ok {
+		return
+	}
+	enforceOwner := true
 	timerID, err := h.decodeTimerID(chi.URLParam(r, "id"))
 	if err != nil {
 		writeError(w, http.StatusNotFound, "NotFound", "Timer not found")
@@ -413,7 +436,7 @@ func (h *LiveTVHandler) HandleTimer(w http.ResponseWriter, r *http.Request) {
 	}
 	switch r.Method {
 	case http.MethodGet:
-		rec, err := h.findRecording(r.Context(), timerID)
+		rec, err := h.findRecording(r.Context(), timerID, userID, profileID, enforceOwner)
 		if err != nil {
 			writeLiveTVCompatError(w, err)
 			return
@@ -426,7 +449,7 @@ func (h *LiveTVHandler) HandleTimer(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		// Jellyfin updates timers in place; Prairie cancels and recreates when
 		// schedule fields change. Absent body fields keep the existing timer.
-		existing, err := h.findRecording(r.Context(), timerID)
+		existing, err := h.findRecording(r.Context(), timerID, userID, profileID, enforceOwner)
 		if err != nil {
 			writeLiveTVCompatError(w, err)
 			return
@@ -437,7 +460,7 @@ func (h *LiveTVHandler) HandleTimer(w http.ResponseWriter, r *http.Request) {
 		}
 		writeJSON(w, http.StatusOK, h.timerDTO(*existing))
 	case http.MethodDelete:
-		if _, err := h.service.CancelRecording(r.Context(), timerID); err != nil {
+		if _, err := h.service.CancelRecording(r.Context(), timerID, userID, profileID, enforceOwner); err != nil {
 			writeLiveTVCompatError(w, err)
 			return
 		}
@@ -449,9 +472,14 @@ func (h *LiveTVHandler) HandleTimer(w http.ResponseWriter, r *http.Request) {
 
 // HandleSeriesTimers serves GET /LiveTv/SeriesTimers and POST /LiveTv/SeriesTimers.
 func (h *LiveTVHandler) HandleSeriesTimers(w http.ResponseWriter, r *http.Request) {
+	userID, profileID, ok := h.livetvOwner(w, r)
+	if !ok {
+		return
+	}
+	enforceOwner := true
 	switch r.Method {
 	case http.MethodGet:
-		rules, err := h.service.ListSeriesRules(r.Context())
+		rules, err := h.service.ListSeriesRules(r.Context(), userID, profileID, enforceOwner)
 		if err != nil {
 			writeLiveTVCompatError(w, err)
 			return
@@ -480,6 +508,8 @@ func (h *LiveTVHandler) HandleSeriesTimers(w http.ResponseWriter, r *http.Reques
 		}
 		rule := &livetv.SeriesRule{
 			SeriesID:   body.SeriesID,
+			UserID:     userID,
+			ProfileID:  profileID,
 			TitleMatch: body.Name,
 			NewOnly:    body.RecordNewOnly,
 			KeepLast:   body.KeepUpTo,
@@ -503,6 +533,11 @@ func (h *LiveTVHandler) HandleSeriesTimers(w http.ResponseWriter, r *http.Reques
 
 // HandleSeriesTimer serves GET|POST|DELETE /LiveTv/SeriesTimers/{id}.
 func (h *LiveTVHandler) HandleSeriesTimer(w http.ResponseWriter, r *http.Request) {
+	userID, profileID, ok := h.livetvOwner(w, r)
+	if !ok {
+		return
+	}
+	enforceOwner := true
 	ruleID, err := h.decodeSeriesTimerID(chi.URLParam(r, "id"))
 	if err != nil {
 		writeError(w, http.StatusNotFound, "NotFound", "Series timer not found")
@@ -510,7 +545,7 @@ func (h *LiveTVHandler) HandleSeriesTimer(w http.ResponseWriter, r *http.Request
 	}
 	switch r.Method {
 	case http.MethodGet, http.MethodPost:
-		rule, err := h.findSeriesRule(r.Context(), ruleID)
+		rule, err := h.findSeriesRule(r.Context(), ruleID, userID, profileID, enforceOwner)
 		if err != nil {
 			writeLiveTVCompatError(w, err)
 			return
@@ -521,7 +556,7 @@ func (h *LiveTVHandler) HandleSeriesTimer(w http.ResponseWriter, r *http.Request
 		}
 		writeJSON(w, http.StatusOK, h.seriesTimerDTO(*rule))
 	case http.MethodDelete:
-		if err := h.service.DeleteSeriesRule(r.Context(), ruleID); err != nil {
+		if err := h.service.DeleteSeriesRule(r.Context(), ruleID, userID, profileID, enforceOwner); err != nil {
 			writeLiveTVCompatError(w, err)
 			return
 		}
@@ -533,7 +568,12 @@ func (h *LiveTVHandler) HandleSeriesTimer(w http.ResponseWriter, r *http.Request
 
 // HandleRecordings serves GET /LiveTv/Recordings.
 func (h *LiveTVHandler) HandleRecordings(w http.ResponseWriter, r *http.Request) {
-	recs, err := h.service.ListRecordings(r.Context(), "completed")
+	userID, profileID, ok := h.livetvOwner(w, r)
+	if !ok {
+		return
+	}
+	enforceOwner := true
+	recs, err := h.service.ListRecordings(r.Context(), "completed", userID, profileID, enforceOwner)
 	if err != nil {
 		writeLiveTVCompatError(w, err)
 		return
@@ -625,11 +665,26 @@ func (h *LiveTVHandler) HandleLiveStreamFile(w http.ResponseWriter, r *http.Requ
 	if streamID == "" {
 		streamID = chi.URLParam(r, "streamId")
 	}
+	session := SessionFromContext(r.Context())
+	if session == nil {
+		writeError(w, http.StatusUnauthorized, "Unauthorized", "Missing authentication token")
+		return
+	}
 	h.mu.Lock()
 	stream, ok := h.streams[streamID]
 	h.mu.Unlock()
 	if !ok || stream == nil || stream.SourceURL == "" {
 		writeError(w, http.StatusNotFound, "NotFound", "Live stream not found")
+		return
+	}
+	// Same ownership gate as Close: knowing the UUID is not enough to pull or
+	// terminate another client's upstream tuner session.
+	if stream.OpenerToken != "" && stream.OpenerToken != session.Token {
+		writeError(w, http.StatusForbidden, "Forbidden", "Live stream belongs to another session")
+		return
+	}
+	if err := livetv.ValidateMediaFetchURL(stream.SourceURL); err != nil {
+		writeError(w, http.StatusBadGateway, "BadGateway", "Live stream source is not allowed")
 		return
 	}
 
@@ -687,7 +742,7 @@ func (h *LiveTVHandler) PlaybackMediaSource(ctx context.Context, session *Sessio
 	dto := mediaSourceDTO{
 		Protocol:             "Http",
 		ID:                   sourceID,
-		Path:                 ch.StreamURL,
+		Path:                 "",
 		Type:                 "Default",
 		Container:            "ts",
 		Name:                 channelDisplayName(*ch),
@@ -744,10 +799,13 @@ func (h *LiveTVHandler) mediaSourceForOpenStream(ctx context.Context, liveStream
 		name = channelDisplayName(*ch)
 	}
 	directURL := "/LiveTv/LiveStreamFiles/" + liveStreamID + "/stream.ts"
+	if stream.OpenerToken != "" {
+		directURL += "?api_key=" + url.QueryEscape(stream.OpenerToken)
+	}
 	return mediaSourceDTO{
 		Protocol:             "Http",
 		ID:                   h.codec.EncodeStringID(EncodedIDLiveTVChannel, channelID),
-		Path:                 stream.SourceURL,
+		Path:                 "",
 		Type:                 "Default",
 		Container:            "ts",
 		Name:                 name,
@@ -810,10 +868,13 @@ func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session,
 		name = channelDisplayName(*ch)
 	}
 	directURL := "/LiveTv/LiveStreamFiles/" + liveStreamID + "/stream.ts"
+	if openerToken != "" {
+		directURL += "?api_key=" + url.QueryEscape(openerToken)
+	}
 	return mediaSourceDTO{
 		Protocol:             "Http",
 		ID:                   h.codec.EncodeStringID(EncodedIDLiveTVChannel, channelID),
-		Path:                 sourceURL,
+		Path:                 "",
 		Type:                 "Default",
 		Container:            "ts",
 		Name:                 name,
@@ -848,7 +909,7 @@ func (h *LiveTVHandler) closeLiveStream(ctx context.Context, liveStreamID string
 		return
 	}
 	if stream.NativeSession != "" {
-		_, _ = h.service.ReleaseSession(ctx, stream.NativeSession)
+		_, _ = h.service.ReleaseSession(ctx, stream.NativeSession, 0, "", false)
 	}
 }
 
@@ -943,8 +1004,8 @@ func (h *LiveTVHandler) seriesTimerDTO(rule livetv.SeriesRule) timerInfoDTO {
 	return dto
 }
 
-func (h *LiveTVHandler) findRecording(ctx context.Context, id string) (*livetv.Recording, error) {
-	recs, err := h.service.ListRecordings(ctx, "")
+func (h *LiveTVHandler) findRecording(ctx context.Context, id string, userID int, profileID string, enforceOwner bool) (*livetv.Recording, error) {
+	recs, err := h.service.ListRecordings(ctx, "", userID, profileID, enforceOwner)
 	if err != nil {
 		return nil, err
 	}
@@ -956,8 +1017,8 @@ func (h *LiveTVHandler) findRecording(ctx context.Context, id string) (*livetv.R
 	return nil, nil
 }
 
-func (h *LiveTVHandler) findSeriesRule(ctx context.Context, id string) (*livetv.SeriesRule, error) {
-	rules, err := h.service.ListSeriesRules(ctx)
+func (h *LiveTVHandler) findSeriesRule(ctx context.Context, id string, userID int, profileID string, enforceOwner bool) (*livetv.SeriesRule, error) {
+	rules, err := h.service.ListSeriesRules(ctx, userID, profileID, enforceOwner)
 	if err != nil {
 		return nil, err
 	}

@@ -16,6 +16,7 @@ import (
 )
 
 func TestServiceAddTunerScansLineup(t *testing.T) {
+	allowLoopbackMediaFetch(t)
 	mux := http.NewServeMux()
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
@@ -158,6 +159,7 @@ func TestGuideSourceReorderPriorities(t *testing.T) {
 }
 
 func TestSyncGuideSourceXMLTVMapsChannels(t *testing.T) {
+	allowLoopbackMediaFetch(t)
 	xmlBody := `<?xml version="1.0" encoding="UTF-8"?>
 <tv>
   <channel id="KING"><display-name>KING-HD</display-name></channel>
@@ -263,6 +265,7 @@ func TestSyncGuideSourceMissingURL(t *testing.T) {
 }
 
 func TestPatchChannelAndScanErrors(t *testing.T) {
+	allowLoopbackMediaFetch(t)
 	mux := http.NewServeMux()
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
@@ -344,7 +347,7 @@ func TestStartAndReleaseChannelSession(t *testing.T) {
 		t.Fatalf("second session error = %v, want ErrNoTuner", err)
 	}
 
-	released, err := svc.ReleaseSession(context.Background(), session.ID)
+	released, err := svc.ReleaseSession(context.Background(), session.ID, 7, "profile-1", true)
 	if err != nil || released == nil || released.Status != "released" {
 		t.Fatalf("ReleaseSession = %+v err=%v", released, err)
 	}
@@ -361,9 +364,30 @@ func TestStartAndReleaseChannelSession(t *testing.T) {
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("missing channel = %v", err)
 	}
-	_, err = svc.ReleaseSession(context.Background(), "missing")
+	_, err = svc.ReleaseSession(context.Background(), "missing", 1, "p", true)
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("missing session = %v", err)
+	}
+
+	_, err = svc.ReleaseSession(context.Background(), session2.ID, 99, "other-profile", true)
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("cross-user ReleaseSession = %v, want ErrNotFound", err)
+	}
+	_, err = svc.ReleaseSession(context.Background(), session2.ID, 7, "profile-1", true)
+	if err != nil {
+		t.Fatalf("owner ReleaseSession: %v", err)
+	}
+
+	// Legacy/unscoped sessions must not be releasable by arbitrary callers.
+	unscoped, err := store.CreateSession(context.Background(), SessionCreate{
+		ChannelID: "ch1", TunerID: "t1", TunerIndex: 0, UserID: 0, ProfileID: "",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession unscoped: %v", err)
+	}
+	_, err = svc.ReleaseSession(context.Background(), unscoped.ID, 7, "profile-1", true)
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("unscoped ReleaseSession = %v, want ErrNotFound", err)
 	}
 }
 
@@ -424,16 +448,16 @@ func TestScheduleCancelAndFailDueRecordings(t *testing.T) {
 		t.Fatalf("missing program = %v", err)
 	}
 
-	listed, err := svc.ListRecordings(context.Background(), "scheduled")
+	listed, err := svc.ListRecordings(context.Background(), "scheduled", 0, "", false)
 	if err != nil || len(listed) != 2 {
 		t.Fatalf("ListRecordings = %+v err=%v", listed, err)
 	}
 
-	cancelled, err := svc.CancelRecording(context.Background(), manual.ID)
+	cancelled, err := svc.CancelRecording(context.Background(), manual.ID, 0, "", false)
 	if err != nil || cancelled.Status != "cancelled" {
 		t.Fatalf("CancelRecording = %+v err=%v", cancelled, err)
 	}
-	_, err = svc.CancelRecording(context.Background(), "missing")
+	_, err = svc.CancelRecording(context.Background(), "missing", 0, "", false)
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("CancelRecording missing = %v", err)
 	}
@@ -442,7 +466,7 @@ func TestScheduleCancelAndFailDueRecordings(t *testing.T) {
 	if err != nil || n != 1 {
 		t.Fatalf("FailDueRecordings = %d, %v", n, err)
 	}
-	due, _ := store.GetRecording(rec.ID)
+	due, _ := store.GetRecording(context.Background(), rec.ID)
 	if due == nil || due.Status != "failed" || due.LastError == "" {
 		t.Fatalf("due recording = %+v", due)
 	}
@@ -485,7 +509,7 @@ func TestSeriesRulesApplyAndCRUD(t *testing.T) {
 	if err := svc.ApplySeriesRules(context.Background()); err != nil {
 		t.Fatalf("ApplySeriesRules: %v", err)
 	}
-	recs, _ := svc.ListRecordings(context.Background(), "")
+	recs, _ := svc.ListRecordings(context.Background(), "", 0, "", false)
 	if len(recs) != 1 || recs[0].ProgramID != "p-new" || recs[0].SeriesRuleID != rule.ID {
 		t.Fatalf("recordings after apply = %+v", recs)
 	}
@@ -494,19 +518,19 @@ func TestSeriesRulesApplyAndCRUD(t *testing.T) {
 	if err := svc.ApplySeriesRules(context.Background()); err != nil {
 		t.Fatalf("ApplySeriesRules second: %v", err)
 	}
-	recs, _ = svc.ListRecordings(context.Background(), "")
+	recs, _ = svc.ListRecordings(context.Background(), "", 0, "", false)
 	if len(recs) != 1 {
 		t.Fatalf("duplicate recordings = %+v", recs)
 	}
 
-	rules, err := svc.ListSeriesRules(context.Background())
+	rules, err := svc.ListSeriesRules(context.Background(), 0, "", false)
 	if err != nil || len(rules) != 1 {
 		t.Fatalf("ListSeriesRules = %+v err=%v", rules, err)
 	}
-	if err := svc.DeleteSeriesRule(context.Background(), rule.ID); err != nil {
+	if err := svc.DeleteSeriesRule(context.Background(), rule.ID, 0, "", false); err != nil {
 		t.Fatalf("DeleteSeriesRule: %v", err)
 	}
-	rules, _ = svc.ListSeriesRules(context.Background())
+	rules, _ = svc.ListSeriesRules(context.Background(), 0, "", false)
 	if len(rules) != 0 {
 		t.Fatalf("rules after delete = %+v", rules)
 	}
@@ -538,7 +562,7 @@ func TestApplySeriesRulesSkipsPreloadedPairs(t *testing.T) {
 	if err := svc.ApplySeriesRules(context.Background()); err != nil {
 		t.Fatalf("ApplySeriesRules: %v", err)
 	}
-	recs, err := svc.ListRecordings(context.Background(), "")
+	recs, err := svc.ListRecordings(context.Background(), "", 0, "", false)
 	if err != nil {
 		t.Fatalf("ListRecordings: %v", err)
 	}
@@ -1171,7 +1195,7 @@ func (s *memoryStore) DeleteSeriesRule(_ context.Context, id string) error {
 	return nil
 }
 
-func (s *memoryStore) GetRecording(id string) (*Recording, error) {
+func (s *memoryStore) GetRecording(_ context.Context, id string) (*Recording, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	rec, ok := s.recordings[id]
@@ -1179,6 +1203,16 @@ func (s *memoryStore) GetRecording(id string) (*Recording, error) {
 		return nil, nil
 	}
 	return &rec, nil
+}
+
+func (s *memoryStore) GetSeriesRule(_ context.Context, id string) (*SeriesRule, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rule, ok := s.rules[id]
+	if !ok {
+		return nil, nil
+	}
+	return &rule, nil
 }
 
 func (s *memoryStore) channelCountLocked(tunerID string) int {

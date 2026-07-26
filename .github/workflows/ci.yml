@@ -17,6 +17,71 @@ env:
   COVER_MIN: "75"
 
 jobs:
+  go-lint:
+    name: Go lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+          # only-new-issues needs full history vs the PR base.
+          fetch-depth: 0
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Stub web/dist for embed
+        run: |
+          mkdir -p web/dist
+          printf '%s\n' '<!doctype html><title>prairie</title>' > web/dist/index.html
+
+      - name: golangci-lint (new issues only)
+        uses: golangci/golangci-lint-action@v8
+        with:
+          version: latest
+          only-new-issues: true
+          args: --timeout=10m
+
+  web-lint:
+    name: Web lint + format
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: ESLint
+        run: pnpm exec eslint . --max-warnings 200
+
+      - name: Prettier check
+        run: pnpm run format:check
+
+      - name: Typecheck (tsc -b)
+        run: pnpm exec tsc -b --pretty false
+
   go-test-coverage:
     name: Go tests + coverage
     runs-on: ubuntu-latest
@@ -35,18 +100,30 @@ jobs:
       - name: Run unit tests with coverage
         run: |
           set -euo pipefail
-          # Scope CI to Live TV packages this PR owns. `go test ./...` currently
-          # fails on unrelated suites (playback_v3 seek recovery, web embed
-          # without a built dist/) and is not gated on main (no prior ci.yml).
-          # Full suite remains: `make test-coverage` locally (after `pnpm run build`
-          # in web/ so embed finds dist/).
+          # Scope CI to packages listed in .github/coverage-packages.txt (plus
+          # jellycompat / LiveTV handlers for integration-ish coverage).
+          # `go test ./...` currently fails on unrelated suites (playback_v3
+          # seek recovery, web embed without a built dist/) and is not gated
+          # on main. Full suite remains: `make test-coverage` locally (after
+          # `pnpm run build` in web/ so embed finds dist/).
           #
-          # coverage.out must include packages listed in
-          # .github/coverage-packages.txt (internal/livetv, …/hdhomerun).
-          #
+          # coverage.out must include every package in coverage-packages.txt.
           # imageutil is CGO-free (embedded WASI) — keep a smoke gate here so the
           # committed .wasm cannot rot without CI noticing.
-          go test ./internal/livetv/... ./internal/jellycompat/... ./internal/imageutil/ \
+          go test \
+            ./internal/livetv/... \
+            ./internal/jellycompat/... \
+            ./internal/imageutil/ \
+            ./internal/contentid/... \
+            ./internal/librarykind/... \
+            ./internal/logredact/... \
+            ./internal/logfilter/... \
+            ./internal/titleutil/... \
+            ./internal/lang/... \
+            ./internal/rootcheck/... \
+            ./internal/secret/... \
+            ./internal/providerid/... \
+            ./internal/buildinfo/... \
             -count=1 -covermode=atomic -coverprofile=coverage.out
           # Native Live TV HTTP handlers live in internal/api/handlers; run only
           # those tests so we do not pull in the full handlers suite.
@@ -106,11 +183,14 @@ jobs:
         run: pnpm run lint
 
       # Vitest coverage thresholds (75% statements/lines/functions/branches) apply
-      # only to src/lib/liveTVGuide.ts (see vite.config.ts coverage.include).
+      # to the include list in web/vite.config.ts (pure helpers under src/lib/).
       # Expand that list as more modules gain unit tests rather than gating the
       # entire web tree, which is still well below 75% overall.
       - name: Run Vitest with coverage
         run: pnpm exec vitest run --coverage
+
+      - name: npm audit (production deps)
+        run: pnpm audit --prod --audit-level=high
 
       - name: Upload web coverage
         if: always()
@@ -119,3 +199,33 @@ jobs:
           name: web-coverage
           path: web/coverage
           if-no-files-found: ignore
+
+  go-vulncheck:
+    name: Go vulnerability check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      # bimg (libvips) is still a CGO dep on this branch; govulncheck loads
+      # packages and needs the same headers as the Go test job.
+      - name: Install libvips (CGO image deps)
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libvips-dev pkg-config
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
+
+      - name: Run govulncheck
+        # Use the same toolchain as go.mod (setup-go already installed it).
+        run: |
+          "$(go env GOPATH)/bin/govulncheck" ./...

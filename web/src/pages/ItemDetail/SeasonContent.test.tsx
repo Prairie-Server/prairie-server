@@ -107,7 +107,11 @@ vi.mock("./components/ActionBar", () => ({
 vi.mock("@/hooks/useOverlayPrefs", async () => {
   const { buildDefaultPrefs } = await import("@/lib/overlays/schema");
   return {
-    useOverlayPrefs: () => ({ prefs: buildDefaultPrefs(), enabled: true, setPrefs: () => undefined }),
+    useOverlayPrefs: () => ({
+      prefs: buildDefaultPrefs(),
+      enabled: true,
+      setPrefs: () => undefined,
+    }),
   };
 });
 

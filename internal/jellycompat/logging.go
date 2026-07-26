@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"sync"
 	"time"
@@ -16,6 +17,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+
+	"github.com/prairie-server/prairie-server/internal/activitylog"
 )
 
 type loggingResponseWriter struct {
@@ -195,7 +198,7 @@ func newDebugLogMiddleware(logFile io.Writer, userAgentFilter string) func(http.
 			fmt.Fprintf(logFile, "=== %s %s %s [%s] %dms ===\n",
 				start.Format("2006/01/02 15:04:05"),
 				r.Method,
-				r.URL.String(),
+				redactDebugURL(r.URL),
 				reqID,
 				elapsed.Milliseconds(),
 			)
@@ -222,6 +225,13 @@ func newDebugLogMiddleware(logFile io.Writer, userAgentFilter string) func(http.
 			fmt.Fprintln(logFile)
 		})
 	}
+}
+
+func redactDebugURL(u *url.URL) string {
+	if u == nil {
+		return ""
+	}
+	return activitylog.RedactSecretQuery(u.RequestURI())
 }
 
 // writeIndentedJSON pretty-prints b if it's valid JSON, otherwise writes it as

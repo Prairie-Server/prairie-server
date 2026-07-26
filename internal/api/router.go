@@ -2198,6 +2198,8 @@ func NewRouter(deps Dependencies) chi.Router {
 						r.Group(func(r chi.Router) {
 							r.Use(apimw.RequireProfile)
 							r.Post("/channels/{channelId}/session", liveTVHandler.HandleStartChannelSession)
+							r.Get("/sessions/{sessionId}/stream", liveTVHandler.HandleSessionStream)
+							r.Method(http.MethodHead, "/sessions/{sessionId}/stream", http.HandlerFunc(liveTVHandler.HandleSessionStream))
 							r.Delete("/sessions/{sessionId}", liveTVHandler.HandleReleaseSession)
 							r.Post("/recordings", liveTVHandler.HandleScheduleRecording)
 							r.Delete("/recordings/{recordingId}", liveTVHandler.HandleCancelRecording)

@@ -161,18 +161,20 @@ function ChannelsTab() {
       {channels.isLoading ? (
         <p className="text-muted-foreground text-sm">Loading channels…</p>
       ) : sorted.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No channels yet. Add and scan a tuner first.</p>
+        <p className="text-muted-foreground text-sm">
+          No channels yet. Add and scan a tuner first.
+        </p>
       ) : (
         <ul className="divide-border divide-y border-y">
           {sorted.map((channel) => {
-            const stationValue =
-              stationDrafts[channel.id] ?? channel.guide_station_id ?? "";
+            const stationValue = stationDrafts[channel.id] ?? channel.guide_station_id ?? "";
             return (
               <li key={channel.id} className="grid gap-3 py-4 sm:grid-cols-[1fr_auto]">
                 <div className="space-y-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">
-                      {channel.number_override || channel.number} · {channel.callsign || channel.name}
+                      {channel.number_override || channel.number} ·{" "}
+                      {channel.callsign || channel.name}
                     </span>
                     {channel.hd ? <Badge variant="secondary">HD</Badge> : null}
                   </div>
@@ -200,7 +202,10 @@ function ChannelsTab() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 self-start sm:self-center">
-                  <Label htmlFor={`enabled-${channel.id}`} className="text-muted-foreground text-sm">
+                  <Label
+                    htmlFor={`enabled-${channel.id}`}
+                    className="text-muted-foreground text-sm"
+                  >
                     Enabled
                   </Label>
                   <Switch
@@ -276,7 +281,11 @@ function GuideTab() {
         </div>
         <Button
           onClick={addXMLTV}
-          disabled={createSource.isPending || !xmltvURL.trim() || (sources.data?.filter((s) => s.enabled).length ?? 0) >= 3}
+          disabled={
+            createSource.isPending ||
+            !xmltvURL.trim() ||
+            (sources.data?.filter((s) => s.enabled).length ?? 0) >= 3
+          }
         >
           <Plus />
           {createSource.isPending ? "Adding…" : "Add XMLTV source"}
@@ -300,7 +309,9 @@ function GuideTab() {
                 </div>
                 <p className="text-muted-foreground truncate text-xs">
                   {source.config?.url || "No URL"}
-                  {source.last_sync_at ? ` · last sync ${new Date(source.last_sync_at).toLocaleString()}` : ""}
+                  {source.last_sync_at
+                    ? ` · last sync ${new Date(source.last_sync_at).toLocaleString()}`
+                    : ""}
                 </p>
                 {source.last_error ? (
                   <p className="text-destructive text-xs">{source.last_error}</p>
@@ -308,7 +319,10 @@ function GuideTab() {
               </div>
               <div className="flex flex-wrap items-center gap-2">
                 <div className="flex items-center gap-2">
-                  <Label htmlFor={`source-enabled-${source.id}`} className="text-muted-foreground text-sm">
+                  <Label
+                    htmlFor={`source-enabled-${source.id}`}
+                    className="text-muted-foreground text-sm"
+                  >
                     Enabled
                   </Label>
                   <Switch
@@ -418,7 +432,9 @@ export default function AdminLiveTV() {
             </h1>
             <Badge variant="secondary">{tuners.data?.length ?? 0} tuners</Badge>
             <Badge variant="outline">{channels.data?.length ?? 0} channels</Badge>
-            <Badge variant="outline">{sources.data?.filter((s) => s.enabled).length ?? 0}/3 guides</Badge>
+            <Badge variant="outline">
+              {sources.data?.filter((s) => s.enabled).length ?? 0}/3 guides
+            </Badge>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm leading-6">
             Configure HDHomeRun OTA tuners, map channels to guide stations, and keep the EPG fresh
