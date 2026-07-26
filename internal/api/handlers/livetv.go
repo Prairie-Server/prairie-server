@@ -57,6 +57,23 @@ func (h *LiveTVHandler) HandleAddTuner(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, tuner)
 }
 
+func (h *LiveTVHandler) HandleDiscoverTuners(w http.ResponseWriter, r *http.Request) {
+	var body livetv.DiscoverTunersRequest
+	if r.Body != nil {
+		dec := json.NewDecoder(io.LimitReader(r.Body, 1<<20))
+		if err := dec.Decode(&body); err != nil && !errors.Is(err, io.EOF) {
+			writeError(w, http.StatusBadRequest, "invalid_body", "invalid JSON body")
+			return
+		}
+	}
+	result, err := h.service.DiscoverTuners(r.Context(), body)
+	if err != nil {
+		writeLiveTVError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
 func (h *LiveTVHandler) HandleDeleteTuner(w http.ResponseWriter, r *http.Request) {
 	if err := h.service.DeleteTuner(r.Context(), chi.URLParam(r, "tunerId")); err != nil {
 		writeLiveTVError(w, err)

@@ -2264,6 +2264,24 @@ export interface LiveTVTunersResponse {
   tuners: LiveTVTuner[];
 }
 
+export interface LiveTVDiscoveredTuner {
+  kind: "hdhomerun" | "dispatcharr" | string;
+  device_id: string;
+  friendly_name: string;
+  model: string;
+  firmware: string;
+  tuner_count: number;
+  discover_url: string;
+  base_url: string;
+  source: "udp" | "probe" | string;
+  already_added: boolean;
+}
+
+export interface LiveTVDiscoverTunersResponse {
+  candidates: LiveTVDiscoveredTuner[];
+  notes?: string[];
+}
+
 export interface LiveTVChannel {
   id: string;
   tuner_id: string;

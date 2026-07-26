@@ -8,10 +8,41 @@ import (
 const (
 	MaxGuideSources = 3
 
-	TunerTypeHDHomeRun        = "hdhomerun"
-	GuideSourceXMLTVURL       = "xmltv_url"
+	TunerTypeHDHomeRun         = "hdhomerun"
+	GuideSourceXMLTVURL        = "xmltv_url"
 	GuideSourceSchedulesDirect = "schedules_direct"
+
+	DiscoveredKindHDHomeRun   = "hdhomerun"
+	DiscoveredKindDispatcharr = "dispatcharr"
 )
+
+// DiscoveredTuner is a candidate returned by admin discovery (not yet saved).
+type DiscoveredTuner struct {
+	Kind         string `json:"kind"`
+	DeviceID     string `json:"device_id"`
+	FriendlyName string `json:"friendly_name"`
+	Model        string `json:"model"`
+	Firmware     string `json:"firmware"`
+	TunerCount   int    `json:"tuner_count"`
+	DiscoverURL  string `json:"discover_url"`
+	BaseURL      string `json:"base_url"`
+	Source       string `json:"source"` // udp | probe
+	AlreadyAdded bool   `json:"already_added"`
+}
+
+type DiscoverTunersRequest struct {
+	// TimeoutMs bounds the UDP listen window (default 2000, max 10000).
+	TimeoutMs int `json:"timeout_ms,omitempty"`
+	// IncludeUDP enables SiliconDust HDHomeRun UDP broadcast discovery.
+	IncludeUDP *bool `json:"include_udp,omitempty"`
+	// ProbeURLs are Dispatcharr / HDHR base URLs to HTTP-probe for discover.json.
+	ProbeURLs []string `json:"probe_urls,omitempty"`
+}
+
+type DiscoverTunersResult struct {
+	Candidates []DiscoveredTuner `json:"candidates"`
+	Notes      []string          `json:"notes,omitempty"`
+}
 
 type Tuner struct {
 	ID           string     `json:"id"`
@@ -37,7 +68,7 @@ type Channel struct {
 	Name           string  `json:"name"`
 	LogoURL        string  `json:"logo_url"`
 	HD             bool    `json:"hd"`
-	Enabled bool `json:"enabled"`
+	Enabled        bool    `json:"enabled"`
 	// StreamURL is the upstream tuner URL. MarshalJSON always emits stream_url
 	// as an empty string so the /api/v1 field remains additive without leaking
 	// private tuner addresses.
@@ -87,15 +118,15 @@ type Program struct {
 }
 
 type LiveSession struct {
-	ID                string     `json:"id"`
-	ChannelID         string     `json:"channel_id"`
-	TunerID           string     `json:"tuner_id"`
-	TunerIndex        int        `json:"tuner_index"`
-	UserID            int        `json:"user_id,omitempty"`
-	ProfileID         string     `json:"profile_id,omitempty"`
-	PlaybackSessionID string     `json:"playback_session_id,omitempty"`
-	Status string `json:"status"`
-	HLSURL string `json:"hls_url,omitempty"`
+	ID                string `json:"id"`
+	ChannelID         string `json:"channel_id"`
+	TunerID           string `json:"tuner_id"`
+	TunerIndex        int    `json:"tuner_index"`
+	UserID            int    `json:"user_id,omitempty"`
+	ProfileID         string `json:"profile_id,omitempty"`
+	PlaybackSessionID string `json:"playback_session_id,omitempty"`
+	Status            string `json:"status"`
+	HLSURL            string `json:"hls_url,omitempty"`
 	// StreamURL may hold an upstream URL in memory; MarshalJSON emits the
 	// authenticated proxy path (or empty) so clients never receive tuner URLs.
 	StreamURL  string     `json:"-"`
@@ -127,19 +158,19 @@ func (s LiveSession) MarshalJSON() ([]byte, error) {
 }
 
 type Recording struct {
-	ID             string    `json:"id"`
-	ProgramID      string    `json:"program_id,omitempty"`
-	ChannelID      string    `json:"channel_id"`
-	SeriesRuleID   string    `json:"series_rule_id,omitempty"`
-	UserID         int       `json:"user_id,omitempty"`
-	ProfileID      string    `json:"profile_id,omitempty"`
-	Status         string    `json:"status"`
-	Path           string    `json:"path,omitempty"`
-	LibraryItemID  string    `json:"library_item_id,omitempty"`
-	Start          time.Time `json:"start"`
-	Stop           time.Time `json:"stop"`
-	Title          string    `json:"title"`
-	LastError      string    `json:"last_error,omitempty"`
+	ID            string    `json:"id"`
+	ProgramID     string    `json:"program_id,omitempty"`
+	ChannelID     string    `json:"channel_id"`
+	SeriesRuleID  string    `json:"series_rule_id,omitempty"`
+	UserID        int       `json:"user_id,omitempty"`
+	ProfileID     string    `json:"profile_id,omitempty"`
+	Status        string    `json:"status"`
+	Path          string    `json:"path,omitempty"`
+	LibraryItemID string    `json:"library_item_id,omitempty"`
+	Start         time.Time `json:"start"`
+	Stop          time.Time `json:"stop"`
+	Title         string    `json:"title"`
+	LastError     string    `json:"last_error,omitempty"`
 }
 
 type SeriesRule struct {
