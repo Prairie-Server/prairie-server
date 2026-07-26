@@ -33,10 +33,10 @@ const (
 )
 
 const (
-	defaultMaxSourceBytes = 64 << 20 // 64 MiB
-	defaultTimeout        = 30 * time.Second
-	defaultConcurrency    = 4
-	defaultMaxMemoryPages = 8192 // 512 MiB
+	defaultMaxSourceBytes = 64 << 20          // 64 MiB
+	defaultTimeout        = 120 * time.Second // AVIF encode in WASM can be slow
+	defaultConcurrency    = 2                 // AVIF is CPU-heavy; keep fan-out modest
+	defaultMaxMemoryPages = 8192              // 512 MiB
 	defaultMaxLogBytes    = 64 << 10
 )
 
@@ -82,8 +82,9 @@ type manifest struct {
 }
 
 type manifestVariant struct {
-	Key  string `json:"key"`
-	File string `json:"file"`
+	Key      string  `json:"key"`
+	File     string  `json:"file"`
+	AVIFFile *string `json:"avif_file"`
 }
 
 var (
@@ -215,7 +216,19 @@ func (p *processor) run(ctx context.Context, mode string, data []byte, extraArgs
 		if err != nil {
 			return nil, fmt.Errorf("imageutil: read variant %s: %w", v.Key, err)
 		}
-		variants = append(variants, Variant{Key: v.Key, Data: raw})
+		item := Variant{Key: v.Key, Data: raw}
+		if v.AVIFFile != nil && *v.AVIFFile != "" {
+			name := *v.AVIFFile
+			if strings.Contains(name, "..") || filepath.Base(name) != name {
+				return nil, fmt.Errorf("imageutil: invalid avif manifest entry %+v", v)
+			}
+			avifRaw, err := os.ReadFile(filepath.Join(outDir, name))
+			if err != nil {
+				return nil, fmt.Errorf("imageutil: read avif variant %s: %w", v.Key, err)
+			}
+			item.AVIF = avifRaw
+		}
+		variants = append(variants, item)
 	}
 	return &VariantResult{Variants: variants, Ext: man.Ext}, nil
 }

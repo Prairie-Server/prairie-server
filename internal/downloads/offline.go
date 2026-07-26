@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/prairie-server/prairie-server/internal/subtitles"
@@ -134,35 +135,58 @@ func (s *Service) ServeArtwork(ctx context.Context, w http.ResponseWriter, r *ht
 	return s.streamArtwork(ctx, w, r, url)
 }
 
-func (s *Service) streamArtwork(ctx context.Context, w http.ResponseWriter, _ *http.Request, url string) error {
+func (s *Service) streamArtwork(ctx context.Context, w http.ResponseWriter, r *http.Request, url string) error {
 	client := s.httpClient
 	if client == nil {
 		client = http.DefaultClient
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return fmt.Errorf("building artwork request: %w", err)
+	candidates := []string{url}
+	if r != nil && artworkkey.PrefersAVIF(r.Header.Get("Accept")) {
+		if avifURL := artworkkey.FormatSibling(url, ".avif"); avifURL != "" && avifURL != url {
+			candidates = []string{avifURL, url}
+		}
 	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("fetching artwork: %w", err)
+	var lastErr error
+	for i, candidate := range candidates {
+		req, err := http.NewRequestWithContext(ctx, http.MethodGet, candidate, nil)
+		if err != nil {
+			return fmt.Errorf("building artwork request: %w", err)
+		}
+		resp, err := client.Do(req)
+		if err != nil {
+			lastErr = fmt.Errorf("fetching artwork: %w", err)
+			continue
+		}
+		if resp.StatusCode != http.StatusOK {
+			_ = resp.Body.Close()
+			lastErr = fmt.Errorf("artwork upstream status %d: %w", resp.StatusCode, ErrAssetNotFound)
+			continue
+		}
+		if ct := resp.Header.Get("Content-Type"); ct != "" {
+			w.Header().Set("Content-Type", ct)
+		}
+		if cl := resp.Header.Get("Content-Length"); cl != "" {
+			w.Header().Set("Content-Length", cl)
+		}
+		if len(candidates) > 1 {
+			w.Header().Set("Vary", "Accept")
+		}
+		// Artwork is immutable for a stored manifest; let the client cache it once.
+		w.Header().Set("Cache-Control", "private, max-age=31536000, immutable")
+		_, copyErr := io.Copy(w, resp.Body)
+		_ = resp.Body.Close()
+		if copyErr != nil {
+			return fmt.Errorf("streaming artwork: %w", copyErr)
+		}
+		if i == 0 && candidate != url {
+			// Served AVIF upgrade.
+		}
+		return nil
 	}
-	defer func() { _ = resp.Body.Close() }()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("artwork upstream status %d: %w", resp.StatusCode, ErrAssetNotFound)
+	if lastErr != nil {
+		return lastErr
 	}
-	if ct := resp.Header.Get("Content-Type"); ct != "" {
-		w.Header().Set("Content-Type", ct)
-	}
-	if cl := resp.Header.Get("Content-Length"); cl != "" {
-		w.Header().Set("Content-Length", cl)
-	}
-	// Artwork is immutable for a stored manifest; let the client cache it once.
-	w.Header().Set("Cache-Control", "private, max-age=31536000, immutable")
-	if _, err := io.Copy(w, resp.Body); err != nil {
-		return fmt.Errorf("streaming artwork: %w", err)
-	}
-	return nil
+	return ErrAssetNotFound
 }
 
 // ServeSubtitle streams a subtitle asset (external sidecar or downloaded S3 file)

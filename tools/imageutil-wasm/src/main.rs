@@ -1,8 +1,8 @@
 //! Prairie imageutil WASI helper.
 //!
-//! Reads an image from `--input`, writes WebP (or PNG) variants into `--outdir`,
-//! and emits a small JSON manifest on stdout. Built for wasm32-wasip1 and run
-//! in-process by `internal/imageutil` via wazero.
+//! Reads an image from `--input`, writes WebP and optional AVIF variants into
+//! `--outdir`, and emits a small JSON manifest on stdout. Built for
+//! wasm32-wasip1 and run in-process by `internal/imageutil` via wazero.
 
 use std::fs;
 use std::path::{Path, PathBuf};
@@ -11,6 +11,7 @@ use std::process::ExitCode;
 use clap::{Parser, ValueEnum};
 use image::imageops::FilterType;
 use image::{DynamicImage, GenericImageView, ImageBuffer, ImageFormat, Rgba, RgbaImage};
+use ravif::{Encoder as AvifEncoder, Img, RGBA8};
 use resvg::tiny_skia;
 use resvg::usvg::{Options as UsvgOptions, Tree};
 use serde::Serialize;
@@ -18,9 +19,9 @@ use zenwebp::{EncodeRequest, LossyConfig, PixelLayout};
 
 #[derive(Debug, Clone, ValueEnum)]
 enum Mode {
-    /// Re-encode original (capped) + width variants as WebP.
+    /// Re-encode original (capped) + width variants.
     Variants,
-    /// Center-crop to square, then emit square original + size variants as WebP.
+    /// Center-crop to square, then emit square original + size variants.
     SquareVariants,
     /// Re-encode as PNG scaled within max-dim (thumbhash normalize path).
     NormalizePng,
@@ -46,7 +47,7 @@ struct Args {
     #[arg(long, value_delimiter = ',')]
     sizes: Vec<u32>,
 
-    /// WebP quality 1–100 (default 90).
+    /// WebP/AVIF quality 1–100 (default 90).
     #[arg(long, default_value_t = 90)]
     quality: u8,
 
@@ -57,10 +58,15 @@ struct Args {
     /// Cap longest dimension for `normalize-png` (default 100).
     #[arg(long, default_value_t = 100)]
     max_dim: u32,
+
+    /// Output formats for variants/square-variants: webp,avif (default both).
+    #[arg(long, value_delimiter = ',', default_value = "webp,avif")]
+    formats: Vec<String>,
 }
 
 #[derive(Serialize)]
 struct Manifest {
+    /// Canonical extension used for cache keys / revision identity (WebP).
     ext: String,
     variants: Vec<ManifestVariant>,
 }
@@ -69,6 +75,13 @@ struct Manifest {
 struct ManifestVariant {
     key: String,
     file: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    avif_file: Option<String>,
+}
+
+struct FormatFlags {
+    webp: bool,
+    avif: bool,
 }
 
 fn main() -> ExitCode {
@@ -102,16 +115,41 @@ fn run() -> Result<(), String> {
     Ok(())
 }
 
+fn parse_formats(raw: &[String]) -> Result<FormatFlags, String> {
+    let mut flags = FormatFlags {
+        webp: false,
+        avif: false,
+    };
+    for item in raw {
+        match item.trim().to_ascii_lowercase().as_str() {
+            "" => {}
+            "webp" => flags.webp = true,
+            "avif" => flags.avif = true,
+            other => return Err(format!("unknown format {other:?} (want webp and/or avif)")),
+        }
+    }
+    if !flags.webp && !flags.avif {
+        return Err("formats must include webp and/or avif".into());
+    }
+    // Canonical cache keys stay WebP; AVIF is always a sibling upgrade.
+    if flags.avif && !flags.webp {
+        flags.webp = true;
+    }
+    Ok(flags)
+}
+
 fn process_variants(img: &DynamicImage, args: &Args) -> Result<Manifest, String> {
+    let formats = parse_formats(&args.formats)?;
     let mut variants = Vec::with_capacity(args.widths.len() + 1);
 
     let original = fit_within(img, args.max_original);
-    let original_name = "original.webp";
-    write_webp(&args.outdir.join(original_name), &original, args.quality)?;
-    variants.push(ManifestVariant {
-        key: "original".into(),
-        file: original_name.into(),
-    });
+    variants.push(write_variant_pair(
+        &args.outdir,
+        "original",
+        &original,
+        args.quality,
+        &formats,
+    )?);
 
     let mut widths = args.widths.clone();
     widths.sort_unstable_by(|a, b| b.cmp(a));
@@ -125,12 +163,13 @@ fn process_variants(img: &DynamicImage, args: &Args) -> Result<Manifest, String>
         } else {
             img.clone()
         };
-        let name = format!("w{w}.webp");
-        write_webp(&args.outdir.join(&name), &out, args.quality)?;
-        variants.push(ManifestVariant {
-            key: format!("w{w}"),
-            file: name,
-        });
+        variants.push(write_variant_pair(
+            &args.outdir,
+            &format!("w{w}"),
+            &out,
+            args.quality,
+            &formats,
+        )?);
     }
 
     Ok(Manifest {
@@ -140,16 +179,18 @@ fn process_variants(img: &DynamicImage, args: &Args) -> Result<Manifest, String>
 }
 
 fn process_square_variants(img: &DynamicImage, args: &Args) -> Result<Manifest, String> {
+    let formats = parse_formats(&args.formats)?;
     let square = center_crop_square(img)?;
     let square_size = square.width();
     let mut variants = Vec::with_capacity(args.sizes.len() + 1);
 
-    let original_name = "original.webp";
-    write_webp(&args.outdir.join(original_name), &square, args.quality)?;
-    variants.push(ManifestVariant {
-        key: "original".into(),
-        file: original_name.into(),
-    });
+    variants.push(write_variant_pair(
+        &args.outdir,
+        "original",
+        &square,
+        args.quality,
+        &formats,
+    )?);
 
     let mut sizes = args.sizes.clone();
     sizes.sort_unstable_by(|a, b| b.cmp(a));
@@ -167,12 +208,13 @@ fn process_square_variants(img: &DynamicImage, args: &Args) -> Result<Manifest, 
                 FilterType::Triangle,
             ))
         };
-        let name = format!("w{size}.webp");
-        write_webp(&args.outdir.join(&name), &out, args.quality)?;
-        variants.push(ManifestVariant {
-            key: format!("w{size}"),
-            file: name,
-        });
+        variants.push(write_variant_pair(
+            &args.outdir,
+            &format!("w{size}"),
+            &out,
+            args.quality,
+            &formats,
+        )?);
     }
 
     Ok(Manifest {
@@ -191,7 +233,31 @@ fn process_normalize_png(img: &DynamicImage, args: &Args) -> Result<Manifest, St
         variants: vec![ManifestVariant {
             key: "normalized".into(),
             file: name.into(),
+            avif_file: None,
         }],
+    })
+}
+
+fn write_variant_pair(
+    outdir: &Path,
+    key: &str,
+    img: &DynamicImage,
+    quality: u8,
+    formats: &FormatFlags,
+) -> Result<ManifestVariant, String> {
+    let webp_name = format!("{key}.webp");
+    write_webp(&outdir.join(&webp_name), img, quality)?;
+    let avif_file = if formats.avif {
+        let avif_name = format!("{key}.avif");
+        write_avif(&outdir.join(&avif_name), img, quality)?;
+        Some(avif_name)
+    } else {
+        None
+    };
+    Ok(ManifestVariant {
+        key: key.into(),
+        file: webp_name,
+        avif_file,
     })
 }
 
@@ -217,11 +283,9 @@ fn rasterize_svg(data: &[u8]) -> Result<DynamicImage, String> {
     let size = tree.size().to_int_size();
     let mut width = size.width().max(1);
     let mut height = size.height().max(1);
-    // Cap enormous SVGs before allocating a pixmap (matches artwork cache needs).
     const MAX_SVG_EDGE: u32 = 4096;
     if width > MAX_SVG_EDGE || height > MAX_SVG_EDGE {
         let scale = MAX_SVG_EDGE as f32 / width.max(height) as f32;
-        // Use float scale via pixmap size only; resvg fit is handled by pixmap dims.
         width = ((width as f32) * scale).round().max(1.0) as u32;
         height = ((height as f32) * scale).round().max(1.0) as u32;
     }
@@ -267,7 +331,6 @@ fn center_crop_square(img: &DynamicImage) -> Result<DynamicImage, String> {
 fn write_webp(path: &Path, img: &DynamicImage, quality: u8) -> Result<(), String> {
     let rgba = img.to_rgba8();
     let (w, h) = rgba.dimensions();
-    // method 4 balances encode time vs size for artwork caching.
     let config = LossyConfig::new()
         .with_quality(f32::from(quality))
         .with_method(4);
@@ -275,4 +338,26 @@ fn write_webp(path: &Path, img: &DynamicImage, quality: u8) -> Result<(), String
         .encode()
         .map_err(|e| format!("encode webp: {e}"))?;
     fs::write(path, encoded).map_err(|e| format!("write {}: {e}", path.display()))
+}
+
+fn write_avif(path: &Path, img: &DynamicImage, quality: u8) -> Result<(), String> {
+    let rgba = img.to_rgba8();
+    let (w, h) = rgba.dimensions();
+    let pixels: Vec<RGBA8> = rgba
+        .as_raw()
+        .chunks_exact(4)
+        .map(|px| RGBA8 {
+            r: px[0],
+            g: px[1],
+            b: px[2],
+            a: px[3],
+        })
+        .collect();
+    // Speed 10 = fastest rav1e preset; artwork is cache-once so favor WASM latency.
+    let encoded = AvifEncoder::new()
+        .with_quality(f32::from(quality))
+        .with_speed(10)
+        .encode_rgba(Img::new(pixels.as_slice(), w as usize, h as usize))
+        .map_err(|e| format!("encode avif: {e}"))?;
+    fs::write(path, encoded.avif_file).map_err(|e| format!("write {}: {e}", path.display()))
 }

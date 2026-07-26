@@ -757,6 +757,8 @@ func contentTypeFromKey(key string) string {
 		return "image/png"
 	case strings.HasSuffix(key, ".webp"):
 		return "image/webp"
+	case strings.HasSuffix(key, ".avif"):
+		return "image/avif"
 	case strings.HasSuffix(key, ".gif"):
 		return "image/gif"
 	case strings.HasSuffix(key, ".svg"):

@@ -50,6 +50,11 @@ func TestGenerateVariants(t *testing.T) {
 			t.Fatalf("missing variant %s", key)
 		}
 	}
+	for _, v := range result.Variants {
+		if len(v.AVIF) < 12 || string(v.AVIF[4:8]) != "ftyp" {
+			t.Fatalf("variant %s missing AVIF payload", v.Key)
+		}
+	}
 }
 
 func TestGenerateVariantsCapsOriginal(t *testing.T) {

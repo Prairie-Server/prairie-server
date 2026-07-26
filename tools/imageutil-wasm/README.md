@@ -1,8 +1,8 @@
 # imageutil.wasm — artwork resize/encode module
 
-`imageutil.wasm` is a small Rust WASI CLI that decodes JPEG/PNG/GIF/WebP,
-resizes, center-crops squares, and encodes WebP (lossy) or PNG. Prairie Server
-runs it **in-process** via [`wazero`](https://github.com/tetratelabs/wazero)
+`imageutil.wasm` is a small Rust WASI CLI that decodes JPEG/PNG/GIF/WebP/SVG,
+resizes, center-crops squares, and encodes WebP + AVIF (lossy) or PNG. Prairie
+Server runs it **in-process** via [`wazero`](https://github.com/tetratelabs/wazero)
 from `internal/imageutil`.
 
 ## Why this shape
@@ -21,6 +21,7 @@ from `internal/imageutil`.
 | `image`   | decode JPEG/PNG/GIF/WebP |
 | `resvg`   | SVG → raster (provider logos) |
 | `zenwebp` | pure-Rust lossy WebP encode (AGPL-3.0) |
+| `ravif`   | pure-Rust lossy AVIF encode |
 
 ## Rebuild + install the artifact
 
@@ -52,11 +53,13 @@ checks the embed matches the sidecar and smoke-tests resize/encode.
 imageutil-wasm --mode variants|square-variants|normalize-png \
   --input /in/src.bin --outdir /out \
   [--widths 500,300] [--sizes 512,256] \
-  [--quality 90] [--max-original 1920] [--max-dim 100]
+  [--quality 90] [--max-original 1920] [--max-dim 100] \
+  [--formats webp,avif]
 ```
 
-Prints a JSON manifest on stdout:
+Prints a JSON manifest on stdout. `ext` stays `.webp` (canonical cache key);
+AVIF siblings are listed per variant:
 
 ```json
-{"ext":".webp","variants":[{"key":"original","file":"original.webp"},{"key":"w500","file":"w500.webp"}]}
+{"ext":".webp","variants":[{"key":"original","file":"original.webp","avif_file":"original.avif"}]}
 ```

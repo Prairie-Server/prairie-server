@@ -31,7 +31,19 @@ embedded WASI module, matching the Kindle→EPUB `ebookconvert` hybrid.
 - Replacing FFmpeg probe/transcode/subtitle extract.
 - Micro-optimizing WebP encode vs libvips; correctness + CGO removal first.
 
+## AVIF dual-write (follow-on)
+
+- WASM emits WebP **and** AVIF; `VariantResult.Ext` stays `.webp` so revision
+  hashes and DB paths remain stable.
+- `imagecache` / chapter thumbs / branding upload AVIF siblings
+  (`*.webp` → `*.avif`).
+- `artworkkey.ObjectKeys` includes AVIF siblings for GC.
+- Accept negotiation on branding asset serve + downloads artwork proxy
+  (`artworkkey.PrefersAVIF`); catalog/presigned URLs stay `.webp` (CDN or
+  client can swap extension when ready).
+
 ## Verification
 
 - `go test ./internal/imageutil` (provenance + resize/encode smoke).
 - Production `Dockerfile` builds with `CGO_ENABLED=0` and no libvips packages.
+- `go test ./internal/artworkkey ./internal/imagecache` for dual-write/GC keys.

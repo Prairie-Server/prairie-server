@@ -775,6 +775,12 @@ func (s *Service) uploadChapterThumbnail(ctx context.Context, fileID, chapterInd
 		if err := s.store.PutObject(ctx, bucket, key, variant.Data); err != nil {
 			return "", "", fmt.Errorf("upload %s: %w", key, err)
 		}
+		if len(variant.AVIF) > 0 {
+			avifKey := strings.TrimSuffix(key, result.Ext) + ".avif"
+			if err := s.store.PutObject(ctx, bucket, avifKey, variant.AVIF); err != nil {
+				return "", "", fmt.Errorf("upload %s: %w", avifKey, err)
+			}
+		}
 		if variant.Key == "original" {
 			originalKey = key
 		}

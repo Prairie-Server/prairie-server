@@ -7,7 +7,9 @@ import (
 	"errors"
 	"log/slog"
 	"path"
+	"strings"
 
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
@@ -81,7 +83,7 @@ func (s *Service) UploadAsset(ctx context.Context, kind AssetKind, data []byte, 
 		return "", ErrStorageUnavailable
 	}
 
-	out, _, ext, err := spec.process(data, declaredType)
+	out, avif, _, ext, err := spec.process(data, declaredType)
 	if err != nil {
 		return "", err
 	}
@@ -95,6 +97,14 @@ func (s *Service) UploadAsset(ctx context.Context, kind AssetKind, data []byte, 
 
 	if err := s.store.PutObject(ctx, s.store.Bucket(), key, out); err != nil {
 		return "", err
+	}
+	// Dual-write AVIF sibling under the same content-address stem so Accept
+	// negotiation can upgrade without changing the stored settings ref.
+	if len(avif) > 0 && ext == ".webp" {
+		avifKey := strings.TrimSuffix(key, ext) + ".avif"
+		if err := s.store.PutObject(ctx, s.store.Bucket(), avifKey, avif); err != nil {
+			return "", err
+		}
 	}
 	if err := s.settings.Set(ctx, spec.settingKey, ref); err != nil {
 		return "", err
@@ -114,9 +124,11 @@ func (s *Service) DeleteAsset(ctx context.Context, kind AssetKind) error {
 }
 
 // GetAsset fetches the bytes of the current custom asset of the given kind.
-// Returns ErrAssetNotConfigured when none is set, ErrStorageUnavailable when S3
-// is absent, and ErrAssetNotConfigured when the object is missing in S3.
-func (s *Service) GetAsset(ctx context.Context, kind AssetKind) (data []byte, contentType, ref string, err error) {
+// When accept prefers image/avif and a dual-written AVIF sibling exists for a
+// WebP ref, that sibling is returned instead. Returns ErrAssetNotConfigured
+// when none is set, ErrStorageUnavailable when S3 is absent, and
+// ErrAssetNotConfigured when the object is missing in S3.
+func (s *Service) GetAsset(ctx context.Context, kind AssetKind, accept string) (data []byte, contentType, ref string, err error) {
 	spec, ok := assetSpecs[kind]
 	if !ok {
 		return nil, "", "", ErrInvalidKind
@@ -129,6 +141,15 @@ func (s *Service) GetAsset(ctx context.Context, kind AssetKind) (data []byte, co
 		return nil, "", "", ErrStorageUnavailable
 	}
 	key := spec.s3Prefix + "/" + ref
+	ext := path.Ext(ref)
+	if artworkkey.PrefersAVIF(accept) && ext == ".webp" {
+		avifKey := strings.TrimSuffix(key, ext) + ".avif"
+		if avifData, avifErr := s.store.GetObject(ctx, s.store.Bucket(), avifKey); avifErr == nil {
+			return avifData, "image/avif", ref, nil
+		} else if avifErr != nil && !errors.Is(avifErr, s3client.ErrNotFound) {
+			return nil, "", "", avifErr
+		}
+	}
 	data, err = s.store.GetObject(ctx, s.store.Bucket(), key)
 	if err != nil {
 		if errors.Is(err, s3client.ErrNotFound) {
@@ -136,7 +157,7 @@ func (s *Service) GetAsset(ctx context.Context, kind AssetKind) (data []byte, co
 		}
 		return nil, "", "", err
 	}
-	return data, contentTypeForExt(path.Ext(ref)), ref, nil
+	return data, contentTypeForExt(ext), ref, nil
 }
 
 // ReconcileMissingAssets clears the ref of every configured branding asset

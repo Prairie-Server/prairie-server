@@ -249,7 +249,7 @@ func serveDynamicManifest(w http.ResponseWriter, r *http.Request) {
 // Returns false when there is no custom favicon, letting the caller fall through
 // to the bundled static file.
 func serveCustomFavicon(w http.ResponseWriter, r *http.Request) bool {
-	data, contentType, ref, err := Branding.GetAsset(r.Context(), branding.KindFavicon)
+	data, contentType, ref, err := Branding.GetAsset(r.Context(), branding.KindFavicon, r.Header.Get("Accept"))
 	if err != nil {
 		return false
 	}
