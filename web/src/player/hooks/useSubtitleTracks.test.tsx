@@ -37,11 +37,14 @@ const createdTracks: FakeTextTrack[] = [];
 // trustworthy" path unless a test opts into the unloaded state.
 function makeVideoRef(readyState = 1): RefObject<HTMLVideoElement | null> {
   const video = document.createElement("video");
-  (video as unknown as { addTextTrack: () => FakeTextTrack }).addTextTrack = () => {
-    const track = new FakeTextTrack();
-    createdTracks.push(track);
-    return track;
-  };
+  Object.defineProperty(video, "addTextTrack", {
+    configurable: true,
+    value: () => {
+      const track = new FakeTextTrack();
+      createdTracks.push(track);
+      return track;
+    },
+  });
   Object.defineProperty(video, "readyState", { value: readyState, configurable: true });
   return { current: video };
 }

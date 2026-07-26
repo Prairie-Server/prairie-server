@@ -65,27 +65,34 @@ const attachedFontTrack: PlayerSubtitleInfo = {
 };
 
 function mockFetchResponse(text: string): Response {
-  return {
-    ok: true,
-    status: 200,
-    text: vi.fn().mockResolvedValue(text),
-    arrayBuffer: vi.fn().mockResolvedValue(new ArrayBuffer(8)),
-    json: vi.fn().mockResolvedValue([]),
-  } as unknown as Response;
+  return new Response(text, { status: 200 });
 }
 
 function mockFontBundleResponse(bytes: string): Response {
-  return {
-    ok: true,
+  return new Response(JSON.stringify([{ name: "Attached.ttf", data: btoa(bytes) }]), {
     status: 200,
-    json: vi.fn().mockResolvedValue([{ name: "Attached.ttf", data: btoa(bytes) }]),
-  } as unknown as Response;
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+function mockBinaryResponse(byteLength = 8): Response {
+  return new Response(new Uint8Array(byteLength), { status: 200 });
 }
 
 beforeEach(() => {
   constructorOpts.length = 0;
   instances.length = 0;
-  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(mockFetchResponse("")));
+  // Fresh Response bodies per call — a shared Response can only be read once.
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (/\.(woff2?|ttf|otf)(\?|$)/i.test(url)) {
+        return mockBinaryResponse();
+      }
+      return mockFetchResponse("");
+    }),
+  );
 });
 
 afterEach(() => {

@@ -6,7 +6,6 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { FileVersion } from "@/api/types";
-import type { BookDoc } from "@/reader/readest/libs/document";
 
 const mocks = vi.hoisted(() => ({
   api: vi.fn(),
@@ -48,7 +47,10 @@ import FoliateBookReader, {
   type ReaderReadyState,
 } from "@/reader/FoliateBookReader";
 
-type DestroyableBook = BookDoc & { destroy: () => void };
+type DestroyableBook = {
+  toc: Array<{ id: number; label: string; href: string }>;
+  destroy: ReturnType<typeof vi.fn>;
+};
 
 const createdViews: FakeFoliateView[] = [];
 // Each created view shifts one behavior off this queue for its open() call;
@@ -90,7 +92,7 @@ function makeBook(label: string): DestroyableBook {
   return {
     toc: [{ id: 1, label, href: `${label}.xhtml` }],
     destroy: vi.fn(),
-  } as unknown as DestroyableBook;
+  };
 }
 
 function makeFile(fileID: number, name: string): FileVersion {
@@ -174,7 +176,7 @@ describe("FoliateBookReader open flow", () => {
   it("tears down a superseded run when the loader resolves after a file switch", async () => {
     const bookA = makeBook("A");
     const bookB = makeBook("B");
-    const loaderA = deferred<{ book: BookDoc }>();
+    const loaderA = deferred<{ book: DestroyableBook }>();
     mocks.loaderOpen.mockImplementation((file: File) =>
       file.name === "a.epub" ? loaderA.promise : Promise.resolve({ book: bookB }),
     );

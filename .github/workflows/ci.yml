@@ -99,6 +99,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Typecheck
+        run: pnpm run typecheck
+
+      - name: Lint
+        run: pnpm run lint
+
       # Vitest coverage thresholds (75% statements/lines/functions/branches) apply
       # only to src/lib/liveTVGuide.ts (see vite.config.ts coverage.include).
       # Expand that list as more modules gain unit tests rather than gating the

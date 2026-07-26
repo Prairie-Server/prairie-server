@@ -14,8 +14,11 @@ class ResizeObserverStub {
   disconnect() {}
 }
 if (typeof globalThis.ResizeObserver === "undefined") {
-  (globalThis as unknown as { ResizeObserver: typeof ResizeObserverStub }).ResizeObserver =
-    ResizeObserverStub;
+  Object.defineProperty(globalThis, "ResizeObserver", {
+    configurable: true,
+    writable: true,
+    value: ResizeObserverStub,
+  });
 }
 if (typeof window !== "undefined" && !window.HTMLElement.prototype.hasPointerCapture) {
   window.HTMLElement.prototype.hasPointerCapture = () => false;
@@ -106,9 +109,27 @@ const bundlesResponse = {
   ],
 };
 
+function libraryFixture(partial: Pick<Library, "id" | "name" | "type">): Library {
+  return {
+    id: partial.id,
+    name: partial.name,
+    type: partial.type,
+    paths: [],
+    enabled: true,
+    metadata_language: "en",
+    auto_translate_metadata: false,
+    chapter_thumbnails_enabled: false,
+    chapter_thumbnails_supported: false,
+    intro_detection_enabled: false,
+    trailer_kinds: [],
+    sort_order: partial.id,
+    last_scanned_at: null,
+  };
+}
+
 const libraries: Library[] = [
-  { id: 1, name: "Movies", type: "movies" } as unknown as Library,
-  { id: 2, name: "TV Shows", type: "series" } as unknown as Library,
+  libraryFixture({ id: 1, name: "Movies", type: "movies" }),
+  libraryFixture({ id: 2, name: "TV Shows", type: "series" }),
 ];
 
 function renderGallery() {

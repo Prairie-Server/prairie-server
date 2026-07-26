@@ -44,7 +44,7 @@ function applyTemplateBundleErrorMessage(error: unknown): string {
 }
 
 function buildCollectionFormData(
-  data: Record<string, unknown>,
+  data: object,
   poster?: File | null,
   backdrop?: File | null,
 ): FormData | string {
@@ -101,7 +101,7 @@ export function useCreateAdminCollection() {
       backdrop?: File | null;
     }) => {
       const payload = buildCollectionFormData(
-        body as unknown as Record<string, unknown>,
+        body,
         poster,
         backdrop,
       );
@@ -229,7 +229,7 @@ export function useUpdateAdminCollection() {
       backdrop?: File | null;
     }) => {
       const payload = buildCollectionFormData(
-        body as unknown as Record<string, unknown>,
+        body,
         poster,
         backdrop,
       );
@@ -492,7 +492,7 @@ export function useImportMDBListCollection() {
       backdrop?: File | null;
     }) => {
       const payload = buildCollectionFormData(
-        body as unknown as Record<string, unknown>,
+        body,
         poster,
         backdrop,
       );
@@ -529,7 +529,7 @@ export function useImportTMDBCollection() {
       backdrop?: File | null;
     }) => {
       const payload = buildCollectionFormData(
-        body as unknown as Record<string, unknown>,
+        body,
         poster,
         backdrop,
       );
@@ -566,7 +566,7 @@ export function useImportTraktCollection() {
       backdrop?: File | null;
     }) => {
       const payload = buildCollectionFormData(
-        body as unknown as Record<string, unknown>,
+        body,
         poster,
         backdrop,
       );

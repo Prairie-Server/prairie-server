@@ -114,10 +114,9 @@ describe("queryDefinitionToDisplayFilters", () => {
   });
 
   it("tolerates a group with a missing rules array", () => {
-    const def = {
-      match: "all",
-      groups: [{ match: "all" }],
-    } as unknown as DisplayQueryDefinition;
-    expect(queryDefinitionToDisplayFilters(def)).toEqual({ watch: "all", media: "all" });
+    expect(queryDefinitionToDisplayFilters({ groups: [{}] })).toEqual({
+      watch: "all",
+      media: "all",
+    });
   });
 });

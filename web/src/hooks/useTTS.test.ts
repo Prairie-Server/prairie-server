@@ -92,8 +92,10 @@ function installFakeMediaSession(): FakeMediaSession {
 const MULTI_CHUNK_TEXT = "First sentence here. Second sentence here. Third sentence here.";
 
 describe("useTTS", () => {
+  let mediaSession: FakeMediaSession;
+
   beforeEach(() => {
-    installFakeMediaSession();
+    mediaSession = installFakeMediaSession();
   });
 
   afterEach(() => {
@@ -200,7 +202,6 @@ describe("useTTS", () => {
 
   it("installs media session handlers on speak and clears them on stop", () => {
     installFakeSpeechSynthesis("end");
-    const mediaSession = navigator.mediaSession as unknown as FakeMediaSession;
     const { result } = renderHook(() => useTTS());
 
     act(() => {
@@ -221,7 +222,6 @@ describe("useTTS", () => {
 
   it("cancels speech and uninstalls the media session when unmounting mid-speech", () => {
     const synth = installFakeSpeechSynthesis("end");
-    const mediaSession = navigator.mediaSession as unknown as FakeMediaSession;
     const { result, unmount } = renderHook(() => useTTS());
 
     act(() => {
