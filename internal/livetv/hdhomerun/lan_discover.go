@@ -2,13 +2,15 @@ package hdhomerun
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"strings"
 	"time"
 )
 
-const discoverUDPPort = 65001
+// discoverUDPPort is the SiliconDust discovery port. Overridden in tests.
+var discoverUDPPort = 65001
 
 // LANCandidate is a device that answered HDHomeRun UDP discovery.
 type LANCandidate struct {
@@ -36,7 +38,7 @@ func DiscoverLAN(ctx context.Context, timeout time.Duration) ([]LANCandidate, er
 	if err != nil {
 		return nil, fmt.Errorf("hdhomerun lan discover: listen: %w", err)
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	_ = conn.SetReadDeadline(time.Now().Add(timeout))
 	req := marshalDiscoverReq()
@@ -50,6 +52,8 @@ func DiscoverLAN(ctx context.Context, timeout time.Duration) ([]LANCandidate, er
 	for _, bcast := range interfaceBroadcastAddrs() {
 		_, _ = conn.WriteToUDP(req, &net.UDPAddr{IP: bcast, Port: discoverUDPPort})
 	}
+	// Loopback helps unit tests (and some local emulators) that bind 127.0.0.1.
+	_, _ = conn.WriteToUDP(req, &net.UDPAddr{IP: net.IPv4(127, 0, 0, 1), Port: discoverUDPPort})
 
 	seen := make(map[string]struct{})
 	var out []LANCandidate
@@ -57,7 +61,8 @@ func DiscoverLAN(ctx context.Context, timeout time.Duration) ([]LANCandidate, er
 	for {
 		n, addr, err := conn.ReadFromUDP(buf)
 		if err != nil {
-			if ne, ok := err.(net.Error); ok && ne.Timeout() {
+			var ne net.Error
+			if errors.As(err, &ne) && ne.Timeout() {
 				break
 			}
 			if len(out) > 0 {

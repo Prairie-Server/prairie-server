@@ -69,8 +69,7 @@ export function ensureStorageSchema(): number {
   try {
     const raw = localStorage.getItem(STORAGE_SCHEMA_VERSION_KEY);
     const current = raw == null || raw === "" ? 0 : Number(raw);
-    const isValidInteger =
-      Number.isFinite(current) && Number.isInteger(current) && current >= 0;
+    const isValidInteger = Number.isFinite(current) && Number.isInteger(current) && current >= 0;
     if (!isValidInteger || current < STORAGE_SCHEMA_VERSION) {
       localStorage.setItem(STORAGE_SCHEMA_VERSION_KEY, String(STORAGE_SCHEMA_VERSION));
     }

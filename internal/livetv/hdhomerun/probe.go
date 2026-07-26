@@ -58,11 +58,17 @@ func ProbeCandidateURLs(raw string) []string {
 	return uniqueStrings(candidates)
 }
 
+const (
+	kindHDHomeRun   = "hdhomerun"
+	kindDispatcharr = "dispatcharr"
+	kindUnknown     = "unknown"
+)
+
 // ClassifyKind guesses whether a verified device looks like Dispatcharr's HDHR
 // emulation versus a SiliconDust tuner.
 func ClassifyKind(info *DeviceInfo, discoverURL string) string {
 	if info == nil {
-		return "unknown"
+		return kindUnknown
 	}
 	blob := strings.ToLower(strings.Join([]string{
 		info.FriendlyName,
@@ -72,13 +78,13 @@ func ClassifyKind(info *DeviceInfo, discoverURL string) string {
 		discoverURL,
 	}, " "))
 	if strings.Contains(blob, "dispatcharr") || strings.Contains(blob, "/hdhr") {
-		return "dispatcharr"
+		return kindDispatcharr
 	}
 	if strings.HasPrefix(strings.ToLower(info.ModelNumber), "hdhr") ||
-		strings.Contains(blob, "hdhomerun") {
-		return "hdhomerun"
+		strings.Contains(blob, kindHDHomeRun) {
+		return kindHDHomeRun
 	}
-	return "hdhomerun"
+	return kindHDHomeRun
 }
 
 func DiscoverURLForBase(baseURL string) string {
