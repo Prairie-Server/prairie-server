@@ -26,6 +26,7 @@ import { hasPinnedJellyfinWebInstalled } from "@/lib/jellyfinCompat";
 import { useSettingsForm } from "@/hooks/useSettingsForm";
 import { SettingField } from "@/pages/admin-settings/SettingField";
 import { useWizardContext } from "../WizardContext";
+import { WizardActions } from "../WizardActions";
 
 const SERVER_KEYS = [
   "redis.url",
@@ -712,7 +713,7 @@ export function ServerStorageStep() {
         </div>
       </div>
 
-      <div className="flex gap-3 pt-4">
+      <WizardActions className="flex flex-wrap gap-3 pt-4">
         <Button type="submit" disabled={submitting || form.isSaving}>
           {submitting || form.isSaving ? "Saving..." : "Save & continue"}
         </Button>
@@ -724,7 +725,7 @@ export function ServerStorageStep() {
         >
           Skip
         </Button>
-      </div>
+      </WizardActions>
     </form>
   );
 }

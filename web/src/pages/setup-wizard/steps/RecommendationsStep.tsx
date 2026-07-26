@@ -15,6 +15,7 @@ import {
   type RecommendationProviderPreset,
 } from "@/lib/recommendation-provider-presets";
 import { useWizardContext } from "../WizardContext";
+import { WizardActions } from "../WizardActions";
 
 const KEYS = [
   "recommendations.enabled",
@@ -200,7 +201,7 @@ export function RecommendationsStep() {
         </div>
       )}
 
-      <div className="flex gap-3 pt-2">
+      <WizardActions>
         <Button type="submit" disabled={submitting || form.isSaving}>
           {submitting || form.isSaving ? "Saving..." : "Save & continue"}
         </Button>
@@ -212,7 +213,7 @@ export function RecommendationsStep() {
         >
           Skip
         </Button>
-      </div>
+      </WizardActions>
     </form>
   );
 }

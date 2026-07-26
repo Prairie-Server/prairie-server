@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { Check, ChevronRight, Plus } from "lucide-react";
 import { useWizardContext } from "../WizardContext";
+import { WizardActions } from "../WizardActions";
 
 interface AddedNode {
   name: string;
@@ -160,20 +161,23 @@ export function NodesFinishStep() {
       )}
 
       {/* Finish CTAs */}
-      <div className="border-foreground/[0.06] flex flex-col gap-3 border-t pt-6 sm:flex-row">
-        <Button onClick={handleFinish} disabled={finishing} className="sm:flex-1">
-          {finishing ? "Starting..." : "Start using Prairie"}
-          <ChevronRight className="ml-1.5 h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={handleGoToAdmin}
-          disabled={finishing}
-          className="sm:flex-1"
-        >
-          Go to admin
-        </Button>
+      <div className="border-foreground/[0.06] space-y-3 border-t pt-6">
+        <WizardActions />
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button onClick={handleFinish} disabled={finishing} className="sm:flex-1">
+            {finishing ? "Starting..." : "Start using Prairie"}
+            <ChevronRight className="ml-1.5 h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleGoToAdmin}
+            disabled={finishing}
+            className="sm:flex-1"
+          >
+            Go to admin
+          </Button>
+        </div>
       </div>
     </div>
   );

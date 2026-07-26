@@ -1770,7 +1770,9 @@
   .auth-shell {
     min-height: 100dvh;
     position: relative;
-    overflow: hidden;
+    /* Allow tall setup steps to scroll; clip only horizontal gradient bleed */
+    overflow-x: hidden;
+    overflow-y: auto;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1779,8 +1781,9 @@
 
   .auth-shell::before {
     content: "";
-    position: absolute;
+    position: fixed;
     inset: 0;
+    z-index: 0;
     background: linear-gradient(180deg, #1a2230 0%, #161c26 42%, #1c1812 78%, #241c12 100%);
     pointer-events: none;
   }
@@ -1788,10 +1791,11 @@
   /* Single horizon band — readable dusk, not decorative orbs */
   .auth-shell::after {
     content: "";
-    position: absolute;
+    position: fixed;
     inset-inline: -10%;
     bottom: 18%;
     height: 42%;
+    z-index: 0;
     background: radial-gradient(
       ellipse 70% 55% at 50% 100%,
       color-mix(in srgb, var(--primary) 28%, transparent),

@@ -2,6 +2,7 @@ import { LibraryForm } from "@/components/admin/libraries/LibraryForm";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useWizardContext } from "../WizardContext";
+import { WizardActions } from "../WizardActions";
 
 export function LibraryStep() {
   const { libraries, markDone, refetchLibraries } = useWizardContext();
@@ -45,14 +46,14 @@ export function LibraryStep() {
         savingLabel="Adding..."
       />
 
-      <div className="flex gap-3 pt-3">
+      <WizardActions className="flex flex-wrap gap-3 pt-3">
         <Button type="button" onClick={() => markDone("library")} disabled={libraries.length === 0}>
           Continue
         </Button>
         <Button type="button" variant="ghost" onClick={handleSkip}>
           Skip
         </Button>
-      </div>
+      </WizardActions>
     </div>
   );
 }

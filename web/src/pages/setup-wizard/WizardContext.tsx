@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
@@ -11,6 +11,7 @@ import {
   type SkippableStep,
   writeSetupWizardFlag,
 } from "./setupStorage";
+import { type WizardStepId, WIZARD_STEP_ORDER, wizardStepIndex } from "./wizardSteps";
 
 interface WizardContextValue {
   // Auth-derived
@@ -32,6 +33,13 @@ interface WizardContextValue {
   stepDone: Record<SkippableStep, boolean>;
   markDone: (step: SkippableStep) => void;
   clearProgress: () => void;
+
+  // Navigation
+  frontierStep: WizardStepId;
+  currentStep: WizardStepId;
+  canGoBack: boolean;
+  goBack: () => void;
+  goForward: () => void;
 }
 
 const WizardCtx = createContext<WizardContextValue | null>(null);
@@ -49,6 +57,21 @@ function shouldRetrySetupQuery(failureCount: number, error: unknown) {
   return failureCount < 1;
 }
 
+function deriveFrontierStep(
+  accountComplete: boolean,
+  profileComplete: boolean,
+  stepDone: Record<SkippableStep, boolean>,
+): WizardStepId {
+  if (!accountComplete) return "account";
+  if (!profileComplete) return "profile";
+  if (!stepDone.server) return "server";
+  if (!stepDone.integrations) return "integrations";
+  if (!stepDone.downloads) return "downloads";
+  if (!stepDone.recommendations) return "recommendations";
+  if (!stepDone.library) return "library";
+  return "nodes";
+}
+
 export function WizardProvider({ children }: { children: ReactNode }) {
   const { user, profile, setupRequired, setupInitialUser, selectProfile } = useAuth();
   const isAdmin = user?.role === "admin";
@@ -60,6 +83,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     }
     return readSetupWizardFlags();
   });
+
+  const [reviewStep, setReviewStep] = useState<WizardStepId | null>(null);
 
   const profilesQuery = useQuery({
     queryKey: ["setup-wizard", "profiles"],
@@ -77,14 +102,44 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     retry: shouldRetrySetupQuery,
   });
 
+  const accountComplete = !!user;
+  const frontierStep = useMemo(
+    () => deriveFrontierStep(accountComplete, profileComplete, stepDone),
+    [accountComplete, profileComplete, stepDone],
+  );
+
+  const currentStep = useMemo(() => {
+    if (!reviewStep) return frontierStep;
+    if (wizardStepIndex(reviewStep) <= wizardStepIndex(frontierStep)) return reviewStep;
+    return frontierStep;
+  }, [reviewStep, frontierStep]);
+
+  const canGoBack = wizardStepIndex(currentStep) > 0;
+
+  const goBack = useCallback(() => {
+    const idx = wizardStepIndex(currentStep);
+    if (idx <= 0) return;
+    setReviewStep(WIZARD_STEP_ORDER[idx - 1]);
+  }, [currentStep]);
+
+  const goForward = useCallback(() => {
+    const idx = wizardStepIndex(currentStep);
+    const frontierIdx = wizardStepIndex(frontierStep);
+    if (idx >= frontierIdx) return;
+    const next = WIZARD_STEP_ORDER[idx + 1];
+    setReviewStep(next === frontierStep ? null : next);
+  }, [currentStep, frontierStep]);
+
   const markDone = useCallback((step: SkippableStep) => {
     writeSetupWizardFlag(step, true);
     setStepDone((prev) => ({ ...prev, [step]: true }));
+    setReviewStep(null);
   }, []);
 
   const clearProgress = useCallback(() => {
     clearSetupWizardStorage();
     setStepDone(createEmptySetupWizardFlags());
+    setReviewStep(null);
   }, []);
 
   return (
@@ -104,6 +159,11 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         stepDone,
         markDone,
         clearProgress,
+        frontierStep,
+        currentStep,
+        canGoBack,
+        goBack,
+        goForward,
       }}
     >
       {children}

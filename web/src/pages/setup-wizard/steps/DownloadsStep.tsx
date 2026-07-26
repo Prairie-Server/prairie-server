@@ -8,6 +8,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useSettingsForm } from "@/hooks/useSettingsForm";
 import { useWizardContext } from "../WizardContext";
+import { WizardActions } from "../WizardActions";
 
 const KEYS = [
   "download.enabled",
@@ -133,7 +134,7 @@ export function DownloadsStep() {
         </div>
       )}
 
-      <div className="flex gap-3 pt-2">
+      <WizardActions>
         <Button type="submit" disabled={submitting || form.isSaving}>
           {submitting || form.isSaving ? "Saving..." : "Save & continue"}
         </Button>
@@ -145,7 +146,7 @@ export function DownloadsStep() {
         >
           Skip
         </Button>
-      </div>
+      </WizardActions>
     </form>
   );
 }

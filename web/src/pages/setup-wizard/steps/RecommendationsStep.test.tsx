@@ -22,7 +22,7 @@ vi.mock("@/hooks/queries/admin/settings", () => ({
 
 describe("RecommendationsStep", () => {
   it("renders a connection check action when recommendations are enabled", () => {
-    useWizardContextMock.mockReturnValue({ markDone: vi.fn() });
+    useWizardContextMock.mockReturnValue({ markDone: vi.fn(), canGoBack: false, goBack: vi.fn() });
     useCheckAdminSettingsConnectionMock.mockReturnValue({
       isPending: false,
       mutateAsync: vi.fn(),
