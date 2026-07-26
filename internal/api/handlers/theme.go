@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/csssanitize"
 )
 
 // ThemeSettingsReader is the subset of ServerSettingsStore needed by ThemeHandler.
@@ -58,7 +59,9 @@ func (h *ThemeHandler) HandleAdminCSS(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, adminCssResponse{
 		Vars:   vars,
-		RawCSS: rawCSS,
+		// Sanitize on read so stored CSS cannot deliver external imports/urls
+		// to pre-login clients even if a write path skipped validation.
+		RawCSS: csssanitize.Sanitize(rawCSS),
 	})
 }
 

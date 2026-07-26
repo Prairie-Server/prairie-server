@@ -37,10 +37,15 @@ type MatchCandidate struct {
 	Sources         []string          `json:"sources"`
 	AgreementHints  []string          `json:"agreement_hints"`
 	DetailScore     int               `json:"-"`
-	// ConflictingProviderIDKeys contains canonical provider IDs deliberately
-	// excluded after two other canonical IDs proved that provider results refer
-	// to the same work. These keys remain quarantined for the rest of the match
-	// pipeline so a later detail response cannot silently reintroduce them.
+	// ConfirmedProviderIDs contains provider IDs returned by their owning
+	// provider (for example, tmdb from a TMDB result). It arbitrates conflicting
+	// cross-references without rejecting compatible IDs from aggregators or
+	// third-party providers.
+	ConfirmedProviderIDs map[string]string `json:"-"`
+	// ConflictingProviderIDKeys contains canonical provider IDs excluded during
+	// candidate selection after two other canonical IDs proved that provider
+	// results refer to the same work. A value in ConfirmedProviderIDs resolves
+	// the conflict; otherwise the key remains quarantined through persistence.
 	ConflictingProviderIDKeys []string `json:"-"`
 	titleRank                 int
 }
@@ -289,9 +294,11 @@ func NormalizeCandidates(results []SearchResult, contentType string) []MatchCand
 // explicitly localized provider title over a provider-marked fallback.
 func NormalizeCandidatesForLanguage(results []SearchResult, contentType, language string) []MatchCandidate {
 	type bucket struct {
-		candidate         MatchCandidate
-		sources           map[string]bool
-		conflictingIDKeys map[string]bool
+		candidate                  MatchCandidate
+		sources                    map[string]bool
+		conflictingIDKeys          map[string]bool
+		confirmedIDValues          map[string]string
+		conflictingConfirmedIDKeys map[string]bool
 	}
 
 	ordered := make([]string, 0)
@@ -319,20 +326,23 @@ func NormalizeCandidatesForLanguage(results []SearchResult, contentType, languag
 			title, titleLanguage, fallback, titleRank := preferredSearchResultTitle(sr, language)
 			b = &bucket{
 				candidate: MatchCandidate{
-					Title:           title,
-					OriginalTitle:   sr.OriginalTitle,
-					TitleAliases:    copyTitleAliases(sr.TitleAliases, sr.Provider),
-					TitleLanguage:   titleLanguage,
-					TitleIsFallback: fallback,
-					titleRank:       titleRank,
-					Year:            sr.Year,
-					ContentType:     contentType,
-					ProviderIDs:     make(map[string]string),
-					ImageURL:        sr.ImageURL,
-					Overview:        sr.Overview,
+					Title:                title,
+					OriginalTitle:        sr.OriginalTitle,
+					TitleAliases:         copyTitleAliases(sr.TitleAliases, sr.Provider),
+					TitleLanguage:        titleLanguage,
+					TitleIsFallback:      fallback,
+					titleRank:            titleRank,
+					Year:                 sr.Year,
+					ContentType:          contentType,
+					ProviderIDs:          make(map[string]string),
+					ConfirmedProviderIDs: make(map[string]string),
+					ImageURL:             sr.ImageURL,
+					Overview:             sr.Overview,
 				},
-				sources:           make(map[string]bool),
-				conflictingIDKeys: make(map[string]bool),
+				sources:                    make(map[string]bool),
+				conflictingIDKeys:          make(map[string]bool),
+				confirmedIDValues:          make(map[string]string),
+				conflictingConfirmedIDKeys: make(map[string]bool),
 			}
 			buckets[key] = b
 			ordered = append(ordered, key)
@@ -355,9 +365,20 @@ func NormalizeCandidatesForLanguage(results []SearchResult, contentType, languag
 			b.candidate.ProviderIDs[k] = v
 		}
 
-		// Track source providers.
+		// Track source providers and the ID returned by the provider that owns
+		// that namespace. Conflicting native results are not authoritative.
 		if sr.Provider != "" {
 			b.sources[sr.Provider] = true
+			provider := strings.ToLower(strings.TrimSpace(sr.Provider))
+			if slices.Contains(canonicalCandidateIDKeys, provider) && strings.TrimSpace(sr.ProviderIDs[provider]) != "" {
+				value := strings.TrimSpace(sr.ProviderIDs[provider])
+				if existing := b.confirmedIDValues[provider]; existing != "" && existing != value {
+					delete(b.confirmedIDValues, provider)
+					b.conflictingConfirmedIDKeys[provider] = true
+				} else if !b.conflictingConfirmedIDKeys[provider] {
+					b.confirmedIDValues[provider] = value
+				}
+			}
 		}
 
 		// Prefer non-empty overview and image.
@@ -382,9 +403,16 @@ func NormalizeCandidatesForLanguage(results []SearchResult, contentType, languag
 		sort.Strings(sources)
 		b.candidate.Sources = sources
 		for _, key := range canonicalCandidateIDKeys {
+			if value := b.confirmedIDValues[key]; value != "" {
+				b.candidate.ConfirmedProviderIDs[key] = value
+			}
 			if b.conflictingIDKeys[key] {
 				b.candidate.ConflictingProviderIDKeys = append(b.candidate.ConflictingProviderIDKeys, key)
-				b.candidate.AgreementHints = append(b.candidate.AgreementHints, "quarantined_"+key+"_id")
+				if b.candidate.ConfirmedProviderIDs[key] != "" {
+					b.candidate.AgreementHints = append(b.candidate.AgreementHints, "resolved_"+key+"_id")
+				} else {
+					b.candidate.AgreementHints = append(b.candidate.AgreementHints, "quarantined_"+key+"_id")
+				}
 			}
 		}
 
@@ -631,7 +659,11 @@ func annotateCandidateMatch(candidate *MatchCandidate, hints *MatchHints) {
 	if len(candidate.ConflictingProviderIDKeys) > 0 {
 		candidate.MatchReasons = append(candidate.MatchReasons, "provider_id_consensus")
 		for _, key := range candidate.ConflictingProviderIDKeys {
-			candidate.MatchReasons = append(candidate.MatchReasons, "quarantined_"+key+"_id")
+			if strings.TrimSpace(candidate.ConfirmedProviderIDs[key]) != "" {
+				candidate.MatchReasons = append(candidate.MatchReasons, "resolved_"+key+"_id")
+			} else {
+				candidate.MatchReasons = append(candidate.MatchReasons, "quarantined_"+key+"_id")
+			}
 		}
 	}
 }
@@ -766,14 +798,27 @@ func anyCandidateHasProviderIDs(group []scoredMatchCandidate) bool {
 func adoptGroupProviderIDs(winner *MatchCandidate, group []scoredMatchCandidate) *MatchCandidate {
 	adopted := *winner
 	adopted.ProviderIDs = make(map[string]string, len(winner.ProviderIDs))
+	adopted.ConfirmedProviderIDs = make(map[string]string)
 	for k, v := range winner.ProviderIDs {
 		adopted.ProviderIDs[k] = v
 	}
+	confirmedConflicts := make(map[string]bool)
 	for _, c := range group {
 		for _, key := range canonicalCandidateIDKeys {
 			if v := strings.TrimSpace(c.candidate.ProviderIDs[key]); v != "" && adopted.ProviderIDs[key] == "" {
 				adopted.ProviderIDs[key] = v
 			}
+		}
+		for key, value := range c.candidate.ConfirmedProviderIDs {
+			if confirmedConflicts[key] {
+				continue
+			}
+			if existing := adopted.ConfirmedProviderIDs[key]; existing != "" && existing != value {
+				delete(adopted.ConfirmedProviderIDs, key)
+				confirmedConflicts[key] = true
+				continue
+			}
+			adopted.ConfirmedProviderIDs[key] = value
 		}
 	}
 	return &adopted

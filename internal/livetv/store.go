@@ -45,6 +45,7 @@ type Store interface {
 	ReleaseSession(ctx context.Context, id string) (*LiveSession, error)
 
 	ListRecordings(ctx context.Context, status string) ([]Recording, error)
+	GetRecording(ctx context.Context, id string) (*Recording, error)
 	CreateRecording(ctx context.Context, rec *Recording) (*Recording, error)
 	CancelRecording(ctx context.Context, id string) (*Recording, error)
 	RecordingExists(ctx context.Context, programID, seriesRuleID string) (bool, error)
@@ -54,6 +55,7 @@ type Store interface {
 	FailDueRecordings(ctx context.Context, now time.Time, message string) (int, error)
 
 	ListSeriesRules(ctx context.Context) ([]SeriesRule, error)
+	GetSeriesRule(ctx context.Context, id string) (*SeriesRule, error)
 	CreateSeriesRule(ctx context.Context, rule *SeriesRule) (*SeriesRule, error)
 	DeleteSeriesRule(ctx context.Context, id string) error
 }
@@ -542,8 +544,10 @@ func (s *PgStore) ReleaseSession(ctx context.Context, id string) (*LiveSession, 
 	return &session, nil
 }
 
+const recordingSelectCols = `id, COALESCE(program_id, ''), channel_id, COALESCE(series_rule_id, ''), user_id, COALESCE(profile_id, ''), status, path, COALESCE(library_item_id, ''), start_at, stop_at, title, last_error`
+
 func (s *PgStore) ListRecordings(ctx context.Context, status string) ([]Recording, error) {
-	sqlText := `SELECT id, COALESCE(program_id, ''), channel_id, COALESCE(series_rule_id, ''), status, path, COALESCE(library_item_id, ''), start_at, stop_at, title, last_error FROM livetv_recordings`
+	sqlText := `SELECT ` + recordingSelectCols + ` FROM livetv_recordings`
 	args := []any{}
 	if status != "" {
 		sqlText += ` WHERE status = $1`
@@ -566,6 +570,17 @@ func (s *PgStore) ListRecordings(ctx context.Context, status string) ([]Recordin
 	return recordings, rows.Err()
 }
 
+func (s *PgStore) GetRecording(ctx context.Context, id string) (*Recording, error) {
+	rec, err := scanRecording(s.db.QueryRow(ctx, `SELECT `+recordingSelectCols+` FROM livetv_recordings WHERE id = $1`, id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get recording: %w", err)
+	}
+	return &rec, nil
+}
+
 func (s *PgStore) CreateRecording(ctx context.Context, rec *Recording) (*Recording, error) {
 	if rec.ID == "" {
 		id, err := idgen.NextID()
@@ -578,10 +593,10 @@ func (s *PgStore) CreateRecording(ctx context.Context, rec *Recording) (*Recordi
 		rec.Status = "scheduled"
 	}
 	out, err := scanRecording(s.db.QueryRow(ctx, `
-		INSERT INTO livetv_recordings (id, program_id, channel_id, series_rule_id, status, path, library_item_id, start_at, stop_at, title, last_error)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
-		RETURNING id, COALESCE(program_id, ''), channel_id, COALESCE(series_rule_id, ''), status, path, COALESCE(library_item_id, ''), start_at, stop_at, title, last_error`,
-		rec.ID, nullString(rec.ProgramID), rec.ChannelID, nullString(rec.SeriesRuleID), rec.Status, rec.Path, nullString(rec.LibraryItemID), rec.Start, rec.Stop, rec.Title, rec.LastError))
+		INSERT INTO livetv_recordings (id, program_id, channel_id, series_rule_id, user_id, profile_id, status, path, library_item_id, start_at, stop_at, title, last_error)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+		RETURNING `+recordingSelectCols,
+		rec.ID, nullString(rec.ProgramID), rec.ChannelID, nullString(rec.SeriesRuleID), nullInt(rec.UserID), rec.ProfileID, rec.Status, rec.Path, nullString(rec.LibraryItemID), rec.Start, rec.Stop, rec.Title, rec.LastError))
 	if err != nil {
 		return nil, fmt.Errorf("create recording: %w", err)
 	}
@@ -592,7 +607,7 @@ func (s *PgStore) CancelRecording(ctx context.Context, id string) (*Recording, e
 	rec, err := scanRecording(s.db.QueryRow(ctx, `
 		UPDATE livetv_recordings SET status = 'cancelled', updated_at = now()
 		WHERE id = $1
-		RETURNING id, COALESCE(program_id, ''), channel_id, COALESCE(series_rule_id, ''), status, path, COALESCE(library_item_id, ''), start_at, stop_at, title, last_error`, id))
+		RETURNING `+recordingSelectCols, id))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -639,8 +654,10 @@ func (s *PgStore) FailDueRecordings(ctx context.Context, now time.Time, message 
 	return int(tag.RowsAffected()), nil
 }
 
+const seriesRuleSelectCols = `id, series_id, channel_id, user_id, COALESCE(profile_id, ''), title_match, new_only, keep_last, enabled`
+
 func (s *PgStore) ListSeriesRules(ctx context.Context) ([]SeriesRule, error) {
-	rows, err := s.db.Query(ctx, `SELECT id, series_id, channel_id, title_match, new_only, keep_last, enabled FROM livetv_series_rules ORDER BY created_at`)
+	rows, err := s.db.Query(ctx, `SELECT `+seriesRuleSelectCols+` FROM livetv_series_rules ORDER BY created_at`)
 	if err != nil {
 		return nil, fmt.Errorf("list series rules: %w", err)
 	}
@@ -656,6 +673,17 @@ func (s *PgStore) ListSeriesRules(ctx context.Context) ([]SeriesRule, error) {
 	return rules, rows.Err()
 }
 
+func (s *PgStore) GetSeriesRule(ctx context.Context, id string) (*SeriesRule, error) {
+	rule, err := scanSeriesRule(s.db.QueryRow(ctx, `SELECT `+seriesRuleSelectCols+` FROM livetv_series_rules WHERE id = $1`, id))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("get series rule: %w", err)
+	}
+	return &rule, nil
+}
+
 func (s *PgStore) CreateSeriesRule(ctx context.Context, rule *SeriesRule) (*SeriesRule, error) {
 	if rule.ID == "" {
 		id, err := idgen.NextID()
@@ -665,10 +693,10 @@ func (s *PgStore) CreateSeriesRule(ctx context.Context, rule *SeriesRule) (*Seri
 		rule.ID = id
 	}
 	out, err := scanSeriesRule(s.db.QueryRow(ctx, `
-		INSERT INTO livetv_series_rules (id, series_id, channel_id, title_match, new_only, keep_last, enabled)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)
-		RETURNING id, series_id, channel_id, title_match, new_only, keep_last, enabled`,
-		rule.ID, rule.SeriesID, rule.ChannelID, rule.TitleMatch, rule.NewOnly, rule.KeepLast, rule.Enabled))
+		INSERT INTO livetv_series_rules (id, series_id, channel_id, user_id, profile_id, title_match, new_only, keep_last, enabled)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+		RETURNING `+seriesRuleSelectCols,
+		rule.ID, rule.SeriesID, rule.ChannelID, nullInt(rule.UserID), rule.ProfileID, rule.TitleMatch, rule.NewOnly, rule.KeepLast, rule.Enabled))
 	if err != nil {
 		return nil, fmt.Errorf("create series rule: %w", err)
 	}
@@ -761,9 +789,13 @@ func scanSession(row scanner) (LiveSession, error) {
 
 func scanRecording(row scanner) (Recording, error) {
 	var rec Recording
-	if err := row.Scan(&rec.ID, &rec.ProgramID, &rec.ChannelID, &rec.SeriesRuleID, &rec.Status, &rec.Path, &rec.LibraryItemID,
+	var userID sql.NullInt64
+	if err := row.Scan(&rec.ID, &rec.ProgramID, &rec.ChannelID, &rec.SeriesRuleID, &userID, &rec.ProfileID, &rec.Status, &rec.Path, &rec.LibraryItemID,
 		&rec.Start, &rec.Stop, &rec.Title, &rec.LastError); err != nil {
 		return Recording{}, err
+	}
+	if userID.Valid {
+		rec.UserID = int(userID.Int64)
 	}
 	return rec, nil
 }
@@ -771,10 +803,14 @@ func scanRecording(row scanner) (Recording, error) {
 func scanSeriesRule(row scanner) (SeriesRule, error) {
 	var rule SeriesRule
 	var channelID sql.NullString
-	if err := row.Scan(&rule.ID, &rule.SeriesID, &channelID, &rule.TitleMatch, &rule.NewOnly, &rule.KeepLast, &rule.Enabled); err != nil {
+	var userID sql.NullInt64
+	if err := row.Scan(&rule.ID, &rule.SeriesID, &channelID, &userID, &rule.ProfileID, &rule.TitleMatch, &rule.NewOnly, &rule.KeepLast, &rule.Enabled); err != nil {
 		return SeriesRule{}, err
 	}
 	rule.ChannelID = nullStringPtr(channelID)
+	if userID.Valid {
+		rule.UserID = int(userID.Int64)
+	}
 	return rule, nil
 }
 

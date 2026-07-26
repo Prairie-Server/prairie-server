@@ -48,11 +48,15 @@ func RequestLogger(nodeID string) func(http.Handler) http.Handler {
 				}
 			}
 
+			loggedPath := r.URL.Path
+			if r.URL.RawQuery != "" {
+				loggedPath = loggedPath + "?" + r.URL.RawQuery
+			}
 			attrs := []any{
 				"component", "api",
 				"request_id", chimw.GetReqID(r.Context()),
 				"method", r.Method,
-				"path", activitylog.RedactSecretPathParams(r, r.URL.Path),
+				"path", activitylog.RedactSecretPathParams(r, loggedPath),
 				"path_pattern", pathPattern,
 				"status", wrapped.status,
 				"duration_ms", time.Since(start).Milliseconds(),
