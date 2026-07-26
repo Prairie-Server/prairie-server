@@ -49,7 +49,7 @@ checks the embed matches the sidecar and smoke-tests resize/encode.
 
 ## CLI surface (used by Go)
 
-```
+```text
 imageutil-wasm --mode variants|square-variants|normalize-png \
   --input /in/src.bin --outdir /out \
   [--widths 500,300] [--sizes 512,256] \

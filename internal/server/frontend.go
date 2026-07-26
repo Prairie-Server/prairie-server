@@ -258,7 +258,12 @@ func serveCustomFavicon(w http.ResponseWriter, r *http.Request) bool {
 	// on direct navigation (stored-XSS defense), matching the API asset route.
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Security-Policy", branding.AssetContentSecurityPolicy)
-	w.Header().Set("ETag", `"`+ref+`"`)
+	etag := `"` + ref + `"`
+	if contentType == "image/avif" {
+		etag = `"` + ref + `;avif"`
+	}
+	w.Header().Set("ETag", etag)
+	w.Header().Set("Vary", "Accept")
 	// Stable path (no content hash in the URL), so revalidate rather than cache
 	// long-lived; the ETag lets browsers skip the body when unchanged.
 	// ServeContent handles If-None-Match with RFC 9110 semantics (weak

@@ -16,8 +16,8 @@ COPY --from=frontend /app/web/dist/. /
 
 # Stage 2: Build Go binary
 FROM golang:1.26 AS build
-# Image resize/encode uses embedded WASI (internal/imageutil); keep the server
-# binary CGO-free for trivial cross-compile and simpler CI.
+# Image resize/encode uses embedded WASI (internal/imageutil). SQLite uses
+# pure-Go modernc.org/sqlite so the server binary stays CGO-free.
 ENV CGO_ENABLED=0
 ENV GOPROXY=https://proxy.golang.org,direct
 ENV GOPRIVATE=github.com/prairie-server/*,github.com/Silo-Server/*

@@ -168,9 +168,7 @@ func (s *Service) streamArtwork(ctx context.Context, w http.ResponseWriter, r *h
 		if cl := resp.Header.Get("Content-Length"); cl != "" {
 			w.Header().Set("Content-Length", cl)
 		}
-		if len(candidates) > 1 {
-			w.Header().Set("Vary", "Accept")
-		}
+		w.Header().Set("Vary", "Accept")
 		// Artwork is immutable for a stored manifest; let the client cache it once.
 		w.Header().Set("Cache-Control", "private, max-age=31536000, immutable")
 		_, copyErr := io.Copy(w, resp.Body)

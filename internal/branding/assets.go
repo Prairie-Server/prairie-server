@@ -77,7 +77,8 @@ func processWebP(generate imageVariantFunc, size int) func([]byte, string) ([]by
 			return nil, nil, "", "", ErrUnsupportedImage
 		}
 		key := fmt.Sprintf("w%d", size)
-		return pickVariant(res, key), pickAVIFVariant(res, key), "image/webp", ".webp", nil
+		webp, avif := pickVariantPair(res, key)
+		return webp, avif, "image/webp", ".webp", nil
 	}
 }
 
@@ -100,32 +101,32 @@ func processFaviconPassthrough(data []byte, declaredType string) ([]byte, []byte
 	}
 }
 
+// pickVariantPair returns WebP and AVIF payloads from the *same* variant,
+// falling back to "original" for both so Accept negotiation never pairs
+// mismatched dimensions.
+func pickVariantPair(res *imageutil.VariantResult, key string) (webp, avif []byte) {
+	var origWebP, origAVIF []byte
+	for _, v := range res.Variants {
+		if v.Key == key {
+			return v.Data, v.AVIF
+		}
+		if v.Key == "original" {
+			origWebP, origAVIF = v.Data, v.AVIF
+		}
+	}
+	return origWebP, origAVIF
+}
+
 // pickVariant returns the named variant's bytes, falling back to the re-encoded
 // original when the exact width variant is absent.
 func pickVariant(res *imageutil.VariantResult, key string) []byte {
-	var original []byte
-	for _, v := range res.Variants {
-		if v.Key == key {
-			return v.Data
-		}
-		if v.Key == "original" {
-			original = v.Data
-		}
-	}
-	return original
+	webp, _ := pickVariantPair(res, key)
+	return webp
 }
 
 func pickAVIFVariant(res *imageutil.VariantResult, key string) []byte {
-	var original []byte
-	for _, v := range res.Variants {
-		if v.Key == key && len(v.AVIF) > 0 {
-			return v.AVIF
-		}
-		if v.Key == "original" && len(v.AVIF) > 0 {
-			original = v.AVIF
-		}
-	}
-	return original
+	_, avif := pickVariantPair(res, key)
+	return avif
 }
 
 // MaxUploadBytes returns the maximum accepted upload size for a kind, or 0 when
