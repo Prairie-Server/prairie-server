@@ -157,11 +157,9 @@ export function ServerStorageStep() {
 
   const redisUrl = form.getValue("redis.url");
   const redisManagedByEnv = form.sensitiveManagedByEnv.includes("redis.url");
-  const redisConfigured =
-    redisUrl.trim() !== "" || form.sensitiveConfigured.includes("redis.url");
+  const redisConfigured = redisUrl.trim() !== "" || form.sensitiveConfigured.includes("redis.url");
   const redisDirty = form.isDirty("redis.url");
-  const redisNeedsLiveCheck =
-    !redisManagedByEnv && redisDirty && redisUrl.trim() !== "";
+  const redisNeedsLiveCheck = !redisManagedByEnv && redisDirty && redisUrl.trim() !== "";
 
   useEffect(() => {
     setRedisConnectionResult(null);

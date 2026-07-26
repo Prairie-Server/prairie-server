@@ -23,10 +23,7 @@ function fetchCollectionsList(): Promise<CollectionsListResponse> {
   }));
 }
 
-function buildUserCollectionPayload(
-  data: object,
-  poster?: File | null,
-): FormData | string {
+function buildUserCollectionPayload(data: object, poster?: File | null): FormData | string {
   if (!poster) {
     return JSON.stringify(data);
   }

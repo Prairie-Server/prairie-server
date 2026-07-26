@@ -1152,8 +1152,11 @@ func main() {
 	if pluginService != nil && pluginInstallationStore != nil {
 		dispatcher := plugins.NewEventDispatcherWithTypedResolver(deps.EventBus, deps.EventsHub, pluginInstallationStore, pluginService, 4)
 		pluginService.SetEventDispatcher(dispatcher)
+		// Same Redis degrade path as log/realtime hubs: unreachable redis.url
+		// must not Fatal and restart-loop under Docker.
 		if err := dispatcher.Start(appCtx); err != nil {
-			log.Fatalf("plugin event dispatcher: %v", err)
+			slog.Warn("plugin event dispatcher start failed; continuing without cross-node plugin events",
+				"error", err)
 		}
 		defer dispatcher.Stop()
 		// Backfill the capability-subscriber index from the already-preloaded

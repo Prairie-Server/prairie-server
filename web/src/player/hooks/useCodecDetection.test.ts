@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { detectHDRFromMatchMedia, detectMaxResolutionFromScreen, type MatchMediaLike } from "./useCodecDetection";
+import {
+  detectHDRFromMatchMedia,
+  detectMaxResolutionFromScreen,
+  type MatchMediaLike,
+} from "./useCodecDetection";
 
 describe("detectMaxResolutionFromScreen", () => {
   it("treats a 2560x1440 display as above the 720p bucket", () => {

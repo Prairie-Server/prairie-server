@@ -125,9 +125,7 @@ export default function AdminRequests() {
     <div className="space-y-6">
       <div className="page-header">
         <div className="space-y-2">
-          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
-            Requests
-          </h1>
+          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Requests</h1>
           <p className="text-muted-foreground max-w-2xl text-sm leading-6">
             Review media requests, set limits, and manage Radarr or Sonarr routing.
           </p>

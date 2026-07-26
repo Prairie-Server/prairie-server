@@ -366,14 +366,14 @@ func checkRedisConnection(ctx context.Context, cfg *config.Config) connectionChe
 // brick startup under a process supervisor.
 func probeRedisConfig(ctx context.Context, redisCfg config.RedisConfig) error {
 	if strings.TrimSpace(redisCfg.URL) == "" && redisCfg.SentinelMaster == "" {
-		return errors.New("Redis URL is required")
+		return errors.New("redis URL is required")
 	}
 	client, err := newAdminRedisSettingsCheckClient(redisCfg)
 	if err != nil {
 		return err
 	}
 	if client == nil {
-		return errors.New("Redis URL is required")
+		return errors.New("redis URL is required")
 	}
 	defer client.Close()
 

@@ -72,10 +72,7 @@ function WizardContent() {
     <div className="auth-shell items-start py-10 sm:py-14">
       <AuthBackground />
       <div className="auth-setup-panel relative z-1 w-full max-w-2xl p-1 sm:p-2">
-        <AuthBrandHero
-          className="mb-8"
-          subtitle="First-run setup for your Prairie server."
-        />
+        <AuthBrandHero className="mb-8" subtitle="First-run setup for your Prairie server." />
         <div className="mb-10">
           <StepIndicator steps={steps} />
           <h1 className="font-display text-foreground mt-6 text-[1.7rem] leading-tight font-semibold tracking-[-0.03em] sm:text-3xl">
