@@ -11,10 +11,7 @@ function pathExtension(pathname: string): string {
   return base.slice(dot);
 }
 
-function webPFormatSibling(
-  objectPath: string | null | undefined,
-  ext: ".avif" | ".png",
-): string {
+function webPFormatSibling(objectPath: string | null | undefined, ext: ".avif" | ".png"): string {
   const trimmed = objectPath?.trim() ?? "";
   if (!trimmed) return "";
 

@@ -52,13 +52,18 @@ var assetSpecs = map[AssetKind]assetSpec{
 	},
 }
 
+const (
+	extWebP  = ".webp"
+	mimeWebP = "image/webp"
+)
+
 // imageUploadTypes is the accepted set for WebP-converted kinds.
 // AVIF uploads are not accepted here: the WASI decoder does not decode AVIF,
 // and re-encoding an AVIF source would need a separate decode path.
 var imageUploadTypes = map[string]bool{
 	"image/jpeg": true,
 	"image/png":  true,
-	"image/webp": true,
+	mimeWebP:     true,
 }
 
 // imageVariantFunc matches imageutil.GenerateVariants / GenerateSquareVariants.
@@ -78,7 +83,7 @@ func processWebP(generate imageVariantFunc, size int) func([]byte, string) ([]by
 		}
 		key := fmt.Sprintf("w%d", size)
 		webp, avif, png := pickVariantTriple(res, key)
-		return webp, avif, png, "image/webp", ".webp", nil
+		return webp, avif, png, mimeWebP, extWebP, nil
 	}
 }
 
@@ -88,8 +93,8 @@ func processFaviconPassthrough(data []byte, declaredType string) ([]byte, []byte
 	switch declaredType {
 	case "image/png":
 		return data, nil, nil, "image/png", ".png", nil
-	case "image/webp":
-		return data, nil, nil, "image/webp", ".webp", nil
+	case mimeWebP:
+		return data, nil, nil, mimeWebP, extWebP, nil
 	case "image/avif":
 		return data, nil, nil, "image/avif", ".avif", nil
 	case "image/x-icon", "image/vnd.microsoft.icon":
@@ -117,24 +122,6 @@ func pickVariantTriple(res *imageutil.VariantResult, key string) (webp, avif, pn
 	return origWebP, origAVIF, origPNG
 }
 
-// pickVariantPair returns WebP and AVIF payloads from the *same* variant.
-func pickVariantPair(res *imageutil.VariantResult, key string) (webp, avif []byte) {
-	webp, avif, _ = pickVariantTriple(res, key)
-	return webp, avif
-}
-
-// pickVariant returns the named variant's bytes, falling back to the re-encoded
-// original when the exact width variant is absent.
-func pickVariant(res *imageutil.VariantResult, key string) []byte {
-	webp, _, _ := pickVariantTriple(res, key)
-	return webp
-}
-
-func pickAVIFVariant(res *imageutil.VariantResult, key string) []byte {
-	_, avif, _ := pickVariantTriple(res, key)
-	return avif
-}
-
 // MaxUploadBytes returns the maximum accepted upload size for a kind, or 0 when
 // the kind is unknown.
 func MaxUploadBytes(kind AssetKind) int64 {
@@ -148,8 +135,8 @@ func MaxUploadBytes(kind AssetKind) int64 {
 // serving it.
 func contentTypeForExt(ext string) string {
 	switch ext {
-	case ".webp":
-		return "image/webp"
+	case extWebP:
+		return mimeWebP
 	case ".avif":
 		return "image/avif"
 	case ".png":
