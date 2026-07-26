@@ -219,7 +219,7 @@ func diagnosticsReportFilename(report *diagnostics.Report) string {
 	if name == "" {
 		name = "report"
 	}
-	return "silo-diagnostics-" + name + ".tar.gz"
+	return "prairie-diagnostics-" + name + ".tar.gz"
 }
 
 func diagnosticsProxyDownloadRequested(r *http.Request) bool {

@@ -12,7 +12,7 @@ import (
 // ErrPolicySlowEval instead of activating and converting to request-path
 // failures for every viewer.
 func TestGuardEvalCostRejectsSlowOverride(t *testing.T) {
-	slow := `package silo_custom.scope
+	slow := `package prairie_custom.scope
 
 import rego.v1
 
@@ -36,12 +36,12 @@ override(base, _) := base if {
 func TestGuardEvalCostAcceptsCheapOverridesForAllDomains(t *testing.T) {
 	sources := map[string]string{
 		DomainScope: tighteningScopeOverrideSource(),
-		DomainPermission: `package silo_custom.permission
+		DomainPermission: `package prairie_custom.permission
 
 import rego.v1
 
 override(base, _) := base`,
-		DomainAction: `package silo_custom.action
+		DomainAction: `package prairie_custom.action
 
 import rego.v1
 

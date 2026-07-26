@@ -75,7 +75,7 @@ fi
 
 # --- Create directories ---
 mkdir -p "${DEV_DIR}/Prairie/web/dist"
-mkdir -p "${DEV_DIR}/silo-plugin-sdk"
+mkdir -p "${DEV_DIR}/prairie-plugin-sdk"
 mkdir -p /tmp/prairie-transcode
 mkdir -p /opt/prairie/plugins /opt/prairie/transcode /opt/prairie/postgres /opt/prairie/redis
 

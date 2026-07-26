@@ -28,7 +28,7 @@ export const UNCATEGORIZED_APP_GROUP = "Other";
  * Groups Apps sidebar entries by the FIRST segment of the plugin manifest's
  * slash-delimited `category` path.
  *
- * SDK contract (silo-plugin-sdk proto/silo/plugin/v1/common.proto,
+ * SDK contract (prairie-plugin-sdk proto/prairie/plugin/v1/common.proto,
  * PluginManifest.category): a slash-delimited path that groups plugins in
  * the user-facing Apps section — e.g. "Tools/Utilities" lands in
  * Apps → Tools → Utilities. Plugins without a category render under

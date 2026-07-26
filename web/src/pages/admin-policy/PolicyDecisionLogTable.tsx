@@ -39,11 +39,11 @@ interface PolicyDecisionLogTableProps {
 }
 
 function decisionNameForDomain(domain: string) {
-  return domain.includes(".") ? domain : `silo.${domain}.decision`;
+  return domain.includes(".") ? domain : `prairie.${domain}.decision`;
 }
 
 function decisionLabel(value: string) {
-  const match = /^silo\.(.+)\.decision$/.exec(value);
+  const match = /^prairie\.(.+)\.decision$/.exec(value);
   return match ? formatPolicyDomain(match[1] ?? value) : value;
 }
 

@@ -63,7 +63,7 @@ func (h *countingHerdHost) startCount() int {
 }
 
 func TestEnsureClientSingleFlightsConcurrentLaunch(t *testing.T) {
-	manifest := testPluginManifest(t, "silo.metadb", "0.0.36")
+	manifest := testPluginManifest(t, "prairie.metadb", "0.0.36")
 	installPath := writeInstalledPluginManifest(t, manifest)
 	store := newFakeServiceInstallationStore(&Installation{
 		ID: 7, PluginID: manifest.GetPluginId(), Version: manifest.GetVersion(),
@@ -112,8 +112,8 @@ func TestEnsureClientSingleFlightsConcurrentLaunch(t *testing.T) {
 }
 
 func TestEnsureClientDistinctInstallationsLaunchIndependently(t *testing.T) {
-	mA := testPluginManifest(t, "silo.metadb", "0.0.36")
-	mB := testPluginManifest(t, "silo.other", "1.0.0")
+	mA := testPluginManifest(t, "prairie.metadb", "0.0.36")
+	mB := testPluginManifest(t, "prairie.other", "1.0.0")
 	pathA := writeInstalledPluginManifest(t, mA)
 	pathB := writeInstalledPluginManifest(t, mB)
 	store := newFakeServiceInstallationStore(
@@ -195,7 +195,7 @@ func (h *ctxCaptureHost) canceledDuringLaunch() bool {
 // the singleflight leader: if that caller's request is canceled mid-launch, the
 // shared launch (which other waiters depend on) must continue.
 func TestEnsureClientLaunchIsolatedFromLeaderCancellation(t *testing.T) {
-	manifest := testPluginManifest(t, "silo.metadb", "0.0.36")
+	manifest := testPluginManifest(t, "prairie.metadb", "0.0.36")
 	installPath := writeInstalledPluginManifest(t, manifest)
 	store := newFakeServiceInstallationStore(&Installation{
 		ID: 7, PluginID: manifest.GetPluginId(), Version: manifest.GetVersion(),
@@ -243,7 +243,7 @@ func TestEnsureClientLaunchIsolatedFromLeaderCancellation(t *testing.T) {
 }
 
 func TestEnsureClientFailedLaunchPropagatesToAllCallers(t *testing.T) {
-	manifest := testPluginManifest(t, "silo.metadb", "0.0.36")
+	manifest := testPluginManifest(t, "prairie.metadb", "0.0.36")
 	installPath := writeInstalledPluginManifest(t, manifest)
 	store := newFakeServiceInstallationStore(&Installation{
 		ID: 7, PluginID: manifest.GetPluginId(), Version: manifest.GetVersion(),

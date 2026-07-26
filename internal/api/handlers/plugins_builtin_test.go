@@ -47,7 +47,7 @@ func seedHandlerBuiltinInstallation(t *testing.T, pool *pgxpool.Pool) int {
 	pluginID := fmt.Sprintf("test.builtin.handler-%d", time.Now().UnixNano())
 	err := pool.QueryRow(context.Background(),
 		`INSERT INTO plugin_installations (plugin_id, version, install_path, enabled, update_policy, kind)
-		 VALUES ($1, '0', '/nonexistent/silo-builtin-test', true, 'manual', 'builtin')
+		 VALUES ($1, '0', '/nonexistent/prairie-builtin-test', true, 'manual', 'builtin')
 		 RETURNING id`, pluginID).Scan(&id)
 	if err != nil {
 		t.Fatalf("seed builtin installation: %v", err)

@@ -16,7 +16,6 @@ export default defineConfig(({ mode }) => {
   // VITE_ALLOWED_HOSTS adds any others (comma-separated).
   const allowedHosts = [
     "prairie.local",
-    "silo.local",
     ".ts.net",
     os.hostname(),
     ...(env.VITE_ALLOWED_HOSTS || "")

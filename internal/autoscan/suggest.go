@@ -41,7 +41,7 @@ func (s *Service) SuggestRewrites(ctx context.Context, sourceID string) (Rewrite
 	}
 	siloFolders, err := s.folders.ListFolderPaths(ctx)
 	if err != nil {
-		return RewriteSuggestions{}, fmt.Errorf("autoscan: list silo folders: %w", err)
+		return RewriteSuggestions{}, fmt.Errorf("autoscan: list Prairie folders: %w", err)
 	}
 	return suggestRewrites(arrRoots, siloFolders, src.PathRewrites), nil
 }

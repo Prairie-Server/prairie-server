@@ -274,7 +274,7 @@ func NewPlaybackHandler(
 	fileResolver FilePathResolver,
 	storeProvider userstore.UserStoreProvider,
 ) *PlaybackHandler {
-	transcodeDir := filepath.Join(os.TempDir(), "silo-transcode")
+	transcodeDir := filepath.Join(os.TempDir(), "prairie-transcode")
 	ffmpegPath := ""
 	hwAccel := ""
 	if cfg != nil {

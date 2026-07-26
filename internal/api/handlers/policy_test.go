@@ -52,7 +52,7 @@ func TestPolicyValidateReturnsIssuesWithOK(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req := newPolicyHandlerRequest(http.MethodPost, "/admin/policy/validate", map[string]any{
 		"domain": policy.DomainScope,
-		"source": "package silo_custom.scope\n\nbroken := if {",
+		"source": "package prairie_custom.scope\n\nbroken := if {",
 	}, nil)
 
 	handler.HandleValidate(rec, req)
@@ -99,7 +99,7 @@ func TestPolicySimulateTighteningOverride(t *testing.T) {
 		ProfileVerified:      true,
 		RequestTime:          "2026-07-02T12:00:00Z",
 	}
-	source := `package silo_custom.scope
+	source := `package prairie_custom.scope
 
 import rego.v1
 
@@ -245,7 +245,7 @@ func TestPolicyVersionCompileFailurePersistsAndCannotActivateDB(t *testing.T) {
 	handler.HandleCreateVersion(createRec, newPolicyHandlerRequest(
 		http.MethodPost,
 		"/admin/policy/documents/"+strconv.FormatInt(document.ID, 10)+"/versions",
-		map[string]any{"source": "package silo_custom.scope\n\nbroken := if {"},
+		map[string]any{"source": "package prairie_custom.scope\n\nbroken := if {"},
 		map[string]string{"id": strconv.FormatInt(document.ID, 10)},
 	))
 	if createRec.Code != http.StatusUnprocessableEntity {
@@ -559,7 +559,7 @@ func policyTestIntPtr(value int) *int {
 }
 
 func validHandlerPolicySource() string {
-	return `package silo_custom.scope
+	return `package prairie_custom.scope
 
 import rego.v1
 

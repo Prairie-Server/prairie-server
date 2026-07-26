@@ -9,7 +9,7 @@ import (
 // jumping ahead of the general providers just because a user might enable it.
 // A provider that does not declare the content level at all must be excluded
 // entirely, not shown as a disabled row. Together these are the regressions that
-// let silo.sportarr land at position 1 enabled, and let the audiobook/ebook/manga
+// let prairie.sportarr land at position 1 enabled, and let the audiobook/ebook/manga
 // providers clutter every TV series and movie library's provider chain.
 func TestBuildSeededChainEntries_OptOutAndLevelScoping(t *testing.T) {
 	candidates := []seedCandidate{

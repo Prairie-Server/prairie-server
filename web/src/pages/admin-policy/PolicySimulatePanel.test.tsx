@@ -19,7 +19,7 @@ describe("PolicySimulatePanel", () => {
         expect(String(input)).toBe("/api/v1/admin/policy/simulate");
         expect(JSON.parse(String(init?.body))).toMatchObject({
           domain: "scope",
-          source: "package silo_custom.scope",
+          source: "package prairie_custom.scope",
         });
         return jsonResponse({
           decision: {
@@ -42,7 +42,7 @@ describe("PolicySimulatePanel", () => {
 
   it("renders the simulated decision and eval time", async () => {
     renderWithPolicyProviders(
-      <PolicySimulatePanel domains={["scope"]} domain="scope" source="package silo_custom.scope" />,
+      <PolicySimulatePanel domains={["scope"]} domain="scope" source="package prairie_custom.scope" />,
     );
 
     fireEvent.click(screen.getByRole("button", { name: /run/i }));

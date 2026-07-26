@@ -29,8 +29,8 @@ func TestServiceIngestStoresReadyReport(t *testing.T) {
 	if result.ReportID != "11111111-1111-1111-1111-111111111111" {
 		t.Fatalf("ReportID = %q, want reserved report ID", result.ReportID)
 	}
-	if result.ShortID != "SILO-ABCDEF123456" {
-		t.Fatalf("ShortID = %q, want SILO-ABCDEF123456", result.ShortID)
+	if result.ShortID != "PRAIRIE-ABCDEF123456" {
+		t.Fatalf("ShortID = %q, want PRAIRIE-ABCDEF123456", result.ShortID)
 	}
 	if len(repo.ready) != 1 || repo.ready[0] != result.ReportID {
 		t.Fatalf("ready reports = %v, want [%s]", repo.ready, result.ReportID)
@@ -661,7 +661,7 @@ func (f *fakeDiagnosticReportStore) InsertReceiving(_ context.Context, input Ins
 	}
 	return InsertReceivingResult{
 		ID:      "11111111-1111-1111-1111-111111111111",
-		ShortID: "SILO-ABCDEF123456",
+		ShortID: "PRAIRIE-ABCDEF123456",
 	}, nil
 }
 
@@ -770,7 +770,7 @@ func testReadyDiagnosticReport(id string, userID int) Report {
 	sha := strings.Repeat("a", 64)
 	return Report{
 		ID:                id,
-		ShortID:           "SILO-ABCDEF123456",
+		ShortID:           "PRAIRIE-ABCDEF123456",
 		UserID:            userID,
 		State:             StateReady,
 		BlobBucket:        &bucket,

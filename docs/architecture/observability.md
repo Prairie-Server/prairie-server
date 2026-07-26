@@ -202,4 +202,4 @@ would re-introduce a custom sink the OTLP + runtime split already covers.
 - **Early-boot logs are not exported.** Records emitted before the handler is installed
   (DB connect, migrations, tuning) reach stderr only, matching existing `opslog` behavior.
 - **Per-subsystem trace propagation into plugins** is a follow-up owned by
-  `silo-plugin-sdk`; this repo instruments only the host side.
+  `prairie-plugin-sdk`; this repo instruments only the host side.

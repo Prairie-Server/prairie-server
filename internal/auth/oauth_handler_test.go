@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
 	"github.com/go-chi/chi/v5"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"google.golang.org/protobuf/types/known/structpb"
 
 	"github.com/prairie-server/prairie-server/internal/clientip"
@@ -60,7 +60,7 @@ func newOAuthHandlerForTest(_ *testing.T, fc *fakeOAuthClient, fcomp *fakeComple
 			return fc, "whmcs", nil
 		},
 		LoginCompleter:       fcomp,
-		HostBaseURL:          "https://silo.test",
+		HostBaseURL:          "https://prairie.test",
 		StateTTL:             10 * time.Minute,
 		FrontendCompletePath: "/login/oauth-complete",
 	})
@@ -200,7 +200,7 @@ func TestOAuthCallback_HappyPath_DeliversOneTimeCompletionCode(t *testing.T) {
 		t.Fatalf("callback code = %d body = %s", wCb.Code, wCb.Body.String())
 	}
 	loc := wCb.Header().Get("Location")
-	if !strings.HasPrefix(loc, "https://silo.test/login/oauth-complete?") {
+	if !strings.HasPrefix(loc, "https://prairie.test/login/oauth-complete?") {
 		t.Fatalf("redirect = %q", loc)
 	}
 	if strings.Contains(loc, "acc.tok") || strings.Contains(loc, "ref.tok") {

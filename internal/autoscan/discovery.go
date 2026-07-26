@@ -10,7 +10,7 @@ import (
 // Sonarr/Radarr POST directly to Prairie, the host parses the payload, and the
 // plugin provider is never invoked for it.
 const (
-	BuiltinArrWebhookPluginID     = "silo.autoscan.arr-webhook"
+	BuiltinArrWebhookPluginID     = "prairie.autoscan.arr-webhook"
 	BuiltinArrWebhookCapabilityID = "arr-webhook"
 	builtinArrWebhookDisplayName  = "Sonarr/Radarr Webhook"
 )

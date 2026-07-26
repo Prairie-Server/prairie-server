@@ -89,7 +89,7 @@ func TestHandleRegisterApplePushDevice(t *testing.T) {
 		"device_id":"local-device",
 		"apns_token":"` + strings.Repeat("a", 64) + `",
 		"apns_environment":"production",
-		"apns_topic":"org.siloserver.silo",
+		"apns_topic":"org.prairieserver.prairie",
 		"push_mode":"private_push"
 	}`
 	rr := httptest.NewRecorder()
@@ -205,7 +205,7 @@ func TestHandleRegisterApplePushDeviceErrors(t *testing.T) {
 				"device_id":"local-device",
 				"apns_token":"abcd",
 				"apns_environment":"production",
-				"apns_topic":"org.siloserver.silo",
+				"apns_topic":"org.prairieserver.prairie",
 				"push_mode":"private_push"
 			}`,
 			wantStatus: http.StatusBadRequest,

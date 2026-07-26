@@ -1,4 +1,4 @@
-package silo.lib.quality
+package prairie.lib.quality
 
 import rego.v1
 

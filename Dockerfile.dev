@@ -31,15 +31,15 @@ COPY internal/ internal/
 COPY migrations/ migrations/
 
 # Stage 3: Build Go binary for dev using a local plugin SDK checkout passed via
-# BuildKit named context `silo_plugin_sdk`.
+# BuildKit named context `prairie_plugin_sdk`.
 FROM build-base AS build
 ARG BUILD_REVISION
 ARG BUILD_DIRTY=false
-COPY --from=silo_plugin_sdk . /tmp/silo-plugin-sdk
-RUN test -f /tmp/silo-plugin-sdk/go.mod
+COPY --from=prairie_plugin_sdk . /tmp/prairie-plugin-sdk
+RUN test -f /tmp/prairie-plugin-sdk/go.mod
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
-    go mod edit -replace=github.com/Silo-Server/silo-plugin-sdk=/tmp/silo-plugin-sdk && \
+    go mod edit -replace=github.com/prairie-server/prairie-plugin-sdk=/tmp/prairie-plugin-sdk && \
     go mod download && \
     go build \
     -ldflags "-X github.com/prairie-server/prairie-server/internal/buildinfo.revisionOverride=${BUILD_REVISION} -X github.com/prairie-server/prairie-server/internal/buildinfo.dirtyOverride=${BUILD_DIRTY}" \

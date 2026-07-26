@@ -24,7 +24,7 @@ var ErrInstallationDisabled = errors.New("plugin installation is disabled")
 var ErrBuiltinInstallationImmutable = errors.New("builtin installation cannot be modified")
 
 // Installation kinds. A 'builtin' installation is the reserved row that
-// anchors built-in host provider capabilities (silo.builtin); it has no
+// anchors built-in host provider capabilities (prairie.builtin); it has no
 // archive, manifest, or binary and must never be launched, updated, or
 // deleted. Generic reads must NOT filter builtins — the metadata chain's
 // enabled-check depends on reading them.

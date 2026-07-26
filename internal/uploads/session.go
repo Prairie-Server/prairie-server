@@ -93,7 +93,7 @@ type session struct {
 func NewManager(opts ManagerOptions) *Manager {
 	rootDir := opts.RootDir
 	if strings.TrimSpace(rootDir) == "" {
-		rootDir = filepath.Join(os.TempDir(), "silo-uploads")
+		rootDir = filepath.Join(os.TempDir(), "prairie-uploads")
 	}
 	ttl := opts.TTL
 	if ttl <= 0 {

@@ -50,10 +50,10 @@ export function CustomThemeProvider({ children }: { children: ReactNode }) {
 
   // Create style elements on mount
   useEffect(() => {
-    adminVarsRef.current = getOrCreateStyle("silo-admin-vars");
-    adminRawRef.current = getOrCreateStyle("silo-admin-raw-css");
-    userVarsRef.current = getOrCreateStyle("silo-user-vars");
-    userRawRef.current = getOrCreateStyle("silo-user-raw-css");
+    adminVarsRef.current = getOrCreateStyle("prairie-admin-vars");
+    adminRawRef.current = getOrCreateStyle("prairie-admin-raw-css");
+    userVarsRef.current = getOrCreateStyle("prairie-user-vars");
+    userRawRef.current = getOrCreateStyle("prairie-user-raw-css");
 
     return () => {
       // Clean up on unmount (dev HMR)

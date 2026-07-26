@@ -84,7 +84,7 @@ func TestMarkerProviderResponseIncludesPluginMetadata(t *testing.T) {
 		markers.ProviderDescriptor{
 			DisplayName:          "Plugin Markers",
 			SourceType:           markers.ProviderSourcePlugin,
-			PluginID:             "silo.plugin.markers",
+			PluginID:             "prairie.plugin.markers",
 			PluginInstallationID: 4,
 			CapabilityID:         "markers",
 		},
@@ -92,7 +92,7 @@ func TestMarkerProviderResponseIncludesPluginMetadata(t *testing.T) {
 	if resp.DisplayName != "Plugin Markers" || resp.SourceType != markers.ProviderSourcePlugin {
 		t.Fatalf("plugin metadata fields missing: %+v", resp)
 	}
-	if resp.PluginID != "silo.plugin.markers" ||
+	if resp.PluginID != "prairie.plugin.markers" ||
 		resp.PluginInstallationID != 4 ||
 		resp.CapabilityID != "markers" ||
 		!resp.IsSubmitter {

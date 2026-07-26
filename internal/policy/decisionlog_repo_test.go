@@ -28,7 +28,7 @@ func TestDecisionRepositoryListFiltersAndCursor(t *testing.T) {
 	})
 	denied := insertDecisionLogRow(t, ctx, pool, Entry{
 		Timestamp:        base.Add(time.Minute),
-		DecisionName:     DecisionName("silo.action.decision"),
+		DecisionName:     DecisionName("prairie.action.decision"),
 		PolicyGeneration: 1,
 		UserID:           intPtr(20),
 		Allowed:          &allowedFalse,
@@ -38,7 +38,7 @@ func TestDecisionRepositoryListFiltersAndCursor(t *testing.T) {
 	})
 	newest := insertDecisionLogRow(t, ctx, pool, Entry{
 		Timestamp:        base.Add(2 * time.Minute),
-		DecisionName:     DecisionName("silo.permission.decision"),
+		DecisionName:     DecisionName("prairie.permission.decision"),
 		PolicyGeneration: 2,
 		UserID:           intPtr(20),
 		Allowed:          &allowedTrue,

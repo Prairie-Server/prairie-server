@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"github.com/prairie-server/prairie-server/internal/cache"
 	"github.com/prairie-server/prairie-server/internal/events"
 )
@@ -163,7 +163,7 @@ func TestDispatcher_BusEvent_DecodesJSONPayloadIntoFields(t *testing.T) {
 }
 
 func TestDispatcher_HubPluginEvent_ReachesConsumer(t *testing.T) {
-	const eventName = "plugin.silo.arrproxy.submitted"
+	const eventName = "plugin.prairie.arrproxy.submitted"
 	_, hub, client := newFixture(t, []string{eventName}, 1)
 
 	body, _ := json.Marshal(map[string]any{"requestId": "01J", "error": ""})

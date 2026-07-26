@@ -19,7 +19,7 @@ func TestArchiveCacheEnsureRecoversLegacyBinaryArchive(t *testing.T) {
 	binaryData := []byte("#!/bin/sh\nexit 0\n")
 	checksum := sha256.Sum256(binaryData)
 
-	manifest := testPluginManifest(t, "silo.metadb", "0.0.19")
+	manifest := testPluginManifest(t, "prairie.metadb", "0.0.19")
 	manifest.Checksum = hex.EncodeToString(checksum[:])
 	manifestBytes, err := protojson.Marshal(manifest)
 	if err != nil {
@@ -35,7 +35,7 @@ func TestArchiveCacheEnsureRecoversLegacyBinaryArchive(t *testing.T) {
 		},
 	}
 
-	installDir := filepath.Join(t.TempDir(), "plugins", "silo.metadb", "0.0.19")
+	installDir := filepath.Join(t.TempDir(), "plugins", "prairie.metadb", "0.0.19")
 	installation := &Installation{
 		ID:          42,
 		PluginID:    manifest.GetPluginId(),
@@ -81,7 +81,7 @@ func TestArchiveCacheEnsureRecoveryToleratesPersistFailure(t *testing.T) {
 	binaryData := []byte("#!/bin/sh\nexit 0\n")
 	checksum := sha256.Sum256(binaryData)
 
-	manifest := testPluginManifest(t, "silo.metadb", "0.0.19")
+	manifest := testPluginManifest(t, "prairie.metadb", "0.0.19")
 	manifest.Checksum = hex.EncodeToString(checksum[:])
 	manifestBytes, err := protojson.Marshal(manifest)
 	if err != nil {
@@ -98,7 +98,7 @@ func TestArchiveCacheEnsureRecoveryToleratesPersistFailure(t *testing.T) {
 		saveErr: errors.New("db unavailable"),
 	}
 
-	installDir := filepath.Join(t.TempDir(), "plugins", "silo.metadb", "0.0.19")
+	installDir := filepath.Join(t.TempDir(), "plugins", "prairie.metadb", "0.0.19")
 	installation := &Installation{
 		ID:          42,
 		PluginID:    manifest.GetPluginId(),

@@ -321,7 +321,7 @@ func (h *PlaybackHandler) playbackConfig() config.PlaybackConfig {
 	}
 	return config.PlaybackConfig{
 		TranscodeEnabled: true,
-		TranscodeDir:     filepath.Join(os.TempDir(), "silo-transcode"),
+		TranscodeDir:     filepath.Join(os.TempDir(), "prairie-transcode"),
 	}
 }
 

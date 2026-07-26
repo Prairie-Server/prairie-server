@@ -12,13 +12,13 @@ import (
 	"google.golang.org/protobuf/encoding/protojson"
 	"google.golang.org/protobuf/proto"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
 func TestServiceEnsureClientRestartsOnManifestDrift(t *testing.T) {
 	ctx := context.Background()
-	manifest := testPluginManifest(t, "silo.metadb", "0.0.36")
+	manifest := testPluginManifest(t, "prairie.metadb", "0.0.36")
 	installPath := writeInstalledPluginManifest(t, manifest)
 
 	store := newFakeServiceInstallationStore(&Installation{
@@ -29,7 +29,7 @@ func TestServiceEnsureClientRestartsOnManifestDrift(t *testing.T) {
 		Enabled:     true,
 	})
 	host := &fakeServiceHost{
-		clientResult: &fakePluginClient{manifest: testPluginManifest(t, "silo.metadb", "0.0.34")},
+		clientResult: &fakePluginClient{manifest: testPluginManifest(t, "prairie.metadb", "0.0.34")},
 		startResult:  &fakePluginClient{manifest: manifest},
 	}
 	service := &Service{
@@ -71,10 +71,10 @@ func TestServiceEnsureClientKeepsHealthyClientWhenInstalledManifestUnavailable(t
 		t.Fatalf("WriteFile(%q) returned error: %v", installPath, err)
 	}
 
-	runningClient := &fakePluginClient{manifest: testPluginManifest(t, "silo.metadb", "0.0.36")}
+	runningClient := &fakePluginClient{manifest: testPluginManifest(t, "prairie.metadb", "0.0.36")}
 	store := newFakeServiceInstallationStore(&Installation{
 		ID:          3,
-		PluginID:    "silo.metadb",
+		PluginID:    "prairie.metadb",
 		Version:     "0.0.36",
 		InstallPath: installPath,
 		Enabled:     true,
@@ -102,10 +102,10 @@ func TestServiceEnsureClientKeepsHealthyClientWhenInstalledManifestUnavailable(t
 
 func TestServiceEnsureClientRestartsWhenInstalledManifestDiffers(t *testing.T) {
 	ctx := context.Background()
-	installedManifest := testPluginManifest(t, "silo.metadb", "0.0.36")
+	installedManifest := testPluginManifest(t, "prairie.metadb", "0.0.36")
 	installPath := writeInstalledPluginManifest(t, installedManifest)
 
-	runningClient := &fakePluginClient{manifest: testPluginManifest(t, "silo.metadb", "0.0.34")}
+	runningClient := &fakePluginClient{manifest: testPluginManifest(t, "prairie.metadb", "0.0.34")}
 	restartedClient := &fakePluginClient{manifest: installedManifest}
 	store := newFakeServiceInstallationStore(&Installation{
 		ID:          3,

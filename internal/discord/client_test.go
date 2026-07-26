@@ -49,7 +49,7 @@ func TestExchangeCodeAndGetUser(t *testing.T) {
 		}
 	}))
 
-	token, err := client.ExchangeCode(context.Background(), "client-id", "client-secret", "the-code", "https://silo.example/cb")
+	token, err := client.ExchangeCode(context.Background(), "client-id", "client-secret", "the-code", "https://prairie.example/cb")
 	if err != nil {
 		t.Fatalf("exchange: %v", err)
 	}

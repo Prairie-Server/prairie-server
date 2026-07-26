@@ -41,8 +41,8 @@ var managedRepositoryDefinitions = []managedRepositoryDefinition{
 }
 
 var approvedCommunityPluginIDs = map[string]struct{}{
-	"silo.requests.arr":   {},
-	"silo.requests.seerr": {},
+	"prairie.requests.arr":   {},
+	"prairie.requests.seerr": {},
 }
 
 func isApprovedCommunityPlugin(pluginID string) bool {

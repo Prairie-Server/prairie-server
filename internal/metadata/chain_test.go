@@ -19,7 +19,7 @@ func TestProviderSupportsLevel(t *testing.T) {
 	}{
 		// An audiobook-only provider must NOT be pulled into video content
 		// levels by the chain-less global fallback. This is the regression
-		// that let silo.audiobook-metadata hammer audiobook APIs with
+		// that let prairie.audiobook-metadata hammer audiobook APIs with
 		// anime/movie/series titles.
 		{"audiobook provider excluded from episode", audiobookCapMetadata, "episode", false},
 		{"audiobook provider excluded from series", audiobookCapMetadata, "series", false},

@@ -79,7 +79,7 @@ func CompileCheck(ctx context.Context, domain, source string) error {
 		return compileErrorMessage("policy source is empty")
 	}
 
-	expectedPackage := "silo_custom." + domain
+	expectedPackage := "prairie_custom." + domain
 	if actualPackage := modulePackageName(candidate); actualPackage != expectedPackage {
 		location := candidate.Package.Location
 		return compileErrorAt(
@@ -171,7 +171,7 @@ func customModulePath(domain string) string {
 }
 
 // Domains for admin-authored policy documents. Each maps to one
-// silo_custom.<domain> package consulted by the matching vendor module.
+// prairie_custom.<domain> package consulted by the matching vendor module.
 const (
 	DomainScope      = "scope"
 	DomainPermission = "permission"

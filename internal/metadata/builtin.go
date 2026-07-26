@@ -7,7 +7,7 @@ import (
 )
 
 // Built-in host metadata providers are registered as data: one reserved
-// plugin_installations row (kind='builtin', plugin_id='silo.builtin') carries
+// plugin_installations row (kind='builtin', plugin_id='prairie.builtin') carries
 // ordinary plugin_capabilities rows, so the chain store, seeding, defaults
 // endpoint, and admin UI all work unchanged. This file is the single
 // in-process registration point mapping those capability ids to provider

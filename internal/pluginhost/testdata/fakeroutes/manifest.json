@@ -2,7 +2,7 @@
   "plugin_id": "example.fakeroutes",
   "version": "1.0.0",
   "checksum": "__CHECKSUM__",
-  "silo_api_version": "v1",
+  "prairie_api_version": "v1",
   "supported_platforms": [
     {"os": "darwin", "arch": "arm64"},
     {"os": "linux", "arch": "amd64"},

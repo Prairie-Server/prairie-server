@@ -3,8 +3,8 @@
 GIT_COMMON_DIR := $(strip $(shell git rev-parse --git-common-dir 2>/dev/null))
 MAIN_CHECKOUT_ROOT := $(if $(GIT_COMMON_DIR),$(abspath $(GIT_COMMON_DIR)/..))
 SHARED_MAKEFILE_LOCAL := $(if $(GIT_COMMON_DIR),$(abspath $(GIT_COMMON_DIR)/../Makefile.local))
-DEFAULT_PLUGIN_SDK_DIR := $(abspath ../silo-plugin-sdk)
-SHARED_PLUGIN_SDK_DIR := $(if $(MAIN_CHECKOUT_ROOT),$(abspath $(MAIN_CHECKOUT_ROOT)/../silo-plugin-sdk))
+DEFAULT_PLUGIN_SDK_DIR := $(abspath ../prairie-plugin-sdk)
+SHARED_PLUGIN_SDK_DIR := $(if $(MAIN_CHECKOUT_ROOT),$(abspath $(MAIN_CHECKOUT_ROOT)/../prairie-plugin-sdk))
 GOOSE := go run github.com/pressly/goose/v3/cmd/goose@v3.27.1
 GOOSE_DIR := migrations/sql
 ENV_FILE ?= .env

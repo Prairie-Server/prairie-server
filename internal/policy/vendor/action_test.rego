@@ -1,4 +1,4 @@
-package silo.action
+package prairie.action
 
 import rego.v1
 
@@ -236,7 +236,7 @@ deny_override(_, _) := {
 test_tightening_deny_override_applies if {
 	got := decision
 		with input as base_input
-		with data.silo_custom.action.override as deny_override
+		with data.prairie_custom.action.override as deny_override
 	not got.allowed
 	got.reason == "quiet hours"
 	got.reason_code == "custom_denial"
@@ -254,7 +254,7 @@ test_widening_allow_override_has_no_effect if {
 	base := decision with input as denied_input
 	got := decision
 		with input as denied_input
-		with data.silo_custom.action.override as allow_override
+		with data.prairie_custom.action.override as allow_override
 	got == base
 }
 
@@ -268,7 +268,7 @@ test_quality_ceiling_override_tightens if {
 		with input as object.union(base_input, {
 			"max_playback_quality": "2160p",
 		})
-		with data.silo_custom.action.override as tighten_quality_override
+		with data.prairie_custom.action.override as tighten_quality_override
 	got.allowed
 	got.quality_ceiling == "1080p"
 }
@@ -283,7 +283,7 @@ test_quality_ceiling_override_cannot_widen if {
 		with input as object.union(base_input, {
 			"max_playback_quality": "1080p",
 		})
-		with data.silo_custom.action.override as widen_quality_override
+		with data.prairie_custom.action.override as widen_quality_override
 	got.allowed
 	got.quality_ceiling == ""
 }

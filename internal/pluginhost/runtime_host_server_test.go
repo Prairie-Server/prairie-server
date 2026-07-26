@@ -6,7 +6,7 @@ import (
 
 	"google.golang.org/protobuf/types/known/structpb"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 
 	"github.com/prairie-server/prairie-server/internal/events"
 	"github.com/prairie-server/prairie-server/internal/pluginhost"
@@ -29,7 +29,7 @@ func (f *fakeLibLister) ListLibraries(_ context.Context, _ string) ([]pluginhost
 
 func TestRuntimeHostServer_PublishEvent_AutoPrefixesAndPublishes(t *testing.T) {
 	hub := &fakeHub{}
-	srv := pluginhost.NewRuntimeHostServer(hub, &fakeLibLister{}, "silo.example")
+	srv := pluginhost.NewRuntimeHostServer(hub, &fakeLibLister{}, "prairie.example")
 
 	payload, _ := structpb.NewStruct(map[string]any{"foo": "bar"})
 	_, err := srv.PublishEvent(context.Background(), &pluginv1.PublishEventRequest{
@@ -46,14 +46,14 @@ func TestRuntimeHostServer_PublishEvent_AutoPrefixesAndPublishes(t *testing.T) {
 	if got.Channel != events.ChannelPlugins {
 		t.Errorf("channel = %q, want %q", got.Channel, events.ChannelPlugins)
 	}
-	if got.Event != "plugin.silo.example.approved" {
-		t.Errorf("event = %q, want %q", got.Event, "plugin.silo.example.approved")
+	if got.Event != "plugin.prairie.example.approved" {
+		t.Errorf("event = %q, want %q", got.Event, "plugin.prairie.example.approved")
 	}
 }
 
 func TestRuntimeHostServer_PublishEvent_RejectsEmptyName(t *testing.T) {
 	hub := &fakeHub{}
-	srv := pluginhost.NewRuntimeHostServer(hub, &fakeLibLister{}, "silo.example")
+	srv := pluginhost.NewRuntimeHostServer(hub, &fakeLibLister{}, "prairie.example")
 
 	_, err := srv.PublishEvent(context.Background(), &pluginv1.PublishEventRequest{EventName: ""})
 	if err == nil {
@@ -66,11 +66,11 @@ func TestRuntimeHostServer_PublishEvent_RejectsEmptyName(t *testing.T) {
 
 func TestRuntimeHostServer_PublishEventTo_AutoPrefixesAndTargets(t *testing.T) {
 	hub := &fakeHub{}
-	srv := pluginhost.NewRuntimeHostServer(hub, &fakeLibLister{}, "silo.example")
+	srv := pluginhost.NewRuntimeHostServer(hub, &fakeLibLister{}, "prairie.example")
 
 	payload, _ := structpb.NewStruct(map[string]any{"foo": "bar"})
 	_, err := srv.PublishEventTo(context.Background(), &pluginv1.PublishEventToRequest{
-		TargetPluginId: "silo.requests",
+		TargetPluginId: "prairie.requests",
 		EventName:      "approved",
 		Payload:        payload,
 	})
@@ -81,17 +81,17 @@ func TestRuntimeHostServer_PublishEventTo_AutoPrefixesAndTargets(t *testing.T) {
 		t.Fatalf("hub calls = %d, want 1", len(hub.calls))
 	}
 	got := hub.calls[0]
-	if got.Event != "plugin.silo.example.approved" {
-		t.Errorf("event = %q, want plugin.silo.example.approved", got.Event)
+	if got.Event != "plugin.prairie.example.approved" {
+		t.Errorf("event = %q, want plugin.prairie.example.approved", got.Event)
 	}
-	if got.TargetPluginID != "silo.requests" {
-		t.Errorf("target_plugin_id = %q, want silo.requests", got.TargetPluginID)
+	if got.TargetPluginID != "prairie.requests" {
+		t.Errorf("target_plugin_id = %q, want prairie.requests", got.TargetPluginID)
 	}
 }
 
 func TestRuntimeHostServer_PublishEventTo_RejectsEmptyTarget(t *testing.T) {
 	hub := &fakeHub{}
-	srv := pluginhost.NewRuntimeHostServer(hub, &fakeLibLister{}, "silo.example")
+	srv := pluginhost.NewRuntimeHostServer(hub, &fakeLibLister{}, "prairie.example")
 
 	_, err := srv.PublishEventTo(context.Background(), &pluginv1.PublishEventToRequest{EventName: "approved"})
 	if err == nil {
@@ -107,7 +107,7 @@ func TestRuntimeHostServer_ListLibraries_PassesUserID(t *testing.T) {
 		{ID: "lib-1", Name: "Movies", MediaType: "movie"},
 		{ID: "lib-2", Name: "Shows", MediaType: "tv"},
 	}}
-	srv := pluginhost.NewRuntimeHostServer(&fakeHub{}, libs, "silo.example")
+	srv := pluginhost.NewRuntimeHostServer(&fakeHub{}, libs, "prairie.example")
 
 	resp, err := srv.ListLibraries(context.Background(), &pluginv1.ListLibrariesRequest{UserId: "u1"})
 	if err != nil {
@@ -133,7 +133,7 @@ func TestRuntimeHostServer_ListInstalledPlugins_ReturnsPlugins(t *testing.T) {
 	lister := &fakeInstalledPluginLister{rows: []pluginhost.InstalledPluginRecord{
 		{
 			InstallationID: 42,
-			PluginID:       "silo.requests",
+			PluginID:       "prairie.requests",
 			Version:        "0.1.0",
 			Enabled:        true,
 			Capabilities: []*pluginv1.CapabilityDescriptor{
@@ -142,7 +142,7 @@ func TestRuntimeHostServer_ListInstalledPlugins_ReturnsPlugins(t *testing.T) {
 		},
 	}}
 	srv := pluginhost.NewRuntimeHostServerWithServices(
-		&fakeHub{}, &fakeLibLister{}, nil, lister, nil, "silo.example", 7,
+		&fakeHub{}, &fakeLibLister{}, nil, lister, nil, "prairie.example", 7,
 	)
 
 	resp, err := srv.ListInstalledPlugins(context.Background(), &pluginv1.ListInstalledPluginsRequest{})
@@ -153,7 +153,7 @@ func TestRuntimeHostServer_ListInstalledPlugins_ReturnsPlugins(t *testing.T) {
 		t.Fatalf("plugins = %d, want 1", len(resp.GetPlugins()))
 	}
 	got := resp.GetPlugins()[0]
-	if got.GetInstallationId() != 42 || got.GetPluginId() != "silo.requests" || !got.GetEnabled() {
+	if got.GetInstallationId() != 42 || got.GetPluginId() != "prairie.requests" || !got.GetEnabled() {
 		t.Errorf("plugin = %+v", got)
 	}
 	if got.GetCapabilities()[0].GetType() != "request_router.v1" {
@@ -177,7 +177,7 @@ func (f *fakeConfigSetter) SetGlobalConfigEntry(_ context.Context, installationI
 func TestRuntimeHostServer_SetGlobalConfigEntry_PassesInstallationKeyAndValue(t *testing.T) {
 	setter := &fakeConfigSetter{}
 	srv := pluginhost.NewRuntimeHostServerWithServices(
-		&fakeHub{}, &fakeLibLister{}, nil, nil, setter, "silo.example", 42,
+		&fakeHub{}, &fakeLibLister{}, nil, nil, setter, "prairie.example", 42,
 	)
 	value, _ := structpb.NewStruct(map[string]any{"baseUrl": "https://example.test"})
 
@@ -202,7 +202,7 @@ func TestRuntimeHostServer_SetGlobalConfigEntry_PassesInstallationKeyAndValue(t 
 func TestRuntimeHostServer_SetGlobalConfigEntry_RejectsEmptyKey(t *testing.T) {
 	setter := &fakeConfigSetter{}
 	srv := pluginhost.NewRuntimeHostServerWithServices(
-		&fakeHub{}, &fakeLibLister{}, nil, nil, setter, "silo.example", 42,
+		&fakeHub{}, &fakeLibLister{}, nil, nil, setter, "prairie.example", 42,
 	)
 
 	_, err := srv.SetGlobalConfigEntry(context.Background(), &pluginv1.SetGlobalConfigEntryRequest{})
@@ -216,7 +216,7 @@ func TestRuntimeHostServer_SetGlobalConfigEntry_RejectsEmptyKey(t *testing.T) {
 
 func TestRuntimeHostServer_PublishEvent_RateLimited(t *testing.T) {
 	hub := &fakeHub{}
-	srv := pluginhost.NewRuntimeHostServerWithRate(hub, &fakeLibLister{}, "silo.example", 2)
+	srv := pluginhost.NewRuntimeHostServerWithRate(hub, &fakeLibLister{}, "prairie.example", 2)
 
 	payload, _ := structpb.NewStruct(map[string]any{"i": float64(1)})
 	for i := 0; i < 5; i++ {
@@ -253,7 +253,7 @@ func TestRuntimeHostServer_CheckMediaPresence_Returns(t *testing.T) {
 	cat := &fakeCatalog{matches: []pluginhost.LibraryPresenceRecord{
 		{ExternalID: "603", MediaID: "m-1", LibraryID: "lib-1", Title: "The Matrix"},
 	}}
-	srv := pluginhost.NewRuntimeHostServerWithCatalog(&fakeHub{}, &fakeLibLister{}, cat, "silo.example")
+	srv := pluginhost.NewRuntimeHostServerWithCatalog(&fakeHub{}, &fakeLibLister{}, cat, "prairie.example")
 
 	resp, err := srv.CheckMediaPresence(context.Background(), &pluginv1.CheckMediaPresenceRequest{
 		Provider:  "tmdb",

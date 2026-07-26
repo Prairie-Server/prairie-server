@@ -1,4 +1,4 @@
-# Contributing to Silo
+# Contributing to Prairie
 
 Hey, thanks for wanting to contribute!
 
@@ -11,7 +11,7 @@ Let's be real: this project is built almost entirely with AI assistance. Claude,
 
 ## Things Are Moving Fast
 
-Silo is in heavy active development. Features get rewritten, APIs shift, whole sections get reworked — sometimes day to day. **If you want to work on something, reach out first.** Open an issue or drop a message so:
+Prairie is in heavy active development. Features get rewritten, APIs shift, whole sections get reworked — sometimes day to day. **If you want to work on something, reach out first.** Open an issue or drop a message so:
 
 - You don't build on something that's already been rewritten locally but not pushed yet.
 - I can avoid breaking something you're actively working on.
@@ -78,7 +78,7 @@ cd web && bun run lint               # Frontend lint
 cd web && bun run format:check       # Frontend formatting
 ```
 
-If your change spans `Silo` and `silo-plugin-sdk`, local iteration through [`go.work`](go.work) is expected. Do not rely on that workspace in repo-tracked config or release pipelines. CI validates this repo with `GOWORK=off`, and any new SDK package or symbol must come from a pushed, tagged `github.com/Silo-Server/silo-plugin-sdk` release before the change is ready to merge.
+If your change spans `Prairie` and `prairie-plugin-sdk`, local iteration through [`go.work`](go.work) is expected. Do not rely on that workspace in repo-tracked config or release pipelines. CI validates this repo with `GOWORK=off`, and any new SDK package or symbol must come from a pushed, tagged `github.com/prairie-server/prairie-plugin-sdk` release before the change is ready to merge.
 
 ## Style
 
