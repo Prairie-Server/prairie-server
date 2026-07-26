@@ -24,7 +24,7 @@ func TestRenderLayoutEscapesAndPlacesContent(t *testing.T) {
 	if !strings.Contains(out, `<span id="footer-marker">fine print</span>`) {
 		t.Fatalf("footer HTML not passed through:\n%s", out)
 	}
-	if !strings.Contains(out, "SILO") {
+	if !strings.Contains(out, "PRAIRIE") {
 		t.Fatalf("wordmark missing:\n%s", out)
 	}
 }

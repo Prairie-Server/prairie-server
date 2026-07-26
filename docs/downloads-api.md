@@ -1,7 +1,7 @@
 # Downloads & Offline Sync API (client integration guide)
 
 This is the client-facing integration guide for downloads v2 / offline sync. It is
-the contract the Apple (`silo-apple`) and Android (`silo-android`) apps should use
+the contract the Apple (`prairie-apple`) and Android (`prairie-android`) apps should use
 to download movies and episodes for fully offline playback and reconcile watch
 state after reconnect.
 
@@ -797,7 +797,7 @@ Clients that hold an events connection can use this instead of polling
 
 ## 10. Apple client implementation notes
 
-This section is the handoff checklist for `silo-apple` across iOS, iPadOS, tvOS,
+This section is the handoff checklist for `prairie-apple` across iOS, iPadOS, tvOS,
 and macOS. Use the same HTTP contract above; these notes only pin the Apple-side
 storage, background transfer, and playback choices.
 
@@ -999,7 +999,7 @@ files playable but stop retrying server fetches for that row.
 
 ## 11. Android client implementation notes
 
-This section is the handoff checklist for `silo-android` across phone, tablet,
+This section is the handoff checklist for `prairie-android` across phone, tablet,
 and Android TV. Use the same HTTP contract above; these notes only pin the
 Android-side identity, storage, transfer, and playback choices. The required
 local state mirrors the Apple table in 10.1.

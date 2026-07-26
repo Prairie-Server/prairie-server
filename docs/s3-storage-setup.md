@@ -1,6 +1,6 @@
 # S3 Storage Setup
 
-Silo uses S3-compatible object storage for caching artwork, catalog exports, and other operational data. Any S3-compatible backend works (AWS S3, Ceph RGW, MinIO, Cloudflare R2, etc.).
+Prairie uses S3-compatible object storage for caching artwork, catalog exports, and other operational data. Any S3-compatible backend works (AWS S3, Ceph RGW, MinIO, Cloudflare R2, etc.).
 
 ## Core Settings
 
@@ -17,7 +17,7 @@ Configure these in **Admin > Settings > Storage** or via `server_settings`:
 
 ## URL Auth Methods
 
-Controls how Silo generates read URLs for cached images served to clients. Three modes are available:
+Controls how Prairie generates read URLs for cached images served to clients. Three modes are available:
 
 ### S3 Presigned URLs (default)
 
@@ -51,7 +51,7 @@ Generates HMAC-signed URLs validated by a Cloudflare WAF rule. Best for Cloudfla
 1. **Create an R2 bucket** in the Cloudflare dashboard
 2. **Connect a custom domain** under R2 > your bucket > Settings > Custom Domains
 3. **Create an R2 API token** with read/write permissions for the bucket
-4. **Configure Silo:**
+4. **Configure Prairie:**
 
 | Setting | Value |
 |---------|-------|
@@ -65,7 +65,7 @@ Generates HMAC-signed URLs validated by a Cloudflare WAF rule. Best for Cloudfla
 
 ### Option B: Token-authenticated (recommended)
 
-Adds HMAC-based access control so only Silo can generate valid image URLs.
+Adds HMAC-based access control so only Prairie can generate valid image URLs.
 
 **Requires Cloudflare Pro plan or higher** for the `is_timed_hmac_valid_v0()` WAF function.
 
@@ -81,7 +81,7 @@ Save the output for Steps 2 and 3.
 
 1. **Cloudflare Dashboard** > your zone > **Security** > **WAF** > **Custom rules**
 2. Click **Create rule**
-3. Name: `Silo CDN Token Auth`
+3. Name: `Prairie CDN Token Auth`
 4. Switch to **Edit expression** and enter:
 
 ```
@@ -91,13 +91,13 @@ Save the output for Steps 2 and 3.
 Replace:
 - `your-cdn-domain.com` with your R2 custom domain
 - `YOUR_SECRET` with the secret from Step 1
-- `10800` with your desired TTL in seconds (must match Silo's Token TTL)
+- `10800` with your desired TTL in seconds (must match Prairie's Token TTL)
 - `8` with the separator length (`len(token_param) + 2`, e.g. `?verify=` = 8)
 
 5. Set action to **Block**
 6. **Deploy**
 
-#### Step 3: Configure Silo
+#### Step 3: Configure Prairie
 
 | Setting | Value |
 |---------|-------|
@@ -127,7 +127,7 @@ https://your-cdn-domain.com/tmdb/movies/550/poster/original.jpg?verify=171215040
 ## Traditional S3 Setup (AWS, Ceph, MinIO)
 
 1. Create a bucket with appropriate IAM permissions (`PutObject`, `GetObject`, `DeleteObject`)
-2. Configure Silo with the endpoint, bucket, and credentials
+2. Configure Prairie with the endpoint, bucket, and credentials
 3. Leave URL Auth Method as **S3 Presigned URLs** (default)
 
 No additional setup needed — presigned URLs work out of the box.

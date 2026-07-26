@@ -15,8 +15,8 @@ RUN pnpm run build
 FROM golang:1.26 AS build-base
 ENV CGO_ENABLED=1
 ENV GOPROXY=direct
-ENV GOPRIVATE=github.com/prairie-server/*,github.com/Silo-Server/*
-ENV GONOSUMDB=github.com/prairie-server/*,github.com/Silo-Server/*
+ENV GOPRIVATE=github.com/prairie-server/*
+ENV GONOSUMDB=github.com/prairie-server/*
 RUN apt-get update && apt-get install -y --no-install-recommends libvips-dev && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY go.mod go.sum ./

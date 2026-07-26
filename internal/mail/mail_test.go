@@ -98,7 +98,7 @@ func TestSendInputValidation(t *testing.T) {
 }
 
 func TestBuildMessageMultipart(t *testing.T) {
-	cfg := &smtpConfig{fromAddress: "silo@example.com", fromName: "Prairie"}
+	cfg := &smtpConfig{fromAddress: "prairie@example.com", fromName: "Prairie"}
 	message, err := buildMessage(cfg, Message{
 		To:       []string{"user@example.com"},
 		Subject:  "Hello",
