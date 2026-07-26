@@ -11,7 +11,7 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/streamapp/streamapp
+        - github.com/prairie-server/prairie-server
 
 linters:
   enable:
@@ -28,6 +28,21 @@ linters:
     - unconvert
     - unused
     - wastedassign
+
+  exclusions:
+    paths:
+      - web
+      - migrations
+    rules:
+      # Allow repeated strings in test files
+      - path: _test\.go
+        linters:
+          - goconst
+      # Allow unchecked errors in test cleanup/defer
+      - path: _test\.go
+        text: "Error return value is not checked"
+        linters:
+          - errcheck
 
   settings:
     sloglint:
@@ -58,20 +73,3 @@ linters:
 
     misspell:
       locale: US
-
-issues:
-  exclude-dirs:
-    - web
-    - migrations
-
-  exclude-rules:
-    # Allow repeated strings in test files
-    - path: _test\.go
-      linters:
-        - goconst
-
-    # Allow unchecked errors in test cleanup/defer
-    - path: _test\.go
-      text: "Error return value is not checked"
-      linters:
-        - errcheck
