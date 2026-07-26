@@ -30,8 +30,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	sdkcapability "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/capability"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+	sdkcapability "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/capability"
 
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/activitylog"
@@ -3191,7 +3191,7 @@ func legacyIntroDBProviderConfig(
 	if configStore == nil ||
 		installation == nil ||
 		capability == nil ||
-		installation.PluginID != "silo.theintrodb" ||
+		installation.PluginID != "prairie.theintrodb" ||
 		capability.ID != "introdb" {
 		return markers.ProviderConfig{}, false
 	}
@@ -3217,7 +3217,7 @@ func copyLegacyIntroDBPluginConfig(
 		legacySettings == nil ||
 		installation == nil ||
 		capability == nil ||
-		installation.PluginID != "silo.theintrodb" ||
+		installation.PluginID != "prairie.theintrodb" ||
 		capability.ID != "introdb" {
 		return nil
 	}

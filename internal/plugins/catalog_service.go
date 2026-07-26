@@ -15,7 +15,7 @@ import (
 	"strings"
 	"time"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 )
 
 type PlatformBinary struct {
@@ -66,11 +66,11 @@ type CatalogServiceOptions struct {
 }
 
 type CatalogService struct {
-	repositories   *RepositoryStore
-	httpClient     *http.Client
-	siloAPIVersion string
-	currentOS      string
-	currentArch    string
+	repositories      *RepositoryStore
+	httpClient        *http.Client
+	prairieAPIVersion string
+	currentOS         string
+	currentArch       string
 }
 
 func NewCatalogService(repositories *RepositoryStore, opts CatalogServiceOptions) *CatalogService {
@@ -94,11 +94,11 @@ func NewCatalogService(repositories *RepositoryStore, opts CatalogServiceOptions
 	}
 
 	return &CatalogService{
-		repositories:   repositories,
-		httpClient:     httpClient,
-		siloAPIVersion: apiVersion,
-		currentOS:      currentOS,
-		currentArch:    currentArch,
+		repositories:      repositories,
+		httpClient:        httpClient,
+		prairieAPIVersion: apiVersion,
+		currentOS:         currentOS,
+		currentArch:       currentArch,
 	}
 }
 
@@ -280,7 +280,7 @@ func (s *CatalogService) catalogEntryFromPackage(repository *Repository, pkg Cat
 		if err := ValidateCatalogManifest(pkg.Manifest); err != nil {
 			return CatalogEntry{}, false, err
 		}
-		if pkg.Manifest.GetSiloApiVersion() != s.siloAPIVersion {
+		if pkg.Manifest.GetPrairieApiVersion() != s.prairieAPIVersion {
 			return CatalogEntry{}, false, nil
 		}
 
@@ -327,7 +327,7 @@ func (s *CatalogService) catalogEntryFromPackage(repository *Repository, pkg Cat
 	if err := ValidateManifest(pkg.Manifest); err != nil {
 		return CatalogEntry{}, false, err
 	}
-	if pkg.Manifest.GetSiloApiVersion() != s.siloAPIVersion {
+	if pkg.Manifest.GetPrairieApiVersion() != s.prairieAPIVersion {
 		return CatalogEntry{}, false, nil
 	}
 	if !supportsPlatform(pkg.Manifest, s.currentOS, s.currentArch) {
@@ -353,8 +353,8 @@ func (s *CatalogService) installTargetFromPackage(ctx context.Context, repositor
 		if err := ValidateCatalogManifest(pkg.Manifest); err != nil {
 			return nil, err
 		}
-		if pkg.Manifest.GetSiloApiVersion() != s.siloAPIVersion {
-			return nil, fmt.Errorf("plugin silo_api_version %q is not supported", pkg.Manifest.GetSiloApiVersion())
+		if pkg.Manifest.GetPrairieApiVersion() != s.prairieAPIVersion {
+			return nil, fmt.Errorf("plugin prairie_api_version %q is not supported", pkg.Manifest.GetPrairieApiVersion())
 		}
 
 		platformKey := s.currentOS + "/" + s.currentArch
@@ -402,8 +402,8 @@ func (s *CatalogService) installTargetFromPackage(ctx context.Context, repositor
 	if err := ValidateManifest(pkg.Manifest); err != nil {
 		return nil, err
 	}
-	if pkg.Manifest.GetSiloApiVersion() != s.siloAPIVersion {
-		return nil, fmt.Errorf("plugin silo_api_version %q is not supported", pkg.Manifest.GetSiloApiVersion())
+	if pkg.Manifest.GetPrairieApiVersion() != s.prairieAPIVersion {
+		return nil, fmt.Errorf("plugin prairie_api_version %q is not supported", pkg.Manifest.GetPrairieApiVersion())
 	}
 	if !supportsPlatform(pkg.Manifest, s.currentOS, s.currentArch) {
 		return nil, fmt.Errorf("plugin %s@%s does not support platform %s/%s", pkg.Manifest.GetPluginId(), pkg.Manifest.GetVersion(), s.currentOS, s.currentArch)

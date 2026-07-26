@@ -115,7 +115,7 @@ function pluginDisplayName(pluginID: string, presentation?: PluginPresentation):
   if (displayName) return displayName;
 
   return pluginID
-    .replace(/^silo[._-]?/, "")
+    .replace(/^(?:prairie|silo)[._-]?/, "")
     .split(/[._-]+/)
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))

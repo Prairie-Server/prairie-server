@@ -6,7 +6,7 @@
 -- Run after deploying the plugin image resolution feature.
 -- Safe to run multiple times (skips already-prefixed paths).
 --
--- Usage: psql -d silo -f scripts/prefix-metadb-image-paths.sql
+-- Usage: psql -d prairie -f scripts/prefix-metadb-image-paths.sql
 
 BEGIN;
 

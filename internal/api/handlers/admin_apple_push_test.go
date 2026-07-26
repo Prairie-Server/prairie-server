@@ -45,7 +45,7 @@ func TestAdminApplePushHandlerRegistersRelayAndStoresKey(t *testing.T) {
 			"deployment_id": "01RETURNED",
 			"api_key":       "modern.capability.value",
 			"key_prefix":    "cap_v1_test",
-			"apns_topics":   []string{"org.siloserver.silo"},
+			"apns_topics":   []string{"org.prairieserver.prairie"},
 			"expires_at":    "2026-08-10T00:00:00Z",
 		})
 	}))

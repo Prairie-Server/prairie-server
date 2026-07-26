@@ -3,7 +3,7 @@ package plugins
 import (
 	"testing"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 )
 
 func TestCatalogEntriesForDiscoveryUsesApprovedCommunityOwnerForTransferredPlugins(t *testing.T) {
@@ -11,12 +11,12 @@ func TestCatalogEntriesForDiscoveryUsesApprovedCommunityOwnerForTransferredPlugi
 		{
 			RepositoryID: 1,
 			SourceKind:   RepositorySourcePrairie,
-			Manifest:     &pluginv1.PluginManifest{PluginId: "silo.requests.arr", Version: "0.1.0"},
+			Manifest:     &pluginv1.PluginManifest{PluginId: "prairie.requests.arr", Version: "0.1.0"},
 		},
 		{
 			RepositoryID: 2,
 			SourceKind:   RepositorySourceApprovedCommunity,
-			Manifest:     &pluginv1.PluginManifest{PluginId: "silo.requests.arr", Version: "0.1.1"},
+			Manifest:     &pluginv1.PluginManifest{PluginId: "prairie.requests.arr", Version: "0.1.1"},
 		},
 	}
 
@@ -33,7 +33,7 @@ func TestCatalogEntriesForDiscoveryHidesTransferredPluginWhenCommunityIsDisabled
 	result := catalogEntriesForDiscovery([]CatalogEntry{{
 		RepositoryID: 1,
 		SourceKind:   RepositorySourcePrairie,
-		Manifest:     &pluginv1.PluginManifest{PluginId: "silo.requests.seerr", Version: "0.1.0"},
+		Manifest:     &pluginv1.PluginManifest{PluginId: "prairie.requests.seerr", Version: "0.1.0"},
 	}})
 	if len(result) != 0 {
 		t.Fatalf("catalog entries = %d, want transferred plugin hidden", len(result))
@@ -45,12 +45,12 @@ func TestCatalogEntriesForDiscoveryPreventsExternalSourceShadowing(t *testing.T)
 		{
 			RepositoryID: 9,
 			SourceKind:   RepositorySourceExternal,
-			Manifest:     &pluginv1.PluginManifest{PluginId: "silo.tmdb", Version: "99.0.0"},
+			Manifest:     &pluginv1.PluginManifest{PluginId: "prairie.tmdb", Version: "99.0.0"},
 		},
 		{
 			RepositoryID: 1,
 			SourceKind:   RepositorySourcePrairie,
-			Manifest:     &pluginv1.PluginManifest{PluginId: "silo.tmdb", Version: "1.0.0"},
+			Manifest:     &pluginv1.PluginManifest{PluginId: "prairie.tmdb", Version: "1.0.0"},
 		},
 	})
 	if len(result) != 1 {
@@ -66,12 +66,12 @@ func TestCatalogEntriesForDiscoveryShowsLatestVersionFromSelectedRepository(t *t
 		{
 			RepositoryID: 1,
 			SourceKind:   RepositorySourcePrairie,
-			Manifest:     &pluginv1.PluginManifest{PluginId: "silo.tmdb", Version: "1.2.9"},
+			Manifest:     &pluginv1.PluginManifest{PluginId: "prairie.tmdb", Version: "1.2.9"},
 		},
 		{
 			RepositoryID: 1,
 			SourceKind:   RepositorySourcePrairie,
-			Manifest:     &pluginv1.PluginManifest{PluginId: "silo.tmdb", Version: "1.2.10"},
+			Manifest:     &pluginv1.PluginManifest{PluginId: "prairie.tmdb", Version: "1.2.10"},
 		},
 	})
 	if len(result) != 1 {

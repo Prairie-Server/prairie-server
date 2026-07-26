@@ -318,7 +318,7 @@ func resetPolicyTables(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 }
 
 func validStorePolicySource() string {
-	return `package silo_custom.scope
+	return `package prairie_custom.scope
 
 import rego.v1
 

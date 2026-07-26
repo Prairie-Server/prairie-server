@@ -83,10 +83,10 @@ func TestMigrationSeedsReservedBuiltinInstallation(t *testing.T) {
 	)
 	err := pool.QueryRow(ctx,
 		`SELECT id, kind, enabled, install_path, update_policy
-		 FROM plugin_installations WHERE plugin_id = 'silo.builtin'`).
+		 FROM plugin_installations WHERE plugin_id = 'prairie.builtin'`).
 		Scan(&id, &kind, &enabled, &installPath, &updatePolicy)
 	if err != nil {
-		t.Fatalf("reserved silo.builtin installation missing: %v", err)
+		t.Fatalf("reserved prairie.builtin installation missing: %v", err)
 	}
 	if kind != "builtin" || !enabled || installPath != "/nonexistent/silo-builtin" || updatePolicy != "manual" {
 		t.Errorf("reserved row = kind=%q enabled=%v install_path=%q update_policy=%q", kind, enabled, installPath, updatePolicy)
@@ -94,7 +94,7 @@ func TestMigrationSeedsReservedBuiltinInstallation(t *testing.T) {
 
 	md := lookupCapabilityMetadata(ctx, pool, id, "nfo")
 	if md == nil {
-		t.Fatal("silo.builtin nfo capability missing")
+		t.Fatal("prairie.builtin nfo capability missing")
 	}
 	if extractDefaultEnabled(md) {
 		t.Error("nfo capability default_enabled must be false")

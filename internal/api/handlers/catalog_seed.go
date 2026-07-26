@@ -90,7 +90,7 @@ func (h *CatalogSeedHandler) HandleExport(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	filename := "silo-catalog-seed-" + time.Now().UTC().Format("20060102T150405Z") + ".json.gz"
+	filename := "prairie-catalog-seed-" + time.Now().UTC().Format("20060102T150405Z") + ".json.gz"
 	w.Header().Set("Content-Type", "application/gzip")
 	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=%q", filename))
 	w.Header().Set("Content-Length", strconv.Itoa(len(data)))

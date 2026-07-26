@@ -30,8 +30,8 @@ import {
   renderWithPolicyProviders,
 } from "./policyTestUtils";
 
-const LIVE_V2_SOURCE = "package silo_custom.scope\n\nbad if {\n  x\n}\n";
-const LIVE_V3_SOURCE = "package silo_custom.scope\n\nlive_three if {\n  input\n}\n";
+const LIVE_V2_SOURCE = "package prairie_custom.scope\n\nbad if {\n  x\n}\n";
+const LIVE_V3_SOURCE = "package prairie_custom.scope\n\nlive_three if {\n  input\n}\n";
 
 function documentWithLiveV3(): PolicyDocument {
   return {
@@ -79,7 +79,7 @@ describe("PolicyEditorPanel", () => {
             source_sha256: "abc",
             compiled_ok: true,
             created_at: "2026-07-02T12:00:00Z",
-            source: "package silo_custom.scope\n\nbad if {\n  x\n}\n",
+            source: "package prairie_custom.scope\n\nbad if {\n  x\n}\n",
           },
           created_at: "2026-07-02T12:00:00Z",
           updated_at: "2026-07-02T12:00:00Z",
@@ -120,7 +120,7 @@ describe("PolicyEditorPanel", () => {
     // and surfaces the Validate step.
     expect(screen.queryByRole("button", { name: /validate/i })).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Rego policy source"), {
-      target: { value: "package silo_custom.scope\n\nbad if {\n  y\n}\n" },
+      target: { value: "package prairie_custom.scope\n\nbad if {\n  y\n}\n" },
     });
 
     await act(async () => {
@@ -143,7 +143,7 @@ describe("PolicyEditorPanel", () => {
     expect(await screen.findByText("Scope limits")).toBeInTheDocument();
     await waitFor(() => expect(regoTextarea().value).toContain("bad if"));
 
-    const myDraft = "package silo_custom.scope\n\nmy_edit if {\n  input\n}\n";
+    const myDraft = "package prairie_custom.scope\n\nmy_edit if {\n  input\n}\n";
     fireEvent.change(regoTextarea(), { target: { value: myDraft } });
 
     // Another admin activates v3 — surfaced here as a background query update.
@@ -164,7 +164,7 @@ describe("PolicyEditorPanel", () => {
     expect(await screen.findByText("Scope limits")).toBeInTheDocument();
     await waitFor(() => expect(regoTextarea().value).toContain("bad if"));
 
-    const myDraft = "package silo_custom.scope\n\nmy_edit if {\n  input\n}\n";
+    const myDraft = "package prairie_custom.scope\n\nmy_edit if {\n  input\n}\n";
     fireEvent.change(regoTextarea(), { target: { value: myDraft } });
     act(() => {
       client.setQueryData(adminKeys.policyDocument(1), documentWithLiveV3());

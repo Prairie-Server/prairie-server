@@ -20,8 +20,8 @@ FROM golang:1.26 AS build
 # pure-Go modernc.org/sqlite so the server binary stays CGO-free.
 ENV CGO_ENABLED=0
 ENV GOPROXY=https://proxy.golang.org,direct
-ENV GOPRIVATE=github.com/prairie-server/*,github.com/Silo-Server/*
-ENV GONOSUMDB=github.com/prairie-server/*,github.com/Silo-Server/*
+ENV GOPRIVATE=github.com/prairie-server/*
+ENV GONOSUMDB=github.com/prairie-server/*
 WORKDIR /app
 COPY go.mod go.sum ./
 COPY internal/compat/zishang520-webtransport-go/ internal/compat/zishang520-webtransport-go/

@@ -492,7 +492,7 @@ func (r *Runner) executeCatalogExport(job *models.AdminJob) {
 		r.publishJobByID(ctx, notifications.TypeJobProgress, job.ID)
 	}
 
-	tempFile, err := os.CreateTemp("", "silo-catalog-seed-*.json.gz")
+	tempFile, err := os.CreateTemp("", "prairie-catalog-seed-*.json.gz")
 	if err != nil {
 		r.failJob(job.ID, 0, 0, "Catalog export failed", fmt.Sprintf("creating temp file: %v", err))
 		return

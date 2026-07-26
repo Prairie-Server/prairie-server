@@ -15,7 +15,7 @@ import {
 } from "./policyTestUtils";
 import { parseRankLadder } from "./vendorBaseline";
 
-const RATINGS_SOURCE = `package silo.lib.ratings
+const RATINGS_SOURCE = `package prairie.lib.ratings
 
 import rego.v1
 
@@ -34,7 +34,7 @@ describe("PolicyVendorViewer", () => {
       "fetch",
       vi.fn<typeof fetch>(async () =>
         jsonResponse([
-          { path: "vendor/scope.rego", source: "package silo.scope" },
+          { path: "vendor/scope.rego", source: "package prairie.scope" },
           { path: "vendor/lib/ratings.rego", source: RATINGS_SOURCE },
         ]),
       ),
@@ -70,6 +70,6 @@ describe("parseRankLadder", () => {
   });
 
   it("returns undefined when no rank table exists", () => {
-    expect(parseRankLadder("package silo.lib.other\n\nallow := true")).toBeUndefined();
+    expect(parseRankLadder("package prairie.lib.other\n\nallow := true")).toBeUndefined();
   });
 });

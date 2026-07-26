@@ -19,13 +19,13 @@ import (
 const (
 	PushPlatformApple        = "apple"
 	PushPlatformAndroid      = "android"
-	PushProviderPrairieRelay = "silo_relay"
+	PushProviderPrairieRelay = "prairie_relay"
 	PushModeOff              = "off"
 	PushModeInAppOnly        = "in_app_only"
 	PushModePrivatePush      = "private_push"
 	APNsEnvironmentProd      = "production"
 	APNsEnvironmentSandbox   = "sandbox"
-	ApplePushTopicPrairie    = "org.siloserver.silo"
+	ApplePushTopicPrairie    = "org.prairieserver.prairie"
 )
 
 var (

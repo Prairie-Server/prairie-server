@@ -16,7 +16,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	"github.com/prairie-server/prairie-server/internal/httpheaders"
 	"github.com/prairie-server/prairie-server/internal/metadata"
@@ -631,7 +631,7 @@ func (h *PluginHandler) HandleUploadInstallation(w http.ResponseWriter, r *http.
 	}
 	defer file.Close()
 
-	tempFile, err := os.CreateTemp("", "silo-plugin-*.zip")
+	tempFile, err := os.CreateTemp("", "prairie-plugin-*.zip")
 	if err != nil {
 		slog.ErrorContext(r.Context(), "creating temp plugin upload file", "component", "api", "error", err)
 		writeError(w, http.StatusInternalServerError, "internal_error", "Failed to process plugin upload")

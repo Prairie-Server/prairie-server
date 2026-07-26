@@ -7,7 +7,8 @@ import (
 )
 
 const (
-	shortIDPrefix        = "SILO-"
+	shortIDPrefix        = "PRAIRIE-"
+	legacyShortIDPrefix  = "SILO-"
 	shortIDPayloadLength = 12
 	shortIDChars         = "0123456789ABCDEFGHJKMNPQRSTVWXYZ"
 )
@@ -28,7 +29,16 @@ func NewShortID() (string, error) {
 
 func ParseShortID(raw string) (string, error) {
 	id := strings.ToUpper(strings.TrimSpace(raw))
-	payload := strings.TrimPrefix(id, shortIDPrefix)
+	prefix := shortIDPrefix
+	payload := id
+	switch {
+	case strings.HasPrefix(id, shortIDPrefix):
+		payload = strings.TrimPrefix(id, shortIDPrefix)
+	case strings.HasPrefix(id, legacyShortIDPrefix):
+		payload = strings.TrimPrefix(id, legacyShortIDPrefix)
+		// Preserve legacy SILO- IDs so existing rows remain addressable.
+		prefix = legacyShortIDPrefix
+	}
 	if len(payload) != shortIDPayloadLength {
 		return "", ErrInvalidShortID
 	}
@@ -37,7 +47,7 @@ func ParseShortID(raw string) (string, error) {
 			return "", ErrInvalidShortID
 		}
 	}
-	return shortIDPrefix + payload, nil
+	return prefix + payload, nil
 }
 
 func isShortIDChar(ch byte) bool {

@@ -28,7 +28,7 @@ describe("PolicyDecisionLogTable", () => {
                 {
                   id: 2,
                   timestamp: "2026-07-02T13:00:00Z",
-                  decision_name: "silo.scope.decision",
+                  decision_name: "prairie.scope.decision",
                   policy_generation: 4,
                   user_id: 42,
                   allowed: false,
@@ -43,7 +43,7 @@ describe("PolicyDecisionLogTable", () => {
               {
                 id: 1,
                 timestamp: "2026-07-02T12:00:00Z",
-                decision_name: "silo.scope.decision",
+                decision_name: "prairie.scope.decision",
                 policy_generation: 3,
                 user_id: 7,
                 allowed: true,

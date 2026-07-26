@@ -115,8 +115,8 @@ const emailShell = `<!DOCTYPE html>
 <meta name="supported-color-schemes" content="dark">
 <style>
   @media (max-width: 480px) {
-    .silo-shell { padding: 24px 12px 36px !important; }
-    .silo-card { padding: 24px 20px !important; }
+    .prairie-shell { padding: 24px 12px 36px !important; }
+    .prairie-card { padding: 24px 20px !important; }
   }
 </style>
 </head>
@@ -124,7 +124,7 @@ const emailShell = `<!DOCTYPE html>
 {{preheader}}<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" bgcolor="{{canvas}}" style="background-color:{{canvas}};">
 <tr><td align="center" class="silo-shell" style="padding:36px 16px 48px;">
 <table role="presentation" width="560" cellpadding="0" cellspacing="0" border="0" style="width:100%;max-width:560px;">
-<tr><td style="padding:0 6px 18px;font:600 12px/1 {{font}};color:{{text}};letter-spacing:7px;"><span style="color:#55555e;">&#9656;&#xFE0E;</span>&nbsp;&nbsp;SILO</td></tr>
+<tr><td style="padding:0 6px 18px;font:600 12px/1 {{font}};color:{{text}};letter-spacing:7px;"><span style="color:#55555e;">&#9656;&#xFE0E;</span>&nbsp;&nbsp;PRAIRIE</td></tr>
 <tr><td class="silo-card" bgcolor="{{card}}" style="background-color:{{card}};border:1px solid {{border}};border-radius:12px;padding:28px 32px;">
 {{title}}{{body}}
 </td></tr>

@@ -34,7 +34,7 @@ func (f fakeMarkerLegacySettings) Get(_ context.Context, key string) (string, er
 
 func TestCopyLegacyIntroDBPluginConfigCopiesAPIKeyOnce(t *testing.T) {
 	runtimeConfigs := &fakeMarkerRuntimeConfigs{configs: map[int][]*plugins.RuntimeConfig{}}
-	installation := &plugins.Installation{ID: 42, PluginID: "silo.theintrodb"}
+	installation := &plugins.Installation{ID: 42, PluginID: "prairie.theintrodb"}
 	capability := &plugins.Capability{ID: "introdb"}
 
 	if err := copyLegacyIntroDBPluginConfig(
@@ -74,7 +74,7 @@ func TestCopyLegacyIntroDBPluginConfigIgnoresOtherPlugins(t *testing.T) {
 		context.Background(),
 		runtimeConfigs,
 		fakeMarkerLegacySettings{"introdb.api_key": "legacy-key"},
-		&plugins.Installation{ID: 7, PluginID: "silo.other"},
+		&plugins.Installation{ID: 7, PluginID: "prairie.other"},
 		&plugins.Capability{ID: "introdb"},
 	); err != nil {
 		t.Fatalf("copyLegacyIntroDBPluginConfig: %v", err)

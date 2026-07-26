@@ -2,7 +2,7 @@
 """Benchmark episode catalog sort/filter shapes without embedding credentials.
 
 Required environment:
-  PRAIRIE_BASE_URL        Example: https://silo.example.com
+  PRAIRIE_BASE_URL        Example: https://prairie.example.com
   PRAIRIE_BEARER_TOKEN    API access token
   PRAIRIE_PROFILE_ID      Profile id used for personalized filters/sorts
 

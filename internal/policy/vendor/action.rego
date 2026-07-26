@@ -1,11 +1,11 @@
-package silo.action
+package prairie.action
 
-import data.silo.lib.quality
-import data.silo.lib.ratings
+import data.prairie.lib.quality
+import data.prairie.lib.ratings
 import rego.v1
 
 decision := tightened if {
-	override := data.silo_custom.action.override(base_decision, input)
+	override := data.prairie_custom.action.override(base_decision, input)
 	tightened := tighten(base_decision, override, input)
 } else := base_decision
 

@@ -309,8 +309,8 @@ func checkS3ObjectPermissions(
 	client s3SettingsCheckClient,
 	bucket string,
 ) (resultErr error) {
-	key := fmt.Sprintf(".silo-admin-connection-check/%d", time.Now().UnixNano())
-	payload := []byte("silo-storage-check")
+	key := fmt.Sprintf(".prairie-admin-connection-check/%d", time.Now().UnixNano())
+	payload := []byte("prairie-storage-check")
 	deleted := false
 	defer func() {
 		if deleted {
@@ -407,7 +407,7 @@ func checkRecommendationsEmbeddingConnection(
 
 	checkCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
-	if _, err := client.Embed(checkCtx, []string{"silo connection test"}); err != nil {
+	if _, err := client.Embed(checkCtx, []string{"prairie connection test"}); err != nil {
 		return connectionCheckResponse{
 			Success: false,
 			Message: fmt.Sprintf("Embedding connection check failed: %v", err),

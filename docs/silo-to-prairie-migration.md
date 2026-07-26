@@ -1,6 +1,6 @@
 # Silo to Prairie migration
 
-This Phase 1 rebrand changes names, paths, environment variables, Docker defaults, and search-index defaults from Silo to Prairie. It does not change the AGPL license or the plugin SDK module path (`github.com/Silo-Server/silo-plugin-sdk`).
+This Phase 1 rebrand changes names, paths, environment variables, Docker defaults, and search-index defaults from Silo to Prairie. It does not change the AGPL license or the plugin SDK module path (`github.com/prairie-server/prairie-plugin-sdk`).
 
 ## Paths
 

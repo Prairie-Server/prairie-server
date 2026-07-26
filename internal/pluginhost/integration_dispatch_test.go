@@ -16,8 +16,8 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"google.golang.org/protobuf/encoding/protojson"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	publicmanifest "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/manifest"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+	publicmanifest "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/manifest"
 
 	"github.com/prairie-server/prairie-server/internal/cache"
 	"github.com/prairie-server/prairie-server/internal/events"
@@ -25,7 +25,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/plugins"
 )
 
-const sdkExamplesDir = "/opt/worktrees/silo-plugin-sdk-rh/examples"
+const sdkExamplesDir = "/opt/worktrees/prairie-plugin-sdk-rh/examples"
 
 // fakePlugin captures the host-side state we need per started plugin to wire
 // the dispatcher.

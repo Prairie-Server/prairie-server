@@ -10,7 +10,7 @@ maintainers.
 ## Registration: a builtin provider in the plugin chain
 
 Provider chains are keyed on `plugin_installations` rows, so builtins are
-registered **as data**: a reserved installation (`plugin_id='silo.builtin'`,
+registered **as data**: a reserved installation (`plugin_id='prairie.builtin'`,
 `kind='builtin'`, sentinel `install_path`, `update_policy='manual'`) plus a
 `metadata_provider.v1` capability `nfo` with `default_priority` 1 for
 movie/series/season/episode and `default_enabled=false`
@@ -23,7 +23,7 @@ movie/series/season/episode and `default_enabled=false`
   `kind='builtin'` rows instead of constructing a gRPC plugin.
 - Guard rails keep the reserved row out of every plugin surface (user plugin
   settings, installations list, image resolvers, preload, auto-update, store
-  delete, mutation handlers); `silo.builtin` is a reserved manifest id. Generic
+  delete, mutation handlers); `prairie.builtin` is a reserved manifest id. Generic
   installation reads must **not** filter builtins — the chain enabled-check
   depends on them.
 - On startup, `SyncBuiltinProviderChains` (`internal/metadata/builtin_sync.go`)

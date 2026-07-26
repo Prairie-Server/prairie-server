@@ -74,8 +74,8 @@ jobs:
 
       - name: Reject committed local SDK replaces
         run: |
-          if grep -Eq '^replace github.com/Silo-Server/silo-plugin-sdk => /' go.mod; then
-            echo "go.mod contains a machine-local silo-plugin-sdk replace."
+          if grep -Eq '^replace github.com/prairie-server/prairie-plugin-sdk => /' go.mod; then
+            echo "go.mod contains a machine-local prairie-plugin-sdk replace."
             exit 1
           fi
 
@@ -84,9 +84,9 @@ jobs:
           GOWORK: off
         run: |
           sdk_module_json="$(mktemp)"
-          go list -m -json github.com/Silo-Server/silo-plugin-sdk > "$sdk_module_json"
+          go list -m -json github.com/prairie-server/prairie-plugin-sdk > "$sdk_module_json"
           if grep -q '"Main": true' "$sdk_module_json"; then
-            echo "silo-plugin-sdk resolved from the local workspace instead of go.mod."
+            echo "prairie-plugin-sdk resolved from the local workspace instead of go.mod."
             cat "$sdk_module_json"
             exit 1
           fi

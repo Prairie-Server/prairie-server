@@ -243,7 +243,7 @@ type Dependencies struct {
 	Recommender      Recommender    // may be nil
 	LoginLimiter     *LoginLimiter  // may be nil — one is created if absent
 	// InstallID returns the current plugin install ID for building
-	// host-proxy-routable URLs. Defaults to "silo.audiobooks" when nil.
+	// host-proxy-routable URLs. Defaults to "prairie.audiobooks" when nil.
 	InstallID func() string
 	// ProgressStore provides access to user_watch_progress for ABS
 	// progress endpoints. May be nil; handlers degrade gracefully.
@@ -309,7 +309,7 @@ func New(deps Dependencies) *Handler {
 		deps.LoginLimiter = NewLoginLimiter()
 	}
 	if deps.InstallID == nil {
-		deps.InstallID = func() string { return "silo.audiobooks" }
+		deps.InstallID = func() string { return "prairie.audiobooks" }
 	}
 	return &Handler{deps: deps}
 }

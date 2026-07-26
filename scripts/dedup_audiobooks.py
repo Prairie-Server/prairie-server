@@ -41,9 +41,9 @@ def db_connect():
     return psycopg2.connect(
         host=os.environ.get("PGHOST", "localhost"),
         port=int(os.environ.get("PGPORT", 5432)),
-        user=os.environ.get("PGUSER", "silo"),
-        password=os.environ.get("PGPASSWORD", "silo"),
-        dbname=os.environ.get("PGDATABASE", "silo"),
+        user=os.environ.get("PGUSER", "prairie"),
+        password=os.environ.get("PGPASSWORD", "prairie"),
+        dbname=os.environ.get("PGDATABASE", "prairie"),
     )
 
 

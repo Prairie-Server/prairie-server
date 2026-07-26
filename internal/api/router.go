@@ -156,7 +156,7 @@ type Dependencies struct {
 	PluginUserConfig             *plugins.UserConfigStore
 	AuthProviders                []auth.RegisteredProvider
 	// PublicURL is the externally-reachable origin (scheme + host) for this
-	// silo instance. Used to build redirect_uri values handed to OAuth
+	// Prairie instance. Used to build redirect_uri values handed to OAuth
 	// IdPs. Empty disables the /oauth/{install_id}/{init,callback} routes.
 	PublicURL              string
 	ImageResolver          catalog.ImageResolver             // plugin-based image URL resolver (may be nil)

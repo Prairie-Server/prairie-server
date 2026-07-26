@@ -13,7 +13,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/cache"
 	"github.com/prairie-server/prairie-server/internal/catalog"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"golang.org/x/sync/singleflight"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

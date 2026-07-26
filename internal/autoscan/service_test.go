@@ -155,7 +155,7 @@ func TestPollOncePassesSourceConfigToProvider(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.cephfs", CapabilityID: "cephfs", Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.cephfs", CapabilityID: "cephfs", Enabled: true,
 			SourceConfig: map[string]string{"exclusions": ".downloads\n.recyclebin"},
 		}},
 	}
@@ -174,7 +174,7 @@ func TestPollOnceSkipsSourceWhenPollAlreadyRunning(t *testing.T) {
 		settings:       Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		createEventErr: ErrPollAlreadyRunning,
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.cephfs", CapabilityID: "cephfs", Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.cephfs", CapabilityID: "cephfs", Enabled: true,
 		}},
 	}
 	prov := &fakeProvider{paths: map[string][]string{"cephfs": {"/mnt/media/Movie/movie.mkv"}}, nextMarker: "m1"}
@@ -401,7 +401,7 @@ func TestPollOnceEnqueuesDedupedFolders(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
 		}},
 	}
 	prov := &fakeProvider{paths: map[string][]string{
@@ -432,7 +432,7 @@ func TestPollOnceRecordsSuccessfulEvent(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true, Marker: &marker,
+			ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true, Marker: &marker,
 		}},
 	}
 	prov := &fakeProvider{paths: map[string][]string{
@@ -474,7 +474,7 @@ func TestPollOnceRecordsReusedScanCounts(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
 		}},
 	}
 	prov := &fakeProvider{paths: map[string][]string{
@@ -509,7 +509,7 @@ func TestPollOnceAppliesSourceRewritesBeforeEnqueue(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
 			PathRewrites: []PathRewrite{{From: "/data/tv", To: "/mnt/media/tv"}},
 		}},
 	}
@@ -538,7 +538,7 @@ func TestPollOnceStructuredFileChangeEnqueuesExactFile(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.cephfs", CapabilityID: "cephfs", Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.cephfs", CapabilityID: "cephfs", Enabled: true,
 			PathRewrites: []PathRewrite{{From: "/ceph/tv", To: "/mnt/media/tv"}},
 		}},
 	}
@@ -571,7 +571,7 @@ func TestPollOnceStructuredSubtreeChangeEnqueuesExactSubtree(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.cephfs", CapabilityID: "cephfs", Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.cephfs", CapabilityID: "cephfs", Enabled: true,
 			PathRewrites: []PathRewrite{{From: "/ceph/movies", To: "/mnt/media/movies"}},
 		}},
 	}
@@ -604,7 +604,7 @@ func TestPollOnceFileChangeForDeletedPathFallsBackToSubtreeScan(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.cephfs", CapabilityID: "cephfs", Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.cephfs", CapabilityID: "cephfs", Enabled: true,
 			PathRewrites: []PathRewrite{{From: "/ceph/movies", To: "/mnt/media/movies"}},
 		}},
 	}
@@ -637,7 +637,7 @@ func TestPollOnceLegacyChangeForDeletedDirFallsBackToSubtreeScan(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.cephfs", CapabilityID: "cephfs", Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.cephfs", CapabilityID: "cephfs", Enabled: true,
 			PathRewrites: []PathRewrite{{From: "/ceph/movies", To: "/mnt/media/movies"}},
 		}},
 	}
@@ -669,7 +669,7 @@ func TestPollOnceCollapsesLargeTargetBatchToLibraryScans(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.cephfs", CapabilityID: "cephfs", Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.cephfs", CapabilityID: "cephfs", Enabled: true,
 		}},
 	}
 	changes := make([]Change, 0, maxAutoscanTargetsPerPoll+1)
@@ -712,7 +712,7 @@ func TestPollOnceChunksCollapsedLibraryScansAtTargetCap(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.cephfs", CapabilityID: "cephfs", Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.cephfs", CapabilityID: "cephfs", Enabled: true,
 		}},
 	}
 	changes := make([]Change, 0, maxAutoscanTargetsPerPoll+1)
@@ -753,7 +753,7 @@ func TestPollOnceScansDistinctPathsUnderSameFolder(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
 		}},
 	}
 	prov := &fakeProvider{paths: map[string][]string{
@@ -783,7 +783,7 @@ func TestPollOnceStoresOpaqueMarkerVerbatim(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
 		}},
 	}
 	const opaque = "eyJjdXJzb3IiOiJhYmMxMjMifQ==|2026-06-02T14:10:00Z"
@@ -807,7 +807,7 @@ func TestPollOnceAdvancesMarkerWhenPathsReturnedButNoneResolve(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
 		}},
 	}
 	prov := &fakeProvider{paths: map[string][]string{
@@ -858,7 +858,7 @@ func TestPollOnceHoldsMarkerOnTransientResolveFailure(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
 		}},
 	}
 	prov := &fakeProvider{paths: map[string][]string{
@@ -902,7 +902,7 @@ func TestPollOnceHoldsMarkerWhenSomeResolveAndOthersFailTransiently(t *testing.T
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
 		}},
 	}
 	prov := &fakeProvider{paths: map[string][]string{
@@ -947,7 +947,7 @@ func TestPollOnceAdvancesMarkerWhenResolvedButAllSuppressed(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
 			// rewrite /data/tv -> /mnt/media/tv so fakeResolver resolves the paths.
 			PathRewrites: []PathRewrite{{From: "/data/tv", To: "/mnt/media/tv"}},
 		}},
@@ -980,7 +980,7 @@ func TestPollOnceAdvancesMarkerWhenZeroPathsReturned(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
 		}},
 	}
 	prov := &fakeProvider{paths: map[string][]string{"arr": {}}, nextMarker: "m1"}
@@ -1012,7 +1012,7 @@ func TestPollOnceDisabledNoop(t *testing.T) {
 func TestPollOnceProviderErrorKeepsMarker(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
-		sources:  []Source{{ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true}},
+		sources:  []Source{{ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true}},
 	}
 	prov := &fakeProvider{err: context.DeadlineExceeded}
 	q := &recordingQueuer{}
@@ -1031,7 +1031,7 @@ func TestPollOnceProviderErrorKeepsMarker(t *testing.T) {
 func TestPollOnceReleasesClaimOnEnqueueFailure(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
-		sources:  []Source{{ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true}},
+		sources:  []Source{{ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true}},
 	}
 	prov := &fakeProvider{paths: map[string][]string{"arr": {"/mnt/media/Show/S01/E01.mkv"}}, nextMarker: "m1"}
 	sup := &recordingSuppressor{}
@@ -1064,7 +1064,7 @@ func TestPollOncePollsConnectionlessSource(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: nil, Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: nil, Enabled: true,
 		}},
 	}
 	prov := &fakeProvider{paths: map[string][]string{"arr": {"/mnt/media/Show/S01/E01.mkv"}}, nextMarker: "m1"}
@@ -1090,7 +1090,7 @@ func TestPollOnceSkipsSourcePolledTooRecently(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
 			PollIntervalSeconds: &interval, LastRunAt: &recent,
 		}},
 	}
@@ -1114,7 +1114,7 @@ func TestPollOnceRunsSourcePastItsInterval(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{{
-			ID: "s1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
+			ID: "s1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1"), Enabled: true,
 			PollIntervalSeconds: &interval, LastRunAt: &old,
 		}},
 	}
@@ -1138,14 +1138,14 @@ func TestPollOnceRecordsScanSourceResolutionFailure(t *testing.T) {
 	store := &fakeStore{
 		settings: Settings{Enabled: true, DefaultPollIntervalSeconds: 600, DebounceSeconds: 60},
 		sources: []Source{
-			{ID: "live", PluginID: "silo.autoscan.live", CapabilityID: "arr-live", ConnectionID: strptr("c1"), Enabled: true},
-			{ID: "gone", PluginID: "silo.autoscan.gone", CapabilityID: "arr-gone", ConnectionID: strptr("c1"), Enabled: true},
+			{ID: "live", PluginID: "prairie.autoscan.live", CapabilityID: "arr-live", ConnectionID: strptr("c1"), Enabled: true},
+			{ID: "gone", PluginID: "prairie.autoscan.gone", CapabilityID: "arr-gone", ConnectionID: strptr("c1"), Enabled: true},
 		},
 	}
 	prov := &fakeProvider{paths: map[string][]string{
 		"arr-live": {"/mnt/media/Show/S01/E01.mkv"},
 	}, errByCap: map[string]error{
-		"arr-gone": errors.New("scan source plugin \"silo.autoscan.gone\" is not installed"),
+		"arr-gone": errors.New("scan source plugin \"prairie.autoscan.gone\" is not installed"),
 	}, nextMarker: "m1"}
 	q := &recordingQueuer{}
 	svc := newService(store, prov, q, allowSuppressor{})

@@ -1,4 +1,4 @@
-package silo.permission
+package prairie.permission
 
 import rego.v1
 
@@ -197,7 +197,7 @@ test_tightening_override_applies if {
 			"permission": "marker_edit",
 			"assigned_permissions": ["marker_edit"],
 		})
-		with data.silo_custom.permission.override as deny_override
+		with data.prairie_custom.permission.override as deny_override
 	not got.allowed
 	got.reason == "quiet hours"
 	got.reason_code == "custom_denial"
@@ -216,6 +216,6 @@ test_widening_override_has_no_effect if {
 	base := decision with input as denied_input
 	got := decision
 		with input as denied_input
-		with data.silo_custom.permission.override as allow_override
+		with data.prairie_custom.permission.override as allow_override
 	got == base
 }

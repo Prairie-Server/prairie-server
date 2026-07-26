@@ -141,7 +141,7 @@ function sourceToRowEdit(source: AutoscanSource): RowEdit {
   };
 }
 
-const ARR_WEBHOOK_PLUGIN_ID = "silo.autoscan.arr-webhook";
+const ARR_WEBHOOK_PLUGIN_ID = "prairie.autoscan.arr-webhook";
 const WEBHOOK_PROVIDER_KEY = "webhook_provider";
 
 function isWebhookSource(source: AutoscanSource): boolean {
@@ -157,7 +157,7 @@ function absoluteWebhookURL(url: string): string {
   return url.startsWith("/") ? `${window.location.origin}${url}` : url;
 }
 
-const CEPHFS_PLUGIN_ID = "silo.autoscan.cephfs";
+const CEPHFS_PLUGIN_ID = "prairie.autoscan.cephfs";
 const CEPHFS_CAPABILITY_ID = "cephfs";
 const DEFAULT_CEPHFS_EXCLUSIONS = [
   "*.partial",

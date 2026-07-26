@@ -107,8 +107,8 @@ func RelayCredentialNeedsRenewal(now, expiresAt time.Time, deploymentID string) 
 }
 
 func RelayRotationIdempotencyKey(deploymentID, capability string) string {
-	digest := sha256.Sum256([]byte("silo-relay-rotation\x00" + deploymentID + "\x00" + capability))
-	return "silo-rotate-" + hex.EncodeToString(digest[:])
+	digest := sha256.Sum256([]byte("prairie-relay-rotation\x00" + deploymentID + "\x00" + capability))
+	return "prairie-rotate-" + hex.EncodeToString(digest[:])
 }
 
 func RequestRelayCredential(ctx context.Context, client RelayHTTPDoer, relayURL, path, capability, idempotencyKey string) (RelayCredentialResult, error) {

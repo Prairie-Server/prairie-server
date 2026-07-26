@@ -7,7 +7,7 @@ import (
 	"os"
 	"runtime"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -28,10 +28,10 @@ func main() {
 	checksum := sha256.Sum256(binaryData)
 
 	manifest := &pluginv1.PluginManifest{
-		PluginId:       "silo.binary",
-		Version:        "1.0.0",
-		Checksum:       hex.EncodeToString(checksum[:]),
-		SiloApiVersion: "v1",
+		PluginId:          "prairie.binary",
+		Version:           "1.0.0",
+		Checksum:          hex.EncodeToString(checksum[:]),
+		PrairieApiVersion: "v1",
 		SupportedPlatforms: []*pluginv1.SupportedPlatform{
 			{Os: runtime.GOOS, Arch: runtime.GOARCH},
 		},

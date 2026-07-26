@@ -90,7 +90,7 @@ func ebookConversionCacheDir(cfg *config.Config) string {
 	if cfg != nil && strings.TrimSpace(cfg.Playback.TranscodeDir) != "" {
 		base = filepath.Dir(cfg.Playback.TranscodeDir)
 	}
-	return filepath.Join(base, "silo-ebook-epub")
+	return filepath.Join(base, "prairie-ebook-epub")
 }
 
 func isTruthySetting(v string) bool {

@@ -341,7 +341,7 @@ func TestViewerResolverPolicyRevokedProfileVerification(t *testing.T) {
 	users := viewerResolverUserRepo{user: &models.User{ID: 1, AccessPolicyRevision: 5}}
 	stores := viewerResolverStoreProvider{store: viewerResolverTestStore{}}
 	engine, err := NewEngineWithCustom(ctx, map[string]ActiveSource{
-		"scope": {Source: `package silo_custom.scope
+		"scope": {Source: `package prairie_custom.scope
 
 import rego.v1
 

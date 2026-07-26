@@ -712,7 +712,7 @@ daily, while the app runs), not "next launch".
 - **Upload**: a small multipart body writer added to `HTTPClient` (verified:
   JSON-only today, no multipart/uploadTask), same status/error handling as
   Android.
-- Housekeeping note: product bundle IDs are already `org.siloserver.silo`;
+- Housekeeping note: product bundle IDs are already `org.prairieserver.prairie`;
   only legacy keychain/logging identifiers (`com.continuum.*`) remain, so
   nothing here blocks on rebranding.
 

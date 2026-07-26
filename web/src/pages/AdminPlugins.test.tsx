@@ -20,10 +20,10 @@ function makeCatalogEntry(
   const repoURL = `https://github.com/prairie-server/plugin-${suffix}`;
   return {
     repository_id: 1,
-    plugin_id: `silo.plugin-${suffix}`,
+    plugin_id: `prairie.plugin-${suffix}`,
     version: "1.0.0",
     archive_url: `${repoURL}/releases/download/v1.0.0/plugin-linux-amd64`,
-    source_kind: "silo",
+    source_kind: "prairie",
     repository_name: "Prairie plugins",
     repo_url: repoURL,
     presentation: {
@@ -52,11 +52,11 @@ function makeInstallation(index: number, displayName: string): PluginInstallatio
   return {
     id: index,
     repository_id: 1,
-    plugin_id: `silo.installed-${suffix}`,
+    plugin_id: `prairie.installed-${suffix}`,
     version: "1.0.0",
     install_path: `/plugins/installed-${suffix}`,
     enabled: true,
-    source_kind: "silo",
+    source_kind: "prairie",
     repository_name: "Prairie plugins",
     updates_paused: false,
     presentation: {
@@ -281,10 +281,10 @@ describe("AdminPlugins", () => {
       catalog: [
         {
           repository_id: 1,
-          plugin_id: "silo.example",
+          plugin_id: "prairie.example",
           version: "1.0.0",
           archive_url: "https://example.com/plugin",
-          source_kind: "silo",
+          source_kind: "prairie",
           repository_name: "Prairie plugins",
           repo_url: "https://github.com/prairie-server/example-plugin",
           presentation: {
@@ -330,11 +330,11 @@ describe("AdminPlugins", () => {
         {
           id: 7,
           repository_id: 1,
-          plugin_id: "silo.example",
+          plugin_id: "prairie.example",
           version: "0.9.0",
           install_path: "/plugins/example",
           enabled: true,
-          source_kind: "silo",
+          source_kind: "prairie",
           repository_name: "Prairie plugins",
           updates_paused: false,
           capabilities: [],
@@ -351,10 +351,10 @@ describe("AdminPlugins", () => {
       catalog: [
         {
           repository_id: 1,
-          plugin_id: "silo.example",
+          plugin_id: "prairie.example",
           version: "1.0.0",
           archive_url: "https://example.com/plugin",
-          source_kind: "silo",
+          source_kind: "prairie",
           repository_name: "Prairie plugins",
           repo_url: "https://github.com/prairie-server/example-plugin",
           presentation: {

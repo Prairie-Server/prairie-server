@@ -1,4 +1,4 @@
-package silo_custom.action
+package prairie_custom.action
 
 import rego.v1
 

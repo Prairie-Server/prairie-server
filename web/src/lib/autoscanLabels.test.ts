@@ -8,38 +8,38 @@ import {
 } from "./autoscanLabels";
 
 describe("composeSourceLabel", () => {
-  const base = { capabilityId: "arr", pluginId: "silo.autoscan.arr" };
+  const base = { capabilityId: "arr", pluginId: "prairie.autoscan.arr" };
 
   it("uses the operator label first, demoting connection to detail", () => {
     expect(
       composeSourceLabel({ ...base, operatorLabel: "4K Movies", connectionName: "Radarr4k" }),
-    ).toEqual({ name: "4K Movies", detail: "Radarr4k · silo.autoscan.arr" });
+    ).toEqual({ name: "4K Movies", detail: "Radarr4k · prairie.autoscan.arr" });
   });
 
   it("uses the connection name when no operator label", () => {
     expect(
       composeSourceLabel({ ...base, connectionName: "Radarr4k", displayName: "Arr Watcher" }),
-    ).toEqual({ name: "Radarr4k", detail: "Arr Watcher · silo.autoscan.arr" });
+    ).toEqual({ name: "Radarr4k", detail: "Arr Watcher · prairie.autoscan.arr" });
   });
 
   it("uses the manifest display name when no connection", () => {
     expect(
       composeSourceLabel({
         capabilityId: "cephfs",
-        pluginId: "silo.autoscan.cephfs",
+        pluginId: "prairie.autoscan.cephfs",
         displayName: "CephFS Watcher",
       }),
-    ).toEqual({ name: "CephFS Watcher", detail: "silo.autoscan.cephfs" });
+    ).toEqual({ name: "CephFS Watcher", detail: "prairie.autoscan.cephfs" });
   });
 
   it("falls back to capability id when nothing else is set", () => {
-    expect(composeSourceLabel(base)).toEqual({ name: "arr", detail: "silo.autoscan.arr" });
+    expect(composeSourceLabel(base)).toEqual({ name: "arr", detail: "prairie.autoscan.arr" });
   });
 
   it("ignores whitespace-only rungs", () => {
     expect(composeSourceLabel({ ...base, operatorLabel: "   ", connectionName: "  " })).toEqual({
       name: "arr",
-      detail: "silo.autoscan.arr",
+      detail: "prairie.autoscan.arr",
     });
   });
 });
@@ -47,7 +47,7 @@ describe("composeSourceLabel", () => {
 describe("resolveEventSourceName", () => {
   const source: AutoscanSource = {
     id: "src-1",
-    plugin_id: "silo.autoscan.arr",
+    plugin_id: "prairie.autoscan.arr",
     capability_id: "arr",
     connection_id: "conn-1",
     enabled: true,
@@ -63,13 +63,13 @@ describe("resolveEventSourceName", () => {
   const lookups: SourceLabelLookups = {
     sourceByID: new Map([["src-1", source]]),
     connectionByID: new Map([["conn-1", "Radarr4k"]]),
-    displayNames: new Map([["silo.autoscan.arr:arr", "Arr Watcher"]]),
+    displayNames: new Map([["prairie.autoscan.arr:arr", "Arr Watcher"]]),
   };
 
   it("resolves the connection name via the source reference", () => {
     expect(
       resolveEventSourceName(
-        { source_id: "src-1", capability_id: "arr", plugin_id: "silo.autoscan.arr" },
+        { source_id: "src-1", capability_id: "arr", plugin_id: "prairie.autoscan.arr" },
         lookups,
       ),
     ).toBe("Radarr4k");
@@ -82,7 +82,7 @@ describe("resolveEventSourceName", () => {
     };
     expect(
       resolveEventSourceName(
-        { source_id: "src-1", capability_id: "arr", plugin_id: "silo.autoscan.arr" },
+        { source_id: "src-1", capability_id: "arr", plugin_id: "prairie.autoscan.arr" },
         withLabel,
       ),
     ).toBe("4K Movies");
@@ -91,7 +91,7 @@ describe("resolveEventSourceName", () => {
   it("falls back to display name when the source was deleted (null source_id)", () => {
     expect(
       resolveEventSourceName(
-        { source_id: null, capability_id: "arr", plugin_id: "silo.autoscan.arr" },
+        { source_id: null, capability_id: "arr", plugin_id: "prairie.autoscan.arr" },
         lookups,
       ),
     ).toBe("Arr Watcher");
@@ -108,7 +108,7 @@ describe("resolveEventSourceName", () => {
     };
     expect(
       resolveEventSourceName(
-        { source_id: "src-1", capability_id: "arr", plugin_id: "silo.autoscan.arr" },
+        { source_id: "src-1", capability_id: "arr", plugin_id: "prairie.autoscan.arr" },
         orphaned,
       ),
     ).toBe("Arr Watcher");

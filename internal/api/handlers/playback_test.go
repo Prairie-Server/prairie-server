@@ -1910,7 +1910,7 @@ func TestHandleChangeAudioTrack_RemoteCopyRejectionPreservesPredecessorState(t *
 // TestHandleChangeAudioTrack_RemoteTranscodeNodeUnreachableSurfacesError
 // verifies the chosen error posture: when the transcode node cannot be reached
 // for the restart, the handler surfaces a 502 rather than returning a 200 that
-// clients (silo-android / silo-apple) would trust as "audio switched".
+// clients (prairie-android / prairie-apple) would trust as "audio switched".
 func TestHandleChangeAudioTrack_RemoteTranscodeNodeUnreachableSurfacesError(t *testing.T) {
 	sessionMgr := playback.NewSessionManager(0, 0)
 	file := &models.MediaFile{

@@ -131,7 +131,7 @@ func (m *TranscodeManager) logSink() FFmpegLogSink {
 
 func (m *TranscodeManager) runtimeConfig() TranscodeRuntimeConfig {
 	if m.Config == nil {
-		return TranscodeRuntimeConfig{TranscodeDir: filepath.Join(os.TempDir(), "silo-transcode")}
+		return TranscodeRuntimeConfig{TranscodeDir: filepath.Join(os.TempDir(), "prairie-transcode")}
 	}
 	return m.Config()
 }
