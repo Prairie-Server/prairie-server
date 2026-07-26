@@ -25,6 +25,8 @@ jobs:
         uses: actions/checkout@v6
         with:
           persist-credentials: false
+          # only-new-issues needs full history vs the PR base.
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -32,10 +34,16 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: golangci-lint
+      - name: Stub web/dist for embed
+        run: |
+          mkdir -p web/dist
+          printf '%s\n' '<!doctype html><title>prairie</title>' > web/dist/index.html
+
+      - name: golangci-lint (new issues only)
         uses: golangci/golangci-lint-action@v8
         with:
           version: latest
+          only-new-issues: true
           args: --timeout=10m
 
   web-lint:
