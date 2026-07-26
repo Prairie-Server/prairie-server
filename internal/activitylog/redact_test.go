@@ -56,3 +56,18 @@ func TestRedactSecretPathParamsNoRouteContext(t *testing.T) {
 		t.Fatalf("path without route context must pass through, got %q", got)
 	}
 }
+
+func TestRedactSecretQuery(t *testing.T) {
+	got := RedactSecretQuery("/LiveTv/LiveStreamFiles/abc/stream.ts?api_key=secret&static=true")
+	want := "/LiveTv/LiveStreamFiles/abc/stream.ts?api_key=[redacted]&static=true"
+	if got != want {
+		t.Fatalf("got %q want %q", got, want)
+	}
+	got = RedactSecretPathParams(
+		httptest.NewRequest("GET", "/Videos/1/stream?token=abc&foo=1", nil),
+		"/Videos/1/stream?token=abc&foo=1",
+	)
+	if got != "/Videos/1/stream?token=[redacted]&foo=1" {
+		t.Fatalf("path+query redaction = %q", got)
+	}
+}

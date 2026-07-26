@@ -433,16 +433,16 @@ func TestScheduleCancelAndFailDueRecordings(t *testing.T) {
 		t.Fatalf("missing program = %v", err)
 	}
 
-	listed, err := svc.ListRecordings(context.Background(), "scheduled")
+	listed, err := svc.ListRecordings(context.Background(), "scheduled", 0, "", false)
 	if err != nil || len(listed) != 2 {
 		t.Fatalf("ListRecordings = %+v err=%v", listed, err)
 	}
 
-	cancelled, err := svc.CancelRecording(context.Background(), manual.ID)
+	cancelled, err := svc.CancelRecording(context.Background(), manual.ID, 0, "", false)
 	if err != nil || cancelled.Status != "cancelled" {
 		t.Fatalf("CancelRecording = %+v err=%v", cancelled, err)
 	}
-	_, err = svc.CancelRecording(context.Background(), "missing")
+	_, err = svc.CancelRecording(context.Background(), "missing", 0, "", false)
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("CancelRecording missing = %v", err)
 	}
@@ -451,7 +451,7 @@ func TestScheduleCancelAndFailDueRecordings(t *testing.T) {
 	if err != nil || n != 1 {
 		t.Fatalf("FailDueRecordings = %d, %v", n, err)
 	}
-	due, _ := store.GetRecording(rec.ID)
+	due, _ := store.GetRecording(context.Background(), rec.ID)
 	if due == nil || due.Status != "failed" || due.LastError == "" {
 		t.Fatalf("due recording = %+v", due)
 	}
@@ -494,7 +494,7 @@ func TestSeriesRulesApplyAndCRUD(t *testing.T) {
 	if err := svc.ApplySeriesRules(context.Background()); err != nil {
 		t.Fatalf("ApplySeriesRules: %v", err)
 	}
-	recs, _ := svc.ListRecordings(context.Background(), "")
+	recs, _ := svc.ListRecordings(context.Background(), "", 0, "", false)
 	if len(recs) != 1 || recs[0].ProgramID != "p-new" || recs[0].SeriesRuleID != rule.ID {
 		t.Fatalf("recordings after apply = %+v", recs)
 	}
@@ -503,19 +503,19 @@ func TestSeriesRulesApplyAndCRUD(t *testing.T) {
 	if err := svc.ApplySeriesRules(context.Background()); err != nil {
 		t.Fatalf("ApplySeriesRules second: %v", err)
 	}
-	recs, _ = svc.ListRecordings(context.Background(), "")
+	recs, _ = svc.ListRecordings(context.Background(), "", 0, "", false)
 	if len(recs) != 1 {
 		t.Fatalf("duplicate recordings = %+v", recs)
 	}
 
-	rules, err := svc.ListSeriesRules(context.Background())
+	rules, err := svc.ListSeriesRules(context.Background(), 0, "", false)
 	if err != nil || len(rules) != 1 {
 		t.Fatalf("ListSeriesRules = %+v err=%v", rules, err)
 	}
-	if err := svc.DeleteSeriesRule(context.Background(), rule.ID); err != nil {
+	if err := svc.DeleteSeriesRule(context.Background(), rule.ID, 0, "", false); err != nil {
 		t.Fatalf("DeleteSeriesRule: %v", err)
 	}
-	rules, _ = svc.ListSeriesRules(context.Background())
+	rules, _ = svc.ListSeriesRules(context.Background(), 0, "", false)
 	if len(rules) != 0 {
 		t.Fatalf("rules after delete = %+v", rules)
 	}
@@ -547,7 +547,7 @@ func TestApplySeriesRulesSkipsPreloadedPairs(t *testing.T) {
 	if err := svc.ApplySeriesRules(context.Background()); err != nil {
 		t.Fatalf("ApplySeriesRules: %v", err)
 	}
-	recs, err := svc.ListRecordings(context.Background(), "")
+	recs, err := svc.ListRecordings(context.Background(), "", 0, "", false)
 	if err != nil {
 		t.Fatalf("ListRecordings: %v", err)
 	}
@@ -1180,7 +1180,7 @@ func (s *memoryStore) DeleteSeriesRule(_ context.Context, id string) error {
 	return nil
 }
 
-func (s *memoryStore) GetRecording(id string) (*Recording, error) {
+func (s *memoryStore) GetRecording(_ context.Context, id string) (*Recording, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	rec, ok := s.recordings[id]
@@ -1188,6 +1188,16 @@ func (s *memoryStore) GetRecording(id string) (*Recording, error) {
 		return nil, nil
 	}
 	return &rec, nil
+}
+
+func (s *memoryStore) GetSeriesRule(_ context.Context, id string) (*SeriesRule, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	rule, ok := s.rules[id]
+	if !ok {
+		return nil, nil
+	}
+	return &rule, nil
 }
 
 func (s *memoryStore) channelCountLocked(tunerID string) int {

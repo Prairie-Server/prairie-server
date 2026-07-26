@@ -11,6 +11,8 @@ import (
 
 	redisv9 "github.com/redis/go-redis/v9"
 	"github.com/robfig/cron/v3"
+
+	"github.com/prairie-server/prairie-server/internal/csssanitize"
 )
 
 const cloudflareURLMode = "cloudflare_token"
@@ -422,6 +424,8 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 			return "", fmt.Errorf("%s must be valid JSON: %w", key, err)
 		}
 		return value, nil
+	case "ui.admin_custom_css":
+		return csssanitize.Sanitize(value), nil
 	}
 
 	return raw, nil

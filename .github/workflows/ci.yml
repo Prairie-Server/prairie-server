@@ -124,6 +124,9 @@ jobs:
       - name: Run Vitest with coverage
         run: pnpm exec vitest run --coverage
 
+      - name: npm audit (production deps)
+        run: pnpm audit --prod --audit-level=high
+
       - name: Upload web coverage
         if: always()
         uses: actions/upload-artifact@v5
@@ -131,3 +134,25 @@ jobs:
           name: web-coverage
           path: web/coverage
           if-no-files-found: ignore
+
+  go-vulncheck:
+    name: Go vulnerability check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+
+      - name: Run govulncheck
+        # Use the same toolchain as go.mod (setup-go already installed it).
+        run: "$(go env GOPATH)/bin/govulncheck" ./...

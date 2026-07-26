@@ -39,6 +39,9 @@ func newLivetvTestStore() *livetvTestStore {
 	}
 }
 
+
+func (s *livetvTestStore) GetRecording(context.Context, string) (*livetv.Recording, error) { return nil, nil }
+func (s *livetvTestStore) GetSeriesRule(context.Context, string) (*livetv.SeriesRule, error) { return nil, nil }
 func (s *livetvTestStore) ListTuners(context.Context) ([]livetv.Tuner, error) {
 	return s.tuners, nil
 }
@@ -322,10 +325,12 @@ func TestLiveTVTimersMapping(t *testing.T) {
 	start := time.Date(2026, 7, 26, 20, 0, 0, 0, time.UTC)
 	store.recordings["rec1"] = livetv.Recording{
 		ID: "rec1", ChannelID: "ch1", ProgramID: "p1", Title: "Drama",
+		UserID: 7, ProfileID: "profile-1",
 		Status: "scheduled", Start: start, Stop: start.Add(time.Hour),
 	}
 	store.rules["rule1"] = livetv.SeriesRule{
 		ID: "rule1", SeriesID: "drama", TitleMatch: "Drama", NewOnly: true, KeepLast: 5, Enabled: true,
+		UserID: 7, ProfileID: "profile-1",
 	}
 	h := newTestLiveTVHandler(store)
 

@@ -35,7 +35,8 @@ type Channel struct {
 	LogoURL        string  `json:"logo_url"`
 	HD             bool    `json:"hd"`
 	Enabled        bool    `json:"enabled"`
-	StreamURL      string  `json:"stream_url"`
+	// StreamURL is the upstream tuner URL — never serialize to API clients.
+	StreamURL      string  `json:"-"`
 	GuideStationID string  `json:"guide_station_id"`
 }
 
@@ -81,7 +82,8 @@ type LiveSession struct {
 	PlaybackSessionID string     `json:"playback_session_id,omitempty"`
 	Status            string     `json:"status"`
 	HLSURL            string     `json:"hls_url,omitempty"`
-	StreamURL         string     `json:"stream_url,omitempty"`
+	// StreamURL is upstream/private; omit from API JSON (use PublicStreamPath).
+	StreamURL         string     `json:"-"`
 	Note              string     `json:"note,omitempty"`
 	CreatedAt         time.Time  `json:"created_at"`
 	ReleasedAt        *time.Time `json:"released_at,omitempty"`
@@ -92,6 +94,8 @@ type Recording struct {
 	ProgramID      string    `json:"program_id,omitempty"`
 	ChannelID      string    `json:"channel_id"`
 	SeriesRuleID   string    `json:"series_rule_id,omitempty"`
+	UserID         int       `json:"user_id,omitempty"`
+	ProfileID      string    `json:"profile_id,omitempty"`
 	Status         string    `json:"status"`
 	Path           string    `json:"path,omitempty"`
 	LibraryItemID  string    `json:"library_item_id,omitempty"`
@@ -105,6 +109,8 @@ type SeriesRule struct {
 	ID         string  `json:"id"`
 	SeriesID   string  `json:"series_id"`
 	ChannelID  *string `json:"channel_id,omitempty"`
+	UserID     int     `json:"user_id,omitempty"`
+	ProfileID  string  `json:"profile_id,omitempty"`
 	TitleMatch string  `json:"title_match"`
 	NewOnly    bool    `json:"new_only"`
 	KeepLast   int     `json:"keep_last"`

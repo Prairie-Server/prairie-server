@@ -152,23 +152,42 @@ func NewMiddleware(w Writer, nodeID string) func(http.Handler) http.Handler {
 // so the chi route context is populated.
 func RedactSecretPathParams(r *http.Request, path string) string {
 	routeCtx := chi.RouteContext(r.Context())
-	if routeCtx == nil {
+	if routeCtx != nil {
+		for i, key := range routeCtx.URLParams.Keys {
+			if key != "token" && key != "secret" {
+				continue
+			}
+			if i >= len(routeCtx.URLParams.Values) {
+				continue
+			}
+			value := routeCtx.URLParams.Values[i]
+			if value == "" {
+				continue
+			}
+			path = strings.Replace(path, "/"+value, "/[redacted]", 1)
+		}
+	}
+	return RedactSecretQuery(path)
+}
+
+// RedactSecretQuery strips token/api_key/access_token query values from a
+// request path (or full URL path+query) before it reaches log sinks.
+func RedactSecretQuery(path string) string {
+	qIdx := strings.IndexByte(path, '?')
+	if qIdx < 0 {
 		return path
 	}
-	for i, key := range routeCtx.URLParams.Keys {
-		if key != "token" && key != "secret" {
-			continue
+	base := path[:qIdx]
+	rawQuery := path[qIdx+1:]
+	parts := strings.Split(rawQuery, "&")
+	for i, part := range parts {
+		key, _, _ := strings.Cut(part, "=")
+		switch strings.ToLower(key) {
+		case "token", "api_key", "apikey", "access_token", "refresh_token", "profile_token", "x-emby-token":
+			parts[i] = key + "=[redacted]"
 		}
-		if i >= len(routeCtx.URLParams.Values) {
-			continue
-		}
-		value := routeCtx.URLParams.Values[i]
-		if value == "" {
-			continue
-		}
-		path = strings.Replace(path, "/"+value, "/[redacted]", 1)
 	}
-	return path
+	return base + "?" + strings.Join(parts, "&")
 }
 
 // isStreamChunk returns true if the path looks like a stream segment/manifest

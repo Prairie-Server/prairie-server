@@ -343,11 +343,22 @@ func (h *LiveTVHandler) HandleRecommendedPrograms(w http.ResponseWriter, r *http
 	})
 }
 
+
+func (h *LiveTVHandler) livetvOwner(r *http.Request) (userID int, profileID string, enforce bool) {
+	session := SessionFromContext(r.Context())
+	if session == nil || session.StreamAppUserID == 0 {
+		// No mapped app user — cannot enforce ownership (tests / incomplete auth).
+		return 0, "", false
+	}
+	return session.StreamAppUserID, session.ProfileID, true
+}
+
 // HandleTimers serves GET /LiveTv/Timers and POST /LiveTv/Timers.
 func (h *LiveTVHandler) HandleTimers(w http.ResponseWriter, r *http.Request) {
+	userID, profileID, enforceOwner := h.livetvOwner(r)
 	switch r.Method {
 	case http.MethodGet:
-		recs, err := h.service.ListRecordings(r.Context(), "")
+		recs, err := h.service.ListRecordings(r.Context(), "", userID, profileID, enforceOwner)
 		if err != nil {
 			writeLiveTVCompatError(w, err)
 			return
@@ -375,7 +386,7 @@ func (h *LiveTVHandler) HandleTimers(w http.ResponseWriter, r *http.Request) {
 			writeError(w, http.StatusBadRequest, "BadRequest", "Invalid request body")
 			return
 		}
-		rec := &livetv.Recording{Title: body.Name}
+		rec := &livetv.Recording{Title: body.Name, UserID: userID, ProfileID: profileID}
 		if body.ProgramID != "" {
 			if id, err := h.decodeProgramID(body.ProgramID); err == nil {
 				rec.ProgramID = id
@@ -407,6 +418,7 @@ func (h *LiveTVHandler) HandleTimers(w http.ResponseWriter, r *http.Request) {
 
 // HandleTimer serves GET|POST|DELETE /LiveTv/Timers/{id}.
 func (h *LiveTVHandler) HandleTimer(w http.ResponseWriter, r *http.Request) {
+	userID, profileID, enforceOwner := h.livetvOwner(r)
 	timerID, err := h.decodeTimerID(chi.URLParam(r, "id"))
 	if err != nil {
 		writeError(w, http.StatusNotFound, "NotFound", "Timer not found")
@@ -414,7 +426,7 @@ func (h *LiveTVHandler) HandleTimer(w http.ResponseWriter, r *http.Request) {
 	}
 	switch r.Method {
 	case http.MethodGet:
-		rec, err := h.findRecording(r.Context(), timerID)
+		rec, err := h.findRecording(r.Context(), timerID, userID, profileID, enforceOwner)
 		if err != nil {
 			writeLiveTVCompatError(w, err)
 			return
@@ -427,7 +439,7 @@ func (h *LiveTVHandler) HandleTimer(w http.ResponseWriter, r *http.Request) {
 	case http.MethodPost:
 		// Jellyfin updates timers in place; Prairie cancels and recreates when
 		// schedule fields change. Absent body fields keep the existing timer.
-		existing, err := h.findRecording(r.Context(), timerID)
+		existing, err := h.findRecording(r.Context(), timerID, userID, profileID, enforceOwner)
 		if err != nil {
 			writeLiveTVCompatError(w, err)
 			return
@@ -438,7 +450,7 @@ func (h *LiveTVHandler) HandleTimer(w http.ResponseWriter, r *http.Request) {
 		}
 		writeJSON(w, http.StatusOK, h.timerDTO(*existing))
 	case http.MethodDelete:
-		if _, err := h.service.CancelRecording(r.Context(), timerID); err != nil {
+		if _, err := h.service.CancelRecording(r.Context(), timerID, userID, profileID, enforceOwner); err != nil {
 			writeLiveTVCompatError(w, err)
 			return
 		}
@@ -450,9 +462,10 @@ func (h *LiveTVHandler) HandleTimer(w http.ResponseWriter, r *http.Request) {
 
 // HandleSeriesTimers serves GET /LiveTv/SeriesTimers and POST /LiveTv/SeriesTimers.
 func (h *LiveTVHandler) HandleSeriesTimers(w http.ResponseWriter, r *http.Request) {
+	userID, profileID, enforceOwner := h.livetvOwner(r)
 	switch r.Method {
 	case http.MethodGet:
-		rules, err := h.service.ListSeriesRules(r.Context())
+		rules, err := h.service.ListSeriesRules(r.Context(), userID, profileID, enforceOwner)
 		if err != nil {
 			writeLiveTVCompatError(w, err)
 			return
@@ -481,6 +494,8 @@ func (h *LiveTVHandler) HandleSeriesTimers(w http.ResponseWriter, r *http.Reques
 		}
 		rule := &livetv.SeriesRule{
 			SeriesID:   body.SeriesID,
+			UserID:     userID,
+			ProfileID:  profileID,
 			TitleMatch: body.Name,
 			NewOnly:    body.RecordNewOnly,
 			KeepLast:   body.KeepUpTo,
@@ -504,6 +519,7 @@ func (h *LiveTVHandler) HandleSeriesTimers(w http.ResponseWriter, r *http.Reques
 
 // HandleSeriesTimer serves GET|POST|DELETE /LiveTv/SeriesTimers/{id}.
 func (h *LiveTVHandler) HandleSeriesTimer(w http.ResponseWriter, r *http.Request) {
+	userID, profileID, enforceOwner := h.livetvOwner(r)
 	ruleID, err := h.decodeSeriesTimerID(chi.URLParam(r, "id"))
 	if err != nil {
 		writeError(w, http.StatusNotFound, "NotFound", "Series timer not found")
@@ -511,7 +527,7 @@ func (h *LiveTVHandler) HandleSeriesTimer(w http.ResponseWriter, r *http.Request
 	}
 	switch r.Method {
 	case http.MethodGet, http.MethodPost:
-		rule, err := h.findSeriesRule(r.Context(), ruleID)
+		rule, err := h.findSeriesRule(r.Context(), ruleID, userID, profileID, enforceOwner)
 		if err != nil {
 			writeLiveTVCompatError(w, err)
 			return
@@ -522,7 +538,7 @@ func (h *LiveTVHandler) HandleSeriesTimer(w http.ResponseWriter, r *http.Request
 		}
 		writeJSON(w, http.StatusOK, h.seriesTimerDTO(*rule))
 	case http.MethodDelete:
-		if err := h.service.DeleteSeriesRule(r.Context(), ruleID); err != nil {
+		if err := h.service.DeleteSeriesRule(r.Context(), ruleID, userID, profileID, enforceOwner); err != nil {
 			writeLiveTVCompatError(w, err)
 			return
 		}
@@ -534,7 +550,8 @@ func (h *LiveTVHandler) HandleSeriesTimer(w http.ResponseWriter, r *http.Request
 
 // HandleRecordings serves GET /LiveTv/Recordings.
 func (h *LiveTVHandler) HandleRecordings(w http.ResponseWriter, r *http.Request) {
-	recs, err := h.service.ListRecordings(r.Context(), "completed")
+	userID, profileID, enforceOwner := h.livetvOwner(r)
+	recs, err := h.service.ListRecordings(r.Context(), "completed", userID, profileID, enforceOwner)
 	if err != nil {
 		writeLiveTVCompatError(w, err)
 		return
@@ -703,7 +720,7 @@ func (h *LiveTVHandler) PlaybackMediaSource(ctx context.Context, session *Sessio
 	dto := mediaSourceDTO{
 		Protocol:             "Http",
 		ID:                   sourceID,
-		Path:                 ch.StreamURL,
+		Path:                 "",
 		Type:                 "Default",
 		Container:            "ts",
 		Name:                 channelDisplayName(*ch),
@@ -766,7 +783,7 @@ func (h *LiveTVHandler) mediaSourceForOpenStream(ctx context.Context, liveStream
 	return mediaSourceDTO{
 		Protocol:             "Http",
 		ID:                   h.codec.EncodeStringID(EncodedIDLiveTVChannel, channelID),
-		Path:                 stream.SourceURL,
+		Path:                 "",
 		Type:                 "Default",
 		Container:            "ts",
 		Name:                 name,
@@ -835,7 +852,7 @@ func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session,
 	return mediaSourceDTO{
 		Protocol:             "Http",
 		ID:                   h.codec.EncodeStringID(EncodedIDLiveTVChannel, channelID),
-		Path:                 sourceURL,
+		Path:                 "",
 		Type:                 "Default",
 		Container:            "ts",
 		Name:                 name,
@@ -965,8 +982,8 @@ func (h *LiveTVHandler) seriesTimerDTO(rule livetv.SeriesRule) timerInfoDTO {
 	return dto
 }
 
-func (h *LiveTVHandler) findRecording(ctx context.Context, id string) (*livetv.Recording, error) {
-	recs, err := h.service.ListRecordings(ctx, "")
+func (h *LiveTVHandler) findRecording(ctx context.Context, id string, userID int, profileID string, enforceOwner bool) (*livetv.Recording, error) {
+	recs, err := h.service.ListRecordings(ctx, "", userID, profileID, enforceOwner)
 	if err != nil {
 		return nil, err
 	}
@@ -978,8 +995,8 @@ func (h *LiveTVHandler) findRecording(ctx context.Context, id string) (*livetv.R
 	return nil, nil
 }
 
-func (h *LiveTVHandler) findSeriesRule(ctx context.Context, id string) (*livetv.SeriesRule, error) {
-	rules, err := h.service.ListSeriesRules(ctx)
+func (h *LiveTVHandler) findSeriesRule(ctx context.Context, id string, userID int, profileID string, enforceOwner bool) (*livetv.SeriesRule, error) {
+	rules, err := h.service.ListSeriesRules(ctx, userID, profileID, enforceOwner)
 	if err != nil {
 		return nil, err
 	}

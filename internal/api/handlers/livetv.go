@@ -1,8 +1,12 @@
 package handlers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
@@ -283,19 +287,78 @@ func (h *LiveTVHandler) HandleStartChannelSession(w http.ResponseWriter, r *http
 	if ticket == "" {
 		ticket = session.ID
 	}
+	hlsURL := session.HLSURL
+	if !livetv.IsClientSafePlayURL(hlsURL) {
+		// Never return raw tuner URLs — clients play via the authenticated proxy.
+		hlsURL = livetv.PublicSessionStreamPath(session.ID)
+	}
 	writeJSON(w, http.StatusCreated, struct {
 		SessionID      string `json:"session_id"`
 		PlaybackTicket string `json:"playback_ticket"`
 		HLSURL         string `json:"hls_url"`
-		StreamURL      string `json:"stream_url,omitempty"`
 		Note           string `json:"note,omitempty"`
 	}{
 		SessionID:      session.ID,
 		PlaybackTicket: ticket,
-		HLSURL:         session.HLSURL,
-		StreamURL:      session.StreamURL,
+		HLSURL:         hlsURL,
 		Note:           session.Note,
 	})
+}
+
+// HandleSessionStream proxies the upstream tuner for an owned active session.
+func (h *LiveTVHandler) HandleSessionStream(w http.ResponseWriter, r *http.Request) {
+	sessionID := chi.URLParam(r, "sessionId")
+	userID := apimw.GetUserID(r.Context())
+	profileID := apimw.GetProfileID(r.Context())
+	session, err := h.service.GetSession(r.Context(), sessionID)
+	if err != nil {
+		writeLiveTVError(w, err)
+		return
+	}
+	if session == nil || session.Status != "active" {
+		writeError(w, http.StatusNotFound, "not_found", "session not found")
+		return
+	}
+	if !apimw.IsAdmin(r.Context()) {
+		if session.UserID != 0 && session.UserID != userID {
+			writeError(w, http.StatusNotFound, "not_found", "session not found")
+			return
+		}
+		if session.ProfileID != "" && profileID != "" && session.ProfileID != profileID {
+			writeError(w, http.StatusNotFound, "not_found", "session not found")
+			return
+		}
+	}
+	upstream, err := h.service.ResolveSessionUpstreamURL(r.Context(), sessionID)
+	if err != nil {
+		writeLiveTVError(w, err)
+		return
+	}
+	w.Header().Set("Content-Type", "video/mp2t")
+	if r.Method == http.MethodHead {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, upstream, nil)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, "upstream_error", "failed to open upstream")
+		return
+	}
+	resp, err := livetv.NewMediaHTTPClient().Do(req)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, "upstream_error", "upstream fetch failed")
+		return
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		writeError(w, http.StatusBadGateway, "upstream_error", fmt.Sprintf("upstream status %d", resp.StatusCode))
+		return
+	}
+	w.Header().Set("Transfer-Encoding", "chunked")
+	w.WriteHeader(http.StatusOK)
+	if _, err := io.Copy(w, resp.Body); err != nil && !errors.Is(err, context.Canceled) {
+		slog.WarnContext(r.Context(), "livetv session stream copy ended", "session_id", sessionID, "error", err)
+	}
 }
 
 func (h *LiveTVHandler) HandleReleaseSession(w http.ResponseWriter, r *http.Request) {
@@ -319,7 +382,12 @@ func (h *LiveTVHandler) HandleReleaseSession(w http.ResponseWriter, r *http.Requ
 }
 
 func (h *LiveTVHandler) HandleListRecordings(w http.ResponseWriter, r *http.Request) {
-	recordings, err := h.service.ListRecordings(r.Context(), r.URL.Query().Get("status"))
+	userID := apimw.GetUserID(r.Context())
+	profileID := apimw.GetProfileID(r.Context())
+	enforceOwner := !apimw.IsAdmin(r.Context())
+	recordings, err := h.service.ListRecordings(
+		r.Context(), r.URL.Query().Get("status"), userID, profileID, enforceOwner,
+	)
 	if err != nil {
 		writeLiveTVError(w, err)
 		return
@@ -347,6 +415,8 @@ func (h *LiveTVHandler) HandleScheduleRecording(w http.ResponseWriter, r *http.R
 	rec, err := h.service.ScheduleRecording(r.Context(), &livetv.Recording{
 		ProgramID: body.ProgramID,
 		ChannelID: body.ChannelID,
+		UserID:    apimw.GetUserID(r.Context()),
+		ProfileID: apimw.GetProfileID(r.Context()),
 		Start:     body.Start,
 		Stop:      body.Stop,
 		Title:     body.Title,
@@ -359,7 +429,12 @@ func (h *LiveTVHandler) HandleScheduleRecording(w http.ResponseWriter, r *http.R
 }
 
 func (h *LiveTVHandler) HandleCancelRecording(w http.ResponseWriter, r *http.Request) {
-	rec, err := h.service.CancelRecording(r.Context(), chi.URLParam(r, "recordingId"))
+	userID := apimw.GetUserID(r.Context())
+	profileID := apimw.GetProfileID(r.Context())
+	enforceOwner := !apimw.IsAdmin(r.Context())
+	rec, err := h.service.CancelRecording(
+		r.Context(), chi.URLParam(r, "recordingId"), userID, profileID, enforceOwner,
+	)
 	if err != nil {
 		writeLiveTVError(w, err)
 		return
@@ -368,7 +443,10 @@ func (h *LiveTVHandler) HandleCancelRecording(w http.ResponseWriter, r *http.Req
 }
 
 func (h *LiveTVHandler) HandleListSeriesRules(w http.ResponseWriter, r *http.Request) {
-	rules, err := h.service.ListSeriesRules(r.Context())
+	userID := apimw.GetUserID(r.Context())
+	profileID := apimw.GetProfileID(r.Context())
+	enforceOwner := !apimw.IsAdmin(r.Context())
+	rules, err := h.service.ListSeriesRules(r.Context(), userID, profileID, enforceOwner)
 	if err != nil {
 		writeLiveTVError(w, err)
 		return
@@ -401,6 +479,8 @@ func (h *LiveTVHandler) HandleCreateSeriesRule(w http.ResponseWriter, r *http.Re
 	created, err := h.service.CreateSeriesRule(r.Context(), &livetv.SeriesRule{
 		SeriesID:   body.SeriesID,
 		ChannelID:  body.ChannelID,
+		UserID:     apimw.GetUserID(r.Context()),
+		ProfileID:  apimw.GetProfileID(r.Context()),
 		TitleMatch: body.TitleMatch,
 		NewOnly:    body.NewOnly,
 		KeepLast:   body.KeepLast,
@@ -414,7 +494,12 @@ func (h *LiveTVHandler) HandleCreateSeriesRule(w http.ResponseWriter, r *http.Re
 }
 
 func (h *LiveTVHandler) HandleDeleteSeriesRule(w http.ResponseWriter, r *http.Request) {
-	if err := h.service.DeleteSeriesRule(r.Context(), chi.URLParam(r, "ruleId")); err != nil {
+	userID := apimw.GetUserID(r.Context())
+	profileID := apimw.GetProfileID(r.Context())
+	enforceOwner := !apimw.IsAdmin(r.Context())
+	if err := h.service.DeleteSeriesRule(
+		r.Context(), chi.URLParam(r, "ruleId"), userID, profileID, enforceOwner,
+	); err != nil {
 		writeLiveTVError(w, err)
 		return
 	}
