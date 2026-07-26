@@ -37,7 +37,6 @@ export default function LiveTV() {
     }
   }, [channels, selectedId]);
 
-<<<<<<< HEAD
   // Capture wall-clock once on mount; recomputing Date.now() during render trips
   // react-hooks/purity and would also churn the guide query key every render.
   const [guideWindow] = useState(() => {
@@ -47,14 +46,6 @@ export default function LiveTV() {
       end: new Date(now + 6 * 60 * 60 * 1000).toISOString(),
     };
   });
-=======
-  const [guideAnchorMs] = useState(() => Date.now());
-  const guideWindow = useMemo(() => {
-    const start = new Date(guideAnchorMs - 30 * 60 * 1000);
-    const end = new Date(guideAnchorMs + 6 * 60 * 60 * 1000);
-    return { start: start.toISOString(), end: end.toISOString() };
-  }, [guideAnchorMs]);
->>>>>>> origin/main
 
   const guide = useLiveTVGuide(
     {
