@@ -3,9 +3,9 @@ import { useBranding } from "@/hooks/useBranding";
 /**
  * Full-bleed custom login background with a readability scrim. Renders nothing
  * when no login background image is configured, so it is safe to drop into any
- * auth page. Must be the first child of an `.auth-shell` element (which is
- * `position: relative`); it sits above the shell's fixed gradient ::before layer
- * and below the `.auth-card` (z-index 1).
+ * auth page. Must be the first child of an `.auth-shell` element. Renders a
+ * `position: fixed` wrapper that sits above the shell's fixed gradient ::before
+ * layer (both at z-index 0) and below the `.auth-card` (z-index 1).
  */
 export function AuthBackground() {
   const { loginBgUrl } = useBranding();
