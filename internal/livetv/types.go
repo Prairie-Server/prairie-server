@@ -47,32 +47,11 @@ type Channel struct {
 
 // MarshalJSON keeps stream_url in the wire shape while redacting the upstream URL.
 func (c Channel) MarshalJSON() ([]byte, error) {
-	type channelJSON struct {
-		ID             string  `json:"id"`
-		TunerID        string  `json:"tuner_id"`
-		Number         string  `json:"number"`
-		NumberOverride *string `json:"number_override,omitempty"`
-		Callsign       string  `json:"callsign"`
-		Name           string  `json:"name"`
-		LogoURL        string  `json:"logo_url"`
-		HD             bool    `json:"hd"`
-		Enabled        bool    `json:"enabled"`
-		StreamURL      string  `json:"stream_url"`
-		GuideStationID string  `json:"guide_station_id"`
-	}
-	return json.Marshal(channelJSON{
-		ID:             c.ID,
-		TunerID:        c.TunerID,
-		Number:         c.Number,
-		NumberOverride: c.NumberOverride,
-		Callsign:       c.Callsign,
-		Name:           c.Name,
-		LogoURL:        c.LogoURL,
-		HD:             c.HD,
-		Enabled:        c.Enabled,
-		StreamURL:      "",
-		GuideStationID: c.GuideStationID,
-	})
+	type Alias Channel
+	return json.Marshal(struct {
+		StreamURL string `json:"stream_url"`
+		Alias
+	}{StreamURL: "", Alias: Alias(c)})
 }
 
 type GuideSource struct {
@@ -135,35 +114,15 @@ func (s LiveSession) MarshalJSON() ([]byte, error) {
 	if !IsClientSafePlayURL(hls) {
 		hls = publicStream
 	}
-	type sessionJSON struct {
-		ID                string     `json:"id"`
-		ChannelID         string     `json:"channel_id"`
-		TunerID           string     `json:"tuner_id"`
-		TunerIndex        int        `json:"tuner_index"`
-		UserID            int        `json:"user_id,omitempty"`
-		ProfileID         string     `json:"profile_id,omitempty"`
-		PlaybackSessionID string     `json:"playback_session_id,omitempty"`
-		Status            string     `json:"status"`
-		HLSURL            string     `json:"hls_url,omitempty"`
-		StreamURL         string     `json:"stream_url"`
-		Note              string     `json:"note,omitempty"`
-		CreatedAt         time.Time  `json:"created_at"`
-		ReleasedAt        *time.Time `json:"released_at,omitempty"`
-	}
-	return json.Marshal(sessionJSON{
-		ID:                s.ID,
-		ChannelID:         s.ChannelID,
-		TunerID:           s.TunerID,
-		TunerIndex:        s.TunerIndex,
-		UserID:            s.UserID,
-		ProfileID:         s.ProfileID,
-		PlaybackSessionID: s.PlaybackSessionID,
-		Status:            s.Status,
-		HLSURL:            hls,
-		StreamURL:         publicStream,
-		Note:              s.Note,
-		CreatedAt:         s.CreatedAt,
-		ReleasedAt:        s.ReleasedAt,
+	type Alias LiveSession
+	return json.Marshal(struct {
+		HLSURL    string `json:"hls_url,omitempty"`
+		StreamURL string `json:"stream_url"`
+		Alias
+	}{
+		HLSURL:    hls,
+		StreamURL: publicStream,
+		Alias:     Alias(s),
 	})
 }
 

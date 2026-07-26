@@ -158,7 +158,7 @@ jobs:
           sudo apt-get install -y --no-install-recommends libvips-dev pkg-config
 
       - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@latest
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
 
       - name: Run govulncheck
         # Use the same toolchain as go.mod (setup-go already installed it).
