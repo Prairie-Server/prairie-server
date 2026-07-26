@@ -10,6 +10,7 @@ import type {
   LiveTVRecording,
   LiveTVRecordingsResponse,
   LiveTVSessionStartResponse,
+  LiveTVDiscoverTunersResponse,
   LiveTVTuner,
   LiveTVTunersResponse,
 } from "@/api/types";
@@ -25,6 +26,19 @@ export function useLiveTVTuners() {
   });
 }
 
+export function useDiscoverLiveTVTuners() {
+  return useMutation({
+    mutationFn: (body: { timeout_ms?: number; include_udp?: boolean; probe_urls?: string[] }) =>
+      api<LiveTVDiscoverTunersResponse>("/livetv/tuners/discover", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }),
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Tuner discovery failed");
+    },
+  });
+}
+
 export function useAddLiveTVTuner() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -34,7 +48,7 @@ export function useAddLiveTVTuner() {
         body: JSON.stringify(body),
       }),
     onSuccess: () => {
-      toast.success("HDHomeRun tuner added");
+      toast.success("Tuner added");
       queryClient.invalidateQueries({ queryKey: adminKeys.liveTVTuners() });
       queryClient.invalidateQueries({ queryKey: adminKeys.liveTVChannels() });
     },

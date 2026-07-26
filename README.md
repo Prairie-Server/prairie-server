@@ -47,6 +47,20 @@ docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up -d
 
 Or set `COMPOSE_FILE=docker-compose.yml:docker-compose.nvidia.yml` in `.env` on Linux/macOS (`;` instead of `:` on Windows).
 
+### Optional Live TV LAN discovery (HDHomeRun)
+
+Admin **Live TV → Tuners → Discover on LAN** uses SiliconDust UDP broadcasts (port `65001`). Bridge-mode Docker usually blocks that path; Dispatcharr / HDHR **URL probe** still works without changes.
+
+On **Linux**, enable host networking for the Prairie service:
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.livetv.yml up -d
+```
+
+Or set `COMPOSE_FILE=docker-compose.yml:docker-compose.livetv.yml` in `.env`.
+
+Details, Docker Desktop limits, and Dispatcharr probing: [docs/livetv-tuner-discovery.md](docs/livetv-tuner-discovery.md).
+
 ## Migrating from Silo
 
 See [docs/silo-to-prairie-migration.md](docs/silo-to-prairie-migration.md) for the Phase 1 path, environment variable, PostgreSQL, and Meilisearch cutover checklist. Legacy `SILO_*` runtime environment variables are accepted as fallbacks where the server reads them directly, but new installs should use `PRAIRIE_*`.

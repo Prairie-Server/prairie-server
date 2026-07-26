@@ -1,0 +1,32 @@
+# Optional override for Live TV HDHomeRun LAN discovery (Linux hosts).
+#
+# Bridge-mode Docker cannot send/receive SiliconDust UDP broadcasts on port
+# 65001 to the LAN. This override puts the prairie service on the host network
+# so "Discover on LAN" works. Dispatcharr URL probing works without this file.
+#
+# Usage:
+#   docker compose -f docker-compose.yml -f docker-compose.livetv.yml up -d
+#
+# Or in .env (Linux/macOS):
+#   COMPOSE_FILE=docker-compose.yml:docker-compose.livetv.yml
+#
+# Notes:
+# - Linux only. Docker Desktop (macOS/Windows) host networking is not a real
+#   LAN attach — use URL probe for Dispatcharr / enter the HDHR discover URL.
+# - With network_mode: host, published `ports:` are ignored; Prairie listens on
+#   host :8080 (and JF/ABS ports if enabled). Point clients at that host port,
+#   or put a reverse proxy on the host in front of it.
+# - postgres/redis stay on the compose network but publish 5432/6379 to the host,
+#   so prairie reaches them via 127.0.0.1.
+
+services:
+  prairie:
+    network_mode: host
+    # Clear bridge-mode port publishes (ignored under host networking anyway).
+    ports: !reset []
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-prairie}:${POSTGRES_PASSWORD:-prairie}@127.0.0.1:5432/${POSTGRES_DB:-prairie}?sslmode=disable
+      REDIS_URL: redis://127.0.0.1:6379
+      # Host networking: PORT is the host listen port. Reuse the same PORT from
+      # .env that used to be the published host port in bridge mode (default 8090).
+      PORT: ${PORT:-8090}

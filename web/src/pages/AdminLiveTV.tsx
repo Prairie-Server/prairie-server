@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
-import { Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Plus, Radar, RefreshCw, Trash2 } from "lucide-react";
+import type { LiveTVDiscoveredTuner } from "@/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +14,7 @@ import {
   useCreateLiveTVGuideSource,
   useDeleteLiveTVGuideSource,
   useDeleteLiveTVTuner,
+  useDiscoverLiveTVTuners,
   useLiveTVChannels,
   useLiveTVGuideSources,
   useLiveTVRecordings,
@@ -30,13 +32,23 @@ function normalizeTab(value: string | null): LiveTVTab {
   return LIVETV_TABS.includes(value as LiveTVTab) ? (value as LiveTVTab) : "tuners";
 }
 
+function kindLabel(kind: string): string {
+  if (kind === "dispatcharr") return "Dispatcharr";
+  if (kind === "hdhomerun") return "HDHomeRun";
+  return kind || "Tuner";
+}
+
 function TunersTab() {
   const tuners = useLiveTVTuners();
   const addTuner = useAddLiveTVTuner();
+  const discoverTuners = useDiscoverLiveTVTuners();
   const scanTuner = useScanLiveTVTuner();
   const deleteTuner = useDeleteLiveTVTuner();
   const [discoverURL, setDiscoverURL] = useState("");
   const [deviceID, setDeviceID] = useState("");
+  const [probeURL, setProbeURL] = useState("");
+  const [candidates, setCandidates] = useState<LiveTVDiscoveredTuner[]>([]);
+  const [discoverNotes, setDiscoverNotes] = useState<string[]>([]);
 
   function submit() {
     addTuner.mutate(
@@ -53,12 +65,123 @@ function TunersTab() {
     );
   }
 
+  function runDiscovery(includeUDP: boolean) {
+    const probe = probeURL.trim();
+    discoverTuners.mutate(
+      {
+        timeout_ms: 2500,
+        include_udp: includeUDP,
+        probe_urls: probe ? [probe] : undefined,
+      },
+      {
+        onSuccess: (data) => {
+          setCandidates(data.candidates ?? []);
+          setDiscoverNotes(data.notes ?? []);
+        },
+      },
+    );
+  }
+
   return (
     <div className="space-y-6">
+      <div className="max-w-2xl space-y-4">
+        <p className="text-muted-foreground text-sm">
+          Auto-discover SiliconDust HDHomeRun tuners on the LAN (UDP) and probe a Dispatcharr URL
+          for its HDHomeRun emulation (`/hdhr/discover.json`). Prairie scans the lineup after you
+          add a candidate. Docker bridge networking usually blocks UDP discovery — on Linux enable{" "}
+          <code className="text-xs">docker-compose.livetv.yml</code> (host networking; see{" "}
+          <code className="text-xs">docs/livetv-tuner-discovery.md</code>) or use probe URL.
+        </p>
+        <div className="space-y-1.5">
+          <Label htmlFor="probe-url">Dispatcharr / HDHR base URL (optional probe)</Label>
+          <Input
+            id="probe-url"
+            placeholder="http://dispatcharr.local:9191 or http://192.168.1.50"
+            value={probeURL}
+            onChange={(e) => setProbeURL(e.target.value)}
+          />
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            variant="secondary"
+            onClick={() => runDiscovery(true)}
+            disabled={discoverTuners.isPending}
+          >
+            <Radar />
+            {discoverTuners.isPending ? "Discovering…" : "Discover on LAN"}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={() => runDiscovery(false)}
+            disabled={discoverTuners.isPending || !probeURL.trim()}
+          >
+            <Radar />
+            Probe URL only
+          </Button>
+        </div>
+        {discoverNotes.length > 0 ? (
+          <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-xs">
+            {discoverNotes.map((note) => (
+              <li key={note}>{note}</li>
+            ))}
+          </ul>
+        ) : null}
+        {candidates.length > 0 ? (
+          <ul className="divide-border divide-y border-y">
+            {candidates.map((c) => (
+              <li
+                key={`${c.device_id}-${c.discover_url}`}
+                className="flex flex-wrap items-center justify-between gap-3 py-3"
+              >
+                <div className="min-w-0 space-y-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="font-medium">
+                      {c.friendly_name || c.model || c.device_id || "Tuner"}
+                    </span>
+                    <Badge variant="secondary">{kindLabel(c.kind)}</Badge>
+                    <Badge variant="outline">{c.source}</Badge>
+                    {c.tuner_count > 0 ? (
+                      <Badge variant="outline">{c.tuner_count} tuners</Badge>
+                    ) : null}
+                    {c.already_added ? <Badge>Added</Badge> : null}
+                  </div>
+                  <p className="text-muted-foreground truncate text-xs">
+                    {c.device_id}
+                    {c.base_url ? ` · ${c.base_url}` : ""}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  disabled={c.already_added || addTuner.isPending || !c.discover_url}
+                  onClick={() =>
+                    addTuner.mutate(
+                      { discover_url: c.discover_url },
+                      {
+                        onSuccess: () => {
+                          setCandidates((prev) =>
+                            prev.map((row) =>
+                              row.discover_url === c.discover_url
+                                ? { ...row, already_added: true }
+                                : row,
+                            ),
+                          );
+                        },
+                      },
+                    )
+                  }
+                >
+                  <Plus />
+                  Add
+                </Button>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
+
       <div className="max-w-xl space-y-4">
         <p className="text-muted-foreground text-sm">
-          Add an HDHomeRun by discover URL (preferred) or device ID. Prairie scans the lineup after
-          discovery.
+          Or add manually by discover URL (preferred) or device host / ID.
         </p>
         <div className="space-y-1.5">
           <Label htmlFor="discover-url">Discover URL</Label>
@@ -70,10 +193,10 @@ function TunersTab() {
           />
         </div>
         <div className="space-y-1.5">
-          <Label htmlFor="device-id">Device ID (optional)</Label>
+          <Label htmlFor="device-id">Device ID / host (optional)</Label>
           <Input
             id="device-id"
-            placeholder="ABCDEF01"
+            placeholder="ABCDEF01 or 192.168.1.50"
             value={deviceID}
             onChange={(e) => setDeviceID(e.target.value)}
           />

@@ -100,6 +100,153 @@ func (s *Service) ListTuners(ctx context.Context) ([]Tuner, error) {
 	return s.store.ListTuners(ctx)
 }
 
+// lanDiscoverFn is overridden in tests.
+var lanDiscoverFn = hdhomerun.DiscoverLAN
+
+// DiscoverTuners finds HDHomeRun tuners via UDP and/or probes Dispatcharr/HDHR URLs.
+func (s *Service) DiscoverTuners(ctx context.Context, req DiscoverTunersRequest) (*DiscoverTunersResult, error) {
+	if s.hdhr == nil {
+		return nil, ErrNotConfigured
+	}
+	timeoutMs := req.TimeoutMs
+	if timeoutMs <= 0 {
+		timeoutMs = 2000
+	}
+	if timeoutMs > 10_000 {
+		timeoutMs = 10_000
+	}
+	includeUDP := true
+	if req.IncludeUDP != nil {
+		includeUDP = *req.IncludeUDP
+	}
+
+	existing := map[string]struct{}{}
+	if err := s.requireStore(); err == nil {
+		if tuners, listErr := s.store.ListTuners(ctx); listErr == nil {
+			for _, t := range tuners {
+				if id := strings.ToUpper(strings.TrimSpace(t.DeviceID)); id != "" {
+					existing[id] = struct{}{}
+				}
+				if base := strings.TrimRight(strings.TrimSpace(t.BaseURL), "/"); base != "" {
+					existing[strings.ToLower(base)] = struct{}{}
+				}
+			}
+		}
+	}
+
+	seen := map[string]struct{}{}
+	var candidates []DiscoveredTuner
+	var notes []string
+	add := func(c DiscoveredTuner) {
+		key := strings.ToUpper(c.DeviceID) + "|" + strings.ToLower(strings.TrimRight(c.BaseURL, "/"))
+		if key == "|" {
+			key = strings.ToLower(c.DiscoverURL)
+		}
+		if _, ok := seen[key]; ok {
+			return
+		}
+		seen[key] = struct{}{}
+		if _, ok := existing[strings.ToUpper(c.DeviceID)]; ok {
+			c.AlreadyAdded = true
+		}
+		if _, ok := existing[strings.ToLower(strings.TrimRight(c.BaseURL, "/"))]; ok {
+			c.AlreadyAdded = true
+		}
+		candidates = append(candidates, c)
+	}
+
+	if includeUDP {
+		lan, err := lanDiscoverFn(ctx, time.Duration(timeoutMs)*time.Millisecond)
+		if err != nil {
+			notes = append(notes, "UDP discovery unavailable: "+err.Error())
+		} else if len(lan) == 0 {
+			notes = append(notes, "No tuners answered UDP discovery. Bridge-mode Docker blocks LAN broadcast — use docker-compose.livetv.yml (Linux host networking) or probe a URL. See docs/livetv-tuner-discovery.md.")
+		}
+		for _, item := range lan {
+			discoverURL := hdhomerun.DiscoverURLForBase(item.BaseURL)
+			if discoverURL == "" {
+				discoverURL = "http://" + item.RemoteIP + "/discover.json"
+			}
+			if err := ValidateMediaFetchURL(discoverURL); err != nil {
+				continue
+			}
+			info, err := s.hdhr.Discover(ctx, discoverURL, item.DeviceIDHex)
+			if err != nil {
+				// Still surface the UDP hit with limited metadata.
+				add(DiscoveredTuner{
+					Kind:        DiscoveredKindHDHomeRun,
+					DeviceID:    item.DeviceIDHex,
+					TunerCount:  item.TunerCount,
+					DiscoverURL: discoverURL,
+					BaseURL:     item.BaseURL,
+					Source:      "udp",
+				})
+				continue
+			}
+			kind := hdhomerun.ClassifyKind(info, discoverURL)
+			add(DiscoveredTuner{
+				Kind:         kind,
+				DeviceID:     coalesceTrimmed(info.DeviceID, item.DeviceIDHex),
+				FriendlyName: info.FriendlyName,
+				Model:        info.ModelNumber,
+				Firmware:     info.FirmwareVersion,
+				TunerCount:   info.TunerCount,
+				DiscoverURL:  discoverURL,
+				BaseURL:      coalesceTrimmed(info.BaseURL, item.BaseURL),
+				Source:       "udp",
+			})
+		}
+	}
+
+	for _, raw := range req.ProbeURLs {
+		urls := hdhomerun.ProbeCandidateURLs(raw)
+		var lastErr error
+		found := false
+		for _, discoverURL := range urls {
+			if err := ValidateMediaFetchURL(discoverURL); err != nil {
+				lastErr = err
+				continue
+			}
+			info, err := s.hdhr.Discover(ctx, discoverURL, "")
+			if err != nil {
+				lastErr = err
+				continue
+			}
+			kind := hdhomerun.ClassifyKind(info, discoverURL)
+			add(DiscoveredTuner{
+				Kind:         kind,
+				DeviceID:     info.DeviceID,
+				FriendlyName: info.FriendlyName,
+				Model:        info.ModelNumber,
+				Firmware:     info.FirmwareVersion,
+				TunerCount:   info.TunerCount,
+				DiscoverURL:  discoverURL,
+				BaseURL:      info.BaseURL,
+				Source:       "probe",
+			})
+			found = true
+			break
+		}
+		if !found && lastErr != nil {
+			notes = append(notes, fmt.Sprintf("probe %q failed: %v", strings.TrimSpace(raw), lastErr))
+		}
+	}
+
+	if candidates == nil {
+		candidates = []DiscoveredTuner{}
+	}
+	return &DiscoverTunersResult{Candidates: candidates, Notes: notes}, nil
+}
+
+func coalesceTrimmed(values ...string) string {
+	for _, v := range values {
+		if s := strings.TrimSpace(v); s != "" {
+			return s
+		}
+	}
+	return ""
+}
+
 func (s *Service) AddTuner(ctx context.Context, discoverURL, deviceID string) (*Tuner, error) {
 	if err := s.requireStore(); err != nil {
 		return nil, err
@@ -129,6 +276,9 @@ func (s *Service) AddTuner(ctx context.Context, discoverURL, deviceID string) (*
 	}
 	if strings.TrimSpace(info.DeviceID) == "" {
 		return nil, fmt.Errorf("%w: device_id is required", ErrInvalidArgument)
+	}
+	if discoverURL == "" {
+		discoverURL = hdhomerun.DiscoverURLForBase(info.BaseURL)
 	}
 	tuner, err := s.store.CreateTuner(ctx, &Tuner{
 		Type:        TunerTypeHDHomeRun,

@@ -2210,6 +2210,7 @@ func NewRouter(deps Dependencies) chi.Router {
 						r.Group(func(r chi.Router) {
 							r.Use(apimw.RequireAdmin)
 							r.Get("/tuners", liveTVHandler.HandleListTuners)
+							r.Post("/tuners/discover", liveTVHandler.HandleDiscoverTuners)
 							r.Post("/tuners", liveTVHandler.HandleAddTuner)
 							r.Delete("/tuners/{tunerId}", liveTVHandler.HandleDeleteTuner)
 							r.Post("/tuners/{tunerId}/scan", liveTVHandler.HandleScanTuner)
