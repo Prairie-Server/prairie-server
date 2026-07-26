@@ -11,7 +11,14 @@ import {
   type SkippableStep,
   writeSetupWizardFlag,
 } from "./setupStorage";
-import { type WizardStepId, WIZARD_STEP_ORDER, wizardStepIndex } from "./wizardSteps";
+import {
+  type WizardStepId,
+  deriveFrontierStep,
+  nextReviewStep,
+  previousWizardStep,
+  resolveCurrentStep,
+  wizardStepIndex,
+} from "./wizardSteps";
 
 interface WizardContextValue {
   // Auth-derived
@@ -57,21 +64,6 @@ function shouldRetrySetupQuery(failureCount: number, error: unknown) {
   return failureCount < 1;
 }
 
-function deriveFrontierStep(
-  accountComplete: boolean,
-  profileComplete: boolean,
-  stepDone: Record<SkippableStep, boolean>,
-): WizardStepId {
-  if (!accountComplete) return "account";
-  if (!profileComplete) return "profile";
-  if (!stepDone.server) return "server";
-  if (!stepDone.integrations) return "integrations";
-  if (!stepDone.downloads) return "downloads";
-  if (!stepDone.recommendations) return "recommendations";
-  if (!stepDone.library) return "library";
-  return "nodes";
-}
-
 export function WizardProvider({ children }: { children: ReactNode }) {
   const { user, profile, setupRequired, setupInitialUser, selectProfile } = useAuth();
   const isAdmin = user?.role === "admin";
@@ -108,26 +100,21 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     [accountComplete, profileComplete, stepDone],
   );
 
-  const currentStep = useMemo(() => {
-    if (!reviewStep) return frontierStep;
-    if (wizardStepIndex(reviewStep) <= wizardStepIndex(frontierStep)) return reviewStep;
-    return frontierStep;
-  }, [reviewStep, frontierStep]);
+  const currentStep = useMemo(
+    () => resolveCurrentStep(frontierStep, reviewStep),
+    [reviewStep, frontierStep],
+  );
 
   const canGoBack = wizardStepIndex(currentStep) > 0;
 
   const goBack = useCallback(() => {
-    const idx = wizardStepIndex(currentStep);
-    if (idx <= 0) return;
-    setReviewStep(WIZARD_STEP_ORDER[idx - 1]);
+    const previous = previousWizardStep(currentStep);
+    if (!previous) return;
+    setReviewStep(previous);
   }, [currentStep]);
 
   const goForward = useCallback(() => {
-    const idx = wizardStepIndex(currentStep);
-    const frontierIdx = wizardStepIndex(frontierStep);
-    if (idx >= frontierIdx) return;
-    const next = WIZARD_STEP_ORDER[idx + 1];
-    setReviewStep(next === frontierStep ? null : next);
+    setReviewStep(nextReviewStep(currentStep, frontierStep));
   }, [currentStep, frontierStep]);
 
   const markDone = useCallback((step: SkippableStep) => {
