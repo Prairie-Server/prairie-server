@@ -42,7 +42,12 @@ function unescapeCss(value: string): string {
     }
     if (hexDigits > 0) {
       const code = Number.parseInt(value.slice(i + 1, j), 16);
-      if (Number.isFinite(code)) out += String.fromCodePoint(code);
+      if (Number.isFinite(code)) {
+        // CSS allows escapes beyond Unicode; fromCodePoint throws above U+10FFFF.
+        out += code >= 0 && code <= 0x10ffff
+          ? String.fromCodePoint(code)
+          : "\uFFFD";
+      }
       if (j < value.length && /[ \t\n\r\f]/.test(value[j]!)) j += 1;
       i = j;
       continue;
