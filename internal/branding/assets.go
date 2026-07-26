@@ -14,9 +14,9 @@ type assetSpec struct {
 	s3Prefix   string // S3 key prefix; object key is "<prefix>/<ref>"
 	maxBytes   int64
 	// process validates the declared content type and returns the bytes to
-	// store, optional AVIF sibling bytes, the content type to serve the
+	// store, optional AVIF/PNG sibling bytes, the content type to serve the
 	// canonical object with, and the file extension used in the content ref.
-	process func(data []byte, declaredType string) (out, avif []byte, serveType, ext string, err error)
+	process func(data []byte, declaredType string) (out, avif, png []byte, serveType, ext string, err error)
 }
 
 // assetSpecs is the registry of all branding asset kinds. Adding a kind here is
@@ -52,81 +52,74 @@ var assetSpecs = map[AssetKind]assetSpec{
 	},
 }
 
+const (
+	extWebP  = ".webp"
+	mimeWebP = "image/webp"
+)
+
 // imageUploadTypes is the accepted set for WebP-converted kinds.
 // AVIF uploads are not accepted here: the WASI decoder does not decode AVIF,
 // and re-encoding an AVIF source would need a separate decode path.
 var imageUploadTypes = map[string]bool{
 	"image/jpeg": true,
 	"image/png":  true,
-	"image/webp": true,
+	mimeWebP:     true,
 }
 
 // imageVariantFunc matches imageutil.GenerateVariants / GenerateSquareVariants.
 type imageVariantFunc func(data []byte, sizes []int) (*imageutil.VariantResult, error)
 
-// processWebP re-encodes any accepted image to a size-capped WebP (+ AVIF
-// sibling) using the given variant generator. The aspect ratio is preserved by
+// processWebP re-encodes any accepted image to a size-capped WebP (+ AVIF/PNG
+// siblings) using the given variant generator. The aspect ratio is preserved by
 // the generator; narrower images are not upscaled.
-func processWebP(generate imageVariantFunc, size int) func([]byte, string) ([]byte, []byte, string, string, error) {
-	return func(data []byte, declaredType string) ([]byte, []byte, string, string, error) {
+func processWebP(generate imageVariantFunc, size int) func([]byte, string) ([]byte, []byte, []byte, string, string, error) {
+	return func(data []byte, declaredType string) ([]byte, []byte, []byte, string, string, error) {
 		if !imageUploadTypes[declaredType] {
-			return nil, nil, "", "", ErrUnsupportedImage
+			return nil, nil, nil, "", "", ErrUnsupportedImage
 		}
 		res, err := generate(data, []int{size})
 		if err != nil {
-			return nil, nil, "", "", ErrUnsupportedImage
+			return nil, nil, nil, "", "", ErrUnsupportedImage
 		}
 		key := fmt.Sprintf("w%d", size)
-		webp, avif := pickVariantPair(res, key)
-		return webp, avif, "image/webp", ".webp", nil
+		webp, avif, png := pickVariantTriple(res, key)
+		return webp, avif, png, mimeWebP, extWebP, nil
 	}
 }
 
 // processFaviconPassthrough stores the favicon unchanged (no WebP re-encode) so
 // that .ico/.png keep working in browsers that don't render WebP favicons.
-func processFaviconPassthrough(data []byte, declaredType string) ([]byte, []byte, string, string, error) {
+func processFaviconPassthrough(data []byte, declaredType string) ([]byte, []byte, []byte, string, string, error) {
 	switch declaredType {
 	case "image/png":
-		return data, nil, "image/png", ".png", nil
-	case "image/webp":
-		return data, nil, "image/webp", ".webp", nil
+		return data, nil, nil, "image/png", ".png", nil
+	case mimeWebP:
+		return data, nil, nil, mimeWebP, extWebP, nil
 	case "image/avif":
-		return data, nil, "image/avif", ".avif", nil
+		return data, nil, nil, "image/avif", ".avif", nil
 	case "image/x-icon", "image/vnd.microsoft.icon":
-		return data, nil, "image/x-icon", ".ico", nil
+		return data, nil, nil, "image/x-icon", ".ico", nil
 	case "image/svg+xml":
-		return data, nil, "image/svg+xml", ".svg", nil
+		return data, nil, nil, "image/svg+xml", ".svg", nil
 	default:
-		return nil, nil, "", "", ErrUnsupportedImage
+		return nil, nil, nil, "", "", ErrUnsupportedImage
 	}
 }
 
-// pickVariantPair returns WebP and AVIF payloads from the *same* variant,
-// falling back to "original" for both so Accept negotiation never pairs
-// mismatched dimensions.
-func pickVariantPair(res *imageutil.VariantResult, key string) (webp, avif []byte) {
-	var origWebP, origAVIF []byte
+// pickVariantTriple returns WebP, AVIF, and PNG payloads from the *same*
+// variant, falling back to "original" for all three so Accept negotiation
+// never pairs mismatched dimensions.
+func pickVariantTriple(res *imageutil.VariantResult, key string) (webp, avif, png []byte) {
+	var origWebP, origAVIF, origPNG []byte
 	for _, v := range res.Variants {
 		if v.Key == key {
-			return v.Data, v.AVIF
+			return v.Data, v.AVIF, v.PNG
 		}
 		if v.Key == "original" {
-			origWebP, origAVIF = v.Data, v.AVIF
+			origWebP, origAVIF, origPNG = v.Data, v.AVIF, v.PNG
 		}
 	}
-	return origWebP, origAVIF
-}
-
-// pickVariant returns the named variant's bytes, falling back to the re-encoded
-// original when the exact width variant is absent.
-func pickVariant(res *imageutil.VariantResult, key string) []byte {
-	webp, _ := pickVariantPair(res, key)
-	return webp
-}
-
-func pickAVIFVariant(res *imageutil.VariantResult, key string) []byte {
-	_, avif := pickVariantPair(res, key)
-	return avif
+	return origWebP, origAVIF, origPNG
 }
 
 // MaxUploadBytes returns the maximum accepted upload size for a kind, or 0 when
@@ -142,8 +135,8 @@ func MaxUploadBytes(kind AssetKind) int64 {
 // serving it.
 func contentTypeForExt(ext string) string {
 	switch ext {
-	case ".webp":
-		return "image/webp"
+	case extWebP:
+		return mimeWebP
 	case ".avif":
 		return "image/avif"
 	case ".png":

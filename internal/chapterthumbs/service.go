@@ -781,6 +781,11 @@ func (s *Service) uploadChapterThumbnail(ctx context.Context, fileID, chapterInd
 				return "", "", fmt.Errorf("upload %s: %w", avifKey, err)
 			}
 		}
+		if pngKey := artworkkey.WebPPNGSibling(key); len(variant.PNG) > 0 && pngKey != "" {
+			if err := s.store.PutObject(ctx, bucket, pngKey, variant.PNG); err != nil {
+				return "", "", fmt.Errorf("upload %s: %w", pngKey, err)
+			}
+		}
 		if variant.Key == "original" {
 			originalKey = key
 		}

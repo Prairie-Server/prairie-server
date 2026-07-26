@@ -37,27 +37,40 @@ func TestVariantOnlyRewritesOriginalFilename(t *testing.T) {
 	}
 }
 
-func TestFormatSiblingAndObjectKeysIncludeAVIF(t *testing.T) {
+func TestFormatSiblingAndObjectKeysIncludeAVIFAndPNG(t *testing.T) {
 	original := "tmdb/movies/550/poster/original.abc123.webp"
 	if got := WebPAVIFSibling(original); got != "tmdb/movies/550/poster/original.abc123.avif" {
 		t.Fatalf("WebPAVIFSibling() = %q", got)
+	}
+	if got := WebPPNGSibling(original); got != "tmdb/movies/550/poster/original.abc123.png" {
+		t.Fatalf("WebPPNGSibling() = %q", got)
 	}
 	url := "https://cdn.example/tmdb/movies/550/poster/original.abc123.webp?token=1"
 	wantURL := "https://cdn.example/tmdb/movies/550/poster/original.abc123.avif?token=1"
 	if got := WebPAVIFSibling(url); got != wantURL {
 		t.Fatalf("WebPAVIFSibling(url) = %q, want %q", got, wantURL)
 	}
+	wantPNGURL := "https://cdn.example/tmdb/movies/550/poster/original.abc123.png?token=1"
+	if got := WebPPNGSibling(url); got != wantPNGURL {
+		t.Fatalf("WebPPNGSibling(url) = %q, want %q", got, wantPNGURL)
+	}
 	if got := WebPAVIFSibling("tmdb/movies/550/poster/original.jpg"); got != "" {
 		t.Fatalf("WebPAVIFSibling(jpeg) = %q, want empty", got)
+	}
+	if got := WebPPNGSibling("tmdb/movies/550/poster/original.jpg"); got != "" {
+		t.Fatalf("WebPPNGSibling(jpeg) = %q, want empty", got)
 	}
 	keys := ObjectKeys(original, "poster")
 	want := map[string]bool{
 		"tmdb/movies/550/poster/original.abc123.webp": true,
 		"tmdb/movies/550/poster/original.abc123.avif": true,
+		"tmdb/movies/550/poster/original.abc123.png":  true,
 		"tmdb/movies/550/poster/w500.abc123.webp":     true,
 		"tmdb/movies/550/poster/w500.abc123.avif":     true,
+		"tmdb/movies/550/poster/w500.abc123.png":      true,
 		"tmdb/movies/550/poster/w300.abc123.webp":     true,
 		"tmdb/movies/550/poster/w300.abc123.avif":     true,
+		"tmdb/movies/550/poster/w300.abc123.png":      true,
 	}
 	if len(keys) != len(want) {
 		t.Fatalf("ObjectKeys len = %d, want %d (%v)", len(keys), len(want), keys)

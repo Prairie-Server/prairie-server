@@ -114,6 +114,7 @@ jobs:
             ./internal/livetv/... \
             ./internal/jellycompat/... \
             ./internal/imageutil/ \
+            ./internal/artworkkey/ \
             ./internal/contentid/... \
             ./internal/librarykind/... \
             ./internal/logredact/... \
@@ -215,17 +216,42 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      # bimg (libvips) is still a CGO dep on this branch; govulncheck loads
-      # packages and needs the same headers as the Go test job.
-      - name: Install libvips (CGO image deps)
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libvips-dev pkg-config
-
       - name: Install govulncheck
         run: go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
 
       - name: Run govulncheck
-        # Use the same toolchain as go.mod (setup-go already installed it).
+        # imageutil is CGO-free (embedded WASI); no libvips headers required.
         run: |
           "$(go env GOPATH)/bin/govulncheck" ./...
+
+  rust-imageutil:
+    name: Rust imageutil (fmt + clippy + test)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/imageutil-wasm
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v6
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        # Pin to the same major as tools/imageutil-wasm/Dockerfile (ravif needs edition2024).
+        uses: dtolnay/rust-toolchain@1.97.1
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tools/imageutil-wasm
+
+      - name: rustfmt
+        run: cargo fmt --check
+
+      - name: clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: test
+        run: cargo test

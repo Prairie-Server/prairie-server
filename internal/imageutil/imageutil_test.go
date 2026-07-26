@@ -54,6 +54,9 @@ func TestGenerateVariants(t *testing.T) {
 		if len(v.AVIF) < 12 || string(v.AVIF[4:8]) != "ftyp" {
 			t.Fatalf("variant %s missing AVIF payload", v.Key)
 		}
+		if len(v.PNG) < 8 || string(v.PNG[:4]) != "\x89PNG" {
+			t.Fatalf("variant %s missing PNG payload", v.Key)
+		}
 	}
 }
 
@@ -88,6 +91,12 @@ func TestGenerateSquareVariants(t *testing.T) {
 		}
 		if cfg.Width != cfg.Height {
 			t.Fatalf("%s not square: %dx%d", v.Key, cfg.Width, cfg.Height)
+		}
+		if len(v.AVIF) < 12 || string(v.AVIF[4:8]) != "ftyp" {
+			t.Fatalf("variant %s missing AVIF payload", v.Key)
+		}
+		if len(v.PNG) < 8 || string(v.PNG[:4]) != "\x89PNG" {
+			t.Fatalf("variant %s missing PNG payload", v.Key)
 		}
 		if v.Key == "w256" {
 			found = true

@@ -1,3 +1,4 @@
+import { ArtworkImage } from "@/components/ArtworkImage";
 import ViewTransitionLink from "@/components/ViewTransitionLink";
 import { useCatalogItemDetail } from "@/hooks/queries/catalogRead";
 
@@ -19,7 +20,7 @@ function RecommendationItemCard({ itemId }: RecommendationItemCardProps) {
     <ViewTransitionLink to={`/item/${encodeURIComponent(itemId)}`} className="group">
       <div className="aspect-[2/3] overflow-hidden rounded-lg">
         {item.poster_url ? (
-          <img
+          <ArtworkImage
             src={item.poster_url}
             alt={item.title}
             className="h-full w-full object-cover transition-transform group-hover:scale-105"

@@ -85,6 +85,7 @@ type manifestVariant struct {
 	Key      string  `json:"key"`
 	File     string  `json:"file"`
 	AVIFFile *string `json:"avif_file"`
+	PNGFile  *string `json:"png_file"`
 }
 
 var (
@@ -227,6 +228,17 @@ func (p *processor) run(ctx context.Context, mode string, data []byte, extraArgs
 				return nil, fmt.Errorf("imageutil: read avif variant %s: %w", v.Key, err)
 			}
 			item.AVIF = avifRaw
+		}
+		if v.PNGFile != nil && *v.PNGFile != "" {
+			name := *v.PNGFile
+			if strings.Contains(name, "..") || filepath.Base(name) != name {
+				return nil, fmt.Errorf("imageutil: invalid png manifest entry %+v", v)
+			}
+			pngRaw, err := os.ReadFile(filepath.Join(outDir, name))
+			if err != nil {
+				return nil, fmt.Errorf("imageutil: read png variant %s: %w", v.Key, err)
+			}
+			item.PNG = pngRaw
 		}
 		variants = append(variants, item)
 	}

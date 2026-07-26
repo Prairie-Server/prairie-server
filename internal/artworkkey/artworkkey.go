@@ -103,18 +103,21 @@ func VariantNames(imageType string) []string {
 }
 
 // ObjectKeys expands an original key to every expected key for its image type,
-// including AVIF siblings when the canonical key is WebP.
+// including AVIF and PNG siblings when the canonical key is WebP.
 func ObjectKeys(originalPath, imageType string) []string {
 	if originalPath == "" || strings.Contains(originalPath, "://") {
 		return nil
 	}
 	names := VariantNames(imageType)
-	keys := make([]string, 0, len(names)*2)
+	keys := make([]string, 0, len(names)*3)
 	for _, name := range names {
 		webpKey := Variant(originalPath, name)
 		keys = append(keys, webpKey)
 		if avifKey := WebPAVIFSibling(webpKey); avifKey != "" {
 			keys = append(keys, avifKey)
+		}
+		if pngKey := WebPPNGSibling(webpKey); pngKey != "" {
+			keys = append(keys, pngKey)
 		}
 	}
 	return keys
@@ -155,22 +158,32 @@ func FormatSibling(objectPath, ext string) string {
 // WebPAVIFSibling returns the AVIF sibling path/URL for a canonical WebP key.
 // Non-WebP inputs return empty so callers do not invent AVIF objects.
 func WebPAVIFSibling(objectPath string) string {
+	return webPFormatSibling(objectPath, ".avif")
+}
+
+// WebPPNGSibling returns the PNG sibling path/URL for a canonical WebP key.
+// Non-WebP inputs return empty so callers do not invent PNG objects.
+func WebPPNGSibling(objectPath string) string {
+	return webPFormatSibling(objectPath, ".png")
+}
+
+func webPFormatSibling(objectPath, ext string) string {
 	objectPath = strings.TrimSpace(objectPath)
 	if objectPath == "" {
 		return ""
 	}
-	ext := path.Ext(objectPath)
+	cur := path.Ext(objectPath)
 	if strings.Contains(objectPath, "://") {
 		u, err := url.Parse(objectPath)
 		if err != nil {
 			return ""
 		}
-		ext = path.Ext(u.Path)
+		cur = path.Ext(u.Path)
 	}
-	if !strings.EqualFold(ext, ".webp") {
+	if !strings.EqualFold(cur, ".webp") {
 		return ""
 	}
-	return FormatSibling(objectPath, ".avif")
+	return FormatSibling(objectPath, ext)
 }
 
 // PrefersAVIF reports whether an Accept header explicitly includes image/avif

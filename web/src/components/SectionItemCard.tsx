@@ -1,4 +1,5 @@
 import { useImageLoaded } from "@/hooks/useImageLoaded";
+import { ArtworkImage } from "@/components/ArtworkImage";
 import ViewTransitionLink from "@/components/ViewTransitionLink";
 import MediaItemMenu from "@/components/MediaItemMenu";
 import CardOverlays from "@/components/overlays/CardOverlays";
@@ -52,7 +53,7 @@ export default function SectionItemCard({ item, libraryId }: SectionItemCardProp
             }
           >
             {item.poster_url ? (
-              <img
+              <ArtworkImage
                 src={item.poster_url}
                 alt={item.title}
                 className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
