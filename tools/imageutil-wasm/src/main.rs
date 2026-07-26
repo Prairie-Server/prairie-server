@@ -1,7 +1,7 @@
 //! Prairie imageutil WASI helper.
 //!
-//! Reads an image from `--input`, writes WebP and optional AVIF variants into
-//! `--outdir`, and emits a small JSON manifest on stdout. Built for
+//! Reads an image from `--input`, writes WebP plus optional AVIF/PNG siblings
+//! into `--outdir`, and emits a small JSON manifest on stdout. Built for
 //! wasm32-wasip1 and run in-process by `internal/imageutil` via wazero.
 
 use std::fs;
@@ -28,7 +28,10 @@ enum Mode {
 }
 
 #[derive(Debug, Parser)]
-#[command(name = "imageutil-wasm", about = "Prairie WASI image resize/encode helper")]
+#[command(
+    name = "imageutil-wasm",
+    about = "Prairie WASI image resize/encode helper"
+)]
 struct Args {
     #[arg(long, value_enum)]
     mode: Mode,
@@ -59,8 +62,8 @@ struct Args {
     #[arg(long, default_value_t = 100)]
     max_dim: u32,
 
-    /// Output formats for variants/square-variants: webp,avif (default both).
-    #[arg(long, value_delimiter = ',', default_value = "webp,avif")]
+    /// Output formats for variants/square-variants: webp,avif,png (default all).
+    #[arg(long, value_delimiter = ',', default_value = "webp,avif,png")]
     formats: Vec<String>,
 }
 
@@ -77,11 +80,14 @@ struct ManifestVariant {
     file: String,
     #[serde(skip_serializing_if = "Option::is_none")]
     avif_file: Option<String>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    png_file: Option<String>,
 }
 
 struct FormatFlags {
     webp: bool,
     avif: bool,
+    png: bool,
 }
 
 fn main() -> ExitCode {
@@ -119,20 +125,26 @@ fn parse_formats(raw: &[String]) -> Result<FormatFlags, String> {
     let mut flags = FormatFlags {
         webp: false,
         avif: false,
+        png: false,
     };
     for item in raw {
         match item.trim().to_ascii_lowercase().as_str() {
             "" => {}
             "webp" => flags.webp = true,
             "avif" => flags.avif = true,
-            other => return Err(format!("unknown format {other:?} (want webp and/or avif)")),
+            "png" => flags.png = true,
+            other => {
+                return Err(format!(
+                    "unknown format {other:?} (want webp, avif, and/or png)"
+                ))
+            }
         }
     }
-    if !flags.webp && !flags.avif {
-        return Err("formats must include webp and/or avif".into());
+    if !flags.webp && !flags.avif && !flags.png {
+        return Err("formats must include webp, avif, and/or png".into());
     }
-    // Canonical cache keys stay WebP; AVIF is always a sibling upgrade.
-    if flags.avif && !flags.webp {
+    // Canonical cache keys stay WebP; AVIF/PNG are always sibling upgrades.
+    if (flags.avif || flags.png) && !flags.webp {
         flags.webp = true;
     }
     Ok(flags)
@@ -234,6 +246,7 @@ fn process_normalize_png(img: &DynamicImage, args: &Args) -> Result<Manifest, St
             key: "normalized".into(),
             file: name.into(),
             avif_file: None,
+            png_file: None,
         }],
     })
 }
@@ -257,10 +270,19 @@ fn write_variant_pair(
     } else {
         None
     };
+    let png_file = if formats.png {
+        let png_name = format!("{key}.png");
+        img.save_with_format(outdir.join(&png_name), ImageFormat::Png)
+            .map_err(|e| format!("encode png: {e}"))?;
+        Some(png_name)
+    } else {
+        None
+    };
     Ok(ManifestVariant {
         key: key.into(),
         file: webp_name,
         avif_file,
+        png_file,
     })
 }
 
@@ -280,8 +302,8 @@ fn looks_like_svg(data: &[u8]) -> bool {
     if trimmed.starts_with("<svg") {
         return true;
     }
-    if trimmed.starts_with("<?xml") {
-        return trimmed[5..].find("<svg").is_some_and(|idx| idx < 400);
+    if let Some(after_xml) = trimmed.strip_prefix("<?xml") {
+        return after_xml.find("<svg").is_some_and(|idx| idx < 400);
     }
     false
 }
@@ -369,4 +391,104 @@ fn write_avif(path: &Path, img: &DynamicImage, quality: u8) -> Result<(), String
         .encode_rgba(Img::new(pixels.as_slice(), w as usize, h as usize))
         .map_err(|e| format!("encode avif: {e}"))?;
     fs::write(path, encoded.avif_file).map_err(|e| format!("write {}: {e}", path.display()))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use image::{Rgba, RgbaImage};
+
+    fn solid(w: u32, h: u32) -> DynamicImage {
+        DynamicImage::ImageRgba8(RgbaImage::from_pixel(w, h, Rgba([10, 20, 30, 255])))
+    }
+
+    #[test]
+    fn parse_formats_defaults_and_unknown() {
+        let all = parse_formats(&["webp".into(), "avif".into(), "png".into()]).unwrap();
+        assert!(all.webp && all.avif && all.png);
+
+        let both = parse_formats(&["webp".into(), "avif".into()]).unwrap();
+        assert!(both.webp && both.avif && !both.png);
+
+        let webp_only = parse_formats(&["webp".into()]).unwrap();
+        assert!(webp_only.webp && !webp_only.avif && !webp_only.png);
+
+        // AVIF/PNG-only still force WebP so canonical cache keys stay .webp.
+        let avif_only = parse_formats(&["avif".into()]).unwrap();
+        assert!(avif_only.webp && avif_only.avif && !avif_only.png);
+
+        let png_only = parse_formats(&["png".into()]).unwrap();
+        assert!(png_only.webp && !png_only.avif && png_only.png);
+
+        assert!(parse_formats(&[]).is_err());
+        assert!(parse_formats(&["gif".into()]).is_err());
+    }
+
+    #[test]
+    fn looks_like_svg_requires_root_near_start() {
+        assert!(looks_like_svg(
+            b"<svg xmlns='http://www.w3.org/2000/svg'></svg>"
+        ));
+        assert!(looks_like_svg(
+            b"<?xml version=\"1.0\"?><svg xmlns='http://www.w3.org/2000/svg'></svg>"
+        ));
+        assert!(!looks_like_svg(b"<html><body><svg></svg></body></html>"));
+        assert!(!looks_like_svg(b"\x89PNG\r\n\x1a\n"));
+    }
+
+    #[test]
+    fn fit_within_caps_longest_edge() {
+        let img = solid(2000, 1000);
+        let out = fit_within(&img, 1000);
+        assert_eq!(out.dimensions(), (1000, 500));
+
+        let already = solid(800, 600);
+        assert_eq!(fit_within(&already, 1000).dimensions(), (800, 600));
+    }
+
+    #[test]
+    fn center_crop_square_is_centered() {
+        let img = solid(300, 100);
+        let square = center_crop_square(&img).unwrap();
+        assert_eq!(square.dimensions(), (100, 100));
+    }
+
+    #[test]
+    fn write_variant_pair_emits_webp_and_optional_avif() {
+        let dir = tempfile_dir("imageutil-pair");
+        let img = solid(32, 32);
+        let all = FormatFlags {
+            webp: true,
+            avif: true,
+            png: true,
+        };
+        let manifest = write_variant_pair(&dir, "original", &img, 80, &all).unwrap();
+        assert_eq!(manifest.file, "original.webp");
+        assert_eq!(manifest.avif_file.as_deref(), Some("original.avif"));
+        assert_eq!(manifest.png_file.as_deref(), Some("original.png"));
+        assert!(dir.join("original.webp").is_file());
+        assert!(dir.join("original.avif").is_file());
+        assert!(dir.join("original.png").is_file());
+
+        let webp_bytes = fs::read(dir.join("original.webp")).unwrap();
+        assert!(webp_bytes.windows(4).any(|w| w == b"WEBP") || webp_bytes.starts_with(b"RIFF"));
+        let avif_bytes = fs::read(dir.join("original.avif")).unwrap();
+        assert!(avif_bytes.windows(4).any(|w| w == b"ftyp"));
+        let png_bytes = fs::read(dir.join("original.png")).unwrap();
+        assert!(png_bytes.starts_with(b"\x89PNG"));
+    }
+
+    fn tempfile_dir(prefix: &str) -> PathBuf {
+        let mut dir = std::env::temp_dir();
+        dir.push(format!(
+            "{prefix}-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
 }

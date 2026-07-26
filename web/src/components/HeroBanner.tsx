@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo, type MouseEvent } from "react";
 import { Link } from "react-router";
 import { Info, ChevronLeft, ChevronRight, Play, Pause, BookOpen } from "lucide-react";
+import { ArtworkImage } from "@/components/ArtworkImage";
 import { decodeThumbhash } from "@/lib/thumbhash";
 import { HERO_BANNER_SIZE } from "@/lib/design-system";
 import { useAmbientColor } from "@/hooks/useAmbientColor";
@@ -194,7 +195,7 @@ export default function HeroBanner({
             }
           >
             {slide.backdrop_url && (
-              <img
+              <ArtworkImage
                 src={slide.backdrop_url}
                 alt=""
                 className={`h-full w-full object-cover object-[center_20%] transition-opacity duration-[--duration-slow] will-change-transform ${loaded[i] ? "opacity-100" : "opacity-0"}`}

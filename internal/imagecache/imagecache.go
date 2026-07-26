@@ -303,7 +303,7 @@ func (c *Cacher) uploadVariants(ctx context.Context, bucket string, result *imag
 		key  string
 		data []byte
 	}
-	jobs := make([]job, 0, len(result.Variants)*2)
+	jobs := make([]job, 0, len(result.Variants)*3)
 	for _, variant := range result.Variants {
 		key := variantPaths[variant.Key]
 		if key == "" {
@@ -313,6 +313,11 @@ func (c *Cacher) uploadVariants(ctx context.Context, bucket string, result *imag
 		if len(variant.AVIF) > 0 {
 			if avifKey := artworkkey.WebPAVIFSibling(key); avifKey != "" {
 				jobs = append(jobs, job{key: avifKey, data: variant.AVIF})
+			}
+		}
+		if len(variant.PNG) > 0 {
+			if pngKey := artworkkey.WebPPNGSibling(key); pngKey != "" {
+				jobs = append(jobs, job{key: pngKey, data: variant.PNG})
 			}
 		}
 	}
@@ -383,11 +388,14 @@ func (c *Cacher) trackRevision(ctx context.Context, imageType metadata.ImageType
 		return nil
 	}
 	originalPath := variantPaths[artworkkey.OriginalVariant]
-	keys := make([]string, 0, len(variantPaths)*2)
+	keys := make([]string, 0, len(variantPaths)*3)
 	for _, key := range variantPaths {
 		keys = append(keys, key)
 		if avifKey := artworkkey.WebPAVIFSibling(key); avifKey != "" {
 			keys = append(keys, avifKey)
+		}
+		if pngKey := artworkkey.WebPPNGSibling(key); pngKey != "" {
+			keys = append(keys, pngKey)
 		}
 	}
 	sort.Strings(keys)

@@ -27,11 +27,13 @@ const (
 )
 
 // Variant holds a named image variant (e.g. "original", "w500").
-// Data is the canonical WebP payload; AVIF is an optional sibling upgrade.
+// Data is the canonical WebP payload; AVIF and PNG are optional sibling
+// upgrades for clients that prefer them (AVIF) or cannot decode WebP (PNG).
 type Variant struct {
 	Key  string
 	Data []byte
 	AVIF []byte // optional; empty when AVIF encode was skipped
+	PNG  []byte // optional; empty when PNG encode was skipped
 }
 
 // VariantResult contains generated variants and their canonical output format.
@@ -40,12 +42,12 @@ type VariantResult struct {
 	Ext      string // canonical extension including dot: ".webp"
 }
 
-// GenerateVariants produces WebP (+ AVIF) variants of the source image at the
-// requested widths, plus an "original" re-encoded as WebP/AVIF. WebP remains
-// the canonical cache key; AVIF is a dual-written sibling for clients that
-// advertise image/avif. Images narrower than a target width are re-encoded
-// without upscaling. All resizes operate on the original bytes to avoid
-// compounding quality loss.
+// GenerateVariants produces WebP (+ AVIF + PNG) variants of the source image
+// at the requested widths, plus an "original" re-encoded in those formats.
+// WebP remains the canonical cache key; AVIF and PNG are dual-written siblings
+// for clients that prefer AVIF or cannot decode WebP. Images narrower than a
+// target width are re-encoded without upscaling. All resizes operate on the
+// original bytes to avoid compounding quality loss.
 func GenerateVariants(data []byte, widths []int) (*VariantResult, error) {
 	p, err := getProcessor()
 	if err != nil {
@@ -54,7 +56,7 @@ func GenerateVariants(data []byte, widths []int) (*VariantResult, error) {
 	args := []string{
 		"--quality", strconv.Itoa(webpQuality),
 		"--max-original", strconv.Itoa(maxCachedOriginalDimension),
-		"--formats", "webp,avif",
+		"--formats", "webp,avif,png",
 	}
 	if csv := joinUintCSV(widths); csv != "" {
 		args = append(args, "--widths", csv)
@@ -64,7 +66,7 @@ func GenerateVariants(data []byte, widths []int) (*VariantResult, error) {
 
 // GenerateSquareVariants center-crops the source image to a square and returns
 // a square original plus resized square variants, encoded as WebP with AVIF
-// siblings.
+// and PNG siblings.
 func GenerateSquareVariants(data []byte, sizes []int) (*VariantResult, error) {
 	p, err := getProcessor()
 	if err != nil {
@@ -72,7 +74,7 @@ func GenerateSquareVariants(data []byte, sizes []int) (*VariantResult, error) {
 	}
 	args := []string{
 		"--quality", strconv.Itoa(webpQuality),
-		"--formats", "webp,avif",
+		"--formats", "webp,avif,png",
 	}
 	if csv := joinUintCSV(sizes); csv != "" {
 		args = append(args, "--sizes", csv)

@@ -76,6 +76,7 @@ export default defineConfig(({ mode }) => {
       coverage: {
         provider: "v8",
         include: [
+          "src/lib/artworkUrl.ts",
           "src/lib/liveTVGuide.ts",
           "src/lib/datetime.ts",
           "src/lib/filterEasyMode.ts",

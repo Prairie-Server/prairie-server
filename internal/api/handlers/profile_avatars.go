@@ -275,6 +275,12 @@ func (h *ProfileHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Reque
 				return
 			}
 		}
+		if pngKey := artworkkey.WebPPNGSibling(key); len(variant.PNG) > 0 && pngKey != "" {
+			if err := h.AvatarStore.PutObject(r.Context(), bucket, pngKey, variant.PNG); err != nil {
+				writeError(w, http.StatusInternalServerError, "internal_error", "Failed to store avatar")
+				return
+			}
+		}
 	}
 
 	avatarRef := profileAvatarUploadPrefix + originalKey

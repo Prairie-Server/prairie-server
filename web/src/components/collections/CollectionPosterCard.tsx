@@ -1,4 +1,5 @@
 import { useImageLoaded } from "@/hooks/useImageLoaded";
+import { ArtworkImage } from "@/components/ArtworkImage";
 import { Pin, PinOff, User } from "lucide-react";
 import type { LibraryTabCollection } from "@/api/types";
 import { useToggleSidebarPin } from "@/hooks/queries/sidebarPins";
@@ -38,7 +39,7 @@ export function CollectionPosterCard({
       <button type="button" onClick={() => navigate(href)} className="block w-full text-left">
         <div className="media-card-image relative aspect-[2/3] overflow-hidden rounded-xl">
           {collection.poster_url ? (
-            <img
+            <ArtworkImage
               src={collection.poster_url}
               alt={collection.title}
               className={`h-full w-full object-cover transition duration-300 group-hover/card:scale-[1.05] ${

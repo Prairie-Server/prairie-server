@@ -82,7 +82,7 @@ func (s *Service) UploadAsset(ctx context.Context, kind AssetKind, data []byte, 
 		return "", ErrStorageUnavailable
 	}
 
-	out, avif, _, ext, err := spec.process(data, declaredType)
+	out, avif, png, _, ext, err := spec.process(data, declaredType)
 	if err != nil {
 		return "", err
 	}
@@ -97,11 +97,19 @@ func (s *Service) UploadAsset(ctx context.Context, kind AssetKind, data []byte, 
 	if err := s.store.PutObject(ctx, s.store.Bucket(), key, out); err != nil {
 		return "", err
 	}
-	// Dual-write AVIF sibling under the same content-address stem so Accept
-	// negotiation can upgrade without changing the stored settings ref.
+	// Dual-write AVIF/PNG siblings under the same content-address stem so
+	// Accept negotiation / client cascades can upgrade or fall back without
+	// changing the stored settings ref.
 	if len(avif) > 0 {
 		if avifKey := artworkkey.WebPAVIFSibling(key); avifKey != "" {
 			if err := s.store.PutObject(ctx, s.store.Bucket(), avifKey, avif); err != nil {
+				return "", err
+			}
+		}
+	}
+	if len(png) > 0 {
+		if pngKey := artworkkey.WebPPNGSibling(key); pngKey != "" {
+			if err := s.store.PutObject(ctx, s.store.Bucket(), pngKey, png); err != nil {
 				return "", err
 			}
 		}

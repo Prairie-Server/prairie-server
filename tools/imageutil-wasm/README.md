@@ -1,9 +1,9 @@
 # imageutil.wasm — artwork resize/encode module
 
 `imageutil.wasm` is a small Rust WASI CLI that decodes JPEG/PNG/GIF/WebP/SVG,
-resizes, center-crops squares, and encodes WebP + AVIF (lossy) or PNG. Prairie
-Server runs it **in-process** via [`wazero`](https://github.com/tetratelabs/wazero)
-from `internal/imageutil`.
+resizes, center-crops squares, and encodes WebP + optional AVIF/PNG siblings
+(lossy WebP/AVIF; lossless PNG). Prairie Server runs it **in-process** via
+[`wazero`](https://github.com/tetratelabs/wazero) from `internal/imageutil`.
 
 ## Why this shape
 
@@ -47,6 +47,17 @@ docker rm "$id"
 Commit both the `.wasm` and the `.sha256` sidecar. `go test ./internal/imageutil`
 checks the embed matches the sidecar and smoke-tests resize/encode.
 
+Host-side unit tests (no WASI target required):
+
+```sh
+cargo test --manifest-path tools/imageutil-wasm/Cargo.toml
+cargo fmt --manifest-path tools/imageutil-wasm/Cargo.toml --check
+cargo clippy --manifest-path tools/imageutil-wasm/Cargo.toml --all-targets -- -D warnings
+```
+
+CI runs the same gates in the `Rust imageutil` job. Canonical keys stay `.webp`;
+the web client prefers AVIF siblings, then WebP, with PNG as a further fallback.
+
 ## CLI surface (used by Go)
 
 ```text
@@ -54,12 +65,12 @@ imageutil-wasm --mode variants|square-variants|normalize-png \
   --input /in/src.bin --outdir /out \
   [--widths 500,300] [--sizes 512,256] \
   [--quality 90] [--max-original 1920] [--max-dim 100] \
-  [--formats webp,avif]
+  [--formats webp,avif,png]
 ```
 
 Prints a JSON manifest on stdout. `ext` stays `.webp` (canonical cache key);
-AVIF siblings are listed per variant:
+AVIF and PNG siblings are listed per variant:
 
 ```json
-{"ext":".webp","variants":[{"key":"original","file":"original.webp","avif_file":"original.avif"}]}
+{"ext":".webp","variants":[{"key":"original","file":"original.webp","avif_file":"original.avif","png_file":"original.png"}]}
 ```
