@@ -374,6 +374,18 @@ func TestStartAndReleaseChannelSession(t *testing.T) {
 	if err != nil {
 		t.Fatalf("owner ReleaseSession: %v", err)
 	}
+
+	// Legacy/unscoped sessions must not be releasable by arbitrary callers.
+	unscoped, err := store.CreateSession(context.Background(), SessionCreate{
+		ChannelID: "ch1", TunerID: "t1", TunerIndex: 0, UserID: 0, ProfileID: "",
+	})
+	if err != nil {
+		t.Fatalf("CreateSession unscoped: %v", err)
+	}
+	_, err = svc.ReleaseSession(context.Background(), unscoped.ID, 7, "profile-1", true)
+	if !errors.Is(err, ErrNotFound) {
+		t.Fatalf("unscoped ReleaseSession = %v, want ErrNotFound", err)
+	}
 }
 
 func TestStartChannelSessionWithPlaybackBridge(t *testing.T) {

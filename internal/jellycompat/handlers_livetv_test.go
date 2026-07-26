@@ -333,8 +333,10 @@ func TestLiveTVTimersMapping(t *testing.T) {
 		UserID: 7, ProfileID: "profile-1",
 	}
 	h := newTestLiveTVHandler(store)
+	compatSession := &Session{Token: "tok", StreamAppUserID: 7, ProfileID: "profile-1"}
 
 	req := httptest.NewRequest(http.MethodGet, "/LiveTv/Timers", nil)
+	req = req.WithContext(context.WithValue(req.Context(), compatSessionKey, compatSession))
 	rr := httptest.NewRecorder()
 	h.HandleTimers(rr, req)
 	if rr.Code != http.StatusOK {
@@ -353,6 +355,7 @@ func TestLiveTVTimersMapping(t *testing.T) {
 	}
 
 	req = httptest.NewRequest(http.MethodGet, "/LiveTv/SeriesTimers", nil)
+	req = req.WithContext(context.WithValue(req.Context(), compatSessionKey, compatSession))
 	rr = httptest.NewRecorder()
 	h.HandleSeriesTimers(rr, req)
 	var series timerQueryResultDTO
@@ -361,6 +364,13 @@ func TestLiveTVTimersMapping(t *testing.T) {
 	}
 	if len(series.Items) != 1 || !series.Items[0].RecordNewOnly || series.Items[0].KeepUpTo != 5 {
 		t.Fatalf("series timers = %+v", series.Items)
+	}
+
+	unauth := httptest.NewRequest(http.MethodGet, "/LiveTv/Timers", nil)
+	unauthRR := httptest.NewRecorder()
+	h.HandleTimers(unauthRR, unauth)
+	if unauthRR.Code != http.StatusUnauthorized {
+		t.Fatalf("unmapped session timers status = %d, want 401", unauthRR.Code)
 	}
 }
 

@@ -296,11 +296,13 @@ func (h *LiveTVHandler) HandleStartChannelSession(w http.ResponseWriter, r *http
 		SessionID      string `json:"session_id"`
 		PlaybackTicket string `json:"playback_ticket"`
 		HLSURL         string `json:"hls_url"`
+		StreamURL      string `json:"stream_url"`
 		Note           string `json:"note,omitempty"`
 	}{
 		SessionID:      session.ID,
 		PlaybackTicket: ticket,
 		HLSURL:         hlsURL,
+		StreamURL:      hlsURL,
 		Note:           session.Note,
 	})
 }
@@ -310,24 +312,15 @@ func (h *LiveTVHandler) HandleSessionStream(w http.ResponseWriter, r *http.Reque
 	sessionID := chi.URLParam(r, "sessionId")
 	userID := apimw.GetUserID(r.Context())
 	profileID := apimw.GetProfileID(r.Context())
-	session, err := h.service.GetSession(r.Context(), sessionID)
+	enforceOwner := !apimw.IsAdmin(r.Context())
+	session, err := h.service.GetSessionForViewer(r.Context(), sessionID, userID, profileID, enforceOwner)
 	if err != nil {
 		writeLiveTVError(w, err)
 		return
 	}
-	if session == nil || session.Status != "active" {
+	if session.Status != "active" {
 		writeError(w, http.StatusNotFound, "not_found", "session not found")
 		return
-	}
-	if !apimw.IsAdmin(r.Context()) {
-		if session.UserID != 0 && session.UserID != userID {
-			writeError(w, http.StatusNotFound, "not_found", "session not found")
-			return
-		}
-		if session.ProfileID != "" && profileID != "" && session.ProfileID != profileID {
-			writeError(w, http.StatusNotFound, "not_found", "session not found")
-			return
-		}
 	}
 	upstream, err := h.service.ResolveSessionUpstreamURL(r.Context(), sessionID)
 	if err != nil {
@@ -344,7 +337,8 @@ func (h *LiveTVHandler) HandleSessionStream(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusBadGateway, "upstream_error", "failed to open upstream")
 		return
 	}
-	resp, err := livetv.NewMediaHTTPClient().Do(req)
+	// Long-lived MPEG-TS proxy — no overall Client.Timeout.
+	resp, err := livetv.NewStreamHTTPClient().Do(req)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, "upstream_error", "upstream fetch failed")
 		return

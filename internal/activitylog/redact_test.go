@@ -70,4 +70,10 @@ func TestRedactSecretQuery(t *testing.T) {
 	if got != "/Videos/1/stream?token=[redacted]&foo=1" {
 		t.Fatalf("path+query redaction = %q", got)
 	}
+	// Percent-encoded key names must still redact (raw key spelling preserved).
+	got = RedactSecretQuery("/stream.ts?%61pi%5Fkey=secret&static=true")
+	want = "/stream.ts?%61pi%5Fkey=[redacted]&static=true"
+	if got != want {
+		t.Fatalf("encoded-key redaction = %q want %q", got, want)
+	}
 }

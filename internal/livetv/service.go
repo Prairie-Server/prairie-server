@@ -544,10 +544,7 @@ func (s *Service) ReleaseSession(ctx context.Context, id string, userID int, pro
 		if existing == nil {
 			return nil, ErrNotFound
 		}
-		if existing.UserID != 0 && existing.UserID != userID {
-			return nil, ErrNotFound
-		}
-		if existing.ProfileID != "" && profileID != "" && existing.ProfileID != profileID {
+		if !ownerMatches(existing.UserID, existing.ProfileID, userID, profileID) {
 			return nil, ErrNotFound
 		}
 	}
@@ -678,6 +675,29 @@ func (s *Service) GetSession(ctx context.Context, id string) (*LiveSession, erro
 		return nil, err
 	}
 	return s.store.GetSession(ctx, id)
+}
+
+// GetSessionForViewer returns a session after applying the centralized ownership
+// check used by ReleaseSession / CancelRecording. Missing or unauthorized
+// sessions surface as ErrNotFound.
+func (s *Service) GetSessionForViewer(
+	ctx context.Context,
+	sessionID string,
+	userID int,
+	profileID string,
+	enforceOwner bool,
+) (*LiveSession, error) {
+	session, err := s.GetSession(ctx, sessionID)
+	if err != nil {
+		return nil, err
+	}
+	if session == nil {
+		return nil, ErrNotFound
+	}
+	if enforceOwner && !ownerMatches(session.UserID, session.ProfileID, userID, profileID) {
+		return nil, ErrNotFound
+	}
+	return session, nil
 }
 
 // ResolveSessionUpstreamURL returns the upstream tuner URL for an active session.

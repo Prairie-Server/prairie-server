@@ -17,6 +17,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+
+	"github.com/prairie-server/prairie-server/internal/activitylog"
 )
 
 type loggingResponseWriter struct {
@@ -229,21 +231,7 @@ func redactDebugURL(u *url.URL) string {
 	if u == nil {
 		return ""
 	}
-	raw := u.RequestURI()
-	qIdx := strings.IndexByte(raw, '?')
-	if qIdx < 0 {
-		return raw
-	}
-	base := raw[:qIdx]
-	parts := strings.Split(raw[qIdx+1:], "&")
-	for i, part := range parts {
-		key, _, _ := strings.Cut(part, "=")
-		switch strings.ToLower(key) {
-		case "token", "api_key", "apikey", "access_token", "refresh_token", "profile_token", "x-emby-token":
-			parts[i] = key + "=[redacted]"
-		}
-	}
-	return base + "?" + strings.Join(parts, "&")
+	return activitylog.RedactSecretQuery(u.RequestURI())
 }
 
 // writeIndentedJSON pretty-prints b if it's valid JSON, otherwise writes it as

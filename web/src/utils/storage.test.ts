@@ -98,6 +98,16 @@ describe("storage upgrade persistence", () => {
     ensureStorageSchema();
     expect(storage.get(storage.KEYS.REFRESH_TOKEN)).toBe("still-here");
   });
+
+  it("rewrites malformed schema-version markers", () => {
+    for (const bad of ["1junk", "1.5", "NaN", "-1"]) {
+      state.set("prairie-storage-schema-version", bad);
+      expect(ensureStorageSchema()).toBe(STORAGE_SCHEMA_VERSION);
+      expect(localStorage.getItem("prairie-storage-schema-version")).toBe(
+        String(STORAGE_SCHEMA_VERSION),
+      );
+    }
+  });
 });
 
 describe("storage get/set/remove", () => {

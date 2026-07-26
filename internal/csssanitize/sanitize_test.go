@@ -18,3 +18,17 @@ func TestSanitizeBlocksExternalResources(t *testing.T) {
 		t.Fatalf("safe urls stripped: %s", out)
 	}
 }
+
+func TestSanitizeBlocksCommentAndEscapeBypasses(t *testing.T) {
+	t.Parallel()
+	cases := []string{
+		`@import/**/ "https://evil.example/x.css"; .ok { color: red; }`,
+		`.x { background: url(h\74 tps://evil.example/x); }`,
+	}
+	for _, in := range cases {
+		out := Sanitize(in)
+		if strings.Contains(out, "evil.example") {
+			t.Fatalf("bypass leaked for %q → %s", in, out)
+		}
+	}
+}

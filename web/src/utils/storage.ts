@@ -68,8 +68,10 @@ const STORAGE_SCHEMA_VERSION_KEY = "prairie-storage-schema-version";
 export function ensureStorageSchema(): number {
   try {
     const raw = localStorage.getItem(STORAGE_SCHEMA_VERSION_KEY);
-    const current = raw ? Number.parseInt(raw, 10) : 0;
-    if (!Number.isFinite(current) || current < STORAGE_SCHEMA_VERSION) {
+    const current = raw == null || raw === "" ? 0 : Number(raw);
+    const isValidInteger =
+      Number.isFinite(current) && Number.isInteger(current) && current >= 0;
+    if (!isValidInteger || current < STORAGE_SCHEMA_VERSION) {
       localStorage.setItem(STORAGE_SCHEMA_VERSION_KEY, String(STORAGE_SCHEMA_VERSION));
     }
     return STORAGE_SCHEMA_VERSION;

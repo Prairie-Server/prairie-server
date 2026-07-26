@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -172,6 +173,8 @@ func RedactSecretPathParams(r *http.Request, path string) string {
 
 // RedactSecretQuery strips token/api_key/access_token query values from a
 // request path (or full URL path+query) before it reaches log sinks.
+// Keys are matched after URL-decoding so percent-encoded names (e.g. %61pi_key)
+// cannot bypass redaction; the raw key spelling is preserved in the output.
 func RedactSecretQuery(path string) string {
 	qIdx := strings.IndexByte(path, '?')
 	if qIdx < 0 {
@@ -182,7 +185,11 @@ func RedactSecretQuery(path string) string {
 	parts := strings.Split(rawQuery, "&")
 	for i, part := range parts {
 		key, _, _ := strings.Cut(part, "=")
-		switch strings.ToLower(key) {
+		decoded, err := url.QueryUnescape(key)
+		if err != nil {
+			decoded = key
+		}
+		switch strings.ToLower(decoded) {
 		case "token", "api_key", "apikey", "access_token", "refresh_token", "profile_token", "x-emby-token":
 			parts[i] = key + "=[redacted]"
 		}

@@ -155,4 +155,5 @@ jobs:
 
       - name: Run govulncheck
         # Use the same toolchain as go.mod (setup-go already installed it).
-        run: "$(go env GOPATH)/bin/govulncheck" ./...
+        run: |
+          "$(go env GOPATH)/bin/govulncheck" ./...
