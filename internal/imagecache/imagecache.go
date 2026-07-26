@@ -299,27 +299,44 @@ type uploadVariantStats struct {
 }
 
 func (c *Cacher) uploadVariants(ctx context.Context, bucket string, result *imageutil.VariantResult, variantPaths map[string]string) (uploadVariantStats, error) {
+	type job struct {
+		key  string
+		data []byte
+	}
+	jobs := make([]job, 0, len(result.Variants)*2)
+	for _, variant := range result.Variants {
+		key := variantPaths[variant.Key]
+		if key == "" {
+			continue
+		}
+		jobs = append(jobs, job{key: key, data: variant.Data})
+		if len(variant.AVIF) > 0 {
+			if avifKey := artworkkey.WebPAVIFSibling(key); avifKey != "" {
+				jobs = append(jobs, job{key: avifKey, data: variant.AVIF})
+			}
+		}
+	}
+
 	var wg sync.WaitGroup
-	uploadErrs := make([]error, len(result.Variants))
-	stats := make([]uploadVariantStats, len(result.Variants))
-	for i, v := range result.Variants {
+	uploadErrs := make([]error, len(jobs))
+	stats := make([]uploadVariantStats, len(jobs))
+	for i, j := range jobs {
 		wg.Add(1)
-		go func(idx int, variant imageutil.Variant) {
+		go func(idx int, item job) {
 			defer wg.Done()
-			key := variantPaths[variant.Key]
-			if exists, err := objectMatches(ctx, c.s3, bucket, key, variant.Data); err != nil {
-				uploadErrs[idx] = fmt.Errorf("imagecache: check existing %s: %w", key, err)
+			if exists, err := objectMatches(ctx, c.s3, bucket, item.key, item.data); err != nil {
+				uploadErrs[idx] = fmt.Errorf("imagecache: check existing %s: %w", item.key, err)
 				return
 			} else if exists {
 				stats[idx].existing = 1
 				return
 			}
-			if err := putObjectWithRetry(ctx, c.s3, bucket, key, variant.Data); err != nil {
-				uploadErrs[idx] = fmt.Errorf("imagecache: upload %s: %w", key, err)
+			if err := putObjectWithRetry(ctx, c.s3, bucket, item.key, item.data); err != nil {
+				uploadErrs[idx] = fmt.Errorf("imagecache: upload %s: %w", item.key, err)
 				return
 			}
 			stats[idx].uploaded = 1
-		}(i, v)
+		}(i, j)
 	}
 	wg.Wait()
 	var total uploadVariantStats
@@ -366,9 +383,12 @@ func (c *Cacher) trackRevision(ctx context.Context, imageType metadata.ImageType
 		return nil
 	}
 	originalPath := variantPaths[artworkkey.OriginalVariant]
-	keys := make([]string, 0, len(variantPaths))
+	keys := make([]string, 0, len(variantPaths)*2)
 	for _, key := range variantPaths {
 		keys = append(keys, key)
+		if avifKey := artworkkey.WebPAVIFSibling(key); avifKey != "" {
+			keys = append(keys, avifKey)
+		}
 	}
 	sort.Strings(keys)
 	if err := c.revisionTracker.TrackArtworkRevision(ctx, originalPath, metadata.ImageTypeToString(imageType), keys); err != nil {

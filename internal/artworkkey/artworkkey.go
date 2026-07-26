@@ -4,6 +4,7 @@
 package artworkkey
 
 import (
+	"net/url"
 	"path"
 	"strconv"
 	"strings"
@@ -101,15 +102,111 @@ func VariantNames(imageType string) []string {
 	return names
 }
 
-// ObjectKeys expands an original key to every expected key for its image type.
+// ObjectKeys expands an original key to every expected key for its image type,
+// including AVIF siblings when the canonical key is WebP.
 func ObjectKeys(originalPath, imageType string) []string {
 	if originalPath == "" || strings.Contains(originalPath, "://") {
 		return nil
 	}
 	names := VariantNames(imageType)
-	keys := make([]string, 0, len(names))
+	keys := make([]string, 0, len(names)*2)
 	for _, name := range names {
-		keys = append(keys, Variant(originalPath, name))
+		webpKey := Variant(originalPath, name)
+		keys = append(keys, webpKey)
+		if avifKey := WebPAVIFSibling(webpKey); avifKey != "" {
+			keys = append(keys, avifKey)
+		}
 	}
 	return keys
+}
+
+// FormatSibling returns the same object key or URL with a different extension.
+// For http(s) URLs only the path suffix is rewritten; query/fragment stay put.
+func FormatSibling(objectPath, ext string) string {
+	objectPath = strings.TrimSpace(objectPath)
+	if objectPath == "" {
+		return objectPath
+	}
+	if ext == "" {
+		return objectPath
+	}
+	if !strings.HasPrefix(ext, ".") {
+		ext = "." + ext
+	}
+	if strings.Contains(objectPath, "://") {
+		u, err := url.Parse(objectPath)
+		if err != nil || u.Path == "" {
+			return objectPath
+		}
+		cur := path.Ext(u.Path)
+		if cur == "" {
+			return objectPath
+		}
+		u.Path = strings.TrimSuffix(u.Path, cur) + ext
+		return u.String()
+	}
+	cur := path.Ext(objectPath)
+	if cur == "" {
+		return objectPath
+	}
+	return strings.TrimSuffix(objectPath, cur) + ext
+}
+
+// WebPAVIFSibling returns the AVIF sibling path/URL for a canonical WebP key.
+// Non-WebP inputs return empty so callers do not invent AVIF objects.
+func WebPAVIFSibling(objectPath string) string {
+	objectPath = strings.TrimSpace(objectPath)
+	if objectPath == "" {
+		return ""
+	}
+	ext := path.Ext(objectPath)
+	if strings.Contains(objectPath, "://") {
+		u, err := url.Parse(objectPath)
+		if err != nil {
+			return ""
+		}
+		ext = path.Ext(u.Path)
+	}
+	if !strings.EqualFold(ext, ".webp") {
+		return ""
+	}
+	return FormatSibling(objectPath, ".avif")
+}
+
+// PrefersAVIF reports whether an Accept header explicitly includes image/avif
+// with a positive q-value. Wildcards alone do not count — many clients send
+// image/* without supporting AVIF.
+func PrefersAVIF(accept string) bool {
+	for _, part := range strings.Split(accept, ",") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		media, params, _ := strings.Cut(part, ";")
+		if !strings.EqualFold(strings.TrimSpace(media), "image/avif") {
+			continue
+		}
+		return acceptQuality(params) > 0
+	}
+	return false
+}
+
+func acceptQuality(params string) float64 {
+	q := 1.0
+	for _, param := range strings.Split(params, ";") {
+		param = strings.TrimSpace(param)
+		if param == "" {
+			continue
+		}
+		key, val, ok := strings.Cut(param, "=")
+		if !ok || !strings.EqualFold(strings.TrimSpace(key), "q") {
+			continue
+		}
+		parsed, err := strconv.ParseFloat(strings.TrimSpace(val), 64)
+		if err != nil {
+			return 0
+		}
+		q = parsed
+	}
+	return q
 }

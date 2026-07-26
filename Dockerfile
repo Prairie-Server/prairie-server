@@ -16,11 +16,12 @@ COPY --from=frontend /app/web/dist/. /
 
 # Stage 2: Build Go binary
 FROM golang:1.26 AS build
-ENV CGO_ENABLED=1
+# Image resize/encode uses embedded WASI (internal/imageutil). SQLite uses
+# pure-Go modernc.org/sqlite so the server binary stays CGO-free.
+ENV CGO_ENABLED=0
 ENV GOPROXY=https://proxy.golang.org,direct
 ENV GOPRIVATE=github.com/prairie-server/*,github.com/Silo-Server/*
 ENV GONOSUMDB=github.com/prairie-server/*,github.com/Silo-Server/*
-RUN apt-get update && apt-get install -y --no-install-recommends libvips-dev && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY go.mod go.sum ./
 COPY internal/compat/zishang520-webtransport-go/ internal/compat/zishang520-webtransport-go/
@@ -50,7 +51,7 @@ RUN apt-get update && \
     echo "deb [signed-by=/usr/share/keyrings/jellyfin.gpg arch=${TARGETARCH}] https://repo.jellyfin.org/debian bookworm main" \
       > /etc/apt/sources.list.d/jellyfin.list && \
     apt-get update && \
-    apt-get install -y --no-install-recommends jellyfin-ffmpeg7 git libvips42 fonts-noto-core fonts-noto-cjk && \
+    apt-get install -y --no-install-recommends jellyfin-ffmpeg7 git fonts-noto-core fonts-noto-cjk && \
     apt-get purge -y gnupg && apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 RUN mkdir -p /tmp/prairie-transcode /var/lib/prairie/compat/jellyfin-web

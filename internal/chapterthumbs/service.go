@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/imageutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
@@ -774,6 +775,11 @@ func (s *Service) uploadChapterThumbnail(ctx context.Context, fileID, chapterInd
 		key := filepath.ToSlash(fmt.Sprintf("chapter-images/%d/%d/%s%s", fileID, chapterIndex, variant.Key, result.Ext))
 		if err := s.store.PutObject(ctx, bucket, key, variant.Data); err != nil {
 			return "", "", fmt.Errorf("upload %s: %w", key, err)
+		}
+		if avifKey := artworkkey.WebPAVIFSibling(key); len(variant.AVIF) > 0 && avifKey != "" {
+			if err := s.store.PutObject(ctx, bucket, avifKey, variant.AVIF); err != nil {
+				return "", "", fmt.Errorf("upload %s: %w", avifKey, err)
+			}
 		}
 		if variant.Key == "original" {
 			originalKey = key
