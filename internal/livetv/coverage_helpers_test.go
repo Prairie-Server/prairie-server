@@ -86,7 +86,7 @@ func TestOwnerMatchesAndSessionViewer(t *testing.T) {
 	store.tuners["t1"] = Tuner{ID: "t1", Type: TunerTypeHDHomeRun, DeviceID: "d1", TunerCount: 2, Status: "ready"}
 	store.channels["ch1"] = Channel{
 		ID: "ch1", TunerID: "t1", Number: "5.1", Enabled: true,
-		StreamURL: "http://127.0.0.1:9/stream",
+		StreamURL: "http://192.168.1.50/stream",
 	}
 	svc := NewServiceWithStore(store)
 	ctx := context.Background()
@@ -116,7 +116,7 @@ func TestOwnerMatchesAndSessionViewer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("ResolveSessionUpstreamURL: %v", err)
 	}
-	if up != "http://127.0.0.1:9/stream" {
+	if up != "http://192.168.1.50/stream" {
 		t.Fatalf("upstream = %q", up)
 	}
 }

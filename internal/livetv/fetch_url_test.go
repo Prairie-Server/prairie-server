@@ -18,6 +18,10 @@ func TestValidateMediaFetchURL(t *testing.T) {
 		"http://169.254.169.254/latest/meta-data/",
 		"http://user:pass@192.168.1.1/lineup.json",
 		"http://metadata.google.internal/",
+		"http://127.0.0.1/stream",
+		"http://localhost/stream",
+		"http://[::1]/stream",
+		"http://[::ffff:127.0.0.1]/stream",
 		"not a url",
 	}
 	for _, raw := range cases {
@@ -26,4 +30,10 @@ func TestValidateMediaFetchURL(t *testing.T) {
 			t.Fatalf("ValidateMediaFetchURL(%q) = %v, want ErrInvalidArgument", raw, err)
 		}
 	}
+}
+
+func allowLoopbackMediaFetch(t *testing.T) {
+	t.Helper()
+	testingAllowLoopback = true
+	t.Cleanup(func() { testingAllowLoopback = false })
 }

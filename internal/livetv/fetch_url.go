@@ -7,9 +7,14 @@ import (
 	"strings"
 )
 
+// testingAllowLoopback lets package tests drive httptest (always 127.0.0.1)
+// through ValidateMediaFetchURL. Production code never sets this.
+var testingAllowLoopback bool
+
 // ValidateMediaFetchURL guards server-side fetches of tuner/guide/stream URLs.
-// Allows http(s) for LAN HDHomeRun devices, but blocks credentialed URLs and
-// well-known cloud metadata endpoints (SSRF to instance metadata).
+// Allows http(s) for LAN HDHomeRun devices, but blocks credentialed URLs,
+// loopback destinations (SSRF to the application host), and well-known cloud
+// metadata endpoints.
 func ValidateMediaFetchURL(raw string) error {
 	parsed, err := url.Parse(strings.TrimSpace(raw))
 	if err != nil {
@@ -30,11 +35,18 @@ func ValidateMediaFetchURL(raw string) error {
 	lowerHost := strings.ToLower(host)
 	switch lowerHost {
 	case "metadata.google.internal", "metadata", "metadata.aws.internal":
-		return fmt.Errorf("%w: metadata hosts are not allowed", ErrInvalidArgument)
+		return fmt.Errorf("%w: host is not allowed", ErrInvalidArgument)
+	case "localhost":
+		if !testingAllowLoopback {
+			return fmt.Errorf("%w: host is not allowed", ErrInvalidArgument)
+		}
 	}
 	if ip := net.ParseIP(host); ip != nil {
 		if isBlockedMetadataIP(ip) {
-			return fmt.Errorf("%w: metadata addresses are not allowed", ErrInvalidArgument)
+			return fmt.Errorf("%w: address is not allowed", ErrInvalidArgument)
+		}
+		if ip.IsLoopback() && !testingAllowLoopback {
+			return fmt.Errorf("%w: address is not allowed", ErrInvalidArgument)
 		}
 	}
 	return nil

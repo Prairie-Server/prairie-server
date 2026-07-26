@@ -16,6 +16,7 @@ import (
 )
 
 func TestServiceAddTunerScansLineup(t *testing.T) {
+	allowLoopbackMediaFetch(t)
 	mux := http.NewServeMux()
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
@@ -158,6 +159,7 @@ func TestGuideSourceReorderPriorities(t *testing.T) {
 }
 
 func TestSyncGuideSourceXMLTVMapsChannels(t *testing.T) {
+	allowLoopbackMediaFetch(t)
 	xmlBody := `<?xml version="1.0" encoding="UTF-8"?>
 <tv>
   <channel id="KING"><display-name>KING-HD</display-name></channel>
@@ -263,6 +265,7 @@ func TestSyncGuideSourceMissingURL(t *testing.T) {
 }
 
 func TestPatchChannelAndScanErrors(t *testing.T) {
+	allowLoopbackMediaFetch(t)
 	mux := http.NewServeMux()
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
