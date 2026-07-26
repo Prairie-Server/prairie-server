@@ -13,6 +13,8 @@ import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useAuth } from "@/hooks/useAuth";
 import { useAvailableUserLibraries } from "@/hooks/queries/libraries";
 import { useProfiles } from "@/hooks/queries/profiles";
+import { AuthBackground } from "@/components/auth/AuthBackground";
+import { AuthBrandHero } from "@/components/auth/AuthBrandHero";
 import { sanitizeAuthRedirect } from "@/lib/authRedirect";
 
 export default function Profiles() {
@@ -72,8 +74,9 @@ export default function Profiles() {
   if (isLoading) {
     return (
       <div className="auth-shell flex-col gap-8">
-        <Skeleton className="h-12 w-64" />
-        <div className="flex flex-wrap justify-center gap-5">
+        <AuthBackground />
+        <Skeleton className="relative z-10 h-12 w-64" />
+        <div className="relative z-10 flex flex-wrap justify-center gap-5">
           {Array.from({ length: 3 }).map((_, index) => (
             <div key={index} className="flex w-[148px] flex-col items-center gap-3 p-5">
               <Skeleton className="h-20 w-20 rounded-full" />
@@ -88,7 +91,9 @@ export default function Profiles() {
   if (profiles.length === 0) {
     return (
       <div className="auth-shell flex-col gap-6">
+        <AuthBackground />
         <div className="relative z-10 flex flex-col items-center gap-6">
+          <AuthBrandHero subtitle="Create a profile before you enter the app." />
           <div className="w-full max-w-md space-y-3 text-center">
             <h1 className="page-title text-[clamp(2.1rem,6vw,4rem)]">Create your first profile</h1>
             <p className="text-muted-foreground text-sm">
@@ -119,7 +124,9 @@ export default function Profiles() {
 
   return (
     <div className="auth-shell flex-col gap-8">
+      <AuthBackground />
       <div className="relative z-10 text-center">
+        <AuthBrandHero className="mb-6" subtitle="Choose who is watching on this device." />
         <h1 className="page-title text-[clamp(2.2rem,7vw,4.5rem)]">Who&apos;s watching?</h1>
       </div>
 

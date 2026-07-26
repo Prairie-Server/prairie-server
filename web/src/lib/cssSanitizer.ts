@@ -44,9 +44,7 @@ function unescapeCss(value: string): string {
       const code = Number.parseInt(value.slice(i + 1, j), 16);
       if (Number.isFinite(code)) {
         // CSS allows escapes beyond Unicode; fromCodePoint throws above U+10FFFF.
-        out += code >= 0 && code <= 0x10ffff
-          ? String.fromCodePoint(code)
-          : "\uFFFD";
+        out += code >= 0 && code <= 0x10ffff ? String.fromCodePoint(code) : "\uFFFD";
       }
       if (j < value.length && /[ \t\n\r\f]/.test(value[j]!)) j += 1;
       i = j;
@@ -60,7 +58,9 @@ function unescapeCss(value: string): string {
 
 /** Check if a single url() value is safe (data:, local path, or fragment) */
 function isSafeUrl(urlContent: string): boolean {
-  const trimmed = unescapeCss(urlContent).trim().replace(/^['"]|['"]$/g, "");
+  const trimmed = unescapeCss(urlContent)
+    .trim()
+    .replace(/^['"]|['"]$/g, "");
   if (!trimmed) return true;
   if (trimmed.startsWith("data:")) return true;
   if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return true;

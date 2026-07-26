@@ -9,6 +9,7 @@
     "dev": "vite",
     "test": "vitest run",
     "build": "tsc -b && vite build",
+    "typecheck": "tsc -b --pretty false",
     "preview": "vite preview",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

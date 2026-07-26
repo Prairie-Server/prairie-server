@@ -2406,6 +2406,27 @@ func (h *AdminHandler) effectiveAdminSettings(stored map[string]string) map[stri
 	return config.EffectiveAdminSettings(h.activeAdminSettings(stored))
 }
 
+// ensureRedisReachableBeforeSave rejects persisting a non-empty redis.url that
+// cannot be pinged. Clearing Redis (empty URL) is always allowed. Env-managed
+// Redis is never written through these endpoints.
+func (h *AdminHandler) ensureRedisReachableBeforeSave(ctx context.Context, changed map[string]string) error {
+	raw, ok := changed["redis.url"]
+	if !ok {
+		return nil
+	}
+	normalized, err := config.NormalizeRedisURL(raw)
+	if err != nil {
+		return err
+	}
+	if normalized == "" {
+		return nil
+	}
+	if err := probeRedisConfig(ctx, config.RedisConfig{URL: normalized}); err != nil {
+		return fmt.Errorf("redis.url is unreachable; fix the URL or leave Redis disabled: %w", err)
+	}
+	return nil
+}
+
 func shouldPersistAdminSetting(stored map[string]string, key, normalized string, effectiveChanged bool) bool {
 	current, exists := stored[key]
 	if exists {
@@ -2464,6 +2485,11 @@ func (h *AdminHandler) HandleUpdateSettings(w http.ResponseWriter, r *http.Reque
 			return
 		}
 		normalized[key] = value
+	}
+
+	if err := h.ensureRedisReachableBeforeSave(r.Context(), normalized); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_settings", err.Error())
+		return
 	}
 
 	var (
@@ -2793,6 +2819,11 @@ func (h *AdminHandler) HandleUpdateSetting(w http.ResponseWriter, r *http.Reques
 			return
 		}
 		req.Value = strconv.FormatBool(enabled)
+	}
+
+	if err := h.ensureRedisReachableBeforeSave(r.Context(), map[string]string{key: req.Value}); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_settings", err.Error())
+		return
 	}
 
 	var (

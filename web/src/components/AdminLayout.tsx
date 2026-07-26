@@ -5,6 +5,7 @@ import ServerActivity from "@/components/ServerActivity";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { resolveAdminDocumentTitle } from "@/lib/documentTitle";
+import { PrairieBrand } from "@/components/PrairieBrand";
 import { Menu } from "lucide-react";
 import { useWatchPlaybackController } from "@/playback/watchPlaybackContext";
 import { useAudiobookPlaybackController } from "@/pages/audiobooks/player/audiobookPlaybackContext";
@@ -42,10 +43,8 @@ export default function AdminLayout() {
           >
             <Menu className="h-5 w-5" />
           </button>
-          <div className="flex items-center gap-2">
-            <div className="text-primary border-border/70 bg-surface flex h-9 w-9 items-center justify-center rounded-xl border text-sm font-bold">
-              ▶
-            </div>
+          <div className="flex items-center gap-2.5">
+            <PrairieBrand variant="mark" className="h-9 w-9" />
             <span className="text-[15px] font-extrabold tracking-tight">Admin</span>
           </div>
         </div>

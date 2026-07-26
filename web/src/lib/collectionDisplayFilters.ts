@@ -89,10 +89,19 @@ export function displayFiltersToQueryDefinition(
 
 /**
  * Read the two display presets back out of a filter-only fragment. Tolerant of
- * rule order, missing groups, and an absent fragment; each preset defaults to
- * "all" when its rule is not present.
+ * rule order, missing groups/rules, and an absent fragment; each preset defaults to
+ * "all" when its rule is not present. Accepts a structural subset so callers (and
+ * tests) do not need type assertions to exercise defensive parsing.
  */
-export function queryDefinitionToDisplayFilters(def: DisplayQueryDefinition | undefined | null): {
+export function queryDefinitionToDisplayFilters(
+  def:
+    | DisplayQueryDefinition
+    | {
+        groups?: Array<{ rules?: QueryRule[] | null } | null> | null;
+      }
+    | undefined
+    | null,
+): {
   watch: UserCollectionWatchFilter;
   media: UserCollectionMediaFilter;
 } {

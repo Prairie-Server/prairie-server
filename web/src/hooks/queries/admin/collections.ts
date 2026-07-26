@@ -44,7 +44,7 @@ function applyTemplateBundleErrorMessage(error: unknown): string {
 }
 
 function buildCollectionFormData(
-  data: Record<string, unknown>,
+  data: object,
   poster?: File | null,
   backdrop?: File | null,
 ): FormData | string {
@@ -100,11 +100,7 @@ export function useCreateAdminCollection() {
       poster?: File | null;
       backdrop?: File | null;
     }) => {
-      const payload = buildCollectionFormData(
-        body as unknown as Record<string, unknown>,
-        poster,
-        backdrop,
-      );
+      const payload = buildCollectionFormData(body, poster, backdrop);
       return api<LibraryCollection>("/admin/collections", {
         method: "POST",
         body: payload,
@@ -228,11 +224,7 @@ export function useUpdateAdminCollection() {
       poster?: File | null;
       backdrop?: File | null;
     }) => {
-      const payload = buildCollectionFormData(
-        body as unknown as Record<string, unknown>,
-        poster,
-        backdrop,
-      );
+      const payload = buildCollectionFormData(body, poster, backdrop);
       return api<LibraryCollection>(`/admin/collections/${id}`, {
         method: "PUT",
         body: payload,
@@ -491,11 +483,7 @@ export function useImportMDBListCollection() {
       poster?: File | null;
       backdrop?: File | null;
     }) => {
-      const payload = buildCollectionFormData(
-        body as unknown as Record<string, unknown>,
-        poster,
-        backdrop,
-      );
+      const payload = buildCollectionFormData(body, poster, backdrop);
       return api<ImportMDBListCollectionResponse>("/admin/collections/import/mdblist", {
         method: "POST",
         body: payload,
@@ -528,11 +516,7 @@ export function useImportTMDBCollection() {
       poster?: File | null;
       backdrop?: File | null;
     }) => {
-      const payload = buildCollectionFormData(
-        body as unknown as Record<string, unknown>,
-        poster,
-        backdrop,
-      );
+      const payload = buildCollectionFormData(body, poster, backdrop);
       return api<ImportTMDBCollectionResponse>("/admin/collections/import/tmdb", {
         method: "POST",
         body: payload,
@@ -565,11 +549,7 @@ export function useImportTraktCollection() {
       poster?: File | null;
       backdrop?: File | null;
     }) => {
-      const payload = buildCollectionFormData(
-        body as unknown as Record<string, unknown>,
-        poster,
-        backdrop,
-      );
+      const payload = buildCollectionFormData(body, poster, backdrop);
       return api<ImportTraktCollectionResponse>("/admin/collections/import/trakt", {
         method: "POST",
         body: payload,

@@ -1067,6 +1067,92 @@ func TestHandleCheckSettingsConnectionRejectsInvalidDraftValues(t *testing.T) {
 	}
 }
 
+func TestAdminSettingsRejectUnreachableRedisURL(t *testing.T) {
+	originalFactory := newAdminRedisSettingsCheckClient
+	t.Cleanup(func() {
+		newAdminRedisSettingsCheckClient = originalFactory
+	})
+	newAdminRedisSettingsCheckClient = func(cfg config.RedisConfig) (redisSettingsCheckClient, error) {
+		return &fakeRedisSettingsCheckClient{
+			ping: func(context.Context) error {
+				return errors.New("dial tcp: connection refused")
+			},
+		}, nil
+	}
+
+	for _, tc := range []struct {
+		name   string
+		target string
+		body   string
+		single bool
+	}{
+		{
+			name:   "batch",
+			target: "/admin/settings",
+			body:   `{"values":{"redis.url":"redis://unreachable.example.invalid:6379"}}`,
+		},
+		{
+			name:   "single",
+			target: "/admin/settings/redis.url",
+			body:   `{"value":"redis://unreachable.example.invalid:6379"}`,
+			single: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			settings := &fakeServerSettingsStore{values: map[string]string{}}
+			handler := &AdminHandler{SettingsRepo: settings}
+			req := httptest.NewRequest(http.MethodPut, tc.target, strings.NewReader(tc.body))
+			if tc.single {
+				req = withChiParam(req, "key", "redis.url")
+			}
+			rec := httptest.NewRecorder()
+
+			if tc.single {
+				handler.HandleUpdateSetting(rec, req)
+			} else {
+				handler.HandleUpdateSettings(rec, req)
+			}
+
+			if rec.Code != http.StatusBadRequest {
+				t.Fatalf("status = %d, want 400; body=%s", rec.Code, rec.Body.String())
+			}
+			if settings.setManyCalls != 0 || settings.setCalls != 0 {
+				t.Fatalf("unreachable redis.url was persisted: SetMany=%d Set=%d", settings.setManyCalls, settings.setCalls)
+			}
+			if !strings.Contains(rec.Body.String(), "unreachable") {
+				t.Fatalf("body = %q, want unreachable message", rec.Body.String())
+			}
+		})
+	}
+}
+
+func TestAdminSettingsAcceptReachableRedisURL(t *testing.T) {
+	originalFactory := newAdminRedisSettingsCheckClient
+	t.Cleanup(func() {
+		newAdminRedisSettingsCheckClient = originalFactory
+	})
+	newAdminRedisSettingsCheckClient = func(cfg config.RedisConfig) (redisSettingsCheckClient, error) {
+		return &fakeRedisSettingsCheckClient{}, nil
+	}
+
+	settings := &fakeServerSettingsStore{values: map[string]string{}}
+	handler := &AdminHandler{SettingsRepo: settings}
+	req := httptest.NewRequest(
+		http.MethodPut,
+		"/admin/settings",
+		strings.NewReader(`{"values":{"redis.url":"redis://cache.example:6379"}}`),
+	)
+	rec := httptest.NewRecorder()
+	handler.HandleUpdateSettings(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body=%s", rec.Code, rec.Body.String())
+	}
+	if settings.values["redis.url"] != "redis://cache.example:6379" {
+		t.Fatalf("values=%#v, want redis.url persisted", settings.values)
+	}
+}
+
 func TestSettingsCheckRouteIsNotShadowedByKeyRoute(t *testing.T) {
 	originalFactory := newAdminRedisSettingsCheckClient
 	t.Cleanup(func() {

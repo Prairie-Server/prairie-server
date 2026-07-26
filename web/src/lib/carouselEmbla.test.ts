@@ -11,7 +11,7 @@ describe("carouselEmbla", () => {
   });
 
   it("forces wheel gestures onto the horizontal axis", () => {
-    const target = { nodeName: "DIV" } as unknown as HTMLElement;
+    const target = document.createElement("div");
 
     expect(getCarouselWheelGestureOptions(target)).toMatchObject({
       forceWheelAxis: "x",

@@ -427,9 +427,7 @@ export default function AdminLiveTV() {
       <div className="page-header">
         <div className="space-y-2">
           <div className="flex items-center gap-2.5">
-            <h1 className="text-3xl font-semibold tracking-normal text-balance sm:text-4xl">
-              Live TV
-            </h1>
+            <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Live TV</h1>
             <Badge variant="secondary">{tuners.data?.length ?? 0} tuners</Badge>
             <Badge variant="outline">{channels.data?.length ?? 0} channels</Badge>
             <Badge variant="outline">

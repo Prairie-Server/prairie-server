@@ -621,12 +621,17 @@ func main() {
 
 	eventBus := cache.NewEventBus(cfg.Redis.URL)
 	logStreamHub := logstream.NewHub(nodeID, eventBus)
+	// Redis pub/sub is optional for single-node operation. A bad or unreachable
+	// redis.url used to Fatal here and restart-loop under Docker; match the
+	// config watcher / policy system and degrade to local-only fanout.
 	if err := logStreamHub.Start(appCtx); err != nil {
-		log.Fatalf("log stream hub start: %v", err)
+		slog.Warn("log stream hub start failed; continuing with local-only log fanout",
+			"error", err)
 	}
 	realtimeHub := notifications.NewHub(nodeID, eventBus)
 	if err := realtimeHub.Start(appCtx); err != nil {
-		log.Fatalf("realtime hub start: %v", err)
+		slog.Warn("realtime hub start failed; continuing with local-only event fanout",
+			"error", err)
 	}
 	eventsHub := realtimeHub.EventsHub()
 	scanRegistry := evt.NewScanRegistry()
@@ -1147,8 +1152,11 @@ func main() {
 	if pluginService != nil && pluginInstallationStore != nil {
 		dispatcher := plugins.NewEventDispatcherWithTypedResolver(deps.EventBus, deps.EventsHub, pluginInstallationStore, pluginService, 4)
 		pluginService.SetEventDispatcher(dispatcher)
+		// Same Redis degrade path as log/realtime hubs: unreachable redis.url
+		// must not Fatal and restart-loop under Docker.
 		if err := dispatcher.Start(appCtx); err != nil {
-			log.Fatalf("plugin event dispatcher: %v", err)
+			slog.Warn("plugin event dispatcher start failed; continuing without cross-node plugin events",
+				"error", err)
 		}
 		defer dispatcher.Stop()
 		// Backfill the capability-subscriber index from the already-preloaded

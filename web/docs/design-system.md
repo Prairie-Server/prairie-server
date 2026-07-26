@@ -44,8 +44,10 @@ On branded surfaces, the Prairie wordmark or mark is a hero-level signal. Produc
 Examples:
 
 - Login uses `AuthBrandHero` above the form.
-- App shell enlarges the wordmark in the sidebar and mobile header.
+- Setup wizard, Profiles, and Activate Device use the same auth brand composition (`AuthBackground` + `AuthBrandHero`).
+- App shell and Admin mobile header use `PrairieBrand` (wordmark / mark), not glyph placeholders.
 - Empty home shows a brand welcome composition before section rows.
+- Admin page titles use `.page-title` consistently with user settings.
 
 ### 1. Content Is King
 

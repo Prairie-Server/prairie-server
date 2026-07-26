@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useServerBranding } from "@/hooks/useServerBranding";
 import { AuthBackground } from "@/components/auth/AuthBackground";
+import { AuthBrandHero } from "@/components/auth/AuthBrandHero";
 import { toast } from "sonner";
 
 function normalizeCode(value: string) {
@@ -98,108 +99,40 @@ export default function ActivateDevice() {
   const loginHref = `/login?redirect=${encodeURIComponent(redirectTarget)}`;
 
   return (
-    <div className="auth-shell">
+    <main className="auth-shell">
       <AuthBackground />
-      <Card className="auth-card glass panel-border w-full max-w-md border-0">
-        <CardHeader>
-          <CardTitle className="text-3xl font-extrabold tracking-[-0.04em]">{serverName}</CardTitle>
-          <CardDescription className="mt-2 text-sm leading-6">
-            Approve sign-in for the device you&apos;re trying to use.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {!token && !code ? (
-            <form onSubmit={handleCodeSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="device-code">Enter the code from your screen</Label>
-                <Input
-                  id="device-code"
-                  value={codeInput}
-                  onChange={(e) => setCodeInput(normalizeCode(e.target.value))}
-                  autoCapitalize="characters"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  placeholder="ABCD-EFGH"
-                />
-              </div>
-              <Button type="submit" className="w-full">
-                Continue
-              </Button>
-            </form>
-          ) : loadingDetails || loading || setupLoading ? (
-            <div className="text-muted-foreground text-sm">Loading device request...</div>
-          ) : !details ? (
-            <div className="space-y-4">
-              <p className="text-sm">That sign-in request could not be found.</p>
-              <Button
-                type="button"
-                variant="outline"
-                className="w-full"
-                onClick={() => setSearchParams({})}
-              >
-                Enter another code
-              </Button>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="border-border/60 bg-background/50 rounded-md border p-4">
-                <div className="space-y-1">
-                  <div className="text-lg font-semibold">
-                    {details.device_name || "This device"}
-                  </div>
-                  {details.device_platform ? (
-                    <div className="text-muted-foreground text-sm">{details.device_platform}</div>
-                  ) : null}
-                  {details.ip_address_hint ? (
-                    <div className="text-muted-foreground text-sm">{details.ip_address_hint}</div>
-                  ) : null}
+      <h1 className="sr-only">Approve a device on {serverName}</h1>
+      <div className="auth-viewport">
+        <AuthBrandHero subtitle="Approve sign-in for the device you're trying to use." />
+        <Card className="auth-card w-full max-w-md border-0 bg-transparent shadow-none">
+          <CardHeader className="sr-only">
+            <CardTitle>Approve device</CardTitle>
+            <CardDescription>Approve sign-in for the device you're trying to use.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6 p-0">
+            {!token && !code ? (
+              <form onSubmit={handleCodeSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="device-code">Enter the code from your screen</Label>
+                  <Input
+                    id="device-code"
+                    value={codeInput}
+                    onChange={(e) => setCodeInput(normalizeCode(e.target.value))}
+                    autoCapitalize="characters"
+                    autoComplete="off"
+                    autoCorrect="off"
+                    placeholder="ABCD-EFGH"
+                  />
                 </div>
-                {details.match_code ? (
-                  <div className="mt-4">
-                    <div className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
-                      Match code
-                    </div>
-                    <div className="text-lg font-semibold">{details.match_code}</div>
-                  </div>
-                ) : null}
-              </div>
-
-              {!user ? (
-                <Button asChild className="w-full">
-                  <Link to={loginHref}>Sign in to approve</Link>
+                <Button type="submit" className="w-full">
+                  Continue
                 </Button>
-              ) : details.status === "pending" ? (
-                <div className="space-y-3">
-                  <p className="text-sm">
-                    Signed in as <span className="font-medium">{user.username}</span>.
-                  </p>
-                  <Button
-                    className="w-full"
-                    disabled={acting}
-                    onClick={() => void handleDecision("approve")}
-                  >
-                    {acting ? "Approving..." : "Approve sign-in"}
-                  </Button>
-                  <Button
-                    variant="outline"
-                    className="w-full"
-                    disabled={acting}
-                    onClick={() => void handleDecision("deny")}
-                  >
-                    Deny
-                  </Button>
-                </div>
-              ) : details.status === "approved" ? (
-                <p className="text-sm">Approved. Finish sign-in on the device.</p>
-              ) : details.status === "consumed" ? (
-                <p className="text-sm">This device is already signed in.</p>
-              ) : details.status === "denied" ? (
-                <p className="text-sm">This sign-in request was denied.</p>
-              ) : (
-                <p className="text-sm">This sign-in request has expired.</p>
-              )}
-
-              {!token ? (
+              </form>
+            ) : loadingDetails || loading || setupLoading ? (
+              <div className="text-muted-foreground text-sm">Loading device request...</div>
+            ) : !details ? (
+              <div className="space-y-4">
+                <p className="text-sm">That sign-in request could not be found.</p>
                 <Button
                   type="button"
                   variant="outline"
@@ -208,11 +141,81 @@ export default function ActivateDevice() {
                 >
                   Enter another code
                 </Button>
-              ) : null}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-    </div>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <div className="border-border/60 bg-background/50 rounded-md border p-4">
+                  <div className="space-y-1">
+                    <div className="text-lg font-semibold">
+                      {details.device_name || "This device"}
+                    </div>
+                    {details.device_platform ? (
+                      <div className="text-muted-foreground text-sm">{details.device_platform}</div>
+                    ) : null}
+                    {details.ip_address_hint ? (
+                      <div className="text-muted-foreground text-sm">{details.ip_address_hint}</div>
+                    ) : null}
+                  </div>
+                  {details.match_code ? (
+                    <div className="mt-4">
+                      <div className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
+                        Match code
+                      </div>
+                      <div className="text-lg font-semibold">{details.match_code}</div>
+                    </div>
+                  ) : null}
+                </div>
+
+                {!user ? (
+                  <Button asChild className="w-full">
+                    <Link to={loginHref}>Sign in to approve</Link>
+                  </Button>
+                ) : details.status === "pending" ? (
+                  <div className="space-y-3">
+                    <p className="text-sm">
+                      Signed in as <span className="font-medium">{user.username}</span>.
+                    </p>
+                    <Button
+                      className="w-full"
+                      disabled={acting}
+                      onClick={() => void handleDecision("approve")}
+                    >
+                      {acting ? "Approving..." : "Approve sign-in"}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      disabled={acting}
+                      onClick={() => void handleDecision("deny")}
+                    >
+                      Deny
+                    </Button>
+                  </div>
+                ) : details.status === "approved" ? (
+                  <p className="text-sm">Approved. Finish sign-in on the device.</p>
+                ) : details.status === "consumed" ? (
+                  <p className="text-sm">This device is already signed in.</p>
+                ) : details.status === "denied" ? (
+                  <p className="text-sm">This sign-in request was denied.</p>
+                ) : (
+                  <p className="text-sm">This sign-in request has expired.</p>
+                )}
+
+                {!token ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setSearchParams({})}
+                  >
+                    Enter another code
+                  </Button>
+                ) : null}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </div>
+    </main>
   );
 }

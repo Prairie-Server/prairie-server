@@ -1,6 +1,8 @@
 import { Navigate } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { AuthBackground } from "@/components/auth/AuthBackground";
+import { AuthBrandHero } from "@/components/auth/AuthBrandHero";
 import { WizardProvider, useWizardContext } from "./setup-wizard/WizardContext";
 import { useWizardSteps } from "./setup-wizard/useWizardSteps";
 import { StepIndicator } from "./setup-wizard/StepIndicator";
@@ -45,7 +47,12 @@ function WizardContent() {
   if (profilesLoading || (user && profileComplete && isAdmin && librariesLoading)) {
     return (
       <div className="auth-shell items-start py-10 sm:py-14">
+        <AuthBackground />
         <div className="auth-setup-panel relative z-1 w-full max-w-2xl p-1 sm:p-2">
+          <AuthBrandHero
+            className="mb-8"
+            subtitle="Getting your server ready — hang tight while we load setup."
+          />
           <div className="space-y-3">
             <div className="flex gap-1">
               {Array.from({ length: 8 }).map((_, i) => (
@@ -63,8 +70,9 @@ function WizardContent() {
 
   return (
     <div className="auth-shell items-start py-10 sm:py-14">
+      <AuthBackground />
       <div className="auth-setup-panel relative z-1 w-full max-w-2xl p-1 sm:p-2">
-        {/* Header */}
+        <AuthBrandHero className="mb-8" subtitle="First-run setup for your Prairie server." />
         <div className="mb-10">
           <StepIndicator steps={steps} />
           <h1 className="font-display text-foreground mt-6 text-[1.7rem] leading-tight font-semibold tracking-[-0.03em] sm:text-3xl">
@@ -75,7 +83,6 @@ function WizardContent() {
           </p>
         </div>
 
-        {/* Step content — keyed to trigger entrance animation on step change */}
         <div key={currentStep} className="animate-[fade-in_0.25s_ease-out]">
           {currentStep === "account" && <AccountStep />}
           {currentStep === "profile" && <ProfileStep />}
@@ -96,7 +103,12 @@ export default function SetupWizard() {
   useDocumentTitle("Setup");
 
   if (loading || setupLoading) {
-    return <div className="text-muted-foreground p-8 text-sm">Loading...</div>;
+    return (
+      <main className="auth-shell">
+        <AuthBackground />
+        <div className="text-muted-foreground relative z-1 text-sm">Loading setup…</div>
+      </main>
+    );
   }
 
   if (!setupRequired && !user) {

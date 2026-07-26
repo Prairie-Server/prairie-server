@@ -23,10 +23,7 @@ function fetchCollectionsList(): Promise<CollectionsListResponse> {
   }));
 }
 
-function buildUserCollectionPayload(
-  data: Record<string, unknown>,
-  poster?: File | null,
-): FormData | string {
+function buildUserCollectionPayload(data: object, poster?: File | null): FormData | string {
   if (!poster) {
     return JSON.stringify(data);
   }
@@ -88,7 +85,7 @@ export function useCreateCollection() {
     mutationFn: ({ body, poster }: { body: CreateCollectionRequest; poster?: File | null }) =>
       api("/collections", {
         method: "POST",
-        body: buildUserCollectionPayload(body as unknown as Record<string, unknown>, poster),
+        body: buildUserCollectionPayload(body, poster),
       }),
     onSuccess: () => {
       toast.success("Collection created");
@@ -114,7 +111,7 @@ export function useUpdateCollection() {
     }) =>
       api(`/collections/${id}`, {
         method: "PUT",
-        body: buildUserCollectionPayload(body as unknown as Record<string, unknown>, poster),
+        body: buildUserCollectionPayload(body, poster),
       }),
     onSuccess: (_data, { id }) => {
       toast.success("Collection updated");

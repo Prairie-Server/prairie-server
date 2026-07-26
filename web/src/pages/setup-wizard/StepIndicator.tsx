@@ -19,7 +19,7 @@ export function StepIndicator({ steps }: { steps: StepDef[] }) {
               step.complete
                 ? "bg-foreground/25"
                 : step.active
-                  ? "bg-foreground shadow-[0_0_8px_rgba(232,232,236,0.15)]"
+                  ? "bg-foreground shadow-[0_0_8px_color-mix(in_oklab,var(--foreground)_18%,transparent)]"
                   : "bg-foreground/[0.06]"
             }`}
           />
