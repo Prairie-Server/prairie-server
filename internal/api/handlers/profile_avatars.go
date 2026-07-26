@@ -269,11 +269,7 @@ func (h *ProfileHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Reque
 			writeError(w, http.StatusInternalServerError, "internal_error", "Failed to store avatar")
 			return
 		}
-		if len(variant.AVIF) > 0 {
-			avifKey := artworkkey.WebPAVIFSibling(key)
-			if avifKey == "" {
-				continue
-			}
+		if avifKey := artworkkey.WebPAVIFSibling(key); len(variant.AVIF) > 0 && avifKey != "" {
 			if err := h.AvatarStore.PutObject(r.Context(), bucket, avifKey, variant.AVIF); err != nil {
 				writeError(w, http.StatusInternalServerError, "internal_error", "Failed to store avatar")
 				return
