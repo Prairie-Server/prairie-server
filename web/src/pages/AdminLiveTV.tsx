@@ -88,7 +88,9 @@ function TunersTab() {
         <p className="text-muted-foreground text-sm">
           Auto-discover SiliconDust HDHomeRun tuners on the LAN (UDP) and probe a Dispatcharr URL
           for its HDHomeRun emulation (`/hdhr/discover.json`). Prairie scans the lineup after you
-          add a candidate.
+          add a candidate. Docker bridge networking usually blocks UDP discovery — enable{" "}
+          <code className="text-xs">docker-compose.livetv.yml</code> on Linux (host networking) or
+          use probe URL.
         </p>
         <div className="space-y-1.5">
           <Label htmlFor="probe-url">Dispatcharr / HDHR base URL (optional probe)</Label>

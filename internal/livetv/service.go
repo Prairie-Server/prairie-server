@@ -160,7 +160,7 @@ func (s *Service) DiscoverTuners(ctx context.Context, req DiscoverTunersRequest)
 		if err != nil {
 			notes = append(notes, "UDP discovery unavailable: "+err.Error())
 		} else if len(lan) == 0 {
-			notes = append(notes, "No tuners answered UDP discovery. Bridge-mode Docker often blocks broadcast; try host networking or probe a URL.")
+			notes = append(notes, "No tuners answered UDP discovery. Bridge-mode Docker blocks LAN broadcast — use docker-compose.livetv.yml (Linux host networking) or probe a URL. See docs/livetv-tuner-discovery.md.")
 		}
 		for _, item := range lan {
 			discoverURL := hdhomerun.DiscoverURLForBase(item.BaseURL)
