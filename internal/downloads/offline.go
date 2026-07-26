@@ -142,12 +142,12 @@ func (s *Service) streamArtwork(ctx context.Context, w http.ResponseWriter, r *h
 	}
 	candidates := []string{url}
 	if r != nil && artworkkey.PrefersAVIF(r.Header.Get("Accept")) {
-		if avifURL := artworkkey.FormatSibling(url, ".avif"); avifURL != "" && avifURL != url {
+		if avifURL := artworkkey.WebPAVIFSibling(url); avifURL != "" && avifURL != url {
 			candidates = []string{avifURL, url}
 		}
 	}
 	var lastErr error
-	for i, candidate := range candidates {
+	for _, candidate := range candidates {
 		req, err := http.NewRequestWithContext(ctx, http.MethodGet, candidate, nil)
 		if err != nil {
 			return fmt.Errorf("building artwork request: %w", err)
@@ -177,9 +177,6 @@ func (s *Service) streamArtwork(ctx context.Context, w http.ResponseWriter, r *h
 		_ = resp.Body.Close()
 		if copyErr != nil {
 			return fmt.Errorf("streaming artwork: %w", copyErr)
-		}
-		if i == 0 && candidate != url {
-			// Served AVIF upgrade.
 		}
 		return nil
 	}

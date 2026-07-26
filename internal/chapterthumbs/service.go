@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/imageutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
@@ -776,7 +777,10 @@ func (s *Service) uploadChapterThumbnail(ctx context.Context, fileID, chapterInd
 			return "", "", fmt.Errorf("upload %s: %w", key, err)
 		}
 		if len(variant.AVIF) > 0 {
-			avifKey := strings.TrimSuffix(key, result.Ext) + ".avif"
+			avifKey := artworkkey.WebPAVIFSibling(key)
+			if avifKey == "" {
+				continue
+			}
 			if err := s.store.PutObject(ctx, bucket, avifKey, variant.AVIF); err != nil {
 				return "", "", fmt.Errorf("upload %s: %w", avifKey, err)
 			}

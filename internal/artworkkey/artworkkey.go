@@ -113,7 +113,7 @@ func ObjectKeys(originalPath, imageType string) []string {
 	for _, name := range names {
 		webpKey := Variant(originalPath, name)
 		keys = append(keys, webpKey)
-		if avifKey := FormatSibling(webpKey, ".avif"); avifKey != "" && avifKey != webpKey {
+		if avifKey := WebPAVIFSibling(webpKey); avifKey != "" {
 			keys = append(keys, avifKey)
 		}
 	}
@@ -140,31 +140,50 @@ func FormatSibling(objectPath, ext string) string {
 		}
 		cur := path.Ext(u.Path)
 		if cur == "" {
-			u.Path += ext
-		} else {
-			u.Path = strings.TrimSuffix(u.Path, cur) + ext
+			return objectPath
 		}
+		u.Path = strings.TrimSuffix(u.Path, cur) + ext
 		return u.String()
 	}
 	cur := path.Ext(objectPath)
 	if cur == "" {
-		return objectPath + ext
+		return objectPath
 	}
 	return strings.TrimSuffix(objectPath, cur) + ext
+}
+
+// WebPAVIFSibling returns the AVIF sibling path/URL for a canonical WebP key.
+// Non-WebP inputs return empty so callers do not invent AVIF objects.
+func WebPAVIFSibling(objectPath string) string {
+	objectPath = strings.TrimSpace(objectPath)
+	if objectPath == "" {
+		return ""
+	}
+	ext := path.Ext(objectPath)
+	if strings.Contains(objectPath, "://") {
+		u, err := url.Parse(objectPath)
+		if err != nil {
+			return ""
+		}
+		ext = path.Ext(u.Path)
+	}
+	if !strings.EqualFold(ext, ".webp") {
+		return ""
+	}
+	return FormatSibling(objectPath, ".avif")
 }
 
 // PrefersAVIF reports whether an Accept header explicitly includes image/avif
 // with a positive q-value. Wildcards alone do not count — many clients send
 // image/* without supporting AVIF.
 func PrefersAVIF(accept string) bool {
-	accept = strings.ToLower(accept)
-	if accept == "" || !strings.Contains(accept, "image/avif") {
-		return false
-	}
 	for _, part := range strings.Split(accept, ",") {
 		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
 		media, params, _ := strings.Cut(part, ";")
-		if strings.TrimSpace(media) != "image/avif" {
+		if !strings.EqualFold(strings.TrimSpace(media), "image/avif") {
 			continue
 		}
 		return acceptQuality(params) > 0
@@ -176,8 +195,11 @@ func acceptQuality(params string) float64 {
 	q := 1.0
 	for _, param := range strings.Split(params, ";") {
 		param = strings.TrimSpace(param)
+		if param == "" {
+			continue
+		}
 		key, val, ok := strings.Cut(param, "=")
-		if !ok || strings.TrimSpace(key) != "q" {
+		if !ok || !strings.EqualFold(strings.TrimSpace(key), "q") {
 			continue
 		}
 		parsed, err := strconv.ParseFloat(strings.TrimSpace(val), 64)

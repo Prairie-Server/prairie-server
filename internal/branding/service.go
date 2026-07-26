@@ -7,7 +7,6 @@ import (
 	"errors"
 	"log/slog"
 	"path"
-	"strings"
 
 	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/s3client"
@@ -100,10 +99,11 @@ func (s *Service) UploadAsset(ctx context.Context, kind AssetKind, data []byte, 
 	}
 	// Dual-write AVIF sibling under the same content-address stem so Accept
 	// negotiation can upgrade without changing the stored settings ref.
-	if len(avif) > 0 && ext == ".webp" {
-		avifKey := strings.TrimSuffix(key, ext) + ".avif"
-		if err := s.store.PutObject(ctx, s.store.Bucket(), avifKey, avif); err != nil {
-			return "", err
+	if len(avif) > 0 {
+		if avifKey := artworkkey.WebPAVIFSibling(key); avifKey != "" {
+			if err := s.store.PutObject(ctx, s.store.Bucket(), avifKey, avif); err != nil {
+				return "", err
+			}
 		}
 	}
 	if err := s.settings.Set(ctx, spec.settingKey, ref); err != nil {
@@ -142,12 +142,13 @@ func (s *Service) GetAsset(ctx context.Context, kind AssetKind, accept string) (
 	}
 	key := spec.s3Prefix + "/" + ref
 	ext := path.Ext(ref)
-	if artworkkey.PrefersAVIF(accept) && ext == ".webp" {
-		avifKey := strings.TrimSuffix(key, ext) + ".avif"
-		if avifData, avifErr := s.store.GetObject(ctx, s.store.Bucket(), avifKey); avifErr == nil {
-			return avifData, "image/avif", ref, nil
-		} else if avifErr != nil && !errors.Is(avifErr, s3client.ErrNotFound) {
-			return nil, "", "", avifErr
+	if artworkkey.PrefersAVIF(accept) {
+		if avifKey := artworkkey.WebPAVIFSibling(key); avifKey != "" {
+			if avifData, avifErr := s.store.GetObject(ctx, s.store.Bucket(), avifKey); avifErr == nil {
+				return avifData, "image/avif", ref, nil
+			} else if avifErr != nil && !errors.Is(avifErr, s3client.ErrNotFound) {
+				return nil, "", "", avifErr
+			}
 		}
 	}
 	data, err = s.store.GetObject(ctx, s.store.Bucket(), key)

@@ -12,6 +12,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/imageutil"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 )
@@ -269,7 +270,10 @@ func (h *ProfileHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Reque
 			return
 		}
 		if len(variant.AVIF) > 0 {
-			avifKey := profileAvatarPrefix(userID, profileID) + "/" + variant.Key + ".avif"
+			avifKey := artworkkey.WebPAVIFSibling(key)
+			if avifKey == "" {
+				continue
+			}
 			if err := h.AvatarStore.PutObject(r.Context(), bucket, avifKey, variant.AVIF); err != nil {
 				writeError(w, http.StatusInternalServerError, "internal_error", "Failed to store avatar")
 				return

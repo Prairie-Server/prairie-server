@@ -39,13 +39,16 @@ func TestVariantOnlyRewritesOriginalFilename(t *testing.T) {
 
 func TestFormatSiblingAndObjectKeysIncludeAVIF(t *testing.T) {
 	original := "tmdb/movies/550/poster/original.abc123.webp"
-	if got := FormatSibling(original, ".avif"); got != "tmdb/movies/550/poster/original.abc123.avif" {
-		t.Fatalf("FormatSibling() = %q", got)
+	if got := WebPAVIFSibling(original); got != "tmdb/movies/550/poster/original.abc123.avif" {
+		t.Fatalf("WebPAVIFSibling() = %q", got)
 	}
 	url := "https://cdn.example/tmdb/movies/550/poster/original.abc123.webp?token=1"
 	wantURL := "https://cdn.example/tmdb/movies/550/poster/original.abc123.avif?token=1"
-	if got := FormatSibling(url, ".avif"); got != wantURL {
-		t.Fatalf("FormatSibling(url) = %q, want %q", got, wantURL)
+	if got := WebPAVIFSibling(url); got != wantURL {
+		t.Fatalf("WebPAVIFSibling(url) = %q, want %q", got, wantURL)
+	}
+	if got := WebPAVIFSibling("tmdb/movies/550/poster/original.jpg"); got != "" {
+		t.Fatalf("WebPAVIFSibling(jpeg) = %q, want empty", got)
 	}
 	keys := ObjectKeys(original, "poster")
 	want := map[string]bool{

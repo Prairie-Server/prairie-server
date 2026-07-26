@@ -245,6 +245,9 @@ fn write_variant_pair(
     quality: u8,
     formats: &FormatFlags,
 ) -> Result<ManifestVariant, String> {
+    if !formats.webp {
+        return Err("webp output is required for canonical cache keys".into());
+    }
     let webp_name = format!("{key}.webp");
     write_webp(&outdir.join(&webp_name), img, quality)?;
     let avif_file = if formats.avif {
@@ -269,12 +272,18 @@ fn decode_image(data: &[u8]) -> Result<DynamicImage, String> {
 }
 
 fn looks_like_svg(data: &[u8]) -> bool {
-    let prefix = data.iter().take(256).copied().collect::<Vec<_>>();
+    let prefix = data.iter().take(512).copied().collect::<Vec<_>>();
     let s = String::from_utf8_lossy(&prefix).to_ascii_lowercase();
-    let trimmed = s.trim_start();
-    trimmed.starts_with("<svg")
-        || trimmed.starts_with("<?xml") && trimmed.contains("<svg")
-        || trimmed.contains("<svg")
+    let trimmed = s.trim_start_matches(['\u{feff}', ' ', '\t', '\r', '\n']);
+    // Require a real SVG root near the start. Avoid matching arbitrary XML/HTML
+    // that merely mentions "<svg" deeper in the payload.
+    if trimmed.starts_with("<svg") {
+        return true;
+    }
+    if trimmed.starts_with("<?xml") {
+        return trimmed[5..].find("<svg").is_some_and(|idx| idx < 400);
+    }
+    false
 }
 
 fn rasterize_svg(data: &[u8]) -> Result<DynamicImage, String> {

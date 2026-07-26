@@ -202,7 +202,7 @@ func TestCacheBytesTracksExactRevisionBeforeUpload(t *testing.T) {
 	wantKeys := make([]string, 0, len(result.VariantPaths)*2)
 	for _, key := range result.VariantPaths {
 		wantKeys = append(wantKeys, key)
-		wantKeys = append(wantKeys, artworkkey.FormatSibling(key, ".avif"))
+		wantKeys = append(wantKeys, artworkkey.WebPAVIFSibling(key))
 	}
 	sort.Strings(wantKeys)
 	if !slices.Equal(calls[0].objectKeys, wantKeys) {
@@ -315,7 +315,7 @@ func TestCache_Poster(t *testing.T) {
 		if !hasKey(keys, want) {
 			t.Errorf("missing S3 key %q in %v", want, keys)
 		}
-		if !hasKey(keys, artworkkey.FormatSibling(want, ".avif")) {
+		if !hasKey(keys, artworkkey.WebPAVIFSibling(want)) {
 			t.Errorf("missing AVIF sibling for %q in %v", want, keys)
 		}
 	}
@@ -343,7 +343,7 @@ func TestCacheSkipsUploadingVariantsThatAlreadyExist(t *testing.T) {
 	existing := make([]string, 0, 6)
 	for _, variant := range []string{"original", "w500", "w300"} {
 		key := first.VariantPaths[variant]
-		existing = append(existing, key, artworkkey.FormatSibling(key, ".avif"))
+		existing = append(existing, key, artworkkey.WebPAVIFSibling(key))
 	}
 	s3.setExisting(existing...)
 	s3.resetCalls()
@@ -409,9 +409,9 @@ func TestCacheUploadsOnlyMissingVariants(t *testing.T) {
 	}
 	s3.setExisting(
 		first.VariantPaths["original"],
-		artworkkey.FormatSibling(first.VariantPaths["original"], ".avif"),
+		artworkkey.WebPAVIFSibling(first.VariantPaths["original"]),
 		first.VariantPaths["w500"],
-		artworkkey.FormatSibling(first.VariantPaths["w500"], ".avif"),
+		artworkkey.WebPAVIFSibling(first.VariantPaths["w500"]),
 	)
 	s3.resetCalls()
 	result, err := c.Cache(context.Background(), req)
@@ -420,7 +420,7 @@ func TestCacheUploadsOnlyMissingVariants(t *testing.T) {
 	}
 	wantUploads := []string{
 		result.VariantPaths["w300"],
-		artworkkey.FormatSibling(result.VariantPaths["w300"], ".avif"),
+		artworkkey.WebPAVIFSibling(result.VariantPaths["w300"]),
 	}
 	got := s3.keys()
 	sort.Strings(got)
@@ -466,7 +466,7 @@ func TestCache_Backdrop(t *testing.T) {
 		if !hasKey(keys, want) {
 			t.Errorf("missing S3 key %q in %v", want, keys)
 		}
-		if !hasKey(keys, artworkkey.FormatSibling(want, ".avif")) {
+		if !hasKey(keys, artworkkey.WebPAVIFSibling(want)) {
 			t.Errorf("missing AVIF sibling for %q in %v", want, keys)
 		}
 	}
@@ -509,7 +509,7 @@ func TestCache_Logo(t *testing.T) {
 		if !hasKey(keys, want) {
 			t.Errorf("missing S3 key %q in %v", want, keys)
 		}
-		if !hasKey(keys, artworkkey.FormatSibling(want, ".avif")) {
+		if !hasKey(keys, artworkkey.WebPAVIFSibling(want)) {
 			t.Errorf("missing AVIF sibling for %q in %v", want, keys)
 		}
 	}

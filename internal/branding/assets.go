@@ -53,11 +53,12 @@ var assetSpecs = map[AssetKind]assetSpec{
 }
 
 // imageUploadTypes is the accepted set for WebP-converted kinds.
+// AVIF uploads are not accepted here: the WASI decoder does not decode AVIF,
+// and re-encoding an AVIF source would need a separate decode path.
 var imageUploadTypes = map[string]bool{
 	"image/jpeg": true,
 	"image/png":  true,
 	"image/webp": true,
-	"image/avif": true,
 }
 
 // imageVariantFunc matches imageutil.GenerateVariants / GenerateSquareVariants.
