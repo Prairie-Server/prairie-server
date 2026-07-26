@@ -115,8 +115,8 @@ const emailShell = `<!DOCTYPE html>
 <meta name="supported-color-schemes" content="dark">
 <style>
   @media (max-width: 480px) {
-    .silo-shell { padding: 24px 12px 36px !important; }
-    .silo-card { padding: 24px 20px !important; }
+    .prairie-shell { padding: 24px 12px 36px !important; }
+    .prairie-card { padding: 24px 20px !important; }
   }
 </style>
 </head>
