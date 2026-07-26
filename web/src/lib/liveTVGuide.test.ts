@@ -1,11 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  channelDisplayNumber,
-  channelLabel,
-  formatGuideTime,
-  pickNowNext,
-} from "./liveTVGuide";
+import { channelDisplayNumber, channelLabel, formatGuideTime, pickNowNext } from "./liveTVGuide";
 
 describe("liveTVGuide", () => {
   it("prefers number overrides", () => {

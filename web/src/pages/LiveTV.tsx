@@ -37,11 +37,12 @@ export default function LiveTV() {
     }
   }, [channels, selectedId]);
 
+  const [guideAnchorMs] = useState(() => Date.now());
   const guideWindow = useMemo(() => {
-    const start = new Date(Date.now() - 30 * 60 * 1000);
-    const end = new Date(Date.now() + 6 * 60 * 60 * 1000);
+    const start = new Date(guideAnchorMs - 30 * 60 * 1000);
+    const end = new Date(guideAnchorMs + 6 * 60 * 60 * 1000);
     return { start: start.toISOString(), end: end.toISOString() };
-  }, []);
+  }, [guideAnchorMs]);
 
   const guide = useLiveTVGuide(
     {
@@ -60,9 +61,7 @@ export default function LiveTV() {
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [streamURL, setStreamURL] = useState<string | null>(null);
 
-  const selectedGuide = selected
-    ? pickNowNext(programs, selected.id)
-    : { now: null, next: null };
+  const selectedGuide = selected ? pickNowNext(programs, selected.id) : { now: null, next: null };
 
   async function onWatch() {
     if (!selected) return;
@@ -219,9 +218,14 @@ export default function LiveTV() {
                   </div>
 
                   {streamURL ? (
-                    <p className="text-muted-foreground break-all text-xs">
+                    <p className="text-muted-foreground text-xs break-all">
                       Stream URL:{" "}
-                      <a className="text-primary underline" href={streamURL} target="_blank" rel="noreferrer">
+                      <a
+                        className="text-primary underline"
+                        href={streamURL}
+                        target="_blank"
+                        rel="noreferrer"
+                      >
                         {streamURL}
                       </a>
                     </p>
