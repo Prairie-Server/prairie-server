@@ -350,32 +350,36 @@ func checkRedisConnection(ctx context.Context, cfg *config.Config) connectionChe
 	if strings.TrimSpace(cfg.Redis.URL) == "" {
 		return connectionCheckResponse{Success: false, Message: "Redis URL is required."}
 	}
-
-	client, err := newAdminRedisSettingsCheckClient(cfg.Redis)
-	if err != nil {
+	if err := probeRedisConfig(ctx, cfg.Redis); err != nil {
 		return connectionCheckResponse{
 			Success: false,
 			Message: fmt.Sprintf("Redis connection check failed: %v", err),
 		}
 	}
+	return connectionCheckResponse{
+		Success: true,
+		Message: "Redis connection successful.",
+	}
+}
+
+// probeRedisConfig pings Redis so unreachable URLs cannot be persisted and later
+// brick startup under a process supervisor.
+func probeRedisConfig(ctx context.Context, redisCfg config.RedisConfig) error {
+	if strings.TrimSpace(redisCfg.URL) == "" && redisCfg.SentinelMaster == "" {
+		return errors.New("Redis URL is required")
+	}
+	client, err := newAdminRedisSettingsCheckClient(redisCfg)
+	if err != nil {
+		return err
+	}
 	if client == nil {
-		return connectionCheckResponse{Success: false, Message: "Redis URL is required."}
+		return errors.New("Redis URL is required")
 	}
 	defer client.Close()
 
 	checkCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()
-	if err := client.Ping(checkCtx); err != nil {
-		return connectionCheckResponse{
-			Success: false,
-			Message: fmt.Sprintf("Redis connection check failed: %v", err),
-		}
-	}
-
-	return connectionCheckResponse{
-		Success: true,
-		Message: "Redis connection successful.",
-	}
+	return client.Ping(checkCtx)
 }
 
 func checkRecommendationsEmbeddingConnection(

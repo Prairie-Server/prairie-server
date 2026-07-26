@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useServerBranding } from "@/hooks/useServerBranding";
 import { AuthBackground } from "@/components/auth/AuthBackground";
+import { AuthBrandHero } from "@/components/auth/AuthBrandHero";
 import { toast } from "sonner";
 
 function normalizeCode(value: string) {
@@ -98,16 +99,17 @@ export default function ActivateDevice() {
   const loginHref = `/login?redirect=${encodeURIComponent(redirectTarget)}`;
 
   return (
-    <div className="auth-shell">
+    <main className="auth-shell">
       <AuthBackground />
-      <Card className="auth-card glass panel-border w-full max-w-md border-0">
-        <CardHeader>
-          <CardTitle className="text-3xl font-extrabold tracking-[-0.04em]">{serverName}</CardTitle>
-          <CardDescription className="mt-2 text-sm leading-6">
-            Approve sign-in for the device you&apos;re trying to use.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
+      <h1 className="sr-only">Approve a device on {serverName}</h1>
+      <div className="auth-viewport">
+        <AuthBrandHero subtitle="Approve sign-in for the device you're trying to use." />
+        <Card className="auth-card w-full max-w-md border-0 bg-transparent shadow-none">
+          <CardHeader className="sr-only">
+            <CardTitle>Approve device</CardTitle>
+            <CardDescription>Approve sign-in for the device you're trying to use.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-6 p-0">
           {!token && !code ? (
             <form onSubmit={handleCodeSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -213,6 +215,7 @@ export default function ActivateDevice() {
           )}
         </CardContent>
       </Card>
-    </div>
+      </div>
+    </main>
   );
 }

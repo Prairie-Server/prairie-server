@@ -125,7 +125,7 @@ export default function AdminRequests() {
     <div className="space-y-6">
       <div className="page-header">
         <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-normal text-balance sm:text-4xl">
+          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
             Requests
           </h1>
           <p className="text-muted-foreground max-w-2xl text-sm leading-6">

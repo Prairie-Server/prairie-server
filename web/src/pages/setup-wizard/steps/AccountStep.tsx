@@ -3,6 +3,7 @@ import type { FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { PasswordInput } from "@/components/PasswordInput";
 import { toast } from "sonner";
 import { useWizardContext } from "../WizardContext";
 
@@ -64,9 +65,8 @@ export function AccountStep() {
           <Label htmlFor="setup-password" className="text-xs">
             Password
           </Label>
-          <Input
+          <PasswordInput
             id="setup-password"
-            type="password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             autoComplete="new-password"
@@ -78,9 +78,8 @@ export function AccountStep() {
         <Label htmlFor="setup-confirm-password" className="text-xs">
           Confirm password
         </Label>
-        <Input
+        <PasswordInput
           id="setup-confirm-password"
-          type="password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           autoComplete="new-password"

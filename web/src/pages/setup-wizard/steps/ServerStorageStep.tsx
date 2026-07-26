@@ -1,9 +1,8 @@
 import { useState, useEffect, useMemo } from "react";
 import type { FormEvent } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { ApiClientError, api } from "@/api/client";
 import type { ConnectionCheckResponse } from "@/api/types";
 import { ConnectionCheckAction } from "@/components/admin/ConnectionCheckAction";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -62,18 +61,6 @@ const PRIVATE_S3_KEYS = [
 const META_KEYS = ["metadata.cache_images"];
 
 const ALL_KEYS = [...SERVER_KEYS, ...PUBLIC_S3_KEYS, ...PRIVATE_S3_KEYS, ...META_KEYS];
-
-async function fetchSettingValue(key: string): Promise<string | null> {
-  try {
-    const result = await api<{ key: string; value: string }>(
-      `/admin/settings/${encodeURIComponent(key)}`,
-    );
-    return result?.value ?? null;
-  } catch (err) {
-    if (err instanceof ApiClientError && err.status === 404) return null;
-    throw err;
-  }
-}
 
 function Section({
   label,
@@ -161,29 +148,37 @@ export function ServerStorageStep() {
   const [jellyfinWebInstallRequested, setJellyfinWebInstallRequested] = useState(false);
   const [publicExpanded, setPublicExpanded] = useState(true);
   const [privateExpanded, setPrivateExpanded] = useState(false);
-  const [redisHydrated, setRedisHydrated] = useState(false);
   const [redisConnectionResult, setRedisConnectionResult] =
     useState<ConnectionCheckResponse | null>(null);
   const [publicS3ConnectionResult, setPublicS3ConnectionResult] =
     useState<ConnectionCheckResponse | null>(null);
   const [privateS3ConnectionResult, setPrivateS3ConnectionResult] =
     useState<ConnectionCheckResponse | null>(null);
-  const redisQuery = useQuery({
-    queryKey: ["setup-wizard", "setting", "redis.url"],
-    queryFn: () => fetchSettingValue("redis.url"),
-  });
+
+  const redisUrl = form.getValue("redis.url");
+  const redisManagedByEnv = form.sensitiveManagedByEnv.includes("redis.url");
+  const redisConfigured =
+    redisUrl.trim() !== "" || form.sensitiveConfigured.includes("redis.url");
+  const redisDirty = form.isDirty("redis.url");
+  const redisNeedsLiveCheck =
+    !redisManagedByEnv && redisDirty && redisUrl.trim() !== "";
 
   useEffect(() => {
-    if (redisHydrated || !redisQuery.data) return;
-    setRedisHydrated(true);
-    form.setValue("redis.url", redisQuery.data);
-  }, [redisQuery.data, redisHydrated, form]);
+    setRedisConnectionResult(null);
+  }, [redisUrl]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     const shouldInstallJellyfinWeb = jellyfinWebInstallRequested && !pinnedJellyfinWebInstalled;
     if (form.dirtyCount === 0 && !shouldInstallJellyfinWeb) {
       markDone("server");
+      return;
+    }
+
+    if (redisNeedsLiveCheck && redisConnectionResult?.success !== true) {
+      toast.error(
+        "Test the Redis connection successfully before saving, or clear the URL to continue without Redis.",
+      );
       return;
     }
 
@@ -285,20 +280,46 @@ export function ServerStorageStep() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <Section label="Redis" description="Required for multi-node deployments.">
-        <Input
-          id="setup-redis-url"
-          type="password"
-          value={form.getValue("redis.url")}
-          onChange={(e) => form.setValue("redis.url", e.target.value)}
-          placeholder="redis://localhost:6379"
-        />
-        <ConnectionCheckAction
-          onClick={handleRedisCheck}
-          result={redisConnectionResult}
-          isPending={redisConnectionCheck.isPending}
-          disabled={submitting || form.isSaving}
-        />
+      <Section
+        label="Redis"
+        description="Optional for single-node setups. Required for multi-node fanout and Redis-backed rate limits."
+      >
+        {redisManagedByEnv ? (
+          <div className="space-y-2">
+            <Badge variant="outline">Managed by environment</Badge>
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              Redis is configured by the <code>REDIS_URL</code> environment variable. Change your
+              deployment configuration and restart the server to update or disable Redis.
+            </p>
+          </div>
+        ) : (
+          <>
+            <Input
+              id="setup-redis-url"
+              type="password"
+              value={redisUrl}
+              onChange={(e) => form.setValue("redis.url", e.target.value)}
+              placeholder={
+                redisConfigured && !redisDirty
+                  ? "Configured — enter a new URL to replace"
+                  : "redis://localhost:6379"
+              }
+              autoComplete="off"
+            />
+            <ConnectionCheckAction
+              onClick={handleRedisCheck}
+              result={redisConnectionResult}
+              isPending={redisConnectionCheck.isPending}
+              disabled={submitting || form.isSaving || redisUrl.trim() === ""}
+            />
+            {redisNeedsLiveCheck && redisConnectionResult?.success !== true ? (
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                Run a successful connection check before saving a Redis URL. A failed check used to
+                leave an unreachable URL that could restart-loop the server after save.
+              </p>
+            ) : null}
+          </>
+        )}
       </Section>
 
       <Section label="Playback">
