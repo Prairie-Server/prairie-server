@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CircleCheck, Eye, EyeOff, Loader2 } from "lucide-react";
 import { useWizardContext } from "../WizardContext";
+import { WizardActions } from "../WizardActions";
 
 // --- Provider metadata ---
 
@@ -108,7 +109,7 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
       {enabled && (
         <div className="border-foreground/[0.06] border-t px-4 py-3.5">
           {isOpenSubtitles ? (
-            <div className="grid gap-2.5 sm:grid-cols-2">
+            <div className="grid gap-2.5">
               <Input
                 type="text"
                 placeholder={config.has_credentials ? "Leave blank to keep" : "Username"}
@@ -223,12 +224,12 @@ export function IntegrationsStep() {
         </p>
       )}
 
-      <div className="flex gap-3 pt-2">
+      <WizardActions>
         <Button onClick={() => markDone("integrations")}>Continue</Button>
         <Button variant="ghost" onClick={() => markDone("integrations")}>
           Skip
         </Button>
-      </div>
+      </WizardActions>
     </div>
   );
 }

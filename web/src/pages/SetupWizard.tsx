@@ -48,7 +48,7 @@ function WizardContent() {
     return (
       <div className="auth-shell items-start py-10 sm:py-14">
         <AuthBackground />
-        <div className="auth-setup-panel relative z-1 w-full max-w-2xl p-1 sm:p-2">
+        <div className="auth-setup-panel relative z-1 w-full max-w-2xl p-1 pb-8 sm:p-2 sm:pb-10">
           <AuthBrandHero
             className="mb-8"
             subtitle="Getting your server ready — hang tight while we load setup."
@@ -71,7 +71,7 @@ function WizardContent() {
   return (
     <div className="auth-shell items-start py-10 sm:py-14">
       <AuthBackground />
-      <div className="auth-setup-panel relative z-1 w-full max-w-2xl p-1 sm:p-2">
+      <div className="auth-setup-panel relative z-1 w-full max-w-2xl p-1 pb-8 sm:p-2 sm:pb-10">
         <AuthBrandHero className="mb-8" subtitle="First-run setup for your Prairie server." />
         <div className="mb-10">
           <StepIndicator steps={steps} />

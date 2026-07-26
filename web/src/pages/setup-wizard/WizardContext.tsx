@@ -1,4 +1,4 @@
-import { createContext, useCallback, useContext, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 import type { ReactNode } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
@@ -11,6 +11,14 @@ import {
   type SkippableStep,
   writeSetupWizardFlag,
 } from "./setupStorage";
+import {
+  type WizardStepId,
+  deriveFrontierStep,
+  nextReviewStep,
+  previousWizardStep,
+  resolveCurrentStep,
+  wizardStepIndex,
+} from "./wizardSteps";
 
 interface WizardContextValue {
   // Auth-derived
@@ -32,6 +40,13 @@ interface WizardContextValue {
   stepDone: Record<SkippableStep, boolean>;
   markDone: (step: SkippableStep) => void;
   clearProgress: () => void;
+
+  // Navigation
+  frontierStep: WizardStepId;
+  currentStep: WizardStepId;
+  canGoBack: boolean;
+  goBack: () => void;
+  goForward: () => void;
 }
 
 const WizardCtx = createContext<WizardContextValue | null>(null);
@@ -61,6 +76,8 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     return readSetupWizardFlags();
   });
 
+  const [reviewStep, setReviewStep] = useState<WizardStepId | null>(null);
+
   const profilesQuery = useQuery({
     queryKey: ["setup-wizard", "profiles"],
     queryFn: () => api<{ profiles: Profile[] }>("/profiles").then((d) => d.profiles ?? []),
@@ -77,14 +94,39 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     retry: shouldRetrySetupQuery,
   });
 
+  const accountComplete = !!user;
+  const frontierStep = useMemo(
+    () => deriveFrontierStep(accountComplete, profileComplete, stepDone),
+    [accountComplete, profileComplete, stepDone],
+  );
+
+  const currentStep = useMemo(
+    () => resolveCurrentStep(frontierStep, reviewStep),
+    [reviewStep, frontierStep],
+  );
+
+  const canGoBack = wizardStepIndex(currentStep) > 0;
+
+  const goBack = useCallback(() => {
+    const previous = previousWizardStep(currentStep);
+    if (!previous) return;
+    setReviewStep(previous);
+  }, [currentStep]);
+
+  const goForward = useCallback(() => {
+    setReviewStep(nextReviewStep(currentStep, frontierStep));
+  }, [currentStep, frontierStep]);
+
   const markDone = useCallback((step: SkippableStep) => {
     writeSetupWizardFlag(step, true);
     setStepDone((prev) => ({ ...prev, [step]: true }));
+    setReviewStep(null);
   }, []);
 
   const clearProgress = useCallback(() => {
     clearSetupWizardStorage();
     setStepDone(createEmptySetupWizardFlags());
+    setReviewStep(null);
   }, []);
 
   return (
@@ -104,6 +146,11 @@ export function WizardProvider({ children }: { children: ReactNode }) {
         stepDone,
         markDone,
         clearProgress,
+        frontierStep,
+        currentStep,
+        canGoBack,
+        goBack,
+        goForward,
       }}
     >
       {children}

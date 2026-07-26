@@ -1,5 +1,7 @@
 import { useWizardContext } from "./WizardContext";
 
+export type { WizardStepId } from "./wizardSteps";
+
 export interface StepDef {
   id: string;
   label: string;
@@ -7,38 +9,12 @@ export interface StepDef {
   active: boolean;
 }
 
-export type WizardStepId =
-  | "account"
-  | "profile"
-  | "server"
-  | "integrations"
-  | "downloads"
-  | "recommendations"
-  | "library"
-  | "nodes";
-
 export function useWizardSteps() {
-  const { user, profiles, stepDone } = useWizardContext();
+  const { user, profiles, stepDone, currentStep, frontierStep } = useWizardContext();
 
   const accountComplete = !!user;
   const profileComplete = profiles.length > 0;
   const libraryDone = stepDone.library;
-
-  const currentStep: WizardStepId = !accountComplete
-    ? "account"
-    : !profileComplete
-      ? "profile"
-      : !stepDone.server
-        ? "server"
-        : !stepDone.integrations
-          ? "integrations"
-          : !stepDone.downloads
-            ? "downloads"
-            : !stepDone.recommendations
-              ? "recommendations"
-              : !libraryDone
-                ? "library"
-                : "nodes";
 
   const steps: StepDef[] = [
     {
@@ -76,5 +52,5 @@ export function useWizardSteps() {
     { id: "nodes", label: "Finish", complete: false, active: currentStep === "nodes" },
   ];
 
-  return { steps, currentStep };
+  return { steps, currentStep, frontierStep };
 }

@@ -59,7 +59,7 @@ function mockStep({
 }: MockStepOptions = {}) {
   const formValues = { ...defaultValues, ...values };
 
-  useWizardContextMock.mockReturnValue({ markDone });
+  useWizardContextMock.mockReturnValue({ markDone, canGoBack: false, goBack: vi.fn() });
   useCheckAdminSettingsConnectionMock.mockReturnValue({
     isPending: false,
     mutateAsync: vi.fn(),
