@@ -88,7 +88,7 @@ func (e *nvencEncoder) encodeNVENC(ctx context.Context, imageBytes []byte) ([]by
 	cmd := exec.CommandContext(ctx, e.ffmpeg, args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
+	if err := runEncodeCommand(cmd); err != nil {
 		return nil, fmt.Errorf("nvenc avif: ffmpeg: %w (%s)", err, trim(stderr.String()))
 	}
 	out, err := os.ReadFile(outPath)

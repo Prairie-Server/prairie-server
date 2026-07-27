@@ -87,7 +87,7 @@ func (e *svtEncoder) encodeUnlocked(ctx context.Context, imageBytes []byte) ([]b
 	cmd.Env = append(os.Environ(), "OMP_NUM_THREADS=1")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
-	if err := cmd.Run(); err != nil {
+	if err := runEncodeCommand(cmd); err != nil {
 		return nil, fmt.Errorf("svt avif: ffmpeg: %w (%s)", err, trim(stderr.String()))
 	}
 	out, err := os.ReadFile(outPath)
