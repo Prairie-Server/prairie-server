@@ -1,0 +1,11 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>prairie-server/prairie-server//renovate-presets/default"],
+  "enabledManagers": ["github-actions", "gomod", "npm", "cargo"],
+  "postUpdateOptions": ["gomodTidy"],
+  "ignorePaths": [
+    "**/node_modules/**",
+    "web/vendor/**",
+    "internal/compat/**"
+  ]
+}

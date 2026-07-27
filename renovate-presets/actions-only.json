@@ -1,0 +1,6 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "GitHub Actions-only updates for low-dependency Prairie repos (plugins, themes, catalog)",
+  "extends": ["github>prairie-server/prairie-server//renovate-presets/default"],
+  "enabledManagers": ["github-actions"]
+}
