@@ -209,21 +209,16 @@ func (f *flexInt) UnmarshalJSON(data []byte) error {
 		return nil
 	}
 	var asInt int
-	if err := json.Unmarshal(data, &asInt); err == nil {
+	if json.Unmarshal(data, &asInt) == nil {
 		f.Value = &asInt
 		return nil
 	}
 	var asStr string
-	if json.Unmarshal(data, &asStr) != nil {
-		// Non-numeric, non-string JSON (object/array/bool): treat as absent.
-		return nil
-	}
-	asStr = strings.TrimSpace(asStr)
-	if asStr == "" {
-		return nil
-	}
-	if n, err := strconv.Atoi(asStr); err == nil {
-		f.Value = &n
+	if json.Unmarshal(data, &asStr) == nil {
+		asStr = strings.TrimSpace(asStr)
+		if n, err := strconv.Atoi(asStr); err == nil {
+			f.Value = &n
+		}
 	}
 	return nil
 }
