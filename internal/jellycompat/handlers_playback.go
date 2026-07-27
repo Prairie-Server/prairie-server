@@ -1806,12 +1806,3 @@ func compatIntValuePtr(value int) *compatIntValue {
 	v := compatIntValue(value)
 	return &v
 }
-
-func (h *PlaybackHandler) playbackUnavailable(w http.ResponseWriter, err error) {
-	switch {
-	case errors.Is(err, ErrSessionNotFound):
-		writeError(w, http.StatusUnauthorized, "Unauthorized", "Authentication failed")
-	default:
-		writeCompatUpstreamError(w, err)
-	}
-}

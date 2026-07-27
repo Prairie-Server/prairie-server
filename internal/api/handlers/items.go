@@ -875,20 +875,6 @@ func (h *ItemsHandler) listItemUserStates(r *http.Request, items []*models.Media
 }
 
 // toEpisodeResponse converts an Episode model to an API response.
-func (h *ItemsHandler) toEpisodeResponse(r *http.Request, ep *models.Episode) episodeResponse {
-	return h.toEpisodeResponseWithFallback(r, ep, episodeImageFallback{})
-}
-
-func (h *ItemsHandler) toEpisodeResponseWithFallback(r *http.Request, ep *models.Episode, fallback episodeImageFallback) episodeResponse {
-	if h.detailSvc != nil {
-		if localized, err := h.detailSvc.LocalizeEpisodeModel(r.Context(), ep, h.accessFilter(r)); err == nil && localized != nil {
-			ep = localized
-		}
-	}
-	resp, stillPath := episodeResponseShell(ep, fallback)
-	resp.StillURL = h.presignURL(r, stillPath, "card")
-	return resp
-}
 
 // episodeResponseShell maps an already-localized episode onto the response
 // shape, returning the card-variant still path for the caller to presign.
@@ -1461,10 +1447,6 @@ func maxFileBitrate(files []*models.MediaFile) int {
 }
 
 // toSeasonResponse converts a Season model to an API response.
-func (h *ItemsHandler) toSeasonResponse(r *http.Request, seriesID string, s *models.Season) seasonResponse {
-	episodes, _ := h.episodeRepo.ListBySeason(r.Context(), seriesID, s.SeasonNumber)
-	return h.toSeasonResponseFromEpisodes(r, seriesID, s, episodes, h.getAggregateUserData(r, episodes))
-}
 
 func (h *ItemsHandler) toSeasonResponseFromEpisodes(
 	r *http.Request,

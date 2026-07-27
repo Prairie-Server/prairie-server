@@ -4348,12 +4348,6 @@ func (s *MetadataService) synthesizeFallbackSeriesStructure(ctx context.Context,
 	return nil
 }
 
-func (s *MetadataService) linkSeriesFilesToEpisodes(ctx context.Context, seriesID string) {
-	if err := s.linkSeriesFilesToEpisodesWithOptions(ctx, seriesID, false); err == nil {
-		s.refreshSeriesEpisodeMetadataState(ctx, seriesID, time.Now())
-	}
-}
-
 func (s *MetadataService) ensureSeriesEpisodeLinks(ctx context.Context, seriesID string) error {
 	return s.withSeriesEpisodeWork(ctx, seriesID, func() error {
 		return s.ensureSeriesEpisodeLinksCore(ctx, seriesID)
@@ -5509,29 +5503,6 @@ func (s *MetadataService) confirmedOwnershipItem(ctx context.Context, contentID 
 	return item, true
 }
 
-func (s *MetadataService) rebindSkeletonByProviderIDs(
-	ctx context.Context,
-	skeletonContentID string,
-	providerIDs map[string]string,
-	itemType string,
-) (string, error) {
-	if s == nil || skeletonContentID == "" {
-		return "", nil
-	}
-	unlockDedup := s.lockDedupKey(dedupKeyFromProviderIDs(itemType, providerIDs))
-	defer unlockDedup()
-	return s.rebindSkeletonByProviderIDsLocked(ctx, skeletonContentID, providerIDs, itemType)
-}
-
-func (s *MetadataService) rebindSkeletonByProviderIDsLocked(
-	ctx context.Context,
-	skeletonContentID string,
-	providerIDs map[string]string,
-	itemType string,
-) (string, error) {
-	return s.rebindItemByProviderIDsLocked(ctx, skeletonContentID, providerIDs, itemType, false)
-}
-
 func (s *MetadataService) rebindItemByProviderIDsLocked(
 	ctx context.Context,
 	sourceContentID string,
@@ -5611,10 +5582,6 @@ func (s *MetadataService) recoverProviderIDConflict(
 		}
 	}
 	return s.rebindItemByProviderIDsLocked(ctx, sourceContentID, providerIDs, itemType, allowMatchedSource)
-}
-
-func (s *MetadataService) rebindSkeletonToExistingItem(ctx context.Context, fromContentID, toContentID string) error {
-	return s.rebindItemToExistingItem(ctx, fromContentID, toContentID, false)
 }
 
 func (s *MetadataService) rebindItemToExistingItem(ctx context.Context, fromContentID, toContentID string, allowMatchedSource bool) error {

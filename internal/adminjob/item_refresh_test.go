@@ -239,21 +239,6 @@ func (r *itemRefreshTestSkippedRootRepo) DeleteMissingInScope(_ context.Context,
 	return nil
 }
 
-type itemRefreshTestSeasonRepo struct {
-	season *models.Season
-}
-
-func (r *itemRefreshTestSeasonRepo) GetByID(_ context.Context, _ string) (*models.Season, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (r *itemRefreshTestSeasonRepo) GetBySeriesAndNumber(_ context.Context, seriesID string, seasonNum int) (*models.Season, error) {
-	if r.season != nil && r.season.SeriesID == seriesID && r.season.SeasonNumber == seasonNum {
-		return r.season, nil
-	}
-	return nil, errors.New("season not found")
-}
-
 type itemRefreshTestEpisodeRepo struct {
 	episode *models.Episode
 }

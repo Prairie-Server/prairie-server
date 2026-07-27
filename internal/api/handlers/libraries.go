@@ -1357,19 +1357,6 @@ func boolPtr(v bool) *bool {
 	return &v
 }
 
-func (h *LibraryHandler) publishCatalogStatsInvalidation(eventType, payload string) {
-	if h.EventBus == nil {
-		return
-	}
-	if err := h.EventBus.Publish(h.appCtx, cache.ChannelCatalog, cache.Event{Type: eventType, Payload: payload}); err != nil {
-		slog.Warn("scan: failed to publish catalog invalidation event",
-			"type", eventType,
-			"payload", payload,
-			"error", err,
-		)
-	}
-}
-
 type refreshLibraryMetadataRequest struct {
 	Mode string `json:"mode"`
 }

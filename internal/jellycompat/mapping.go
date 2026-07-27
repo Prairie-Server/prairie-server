@@ -791,10 +791,6 @@ func imageTagsWithSeed(signer *imageTagSigner, seed, imageURL string) map[string
 	return map[string]string{"Primary": signer.Tag(seed, imageURL)}
 }
 
-func backdropTags(imageURL string) []string {
-	return backdropTagsWithSeed(nil, "", imageURL)
-}
-
 func backdropTagsWithSeed(signer *imageTagSigner, seed, imageURL string) []string {
 	if imageURL == "" {
 		return nil

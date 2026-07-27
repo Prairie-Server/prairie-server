@@ -972,10 +972,6 @@ func buildHistoryRequest(plays []watchsync.LocalPlay, includeWatchedAt bool) sim
 	return request
 }
 
-func buildHistoryPayload(plays []watchsync.LocalPlay, includeWatchedAt bool) simklHistoryPayload {
-	return buildHistoryRequest(plays, includeWatchedAt).Payload
-}
-
 func (r simklHistoryRequest) addHistoryID(historyID string, keys []string) {
 	if historyID == "" {
 		return

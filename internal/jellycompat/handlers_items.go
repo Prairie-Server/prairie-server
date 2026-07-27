@@ -3154,15 +3154,6 @@ func urlValuesFromItemsQuery(query itemsQuery) url.Values {
 	return buildBrowseParams(query)
 }
 
-func progressMap(entries []upstreamProgress) map[string]*upstreamProgress {
-	result := make(map[string]*upstreamProgress, len(entries))
-	for i := range entries {
-		entry := entries[i]
-		result[entry.MediaItemID] = &entry
-	}
-	return result
-}
-
 func decodeContentID(codec *ResourceIDCodec, raw string) (string, error) {
 	if id, err := decodeItemID(codec, raw); err == nil {
 		return id, nil
@@ -3272,15 +3263,6 @@ func (h *ItemsHandler) rememberSeasonImages(seasons []upstreamSeason, seriesID s
 		if seriesID != "" {
 			h.images.RememberSized(h.codec.EncodeStringID(EncodedIDItem, seriesID), "Primary", season.PosterURL, compatCardImageSize)
 		}
-	}
-}
-
-func (h *ItemsHandler) rememberEpisodeImages(episodes []upstreamEpisode) {
-	if h.images == nil {
-		return
-	}
-	for _, episode := range episodes {
-		h.images.RememberSized(h.codec.EncodeStringID(EncodedIDItem, episode.ContentID), "Primary", episode.StillURL, compatCardImageSize)
 	}
 }
 

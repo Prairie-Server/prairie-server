@@ -127,14 +127,6 @@ func newProcessor(ctx context.Context, opts processorOptions) (*processor, error
 	}, nil
 }
 
-func (p *processor) close(ctx context.Context) error {
-	if p == nil || p.runtime == nil {
-		return nil
-	}
-	p.closed.Store(true)
-	return p.runtime.Close(ctx)
-}
-
 func (p *processor) run(ctx context.Context, mode string, data []byte, extraArgs []string) (*VariantResult, error) {
 	if p == nil || p.closed.Load() {
 		return nil, fmt.Errorf("imageutil: processor unavailable")

@@ -3275,23 +3275,6 @@ func buildLibraryScope(libraryID *int, libraryIDs []int, configLibraryIDs []int,
 	return fromClause, conditions, args, argIdx
 }
 
-func fetchSortClause(sort, order string) string {
-	dir := "DESC"
-	if order == "asc" {
-		dir = "ASC"
-	}
-	switch sort {
-	case "rating":
-		return fmt.Sprintf("ORDER BY mi.rating_imdb %s NULLS LAST", dir)
-	case "year":
-		return fmt.Sprintf("ORDER BY mi.year %s", dir)
-	case "title":
-		return fmt.Sprintf("ORDER BY mi.sort_title %s", dir)
-	default:
-		return fmt.Sprintf("ORDER BY mi.created_at %s", dir)
-	}
-}
-
 func intersectLibraryIDs(a, b []int) []int {
 	if len(a) == 0 || len(b) == 0 {
 		return nil

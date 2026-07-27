@@ -704,13 +704,6 @@ func (h *Handler) publish(userID, event string, payload any) {
 	h.deps.Publisher.Publish(userID, event, payload)
 }
 
-func (h *Handler) broadcast(event string, payload any) {
-	if h.deps.Publisher == nil {
-		return
-	}
-	h.deps.Publisher.Broadcast(event, payload)
-}
-
 // ---------------------------------------------------------------------------
 // URL helpers
 // ---------------------------------------------------------------------------
@@ -776,14 +769,14 @@ func readPagedQuery(r *http.Request, defaultLimit int) (limit, page int) {
 // their presence (sortBy, filterBy, minified).
 func pagedEnvelope(results any, total, limit, page int, sortBy string, sortDesc bool, filterBy string, minified bool, include string) map[string]any {
 	return map[string]any{
-		"results":  results,
-		"total":    total,
-		"limit":    limit,
-		"page":     page,
-		"sortBy":   sortBy,
-		"sortDesc": sortDesc,
-		"filterBy": filterBy,
-		"minified": minified,
-		"include":  include,
+		"results":    results,
+		jsonKeyTotal: total,
+		"limit":      limit,
+		"page":       page,
+		"sortBy":     sortBy,
+		"sortDesc":   sortDesc,
+		"filterBy":   filterBy,
+		"minified":   minified,
+		"include":    include,
 	}
 }

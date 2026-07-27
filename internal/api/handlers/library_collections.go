@@ -299,29 +299,6 @@ type libraryCollectionGroupResponse struct {
 	SortOrder       int    `json:"sort_order"`
 }
 
-type libraryCollectionGroupsListResponse struct {
-	Groups             []libraryCollectionGroupResponse `json:"groups"`
-	UngroupedSortOrder int                              `json:"ungrouped_sort_order"`
-}
-
-type createLibraryCollectionGroupRequest struct {
-	LibraryID       int    `json:"library_id"`
-	Name            string `json:"name"`
-	Slug            string `json:"slug"`
-	DefaultSortMode string `json:"default_sort_mode"`
-}
-
-type updateLibraryCollectionGroupRequest struct {
-	Name            *string `json:"name"`
-	Slug            *string `json:"slug"`
-	DefaultSortMode *string `json:"default_sort_mode"`
-}
-
-type reorderLibraryCollectionGroupsRequest struct {
-	LibraryID  int      `json:"library_id"`
-	OrderedIDs []string `json:"ordered_ids"`
-}
-
 type libraryCollectionsListResponse struct {
 	Collections []libraryCollectionResponse      `json:"collections"`
 	Groups      []libraryCollectionGroupResponse `json:"groups,omitempty"`
@@ -1264,7 +1241,7 @@ func (h *LibraryCollectionHandler) HandleUpdateAdminCollection(w http.ResponseWr
 		ManagementKey:    req.ManagementKey,
 		SyncSchedule:     req.SyncSchedule,
 	}); err != nil {
-		if err == catalog.ErrLibraryCollectionNotFound {
+		if errors.Is(err, catalog.ErrLibraryCollectionNotFound) {
 			writeError(w, http.StatusNotFound, "not_found", "Collection not found")
 			return
 		}
@@ -3652,9 +3629,9 @@ func (h *LibraryCollectionHandler) processArtworkInputs(r *http.Request, collect
 			err = http.ErrMissingFile
 		}
 
-		switch err {
-		case nil:
-		case http.ErrMissingFile:
+		switch {
+		case err == nil:
+		case errors.Is(err, http.ErrMissingFile):
 			if sourceByType[imageType] == "" {
 				continue
 			}

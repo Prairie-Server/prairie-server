@@ -84,36 +84,6 @@ func (h *PersonalDataHandler) SetLocalListEventDispatcher(dispatcher LocalListEv
 
 // --- Response types ---
 
-type favoriteResponse struct {
-	MediaItemID string `json:"media_item_id"`
-	AddedAt     string `json:"added_at"`
-}
-
-type favoriteListResponse struct {
-	Favorites []favoriteResponse `json:"favorites"`
-}
-
-type watchlistEntryResponse struct {
-	MediaItemID string `json:"media_item_id"`
-	AddedAt     string `json:"added_at"`
-}
-
-type watchlistListResponse struct {
-	Watchlist []watchlistEntryResponse `json:"watchlist"`
-}
-
-type historyEntryResponse struct {
-	ID              string  `json:"id"`
-	MediaItemID     string  `json:"media_item_id"`
-	WatchedAt       string  `json:"watched_at"`
-	DurationSeconds float64 `json:"duration_seconds"`
-	Completed       bool    `json:"completed"`
-}
-
-type historyListResponse struct {
-	History []historyEntryResponse `json:"history"`
-}
-
 type historyRemovalTargetRequest struct {
 	ContentID string `json:"content_id"`
 	Scope     string `json:"scope"`

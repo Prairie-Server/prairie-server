@@ -1166,32 +1166,12 @@ func (s *directContentService) batchProgressForEpisodes(ctx context.Context, ses
 }
 
 // enrichEpisodeUserData adds user data for a single episode.
-func (s *directContentService) enrichEpisodeUserData(ctx context.Context, session *Session, ep *upstreamEpisode) {
-	if progressMap, err := s.progressForContentIDs(ctx, session, []string{ep.ContentID}); err == nil {
-		if progress, ok := progressMap[ep.ContentID]; ok {
-			progressCopy := progress
-			ep.UserData = seasonUserDataFromProgress(&progressCopy)
-		}
-	}
-}
 
 func (s *directContentService) userStore(ctx context.Context, session *Session) (userstore.UserStore, error) {
 	if s.storeProvider == nil {
 		return nil, fmt.Errorf("user store is not configured")
 	}
 	return s.storeProvider.ForUser(ctx, session.StreamAppUserID)
-}
-
-func (s *directContentService) progressForContentIDs(ctx context.Context, session *Session, contentIDs []string) (map[string]userstore.WatchProgress, error) {
-	store, err := s.userStore(ctx, session)
-	if err != nil {
-		return nil, err
-	}
-	progressMap, err := userstore.ListProgressWithCompletedHistory(ctx, store, session.ProfileID, contentIDs)
-	if err != nil {
-		return nil, err
-	}
-	return progressMap, nil
 }
 
 func seasonUserDataFromProgress(progress *userstore.WatchProgress) *catalog.SeasonUserData {

@@ -158,10 +158,6 @@ func (t *pluginTask) Execute(ctx context.Context, progress taskmanager.ProgressR
 	return nil
 }
 
-func taskBindingKey(installationID int, capabilityID string) string {
-	return fmt.Sprintf("%d/%s", installationID, capabilityID)
-}
-
 func pluginTaskKey(installationID int, capabilityID string) string {
 	return fmt.Sprintf("plugin:%d:%s", installationID, capabilityID)
 }

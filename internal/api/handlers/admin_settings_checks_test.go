@@ -861,10 +861,6 @@ func (f *fakeRedisSettingsCheckClient) Close() error {
 	return nil
 }
 
-type fakeEmbeddingsSettingsCheckClient struct {
-	embed func(ctx context.Context, texts []string) ([][]float32, error)
-}
-
 type fakeMDBListSettingsCheckClient struct {
 	check func(context.Context) error
 }
@@ -874,16 +870,6 @@ func (f *fakeMDBListSettingsCheckClient) Check(ctx context.Context) error {
 		return f.check(ctx)
 	}
 	return nil
-}
-
-func (f *fakeEmbeddingsSettingsCheckClient) Embed(
-	ctx context.Context,
-	texts []string,
-) ([][]float32, error) {
-	if f.embed != nil {
-		return f.embed(ctx, texts)
-	}
-	return [][]float32{{0.1, 0.2}}, nil
 }
 
 func TestHandleCheckSettingsConnectionS3UsesPersistedSensitiveValues(t *testing.T) {

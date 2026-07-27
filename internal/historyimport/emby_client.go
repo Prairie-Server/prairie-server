@@ -76,10 +76,6 @@ type embyItem struct {
 	} `json:"UserData"`
 }
 
-type embyUser struct {
-	ID string `json:"Id"`
-}
-
 type embyLocalAuth struct {
 	BaseURL     string
 	UserID      string

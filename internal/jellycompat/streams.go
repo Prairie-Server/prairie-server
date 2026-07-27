@@ -1214,7 +1214,7 @@ func (h *PlaybackHandler) handlePlaybackReport(w http.ResponseWriter, r *http.Re
 		}
 	}
 	audioTrackIndex := 0
-	audioRestarted := false
+	var audioRestarted bool
 	// Jellyfin web/mobile clients send AudioStreamIndex on every progress
 	// report, not just on track changes. Restarting ffmpeg on each report
 	// (every ~10s) tears down segments the player is still appending and
@@ -1979,16 +1979,6 @@ func buildSegmentProxyPath(routeItemID, playlistID, mediaSourceID, current strin
 		return fmt.Sprintf("/Videos/%s/hls/%s/%s%s%s", routeItemID, playlistID, name, ext, qs)
 	}
 	return fmt.Sprintf("/Videos/%s/hls/%s/%s%s", routeItemID, playlistID, base, qs)
-}
-
-func copyProxyResponse(w http.ResponseWriter, resp *http.Response) {
-	for key, values := range resp.Header {
-		for _, value := range values {
-			w.Header().Add(key, value)
-		}
-	}
-	w.WriteHeader(resp.StatusCode)
-	_, _ = io.Copy(w, resp.Body)
 }
 
 func chiURLParam(r *http.Request, key string) string {

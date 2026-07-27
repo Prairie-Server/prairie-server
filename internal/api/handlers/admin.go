@@ -331,12 +331,6 @@ type unmatchedFileRow struct {
 
 // presignPosterURL generates a presigned poster URL for admin sessions.
 // Returns empty string if no detail service is configured or the path is empty.
-func (h *AdminHandler) presignPosterURL(r *http.Request, path string) string {
-	if h.DetailSvc != nil {
-		return h.DetailSvc.PresignURL(r.Context(), cardThumbnailPath(path), "card")
-	}
-	return ""
-}
 
 // toAdminUserResponse converts a User model to an admin API response.
 func toAdminUserResponse(u *models.User) adminUserResponse {

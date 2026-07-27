@@ -379,7 +379,7 @@ func (h *Handler) handleLibraryAuthors(w http.ResponseWriter, r *http.Request) {
 	}
 	if total > len(pageAuthors) && r.URL.Query().Get("page") == "" {
 		slog.WarnContext(r.Context(), "abs authors truncated for non-paginated request", "component", "audiobooks",
-			"library", lib.ID, "total", total, "returned", len(pageAuthors))
+			"library", lib.ID, jsonKeyTotal, total, "returned", len(pageAuthors))
 	}
 	libID := audiobookLibraryID(lib)
 	results := make([]map[string]any, 0, len(pageAuthors))
@@ -433,7 +433,7 @@ func (h *Handler) handleLibrarySeries(w http.ResponseWriter, r *http.Request) {
 	}
 	if total > len(pageSeries) && r.URL.Query().Get("page") == "" {
 		slog.WarnContext(r.Context(), "abs series truncated for non-paginated request", "component", "audiobooks",
-			"library", lib.ID, "total", total, "returned", len(pageSeries))
+			"library", lib.ID, jsonKeyTotal, total, "returned", len(pageSeries))
 	}
 	libID := audiobookLibraryID(lib)
 	baseURL := h.absBaseURL(r)
@@ -620,22 +620,22 @@ func (h *Handler) handlePersonalized(w http.ResponseWriter, r *http.Request) {
 	}
 
 	shelves := []map[string]any{
-		{"id": "continue-listening", "label": "Continue Listening", "labelStringKey": "LabelContinueListening", "type": "book", "entities": []any{}, "total": 0},
-		{"id": "continue-series", "label": "Continue Series", "labelStringKey": "LabelContinueSeries", "type": "book", "entities": []any{}, "total": 0},
-		{"id": "newest", "label": "Newest", "labelStringKey": "LabelNewest", "type": "book", "entities": []any{}, "total": 0},
-		{"id": "recent-series", "label": "Recent Series", "labelStringKey": "LabelRecentSeries", "type": "series", "entities": []any{}, "total": 0},
-		{"id": "discover", "label": "Discover", "labelStringKey": "LabelDiscover", "type": "book", "entities": []any{}, "total": 0},
-		{"id": "listen-again", "label": "Listen Again", "labelStringKey": "LabelListenAgain", "type": "book", "entities": []any{}, "total": 0},
+		{"id": "continue-listening", "label": "Continue Listening", "labelStringKey": "LabelContinueListening", "type": "book", "entities": []any{}, jsonKeyTotal: 0},
+		{"id": "continue-series", "label": "Continue Series", "labelStringKey": "LabelContinueSeries", "type": "book", "entities": []any{}, jsonKeyTotal: 0},
+		{"id": "newest", "label": "Newest", "labelStringKey": "LabelNewest", "type": "book", "entities": []any{}, jsonKeyTotal: 0},
+		{"id": "recent-series", "label": "Recent Series", "labelStringKey": "LabelRecentSeries", "type": "series", "entities": []any{}, jsonKeyTotal: 0},
+		{"id": "discover", "label": "Discover", "labelStringKey": "LabelDiscover", "type": "book", "entities": []any{}, jsonKeyTotal: 0},
+		{"id": "listen-again", "label": "Listen Again", "labelStringKey": "LabelListenAgain", "type": "book", "entities": []any{}, jsonKeyTotal: 0},
 	}
 
 	if items, err := h.deps.MediaStore.ListContinueListening(r.Context(), a.UserID, a.ProfileID, lib.ID, shelfLimit, access); err == nil && len(items) > 0 {
 		shelves[0]["entities"] = minifiedSlice(items, lib, baseURL)
-		shelves[0]["total"] = len(items)
+		shelves[0][jsonKeyTotal] = len(items)
 	}
 
 	if items, err := h.deps.MediaStore.ListRecentlyAdded(r.Context(), lib.ID, shelfLimit, access); err == nil && len(items) > 0 {
 		shelves[2]["entities"] = minifiedSlice(items, lib, baseURL)
-		shelves[2]["total"] = len(items)
+		shelves[2][jsonKeyTotal] = len(items)
 	}
 
 	libID := audiobookLibraryID(lib)
@@ -658,12 +658,12 @@ func (h *Handler) handlePersonalized(w http.ResponseWriter, r *http.Request) {
 			recent = append(recent, obj)
 		}
 		shelves[3]["entities"] = recent
-		shelves[3]["total"] = len(recent)
+		shelves[3][jsonKeyTotal] = len(recent)
 	}
 
 	if items, err := h.deps.MediaStore.ListDiscover(r.Context(), lib.ID, shelfLimit, access); err == nil && len(items) > 0 {
 		shelves[4]["entities"] = minifiedSlice(items, lib, baseURL)
-		shelves[4]["total"] = len(items)
+		shelves[4][jsonKeyTotal] = len(items)
 	}
 
 	writeJSON(w, http.StatusOK, shelves)
@@ -1019,27 +1019,6 @@ func siloFilesToAudioTracks(contentID string, files []*models.MediaFile, baseURL
 
 // slugify produces a stable ID-from-name, identical to the plugin's translate.go
 // implementation so derived IDs round-trip consistently.
-func slugify(name string) string {
-	var b strings.Builder
-	prevDash := true
-	for _, r := range strings.ToLower(name) {
-		switch {
-		case isLetterOrDigit(r):
-			b.WriteRune(r)
-			prevDash = false
-		default:
-			if !prevDash && b.Len() > 0 {
-				b.WriteRune('-')
-				prevDash = true
-			}
-		}
-	}
-	return strings.TrimRight(b.String(), "-")
-}
-
-func isLetterOrDigit(r rune) bool {
-	return (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9')
-}
 
 // includeHas tests whether an "include" comma-separated query value contains
 // the given key.

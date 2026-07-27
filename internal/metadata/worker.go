@@ -438,26 +438,6 @@ func matchIdentityKey(title string, year int) string {
 	return title + "\x00" + strconv.Itoa(year)
 }
 
-func compactUniquePaths(paths []string) []string {
-	if len(paths) == 0 {
-		return nil
-	}
-	seen := make(map[string]struct{}, len(paths))
-	out := make([]string, 0, len(paths))
-	for _, path := range paths {
-		clean := filepath.Clean(path)
-		if clean == "." || clean == "" {
-			continue
-		}
-		if _, ok := seen[clean]; ok {
-			continue
-		}
-		seen[clean] = struct{}{}
-		out = append(out, clean)
-	}
-	return out
-}
-
 // ProcessFile applies the normal unmatched-file pipeline to a single file.
 func (w *MatchWorker) ProcessFile(ctx context.Context, file *models.MediaFile) {
 	w.processFile(ctx, file)
@@ -692,7 +672,7 @@ func (w *MatchWorker) processFiles(ctx context.Context, files []*models.MediaFil
 			if ctx.Err() != nil {
 				return false
 			}
-			contentID := key.(string)
+			contentID, _ := key.(string)
 			if err := w.service.ensureSeriesEpisodeLinks(ctx, contentID); err != nil {
 				slog.WarnContext(ctx, "metadata: deferred series episode link failed", "component", "metadata",
 					"content_id", contentID, "error", err)
@@ -1427,7 +1407,8 @@ func (w *MatchWorker) folderEnabled(ctx context.Context, folderID int, cache *sy
 
 	if cache != nil {
 		if cached, ok := cache.Load(folderID); ok {
-			return cached.(bool)
+			b, _ := cached.(bool)
+			return b
 		}
 	}
 

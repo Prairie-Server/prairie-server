@@ -12,7 +12,7 @@ const (
 	// oshashMinFileSize is the minimum file size required for OSHash (2 * blockSize).
 	oshashMinFileSize = oshashBlockSize * 2
 	// oshashUint64Count is the number of uint64 values in one block.
-	oshashUint64Count = oshashBlockSize / 8
+
 )
 
 // ComputeOSHash computes the OpenSubtitles hash of the file at the given path.
