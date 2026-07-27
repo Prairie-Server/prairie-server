@@ -135,13 +135,19 @@ row-bound envelope rather than by manifest field. Consequently, runtime code
 must use `RuntimeConfigStore`; database JSON-member queries and indexes are not
 supported for `plugin_runtime_configs.config_value`.
 
-Deliberately **not** encrypted (tracked as follow-ups):
+Equality-looked-up secrets use a deterministic blind-index hash rather than
+AES-GCM (randomized ciphertext would break `WHERE … = $1` lookups):
 
-- **Equality-looked-up secrets** — these are matched by exact value
-  (`WHERE … = $1`), and AES-GCM is randomized, so encrypting them would break the
-  lookup. They need a deterministic **blind-index hash** column instead:
-  `api_keys.api_key`, `webhook_sync_connections.webhook_secret`,
-  `jellycompat_sessions.token`, and `watch_together_rooms.join_token`.
+- **`api_keys`** — `api_key_hash` is HMAC-SHA256 of the token under an
+  HKDF-derived key from `SECRET_KEY` (`silo/api-keys-hash/v1`). The plaintext
+  `api_key` column is cleared after backfill; list/admin UIs expose only
+  `api_key_prefix`. The full token is returned once at creation.
+- **Autoscan webhook endpoints** — `secret_hash` (SHA-256) already.
+
+Still tracked as follow-ups for the same hashing treatment:
+`webhook_sync_connections.webhook_secret`, `jellycompat_sessions.token`, and
+`watch_together_rooms.join_token`.
+
 Excluded (not a gap): `plex_sync_connections.*` is a dead table (zero Go
 references); `oauth_completion.token_ciphertext` is already AES-GCM;
 `users.password_hash` and the `*_hash` columns are already hashed.

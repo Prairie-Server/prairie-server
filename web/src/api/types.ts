@@ -4251,7 +4251,10 @@ export interface AdminAPIKey {
   user_id: number;
   username: string;
   label: string;
-  key: string;
+  /** Full credential is only returned on key creation. */
+  key?: string;
+  /** Non-secret prefix for listing existing keys. */
+  key_prefix?: string;
   rate_tier: string;
   created_at: string;
   last_used_at?: string;

@@ -2,7 +2,9 @@ package auth
 
 import (
 	"context"
+	"crypto/hmac"
 	"crypto/rand"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -18,16 +20,24 @@ var (
 	ErrAPIKeyNotFound = errors.New("api key not found")
 )
 
-const apiKeyColumns = `id, user_id, label, api_key, rate_tier, created_at, last_used_at`
+const (
+	// apiKeySelectColumns includes only non-secret fields persisted in DB.
+	apiKeySelectColumns = `id, user_id, label, api_key_prefix, rate_tier, created_at, last_used_at`
+	// apiKeyAuthSelectColumns includes the minimum needed for auth middleware.
+	apiKeyAuthSelectColumns = `id, user_id, rate_tier`
+
+	apiKeyPrefixDisplayLen = 10 // includes "sa_" prefix
+)
 
 // APIKeyRepository provides CRUD operations for the api_keys table.
 type APIKeyRepository struct {
-	pool *pgxpool.Pool
+	pool    *pgxpool.Pool
+	hashKey []byte // nil disables hash storage/lookup and falls back to plaintext
 }
 
 // NewAPIKeyRepository creates a new APIKeyRepository backed by the given pool.
-func NewAPIKeyRepository(pool *pgxpool.Pool) *APIKeyRepository {
-	return &APIKeyRepository{pool: pool}
+func NewAPIKeyRepository(pool *pgxpool.Pool, hashKey []byte) *APIKeyRepository {
+	return &APIKeyRepository{pool: pool, hashKey: hashKey}
 }
 
 // scanAPIKey scans a single row into a *models.APIKey.
@@ -37,7 +47,7 @@ func scanAPIKey(row pgx.Row) (*models.APIKey, error) {
 		&k.ID,
 		&k.UserID,
 		&k.Label,
-		&k.Key,
+		&k.KeyPrefix,
 		&k.RateTier,
 		&k.CreatedAt,
 		&k.LastUsedAt,
@@ -60,7 +70,7 @@ func scanAPIKeys(rows pgx.Rows) ([]*models.APIKey, error) {
 			&k.ID,
 			&k.UserID,
 			&k.Label,
-			&k.Key,
+			&k.KeyPrefix,
 			&k.RateTier,
 			&k.CreatedAt,
 			&k.LastUsedAt,
@@ -74,6 +84,22 @@ func scanAPIKeys(rows pgx.Rows) ([]*models.APIKey, error) {
 		return nil, fmt.Errorf("iterating api key rows: %w", err)
 	}
 	return keys, nil
+}
+
+func apiKeyPrefix(key string) string {
+	if len(key) <= apiKeyPrefixDisplayLen {
+		return key
+	}
+	return key[:apiKeyPrefixDisplayLen]
+}
+
+func (r *APIKeyRepository) hashAPIKey(key string) ([]byte, error) {
+	if len(r.hashKey) == 0 {
+		return nil, fmt.Errorf("api key hashing disabled")
+	}
+	h := hmac.New(sha256.New, r.hashKey)
+	_, _ = h.Write([]byte(key))
+	return h.Sum(nil), nil
 }
 
 // generateAPIKey creates a cryptographically random API key with the "sa_" prefix.
@@ -92,17 +118,38 @@ func (r *APIKeyRepository) Create(ctx context.Context, userID int, label string)
 		return nil, err
 	}
 
-	query := `INSERT INTO api_keys (user_id, label, api_key)
-		VALUES ($1, $2, $3)
-		RETURNING ` + apiKeyColumns
+	prefix := apiKeyPrefix(key)
 
-	row := r.pool.QueryRow(ctx, query, userID, label, key)
-	return scanAPIKey(row)
+	// Prefer deterministic equality-hash storage when enabled, so plaintext
+	// key material can be cleared. If hashing is disabled (e.g., mis-wired
+	// proxy-only nodes), fall back to storing plaintext so auth keeps working.
+	var apiKeyValue interface{} = nil
+	var hashValue []byte
+	if len(r.hashKey) == 0 {
+		apiKeyValue = key
+	} else {
+		hashValue, err = r.hashAPIKey(key)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	query := `INSERT INTO api_keys (user_id, label, api_key, api_key_hash, api_key_prefix)
+		VALUES ($1, $2, $3, $4, $5)
+		RETURNING ` + apiKeySelectColumns
+
+	row := r.pool.QueryRow(ctx, query, userID, label, apiKeyValue, hashValue, prefix)
+	out, scanErr := scanAPIKey(row)
+	if scanErr != nil {
+		return nil, scanErr
+	}
+	out.Key = key
+	return out, nil
 }
 
 // ListByUser returns all API keys belonging to the given user, ordered by creation time.
 func (r *APIKeyRepository) ListByUser(ctx context.Context, userID int) ([]*models.APIKey, error) {
-	query := `SELECT ` + apiKeyColumns + ` FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC`
+	query := `SELECT ` + apiKeySelectColumns + ` FROM api_keys WHERE user_id = $1 ORDER BY created_at DESC`
 	rows, err := r.pool.Query(ctx, query, userID)
 	if err != nil {
 		return nil, fmt.Errorf("listing api keys: %w", err)
@@ -113,8 +160,34 @@ func (r *APIKeyRepository) ListByUser(ctx context.Context, userID int) ([]*model
 
 // GetByKey looks up an API key by its full key string (including "sa_" prefix).
 func (r *APIKeyRepository) GetByKey(ctx context.Context, key string) (*models.APIKey, error) {
-	query := `SELECT ` + apiKeyColumns + ` FROM api_keys WHERE api_key = $1`
-	return scanAPIKey(r.pool.QueryRow(ctx, query, key))
+	// Primary lookup uses deterministic equality-hash. During rollout, we
+	// also fall back to plaintext lookup so legacy keys keep working until the
+	// next backfill.
+	if len(r.hashKey) != 0 {
+		hash, err := r.hashAPIKey(key)
+		if err == nil {
+			query := `SELECT ` + apiKeyAuthSelectColumns + ` FROM api_keys WHERE api_key_hash = $1`
+			var k models.APIKey
+			err := r.pool.QueryRow(ctx, query, hash).Scan(&k.ID, &k.UserID, &k.RateTier)
+			if err == nil {
+				return &k, nil
+			}
+			if err != nil && !errors.Is(err, pgx.ErrNoRows) {
+				return nil, fmt.Errorf("lookup api key by hash: %w", err)
+			}
+		}
+	}
+
+	query := `SELECT ` + apiKeyAuthSelectColumns + ` FROM api_keys WHERE api_key = $1`
+	var k models.APIKey
+	err := r.pool.QueryRow(ctx, query, key).Scan(&k.ID, &k.UserID, &k.RateTier)
+	if err != nil {
+		if errors.Is(err, pgx.ErrNoRows) {
+			return nil, ErrAPIKeyNotFound
+		}
+		return nil, fmt.Errorf("lookup api key: %w", err)
+	}
+	return &k, nil
 }
 
 // Delete removes an API key owned by the given user.
@@ -149,7 +222,7 @@ func (r *APIKeyRepository) ListByUserAdmin(ctx context.Context, userID int) ([]*
 // ListAll returns all API keys across all users, ordered by creation time descending.
 // Each entry includes the owning user's username.
 func (r *APIKeyRepository) ListAll(ctx context.Context) ([]*models.APIKeyWithUser, error) {
-	query := `SELECT ak.id, ak.user_id, u.username, ak.label, ak.api_key, ak.rate_tier, ak.created_at, ak.last_used_at
+	query := `SELECT ak.id, ak.user_id, u.username, ak.label, ak.api_key_prefix, ak.rate_tier, ak.created_at, ak.last_used_at
 		FROM api_keys ak
 		JOIN users u ON u.id = ak.user_id
 		ORDER BY ak.created_at DESC`
@@ -167,7 +240,7 @@ func (r *APIKeyRepository) ListAll(ctx context.Context) ([]*models.APIKeyWithUse
 			&k.UserID,
 			&k.Username,
 			&k.Label,
-			&k.Key,
+			&k.KeyPrefix,
 			&k.RateTier,
 			&k.CreatedAt,
 			&k.LastUsedAt,
@@ -185,7 +258,7 @@ func (r *APIKeyRepository) ListAll(ctx context.Context) ([]*models.APIKeyWithUse
 
 // GetByID looks up an API key by its ID.
 func (r *APIKeyRepository) GetByID(ctx context.Context, id int64) (*models.APIKey, error) {
-	query := `SELECT ` + apiKeyColumns + ` FROM api_keys WHERE id = $1`
+	query := `SELECT ` + apiKeySelectColumns + ` FROM api_keys WHERE id = $1`
 	return scanAPIKey(r.pool.QueryRow(ctx, query, id))
 }
 
@@ -208,4 +281,76 @@ func (r *APIKeyRepository) UpdateLastUsed(ctx context.Context, id int64) error {
 		return fmt.Errorf("updating api key last_used_at: %w", err)
 	}
 	return nil
+}
+
+// BackfillPlaintextToHash converts legacy plaintext api_keys rows into the
+// deterministic api_key_hash + api_key_prefix representation and clears the
+// plaintext api_key value.
+//
+// Best-effort: rows that fail to update are left untouched and the backfill
+// continues. Callers should treat the returned count as a lower bound.
+func (r *APIKeyRepository) BackfillPlaintextToHash(ctx context.Context, batchSize int) (int, error) {
+	if len(r.hashKey) == 0 {
+		// Hashing disabled: nothing we can safely do.
+		return 0, nil
+	}
+	if batchSize <= 0 {
+		batchSize = 500
+	}
+
+	total := 0
+	for {
+		rows, err := r.pool.Query(
+			ctx,
+			`SELECT id, api_key
+			FROM api_keys
+			WHERE api_key IS NOT NULL
+			  AND (api_key_hash IS NULL OR api_key_prefix IS NULL)
+			LIMIT $1`,
+			batchSize,
+		)
+		if err != nil {
+			return total, fmt.Errorf("api key backfill: select: %w", err)
+		}
+
+		var any bool
+		for rows.Next() {
+			any = true
+			var id int64
+			var apiKey string
+			if err := rows.Scan(&id, &apiKey); err != nil {
+				continue
+			}
+
+			hash, hErr := r.hashAPIKey(apiKey)
+			if hErr != nil {
+				continue
+			}
+
+			prefix := apiKeyPrefix(apiKey)
+			tag, uErr := r.pool.Exec(
+				ctx,
+				`UPDATE api_keys
+				 SET api_key_hash = $1,
+				     api_key_prefix = $2,
+				     api_key = NULL
+				 WHERE id = $3 AND api_key IS NOT NULL`,
+				hash, prefix, id,
+			)
+			if uErr != nil {
+				continue
+			}
+			if tag.RowsAffected() > 0 {
+				total++
+			}
+		}
+		if err := rows.Err(); err != nil {
+			rows.Close()
+			return total, fmt.Errorf("api key backfill: iterate: %w", err)
+		}
+		rows.Close()
+		if !any {
+			return total, nil
+		}
+	}
 }
