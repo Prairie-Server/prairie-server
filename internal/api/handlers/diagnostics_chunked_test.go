@@ -103,7 +103,7 @@ func TestDiagnosticsChunkedUploadHappyPath(t *testing.T) {
 	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
 		t.Fatalf("decode complete response: %v", err)
 	}
-	if resp.ShortID != "SILO-ABCDEF123456" {
+	if resp.ShortID != "PRAIRIE-ABCDEF123456" {
 		t.Fatalf("short_id = %q", resp.ShortID)
 	}
 	if service.ingestCalls != 1 {
