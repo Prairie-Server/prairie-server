@@ -564,3 +564,18 @@ func TestTranscodesAudioMatchesFFmpegDefault(t *testing.T) {
 		}
 	}
 }
+
+func TestAppendAudioArgs_TrueHDForcesStereo(t *testing.T) {
+	args := appendAudioArgs(nil, TranscodeOpts{
+		TargetCodecAudio:    "aac",
+		TargetAudioChannels: 6,
+		SourceAudioCodec:    "truehd",
+	})
+	joined := strings.Join(args, " ")
+	if !strings.Contains(joined, "-ac 2") {
+		t.Fatalf("TrueHD AAC should force stereo, got %s", joined)
+	}
+	if strings.Contains(joined, "-ac 6") {
+		t.Fatalf("TrueHD AAC must not request 5.1, got %s", joined)
+	}
+}

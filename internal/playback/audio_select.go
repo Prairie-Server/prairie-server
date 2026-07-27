@@ -123,3 +123,70 @@ func BrowserSupportsAudioCodec(codec string) bool {
 		return false
 	}
 }
+
+// IsFragileLosslessAudioCodec reports codecs whose software decode path is
+// unreliable under HLS remux/transcode — notably TrueHD/MLP (quant_step_size
+// larger than huff_lsbs warnings that stall AAC muxing).
+func IsFragileLosslessAudioCodec(codec string) bool {
+	c := strings.ToLower(strings.TrimSpace(codec))
+	if c == "" {
+		return false
+	}
+	return strings.Contains(c, "truehd") || strings.Contains(c, "mlp")
+}
+
+// PreferTranscodeFriendlyAudioTrack picks a more reliable source track when
+// re-encoding fragile lossless codecs (TrueHD/MLP) to AAC. Prefers a
+// same-language AAC/EAC3/AC3 companion when present; otherwise returns the
+// originally selected index so the caller can still force a stereo downmix.
+func PreferTranscodeFriendlyAudioTrack(tracks []models.AudioTrack, selected int) int {
+	if len(tracks) == 0 {
+		return selected
+	}
+	if selected < 0 || selected >= len(tracks) {
+		// Preserve the caller's ordinal when the inventory is incomplete —
+		// remapping an out-of-range selection to 0 would silently change the
+		// stream the client asked for.
+		return selected
+	}
+	if !IsFragileLosslessAudioCodec(tracks[selected].Codec) {
+		return selected
+	}
+
+	lang := tracks[selected].Language
+	preferOrder := []string{"aac", "eac3", "ac3", "mp3", "opus"}
+
+	pick := func(requireLang bool) int {
+		for _, want := range preferOrder {
+			for i, t := range tracks {
+				if i == selected {
+					continue
+				}
+				if requireLang && lang != "" && t.Language != "" && !langMatch(t.Language, lang) {
+					continue
+				}
+				if strings.EqualFold(strings.TrimSpace(t.Codec), want) {
+					return i
+				}
+			}
+		}
+		return -1
+	}
+
+	if idx := pick(true); idx >= 0 {
+		return idx
+	}
+	if idx := pick(false); idx >= 0 {
+		return idx
+	}
+	return selected
+}
+
+// AudioTrackCodecAt returns the codec string for tracks[index], or empty when
+// the inventory is missing / out of range.
+func AudioTrackCodecAt(tracks []models.AudioTrack, index int) string {
+	if index < 0 || index >= len(tracks) {
+		return ""
+	}
+	return tracks[index].Codec
+}

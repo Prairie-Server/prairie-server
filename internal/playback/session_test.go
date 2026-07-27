@@ -1296,6 +1296,32 @@ func TestSessionManager_HasActiveSessions(t *testing.T) {
 	}
 }
 
+func TestSessionManager_CleanInactive_PreservesActiveTranscode(t *testing.T) {
+	sm := playback.NewSessionManager(0, 0)
+
+	session, err := sm.StartSession(1, "prof", 100, playback.PlayTranscode, true)
+	if err != nil {
+		t.Fatalf("StartSession: %v", err)
+	}
+
+	alive := true
+	sm.SetKeepAliveCheck(func(sessionID string) bool {
+		return alive && sessionID == session.ID
+	})
+
+	if expired := sm.CleanInactive(0, 0); len(expired) != 0 {
+		t.Fatalf("CleanInactive removed %d sessions while encode keep-alive was set, want 0", len(expired))
+	}
+	if _, err := sm.GetSession(session.ID); err != nil {
+		t.Fatalf("session should survive keep-alive CleanInactive: %v", err)
+	}
+
+	alive = false
+	if expired := sm.CleanInactive(0, 0); len(expired) != 1 {
+		t.Fatalf("CleanInactive removed %d sessions after keep-alive cleared, want 1", len(expired))
+	}
+}
+
 func TestSessionManager_CleanInactive_TriggersExpirationHook(t *testing.T) {
 	sm := playback.NewSessionManager(0, 0)
 

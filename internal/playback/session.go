@@ -159,6 +159,11 @@ func ClientInfoFromContext(ctx context.Context) ClientInfo {
 	return info
 }
 
+// SessionKeepAliveFunc reports whether a session should be treated as live
+// even without recent client heartbeats — e.g. a local ffmpeg encode that is
+// still starting and has not produced a first segment yet.
+type SessionKeepAliveFunc func(sessionID string) bool
+
 // SessionManager tracks active playback sessions and enforces stream limits.
 type SessionManager struct {
 	sessions         map[string]*Session
@@ -170,6 +175,7 @@ type SessionManager struct {
 	activeGrace      time.Duration
 	pausedGrace      time.Duration
 	expireHook       func(*Session)
+	keepAliveCheck   SessionKeepAliveFunc
 }
 
 // SessionLimits stores per-user admission limits. Zero values mean unlimited.
@@ -282,6 +288,16 @@ func (m *SessionManager) SetExpirationHook(fn func(*Session)) {
 	m.mu.Lock()
 	defer m.mu.Unlock()
 	m.expireHook = fn
+}
+
+// SetKeepAliveCheck registers a predicate that preserves sessions from
+// inactivity expiry (and keeps them counting toward limits) while an encode
+// job for that session is actively running. Used so a slow-starting
+// TrueHD→AAC / 4K NVENC job is not reaped before segment 0 exists.
+func (m *SessionManager) SetKeepAliveCheck(fn SessionKeepAliveFunc) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.keepAliveCheck = fn
 }
 
 func normalizeClientMetadataValue(value string, maxLen int) string {
@@ -1266,8 +1282,9 @@ func (m *SessionManager) CleanStale() []*Session {
 }
 
 // CleanInactive removes sessions whose last playback activity exceeds the
-// provided grace period. Sessions with an active media transport request are
-// preserved even if they have not emitted a recent heartbeat yet.
+// provided grace period. Sessions with an active media transport request, or
+// sessions whose keep-alive check reports an in-flight encode, are preserved
+// even if they have not emitted a recent client heartbeat yet.
 func (m *SessionManager) CleanInactive(activeIdle, pausedIdle time.Duration) []*Session {
 	m.mu.Lock()
 
@@ -1275,6 +1292,9 @@ func (m *SessionManager) CleanInactive(activeIdle, pausedIdle time.Duration) []*
 	var expired []*Session
 	for id, s := range m.sessions {
 		if s.activeTransportCount > 0 {
+			continue
+		}
+		if m.sessionHasKeepAliveLocked(id) {
 			continue
 		}
 		if m.sessionIsInactiveLocked(s, now, activeIdle, pausedIdle) {
@@ -1307,7 +1327,17 @@ func (m *SessionManager) countsTowardLimitsLocked(s *Session, now time.Time) boo
 	if s.activeTransportCount > 0 {
 		return true
 	}
+	if m.sessionHasKeepAliveLocked(s.ID) {
+		return true
+	}
 	return !m.sessionIsInactiveLocked(s, now, m.activeGrace, m.pausedGrace)
+}
+
+func (m *SessionManager) sessionHasKeepAliveLocked(sessionID string) bool {
+	if m.keepAliveCheck == nil || sessionID == "" {
+		return false
+	}
+	return m.keepAliveCheck(sessionID)
 }
 
 func (m *SessionManager) sessionIsInactiveLocked(s *Session, now time.Time, activeIdle, pausedIdle time.Duration) bool {
