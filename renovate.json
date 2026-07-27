@@ -1,8 +1,18 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["github>prairie-server/prairie-server//renovate-presets/default"],
-  "enabledManagers": ["github-actions", "gomod", "npm", "cargo"],
-  "postUpdateOptions": ["gomodTidy"],
+  "extends": [
+    "github>prairie-server/prairie-server//renovate-presets/default"
+  ],
+  "forkProcessing": "enabled",
+  "enabledManagers": [
+    "github-actions",
+    "gomod",
+    "npm",
+    "cargo"
+  ],
+  "postUpdateOptions": [
+    "gomodTidy"
+  ],
   "ignorePaths": [
     "**/node_modules/**",
     "web/vendor/**",
@@ -11,7 +21,9 @@
   "packageRules": [
     {
       "description": "typescript-eslint peer range is still <6.1; stay on TypeScript 6.0.x until that catches up",
-      "matchPackageNames": ["typescript"],
+      "matchPackageNames": [
+        "typescript"
+      ],
       "allowedVersions": "<6.1"
     }
   ]
