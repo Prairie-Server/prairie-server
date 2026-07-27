@@ -3,6 +3,7 @@ package metadata
 import (
 	"context"
 	"errors"
+	"sync"
 	"testing"
 	"time"
 
@@ -159,6 +160,7 @@ func (f *fakeEpisodeStillUpdater) UpdateStillIfSourceMatches(_ context.Context, 
 }
 
 type fakeItemArtworkUpdater struct {
+	mu         sync.Mutex
 	updated    bool
 	contentID  string
 	imageType  string
@@ -168,6 +170,8 @@ type fakeItemArtworkUpdater struct {
 }
 
 func (f *fakeItemArtworkUpdater) UpdateArtworkIfSourceMatches(_ context.Context, contentID, imageType, sourcePath, cachedPath, thumbhash string) (bool, error) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	f.contentID = contentID
 	f.imageType = imageType
 	f.sourcePath = sourcePath
@@ -521,14 +525,16 @@ func TestImageCacheProcessorRunUntilIdleDrainsNewWorkAddedDuringRun(t *testing.T
 	if err != nil {
 		t.Fatalf("RunUntilIdle() error = %v", err)
 	}
-	if stats.Batches != 4 {
-		t.Fatalf("Batches = %d, want 4", stats.Batches)
-	}
 	if stats.EnqueuedExisting != 1 || stats.Claimed != 2 || stats.Succeeded != 2 {
 		t.Fatalf("stats = %+v, want enqueued=1 claimed=2 succeeded=2", stats)
 	}
-	if jobs.enqueueCalls != 2 || jobs.claimCalls != 4 {
-		t.Fatalf("calls enqueue=%d claim=%d, want enqueue=2 claim=4", jobs.enqueueCalls, jobs.claimCalls)
+	if jobs.enqueueCalls != 2 {
+		t.Fatalf("enqueueCalls=%d, want 2", jobs.enqueueCalls)
+	}
+	// Rolling pool refills while work is in flight, so claim count is at least
+	// the old batch-barrier sequence (4) and may be higher.
+	if jobs.claimCalls < 4 {
+		t.Fatalf("claimCalls=%d, want >= 4", jobs.claimCalls)
 	}
 	if len(jobs.succeededIDs) != 2 || jobs.succeededIDs[0] != 10 || jobs.succeededIDs[1] != 11 {
 		t.Fatalf("succeededIDs = %#v, want [10 11]", jobs.succeededIDs)
@@ -607,6 +613,236 @@ func TestImageCacheProcessorReportsSucceededOverTotalProgress(t *testing.T) {
 	}
 	if message != "Cached 150/287 (queued 125, running 12, failed 0)" {
 		t.Fatalf("message = %q", message)
+	}
+}
+
+// queueImageCacheJobs is a ClaimDue-backed queue that tracks in-flight and
+// terminal transitions for rolling-pool concurrency tests.
+type queueImageCacheJobs struct {
+	mu          sync.Mutex
+	queue       []*models.MetadataImageCacheJob
+	inFlight    int
+	maxInFlight int
+	terminal    map[int64]string // id -> succeeded|failed|requeued
+	claimLimits []int
+	requeuedIDs []int64
+}
+
+func (q *queueImageCacheJobs) ClaimDue(_ context.Context, _ string, limit int) ([]*models.MetadataImageCacheJob, error) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	q.claimLimits = append(q.claimLimits, limit)
+	if limit <= 0 || len(q.queue) == 0 {
+		return nil, nil
+	}
+	n := limit
+	if n > len(q.queue) {
+		n = len(q.queue)
+	}
+	out := q.queue[:n]
+	q.queue = q.queue[n:]
+	q.inFlight += len(out)
+	if q.inFlight > q.maxInFlight {
+		q.maxInFlight = q.inFlight
+	}
+	return out, nil
+}
+
+func (q *queueImageCacheJobs) markTerminal(id int64, status string) {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	if q.terminal == nil {
+		q.terminal = make(map[int64]string)
+	}
+	q.terminal[id] = status
+	if q.inFlight > 0 {
+		q.inFlight--
+	}
+}
+
+func (q *queueImageCacheJobs) MarkSucceeded(_ context.Context, id int64, _ string) error {
+	q.markTerminal(id, "succeeded")
+	return nil
+}
+
+func (q *queueImageCacheJobs) MarkFailed(_ context.Context, id int64, _ int, _ string, _ string) error {
+	q.markTerminal(id, "failed")
+	return nil
+}
+
+func (q *queueImageCacheJobs) RequeueClaimed(_ context.Context, ids []int64, _ string) error {
+	q.mu.Lock()
+	defer q.mu.Unlock()
+	q.requeuedIDs = append(q.requeuedIDs, ids...)
+	if q.terminal == nil {
+		q.terminal = make(map[int64]string)
+	}
+	for _, id := range ids {
+		q.terminal[id] = "requeued"
+		if q.inFlight > 0 {
+			q.inFlight--
+		}
+	}
+	return nil
+}
+
+func (q *queueImageCacheJobs) CurrentTargetSourcePath(_ context.Context, job *models.MetadataImageCacheJob) (string, error) {
+	return job.SourcePath, nil
+}
+
+func (q *queueImageCacheJobs) EnqueueExistingProviderArtwork(context.Context, int) (int, error) {
+	return 0, nil
+}
+
+func (q *queueImageCacheJobs) DeleteSucceededBefore(context.Context, time.Time, int) (int, error) {
+	return 0, nil
+}
+
+func (q *queueImageCacheJobs) StatusCounts(context.Context) (ImageCacheJobStatusCounts, error) {
+	return ImageCacheJobStatusCounts{}, nil
+}
+
+func (q *queueImageCacheJobs) Heartbeat(context.Context, int64, string) (bool, error) {
+	return true, nil
+}
+
+type slowImageCacher struct {
+	delay time.Duration
+	gate  chan struct{} // optional: block until closed
+}
+
+func (s *slowImageCacher) CacheImage(ctx context.Context, req CacheImageRequest) (*CacheImageResult, error) {
+	if s.gate != nil {
+		select {
+		case <-s.gate:
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+	if s.delay > 0 {
+		select {
+		case <-time.After(s.delay):
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		}
+	}
+	return &CacheImageResult{
+		BasePath:  "tmdb/series/" + req.ContentID + "/poster",
+		Ext:       ".webp",
+		Thumbhash: "t",
+	}, nil
+}
+
+func TestImageCacheProcessorRollingPoolCapsInFlightAndTerminatesOnce(t *testing.T) {
+	const concurrency = 3
+	const jobCount = 12
+	queue := make([]*models.MetadataImageCacheJob, 0, jobCount)
+	for i := 1; i <= jobCount; i++ {
+		queue = append(queue, &models.MetadataImageCacheJob{
+			ID:                int64(i),
+			TargetType:        ImageCacheTargetItem,
+			TargetContentID:   "series-1",
+			SourcePath:        "https://example.test/poster.jpg",
+			ProviderID:        "tmdb",
+			ProviderContentID: "1396",
+			ContentType:       "series",
+			ImageType:         ImageCacheImagePoster,
+			LockedBy:          "test-worker",
+		})
+	}
+	jobs := &queueImageCacheJobs{queue: queue}
+	cacher := &slowImageCacher{delay: 20 * time.Millisecond}
+	items := &fakeItemArtworkUpdater{updated: true}
+	processor := NewImageCacheProcessorWithTargets(jobs, cacher, nil, ImageCacheProcessorTargets{Items: items})
+	// Skip discovery so the run ends when the queue drains.
+	processor.lastDiscovery = time.Now()
+
+	stats, err := processor.RunUntilIdle(context.Background(), "test-worker", 1000, concurrency, time.Minute, nil)
+	if err != nil {
+		t.Fatalf("RunUntilIdle() error = %v", err)
+	}
+	if stats.Claimed != jobCount || stats.Succeeded != jobCount {
+		t.Fatalf("stats = %+v, want claimed=%d succeeded=%d", stats, jobCount, jobCount)
+	}
+	if stats.MaxInFlight > concurrency {
+		t.Fatalf("MaxInFlight = %d, want <= %d", stats.MaxInFlight, concurrency)
+	}
+	jobs.mu.Lock()
+	defer jobs.mu.Unlock()
+	if jobs.maxInFlight > concurrency {
+		t.Fatalf("observed maxInFlight = %d, want <= %d", jobs.maxInFlight, concurrency)
+	}
+	if len(jobs.terminal) != jobCount {
+		t.Fatalf("terminal count = %d, want %d: %#v", len(jobs.terminal), jobCount, jobs.terminal)
+	}
+	for id, status := range jobs.terminal {
+		if status != "succeeded" {
+			t.Fatalf("job %d terminal status = %q, want succeeded", id, status)
+		}
+	}
+	for _, limit := range jobs.claimLimits {
+		if limit > concurrency {
+			t.Fatalf("ClaimDue limit %d exceeds concurrency %d", limit, concurrency)
+		}
+	}
+}
+
+func TestImageCacheProcessorRollingPoolRequeuesUnstartedOnCancel(t *testing.T) {
+	const concurrency = 2
+	gate := make(chan struct{})
+	queue := make([]*models.MetadataImageCacheJob, 0, 6)
+	for i := 1; i <= 6; i++ {
+		queue = append(queue, &models.MetadataImageCacheJob{
+			ID:                int64(i),
+			TargetType:        ImageCacheTargetItem,
+			TargetContentID:   "series-1",
+			SourcePath:        "https://example.test/poster.jpg",
+			ProviderID:        "tmdb",
+			ProviderContentID: "1396",
+			ContentType:       "series",
+			ImageType:         ImageCacheImagePoster,
+			LockedBy:          "test-worker",
+		})
+	}
+	jobs := &queueImageCacheJobs{queue: queue}
+	cacher := &slowImageCacher{gate: gate}
+	items := &fakeItemArtworkUpdater{updated: true}
+	processor := NewImageCacheProcessorWithTargets(jobs, cacher, nil, ImageCacheProcessorTargets{Items: items})
+	processor.lastDiscovery = time.Now()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	done := make(chan ImageCacheRunStats, 1)
+	go func() {
+		stats, _ := processor.RunUntilIdle(ctx, "test-worker", 1000, concurrency, time.Minute, nil)
+		done <- stats
+	}()
+
+	// Let the pool claim and start workers, then cancel before unblocking cache.
+	time.Sleep(50 * time.Millisecond)
+	cancel()
+	close(gate) // unblock any in-flight CacheImage calls
+
+	stats := <-done
+	jobs.mu.Lock()
+	defer jobs.mu.Unlock()
+	if stats.Claimed == 0 {
+		t.Fatal("expected some jobs claimed before cancel")
+	}
+	for id, status := range jobs.terminal {
+		if status != "succeeded" && status != "failed" && status != "requeued" {
+			t.Fatalf("job %d unexpected terminal %q", id, status)
+		}
+	}
+	// Every claimed job must appear exactly once in terminal (succeeded/failed/requeued).
+	if len(jobs.terminal) != stats.Claimed {
+		t.Fatalf("terminal=%d claimed=%d requeued=%v terminal=%v", len(jobs.terminal), stats.Claimed, jobs.requeuedIDs, jobs.terminal)
+	}
+	seen := map[int64]int{}
+	for id := range jobs.terminal {
+		seen[id]++
+		if seen[id] != 1 {
+			t.Fatalf("job %d terminated more than once", id)
+		}
 	}
 }
 
