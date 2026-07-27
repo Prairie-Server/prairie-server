@@ -68,7 +68,7 @@ describe("webPPNGSibling", () => {
 describe("artworkCandidates", () => {
   beforeEach(() => {
     resetImageFormatsCacheForTests();
-    localStorage.setItem("prairie.imageFormats", "avif,webp,png");
+    localStorage.setItem("prairie.imageFormats.v2", "avif,webp,png");
   });
 
   it("orders AVIF → WebP → PNG for WebP artwork", () => {

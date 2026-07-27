@@ -7,7 +7,7 @@ import DetailHero from "./DetailHero";
 describe("DetailHero artwork revisions", () => {
   beforeEach(() => {
     resetImageFormatsCacheForTests();
-    localStorage.setItem("prairie.imageFormats", "avif,webp,png");
+    localStorage.setItem("prairie.imageFormats.v2", "avif,webp,png");
   });
 
   it("treats a changed poster URL as unloaded until that revision finishes loading", () => {

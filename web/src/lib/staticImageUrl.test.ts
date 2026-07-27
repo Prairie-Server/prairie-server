@@ -28,7 +28,7 @@ describe("staticRasterFormats", () => {
 describe("staticRasterCandidates", () => {
   beforeEach(() => {
     resetImageFormatsCacheForTests();
-    localStorage.setItem("prairie.imageFormats", "avif,webp,png");
+    localStorage.setItem("prairie.imageFormats.v2", "avif,webp,png");
   });
 
   it("orders AVIF → WebP → PNG", () => {
@@ -49,7 +49,7 @@ describe("staticRasterCandidates", () => {
 
   it("respects a WebP-first capability preference", () => {
     resetImageFormatsCacheForTests();
-    localStorage.setItem("prairie.imageFormats", "webp,png");
+    localStorage.setItem("prairie.imageFormats.v2", "webp,png");
     expect(staticRasterCandidates("/images/collection-templates/trending.webp")).toEqual([
       "/images/collection-templates/trending.webp",
       "/images/collection-templates/trending.png",
