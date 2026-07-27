@@ -428,11 +428,12 @@ func (s *PgStore) UpsertPrograms(ctx context.Context, sourceID string, programs 
 		if p.SourceID == "" {
 			p.SourceID = sourceID
 		}
+		genres := nonNilStringSlice(p.Genres)
 		_, err := tx.Exec(ctx, `
 			INSERT INTO livetv_programs (id, channel_id, source_id, series_id, external_id, start_at, stop_at, title, subtitle, description, season, episode, genres, image_url, is_new, is_live)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
 			p.ID, p.ChannelID, p.SourceID, p.SeriesID, p.ExternalID, p.Start, p.Stop, p.Title, p.Subtitle,
-			p.Description, p.Season, p.Episode, p.Genres, p.ImageURL, p.IsNew, p.IsLive)
+			p.Description, p.Season, p.Episode, genres, p.ImageURL, p.IsNew, p.IsLive)
 		if err != nil {
 			return fmt.Errorf("upsert programs: insert: %w", err)
 		}
@@ -847,6 +848,15 @@ func valueOrEmpty(v *string) string {
 		return ""
 	}
 	return *v
+}
+
+// nonNilStringSlice maps nil to an empty slice so NOT NULL text[] columns
+// (and JSON responses) never see a SQL/JSON null.
+func nonNilStringSlice(values []string) []string {
+	if values == nil {
+		return []string{}
+	}
+	return values
 }
 
 func channelKey(number, callsign, streamURL string) string {

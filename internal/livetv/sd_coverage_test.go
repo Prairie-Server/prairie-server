@@ -173,7 +173,7 @@ func TestSchedulesDirectCoverageBranches(t *testing.T) {
 		if len(programs) < 2 {
 			t.Fatalf("programs = %+v", programs)
 		}
-		var sawLive, sawFallbackTitle bool
+		var sawLive, sawFallbackTitle, sawEmptyGenres bool
 		for _, p := range programs {
 			if p.IsLive {
 				sawLive = true
@@ -181,9 +181,15 @@ func TestSchedulesDirectCoverageBranches(t *testing.T) {
 			if p.Title == "EP000000990099" {
 				sawFallbackTitle = true
 			}
+			if p.Title == "Movie" {
+				if p.Genres == nil {
+					t.Fatalf("Movie genres must be non-nil empty slice, got nil")
+				}
+				sawEmptyGenres = true
+			}
 		}
-		if !sawLive || !sawFallbackTitle {
-			t.Fatalf("expected live + fallback title in %+v", programs)
+		if !sawLive || !sawFallbackTitle || !sawEmptyGenres {
+			t.Fatalf("expected live + fallback title + empty genres in %+v", programs)
 		}
 	})
 
