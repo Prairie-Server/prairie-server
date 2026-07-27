@@ -301,8 +301,8 @@ jobs:
           set -euo pipefail
           mapfile -t pkgs < <(grep -vE '^\s*(#|$)' .github/coverage-packages.txt || true)
           export COVER_PACKAGES="${pkgs[*]}"
-          # PgStore (DB) lives in store.go and is impractical to unit-test here.
-          export COVER_EXCLUDE_FILE_REGEX='(^|/)store\.go$'
+          # PgStore / pg artwork index (DB) are impractical to unit-test here.
+          export COVER_EXCLUDE_FILE_REGEX='(^|/)(store|artwork_index_pg)\.go$'
           chmod +x scripts/check-go-coverage.sh
           ./scripts/check-go-coverage.sh coverage.out "${COVER_MIN}"
 
