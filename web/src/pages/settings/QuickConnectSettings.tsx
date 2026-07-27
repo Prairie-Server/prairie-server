@@ -99,8 +99,8 @@ export default function QuickConnectSettings() {
       <div className="space-y-2">
         <h2 className="text-2xl font-semibold tracking-tight">Quick Connect</h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Approve sign-in for another Prairie device without typing a password there. Enter the
-          code shown on the TV, Roku, Smart TV, or web login screen.
+          Approve sign-in for another Prairie device without typing a password there. Enter the code
+          shown on the TV, Roku, Smart TV, or web login screen.
         </p>
       </div>
 
@@ -197,7 +197,9 @@ export default function QuickConnectSettings() {
         description="Any Prairie client that shows a Quick Connect code can be approved here."
       >
         <ol className="text-muted-foreground list-decimal space-y-2 pl-5 text-sm leading-relaxed">
-          <li>On the other device, choose Quick Connect (or Show QR code) on the sign-in screen.</li>
+          <li>
+            On the other device, choose Quick Connect (or Show QR code) on the sign-in screen.
+          </li>
           <li>Enter the displayed code here, confirm the match phrase, and approve.</li>
           <li>The other device finishes signing in automatically.</li>
         </ol>
