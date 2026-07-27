@@ -11,6 +11,7 @@ import {
   pickNowNext,
   progressFraction,
 } from "@/lib/liveTVGuide";
+import { buildLiveWatchHref } from "@/lib/liveTVWatch";
 
 /**
  * Home-row teaser for currently airing Live TV programmes.
@@ -85,7 +86,7 @@ export default function LiveTVOnNowRow() {
           return (
             <Link
               key={channel.id}
-              to={`/livetv?channel=${encodeURIComponent(channel.id)}&watch=1`}
+              to={buildLiveWatchHref(channel.id, "/")}
               className="group block w-[130px] sm:w-[150px] lg:w-[178px]"
             >
               <div className="bg-muted relative aspect-[2/3] overflow-hidden rounded-lg">

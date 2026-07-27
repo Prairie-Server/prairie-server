@@ -34,7 +34,7 @@ for arg in "$@"; do
 done
 if [ -n "$outdir" ]; then
   mkdir -p "$outdir"
-  printf '#EXTM3U\n' > "$outdir/index.m3u8"
+  printf '#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:2\n#EXTINF:1.0,\nseg_00000.ts\n' > "$outdir/index.m3u8"
   printf 'seg' > "$outdir/seg_00000.ts"
 fi
 if [ -n "$out" ] && [ -z "$outdir" ]; then

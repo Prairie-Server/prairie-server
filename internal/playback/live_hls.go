@@ -1,6 +1,7 @@
 package playback
 
 import (
+	"bytes"
 	"context"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"sync"
 	"syscall"
 	"time"
@@ -54,7 +56,9 @@ func StartLiveHLS(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession, er
 	}
 	seg := opts.SegmentSeconds
 	if seg <= 0 {
-		seg = 2
+		// 1s segments get the first playlist entry out faster than the old 2s
+		// default — cold tune latency is dominated by waiting for segment 0.
+		seg = 1
 	}
 	listSize := opts.ListSize
 	if listSize <= 0 {
@@ -130,8 +134,9 @@ func StartLiveHLS(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession, er
 		close(session.done)
 	}()
 
-	// Wait briefly for the playlist to appear so clients don't 404 immediately.
-	deadline := time.Now().Add(8 * time.Second)
+	// Block until the playlist lists at least one segment. Returning earlier
+	// caused clients to GET index.m3u8 → 404 → hls.js manifestLoadError.
+	deadline := time.Now().Add(20 * time.Second)
 	for time.Now().Before(deadline) {
 		select {
 		case <-session.done:
@@ -145,13 +150,41 @@ func StartLiveHLS(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession, er
 			return nil, err
 		default:
 		}
-		if st, err := os.Stat(playlist); err == nil && st.Size() > 0 {
+		if liveHLSPlaylistReady(playlist) {
 			return session, nil
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
-	// Soft-ready: process is still running; playlist may appear on first segments.
-	return session, nil
+	_ = session.Close()
+	return nil, errors.New("live hls playlist not ready within timeout")
+}
+
+// liveHLSPlaylistReady reports whether the HLS playlist is safe for clients to
+// load: non-empty and either listing a segment (#EXTINF) or accompanied by a
+// non-empty .ts segment file in the same directory.
+func liveHLSPlaylistReady(playlist string) bool {
+	data, err := os.ReadFile(playlist)
+	if err != nil || len(data) == 0 {
+		return false
+	}
+	if bytes.Contains(data, []byte("#EXTINF")) {
+		return true
+	}
+	dir := filepath.Dir(playlist)
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return false
+	}
+	for _, e := range entries {
+		if e.IsDir() || !strings.HasSuffix(strings.ToLower(e.Name()), ".ts") {
+			continue
+		}
+		info, infoErr := e.Info()
+		if infoErr == nil && info.Size() > 0 {
+			return true
+		}
+	}
+	return false
 }
 
 // Err returns a non-nil error if ffmpeg exited unexpectedly.
