@@ -32,11 +32,16 @@ function resolveStreamUrl(streamUrl: string): string {
   return new URL(streamUrl, window.location.origin).toString();
 }
 
-function withTokenQuery(url: string): string {
+function withMediaAuthQuery(url: string): string {
+  const params = new URLSearchParams();
   const token = getAccessToken();
-  if (!token) return url;
+  if (token) params.set("token", token);
+  const profileId = getProfileId();
+  if (profileId) params.set("profile_id", profileId);
+  const encoded = params.toString();
+  if (!encoded) return url;
   const separator = url.includes("?") ? "&" : "?";
-  return `${url}${separator}token=${encodeURIComponent(token)}`;
+  return `${url}${separator}${encoded}`;
 }
 
 /**
@@ -66,7 +71,7 @@ export function LiveTVPlayer({
     const isHLS = transport === "hls" || url.includes(".m3u8");
 
     if (isHLS) {
-      const playUrl = withTokenQuery(url);
+      const playUrl = withMediaAuthQuery(url);
       if (!Hls.isSupported()) {
         // Safari can play HLS natively but cannot attach auth headers; require
         // hls.js (MSE) so X-Profile-Id reaches RequireProfile.
