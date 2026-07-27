@@ -47,18 +47,44 @@ export function webPPNGSibling(objectPath: string | null | undefined): string {
 
 /** True when rewriting the path would invalidate a cloud object signature. */
 export function isSignedArtworkURL(objectPath: string): boolean {
-  return /[?&](X-Amz-Signature|X-Goog-Signature|Signature|sig)=/i.test(objectPath);
+  // AWS SigV4, GCS, generic Signature/sig, and Cloudflare WAF token (?verify=).
+  return /[?&](X-Amz-Signature|X-Goog-Signature|Signature|sig|verify)=/i.test(objectPath);
 }
+
+export type ArtworkFormatSources = {
+  /** Canonical artwork URL (typically .webp). */
+  src?: string | null;
+  /** Pre-signed AVIF sibling from the API (preferred when present). */
+  avif?: string | null;
+  /** Pre-signed PNG sibling from the API. */
+  png?: string | null;
+};
 
 /**
  * Ordered load candidates for a canonical artwork URL: AVIF → WebP → PNG when
  * siblings can be derived; otherwise just the original URL.
  *
- * Signed URLs return only the original — inventing AVIF/PNG siblings would
- * request an unsigned path and fail before the WebP fallback.
+ * When the API supplies already-signed `avif` / `png` URLs (required for
+ * SigV4 / Cloudflare token auth), those take precedence over path rewriting.
+ *
+ * Signed URLs without explicit format siblings return only the original —
+ * inventing AVIF/PNG siblings would request an unsigned path and fail before
+ * the WebP fallback.
  */
-export function artworkCandidates(objectPath: string | null | undefined): string[] {
+export function artworkCandidates(
+  objectPath: string | null | undefined,
+  formats?: Omit<ArtworkFormatSources, "src">,
+): string[] {
   const trimmed = objectPath?.trim() ?? "";
+  const avif = formats?.avif?.trim() ?? "";
+  const png = formats?.png?.trim() ?? "";
+  if (avif || png) {
+    const out: string[] = [];
+    if (avif) out.push(avif);
+    if (trimmed) out.push(trimmed);
+    if (png && png !== trimmed && png !== avif) out.push(png);
+    return out;
+  }
   if (!trimmed) return [];
   if (isSignedArtworkURL(trimmed)) return [trimmed];
   return staticRasterCandidates(trimmed);

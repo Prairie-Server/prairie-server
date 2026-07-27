@@ -462,8 +462,12 @@ type sectionItemResponse struct {
 	DurationSeconds   *float64               `json:"duration_seconds,omitempty"`
 	ProgressUpdatedAt *string                `json:"progress_updated_at,omitempty"`
 	PosterURL         string                 `json:"poster_url,omitempty"`
+	PosterAVIFURL     string                 `json:"poster_avif_url,omitempty"`
+	PosterPNGURL      string                 `json:"poster_png_url,omitempty"`
 	PosterThumbhash   string                 `json:"poster_thumbhash,omitempty"`
 	BackdropURL       string                 `json:"backdrop_url,omitempty"`
+	BackdropAVIFURL   string                 `json:"backdrop_avif_url,omitempty"`
+	BackdropPNGURL    string                 `json:"backdrop_png_url,omitempty"`
 	BackdropThumbhash string                 `json:"backdrop_thumbhash,omitempty"`
 	LogoURL           string                 `json:"logo_url,omitempty"`
 	OverlaySummary    *models.OverlaySummary `json:"overlay_summary,omitempty"`
@@ -1200,9 +1204,9 @@ type sectionItemImageKey struct {
 }
 
 type sectionItemImageURLs struct {
-	posterURL   string
-	backdropURL string
-	logoURL     string
+	poster   artworkFormats
+	backdrop artworkFormats
+	logoURL  string
 }
 
 func (h *SectionHandler) buildSectionsResponse(r *http.Request, withItems []sections.SectionWithItems) homeSectionsResponse {
@@ -1363,16 +1367,6 @@ func (h *SectionHandler) resolveSectionItemImageURLs(ctx context.Context, withIt
 	pending := make([]pendingImages, 0)
 	paths := make([]string, 0)
 	seenPaths := make(map[string]struct{})
-	addPath := func(path string) {
-		if path == "" || path == "-" {
-			return
-		}
-		if _, ok := seenPaths[path]; ok {
-			return
-		}
-		seenPaths[path] = struct{}{}
-		paths = append(paths, path)
-	}
 
 	for _, section := range withItems {
 		for _, item := range section.Items {
@@ -1389,18 +1383,18 @@ func (h *SectionHandler) resolveSectionItemImageURLs(ctx context.Context, withIt
 				logoPath:     item.LogoPath,
 			}
 			pending = append(pending, images)
-			addPath(images.posterPath)
-			addPath(images.backdropPath)
-			addPath(images.logoPath)
+			paths = appendArtworkFormatPaths(paths, seenPaths, images.posterPath)
+			paths = appendArtworkFormatPaths(paths, seenPaths, images.backdropPath)
+			paths = appendArtworkFormatPaths(paths, seenPaths, images.logoPath)
 		}
 	}
 
 	resolved := h.DetailSvc.PresignURLsWithExpiry(ctx, paths, "featured")
 	for _, images := range pending {
 		result[images.key] = sectionItemImageURLs{
-			posterURL:   resolved[images.posterPath].URL,
-			backdropURL: resolved[images.backdropPath].URL,
-			logoURL:     resolved[images.logoPath].URL,
+			poster:   artworkFormatsFromResolved(resolved, images.posterPath),
+			backdrop: artworkFormatsFromResolved(resolved, images.backdropPath),
+			logoURL:  resolved[images.logoPath].URL,
 		}
 	}
 	return result
@@ -1452,8 +1446,12 @@ func (h *SectionHandler) toSectionItemResponse(sectionType sections.SectionType,
 		resp.Keywords = []string{}
 	}
 
-	resp.PosterURL = imageURLs.posterURL
-	resp.BackdropURL = imageURLs.backdropURL
+	resp.PosterURL = imageURLs.poster.URL
+	resp.PosterAVIFURL = imageURLs.poster.AVIFURL
+	resp.PosterPNGURL = imageURLs.poster.PNGURL
+	resp.BackdropURL = imageURLs.backdrop.URL
+	resp.BackdropAVIFURL = imageURLs.backdrop.AVIFURL
+	resp.BackdropPNGURL = imageURLs.backdrop.PNGURL
 	resp.LogoURL = imageURLs.logoURL
 
 	return resp

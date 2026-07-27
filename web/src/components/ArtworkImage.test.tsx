@@ -74,4 +74,11 @@ describe("ArtworkImage", () => {
     expect(img.getAttribute("srcset")).toBeNull();
     expect(img.getAttribute("sizes")).toBeNull();
   });
+
+  it("uses API-provided signed AVIF before the canonical WebP URL", () => {
+    const webp = "https://cdn.example.com/art/w300.webp?X-Amz-Signature=webp";
+    const avif = "https://cdn.example.com/art/w300.avif?X-Amz-Signature=avif";
+    render(<ArtworkImage src={webp} avifSrc={avif} alt="Poster" />);
+    expect(screen.getByRole("img", { name: "Poster" })).toHaveAttribute("src", avif);
+  });
 });

@@ -826,8 +826,12 @@ export interface BrowseItem {
   original_language?: string;
   overview: string;
   poster_url: string;
+  poster_avif_url?: string;
+  poster_png_url?: string;
   poster_thumbhash: string;
   backdrop_url: string;
+  backdrop_avif_url?: string;
+  backdrop_png_url?: string;
   backdrop_thumbhash: string;
   added_at?: string;
   release_date?: string | null;
@@ -1172,8 +1176,13 @@ export interface ItemDetail {
 
   // Presigned image URLs.
   poster_url: string;
+  /** Signed AVIF sibling when the poster is a cached WebP object. */
+  poster_avif_url?: string;
+  poster_png_url?: string;
   poster_thumbhash: string;
   backdrop_url: string;
+  backdrop_avif_url?: string;
+  backdrop_png_url?: string;
   backdrop_thumbhash: string;
   logo_url: string;
 
@@ -3907,8 +3916,12 @@ export interface SectionItem {
   duration_seconds?: number;
   progress_updated_at?: string;
   poster_url: string;
+  poster_avif_url?: string;
+  poster_png_url?: string;
   poster_thumbhash: string;
   backdrop_url: string;
+  backdrop_avif_url?: string;
+  backdrop_png_url?: string;
   backdrop_thumbhash: string;
   logo_url: string;
   overlay_summary?: OverlaySummary | null;

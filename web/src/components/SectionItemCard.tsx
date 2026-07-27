@@ -56,6 +56,8 @@ export default function SectionItemCard({ item, libraryId }: SectionItemCardProp
             {item.poster_url ? (
               <ArtworkImage
                 src={item.poster_url}
+                avifSrc={item.poster_avif_url}
+                pngSrc={item.poster_png_url}
                 alt={item.title}
                 widths={POSTER_WIDTHS}
                 sizes="(max-width: 640px) 42vw, (max-width: 1024px) 18vw, 160px"

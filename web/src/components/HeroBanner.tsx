@@ -198,6 +198,8 @@ export default function HeroBanner({
             {slide.backdrop_url && (
               <ArtworkImage
                 src={slide.backdrop_url}
+                avifSrc={slide.backdrop_avif_url}
+                pngSrc={slide.backdrop_png_url}
                 alt=""
                 widths={BACKDROP_WIDTHS}
                 sizes="100vw"
