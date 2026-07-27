@@ -30,6 +30,7 @@ describe("CastCarousel", () => {
 
     expect(markup).toContain("embla__viewport");
     expect(markup).toContain("embla__container");
+    expect(markup).toContain("w-[160px]");
     expect(markup).toContain('href="/person/person-001"');
     expect(markup).toContain('src="https://images.example.test/winona.jpg"');
     expect(markup).toContain(">DH<");

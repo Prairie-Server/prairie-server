@@ -6,6 +6,9 @@ import { buildPersonCatalogHref } from "@/pages/catalogSearchParams";
 import { getInitials } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
+/** Shared portrait card width — keep in sync with CrewList. */
+export const PERSON_CARD_WIDTH_CLASS = "w-[160px]";
+
 interface CastCarouselProps {
   cast: CastMember[];
   limit?: number;
@@ -61,7 +64,12 @@ export default function CastCarousel({ cast, limit = 20, fullBleed = false }: Ca
             const href = member.person_id ? buildPersonCatalogHref(member.person_id) : null;
             return (
               <li key={`${member.name}-${member.order}`} className="embla__slide shrink-0">
-                <CastCard member={member} href={href} />
+                <PersonCard
+                  name={member.name}
+                  subtitle={member.character}
+                  photoUrl={member.photo_url}
+                  href={href}
+                />
               </li>
             );
           })}
@@ -85,38 +93,46 @@ export default function CastCarousel({ cast, limit = 20, fullBleed = false }: Ca
   );
 }
 
-function CastCard({ member, href }: { member: CastMember; href: string | null }) {
+export function PersonCard({
+  name,
+  subtitle,
+  photoUrl,
+  href,
+}: {
+  name: string;
+  subtitle?: string | null;
+  photoUrl?: string | null;
+  href: string | null;
+}) {
   const inner = (
     <>
       <div className="media-card-image mb-2.5 aspect-[2/3] overflow-hidden rounded-lg">
-        {member.photo_url ? (
+        {photoUrl ? (
           <img
-            src={member.photo_url}
-            alt={member.name}
-            className="h-full w-full object-cover transition-transform duration-300 group-hover/cast:scale-105"
+            src={photoUrl}
+            alt={name}
+            className="h-full w-full object-cover transition-transform duration-300 group-hover/person:scale-105"
             loading="lazy"
           />
         ) : (
           <div className="bg-surface text-muted-foreground flex h-full w-full items-center justify-center text-lg font-semibold">
-            {getInitials(member.name)}
+            {getInitials(name)}
           </div>
         )}
       </div>
       <div className="px-0.5">
-        <div className="text-foreground truncate text-[13px] font-medium">{member.name}</div>
-        {member.character ? (
-          <div className="text-muted-foreground truncate text-[11px]">{member.character}</div>
-        ) : null}
+        <div className="text-foreground truncate text-sm font-medium">{name}</div>
+        {subtitle ? <div className="text-muted-foreground truncate text-xs">{subtitle}</div> : null}
       </div>
     </>
   );
 
   if (href) {
     return (
-      <ViewTransitionLink to={href} className="group/cast block w-[110px]">
+      <ViewTransitionLink to={href} className={cn("group/person block", PERSON_CARD_WIDTH_CLASS)}>
         {inner}
       </ViewTransitionLink>
     );
   }
-  return <div className="group/cast w-[110px]">{inner}</div>;
+  return <div className={cn("group/person", PERSON_CARD_WIDTH_CLASS)}>{inner}</div>;
 }
