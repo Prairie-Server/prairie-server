@@ -3,21 +3,22 @@
  * Canonical cache keys stay .webp; clients try AVIF → WebP → PNG so older
  * OSes/devices that cannot decode AVIF or WebP still get a sibling.
  *
+ * Sibling derivation is shared with bundled static assets via
+ * {@link staticRasterFormats} / {@link staticRasterCandidates}. Prefer
+ * {@link PictureImage} when all three siblings are guaranteed on disk
+ * (brand marks, collection-template posters); prefer {@link ArtworkImage}
+ * when siblings may be missing (object-store artwork).
+ *
  * Width variants live in the object key (`/original.`, `/w300.`, `/w500.`, …),
  * not query params. Path rewrite matches the Go artworkkey contract and is
  * skipped for SigV4-style signed URLs (rewriting the path would invalidate
  * the signature).
  */
 
+import { staticRasterCandidates, staticRasterFormats } from "@/lib/staticImageUrl";
+
 export const POSTER_WIDTHS = [300, 500] as const;
 export const BACKDROP_WIDTHS = [300, 1280, 1920] as const;
-
-function pathExtension(pathname: string): string {
-  const base = pathname.split("/").pop() ?? "";
-  const dot = base.lastIndexOf(".");
-  if (dot < 0) return "";
-  return base.slice(dot);
-}
 
 function pathnameOf(objectPath: string): string {
   if (!objectPath.includes("://")) return objectPath;
@@ -28,41 +29,20 @@ function pathnameOf(objectPath: string): string {
   }
 }
 
-function webPFormatSibling(objectPath: string | null | undefined, ext: ".avif" | ".png"): string {
-  const trimmed = objectPath?.trim() ?? "";
-  if (!trimmed) return "";
-
-  if (trimmed.includes("://")) {
-    try {
-      const u = new URL(trimmed);
-      const cur = pathExtension(u.pathname);
-      if (cur.toLowerCase() !== ".webp") return "";
-      u.pathname = `${u.pathname.slice(0, -cur.length)}${ext}`;
-      return u.toString();
-    } catch {
-      return "";
-    }
-  }
-
-  const cur = pathExtension(trimmed);
-  if (cur.toLowerCase() !== ".webp") return "";
-  return `${trimmed.slice(0, -cur.length)}${ext}`;
-}
-
 /**
- * Returns the AVIF sibling for a canonical WebP object key or http(s) URL.
- * Query/fragment are preserved. Non-WebP inputs return "".
+ * Returns the AVIF sibling for a raster path (.webp / .png / .avif) or URL.
+ * Query/fragment are preserved. Non-raster inputs return "".
  */
 export function webPAVIFSibling(objectPath: string | null | undefined): string {
-  return webPFormatSibling(objectPath, ".avif");
+  return staticRasterFormats(objectPath)?.avif ?? "";
 }
 
 /**
- * Returns the PNG sibling for a canonical WebP object key or http(s) URL.
- * Query/fragment are preserved. Non-WebP inputs return "".
+ * Returns the PNG sibling for a raster path (.webp / .png / .avif) or URL.
+ * Query/fragment are preserved. Non-raster inputs return "".
  */
 export function webPPNGSibling(objectPath: string | null | undefined): string {
-  return webPFormatSibling(objectPath, ".png");
+  return staticRasterFormats(objectPath)?.png ?? "";
 }
 
 /** True when rewriting the path would invalidate a cloud object signature. */
@@ -72,27 +52,16 @@ export function isSignedArtworkURL(objectPath: string): boolean {
 
 /**
  * Ordered load candidates for a canonical artwork URL: AVIF → WebP → PNG when
- * the input is WebP; otherwise just the original URL.
+ * siblings can be derived; otherwise just the original URL.
  *
  * Signed URLs return only the original — inventing AVIF/PNG siblings would
  * request an unsigned path and fail before the WebP fallback.
- *
- * Bundled static PNG brand assets use {@link staticRasterFormats} / PictureImage
- * instead — those siblings are guaranteed to exist, so a native `<picture>` is
- * preferable to speculative onError fallbacks.
  */
 export function artworkCandidates(objectPath: string | null | undefined): string[] {
   const trimmed = objectPath?.trim() ?? "";
   if (!trimmed) return [];
   if (isSignedArtworkURL(trimmed)) return [trimmed];
-
-  const avif = webPAVIFSibling(trimmed);
-  const png = webPPNGSibling(trimmed);
-  const out: string[] = [];
-  if (avif) out.push(avif);
-  out.push(trimmed);
-  if (png) out.push(png);
-  return out;
+  return staticRasterCandidates(trimmed);
 }
 
 function rewritePathWidthVariant(pathname: string, width: number): string {

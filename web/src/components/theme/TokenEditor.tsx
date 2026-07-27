@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo } from "react";
 import { RotateCcw } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import {
@@ -10,6 +10,7 @@ import {
 import type { ThemeToken, TokenMeta } from "@/lib/themeTokens";
 import { useTheme } from "@/hooks/useTheme";
 import type { ThemeVarOverrides } from "@/hooks/useCustomTheme";
+import { ensureThemeFontsLoaded } from "@/lib/themeFonts";
 import { cn } from "@/lib/utils";
 
 interface TokenEditorProps {
@@ -194,6 +195,11 @@ function FontInput({
 
 export function TokenEditor({ vars, onSetVar, onResetVar }: TokenEditorProps) {
   const { theme } = useTheme();
+
+  // Theme editor exposes Outfit/Manrope/Urbanist even on prairie-dusk.
+  useEffect(() => {
+    ensureThemeFontsLoaded();
+  }, []);
 
   // Recompute when the base theme changes so fallback values stay current
   const computedValues = useMemo(() => {

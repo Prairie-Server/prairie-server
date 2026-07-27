@@ -2392,7 +2392,10 @@ func main() {
 	// (/ping, /healthcheck, /status, /init, /login, /socket.io) own the URL
 	// space without collision with Prairie's SPA fallback. Mirrors how the
 	// Jellyfin compat server is set up at :8096.
-	metricsMux.Handle("/", server.FrontendHandler())
+	// Compress text assets (JS/CSS/HTML/SVG/JSON). Images/wasm/woff2 are skipped
+	// by content-type. Without this, LAN clients download the SPA uncompressed
+	// (~1MB+ JS) even though the API router already gzip-compresses JSON.
+	metricsMux.Handle("/", chimiddleware.Compress(5)(server.FrontendHandler()))
 
 	// Step 9: Start background workers (if needed).
 	var sessionCleaner *worker.SessionCleaner

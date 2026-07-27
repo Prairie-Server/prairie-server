@@ -2,6 +2,7 @@ import { Link } from "react-router";
 import { Loader, Pause, Play, Radio } from "lucide-react";
 
 import type { AdminSession } from "@/api/types";
+import { ArtworkImage } from "@/components/ArtworkImage";
 import { Badge } from "@/components/ui/badge";
 import { JellyfinSessionPill } from "@/components/JellyfinSessionPill";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -55,7 +56,7 @@ function StreamRow({ session }: { session: AdminSession }) {
     <div className="border-border flex gap-3 rounded-md border px-3 py-3 sm:px-4">
       <div className="bg-muted h-14 w-10 shrink-0 overflow-hidden rounded">
         {session.poster_url ? (
-          <img src={session.poster_url} alt="" className="h-full w-full object-cover" />
+          <ArtworkImage src={session.poster_url} alt="" className="h-full w-full object-cover" />
         ) : null}
       </div>
 

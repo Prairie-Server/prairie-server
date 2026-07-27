@@ -36,7 +36,7 @@ type ImagesHandler struct {
 	// resolves durably instead of depending on the in-memory image cache.
 	collections collectionSource
 	// frontendFS is optional; when set, app-relative artwork references (bundled
-	// collection-template posters like "/images/collection-templates/x.jpg") are
+	// collection-template posters like "/images/collection-templates/x.webp") are
 	// served straight from the embedded frontend assets. Without it those paths
 	// have no fetchable origin on the compat surface.
 	frontendFS fs.FS
@@ -626,7 +626,7 @@ func (h *ImagesHandler) serveImageURL(w http.ResponseWriter, r *http.Request, im
 }
 
 // serveBundledAsset serves an app-relative asset (e.g.
-// "/images/collection-templates/x.jpg") straight from the embedded frontend
+// "/images/collection-templates/x.webp") straight from the embedded frontend
 // filesystem. A missing FS or file degrades to a clean 404.
 func (h *ImagesHandler) serveBundledAsset(w http.ResponseWriter, assetPath string) {
 	if h.frontendFS == nil {

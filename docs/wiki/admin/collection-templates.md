@@ -76,8 +76,9 @@ is created.
 
 Built-in templates ship with poster artwork under
 `web/public/images/collection-templates/`. Poster filenames match template
-IDs, for example `tmdb_popular_movies.jpg`; raw generated plates live in
-`web/public/images/collection-templates/raw/` so typography can be regenerated (Vite omits `raw/` from `web/dist` / the embedded binary; only the JPG posters ship)
+IDs and ship as an AVIF → WebP → PNG set (canonical path is `.webp`, e.g.
+`tmdb_popular_movies.webp`); raw generated plates live in
+`web/public/images/collection-templates/raw/` so typography can be regenerated (Vite omits `raw/` from `web/dist` / the embedded binary; only the AVIF/WebP/PNG posters ship)
 without re-running image generation.
 
 The poster style is intentionally close to Kometa/Plex collection posters:
@@ -108,9 +109,11 @@ then add deterministic typography locally:
 2. Copy the generated PNG into
    `web/public/images/collection-templates/raw/{template_id}.png`, resizing and
    center-cropping to `1024x1536`.
-3. Create the final poster at
-   `web/public/images/collection-templates/{template_id}.jpg`, resizing and
-   center-cropping to `1000x1500`.
+3. Create the final poster siblings under
+   `web/public/images/collection-templates/{template_id}.{avif,webp,png}`,
+   resizing and center-cropping the WebP/AVIF masters to `1000x1500`. The PNG
+   sibling may be a smaller palette fallback (legacy decode only); clients
+   prefer AVIF then WebP via `PictureImage` / `staticRasterFormats`.
 4. Add typography outside image generation: media type in gold at top-left,
    collection title at bottom-left, and the source label beneath it. Use a
    subtle dark vignette/overlay and text shadow or stroke for contrast.

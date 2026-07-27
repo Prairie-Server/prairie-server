@@ -32,4 +32,12 @@ describe("staticRasterCandidates", () => {
       "/prairie-wordmark-sidebar.png",
     ]);
   });
+
+  it("orders AVIF → WebP → PNG from a webp canonical path", () => {
+    expect(staticRasterCandidates("/images/collection-templates/trending.webp")).toEqual([
+      "/images/collection-templates/trending.avif",
+      "/images/collection-templates/trending.webp",
+      "/images/collection-templates/trending.png",
+    ]);
+  });
 });
