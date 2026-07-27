@@ -716,32 +716,9 @@ func (s *Service) syncSchedulesDirect(ctx context.Context, source *GuideSource) 
 }
 
 func (s *Service) mapChannelsToStations(ctx context.Context, channels []Channel, detail *schedulesdirect.LineupDetail) (map[string]string, error) {
-	stationCallsign := map[string]string{}
-	for _, st := range detail.Stations {
-		stationCallsign[st.StationID] = strings.ToLower(strings.TrimSpace(st.Callsign))
-	}
-	stationByChannelNumber := map[string]string{}
-	for _, m := range detail.Map {
-		stationByChannelNumber[normalizeChannelNumber(m.Channel)] = m.StationID
-	}
-
 	out := map[string]string{}
 	for _, ch := range channels {
-		stationID := strings.TrimSpace(ch.GuideStationID)
-		if stationID == "" {
-			stationID = stationByChannelNumber[normalizeChannelNumber(channelDisplayNumber(ch))]
-		}
-		if stationID == "" {
-			want := strings.ToLower(strings.TrimSpace(ch.Callsign))
-			if want != "" {
-				for id, callsign := range stationCallsign {
-					if callsign == want || strings.HasPrefix(callsign, want) || strings.HasPrefix(want, callsign) {
-						stationID = id
-						break
-					}
-				}
-			}
-		}
+		stationID := resolveGuideStationID(ch, detail)
 		if stationID == "" {
 			continue
 		}

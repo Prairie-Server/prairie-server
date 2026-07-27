@@ -256,6 +256,7 @@ function TunersTab() {
 function ChannelsTab() {
   const channels = useLiveTVChannels();
   const patchChannel = usePatchLiveTVChannel();
+  const [editingStation, setEditingStation] = useState<string | null>(null);
   const [stationDrafts, setStationDrafts] = useState<Record<string, string>>({});
 
   const sorted = useMemo(
@@ -268,12 +269,26 @@ function ChannelsTab() {
     [channels.data],
   );
 
+  const mappedCount = sorted.filter((ch) => Boolean(ch.guide_station_id)).length;
+
   return (
     <div className="space-y-4">
       <p className="text-muted-foreground text-sm">
-        Enable channels for Live TV, override display numbers, and map each channel to a Schedules
-        Direct station ID. Syncing a guide source can auto-map by channel number or callsign.
+        Enable channels for Live TV. Guide station IDs are filled automatically when you sync a
+        Schedules Direct source (matching HDHomeRun numbers like{" "}
+        <span className="font-mono">2.1</span> and callsigns like{" "}
+        <span className="font-mono">KDTN-DT</span>). Manual overrides are only needed for
+        mismatches.
       </p>
+      {sorted.length > 0 ? (
+        <p className="text-muted-foreground text-xs">
+          {mappedCount}/{sorted.length} channels mapped to guide stations
+          {mappedCount < sorted.length
+            ? " — sync a guide source to auto-map the rest, or override below"
+            : ""}
+          .
+        </p>
+      ) : null}
       {channels.isLoading ? (
         <p className="text-muted-foreground text-sm">Loading channels…</p>
       ) : sorted.length === 0 ? (
@@ -283,39 +298,76 @@ function ChannelsTab() {
       ) : (
         <ul className="divide-border divide-y border-y">
           {sorted.map((channel) => {
+            const mapped = Boolean(channel.guide_station_id);
+            const editing = editingStation === channel.id;
             const stationValue = stationDrafts[channel.id] ?? channel.guide_station_id ?? "";
             return (
               <li key={channel.id} className="grid gap-3 py-4 sm:grid-cols-[1fr_auto]">
-                <div className="space-y-1">
+                <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">
                       {channel.number_override || channel.number} ·{" "}
                       {channel.callsign || channel.name}
                     </span>
                     {channel.hd ? <Badge variant="secondary">HD</Badge> : null}
+                    {mapped ? (
+                      <Badge variant="outline">guide {channel.guide_station_id}</Badge>
+                    ) : (
+                      <Badge variant="secondary">unmapped</Badge>
+                    )}
                   </div>
-                  <div className="flex flex-wrap items-end gap-3">
-                    <div className="space-y-1">
-                      <Label htmlFor={`station-${channel.id}`} className="text-xs">
-                        Guide station ID
-                      </Label>
-                      <Input
-                        id={`station-${channel.id}`}
-                        className="w-48"
-                        value={stationValue}
-                        onChange={(e) =>
-                          setStationDrafts((prev) => ({ ...prev, [channel.id]: e.target.value }))
-                        }
-                        onBlur={() => {
-                          if (stationValue === (channel.guide_station_id || "")) return;
-                          patchChannel.mutate({
-                            channelId: channel.id,
-                            body: { guide_station_id: stationValue },
-                          });
-                        }}
-                      />
+                  {editing || !mapped ? (
+                    <div className="flex flex-wrap items-end gap-2">
+                      <div className="space-y-1">
+                        <Label htmlFor={`station-${channel.id}`} className="text-xs">
+                          {mapped ? "Override guide station ID" : "Guide station ID"}
+                        </Label>
+                        <Input
+                          id={`station-${channel.id}`}
+                          className="w-48"
+                          placeholder="Auto on guide sync"
+                          value={stationValue}
+                          onChange={(e) =>
+                            setStationDrafts((prev) => ({
+                              ...prev,
+                              [channel.id]: e.target.value,
+                            }))
+                          }
+                          onBlur={() => {
+                            if (stationValue === (channel.guide_station_id || "")) {
+                              setEditingStation(null);
+                              return;
+                            }
+                            patchChannel.mutate({
+                              channelId: channel.id,
+                              body: { guide_station_id: stationValue },
+                            });
+                            setEditingStation(null);
+                          }}
+                        />
+                      </div>
+                      {mapped ? (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setEditingStation(null)}
+                        >
+                          Done
+                        </Button>
+                      ) : null}
                     </div>
-                  </div>
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="text-muted-foreground h-auto px-0"
+                      onClick={() => setEditingStation(channel.id)}
+                    >
+                      Override mapping
+                    </Button>
+                  )}
                 </div>
                 <div className="flex items-center gap-2 self-start sm:self-center">
                   <Label

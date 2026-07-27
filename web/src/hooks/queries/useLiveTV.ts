@@ -204,6 +204,7 @@ export function useSyncLiveTVGuideSource() {
     onSuccess: () => {
       toast.success("Guide sync started");
       void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVGuideSources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVChannels() });
       void queryClient.invalidateQueries({ queryKey: ["livetv", "guide"] });
     },
     onError: (err) => {
