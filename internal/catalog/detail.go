@@ -1089,13 +1089,13 @@ func (s *DetailService) buildExtraItemDetail(ctx context.Context, contentID stri
 // seriesDetailContext caches series-level lookups so a batched episode-detail
 // call doesn't redo them per episode.
 type seriesDetailContext struct {
-	series           *models.MediaItem
-	castCredits      []CastCredit
-	crewCredits      []CrewCredit
-	versionPref      versionDefaults
-	backdropURL      string
-	backdropAVIFURL  string
-	backdropPNGURL   string
+	series          *models.MediaItem
+	castCredits     []CastCredit
+	crewCredits     []CrewCredit
+	versionPref     versionDefaults
+	backdropURL     string
+	backdropAVIFURL string
+	backdropPNGURL  string
 }
 
 // buildSeriesDetailContext loads the parent series row, localizes it, fetches

@@ -1204,9 +1204,9 @@ type sectionItemImageKey struct {
 }
 
 type sectionItemImageURLs struct {
-	poster    artworkFormats
-	backdrop  artworkFormats
-	logoURL   string
+	poster   artworkFormats
+	backdrop artworkFormats
+	logoURL  string
 }
 
 func (h *SectionHandler) buildSectionsResponse(r *http.Request, withItems []sections.SectionWithItems) homeSectionsResponse {
