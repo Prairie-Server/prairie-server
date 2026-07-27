@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import Hls from "hls.js";
 import mpegts from "mpegts.js";
-import { Loader2 } from "lucide-react";
 import { getAccessToken, getProfileId, getProfileToken } from "@/api/client";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +10,11 @@ type LiveTVPlayerProps = {
   transport?: "mpegts" | "hls";
   title?: string;
   className?: string;
+  /** Hide native controls when the host draws its own chrome (fullscreen watch). */
+  hideNativeControls?: boolean;
+  onPlayingChange?: (playing: boolean) => void;
+  onErrorChange?: (error: string | null) => void;
+  onStartingChange?: (starting: boolean) => void;
 };
 
 function authHeaders(): Record<string, string> {
@@ -44,6 +48,14 @@ function withMediaAuthQuery(url: string): string {
   return `${url}${separator}${encoded}`;
 }
 
+/** Match VideoPlayer's load policy so cold HLS remuxes can retry through 404s. */
+const retryingLoadPolicy = {
+  maxTimeToFirstByteMs: 45000,
+  maxLoadTimeMs: 45000,
+  timeoutRetry: { maxNumRetry: 6, retryDelayMs: 400, maxRetryDelayMs: 2000 },
+  errorRetry: { maxNumRetry: 6, retryDelayMs: 400, maxRetryDelayMs: 2000 },
+};
+
 /**
  * Plays a Live TV stream. Uses hls.js for remuxed HLS (`transport=hls`) and
  * mpegts.js for the MPEG-TS session proxy.
@@ -53,12 +65,26 @@ export function LiveTVPlayer({
   transport = "mpegts",
   title,
   className,
+  hideNativeControls = false,
+  onPlayingChange,
+  onErrorChange,
+  onStartingChange,
 }: LiveTVPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const mpegtsRef = useRef<ReturnType<typeof mpegts.createPlayer> | null>(null);
   const hlsRef = useRef<Hls | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(true);
+  const networkRecoveryRef = useRef(0);
+  const lastRecoveryAtRef = useRef(0);
+
+  useEffect(() => {
+    onErrorChange?.(error);
+  }, [error, onErrorChange]);
+
+  useEffect(() => {
+    onStartingChange?.(starting);
+  }, [starting, onStartingChange]);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -66,6 +92,8 @@ export function LiveTVPlayer({
 
     setError(null);
     setStarting(true);
+    networkRecoveryRef.current = 0;
+    lastRecoveryAtRef.current = 0;
 
     const url = resolveStreamUrl(streamUrl);
     const isHLS = transport === "hls" || url.includes(".m3u8");
@@ -82,6 +110,11 @@ export function LiveTVPlayer({
       const hls = new Hls({
         enableWorker: true,
         lowLatencyMode: true,
+        liveSyncDurationCount: 3,
+        liveMaxLatencyDurationCount: 6,
+        manifestLoadPolicy: { default: retryingLoadPolicy },
+        playlistLoadPolicy: { default: retryingLoadPolicy },
+        fragLoadPolicy: { default: retryingLoadPolicy },
         xhrSetup: (xhr) => {
           const headers = authHeaders();
           for (const [key, value] of Object.entries(headers)) {
@@ -94,15 +127,40 @@ export function LiveTVPlayer({
       hls.attachMedia(video);
       hls.on(Hls.Events.MANIFEST_PARSED, () => {
         void video.play().then(
-          () => setStarting(false),
-          () => setStarting(false),
+          () => {
+            setStarting(false);
+            onPlayingChange?.(true);
+          },
+          () => {
+            setStarting(false);
+            onPlayingChange?.(false);
+          },
         );
       });
       hls.on(Hls.Events.ERROR, (_event, data) => {
-        if (data.fatal) {
-          setError(data.details || "HLS playback error");
-          setStarting(false);
+        if (!data.fatal) return;
+        const now = Date.now();
+        if (now - lastRecoveryAtRef.current < 1500) return;
+        lastRecoveryAtRef.current = now;
+
+        if (data.type === Hls.ErrorTypes.NETWORK_ERROR && networkRecoveryRef.current < 8) {
+          networkRecoveryRef.current += 1;
+          // Playlist often 404s for a beat while ffmpeg writes the first segment.
+          hls.startLoad();
+          return;
         }
+        if (data.type === Hls.ErrorTypes.MEDIA_ERROR && networkRecoveryRef.current < 3) {
+          networkRecoveryRef.current += 1;
+          hls.recoverMediaError();
+          return;
+        }
+        const detail = data.details || "HLS playback error";
+        const friendly =
+          detail === "manifestLoadError"
+            ? "Could not load the live stream playlist. The channel may still be tuning — try again."
+            : detail;
+        setError(friendly);
+        setStarting(false);
       });
       return () => {
         hls.destroy();
@@ -143,8 +201,14 @@ export function LiveTVPlayer({
     const playResult = player.play();
     if (playResult && typeof playResult.then === "function") {
       void playResult.then(
-        () => setStarting(false),
-        () => setStarting(false),
+        () => {
+          setStarting(false);
+          onPlayingChange?.(true);
+        },
+        () => {
+          setStarting(false);
+          onPlayingChange?.(false);
+        },
       );
     } else {
       setStarting(false);
@@ -161,24 +225,24 @@ export function LiveTVPlayer({
       }
       if (mpegtsRef.current === player) mpegtsRef.current = null;
     };
-  }, [streamUrl, transport]);
+  }, [streamUrl, transport, onPlayingChange]);
 
   return (
     <div className={cn("relative overflow-hidden bg-black", className)}>
       <video
         ref={videoRef}
         className="h-full w-full object-contain"
-        controls
+        controls={!hideNativeControls}
         playsInline
         autoPlay
         aria-label={title ? `Live: ${title}` : "Live TV"}
       />
-      {starting ? (
+      {starting && !hideNativeControls ? (
         <div className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40">
-          <Loader2 className="h-8 w-8 animate-spin text-white" aria-hidden />
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
         </div>
       ) : null}
-      {error ? (
+      {error && !hideNativeControls ? (
         <div className="absolute inset-x-0 bottom-0 bg-black/80 px-3 py-2 text-sm text-white">
           {error}
         </div>

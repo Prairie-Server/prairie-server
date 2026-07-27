@@ -1,23 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useSearchParams } from "react-router";
-import { Circle, Play, Radio, Square, X } from "lucide-react";
-import { toast } from "sonner";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate, useSearchParams } from "react-router";
+import { Circle, Play, Radio, X } from "lucide-react";
 import type { LiveTVChannel, LiveTVRecording } from "@/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LiveTVGuideGrid } from "@/components/livetv/LiveTVGuideGrid";
-import { LiveTVPlayer } from "@/components/livetv/LiveTVPlayer";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
   useCancelLiveTVRecording,
   useLiveTVChannels,
   useLiveTVGuide,
   useLiveTVRecordings,
-  useReleaseLiveTVSession,
   useScheduleLiveTVRecording,
-  useStartLiveTVSession,
 } from "@/hooks/queries/useLiveTV";
 import {
   buildGuideWindow,
@@ -27,6 +23,7 @@ import {
   pickNowNext,
   progressFraction,
 } from "@/lib/liveTVGuide";
+import { buildLiveWatchHref } from "@/lib/liveTVWatch";
 import { cn } from "@/lib/utils";
 
 const LIVETV_TABS = ["guide", "channels", "recordings"] as const;
@@ -38,6 +35,7 @@ function normalizeTab(value: string | null): LiveTVTab {
 
 export default function LiveTV() {
   useDocumentTitle("Live TV");
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = normalizeTab(searchParams.get("tab"));
   const channelFromUrl = searchParams.get("channel");
@@ -60,6 +58,13 @@ export default function LiveTV() {
       setSelectedId(channels[0].id);
     }
   }, [channels, selectedId, channelFromUrl]);
+
+  // Legacy deep-link from older On now cards: send straight into the watch player.
+  useEffect(() => {
+    if (!shouldAutoWatch || !channelFromUrl) return;
+    if (channels.length > 0 && !channels.some((ch) => ch.id === channelFromUrl)) return;
+    void navigate(buildLiveWatchHref(channelFromUrl, "/livetv"), { replace: true });
+  }, [shouldAutoWatch, channelFromUrl, channels, navigate]);
 
   // Refresh the guide window periodically so "now" stays accurate.
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -87,23 +92,9 @@ export default function LiveTV() {
   );
   const programs = guide.data?.programs ?? [];
   const recordings = useLiveTVRecordings();
-  const startSession = useStartLiveTVSession();
-  const releaseSession = useReleaseLiveTVSession();
   const scheduleRecording = useScheduleLiveTVRecording();
   const cancelRecording = useCancelLiveTVRecording();
-  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [streamURL, setStreamURL] = useState<string | null>(null);
-  const [streamTransport, setStreamTransport] = useState<"mpegts" | "hls">("mpegts");
-  const [watchingChannelId, setWatchingChannelId] = useState<string | null>(null);
-  const [startingChannelId, setStartingChannelId] = useState<string | null>(null);
-  const autoWatchAttempted = useRef<string | null>(null);
-  const playerSectionRef = useRef<HTMLElement | null>(null);
 
-  const selectedGuide = selected
-    ? pickNowNext(programs, selected.id, now)
-    : { now: null, next: null };
-  const watchingChannel =
-    channels.find((ch) => ch.id === watchingChannelId) ?? (watchingChannelId ? selected : null);
   const filteredChannels = useMemo(() => {
     const q = channelFilter.trim().toLowerCase();
     if (!q) return channels;
@@ -121,80 +112,10 @@ export default function LiveTV() {
     setSearchParams(params, { replace: true });
   }
 
-  function clearWatchParam() {
-    if (!shouldAutoWatch) return;
-    const params = new URLSearchParams(searchParams);
-    params.delete("watch");
-    setSearchParams(params, { replace: true });
-  }
-
-  async function onWatch(channelId?: string) {
+  function onWatch(channelId?: string) {
     const targetId = channelId ?? selected?.id;
-    if (!targetId || startingChannelId) return;
-    const channel = channels.find((ch) => ch.id === targetId) ?? selected;
-    if (!channel) return;
-    setStartingChannelId(channel.id);
-    setSelectedId(channel.id);
-    try {
-      if (activeSessionId) {
-        try {
-          await releaseSession.mutateAsync(activeSessionId);
-        } catch {
-          // Continue — a new tune should still attempt to start.
-        }
-      }
-      const session = await startSession.mutateAsync(channel.id);
-      const nextUrl = session.hls_url || session.stream_url || null;
-      setActiveSessionId(session.session_id);
-      setWatchingChannelId(channel.id);
-      setStreamURL(nextUrl);
-      setStreamTransport(session.transport === "hls" ? "hls" : "mpegts");
-      if (!nextUrl) {
-        toast.error("Live TV session started but no stream URL was returned");
-      } else if (session.note) {
-        toast.message(session.note);
-      } else {
-        toast.success(`Watching ${channelLabel(channel)}`);
-      }
-      requestAnimationFrame(() => {
-        playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-      });
-    } catch {
-      // useStartLiveTVSession already toasts.
-    } finally {
-      setStartingChannelId(null);
-    }
-  }
-
-  useEffect(() => {
-    if (!shouldAutoWatch || !channelFromUrl || channels.length === 0) return;
-    if (!channels.some((ch) => ch.id === channelFromUrl)) return;
-    if (autoWatchAttempted.current === channelFromUrl) return;
-    autoWatchAttempted.current = channelFromUrl;
-    void onWatch(channelFromUrl).finally(() => {
-      clearWatchParam();
-    });
-    // Intentionally once per channel deep-link; onWatch closes over latest channels/session.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [shouldAutoWatch, channelFromUrl, channels]);
-
-  async function onStop() {
-    if (!activeSessionId) {
-      setStreamURL(null);
-      setWatchingChannelId(null);
-      return;
-    }
-    try {
-      await releaseSession.mutateAsync(activeSessionId);
-      toast.success("Live TV session released");
-    } catch {
-      // useReleaseLiveTVSession already toasts.
-    } finally {
-      setActiveSessionId(null);
-      setStreamURL(null);
-      setStreamTransport("mpegts");
-      setWatchingChannelId(null);
-    }
+    if (!targetId) return;
+    void navigate(buildLiveWatchHref(targetId, "/livetv"));
   }
 
   const scheduled = (recordings.data ?? []).filter((r) =>
@@ -213,44 +134,10 @@ export default function LiveTV() {
           <Badge variant="secondary">{channels.length} channels</Badge>
         </div>
         <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-          Guide grid, channel lineup, and your recordings — watch or schedule from a programme or
-          channel row.
+          Guide grid, channel lineup, and your recordings — play opens the same fullscreen player
+          used for movies and shows.
         </p>
       </header>
-
-      {streamURL ? (
-        <section ref={playerSectionRef} className="border-border overflow-hidden rounded-xl border">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2">
-            <div className="min-w-0">
-              <p className="text-muted-foreground text-[10px] font-semibold tracking-[0.18em] uppercase">
-                Now watching
-              </p>
-              <p className="truncate font-medium">
-                {watchingChannel ? channelLabel(watchingChannel) : "Live"}
-                {selectedGuide.now && watchingChannelId === selected?.id
-                  ? ` · ${selectedGuide.now.title}`
-                  : ""}
-              </p>
-            </div>
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              onClick={() => void onStop()}
-              disabled={releaseSession.isPending}
-            >
-              <Square />
-              Stop
-            </Button>
-          </div>
-          <LiveTVPlayer
-            streamUrl={streamURL}
-            transport={streamTransport}
-            title={watchingChannel ? channelLabel(watchingChannel) : "Live TV"}
-            className="aspect-video w-full"
-          />
-        </section>
-      ) : null}
 
       {channelsQuery.isLoading ? (
         <p className="text-muted-foreground text-sm">Loading channels…</p>
@@ -283,10 +170,10 @@ export default function LiveTV() {
                 selectedChannelId={selected?.id ?? null}
                 now={now}
                 onSelectChannel={setSelectedId}
-                onWatch={(id) => void onWatch(id)}
+                onWatch={(id) => onWatch(id)}
                 onRecord={(programId) => scheduleRecording.mutate({ program_id: programId })}
                 recordDisabled={scheduleRecording.isPending}
-                startingChannelId={startingChannelId}
+                startingChannelId={null}
               />
             )}
           </TabsContent>
@@ -311,11 +198,9 @@ export default function LiveTV() {
                   programs={programs}
                   now={now}
                   active={selected?.id === channel.id}
-                  watching={watchingChannelId === channel.id}
-                  watchBusy={startingChannelId === channel.id}
                   recordBusy={scheduleRecording.isPending}
                   onSelect={() => setSelectedId(channel.id)}
-                  onWatch={() => void onWatch(channel.id)}
+                  onWatch={() => onWatch(channel.id)}
                   onRecordNow={(programId) => scheduleRecording.mutate({ program_id: programId })}
                   onRecordNext={(programId) => scheduleRecording.mutate({ program_id: programId })}
                 />
@@ -357,8 +242,6 @@ function ChannelListRow({
   programs,
   now,
   active,
-  watching,
-  watchBusy,
   recordBusy,
   onSelect,
   onWatch,
@@ -375,8 +258,6 @@ function ChannelListRow({
   }>;
   now: Date;
   active: boolean;
-  watching: boolean;
-  watchBusy: boolean;
   recordBusy: boolean;
   onSelect: () => void;
   onWatch: () => void;
@@ -414,7 +295,6 @@ function ChannelListRow({
                 </span>
                 <span className="truncate">{channel.callsign || channel.name}</span>
                 {channel.hd ? <Badge variant="outline">HD</Badge> : null}
-                {watching ? <Badge>Live</Badge> : null}
               </p>
               <p className="text-muted-foreground truncate text-xs">
                 {slot.now?.title ?? "No guide data"}
@@ -429,7 +309,7 @@ function ChannelListRow({
           </div>
         </button>
         <div className="flex flex-wrap gap-2 sm:shrink-0">
-          <Button type="button" size="sm" onClick={onWatch} disabled={watchBusy}>
+          <Button type="button" size="sm" onClick={onWatch}>
             <Play />
             Watch
           </Button>

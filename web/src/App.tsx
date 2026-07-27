@@ -57,6 +57,7 @@ const AdminRequests = lazy(() => import("@/pages/AdminRequests"));
 const AdminAutoscan = lazy(() => import("@/pages/AdminAutoscan"));
 const AdminLiveTV = lazy(() => import("@/pages/AdminLiveTV"));
 const LiveTV = lazy(() => import("@/pages/LiveTV"));
+const LiveWatchRoute = lazy(() => import("@/pages/LiveWatchRoute"));
 const AdminDevices = lazy(() => import("@/pages/AdminDevices"));
 const AdminLibraries = lazy(() => import("@/pages/AdminLibraries"));
 const AdminSettingsLayout = lazy(() => import("@/pages/admin-settings/AdminSettingsLayout"));
@@ -402,6 +403,14 @@ function AppRoutes() {
                     element={
                       <RequireProfile>
                         <TasteSeed />
+                      </RequireProfile>
+                    }
+                  />
+                  <Route
+                    path="/watch/live/:channelId"
+                    element={
+                      <RequireProfile>
+                        <LiveWatchRoute />
                       </RequireProfile>
                     }
                   />
