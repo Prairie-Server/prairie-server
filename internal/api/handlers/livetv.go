@@ -8,6 +8,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -564,7 +566,9 @@ func (h *LiveTVHandler) HandleDeleteSeriesRule(w http.ResponseWriter, r *http.Re
 }
 
 // HandleLiveHLS serves a remuxed live HLS playlist or segment for a playback
-// bridge session.
+// bridge session. Playlists are rewritten so relative segment URIs carry the
+// same auth query (token + profile_id) as the playlist request — required for
+// native players that cannot attach Authorization / X-Profile-Id on every fetch.
 func (h *LiveTVHandler) HandleLiveHLS(w http.ResponseWriter, r *http.Request) {
 	playbackID := chi.URLParam(r, "playbackId")
 	name := chi.URLParam(r, "name")
@@ -583,12 +587,80 @@ func (h *LiveTVHandler) HandleLiveHLS(w http.ResponseWriter, r *http.Request) {
 		writeLiveTVError(w, err)
 		return
 	}
-	path, err := bridge.ResolvePlaylistFile(playbackID, name)
+	filePath, err := bridge.ResolvePlaylistFile(playbackID, name)
 	if err != nil {
 		writeLiveTVError(w, err)
 		return
 	}
-	http.ServeFile(w, r, path)
+	if strings.HasSuffix(strings.ToLower(name), ".m3u8") {
+		serveLiveHLSPlaylist(w, r, filePath)
+		return
+	}
+	http.ServeFile(w, r, filePath)
+}
+
+func serveLiveHLSPlaylist(w http.ResponseWriter, r *http.Request, filePath string) {
+	raw, err := os.ReadFile(filePath)
+	if err != nil {
+		writeError(w, http.StatusNotFound, "not_found", "playlist not found")
+		return
+	}
+	query := r.URL.RawQuery
+	body := string(raw)
+	if query != "" {
+		body = rewriteHLSPlaylistAuthQuery(body, query)
+	}
+	w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
+	w.Header().Set("Cache-Control", "no-store")
+	w.WriteHeader(http.StatusOK)
+	_, _ = io.WriteString(w, body)
+}
+
+// rewriteHLSPlaylistAuthQuery appends authQuery to relative media URIs in an
+// HLS playlist so segment fetches keep token/profile_id query credentials.
+func rewriteHLSPlaylistAuthQuery(playlist, authQuery string) string {
+	authQuery = strings.TrimPrefix(authQuery, "?")
+	if authQuery == "" {
+		return playlist
+	}
+	lines := strings.Split(playlist, "\n")
+	for i, line := range lines {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		if strings.Contains(trimmed, "://") {
+			continue // absolute URLs — leave alone
+		}
+		base := trimmed
+		existingQuery := ""
+		if idx := strings.Index(trimmed, "?"); idx >= 0 {
+			base = trimmed[:idx]
+			existingQuery = trimmed[idx+1:]
+		}
+		merged := mergeQueryStrings(existingQuery, authQuery)
+		lines[i] = base + "?" + merged
+	}
+	return strings.Join(lines, "\n")
+}
+
+func mergeQueryStrings(existing, extra string) string {
+	values, err := url.ParseQuery(existing)
+	if err != nil {
+		values = url.Values{}
+	}
+	extraValues, err := url.ParseQuery(extra)
+	if err != nil {
+		return existing
+	}
+	for key, vals := range extraValues {
+		if values.Get(key) == "" {
+			for _, v := range vals {
+				values.Add(key, v)
+			}
+		}
+	}
+	return values.Encode()
 }
 
 func parseOptionalTime(raw string, fallback time.Time) (time.Time, error) {
