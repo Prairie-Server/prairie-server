@@ -69,7 +69,7 @@ export default defineConfig(({ mode }) => {
       environment: "jsdom",
       globals: true,
       setupFiles: ["./src/test-setup.ts"],
-      // Enforce 75% on pure helpers under src/lib/. Prefer modules that already
+      // Enforce 90% on pure helpers under src/lib/. Prefer modules that already
       // have *.test.ts coverage; write tests before adding a file here.
       // Thin React Query / mutation wrappers are left out until they are
       // meaningfully unit-tested.
@@ -99,10 +99,10 @@ export default defineConfig(({ mode }) => {
           "src/utils/storage.ts",
         ],
         thresholds: {
-          statements: 75,
-          lines: 75,
-          functions: 75,
-          branches: 75,
+          statements: 90,
+          lines: 90,
+          functions: 90,
+          branches: 90,
         },
       },
     },
