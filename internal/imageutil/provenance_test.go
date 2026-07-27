@@ -9,6 +9,7 @@ import (
 )
 
 func TestEmbeddedWasmMatchesRecordedSHA256(t *testing.T) {
+	t.Parallel()
 	raw, err := os.ReadFile("imageutil.wasm.sha256")
 	if err != nil {
 		t.Fatalf("read sha256 sidecar: %v", err)
