@@ -1216,6 +1216,8 @@ func main() {
 	// Step 4b: Create metadata service and match worker (if needed).
 	var metadataService *metadata.MetadataService
 	var metadataImageCacheProcessor *metadata.ImageCacheProcessor
+	var avifBackfillProcessor *metadata.AVIFBackfillProcessor
+	var imageCacher *imagecache.Cacher
 	var personRefreshService *metadata.PersonRefreshService
 	var matchWorker *metadata.MatchWorker
 	var libraryIngestExecutor *libraryingest.Executor
@@ -1390,8 +1392,10 @@ func main() {
 		// public S3 or the local filesystem offload.
 		artworkPut := artworkObjectPutter(deps)
 		if artworkPut != nil {
-			imageCacher := imagecache.New(artworkPut)
+			imageCacher = imagecache.New(artworkPut)
 			imageCacher.SetArtworkRevisionTracker(catalog.NewArtworkRevisionTracker(deps.DB))
+			avifBackfillJobs := metadata.NewAVIFBackfillJobRepository(deps.DB)
+			imageCacher.SetAVIFBackfillStore(avifBackfillJobs)
 			metadataService.SetImageCacher(imageCacher)
 			imageCacheJobs := metadata.NewImageCacheJobRepository(deps.DB)
 			metadataService.SetImageCacheJobEnqueuer(imageCacheJobs)
@@ -1417,11 +1421,30 @@ func main() {
 			} else if deps.ArtworkLocal != nil {
 				metadataImageCacheProcessor.SetImagePrefixDeleter(deps.ArtworkLocal)
 			}
+			avifBackfillProcessor = metadata.NewAVIFBackfillProcessor(avifBackfillJobs, imageCacher)
+			if artworkChecker := artworkObjectChecker(deps); artworkChecker != nil {
+				avifBackfillProcessor.SetDiscoverer(metadata.NewAVIFSiblingReconciler(deps.DB, artworkChecker))
+			}
+			if pngCleaner := artworkObjectDeleter(deps); pngCleaner != nil {
+				avifBackfillProcessor.SetPNGCleaner(metadata.NewLegacyPNGSiblingCleaner(deps.DB, pngCleaner))
+			}
 			metadataService.SetAutoCacheImages(cfg.Metadata.CacheImages)
 			metadataImageCacheProcessor.SetEnabled(cfg.Metadata.CacheImages)
-			configWatcher.OnChange(func(_, updated *config.Config) {
+			avifBackfillProcessor.SetEnabled(cfg.Metadata.CacheImages)
+			configWatcher.OnChange(func(oldCfg, updated *config.Config) {
+				wasEnabled := oldCfg != nil && oldCfg.Metadata.CacheImages
 				metadataService.SetAutoCacheImages(updated.Metadata.CacheImages)
 				metadataImageCacheProcessor.SetEnabled(updated.Metadata.CacheImages)
+				avifBackfillProcessor.SetEnabled(updated.Metadata.CacheImages)
+				if updated.Metadata.CacheImages && !wasEnabled {
+					// Enabling caching must backfill existing item posters, not
+					// wait for the next match/refresh of each title.
+					if personRefreshService != nil {
+						personRefreshService.SetImageCacher(imageCacher)
+						personRefreshService.SetImageCacheJobEnqueuer(imageCacheJobs)
+					}
+					metadataImageCacheProcessor.ForceDiscovery()
+				}
 			})
 			if deps.Scanner != nil {
 				deps.Scanner.SetImageCacher(imageCacher)
@@ -2124,6 +2147,9 @@ func main() {
 		if metadataImageCacheProcessor != nil {
 			taskMgr.Register(tasks.NewCacheMetadataImagesTask(metadataImageCacheProcessor))
 		}
+		if avifBackfillProcessor != nil {
+			taskMgr.Register(tasks.NewBackfillAVIFSiblingsTask(avifBackfillProcessor))
+		}
 		if artworkChecker := artworkObjectChecker(deps); artworkChecker != nil {
 			identity := artworkStorageIdentity(cfg, deps)
 			// Seed the fingerprint on first boot so an unchanged storage
@@ -2817,6 +2843,14 @@ func main() {
 		}
 	}
 
+	// 2c. Drain in-flight deferred AVIF encodes so a deploy/SIGTERM does not
+	// drop siblings that were queued only in memory for the eager path.
+	if imageCacher != nil {
+		if err := imageCacher.WaitAVIFBackfillContext(shutdownCtx); err != nil {
+			slog.Warn("AVIF backfill drain interrupted", "error", err)
+		}
+	}
+
 	// 3. Close user store provider.
 	if userStoreProvider != nil {
 		if closeErr := userStoreProvider.Close(); closeErr != nil {
@@ -2912,6 +2946,16 @@ func artworkRevisionDeleter(deps api.Dependencies) metadata.ArtworkRevisionDelet
 }
 
 func artworkObjectChecker(deps api.Dependencies) metadata.ArtworkObjectChecker {
+	if deps.S3Public != nil {
+		return deps.S3Public
+	}
+	if deps.ArtworkLocal != nil {
+		return deps.ArtworkLocal
+	}
+	return nil
+}
+
+func artworkObjectDeleter(deps api.Dependencies) metadata.ArtworkObjectDeleter {
 	if deps.S3Public != nil {
 		return deps.S3Public
 	}

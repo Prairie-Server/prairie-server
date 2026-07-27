@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -121,6 +122,17 @@ func (m *mockS3) PutObject(_ context.Context, bucket, key string, data []byte) e
 	copied := append([]byte(nil), data...)
 	m.calls = append(m.calls, putCall{bucket: bucket, key: key, size: len(data), data: copied})
 	return nil
+}
+
+func (m *mockS3) GetObject(_ context.Context, _ string, key string) ([]byte, error) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for _, c := range m.calls {
+		if c.key == key {
+			return append([]byte(nil), c.data...), nil
+		}
+	}
+	return nil, fmt.Errorf("mockS3: object not found: %s", key)
 }
 
 func (m *mockS3) Bucket() string { return m.bucket }

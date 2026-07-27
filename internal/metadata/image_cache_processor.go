@@ -126,6 +126,7 @@ type ImageCacheProcessor struct {
 	discoveryInterval time.Duration
 	discoveryMu       sync.Mutex
 	lastDiscovery     time.Time
+	forceDiscover     bool
 }
 
 // SetLibraryRootResolver wires the folder repository used to confine local
@@ -357,9 +358,27 @@ func (p *ImageCacheProcessor) RunUntilIdle(ctx context.Context, workerID string,
 		return total, err
 	}
 
-	sweep := p.discoveryDue()
+	// Discover before draining only when forced (cache_images enable / manual or
+	// interval Cache Metadata Images run). Waiting until the queue is empty
+	// starves never-enqueued item posters behind a TV episode backlog. The
+	// 15m throttle still gates non-forced idle discovery inside runRolling.
+	force := p.consumeForceDiscover()
+	sweep := force || p.discoveryDue()
+	if force {
+		enqueued, derr := p.discoverExisting(ctx, discoverLimit)
+		total.EnqueuedExisting += enqueued
+		if derr != nil {
+			return total, derr
+		}
+		reportProgress()
+	}
 	deadline := time.Now().Add(maxRuntime)
-	return p.runRolling(ctx, workerID, discoverLimit, concurrency, deadline, sweep, onProgress)
+	stats, err := p.runRolling(ctx, workerID, discoverLimit, concurrency, deadline, sweep, onProgress)
+	total.add(stats)
+	total.RuntimeLimited = stats.RuntimeLimited
+	total.MaxInFlight = stats.MaxInFlight
+	total.Batches = stats.Batches
+	return total, err
 }
 
 func (p *ImageCacheProcessor) runRolling(
@@ -618,6 +637,27 @@ func (p *ImageCacheProcessor) discoveryDue() bool {
 	p.discoveryMu.Lock()
 	defer p.discoveryMu.Unlock()
 	return p.lastDiscovery.IsZero() || time.Since(p.lastDiscovery) >= p.discoveryInterval
+}
+
+// ForceDiscovery clears the discovery throttle so the next RunUntilIdle enqueues
+// existing provider artwork immediately — used when cache_images flips on and
+// when an admin manually runs Cache Metadata Images.
+func (p *ImageCacheProcessor) ForceDiscovery() {
+	if p == nil {
+		return
+	}
+	p.discoveryMu.Lock()
+	p.lastDiscovery = time.Time{}
+	p.forceDiscover = true
+	p.discoveryMu.Unlock()
+}
+
+func (p *ImageCacheProcessor) consumeForceDiscover() bool {
+	p.discoveryMu.Lock()
+	defer p.discoveryMu.Unlock()
+	force := p.forceDiscover
+	p.forceDiscover = false
+	return force
 }
 
 func (p *ImageCacheProcessor) markDiscovered() {

@@ -7,6 +7,38 @@ import (
 	"time"
 )
 
+func TestImageCacheJobPriorityRanksItemPostersAboveEpisodes(t *testing.T) {
+	if got := imageCacheJobPriority(ImageCacheTargetItem, ImageCacheImagePoster); got != 100 {
+		t.Fatalf("item poster priority = %d, want 100", got)
+	}
+	if got := imageCacheJobPriority(ImageCacheTargetEpisode, ImageCacheImageStill); got != 20 {
+		t.Fatalf("episode still priority = %d, want 20", got)
+	}
+	if got := imageCacheJobPriority(ImageCacheTargetPerson, ImageCacheImageProfile); got != 10 {
+		t.Fatalf("person profile priority = %d, want 10", got)
+	}
+	if imageCacheJobPriority(ImageCacheTargetItem, ImageCacheImagePoster) <=
+		imageCacheJobPriority(ImageCacheTargetEpisode, ImageCacheImageStill) {
+		t.Fatal("item posters must outrank episode stills in ClaimDue")
+	}
+}
+
+func TestNormalizeImageCacheJobInputSetsPriority(t *testing.T) {
+	got, ok := normalizeImageCacheJobInput(EnqueueImageCacheJobInput{
+		TargetType:      ImageCacheTargetItem,
+		TargetContentID: "movie-1",
+		SourcePath:      "https://image.tmdb.org/t/p/original/x.jpg",
+		ImageType:       ImageCacheImagePoster,
+		ContentType:     "movie",
+	})
+	if !ok {
+		t.Fatal("expected remote poster to normalize")
+	}
+	if got.Priority != 100 {
+		t.Fatalf("priority = %d, want 100", got.Priority)
+	}
+}
+
 func TestImageCacheLeaseDurationIsBounded(t *testing.T) {
 	if imageCacheLeaseDuration != 2*time.Minute {
 		t.Fatalf("imageCacheLeaseDuration = %s, want 2m for fast restart reclaim", imageCacheLeaseDuration)
@@ -21,6 +53,12 @@ func TestImageCacheLeaseDurationIsBounded(t *testing.T) {
 	}
 	if !strings.Contains(sql, "AND locked_at < NOW() - $1::interval") {
 		t.Fatal("stale running reclaim must key off locked_at lease expiry")
+	}
+	if !strings.Contains(sql, "ORDER BY priority DESC, next_attempt_at ASC, id ASC") {
+		t.Fatal("ClaimDue must order by priority so item posters outrank episode stills")
+	}
+	if !strings.Contains(sql, "WHEN 'item' THEN 0") {
+		t.Fatal("EnqueueExistingProviderArtwork must prioritize item targets over episodes")
 	}
 }
 
