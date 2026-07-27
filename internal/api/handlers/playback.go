@@ -2290,12 +2290,13 @@ func (h *PlaybackHandler) HandleChangeAudioTrack(w http.ResponseWriter, r *http.
 	newTrack := file.AudioTracks[req.AudioTrackIndex]
 	audioCodecNeedsTranscode := !playback.BrowserSupportsAudioCodec(newTrack.Codec)
 
-	if baseMethod == playback.PlayDirect {
+	switch baseMethod {
+	case playback.PlayDirect:
 		newMethod = playback.PlayRemux
 		transcodeAudio = audioCodecNeedsTranscode
-	} else if baseMethod == playback.PlayRemux {
+	case playback.PlayRemux:
 		transcodeAudio = audioCodecNeedsTranscode
-	} else if baseMethod == playback.PlayTranscode {
+	case playback.PlayTranscode:
 		transcodeAudio = true
 	}
 
@@ -3083,7 +3084,7 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 	// encoding transcode so the burned frames are actually produced instead of
 	// the subtitle selection being silently dropped by the filter stage.
 	if req.SubtitleBurnIn && req.SubtitleTrackIndex >= 0 && strings.EqualFold(req.TargetCodecVideo, "copy") {
-		slog.Info("forcing video transcode for subtitle burn-in request",
+		slog.InfoContext(r.Context(), "forcing video transcode for subtitle burn-in request",
 			"playback_session_id", req.SessionID,
 			"subtitle_track_index", req.SubtitleTrackIndex,
 			"requested_target_codec_video", req.TargetCodecVideo,
@@ -3165,7 +3166,7 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 			return
 		}
 		if resolvedIndex != req.SubtitleTrackIndex {
-			slog.Info("remapped subtitle burn-in track for alternate file",
+			slog.InfoContext(r.Context(), "remapped subtitle burn-in track for alternate file",
 				"playback_session_id", req.SessionID,
 				"subtitle_source_file_id", subtitleSourceFile.ID,
 				"effective_file_id", file.ID,
@@ -3842,7 +3843,7 @@ func (h *PlaybackHandler) proxyToTranscodeNode(w http.ResponseWriter, r *http.Re
 	// WriteTimeout; roll the write deadline with progress instead.
 	sw := httpstream.NewRollingDeadlineWriter(w)
 	sw.WriteHeader(resp.StatusCode)
-	io.Copy(sw, resp.Body)
+	_, _ = io.Copy(sw, resp.Body)
 }
 
 // maybeStartThrottler reads throttle settings and starts the throttler if enabled.

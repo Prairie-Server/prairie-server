@@ -752,7 +752,7 @@ func (e *Enricher) persistPeople(ctx context.Context, contentID string, people [
 			continue
 		}
 		ip := people[i]
-		ip.Person.ID = personIDs[i]
+		ip.ID = personIDs[i]
 		linked = append(linked, ip)
 	}
 

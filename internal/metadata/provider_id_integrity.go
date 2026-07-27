@@ -946,7 +946,7 @@ func ensureSeriesCanMove(ctx context.Context, tx pgx.Tx, sourceID, canonicalID s
 		}
 		return fmt.Errorf("loading source item type: %w", err)
 	}
-	if sourceType != "series" {
+	if sourceType != matchContentTypeSeries {
 		return nil
 	}
 	var conflictCount int

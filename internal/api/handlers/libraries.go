@@ -600,7 +600,7 @@ func (h *LibraryHandler) HandleCreateLibrary(w http.ResponseWriter, r *http.Requ
 
 	// Seed default sections for the new library.
 	if h.SectionRepo != nil {
-		if seedErr := h.SectionRepo.SeedDefaults(r.Context(), "library", &folder.ID, sections.DefaultLibrarySectionsForType(&folder.ID, folder.Type)); seedErr != nil {
+		if seedErr := h.SectionRepo.SeedDefaults(r.Context(), sectionTypeLibrary, &folder.ID, sections.DefaultLibrarySectionsForType(&folder.ID, folder.Type)); seedErr != nil {
 			slog.WarnContext(r.Context(), "seed default sections for new library", "component", "api", "library_id", folder.ID, "error", seedErr)
 		}
 		if sections.IsAudiobookLibraryType(folder.Type) {
@@ -1357,19 +1357,6 @@ func boolPtr(v bool) *bool {
 	return &v
 }
 
-func (h *LibraryHandler) publishCatalogStatsInvalidation(eventType, payload string) {
-	if h.EventBus == nil {
-		return
-	}
-	if err := h.EventBus.Publish(h.appCtx, cache.ChannelCatalog, cache.Event{Type: eventType, Payload: payload}); err != nil {
-		slog.Warn("scan: failed to publish catalog invalidation event",
-			"type", eventType,
-			"payload", payload,
-			"error", err,
-		)
-	}
-}
-
 type refreshLibraryMetadataRequest struct {
 	Mode string `json:"mode"`
 }
@@ -1937,7 +1924,7 @@ func (h *LibraryHandler) HandleUploadPoster(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	file, header, err := r.FormFile("poster")
+	file, header, err := r.FormFile(imageTypePoster)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "bad_request", "Missing poster file")
 		return

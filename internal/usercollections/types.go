@@ -1,5 +1,5 @@
 // Package usercollections owns the import + sync logic for personal,
-// profile-scoped collections (the user-facing analogue of the admin
+// profile-scoped collections (the user-facing analog of the admin
 // library_collections subsystem).
 //
 // User collections live in user_personal_collections and use external sources

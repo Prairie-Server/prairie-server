@@ -17,17 +17,17 @@ func TestNewRunContext_HasNoDeadline(t *testing.T) {
 	}
 }
 
-func TestNewRunContext_UsesBackgroundWhenParentNil(t *testing.T) {
+func TestNewRunContext_UsesTODOWithoutDeadline(t *testing.T) {
 	t.Parallel()
 
-	ctx, cancel := newRunContext(nil)
+	ctx, cancel := newRunContext(context.TODO())
 	defer cancel()
 
 	if err := ctx.Err(); err != nil {
 		t.Fatalf("ctx.Err() = %v, want nil before cancel", err)
 	}
 	if _, ok := ctx.Deadline(); ok {
-		t.Fatal("newRunContext should not add a deadline when parent is nil")
+		t.Fatal("newRunContext should not add a deadline")
 	}
 }
 

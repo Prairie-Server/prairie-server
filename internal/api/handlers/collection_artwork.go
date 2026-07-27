@@ -47,7 +47,7 @@ func storeBundledCollectionPosterIfS3Configured(
 		return "", "", false, fmt.Errorf("reading bundled poster %q: %w", posterPath, err)
 	}
 
-	storedPath, thumbhashStr, err = uploadCollectionImageVariants(ctx, s3GP, prefix, collectionID, "poster", data)
+	storedPath, thumbhashStr, err = uploadCollectionImageVariants(ctx, s3GP, prefix, collectionID, imageTypePoster, data)
 	if err != nil {
 		return "", "", false, err
 	}
@@ -133,7 +133,7 @@ func uploadCollectionImageVariants(
 	}
 	var widths []int
 	switch imageType {
-	case "poster":
+	case imageTypePoster:
 		widths = []int{500, 300}
 	case "backdrop":
 		widths = []int{1280, 300}

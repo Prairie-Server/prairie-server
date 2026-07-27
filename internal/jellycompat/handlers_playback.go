@@ -337,7 +337,7 @@ func NewPlaybackHandler(
 		if h.sessionMgr != nil && h.tm.CloseTranscodeSessionIf(sessionID, dead, nodeURL) {
 			if h.playbackStore != nil {
 				if playSession, ok := h.playbackStore.FindByUpstreamSessionID(sessionID); ok {
-					h.dispatchCompatScrobble(ctx, compatScrobblePause, playSession, upstreamSession, nil)
+					_ = h.dispatchCompatScrobble(ctx, compatScrobblePause, playSession, upstreamSession, nil)
 				}
 			}
 			_ = h.sessionMgr.StopSession(sessionID)
@@ -937,7 +937,7 @@ func buildMediaStreamsWithSelection(routeItemID, mediaSourceID string, version c
 		}
 		streams = append(streams, mediaStreamDTO{
 			Index:                  index,
-			Type:                   "Video",
+			Type:                   streamTypeVideo,
 			Codec:                  strings.ToLower(track.Codec),
 			TimeBase:               "1/1000",
 			DisplayTitle:           firstNonEmpty(track.Title, track.Codec),
@@ -1805,13 +1805,4 @@ func (v *compatIntValue) UnmarshalJSON(data []byte) error {
 func compatIntValuePtr(value int) *compatIntValue {
 	v := compatIntValue(value)
 	return &v
-}
-
-func (h *PlaybackHandler) playbackUnavailable(w http.ResponseWriter, err error) {
-	switch {
-	case errors.Is(err, ErrSessionNotFound):
-		writeError(w, http.StatusUnauthorized, "Unauthorized", "Authentication failed")
-	default:
-		writeCompatUpstreamError(w, err)
-	}
 }

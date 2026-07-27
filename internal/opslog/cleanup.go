@@ -128,27 +128,25 @@ func LoadRetentionPolicy(ctx context.Context, store SettingsStore) (RetentionPol
 	}
 
 	rawBuckets, err := store.Get(ctx, keyBucketPolicies)
-	if err != nil || strings.TrimSpace(rawBuckets) == "" {
-		return policy, nil
-	}
-
-	var buckets []BucketPolicy
-	if err := json.Unmarshal([]byte(rawBuckets), &buckets); err != nil {
-		return policy, fmt.Errorf("decode %s: %w", keyBucketPolicies, err)
-	}
-
-	normalized := make([]BucketPolicy, 0, len(buckets))
-	for _, bucket := range buckets {
-		component := strings.TrimSpace(bucket.Component)
-		level := strings.ToLower(strings.TrimSpace(bucket.Level))
-		if component == "" || level == "" {
-			continue
+	if err == nil && strings.TrimSpace(rawBuckets) != "" {
+		var buckets []BucketPolicy
+		if err := json.Unmarshal([]byte(rawBuckets), &buckets); err != nil {
+			return policy, fmt.Errorf("decode %s: %w", keyBucketPolicies, err)
 		}
-		bucket.Component = component
-		bucket.Level = level
-		normalized = append(normalized, bucket)
+
+		normalized := make([]BucketPolicy, 0, len(buckets))
+		for _, bucket := range buckets {
+			component := strings.TrimSpace(bucket.Component)
+			level := strings.ToLower(strings.TrimSpace(bucket.Level))
+			if component == "" || level == "" {
+				continue
+			}
+			bucket.Component = component
+			bucket.Level = level
+			normalized = append(normalized, bucket)
+		}
+		policy.Buckets = normalized
 	}
-	policy.Buckets = normalized
 	return policy, nil
 }
 
@@ -436,12 +434,12 @@ func scopeFilterArgs(component, level string) (string, []any, int) {
 
 func parseInt(s string) int {
 	var v int
-	fmt.Sscanf(s, "%d", &v)
+	_, _ = fmt.Sscanf(s, "%d", &v)
 	return v
 }
 
 func parseInt64(s string) int64 {
 	var v int64
-	fmt.Sscanf(s, "%d", &v)
+	_, _ = fmt.Sscanf(s, "%d", &v)
 	return v
 }

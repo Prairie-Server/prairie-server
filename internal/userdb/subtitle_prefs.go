@@ -2,6 +2,7 @@ package userdb
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/prairie-server/prairie-server/internal/userstore"
@@ -74,7 +75,7 @@ func GetSubtitlePreference(db *sql.DB, profileID, seriesID string) (*SubtitlePre
 		&showForcedSubtitles,
 		&pref.UpdatedAt,
 	)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {

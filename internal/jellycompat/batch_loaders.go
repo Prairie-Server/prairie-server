@@ -312,7 +312,7 @@ func (h *ItemsHandler) fetchCompatEpisodeTargetsByContentIDs(ctx context.Context
 
 		listItem := upstreamListItem{
 			ContentID:         contentID,
-			Type:              "episode",
+			Type:              itemTypeEpisode,
 			Title:             title,
 			Genres:            genres,
 			ContentRating:     contentRating,
@@ -426,7 +426,7 @@ func (h *ItemsHandler) fetchCompatEpisodeTargetsByContentIDsFallback(ctx context
 		}
 		listItem := upstreamListItem{
 			ContentID:         episode.ContentID,
-			Type:              "episode",
+			Type:              itemTypeEpisode,
 			Title:             episode.Title,
 			Genres:            series.Genres,
 			ContentRating:     series.ContentRating,

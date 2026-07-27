@@ -494,7 +494,7 @@ func TestApplyDiversityFilterAvoidSectionDoesNotShadowItself(t *testing.T) {
 }
 
 func TestApplyDiversityFilterHandlesNilAndEmpty(t *testing.T) {
-	if got := applyDiversityFilter(nil); got != nil && len(got) != 0 {
+	if got := applyDiversityFilter(nil); len(got) != 0 {
 		t.Errorf("nil input returned non-empty: %v", got)
 	}
 	if got := applyDiversityFilter([]sections.SectionWithItems{}); len(got) != 0 {

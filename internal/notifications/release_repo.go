@@ -259,8 +259,8 @@ func (r *ReleaseRepository) recordItemAvailability(ctx context.Context, k flatIt
 					sb.WriteString(", ")
 				}
 				base := len(eventArgs)
-				sb.WriteString(fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d)",
-					base+1, base+2, base+3, base+4, base+5, base+6))
+				fmt.Fprintf(&sb, "($%d,$%d,$%d,$%d,$%d,$%d)",
+					base+1, base+2, base+3, base+4, base+5, base+6)
 				eventArgs = append(eventArgs,
 					ulid.Make().String(),
 					libraryID,
@@ -369,8 +369,8 @@ func insertReleaseEvents(ctx context.Context, tx pgx.Tx, libraryID int, rows []n
 				sb.WriteString(", ")
 			}
 			base := len(args)
-			sb.WriteString(fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d)",
-				base+1, base+2, base+3, base+4, base+5, base+6, base+7, base+8, base+9))
+			fmt.Fprintf(&sb, "($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d)",
+				base+1, base+2, base+3, base+4, base+5, base+6, base+7, base+8, base+9)
 			args = append(args,
 				ulid.Make().String(),
 				libraryID,

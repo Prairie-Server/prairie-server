@@ -54,10 +54,10 @@ func (e *Engine) SimilarUsersLiked(ctx context.Context, userID int, profileID st
 
 		for _, r := range ratings {
 			var weight float64
-			switch {
-			case r.Rating == 5:
+			switch r.Rating {
+			case 5:
 				weight = WeightRated5
-			case r.Rating == 4:
+			case 4:
 				weight = WeightRated4
 			default:
 				continue

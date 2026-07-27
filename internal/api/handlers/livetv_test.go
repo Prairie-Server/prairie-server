@@ -17,9 +17,12 @@ type fakeLiveTVStore struct {
 	tuners []livetv.Tuner
 }
 
-
-func (s *fakeLiveTVStore) GetRecording(context.Context, string) (*livetv.Recording, error) { return nil, nil }
-func (s *fakeLiveTVStore) GetSeriesRule(context.Context, string) (*livetv.SeriesRule, error) { return nil, nil }
+func (s *fakeLiveTVStore) GetRecording(context.Context, string) (*livetv.Recording, error) {
+	return nil, nil
+}
+func (s *fakeLiveTVStore) GetSeriesRule(context.Context, string) (*livetv.SeriesRule, error) {
+	return nil, nil
+}
 func (s *fakeLiveTVStore) ListTuners(context.Context) ([]livetv.Tuner, error) {
 	return s.tuners, nil
 }

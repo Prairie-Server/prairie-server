@@ -145,8 +145,8 @@ func (r *PushDeviceRepository) EnqueuePushAttempts(ctx context.Context, tx pgx.T
 			sb.WriteString(", ")
 		}
 		base := len(args)
-		sb.WriteString(fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d)",
-			base+1, base+2, base+3, base+4, base+5, base+6, base+7, base+8))
+		fmt.Fprintf(&sb, "($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d)",
+			base+1, base+2, base+3, base+4, base+5, base+6, base+7, base+8)
 		args = append(args,
 			attempt.ID,
 			attempt.NotificationDeliveryID,

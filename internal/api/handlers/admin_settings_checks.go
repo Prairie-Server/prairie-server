@@ -375,7 +375,7 @@ func probeRedisConfig(ctx context.Context, redisCfg config.RedisConfig) error {
 	if client == nil {
 		return errors.New("redis URL is required")
 	}
-	defer client.Close()
+	defer func() { _ = client.Close() }()
 
 	checkCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
 	defer cancel()

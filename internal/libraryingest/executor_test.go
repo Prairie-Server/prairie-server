@@ -13,7 +13,7 @@ import (
 
 // settleControlledMatcher simulates a TV match drainer whose provider lookup is
 // still in flight when the settle window expires. The batch only returns once
-// the test releases it, so the test can catch stopDrainers cancelling the active
+// the test releases it, so the test can catch stopDrainers canceling the active
 // batch context instead of only stopping the drainer loop.
 type settleControlledMatcher struct {
 	batchCalls            atomic.Int64

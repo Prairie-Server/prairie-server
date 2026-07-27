@@ -98,7 +98,7 @@ func (p *PlexServerProvider) fetchSeriesMetadata(ctx context.Context, items []Pl
 	seen := make(map[string]struct{})
 	var seriesKeys []string
 	for _, item := range items {
-		if item.Type != "episode" || item.GrandparentRatingKey == "" {
+		if item.Type != KindEpisode || item.GrandparentRatingKey == "" {
 			continue
 		}
 		if _, ok := seen[item.GrandparentRatingKey]; ok {

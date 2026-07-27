@@ -155,7 +155,7 @@ func listeningSessionsEnvelope(sessions []map[string]any, total, itemsPerPage, p
 		numPages = (total + itemsPerPage - 1) / itemsPerPage
 	}
 	return map[string]any{
-		"total":        total,
+		jsonKeyTotal:   total,
 		"numPages":     numPages,
 		"page":         page,
 		"itemsPerPage": itemsPerPage,

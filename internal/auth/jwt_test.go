@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+
 	"github.com/prairie-server/prairie-server/internal/auth"
 )
 
@@ -75,7 +76,7 @@ func TestJWT_ValidateAccessToken(t *testing.T) {
 	if claims.ExpiresAt == nil {
 		t.Fatal("ExpiresAt should be set")
 	}
-	if !claims.ExpiresAt.Time.After(time.Now()) {
+	if !claims.ExpiresAt.After(time.Now()) {
 		t.Error("ExpiresAt should be in the future")
 	}
 
@@ -83,7 +84,7 @@ func TestJWT_ValidateAccessToken(t *testing.T) {
 	if claims.IssuedAt == nil {
 		t.Fatal("IssuedAt should be set")
 	}
-	if claims.IssuedAt.Time.After(time.Now().Add(1 * time.Second)) {
+	if claims.IssuedAt.After(time.Now().Add(1 * time.Second)) {
 		t.Error("IssuedAt should not be in the future")
 	}
 }
@@ -137,8 +138,8 @@ func TestJWT_AccessTokenExpiry(t *testing.T) {
 		t.Fatalf("ValidateToken(refresh) error: %v", err)
 	}
 
-	accessExpiry := accessClaims.ExpiresAt.Time.Sub(accessClaims.IssuedAt.Time)
-	refreshExpiry := refreshClaims.ExpiresAt.Time.Sub(refreshClaims.IssuedAt.Time)
+	accessExpiry := accessClaims.ExpiresAt.Sub(accessClaims.IssuedAt.Time)
+	refreshExpiry := refreshClaims.ExpiresAt.Sub(refreshClaims.IssuedAt.Time)
 
 	// Access token should have shorter expiry than refresh token.
 	if accessExpiry >= refreshExpiry {

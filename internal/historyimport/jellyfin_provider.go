@@ -51,7 +51,7 @@ func (p *JellyfinProvider) fetchSeriesMetadata(ctx context.Context, items []jell
 	seen := map[string]struct{}{}
 	ids := []string{}
 	for _, item := range items {
-		if strings.ToLower(item.Type) != "episode" || strings.TrimSpace(item.SeriesID) == "" {
+		if strings.ToLower(item.Type) != KindEpisode || strings.TrimSpace(item.SeriesID) == "" {
 			continue
 		}
 		if _, ok := seen[item.SeriesID]; ok {
@@ -86,7 +86,7 @@ func normalizeJellyfinItem(item jellyfinItem, series jellyfinItem) Record {
 	switch strings.ToLower(item.Type) {
 	case "movie":
 		record.Kind = KindMovie
-	case "episode":
+	case KindEpisode:
 		record.Kind = KindEpisode
 		record.SeriesTitle = item.SeriesName
 		if record.SeriesTitle == "" {

@@ -79,7 +79,7 @@ func (v *WatchlistVisibility) HiddenSeriesIDs(ctx context.Context, store watchli
 	}
 	seriesIDs := make([]string, 0, len(items))
 	for _, item := range items {
-		if item != nil && item.Type == "series" {
+		if item != nil && item.Type == itemTypeSeries {
 			seriesIDs = append(seriesIDs, item.ContentID)
 		}
 	}

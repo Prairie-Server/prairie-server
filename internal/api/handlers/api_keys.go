@@ -254,7 +254,7 @@ func (h *APIKeyHandler) HandleAdminUpdateTier(w http.ResponseWriter, r *http.Req
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
 }
 
 // HandleAdminCreateAPIKey handles POST /admin/api-keys.

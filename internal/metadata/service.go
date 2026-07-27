@@ -17,6 +17,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/catalog/reattribute"
 	"github.com/prairie-server/prairie-server/internal/contentid"
@@ -25,8 +28,6 @@ import (
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/naming"
 	"github.com/prairie-server/prairie-server/internal/scanner"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // FileContentUpdater updates content_id on media_files.
@@ -740,7 +741,7 @@ func (s *MetadataService) itemLibrariesAgreeOnLanguage(ctx context.Context, cont
 func parseProcessFolderID(raw string) int {
 	folderID := 0
 	if raw != "" {
-		fmt.Sscanf(raw, "%d", &folderID)
+		_, _ = fmt.Sscanf(raw, "%d", &folderID)
 	}
 	return folderID
 }
@@ -1007,7 +1008,7 @@ func buildSeriesChildLocalContext(seriesRootPaths []string, filePaths []string) 
 		episodeFilePaths:     make(map[int]map[int][]string),
 	}
 	for _, path := range compactUniqueFilePaths(filePaths) {
-		hints := naming.ParseFilename(path, "series")
+		hints := naming.ParseFilename(path, matchContentTypeSeries)
 		if hints == nil || hints.EpisodeNum == 0 {
 			continue
 		}
@@ -1699,7 +1700,7 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 	// Phase 4a: Seasons — resolve with "season" content level.
 	var allSeasons []SeasonResult
 	var allEpisodes []EpisodeResult
-	if contentType == "series" {
+	if contentType == matchContentTypeSeries {
 		childCtx := buildSeriesChildLocalContext(
 			primarySidecarSearchPaths,
 			append(append([]string(nil), representativeFilePath), allGroupFilePaths...),
@@ -2380,13 +2381,13 @@ func (s *MetadataService) mergeAndPersist(
 			slog.WarnContext(ctx, "metadata: batch find/create people failed", "component", "metadata", "error", err)
 		} else {
 			for i := range item.People {
-				item.People[i].Person.ID = personIDs[i]
+				item.People[i].ID = personIDs[i]
 			}
 		}
 		// Filter out entries where FindOrCreate failed (Person.ID stayed 0).
 		valid := item.People[:0]
 		for _, p := range item.People {
-			if p.Person.ID != 0 {
+			if p.ID != 0 {
 				valid = append(valid, p)
 			}
 		}
@@ -2415,7 +2416,7 @@ func (s *MetadataService) mergeAndPersist(
 	// this point; it uses the matched-only upsert as a secondary confirmation.
 	if req.Mode == ModeInitialMatch && req.FolderID != "" {
 		folderID := 0
-		fmt.Sscanf(req.FolderID, "%d", &folderID)
+		_, _ = fmt.Sscanf(req.FolderID, "%d", &folderID)
 		if err := s.upsertLibraryMembershipIfMatched(ctx, contentID, folderID); err != nil {
 			s.logLibraryMembershipError("ensuring matched library membership", contentID, folderID, err)
 		}
@@ -2426,7 +2427,7 @@ func (s *MetadataService) mergeAndPersist(
 	// path creates their implicit "Season N" rows. Fallback synthesis then
 	// covers any files the providers left unlinked (episodes with no NFO
 	// and no remote row); it is a no-op when every file is linked.
-	if contentType == "series" {
+	if contentType == matchContentTypeSeries {
 		if len(seasons) > 0 || len(episodes) > 0 {
 			s.persistSeasonsAndEpisodes(ctx, item, accumulator.ProviderIDs, canonicalLanguage, req.Language, seasons, episodes, mergeMode)
 		}
@@ -3093,7 +3094,7 @@ func (s *MetadataService) currentStaleRefreshDebtState(
 
 func itemHasEpisodeMetadataDebt(item *models.MediaItem) bool {
 	return item != nil &&
-		strings.EqualFold(strings.TrimSpace(item.Type), "series") &&
+		strings.EqualFold(strings.TrimSpace(item.Type), matchContentTypeSeries) &&
 		item.EpisodeMetadataIncomplete
 }
 
@@ -3134,7 +3135,7 @@ func (s *MetadataService) refreshSeriesChildTarget(
 	if err != nil {
 		return err
 	}
-	if !strings.EqualFold(strings.TrimSpace(series.Type), "series") {
+	if !strings.EqualFold(strings.TrimSpace(series.Type), matchContentTypeSeries) {
 		return ErrMetadataNotFound
 	}
 
@@ -3211,7 +3212,7 @@ func (s *MetadataService) resolveSeriesRefreshProviderIDs(ctx context.Context, s
 	}
 	suppressProviderIDValues(accumulatedIDs, recordedStaleIDs)
 
-	itemChain, err := s.resolveChainCached(ctx, folderID, "series")
+	itemChain, err := s.resolveChainCached(ctx, folderID, matchContentTypeSeries)
 	if err != nil {
 		return nil, fmt.Errorf("resolve series provider chain: %w", err)
 	}
@@ -3280,7 +3281,7 @@ func (s *MetadataService) fetchTargetSeasonResults(ctx context.Context, provider
 		}
 		seasons, err := ep.GetSeasons(ctx, SeasonsRequest{
 			ProviderIDs:          providerIDs,
-			ContentType:          "series",
+			ContentType:          matchContentTypeSeries,
 			Language:             language,
 			SeriesRootPaths:      childCtx.seriesRootPaths,
 			SeasonDirectoryPaths: childCtx.seasonDirectoryPaths,
@@ -3849,12 +3850,12 @@ func (s *MetadataService) SearchProviders(ctx context.Context, query SearchQuery
 
 func providerChainContentLevel(contentType string) string {
 	switch normalized := strings.ToLower(strings.TrimSpace(contentType)); normalized {
-	case "movie", "movies":
-		return "movie"
-	case "series", "show", "shows", "tv", "season", "seasons", "episode", "episodes":
-		return "series"
+	case matchContentTypeMovie, libraryTypeMovies:
+		return matchContentTypeMovie
+	case matchContentTypeSeries, "show", "shows", "tv", "season", "seasons", "episode", "episodes":
+		return matchContentTypeSeries
 	case "":
-		return "series"
+		return matchContentTypeSeries
 	default:
 		return normalized
 	}
@@ -3904,7 +3905,7 @@ func (s *MetadataService) persistSeasonsAndEpisodes(
 			SourcePath:        season.PosterSourcePath,
 			ProviderID:        providerID,
 			ProviderContentID: providerContentID,
-			ContentType:       "series",
+			ContentType:       matchContentTypeSeries,
 			ImageType:         ImageCacheImagePoster,
 			SeasonNumber:      &seasonNumber,
 		})
@@ -3923,7 +3924,7 @@ func (s *MetadataService) persistSeasonsAndEpisodes(
 			SourcePath:        episode.StillSourcePath,
 			ProviderID:        providerID,
 			ProviderContentID: providerContentID,
-			ContentType:       "series",
+			ContentType:       matchContentTypeSeries,
 			ImageType:         ImageCacheImageStill,
 			SeasonNumber:      &seasonNumber,
 			EpisodeNumber:     &episodeNumber,
@@ -3943,7 +3944,7 @@ func (s *MetadataService) persistSeasonsAndEpisodes(
 			SourcePath:        loc.PosterSourcePath,
 			ProviderID:        providerID,
 			ProviderContentID: providerContentID,
-			ContentType:       "series",
+			ContentType:       matchContentTypeSeries,
 			ImageType:         ImageCacheImagePoster,
 			SeasonNumber:      &seasonNumber,
 		})
@@ -4256,7 +4257,7 @@ func (s *MetadataService) synthesizeFallbackSeriesStructure(ctx context.Context,
 	if err != nil {
 		return fmt.Errorf("loading series item: %w", err)
 	}
-	if item.Type != "series" {
+	if item.Type != matchContentTypeSeries {
 		return nil
 	}
 
@@ -4345,12 +4346,6 @@ func (s *MetadataService) synthesizeFallbackSeriesStructure(ctx context.Context,
 	}
 	s.refreshSeriesEpisodeMetadataState(ctx, seriesID, time.Now())
 	return nil
-}
-
-func (s *MetadataService) linkSeriesFilesToEpisodes(ctx context.Context, seriesID string) {
-	if err := s.linkSeriesFilesToEpisodesWithOptions(ctx, seriesID, false); err == nil {
-		s.refreshSeriesEpisodeMetadataState(ctx, seriesID, time.Now())
-	}
 }
 
 func (s *MetadataService) ensureSeriesEpisodeLinks(ctx context.Context, seriesID string) error {
@@ -4713,7 +4708,7 @@ func parseEpisodeLinkHint(file *models.MediaFile) episodeLinkHint {
 		return episodeLinkHint{seasonNum: file.SeasonNumber, episodeNum: file.EpisodeNumber, ok: true}
 	}
 
-	fnh := naming.ParseFilename(file.FilePath, "series")
+	fnh := naming.ParseFilename(file.FilePath, matchContentTypeSeries)
 	if fnh == nil {
 		return episodeLinkHint{}
 	}
@@ -4944,8 +4939,8 @@ func (s *MetadataService) createOrFindSkeleton(ctx context.Context, file *models
 			if scannedGroup.TvdbID != "" {
 				res.TvdbID = scannedGroup.TvdbID
 			}
-			if scannedGroup.State == "ambiguous" {
-				res.ItemStatus = "ambiguous"
+			if scannedGroup.State == matchStatusAmbiguous {
+				res.ItemStatus = matchStatusAmbiguous
 			}
 			if scannedGroup.SampleObservedRootPath != "" {
 				res.ObservedRootPath = scannedGroup.SampleObservedRootPath
@@ -4985,18 +4980,18 @@ func (s *MetadataService) createOrFindSkeleton(ctx context.Context, file *models
 	}
 	if res.Type == "" {
 		switch libraryTypeNorm {
-		case "series", "tv", "show", "tvshows":
-			res.Type = "series"
-		case "movie", "movies":
-			res.Type = "movie"
+		case matchContentTypeSeries, "tv", "show", "tvshows":
+			res.Type = matchContentTypeSeries
+		case matchContentTypeMovie, libraryTypeMovies:
+			res.Type = matchContentTypeMovie
 		case "mixed":
 			if file.EpisodeID != "" || file.SeasonNumber != 0 || file.EpisodeNumber != 0 {
-				res.Type = "series"
+				res.Type = matchContentTypeSeries
 			}
 		}
 	}
 	if res.Type == "" {
-		res.Type = "movie"
+		res.Type = matchContentTypeMovie
 	}
 
 	// Explicit structured IDs from the file or folder are treated as trusted.
@@ -5049,7 +5044,7 @@ func (s *MetadataService) createOrFindSkeleton(ctx context.Context, file *models
 	// a provider id was parsed — a "Season NN" folder otherwise yields a bogus
 	// id (the season number, e.g. tmdb="01"), so effectiveExternalIDs must NOT
 	// gate the skip.
-	if (libraryTypeNorm == "movie" || libraryTypeNorm == "movies") &&
+	if (libraryTypeNorm == matchContentTypeMovie || libraryTypeNorm == libraryTypeMovies) &&
 		naming.IsMisplacedSeriesFile(file.FilePath) {
 		s.recordSkippedRoot(ctx, folderID, observedRootPath, skippedReasonSeriesInMovieLibrary, file.FilePath)
 		res.ItemStatus = "skipped"
@@ -5119,9 +5114,9 @@ func (s *MetadataService) createOrFindSkeleton(ctx context.Context, file *models
 	}
 
 	// Dedup 3: same observed TV root reuses the already-linked root-scoped item.
-	if res.Type == "series" {
-		res.Type = "series"
-		existingContentID, err := s.fileRepo.FindContentIDByObservedRootPath(ctx, folderID, observedRootPath, "series")
+	if res.Type == matchContentTypeSeries {
+		res.Type = matchContentTypeSeries
+		existingContentID, err := s.fileRepo.FindContentIDByObservedRootPath(ctx, folderID, observedRootPath, matchContentTypeSeries)
 		if err != nil {
 			return nil, fmt.Errorf("finding existing item by observed root path: %w", err)
 		}
@@ -5142,7 +5137,7 @@ func (s *MetadataService) createOrFindSkeleton(ctx context.Context, file *models
 	if effectiveExternalIDs != nil {
 		existing, err := s.itemRepo.GetByExternalID(ctx, effectiveExternalIDs.TmdbID, effectiveExternalIDs.ImdbID, effectiveExternalIDs.TvdbID, res.Type)
 		if err == nil && existing != nil {
-			if (res.Type == "movie" || res.Type == "series") && !isConfirmedOwnershipStatus(existing.Status) {
+			if (res.Type == matchContentTypeMovie || res.Type == matchContentTypeSeries) && !isConfirmedOwnershipStatus(existing.Status) {
 				existing = nil
 			}
 		}
@@ -5486,7 +5481,7 @@ func isSkeletonLikeStatus(status string) bool {
 
 func isProvisionalOwnershipStatus(status string) bool {
 	switch strings.ToLower(strings.TrimSpace(status)) {
-	case "pending", "unmatched", "ambiguous":
+	case "pending", "unmatched", matchStatusAmbiguous:
 		return true
 	default:
 		return false
@@ -5506,29 +5501,6 @@ func (s *MetadataService) confirmedOwnershipItem(ctx context.Context, contentID 
 		return nil, false
 	}
 	return item, true
-}
-
-func (s *MetadataService) rebindSkeletonByProviderIDs(
-	ctx context.Context,
-	skeletonContentID string,
-	providerIDs map[string]string,
-	itemType string,
-) (string, error) {
-	if s == nil || skeletonContentID == "" {
-		return "", nil
-	}
-	unlockDedup := s.lockDedupKey(dedupKeyFromProviderIDs(itemType, providerIDs))
-	defer unlockDedup()
-	return s.rebindSkeletonByProviderIDsLocked(ctx, skeletonContentID, providerIDs, itemType)
-}
-
-func (s *MetadataService) rebindSkeletonByProviderIDsLocked(
-	ctx context.Context,
-	skeletonContentID string,
-	providerIDs map[string]string,
-	itemType string,
-) (string, error) {
-	return s.rebindItemByProviderIDsLocked(ctx, skeletonContentID, providerIDs, itemType, false)
 }
 
 func (s *MetadataService) rebindItemByProviderIDsLocked(
@@ -5610,10 +5582,6 @@ func (s *MetadataService) recoverProviderIDConflict(
 		}
 	}
 	return s.rebindItemByProviderIDsLocked(ctx, sourceContentID, providerIDs, itemType, allowMatchedSource)
-}
-
-func (s *MetadataService) rebindSkeletonToExistingItem(ctx context.Context, fromContentID, toContentID string) error {
-	return s.rebindItemToExistingItem(ctx, fromContentID, toContentID, false)
 }
 
 func (s *MetadataService) rebindItemToExistingItem(ctx context.Context, fromContentID, toContentID string, allowMatchedSource bool) error {
@@ -5790,7 +5758,7 @@ func mergeEpisodeIDPairs(ctx context.Context, tx pgx.Tx, fromContentID, toConten
 }
 
 func rebindDeletableStatuses(allowMatchedSource bool) []string {
-	statuses := []string{"pending", "unmatched", "ambiguous"}
+	statuses := []string{"pending", "unmatched", matchStatusAmbiguous}
 	if allowMatchedSource {
 		statuses = append(statuses, "matched")
 	}
@@ -5909,9 +5877,9 @@ func (s *MetadataService) repairMatchedDuplicateProviderOwnersByFolderAndPathPre
 // ---------------------------------------------------------------------------
 
 var ephemeralProviderIDKeys = map[string]struct{}{
-	"metadb":    {},
-	"_filepath": {},
-	"oshash":    {},
+	providerSlugMetaDB: {},
+	"_filepath":        {},
+	"oshash":           {},
 }
 
 func isEphemeralProviderIDKey(key string) bool {
@@ -6107,7 +6075,7 @@ func itemToMetadataResult(item *models.MediaItem) *MetadataResult {
 	if item.ImdbID != "" {
 		result.ProviderIDs["imdb"] = item.ImdbID
 	}
-	result.ProviderIDs["metadb"] = item.ContentID
+	result.ProviderIDs[providerSlugMetaDB] = item.ContentID
 
 	if item.RatingIMDB != nil {
 		result.Ratings.IMDB = *item.RatingIMDB
@@ -6216,7 +6184,7 @@ func metadataResultToItem(r *MetadataResult, contentType string) *models.MediaIt
 	// (normalized here) and the manga publication domain (normalized by the
 	// manga enrichment pipeline). Pass non-series values through untouched so
 	// a round-trip through itemToMetadataResult can never mangle them.
-	if contentType == "series" {
+	if contentType == matchContentTypeSeries {
 		item.ShowStatus = NormalizeShowStatus(r.ShowStatus)
 	} else {
 		item.ShowStatus = r.ShowStatus
@@ -6529,8 +6497,8 @@ func findProviderID(images []RemoteImage, url string) string {
 
 // pluralContentType converts "movie"/"series" to "movies"/"series" for S3 keys.
 func pluralContentType(ct string) string {
-	if ct == "movie" {
-		return "movies"
+	if ct == matchContentTypeMovie {
+		return libraryTypeMovies
 	}
 	return ct
 }
@@ -6556,7 +6524,7 @@ func findContentID(item *models.MediaItem, providerID string) string {
 			if item.ImdbID != "" {
 				return item.ImdbID
 			}
-		case "metadb":
+		case providerSlugMetaDB:
 			if item.ContentID != "" {
 				return item.ContentID
 			}
@@ -6569,13 +6537,13 @@ func findContentID(item *models.MediaItem, providerID string) string {
 func contentIDPreferenceOrder(providerID string) []string {
 	switch providerID {
 	case "tmdb":
-		return []string{"tmdb", "tvdb", "imdb", "metadb"}
+		return []string{"tmdb", "tvdb", "imdb", providerSlugMetaDB}
 	case "tvdb":
-		return []string{"tvdb", "tmdb", "imdb", "metadb"}
+		return []string{"tvdb", "tmdb", "imdb", providerSlugMetaDB}
 	case "imdb":
-		return []string{"imdb", "tmdb", "tvdb", "metadb"}
+		return []string{"imdb", "tmdb", "tvdb", providerSlugMetaDB}
 	default:
-		return []string{"tmdb", "tvdb", "imdb", "metadb"}
+		return []string{"tmdb", "tvdb", "imdb", providerSlugMetaDB}
 	}
 }
 
@@ -6740,14 +6708,14 @@ func generateContentID() (string, error) {
 // Sonyflake id.
 func deriveLogicalContentID(itemType string, ids contentid.ProviderIDs, fallbackPath string) (string, error) {
 	switch normalizeItemTypeForContentID(itemType) {
-	case "movie":
+	case matchContentTypeMovie:
 		if id, ok := contentid.ForMovie(ids); ok {
 			return id, nil
 		}
 		if strings.TrimSpace(fallbackPath) != "" {
 			return contentid.ForLocal(fallbackPath), nil
 		}
-	case "series":
+	case matchContentTypeSeries:
 		if id, ok := contentid.ForSeries(ids); ok {
 			return id, nil
 		}
@@ -6793,10 +6761,10 @@ func firstNonEmpty(values ...string) string {
 // entity kinds the deterministic scheme covers.
 func normalizeItemTypeForContentID(itemType string) string {
 	switch strings.ToLower(strings.TrimSpace(itemType)) {
-	case "movie", "movies":
-		return "movie"
-	case "series", "show", "tv":
-		return "series"
+	case matchContentTypeMovie, libraryTypeMovies:
+		return matchContentTypeMovie
+	case matchContentTypeSeries, "show", "tv":
+		return matchContentTypeSeries
 	default:
 		return ""
 	}

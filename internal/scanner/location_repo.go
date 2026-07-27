@@ -93,7 +93,7 @@ func (r *ObservedLocationRepository) UpsertMany(ctx context.Context, locations [
 		)
 	}
 	results := r.pool.SendBatch(ctx, batch)
-	defer results.Close()
+	defer func() { _ = results.Close() }()
 	for range locations {
 		if _, err := results.Exec(); err != nil {
 			return fmt.Errorf("upserting observed media locations: %w", err)
@@ -243,7 +243,7 @@ func (r *GroupLocationRepository) UpsertMany(ctx context.Context, locations []mo
 		)
 	}
 	results := r.pool.SendBatch(ctx, batch)
-	defer results.Close()
+	defer func() { _ = results.Close() }()
 	for range locations {
 		if _, err := results.Exec(); err != nil {
 			return fmt.Errorf("upserting group locations: %w", err)

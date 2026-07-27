@@ -482,7 +482,7 @@ func appendSegmentBoundaryArgs(args []string, opts TranscodeOpts) []string {
 	// boundaries always start with an IDR frame. We assume 30 fps as a
 	// safe ceiling — the GOP will be at most segmentDuration * 30 frames.
 	// Matches Jellyfin's approach for hardware encoders.
-	if opts.HWAccel == "qsv" || opts.HWAccel == "vaapi" || opts.HWAccel == "nvenc" {
+	if opts.HWAccel == "qsv" || opts.HWAccel == hwAccelVAAPI || opts.HWAccel == hwAccelNVENC {
 		gopSize := fmt.Sprintf("%d", opts.SegmentDuration*30)
 		args = append(args, "-g", gopSize, "-keyint_min", gopSize)
 	}
@@ -505,11 +505,11 @@ func appendHWAccelArgs(args []string, opts TranscodeOpts) []string {
 			"-init_hw_device", fmt.Sprintf("vaapi=va:%s,driver=iHD,kernel_driver=i915,vendor_id=0x8086", hwDevice),
 			"-init_hw_device", "qsv=qs@va",
 			"-filter_hw_device", "va",
-			"-hwaccel", "vaapi",
-			"-hwaccel_output_format", "vaapi",
+			"-hwaccel", hwAccelVAAPI,
+			"-hwaccel_output_format", hwAccelVAAPI,
 			"-noautorotate",
 		)
-	case "vaapi":
+	case hwAccelVAAPI:
 		vaapiDevice := PickRenderDevice(opts.HWDevice)
 		if vaapiDevice == "" {
 			vaapiDevice = "/dev/dri/renderD128" // last-resort fallback
@@ -517,10 +517,10 @@ func appendHWAccelArgs(args []string, opts TranscodeOpts) []string {
 		args = append(args,
 			"-init_hw_device", fmt.Sprintf("vaapi=hw:%s", vaapiDevice),
 			"-filter_hw_device", "hw",
-			"-hwaccel", "vaapi",
-			"-hwaccel_output_format", "vaapi",
+			"-hwaccel", hwAccelVAAPI,
+			"-hwaccel_output_format", hwAccelVAAPI,
 		)
-	case "nvenc":
+	case hwAccelNVENC:
 		args = append(args,
 			"-hwaccel", "cuda",
 			"-hwaccel_output_format", "cuda",
@@ -580,21 +580,21 @@ func appendVideoArgs(args []string, opts TranscodeOpts) []string {
 		} else {
 			args = append(args, "-c:v", "hevc_qsv", "-preset", preset, "-global_quality", "28")
 		}
-	case opts.HWAccel == "vaapi" && codec == "h264":
+	case opts.HWAccel == hwAccelVAAPI && codec == "h264":
 		args = append(args, "-c:v", "h264_vaapi", "-qp", "23")
 		if hasBitrateCap {
 			args = append(args,
 				"-maxrate", fmt.Sprintf("%dk", opts.TargetBitrateKbps),
 				"-bufsize", fmt.Sprintf("%dk", opts.TargetBitrateKbps*2))
 		}
-	case opts.HWAccel == "vaapi" && codec == "hevc":
+	case opts.HWAccel == hwAccelVAAPI && codec == "hevc":
 		args = append(args, "-c:v", "hevc_vaapi", "-qp", "28")
 		if hasBitrateCap {
 			args = append(args,
 				"-maxrate", fmt.Sprintf("%dk", opts.TargetBitrateKbps),
 				"-bufsize", fmt.Sprintf("%dk", opts.TargetBitrateKbps*2))
 		}
-	case opts.HWAccel == "nvenc" && codec == "h264":
+	case opts.HWAccel == hwAccelNVENC && codec == "h264":
 		args = append(args, "-c:v", "h264_nvenc", "-rc:v", "vbr")
 		if hasBitrateCap {
 			args = append(args,
@@ -604,7 +604,7 @@ func appendVideoArgs(args []string, opts TranscodeOpts) []string {
 		} else {
 			args = append(args, "-cq:v", "23", "-b:v", "0")
 		}
-	case opts.HWAccel == "nvenc" && codec == "hevc":
+	case opts.HWAccel == hwAccelNVENC && codec == "hevc":
 		args = append(args, "-c:v", "hevc_nvenc", "-rc:v", "vbr")
 		if hasBitrateCap {
 			args = append(args,
@@ -648,9 +648,9 @@ func appendVideoFilterArgs(args []string, opts TranscodeOpts) []string {
 		return appendSubtitleBurnInArgs(args, opts)
 	case opts.HWAccel == "qsv":
 		return append(args, "-vf", qsvScaleFilter(opts.TargetResolution))
-	case opts.HWAccel == "vaapi":
+	case opts.HWAccel == hwAccelVAAPI:
 		return append(args, "-vf", vaapiScaleFilter(opts.TargetResolution))
-	case opts.HWAccel == "nvenc":
+	case opts.HWAccel == hwAccelNVENC:
 		return append(args, "-vf", nvencScaleFilter(opts.TargetResolution))
 	case opts.TargetResolution != "":
 		if scale := resolutionToScale(opts.TargetResolution); scale != "" {
@@ -739,10 +739,10 @@ func appendBitmapSubtitleBurnInArgs(args []string, opts TranscodeOpts) []string 
 		// to nv12, upload back to VAAPI, then map to QSV for the encoder.
 		graph = "[0:v:0]hwdownload,format=yuv420p[vmain];[vmain]" + cpuFilters +
 			",format=nv12,hwupload,hwmap=derive_device=qsv,format=qsv[vout]"
-	case "vaapi":
+	case hwAccelVAAPI:
 		graph = "[0:v:0]hwdownload,format=yuv420p[vmain];[vmain]" + cpuFilters +
 			",format=nv12,hwupload[vout]"
-	case "nvenc":
+	case hwAccelNVENC:
 		graph = "[0:v:0]hwdownload,format=yuv420p[vmain];[vmain]" + cpuFilters +
 			",format=nv12,hwupload_cuda[vout]"
 	default:
@@ -780,11 +780,11 @@ func appendSubtitleBurnInArgs(args []string, opts TranscodeOpts) []string {
 		// surfaces), upload back to VAAPI, then map to QSV for the encoder.
 		vf := "hwdownload,format=yuv420p," + cpuFilters + ",format=nv12,hwupload,hwmap=derive_device=qsv,format=qsv"
 		args = append(args, "-vf", vf)
-	case "vaapi":
+	case hwAccelVAAPI:
 		// VAAPI-only: download, apply CPU filters, convert to nv12, upload back.
 		vf := "hwdownload,format=yuv420p," + cpuFilters + ",format=nv12,hwupload"
 		args = append(args, "-vf", vf)
-	case "nvenc":
+	case hwAccelNVENC:
 		// NVENC/CUDA: download to CPU for subtitle rendering, then upload back.
 		vf := "hwdownload,format=yuv420p," + cpuFilters + ",format=nv12,hwupload_cuda"
 		args = append(args, "-vf", vf)
@@ -799,9 +799,9 @@ func appendSubtitleBurnInArgs(args []string, opts TranscodeOpts) []string {
 // resolutionToScale returns an ffmpeg scale filter string for the target resolution.
 func resolutionToScale(res string) string {
 	switch res {
-	case "2160p":
+	case resolution2160p:
 		return "scale=-2:2160"
-	case "1080p":
+	case resolution1080p:
 		return "scale=-2:1080"
 	case "720p":
 		return "scale=-2:720"
@@ -819,9 +819,9 @@ func resolutionToScale(res string) string {
 // qsvScaleFilter returns the VAAPI→QSV filter chain with optional resolution scaling.
 func qsvScaleFilter(res string) string {
 	switch res {
-	case "2160p":
+	case resolution2160p:
 		return "scale_vaapi=w=-2:h=2160:format=nv12,hwmap=derive_device=qsv,format=qsv"
-	case "1080p":
+	case resolution1080p:
 		return "scale_vaapi=w=-2:h=1080:format=nv12,hwmap=derive_device=qsv,format=qsv"
 	case "720p":
 		return "scale_vaapi=w=-2:h=720:format=nv12,hwmap=derive_device=qsv,format=qsv"
@@ -841,9 +841,9 @@ func qsvScaleFilter(res string) string {
 // causes FFmpeg auto_scale format-negotiation failures.
 func vaapiScaleFilter(res string) string {
 	switch res {
-	case "2160p":
+	case resolution2160p:
 		return "scale_vaapi=w=-2:h=2160:format=nv12"
-	case "1080p":
+	case resolution1080p:
 		return "scale_vaapi=w=-2:h=1080:format=nv12"
 	case "720p":
 		return "scale_vaapi=w=-2:h=720:format=nv12"
@@ -860,9 +860,9 @@ func vaapiScaleFilter(res string) string {
 
 func nvencScaleFilter(res string) string {
 	switch res {
-	case "2160p":
+	case resolution2160p:
 		return "scale_cuda=w=-2:h=2160:format=nv12"
-	case "1080p":
+	case resolution1080p:
 		return "scale_cuda=w=-2:h=1080:format=nv12"
 	case "720p":
 		return "scale_cuda=w=-2:h=720:format=nv12"
@@ -927,9 +927,9 @@ func (s *TranscodeSession) GetManifest() ([]byte, error) {
 				if s.waitErr != nil {
 					stderr := truncateStderr(s.stderr.String())
 					if stderr != "" {
-						return nil, fmt.Errorf("%w: %v (stderr: %s)", ErrTranscodeFailed, s.waitErr, stderr)
+						return nil, fmt.Errorf("%w: %w (stderr: %s)", ErrTranscodeFailed, s.waitErr, stderr)
 					}
-					return nil, fmt.Errorf("%w: %v", ErrTranscodeFailed, s.waitErr)
+					return nil, fmt.Errorf("%w: %w", ErrTranscodeFailed, s.waitErr)
 				}
 				return nil, ErrTranscodeFailed
 			}
@@ -968,7 +968,7 @@ func (s *TranscodeSession) WaitForManifest(timeout time.Duration) ([]byte, error
 		if err == nil {
 			return manifest, nil
 		}
-		if err != nil && err != ErrManifestNotReady {
+		if err != nil && !errors.Is(err, ErrManifestNotReady) {
 			return nil, err
 		}
 
@@ -1377,13 +1377,13 @@ func (s *TranscodeSession) GenerateFullManifest(segPrefix, rawQuery string) []by
 
 	var buf bytes.Buffer
 	buf.WriteString("#EXTM3U\n")
-	buf.WriteString(fmt.Sprintf("#EXT-X-VERSION:%d\n", hlsVersion))
-	buf.WriteString(fmt.Sprintf("#EXT-X-TARGETDURATION:%d\n", segDur))
+	fmt.Fprintf(&buf, "#EXT-X-VERSION:%d\n", hlsVersion)
+	fmt.Fprintf(&buf, "#EXT-X-TARGETDURATION:%d\n", segDur)
 	buf.WriteString("#EXT-X-MEDIA-SEQUENCE:0\n")
 	buf.WriteString("#EXT-X-PLAYLIST-TYPE:VOD\n")
 
 	if segExt == ".m4s" {
-		buf.WriteString(fmt.Sprintf("#EXT-X-MAP:URI=\"%sinit.mp4%s\"\n", segPrefix, suffix))
+		fmt.Fprintf(&buf, "#EXT-X-MAP:URI=\"%sinit.mp4%s\"\n", segPrefix, suffix)
 	}
 
 	for i := range segCount {
@@ -1395,8 +1395,8 @@ func (s *TranscodeSession) GenerateFullManifest(segPrefix, rawQuery string) []by
 				dur = float64(segDur)
 			}
 		}
-		buf.WriteString(fmt.Sprintf("#EXTINF:%.6f,\n", dur))
-		buf.WriteString(fmt.Sprintf("%sseg_%05d%s%s\n", segPrefix, i, segExt, suffix))
+		fmt.Fprintf(&buf, "#EXTINF:%.6f,\n", dur)
+		fmt.Fprintf(&buf, "%sseg_%05d%s%s\n", segPrefix, i, segExt, suffix)
 	}
 
 	buf.WriteString("#EXT-X-ENDLIST\n")
@@ -1518,7 +1518,7 @@ func (s *TranscodeSession) cleanStaleSegments(startSegment int) {
 	for _, entry := range entries {
 		name := entry.Name()
 		if name == "stream.m3u8" {
-			os.Remove(filepath.Join(s.outputDir, name))
+			_ = os.Remove(filepath.Join(s.outputDir, name))
 			continue
 		}
 		if name == "init.mp4" {
@@ -1529,7 +1529,7 @@ func (s *TranscodeSession) cleanStaleSegments(startSegment int) {
 			continue
 		}
 		if segNum >= startSegment {
-			os.Remove(filepath.Join(s.outputDir, name))
+			_ = os.Remove(filepath.Join(s.outputDir, name))
 		}
 	}
 }
@@ -1715,7 +1715,7 @@ func (s *TranscodeSession) WaitForSegment(name string, timeout time.Duration) (s
 		}
 
 		if !running && waitErr != nil {
-			return "", fmt.Errorf("%w: %v", ErrTranscodeFailed, waitErr)
+			return "", fmt.Errorf("%w: %w", ErrTranscodeFailed, waitErr)
 		}
 		// If ffmpeg finished cleanly but the segment doesn't exist,
 		// it won't appear later — fail fast.
@@ -1884,9 +1884,9 @@ func (s *TranscodeSession) manifestTimeoutError(timeout time.Duration) error {
 
 	switch {
 	case waitErr != nil && stderr != "":
-		return fmt.Errorf("%w after %s: ffmpeg exited: %v (stderr: %s)", ErrManifestNotReady, timeout, waitErr, stderr)
+		return fmt.Errorf("%w after %s: ffmpeg exited: %w (stderr: %s)", ErrManifestNotReady, timeout, waitErr, stderr)
 	case waitErr != nil:
-		return fmt.Errorf("%w after %s: ffmpeg exited: %v", ErrManifestNotReady, timeout, waitErr)
+		return fmt.Errorf("%w after %s: ffmpeg exited: %w", ErrManifestNotReady, timeout, waitErr)
 	case running:
 		return fmt.Errorf("%w after %s: ffmpeg still running", ErrManifestNotReady, timeout)
 	default:
@@ -2143,7 +2143,8 @@ func formatWaitError(err error) string {
 	if err == nil {
 		return ""
 	}
-	if exitErr, ok := err.(*exec.ExitError); ok {
+	exitErr := &exec.ExitError{}
+	if errors.As(err, &exitErr) {
 		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
 			return fmt.Sprintf("exit_code=%d: %v", status.ExitStatus(), err)
 		}

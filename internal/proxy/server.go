@@ -54,7 +54,8 @@ func NewServer(watcher *nodeconfig.Watcher, tracker *nodesessions.Tracker) *Serv
 // bounds requests to a hung node; the longest legitimate server-side wait is
 // the 30s manifest-readiness poll on the transcode node.
 func newStreamTransport() *http.Transport {
-	t := http.DefaultTransport.(*http.Transport).Clone()
+	base, _ := http.DefaultTransport.(*http.Transport)
+	t := base.Clone()
 	t.MaxIdleConns = 128
 	t.MaxIdleConnsPerHost = 32
 	t.ResponseHeaderTimeout = 60 * time.Second
@@ -109,7 +110,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 		activeJobs = s.tracker.ActiveCount()
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(healthResponse{
+	_ = json.NewEncoder(w).Encode(healthResponse{
 		Status:     "ok",
 		ActiveJobs: activeJobs,
 		EgressKbps: s.egress.RateKbps(),
@@ -371,7 +372,7 @@ func (s *Server) proxyToTranscodeNode(w http.ResponseWriter, r *http.Request, cl
 		}
 	}
 	w.WriteHeader(resp.StatusCode)
-	io.Copy(w, resp.Body)
+	_, _ = io.Copy(w, resp.Body)
 }
 
 func (s *Server) handleForceReload(w http.ResponseWriter, r *http.Request) {
@@ -389,7 +390,7 @@ type statusResponse struct {
 
 func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(statusResponse{
+	_ = json.NewEncoder(w).Encode(statusResponse{
 		ActiveSessions: s.tracker.ActiveCount(),
 	})
 }

@@ -192,7 +192,7 @@ func (h *Handler) handleListLibraryPlaylists(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if h.deps.PlaylistStore == nil {
-		writeJSON(w, http.StatusOK, map[string]any{"results": []any{}, "total": 0})
+		writeJSON(w, http.StatusOK, map[string]any{"results": []any{}, jsonKeyTotal: 0})
 		return
 	}
 	rows, err := h.deps.PlaylistStore.ListUserPlaylists(r.Context(), a.UserID, a.ProfileID)
@@ -209,7 +209,7 @@ func (h *Handler) handleListLibraryPlaylists(w http.ResponseWriter, r *http.Requ
 	}
 	// LazyBookshelf reads payload.total to compute pagination; emit both
 	// for the bookshelf grid AND the create modal (modal ignores total).
-	writeJSON(w, http.StatusOK, map[string]any{"results": out, "total": len(out)})
+	writeJSON(w, http.StatusOK, map[string]any{"results": out, jsonKeyTotal: len(out)})
 }
 
 // handleListPlaylists — GET /playlists.

@@ -472,13 +472,13 @@ func (p *MeilisearchSearchProvider) buildFederatedSearchRequest(
 	offset, limit int,
 ) meilisearchFederatedSearchRequest {
 	mediaTypes, _ := splitSearchItemTypes(req.ItemTypes)
-	mediaFilter := ""
+	var mediaFilter string
 	if len(req.ItemTypes) == 0 {
 		mediaFilter = joinMeilisearchFilters(`type != "episode"`, meilisearchSearchFilter(nil, req.Access))
 	} else {
 		mediaFilter = meilisearchSearchFilter(mediaTypes, req.Access)
 	}
-	episodeFilter := meilisearchSearchFilter([]string{"episode"}, req.Access)
+	episodeFilter := meilisearchSearchFilter([]string{itemTypeEpisode}, req.Access)
 	mediaQuery := meilisearchFederatedQuery{
 		IndexUID:             indexUID,
 		Query:                base.Query,

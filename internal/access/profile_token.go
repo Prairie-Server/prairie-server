@@ -69,7 +69,7 @@ func (s *ProfileTokenService) Validate(tokenStr string) (*ProfileTokenClaims, er
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, fmt.Errorf("%w: expired", ErrProfileUnverified)
 		}
-		return nil, fmt.Errorf("%w: %v", ErrProfileUnverified, err)
+		return nil, fmt.Errorf("%w: %w", ErrProfileUnverified, err)
 	}
 	if !token.Valid {
 		return nil, ErrProfileUnverified

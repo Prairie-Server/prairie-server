@@ -44,7 +44,7 @@ func InferGroupIdentity(filePath string, libraryType string, assignment RootAssi
 
 	if group.BaseType == "" {
 		ctx := ResolvePathContext(cleanFilePath, libraryType)
-		group.BaseType = "movie"
+		group.BaseType = itemTypeMovie
 		if ctx != nil && ctx.Type != "" {
 			group.BaseType = ctx.Type
 		}
@@ -57,7 +57,7 @@ func InferGroupIdentity(filePath string, libraryType string, assignment RootAssi
 	// (2021).mkv") are the common case.
 	idAnchored := hasStructuredIDAnchor(cleanFilePath, group.ObservedRootPath)
 
-	if group.BaseType == "series" {
+	if group.BaseType == itemTypeSeries {
 		populateSeriesGroupIdentity(cleanFilePath, libraryType, assignment, idAnchored, &group)
 	} else {
 		populateMovieGroupIdentity(cleanFilePath, assignment, idAnchored, &group)
@@ -166,7 +166,7 @@ func populateMovieGroupIdentity(filePath string, assignment RootAssignment, idAn
 	group.BaseYear = baseYear
 	group.Confidence = normalizeIdentityConfidence(confidence)
 	group.State = state
-	group.ContentGroupKey = makeContentGroupKey("movie", baseTitle, baseYear, parentDir, filePath)
+	group.ContentGroupKey = makeContentGroupKey(itemTypeMovie, baseTitle, baseYear, parentDir, filePath)
 	group.EvidenceJSON, _ = json.Marshal(map[string]any{
 		"parent_title":      parentTitle,
 		"parent_year":       parentYear,
@@ -250,7 +250,7 @@ func populateSeriesGroupIdentity(filePath string, libraryType string, assignment
 	group.BaseYear = year
 	group.Confidence = normalizeIdentityConfidence(confidence)
 	group.State = state
-	group.ContentGroupKey = makeContentGroupKey("series", title, year, group.ObservedRootPath, filePath)
+	group.ContentGroupKey = makeContentGroupKey(itemTypeSeries, title, year, group.ObservedRootPath, filePath)
 	group.EvidenceJSON, _ = json.Marshal(map[string]any{
 		"title":               title,
 		"year":                year,

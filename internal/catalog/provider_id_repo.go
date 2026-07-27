@@ -192,7 +192,7 @@ func normalizeDurableProviderIDs(providerIDs map[string]string) []models.MediaIt
 			return leftRank < rightRank
 		case leftOK != rightOK:
 			return leftOK
-		case strings.ToLower(entries[i].Provider) != strings.ToLower(entries[j].Provider):
+		case !strings.EqualFold(entries[i].Provider, entries[j].Provider):
 			return strings.ToLower(entries[i].Provider) < strings.ToLower(entries[j].Provider)
 		default:
 			return entries[i].ProviderID < entries[j].ProviderID
@@ -200,21 +200,6 @@ func normalizeDurableProviderIDs(providerIDs map[string]string) []models.MediaIt
 	})
 
 	return entries
-}
-
-func scanProviderID(row pgx.Row) (*models.MediaItemProviderID, error) {
-	var id models.MediaItemProviderID
-	if err := row.Scan(
-		&id.ContentID,
-		&id.ItemType,
-		&id.Provider,
-		&id.ProviderID,
-		&id.CreatedAt,
-		&id.UpdatedAt,
-	); err != nil {
-		return nil, fmt.Errorf("scanning media item provider id: %w", err)
-	}
-	return &id, nil
 }
 
 func scanProviderIDs(rows pgx.Rows) ([]*models.MediaItemProviderID, error) {

@@ -12,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/pgvector/pgvector-go"
+
 	"github.com/prairie-server/prairie-server/internal/embeddingvectors"
 )
 
@@ -125,7 +126,7 @@ func (i *CatalogSearchIndexer) SyncOutbox(ctx context.Context, progress SearchIn
 		reportSearchIndexProgress(progress, 100, "Another catalog search index maintenance task is already running")
 		return stats, nil
 	}
-	defer lock.Close(context.Background())
+	defer func() { _ = lock.Close(context.Background()) }()
 
 	state, err := i.events.GetState(ctx, SearchProviderMeilisearch)
 	if err != nil {
@@ -258,7 +259,7 @@ func (i *CatalogSearchIndexer) Rebuild(ctx context.Context, progress SearchIndex
 		reportSearchIndexProgress(progress, 100, "Another catalog search index maintenance task is already running")
 		return stats, nil
 	}
-	defer lock.Close(context.Background())
+	defer func() { _ = lock.Close(context.Background()) }()
 
 	rebuildEventHighWater, err := i.events.MaxEventID(ctx, SearchProviderMeilisearch)
 	if err != nil {
@@ -815,7 +816,7 @@ func (i *CatalogSearchIndexer) attachDocumentVectors(ctx context.Context, docs [
 	}
 	ids := make([]string, 0, len(docs))
 	for _, doc := range docs {
-		if doc.Type != "episode" && strings.TrimSpace(doc.ContentID) != "" {
+		if doc.Type != itemTypeEpisode && strings.TrimSpace(doc.ContentID) != "" {
 			ids = append(ids, doc.ContentID)
 		}
 	}
@@ -871,7 +872,7 @@ func setCatalogSearchDocumentVectors(docs []catalogSearchDocument, vectors map[s
 	}
 	count := 0
 	for idx := range docs {
-		if docs[idx].Type == "episode" {
+		if docs[idx].Type == itemTypeEpisode {
 			// Episodes are keyword-only, but a userProvided embedder requires
 			// every document to either supply vectors or opt out explicitly
 			// with `_vectors.<embedder>: null`; omitting _vectors entirely

@@ -1304,7 +1304,7 @@ func (f *Fetcher) fetchCollection(ctx context.Context, s ResolvedSection, librar
 		return f.fetchUserCollection(ctx, s, libraryID, libraryIDs, userID, profileID, filter, userCollID)
 	}
 
-	// Library collection path (existing behaviour).
+	// Library collection path (existing behavior).
 	if f.CollectionRepo == nil {
 		return nil, 0, fmt.Errorf("collection sections require a collection repository")
 	}
@@ -3273,23 +3273,6 @@ func buildLibraryScope(libraryID *int, libraryIDs []int, configLibraryIDs []int,
 	}
 
 	return fromClause, conditions, args, argIdx
-}
-
-func fetchSortClause(sort, order string) string {
-	dir := "DESC"
-	if order == "asc" {
-		dir = "ASC"
-	}
-	switch sort {
-	case "rating":
-		return fmt.Sprintf("ORDER BY mi.rating_imdb %s NULLS LAST", dir)
-	case "year":
-		return fmt.Sprintf("ORDER BY mi.year %s", dir)
-	case "title":
-		return fmt.Sprintf("ORDER BY mi.sort_title %s", dir)
-	default:
-		return fmt.Sprintf("ORDER BY mi.created_at %s", dir)
-	}
 }
 
 func intersectLibraryIDs(a, b []int) []int {

@@ -119,6 +119,10 @@ import (
 	siloweb "github.com/prairie-server/prairie-server/web"
 )
 
+const (
+	authModeIntegrated = "integrated"
+)
+
 // resolveNodeIdentity returns a stable node identifier used by the
 // heartbeat writer, reconciler, and shutdown cleanup. Resolution order:
 // PRAIRIE_NODE_NAME > SILO_NODE_NAME > NODE_NAME > os.Hostname().
@@ -241,7 +245,7 @@ func configureOperationalLogging(
 
 func maybeApplyPostgresTuning(ctx context.Context, pool *pgxpool.Pool, appMaxConnections int, mode string) {
 	switch strings.ToLower(strings.TrimSpace(mode)) {
-	case "", "integrated", "api":
+	case "", authModeIntegrated, "api":
 	default:
 		return
 	}
@@ -463,7 +467,7 @@ func main() {
 	// The same gate decides whether this node runs the credential-encryption
 	// backfills: only the primary (migration-running) node sweeps plaintext to
 	// ciphertext; secondary nodes read whatever the primary encrypted.
-	isPrimaryNode := bc.Mode == "integrated" || bc.Mode == "api" || bc.Mode == ""
+	isPrimaryNode := bc.Mode == authModeIntegrated || bc.Mode == "api" || bc.Mode == ""
 	if isPrimaryNode {
 		migCtx, migCancel := database.MigrationContext(ctx)
 		if migErr := database.RunMigrations(migCtx, pool, migrations.FS, "sql"); migErr != nil {
@@ -728,10 +732,10 @@ func main() {
 	})
 
 	// Determine which components to initialize based on mode.
-	needsS3 := mode == "integrated" || mode == "api"
-	needsScanner := mode == "integrated" || mode == "api"
-	needsUserDB := mode == "integrated" || mode == "api"
-	needsWorkers := mode == "integrated" || mode == "api"
+	needsS3 := mode == authModeIntegrated || mode == "api"
+	needsScanner := mode == authModeIntegrated || mode == "api"
+	needsUserDB := mode == authModeIntegrated || mode == "api"
+	needsWorkers := mode == authModeIntegrated || mode == "api"
 
 	bootstrapSensitiveConfigured := map[string]bool{}
 	bootstrapSensitiveValues := map[string]string{}
@@ -879,7 +883,7 @@ func main() {
 	}
 
 	// Initialize node pools for integrated/api modes.
-	if mode == "integrated" || mode == "api" {
+	if mode == authModeIntegrated || mode == "api" {
 		nodeRepo := nodepool.NewRepository(pool)
 		deps.NodeRepo = nodeRepo
 
@@ -1562,11 +1566,11 @@ func main() {
 			userStoreProvider = pgstore.NewPostgresProvider(deps.DB)
 			slog.Info("user store initialized", "backend", "postgres")
 		}
-		defer userStoreProvider.Close()
+		defer func() { _ = userStoreProvider.Close() }()
 	}
 
 	var policySystem *policy.System
-	if mode == "integrated" || mode == "api" {
+	if mode == authModeIntegrated || mode == "api" {
 		policyDecisionLogger := policy.NewDecisionLogger(
 			deps.DB,
 			nodeID,
@@ -1820,7 +1824,7 @@ func main() {
 				perKeyLimiter = ratelimit.NewRedisLimiter(redisClient)
 				globalLimiter = ratelimit.NewRedisLimiter(redisClient)
 				isMemory = false
-				defer redisClient.Close()
+				defer func() { _ = redisClient.Close() }()
 			}
 		}
 
@@ -1895,7 +1899,7 @@ func main() {
 			activityWriter = activitylog.NewRedisWriter(actRedisClient)
 			activityConsumer = activitylog.NewConsumer(pool, actRedisClient, logStreamHub)
 			go activityConsumer.RunRedis(appCtx)
-			defer actRedisClient.Close()
+			defer func() { _ = actRedisClient.Close() }()
 		}
 	}
 
@@ -2491,7 +2495,7 @@ func main() {
 	}
 
 	var compatSrv *http.Server
-	if (mode == "integrated" || mode == "api") && cfg.JellyfinCompat.Enabled && cfg.JellyfinCompat.Listen != "" {
+	if (mode == authModeIntegrated || mode == "api") && cfg.JellyfinCompat.Enabled && cfg.JellyfinCompat.Listen != "" {
 		compatDeps := jellycompat.Dependencies{
 			Config:           cfg,
 			AppContext:       appCtx,
@@ -2643,7 +2647,7 @@ func main() {
 	// /socket.io, etc. own the URL space at the root — no SPA fallback,
 	// no collision with Prairie's /api/v1.
 	var absSrv *http.Server
-	if (mode == "integrated" || mode == "api") && deps.ABSHandler != nil && cfg.AudiobookshelfCompat.Listen != "" {
+	if (mode == authModeIntegrated || mode == "api") && deps.ABSHandler != nil && cfg.AudiobookshelfCompat.Listen != "" {
 		absRouter := chi.NewRouter()
 		absRouter.Use(chimiddleware.Recoverer)
 		absRouter.Use(chimiddleware.Compress(5))

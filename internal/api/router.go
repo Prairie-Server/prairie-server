@@ -171,7 +171,7 @@ type Dependencies struct {
 	ServerRestartStatus    *handlers.ServerRestartStatusTracker
 
 	// UserCollectionSync handles per-profile imported collections (TMDB /
-	// Trakt / MDBList) — the user-facing analogue of CollectionService.
+	// Trakt / MDBList) — the user-facing analog of CollectionService.
 	UserCollectionSync      *usercollections.Service
 	UserCollectionScheduler *usercollections.Scheduler
 

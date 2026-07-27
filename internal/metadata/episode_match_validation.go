@@ -13,8 +13,9 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/prairie-server/prairie-server/internal/naming"
 	"golang.org/x/text/unicode/norm"
+
+	"github.com/prairie-server/prairie-server/internal/naming"
 )
 
 const (
@@ -435,7 +436,7 @@ func candidateCorroboratingSourceCount(candidate MatchCandidate) int {
 func selectLocalEpisodeCoordinateHints(paths []string) []localEpisodeMatchHint {
 	bySeason := make(map[int]map[int]localEpisodeMatchHint)
 	for _, path := range paths {
-		parsed := naming.ParseFilename(path, "series")
+		parsed := naming.ParseFilename(path, matchContentTypeSeries)
 		if parsed == nil || parsed.EpisodeNum <= 0 {
 			continue
 		}

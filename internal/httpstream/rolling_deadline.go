@@ -18,8 +18,9 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/prairie-server/prairie-server/internal/envutil"
 	"time"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 const (

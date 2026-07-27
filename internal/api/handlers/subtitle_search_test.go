@@ -44,14 +44,6 @@ func (s stubItemAccessChecker) EnsureAccessible(context.Context, string, catalog
 	return s.err
 }
 
-type stubEpisodeLookup struct {
-	episode *models.Episode
-}
-
-func (s stubEpisodeLookup) GetByID(context.Context, string) (*models.Episode, error) {
-	return s.episode, nil
-}
-
 func newSubtitleAuthRequest(method, path string, body io.Reader) *http.Request {
 	req := httptest.NewRequest(method, path, body)
 	ctx := apimw.SetClaims(context.Background(), &auth.Claims{

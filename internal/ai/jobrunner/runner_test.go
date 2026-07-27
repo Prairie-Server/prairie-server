@@ -91,7 +91,7 @@ func TestSharedSemaphoreBoundsAcrossRunners(t *testing.T) {
 	}
 }
 
-// Cancelling a job that is queued behind the semaphore aborts it without
+// Canceling a job that is queued behind the semaphore aborts it without
 // running it, via the onAbort callback.
 func TestCancelWhileQueuedCallsOnAbort(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())

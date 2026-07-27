@@ -498,7 +498,7 @@ func (r *Runner) executeCatalogExport(job *models.AdminJob) {
 		return
 	}
 	tempPath := tempFile.Name()
-	defer os.Remove(tempPath)
+	defer func() { _ = os.Remove(tempPath) }()
 
 	var (
 		lastProgressUpdate time.Time

@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"log/slog"
 	"strconv"
 	"strings"
@@ -143,7 +144,10 @@ func blockingResolvedListRebuild(ctx context.Context, key string, now time.Time,
 	if err != nil {
 		return nil, 0, err
 	}
-	res := value.(buildResult)
+	res, ok := value.(buildResult)
+	if !ok {
+		return nil, 0, fmt.Errorf("resolved list cache: unexpected value type %T", value)
+	}
 	return cloneMediaItems(res.items), res.total, nil
 }
 

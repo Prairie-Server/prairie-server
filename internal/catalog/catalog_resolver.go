@@ -385,7 +385,7 @@ func (r *CatalogResolver) resolveSectionSource(ctx context.Context, req CatalogR
 			MediaScope: sectionFilters.FilterType,
 			LibraryIDs: append([]int(nil), sectionFilters.LibraryIDs...),
 		}.Normalize()
-		if section.Scope == "library" && section.LibraryID != nil {
+		if section.Scope == filterFieldLibrary && section.LibraryID != nil {
 			query.LibraryIDs = []int{*section.LibraryID}
 		}
 		useSourceOrder := true
@@ -410,12 +410,12 @@ func (r *CatalogResolver) resolveSectionSource(ctx context.Context, req CatalogR
 		return r.resolveSectionBrowseSource(ctx, req, access, section, "release_date", "desc")
 	case "random":
 		return r.resolveSectionBrowseSource(ctx, req, access, section, "random", "desc")
-	case "genre", "custom_filter":
+	case filterFieldGenre, "custom_filter":
 		def, err := parseCatalogSectionQueryDefinition(section.Config)
 		if err != nil {
-			return nil, fmt.Errorf("%w: parsing section query definition: %v", ErrInvalidCatalogRequest, err)
+			return nil, fmt.Errorf("%w: parsing section query definition: %w", ErrInvalidCatalogRequest, err)
 		}
-		if section.Scope == "library" && section.LibraryID != nil {
+		if section.Scope == filterFieldLibrary && section.LibraryID != nil {
 			def.LibraryIDs = []int{*section.LibraryID}
 		}
 		return r.resolveQuerySource(ctx, CatalogRequest{
@@ -445,7 +445,7 @@ func (r *CatalogResolver) resolveSectionBrowseSource(ctx context.Context, req Ca
 			Order: order,
 		},
 	}.Normalize()
-	if section.Scope == "library" && section.LibraryID != nil {
+	if section.Scope == filterFieldLibrary && section.LibraryID != nil {
 		query.LibraryIDs = []int{*section.LibraryID}
 	}
 
@@ -513,7 +513,7 @@ func (r *CatalogResolver) resolveLibraryCollectionSource(ctx context.Context, re
 func (r *CatalogResolver) resolveLiveLibraryCollectionSource(ctx context.Context, req CatalogRequest, access AccessFilter, collection *models.LibraryCollection) (*CatalogResult, error) {
 	def, err := parseCatalogCollectionQueryDefinition(collection.QueryDefinition)
 	if err != nil {
-		return nil, fmt.Errorf("%w: parsing library collection query_definition: %v", ErrInvalidCatalogRequest, err)
+		return nil, fmt.Errorf("%w: parsing library collection query_definition: %w", ErrInvalidCatalogRequest, err)
 	}
 	if len(collection.LibraryIDs) > 0 {
 		def.LibraryIDs = intersectCatalogDefinitionLibraries(def.LibraryIDs, collection.LibraryIDs)
@@ -551,7 +551,7 @@ func (r *CatalogResolver) resolveUserCollectionSource(ctx context.Context, req C
 	if IsLiveQueryType(collection.CollectionType) {
 		def, err := parseCatalogCollectionQueryDefinition([]byte(collection.QueryDefinition))
 		if err != nil {
-			return nil, fmt.Errorf("%w: parsing user collection query_definition: %v", ErrInvalidCatalogRequest, err)
+			return nil, fmt.Errorf("%w: parsing user collection query_definition: %w", ErrInvalidCatalogRequest, err)
 		}
 		def = ApplySmartCollectionItemLimit(def)
 		if catalogRequestHasOverlay(req) || strings.TrimSpace(collection.DisplayQueryDefinition) != "" {
@@ -669,7 +669,7 @@ func normalizeExactCollectionOverlayRequest(req CatalogRequest, items []*models.
 		return req
 	}
 	for _, item := range items {
-		if item != nil && item.Type == "episode" {
+		if item != nil && item.Type == itemTypeEpisode {
 			return req
 		}
 	}
@@ -1015,7 +1015,7 @@ func (r *CatalogResolver) SearchFacet(ctx context.Context, req CatalogRequest, a
 // invalid request so callers learn about typos at the API boundary.
 func dispatchFacetSearch(ctx context.Context, facets facetFetcher, facet string, filters BrowseFilters, baseRelation string, mediaScope string, prefix string, limit int) ([]string, bool, error) {
 	switch facet {
-	case "genre":
+	case filterFieldGenre:
 		return facets.SearchDistinctArrayColumn(ctx, "genres", filters, baseRelation, mediaScope, prefix, limit)
 	case "studio":
 		return facets.SearchDistinctArrayColumn(ctx, "studios", filters, baseRelation, mediaScope, prefix, limit)
@@ -1023,18 +1023,18 @@ func dispatchFacetSearch(ctx context.Context, facets facetFetcher, facet string,
 		return facets.SearchDistinctArrayColumn(ctx, "networks", filters, baseRelation, mediaScope, prefix, limit)
 	case "country":
 		return facets.SearchDistinctArrayColumn(ctx, "countries", filters, baseRelation, mediaScope, prefix, limit)
-	case "original_language":
-		return facets.SearchDistinctScalarColumn(ctx, "original_language", filters, baseRelation, mediaScope, prefix, limit)
+	case filterFieldOriginalLanguage:
+		return facets.SearchDistinctScalarColumn(ctx, filterFieldOriginalLanguage, filters, baseRelation, mediaScope, prefix, limit)
 	case "content_rating":
 		return facets.SearchDistinctScalarColumn(ctx, "content_rating", filters, baseRelation, mediaScope, prefix, limit)
-	case "author":
+	case filterFieldAuthor:
 		return facets.SearchPeopleByKind(ctx, models.PersonKindAuthor, filters, baseRelation, mediaScope, prefix, limit)
-	case "narrator":
-		if mediaScope == "ebook" {
+	case filterFieldNarrator:
+		if mediaScope == itemTypeEbook {
 			return nil, false, fmt.Errorf("%w: narrator facet is not available for ebook scope", ErrInvalidCatalogRequest)
 		}
 		return facets.SearchPeopleByKind(ctx, models.PersonKindNarrator, filters, baseRelation, mediaScope, prefix, limit)
-	case "series":
+	case itemTypeSeries:
 		return facets.SearchAudiobookSeries(ctx, filters, baseRelation, mediaScope, prefix, limit)
 	default:
 		return nil, false, fmt.Errorf("%w: unknown facet %q", ErrInvalidCatalogRequest, facet)
@@ -1131,7 +1131,7 @@ func (r *CatalogResolver) listFiltersForSource(
 		return nil
 	}))
 	eg.Go(withLimit(func() error {
-		out, err := facets.DistinctScalarColumn(gctx, "original_language", filters, baseRelation, mediaScope)
+		out, err := facets.DistinctScalarColumn(gctx, filterFieldOriginalLanguage, filters, baseRelation, mediaScope)
 		if err != nil {
 			return fmt.Errorf("listing catalog original languages: %w", err)
 		}
@@ -1154,7 +1154,7 @@ func (r *CatalogResolver) listFiltersForSource(
 		authors = out
 		return nil
 	}))
-	if mediaScope != "ebook" {
+	if mediaScope != itemTypeEbook {
 		eg.Go(withLimit(func() error {
 			out, err := facets.PeopleByKind(gctx, models.PersonKindNarrator, filters, baseRelation, mediaScope)
 			if err != nil {
@@ -1262,10 +1262,10 @@ func validateCatalogSectionRequest(req CatalogRequest) error {
 	if strings.TrimSpace(req.SectionID) == "" {
 		return fmt.Errorf("%w: section_id is required", ErrInvalidCatalogRequest)
 	}
-	if req.Scope != "home" && req.Scope != "library" {
+	if req.Scope != "home" && req.Scope != filterFieldLibrary {
 		return fmt.Errorf("%w: scope must be 'home' or 'library'", ErrInvalidCatalogRequest)
 	}
-	if req.Scope == "library" && req.LibraryID <= 0 {
+	if req.Scope == filterFieldLibrary && req.LibraryID <= 0 {
 		return fmt.Errorf("%w: library_id is required for library sections", ErrInvalidCatalogRequest)
 	}
 	return nil
@@ -1356,69 +1356,69 @@ func validateCatalogOverlayQuery(searchQuery string, def QueryDefinition, ruleFi
 }
 
 var catalogQueryRuleFields = map[string]bool{
-	"type":              true,
-	"genre":             true,
-	"year":              true,
-	"rating_imdb":       true,
-	"studio":            true,
-	"network":           true,
-	"country":           true,
-	"original_language": true,
-	"content_rating":    true,
-	"added_at":          true,
-	"release_date":      true,
-	"status":            true,
-	"actor":             true,
-	"director":          true,
-	"writer":            true,
-	"producer":          true,
-	"author":            true,
-	"narrator":          true,
-	"series":            true,
-	"watched":           true,
-	"favorited":         true,
-	"in_watchlist":      true,
-	"in_progress":       true,
-	"last_watched":      true,
-	"resolution":        true,
-	"hdr":               true,
-	"dolby_vision":      true,
-	"bitrate":           true,
-	"audio_language":    true,
-	"subtitle_language": true,
+	"type":                      true,
+	filterFieldGenre:            true,
+	"year":                      true,
+	"rating_imdb":               true,
+	"studio":                    true,
+	"network":                   true,
+	"country":                   true,
+	filterFieldOriginalLanguage: true,
+	"content_rating":            true,
+	"added_at":                  true,
+	"release_date":              true,
+	"status":                    true,
+	"actor":                     true,
+	"director":                  true,
+	"writer":                    true,
+	"producer":                  true,
+	filterFieldAuthor:           true,
+	filterFieldNarrator:         true,
+	itemTypeSeries:              true,
+	displayFilterFieldWatched:   true,
+	"favorited":                 true,
+	"in_watchlist":              true,
+	filterFieldInProgress:       true,
+	filterFieldLastWatched:      true,
+	filterFieldResolution:       true,
+	"hdr":                       true,
+	filterFieldDolbyVision:      true,
+	filterFieldBitrate:          true,
+	filterFieldAudioLanguage:    true,
+	"subtitle_language":         true,
 }
 
 var catalogPersonalRuleFields = map[string]bool{
-	"type":              true,
-	"genre":             true,
-	"year":              true,
-	"rating_imdb":       true,
-	"studio":            true,
-	"network":           true,
-	"country":           true,
-	"original_language": true,
-	"content_rating":    true,
-	"added_at":          true,
-	"release_date":      true,
-	"status":            true,
-	"actor":             true,
-	"director":          true,
-	"writer":            true,
-	"producer":          true,
-	"author":            true,
-	"narrator":          true,
-	"series":            true,
-	"watched":           true,
-	"favorited":         true,
-	"in_watchlist":      true,
-	"in_progress":       true,
-	"last_watched":      true,
-	"resolution":        true,
-	"hdr":               true,
-	"dolby_vision":      true,
-	"bitrate":           true,
-	"audio_language":    true,
-	"subtitle_language": true,
+	"type":                      true,
+	filterFieldGenre:            true,
+	"year":                      true,
+	"rating_imdb":               true,
+	"studio":                    true,
+	"network":                   true,
+	"country":                   true,
+	filterFieldOriginalLanguage: true,
+	"content_rating":            true,
+	"added_at":                  true,
+	"release_date":              true,
+	"status":                    true,
+	"actor":                     true,
+	"director":                  true,
+	"writer":                    true,
+	"producer":                  true,
+	filterFieldAuthor:           true,
+	filterFieldNarrator:         true,
+	itemTypeSeries:              true,
+	displayFilterFieldWatched:   true,
+	"favorited":                 true,
+	"in_watchlist":              true,
+	filterFieldInProgress:       true,
+	filterFieldLastWatched:      true,
+	filterFieldResolution:       true,
+	"hdr":                       true,
+	filterFieldDolbyVision:      true,
+	filterFieldBitrate:          true,
+	filterFieldAudioLanguage:    true,
+	"subtitle_language":         true,
 }
 
 func catalogQuerySortFields() map[string]bool {
@@ -1430,13 +1430,13 @@ func catalogPersonalSortFields() map[string]bool {
 }
 
 func requiresAdvancedQueryExecution(def QueryDefinition) bool {
-	if def.Sort.Field == "bitrate" {
+	if def.Sort.Field == filterFieldBitrate {
 		return true
 	}
 	for _, group := range def.Groups {
 		for _, rule := range group.Rules {
 			switch rule.Field {
-			case "actor", "director", "writer", "producer", "author", "narrator", "series", "watched", "favorited", "in_watchlist", "in_progress", "last_watched", "resolution", "hdr", "dolby_vision", "bitrate", "audio_language", "subtitle_language":
+			case "actor", "director", "writer", "producer", filterFieldAuthor, filterFieldNarrator, itemTypeSeries, displayFilterFieldWatched, "favorited", "in_watchlist", filterFieldInProgress, filterFieldLastWatched, filterFieldResolution, "hdr", filterFieldDolbyVision, filterFieldBitrate, filterFieldAudioLanguage, "subtitle_language":
 				return true
 			}
 		}
@@ -1480,7 +1480,7 @@ func defaultCatalogLibrarySection(libraryID int, sectionID string) (catalogPageS
 	sections := []catalogPageSection{
 		{
 			ID:          "default-continue-watching",
-			Scope:       "library",
+			Scope:       filterFieldLibrary,
 			LibraryID:   &libraryID,
 			SectionType: "continue_watching",
 			Title:       "Continue Watching",
@@ -1489,7 +1489,7 @@ func defaultCatalogLibrarySection(libraryID int, sectionID string) (catalogPageS
 		},
 		{
 			ID:          "default-recently-added",
-			Scope:       "library",
+			Scope:       filterFieldLibrary,
 			LibraryID:   &libraryID,
 			SectionType: "recently_added",
 			Title:       "Recently Added",
@@ -1498,7 +1498,7 @@ func defaultCatalogLibrarySection(libraryID int, sectionID string) (catalogPageS
 		},
 		{
 			ID:          "default-recently-released",
-			Scope:       "library",
+			Scope:       filterFieldLibrary,
 			LibraryID:   &libraryID,
 			SectionType: "recently_released",
 			Title:       "Recently Released",
@@ -1524,7 +1524,7 @@ func (r *CatalogResolver) loadCatalogSection(ctx context.Context, req CatalogReq
 		WHERE id = $1 AND scope = $2 AND enabled = true
 	`
 	args := []any{req.SectionID, req.Scope}
-	if req.Scope == "library" {
+	if req.Scope == filterFieldLibrary {
 		query += " AND library_id = $3"
 		args = append(args, req.LibraryID)
 	} else {
@@ -1542,7 +1542,7 @@ func (r *CatalogResolver) loadCatalogSection(ctx context.Context, req CatalogReq
 	)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
-			if req.Scope == "library" {
+			if req.Scope == filterFieldLibrary {
 				if fallback, ok := defaultCatalogLibrarySection(req.LibraryID, req.SectionID); ok {
 					return fallback, nil
 				}
@@ -1812,7 +1812,7 @@ func (r *CatalogResolver) loadCollectionSourceBaseItems(ctx context.Context, req
 		if IsLiveQueryType(collection.CollectionType) || catalogCollectionUsesLiveQuery(collection.QueryDefinition) {
 			def, err := parseCatalogCollectionQueryDefinition(collection.QueryDefinition)
 			if err != nil {
-				return nil, fmt.Errorf("%w: parsing library collection query_definition: %v", ErrInvalidCatalogRequest, err)
+				return nil, fmt.Errorf("%w: parsing library collection query_definition: %w", ErrInvalidCatalogRequest, err)
 			}
 			if len(collection.LibraryIDs) > 0 {
 				def.LibraryIDs = intersectCatalogDefinitionLibraries(def.LibraryIDs, collection.LibraryIDs)
@@ -1844,7 +1844,7 @@ func (r *CatalogResolver) loadCollectionSourceBaseItems(ctx context.Context, req
 		if IsLiveQueryType(collection.CollectionType) {
 			def, err := parseCatalogCollectionQueryDefinition([]byte(collection.QueryDefinition))
 			if err != nil {
-				return nil, fmt.Errorf("%w: parsing user collection query_definition: %v", ErrInvalidCatalogRequest, err)
+				return nil, fmt.Errorf("%w: parsing user collection query_definition: %w", ErrInvalidCatalogRequest, err)
 			}
 			items, err = r.resolveCollectionQueryBaseItems(ctx, ApplySmartCollectionItemLimit(def), access)
 			if err != nil {
@@ -1985,37 +1985,6 @@ func intersectContentIDs(ids []string, allowed []string) []string {
 	return intersection
 }
 
-func (r *CatalogResolver) fetchAllBrowseCandidates(ctx context.Context, req CatalogRequest, access AccessFilter) ([]*models.MediaItem, error) {
-	filters, earlyEmpty, err := catalogBrowseFilters(req, access)
-	if err != nil {
-		return nil, err
-	}
-	if earlyEmpty {
-		return []*models.MediaItem{}, nil
-	}
-
-	allItems := make([]*models.MediaItem, 0)
-	page := filters
-	page.Limit = 100
-	page.Offset = 0
-	page.Sort = "created_at"
-	page.Order = "desc"
-
-	for {
-		result, err := r.browseRepo.Browse(ctx, page)
-		if err != nil {
-			return nil, fmt.Errorf("browsing catalog items: %w", err)
-		}
-		allItems = append(allItems, result.Items...)
-		if len(allItems) >= result.Total || len(result.Items) == 0 {
-			break
-		}
-		page.Offset += page.Limit
-	}
-
-	return allItems, nil
-}
-
 func (r *CatalogResolver) fetchAllSearchCandidates(ctx context.Context, req CatalogRequest, access AccessFilter) ([]*models.MediaItem, error) {
 	searchAccess, itemTypes, earlyEmpty := catalogSearchAccess(req, access)
 	if earlyEmpty {
@@ -2093,7 +2062,7 @@ func applyCatalogBrowseOverlayRules(filters *BrowseFilters, def QueryDefinition)
 	for _, group := range def.Groups {
 		for _, rule := range group.Rules {
 			switch rule.Field {
-			case "genre":
+			case filterFieldGenre:
 				if filters.Genre == "" && rule.Op == "contains" {
 					if value, ok := catalogStringValue(rule.Value); ok {
 						filters.Genre = value
@@ -2378,7 +2347,7 @@ func catalogRuleMatchesItem(item *models.MediaItem, rule QueryRule) bool {
 	switch rule.Field {
 	case "type":
 		return compareCatalogString(item.Type, rule.Op, rule.Value)
-	case "genre":
+	case filterFieldGenre:
 		return compareCatalogStringSlice(item.Genres, rule.Op, rule.Value)
 	case "studio":
 		return compareCatalogStringSlice(item.Studios, rule.Op, rule.Value)
@@ -2386,7 +2355,7 @@ func catalogRuleMatchesItem(item *models.MediaItem, rule QueryRule) bool {
 		return compareCatalogStringSlice(item.Networks, rule.Op, rule.Value)
 	case "country":
 		return compareCatalogStringSlice(item.Countries, rule.Op, rule.Value)
-	case "original_language":
+	case filterFieldOriginalLanguage:
 		return compareCatalogString(item.OriginalLanguage, rule.Op, rule.Value)
 	case "content_rating":
 		return compareCatalogString(item.ContentRating, rule.Op, rule.Value)
@@ -2485,12 +2454,12 @@ func compareCatalogStringDate(actual, op string, value any) bool {
 	}
 
 	switch op {
-	case "gt", "gte", "lt", "lte", "between", "is", "is_not", "in_last":
+	case "gt", "gte", "lt", "lte", "between", "is", "is_not", filterOpInLast:
 	default:
 		return false
 	}
 
-	if op == "in_last" {
+	if op == filterOpInLast {
 		duration, ok := catalogStringValue(value)
 		if !ok {
 			return false
@@ -2549,12 +2518,12 @@ func compareCatalogTime(actual time.Time, op string, value any) bool {
 	}
 
 	switch op {
-	case "gt", "gte", "lt", "lte", "between", "in_last":
+	case "gt", "gte", "lt", "lte", "between", filterOpInLast:
 	default:
 		return false
 	}
 
-	if op == "in_last" {
+	if op == filterOpInLast {
 		duration, ok := catalogStringValue(value)
 		if !ok {
 			return false

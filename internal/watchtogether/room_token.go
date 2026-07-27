@@ -68,7 +68,7 @@ func (s *RoomTokenService) Validate(tokenStr string) (*RoomTokenClaims, error) {
 		if errors.Is(err, jwt.ErrTokenExpired) {
 			return nil, fmt.Errorf("%w: expired", ErrInvalidRoomToken)
 		}
-		return nil, fmt.Errorf("%w: %v", ErrInvalidRoomToken, err)
+		return nil, fmt.Errorf("%w: %w", ErrInvalidRoomToken, err)
 	}
 	if !token.Valid {
 		return nil, ErrInvalidRoomToken

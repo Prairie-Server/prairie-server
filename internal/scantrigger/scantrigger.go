@@ -16,6 +16,10 @@ import (
 )
 
 const (
+	errCodeBadRequest = "bad_request"
+)
+
+const (
 	ModeLibrary = "library"
 	ModeSubtree = "subtree"
 	ModeFile    = "file"
@@ -105,14 +109,14 @@ func (r *Resolver) ResolveMissingSubtree(ctx context.Context, subtreePath, trigg
 	}
 	cleanPath := filepath.Clean(subtreePath)
 	if strings.TrimSpace(subtreePath) == "" || cleanPath == "." {
-		return nil, &RequestError{Status: http.StatusBadRequest, Code: "bad_request", Message: "Path is required"}
+		return nil, &RequestError{Status: http.StatusBadRequest, Code: errCodeBadRequest, Message: "Path is required"}
 	}
 	folder, matchedRoot, err := r.matchEnabledFolder(ctx, cleanPath)
 	if err != nil {
 		return nil, err
 	}
 	if filepath.Clean(cleanPath) == filepath.Clean(matchedRoot) {
-		return nil, &RequestError{Status: http.StatusBadRequest, Code: "bad_request", Message: "Subtree path must be below a library root"}
+		return nil, &RequestError{Status: http.StatusBadRequest, Code: errCodeBadRequest, Message: "Subtree path must be below a library root"}
 	}
 	return &Target{Folder: folder, Mode: ModeSubtree, Path: cleanPath, Trigger: normalizeTrigger(trigger)}, nil
 }
@@ -160,14 +164,14 @@ func (r *Resolver) ResolveVanishedPath(ctx context.Context, path, trigger string
 	}
 	cleanPath := filepath.Clean(path)
 	if strings.TrimSpace(path) == "" || cleanPath == "." {
-		return nil, &RequestError{Status: http.StatusBadRequest, Code: "bad_request", Message: "Path is required"}
+		return nil, &RequestError{Status: http.StatusBadRequest, Code: errCodeBadRequest, Message: "Path is required"}
 	}
 	if _, err := os.Lstat(cleanPath); err == nil {
-		return nil, &RequestError{Status: http.StatusBadRequest, Code: "bad_request", Message: "Path still exists"}
+		return nil, &RequestError{Status: http.StatusBadRequest, Code: errCodeBadRequest, Message: "Path still exists"}
 	} else if !errors.Is(err, os.ErrNotExist) {
 		// Only a confirmed ENOENT counts as vanished. Permission or other
 		// stat failures must not reconcile still-existing files as missing.
-		return nil, &RequestError{Status: http.StatusBadRequest, Code: "bad_request", Message: "Path could not be inspected"}
+		return nil, &RequestError{Status: http.StatusBadRequest, Code: errCodeBadRequest, Message: "Path could not be inspected"}
 	}
 	folder, matchedRoot, err := r.matchEnabledFolder(ctx, cleanPath)
 	if err != nil {
@@ -182,7 +186,7 @@ func (r *Resolver) ResolveVanishedPath(ctx context.Context, path, trigger string
 		return &Target{Folder: folder, Mode: ModeFile, Path: cleanPath, Trigger: trigger}, nil
 	}
 	if supportsMediaFile(cleanPath) {
-		return nil, &RequestError{Status: http.StatusBadRequest, Code: "bad_request", Message: "Unsupported media file extension for library type"}
+		return nil, &RequestError{Status: http.StatusBadRequest, Code: errCodeBadRequest, Message: "Unsupported media file extension for library type"}
 	}
 	scope := cleanPath
 	if filepath.Clean(scope) == filepath.Clean(matchedRoot) {
@@ -198,7 +202,7 @@ func (r *Resolver) resolve(ctx context.Context, req Request, pathFolders []*mode
 		return nil, &RequestError{Status: http.StatusServiceUnavailable, Code: "unavailable", Message: "Scanner not available"}
 	}
 	if req.LibraryID == nil && strings.TrimSpace(req.Path) == "" {
-		return nil, &RequestError{Status: http.StatusBadRequest, Code: "bad_request", Message: "Either library_id or path is required"}
+		return nil, &RequestError{Status: http.StatusBadRequest, Code: errCodeBadRequest, Message: "Either library_id or path is required"}
 	}
 
 	var folder *models.MediaFolder
@@ -232,7 +236,7 @@ func (r *Resolver) resolve(ctx context.Context, req Request, pathFolders []*mode
 			return nil, err
 		}
 		if matchedRoot == "" {
-			return nil, &RequestError{Status: http.StatusBadRequest, Code: "bad_request", Message: "Path does not belong to the specified library"}
+			return nil, &RequestError{Status: http.StatusBadRequest, Code: errCodeBadRequest, Message: "Path does not belong to the specified library"}
 		}
 	} else {
 		folders := pathFolders
@@ -328,10 +332,10 @@ func MatchFolderForPath(targetPath string, folders []*models.MediaFolder) (*mode
 	}
 
 	if ambiguous {
-		return nil, "", &RequestError{Status: http.StatusBadRequest, Code: "bad_request", Message: "Path matches multiple libraries"}
+		return nil, "", &RequestError{Status: http.StatusBadRequest, Code: errCodeBadRequest, Message: "Path matches multiple libraries"}
 	}
 	if bestFolder == nil {
-		return nil, "", &RequestError{Status: http.StatusBadRequest, Code: "bad_request", Message: "No library matches the given path"}
+		return nil, "", &RequestError{Status: http.StatusBadRequest, Code: errCodeBadRequest, Message: "No library matches the given path"}
 	}
 	return bestFolder, bestRoot, nil
 }
@@ -349,21 +353,21 @@ func ClassifyLibraryPath(targetPath, matchedRoot, folderType string) (string, er
 	if err != nil {
 		switch {
 		case errors.Is(err, os.ErrNotExist):
-			return "", &RequestError{Status: http.StatusBadRequest, Code: "bad_request", Message: "Path does not exist"}
+			return "", &RequestError{Status: http.StatusBadRequest, Code: errCodeBadRequest, Message: "Path does not exist"}
 		case errors.Is(err, os.ErrPermission):
-			return "", &RequestError{Status: http.StatusBadRequest, Code: "bad_request", Message: "Permission denied for path"}
+			return "", &RequestError{Status: http.StatusBadRequest, Code: errCodeBadRequest, Message: "Permission denied for path"}
 		default:
-			return "", &RequestError{Status: http.StatusBadRequest, Code: "bad_request", Message: "Path could not be inspected"}
+			return "", &RequestError{Status: http.StatusBadRequest, Code: errCodeBadRequest, Message: "Path could not be inspected"}
 		}
 	}
 	if info.IsDir() {
 		return ModeSubtree, nil
 	}
 	if !info.Mode().IsRegular() {
-		return "", &RequestError{Status: http.StatusBadRequest, Code: "bad_request", Message: "Path must be a file or directory"}
+		return "", &RequestError{Status: http.StatusBadRequest, Code: errCodeBadRequest, Message: "Path must be a file or directory"}
 	}
 	if !supportsLibraryMediaFile(targetPath, folderType) {
-		return "", &RequestError{Status: http.StatusBadRequest, Code: "bad_request", Message: "Unsupported media file extension for library type"}
+		return "", &RequestError{Status: http.StatusBadRequest, Code: errCodeBadRequest, Message: "Unsupported media file extension for library type"}
 	}
 	return ModeFile, nil
 }

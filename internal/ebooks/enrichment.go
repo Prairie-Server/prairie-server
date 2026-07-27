@@ -442,11 +442,12 @@ func (e *Enricher) runQueueBatch(
 					recordTransitionError(item.ContentID, transitionErr)
 					continue
 				}
-				if outcome == EnrichmentOutcomeSuccess {
+				switch outcome {
+				case EnrichmentOutcomeSuccess:
 					atomic.AddInt64(&enriched, 1)
-				} else if outcome == EnrichmentOutcomeNoMatch {
+				case EnrichmentOutcomeNoMatch:
 					atomic.AddInt64(&noMatch, 1)
-				} else {
+				default:
 					atomic.AddInt64(&deferred, 1)
 				}
 			}
@@ -1136,7 +1137,7 @@ func isNilImageCacher(cacher metadata.ImageCacher) bool {
 	}
 	value := reflect.ValueOf(cacher)
 	switch value.Kind() {
-	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
 		return value.IsNil()
 	default:
 		return false
@@ -1274,7 +1275,7 @@ func (e *Enricher) persistPeople(ctx context.Context, contentID string, people [
 			continue
 		}
 		ip := people[i]
-		ip.Person.ID = personIDs[i]
+		ip.ID = personIDs[i]
 		linked = append(linked, ip)
 	}
 

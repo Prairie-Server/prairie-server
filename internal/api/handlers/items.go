@@ -151,7 +151,7 @@ func (h *ItemsHandler) maybeRequestStaleDetailMetadataRefresh(ctx context.Contex
 		return
 	}
 	switch detail.Type {
-	case "episode":
+	case itemTypeEpisode:
 		if h.episodeRepo == nil {
 			return
 		}
@@ -159,7 +159,7 @@ func (h *ItemsHandler) maybeRequestStaleDetailMetadataRefresh(ctx context.Contex
 		if err == nil {
 			h.maybeRequestStaleEpisodeMetadataRefresh(ctx, episode)
 		}
-	case "season":
+	case itemTypeSeason:
 		if h.episodeRepo == nil {
 			return
 		}
@@ -167,7 +167,7 @@ func (h *ItemsHandler) maybeRequestStaleDetailMetadataRefresh(ctx context.Contex
 		if err == nil {
 			h.maybeRequestStaleSeasonMetadataRefresh(ctx, detail.ContentID, episodes)
 		}
-	case "series":
+	case itemTypeSeries:
 		if h.itemRepo == nil {
 			return
 		}
@@ -183,7 +183,7 @@ func (h *ItemsHandler) maybeRequestStaleEpisodeMetadataRefresh(ctx context.Conte
 		return
 	}
 	if metadata.EpisodeHasActionableMetadataDebt(episode, time.Now()) {
-		h.requestStaleMetadataRefresh(ctx, "episode", episode.ContentID)
+		h.requestStaleMetadataRefresh(ctx, itemTypeEpisode, episode.ContentID)
 	}
 }
 
@@ -194,7 +194,7 @@ func (h *ItemsHandler) maybeRequestStaleSeasonMetadataRefresh(ctx context.Contex
 	now := time.Now()
 	for _, episode := range episodes {
 		if metadata.EpisodeHasActionableMetadataDebt(episode, now) {
-			h.requestStaleMetadataRefresh(ctx, "season", seasonID)
+			h.requestStaleMetadataRefresh(ctx, itemTypeSeason, seasonID)
 			return
 		}
 	}
@@ -420,7 +420,7 @@ func (h *ItemsHandler) HandleGetWatchDetail(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	if detail.Type == "movie" || detail.Type == "episode" || detail.Type == "ebook" || detail.Type == "audiobook" {
+	if detail.Type == itemTypeMovie || detail.Type == itemTypeEpisode || detail.Type == itemTypeEbook || detail.Type == "audiobook" {
 		detail.UserData = h.getLeafUserData(r, detail.ContentID, detail.Type)
 		applyEffectiveEditionPreference(detail.UserData, &detail.EffectiveVersionEditionKey)
 	}
@@ -489,7 +489,7 @@ func (h *ItemsHandler) handleSetWatchedState(w http.ResponseWriter, r *http.Requ
 	}
 
 	switch {
-	case targetType == "ebook":
+	case targetType == itemTypeEbook:
 		// Ebook read state lives in ebook_reader_progress, not in
 		// user_watch_progress/user_watch_history; watch providers do not sync
 		// books, so no local watch event is dispatched.
@@ -788,7 +788,7 @@ func (h *ItemsHandler) listEpisodeBrowseMetadata(
 
 	episodeIDs := make([]string, 0)
 	for _, item := range items {
-		if item == nil || item.Type != "episode" || strings.TrimSpace(item.ContentID) == "" {
+		if item == nil || item.Type != itemTypeEpisode || strings.TrimSpace(item.ContentID) == "" {
 			continue
 		}
 		episodeIDs = append(episodeIDs, item.ContentID)
@@ -875,20 +875,6 @@ func (h *ItemsHandler) listItemUserStates(r *http.Request, items []*models.Media
 }
 
 // toEpisodeResponse converts an Episode model to an API response.
-func (h *ItemsHandler) toEpisodeResponse(r *http.Request, ep *models.Episode) episodeResponse {
-	return h.toEpisodeResponseWithFallback(r, ep, episodeImageFallback{})
-}
-
-func (h *ItemsHandler) toEpisodeResponseWithFallback(r *http.Request, ep *models.Episode, fallback episodeImageFallback) episodeResponse {
-	if h.detailSvc != nil {
-		if localized, err := h.detailSvc.LocalizeEpisodeModel(r.Context(), ep, h.accessFilter(r)); err == nil && localized != nil {
-			ep = localized
-		}
-	}
-	resp, stillPath := episodeResponseShell(ep, fallback)
-	resp.StillURL = h.presignURL(r, stillPath, "card")
-	return resp
-}
 
 // episodeResponseShell maps an already-localized episode onto the response
 // shape, returning the card-variant still path for the caller to presign.
@@ -1116,7 +1102,7 @@ func (h *ItemsHandler) listSortMetrics(
 		}
 	case "progress", "date_viewed", "plays":
 		h.listUserSortMetrics(ctx, items, sortField, store, userID, profileID, metrics)
-	case "author", "narrator", "series":
+	case "author", "narrator", itemTypeSeries:
 		h.listAudiobookSortMetrics(ctx, items, sortField, metrics)
 	}
 	return metrics
@@ -1142,7 +1128,7 @@ func (h *ItemsHandler) listAudiobookSortMetrics(
 		query = audiobookPersonSortMetricQuery(int(models.PersonKindAuthor))
 	case "narrator":
 		query = audiobookPersonSortMetricQuery(int(models.PersonKindNarrator))
-	case "series":
+	case itemTypeSeries:
 		query = `
 			SELECT target.content_id, BTRIM(s.series_name) AS value
 			FROM unnest($1::text[]) WITH ORDINALITY AS target(content_id, ord)
@@ -1177,7 +1163,7 @@ func (h *ItemsHandler) listAudiobookSortMetrics(
 			resp.Author = value
 		case "narrator":
 			resp.Narrator = value
-		case "series":
+		case itemTypeSeries:
 			resp.SeriesName = value
 		}
 	}
@@ -1431,7 +1417,7 @@ func collectBrowseFileIDs(items []*models.MediaItem, contentIDs *[]string, episo
 			continue
 		}
 		seen[item.ContentID] = struct{}{}
-		if item.Type == "episode" {
+		if item.Type == itemTypeEpisode {
 			*episodeIDs = append(*episodeIDs, item.ContentID)
 		} else {
 			*contentIDs = append(*contentIDs, item.ContentID)
@@ -1461,10 +1447,6 @@ func maxFileBitrate(files []*models.MediaFile) int {
 }
 
 // toSeasonResponse converts a Season model to an API response.
-func (h *ItemsHandler) toSeasonResponse(r *http.Request, seriesID string, s *models.Season) seasonResponse {
-	episodes, _ := h.episodeRepo.ListBySeason(r.Context(), seriesID, s.SeasonNumber)
-	return h.toSeasonResponseFromEpisodes(r, seriesID, s, episodes, h.getAggregateUserData(r, episodes))
-}
 
 func (h *ItemsHandler) toSeasonResponseFromEpisodes(
 	r *http.Request,
@@ -1498,7 +1480,7 @@ func (h *ItemsHandler) toSeasonResponseFromEpisodes(
 }
 
 func (h *ItemsHandler) getLeafUserData(r *http.Request, contentID string, itemType ...string) *catalog.SeasonUserData {
-	if len(itemType) > 0 && itemType[0] == "ebook" {
+	if len(itemType) > 0 && itemType[0] == itemTypeEbook {
 		return h.getEbookLeafUserData(r, contentID)
 	}
 
@@ -1880,16 +1862,16 @@ func (h *ItemsHandler) resolveWatchedTargets(ctx context.Context, contentID stri
 			return "", nil, err
 		}
 		switch item.Type {
-		case "movie":
-			return "movie", []watchedLeafTarget{{
+		case itemTypeMovie:
+			return itemTypeMovie, []watchedLeafTarget{{
 				ContentID:       item.ContentID,
 				DurationSeconds: h.contentDurationSeconds(ctx, item.ContentID, "", item.Runtime),
 			}}, nil
-		case "ebook":
+		case itemTypeEbook:
 			// Ebooks have no playback duration; read state is keyed off
 			// ebook_reader_progress, so the leaf target only carries the ID.
-			return "ebook", []watchedLeafTarget{{ContentID: item.ContentID}}, nil
-		case "series":
+			return itemTypeEbook, []watchedLeafTarget{{ContentID: item.ContentID}}, nil
+		case itemTypeSeries:
 			if h.episodeRepo == nil {
 				return "", nil, catalog.ErrItemNotFound
 			}
@@ -1897,7 +1879,7 @@ func (h *ItemsHandler) resolveWatchedTargets(ctx context.Context, contentID stri
 			if err != nil {
 				return "", nil, err
 			}
-			return "series", h.episodeTargets(ctx, episodes), nil
+			return itemTypeSeries, h.episodeTargets(ctx, episodes), nil
 		default:
 			return "", nil, catalog.ErrItemNotFound
 		}
@@ -1919,7 +1901,7 @@ func (h *ItemsHandler) resolveWatchedTargets(ctx context.Context, contentID stri
 			if err != nil {
 				return "", nil, err
 			}
-			return "season", h.episodeTargets(ctx, episodes), nil
+			return itemTypeSeason, h.episodeTargets(ctx, episodes), nil
 		case !errors.Is(err, catalog.ErrSeasonNotFound):
 			return "", nil, err
 		}
@@ -1937,7 +1919,7 @@ func (h *ItemsHandler) resolveWatchedTargets(ctx context.Context, contentID stri
 		return "", nil, err
 	}
 
-	return "episode", []watchedLeafTarget{{
+	return itemTypeEpisode, []watchedLeafTarget{{
 		ContentID:       episode.ContentID,
 		DurationSeconds: h.contentDurationSeconds(ctx, "", episode.ContentID, episode.Runtime),
 	}}, nil

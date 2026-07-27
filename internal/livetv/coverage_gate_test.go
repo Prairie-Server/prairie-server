@@ -359,7 +359,10 @@ func TestMediaHTTPClientDialBlocksMetadata(t *testing.T) {
 	client.Transport = http.DefaultTransport
 	// keep CheckRedirect from NewMediaHTTPClient
 	req, _ = http.NewRequest(http.MethodGet, srv.URL+"/", nil)
-	_, err = client.Do(req)
+	resp, err = client.Do(req)
+	if resp != nil {
+		defer resp.Body.Close()
+	}
 	if err == nil {
 		t.Fatal("expected too many redirects")
 	}

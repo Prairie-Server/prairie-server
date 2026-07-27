@@ -229,9 +229,9 @@ func resolutionOrder(res string) int {
 	switch {
 	case access.CompareQuality(res, "4320p") == 0:
 		return 5
-	case access.CompareQuality(res, "2160p") == 0:
+	case access.CompareQuality(res, resolution2160p) == 0:
 		return 4
-	case access.CompareQuality(res, "1080p") == 0:
+	case access.CompareQuality(res, resolution1080p) == 0:
 		return 3
 	case access.CompareQuality(res, "720p") == 0:
 		return 2
@@ -252,7 +252,7 @@ func resolutionFits(fileRes, maxRes string) bool {
 
 // is4K returns true if the resolution is 2160p or higher.
 func is4K(res string) bool {
-	return access.CompareQuality(res, "2160p") >= 0
+	return access.CompareQuality(res, resolution2160p) >= 0
 }
 
 // containsStr checks if a slice contains a string.

@@ -41,7 +41,7 @@ type SourceKey struct {
 
 func (k SourceKey) hash() string {
 	h := sha256.New()
-	fmt.Fprintf(h, "v1|mod=%s|id=%d|sz=%d|mt=%d|ck=%s",
+	_, _ = fmt.Fprintf(h, "v1|mod=%s|id=%d|sz=%d|mt=%d|ck=%s",
 		moduleVersion, k.FileID, k.Size, k.ModTimeNano, k.Checksum)
 	return hex.EncodeToString(h.Sum(nil))
 }
@@ -145,7 +145,7 @@ func (c *Cache) GetOrConvert(ctx context.Context, srcPath string, key SourceKey)
 		// Convert to a temp file in the cache dir, then atomically rename in.
 		tmp, tmpErr := os.CreateTemp(c.opts.Dir, "converting-*.epub")
 		if tmpErr != nil {
-			return "", fmt.Errorf("%w: cache temp: %v", ErrConversionFailed, tmpErr)
+			return "", fmt.Errorf("%w: cache temp: %w", ErrConversionFailed, tmpErr)
 		}
 		tmpPath := tmp.Name()
 		_ = tmp.Close()
@@ -158,7 +158,7 @@ func (c *Cache) GetOrConvert(ctx context.Context, srcPath string, key SourceKey)
 		}
 		if renErr := os.Rename(tmpPath, dst); renErr != nil {
 			_ = os.Remove(tmpPath)
-			return "", fmt.Errorf("%w: cache rename: %v", ErrConversionFailed, renErr)
+			return "", fmt.Errorf("%w: cache rename: %w", ErrConversionFailed, renErr)
 		}
 		c.enforceBudget(dst)
 		return dst, nil
@@ -169,7 +169,11 @@ func (c *Cache) GetOrConvert(ctx context.Context, srcPath string, key SourceKey)
 		if res.Err != nil {
 			return "", res.Err
 		}
-		return res.Val.(string), nil
+		path, ok := res.Val.(string)
+		if !ok {
+			return "", fmt.Errorf("ebook convert cache: unexpected value type %T", res.Val)
+		}
+		return path, nil
 	case <-ctx.Done():
 		return "", ctx.Err()
 	}

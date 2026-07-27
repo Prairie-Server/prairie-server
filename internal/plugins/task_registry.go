@@ -3,9 +3,11 @@ package plugins
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 
 	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+
 	"github.com/prairie-server/prairie-server/internal/pluginhost"
 	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
@@ -84,7 +86,7 @@ func (r *TaskRegistry) Tasks(ctx context.Context) ([]taskmanager.Task, error) {
 			}
 
 			binding, err := r.bindings.GetTaskBinding(ctx, installation.ID, capability.ID)
-			if err != nil && err != ErrTaskBindingNotFound {
+			if err != nil && !errors.Is(err, ErrTaskBindingNotFound) {
 				return nil, err
 			}
 			if binding != nil && !binding.Enabled {
@@ -154,10 +156,6 @@ func (t *pluginTask) Execute(ctx context.Context, progress taskmanager.ProgressR
 
 	progress.Report(100, "Plugin task complete")
 	return nil
-}
-
-func taskBindingKey(installationID int, capabilityID string) string {
-	return fmt.Sprintf("%d/%s", installationID, capabilityID)
 }
 
 func pluginTaskKey(installationID int, capabilityID string) string {

@@ -22,6 +22,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+
 	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
@@ -752,7 +753,11 @@ func (s *Service) ensureClient(ctx context.Context, installationID int) (pluginC
 	if err != nil {
 		return nil, err
 	}
-	return v.(pluginClient), nil
+	client, ok := v.(pluginClient)
+	if !ok {
+		return nil, fmt.Errorf("plugins: unexpected client type %T", v)
+	}
+	return client, nil
 }
 
 func (s *Service) doEnsureClient(ctx context.Context, installationID int) (pluginClient, error) {

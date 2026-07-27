@@ -270,8 +270,8 @@ func composeNotificationEmail(mode string, rows []DeliveryRow, opts emailCompose
 		text.WriteString("  " + plain + "\n")
 		var inner strings.Builder
 		if code != "" {
-			inner.WriteString(fmt.Sprintf(`<span style="font:500 12px/1 %s;color:%s;">%s</span>`,
-				mail.EmailFontMono, mail.EmailColorMuted, html.EscapeString(code)))
+			fmt.Fprintf(&inner, `<span style="font:500 12px/1 %s;color:%s;">%s</span>`,
+				mail.EmailFontMono, mail.EmailColorMuted, html.EscapeString(code))
 			if label != "" {
 				inner.WriteString("&nbsp;&nbsp;")
 			}
@@ -282,9 +282,8 @@ func composeNotificationEmail(mode string, rows []DeliveryRow, opts emailCompose
 			content = fmt.Sprintf(`<a href="%s" style="color:%s;text-decoration:none;">%s</a>`,
 				html.EscapeString(href), mail.EmailColorText, content)
 		}
-		body.WriteString(fmt.Sprintf(
-			`<li style="margin:0;padding:8px 2px;border-top:1px solid %s;font:400 14px/1.5 %s;color:%s;">%s</li>`,
-			mail.EmailColorRule, mail.EmailFont, mail.EmailColorText, content))
+		fmt.Fprintf(&body, `<li style="margin:0;padding:8px 2px;border-top:1px solid %s;font:400 14px/1.5 %s;color:%s;">%s</li>`,
+			mail.EmailColorRule, mail.EmailFont, mail.EmailColorText, content)
 	}
 	writeHeading := func(title, href string) {
 		text.WriteString(title + "\n")
@@ -297,9 +296,8 @@ func composeNotificationEmail(mode string, rows []DeliveryRow, opts emailCompose
 		if body.Len() == 0 {
 			top = "0"
 		}
-		body.WriteString(fmt.Sprintf(
-			`<h2 style="margin:%s 0 6px;font:600 15px/1.4 %s;color:%s;">%s</h2>`,
-			top, mail.EmailFont, mail.EmailColorText, label))
+		fmt.Fprintf(&body, `<h2 style="margin:%s 0 6px;font:600 15px/1.4 %s;color:%s;">%s</h2>`,
+			top, mail.EmailFont, mail.EmailColorText, label)
 	}
 	openList := func() { body.WriteString(`<ul style="margin:0;padding:0;list-style:none;">`) }
 	closeList := func() { body.WriteString(`</ul>`) }
@@ -351,8 +349,8 @@ func composeNotificationEmail(mode string, rows []DeliveryRow, opts emailCompose
 	if remainder := total - emailMaxItemsRendered; remainder > 0 {
 		more := fmt.Sprintf("…and %d more in your Prairie inbox.", remainder)
 		text.WriteString(more + "\n")
-		body.WriteString(fmt.Sprintf(`<p style="margin:14px 0 0;font:400 13px/1.5 %s;color:%s;">%s</p>`,
-			mail.EmailFont, mail.EmailColorMuted, html.EscapeString(more)))
+		fmt.Fprintf(&body, `<p style="margin:14px 0 0;font:400 13px/1.5 %s;color:%s;">%s</p>`,
+			mail.EmailFont, mail.EmailColorMuted, html.EscapeString(more))
 	}
 
 	forProfile := ""

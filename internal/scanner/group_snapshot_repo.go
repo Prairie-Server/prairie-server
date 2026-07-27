@@ -180,7 +180,7 @@ func (r *ScannedGroupRepository) UpsertMany(ctx context.Context, groups []models
 	}
 
 	results := r.pool.SendBatch(ctx, batch)
-	defer results.Close()
+	defer func() { _ = results.Close() }()
 	for range groups {
 		if _, err := results.Exec(); err != nil {
 			return fmt.Errorf("upserting scanned media groups: %w", err)

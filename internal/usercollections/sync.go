@@ -132,7 +132,7 @@ func (s *Service) syncMDBList(ctx context.Context, store userstore.UserStore, co
 	var movieBatch, seriesBatch catalog.ExternalIDBatch
 	for _, entry := range entries {
 		batch := &movieBatch
-		if mdbListItemType(entry) == "series" {
+		if mdbListItemType(entry) == itemTypeSeries {
 			batch = &seriesBatch
 		}
 		if entry.ID > 0 {
@@ -150,7 +150,7 @@ func (s *Service) syncMDBList(ctx context.Context, store userstore.UserStore, co
 	if err != nil {
 		return nil, nil, err
 	}
-	seriesLookup, err := s.items.GetByExternalIDs(ctx, seriesBatch, "series")
+	seriesLookup, err := s.items.GetByExternalIDs(ctx, seriesBatch, itemTypeSeries)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -160,7 +160,7 @@ func (s *Service) syncMDBList(ctx context.Context, store userstore.UserStore, co
 		entry := entries[i]
 		itemType := mdbListItemType(entry)
 		lookup := movieLookup
-		if itemType == "series" {
+		if itemType == itemTypeSeries {
 			lookup = seriesLookup
 		}
 		var tvdb string
@@ -183,8 +183,8 @@ func (s *Service) syncMDBList(ctx context.Context, store userstore.UserStore, co
 
 func mdbListItemType(entry mdblistEntry) string {
 	switch strings.ToLower(entry.MediaType) {
-	case "show", "tv", "series":
-		return "series"
+	case "show", "tv", itemTypeSeries:
+		return itemTypeSeries
 	default:
 		return "movie"
 	}
@@ -196,7 +196,7 @@ func resolveCandidate(lookup *catalog.ExternalIDLookup, itemType, tvdbID, tmdbID
 	if lookup == nil {
 		return ""
 	}
-	if itemType == "series" && tvdbID != "" {
+	if itemType == itemTypeSeries && tvdbID != "" {
 		if id := lookup.ByTVDB[tvdbID]; id != "" {
 			return id
 		}
@@ -368,7 +368,7 @@ func (s *Service) syncTMDB(ctx context.Context, store userstore.UserStore, colle
 	if err != nil {
 		return nil, nil, err
 	}
-	seriesLookup, err := s.items.GetByExternalIDs(ctx, seriesBatch, "series")
+	seriesLookup, err := s.items.GetByExternalIDs(ctx, seriesBatch, itemTypeSeries)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -379,7 +379,7 @@ func (s *Service) syncTMDB(ctx context.Context, store userstore.UserStore, colle
 		itemType := "movie"
 		lookup := movieLookup
 		if entry.MediaType == "tv" {
-			itemType = "series"
+			itemType = itemTypeSeries
 			lookup = seriesLookup
 		}
 		var tmdb string
@@ -404,7 +404,7 @@ func (s *Service) syncTMDB(ctx context.Context, store userstore.UserStore, colle
 
 func (s *Service) syncTrakt(ctx context.Context, store userstore.UserStore, collection *userstore.Collection, cfg SourceConfig, startedAt time.Time) (*SyncResult, *userstore.Collection, error) {
 	if s.TraktCollections == nil {
-		return nil, nil, fmt.Errorf("Trakt sync requires configured Trakt access")
+		return nil, nil, fmt.Errorf("trakt sync requires configured Trakt access")
 	}
 	preset := strings.TrimSpace(cfg.Preset)
 	mediaType := strings.TrimSpace(cfg.MediaType)
@@ -422,7 +422,7 @@ func (s *Service) syncTrakt(ctx context.Context, store userstore.UserStore, coll
 			profileID = collection.CreatorProfileID
 		}
 		if profileID == "" || s.TraktTokenResolver == nil {
-			return nil, nil, fmt.Errorf("Trakt recommendations require a profile binding")
+			return nil, nil, fmt.Errorf("trakt recommendations require a profile binding")
 		}
 		token, err := s.TraktTokenResolver.ResolveTraktAccessToken(ctx, profileID)
 		if err != nil {
@@ -439,7 +439,7 @@ func (s *Service) syncTrakt(ctx context.Context, store userstore.UserStore, coll
 
 	itemType := "movie"
 	if mediaType == "tv" {
-		itemType = "series"
+		itemType = itemTypeSeries
 	}
 	var batch catalog.ExternalIDBatch
 	for _, entry := range results {
@@ -449,7 +449,7 @@ func (s *Service) syncTrakt(ctx context.Context, store userstore.UserStore, coll
 		if entry.IMDbID != "" {
 			batch.IMDbIDs = append(batch.IMDbIDs, entry.IMDbID)
 		}
-		if entry.TVDBID > 0 && itemType == "series" {
+		if entry.TVDBID > 0 && itemType == itemTypeSeries {
 			batch.TVDBIDs = append(batch.TVDBIDs, fmt.Sprintf("%d", entry.TVDBID))
 		}
 	}

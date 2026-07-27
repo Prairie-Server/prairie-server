@@ -215,56 +215,6 @@ func (s *PersonRefreshService) enqueuePersonPhoto(ctx context.Context, person mo
 	}
 }
 
-func (s *PersonRefreshService) cachePersonPhoto(
-	ctx context.Context,
-	person models.Person,
-	detail PersonDetailResult,
-	photoProviderID string,
-) (string, string, error) {
-	if s.imageCacher == nil {
-		return detail.PhotoPath, detail.PhotoThumbhash, nil
-	}
-	if strings.TrimSpace(detail.PhotoPath) == "" || detail.PhotoPath == "-" {
-		return detail.PhotoPath, detail.PhotoThumbhash, nil
-	}
-	if !strings.Contains(detail.PhotoPath, "://") {
-		return detail.PhotoPath, detail.PhotoThumbhash, nil
-	}
-
-	downloadURL := detail.PhotoPath
-	if !strings.HasPrefix(downloadURL, "http://") && !strings.HasPrefix(downloadURL, "https://") {
-		if s.imageResolver == nil {
-			return "", "", fmt.Errorf("plugin image resolver is not configured")
-		}
-		downloadURL = s.imageResolver.ResolveImageURL(ctx, detail.PhotoPath, "original")
-		if downloadURL == "" {
-			return "", "", fmt.Errorf("resolved empty URL for %q", detail.PhotoPath)
-		}
-	}
-
-	providerID := photoProviderID
-	if providerID == "" {
-		providerID = primaryPersonProviderID(detail.ProviderIDs)
-	}
-	if providerID == "" {
-		providerID = "unknown"
-	}
-
-	contentID := personCacheContentID(person, detail.ProviderIDs, providerID)
-	result, err := s.imageCacher.CacheImage(ctx, CacheImageRequest{
-		SourceURL:   downloadURL,
-		ProviderID:  providerID,
-		ContentType: "people",
-		ContentID:   contentID,
-		ImageType:   ImagePoster,
-	})
-	if err != nil {
-		return "", "", err
-	}
-
-	return CachedImageOriginalPath(result), result.Thumbhash, nil
-}
-
 func personProviderIDs(person models.Person) map[string]string {
 	ids := map[string]string{}
 	if person.TmdbID != "" {
@@ -347,7 +297,7 @@ func parseOptionalPersonDate(value string) (*time.Time, error) {
 }
 
 func primaryPersonProviderID(providerIDs map[string]string) string {
-	for _, key := range []string{"tmdb", "tvdb", "imdb", "metadb"} {
+	for _, key := range []string{"tmdb", "tvdb", "imdb", providerSlugMetaDB} {
 		if providerIDs[key] != "" {
 			return key
 		}
@@ -363,7 +313,7 @@ func personCacheContentID(
 	if providerID != "" && providerIDs[providerID] != "" {
 		return providerIDs[providerID]
 	}
-	for _, key := range []string{"tmdb", "tvdb", "imdb", "metadb"} {
+	for _, key := range []string{"tmdb", "tvdb", "imdb", providerSlugMetaDB} {
 		if providerIDs[key] != "" {
 			return providerIDs[key]
 		}

@@ -5,7 +5,7 @@ package templates
 // stable strings so they can be referenced across the API and UI without
 // drifting when descriptions are tweaked.
 //
-// Sync cadences favour conservative defaults — a heavy library does not need
+// Sync cadences favor conservative defaults — a heavy library does not need
 // "Trending" to refresh more than every six hours, and TMDB rate-limits make
 // hourly refreshes wasteful for shared servers.
 //
@@ -42,7 +42,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSyncSchedule: "0 6 * * *",
 		Featured:            true,
-		TMDB:                &TMDBSpec{Preset: "trending", MediaType: "movie", TimeWindow: "week"},
+		TMDB:                &TMDBSpec{Preset: "trending", MediaType: mediaTypeMovie, TimeWindow: "week"},
 	},
 	{
 		ID:                  "tmdb_trending_tv_week",
@@ -67,7 +67,7 @@ var builtinTemplates = []Template{
 		MediaKind:           MediaMovie,
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSyncSchedule: "0 */6 * * *",
-		Trakt:               &TraktSpec{Preset: "trending", MediaType: "movie"},
+		Trakt:               &TraktSpec{Preset: "trending", MediaType: mediaTypeMovie},
 	},
 	{
 		ID:                  "trakt_trending_shows",
@@ -86,19 +86,19 @@ var builtinTemplates = []Template{
 	{
 		ID:                  "tmdb_popular_movies",
 		Title:               "Popular Movies",
-		Description:         "Perennial favourites ranked by TMDB's popularity score.",
+		Description:         "Perennial favorites ranked by TMDB's popularity score.",
 		Icon:                "⭐",
 		Category:            CategoryPopular,
 		Source:              SourceTMDB,
 		MediaKind:           MediaMovie,
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSyncSchedule: "0 4 * * *",
-		TMDB:                &TMDBSpec{Preset: "popular", MediaType: "movie"},
+		TMDB:                &TMDBSpec{Preset: "popular", MediaType: mediaTypeMovie},
 	},
 	{
 		ID:                  "tmdb_popular_tv",
 		Title:               "Popular TV Shows",
-		Description:         "Perennial favourites ranked by TMDB's popularity score.",
+		Description:         "Perennial favorites ranked by TMDB's popularity score.",
 		Icon:                "⭐",
 		Category:            CategoryPopular,
 		Source:              SourceTMDB,
@@ -117,7 +117,7 @@ var builtinTemplates = []Template{
 		MediaKind:           MediaMovie,
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSyncSchedule: "0 4 * * *",
-		Trakt:               &TraktSpec{Preset: "popular", MediaType: "movie"},
+		Trakt:               &TraktSpec{Preset: "popular", MediaType: mediaTypeMovie},
 	},
 	{
 		ID:                  "trakt_popular_shows",
@@ -143,7 +143,7 @@ var builtinTemplates = []Template{
 		MediaKind:           MediaMovie,
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSyncSchedule: "0 5 * * 0",
-		TMDB:                &TMDBSpec{Preset: "top_rated", MediaType: "movie"},
+		TMDB:                &TMDBSpec{Preset: "top_rated", MediaType: mediaTypeMovie},
 	},
 	{
 		ID:                  "tmdb_top_rated_tv",
@@ -169,7 +169,7 @@ var builtinTemplates = []Template{
 		MediaKind:           MediaMovie,
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSyncSchedule: "0 5 * * *",
-		TMDB:                &TMDBSpec{Preset: "now_playing", MediaType: "movie"},
+		TMDB:                &TMDBSpec{Preset: "now_playing", MediaType: mediaTypeMovie},
 	},
 
 	// ── Upcoming ───────────────────────────────────────────────────────────
@@ -183,7 +183,7 @@ var builtinTemplates = []Template{
 		MediaKind:           MediaMovie,
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSyncSchedule: "0 5 * * *",
-		TMDB:                &TMDBSpec{Preset: "upcoming", MediaType: "movie"},
+		TMDB:                &TMDBSpec{Preset: "upcoming", MediaType: mediaTypeMovie},
 	},
 
 	// ── Airing TV ──────────────────────────────────────────────────────────
@@ -224,7 +224,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSyncSchedule: "0 7 * * *",
 		RequiresProfile:     true,
-		Trakt:               &TraktSpec{Preset: "recommended", MediaType: "movie"},
+		Trakt:               &TraktSpec{Preset: "recommended", MediaType: mediaTypeMovie},
 	},
 	{
 		ID:                  "trakt_recommended_shows",
@@ -642,7 +642,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    8001,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"seasonal", "holiday"},
+		Tags:                []string{tagSeasonal, "holiday"},
 		MDBList:             &MDBListSpec{URL: "https://mdblist.com/lists/fuzi0n/halloween-movies/json"},
 	},
 	{
@@ -656,7 +656,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    8002,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"seasonal", "holiday"},
+		Tags:                []string{tagSeasonal, "holiday"},
 		MDBList:             &MDBListSpec{URL: "https://mdblist.com/lists/fuzi0n/christmas-movies/json"},
 	},
 	{
@@ -670,7 +670,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    8003,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"seasonal", "holiday"},
+		Tags:                []string{tagSeasonal, "holiday"},
 		MDBList:             &MDBListSpec{URL: "https://mdblist.com/lists/fuzi0n/valentines-day-movies/json"},
 	},
 	{
@@ -684,7 +684,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    8004,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"seasonal", "holiday"},
+		Tags:                []string{tagSeasonal, "holiday"},
 		MDBList:             &MDBListSpec{URL: "https://mdblist.com/lists/fuzi0n/easter-movies/json"},
 	},
 	{
@@ -698,7 +698,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    8005,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"seasonal", "holiday"},
+		Tags:                []string{tagSeasonal, "holiday"},
 		MDBList:             &MDBListSpec{URL: "https://mdblist.com/lists/fuzi0n/thanksgiving-movies/json"},
 	},
 	{
@@ -712,7 +712,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    8006,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"seasonal", "holiday"},
+		Tags:                []string{tagSeasonal, "holiday"},
 		MDBList:             &MDBListSpec{URL: "https://mdblist.com/lists/fuzi0n/new-years-movies/json"},
 	},
 	{
@@ -726,7 +726,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    8007,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"seasonal", "heritage"},
+		Tags:                []string{tagSeasonal, "heritage"},
 		MDBList: &MDBListSpec{
 			URL: "https://mdblist.com/lists/k0meta/asian-american-pacific-islander-heritage-month/json",
 		},
@@ -742,7 +742,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    8008,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"seasonal", "heritage"},
+		Tags:                []string{tagSeasonal, "heritage"},
 		MDBList:             &MDBListSpec{URL: "https://mdblist.com/lists/k0meta/latinx-heritage-month/json"},
 	},
 	{
@@ -756,7 +756,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    8009,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"seasonal", "heritage", "pride"},
+		Tags:                []string{tagSeasonal, "heritage", "pride"},
 		MDBList:             &MDBListSpec{URL: "https://mdblist.com/lists/apollocat/new-in-lgbtq/json"},
 	},
 
@@ -860,7 +860,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5001,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{28},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -878,7 +878,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5002,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{12},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -896,7 +896,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5003,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{16},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -914,7 +914,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5004,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{35},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -932,7 +932,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5005,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{80},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -950,7 +950,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5006,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{99},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -968,7 +968,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5007,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{18},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -986,7 +986,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5008,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{10751},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -1004,7 +1004,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5009,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{14},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -1022,7 +1022,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5010,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{36},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -1040,7 +1040,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5011,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{27},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -1058,7 +1058,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5012,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{10402},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -1076,7 +1076,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5013,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{9648},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -1094,7 +1094,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5014,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{10749},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -1103,7 +1103,7 @@ var builtinTemplates = []Template{
 	{
 		ID:                  "tmdb_discover_popular_science_fiction",
 		Title:               "Popular Science Fiction",
-		Description:         "Sci-fi blockbusters and cult favourites sorted by TMDB heat.",
+		Description:         "Sci-fi blockbusters and cult favorites sorted by TMDB heat.",
 		Icon:                "🚀",
 		Category:            CategoryPopular,
 		Source:              SourceTMDBDiscover,
@@ -1112,7 +1112,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5015,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{878},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -1130,7 +1130,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5016,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{53},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -1148,7 +1148,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5017,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{10752},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -1166,7 +1166,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    5018,
 		DefaultSyncSchedule: "0 4 * * *",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{37},
 			SortBy:       "popularity.desc",
 			VoteCountGte: 300,
@@ -1189,7 +1189,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6001,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{28},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1207,7 +1207,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6002,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{12},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1225,7 +1225,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6003,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{16},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1243,7 +1243,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6004,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{35},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1261,7 +1261,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6005,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{80},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1279,7 +1279,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6006,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{99},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1297,7 +1297,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6007,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{18},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1315,7 +1315,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6008,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{10751},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1333,7 +1333,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6009,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{14},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1351,7 +1351,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6010,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{36},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1369,7 +1369,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6011,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{27},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1387,7 +1387,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6012,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{10402},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1405,7 +1405,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6013,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{9648},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1423,7 +1423,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6014,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{10749},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1441,7 +1441,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6015,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{878},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1459,7 +1459,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6016,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{53},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1477,7 +1477,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6017,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{10752},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1495,7 +1495,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    6018,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			WithGenres:   []int{37},
 			SortBy:       "vote_average.desc",
 			VoteCountGte: 1000,
@@ -1518,7 +1518,7 @@ var builtinTemplates = []Template{
 		DefaultSortOrder:    9050,
 		DefaultSyncSchedule: "0 5 * * 0",
 		TMDBDiscover: &TMDBDiscoverSpec{
-			MediaType:        "movie",
+			MediaType:        mediaTypeMovie,
 			WithGenres:       []int{10751},
 			SortBy:           "popularity.desc",
 			CertificationLte: "PG",
@@ -1548,7 +1548,7 @@ var builtinTemplates = []Template{
 	{
 		ID:                  "tmdb_franchise_star_wars",
 		Title:               "Star Wars Saga",
-		Description:         "The Skywalker-era Star Wars feature films as catalogued by TMDB.",
+		Description:         "The Skywalker-era Star Wars feature films as cataloged by TMDB.",
 		Icon:                "⚔️",
 		Category:            CategoryEditorial,
 		Source:              SourceTMDBCollection,
@@ -1556,7 +1556,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    7002,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"franchise"},
+		Tags:                []string{tagFranchise},
 		TMDBCollection:      &TMDBCollectionSpec{CollectionID: 10},
 	},
 	{
@@ -1570,7 +1570,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    7003,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"franchise"},
+		Tags:                []string{tagFranchise},
 		TMDBCollection:      &TMDBCollectionSpec{CollectionID: 645},
 	},
 	{
@@ -1584,7 +1584,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    7004,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"franchise"},
+		Tags:                []string{tagFranchise},
 		TMDBCollection:      &TMDBCollectionSpec{CollectionID: 1241},
 	},
 	{
@@ -1598,7 +1598,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    7006,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"franchise"},
+		Tags:                []string{tagFranchise},
 		TMDBCollection:      &TMDBCollectionSpec{CollectionID: 9485},
 	},
 	{
@@ -1612,7 +1612,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    7007,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"franchise"},
+		Tags:                []string{tagFranchise},
 		TMDBCollection:      &TMDBCollectionSpec{CollectionID: 119},
 	},
 	{
@@ -1626,7 +1626,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    7008,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"franchise"},
+		Tags:                []string{tagFranchise},
 		TMDBCollection:      &TMDBCollectionSpec{CollectionID: 121938},
 	},
 	{
@@ -1640,7 +1640,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    7009,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"franchise"},
+		Tags:                []string{tagFranchise},
 		TMDBCollection:      &TMDBCollectionSpec{CollectionID: 328},
 	},
 	{
@@ -1654,7 +1654,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    7010,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"franchise"},
+		Tags:                []string{tagFranchise},
 		TMDBCollection:      &TMDBCollectionSpec{CollectionID: 295},
 	},
 	{
@@ -1668,7 +1668,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    7011,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"franchise"},
+		Tags:                []string{tagFranchise},
 		TMDBCollection:      &TMDBCollectionSpec{CollectionID: 87359},
 	},
 	{
@@ -1682,7 +1682,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    7012,
 		DefaultSyncSchedule: "0 5 * * 0",
-		Tags:                []string{"franchise"},
+		Tags:                []string{tagFranchise},
 		TMDBCollection:      &TMDBCollectionSpec{CollectionID: 535313},
 	},
 	{
@@ -1696,7 +1696,7 @@ var builtinTemplates = []Template{
 		DefaultLimit:        builtinDefaultLimit,
 		DefaultSortOrder:    7099,
 		DefaultSyncSchedule: "",
-		Tags:                []string{"franchise", "placeholder"},
+		Tags:                []string{tagFranchise, "placeholder"},
 		TMDBCollection:      &TMDBCollectionSpec{CollectionID: 0},
 	},
 }

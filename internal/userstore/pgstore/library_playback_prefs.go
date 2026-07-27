@@ -2,6 +2,7 @@ package pgstore
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -63,7 +64,7 @@ func (s *PostgresUserStore) GetLibraryPlaybackPreference(ctx context.Context, pr
 		&showForcedSubtitles,
 		&updatedAt,
 	)
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {

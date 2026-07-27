@@ -12,9 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/cache"
 	"golang.org/x/sync/singleflight"
 	"golang.org/x/time/rate"
+
+	"github.com/prairie-server/prairie-server/internal/cache"
 )
 
 const (
@@ -177,7 +178,7 @@ func (c *Client) SearchMedia(ctx context.Context, mediaType, query string, page 
 	}
 
 	switch mediaType {
-	case "movie":
+	case mediaTypeMovie:
 		values := url.Values{}
 		values.Set("query", query)
 		values.Set("include_adult", "false")
@@ -319,7 +320,7 @@ func normalizeMoviePage(resp paginatedResponse[mediaMovieResponse]) *MediaPage {
 	for _, item := range resp.Results {
 		page.Results = append(page.Results, MediaResult{
 			ID:           item.ID,
-			MediaType:    "movie",
+			MediaType:    mediaTypeMovie,
 			Title:        item.Title,
 			Overview:     item.Overview,
 			PosterPath:   item.PosterPath,
@@ -366,10 +367,10 @@ func normalizeMultiSearchPage(resp paginatedResponse[mediaMultiSearchResponse]) 
 	}
 	for _, item := range resp.Results {
 		switch item.MediaType {
-		case "movie":
+		case mediaTypeMovie:
 			page.Results = append(page.Results, MediaResult{
 				ID:           item.ID,
-				MediaType:    "movie",
+				MediaType:    mediaTypeMovie,
 				Title:        item.Title,
 				Overview:     item.Overview,
 				PosterPath:   item.PosterPath,
@@ -412,7 +413,7 @@ func normalizeCollectionPreset(preset, mediaType, timeWindow string) (string, st
 	switch preset {
 	case "trending":
 		switch mediaType {
-		case "all", "movie", "tv":
+		case "all", mediaTypeMovie, "tv":
 		default:
 			return "", "", "", "", fmt.Errorf("tmdb: invalid media type for preset %q: %q", preset, mediaType)
 		}
@@ -424,7 +425,7 @@ func normalizeCollectionPreset(preset, mediaType, timeWindow string) (string, st
 		return preset, mediaType, timeWindow, fmt.Sprintf("/trending/%s/%s", mediaType, timeWindow), nil
 	case "popular", "top_rated":
 		switch mediaType {
-		case "movie":
+		case mediaTypeMovie:
 			return preset, mediaType, "", fmt.Sprintf("/movie/%s", preset), nil
 		case "tv":
 			return preset, mediaType, "", fmt.Sprintf("/tv/%s", preset), nil
@@ -432,8 +433,8 @@ func normalizeCollectionPreset(preset, mediaType, timeWindow string) (string, st
 			return "", "", "", "", fmt.Errorf("tmdb: invalid media type for preset %q: %q", preset, mediaType)
 		}
 	case "now_playing", "upcoming":
-		if mediaType != "movie" {
-			return "", "", "", "", fmt.Errorf("tmdb: preset %q requires media type %q", preset, "movie")
+		if mediaType != mediaTypeMovie {
+			return "", "", "", "", fmt.Errorf("tmdb: preset %q requires media type %q", preset, mediaTypeMovie)
 		}
 		return preset, mediaType, "", fmt.Sprintf("/movie/%s", preset), nil
 	case "airing_today", "on_the_air":
@@ -511,7 +512,7 @@ func (c *Client) GetCollectionPreset(ctx context.Context, preset, mediaType, tim
 			for _, item := range resp.Results {
 				results = append(results, CollectionResult{
 					ID:        item.ID,
-					MediaType: "movie",
+					MediaType: mediaTypeMovie,
 					Title:     item.Title,
 				})
 			}
@@ -526,7 +527,7 @@ func (c *Client) GetCollectionPreset(ctx context.Context, preset, mediaType, tim
 			for _, item := range resp.Results {
 				results = append(results, CollectionResult{
 					ID:        item.ID,
-					MediaType: "movie",
+					MediaType: mediaTypeMovie,
 					Title:     item.Title,
 				})
 			}
@@ -568,7 +569,7 @@ func (c *Client) GetCollectionPreset(ctx context.Context, preset, mediaType, tim
 // maxCollectionPresetResults.
 func (c *Client) Discover(ctx context.Context, mediaType string, params DiscoverParams) ([]CollectionResult, error) {
 	switch mediaType {
-	case "movie", "tv":
+	case mediaTypeMovie, "tv":
 	default:
 		return nil, fmt.Errorf("tmdb: invalid media type for discover: %q", mediaType)
 	}
@@ -618,7 +619,7 @@ func (c *Client) Discover(ctx context.Context, mediaType string, params Discover
 		for _, item := range resp.Results {
 			results = append(results, CollectionResult{
 				ID:        item.ID,
-				MediaType: "movie",
+				MediaType: mediaTypeMovie,
 				Title:     item.Title,
 			})
 		}
@@ -641,7 +642,7 @@ func (c *Client) Discover(ctx context.Context, mediaType string, params Discover
 // pagination explicitly.
 func (c *Client) DiscoverPage(ctx context.Context, mediaType string, params DiscoverParams, page int) (*MediaPage, error) {
 	switch mediaType {
-	case "movie", "tv":
+	case mediaTypeMovie, "tv":
 	default:
 		return nil, fmt.Errorf("tmdb: invalid media type for discover: %q", mediaType)
 	}
@@ -797,7 +798,7 @@ func (c *Client) GetCollection(ctx context.Context, id int) (*Collection, error)
 			// TMDB /collection/{id} only ever returns movies; older docs
 			// sometimes omit the field, so default explicitly rather than
 			// leaking an empty string into the resolver.
-			mediaType = "movie"
+			mediaType = mediaTypeMovie
 		}
 		parts = append(parts, CollectionPart{
 			ID:          p.ID,
@@ -826,7 +827,7 @@ func (c *Client) GetMediaDetail(ctx context.Context, mediaType string, id int) (
 	}
 
 	switch mediaType {
-	case "movie":
+	case mediaTypeMovie:
 		path := fmt.Sprintf("/movie/%d?append_to_response=credits,external_ids,recommendations,release_dates,keywords", id)
 		var resp movieDetailResponse
 		if err := c.doGet(ctx, path, &resp); err != nil {
@@ -847,7 +848,7 @@ func (c *Client) GetMediaDetail(ctx context.Context, mediaType string, id int) (
 
 func normalizeMovieDetail(resp *movieDetailResponse) *MediaDetail {
 	detail := &MediaDetail{
-		MediaType:        "movie",
+		MediaType:        mediaTypeMovie,
 		ID:               resp.ID,
 		IMDbID:           resp.IMDbID,
 		Title:            resp.Title,
@@ -888,7 +889,7 @@ func normalizeMovieDetail(resp *movieDetailResponse) *MediaDetail {
 		for _, item := range resp.Recommendations.Results {
 			detail.Recommendations = append(detail.Recommendations, MediaResult{
 				ID:           item.ID,
-				MediaType:    "movie",
+				MediaType:    mediaTypeMovie,
 				Title:        item.Title,
 				Overview:     item.Overview,
 				PosterPath:   item.PosterPath,
@@ -1093,7 +1094,7 @@ func pickTVRating(cr *contentRatingsResponse) string {
 func (c *Client) GetExternalIDs(ctx context.Context, mediaType string, id int) (*ExternalIDs, error) {
 	var path string
 	switch mediaType {
-	case "movie":
+	case mediaTypeMovie:
 		path = fmt.Sprintf("/movie/%d/external_ids", id)
 	case "tv":
 		path = fmt.Sprintf("/tv/%d/external_ids", id)

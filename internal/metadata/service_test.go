@@ -464,13 +464,6 @@ func (r *fakeFileRepo) setRootCandidates(folderID int, rootPath string, candidat
 	slices.Sort(r.rootCandidates[key])
 }
 
-func (r *fakeFileRepo) setGroupContent(folderID int, groupKeyVersion int, contentGroupKey, contentID string) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	key := fmt.Sprintf("%d:%d:%s", folderID, groupKeyVersion, contentGroupKey)
-	r.groupContent[key] = contentID
-}
-
 func (r *fakeFileRepo) setGroupFiles(folderID int, groupKeyVersion int, contentGroupKey string, files ...*models.MediaFile) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
@@ -894,14 +887,6 @@ func (r *fakeScannedRootRepo) Get(_ context.Context, folderID int, rootPath stri
 	}
 	cp := *root
 	return &cp, nil
-}
-
-func (r *fakeScannedRootRepo) setRoot(root *models.ScannedMediaRoot) {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	key := fmt.Sprintf("%d:%s", root.MediaFolderID, root.RootPath)
-	cp := *root
-	r.roots[key] = &cp
 }
 
 // ---------------------------------------------------------------------------

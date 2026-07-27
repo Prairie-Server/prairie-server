@@ -49,7 +49,7 @@ func (h *TaskHandler) HandleListTasks(w http.ResponseWriter, r *http.Request) {
 	includeHidden := r.URL.Query().Get("include_hidden") == "true"
 	tasks := h.mgr.ListTasks(includeHidden)
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(tasks)
+	_ = json.NewEncoder(w).Encode(tasks)
 }
 
 // HandleGetTask handles GET /api/v1/admin/tasks/{key}
@@ -61,7 +61,7 @@ func (h *TaskHandler) HandleGetTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(info)
+	_ = json.NewEncoder(w).Encode(info)
 }
 
 // HandleRunTask handles POST /api/v1/admin/tasks/{key}/run
@@ -77,15 +77,15 @@ func (h *TaskHandler) HandleRunTask(w http.ResponseWriter, r *http.Request) {
 	if info.State == taskmanager.TaskStateRunning || info.State == taskmanager.TaskStateCancelling {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusConflict)
-		json.NewEncoder(w).Encode(map[string]string{"error": "task is already running"})
+		_ = json.NewEncoder(w).Encode(map[string]string{"error": "task is already running"})
 		return
 	}
 
-	go h.mgr.RunTask(context.Background(), key)
+	go func() { _ = h.mgr.RunTask(context.Background(), key) }()
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(map[string]string{"status": "started"})
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "started"})
 }
 
 // HandleCancelTask handles POST /api/v1/admin/tasks/{key}/cancel
@@ -105,7 +105,7 @@ func (h *TaskHandler) HandleCancelTask(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]string{"status": "cancelling"})
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "canceling"})
 }
 
 // HandleUpdateTriggers handles PUT /api/v1/admin/tasks/{key}/triggers
@@ -128,7 +128,7 @@ func (h *TaskHandler) HandleUpdateTriggers(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(h.mgr.GetTaskInfo(key))
+	_ = json.NewEncoder(w).Encode(h.mgr.GetTaskInfo(key))
 }
 
 // HandleGetHistory handles GET /api/v1/admin/tasks/{key}/history
@@ -153,7 +153,7 @@ func (h *TaskHandler) HandleGetHistory(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(results)
+	_ = json.NewEncoder(w).Encode(results)
 }
 
 func (h *TaskHandler) HandleGetMetrics(w http.ResponseWriter, r *http.Request) {
@@ -170,5 +170,5 @@ func (h *TaskHandler) HandleGetMetrics(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(metrics)
+	_ = json.NewEncoder(w).Encode(metrics)
 }

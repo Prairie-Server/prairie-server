@@ -52,17 +52,6 @@ func (h *PlaybackHandler) abortPlaybackSession(ctx context.Context, session *pla
 	return nil
 }
 
-func (h *PlaybackHandler) abortPlaybackSessionByID(ctx context.Context, sessionID string) error {
-	if h == nil || sessionID == "" {
-		return playback.ErrSessionNotFound
-	}
-	session, err := h.sessionMgr.GetSession(sessionID)
-	if err != nil {
-		return err
-	}
-	return h.abortPlaybackSession(ctx, session)
-}
-
 func (h *PlaybackHandler) rememberRealtimeCommand(commandID, sessionID string, name playback.CommandName) {
 	if h == nil || commandID == "" || sessionID == "" {
 		return

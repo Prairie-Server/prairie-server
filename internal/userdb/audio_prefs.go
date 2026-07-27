@@ -2,6 +2,7 @@ package userdb
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 
 	"github.com/prairie-server/prairie-server/internal/userstore"
@@ -61,7 +62,7 @@ func GetAudioPreference(db *sql.DB, profileID, seriesID string) (*AudioPreferenc
 		&signatureJSON,
 		&pref.UpdatedAt,
 	)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {

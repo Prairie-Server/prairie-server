@@ -116,12 +116,12 @@ func (c *ArchiveCache) recoverLegacyBinaryArchive(
 
 	archiveBytes, err := buildBinaryPluginArchive(archive.ManifestJSON, archive.Bytes)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("%w; recover legacy raw binary archive: %v", openErr, err)
+		return nil, nil, nil, fmt.Errorf("%w; recover legacy raw binary archive: %w", openErr, err)
 	}
 
 	reader, manifestBytes, manifest, err := openPluginArchive(archiveBytes)
 	if err != nil {
-		return nil, nil, nil, fmt.Errorf("%w; recover legacy raw binary archive: %v", openErr, err)
+		return nil, nil, nil, fmt.Errorf("%w; recover legacy raw binary archive: %w", openErr, err)
 	}
 
 	// Persist the repaired archive so future preloads skip recovery, but don't

@@ -11,6 +11,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/markers"
 	"github.com/prairie-server/prairie-server/internal/models"
@@ -2688,7 +2689,7 @@ func (r *FileRepository) DeleteMissingByFolder(ctx context.Context, folderID int
 //
 // This is the proactive counterpart to ListRootsWithOnlyMissingFiles. That
 // query requires a root to have NO live rows left, which means it can only
-// recognise a lost mount after a scan has already marked its files missing —
+// recognize a lost mount after a scan has already marked its files missing —
 // i.e. after the damage is done. For deciding whether to mark in the first
 // place, the question is simply "does the catalog believe anything lives
 // here", because an empty-but-reachable directory that still owns cataloged

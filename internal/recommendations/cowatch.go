@@ -14,7 +14,7 @@ const (
 // lists. For every pair of items that each have at least minWatchers viewers,
 // it computes the Jaccard similarity of their watcher sets. Pairs with fewer
 // than minShared shared watchers are discarded. For each item only the topN
-// most similar neighbours (by Jaccard score) are retained.
+// most similar neighbors (by Jaccard score) are retained.
 func computeCowatchMatrix(watchers map[string][]string, minWatchers, minShared, topN int) []CowatchPair {
 	// Collect item IDs that meet the minimum-watchers threshold.
 	eligible := make([]string, 0, len(watchers))
@@ -37,13 +37,13 @@ func computeCowatchMatrix(watchers map[string][]string, minWatchers, minShared, 
 		watcherSets[itemID] = set
 	}
 
-	// Per-item neighbour lists, keyed by itemID.
-	type neighbour struct {
+	// Per-item neighbor lists, keyed by itemID.
+	type neighbor struct {
 		similarID string
 		score     float64
 		shared    int
 	}
-	neighbours := make(map[string][]neighbour, len(eligible))
+	neighbors := make(map[string][]neighbor, len(eligible))
 
 	// Compare every pair once (i < j), then record from both sides.
 	for i := 0; i < len(eligible); i++ {
@@ -77,15 +77,15 @@ func computeCowatchMatrix(watchers map[string][]string, minWatchers, minShared, 
 			}
 			jaccard := float64(shared) / float64(union)
 
-			neighbours[a] = append(neighbours[a], neighbour{similarID: b, score: jaccard, shared: shared})
-			neighbours[b] = append(neighbours[b], neighbour{similarID: a, score: jaccard, shared: shared})
+			neighbors[a] = append(neighbors[a], neighbor{similarID: b, score: jaccard, shared: shared})
+			neighbors[b] = append(neighbors[b], neighbor{similarID: a, score: jaccard, shared: shared})
 		}
 	}
 
-	// For each item, keep only the topN neighbours by Jaccard score descending.
+	// For each item, keep only the topN neighbors by Jaccard score descending.
 	var result []CowatchPair
 	for _, itemID := range eligible {
-		nbrs := neighbours[itemID]
+		nbrs := neighbors[itemID]
 		if len(nbrs) == 0 {
 			continue
 		}
@@ -165,27 +165,3 @@ func blendScores(embeddingItems []ScoredItem, cowatchItems map[string]float64, e
 
 // jaccardSimilarity computes the Jaccard index between two string slices,
 // defined as |intersection| / |union|. Returns 0 if both slices are empty.
-func jaccardSimilarity(setA, setB []string) float64 {
-	if len(setA) == 0 && len(setB) == 0 {
-		return 0
-	}
-
-	members := make(map[string]struct{}, len(setA))
-	for _, v := range setA {
-		members[v] = struct{}{}
-	}
-
-	intersection := 0
-	for _, v := range setB {
-		if _, ok := members[v]; ok {
-			intersection++
-		}
-	}
-
-	union := len(members) + len(setB) - intersection
-	if union == 0 {
-		return 0
-	}
-
-	return float64(intersection) / float64(union)
-}

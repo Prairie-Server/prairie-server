@@ -758,7 +758,7 @@ func (h *PlaybackHandler) HandleSessionPlayingStopped(w http.ResponseWriter, r *
 // Jellyfin clients (e.g. JellyCon) call this endpoint when playback stops to
 // signal the server to tear down any running HLS transcode for the session.
 // Without it, the transcode process keeps running until the playback session
-// TTL expires (default 6 h). We honour the request by stopping the transcode
+// TTL expires (default 6 h). We honor the request by stopping the transcode
 // identified by the playSessionId query parameter.
 func (h *PlaybackHandler) HandleDeleteActiveEncodings(w http.ResponseWriter, r *http.Request) {
 	session := SessionFromContext(r.Context())
@@ -1214,7 +1214,7 @@ func (h *PlaybackHandler) handlePlaybackReport(w http.ResponseWriter, r *http.Re
 		}
 	}
 	audioTrackIndex := 0
-	audioRestarted := false
+	var audioRestarted bool
 	// Jellyfin web/mobile clients send AudioStreamIndex on every progress
 	// report, not just on track changes. Restarting ffmpeg on each report
 	// (every ~10s) tears down segments the player is still appending and
@@ -1284,7 +1284,7 @@ func (h *PlaybackHandler) handlePlaybackReport(w http.ResponseWriter, r *http.Re
 		if req.IsPaused {
 			action = compatScrobblePause
 		}
-		h.dispatchCompatScrobbleAt(
+		_ = h.dispatchCompatScrobbleAt(
 			r.Context(), action, playSession, &updatedSession,
 			findMediaSource(playSession, req.MediaSourceID), &positionSeconds,
 		)
@@ -1412,7 +1412,7 @@ func (h *PlaybackHandler) ensureUpstreamPlayback(ctx context.Context, compatSess
 						h.recordCompatProgressPersistence(playSession.ID, reconstructed.DisableProgressPersistence)
 					}
 					_ = h.syncUpstreamAudioSelection(playSession, source)
-					h.dispatchCompatScrobble(ctx, compatScrobbleStart, playSession, reconstructed, &source)
+					_ = h.dispatchCompatScrobble(ctx, compatScrobbleStart, playSession, reconstructed, &source)
 					return playSession, nil
 				}
 			}
@@ -1459,7 +1459,7 @@ func (h *PlaybackHandler) ensureUpstreamPlayback(ctx context.Context, compatSess
 		transcodeNodeURL := ""
 		if current, err := h.sessionMgr.GetSession(oldUpstreamSessionID); err == nil {
 			transcodeNodeURL = current.TranscodeNodeURL
-			h.dispatchCompatScrobble(ctx, compatScrobbleStop, playSession, current, nil)
+			_ = h.dispatchCompatScrobble(ctx, compatScrobbleStop, playSession, current, nil)
 		}
 		_ = h.sessionMgr.StopSession(oldUpstreamSessionID)
 		h.tm.CloseTranscodeSession(oldUpstreamSessionID, transcodeNodeURL)
@@ -1523,7 +1523,7 @@ func (h *PlaybackHandler) ensureUpstreamPlayback(ctx context.Context, compatSess
 		return nil, ErrSessionNotFound
 	}
 	h.syncSessionsNow(ctx, "compat_start")
-	h.dispatchCompatScrobble(ctx, compatScrobbleStart, updated, session, &source)
+	_ = h.dispatchCompatScrobble(ctx, compatScrobbleStart, updated, session, &source)
 	return updated, nil
 }
 
@@ -1981,16 +1981,6 @@ func buildSegmentProxyPath(routeItemID, playlistID, mediaSourceID, current strin
 	return fmt.Sprintf("/Videos/%s/hls/%s/%s%s", routeItemID, playlistID, base, qs)
 }
 
-func copyProxyResponse(w http.ResponseWriter, resp *http.Response) {
-	for key, values := range resp.Header {
-		for _, value := range values {
-			w.Header().Add(key, value)
-		}
-	}
-	w.WriteHeader(resp.StatusCode)
-	_, _ = io.Copy(w, resp.Body)
-}
-
 func chiURLParam(r *http.Request, key string) string {
 	return chi.URLParam(r, key)
 }
@@ -2090,12 +2080,12 @@ func generateFullManifest(durationSeconds, segDuration int, fmp4 bool, startTime
 	case startTimeOffsetSeconds > 0:
 		hlsVersion = 6
 	}
-	b.WriteString(fmt.Sprintf("#EXT-X-VERSION:%d\n", hlsVersion))
-	b.WriteString(fmt.Sprintf("#EXT-X-TARGETDURATION:%d\n", segDuration))
+	fmt.Fprintf(&b, "#EXT-X-VERSION:%d\n", hlsVersion)
+	fmt.Fprintf(&b, "#EXT-X-TARGETDURATION:%d\n", segDuration)
 	b.WriteString("#EXT-X-MEDIA-SEQUENCE:0\n")
 	b.WriteString("#EXT-X-PLAYLIST-TYPE:VOD\n")
 	if startTimeOffsetSeconds > 0 {
-		b.WriteString(fmt.Sprintf("#EXT-X-START:TIME-OFFSET=%.6f,PRECISE=YES\n", startTimeOffsetSeconds))
+		fmt.Fprintf(&b, "#EXT-X-START:TIME-OFFSET=%.6f,PRECISE=YES\n", startTimeOffsetSeconds)
 	}
 	if fmp4 {
 		b.WriteString("#EXT-X-MAP:URI=\"init.mp4\"\n")
@@ -2104,11 +2094,11 @@ func generateFullManifest(durationSeconds, segDuration int, fmp4 bool, startTime
 	remaining := float64(durationSeconds)
 	for i := range numSegments {
 		segLen := math.Min(float64(segDuration), remaining)
-		b.WriteString(fmt.Sprintf("#EXTINF:%.6f,\n", segLen))
+		fmt.Fprintf(&b, "#EXTINF:%.6f,\n", segLen)
 		if fmp4 {
-			b.WriteString(fmt.Sprintf("seg_%05d.m4s\n", i))
+			fmt.Fprintf(&b, "seg_%05d.m4s\n", i)
 		} else {
-			b.WriteString(fmt.Sprintf("seg_%05d.ts\n", i))
+			fmt.Fprintf(&b, "seg_%05d.ts\n", i)
 		}
 		remaining -= segLen
 	}

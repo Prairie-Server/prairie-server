@@ -633,7 +633,7 @@ func serveEbookInline(w http.ResponseWriter, r *http.Request, file *models.Media
 func inlineContentDisposition(name string) string {
 	name = strings.TrimSpace(name)
 	if name == "" || name == "." || name == string(filepath.Separator) {
-		name = "ebook"
+		name = itemTypeEbook
 	}
 	if disposition := mime.FormatMediaType("inline", map[string]string{"filename": name}); disposition != "" {
 		return disposition
@@ -645,7 +645,7 @@ func isEbookFile(file *models.MediaFile) bool {
 	if file == nil {
 		return false
 	}
-	if !strings.EqualFold(file.BaseType, "ebook") {
+	if !strings.EqualFold(file.BaseType, itemTypeEbook) {
 		return false
 	}
 	return ebookReaderFormat(file.FilePath, file.Container) != ""

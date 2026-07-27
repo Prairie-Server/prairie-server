@@ -189,7 +189,7 @@ func ParseVariantHints(filePath string, libraryType string) *VariantHints {
 		partIndex, _ := strconv.Atoi(match[2])
 		ctx := ResolvePathContext(cleanPath, libraryType)
 		hints.PresentationKind = "multipart_movie"
-		if ctx != nil && ctx.Type == "series" {
+		if ctx != nil && ctx.Type == itemTypeSeries {
 			hints.PresentationKind = "split_episode"
 		}
 		hints.PresentationPartIndex = partIndex

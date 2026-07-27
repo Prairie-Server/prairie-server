@@ -440,7 +440,7 @@ func (h *Handler) mountRoutes(r chi.Router) {
 			// PATCH /session/{sid}           — silo-native heartbeat alias
 			// (kept additive for silo's own clients).
 			r.Patch(prefix+"/session/{sid}", h.handleSessionSync)
-			// POST  /session/{sid}/close     — finalise the play session
+			// POST  /session/{sid}/close     — finalize the play session
 			r.Post(prefix+"/session/{sid}/close", h.handleSessionClose)
 			// POST  /session/local          — sync one offline-recorded session
 			r.Post(prefix+"/session/local", h.handleSyncLocalSession)
@@ -704,13 +704,6 @@ func (h *Handler) publish(userID, event string, payload any) {
 	h.deps.Publisher.Publish(userID, event, payload)
 }
 
-func (h *Handler) broadcast(event string, payload any) {
-	if h.deps.Publisher == nil {
-		return
-	}
-	h.deps.Publisher.Broadcast(event, payload)
-}
-
 // ---------------------------------------------------------------------------
 // URL helpers
 // ---------------------------------------------------------------------------
@@ -746,7 +739,7 @@ func (h *Handler) absBaseURL(r *http.Request) string {
 // Shared response helpers (used by handlers across multiple stages)
 // ---------------------------------------------------------------------------
 
-// writeJSON serialises v as JSON and writes it with the given HTTP status.
+// writeJSON serializes v as JSON and writes it with the given HTTP status.
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -776,14 +769,14 @@ func readPagedQuery(r *http.Request, defaultLimit int) (limit, page int) {
 // their presence (sortBy, filterBy, minified).
 func pagedEnvelope(results any, total, limit, page int, sortBy string, sortDesc bool, filterBy string, minified bool, include string) map[string]any {
 	return map[string]any{
-		"results":  results,
-		"total":    total,
-		"limit":    limit,
-		"page":     page,
-		"sortBy":   sortBy,
-		"sortDesc": sortDesc,
-		"filterBy": filterBy,
-		"minified": minified,
-		"include":  include,
+		"results":    results,
+		jsonKeyTotal: total,
+		"limit":      limit,
+		"page":       page,
+		"sortBy":     sortBy,
+		"sortDesc":   sortDesc,
+		"filterBy":   filterBy,
+		"minified":   minified,
+		"include":    include,
 	}
 }

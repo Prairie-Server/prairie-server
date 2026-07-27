@@ -104,7 +104,7 @@ func validateTMDB(spec TMDBSpec) error {
 	switch spec.Preset {
 	case "trending":
 		switch spec.MediaType {
-		case "movie", "tv", "all":
+		case mediaTypeMovie, "tv", "all":
 		default:
 			return fmt.Errorf("tmdb trending: media_type must be movie, tv, or all (got %q)", spec.MediaType)
 		}
@@ -115,7 +115,7 @@ func validateTMDB(spec TMDBSpec) error {
 		}
 	case "popular", "top_rated":
 		switch spec.MediaType {
-		case "movie", "tv":
+		case mediaTypeMovie, "tv":
 		default:
 			return fmt.Errorf("tmdb %s: media_type must be movie or tv", spec.Preset)
 		}
@@ -123,7 +123,7 @@ func validateTMDB(spec TMDBSpec) error {
 			return fmt.Errorf("tmdb %s: time_window is not allowed", spec.Preset)
 		}
 	case "now_playing", "upcoming":
-		if spec.MediaType != "movie" {
+		if spec.MediaType != mediaTypeMovie {
 			return fmt.Errorf("tmdb %s requires media_type=movie", spec.Preset)
 		}
 	case "airing_today", "on_the_air":
@@ -150,7 +150,7 @@ func validateTrakt(spec TraktSpec, requiresProfile bool) error {
 		return fmt.Errorf("trakt: unsupported preset %q", spec.Preset)
 	}
 	switch spec.MediaType {
-	case "movie", "tv":
+	case mediaTypeMovie, "tv":
 	default:
 		return fmt.Errorf("trakt: media_type must be movie or tv (got %q)", spec.MediaType)
 	}
@@ -178,7 +178,7 @@ var tmdbDiscoverSortByValues = map[string]struct{}{
 
 func validateTMDBDiscover(spec TMDBDiscoverSpec) error {
 	switch spec.MediaType {
-	case "movie", "tv":
+	case mediaTypeMovie, "tv":
 	default:
 		return fmt.Errorf("tmdb_discover: media_type must be movie or tv (got %q)", spec.MediaType)
 	}

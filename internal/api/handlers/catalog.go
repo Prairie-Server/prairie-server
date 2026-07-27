@@ -17,28 +17,10 @@ import (
 	"github.com/prairie-server/prairie-server/internal/sections"
 )
 
-// audiobookGroupsCacheTTL matches the client's React Query staleTime: the
-// grouped author/narrator browse is cached server-side for the same window so
-// the sequential page fetches and a quick refresh reuse one aggregation.
-const audiobookGroupsCacheTTL = 60 * time.Second
-
 type CatalogHandler struct {
 	resolver    *catalog.CatalogResolver
 	itemsH      *ItemsHandler
 	workSummary catalog.WorkSummaryProvider
-
-	groupsCacheOnce sync.Once
-	groupsCache     *catalog.AudiobookGroupsCache
-}
-
-// audiobookGroups returns the lazily-initialized grouped-browse cache. Built on
-// first use (only the route-mounted singleton handler serves audiobook-groups)
-// so the per-request CatalogHandler instances never spawn a cache sweeper.
-func (h *CatalogHandler) audiobookGroups() *catalog.AudiobookGroupsCache {
-	h.groupsCacheOnce.Do(func() {
-		h.groupsCache = catalog.NewAudiobookGroupsCache(h.itemsH.browseRepo.Pool(), audiobookGroupsCacheTTL)
-	})
-	return h.groupsCache
 }
 
 func NewCatalogHandler(resolver *catalog.CatalogResolver, itemsH *ItemsHandler) *CatalogHandler {
@@ -389,7 +371,7 @@ func groupedCatalogEntryKey(item *models.MediaItem, summary *catalog.WorkSummary
 }
 
 func catalogItemCanGroupByWork(item *models.MediaItem) bool {
-	return item != nil && (item.Type == "ebook" || item.Type == "audiobook")
+	return item != nil && (item.Type == itemTypeEbook || item.Type == "audiobook")
 }
 
 func applyWorkSummaryToCatalogItem(item *itemListResponse, summary *catalog.WorkSummary) {

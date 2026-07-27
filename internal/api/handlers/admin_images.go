@@ -152,7 +152,7 @@ func (h *AdminImageHandler) resolveContentID(ctx context.Context, contentID stri
 			return nil, err
 		}
 		return &resolvedItem{
-			contentType: "season",
+			contentType: itemTypeSeason,
 			parentItem:  parentItem,
 			season:      season,
 		}, nil
@@ -169,7 +169,7 @@ func (h *AdminImageHandler) resolveContentID(ctx context.Context, contentID stri
 			return nil, err
 		}
 		return &resolvedItem{
-			contentType: "episode",
+			contentType: itemTypeEpisode,
 			parentItem:  parentItem,
 			episode:     ep,
 		}, nil
@@ -311,7 +311,7 @@ func (h *AdminImageHandler) HandleApplyItemImage(w http.ResponseWriter, r *http.
 	imageType := metadata.ImageTypeFromString(req.Type)
 	// Episodes only have stills. Clients historically sent "poster" here (the
 	// old flow silently dropped it), so coerce rather than reject.
-	if resolved.contentType == "episode" {
+	if resolved.contentType == itemTypeEpisode {
 		imageType = metadata.ImageStill
 	}
 	// Reject unsupported target/image combinations before spending a download
@@ -332,12 +332,12 @@ func (h *AdminImageHandler) HandleApplyItemImage(w http.ResponseWriter, r *http.
 	cacheContentID := findBestContentID(resolved.parentItem, providerID)
 	var seasonNumber, episodeNumber *int
 	switch resolved.contentType {
-	case "season":
+	case itemTypeSeason:
 		if resolved.season != nil {
 			n := resolved.season.SeasonNumber
 			seasonNumber = &n
 		}
-	case "episode":
+	case itemTypeEpisode:
 		if resolved.episode != nil {
 			s := resolved.episode.SeasonNumber
 			e := resolved.episode.EpisodeNumber

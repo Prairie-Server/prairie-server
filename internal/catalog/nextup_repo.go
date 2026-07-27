@@ -139,7 +139,6 @@ func buildListNextUpQuery(q NextUpQuery, limit int) (string, []interface{}) {
 	if q.DateCutoff != nil {
 		dateCutoffFilter = fmt.Sprintf(" AND uwp.updated_at >= $%d", argIdx)
 		args = append(args, *q.DateCutoff)
-		argIdx++
 	}
 
 	// When resumable items are disabled, suppress next-up only if the series has
@@ -341,7 +340,7 @@ func (r *NextUpRepository) listResumableFirstEpisodes(ctx context.Context, q Nex
 		return nil, fmt.Errorf("getting user store: %w", err)
 	}
 
-	inProgressEntries, err := store.ListProgress(ctx, q.ProfileID, "in_progress", 100, 0)
+	inProgressEntries, err := store.ListProgress(ctx, q.ProfileID, filterFieldInProgress, 100, 0)
 	if err != nil {
 		return nil, fmt.Errorf("listing in-progress: %w", err)
 	}

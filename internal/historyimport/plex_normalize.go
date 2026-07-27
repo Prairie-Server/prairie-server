@@ -28,7 +28,7 @@ func NormalizePlexItem(item PlexItem, series *PlexItem) Record {
 	switch item.Type {
 	case "movie":
 		record.Kind = KindMovie
-	case "episode":
+	case KindEpisode:
 		record.Kind = KindEpisode
 		record.SeriesTitle = item.GrandparentTitle
 		record.SeasonNumber = item.ParentIndex
@@ -92,7 +92,7 @@ func NormalizePlexHistoryItem(item PlexHistoryItem, series *PlexItem) Record {
 	switch item.Type {
 	case "movie":
 		record.Kind = KindMovie
-	case "episode":
+	case KindEpisode:
 		record.Kind = KindEpisode
 		record.SeriesTitle = item.GrandparentTitle
 		record.SeasonNumber = item.ParentIndex

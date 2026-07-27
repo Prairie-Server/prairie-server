@@ -144,7 +144,7 @@ func drawPosterCaption(img *image.RGBA, text string) error {
 	if err != nil {
 		return err
 	}
-	defer face.Close()
+	defer func() { _ = face.Close() }()
 
 	metrics := face.Metrics()
 	lineHeight := int(math.Round(float64(metrics.Height.Round()) * lineSpace))

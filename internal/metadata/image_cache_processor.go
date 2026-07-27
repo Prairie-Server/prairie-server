@@ -413,7 +413,7 @@ func (p *ImageCacheProcessor) processOne(ctx context.Context, job *models.Metada
 	imageType, err := imageCacheJobImageType(job.ImageType)
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
 	}
 
 	// Confirm the target still references this job's source before doing the
@@ -422,7 +422,7 @@ func (p *ImageCacheProcessor) processOne(ctx context.Context, job *models.Metada
 	current, err := p.jobs.CurrentTargetSourcePath(ctx, job)
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
 	}
 	if current != job.SourcePath {
 		p.markSucceeded(ctx, job)
@@ -437,12 +437,12 @@ func (p *ImageCacheProcessor) processOne(ctx context.Context, job *models.Metada
 	if isProviderImagePath(downloadURL) {
 		if p.resolver == nil {
 			p.markFailed(ctx, job, "missing image resolver")
-			return imageCacheProcessResult{outcome: "failed"}
+			return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
 		}
 		downloadURL = p.resolver.ResolveImageURL(ctx, job.SourcePath, "original")
 		if downloadURL == "" {
 			p.markFailed(ctx, job, "image resolver returned empty URL")
-			return imageCacheProcessResult{outcome: "failed"}
+			return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
 		}
 	}
 
@@ -458,12 +458,12 @@ func (p *ImageCacheProcessor) processOne(ctx context.Context, job *models.Metada
 	})
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
 	}
 
 	if result == nil {
 		p.markFailed(ctx, job, "image cache returned no result")
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
 	}
 	processResult := imageCacheProcessResult{
 		uploadedVariants: result.UploadedVariants,
@@ -472,7 +472,7 @@ func (p *ImageCacheProcessor) processOne(ctx context.Context, job *models.Metada
 	cachedPath := CachedImageOriginalPath(result)
 	if cachedPath == "" {
 		p.markFailed(ctx, job, "image cache returned empty stored path")
-		processResult.outcome = "failed"
+		processResult.outcome = ImageCacheStatusFailed
 		return processResult
 	}
 	p.finishJobWithTargetUpdate(ctx, job, cachedPath, result.Thumbhash, &processResult)
@@ -485,7 +485,7 @@ func (p *ImageCacheProcessor) finishJobWithTargetUpdate(ctx context.Context, job
 	updated, err := p.updateTargetArtwork(ctx, job, cachedPath, thumbhash)
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		processResult.outcome = "failed"
+		processResult.outcome = ImageCacheStatusFailed
 		return
 	}
 	p.markSucceeded(ctx, job)
@@ -548,11 +548,11 @@ func (p *ImageCacheProcessor) processLocalOne(ctx context.Context, job *models.M
 	byteCacher, ok := p.cacher.(ImageByteCacher)
 	if !ok {
 		p.markFailed(ctx, job, "image cacher does not support local artwork")
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
 	}
 	if p.libraryRoots == nil {
 		p.markFailed(ctx, job, "missing library root resolver for local artwork")
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
 	}
 
 	localPath := filepath.Clean(strings.TrimSpace(job.SourcePath)[len("file://"):])
@@ -560,11 +560,11 @@ func (p *ImageCacheProcessor) processLocalOne(ctx context.Context, job *models.M
 	roots, err := p.libraryRoots.LibraryRootsForContent(ctx, rootsContentID)
 	if err != nil {
 		p.markFailed(ctx, job, fmt.Sprintf("resolving library roots: %v", err))
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
 	}
 	if !localImagePathWithinRoots(localPath, roots) {
 		p.markFailed(ctx, job, "local image path outside library roots: "+localPath)
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
 	}
 	// The lexical check above cannot see through symlinks. Resolve the path and
 	// roots and re-confine so an intermediate directory symlink planted inside a
@@ -576,13 +576,13 @@ func (p *ImageCacheProcessor) processLocalOne(ctx context.Context, job *models.M
 	// through to the reader, which classifies it as the stable "missing" failure.
 	if _, err := localImagePathResolvedWithinRoots(localPath, roots); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		p.markFailed(ctx, job, "local image path outside library roots: "+localPath)
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
 	}
 
 	data, err := readLocalImageFile(localPath)
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
 	}
 
 	// The target's current cached path drives the unchanged-skip (same hash →
@@ -610,11 +610,11 @@ func (p *ImageCacheProcessor) processLocalOne(ctx context.Context, job *models.M
 	})
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
 	}
 	if result == nil {
 		p.markFailed(ctx, job, "image cache returned no result")
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
 	}
 	processResult := imageCacheProcessResult{
 		uploadedVariants: result.UploadedVariants,
@@ -623,7 +623,7 @@ func (p *ImageCacheProcessor) processLocalOne(ctx context.Context, job *models.M
 	cachedPath := CachedImageOriginalPath(result)
 	if cachedPath == "" {
 		p.markFailed(ctx, job, "image cache returned empty stored path")
-		processResult.outcome = "failed"
+		processResult.outcome = ImageCacheStatusFailed
 		return processResult
 	}
 	p.finishJobWithTargetUpdate(ctx, job, cachedPath, result.Thumbhash, &processResult)

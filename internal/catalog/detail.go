@@ -1073,7 +1073,7 @@ func (s *DetailService) buildExtraItemDetail(ctx context.Context, contentID stri
 		// Series fields only for series-owned extras: clients treat a
 		// populated series_id as episodic context (post-roll/next-episode
 		// flows), which is wrong for a movie's extras.
-		if parent.Type == "series" {
+		if parent.Type == itemTypeSeries {
 			detail.SeriesID = extra.ParentID
 			detail.SeriesTitle = parent.Title
 		}
@@ -1157,7 +1157,7 @@ func (s *DetailService) GetEpisodeDetailsForSeries(
 			// Skip this episode rather than failing the whole batch — the
 			// caller falls back to list-mapping for any contentID missing
 			// from the result map, matching the prior per-episode loop's
-			// behaviour where one bad detail didn't break the series page.
+			// behavior where one bad detail didn't break the series page.
 			continue
 		}
 		result[contentID] = detail
@@ -1231,7 +1231,7 @@ func (s *DetailService) GetItemDetailsByIDs(ctx context.Context, contentIDs []st
 		}
 		visible = append(visible, item)
 		visibleIDs = append(visibleIDs, item.ContentID)
-		if item.Type != "series" {
+		if item.Type != itemTypeSeries {
 			nonSeriesIDs = append(nonSeriesIDs, item.ContentID)
 		}
 	}
@@ -1278,7 +1278,7 @@ func (s *DetailService) GetItemDetailsByIDs(ctx context.Context, contentIDs []st
 	// Remote videos and local extras for movie/series items in two queries.
 	movieSeriesIDs := make([]string, 0, len(visible))
 	for _, item := range visible {
-		if item.Type == "movie" || item.Type == "series" {
+		if item.Type == itemTypeMovie || item.Type == itemTypeSeries {
 			movieSeriesIDs = append(movieSeriesIDs, item.ContentID)
 		}
 	}
@@ -1327,7 +1327,7 @@ func (s *DetailService) GetItemDetailsByIDs(ctx context.Context, contentIDs []st
 		if s.personRepo != nil {
 			pf.castCredits, pf.crewCredits = splitCastCrew(s.personCredits(ctx, creditsByID[id]))
 		}
-		if item.Type != "series" && haveFileBatch {
+		if item.Type != itemTypeSeries && haveFileBatch {
 			pf.haveFiles = true
 			pf.files = filesByID[id]
 		}
@@ -1335,7 +1335,7 @@ func (s *DetailService) GetItemDetailsByIDs(ctx context.Context, contentIDs []st
 			pf.haveWorkSummary = true
 			pf.workSummary = workSummaries[id]
 		}
-		if item.Type == "movie" || item.Type == "series" {
+		if item.Type == itemTypeMovie || item.Type == itemTypeSeries {
 			if s.videoRepo != nil {
 				pf.haveVideos = true
 				pf.videos = videosByID[id]
@@ -1523,7 +1523,7 @@ func (s *DetailService) buildMediaItemDetail(ctx context.Context, item *models.M
 	// File versions and subtitle aggregation only apply to movies.
 	// For series, each episode file shares the series content_id, so
 	// GetByContentID would return every episode — not alternate encodings.
-	if item.Type != "series" {
+	if item.Type != itemTypeSeries {
 		var files []*models.MediaFile
 		if pf != nil && pf.haveFiles {
 			files = pf.files
@@ -1552,13 +1552,13 @@ func (s *DetailService) buildMediaItemDetail(ctx context.Context, item *models.M
 		// from a previous play — so the item detail can't omit them. Scoped to
 		// movies: episodes resolve theirs in buildEpisodeDetail, and other
 		// types have no subtitle selector to feed.
-		if item.Type == "movie" {
+		if item.Type == itemTypeMovie {
 			s.effectiveSubtitleDefaults(ctx, filter, item.ContentID, files).applyToItemDetail(detail)
 		}
 	}
 
 	// Trailers/extras apply to movies and series only.
-	if item.Type == "movie" || item.Type == "series" {
+	if item.Type == itemTypeMovie || item.Type == itemTypeSeries {
 		detail.Videos = s.fetchItemVideos(ctx, contentID, pf)
 		detail.Extras = s.fetchItemExtras(ctx, contentID, pf)
 	}
@@ -1566,7 +1566,7 @@ func (s *DetailService) buildMediaItemDetail(ctx context.Context, item *models.M
 	if item.Type == "audiobook" {
 		detail.Audiobook = s.buildAudiobookExtension(ctx, item, detail.Versions, crewCredits, filter)
 	}
-	if item.Type == "ebook" {
+	if item.Type == itemTypeEbook {
 		detail.Ebook = s.buildEbookExtension(ctx, item, crewCredits, filter)
 		// A manga chapter is an ebook item linked to its series; exposing the
 		// linkage lets the reader navigate back/next within the series and
@@ -1584,7 +1584,7 @@ func (s *DetailService) buildMediaItemDetail(ctx context.Context, item *models.M
 	// the file links that currently belong to the item. This keeps provisional
 	// root-scoped series visible for manual match/admin flows without implying
 	// confirmed cross-root ownership.
-	if item.Type == "series" {
+	if item.Type == itemTypeSeries {
 		if item.Status == "matched" {
 			if s.groupClaimRepo != nil {
 				paths, err := s.groupClaimRepo.ListObservedRootsByContentID(ctx, contentID)
@@ -1873,7 +1873,7 @@ func (s *DetailService) fetchMangaChapters(ctx context.Context, seriesContentID 
 		chapters = append(chapters, ch)
 	}
 	if err := rows.Err(); err != nil {
-		slog.WarnContext(ctx, "manga chapters: row iteration error", "component", "catalog", "series", seriesContentID, "error", err)
+		slog.WarnContext(ctx, "manga chapters: row iteration error", "component", "catalog", itemTypeSeries, seriesContentID, "error", err)
 	}
 	// Presign every chapter poster in one batch rather than per chapter — a
 	// long-running series has hundreds of chapters.
@@ -1959,7 +1959,7 @@ func (s *DetailService) fetchAudiobookAlsoByAuthor(ctx context.Context, contentI
 }
 
 func (s *DetailService) fetchEbookAlsoByAuthor(ctx context.Context, contentID string, filter AccessFilter) []AudiobookRelatedItem {
-	return s.fetchBookAlsoByAuthor(ctx, contentID, "ebook", filter)
+	return s.fetchBookAlsoByAuthor(ctx, contentID, itemTypeEbook, filter)
 }
 
 func (s *DetailService) fetchBookAlsoByAuthor(ctx context.Context, contentID string, mediaType string, filter AccessFilter) []AudiobookRelatedItem {
@@ -2017,7 +2017,7 @@ func (s *DetailService) fetchAudiobookSimilarByGenres(ctx context.Context, conte
 }
 
 func (s *DetailService) fetchEbookSimilarByGenres(ctx context.Context, contentID string, filter AccessFilter) []AudiobookRelatedItem {
-	return s.fetchBookSimilarByGenres(ctx, contentID, "ebook", filter)
+	return s.fetchBookSimilarByGenres(ctx, contentID, itemTypeEbook, filter)
 }
 
 func (s *DetailService) fetchBookSimilarByGenres(ctx context.Context, contentID string, mediaType string, filter AccessFilter) []AudiobookRelatedItem {
@@ -2084,7 +2084,7 @@ func (s *DetailService) fetchAudiobookSeries(ctx context.Context, contentID stri
 }
 
 func (s *DetailService) fetchEbookSeries(ctx context.Context, contentID string, filter AccessFilter) *AudiobookSeriesGroup {
-	return s.fetchBookSeries(ctx, contentID, "ebook", "ebook_series", filter)
+	return s.fetchBookSeries(ctx, contentID, itemTypeEbook, "ebook_series", filter)
 }
 
 func (s *DetailService) fetchBookSeries(ctx context.Context, contentID string, mediaType string, tableName string, filter AccessFilter) *AudiobookSeriesGroup {
@@ -2263,12 +2263,6 @@ func seriesFolderPathsFromFiles(files []*models.MediaFile) []string {
 }
 
 // clearSentinel returns "" for the no-photo sentinel, passing through real values.
-func clearSentinel(s string) string {
-	if s == "-" {
-		return ""
-	}
-	return s
-}
 
 func (s *DetailService) buildSeasonDetail(ctx context.Context, season *models.Season, filter AccessFilter) (*ItemDetail, error) {
 	pendingTranslation := s.PendingSeasonTranslationLanguage(ctx, season, filter)
@@ -2348,7 +2342,7 @@ func (s *DetailService) buildEpisodeDetail(ctx context.Context, episode *models.
 	episodeNumber := episode.EpisodeNumber
 	detail := &ItemDetail{
 		ContentID:                  episode.ContentID,
-		Type:                       "episode",
+		Type:                       itemTypeEpisode,
 		Title:                      episode.Title,
 		Overview:                   episode.Overview,
 		PendingTranslationLanguage: pendingTranslation,
@@ -2425,7 +2419,7 @@ func (s *DetailService) GetWatchDetail(ctx context.Context, contentID string, fi
 		if err != nil {
 			return nil, fmt.Errorf("localizing watch item: %w", err)
 		}
-		if item.Type == "series" {
+		if item.Type == itemTypeSeries {
 			return nil, ErrWatchTargetNotPlayable
 		}
 
@@ -2484,11 +2478,11 @@ func (s *DetailService) GetWatchDetail(ctx context.Context, contentID string, fi
 
 	files = FilterMediaFilesByAccess(files, filter)
 	files = s.preparePlaybackFiles(ctx, files)
-	s.queueWatchPlaybackFiles(ctx, episode.ContentID, "episode", files)
+	s.queueWatchPlaybackFiles(ctx, episode.ContentID, itemTypeEpisode, files)
 	detail := s.newWatchDetail(
 		ctx,
 		episode.ContentID,
-		"episode",
+		itemTypeEpisode,
 		episode.Title,
 		episode.Overview,
 		files,
@@ -2572,7 +2566,7 @@ func (s *DetailService) buildExtraWatchDetail(ctx context.Context, contentID str
 		// Series fields only for series-owned extras: players treat a
 		// populated SeriesID as episodic context (post-roll/next-episode
 		// flows), which is wrong for a movie's extras.
-		if parent.Type == "series" {
+		if parent.Type == itemTypeSeries {
 			detail.SeriesID = extra.ParentID
 			detail.SeriesTitle = parent.Title
 		}

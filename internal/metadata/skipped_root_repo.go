@@ -34,22 +34,6 @@ func NewSkippedRootRepository(pool *pgxpool.Pool) *SkippedRootRepository {
 
 const skippedRootColumns = `media_folder_id, root_path, reason, sample_file_path, file_count, first_seen_at, last_seen_at`
 
-func scanSkippedRoot(row pgx.Row) (*models.SkippedMediaRoot, error) {
-	var root models.SkippedMediaRoot
-	if err := row.Scan(
-		&root.MediaFolderID,
-		&root.RootPath,
-		&root.Reason,
-		&root.SampleFilePath,
-		&root.FileCount,
-		&root.FirstSeenAt,
-		&root.LastSeenAt,
-	); err != nil {
-		return nil, fmt.Errorf("scanning skipped media root: %w", err)
-	}
-	return &root, nil
-}
-
 func scanSkippedRoots(rows pgx.Rows) ([]*models.SkippedMediaRoot, error) {
 	var roots []*models.SkippedMediaRoot
 	for rows.Next() {
