@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 
-import { useSetSetting, type SettingsMap } from "./settings";
+import { useSetSetting, useSetting, type SettingsMap } from "./settings";
 import { settingsKeys } from "./keys";
 
 const apiMock = vi.hoisted(() => vi.fn());
@@ -18,6 +18,35 @@ function createHarness() {
   );
   return { queryClient, wrapper };
 }
+
+describe("useSetting", () => {
+  it("reads unset keys as null from the settings list without calling GET /settings/{key}", async () => {
+    const { wrapper } = createHarness();
+    apiMock.mockResolvedValueOnce({
+      settings: [{ key: "ui.date_format", value: "auto" }],
+    });
+
+    const { result } = renderHook(() => useSetting("search.media_scope"), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toBeNull();
+    expect(apiMock).toHaveBeenCalledTimes(1);
+    expect(apiMock).toHaveBeenCalledWith("/settings");
+  });
+
+  it("returns the stored value when the key is present in the settings list", async () => {
+    const { wrapper } = createHarness();
+    apiMock.mockResolvedValueOnce({
+      settings: [{ key: "card_overlays", value: '{"version":2}' }],
+    });
+
+    const { result } = renderHook(() => useSetting("card_overlays"), { wrapper });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(result.current.data).toBe('{"version":2}');
+    expect(apiMock).toHaveBeenCalledWith("/settings");
+  });
+});
 
 describe("useSetSetting overlapping mutations", () => {
   it("does not roll back a newer successful save of the same key when an older save fails", async () => {

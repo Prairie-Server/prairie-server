@@ -65,29 +65,29 @@ function getActiveProfileIdForSettings() {
   return storage.get(storage.KEYS.PROFILE_ID);
 }
 
+async function fetchSettingsMap(): Promise<SettingsMap> {
+  const result = await api<SettingsListResponse>("/settings");
+  return normalizeSettings(result.settings);
+}
+
 export function useSettings(options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: settingsKeys.list(),
-    queryFn: async () => {
-      const result = await api<SettingsListResponse>("/settings");
-      return normalizeSettings(result.settings);
-    },
+    queryFn: fetchSettingsMap,
     enabled: options?.enabled ?? true,
     staleTime: 5 * 60 * 1000,
   });
 }
 
 export function useSetting(key: string, options?: { enabled?: boolean }) {
+  // Read from GET /settings (shared cache with useSettings) instead of
+  // GET /settings/{key}. Unset keys are simply absent from the list, so we
+  // avoid the per-key 404 that browsers log as a console error even though
+  // clients treat it as "not set" (card_overlays, search.media_scope, etc.).
   return useQuery({
-    queryKey: settingsKeys.detail(key),
-    queryFn: async () => {
-      try {
-        const result = await api<SettingEntry>(`/settings/${key}`);
-        return result.value;
-      } catch {
-        return null;
-      }
-    },
+    queryKey: settingsKeys.list(),
+    queryFn: fetchSettingsMap,
+    select: (settings) => settings[key] ?? null,
     enabled: options?.enabled ?? true,
     staleTime: 5 * 60 * 1000,
   });
