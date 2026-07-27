@@ -33,7 +33,7 @@ const STEP_DESCRIPTIONS: Record<WizardStepId, string> = {
   server: "Configure core infrastructure. All fields are optional and can be changed later.",
   integrations: "Configure subtitle providers for automatic subtitle downloading.",
   downloads: "Allow users to download media files for offline viewing.",
-  recommendations: "AI-powered recommendations using embeddings. Requires pgvector.",
+  recommendations: "AI-powered recommendations using embeddings.",
   library: "Point Prairie at your media files. You can add more libraries later.",
   nodes: "Prairie is ready. Start exploring or fine-tune in admin settings.",
 };

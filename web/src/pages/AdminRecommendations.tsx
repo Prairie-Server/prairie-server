@@ -494,8 +494,8 @@ export default function AdminRecommendations() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Recommendations</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Configure the AI-powered recommendation engine. Requires pgvector and an
-            OpenAI-compatible embedding endpoint.
+            Configure the AI-powered recommendation engine. Requires an OpenAI-compatible embedding
+            endpoint.
           </p>
         </div>
       </div>
