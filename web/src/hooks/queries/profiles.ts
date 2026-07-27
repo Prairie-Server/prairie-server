@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import type { AdminSession, Profile, CreateProfileRequest, ProfileListResponse } from "@/api/types";
+import { useOptionalAuth } from "@/hooks/useAuth";
 import { profileKeys } from "./keys";
 import { toast } from "sonner";
 
@@ -36,9 +37,13 @@ export function useHouseholdSessions(enabled = true) {
 }
 
 export function useProfiles() {
+  // Global chrome (realtime/admin hooks) mounts on /setup and /login too.
+  // Skip until there is a signed-in user so first-launch does not 401.
+  const user = useOptionalAuth()?.user;
   const query = useQuery({
     queryKey: profileKeys.list(),
     queryFn: () => api<ProfileListResponse>("/profiles"),
+    enabled: Boolean(user),
   });
 
   return {
