@@ -243,12 +243,17 @@ export default function Home() {
   );
 }
 
+/**
+ * Welcome composition when Home has no featured media hero.
+ * Mark + server name (same pattern as AuthBrandHero) — never stack the
+ * wordmark above a duplicate "{serverName}" title next to the sidebar logo.
+ */
 function HomeBrandHero() {
   const { serverName } = useServerBranding();
 
   return (
     <section
-      className={`home-hero border-border/60 relative mb-10 flex w-full items-end overflow-hidden border-b ${HOME_BRAND_HERO_SIZE}`}
+      className={`home-hero border-border/60 relative mb-8 flex w-full items-end overflow-hidden border-b ${HOME_BRAND_HERO_SIZE}`}
       aria-label="Welcome"
     >
       <div
@@ -262,8 +267,12 @@ function HomeBrandHero() {
         }}
       />
       <div className="hero-gradient" />
-      <div className="relative z-10 flex w-full flex-col items-start gap-5 px-4 pb-12 sm:px-6 sm:pb-14 lg:px-10 lg:pb-16 xl:px-12">
-        <PrairieBrand className="brand-reveal h-16 w-[168px] sm:h-[4.5rem] sm:w-[190px]" />
+      <div className="relative z-10 flex w-full flex-col items-start gap-4 px-4 pb-8 sm:px-6 sm:pb-10 lg:px-10 lg:pb-12 xl:px-12">
+        <PrairieBrand
+          variant="mark"
+          className="brand-reveal h-14 w-14 sm:h-16 sm:w-16"
+          imageClassName="rounded-xl"
+        />
         <div className="auth-brand-copy max-w-lg space-y-2.5">
           <p className="font-display text-3xl font-semibold tracking-[-0.035em] sm:text-4xl lg:text-[2.75rem]">
             {serverName}

@@ -146,7 +146,7 @@ export default function Layout({ children }: LayoutProps) {
             <Menu className="h-5 w-5" />
           </button>
           <ViewTransitionLink to="/" className="brand-reveal flex items-center gap-2.5">
-            <PrairieBrand className="h-11 w-[108px]" />
+            <PrairieBrand className="h-7 w-[10.5rem]" />
           </ViewTransitionLink>
         </div>
         <div className="flex items-center gap-2">

@@ -15,10 +15,10 @@ interface PrairieBrandProps {
 
 /**
  * Brand mark / wordmark. The bundled mark is 1024² (sharp on retina at ~44px);
- * the bundled wordmark is a modest 142×96 PNG — prefer a custom upload via
- * branding settings for crisp wordmarks on high-DPI displays. Bundled assets
- * use PictureImage (AVIF → WebP → PNG); custom assets are content-negotiated
- * by the branding API.
+ * the bundled wordmark is a wide transparent strip (~542×90). Prefer a custom
+ * upload via branding settings for alternate wordmarks. Bundled assets use
+ * PictureImage (AVIF → WebP → PNG); custom assets are content-negotiated by
+ * the branding API.
  */
 export function PrairieBrand({
   className,
@@ -33,7 +33,7 @@ export function PrairieBrand({
   const imageClass = cn("h-full w-full object-contain", isMark && "rounded-lg", imageClassName);
   // Intrinsic pixel size of the bundled assets — helps decode prioritization
   // on high-DPI displays when CSS sizes the element down.
-  const intrinsic = isMark ? { width: 1024, height: 1024 } : { width: 142, height: 96 };
+  const intrinsic = isMark ? { width: 1024, height: 1024 } : { width: 542, height: 90 };
 
   return (
     <span className={cn("block shrink-0", !isMark && "overflow-hidden", className)}>
