@@ -85,6 +85,7 @@ export default function LiveTV() {
   const cancelRecording = useCancelLiveTVRecording();
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [streamURL, setStreamURL] = useState<string | null>(null);
+  const [streamTransport, setStreamTransport] = useState<"mpegts" | "hls">("mpegts");
   const [watchingChannelId, setWatchingChannelId] = useState<string | null>(null);
 
   const selectedGuide = selected
@@ -126,6 +127,7 @@ export default function LiveTV() {
     setWatchingChannelId(channel.id);
     setSelectedId(channel.id);
     setStreamURL(session.hls_url || session.stream_url || null);
+    setStreamTransport(session.transport === "hls" ? "hls" : "mpegts");
     if (session.note) {
       toast.message(session.note);
     } else {
@@ -142,6 +144,7 @@ export default function LiveTV() {
     await releaseSession.mutateAsync(activeSessionId);
     setActiveSessionId(null);
     setStreamURL(null);
+    setStreamTransport("mpegts");
     setWatchingChannelId(null);
     toast.success("Live TV session released");
   }
@@ -239,6 +242,7 @@ export default function LiveTV() {
           </div>
           <LiveTVPlayer
             streamUrl={streamURL}
+            transport={streamTransport}
             title={watchingChannel ? channelLabel(watchingChannel) : "Live TV"}
             className="aspect-video w-full"
           />

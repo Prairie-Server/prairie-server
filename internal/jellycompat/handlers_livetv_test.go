@@ -175,6 +175,17 @@ func (s *livetvTestStore) CreateRecording(_ context.Context, rec *livetv.Recordi
 	cp := *rec
 	return &cp, nil
 }
+func (s *livetvTestStore) UpdateRecording(_ context.Context, rec *livetv.Recording) (*livetv.Recording, error) {
+	if rec == nil || rec.ID == "" {
+		return nil, nil
+	}
+	if _, ok := s.recordings[rec.ID]; !ok {
+		return nil, nil
+	}
+	s.recordings[rec.ID] = *rec
+	cp := *rec
+	return &cp, nil
+}
 func (s *livetvTestStore) CancelRecording(_ context.Context, id string) (*livetv.Recording, error) {
 	rec, ok := s.recordings[id]
 	if !ok {

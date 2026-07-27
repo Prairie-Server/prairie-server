@@ -2023,11 +2023,21 @@ func main() {
 	}
 	brandingSvc := branding.NewService(settingsRepo, brandingStore)
 
-	// Shared Live TV service (HDHomeRun / guide / DVR). Created whenever a DB is
-	// available so jellycompat and the task manager share one instance.
+	// Shared Live TV service (HDHomeRun / guide / DVR / HLS bridge). Created
+	// whenever a DB is available so the API, jellycompat, and task manager share
+	// one instance with the same playback bridge and recorder.
 	var liveTVSvc *livetv.Service
 	if deps.DB != nil {
 		liveTVSvc = livetv.NewService(deps.DB)
+		ffmpegPath := cfg.Playback.FFmpegPath
+		bridge := livetv.NewHLSBridge(cfg.Playback.TranscodeDir, ffmpegPath)
+		liveTVSvc.SetPlaybackBridge(bridge)
+		dvrPath := cfg.LiveTV.DVRPath
+		if dvrPath == "" {
+			dvrPath = config.DefaultLiveTVDVRPath
+		}
+		liveTVSvc.SetRecorder(livetv.NewRecorder(liveTVSvc, dvrPath, ffmpegPath))
+		deps.LiveTV = liveTVSvc
 	}
 
 	// Wire up task manager for admin task API.

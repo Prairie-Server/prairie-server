@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import Hls from "hls.js";
 import mpegts from "mpegts.js";
 import { Loader2 } from "lucide-react";
 import { getAccessToken, getProfileId, getProfileToken } from "@/api/client";
@@ -6,6 +7,8 @@ import { cn } from "@/lib/utils";
 
 type LiveTVPlayerProps = {
   streamUrl: string;
+  /** Defaults to mpegts when omitted. */
+  transport?: "mpegts" | "hls";
   title?: string;
   className?: string;
 };
@@ -29,13 +32,26 @@ function resolveStreamUrl(streamUrl: string): string {
   return new URL(streamUrl, window.location.origin).toString();
 }
 
+function withTokenQuery(url: string): string {
+  const token = getAccessToken();
+  if (!token) return url;
+  const separator = url.includes("?") ? "&" : "?";
+  return `${url}${separator}token=${encodeURIComponent(token)}`;
+}
+
 /**
- * Plays a Live TV MPEG-TS session proxy with mpegts.js.
- * Auth headers are attached via mpegts config so RequireProfile succeeds.
+ * Plays a Live TV stream. Uses hls.js for remuxed HLS (`transport=hls`) and
+ * mpegts.js for the MPEG-TS session proxy.
  */
-export function LiveTVPlayer({ streamUrl, title, className }: LiveTVPlayerProps) {
+export function LiveTVPlayer({
+  streamUrl,
+  transport = "mpegts",
+  title,
+  className,
+}: LiveTVPlayerProps) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const playerRef = useRef<ReturnType<typeof mpegts.createPlayer> | null>(null);
+  const mpegtsRef = useRef<ReturnType<typeof mpegts.createPlayer> | null>(null);
+  const hlsRef = useRef<Hls | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [starting, setStarting] = useState(true);
 
@@ -45,6 +61,49 @@ export function LiveTVPlayer({ streamUrl, title, className }: LiveTVPlayerProps)
 
     setError(null);
     setStarting(true);
+
+    const url = resolveStreamUrl(streamUrl);
+    const isHLS = transport === "hls" || url.includes(".m3u8");
+
+    if (isHLS) {
+      const playUrl = withTokenQuery(url);
+      if (!Hls.isSupported()) {
+        // Safari can play HLS natively but cannot attach auth headers; require
+        // hls.js (MSE) so X-Profile-Id reaches RequireProfile.
+        setError("HLS playback requires Media Source Extensions in this browser.");
+        setStarting(false);
+        return;
+      }
+      const hls = new Hls({
+        enableWorker: true,
+        lowLatencyMode: true,
+        xhrSetup: (xhr) => {
+          const headers = authHeaders();
+          for (const [key, value] of Object.entries(headers)) {
+            xhr.setRequestHeader(key, value);
+          }
+        },
+      });
+      hlsRef.current = hls;
+      hls.loadSource(playUrl);
+      hls.attachMedia(video);
+      hls.on(Hls.Events.MANIFEST_PARSED, () => {
+        void video.play().then(
+          () => setStarting(false),
+          () => setStarting(false),
+        );
+      });
+      hls.on(Hls.Events.ERROR, (_event, data) => {
+        if (data.fatal) {
+          setError(data.details || "HLS playback error");
+          setStarting(false);
+        }
+      });
+      return () => {
+        hls.destroy();
+        if (hlsRef.current === hls) hlsRef.current = null;
+      };
+    }
 
     if (!mpegts.isSupported() || !mpegts.getFeatureList().mseLivePlayback) {
       setError("Live MPEG-TS playback is not supported in this browser.");
@@ -56,7 +115,7 @@ export function LiveTVPlayer({ streamUrl, title, className }: LiveTVPlayerProps)
       {
         type: "mpegts",
         isLive: true,
-        url: resolveStreamUrl(streamUrl),
+        url,
       },
       {
         enableStashBuffer: false,
@@ -65,7 +124,7 @@ export function LiveTVPlayer({ streamUrl, title, className }: LiveTVPlayerProps)
         headers: authHeaders(),
       },
     );
-    playerRef.current = player;
+    mpegtsRef.current = player;
     player.attachMediaElement(video);
     player.on(mpegts.Events.ERROR, (_type: string, _detail: string, info: unknown) => {
       const message =
@@ -95,11 +154,9 @@ export function LiveTVPlayer({ streamUrl, title, className }: LiveTVPlayerProps)
       } catch {
         // Best-effort teardown when the session URL changes.
       }
-      if (playerRef.current === player) {
-        playerRef.current = null;
-      }
+      if (mpegtsRef.current === player) mpegtsRef.current = null;
     };
-  }, [streamUrl]);
+  }, [streamUrl, transport]);
 
   return (
     <div className={cn("relative overflow-hidden bg-black", className)}>

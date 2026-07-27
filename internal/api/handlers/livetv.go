@@ -25,6 +25,9 @@ type LiveTVHandler struct {
 }
 
 func NewLiveTVHandler(service *livetv.Service) *LiveTVHandler {
+	if service == nil {
+		return nil
+	}
 	return &LiveTVHandler{service: service}
 }
 
@@ -558,6 +561,34 @@ func (h *LiveTVHandler) HandleDeleteSeriesRule(w http.ResponseWriter, r *http.Re
 		return
 	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// HandleLiveHLS serves a remuxed live HLS playlist or segment for a playback
+// bridge session.
+func (h *LiveTVHandler) HandleLiveHLS(w http.ResponseWriter, r *http.Request) {
+	playbackID := chi.URLParam(r, "playbackId")
+	name := chi.URLParam(r, "name")
+	if name == "" {
+		name = "index.m3u8"
+	}
+	bridge, ok := h.service.PlaybackBridge().(*livetv.HLSBridge)
+	if !ok || bridge == nil {
+		writeError(w, http.StatusNotFound, "not_found", "live hls not available")
+		return
+	}
+	userID := apimw.GetUserID(r.Context())
+	profileID := apimw.GetProfileID(r.Context())
+	enforceOwner := !apimw.IsAdmin(r.Context())
+	if err := bridge.Authorize(playbackID, userID, profileID, enforceOwner); err != nil {
+		writeLiveTVError(w, err)
+		return
+	}
+	path, err := bridge.ResolvePlaylistFile(playbackID, name)
+	if err != nil {
+		writeLiveTVError(w, err)
+		return
+	}
+	http.ServeFile(w, r, path)
 }
 
 func parseOptionalTime(raw string, fallback time.Time) (time.Time, error) {

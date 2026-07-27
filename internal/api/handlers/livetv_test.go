@@ -91,6 +91,9 @@ func (s *fakeLiveTVStore) ListRecordings(context.Context, string) ([]livetv.Reco
 func (s *fakeLiveTVStore) CreateRecording(context.Context, *livetv.Recording) (*livetv.Recording, error) {
 	return nil, nil
 }
+func (s *fakeLiveTVStore) UpdateRecording(context.Context, *livetv.Recording) (*livetv.Recording, error) {
+	return nil, nil
+}
 func (s *fakeLiveTVStore) CancelRecording(context.Context, string) (*livetv.Recording, error) {
 	return nil, nil
 }

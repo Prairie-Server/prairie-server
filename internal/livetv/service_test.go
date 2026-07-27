@@ -1446,6 +1446,20 @@ func (s *memoryStore) CreateRecording(_ context.Context, rec *Recording) (*Recor
 	return &out, nil
 }
 
+func (s *memoryStore) UpdateRecording(_ context.Context, rec *Recording) (*Recording, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if rec == nil || rec.ID == "" {
+		return nil, fmt.Errorf("id required")
+	}
+	if _, ok := s.recordings[rec.ID]; !ok {
+		return nil, nil
+	}
+	s.recordings[rec.ID] = *rec
+	out := s.recordings[rec.ID]
+	return &out, nil
+}
+
 func (s *memoryStore) CancelRecording(_ context.Context, id string) (*Recording, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()

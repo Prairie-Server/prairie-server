@@ -62,8 +62,8 @@ func (t *SyncLiveTVGuideTask) Execute(ctx context.Context, progress taskmanager.
 	return nil
 }
 
-// LiveTVDVRTickTask marks due scheduled recordings as failed until the
-// FFmpeg recorder lands, and re-applies series rules against upcoming programs.
+// LiveTVDVRTickTask applies series rules and runs the FFmpeg DVR recorder
+// against due / in-progress Live TV recordings.
 type LiveTVDVRTickTask struct {
 	service *livetv.Service
 }
@@ -75,7 +75,7 @@ func NewLiveTVDVRTickTask(service *livetv.Service) *LiveTVDVRTickTask {
 func (t *LiveTVDVRTickTask) Key() string  { return "livetv_dvr_tick" }
 func (t *LiveTVDVRTickTask) Name() string { return "Live TV DVR Tick" }
 func (t *LiveTVDVRTickTask) Description() string {
-	return "Applies Live TV series recording rules and expires due scheduled recordings until the recorder ships"
+	return "Applies Live TV series recording rules and starts/finishes due recordings"
 }
 func (t *LiveTVDVRTickTask) Category() taskmanager.TaskCategory {
 	return taskmanager.TaskCategoryLibrary
@@ -84,7 +84,7 @@ func (t *LiveTVDVRTickTask) IsHidden() bool { return false }
 
 func (t *LiveTVDVRTickTask) DefaultTriggers() []taskmanager.TriggerConfig {
 	return []taskmanager.TriggerConfig{
-		{Type: taskmanager.TriggerTypeInterval, IntervalMs: 5 * 60 * 1000}, // every 5 minutes
+		{Type: taskmanager.TriggerTypeInterval, IntervalMs: 60 * 1000}, // every minute
 	}
 }
 
@@ -97,13 +97,20 @@ func (t *LiveTVDVRTickTask) Execute(ctx context.Context, progress taskmanager.Pr
 	if err := t.service.ApplySeriesRules(ctx); err != nil {
 		return fmt.Errorf("livetv apply series rules: %w", err)
 	}
-	progress.Report(50, "Checking due Live TV recordings")
-	failed, err := t.service.FailDueRecordings(ctx)
+	progress.Report(40, "Processing Live TV recordings")
+	started, completed, failed, err := t.service.ProcessRecordings(ctx)
 	if err != nil {
-		return fmt.Errorf("livetv fail due recordings: %w", err)
+		return fmt.Errorf("livetv process recordings: %w", err)
 	}
-	result, _ := json.Marshal(map[string]int{"due_marked_failed": failed})
+	result, _ := json.Marshal(map[string]int{
+		"started":   started,
+		"completed": completed,
+		"failed":    failed,
+	})
 	progress.SetResultData(result)
-	progress.Report(100, fmt.Sprintf("Live TV DVR tick complete (%d due marked failed)", failed))
+	progress.Report(100, fmt.Sprintf(
+		"Live TV DVR tick complete (started=%d completed=%d failed=%d)",
+		started, completed, failed,
+	))
 	return nil
 }
