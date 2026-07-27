@@ -177,12 +177,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Typecheck
-        run: pnpm run typecheck
-
-      - name: Lint
-        run: pnpm run lint
-
+      # typecheck + lint already run in web-lint (parallel job). Keep this job
+      # focused on Vitest so the critical path is ~vitest wall-clock only.
       # Vitest coverage thresholds (90% statements/lines/functions/branches) apply
       # to the include list in web/vite.config.ts (pure helpers under src/lib/).
       # Expand that list as more modules gain unit tests rather than gating the
