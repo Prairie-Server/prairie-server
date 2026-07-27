@@ -98,9 +98,6 @@ linters:
       min-occurrences: 8
       # Tests inflate occurrence counts across the package; ignore them.
       ignore-tests: true
-      # Switch-case enum arms are intentionally literal alongside the const defs.
-      exclude-types:
-        - Case
       ignore-string-values:
         - "true"
         - "false"
