@@ -241,31 +241,22 @@ func ImageFormatsFromRequest(imageFormatsHeader, acceptHeader string) []string {
 // are empty, canonical WebP is returned.
 func SelectRasterURL(canonical, avif, png string, preferred []string) string {
 	byFormat := map[string]string{
-		FormatWebP: canonical,
-		FormatAVIF: avif,
-		FormatPNG:  png,
-	}
-	if len(preferred) == 0 {
-		if canonical != "" {
-			return canonical
-		}
-		if avif != "" {
-			return avif
-		}
-		return png
+		FormatWebP: strings.TrimSpace(canonical),
+		FormatAVIF: strings.TrimSpace(avif),
+		FormatPNG:  strings.TrimSpace(png),
 	}
 	for _, format := range preferred {
-		if url := strings.TrimSpace(byFormat[format]); url != "" {
+		if url := byFormat[format]; url != "" {
 			return url
 		}
 	}
-	if canonical != "" {
-		return canonical
+	if byFormat[FormatWebP] != "" {
+		return byFormat[FormatWebP]
 	}
-	if avif != "" {
-		return avif
+	if byFormat[FormatAVIF] != "" {
+		return byFormat[FormatAVIF]
 	}
-	return png
+	return byFormat[FormatPNG]
 }
 
 // PrefersAVIF reports whether an Accept header explicitly includes image/avif

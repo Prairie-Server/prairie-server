@@ -121,7 +121,22 @@ func TestSelectRasterURL(t *testing.T) {
 		t.Fatalf("SelectRasterURL(webp first) = %q", got)
 	}
 	if got := SelectRasterURL("", "", png, nil); got != png {
-		t.Fatalf("SelectRasterURL(default) = %q", got)
+		t.Fatalf("SelectRasterURL(default png) = %q", got)
+	}
+	if got := SelectRasterURL("", avif, "", nil); got != avif {
+		t.Fatalf("SelectRasterURL(default avif) = %q", got)
+	}
+	if got := SelectRasterURL(canonical, avif, png, nil); got != canonical {
+		t.Fatalf("SelectRasterURL(default webp) = %q", got)
+	}
+	if got := SelectRasterURL("", "", "", []string{FormatAVIF}); got != "" {
+		t.Fatalf("SelectRasterURL(empty) = %q", got)
+	}
+	if got := SelectRasterURL("  ", avif, png, []string{FormatWebP, FormatAVIF}); got != avif {
+		t.Fatalf("SelectRasterURL(trim blank webp) = %q", got)
+	}
+	if got := SelectRasterURL("", "", png, []string{FormatAVIF, FormatWebP}); got != png {
+		t.Fatalf("SelectRasterURL(prefer miss → png) = %q", got)
 	}
 }
 

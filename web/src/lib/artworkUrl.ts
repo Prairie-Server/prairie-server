@@ -80,10 +80,7 @@ export function artworkCandidates(
   const avif = formats?.avif?.trim() ?? "";
   const png = formats?.png?.trim() ?? "";
   if (avif || png) {
-    return orderRasterCandidates(
-      { avif, webp: trimmed, png },
-      getImageFormats(),
-    );
+    return orderRasterCandidates({ avif, webp: trimmed, png }, getImageFormats());
   }
   if (!trimmed) return [];
   if (isSignedArtworkURL(trimmed)) return [trimmed];
