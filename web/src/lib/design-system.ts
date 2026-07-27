@@ -88,7 +88,7 @@ export const DESIGN_PRINCIPLES = [
     examples: [
       "Login / empty home: mark + display-scale server name (not wordmark + title)",
       "App shell: wordmark sized for recognition in the sidebar and mobile header",
-      "Empty home: compact brand welcome before section rows",
+      "Empty home: compact brand welcome; populated home opens on carousel rows",
     ],
   },
   {
@@ -675,8 +675,8 @@ export const HERO_BANNER_SIZE = "h-[50dvh] min-h-[350px] max-h-[700px] lg:h-[60d
 export const HERO_BANNER_SIZE_TALL = "h-[60dvh] min-h-[420px] max-h-[760px] lg:h-[72dvh]";
 
 /**
- * Brand welcome hero used when Home has no featured media slot.
- * Compact enough that section rows stay near the first viewport; tall
- * enough for mark + server name + tagline as one composition.
+ * Compact brand welcome used only on an empty Home (no sections yet).
+ * Content-sized — not a viewport plane — so it never delays carousel discovery.
+ * Populated homes with no featured slot skip this and open on section rows.
  */
-export const HOME_BRAND_HERO_SIZE = "min-h-[28dvh] lg:min-h-[32dvh]";
+export const HOME_BRAND_HERO_SIZE = "py-6 sm:py-8";
