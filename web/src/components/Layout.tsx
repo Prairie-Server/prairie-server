@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Link, useLocation } from "react-router";
 import { Menu, Search } from "lucide-react";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -22,6 +22,25 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [userCollapsed, setUserCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    try {
+      return window.localStorage.getItem("prairie.sidebar.collapsed") === "1";
+    } catch {
+      return false;
+    }
+  });
+  const toggleUserCollapsed = useCallback(() => {
+    setUserCollapsed((prev) => {
+      const next = !prev;
+      try {
+        window.localStorage.setItem("prairie.sidebar.collapsed", next ? "1" : "0");
+      } catch {
+        // ignore quota / private mode
+      }
+      return next;
+    });
+  }, []);
   // Tracks whether the mobile header should slide off-screen on scroll.
   // We auto-hide on Calendar to maximize vertical room for the sticky week strip
   // and the day timeline below it. Pulling up restores the header.
@@ -54,15 +73,17 @@ export default function Layout({ children }: LayoutProps) {
     isRecommendationsRoute ||
     isCalendarRoute;
 
-  // Immersion: auto-collapse sidebar on detail pages so content gets full stage
+  // Immersion: auto-collapse sidebar on detail pages so content gets full stage.
+  // User preference also collapses the desktop rail (iPad-style icon rail).
   const isDetailImmersion = isItemRoute;
+  const sidebarCollapsed = isDetailImmersion || userCollapsed;
 
   // Publish the current sidebar width on the document root so out-of-tree
   // chrome (notably ImpersonationBanner, which renders above all routes)
   // can align with whichever sidebar state is active.
   useEffect(() => {
     const root = document.documentElement;
-    if (isDetailImmersion) {
+    if (sidebarCollapsed) {
       root.dataset.sidebarCollapsed = "true";
     } else {
       delete root.dataset.sidebarCollapsed;
@@ -70,7 +91,7 @@ export default function Layout({ children }: LayoutProps) {
     return () => {
       delete root.dataset.sidebarCollapsed;
     };
-  }, [isDetailImmersion]);
+  }, [sidebarCollapsed]);
 
   // Auto-hide the mobile header on scroll-down for the Calendar route only.
   // Direction-based (not threshold-based) so a small scroll-up reveals the
@@ -127,7 +148,11 @@ export default function Layout({ children }: LayoutProps) {
       <div className="from-primary/12 pointer-events-none fixed inset-x-0 top-0 z-0 h-52 bg-gradient-to-b to-transparent blur-3xl" />
       {/* Desktop sidebar — hidden below lg */}
       <div className="hidden lg:block">
-        <AppSidebar collapsed={isDetailImmersion} />
+        <AppSidebar
+          collapsed={sidebarCollapsed}
+          onToggleCollapse={toggleUserCollapsed}
+          showCollapseControl={!isDetailImmersion}
+        />
       </div>
 
       {/* Mobile header — visible below lg. Slides up on scroll-down within
@@ -146,7 +171,7 @@ export default function Layout({ children }: LayoutProps) {
             <Menu className="h-5 w-5" />
           </button>
           <ViewTransitionLink to="/" className="brand-reveal flex items-center gap-2.5">
-            <PrairieBrand className="h-7 w-[10.5rem]" />
+            <PrairieBrand className="aspect-[274/90] h-7" />
           </ViewTransitionLink>
         </div>
         <div className="flex items-center gap-2">
@@ -189,7 +214,7 @@ export default function Layout({ children }: LayoutProps) {
       <main
         id="main-content"
         className={`main-transition relative min-h-[100dvh] ${
-          isDetailImmersion ? "lg:ml-16" : "lg:ml-[260px]"
+          sidebarCollapsed ? "lg:ml-16" : "lg:ml-[260px]"
         } ${hasBackgroundBar ? "pb-32 sm:pb-36" : ""}`}
         style={{ viewTransitionName: "main-content" }}
       >
