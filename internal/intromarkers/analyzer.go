@@ -221,12 +221,13 @@ func (a *Analyzer) AnalyzeEpisode(ctx context.Context, episodeID string) (RunSum
 		return summary, nil
 	}
 
-	if err := a.extractor.Preflight(ctx); err != nil {
+	if err := a.extractor.Preflight(ctx); err == nil {
+		summary.ChromaprintSupported = true
+	} else {
 		summary.ChromaprintSupported = false
 		summary.ChromaprintSupportMessage = err.Error()
 		return summary, nil
 	}
-	summary.ChromaprintSupported = true
 
 	groups := make([]candidateGroup, 0, len(groupsByKey))
 	for _, group := range groupsByKey {

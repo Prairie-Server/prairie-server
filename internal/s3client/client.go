@@ -220,10 +220,12 @@ func (c *Client) PutObjectStream(ctx context.Context, bucket, key string, r io.R
 		input.ContentType = aws.String(ct)
 	}
 
+	//nolint:staticcheck // manager.Uploader superseded by transfermanager; migrate in a dedicated change
 	uploader := manager.NewUploader(c.s3Client, func(u *manager.Uploader) {
 		u.PartSize = streamUploadPartSize
 		u.Concurrency = 1
 	})
+	//nolint:staticcheck // see NewUploader above
 	if _, err := uploader.Upload(ctx, input); err != nil {
 		return fmt.Errorf("s3 PutObject stream %s/%s: %w", bucket, key, err)
 	}

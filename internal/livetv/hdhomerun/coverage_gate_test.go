@@ -13,8 +13,8 @@ func TestProbeCandidateURLsEdges(t *testing.T) {
 	if ProbeCandidateURLs("") != nil {
 		t.Fatal("empty")
 	}
-	if ProbeCandidateURLs("://") != nil && len(ProbeCandidateURLs("://")) != 0 {
-		// parse may yield nil
+	if got := ProbeCandidateURLs("://"); len(got) != 0 {
+		t.Fatalf("invalid URL candidates: %v", got)
 	}
 	if got := ProbeCandidateURLs("192.168.1.9"); len(got) == 0 {
 		t.Fatal("host without scheme")

@@ -404,7 +404,7 @@ func (s *Service) syncTMDB(ctx context.Context, store userstore.UserStore, colle
 
 func (s *Service) syncTrakt(ctx context.Context, store userstore.UserStore, collection *userstore.Collection, cfg SourceConfig, startedAt time.Time) (*SyncResult, *userstore.Collection, error) {
 	if s.TraktCollections == nil {
-		return nil, nil, fmt.Errorf("Trakt sync requires configured Trakt access")
+		return nil, nil, fmt.Errorf("trakt sync requires configured Trakt access")
 	}
 	preset := strings.TrimSpace(cfg.Preset)
 	mediaType := strings.TrimSpace(cfg.MediaType)
@@ -422,7 +422,7 @@ func (s *Service) syncTrakt(ctx context.Context, store userstore.UserStore, coll
 			profileID = collection.CreatorProfileID
 		}
 		if profileID == "" || s.TraktTokenResolver == nil {
-			return nil, nil, fmt.Errorf("Trakt recommendations require a profile binding")
+			return nil, nil, fmt.Errorf("trakt recommendations require a profile binding")
 		}
 		token, err := s.TraktTokenResolver.ResolveTraktAccessToken(ctx, profileID)
 		if err != nil {

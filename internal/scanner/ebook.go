@@ -1104,10 +1104,7 @@ func splitPDFKeywords(value string) []string {
 }
 
 func parsePDFDate(value string) (time.Time, bool) {
-	value = strings.TrimSpace(value)
-	if strings.HasPrefix(value, "D:") {
-		value = strings.TrimPrefix(value, "D:")
-	}
+	value = strings.TrimPrefix(strings.TrimSpace(value), "D:")
 	value = strings.TrimSuffix(value, "Z")
 	if len(value) >= 14 {
 		if t, err := time.Parse("20060102150405", value[:14]); err == nil && t.Year() > 0 {

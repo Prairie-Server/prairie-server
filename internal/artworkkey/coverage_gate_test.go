@@ -48,8 +48,8 @@ func TestArtworkKeyEdgeCases(t *testing.T) {
 	if FormatSibling("https://cdn/noext", ".avif") != "https://cdn/noext" {
 		t.Fatal("url no ext")
 	}
-	if FormatSibling("://bad", ".avif") != "://bad" {
-		// invalid URL parse may passthrough
+	if got := FormatSibling("://bad", ".avif"); got != "://bad" {
+		t.Fatalf("invalid URL sibling: %q", got)
 	}
 	if webPFormatSibling("", ".avif") != "" || webPFormatSibling("a.jpg", ".avif") != "" {
 		t.Fatal("webp sibling guards")

@@ -227,11 +227,11 @@ func StartRemuxWithDVMode(ctx context.Context, filePath, outputFormat string, se
 	case RemuxDVStripToHDR10V3:
 		if dvProfile != 7 && dvProfile != 8 {
 			cancel()
-			return nil, fmt.Errorf("Dolby Vision HDR10 strip requires profile 7 or 8")
+			return nil, fmt.Errorf("dolby Vision HDR10 strip requires profile 7 or 8")
 		}
 		if !supportsDoviRPUFilter(bin) {
 			cancel()
-			return nil, fmt.Errorf("Dolby Vision HDR10 remux requires the dovi_rpu bitstream filter")
+			return nil, fmt.Errorf("dolby Vision HDR10 remux requires the dovi_rpu bitstream filter")
 		}
 		// buildRemuxArgs uses profile 7 as the explicit strip sentinel; the
 		// filter is equally required for a compatible profile 8 base layer.
@@ -242,7 +242,7 @@ func StartRemuxWithDVMode(ctx context.Context, filePath, outputFormat string, se
 			// cannot be preserved: the EL is dropped and its RPUs would
 			// dangle. Callers must strip to HDR10 or transcode instead.
 			cancel()
-			return nil, fmt.Errorf("Dolby Vision profile 7 cannot be preserved in a progressive remux")
+			return nil, fmt.Errorf("dolby Vision profile 7 cannot be preserved in a progressive remux")
 		}
 		tagDVSampleEntry = true
 	case RemuxDVRejectP7V3:

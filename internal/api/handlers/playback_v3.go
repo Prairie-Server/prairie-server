@@ -1749,7 +1749,7 @@ func remapAudioSelectionV3(source, target *models.MediaFile, request *playback.S
 		}
 		fileID, kind, ordinal, ok := playback.ParseTrackIDV3(request.AudioTrackID)
 		if !ok || kind != "audio" || fileID != source.ID {
-			return errors.New("The selected audio track identity is invalid for the source file.")
+			return errors.New("the selected audio track identity is invalid for the source file")
 		}
 		request.AudioTrackIndex = &ordinal
 	}
@@ -1772,13 +1772,13 @@ func (h *PlaybackHandler) remapSubtitleSelectionV3(ctx context.Context, source, 
 		}
 		fileID, kind, ordinal, ok := playback.ParseTrackIDV3(request.SubtitleTrackID)
 		if !ok || kind != "subtitle" || fileID != source.ID {
-			return errors.New("The selected subtitle track identity is invalid for the source file.")
+			return errors.New("the selected subtitle track identity is invalid for the source file")
 		}
 		request.SubtitleTrackIndex = &ordinal
 	}
 	index := *request.SubtitleTrackIndex
 	if index < 0 {
-		return errors.New("The selected subtitle track index is invalid.")
+		return errors.New("the selected subtitle track index is invalid")
 	}
 	targetIndex := -1
 	switch {
@@ -1815,7 +1815,7 @@ func (h *PlaybackHandler) remapSubtitleSelectionV3(ctx context.Context, source, 
 		}
 	}
 	if targetIndex < 0 {
-		return errors.New("The selected subtitle track is unavailable in the effective file version.")
+		return errors.New("the selected subtitle track is unavailable in the effective file version")
 	}
 	request.SubtitleTrackIndex = &targetIndex
 	request.SubtitleTrackID = playback.TrackIDV3(target.ID, "subtitle", targetIndex)

@@ -289,10 +289,10 @@ func (h *ImagesHandler) resolveItemImageURLFromTag(ctx context.Context, routeID,
 	// HandleItemImage by serveCollectionImage / serveCollectionsViewImage, so they
 	// never reach this generic resolver.
 	contentID, err := decodeContentID(h.codec, routeID)
-	if err != nil {
-		return catalog.ResolvedImageURL{}, false, nil
+	if err == nil {
+		return h.resolveItemImageURLFromReposWithoutSession(ctx, routeID, contentID, imageType, imageSize, tag)
 	}
-	return h.resolveItemImageURLFromReposWithoutSession(ctx, routeID, contentID, imageType, imageSize, tag)
+	return catalog.ResolvedImageURL{}, false, nil
 }
 
 // collectionArtworkKey returns the stored artwork reference for the requested
@@ -462,7 +462,7 @@ func (h *ImagesHandler) resolveLibraryImageURLFromTag(ctx context.Context, route
 	}
 	folder, err := h.folderRepo.GetByID(ctx, libraryID)
 	if err != nil {
-		return catalog.ResolvedImageURL{}, false, nil
+		return catalog.ResolvedImageURL{}, false, err
 	}
 	if folder.PosterPath == "" || !h.imageTags.Equal(
 		imageTagSeed(routeID, imageTypePrimary, compatCardImageSize, folder.PosterPath, "", time.Time{}),

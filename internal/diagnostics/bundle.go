@@ -220,7 +220,7 @@ func validateEntryHeader(hdr *tar.Header) (string, error) {
 	if len(hdr.PAXRecords) > 0 {
 		return "", fmt.Errorf("%w: unsupported tar extension records", ErrInvalidBundle)
 	}
-	if hdr.Typeflag != tar.TypeReg && hdr.Typeflag != tar.TypeRegA {
+	if hdr.Typeflag != tar.TypeReg {
 		return "", fmt.Errorf("%w: unsupported tar entry type", ErrInvalidBundle)
 	}
 	if hdr.Size < 0 {
