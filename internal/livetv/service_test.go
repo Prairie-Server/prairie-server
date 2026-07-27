@@ -391,8 +391,11 @@ func TestStartAndReleaseChannelSession(t *testing.T) {
 	if session.TunerIndex != 0 || session.StreamURL == "" || session.Status != "active" {
 		t.Fatalf("session = %+v", session)
 	}
-	if !strings.Contains(session.Note, "playback bridge") {
-		t.Fatalf("expected note about missing bridge, got %q", session.Note)
+	if session.Note != "" {
+		t.Fatalf("expected empty note when using session proxy, got %q", session.Note)
+	}
+	if session.Transport != "mpegts" {
+		t.Fatalf("expected mpegts transport, got %q", session.Transport)
 	}
 
 	_, err = svc.StartChannelSession(context.Background(), "ch1", 7, "profile-1")
@@ -459,6 +462,9 @@ func TestStartChannelSessionWithPlaybackBridge(t *testing.T) {
 	}
 	if session.PlaybackSessionID != "pb-1" || session.HLSURL != "http://play/hls.m3u8" || session.Note != "" {
 		t.Fatalf("session = %+v", session)
+	}
+	if session.Transport != "hls" {
+		t.Fatalf("expected hls transport with bridge, got %q", session.Transport)
 	}
 }
 

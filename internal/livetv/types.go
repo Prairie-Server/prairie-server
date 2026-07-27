@@ -167,7 +167,10 @@ type LiveSession struct {
 	HLSURL            string `json:"hls_url,omitempty"`
 	// StreamURL may hold an upstream URL in memory; MarshalJSON emits the
 	// authenticated proxy path (or empty) so clients never receive tuner URLs.
-	StreamURL  string     `json:"-"`
+	StreamURL string `json:"-"`
+	// Transport is "mpegts" for the session proxy or "hls" when a playback
+	// bridge remuxes into the normal Prairie player pipeline.
+	Transport  string     `json:"transport,omitempty"`
 	Note       string     `json:"note,omitempty"`
 	CreatedAt  time.Time  `json:"created_at"`
 	ReleasedAt *time.Time `json:"released_at,omitempty"`

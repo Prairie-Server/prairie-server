@@ -346,17 +346,23 @@ func (h *LiveTVHandler) HandleStartChannelSession(w http.ResponseWriter, r *http
 		// Never return raw tuner URLs — clients play via the authenticated proxy.
 		hlsURL = livetv.PublicSessionStreamPath(session.ID)
 	}
+	transport := session.Transport
+	if transport == "" {
+		transport = "mpegts"
+	}
 	writeJSON(w, http.StatusCreated, struct {
 		SessionID      string `json:"session_id"`
 		PlaybackTicket string `json:"playback_ticket"`
 		HLSURL         string `json:"hls_url"`
 		StreamURL      string `json:"stream_url"`
+		Transport      string `json:"transport,omitempty"`
 		Note           string `json:"note,omitempty"`
 	}{
 		SessionID:      session.ID,
 		PlaybackTicket: ticket,
 		HLSURL:         hlsURL,
 		StreamURL:      hlsURL,
+		Transport:      transport,
 		Note:           session.Note,
 	})
 }

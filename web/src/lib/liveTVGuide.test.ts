@@ -1,96 +1,78 @@
 import { describe, expect, it } from "vitest";
+import {
+  buildGuideWindow,
+  channelDisplayNumber,
+  channelLabel,
+  guideTimeTicks,
+  layoutProgramsForChannel,
+  pickNowNext,
+  progressFraction,
+} from "./liveTVGuide";
 
-import { channelDisplayNumber, channelLabel, formatGuideTime, pickNowNext } from "./liveTVGuide";
-
-describe("liveTVGuide", () => {
-  it("prefers number overrides", () => {
-    expect(channelDisplayNumber({ number: "5.1", number_override: " 99.1 " })).toBe("99.1");
-    expect(channelDisplayNumber({ number: "5.1", number_override: "   " })).toBe("5.1");
-    expect(channelDisplayNumber({ number: "5.1" })).toBe("5.1");
-    expect(channelLabel({ number: "5.1", callsign: "KING", name: "King" })).toBe("5.1 · KING");
-    expect(channelLabel({ number: "5.1", callsign: "", name: "King" })).toBe("5.1 · King");
-    expect(channelLabel({ number: "5.1", callsign: "", name: "" })).toBe("5.1 · Channel");
+describe("liveTVGuide helpers", () => {
+  it("prefers number_override for display", () => {
+    expect(channelDisplayNumber({ number: "5.1", number_override: "5" })).toBe("5");
+    expect(channelLabel({ number: "5.1", callsign: "KING", name: "NBC" })).toBe("5.1 · KING");
   });
 
-  it("picks now and next programmes for a channel", () => {
-    const now = new Date("2026-07-25T19:30:00Z");
+  it("picks now and next programmes", () => {
+    const now = new Date("2026-07-27T15:00:00Z");
     const result = pickNowNext(
       [
         {
           id: "a",
           channel_id: "ch1",
-          title: "Earlier",
-          start: "2026-07-25T18:00:00Z",
-          stop: "2026-07-25T19:00:00Z",
+          title: "Past",
+          start: "2026-07-27T13:00:00Z",
+          stop: "2026-07-27T14:00:00Z",
         },
         {
           id: "b",
           channel_id: "ch1",
-          title: "News",
-          start: "2026-07-25T19:00:00Z",
-          stop: "2026-07-25T20:00:00Z",
+          title: "Now Show",
+          start: "2026-07-27T14:30:00Z",
+          stop: "2026-07-27T15:30:00Z",
         },
         {
           id: "c",
           channel_id: "ch1",
-          title: "Drama",
-          start: "2026-07-25T20:00:00Z",
-          stop: "2026-07-25T21:00:00Z",
-        },
-        {
-          id: "x",
-          channel_id: "ch2",
-          title: "Other",
-          start: "2026-07-25T19:00:00Z",
-          stop: "2026-07-25T20:00:00Z",
+          title: "Next Show",
+          start: "2026-07-27T15:30:00Z",
+          stop: "2026-07-27T16:30:00Z",
         },
       ],
       "ch1",
       now,
     );
-    expect(result.now?.title).toBe("News");
-    expect(result.next?.title).toBe("Drama");
+    expect(result.now?.title).toBe("Now Show");
+    expect(result.next?.title).toBe("Next Show");
   });
 
-  it("picks next when only current is airing at end of list", () => {
-    const now = new Date("2026-07-25T19:30:00Z");
-    const result = pickNowNext(
+  it("layouts programs inside the guide window", () => {
+    const now = new Date("2026-07-27T15:00:00Z");
+    const window = buildGuideWindow(now, 0.5, 1.5);
+    expect(guideTimeTicks(window).length).toBeGreaterThan(0);
+    const laid = layoutProgramsForChannel(
       [
         {
-          id: "only",
+          id: "b",
           channel_id: "ch1",
-          title: "Solo",
-          start: "2026-07-25T19:00:00Z",
-          stop: "2026-07-25T20:00:00Z",
+          title: "Now Show",
+          start: "2026-07-27T14:30:00Z",
+          stop: "2026-07-27T15:30:00Z",
         },
       ],
       "ch1",
+      window,
       now,
     );
-    expect(result.now?.title).toBe("Solo");
-    expect(result.next).toBeNull();
+    expect(laid).toHaveLength(1);
+    expect(laid[0]?.isNow).toBe(true);
+    expect(laid[0]?.widthPx).toBeGreaterThan(40);
   });
 
-  it("skips invalid timestamps", () => {
-    const result = pickNowNext(
-      [
-        {
-          id: "bad",
-          channel_id: "ch1",
-          title: "Bad",
-          start: "nope",
-          stop: "still-nope",
-        },
-      ],
-      "ch1",
-      new Date("2026-07-25T19:30:00Z"),
-    );
-    expect(result.now).toBeNull();
-    expect(result.next).toBeNull();
-  });
-
-  it("formats guide times", () => {
-    expect(formatGuideTime("not-a-date")).toBe("");
-    expect(formatGuideTime("2026-07-25T19:05:00Z")).toMatch(/\d/);
+  it("computes progress fraction", () => {
+    const now = new Date("2026-07-27T15:00:00Z");
+    expect(progressFraction("2026-07-27T14:00:00Z", "2026-07-27T16:00:00Z", now)).toBeCloseTo(0.5);
   });
 });

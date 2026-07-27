@@ -33,7 +33,7 @@ export function setRefreshToken(token: string | null) {
   }
 }
 
-function getProfileId(): string | null {
+export function getProfileId(): string | null {
   return storage.get(storage.KEYS.PROFILE_ID);
 }
 

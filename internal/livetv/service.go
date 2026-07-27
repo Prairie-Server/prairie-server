@@ -1224,14 +1224,19 @@ func (s *Service) StartChannelSession(ctx context.Context, channelID string, use
 	}
 	playbackID := ""
 	streamURL := channel.StreamURL
-	note := "raw HDHomeRun stream URL; playback bridge not configured"
+	// Without a playback bridge, clients play MPEG-TS via the authenticated
+	// session proxy (PublicSessionStreamPath). The handler rewrites unsafe
+	// tuner URLs before they leave the API — do not surface a "not configured"
+	// note that makes a working proxy path look broken.
+	transport := "mpegts"
+	note := ""
 	if s.playbackBridge != nil {
 		var err error
 		playbackID, streamURL, err = s.playbackBridge.StartLiveStream(ctx, channel.ID, channel.StreamURL, userID, profileID)
 		if err != nil {
 			return nil, fmt.Errorf("start playback bridge: %w", err)
 		}
-		note = ""
+		transport = "hls"
 	}
 
 	// Allocate a free tuner index, then insert. A concurrent StartChannelSession
@@ -1269,6 +1274,7 @@ func (s *Service) StartChannelSession(ctx context.Context, channelID string, use
 	session.StreamURL = streamURL
 	session.HLSURL = streamURL
 	session.Note = note
+	session.Transport = transport
 	return session, nil
 }
 

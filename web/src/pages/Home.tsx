@@ -6,6 +6,7 @@ import { LayoutDashboard } from "lucide-react";
 import HeroBanner from "@/components/HeroBanner";
 import SectionRow from "@/components/SectionRow";
 import TasteSeedBanner from "@/components/TasteSeedBanner";
+import LiveTVOnNowRow from "@/components/livetv/LiveTVOnNowRow";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { HomeSectionItemsResponse, ResolvedSection } from "@/api/types";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -200,6 +201,7 @@ export default function Home() {
             only an empty home keeps a compact brand welcome. */}
         {hasHeroSlot ? heroSlot : layout.length === 0 ? <HomeBrandHero /> : null}
         <TasteSeedBanner />
+        <LiveTVOnNowRow />
 
         {viewModel.rows.map((slot) => {
           if (slot.state === "empty") {

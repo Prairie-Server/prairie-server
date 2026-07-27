@@ -2397,6 +2397,8 @@ export interface LiveTVSessionStartResponse {
   playback_ticket: string;
   hls_url: string;
   stream_url?: string;
+  /** "mpegts" for the session proxy; "hls" when a playback bridge remuxes. */
+  transport?: "mpegts" | "hls";
   note?: string;
 }
 
