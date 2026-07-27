@@ -20,6 +20,7 @@ import {
   useStartLiveTVSession,
 } from "@/hooks/queries/useLiveTV";
 import {
+  buildGuideWindow,
   channelDisplayNumber,
   channelLabel,
   formatGuideTime,
@@ -63,9 +64,10 @@ export default function LiveTV() {
   const now = useMemo(() => new Date(nowMs), [nowMs]);
 
   const guideWindow = useMemo(() => {
+    const win = buildGuideWindow(new Date(nowMs));
     return {
-      start: new Date(nowMs - 30 * 60 * 1000).toISOString(),
-      end: new Date(nowMs + 6 * 60 * 60 * 1000).toISOString(),
+      start: new Date(win.startMs).toISOString(),
+      end: new Date(win.endMs).toISOString(),
     };
   }, [nowMs]);
 
