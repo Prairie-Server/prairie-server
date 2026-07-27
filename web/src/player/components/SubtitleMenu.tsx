@@ -59,17 +59,18 @@ export function SubtitleMenu({
   const [translateOpen, setTranslateOpen] = useState(false);
   const [aiEnabled, setAiEnabled] = useState(false);
   const [aiTranscribeEnabled, setAiTranscribeEnabled] = useState(false);
+  const [aiStatusLoaded, setAiStatusLoaded] = useState(false);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
   const sortedTracks = useMemo(() => sortSubtitlesBySource(tracks), [tracks]);
 
-  // Discover whether the server has AI subtitle translation configured, so we
-  // only surface the entry point when it can actually do something. This is a
-  // server-wide capability, so we fetch it once per session (keyed on the stable
-  // playerConfig) rather than re-checking on every file change.
+  // Discover whether the server has AI subtitle translation configured only
+  // when the subtitles menu is actually opened. Older Prairie servers may not
+  // expose this capability route yet; deferring the probe avoids a startup 404
+  // during playback for people who never open the subtitles menu.
   useEffect(() => {
-    if (!playerConfig) return;
+    if (!open || aiStatusLoaded || !playerConfig) return;
     let cancelled = false;
     playerFetch<{ enabled: boolean; transcribe_enabled?: boolean }>(
       playerConfig,
@@ -79,16 +80,18 @@ export function SubtitleMenu({
         if (cancelled) return;
         setAiEnabled(Boolean(res?.enabled));
         setAiTranscribeEnabled(Boolean(res?.transcribe_enabled));
+        setAiStatusLoaded(true);
       })
       .catch(() => {
         if (cancelled) return;
         setAiEnabled(false);
         setAiTranscribeEnabled(false);
+        setAiStatusLoaded(true);
       });
     return () => {
       cancelled = true;
     };
-  }, [playerConfig]);
+  }, [aiStatusLoaded, open, playerConfig]);
 
   const clampedDelay = useCallback(
     (ms: number) => Math.max(-DELAY_MAX_MS, Math.min(DELAY_MAX_MS, ms)),
