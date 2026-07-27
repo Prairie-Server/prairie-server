@@ -6,7 +6,7 @@ import { ArtworkImage } from "./ArtworkImage";
 describe("ArtworkImage", () => {
   beforeEach(() => {
     resetImageFormatsCacheForTests();
-    localStorage.setItem("prairie.imageFormats", "avif,webp,png");
+    localStorage.setItem("prairie.imageFormats.v2", "avif,webp,png");
   });
 
   it("renders nothing without a src", () => {
@@ -90,7 +90,7 @@ describe("ArtworkImage", () => {
 
   it("skips AVIF when the client does not advertise AVIF support", () => {
     resetImageFormatsCacheForTests();
-    localStorage.setItem("prairie.imageFormats", "webp,png");
+    localStorage.setItem("prairie.imageFormats.v2", "webp,png");
     render(<ArtworkImage src="/art/original.rev.webp" alt="Poster" />);
     expect(screen.getByRole("img", { name: "Poster" })).toHaveAttribute(
       "src",

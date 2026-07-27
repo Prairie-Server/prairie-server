@@ -1,5 +1,6 @@
-import { useState, type ImgHTMLAttributes } from "react";
+import { useSyncExternalStore, useState, type ImgHTMLAttributes } from "react";
 import { artworkCandidates, artworkSrcSet, type ArtworkFormatSources } from "@/lib/artworkUrl";
+import { getImageFormats, subscribeImageFormats } from "@/lib/imageFormats";
 
 export type ArtworkImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src" | "srcSet"> & {
   /** Canonical artwork URL (typically a .webp object key or signed URL). */
@@ -38,6 +39,10 @@ export function ArtworkImage({
   onLoad,
   ...rest
 }: ArtworkImageProps) {
+  // Re-render when one-time format detection finishes so we can switch to AVIF
+  // without waiting for a navigation.
+  useSyncExternalStore(subscribeImageFormats, getImageFormats, getImageFormats);
+
   const formats: Omit<ArtworkFormatSources, "src"> = { avif: avifSrc, png: pngSrc };
   const candidates = artworkCandidates(src, formats);
   const [failedCount, setFailedCount] = useState(0);
