@@ -12,13 +12,7 @@ interface CrewListProps {
 }
 
 /** Jobs to display, in order. Others are ignored unless none match. */
-const DISPLAY_JOBS = [
-  "Director",
-  "Writer",
-  "Producer",
-  "Creator",
-  "Executive Producer",
-] as const;
+const DISPLAY_JOBS = ["Director", "Writer", "Producer", "Creator", "Executive Producer"] as const;
 
 function normalizeJob(job: string): string {
   return job.trim().toLowerCase();
@@ -55,13 +49,8 @@ function pickCrew(crew: CrewMember[], limit: number): CrewMember[] {
  * Portrait crew rail matching CastCarousel card metrics (avoids tiny cast vs
  * oversized definition-list crew imbalance).
  */
-export default function CrewList({
-  crew,
-  limit = 16,
-  fullBleed = false,
-}: CrewListProps) {
-  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
-    useCarouselEmbla();
+export default function CrewList({ crew, limit = 16, fullBleed = false }: CrewListProps) {
+  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } = useCarouselEmbla();
 
   if (crew.length === 0) return null;
 
@@ -101,9 +90,7 @@ export default function CrewList({
             )}
           >
             {visible.map((member) => {
-              const href = member.person_id
-                ? buildPersonCatalogHref(member.person_id)
-                : null;
+              const href = member.person_id ? buildPersonCatalogHref(member.person_id) : null;
               return (
                 <li
                   key={`${member.person_id || member.name}-${member.job}`}
@@ -127,9 +114,7 @@ export default function CrewList({
             onClick={scrollNext}
             className={cn(
               "from-background/90 absolute top-0 bottom-0 z-10 flex h-11 w-11 items-center justify-center self-center bg-gradient-to-l to-transparent opacity-0 transition-opacity duration-200 group-hover/carousel:opacity-100 focus-visible:opacity-100",
-              fullBleed
-                ? "right-4 sm:right-6 lg:right-10 xl:right-12"
-                : "right-0",
+              fullBleed ? "right-4 sm:right-6 lg:right-10 xl:right-12" : "right-0",
             )}
             aria-label="Scroll right"
           >

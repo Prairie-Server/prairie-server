@@ -20,13 +20,8 @@ interface CastCarouselProps {
   fullBleed?: boolean;
 }
 
-export default function CastCarousel({
-  cast,
-  limit = 20,
-  fullBleed = false,
-}: CastCarouselProps) {
-  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
-    useCarouselEmbla();
+export default function CastCarousel({ cast, limit = 20, fullBleed = false }: CastCarouselProps) {
+  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } = useCarouselEmbla();
 
   if (cast.length === 0) return null;
 
@@ -66,14 +61,9 @@ export default function CastCarousel({
           )}
         >
           {visible.map((member) => {
-            const href = member.person_id
-              ? buildPersonCatalogHref(member.person_id)
-              : null;
+            const href = member.person_id ? buildPersonCatalogHref(member.person_id) : null;
             return (
-              <li
-                key={`${member.name}-${member.order}`}
-                className="embla__slide shrink-0"
-              >
+              <li key={`${member.name}-${member.order}`} className="embla__slide shrink-0">
                 <PersonCard
                   name={member.name}
                   subtitle={member.character}
@@ -92,9 +82,7 @@ export default function CastCarousel({
           onClick={scrollNext}
           className={cn(
             "from-background/90 absolute top-0 bottom-0 z-10 flex h-11 w-11 items-center justify-center self-center bg-gradient-to-l to-transparent opacity-0 transition-opacity duration-200 group-hover/carousel:opacity-100 focus-visible:opacity-100",
-            fullBleed
-              ? "right-4 sm:right-6 lg:right-10 xl:right-12"
-              : "right-0",
+            fullBleed ? "right-4 sm:right-6 lg:right-10 xl:right-12" : "right-0",
           )}
           aria-label="Scroll right"
         >
@@ -133,29 +121,18 @@ export function PersonCard({
         )}
       </div>
       <div className="px-0.5">
-        <div className="text-foreground truncate text-sm font-medium">
-          {name}
-        </div>
-        {subtitle ? (
-          <div className="text-muted-foreground truncate text-xs">
-            {subtitle}
-          </div>
-        ) : null}
+        <div className="text-foreground truncate text-sm font-medium">{name}</div>
+        {subtitle ? <div className="text-muted-foreground truncate text-xs">{subtitle}</div> : null}
       </div>
     </>
   );
 
   if (href) {
     return (
-      <ViewTransitionLink
-        to={href}
-        className={cn("group/person block", PERSON_CARD_WIDTH_CLASS)}
-      >
+      <ViewTransitionLink to={href} className={cn("group/person block", PERSON_CARD_WIDTH_CLASS)}>
         {inner}
       </ViewTransitionLink>
     );
   }
-  return (
-    <div className={cn("group/person", PERSON_CARD_WIDTH_CLASS)}>{inner}</div>
-  );
+  return <div className={cn("group/person", PERSON_CARD_WIDTH_CLASS)}>{inner}</div>;
 }
