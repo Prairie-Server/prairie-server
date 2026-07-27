@@ -629,8 +629,10 @@ func rewriteHLSPlaylistAuthQuery(playlist, authQuery string) string {
 		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
 			continue
 		}
-		if strings.Contains(trimmed, "://") {
-			continue // absolute URLs — leave alone
+		uri, err := url.Parse(trimmed)
+		if err != nil || uri.IsAbs() || uri.Host != "" {
+			continue // non-local URLs — leave alone
+		}
 		}
 		base := trimmed
 		existingQuery := ""
