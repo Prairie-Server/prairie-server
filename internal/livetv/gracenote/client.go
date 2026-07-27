@@ -150,17 +150,77 @@ type Event struct {
 }
 
 // Program is program metadata nested under an event.
+// Season/Episode/ReleaseYear arrive as JSON strings or numbers depending on the airing.
 type Program struct {
 	ID           string `json:"id"`
 	TMSID        string `json:"tmsId"`
 	Title        string `json:"title"`
 	ShortDesc    string `json:"shortDesc"`
-	Season       *int   `json:"season"`
-	Episode      *int   `json:"episode"`
+	Season       *int   `json:"-"`
+	Episode      *int   `json:"-"`
 	EpisodeTitle string `json:"episodeTitle"`
 	SeriesID     string `json:"seriesId"`
-	ReleaseYear  *int   `json:"releaseYear"`
-	IsGeneric    int    `json:"isGeneric"`
+	ReleaseYear  *int   `json:"-"`
+	IsGeneric    int    `json:"-"`
+}
+
+type programJSON struct {
+	ID           string  `json:"id"`
+	TMSID        string  `json:"tmsId"`
+	Title        string  `json:"title"`
+	ShortDesc    string  `json:"shortDesc"`
+	Season       flexInt `json:"season"`
+	Episode      flexInt `json:"episode"`
+	EpisodeTitle string  `json:"episodeTitle"`
+	SeriesID     string  `json:"seriesId"`
+	ReleaseYear  flexInt `json:"releaseYear"`
+	IsGeneric    flexInt `json:"isGeneric"`
+}
+
+func (p *Program) UnmarshalJSON(data []byte) error {
+	var raw programJSON
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	p.ID = raw.ID
+	p.TMSID = raw.TMSID
+	p.Title = raw.Title
+	p.ShortDesc = raw.ShortDesc
+	p.Season = raw.Season.Value
+	p.Episode = raw.Episode.Value
+	p.EpisodeTitle = raw.EpisodeTitle
+	p.SeriesID = raw.SeriesID
+	p.ReleaseYear = raw.ReleaseYear.Value
+	if raw.IsGeneric.Value != nil {
+		p.IsGeneric = *raw.IsGeneric.Value
+	}
+	return nil
+}
+
+// flexInt accepts JSON null, number, or numeric string.
+type flexInt struct {
+	Value *int
+}
+
+func (f *flexInt) UnmarshalJSON(data []byte) error {
+	f.Value = nil
+	s := strings.TrimSpace(string(data))
+	if s == "" || s == "null" {
+		return nil
+	}
+	var asInt int
+	if json.Unmarshal(data, &asInt) == nil {
+		f.Value = &asInt
+		return nil
+	}
+	var asStr string
+	if json.Unmarshal(data, &asStr) == nil {
+		asStr = strings.TrimSpace(asStr)
+		if n, err := strconv.Atoi(asStr); err == nil {
+			f.Value = &n
+		}
+	}
+	return nil
 }
 
 // Grid fetches one timespan of listings (typically 3 hours).

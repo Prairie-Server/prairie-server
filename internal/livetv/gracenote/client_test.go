@@ -101,6 +101,46 @@ func TestClientProvidersAndGrid(t *testing.T) {
 	}
 }
 
+func TestProgramFlexibleSeasonEpisode(t *testing.T) {
+	raw := []byte(`{
+		"channels": [{
+			"channelId": "1", "callSign": "TEST", "channelNo": "1.1",
+			"events": [{
+				"startTime": "2026-07-27T08:00:00Z",
+				"endTime": "2026-07-27T09:00:00Z",
+				"duration": "60",
+				"flag": [], "filter": ["filter-Drama"],
+				"program": {
+					"id": "EP1", "title": "Show", "season": "9", "episode": "5",
+					"episodeTitle": "Pilot", "seriesId": "SH1", "isGeneric": "0",
+					"releaseYear": "2024"
+				}
+			}]
+		}]
+	}`)
+	var grid GridResponse
+	if err := json.Unmarshal(raw, &grid); err != nil {
+		t.Fatalf("unmarshal: %v", err)
+	}
+	prog := grid.Channels[0].Events[0].Program
+	if prog.Season == nil || *prog.Season != 9 || prog.Episode == nil || *prog.Episode != 5 {
+		t.Fatalf("season/episode = %+v %+v", prog.Season, prog.Episode)
+	}
+	if prog.ReleaseYear == nil || *prog.ReleaseYear != 2024 || prog.IsGeneric != 0 {
+		t.Fatalf("releaseYear/isGeneric = %+v %d", prog.ReleaseYear, prog.IsGeneric)
+	}
+
+	// Numbers still decode.
+	rawNum := []byte(`{"id":"EP2","title":"X","season":2,"episode":3,"isGeneric":1}`)
+	var progNum Program
+	if err := json.Unmarshal(rawNum, &progNum); err != nil {
+		t.Fatalf("number unmarshal: %v", err)
+	}
+	if progNum.Season == nil || *progNum.Season != 2 || progNum.Episode == nil || *progNum.Episode != 3 || progNum.IsGeneric != 1 {
+		t.Fatalf("number fields = %+v", progNum)
+	}
+}
+
 func TestClientErrors(t *testing.T) {
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, `{"message":"No lineups"}`, http.StatusBadRequest)
