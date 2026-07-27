@@ -718,7 +718,7 @@ export function ServerStorageStep() {
               Image caching
             </p>
             <p className="text-muted-foreground/70 mt-0.5 text-xs">
-              Store artwork in public asset storage instead of proxying external URLs.
+              Cache artwork as WebP/AVIF/PNG variants (public S3 when configured, otherwise local storage).
             </p>
           </div>
           <Switch

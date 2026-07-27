@@ -331,6 +331,13 @@ type MetadataConfig struct {
 	CacheImages bool `yaml:"-"`
 }
 
+// ArtworkConfig holds local artwork cache settings used when public S3 is off.
+type ArtworkConfig struct {
+	// LocalDir is the filesystem root for cached WebP/AVIF/PNG variants.
+	// Default: /var/lib/prairie/artwork
+	LocalDir string `yaml:"-"`
+}
+
 // ClientIPConfig holds client IP resolution settings.
 type ClientIPConfig struct {
 	// TrustedProxies is the comma-separated CIDR list of reverse proxies
@@ -347,6 +354,7 @@ type Config struct {
 	Scanner              ScannerConfig              `yaml:"-"`
 	Matcher              MatcherConfig              `yaml:"matcher"`
 	Metadata             MetadataConfig             `yaml:"-"`
+	Artwork              ArtworkConfig              `yaml:"-"`
 	Playback             PlaybackConfig             `yaml:"playback"`
 	Redis                RedisConfig                `yaml:"redis"`
 	RateLimit            RateLimitConfig            `yaml:"rate_limiting"`

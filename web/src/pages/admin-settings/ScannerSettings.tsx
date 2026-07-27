@@ -66,9 +66,9 @@ export default function ScannerSettings() {
 
         <FieldGroup label="Metadata">
           <SettingField
-            label="Cache Images to S3"
+			label="Cache Artwork"
             type="toggle"
-            hint="Download artwork from metadata providers and store resized variants in public asset S3 storage. Private bucket + presigned URLs is fully supported."
+            hint="Download artwork from metadata providers and store resized WebP/AVIF/PNG variants. Uses public S3 when configured; otherwise stores on the local artwork volume."
             value={form.getValue("metadata.cache_images")}
             onChange={(v) => form.setValue("metadata.cache_images", v)}
           />
