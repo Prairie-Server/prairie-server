@@ -1271,6 +1271,31 @@ func TestSessionManager_CleanExpired_RespectsMaxIdle(t *testing.T) {
 	}
 }
 
+// Background artwork encoding consults HasActiveSessions to stand down while
+// someone is watching, so a live session must report true and a reaped one false.
+func TestSessionManager_HasActiveSessions(t *testing.T) {
+	sm := playback.NewSessionManager(0, 0)
+
+	if sm.HasActiveSessions() {
+		t.Fatal("HasActiveSessions() = true with no sessions, want false")
+	}
+
+	session, err := sm.StartSession(1, "prof", 100, playback.PlayTranscode, true)
+	if err != nil {
+		t.Fatalf("StartSession: %v", err)
+	}
+	if !sm.HasActiveSessions() {
+		t.Fatal("HasActiveSessions() = false with a fresh session, want true")
+	}
+
+	if err := sm.StopSession(session.ID); err != nil {
+		t.Fatalf("StopSession: %v", err)
+	}
+	if sm.HasActiveSessions() {
+		t.Fatal("HasActiveSessions() = true after stop, want false")
+	}
+}
+
 func TestSessionManager_CleanInactive_TriggersExpirationHook(t *testing.T) {
 	sm := playback.NewSessionManager(0, 0)
 
