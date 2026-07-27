@@ -103,12 +103,15 @@ jobs:
       # debt) — which looks like intermittent CI failure on large asset PRs.
       - name: Fetch PR base for merge-base lint
         if: github.event_name == 'pull_request'
+        env:
+          # Pass via env — interpolating github.base_ref into the shell is an injection risk.
+          PR_BASE_REF: ${{ github.base_ref }}
         run: |
           set -euo pipefail
-          git fetch --no-tags --depth=100 origin "${{ github.base_ref }}"
-          if ! git merge-base --is-ancestor "origin/${{ github.base_ref }}" HEAD 2>/dev/null \
-            && ! git merge-base "HEAD" "origin/${{ github.base_ref }}" >/dev/null 2>&1; then
-            git fetch --no-tags --deepen=500 origin "${{ github.base_ref }}"
+          git fetch --no-tags --depth=100 origin "${PR_BASE_REF}"
+          if ! git merge-base --is-ancestor "origin/${PR_BASE_REF}" HEAD 2>/dev/null \
+            && ! git merge-base "HEAD" "origin/${PR_BASE_REF}" >/dev/null 2>&1; then
+            git fetch --no-tags --deepen=500 origin "${PR_BASE_REF}"
             git fetch --no-tags --deepen=500 origin "${{ github.sha }}" || true
           fi
 
@@ -120,6 +123,7 @@ jobs:
 
       - name: golangci-lint
         env:
+          PR_BASE_REF: ${{ github.base_ref }}
           # PRs lint changed packages only; main/dispatch keep a full-module pass.
           CI_GO_LINT_FULL: ${{ github.event_name == 'pull_request' && '0' || '1' }}
           CI_GO_LINT_SHARD: ${{ matrix.shard }}
@@ -130,7 +134,7 @@ jobs:
           set -euo pipefail
           chmod +x scripts/ci-go-lint.sh scripts/ci-go-lint-packages.sh
           if [[ "${{ github.event_name }}" == "pull_request" ]]; then
-            ./scripts/ci-go-lint.sh "origin/${{ github.base_ref }}"
+            ./scripts/ci-go-lint.sh "origin/${PR_BASE_REF}"
           else
             ./scripts/ci-go-lint.sh
           fi
@@ -204,19 +208,20 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          cache: true
+          # Own the build/mod cache below so restore-keys can reuse dependency
+          # objects across jellycompat source edits (tests ~3s; cold compile ~1m).
+          cache: false
 
-      # setup-go already caches modules; keep a go.sum-keyed build cache with
-      # broad restore-keys so dependency objects survive across PRs even when
-      # jellycompat sources change (tests are ~3s; cold compile is ~40–60s).
-      - name: Cache Go build
+      - name: Cache Go build and modules
         uses: actions/cache@v4
         with:
-          path: ~/.cache/go-build
-          key: ${{ runner.os }}-jellycompat-gobuild-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/jellycompat/**/*.go') }}
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-jellycompat-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/jellycompat/**/*.go') }}
           restore-keys: |
-            ${{ runner.os }}-jellycompat-gobuild-${{ hashFiles('go.sum') }}-
-            ${{ runner.os }}-jellycompat-gobuild-
+            ${{ runner.os }}-jellycompat-${{ hashFiles('go.sum') }}-
+            ${{ runner.os }}-jellycompat-
 
       - name: Run jellycompat tests
         # -vet=off: golangci already covers vet/staticcheck; vet-during-test
@@ -264,6 +269,16 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Stub web/dist for embed
+        run: |
+          mkdir -p web/dist
+          printf '%s\n' '<!doctype html><title>prairie</title>' > web/dist/index.html
+
+      # Scoped lint can miss breakage in unchanged importers; a full compile
+      # catches that without re-running the whole test suite.
+      - name: Compile all packages
+        run: go build -o /dev/null ./...
 
       - name: Run unit tests with coverage
         run: |
@@ -324,15 +339,19 @@ jobs:
           "$(go env GOPATH)/bin/govulncheck" ./...
 
   # Kept as a named check for branch-protection compatibility; work lives in
-  # go-test-coverage. Skipped on non-Go PRs along with that job.
+  # go-test-coverage. Must not treat a failed coverage job as a successful skip.
   go-vulncheck:
     name: Go vulnerability check
-    needs: go-test-coverage
-    if: needs.go-test-coverage.result == 'success'
+    needs: [changes, go-test-coverage]
+    if: always() && needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Already verified in Go tests + coverage
-        run: echo "govulncheck ran in the Go tests + coverage job."
+      - name: Require Go tests + coverage (includes govulncheck)
+        run: |
+          set -euo pipefail
+          result="${{ needs.go-test-coverage.result }}"
+          echo "go-test-coverage result: ${result}"
+          test "$result" = "success"
 
   web-test-coverage:
     name: Web tests (${{ matrix.shard }}/4)
@@ -389,12 +408,20 @@ jobs:
   web-coverage-report:
     name: Web coverage gate
     needs: [changes, web-test-coverage]
-    if: always() && needs.changes.outputs.web == 'true' && needs.web-test-coverage.result == 'success'
+    # Run whenever web changed so a failed shard cannot skip this required check.
+    if: always() && needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: web
     steps:
+      - name: Require web test shards
+        run: |
+          set -euo pipefail
+          result="${{ needs.web-test-coverage.result }}"
+          echo "web-test-coverage result: ${result}"
+          test "$result" = "success"
+
       - name: Check out sources
         uses: actions/checkout@v7
         with:

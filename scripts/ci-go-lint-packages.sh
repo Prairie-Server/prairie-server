@@ -10,9 +10,14 @@
 #   CI_GO_LINT_SHARDS=n   shard count (optional; with SHARD, emit every n-th pkg)
 #
 # On PRs, prefers packages that contain changed .go files so analysis stays
-# proportional to the diff. Falls back to ./... when the module graph, lint
-# config, or a large surface area changed. Workflow-only edits do not force a
-# full-module lint (the job may still run via path filters, but exits quickly).
+# proportional to the diff. Falls back to a full-module package list when the
+# module graph, lint config, or a large surface area changed. Workflow-only
+# edits do not force a full-module lint (the job may still run via path
+# filters, but exits quickly).
+#
+# Importer compile coverage for unchanged dependents lives in CI as
+# `go build ./...` on the Go tests + coverage job — scoped lint alone cannot
+# see reverse dependents without ballooning analysis time.
 
 set -euo pipefail
 
