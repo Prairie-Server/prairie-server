@@ -37,7 +37,9 @@ func NewAVIFSiblingReconciler(pool *pgxpool.Pool, s3 ArtworkObjectChecker) *AVIF
 }
 
 // DiscoverMissing scans catalog artwork surfaces for cached WebP paths whose
-// .avif sibling is absent. Does not reset path columns — only enqueues AVIF work.
+// display-ladder AVIF siblings are absent. Original stays WebP-only (no
+// original.avif), so coverage is judged by w300/w500/… AVIFs. Does not reset
+// path columns — only enqueues AVIF work.
 func (r *AVIFSiblingReconciler) DiscoverMissing(ctx context.Context, limit int) ([]AVIFBackfillEnqueueInput, error) {
 	if r == nil || r.pool == nil || r.s3 == nil || limit <= 0 {
 		return nil, nil
@@ -53,18 +55,22 @@ func (r *AVIFSiblingReconciler) DiscoverMissing(ctx context.Context, limit int) 
 	type candidate struct {
 		path      string
 		imageType string
-		avifKey   string
+		avifKeys  []string
 	}
 	candidates := make([]candidate, 0, len(paths))
 	for _, p := range paths {
-		avifKey := artworkkey.WebPAVIFSibling(p)
-		if avifKey == "" {
+		if artworkkey.WebPAVIFSibling(p) == "" {
+			continue
+		}
+		imageType := artworkkey.ImageTypeFromPath(p)
+		avifKeys := displayAVIFKeys(p, imageType)
+		if len(avifKeys) == 0 {
 			continue
 		}
 		candidates = append(candidates, candidate{
 			path:      p,
-			imageType: artworkkey.ImageTypeFromPath(p),
-			avifKey:   avifKey,
+			imageType: imageType,
+			avifKeys:  avifKeys,
 		})
 	}
 
@@ -85,18 +91,21 @@ func (r *AVIFSiblingReconciler) DiscoverMissing(ctx context.Context, limit int) 
 		go func() {
 			defer wg.Done()
 			defer func() { <-sem }()
-			exists, err := r.s3.ObjectExists(ctx, r.s3.Bucket(), c.avifKey)
-			if err != nil {
-				results[i] = result{err: err}
+			for _, avifKey := range c.avifKeys {
+				exists, err := r.s3.ObjectExists(ctx, r.s3.Bucket(), avifKey)
+				if err != nil {
+					results[i] = result{err: err}
+					return
+				}
+				if exists {
+					continue
+				}
+				results[i] = result{in: AVIFBackfillEnqueueInput{
+					OriginalPath: c.path,
+					ImageType:    c.imageType,
+				}}
 				return
 			}
-			if exists {
-				return
-			}
-			results[i] = result{in: AVIFBackfillEnqueueInput{
-				OriginalPath: c.path,
-				ImageType:    c.imageType,
-			}}
 		}()
 	}
 	wg.Wait()
@@ -115,6 +124,23 @@ func (r *AVIFSiblingReconciler) DiscoverMissing(ctx context.Context, limit int) 
 		}
 	}
 	return missing, nil
+}
+
+// displayAVIFKeys returns AVIF object keys for the display ladder (everything
+// except the original WebP). Matches GenerateAVIFSiblings --no-avif-keys original.
+func displayAVIFKeys(originalPath, imageType string) []string {
+	names := artworkkey.VariantNames(imageType)
+	keys := make([]string, 0, len(names))
+	for _, name := range names {
+		if name == artworkkey.OriginalVariant {
+			continue
+		}
+		webpKey := artworkkey.Variant(originalPath, name)
+		if avifKey := artworkkey.WebPAVIFSibling(webpKey); avifKey != "" {
+			keys = append(keys, avifKey)
+		}
+	}
+	return keys
 }
 
 func (r *AVIFSiblingReconciler) listCachedWebPOriginals(ctx context.Context, limit int) ([]string, error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -70,6 +71,7 @@ type AVIFBackfillProcessor struct {
 	pngClean LegacyPNGCleaner
 	logger   *slog.Logger
 	enabled  atomic.Bool
+	workers  atomic.Int32
 
 	discoveryMu   sync.Mutex
 	lastDiscovery time.Time
@@ -82,7 +84,29 @@ func NewAVIFBackfillProcessor(jobs AVIFBackfillJobStore, ensurer AVIFSiblingEnsu
 		logger:  slog.Default(),
 	}
 	p.enabled.Store(true)
+	p.workers.Store(int32(ResolveAVIFBackfillWorkers(0)))
 	return p
+}
+
+// SetWorkers updates the configured AVIF encode concurrency. Values <= 0 mean
+// runtime.NumCPU(). Hot-reloads without interrupting in-flight claims.
+func (p *AVIFBackfillProcessor) SetWorkers(configured int) {
+	if p == nil {
+		return
+	}
+	p.workers.Store(int32(ResolveAVIFBackfillWorkers(configured)))
+}
+
+// Workers returns the effective AVIF backfill concurrency.
+func (p *AVIFBackfillProcessor) Workers() int {
+	if p == nil {
+		return ResolveAVIFBackfillWorkers(0)
+	}
+	n := int(p.workers.Load())
+	if n < 1 {
+		return ResolveAVIFBackfillWorkers(0)
+	}
+	return n
 }
 
 func (p *AVIFBackfillProcessor) SetDiscoverer(d AVIFMissingDiscoverer) {
@@ -111,7 +135,7 @@ func (p *AVIFBackfillProcessor) RunUntilIdle(ctx context.Context, concurrency in
 		return stats, nil
 	}
 	if concurrency <= 0 {
-		concurrency = avifBackfillConcurrencyDefault()
+		concurrency = p.Workers()
 	}
 	if maxRuntime <= 0 {
 		maxRuntime = avifBackfillMaxRuntime
@@ -276,5 +300,19 @@ func (p *AVIFBackfillProcessor) progressPercent(ctx context.Context) float64 {
 }
 
 func avifBackfillConcurrencyDefault() int {
-	return 2
+	return ResolveAVIFBackfillWorkers(0)
+}
+
+// ResolveAVIFBackfillWorkers maps a configured worker count to a concrete
+// concurrency. Values <= 0 mean runtime.NumCPU() so AVIF backfill can saturate
+// the host once the WebP queue drains.
+func ResolveAVIFBackfillWorkers(configured int) int {
+	if configured > 0 {
+		return configured
+	}
+	n := runtime.NumCPU()
+	if n < 1 {
+		return 1
+	}
+	return n
 }

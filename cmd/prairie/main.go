@@ -1422,6 +1422,8 @@ func main() {
 				metadataImageCacheProcessor.SetImagePrefixDeleter(deps.ArtworkLocal)
 			}
 			avifBackfillProcessor = metadata.NewAVIFBackfillProcessor(avifBackfillJobs, imageCacher)
+			avifBackfillProcessor.SetWorkers(cfg.Metadata.AVIFBackfillWorkers)
+			imageCacher.SetAVIFBackfillConcurrency(metadata.ResolveAVIFBackfillWorkers(cfg.Metadata.AVIFBackfillWorkers))
 			if artworkChecker := artworkObjectChecker(deps); artworkChecker != nil {
 				avifBackfillProcessor.SetDiscoverer(metadata.NewAVIFSiblingReconciler(deps.DB, artworkChecker))
 			}
@@ -1436,6 +1438,8 @@ func main() {
 				metadataService.SetAutoCacheImages(updated.Metadata.CacheImages)
 				metadataImageCacheProcessor.SetEnabled(updated.Metadata.CacheImages)
 				avifBackfillProcessor.SetEnabled(updated.Metadata.CacheImages)
+				avifBackfillProcessor.SetWorkers(updated.Metadata.AVIFBackfillWorkers)
+				imageCacher.SetAVIFBackfillConcurrency(metadata.ResolveAVIFBackfillWorkers(updated.Metadata.AVIFBackfillWorkers))
 				if updated.Metadata.CacheImages && !wasEnabled {
 					// Enabling caching must backfill existing item posters, not
 					// wait for the next match/refresh of each title.

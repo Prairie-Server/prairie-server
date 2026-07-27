@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/prairie-server/prairie-server/internal/artworkkey"
@@ -108,20 +109,23 @@ type Cacher struct {
 	enforcePublicURLs bool
 
 	// AVIF backfill: WebP publishes first so the library is browsable; AVIF
-	// siblings land asynchronously on a low-priority semaphore. When avifJobs
-	// is set the work is also persisted so restarts can reclaim it.
-	avifSem chan struct{}
-	avifWG  sync.WaitGroup
+	// siblings land asynchronously. When avifJobs is set the work is also
+	// persisted so restarts can reclaim it. avifWorkers caps in-flight eager
+	// encodes (0 = runtime.NumCPU).
+	avifWorkers atomic.Int32
+	avifCur     atomic.Int32
+	avifWG      sync.WaitGroup
 }
 
 // New creates a new Cacher backed by the given ObjectPutter.
 func New(s3 ObjectPutter) *Cacher {
-	return &Cacher{
+	c := &Cacher{
 		s3:                s3,
 		httpClient:        newSecureHTTPClient(),
 		enforcePublicURLs: true,
-		avifSem:           make(chan struct{}, avifBackfillConcurrency()),
 	}
+	c.avifWorkers.Store(int32(avifBackfillConcurrency()))
+	return c
 }
 
 // SetArtworkRevisionTracker wires durable revision lifecycle tracking. The
@@ -140,15 +144,28 @@ func (c *Cacher) SetAVIFBackfillStore(store AVIFBackfillStore) {
 	}
 }
 
+// SetAVIFBackfillConcurrency sets the eager in-process AVIF encode concurrency.
+// Values <= 0 mean runtime.NumCPU(). Hot-reloads without dropping in-flight work.
+func (c *Cacher) SetAVIFBackfillConcurrency(n int) {
+	if c == nil {
+		return
+	}
+	if n <= 0 {
+		n = avifBackfillConcurrency()
+	}
+	c.avifWorkers.Store(int32(n))
+}
+
 func newWithHTTPClient(s3 ObjectPutter, client *http.Client) *Cacher {
 	if client == nil {
 		client = http.DefaultClient
 	}
-	return &Cacher{
+	c := &Cacher{
 		s3:         s3,
 		httpClient: client,
-		avifSem:    make(chan struct{}, avifBackfillConcurrency()),
 	}
+	c.avifWorkers.Store(int32(avifBackfillConcurrency()))
+	return c
 }
 
 // WaitAVIFBackfill blocks until deferred AVIF sibling uploads finish. Tests
@@ -181,14 +198,37 @@ func (c *Cacher) WaitAVIFBackfillContext(ctx context.Context) error {
 	}
 }
 
-// avifBackfillConcurrency caps deferred AVIF encodes below the main WASM
-// processor so WebP-first publishes stay responsive under load.
+// avifBackfillConcurrency is the default eager AVIF worker count: one per CPU
+// so deferred encodes saturate the host once the WebP publish path is idle.
 func avifBackfillConcurrency() int {
-	n := runtime.NumCPU() / 2
+	n := runtime.NumCPU()
 	if n < 1 {
 		return 1
 	}
 	return n
+}
+
+func (c *Cacher) acquireAVIFSlot() {
+	for {
+		max := c.avifWorkers.Load()
+		if max < 1 {
+			max = 1
+		}
+		for {
+			cur := c.avifCur.Load()
+			if cur >= max {
+				break
+			}
+			if c.avifCur.CompareAndSwap(cur, cur+1) {
+				return
+			}
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
+func (c *Cacher) releaseAVIFSlot() {
+	c.avifCur.Add(-1)
 }
 
 // CacheImage implements metadata.ImageCacher using the internal Cache method.
@@ -379,10 +419,8 @@ func (c *Cacher) scheduleAVIFBackfill(ctx context.Context, data []byte, widths [
 	c.avifWG.Add(1)
 	go func() {
 		defer c.avifWG.Done()
-		if c.avifSem != nil {
-			c.avifSem <- struct{}{}
-			defer func() { <-c.avifSem }()
-		}
+		c.acquireAVIFSlot()
+		defer c.releaseAVIFSlot()
 
 		workerID := "eager-avif"
 		bg := context.Background()
@@ -610,11 +648,16 @@ func (c *Cacher) trackRevision(ctx context.Context, imageType metadata.ImageType
 		return nil
 	}
 	originalPath := variantPaths[artworkkey.OriginalVariant]
-	// Track WebP + AVIF keys. PNG siblings are no longer generated; ObjectKeys
-	// still lists legacy PNG for GC of older revisions.
+	// Track WebP + AVIF keys for the display ladder. PNG siblings are no longer
+	// generated; ObjectKeys still lists legacy PNG for GC of older revisions.
+	// original.avif is intentionally omitted: GenerateAVIFSiblings skips AVIF
+	// for the original key (clients fall through to WebP).
 	keys := make([]string, 0, len(variantPaths)*2)
-	for _, key := range variantPaths {
+	for name, key := range variantPaths {
 		keys = append(keys, key)
+		if name == artworkkey.OriginalVariant {
+			continue
+		}
 		if avifKey := artworkkey.WebPAVIFSibling(key); avifKey != "" {
 			keys = append(keys, avifKey)
 		}

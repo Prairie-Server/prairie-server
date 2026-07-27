@@ -11,12 +11,12 @@ import (
 
 const (
 	backfillAVIFSiblingsIntervalMs = int64(2 * 60 * 1000)
-	backfillAVIFSiblingsWorkers    = 2
 	backfillAVIFSiblingsMaxRuntime = 8 * time.Minute
 )
 
 type AVIFBackfillRunner interface {
 	RunUntilIdle(ctx context.Context, concurrency int, maxRuntime time.Duration, onProgress func(float64, string)) (metadata.AVIFBackfillStats, error)
+	Workers() int
 }
 
 type BackfillAVIFSiblingsTask struct {
@@ -49,7 +49,8 @@ func (t *BackfillAVIFSiblingsTask) Execute(ctx context.Context, progress taskman
 		progress.Report(100, "AVIF backfill is not configured")
 		return nil
 	}
-	stats, err := t.runner.RunUntilIdle(ctx, backfillAVIFSiblingsWorkers, backfillAVIFSiblingsMaxRuntime, progress.Report)
+	workers := t.runner.Workers()
+	stats, err := t.runner.RunUntilIdle(ctx, workers, backfillAVIFSiblingsMaxRuntime, progress.Report)
 	if err != nil {
 		return fmt.Errorf("backfilling AVIF siblings: %w", err)
 	}

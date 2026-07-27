@@ -28,12 +28,13 @@ resizes, center-crops squares, and encodes WebP + optional AVIF/PNG siblings
 ```sh
 # from repository root
 rustup target add wasm32-wasip1
-cargo build --release --target wasm32-wasip1 --manifest-path tools/imageutil-wasm/Cargo.toml
+# SIMD accelerates rav1e inside wazero (Core Features V2 enables simd128).
+RUSTFLAGS="-C target-feature=+simd128" \
+  cargo build --release --target wasm32-wasip1 --manifest-path tools/imageutil-wasm/Cargo.toml
 cp tools/imageutil-wasm/target/wasm32-wasip1/release/imageutil-wasm.wasm \
   internal/imageutil/imageutil.wasm
 sha256sum internal/imageutil/imageutil.wasm | tee internal/imageutil/imageutil.wasm.sha256
 ```
-
 Or use the Docker builder (pinned Rust, no host toolchain required):
 
 ```sh
@@ -66,11 +67,13 @@ imageutil-wasm --mode variants|square-variants|normalize-png \
   --input /in/src.bin --outdir /out \
   [--widths 500,300] [--sizes 512,256] \
   [--quality 90] [--avif-speed 10] [--max-original 1920] [--max-dim 100] \
-  [--formats webp,avif]
+  [--formats webp,avif] [--no-avif-keys original]
 ```
 
 `--avif-speed` is the rav1e preset (1..=10; 10 = fastest). Go passes
-`avifSpeed=10` by default.
+`avifSpeed=10` by default. `--no-avif-keys` skips AVIF for listed variant keys
+while still writing WebP; `GenerateAVIFSiblings` passes `original` so only the
+display ladder (w300/w500/…) is encoded as AVIF.
 
 Prints a JSON manifest on stdout. `ext` stays `.webp` (canonical cache key);
 AVIF (and optional PNG) siblings are listed per variant:
