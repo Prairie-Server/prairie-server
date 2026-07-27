@@ -41,15 +41,12 @@ func (h *LiveTVHandler) HandleListTuners(w http.ResponseWriter, r *http.Request)
 }
 
 func (h *LiveTVHandler) HandleAddTuner(w http.ResponseWriter, r *http.Request) {
-	var body struct {
-		DiscoverURL string `json:"discover_url"`
-		DeviceID    string `json:"device_id"`
-	}
+	var body livetv.AddTunerInput
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_body", "invalid JSON body")
 		return
 	}
-	tuner, err := h.service.AddTuner(r.Context(), body.DiscoverURL, body.DeviceID)
+	tuner, err := h.service.AddTuner(r.Context(), body)
 	if err != nil {
 		writeLiveTVError(w, err)
 		return

@@ -247,38 +247,47 @@ func coalesceTrimmed(values ...string) string {
 	return ""
 }
 
-func (s *Service) AddTuner(ctx context.Context, discoverURL, deviceID string) (*Tuner, error) {
+func (s *Service) AddTuner(ctx context.Context, in AddTunerInput) (*Tuner, error) {
 	if err := s.requireStore(); err != nil {
 		return nil, err
 	}
 	if s.hdhr == nil {
 		return nil, ErrNotConfigured
 	}
-	discoverURL = strings.TrimSpace(discoverURL)
-	deviceID = strings.TrimSpace(deviceID)
-	switch {
-	case discoverURL != "":
-		if err := ValidateMediaFetchURL(discoverURL); err != nil {
-			return nil, err
-		}
-	case strings.HasPrefix(deviceID, "http://"), strings.HasPrefix(deviceID, "https://"):
-		if err := ValidateMediaFetchURL(deviceID); err != nil {
-			return nil, err
-		}
-	case deviceID != "":
-		if err := ValidateMediaFetchURL("http://" + deviceID + "/discover.json"); err != nil {
-			return nil, err
-		}
+	raw := coalesceTrimmed(in.URL, in.DiscoverURL, in.DeviceID)
+	if raw == "" {
+		return nil, fmt.Errorf("%w: url is required", ErrInvalidArgument)
 	}
-	info, err := s.hdhr.Discover(ctx, discoverURL, deviceID)
-	if err != nil {
-		return nil, fmt.Errorf("discover hdhomerun: %w", err)
+
+	endpoints := hdhomerun.ProbeCandidateURLs(raw)
+	if len(endpoints) == 0 {
+		return nil, fmt.Errorf("%w: invalid url", ErrInvalidArgument)
+	}
+
+	var (
+		info        *hdhomerun.DeviceInfo
+		discoverURL string
+		lastErr     error
+	)
+	for _, endpoint := range endpoints {
+		if err := ValidateMediaFetchURL(endpoint); err != nil {
+			lastErr = err
+			continue
+		}
+		discovered, err := s.hdhr.Discover(ctx, endpoint, "")
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		info = discovered
+		discoverURL = endpoint
+		break
+	}
+	if info == nil {
+		return nil, fmt.Errorf("discover hdhomerun: %w", lastErr)
 	}
 	if strings.TrimSpace(info.DeviceID) == "" {
 		return nil, fmt.Errorf("%w: device_id is required", ErrInvalidArgument)
-	}
-	if discoverURL == "" {
-		discoverURL = hdhomerun.DiscoverURLForBase(info.BaseURL)
 	}
 	tuner, err := s.store.CreateTuner(ctx, &Tuner{
 		Type:        TunerTypeHDHomeRun,

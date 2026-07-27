@@ -39,6 +39,16 @@ type DiscoverTunersRequest struct {
 	ProbeURLs []string `json:"probe_urls,omitempty"`
 }
 
+// AddTunerInput adds an HDHomeRun-compatible tuner from a single address.
+// Prefer URL. DiscoverURL and DeviceID remain accepted as legacy aliases for
+// the same address (base URL, host, or discover.json path) — not the
+// SiliconDust hardware id returned by discover.json.
+type AddTunerInput struct {
+	URL         string `json:"url"`
+	DiscoverURL string `json:"discover_url"`
+	DeviceID    string `json:"device_id"`
+}
+
 type DiscoverTunersResult struct {
 	Candidates []DiscoveredTuner `json:"candidates"`
 	Notes      []string          `json:"notes,omitempty"`

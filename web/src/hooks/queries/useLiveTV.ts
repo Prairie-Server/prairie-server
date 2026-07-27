@@ -42,7 +42,7 @@ export function useDiscoverLiveTVTuners() {
 export function useAddLiveTVTuner() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body: { discover_url?: string; device_id?: string }) =>
+    mutationFn: (body: { url?: string; discover_url?: string; device_id?: string }) =>
       api<LiveTVTuner>("/livetv/tuners", {
         method: "POST",
         body: JSON.stringify(body),

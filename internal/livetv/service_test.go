@@ -17,6 +17,56 @@ import (
 
 var errStoreBoom = errors.New("store boom")
 
+func TestAddTunerAcceptsLegacyAliases(t *testing.T) {
+	allowLoopbackMediaFetch(t)
+	mux := http.NewServeMux()
+	srv := httptest.NewServer(mux)
+	defer srv.Close()
+	mux.HandleFunc("/discover.json", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"DeviceID":"legacy-1","BaseURL":"` + srv.URL + `","TunerCount":1}`))
+	})
+	mux.HandleFunc("/lineup.json", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`[]`))
+	})
+
+	svc := NewServiceWithStore(newMemoryStore())
+	svc.SetHDHomeRunClient(hdhomerun.NewClient(srv.Client()))
+
+	tuner, err := svc.AddTuner(context.Background(), AddTunerInput{DiscoverURL: srv.URL + "/discover.json"})
+	if err != nil {
+		t.Fatalf("legacy discover_url: %v", err)
+	}
+	if tuner.DeviceID != "legacy-1" {
+		t.Fatalf("DeviceID = %q", tuner.DeviceID)
+	}
+
+	mux2 := http.NewServeMux()
+	srv2 := httptest.NewServer(mux2)
+	defer srv2.Close()
+	mux2.HandleFunc("/discover.json", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"DeviceID":"legacy-2","BaseURL":"` + srv2.URL + `","TunerCount":1}`))
+	})
+	mux2.HandleFunc("/lineup.json", func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`[]`))
+	})
+	svc.SetHDHomeRunClient(hdhomerun.NewClient(srv2.Client()))
+	host := strings.TrimPrefix(srv2.URL, "http://")
+	tuner, err = svc.AddTuner(context.Background(), AddTunerInput{DeviceID: host})
+	if err != nil {
+		t.Fatalf("legacy device_id host: %v", err)
+	}
+	if tuner.DeviceID != "legacy-2" {
+		t.Fatalf("DeviceID = %q", tuner.DeviceID)
+	}
+
+	if _, err := svc.AddTuner(context.Background(), AddTunerInput{}); !errors.Is(err, ErrInvalidArgument) {
+		t.Fatalf("empty input: %v", err)
+	}
+	if _, err := svc.AddTuner(context.Background(), AddTunerInput{URL: "://"}); !errors.Is(err, ErrInvalidArgument) {
+		t.Fatalf("invalid url: %v", err)
+	}
+}
+
 func TestServiceAddTunerScansLineup(t *testing.T) {
 	allowLoopbackMediaFetch(t)
 	mux := http.NewServeMux()
@@ -34,12 +84,18 @@ func TestServiceAddTunerScansLineup(t *testing.T) {
 	svc := NewServiceWithStore(store)
 	svc.SetHDHomeRunClient(hdhomerun.NewClient(srv.Client()))
 
-	tuner, err := svc.AddTuner(context.Background(), srv.URL+"/discover.json", "")
+	tuner, err := svc.AddTuner(context.Background(), AddTunerInput{URL: srv.URL})
 	if err != nil {
 		t.Fatalf("AddTuner() error = %v", err)
 	}
 	if tuner == nil || tuner.DeviceID != "hdhr-1" || tuner.ChannelCount != 1 {
 		t.Fatalf("unexpected tuner: %+v", tuner)
+	}
+	if tuner.BaseURL != srv.URL {
+		t.Fatalf("BaseURL = %q, want %q", tuner.BaseURL, srv.URL)
+	}
+	if !strings.HasSuffix(tuner.DiscoverURL, "/discover.json") {
+		t.Fatalf("DiscoverURL = %q, want .../discover.json", tuner.DiscoverURL)
 	}
 	channels, err := svc.ListChannels(context.Background(), tuner.ID)
 	if err != nil {
@@ -788,7 +844,7 @@ func TestCreateGuideSourceInvalidType(t *testing.T) {
 
 func TestAddTunerRequiresConfiguredService(t *testing.T) {
 	svc := NewServiceWithStore(nil)
-	_, err := svc.AddTuner(context.Background(), "http://x", "")
+	_, err := svc.AddTuner(context.Background(), AddTunerInput{URL: "http://x"})
 	if !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("expected ErrNotConfigured, got %v", err)
 	}
@@ -806,7 +862,7 @@ func TestServiceStoreErrorBranches(t *testing.T) {
 			return &hdhomerun.DeviceInfo{DeviceID: "D1", BaseURL: "http://192.168.1.50", TunerCount: 1}, nil
 		},
 	})
-	if _, err := svc.AddTuner(context.Background(), "http://192.168.1.50/discover.json", ""); !errors.Is(err, errStoreBoom) {
+	if _, err := svc.AddTuner(context.Background(), AddTunerInput{URL: "http://192.168.1.50"}); !errors.Is(err, errStoreBoom) {
 		t.Fatalf("CreateTuner error = %v", err)
 	}
 

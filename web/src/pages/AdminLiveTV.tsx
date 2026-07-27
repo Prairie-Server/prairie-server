@@ -44,22 +44,17 @@ function TunersTab() {
   const discoverTuners = useDiscoverLiveTVTuners();
   const scanTuner = useScanLiveTVTuner();
   const deleteTuner = useDeleteLiveTVTuner();
-  const [discoverURL, setDiscoverURL] = useState("");
-  const [deviceID, setDeviceID] = useState("");
+  const [tunerURL, setTunerURL] = useState("");
   const [probeURL, setProbeURL] = useState("");
   const [candidates, setCandidates] = useState<LiveTVDiscoveredTuner[]>([]);
   const [discoverNotes, setDiscoverNotes] = useState<string[]>([]);
 
   function submit() {
     addTuner.mutate(
-      {
-        discover_url: discoverURL.trim() || undefined,
-        device_id: deviceID.trim() || undefined,
-      },
+      { url: tunerURL.trim() },
       {
         onSuccess: () => {
-          setDiscoverURL("");
-          setDeviceID("");
+          setTunerURL("");
         },
       },
     );
@@ -77,6 +72,25 @@ function TunersTab() {
         onSuccess: (data) => {
           setCandidates(data.candidates ?? []);
           setDiscoverNotes(data.notes ?? []);
+        },
+      },
+    );
+  }
+
+  function addCandidate(c: LiveTVDiscoveredTuner) {
+    const url = c.base_url || c.discover_url;
+    if (!url) return;
+    addTuner.mutate(
+      { url },
+      {
+        onSuccess: () => {
+          setCandidates((prev) =>
+            prev.map((row) =>
+              row.device_id === c.device_id && row.base_url === c.base_url
+                ? { ...row, already_added: true }
+                : row,
+            ),
+          );
         },
       },
     );
@@ -130,7 +144,7 @@ function TunersTab() {
           <ul className="divide-border divide-y border-y">
             {candidates.map((c) => (
               <li
-                key={`${c.device_id}-${c.discover_url}`}
+                key={`${c.device_id}-${c.base_url || c.discover_url}`}
                 className="flex flex-wrap items-center justify-between gap-3 py-3"
               >
                 <div className="min-w-0 space-y-1">
@@ -146,29 +160,16 @@ function TunersTab() {
                     {c.already_added ? <Badge>Added</Badge> : null}
                   </div>
                   <p className="text-muted-foreground truncate text-xs">
-                    {c.device_id}
-                    {c.base_url ? ` · ${c.base_url}` : ""}
+                    {c.base_url || c.discover_url}
+                    {c.device_id ? ` · ${c.device_id}` : ""}
                   </p>
                 </div>
                 <Button
                   size="sm"
-                  disabled={c.already_added || addTuner.isPending || !c.discover_url}
-                  onClick={() =>
-                    addTuner.mutate(
-                      { discover_url: c.discover_url },
-                      {
-                        onSuccess: () => {
-                          setCandidates((prev) =>
-                            prev.map((row) =>
-                              row.discover_url === c.discover_url
-                                ? { ...row, already_added: true }
-                                : row,
-                            ),
-                          );
-                        },
-                      },
-                    )
+                  disabled={
+                    c.already_added || addTuner.isPending || !(c.base_url || c.discover_url)
                   }
+                  onClick={() => addCandidate(c)}
                 >
                   <Plus />
                   Add
@@ -181,30 +182,20 @@ function TunersTab() {
 
       <div className="max-w-xl space-y-4">
         <p className="text-muted-foreground text-sm">
-          Or add manually by discover URL (preferred) or device host / ID.
+          Or add manually with a tuner base URL or host. Prairie probes{" "}
+          <code className="text-xs">discover.json</code> (including Dispatcharr{" "}
+          <code className="text-xs">/hdhr/</code>) and stores the device identity from the response.
         </p>
         <div className="space-y-1.5">
-          <Label htmlFor="discover-url">Discover URL</Label>
+          <Label htmlFor="tuner-url">Tuner URL</Label>
           <Input
-            id="discover-url"
-            placeholder="http://192.168.1.50/discover.json"
-            value={discoverURL}
-            onChange={(e) => setDiscoverURL(e.target.value)}
+            id="tuner-url"
+            placeholder="http://192.168.1.50 or http://dispatcharr.local:9191"
+            value={tunerURL}
+            onChange={(e) => setTunerURL(e.target.value)}
           />
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="device-id">Device ID / host (optional)</Label>
-          <Input
-            id="device-id"
-            placeholder="ABCDEF01 or 192.168.1.50"
-            value={deviceID}
-            onChange={(e) => setDeviceID(e.target.value)}
-          />
-        </div>
-        <Button
-          onClick={submit}
-          disabled={addTuner.isPending || (!discoverURL.trim() && !deviceID.trim())}
-        >
+        <Button onClick={submit} disabled={addTuner.isPending || !tunerURL.trim()}>
           <Plus />
           {addTuner.isPending ? "Adding…" : "Add tuner"}
         </Button>
@@ -225,8 +216,8 @@ function TunersTab() {
                   <Badge variant="outline">{tuner.channel_count} channels</Badge>
                 </div>
                 <p className="text-muted-foreground truncate text-xs">
-                  {tuner.device_id}
-                  {tuner.base_url ? ` · ${tuner.base_url}` : ""}
+                  {tuner.base_url || tuner.device_id}
+                  {tuner.base_url && tuner.device_id ? ` · ${tuner.device_id}` : ""}
                 </p>
                 {tuner.last_error ? (
                   <p className="text-destructive text-xs">{tuner.last_error}</p>
