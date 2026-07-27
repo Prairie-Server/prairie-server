@@ -77,8 +77,8 @@ func TestCacheMetadataImagesTaskReportsStats(t *testing.T) {
 	if runner.claimLimit != 1000 {
 		t.Fatalf("claimLimit = %d, want 1000", runner.claimLimit)
 	}
-	if runner.concurrency != 12 {
-		t.Fatalf("concurrency = %d, want 12", runner.concurrency)
+	if runner.concurrency != cacheMetadataImagesConcurrency() {
+		t.Fatalf("concurrency = %d, want %d (encode budget / NumCPU)", runner.concurrency, cacheMetadataImagesConcurrency())
 	}
 	if runner.maxRuntime != 10*time.Minute {
 		t.Fatalf("maxRuntime = %s, want 10m", runner.maxRuntime)

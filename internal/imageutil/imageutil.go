@@ -1,9 +1,15 @@
 // Package imageutil provides image resizing and thumbhash generation
 // for collection poster and backdrop uploads.
 //
-// Resizing and WebP/PNG encoding run in-process via an embedded Rust WASI
-// module (tools/imageutil-wasm) executed by wazero. That keeps the Go build
-// CGO-free while sandboxing untrusted image decode.
+// Resizing and WebP encoding run in-process via an embedded Rust WASI module
+// (tools/imageutil-wasm) executed by wazero — CGO-free, sandboxed decode.
+//
+// AVIF siblings use a pluggable native backend by default (SVT-AV1 via ffmpeg
+// subprocess, optional AV1 NVENC with CPU fallback). The legacy rav1e-WASM
+// path remains available as metadata.avif_encoder=wasm. Trading hermetic
+// vendored-WASM AVIF for native libs in the Docker image (debian ffmpeg /
+// libsvtav1) is intentional: WASM rav1e cannot match native SIMD/threads on
+// small nodes.
 package imageutil
 
 import (
@@ -56,9 +62,12 @@ type VariantResult struct {
 // remains the canonical cache key; AVIF is a dual-written sibling for clients
 // that prefer it. Images narrower than a target width are re-encoded without
 // upscaling. All resizes operate on the original bytes to avoid compounding
-// quality loss.
+// quality loss. AVIF uses the configured native/WASM backend.
 func GenerateVariants(data []byte, widths []int) (*VariantResult, error) {
-	return generateVariants(data, widths, defaultFormats)
+	if ActiveAVIFBackend() == BackendWASM || forceWASMForTest.Load() {
+		return generateVariants(data, widths, defaultFormats)
+	}
+	return encodeAVIFLadder(context.Background(), data, widths, nil)
 }
 
 // GenerateWebPVariants is the fast phase of artwork caching: WebP only, no
@@ -67,14 +76,13 @@ func GenerateWebPVariants(data []byte, widths []int) (*VariantResult, error) {
 	return generateVariants(data, widths, "webp")
 }
 
-// GenerateAVIFSiblings re-encodes the display-width ladder as WebP+AVIF so
-// callers can upload only the AVIF payloads after a WebP-first publish.
-// The "original" key keeps WebP only (via --no-avif-keys): the full-size AVIF
-// dominate encode cost and clients already fall through to WebP for it.
-// Canonical WebP bytes are regenerated (discarded by callers that already
-// uploaded them); AVIF dominates cost so the extra WebP pass is cheap.
+// GenerateAVIFSiblings resizes the display-width ladder (WebP via WASM) then
+// encodes AVIF siblings with the configured backend (svt/nvenc/wasm).
+// The "original" key keeps WebP only: full-size AVIF dominates encode cost and
+// clients already fall through to WebP for it. Callers discard regenerated
+// WebP and upload only the AVIF payloads.
 func GenerateAVIFSiblings(data []byte, widths []int) (*VariantResult, error) {
-	return generateVariants(data, widths, "webp,avif", "original")
+	return encodeAVIFLadder(context.Background(), data, widths, []string{"original"})
 }
 
 func generateVariants(data []byte, widths []int, formats string, noAVIFKeys ...string) (*VariantResult, error) {
@@ -105,15 +113,38 @@ func GenerateSquareVariants(data []byte, sizes []int) (*VariantResult, error) {
 	if err != nil {
 		return nil, err
 	}
+	if ActiveAVIFBackend() == BackendWASM || forceWASMForTest.Load() {
+		args := []string{
+			"--quality", strconv.Itoa(webpQuality),
+			"--avif-speed", strconv.Itoa(avifSpeed),
+			"--formats", defaultFormats,
+		}
+		if csv := joinUintCSV(sizes); csv != "" {
+			args = append(args, "--sizes", csv)
+		}
+		return p.run(context.Background(), "square-variants", data, args)
+	}
 	args := []string{
 		"--quality", strconv.Itoa(webpQuality),
 		"--avif-speed", strconv.Itoa(avifSpeed),
-		"--formats", defaultFormats,
+		"--formats", "webp",
 	}
 	if csv := joinUintCSV(sizes); csv != "" {
 		args = append(args, "--sizes", csv)
 	}
-	return p.run(context.Background(), "square-variants", data, args)
+	webp, err := p.run(context.Background(), "square-variants", data, args)
+	if err != nil {
+		return nil, err
+	}
+	enc := currentAVIFEncoder()
+	for i := range webp.Variants {
+		avif, encErr := enc.Encode(context.Background(), webp.Variants[i].Data, widthFromKey(webp.Variants[i].Key))
+		if encErr != nil {
+			return nil, fmt.Errorf("imageutil: square AVIF %s: %w", webp.Variants[i].Key, encErr)
+		}
+		webp.Variants[i].AVIF = avif
+	}
+	return webp, nil
 }
 
 // Thumbhash computes a base64-encoded thumbhash from raw image bytes.

@@ -1,17 +1,25 @@
 # imageutil.wasm — artwork resize/encode module
 
 `imageutil.wasm` is a small Rust WASI CLI that decodes JPEG/PNG/GIF/WebP/SVG,
-resizes, center-crops squares, and encodes WebP + optional AVIF/PNG siblings
-(lossy WebP/AVIF; lossless PNG). Prairie Server runs it **in-process** via
-[`wazero`](https://github.com/tetratelabs/wazero) from `internal/imageutil`.
+resizes, center-crops squares, and encodes WebP (+ optional PNG). Prairie Server
+runs it **in-process** via [`wazero`](https://github.com/tetratelabs/wazero)
+from `internal/imageutil` for sandboxed decode/resize/WebP.
+
+**AVIF siblings** default to a native backend (`metadata.avif_encoder=auto|svt|nvenc`)
+using ffmpeg `libsvtav1` (or optional `av1_nvenc`) — see `internal/imageutil`
+(`ConfigureAVIFEncoder`). The WASM `ravif`/rav1e path remains as
+`metadata.avif_encoder=wasm` for hermetic fallback. Tradeoff: native AVIF needs
+debian `ffmpeg` + libsvtav1 in the runtime image (still `CGO_ENABLED=0`).
 
 ## Why this shape
 
 - **No cgo / no libvips.** The main Go binary can build with `CGO_ENABLED=0`.
-- **Architecture-independent.** One `wasm32-wasip1` artifact runs on amd64/arm64
-  through wazero.
+- **Architecture-independent WebP path.** One `wasm32-wasip1` artifact runs on
+  amd64/arm64 through wazero.
 - **Sandboxed decode.** Untrusted upload/provider artwork is decoded inside the
   WASM memory sandbox (same pattern as `tools/mobitool-wasm`).
+- **Native AVIF throughput.** rav1e-in-WASM cannot match SVT-AV1 SIMD/threads on
+  small nodes; native encode is the production default.
 
 ## Dependencies
 
@@ -21,7 +29,7 @@ resizes, center-crops squares, and encodes WebP + optional AVIF/PNG siblings
 | `image`   | decode JPEG/PNG/GIF/WebP |
 | `resvg`   | SVG → raster (provider logos) |
 | `zenwebp` | pure-Rust lossy WebP encode (AGPL-3.0) |
-| `ravif`   | pure-Rust lossy AVIF encode |
+| `ravif`   | legacy AVIF encode (`avif_encoder=wasm` only) |
 
 ## Rebuild + install the artifact
 

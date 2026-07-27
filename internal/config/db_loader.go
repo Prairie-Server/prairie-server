@@ -318,6 +318,13 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 		return nil, err
 	}
 	cfg.Metadata.AVIFBackfillWorkers = avifWorkers
+	cfg.Metadata.AVIFEncoder = stringOr(m, "metadata.avif_encoder", "auto")
+	cfg.Metadata.AVIFFFmpegPath = stringOr(m, "metadata.avif_ffmpeg_path", "ffmpeg")
+	avifNVENCSessions, err := intOr(m, "metadata.avif_nvenc_sessions", 0)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Metadata.AVIFNVENCSessions = avifNVENCSessions
 
 	// Artwork (local filesystem cache when public S3 is unconfigured)
 	cfg.Artwork.LocalDir = stringOr(m, "artwork.local_dir", "/var/lib/prairie/artwork")

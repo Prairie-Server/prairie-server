@@ -11,6 +11,9 @@ const KEYS = [
   "matcher.batch_size",
   "metadata.cache_images",
   "metadata.avif_backfill_workers",
+  "metadata.avif_encoder",
+  "metadata.avif_ffmpeg_path",
+  "metadata.avif_nvenc_sessions",
 ];
 
 export default function ScannerSettings() {
@@ -81,9 +84,36 @@ export default function ScannerSettings() {
           <SettingField
             label="AVIF Backfill Workers"
             type="number"
-            hint="Concurrent AVIF encodes for deferred sibling backfill. 0 = use all CPU cores. Raise this once the WebP cache queue has drained so AVIF coverage can catch up."
+            hint="Concurrent AVIF encodes for deferred sibling backfill. 0 = auto (CPU cores for svt/wasm, NVENC session cap for nvenc). Shared with WebP encodes so a 4-core node is not oversubscribed."
             value={form.getValue("metadata.avif_backfill_workers")}
             onChange={(v) => form.setValue("metadata.avif_backfill_workers", v)}
+          />
+          <SettingField
+            label="AVIF Encoder"
+            type="select"
+            hint="Still-image AVIF backend. auto picks NVENC (Ada+ AV1) when available, else native SVT-AV1 via ffmpeg, else legacy WASM rav1e. Native SVT requires the debian ffmpeg package (libsvtav1)."
+            value={form.getValue("metadata.avif_encoder")}
+            onChange={(v) => form.setValue("metadata.avif_encoder", v)}
+            options={[
+              { value: "auto", label: "Auto (recommended)" },
+              { value: "svt", label: "SVT-AV1 (CPU)" },
+              { value: "nvenc", label: "NVENC AV1 (GPU, fallback to SVT)" },
+              { value: "wasm", label: "WASM rav1e (legacy)" },
+            ]}
+          />
+          <SettingField
+            label="AVIF FFmpeg Path"
+            type="text"
+            hint="ffmpeg binary for SVT/NVENC still encodes (must include libsvtav1 + avif muxer). Defaults to ffmpeg on PATH — not jellyfin-ffmpeg."
+            value={form.getValue("metadata.avif_ffmpeg_path")}
+            onChange={(v) => form.setValue("metadata.avif_ffmpeg_path", v)}
+          />
+          <SettingField
+            label="AVIF NVENC Sessions"
+            type="number"
+            hint="Max concurrent NVENC still encodes when the nvenc backend is active. 0 = 3. Tiny display widths still fall back to SVT."
+            value={form.getValue("metadata.avif_nvenc_sessions")}
+            onChange={(v) => form.setValue("metadata.avif_nvenc_sessions", v)}
           />
         </FieldGroup>
       </div>

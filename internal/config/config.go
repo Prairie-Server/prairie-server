@@ -338,9 +338,17 @@ type PolicyConfig struct {
 // MetadataConfig holds metadata pipeline settings.
 type MetadataConfig struct {
 	CacheImages bool `yaml:"-"`
-	// AVIFBackfillWorkers is the durable + eager AVIF encode concurrency.
-	// 0 means runtime.NumCPU() (auto).
+	// AVIFBackfillWorkers is the durable AVIF encode concurrency.
+	// 0 means auto: NumCPU for CPU backends, NVENC session cap for nvenc.
 	AVIFBackfillWorkers int `yaml:"-"`
+	// AVIFEncoder selects the still-image AVIF backend: auto|svt|nvenc|wasm.
+	// auto prefers NVENC (Ada+) when available, else SVT-AV1 via ffmpeg, else WASM.
+	AVIFEncoder string `yaml:"-"`
+	// AVIFFFmpegPath is the ffmpeg binary for svt/nvenc (needs libsvtav1 + avif muxer).
+	// Empty → "ffmpeg". Distinct from playback.ffmpeg_path (jellyfin-ffmpeg).
+	AVIFFFmpegPath string `yaml:"-"`
+	// AVIFNVENCSessions caps concurrent NVENC still encodes. 0 → 3.
+	AVIFNVENCSessions int `yaml:"-"`
 }
 
 // ArtworkConfig holds local artwork cache settings used when public S3 is off.

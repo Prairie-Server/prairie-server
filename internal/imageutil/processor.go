@@ -147,12 +147,12 @@ func (p *processor) run(ctx context.Context, mode string, data []byte, extraArgs
 		return nil, fmt.Errorf("imageutil: source exceeds %d bytes", p.opts.MaxSourceBytes)
 	}
 
-	select {
-	case p.sem <- struct{}{}:
-		defer func() { <-p.sem }()
-	case <-ctx.Done():
-		return nil, ctx.Err()
+	// Shared WebP+AVIF budget so metadata image-cache workers and AVIF backfill
+	// cannot oversubscribe the host (especially once SVT-AV1 is in use).
+	if err := encodeBudget.Acquire(ctx); err != nil {
+		return nil, err
 	}
+	defer encodeBudget.Release()
 
 	scratch, err := os.MkdirTemp(p.opts.WorkRoot, "imageutil-")
 	if err != nil {

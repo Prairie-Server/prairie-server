@@ -3,6 +3,7 @@ package tasks
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"time"
 
 	"github.com/prairie-server/prairie-server/internal/metadata"
@@ -21,6 +22,11 @@ type AVIFBackfillRunner interface {
 
 type BackfillAVIFSiblingsTask struct {
 	runner AVIFBackfillRunner
+	// running closes the startup+interval overlap gap: taskmanager already
+	// returns ErrTaskAlreadyRunning, but a second Execute entry (manual run
+	// racing a scheduled fire across re-register) must no-op instead of
+	// stacking another NumCPU worker set on a 4-core box.
+	running atomic.Bool
 }
 
 func NewBackfillAVIFSiblingsTask(runner AVIFBackfillRunner) *BackfillAVIFSiblingsTask {
@@ -49,6 +55,12 @@ func (t *BackfillAVIFSiblingsTask) Execute(ctx context.Context, progress taskman
 		progress.Report(100, "AVIF backfill is not configured")
 		return nil
 	}
+	if !t.running.CompareAndSwap(false, true) {
+		progress.Report(100, "AVIF backfill already running; skipped overlapping trigger")
+		return nil
+	}
+	defer t.running.Store(false)
+
 	workers := t.runner.Workers()
 	stats, err := t.runner.RunUntilIdle(ctx, workers, backfillAVIFSiblingsMaxRuntime, progress.Report)
 	if err != nil {
