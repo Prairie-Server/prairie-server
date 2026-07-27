@@ -10,7 +10,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Circle, Play } from "lucide-react";
 
-const CHANNEL_COL_WIDTH = 200;
+const CHANNEL_COL_WIDTH = 220;
 const ROW_HEIGHT = 88;
 
 type LiveTVGuideGridProps = {

@@ -75,9 +75,14 @@ export type GuideWindow = {
   pxPerMs: number;
 };
 
-export const GUIDE_HOUR_WIDTH_PX = 360;
+export const GUIDE_HOUR_WIDTH_PX = 480;
 
-/** Build a guide layout window. With no lookback, the timeline starts at now. */
+/**
+ * Build a guide layout window.
+ * With no lookback, the timeline snaps to the current half-hour so a show that
+ * ends soon (e.g. 12:00–12:30 at 12:20) still gets a readable full slot —
+ * ended programmes are filtered separately in layout.
+ */
 export function buildGuideWindow(
   now: Date = new Date(),
   pastHours = 0,
@@ -86,7 +91,9 @@ export function buildGuideWindow(
   const halfHour = 30 * 60 * 1000;
   const nowMs = now.getTime();
   const startMs =
-    pastHours <= 0 ? nowMs : Math.floor((nowMs - pastHours * 60 * 60 * 1000) / halfHour) * halfHour;
+    pastHours <= 0
+      ? Math.floor(nowMs / halfHour) * halfHour
+      : Math.floor((nowMs - pastHours * 60 * 60 * 1000) / halfHour) * halfHour;
   const endMs = startMs + Math.max(pastHours, 0) * 60 * 60 * 1000 + futureHours * 60 * 60 * 1000;
   return {
     startMs,
@@ -98,7 +105,7 @@ export function buildGuideWindow(
 export function guideTimeTicks(window: GuideWindow, stepMinutes = 30): number[] {
   const step = stepMinutes * 60 * 1000;
   const ticks: number[] = [];
-  // Snap labels to the step grid so an unaligned "now" start does not print 11:18 as a tick.
+  // Snap labels to the step grid (default window start is already half-hour aligned).
   for (let t = Math.ceil(window.startMs / step) * step; t < window.endMs; t += step) {
     ticks.push(t);
   }
