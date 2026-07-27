@@ -391,8 +391,11 @@ func TestStartAndReleaseChannelSession(t *testing.T) {
 	if session.TunerIndex != 0 || session.StreamURL == "" || session.Status != "active" {
 		t.Fatalf("session = %+v", session)
 	}
-	if !strings.Contains(session.Note, "playback bridge") {
-		t.Fatalf("expected note about missing bridge, got %q", session.Note)
+	if session.Note != "" {
+		t.Fatalf("expected empty note when using session proxy, got %q", session.Note)
+	}
+	if session.Transport != "mpegts" {
+		t.Fatalf("expected mpegts transport, got %q", session.Transport)
 	}
 
 	_, err = svc.StartChannelSession(context.Background(), "ch1", 7, "profile-1")
@@ -459,6 +462,9 @@ func TestStartChannelSessionWithPlaybackBridge(t *testing.T) {
 	}
 	if session.PlaybackSessionID != "pb-1" || session.HLSURL != "http://play/hls.m3u8" || session.Note != "" {
 		t.Fatalf("session = %+v", session)
+	}
+	if session.Transport != "hls" {
+		t.Fatalf("expected hls transport with bridge, got %q", session.Transport)
 	}
 }
 
@@ -1434,6 +1440,20 @@ func (s *memoryStore) CreateRecording(_ context.Context, rec *Recording) (*Recor
 	}
 	if rec.Status == "" {
 		rec.Status = "scheduled"
+	}
+	s.recordings[rec.ID] = *rec
+	out := s.recordings[rec.ID]
+	return &out, nil
+}
+
+func (s *memoryStore) UpdateRecording(_ context.Context, rec *Recording) (*Recording, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if rec == nil || rec.ID == "" {
+		return nil, fmt.Errorf("id required")
+	}
+	if _, ok := s.recordings[rec.ID]; !ok {
+		return nil, nil
 	}
 	s.recordings[rec.ID] = *rec
 	out := s.recordings[rec.ID]

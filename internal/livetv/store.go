@@ -47,6 +47,7 @@ type Store interface {
 	ListRecordings(ctx context.Context, status string) ([]Recording, error)
 	GetRecording(ctx context.Context, id string) (*Recording, error)
 	CreateRecording(ctx context.Context, rec *Recording) (*Recording, error)
+	UpdateRecording(ctx context.Context, rec *Recording) (*Recording, error)
 	CancelRecording(ctx context.Context, id string) (*Recording, error)
 	RecordingExists(ctx context.Context, programID, seriesRuleID string) (bool, error)
 	// ListActiveRecordingPairs returns keys of (program_id, series_rule_id) for
@@ -600,6 +601,32 @@ func (s *PgStore) CreateRecording(ctx context.Context, rec *Recording) (*Recordi
 		rec.ID, nullString(rec.ProgramID), rec.ChannelID, nullString(rec.SeriesRuleID), nullInt(rec.UserID), rec.ProfileID, rec.Status, rec.Path, nullString(rec.LibraryItemID), rec.Start, rec.Stop, rec.Title, rec.LastError))
 	if err != nil {
 		return nil, fmt.Errorf("create recording: %w", err)
+	}
+	return &out, nil
+}
+
+func (s *PgStore) UpdateRecording(ctx context.Context, rec *Recording) (*Recording, error) {
+	if rec == nil || rec.ID == "" {
+		return nil, fmt.Errorf("update recording: id required")
+	}
+	out, err := scanRecording(s.db.QueryRow(ctx, `
+		UPDATE livetv_recordings
+		SET status = $2,
+			path = $3,
+			library_item_id = $4,
+			last_error = $5,
+			start_at = $6,
+			stop_at = $7,
+			title = $8,
+			updated_at = now()
+		WHERE id = $1
+		RETURNING `+recordingSelectCols,
+		rec.ID, rec.Status, rec.Path, nullString(rec.LibraryItemID), rec.LastError, rec.Start, rec.Stop, rec.Title))
+	if errors.Is(err, pgx.ErrNoRows) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, fmt.Errorf("update recording: %w", err)
 	}
 	return &out, nil
 }

@@ -841,9 +841,15 @@ func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session,
 		return mediaSourceDTO{}, err
 	}
 	liveStreamID := uuid.NewString()
-	sourceURL := native.StreamURL
-	if sourceURL == "" {
-		sourceURL = native.HLSURL
+	// Compat clients always consume MPEG-TS via HandleLiveStreamFile. Keep the
+	// upstream tuner URL even when the native PlaybackBridge remuxes to HLS.
+	sourceURL, resolveErr := h.service.ResolveSessionUpstreamURL(ctx, native.ID)
+	if resolveErr != nil || sourceURL == "" {
+		_, _ = h.service.ReleaseSession(ctx, native.ID, userID, profileID, false)
+		if resolveErr != nil {
+			return mediaSourceDTO{}, resolveErr
+		}
+		return mediaSourceDTO{}, livetv.ErrNotFound
 	}
 	openerToken := ""
 	if session != nil {

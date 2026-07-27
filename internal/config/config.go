@@ -167,6 +167,15 @@ type PlaybackConfig struct {
 	TranscodeEnabled             bool   `yaml:"transcode_enabled"`
 }
 
+// LiveTVConfig holds Live TV / OTA / DVR settings.
+type LiveTVConfig struct {
+	// DVRPath is where completed Live TV recordings are written.
+	DVRPath string `yaml:"dvr_path"`
+}
+
+// DefaultLiveTVDVRPath is the fallback livetv.dvr_path.
+const DefaultLiveTVDVRPath = "/var/lib/prairie/dvr"
+
 // RedisConfig holds Redis connection settings.
 type RedisConfig struct {
 	URL               string   `yaml:"url"`
@@ -356,6 +365,7 @@ type Config struct {
 	Metadata             MetadataConfig             `yaml:"-"`
 	Artwork              ArtworkConfig              `yaml:"-"`
 	Playback             PlaybackConfig             `yaml:"playback"`
+	LiveTV               LiveTVConfig               `yaml:"livetv"`
 	Redis                RedisConfig                `yaml:"redis"`
 	RateLimit            RateLimitConfig            `yaml:"rate_limiting"`
 	Auth                 AuthConfig                 `yaml:"-"`
@@ -381,6 +391,7 @@ type configRaw struct {
 	Scanner        scannerConfigRaw        `yaml:"scanner"`
 	Matcher        MatcherConfig           `yaml:"matcher"`
 	Playback       PlaybackConfig          `yaml:"playback"`
+	LiveTV         LiveTVConfig            `yaml:"livetv"`
 	Redis          RedisConfig             `yaml:"redis"`
 	RateLimit      RateLimitConfig         `yaml:"rate_limiting"`
 	Auth           authConfigRaw           `yaml:"auth"`
@@ -480,6 +491,9 @@ func setDefaults() *configRaw {
 			ChapterThumbnailExecution:    "local",
 			ChapterThumbnailNodeCapacity: 1,
 			TranscodeEnabled:             true,
+		},
+		LiveTV: LiveTVConfig{
+			DVRPath: DefaultLiveTVDVRPath,
 		},
 		RateLimit: RateLimitConfig{
 			Enabled: true,

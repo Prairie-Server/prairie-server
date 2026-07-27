@@ -183,6 +183,9 @@ type Dependencies struct {
 	// router.go once the Trakt adapter exists (mirrors UserCollectionSync).
 	TrendingRefresher *sections.TrendingRefresher
 
+	// LiveTV is the shared Live TV / OTA / DVR service (nil when DB unavailable).
+	LiveTV *livetv.Service
+
 	// MDBListClient is used by user-facing list discovery endpoints
 	// (search/top). May be nil; the handlers report "not configured" in
 	// that case rather than failing.
@@ -703,7 +706,11 @@ func NewRouter(deps Dependencies) chi.Router {
 		}
 		requestHandler = handlers.NewRequestsHandler(requestSvc)
 
-		liveTVHandler = handlers.NewLiveTVHandler(livetv.NewService(deps.DB))
+		liveTVHandler = handlers.NewLiveTVHandler(deps.LiveTV)
+		if liveTVHandler == nil && deps.DB != nil {
+			// Tests / alternate entrypoints may omit deps.LiveTV.
+			liveTVHandler = handlers.NewLiveTVHandler(livetv.NewService(deps.DB))
+		}
 
 		autoscanRepo := autoscan.NewRepository(deps.DB, deps.SecretCipher)
 		if deps.FolderRepo != nil && deps.LibraryScanQueue != nil && deps.PluginService != nil {
@@ -2228,6 +2235,7 @@ func NewRouter(deps Dependencies) chi.Router {
 							r.Post("/channels/{channelId}/session", liveTVHandler.HandleStartChannelSession)
 							r.Get("/sessions/{sessionId}/stream", liveTVHandler.HandleSessionStream)
 							r.Method(http.MethodHead, "/sessions/{sessionId}/stream", http.HandlerFunc(liveTVHandler.HandleSessionStream))
+							r.Get("/live-hls/{playbackId}/{name}", liveTVHandler.HandleLiveHLS)
 							r.Delete("/sessions/{sessionId}", liveTVHandler.HandleReleaseSession)
 							r.Post("/recordings", liveTVHandler.HandleScheduleRecording)
 							r.Delete("/recordings/{recordingId}", liveTVHandler.HandleCancelRecording)

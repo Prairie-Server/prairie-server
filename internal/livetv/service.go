@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"sort"
 	"strconv"
@@ -52,6 +53,12 @@ type PlaybackBridge interface {
 	StartLiveStream(ctx context.Context, channelID, sourceStreamURL string, userID int, profileID string) (playbackSessionID, playbackURL string, err error)
 }
 
+// PlaybackBridgeStopper is an optional extension for tearing down bridge-owned
+// remux processes when a Live TV session is released.
+type PlaybackBridgeStopper interface {
+	StopLiveStream(ctx context.Context, playbackSessionID string) error
+}
+
 type Service struct {
 	store          Store
 	hdhr           HDHomeRunClient
@@ -59,6 +66,7 @@ type Service struct {
 	gn             GracenoteClient
 	httpClient     *http.Client
 	playbackBridge PlaybackBridge
+	recorder       *Recorder
 	now            func() time.Time
 }
 
@@ -116,6 +124,19 @@ func (s *Service) SetGracenoteClient(client GracenoteClient) {
 
 func (s *Service) SetPlaybackBridge(bridge PlaybackBridge) {
 	s.playbackBridge = bridge
+}
+
+// SetRecorder attaches the FFmpeg DVR recorder used by ProcessRecordings.
+func (s *Service) SetRecorder(recorder *Recorder) {
+	s.recorder = recorder
+}
+
+// PlaybackBridge returns the configured bridge, if any.
+func (s *Service) PlaybackBridge() PlaybackBridge {
+	if s == nil {
+		return nil
+	}
+	return s.playbackBridge
 }
 
 func (s *Service) requireStore() error {
@@ -1224,14 +1245,19 @@ func (s *Service) StartChannelSession(ctx context.Context, channelID string, use
 	}
 	playbackID := ""
 	streamURL := channel.StreamURL
-	note := "raw HDHomeRun stream URL; playback bridge not configured"
+	// Without a playback bridge, clients play MPEG-TS via the authenticated
+	// session proxy (PublicSessionStreamPath). The handler rewrites unsafe
+	// tuner URLs before they leave the API — do not surface a "not configured"
+	// note that makes a working proxy path look broken.
+	transport := "mpegts"
+	note := ""
 	if s.playbackBridge != nil {
 		var err error
 		playbackID, streamURL, err = s.playbackBridge.StartLiveStream(ctx, channel.ID, channel.StreamURL, userID, profileID)
 		if err != nil {
 			return nil, fmt.Errorf("start playback bridge: %w", err)
 		}
-		note = ""
+		transport = "hls"
 	}
 
 	// Allocate a free tuner index, then insert. A concurrent StartChannelSession
@@ -1241,10 +1267,12 @@ func (s *Service) StartChannelSession(ctx context.Context, channelID string, use
 	for attempt := 0; attempt < 2; attempt++ {
 		indices, err := s.store.ActiveSessionTunerIndices(ctx, tuner.ID)
 		if err != nil {
+			s.stopBridge(ctx, playbackID)
 			return nil, err
 		}
 		index, ok := firstFreeIndex(tuner.TunerCount, indices)
 		if !ok {
+			s.stopBridge(ctx, playbackID)
 			return nil, ErrNoTuner
 		}
 		session, err = s.store.CreateSession(ctx, SessionCreate{
@@ -1261,6 +1289,7 @@ func (s *Service) StartChannelSession(ctx context.Context, channelID string, use
 		if errors.Is(err, ErrTunerIndexConflict) && attempt == 0 {
 			continue
 		}
+		s.stopBridge(ctx, playbackID)
 		if errors.Is(err, ErrTunerIndexConflict) {
 			return nil, ErrNoTuner
 		}
@@ -1269,7 +1298,17 @@ func (s *Service) StartChannelSession(ctx context.Context, channelID string, use
 	session.StreamURL = streamURL
 	session.HLSURL = streamURL
 	session.Note = note
+	session.Transport = transport
 	return session, nil
+}
+
+func (s *Service) stopBridge(ctx context.Context, playbackSessionID string) {
+	if playbackSessionID == "" {
+		return
+	}
+	if stopper, ok := s.playbackBridge.(PlaybackBridgeStopper); ok {
+		_ = stopper.StopLiveStream(ctx, playbackSessionID)
+	}
 }
 
 // ReleaseSession releases a live tuner session.
@@ -1298,6 +1337,16 @@ func (s *Service) ReleaseSession(ctx context.Context, id string, userID int, pro
 	}
 	if session == nil {
 		return nil, ErrNotFound
+	}
+	if session.PlaybackSessionID != "" {
+		if stopper, ok := s.playbackBridge.(PlaybackBridgeStopper); ok {
+			if stopErr := stopper.StopLiveStream(ctx, session.PlaybackSessionID); stopErr != nil {
+				slog.WarnContext(ctx, "livetv playback bridge stop failed",
+					"session_id", session.ID,
+					"playback_session_id", session.PlaybackSessionID,
+					"error", stopErr)
+			}
+		}
 	}
 	return session, nil
 }
@@ -1544,9 +1593,22 @@ func (s *Service) FailDueRecordings(ctx context.Context) (int, error) {
 	if err := s.requireStore(); err != nil {
 		return 0, err
 	}
-	// Placeholder until the actual FFmpeg/DVR recorder lands. This makes due
-	// rows visible as failed instead of silently accumulating as scheduled.
+	// Kept for tests / fallback when no recorder is attached.
 	return s.store.FailDueRecordings(ctx, s.now(), "Live TV recorder is not implemented yet")
+}
+
+// ProcessRecordings starts due recordings, finishes elapsed ones, and fails
+// orphans that never left scheduled. When no recorder is configured it falls
+// back to FailDueRecordings.
+func (s *Service) ProcessRecordings(ctx context.Context) (started, completed, failed int, err error) {
+	if err := s.requireStore(); err != nil {
+		return 0, 0, 0, err
+	}
+	if s.recorder == nil {
+		n, err := s.FailDueRecordings(ctx)
+		return 0, 0, n, err
+	}
+	return s.recorder.Process(ctx)
 }
 
 func validateGuideSource(source *GuideSource) error {

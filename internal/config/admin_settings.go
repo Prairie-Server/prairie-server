@@ -66,6 +66,8 @@ var adminSettingDefaults = map[string]string{
 	"enable_transcode_throttle":                "false",
 	"transcode_throttle_seconds":               "300",
 
+	"livetv.dvr_path": DefaultLiveTVDVRPath,
+
 	"audiobookshelf_compat.enabled":           "true",
 	"jellyfin_compat.enabled":                 "true",
 	"jellyfin_compat.public_url":              "http://127.0.0.1:8096",

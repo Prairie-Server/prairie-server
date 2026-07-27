@@ -339,6 +339,8 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 	}
 	cfg.Playback.TranscodeEnabled = transcodeEnabled
 
+	cfg.LiveTV.DVRPath = stringOr(m, "livetv.dvr_path", DefaultLiveTVDVRPath)
+
 	// Redis
 	cfg.Redis.URL = stringOr(m, "redis.url", "")
 	cfg.Redis.SentinelMaster = stringOr(m, "redis.sentinel_master", "")
