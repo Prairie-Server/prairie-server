@@ -143,17 +143,23 @@ export default function AdminApiKeys() {
                 <TableCell>
                   <div className="flex items-center gap-1.5">
                     <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">
-                      {maskKey(key.key)}
+                      {key.key
+                        ? maskKey(key.key)
+                        : key.key_prefix
+                          ? key.key_prefix
+                          : "Hidden"}
                     </code>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      aria-label={`Copy API key ${key.label}`}
-                      onClick={() => handleCopy(key.key)}
-                    >
-                      <Copy className="h-3 w-3" aria-hidden="true" />
-                    </Button>
+                    {key.key ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        aria-label={`Copy API key ${key.label}`}
+                        onClick={() => handleCopy(key.key ?? "")}
+                      >
+                        <Copy className="h-3 w-3" aria-hidden="true" />
+                      </Button>
+                    ) : null}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -259,7 +265,7 @@ function CreateApiKeyForm({ onClose }: { onClose: () => void }) {
     createMutation.mutate(body, {
       onSuccess: (data) => {
         toast.success("API key created");
-        setCreatedKey(data.key);
+          setCreatedKey(data.key ?? null);
       },
     });
   }

@@ -93,6 +93,7 @@ type Dependencies struct {
 	AppContext                   context.Context
 	DB                           *pgxpool.Pool
 	SecretCipher                 *secret.Cipher // at-rest credential cipher (required when DB is set)
+	APIKeyHashKey                []byte         // deterministic key hash key (required when DB is set)
 	FrontendFS                   fs.FS
 	S3Public                     *s3client.Client                 // public assets bucket client (may be nil)
 	S3Private                    *s3client.Client                 // private internal bucket client (may be nil)
@@ -372,7 +373,7 @@ func NewRouter(deps Dependencies) chi.Router {
 		userRepo = auth.NewUserRepository(deps.DB)
 		sessionRepo = auth.NewSessionRepository(deps.DB)
 		inviteCodeRepo = auth.NewInviteCodeRepository(deps.DB)
-		apiKeyRepo = auth.NewAPIKeyRepository(deps.DB)
+		apiKeyRepo = auth.NewAPIKeyRepository(deps.DB, deps.APIKeyHashKey)
 		jwtService = auth.NewJWTService(
 			deps.Config.Auth.JWTSecret,
 			deps.Config.Auth.AccessTokenExpiry,

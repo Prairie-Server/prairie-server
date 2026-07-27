@@ -34,7 +34,8 @@ type apiKeyResponse struct {
 	ID         int64      `json:"id"`
 	UserID     int        `json:"user_id"`
 	Label      string     `json:"label"`
-	Key        string     `json:"key"`
+	Key        string     `json:"key,omitempty"`
+	KeyPrefix  string     `json:"key_prefix,omitempty"`
 	RateTier   string     `json:"rate_tier"`
 	CreatedAt  time.Time  `json:"created_at"`
 	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
@@ -46,6 +47,7 @@ func toAPIKeyResponse(k *models.APIKey) apiKeyResponse {
 		UserID:     k.UserID,
 		Label:      k.Label,
 		Key:        k.Key,
+		KeyPrefix:  k.KeyPrefix,
 		RateTier:   k.RateTier,
 		CreatedAt:  k.CreatedAt,
 		LastUsedAt: k.LastUsedAt,
@@ -57,7 +59,8 @@ type adminApiKeyResponse struct {
 	UserID     int        `json:"user_id"`
 	Username   string     `json:"username"`
 	Label      string     `json:"label"`
-	Key        string     `json:"key"`
+	Key        string     `json:"key,omitempty"`
+	KeyPrefix  string     `json:"key_prefix,omitempty"`
 	RateTier   string     `json:"rate_tier"`
 	CreatedAt  time.Time  `json:"created_at"`
 	LastUsedAt *time.Time `json:"last_used_at,omitempty"`
@@ -214,6 +217,7 @@ func (h *APIKeyHandler) HandleAdminListAllAPIKeys(w http.ResponseWriter, r *http
 			Username:   k.Username,
 			Label:      k.Label,
 			Key:        k.Key,
+			KeyPrefix:  k.KeyPrefix,
 			RateTier:   k.RateTier,
 			CreatedAt:  k.CreatedAt,
 			LastUsedAt: k.LastUsedAt,

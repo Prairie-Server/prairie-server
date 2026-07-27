@@ -416,6 +416,11 @@ func main() {
 		log.Fatalf("secret cipher: %v", err)
 	}
 
+	apiKeyHashKey, err := secret.DeriveAPIKeyHashKey(bc.SecretKey)
+	if err != nil {
+		log.Fatalf("api key hash derivation: %v", err)
+	}
+
 	// Step 2: Connect to PostgreSQL (bootstrap pool with default max connections)
 	bootstrapDBCfg := config.DatabaseConfig{URL: bc.DatabaseURL, MaxConnections: 20}
 	pool, err := database.NewPool(ctx, bootstrapDBCfg)
@@ -485,6 +490,16 @@ func main() {
 	settingsRepo := catalog.NewEncryptedSettingsRepo(catalog.NewServerSettingsRepo(pool), dataCipher)
 	if isPrimaryNode {
 		runCredentialBackfills(ctx, pool, dataCipher, settingsRepo)
+
+		// Best-effort backfill of API key hashes so plaintext api_key values
+		// can be cleared from DB after upgrade.
+		apiKeyRepo := auth.NewAPIKeyRepository(pool, apiKeyHashKey)
+		backfillN, backfillErr := apiKeyRepo.BackfillPlaintextToHash(ctx, 500)
+		if backfillErr != nil {
+			slog.ErrorContext(ctx, "api key backfill failed", "component", "auth", "error", backfillErr)
+		} else if backfillN > 0 {
+			slog.InfoContext(ctx, "api key backfill applied", "component", "auth", "converted", backfillN)
+		}
 	}
 	settings, err := settingsRepo.GetAll(ctx)
 	if err != nil {
@@ -780,6 +795,7 @@ func main() {
 		AppContext:                   appCtx,
 		DB:                           pool,
 		SecretCipher:                 dataCipher,
+		APIKeyHashKey:                apiKeyHashKey,
 		EventBus:                     eventBus,
 		RedisClient:                  apiRedisClient,
 		LogStreamHub:                 logStreamHub,
@@ -2588,7 +2604,7 @@ func main() {
 
 			// Construct auth service for jellycompat login.
 			userRepo := auth.NewUserRepository(deps.DB)
-			compatDeps.APIKeyValidator = auth.NewAPIKeyRepository(deps.DB)
+			compatDeps.APIKeyValidator = auth.NewAPIKeyRepository(deps.DB, apiKeyHashKey)
 			compatDeps.APIKeyUserLoader = userRepo
 			compatDeps.ScanQueue = deps.LibraryScanQueue
 			sessionRepo := auth.NewSessionRepository(deps.DB)
