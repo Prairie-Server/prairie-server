@@ -114,6 +114,9 @@ jobs:
           context: .
           platforms: ${{ matrix.platform }}
           labels: ${{ steps.meta.outputs.labels }}
+          # Named context replaces the Dockerfile frontend_dist stage so BuildKit
+          # skips the in-image pnpm/vite work. Node/npm come from a separate
+          # node_runtime stage and no longer force that rebuild.
           build-contexts: |
             frontend_dist=./web/dist
           build-args: |
