@@ -62,7 +62,7 @@ export default defineConfig(({ mode }) => {
               return "react-vendor";
             }
             if (id.includes("@radix-ui")) return "radix";
-            if (id.includes("framer-motion")) return "motion";
+            if (id.includes("/motion/") || id.includes("framer-motion")) return "motion";
             if (id.includes("@codemirror") || id.includes("codemirror")) return "codemirror";
             if (id.includes("lucide-react")) return "icons";
             if (id.includes("@tanstack")) return "tanstack";

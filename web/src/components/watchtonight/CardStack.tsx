@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { useLocation, useNavigate } from "react-router";
 import { RefreshCw, Tv } from "lucide-react";
 import type { SwipeCard as SwipeCardType } from "@/hooks/queries/recommendations";
