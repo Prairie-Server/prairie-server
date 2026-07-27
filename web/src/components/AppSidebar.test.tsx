@@ -172,6 +172,8 @@ describe("AppSidebar", () => {
   it("renders the Prairie brand mark instead of the old play glyph", () => {
     const markup = renderSidebar("/");
 
+    expect(markup).toContain('srcSet="/prairie-wordmark-sidebar.avif"');
+    expect(markup).toContain('srcSet="/prairie-wordmark-sidebar.webp"');
     expect(markup).toContain('src="/prairie-wordmark-sidebar.png"');
     expect(markup).toContain('alt="Prairie"');
     expect(markup).not.toContain("▶");
@@ -180,6 +182,8 @@ describe("AppSidebar", () => {
   it("uses the icon-only mark when the sidebar is collapsed", () => {
     const markup = renderSidebar("/", { collapsed: true });
 
+    expect(markup).toContain('srcSet="/prairie-icon-1024.avif"');
+    expect(markup).toContain('srcSet="/prairie-icon-1024.webp"');
     expect(markup).toContain('src="/prairie-icon-1024.png"');
     expect(markup).not.toContain('src="/prairie-wordmark-sidebar.png"');
     expect(markup).toContain("sidebar-logo flex items-center py-7 justify-center px-2");
