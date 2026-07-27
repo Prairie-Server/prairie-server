@@ -17,6 +17,7 @@ import {
   nextReviewStep,
   previousWizardStep,
   resolveCurrentStep,
+  reviewStepAfterMarkDone,
   wizardStepIndex,
 } from "./wizardSteps";
 
@@ -117,11 +118,18 @@ export function WizardProvider({ children }: { children: ReactNode }) {
     setReviewStep(nextReviewStep(currentStep, frontierStep));
   }, [currentStep, frontierStep]);
 
-  const markDone = useCallback((step: SkippableStep) => {
-    writeSetupWizardFlag(step, true);
-    setStepDone((prev) => ({ ...prev, [step]: true }));
-    setReviewStep(null);
-  }, []);
+  const markDone = useCallback(
+    (step: SkippableStep) => {
+      writeSetupWizardFlag(step, true);
+      const nextDone = { ...stepDone, [step]: true };
+      setStepDone(nextDone);
+      // Advance one step when reviewing earlier steps; don't jump to the frontier.
+      setReviewStep(
+        reviewStepAfterMarkDone(step, currentStep, accountComplete, profileComplete, stepDone),
+      );
+    },
+    [accountComplete, currentStep, profileComplete, stepDone],
+  );
 
   const clearProgress = useCallback(() => {
     clearSetupWizardStorage();

@@ -76,3 +76,20 @@ export function nextReviewStep(
   if (!next || next === frontierStep) return null;
   return next;
 }
+
+/**
+ * Where review should land after Save & continue / Skip on a skippable step.
+ * Advances one step when reviewing earlier steps; clears review when continuing
+ * from the frontier so the (possibly advanced) frontier becomes visible.
+ */
+export function reviewStepAfterMarkDone(
+  markedStep: SkippableStep,
+  visibleStep: WizardStepId,
+  accountComplete: boolean,
+  profileComplete: boolean,
+  stepDone: Record<SkippableStep, boolean>,
+): WizardStepId | null {
+  const nextDone = { ...stepDone, [markedStep]: true };
+  const nextFrontier = deriveFrontierStep(accountComplete, profileComplete, nextDone);
+  return nextReviewStep(visibleStep, nextFrontier);
+}

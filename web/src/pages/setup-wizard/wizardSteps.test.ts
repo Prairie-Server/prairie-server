@@ -6,6 +6,7 @@ import {
   nextReviewStep,
   previousWizardStep,
   resolveCurrentStep,
+  reviewStepAfterMarkDone,
   wizardStepIndex,
 } from "./wizardSteps";
 
@@ -86,6 +87,39 @@ describe("wizardSteps", () => {
 
     it("clears review when already at the frontier", () => {
       expect(nextReviewStep("integrations", "integrations")).toBeNull();
+    });
+  });
+
+  describe("reviewStepAfterMarkDone", () => {
+    it("advances one step when continuing from an earlier reviewed step", () => {
+      const done = createEmptySetupWizardFlags();
+      done.server = true;
+      done.integrations = true;
+      done.downloads = true;
+      done.recommendations = true;
+      // Frontier is library (step 7 of 8). Reviewing downloads (step 5) should go to recommendations.
+      expect(reviewStepAfterMarkDone("downloads", "downloads", true, true, done)).toBe(
+        "recommendations",
+      );
+    });
+
+    it("returns to the frontier when continuing from the step immediately before it", () => {
+      const done = createEmptySetupWizardFlags();
+      done.server = true;
+      done.integrations = true;
+      done.downloads = true;
+      done.recommendations = true;
+      expect(
+        reviewStepAfterMarkDone("recommendations", "recommendations", true, true, done),
+      ).toBeNull();
+    });
+
+    it("clears review when continuing on the frontier so the next frontier is shown", () => {
+      const done = createEmptySetupWizardFlags();
+      done.server = true;
+      done.integrations = true;
+      expect(reviewStepAfterMarkDone("downloads", "downloads", true, true, done)).toBeNull();
+      expect(deriveFrontierStep(true, true, { ...done, downloads: true })).toBe("recommendations");
     });
   });
 });
