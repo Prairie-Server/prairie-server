@@ -101,7 +101,7 @@ func TestDiscoverTunersUDPThenVerify(t *testing.T) {
 		t.Fatal("expected not already added")
 	}
 
-	_, err = svc.AddTuner(context.Background(), result.Candidates[0].DiscoverURL, "")
+	_, err = svc.AddTuner(context.Background(), AddTunerInput{URL: result.Candidates[0].BaseURL})
 	if err != nil {
 		t.Fatalf("AddTuner: %v", err)
 	}

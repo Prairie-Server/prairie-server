@@ -9,6 +9,8 @@ Prairie can discover Live TV tuners from **Admin → Live TV → Tuners**:
 
 Candidates are verified over HTTP before you click **Add**. Existing tuners are marked **Added**.
 
+Manual add takes a single **tuner URL** (base URL or host). Prairie probes the usual `discover.json` locations, including Dispatcharr’s `/hdhr/` path, then stores the device identity and base URL from the response. You do not need a separate discover URL or device ID.
+
 ## Docker: enable LAN UDP discovery
 
 Default `docker-compose.yml` runs Prairie in **bridge** networking. Bridge mode typically **cannot** send SiliconDust discovery broadcasts to your LAN, so **Discover on LAN** returns no devices (URL probe still works).
@@ -57,6 +59,16 @@ Dispatcharr exposes HDHomeRun-compatible endpoints (commonly under `/hdhr/`). Pr
 - `http(s)://{host}:9191/hdhr/discover.json` when another port was given
 
 No Dispatcharr API key is required for HDHR emulation; protect it with network ACLs as you would any tuner.
+
+## API
+
+`POST /api/v1/livetv/tuners` accepts:
+
+```json
+{ "url": "http://192.168.1.50" }
+```
+
+Legacy `discover_url` and `device_id` fields are still accepted as aliases for the same address. The SiliconDust hardware id is read from `discover.json` and stored as `device_id` on the tuner; clients do not supply it.
 
 ## Security notes
 

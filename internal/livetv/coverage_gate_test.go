@@ -23,7 +23,7 @@ func TestNewServiceNilDBAndRequireStoreGuards(t *testing.T) {
 	if _, err := svc.ListTuners(ctx); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("ListTuners: %v", err)
 	}
-	if _, err := svc.AddTuner(ctx, "", ""); !errors.Is(err, ErrNotConfigured) {
+	if _, err := svc.AddTuner(ctx, AddTunerInput{}); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("AddTuner: %v", err)
 	}
 	if err := svc.ScanTuner(ctx, "x"); !errors.Is(err, ErrNotConfigured) {
@@ -205,7 +205,7 @@ func TestAddTunerValidationAndScanErrors(t *testing.T) {
 	store := newMemoryStore()
 	svc := NewServiceWithStore(store)
 	svc.hdhr = nil
-	if _, err := svc.AddTuner(context.Background(), "http://192.168.1.1/discover.json", ""); !errors.Is(err, ErrNotConfigured) {
+	if _, err := svc.AddTuner(context.Background(), AddTunerInput{URL: "http://192.168.1.1"}); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("AddTuner nil hdhr: %v", err)
 	}
 
@@ -216,7 +216,7 @@ func TestAddTunerValidationAndScanErrors(t *testing.T) {
 		_, _ = w.Write([]byte(`{"DeviceID":"","BaseURL":"` + srv.URL + `","TunerCount":1}`))
 	})
 	svc.SetHDHomeRunClient(hdhomerun.NewClient(srv.Client()))
-	if _, err := svc.AddTuner(context.Background(), srv.URL+"/discover.json", ""); err == nil || !strings.Contains(err.Error(), "device_id") {
+	if _, err := svc.AddTuner(context.Background(), AddTunerInput{URL: srv.URL}); err == nil || !strings.Contains(err.Error(), "device_id") {
 		t.Fatalf("empty device id: %v", err)
 	}
 
@@ -230,7 +230,7 @@ func TestAddTunerValidationAndScanErrors(t *testing.T) {
 		http.Error(w, "fail", 500)
 	})
 	svc.SetHDHomeRunClient(hdhomerun.NewClient(srv2.Client()))
-	tuner, err := svc.AddTuner(context.Background(), "", strings.TrimPrefix(srv2.URL, "http://"))
+	tuner, err := svc.AddTuner(context.Background(), AddTunerInput{URL: strings.TrimPrefix(srv2.URL, "http://")})
 	if err == nil {
 		t.Fatal("expected lineup scan error")
 	}
@@ -257,7 +257,7 @@ func TestAddTunerValidationAndScanErrors(t *testing.T) {
 
 func TestAddTunerDeviceIDValidationAndDiscoverError(t *testing.T) {
 	svc := NewServiceWithStore(newMemoryStore())
-	if _, err := svc.AddTuner(context.Background(), "", "169.254.169.254"); !errors.Is(err, ErrInvalidArgument) {
+	if _, err := svc.AddTuner(context.Background(), AddTunerInput{URL: "169.254.169.254"}); !errors.Is(err, ErrInvalidArgument) {
 		t.Fatalf("metadata device id = %v", err)
 	}
 
@@ -266,7 +266,7 @@ func TestAddTunerDeviceIDValidationAndDiscoverError(t *testing.T) {
 			return nil, errors.New("discover boom")
 		},
 	})
-	if _, err := svc.AddTuner(context.Background(), "http://probe.example/discover.json", ""); err == nil || !strings.Contains(err.Error(), "discover hdhomerun") {
+	if _, err := svc.AddTuner(context.Background(), AddTunerInput{URL: "http://probe.example"}); err == nil || !strings.Contains(err.Error(), "discover hdhomerun") {
 		t.Fatalf("discover error = %v", err)
 	}
 }
@@ -550,13 +550,13 @@ func TestDiscoverTunersEmptyLANAndAddTunerURLCases(t *testing.T) {
 		t.Fatalf("notes=%v", result.Notes)
 	}
 
-	if _, err := svc.AddTuner(context.Background(), "ftp://bad", ""); err == nil {
+	if _, err := svc.AddTuner(context.Background(), AddTunerInput{URL: "ftp://bad"}); err == nil {
 		t.Fatal("expected invalid discover url")
 	}
-	if _, err := svc.AddTuner(context.Background(), "", "https://169.254.169.254/discover.json"); err == nil {
+	if _, err := svc.AddTuner(context.Background(), AddTunerInput{URL: "https://169.254.169.254/discover.json"}); err == nil {
 		t.Fatal("expected blocked metadata device url")
 	}
-	if _, err := svc.AddTuner(context.Background(), "", "http://169.254.169.254/"); err == nil {
+	if _, err := svc.AddTuner(context.Background(), AddTunerInput{URL: "http://169.254.169.254/"}); err == nil {
 		t.Fatal("expected blocked http device id host")
 	}
 }
