@@ -84,14 +84,26 @@ type scoredItemsResponse struct {
 	Items []recommendations.ScoredItem `json:"items"`
 }
 
+// similarItemsResponse keeps the scored `items` list and adds ready-to-render
+// `cards` so clients do not need a request per recommendation.
+type similarItemsResponse struct {
+	Items []recommendations.ScoredItem `json:"items"`
+	Cards []sectionItemResponse        `json:"cards,omitempty"`
+}
+
 type forYouMainResponse struct {
 	Row *recommendations.ForYouRow `json:"row"`
 }
 
 // HandleSimilar handles GET /recommendations/similar/{item_id}.
+//
+// `items` carries the scored ids for compatibility; `cards` carries the same
+// items already hydrated into the section-item shape. Without `cards` a client
+// has to issue one item-detail request per recommendation just to draw a poster,
+// which on TV clients dominated the time to a usable detail page.
 func (h *RecommendationsHandler) HandleSimilar(w http.ResponseWriter, r *http.Request) {
 	if !h.enabled {
-		writeJSON(w, http.StatusOK, scoredItemsResponse{Items: []recommendations.ScoredItem{}})
+		writeJSON(w, http.StatusOK, similarItemsResponse{Items: []recommendations.ScoredItem{}})
 		return
 	}
 
@@ -119,7 +131,48 @@ func (h *RecommendationsHandler) HandleSimilar(w http.ResponseWriter, r *http.Re
 		items = []recommendations.ScoredItem{}
 	}
 
-	writeJSON(w, http.StatusOK, scoredItemsResponse{Items: items})
+	writeJSON(w, http.StatusOK, similarItemsResponse{
+		Items: items,
+		Cards: h.hydrateScoredCards(r, items),
+	})
+}
+
+// hydrateScoredCards resolves scored ids into cards, dropping anything the
+// requesting profile cannot see. Returns nil when hydration is unavailable so
+// the field is omitted and clients fall back to per-id lookups.
+func (h *RecommendationsHandler) hydrateScoredCards(
+	r *http.Request,
+	items []recommendations.ScoredItem,
+) []sectionItemResponse {
+	if h.Fetcher == nil || len(items) == 0 {
+		return nil
+	}
+
+	ids := make([]string, 0, len(items))
+	for _, item := range items {
+		if item.MediaItemID != "" {
+			ids = append(ids, item.MediaItemID)
+		}
+	}
+	if len(ids) == 0 {
+		return nil
+	}
+
+	enrichment, err := h.loadItemEnrichment(
+		r.Context(),
+		apimw.GetUserID(r.Context()),
+		apimw.GetProfileID(r.Context()),
+		requestAccessFilter(r),
+		ids,
+	)
+	if err != nil {
+		// Scored ids are still useful on their own; log and degrade.
+		slog.WarnContext(r.Context(), "Recommendations: card hydration failed",
+			"component", "api", "error", err)
+		return nil
+	}
+
+	return h.buildSectionItems(r.Context(), items, enrichment, nil)
 }
 
 // HandleForYouMain handles GET /recommendations/for-you/main.
