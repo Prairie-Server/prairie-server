@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router";
 import {
   Cast,
   Check,
@@ -299,12 +298,12 @@ export default function ConnectAppsSettings() {
           Exactly what to type on a sign-in screen. Pick the kind of app you're using — the
           credentials are different for each. To approve a TV or other device without a password,
           use{" "}
-          <Link
+          <a
             className="text-foreground underline underline-offset-2"
-            to="/settings/quick-connect"
+            href="/settings/quick-connect"
           >
             Quick Connect
-          </Link>
+          </a>
           .
         </p>
       </div>
