@@ -1,3 +1,10 @@
+# syntax=docker/dockerfile:1.7
+
+# Node/npm for jellyfin-web builds at runtime. Kept separate from the frontend
+# build stage so CI can inject a prebuilt `frontend_dist` without re-running
+# pnpm install / vite inside Docker.
+FROM node:22-slim AS node_runtime
+
 # Stage 1: Build frontend
 FROM node:22-slim AS frontend
 RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
@@ -45,7 +52,10 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
 # Stage 3: Runtime
 FROM debian:bookworm-slim
 ARG TARGETARCH
-RUN apt-get update && \
+RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
+    --mount=type=cache,target=/var/lib/apt,sharing=locked \
+    rm -f /etc/apt/apt.conf.d/docker-clean && \
+    apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates curl gnupg && \
     curl -fsSL https://repo.jellyfin.org/jellyfin_team.gpg.key \
       | gpg --dearmor -o /usr/share/keyrings/jellyfin.gpg && \
@@ -53,11 +63,10 @@ RUN apt-get update && \
       > /etc/apt/sources.list.d/jellyfin.list && \
     apt-get update && \
     apt-get install -y --no-install-recommends jellyfin-ffmpeg7 git fonts-noto-core fonts-noto-cjk && \
-    apt-get purge -y gnupg && apt-get autoremove -y && \
-    rm -rf /var/lib/apt/lists/*
+    apt-get purge -y gnupg && apt-get autoremove -y
 RUN mkdir -p /tmp/prairie-transcode /var/lib/prairie/compat/jellyfin-web
-COPY --from=frontend /usr/local/bin/node /usr/local/bin/node
-COPY --from=frontend /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
+COPY --from=node_runtime /usr/local/bin/node /usr/local/bin/node
+COPY --from=node_runtime /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
 RUN ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
     ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
 COPY --from=build /prairie /usr/local/bin/prairie
