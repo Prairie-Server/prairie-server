@@ -161,6 +161,23 @@ func (s *flakyTerminalPlaybackStore) calls() int {
 	return s.stageCalls
 }
 
+// waitForFinalizableGone waits until CompleteTerminal removes a staged stop.
+// channelCompatWatchScrobbler signals during ScrobbleStop, which runs before
+// the store deletion, so immediate GetFinalizable checks race under load.
+func waitForFinalizableGone(t *testing.T, store CompatPlaybackStore, id, token, message string) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		if _, ok := store.GetFinalizable(id, token); !ok {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatal(message)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
 func (s *channelCompatWatchScrobbler) ScrobbleStart(context.Context, watchsync.ScrobbleEvent) error {
 	return nil
 }
@@ -636,9 +653,10 @@ func TestActiveEncodingsFallbackAllowsLaterAuthoritativeStop(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("timed out waiting for authoritative stop after fallback")
 	}
-	if _, ok := store.GetFinalizable("play-1", "token-1"); ok {
-		t.Fatal("authoritative terminal event remained after delivery")
-	}
+	waitForFinalizableGone(
+		t, store, "play-1", "token-1",
+		"authoritative terminal event remained after delivery",
+	)
 }
 
 func TestPositionlessLateStopPreservesAndDeliversPendingFallback(t *testing.T) {
@@ -735,9 +753,10 @@ func TestStoppedScrobbleQueueFailureRetainsAndRetriesTerminalEvent(t *testing.T)
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for terminal queue retry")
 	}
-	if _, ok := handler.playbackStore.GetFinalizable("play-1", "token-1"); ok {
-		t.Fatal("authoritative terminal event remained after successful retry")
-	}
+	waitForFinalizableGone(
+		t, handler.playbackStore, "play-1", "token-1",
+		"authoritative terminal event remained after successful retry",
+	)
 }
 
 func TestStoppedScrobbleRestagesAfterTerminalPersistenceFailure(t *testing.T) {
@@ -782,9 +801,10 @@ func TestStoppedScrobbleRestagesAfterTerminalPersistenceFailure(t *testing.T) {
 	if calls := flakyStore.calls(); calls < 2 {
 		t.Fatalf("stage calls = %d, want persistence retry", calls)
 	}
-	if _, ok := flakyStore.GetFinalizable("play-1", "token-1"); ok {
-		t.Fatal("restaged authoritative event remained after delivery")
-	}
+	waitForFinalizableGone(
+		t, flakyStore, "play-1", "token-1",
+		"restaged authoritative event remained after delivery",
+	)
 }
 
 func TestStoppedScrobblePreservesExplicitZeroPosition(t *testing.T) {
@@ -842,9 +862,10 @@ func TestTerminalScrobbleRecoveryDeliversPersistedEventAfterRestart(t *testing.T
 	case <-time.After(time.Second):
 		t.Fatal("timed out waiting for recovered terminal event")
 	}
-	if _, ok := store.GetFinalizable("play-1", "token-1"); ok {
-		t.Fatal("recovered authoritative event remained pending")
-	}
+	waitForFinalizableGone(
+		t, store, "play-1", "token-1",
+		"recovered authoritative event remained pending",
+	)
 }
 
 func TestTerminalScrobbleRecoveryWaitsForConfirmedProviderStop(t *testing.T) {
