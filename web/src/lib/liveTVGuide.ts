@@ -17,14 +17,30 @@ export function channelLabel(channel: {
   return `${number} · ${name}`;
 }
 
+export type NowNextSlot = {
+  id: string;
+  title: string;
+  start: string;
+  stop: string;
+  /** Programme artwork when the guide source provided it. */
+  image_url?: string;
+};
+
 export type NowNext = {
-  now: { id: string; title: string; start: string; stop: string } | null;
-  next: { id: string; title: string; start: string; stop: string } | null;
+  now: NowNextSlot | null;
+  next: NowNextSlot | null;
 };
 
 /** Pick the current and following programme for a channel from a flat guide list. */
 export function pickNowNext(
-  programs: Array<{ id: string; channel_id: string; title: string; start: string; stop: string }>,
+  programs: Array<{
+    id: string;
+    channel_id: string;
+    title: string;
+    start: string;
+    stop: string;
+    image_url?: string;
+  }>,
   channelId: string,
   now: Date = new Date(),
 ): NowNext {
@@ -53,12 +69,25 @@ export function pickNowNext(
     upcoming = idx >= 0 ? (sorted[idx + 1] ?? null) : null;
   }
   return {
-    now: current
-      ? { id: current.id, title: current.title, start: current.start, stop: current.stop }
-      : null,
-    next: upcoming
-      ? { id: upcoming.id, title: upcoming.title, start: upcoming.start, stop: upcoming.stop }
-      : null,
+    now: current ? toNowNextSlot(current) : null,
+    next: upcoming ? toNowNextSlot(upcoming) : null,
+  };
+}
+
+function toNowNextSlot(program: {
+  id: string;
+  title: string;
+  start: string;
+  stop: string;
+  image_url?: string;
+}): NowNextSlot {
+  const image = program.image_url?.trim();
+  return {
+    id: program.id,
+    title: program.title,
+    start: program.start,
+    stop: program.stop,
+    ...(image ? { image_url: image } : {}),
   };
 }
 
