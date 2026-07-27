@@ -39,7 +39,7 @@ type PlannerInputV3 struct {
 	// Dolby Vision RPU strip. The registries answer whether the executor
 	// carries the transformation; this answers whether the file does, which
 	// no capability probe can. Nil means "assume it does", preserving the
-	// pre-probe behaviour for callers that cannot run one (the shadow
+	// pre-probe behavior for callers that cannot run one (the shadow
 	// planner, tests). Lazy for the same reason as HLSRegistry: it shells out
 	// to ffmpeg, so it is consulted only once every cheap eligibility gate
 	// has already passed and a strip route is genuinely on the table.

@@ -107,7 +107,7 @@ func DVRPUStrippable(ctx context.Context, ffmpegPath, inputPath string) bool {
 
 // CanStrip answers for one source, probing it if the verdict is not cached.
 // It fails open: anything that stops the probe from reaching a conclusion
-// keeps the previous strip-always behaviour, because most Profile 7 sources
+// keeps the previous strip-always behavior, because most Profile 7 sources
 // genuinely need the strip and "we did not find out" must not silently
 // disable it.
 func (p *DVRPUProbe) CanStrip(ctx context.Context, bin, inputPath string) bool {

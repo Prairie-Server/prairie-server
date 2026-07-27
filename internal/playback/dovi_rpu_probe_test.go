@@ -75,7 +75,7 @@ func TestProbeKeyRefusesAnUnreadableFile(t *testing.T) {
 	}
 }
 
-// A nil probe must not change behaviour: most Profile 7 sources need the strip,
+// A nil probe must not change behavior: most Profile 7 sources need the strip,
 // so "no probe configured" has to mean "strip", not "never strip".
 func TestNilProbeKeepsStripping(t *testing.T) {
 	var probe *DVRPUProbe
@@ -115,7 +115,7 @@ func TestInconclusiveProbeIsNeitherFatalNorCached(t *testing.T) {
 // The leader probes on behalf of every follower queued behind it, so its own
 // client giving up must not abandon the run: the verdict is still reached and
 // still cached for the next start. While the probe rode the caller's context,
-// one client disconnecting turned the answer its neighbours were waiting on
+// one client disconnecting turned the answer its neighbors were waiting on
 // into an inconclusive fail-open and hung them on the very source it had been
 // about to reject.
 func TestProbeSurvivesTheLeaderLeaving(t *testing.T) {

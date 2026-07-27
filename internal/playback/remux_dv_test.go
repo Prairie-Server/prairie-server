@@ -161,7 +161,7 @@ func TestLegacyRemuxDropsTheStripForAnUnstrippableSource(t *testing.T) {
 
 // The explicit v3 recipe has already promised the client HDR10. Reaching it
 // with an unstrippable source means a session or stream token minted before
-// the verdict was known, and neither honouring nor silently dropping the strip
+// the verdict was known, and neither honoring nor silently dropping the strip
 // is right: fail so the request gets a definite error instead of a stalled
 // stream, and so the next start re-plans onto a route that works.
 func TestExplicitStripRecipeRefusesAnUnstrippableSource(t *testing.T) {
