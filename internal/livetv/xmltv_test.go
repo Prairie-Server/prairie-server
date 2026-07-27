@@ -91,11 +91,11 @@ func TestParseXMLTVErrors(t *testing.T) {
 	if _, err := ParseXMLTV(strings.NewReader(`not xml`)); err == nil {
 		t.Fatal("expected parse error")
 	}
-	const badTime = `<?xml version="1.0"?><tv><programme start="bad" stop="20260725200000" channel="x"><title>T</title></programme></tv>`
+	const badTime = `<?xml version="1.0"?><tv><programme start="bad" stop="20260725200000" channel="x"><title>T</title></programme></tv>` //nolint:misspell // XMLTV element name
 	if _, err := ParseXMLTV(strings.NewReader(badTime)); err == nil {
 		t.Fatal("expected bad start time error")
 	}
-	const badStop = `<?xml version="1.0"?><tv><programme start="20260725190000" stop="bad" channel="x"><title>T</title></programme></tv>`
+	const badStop = `<?xml version="1.0"?><tv><programme start="20260725190000" stop="bad" channel="x"><title>T</title></programme></tv>` //nolint:misspell // XMLTV element name
 	if _, err := ParseXMLTV(strings.NewReader(badStop)); err == nil {
 		t.Fatal("expected bad stop time error")
 	}

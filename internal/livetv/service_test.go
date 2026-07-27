@@ -857,7 +857,7 @@ func TestServiceStoreErrorBranches(t *testing.T) {
 	}
 
 	xmlSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`<?xml version="1.0"?><tv><channel id="KING"><display-name>KING</display-name></channel><programme start="20260725190000" stop="20260725200000" channel="KING"><title>News</title></programme></tv>`))
+		_, _ = w.Write([]byte(`<?xml version="1.0"?><tv><channel id="KING"><display-name>KING</display-name></channel><programme start="20260725190000" stop="20260725200000" channel="KING"><title>News</title></programme></tv>`)) //nolint:misspell // XMLTV element name
 	}))
 	defer xmlSrv.Close()
 
