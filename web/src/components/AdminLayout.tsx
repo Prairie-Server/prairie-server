@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { Outlet, useLocation } from "react-router";
 import AdminSidebar from "@/components/AdminSidebar";
 import ServerActivity from "@/components/ServerActivity";
@@ -73,7 +73,15 @@ export default function AdminLayout() {
         }`}
       >
         <div className="admin-shell">
-          <Outlet />
+          <Suspense
+            fallback={
+              <div className="p-8" role="status" aria-live="polite">
+                Loading...
+              </div>
+            }
+          >
+            <Outlet />
+          </Suspense>
         </div>
       </main>
     </div>
