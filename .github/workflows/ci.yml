@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  COVER_MIN: "75"
+  COVER_MIN: "90"
 
 jobs:
   go-lint:
@@ -22,14 +22,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out sources
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
           # only-new-issues needs full history vs the PR base.
           fetch-depth: 0
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -40,7 +40,7 @@ jobs:
           printf '%s\n' '<!doctype html><title>prairie</title>' > web/dist/index.html
 
       - name: golangci-lint (new issues only)
-        uses: golangci/golangci-lint-action@v8
+        uses: golangci/golangci-lint-action@v9
         with:
           version: latest
           only-new-issues: true
@@ -54,17 +54,17 @@ jobs:
         working-directory: web
     steps:
       - name: Check out sources
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           version: 10
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: pnpm
@@ -87,12 +87,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out sources
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -142,7 +142,7 @@ jobs:
 
       - name: Upload coverage profile
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: go-coverage
           path: coverage.out
@@ -156,19 +156,19 @@ jobs:
         working-directory: web
     steps:
       - name: Check out sources
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
           # Match docker.yml: pin major here. Do not also pass package_json_file
           # (web/package.json packageManager would conflict with "version").
           version: 10
 
       - name: Set up Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: "22"
           cache: pnpm
@@ -183,10 +183,10 @@ jobs:
       - name: Lint
         run: pnpm run lint
 
-      # Vitest coverage thresholds (75% statements/lines/functions/branches) apply
+      # Vitest coverage thresholds (90% statements/lines/functions/branches) apply
       # to the include list in web/vite.config.ts (pure helpers under src/lib/).
       # Expand that list as more modules gain unit tests rather than gating the
-      # entire web tree, which is still well below 75% overall.
+      # entire web tree, which is still well below 90% overall.
       - name: Run Vitest with coverage
         run: pnpm exec vitest run --coverage
 
@@ -195,7 +195,7 @@ jobs:
 
       - name: Upload web coverage
         if: always()
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v7
         with:
           name: web-coverage
           path: web/coverage
@@ -206,12 +206,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out sources
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
@@ -232,7 +232,7 @@ jobs:
         working-directory: tools/imageutil-wasm
     steps:
       - name: Check out sources
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 

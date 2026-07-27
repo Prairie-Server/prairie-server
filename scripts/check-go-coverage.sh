@@ -6,7 +6,7 @@
 #
 # Environment:
 #   COVER_PROFILE   coverprofile path (default: coverage.out)
-#   COVER_MIN       minimum percent (default: 75)
+#   COVER_MIN       minimum percent (default: 90)
 #   COVER_PACKAGES  newline/space separated package patterns; when set, each
 #                   matched package must meet COVER_MIN. When empty, the
 #                   aggregate profile total must meet COVER_MIN.
@@ -18,7 +18,7 @@
 set -euo pipefail
 
 COVER_PROFILE="${1:-${COVER_PROFILE:-coverage.out}}"
-COVER_MIN="${2:-${COVER_MIN:-75}}"
+COVER_MIN="${2:-${COVER_MIN:-90}}"
 
 if [[ ! -f "$COVER_PROFILE" ]]; then
   echo "error: cover profile not found: $COVER_PROFILE" >&2
