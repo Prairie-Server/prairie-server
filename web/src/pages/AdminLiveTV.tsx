@@ -636,7 +636,15 @@ function GuideTab() {
         </Button>
       </div>
 
-      <div className="max-w-xl space-y-4">
+      <form
+        className="max-w-xl space-y-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!createSource.isPending && canAddSD) {
+            addSchedulesDirect();
+          }
+        }}
+      >
         <h3 className="text-sm font-medium">Schedules Direct</h3>
         <div className="space-y-1.5">
           <Label htmlFor="guide-name">Display name</Label>
@@ -727,11 +735,11 @@ function GuideTab() {
             />
           </div>
         )}
-        <Button onClick={addSchedulesDirect} disabled={createSource.isPending || !canAddSD}>
+        <Button type="submit" disabled={createSource.isPending || !canAddSD}>
           <Plus />
           {createSource.isPending ? "Adding…" : "Add Schedules Direct source"}
         </Button>
-      </div>
+      </form>
 
       {sources.isLoading ? (
         <p className="text-muted-foreground text-sm">Loading guide sources…</p>
