@@ -284,16 +284,10 @@ func (s *Service) AddTuner(ctx context.Context, in AddTunerInput) (*Tuner, error
 		break
 	}
 	if info == nil {
-		if lastErr == nil {
-			lastErr = errors.New("no discover endpoint responded")
-		}
 		return nil, fmt.Errorf("discover hdhomerun: %w", lastErr)
 	}
 	if strings.TrimSpace(info.DeviceID) == "" {
 		return nil, fmt.Errorf("%w: device_id is required", ErrInvalidArgument)
-	}
-	if discoverURL == "" {
-		discoverURL = hdhomerun.DiscoverURLForBase(info.BaseURL)
 	}
 	tuner, err := s.store.CreateTuner(ctx, &Tuner{
 		Type:        TunerTypeHDHomeRun,

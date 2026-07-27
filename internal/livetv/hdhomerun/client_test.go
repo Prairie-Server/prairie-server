@@ -170,6 +170,42 @@ func TestFetchLineupAcceptsNumericHDAndFavorite(t *testing.T) {
 	}
 }
 
+func TestLineupBoolUnmarshal(t *testing.T) {
+	cases := []struct {
+		name    string
+		raw     string
+		want    bool
+		wantErr bool
+	}{
+		{name: "null", raw: "null", want: false},
+		{name: "true", raw: "true", want: true},
+		{name: "false", raw: "false", want: false},
+		{name: "one", raw: "1", want: true},
+		{name: "zero", raw: "0", want: false},
+		{name: "float", raw: "1.5", wantErr: true},
+		{name: "string", raw: `"yes"`, wantErr: true},
+		{name: "object", raw: `{}`, wantErr: true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			var got lineupBool
+			err := got.UnmarshalJSON([]byte(tc.raw))
+			if tc.wantErr {
+				if err == nil {
+					t.Fatal("expected error")
+				}
+				return
+			}
+			if err != nil {
+				t.Fatalf("UnmarshalJSON: %v", err)
+			}
+			if bool(got) != tc.want {
+				t.Fatalf("got %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
 func TestFetchLineupErrors(t *testing.T) {
 	client := NewClient(http.DefaultClient)
 	_, err := client.FetchLineup(context.Background(), "")

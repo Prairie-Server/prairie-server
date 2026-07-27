@@ -62,6 +62,9 @@ func TestAddTunerAcceptsLegacyAliases(t *testing.T) {
 	if _, err := svc.AddTuner(context.Background(), AddTunerInput{}); !errors.Is(err, ErrInvalidArgument) {
 		t.Fatalf("empty input: %v", err)
 	}
+	if _, err := svc.AddTuner(context.Background(), AddTunerInput{URL: "://"}); !errors.Is(err, ErrInvalidArgument) {
+		t.Fatalf("invalid url: %v", err)
+	}
 }
 
 func TestServiceAddTunerScansLineup(t *testing.T) {
