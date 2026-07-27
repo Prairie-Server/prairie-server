@@ -8,9 +8,11 @@ import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import {
   useLiveTVChannels,
   useLiveTVGuide,
+  useLiveTVSessionHeartbeat,
   useReleaseLiveTVSession,
   useStartLiveTVSession,
 } from "@/hooks/queries/useLiveTV";
+import { releaseLiveTVSessionOnUnload } from "@/lib/liveTVWatch";
 import { channelLabel, pickNowNext } from "@/lib/liveTVGuide";
 import { CircleButton } from "@/player/components/CircleButton";
 
@@ -58,6 +60,7 @@ export default function LiveWatchRoute() {
   const releaseSession = useReleaseLiveTVSession();
   const sessionIdRef = useRef<string | null>(null);
   const releasedRef = useRef(false);
+  const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
   const [streamURL, setStreamURL] = useState<string | null>(null);
   const [transport, setTransport] = useState<"mpegts" | "hls">("hls");
   const [tuneError, setTuneError] = useState<string | null>(null);
@@ -77,6 +80,7 @@ export default function LiveWatchRoute() {
     releasedRef.current = true;
     const sid = sessionIdRef.current;
     sessionIdRef.current = null;
+    setActiveSessionId(null);
     if (sid) {
       try {
         await releaseSession.mutateAsync(sid);
@@ -105,6 +109,7 @@ export default function LiveWatchRoute() {
           return;
         }
         sessionIdRef.current = session.session_id;
+        setActiveSessionId(session.session_id);
         const nextUrl = session.hls_url || session.stream_url || null;
         setTransport(session.transport === "hls" || Boolean(session.hls_url) ? "hls" : "mpegts");
         setStreamURL(nextUrl);
@@ -132,6 +137,21 @@ export default function LiveWatchRoute() {
     // Start once per channel deep-link; hooks are stable enough for this mount.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [channelId]);
+
+  useLiveTVSessionHeartbeat(activeSessionId, Boolean(activeSessionId) && !tuneError);
+
+  // Closing the tab never runs React cleanup, so free the tuner with a beacon.
+  useEffect(() => {
+    function onPageHide() {
+      const sid = sessionIdRef.current;
+      if (!sid || releasedRef.current) return;
+      releasedRef.current = true;
+      sessionIdRef.current = null;
+      releaseLiveTVSessionOnUnload(sid);
+    }
+    window.addEventListener("pagehide", onPageHide);
+    return () => window.removeEventListener("pagehide", onPageHide);
+  }, []);
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {

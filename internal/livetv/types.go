@@ -174,6 +174,9 @@ type LiveSession struct {
 	Note       string     `json:"note,omitempty"`
 	CreatedAt  time.Time  `json:"created_at"`
 	ReleasedAt *time.Time `json:"released_at,omitempty"`
+	// LastSeenAt is refreshed while the stream is being fetched or the client
+	// heartbeats; stale sessions are reclaimed so tuners are not leaked.
+	LastSeenAt time.Time `json:"last_seen_at"`
 }
 
 // MarshalJSON preserves stream_url for /api/v1 clients using the public proxy path.

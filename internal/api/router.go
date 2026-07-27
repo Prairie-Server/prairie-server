@@ -711,6 +711,12 @@ func NewRouter(deps Dependencies) chi.Router {
 			// Tests / alternate entrypoints may omit deps.LiveTV.
 			liveTVHandler = handlers.NewLiveTVHandler(livetv.NewService(deps.DB))
 		}
+		if deps.LiveTV != nil && deps.DB != nil {
+			// Finished live views land in the same admin playback history as VOD.
+			deps.LiveTV.SetHistoryRecorder(handlers.NewLiveTVHistoryRecorder(
+				handlers.NewPGPlaybackAdminStore(deps.DB, deps.EventsHub),
+			))
+		}
 
 		autoscanRepo := autoscan.NewRepository(deps.DB, deps.SecretCipher)
 		if deps.FolderRepo != nil && deps.LibraryScanQueue != nil && deps.PluginService != nil {
@@ -2245,6 +2251,7 @@ func NewRouter(deps Dependencies) chi.Router {
 							r.Get("/sessions/{sessionId}/stream", liveTVHandler.HandleSessionStream)
 							r.Method(http.MethodHead, "/sessions/{sessionId}/stream", http.HandlerFunc(liveTVHandler.HandleSessionStream))
 							r.Get("/live-hls/{playbackId}/{name}", liveTVHandler.HandleLiveHLS)
+							r.Post("/sessions/{sessionId}/heartbeat", liveTVHandler.HandleSessionHeartbeat)
 							r.Delete("/sessions/{sessionId}", liveTVHandler.HandleReleaseSession)
 							r.Post("/recordings", liveTVHandler.HandleScheduleRecording)
 							r.Delete("/recordings/{recordingId}", liveTVHandler.HandleCancelRecording)

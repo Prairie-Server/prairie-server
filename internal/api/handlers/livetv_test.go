@@ -85,6 +85,10 @@ func (s *fakeLiveTVStore) GetSession(context.Context, string) (*livetv.LiveSessi
 func (s *fakeLiveTVStore) ReleaseSession(context.Context, string) (*livetv.LiveSession, error) {
 	return nil, nil
 }
+func (s *fakeLiveTVStore) TouchSession(context.Context, string) error { return nil }
+func (s *fakeLiveTVStore) ReleaseSessionsLastSeenBefore(context.Context, time.Time) ([]livetv.LiveSession, error) {
+	return nil, nil
+}
 func (s *fakeLiveTVStore) ListRecordings(context.Context, string) ([]livetv.Recording, error) {
 	return nil, nil
 }

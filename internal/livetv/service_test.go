@@ -1393,6 +1393,7 @@ func (s *memoryStore) CreateSession(_ context.Context, input SessionCreate) (*Li
 		PlaybackSessionID: input.PlaybackSessionID,
 		Status:            "active",
 		CreatedAt:         time.Now().UTC(),
+		LastSeenAt:        time.Now().UTC(),
 	}
 	s.sessions[session.ID] = session
 	return &session, nil
@@ -1420,6 +1421,38 @@ func (s *memoryStore) ReleaseSession(_ context.Context, id string) (*LiveSession
 	session.ReleasedAt = &now
 	s.sessions[id] = session
 	return &session, nil
+}
+
+func (s *memoryStore) TouchSession(_ context.Context, id string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	for key, session := range s.sessions {
+		if session.Status != "active" {
+			continue
+		}
+		if session.ID == id || session.PlaybackSessionID == id {
+			session.LastSeenAt = time.Now().UTC()
+			s.sessions[key] = session
+		}
+	}
+	return nil
+}
+
+func (s *memoryStore) ReleaseSessionsLastSeenBefore(_ context.Context, cutoff time.Time) ([]LiveSession, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	now := time.Now().UTC()
+	var released []LiveSession
+	for key, session := range s.sessions {
+		if session.Status != "active" || !session.LastSeenAt.Before(cutoff) {
+			continue
+		}
+		session.Status = "released"
+		session.ReleasedAt = &now
+		s.sessions[key] = session
+		released = append(released, session)
+	}
+	return released, nil
 }
 
 func (s *memoryStore) ListRecordings(_ context.Context, status string) ([]Recording, error) {
