@@ -33,6 +33,10 @@ const imageCacheDiscoveryInterval = 15 * time.Minute
 // processed so the short reclaim lease does not steal in-flight work.
 const imageCacheLeaseHeartbeatInterval = 30 * time.Second
 
+// imageCacheProgressInterval drives admin UI progress while the rolling pool
+// has no batch boundaries to hang reports on.
+const imageCacheProgressInterval = 2 * time.Second
+
 // ImageCacheProgressFunc reports cache-queue progress to the task manager UI.
 type ImageCacheProgressFunc func(percent float64, message string)
 
@@ -201,6 +205,9 @@ type ImageCacheRunStats struct {
 	UploadedVariants int
 	ExistingVariants int
 	RuntimeLimited   bool
+	// MaxInFlight is the peak claimed-but-unfinished count during a rolling
+	// RunUntilIdle; used to assert the pool never exceeds concurrency.
+	MaxInFlight int
 }
 
 func (s *ImageCacheRunStats) add(other ImageCacheRunStats) {
@@ -215,8 +222,9 @@ func (s *ImageCacheRunStats) add(other ImageCacheRunStats) {
 }
 
 // RunOnce claims and processes one batch of already-queued jobs. It does not
-// run catalog discovery; callers (RunUntilIdle) drive discovery on a throttled
-// cadence so backlog draining stays decoupled from full-table sweeps.
+// run catalog discovery; callers (RunUntilIdle) drive continuous draining and
+// discovery. Prefer RunUntilIdle in production — RunOnce is a single-batch
+// helper used by tests and the maxRuntime<=0 path.
 //
 // claimLimit is capped to concurrency so DB "running" tracks work that is
 // actually in flight. Over-claiming marked hundreds of idle jobs running and
@@ -238,6 +246,7 @@ func (p *ImageCacheProcessor) RunOnce(ctx context.Context, workerID string, clai
 		return stats, err
 	}
 	stats.Claimed = len(jobs)
+	stats.Batches = 1
 	if len(jobs) == 0 {
 		p.cleanupSucceeded(ctx, &stats)
 		return stats, nil
@@ -267,27 +276,14 @@ loop:
 			defer func() { <-sem }()
 			result := p.processOne(ctx, job)
 			mu.Lock()
-			switch result.outcome {
-			case "succeeded":
-				stats.Succeeded++
-			case "skipped":
-				stats.Skipped++
-			default:
-				stats.Failed++
-			}
-			stats.UploadedVariants += result.uploadedVariants
-			stats.ExistingVariants += result.existingVariants
+			p.addProcessStatsLocked(&stats, result)
 			mu.Unlock()
 		}(job)
 	}
 	wg.Wait()
 
 	if len(unstarted) > 0 {
-		requeueCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
-		if err := p.jobs.RequeueClaimed(requeueCtx, unstarted, workerID); err != nil {
-			p.logger.WarnContext(ctx, "metadata image cache: failed to requeue unstarted jobs", "count", len(unstarted), "error", err)
-		}
-		cancel()
+		p.requeueUnstarted(ctx, unstarted, workerID)
 	}
 
 	p.cleanupSucceeded(ctx, &stats)
@@ -297,6 +293,39 @@ loop:
 	return stats, nil
 }
 
+func (p *ImageCacheProcessor) addProcessStatsLocked(stats *ImageCacheRunStats, result imageCacheProcessResult) {
+	switch result.outcome {
+	case "succeeded":
+		stats.Succeeded++
+	case "skipped":
+		stats.Skipped++
+	default:
+		stats.Failed++
+	}
+	stats.UploadedVariants += result.uploadedVariants
+	stats.ExistingVariants += result.existingVariants
+}
+
+func (p *ImageCacheProcessor) requeueUnstarted(ctx context.Context, ids []int64, workerID string) {
+	if len(ids) == 0 || p.jobs == nil {
+		return
+	}
+	requeueCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+	defer cancel()
+	if err := p.jobs.RequeueClaimed(requeueCtx, ids, workerID); err != nil {
+		p.logger.WarnContext(ctx, "metadata image cache: failed to requeue unstarted jobs", "count", len(ids), "error", err)
+	}
+}
+
+// RunUntilIdle drains the image-cache queue with a rolling worker pool: a
+// single dispatcher claims only free capacity (concurrency − in-flight) via
+// ClaimDue, and concurrency workers pull continuously. Freed workers are
+// refilled immediately rather than waiting for a batch barrier, so DB
+// "running" stays ≈ concurrency while a backlog exists.
+//
+// On cancel / maxRuntime deadline, claimed-but-not-yet-started jobs are
+// requeued via RequeueClaimed. Discovery sweeps, cleanupSucceeded, and
+// progress reporting are preserved.
 func (p *ImageCacheProcessor) RunUntilIdle(ctx context.Context, workerID string, claimLimit int, concurrency int, maxRuntime time.Duration, onProgress ImageCacheProgressFunc) (ImageCacheRunStats, error) {
 	var total ImageCacheRunStats
 	if p == nil || p.jobs == nil || p.cacher == nil || !p.enabled.Load() {
@@ -308,60 +337,247 @@ func (p *ImageCacheProcessor) RunUntilIdle(ctx context.Context, workerID string,
 	}
 	reportProgress()
 
+	if concurrency <= 0 {
+		concurrency = 4
+	}
+	discoverLimit := claimLimit
+	if discoverLimit <= 0 {
+		discoverLimit = concurrency
+	}
+
 	if maxRuntime <= 0 {
-		enqueued, derr := p.discoverExisting(ctx, claimLimit)
+		enqueued, derr := p.discoverExisting(ctx, discoverLimit)
 		total.EnqueuedExisting += enqueued
 		if derr != nil {
 			return total, derr
 		}
 		stats, err := p.RunOnce(ctx, workerID, claimLimit, concurrency)
 		total.add(stats)
-		total.Batches = 1
 		reportProgress()
 		return total, err
 	}
 
-	// Decide once per run whether a full-catalog backfill sweep is due. Within a
-	// due run we keep sweeping until the catalog is exhausted; otherwise we only
-	// drain the existing queue. claimLimit remains the discovery enqueue batch;
-	// RunOnce caps the claim size to concurrency so running ≈ in flight.
 	sweep := p.discoveryDue()
 	deadline := time.Now().Add(maxRuntime)
+	return p.runRolling(ctx, workerID, discoverLimit, concurrency, deadline, sweep, onProgress)
+}
+
+func (p *ImageCacheProcessor) runRolling(
+	ctx context.Context,
+	workerID string,
+	discoverLimit int,
+	concurrency int,
+	deadline time.Time,
+	sweep bool,
+	onProgress ImageCacheProgressFunc,
+) (ImageCacheRunStats, error) {
+	var total ImageCacheRunStats
+	reportProgress := func() {
+		p.reportQueueProgress(ctx, onProgress)
+	}
+
+	jobsCh := make(chan *models.MetadataImageCacheJob) // unbuffered: send success == started
+	completeCh := make(chan struct{}, concurrency)
+	deadlineCh := time.After(time.Until(deadline))
+
+	var (
+		mu          sync.Mutex
+		outstanding atomic.Int32 // claimed and not yet finished
+		maxInFlight atomic.Int32
+		unstarted   []int64
+	)
+
+	recordPeak := func() {
+		for {
+			cur := outstanding.Load()
+			peak := maxInFlight.Load()
+			if cur <= peak || maxInFlight.CompareAndSwap(peak, cur) {
+				return
+			}
+		}
+	}
+
+	workerCtx, workerCancel := context.WithCancel(ctx)
+	defer workerCancel()
+
+	var wg sync.WaitGroup
+	for range concurrency {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for job := range jobsCh {
+				result := p.processOne(workerCtx, job)
+				mu.Lock()
+				p.addProcessStatsLocked(&total, result)
+				mu.Unlock()
+				outstanding.Add(-1)
+				select {
+				case completeCh <- struct{}{}:
+				default:
+				}
+			}
+		}()
+	}
+
+	progressDone := make(chan struct{})
+	go func() {
+		ticker := time.NewTicker(imageCacheProgressInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-progressDone:
+				return
+			case <-ticker.C:
+				reportProgress()
+			}
+		}
+	}()
+
+	var dispatchErr error
+loop:
 	for {
 		if err := ctx.Err(); err != nil {
-			return total, err
+			dispatchErr = err
+			break
 		}
-		if !time.Now().Before(deadline) {
+		select {
+		case <-deadlineCh:
+			mu.Lock()
 			total.RuntimeLimited = true
-			reportProgress()
-			return total, nil
+			mu.Unlock()
+			break loop
+		default:
 		}
 
-		stats, err := p.RunOnce(ctx, workerID, claimLimit, concurrency)
-		total.Batches++
-		total.add(stats)
-		reportProgress()
-		if err != nil {
-			return total, err
+		free := concurrency - int(outstanding.Load())
+		if free <= 0 {
+			switch waitForSlot(ctx, completeCh, deadlineCh) {
+			case slotWaitOK:
+				continue
+			case slotWaitDeadline:
+				mu.Lock()
+				total.RuntimeLimited = true
+				mu.Unlock()
+				break loop
+			default:
+				break loop
+			}
 		}
-		if stats.Claimed > 0 {
-			// Keep draining the queue before spending a full-table sweep.
+
+		jobs, err := p.jobs.ClaimDue(ctx, workerID, free)
+		mu.Lock()
+		total.Batches++
+		mu.Unlock()
+		if err != nil {
+			dispatchErr = err
+			break
+		}
+		mu.Lock()
+		total.Claimed += len(jobs)
+		mu.Unlock()
+
+		if len(jobs) == 0 {
+			if outstanding.Load() > 0 {
+				switch waitForSlot(ctx, completeCh, deadlineCh) {
+				case slotWaitOK:
+					continue
+				case slotWaitDeadline:
+					mu.Lock()
+					total.RuntimeLimited = true
+					mu.Unlock()
+					break loop
+				default:
+					break loop
+				}
+			}
+			// Queue drained of due work.
+			if !sweep {
+				break
+			}
+			enqueued, err := p.jobs.EnqueueExistingProviderArtwork(ctx, discoverLimit)
+			if err != nil {
+				dispatchErr = err
+				break
+			}
+			mu.Lock()
+			total.EnqueuedExisting += enqueued
+			mu.Unlock()
+			reportProgress()
+			if enqueued == 0 {
+				p.markDiscovered()
+				break
+			}
 			continue
 		}
-		if !sweep {
-			return total, nil
+
+		for i, job := range jobs {
+			outstanding.Add(1)
+			recordPeak()
+			select {
+			case jobsCh <- job:
+				// Worker has received the job; it is started.
+			case <-ctx.Done():
+				outstanding.Add(-1)
+				unstarted = append(unstarted, job.ID)
+				for _, rem := range jobs[i+1:] {
+					unstarted = append(unstarted, rem.ID)
+				}
+				dispatchErr = ctx.Err()
+				break loop
+			case <-deadlineCh:
+				outstanding.Add(-1)
+				unstarted = append(unstarted, job.ID)
+				for _, rem := range jobs[i+1:] {
+					unstarted = append(unstarted, rem.ID)
+				}
+				mu.Lock()
+				total.RuntimeLimited = true
+				mu.Unlock()
+				break loop
+			}
 		}
-		enqueued, err := p.jobs.EnqueueExistingProviderArtwork(ctx, claimLimit)
-		if err != nil {
-			return total, err
-		}
-		total.EnqueuedExisting += enqueued
-		reportProgress()
-		if enqueued == 0 {
-			// Catalog fully swept; throttle the next sweep.
-			p.markDiscovered()
-			return total, nil
-		}
+	}
+
+	close(progressDone)
+	close(jobsCh)
+	wg.Wait()
+
+	mu.Lock()
+	total.MaxInFlight = int(maxInFlight.Load())
+	mu.Unlock()
+	if len(unstarted) > 0 {
+		p.requeueUnstarted(ctx, unstarted, workerID)
+	}
+	p.cleanupSucceeded(ctx, &total)
+	reportProgress()
+
+	if dispatchErr != nil && total.Claimed == 0 {
+		return total, dispatchErr
+	}
+	if dispatchErr != nil && errors.Is(dispatchErr, context.Canceled) {
+		// Partial run with cancel: keep stats, soft-succeed like RunOnce.
+		return total, nil
+	}
+	return total, dispatchErr
+}
+
+type slotWaitResult int
+
+const (
+	slotWaitOK slotWaitResult = iota
+	slotWaitCancel
+	slotWaitDeadline
+)
+
+// waitForSlot blocks until a worker frees capacity, ctx cancels, or deadline hits.
+func waitForSlot(ctx context.Context, completeCh <-chan struct{}, deadlineCh <-chan time.Time) slotWaitResult {
+	select {
+	case <-completeCh:
+		return slotWaitOK
+	case <-ctx.Done():
+		return slotWaitCancel
+	case <-deadlineCh:
+		return slotWaitDeadline
 	}
 }
 
