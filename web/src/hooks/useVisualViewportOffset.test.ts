@@ -22,7 +22,7 @@ describe("useVisualViewportOffset", () => {
       },
     };
     vi.stubGlobal("visualViewport", vv);
-    Object.defineProperty(window, "innerHeight", { configurable: true, value: 800 });
+    vi.stubGlobal("innerHeight", 800);
 
     const { result } = renderHook(() => useVisualViewportOffset());
     expect(result.current.bottomOffset).toBe(400);

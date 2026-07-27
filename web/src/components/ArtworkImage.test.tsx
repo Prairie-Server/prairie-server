@@ -66,16 +66,11 @@ describe("ArtworkImage", () => {
     expect(img).toHaveAttribute("sizes", "160px");
   });
 
-  it("omits srcSet for signed artwork URLs", () => {
-    render(
-      <ArtworkImage
-        src="https://cdn.example.com/art/w300.webp?X-Amz-Signature=abc"
-        alt="Poster"
-        widths={[300, 500]}
-        sizes="160px"
-      />,
-    );
+  it("omits srcSet and format siblings for signed artwork URLs", () => {
+    const signed = "https://cdn.example.com/art/w300.webp?X-Amz-Signature=abc";
+    render(<ArtworkImage src={signed} alt="Poster" widths={[300, 500]} sizes="160px" />);
     const img = screen.getByRole("img", { name: "Poster" });
+    expect(img).toHaveAttribute("src", signed);
     expect(img.getAttribute("srcset")).toBeNull();
     expect(img.getAttribute("sizes")).toBeNull();
   });

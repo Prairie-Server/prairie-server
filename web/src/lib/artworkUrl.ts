@@ -65,9 +65,17 @@ export function webPPNGSibling(objectPath: string | null | undefined): string {
   return webPFormatSibling(objectPath, ".png");
 }
 
+/** True when rewriting the path would invalidate a cloud object signature. */
+export function isSignedArtworkURL(objectPath: string): boolean {
+  return /[?&](X-Amz-Signature|X-Goog-Signature|Signature|sig)=/i.test(objectPath);
+}
+
 /**
  * Ordered load candidates for a canonical artwork URL: AVIF → WebP → PNG when
  * the input is WebP; otherwise just the original URL.
+ *
+ * Signed URLs return only the original — inventing AVIF/PNG siblings would
+ * request an unsigned path and fail before the WebP fallback.
  *
  * Bundled static PNG brand assets use {@link staticRasterFormats} / PictureImage
  * instead — those siblings are guaranteed to exist, so a native `<picture>` is
@@ -76,6 +84,7 @@ export function webPPNGSibling(objectPath: string | null | undefined): string {
 export function artworkCandidates(objectPath: string | null | undefined): string[] {
   const trimmed = objectPath?.trim() ?? "";
   if (!trimmed) return [];
+  if (isSignedArtworkURL(trimmed)) return [trimmed];
 
   const avif = webPAVIFSibling(trimmed);
   const png = webPPNGSibling(trimmed);
@@ -84,11 +93,6 @@ export function artworkCandidates(objectPath: string | null | undefined): string
   out.push(trimmed);
   if (png) out.push(png);
   return out;
-}
-
-/** True when rewriting the path would invalidate a cloud object signature. */
-export function isSignedArtworkURL(objectPath: string): boolean {
-  return /[?&](X-Amz-Signature|X-Goog-Signature|Signature|sig)=/i.test(objectPath);
 }
 
 function rewritePathWidthVariant(pathname: string, width: number): string {

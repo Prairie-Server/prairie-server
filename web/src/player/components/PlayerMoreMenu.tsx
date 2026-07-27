@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Info, MoreHorizontal, PictureInPicture2, Tags } from "lucide-react";
 
 interface PlayerMoreMenuProps {
@@ -13,6 +14,9 @@ interface PlayerMoreMenuProps {
 /**
  * Mobile-only overflow for secondary player utilities (markers / info / PiP)
  * that are otherwise hidden below the sm breakpoint.
+ *
+ * The popup is portaled to document.body so it is not clipped by the utility
+ * rail's overflow-x-auto scroll container.
  */
 export function PlayerMoreMenu({
   markerEditAvailable,
@@ -23,23 +27,46 @@ export function PlayerMoreMenu({
   onTogglePiP,
 }: PlayerMoreMenuProps) {
   const [open, setOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState<{ bottom: number; right: number } | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const pipEnabled =
     typeof document !== "undefined" && Boolean(onTogglePiP) && document.pictureInPictureEnabled;
 
-  const handleBlur = useCallback((e: React.FocusEvent) => {
-    if (!menuRef.current?.contains(e.relatedTarget as Node)) {
-      setOpen(false);
-    }
+  const updateMenuPos = useCallback(() => {
+    const trigger = triggerRef.current;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    setMenuPos({
+      bottom: window.innerHeight - rect.top + 8,
+      right: window.innerWidth - rect.right,
+    });
   }, []);
+
+  useLayoutEffect(() => {
+    if (!open) {
+      setMenuPos(null);
+      return;
+    }
+    updateMenuPos();
+    window.addEventListener("resize", updateMenuPos);
+    // Capture scroll from overflow ancestors (utility rail) as well as window.
+    window.addEventListener("scroll", updateMenuPos, true);
+    return () => {
+      window.removeEventListener("resize", updateMenuPos);
+      window.removeEventListener("scroll", updateMenuPos, true);
+    };
+  }, [open, updateMenuPos]);
 
   useEffect(() => {
     if (!open) return;
 
     const handlePointerDown = (e: PointerEvent) => {
-      if (!menuRef.current?.contains(e.target as Node)) {
-        setOpen(false);
+      const target = e.target as Node;
+      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) {
+        return;
       }
+      setOpen(false);
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -59,8 +86,9 @@ export function PlayerMoreMenu({
   };
 
   return (
-    <div ref={menuRef} className="relative sm:hidden" onBlur={handleBlur}>
+    <div className="relative sm:hidden">
       <button
+        ref={triggerRef}
         type="button"
         className="player-utility-btn"
         onClick={() => setOpen((v) => !v)}
@@ -72,48 +100,53 @@ export function PlayerMoreMenu({
         <MoreHorizontal className="h-[18px] w-[18px]" />
       </button>
 
-      {open && (
-        <div
-          role="menu"
-          className="absolute right-0 bottom-full mb-2 min-w-[180px] rounded-lg bg-black/90 py-1.5 shadow-xl backdrop-blur-sm"
-        >
-          {markerEditAvailable && onToggleMarkerEdit ? (
-            <button
-              type="button"
-              role="menuitem"
-              className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-white/85 transition-colors hover:bg-white/10"
-              onClick={() => run(onToggleMarkerEdit)}
-              aria-pressed={markerEditActive}
-            >
-              <Tags className="h-4 w-4 shrink-0" />
-              {markerEditActive ? "Done editing markers" : "Edit markers"}
-            </button>
-          ) : null}
-
-          <button
-            type="button"
-            role="menuitem"
-            className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-white/85 transition-colors hover:bg-white/10"
-            onClick={() => run(onTogglePlaybackInfo)}
-            aria-pressed={showPlaybackInfo}
+      {open &&
+        menuPos &&
+        createPortal(
+          <div
+            ref={menuRef}
+            role="menu"
+            className="fixed z-[80] min-w-[180px] rounded-lg bg-black/90 py-1.5 shadow-xl backdrop-blur-sm"
+            style={{ bottom: menuPos.bottom, right: menuPos.right }}
           >
-            <Info className="h-4 w-4 shrink-0" />
-            Playback info
-          </button>
+            {markerEditAvailable && onToggleMarkerEdit ? (
+              <button
+                type="button"
+                role="menuitem"
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-white/85 transition-colors hover:bg-white/10"
+                onClick={() => run(onToggleMarkerEdit)}
+                aria-pressed={markerEditActive}
+              >
+                <Tags className="h-4 w-4 shrink-0" />
+                {markerEditActive ? "Done editing markers" : "Edit markers"}
+              </button>
+            ) : null}
 
-          {pipEnabled && onTogglePiP ? (
             <button
               type="button"
               role="menuitem"
               className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-white/85 transition-colors hover:bg-white/10"
-              onClick={() => run(onTogglePiP)}
+              onClick={() => run(onTogglePlaybackInfo)}
+              aria-pressed={showPlaybackInfo}
             >
-              <PictureInPicture2 className="h-4 w-4 shrink-0" />
-              Picture in Picture
+              <Info className="h-4 w-4 shrink-0" />
+              Playback info
             </button>
-          ) : null}
-        </div>
-      )}
+
+            {pipEnabled && onTogglePiP ? (
+              <button
+                type="button"
+                role="menuitem"
+                className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-white/85 transition-colors hover:bg-white/10"
+                onClick={() => run(onTogglePiP)}
+              >
+                <PictureInPicture2 className="h-4 w-4 shrink-0" />
+                Picture in Picture
+              </button>
+            ) : null}
+          </div>,
+          document.body,
+        )}
     </div>
   );
 }

@@ -34,4 +34,22 @@ describe("PlayerMoreMenu", () => {
     fireEvent.click(screen.getByRole("menuitem", { name: "Picture in Picture" }));
     expect(onTogglePiP).toHaveBeenCalledOnce();
   });
+
+  it("portals the menu to document.body", () => {
+    render(<PlayerMoreMenu onTogglePlaybackInfo={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "More" }));
+    const menu = screen.getByRole("menu");
+    expect(menu.parentElement).toBe(document.body);
+  });
+
+  it("closes on outside pointerdown", () => {
+    render(<PlayerMoreMenu onTogglePlaybackInfo={vi.fn()} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "More" }));
+    expect(screen.getByRole("menu")).toBeInTheDocument();
+
+    fireEvent.pointerDown(document.body);
+    expect(screen.queryByRole("menu")).toBeNull();
+  });
 });

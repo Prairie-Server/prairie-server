@@ -17,7 +17,8 @@ export type ArtworkImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src" 
  * OSes/devices without AVIF/WebP decode).
  *
  * Optional `widths` + `sizes` emit a responsive `srcSet` by rewriting the
- * object-key width variant (`original` / `w300` / …). Signed URLs skip srcset.
+ * object-key width variant (`original` / `w300` / …). Signed URLs skip both
+ * format siblings and srcset so the signature stays valid.
  */
 export function ArtworkImage({
   src,

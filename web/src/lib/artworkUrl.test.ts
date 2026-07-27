@@ -71,6 +71,11 @@ describe("artworkCandidates", () => {
     expect(artworkCandidates("")).toEqual([]);
     expect(artworkCandidates(null)).toEqual([]);
   });
+
+  it("returns only the original URL for signed artwork", () => {
+    const signed = "https://cdn.example.com/art/w300.webp?X-Amz-Signature=abc";
+    expect(artworkCandidates(signed)).toEqual([signed]);
+  });
 });
 
 describe("artworkWidthVariant", () => {
