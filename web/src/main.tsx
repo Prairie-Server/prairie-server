@@ -8,14 +8,9 @@ import "./app.css";
 ensureStorageSchema();
 installPreloadErrorReload();
 
-// Activate deferred alternate-theme fonts without an inline onload handler (CSP).
-// media="print" kept the link non-blocking during HTML parse; flip once the
-// module runs. Avoid link.sheet / load listeners — cross-origin Google Fonts
-// often expose a null sheet and can miss a load that already fired.
-const themeFonts = document.getElementById("prairie-theme-fonts");
-if (themeFonts instanceof HTMLLinkElement) {
-  themeFonts.media = "all";
-}
+// Alternate-theme fonts stay media="print" until a non-default theme is
+// selected (see ThemeProvider → ensureThemeFontsLoaded). That keeps ~160KB of
+// Outfit/Manrope/Urbanist off the default Prairie Dusk first paint.
 
 const root = document.getElementById("root");
 if (root === null) throw new Error("Root element #root not found");

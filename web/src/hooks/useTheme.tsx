@@ -4,6 +4,7 @@ import type { ThemeId } from "@/lib/themes";
 import { useSettings, useSetSetting } from "@/hooks/queries/settings";
 import { useOptionalAuth } from "@/hooks/useAuth";
 import { useBranding } from "@/hooks/useBranding";
+import { ensureThemeFontsLoaded, themeNeedsDeferredFonts } from "@/lib/themeFonts";
 import { storage } from "@/utils/storage";
 import {
   getInitialTheme,
@@ -94,6 +95,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     applyThemeToDOM(previewThemeState ?? theme);
+  }, [previewThemeState, theme]);
+
+  useEffect(() => {
+    const active = previewThemeState ?? theme;
+    if (themeNeedsDeferredFonts(active)) {
+      ensureThemeFontsLoaded();
+    }
   }, [previewThemeState, theme]);
 
   useEffect(() => {
