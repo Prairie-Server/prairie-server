@@ -219,10 +219,7 @@ export default function LiveTV() {
       </header>
 
       {streamURL ? (
-        <section
-          ref={playerSectionRef}
-          className="border-border overflow-hidden rounded-xl border"
-        >
+        <section ref={playerSectionRef} className="border-border overflow-hidden rounded-xl border">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2">
             <div className="min-w-0">
               <p className="text-muted-foreground text-[10px] font-semibold tracking-[0.18em] uppercase">
