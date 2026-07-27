@@ -42,10 +42,24 @@ type objectMatcher interface {
 	ObjectMatches(ctx context.Context, bucket, key string, data []byte) (bool, error)
 }
 
+type objectGetter interface {
+	GetObject(ctx context.Context, bucket, key string) ([]byte, error)
+}
+
 // ArtworkRevisionTracker persists the exact object manifest for an immutable
 // revision before any object is uploaded.
 type ArtworkRevisionTracker interface {
 	TrackArtworkRevision(ctx context.Context, originalPath, imageType string, objectKeys []string) error
+}
+
+// AVIFBackfillStore persists deferred AVIF sibling work so it survives process
+// restarts. When unset, scheduleAVIFBackfill falls back to in-memory only
+// (unit tests without a DB).
+type AVIFBackfillStore interface {
+	Enqueue(ctx context.Context, originalPath, imageType string) (jobID int64, err error)
+	TryClaim(ctx context.Context, jobID int64, workerID string) (bool, error)
+	MarkSucceeded(ctx context.Context, jobID int64, workerID string) error
+	MarkFailed(ctx context.Context, jobID int64, attemptCount int, workerID, errText string) error
 }
 
 // ImageURLResolver resolves plugin:// paths to HTTP URLs.
@@ -89,11 +103,13 @@ type CacheResult struct {
 type Cacher struct {
 	s3                ObjectPutter
 	revisionTracker   ArtworkRevisionTracker
+	avifJobs          AVIFBackfillStore
 	httpClient        *http.Client
 	enforcePublicURLs bool
 
 	// AVIF backfill: WebP publishes first so the library is browsable; AVIF
-	// siblings land asynchronously on a low-priority semaphore.
+	// siblings land asynchronously on a low-priority semaphore. When avifJobs
+	// is set the work is also persisted so restarts can reclaim it.
 	avifSem chan struct{}
 	avifWG  sync.WaitGroup
 }
@@ -116,6 +132,14 @@ func (c *Cacher) SetArtworkRevisionTracker(tracker ArtworkRevisionTracker) {
 	}
 }
 
+// SetAVIFBackfillStore wires durable deferred AVIF sibling jobs. Without it,
+// AVIF backfill is in-memory only and is dropped on process exit.
+func (c *Cacher) SetAVIFBackfillStore(store AVIFBackfillStore) {
+	if c != nil {
+		c.avifJobs = store
+	}
+}
+
 func newWithHTTPClient(s3 ObjectPutter, client *http.Client) *Cacher {
 	if client == nil {
 		client = http.DefaultClient
@@ -129,11 +153,32 @@ func newWithHTTPClient(s3 ObjectPutter, client *http.Client) *Cacher {
 
 // WaitAVIFBackfill blocks until deferred AVIF sibling uploads finish. Tests
 // call this after Cache/CacheBytes so assertions see the full object set.
+// Production shutdown also waits so in-flight encodes drain during the
+// termination grace period.
 func (c *Cacher) WaitAVIFBackfill() {
 	if c == nil {
 		return
 	}
 	c.avifWG.Wait()
+}
+
+// WaitAVIFBackfillContext waits for deferred AVIF work or ctx cancellation,
+// whichever comes first. Returns ctx.Err() when cancelled before drain completes.
+func (c *Cacher) WaitAVIFBackfillContext(ctx context.Context) error {
+	if c == nil {
+		return nil
+	}
+	done := make(chan struct{})
+	go func() {
+		c.avifWG.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
 
 // avifBackfillConcurrency caps deferred AVIF encodes below the main WASM
@@ -287,7 +332,7 @@ func (c *Cacher) CacheBytes(ctx context.Context, data []byte, req CacheRequest) 
 	if err != nil {
 		return nil, err
 	}
-	c.scheduleAVIFBackfill(data, widths, bucket, variantPaths)
+	c.scheduleAVIFBackfill(ctx, data, widths, bucket, variantPaths, metadata.ImageTypeToString(req.ImageType))
 	return &CacheResult{
 		BasePath:         basePath,
 		OriginalPath:     variantPaths[artworkkey.OriginalVariant],
@@ -300,10 +345,29 @@ func (c *Cacher) CacheBytes(ctx context.Context, data []byte, req CacheRequest) 
 	}, nil
 }
 
-func (c *Cacher) scheduleAVIFBackfill(data []byte, widths []int, bucket string, variantPaths map[string]string) {
+func (c *Cacher) scheduleAVIFBackfill(ctx context.Context, data []byte, widths []int, bucket string, variantPaths map[string]string, imageType string) {
 	if c == nil || len(variantPaths) == 0 {
 		return
 	}
+	originalPath := variantPaths[artworkkey.OriginalVariant]
+	if originalPath == "" {
+		return
+	}
+	if imageType == "" {
+		imageType = artworkkey.ImageTypeFromPath(originalPath)
+	}
+
+	// Persist first so a crash after WebP publish cannot orphan the AVIF work.
+	var jobID int64
+	if c.avifJobs != nil {
+		id, err := c.avifJobs.Enqueue(ctx, originalPath, imageType)
+		if err != nil {
+			slog.WarnContext(ctx, "imagecache: enqueue AVIF backfill failed", "component", "imagecache", "path", originalPath, "error", err)
+		} else {
+			jobID = id
+		}
+	}
+
 	// Copy paths so the caller can mutate the returned map safely.
 	paths := make(map[string]string, len(variantPaths))
 	for k, v := range variantPaths {
@@ -319,17 +383,83 @@ func (c *Cacher) scheduleAVIFBackfill(data []byte, widths []int, bucket string, 
 			c.avifSem <- struct{}{}
 			defer func() { <-c.avifSem }()
 		}
+
+		workerID := "eager-avif"
+		bg := context.Background()
+		claimed := false
+		if c.avifJobs != nil && jobID > 0 {
+			ok, err := c.avifJobs.TryClaim(bg, jobID, workerID)
+			if err != nil {
+				slog.WarnContext(bg, "imagecache: claim AVIF backfill failed", "component", "imagecache", "job_id", jobID, "error", err)
+			}
+			claimed = ok
+			// Another worker already owns it (or it is not queued); skip eager
+			// encode to avoid duplicate WASM work. The durable worker will finish.
+			if !ok {
+				return
+			}
+		}
+
 		avifResult, err := imageutil.GenerateAVIFSiblings(src, widthCopy)
 		if err != nil {
-			slog.Warn("imagecache: deferred AVIF encode failed", "component", "imagecache", "error", err)
+			slog.WarnContext(bg, "imagecache: deferred AVIF encode failed", "component", "imagecache", "error", err)
+			if claimed {
+				_ = c.avifJobs.MarkFailed(bg, jobID, 0, workerID, err.Error())
+			}
 			return
 		}
-		ctx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		uploadCtx, cancel := context.WithTimeout(bg, 3*time.Minute)
 		defer cancel()
-		if _, err := c.uploadAVIFSiblings(ctx, bucket, avifResult, paths); err != nil {
-			slog.Warn("imagecache: deferred AVIF upload failed", "component", "imagecache", "error", err)
+		if _, err := c.uploadAVIFSiblings(uploadCtx, bucket, avifResult, paths); err != nil {
+			slog.WarnContext(bg, "imagecache: deferred AVIF upload failed", "component", "imagecache", "error", err)
+			if claimed {
+				_ = c.avifJobs.MarkFailed(bg, jobID, 0, workerID, err.Error())
+			}
+			return
+		}
+		if claimed {
+			if err := c.avifJobs.MarkSucceeded(bg, jobID, workerID); err != nil {
+				slog.WarnContext(bg, "imagecache: mark AVIF backfill succeeded failed", "component", "imagecache", "job_id", jobID, "error", err)
+			}
 		}
 	}()
+}
+
+// EnsureAVIFSiblings generates and uploads AVIF siblings for an already-cached
+// WebP original. Used by the durable backfill processor when source bytes are
+// no longer in memory (restart recovery / reconcile).
+func (c *Cacher) EnsureAVIFSiblings(ctx context.Context, originalPath, imageType string) error {
+	if c == nil || c.s3 == nil {
+		return fmt.Errorf("imagecache: cacher not configured")
+	}
+	originalPath = strings.TrimSpace(originalPath)
+	if originalPath == "" || artworkkey.WebPAVIFSibling(originalPath) == "" {
+		return fmt.Errorf("imagecache: original path is not a cached WebP key")
+	}
+	if imageType == "" {
+		imageType = artworkkey.ImageTypeFromPath(originalPath)
+	}
+	getter, ok := c.s3.(objectGetter)
+	if !ok {
+		return fmt.Errorf("imagecache: object store does not support GetObject")
+	}
+	data, err := getter.GetObject(ctx, c.s3.Bucket(), originalPath)
+	if err != nil {
+		return fmt.Errorf("imagecache: get WebP original: %w", err)
+	}
+	widths := artworkkey.VariantWidths(imageType)
+	avifResult, err := imageutil.GenerateAVIFSiblings(data, widths)
+	if err != nil {
+		return fmt.Errorf("imagecache: generate AVIF siblings: %w", err)
+	}
+	paths := make(map[string]string, len(artworkkey.VariantNames(imageType)))
+	for _, name := range artworkkey.VariantNames(imageType) {
+		paths[name] = artworkkey.Variant(originalPath, name)
+	}
+	if _, err := c.uploadAVIFSiblings(ctx, c.s3.Bucket(), avifResult, paths); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *Cacher) uploadAVIFSiblings(ctx context.Context, bucket string, result *imageutil.VariantResult, variantPaths map[string]string) (uploadVariantStats, error) {

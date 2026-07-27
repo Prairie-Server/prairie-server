@@ -30,6 +30,8 @@ func (f *fakeMetadataImageCacheRunner) RunUntilIdle(_ context.Context, _ string,
 	return f.stats, f.err
 }
 
+func (f *fakeMetadataImageCacheRunner) ForceDiscovery() {}
+
 type recordingProgress struct {
 	percents []float64
 	messages []string

@@ -21,6 +21,7 @@ const (
 
 type MetadataImageCacheRunner interface {
 	RunUntilIdle(ctx context.Context, workerID string, claimLimit int, concurrency int, maxRuntime time.Duration, onProgress metadata.ImageCacheProgressFunc) (metadata.ImageCacheRunStats, error)
+	ForceDiscovery()
 }
 
 type CacheMetadataImagesTask struct {
@@ -53,6 +54,9 @@ func (t *CacheMetadataImagesTask) Execute(ctx context.Context, progress taskmana
 		progress.Report(100, "Metadata image cache is not configured")
 		return nil
 	}
+	// Manual runs and interval ticks both force a discovery pass so item
+	// posters are enqueued even while an episode backlog occupies the queue.
+	t.runner.ForceDiscovery()
 	hostname, _ := os.Hostname()
 	if hostname == "" {
 		hostname = "silo"

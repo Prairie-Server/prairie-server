@@ -53,6 +53,7 @@ type EnqueueImageCacheJobInput struct {
 	ImageType         string
 	SeasonNumber      *int
 	EpisodeNumber     *int
+	Priority          int
 }
 
 type ImageCacheJobRepository struct {
@@ -155,17 +156,59 @@ func normalizeImageCacheJobInput(in EnqueueImageCacheJobInput) (EnqueueImageCach
 	if in.ProviderContentID == "" {
 		in.ProviderContentID = firstNonEmpty(in.SeriesID, in.TargetContentID)
 	}
+	if in.Priority == 0 {
+		in.Priority = imageCacheJobPriority(in.TargetType, in.ImageType)
+	}
 	return in, true
+}
+
+// imageCacheJobPriority ranks user-visible artwork above episode stills and
+// person photos so ClaimDue cannot starve posters behind a TV-library backlog.
+func imageCacheJobPriority(targetType, imageType string) int {
+	switch strings.TrimSpace(targetType) {
+	case ImageCacheTargetItem:
+		switch strings.TrimSpace(imageType) {
+		case ImageCacheImagePoster:
+			return 100
+		case ImageCacheImageBackdrop:
+			return 90
+		case ImageCacheImageLogo:
+			return 80
+		default:
+			return 70
+		}
+	case ImageCacheTargetItemLocalization:
+		switch strings.TrimSpace(imageType) {
+		case ImageCacheImagePoster:
+			return 95
+		case ImageCacheImageBackdrop:
+			return 85
+		case ImageCacheImageLogo:
+			return 75
+		default:
+			return 65
+		}
+	case ImageCacheTargetSeason:
+		return 50
+	case ImageCacheTargetSeasonLocalization:
+		return 45
+	case ImageCacheTargetEpisode:
+		return 20
+	case ImageCacheTargetPerson:
+		return 10
+	default:
+		return 0
+	}
 }
 
 func (r *ImageCacheJobRepository) enqueueBatchChunk(ctx context.Context, inputs []EnqueueImageCacheJobInput, requeueSucceeded bool) (int, error) {
 	var sql strings.Builder
-	args := make([]any, 0, len(inputs)*11+1)
+	args := make([]any, 0, len(inputs)*12+1)
 	sql.WriteString(`
 		INSERT INTO metadata_image_cache_jobs (
 			target_type, target_content_id, target_language, series_id, source_path,
 			provider_id, provider_content_id, content_type, image_type,
-			season_number, episode_number, status, attempt_count,
+			season_number, episode_number, priority, status, attempt_count,
 			next_attempt_at, locked_at, locked_by, last_error,
 			created_at, updated_at, completed_at
 		) VALUES `)
@@ -174,13 +217,13 @@ func (r *ImageCacheJobRepository) enqueueBatchChunk(ctx context.Context, inputs 
 			sql.WriteString(", ")
 		}
 		base := len(args)
-		fmt.Fprintf(&sql, `($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, 'queued', 0, NOW(), NULL, '', '', NOW(), NOW(), NULL)`,
+		fmt.Fprintf(&sql, `($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, 'queued', 0, NOW(), NULL, '', '', NOW(), NOW(), NULL)`,
 			base+1, base+2, base+3, base+4, base+5,
-			base+6, base+7, base+8, base+9, base+10, base+11)
+			base+6, base+7, base+8, base+9, base+10, base+11, base+12)
 		args = append(args,
 			in.TargetType, in.TargetContentID, strings.TrimSpace(in.TargetLanguage), in.SeriesID, in.SourcePath,
 			in.ProviderID, in.ProviderContentID, in.ContentType, in.ImageType,
-			in.SeasonNumber, in.EpisodeNumber,
+			in.SeasonNumber, in.EpisodeNumber, in.Priority,
 		)
 	}
 	requeueSucceededArg := len(args) + 1
@@ -194,6 +237,7 @@ func (r *ImageCacheJobRepository) enqueueBatchChunk(ctx context.Context, inputs 
 			content_type = EXCLUDED.content_type,
 			season_number = EXCLUDED.season_number,
 			episode_number = EXCLUDED.episode_number,
+			priority = EXCLUDED.priority,
 			status = CASE
 				WHEN metadata_image_cache_jobs.source_path IS DISTINCT FROM EXCLUDED.source_path
 					THEN 'queued'
@@ -405,7 +449,7 @@ func (r *ImageCacheJobRepository) ClaimDue(ctx context.Context, workerID string,
 			FROM metadata_image_cache_jobs
 			WHERE status = 'queued'
 			  AND next_attempt_at <= NOW()
-			ORDER BY next_attempt_at ASC, id ASC
+			ORDER BY priority DESC, next_attempt_at ASC, id ASC
 			LIMIT $1
 			FOR UPDATE SKIP LOCKED
 		)
@@ -420,7 +464,7 @@ func (r *ImageCacheJobRepository) ClaimDue(ctx context.Context, workerID string,
 			j.id, j.target_type, j.target_content_id, j.target_language, j.series_id,
 			j.source_path, j.provider_id, j.provider_content_id,
 			j.content_type, j.image_type, j.season_number, j.episode_number,
-			j.status, j.attempt_count, j.next_attempt_at, j.locked_at,
+			j.priority, j.status, j.attempt_count, j.next_attempt_at, j.locked_at,
 			j.locked_by, j.last_error, j.created_at, j.updated_at, j.completed_at
 	`, limit, workerID)
 	if err != nil {
@@ -435,7 +479,7 @@ func (r *ImageCacheJobRepository) ClaimDue(ctx context.Context, workerID string,
 			&job.ID, &job.TargetType, &job.TargetContentID, &job.TargetLanguage, &job.SeriesID,
 			&job.SourcePath, &job.ProviderID, &job.ProviderContentID,
 			&job.ContentType, &job.ImageType, &job.SeasonNumber, &job.EpisodeNumber,
-			&job.Status, &job.AttemptCount, &job.NextAttemptAt, &job.LockedAt,
+			&job.Priority, &job.Status, &job.AttemptCount, &job.NextAttemptAt, &job.LockedAt,
 			&job.LockedBy, &job.LastError, &job.CreatedAt, &job.UpdatedAt, &job.CompletedAt,
 		); err != nil {
 			return nil, fmt.Errorf("scanning metadata image cache job: %w", err)
@@ -859,7 +903,26 @@ func (r *ImageCacheJobRepository) EnqueueExistingProviderArtwork(ctx context.Con
 				   j.status = 'failed'
 				   AND j.next_attempt_at <= NOW()
 			   )
-			ORDER BY ac.target_type, ac.target_content_id, ac.target_language, ac.image_type
+			ORDER BY
+				CASE ac.target_type
+					WHEN 'item' THEN 0
+					WHEN 'item_localization' THEN 1
+					WHEN 'season' THEN 2
+					WHEN 'season_localization' THEN 3
+					WHEN 'episode' THEN 4
+					WHEN 'person' THEN 5
+					ELSE 6
+				END,
+				CASE ac.image_type
+					WHEN 'poster' THEN 0
+					WHEN 'backdrop' THEN 1
+					WHEN 'logo' THEN 2
+					WHEN 'still' THEN 3
+					WHEN 'profile' THEN 4
+					ELSE 5
+				END,
+				ac.target_content_id,
+				ac.target_language
 			LIMIT $1
 		)
 		SELECT image_type, target_type, target_content_id, target_language, series_id, source_path,

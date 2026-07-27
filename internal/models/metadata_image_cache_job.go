@@ -15,6 +15,7 @@ type MetadataImageCacheJob struct {
 	ImageType         string
 	SeasonNumber      *int
 	EpisodeNumber     *int
+	Priority          int
 	Status            string
 	AttemptCount      int
 	NextAttemptAt     time.Time

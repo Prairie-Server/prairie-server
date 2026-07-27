@@ -2,20 +2,12 @@ package artworkkey
 
 import "testing"
 
-func TestRevisionedArtworkKeys(t *testing.T) {
-	base := "tmdb/movies/550/poster"
-	original := Original(base, "abc123", ".webp")
-	if original != base+"/original.abc123.webp" {
-		t.Fatalf("Original() = %q", original)
+func TestImageTypeFromPath(t *testing.T) {
+	if got := ImageTypeFromPath("tmdb/movies/550/poster/original.abc.webp"); got != "poster" {
+		t.Fatalf("ImageTypeFromPath() = %q, want poster", got)
 	}
-	if got := Variant(original, "w500"); got != base+"/w500.abc123.webp" {
-		t.Fatalf("Variant() = %q", got)
-	}
-	if got := Revision(original); got != "abc123" {
-		t.Fatalf("Revision() = %q", got)
-	}
-	if got := Directory(original); got != base+"/" {
-		t.Fatalf("Directory() = %q", got)
+	if got := ImageTypeFromPath("https://example.com/poster/original.webp"); got != "" {
+		t.Fatalf("ImageTypeFromPath(url) = %q, want empty", got)
 	}
 }
 
