@@ -3,6 +3,8 @@
  * Prefer AVIF, then WebP, then PNG (widest decode support).
  */
 
+import { getImageFormats, orderRasterCandidates } from "@/lib/imageFormats";
+
 function pathExtension(pathname: string): string {
   const base = pathname.split("/").pop() ?? "";
   const dot = base.lastIndexOf(".");
@@ -66,12 +68,12 @@ export function staticRasterFormats(src: string | null | undefined): StaticRaste
   };
 }
 
-/** Ordered load candidates: AVIF → WebP → PNG when siblings can be derived. */
+/** Ordered load candidates using the client's detected raster preference. */
 export function staticRasterCandidates(src: string | null | undefined): string[] {
   const formats = staticRasterFormats(src);
   if (!formats) {
     const trimmed = src?.trim() ?? "";
     return trimmed ? [trimmed] : [];
   }
-  return [formats.avif, formats.webp, formats.png];
+  return orderRasterCandidates(formats, getImageFormats());
 }

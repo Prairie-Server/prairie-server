@@ -12,6 +12,11 @@ const (
 	HeaderDeviceID           = prairiePrefix + "Device-Id"
 	HeaderDeviceName         = prairiePrefix + "Device-Name"
 	HeaderDevicePlatform     = prairiePrefix + "Device-Platform"
+	// HeaderImageFormats is a comma-separated raster preference list from the
+	// client (e.g. "avif,webp,png"), ordered best-first. Clients probe decode
+	// support once per install and send this on API requests so the server can
+	// pick siblings without per-image trial-and-error fallbacks.
+	HeaderImageFormats = prairiePrefix + "Image-Formats"
 	HeaderClient             = prairiePrefix + "Client"
 	HeaderClientVersion      = prairiePrefix + "Client-Version"
 	HeaderStreamToken        = prairiePrefix + "Stream-Token"
