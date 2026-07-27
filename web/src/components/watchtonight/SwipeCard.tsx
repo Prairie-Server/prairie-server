@@ -1,5 +1,5 @@
 import { useRef, useState } from "react";
-import { motion, useMotionValue, useTransform, type PanInfo } from "framer-motion";
+import { motion, useMotionValue, useTransform, type PanInfo } from "motion/react";
 import { Check, Info, Play, Star, X } from "lucide-react";
 import type { SwipeCard as SwipeCardType } from "@/hooks/queries/recommendations";
 import { Badge } from "@/components/ui/badge";
