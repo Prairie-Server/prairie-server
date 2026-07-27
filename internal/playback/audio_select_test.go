@@ -210,3 +210,36 @@ func TestMatchAudioTrackAcrossVersionsFallsBackToLanguageAcrossCodecs(t *testing
 		t.Fatalf("MatchAudioTrackAcrossVersions() = %d, want English track 0", got)
 	}
 }
+
+func TestPreferTranscodeFriendlyAudioTrack_TrueHDCompanion(t *testing.T) {
+	tracks := []models.AudioTrack{
+		{Language: "en", Codec: "truehd", Channels: 8},
+		{Language: "en", Codec: "ac3", Channels: 6},
+		{Language: "ja", Codec: "aac", Channels: 2},
+	}
+	if got := playback.PreferTranscodeFriendlyAudioTrack(tracks, 0); got != 1 {
+		t.Fatalf("PreferTranscodeFriendlyAudioTrack() = %d, want AC3 companion 1", got)
+	}
+}
+
+func TestPreferTranscodeFriendlyAudioTrack_LeavesNonFragile(t *testing.T) {
+	tracks := []models.AudioTrack{
+		{Language: "en", Codec: "eac3", Channels: 6},
+		{Language: "en", Codec: "aac", Channels: 2},
+	}
+	if got := playback.PreferTranscodeFriendlyAudioTrack(tracks, 0); got != 0 {
+		t.Fatalf("PreferTranscodeFriendlyAudioTrack() = %d, want selected EAC3", got)
+	}
+}
+
+func TestIsFragileLosslessAudioCodec(t *testing.T) {
+	if !playback.IsFragileLosslessAudioCodec("truehd") {
+		t.Fatal("truehd should be fragile")
+	}
+	if !playback.IsFragileLosslessAudioCodec("mlp fba") {
+		t.Fatal("mlp should be fragile")
+	}
+	if playback.IsFragileLosslessAudioCodec("aac") {
+		t.Fatal("aac should not be fragile")
+	}
+}

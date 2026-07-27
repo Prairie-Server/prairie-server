@@ -220,6 +220,10 @@ type sessionExpirationHookSetter interface {
 	SetExpirationHook(func(*playback.Session))
 }
 
+type sessionKeepAliveSetter interface {
+	SetKeepAliveCheck(playback.SessionKeepAliveFunc)
+}
+
 // NewPlaybackHandler creates a new PlaybackHandler backed by the given
 // session manager. Pass optional FilePathResolver to enable stream_url
 // and subtitle_urls in start playback responses.
@@ -291,6 +295,14 @@ func NewPlaybackHandler(sessionMgr SessionManagerInterface, opts ...FilePathReso
 	}
 	if setter, ok := sessionMgr.(sessionExpirationHookSetter); ok {
 		setter.SetExpirationHook(h.handleExpiredSession)
+	}
+	if setter, ok := sessionMgr.(sessionKeepAliveSetter); ok {
+		// Do not reap a playback session while its local ffmpeg job is still
+		// running or restarting — slow TrueHD/4K startups can exceed the
+		// default 45s inactivity grace before segment 0 exists.
+		setter.SetKeepAliveCheck(func(sessionID string) bool {
+			return h.tm.GetTranscodeSession(sessionID).IsActive()
+		})
 	}
 	return h
 }
@@ -3048,6 +3060,27 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 		return
 	}
 	file = h.ensurePlaybackProbe(r.Context(), file)
+
+	// When re-encoding audio, prefer a companion AC3/EAC3/AAC track over
+	// TrueHD/MLP/DTS — software TrueHD decode is a known stall source.
+	audioTrackIndex := session.AudioTrackIndex
+	sourceAudioCodec := ""
+	if playback.TranscodesAudio(req.TargetCodecAudio) && len(file.AudioTracks) > 0 {
+		preferred := playback.PreferTranscodeFriendlyAudioTrack(file.AudioTracks, audioTrackIndex)
+		if preferred != audioTrackIndex {
+			slog.InfoContext(r.Context(), "preferring companion audio track for transcode",
+				"component", "api",
+				"playback_session_id", req.SessionID,
+				"requested_audio_track_index", audioTrackIndex,
+				"effective_audio_track_index", preferred,
+				"requested_codec", playback.AudioTrackCodecAt(file.AudioTracks, audioTrackIndex),
+				"effective_codec", playback.AudioTrackCodecAt(file.AudioTracks, preferred),
+			)
+			audioTrackIndex = preferred
+		}
+		sourceAudioCodec = playback.AudioTrackCodecAt(file.AudioTracks, audioTrackIndex)
+	}
+
 	requestedFile := file
 	if originalFileID := requestedMediaFileID(session); originalFileID > 0 && originalFileID != file.ID {
 		originalFile, loadErr := h.loadFileByPreferredID(r.Context(), originalFileID, 0)
@@ -3255,6 +3288,7 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 			SessionID:              replacementTransportID,
 			InputPath:              file.FilePath,
 			SourceVideoCodec:       file.CodecVideo,
+			SourceAudioCodec:       sourceAudioCodec,
 			VideoBitstreamFilter:   videoBitstreamFilter,
 			SeekSeconds:            transportSeekSeconds,
 			StreamOriginSeconds:    streamOriginSeconds,
@@ -3266,7 +3300,7 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 			TargetBitrateKbps:      req.TargetBitrateKbps,
 			SegmentDuration:        req.SegmentDuration,
 			HWAccel:                playbackCfg.HWAccel,
-			AudioTrackIndex:        session.AudioTrackIndex,
+			AudioTrackIndex:        audioTrackIndex,
 			SubtitleTrackIndex:     req.SubtitleTrackIndex,
 			SubtitleBurnIn:         req.SubtitleBurnIn,
 			SubtitleCodec:          subtitleCodec,
@@ -3390,6 +3424,7 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 		OutputDir:              filepath.Join(playbackCfg.TranscodeDir, req.SessionID),
 		SessionID:              req.SessionID,
 		SourceVideoCodec:       file.CodecVideo,
+		SourceAudioCodec:       sourceAudioCodec,
 		VideoBitstreamFilter:   videoBitstreamFilter,
 		SeekSeconds:            transportSeekSeconds,
 		StreamOriginSeconds:    streamOriginSeconds,
@@ -3403,7 +3438,7 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 		FFmpegPath:             playbackCfg.FFmpegPath,
 		HWAccel:                playbackCfg.HWAccel,
 		HWDevice:               playbackCfg.HWDevice,
-		AudioTrackIndex:        session.AudioTrackIndex,
+		AudioTrackIndex:        audioTrackIndex,
 		SubtitleTrackIndex:     req.SubtitleTrackIndex,
 		SubtitleBurnIn:         req.SubtitleBurnIn,
 		SubtitleCodec:          subtitleCodec,

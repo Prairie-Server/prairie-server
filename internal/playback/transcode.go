@@ -62,6 +62,11 @@ type TranscodeOpts struct {
 	// Empty preserves the legacy text path for callers minted before the field.
 	SubtitleCodec   string
 	AudioTrackIndex int // -1 = default (first track), >= 0 = specific track
+	// SourceAudioCodec is the probed codec of the mapped audio track (e.g.
+	// "truehd", "eac3"). When set to a fragile lossless family (TrueHD/MLP),
+	// the AAC path forces a stereo downmix — multichannel TrueHD decode is a
+	// known stall source (quant_step_size / huff_lsbs warnings).
+	SourceAudioCodec string
 	// TargetAudioChannels caps the re-encoded channel count. 0 (or anything
 	// below 3) keeps the historical stereo downmix; 6 preserves 5.1 from a
 	// surround source. Ignored for copy/passthrough audio targets.
@@ -698,8 +703,10 @@ func appendAudioArgs(args []string, opts TranscodeOpts) []string {
 	default:
 		// Preserve surround from multichannel sources when the planner asked
 		// for it (AAC 5.1 decodes universally in Media3); the historical
-		// default stays a stereo 192k downmix.
-		if opts.TargetAudioChannels >= 6 {
+		// default stays a stereo 192k downmix. Fragile lossless sources
+		// (TrueHD/MLP) always downmix to stereo — software TrueHD→5.1 AAC
+		// stalls segment muxing on some Blu-ray titles.
+		if opts.TargetAudioChannels >= 6 && !IsFragileLosslessAudioCodec(opts.SourceAudioCodec) {
 			args = append(args, "-c:a", "aac", "-b:a", "384k", "-ac", "6")
 		} else {
 			args = append(args, "-c:a", "aac", "-b:a", "192k", "-ac", "2")
@@ -1480,6 +1487,18 @@ func (s *TranscodeSession) IsRunning() bool {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	return s.running
+}
+
+// IsActive reports whether this session still owns a live or restarting
+// ffmpeg job. Used by the playback-session reaper so a slow-starting encode
+// is not expired before the first HLS segment lands.
+func (s *TranscodeSession) IsActive() bool {
+	if s == nil {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	return s.running || s.restarting
 }
 
 // WaitError returns the error from the last ffmpeg process exit, or nil if
