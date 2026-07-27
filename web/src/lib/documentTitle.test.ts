@@ -47,6 +47,7 @@ describe("resolveSettingsDocumentTitle", () => {
     expect(resolveSettingsDocumentTitle("/settings/home-screen")).toBe("Home Screen Settings");
     expect(resolveSettingsDocumentTitle("/settings/appearance")).toBe("Appearance Settings");
     expect(resolveSettingsDocumentTitle("/settings/webhook-sync")).toBe("Webhook Sync Settings");
+    expect(resolveSettingsDocumentTitle("/settings/quick-connect")).toBe("Quick Connect Settings");
   });
 
   it("falls back to the base settings title", () => {

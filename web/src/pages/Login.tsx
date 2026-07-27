@@ -352,9 +352,9 @@ export default function Login() {
               <Separator />
               <div className="space-y-3">
                 <div>
-                  <h2 className="text-sm font-semibold">Use your phone instead</h2>
+                  <h2 className="text-sm font-semibold">Quick Connect</h2>
                   <p className="text-muted-foreground mt-1 text-sm">
-                    Scan a code, sign in there, and approve this device.
+                    Show a code, then approve from Settings → Quick Connect on a signed-in device.
                   </p>
                 </div>
                 {!deviceSession ? (
@@ -365,7 +365,7 @@ export default function Login() {
                     disabled={startingDeviceLogin}
                     onClick={() => void handleStartDeviceLogin()}
                   >
-                    {startingDeviceLogin ? "Generating code..." : "Show QR code"}
+                    {startingDeviceLogin ? "Generating code..." : "Show Quick Connect code"}
                   </Button>
                 ) : (
                   <div className="border-border/60 bg-background/50 space-y-4 rounded-md border p-4">
@@ -375,24 +375,25 @@ export default function Login() {
                     <div className="space-y-2 text-center">
                       <div>
                         <div className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
+                          Quick Connect code
+                        </div>
+                        <div className="font-mono text-2xl font-semibold tracking-wider">
+                          {deviceSession.user_code}
+                        </div>
+                        <p className="text-muted-foreground mt-1 text-xs">
+                          Enter this in Settings → Quick Connect on a signed-in device.
+                        </p>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
                           Match code
                         </div>
                         <div className="text-lg font-semibold">{deviceSession.match_code}</div>
                       </div>
                       {showDeviceFallback ? (
-                        <div className="space-y-2">
-                          <div>
-                            <div className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
-                              Enter this code if needed
-                            </div>
-                            <div className="font-mono text-lg font-semibold">
-                              {deviceSession.user_code}
-                            </div>
-                          </div>
-                          <p className="text-muted-foreground text-xs break-all">
-                            {deviceSession.verification_uri}
-                          </p>
-                        </div>
+                        <p className="text-muted-foreground text-xs break-all">
+                          Or open {deviceSession.verification_uri}
+                        </p>
                       ) : (
                         <Button
                           type="button"
@@ -400,7 +401,7 @@ export default function Login() {
                           className="text-muted-foreground hover:text-foreground mx-auto h-auto px-0 py-1 text-xs"
                           onClick={() => setShowDeviceFallback(true)}
                         >
-                          Can&apos;t scan the QR code?
+                          Prefer a link instead?
                         </Button>
                       )}
                     </div>
