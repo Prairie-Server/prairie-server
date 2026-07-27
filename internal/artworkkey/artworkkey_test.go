@@ -60,6 +60,18 @@ func TestFormatSiblingAndObjectKeysIncludeAVIFAndPNG(t *testing.T) {
 	if got := WebPPNGSibling("tmdb/movies/550/poster/original.jpg"); got != "" {
 		t.Fatalf("WebPPNGSibling(jpeg) = %q, want empty", got)
 	}
+	avif, png := ObjectFormatSiblings("tmdb/movies/550/poster/original.abc123.webp")
+	if avif != "tmdb/movies/550/poster/original.abc123.avif" || png != "tmdb/movies/550/poster/original.abc123.png" {
+		t.Fatalf("ObjectFormatSiblings(webp) = %q, %q", avif, png)
+	}
+	avif, png = ObjectFormatSiblings("plugin://tmdb/poster/x.webp")
+	if avif != "" || png != "" {
+		t.Fatalf("ObjectFormatSiblings(plugin) = %q, %q, want empty", avif, png)
+	}
+	avif, png = ObjectFormatSiblings(url)
+	if avif != "" || png != "" {
+		t.Fatalf("ObjectFormatSiblings(https) = %q, %q, want empty", avif, png)
+	}
 	keys := ObjectKeys(original, "poster")
 	want := map[string]bool{
 		"tmdb/movies/550/poster/original.abc123.webp": true,

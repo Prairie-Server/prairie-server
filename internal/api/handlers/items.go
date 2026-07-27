@@ -238,8 +238,12 @@ type itemListResponse struct {
 	OriginalLanguage  string                      `json:"original_language,omitempty"`
 	Overview          string                      `json:"overview,omitempty"`
 	PosterURL         string                      `json:"poster_url,omitempty"`
+	PosterAVIFURL     string                      `json:"poster_avif_url,omitempty"`
+	PosterPNGURL      string                      `json:"poster_png_url,omitempty"`
 	PosterThumbhash   string                      `json:"poster_thumbhash,omitempty"`
 	BackdropURL       string                      `json:"backdrop_url,omitempty"`
+	BackdropAVIFURL   string                      `json:"backdrop_avif_url,omitempty"`
+	BackdropPNGURL    string                      `json:"backdrop_png_url,omitempty"`
 	BackdropThumbhash string                      `json:"backdrop_thumbhash,omitempty"`
 	ReleaseDate       *string                     `json:"release_date,omitempty"`
 	LastAirDate       *string                     `json:"last_air_date,omitempty"`
@@ -268,8 +272,8 @@ type sortMetricsResponse struct {
 }
 
 type itemListImageURLs struct {
-	posterURL   string
-	backdropURL string
+	poster   artworkFormats
+	backdrop artworkFormats
 }
 
 // browseResponse is the paginated response for the /items endpoint.
@@ -663,6 +667,24 @@ func (h *ItemsHandler) toItemListResponseWithOverlay(r *http.Request, item *mode
 		}
 	}
 	resp := itemListResponseShell(item, overlaySummary, userState)
+	if h.detailSvc != nil {
+		posterPath := cardThumbnailPath(item.PosterPath)
+		backdropPath := cardThumbnailPath(item.BackdropPath)
+		paths := make([]string, 0, 6)
+		seen := make(map[string]struct{})
+		paths = appendArtworkFormatPaths(paths, seen, posterPath)
+		paths = appendArtworkFormatPaths(paths, seen, backdropPath)
+		resolved := h.detailSvc.PresignURLsWithExpiry(r.Context(), paths, "card")
+		poster := artworkFormatsFromResolved(resolved, posterPath)
+		backdrop := artworkFormatsFromResolved(resolved, backdropPath)
+		resp.PosterURL = poster.URL
+		resp.PosterAVIFURL = poster.AVIFURL
+		resp.PosterPNGURL = poster.PNGURL
+		resp.BackdropURL = backdrop.URL
+		resp.BackdropAVIFURL = backdrop.AVIFURL
+		resp.BackdropPNGURL = backdrop.PNGURL
+		return resp
+	}
 	resp.PosterURL = h.presignURL(r, cardThumbnailPath(item.PosterPath), "card")
 	resp.BackdropURL = h.presignURL(r, cardThumbnailPath(item.BackdropPath), "card")
 	return resp
@@ -735,16 +757,6 @@ func (h *ItemsHandler) itemListCardImageURLs(ctx context.Context, items []*model
 	pending := make([]pendingImages, 0, len(items))
 	paths := make([]string, 0, len(items)*2)
 	seenPaths := make(map[string]struct{}, len(items)*2)
-	addPath := func(path string) {
-		if path == "" || path == "-" {
-			return
-		}
-		if _, ok := seenPaths[path]; ok {
-			return
-		}
-		seenPaths[path] = struct{}{}
-		paths = append(paths, path)
-	}
 
 	for _, item := range items {
 		if item == nil || item.ContentID == "" {
@@ -756,15 +768,15 @@ func (h *ItemsHandler) itemListCardImageURLs(ctx context.Context, items []*model
 			backdropPath: cardThumbnailPath(item.BackdropPath),
 		}
 		pending = append(pending, images)
-		addPath(images.posterPath)
-		addPath(images.backdropPath)
+		paths = appendArtworkFormatPaths(paths, seenPaths, images.posterPath)
+		paths = appendArtworkFormatPaths(paths, seenPaths, images.backdropPath)
 	}
 
 	resolved := h.detailSvc.PresignURLsWithExpiry(ctx, paths, "card")
 	for _, images := range pending {
 		urls[images.contentID] = itemListImageURLs{
-			posterURL:   resolved[images.posterPath].URL,
-			backdropURL: resolved[images.backdropPath].URL,
+			poster:   artworkFormatsFromResolved(resolved, images.posterPath),
+			backdrop: artworkFormatsFromResolved(resolved, images.backdropPath),
 		}
 	}
 	return urls

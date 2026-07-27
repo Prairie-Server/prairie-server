@@ -198,8 +198,12 @@ func (h *CatalogHandler) catalogItemResponses(r *http.Request, resultItems []*mo
 			resp.SeasonNumber = meta.SeasonNumber
 			resp.EpisodeNumber = meta.EpisodeNumber
 		}
-		resp.PosterURL = imageURLs[item.ContentID].posterURL
-		resp.BackdropURL = imageURLs[item.ContentID].backdropURL
+		resp.PosterURL = imageURLs[item.ContentID].poster.URL
+		resp.PosterAVIFURL = imageURLs[item.ContentID].poster.AVIFURL
+		resp.PosterPNGURL = imageURLs[item.ContentID].poster.PNGURL
+		resp.BackdropURL = imageURLs[item.ContentID].backdrop.URL
+		resp.BackdropAVIFURL = imageURLs[item.ContentID].backdrop.AVIFURL
+		resp.BackdropPNGURL = imageURLs[item.ContentID].backdrop.PNGURL
 		resp.SortMetrics = sortMetrics[item.ContentID]
 		items = append(items, resp)
 	}

@@ -1,5 +1,7 @@
 import { type ReactNode } from "react";
 import { Languages } from "lucide-react";
+import { ArtworkImage } from "@/components/ArtworkImage";
+import { BACKDROP_WIDTHS, POSTER_WIDTHS } from "@/lib/artworkUrl";
 import { decodeThumbhash } from "@/lib/thumbhash";
 import { useImageLoaded } from "@/hooks/useImageLoaded";
 
@@ -8,8 +10,12 @@ interface DetailHeroProps {
   subtitle?: ReactNode;
   context?: ReactNode;
   backdropUrl?: string;
+  backdropAvifUrl?: string;
+  backdropPngUrl?: string;
   backdropThumbhash?: string;
   posterUrl?: string;
+  posterAvifUrl?: string;
+  posterPngUrl?: string;
   posterThumbhash?: string;
   posterOrientation?: "portrait" | "landscape" | "square";
   hidePoster?: boolean;
@@ -42,8 +48,12 @@ export default function DetailHero({
   subtitle,
   context,
   backdropUrl,
+  backdropAvifUrl,
+  backdropPngUrl,
   backdropThumbhash,
   posterUrl,
+  posterAvifUrl,
+  posterPngUrl,
   posterThumbhash,
   posterOrientation = "portrait",
   hidePoster = false,
@@ -114,10 +124,14 @@ export default function DetailHero({
           }}
         >
           {backdropUrl && (
-            <img
+            <ArtworkImage
               key={backdropUrl}
               src={backdropUrl}
+              avifSrc={backdropAvifUrl}
+              pngSrc={backdropPngUrl}
               alt=""
+              widths={BACKDROP_WIDTHS}
+              sizes="100vw"
               className={`h-full w-full object-cover object-[center_20%] transition-opacity duration-300 will-change-transform ${backdropLoaded ? "opacity-100" : "opacity-0"}`}
               style={{ animation: "var(--animate-ken-burns-a)" }}
               onLoad={onBackdropLoad}
@@ -164,10 +178,14 @@ export default function DetailHero({
                 }
               >
                 {posterUrl ? (
-                  <img
+                  <ArtworkImage
                     key={posterUrl}
                     src={posterUrl}
+                    avifSrc={posterAvifUrl}
+                    pngSrc={posterPngUrl}
                     alt={title}
+                    widths={POSTER_WIDTHS}
+                    sizes="(max-width: 1024px) 40vw, 220px"
                     className={`w-full object-cover ${posterAspect} transition-opacity duration-300 ${posterLoaded ? "opacity-100" : "opacity-0"}`}
                     onLoad={onPosterLoad}
                   />

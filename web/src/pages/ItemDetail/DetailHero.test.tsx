@@ -15,7 +15,8 @@ describe("DetailHero artwork revisions", () => {
     rerender(<DetailHero title="Blade Runner" posterUrl="/poster.rev-b.webp" />);
 
     const replacement = screen.getByRole("img", { name: "Blade Runner" });
-    expect(replacement).toHaveAttribute("src", "/poster.rev-b.webp");
+    // ArtworkImage prefers the AVIF sibling of a WebP poster URL.
+    expect(replacement).toHaveAttribute("src", "/poster.rev-b.avif");
     expect(replacement).toHaveClass("opacity-0");
     fireEvent.load(replacement);
     expect(replacement).toHaveClass("opacity-100");

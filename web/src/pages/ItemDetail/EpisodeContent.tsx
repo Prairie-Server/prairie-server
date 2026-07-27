@@ -279,6 +279,8 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
           </div>
         }
         backdropUrl={item.backdrop_url}
+        backdropAvifUrl={item.backdrop_avif_url}
+        backdropPngUrl={item.backdrop_png_url}
         backdropThumbhash={item.backdrop_thumbhash}
         hidePoster
         logoUrl={item.logo_url}

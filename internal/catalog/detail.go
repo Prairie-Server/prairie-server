@@ -132,8 +132,12 @@ type ItemDetail struct {
 
 	// Presigned image URLs.
 	PosterURL         string `json:"poster_url,omitempty"`
+	PosterAVIFURL     string `json:"poster_avif_url,omitempty"`
+	PosterPNGURL      string `json:"poster_png_url,omitempty"`
 	PosterThumbhash   string `json:"poster_thumbhash,omitempty"`
 	BackdropURL       string `json:"backdrop_url,omitempty"`
+	BackdropAVIFURL   string `json:"backdrop_avif_url,omitempty"`
+	BackdropPNGURL    string `json:"backdrop_png_url,omitempty"`
 	BackdropThumbhash string `json:"backdrop_thumbhash,omitempty"`
 	LogoURL           string `json:"logo_url,omitempty"`
 
@@ -1085,11 +1089,13 @@ func (s *DetailService) buildExtraItemDetail(ctx context.Context, contentID stri
 // seriesDetailContext caches series-level lookups so a batched episode-detail
 // call doesn't redo them per episode.
 type seriesDetailContext struct {
-	series      *models.MediaItem
-	castCredits []CastCredit
-	crewCredits []CrewCredit
-	versionPref versionDefaults
-	backdropURL string
+	series           *models.MediaItem
+	castCredits      []CastCredit
+	crewCredits      []CrewCredit
+	versionPref      versionDefaults
+	backdropURL      string
+	backdropAVIFURL  string
+	backdropPNGURL   string
 }
 
 // buildSeriesDetailContext loads the parent series row, localizes it, fetches
@@ -1107,12 +1113,15 @@ func (s *DetailService) buildSeriesDetailContext(ctx context.Context, seriesID s
 		return nil, fmt.Errorf("localizing episode series detail: %w", err)
 	}
 	castCredits, crewCredits := s.fetchCredits(ctx, seriesID)
+	_, backdrop, _ := s.presignPrimaryArtwork(ctx, "", series.BackdropPath, "")
 	return &seriesDetailContext{
-		series:      series,
-		castCredits: castCredits,
-		crewCredits: crewCredits,
-		versionPref: s.effectiveVersionDefaults(ctx, filter, seriesID),
-		backdropURL: s.PresignImageURL(ctx, series.BackdropPath, "backdrop", ""),
+		series:          series,
+		castCredits:     castCredits,
+		crewCredits:     crewCredits,
+		versionPref:     s.effectiveVersionDefaults(ctx, filter, seriesID),
+		backdropURL:     backdrop.URL,
+		backdropAVIFURL: backdrop.AVIFURL,
+		backdropPNGURL:  backdrop.PNGURL,
 	}, nil
 }
 
@@ -1515,10 +1524,16 @@ func (s *DetailService) buildMediaItemDetail(ctx context.Context, item *models.M
 	}
 
 	// Resolve image URLs: full URLs (TVDB/TMDB) pass through; S3 cached base paths get
-	// variant-resolved and presigned.
-	detail.PosterURL = s.PresignImageURL(ctx, item.PosterPath, "poster", "")
-	detail.BackdropURL = s.PresignImageURL(ctx, item.BackdropPath, "backdrop", "")
-	detail.LogoURL = s.PresignImageURL(ctx, item.LogoPath, "logo", "")
+	// variant-resolved and presigned. AVIF/PNG siblings are signed in the same batch so
+	// clients can prefer modern formats even when URL auth is SigV4 / Cloudflare token.
+	poster, backdrop, logo := s.presignPrimaryArtwork(ctx, item.PosterPath, item.BackdropPath, item.LogoPath)
+	detail.PosterURL = poster.URL
+	detail.PosterAVIFURL = poster.AVIFURL
+	detail.PosterPNGURL = poster.PNGURL
+	detail.BackdropURL = backdrop.URL
+	detail.BackdropAVIFURL = backdrop.AVIFURL
+	detail.BackdropPNGURL = backdrop.PNGURL
+	detail.LogoURL = logo.URL
 
 	// File versions and subtitle aggregation only apply to movies.
 	// For series, each episode file shares the series content_id, so
@@ -2324,8 +2339,13 @@ func (s *DetailService) buildSeasonDetail(ctx context.Context, season *models.Se
 		detail.AirDate = &airDate
 	}
 
-	detail.PosterURL = s.PresignImageURL(ctx, season.PosterPath, "poster", "")
-	detail.BackdropURL = s.PresignImageURL(ctx, series.BackdropPath, "backdrop", "")
+	poster, backdrop, _ := s.presignPrimaryArtwork(ctx, season.PosterPath, series.BackdropPath, "")
+	detail.PosterURL = poster.URL
+	detail.PosterAVIFURL = poster.AVIFURL
+	detail.PosterPNGURL = poster.PNGURL
+	detail.BackdropURL = backdrop.URL
+	detail.BackdropAVIFURL = backdrop.AVIFURL
+	detail.BackdropPNGURL = backdrop.PNGURL
 	return detail, nil
 }
 
@@ -2372,8 +2392,13 @@ func (s *DetailService) buildEpisodeDetail(ctx context.Context, episode *models.
 		detail.Title = fmt.Sprintf("Episode %d", episode.EpisodeNumber)
 	}
 
-	detail.PosterURL = s.PresignImageURL(ctx, episode.StillPath, "still", "")
+	still := s.presignArtworkPath(ctx, episode.StillPath, "still")
+	detail.PosterURL = still.URL
+	detail.PosterAVIFURL = still.AVIFURL
+	detail.PosterPNGURL = still.PNGURL
 	detail.BackdropURL = seriesCtx.backdropURL
+	detail.BackdropAVIFURL = seriesCtx.backdropAVIFURL
+	detail.BackdropPNGURL = seriesCtx.backdropPNGURL
 
 	files, err := s.fileFetcher.GetByEpisodeID(ctx, episode.ContentID)
 	if err != nil {
@@ -3585,6 +3610,113 @@ func sizeToVariant(size string) string {
 // paths, delegates to PresignURL with a mapped semantic variant.
 func (s *DetailService) PresignImageURL(ctx context.Context, path, imageType, size string) string {
 	return s.PresignImageURLWithExpiry(ctx, path, imageType, size).URL
+}
+
+// ArtworkFormats is the canonical artwork URL plus optional signed AVIF/PNG siblings.
+type ArtworkFormats struct {
+	URL     string
+	AVIFURL string
+	PNGURL  string
+}
+
+// presignArtworkPath resolves one artwork path (with image-type variant rewrite)
+// and its AVIF/PNG siblings in a single batch.
+func (s *DetailService) presignArtworkPath(ctx context.Context, path, imageType string) ArtworkFormats {
+	if path == "" || path == "-" {
+		return ArtworkFormats{}
+	}
+	resolvedPath := path
+	if !strings.HasPrefix(path, "http://") &&
+		!strings.HasPrefix(path, "https://") &&
+		!strings.Contains(path, "://") {
+		resolvedPath = cachedImageVariantPath(path, imageType, "")
+	}
+	paths := []string{resolvedPath}
+	avif, png := artworkkey.ObjectFormatSiblings(resolvedPath)
+	if avif != "" {
+		paths = append(paths, avif)
+	}
+	if png != "" {
+		paths = append(paths, png)
+	}
+	resolved := s.PresignURLsWithExpiry(ctx, paths, sizeToVariant(""))
+	out := ArtworkFormats{URL: resolved[resolvedPath].URL}
+	if avif != "" {
+		out.AVIFURL = resolved[avif].URL
+	}
+	if png != "" {
+		out.PNGURL = resolved[png].URL
+	}
+	return out
+}
+
+// presignPrimaryArtwork batch-resolves poster/backdrop/logo including format siblings.
+func (s *DetailService) presignPrimaryArtwork(ctx context.Context, posterPath, backdropPath, logoPath string) (poster, backdrop, logo ArtworkFormats) {
+	type pending struct {
+		kind      string
+		path      string
+		imageType string
+	}
+	var pendingPaths []pending
+	paths := make([]string, 0, 9)
+	seen := make(map[string]struct{})
+	add := func(kind, rawPath, imageType string) {
+		if rawPath == "" || rawPath == "-" {
+			return
+		}
+		resolvedPath := rawPath
+		if !strings.HasPrefix(rawPath, "http://") &&
+			!strings.HasPrefix(rawPath, "https://") &&
+			!strings.Contains(rawPath, "://") {
+			resolvedPath = cachedImageVariantPath(rawPath, imageType, "")
+		}
+		pendingPaths = append(pendingPaths, pending{kind: kind, path: resolvedPath, imageType: imageType})
+		if _, ok := seen[resolvedPath]; !ok {
+			seen[resolvedPath] = struct{}{}
+			paths = append(paths, resolvedPath)
+		}
+		avif, png := artworkkey.ObjectFormatSiblings(resolvedPath)
+		for _, sibling := range []string{avif, png} {
+			if sibling == "" {
+				continue
+			}
+			if _, ok := seen[sibling]; ok {
+				continue
+			}
+			seen[sibling] = struct{}{}
+			paths = append(paths, sibling)
+		}
+	}
+	add("poster", posterPath, "poster")
+	add("backdrop", backdropPath, "backdrop")
+	add("logo", logoPath, "logo")
+
+	resolved := s.PresignURLsWithExpiry(ctx, paths, "featured")
+	pick := func(path string) ArtworkFormats {
+		if path == "" {
+			return ArtworkFormats{}
+		}
+		out := ArtworkFormats{URL: resolved[path].URL}
+		avif, png := artworkkey.ObjectFormatSiblings(path)
+		if avif != "" {
+			out.AVIFURL = resolved[avif].URL
+		}
+		if png != "" {
+			out.PNGURL = resolved[png].URL
+		}
+		return out
+	}
+	for _, p := range pendingPaths {
+		switch p.kind {
+		case "poster":
+			poster = pick(p.path)
+		case "backdrop":
+			backdrop = pick(p.path)
+		case "logo":
+			logo = pick(p.path)
+		}
+	}
+	return poster, backdrop, logo
 }
 
 // PresignImageURLWithExpiry resolves one image path using the same image type

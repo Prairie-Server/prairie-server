@@ -23,6 +23,8 @@ function RecommendationItemCard({ itemId }: RecommendationItemCardProps) {
         {item.poster_url ? (
           <ArtworkImage
             src={item.poster_url}
+            avifSrc={item.poster_avif_url}
+            pngSrc={item.poster_png_url}
             alt={item.title}
             widths={POSTER_WIDTHS}
             sizes="(max-width: 640px) 30vw, 140px"

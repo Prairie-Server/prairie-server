@@ -94,6 +94,19 @@ describe("artworkCandidates", () => {
     const signed = "https://cdn.example.com/art/w300.webp?X-Amz-Signature=abc";
     expect(artworkCandidates(signed)).toEqual([signed]);
   });
+
+  it("treats Cloudflare verify tokens as signed", () => {
+    const signed = "https://cdn.example.com/art/w300.webp?verify=123-abc";
+    expect(isSignedArtworkURL(signed)).toBe(true);
+    expect(artworkCandidates(signed)).toEqual([signed]);
+  });
+
+  it("prefers API-provided signed format siblings", () => {
+    const webp = "https://cdn.example.com/art/w300.webp?X-Amz-Signature=webp";
+    const avif = "https://cdn.example.com/art/w300.avif?X-Amz-Signature=avif";
+    const png = "https://cdn.example.com/art/w300.png?X-Amz-Signature=png";
+    expect(artworkCandidates(webp, { avif, png })).toEqual([avif, webp, png]);
+  });
 });
 
 describe("artworkWidthVariant", () => {

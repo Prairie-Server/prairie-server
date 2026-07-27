@@ -167,6 +167,17 @@ func WebPPNGSibling(objectPath string) string {
 	return webPFormatSibling(objectPath, ".png")
 }
 
+// ObjectFormatSiblings returns AVIF and PNG sibling object keys for a bare
+// cached WebP path. Empty for http(s)/plugin URLs and non-WebP keys — those
+// must not be rewritten before signing (signatures cover the object key).
+func ObjectFormatSiblings(objectPath string) (avif, png string) {
+	objectPath = strings.TrimSpace(objectPath)
+	if objectPath == "" || strings.Contains(objectPath, "://") {
+		return "", ""
+	}
+	return WebPAVIFSibling(objectPath), WebPPNGSibling(objectPath)
+}
+
 func webPFormatSibling(objectPath, ext string) string {
 	objectPath = strings.TrimSpace(objectPath)
 	if objectPath == "" {
