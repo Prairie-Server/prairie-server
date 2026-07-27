@@ -16,6 +16,7 @@ type SystemHandler struct {
 	jwtSecret     string
 	ffmpegPath    string
 	buildInfo     buildinfo.Info
+	updateChecker *buildinfo.UpdateChecker
 }
 
 // NewSystemHandler creates a SystemHandler.
@@ -25,6 +26,7 @@ func NewSystemHandler(transcodePool *nodepool.TranscodePool, jwtSecret string, f
 		jwtSecret:     jwtSecret,
 		ffmpegPath:    ffmpegPath,
 		buildInfo:     buildinfo.Current(),
+		updateChecker: buildinfo.DefaultUpdateChecker,
 	}
 }
 
@@ -49,8 +51,15 @@ func (h *SystemHandler) HandleHWAccel(w http.ResponseWriter, r *http.Request) {
 }
 
 // HandleBuildInfo handles GET /admin/system/build.
-func (h *SystemHandler) HandleBuildInfo(w http.ResponseWriter, _ *http.Request) {
-	writeJSON(w, http.StatusOK, h.buildInfo)
+func (h *SystemHandler) HandleBuildInfo(w http.ResponseWriter, r *http.Request) {
+	info := h.buildInfo
+	if h.updateChecker != nil {
+		info = h.updateChecker.Enrich(r.Context(), info)
+	} else {
+		info.UpdateStatus = buildinfo.UpdateStatusUnknown
+		info.ChangelogURL = "https://github.com/Prairie-Server/prairie-server/releases"
+	}
+	writeJSON(w, http.StatusOK, info)
 }
 
 func (h *SystemHandler) fetchRemoteHWAccel(ctx context.Context, node *nodepool.Node) (playback.HWAccelInfo, error) {

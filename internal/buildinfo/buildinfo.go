@@ -7,32 +7,56 @@ import (
 
 const unavailableDisplay = "unavailable"
 
+// Update status values returned on GET /admin/system/build.
+const (
+	UpdateStatusUpToDate        = "up_to_date"
+	UpdateStatusUpdateAvailable = "update_available"
+	UpdateStatusUnknown         = "unknown"
+)
+
 var (
 	revisionOverride string
 	dirtyOverride    string
+	versionOverride  string
 )
 
-// Info describes the running Prairie build as embedded by Go's VCS metadata.
+// Info describes the running Prairie build as embedded by Go's VCS metadata,
+// plus optional marketing-version / update-channel fields.
 type Info struct {
 	Display   string `json:"display"`
 	Revision  string `json:"revision"`
 	Dirty     bool   `json:"dirty"`
 	VCSTime   string `json:"vcs_time"`
 	Available bool   `json:"available"`
+
+	// Version is the stamped marketing semver when the binary was built from
+	// a release tag (BUILD_VERSION / versionOverride). Empty for plain SHA
+	// builds.
+	Version string `json:"version,omitempty"`
+	// LatestVersion is the newest GitHub release tag discovered by the
+	// update check, when available.
+	LatestVersion string `json:"latest_version,omitempty"`
+	// UpdateStatus is up_to_date, update_available, or unknown.
+	UpdateStatus string `json:"update_status,omitempty"`
+	// ChangelogURL points at release notes (specific tag page or /releases).
+	ChangelogURL string `json:"changelog_url,omitempty"`
+	// ReleaseURL is the latest GitHub release HTML page when known.
+	ReleaseURL string `json:"release_url,omitempty"`
 }
 
 // Current reads build metadata from the running binary.
 func Current() Info {
 	overrideRevision, overrideDirty := parseOverrides(revisionOverride, dirtyOverride)
+	version := strings.TrimSpace(versionOverride)
 
 	info, ok := debug.ReadBuildInfo()
 	if !ok {
-		return buildInfo(overrideRevision, overrideDirty, "")
+		return buildInfo(overrideRevision, overrideDirty, "", version)
 	}
-	return resolve(info.Settings, overrideRevision, overrideDirty)
+	return resolve(info.Settings, overrideRevision, overrideDirty, version)
 }
 
-func resolve(settings []debug.BuildSetting, fallbackRevision string, fallbackDirty bool) Info {
+func resolve(settings []debug.BuildSetting, fallbackRevision string, fallbackDirty bool, version string) Info {
 	var (
 		revision string
 		vcsTime  string
@@ -51,21 +75,24 @@ func resolve(settings []debug.BuildSetting, fallbackRevision string, fallbackDir
 	}
 
 	if revision != "" {
-		return buildInfo(revision, dirty, vcsTime)
+		return buildInfo(revision, dirty, vcsTime, version)
 	}
 
-	return buildInfo(fallbackRevision, fallbackDirty, "")
+	return buildInfo(fallbackRevision, fallbackDirty, "", version)
 }
 
 func parseOverrides(revision, dirty string) (string, bool) {
 	return strings.TrimSpace(revision), strings.EqualFold(strings.TrimSpace(dirty), "true")
 }
 
-func buildInfo(revision string, dirty bool, vcsTime string) Info {
+func buildInfo(revision string, dirty bool, vcsTime string, version string) Info {
 	revision = strings.TrimSpace(revision)
 	vcsTime = strings.TrimSpace(vcsTime)
+	version = normalizeVersion(version)
 	if revision == "" {
-		return unavailableInfo()
+		info := unavailableInfo()
+		info.Version = version
+		return info
 	}
 
 	display := revision
@@ -75,6 +102,13 @@ func buildInfo(revision string, dirty bool, vcsTime string) Info {
 	if dirty {
 		display += "+dirty"
 	}
+	// Prefer marketing version in the short display when stamped.
+	if version != "" {
+		display = version
+		if dirty {
+			display += "+dirty"
+		}
+	}
 
 	return Info{
 		Display:   display,
@@ -82,6 +116,7 @@ func buildInfo(revision string, dirty bool, vcsTime string) Info {
 		Dirty:     dirty,
 		VCSTime:   vcsTime,
 		Available: true,
+		Version:   version,
 	}
 }
 
@@ -93,4 +128,17 @@ func unavailableInfo() Info {
 		VCSTime:   "",
 		Available: false,
 	}
+}
+
+func normalizeVersion(raw string) string {
+	text := strings.TrimSpace(raw)
+	if text == "" {
+		return ""
+	}
+	if strings.HasPrefix(strings.ToLower(text), "v") && len(text) > 1 {
+		if text[1] >= '0' && text[1] <= '9' {
+			return strings.TrimSpace(text[1:])
+		}
+	}
+	return text
 }

@@ -141,6 +141,26 @@ describe("AdminSidebar", () => {
 
     expect(markup).toContain(">Build<");
     expect(markup).toContain(">b4c5aae1+dirty<");
+    expect(markup).toContain('href="/admin/settings?tab=about"');
+  });
+
+  it("surfaces update available in the build footer", () => {
+    mockUseBuildInfo.mockReturnValueOnce({
+      data: {
+        ...defaultBuildInfo,
+        version: "1.0.0",
+        latest_version: "1.4.0",
+        update_status: "update_available",
+        changelog_url: "https://github.com/Prairie-Server/prairie-server/releases/tag/v1.4.0",
+      },
+      isPending: false,
+      isError: false,
+    });
+
+    const markup = renderSidebar();
+
+    expect(markup).toContain(">Update available<");
+    expect(markup).toContain(">Latest 1.4.0<");
   });
 
   it("renders dev build when build metadata is missing", () => {
