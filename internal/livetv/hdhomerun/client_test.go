@@ -2,6 +2,7 @@ package hdhomerun
 
 import (
 	"context"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -70,6 +71,14 @@ func TestDiscoverAcceptsLineupJSON(t *testing.T) {
 	if info.DeviceID != "dev-1" || info.BaseURL != srv.URL || info.TunerCount != 1 {
 		t.Fatalf("unexpected lineup discover info: %+v", info)
 	}
+
+	info, err = NewClient(srv.Client()).Discover(context.Background(), srv.URL, "")
+	if err != nil {
+		t.Fatalf("Discover lineup without device id: %v", err)
+	}
+	if info.DeviceID == "" || info.DeviceID != hostWithoutPort(srv.URL) {
+		t.Fatalf("lineup fallback device id = %+v", info)
+	}
 }
 
 func TestDiscoverFromDeviceID(t *testing.T) {
@@ -105,6 +114,9 @@ func TestDiscoverErrors(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected missing discover args error")
 	}
+	if _, _, err := client.get(context.Background(), "://"); err == nil {
+		t.Fatal("expected malformed request error")
+	}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		http.Error(w, "nope", http.StatusBadGateway)
@@ -123,6 +135,14 @@ func TestDiscoverErrors(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected unsupported response")
 	}
+
+	malformed := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{`))
+	}))
+	defer malformed.Close()
+	if _, _, err := NewClient(malformed.Client()).get(context.Background(), malformed.URL); err == nil {
+		t.Fatal("expected JSON decode error")
+	}
 }
 
 func TestFetchLineupErrors(t *testing.T) {
@@ -130,6 +150,10 @@ func TestFetchLineupErrors(t *testing.T) {
 	_, err := client.FetchLineup(context.Background(), "")
 	if err == nil {
 		t.Fatal("expected empty base url error")
+	}
+	_, err = NewClient(&http.Client{Transport: errorTransport{}}).FetchLineup(context.Background(), "http://example.test")
+	if err == nil {
+		t.Fatal("expected transport error")
 	}
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -159,4 +183,13 @@ func TestNormalizeHelpers(t *testing.T) {
 	if hostWithoutPort("http://example.com:5004/x") != "example.com" {
 		t.Fatalf("hostWithoutPort unexpected")
 	}
+	if hostWithoutPort("not a url") != "" {
+		t.Fatal("hostWithoutPort should be empty")
+	}
+}
+
+type errorTransport struct{}
+
+func (errorTransport) RoundTrip(*http.Request) (*http.Response, error) {
+	return nil, errors.New("transport boom")
 }

@@ -95,4 +95,8 @@ func TestParseXMLTVErrors(t *testing.T) {
 	if _, err := ParseXMLTV(strings.NewReader(badTime)); err == nil {
 		t.Fatal("expected bad start time error")
 	}
+	const badStop = `<?xml version="1.0"?><tv><programme start="20260725190000" stop="bad" channel="x"><title>T</title></programme></tv>`
+	if _, err := ParseXMLTV(strings.NewReader(badStop)); err == nil {
+		t.Fatal("expected bad stop time error")
+	}
 }
