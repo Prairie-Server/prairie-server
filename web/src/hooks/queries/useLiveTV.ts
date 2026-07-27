@@ -13,6 +13,7 @@ import type {
   LiveTVDiscoverTunersResponse,
   LiveTVTuner,
   LiveTVTunersResponse,
+  SchedulesDirectLineupsResponse,
 } from "@/api/types";
 import { adminKeys } from "./keys";
 
@@ -203,10 +204,29 @@ export function useSyncLiveTVGuideSource() {
     onSuccess: () => {
       toast.success("Guide sync started");
       void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVGuideSources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVChannels() });
       void queryClient.invalidateQueries({ queryKey: ["livetv", "guide"] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to sync guide source");
+    },
+  });
+}
+
+export function useLookupSchedulesDirectLineups() {
+  return useMutation({
+    mutationFn: (body: {
+      username: string;
+      password: string;
+      country?: string;
+      postalcode: string;
+    }) =>
+      api<SchedulesDirectLineupsResponse>("/livetv/guide-sources/schedules-direct/lineups", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }).then((data) => data.lineups ?? []),
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Failed to look up lineups");
     },
   });
 }

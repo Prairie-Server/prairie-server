@@ -9,8 +9,12 @@ const (
 	MaxGuideSources = 3
 
 	TunerTypeHDHomeRun         = "hdhomerun"
-	GuideSourceXMLTVURL        = "xmltv_url"
 	GuideSourceSchedulesDirect = "schedules_direct"
+
+	// DefaultSchedulesDirectCountry is used when config omits country.
+	DefaultSchedulesDirectCountry = "USA"
+	// DefaultSchedulesDirectDays is how many days of schedule to pull per sync.
+	DefaultSchedulesDirectDays = 7
 
 	DiscoveredKindHDHomeRun   = "hdhomerun"
 	DiscoveredKindDispatcharr = "dispatcharr"
@@ -106,6 +110,15 @@ type GuideSource struct {
 	LastError   string            `json:"last_error"`
 	LastSyncAt  *time.Time        `json:"last_sync_at,omitempty"`
 	NextSyncAt  *time.Time        `json:"next_sync_at,omitempty"`
+}
+
+// SchedulesDirectLineupsRequest looks up available lineups by postal code.
+type SchedulesDirectLineupsRequest struct {
+	Username     string `json:"username"`
+	Password     string `json:"password"`
+	PasswordSHA1 string `json:"password_sha1"`
+	Country      string `json:"country"`
+	PostalCode   string `json:"postalcode"`
 }
 
 type Program struct {

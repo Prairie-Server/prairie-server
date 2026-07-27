@@ -94,7 +94,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavGroup[] = [
       {
         label: "Live TV",
         description: "HDHomeRun tuners, channel lineup, and guide source sync.",
-        keywords: ["ota", "hdhomerun", "epg", "dvr", "guide", "xmltv"],
+        keywords: ["ota", "hdhomerun", "epg", "dvr", "guide", "schedules direct"],
         icon: Radio,
         href: "/admin/livetv",
       },
