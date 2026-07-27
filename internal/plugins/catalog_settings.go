@@ -2,6 +2,7 @@ package plugins
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -185,7 +186,7 @@ func reconcileManagedRepository(
 	lookupErr := executor.QueryRow(ctx, `
 		SELECT id FROM plugin_repositories WHERE managed_key = $1
 	`, definition.Key).Scan(&managedID)
-	if lookupErr != nil && lookupErr != pgx.ErrNoRows {
+	if lookupErr != nil && !errors.Is(lookupErr, pgx.ErrNoRows) {
 		return false, fmt.Errorf("lookup managed plugin repository %q: %w", definition.Key, lookupErr)
 	}
 
