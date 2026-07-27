@@ -65,7 +65,7 @@ export function useCreateDownload() {
       }),
     onSuccess: (_data, req) => {
       toast.success(req.series ? "Series download queued" : "Download queued");
-      qc.invalidateQueries({ queryKey: downloadKeys.all });
+      void qc.invalidateQueries({ queryKey: downloadKeys.all });
     },
     onError: () => {
       toast.error("Failed to start download");
@@ -78,7 +78,7 @@ export function useDeleteDownload() {
   return useMutation({
     mutationFn: (id: string) => api(`/downloads/${id}`, { method: "DELETE" }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: downloadKeys.all });
+      void qc.invalidateQueries({ queryKey: downloadKeys.all });
     },
   });
 }

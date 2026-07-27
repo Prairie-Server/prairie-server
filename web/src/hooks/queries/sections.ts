@@ -136,7 +136,7 @@ export function useCreateSection() {
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: sectionKeys.all });
+      void qc.invalidateQueries({ queryKey: sectionKeys.all });
     },
   });
 }
@@ -165,7 +165,7 @@ export function useBulkCreateSections() {
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: sectionKeys.all });
+      void qc.invalidateQueries({ queryKey: sectionKeys.all });
     },
   });
 }
@@ -179,7 +179,7 @@ export function useUpdateSection() {
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: sectionKeys.all });
+      void qc.invalidateQueries({ queryKey: sectionKeys.all });
     },
   });
 }
@@ -189,7 +189,7 @@ export function useDeleteSection() {
   return useMutation({
     mutationFn: (id: string) => api<void>(`/admin/sections/${id}`, { method: "DELETE" }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: sectionKeys.all });
+      void qc.invalidateQueries({ queryKey: sectionKeys.all });
       void invalidateAdminCollectionQueries(qc);
     },
   });
@@ -204,7 +204,7 @@ export function useReorderSections() {
         body: JSON.stringify({ entries }),
       }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: sectionKeys.all });
+      void qc.invalidateQueries({ queryKey: sectionKeys.all });
     },
   });
 }
@@ -242,7 +242,7 @@ export function useSaveProfileOverrides() {
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: sectionKeys.all });
+      void qc.invalidateQueries({ queryKey: sectionKeys.all });
     },
   });
 }
@@ -258,7 +258,7 @@ export function useResetProfileOverrides() {
       });
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: sectionKeys.all });
+      void qc.invalidateQueries({ queryKey: sectionKeys.all });
     },
   });
 }
@@ -272,7 +272,7 @@ export function useRestoreDefaultSections() {
         body: JSON.stringify(params),
       }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: sectionKeys.all });
+      void qc.invalidateQueries({ queryKey: sectionKeys.all });
     },
   });
 }

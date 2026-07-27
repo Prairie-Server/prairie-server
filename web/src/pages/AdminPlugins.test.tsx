@@ -173,7 +173,9 @@ describe("AdminPlugins", () => {
     expect(button).toBeTruthy();
     expect(typeof button?.onClick).toBe("function");
 
-    (button?.onClick as () => void)();
+    if (button?.onClick) {
+      (button.onClick as () => void)();
+    }
 
     expect(checkPluginUpdatesMutateMock).toHaveBeenCalledTimes(1);
   });

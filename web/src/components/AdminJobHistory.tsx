@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { RefreshCw } from "lucide-react";
 import { formatJobProgress } from "./adminCatalogMaintenanceFormatters";
 import { formatDateTime } from "@/lib/datetime";
+import { stringifyUnknown } from "@/lib/stringifyUnknown";
 
 const JOB_TYPE_LABELS: Record<string, string> = {
   delete_library: "Library Delete",
@@ -32,18 +33,29 @@ function statusVariant(status: string) {
   }
 }
 
+function asFiniteNumber(value: unknown, fallback = 0): number {
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (typeof value === "string" && value.trim() !== "") {
+    const n = Number(value);
+    if (Number.isFinite(n)) return n;
+  }
+  return fallback;
+}
+
 function jobDescription(job: AdminJob) {
   const payload = job.request_payload as Record<string, unknown>;
+  const libraryName = stringifyUnknown(payload.library_name);
+  const libraryId = stringifyUnknown(payload.library_id);
   switch (job.job_type) {
     case "delete_library":
     case "image_cache_cleanup":
-      return payload.library_name ? `"${payload.library_name}"` : `Library #${payload.library_id}`;
+      return libraryName ? `"${libraryName}"` : libraryId ? `Library #${libraryId}` : "Library";
     case "item_refresh":
     case "library_refresh":
-      return payload.library_name
-        ? `"${payload.library_name}"`
-        : payload.library_id
-          ? `Library #${payload.library_id}`
+      return libraryName
+        ? `"${libraryName}"`
+        : libraryId
+          ? `Library #${libraryId}`
           : "All libraries";
     case "catalog_export": {
       const ids = payload.library_ids as number[] | undefined;
@@ -51,7 +63,11 @@ function jobDescription(job: AdminJob) {
       return "All libraries";
     }
     case "catalog_import":
-      return (payload.source_label as string) || (payload.source_key as string) || "Catalog seed";
+      return (
+        stringifyUnknown(payload.source_label) ||
+        stringifyUnknown(payload.source_key) ||
+        "Catalog seed"
+      );
     default:
       return "";
   }
@@ -62,13 +78,13 @@ function jobResult(job: AdminJob) {
   const result = job.result_payload as Record<string, unknown>;
   switch (job.job_type) {
     case "library_refresh": {
-      const total = result.total_items ?? 0;
-      const withIDs = result.items_with_ids ?? 0;
-      const withoutIDs = result.items_without_ids ?? 0;
-      const refreshedOK = result.refreshed_ok ?? 0;
-      const refreshedFailed = result.refreshed_failed ?? 0;
-      const pipelineOK = result.pipeline_ok ?? 0;
-      const pipelineFailed = result.pipeline_failed ?? 0;
+      const total = asFiniteNumber(result.total_items);
+      const withIDs = asFiniteNumber(result.items_with_ids);
+      const withoutIDs = asFiniteNumber(result.items_without_ids);
+      const refreshedOK = asFiniteNumber(result.refreshed_ok);
+      const refreshedFailed = asFiniteNumber(result.refreshed_failed);
+      const pipelineOK = asFiniteNumber(result.pipeline_ok);
+      const pipelineFailed = asFiniteNumber(result.pipeline_failed);
       if (total === 0) {
         return "No library items to refresh";
       }

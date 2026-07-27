@@ -1,4 +1,4 @@
-import { useEffect, useCallback, useState } from "react";
+import { useEffect, useCallback, useMemo, useRef, useState } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import type { BrowseItem } from "@/api/types";
 import ItemCard from "./ItemCard";
@@ -53,11 +53,18 @@ export default function ItemGrid(props: ItemGridProps) {
   } = props;
   const { prefs: overlayPrefs } = useOverlayPrefs();
   const totalItems = hasStaticItems(props) ? props.items.length : props.totalItems;
-  const pages = hasStaticItems(props)
-    ? new Map<number, BrowseItem[]>([[0, props.items]])
-    : props.pages;
+  const staticItems = hasStaticItems(props) ? props.items : null;
+  const pagedPages = hasStaticItems(props) ? null : props.pages;
+  const pages = useMemo(() => {
+    if (staticItems) {
+      return new Map<number, BrowseItem[]>([[0, staticItems]]);
+    }
+    return pagedPages ?? new Map<number, BrowseItem[]>();
+  }, [staticItems, pagedPages]);
   const pageSize = hasStaticItems(props) ? Math.max(props.items.length, 1) : props.pageSize;
-  const onVisibleRangeChange = hasStaticItems(props) ? () => undefined : props.onVisibleRangeChange;
+  const onVisibleRangeChange = hasStaticItems(props) ? undefined : props.onVisibleRangeChange;
+  const onVisibleRangeChangeRef = useRef(onVisibleRangeChange);
+  onVisibleRangeChangeRef.current = onVisibleRangeChange;
   const { containerRef, layout } = useGridLayout({
     gap: GRID_GAP,
     textAreaHeight: TEXT_AREA_HEIGHT,
@@ -88,8 +95,8 @@ export default function ItemGrid(props: ItemGridProps) {
   useEffect(() => {
     const start = firstRow * columnCount;
     const end = Math.min((lastRow + 1) * columnCount - 1, totalItems - 1);
-    onVisibleRangeChange(start, Math.max(end, 0));
-  }, [firstRow, lastRow, columnCount, totalItems, onVisibleRangeChange]);
+    onVisibleRangeChangeRef.current?.(start, Math.max(end, 0));
+  }, [firstRow, lastRow, columnCount, totalItems]);
 
   const getItem = useCallback(
     (globalIndex: number): BrowseItem | undefined => {

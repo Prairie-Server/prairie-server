@@ -85,7 +85,7 @@ export function AdminSectionCommandDialog({ sections }: AdminSectionCommandDialo
         void navigateToPluginRoute(item.href);
         return;
       }
-      navigate(item.href);
+      void navigate(item.href);
     },
     [closeDialog, navigate],
   );

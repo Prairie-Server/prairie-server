@@ -223,7 +223,7 @@ export default function AdminUserDetail() {
             .mutateAsync(user.id)
             .then((result) => {
               beginImpersonation(result, `/admin/users/${user.id}`);
-              navigate("/profiles");
+              void navigate("/profiles");
             })
             .catch((error: unknown) => {
               toast.error(error instanceof Error ? error.message : "Failed to start impersonation");

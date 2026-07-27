@@ -49,8 +49,8 @@ export function useAddLiveTVTuner() {
       }),
     onSuccess: () => {
       toast.success("Tuner added");
-      queryClient.invalidateQueries({ queryKey: adminKeys.liveTVTuners() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.liveTVChannels() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVTuners() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVChannels() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to add tuner");
@@ -67,8 +67,8 @@ export function useScanLiveTVTuner() {
       }),
     onSuccess: () => {
       toast.success("Channel lineup rescanned");
-      queryClient.invalidateQueries({ queryKey: adminKeys.liveTVTuners() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.liveTVChannels() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVTuners() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVChannels() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to scan tuner");
@@ -83,8 +83,8 @@ export function useDeleteLiveTVTuner() {
       api(`/livetv/tuners/${encodeURIComponent(tunerId)}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Tuner removed");
-      queryClient.invalidateQueries({ queryKey: adminKeys.liveTVTuners() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.liveTVChannels() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVTuners() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVChannels() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to delete tuner");
@@ -123,7 +123,7 @@ export function usePatchLiveTVChannel() {
       }),
     onSuccess: () => {
       toast.success("Channel updated");
-      queryClient.invalidateQueries({ queryKey: adminKeys.liveTVChannels() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVChannels() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to update channel");
@@ -152,7 +152,7 @@ export function useCreateLiveTVGuideSource() {
       }),
     onSuccess: () => {
       toast.success("Guide source added");
-      queryClient.invalidateQueries({ queryKey: adminKeys.liveTVGuideSources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVGuideSources() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to add guide source");
@@ -170,7 +170,7 @@ export function useUpdateLiveTVGuideSource() {
       }),
     onSuccess: () => {
       toast.success("Guide source updated");
-      queryClient.invalidateQueries({ queryKey: adminKeys.liveTVGuideSources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVGuideSources() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to update guide source");
@@ -185,7 +185,7 @@ export function useDeleteLiveTVGuideSource() {
       api(`/livetv/guide-sources/${encodeURIComponent(id)}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Guide source removed");
-      queryClient.invalidateQueries({ queryKey: adminKeys.liveTVGuideSources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVGuideSources() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to delete guide source");
@@ -202,8 +202,8 @@ export function useSyncLiveTVGuideSource() {
       }),
     onSuccess: () => {
       toast.success("Guide sync started");
-      queryClient.invalidateQueries({ queryKey: adminKeys.liveTVGuideSources() });
-      queryClient.invalidateQueries({ queryKey: ["livetv", "guide"] });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVGuideSources() });
+      void queryClient.invalidateQueries({ queryKey: ["livetv", "guide"] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to sync guide source");
@@ -293,7 +293,7 @@ export function useScheduleLiveTVRecording() {
       }),
     onSuccess: () => {
       toast.success("Recording scheduled");
-      queryClient.invalidateQueries({ queryKey: ["livetv", "recordings"] });
+      void queryClient.invalidateQueries({ queryKey: ["livetv", "recordings"] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to schedule recording");
@@ -310,7 +310,7 @@ export function useCancelLiveTVRecording() {
       }),
     onSuccess: () => {
       toast.success("Recording cancelled");
-      queryClient.invalidateQueries({ queryKey: ["livetv", "recordings"] });
+      void queryClient.invalidateQueries({ queryKey: ["livetv", "recordings"] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to cancel recording");

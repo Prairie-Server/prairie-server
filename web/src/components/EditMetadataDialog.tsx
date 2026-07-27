@@ -215,8 +215,10 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
 
     if (isLockable) {
       const originalLocked = new Set(item.locked_fields ?? []);
-      const currentLocked = Array.from(lockedFields).sort();
-      const originalSorted = Array.from(originalLocked).sort();
+      const currentLocked = Array.from(lockedFields).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+      const originalSorted = Array.from(originalLocked).sort((a, b) =>
+        a < b ? -1 : a > b ? 1 : 0,
+      );
       if (JSON.stringify(currentLocked) !== JSON.stringify(originalSorted)) {
         data.locked_fields = currentLocked;
       }

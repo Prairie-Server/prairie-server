@@ -23,7 +23,7 @@ export function useAdminCreateApiKey() {
         body: JSON.stringify(body),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.apiKeys() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.apiKeys() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to create API key");
@@ -37,7 +37,7 @@ export function useAdminDeleteApiKey() {
     mutationFn: (id: number) => api(`/admin/api-keys/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("API key revoked");
-      queryClient.invalidateQueries({ queryKey: adminKeys.apiKeys() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.apiKeys() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to revoke API key");
@@ -54,7 +54,7 @@ export function useAdminUpdateApiKeyTier() {
         body: JSON.stringify({ tier }),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.apiKeys() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.apiKeys() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to update tier");

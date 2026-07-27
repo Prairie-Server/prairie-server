@@ -67,7 +67,7 @@ export default function InviteCodesTab() {
   }
 
   function handleCopy(text: string) {
-    navigator.clipboard.writeText(text);
+    void navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
   }
 

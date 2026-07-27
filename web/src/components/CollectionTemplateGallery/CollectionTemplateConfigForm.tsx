@@ -84,7 +84,7 @@ export function CollectionTemplateConfigForm({
   const tmdbMutation = useImportTMDBCollection();
   const traktMutation = useImportTraktCollection();
   const mdblistMutation = useImportMDBListCollection();
-  const { data: profiles = [] } = useProfiles();
+  const { data: profiles } = useProfiles();
   const eligibility = libraryEligibilityForMediaKind(template.media_kind);
 
   const [libraryIds, setLibraryIds] = useState<number[]>(() =>

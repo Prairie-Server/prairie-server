@@ -212,7 +212,7 @@ export function WatchPlaybackProvider({ children }: { children: ReactNode }) {
           });
         }
 
-        navigate(buildWatchHref(request), {
+        void navigate(buildWatchHref(request), {
           state: buildWatchLocationState(request),
           viewTransition: true,
         });
@@ -287,7 +287,7 @@ export function WatchPlaybackProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    navigate(buildWatchHref(request), {
+    void navigate(buildWatchHref(request), {
       replace: true,
       state: buildWatchLocationState(request),
       viewTransition: true,
@@ -474,7 +474,7 @@ export function WatchPlaybackHost() {
     const prefetchAndNavigate = async () => {
       if (request.returnHref) {
         clearPendingReturnNavigation(request.requestKey);
-        navigate(returnHref, { replace: true });
+        void navigate(returnHref, { replace: true });
         return;
       }
 
@@ -489,7 +489,7 @@ export function WatchPlaybackHost() {
 
       if (!cancelled) {
         clearPendingReturnNavigation(request.requestKey);
-        navigate(fallbackItemHref, { replace: true });
+        void navigate(fallbackItemHref, { replace: true });
       }
     };
 
@@ -513,7 +513,7 @@ export function WatchPlaybackHost() {
       return;
     }
 
-    navigate(buildWatchHref(request), {
+    void navigate(buildWatchHref(request), {
       replace: true,
       state: buildWatchLocationState(request),
     });
@@ -554,7 +554,7 @@ export function WatchPlaybackHost() {
       if (activeRequest) {
         if (exitState?.destinationHref) {
           exitPlayback({ destinationHref: exitState.destinationHref });
-          navigate(exitState.destinationHref, {
+          void navigate(exitState.destinationHref, {
             replace: true,
             viewTransition: true,
           });
@@ -563,7 +563,7 @@ export function WatchPlaybackHost() {
 
         if (activeRequest.roomId && activeRequest.roomToken) {
           exitPlayback();
-          navigate(`/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`, {
+          void navigate(`/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`, {
             replace: true,
             viewTransition: true,
             state: {
@@ -578,7 +578,7 @@ export function WatchPlaybackHost() {
         }
 
         exitPlayback();
-        navigate(buildPlaybackReturnHref(activeRequest), {
+        void navigate(buildPlaybackReturnHref(activeRequest), {
           replace: true,
           viewTransition: true,
         });
@@ -586,7 +586,7 @@ export function WatchPlaybackHost() {
       }
 
       exitPlayback();
-      navigate(-1);
+      void navigate(-1);
     },
     [activeRequest, applyExitStateToCache, exitPlayback, navigate, state.mode],
   );
@@ -603,7 +603,7 @@ export function WatchPlaybackHost() {
       flushSync(() => {
         minimizePlayback();
       });
-      navigate(returnHref, {
+      void navigate(returnHref, {
         replace: true,
         viewTransition: true,
       });
@@ -615,7 +615,7 @@ export function WatchPlaybackHost() {
     (nextContentId: string) => {
       if (!activeRequest) return;
       if (activeRequest.roomId && activeRequest.roomToken) {
-        navigate(`/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`, {
+        void navigate(`/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`, {
           replace: true,
           viewTransition: true,
         });
@@ -686,7 +686,7 @@ export function WatchPlaybackHost() {
       if (!requestKeyValue) return;
       if (activeRequest?.roomId && activeRequest.roomToken) {
         stopPlayback();
-        navigate(`/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`, {
+        void navigate(`/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`, {
           replace: true,
           viewTransition: true,
         });
@@ -722,7 +722,7 @@ export function WatchPlaybackHost() {
       if (!activeItem?.series_id) {
         if (activeRequest) {
           stopPlayback();
-          navigate(buildWatchItemHref(activeRequest));
+          void navigate(buildWatchItemHref(activeRequest));
         }
         return;
       }
@@ -747,7 +747,7 @@ export function WatchPlaybackHost() {
   const handlePostRollClose = useCallback(() => {
     if (activeRequest) {
       stopPlayback();
-      navigate(buildWatchItemHref(activeRequest));
+      void navigate(buildWatchItemHref(activeRequest));
     }
   }, [activeRequest, stopPlayback, navigate]);
 

@@ -1,6 +1,7 @@
 import type { ThemeId } from "@/lib/themes";
 import { THEME_IDS } from "@/lib/themes";
 import type { ThemeToken } from "@/lib/themeTokens";
+import { stringifyUnknown } from "@/lib/stringifyUnknown";
 
 /** Portable theme file format for import/export and catalog distribution. */
 export interface PrairieThemeFile {
@@ -57,7 +58,7 @@ export function parseThemeFile(json: unknown): PrairieThemeFile {
   const obj = json as Record<string, unknown>;
 
   if (obj.version !== 1) {
-    throw new Error(`Unsupported theme file version: ${obj.version}`);
+    throw new Error(`Unsupported theme file version: ${stringifyUnknown(obj.version)}`);
   }
   if (typeof obj.name !== "string" || !obj.name.trim()) {
     throw new Error("Theme file must have a name");
@@ -66,7 +67,7 @@ export function parseThemeFile(json: unknown): PrairieThemeFile {
     typeof obj.baseTheme !== "string" ||
     !(THEME_IDS as readonly string[]).includes(obj.baseTheme)
   ) {
-    throw new Error(`Invalid baseTheme: ${obj.baseTheme}`);
+    throw new Error(`Invalid baseTheme: ${stringifyUnknown(obj.baseTheme)}`);
   }
   if (obj.vars != null && typeof obj.vars !== "object") {
     throw new Error("vars must be an object");

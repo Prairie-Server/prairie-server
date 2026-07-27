@@ -82,7 +82,7 @@ export default function TasteSeed() {
     if (profile) {
       setTasteSeedDismissed(profile.id);
     }
-    navigate(isReturning ? "/settings/playback" : "/", { replace: true });
+    void navigate(isReturning ? "/settings/playback" : "/", { replace: true });
   }, [navigate, profile, isReturning]);
 
   const handleSubmit = useCallback(async () => {
@@ -103,7 +103,7 @@ export default function TasteSeed() {
       if (profile) {
         setTasteSeedDismissed(profile.id);
       }
-      navigate(isReturning ? "/settings/playback" : "/", { replace: true });
+      void navigate(isReturning ? "/settings/playback" : "/", { replace: true });
       return;
     }
 
@@ -117,7 +117,7 @@ export default function TasteSeed() {
           ? "Added 1 favorite — personalizing your home"
           : `Added ${result.added} favorites — personalizing your home`,
       );
-      navigate(isReturning ? "/settings/playback" : "/", { replace: true });
+      void navigate(isReturning ? "/settings/playback" : "/", { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save your picks");
     }

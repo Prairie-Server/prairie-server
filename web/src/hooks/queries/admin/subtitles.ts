@@ -49,7 +49,7 @@ export function useAdminUpdateDownloadedSubtitle() {
       }),
     onSuccess: () => {
       toast.success("Subtitle updated");
-      queryClient.invalidateQueries({ queryKey: ["admin", "downloadedSubtitles"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "downloadedSubtitles"] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to update subtitle");
@@ -66,7 +66,7 @@ export function useAdminDeleteDownloadedSubtitle() {
       }),
     onSuccess: () => {
       toast.success("Subtitle deleted");
-      queryClient.invalidateQueries({ queryKey: ["admin", "downloadedSubtitles"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "downloadedSubtitles"] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to delete subtitle");

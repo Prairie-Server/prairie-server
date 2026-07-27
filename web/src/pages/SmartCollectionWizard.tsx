@@ -391,7 +391,7 @@ function Step2UserMetadata({
   onBack,
 }: Step2BaseProps & { wizard: UserModeProps }) {
   const { profile } = useCurrentProfile();
-  const { data: profiles = [] } = useProfiles();
+  const { data: profiles } = useProfiles();
   const createMutation = useCreateCollection();
   const updateMutation = useUpdateCollection();
   const deletePosterMutation = useDeleteUserCollectionImage();

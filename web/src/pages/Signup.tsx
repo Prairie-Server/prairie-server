@@ -66,7 +66,7 @@ export default function Signup() {
     try {
       await signup(username, email, password, inviteCode);
       if (redirectTarget) {
-        navigate(redirectTarget, { replace: true });
+        void navigate(redirectTarget, { replace: true });
         return;
       }
       try {
@@ -74,14 +74,14 @@ export default function Signup() {
         const soleProfile = getBootstrapProfile(profileList.profiles ?? []);
         if (soleProfile) {
           selectProfile(soleProfile);
-          navigate("/");
+          void navigate("/");
           return;
         }
       } catch {
-        navigate("/profiles");
+        void navigate("/profiles");
         return;
       }
-      navigate("/profiles");
+      void navigate("/profiles");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Signup failed");
     } finally {

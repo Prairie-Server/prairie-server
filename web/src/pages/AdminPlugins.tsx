@@ -1130,9 +1130,9 @@ export default function AdminPlugins() {
       (previousState === "running" || previousState === "cancelling") &&
       currentState === "idle"
     ) {
-      queryClient.invalidateQueries({ queryKey: adminKeys.pluginRepositories() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.pluginCatalog() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.pluginInstallations() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.pluginRepositories() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.pluginCatalog() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.pluginInstallations() });
     }
 
     previousTaskState.current = currentState;

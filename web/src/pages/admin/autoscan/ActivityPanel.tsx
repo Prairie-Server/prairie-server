@@ -141,7 +141,7 @@ function eventStatusTone(status: AutoscanEventStatus): {
   }
 }
 
-function scanStatusClass(status: AutoscanEventScanRun["status"] | ScanRun["status"]): string {
+function scanStatusClass(status: AutoscanEventScanRun["status"]): string {
   switch (status) {
     case "completed":
       return "border-emerald-500/30 bg-emerald-500/10 text-emerald-500";

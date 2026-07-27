@@ -144,10 +144,11 @@ export function useCatalogWindow(
   const enabled = options.enabled ?? true;
   const page0Params = catalogParamsForKey(state, limit, includeTotal);
   const remainingPageParams = catalogParamsForKey(state, limit, false);
-  const visibleRange = options.visibleRange ?? [0, limit - 1];
+  const visibleStart = options.visibleRange?.[0] ?? 0;
+  const visibleEnd = options.visibleRange?.[1] ?? limit - 1;
   const bufferPages = state.source === "query" && state.q ? 0 : 1;
-  const startPage = Math.max(0, Math.floor(visibleRange[0] / limit) - bufferPages);
-  const endPage = Math.floor(visibleRange[1] / limit) + bufferPages;
+  const startPage = Math.max(0, Math.floor(visibleStart / limit) - bufferPages);
+  const endPage = Math.floor(visibleEnd / limit) + bufferPages;
 
   // Fetch page 0 separately so its snapshot timestamp is available
   // synchronously for subsequent page queries, preventing duplicate items
@@ -286,7 +287,7 @@ export function useCatalogWindow(
       }
 
       const seededEstimate = current > 0 ? current : nonExactPageStats.maxLoadedEnd + estimateStep;
-      const needsMoreRunway = visibleRange[1] >= seededEstimate - limit * 2;
+      const needsMoreRunway = visibleEnd >= seededEstimate - limit * 2;
       const expandedEstimate = needsMoreRunway ? seededEstimate + estimateStep : seededEstimate;
 
       return Math.max(expandedEstimate, nonExactPageStats.maxLoadedEnd);
@@ -297,7 +298,7 @@ export function useCatalogWindow(
     nonExactPageStats.maxLoadedEnd,
     page0Result.data?.total,
     page0Result.data?.total_exact,
-    visibleRange,
+    visibleEnd,
   ]);
 
   const totalItems =

@@ -148,7 +148,7 @@ export interface CollectionTemplateBundleCollectionEntry {
 }
 
 export interface CollectionTemplateBundleFeaturedEntry {
-  surface: "home" | "library" | string;
+  surface: "home" | "library";
   library_id?: number;
   library_name?: string;
   template_id: string;

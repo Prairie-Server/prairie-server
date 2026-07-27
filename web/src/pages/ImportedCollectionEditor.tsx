@@ -108,7 +108,7 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
   const deleteMutation = useDeleteCollection();
   const deletePosterMutation = useDeleteUserCollectionImage();
   const syncMutation = useSyncUserCollection();
-  const { data: profiles = [] } = useProfiles();
+  const { data: profiles } = useProfiles();
   const { data: libraries = [] } = useUserLibraries();
   const { data: collectionCapabilities } = useCollectionCapabilities();
   const { profile } = useCurrentProfile();
@@ -1008,8 +1008,9 @@ function SaveDock({
 
 function arraysEqual<T>(a: T[], b: T[]): boolean {
   if (a.length !== b.length) return false;
-  const sa = [...a].sort();
-  const sb = [...b].sort();
+  const compare = (x: T, y: T) => (x < y ? -1 : x > y ? 1 : 0);
+  const sa = [...a].sort(compare);
+  const sb = [...b].sort(compare);
   for (let i = 0; i < sa.length; i++) {
     if (sa[i] !== sb[i]) return false;
   }

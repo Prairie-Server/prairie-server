@@ -73,8 +73,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: ESLint
-        run: pnpm exec eslint . --max-warnings 200
+      - name: Oxlint
+        run: pnpm run lint
 
       - name: Prettier check
         run: pnpm run format:check

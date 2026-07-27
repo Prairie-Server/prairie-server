@@ -38,7 +38,7 @@ function getDeleteGuardReason(
 }
 
 export default function ProfilesSettings() {
-  const { data: profiles = [], isLoading: profilesLoading, avatarUploadEnabled } = useProfiles();
+  const { data: profiles, isLoading: profilesLoading, avatarUploadEnabled } = useProfiles();
   const { data: libraries = [], isLoading: librariesLoading } = useAvailableUserLibraries();
   const { profile: activeProfile, selectProfile, verifyProfilePin } = useAuth();
   const deleteMutation = useDeleteProfile();

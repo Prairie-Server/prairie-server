@@ -63,7 +63,7 @@ export default function AdminApiKeys() {
   }
 
   function handleCopy(text: string) {
-    navigator.clipboard.writeText(text);
+    void navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
   }
 
@@ -266,7 +266,7 @@ function CreateApiKeyForm({ onClose }: { onClose: () => void }) {
 
   function handleCopyAndClose() {
     if (createdKey) {
-      navigator.clipboard.writeText(createdKey);
+      void navigator.clipboard.writeText(createdKey);
       toast.success("Copied to clipboard");
     }
     onClose();
