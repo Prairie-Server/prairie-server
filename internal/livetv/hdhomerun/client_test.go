@@ -145,6 +145,31 @@ func TestDiscoverErrors(t *testing.T) {
 	}
 }
 
+func TestFetchLineupAcceptsNumericHDAndFavorite(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`[
+			{"GuideNumber":"4.1","GuideName":"WCMH-DT","HD":1,"Favorite":1,"URL":"http://example/auto/v4.1"},
+			{"GuideNumber":"4.2","GuideName":"MeTV","URL":"http://example/auto/v4.2"}
+		]`))
+	}))
+	defer srv.Close()
+
+	lineup, err := NewClient(srv.Client()).FetchLineup(context.Background(), srv.URL)
+	if err != nil {
+		t.Fatalf("FetchLineup() error = %v", err)
+	}
+	if len(lineup) != 2 {
+		t.Fatalf("len(lineup) = %d, want 2", len(lineup))
+	}
+	if !lineup[0].HD || !lineup[0].Favorite {
+		t.Fatalf("first channel flags = HD:%v Favorite:%v, want true/true", lineup[0].HD, lineup[0].Favorite)
+	}
+	if lineup[1].HD || lineup[1].Favorite {
+		t.Fatalf("second channel flags = HD:%v Favorite:%v, want false/false", lineup[1].HD, lineup[1].Favorite)
+	}
+}
+
 func TestFetchLineupErrors(t *testing.T) {
 	client := NewClient(http.DefaultClient)
 	_, err := client.FetchLineup(context.Background(), "")

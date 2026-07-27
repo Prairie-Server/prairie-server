@@ -50,6 +50,35 @@ type discoverJSON struct {
 	LineupURL       string `json:"LineupURL"`
 }
 
+// lineupBool accepts HDHomeRun lineup flags that devices may emit as booleans
+// or 0/1 integers (the common SiliconDust format).
+type lineupBool bool
+
+func (b *lineupBool) UnmarshalJSON(data []byte) error {
+	if string(data) == "null" {
+		*b = false
+		return nil
+	}
+
+	var flag bool
+	if err := json.Unmarshal(data, &flag); err == nil {
+		*b = lineupBool(flag)
+		return nil
+	}
+
+	var num json.Number
+	if err := json.Unmarshal(data, &num); err == nil {
+		i, err := num.Int64()
+		if err != nil {
+			return fmt.Errorf("lineup bool number: %w", err)
+		}
+		*b = lineupBool(i != 0)
+		return nil
+	}
+
+	return fmt.Errorf("unsupported lineup bool %s", string(data))
+}
+
 type lineupJSON struct {
 	// SiliconDust lineup.json fields used by Prairie:
 	// GuideNumber is the channel's display number (for example "7.1").
@@ -58,11 +87,11 @@ type lineupJSON struct {
 	// HD marks high-definition channels.
 	// Favorite marks channels favorited on the HDHomeRun device; Prairie stores
 	// all discovered channels and may use this as a future default filter.
-	GuideNumber string `json:"GuideNumber"`
-	GuideName   string `json:"GuideName"`
-	URL         string `json:"URL"`
-	HD          bool   `json:"HD"`
-	Favorite    bool   `json:"Favorite"`
+	GuideNumber string     `json:"GuideNumber"`
+	GuideName   string     `json:"GuideName"`
+	URL         string     `json:"URL"`
+	HD          lineupBool `json:"HD"`
+	Favorite    lineupBool `json:"Favorite"`
 }
 
 func (c *Client) Discover(ctx context.Context, discoverURL, deviceID string) (*DeviceInfo, error) {
@@ -119,8 +148,8 @@ func (c *Client) FetchLineup(ctx context.Context, baseURL string) ([]LineupChann
 			GuideNumber: strings.TrimSpace(ch.GuideNumber),
 			GuideName:   strings.TrimSpace(ch.GuideName),
 			URL:         strings.TrimSpace(ch.URL),
-			HD:          ch.HD,
-			Favorite:    ch.Favorite,
+			HD:          bool(ch.HD),
+			Favorite:    bool(ch.Favorite),
 		})
 	}
 	return channels, nil
