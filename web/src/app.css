@@ -1788,13 +1788,12 @@
     pointer-events: none;
   }
 
-  /* Single horizon band — readable dusk, not decorative orbs */
+  /* Horizon glow from the bottom of the viewport — full-height layer so
+     tall setup steps never leave a floating mid-screen stripe */
   .auth-shell::after {
     content: "";
     position: fixed;
-    inset-inline: -10%;
-    bottom: 18%;
-    height: 42%;
+    inset: 0;
     z-index: 0;
     background: radial-gradient(
       ellipse 70% 55% at 50% 100%,
