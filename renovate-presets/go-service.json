@@ -1,0 +1,7 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Go module + GitHub Actions updates for Prairie Go libraries/services",
+  "extends": ["github>prairie-server/prairie-server//renovate-presets/default"],
+  "enabledManagers": ["github-actions", "gomod"],
+  "postUpdateOptions": ["gomodTidy"]
+}
