@@ -56,6 +56,7 @@ function AddNodeForm({ onAdded }: { onAdded: (node: AddedNode) => void }) {
             onChange={(e) => setName(e.target.value)}
             placeholder="proxy-us-east"
             className="h-8 text-sm"
+            autoComplete="off"
             required
           />
         </div>
@@ -83,6 +84,7 @@ function AddNodeForm({ onAdded }: { onAdded: (node: AddedNode) => void }) {
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://proxy.example.com"
             className="h-8 text-sm"
+            autoComplete="url"
             required
           />
         </div>

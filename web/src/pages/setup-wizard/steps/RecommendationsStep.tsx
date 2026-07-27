@@ -158,6 +158,7 @@ export function RecommendationsStep() {
                   form.setValue("recommendations.embedding_base_url", e.target.value)
                 }
                 placeholder="https://generativelanguage.googleapis.com"
+                autoComplete="off"
               />
             </div>
             <div className="space-y-1.5">
@@ -169,6 +170,7 @@ export function RecommendationsStep() {
                 value={form.getValue("recommendations.embedding_model")}
                 onChange={(e) => form.setValue("recommendations.embedding_model", e.target.value)}
                 placeholder="gemini-embedding-001"
+                autoComplete="off"
               />
             </div>
             {showToken && (
@@ -188,6 +190,7 @@ export function RecommendationsStep() {
                       ? "Configured"
                       : "Enter API key"
                   }
+                  autoComplete="off"
                 />
               </div>
             )}

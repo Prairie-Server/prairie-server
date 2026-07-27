@@ -107,32 +107,44 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
 
       {/* Credentials — shown when enabled */}
       {enabled && (
-        <div className="border-foreground/[0.06] border-t px-4 py-3.5">
+        <form
+          className="border-foreground/[0.06] border-t px-4 py-3.5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSave();
+          }}
+        >
           {isOpenSubtitles ? (
             <div className="grid gap-2.5">
               <Input
                 type="text"
+                name={`${providerName}-username`}
                 placeholder={config.has_credentials ? "Leave blank to keep" : "Username"}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="h-8 text-sm"
+                autoComplete="off"
               />
               <Input
                 type="password"
+                name={`${providerName}-password`}
                 placeholder={config.has_credentials ? "Leave blank to keep" : "Password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-8 text-sm"
+                autoComplete="off"
               />
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <Input
                 type={showApiKey ? "text" : "password"}
+                name={`${providerName}-api-key`}
                 placeholder={config.has_api_key ? "Leave blank to keep" : "API key"}
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 className="h-8 flex-1 text-sm"
+                autoComplete="off"
               />
               <button
                 type="button"
@@ -147,6 +159,7 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
           {/* Actions */}
           <div className="mt-3 flex items-center gap-2">
             <Button
+              type="button"
               variant="secondary"
               size="sm"
               className="h-7 px-3 text-xs"
@@ -163,10 +176,10 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
               )}
             </Button>
             <Button
+              type="submit"
               variant="ghost"
               size="sm"
               className="h-7 px-3 text-xs"
-              onClick={handleSave}
               disabled={updateProvider.isPending}
             >
               {updateProvider.isPending ? "Saving..." : "Save"}
@@ -177,7 +190,7 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
               </span>
             )}
           </div>
-        </div>
+        </form>
       )}
     </fieldset>
   );

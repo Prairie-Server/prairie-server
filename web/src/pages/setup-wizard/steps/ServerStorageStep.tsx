@@ -120,7 +120,12 @@ function KeyPrefixField({ value, onChange }: { value: string; onChange: (value: 
   return (
     <div className="space-y-1.5">
       <Label className="text-xs">Key Prefix</Label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder="prairie/dev" />
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="prairie/dev"
+        autoComplete="off"
+      />
       <p className="text-muted-foreground/70 text-xs">
         Optional. Stores all Prairie objects under this folder inside the bucket. Leave blank to use
         the bucket root.
@@ -332,6 +337,7 @@ export function ServerStorageStep() {
               value={form.getValue("playback.ffmpeg_path")}
               onChange={(e) => form.setValue("playback.ffmpeg_path", e.target.value)}
               placeholder="/usr/lib/jellyfin-ffmpeg/ffmpeg"
+              autoComplete="off"
             />
           </div>
           <div className="space-y-1.5">
@@ -343,6 +349,7 @@ export function ServerStorageStep() {
               value={form.getValue("playback.transcode_dir")}
               onChange={(e) => form.setValue("playback.transcode_dir", e.target.value)}
               placeholder="/tmp/prairie-transcode"
+              autoComplete="off"
             />
           </div>
         </div>
@@ -367,17 +374,19 @@ export function ServerStorageStep() {
               </SelectContent>
             </Select>
           </div>
-          <div className="flex items-center gap-2 pb-1.5">
-            <Switch
-              id="setup-transcode-enabled"
-              checked={form.getValue("playback.transcode_enabled") !== "false"}
-              onCheckedChange={(v) =>
-                form.setValue("playback.transcode_enabled", v ? "true" : "false")
-              }
-            />
+          <div className="space-y-1.5">
             <Label htmlFor="setup-transcode-enabled" className="text-xs">
               Transcoding
             </Label>
+            <div className="flex h-9 items-center">
+              <Switch
+                id="setup-transcode-enabled"
+                checked={form.getValue("playback.transcode_enabled") !== "false"}
+                onCheckedChange={(v) =>
+                  form.setValue("playback.transcode_enabled", v ? "true" : "false")
+                }
+              />
+            </div>
           </div>
         </div>
       </Section>
@@ -424,6 +433,7 @@ export function ServerStorageStep() {
               value={form.getValue("jellyfin_compat.public_url")}
               onChange={(e) => form.setValue("jellyfin_compat.public_url", e.target.value)}
               placeholder="http://your-server:8096"
+              autoComplete="off"
             />
           </div>
           <div className="space-y-1.5">
@@ -435,6 +445,7 @@ export function ServerStorageStep() {
               value={form.getValue("jellyfin_compat.server_name")}
               onChange={(e) => form.setValue("jellyfin_compat.server_name", e.target.value)}
               placeholder="Prairie"
+              autoComplete="off"
             />
           </div>
         </div>
@@ -449,6 +460,7 @@ export function ServerStorageStep() {
                 value={form.getValue("jellyfin_compat.web_version")}
                 onChange={(e) => form.setValue("jellyfin_compat.web_version", e.target.value)}
                 placeholder="Auto-select compatible release"
+                autoComplete="off"
               />
               <p className="text-muted-foreground/70 text-xs">
                 Optional. Leave blank to use the latest compatible released Jellyfin Web patch.
@@ -463,6 +475,7 @@ export function ServerStorageStep() {
                 value={form.getValue("jellyfin_compat.web_install_dir")}
                 onChange={(e) => form.setValue("jellyfin_compat.web_install_dir", e.target.value)}
                 placeholder="Use Prairie managed directory"
+                autoComplete="off"
               />
               <p className="text-muted-foreground/70 text-xs">
                 Optional. Defaults to{" "}
@@ -582,6 +595,7 @@ export function ServerStorageStep() {
               value={form.getValue("s3.public_endpoint")}
               onChange={(e) => form.setValue("s3.public_endpoint", e.target.value)}
               placeholder="https://s3.amazonaws.com"
+              autoComplete="off"
             />
           </div>
           <div className="space-y-1.5">
@@ -589,6 +603,7 @@ export function ServerStorageStep() {
             <Input
               value={form.getValue("s3.public_bucket")}
               onChange={(e) => form.setValue("s3.public_bucket", e.target.value)}
+              autoComplete="off"
             />
           </div>
         </div>
@@ -656,6 +671,7 @@ export function ServerStorageStep() {
               value={form.getValue("s3.private_endpoint")}
               onChange={(e) => form.setValue("s3.private_endpoint", e.target.value)}
               placeholder="https://s3.amazonaws.com"
+              autoComplete="off"
             />
           </div>
           <div className="space-y-1.5">
@@ -663,6 +679,7 @@ export function ServerStorageStep() {
             <Input
               value={form.getValue("s3.private_bucket")}
               onChange={(e) => form.setValue("s3.private_bucket", e.target.value)}
+              autoComplete="off"
             />
           </div>
         </div>
