@@ -25,6 +25,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"strings"
 )
 
@@ -94,7 +95,7 @@ func (c *Cipher) Encrypt(plaintext, aad string) (string, error) {
 		return "", nil
 	}
 	nonce := make([]byte, c.gcm.NonceSize())
-	if _, err := rand.Read(nonce); err != nil {
+	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
 		return "", fmt.Errorf("secret: read nonce: %w", err)
 	}
 	// Seal appends the ciphertext to nonce, so the returned slice is nonce‖sealed.

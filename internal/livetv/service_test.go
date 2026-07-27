@@ -15,6 +15,8 @@ import (
 	"github.com/prairie-server/prairie-server/internal/livetv/hdhomerun"
 )
 
+var errStoreBoom = errors.New("store boom")
+
 func TestServiceAddTunerScansLineup(t *testing.T) {
 	allowLoopbackMediaFetch(t)
 	mux := http.NewServeMux()
@@ -409,6 +411,66 @@ func TestStartChannelSessionWithPlaybackBridge(t *testing.T) {
 	}
 }
 
+func TestStartChannelSessionEdgePaths(t *testing.T) {
+	store := newMemoryStore()
+	store.tuners["t1"] = Tuner{ID: "t1", Type: TunerTypeHDHomeRun, DeviceID: "d1", TunerCount: 2, Status: "ready"}
+	store.channels["disabled"] = Channel{ID: "disabled", TunerID: "t1", Enabled: false, StreamURL: "http://hdhr/auto/v1"}
+	store.channels["missing-tuner"] = Channel{ID: "missing-tuner", TunerID: "missing", Enabled: true, StreamURL: "http://hdhr/auto/v2"}
+	store.channels["bridge-fail"] = Channel{ID: "bridge-fail", TunerID: "t1", Enabled: true, StreamURL: "http://hdhr/auto/v3"}
+
+	svc := NewServiceWithStore(store)
+	if _, err := svc.StartChannelSession(context.Background(), "disabled", 1, "p"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("disabled channel = %v", err)
+	}
+	if _, err := svc.StartChannelSession(context.Background(), "missing-tuner", 1, "p"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("missing tuner = %v", err)
+	}
+
+	svc.SetPlaybackBridge(errorPlaybackBridge{})
+	if _, err := svc.StartChannelSession(context.Background(), "bridge-fail", 1, "p"); err == nil || !strings.Contains(err.Error(), "start playback bridge") {
+		t.Fatalf("bridge failure = %v", err)
+	}
+
+	retryStore := &conflictOnceStore{memoryStore: newMemoryStore()}
+	retryStore.tuners["t1"] = Tuner{ID: "t1", Type: TunerTypeHDHomeRun, DeviceID: "d1", TunerCount: 1, Status: "ready"}
+	retryStore.channels["ch1"] = Channel{ID: "ch1", TunerID: "t1", Enabled: true, StreamURL: "http://hdhr/auto/v4"}
+	svc = NewServiceWithStore(retryStore)
+	session, err := svc.StartChannelSession(context.Background(), "ch1", 1, "p")
+	if err != nil {
+		t.Fatalf("retry after conflict: %v", err)
+	}
+	if !retryStore.conflicted || session == nil || session.TunerIndex != 0 {
+		t.Fatalf("retry state conflicted=%v session=%+v", retryStore.conflicted, session)
+	}
+}
+
+func TestResolveSessionUpstreamURLEdgePaths(t *testing.T) {
+	store := newMemoryStore()
+	svc := NewServiceWithStore(store)
+
+	store.sessions["released"] = LiveSession{ID: "released", Status: "released", ChannelID: "ch1"}
+	if _, err := svc.ResolveSessionUpstreamURL(context.Background(), "released"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("released session = %v", err)
+	}
+
+	store.sessions["missing-channel"] = LiveSession{ID: "missing-channel", Status: "active", ChannelID: "missing"}
+	if _, err := svc.ResolveSessionUpstreamURL(context.Background(), "missing-channel"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("missing channel = %v", err)
+	}
+
+	store.channels["empty-stream"] = Channel{ID: "empty-stream", Enabled: true}
+	store.sessions["empty-stream"] = LiveSession{ID: "empty-stream", Status: "active", ChannelID: "empty-stream"}
+	if _, err := svc.ResolveSessionUpstreamURL(context.Background(), "empty-stream"); !errors.Is(err, ErrNotFound) {
+		t.Fatalf("empty stream = %v", err)
+	}
+
+	store.channels["metadata"] = Channel{ID: "metadata", Enabled: true, StreamURL: "http://169.254.169.254/stream"}
+	store.sessions["metadata"] = LiveSession{ID: "metadata", Status: "active", ChannelID: "metadata"}
+	if _, err := svc.ResolveSessionUpstreamURL(context.Background(), "metadata"); !errors.Is(err, ErrInvalidArgument) {
+		t.Fatalf("metadata stream = %v", err)
+	}
+}
+
 func TestScheduleCancelAndFailDueRecordings(t *testing.T) {
 	store := newMemoryStore()
 	fixed := time.Date(2026, 7, 25, 18, 30, 0, 0, time.UTC)
@@ -732,10 +794,188 @@ func TestAddTunerRequiresConfiguredService(t *testing.T) {
 	}
 }
 
+func TestServiceStoreErrorBranches(t *testing.T) {
+	allowLoopbackMediaFetch(t)
+	if svc := NewService(nil); svc == nil {
+		t.Fatal("NewService(nil) returned nil")
+	}
+
+	svc := NewServiceWithStore(&erroringStore{memoryStore: newMemoryStore(), createTunerErr: true})
+	svc.SetHDHomeRunClient(fakeHDHRClient{
+		discover: func(context.Context, string, string) (*hdhomerun.DeviceInfo, error) {
+			return &hdhomerun.DeviceInfo{DeviceID: "D1", BaseURL: "http://192.168.1.50", TunerCount: 1}, nil
+		},
+	})
+	if _, err := svc.AddTuner(context.Background(), "http://192.168.1.50/discover.json", ""); !errors.Is(err, errStoreBoom) {
+		t.Fatalf("CreateTuner error = %v", err)
+	}
+
+	svc = NewServiceWithStore(&erroringStore{memoryStore: newMemoryStore(), getTunerErr: true})
+	if err := svc.ScanTuner(context.Background(), "t1"); !errors.Is(err, errStoreBoom) {
+		t.Fatalf("ScanTuner GetTuner error = %v", err)
+	}
+
+	store := newMemoryStore()
+	store.tuners["bad"] = Tuner{ID: "bad", BaseURL: "ftp://bad.example", TunerCount: 1}
+	svc = NewServiceWithStore(store)
+	if err := svc.ScanTuner(context.Background(), "bad"); !errors.Is(err, ErrInvalidArgument) {
+		t.Fatalf("ScanTuner invalid URL = %v", err)
+	}
+
+	svc = NewServiceWithStore(&erroringStore{memoryStore: newMemoryStore(), getChannelErr: true})
+	if _, err := svc.GetChannel(context.Background(), "ch1"); !errors.Is(err, errStoreBoom) {
+		t.Fatalf("GetChannel error = %v", err)
+	}
+
+	svc = NewServiceWithStore(&erroringStore{memoryStore: newMemoryStore(), updateChannelErr: true})
+	if _, err := svc.PatchChannel(context.Background(), "ch1", ChannelPatch{}); !errors.Is(err, errStoreBoom) {
+		t.Fatalf("PatchChannel error = %v", err)
+	}
+
+	activeErr := &erroringStore{memoryStore: newMemoryStore(), activeIndicesErr: true}
+	activeErr.tuners["t1"] = Tuner{ID: "t1", TunerCount: 1}
+	activeErr.channels["ch1"] = Channel{ID: "ch1", TunerID: "t1", Enabled: true, StreamURL: "http://192.168.1.50/auto/v1"}
+	svc = NewServiceWithStore(activeErr)
+	if _, err := svc.StartChannelSession(context.Background(), "ch1", 1, "p"); !errors.Is(err, errStoreBoom) {
+		t.Fatalf("ActiveSessionTunerIndices error = %v", err)
+	}
+
+	createErr := &erroringStore{memoryStore: newMemoryStore(), createSessionErr: true}
+	createErr.tuners["t1"] = Tuner{ID: "t1", TunerCount: 1}
+	createErr.channels["ch1"] = Channel{ID: "ch1", TunerID: "t1", Enabled: true, StreamURL: "http://192.168.1.50/auto/v1"}
+	svc = NewServiceWithStore(createErr)
+	if _, err := svc.StartChannelSession(context.Background(), "ch1", 1, "p"); !errors.Is(err, errStoreBoom) {
+		t.Fatalf("CreateSession error = %v", err)
+	}
+
+	conflictStore := &alwaysConflictStore{memoryStore: newMemoryStore()}
+	conflictStore.tuners["t1"] = Tuner{ID: "t1", TunerCount: 1}
+	conflictStore.channels["ch1"] = Channel{ID: "ch1", TunerID: "t1", Enabled: true, StreamURL: "http://192.168.1.50/auto/v1"}
+	svc = NewServiceWithStore(conflictStore)
+	if _, err := svc.StartChannelSession(context.Background(), "ch1", 1, "p"); !errors.Is(err, ErrNoTuner) {
+		t.Fatalf("persistent conflict = %v", err)
+	}
+
+	xmlSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`<?xml version="1.0"?><tv><channel id="KING"><display-name>KING</display-name></channel><programme start="20260725190000" stop="20260725200000" channel="KING"><title>News</title></programme></tv>`)) //nolint:misspell // XMLTV element name
+	}))
+	defer xmlSrv.Close()
+
+	channelErr := &erroringStore{memoryStore: newMemoryStore(), listChannelsErr: true}
+	svc = NewServiceWithStore(channelErr)
+	svc.httpClient = xmlSrv.Client()
+	if err := svc.syncXMLTV(context.Background(), &GuideSource{ID: "src", Config: map[string]string{"url": xmlSrv.URL}}); !errors.Is(err, errStoreBoom) {
+		t.Fatalf("syncXMLTV ListChannels error = %v", err)
+	}
+
+	upsertErr := &erroringStore{memoryStore: newMemoryStore(), upsertProgramsErr: true}
+	upsertErr.channels["ch1"] = Channel{ID: "ch1", Callsign: "KING", Enabled: true}
+	svc = NewServiceWithStore(upsertErr)
+	svc.httpClient = xmlSrv.Client()
+	if err := svc.syncXMLTV(context.Background(), &GuideSource{ID: "src", Config: map[string]string{"url": xmlSrv.URL}}); !errors.Is(err, errStoreBoom) {
+		t.Fatalf("syncXMLTV UpsertPrograms error = %v", err)
+	}
+}
+
 type stubPlaybackBridge struct{}
 
 func (stubPlaybackBridge) StartLiveStream(context.Context, string, string, int, string) (string, string, error) {
 	return "pb-1", "http://play/hls.m3u8", nil
+}
+
+type errorPlaybackBridge struct{}
+
+func (errorPlaybackBridge) StartLiveStream(context.Context, string, string, int, string) (string, string, error) {
+	return "", "", errors.New("bridge boom")
+}
+
+type conflictOnceStore struct {
+	*memoryStore
+	conflicted bool
+}
+
+func (s *conflictOnceStore) CreateSession(ctx context.Context, input SessionCreate) (*LiveSession, error) {
+	if !s.conflicted {
+		s.conflicted = true
+		return nil, ErrTunerIndexConflict
+	}
+	return s.memoryStore.CreateSession(ctx, input)
+}
+
+type alwaysConflictStore struct {
+	*memoryStore
+}
+
+func (s *alwaysConflictStore) CreateSession(context.Context, SessionCreate) (*LiveSession, error) {
+	return nil, ErrTunerIndexConflict
+}
+
+type erroringStore struct {
+	*memoryStore
+	createTunerErr    bool
+	getTunerErr       bool
+	getChannelErr     bool
+	updateChannelErr  bool
+	listChannelsErr   bool
+	upsertProgramsErr bool
+	activeIndicesErr  bool
+	createSessionErr  bool
+}
+
+func (s *erroringStore) CreateTuner(ctx context.Context, tuner *Tuner) (*Tuner, error) {
+	if s.createTunerErr {
+		return nil, errStoreBoom
+	}
+	return s.memoryStore.CreateTuner(ctx, tuner)
+}
+
+func (s *erroringStore) GetTuner(ctx context.Context, id string) (*Tuner, error) {
+	if s.getTunerErr {
+		return nil, errStoreBoom
+	}
+	return s.memoryStore.GetTuner(ctx, id)
+}
+
+func (s *erroringStore) GetChannel(ctx context.Context, id string) (*Channel, error) {
+	if s.getChannelErr {
+		return nil, errStoreBoom
+	}
+	return s.memoryStore.GetChannel(ctx, id)
+}
+
+func (s *erroringStore) UpdateChannel(ctx context.Context, id string, patch ChannelPatch) (*Channel, error) {
+	if s.updateChannelErr {
+		return nil, errStoreBoom
+	}
+	return s.memoryStore.UpdateChannel(ctx, id, patch)
+}
+
+func (s *erroringStore) ListChannels(ctx context.Context, tunerID string) ([]Channel, error) {
+	if s.listChannelsErr {
+		return nil, errStoreBoom
+	}
+	return s.memoryStore.ListChannels(ctx, tunerID)
+}
+
+func (s *erroringStore) UpsertPrograms(ctx context.Context, sourceID string, programs []Program) error {
+	if s.upsertProgramsErr {
+		return errStoreBoom
+	}
+	return s.memoryStore.UpsertPrograms(ctx, sourceID, programs)
+}
+
+func (s *erroringStore) ActiveSessionTunerIndices(ctx context.Context, tunerID string) ([]int, error) {
+	if s.activeIndicesErr {
+		return nil, errStoreBoom
+	}
+	return s.memoryStore.ActiveSessionTunerIndices(ctx, tunerID)
+}
+
+func (s *erroringStore) CreateSession(ctx context.Context, input SessionCreate) (*LiveSession, error) {
+	if s.createSessionErr {
+		return nil, errStoreBoom
+	}
+	return s.memoryStore.CreateSession(ctx, input)
 }
 
 type memoryStore struct {
