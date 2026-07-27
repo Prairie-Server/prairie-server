@@ -17,8 +17,11 @@ func TestResolveAVIFBackfillWorkers(t *testing.T) {
 	if got := ResolveAVIFBackfillWorkers(0); got != want {
 		t.Fatalf("ResolveAVIFBackfillWorkers(0) = %d, want NumCPU %d", got, want)
 	}
-	if got := ResolveAVIFBackfillWorkers(-1); got != want {
-		t.Fatalf("ResolveAVIFBackfillWorkers(-1) = %d, want NumCPU %d", got, want)
+	if got := ResolveAVIFBackfillWorkersFor(0, "nvenc", 0); got != 3 {
+		t.Fatalf("ResolveAVIFBackfillWorkersFor(nvenc) = %d, want 3", got)
+	}
+	if got := ResolveAVIFBackfillWorkersFor(0, "nvenc", 5); got != 5 {
+		t.Fatalf("ResolveAVIFBackfillWorkersFor(nvenc,5) = %d, want 5", got)
 	}
 }
 

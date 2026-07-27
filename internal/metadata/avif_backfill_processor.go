@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"runtime"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -304,11 +305,23 @@ func avifBackfillConcurrencyDefault() int {
 }
 
 // ResolveAVIFBackfillWorkers maps a configured worker count to a concrete
-// concurrency. Values <= 0 mean runtime.NumCPU() so AVIF backfill can saturate
-// the host once the WebP queue drains.
+// concurrency. Values <= 0 mean runtime.NumCPU().
 func ResolveAVIFBackfillWorkers(configured int) int {
+	return ResolveAVIFBackfillWorkersFor(configured, "", 0)
+}
+
+// ResolveAVIFBackfillWorkersFor is the backend-aware variant used at wiring
+// time. When backend is "nvenc" and configured <= 0, concurrency follows the
+// NVENC session cap (default 3) instead of NumCPU.
+func ResolveAVIFBackfillWorkersFor(configured int, backend string, nvencSessions int) int {
 	if configured > 0 {
 		return configured
+	}
+	if strings.EqualFold(strings.TrimSpace(backend), "nvenc") {
+		if nvencSessions > 0 {
+			return nvencSessions
+		}
+		return 3
 	}
 	n := runtime.NumCPU()
 	if n < 1 {

@@ -48,6 +48,9 @@ var adminSettingDefaults = map[string]string{
 	"matcher.batch_size":             "500",
 	"metadata.cache_images":          "true",
 	"metadata.avif_backfill_workers": "0",
+	"metadata.avif_encoder":          "auto",
+	"metadata.avif_ffmpeg_path":      "ffmpeg",
+	"metadata.avif_nvenc_sessions":   "0",
 	"artwork.local_dir":              "/var/lib/prairie/artwork",
 	"markers.mode":                   "local",
 	"markers.lazy_playback":          "false",
@@ -294,6 +297,18 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 		return normalizeAdminInt(key, value, 1, 1024)
 	case "metadata.avif_backfill_workers":
 		return normalizeAdminInt(key, value, 0, 1024)
+	case "metadata.avif_nvenc_sessions":
+		return normalizeAdminInt(key, value, 0, 64)
+	case "metadata.avif_encoder":
+		v := strings.ToLower(strings.TrimSpace(value))
+		switch v {
+		case "auto", "svt", "nvenc", "wasm":
+			return v, nil
+		default:
+			return "", fmt.Errorf("%s must be one of auto, svt, nvenc, wasm", key)
+		}
+	case "metadata.avif_ffmpeg_path":
+		return strings.TrimSpace(value), nil
 	case "matcher.batch_size":
 		return normalizeAdminInt(key, value, 1, 100000)
 	case "playback.chapter_thumbnail_workers", "playback.chapter_thumbnail_node_capacity":

@@ -4,8 +4,10 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"runtime"
 	"time"
 
+	"github.com/prairie-server/prairie-server/internal/imageutil"
 	"github.com/prairie-server/prairie-server/internal/metadata"
 	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
@@ -15,9 +17,21 @@ const (
 	// Discovery enqueue batch stays large; claim size is capped to concurrency
 	// inside the processor so DB running ≈ actually in-flight work.
 	cacheMetadataImagesBatchSize  = 1000
-	cacheMetadataImagesWorkers    = 12
 	cacheMetadataImagesMaxRuntime = 10 * time.Minute
 )
+
+// cacheMetadataImagesConcurrency caps WebP cache workers to the shared encode
+// budget size (≈ NumCPU) so WebP + AVIF in-flight work does not oversubscribe.
+func cacheMetadataImagesConcurrency() int {
+	n := imageutil.EncodeBudgetSize()
+	if n < 1 {
+		n = runtime.NumCPU()
+	}
+	if n < 1 {
+		return 1
+	}
+	return n
+}
 
 type MetadataImageCacheRunner interface {
 	RunUntilIdle(ctx context.Context, workerID string, claimLimit int, concurrency int, maxRuntime time.Duration, onProgress metadata.ImageCacheProgressFunc) (metadata.ImageCacheRunStats, error)
@@ -65,7 +79,7 @@ func (t *CacheMetadataImagesTask) Execute(ctx context.Context, progress taskmana
 		ctx,
 		hostname,
 		cacheMetadataImagesBatchSize,
-		cacheMetadataImagesWorkers,
+		cacheMetadataImagesConcurrency(),
 		cacheMetadataImagesMaxRuntime,
 		progress.Report,
 	)

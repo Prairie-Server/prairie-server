@@ -62,7 +62,10 @@ RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     echo "deb [signed-by=/usr/share/keyrings/jellyfin.gpg arch=${TARGETARCH}] https://repo.jellyfin.org/debian bookworm main" \
       > /etc/apt/sources.list.d/jellyfin.list && \
     apt-get update && \
-    apt-get install -y --no-install-recommends jellyfin-ffmpeg7 git fonts-noto-core fonts-noto-cjk && \
+			# jellyfin-ffmpeg7: playback/transcode. debian ffmpeg: artwork AVIF
+			# (libsvtav1 + avif muxer). Native SVT replaces rav1e-WASM; keeps
+			# CGO_ENABLED=0 (subprocess, not cgo/libavif).
+			apt-get install -y --no-install-recommends jellyfin-ffmpeg7 ffmpeg git fonts-noto-core fonts-noto-cjk && \
     apt-get purge -y gnupg && apt-get autoremove -y
 RUN mkdir -p /tmp/prairie-transcode /var/lib/prairie/compat/jellyfin-web
 COPY --from=node_runtime /usr/local/bin/node /usr/local/bin/node

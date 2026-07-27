@@ -58,6 +58,7 @@ import (
 	evt "github.com/prairie-server/prairie-server/internal/events"
 	"github.com/prairie-server/prairie-server/internal/historyimport"
 	"github.com/prairie-server/prairie-server/internal/imagecache"
+	"github.com/prairie-server/prairie-server/internal/imageutil"
 	"github.com/prairie-server/prairie-server/internal/intromarkers"
 	"github.com/prairie-server/prairie-server/internal/jellycompat"
 	"github.com/prairie-server/prairie-server/internal/libraryingest"
@@ -1422,8 +1423,20 @@ func main() {
 				metadataImageCacheProcessor.SetImagePrefixDeleter(deps.ArtworkLocal)
 			}
 			avifBackfillProcessor = metadata.NewAVIFBackfillProcessor(avifBackfillJobs, imageCacher)
-			avifBackfillProcessor.SetWorkers(cfg.Metadata.AVIFBackfillWorkers)
-			imageCacher.SetAVIFBackfillConcurrency(metadata.ResolveAVIFBackfillWorkers(cfg.Metadata.AVIFBackfillWorkers))
+			configureAVIFEncoder(cfg)
+			avifWorkers := metadata.ResolveAVIFBackfillWorkersFor(
+				cfg.Metadata.AVIFBackfillWorkers,
+				imageutil.ActiveAVIFBackend(),
+				cfg.Metadata.AVIFNVENCSessions,
+			)
+			avifBackfillProcessor.SetWorkers(avifWorkers)
+			imageCacher.SetAVIFBackfillConcurrency(avifWorkers)
+			imageutil.SetEncodeBudgetSize(avifWorkers) // CPU: slots≈workers≈cores; NVENC: slots≈sessions
+			if imageutil.ActiveAVIFBackend() != imageutil.BackendNVENC {
+				// On CPU backends the shared budget must stay at NumCPU even when
+				// AVIF workers are lowered — WebP cache workers share the same pool.
+				imageutil.SetEncodeBudgetSize(0)
+			}
 			if artworkChecker := artworkObjectChecker(deps); artworkChecker != nil {
 				avifBackfillProcessor.SetDiscoverer(metadata.NewAVIFSiblingReconciler(deps.DB, artworkChecker))
 			}
@@ -1438,8 +1451,19 @@ func main() {
 				metadataService.SetAutoCacheImages(updated.Metadata.CacheImages)
 				metadataImageCacheProcessor.SetEnabled(updated.Metadata.CacheImages)
 				avifBackfillProcessor.SetEnabled(updated.Metadata.CacheImages)
-				avifBackfillProcessor.SetWorkers(updated.Metadata.AVIFBackfillWorkers)
-				imageCacher.SetAVIFBackfillConcurrency(metadata.ResolveAVIFBackfillWorkers(updated.Metadata.AVIFBackfillWorkers))
+				configureAVIFEncoder(updated)
+				avifWorkers := metadata.ResolveAVIFBackfillWorkersFor(
+					updated.Metadata.AVIFBackfillWorkers,
+					imageutil.ActiveAVIFBackend(),
+					updated.Metadata.AVIFNVENCSessions,
+				)
+				avifBackfillProcessor.SetWorkers(avifWorkers)
+				imageCacher.SetAVIFBackfillConcurrency(avifWorkers)
+				if imageutil.ActiveAVIFBackend() == imageutil.BackendNVENC {
+					imageutil.SetEncodeBudgetSize(avifWorkers)
+				} else {
+					imageutil.SetEncodeBudgetSize(0)
+				}
 				if updated.Metadata.CacheImages && !wasEnabled {
 					// Enabling caching must backfill existing item posters, not
 					// wait for the next match/refresh of each title.
@@ -2967,6 +2991,21 @@ func artworkObjectDeleter(deps api.Dependencies) metadata.ArtworkObjectDeleter {
 		return deps.ArtworkLocal
 	}
 	return nil
+}
+
+func configureAVIFEncoder(cfg *config.Config) {
+	if cfg == nil {
+		return
+	}
+	if _, err := imageutil.ConfigureAVIFEncoder(imageutil.EncoderConfig{
+		Backend:       cfg.Metadata.AVIFEncoder,
+		FFmpegPath:    cfg.Metadata.AVIFFFmpegPath,
+		NVENCSessions: cfg.Metadata.AVIFNVENCSessions,
+		EnableNVENC:   true,
+	}); err != nil {
+		slog.Warn("imageutil: AVIF encoder configure failed; keeping previous backend",
+			"component", "imageutil", "error", err)
+	}
 }
 
 func artworkBackendName(deps api.Dependencies) string {
