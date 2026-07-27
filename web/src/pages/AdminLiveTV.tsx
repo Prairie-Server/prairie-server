@@ -465,7 +465,15 @@ function GuideTab() {
 
   return (
     <div className="space-y-6">
-      <div className="max-w-xl space-y-4">
+      <form
+        className="max-w-xl space-y-4"
+        onSubmit={(event) => {
+          event.preventDefault();
+          if (!createSource.isPending && canAdd) {
+            addSchedulesDirect();
+          }
+        }}
+      >
         <p className="text-muted-foreground text-sm">
           Up to three enabled guide sources, priority-ordered like marker providers. Enter your{" "}
           <a
@@ -568,11 +576,11 @@ function GuideTab() {
             />
           </div>
         )}
-        <Button onClick={addSchedulesDirect} disabled={createSource.isPending || !canAdd}>
+        <Button type="submit" disabled={createSource.isPending || !canAdd}>
           <Plus />
           {createSource.isPending ? "Adding…" : "Add Schedules Direct source"}
         </Button>
-      </div>
+      </form>
 
       {sources.isLoading ? (
         <p className="text-muted-foreground text-sm">Loading guide sources…</p>
