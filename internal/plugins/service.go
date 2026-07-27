@@ -471,8 +471,7 @@ func (s *Service) PreloadEnabled(ctx context.Context) error {
 			continue
 		}
 		// Builtin installations have no archive or binary; skip them explicitly
-		// instead of leaning on the tolerated ErrArchiveNotFound branch below
-		// (any other load error here is fatal to startup).
+		// rather than relying on the load-error handling below.
 		if installation.IsBuiltin() {
 			continue
 		}
@@ -486,7 +485,21 @@ func (s *Service) PreloadEnabled(ctx context.Context) error {
 				)
 				continue
 			}
-			return fmt.Errorf("preload plugin installation %d: %w", installation.ID, err)
+			// A single malformed or incompatible stored plugin must not take
+			// down the whole server at startup (previously this returned an
+			// error that reached log.Fatalf in main). Log and skip so the rest
+			// of the app still boots; the installation stays enabled in the
+			// store but unloaded, and its feature surfaces the error on demand.
+			// Mirrors the tolerated ErrArchiveNotFound branch above and the
+			// pre-existing "skipped broken plugin repository" resilience.
+			slog.ErrorContext(ctx,
+				"plugin preload skipped: failed to load enabled installation", "component", "plugins",
+				"installation_id", installation.ID,
+				"plugin_id", installation.PluginID,
+				"version", installation.Version,
+				"error", err,
+			)
+			continue
 		}
 	}
 	s.OnLifecycleChange(ctx)
