@@ -300,7 +300,7 @@ func (h *LiveTVHandler) HandleListGuide(w http.ResponseWriter, r *http.Request) 
 			}
 		}
 	}
-	start, err := parseOptionalTime(q.Get("start"), time.Now().UTC().Add(-30*time.Minute))
+	start, err := parseOptionalTime(q.Get("start"), time.Now().UTC())
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "invalid_start", "start must be RFC3339")
 		return

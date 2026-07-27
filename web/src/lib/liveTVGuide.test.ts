@@ -185,6 +185,13 @@ describe("liveTVGuide helpers", () => {
           stop: "2026-07-27T21:00:00Z",
         },
         {
+          id: "past-in-window",
+          channel_id: "ch1",
+          title: "Already ended",
+          start: "2026-07-27T14:00:00Z",
+          stop: "2026-07-27T14:45:00Z",
+        },
+        {
           id: "b",
           channel_id: "ch1",
           title: "Now Show",
@@ -199,6 +206,13 @@ describe("liveTVGuide helpers", () => {
           start: "2026-07-27T13:00:00Z",
           stop: "2026-07-27T16:00:00Z",
         },
+        {
+          id: "future",
+          channel_id: "ch1",
+          title: "Later",
+          start: "2026-07-27T15:30:00Z",
+          stop: "2026-07-27T16:00:00Z",
+        },
       ],
       "ch1",
       window,
@@ -206,10 +220,46 @@ describe("liveTVGuide helpers", () => {
     );
     expect(laid.some((p) => p.id === "b")).toBe(true);
     expect(laid.find((p) => p.id === "b")?.isNow).toBe(true);
+    expect(laid.find((p) => p.id === "b")?.canRecord).toBe(true);
+    // Ended programmes are omitted even if they overlap a lookback window.
+    expect(laid.every((p) => p.id !== "past-in-window")).toBe(true);
+    expect(laid.find((p) => p.id === "future")?.canRecord).toBe(true);
     expect(laid.find((p) => p.id === "b")?.widthPx).toBeGreaterThan(40);
     expect(laid.find((p) => p.id === "c")?.subtitle).toBeUndefined();
     expect(laid.every((p) => p.id !== "bad-dates")).toBe(true);
     expect(laid.every((p) => p.id !== "before-window")).toBe(true);
+  });
+
+  it("starts the default guide window at now and hides ended programmes", () => {
+    const now = new Date("2026-07-27T15:18:00Z");
+    const window = buildGuideWindow(now);
+    expect(window.startMs).toBe(now.getTime());
+    expect(window.endMs - window.startMs).toBe(6 * 60 * 60 * 1000);
+    expect(guideTimeTicks(window)[0]).toBe(Date.parse("2026-07-27T15:30:00Z"));
+
+    const laid = layoutProgramsForChannel(
+      [
+        {
+          id: "ended",
+          channel_id: "ch1",
+          title: "Already over",
+          start: "2026-07-27T14:30:00Z",
+          stop: "2026-07-27T15:00:00Z",
+        },
+        {
+          id: "airing",
+          channel_id: "ch1",
+          title: "Still on",
+          start: "2026-07-27T15:00:00Z",
+          stop: "2026-07-27T16:00:00Z",
+        },
+      ],
+      "ch1",
+      window,
+      now,
+    );
+    expect(laid.map((p) => p.id)).toEqual(["airing"]);
+    expect(laid[0]?.leftPx).toBe(0);
   });
 
   it("computes progress fraction edges", () => {

@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
-import { Circle, Loader2, Play, Radio, Square, X } from "lucide-react";
+import { Circle, Play, Radio, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import type { LiveTVChannel, LiveTVRecording } from "@/api/types";
 import { Badge } from "@/components/ui/badge";
@@ -20,6 +20,7 @@ import {
   useStartLiveTVSession,
 } from "@/hooks/queries/useLiveTV";
 import {
+  buildGuideWindow,
   channelDisplayNumber,
   channelLabel,
   formatGuideTime,
@@ -63,9 +64,10 @@ export default function LiveTV() {
   const now = useMemo(() => new Date(nowMs), [nowMs]);
 
   const guideWindow = useMemo(() => {
+    const win = buildGuideWindow(new Date(nowMs));
     return {
-      start: new Date(nowMs - 30 * 60 * 1000).toISOString(),
-      end: new Date(nowMs + 6 * 60 * 60 * 1000).toISOString(),
+      start: new Date(win.startMs).toISOString(),
+      end: new Date(win.endMs).toISOString(),
     };
   }, [nowMs]);
 
@@ -149,16 +151,6 @@ export default function LiveTV() {
     toast.success("Live TV session released");
   }
 
-  function onRecordNow() {
-    if (!selected || !selectedGuide.now) return;
-    scheduleRecording.mutate({ program_id: selectedGuide.now.id });
-  }
-
-  function onRecordNext() {
-    if (!selected || !selectedGuide.next) return;
-    scheduleRecording.mutate({ program_id: selectedGuide.next.id });
-  }
-
   const scheduled = (recordings.data ?? []).filter((r) =>
     ["scheduled", "recording"].includes(r.status),
   );
@@ -167,53 +159,17 @@ export default function LiveTV() {
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div className="space-y-1">
-          <div className="flex flex-wrap items-center gap-3">
-            <Radio className="text-primary h-7 w-7" aria-hidden />
-            <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Live TV</h1>
-            <Badge variant="secondary">{channels.length} channels</Badge>
-          </div>
-          <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-            Guide grid, channel lineup, and your recordings — watch or schedule from here.
-          </p>
+    <div className="mx-auto flex w-full max-w-[100rem] flex-col gap-6 px-4 py-6 sm:px-6">
+      <header className="space-y-1">
+        <div className="flex flex-wrap items-center gap-3">
+          <Radio className="text-primary h-7 w-7" aria-hidden />
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Live TV</h1>
+          <Badge variant="secondary">{channels.length} channels</Badge>
         </div>
-        {selected ? (
-          <div className="flex flex-wrap gap-2">
-            {activeSessionId ? (
-              <Button
-                variant="outline"
-                onClick={() => void onStop()}
-                disabled={releaseSession.isPending}
-              >
-                <Square />
-                Stop
-              </Button>
-            ) : (
-              <Button onClick={() => void onWatch()} disabled={startSession.isPending}>
-                {startSession.isPending ? <Loader2 className="animate-spin" /> : <Play />}
-                {startSession.isPending ? "Starting…" : "Watch"}
-              </Button>
-            )}
-            <Button
-              variant="outline"
-              onClick={onRecordNow}
-              disabled={!selectedGuide.now || scheduleRecording.isPending}
-            >
-              <Circle />
-              Record now
-            </Button>
-            <Button
-              variant="outline"
-              onClick={onRecordNext}
-              disabled={!selectedGuide.next || scheduleRecording.isPending}
-            >
-              <Circle />
-              Record next
-            </Button>
-          </div>
-        ) : null}
+        <p className="text-muted-foreground max-w-2xl text-sm leading-6">
+          Guide grid, channel lineup, and your recordings — watch or schedule from a programme or
+          channel row.
+        </p>
       </header>
 
       {streamURL ? (

@@ -75,18 +75,19 @@ export type GuideWindow = {
   pxPerMs: number;
 };
 
-export const GUIDE_HOUR_WIDTH_PX = 240;
+export const GUIDE_HOUR_WIDTH_PX = 360;
 
-/** Build a guide layout window snapped to half-hour boundaries. */
+/** Build a guide layout window. With no lookback, the timeline starts at now. */
 export function buildGuideWindow(
   now: Date = new Date(),
-  pastHours = 0.5,
+  pastHours = 0,
   futureHours = 6,
 ): GuideWindow {
   const halfHour = 30 * 60 * 1000;
-  const rawStart = now.getTime() - pastHours * 60 * 60 * 1000;
-  const startMs = Math.floor(rawStart / halfHour) * halfHour;
-  const endMs = startMs + (pastHours + futureHours) * 60 * 60 * 1000;
+  const nowMs = now.getTime();
+  const startMs =
+    pastHours <= 0 ? nowMs : Math.floor((nowMs - pastHours * 60 * 60 * 1000) / halfHour) * halfHour;
+  const endMs = startMs + Math.max(pastHours, 0) * 60 * 60 * 1000 + futureHours * 60 * 60 * 1000;
   return {
     startMs,
     endMs,
@@ -97,7 +98,8 @@ export function buildGuideWindow(
 export function guideTimeTicks(window: GuideWindow, stepMinutes = 30): number[] {
   const step = stepMinutes * 60 * 1000;
   const ticks: number[] = [];
-  for (let t = window.startMs; t < window.endMs; t += step) {
+  // Snap labels to the step grid so an unaligned "now" start does not print 11:18 as a tick.
+  for (let t = Math.ceil(window.startMs / step) * step; t < window.endMs; t += step) {
     ticks.push(t);
   }
   return ticks;
@@ -113,6 +115,8 @@ export type GuideProgramLayout = {
   leftPx: number;
   widthPx: number;
   isNow: boolean;
+  /** True when the programme is still airing or has not started yet. */
+  canRecord: boolean;
 };
 
 /** Position programmes absolutely within a guide window for one channel. */
@@ -138,6 +142,7 @@ export function layoutProgramsForChannel(
     if (
       Number.isNaN(start) ||
       Number.isNaN(stop) ||
+      stop <= nowMs ||
       stop <= window.startMs ||
       start >= window.endMs
     ) {
@@ -153,8 +158,9 @@ export function layoutProgramsForChannel(
       start: program.start,
       stop: program.stop,
       leftPx: (clampedStart - window.startMs) * window.pxPerMs,
-      widthPx: Math.max(48, (clampedStop - clampedStart) * window.pxPerMs),
+      widthPx: Math.max(96, (clampedStop - clampedStart) * window.pxPerMs),
       isNow: start <= nowMs && stop > nowMs,
+      canRecord: stop > nowMs,
     });
   }
   laid.sort((a, b) => a.leftPx - b.leftPx);

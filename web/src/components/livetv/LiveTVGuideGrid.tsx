@@ -10,8 +10,8 @@ import {
 import { cn } from "@/lib/utils";
 import { Circle, Play } from "lucide-react";
 
-const CHANNEL_COL_WIDTH = 148;
-const ROW_HEIGHT = 64;
+const CHANNEL_COL_WIDTH = 200;
+const ROW_HEIGHT = 88;
 
 type LiveTVGuideGridProps = {
   channels: LiveTVChannel[];
@@ -46,10 +46,10 @@ export function LiveTVGuideGrid({
 
   return (
     <div className="border-border overflow-hidden rounded-xl border">
-      <div className="max-h-[min(70vh,52rem)] overflow-auto">
+      <div className="max-h-[calc(100dvh-10rem)] overflow-auto">
         <div className="sticky top-0 z-20 flex border-b bg-[color-mix(in_srgb,var(--background)_92%,transparent)] backdrop-blur-sm">
           <div
-            className="border-border text-muted-foreground sticky left-0 z-30 flex shrink-0 items-end border-r px-3 py-2 text-[10px] font-semibold tracking-[0.18em] uppercase"
+            className="border-border text-muted-foreground sticky left-0 z-30 flex shrink-0 items-end border-r px-3 py-2.5 text-[10px] font-semibold tracking-[0.18em] uppercase"
             style={{ width: CHANNEL_COL_WIDTH }}
           >
             Channel
@@ -58,13 +58,13 @@ export function LiveTVGuideGrid({
             {ticks.map((tick) => (
               <div
                 key={tick}
-                className="border-border text-muted-foreground absolute top-0 bottom-0 border-l px-2 py-2 text-xs"
+                className="border-border text-muted-foreground absolute top-0 bottom-0 border-l px-2.5 py-2.5 text-xs"
                 style={{ left: (tick - window.startMs) * window.pxPerMs }}
               >
                 {formatGuideTime(new Date(tick).toISOString())}
               </div>
             ))}
-            <div className="h-9" />
+            <div className="h-10" />
           </div>
         </div>
 
@@ -82,7 +82,7 @@ export function LiveTVGuideGrid({
               <button
                 type="button"
                 onClick={() => onSelectChannel(channel.id)}
-                className="border-border hover:bg-muted/60 sticky left-0 z-10 flex shrink-0 flex-col justify-center gap-0.5 border-r bg-[color-mix(in_srgb,var(--background)_96%,transparent)] px-3 text-left"
+                className="border-border hover:bg-muted/60 sticky left-0 z-10 flex shrink-0 flex-col justify-center gap-1 border-r bg-[color-mix(in_srgb,var(--background)_96%,transparent)] px-3.5 text-left"
                 style={{ width: CHANNEL_COL_WIDTH, height: ROW_HEIGHT }}
               >
                 <span className="flex items-center gap-2 text-sm font-medium">
@@ -91,7 +91,7 @@ export function LiveTVGuideGrid({
                   </span>
                   <span className="truncate">{channel.callsign || channel.name}</span>
                 </span>
-                <span className="text-muted-foreground truncate text-[11px]">
+                <span className="text-muted-foreground truncate text-xs">
                   {laid.find((p) => p.isNow)?.title ?? "No guide data"}
                 </span>
               </button>
@@ -100,7 +100,7 @@ export function LiveTVGuideGrid({
                 style={{ width: gridWidth, minWidth: gridWidth, height: ROW_HEIGHT }}
               >
                 <div
-                  className="bg-primary/70 absolute top-1 bottom-1 z-10 w-px"
+                  className="bg-primary/70 absolute top-1.5 bottom-1.5 z-10 w-px"
                   style={{ left: nowOffset }}
                   aria-hidden
                 />
@@ -108,7 +108,7 @@ export function LiveTVGuideGrid({
                   <div
                     key={program.id}
                     className={cn(
-                      "border-border absolute top-1.5 bottom-1.5 overflow-hidden rounded-md border px-2 py-1",
+                      "border-border absolute top-2 bottom-2 overflow-hidden rounded-md border px-2.5 py-1.5",
                       program.isNow
                         ? "bg-primary/15 border-primary/40"
                         : "bg-muted/50 hover:bg-muted",
@@ -118,8 +118,8 @@ export function LiveTVGuideGrid({
                   >
                     <div className="flex h-full items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="truncate text-xs font-medium">{program.title}</p>
-                        <p className="text-muted-foreground truncate text-[10px]">
+                        <p className="truncate text-sm font-medium">{program.title}</p>
+                        <p className="text-muted-foreground truncate text-[11px]">
                           {formatGuideTime(program.start)} – {formatGuideTime(program.stop)}
                         </p>
                       </div>
@@ -128,7 +128,7 @@ export function LiveTVGuideGrid({
                           <Button
                             size="sm"
                             variant="secondary"
-                            className="h-7 px-2"
+                            className="h-8 px-2.5"
                             disabled={watchDisabled}
                             onClick={() => {
                               onSelectChannel(channel.id);
@@ -138,15 +138,18 @@ export function LiveTVGuideGrid({
                             <Play />
                           </Button>
                         ) : null}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2"
-                          disabled={recordDisabled}
-                          onClick={() => onRecord(program.id)}
-                        >
-                          <Circle />
-                        </Button>
+                        {program.canRecord ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8 px-2.5"
+                            disabled={recordDisabled}
+                            onClick={() => onRecord(program.id)}
+                            aria-label={`Record ${program.title}`}
+                          >
+                            <Circle />
+                          </Button>
+                        ) : null}
                       </div>
                     </div>
                   </div>
