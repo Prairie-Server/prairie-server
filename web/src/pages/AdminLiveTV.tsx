@@ -477,7 +477,7 @@ function GuideTab() {
             Schedules Direct
           </a>{" "}
           account, look up lineups by postal code (for example{" "}
-          <span className="font-mono">76052</span>), then add the source and sync.
+          <span className="font-mono">12345</span>), then add the source and sync.
         </p>
         <div className="space-y-1.5">
           <Label htmlFor="guide-name">Display name</Label>
@@ -524,7 +524,7 @@ function GuideTab() {
               id="sd-postal"
               value={postalCode}
               onChange={(e) => setPostalCode(e.target.value)}
-              placeholder="76052"
+              placeholder="12345"
             />
           </div>
         </div>
@@ -564,7 +564,7 @@ function GuideTab() {
               id="sd-lineup-manual"
               value={lineup}
               onChange={(e) => setLineup(e.target.value)}
-              placeholder="USA-OTA-76052"
+              placeholder="USA-OTA-12345"
             />
           </div>
         )}
