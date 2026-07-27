@@ -53,12 +53,19 @@ func (t *SyncLiveTVGuideTask) ShouldRun(ctx context.Context) (bool, error) {
 func (t *SyncLiveTVGuideTask) Execute(ctx context.Context, progress taskmanager.ProgressReporter) error {
 	progress.Report(0, "Syncing Live TV guide sources")
 	count, err := t.service.SyncAllEnabledGuideSources(ctx)
-	result, _ := json.Marshal(map[string]int{"sources_attempted": count})
+	reaped, reapErr := t.service.ReapExpiredArtwork(ctx)
+	result, _ := json.Marshal(map[string]int{
+		"sources_attempted": count,
+		"artwork_reaped":    reaped,
+	})
 	progress.SetResultData(result)
 	if err != nil {
 		return fmt.Errorf("livetv guide sync: %w", err)
 	}
-	progress.Report(100, fmt.Sprintf("Live TV guide sync complete (%d sources)", count))
+	if reapErr != nil {
+		return fmt.Errorf("livetv artwork reap: %w", reapErr)
+	}
+	progress.Report(100, fmt.Sprintf("Live TV guide sync complete (%d sources, reaped %d art)", count, reaped))
 	return nil
 }
 

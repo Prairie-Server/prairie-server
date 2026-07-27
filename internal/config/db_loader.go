@@ -320,6 +320,7 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 	cfg.Metadata.AVIFBackfillWorkers = avifWorkers
 	cfg.Metadata.AVIFEncoder = stringOr(m, "metadata.avif_encoder", "auto")
 	cfg.Metadata.AVIFFFmpegPath = stringOr(m, "metadata.avif_ffmpeg_path", "ffmpeg")
+	cfg.Metadata.WebPEncoder = stringOr(m, "metadata.webp_encoder", "auto")
 	avifNVENCSessions, err := intOr(m, "metadata.avif_nvenc_sessions", 0)
 	if err != nil {
 		return nil, err

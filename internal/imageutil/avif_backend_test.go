@@ -6,9 +6,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	// Prefer native SVT when ffmpeg/libsvtav1 is present so CI exercises the
-	// production default path. Falls back to WASM automatically.
+	// Prefer native ffmpeg backends when present so CI exercises the production
+	// default path. Falls back to WASM automatically.
 	_, _ = ConfigureAVIFEncoder(EncoderConfig{Backend: BackendAuto})
+	_, _ = ConfigureWebPEncoder(WebPEncoderConfig{Backend: WebPBackendAuto})
 	os.Exit(m.Run())
 }
 

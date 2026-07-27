@@ -51,6 +51,7 @@ var adminSettingDefaults = map[string]string{
 	"metadata.avif_encoder":          "auto",
 	"metadata.avif_ffmpeg_path":      "ffmpeg",
 	"metadata.avif_nvenc_sessions":   "0",
+	"metadata.webp_encoder":          "auto",
 	"artwork.local_dir":              "/var/lib/prairie/artwork",
 	"markers.mode":                   "local",
 	"markers.lazy_playback":          "false",
@@ -308,6 +309,14 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 			return v, nil
 		default:
 			return "", fmt.Errorf("%s must be one of auto, svt, nvenc, wasm", key)
+		}
+	case "metadata.webp_encoder":
+		v := strings.ToLower(strings.TrimSpace(value))
+		switch v {
+		case "auto", "ffmpeg", "wasm":
+			return v, nil
+		default:
+			return "", fmt.Errorf("%s must be one of auto, ffmpeg, wasm", key)
 		}
 	case "metadata.avif_ffmpeg_path":
 		return strings.TrimSpace(value), nil

@@ -192,6 +192,10 @@ func (s *PgStore) ReplaceChannelsForTuner(ctx context.Context, tunerID string, c
 			ch.NumberOverride = prev.NumberOverride
 			ch.Enabled = prev.Enabled
 			ch.GuideStationID = prev.GuideStationID
+			// HDHomeRun lineup has no logos; keep guide-sourced logos across rescans.
+			if strings.TrimSpace(ch.LogoURL) == "" {
+				ch.LogoURL = prev.LogoURL
+			}
 			_, err := tx.Exec(ctx, `
 				UPDATE livetv_channels SET
 					number = $2, callsign = $3, name = $4, logo_url = $5, hd = $6,
@@ -274,10 +278,13 @@ func (s *PgStore) UpdateChannel(ctx context.Context, id string, patch ChannelPat
 			enabled = COALESCE($2, enabled),
 			number_override = CASE WHEN $3::boolean THEN $4 ELSE number_override END,
 			guide_station_id = CASE WHEN $5::boolean THEN $6 ELSE guide_station_id END,
+			logo_url = CASE WHEN $7::boolean THEN $8 ELSE logo_url END,
 			updated_at = now()
 		WHERE id = $1
 		RETURNING id, tuner_id, number, number_override, callsign, name, logo_url, hd, enabled, stream_url, guide_station_id`,
-		id, patch.Enabled, patch.NumberOverride != nil, valueOrEmpty(patch.NumberOverride), patch.GuideStationID != nil, valueOrEmpty(patch.GuideStationID))
+		id, patch.Enabled, patch.NumberOverride != nil, valueOrEmpty(patch.NumberOverride),
+		patch.GuideStationID != nil, valueOrEmpty(patch.GuideStationID),
+		patch.LogoURL != nil, valueOrEmpty(patch.LogoURL))
 	ch, err := scanChannel(row)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil

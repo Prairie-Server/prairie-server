@@ -7,9 +7,10 @@ import (
 	"sync/atomic"
 )
 
-// encodeBudget caps in-flight WebP (WASM) + AVIF (native/WASM) work so a
-// 4-core node is not oversubscribed by (WebP workers) + (AVIF workers) ×
-// (SVT threads per encode). Size defaults to runtime.NumCPU().
+// encodeBudget caps in-flight WebP + AVIF work so a 4-core node is not
+// oversubscribed by (WebP workers) + (AVIF workers) × (encoder threads).
+// Size defaults to runtime.NumCPU(). Native ffmpeg paths also pin
+// -threads 1 / OMP_NUM_THREADS=1 and SVT lp=1 so each slot ≈ one core.
 var encodeBudget = newSlotBudget(defaultEncodeBudgetSize())
 
 func defaultEncodeBudgetSize() int {
