@@ -354,13 +354,28 @@ BEGIN
 
 	IF to_regclass('public.plugin_repositories') IS NOT NULL THEN
 		UPDATE plugin_repositories
-		SET display_name = replace(display_name, 'Continuum', 'Silo'),
-		    url = replace(url, 'https://raw.githubusercontent.com/ContinuumApp/continuum-plugins/', 'https://raw.githubusercontent.com/Silo-Server/silo-plugins/'),
-		    enabled = false,
+		SET display_name = replace(replace(display_name, 'Continuum', 'Prairie'), 'Silo', 'Prairie'),
+		    url = replace(replace(replace(
+		            url,
+		            'https://raw.githubusercontent.com/ContinuumApp/continuum-plugins/',
+		            'https://raw.githubusercontent.com/prairie-server/prairie-plugins/'
+		        ),
+		            'https://raw.githubusercontent.com/Silo-Server/silo-plugins/',
+		            'https://raw.githubusercontent.com/prairie-server/prairie-plugins/'
+		        ),
+		            'https://raw.githubusercontent.com/Silo-Community/silo-plugins/',
+		            'https://raw.githubusercontent.com/Prairie-Community/prairie-plugins/'
+		        ),
+		    enabled = CASE
+		        WHEN url LIKE '%Silo-Community/silo-plugins/%' THEN enabled
+		        ELSE true
+		    END,
 		    updated_at = NOW()
-		WHERE display_name LIKE '%Continuum%'
-		   OR url LIKE '%ContinuumApp/continuum-plugins/%'
-		   OR url LIKE '%Silo-Server/silo-plugins/%';
+		WHERE url LIKE '%ContinuumApp/continuum-plugins/%'
+		   OR url LIKE '%Silo-Server/silo-plugins/%'
+		   OR url LIKE '%silo-server/silo-plugins/%'
+		   OR url LIKE '%Silo-Community/silo-plugins/%'
+		   OR url LIKE '%silo-community/silo-plugins/%';
 	END IF;
 END $$;
 SQL
