@@ -39,12 +39,22 @@ jobs:
           mkdir -p web/dist
           printf '%s\n' '<!doctype html><title>prairie</title>' > web/dist/index.html
 
-      - name: golangci-lint (new issues only)
+      # Prefer git merge-base over the action's only-new-issues PR-patch fetch.
+      # GitHub refuses PR diffs over 300 files, and the action then falls back to
+      # linting the whole tree against ~2k pre-existing findings (goconst/errcheck
+      # debt) — which looks like intermittent CI failure on large asset PRs.
+      - name: Fetch PR base for merge-base lint
+        if: github.event_name == 'pull_request'
+        run: git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+
+      - name: golangci-lint (new issues vs base)
         uses: golangci/golangci-lint-action@v9
         with:
           version: latest
-          only-new-issues: true
-          args: --timeout=10m
+          only-new-issues: false
+          args: >-
+            --timeout=10m
+            ${{ github.event_name == 'pull_request' && format('--new-from-merge-base=origin/{0}', github.base_ref) || '--new-from-rev=HEAD~1' }}
 
   web-lint:
     name: Web lint + format
