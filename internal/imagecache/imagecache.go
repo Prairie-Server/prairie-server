@@ -362,7 +362,7 @@ func (c *Cacher) scheduleAVIFBackfill(ctx context.Context, data []byte, widths [
 	if c.avifJobs != nil {
 		id, err := c.avifJobs.Enqueue(ctx, originalPath, imageType)
 		if err != nil {
-			slog.Warn("imagecache: enqueue AVIF backfill failed", "component", "imagecache", "path", originalPath, "error", err)
+			slog.WarnContext(ctx, "imagecache: enqueue AVIF backfill failed", "component", "imagecache", "path", originalPath, "error", err)
 		} else {
 			jobID = id
 		}
@@ -385,11 +385,12 @@ func (c *Cacher) scheduleAVIFBackfill(ctx context.Context, data []byte, widths [
 		}
 
 		workerID := "eager-avif"
+		bg := context.Background()
 		claimed := false
 		if c.avifJobs != nil && jobID > 0 {
-			ok, err := c.avifJobs.TryClaim(context.Background(), jobID, workerID)
+			ok, err := c.avifJobs.TryClaim(bg, jobID, workerID)
 			if err != nil {
-				slog.Warn("imagecache: claim AVIF backfill failed", "component", "imagecache", "job_id", jobID, "error", err)
+				slog.WarnContext(bg, "imagecache: claim AVIF backfill failed", "component", "imagecache", "job_id", jobID, "error", err)
 			}
 			claimed = ok
 			// Another worker already owns it (or it is not queued); skip eager
@@ -401,24 +402,24 @@ func (c *Cacher) scheduleAVIFBackfill(ctx context.Context, data []byte, widths [
 
 		avifResult, err := imageutil.GenerateAVIFSiblings(src, widthCopy)
 		if err != nil {
-			slog.Warn("imagecache: deferred AVIF encode failed", "component", "imagecache", "error", err)
+			slog.WarnContext(bg, "imagecache: deferred AVIF encode failed", "component", "imagecache", "error", err)
 			if claimed {
-				_ = c.avifJobs.MarkFailed(context.Background(), jobID, 0, workerID, err.Error())
+				_ = c.avifJobs.MarkFailed(bg, jobID, 0, workerID, err.Error())
 			}
 			return
 		}
-		uploadCtx, cancel := context.WithTimeout(context.Background(), 3*time.Minute)
+		uploadCtx, cancel := context.WithTimeout(bg, 3*time.Minute)
 		defer cancel()
 		if _, err := c.uploadAVIFSiblings(uploadCtx, bucket, avifResult, paths); err != nil {
-			slog.Warn("imagecache: deferred AVIF upload failed", "component", "imagecache", "error", err)
+			slog.WarnContext(bg, "imagecache: deferred AVIF upload failed", "component", "imagecache", "error", err)
 			if claimed {
-				_ = c.avifJobs.MarkFailed(context.Background(), jobID, 0, workerID, err.Error())
+				_ = c.avifJobs.MarkFailed(bg, jobID, 0, workerID, err.Error())
 			}
 			return
 		}
 		if claimed {
-			if err := c.avifJobs.MarkSucceeded(context.Background(), jobID, workerID); err != nil {
-				slog.Warn("imagecache: mark AVIF backfill succeeded failed", "component", "imagecache", "job_id", jobID, "error", err)
+			if err := c.avifJobs.MarkSucceeded(bg, jobID, workerID); err != nil {
+				slog.WarnContext(bg, "imagecache: mark AVIF backfill succeeded failed", "component", "imagecache", "job_id", jobID, "error", err)
 			}
 		}
 	}()

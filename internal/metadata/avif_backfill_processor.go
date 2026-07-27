@@ -128,10 +128,7 @@ func (p *AVIFBackfillProcessor) RunUntilIdle(ctx context.Context, concurrency in
 
 	workerID := "avif-" + uuid.NewString()
 	deadline := time.Now().Add(maxRuntime)
-	for {
-		if ctx.Err() != nil {
-			break
-		}
+	for ctx.Err() == nil {
 		if time.Now().After(deadline) {
 			stats.RuntimeLimited = true
 			break

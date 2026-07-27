@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -401,7 +402,7 @@ func (r *AVIFBackfillJobRepository) LookupID(ctx context.Context, originalPath s
 		SELECT id FROM artwork_avif_backfill_jobs WHERE original_path = $1
 	`, strings.TrimSpace(originalPath)).Scan(&id)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return 0, nil
 		}
 		return 0, fmt.Errorf("looking up artwork AVIF backfill job: %w", err)
