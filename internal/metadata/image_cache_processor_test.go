@@ -11,15 +11,18 @@ import (
 
 type fakeImageCacheJobs struct {
 	claimed       []*models.MetadataImageCacheJob
+	claimLimit    int
 	succeededID   int64
 	failedID      int64
 	failedText    string
 	deletedCount  int
 	requeuedIDs   []int64
 	currentSource *string // when set, overrides CurrentTargetSourcePath
+	statusCounts  ImageCacheJobStatusCounts
 }
 
-func (f *fakeImageCacheJobs) ClaimDue(context.Context, string, int) ([]*models.MetadataImageCacheJob, error) {
+func (f *fakeImageCacheJobs) ClaimDue(_ context.Context, _ string, limit int) ([]*models.MetadataImageCacheJob, error) {
+	f.claimLimit = limit
 	return f.claimed, nil
 }
 
@@ -52,6 +55,14 @@ func (f *fakeImageCacheJobs) EnqueueExistingProviderArtwork(context.Context, int
 
 func (f *fakeImageCacheJobs) DeleteSucceededBefore(context.Context, time.Time, int) (int, error) {
 	return f.deletedCount, nil
+}
+
+func (f *fakeImageCacheJobs) StatusCounts(context.Context) (ImageCacheJobStatusCounts, error) {
+	return f.statusCounts, nil
+}
+
+func (f *fakeImageCacheJobs) Heartbeat(context.Context, int64, string) (bool, error) {
+	return true, nil
 }
 
 type loopingImageCacheJobs struct {
@@ -99,6 +110,14 @@ func (f *loopingImageCacheJobs) CurrentTargetSourcePath(_ context.Context, job *
 
 func (f *loopingImageCacheJobs) DeleteSucceededBefore(context.Context, time.Time, int) (int, error) {
 	return 0, nil
+}
+
+func (f *loopingImageCacheJobs) StatusCounts(context.Context) (ImageCacheJobStatusCounts, error) {
+	return ImageCacheJobStatusCounts{}, nil
+}
+
+func (f *loopingImageCacheJobs) Heartbeat(context.Context, int64, string) (bool, error) {
+	return true, nil
 }
 
 type fakeImageCacher struct {
@@ -498,7 +517,7 @@ func TestImageCacheProcessorRunUntilIdleDrainsNewWorkAddedDuringRun(t *testing.T
 	episodes := &fakeEpisodeStillUpdater{updated: true}
 
 	processor := NewImageCacheProcessor(jobs, cacher, resolver, nil, episodes)
-	stats, err := processor.RunUntilIdle(context.Background(), "test-worker", 1000, 2, time.Minute)
+	stats, err := processor.RunUntilIdle(context.Background(), "test-worker", 1000, 2, time.Minute, nil)
 	if err != nil {
 		t.Fatalf("RunUntilIdle() error = %v", err)
 	}
@@ -552,6 +571,42 @@ func TestImageCacheProcessorSkipsWhenTargetSourceChanged(t *testing.T) {
 	}
 	if jobs.succeededID != 40 {
 		t.Fatalf("succeededID = %d, want 40", jobs.succeededID)
+	}
+}
+
+func TestImageCacheProcessorCapsClaimToConcurrency(t *testing.T) {
+	jobs := &fakeImageCacheJobs{}
+	processor := NewImageCacheProcessor(jobs, &fakeImageCacher{}, nil, nil, nil)
+	if _, err := processor.RunOnce(context.Background(), "test-worker", 1000, 12); err != nil {
+		t.Fatalf("RunOnce() error = %v", err)
+	}
+	if jobs.claimLimit != 12 {
+		t.Fatalf("claimLimit = %d, want 12 (capped to concurrency)", jobs.claimLimit)
+	}
+}
+
+func TestImageCacheProcessorReportsSucceededOverTotalProgress(t *testing.T) {
+	jobs := &fakeImageCacheJobs{
+		statusCounts: ImageCacheJobStatusCounts{
+			Queued:    125,
+			Running:   12,
+			Succeeded: 150,
+			Failed:    0,
+		},
+	}
+	processor := NewImageCacheProcessor(jobs, &fakeImageCacher{}, nil, nil, nil)
+	var percent float64
+	var message string
+	processor.reportQueueProgress(context.Background(), func(p float64, msg string) {
+		percent = p
+		message = msg
+	})
+	wantPercent := 150.0 / 287.0 * 100
+	if percent < wantPercent-0.01 || percent > wantPercent+0.01 {
+		t.Fatalf("percent = %v, want ~%v", percent, wantPercent)
+	}
+	if message != "Cached 150/287 (queued 125, running 12, failed 0)" {
+		t.Fatalf("message = %q", message)
 	}
 }
 

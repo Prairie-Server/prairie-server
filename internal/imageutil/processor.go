@@ -35,8 +35,12 @@ const (
 const (
 	defaultMaxSourceBytes = 64 << 20          // 64 MiB
 	defaultTimeout        = 120 * time.Second // AVIF encode in WASM can be slow
-	defaultConcurrency    = 2                 // AVIF is CPU-heavy; keep fan-out modest
-	defaultMaxMemoryPages = 8192              // 512 MiB
+	// Match metadata image-cache worker fan-out; the previous default of 2
+	// serialized ~12 cache workers behind two WASM slots (~minutes per image
+	// under load). AVIF remains CPU-heavy, so this is a modest raise rather
+	// than unbounded parallelism.
+	defaultConcurrency    = 8
+	defaultMaxMemoryPages = 8192 // 512 MiB
 	defaultMaxLogBytes    = 64 << 10
 )
 

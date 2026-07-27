@@ -32,7 +32,11 @@ const (
 	ImageCacheStatusSucceeded = "succeeded"
 	ImageCacheStatusFailed    = "failed"
 
-	imageCacheLeaseDuration = 15 * time.Minute
+	// imageCacheLeaseDuration bounds how long a crashed/restarted worker can
+	// leave jobs stuck in running before ClaimDue soft-requeues them. Keep this
+	// short relative to the old 15m lease so restarts recover quickly; in-flight
+	// workers refresh locked_at via Heartbeat.
+	imageCacheLeaseDuration = 2 * time.Minute
 	imageCacheMaxAttempts   = 8
 	imageCacheDeferredRetry = 7 * 24 * time.Hour
 )
@@ -296,32 +300,96 @@ func (r *ImageCacheJobRepository) enqueueBatchChunk(ctx context.Context, inputs 
 	return int(tag.RowsAffected()), nil
 }
 
+// recoverExpiredRunning soft-requeues running jobs whose lease has expired
+// without burning a retry attempt. Restart orphans and crashed workers must
+// become claimable again quickly; real failures still go through MarkFailed.
 func (r *ImageCacheJobRepository) recoverExpiredRunning(ctx context.Context) error {
 	_, err := r.pool.Exec(ctx, `
 		UPDATE metadata_image_cache_jobs
-		SET status = CASE
-				WHEN attempt_count + 1 >= $2 THEN 'failed'
-				ELSE 'queued'
-			END,
-			attempt_count = attempt_count + 1,
-			next_attempt_at = CASE
-				WHEN attempt_count + 1 >= $2 THEN next_attempt_at
-				ELSE NOW()
-			END,
+		SET status = 'queued',
+			next_attempt_at = NOW(),
 			locked_at = NULL,
 			locked_by = '',
-			last_error = CASE
-				WHEN attempt_count + 1 >= $2 THEN left('worker lease expired too many times', 2000)
-				ELSE last_error
-			END,
 			updated_at = NOW()
 		WHERE status = 'running'
 		  AND locked_at < NOW() - $1::interval
-	`, intervalLiteral(imageCacheLeaseDuration), imageCacheMaxAttempts)
+	`, intervalLiteral(imageCacheLeaseDuration))
 	if err != nil {
 		return fmt.Errorf("recovering expired metadata image cache jobs: %w", err)
 	}
 	return nil
+}
+
+// Heartbeat extends the lease on a running job the caller still owns. Returns
+// false when the lease was lost (reclaimed, repurposed, or completed).
+func (r *ImageCacheJobRepository) Heartbeat(ctx context.Context, id int64, lockedBy string) (bool, error) {
+	if r == nil || r.pool == nil || lockedBy == "" {
+		return false, nil
+	}
+	tag, err := r.pool.Exec(ctx, `
+		UPDATE metadata_image_cache_jobs
+		SET locked_at = NOW(),
+			updated_at = NOW()
+		WHERE id = $1
+		  AND status = 'running'
+		  AND locked_by = $2
+	`, id, lockedBy)
+	if err != nil {
+		return false, fmt.Errorf("heartbeat metadata image cache job: %w", err)
+	}
+	return tag.RowsAffected() > 0, nil
+}
+
+// ImageCacheJobStatusCounts is the queue snapshot used for admin progress.
+type ImageCacheJobStatusCounts struct {
+	Queued    int
+	Running   int
+	Succeeded int
+	Failed    int
+}
+
+// Total is queued+running+succeeded+failed.
+func (c ImageCacheJobStatusCounts) Total() int {
+	return c.Queued + c.Running + c.Succeeded + c.Failed
+}
+
+// StatusCounts returns per-status job counts for progress reporting.
+func (r *ImageCacheJobRepository) StatusCounts(ctx context.Context) (ImageCacheJobStatusCounts, error) {
+	var counts ImageCacheJobStatusCounts
+	if r == nil || r.pool == nil {
+		return counts, nil
+	}
+	rows, err := r.pool.Query(ctx, `
+		SELECT status, COUNT(*)::int
+		FROM metadata_image_cache_jobs
+		WHERE status IN ('queued', 'running', 'succeeded', 'failed')
+		GROUP BY status
+	`)
+	if err != nil {
+		return counts, fmt.Errorf("counting metadata image cache jobs: %w", err)
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var status string
+		var n int
+		if err := rows.Scan(&status, &n); err != nil {
+			return counts, fmt.Errorf("scanning metadata image cache job counts: %w", err)
+		}
+		switch status {
+		case ImageCacheStatusQueued:
+			counts.Queued = n
+		case ImageCacheStatusRunning:
+			counts.Running = n
+		case ImageCacheStatusSucceeded:
+			counts.Succeeded = n
+		case ImageCacheStatusFailed:
+			counts.Failed = n
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return counts, fmt.Errorf("iterating metadata image cache job counts: %w", err)
+	}
+	return counts, nil
 }
 
 func (r *ImageCacheJobRepository) ClaimDue(ctx context.Context, workerID string, limit int) ([]*models.MetadataImageCacheJob, error) {
