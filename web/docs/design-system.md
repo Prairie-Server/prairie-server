@@ -385,6 +385,52 @@ Implementation cues:
 - Use `.pill-glass` for buttons floating over imagery.
 - Reserve pill shape for primary actions, tabs, and chips.
 
+### Action Buttons
+
+Primary and secondary action buttons should pair a Lucide icon with their label. Place the icon before the label as a sibling inside `<Button>` (composition — do not change the Button API). The Button already styles child SVGs via `[&_svg]` rules.
+
+Icon-only buttons (`size="icon"`) remain icon-only. Loading states may swap the action icon for `Loader2` with `className="animate-spin"`.
+
+Use this semantic action → icon map:
+
+| Action                                           | Icon                                |
+| ------------------------------------------------ | ----------------------------------- |
+| Sign in / Signing in                             | `LogIn` (`Loader2` when submitting) |
+| Sign up / Create account                         | `UserPlus`                          |
+| Sign out                                         | `LogOut`                            |
+| Continue / Next / Go                             | `ArrowRight` or `ChevronRight`      |
+| Back / Previous                                  | `ArrowLeft` or `ChevronLeft`        |
+| Skip                                             | `SkipForward`                       |
+| Save / Save Changes / Saving                     | `Save` (`Loader2` when saving)      |
+| Discard                                          | `Undo2`                             |
+| Cancel / Close                                   | `X`                                 |
+| Done / Confirm / Apply / Approve / I've saved it | `Check`                             |
+| Deny / Reject                                    | `Ban` or `X`                        |
+| Delete / Remove                                  | `Trash2`                            |
+| Create / New / Add                               | `Plus`                              |
+| Edit / Configure                                 | `Pencil` or `Settings2`             |
+| Search                                           | `Search`                            |
+| Refresh / Retry / Reload                         | `RefreshCw`                         |
+| Reset / Clear / Clear selection                  | `RotateCcw` or `X`                  |
+| Download                                         | `Download`                          |
+| Upload                                           | `Upload`                            |
+| Play / Watch / Listen                            | `Play`                              |
+| Pause                                            | `Pause`                             |
+| Select / Selection mode                          | `CheckSquare`                       |
+| Gallery / Artwork                                | `Images`                            |
+| Browse folder                                    | `FolderOpen`                        |
+| Restart                                          | `RotateCcw`                         |
+| Send / Message                                   | `Send`                              |
+| Copy                                             | `Copy`                              |
+| Connect / Quick Connect code                     | `QrCode` or `Smartphone`            |
+| Disconnect                                       | `Unplug`                            |
+| Scan                                             | `ScanSearch` or `Radar`             |
+| Show / Reveal                                    | `Eye`                               |
+| Hide                                             | `EyeOff`                            |
+| Join room                                        | `Users`                             |
+| Leave                                            | `LogOut`                            |
+| More                                             | `MoreVertical` (already used)       |
+
 ### Episode Row
 
 Episode rows should read quickly in a scan: thumbnail, number, title, description, runtime.

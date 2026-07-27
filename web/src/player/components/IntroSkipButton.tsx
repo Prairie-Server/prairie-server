@@ -1,3 +1,5 @@
+import { SkipForward } from "lucide-react";
+
 interface IntroSkipButtonProps {
   onSkip: () => void;
   label?: string;
@@ -11,8 +13,9 @@ export function IntroSkipButton({ onSkip, label = "Skip Intro" }: IntroSkipButto
     <button
       onClick={onSkip}
       type="button"
-      className="absolute right-6 bottom-24 z-50 rounded border border-white/40 bg-black/70 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20"
+      className="absolute right-6 bottom-24 z-50 inline-flex items-center gap-2 rounded border border-white/40 bg-black/70 px-6 py-2 text-sm font-medium text-white transition-colors hover:bg-white/20"
     >
+      <SkipForward className="size-4" />
       {label}
     </button>
   );

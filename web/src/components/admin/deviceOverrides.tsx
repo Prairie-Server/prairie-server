@@ -5,7 +5,9 @@ import {
   AlertTriangle,
   Monitor,
   MonitorSmartphone,
+  Pencil,
   RotateCcw,
+  Settings2,
   Smartphone,
   Tablet,
   Tv,
@@ -392,6 +394,7 @@ export function DeviceOverrideRow({
       <div className="flex flex-col items-stretch gap-2 md:min-w-[220px] md:items-end">
         {isJsonOnly ? (
           <Button variant="outline" size="sm" onClick={() => onEditJson(setting, isOverride)}>
+            {setting.key === "subtitle_appearance" ? <Settings2 /> : <Pencil />}
             {setting.key === "subtitle_appearance" ? "Customize" : "Edit JSON"}
           </Button>
         ) : (

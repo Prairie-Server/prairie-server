@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router";
-import { Loader2, Play, RefreshCw } from "lucide-react";
+import { Loader2, Play, RefreshCw, Save } from "lucide-react";
 import { toast } from "sonner";
 import type { MarkerProviderConfig, TaskInfo } from "@/api/types";
 import { TaskStatusBadge } from "@/components/admin/TaskStatusBadge";
@@ -266,6 +266,7 @@ function ProviderSettingsForm({ provider }: { provider: MarkerProviderConfig }) 
           onClick={save}
           disabled={!dirty || !priorityValid || !confidenceValid || updateProvider.isPending}
         >
+          {updateProvider.isPending ? <Loader2 className="animate-spin" /> : <Save />}
           {updateProvider.isPending ? "Saving..." : "Save Provider Settings"}
         </Button>
       </div>

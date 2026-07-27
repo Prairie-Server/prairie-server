@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { LANGUAGES } from "@/player/utils/languageNames";
 import { SUBTITLE_PROVIDER_OPTIONS } from "./subtitleAdminStyles";
 
+import { RotateCcw } from "lucide-react";
 const ALL = "all";
 
 interface AdminSubtitlesFiltersProps {
@@ -107,6 +108,7 @@ export default function AdminSubtitlesFilters({
           </Select>
 
           <Button type="button" variant="ghost" size="sm" onClick={onReset}>
+            <RotateCcw />
             Reset filters
           </Button>
         </div>

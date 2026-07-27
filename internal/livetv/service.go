@@ -740,7 +740,7 @@ func (s *Service) syncSchedulesDirect(ctx context.Context, source *GuideSource) 
 				Description: detail.Description(),
 				Season:      season,
 				Episode:     episode,
-				Genres:      detail.Genres,
+				Genres:      nonNilStringSlice(detail.Genres),
 				IsNew:       isNew,
 				IsLive:      isLive,
 			})

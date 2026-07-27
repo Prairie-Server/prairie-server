@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 import type { PluginAdminForm, PluginAdminFormField, PluginAdminFormSection } from "@/api/types";
 import { Button } from "@/components/ui/button";
@@ -126,6 +126,7 @@ function SchemaFormSection({
         </div>
         {section.collapsible ? (
           <Button type="button" size="xs" variant="ghost" onClick={() => setUserOpen(!open)}>
+            {open ? <EyeOff /> : <Eye />}
             {open ? "Hide" : "Show"}
           </Button>
         ) : null}

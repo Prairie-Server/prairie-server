@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { Button } from "@/components/ui/button";
 import { useWizardContext } from "./WizardContext";
 
+import { ArrowLeft } from "lucide-react";
 interface WizardActionsProps {
   children?: ReactNode;
   className?: string;
@@ -24,6 +25,7 @@ export function WizardActions({
     <div className={className}>
       {canGoBack ? (
         <Button type="button" variant="ghost" onClick={goBack}>
+          <ArrowLeft />
           Back
         </Button>
       ) : null}

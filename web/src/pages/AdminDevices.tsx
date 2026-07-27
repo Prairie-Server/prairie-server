@@ -6,6 +6,8 @@ import {
   ArrowUpRight,
   ChevronRight,
   Clock,
+  RotateCcw,
+  Save,
   Search,
   Sparkles,
   Subtitles,
@@ -1348,6 +1350,7 @@ function EmptyFleet({ hasDevices, onClear }: { hasDevices: boolean; onClear: () 
       </p>
       {hasDevices && (
         <Button variant="outline" size="sm" onClick={onClear}>
+          <RotateCcw />
           Clear filters
         </Button>
       )}
@@ -1576,6 +1579,7 @@ function DeviceDetailPanel({
             />
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={closeJsonEditor}>
+                <X />
                 Cancel
               </Button>
               <Button
@@ -1597,6 +1601,7 @@ function DeviceDetailPanel({
                   );
                 }}
               >
+                <Save />
                 Save override
               </Button>
             </div>

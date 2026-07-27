@@ -1,7 +1,17 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent, KeyboardEvent, ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
-import { Bug, Download, ExternalLink, FilterX, Trash2, TriangleAlert } from "lucide-react";
+import {
+  Bug,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  ExternalLink,
+  FilterX,
+  Trash2,
+  TriangleAlert,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import type { DiagnosticReport, DiagnosticReportState, DiagnosticReportSummary } from "@/api/types";
@@ -276,7 +286,9 @@ export default function AdminDiagnostics() {
           />
         </FilterField>
         <div className="ml-auto flex gap-2">
-          <Button type="submit">Apply</Button>
+          <Button type="submit">
+            <Check /> Apply
+          </Button>
           <Button
             type="button"
             variant="outline"
@@ -342,6 +354,7 @@ export default function AdminDiagnostics() {
           disabled={activeCursorStack.length === 0 || reports.isFetching}
           onClick={goPrevious}
         >
+          <ChevronLeft />
           Previous
         </Button>
         <div className="text-muted-foreground text-xs">
@@ -359,6 +372,7 @@ export default function AdminDiagnostics() {
           disabled={!reports.data?.next_cursor || reports.isFetching}
           onClick={goNext}
         >
+          <ChevronRight />
           Next
         </Button>
       </div>

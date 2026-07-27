@@ -50,7 +50,9 @@ export function SigningSecretDialog({
           </Button>
         </div>
         <DialogFooter>
-          <Button onClick={onClose}>I've saved it</Button>
+          <Button onClick={onClose}>
+            <Check /> I've saved it
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

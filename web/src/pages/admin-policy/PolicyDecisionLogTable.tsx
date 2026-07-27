@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, RotateCcw } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -180,9 +180,11 @@ export function PolicyDecisionLogTable({ domains }: PolicyDecisionLogTableProps)
 
         <div className="flex gap-2">
           <Button type="button" variant="outline" onClick={resetFilters}>
+            <RotateCcw />
             Reset
           </Button>
           <Button type="button" onClick={applyFilters}>
+            <Check />
             Apply
           </Button>
         </div>
@@ -284,6 +286,7 @@ export function PolicyDecisionLogTable({ domains }: PolicyDecisionLogTableProps)
           disabled={cursorStack.length === 0 || decisions.isFetching}
           onClick={goPrevious}
         >
+          <ChevronLeft />
           Previous
         </Button>
         <div className="text-muted-foreground text-xs">
@@ -295,6 +298,7 @@ export function PolicyDecisionLogTable({ domains }: PolicyDecisionLogTableProps)
           disabled={!decisions.data?.next_cursor || decisions.isFetching}
           onClick={goNext}
         >
+          <ChevronRight />
           Next
         </Button>
       </div>

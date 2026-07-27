@@ -12,6 +12,7 @@ import {
 import { pluginRouteHref } from "@/lib/pluginRouteHref";
 import { navigateToPluginRoute } from "@/lib/buildPluginHref";
 
+import { Save } from "lucide-react";
 function PluginSettingsCard({ installationId }: { installationId: number }) {
   const { data, isLoading } = usePluginSettingsDetail(installationId, installationId > 0);
   const updateSettings = useUpdatePluginSettings();
@@ -57,6 +58,7 @@ function PluginSettingsCard({ installationId }: { installationId: number }) {
             })
           }
         >
+          <Save />
           Save
         </Button>
         {userRoutes.map((route) => {

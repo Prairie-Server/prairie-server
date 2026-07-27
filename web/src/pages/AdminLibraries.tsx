@@ -66,27 +66,28 @@ import {
 } from "@/components/ui/select";
 import { Link } from "react-router";
 import {
-  Plus,
-  Pencil,
-  Trash2,
-  RefreshCw,
-  ScanLine,
-  DatabaseBackup,
+  AlertTriangle,
   CheckCircle2,
-  GripVertical,
-  Wrench,
-  HardDrive,
+  ChevronDown,
   ChevronLeft,
   ChevronRight,
+  ChevronUp,
   ChevronsLeft,
   ChevronsRight,
-  ChevronUp,
-  ChevronDown,
-  AlertTriangle,
-  Square,
-  Unlink,
-  Search,
+  DatabaseBackup,
   FolderOpen,
+  GripVertical,
+  HardDrive,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Save,
+  ScanLine,
+  Search,
+  Square,
+  Trash2,
+  Unlink,
+  Wrench,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { cn } from "@/lib/utils";
@@ -1829,6 +1830,7 @@ function RootOverrideDialog({
                 );
               }}
             >
+              <Trash2 />
               Remove Override
             </Button>
             <Button
@@ -1851,6 +1853,7 @@ function RootOverrideDialog({
               }}
               disabled={upsertOverride.isPending}
             >
+              <Save />
               Save Override
             </Button>
           </div>

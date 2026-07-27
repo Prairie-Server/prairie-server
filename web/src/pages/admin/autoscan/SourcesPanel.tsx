@@ -1,14 +1,17 @@
 import { useId, useMemo, useState } from "react";
 import {
   AlertTriangle,
+  Check,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
   Clock,
   Copy,
   Library as LibraryIcon,
+  Loader2,
   Plus,
   RefreshCw,
+  Save,
   Trash2,
   Webhook,
   X,
@@ -475,6 +478,7 @@ function RewriteEditor({
               {suggest.isPending ? "Syncing…" : "Sync from server"}
             </Button>
             <Button type="button" size="sm" disabled={isSaving} onClick={handleSave}>
+              <Save />
               Save rewrites
             </Button>
           </div>
@@ -538,9 +542,11 @@ function RewriteEditor({
 
               <div className="flex flex-wrap items-center gap-2">
                 <Button type="button" size="sm" disabled={isSaving} onClick={applySelected}>
+                  <Check />
                   Apply selected
                 </Button>
                 <Button type="button" variant="outline" size="sm" onClick={() => setPreview(null)}>
+                  <X />
                   Cancel
                 </Button>
               </div>
@@ -699,6 +705,7 @@ function CephFSConfigEditor({
           {showSave && (
             <div className="flex justify-end">
               <Button type="button" size="sm" disabled={isSaving} onClick={() => onSave()}>
+                <Save />
                 Save CephFS settings
               </Button>
             </div>
@@ -1504,10 +1511,12 @@ function AddSourceDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={close} disabled={createSource.isPending}>
+            <X />
             Cancel
           </Button>
           {plugins.length > 0 && (
             <Button onClick={handleSubmit} disabled={!canSubmit}>
+              {createSource.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
               {createSource.isPending ? "Adding…" : "Add source"}
             </Button>
           )}

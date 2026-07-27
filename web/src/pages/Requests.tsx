@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { useSearchParams } from "react-router";
-import { Search, Sparkles, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Sparkles, X } from "lucide-react";
 import BrandCarousel from "@/components/BrandCarousel";
 import MediaCarousel from "@/components/MediaCarousel";
 import RequestPosterCard from "@/components/RequestPosterCard";
@@ -520,6 +520,7 @@ function SearchBar({
         disabled={searchInput.trim().length < 2}
         className="h-10 rounded-xl px-5"
       >
+        <Search />
         Search
       </Button>
     </form>
@@ -698,6 +699,7 @@ function SearchResultsView({
                 onClick={() => onPageChange(Math.max(1, page - 1))}
                 disabled={page <= 1 || isLoading}
               >
+                <ChevronLeft />
                 Previous
               </Button>
               <span className="text-muted-foreground text-xs tabular-nums">
@@ -709,6 +711,7 @@ function SearchResultsView({
                 onClick={() => onPageChange(page + 1)}
                 disabled={page >= totalPages || isLoading}
               >
+                <ChevronRight />
                 Next
               </Button>
             </div>

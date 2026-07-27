@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/sheet";
 import type { CatalogFiltersResponse } from "@/api/types";
 
+import { Check, RotateCcw } from "lucide-react";
 /** Default secondary filter values for "Clear All". */
 const EMPTY_SECONDARY_FILTERS: Partial<GuidedFormState> = {
   libraryIds: [],
@@ -176,10 +177,12 @@ export default function CatalogFilterSheet({
               size="sm"
               onClick={() => onUpdate(EMPTY_SECONDARY_FILTERS)}
             >
+              <RotateCcw />
               Clear All
             </Button>
             <SheetClose asChild>
               <Button type="button" size="sm">
+                <Check />
                 Done
               </Button>
             </SheetClose>

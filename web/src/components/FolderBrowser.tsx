@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import { ArrowUp, Check, FolderOpen, RefreshCw } from "lucide-react";
+import { ArrowUp, Check, FolderOpen, Plus, RefreshCw, X } from "lucide-react";
 
 import { fetchFilesystemBrowse, useFilesystemBrowse } from "@/hooks/queries/admin/libraries";
 import { adminKeys } from "@/hooks/queries/keys";
@@ -174,6 +174,7 @@ export default function FolderBrowser({
               }}
             />
             <Button type="button" variant="outline" onClick={() => void handleBrowseSubmit()}>
+              <FolderOpen />
               Browse
             </Button>
           </div>
@@ -287,14 +288,17 @@ export default function FolderBrowser({
           </div>
           <div className="flex gap-2">
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              <X />
               Cancel
             </Button>
             {addableSelected > 0 ? (
               <Button type="button" onClick={handleAddSelected}>
+                <Plus />
                 Add {addableSelected} Folder{addableSelected !== 1 ? "s" : ""}
               </Button>
             ) : (
               <Button type="button" onClick={handleSelectCurrent} disabled={alreadyAdded}>
+                <FolderOpen />
                 Use Current Folder
               </Button>
             )}

@@ -16,6 +16,7 @@ import {
   Megaphone,
   MonitorSmartphone,
   RadioTower,
+  RotateCcw,
   Rss,
   Send,
   TriangleAlert,
@@ -455,6 +456,7 @@ function ClearDiscordCredentialsRow({
   return (
     <div className="py-2">
       <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(true)}>
+        <RotateCcw />
         Clear Discord credentials
       </Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
@@ -600,6 +602,7 @@ function RegisterRelayRow({
             disabled={pending}
             onClick={() => setConfirmClear(true)}
           >
+            <RotateCcw />
             Clear credential
           </Button>
         )}

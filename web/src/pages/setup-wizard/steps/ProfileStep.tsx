@@ -9,6 +9,7 @@ import { toast } from "sonner";
 import { useWizardContext } from "../WizardContext";
 import { WizardActions } from "../WizardActions";
 
+import { ArrowRight, Loader2, Plus } from "lucide-react";
 export function ProfileStep() {
   const { selectProfile, refetchProfiles, profiles, goForward } = useWizardContext();
   const [profileName, setProfileName] = useState("");
@@ -45,6 +46,7 @@ export function ProfileStep() {
         </p>
         <WizardActions>
           <Button type="button" onClick={goForward}>
+            <ArrowRight />
             Continue
           </Button>
         </WizardActions>
@@ -69,6 +71,7 @@ export function ProfileStep() {
       </div>
       <WizardActions className="flex flex-wrap gap-3 pt-3">
         <Button type="submit" disabled={submitting}>
+          {submitting ? <Loader2 className="animate-spin" /> : <Plus />}
           {submitting ? "Creating..." : "Create profile"}
         </Button>
       </WizardActions>

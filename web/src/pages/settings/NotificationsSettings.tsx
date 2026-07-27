@@ -11,7 +11,9 @@ import {
   Plus,
   Send,
   Trash2,
+  Unplug,
   Webhook as WebhookIcon,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import type {
@@ -242,10 +244,12 @@ function EmailDestinationRow({ prefs }: { prefs: NotificationEmailPreferences })
                 disabled={clearAddress.isPending}
                 onClick={() => clearAddress.mutate()}
               >
+                <Trash2 />
                 Remove
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={() => setEditing((value) => !value)}>
+              {editing ? <X /> : hasAddress ? <Pencil /> : <Plus />}
               {editing ? "Cancel" : hasAddress ? "Change" : "Add address"}
             </Button>
           </div>
@@ -462,6 +466,7 @@ function DiscordSection() {
                 disabled={unlink.isPending}
                 onClick={() => unlink.mutate()}
               >
+                <Unplug />
                 Unlink
               </Button>
             </div>
@@ -802,6 +807,7 @@ function WebhookFormDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <X />
             Cancel
           </Button>
           <Button onClick={submit} disabled={pending || !name.trim()}>

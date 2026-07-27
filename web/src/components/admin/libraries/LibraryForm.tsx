@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { AdvancedFields, FolderFields, GeneralFields, MetadataFields } from "./LibraryFormSections";
 import { useLibraryForm } from "./useLibraryForm";
 
+import { Loader2, Save } from "lucide-react";
 export interface LibraryFormProps {
   library: Library | null;
   chapterThumbnailsSupported: boolean;
@@ -63,6 +64,7 @@ export function LibraryForm({
         <AdvancedFields form={form} chapterThumbnailsSupported={chapterThumbnailsSupported} />
       </FormSection>
       <Button type="submit" className="w-full" disabled={form.isPending}>
+        {form.isPending ? <Loader2 className="animate-spin" /> : <Save />}
         {form.isPending ? savingLabel : submitLabel}
       </Button>
     </form>

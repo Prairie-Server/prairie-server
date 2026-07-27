@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
-import { Plus, Radar, RefreshCw, Trash2 } from "lucide-react";
+import { Plus, Radar, RefreshCw, Trash2, X } from "lucide-react";
 import type { LiveTVDiscoveredTuner } from "@/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -275,19 +275,14 @@ function ChannelsTab() {
   return (
     <div className="space-y-4">
       <p className="text-muted-foreground text-sm">
-        Enable channels for Live TV. Guide station IDs are filled automatically when you sync a
-        Schedules Direct or XML sync source (matching HDHomeRun numbers like{" "}
-        <span className="font-mono">2.1</span> and callsigns like{" "}
-        <span className="font-mono">KDTN-DT</span>). Manual overrides are only needed for
-        mismatches.
+        Enable channels for Live TV. After you sync a Schedules Direct or XML sync source, station
+        IDs are matched automatically from HDHomeRun numbers and callsigns (for example{" "}
+        <span className="font-mono">2.1 · KDTN-DT</span>). Use override only if a match is wrong.
       </p>
       {sorted.length > 0 ? (
         <p className="text-muted-foreground text-xs">
-          {mappedCount}/{sorted.length} channels mapped to guide stations
-          {mappedCount < sorted.length
-            ? " — sync a guide source to auto-map the rest, or override below"
-            : ""}
-          .
+          {mappedCount}/{sorted.length} channels mapped
+          {mappedCount < sorted.length ? " — sync a guide source to fill the rest" : ""}.
         </p>
       ) : null}
       {channels.isLoading ? (
@@ -317,16 +312,17 @@ function ChannelsTab() {
                       <Badge variant="secondary">unmapped</Badge>
                     )}
                   </div>
-                  {editing || !mapped ? (
+                  {editing ? (
                     <div className="flex flex-wrap items-end gap-2">
                       <div className="space-y-1">
                         <Label htmlFor={`station-${channel.id}`} className="text-xs">
-                          {mapped ? "Override guide station ID" : "Guide station ID"}
+                          Guide station ID
                         </Label>
                         <Input
                           id={`station-${channel.id}`}
                           className="w-48"
-                          placeholder="Auto on guide sync"
+                          placeholder="Guide station ID"
+                          autoFocus
                           value={stationValue}
                           onChange={(e) =>
                             setStationDrafts((prev) => ({
@@ -345,18 +341,26 @@ function ChannelsTab() {
                             });
                             setEditingStation(null);
                           }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Escape") {
+                              setStationDrafts((prev) => {
+                                const next = { ...prev };
+                                delete next[channel.id];
+                                return next;
+                              });
+                              setEditingStation(null);
+                            }
+                          }}
                         />
                       </div>
-                      {mapped ? (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setEditingStation(null)}
-                        >
-                          Done
-                        </Button>
-                      ) : null}
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setEditingStation(null)}
+                      >
+                        Done
+                      </Button>
                     </div>
                   ) : (
                     <Button
@@ -366,7 +370,7 @@ function ChannelsTab() {
                       className="text-muted-foreground h-auto px-0"
                       onClick={() => setEditingStation(channel.id)}
                     >
-                      Override mapping
+                      {mapped ? "Override mapping" : "Set mapping manually"}
                     </Button>
                   )}
                 </div>
@@ -536,7 +540,8 @@ function GuideTab() {
         <h3 className="text-sm font-medium">XML sync (Gracenote)</h3>
         <p className="text-muted-foreground text-sm">
           Built-in listings sync based on the Zap2XML Gracenote grid flow. No separate grabber or
-          hosted XMLTV file — enter a postal code, pick a lineup, then sync. Artwork uses{" "}
+          hosted XMLTV file — enter a postal code (for example{" "}
+          <span className="font-mono">12345</span>), pick a lineup, then sync. Artwork uses{" "}
           <span className="font-mono text-xs">emby.tmsimg.com/assets</span>.
         </p>
         <div className="space-y-1.5">
@@ -563,7 +568,7 @@ function GuideTab() {
               id="xml-postal"
               value={xmlPostalCode}
               onChange={(e) => setXMLPostalCode(e.target.value)}
-              placeholder="76052"
+              placeholder="12345"
             />
           </div>
         </div>
@@ -678,7 +683,7 @@ function GuideTab() {
               id="sd-postal"
               value={sdPostalCode}
               onChange={(e) => setSDPostalCode(e.target.value)}
-              placeholder="76052"
+              placeholder="12345"
             />
           </div>
         </div>
@@ -718,7 +723,7 @@ function GuideTab() {
               id="sd-lineup-manual"
               value={sdLineup}
               onChange={(e) => setSDLineup(e.target.value)}
-              placeholder="USA-OTA-76052"
+              placeholder="USA-OTA-12345"
             />
           </div>
         )}
@@ -833,6 +838,7 @@ function RecordingsTab() {
               disabled={cancelRecording.isPending}
               onClick={() => cancelRecording.mutate(rec.id)}
             >
+              <X />
               Cancel
             </Button>
           ) : null}
@@ -872,8 +878,8 @@ export default function AdminLiveTV() {
             </Badge>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-            Configure HDHomeRun OTA tuners, map channels to guide stations, and keep the EPG fresh
-            with priority-ordered guide sources.
+            Configure HDHomeRun OTA tuners, sync Schedules Direct for the EPG, and channels map to
+            guide stations automatically from number and callsign.
           </p>
         </div>
       </div>

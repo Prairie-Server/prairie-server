@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { Lock, Plus } from "lucide-react";
+import { Lock, LogOut, Plus } from "lucide-react";
 import { toast } from "sonner";
 
 import type { Profile } from "@/api/types";
@@ -107,6 +107,7 @@ export default function Profiles() {
           </Button>
 
           <Button variant="outline" size="sm" onClick={logout}>
+            <LogOut />
             Sign out
           </Button>
         </div>
@@ -158,6 +159,7 @@ export default function Profiles() {
       </div>
 
       <Button variant="outline" size="sm" onClick={logout} className="relative z-10 mt-2">
+        <LogOut />
         Sign out
       </Button>
 

@@ -1,4 +1,4 @@
-import { Loader2, RefreshCw, RotateCcw } from "lucide-react";
+import { Loader2, RefreshCw, RotateCcw, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -75,6 +75,7 @@ export default function RefreshMetadataDialog({
 
         <div className="flex justify-end">
           <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
+            <X />
             Cancel
           </Button>
         </div>

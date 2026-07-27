@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
-import { CheckSquare, Search, Trash2, X } from "lucide-react";
+import { CheckSquare, RotateCcw, Search, Trash2, X } from "lucide-react";
 
 import type { BrowseItem } from "@/api/types";
 import ItemGrid from "@/components/ItemGrid";
@@ -310,9 +310,11 @@ function CatalogResults({
                     setSelectedIds(new Set(loadedHistoryItems.map((item) => item.content_id)))
                   }
                 >
+                  <CheckSquare />
                   Select Loaded
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+                  <RotateCcw />
                   Clear
                 </Button>
                 <Button

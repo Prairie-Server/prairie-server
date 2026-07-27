@@ -1,5 +1,5 @@
 import type { ChangeEvent } from "react";
-import { ImageIcon, Trash2 } from "lucide-react";
+import { ImageIcon, Loader2, Trash2, Upload } from "lucide-react";
 
 import type { Library } from "@/api/types";
 import { Button } from "@/components/ui/button";
@@ -52,6 +52,7 @@ export function LibraryPosterSection({ library }: { library: Library }) {
           onClick={() => document.getElementById(fileInputId)?.click()}
           disabled={uploadMutation.isPending}
         >
+          {uploadMutation.isPending ? <Loader2 className="animate-spin" /> : <Upload />}
           {uploadMutation.isPending ? "..." : library.poster_url ? "Replace" : "Upload"}
         </Button>
         {library.poster_url && (

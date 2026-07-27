@@ -245,6 +245,7 @@ export default function AudiobookContent({
                 </Button>
                 {hasProgress && (
                   <Button variant="outline" size="lg" onClick={() => openPlayer(0)}>
+                    <Play />
                     Listen from Start
                   </Button>
                 )}

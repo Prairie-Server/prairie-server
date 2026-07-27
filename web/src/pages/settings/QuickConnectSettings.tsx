@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router";
-import { MonitorSmartphone } from "lucide-react";
+import { ArrowRight, Ban, Check, Loader2, MonitorSmartphone, QrCode } from "lucide-react";
 import { toast } from "sonner";
 
 import { api } from "@/api/client";
@@ -123,7 +123,9 @@ export default function QuickConnectSettings() {
                 className="font-mono tracking-wider"
               />
             </div>
-            <Button type="submit">Continue</Button>
+            <Button type="submit">
+              <ArrowRight /> Continue
+            </Button>
           </form>
         ) : loadingDetails ? (
           <p className="text-muted-foreground text-sm">Looking up device request…</p>
@@ -131,6 +133,7 @@ export default function QuickConnectSettings() {
           <div className="space-y-4">
             <p className="text-sm">That sign-in request could not be found or has expired.</p>
             <Button type="button" variant="outline" onClick={reset}>
+              <QrCode />
               Enter another code
             </Button>
           </div>
@@ -165,6 +168,7 @@ export default function QuickConnectSettings() {
             {details.status === "pending" ? (
               <div className="flex flex-wrap gap-3">
                 <Button disabled={acting} onClick={() => void handleDecision("approve")}>
+                  {acting ? <Loader2 className="animate-spin" /> : <Check />}
                   {acting ? "Approving…" : "Approve sign-in"}
                 </Button>
                 <Button
@@ -172,6 +176,7 @@ export default function QuickConnectSettings() {
                   disabled={acting}
                   onClick={() => void handleDecision("deny")}
                 >
+                  <Ban />
                   Deny
                 </Button>
               </div>
@@ -186,6 +191,7 @@ export default function QuickConnectSettings() {
             )}
 
             <Button type="button" variant="ghost" onClick={reset}>
+              <QrCode />
               Enter another code
             </Button>
           </div>

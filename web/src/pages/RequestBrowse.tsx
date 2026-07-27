@@ -14,6 +14,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useCreateMediaRequest, useRequestBrowse } from "@/hooks/queries/useRequests";
 import { requestInputFromMediaResult } from "@/lib/mediaRequests";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import type {
   DiscoverBrowseKind,
   DiscoverBrowseResponse,
@@ -168,6 +169,7 @@ export default function RequestBrowse({ kind }: RequestBrowseProps) {
       {totalPages > 1 ? (
         <div className="flex items-center justify-center gap-3 px-4">
           <Button variant="outline" disabled={page <= 1} onClick={() => goToPage(page - 1)}>
+            <ChevronLeft />
             Prev
           </Button>
           <span className="text-muted-foreground text-sm tabular-nums">
@@ -178,6 +180,7 @@ export default function RequestBrowse({ kind }: RequestBrowseProps) {
             disabled={page >= totalPages}
             onClick={() => goToPage(page + 1)}
           >
+            <ChevronRight />
             Next
           </Button>
         </div>

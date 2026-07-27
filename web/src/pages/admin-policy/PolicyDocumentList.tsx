@@ -1,4 +1,4 @@
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 
@@ -158,6 +158,7 @@ function PolicyDomainCard({ domain, documents, onSelect }: PolicyDomainCardProps
             autoFocus
           />
           <Button type="button" size="sm" onClick={create} disabled={createDocument.isPending}>
+            <Plus />
             Create
           </Button>
           <Button
@@ -170,6 +171,7 @@ function PolicyDomainCard({ domain, documents, onSelect }: PolicyDomainCardProps
               setError("");
             }}
           >
+            <X />
             Cancel
           </Button>
         </div>

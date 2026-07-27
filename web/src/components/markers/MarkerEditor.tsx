@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Loader2, Trash2 } from "lucide-react";
+import { Loader2, Trash2, X } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -188,6 +188,7 @@ function MarkerEditorForm({
 
       <DialogFooter>
         <Button variant="outline" onClick={onClose}>
+          <X />
           Cancel
         </Button>
         <Button onClick={handleSave} disabled={setMarkers.isPending}>

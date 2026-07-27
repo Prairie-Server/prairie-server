@@ -1,5 +1,5 @@
 import { useId, useMemo, useState, type ReactNode } from "react";
-import { RotateCcw } from "lucide-react";
+import { RotateCcw, Save, Undo2 } from "lucide-react";
 import { getProfileToken } from "@/api/client";
 import { SettingsGroup } from "@/components/settings/SettingsGroup";
 import { Button } from "@/components/ui/button";
@@ -318,6 +318,7 @@ export default function SubtitleAppearanceSettings() {
         </div>
         <div className="flex flex-wrap gap-2">
           <Button onClick={handleSave} disabled={!hasUnsavedChanges || setDeviceSetting.isPending}>
+            <Save />
             Save Appearance
           </Button>
           <Button
@@ -325,6 +326,7 @@ export default function SubtitleAppearanceSettings() {
             onClick={discardLocalChanges}
             disabled={!hasUnsavedChanges || setDeviceSetting.isPending}
           >
+            <Undo2 />
             Discard Changes
           </Button>
           {hasDeviceOverride ? (

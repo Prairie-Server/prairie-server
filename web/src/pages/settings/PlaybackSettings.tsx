@@ -22,6 +22,7 @@ import {
 import { LANGUAGE_OPTIONS } from "@/lib/settingsManifest";
 import { toast } from "sonner";
 
+import { RotateCcw } from "lucide-react";
 const AUTO_PLAY_NEXT_KEY = "playback.auto_play_next";
 
 function AutoPlayNextSetting({ profileId }: { profileId: string }) {
@@ -90,6 +91,7 @@ function NextUpSetting() {
               className="h-9 rounded-full px-3"
               onClick={() => deleteSetting.mutate({ key: "next_up_mode" })}
             >
+              <RotateCcw />
               Reset
             </Button>
           ) : null}

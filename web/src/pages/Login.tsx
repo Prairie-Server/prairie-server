@@ -25,6 +25,7 @@ import { AuthBrandHero } from "@/components/auth/AuthBrandHero";
 import { sanitizeAuthRedirect } from "@/lib/authRedirect";
 import { toast } from "sonner";
 
+import { Loader2, LogIn, QrCode, RotateCcw } from "lucide-react";
 function detectPlatform() {
   const ua = navigator.userAgent;
   if (/AppleTV|tvOS/i.test(ua)) return "tvOS";
@@ -344,6 +345,7 @@ export default function Login() {
                 </div>
               )}
               <Button type="submit" className="w-full" disabled={submitting}>
+                {submitting ? <Loader2 className="animate-spin" /> : <LogIn />}
                 {submitting ? "Signing in..." : "Sign in"}
               </Button>
             </form>
@@ -365,6 +367,7 @@ export default function Login() {
                     disabled={startingDeviceLogin}
                     onClick={() => void handleStartDeviceLogin()}
                   >
+                    {startingDeviceLogin ? <Loader2 className="animate-spin" /> : <QrCode />}
                     {startingDeviceLogin ? "Generating code..." : "Show Quick Connect code"}
                   </Button>
                 ) : (
@@ -416,6 +419,7 @@ export default function Login() {
                           setShowDeviceFallback(false);
                         }}
                       >
+                        <RotateCcw />
                         Start over
                       </Button>
                       <p className="text-muted-foreground text-center text-sm">

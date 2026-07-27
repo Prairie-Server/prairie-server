@@ -1,6 +1,16 @@
 import { useState } from "react";
 import { useParams, Link } from "react-router";
-import { Play, Square, Plus, Trash2, ChevronRight, ChevronDown } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Pencil,
+  Play,
+  Plus,
+  Save,
+  Square,
+  Trash2,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { TaskStatusBadge } from "@/components/admin/TaskStatusBadge";
@@ -563,6 +573,7 @@ export default function AdminTaskDetail() {
           <h2 className="text-lg font-medium tracking-tight">Schedule</h2>
           {!editing && (
             <Button variant="outline" size="sm" onClick={startEditing}>
+              <Pencil />
               Edit Schedule
             </Button>
           )}
@@ -598,9 +609,11 @@ export default function AdminTaskDetail() {
 
               <div className="flex flex-col gap-2 sm:flex-row">
                 <Button size="sm" onClick={saveTriggers} disabled={updateTriggers.isPending}>
+                  <Save />
                   Save
                 </Button>
                 <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>
+                  <X />
                   Cancel
                 </Button>
               </div>

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Check, Loader2, RotateCcw, Save, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   useAdminSensitiveStatus,
@@ -105,10 +105,12 @@ function WatchProviderCredentialCard({ provider }: { provider: WatchProviderCred
       />
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" onClick={() => void save()} disabled={updateSetting.isPending}>
+          {updateSetting.isPending ? <Loader2 className="animate-spin" /> : <Save />}
           {updateSetting.isPending ? "Saving..." : `Save ${provider.displayName} Credentials`}
         </Button>
         {(configured.has(clientIdKey) || configured.has(clientSecretKey)) && !confirmClear && (
           <Button type="button" variant="outline" onClick={() => setConfirmClear(true)}>
+            <RotateCcw />
             Clear credentials
           </Button>
         )}
@@ -123,9 +125,11 @@ function WatchProviderCredentialCard({ provider }: { provider: WatchProviderCred
               onClick={() => void clearCredentials()}
               disabled={updateSetting.isPending}
             >
+              <Check />
               Confirm clear
             </Button>
             <Button type="button" variant="ghost" onClick={() => setConfirmClear(false)}>
+              <X />
               Cancel
             </Button>
           </>

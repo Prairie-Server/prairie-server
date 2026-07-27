@@ -24,6 +24,7 @@ import { useAdminLogStream } from "@/hooks/admin/useAdminLogStream";
 import { formatDateTime as formatPreferredDateTime } from "@/lib/datetime";
 import { useDateTimeFormat } from "@/hooks/useDateTimeFormat";
 
+import { RefreshCw } from "lucide-react";
 export default function AdminLogs() {
   const [searchParams, setSearchParams] = useSearchParams();
   const focus = searchParams.get("focus") ?? "";
@@ -97,6 +98,7 @@ export default function AdminLogs() {
               className="mt-1 h-7 px-2 text-xs"
               onClick={activeStream.reconnect}
             >
+              <RefreshCw />
               Reconnect
             </Button>
           )}
