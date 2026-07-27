@@ -4,11 +4,21 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"image"
+	_ "image/gif"
+	_ "image/jpeg"
+	_ "image/png"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strconv"
+
+	_ "golang.org/x/image/webp"
 )
+
+// svtMinEdge is SVT-AV1's minimum frame edge. Below this the encoder rejects
+// the frame; we upscale (never downscale) so both edges meet the floor.
+const svtMinEdge = 64
 
 type svtEncoder struct {
 	ffmpeg  string
@@ -54,11 +64,14 @@ func (e *svtEncoder) encodeUnlocked(ctx context.Context, imageBytes []byte) ([]b
 	preset := speedToSVTPreset(e.speed)
 	// lp=1: one logical processor per encode so NumCPU concurrent encodes do
 	// not oversubscribe (SVT otherwise grabs all cores per process).
-	// SVT rejects frames shorter than 64px; pad/scale so tiny test/logo edges work.
 	args := []string{
 		"-hide_banner", "-loglevel", "error", "-y",
 		"-i", inPath,
-		"-vf", "pad=max(iw\\,64):max(ih\\,64):(ow-iw)/2:(oh-ih)/2",
+	}
+	if vf := svtPrepareFilter(imageBytes); vf != "" {
+		args = append(args, "-vf", vf)
+	}
+	args = append(args,
 		"-frames:v", "1",
 		"-c:v", "libsvtav1",
 		"-preset", strconv.Itoa(preset),
@@ -67,7 +80,7 @@ func (e *svtEncoder) encodeUnlocked(ctx context.Context, imageBytes []byte) ([]b
 		"-pix_fmt", "yuv420p",
 		"-an",
 		outPath,
-	}
+	)
 	cmd := exec.CommandContext(ctx, e.ffmpeg, args...)
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
@@ -82,4 +95,72 @@ func (e *svtEncoder) encodeUnlocked(ctx context.Context, imageBytes []byte) ([]b
 		return nil, fmt.Errorf("svt avif: output too small (%d bytes)", len(out))
 	}
 	return out, nil
+}
+
+// svtPrepareFilter returns an ffmpeg -vf string that makes the frame safe for
+// SVT-AV1 + yuv420p without forcing a fixed canvas:
+//
+//   - never shrink (matches WASM: narrower-than-target sources are not upscaled
+//     for the width ladder; here we only grow when below SVT's 64px floor)
+//   - pad at most 1px per edge to reach even dimensions for 4:2:0
+//   - never pad to a target smaller than the input (the prior max(iw,64) pad
+//     expression broke on some landscape/logo paths)
+func svtPrepareFilter(imageBytes []byte) string {
+	cfg, _, err := image.DecodeConfig(bytes.NewReader(imageBytes))
+	if err != nil || cfg.Width < 1 || cfg.Height < 1 {
+		// Unknown dims: use a safe upscale-only filter that never pads down.
+		return "scale='max(iw\\,64)':'max(ih\\,64)':force_original_aspect_ratio=increase," +
+			"pad='ceil(iw/2)*2':'ceil(ih/2)*2':(ow-iw)/2:(oh-ih)/2"
+	}
+	w, h := cfg.Width, cfg.Height
+	outW, outH := svtOutputSize(w, h)
+	if outW == w && outH == h {
+		return ""
+	}
+	// Upscale when below the SVT floor; otherwise only even-pad (≤1px).
+	if outW > w+1 || outH > h+1 {
+		return fmt.Sprintf("scale=%d:%d:flags=bilinear", outW, outH)
+	}
+	return fmt.Sprintf("pad=%d:%d:0:0:color=black", outW, outH)
+}
+
+// svtOutputSize returns the encode frame size: at least svtMinEdge on each
+// side (aspect preserved when upscaling) and even width/height for yuv420p.
+func svtOutputSize(w, h int) (int, int) {
+	if w < 1 {
+		w = 1
+	}
+	if h < 1 {
+		h = 1
+	}
+	outW, outH := w, h
+	if outW < svtMinEdge || outH < svtMinEdge {
+		scaleW := float64(svtMinEdge) / float64(outW)
+		scaleH := float64(svtMinEdge) / float64(outH)
+		scale := scaleW
+		if scaleH > scale {
+			scale = scaleH
+		}
+		outW = int(float64(w)*scale + 0.999) // ceil
+		outH = int(float64(h)*scale + 0.999)
+	}
+	if outW%2 != 0 {
+		outW++
+	}
+	if outH%2 != 0 {
+		outH++
+	}
+	if outW < svtMinEdge {
+		outW = svtMinEdge
+		if outW%2 != 0 {
+			outW++
+		}
+	}
+	if outH < svtMinEdge {
+		outH = svtMinEdge
+		if outH%2 != 0 {
+			outH++
+		}
+	}
+	return outW, outH
 }
