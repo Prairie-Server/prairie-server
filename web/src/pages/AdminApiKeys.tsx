@@ -143,11 +143,7 @@ export default function AdminApiKeys() {
                 <TableCell>
                   <div className="flex items-center gap-1.5">
                     <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">
-                      {key.key
-                        ? maskKey(key.key)
-                        : key.key_prefix
-                          ? key.key_prefix
-                          : "Hidden"}
+                      {key.key ? maskKey(key.key) : key.key_prefix ? key.key_prefix : "Hidden"}
                     </code>
                     {key.key ? (
                       <Button
@@ -265,7 +261,7 @@ function CreateApiKeyForm({ onClose }: { onClose: () => void }) {
     createMutation.mutate(body, {
       onSuccess: (data) => {
         toast.success("API key created");
-          setCreatedKey(data.key ?? null);
+        setCreatedKey(data.key ?? null);
       },
     });
   }
