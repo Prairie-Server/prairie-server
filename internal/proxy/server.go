@@ -54,7 +54,8 @@ func NewServer(watcher *nodeconfig.Watcher, tracker *nodesessions.Tracker) *Serv
 // bounds requests to a hung node; the longest legitimate server-side wait is
 // the 30s manifest-readiness poll on the transcode node.
 func newStreamTransport() *http.Transport {
-	t := http.DefaultTransport.(*http.Transport).Clone()
+	base, _ := http.DefaultTransport.(*http.Transport)
+	t := base.Clone()
 	t.MaxIdleConns = 128
 	t.MaxIdleConnsPerHost = 32
 	t.ResponseHeaderTimeout = 60 * time.Second

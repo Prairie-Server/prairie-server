@@ -36,35 +36,35 @@ var querySortAliases = map[string]string{
 }
 
 var queryFieldDefs = map[string]queryFieldDef{
-	"type":              {columnSQL: "type", executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
-	"genre":             {columnSQL: "genres", isArray: true, executable: true, validOps: map[string]bool{"is": true, "is_not": true, "contains": true}},
-	"year":              {columnSQL: "year", executable: true, validOps: map[string]bool{"is": true, "is_not": true, "gt": true, "gte": true, "lt": true, "lte": true, "between": true}},
-	"rating_imdb":       {columnSQL: "rating_imdb", executable: true, validOps: map[string]bool{"gt": true, "gte": true, "lt": true, "lte": true, "between": true}},
-	"studio":            {columnSQL: "studios", isArray: true, executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
-	"network":           {columnSQL: "networks", isArray: true, executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
-	"country":           {columnSQL: "countries", isArray: true, executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
-	"original_language": {columnSQL: "original_language", executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
-	"content_rating":    {columnSQL: "content_rating", executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
-	"added_at":          {columnSQL: "created_at", executable: true, validOps: map[string]bool{"gt": true, "lt": true, "between": true, "in_last": true}},
-	"release_date":      {columnSQL: "COALESCE(%s.release_date::text, NULLIF(BTRIM(%s.first_air_date), ''))", executable: true, validOps: map[string]bool{"gt": true, "lt": true, "between": true, "in_last": true}},
-	"status":            {columnSQL: "status", executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
-	"actor":             {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
-	"director":          {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
-	"writer":            {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
-	"producer":          {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
-	"author":            {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
-	"narrator":          {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
-	"series":            {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
-	"watched":           {executable: true, personalized: true, validOps: map[string]bool{"is": true}},
-	"favorited":         {executable: true, personalized: true, validOps: map[string]bool{"is": true}},
-	"in_watchlist":      {executable: true, personalized: true, validOps: map[string]bool{"is": true}},
-	"in_progress":       {executable: true, personalized: true, validOps: map[string]bool{"is": true}},
-	"last_watched":      {executable: true, personalized: true, validOps: map[string]bool{"gt": true, "gte": true, "lt": true, "lte": true, "between": true, "in_last": true}},
-	"resolution":        {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
-	"hdr":               {executable: true, validOps: map[string]bool{"is": true}},
-	"dolby_vision":      {executable: true, validOps: map[string]bool{"is": true}},
-	"bitrate":           {executable: true, validOps: map[string]bool{"gt": true, "gte": true, "lt": true, "lte": true, "between": true}},
-	"audio_language":    {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
+	"type":                      {columnSQL: "type", executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
+	filterFieldGenre:            {columnSQL: "genres", isArray: true, executable: true, validOps: map[string]bool{"is": true, "is_not": true, "contains": true}},
+	"year":                      {columnSQL: "year", executable: true, validOps: map[string]bool{"is": true, "is_not": true, "gt": true, "gte": true, "lt": true, "lte": true, "between": true}},
+	"rating_imdb":               {columnSQL: "rating_imdb", executable: true, validOps: map[string]bool{"gt": true, "gte": true, "lt": true, "lte": true, "between": true}},
+	"studio":                    {columnSQL: "studios", isArray: true, executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
+	"network":                   {columnSQL: "networks", isArray: true, executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
+	"country":                   {columnSQL: "countries", isArray: true, executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
+	filterFieldOriginalLanguage: {columnSQL: filterFieldOriginalLanguage, executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
+	"content_rating":            {columnSQL: "content_rating", executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
+	"added_at":                  {columnSQL: "created_at", executable: true, validOps: map[string]bool{"gt": true, "lt": true, "between": true, filterOpInLast: true}},
+	"release_date":              {columnSQL: "COALESCE(%s.release_date::text, NULLIF(BTRIM(%s.first_air_date), ''))", executable: true, validOps: map[string]bool{"gt": true, "lt": true, "between": true, filterOpInLast: true}},
+	"status":                    {columnSQL: "status", executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
+	"actor":                     {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
+	"director":                  {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
+	"writer":                    {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
+	"producer":                  {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
+	filterFieldAuthor:           {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
+	filterFieldNarrator:         {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
+	itemTypeSeries:              {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
+	displayFilterFieldWatched:   {executable: true, personalized: true, validOps: map[string]bool{"is": true}},
+	"favorited":                 {executable: true, personalized: true, validOps: map[string]bool{"is": true}},
+	"in_watchlist":              {executable: true, personalized: true, validOps: map[string]bool{"is": true}},
+	filterFieldInProgress:       {executable: true, personalized: true, validOps: map[string]bool{"is": true}},
+	filterFieldLastWatched:      {executable: true, personalized: true, validOps: map[string]bool{"gt": true, "gte": true, "lt": true, "lte": true, "between": true, filterOpInLast: true}},
+	filterFieldResolution:       {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
+	"hdr":                       {executable: true, validOps: map[string]bool{"is": true}},
+	filterFieldDolbyVision:      {executable: true, validOps: map[string]bool{"is": true}},
+	filterFieldBitrate:          {executable: true, validOps: map[string]bool{"gt": true, "gte": true, "lt": true, "lte": true, "between": true}},
+	filterFieldAudioLanguage:    {executable: true, validOps: map[string]bool{"is": true, "is_not": true}},
 	"subtitle_language": {
 		executable: true,
 		validOps:   map[string]bool{"is": true, "is_not": true},
@@ -89,16 +89,16 @@ var querySortDefs = map[string]querySortDef{
 	"rating_tmdb":          {columnSQL: "rating_tmdb", defaultOrder: "desc", nullsLast: true},
 	"rating_rt_critic":     {columnSQL: "rating_rt_critic", defaultOrder: "desc", nullsLast: true},
 	"rating_rt_audience":   {columnSQL: "rating_rt_audience", defaultOrder: "desc", nullsLast: true},
-	"resolution":           {defaultOrder: "desc", nullsLast: true},
-	"bitrate":              {defaultOrder: "desc", nullsLast: true},
-	"progress":             {defaultOrder: "desc", nullsLast: true, personalized: true},
+	filterFieldResolution:  {defaultOrder: "desc", nullsLast: true},
+	filterFieldBitrate:     {defaultOrder: "desc", nullsLast: true},
+	filterFieldProgress:    {defaultOrder: "desc", nullsLast: true, personalized: true},
 	"date_viewed":          {defaultOrder: "desc", nullsLast: true, personalized: true},
 	"plays":                {defaultOrder: "desc", nullsLast: true, personalized: true},
 	// Audiobook-native sorts. nullsLast so items without an author /
 	// narrator / series association still appear (sorted to the end).
-	"author":   {defaultOrder: "asc", nullsLast: true},
-	"narrator": {defaultOrder: "asc", nullsLast: true},
-	"series":   {defaultOrder: "asc", nullsLast: true},
+	filterFieldAuthor:   {defaultOrder: "asc", nullsLast: true},
+	filterFieldNarrator: {defaultOrder: "asc", nullsLast: true},
+	itemTypeSeries:      {defaultOrder: "asc", nullsLast: true},
 }
 
 type QueryDefinition struct {
@@ -119,7 +119,7 @@ const MediaScopeVideo = "video"
 // is an accepted media_scope value. Empty means unscoped and is valid.
 func IsValidMediaScope(scope string) bool {
 	switch scope {
-	case "", "movie", "series", "episode", "audiobook", "ebook", "manga", MediaScopeVideo:
+	case "", itemTypeMovie, itemTypeSeries, itemTypeEpisode, "audiobook", itemTypeEbook, "manga", MediaScopeVideo:
 		return true
 	default:
 		return false
@@ -135,7 +135,7 @@ func MediaScopeItemTypes(scope string) []string {
 	case "":
 		return nil
 	case MediaScopeVideo:
-		return []string{"movie", "series"}
+		return []string{itemTypeMovie, itemTypeSeries}
 	default:
 		return []string{scope}
 	}
@@ -278,7 +278,7 @@ func (q QueryDefinition) ValidateWithOptions(allowPersonalizedSorts, allowPerson
 			if def.personalized && !allowPersonalizedFields {
 				return fmt.Errorf("groups[%d].rules[%d].field %q requires profile scope", i, j, rule.Field)
 			}
-			if normalized.MediaScope == "ebook" && rule.Field == "narrator" {
+			if normalized.MediaScope == itemTypeEbook && rule.Field == filterFieldNarrator {
 				return fmt.Errorf("groups[%d].rules[%d].field %q is not supported for ebook media_scope", i, j, rule.Field)
 			}
 			if !def.validOps[rule.Op] {
@@ -295,7 +295,7 @@ func (q QueryDefinition) ValidateWithOptions(allowPersonalizedSorts, allowPerson
 		if def.personalized && !allowPersonalizedSorts {
 			return fmt.Errorf("sort.field %q requires profile scope", normalized.Sort.Field)
 		}
-		if normalized.MediaScope == "ebook" && normalized.Sort.Field == "narrator" {
+		if normalized.MediaScope == itemTypeEbook && normalized.Sort.Field == filterFieldNarrator {
 			return fmt.Errorf("sort.field %q is not supported for ebook media_scope", normalized.Sort.Field)
 		}
 	}

@@ -482,7 +482,7 @@ func appendSegmentBoundaryArgs(args []string, opts TranscodeOpts) []string {
 	// boundaries always start with an IDR frame. We assume 30 fps as a
 	// safe ceiling — the GOP will be at most segmentDuration * 30 frames.
 	// Matches Jellyfin's approach for hardware encoders.
-	if opts.HWAccel == "qsv" || opts.HWAccel == "vaapi" || opts.HWAccel == "nvenc" {
+	if opts.HWAccel == "qsv" || opts.HWAccel == hwAccelVAAPI || opts.HWAccel == hwAccelNVENC {
 		gopSize := fmt.Sprintf("%d", opts.SegmentDuration*30)
 		args = append(args, "-g", gopSize, "-keyint_min", gopSize)
 	}
@@ -505,11 +505,11 @@ func appendHWAccelArgs(args []string, opts TranscodeOpts) []string {
 			"-init_hw_device", fmt.Sprintf("vaapi=va:%s,driver=iHD,kernel_driver=i915,vendor_id=0x8086", hwDevice),
 			"-init_hw_device", "qsv=qs@va",
 			"-filter_hw_device", "va",
-			"-hwaccel", "vaapi",
-			"-hwaccel_output_format", "vaapi",
+			"-hwaccel", hwAccelVAAPI,
+			"-hwaccel_output_format", hwAccelVAAPI,
 			"-noautorotate",
 		)
-	case "vaapi":
+	case hwAccelVAAPI:
 		vaapiDevice := PickRenderDevice(opts.HWDevice)
 		if vaapiDevice == "" {
 			vaapiDevice = "/dev/dri/renderD128" // last-resort fallback
@@ -517,10 +517,10 @@ func appendHWAccelArgs(args []string, opts TranscodeOpts) []string {
 		args = append(args,
 			"-init_hw_device", fmt.Sprintf("vaapi=hw:%s", vaapiDevice),
 			"-filter_hw_device", "hw",
-			"-hwaccel", "vaapi",
-			"-hwaccel_output_format", "vaapi",
+			"-hwaccel", hwAccelVAAPI,
+			"-hwaccel_output_format", hwAccelVAAPI,
 		)
-	case "nvenc":
+	case hwAccelNVENC:
 		args = append(args,
 			"-hwaccel", "cuda",
 			"-hwaccel_output_format", "cuda",
@@ -580,21 +580,21 @@ func appendVideoArgs(args []string, opts TranscodeOpts) []string {
 		} else {
 			args = append(args, "-c:v", "hevc_qsv", "-preset", preset, "-global_quality", "28")
 		}
-	case opts.HWAccel == "vaapi" && codec == "h264":
+	case opts.HWAccel == hwAccelVAAPI && codec == "h264":
 		args = append(args, "-c:v", "h264_vaapi", "-qp", "23")
 		if hasBitrateCap {
 			args = append(args,
 				"-maxrate", fmt.Sprintf("%dk", opts.TargetBitrateKbps),
 				"-bufsize", fmt.Sprintf("%dk", opts.TargetBitrateKbps*2))
 		}
-	case opts.HWAccel == "vaapi" && codec == "hevc":
+	case opts.HWAccel == hwAccelVAAPI && codec == "hevc":
 		args = append(args, "-c:v", "hevc_vaapi", "-qp", "28")
 		if hasBitrateCap {
 			args = append(args,
 				"-maxrate", fmt.Sprintf("%dk", opts.TargetBitrateKbps),
 				"-bufsize", fmt.Sprintf("%dk", opts.TargetBitrateKbps*2))
 		}
-	case opts.HWAccel == "nvenc" && codec == "h264":
+	case opts.HWAccel == hwAccelNVENC && codec == "h264":
 		args = append(args, "-c:v", "h264_nvenc", "-rc:v", "vbr")
 		if hasBitrateCap {
 			args = append(args,
@@ -604,7 +604,7 @@ func appendVideoArgs(args []string, opts TranscodeOpts) []string {
 		} else {
 			args = append(args, "-cq:v", "23", "-b:v", "0")
 		}
-	case opts.HWAccel == "nvenc" && codec == "hevc":
+	case opts.HWAccel == hwAccelNVENC && codec == "hevc":
 		args = append(args, "-c:v", "hevc_nvenc", "-rc:v", "vbr")
 		if hasBitrateCap {
 			args = append(args,
@@ -648,9 +648,9 @@ func appendVideoFilterArgs(args []string, opts TranscodeOpts) []string {
 		return appendSubtitleBurnInArgs(args, opts)
 	case opts.HWAccel == "qsv":
 		return append(args, "-vf", qsvScaleFilter(opts.TargetResolution))
-	case opts.HWAccel == "vaapi":
+	case opts.HWAccel == hwAccelVAAPI:
 		return append(args, "-vf", vaapiScaleFilter(opts.TargetResolution))
-	case opts.HWAccel == "nvenc":
+	case opts.HWAccel == hwAccelNVENC:
 		return append(args, "-vf", nvencScaleFilter(opts.TargetResolution))
 	case opts.TargetResolution != "":
 		if scale := resolutionToScale(opts.TargetResolution); scale != "" {
@@ -739,10 +739,10 @@ func appendBitmapSubtitleBurnInArgs(args []string, opts TranscodeOpts) []string 
 		// to nv12, upload back to VAAPI, then map to QSV for the encoder.
 		graph = "[0:v:0]hwdownload,format=yuv420p[vmain];[vmain]" + cpuFilters +
 			",format=nv12,hwupload,hwmap=derive_device=qsv,format=qsv[vout]"
-	case "vaapi":
+	case hwAccelVAAPI:
 		graph = "[0:v:0]hwdownload,format=yuv420p[vmain];[vmain]" + cpuFilters +
 			",format=nv12,hwupload[vout]"
-	case "nvenc":
+	case hwAccelNVENC:
 		graph = "[0:v:0]hwdownload,format=yuv420p[vmain];[vmain]" + cpuFilters +
 			",format=nv12,hwupload_cuda[vout]"
 	default:
@@ -780,11 +780,11 @@ func appendSubtitleBurnInArgs(args []string, opts TranscodeOpts) []string {
 		// surfaces), upload back to VAAPI, then map to QSV for the encoder.
 		vf := "hwdownload,format=yuv420p," + cpuFilters + ",format=nv12,hwupload,hwmap=derive_device=qsv,format=qsv"
 		args = append(args, "-vf", vf)
-	case "vaapi":
+	case hwAccelVAAPI:
 		// VAAPI-only: download, apply CPU filters, convert to nv12, upload back.
 		vf := "hwdownload,format=yuv420p," + cpuFilters + ",format=nv12,hwupload"
 		args = append(args, "-vf", vf)
-	case "nvenc":
+	case hwAccelNVENC:
 		// NVENC/CUDA: download to CPU for subtitle rendering, then upload back.
 		vf := "hwdownload,format=yuv420p," + cpuFilters + ",format=nv12,hwupload_cuda"
 		args = append(args, "-vf", vf)
@@ -799,9 +799,9 @@ func appendSubtitleBurnInArgs(args []string, opts TranscodeOpts) []string {
 // resolutionToScale returns an ffmpeg scale filter string for the target resolution.
 func resolutionToScale(res string) string {
 	switch res {
-	case "2160p":
+	case resolution2160p:
 		return "scale=-2:2160"
-	case "1080p":
+	case resolution1080p:
 		return "scale=-2:1080"
 	case "720p":
 		return "scale=-2:720"
@@ -819,9 +819,9 @@ func resolutionToScale(res string) string {
 // qsvScaleFilter returns the VAAPI→QSV filter chain with optional resolution scaling.
 func qsvScaleFilter(res string) string {
 	switch res {
-	case "2160p":
+	case resolution2160p:
 		return "scale_vaapi=w=-2:h=2160:format=nv12,hwmap=derive_device=qsv,format=qsv"
-	case "1080p":
+	case resolution1080p:
 		return "scale_vaapi=w=-2:h=1080:format=nv12,hwmap=derive_device=qsv,format=qsv"
 	case "720p":
 		return "scale_vaapi=w=-2:h=720:format=nv12,hwmap=derive_device=qsv,format=qsv"
@@ -841,9 +841,9 @@ func qsvScaleFilter(res string) string {
 // causes FFmpeg auto_scale format-negotiation failures.
 func vaapiScaleFilter(res string) string {
 	switch res {
-	case "2160p":
+	case resolution2160p:
 		return "scale_vaapi=w=-2:h=2160:format=nv12"
-	case "1080p":
+	case resolution1080p:
 		return "scale_vaapi=w=-2:h=1080:format=nv12"
 	case "720p":
 		return "scale_vaapi=w=-2:h=720:format=nv12"
@@ -860,9 +860,9 @@ func vaapiScaleFilter(res string) string {
 
 func nvencScaleFilter(res string) string {
 	switch res {
-	case "2160p":
+	case resolution2160p:
 		return "scale_cuda=w=-2:h=2160:format=nv12"
-	case "1080p":
+	case resolution1080p:
 		return "scale_cuda=w=-2:h=1080:format=nv12"
 	case "720p":
 		return "scale_cuda=w=-2:h=720:format=nv12"

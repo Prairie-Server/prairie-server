@@ -937,7 +937,7 @@ func buildMediaStreamsWithSelection(routeItemID, mediaSourceID string, version c
 		}
 		streams = append(streams, mediaStreamDTO{
 			Index:                  index,
-			Type:                   "Video",
+			Type:                   streamTypeVideo,
 			Codec:                  strings.ToLower(track.Codec),
 			TimeBase:               "1/1000",
 			DisplayTitle:           firstNonEmpty(track.Title, track.Codec),

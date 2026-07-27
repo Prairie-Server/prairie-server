@@ -177,7 +177,7 @@ var itemColumnNames = []string{
 	"imdb_id", "tmdb_id", "tvdb_id",
 	"poster_path", "poster_source_path", "poster_thumbhash", "backdrop_path", "backdrop_source_path", "backdrop_thumbhash", "logo_path", "logo_source_path",
 	"metadata_s3_path", "metadata_etag", "season_count",
-	"studios", "networks", "countries", "keywords", "original_language", "release_date::text", "first_air_date", "last_air_date", "air_time", "air_timezone",
+	"studios", "networks", "countries", "keywords", filterFieldOriginalLanguage, "release_date::text", "first_air_date", "last_air_date", "air_time", "air_timezone",
 	"show_status",
 	"matched_at", "last_refreshed", "refresh_failures",
 	"episode_metadata_incomplete", "episode_metadata_last_checked_at", "locked_fields", "status", "created_at", "updated_at",

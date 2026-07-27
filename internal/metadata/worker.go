@@ -264,9 +264,9 @@ func (w *MatchWorker) processFileWithFolderCache(ctx context.Context, file *mode
 	if !skeleton.IsNew {
 		// For series files, defer episode linking to a single call per series
 		// after the batch completes, rather than calling per-file.
-		if skeleton.Type == "series" && deferredSeriesLinks != nil {
+		if skeleton.Type == matchContentTypeSeries && deferredSeriesLinks != nil {
 			deferredSeriesLinks.Store(skeleton.ContentID, struct{}{})
-		} else if skeleton.Type == "series" {
+		} else if skeleton.Type == matchContentTypeSeries {
 			// Fallback for callers that don't provide a deferred map.
 			if err := w.service.ensureSeriesEpisodeLinks(ctx, skeleton.ContentID); err != nil {
 				slog.WarnContext(ctx, "metadata: failed to ensure series episode links", "component", "metadata",
@@ -278,7 +278,7 @@ func (w *MatchWorker) processFileWithFolderCache(ctx context.Context, file *mode
 		}
 		return
 	}
-	if skeleton.ItemStatus == "ambiguous" {
+	if skeleton.ItemStatus == matchStatusAmbiguous {
 		return
 	}
 
@@ -290,7 +290,7 @@ func (w *MatchWorker) processFileWithFolderCache(ctx context.Context, file *mode
 		w.logStatusUpdateFailure(ctx, skeleton.ContentID, "unmatched", "content_id", skeleton.ContentID, "file_id", file.ID, "path", file.FilePath)
 		// For series items, synthesize fallback episode structure so episodes
 		// are visible even when no provider match was found.
-		if skeleton.Type == "series" {
+		if skeleton.Type == matchContentTypeSeries {
 			if fbErr := w.service.SynthesizeFallbackEpisodes(ctx, skeleton.ContentID); fbErr != nil {
 				slog.WarnContext(ctx, "metadata: fallback episode synthesis failed after enrichment error", "component", "metadata",
 					"content_id", skeleton.ContentID, "error", fbErr)
@@ -302,7 +302,7 @@ func (w *MatchWorker) processFileWithFolderCache(ctx context.Context, file *mode
 	if result != nil && !result.Updated {
 		w.logStatusUpdateFailure(ctx, skeleton.ContentID, "unmatched", "content_id", skeleton.ContentID, "file_id", file.ID, "path", file.FilePath)
 		// Same fallback synthesis for series when no provider data was returned.
-		if skeleton.Type == "series" {
+		if skeleton.Type == matchContentTypeSeries {
 			if fbErr := w.service.SynthesizeFallbackEpisodes(ctx, skeleton.ContentID); fbErr != nil {
 				slog.WarnContext(ctx, "metadata: fallback episode synthesis failed for unmatched series", "component", "metadata",
 					"content_id", skeleton.ContentID, "error", fbErr)
@@ -317,7 +317,7 @@ func (w *MatchWorker) buildProcessRequestForGroup(ctx context.Context, represent
 	groupFiles := preloadedGroupFiles
 	if len(groupFiles) == 0 {
 		groupFiles = []*models.MediaFile{representative}
-		if skeleton != nil && skeleton.Type == "series" && w.service != nil && w.service.fileRepo != nil {
+		if skeleton != nil && skeleton.Type == matchContentTypeSeries && w.service != nil && w.service.fileRepo != nil {
 			loadedFiles, err := w.service.fileRepo.ListByObservedRootPath(ctx, representative.MediaFolderID, skeleton.ObservedRootPath)
 			if err != nil {
 				slog.WarnContext(ctx, "metadata: failed to load observed-root files", "component", "metadata",
@@ -816,7 +816,7 @@ func (w *MatchWorker) processQueuedMovieFile(ctx context.Context, job models.Mov
 		}
 		return false
 	}
-	if skeleton.ItemStatus == "ambiguous" {
+	if skeleton.ItemStatus == matchStatusAmbiguous {
 		if err := w.movieClaimer.Delete(ctx, file.ID, job.LeaseToken); err != nil {
 			slog.WarnContext(ctx, "metadata: failed to delete ambiguous movie queue row", "component", "metadata",
 				"file_id", file.ID,
@@ -877,7 +877,7 @@ func (w *MatchWorker) queuedMovieSkeleton(ctx context.Context, file *models.Medi
 		return skeleton, true, nil
 	}
 
-	currentFile := reparseQueuedFileIdentity(file, "movie")
+	currentFile := reparseQueuedFileIdentity(file, matchContentTypeMovie)
 	skeleton, err := w.service.createOrFindSkeleton(ctx, currentFile, currentFile.MediaFolderID)
 	if err != nil {
 		return nil, false, err
@@ -900,7 +900,7 @@ func (w *MatchWorker) reusableQueuedMovieSkeleton(ctx context.Context, file *mod
 	}
 	status := strings.ToLower(strings.TrimSpace(item.Status))
 	reusableStatus := isSkeletonLikeStatus(status) ||
-		status == "ambiguous" ||
+		status == matchStatusAmbiguous ||
 		(allowMatched && status == string(MatchOutcomeMatched))
 	if !reusableStatus {
 		return nil, false
@@ -923,7 +923,7 @@ func (w *MatchWorker) reusableQueuedMovieSkeleton(ctx context.Context, file *mod
 		itemType = file.BaseType
 	}
 	if itemType == "" {
-		itemType = "movie"
+		itemType = matchContentTypeMovie
 	}
 	year := item.Year
 	if year == 0 {
@@ -1111,7 +1111,7 @@ func (w *MatchWorker) processSeriesRoot(ctx context.Context, job models.SeriesRo
 	}
 	if !hasUnlinkedGroupFile(groupFiles) {
 		if strings.TrimSpace(representative.ContentID) != "" {
-			if skeleton, ok := w.reusableQueuedMovieSkeleton(ctx, representative, job.RerunRequested); ok && skeleton.ItemStatus != "ambiguous" {
+			if skeleton, ok := w.reusableQueuedMovieSkeleton(ctx, representative, job.RerunRequested); ok && skeleton.ItemStatus != matchStatusAmbiguous {
 				req := w.buildProcessRequestForGroup(ctx, representative, skeleton, groupFiles)
 				result, processErr := w.service.Process(ctx, req)
 				if processErr != nil {
@@ -1173,7 +1173,7 @@ func (w *MatchWorker) processSeriesRoot(ctx context.Context, job models.SeriesRo
 		return len(groupFiles), nil
 	}
 
-	currentRepresentative := reparseQueuedFileIdentity(representative, "series")
+	currentRepresentative := reparseQueuedFileIdentity(representative, matchContentTypeSeries)
 	skeleton, err := w.service.createOrFindSkeleton(ctx, currentRepresentative, job.MediaFolderID)
 	if err != nil {
 		queueErr := truncateSeriesQueueError(err.Error())
@@ -1214,7 +1214,7 @@ func (w *MatchWorker) processSeriesRoot(ctx context.Context, job models.SeriesRo
 			needsInitialMatch = isSkeletonLikeStatus(item.Status)
 		}
 	}
-	if needsInitialMatch && skeleton.ItemStatus != "ambiguous" {
+	if needsInitialMatch && skeleton.ItemStatus != matchStatusAmbiguous {
 		req := w.buildProcessRequestForGroup(ctx, representative, skeleton, groupFiles)
 		result, processErr := w.service.Process(ctx, req)
 		if processErr != nil {
@@ -1262,7 +1262,7 @@ func (w *MatchWorker) processSeriesRoot(ctx context.Context, job models.SeriesRo
 		w.publishCatalogItemChanged(ctx, job.MediaFolderID, resultContentID(result, skeleton.ContentID), "metadata_updated")
 	}
 
-	finalContentID, err := w.service.fileRepo.FindContentIDByObservedRootPath(ctx, job.MediaFolderID, job.ObservedRootPath, "series")
+	finalContentID, err := w.service.fileRepo.FindContentIDByObservedRootPath(ctx, job.MediaFolderID, job.ObservedRootPath, matchContentTypeSeries)
 	if err != nil {
 		if updateErr := w.seriesClaimer.UpdateError(ctx, job.MediaFolderID, job.ObservedRootPath, job.LeaseToken, truncateSeriesQueueError(err.Error())); updateErr != nil {
 			return 0, updateErr
@@ -1379,7 +1379,7 @@ func (w *MatchWorker) collapseClaimedSeriesBatch(ctx context.Context, files []*m
 		}
 
 		switch folderType {
-		case "series", "tv", "show", "tvshows":
+		case matchContentTypeSeries, "tv", "show", "tvshows":
 		default:
 			out = append(out, file)
 			continue

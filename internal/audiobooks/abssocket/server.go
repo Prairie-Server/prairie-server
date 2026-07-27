@@ -85,7 +85,7 @@ func New(secretFn SecretFn, tokenValidator TokenValidator, logger Logger, opts *
 		tokenValidator: tokenValidator,
 		logger:         logger,
 	}
-	io.On("connection", func(args ...any) {
+	_ = io.On("connection", func(args ...any) {
 		if len(args) == 0 {
 			return
 		}
@@ -112,7 +112,7 @@ func (s *Server) onConnection(client *socket.Socket) {
 	// successful auth fires "init" with a user-state payload; failed auth
 	// fires "auth_failed" with {message}. The official ABS mobile + web
 	// clients listen for these specific names.
-	client.On("auth", func(args ...any) {
+	_ = client.On("auth", func(args ...any) {
 		token := pickToken(args)
 		if token == "" {
 			s.logger.Warn("abssocket: auth without token", "sid", client.Id())
@@ -153,7 +153,7 @@ func (s *Server) onConnection(client *socket.Socket) {
 		})
 	})
 
-	client.On("disconnect", func(...any) {
+	_ = client.On("disconnect", func(...any) {
 		s.mu.Lock()
 		if s.connCount > 0 {
 			s.connCount--
@@ -175,7 +175,7 @@ func (s *Server) Publish(userID, event string, payload any) {
 	if userID == "" {
 		return
 	}
-	s.io.To(userRoom(userID)).Emit(event, payload)
+	_ = s.io.To(userRoom(userID)).Emit(event, payload)
 }
 
 // Broadcast emits to every authenticated socket regardless of user. Use

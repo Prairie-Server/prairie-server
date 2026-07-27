@@ -297,7 +297,7 @@ func parseOptionalPersonDate(value string) (*time.Time, error) {
 }
 
 func primaryPersonProviderID(providerIDs map[string]string) string {
-	for _, key := range []string{"tmdb", "tvdb", "imdb", "metadb"} {
+	for _, key := range []string{"tmdb", "tvdb", "imdb", providerSlugMetaDB} {
 		if providerIDs[key] != "" {
 			return key
 		}
@@ -313,7 +313,7 @@ func personCacheContentID(
 	if providerID != "" && providerIDs[providerID] != "" {
 		return providerIDs[providerID]
 	}
-	for _, key := range []string{"tmdb", "tvdb", "imdb", "metadb"} {
+	for _, key := range []string{"tmdb", "tvdb", "imdb", providerSlugMetaDB} {
 		if providerIDs[key] != "" {
 			return providerIDs[key]
 		}

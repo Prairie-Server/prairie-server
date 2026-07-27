@@ -217,11 +217,11 @@ func (h *UserDataHandler) resolvePlayedTargetsForItem(r *http.Request, session *
 	}
 
 	switch strings.ToLower(detail.Type) {
-	case "movie", "episode":
+	case itemTypeMovie, itemTypeEpisode:
 		return []string{detail.ContentID}, nil
 	case "season":
 		return h.resolvePlayedTargetsForSeason(r, session, detail.ContentID)
-	case "series":
+	case itemTypeSeries:
 		seasons, err := h.content.ListSeasons(r.Context(), session, detail.ContentID, nil)
 		if err != nil {
 			return nil, err

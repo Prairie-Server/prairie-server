@@ -341,7 +341,7 @@ func (r *NextUpRepository) listResumableFirstEpisodes(ctx context.Context, q Nex
 		return nil, fmt.Errorf("getting user store: %w", err)
 	}
 
-	inProgressEntries, err := store.ListProgress(ctx, q.ProfileID, "in_progress", 100, 0)
+	inProgressEntries, err := store.ListProgress(ctx, q.ProfileID, filterFieldInProgress, 100, 0)
 	if err != nil {
 		return nil, fmt.Errorf("listing in-progress: %w", err)
 	}

@@ -125,7 +125,7 @@ func InferRootAssignments(
 			agg.releaseDensityCount++
 		}
 		switch assignment.InferredType {
-		case "series":
+		case itemTypeSeries:
 			agg.seriesTypeVotes++
 		default:
 			agg.movieTypeVotes++
@@ -150,13 +150,13 @@ func InferRootAssignments(
 
 		switch {
 		case agg.seriesTypeVotes > 0 && agg.movieTypeVotes == 0:
-			agg.root.InferredType = "series"
+			agg.root.InferredType = itemTypeSeries
 		case agg.movieTypeVotes > 0 && agg.seriesTypeVotes == 0:
-			agg.root.InferredType = "movie"
+			agg.root.InferredType = itemTypeMovie
 		case agg.seasonEvidenceCount > 0 || agg.episodeEvidenceCount > agg.movieEvidenceCount:
-			agg.root.InferredType = "series"
+			agg.root.InferredType = itemTypeSeries
 		default:
-			agg.root.InferredType = "movie"
+			agg.root.InferredType = itemTypeMovie
 		}
 
 		switch {
@@ -271,7 +271,7 @@ func extractPathEvidence(filePath string, libraryType string) RootAssignment {
 	dirParts := pathParts[:max(len(pathParts)-1, 0)]
 
 	hasEpisodePattern := inferSeasonEpisodeRe.MatchString(nameNoExt)
-	hasSeasonStructure := detectInferSeasonStructure(dirParts, hasEpisodePattern || normalizeInferLibraryType(libraryType) == "series")
+	hasSeasonStructure := detectInferSeasonStructure(dirParts, hasEpisodePattern || normalizeInferLibraryType(libraryType) == itemTypeSeries)
 	parentTitle, parentYear, parentTrusted := parseInferFolderTitleYear(parentBase)
 	fileStem := parseInferMovieStem(nameNoExt, parentTitle, parentYear)
 	hasMovieEvidence := detectInferMovieFolderEvidence(parentBase, nameNoExt, hasSeasonStructure)
@@ -283,32 +283,32 @@ func extractPathEvidence(filePath string, libraryType string) RootAssignment {
 
 	inferredType := normalizeInferLibraryType(libraryType)
 	switch inferredType {
-	case "series":
-		inferredType = "series"
-	case "movie":
-		inferredType = "movie"
+	case itemTypeSeries:
+		inferredType = itemTypeSeries
+	case itemTypeMovie:
+		inferredType = itemTypeMovie
 	default:
 		switch {
 		case hasSeasonStructure:
-			inferredType = "series"
+			inferredType = itemTypeSeries
 		case hasMovieEvidence:
-			inferredType = "movie"
+			inferredType = itemTypeMovie
 		case hasEpisodePattern:
-			inferredType = "series"
+			inferredType = itemTypeSeries
 		default:
-			inferredType = "movie"
+			inferredType = itemTypeMovie
 		}
 	}
 
 	rootPath := parentDir
-	if inferredType == "series" {
+	if inferredType == itemTypeSeries {
 		rootPath = deriveInferSeriesRootPath(cleanFilePath, dirParts)
 	} else {
 		rootPath = deriveInferMovieRootPath(cleanFilePath, hasMovieEvidence || parentTrusted)
 	}
 
 	title, year := parseInferTitleYear(filepath.Base(rootPath))
-	if inferredType == "movie" && parentTrusted {
+	if inferredType == itemTypeMovie && parentTrusted {
 		title = parentTitle
 		year = parentYear
 	}
@@ -339,10 +339,10 @@ func extractPathEvidence(filePath string, libraryType string) RootAssignment {
 
 func normalizeInferLibraryType(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "movie", "movies":
-		return "movie"
-	case "series", "tv", "show", "tvshows":
-		return "series"
+	case itemTypeMovie, "movies":
+		return itemTypeMovie
+	case itemTypeSeries, "tv", "show", "tvshows":
+		return itemTypeSeries
 	default:
 		return ""
 	}

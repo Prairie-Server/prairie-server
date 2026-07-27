@@ -170,7 +170,7 @@ func (h *ImagesHandler) HandleItemImage(w http.ResponseWriter, r *http.Request) 
 
 // handlePersonImage serves person photo images.
 func (h *ImagesHandler) handlePersonImage(w http.ResponseWriter, r *http.Request, routeID, imageType string, personID int64) {
-	if imageType != "Primary" {
+	if imageType != imageTypePrimary {
 		writeError(w, http.StatusNotFound, "NotFound", "Image not found")
 		return
 	}
@@ -204,7 +204,7 @@ func (h *ImagesHandler) resolveItemImageURL(ctx context.Context, session *Sessio
 		return catalog.ResolvedImageURL{}, err
 	}
 	switch imageType {
-	case "Primary":
+	case imageTypePrimary:
 		return catalog.ResolvedImageURL{URL: firstNonEmpty(detail.PosterURL, detail.BackdropURL)}, nil
 	case "Backdrop", "Thumb":
 		return catalog.ResolvedImageURL{URL: firstNonEmpty(detail.BackdropURL, detail.PosterURL)}, nil
@@ -299,7 +299,7 @@ func (h *ImagesHandler) resolveItemImageURLFromTag(ctx context.Context, routeID,
 // compat image type ("" when the collection has none of that type).
 func collectionArtworkKey(c *models.LibraryCollection, imageType string) string {
 	switch imageType {
-	case "Primary":
+	case imageTypePrimary:
 		return c.PosterURL
 	case "Backdrop":
 		return c.BackdropURL
@@ -327,11 +327,11 @@ func (h *ImagesHandler) presignCollectionArtwork(ctx context.Context, path strin
 // stored art); Backdrop only when a stored backdrop exists.
 func collectionImageTagSeed(routeID, imageType string, c *models.LibraryCollection) (string, bool) {
 	switch imageType {
-	case "Primary":
+	case imageTypePrimary:
 		if key := strings.TrimSpace(c.PosterURL); key != "" {
-			return imageTagSeed(routeID, "Primary", compatCardImageSize, key, "", time.Time{}), true
+			return imageTagSeed(routeID, imageTypePrimary, compatCardImageSize, key, "", time.Time{}), true
 		}
-		return imageTagSeed(routeID, "Primary", compatCardImageSize, generatedPosterSeed(c.Title), "", time.Time{}), true
+		return imageTagSeed(routeID, imageTypePrimary, compatCardImageSize, generatedPosterSeed(c.Title), "", time.Time{}), true
 	case "Backdrop":
 		if key := strings.TrimSpace(c.BackdropURL); key != "" {
 			return imageTagSeed(routeID, "Backdrop", compatCardImageSize, key, "", time.Time{}), true
@@ -390,7 +390,7 @@ func (h *ImagesHandler) serveCollectionImage(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	if imageType != "Primary" {
+	if imageType != imageTypePrimary {
 		writeError(w, http.StatusNotFound, "NotFound", "Image not found")
 		return
 	}
@@ -421,11 +421,11 @@ func (h *ImagesHandler) collectionVisibleToRequest(r *http.Request, collection *
 // always a generated "Collections" poster, authorized by the signed tag or any
 // authenticated session.
 func (h *ImagesHandler) serveCollectionsViewImage(w http.ResponseWriter, r *http.Request, imageType, tag string) {
-	if imageType != "Primary" {
+	if imageType != imageTypePrimary {
 		writeError(w, http.StatusNotFound, "NotFound", "Image not found")
 		return
 	}
-	seed := imageTagSeed(collectionsViewID, "Primary", compatCardImageSize, generatedPosterSeed(collectionsViewCaption), "", time.Time{})
+	seed := imageTagSeed(collectionsViewID, imageTypePrimary, compatCardImageSize, generatedPosterSeed(collectionsViewCaption), "", time.Time{})
 	authorized := tag != "" && h.imageTags != nil && h.imageTags.Equal(seed, "", tag)
 	if !authorized {
 		session := SessionFromContext(r.Context())
@@ -457,7 +457,7 @@ func (h *ImagesHandler) serveGeneratedPoster(w http.ResponseWriter, caption stri
 }
 
 func (h *ImagesHandler) resolveLibraryImageURLFromTag(ctx context.Context, routeID string, libraryID int, imageType, _ string, tag string) (catalog.ResolvedImageURL, bool, error) {
-	if imageType != "Primary" || h.folderRepo == nil || h.posterSigner == nil {
+	if imageType != imageTypePrimary || h.folderRepo == nil || h.posterSigner == nil {
 		return catalog.ResolvedImageURL{}, false, nil
 	}
 	folder, err := h.folderRepo.GetByID(ctx, libraryID)
@@ -465,7 +465,7 @@ func (h *ImagesHandler) resolveLibraryImageURLFromTag(ctx context.Context, route
 		return catalog.ResolvedImageURL{}, false, nil
 	}
 	if folder.PosterPath == "" || !h.imageTags.Equal(
-		imageTagSeed(routeID, "Primary", compatCardImageSize, folder.PosterPath, "", time.Time{}),
+		imageTagSeed(routeID, imageTypePrimary, compatCardImageSize, folder.PosterPath, "", time.Time{}),
 		"",
 		tag,
 	) {
@@ -553,10 +553,10 @@ func (h *ImagesHandler) resolveItemImageURLFromReposWithoutSession(ctx context.C
 func (h *ImagesHandler) signedImageTagMatches(routeID, contentID, imageType, tag, primaryPath, primaryThumbhash, backdropPath, backdropThumbhash, logoPath string, updatedAt time.Time, resolvedURL string) bool {
 	var path, thumbhash, tagImageType string
 	switch imageType {
-	case "Primary":
+	case imageTypePrimary:
 		path = primaryPath
 		thumbhash = primaryThumbhash
-		tagImageType = "Primary"
+		tagImageType = imageTypePrimary
 	case "Backdrop", "Thumb":
 		path = backdropPath
 		thumbhash = backdropThumbhash
@@ -590,7 +590,7 @@ func (h *ImagesHandler) imageURLForItem(ctx context.Context, primaryPath, primar
 	logoURL := compatPresignImageWithExpiry(h.detailSvc, ctx, logoPath, "logo", size)
 
 	switch imageType {
-	case "Primary":
+	case imageTypePrimary:
 		return firstResolvedImageURL(primaryURL, backdropURL)
 	case "Backdrop", "Thumb":
 		return firstResolvedImageURL(backdropURL, primaryURL)

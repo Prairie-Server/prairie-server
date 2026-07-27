@@ -117,7 +117,7 @@ func (h *PersonsHandler) personToDTO(p models.Person) baseItemDTO {
 		ServerID: h.serverID,
 	}
 	if p.PhotoPath != "" && p.PhotoPath != "-" {
-		dto.ImageTags = map[string]string{"Primary": tagValue(p.PhotoPath)}
+		dto.ImageTags = map[string]string{imageTypePrimary: tagValue(p.PhotoPath)}
 	}
 	return dto
 }
@@ -158,7 +158,7 @@ func (h *PersonsHandler) shouldSuppressSearchPeople(ctx context.Context, session
 
 	media, err := h.content.SearchItems(ctx, session, SearchItemsOptions{
 		Query:     raw,
-		ItemTypes: []string{"movie", "series"},
+		ItemTypes: []string{itemTypeMovie, itemTypeSeries},
 		Limit:     5,
 		SkipTotal: true,
 	})

@@ -33,7 +33,7 @@ func ffmpegBinary() string {
 			resolvedFFmpegPath = jellyfinPath
 			return
 		}
-		resolvedFFmpegPath = "ffmpeg"
+		resolvedFFmpegPath = ffmpegComponent
 	})
 	return resolvedFFmpegPath
 }
@@ -63,7 +63,7 @@ func supportsDoviRPUFilter(bin string) bool {
 	out, err := exec.Command(bin, "-hide_banner", "-bsfs").Output()
 	available := err == nil && bytes.Contains(out, []byte("dovi_rpu"))
 	if !available {
-		slog.Warn("ffmpeg lacks the dovi_rpu bitstream filter (needs FFmpeg 7.1+); validated Profile 7 HDR10 remux is disabled", "ffmpeg", bin)
+		slog.Warn("ffmpeg lacks the dovi_rpu bitstream filter (needs FFmpeg 7.1+); validated Profile 7 HDR10 remux is disabled", ffmpegComponent, bin)
 	}
 	if doviRPUCache == nil {
 		doviRPUCache = make(map[string]bool)

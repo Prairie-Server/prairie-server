@@ -105,7 +105,7 @@ const episodeCatalogActiveLibraryExists = `EXISTS (
 var episodeCatalogBaseRelation = fmt.Sprintf(episodeCatalogSelectBody, episodeCatalogActiveLibraryExists)
 
 func isEpisodeCatalogScope(scope string) bool {
-	return scope == "episode"
+	return scope == itemTypeEpisode
 }
 
 func catalogBaseRelationForScope(scope string) string {

@@ -127,10 +127,10 @@ func ResolveHWAccelWithFFmpeg(hwAccel string, ffmpegPath string) string {
 			} else {
 				slog.Info("hw_accel=auto: NVIDIA device detected, using NVENC")
 			}
-			return "nvenc"
+			return hwAccelNVENC
 		} else {
 			slog.Warn("hw_accel=auto: NVIDIA device detected but FFmpeg NVENC probe failed",
-				"ffmpeg", normalizeFFmpegPath(ffmpegPath), "reason", reason)
+				ffmpegComponent, normalizeFFmpegPath(ffmpegPath), "reason", reason)
 		}
 	}
 
@@ -141,7 +141,7 @@ func ResolveHWAccelWithFFmpeg(hwAccel string, ffmpegPath string) string {
 
 	if vaapiDevice != "" {
 		slog.Info("hw_accel=auto: non-Intel GPU detected, using VAAPI", "device", vaapiDevice)
-		return "vaapi"
+		return hwAccelVAAPI
 	}
 
 	slog.Info("hw_accel=auto: no compatible GPU devices found, using software encoding")

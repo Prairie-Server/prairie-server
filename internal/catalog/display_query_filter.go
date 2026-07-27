@@ -114,9 +114,9 @@ func validateDisplayFilterValue(field string, rule QueryRule) error {
 			return fmt.Errorf("display_query_definition type value must be a non-empty string")
 		}
 		switch value {
-		case "all", "movie", "series":
+		case "all", itemTypeMovie, itemTypeSeries:
 		default:
-			return fmt.Errorf("display_query_definition type value must be one of %q, %q, or %q", "all", "movie", "series")
+			return fmt.Errorf("display_query_definition type value must be one of %q, %q, or %q", "all", itemTypeMovie, itemTypeSeries)
 		}
 	}
 	return nil

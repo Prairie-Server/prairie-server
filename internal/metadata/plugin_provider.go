@@ -167,7 +167,7 @@ func (p *PluginProvider) Name() string {
 }
 
 func (p *PluginProvider) ForTypes() []string {
-	return []string{"movie", "series"}
+	return []string{matchContentTypeMovie, matchContentTypeSeries}
 }
 
 func (p *PluginProvider) Search(ctx context.Context, query SearchQuery) ([]SearchResult, error) {

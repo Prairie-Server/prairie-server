@@ -363,8 +363,8 @@ func (s *Scanner) emptyCleanupDecision(
 		}
 	}
 	if !allowed {
-		slog.WarnContext(ctx, mediaKind+" scan: empty roots still have cataloged files; cleanup requires confirmation",
-			"component", "scanner", "folder_id", folder.ID, "full_scan", fullScan)
+		slog.WarnContext(ctx, "scan: empty roots still have cataloged files; cleanup requires confirmation",
+			"component", "scanner", "media_kind", mediaKind, "folder_id", folder.ID, "full_scan", fullScan)
 	}
 	return allowed, wholeScanEmpty && !allowed, nil
 }

@@ -158,7 +158,7 @@ func validateSectionConfig(sectionType sections.SectionType, config json.RawMess
 	}
 
 	cfg := sections.ParseConfigFilters(config)
-	if cfg.FilterType != "" && cfg.FilterType != "movie" && cfg.FilterType != "series" && cfg.FilterType != "audiobook" {
+	if cfg.FilterType != "" && cfg.FilterType != itemTypeMovie && cfg.FilterType != itemTypeSeries && cfg.FilterType != "audiobook" {
 		return "filter_type must be 'movie', 'series', or 'audiobook'", false
 	}
 	if _, err := sections.ParseContinueType(config); err != nil {
@@ -194,7 +194,7 @@ func validateSectionScope(scope string, libraryID *int) (string, bool) {
 		if libraryID != nil {
 			return "library_id must not be set for home sections", false
 		}
-	case "library":
+	case sectionTypeLibrary:
 		if libraryID == nil {
 			return "library_id is required for library sections", false
 		}
@@ -773,7 +773,7 @@ func (h *SectionHandler) loadResolvedLibrarySections(r *http.Request, libraryID 
 	profileID := apimw.GetProfileID(r.Context())
 	userID := apimw.GetUserID(r.Context())
 
-	adminSections, err := h.repo.ListByScope(r.Context(), "library", &libraryID)
+	adminSections, err := h.repo.ListByScope(r.Context(), sectionTypeLibrary, &libraryID)
 	if err != nil {
 		return nil, catalog.AccessFilter{}, profileID, err
 	}
@@ -794,7 +794,7 @@ func (h *SectionHandler) loadResolvedLibrarySections(r *http.Request, libraryID 
 		store, storeErr := h.StoreProvider.ForUser(r.Context(), userID)
 		if storeErr == nil {
 			libStr := strconv.Itoa(libraryID)
-			userOverrides, _ := store.ListSectionOverrides(r.Context(), profileID, "library", libStr)
+			userOverrides, _ := store.ListSectionOverrides(r.Context(), profileID, sectionTypeLibrary, libStr)
 			overrides = toSectionOverrides(userOverrides)
 		}
 	}
@@ -1294,7 +1294,7 @@ func (h *SectionHandler) listSectionMangaChapterItemMeta(ctx context.Context, it
 	ids := make([]string, 0)
 	seen := make(map[string]struct{})
 	for _, item := range items {
-		if item == nil || item.Type != "ebook" || strings.TrimSpace(item.ContentID) == "" {
+		if item == nil || item.Type != itemTypeEbook || strings.TrimSpace(item.ContentID) == "" {
 			continue
 		}
 		if _, ok := seen[item.ContentID]; ok {
@@ -1320,7 +1320,7 @@ func (h *SectionHandler) listSectionEpisodeItemMeta(ctx context.Context, withIte
 	seen := make(map[string]struct{})
 	for _, section := range withItems {
 		for _, item := range section.Items {
-			if item == nil || item.Type != "episode" || strings.TrimSpace(item.ContentID) == "" {
+			if item == nil || item.Type != itemTypeEpisode || strings.TrimSpace(item.ContentID) == "" {
 				continue
 			}
 			if section.ItemMeta != nil {
@@ -1597,11 +1597,11 @@ func (h *SectionHandler) HandleRestoreDefaults(w http.ResponseWriter, r *http.Re
 	if req.Scope == "" {
 		req.Scope = "home"
 	}
-	if req.Scope != "home" && req.Scope != "library" {
+	if req.Scope != "home" && req.Scope != sectionTypeLibrary {
 		writeError(w, http.StatusBadRequest, "bad_request", "Scope must be 'home' or 'library'")
 		return
 	}
-	if req.Scope == "library" && req.LibraryID == nil {
+	if req.Scope == sectionTypeLibrary && req.LibraryID == nil {
 		writeError(w, http.StatusBadRequest, "bad_request", "library_id is required for library scope")
 		return
 	}

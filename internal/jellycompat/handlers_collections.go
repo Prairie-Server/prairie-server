@@ -71,7 +71,7 @@ func (h *ItemsHandler) collectionsView() baseItemDTO {
 	// Advertise a Primary image tag so clients fetch the generated "Collections"
 	// gradient tile; the seed matches serveCollectionsViewImage.
 	primaryTag := h.mapper.imageTagSigner.Tag(
-		imageTagSeed(collectionsViewID, "Primary", compatCardImageSize, generatedPosterSeed(collectionsViewCaption), "", time.Time{}),
+		imageTagSeed(collectionsViewID, imageTypePrimary, compatCardImageSize, generatedPosterSeed(collectionsViewCaption), "", time.Time{}),
 		generatedPosterSeed(collectionsViewCaption),
 	)
 	posterAspect := 2.0 / 3.0 // portrait tile; match the generated poster so clients don't square-crop
@@ -85,7 +85,7 @@ func (h *ItemsHandler) collectionsView() baseItemDTO {
 		ServerID:                h.mapper.serverID,
 		SortName:                "collections",
 		PrimaryImageAspectRatio: &posterAspect,
-		ImageTags:               map[string]string{"Primary": primaryTag},
+		ImageTags:               map[string]string{imageTypePrimary: primaryTag},
 		UserData: &itemUserDataDTO{
 			Key:    collectionsViewID,
 			ItemID: collectionsViewID,
@@ -194,18 +194,18 @@ func (h *ItemsHandler) boxSetFromCollection(ctx context.Context, c *models.Libra
 	imgTags := map[string]string{}
 	if posterURL := h.presignCollectionPoster(ctx, c.PosterURL); posterURL != "" {
 		if h.images != nil {
-			h.images.RememberSized(routeID, "Primary", posterURL, compatCardImageSize)
+			h.images.RememberSized(routeID, imageTypePrimary, posterURL, compatCardImageSize)
 		}
-		imgTags["Primary"] = h.mapper.imageTagSigner.Tag(
-			imageTagSeed(routeID, "Primary", compatCardImageSize, c.PosterURL, "", time.Time{}),
+		imgTags[imageTypePrimary] = h.mapper.imageTagSigner.Tag(
+			imageTagSeed(routeID, imageTypePrimary, compatCardImageSize, c.PosterURL, "", time.Time{}),
 			posterURL,
 		)
 	} else {
 		// No stored poster: advertise a Primary tag anyway so clients request the
 		// generated gradient fallback instead of showing a blank card. The seed
 		// matches collectionImageTagSeed's generated branch.
-		imgTags["Primary"] = h.mapper.imageTagSigner.Tag(
-			imageTagSeed(routeID, "Primary", compatCardImageSize, generatedPosterSeed(c.Title), "", time.Time{}),
+		imgTags[imageTypePrimary] = h.mapper.imageTagSigner.Tag(
+			imageTagSeed(routeID, imageTypePrimary, compatCardImageSize, generatedPosterSeed(c.Title), "", time.Time{}),
 			generatedPosterSeed(c.Title),
 		)
 	}

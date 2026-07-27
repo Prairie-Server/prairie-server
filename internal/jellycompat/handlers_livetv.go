@@ -592,7 +592,7 @@ func (h *LiveTVHandler) HandleRecordings(w http.ResponseWriter, r *http.Request)
 			ImageTags:    map[string]string{},
 			UserData:     &itemUserDataDTO{Key: rec.ID, ItemID: h.codec.EncodeStringID(EncodedIDLiveTVTimer, rec.ID)},
 			LocationType: "FileSystem",
-			MediaType:    "Video",
+			MediaType:    streamTypeVideo,
 		})
 	}
 	writeJSON(w, http.StatusOK, queryResultDTO{
@@ -758,10 +758,10 @@ func (h *LiveTVHandler) PlaybackMediaSource(ctx context.Context, session *Sessio
 		MediaAttachments:     []map[string]any{},
 		MediaStreams: []mediaStreamDTO{{
 			Index:        0,
-			Type:         "Video",
+			Type:         streamTypeVideo,
 			Codec:        "mpeg2video",
 			IsDefault:    true,
-			DisplayTitle: "Video",
+			DisplayTitle: streamTypeVideo,
 		}},
 	}
 	if autoOpen {
@@ -821,10 +821,10 @@ func (h *LiveTVHandler) mediaSourceForOpenStream(ctx context.Context, liveStream
 		MediaAttachments:     []map[string]any{},
 		MediaStreams: []mediaStreamDTO{{
 			Index:        0,
-			Type:         "Video",
+			Type:         streamTypeVideo,
 			Codec:        "mpeg2video",
 			IsDefault:    true,
-			DisplayTitle: "Video",
+			DisplayTitle: streamTypeVideo,
 		}},
 	}, true
 }
@@ -890,10 +890,10 @@ func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session,
 		MediaAttachments:     []map[string]any{},
 		MediaStreams: []mediaStreamDTO{{
 			Index:        0,
-			Type:         "Video",
+			Type:         streamTypeVideo,
 			Codec:        "mpeg2video",
 			IsDefault:    true,
-			DisplayTitle: "Video",
+			DisplayTitle: streamTypeVideo,
 		}},
 	}, nil
 }
@@ -923,7 +923,7 @@ func (h *LiveTVHandler) channelDTO(ch livetv.Channel) baseItemDTO {
 		ChannelNumber: number,
 		IsFolder:      false,
 		IsHD:          ch.HD,
-		MediaType:     "Video",
+		MediaType:     streamTypeVideo,
 		LocationType:  "Remote",
 		ChannelID:     &id,
 		ImageTags:     map[string]string{},
@@ -960,7 +960,7 @@ func (h *LiveTVHandler) programDTO(p livetv.Program) baseItemDTO {
 			Key:    p.ID,
 			ItemID: id,
 		},
-		MediaType:    "Video",
+		MediaType:    streamTypeVideo,
 		LocationType: "Remote",
 	}
 }

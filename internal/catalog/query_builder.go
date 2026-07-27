@@ -264,19 +264,19 @@ func (qb *QueryBuilder) BuildSortPlan(sortConfig QuerySort) (QuerySortPlan, erro
 			qb.alias,
 		)
 		return plan, nil
-	case "resolution":
+	case filterFieldResolution:
 		joinSQL, args := qb.mediaFileSortJoin("max_resolution_rank", qb.resolutionRankExpr())
 		plan.Joins = []string{joinSQL}
 		plan.Args = args
 		plan.OrderBy = qb.orderByExpr("sort_files.max_resolution_rank", dir, true, titleExpr)
 		return plan, nil
-	case "bitrate":
+	case filterFieldBitrate:
 		joinSQL, args := qb.mediaFileSortJoin("max_bitrate", "MAX(mf.bitrate)")
 		plan.Joins = []string{joinSQL}
 		plan.Args = args
 		plan.OrderBy = qb.orderByExpr("sort_files.max_bitrate", dir, true, titleExpr)
 		return plan, nil
-	case "progress":
+	case filterFieldProgress:
 		expr, joins, args := qb.progressSortPlan()
 		plan.Joins = joins
 		plan.Args = args
@@ -299,15 +299,15 @@ func (qb *QueryBuilder) BuildSortPlan(sortConfig QuerySort) (QuerySortPlan, erro
 		plan.Joins = joins
 		plan.OrderBy = qb.orderByExpr(expr, dir, true, titleExpr)
 		return plan, nil
-	case "author":
+	case filterFieldAuthor:
 		plan.Joins = []string{qb.personKindSortJoin(models.PersonKindAuthor, "sort_author")}
 		plan.OrderBy = qb.orderByExpr("sort_author.name", dir, true, titleExpr)
 		return plan, nil
-	case "narrator":
+	case filterFieldNarrator:
 		plan.Joins = []string{qb.personKindSortJoin(models.PersonKindNarrator, "sort_narrator")}
 		plan.OrderBy = qb.orderByExpr("sort_narrator.name", dir, true, titleExpr)
 		return plan, nil
-	case "series":
+	case itemTypeSeries:
 		plan.Joins = []string{fmt.Sprintf(
 			"LEFT JOIN %s sort_series ON sort_series.content_id = %s.content_id",
 			qb.bookSeriesTable(),
@@ -392,35 +392,35 @@ func (qb *QueryBuilder) buildRule(rule QueryRule) (string, error) {
 		return qb.buildPersonClause(models.PersonKindWriter, rule)
 	case "producer":
 		return qb.buildPersonClause(models.PersonKindProducer, rule)
-	case "author":
+	case filterFieldAuthor:
 		return qb.buildPersonClause(models.PersonKindAuthor, rule)
-	case "narrator":
+	case filterFieldNarrator:
 		return qb.buildPersonClause(models.PersonKindNarrator, rule)
-	case "series":
+	case itemTypeSeries:
 		return qb.buildBookSeriesClause(rule)
-	case "watched":
+	case displayFilterFieldWatched:
 		return qb.buildWatchedClause(rule)
 	case "favorited":
 		return qb.buildFavoriteClause(rule)
 	case "in_watchlist":
 		return qb.buildWatchlistClause(rule)
-	case "in_progress":
+	case filterFieldInProgress:
 		return qb.buildInProgressClause(rule)
-	case "last_watched":
+	case filterFieldLastWatched:
 		return qb.buildLastWatchedClause(rule)
 	case "added_at":
 		return qb.buildAddedAtClause(rule)
 	case "release_date":
 		return qb.buildReleaseDateClause(rule)
-	case "resolution":
+	case filterFieldResolution:
 		return qb.buildResolutionClause(rule)
 	case "hdr":
 		return qb.buildMediaFileEqualityClause("mf.hdr", rule)
-	case "dolby_vision":
+	case filterFieldDolbyVision:
 		return qb.buildDolbyVisionClause(rule)
-	case "bitrate":
+	case filterFieldBitrate:
 		return qb.buildMediaFileComparisonClause("mf.bitrate", rule)
-	case "audio_language":
+	case filterFieldAudioLanguage:
 		return qb.buildAudioLanguageClause(rule)
 	case "subtitle_language":
 		return qb.buildSubtitleLanguageClause(rule)
@@ -458,7 +458,7 @@ func (qb *QueryBuilder) buildRule(rule QueryRule) (string, error) {
 		clause := fmt.Sprintf("%s >= $%d AND %s <= $%d", column, qb.argIdx, column, qb.argIdx+1)
 		qb.argIdx += 2
 		return clause, nil
-	case "in_last":
+	case filterOpInLast:
 		duration, ok := rule.Value.(string)
 		if !ok {
 			return "", fmt.Errorf("in_last requires a duration string like '30d'")
@@ -515,7 +515,7 @@ func (qb *QueryBuilder) personKindSortJoin(kind models.PersonKind, alias string)
 }
 
 func (qb *QueryBuilder) bookSeriesTable() string {
-	if qb.mediaScope == "ebook" {
+	if qb.mediaScope == itemTypeEbook {
 		return "ebook_series"
 	}
 	return "audiobook_series"
@@ -748,7 +748,7 @@ func (qb *QueryBuilder) buildSameFileTechnicalClause(group QueryGroup) (string, 
 
 func (qb *QueryBuilder) buildTechnicalMediaFilePredicate(rule QueryRule, alias string) (string, error) {
 	switch rule.Field {
-	case "resolution":
+	case filterFieldResolution:
 		value, ok := rule.Value.(string)
 		if !ok {
 			return "", fmt.Errorf("resolution requires a string value")
@@ -766,7 +766,7 @@ func (qb *QueryBuilder) buildTechnicalMediaFilePredicate(rule QueryRule, alias s
 		predicate := fmt.Sprintf("%s.hdr = $%d", alias, qb.argIdx)
 		qb.argIdx++
 		return predicate, nil
-	case "dolby_vision":
+	case filterFieldDolbyVision:
 		value, ok := rule.Value.(bool)
 		if !ok {
 			return "", fmt.Errorf("dolby_vision requires a boolean value")
@@ -780,9 +780,9 @@ func (qb *QueryBuilder) buildTechnicalMediaFilePredicate(rule QueryRule, alias s
 			return "NOT (" + predicate + ")", nil
 		}
 		return predicate, nil
-	case "bitrate":
+	case filterFieldBitrate:
 		return qb.buildMediaFileInlineComparisonPredicate(alias+".bitrate", rule)
-	case "audio_language":
+	case filterFieldAudioLanguage:
 		value, ok := rule.Value.(string)
 		if !ok {
 			return "", fmt.Errorf("audio_language requires a string value")
@@ -845,7 +845,7 @@ func isSameFileTechnicalRule(rule QueryRule) bool {
 		return false
 	}
 	switch rule.Field {
-	case "resolution", "hdr", "dolby_vision", "bitrate", "audio_language", "subtitle_language":
+	case filterFieldResolution, "hdr", filterFieldDolbyVision, filterFieldBitrate, filterFieldAudioLanguage, "subtitle_language":
 		return true
 	default:
 		return false
@@ -966,7 +966,7 @@ func (qb *QueryBuilder) buildInProgressClause(rule QueryRule) (string, error) {
 	if !ok {
 		return "", fmt.Errorf("in_progress requires a boolean value")
 	}
-	if qb.mediaScope == "ebook" {
+	if qb.mediaScope == itemTypeEbook {
 		return qb.buildEbookInProgressClause(value), nil
 	}
 	qb.args = append(qb.args, qb.userID, qb.profileID)
@@ -1043,7 +1043,7 @@ func (qb *QueryBuilder) buildLastWatchedClause(rule QueryRule) (string, error) {
 		clause := fmt.Sprintf("%s >= $%d::timestamptz AND %s <= $%d::timestamptz", expr, qb.argIdx, expr, qb.argIdx+1)
 		qb.argIdx += 2
 		return clause, nil
-	case "in_last":
+	case filterOpInLast:
 		duration, ok := rule.Value.(string)
 		if !ok {
 			return "", fmt.Errorf("in_last requires a duration string like '30d'")
@@ -1072,7 +1072,7 @@ func (qb *QueryBuilder) buildAddedAtClause(rule QueryRule) (string, error) {
 		return qb.buildTypedComparisonClause(column, "<=", rule.Value, "timestamptz"), nil
 	case "between":
 		return qb.buildTypedBetweenClause(column, rule.Value, "timestamptz")
-	case "in_last":
+	case filterOpInLast:
 		duration, ok := rule.Value.(string)
 		if !ok {
 			return "", fmt.Errorf("in_last requires a duration string like '30d'")
@@ -1101,7 +1101,7 @@ func (qb *QueryBuilder) buildReleaseDateClause(rule QueryRule) (string, error) {
 		return qb.buildTypedComparisonClause(column, "<=", rule.Value, "date"), nil
 	case "between":
 		return qb.buildTypedBetweenClause(column, rule.Value, "date")
-	case "in_last":
+	case filterOpInLast:
 		duration, ok := rule.Value.(string)
 		if !ok {
 			return "", fmt.Errorf("in_last requires a duration string like '30d'")
@@ -1142,14 +1142,14 @@ func (qb *QueryBuilder) userStateCompletionClause() string {
 	rowID := qb.alias + ".content_id"
 
 	switch qb.mediaScope {
-	case "ebook":
+	case itemTypeEbook:
 		return qb.ebookLeafCompletionSQL(rowID, base)
-	case "series":
+	case itemTypeSeries:
 		return qb.episodeRollupCompletionSQL("series_id", qb.alias, base)
 	// No "season" case: season is not a valid media_scope, so a season-scoped
 	// query never reaches here. Season rows are encountered only under unscoped
 	// queries and are rolled up by the mi.type = 'season' branch below.
-	case "movie", "episode", "audiobook", "manga":
+	case itemTypeMovie, itemTypeEpisode, "audiobook", "manga":
 		// Leaf kinds complete via watch progress / completed history. Manga has
 		// no dedicated read-state source yet; it stays on the leaf path until
 		// manga catalog filtering is finalized rather than getting a
@@ -1490,7 +1490,7 @@ func (qb *QueryBuilder) consumeIntArgs(values []int) ([]string, []any) {
 }
 
 func (qb *QueryBuilder) progressSortPlan() (string, []string, []any) {
-	if qb.mediaScope == "ebook" {
+	if qb.mediaScope == itemTypeEbook {
 		return qb.ebookProgressSortPlan()
 	}
 	joinSQL := fmt.Sprintf(
@@ -1550,7 +1550,7 @@ func (qb *QueryBuilder) ebookProgressSortPlan() (string, []string, []any) {
 }
 
 func (qb *QueryBuilder) dateViewedSortPlan() (string, []string, []any) {
-	if qb.mediaScope == "ebook" {
+	if qb.mediaScope == itemTypeEbook {
 		return qb.ebookDateViewedSortPlan()
 	}
 	historyJoin := fmt.Sprintf(
@@ -1632,7 +1632,7 @@ func (qb *QueryBuilder) ebookDateViewedSortPlan() (string, []string, []any) {
 }
 
 func (qb *QueryBuilder) playsSortPlan() (string, []string, []any) {
-	if qb.mediaScope == "ebook" {
+	if qb.mediaScope == itemTypeEbook {
 		return qb.ebookPlaysSortPlan()
 	}
 	historyJoin := fmt.Sprintf(

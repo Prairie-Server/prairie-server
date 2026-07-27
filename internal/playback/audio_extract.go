@@ -201,7 +201,7 @@ func audioExtractionFFmpegBinary(ffmpegPath string) string {
 	if ffmpegPath != "" {
 		return ffmpegPath
 	}
-	return "ffmpeg"
+	return ffmpegComponent
 }
 
 // parseSegmentList reads ffmpeg's CSV segment list (filename,start,end per

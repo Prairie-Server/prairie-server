@@ -124,10 +124,10 @@ const compatNoMatchType = "__compat_none__"
 // type filter may pass through ("season" matches no media_items row but is
 // kept so season-typed filters keep their empty-result semantics).
 var compatAllowedTypeSet = map[string]struct{}{
-	"movie":   {},
-	"series":  {},
-	"episode": {},
-	"season":  {},
+	itemTypeMovie:   {},
+	itemTypeSeries:  {},
+	itemTypeEpisode: {},
+	"season":        {},
 }
 
 // compatScopedSearchTypes clamps an item-type filter to the types the compat
@@ -642,7 +642,7 @@ func (s *directContentService) enrichDetailUserData(ctx context.Context, store u
 	// its episodes (mirrors applySeasonUserData) to give clients Played/
 	// UnplayedItemCount at the series level. Postgres-backed stores aggregate
 	// the rollup in SQL; the chunked per-episode path remains as fallback.
-	if result.UserData == nil && strings.EqualFold(result.Type, "series") && s.episodeRepo != nil {
+	if result.UserData == nil && strings.EqualFold(result.Type, itemTypeSeries) && s.episodeRepo != nil {
 		if rollupStore, ok := store.(userstore.SeriesEpisodeRollupStore); ok {
 			counts, err := rollupStore.SeriesEpisodeWatchCounts(ctx, profileID, []string{contentID})
 			if err == nil {
@@ -739,7 +739,7 @@ func (s *directContentService) GetItemDetailsByIDs(ctx context.Context, session 
 	if store != nil {
 		leafIDs := make([]string, 0, len(details))
 		for id, detail := range details {
-			if isCompatExcludedMediaType(detail.Type) || strings.EqualFold(detail.Type, "series") {
+			if isCompatExcludedMediaType(detail.Type) || strings.EqualFold(detail.Type, itemTypeSeries) {
 				continue
 			}
 			leafIDs = append(leafIDs, id)
@@ -766,7 +766,7 @@ func (s *directContentService) GetItemDetailsByIDs(ctx context.Context, session 
 		upstream := itemDetailToUpstream(detail)
 		if store != nil {
 			switch {
-			case strings.EqualFold(detail.Type, "series"), leafBatchFailed:
+			case strings.EqualFold(detail.Type, itemTypeSeries), leafBatchFailed:
 				s.enrichDetailUserData(ctx, store, session.ProfileID, id, &upstream)
 			default:
 				var wp *userstore.WatchProgress
@@ -1024,7 +1024,7 @@ func (s *directContentService) enrichSeriesListUserData(ctx context.Context, ses
 	}
 	seriesIDs := make([]string, 0, len(items))
 	for i := range items {
-		if items[i].UserData == nil && items[i].ContentID != "" && strings.EqualFold(items[i].Type, "series") {
+		if items[i].UserData == nil && items[i].ContentID != "" && strings.EqualFold(items[i].Type, itemTypeSeries) {
 			seriesIDs = append(seriesIDs, items[i].ContentID)
 		}
 	}
@@ -1050,7 +1050,7 @@ func (s *directContentService) enrichSeriesListUserData(ctx context.Context, ses
 		counts, err := rollupStore.SeriesEpisodeWatchCounts(ctx, session.ProfileID, seriesIDs)
 		if err == nil {
 			for i := range items {
-				if items[i].UserData != nil || !strings.EqualFold(items[i].Type, "series") {
+				if items[i].UserData != nil || !strings.EqualFold(items[i].Type, itemTypeSeries) {
 					continue
 				}
 				if c, ok := counts[items[i].ContentID]; ok {
@@ -1072,7 +1072,7 @@ func (s *directContentService) enrichSeriesListUserData(ctx context.Context, ses
 	}
 	progressMap := chunkedProgressByMediaItems(ctx, store, session.ProfileID, episodeIDs)
 	for i := range items {
-		if items[i].UserData != nil || !strings.EqualFold(items[i].Type, "series") {
+		if items[i].UserData != nil || !strings.EqualFold(items[i].Type, itemTypeSeries) {
 			continue
 		}
 		if episodes, ok := episodesBySeries[items[i].ContentID]; ok {

@@ -632,10 +632,10 @@ func NormalizeQualityV3(value string) (string, bool) {
 		return "auto", false
 	case "original", "source", "max":
 		return "original", false
-	case "2160p", "4k", "uhd":
-		return "2160p", false
-	case "1080p", "fhd":
-		return "1080p", false
+	case resolution2160p, "4k", "uhd":
+		return resolution2160p, false
+	case resolution1080p, "fhd":
+		return resolution1080p, false
 	case "720p", "hd":
 		return "720p", false
 	case "480p", "sd":
@@ -769,7 +769,7 @@ func validateCapabilitiesV3(c *ClientCodecCapabilitiesV3, ctx *ClientPlaybackCon
 			transformation.Executor = strings.ToLower(strings.TrimSpace(transformation.Executor))
 			transformation.RecipeVersion = strings.TrimSpace(transformation.RecipeVersion)
 			if transformation.Name == "" || len(transformation.Name) > 64 ||
-				(transformation.Executor != "client" && transformation.Executor != "server") ||
+				(transformation.Executor != "client" && transformation.Executor != nodeRoleServer) ||
 				transformation.RecipeVersion == "" || len(transformation.RecipeVersion) > 32 ||
 				len(transformation.ValidatedClaims) > 32 {
 				return errors.New("invalid engine transformation capability")

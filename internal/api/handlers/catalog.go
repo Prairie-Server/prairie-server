@@ -371,7 +371,7 @@ func groupedCatalogEntryKey(item *models.MediaItem, summary *catalog.WorkSummary
 }
 
 func catalogItemCanGroupByWork(item *models.MediaItem) bool {
-	return item != nil && (item.Type == "ebook" || item.Type == "audiobook")
+	return item != nil && (item.Type == itemTypeEbook || item.Type == "audiobook")
 }
 
 func applyWorkSummaryToCatalogItem(item *itemListResponse, summary *catalog.WorkSummary) {

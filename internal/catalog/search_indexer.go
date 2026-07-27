@@ -816,7 +816,7 @@ func (i *CatalogSearchIndexer) attachDocumentVectors(ctx context.Context, docs [
 	}
 	ids := make([]string, 0, len(docs))
 	for _, doc := range docs {
-		if doc.Type != "episode" && strings.TrimSpace(doc.ContentID) != "" {
+		if doc.Type != itemTypeEpisode && strings.TrimSpace(doc.ContentID) != "" {
 			ids = append(ids, doc.ContentID)
 		}
 	}
@@ -872,7 +872,7 @@ func setCatalogSearchDocumentVectors(docs []catalogSearchDocument, vectors map[s
 	}
 	count := 0
 	for idx := range docs {
-		if docs[idx].Type == "episode" {
+		if docs[idx].Type == itemTypeEpisode {
 			// Episodes are keyword-only, but a userProvided embedder requires
 			// every document to either supply vectors or opt out explicitly
 			// with `_vectors.<embedder>: null`; omitting _vectors entirely

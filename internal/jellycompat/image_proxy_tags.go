@@ -159,7 +159,7 @@ func appendCompatImageProxyTags(codec *ResourceIDCodec, value any) bool {
 
 func compatMapHasPrimaryImageTag(value map[string]any) bool {
 	if tags, ok := value["ImageTags"].(map[string]any); ok {
-		if tag, ok := tags["Primary"].(string); ok && strings.TrimSpace(tag) != "" {
+		if tag, ok := tags[imageTypePrimary].(string); ok && strings.TrimSpace(tag) != "" {
 			return true
 		}
 	}

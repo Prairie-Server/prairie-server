@@ -278,13 +278,13 @@ func PlanPlaybackV3(input PlannerInputV3) PlannerResultV3 {
 			plan.EffectiveRecipe.AudioChannels = intPointerV3(2)
 			plan.EffectiveRecipe.AudioLayout = "stereo"
 			plan.Claims.Audio = AudioClaimsV3{Codec: "aac", Reason: "server_audio_adaptation"}
-			plan.Transformations = append(plan.Transformations, TransformationV3{Name: "audio_to_aac", Executor: "server", RecipeVersion: "1", ValidatedClaims: []string{"media3_audio_decode"}})
+			plan.Transformations = append(plan.Transformations, TransformationV3{Name: "audio_to_aac", Executor: nodeRoleServer, RecipeVersion: "1", ValidatedClaims: []string{"media3_audio_decode"}})
 			plan.DegradationWarnings = append(plan.DegradationWarnings, DegradationWarningV3{Code: "audio_converted", Message: "The selected audio track is converted to AAC stereo."})
 			plan.DecisionReason = "audio_adaptation"
 		}
 		dvStrip := dvStripEligible && (source.DVProfile == 7 || !rangeOK)
 		if dvStrip {
-			plan.Transformations = append(plan.Transformations, TransformationV3{Name: "server_dv7_to_hdr10", Executor: "server", RecipeVersion: "1", ValidatedClaims: []string{"dolby_vision_metadata_removed", "hdr10_base_layer_preserved", "enhancement_layer_discarded"}})
+			plan.Transformations = append(plan.Transformations, TransformationV3{Name: "server_dv7_to_hdr10", Executor: nodeRoleServer, RecipeVersion: "1", ValidatedClaims: []string{"dolby_vision_metadata_removed", "hdr10_base_layer_preserved", "enhancement_layer_discarded"}})
 			plan.EffectiveRecipe.DynamicRange = "hdr10"
 			plan.Claims.Video = VideoClaimsV3{HDR10: true}
 			plan.DegradationWarnings = append(plan.DegradationWarnings, DegradationWarningV3{Code: "dolby_vision_removed", Message: "Dolby Vision metadata is removed and the validated HDR10 base layer is preserved."})
@@ -321,7 +321,7 @@ func PlanPlaybackV3(input PlannerInputV3) PlannerResultV3 {
 				plan.EffectiveRecipe.AudioChannels = intPointerV3(2)
 				plan.EffectiveRecipe.AudioLayout = "stereo"
 				plan.Claims.Audio = AudioClaimsV3{Codec: "aac", Reason: "device_hls_audio_adaptation"}
-				plan.Transformations = append(plan.Transformations, TransformationV3{Name: "audio_to_aac", Executor: "server", RecipeVersion: "1", ValidatedClaims: []string{"media3_audio_decode"}})
+				plan.Transformations = append(plan.Transformations, TransformationV3{Name: "audio_to_aac", Executor: nodeRoleServer, RecipeVersion: "1", ValidatedClaims: []string{"media3_audio_decode"}})
 				plan.DegradationWarnings = append(plan.DegradationWarnings, DegradationWarningV3{Code: "audio_converted", Message: "The selected audio track is converted to AAC stereo for this device's HLS route."})
 				appendAppliedQuirkV3(&plan, *audioQuirk, "")
 			}
@@ -347,7 +347,7 @@ func PlanPlaybackV3(input PlannerInputV3) PlannerResultV3 {
 				plan.EffectiveRecipe.AudioChannels = intPointerV3(hlsAudioChannels)
 				plan.EffectiveRecipe.AudioLayout = audioLayout
 				plan.Claims.Audio = AudioClaimsV3{Codec: "aac", Reason: "hls_audio_adaptation"}
-				plan.Transformations = append(plan.Transformations, TransformationV3{Name: "audio_to_aac", Executor: "server", RecipeVersion: "1", ValidatedClaims: []string{"media3_audio_decode"}})
+				plan.Transformations = append(plan.Transformations, TransformationV3{Name: "audio_to_aac", Executor: nodeRoleServer, RecipeVersion: "1", ValidatedClaims: []string{"media3_audio_decode"}})
 				plan.DegradationWarnings = append(plan.DegradationWarnings, DegradationWarningV3{Code: "audio_converted", Message: "The selected audio track is converted to AAC for HLS delivery."})
 			}
 			if !dvStrip {
@@ -422,8 +422,8 @@ func planVideoTranscodeV3(input PlannerInputV3, base PlanV3, source SourceDescri
 	plan.EffectiveRecipe.AudioChannels = intPointerV3(targetAudioChannels)
 	plan.EffectiveRecipe.AudioLayout = audioLayout
 	plan.Transformations = append(plan.Transformations,
-		TransformationV3{Name: "video_to_h264", Executor: "server", RecipeVersion: "1", ValidatedClaims: []string{"media3_h264_decode"}},
-		TransformationV3{Name: "audio_to_aac", Executor: "server", RecipeVersion: "1", ValidatedClaims: []string{"media3_audio_decode"}},
+		TransformationV3{Name: "video_to_h264", Executor: nodeRoleServer, RecipeVersion: "1", ValidatedClaims: []string{"media3_h264_decode"}},
+		TransformationV3{Name: "audio_to_aac", Executor: nodeRoleServer, RecipeVersion: "1", ValidatedClaims: []string{"media3_audio_decode"}},
 	)
 	plan.Claims.Audio = AudioClaimsV3{Codec: "aac", Passthrough: false, AtmosPreserved: false, Reason: "server_audio_adaptation"}
 	plan.Subtitle = subtitle.Decision
@@ -495,7 +495,7 @@ func is4KSourceV3(file *models.MediaFile, source SourceDescriptorV3) bool {
 	if file != nil {
 		resolution = strings.ToLower(strings.TrimSpace(file.Resolution))
 	}
-	return resolution == "2160p" || resolution == "4k" || resolution == "uhd" || source.Width >= 3840 || source.Height >= 2160
+	return resolution == resolution2160p || resolution == "4k" || resolution == "uhd" || source.Width >= 3840 || source.Height >= 2160
 }
 
 type QualityResultV3 struct {
@@ -738,9 +738,9 @@ func resolutionHeightV3(v string) int {
 func resolutionLabelV3(h int) string {
 	switch {
 	case h >= 2160:
-		return "2160p"
+		return resolution2160p
 	case h >= 1080:
-		return "1080p"
+		return resolution1080p
 	case h >= 720:
 		return "720p"
 	default:

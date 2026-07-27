@@ -45,7 +45,7 @@ func parseSearchTypes(rawValues []string) []string {
 		for part := range strings.SplitSeq(raw, ",") {
 			normalized := strings.ToLower(strings.TrimSpace(part))
 			switch normalized {
-			case "movie", "series", "season", "episode":
+			case itemTypeMovie, itemTypeSeries, itemTypeSeason, itemTypeEpisode:
 			default:
 				continue
 			}

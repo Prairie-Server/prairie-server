@@ -91,7 +91,7 @@ func (r *TransformationRegistryV3) WithAdvertised(advertised []TransformationV3)
 			for _, remote := range advertised {
 				if strings.EqualFold(strings.TrimSpace(remote.Name), spec.Name) &&
 					strings.TrimSpace(remote.RecipeVersion) == spec.RecipeVersion &&
-					strings.EqualFold(strings.TrimSpace(remote.Executor), "server") {
+					strings.EqualFold(strings.TrimSpace(remote.Executor), nodeRoleServer) {
 					spec.Available = true
 					changed = true
 					break
@@ -113,7 +113,7 @@ func (r *TransformationRegistryV3) Advertised() []TransformationV3 {
 	result := make([]TransformationV3, 0, len(r.entries))
 	for _, spec := range r.entries {
 		if spec.Available {
-			result = append(result, TransformationV3{Name: spec.Name, Executor: "server", RecipeVersion: spec.RecipeVersion, ValidatedClaims: append([]string(nil), spec.ValidatedClaims...)})
+			result = append(result, TransformationV3{Name: spec.Name, Executor: nodeRoleServer, RecipeVersion: spec.RecipeVersion, ValidatedClaims: append([]string(nil), spec.ValidatedClaims...)})
 		}
 	}
 	sort.Slice(result, func(i, j int) bool { return result[i].Name < result[j].Name })

@@ -264,9 +264,9 @@ func dimensionsFromResolutionV3(value string) (int, int) {
 	switch strings.ToLower(strings.TrimSpace(value)) {
 	case "4320p", "8k":
 		return 7680, 4320
-	case "2160p", "4k", "uhd":
+	case resolution2160p, "4k", "uhd":
 		return 3840, 2160
-	case "1080p", "fhd":
+	case resolution1080p, "fhd":
 		return 1920, 1080
 	case "720p", "hd":
 		return 1280, 720

@@ -96,7 +96,7 @@ func (r *Repository) ListByScope(ctx context.Context, scope string, libraryID *i
 	var query string
 	var args []any
 
-	if scope == "library" && libraryID != nil {
+	if scope == sectionTypeLibrary && libraryID != nil {
 		query = fmt.Sprintf("SELECT %s FROM page_sections WHERE scope = $1 AND library_id = $2 AND enabled = true ORDER BY position ASC", sectionColumns)
 		args = []any{scope, *libraryID}
 	} else {
@@ -118,7 +118,7 @@ func (r *Repository) ListByScopeAll(ctx context.Context, scope string, libraryID
 	var query string
 	var args []any
 
-	if scope == "library" && libraryID != nil {
+	if scope == sectionTypeLibrary && libraryID != nil {
 		query = fmt.Sprintf("SELECT %s FROM page_sections WHERE scope = $1 AND library_id = $2 ORDER BY position ASC", sectionColumns)
 		args = []any{scope, *libraryID}
 	} else {

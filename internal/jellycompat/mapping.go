@@ -43,8 +43,8 @@ func (m *mapper) viewFromLibrary(library upstreamUserLibrary) baseItemDTO {
 	imgTags := map[string]string{}
 	routeID := m.codec.EncodeIntID(EncodedIDLibrary, int64(library.ID))
 	if library.PosterPath != "" {
-		imgTags["Primary"] = m.imageTagSigner.Tag(
-			imageTagSeed(routeID, "Primary", compatCardImageSize, library.PosterPath, "", time.Time{}),
+		imgTags[imageTypePrimary] = m.imageTagSigner.Tag(
+			imageTagSeed(routeID, imageTypePrimary, compatCardImageSize, library.PosterPath, "", time.Time{}),
 			library.PosterURL,
 		)
 	}
@@ -103,7 +103,7 @@ func (m *mapper) itemFromList(item upstreamListItem, isFavorite bool, progress *
 	if item.Runtime > 0 {
 		dto.RunTimeTicks = minutesToTicks(item.Runtime)
 	}
-	if item.Type == "movie" || item.Type == "episode" {
+	if item.Type == itemTypeMovie || item.Type == itemTypeEpisode {
 		applyPlayableLocation(&dto, item.HasMediaFiles == nil || *item.HasMediaFiles)
 	}
 	if item.SeriesID != "" {
@@ -128,7 +128,7 @@ func (m *mapper) itemFromList(item upstreamListItem, isFavorite bool, progress *
 	}
 	primaryPath, primaryThumbhash := listItemPrimaryImageSeedParts(item)
 	if tags := imageTagsWithSeed(m.imageTagSigner,
-		imageTagSeed(item.ContentID, "Primary", compatCardImageSize, primaryPath, primaryThumbhash, item.UpdatedAt),
+		imageTagSeed(item.ContentID, imageTypePrimary, compatCardImageSize, primaryPath, primaryThumbhash, item.UpdatedAt),
 		item.PosterURL,
 	); tags != nil {
 		dto.ImageTags = tags
@@ -229,7 +229,7 @@ func (m *mapper) itemFromList(item upstreamListItem, isFavorite bool, progress *
 var (
 	stubDetailPerson      = personDTO{ID: "0", Name: ""}
 	stubDetailMediaSource = mediaSourceDTO{ID: "0"}
-	stubDetailMediaStream = mediaStreamDTO{Index: 0, Type: "Video"}
+	stubDetailMediaStream = mediaStreamDTO{Index: 0, Type: streamTypeVideo}
 )
 
 // stubDetailListFields sets the four detail-only fields on a list-mapped DTO
@@ -466,7 +466,7 @@ func (m *mapper) seasonFromUpstream(season upstreamSeason, seriesID string, isFa
 	}
 	dto.IndexNumber = &season.SeasonNumber
 	if tags := imageTagsWithSeed(m.imageTagSigner,
-		imageTagSeed(season.ContentID, "Primary", compatCardImageSize, season.PosterPath, season.PosterThumbhash, season.UpdatedAt),
+		imageTagSeed(season.ContentID, imageTypePrimary, compatCardImageSize, season.PosterPath, season.PosterThumbhash, season.UpdatedAt),
 		season.PosterURL,
 	); tags != nil {
 		dto.ImageTags = tags
@@ -478,7 +478,7 @@ func (m *mapper) episodeFromUpstream(ep upstreamEpisode, isFavorite bool, progre
 	dto := baseItemDTO{
 		ID:           m.codec.EncodeStringID(EncodedIDItem, ep.ContentID),
 		Type:         "Episode",
-		MediaType:    "Video",
+		MediaType:    streamTypeVideo,
 		Name:         ep.Title,
 		ServerID:     m.serverID,
 		Overview:     ep.Overview,
@@ -498,7 +498,7 @@ func (m *mapper) episodeFromUpstream(ep upstreamEpisode, isFavorite bool, progre
 		dto.ParentID = m.codec.EncodeStringID(EncodedIDSeason, ep.SeasonID)
 	}
 	if tags := imageTagsWithSeed(m.imageTagSigner,
-		imageTagSeed(ep.ContentID, "Primary", compatCardImageSize, ep.StillPath, ep.StillThumbhash, ep.UpdatedAt),
+		imageTagSeed(ep.ContentID, imageTypePrimary, compatCardImageSize, ep.StillPath, ep.StillThumbhash, ep.UpdatedAt),
 		ep.StillURL,
 	); tags != nil {
 		dto.ImageTags = tags
@@ -525,7 +525,7 @@ func (m *mapper) applySeriesImages(dto *baseItemDTO, series seriesImageSet) {
 	}
 	if series.PosterURL != "" {
 		dto.SeriesPrimaryImageTag = m.imageTagSigner.Tag(
-			imageTagSeed(series.ContentID, "Primary", compatCardImageSize, series.PosterPath, series.PosterThumbhash, series.UpdatedAt),
+			imageTagSeed(series.ContentID, imageTypePrimary, compatCardImageSize, series.PosterPath, series.PosterThumbhash, series.UpdatedAt),
 			series.PosterURL,
 		)
 	}
@@ -587,18 +587,18 @@ func playedPercentage(clampedPos, duration float64, played bool) float64 {
 
 func jellyfinItemType(native string) string {
 	switch strings.ToLower(native) {
-	case "movie":
+	case itemTypeMovie:
 		return "Movie"
-	case "series":
+	case itemTypeSeries:
 		return "Series"
-	case "episode":
+	case itemTypeEpisode:
 		return "Episode"
 	case "season":
 		return "Season"
 	case "extra":
 		// Local extras have no dedicated BaseItemKind; plain Video is what
 		// Jellyfin uses for special features.
-		return "Video"
+		return streamTypeVideo
 	default:
 		if native == "" {
 			return ""
@@ -611,7 +611,7 @@ func libraryCollectionType(native string) string {
 	switch native {
 	case "movies":
 		return "movies"
-	case "series":
+	case itemTypeSeries:
 		return "tvshows"
 	default:
 		return native
@@ -620,8 +620,8 @@ func libraryCollectionType(native string) string {
 
 func jellyfinMediaType(native string) string {
 	switch strings.ToLower(native) {
-	case "movie", "episode":
-		return "Video"
+	case itemTypeMovie, itemTypeEpisode:
+		return streamTypeVideo
 	default:
 		return ""
 	}
@@ -629,7 +629,7 @@ func jellyfinMediaType(native string) string {
 
 func jellyfinIsFolder(native string) bool {
 	switch strings.ToLower(native) {
-	case "series", "season":
+	case itemTypeSeries, "season":
 		return true
 	default:
 		return false
@@ -638,7 +638,7 @@ func jellyfinIsFolder(native string) bool {
 
 func isPlayableItemType(native string) bool {
 	switch strings.ToLower(native) {
-	case "movie", "episode":
+	case itemTypeMovie, itemTypeEpisode:
 		return true
 	default:
 		return false
@@ -666,10 +666,10 @@ func (m *mapper) namePairs(values []string, kind EncodedIDType) []namePairDTO {
 
 func primaryAspectRatio(native string) *float64 {
 	switch strings.ToLower(native) {
-	case "movie", "series":
+	case itemTypeMovie, itemTypeSeries:
 		value := 2.0 / 3.0 // portrait poster
 		return &value
-	case "episode":
+	case itemTypeEpisode:
 		value := 16.0 / 9.0 // landscape still
 		return &value
 	default:
@@ -788,7 +788,7 @@ func imageTagsWithSeed(signer *imageTagSigner, seed, imageURL string) map[string
 	if imageURL == "" {
 		return nil
 	}
-	return map[string]string{"Primary": signer.Tag(seed, imageURL)}
+	return map[string]string{imageTypePrimary: signer.Tag(seed, imageURL)}
 }
 
 func backdropTagsWithSeed(signer *imageTagSigner, seed, imageURL string) []string {
@@ -799,7 +799,7 @@ func backdropTagsWithSeed(signer *imageTagSigner, seed, imageURL string) []strin
 }
 
 func listItemPrimaryImageSeedParts(item upstreamListItem) (string, string) {
-	if item.Type == "episode" && item.StillPath != "" {
+	if item.Type == itemTypeEpisode && item.StillPath != "" {
 		return item.StillPath, item.StillThumbhash
 	}
 	return firstNonEmpty(item.PosterPath, item.StillPath), item.PosterThumbhash

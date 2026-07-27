@@ -620,7 +620,7 @@ func resolveItemsByIDs(h *PersonalDataHandler, r *http.Request, ids []string) ([
 					parent := parentByID[ep.SeriesID]
 					resp := itemListResponse{
 						ContentID:  ep.ContentID,
-						Type:       "episode",
+						Type:       itemTypeEpisode,
 						Title:      ep.Title,
 						RatingIMDB: ep.RatingIMDB,
 						Overview:   ep.Overview,
@@ -683,13 +683,13 @@ func (h *PersonalDataHandler) resolveHistoryRemovalMediaItemIDs(
 				return nil, err
 			}
 			switch item.Type {
-			case "movie", "ebook":
+			case itemTypeMovie, itemTypeEbook:
 				// Hiding an ebook gates ebook_reader_progress reads via
 				// user_history_hidden_items (updated_at <= hidden_before)
 				// without deleting the progress row, so the reader position
 				// survives: hidden is not the same as unread.
 				return []string{item.ContentID}, nil
-			case "series":
+			case itemTypeSeries:
 				return h.seriesEpisodeIDs(ctx, item.ContentID)
 			}
 		case err != nil && !errors.Is(err, catalog.ErrItemNotFound):

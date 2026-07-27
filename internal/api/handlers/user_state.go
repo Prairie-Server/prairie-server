@@ -59,12 +59,12 @@ func resolveItemUserStatesWithOptions(
 		seenContent[item.ContentID] = struct{}{}
 		contentIDs = append(contentIDs, item.ContentID)
 		switch item.Type {
-		case "series":
+		case itemTypeSeries:
 			if _, ok := seenSeries[item.ContentID]; !ok {
 				seenSeries[item.ContentID] = struct{}{}
 				seriesIDs = append(seriesIDs, item.ContentID)
 			}
-		case "season":
+		case itemTypeSeason:
 			if _, ok := seenSeason[item.ContentID]; !ok {
 				seenSeason[item.ContentID] = struct{}{}
 				seasonIDs = append(seasonIDs, item.ContentID)
@@ -141,11 +141,11 @@ func resolveItemUserStatesWithOptions(
 			InWatchlist: watchlistMap[item.ContentID],
 		}
 		switch item.Type {
-		case "series":
+		case itemTypeSeries:
 			state.Played = allEpisodesCompleted(seriesEpisodes[item.ContentID], progressMap)
-		case "season":
+		case itemTypeSeason:
 			state.Played = allEpisodesCompleted(seasonEpisodes[item.ContentID], progressMap)
-		case "ebook":
+		case itemTypeEbook:
 			state.Played = ebookProgressMap[item.ContentID].Progress >= models.EbookFinishedProgressThreshold
 		default:
 			state.Played = progressMap[item.ContentID].Completed

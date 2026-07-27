@@ -41,17 +41,17 @@ func NewUserDB(path string, userID int) (*UserDB, error) {
 
 	// Verify connection and PRAGMAs.
 	if err := db.Ping(); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("pinging sqlite %s: %w", path, err)
 	}
 
 	// Initialize schema.
 	if err := InitSchema(db); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("initializing schema %s: %w", path, err)
 	}
 	if err := runMigrations(db); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("migrating schema %s: %w", path, err)
 	}
 

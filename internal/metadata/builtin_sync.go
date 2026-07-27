@@ -11,10 +11,10 @@ import (
 // chain sync.
 func ContentLevelsForLibraryType(libraryType string) []string {
 	switch libraryType {
-	case "series":
-		return []string{"series", "season", "episode"}
-	case "movies", "movie":
-		return []string{"movie"}
+	case matchContentTypeSeries:
+		return []string{matchContentTypeSeries, "season", "episode"}
+	case libraryTypeMovies, matchContentTypeMovie:
+		return []string{matchContentTypeMovie}
 	case "audiobooks", "audiobook":
 		return []string{"audiobook"}
 	case "ebooks", "ebook":
@@ -22,7 +22,7 @@ func ContentLevelsForLibraryType(libraryType string) []string {
 	case "manga":
 		return []string{"manga"}
 	case "mixed":
-		return []string{"movie", "series", "season", "episode", "audiobook", "ebook"}
+		return []string{matchContentTypeMovie, matchContentTypeSeries, "season", "episode", "audiobook", "ebook"}
 	default:
 		return nil
 	}

@@ -231,7 +231,7 @@ func (h *CollectionHandler) HandleCapabilities(w http.ResponseWriter, r *http.Re
 		DisplayFilterFields: []string{"type", "watched"},
 		DisplayFilterPresets: collectionDisplayFilterPresets{
 			Watched: []string{"all", "watched", "unwatched"},
-			Media:   []string{"all", "movie", "series"},
+			Media:   []string{"all", itemTypeMovie, itemTypeSeries},
 		},
 	})
 }
@@ -942,7 +942,7 @@ func (h *CollectionHandler) HandleDeleteCollectionImage(w http.ResponseWriter, r
 		return
 	}
 	imageType := r.URL.Query().Get("type")
-	if imageType != "poster" {
+	if imageType != imageTypePoster {
 		writeError(w, http.StatusBadRequest, "bad_request", `type must be "poster"`)
 		return
 	}
@@ -994,7 +994,7 @@ func (h *CollectionHandler) posterInputProvided(r *http.Request, sourceURL strin
 	if r.MultipartForm == nil {
 		return false
 	}
-	_, ok := r.MultipartForm.File["poster"]
+	_, ok := r.MultipartForm.File[imageTypePoster]
 	return ok
 }
 
@@ -1012,7 +1012,7 @@ func (h *CollectionHandler) processCollectionPoster(
 
 	var fileData []byte
 	if isMultipart {
-		data, err := readCollectionImageMultipart(r, "poster")
+		data, err := readCollectionImageMultipart(r, imageTypePoster)
 		switch err {
 		case nil:
 			fileData = data
@@ -1036,10 +1036,10 @@ func (h *CollectionHandler) processCollectionPoster(
 	if h.S3GP == nil {
 		return fmt.Errorf("poster upload requires configured object storage")
 	}
-	if err := removeCollectionImageVariants(r.Context(), h.S3GP, userCollectionImagePrefix, collectionID, "poster"); err != nil {
+	if err := removeCollectionImageVariants(r.Context(), h.S3GP, userCollectionImagePrefix, collectionID, imageTypePoster); err != nil {
 		return fmt.Errorf("clearing previous poster: %w", err)
 	}
-	s3Path, thumbhash, err := uploadCollectionImageVariants(r.Context(), h.S3GP, userCollectionImagePrefix, collectionID, "poster", fileData)
+	s3Path, thumbhash, err := uploadCollectionImageVariants(r.Context(), h.S3GP, userCollectionImagePrefix, collectionID, imageTypePoster, fileData)
 	if err != nil {
 		return fmt.Errorf("poster: %w", err)
 	}
