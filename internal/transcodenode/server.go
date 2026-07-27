@@ -884,7 +884,7 @@ func (s *Server) handleSegment(w http.ResponseWriter, r *http.Request) {
 	}
 
 	segPath, err := session.GetSegment(name)
-	if err != nil && err == playback.ErrSegmentNotFound {
+	if err != nil && errors.Is(err, playback.ErrSegmentNotFound) {
 		segNum, parseErr := playback.ParseSegmentNumber(name)
 		if parseErr == nil {
 			now := time.Now()
@@ -919,7 +919,7 @@ func (s *Server) handleSegment(w http.ResponseWriter, r *http.Request) {
 					"playback_session_id", sessionID,
 				)
 				segPath, err = session.WaitForSegment(name, decision.WaitTimeout)
-				if err != nil && err == playback.ErrSegmentNotFound {
+				if err != nil && errors.Is(err, playback.ErrSegmentNotFound) {
 					slog.InfoContext(r.Context(), "transcode segment wait timeout", "component", "transcodenode",
 						"segment", name,
 						"requested_segment", segNum,
@@ -935,7 +935,7 @@ func (s *Server) handleSegment(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			if err != nil && err == playback.ErrSegmentNotFound && decision.RestartOnTimeout {
+			if err != nil && errors.Is(err, playback.ErrSegmentNotFound) && decision.RestartOnTimeout {
 				seekSeconds, ok, seekErr := session.RestartSeekTarget(segNum)
 				if seekErr != nil && !errors.Is(seekErr, playback.ErrManifestNotReady) {
 					slog.ErrorContext(r.Context(), "resolve transcode node seek target", "component", "transcodenode", "error", seekErr, "segment", name, "session", sessionID, "playback_session_id", sessionID)

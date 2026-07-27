@@ -35,7 +35,7 @@ func TestDialogueBoundaryRefinerMovesStartPastEarlyDialogue(t *testing.T) {
 		t.Fatalf("RefineChromaprintStart returned error: %v", err)
 	}
 	if !ok {
-		t.Fatal("expected dialogue refinement to apply")
+		t.Fatal("expected dialog refinement to apply")
 	}
 	if math.Abs(refined.Start-330.852) > 0.001 {
 		t.Fatalf("refined start = %.3f, want 330.852", refined.Start)

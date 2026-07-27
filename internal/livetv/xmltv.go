@@ -10,8 +10,8 @@ import (
 )
 
 type XMLTV struct {
-	Channels   []XMLTVChannel
-	Programmes []XMLTVProgramme
+	Channels []XMLTVChannel
+	Programs []XMLTVProgramme
 }
 
 type XMLTVChannel struct {
@@ -36,28 +36,28 @@ type XMLTVProgramme struct {
 }
 
 type xmltvDoc struct {
-	Channels   []xmltvChannel   `xml:"channel"`
-	Programmes []xmltvProgramme `xml:"programme"`
+	Channels []xmltvChannel   `xml:"channel"`
+	Programs []xmltvProgramme `xml:"program"`
 }
 
 type xmltvChannel struct {
-	ID           string       `xml:"id,attr"`
-	DisplayNames []string     `xml:"display-name"`
-	Icon         *xmltvIcon   `xml:"icon"`
+	ID           string     `xml:"id,attr"`
+	DisplayNames []string   `xml:"display-name"`
+	Icon         *xmltvIcon `xml:"icon"`
 }
 
 type xmltvProgramme struct {
-	Channel string          `xml:"channel,attr"`
-	Start   string          `xml:"start,attr"`
-	Stop    string          `xml:"stop,attr"`
-	Titles  []string        `xml:"title"`
-	Sub     []string        `xml:"sub-title"`
-	Desc    []string        `xml:"desc"`
-	Cats    []string        `xml:"category"`
-	Episode []xmltvEpisode  `xml:"episode-num"`
-	Icon    *xmltvIcon      `xml:"icon"`
-	New     *struct{}        `xml:"new"`
-	Live    *struct{}        `xml:"live"`
+	Channel string         `xml:"channel,attr"`
+	Start   string         `xml:"start,attr"`
+	Stop    string         `xml:"stop,attr"`
+	Titles  []string       `xml:"title"`
+	Sub     []string       `xml:"sub-title"`
+	Desc    []string       `xml:"desc"`
+	Cats    []string       `xml:"category"`
+	Episode []xmltvEpisode `xml:"episode-num"`
+	Icon    *xmltvIcon     `xml:"icon"`
+	New     *struct{}      `xml:"new"`
+	Live    *struct{}      `xml:"live"`
 }
 
 type xmltvEpisode struct {
@@ -77,8 +77,8 @@ func ParseXMLTV(r io.Reader) (*XMLTV, error) {
 	}
 
 	out := &XMLTV{
-		Channels:   make([]XMLTVChannel, 0, len(doc.Channels)),
-		Programmes: make([]XMLTVProgramme, 0, len(doc.Programmes)),
+		Channels: make([]XMLTVChannel, 0, len(doc.Channels)),
+		Programs: make([]XMLTVProgramme, 0, len(doc.Programs)),
 	}
 	for _, ch := range doc.Channels {
 		channel := XMLTVChannel{
@@ -90,17 +90,17 @@ func ParseXMLTV(r io.Reader) (*XMLTV, error) {
 		}
 		out.Channels = append(out.Channels, channel)
 	}
-	for _, p := range doc.Programmes {
+	for _, p := range doc.Programs {
 		start, err := parseXMLTVTime(p.Start)
 		if err != nil {
-			return nil, fmt.Errorf("programme %q start: %w", p.Title(), err)
+			return nil, fmt.Errorf("program %q start: %w", p.Title(), err)
 		}
 		stop, err := parseXMLTVTime(p.Stop)
 		if err != nil {
-			return nil, fmt.Errorf("programme %q stop: %w", p.Title(), err)
+			return nil, fmt.Errorf("program %q stop: %w", p.Title(), err)
 		}
 		season, episode := parseXMLTVEpisode(p.Episode)
-		programme := XMLTVProgramme{
+		program := XMLTVProgramme{
 			ChannelID:   strings.TrimSpace(p.Channel),
 			Start:       start,
 			Stop:        stop,
@@ -114,9 +114,9 @@ func ParseXMLTV(r io.Reader) (*XMLTV, error) {
 			IsLive:      p.Live != nil,
 		}
 		if p.Icon != nil {
-			programme.ImageURL = strings.TrimSpace(p.Icon.Src)
+			program.ImageURL = strings.TrimSpace(p.Icon.Src)
 		}
-		out.Programmes = append(out.Programmes, programme)
+		out.Programs = append(out.Programs, program)
 	}
 	return out, nil
 }

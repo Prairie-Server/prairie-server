@@ -1169,7 +1169,7 @@ func (s *Scanner) scanFolderByRoots(
 			//
 			// Suspect-empty children are protected unless the operator has
 			// explicitly confirmed cleanup — that confirmation is the
-			// deliberate way to retire an emptied root, and honouring it here
+			// deliberate way to retire an emptied root, and honoring it here
 			// is what stops the allowance being consumed to no effect.
 			// Unreachable roots are protected either way: an outage is never
 			// a confirmation to erase a root's catalog.
@@ -1354,7 +1354,7 @@ func (s *Scanner) scanFolderByRoots(
 	}
 
 	// Reuse the same protected set the scoped cleanup used, so membership
-	// removal and the trash sweep below honour roots the mid-loop re-probe
+	// removal and the trash sweep below honor roots the mid-loop re-probe
 	// found offline. Rebuilding from only the initial probe here would let a
 	// child that dropped during this scan have its already-missing rows hard
 	// deleted once they pass the removal grace — by the very scan that
@@ -1522,7 +1522,7 @@ func (s *Scanner) suspectEmptyRoots(ctx context.Context, folderID int, configure
 	// latter made this protection reactive: on the first scan after a mount
 	// dropped, the rows are still live, the root is not classified suspect,
 	// and the scan marks everything missing — the exact outage this guards
-	// against, recognised only in time to protect the wreckage.
+	// against, recognized only in time to protect the wreckage.
 	suspect, err := s.fileRepo.ListRootsWithCatalogedFiles(ctx, folderID, emptyRoots)
 	if err != nil {
 		return nil, fmt.Errorf("listing suspect-empty roots for folder %d: %w", folderID, err)

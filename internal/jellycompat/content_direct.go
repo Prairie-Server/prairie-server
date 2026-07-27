@@ -652,7 +652,7 @@ func (s *directContentService) enrichDetailUserData(ctx context.Context, store u
 				result.UserData = catalog.SeasonUserDataFromCounts(counts[contentID])
 				return
 			}
-			slog.Warn("series watch rollup query failed, falling back to per-episode rollup", "error", err)
+			slog.WarnContext(ctx, "series watch rollup query failed, falling back to per-episode rollup", "error", err)
 		}
 		if episodesBySeries, epErr := s.episodeRepo.ListBySeriesIDs(ctx, []string{contentID}); epErr == nil {
 			episodes := episodesBySeries[contentID]
@@ -1059,7 +1059,7 @@ func (s *directContentService) enrichSeriesListUserData(ctx context.Context, ses
 			}
 			return
 		}
-		slog.Warn("series watch rollup query failed, falling back to per-episode rollup", "error", err)
+		slog.WarnContext(ctx, "series watch rollup query failed, falling back to per-episode rollup", "error", err)
 	}
 
 	episodesBySeries, err := s.episodeRepo.ListBySeriesIDs(ctx, seriesIDs)

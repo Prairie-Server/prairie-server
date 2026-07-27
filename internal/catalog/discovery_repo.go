@@ -41,7 +41,7 @@ type RatingFilter struct {
 
 // buildRatingThresholdQuery builds the SQL statement and bind args for ListByRatingThreshold.
 // It returns an empty query string when access rules exclude every
-// library, signalling the caller to skip the query and return no rows.
+// library, signaling the caller to skip the query and return no rows.
 func buildRatingThresholdQuery(f RatingFilter) (string, []any) {
 	var conditions []string
 	var args []any
@@ -122,7 +122,7 @@ type UnplayedFilter struct {
 
 // buildUnplayedHighRatedQuery builds the SQL statement and bind args for ListUnplayedHighRated.
 // It returns an empty query string when access rules exclude every
-// library, signalling the caller to skip the query and return no rows.
+// library, signaling the caller to skip the query and return no rows.
 func buildUnplayedHighRatedQuery(f UnplayedFilter) (string, []any) {
 	var conditions []string
 	var args []any
@@ -232,7 +232,7 @@ type ForgottenFavoritesFilter struct {
 
 // buildForgottenFavoritesQuery builds the SQL statement and bind args for ListForgottenFavorites.
 // It returns an empty query string when access rules exclude every
-// library, signalling the caller to skip the query and return no rows.
+// library, signaling the caller to skip the query and return no rows.
 func buildForgottenFavoritesQuery(f ForgottenFavoritesFilter) (string, []any) {
 	if f.LookbackDays <= 0 {
 		f.LookbackDays = 365

@@ -2,6 +2,7 @@ package playback
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
 	"time"
 )
@@ -113,7 +114,7 @@ func TestCommandDispatcherDisconnectedTarget(t *testing.T) {
 	}
 
 	result := dispatcher.DispatchToSession(command, 0, nil)
-	if result.DispatchErr != ErrRealtimeConnectionNotFound {
+	if !errors.Is(result.DispatchErr, ErrRealtimeConnectionNotFound) {
 		t.Fatalf("DispatchErr = %v, want %v", result.DispatchErr, ErrRealtimeConnectionNotFound)
 	}
 }
@@ -126,7 +127,7 @@ func TestCommandDispatcherMissingTarget(t *testing.T) {
 	}
 
 	result := dispatcher.DispatchToSession(command, 0, nil)
-	if result.DispatchErr != ErrSessionNotFound {
+	if !errors.Is(result.DispatchErr, ErrSessionNotFound) {
 		t.Fatalf("DispatchErr = %v, want %v", result.DispatchErr, ErrSessionNotFound)
 	}
 }

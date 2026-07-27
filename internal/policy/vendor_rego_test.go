@@ -10,6 +10,7 @@ import (
 
 	"github.com/open-policy-agent/opa/v1/storage"
 	"github.com/open-policy-agent/opa/v1/tester"
+
 	"github.com/prairie-server/prairie-server/internal/access"
 )
 

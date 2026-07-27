@@ -2,6 +2,7 @@ package taskmanager
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"sort"
 	"sync"
@@ -168,7 +169,7 @@ func (m *TaskManager) triggerLoop(ctx context.Context, w *taskWorker) {
 			// If the task is already running (e.g. via manual RunTask), don't
 			// rearm — the concurrent runner will rearm when it finishes.
 			// For other errors, rearm so the trigger fires again later.
-			if err != ErrTaskAlreadyRunning {
+			if !errors.Is(err, ErrTaskAlreadyRunning) {
 				m.rearmTriggers(w)
 			}
 			continue

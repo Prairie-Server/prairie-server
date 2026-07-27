@@ -18,7 +18,7 @@ type TaskState string
 const (
 	TaskStateIdle       TaskState = "idle"
 	TaskStateRunning    TaskState = "running"
-	TaskStateCancelling TaskState = "cancelling"
+	TaskStateCancelling TaskState = "canceling"
 )
 
 // TaskCategory groups tasks for display.

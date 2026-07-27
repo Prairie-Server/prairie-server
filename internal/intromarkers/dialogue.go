@@ -50,11 +50,11 @@ func (r *DialogueBoundaryRefiner) RefineChromaprintStart(ctx context.Context, ca
 	}
 	data, err := readFile(subtitle.Path)
 	if err != nil {
-		return segment, false, fmt.Errorf("read dialogue subtitle %q for file %d: %w", subtitle.Path, candidate.FileID, err)
+		return segment, false, fmt.Errorf("read dialog subtitle %q for file %d: %w", subtitle.Path, candidate.FileID, err)
 	}
 	cues, err := subtitles.ParseCues(data)
 	if err != nil {
-		return segment, false, fmt.Errorf("parse dialogue subtitle %q for file %d: %w", subtitle.Path, candidate.FileID, err)
+		return segment, false, fmt.Errorf("parse dialog subtitle %q for file %d: %w", subtitle.Path, candidate.FileID, err)
 	}
 	refinedStart, ok := dialogueRefinedStart(cues, segment, cfg)
 	if !ok {

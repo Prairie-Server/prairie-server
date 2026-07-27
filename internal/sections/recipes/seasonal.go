@@ -151,7 +151,7 @@ func (seasonalRecipe) Validate(raw json.RawMessage) error {
 				return fmt.Errorf("seasonal_themed: unknown theme %q in enabled_themes", t)
 			}
 		}
-		// Mode is ignored in multi-theme mode (the off-season behaviour is
+		// Mode is ignored in multi-theme mode (the off-season behavior is
 		// implicit) but still validated if the caller sent something nonsense.
 		if !validSeasonalModes[p.Mode] {
 			return fmt.Errorf("seasonal_themed: invalid mode %q (want auto|pinned)", p.Mode)
@@ -211,7 +211,7 @@ func SeasonalTitleOverride(p SeasonalThemedParams, now time.Time, usable func(th
 	case len(p.EnabledThemes) > 0:
 		theme = ActiveSeasonalThemeWhere(p.EnabledThemes, now, usable)
 	case p.Theme != "":
-		// Legacy mode — only honour an override if the predicate currently fires.
+		// Legacy mode — only honor an override if the predicate currently fires.
 		pred, ok := SeasonalPredicates[p.Theme]
 		if ok && pred(now) {
 			theme = p.Theme

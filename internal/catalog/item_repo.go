@@ -1622,7 +1622,7 @@ func (r *ItemRepository) ReplacePeople(ctx context.Context, contentID string, pe
 	seen := make(map[dedupKey]struct{}, len(people))
 	deduped := make([]models.ItemPerson, 0, len(people))
 	for _, p := range people {
-		key := dedupKey{p.Person.ID, p.Kind, p.Character}
+		key := dedupKey{p.ID, p.Kind, p.Character}
 		if _, exists := seen[key]; exists {
 			continue
 		}
@@ -1645,7 +1645,7 @@ func (r *ItemRepository) ReplacePeople(ctx context.Context, contentID string, pe
 			return fmt.Errorf("generate content-person id: %w", err)
 		}
 		rowID, _ := strconv.ParseInt(rowIDStr, 10, 64)
-		args = append(args, rowID, contentID, p.Person.ID, p.Kind, p.Character, p.SortOrder)
+		args = append(args, rowID, contentID, p.ID, p.Kind, p.Character, p.SortOrder)
 	}
 	sb.WriteString(" ON CONFLICT (content_id, person_id, kind, character) DO UPDATE SET sort_order = EXCLUDED.sort_order")
 

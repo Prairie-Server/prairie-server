@@ -69,7 +69,7 @@ type Options struct {
 
 // New builds a Server. secretFn is required; tokenValidator and logger are
 // optional (nil tokenValidator skips revocation check; nil logger is a no-op).
-// opts may be nil for default single-replica behaviour.
+// opts may be nil for default single-replica behavior.
 func New(secretFn SecretFn, tokenValidator TokenValidator, logger Logger, opts *Options) *Server {
 	if logger == nil {
 		logger = noopLogger{}

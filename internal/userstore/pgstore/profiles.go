@@ -2,6 +2,7 @@ package pgstore
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -95,7 +96,7 @@ func (s *PostgresUserStore) GetProfile(ctx context.Context, id string) (*usersto
 		FROM user_profiles WHERE user_id = $1 AND id = $2`, s.userID, id)
 
 	p, err := scanProfile(row)
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -303,7 +304,7 @@ func (s *PostgresUserStore) VerifyPIN(ctx context.Context, profileID, pin string
 		"SELECT pin_hash FROM user_profiles WHERE user_id = $1 AND id = $2",
 		s.userID, profileID,
 	).Scan(&pinHash)
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return false, fmt.Errorf("profile %s not found", profileID)
 	}
 	if err != nil {
@@ -314,7 +315,7 @@ func (s *PostgresUserStore) VerifyPIN(ctx context.Context, profileID, pin string
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(pinHash), []byte(pin))
-	if err == bcrypt.ErrMismatchedHashAndPassword {
+	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 		return false, nil
 	}
 	if err != nil {

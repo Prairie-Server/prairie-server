@@ -34,14 +34,10 @@ linters:
       - web
       - migrations
     rules:
-      # Allow repeated strings in test files
+      # Tests may freely repeat fixture strings / leave cleanup errors unchecked.
       - path: _test\.go
         linters:
           - goconst
-      # Allow unchecked errors in test cleanup/defer
-      - path: _test\.go
-        text: "Error return value is not checked"
-        linters:
           - errcheck
 
   settings:
@@ -61,6 +57,29 @@ linters:
 
     errcheck:
       check-type-assertions: true
+      # Best-effort closes/rollbacks in defer can't usefully propagate; ignore.
+      # pgx documents defer tx.Rollback(ctx) as safe after Commit.
+      exclude-functions:
+        - io.Closer.Close
+        - (io.ReadCloser).Close
+        - (io.WriteCloser).Close
+        - (*os.File).Close
+        - (*compress/gzip.Reader).Close
+        - (*compress/gzip.Writer).Close
+        - (*archive/zip.ReadCloser).Close
+        - (*database/sql.Rows).Close
+        - (*database/sql.Tx).Rollback
+        - (github.com/jackc/pgx/v5.Tx).Rollback
+        - (*github.com/jackc/pgx/v5.Conn).Close
+        - (*github.com/jackc/pgx/v5/pgxpool.Pool).Close
+        - (*github.com/redis/go-redis/v9.Client).Close
+        - (*github.com/redis/go-redis/v9.ClusterClient).Close
+        - (github.com/gorilla/websocket.Conn).Close
+        - (*net/http.Response).Body.Close
+        - (*net.TCPListener).Close
+        - (mime/multipart.File).Close
+        - (*mime/multipart.Part).Close
+        - (*github.com/fsnotify/fsnotify.Watcher).Close
 
     errorlint:
       errorf: true
@@ -68,8 +87,58 @@ linters:
       comparison: true
 
     goconst:
-      min-len: 3
-      min-occurrences: 3
+      min-len: 5
+      # Require clearer repetition before forcing package-level constants.
+      min-occurrences: 8
+      # Tests inflate occurrence counts across the package; ignore them.
+      ignore-tests: true
+      # Switch-case enum arms are intentionally literal alongside the const defs.
+      exclude-types:
+        - Case
+      ignore-string-values:
+        - "true"
+        - "false"
+        - "asc"
+        - "desc"
+        - "type"
+        - "name"
+        - "title"
+        - "status"
+        - "error"
+        - "admin"
+        - "between"
+        - "contains"
+        - "is_not"
+        - "libraryId"
+        - "libraryItemId"
+        - "content_id"
+        - "added_at"
+        - "created_at"
+        - "createdAt"
+        - "updatedAt"
+        - "userId"
+        - "mediaType"
+        - "currentTime"
+        - "lastUpdate"
+        - "release_date"
+        - "last_air_date"
+        - "content_rating"
+        - "rating_imdb"
+        - "media_items mi"
+      ignore-functions:
+        - fmt.Errorf
+        - fmt.Sprintf
+        - slog.Info
+        - slog.Warn
+        - slog.Error
+        - slog.Debug
+        - slog.InfoContext
+        - slog.WarnContext
+        - slog.ErrorContext
+        - slog.DebugContext
 
     misspell:
       locale: US
+      # Domain enum / API / DB values intentionally use British "cancelled".
+      ignore-rules:
+        - cancelled

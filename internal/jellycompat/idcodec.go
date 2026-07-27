@@ -15,16 +15,16 @@ import (
 type EncodedIDType byte
 
 const (
-	EncodedIDLibrary     EncodedIDType = 1
-	EncodedIDItem        EncodedIDType = 2
-	EncodedIDMediaSource EncodedIDType = 3
-	EncodedIDSeason      EncodedIDType = 4
-	EncodedIDPlaySession EncodedIDType = 5
-	EncodedIDGenre       EncodedIDType = 6
-	EncodedIDStudio      EncodedIDType = 7
-	EncodedIDPerson      EncodedIDType = 8
-	EncodedIDImageProxy  EncodedIDType = 9
-	EncodedIDCollection  EncodedIDType = 10
+	EncodedIDLibrary           EncodedIDType = 1
+	EncodedIDItem              EncodedIDType = 2
+	EncodedIDMediaSource       EncodedIDType = 3
+	EncodedIDSeason            EncodedIDType = 4
+	EncodedIDPlaySession       EncodedIDType = 5
+	EncodedIDGenre             EncodedIDType = 6
+	EncodedIDStudio            EncodedIDType = 7
+	EncodedIDPerson            EncodedIDType = 8
+	EncodedIDImageProxy        EncodedIDType = 9
+	EncodedIDCollection        EncodedIDType = 10
 	EncodedIDLiveTVChannel     EncodedIDType = 11
 	EncodedIDLiveTVProgram     EncodedIDType = 12
 	EncodedIDLiveTVTimer       EncodedIDType = 13

@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"html"
 	"io"
@@ -557,7 +558,7 @@ const maxMOBIHeaderScanSize = 256 * 1024
 // MOBI/AZW/AZW3 share the Palm Database (PDB) container: a PDB header, a record
 // offset list, then record 0 holding the PalmDOC header (16 bytes), the MOBI
 // header, and the optional EXTH metadata block. parseEbookMOBI extracts the
-// title, authors, and ISBN that Calibre and most tools write into EXTH, so these
+// title, authors, and ISBN that Caliber and most tools write into EXTH, so these
 // formats no longer fall back to the filename with no author or identifier.
 func parseEbookMOBI(path string) (parsedEbook, error) {
 	book := parsedEbook{Format: strings.TrimPrefix(strings.ToLower(filepath.Ext(path)), ".")}
@@ -569,7 +570,7 @@ func parseEbookMOBI(path string) (parsedEbook, error) {
 
 	header := make([]byte, maxMOBIHeaderScanSize)
 	n, err := io.ReadFull(file, header)
-	if err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
+	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) && !errors.Is(err, io.EOF) {
 		return book, err
 	}
 	header = header[:n]
@@ -1211,11 +1212,11 @@ func parseEPUBOPFMetadata(opf []byte, book *parsedEbook) error {
 		name := strings.ToLower(strings.TrimSpace(firstNonEmpty(meta.Name, meta.Property)))
 		value := strings.TrimSpace(firstNonEmpty(meta.Content, meta.Value))
 		switch name {
-		case "calibre:series", "belongs-to-collection":
+		case "caliber:series", "belongs-to-collection":
 			book.Series = value
-		case "calibre:series_index", "group-position":
+		case "caliber:series_index", "group-position":
 			book.SeriesIndex = value
-		case "calibre:isbn", "isbn", "schema:isbn":
+		case "caliber:isbn", "isbn", "schema:isbn":
 			if book.ISBN == "" {
 				book.ISBN = normalizeEbookISBN(value)
 			}

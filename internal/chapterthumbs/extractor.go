@@ -68,7 +68,7 @@ func ExtractFrame(ctx context.Context, opts FrameExtractOptions) ([]byte, string
 			if cpuErr == nil {
 				return cpuData, "", nil
 			}
-			return nil, cpuReason, fmt.Errorf("hardware extraction failed: %v; cpu fallback failed: %w", wrapReason(hwReason, err), cpuErr)
+			return nil, cpuReason, fmt.Errorf("hardware extraction failed: %w; cpu fallback failed: %w", wrapReason(hwReason, err), cpuErr)
 		}
 	}
 

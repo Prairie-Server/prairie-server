@@ -303,7 +303,8 @@ func UpstreamHTTPStatus(err error) int {
 }
 
 func shouldTryAnotherBase(err error) bool {
-	httpErr, ok := err.(*embyHTTPError)
+	httpErr := &embyHTTPError{}
+	ok := errors.As(err, &httpErr)
 	if !ok {
 		return true
 	}

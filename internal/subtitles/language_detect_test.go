@@ -47,7 +47,7 @@ Title: Example
 Language: Spanish
 
 [Events]
-Dialogue: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,Hola
+Dialog: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,Hola
 `)
 	detected := DetectSubtitleLanguage("subtitle.ass", FormatASS, data)
 	if detected.Language != "es" {

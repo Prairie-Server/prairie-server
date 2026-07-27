@@ -13,6 +13,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
@@ -291,14 +292,14 @@ func TestParseEbookEPUBSkipsUUIDIdentifierBeforeISBN(t *testing.T) {
 }
 
 func TestParseEbookEPUBMetadataReadsISBNFromMetaTags(t *testing.T) {
-	path := writeTestEPUBWithMeta(t, nil, `    <meta name="calibre:isbn" content="978-0-306-40615-7"/>`)
+	path := writeTestEPUBWithMeta(t, nil, `    <meta name="caliber:isbn" content="978-0-306-40615-7"/>`)
 
 	got, err := parseEbookFile(path)
 	if err != nil {
 		t.Fatalf("parseEbookFile: %v", err)
 	}
 	if got.ISBN != "9780306406157" {
-		t.Fatalf("ISBN = %q, want normalized ISBN from calibre meta tag", got.ISBN)
+		t.Fatalf("ISBN = %q, want normalized ISBN from caliber meta tag", got.ISBN)
 	}
 }
 
@@ -1319,10 +1320,10 @@ func TestEbookPeopleMergePreservesExistingNonAuthorCreditsExceptNarrators(t *tes
 	if len(got) != 2 {
 		t.Fatalf("merged people len = %d, want 2: %+v", len(got), got)
 	}
-	if got[0].Person.ID != 20 || got[0].Kind != models.PersonKindWriter || got[0].Character != "essay" {
+	if got[0].ID != 20 || got[0].Kind != models.PersonKindWriter || got[0].Character != "essay" {
 		t.Fatalf("first preserved non-author = %+v", got[0])
 	}
-	if got[1].Person.ID != 40 || got[1].Kind != models.PersonKindAuthor || got[1].SortOrder != 1 {
+	if got[1].ID != 40 || got[1].Kind != models.PersonKindAuthor || got[1].SortOrder != 1 {
 		t.Fatalf("new author credit = %+v", got[1])
 	}
 }
@@ -1830,8 +1831,8 @@ func writeTestEPUBWithDescriptionAndMeta(t *testing.T, identifiers []string, des
     <dc:subject>Fiction</dc:subject>
     <dc:subject>Adventure</dc:subject>
     <dc:description>`+description+`</dc:description>
-    <meta name="calibre:series" content="Test Series"/>
-    <meta name="calibre:series_index" content="2"/>
+    <meta name="caliber:series" content="Test Series"/>
+    <meta name="caliber:series_index" content="2"/>
 `+extraMetaXML+`
   </metadata>
 </package>`)

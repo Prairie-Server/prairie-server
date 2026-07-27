@@ -100,11 +100,7 @@ func (s *Service) ListAvailableScanSources(ctx context.Context) ([]AvailableScan
 	}
 	out := make([]AvailableScanSource, 0, len(discovered))
 	for _, d := range discovered {
-		out = append(out, AvailableScanSource{
-			PluginID:     d.PluginID,
-			CapabilityID: d.CapabilityID,
-			DisplayName:  d.DisplayName,
-		})
+		out = append(out, AvailableScanSource(d))
 	}
 	return out, nil
 }

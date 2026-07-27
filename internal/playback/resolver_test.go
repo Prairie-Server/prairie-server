@@ -1,6 +1,7 @@
 package playback_test
 
 import (
+	"errors"
 	"testing"
 
 	"github.com/prairie-server/prairie-server/internal/models"
@@ -224,7 +225,7 @@ func TestSelectVersion_4KTranscodeDisabled(t *testing.T) {
 
 func TestSelectVersion_NoFiles(t *testing.T) {
 	_, err := playback.SelectVersion(nil, defaultCaps(), defaultSettings())
-	if err != playback.ErrNoVersions {
+	if !errors.Is(err, playback.ErrNoVersions) {
 		t.Errorf("err = %v, want ErrNoVersions", err)
 	}
 }

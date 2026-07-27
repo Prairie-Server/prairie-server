@@ -343,7 +343,6 @@ func (h *LiveTVHandler) HandleRecommendedPrograms(w http.ResponseWriter, r *http
 	})
 }
 
-
 // livetvOwner resolves the mapped Prairie app user for Live TV ownership checks.
 // Fail closed: unmapped / missing sessions are unauthorized (same as stream file).
 func (h *LiveTVHandler) livetvOwner(w http.ResponseWriter, r *http.Request) (userID int, profileID string, ok bool) {
@@ -784,7 +783,6 @@ func (h *LiveTVHandler) DecodeLiveTVChannelID(raw string) (string, bool) {
 	id, err := h.decodeChannelID(raw)
 	return id, err == nil
 }
-
 
 func (h *LiveTVHandler) mediaSourceForOpenStream(ctx context.Context, liveStreamID, channelID string) (mediaSourceDTO, bool) {
 	h.mu.Lock()

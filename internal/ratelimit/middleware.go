@@ -127,11 +127,7 @@ func (mw *Middleware) Handler(next http.Handler) http.Handler {
 				tierCfg = cfg.Tiers["standard"]
 			}
 
-			keyRate := Rate{
-				RequestsPerSecond: tierCfg.RequestsPerSecond,
-				RequestsPerMinute: tierCfg.RequestsPerMinute,
-				Burst:             tierCfg.Burst,
-			}
+			keyRate := Rate(tierCfg)
 			key := fmt.Sprintf("key:%d", claims.APIKeyID)
 			result := mw.perKey.Allow(r.Context(), key, keyRate)
 

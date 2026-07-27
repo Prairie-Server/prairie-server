@@ -19,14 +19,7 @@ type adminServerStatusResponse struct {
 // HandleGetServerStatus handles GET /admin/server/status.
 func (h *AdminHandler) HandleGetServerStatus(w http.ResponseWriter, r *http.Request) {
 	snapshot := h.RestartStatus.Snapshot()
-	resp := adminServerStatusResponse{
-		StartedAt:             snapshot.StartedAt,
-		RestartRequired:       snapshot.RestartRequired,
-		RestartRequiredAt:     snapshot.RestartRequiredAt,
-		RestartRequiredReason: snapshot.RestartRequiredReason,
-		RestartRequested:      snapshot.RestartRequested,
-		RestartRequestedAt:    snapshot.RestartRequestedAt,
-	}
+	resp := adminServerStatusResponse(snapshot)
 
 	if h.SettingsRepo != nil {
 		settings, err := h.SettingsRepo.GetAll(r.Context())

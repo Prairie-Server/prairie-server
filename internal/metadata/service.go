@@ -17,6 +17,9 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
+
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/catalog/reattribute"
 	"github.com/prairie-server/prairie-server/internal/contentid"
@@ -25,8 +28,6 @@ import (
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/naming"
 	"github.com/prairie-server/prairie-server/internal/scanner"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 // FileContentUpdater updates content_id on media_files.
@@ -2380,13 +2381,13 @@ func (s *MetadataService) mergeAndPersist(
 			slog.WarnContext(ctx, "metadata: batch find/create people failed", "component", "metadata", "error", err)
 		} else {
 			for i := range item.People {
-				item.People[i].Person.ID = personIDs[i]
+				item.People[i].ID = personIDs[i]
 			}
 		}
 		// Filter out entries where FindOrCreate failed (Person.ID stayed 0).
 		valid := item.People[:0]
 		for _, p := range item.People {
-			if p.Person.ID != 0 {
+			if p.ID != 0 {
 				valid = append(valid, p)
 			}
 		}

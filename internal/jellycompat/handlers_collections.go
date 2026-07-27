@@ -27,7 +27,7 @@ type collectionSource interface {
 
 // collectionsViewID is the canonical Jellyfin "Collections" (boxsets)
 // CollectionFolder GUID. It is stable across all Jellyfin servers, so clients
-// recognise it as the box-set library; Prairie reuses the same constant rather
+// recognize it as the box-set library; Prairie reuses the same constant rather
 // than minting a per-server ID. Emitted in the compact 32-char form Jellyfin
 // uses for these views; isCollectionsViewID tolerates the dashed form clients
 // may echo back as a ParentId.

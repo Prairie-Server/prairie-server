@@ -556,8 +556,8 @@ func (s *Service) syncXMLTV(ctx context.Context, source *GuideSource) error {
 		addKey(ch.ID)
 		addKey(ch.Name)
 	}
-	programs := make([]Program, 0, len(parsed.Programmes))
-	for _, p := range parsed.Programmes {
+	programs := make([]Program, 0, len(parsed.Programs))
+	for _, p := range parsed.Programs {
 		channelID := channelByKey[strings.ToLower(strings.TrimSpace(p.ChannelID))]
 		if channelID == "" {
 			channelID = channelByKey[xmlChannelNames[strings.ToLower(strings.TrimSpace(p.ChannelID))]]

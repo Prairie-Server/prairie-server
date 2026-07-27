@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+
 	"github.com/prairie-server/prairie-server/internal/scantrigger"
 )
 

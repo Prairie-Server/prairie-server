@@ -18,6 +18,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+
 	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/idgen"
 	"github.com/prairie-server/prairie-server/internal/imageutil"
@@ -1343,7 +1344,7 @@ func ebookPeopleCreditsEqual(existing []models.ItemPerson, desired []ebookCredit
 	}
 	have := make(map[key]struct{}, len(existingAuthors))
 	for _, p := range existingAuthors {
-		have[key{strings.ToLower(strings.TrimSpace(p.Person.Name)), p.Kind}] = struct{}{}
+		have[key{strings.ToLower(strings.TrimSpace(p.Name)), p.Kind}] = struct{}{}
 	}
 	for _, d := range desired {
 		k := key{strings.ToLower(strings.TrimSpace(d.Name)), d.Kind}

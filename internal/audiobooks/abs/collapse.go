@@ -65,7 +65,7 @@ func primarySeries(it LibraryItem) SeriesObj {
 }
 
 // seriesKey prefers the id (stable identifier); falls back to the name
-// when the id is empty (legacy / synthesised metadata).
+// when the id is empty (legacy / synthesized metadata).
 func seriesKey(s SeriesObj) string {
 	if s.ID != "" {
 		return "id:" + s.ID

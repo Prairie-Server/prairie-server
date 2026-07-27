@@ -643,7 +643,7 @@ func (a *Analyzer) refineChromaprintSegment(ctx context.Context, candidate Candi
 	refined, ok, err := a.chromaprintRefiner.RefineChromaprintStart(ctx, candidate, segment)
 	if err != nil {
 		summary.DialogueRefinementErrors++
-		a.logger.WarnContext(ctx, "intro marker dialogue refinement failed", "file_id", candidate.FileID, "path", candidate.FilePath, "error", err)
+		a.logger.WarnContext(ctx, "intro marker dialog refinement failed", "file_id", candidate.FileID, "path", candidate.FilePath, "error", err)
 		return segment
 	}
 	if ok {

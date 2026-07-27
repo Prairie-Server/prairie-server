@@ -1309,9 +1309,10 @@ func (s *Service) ExportWatched(
 
 	exports := reconcileHistoryExports(conn.ID, local, remote)
 	for _, export := range exports {
-		if export.Status == "remote_present" {
+		switch export.Status {
+		case "remote_present":
 			result.RemotePresent++
-		} else if export.Status == "pending" {
+		case "pending":
 			result.Queued++
 		}
 	}

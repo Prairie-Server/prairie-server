@@ -1304,7 +1304,7 @@ func (f *Fetcher) fetchCollection(ctx context.Context, s ResolvedSection, librar
 		return f.fetchUserCollection(ctx, s, libraryID, libraryIDs, userID, profileID, filter, userCollID)
 	}
 
-	// Library collection path (existing behaviour).
+	// Library collection path (existing behavior).
 	if f.CollectionRepo == nil {
 		return nil, 0, fmt.Errorf("collection sections require a collection repository")
 	}

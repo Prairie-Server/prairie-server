@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"github.com/go-chi/chi/v5"
+
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	evt "github.com/prairie-server/prairie-server/internal/events"
 	"github.com/prairie-server/prairie-server/internal/notifications"

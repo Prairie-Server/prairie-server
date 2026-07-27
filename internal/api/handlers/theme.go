@@ -58,7 +58,7 @@ func (h *ThemeHandler) HandleAdminCSS(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Cache-Control", "no-store")
 	writeJSON(w, http.StatusOK, adminCssResponse{
-		Vars:   vars,
+		Vars: vars,
 		// Sanitize on read so stored CSS cannot deliver external imports/urls
 		// to pre-login clients even if a write path skipped validation.
 		RawCSS: csssanitize.Sanitize(rawCSS),

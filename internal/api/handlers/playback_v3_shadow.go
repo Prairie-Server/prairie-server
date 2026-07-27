@@ -19,7 +19,7 @@ func (h *PlaybackHandler) protocolV3ShadowEnabled(ctx context.Context) bool {
 // shadowLegacyPlaybackV3 compares the production legacy route with a v3 plan
 // without advertising or executing that plan. Legacy capabilities lack the
 // detailed v3 fields, so exact source facts are used only as an explicitly
-// labelled validation inference; this is never a production compatibility
+// labeled validation inference; this is never a production compatibility
 // claim and cannot enable v3 playback.
 func (h *PlaybackHandler) shadowLegacyPlaybackV3(ctx context.Context, req startPlaybackRequest, requestedFile, effectiveFile *models.MediaFile, audioIndex int, productionMethod playback.PlayMethod, productionTranscodeAudio bool, sessionID string) {
 	// The shadow planner runs on a bare goroutine off the production start

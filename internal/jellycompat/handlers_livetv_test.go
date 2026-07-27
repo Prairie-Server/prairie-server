@@ -39,9 +39,12 @@ func newLivetvTestStore() *livetvTestStore {
 	}
 }
 
-
-func (s *livetvTestStore) GetRecording(context.Context, string) (*livetv.Recording, error) { return nil, nil }
-func (s *livetvTestStore) GetSeriesRule(context.Context, string) (*livetv.SeriesRule, error) { return nil, nil }
+func (s *livetvTestStore) GetRecording(context.Context, string) (*livetv.Recording, error) {
+	return nil, nil
+}
+func (s *livetvTestStore) GetSeriesRule(context.Context, string) (*livetv.SeriesRule, error) {
+	return nil, nil
+}
 func (s *livetvTestStore) ListTuners(context.Context) ([]livetv.Tuner, error) {
 	return s.tuners, nil
 }

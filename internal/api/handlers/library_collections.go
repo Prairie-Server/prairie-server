@@ -1928,7 +1928,7 @@ func (h *LibraryCollectionHandler) applyTemplateBundle(
 			// in_use_by_section). The adoption flags itself with that reason so
 			// admins can tell "adopted because delete failed" apart from a
 			// straight "already_exists".
-			if !(req.DryRun && req.DeleteExisting) {
+			if !req.DryRun || !req.DeleteExisting {
 				existingBySlug := remainingByLibrarySlug[templateBundleExistingCollectionKey{
 					LibraryID: library.ID,
 					Slug:      slugifyCollectionName(tmpl.Title),
@@ -3488,20 +3488,7 @@ func buildTMDBDiscoverSourceConfig(mediaType string, spec importTMDBDiscoverSpec
 		Mode:      collectionSourceModeTMDBDiscover,
 		MediaType: mediaType,
 		Limit:     limit,
-		Discover: tmdbDiscoverConfigBody{
-			WithGenres:       spec.WithGenres,
-			WithoutGenres:    spec.WithoutGenres,
-			SortBy:           spec.SortBy,
-			VoteCountGte:     spec.VoteCountGte,
-			VoteAverageGte:   spec.VoteAverageGte,
-			ReleaseDateGte:   spec.ReleaseDateGte,
-			ReleaseDateLte:   spec.ReleaseDateLte,
-			Certifications:   spec.Certifications,
-			CertificationLte: spec.CertificationLte,
-			WithRuntimeGte:   spec.WithRuntimeGte,
-			WithRuntimeLte:   spec.WithRuntimeLte,
-			OriginalLanguage: spec.OriginalLanguage,
-		},
+		Discover:  tmdbDiscoverConfigBody(spec),
 	}
 	raw, err := json.Marshal(payload)
 	if err != nil {
@@ -3665,9 +3652,9 @@ func (h *LibraryCollectionHandler) processArtworkInputs(r *http.Request, collect
 			err = http.ErrMissingFile
 		}
 
-		switch {
-		case err == nil:
-		case err == http.ErrMissingFile:
+		switch err {
+		case nil:
+		case http.ErrMissingFile:
 			if sourceByType[imageType] == "" {
 				continue
 			}

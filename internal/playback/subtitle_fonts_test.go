@@ -10,7 +10,7 @@ import (
 )
 
 // fakeFFmpegDumping returns a shell script that mimics ffmpeg's
-// -dump_attachment behaviour: it writes payload to every path that follows a
+// -dump_attachment behavior: it writes payload to every path that follows a
 // -dump_attachment:* flag. This exercises the single-invocation extractor
 // without a real ffmpeg. The shebang must stay on the first line.
 func fakeFFmpegDumping(payload string) string {

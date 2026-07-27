@@ -119,12 +119,12 @@ func NewConverter(ctx context.Context, opts Options) (*Converter, error) {
 	r := wazero.NewRuntimeWithConfig(ctx, cfg)
 	if _, err := wasi_snapshot_preview1.Instantiate(ctx, r); err != nil {
 		_ = r.Close(ctx)
-		return nil, fmt.Errorf("%w: instantiate wasi: %v", ErrUnavailable, err)
+		return nil, fmt.Errorf("%w: instantiate wasi: %w", ErrUnavailable, err)
 	}
 	compiled, err := r.CompileModule(ctx, mobitoolWasm)
 	if err != nil {
 		_ = r.Close(ctx)
-		return nil, fmt.Errorf("%w: compile module: %v", ErrUnavailable, err)
+		return nil, fmt.Errorf("%w: compile module: %w", ErrUnavailable, err)
 	}
 	return &Converter{
 		runtime:  r,
@@ -154,7 +154,7 @@ func (c *Converter) Convert(ctx context.Context, srcPath, dstPath string) error 
 	}
 	info, statErr := os.Stat(srcPath)
 	if statErr != nil {
-		return fmt.Errorf("%w: stat source: %v", ErrConversionFailed, statErr)
+		return fmt.Errorf("%w: stat source: %w", ErrConversionFailed, statErr)
 	}
 	if info.Size() > c.opts.MaxSourceBytes {
 		return ErrSourceTooLarge
@@ -170,20 +170,20 @@ func (c *Converter) Convert(ctx context.Context, srcPath, dstPath string) error 
 	// Per-conversion scratch: in/ (read-only mount) and out/ (writable mount).
 	scratch, err := os.MkdirTemp(c.opts.WorkRoot, "ebookconvert-")
 	if err != nil {
-		return fmt.Errorf("%w: scratch: %v", ErrConversionFailed, err)
+		return fmt.Errorf("%w: scratch: %w", ErrConversionFailed, err)
 	}
 	defer os.RemoveAll(scratch)
 
 	inDir := filepath.Join(scratch, "in")
 	outDir := filepath.Join(scratch, "out")
 	if err := os.MkdirAll(inDir, 0o755); err != nil {
-		return fmt.Errorf("%w: in dir: %v", ErrConversionFailed, err)
+		return fmt.Errorf("%w: in dir: %w", ErrConversionFailed, err)
 	}
 	if err := os.MkdirAll(outDir, 0o755); err != nil {
-		return fmt.Errorf("%w: out dir: %v", ErrConversionFailed, err)
+		return fmt.Errorf("%w: out dir: %w", ErrConversionFailed, err)
 	}
 	if err := copyFile(srcPath, filepath.Join(inDir, guestInputName)); err != nil {
-		return fmt.Errorf("%w: stage input: %v", ErrConversionFailed, err)
+		return fmt.Errorf("%w: stage input: %w", ErrConversionFailed, err)
 	}
 
 	runCtx, cancel := context.WithTimeout(ctx, c.opts.Timeout)
@@ -226,10 +226,10 @@ func (c *Converter) Convert(ctx context.Context, srcPath, dstPath string) error 
 		return fmt.Errorf("%w: output EPUB exceeds %d bytes", ErrConversionFailed, c.opts.MaxOutputBytes)
 	}
 	if err := validateEpub(producedEpub); err != nil {
-		return fmt.Errorf("%w: %v", ErrConversionFailed, err)
+		return fmt.Errorf("%w: %w", ErrConversionFailed, err)
 	}
 	if err := moveFile(producedEpub, dstPath); err != nil {
-		return fmt.Errorf("%w: deliver output: %v", ErrConversionFailed, err)
+		return fmt.Errorf("%w: deliver output: %w", ErrConversionFailed, err)
 	}
 	return nil
 }
@@ -273,7 +273,7 @@ func classifyRunError(parent, run context.Context, instErr error, timeout time.D
 			return fmt.Errorf("%w: mobitool exit %d: %s", ErrConversionFailed, exitErr.ExitCode(), trim(combined))
 		}
 	}
-	return fmt.Errorf("%w: run: %v", ErrConversionFailed, instErr)
+	return fmt.Errorf("%w: run: %w", ErrConversionFailed, instErr)
 }
 
 // validateEpub confirms a well-formed EPUB OCF container: a zip whose first

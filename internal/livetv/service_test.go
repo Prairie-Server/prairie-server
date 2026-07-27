@@ -164,16 +164,16 @@ func TestSyncGuideSourceXMLTVMapsChannels(t *testing.T) {
 <tv>
   <channel id="KING"><display-name>KING-HD</display-name></channel>
   <channel id="orphan"><display-name>Orphan</display-name></channel>
-  <programme start="20260725190000 +0000" stop="20260725200000 +0000" channel="KING">
+  <program start="20260725190000 +0000" stop="20260725200000 +0000" channel="KING">
     <title>Evening News</title>
     <sub-title>Weekend</sub-title>
     <desc>Headlines</desc>
     <category>News</category>
     <new/>
-  </programme>
-  <programme start="20260725200000 +0000" stop="20260725210000 +0000" channel="orphan">
+  </program>
+  <program start="20260725200000 +0000" stop="20260725210000 +0000" channel="orphan">
     <title>Unmapped</title>
-  </programme>
+  </program>
 </tv>`
 
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {

@@ -143,7 +143,7 @@ func TestAnalyzeEpisodeWritesChapterMarker(t *testing.T) {
 			{Index: 2, Title: "Part 1", StartSeconds: 95, EndSeconds: 900},
 		},
 	}
-	repo := &fakeIntroRepository{episodeCandidates: map[string][]Candidate{"ep1": []Candidate{candidate}}}
+	repo := &fakeIntroRepository{episodeCandidates: map[string][]Candidate{"ep1": {candidate}}}
 	extractor := &fakeFingerprintExtractor{}
 	analyzer := &Analyzer{repo: repo, extractor: extractor, config: DefaultConfig("ffmpeg")}
 
@@ -175,7 +175,7 @@ func TestAnalyzeEpisodeWritesSilenceRefinedChapterMarker(t *testing.T) {
 			{Index: 2, Title: "Part 1", StartSeconds: 120, EndSeconds: 900},
 		},
 	}
-	repo := &fakeIntroRepository{episodeCandidates: map[string][]Candidate{"ep1": []Candidate{candidate}}}
+	repo := &fakeIntroRepository{episodeCandidates: map[string][]Candidate{"ep1": {candidate}}}
 	extractor := &fakeFingerprintExtractor{}
 	refiner := &fakeBoundaryRefiner{segments: map[int]Segment{
 		10: {Start: 60, End: 132, Confidence: 0.95, Algorithm: ChapterSilenceAlgorithm},
@@ -218,7 +218,7 @@ func TestAnalyzeEpisodeUpgradesExistingScannerChapterMarker(t *testing.T) {
 			{Index: 2, Title: "Part 1", StartSeconds: 120, EndSeconds: 900},
 		},
 	}
-	repo := &fakeIntroRepository{episodeCandidates: map[string][]Candidate{"ep1": []Candidate{candidate}}}
+	repo := &fakeIntroRepository{episodeCandidates: map[string][]Candidate{"ep1": {candidate}}}
 	refiner := &fakeBoundaryRefiner{segments: map[int]Segment{
 		10: {Start: 60, End: 132, Confidence: 0.95, Algorithm: ChapterSilenceAlgorithm},
 	}}
@@ -252,7 +252,7 @@ func TestAnalyzeEpisodeDoesNotOverwriteManualMarker(t *testing.T) {
 			{Index: 2, Title: "Part 1", StartSeconds: 120, EndSeconds: 900},
 		},
 	}
-	repo := &fakeIntroRepository{episodeCandidates: map[string][]Candidate{"ep1": []Candidate{candidate}}}
+	repo := &fakeIntroRepository{episodeCandidates: map[string][]Candidate{"ep1": {candidate}}}
 	analyzer := &Analyzer{repo: repo, extractor: &fakeFingerprintExtractor{}, refiner: &fakeBoundaryRefiner{}, config: DefaultConfig("ffmpeg")}
 
 	_, err := analyzer.AnalyzeEpisode(context.Background(), "ep1")
@@ -275,7 +275,7 @@ func TestAnalyzeEpisodeCopiesMarkerToCompatibleEpisodeVersion(t *testing.T) {
 		},
 	}
 	target := Candidate{FileID: 11, EpisodeID: "ep1", DurationSeconds: 1202.5}
-	repo := &fakeIntroRepository{episodeCandidates: map[string][]Candidate{"ep1": []Candidate{source, target}}}
+	repo := &fakeIntroRepository{episodeCandidates: map[string][]Candidate{"ep1": {source, target}}}
 	analyzer := &Analyzer{repo: repo, extractor: &fakeFingerprintExtractor{}, config: DefaultConfig("ffmpeg")}
 
 	summary, err := analyzer.AnalyzeEpisode(context.Background(), "ep1")
@@ -304,7 +304,7 @@ func TestAnalyzeEpisodeSkipsCopyForIncompatibleDuration(t *testing.T) {
 		},
 	}
 	target := Candidate{FileID: 11, EpisodeID: "ep1", DurationSeconds: 1205}
-	repo := &fakeIntroRepository{episodeCandidates: map[string][]Candidate{"ep1": []Candidate{source, target}}}
+	repo := &fakeIntroRepository{episodeCandidates: map[string][]Candidate{"ep1": {source, target}}}
 	analyzer := &Analyzer{repo: repo, extractor: &fakeFingerprintExtractor{}, config: DefaultConfig("ffmpeg")}
 
 	summary, err := analyzer.AnalyzeEpisode(context.Background(), "ep1")
@@ -346,7 +346,7 @@ func TestAnalyzeEpisodeRunsChromaprintAfterChapterMarker(t *testing.T) {
 	groupCandidates := []Candidate{target, sibling}
 	group := groupKey(target.MediaFolderID, target.SeasonID, target.AnalysisGroupKey())
 	repo := &fakeIntroRepository{
-		episodeCandidates: map[string][]Candidate{"ep1": []Candidate{target}},
+		episodeCandidates: map[string][]Candidate{"ep1": {target}},
 		groupCandidates:   map[string][]Candidate{group: groupCandidates},
 		fingerprints: map[int]*Fingerprint{
 			target.FileID:  cachedFingerprint(target, cfg, sharedIntroPoints(1000)),
@@ -403,7 +403,7 @@ func TestAnalyzeEpisodeChromaprintOnlyPatchesRequestedEpisode(t *testing.T) {
 	groupCandidates := []Candidate{target, sibling}
 	group := groupKey(target.MediaFolderID, target.SeasonID, target.AnalysisGroupKey())
 	repo := &fakeIntroRepository{
-		episodeCandidates: map[string][]Candidate{"ep1": []Candidate{target}},
+		episodeCandidates: map[string][]Candidate{"ep1": {target}},
 		groupCandidates:   map[string][]Candidate{group: groupCandidates},
 		fingerprints: map[int]*Fingerprint{
 			target.FileID:  cachedFingerprint(target, cfg, sharedIntroPoints(1000)),
@@ -457,7 +457,7 @@ func TestAnalyzeEpisodePersistsRefinedChromaprintSegment(t *testing.T) {
 	groupCandidates := []Candidate{target, sibling}
 	group := groupKey(target.MediaFolderID, target.SeasonID, target.AnalysisGroupKey())
 	repo := &fakeIntroRepository{
-		episodeCandidates: map[string][]Candidate{"ep1": []Candidate{target}},
+		episodeCandidates: map[string][]Candidate{"ep1": {target}},
 		groupCandidates:   map[string][]Candidate{group: groupCandidates},
 		fingerprints: map[int]*Fingerprint{
 			target.FileID:  cachedFingerprint(target, cfg, sharedIntroPoints(1000)),
@@ -482,7 +482,7 @@ func TestAnalyzeEpisodePersistsRefinedChromaprintSegment(t *testing.T) {
 		t.Fatalf("expected one refinement call for requested file, got %d", refiner.calls)
 	}
 	if summary.DialogueRefinementsAttempted != 1 || summary.DialogueRefinementsApplied != 1 {
-		t.Fatalf("expected one applied dialogue refinement, got attempted=%d applied=%d",
+		t.Fatalf("expected one applied dialog refinement, got attempted=%d applied=%d",
 			summary.DialogueRefinementsAttempted, summary.DialogueRefinementsApplied)
 	}
 	if len(repo.patches) != 1 {
@@ -559,7 +559,7 @@ func TestAnalyzeEpisodeForcesCachedSeasonGroup(t *testing.T) {
 	groupCandidates := []Candidate{target, sibling}
 	group := groupKey(target.MediaFolderID, target.SeasonID, target.AnalysisGroupKey())
 	repo := &fakeIntroRepository{
-		episodeCandidates: map[string][]Candidate{"ep1": []Candidate{target}},
+		episodeCandidates: map[string][]Candidate{"ep1": {target}},
 		groupCandidates:   map[string][]Candidate{group: groupCandidates},
 		fingerprints: map[int]*Fingerprint{
 			target.FileID:  cachedFingerprint(target, cfg, sharedIntroPoints(1000)),

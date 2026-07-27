@@ -72,8 +72,8 @@ func (r *InterestRepository) UpsertRows(ctx context.Context, interests []SeriesI
 			sb.WriteString(", ")
 		}
 		base := len(args)
-		sb.WriteString(fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,now())",
-			base+1, base+2, base+3, base+4, base+5, base+6, base+7, base+8, base+9, base+10))
+		fmt.Fprintf(&sb, "($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d,now())",
+			base+1, base+2, base+3, base+4, base+5, base+6, base+7, base+8, base+9, base+10)
 		args = append(args,
 			interest.UserID, interest.ProfileID, interest.LibraryID, interest.SeriesID,
 			interest.Favorite, interest.Watchlist, interest.ContinueWatching, interest.NextUpCandidate,

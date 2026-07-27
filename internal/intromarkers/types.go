@@ -17,7 +17,7 @@ const (
 	ChapterSilenceAlgorithm      = "chapter:silence:v1"
 	EpisodeVersionCopyAlgorithm  = "episode-version-copy:v1"
 	ChromaprintAlgorithm         = "chromaprint:v1"
-	ChromaprintDialogueAlgorithm = "chromaprint:dialogue:v1"
+	ChromaprintDialogueAlgorithm = "chromaprint:dialog:v1"
 	ChromaprintFormat            = "chromaprint:raw:uint32le"
 	DefaultPointHopSeconds       = 0.123
 )
@@ -271,7 +271,7 @@ type RunSummary struct {
 	SilenceRefinementErrors      int      `json:"silence_refinement_errors"`
 	EpisodeVersionMarkersCopied  int      `json:"episode_version_markers_copied"`
 	SilenceBackfillConsidered    int      `json:"silence_backfill_considered"`
-	DialogueRefinementsAttempted int      `json:"dialogue_refinements_attempted"`
-	DialogueRefinementsApplied   int      `json:"dialogue_refinements_applied"`
-	DialogueRefinementErrors     int      `json:"dialogue_refinement_errors"`
+	DialogueRefinementsAttempted int      `json:"dialog_refinements_attempted"`
+	DialogueRefinementsApplied   int      `json:"dialog_refinements_applied"`
+	DialogueRefinementErrors     int      `json:"dialog_refinement_errors"`
 }

@@ -12,9 +12,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/cache"
 	"golang.org/x/sync/singleflight"
 	"golang.org/x/time/rate"
+
+	"github.com/prairie-server/prairie-server/internal/cache"
 )
 
 const (

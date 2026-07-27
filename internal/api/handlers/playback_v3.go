@@ -1625,7 +1625,7 @@ func (h *PlaybackHandler) StartV3Maintenance(ctx context.Context) {
 			case now := <-ticker.C:
 				cleanupCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 				if _, err := h.PlanStoreV3.CleanupExpired(cleanupCtx, now); err != nil {
-					slog.Warn("playback v3 cleanup failed", "error", err)
+					slog.WarnContext(ctx, "playback v3 cleanup failed", "error", err)
 				}
 				cancel()
 			}

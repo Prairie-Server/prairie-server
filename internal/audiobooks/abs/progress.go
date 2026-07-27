@@ -396,7 +396,7 @@ func (h *Handler) handleSessionSync(w http.ResponseWriter, r *http.Request) {
 }
 
 // handleSessionClose — POST /abs/api/session/{sid}/close
-// Finalises a play session. Sets closed_at on the abs_playback_sessions row.
+// Finalizes a play session. Sets closed_at on the abs_playback_sessions row.
 // Only the owning user may close their session (IDOR guard).
 func (h *Handler) handleSessionClose(w http.ResponseWriter, r *http.Request) {
 	a, ok := absAuthFrom(r)
@@ -432,7 +432,7 @@ func (h *Handler) handleSessionClose(w http.ResponseWriter, r *http.Request) {
 }
 
 // ---------------------------------------------------------------------------
-// Serialisation helpers
+// Serialization helpers
 // ---------------------------------------------------------------------------
 
 // progressRowToABS shapes a ProgressRow into the ABS /me/progress wire format.

@@ -230,14 +230,14 @@ func (e *Engine) RefreshTasteProfile(ctx context.Context, userID int, profileID 
 		ratedSet[ref.CanonicalID] = struct{}{}
 
 		decay := timeDecay(r.RatedAt, now, halfLife)
-		switch {
-		case r.Rating == 5:
+		switch r.Rating {
+		case 5:
 			s.ExplicitWeight += WeightRated5 * decay
 			signalCounts["rated_5"]++
-		case r.Rating == 4:
+		case 4:
 			s.ExplicitWeight += WeightRated4 * decay
 			signalCounts["rated_4"]++
-		case r.Rating == 3:
+		case 3:
 			s.ExplicitWeight += WeightRated3 * decay
 			signalCounts["rated_3"]++
 		default:

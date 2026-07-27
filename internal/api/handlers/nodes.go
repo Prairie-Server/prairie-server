@@ -14,9 +14,10 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"github.com/redis/go-redis/v9"
+
 	"github.com/prairie-server/prairie-server/internal/cache"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
-	"github.com/redis/go-redis/v9"
 )
 
 // NodeRepository defines the operations the NodeHandler needs on the node store.

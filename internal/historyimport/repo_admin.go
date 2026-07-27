@@ -366,7 +366,7 @@ func (r *Repository) CancelRunIfActive(ctx context.Context, runID string) error 
 		    completed_at  = NOW()
 		WHERE id = $1 AND status IN ('queued', 'running')`, runID)
 	if err != nil {
-		return fmt.Errorf("cancelling run %s: %w", runID, err)
+		return fmt.Errorf("canceling run %s: %w", runID, err)
 	}
 	if result.RowsAffected() == 0 {
 		return ErrRunNotFound

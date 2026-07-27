@@ -498,7 +498,7 @@ func newTestDiagnosticsService(repo ReportStore, store ObjectStore) *Service {
 		KeyConsentNoticeVersion: "1",
 		KeyServerInstanceID:     "server-1",
 	})
-	svc := NewService(repo, settings, store, slog.New(slog.NewTextHandler(io.Discard, nil)))
+	svc := NewService(repo, settings, store, slog.New(slog.DiscardHandler))
 	svc.now = func() time.Time { return time.Date(2026, 7, 20, 12, 0, 0, 0, time.UTC) }
 	return svc
 }

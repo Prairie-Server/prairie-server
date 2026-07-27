@@ -758,7 +758,7 @@ func (h *PlaybackHandler) HandleSessionPlayingStopped(w http.ResponseWriter, r *
 // Jellyfin clients (e.g. JellyCon) call this endpoint when playback stops to
 // signal the server to tear down any running HLS transcode for the session.
 // Without it, the transcode process keeps running until the playback session
-// TTL expires (default 6 h). We honour the request by stopping the transcode
+// TTL expires (default 6 h). We honor the request by stopping the transcode
 // identified by the playSessionId query parameter.
 func (h *PlaybackHandler) HandleDeleteActiveEncodings(w http.ResponseWriter, r *http.Request) {
 	session := SessionFromContext(r.Context())
@@ -2090,12 +2090,12 @@ func generateFullManifest(durationSeconds, segDuration int, fmp4 bool, startTime
 	case startTimeOffsetSeconds > 0:
 		hlsVersion = 6
 	}
-	b.WriteString(fmt.Sprintf("#EXT-X-VERSION:%d\n", hlsVersion))
-	b.WriteString(fmt.Sprintf("#EXT-X-TARGETDURATION:%d\n", segDuration))
+	fmt.Fprintf(&b, "#EXT-X-VERSION:%d\n", hlsVersion)
+	fmt.Fprintf(&b, "#EXT-X-TARGETDURATION:%d\n", segDuration)
 	b.WriteString("#EXT-X-MEDIA-SEQUENCE:0\n")
 	b.WriteString("#EXT-X-PLAYLIST-TYPE:VOD\n")
 	if startTimeOffsetSeconds > 0 {
-		b.WriteString(fmt.Sprintf("#EXT-X-START:TIME-OFFSET=%.6f,PRECISE=YES\n", startTimeOffsetSeconds))
+		fmt.Fprintf(&b, "#EXT-X-START:TIME-OFFSET=%.6f,PRECISE=YES\n", startTimeOffsetSeconds)
 	}
 	if fmp4 {
 		b.WriteString("#EXT-X-MAP:URI=\"init.mp4\"\n")
@@ -2104,11 +2104,11 @@ func generateFullManifest(durationSeconds, segDuration int, fmp4 bool, startTime
 	remaining := float64(durationSeconds)
 	for i := range numSegments {
 		segLen := math.Min(float64(segDuration), remaining)
-		b.WriteString(fmt.Sprintf("#EXTINF:%.6f,\n", segLen))
+		fmt.Fprintf(&b, "#EXTINF:%.6f,\n", segLen)
 		if fmp4 {
-			b.WriteString(fmt.Sprintf("seg_%05d.m4s\n", i))
+			fmt.Fprintf(&b, "seg_%05d.m4s\n", i)
 		} else {
-			b.WriteString(fmt.Sprintf("seg_%05d.ts\n", i))
+			fmt.Fprintf(&b, "seg_%05d.ts\n", i)
 		}
 		remaining -= segLen
 	}

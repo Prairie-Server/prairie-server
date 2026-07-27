@@ -115,10 +115,10 @@ type loginResolver interface {
 
 // AuthHandler serves Jellyfin login/current-user routes.
 type AuthHandler struct {
-	cfg             func() *config.Config
-	loginResolver   loginResolver
-	authenticator   *Authenticator
-	liveTVEnabled   bool
+	cfg           func() *config.Config
+	loginResolver loginResolver
+	authenticator *Authenticator
+	liveTVEnabled bool
 }
 
 // NewAuthHandler creates a new auth handler. The config provider is invoked

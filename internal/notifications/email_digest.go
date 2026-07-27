@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgx/v5"
+
 	"github.com/prairie-server/prairie-server/internal/mail"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 )

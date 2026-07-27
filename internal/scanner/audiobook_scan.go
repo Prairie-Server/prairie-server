@@ -16,6 +16,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+
 	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/idgen"
 	"github.com/prairie-server/prairie-server/internal/models"
@@ -1037,7 +1038,7 @@ func audiobookPeopleCreditsEqual(existing []models.ItemPerson, desired []audiobo
 	}
 	have := make(map[key]struct{}, len(existing))
 	for _, p := range existing {
-		have[key{strings.ToLower(strings.TrimSpace(p.Person.Name)), p.Kind}] = struct{}{}
+		have[key{strings.ToLower(strings.TrimSpace(p.Name)), p.Kind}] = struct{}{}
 	}
 	for _, d := range desired {
 		k := key{strings.ToLower(strings.TrimSpace(d.Name)), d.Kind}

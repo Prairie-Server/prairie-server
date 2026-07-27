@@ -17,7 +17,7 @@ import (
 // collections live in user_personal_collections with collection_type =
 // 'smart'; the rule DSL is stored in the query_definition jsonb column
 // (formerly abs_smart_collections.query_def). Smart collections have no
-// membership rows — items are materialised at request time by the
+// membership rows — items are materialized at request time by the
 // smartcoll engine, so user_personal_collection_items is unused for
 // collection_type = 'smart'.
 //

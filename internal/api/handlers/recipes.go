@@ -20,7 +20,7 @@ func (h *RecipeHandler) HandleList(w http.ResponseWriter, _ *http.Request) {
 		if def.Hidden {
 			continue
 		}
-		// Guarantee Presets serialises as `[]` rather than `null` so the UI can
+		// Guarantee Presets serializes as `[]` rather than `null` so the UI can
 		// iterate without a guard. Recipes that take no preset (e.g. custom_filter)
 		// still need a present-but-empty array.
 		if def.Presets == nil {

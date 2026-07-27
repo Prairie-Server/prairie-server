@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/oklog/ulid/v2"
+
 	"github.com/prairie-server/prairie-server/internal/secret"
 )
 

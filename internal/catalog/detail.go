@@ -1157,7 +1157,7 @@ func (s *DetailService) GetEpisodeDetailsForSeries(
 			// Skip this episode rather than failing the whole batch — the
 			// caller falls back to list-mapping for any contentID missing
 			// from the result map, matching the prior per-episode loop's
-			// behaviour where one bad detail didn't break the series page.
+			// behavior where one bad detail didn't break the series page.
 			continue
 		}
 		result[contentID] = detail
