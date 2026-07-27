@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
-	"sync"
 )
 
 type nvencEncoder struct {
@@ -17,7 +16,6 @@ type nvencEncoder struct {
 	minEdge  int
 	fallback AVIFEncoder
 	sem      chan struct{}
-	mu       sync.Mutex
 }
 
 func newNVENCEncoder(cfg EncoderConfig, fallback AVIFEncoder) *nvencEncoder {
