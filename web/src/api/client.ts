@@ -1,6 +1,7 @@
 import type { ApiError, RefreshResponse } from "./types";
 import { storage } from "../utils/storage";
 import { randomUUID } from "../lib/uuid";
+import { imageFormatsHeaderValue } from "@/lib/imageFormats";
 
 type ProfileUnverifiedListener = () => void;
 let profileUnverifiedListener: ProfileUnverifiedListener | null = null;
@@ -131,6 +132,7 @@ function getDeviceHeaders(): Record<string, string> {
     "X-Prairie-Device-Id": deviceId,
     "X-Prairie-Device-Name": detectDeviceName(),
     "X-Prairie-Device-Platform": detectDevicePlatform(),
+    "X-Prairie-Image-Formats": imageFormatsHeaderValue(),
   };
 }
 

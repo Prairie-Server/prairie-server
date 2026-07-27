@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, beforeEach } from "vitest";
+import { resetImageFormatsCacheForTests } from "./imageFormats";
 import {
   artworkCandidates,
   artworkSrcSet,
@@ -65,6 +66,11 @@ describe("webPPNGSibling", () => {
 });
 
 describe("artworkCandidates", () => {
+  beforeEach(() => {
+    resetImageFormatsCacheForTests();
+    localStorage.setItem("prairie.imageFormats", "avif,webp,png");
+  });
+
   it("orders AVIF → WebP → PNG for WebP artwork", () => {
     expect(artworkCandidates("/art/original.rev.webp")).toEqual([
       "/art/original.rev.avif",

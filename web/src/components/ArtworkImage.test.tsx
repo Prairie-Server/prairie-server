@@ -1,8 +1,14 @@
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { resetImageFormatsCacheForTests } from "@/lib/imageFormats";
 import { ArtworkImage } from "./ArtworkImage";
 
 describe("ArtworkImage", () => {
+  beforeEach(() => {
+    resetImageFormatsCacheForTests();
+    localStorage.setItem("prairie.imageFormats", "avif,webp,png");
+  });
+
   it("renders nothing without a src", () => {
     const { container } = render(<ArtworkImage src={null} alt="x" />);
     expect(container.querySelector("img")).toBeNull();
@@ -59,7 +65,7 @@ describe("ArtworkImage", () => {
       <ArtworkImage src="/art/poster/w300.webp" alt="Poster" widths={[300, 500]} sizes="160px" />,
     );
     const img = screen.getByRole("img", { name: "Poster" });
-    // Format fallback prefers AVIF sibling first.
+    // Format preference starts at the best detected format (AVIF here).
     expect(img).toHaveAttribute("src", "/art/poster/w300.avif");
     expect(img.getAttribute("srcset")).toContain("300w");
     expect(img.getAttribute("srcset")).toContain("500w");
@@ -80,5 +86,15 @@ describe("ArtworkImage", () => {
     const avif = "https://cdn.example.com/art/w300.avif?X-Amz-Signature=avif";
     render(<ArtworkImage src={webp} avifSrc={avif} alt="Poster" />);
     expect(screen.getByRole("img", { name: "Poster" })).toHaveAttribute("src", avif);
+  });
+
+  it("skips AVIF when the client does not advertise AVIF support", () => {
+    resetImageFormatsCacheForTests();
+    localStorage.setItem("prairie.imageFormats", "webp,png");
+    render(<ArtworkImage src="/art/original.rev.webp" alt="Poster" />);
+    expect(screen.getByRole("img", { name: "Poster" })).toHaveAttribute(
+      "src",
+      "/art/original.rev.webp",
+    );
   });
 });

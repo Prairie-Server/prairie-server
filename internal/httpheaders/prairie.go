@@ -30,6 +30,12 @@ const (
 	HeaderChannelID          = prairiePrefix + "Channel-Id"
 	HeaderTimestamp          = prairiePrefix + "Timestamp"
 	HeaderSignature          = prairiePrefix + "Signature"
+
+	// HeaderImageFormats is a comma-separated raster preference list from the
+	// client (e.g. "avif,webp,png"), ordered best-first. Clients probe decode
+	// support once per install and send this on API requests so the server can
+	// pick siblings without per-image trial-and-error fallbacks.
+	HeaderImageFormats = prairiePrefix + "Image-Formats"
 )
 
 // LegacyName returns the corresponding pre-rebrand X-Silo-* header name.

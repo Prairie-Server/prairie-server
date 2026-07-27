@@ -1,4 +1,5 @@
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
+import { resetImageFormatsCacheForTests } from "./imageFormats";
 import { staticRasterCandidates, staticRasterFormats } from "./staticImageUrl";
 
 describe("staticRasterFormats", () => {
@@ -25,6 +26,11 @@ describe("staticRasterFormats", () => {
 });
 
 describe("staticRasterCandidates", () => {
+  beforeEach(() => {
+    resetImageFormatsCacheForTests();
+    localStorage.setItem("prairie.imageFormats", "avif,webp,png");
+  });
+
   it("orders AVIF → WebP → PNG", () => {
     expect(staticRasterCandidates("/prairie-wordmark-sidebar.png")).toEqual([
       "/prairie-wordmark-sidebar.avif",
@@ -36,6 +42,15 @@ describe("staticRasterCandidates", () => {
   it("orders AVIF → WebP → PNG from a webp canonical path", () => {
     expect(staticRasterCandidates("/images/collection-templates/trending.webp")).toEqual([
       "/images/collection-templates/trending.avif",
+      "/images/collection-templates/trending.webp",
+      "/images/collection-templates/trending.png",
+    ]);
+  });
+
+  it("respects a WebP-first capability preference", () => {
+    resetImageFormatsCacheForTests();
+    localStorage.setItem("prairie.imageFormats", "webp,png");
+    expect(staticRasterCandidates("/images/collection-templates/trending.webp")).toEqual([
       "/images/collection-templates/trending.webp",
       "/images/collection-templates/trending.png",
     ]);

@@ -197,6 +197,68 @@ func webPFormatSibling(objectPath, ext string) string {
 	return FormatSibling(objectPath, ext)
 }
 
+const (
+	FormatAVIF = "avif"
+	FormatWebP = "webp"
+	FormatPNG  = "png"
+)
+
+// ParseImageFormats parses X-Prairie-Image-Formats (or any comma-separated
+// raster preference list) into normalized tokens in preference order.
+// Unknown tokens are dropped; duplicates are removed.
+func ParseImageFormats(header string) []string {
+	var out []string
+	seen := make(map[string]struct{})
+	for _, part := range strings.Split(header, ",") {
+		token := strings.ToLower(strings.TrimSpace(part))
+		if token != FormatAVIF && token != FormatWebP && token != FormatPNG {
+			continue
+		}
+		if _, ok := seen[token]; ok {
+			continue
+		}
+		seen[token] = struct{}{}
+		out = append(out, token)
+	}
+	return out
+}
+
+// ImageFormatsFromRequest returns the client's raster preference list from
+// X-Prairie-Image-Formats, falling back to Accept when the explicit header is
+// absent.
+func ImageFormatsFromRequest(imageFormatsHeader, acceptHeader string) []string {
+	if parsed := ParseImageFormats(imageFormatsHeader); len(parsed) > 0 {
+		return parsed
+	}
+	if PrefersAVIF(acceptHeader) {
+		return []string{FormatAVIF, FormatWebP, FormatPNG}
+	}
+	return nil
+}
+
+// SelectRasterURL picks the first available URL from canonical WebP, AVIF, and
+// PNG siblings using the client's ordered format preference. When preferences
+// are empty, canonical WebP is returned.
+func SelectRasterURL(canonical, avif, png string, preferred []string) string {
+	byFormat := map[string]string{
+		FormatWebP: strings.TrimSpace(canonical),
+		FormatAVIF: strings.TrimSpace(avif),
+		FormatPNG:  strings.TrimSpace(png),
+	}
+	for _, format := range preferred {
+		if url := byFormat[format]; url != "" {
+			return url
+		}
+	}
+	if byFormat[FormatWebP] != "" {
+		return byFormat[FormatWebP]
+	}
+	if byFormat[FormatAVIF] != "" {
+		return byFormat[FormatAVIF]
+	}
+	return byFormat[FormatPNG]
+}
+
 // PrefersAVIF reports whether an Accept header explicitly includes image/avif
 // with a positive q-value. Wildcards alone do not count — many clients send
 // image/* without supporting AVIF.

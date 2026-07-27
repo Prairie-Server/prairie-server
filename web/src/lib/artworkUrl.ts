@@ -16,6 +16,7 @@
  */
 
 import { staticRasterCandidates, staticRasterFormats } from "@/lib/staticImageUrl";
+import { getImageFormats, orderRasterCandidates } from "@/lib/imageFormats";
 
 export const POSTER_WIDTHS = [300, 500] as const;
 export const BACKDROP_WIDTHS = [300, 1280, 1920] as const;
@@ -79,15 +80,22 @@ export function artworkCandidates(
   const avif = formats?.avif?.trim() ?? "";
   const png = formats?.png?.trim() ?? "";
   if (avif || png) {
-    const out: string[] = [];
-    if (avif) out.push(avif);
-    if (trimmed) out.push(trimmed);
-    if (png && png !== trimmed && png !== avif) out.push(png);
-    return out;
+    return orderRasterCandidates({ avif, webp: trimmed, png }, getImageFormats());
   }
   if (!trimmed) return [];
   if (isSignedArtworkURL(trimmed)) return [trimmed];
   return staticRasterCandidates(trimmed);
+}
+
+/**
+ * Best immediate artwork URL for this client without trial-and-error probing.
+ * Falls back to the canonical URL when no sibling matches the detected formats.
+ */
+export function artworkPreferred(
+  objectPath: string | null | undefined,
+  formats?: Omit<ArtworkFormatSources, "src">,
+): string {
+  return artworkCandidates(objectPath, formats)[0] ?? "";
 }
 
 function rewritePathWidthVariant(pathname: string, width: number): string {

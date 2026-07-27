@@ -94,6 +94,64 @@ func TestFormatSiblingAndObjectKeysIncludeAVIFAndPNG(t *testing.T) {
 	}
 }
 
+func TestParseImageFormats(t *testing.T) {
+	if got := ParseImageFormats("avif,webp,png"); len(got) != 3 || got[0] != FormatAVIF {
+		t.Fatalf("ParseImageFormats() = %v", got)
+	}
+	if got := ParseImageFormats(" WEBP , avif , webp "); len(got) != 2 || got[0] != FormatWebP || got[1] != FormatAVIF {
+		t.Fatalf("ParseImageFormats(dedupe) = %v", got)
+	}
+	if got := ParseImageFormats("jpeg,foo"); len(got) != 0 {
+		t.Fatalf("ParseImageFormats(unknown) = %v, want empty", got)
+	}
+}
+
+func TestSelectRasterURL(t *testing.T) {
+	canonical := "https://cdn/poster.webp"
+	avif := "https://cdn/poster.avif"
+	png := "https://cdn/poster.png"
+
+	if got := SelectRasterURL(canonical, avif, png, []string{FormatAVIF, FormatWebP, FormatPNG}); got != avif {
+		t.Fatalf("SelectRasterURL(avif first) = %q", got)
+	}
+	if got := SelectRasterURL(canonical, "", png, []string{FormatAVIF, FormatWebP, FormatPNG}); got != canonical {
+		t.Fatalf("SelectRasterURL(missing avif) = %q", got)
+	}
+	if got := SelectRasterURL(canonical, avif, png, []string{FormatWebP, FormatPNG}); got != canonical {
+		t.Fatalf("SelectRasterURL(webp first) = %q", got)
+	}
+	if got := SelectRasterURL("", "", png, nil); got != png {
+		t.Fatalf("SelectRasterURL(default png) = %q", got)
+	}
+	if got := SelectRasterURL("", avif, "", nil); got != avif {
+		t.Fatalf("SelectRasterURL(default avif) = %q", got)
+	}
+	if got := SelectRasterURL(canonical, avif, png, nil); got != canonical {
+		t.Fatalf("SelectRasterURL(default webp) = %q", got)
+	}
+	if got := SelectRasterURL("", "", "", []string{FormatAVIF}); got != "" {
+		t.Fatalf("SelectRasterURL(empty) = %q", got)
+	}
+	if got := SelectRasterURL("  ", avif, png, []string{FormatWebP, FormatAVIF}); got != avif {
+		t.Fatalf("SelectRasterURL(trim blank webp) = %q", got)
+	}
+	if got := SelectRasterURL("", "", png, []string{FormatAVIF, FormatWebP}); got != png {
+		t.Fatalf("SelectRasterURL(prefer miss → png) = %q", got)
+	}
+}
+
+func TestImageFormatsFromRequest(t *testing.T) {
+	if got := ImageFormatsFromRequest("webp,png", ""); len(got) != 2 || got[0] != FormatWebP {
+		t.Fatalf("ImageFormatsFromRequest(header) = %v", got)
+	}
+	if got := ImageFormatsFromRequest("", "image/avif,image/webp"); len(got) != 3 || got[0] != FormatAVIF {
+		t.Fatalf("ImageFormatsFromRequest(accept) = %v", got)
+	}
+	if got := ImageFormatsFromRequest("", "image/webp"); got != nil {
+		t.Fatalf("ImageFormatsFromRequest(no avif) = %v, want nil", got)
+	}
+}
+
 func TestPrefersAVIF(t *testing.T) {
 	cases := []struct {
 		accept string
