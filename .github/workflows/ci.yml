@@ -26,6 +26,7 @@ jobs:
       go_imageutil: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.go_imageutil }}
       web: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.web }}
       rust_imageutil: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.rust_imageutil }}
+      rust_fingerprint_compare: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.rust_fingerprint_compare }}
     steps:
       - name: Check out sources
         uses: actions/checkout@v7
@@ -64,6 +65,9 @@ jobs:
               - '.github/workflows/ci.yml'
             rust_imageutil:
               - 'tools/imageutil-wasm/**'
+              - '.github/workflows/ci.yml'
+            rust_fingerprint_compare:
+              - 'tools/fingerprint-compare-wasm/**'
               - '.github/workflows/ci.yml'
 
   # Single lint job (not matrix-sharded): each shard still typechecks the module
@@ -470,6 +474,39 @@ jobs:
         uses: Swatinem/rust-cache@v2
         with:
           workspaces: tools/imageutil-wasm
+
+      - name: rustfmt
+        run: cargo fmt --check
+
+      - name: clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: test
+        run: cargo test
+
+  rust-fingerprint-compare:
+    name: Rust fingerprint compare (fmt + clippy + test)
+    needs: changes
+    if: needs.changes.outputs.rust_fingerprint_compare == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/fingerprint-compare-wasm
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.97.1
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tools/fingerprint-compare-wasm
 
       - name: rustfmt
         run: cargo fmt --check

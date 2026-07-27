@@ -4,6 +4,7 @@
 
 # Rust tool build outputs (committed artifacts live under internal/)
 tools/imageutil-wasm/target/
+tools/fingerprint-compare-wasm/target/
 
 # IDE
 .idea/
