@@ -12,13 +12,15 @@ import (
 
 const (
 	cacheMetadataImagesIntervalMs = int64(60 * 1000)
+	// Discovery enqueue batch stays large; claim size is capped to concurrency
+	// inside the processor so DB running ≈ actually in-flight work.
 	cacheMetadataImagesBatchSize  = 1000
 	cacheMetadataImagesWorkers    = 12
 	cacheMetadataImagesMaxRuntime = 10 * time.Minute
 )
 
 type MetadataImageCacheRunner interface {
-	RunUntilIdle(ctx context.Context, workerID string, claimLimit int, concurrency int, maxRuntime time.Duration) (metadata.ImageCacheRunStats, error)
+	RunUntilIdle(ctx context.Context, workerID string, claimLimit int, concurrency int, maxRuntime time.Duration, onProgress metadata.ImageCacheProgressFunc) (metadata.ImageCacheRunStats, error)
 }
 
 type CacheMetadataImagesTask struct {
@@ -55,7 +57,14 @@ func (t *CacheMetadataImagesTask) Execute(ctx context.Context, progress taskmana
 	if hostname == "" {
 		hostname = "silo"
 	}
-	stats, err := t.runner.RunUntilIdle(ctx, hostname, cacheMetadataImagesBatchSize, cacheMetadataImagesWorkers, cacheMetadataImagesMaxRuntime)
+	stats, err := t.runner.RunUntilIdle(
+		ctx,
+		hostname,
+		cacheMetadataImagesBatchSize,
+		cacheMetadataImagesWorkers,
+		cacheMetadataImagesMaxRuntime,
+		progress.Report,
+	)
 	if err != nil {
 		return fmt.Errorf("caching metadata images: %w", err)
 	}

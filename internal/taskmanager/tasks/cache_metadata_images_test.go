@@ -16,21 +16,28 @@ type fakeMetadataImageCacheRunner struct {
 	claimLimit  int
 	concurrency int
 	maxRuntime  time.Duration
+	progressed  bool
 }
 
-func (f *fakeMetadataImageCacheRunner) RunUntilIdle(_ context.Context, _ string, claimLimit int, concurrency int, maxRuntime time.Duration) (metadata.ImageCacheRunStats, error) {
+func (f *fakeMetadataImageCacheRunner) RunUntilIdle(_ context.Context, _ string, claimLimit int, concurrency int, maxRuntime time.Duration, onProgress metadata.ImageCacheProgressFunc) (metadata.ImageCacheRunStats, error) {
 	f.claimLimit = claimLimit
 	f.concurrency = concurrency
 	f.maxRuntime = maxRuntime
+	if onProgress != nil {
+		f.progressed = true
+		onProgress(12.5, "Cached 1/8 (queued 5, running 2, failed 0)")
+	}
 	return f.stats, f.err
 }
 
 type recordingProgress struct {
-	message string
+	percents []float64
+	messages []string
 }
 
-func (r *recordingProgress) Report(_ float64, message string) {
-	r.message = message
+func (r *recordingProgress) Report(percent float64, message string) {
+	r.percents = append(r.percents, percent)
+	r.messages = append(r.messages, message)
 }
 
 func (r *recordingProgress) SetResultData(json.RawMessage) {}
@@ -74,7 +81,20 @@ func TestCacheMetadataImagesTaskReportsStats(t *testing.T) {
 	if runner.maxRuntime != 10*time.Minute {
 		t.Fatalf("maxRuntime = %s, want 10m", runner.maxRuntime)
 	}
-	if progress.message != "Batches 3, enqueued 5 existing, claimed 4, cached 3, failed 1, skipped 0, uploaded 7 variants, found 2 existing variants, deleted 0 old successes" {
-		t.Fatalf("progress message = %q", progress.message)
+	if !runner.progressed {
+		t.Fatal("expected RunUntilIdle to receive a progress callback")
+	}
+	if len(progress.messages) < 2 {
+		t.Fatalf("progress reports = %d, want at least mid-run + final", len(progress.messages))
+	}
+	if progress.messages[0] != "Cached 1/8 (queued 5, running 2, failed 0)" {
+		t.Fatalf("mid-run progress = %q", progress.messages[0])
+	}
+	wantFinal := "Batches 3, enqueued 5 existing, claimed 4, cached 3, failed 1, skipped 0, uploaded 7 variants, found 2 existing variants, deleted 0 old successes"
+	if progress.messages[len(progress.messages)-1] != wantFinal {
+		t.Fatalf("final progress message = %q", progress.messages[len(progress.messages)-1])
+	}
+	if progress.percents[len(progress.percents)-1] != 100 {
+		t.Fatalf("final percent = %v, want 100", progress.percents[len(progress.percents)-1])
 	}
 }

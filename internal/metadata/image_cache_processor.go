@@ -29,6 +29,13 @@ const maxLocalImageSourceBytes = 8 << 20
 // Draining of already-queued jobs is unaffected and stays responsive.
 const imageCacheDiscoveryInterval = 15 * time.Minute
 
+// imageCacheLeaseHeartbeatInterval refreshes locked_at while a job is actively
+// processed so the short reclaim lease does not steal in-flight work.
+const imageCacheLeaseHeartbeatInterval = 30 * time.Second
+
+// ImageCacheProgressFunc reports cache-queue progress to the task manager UI.
+type ImageCacheProgressFunc func(percent float64, message string)
+
 type ImageCacheJobClaimer interface {
 	ClaimDue(ctx context.Context, workerID string, limit int) ([]*models.MetadataImageCacheJob, error)
 	MarkSucceeded(ctx context.Context, id int64, lockedBy string) error
@@ -37,6 +44,8 @@ type ImageCacheJobClaimer interface {
 	CurrentTargetSourcePath(ctx context.Context, job *models.MetadataImageCacheJob) (string, error)
 	EnqueueExistingProviderArtwork(ctx context.Context, limit int) (int, error)
 	DeleteSucceededBefore(ctx context.Context, before time.Time, limit int) (int, error)
+	StatusCounts(ctx context.Context) (ImageCacheJobStatusCounts, error)
+	Heartbeat(ctx context.Context, id int64, lockedBy string) (bool, error)
 }
 
 // imageCacheTargetCachedPathReader is optionally implemented by the job store
@@ -208,16 +217,20 @@ func (s *ImageCacheRunStats) add(other ImageCacheRunStats) {
 // RunOnce claims and processes one batch of already-queued jobs. It does not
 // run catalog discovery; callers (RunUntilIdle) drive discovery on a throttled
 // cadence so backlog draining stays decoupled from full-table sweeps.
+//
+// claimLimit is capped to concurrency so DB "running" tracks work that is
+// actually in flight. Over-claiming marked hundreds of idle jobs running and
+// left them orphaned across restarts until the lease expired.
 func (p *ImageCacheProcessor) RunOnce(ctx context.Context, workerID string, claimLimit int, concurrency int) (ImageCacheRunStats, error) {
 	var stats ImageCacheRunStats
 	if p == nil || p.jobs == nil || p.cacher == nil || !p.enabled.Load() {
 		return stats, nil
 	}
-	if claimLimit <= 0 {
-		claimLimit = 100
-	}
 	if concurrency <= 0 {
 		concurrency = 4
+	}
+	if claimLimit <= 0 || claimLimit > concurrency {
+		claimLimit = concurrency
 	}
 
 	jobs, err := p.jobs.ClaimDue(ctx, workerID, claimLimit)
@@ -284,11 +297,16 @@ loop:
 	return stats, nil
 }
 
-func (p *ImageCacheProcessor) RunUntilIdle(ctx context.Context, workerID string, claimLimit int, concurrency int, maxRuntime time.Duration) (ImageCacheRunStats, error) {
+func (p *ImageCacheProcessor) RunUntilIdle(ctx context.Context, workerID string, claimLimit int, concurrency int, maxRuntime time.Duration, onProgress ImageCacheProgressFunc) (ImageCacheRunStats, error) {
 	var total ImageCacheRunStats
 	if p == nil || p.jobs == nil || p.cacher == nil || !p.enabled.Load() {
 		return total, nil
 	}
+
+	reportProgress := func() {
+		p.reportQueueProgress(ctx, onProgress)
+	}
+	reportProgress()
 
 	if maxRuntime <= 0 {
 		enqueued, derr := p.discoverExisting(ctx, claimLimit)
@@ -299,12 +317,14 @@ func (p *ImageCacheProcessor) RunUntilIdle(ctx context.Context, workerID string,
 		stats, err := p.RunOnce(ctx, workerID, claimLimit, concurrency)
 		total.add(stats)
 		total.Batches = 1
+		reportProgress()
 		return total, err
 	}
 
 	// Decide once per run whether a full-catalog backfill sweep is due. Within a
 	// due run we keep sweeping until the catalog is exhausted; otherwise we only
-	// drain the existing queue.
+	// drain the existing queue. claimLimit remains the discovery enqueue batch;
+	// RunOnce caps the claim size to concurrency so running ≈ in flight.
 	sweep := p.discoveryDue()
 	deadline := time.Now().Add(maxRuntime)
 	for {
@@ -313,12 +333,14 @@ func (p *ImageCacheProcessor) RunUntilIdle(ctx context.Context, workerID string,
 		}
 		if !time.Now().Before(deadline) {
 			total.RuntimeLimited = true
+			reportProgress()
 			return total, nil
 		}
 
 		stats, err := p.RunOnce(ctx, workerID, claimLimit, concurrency)
 		total.Batches++
 		total.add(stats)
+		reportProgress()
 		if err != nil {
 			return total, err
 		}
@@ -334,12 +356,41 @@ func (p *ImageCacheProcessor) RunUntilIdle(ctx context.Context, workerID string,
 			return total, err
 		}
 		total.EnqueuedExisting += enqueued
+		reportProgress()
 		if enqueued == 0 {
 			// Catalog fully swept; throttle the next sweep.
 			p.markDiscovered()
 			return total, nil
 		}
 	}
+}
+
+func (p *ImageCacheProcessor) reportQueueProgress(ctx context.Context, onProgress ImageCacheProgressFunc) {
+	if onProgress == nil || p.jobs == nil {
+		return
+	}
+	counts, err := p.jobs.StatusCounts(ctx)
+	if err != nil {
+		p.logger.WarnContext(ctx, "metadata image cache: failed to read job status counts", "error", err)
+		return
+	}
+	total := counts.Total()
+	var percent float64
+	switch {
+	case total == 0:
+		percent = 100
+	case counts.Queued+counts.Running == 0:
+		percent = 100
+	default:
+		percent = float64(counts.Succeeded) / float64(total) * 100
+		if percent > 99 && counts.Queued+counts.Running > 0 {
+			percent = 99
+		}
+	}
+	onProgress(percent, fmt.Sprintf(
+		"Cached %d/%d (queued %d, running %d, failed %d)",
+		counts.Succeeded, total, counts.Queued, counts.Running, counts.Failed,
+	))
 }
 
 // discoveryDue reports whether enough time has elapsed since the last completed
@@ -410,6 +461,9 @@ func (p *ImageCacheProcessor) processOne(ctx context.Context, job *models.Metada
 	if job == nil {
 		return imageCacheProcessResult{outcome: "skipped"}
 	}
+	stopHeartbeat := p.startLeaseHeartbeat(ctx, job)
+	defer stopHeartbeat()
+
 	imageType, err := imageCacheJobImageType(job.ImageType)
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
@@ -477,6 +531,41 @@ func (p *ImageCacheProcessor) processOne(ctx context.Context, job *models.Metada
 	}
 	p.finishJobWithTargetUpdate(ctx, job, cachedPath, result.Thumbhash, &processResult)
 	return processResult
+}
+
+// startLeaseHeartbeat refreshes locked_at while the job is actively processed
+// so the short reclaim window does not soft-requeue in-flight work.
+func (p *ImageCacheProcessor) startLeaseHeartbeat(ctx context.Context, job *models.MetadataImageCacheJob) func() {
+	if p == nil || p.jobs == nil || job == nil || job.LockedBy == "" {
+		return func() {}
+	}
+	done := make(chan struct{})
+	var once sync.Once
+	go func() {
+		ticker := time.NewTicker(imageCacheLeaseHeartbeatInterval)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-done:
+				return
+			case <-ctx.Done():
+				return
+			case <-ticker.C:
+				ok, err := p.jobs.Heartbeat(ctx, job.ID, job.LockedBy)
+				if err != nil {
+					p.logger.WarnContext(ctx, "metadata image cache: lease heartbeat failed", "job_id", job.ID, "error", err)
+					continue
+				}
+				if !ok {
+					p.logger.WarnContext(ctx, "metadata image cache: lease lost during processing", "job_id", job.ID)
+					return
+				}
+			}
+		}
+	}()
+	return func() {
+		once.Do(func() { close(done) })
+	}
 }
 
 // finishJobWithTargetUpdate persists the cached path/thumbhash to the job's

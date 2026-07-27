@@ -380,6 +380,42 @@ func TestIsBlockedMetadataIPVariants(t *testing.T) {
 	}
 }
 
+func TestMediaTransportDialControlBlocksMetadata(t *testing.T) {
+	client := NewMediaHTTPClient()
+	client.Timeout = 2 * time.Second
+	// Dial-time Control rejects cloud metadata IPs even if URL validation is bypassed
+	// by using the transport directly with a literal address.
+	req, err := http.NewRequest(http.MethodGet, "http://169.254.169.254/", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := client.Transport.RoundTrip(req)
+	if resp != nil {
+		_ = resp.Body.Close()
+	}
+	if err == nil {
+		t.Fatal("expected metadata dial rejection")
+	}
+	if !strings.Contains(err.Error(), "metadata") {
+		t.Fatalf("err = %v", err)
+	}
+
+	// Happy-path Control allows a normal LAN/loopback dial attempt (connection
+	// may still fail; we only need Control to return nil).
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = io.WriteString(w, "ok")
+	}))
+	defer srv.Close()
+	allowLoopbackMediaFetch(t)
+	okClient := NewMediaHTTPClient()
+	okClient.Timeout = 2 * time.Second
+	resp, err = okClient.Get(srv.URL)
+	if err != nil {
+		t.Fatalf("loopback get: %v", err)
+	}
+	defer resp.Body.Close()
+}
+
 func TestPublicSessionHelpers(t *testing.T) {
 	if path := PublicSessionStreamPath("abc"); path != "/api/v1/livetv/sessions/abc/stream" {
 		t.Fatalf("path=%q", path)

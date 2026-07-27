@@ -133,6 +133,72 @@ func TestResolveGuideStationIDFromHDHomeRun(t *testing.T) {
 			t.Fatalf("got %q", got)
 		}
 	})
+
+	t.Run("duplicate callsign filtered to unique major", func(t *testing.T) {
+		dup := &schedulesdirect.LineupDetail{
+			Map: []schedulesdirect.LineupMapEntry{
+				{Channel: "7.1", StationID: "400"},
+				{Channel: "8.1", StationID: "401"},
+			},
+			Stations: []schedulesdirect.Station{
+				{StationID: "400", Callsign: "WFAA"},
+				{StationID: "401", Callsign: "WFAA"},
+			},
+		}
+		got := resolveGuideStationID(Channel{Number: "7.9", Callsign: "WFAA"}, dup)
+		if got != "400" {
+			t.Fatalf("got %q want major-filtered 400", got)
+		}
+	})
+
+	t.Run("duplicate callsign filtered pool prefers .1", func(t *testing.T) {
+		dup := &schedulesdirect.LineupDetail{
+			Map: []schedulesdirect.LineupMapEntry{
+				{Channel: "7.1", StationID: "400"},
+				{Channel: "7.2", StationID: "401"},
+				{Channel: "7.3", StationID: "402"},
+			},
+			Stations: []schedulesdirect.Station{
+				{StationID: "400", Callsign: "WFAA"},
+				{StationID: "401", Callsign: "WFAA"},
+				{StationID: "402", Callsign: "OTHER"},
+			},
+		}
+		got := resolveGuideStationID(Channel{Number: "7.9", Callsign: "WFAA"}, dup)
+		if got != "400" {
+			t.Fatalf("got %q want .1 from filtered pool", got)
+		}
+	})
+
+	t.Run("major with multiple entries prefers .1 without callsign", func(t *testing.T) {
+		got := resolveGuideStationID(Channel{Number: "2.9", Callsign: "NOPE"}, detail)
+		if got != "100" {
+			t.Fatalf("got %q want 2.1 station", got)
+		}
+	})
+
+	t.Run("major-only single map entry without callsign", func(t *testing.T) {
+		got := resolveGuideStationID(Channel{Number: "5.9"}, detail)
+		if got != "300" {
+			t.Fatalf("got %q want major-only 300", got)
+		}
+	})
+
+	t.Run("duplicate station ids in callsign list", func(t *testing.T) {
+		dup := &schedulesdirect.LineupDetail{
+			Map: []schedulesdirect.LineupMapEntry{
+				{Channel: "11.1", StationID: "700"},
+			},
+			Stations: []schedulesdirect.Station{
+				{StationID: "700", Callsign: "UNIQUE"},
+				{StationID: "700", Callsign: "UNIQUE"},
+			},
+		}
+		got := resolveGuideStationID(Channel{Number: "99.1", Callsign: "UNIQUE"}, dup)
+		if got != "700" {
+			t.Fatalf("got %q", got)
+		}
+	})
 }
 
 func TestChannelMajorAndHelpers(t *testing.T) {

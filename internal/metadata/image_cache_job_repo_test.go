@@ -7,6 +7,23 @@ import (
 	"time"
 )
 
+func TestImageCacheLeaseDurationIsBounded(t *testing.T) {
+	if imageCacheLeaseDuration != 2*time.Minute {
+		t.Fatalf("imageCacheLeaseDuration = %s, want 2m for fast restart reclaim", imageCacheLeaseDuration)
+	}
+	body, err := os.ReadFile("image_cache_job_repo.go")
+	if err != nil {
+		t.Fatalf("read image_cache_job_repo.go: %v", err)
+	}
+	sql := string(body)
+	if strings.Contains(sql, "worker lease expired too many times") {
+		t.Fatal("stale running reclaim must soft-requeue without burning attempts")
+	}
+	if !strings.Contains(sql, "AND locked_at < NOW() - $1::interval") {
+		t.Fatal("stale running reclaim must key off locked_at lease expiry")
+	}
+}
+
 func TestImageCacheRetryDelayCaps(t *testing.T) {
 	if got := imageCacheRetryDelay(1); got != time.Minute {
 		t.Fatalf("attempt 1 delay = %s, want 1m", got)
