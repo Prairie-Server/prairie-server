@@ -106,7 +106,7 @@ func StartLiveRecord(parent context.Context, opts LiveRecordOpts) (*LiveRecordSe
 		session.errMu.Lock()
 		if waitErr != nil && ctx.Err() == nil {
 			session.err = fmt.Errorf("live record ffmpeg exited: %w (%s)", waitErr, string(last))
-			slog.Warn("live record ffmpeg exited unexpectedly",
+			slog.WarnContext(ctx, "live record ffmpeg exited unexpectedly",
 				"recording_id", opts.ID, "error", session.err)
 		}
 		session.errMu.Unlock()

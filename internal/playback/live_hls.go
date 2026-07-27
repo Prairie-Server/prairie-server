@@ -123,7 +123,7 @@ func StartLiveHLS(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession, er
 		session.errMu.Lock()
 		if waitErr != nil && ctx.Err() == nil {
 			session.err = fmt.Errorf("live hls ffmpeg exited: %w (%s)", waitErr, string(last))
-			slog.Warn("live hls ffmpeg exited unexpectedly",
+			slog.WarnContext(ctx, "live hls ffmpeg exited unexpectedly",
 				"session_id", opts.ID, "error", session.err)
 		}
 		session.errMu.Unlock()

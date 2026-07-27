@@ -40,6 +40,10 @@ vi.mock("@/components/TasteSeedBanner", () => ({
   default: () => <div data-kind="taste-seed" />,
 }));
 
+vi.mock("@/components/livetv/LiveTVOnNowRow", () => ({
+  default: () => null,
+}));
+
 vi.mock("@/components/HeroBanner", () => ({
   default: () => <div data-kind="hero" />,
 }));

@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 import { Play, Radio } from "lucide-react";
 import MediaCarousel from "@/components/MediaCarousel";
 import { Badge } from "@/components/ui/badge";
@@ -16,7 +16,6 @@ import {
  * Hidden when the server has no enabled channels.
  */
 export default function LiveTVOnNowRow() {
-  const navigate = useNavigate();
   const channelsQuery = useLiveTVChannels();
   const channels = (channelsQuery.data ?? []).filter((ch) => ch.enabled).slice(0, 24);
 
@@ -37,7 +36,7 @@ export default function LiveTVOnNowRow() {
     channels.length > 0,
   );
 
-  if (channelsQuery.isLoading || channels.length === 0) {
+  if (channelsQuery.isLoading || channelsQuery.isError || channels.length === 0) {
     return null;
   }
 
@@ -63,7 +62,6 @@ export default function LiveTVOnNowRow() {
         titleHref="/livetv"
         loading={guide.isLoading && cards.length === 0}
         skeletonAspect="aspect-video"
-        onViewAll={() => navigate("/livetv")}
       >
         {cards.map(({ channel, nowProgram }) => {
           const progress = progressFraction(nowProgram.start, nowProgram.stop, now);

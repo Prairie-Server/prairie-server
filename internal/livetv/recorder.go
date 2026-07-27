@@ -207,8 +207,10 @@ func (r *Recorder) finishRecording(ctx context.Context, rec *Recording, cancel b
 		} else {
 			rec.LastError = "recording file empty"
 		}
-		_, err := r.service.store.UpdateRecording(ctx, rec)
-		return err
+		if _, err := r.service.store.UpdateRecording(ctx, rec); err != nil {
+			return err
+		}
+		return fmt.Errorf("recording file missing or empty")
 	}
 
 	rec.Status = "completed"
