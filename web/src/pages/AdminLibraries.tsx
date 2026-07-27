@@ -170,10 +170,13 @@ export default function AdminLibraries() {
   }, [libraries]);
 
   useEffect(() => {
+    // Capture the mutable timeouts map once; entries are added/removed in place,
+    // so cleanup still sees every pending timer at unmount.
+    const pendingTimeouts = mountCheckClearTimeoutsRef.current;
     return () => {
       // Cancel pending mount-check cleanup timers so unmount cannot clear state
       // after the page leaves.
-      for (const timeoutID of Object.values(mountCheckClearTimeoutsRef.current)) {
+      for (const timeoutID of Object.values(pendingTimeouts)) {
         window.clearTimeout(timeoutID);
       }
     };

@@ -26,15 +26,15 @@
     ],
     "typescript/no-empty-object-type": ["error", { "allowInterfaces": "with-single-extends" }],
     "typescript/no-floating-promises": "error",
-    "typescript/no-base-to-string": "warn",
-    "typescript/restrict-template-expressions": "warn",
-    "typescript/no-redundant-type-constituents": "warn",
-    "typescript/require-array-sort-compare": "warn",
+    "typescript/no-base-to-string": "error",
+    "typescript/restrict-template-expressions": "error",
+    "typescript/no-redundant-type-constituents": "error",
+    "typescript/require-array-sort-compare": "error",
     "unicorn/no-useless-fallback-in-spread": "off",
-    "unicorn/no-useless-spread": "warn",
+    "unicorn/no-useless-spread": "error",
     "react/rules-of-hooks": "error",
     "react/exhaustive-deps": "warn",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+    "react/only-export-components": "off"
   },
   "overrides": [
     {

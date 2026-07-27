@@ -60,7 +60,7 @@ export function FacetSearchSelect({
     staleTime: 60 * 1000,
   });
 
-  const matches = query.data?.matches ?? [];
+  const matches = query.data?.matches;
   const hasMore = query.data?.has_more ?? false;
 
   const options = React.useMemo(() => {
@@ -68,7 +68,7 @@ export function FacetSearchSelect({
     if (value) {
       names.add(value);
     }
-    for (const name of matches) {
+    for (const name of matches ?? []) {
       if (name) {
         names.add(name);
       }

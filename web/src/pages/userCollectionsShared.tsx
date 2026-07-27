@@ -22,7 +22,7 @@ import CollectionBuilder, {
 import { ImageUploadField } from "@/components/ImageUploadField";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function buildUserCollectionEditorPath(id: "new" | string) {
+export function buildUserCollectionEditorPath(id: string) {
   return id === "new" ? "/collections/new" : `/collections/${id}/edit`;
 }
 

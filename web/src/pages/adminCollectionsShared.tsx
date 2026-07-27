@@ -71,7 +71,7 @@ interface TraktSourceConfig extends TraktPresetSourceConfig {
   listUrl: string;
 }
 
-export function buildAdminCollectionEditorPath(id: "new" | string, libraryId?: number | null) {
+export function buildAdminCollectionEditorPath(id: string, libraryId?: number | null) {
   const base = id === "new" ? "/admin/collections/new" : `/admin/collections/${id}/edit`;
   return libraryId ? `${base}?libraryId=${libraryId}` : base;
 }

@@ -202,7 +202,7 @@ export function useLibraryForm({
   }
 
   function mergeBrowsedPaths(selectedPaths: string[]) {
-    const merged = [...paths.filter((path) => path.trim())];
+    const merged = paths.filter((path) => path.trim());
     for (const selectedPath of selectedPaths) {
       if (!merged.includes(selectedPath)) {
         merged.push(selectedPath);

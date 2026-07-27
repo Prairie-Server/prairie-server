@@ -34,14 +34,14 @@ export default function ImageSelectorTab({ item, enabled }: ImageSelectorTabProp
   const { data, isLoading, isError } = useItemImages(item.content_id, enabled);
   const applyMutation = useApplyItemImage();
 
-  const images = data?.images ?? [];
+  const images = data?.images;
   const current = data?.current;
   const providerErrors = data?.provider_errors;
 
   const tabConfig = IMAGE_TABS.find((t) => t.key === activeTab)!;
 
   const filteredImages = useMemo(() => {
-    let result = images.filter((img) => img.type === activeTab);
+    let result = (images ?? []).filter((img) => img.type === activeTab);
     if (textlessOnly && activeTab !== "logo") {
       result = result.filter((img) => img.language === "");
     }

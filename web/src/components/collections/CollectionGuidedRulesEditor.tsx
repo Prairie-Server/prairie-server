@@ -31,6 +31,7 @@ import {
   type QuerySortRelevanceScope,
 } from "@/lib/querySortOptions";
 import { cn } from "@/lib/utils";
+import { stringifyUnknown } from "@/lib/stringifyUnknown";
 
 import { getCollectionSortOptions } from "./collectionBuilderFields";
 
@@ -83,9 +84,7 @@ function deriveDecade(yearFrom: string, yearTo: string): string {
 }
 
 function isFourKResolution(value: unknown): boolean {
-  const normalized = String(value ?? "")
-    .trim()
-    .toLowerCase();
+  const normalized = stringifyUnknown(value).trim().toLowerCase();
   return normalized === "2160p" || normalized === "4k" || normalized === "uhd";
 }
 

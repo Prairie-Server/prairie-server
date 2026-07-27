@@ -103,6 +103,17 @@ function SidebarLabel({ children, show }: { children: ReactNode; show: boolean }
   );
 }
 
+function reactNodeToLabel(node: ReactNode): string {
+  if (node == null || typeof node === "boolean") return "";
+  if (typeof node === "string" || typeof node === "number" || typeof node === "bigint") {
+    return String(node);
+  }
+  if (Array.isArray(node)) {
+    return node.map(reactNodeToLabel).filter(Boolean).join(" ");
+  }
+  return "";
+}
+
 function SidebarSectionHeader({
   children,
   show,
@@ -139,7 +150,11 @@ function SidebarSectionHeader({
           disabled={!show}
           aria-hidden={!show}
           aria-expanded={expanded}
-          aria-label={expanded ? `Collapse ${String(children)}` : `Expand ${String(children)}`}
+          aria-label={
+            expanded
+              ? `Collapse ${reactNodeToLabel(children) || "section"}`
+              : `Expand ${reactNodeToLabel(children) || "section"}`
+          }
           tabIndex={show ? 0 : -1}
           className={`${textClass} hover:text-sidebar-foreground flex h-5 w-full items-center gap-1 px-3 transition-opacity duration-150 ${
             show ? "opacity-100" : "pointer-events-none opacity-0"

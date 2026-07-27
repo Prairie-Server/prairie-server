@@ -41,6 +41,7 @@ import { useUserCollectionTemplates } from "@/hooks/queries/userCollectionImport
 import { CollectionTemplateCard } from "./CollectionTemplateCard";
 import { CollectionTemplateConfigForm } from "./CollectionTemplateConfigForm";
 import { UserCollectionTemplateConfigForm } from "./UserCollectionTemplateConfigForm";
+import { stringifyUnknown } from "@/lib/stringifyUnknown";
 
 type ActiveCategory = CollectionTemplateCategory | "all";
 
@@ -229,7 +230,7 @@ function GalleryView({
   if (error) {
     return (
       <div className="text-destructive rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm">
-        Failed to load templates: {error instanceof Error ? error.message : String(error)}
+        Failed to load templates: {error instanceof Error ? error.message : stringifyUnknown(error)}
       </div>
     );
   }
