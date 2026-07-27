@@ -2,22 +2,25 @@ package imageutil
 
 import (
 	"bytes"
+	"context"
 	"image"
 	"image/color"
 	"image/jpeg"
 	"image/png"
+	"strconv"
 	"testing"
 
 	"golang.org/x/image/webp"
 )
 
+// fastFormats skips AVIF encode. Most tests only need WebP/PNG; AVIF is covered
+// by TestPublicVariantAPIs so CI stays cheap.
+const fastFormats = "webp,png"
+
 func TestGenerateVariants(t *testing.T) {
 	t.Parallel()
-	src := makeTestJPEG(t, 800, 600)
-	result, err := GenerateVariants(src, []int{500, 300})
-	if err != nil {
-		t.Fatalf("GenerateVariants: %v", err)
-	}
+	src := makeTestJPEG(t, 400, 300)
+	result := mustGenerateVariants(t, src, []int{300, 200}, fastFormats)
 	if result.Ext != ".webp" {
 		t.Fatalf("ext = %q, want .webp", result.Ext)
 	}
@@ -33,27 +36,27 @@ func TestGenerateVariants(t *testing.T) {
 		}
 		switch v.Key {
 		case "original":
-			if cfg.Width != 800 || cfg.Height != 600 {
-				t.Fatalf("original size = %dx%d, want 800x600", cfg.Width, cfg.Height)
-			}
-		case "w500":
-			if cfg.Width != 500 {
-				t.Fatalf("w500 width = %d, want 500", cfg.Width)
+			if cfg.Width != 400 || cfg.Height != 300 {
+				t.Fatalf("original size = %dx%d, want 400x300", cfg.Width, cfg.Height)
 			}
 		case "w300":
 			if cfg.Width != 300 {
 				t.Fatalf("w300 width = %d, want 300", cfg.Width)
 			}
+		case "w200":
+			if cfg.Width != 200 {
+				t.Fatalf("w200 width = %d, want 200", cfg.Width)
+			}
 		}
 	}
-	for _, key := range []string{"original", "w500", "w300"} {
+	for _, key := range []string{"original", "w300", "w200"} {
 		if keys[key] == nil {
 			t.Fatalf("missing variant %s", key)
 		}
 	}
 	for _, v := range result.Variants {
-		if len(v.AVIF) < 12 || string(v.AVIF[4:8]) != "ftyp" {
-			t.Fatalf("variant %s missing AVIF payload", v.Key)
+		if len(v.AVIF) != 0 {
+			t.Fatalf("variant %s unexpectedly included AVIF", v.Key)
 		}
 		if len(v.PNG) < 8 || string(v.PNG[:4]) != "\x89PNG" {
 			t.Fatalf("variant %s missing PNG payload", v.Key)
@@ -61,14 +64,62 @@ func TestGenerateVariants(t *testing.T) {
 	}
 }
 
-func TestGenerateVariantsCapsOriginal(t *testing.T) {
+func TestPublicVariantAPIs(t *testing.T) {
 	t.Parallel()
-	// Just over the 1920 cap on the long edge; keep pixels modest for CI time.
-	src := makeTestJPEG(t, 2000, 800)
-	result, err := GenerateVariants(src, nil)
+	// Exercises GenerateVariants / GenerateSquareVariants wrappers (default
+	// webp,avif,png) on a small canvas so CI time stays modest.
+	src := makeTestJPEG(t, 160, 120)
+
+	result, err := GenerateVariants(src, []int{80})
 	if err != nil {
 		t.Fatalf("GenerateVariants: %v", err)
 	}
+	keys := map[string]bool{}
+	for _, v := range result.Variants {
+		keys[v.Key] = true
+		if len(v.AVIF) < 12 || string(v.AVIF[4:8]) != "ftyp" {
+			t.Fatalf("variant %s missing AVIF payload", v.Key)
+		}
+	}
+	for _, key := range []string{"original", "w80"} {
+		if !keys[key] {
+			t.Fatalf("missing variant %s", key)
+		}
+	}
+
+	square, err := GenerateSquareVariants(src, []int{64})
+	if err != nil {
+		t.Fatalf("GenerateSquareVariants: %v", err)
+	}
+	found := false
+	for _, v := range square.Variants {
+		cfg, err := webp.DecodeConfig(bytes.NewReader(v.Data))
+		if err != nil {
+			t.Fatalf("decode %s: %v", v.Key, err)
+		}
+		if cfg.Width != cfg.Height {
+			t.Fatalf("%s not square: %dx%d", v.Key, cfg.Width, cfg.Height)
+		}
+		if len(v.AVIF) < 12 || string(v.AVIF[4:8]) != "ftyp" {
+			t.Fatalf("square variant %s missing AVIF payload", v.Key)
+		}
+		if v.Key == "w64" {
+			found = true
+			if cfg.Width != 64 {
+				t.Fatalf("w64 size = %d, want 64", cfg.Width)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("missing w64")
+	}
+}
+
+func TestGenerateVariantsCapsOriginal(t *testing.T) {
+	t.Parallel()
+	// Just over the 1920 cap on the long edge; keep pixels modest for CI time.
+	src := makeTestJPEG(t, 2000, 400)
+	result := mustGenerateVariants(t, src, nil, fastFormats)
 	original := result.Variants[0].Data
 	cfg, err := webp.DecodeConfig(bytes.NewReader(original))
 	if err != nil {
@@ -81,11 +132,8 @@ func TestGenerateVariantsCapsOriginal(t *testing.T) {
 
 func TestGenerateSquareVariants(t *testing.T) {
 	t.Parallel()
-	src := makeTestJPEG(t, 800, 600)
-	result, err := GenerateSquareVariants(src, []int{256})
-	if err != nil {
-		t.Fatalf("GenerateSquareVariants: %v", err)
-	}
+	src := makeTestJPEG(t, 400, 300)
+	result := mustGenerateSquareVariants(t, src, []int{128}, fastFormats)
 	found := false
 	for _, v := range result.Variants {
 		cfg, err := webp.DecodeConfig(bytes.NewReader(v.Data))
@@ -95,21 +143,18 @@ func TestGenerateSquareVariants(t *testing.T) {
 		if cfg.Width != cfg.Height {
 			t.Fatalf("%s not square: %dx%d", v.Key, cfg.Width, cfg.Height)
 		}
-		if len(v.AVIF) < 12 || string(v.AVIF[4:8]) != "ftyp" {
-			t.Fatalf("variant %s missing AVIF payload", v.Key)
-		}
 		if len(v.PNG) < 8 || string(v.PNG[:4]) != "\x89PNG" {
 			t.Fatalf("variant %s missing PNG payload", v.Key)
 		}
-		if v.Key == "w256" {
+		if v.Key == "w128" {
 			found = true
-			if cfg.Width != 256 {
-				t.Fatalf("w256 size = %d, want 256", cfg.Width)
+			if cfg.Width != 128 {
+				t.Fatalf("w128 size = %d, want 128", cfg.Width)
 			}
 		}
 	}
 	if !found {
-		t.Fatal("missing w256")
+		t.Fatal("missing w128")
 	}
 }
 
@@ -125,10 +170,7 @@ func TestThumbhash(t *testing.T) {
 	}
 
 	// WebP-only sources need the normalize-png WASM path.
-	webpSrc, err := GenerateVariants(src, nil)
-	if err != nil {
-		t.Fatalf("GenerateVariants for webp source: %v", err)
-	}
+	webpSrc := mustGenerateVariants(t, src, nil, "webp")
 	hash2, err := Thumbhash(webpSrc.Variants[0].Data)
 	if err != nil {
 		t.Fatalf("Thumbhash(webp): %v", err)
@@ -149,10 +191,7 @@ func TestNormalizeRejectsGarbage(t *testing.T) {
 func TestGenerateVariantsFromSVG(t *testing.T) {
 	t.Parallel()
 	svg := []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200"><rect width="400" height="200" fill="#234"/></svg>`)
-	result, err := GenerateVariants(svg, []int{200})
-	if err != nil {
-		t.Fatalf("GenerateVariants(svg): %v", err)
-	}
+	result := mustGenerateVariants(t, svg, []int{200}, fastFormats)
 	cfg, err := webp.DecodeConfig(bytes.NewReader(result.Variants[0].Data))
 	if err != nil {
 		t.Fatalf("decode svg original: %v", err)
@@ -171,7 +210,7 @@ func makeTestJPEG(t *testing.T, w, h int) []byte {
 		}
 	}
 	var buf bytes.Buffer
-	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 90}); err != nil {
+	if err := jpeg.Encode(&buf, img, &jpeg.Options{Quality: 85}); err != nil {
 		t.Fatalf("jpeg encode: %v", err)
 	}
 	return buf.Bytes()
@@ -196,4 +235,33 @@ func TestPNGRoundTripNormalize(t *testing.T) {
 	if hash == "" {
 		t.Fatal("empty thumbhash")
 	}
+}
+
+func mustRunVariants(t *testing.T, op, flagName string, data []byte, values []int, formats string, extraArgs ...string) *VariantResult {
+	t.Helper()
+	p, err := getProcessor()
+	if err != nil {
+		t.Fatalf("getProcessor: %v", err)
+	}
+	args := append([]string{"--quality", strconv.Itoa(webpQuality)}, extraArgs...)
+	args = append(args, "--formats", formats)
+	if csv := joinUintCSV(values); csv != "" {
+		args = append(args, "--"+flagName, csv)
+	}
+	result, err := p.run(context.Background(), op, data, args)
+	if err != nil {
+		t.Fatalf("%s(%s): %v", op, formats, err)
+	}
+	return result
+}
+
+func mustGenerateVariants(t *testing.T, data []byte, widths []int, formats string) *VariantResult {
+	t.Helper()
+	return mustRunVariants(t, "variants", "widths", data, widths, formats,
+		"--max-original", strconv.Itoa(maxCachedOriginalDimension))
+}
+
+func mustGenerateSquareVariants(t *testing.T, data []byte, sizes []int, formats string) *VariantResult {
+	t.Helper()
+	return mustRunVariants(t, "square-variants", "sizes", data, sizes, formats)
 }

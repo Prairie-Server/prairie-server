@@ -993,8 +993,8 @@ func TestTerminalScrobbleRecoveryHonorsFallbackGracePeriod(t *testing.T) {
 	}
 	scrobbler := &channelCompatWatchScrobbler{stopEvents: make(chan watchsync.ScrobbleEvent, 1)}
 	handler := &PlaybackHandler{
-		playbackStore:         store,
-		WatchScrobbler:        scrobbler,
+		playbackStore:  store,
+		WatchScrobbler: scrobbler,
 		// Keep short so CI wall clock stays small; grace still exceeds the
 		// "must not deliver yet" probe below.
 		terminalFallbackDelay: 40 * time.Millisecond,
@@ -1029,7 +1029,9 @@ func TestTerminalScrobbleRecoveryLeavesRetryToNextScan(t *testing.T) {
 	if err := recoverPendingTerminalScrobbles(context.Background(), handler); err != nil {
 		t.Fatalf("recover terminal events: %v", err)
 	}
-	time.Sleep(compatTerminalInitialRetryDelay + 100*time.Millisecond)
+	// Stay just past the initial retry delay so a second attempt would have
+	// fired if recoverPendingTerminalScrobbles retried in-loop.
+	time.Sleep(compatTerminalInitialRetryDelay + 20*time.Millisecond)
 	if calls := scrobbler.stopCalls.Load(); calls != 1 {
 		t.Fatalf("recovery stop attempts = %d, want one attempt per scan", calls)
 	}

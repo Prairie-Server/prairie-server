@@ -17,16 +17,70 @@ env:
   COVER_MIN: "95"
 
 jobs:
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      go: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.go }}
+      go_jellycompat: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.go_jellycompat }}
+      go_imageutil: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.go_imageutil }}
+      web: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.web }}
+      rust_imageutil: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.rust_imageutil }}
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Path filter
+        uses: dorny/paths-filter@v4
+        id: filter
+        if: github.event_name == 'pull_request'
+        with:
+          filters: |
+            go:
+              - 'go.mod'
+              - 'go.sum'
+              - '**.go'
+              - '.golangci.yml'
+              - '.github/coverage-packages.txt'
+              - 'scripts/check-go-coverage.sh'
+              - 'scripts/ci-go-lint.sh'
+              - 'scripts/ci-go-lint-packages.sh'
+              - '.github/workflows/ci.yml'
+            go_jellycompat:
+              - 'internal/jellycompat/**'
+              - 'go.mod'
+              - 'go.sum'
+              - '.github/workflows/ci.yml'
+            go_imageutil:
+              - 'internal/imageutil/**'
+              - 'tools/imageutil-wasm/**'
+              - 'go.mod'
+              - 'go.sum'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'web/**'
+              - '.github/workflows/ci.yml'
+            rust_imageutil:
+              - 'tools/imageutil-wasm/**'
+              - '.github/workflows/ci.yml'
+
+  # Single lint job (not matrix-sharded): each shard still typechecks the module
+  # graph, so 4-way split left wall clock ~2.5m while burning 4 runners. PRs lint
+  # only packages with changed .go files; main/dispatch keep a full-module pass.
+  # Workflow / CI-script-only diffs emit zero packages and skip analysis.
   go-lint:
     name: Go lint
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out sources
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-          # Merge-base lint needs enough history to reach origin/<base>.
-          # Cap depth so cold clones stay cheap; deepen if merge-base fails.
+          # Merge-base / changed-package lint needs history vs origin/<base>.
           fetch-depth: 100
 
       - name: Set up Go
@@ -46,28 +100,44 @@ jobs:
       # debt) — which looks like intermittent CI failure on large asset PRs.
       - name: Fetch PR base for merge-base lint
         if: github.event_name == 'pull_request'
+        env:
+          # Pass via env — interpolating github.base_ref into the shell is an injection risk.
+          PR_BASE_REF: ${{ github.base_ref }}
         run: |
           set -euo pipefail
-          git fetch --no-tags --depth=100 origin "${{ github.base_ref }}"
-          # Deepen if this PR branched farther back than the shallow window.
-          if ! git merge-base --is-ancestor "origin/${{ github.base_ref }}" HEAD 2>/dev/null \
-            && ! git merge-base "HEAD" "origin/${{ github.base_ref }}" >/dev/null 2>&1; then
-            git fetch --no-tags --deepen=500 origin "${{ github.base_ref }}"
+          git fetch --no-tags --depth=100 origin "${PR_BASE_REF}"
+          if ! git merge-base --is-ancestor "origin/${PR_BASE_REF}" HEAD 2>/dev/null \
+            && ! git merge-base "HEAD" "origin/${PR_BASE_REF}" >/dev/null 2>&1; then
+            git fetch --no-tags --deepen=500 origin "${PR_BASE_REF}"
             git fetch --no-tags --deepen=500 origin "${{ github.sha }}" || true
           fi
 
-      - name: golangci-lint (new issues vs base)
+      - name: Install golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          # Pin for stable binary + action cache hits (latest churns cold installs).
           version: v2.12.2
-          only-new-issues: false
-          args: >-
-            --timeout=5m
-            ${{ github.event_name == 'pull_request' && format('--new-from-merge-base=origin/{0}', github.base_ref) || '--new-from-rev=HEAD~1' }}
+          install-only: true
+
+      - name: golangci-lint
+        env:
+          PR_BASE_REF: ${{ github.base_ref }}
+          # PRs lint changed packages only; main/dispatch keep a full-module pass.
+          CI_GO_LINT_FULL: ${{ github.event_name == 'pull_request' && '0' || '1' }}
+          CI_GO_LINT_NEW_FROM_MERGE_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+          CI_GO_LINT_NEW_FROM_REV: ${{ github.event_name != 'pull_request' && 'HEAD~1' || '' }}
+        run: |
+          set -euo pipefail
+          chmod +x scripts/ci-go-lint.sh scripts/ci-go-lint-packages.sh
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            ./scripts/ci-go-lint.sh "origin/${PR_BASE_REF}"
+          else
+            ./scripts/ci-go-lint.sh
+          fi
 
   web-lint:
     name: Web lint + format
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -104,9 +174,11 @@ jobs:
 
   # jellycompat is the heavy suite (~17k test LOC). Run it in parallel with the
   # coverage-gated packages and imageutil WASM smoke so wall clock is ~max(suite)
-  # instead of sum.
+  # instead of sum. Path-filtered so web-only PRs skip it.
   go-test-jellycompat:
     name: Go jellycompat tests
+    needs: changes
+    if: needs.changes.outputs.go_jellycompat == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out sources
@@ -118,15 +190,35 @@ jobs:
         uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
-          cache: true
+          # Own the build/mod cache below so restore-keys can reuse dependency
+          # objects across jellycompat source edits (tests ~3s; cold compile ~1m).
+          cache: false
+
+      - name: Cache Go build and modules
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-jellycompat-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/jellycompat/**/*.go') }}
+          restore-keys: |
+            ${{ runner.os }}-jellycompat-${{ hashFiles('go.sum') }}-
+            ${{ runner.os }}-jellycompat-
 
       - name: Run jellycompat tests
-        run: go test ./internal/jellycompat/... -count=1
+        # -vet=off: golangci already covers vet/staticcheck; vet-during-test
+        # re-typechecks the 600+ dependency graph on cold runners.
+        run: |
+          set -euo pipefail
+          go mod download
+          go test ./internal/jellycompat/... -count=1 -vet=off
 
-  # Embedded WASI AVIF encode is CPU-heavy (~1m locally); keep it off the
-  # coverage-package critical path.
+  # Embedded WASI AVIF encode is CPU-heavy; keep it off the coverage-package path
+  # and only run when imageutil / its WASM toolchain changes.
   go-test-imageutil:
     name: Go imageutil tests
+    needs: changes
+    if: needs.changes.outputs.go_imageutil == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out sources
@@ -141,10 +233,12 @@ jobs:
           cache: true
 
       - name: Run imageutil WASM smoke tests
-        run: go test ./internal/imageutil/ -count=1
+        run: go test ./internal/imageutil/ -count=1 -vet=off
 
   go-test-coverage:
     name: Go tests + coverage
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Check out sources
@@ -157,6 +251,16 @@ jobs:
         with:
           go-version-file: go.mod
           cache: true
+
+      - name: Stub web/dist for embed
+        run: |
+          mkdir -p web/dist
+          printf '%s\n' '<!doctype html><title>prairie</title>' > web/dist/index.html
+
+      # Scoped lint can miss breakage in unchanged importers; a full compile
+      # catches that without re-running the whole test suite.
+      - name: Compile all packages
+        run: go build -o /dev/null ./...
 
       - name: Run unit tests with coverage
         run: |
@@ -186,7 +290,7 @@ jobs:
             ./internal/secret/... \
             ./internal/providerid/... \
             ./internal/buildinfo/... \
-            -count=1 -covermode=set -coverprofile=coverage.out
+            -count=1 -vet=off -covermode=set -coverprofile=coverage.out
 
       - name: Enforce coverage gate
         run: |
@@ -206,8 +310,35 @@ jobs:
           path: coverage.out
           if-no-files-found: ignore
 
+      # Folded in from a dedicated job to save a runner slot; still gated on Go
+      # path changes via this job's `if`.
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
+
+      - name: Run govulncheck
+        # imageutil is CGO-free (embedded WASI); no libvips headers required.
+        run: |
+          "$(go env GOPATH)/bin/govulncheck" ./...
+
+  # Kept as a named check for branch-protection compatibility; work lives in
+  # go-test-coverage. Must not treat a failed coverage job as a successful skip.
+  go-vulncheck:
+    name: Go vulnerability check
+    needs: [changes, go-test-coverage]
+    if: always() && needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require Go tests + coverage (includes govulncheck)
+        run: |
+          set -euo pipefail
+          result="${{ needs.go-test-coverage.result }}"
+          echo "go-test-coverage result: ${result}"
+          test "$result" = "success"
+
   web-test-coverage:
     name: Web tests (${{ matrix.shard }}/4)
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -258,12 +389,19 @@ jobs:
 
   web-coverage-report:
     name: Web coverage gate
-    needs: web-test-coverage
+    needs: [changes, web-test-coverage]
+    # Run whenever web changed so a failed shard cannot skip this required check.
+    if: always() && needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: web
     steps:
+      # Must run before defaults.working-directory=web (no checkout yet).
+      - name: Require web test shards
+        run: |
+          set -euo pipefail
+          result="${{ needs.web-test-coverage.result }}"
+          echo "web-test-coverage result: ${result}"
+          test "$result" = "success"
+
       - name: Check out sources
         uses: actions/checkout@v7
         with:
@@ -282,6 +420,7 @@ jobs:
           cache-dependency-path: web/pnpm-lock.yaml
 
       - name: Install dependencies
+        working-directory: web
         run: pnpm install --frozen-lockfile
 
       - name: Download blob reports
@@ -292,9 +431,11 @@ jobs:
           merge-multiple: true
 
       - name: Merge shard reports and enforce coverage
+        working-directory: web
         run: pnpm exec vitest --mergeReports --coverage
 
       - name: npm audit (production deps)
+        working-directory: web
         run: pnpm audit --prod --audit-level=high
 
       - name: Upload web coverage
@@ -305,31 +446,10 @@ jobs:
           path: web/coverage
           if-no-files-found: ignore
 
-  go-vulncheck:
-    name: Go vulnerability check
-    runs-on: ubuntu-latest
-    steps:
-      - name: Check out sources
-        uses: actions/checkout@v7
-        with:
-          persist-credentials: false
-
-      - name: Set up Go
-        uses: actions/setup-go@v7
-        with:
-          go-version-file: go.mod
-          cache: true
-
-      - name: Install govulncheck
-        run: go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
-
-      - name: Run govulncheck
-        # imageutil is CGO-free (embedded WASI); no libvips headers required.
-        run: |
-          "$(go env GOPATH)/bin/govulncheck" ./...
-
   rust-imageutil:
     name: Rust imageutil (fmt + clippy + test)
+    needs: changes
+    if: needs.changes.outputs.rust_imageutil == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
