@@ -6,6 +6,7 @@
 # Prefer packages with solid unit tests over artificially narrow includes.
 # When adding a package here, also add it to the go-test-coverage job in
 # .github/workflows/ci.yml so coverage.out contains its profile data.
+# jellycompat / imageutil run in parallel sibling CI jobs (no 95% gate).
 internal/livetv
 internal/livetv/hdhomerun
 internal/contentid

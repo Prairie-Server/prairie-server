@@ -995,7 +995,9 @@ func TestTerminalScrobbleRecoveryHonorsFallbackGracePeriod(t *testing.T) {
 	handler := &PlaybackHandler{
 		playbackStore:         store,
 		WatchScrobbler:        scrobbler,
-		terminalFallbackDelay: time.Second,
+		// Keep short so CI wall clock stays small; grace still exceeds the
+		// "must not deliver yet" probe below.
+		terminalFallbackDelay: 40 * time.Millisecond,
 	}
 
 	if err := recoverPendingTerminalScrobbles(context.Background(), handler); err != nil {
@@ -1004,11 +1006,11 @@ func TestTerminalScrobbleRecoveryHonorsFallbackGracePeriod(t *testing.T) {
 	select {
 	case got := <-scrobbler.stopEvents:
 		t.Fatalf("fallback delivered during grace period: %+v", got)
-	case <-time.After(25 * time.Millisecond):
+	case <-time.After(15 * time.Millisecond):
 	}
 	select {
 	case <-scrobbler.stopEvents:
-	case <-time.After(2 * time.Second):
+	case <-time.After(500 * time.Millisecond):
 		t.Fatal("fallback was not delivered after grace period")
 	}
 }

@@ -25,8 +25,9 @@ jobs:
         uses: actions/checkout@v7
         with:
           persist-credentials: false
-          # only-new-issues needs full history vs the PR base.
-          fetch-depth: 0
+          # Merge-base lint needs enough history to reach origin/<base>.
+          # Cap depth so cold clones stay cheap; deepen if merge-base fails.
+          fetch-depth: 100
 
       - name: Set up Go
         uses: actions/setup-go@v7
@@ -45,15 +46,24 @@ jobs:
       # debt) — which looks like intermittent CI failure on large asset PRs.
       - name: Fetch PR base for merge-base lint
         if: github.event_name == 'pull_request'
-        run: git fetch --no-tags --depth=1 origin "${{ github.base_ref }}"
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=100 origin "${{ github.base_ref }}"
+          # Deepen if this PR branched farther back than the shallow window.
+          if ! git merge-base --is-ancestor "origin/${{ github.base_ref }}" HEAD 2>/dev/null \
+            && ! git merge-base "HEAD" "origin/${{ github.base_ref }}" >/dev/null 2>&1; then
+            git fetch --no-tags --deepen=500 origin "${{ github.base_ref }}"
+            git fetch --no-tags --deepen=500 origin "${{ github.sha }}" || true
+          fi
 
       - name: golangci-lint (new issues vs base)
         uses: golangci/golangci-lint-action@v9
         with:
-          version: latest
+          # Pin for stable binary + action cache hits (latest churns cold installs).
+          version: v2.12.2
           only-new-issues: false
           args: >-
-            --timeout=10m
+            --timeout=5m
             ${{ github.event_name == 'pull_request' && format('--new-from-merge-base=origin/{0}', github.base_ref) || '--new-from-rev=HEAD~1' }}
 
   web-lint:
@@ -92,6 +102,47 @@ jobs:
       - name: Typecheck (tsc -b)
         run: pnpm exec tsc -b --pretty false
 
+  # jellycompat is the heavy suite (~17k test LOC). Run it in parallel with the
+  # coverage-gated packages and imageutil WASM smoke so wall clock is ~max(suite)
+  # instead of sum.
+  go-test-jellycompat:
+    name: Go jellycompat tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run jellycompat tests
+        run: go test ./internal/jellycompat/... -count=1
+
+  # Embedded WASI AVIF encode is CPU-heavy (~1m locally); keep it off the
+  # coverage-package critical path.
+  go-test-imageutil:
+    name: Go imageutil tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run imageutil WASM smoke tests
+        run: go test ./internal/imageutil/ -count=1
+
   go-test-coverage:
     name: Go tests + coverage
     runs-on: ubuntu-latest
@@ -110,20 +161,20 @@ jobs:
       - name: Run unit tests with coverage
         run: |
           set -euo pipefail
-          # Scope CI to packages listed in .github/coverage-packages.txt (plus
-          # jellycompat / LiveTV handlers for integration-ish coverage).
+          # Scope CI to packages listed in .github/coverage-packages.txt.
+          # jellycompat / imageutil run in parallel sibling jobs.
           # `go test ./...` currently fails on unrelated suites (playback_v3
           # seek recovery, web embed without a built dist/) and is not gated
           # on main. Full suite remains: `make test-coverage` locally (after
           # `pnpm run build` in web/ so embed finds dist/).
           #
           # coverage.out must include every package in coverage-packages.txt.
-          # imageutil is CGO-free (embedded WASI) — keep a smoke gate here so the
-          # committed .wasm cannot rot without CI noticing.
+          # covermode=set is enough: CI does not use -race, and atomic is slower.
+          # LiveTV HTTP handler tests live in internal/api/handlers but compiling
+          # that package (~58k LOC) for two smoke tests dominated this job; the
+          # livetv service suite above already gates Live TV behavior.
           go test \
             ./internal/livetv/... \
-            ./internal/jellycompat/... \
-            ./internal/imageutil/ \
             ./internal/artworkkey/ \
             ./internal/contentid/... \
             ./internal/librarykind/... \
@@ -135,10 +186,7 @@ jobs:
             ./internal/secret/... \
             ./internal/providerid/... \
             ./internal/buildinfo/... \
-            -count=1 -covermode=atomic -coverprofile=coverage.out
-          # Native Live TV HTTP handlers live in internal/api/handlers; run only
-          # those tests so we do not pull in the full handlers suite.
-          go test ./internal/api/handlers/ -count=1 -run 'LiveTV'
+            -count=1 -covermode=set -coverprofile=coverage.out
 
       - name: Enforce coverage gate
         run: |

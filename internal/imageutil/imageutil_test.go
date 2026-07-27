@@ -12,6 +12,7 @@ import (
 )
 
 func TestGenerateVariants(t *testing.T) {
+	t.Parallel()
 	src := makeTestJPEG(t, 800, 600)
 	result, err := GenerateVariants(src, []int{500, 300})
 	if err != nil {
@@ -61,6 +62,7 @@ func TestGenerateVariants(t *testing.T) {
 }
 
 func TestGenerateVariantsCapsOriginal(t *testing.T) {
+	t.Parallel()
 	// Just over the 1920 cap on the long edge; keep pixels modest for CI time.
 	src := makeTestJPEG(t, 2000, 800)
 	result, err := GenerateVariants(src, nil)
@@ -78,6 +80,7 @@ func TestGenerateVariantsCapsOriginal(t *testing.T) {
 }
 
 func TestGenerateSquareVariants(t *testing.T) {
+	t.Parallel()
 	src := makeTestJPEG(t, 800, 600)
 	result, err := GenerateSquareVariants(src, []int{256})
 	if err != nil {
@@ -111,6 +114,7 @@ func TestGenerateSquareVariants(t *testing.T) {
 }
 
 func TestThumbhash(t *testing.T) {
+	t.Parallel()
 	src := makeTestJPEG(t, 120, 80)
 	hash, err := Thumbhash(src)
 	if err != nil {
@@ -135,6 +139,7 @@ func TestThumbhash(t *testing.T) {
 }
 
 func TestNormalizeRejectsGarbage(t *testing.T) {
+	t.Parallel()
 	_, err := GenerateVariants([]byte("not-an-image"), []int{100})
 	if err == nil {
 		t.Fatal("expected error for garbage input")
@@ -142,6 +147,7 @@ func TestNormalizeRejectsGarbage(t *testing.T) {
 }
 
 func TestGenerateVariantsFromSVG(t *testing.T) {
+	t.Parallel()
 	svg := []byte(`<svg xmlns="http://www.w3.org/2000/svg" width="400" height="200"><rect width="400" height="200" fill="#234"/></svg>`)
 	result, err := GenerateVariants(svg, []int{200})
 	if err != nil {
@@ -172,6 +178,7 @@ func makeTestJPEG(t *testing.T, w, h int) []byte {
 }
 
 func TestPNGRoundTripNormalize(t *testing.T) {
+	t.Parallel()
 	img := image.NewRGBA(image.Rect(0, 0, 40, 40))
 	for y := 0; y < 40; y++ {
 		for x := 0; x < 40; x++ {
