@@ -12,6 +12,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/livetv/gracenote"
 	"github.com/prairie-server/prairie-server/internal/livetv/hdhomerun"
 	"github.com/prairie-server/prairie-server/internal/livetv/schedulesdirect"
 )
@@ -40,6 +41,13 @@ type SchedulesDirectClient interface {
 	Programs(ctx context.Context, token string, ids []string) ([]schedulesdirect.ProgramDetail, error)
 }
 
+// GracenoteClient fetches Zap2XML-style listings from tvlistings.gracenote.com.
+type GracenoteClient interface {
+	Providers(ctx context.Context, country, postalCode, lang string) ([]gracenote.Provider, error)
+	Grid(ctx context.Context, params gracenote.GridParams, start time.Time, timespanHours int) (*gracenote.GridResponse, error)
+	AssetURL(thumbnail string) string
+}
+
 type PlaybackBridge interface {
 	StartLiveStream(ctx context.Context, channelID, sourceStreamURL string, userID int, profileID string) (playbackSessionID, playbackURL string, err error)
 }
@@ -48,6 +56,7 @@ type Service struct {
 	store          Store
 	hdhr           HDHomeRunClient
 	sd             SchedulesDirectClient
+	gn             GracenoteClient
 	httpClient     *http.Client
 	playbackBridge PlaybackBridge
 	now            func() time.Time
@@ -64,10 +73,12 @@ func NewService(db *pgxpool.Pool) *Service {
 func NewServiceWithStore(store Store) *Service {
 	httpClient := NewMediaHTTPClient()
 	sdHTTP := &http.Client{Timeout: 2 * time.Minute}
+	gnHTTP := &http.Client{Timeout: 2 * time.Minute}
 	return &Service{
 		store:      store,
 		hdhr:       hdhomerun.NewClient(httpClient),
 		sd:         schedulesdirect.NewClient(sdHTTP),
+		gn:         gracenote.NewClient(gnHTTP),
 		httpClient: httpClient,
 		now:        time.Now,
 	}
@@ -97,6 +108,10 @@ func (s *Service) SetHDHomeRunClient(client HDHomeRunClient) {
 
 func (s *Service) SetSchedulesDirectClient(client SchedulesDirectClient) {
 	s.sd = client
+}
+
+func (s *Service) SetGracenoteClient(client GracenoteClient) {
+	s.gn = client
 }
 
 func (s *Service) SetPlaybackBridge(bridge PlaybackBridge) {
@@ -543,6 +558,8 @@ func (s *Service) SyncGuideSource(ctx context.Context, id string) error {
 	switch source.Type {
 	case GuideSourceSchedulesDirect:
 		syncErr = s.syncSchedulesDirect(ctx, source)
+	case GuideSourceXMLSync:
+		syncErr = s.syncXMLSync(ctx, source)
 	default:
 		syncErr = fmt.Errorf("%w: unsupported guide source type %q", ErrInvalidArgument, source.Type)
 	}
@@ -582,6 +599,26 @@ func (s *Service) ListSchedulesDirectLineups(ctx context.Context, req SchedulesD
 		return nil, err
 	}
 	return schedulesdirect.FlattenLineups(headends), nil
+}
+
+// ListXMLSyncLineups returns Gracenote providers for a postal code (no account).
+func (s *Service) ListXMLSyncLineups(ctx context.Context, req XMLSyncLineupsRequest) ([]gracenote.LineupOption, error) {
+	if s == nil || s.gn == nil {
+		return nil, ErrNotConfigured
+	}
+	postal := strings.TrimSpace(req.PostalCode)
+	if postal == "" {
+		return nil, fmt.Errorf("%w: postalcode is required", ErrInvalidArgument)
+	}
+	country := strings.TrimSpace(req.Country)
+	if country == "" {
+		country = DefaultXMLSyncCountry
+	}
+	providers, err := s.gn.Providers(ctx, country, postal, strings.TrimSpace(req.Lang))
+	if err != nil {
+		return nil, err
+	}
+	return gracenote.FlattenProviders(providers), nil
 }
 
 func (s *Service) syncSchedulesDirect(ctx context.Context, source *GuideSource) error {
@@ -715,6 +752,200 @@ func (s *Service) syncSchedulesDirect(ctx context.Context, source *GuideSource) 
 	return s.ApplySeriesRules(ctx)
 }
 
+func (s *Service) syncXMLSync(ctx context.Context, source *GuideSource) error {
+	if s.gn == nil {
+		return ErrNotConfigured
+	}
+	postal := strings.TrimSpace(source.Config["postalcode"])
+	lineupID := strings.TrimSpace(source.Config["lineup"])
+	if postal == "" || lineupID == "" {
+		return fmt.Errorf("%w: xml sync postalcode and lineup are required", ErrInvalidArgument)
+	}
+	country := strings.TrimSpace(source.Config["country"])
+	if country == "" {
+		country = DefaultXMLSyncCountry
+	}
+	headend := strings.TrimSpace(source.Config["headend"])
+	device := strings.TrimSpace(source.Config["device"])
+	days := DefaultXMLSyncDays
+	if raw := strings.TrimSpace(source.Config["days"]); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 && n <= MaxXMLSyncDays {
+			days = n
+		}
+	}
+
+	channels, err := s.store.ListChannels(ctx, "")
+	if err != nil {
+		return err
+	}
+
+	params := gracenote.GridParams{
+		Country:    country,
+		PostalCode: postal,
+		LineupID:   lineupID,
+		HeadendID:  headend,
+		Device:     device,
+	}
+
+	// Pull the first window to discover stations for channel mapping, then the rest.
+	start := s.now().UTC().Truncate(time.Hour)
+	first, err := s.gn.Grid(ctx, params, start, gracenote.DefaultGridHours)
+	if err != nil {
+		return err
+	}
+	stations := first.Channels
+	stationByChannelID, err := s.mapChannelsToXMLSyncStations(ctx, channels, stations)
+	if err != nil {
+		return err
+	}
+	if len(stationByChannelID) == 0 {
+		return fmt.Errorf("%w: no channels mapped to XML sync stations; set guide station IDs or match channel numbers/callsigns", ErrInvalidArgument)
+	}
+
+	channelByStation := map[string]string{}
+	for channelID, stationID := range stationByChannelID {
+		channelByStation[stationID] = channelID
+	}
+
+	programs := make([]Program, 0)
+	appendGrid := func(grid *gracenote.GridResponse) {
+		if grid == nil {
+			return
+		}
+		for _, st := range grid.Channels {
+			channelID := channelByStation[strings.TrimSpace(st.ChannelID)]
+			if channelID == "" {
+				continue
+			}
+			for _, ev := range st.Events {
+				prog := programFromGracenoteEvent(source.ID, channelID, ev, s.gn.AssetURL)
+				if prog == nil {
+					continue
+				}
+				programs = append(programs, *prog)
+			}
+		}
+	}
+	appendGrid(first)
+
+	windows := days * (24 / gracenote.DefaultGridHours)
+	for i := 1; i < windows; i++ {
+		select {
+		case <-ctx.Done():
+			return ctx.Err()
+		case <-time.After(100 * time.Millisecond):
+		}
+		windowStart := start.Add(time.Duration(i*gracenote.DefaultGridHours) * time.Hour)
+		grid, err := s.gn.Grid(ctx, params, windowStart, gracenote.DefaultGridHours)
+		if err != nil {
+			return err
+		}
+		appendGrid(grid)
+	}
+
+	if err := s.store.UpsertPrograms(ctx, source.ID, programs); err != nil {
+		return err
+	}
+	return s.ApplySeriesRules(ctx)
+}
+
+func programFromGracenoteEvent(sourceID, channelID string, ev gracenote.Event, assetURL func(string) string) *Program {
+	start, err := time.Parse(time.RFC3339, strings.TrimSpace(ev.StartTime))
+	if err != nil {
+		return nil
+	}
+	stop, err := time.Parse(time.RFC3339, strings.TrimSpace(ev.EndTime))
+	if err != nil {
+		if mins, convErr := strconv.Atoi(strings.TrimSpace(ev.Duration)); convErr == nil && mins > 0 {
+			stop = start.Add(time.Duration(mins) * time.Minute)
+		} else {
+			return nil
+		}
+	}
+	if !stop.After(start) {
+		return nil
+	}
+	title := strings.TrimSpace(ev.Program.Title)
+	if title == "" {
+		title = strings.TrimSpace(ev.Program.ID)
+	}
+	if title == "" {
+		return nil
+	}
+	externalID := strings.TrimSpace(ev.Program.ID)
+	if externalID == "" {
+		externalID = title
+	}
+	externalID += ":" + start.UTC().Format(time.RFC3339)
+
+	seriesID := strings.TrimSpace(ev.Program.SeriesID)
+	if seriesID == "" {
+		seriesID = schedulesDirectSeriesID(ev.Program.ID, title)
+	} else {
+		seriesID = strings.ToLower(seriesID)
+	}
+
+	genres := make([]string, 0, len(ev.Filter))
+	for _, g := range ev.Filter {
+		g = strings.TrimSpace(strings.TrimPrefix(g, "filter-"))
+		if g == "" {
+			continue
+		}
+		genres = append(genres, g)
+	}
+	isNew := false
+	isLive := false
+	for _, flag := range ev.Flag {
+		switch strings.ToLower(strings.TrimSpace(flag)) {
+		case "new":
+			isNew = true
+		case "live":
+			isLive = true
+		}
+	}
+
+	imageURL := ""
+	if assetURL != nil {
+		imageURL = assetURL(ev.Thumbnail)
+	}
+
+	return &Program{
+		ChannelID:   channelID,
+		SourceID:    sourceID,
+		SeriesID:    seriesID,
+		ExternalID:  externalID,
+		Start:       start.UTC(),
+		Stop:        stop.UTC(),
+		Title:       title,
+		Subtitle:    strings.TrimSpace(ev.Program.EpisodeTitle),
+		Description: strings.TrimSpace(ev.Program.ShortDesc),
+		Season:      ev.Program.Season,
+		Episode:     ev.Program.Episode,
+		Genres:      genres,
+		ImageURL:    imageURL,
+		IsNew:       isNew,
+		IsLive:      isLive,
+	}
+}
+
+func (s *Service) mapChannelsToXMLSyncStations(ctx context.Context, channels []Channel, stations []gracenote.Channel) (map[string]string, error) {
+	out := map[string]string{}
+	for _, ch := range channels {
+		stationID := resolveXMLSyncStationID(ch, stations)
+		if stationID == "" {
+			continue
+		}
+		out[ch.ID] = stationID
+		if strings.TrimSpace(ch.GuideStationID) == "" {
+			id := stationID
+			if _, err := s.store.UpdateChannel(ctx, ch.ID, ChannelPatch{GuideStationID: &id}); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return out, nil
+}
+
 func (s *Service) mapChannelsToStations(ctx context.Context, channels []Channel, detail *schedulesdirect.LineupDetail) (map[string]string, error) {
 	out := map[string]string{}
 	for _, ch := range channels {
@@ -737,9 +968,6 @@ func (s *Service) prepareGuideSourceConfig(ctx context.Context, source *GuideSou
 	if source.Type == "" {
 		source.Type = GuideSourceSchedulesDirect
 	}
-	if source.Type != GuideSourceSchedulesDirect {
-		return fmt.Errorf("%w: unsupported guide source type %q", ErrInvalidArgument, source.Type)
-	}
 	if source.Config == nil {
 		source.Config = map[string]string{}
 	}
@@ -755,6 +983,17 @@ func (s *Service) prepareGuideSourceConfig(ctx context.Context, source *GuideSou
 		}
 	}
 
+	switch source.Type {
+	case GuideSourceSchedulesDirect:
+		return s.prepareSchedulesDirectConfig(ctx, source, existing, cfg)
+	case GuideSourceXMLSync:
+		return prepareXMLSyncConfig(source, cfg)
+	default:
+		return fmt.Errorf("%w: unsupported guide source type %q", ErrInvalidArgument, source.Type)
+	}
+}
+
+func (s *Service) prepareSchedulesDirectConfig(ctx context.Context, source *GuideSource, existing *GuideSource, cfg map[string]string) error {
 	username := strings.TrimSpace(cfg["username"])
 	passwordSHA1 := strings.ToLower(strings.TrimSpace(cfg["password_sha1"]))
 	if password := strings.TrimSpace(cfg["password"]); password != "" {
@@ -803,6 +1042,52 @@ func (s *Service) prepareGuideSourceConfig(ctx context.Context, source *GuideSou
 		source.DisplayName = "Schedules Direct"
 	}
 	return nil
+}
+
+func prepareXMLSyncConfig(source *GuideSource, cfg map[string]string) error {
+	country := strings.TrimSpace(cfg["country"])
+	if country == "" {
+		country = DefaultXMLSyncCountry
+	}
+	postal := strings.TrimSpace(cfg["postalcode"])
+	lineup := strings.TrimSpace(cfg["lineup"])
+	if postal == "" || lineup == "" {
+		return fmt.Errorf("%w: xml sync postalcode and lineup are required", ErrInvalidArgument)
+	}
+	headend := strings.TrimSpace(cfg["headend"])
+	if headend == "" {
+		headend = gracenoteHeadendFromLineup(lineup)
+	}
+	device := strings.TrimSpace(cfg["device"])
+	if device == "" {
+		device = "-"
+	}
+
+	source.Config = map[string]string{
+		"country":    country,
+		"postalcode": postal,
+		"lineup":     lineup,
+		"headend":    headend,
+		"device":     device,
+	}
+	if days := strings.TrimSpace(cfg["days"]); days != "" {
+		source.Config["days"] = days
+	}
+	if source.DisplayName == "" {
+		source.DisplayName = "XML sync"
+	}
+	return nil
+}
+
+func gracenoteHeadendFromLineup(lineupID string) string {
+	parts := strings.Split(strings.TrimSpace(lineupID), "-")
+	if len(parts) >= 3 && strings.EqualFold(parts[len(parts)-1], "DEFAULT") {
+		return strings.Join(parts[1:len(parts)-1], "-")
+	}
+	if len(parts) >= 2 {
+		return parts[1]
+	}
+	return lineupID
 }
 
 // RedactGuideSourceConfig removes secrets from guide source config for API responses.
@@ -1251,7 +1536,7 @@ func (s *Service) FailDueRecordings(ctx context.Context) (int, error) {
 
 func validateGuideSource(source *GuideSource) error {
 	switch source.Type {
-	case GuideSourceSchedulesDirect:
+	case GuideSourceSchedulesDirect, GuideSourceXMLSync:
 	default:
 		return fmt.Errorf("%w: unsupported guide source type %q", ErrInvalidArgument, source.Type)
 	}

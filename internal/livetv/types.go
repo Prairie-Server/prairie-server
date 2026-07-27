@@ -10,11 +10,19 @@ const (
 
 	TunerTypeHDHomeRun         = "hdhomerun"
 	GuideSourceSchedulesDirect = "schedules_direct"
+	// GuideSourceXMLSync is a native Zap2XML-style Gracenote listings sync.
+	GuideSourceXMLSync = "xml_sync"
 
 	// DefaultSchedulesDirectCountry is used when config omits country.
 	DefaultSchedulesDirectCountry = "USA"
 	// DefaultSchedulesDirectDays is how many days of schedule to pull per sync.
 	DefaultSchedulesDirectDays = 7
+	// DefaultXMLSyncCountry is used when XML sync config omits country.
+	DefaultXMLSyncCountry = "USA"
+	// DefaultXMLSyncDays is how many days of Gracenote grid to pull per sync.
+	DefaultXMLSyncDays = 7
+	// MaxXMLSyncDays caps Gracenote grid pull length.
+	MaxXMLSyncDays = 14
 
 	DiscoveredKindHDHomeRun   = "hdhomerun"
 	DiscoveredKindDispatcharr = "dispatcharr"
@@ -119,6 +127,13 @@ type SchedulesDirectLineupsRequest struct {
 	PasswordSHA1 string `json:"password_sha1"`
 	Country      string `json:"country"`
 	PostalCode   string `json:"postalcode"`
+}
+
+// XMLSyncLineupsRequest looks up Gracenote providers by postal code (no account).
+type XMLSyncLineupsRequest struct {
+	Country    string `json:"country"`
+	PostalCode string `json:"postalcode"`
+	Lang       string `json:"lang,omitempty"`
 }
 
 type Program struct {
