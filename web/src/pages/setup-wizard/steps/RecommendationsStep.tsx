@@ -157,7 +157,11 @@ export function RecommendationsStep() {
                 onChange={(e) =>
                   form.setValue("recommendations.embedding_base_url", e.target.value)
                 }
-                placeholder="https://generativelanguage.googleapis.com"
+                placeholder={
+                  activePreset?.urlPlaceholder ??
+                  activePreset?.baseUrl ??
+                  "https://generativelanguage.googleapis.com"
+                }
                 autoComplete="off"
               />
             </div>
@@ -169,7 +173,9 @@ export function RecommendationsStep() {
                 id="recs-model"
                 value={form.getValue("recommendations.embedding_model")}
                 onChange={(e) => form.setValue("recommendations.embedding_model", e.target.value)}
-                placeholder="gemini-embedding-001"
+                placeholder={
+                  activePreset?.modelPlaceholder ?? activePreset?.model ?? "gemini-embedding-001"
+                }
                 autoComplete="off"
               />
             </div>

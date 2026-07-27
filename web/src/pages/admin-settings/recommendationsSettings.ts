@@ -36,7 +36,7 @@ const RECOMMENDATIONS_EMBEDDING_SECTION: RecSectionDef = {
       key: "recommendations.embedding_model",
       label: "Model",
       type: "text",
-      hint: "e.g. text-embedding-3-large",
+      hint: "e.g. qwen3-embedding:0.6b",
     },
     {
       key: "recommendations.embedding_auth_token",

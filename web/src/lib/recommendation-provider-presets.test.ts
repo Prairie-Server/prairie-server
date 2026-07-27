@@ -21,6 +21,19 @@ describe("recommendation provider presets", () => {
     ).toBe("openai");
   });
 
+  it("recommends the lightweight Qwen3 Embedding 0.6B Ollama tag", () => {
+    const ollama = RECOMMENDATION_PROVIDER_OPTIONS.find((preset) => preset.id === "ollama");
+    expect(ollama?.model).toBe("qwen3-embedding:0.6b");
+  });
+
+  it("keeps Custom blank but suggests a lightweight LM Studio-style model", () => {
+    const custom = RECOMMENDATION_PROVIDER_OPTIONS.find((preset) => preset.id === "custom");
+    expect(custom?.baseUrl).toBe("");
+    expect(custom?.model).toBe("");
+    expect(custom?.urlPlaceholder).toBe("http://host.docker.internal:1234");
+    expect(custom?.modelPlaceholder).toBe("text-embedding-qwen3-embedding-0.6b");
+  });
+
   it("returns null when the settings do not match a built-in provider", () => {
     expect(matchRecommendationProviderPreset("http://localhost:9999", "custom-model")).toBeNull();
   });
