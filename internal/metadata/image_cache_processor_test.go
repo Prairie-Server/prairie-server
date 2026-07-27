@@ -619,14 +619,13 @@ func TestImageCacheProcessorReportsSucceededOverTotalProgress(t *testing.T) {
 // queueImageCacheJobs is a ClaimDue-backed queue that tracks in-flight and
 // terminal transitions for rolling-pool concurrency tests.
 type queueImageCacheJobs struct {
-	mu           sync.Mutex
-	queue        []*models.MetadataImageCacheJob
-	inFlight     int
-	maxInFlight  int
-	terminal     map[int64]string // id -> succeeded|failed|requeued
-	claimLimits  []int
-	requeuedIDs  []int64
-	processDelay time.Duration
+	mu          sync.Mutex
+	queue       []*models.MetadataImageCacheJob
+	inFlight    int
+	maxInFlight int
+	terminal    map[int64]string // id -> succeeded|failed|requeued
+	claimLimits []int
+	requeuedIDs []int64
 }
 
 func (q *queueImageCacheJobs) ClaimDue(_ context.Context, _ string, limit int) ([]*models.MetadataImageCacheJob, error) {
