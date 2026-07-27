@@ -38,6 +38,8 @@ const SETTINGS_TITLES: Record<string, string> = {
   "home-screen": "Home Screen Settings",
   "card-overlays": "Card Overlay Settings",
   "connect-apps": "Connect Apps Settings",
+  "quick-connect": "Quick Connect Settings",
+  notifications: "Notifications Settings",
 };
 
 const ADMIN_TITLES: Record<string, string> = {

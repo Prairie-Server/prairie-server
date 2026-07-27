@@ -16,6 +16,7 @@ import {
   Server,
   Sparkles,
   Bell,
+  MonitorSmartphone,
 } from "lucide-react";
 // Sparkles is used by the Personalization nav entry below.
 import type { LucideIcon } from "lucide-react";
@@ -299,6 +300,29 @@ const NAV_SECTIONS: NavSection[] = [
           "Per-episode alerts",
           "Digest",
           "Webhook URL",
+        ),
+      },
+      {
+        path: "quick-connect",
+        label: "Quick Connect",
+        icon: MonitorSmartphone,
+        description: "Approve sign-in on another device",
+        keywords: [
+          "quick connect",
+          "pair device",
+          "device login",
+          "tv login",
+          "roku",
+          "smart tv",
+          "approve",
+          "code",
+          "qr",
+        ],
+        settings: settingIndex(
+          "Enter device code",
+          "Approve sign-in",
+          "Match code",
+          "How it works",
         ),
       },
       {
