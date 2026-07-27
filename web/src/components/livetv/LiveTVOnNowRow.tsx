@@ -76,37 +76,47 @@ export default function LiveTVOnNowRow() {
         title="On now"
         titleHref="/livetv"
         loading={guide.isLoading && cards.length === 0}
-        skeletonAspect="aspect-video"
+        skeletonAspect="aspect-[2/3]"
       >
         {cards.map(({ channel, nowProgram }) => {
           const progress = progressFraction(nowProgram.start, nowProgram.stop, now);
+          const posterUrl = nowProgram.image_url?.trim() || "";
+          const logoUrl = channel.logo_url?.trim() || "";
           return (
             <Link
               key={channel.id}
               to="/livetv?tab=guide"
-              className="group block w-[200px] sm:w-[220px] lg:w-[240px]"
+              className="group block w-[130px] sm:w-[150px] lg:w-[178px]"
             >
-              <div className="bg-muted relative aspect-video overflow-hidden rounded-lg">
-                {channel.logo_url ? (
+              <div className="bg-muted relative aspect-[2/3] overflow-hidden rounded-lg">
+                {posterUrl ? (
                   <img
-                    src={channel.logo_url}
+                    src={posterUrl}
+                    alt=""
+                    className="absolute inset-0 h-full w-full object-cover"
+                    loading="lazy"
+                  />
+                ) : logoUrl ? (
+                  <img
+                    src={logoUrl}
                     alt=""
                     className="absolute inset-0 m-auto max-h-[55%] max-w-[55%] object-contain opacity-80"
+                    loading="lazy"
                   />
                 ) : (
                   <div className="text-muted-foreground absolute inset-0 flex items-center justify-center">
                     <Radio className="h-8 w-8" aria-hidden />
                   </div>
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/10 to-transparent" />
                 <div className="absolute right-2 bottom-2 left-2">
                   <div className="mb-1 flex items-center gap-1.5">
                     <Badge variant="secondary">Live</Badge>
-                    <span className="text-muted-foreground text-[11px] font-medium tabular-nums">
+                    <span className="text-[11px] font-medium text-white/80 tabular-nums">
                       {channelDisplayNumber(channel)}
                     </span>
                   </div>
-                  <div className="bg-background/40 h-1 overflow-hidden rounded-full">
+                  <div className="h-1 overflow-hidden rounded-full bg-white/25">
                     <div className="bg-primary h-full" style={{ width: `${progress * 100}%` }} />
                   </div>
                 </div>

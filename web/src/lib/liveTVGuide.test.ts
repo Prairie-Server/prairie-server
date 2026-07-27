@@ -38,6 +38,7 @@ describe("liveTVGuide helpers", () => {
           title: "Now Show",
           start: "2026-07-27T14:30:00Z",
           stop: "2026-07-27T15:30:00Z",
+          image_url: "https://img.example/now.jpg",
         },
         {
           id: "c",
@@ -45,6 +46,7 @@ describe("liveTVGuide helpers", () => {
           title: "Next Show",
           start: "2026-07-27T15:30:00Z",
           stop: "2026-07-27T16:30:00Z",
+          image_url: "  ",
         },
         {
           id: "other",
@@ -58,7 +60,9 @@ describe("liveTVGuide helpers", () => {
       now,
     );
     expect(result.now?.title).toBe("Now Show");
+    expect(result.now?.image_url).toBe("https://img.example/now.jpg");
     expect(result.next?.title).toBe("Next Show");
+    expect(result.next?.image_url).toBeUndefined();
   });
 
   it("falls back to the programme after current when nothing is upcoming by start", () => {
