@@ -54,6 +54,12 @@ struct Args {
     #[arg(long, default_value_t = 90)]
     quality: u8,
 
+    /// rav1e AVIF speed preset 1..=10 (10 = fastest; default 10).
+    /// Photographic posters/backdrops stay visually identical at speed 10 vs
+    /// slower presets; encode time drops multi-fold in WASM.
+    #[arg(long, default_value_t = DEFAULT_AVIF_SPEED)]
+    avif_speed: u8,
+
     /// Cap longest original dimension for `variants` (default 1920).
     #[arg(long, default_value_t = 1920)]
     max_original: u32,
@@ -62,10 +68,15 @@ struct Args {
     #[arg(long, default_value_t = 100)]
     max_dim: u32,
 
-    /// Output formats for variants/square-variants: webp,avif,png (default all).
-    #[arg(long, value_delimiter = ',', default_value = "webp,avif,png")]
+    /// Output formats for variants/square-variants: webp,avif,png.
+    /// Default is webp,avif — PNG remains available for callers that need it
+    /// (thumbhash normalize still uses PNG) but is not dual-written by default.
+    #[arg(long, value_delimiter = ',', default_value = "webp,avif")]
     formats: Vec<String>,
 }
+
+/// Fastest rav1e preset. Tunable via `--avif-speed` / Go `avifSpeed`.
+const DEFAULT_AVIF_SPEED: u8 = 10;
 
 #[derive(Serialize)]
 struct Manifest {
@@ -104,6 +115,12 @@ fn run() -> Result<(), String> {
     let args = Args::parse();
     if !(1..=100).contains(&args.quality) {
         return Err(format!("quality must be 1..=100, got {}", args.quality));
+    }
+    if !(1..=10).contains(&args.avif_speed) {
+        return Err(format!(
+            "avif-speed must be 1..=10, got {}",
+            args.avif_speed
+        ));
     }
     fs::create_dir_all(&args.outdir).map_err(|e| format!("create outdir: {e}"))?;
 
@@ -160,6 +177,7 @@ fn process_variants(img: &DynamicImage, args: &Args) -> Result<Manifest, String>
         "original",
         &original,
         args.quality,
+        args.avif_speed,
         &formats,
     )?);
 
@@ -180,6 +198,7 @@ fn process_variants(img: &DynamicImage, args: &Args) -> Result<Manifest, String>
             &format!("w{w}"),
             &out,
             args.quality,
+            args.avif_speed,
             &formats,
         )?);
     }
@@ -201,6 +220,7 @@ fn process_square_variants(img: &DynamicImage, args: &Args) -> Result<Manifest, 
         "original",
         &square,
         args.quality,
+        args.avif_speed,
         &formats,
     )?);
 
@@ -225,6 +245,7 @@ fn process_square_variants(img: &DynamicImage, args: &Args) -> Result<Manifest, 
             &format!("w{size}"),
             &out,
             args.quality,
+            args.avif_speed,
             &formats,
         )?);
     }
@@ -256,6 +277,7 @@ fn write_variant_pair(
     key: &str,
     img: &DynamicImage,
     quality: u8,
+    avif_speed: u8,
     formats: &FormatFlags,
 ) -> Result<ManifestVariant, String> {
     if !formats.webp {
@@ -265,7 +287,7 @@ fn write_variant_pair(
     write_webp(&outdir.join(&webp_name), img, quality)?;
     let avif_file = if formats.avif {
         let avif_name = format!("{key}.avif");
-        write_avif(&outdir.join(&avif_name), img, quality)?;
+        write_avif(&outdir.join(&avif_name), img, quality, avif_speed)?;
         Some(avif_name)
     } else {
         None
@@ -371,7 +393,7 @@ fn write_webp(path: &Path, img: &DynamicImage, quality: u8) -> Result<(), String
     fs::write(path, encoded).map_err(|e| format!("write {}: {e}", path.display()))
 }
 
-fn write_avif(path: &Path, img: &DynamicImage, quality: u8) -> Result<(), String> {
+fn write_avif(path: &Path, img: &DynamicImage, quality: u8, speed: u8) -> Result<(), String> {
     let rgba = img.to_rgba8();
     let (w, h) = rgba.dimensions();
     let pixels: Vec<RGBA8> = rgba
@@ -387,7 +409,7 @@ fn write_avif(path: &Path, img: &DynamicImage, quality: u8) -> Result<(), String
     // Speed 10 = fastest rav1e preset; artwork is cache-once so favor WASM latency.
     let encoded = AvifEncoder::new()
         .with_quality(f32::from(quality))
-        .with_speed(10)
+        .with_speed(speed)
         .encode_rgba(Img::new(pixels.as_slice(), w as usize, h as usize))
         .map_err(|e| format!("encode avif: {e}"))?;
     fs::write(path, encoded.avif_file).map_err(|e| format!("write {}: {e}", path.display()))
@@ -462,7 +484,8 @@ mod tests {
             avif: true,
             png: true,
         };
-        let manifest = write_variant_pair(&dir, "original", &img, 80, &all).unwrap();
+        let manifest =
+            write_variant_pair(&dir, "original", &img, 80, DEFAULT_AVIF_SPEED, &all).unwrap();
         assert_eq!(manifest.file, "original.webp");
         assert_eq!(manifest.avif_file.as_deref(), Some("original.avif"));
         assert_eq!(manifest.png_file.as_deref(), Some("original.png"));

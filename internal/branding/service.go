@@ -97,9 +97,10 @@ func (s *Service) UploadAsset(ctx context.Context, kind AssetKind, data []byte, 
 	if err := s.store.PutObject(ctx, s.store.Bucket(), key, out); err != nil {
 		return "", err
 	}
-	// Dual-write AVIF/PNG siblings under the same content-address stem so
-	// Accept negotiation / client cascades can upgrade or fall back without
-	// changing the stored settings ref.
+	// Dual-write AVIF siblings under the same content-address stem so
+	// Accept negotiation / client cascades can upgrade without changing the
+	// stored settings ref. PNG siblings are no longer generated; clients fall
+	// through AVIF→WebP when PNG is absent.
 	if len(avif) > 0 {
 		if avifKey := artworkkey.WebPAVIFSibling(key); avifKey != "" {
 			if err := s.store.PutObject(ctx, s.store.Bucket(), avifKey, avif); err != nil {

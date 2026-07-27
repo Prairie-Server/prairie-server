@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
@@ -35,14 +36,21 @@ const (
 const (
 	defaultMaxSourceBytes = 64 << 20          // 64 MiB
 	defaultTimeout        = 120 * time.Second // AVIF encode in WASM can be slow
-	// Match metadata image-cache worker fan-out; the previous default of 2
-	// serialized ~12 cache workers behind two WASM slots (~minutes per image
-	// under load). AVIF remains CPU-heavy, so this is a modest raise rather
-	// than unbounded parallelism.
-	defaultConcurrency    = 8
-	defaultMaxMemoryPages = 8192 // 512 MiB
+	defaultMaxMemoryPages = 8192              // 512 MiB
 	defaultMaxLogBytes    = 64 << 10
 )
+
+// defaultConcurrency returns the WASM processor semaphore size. Sized to
+// runtime.NumCPU so metadata image-cache workers are not serialized behind a
+// fixed slot count; AVIF remains CPU-heavy, so callers that raise formats /
+// speed first should keep this from saturating the host.
+func defaultConcurrency() int {
+	n := runtime.NumCPU()
+	if n < 2 {
+		return 2
+	}
+	return n
+}
 
 // processorOptions configures the WASM image processor.
 type processorOptions struct {
@@ -62,7 +70,7 @@ func (o *processorOptions) applyDefaults() {
 		o.Timeout = defaultTimeout
 	}
 	if o.MaxConcurrent <= 0 {
-		o.MaxConcurrent = defaultConcurrency
+		o.MaxConcurrent = defaultConcurrency()
 	}
 	if o.MaxMemoryPages == 0 {
 		o.MaxMemoryPages = defaultMaxMemoryPages
