@@ -15,9 +15,9 @@ describe("joinApiStreamPath", () => {
   });
 
   it("joins an absolute origin with an already-prefixed API path", () => {
-    expect(
-      joinApiStreamPath("https://api.example.com", "/api/v1/stream/abc"),
-    ).toBe("https://api.example.com/api/v1/stream/abc");
+    expect(joinApiStreamPath("https://api.example.com", "/api/v1/stream/abc")).toBe(
+      "https://api.example.com/api/v1/stream/abc",
+    );
   });
 });
 
