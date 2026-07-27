@@ -1,5 +1,6 @@
 // Package imagecache downloads images from URLs, generates sized variants,
-// computes thumbhashes, and uploads all variants to S3.
+// computes thumbhashes, and uploads all variants to an ObjectPutter backend
+// (public S3 or the local artwork filesystem store).
 package imagecache
 
 import (
@@ -28,7 +29,8 @@ const (
 	downloadTimeout  = 30 * time.Second
 )
 
-// ObjectPutter is the S3 interface required by Cacher.
+// ObjectPutter is the object-storage interface required by Cacher.
+// Satisfied by *s3client.Client and *artworkstore.LocalStore.
 type ObjectPutter interface {
 	PutObject(ctx context.Context, bucket, key string, data []byte) error
 	Bucket() string
@@ -81,7 +83,7 @@ type CacheResult struct {
 	ExistingVariants int
 }
 
-// Cacher downloads and stores image variants to S3.
+// Cacher downloads and stores image variants via an ObjectPutter backend.
 type Cacher struct {
 	s3                ObjectPutter
 	revisionTracker   ArtworkRevisionTracker

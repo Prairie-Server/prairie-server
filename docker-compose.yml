@@ -74,6 +74,7 @@ services:
       - ${MEDIA_BOOKS_ROOT:-${MEDIA_ROOT}}:${MEDIA_BOOKS_CONTAINER_ROOT:-${MEDIA_CONTAINER_ROOT:-/mnt/media}/books}:ro
       - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/plugins:/var/lib/prairie/plugins
       - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/compat:/var/lib/prairie/compat
+      - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/artwork:/var/lib/prairie/artwork
       - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/transcode:/tmp/prairie-transcode
       - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/catalog-seeds:/catalog-seeds:ro
       - ${PRAIRIE_DATA_ROOT:-/opt/prairie}/audiobook-covers:/var/lib/prairie/audiobook-covers

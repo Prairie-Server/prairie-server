@@ -24,6 +24,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/ai/llm"
 	"github.com/prairie-server/prairie-server/internal/api/handlers"
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/artworkstore"
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/autoscan"
 	"github.com/prairie-server/prairie-server/internal/branding"
@@ -98,6 +99,7 @@ type Dependencies struct {
 	S3Public                     *s3client.Client                 // public assets bucket client (may be nil)
 	S3Private                    *s3client.Client                 // private internal bucket client (may be nil)
 	S3UserDB                     *s3client.Client                 // user-db bucket client (may be nil)
+	ArtworkLocal                 *artworkstore.LocalStore         // filesystem artwork backend when S3Public is nil
 	BrandingService              *branding.Service                // white-label branding (nil when DB unavailable)
 	FolderRepo                   *catalog.FolderRepository        // media folder repository (may be nil)
 	FileRepo                     *scanner.FileRepository          // media file repository (may be nil)

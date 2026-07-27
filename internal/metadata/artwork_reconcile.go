@@ -13,8 +13,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// ArtworkObjectChecker is the S3 surface the reconciler needs: existence
-// checks against the public asset bucket. Satisfied by *s3client.Client.
+// ArtworkObjectChecker is the object-storage surface the reconciler needs:
+// existence checks against the public artwork backend (S3 or local disk).
 type ArtworkObjectChecker interface {
 	ObjectExists(ctx context.Context, bucket, key string) (bool, error)
 	Bucket() string

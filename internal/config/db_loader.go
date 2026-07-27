@@ -308,11 +308,14 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 	cfg.Matcher.EnableTVSeriesRootQueue = enableTVSeriesRootQueue
 
 	// Metadata
-	cacheImages, err := boolOr(m, "metadata.cache_images", false)
+	cacheImages, err := boolOr(m, "metadata.cache_images", true)
 	if err != nil {
 		return nil, err
 	}
 	cfg.Metadata.CacheImages = cacheImages
+
+	// Artwork (local filesystem cache when public S3 is unconfigured)
+	cfg.Artwork.LocalDir = stringOr(m, "artwork.local_dir", "/var/lib/prairie/artwork")
 
 	// Playback
 	cfg.Playback.FFmpegPath = stringOr(m, "playback.ffmpeg_path", "/usr/lib/jellyfin-ffmpeg/ffmpeg")

@@ -46,7 +46,8 @@ var adminSettingDefaults = map[string]string{
 	"scanner.workers":       "8",
 	"matcher.workers":       "8",
 	"matcher.batch_size":    "500",
-	"metadata.cache_images": "false",
+	"metadata.cache_images": "true",
+	"artwork.local_dir":     "/var/lib/prairie/artwork",
 	"markers.mode":          "local",
 	"markers.lazy_playback": "false",
 
@@ -426,6 +427,11 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 		return value, nil
 	case "ui.admin_custom_css":
 		return csssanitize.Sanitize(value), nil
+	case "artwork.local_dir":
+		if value == "" {
+			return "", fmt.Errorf("%s must not be empty", key)
+		}
+		return value, nil
 	}
 
 	return raw, nil

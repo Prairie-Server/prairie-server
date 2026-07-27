@@ -137,7 +137,7 @@ func (p *ImageCacheProcessor) SetImagePrefixDeleter(deleter ImagePrefixDeleter) 
 
 // SetEnabled toggles background caching. When disabled the processor performs
 // no discovery, claiming, or uploading, honoring metadata.cache_images so that
-// merely configuring object storage does not download the whole catalog.
+// merely configuring an artwork backend does not download the whole catalog.
 func (p *ImageCacheProcessor) SetEnabled(enabled bool) {
 	if p == nil {
 		return
@@ -542,8 +542,8 @@ func (p *ImageCacheProcessor) updateTargetArtwork(ctx context.Context, job *mode
 // followed by a symlink-resolving re-check (both path and roots are resolved, so
 // scanner-recorded logical paths under symlinked roots stay valid while an
 // intermediate directory symlink escaping a root is rejected), then read through
-// an opened handle with fstat re-checks and pushed to S3 under a content-hashed
-// local/ key.
+// an opened handle with fstat re-checks and pushed to the artwork backend under
+// a content-hashed local/ key.
 func (p *ImageCacheProcessor) processLocalOne(ctx context.Context, job *models.MetadataImageCacheJob, imageType ImageType) imageCacheProcessResult {
 	byteCacher, ok := p.cacher.(ImageByteCacher)
 	if !ok {

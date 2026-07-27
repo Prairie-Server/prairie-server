@@ -38,6 +38,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/adminjob"
 	"github.com/prairie-server/prairie-server/internal/api"
 	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/artworkstore"
 	"github.com/prairie-server/prairie-server/internal/audiobooks"
 	"github.com/prairie-server/prairie-server/internal/audiobooks/podcastfeed"
 	"github.com/prairie-server/prairie-server/internal/auth"
@@ -940,6 +941,25 @@ func main() {
 	if needsS3 {
 		configureS3Clients(cfg, &deps)
 	}
+	// When public S3 is unconfigured, cache artwork on the local data volume
+	// so WebP/AVIF/PNG conversion still runs without an object store.
+	if needsS3 && deps.S3Public == nil {
+		presignTTL := cfg.S3.MetadataPresignExpiry
+		if presignTTL <= 0 {
+			presignTTL = 4 * time.Hour
+		}
+		localStore, err := artworkstore.NewLocalStore(artworkstore.LocalConfig{
+			Root:          cfg.Artwork.LocalDir,
+			URLSecret:     cfg.Auth.JWTSecret,
+			URLTTL:        presignTTL,
+			PublicBaseURL: deps.PublicURL,
+		})
+		if err != nil {
+			log.Fatalf("local artwork store: %v", err)
+		}
+		deps.ArtworkLocal = localStore
+		slog.Info("local artwork store configured", "root", localStore.Root())
+	}
 
 	var literaryWorkService *literaryworks.Service
 	if deps.DB != nil {
@@ -1253,6 +1273,12 @@ func main() {
 				presignTTL = 4 * time.Hour
 			}
 			imageResolver.SetS3Presigner(deps.S3Public, deps.S3Public.EffectivePresignTTL(presignTTL))
+		} else if deps.ArtworkLocal != nil {
+			presignTTL := cfg.S3.MetadataPresignExpiry
+			if presignTTL <= 0 {
+				presignTTL = 4 * time.Hour
+			}
+			imageResolver.SetS3Presigner(deps.ArtworkLocal, deps.ArtworkLocal.EffectivePresignTTL(presignTTL))
 		}
 		deps.ImageResolver = imageResolver
 		deps.PluginImageResolver = imageResolver
@@ -1359,10 +1385,12 @@ func main() {
 		// metadb://) can be resolved to presigned HTTP URLs in API responses.
 		metadataService.SetImageResolver(imageResolver)
 
-		// Wire the image cacher whenever object storage is available so explicit
-		// admin image applies can succeed even if automatic metadata caching is off.
-		if deps.S3Public != nil {
-			imageCacher := imagecache.New(deps.S3Public)
+		// Wire the image cacher whenever an artwork backend is available so
+		// explicit admin image applies and automatic caching work with either
+		// public S3 or the local filesystem offload.
+		artworkPut := artworkObjectPutter(deps)
+		if artworkPut != nil {
+			imageCacher := imagecache.New(artworkPut)
 			imageCacher.SetArtworkRevisionTracker(catalog.NewArtworkRevisionTracker(deps.DB))
 			metadataService.SetImageCacher(imageCacher)
 			imageCacheJobs := metadata.NewImageCacheJobRepository(deps.DB)
@@ -1384,7 +1412,11 @@ func main() {
 			// library's roots and sweep stale hashed local/ prefixes on re-cache.
 			// The processor host must mount the libraries, like the metadata worker.
 			metadataImageCacheProcessor.SetLibraryRootResolver(deps.FolderRepo)
-			metadataImageCacheProcessor.SetImagePrefixDeleter(deps.S3Public)
+			if deps.S3Public != nil {
+				metadataImageCacheProcessor.SetImagePrefixDeleter(deps.S3Public)
+			} else if deps.ArtworkLocal != nil {
+				metadataImageCacheProcessor.SetImagePrefixDeleter(deps.ArtworkLocal)
+			}
 			metadataService.SetAutoCacheImages(cfg.Metadata.CacheImages)
 			metadataImageCacheProcessor.SetEnabled(cfg.Metadata.CacheImages)
 			configWatcher.OnChange(func(_, updated *config.Config) {
@@ -1397,7 +1429,7 @@ func main() {
 			if cfg.Metadata.CacheImages {
 				personRefreshService.SetImageCacher(imageCacher)
 				personRefreshService.SetImageCacheJobEnqueuer(imageCacheJobs)
-				slog.Info("metadata image caching enabled")
+				slog.Info("metadata image caching enabled", "backend", artworkBackendName(deps))
 			}
 			if audiobookEnricher != nil {
 				audiobookEnricher.SetImageCacher(imageCacher)
@@ -2012,9 +2044,9 @@ func main() {
 		}
 		taskMgr.Register(tasks.NewCleanupOrphanedMediaItemsTask(catalog.NewOrphanedProvisionalCleaner(deps.DB)))
 		taskMgr.Register(tasks.NewBackfillMediaItemAliasesTask(catalog.NewItemAliasRepository(deps.DB)))
-		if deps.S3Public != nil {
+		if artworkDeleter := artworkRevisionDeleter(deps); artworkDeleter != nil {
 			taskMgr.Register(tasks.NewCleanupArtworkRevisionsTask(
-				metadata.NewArtworkRevisionGarbageCollector(deps.DB, deps.S3Public),
+				metadata.NewArtworkRevisionGarbageCollector(deps.DB, artworkDeleter),
 			))
 		}
 		catalogSearchIndexer := catalog.NewCatalogSearchIndexer(deps.DB, settingsRepo)
@@ -2092,8 +2124,8 @@ func main() {
 		if metadataImageCacheProcessor != nil {
 			taskMgr.Register(tasks.NewCacheMetadataImagesTask(metadataImageCacheProcessor))
 		}
-		if deps.S3Public != nil {
-			identity := tasks.ArtworkStorageIdentity(cfg.S3.Public.Endpoint, cfg.S3.Public.Bucket, cfg.S3.Public.KeyPrefix)
+		if artworkChecker := artworkObjectChecker(deps); artworkChecker != nil {
+			identity := artworkStorageIdentity(cfg, deps)
 			// Seed the fingerprint on first boot so an unchanged storage
 			// identity never triggers a sweep. On the boot after a provider
 			// change the stored (old) identity survives this call and the
@@ -2106,7 +2138,7 @@ func main() {
 				brandingReconciler = brandingSvc
 			}
 			taskMgr.Register(tasks.NewReconcileArtworkCacheTask(
-				metadata.NewArtworkCacheReconciler(deps.DB, deps.S3Public),
+				metadata.NewArtworkCacheReconciler(deps.DB, artworkChecker),
 				settingsRepo,
 				brandingReconciler,
 				identity,
@@ -2407,6 +2439,11 @@ func main() {
 	metricsMux := http.NewServeMux()
 	metricsMux.Handle("/metrics", promhttp.Handler())
 	metricsMux.Handle("/api/", router)
+	if deps.ArtworkLocal != nil {
+		// Signed /artwork/... URLs for the local filesystem cache. Must be
+		// registered before the SPA fallback.
+		metricsMux.Handle("/artwork/", deps.ArtworkLocal.Handler())
+	}
 	// ABS-compat is NOT mounted on the main listener — see the "ABS compat
 	// listener" block below. It binds its own port so the discovery probes
 	// (/ping, /healthcheck, /status, /init, /login, /socket.io) own the URL
@@ -2477,7 +2514,7 @@ func main() {
 			itemRefreshExecutor,
 			libraryRefreshExecutor,
 			adminjob.NewLibraryDeleteExecutor(deps.FolderRepo, sectionRepo),
-			adminjob.NewImageCacheCleanupExecutor(deps.S3Public),
+			adminjob.NewImageCacheCleanupExecutor(artworkPrefixDeleter(deps)),
 			templateBundleApplyExecutor,
 			deps.RealtimeHub,
 		)
@@ -2842,6 +2879,66 @@ func newS3ClientIfConfigured(cfg s3client.BucketConfig) *s3client.Client {
 		return nil
 	}
 	return s3client.NewClient(cfg)
+}
+
+func artworkObjectPutter(deps api.Dependencies) imagecache.ObjectPutter {
+	if deps.S3Public != nil {
+		return deps.S3Public
+	}
+	if deps.ArtworkLocal != nil {
+		return deps.ArtworkLocal
+	}
+	return nil
+}
+
+func artworkPrefixDeleter(deps api.Dependencies) adminjob.S3PrefixDeleter {
+	if deps.S3Public != nil {
+		return deps.S3Public
+	}
+	if deps.ArtworkLocal != nil {
+		return deps.ArtworkLocal
+	}
+	return nil
+}
+
+func artworkRevisionDeleter(deps api.Dependencies) metadata.ArtworkRevisionDeleter {
+	if deps.S3Public != nil {
+		return deps.S3Public
+	}
+	if deps.ArtworkLocal != nil {
+		return deps.ArtworkLocal
+	}
+	return nil
+}
+
+func artworkObjectChecker(deps api.Dependencies) metadata.ArtworkObjectChecker {
+	if deps.S3Public != nil {
+		return deps.S3Public
+	}
+	if deps.ArtworkLocal != nil {
+		return deps.ArtworkLocal
+	}
+	return nil
+}
+
+func artworkBackendName(deps api.Dependencies) string {
+	if deps.S3Public != nil {
+		return "s3"
+	}
+	if deps.ArtworkLocal != nil {
+		return "local"
+	}
+	return "none"
+}
+
+func artworkStorageIdentity(cfg *config.Config, deps api.Dependencies) string {
+	if deps.S3Public != nil {
+		return tasks.ArtworkStorageIdentity(cfg.S3.Public.Endpoint, cfg.S3.Public.Bucket, cfg.S3.Public.KeyPrefix)
+	}
+	if deps.ArtworkLocal != nil {
+		return artworkstore.StorageIdentity(deps.ArtworkLocal.Root())
+	}
+	return artworkstore.StorageIdentity(cfg.Artwork.LocalDir)
 }
 
 func configureS3Clients(cfg *config.Config, deps *api.Dependencies) {

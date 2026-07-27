@@ -320,7 +320,7 @@ func (r *PluginImageResolver) resolveS3Batch(
 	for _, entry := range entries {
 		url, err := presigner.PresignGetURL(ctx, presigner.Bucket(), entry.originalPath, ttl)
 		if err != nil {
-			slog.ErrorContext(ctx, "s3 image resolution failed", "component", "metadata", "path", entry.originalPath, "error", err)
+			slog.ErrorContext(ctx, "artwork image resolution failed", "component", "metadata", "path", entry.originalPath, "error", err)
 			continue
 		}
 		expiry := expiresAt
