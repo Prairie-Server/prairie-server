@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 
 import type { AutoscanSource } from "@/api/types";
 import {
+  buildPluginDisplayNames,
   composeSourceLabel,
+  pluginDisplayNameKey,
   resolveEventSourceName,
   type SourceLabelLookups,
 } from "./autoscanLabels";
@@ -34,6 +36,13 @@ describe("composeSourceLabel", () => {
 
   it("falls back to capability id when nothing else is set", () => {
     expect(composeSourceLabel(base)).toEqual({ name: "arr", detail: "prairie.autoscan.arr" });
+  });
+
+  it("uses capability id as detail when plugin id is blank", () => {
+    expect(composeSourceLabel({ capabilityId: "arr", pluginId: "" })).toEqual({
+      name: "arr",
+      detail: "arr",
+    });
   });
 
   it("ignores whitespace-only rungs", () => {
@@ -99,6 +108,9 @@ describe("resolveEventSourceName", () => {
 
   it("returns empty string when the reference has no capability", () => {
     expect(resolveEventSourceName({ source_id: null }, lookups)).toBe("");
+    expect(
+      resolveEventSourceName({ source_id: null, capability_id: "arr", plugin_id: null }, lookups),
+    ).toBe("");
   });
 
   it("falls back to display name when the bound connection is missing (deleted)", () => {
@@ -112,5 +124,14 @@ describe("resolveEventSourceName", () => {
         orphaned,
       ),
     ).toBe("Arr Watcher");
+  });
+
+  it("builds plugin display name lookup keys", () => {
+    expect(pluginDisplayNameKey("plugin", "cap")).toBe("plugin:cap");
+    expect(
+      buildPluginDisplayNames([
+        { plugin_id: "plugin", capability_id: "cap", display_name: "Display" },
+      ]).get("plugin:cap"),
+    ).toBe("Display");
   });
 });

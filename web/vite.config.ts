@@ -62,7 +62,7 @@ export default defineConfig(({ mode }) => {
               return "react-vendor";
             }
             if (id.includes("@radix-ui")) return "radix";
-            if (id.includes("framer-motion")) return "motion";
+            if (id.includes("/motion/") || id.includes("framer-motion")) return "motion";
             if (id.includes("@codemirror") || id.includes("codemirror")) return "codemirror";
             if (id.includes("lucide-react")) return "icons";
             if (id.includes("@tanstack")) return "tanstack";
@@ -110,7 +110,7 @@ export default defineConfig(({ mode }) => {
       pool: "forks",
       fileParallelism: true,
       maxWorkers: "50%",
-      // Enforce 90% on pure helpers under src/lib/. Prefer modules that already
+      // Enforce 95% on pure helpers under src/lib/. Prefer modules that already
       // have *.test.ts coverage; write tests before adding a file here.
       // Thin React Query / mutation wrappers are left out until they are
       // meaningfully unit-tested.
@@ -140,10 +140,10 @@ export default defineConfig(({ mode }) => {
           "src/utils/storage.ts",
         ],
         thresholds: {
-          statements: 90,
-          lines: 90,
-          functions: 90,
-          branches: 90,
+          statements: 95,
+          lines: 95,
+          functions: 95,
+          branches: 95,
         },
       },
     },

@@ -75,6 +75,26 @@ describe("filterEasyMode conversion", () => {
     }
   });
 
+  it("treats nullish or malformed group lists as an empty easy-mode config", () => {
+    for (const config of [undefined, null, { match: "all" as const, groups: "nope" }]) {
+      const result = filterConfigToChips(config as never);
+      expect(result).toEqual({ kind: "compatible", chips: [], matchMode: "all" });
+    }
+  });
+
+  it("returns empty chips when the single group slot is missing", () => {
+    const result = filterConfigToChips({ match: "all", groups: [undefined] } as never);
+    expect(result).toEqual({ kind: "compatible", chips: [], matchMode: "all" });
+  });
+
+  it("reports unknown group match modes as incompatible", () => {
+    const result = filterConfigToChips({
+      match: "all",
+      groups: [{ match: "xor", rules: [] }],
+    } as never);
+    expect(result).toEqual({ kind: "incompatible", reason: "unknown group match mode" });
+  });
+
   it("round-trip preserves the chip list and match mode", () => {
     const chips: FilterChipModel[] = [
       { field: "genre", op: "contains", value: "Action" },

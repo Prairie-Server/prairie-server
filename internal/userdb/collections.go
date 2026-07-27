@@ -209,7 +209,7 @@ func UpdateCollection(db *sql.DB, input userstore.UpdateCollectionInput) error {
 				return err
 			}
 		}
-		allowed := []string{}
+		var allowed []string
 		if input.AllowedProfileIDs != nil {
 			allowed = *input.AllowedProfileIDs
 		} else {

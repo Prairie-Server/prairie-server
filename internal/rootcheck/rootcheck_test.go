@@ -183,6 +183,37 @@ func TestProbeManyPreservesOrderAndBoundsConcurrency(t *testing.T) {
 	}
 }
 
+func TestProbeManyWithTimeoutWrapper(t *testing.T) {
+	t.Parallel()
+
+	dir := t.TempDir()
+	missing := filepath.Join(dir, "missing")
+	results := ProbeManyWithTimeout(context.Background(), []string{dir, missing}, 50*time.Millisecond)
+	if len(results) != 2 {
+		t.Fatalf("len(results) = %d, want 2", len(results))
+	}
+	if !results[0].Reachable {
+		t.Fatalf("first result = %+v, want reachable temp dir", results[0])
+	}
+	if results[1].Reachable || results[1].ErrorCode != ErrCodeNotFound {
+		t.Fatalf("second result = %+v, want missing path", results[1])
+	}
+}
+
+func TestClassifyErrorCodes(t *testing.T) {
+	t.Parallel()
+
+	if code, message := classify(os.ErrPermission, false); code != ErrCodePermissionDenied || message == "" {
+		t.Fatalf("permission classify = %q/%q", code, message)
+	}
+	if code, message := classify(context.Canceled, true); code != ErrCodeReadFailed || message == "" {
+		t.Fatalf("read classify = %q/%q", code, message)
+	}
+	if code, message := classify(context.Canceled, false); code != ErrCodeStatFailed || message == "" {
+		t.Fatalf("stat classify = %q/%q", code, message)
+	}
+}
+
 func TestProbeReportsEmptyDirectory(t *testing.T) {
 	t.Parallel()
 

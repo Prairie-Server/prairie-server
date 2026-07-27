@@ -164,6 +164,42 @@ func TestDiscoverTunersEdgeCases(t *testing.T) {
 	}
 }
 
+func TestDiscoverTunersDedupesAndSkipsInvalidUDP(t *testing.T) {
+	prev := lanDiscoverFn
+	lanDiscoverFn = func(context.Context, time.Duration) ([]hdhomerun.LANCandidate, error) {
+		return []hdhomerun.LANCandidate{{
+			DeviceIDHex: "METADATA",
+			RemoteIP:    "169.254.169.254",
+		}}, nil
+	}
+	t.Cleanup(func() { lanDiscoverFn = prev })
+
+	svc := NewServiceWithStore(newMemoryStore())
+	svc.SetHDHomeRunClient(fakeHDHRClient{
+		discover: func(_ context.Context, discoverURL, _ string) (*hdhomerun.DeviceInfo, error) {
+			return &hdhomerun.DeviceInfo{
+				FriendlyName: "empty ids",
+				TunerCount:   1,
+				LineupURL:    discoverURL,
+			}, nil
+		},
+	})
+
+	probeURL := "http://probe.example/discover.json"
+	result, err := svc.DiscoverTuners(context.Background(), DiscoverTunersRequest{
+		ProbeURLs: []string{probeURL, probeURL},
+	})
+	if err != nil {
+		t.Fatalf("DiscoverTuners: %v", err)
+	}
+	if len(result.Candidates) != 1 {
+		t.Fatalf("expected duplicate probe to collapse to one candidate, got %+v", result.Candidates)
+	}
+	if result.Candidates[0].DiscoverURL != probeURL {
+		t.Fatalf("candidate = %+v", result.Candidates[0])
+	}
+}
+
 func TestAddTunerValidationAndScanErrors(t *testing.T) {
 	allowLoopbackMediaFetch(t)
 	store := newMemoryStore()
@@ -216,6 +252,22 @@ func TestAddTunerValidationAndScanErrors(t *testing.T) {
 	}
 	if err := svc.ScanTuner(context.Background(), "missing"); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("ScanTuner missing: %v", err)
+	}
+}
+
+func TestAddTunerDeviceIDValidationAndDiscoverError(t *testing.T) {
+	svc := NewServiceWithStore(newMemoryStore())
+	if _, err := svc.AddTuner(context.Background(), "", "169.254.169.254"); !errors.Is(err, ErrInvalidArgument) {
+		t.Fatalf("metadata device id = %v", err)
+	}
+
+	svc.SetHDHomeRunClient(fakeHDHRClient{
+		discover: func(context.Context, string, string) (*hdhomerun.DeviceInfo, error) {
+			return nil, errors.New("discover boom")
+		},
+	})
+	if _, err := svc.AddTuner(context.Background(), "http://probe.example/discover.json", ""); err == nil || !strings.Contains(err.Error(), "discover hdhomerun") {
+		t.Fatalf("discover error = %v", err)
 	}
 }
 
@@ -378,6 +430,63 @@ func TestOwnerMatchesAndCancelRecording(t *testing.T) {
 	}
 }
 
+func TestSyncGuideSourceXMLTVErrorBranches(t *testing.T) {
+	allowLoopbackMediaFetch(t)
+	store := newMemoryStore()
+	svc := NewServiceWithStore(store)
+
+	metadata, err := svc.CreateGuideSource(context.Background(), &GuideSource{
+		Type:        GuideSourceXMLTVURL,
+		DisplayName: "metadata",
+		Config:      map[string]string{"url": "http://169.254.169.254/xmltv.xml"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.SyncGuideSource(context.Background(), metadata.ID); !errors.Is(err, ErrInvalidArgument) {
+		t.Fatalf("metadata url = %v", err)
+	}
+
+	statusSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		http.Error(w, "nope", http.StatusBadGateway)
+	}))
+	defer statusSrv.Close()
+	svc.httpClient = statusSrv.Client()
+	statusSource, err := svc.CreateGuideSource(context.Background(), &GuideSource{
+		Type:        GuideSourceXMLTVURL,
+		DisplayName: "status",
+		Config:      map[string]string{"url": statusSrv.URL + "/xmltv.xml"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.SyncGuideSource(context.Background(), statusSource.ID); err == nil || !strings.Contains(err.Error(), "status 502") {
+		t.Fatalf("status error = %v", err)
+	}
+
+	badXMLSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`not xml`))
+	}))
+	defer badXMLSrv.Close()
+	svc.httpClient = badXMLSrv.Client()
+	badXMLSource, err := svc.CreateGuideSource(context.Background(), &GuideSource{
+		Type:        GuideSourceXMLTVURL,
+		DisplayName: "bad xml",
+		Config:      map[string]string{"url": badXMLSrv.URL + "/xmltv.xml"},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := svc.SyncGuideSource(context.Background(), badXMLSource.ID); err == nil || !strings.Contains(err.Error(), "parse xmltv") {
+		t.Fatalf("bad xml error = %v", err)
+	}
+
+	store.guideSources["unsupported"] = GuideSource{ID: "unsupported", Type: "mystery", Config: map[string]string{}}
+	if err := svc.SyncGuideSource(context.Background(), "unsupported"); !errors.Is(err, ErrInvalidArgument) {
+		t.Fatalf("unsupported source = %v", err)
+	}
+}
+
 func TestSyncSchedulesDirectAndUpdateFill(t *testing.T) {
 	store := newMemoryStore()
 	svc := NewServiceWithStore(store)
@@ -523,4 +632,23 @@ func TestGetSessionForViewerAndResolveUpstream(t *testing.T) {
 	if err != nil || url == "" {
 		t.Fatalf("upstream: %v %q", err, url)
 	}
+}
+
+type fakeHDHRClient struct {
+	discover func(context.Context, string, string) (*hdhomerun.DeviceInfo, error)
+	lineup   func(context.Context, string) ([]hdhomerun.LineupChannel, error)
+}
+
+func (f fakeHDHRClient) Discover(ctx context.Context, discoverURL, deviceID string) (*hdhomerun.DeviceInfo, error) {
+	if f.discover != nil {
+		return f.discover(ctx, discoverURL, deviceID)
+	}
+	return &hdhomerun.DeviceInfo{DeviceID: deviceID, BaseURL: discoverURL, TunerCount: 1}, nil
+}
+
+func (f fakeHDHRClient) FetchLineup(ctx context.Context, baseURL string) ([]hdhomerun.LineupChannel, error) {
+	if f.lineup != nil {
+		return f.lineup(ctx, baseURL)
+	}
+	return nil, nil
 }

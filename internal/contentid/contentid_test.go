@@ -201,3 +201,9 @@ func TestProviderAnchor(t *testing.T) {
 		})
 	}
 }
+
+func TestProviderIDsUnknownProvider(t *testing.T) {
+	if got := (ProviderIDs{Tmdb: "1"}).get("bogus"); got != "" {
+		t.Fatalf("unknown provider lookup = %q, want empty", got)
+	}
+}

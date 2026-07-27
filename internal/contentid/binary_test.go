@@ -52,8 +52,11 @@ func TestPackRejectsNonContentID(t *testing.T) {
 		"",
 		"1234567890123456", // legacy Sonyflake
 		"garbage",
-		"movie-bogus-x",       // invalid provider id
-		"episode-tvdb-296762", // truncated (missing season/episode)
+		"movie-bogus-x",                   // invalid provider id
+		"movie-tmdb-18446744073709551616", // provider id overflows uint64
+		"episode-tvdb-296762",             // truncated (missing season/episode)
+		"episode-tvdb-296762-1-x",         // non-numeric episode
+		"season-tvdb-296762-18446744073709551616", // season overflows uint64
 		"movie-",
 		"local-",    // empty hash
 		"local-xyz", // non-hex hash
@@ -72,11 +75,22 @@ func TestUnpackRejectsGarbage(t *testing.T) {
 		{},
 		{0x00},
 		{0xff, 0xff, 0xff},
+		{tagMovie},
+		{tagMovie, 99},
+		{tagMovie, 1},
+		{tagMovie, 1, 1},
+		{tagSeason, 1, 1, 1},
 		[]byte(strings.Repeat("\x01", 15)),
 	} {
 		if id, ok := Unpack(b); ok {
 			t.Fatalf("Unpack(%x) = (%q, true), want ok=false", b, id)
 		}
+	}
+}
+
+func TestCodeToProviderRejectsUnknown(t *testing.T) {
+	if provider, ok := codeToProvider(99); ok || provider != "" {
+		t.Fatalf("codeToProvider(99) = (%q, %v), want empty/false", provider, ok)
 	}
 }
 

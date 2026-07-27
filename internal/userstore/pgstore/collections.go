@@ -326,7 +326,7 @@ func (s *PostgresUserStore) UpdateCollection(ctx context.Context, input userstor
 				return err
 			}
 		}
-		allowed := []string{}
+		var allowed []string
 		if input.AllowedProfileIDs != nil {
 			allowed = *input.AllowedProfileIDs
 		} else {

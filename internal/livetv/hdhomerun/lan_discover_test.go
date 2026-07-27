@@ -56,6 +56,19 @@ func TestDiscoverLANFindsLoopbackResponder(t *testing.T) {
 	}
 }
 
+func TestDiscoverLANDefaultTimeoutHonorsContextDeadline(t *testing.T) {
+	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
+	defer cancel()
+
+	got, err := DiscoverLAN(ctx, 0)
+	if err != nil {
+		t.Fatalf("DiscoverLAN deadline: %v", err)
+	}
+	if len(got) != 0 {
+		t.Fatalf("expected no candidates without responder, got %+v", got)
+	}
+}
+
 func TestInterfaceBroadcastAddrsDoesNotPanic(t *testing.T) {
 	_ = interfaceBroadcastAddrs()
 }

@@ -519,8 +519,8 @@ const defaultLocalImportDir = "/catalog-seeds"
 var (
 	errCatalogSeedImportSourceRequired    = errors.New("provide exactly one source: local_path, export_job_id, artifact_key, or remote_url")
 	errCatalogSeedImportSourceConflict    = errors.New("provide only one catalog seed source")
-	errCatalogSeedImportSourceUnavailable = errors.New("Catalog imports from S3 require the private internal S3 bucket")
-	errCatalogSeedImportInvalidLocalPath  = errors.New("Local path must point to an existing .json.gz file")
+	errCatalogSeedImportSourceUnavailable = errors.New("catalog imports from S3 require the private internal S3 bucket")
+	errCatalogSeedImportInvalidLocalPath  = errors.New("local path must point to an existing .json.gz file")
 	errCatalogSeedImportInvalidRemoteURL  = errors.New("remote URL must point to an http(s) .json.gz file")
 )
 
