@@ -170,7 +170,7 @@ export function UserCollectionForm({
   const createMutation = useCreateCollection();
   const updateMutation = useUpdateCollection();
   const deletePosterMutation = useDeleteUserCollectionImage();
-  const { data: profiles = [] } = useProfiles();
+  const { data: profiles } = useProfiles();
   const { data: libraries = [] } = useUserLibraries();
   const { profile } = useCurrentProfile();
   const isPending = createMutation.isPending || updateMutation.isPending;

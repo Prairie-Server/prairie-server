@@ -202,8 +202,8 @@ export function useReorderLibraries() {
         body: JSON.stringify({ entries }),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
-      queryClient.invalidateQueries({ queryKey: libraryKeys.all });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
+      void queryClient.invalidateQueries({ queryKey: libraryKeys.all });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to reorder libraries");
@@ -244,7 +244,7 @@ export function useUpsertLibraryRootOverride() {
         body: JSON.stringify(body),
       }),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.libraryRoots(variables.library_id) });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.libraryRoots(variables.library_id) });
       toast.success("Root override saved");
     },
     onError: (err) => {
@@ -262,7 +262,7 @@ export function useDeleteLibraryRootOverride() {
         body: JSON.stringify(body),
       }),
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.libraryRoots(variables.library_id) });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.libraryRoots(variables.library_id) });
       toast.success("Root override removed");
     },
     onError: (err) => {
@@ -285,7 +285,7 @@ export function useRematchStaleMediaID() {
     mutationFn: (contentId: string) =>
       api(`/libraries/stale-ids/${contentId}/rematch`, { method: "POST" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.staleMediaIDs() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.staleMediaIDs() });
       toast.success("Re-match started");
     },
     onError: (err) => {
@@ -304,7 +304,7 @@ export function useCreateLibrary() {
       }),
     onSuccess: () => {
       toast.success("Library created");
-      queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to save");
@@ -322,7 +322,7 @@ export function useUpdateLibrary() {
       }),
     onSuccess: () => {
       toast.success("Library updated");
-      queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to save");
@@ -336,8 +336,8 @@ export function useDeleteLibrary() {
     mutationFn: (id: number) => api<AdminJob>(`/libraries/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Library deletion started");
-      queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.jobs("delete_library") });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("delete_library") });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to delete");
@@ -368,7 +368,7 @@ export function useCheckLibraryMount() {
       api<LibraryMountCheckResponse>(`/libraries/${id}/check-mount`, { method: "POST" }),
     onSuccess: (data) => {
       toast.success(data.healthy ? "Mount check passed" : "Mount check found unreachable roots");
-      queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Mount check failed");
@@ -401,7 +401,7 @@ export function useCancelLibraryScans() {
       }),
     onSuccess: () => {
       toast.success("Scan cancellation requested");
-      queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueStatuses() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueStatuses() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to cancel scans");
@@ -449,8 +449,8 @@ export function useRetryLibraryMetadataMatchQueue() {
       }),
     onSuccess: (_data, id) => {
       toast.success("Metadata matcher backlog queued");
-      queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueStatuses() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueDetail(id) });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueStatuses() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueDetail(id) });
     },
     onError: (err) => {
       toast.error(
@@ -469,8 +469,8 @@ export function useCancelLibraryMetadataMatchQueue() {
       }),
     onSuccess: (_data, id) => {
       toast.success("Metadata matcher backlog cancelled");
-      queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueStatuses() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueDetail(id) });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueStatuses() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueDetail(id) });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to cancel metadata matcher backlog");
@@ -515,7 +515,7 @@ export function useSetLibraryProviders() {
       }),
     onSuccess: (_data, variables) => {
       toast.success("Provider chain updated");
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: adminKeys.libraryProviders(variables.id),
       });
     },
@@ -544,7 +544,7 @@ export function useUploadLibraryPoster() {
     },
     onSuccess: () => {
       toast.success("Library poster updated");
-      queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to upload poster");
@@ -558,7 +558,7 @@ export function useDeleteLibraryPoster() {
     mutationFn: (id: number) => api(`/libraries/${id}/poster`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Library poster removed");
-      queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to remove poster");
@@ -583,14 +583,14 @@ export function useRefreshLibraryMetadata() {
     },
     onSuccess: () => {
       toast.success("Metadata refresh queued");
-      queryClient.invalidateQueries({ queryKey: adminKeys.jobs("library_refresh") });
-      queryClient.invalidateQueries({ queryKey: adminKeys.jobs("__all") });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("library_refresh") });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("__all") });
     },
     onError: (err) => {
       if (err instanceof AdminJobRequestError && err.activeJobId) {
         toast.error(err.message);
-        queryClient.invalidateQueries({ queryKey: adminKeys.jobs("library_refresh") });
-        queryClient.invalidateQueries({ queryKey: adminKeys.jobs("__all") });
+        void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("library_refresh") });
+        void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("__all") });
         return;
       }
       toast.error(err instanceof Error ? err.message : "Refresh failed");
@@ -605,8 +605,8 @@ export function useCancelAdminJob() {
       api<AdminJob>(`/admin/jobs/${encodeURIComponent(id)}/cancel`, { method: "POST" }),
     onSuccess: () => {
       toast.success("Cancellation requested");
-      queryClient.invalidateQueries({ queryKey: adminKeys.jobs("library_refresh") });
-      queryClient.invalidateQueries({ queryKey: adminKeys.jobs("__all") });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("library_refresh") });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("__all") });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to cancel job");
@@ -641,7 +641,7 @@ export function useConfirmEmptyRootCleanup() {
       api(`/libraries/${id}/confirm-empty-root-cleanup`, { method: "POST" }),
     onSuccess: () => {
       toast.success("Deletion confirmed for the next empty-root scan");
-      queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to confirm cleanup");
@@ -726,12 +726,12 @@ export function useCreateCatalogExportJob() {
     mutationFn: (body?: CatalogSeedExportRequest) => createCatalogExportJob(body),
     onSuccess: () => {
       toast.success("Catalog export queued");
-      queryClient.invalidateQueries({ queryKey: adminKeys.jobs("catalog_export") });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("catalog_export") });
     },
     onError: (err) => {
       if (err instanceof AdminJobRequestError && err.activeJobId) {
         toast.error(err.message);
-        queryClient.invalidateQueries({ queryKey: adminKeys.jobs("catalog_export") });
+        void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("catalog_export") });
         return;
       }
       toast.error(err instanceof Error ? err.message : "Failed to queue catalog export");
@@ -745,7 +745,7 @@ export function usePublishCatalogExportJob() {
     mutationFn: (id: string) => publishCatalogExportJob(id),
     onSuccess: () => {
       toast.success("Catalog export published");
-      queryClient.invalidateQueries({ queryKey: adminKeys.jobs("catalog_export") });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("catalog_export") });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to publish catalog export");
@@ -775,13 +775,13 @@ export function useImportCatalogSeed() {
     onSuccess: (payload) => {
       if (payload.mode === "job") {
         toast.success("Catalog import queued");
-        queryClient.invalidateQueries({ queryKey: adminKeys.jobs("catalog_import") });
+        void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("catalog_import") });
         return;
       }
       toast.success(
         `Catalog imported: ${payload.result.items_created} items, ${payload.result.files_created} files`,
       );
-      queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
     },
     onError: (err) => {
       if (err instanceof AdminJobRequestError && err.unmatchedRoots?.length) {

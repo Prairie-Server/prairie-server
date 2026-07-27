@@ -102,8 +102,8 @@ export function useReportMediaProgress() {
       // during playback, and invalidating catalogKeys.all refetched every active
       // browse/detail query — including the large audiobook author/narrator
       // group lists — on every tick.
-      queryClient.invalidateQueries({ queryKey: progressKeys.all });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({ queryKey: progressKeys.all });
+      void queryClient.invalidateQueries({
         queryKey: catalogKeys.itemDetail(variables.contentId),
       });
     },

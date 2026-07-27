@@ -70,7 +70,7 @@ export function getPlexClientIdentifier(): string {
   return generated;
 }
 
-function buildPlexHeaders(token?: string): HeadersInit {
+function buildPlexHeaders(token?: string): Record<string, string> {
   const headers: Record<string, string> = {
     Accept: "application/json",
     "X-Plex-Client-Identifier": getPlexClientIdentifier(),

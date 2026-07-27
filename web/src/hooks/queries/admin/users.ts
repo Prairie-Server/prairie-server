@@ -42,8 +42,8 @@ function invalidateAdminDeviceCaches(
   queryClient: ReturnType<typeof useQueryClient>,
   userId: number,
 ) {
-  queryClient.invalidateQueries({ queryKey: adminKeys.userDeviceSettings(userId) });
-  queryClient.invalidateQueries({ queryKey: adminKeys.devices() });
+  void queryClient.invalidateQueries({ queryKey: adminKeys.userDeviceSettings(userId) });
+  void queryClient.invalidateQueries({ queryKey: adminKeys.devices() });
 }
 
 export function useAdminUsers() {
@@ -72,7 +72,7 @@ export function useCreateUser() {
       }),
     onSuccess: () => {
       toast.success("User created");
-      queryClient.invalidateQueries({ queryKey: adminKeys.users() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.users() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to save");
@@ -90,10 +90,10 @@ export function useUpdateUser() {
       }),
     onSuccess: (_data, variables) => {
       toast.success("User updated");
-      queryClient.invalidateQueries({ queryKey: adminKeys.users() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.userDetail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: adminKeys.userProfiles(variables.id) });
-      queryClient.invalidateQueries({ queryKey: adminKeys.accessGroups() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.users() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.userDetail(variables.id) });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.userProfiles(variables.id) });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.accessGroups() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to save");
@@ -107,8 +107,8 @@ export function useDeleteUser() {
     mutationFn: (id: number) => api(`/admin/users/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("User deleted");
-      queryClient.invalidateQueries({ queryKey: adminKeys.users() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.accessGroups() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.users() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.accessGroups() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to delete");
@@ -135,7 +135,7 @@ export function useUpdateAdminUserSetting() {
       }),
     onSuccess: (_data, variables) => {
       toast.success("User setting updated");
-      queryClient.invalidateQueries({ queryKey: adminKeys.userSettings(variables.userId) });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.userSettings(variables.userId) });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to save setting");
@@ -152,7 +152,7 @@ export function useDeleteAdminUserSetting() {
       }),
     onSuccess: (_data, variables) => {
       toast.success("User setting reset");
-      queryClient.invalidateQueries({ queryKey: adminKeys.userSettings(variables.userId) });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.userSettings(variables.userId) });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to reset setting");
@@ -197,7 +197,7 @@ export function useUpdateAdminUserDeviceSetting() {
     onSuccess: (_data, variables) => {
       toast.success("Device override updated");
       invalidateAdminDeviceCaches(queryClient, variables.userId);
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: adminKeys.deviceDetail(variables.userId, variables.deviceId),
       });
     },
@@ -228,7 +228,7 @@ export function useDeleteAdminUserDeviceSetting() {
     onSuccess: (_data, variables) => {
       toast.success("Device override reset");
       invalidateAdminDeviceCaches(queryClient, variables.userId);
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: adminKeys.deviceDetail(variables.userId, variables.deviceId),
       });
     },
@@ -259,7 +259,7 @@ export function useDeleteAllAdminUserDeviceSettingsForDevice() {
     onSuccess: (_data, variables) => {
       toast.success("All device overrides reset");
       invalidateAdminDeviceCaches(queryClient, variables.userId);
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: adminKeys.deviceDetail(variables.userId, variables.deviceId),
       });
     },

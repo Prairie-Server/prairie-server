@@ -1412,7 +1412,7 @@ export function VideoPlayer({
       }
     }
 
-    init();
+    void init();
 
     return () => {
       destroyed = true;

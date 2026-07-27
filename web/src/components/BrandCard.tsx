@@ -21,10 +21,10 @@ export default function BrandCard({
     if (kind === "genre") {
       const initial =
         card.series_supported && defaultMediaTypeForGenre === "series" ? "series" : "movie";
-      navigate(`${base}?media_type=${initial}`);
+      void navigate(`${base}?media_type=${initial}`);
       return;
     }
-    navigate(base);
+    void navigate(base);
   }
 
   const baseClasses =

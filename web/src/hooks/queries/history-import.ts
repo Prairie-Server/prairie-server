@@ -92,8 +92,8 @@ export function useCreateHistoryImportRun() {
       }),
     onSuccess: (run) => {
       toast.success("Import started");
-      queryClient.invalidateQueries({ queryKey: historyImportKeys.runs() });
-      queryClient.invalidateQueries({ queryKey: historyImportKeys.run(run.id) });
+      void queryClient.invalidateQueries({ queryKey: historyImportKeys.runs() });
+      void queryClient.invalidateQueries({ queryKey: historyImportKeys.run(run.id) });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to start import");

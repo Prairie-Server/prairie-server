@@ -108,7 +108,7 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
   const deleteMutation = useDeleteCollection();
   const deletePosterMutation = useDeleteUserCollectionImage();
   const syncMutation = useSyncUserCollection();
-  const { data: profiles = [] } = useProfiles();
+  const { data: profiles } = useProfiles();
   const { data: libraries = [] } = useUserLibraries();
   const { data: collectionCapabilities } = useCollectionCapabilities();
   const { profile } = useCurrentProfile();

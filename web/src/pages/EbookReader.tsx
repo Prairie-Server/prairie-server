@@ -299,7 +299,7 @@ export default function EbookReader() {
       if (libraryIdParam) {
         nextParams.set("libraryId", libraryIdParam);
       }
-      navigate(`/reader/ebook/${encodeURIComponent(contentId)}?${nextParams.toString()}`, {
+      void navigate(`/reader/ebook/${encodeURIComponent(contentId)}?${nextParams.toString()}`, {
         replace: true,
       });
     },

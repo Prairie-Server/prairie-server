@@ -916,7 +916,7 @@ export function TraktPresetForm({
   onClose: () => void;
 }) {
   const mutation = useImportTraktCollection();
-  const { data: profiles = [] } = useProfiles();
+  const { data: profiles } = useProfiles();
   const [libraryIds, setLibraryIds] = useState<number[]>(() =>
     initialLibraryId ? [initialLibraryId] : libraries[0]?.id ? [libraries[0].id] : [],
   );
@@ -1376,7 +1376,7 @@ export function CollectionEditForm({
   const [backdropSourceUrl, setBackdropSourceUrl] = useState("");
   const deleteImage = useDeleteCollectionImage();
   const updateMutation = useUpdateAdminCollection();
-  const { data: profiles = [] } = useProfiles();
+  const { data: profiles } = useProfiles();
   const [sourceUrl, setSourceUrl] = useState(collection.source_url ?? "");
   const [sourceLimit, setSourceLimit] = useState(getMDBListLimitValue(collection));
   const [editSyncSchedule, setEditSyncSchedule] = useState(collection.sync_schedule ?? "");

@@ -18,7 +18,7 @@ import { AuthBrandHero } from "@/components/auth/AuthBrandHero";
 import { sanitizeAuthRedirect } from "@/lib/authRedirect";
 
 export default function Profiles() {
-  const { data: profiles = [], isLoading: profilesLoading, avatarUploadEnabled } = useProfiles();
+  const { data: profiles, isLoading: profilesLoading, avatarUploadEnabled } = useProfiles();
   const { data: libraries = [], isLoading: librariesLoading } = useAvailableUserLibraries();
   const [editorOpen, setEditorOpen] = useState(false);
   const [pinProfile, setPinProfile] = useState<Profile | null>(null);
@@ -32,7 +32,7 @@ export default function Profiles() {
   const isLoading = profilesLoading || librariesLoading;
 
   function enterApp() {
-    navigate(redirectTarget ?? "/");
+    void navigate(redirectTarget ?? "/");
   }
 
   function handleSelect(profile: Profile) {

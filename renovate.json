@@ -17,6 +17,7 @@
     "**/node_modules/**",
     "web/vendor/**",
     "internal/compat/**"
+<<<<<<< HEAD
   ],
   "packageRules": [
     {
@@ -26,5 +27,7 @@
       ],
       "allowedVersions": "<6.1"
     }
+=======
+>>>>>>> 3c6b0c0e (chore(web): replace ESLint with Oxlint and adopt TypeScript 7)
   ]
 }

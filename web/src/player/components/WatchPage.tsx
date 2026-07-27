@@ -149,7 +149,7 @@ export function WatchPage({
   );
 
   const handleEnded = useCallback(() => {
-    onEnded?.({
+    void onEnded?.({
       positionSeconds: session.durationSeconds ?? 0,
       durationSeconds: session.durationSeconds ?? undefined,
       lastFileId: session.mediaFileId,

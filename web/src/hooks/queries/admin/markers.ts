@@ -50,10 +50,10 @@ export function useUpdateMarkerProvider() {
         queryClient.invalidateQueries({
           queryKey: adminKeys.markerProvider(variables.provider),
         }),
-        queryClient.removeQueries({
-          queryKey: adminKeys.markerProviderValidation(variables.provider),
-        }),
       ]);
+      queryClient.removeQueries({
+        queryKey: adminKeys.markerProviderValidation(variables.provider),
+      });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to save marker provider settings");

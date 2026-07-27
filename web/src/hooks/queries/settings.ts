@@ -140,10 +140,10 @@ export function useSetSetting() {
     },
     onSettled: (_data, _err, variables) => {
       const profileId = getActiveProfileIdForSettings();
-      qc.invalidateQueries({ queryKey: settingsKeys.list() });
-      qc.invalidateQueries({ queryKey: settingsKeys.detail(variables.key) });
-      qc.invalidateQueries({ queryKey: settingsKeys.effective(profileId, [variables.key]) });
-      qc.invalidateQueries({ queryKey: ["settings", "effective"] });
+      void qc.invalidateQueries({ queryKey: settingsKeys.list() });
+      void qc.invalidateQueries({ queryKey: settingsKeys.detail(variables.key) });
+      void qc.invalidateQueries({ queryKey: settingsKeys.effective(profileId, [variables.key]) });
+      void qc.invalidateQueries({ queryKey: ["settings", "effective"] });
     },
   });
 }
@@ -164,10 +164,10 @@ export function useDeleteSetting() {
         delete next[variables.key];
         return next;
       });
-      qc.invalidateQueries({ queryKey: settingsKeys.list() });
+      void qc.invalidateQueries({ queryKey: settingsKeys.list() });
       const profileId = getActiveProfileIdForSettings();
-      qc.invalidateQueries({ queryKey: settingsKeys.effective(profileId, [variables.key]) });
-      qc.invalidateQueries({ queryKey: ["settings", "effective"] });
+      void qc.invalidateQueries({ queryKey: settingsKeys.effective(profileId, [variables.key]) });
+      void qc.invalidateQueries({ queryKey: ["settings", "effective"] });
     },
   });
 }
@@ -205,9 +205,9 @@ export function useSetDeviceSetting() {
     onSuccess: (_data, variables) => {
       const profileId = getActiveProfileIdForSettings();
       qc.setQueryData(settingsKeys.deviceDetail(profileId, variables.key), variables.value);
-      qc.invalidateQueries({ queryKey: settingsKeys.deviceDetail(profileId, variables.key) });
-      qc.invalidateQueries({ queryKey: settingsKeys.effective(profileId, [variables.key]) });
-      qc.invalidateQueries({ queryKey: ["settings", "effective"] });
+      void qc.invalidateQueries({ queryKey: settingsKeys.deviceDetail(profileId, variables.key) });
+      void qc.invalidateQueries({ queryKey: settingsKeys.effective(profileId, [variables.key]) });
+      void qc.invalidateQueries({ queryKey: ["settings", "effective"] });
     },
   });
 }
@@ -223,9 +223,9 @@ export function useDeleteDeviceSetting() {
     onSuccess: (_data, variables) => {
       const profileId = getActiveProfileIdForSettings();
       qc.setQueryData(settingsKeys.deviceDetail(profileId, variables.key), null);
-      qc.invalidateQueries({ queryKey: settingsKeys.deviceDetail(profileId, variables.key) });
-      qc.invalidateQueries({ queryKey: settingsKeys.effective(profileId, [variables.key]) });
-      qc.invalidateQueries({ queryKey: ["settings", "effective"] });
+      void qc.invalidateQueries({ queryKey: settingsKeys.deviceDetail(profileId, variables.key) });
+      void qc.invalidateQueries({ queryKey: settingsKeys.effective(profileId, [variables.key]) });
+      void qc.invalidateQueries({ queryKey: ["settings", "effective"] });
     },
   });
 }
