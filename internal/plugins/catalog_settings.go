@@ -273,14 +273,18 @@ func mergeLegacyCatalogURLs(ctx context.Context, executor catalogSettingsExecuto
 			    updated_at = NOW()
 			WHERE repository_id IN (
 			    SELECT id FROM plugin_repositories
-			    WHERE id <> $1 AND position(lower($2) in lower(url)) > 0
+			    WHERE id <> $1
+			      AND position(lower($2) in lower(url)) > 0
+			      AND managed_key IS NOT NULL
 			)
 		`, targetID, marker); err != nil {
 			return fmt.Errorf("reassign legacy catalog installations for %q: %w", managedKey, err)
 		}
 		if _, err := executor.Exec(ctx, `
 			DELETE FROM plugin_repositories
-			WHERE id <> $1 AND position(lower($2) in lower(url)) > 0
+			WHERE id <> $1
+			  AND position(lower($2) in lower(url)) > 0
+			  AND managed_key IS NOT NULL
 		`, targetID, marker); err != nil {
 			return fmt.Errorf("delete legacy catalog repository for %q: %w", managedKey, err)
 		}

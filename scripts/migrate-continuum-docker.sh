@@ -371,11 +371,11 @@ BEGIN
 		        ELSE true
 		    END,
 		    updated_at = NOW()
-		WHERE display_name LIKE '%Continuum%'
-		   OR display_name LIKE '%Silo%'
-		   OR url LIKE '%ContinuumApp/continuum-plugins/%'
+		WHERE url LIKE '%ContinuumApp/continuum-plugins/%'
 		   OR url LIKE '%Silo-Server/silo-plugins/%'
-		   OR url LIKE '%Silo-Community/silo-plugins/%';
+		   OR url LIKE '%silo-server/silo-plugins/%'
+		   OR url LIKE '%Silo-Community/silo-plugins/%'
+		   OR url LIKE '%silo-community/silo-plugins/%';
 	END IF;
 END $$;
 SQL

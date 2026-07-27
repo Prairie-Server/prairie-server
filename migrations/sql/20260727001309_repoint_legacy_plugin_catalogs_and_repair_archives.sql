@@ -83,6 +83,7 @@ BEGIN
         SELECT id
         FROM public.plugin_repositories
         WHERE id <> official_repository_id
+          AND managed_key IS NOT NULL
           AND (
               url ILIKE '%/ContinuumApp/continuum-plugins/%'
               OR url ILIKE '%/Silo-Server/silo-plugins/%'
@@ -159,6 +160,7 @@ BEGIN
         SELECT id
         FROM public.plugin_repositories
         WHERE id <> community_repository_id
+          AND managed_key IS NOT NULL
           AND (
               url ILIKE '%/Silo-Community/silo-plugins/%'
               OR url ILIKE '%/silo-community/silo-plugins/%'
@@ -185,7 +187,10 @@ BEGIN
       AND plugin_id IN ('prairie.tmdb', 'prairie.tvdb');
 
     UPDATE public.plugin_installations
-    SET repository_id = community_repository_id,
+    SET repository_id = CASE
+            WHEN include_community THEN community_repository_id
+            ELSE NULL
+        END,
         available_version = NULL,
         updated_at = NOW()
     WHERE kind = 'plugin'
