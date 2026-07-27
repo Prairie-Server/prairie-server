@@ -36,6 +36,7 @@ const (
 	libraryPageStateSettingKey         = "ui.library_page_state"
 	rememberLibraryPageStateSettingKey = "ui.remember_library_page_state"
 	searchMediaScopeSettingKey         = "search.media_scope"
+	cardOverlaysSettingKey             = "card_overlays"
 	dateFormatSettingKey               = "ui.date_format"
 	timeFormatSettingKey               = "ui.time_format"
 )
@@ -217,6 +218,13 @@ var settingsRegistry = map[string]settingSpec{
 		DefaultValue: "video",
 		Validate: validateEnumSetting(searchMediaScopeSettingKey,
 			"all", "video", "audiobook"),
+	},
+	// Per-user card overlay layout (JSON). Empty means fall back to admin
+	// defaults from GET /settings/overlay-config (or built-in registry defaults).
+	cardOverlaysSettingKey: {
+		Scope:        scopeUser,
+		DefaultValue: "",
+		Validate:     validateJSONSetting(cardOverlaysSettingKey),
 	},
 	// Preferred display formats for dates and clock times. "auto" defers to
 	// the client's locale default.
