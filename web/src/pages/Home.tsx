@@ -196,7 +196,9 @@ export default function Home() {
     <>
       <h1 className="sr-only">Home</h1>
       <div className="home-sections space-y-10 pb-2">
-        {hasHeroSlot ? heroSlot : <HomeBrandHero />}
+        {/* Featured → Netflix-style billboard. Otherwise open on carousel rows;
+            only an empty home keeps a compact brand welcome. */}
+        {hasHeroSlot ? heroSlot : layout.length === 0 ? <HomeBrandHero /> : null}
         <TasteSeedBanner />
 
         {viewModel.rows.map((slot) => {
@@ -244,16 +246,16 @@ export default function Home() {
 }
 
 /**
- * Welcome composition when Home has no featured media hero.
- * Mark + server name (same pattern as AuthBrandHero) — never stack the
- * wordmark above a duplicate "{serverName}" title next to the sidebar logo.
+ * Compact welcome for an empty Home (no sections configured yet).
+ * Mark + server name beside each other — same brand pairing as AuthBrandHero,
+ * content-sized so it does not invent a tall empty plane above the CTA.
  */
 function HomeBrandHero() {
   const { serverName } = useServerBranding();
 
   return (
     <section
-      className={`home-hero border-border/60 relative mb-8 flex w-full items-end overflow-hidden border-b ${HOME_BRAND_HERO_SIZE}`}
+      className={`home-hero border-border/60 relative overflow-hidden border-b ${HOME_BRAND_HERO_SIZE}`}
       aria-label="Welcome"
     >
       <div
@@ -261,23 +263,22 @@ function HomeBrandHero() {
         className="pointer-events-none absolute inset-0"
         style={{
           background: `
-            linear-gradient(180deg, #1a2230 0%, var(--background) 55%, color-mix(in srgb, var(--background) 88%, #241c12) 100%),
-            radial-gradient(ellipse 80% 50% at 50% 100%, color-mix(in srgb, var(--primary) 18%, transparent), transparent 65%)
+            linear-gradient(180deg, color-mix(in srgb, #1a2230 55%, var(--background)) 0%, var(--background) 100%),
+            radial-gradient(ellipse 70% 120% at 0% 50%, color-mix(in srgb, var(--primary) 14%, transparent), transparent 60%)
           `,
         }}
       />
-      <div className="hero-gradient" />
-      <div className="relative z-10 flex w-full flex-col items-start gap-4 px-4 pb-8 sm:px-6 sm:pb-10 lg:px-10 lg:pb-12 xl:px-12">
+      <div className="relative z-10 flex w-full items-center gap-4 px-4 sm:gap-5 sm:px-6 lg:px-10 xl:px-12">
         <PrairieBrand
           variant="mark"
-          className="brand-reveal h-14 w-14 sm:h-16 sm:w-16"
+          className="brand-reveal h-11 w-11 shrink-0 sm:h-12 sm:w-12"
           imageClassName="rounded-xl"
         />
-        <div className="auth-brand-copy max-w-lg space-y-2.5">
-          <p className="font-display text-3xl font-semibold tracking-[-0.035em] sm:text-4xl lg:text-[2.75rem]">
+        <div className="auth-brand-copy min-w-0 space-y-1">
+          <p className="font-display text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
             {serverName}
           </p>
-          <p className="text-muted-foreground max-w-md text-sm leading-6 sm:text-[0.95rem]">
+          <p className="text-muted-foreground text-sm leading-5">
             Your library, ready when you are.
           </p>
         </div>
@@ -324,9 +325,11 @@ function renderHeroSlot(hero: HomeSectionSlot | null, retrySection: (sectionId: 
 }
 
 function HomePageSkeleton() {
+  // Layout is unknown until the first fetch — prefer carousel-row skeletons over
+  // a tall featured billboard so homes without a featured slot do not flash a
+  // full-viewport empty plane.
   return (
-    <div className="home-sections space-y-8">
-      <Skeleton className={`${HERO_BANNER_SIZE} w-full rounded-none`} />
+    <div className="home-sections space-y-8 pt-4">
       {Array.from({ length: 3 }).map((_, i) => (
         <div key={i} className="section-fade-in space-y-3 px-4 sm:px-6 lg:px-12">
           <Skeleton className="h-6 w-48" />
