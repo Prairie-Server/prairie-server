@@ -83,7 +83,7 @@ function LibraryPicker({
       value={value ? String(value) : undefined}
       onValueChange={(next) => onChange(Number(next))}
     >
-      <SelectTrigger className="w-[220px]">
+      <SelectTrigger className="w-full sm:w-[220px]">
         <SelectValue placeholder="Choose library" />
       </SelectTrigger>
       <SelectContent>

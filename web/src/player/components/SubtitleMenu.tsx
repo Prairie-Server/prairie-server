@@ -205,7 +205,7 @@ export function SubtitleMenu({
               Off
             </button>
           </div>
-          <div className="max-h-[60vh] overflow-y-auto py-1">
+          <div className="max-h-[min(60dvh,24rem)] overflow-y-auto py-1">
             {sortedTracks.map((track) => {
               const isActive = track.index === activeIndex;
               const languageName = getLanguageName(track.language);

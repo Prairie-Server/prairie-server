@@ -40,7 +40,7 @@ function hasStaticItems(props: ItemGridProps): props is StaticItemGridProps {
 const GRID_GAP = 12;
 const TEXT_AREA_HEIGHT = 44;
 const GRID_CLASSES =
-  "grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-7 xl:grid-cols-8 gap-3";
+  "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3";
 
 export default function ItemGrid(props: ItemGridProps) {
   const {

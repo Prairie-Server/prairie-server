@@ -104,7 +104,7 @@ export function SpeedControl({ value, onChange }: SpeedControlProps) {
         <div
           role="dialog"
           aria-label="Playback speed"
-          className="absolute right-0 bottom-full mb-2 flex w-[230px] flex-col gap-3 rounded-lg bg-black/90 px-4 py-3 shadow-xl backdrop-blur-sm"
+          className="absolute right-0 bottom-full mb-2 flex w-[min(230px,calc(100vw-1rem))] flex-col gap-3 rounded-lg bg-black/90 px-4 py-3 shadow-xl backdrop-blur-sm"
           onKeyDown={handlePopoverKeyDown}
         >
           <div className="flex items-center justify-between">

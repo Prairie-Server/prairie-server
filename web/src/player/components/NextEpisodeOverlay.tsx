@@ -17,7 +17,7 @@ export function NextEpisodeOverlay({
   onCancel,
 }: NextEpisodeOverlayProps) {
   return (
-    <div className="absolute right-6 bottom-24 z-50 flex min-w-[260px] flex-col gap-2 rounded-lg bg-black/80 p-4 text-white">
+    <div className="absolute right-3 bottom-24 left-3 z-50 flex max-w-sm flex-col gap-2 rounded-lg bg-black/80 p-4 text-white sm:right-6 sm:left-auto sm:min-w-[260px]">
       <div className="text-xs tracking-wider text-white/60 uppercase">
         Up Next in {secondsRemaining}s
       </div>

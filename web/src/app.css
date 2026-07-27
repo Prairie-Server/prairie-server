@@ -814,6 +814,57 @@
 }
 
 /* ================================================================
+   § 4b  SAFE-AREA HELPERS — notched phones / home indicator
+   ================================================================
+   Pair with viewport-fit=cover. Prefer padding over shifting `bottom`
+   so fixed chrome clears the home indicator without clipping content.
+   ================================================================ */
+
+@layer utilities {
+  .pt-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .pl-safe {
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+  .pr-safe {
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+  .px-safe {
+    padding-left: env(safe-area-inset-left, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+  }
+  .p-safe {
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-right: env(safe-area-inset-right, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-left: env(safe-area-inset-left, 0px);
+  }
+  /* Combined with existing spacing — keep the design padding AND clear the notch. */
+  .pt-safe-offset {
+    padding-top: max(0.75rem, env(safe-area-inset-top, 0px));
+  }
+  .pb-safe-offset {
+    padding-bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  }
+  .pb-safe-offset-sm {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
+  }
+  .bottom-safe {
+    bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .bottom-safe-3 {
+    bottom: max(0.75rem, env(safe-area-inset-bottom, 0px));
+  }
+  .bottom-safe-6 {
+    bottom: max(1.5rem, env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/* ================================================================
    § 5  COMPONENT UTILITY CLASSES
    ================================================================
    Reusable patterns extracted from the design system.
@@ -1148,6 +1199,13 @@
     transition:
       color var(--duration-fast) var(--ease-default),
       background-color var(--duration-fast) var(--ease-default);
+  }
+  /* Coarse pointers (phones/tablets): meet the ~44px touch-target floor. */
+  @media (pointer: coarse) {
+    .player-utility-btn {
+      width: 2.75rem;
+      height: 2.75rem;
+    }
   }
   .player-utility-btn:hover {
     color: #fff;

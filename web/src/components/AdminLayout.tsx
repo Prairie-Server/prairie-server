@@ -34,11 +34,11 @@ export default function AdminLayout() {
       </div>
 
       {/* Mobile header */}
-      <div className="glass-dark border-border/70 sticky top-0 z-30 mx-3 mt-3 flex items-center justify-between rounded-2xl border px-4 py-3 lg:hidden">
+      <div className="glass-dark border-border/70 sticky top-0 z-30 mx-3 mt-3 flex items-center justify-between rounded-2xl border px-4 py-3 pt-safe-offset lg:hidden">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setMobileOpen(true)}
-            className="text-muted-foreground hover:text-foreground hover:bg-accent/60 flex h-10 w-10 items-center justify-center rounded-xl transition-all"
+            className="text-muted-foreground hover:text-foreground hover:bg-accent/60 flex h-11 w-11 items-center justify-center rounded-xl transition-all"
             aria-label="Open admin menu"
           >
             <Menu className="h-5 w-5" />
@@ -68,7 +68,7 @@ export default function AdminLayout() {
 
       <main
         id="main-content"
-        className={`relative z-10 min-h-screen px-4 py-4 sm:px-6 lg:ml-[240px] lg:px-8 lg:py-8 xl:px-10 ${
+        className={`relative z-10 min-h-[100dvh] px-4 py-4 sm:px-6 lg:ml-[240px] lg:px-8 lg:py-8 xl:px-10 ${
           hasBackgroundBar ? "pb-32 sm:pb-36" : ""
         }`}
       >

@@ -29,6 +29,11 @@ interface VolumeControlProps {
    * audiobook mini bar.
    */
   tone?: "overlay" | "surface";
+  /**
+   * When false, only the mute button is shown (no slider). Useful on narrow
+   * player HUDs where the full control would crowd the utility rail.
+   */
+  showSlider?: boolean;
 }
 
 export function VolumeControl({
@@ -37,6 +42,7 @@ export function VolumeControl({
   onVolumeChange,
   onMutedChange,
   tone = "overlay",
+  showSlider = true,
 }: VolumeControlProps) {
   const sliderRef = useRef<HTMLDivElement>(null);
 
@@ -171,9 +177,10 @@ export function VolumeControl({
         )}
       </button>
 
-      {/* Always-visible slider. Uses the same thin resting height as the seek
-          bar, grows subtly on hover for richer feedback, and reveals a small
-          thumb dot at the playhead when hovered. */}
+      {/* Always-visible slider (unless compact mute-only). Uses the same thin
+          resting height as the seek bar, grows subtly on hover for richer
+          feedback, and reveals a small thumb dot at the playhead when hovered. */}
+      {showSlider ? (
       <div
         ref={sliderRef}
         role="slider"
@@ -201,6 +208,7 @@ export function VolumeControl({
           />
         </div>
       </div>
+      ) : null}
     </div>
   );
 }

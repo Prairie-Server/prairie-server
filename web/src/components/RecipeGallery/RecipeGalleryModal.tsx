@@ -82,7 +82,7 @@ export default function RecipeGalleryModal({ open, onClose, onPick, hideAdminOnl
       onClick={onClose}
     >
       <div
-        className="max-h-[80vh] w-[800px] overflow-y-auto rounded-xl border border-white/10 bg-zinc-900 p-6"
+        className="mx-4 max-h-[min(80dvh,calc(100dvh-2rem))] w-full max-w-[800px] overflow-y-auto rounded-xl border border-white/10 bg-zinc-900 p-4 sm:p-6"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between border-b border-white/10 pb-3">
@@ -121,7 +121,7 @@ export default function RecipeGalleryModal({ open, onClose, onPick, hideAdminOnl
           ))}
         </div>
 
-        <div className="mt-4 grid grid-cols-3 gap-3">
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {flat.map(({ def, preset }) => (
             <RecipeCard
               key={`${def.type}:${preset.key}`}
@@ -131,7 +131,7 @@ export default function RecipeGalleryModal({ open, onClose, onPick, hideAdminOnl
             />
           ))}
           {flat.length === 0 && (
-            <div className="col-span-3 flex flex-col items-center justify-center py-12 text-center text-sm text-white/50">
+            <div className="col-span-full flex flex-col items-center justify-center py-12 text-center text-sm text-white/50">
               <div className="mb-2 text-3xl">🔍</div>
               <div>No recipes match {search ? `"${search}"` : "this filter"}.</div>
               <button

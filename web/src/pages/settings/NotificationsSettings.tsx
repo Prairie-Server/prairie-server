@@ -159,8 +159,8 @@ function ChannelFrequencyRow({
 }) {
   const digestText = `One summary per day, around ${digestHour}:00 server time`;
   return (
-    <div className="flex items-center justify-between gap-3">
-      <div>
+    <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
+      <div className="min-w-0">
         <div className="text-sm">Frequency</div>
         <div className="text-muted-foreground text-xs">
           {mode === "per_episode"
@@ -175,7 +175,7 @@ function ChannelFrequencyRow({
         disabled={isPending}
         onValueChange={(value) => onChange(value as NotificationChannelMode)}
       >
-        <SelectTrigger className="w-[220px]">
+        <SelectTrigger className="w-full sm:w-[220px]">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>

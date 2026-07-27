@@ -169,7 +169,7 @@ export default function AudiobookGroupsView({
           className="w-full max-w-xs"
         />
         <Select value={sort} onValueChange={(value) => setSort(value as AudiobookGroupSort)}>
-          <SelectTrigger className="w-[160px]">
+          <SelectTrigger className="w-full sm:w-[160px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

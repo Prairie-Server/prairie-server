@@ -809,7 +809,7 @@ function WebhookEndpointSection({
           onValueChange={(v) => onProviderChange(v as AutoscanWebhookProvider)}
           disabled={isSaving}
         >
-          <SelectTrigger className="w-[140px]" aria-label="Webhook payload provider">
+          <SelectTrigger className="w-full sm:w-[140px]" aria-label="Webhook payload provider">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

@@ -36,7 +36,7 @@ export function MiniBar({
 
   return (
     <div
-      className="bg-background fixed right-0 bottom-0 z-40 border-t px-3 pt-2 pb-2 shadow-lg sm:px-6"
+      className="bg-background fixed right-0 bottom-0 z-40 border-t px-3 pt-2 pb-safe-offset-sm shadow-lg sm:px-6"
       style={{ left: "var(--app-sidebar-offset, 0px)" }}
     >
       <SeekBar
@@ -156,6 +156,16 @@ export function MiniBar({
         </div>
 
         <div className="flex items-center justify-end gap-2">
+          <div className="md:hidden">
+            <VolumeControl
+              tone="surface"
+              volume={playback.volume}
+              muted={playback.muted}
+              onVolumeChange={playback.setVolume}
+              onMutedChange={playback.setMuted}
+              showSlider={false}
+            />
+          </div>
           <div className="hidden md:block">
             <VolumeControl
               tone="surface"

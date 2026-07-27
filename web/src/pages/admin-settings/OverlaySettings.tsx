@@ -56,7 +56,7 @@ function DefaultsEditor({ value, onChange }: DefaultsEditorProps) {
       <div className="space-y-2">
         <Label className="text-sm font-medium">Default style preset</Label>
         <Select value={prefs.preset} onValueChange={(v) => setPreset(v as PresetId)}>
-          <SelectTrigger className="w-[200px]">
+          <SelectTrigger className="w-full sm:w-[200px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -96,7 +96,7 @@ function DefaultsEditor({ value, onChange }: DefaultsEditorProps) {
                           updateItem(def.id, { position: pos as OverlayPosition })
                         }
                       >
-                        <SelectTrigger className="w-[130px]">
+                        <SelectTrigger className="w-full sm:w-[130px]">
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>

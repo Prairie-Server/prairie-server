@@ -487,7 +487,7 @@ export default function AdminActivity() {
           </div>
 
           {/* Rows */}
-          <div className="max-h-[calc(100vh-420px)] overflow-y-auto">
+          <div className="max-h-[calc(100dvh-420px)] overflow-y-auto">
             {filtered.map((session, i) => (
               <StreamRow
                 key={session.session_id}

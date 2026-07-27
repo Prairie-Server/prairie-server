@@ -111,7 +111,7 @@ export default function RequestBrowse({ kind }: RequestBrowseProps) {
             </div>
           </div>
           <Select value={sort} onValueChange={updateSort}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="Sort" />
             </SelectTrigger>
             <SelectContent>

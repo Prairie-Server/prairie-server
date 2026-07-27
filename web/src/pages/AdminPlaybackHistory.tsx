@@ -141,7 +141,7 @@ export default function AdminPlaybackHistory() {
           )}
 
           <Select value={selectedUser} onValueChange={(value) => updateFilter("user_id", value)}>
-            <SelectTrigger className="w-[220px]">
+            <SelectTrigger className="w-full sm:w-[220px]">
               <SelectValue placeholder="All users" />
             </SelectTrigger>
             <SelectContent>
@@ -159,7 +159,7 @@ export default function AdminPlaybackHistory() {
             onValueChange={(value) => updateFilter("profile_id", value)}
             disabled={selectedUser === ALL_USERS}
           >
-            <SelectTrigger className="w-[220px]">
+            <SelectTrigger className="w-full sm:w-[220px]">
               <SelectValue
                 placeholder={selectedUser === ALL_USERS ? "Choose a user first" : "All profiles"}
               />
@@ -178,7 +178,7 @@ export default function AdminPlaybackHistory() {
             value={selectedCompleted}
             onValueChange={(value) => updateFilter("completed", value)}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue placeholder="All attempts" />
             </SelectTrigger>
             <SelectContent>
