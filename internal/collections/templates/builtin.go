@@ -1892,5 +1892,5 @@ func defaultPosterPath(templateID string) string {
 	if templateID == "" {
 		return ""
 	}
-	return "/images/collection-templates/" + templateID + ".jpg"
+	return "/images/collection-templates/" + templateID + ".webp"
 }

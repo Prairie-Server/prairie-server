@@ -1,19 +1,17 @@
 import { DEFAULT_THEME, type ThemeId } from "@/lib/themes";
 
-const THEME_FONTS_LINK_ID = "prairie-theme-fonts";
-
 /** Non-default curated themes use Outfit (and theme editor may need extras). */
 export function themeNeedsDeferredFonts(theme: ThemeId): boolean {
   return theme !== DEFAULT_THEME;
 }
 
+let deferredFontsPromise: Promise<unknown> | null = null;
+
 /**
- * Flip the deferred Google Fonts stylesheet from media=print to all.
- * Safe to call repeatedly; no-ops when the link is missing or already active.
+ * Load Outfit / Manrope / Urbanist (self-hosted) once. Safe to call repeatedly.
+ * Default prairie-dusk only needs Sora + Fraunces from fonts-default.css.
  */
 export function ensureThemeFontsLoaded(): void {
-  const link = document.getElementById(THEME_FONTS_LINK_ID);
-  if (!(link instanceof HTMLLinkElement)) return;
-  if (link.media === "all") return;
-  link.media = "all";
+  if (deferredFontsPromise) return;
+  deferredFontsPromise = import("@/styles/fonts-deferred.css");
 }

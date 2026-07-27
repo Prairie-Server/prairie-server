@@ -76,8 +76,8 @@ is created.
 
 Built-in templates ship with poster artwork under
 `web/public/images/collection-templates/`. Poster filenames match template
-IDs, for example `tmdb_popular_movies.jpg`; raw generated plates live in
-`web/public/images/collection-templates/raw/` so typography can be regenerated (Vite omits `raw/` from `web/dist` / the embedded binary; only the JPG posters ship)
+IDs, for example `tmdb_popular_movies.webp`; raw generated plates live in
+`web/public/images/collection-templates/raw/` so typography can be regenerated (Vite omits `raw/` from `web/dist` / the embedded binary; only the WebP posters ship)
 without re-running image generation.
 
 The poster style is intentionally close to Kometa/Plex collection posters:
@@ -109,8 +109,9 @@ then add deterministic typography locally:
    `web/public/images/collection-templates/raw/{template_id}.png`, resizing and
    center-cropping to `1024x1536`.
 3. Create the final poster at
-   `web/public/images/collection-templates/{template_id}.jpg`, resizing and
-   center-cropping to `1000x1500`.
+   `web/public/images/collection-templates/{template_id}.webp`, resizing and
+   center-cropping to `1000x1500` (lossy WebP quality ~72 keeps the embed
+   binary small while remaining sharp at poster sizes).
 4. Add typography outside image generation: media type in gold at top-left,
    collection title at bottom-left, and the source label beneath it. Use a
    subtle dark vignette/overlay and text shadow or stroke for contrast.

@@ -42,7 +42,7 @@ func TestBuiltinTemplatePosterAssetsExist(t *testing.T) {
 
 	for _, tmpl := range List() {
 		t.Run(tmpl.ID, func(t *testing.T) {
-			if _, err := os.Stat(filepath.Join(assetRoot, tmpl.ID+".jpg")); err != nil {
+			if _, err := os.Stat(filepath.Join(assetRoot, tmpl.ID+".webp")); err != nil {
 				t.Fatalf("final poster asset missing: %v", err)
 			}
 			if _, err := os.Stat(filepath.Join(rawRoot, tmpl.ID+".png")); err != nil {

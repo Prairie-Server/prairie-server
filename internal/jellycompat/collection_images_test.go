@@ -42,8 +42,8 @@ func TestServeCollectionImageServesBundledTemplatePoster(t *testing.T) {
 	codec := NewResourceIDCodec()
 	collectionID := "129510738770395144"
 	routeID := codec.EncodeStringID(EncodedIDCollection, collectionID)
-	posterPath := "/images/collection-templates/tmdb_on_the_air.jpg"
-	jpegBytes := []byte("\xff\xd8\xfffake-jpeg-bytes")
+	posterPath := "/images/collection-templates/tmdb_on_the_air.webp"
+	webpBytes := []byte("RIFF....WEBPFAKE")
 
 	collection := &models.LibraryCollection{
 		ID:         collectionID,
@@ -61,7 +61,7 @@ func TestServeCollectionImageServesBundledTemplatePoster(t *testing.T) {
 		imageTags:   newImageTagSigner(secret),
 		collections: &fakeCollectionSource{collections: []*models.LibraryCollection{collection}},
 		frontendFS: fstest.MapFS{
-			"images/collection-templates/tmdb_on_the_air.jpg": {Data: jpegBytes},
+			"images/collection-templates/tmdb_on_the_air.webp": {Data: webpBytes},
 		},
 	}
 
@@ -74,11 +74,11 @@ func TestServeCollectionImageServesBundledTemplatePoster(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status = %d, want 200; body=%s", rec.Code, rec.Body.String())
 	}
-	if !bytes.Equal(rec.Body.Bytes(), jpegBytes) {
+	if !bytes.Equal(rec.Body.Bytes(), webpBytes) {
 		t.Fatal("served body does not match bundled asset bytes")
 	}
-	if ct := rec.Header().Get("Content-Type"); ct != "image/jpeg" {
-		t.Fatalf("Content-Type = %q, want image/jpeg", ct)
+	if ct := rec.Header().Get("Content-Type"); ct != "image/webp" {
+		t.Fatalf("Content-Type = %q, want image/webp", ct)
 	}
 }
 

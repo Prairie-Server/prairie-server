@@ -1,4 +1,4 @@
-import { describe, expect, it, beforeEach, afterEach } from "vitest";
+import { describe, expect, it } from "vitest";
 import { ensureThemeFontsLoaded, themeNeedsDeferredFonts } from "./themeFonts";
 
 describe("themeFonts", () => {
@@ -8,29 +8,10 @@ describe("themeFonts", () => {
     expect(themeNeedsDeferredFonts("cobalt-studio")).toBe(true);
   });
 
-  describe("ensureThemeFontsLoaded", () => {
-    beforeEach(() => {
-      document.body.innerHTML = "";
-    });
-    afterEach(() => {
-      document.body.innerHTML = "";
-    });
-
-    it("activates the deferred stylesheet once", () => {
-      const link = document.createElement("link");
-      link.id = "prairie-theme-fonts";
-      link.rel = "stylesheet";
-      link.media = "print";
-      document.head.appendChild(link);
-
+  it("ensureThemeFontsLoaded is safe to call repeatedly", () => {
+    expect(() => {
       ensureThemeFontsLoaded();
-      expect(link.media).toBe("all");
       ensureThemeFontsLoaded();
-      expect(link.media).toBe("all");
-    });
-
-    it("no-ops when the link is absent", () => {
-      expect(() => ensureThemeFontsLoaded()).not.toThrow();
-    });
+    }).not.toThrow();
   });
 });

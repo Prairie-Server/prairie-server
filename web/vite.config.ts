@@ -36,7 +36,7 @@ export default defineConfig(({ mode }) => {
       react(),
       tailwindcss(),
       // Authoring plates under collection-templates/raw (~231MB) are only used to
-      // regenerate JPG posters. Keep them in public/ for that workflow, but do not
+      // regenerate WebP posters. Keep them in public/ for that workflow, but do not
       // ship them in dist (and thus the Go embed binary).
       {
         name: "omit-collection-template-raw",
