@@ -592,11 +592,11 @@ func (s *Service) ListSchedulesDirectLineups(ctx context.Context, req SchedulesD
 	}
 	token, err := s.sd.Token(ctx, username, passwordSHA1)
 	if err != nil {
-		return nil, err
+		return nil, wrapSchedulesDirectErr(err)
 	}
 	headends, err := s.sd.Headends(ctx, token, country, postal)
 	if err != nil {
-		return nil, err
+		return nil, wrapSchedulesDirectErr(err)
 	}
 	return schedulesdirect.FlattenLineups(headends), nil
 }
@@ -640,14 +640,14 @@ func (s *Service) syncSchedulesDirect(ctx context.Context, source *GuideSource) 
 
 	token, err := s.sd.Token(ctx, username, passwordSHA1)
 	if err != nil {
-		return err
+		return wrapSchedulesDirectErr(err)
 	}
 	if err := s.sd.AddLineup(ctx, token, lineupID); err != nil {
-		return err
+		return wrapSchedulesDirectErr(err)
 	}
 	detail, err := s.sd.Lineup(ctx, token, lineupID)
 	if err != nil {
-		return err
+		return wrapSchedulesDirectErr(err)
 	}
 
 	channels, err := s.store.ListChannels(ctx, "")
@@ -670,7 +670,7 @@ func (s *Service) syncSchedulesDirect(ctx context.Context, source *GuideSource) 
 	}
 	schedules, err := s.sd.Schedules(ctx, token, reqs)
 	if err != nil {
-		return err
+		return wrapSchedulesDirectErr(err)
 	}
 
 	programIDs := make([]string, 0)
@@ -688,13 +688,15 @@ func (s *Service) syncSchedulesDirect(ctx context.Context, source *GuideSource) 
 			programIDs = append(programIDs, id)
 		}
 	}
-	programDetails, err := s.sd.Programs(ctx, token, programIDs)
-	if err != nil {
-		return err
-	}
 	byProgramID := map[string]schedulesdirect.ProgramDetail{}
-	for _, p := range programDetails {
-		byProgramID[p.ProgramID] = p
+	if len(programIDs) > 0 {
+		programDetails, err := s.sd.Programs(ctx, token, programIDs)
+		if err != nil {
+			return wrapSchedulesDirectErr(err)
+		}
+		for _, p := range programDetails {
+			byProgramID[p.ProgramID] = p
+		}
 	}
 
 	channelByStation := map[string]string{}
@@ -1020,10 +1022,10 @@ func (s *Service) prepareSchedulesDirectConfig(ctx context.Context, source *Guid
 		if credsChanged {
 			token, err := s.sd.Token(ctx, username, passwordSHA1)
 			if err != nil {
-				return err
+				return wrapSchedulesDirectErr(err)
 			}
 			if err := s.sd.AddLineup(ctx, token, lineup); err != nil {
-				return err
+				return wrapSchedulesDirectErr(err)
 			}
 		}
 	}
@@ -1136,6 +1138,19 @@ func scheduleDates(now time.Time, days int) []string {
 		out = append(out, day.AddDate(0, 0, i).Format("2006-01-02"))
 	}
 	return out
+}
+
+// wrapSchedulesDirectErr maps SD API business errors (auth, lineup, quota) to
+// ErrInvalidArgument so the admin UI gets a 400 + message instead of a bare 500.
+func wrapSchedulesDirectErr(err error) error {
+	if err == nil {
+		return nil
+	}
+	var apiErr schedulesdirect.APIError
+	if errors.As(err, &apiErr) {
+		return fmt.Errorf("%w: %s", ErrInvalidArgument, apiErr.Error())
+	}
+	return err
 }
 
 func schedulesDirectSeriesID(programID, title string) string {

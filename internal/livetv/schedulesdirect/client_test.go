@@ -3,6 +3,7 @@ package schedulesdirect
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -110,6 +111,10 @@ func TestClientTokenError(t *testing.T) {
 	_, err := client.Token(context.Background(), "u", "bad")
 	if err == nil || !strings.Contains(err.Error(), "Invalid username") {
 		t.Fatalf("Token error = %v", err)
+	}
+	var apiErr APIError
+	if !errors.As(err, &apiErr) || apiErr.Code != 4003 {
+		t.Fatalf("Token error type = %v (%T)", err, err)
 	}
 }
 
