@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  COVER_MIN: "90"
+  COVER_MIN: "95"
 
 jobs:
   go-lint:
@@ -179,10 +179,10 @@ jobs:
 
       # typecheck + lint already run in web-lint (parallel job). Keep this job
       # focused on Vitest so the critical path is ~vitest wall-clock only.
-      # Vitest coverage thresholds (90% statements/lines/functions/branches) apply
+      # Vitest coverage thresholds (95% statements/lines/functions/branches) apply
       # to the include list in web/vite.config.ts (pure helpers under src/lib/).
       # Expand that list as more modules gain unit tests rather than gating the
-      # entire web tree, which is still well below 90% overall.
+      # entire web tree, which is still well below 95% overall.
       - name: Run Vitest with coverage
         run: pnpm exec vitest run --coverage
 

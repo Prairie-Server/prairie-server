@@ -1,4 +1,4 @@
-# Packages that must meet COVER_MIN (default 90%) in CI.
+# Packages that must meet COVER_MIN (default 95%) in CI.
 # Patterns match exact package-path suffixes of the Go coverprofile.
 # CI also sets COVER_EXCLUDE_FILE_REGEX='(^|/)store\.go$' so PgStore DB code
 # under internal/livetv is omitted from the livetv package total.
@@ -20,4 +20,4 @@ internal/providerid
 internal/buildinfo
 internal/artworkkey
 # internal/imageutil is exercised in go-test-coverage (embedded WASI smoke) but
-# stays off the 90% gate until processor error paths have dedicated unit tests.
+# stays off the 95% gate until processor error paths have dedicated unit tests.
