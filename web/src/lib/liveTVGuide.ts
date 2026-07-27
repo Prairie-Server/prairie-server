@@ -113,6 +113,8 @@ export type GuideProgramLayout = {
   leftPx: number;
   widthPx: number;
   isNow: boolean;
+  /** True when the programme is still airing or has not started yet. */
+  canRecord: boolean;
 };
 
 /** Position programmes absolutely within a guide window for one channel. */
@@ -155,6 +157,7 @@ export function layoutProgramsForChannel(
       leftPx: (clampedStart - window.startMs) * window.pxPerMs,
       widthPx: Math.max(48, (clampedStop - clampedStart) * window.pxPerMs),
       isNow: start <= nowMs && stop > nowMs,
+      canRecord: stop > nowMs,
     });
   }
   laid.sort((a, b) => a.leftPx - b.leftPx);

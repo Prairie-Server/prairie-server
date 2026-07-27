@@ -138,15 +138,18 @@ export function LiveTVGuideGrid({
                             <Play />
                           </Button>
                         ) : null}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 px-2"
-                          disabled={recordDisabled}
-                          onClick={() => onRecord(program.id)}
-                        >
-                          <Circle />
-                        </Button>
+                        {program.canRecord ? (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-7 px-2"
+                            disabled={recordDisabled}
+                            onClick={() => onRecord(program.id)}
+                            aria-label={`Record ${program.title}`}
+                          >
+                            <Circle />
+                          </Button>
+                        ) : null}
                       </div>
                     </div>
                   </div>

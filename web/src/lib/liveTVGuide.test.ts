@@ -185,6 +185,13 @@ describe("liveTVGuide helpers", () => {
           stop: "2026-07-27T21:00:00Z",
         },
         {
+          id: "past-in-window",
+          channel_id: "ch1",
+          title: "Already ended",
+          start: "2026-07-27T14:00:00Z",
+          stop: "2026-07-27T14:45:00Z",
+        },
+        {
           id: "b",
           channel_id: "ch1",
           title: "Now Show",
@@ -199,6 +206,13 @@ describe("liveTVGuide helpers", () => {
           start: "2026-07-27T13:00:00Z",
           stop: "2026-07-27T16:00:00Z",
         },
+        {
+          id: "future",
+          channel_id: "ch1",
+          title: "Later",
+          start: "2026-07-27T15:30:00Z",
+          stop: "2026-07-27T16:00:00Z",
+        },
       ],
       "ch1",
       window,
@@ -206,6 +220,10 @@ describe("liveTVGuide helpers", () => {
     );
     expect(laid.some((p) => p.id === "b")).toBe(true);
     expect(laid.find((p) => p.id === "b")?.isNow).toBe(true);
+    expect(laid.find((p) => p.id === "b")?.canRecord).toBe(true);
+    expect(laid.find((p) => p.id === "past-in-window")?.isNow).toBe(false);
+    expect(laid.find((p) => p.id === "past-in-window")?.canRecord).toBe(false);
+    expect(laid.find((p) => p.id === "future")?.canRecord).toBe(true);
     expect(laid.find((p) => p.id === "b")?.widthPx).toBeGreaterThan(40);
     expect(laid.find((p) => p.id === "c")?.subtitle).toBeUndefined();
     expect(laid.every((p) => p.id !== "bad-dates")).toBe(true);
