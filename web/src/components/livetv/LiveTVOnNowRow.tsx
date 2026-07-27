@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router";
 import { Play, Radio } from "lucide-react";
 import MediaCarousel from "@/components/MediaCarousel";
@@ -14,26 +15,41 @@ import {
 /**
  * Home-row teaser for currently airing Live TV programmes.
  * Hidden when the server has no enabled channels.
+ *
+ * Guide window bounds are pinned to a minute-bucketed clock so the React Query
+ * key stays stable across renders (a fresh Date.now() ISO string every paint
+ * was hammering GET /livetv/guide).
  */
 export default function LiveTVOnNowRow() {
   const channelsQuery = useLiveTVChannels();
-  const channels = (channelsQuery.data ?? []).filter((ch) => ch.enabled).slice(0, 24);
+  const channels = useMemo(
+    () => (channelsQuery.data ?? []).filter((ch) => ch.enabled).slice(0, 24),
+    [channelsQuery.data],
+  );
+  const channelIds = useMemo(() => channels.map((ch) => ch.id), [channels]);
 
-  const guideWindow = (() => {
-    const now = Date.now();
-    return {
-      start: new Date(now - 15 * 60 * 1000).toISOString(),
-      end: new Date(now + 3 * 60 * 60 * 1000).toISOString(),
-    };
-  })();
+  const [nowMs, setNowMs] = useState(() => Date.now());
+  useEffect(() => {
+    const id = window.setInterval(() => setNowMs(Date.now()), 60_000);
+    return () => window.clearInterval(id);
+  }, []);
+  const now = useMemo(() => new Date(nowMs), [nowMs]);
+
+  const guideWindow = useMemo(
+    () => ({
+      start: new Date(nowMs - 15 * 60 * 1000).toISOString(),
+      end: new Date(nowMs + 3 * 60 * 60 * 1000).toISOString(),
+    }),
+    [nowMs],
+  );
 
   const guide = useLiveTVGuide(
     {
-      channelIds: channels.map((ch) => ch.id),
+      channelIds,
       start: guideWindow.start,
       end: guideWindow.end,
     },
-    channels.length > 0,
+    channelIds.length > 0,
   );
 
   if (channelsQuery.isLoading || channelsQuery.isError || channels.length === 0) {
@@ -41,7 +57,6 @@ export default function LiveTVOnNowRow() {
   }
 
   const programs = guide.data?.programs ?? [];
-  const now = new Date();
   const cards = channels
     .map((channel) => {
       const slot = pickNowNext(programs, channel.id, now);
