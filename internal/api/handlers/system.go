@@ -57,7 +57,7 @@ func (h *SystemHandler) HandleBuildInfo(w http.ResponseWriter, r *http.Request) 
 		info = h.updateChecker.Enrich(r.Context(), info)
 	} else {
 		info.UpdateStatus = buildinfo.UpdateStatusUnknown
-		info.ChangelogURL = "https://github.com/Prairie-Server/prairie-server/releases"
+		info.ChangelogURL = buildinfo.DefaultChangelogURL
 	}
 	writeJSON(w, http.StatusOK, info)
 }

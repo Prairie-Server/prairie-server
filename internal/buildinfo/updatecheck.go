@@ -14,9 +14,11 @@ import (
 
 const (
 	defaultReleasesLatestURL = "https://api.github.com/repos/Prairie-Server/prairie-server/releases/latest"
-	defaultChangelogURL      = "https://github.com/Prairie-Server/prairie-server/releases"
-	defaultUpdateCheckTTL    = 15 * time.Minute
-	githubUserAgent          = "Prairie-Server"
+	// DefaultChangelogURL is the fallback release-notes page when no specific
+	// GitHub release HTML URL is available.
+	DefaultChangelogURL   = "https://github.com/Prairie-Server/prairie-server/releases"
+	defaultUpdateCheckTTL = 15 * time.Minute
+	githubUserAgent       = "Prairie-Server"
 )
 
 // UpdateChecker fetches the latest GitHub release and caches the result.
@@ -48,7 +50,7 @@ func NewUpdateChecker(releasesLatestURL, changelogURL string) *UpdateChecker {
 		releasesLatestURL = defaultReleasesLatestURL
 	}
 	if strings.TrimSpace(changelogURL) == "" {
-		changelogURL = defaultChangelogURL
+		changelogURL = DefaultChangelogURL
 	}
 	return &UpdateChecker{
 		url:       releasesLatestURL,
@@ -64,7 +66,7 @@ func NewUpdateChecker(releasesLatestURL, changelogURL string) *UpdateChecker {
 func (c *UpdateChecker) Enrich(ctx context.Context, info Info) Info {
 	if c == nil {
 		info.UpdateStatus = UpdateStatusUnknown
-		info.ChangelogURL = defaultChangelogURL
+		info.ChangelogURL = DefaultChangelogURL
 		return info
 	}
 
@@ -127,7 +129,7 @@ func (c *UpdateChecker) fetch(ctx context.Context) (remoteRelease, error) {
 	if err != nil {
 		return remoteRelease{}, err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	// No published releases yet.
 	if resp.StatusCode == http.StatusNotFound {

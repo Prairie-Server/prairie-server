@@ -42,7 +42,7 @@ func TestSystemBuildInfoResponse(t *testing.T) {
 
 	want := handler.buildInfo
 	want.UpdateStatus = buildinfo.UpdateStatusUnknown
-	want.ChangelogURL = "https://github.com/Prairie-Server/prairie-server/releases"
+	want.ChangelogURL = buildinfo.DefaultChangelogURL
 	if got != want {
 		t.Fatalf("response = %#v, want %#v", got, want)
 	}
@@ -81,7 +81,7 @@ func TestSystemBuildInfoUnavailableResponseShape(t *testing.T) {
 		"vcs_time":      "",
 		"available":     false,
 		"update_status": "unknown",
-		"changelog_url": "https://github.com/Prairie-Server/prairie-server/releases",
+		"changelog_url": buildinfo.DefaultChangelogURL,
 	}
 
 	for key, want := range expected {
