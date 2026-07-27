@@ -375,7 +375,7 @@ func (p *ImageCacheProcessor) reportQueueProgress(ctx context.Context, onProgres
 		return
 	}
 	total := counts.Total()
-	percent := 0.0
+	var percent float64
 	switch {
 	case total == 0:
 		percent = 100
