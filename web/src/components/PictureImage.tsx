@@ -8,8 +8,12 @@ export type PictureImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src">
 
 /**
  * Native AVIF → WebP → PNG selection for bundled static assets that ship all
- * three siblings. Falls back to a plain img when the path is not a raster we
- * can derive siblings for (e.g. SVG).
+ * three siblings (brand marks, collection-template posters, etc). Sibling URLs
+ * come from {@link staticRasterFormats}. Falls back to a plain img when the
+ * path is not a raster we can derive siblings for (e.g. SVG).
+ *
+ * For object-store artwork where PNG/AVIF siblings may be absent, use
+ * {@link ArtworkImage} (onError cascade) instead.
  */
 export function PictureImage({ src, alt, ...rest }: PictureImageProps) {
   const formats = staticRasterFormats(src);

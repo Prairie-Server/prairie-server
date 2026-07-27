@@ -15,9 +15,14 @@ describe("webPAVIFSibling", () => {
     ).toBe("https://cdn.example.com/art/original.rev.avif?X-Amz-Signature=abc");
   });
 
-  it("returns empty for non-WebP inputs", () => {
+  it("derives AVIF from PNG paths via the shared raster helper", () => {
+    expect(webPAVIFSibling("https://cdn.example.com/art/original.png")).toBe(
+      "https://cdn.example.com/art/original.avif",
+    );
+  });
+
+  it("returns empty for non-raster inputs", () => {
     expect(webPAVIFSibling("poster.jpg")).toBe("");
-    expect(webPAVIFSibling("https://cdn.example.com/art/original.png")).toBe("");
     expect(webPAVIFSibling("")).toBe("");
     expect(webPAVIFSibling(null)).toBe("");
     expect(webPAVIFSibling(undefined)).toBe("");
@@ -41,7 +46,7 @@ describe("webPPNGSibling", () => {
     ).toBe("https://cdn.example.com/art/original.rev.png?X-Amz-Signature=abc");
   });
 
-  it("returns empty for non-WebP inputs", () => {
+  it("returns empty for non-raster inputs", () => {
     expect(webPPNGSibling("poster.jpg")).toBe("");
     expect(webPPNGSibling("")).toBe("");
   });
@@ -56,7 +61,15 @@ describe("artworkCandidates", () => {
     ]);
   });
 
-  it("returns the original URL alone when it is not WebP", () => {
+  it("orders AVIF → WebP → PNG for PNG canonical paths too", () => {
+    expect(artworkCandidates("/images/collection-templates/trending.webp")).toEqual([
+      "/images/collection-templates/trending.avif",
+      "/images/collection-templates/trending.webp",
+      "/images/collection-templates/trending.png",
+    ]);
+  });
+
+  it("returns the original URL alone when it is not a raster sibling set", () => {
     expect(artworkCandidates("/art/cover.jpg")).toEqual(["/art/cover.jpg"]);
   });
 

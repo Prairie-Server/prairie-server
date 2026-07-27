@@ -1,5 +1,6 @@
 import { Check } from "lucide-react";
 
+import { PictureImage } from "@/components/PictureImage";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
@@ -47,7 +48,7 @@ export function TemplatePosterField({
 
         {mode === "default" && template.poster_path ? (
           <div className="flex items-center gap-3">
-            <img
+            <PictureImage
               src={template.poster_path}
               alt=""
               loading="lazy"

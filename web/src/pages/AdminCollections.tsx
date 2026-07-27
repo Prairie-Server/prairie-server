@@ -20,6 +20,7 @@ import { sectionKeys } from "@/hooks/queries/keys";
 import { useEventChannel } from "@/components/realtimeEventsContext";
 import { GroupsBoard } from "@/components/collections/admin/GroupsBoard";
 import { GroupEditDialog } from "@/components/collections/admin/GroupEditDialog";
+import { ArtworkImage } from "@/components/ArtworkImage";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -543,7 +544,11 @@ function AllLibraryCollectionRow({
   return (
     <div className="flex items-center gap-3 px-4 py-3">
       {collection.poster_url ? (
-        <img src={collection.poster_url} alt="" className="h-12 w-8 rounded object-cover" />
+        <ArtworkImage
+          src={collection.poster_url}
+          alt=""
+          className="h-12 w-8 rounded object-cover"
+        />
       ) : (
         <div className="bg-muted h-12 w-8 rounded" />
       )}
