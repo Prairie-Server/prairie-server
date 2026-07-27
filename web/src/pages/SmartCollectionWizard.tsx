@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, Save } from "lucide-react";
 
 import type {
   Collection,
@@ -687,6 +687,7 @@ function SaveBar({
         Back
       </Button>
       <Button type="submit" disabled={!canSave || isPending}>
+        {isPending ? <Loader2 className="animate-spin" /> : <Save />}
         {isPending ? "Saving…" : saveLabel}
       </Button>
     </div>

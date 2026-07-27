@@ -4,6 +4,7 @@ import { useEventChannel } from "@/components/realtimeEventsContext";
 import {
   AlertTriangle,
   ArrowRight,
+  Check,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -13,12 +14,16 @@ import {
   EyeOff,
   KeyRound,
   Loader2,
+  LogIn,
   Pencil,
   Play,
   Plus,
+  RefreshCw,
+  Save,
   Search,
   Server,
   Trash2,
+  X,
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -393,9 +398,11 @@ function SourceDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
+            <X />
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={!name.trim() || !baseURL.trim() || isPending}>
+            {isPending ? <Loader2 className="animate-spin" /> : isEdit ? <Save /> : <Plus />}
             {isPending ? "Saving…" : isEdit ? "Save" : "Add server"}
           </Button>
         </DialogFooter>
@@ -551,18 +558,22 @@ function TokenDialog({
               onClick={() => clearToken.mutate(source.id, { onSuccess: onClose })}
               disabled={clearToken.isPending}
             >
+              <Trash2 />
               Remove
             </Button>
           )}
           <Button variant="outline" onClick={onClose}>
+            <X />
             Cancel
           </Button>
           {mode === "login" && isPlex ? (
             <Button onClick={handlePlexLogin} disabled={!plexUser.trim() || !plexPass || isSaving}>
+              {isSaving ? <Loader2 className="animate-spin" /> : <LogIn />}
               {isSaving ? "Signing in…" : "Sign in & save"}
             </Button>
           ) : (
             <Button onClick={handleSaveToken} disabled={!token.trim() || isSaving}>
+              {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
               {isSaving ? "Saving…" : "Save"}
             </Button>
           )}
@@ -654,6 +665,7 @@ function DiscoverDialog({
                 Query the server to find user accounts available for import.
               </p>
               <Button onClick={() => refetch()} size="sm">
+                <Search />
                 Discover users
               </Button>
             </div>
@@ -673,6 +685,7 @@ function DiscoverDialog({
                 <span>{discoverErrorMessage}</span>
               </div>
               <Button variant="outline" size="sm" onClick={() => refetch()}>
+                <RefreshCw />
                 Retry
               </Button>
             </div>
@@ -688,6 +701,7 @@ function DiscoverDialog({
                     : `${unmappedUsers.length} unmapped user${unmappedUsers.length !== 1 ? "s" : ""} found`}
                 </p>
                 <Button variant="ghost" size="sm" onClick={() => refetch()}>
+                  <RefreshCw />
                   Refresh
                 </Button>
               </div>
@@ -802,6 +816,7 @@ function DiscoverDialog({
                       )}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => setMappingTarget(null)}>
+                      <X />
                       Cancel
                     </Button>
                   </div>
@@ -813,6 +828,7 @@ function DiscoverDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
+            <Check />
             Done
           </Button>
         </DialogFooter>
@@ -1206,6 +1222,7 @@ function RunsSection({ sourceId }: { sourceId: number }) {
                         disabled={cancelRun.isPending}
                         className="text-destructive hover:text-destructive"
                       >
+                        <X />
                         Cancel
                       </Button>
                     )}

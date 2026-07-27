@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { CredentialStatus } from "./CredentialStatus";
 import { SettingField } from "./SettingField";
 
+import { Check, Loader2, RotateCcw, Save, X } from "lucide-react";
 function MDBListCredentialCard() {
   const { data: sensitive } = useAdminSensitiveStatus();
   const updateSettings = useUpdateServerSettings();
@@ -101,10 +102,12 @@ function MDBListCredentialCard() {
       />
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" onClick={() => void save()} disabled={updateSettings.isPending}>
+          {updateSettings.isPending ? <Loader2 className="animate-spin" /> : <Save />}
           {updateSettings.isPending ? "Saving..." : "Save MDBList API Key"}
         </Button>
         {configured && !confirmClear && (
           <Button type="button" variant="outline" onClick={() => setConfirmClear(true)}>
+            <RotateCcw />
             Clear API key
           </Button>
         )}
@@ -117,9 +120,11 @@ function MDBListCredentialCard() {
               onClick={() => void clearKey()}
               disabled={updateSettings.isPending}
             >
+              <Check />
               Confirm clear
             </Button>
             <Button type="button" variant="ghost" onClick={() => setConfirmClear(false)}>
+              <X />
               Cancel
             </Button>
           </>

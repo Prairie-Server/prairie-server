@@ -8,6 +8,7 @@ import {
   Plus,
   Send,
   Trash2,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import type {
@@ -193,6 +194,7 @@ function ChannelFormDialog({
         </fieldset>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <X />
             Cancel
           </Button>
           <Button onClick={submit} disabled={pending || !name.trim()}>

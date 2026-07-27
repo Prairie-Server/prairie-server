@@ -7,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useMDBListSearch, useMDBListTop } from "@/hooks/queries/userCollectionImports";
 
+import { Search } from "lucide-react";
 interface Props {
   onPick: (list: MDBListListSummary, jsonURL: string) => void;
 }
@@ -59,6 +60,7 @@ export function MDBListBrowser({ onPick }: Props) {
             setShowTop(true);
           }}
         >
+          <Search />
           Top lists
         </Button>
       </div>

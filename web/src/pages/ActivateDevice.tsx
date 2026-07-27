@@ -14,6 +14,7 @@ import { AuthBackground } from "@/components/auth/AuthBackground";
 import { AuthBrandHero } from "@/components/auth/AuthBrandHero";
 import { toast } from "sonner";
 
+import { ArrowRight, Ban, Check, Loader2, LogIn, QrCode } from "lucide-react";
 function normalizeCode(value: string) {
   const clean = value
     .toUpperCase()
@@ -125,6 +126,7 @@ export default function ActivateDevice() {
                   />
                 </div>
                 <Button type="submit" className="w-full">
+                  <ArrowRight />
                   Continue
                 </Button>
               </form>
@@ -139,6 +141,7 @@ export default function ActivateDevice() {
                   className="w-full"
                   onClick={() => setSearchParams({})}
                 >
+                  <QrCode />
                   Enter another code
                 </Button>
               </div>
@@ -168,7 +171,9 @@ export default function ActivateDevice() {
 
                 {!user ? (
                   <Button asChild className="w-full">
-                    <Link to={loginHref}>Sign in to approve</Link>
+                    <Link to={loginHref}>
+                      <LogIn /> Sign in to approve
+                    </Link>
                   </Button>
                 ) : details.status === "pending" ? (
                   <div className="space-y-3">
@@ -180,6 +185,7 @@ export default function ActivateDevice() {
                       disabled={acting}
                       onClick={() => void handleDecision("approve")}
                     >
+                      {acting ? <Loader2 className="animate-spin" /> : <Check />}
                       {acting ? "Approving..." : "Approve sign-in"}
                     </Button>
                     <Button
@@ -188,6 +194,7 @@ export default function ActivateDevice() {
                       disabled={acting}
                       onClick={() => void handleDecision("deny")}
                     >
+                      <Ban />
                       Deny
                     </Button>
                   </div>
@@ -208,6 +215,7 @@ export default function ActivateDevice() {
                     className="w-full"
                     onClick={() => setSearchParams({})}
                   >
+                    <QrCode />
                     Enter another code
                   </Button>
                 ) : null}

@@ -5,7 +5,7 @@ import {
   useAdminServerSettings,
   useUpdateServerSettings,
 } from "@/hooks/queries/admin/settings";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2, Save } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { QUOTA_PERIODS, QUOTA_PERIOD_WINDOW_LABELS } from "@/lib/quotaPeriods";
@@ -259,6 +259,7 @@ function AIConnectionCard() {
       />
       <div className="pt-2">
         <Button type="button" onClick={() => void save()} disabled={updateSettings.isPending}>
+          {updateSettings.isPending ? <Loader2 className="animate-spin" /> : <Save />}
           {updateSettings.isPending ? "Saving..." : "Save Endpoint Settings"}
         </Button>
         <p className="text-muted-foreground mt-2 text-xs">
@@ -443,6 +444,7 @@ function AIFeaturesCard() {
       />
       <div className="pt-2">
         <Button type="button" onClick={() => void save()} disabled={updateSettings.isPending}>
+          {updateSettings.isPending ? <Loader2 className="animate-spin" /> : <Save />}
           {updateSettings.isPending ? "Saving..." : "Save Feature Settings"}
         </Button>
         <p className="text-muted-foreground mt-2 text-xs">Feature changes apply live.</p>

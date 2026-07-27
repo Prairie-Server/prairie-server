@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { CircleDot, Radio, Square } from "lucide-react";
+import { Loader2, Play, Radio, Square, X } from "lucide-react";
 import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -182,7 +182,7 @@ export default function LiveTV() {
                         </Button>
                       ) : (
                         <Button onClick={() => void onWatch()} disabled={startSession.isPending}>
-                          <CircleDot />
+                          {startSession.isPending ? <Loader2 className="animate-spin" /> : <Play />}
                           {startSession.isPending ? "Starting…" : "Watch"}
                         </Button>
                       )}
@@ -305,6 +305,7 @@ export default function LiveTV() {
                           disabled={cancelRecording.isPending}
                           onClick={() => cancelRecording.mutate(rec.id)}
                         >
+                          <X />
                           Cancel
                         </Button>
                       ) : null}

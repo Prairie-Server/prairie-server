@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { FolderPlus, Loader2 } from "lucide-react";
+import { FolderPlus, Loader2, Plus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -170,6 +170,7 @@ export default function AddToCollectionDialog({
 
         <DialogFooter>
           <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={addItem.isPending}>
+            <X />
             Cancel
           </Button>
           <Button
@@ -177,7 +178,7 @@ export default function AddToCollectionDialog({
             disabled={!selectedId || addItem.isPending}
             className="gap-2"
           >
-            {addItem.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+            {addItem.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus />}
             Add
           </Button>
         </DialogFooter>

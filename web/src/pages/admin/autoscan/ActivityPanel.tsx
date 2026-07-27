@@ -6,6 +6,7 @@ import {
   History,
   ListChecks,
   RefreshCw,
+  RotateCcw,
   ScanLine,
   Search,
   Square,
@@ -966,6 +967,7 @@ export default function ActivityPanel() {
               </Select>
             )}
             <Button variant="outline" onClick={resetHistoryFilters} disabled={!hasHistoryFilters}>
+              <RotateCcw />
               Reset
             </Button>
           </div>
@@ -977,6 +979,7 @@ export default function ActivityPanel() {
           <div className="border-destructive/30 bg-destructive/5 rounded-lg border p-8 text-center">
             <p className="text-destructive text-sm">Failed to load autoscan activity.</p>
             <Button variant="outline" size="sm" className="mt-3" onClick={refresh}>
+              <RefreshCw />
               Try again
             </Button>
           </div>

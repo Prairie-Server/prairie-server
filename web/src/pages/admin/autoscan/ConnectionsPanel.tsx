@@ -1,5 +1,15 @@
 import { useState } from "react";
-import { CheckCircle2, Pencil, Plus, Trash2, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Loader2,
+  Pencil,
+  Plus,
+  Save,
+  ScanSearch,
+  Trash2,
+  X,
+  XCircle,
+} from "lucide-react";
 import type {
   AutoscanConnection,
   AutoscanConnectionInput,
@@ -492,13 +502,22 @@ export default function ConnectionsPanel() {
               onClick={handleTest}
               disabled={!canTest || testConnection.isPending}
             >
+              {testConnection.isPending ? <Loader2 className="animate-spin" /> : <ScanSearch />}
               {testConnection.isPending ? "Testing…" : "Test connection"}
             </Button>
             <div className="flex gap-2">
               <Button variant="outline" onClick={closeDialog} disabled={isSaving}>
+                <X />
                 Cancel
               </Button>
               <Button onClick={handleSave} disabled={!canSave || isSaving}>
+                {isSaving ? (
+                  <Loader2 className="animate-spin" />
+                ) : dialog.editing ? (
+                  <Save />
+                ) : (
+                  <Plus />
+                )}
                 {isSaving ? "Saving…" : dialog.editing ? "Save changes" : "Add connection"}
               </Button>
             </div>

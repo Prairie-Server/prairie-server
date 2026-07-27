@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import {
   AlertTriangle,
+  Ban,
   Check,
   Library,
   Plug,
@@ -333,9 +334,11 @@ function RequestQueueTab() {
                 setDeclineReason("");
               }}
             >
+              <X />
               Cancel
             </Button>
             <Button onClick={confirmDecline} disabled={decline.isPending}>
+              <Ban />
               Decline
             </Button>
           </DialogFooter>
@@ -1370,6 +1373,7 @@ function IntegrationEditor({
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
+              <X />
               Cancel
             </Button>
             <Button

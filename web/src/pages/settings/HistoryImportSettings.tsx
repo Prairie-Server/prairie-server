@@ -37,7 +37,18 @@ import {
   type SourceType,
 } from "./HistoryImportSettings.utils";
 import { cn } from "@/lib/utils";
-import { AlertTriangle, CheckCircle2, CircleSlash2, Clock, Loader2, XCircle } from "lucide-react";
+import {
+  AlertTriangle,
+  CheckCircle2,
+  CircleSlash2,
+  Clock,
+  Download,
+  Loader2,
+  LogIn,
+  RefreshCw,
+  Search,
+  XCircle,
+} from "lucide-react";
 import { formatDate } from "@/lib/datetime";
 
 const STATUS_CONFIG = {
@@ -375,6 +386,7 @@ export default function HistoryImportSettings() {
                   </div>
                 </div>
                 <Button onClick={handleConnectLogin} disabled={loginMutation.isPending}>
+                  {loginMutation.isPending ? <Loader2 className="animate-spin" /> : <Search />}
                   {loginMutation.isPending ? "Connecting\u2026" : "Find Servers"}
                 </Button>
 
@@ -471,6 +483,7 @@ export default function HistoryImportSettings() {
                     </div>
                     <p className="text-red-100/80">{plexAuthError}</p>
                     <Button onClick={handlePlexLogin} disabled={plexAuthPending} variant="outline">
+                      {plexAuthPending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
                       {plexAuthPending ? "Starting\u2026" : "Try Again"}
                     </Button>
                   </div>
@@ -486,6 +499,7 @@ export default function HistoryImportSettings() {
                   </div>
                 ) : plexServers.length === 0 ? (
                   <Button onClick={handlePlexLogin} disabled={plexAuthPending}>
+                    {plexAuthPending ? <Loader2 className="animate-spin" /> : <LogIn />}
                     {plexAuthPending ? "Starting\u2026" : "Sign in with Plex"}
                   </Button>
                 ) : (
@@ -514,6 +528,7 @@ export default function HistoryImportSettings() {
                       </Select>
                     </div>
                     <Button onClick={handlePlexLogin} disabled={plexAuthPending} variant="outline">
+                      <RefreshCw />
                       Reconnect Plex Account
                     </Button>
                   </div>
@@ -615,6 +630,7 @@ export default function HistoryImportSettings() {
             </Select>
           </div>
           <Button onClick={handleStartImport} disabled={!canStart || pending} className="sm:px-8">
+            {createRunMutation.isPending ? <Loader2 className="animate-spin" /> : <Download />}
             {createRunMutation.isPending ? "Starting\u2026" : "Start Import"}
           </Button>
         </div>

@@ -21,7 +21,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, Loader2, RotateCcw, Save, ScanSearch } from "lucide-react";
 import { CredentialStatus } from "./CredentialStatus";
 
 // ============================================================================
@@ -209,9 +209,11 @@ function SubtitleProviderCard({ config }: { config: SubtitleProviderConfig }) {
       {/* Actions */}
       <div className="flex items-center gap-3 pt-1">
         <Button variant="outline" onClick={handleTest} disabled={testProvider.isPending}>
+          {testProvider.isPending ? <Loader2 className="animate-spin" /> : <ScanSearch />}
           {testProvider.isPending ? "Testing..." : "Test Connection"}
         </Button>
         <Button onClick={handleSave} disabled={updateProvider.isPending}>
+          {updateProvider.isPending ? <Loader2 className="animate-spin" /> : <Save />}
           {updateProvider.isPending ? "Saving..." : "Save"}
         </Button>
         {credentialsConfigured && (
@@ -220,6 +222,7 @@ function SubtitleProviderCard({ config }: { config: SubtitleProviderConfig }) {
             onClick={() => setConfirmClear(true)}
             disabled={updateProvider.isPending}
           >
+            <RotateCcw />
             Clear credentials
           </Button>
         )}

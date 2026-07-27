@@ -8,6 +8,7 @@ import { toast } from "sonner";
 import { useWizardContext } from "../WizardContext";
 import { WizardActions } from "../WizardActions";
 
+import { ArrowRight, Loader2, UserPlus } from "lucide-react";
 export function AccountStep() {
   const { setupInitialUser, user, goForward } = useWizardContext();
   const [username, setUsername] = useState("");
@@ -44,6 +45,7 @@ export function AccountStep() {
         </p>
         <WizardActions>
           <Button type="button" onClick={goForward}>
+            <ArrowRight />
             Continue
           </Button>
         </WizardActions>
@@ -104,6 +106,7 @@ export function AccountStep() {
       </div>
       <WizardActions className="flex flex-wrap gap-3 pt-3">
         <Button type="submit" disabled={submitting}>
+          {submitting ? <Loader2 className="animate-spin" /> : <UserPlus />}
           {submitting ? "Creating..." : "Create account"}
         </Button>
       </WizardActions>

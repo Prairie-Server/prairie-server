@@ -1,5 +1,5 @@
 import * as React from "react";
-import { XIcon } from "lucide-react";
+import { X, XIcon } from "lucide-react";
 import { Dialog as DialogPrimitive } from "radix-ui";
 
 import { cn } from "@/lib/utils";
@@ -98,7 +98,9 @@ function DialogFooter({
       {children}
       {showCloseButton && (
         <DialogPrimitive.Close asChild>
-          <Button variant="outline">Close</Button>
+          <Button variant="outline">
+            <X /> Close
+          </Button>
         </DialogPrimitive.Close>
       )}
     </div>

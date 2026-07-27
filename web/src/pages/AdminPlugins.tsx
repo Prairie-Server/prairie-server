@@ -924,6 +924,7 @@ function RepositorySection() {
             className="sm:flex-[2]"
           />
           <Button type="submit" size="sm">
+            <Plus />
             Add
           </Button>
         </form>

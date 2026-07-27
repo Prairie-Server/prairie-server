@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, ChevronRight, Plus } from "lucide-react";
+import { ArrowRight, Check, ChevronRight, Loader2, Plus } from "lucide-react";
 import { useWizardContext } from "../WizardContext";
 import { WizardActions } from "../WizardActions";
 
@@ -96,6 +96,7 @@ function AddNodeForm({ onAdded }: { onAdded: (node: AddedNode) => void }) {
         className="h-7 text-xs"
         disabled={createNode.isPending}
       >
+        {createNode.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
         {createNode.isPending ? "Adding..." : "Add node"}
       </Button>
     </form>
@@ -177,6 +178,7 @@ export function NodesFinishStep() {
             disabled={finishing}
             className="sm:flex-1"
           >
+            <ArrowRight />
             Go to admin
           </Button>
         </div>

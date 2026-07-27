@@ -24,6 +24,7 @@ import { LANGUAGES, getLanguageName } from "@/player/utils/languageNames";
 import { cn } from "@/lib/utils";
 import { languageChipClass, providerBadgeClass, providerLabel } from "./subtitleAdminStyles";
 
+import { Save, X } from "lucide-react";
 interface AdminSubtitleEditSheetProps {
   subtitle: AdminDownloadedSubtitle | null;
   open: boolean;
@@ -160,9 +161,11 @@ function AdminSubtitleEditForm({
 
       <SheetFooter className="mt-auto gap-2 sm:justify-end">
         <Button type="button" variant="outline" onClick={onClose}>
+          <X />
           Cancel
         </Button>
         <Button type="button" disabled={updateMutation.isPending} onClick={() => void handleSave()}>
+          <Save />
           Save changes
         </Button>
       </SheetFooter>

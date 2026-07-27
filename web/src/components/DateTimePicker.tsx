@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, RotateCcw } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
@@ -84,6 +84,7 @@ export function DateTimePicker({
             disabled={!selected}
             onClick={() => onChange("")}
           >
+            <RotateCcw />
             Clear
           </Button>
         </div>

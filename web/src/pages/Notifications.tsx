@@ -1,6 +1,6 @@
 import { Fragment, useState } from "react";
 import { Link } from "react-router";
-import { Bell, BellOff, Check, CheckCheck, Loader2, Settings2 } from "lucide-react";
+import { Bell, BellOff, Check, CheckCheck, Loader2, RefreshCw, Settings2 } from "lucide-react";
 import type { AppNotification } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -274,6 +274,7 @@ function NotificationPreferencesPopover() {
           <div className="space-y-3">
             <p className="text-muted-foreground text-sm">Couldn’t load preferences.</p>
             <Button size="sm" variant="outline" onClick={() => void refetch()}>
+              <RefreshCw />
               Retry
             </Button>
           </div>

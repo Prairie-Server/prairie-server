@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CircleCheck, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ArrowRight, CircleCheck, Eye, EyeOff, Loader2, Save, SkipForward } from "lucide-react";
 import { useWizardContext } from "../WizardContext";
 import { WizardActions } from "../WizardActions";
 
@@ -182,6 +182,7 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
               className="h-7 px-3 text-xs"
               disabled={updateProvider.isPending}
             >
+              {updateProvider.isPending ? <Loader2 className="animate-spin" /> : <Save />}
               {updateProvider.isPending ? "Saving..." : "Save"}
             </Button>
             {testResult !== null && (
@@ -238,8 +239,11 @@ export function IntegrationsStep() {
       )}
 
       <WizardActions>
-        <Button onClick={() => markDone("integrations")}>Continue</Button>
+        <Button onClick={() => markDone("integrations")}>
+          <ArrowRight /> Continue
+        </Button>
         <Button variant="ghost" onClick={() => markDone("integrations")}>
+          <SkipForward />
           Skip
         </Button>
       </WizardActions>
