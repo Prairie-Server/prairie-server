@@ -374,7 +374,7 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
       >
         <PrairieBrand
           variant={showLabels ? "wordmark" : "mark"}
-          className={showLabels ? "brand-reveal h-8 w-[12.5rem]" : "brand-reveal h-10 w-10"}
+          className={showLabels ? "brand-reveal aspect-[274/90] h-8" : "brand-reveal h-10 w-10"}
         />
       </div>
 
