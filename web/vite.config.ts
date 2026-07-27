@@ -104,7 +104,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     test: {
-      environment: "jsdom",
+      environment: "happy-dom",
       globals: true,
       setupFiles: ["./src/test-setup.ts"],
       pool: "forks",
@@ -139,12 +139,16 @@ export default defineConfig(({ mode }) => {
           "src/lib/queryInvalidation.ts",
           "src/utils/storage.ts",
         ],
-        thresholds: {
-          statements: 95,
-          lines: 95,
-          functions: 95,
-          branches: 95,
-        },
+        // Per-shard runs only see a slice of tests; enforce thresholds on the
+        // merged report (CI sets VITEST_SHARD=1). Local/full runs keep the gate.
+        thresholds: process.env.VITEST_SHARD
+          ? undefined
+          : {
+              statements: 95,
+              lines: 95,
+              functions: 95,
+              branches: 95,
+            },
       },
     },
   };

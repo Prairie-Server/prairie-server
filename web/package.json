@@ -13,8 +13,8 @@
     "preview": "vite preview",
     "lint": "oxlint .",
     "lint:fix": "oxlint . --fix",
-    "format": "prettier --write \"src/**/*.{ts,tsx,css}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css}\""
+    "format": "oxfmt .",
+    "format:check": "oxfmt --check ."
   },
   "dependencies": {
     "@codemirror/language": "^6.12.4",
@@ -62,15 +62,15 @@
     "@types/react-dom": "^19.0.0",
     "@vitejs/plugin-react": "^4.4.0",
     "@vitest/coverage-v8": "^4.1.0",
+    "happy-dom": "^20.11.1",
     "jsdom": "^29.0.1",
-    "prettier": "^3.8.1",
-    "prettier-plugin-tailwindcss": "^0.6.14",
+    "oxfmt": "^0.60.0",
+    "oxlint": "^1.75.0",
+    "oxlint-tsgolint": "^7.0.2001",
     "tailwindcss": "^4.0.0",
     "typescript": "~7.0.2",
     "vite": "^6.4.3",
-    "vitest": "^4.1.0",
-    "oxlint": "^1.75.0",
-    "oxlint-tsgolint": "^7.0.2001"
+    "vitest": "^4.1.0"
   },
   "pnpm": {
     "onlyBuiltDependencies": [
