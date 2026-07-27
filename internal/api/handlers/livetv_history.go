@@ -34,7 +34,7 @@ func (r *LiveTVHistoryRecorder) RecordLiveSession(ctx context.Context, entry liv
 	}
 	playMethod := entry.Transport
 	if playMethod == "" {
-		playMethod = "direct"
+		playMethod = playbackModeDirect
 	}
 	return r.store.RecordHistory(ctx, AdminPlaybackHistoryEntry{
 		SessionID:      entry.SessionID,

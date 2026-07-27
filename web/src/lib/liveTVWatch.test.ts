@@ -30,10 +30,10 @@ describe("releaseLiveTVSessionOnUnload", () => {
     releaseLiveTVSessionOnUnload("sess-1");
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
-    const [url, init] = fetchMock.mock.calls[0];
-    expect(url).toBe("/api/v1/livetv/sessions/sess-1");
-    expect(init).toMatchObject({ method: "DELETE", keepalive: true });
-    expect(init.headers).toMatchObject({
+    const call = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(call[0]).toBe("/api/v1/livetv/sessions/sess-1");
+    expect(call[1]).toMatchObject({ method: "DELETE", keepalive: true });
+    expect(call[1].headers).toMatchObject({
       Authorization: "Bearer access-token",
       "X-Profile-Id": "profile-1",
       "X-Profile-Token": "profile-token",
