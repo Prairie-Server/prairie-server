@@ -8,6 +8,19 @@ import "./app.css";
 ensureStorageSchema();
 installPreloadErrorReload();
 
+// Activate deferred alternate-theme fonts without an inline onload handler (CSP).
+const themeFonts = document.getElementById("prairie-theme-fonts");
+if (themeFonts instanceof HTMLLinkElement) {
+  const activate = () => {
+    themeFonts.media = "all";
+  };
+  if (themeFonts.sheet) {
+    activate();
+  } else {
+    themeFonts.addEventListener("load", activate, { once: true });
+  }
+}
+
 const root = document.getElementById("root");
 if (root === null) throw new Error("Root element #root not found");
 createRoot(root).render(<App />);
