@@ -72,7 +72,9 @@ async function canDecodeMime(mime: string, bytes: Uint8Array): Promise<boolean> 
     return false;
   }
   try {
-    const blob = new Blob([bytes], { type: mime });
+    const copy = new Uint8Array(bytes.byteLength);
+    copy.set(bytes);
+    const blob = new Blob([copy], { type: mime });
     const bitmap = await createImageBitmap(blob);
     bitmap.close();
     return true;
