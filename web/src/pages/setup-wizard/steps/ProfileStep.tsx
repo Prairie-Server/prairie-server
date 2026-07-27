@@ -63,6 +63,7 @@ export function ProfileStep() {
           value={profileName}
           onChange={(e) => setProfileName(e.target.value)}
           placeholder="Alex"
+          autoComplete="nickname"
           required
         />
       </div>

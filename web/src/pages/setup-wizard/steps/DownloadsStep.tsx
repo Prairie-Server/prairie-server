@@ -94,6 +94,7 @@ export function DownloadsStep() {
                   value={form.getValue("download.server_bandwidth_mbps")}
                   onChange={(e) => form.setValue("download.server_bandwidth_mbps", e.target.value)}
                   className="w-24"
+                  autoComplete="off"
                 />
                 <span className="text-muted-foreground text-xs">Mbps</span>
               </div>
@@ -112,6 +113,7 @@ export function DownloadsStep() {
                   value={form.getValue("download.user_bandwidth_mbps")}
                   onChange={(e) => form.setValue("download.user_bandwidth_mbps", e.target.value)}
                   className="w-24"
+                  autoComplete="off"
                 />
                 <span className="text-muted-foreground text-xs">Mbps</span>
               </div>
@@ -128,6 +130,7 @@ export function DownloadsStep() {
               value={form.getValue("download.max_concurrent_per_user")}
               onChange={(e) => form.setValue("download.max_concurrent_per_user", e.target.value)}
               className="w-24"
+              autoComplete="off"
             />
             <p className="text-muted-foreground/60 text-[11px]">0 = unlimited</p>
           </div>

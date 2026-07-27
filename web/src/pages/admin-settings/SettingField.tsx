@@ -111,6 +111,7 @@ export function SettingField({
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
           className="max-w-md"
+          autoComplete="off"
           aria-describedby={hint ? hintId : undefined}
         />
         {hint && (
@@ -135,6 +136,7 @@ export function SettingField({
           onChange={(e) => onChange(e.target.value)}
           disabled={disabled}
           className="w-full sm:w-40"
+          autoComplete="off"
           aria-describedby={hint ? hintId : undefined}
         />
         {hint && (
@@ -160,6 +162,7 @@ export function SettingField({
         disabled={disabled}
         className="max-w-md"
         placeholder={hint}
+        autoComplete="off"
         aria-describedby={hint && type === "duration" ? hintId : undefined}
       />
       {hint && type === "duration" && (
