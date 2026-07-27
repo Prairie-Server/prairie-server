@@ -1,5 +1,6 @@
 import { useImageLoaded } from "@/hooks/useImageLoaded";
 import { ArtworkImage } from "@/components/ArtworkImage";
+import { POSTER_WIDTHS } from "@/lib/artworkUrl";
 import { Pin, PinOff, User } from "lucide-react";
 import type { LibraryTabCollection } from "@/api/types";
 import { useToggleSidebarPin } from "@/hooks/queries/sidebarPins";
@@ -42,6 +43,8 @@ export function CollectionPosterCard({
             <ArtworkImage
               src={collection.poster_url}
               alt={collection.title}
+              widths={POSTER_WIDTHS}
+              sizes="(max-width: 640px) 42vw, (max-width: 1024px) 18vw, 160px"
               className={`h-full w-full object-cover transition duration-300 group-hover/card:scale-[1.05] ${
                 loaded ? "opacity-100" : "opacity-0"
               }`}

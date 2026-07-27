@@ -26,6 +26,7 @@ import { applyPlaybackProgressToCache } from "@/hooks/queries/playbackProgressCa
 import { invalidatePlaybackSurfaceQueries } from "@/hooks/queries/playbackSurfaceRefresh";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
+import { useVisualViewportOffset } from "@/hooks/useVisualViewportOffset";
 import { PlayerConfigProvider, WatchPage } from "@/player";
 import type {
   EpisodeRef,
@@ -906,6 +907,7 @@ export function WatchPlaybackBar() {
   const transport = state.transport;
   const { data: item } = useWatchDetail(request?.contentId, request?.fileId, request?.libraryId);
   const [scrubValue, setScrubValue] = useState<number | null>(null);
+  const { bottomOffset } = useVisualViewportOffset();
 
   if (!isBackgroundBarVisible || !request) {
     return null;
@@ -916,7 +918,10 @@ export function WatchPlaybackBar() {
   const displayedTime = scrubValue ?? snapshot?.currentTime ?? 0;
 
   return (
-    <div className="bottom-safe-3 pointer-events-none fixed inset-x-3 z-40 flex justify-center">
+    <div
+      className="bottom-safe-3 pointer-events-none fixed inset-x-3 z-40 flex justify-center"
+      style={bottomOffset > 0 ? { transform: `translateY(-${bottomOffset}px)` } : undefined}
+    >
       <div className="glass-dark border-border/70 pointer-events-auto w-full max-w-4xl rounded-2xl border px-4 py-3 shadow-[0_24px_80px_-32px_rgba(0,0,0,0.7)] backdrop-blur-xl">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">
