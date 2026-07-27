@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { useBranding } from "@/hooks/useBranding";
+import { PictureImage } from "@/components/PictureImage";
 
 const PRAIRIE_WORDMARK_SRC = "/prairie-wordmark-sidebar.png";
 const PRAIRIE_MARK_SRC = "/prairie-icon-1024.png";
@@ -21,15 +22,17 @@ export function PrairieBrand({
   const { serverName, wordmarkUrl, markUrl } = useBranding();
 
   const customSrc = isMark ? markUrl : wordmarkUrl;
-  const src = customSrc ?? (isMark ? PRAIRIE_MARK_SRC : PRAIRIE_WORDMARK_SRC);
+  const defaultSrc = isMark ? PRAIRIE_MARK_SRC : PRAIRIE_WORDMARK_SRC;
+  const imageClass = cn("h-full w-full object-contain", isMark && "rounded-lg", imageClassName);
 
   return (
     <span className={cn("block shrink-0", !isMark && "overflow-hidden", className)}>
-      <img
-        src={src}
-        alt={serverName}
-        className={cn("h-full w-full object-contain", isMark && "rounded-lg", imageClassName)}
-      />
+      {customSrc ? (
+        // Custom branding assets are content-negotiated by the server (Accept).
+        <img src={customSrc} alt={serverName} className={imageClass} />
+      ) : (
+        <PictureImage src={defaultSrc} alt={serverName} className={imageClass} />
+      )}
     </span>
   );
 }

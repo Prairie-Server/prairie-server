@@ -51,6 +51,10 @@ export function webPPNGSibling(objectPath: string | null | undefined): string {
 /**
  * Ordered load candidates for a canonical artwork URL: AVIF → WebP → PNG when
  * the input is WebP; otherwise just the original URL.
+ *
+ * Bundled static PNG brand assets use {@link staticRasterFormats} / PictureImage
+ * instead — those siblings are guaranteed to exist, so a native `<picture>` is
+ * preferable to speculative onError fallbacks.
  */
 export function artworkCandidates(objectPath: string | null | undefined): string[] {
   const trimmed = objectPath?.trim() ?? "";
