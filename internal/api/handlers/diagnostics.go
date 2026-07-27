@@ -8,6 +8,8 @@ import (
 	"mime"
 	"mime/multipart"
 	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -41,18 +43,24 @@ type DiagnosticsService interface {
 }
 
 type DiagnosticsHandler struct {
-	service      DiagnosticsService
-	adminService AdminDiagnosticsService
-	inflight     *diagnosticsInFlightLimiter
-	logger       *slog.Logger
+	service       DiagnosticsService
+	adminService  AdminDiagnosticsService
+	inflight      *diagnosticsInFlightLimiter
+	chunkSessions *diagnosticsChunkSessions
+	logger        *slog.Logger
 }
 
 func NewDiagnosticsHandler(service DiagnosticsService) *DiagnosticsHandler {
 	handler := &DiagnosticsHandler{
-		service:  service,
-		inflight: newDiagnosticsInFlightLimiter(4),
-		logger:   slog.Default(),
+		service:       service,
+		inflight:      newDiagnosticsInFlightLimiter(4),
+		chunkSessions: newDiagnosticsChunkSessions(filepath.Join(os.TempDir(), "prairie-diagnostics-uploads")),
+		logger:        slog.Default(),
 	}
+	// Reclaim abandoned chunk spool bytes on a timer, not only from later API
+	// traffic. The handler lives for the process, so the sweeper needs no
+	// stop signal.
+	handler.chunkSessions.startSweeper(nil)
 	if adminService, ok := service.(AdminDiagnosticsService); ok {
 		handler.adminService = adminService
 	}
@@ -72,15 +80,23 @@ func (h *DiagnosticsHandler) HandleStatus(w http.ResponseWriter, r *http.Request
 	writeJSON(w, http.StatusOK, status)
 }
 
-func (h *DiagnosticsHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
-	// Extend the read deadline for this request only; the server-wide
-	// ReadTimeout is too short for slow, large bundle uploads (see the constant).
+// extendDiagnosticsUploadDeadlines lifts this request's read (and, when
+// includeWrite, write) deadline to diagnosticsUploadReadTimeout. The
+// server-wide ReadTimeout (30s) is too short for slow bundle/chunk uploads,
+// and the WriteTimeout (120s) can expire after Ingest has already stored the
+// report — the lost 201 would make the client retry an upload that
+// succeeded. Shared by the single-shot upload, chunk PUT (read only), and
+// chunked complete (both).
+func (h *DiagnosticsHandler) extendDiagnosticsUploadDeadlines(w http.ResponseWriter, r *http.Request, includeWrite bool) {
 	rc := http.NewResponseController(w)
 	if err := rc.SetReadDeadline(time.Now().Add(diagnosticsUploadReadTimeout)); err != nil {
 		h.diagnosticsLogger().WarnContext(r.Context(), "diagnostics upload read deadline not extended",
 			"component", "diagnostics",
 			"error", err,
 		)
+	}
+	if !includeWrite {
+		return
 	}
 	// Extend the write deadline the same way. cmd/prairie's integrated server sets
 	// WriteTimeout 120s, but a slow upload can take longer than that within the
@@ -93,6 +109,10 @@ func (h *DiagnosticsHandler) HandleUpload(w http.ResponseWriter, r *http.Request
 			"error", err,
 		)
 	}
+}
+
+func (h *DiagnosticsHandler) HandleUpload(w http.ResponseWriter, r *http.Request) {
+	h.extendDiagnosticsUploadDeadlines(w, r, true)
 
 	userID, ok := diagnosticsUserID(w, r)
 	if !ok {
