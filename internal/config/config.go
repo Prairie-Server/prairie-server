@@ -338,8 +338,15 @@ type PolicyConfig struct {
 // MetadataConfig holds metadata pipeline settings.
 type MetadataConfig struct {
 	CacheImages bool `yaml:"-"`
-	// AVIFBackfillWorkers is the durable AVIF encode concurrency.
-	// 0 means auto: NumCPU for CPU backends, NVENC session cap for nvenc.
+	// ArtworkEncodeWorkers caps total in-flight artwork encode work (WebP cache
+	// workers + AVIF backfill workers share it). 0 means auto: a quarter of the
+	// cores, at most 4, so playback ffmpeg keeps the rest.
+	ArtworkEncodeWorkers int `yaml:"-"`
+	// PauseArtworkDuringPlayback stops the AVIF backfill and throttles the WebP
+	// image cache to one encode slot while any playback session is live.
+	PauseArtworkDuringPlayback bool `yaml:"-"`
+	// AVIFBackfillWorkers is the durable AVIF encode concurrency. 0 means auto:
+	// the shared artwork encode budget, or the NVENC session cap for nvenc.
 	AVIFBackfillWorkers int `yaml:"-"`
 	// AVIFEncoder selects the still-image AVIF backend: auto|svt|nvenc|wasm.
 	// auto prefers NVENC (Ada+) when available, else SVT-AV1 via ffmpeg, else WASM.

@@ -76,6 +76,9 @@ func (t *BackfillAVIFSiblingsTask) Execute(ctx context.Context, progress taskman
 	if stats.RuntimeLimited {
 		message += ", runtime budget reached"
 	}
+	if stats.PausedForPlayback {
+		message += ", paused while playback was active"
+	}
 	progress.Report(100, message)
 	return nil
 }

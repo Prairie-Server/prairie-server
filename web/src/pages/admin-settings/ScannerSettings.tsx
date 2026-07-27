@@ -10,6 +10,8 @@ const KEYS = [
   "matcher.workers",
   "matcher.batch_size",
   "metadata.cache_images",
+  "metadata.artwork_encode_workers",
+  "metadata.pause_artwork_during_playback",
   "metadata.avif_backfill_workers",
   "metadata.avif_encoder",
   "metadata.avif_ffmpeg_path",
@@ -82,9 +84,23 @@ export default function ScannerSettings() {
             onChange={(v) => form.setValue("metadata.cache_images", v)}
           />
           <SettingField
+            label="Artwork Encode Workers"
+            type="number"
+            hint="Total in-flight artwork encodes (WebP cache + AVIF backfill share this budget). 0 = auto: a quarter of the CPU cores, at most 4, so playback transcodes keep headroom."
+            value={form.getValue("metadata.artwork_encode_workers")}
+            onChange={(v) => form.setValue("metadata.artwork_encode_workers", v)}
+          />
+          <SettingField
+            label="Pause Artwork During Playback"
+            type="toggle"
+            hint="Stop the AVIF backfill and throttle artwork caching to one encode while any playback or transcode session is active. Queued work resumes when streaming ends."
+            value={form.getValue("metadata.pause_artwork_during_playback")}
+            onChange={(v) => form.setValue("metadata.pause_artwork_during_playback", v)}
+          />
+          <SettingField
             label="AVIF Backfill Workers"
             type="number"
-            hint="Concurrent AVIF encodes for deferred sibling backfill. 0 = auto (CPU cores for svt/wasm, NVENC session cap for nvenc). Shared with WebP encodes so a 4-core node is not oversubscribed."
+            hint="Concurrent AVIF encodes for deferred sibling backfill. 0 = auto (the shared artwork encode budget, or the NVENC session cap for nvenc)."
             value={form.getValue("metadata.avif_backfill_workers")}
             onChange={(v) => form.setValue("metadata.avif_backfill_workers", v)}
           />

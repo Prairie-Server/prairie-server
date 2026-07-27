@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
-	"runtime"
+	"sync/atomic"
 	"time"
 
 	"github.com/prairie-server/prairie-server/internal/imageutil"
@@ -20,12 +20,12 @@ const (
 	cacheMetadataImagesMaxRuntime = 10 * time.Minute
 )
 
-// cacheMetadataImagesConcurrency caps WebP cache workers to the shared encode
-// budget size (≈ NumCPU) so WebP + AVIF in-flight work does not oversubscribe.
+// cacheMetadataImagesConcurrency caps WebP cache workers to the shared artwork
+// encode budget so WebP + AVIF in-flight work stays well below the core count.
 func cacheMetadataImagesConcurrency() int {
 	n := imageutil.EncodeBudgetSize()
 	if n < 1 {
-		n = runtime.NumCPU()
+		n = imageutil.DefaultEncodeBudgetSize()
 	}
 	if n < 1 {
 		return 1
@@ -40,10 +40,38 @@ type MetadataImageCacheRunner interface {
 
 type CacheMetadataImagesTask struct {
 	runner MetadataImageCacheRunner
+	// playbackActive reports live playback/transcode sessions. Unlike the AVIF
+	// backfill this task still runs while streaming — posters users are waiting
+	// on come from here — but it drops to a single encode slot.
+	playbackActive atomic.Pointer[func() bool]
 }
 
 func NewCacheMetadataImagesTask(runner MetadataImageCacheRunner) *CacheMetadataImagesTask {
 	return &CacheMetadataImagesTask{runner: runner}
+}
+
+// SetPlaybackActivityCheck wires the live-playback predicate used to throttle
+// encode concurrency. A nil predicate restores the unthrottled budget.
+func (t *CacheMetadataImagesTask) SetPlaybackActivityCheck(fn func() bool) {
+	if t == nil {
+		return
+	}
+	if fn == nil {
+		t.playbackActive.Store(nil)
+		return
+	}
+	t.playbackActive.Store(&fn)
+}
+
+// concurrency returns the encode slots for this run: the shared artwork budget,
+// or a single slot while playback is active.
+func (t *CacheMetadataImagesTask) concurrency() int {
+	if t != nil {
+		if fn := t.playbackActive.Load(); fn != nil && *fn != nil && (*fn)() {
+			return 1
+		}
+	}
+	return cacheMetadataImagesConcurrency()
 }
 
 func (t *CacheMetadataImagesTask) Key() string  { return "cache_metadata_images" }
@@ -79,7 +107,7 @@ func (t *CacheMetadataImagesTask) Execute(ctx context.Context, progress taskmana
 		ctx,
 		hostname,
 		cacheMetadataImagesBatchSize,
-		cacheMetadataImagesConcurrency(),
+		t.concurrency(),
 		cacheMetadataImagesMaxRuntime,
 		progress.Report,
 	)

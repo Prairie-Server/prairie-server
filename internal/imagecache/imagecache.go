@@ -15,7 +15,6 @@ import (
 	"net/http"
 	"net/netip"
 	"net/url"
-	"runtime"
 	"sort"
 	"strings"
 	"sync"
@@ -198,10 +197,11 @@ func (c *Cacher) WaitAVIFBackfillContext(ctx context.Context) error {
 	}
 }
 
-// avifBackfillConcurrency is the default eager AVIF worker count: one per CPU
-// so deferred encodes saturate the host once the WebP publish path is idle.
+// avifBackfillConcurrency is the default eager AVIF worker count. It tracks the
+// shared artwork encode budget (well below the core count) so deferred encodes
+// never crowd out playback ffmpeg.
 func avifBackfillConcurrency() int {
-	n := runtime.NumCPU()
+	n := imageutil.DefaultEncodeBudgetSize()
 	if n < 1 {
 		return 1
 	}

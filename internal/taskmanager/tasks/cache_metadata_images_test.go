@@ -100,3 +100,31 @@ func TestCacheMetadataImagesTaskReportsStats(t *testing.T) {
 		t.Fatalf("final percent = %v, want 100", progress.percents[len(progress.percents)-1])
 	}
 }
+
+// Artwork caching keeps running while someone streams — users are waiting on
+// those posters — but it drops to a single encode slot so playback keeps cores.
+func TestCacheMetadataImagesTaskThrottlesDuringPlayback(t *testing.T) {
+	runner := &fakeMetadataImageCacheRunner{}
+	task := NewCacheMetadataImagesTask(runner)
+	task.SetPlaybackActivityCheck(func() bool { return true })
+
+	if err := task.Execute(context.Background(), &recordingProgress{}); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if runner.concurrency != 1 {
+		t.Fatalf("concurrency = %d, want 1 while playback is active", runner.concurrency)
+	}
+}
+
+func TestCacheMetadataImagesTaskUsesFullBudgetWhenIdle(t *testing.T) {
+	runner := &fakeMetadataImageCacheRunner{}
+	task := NewCacheMetadataImagesTask(runner)
+	task.SetPlaybackActivityCheck(func() bool { return false })
+
+	if err := task.Execute(context.Background(), &recordingProgress{}); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if want := cacheMetadataImagesConcurrency(); runner.concurrency != want {
+		t.Fatalf("concurrency = %d, want %d", runner.concurrency, want)
+	}
+}

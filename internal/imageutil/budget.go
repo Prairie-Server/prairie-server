@@ -7,27 +7,54 @@ import (
 	"sync/atomic"
 )
 
-// encodeBudget caps in-flight WebP + AVIF work so a 4-core node is not
-// oversubscribed by (WebP workers) + (AVIF workers) × (encoder threads).
-// Size defaults to runtime.NumCPU(). Native ffmpeg paths also pin
-// -threads 1 / OMP_NUM_THREADS=1 and SVT lp=1 so each slot ≈ one core.
-var encodeBudget = newSlotBudget(defaultEncodeBudgetSize())
+// encodeBudget caps in-flight WebP + AVIF work so a node is not oversubscribed
+// by (WebP workers) + (AVIF workers) × (encoder threads). Native ffmpeg paths
+// also pin -threads 1 / OMP_NUM_THREADS=1 and SVT lp=1 so each slot ≈ one core.
+//
+// Artwork encoding is fully deferrable background work that competes with
+// playback ffmpeg for the same cores, so the default budget stays well below
+// the core count instead of tracking it.
+var encodeBudget = newSlotBudget(DefaultEncodeBudgetSize())
 
-func defaultEncodeBudgetSize() int {
+// encodeBudgetCoreDivisor and encodeBudgetCeiling shape the automatic budget:
+// a quarter of the cores (1 on a 4-core node, 2 on 8) and never more than the
+// ceiling, so a large host still leaves most of its cores for playback.
+const (
+	encodeBudgetCoreDivisor = 4
+	encodeBudgetCeiling     = 4
+)
+
+// DefaultEncodeBudgetSize is the automatic shared WebP+AVIF encode slot count
+// used when no explicit admin budget is configured.
+func DefaultEncodeBudgetSize() int {
 	n := runtime.NumCPU()
 	if n < 1 {
 		return 1
 	}
-	return n
+	// Round up so a 1-3 core node still gets one slot.
+	budget := (n + encodeBudgetCoreDivisor - 1) / encodeBudgetCoreDivisor
+	if budget > encodeBudgetCeiling {
+		budget = encodeBudgetCeiling
+	}
+	if budget < 1 {
+		budget = 1
+	}
+	return budget
+}
+
+// ResolveEncodeBudgetSize maps a configured artwork encode budget to a concrete
+// slot count. Values <= 0 mean the automatic default.
+func ResolveEncodeBudgetSize(configured int) int {
+	if configured > 0 {
+		return configured
+	}
+	return DefaultEncodeBudgetSize()
 }
 
 // SetEncodeBudgetSize updates the shared WebP+AVIF encode slot count.
-// Values <= 0 reset to runtime.NumCPU(). Hot-reload safe.
+// Values <= 0 reset to DefaultEncodeBudgetSize(). Hot-reload safe.
 func SetEncodeBudgetSize(n int) {
-	if n <= 0 {
-		n = defaultEncodeBudgetSize()
-	}
-	encodeBudget.Resize(n)
+	encodeBudget.Resize(ResolveEncodeBudgetSize(n))
 }
 
 // EncodeBudgetSize returns the current shared encode slot count.
