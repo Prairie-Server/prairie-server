@@ -7,6 +7,7 @@ import {
   Link as LinkIcon,
   LogOut,
   Play,
+  Plus,
   Search,
   ShieldCheck,
   Users,
@@ -571,6 +572,7 @@ export default function WatchTogetherRoomPage() {
         description="The link is missing its access token, so the room can't be opened. Ask the host for a fresh invite, or join with a room code instead."
       >
         <Button type="button" onClick={() => navigate("/rooms/join")}>
+          <Users />
           Join with a code
         </Button>
       </RoomTerminalState>
@@ -584,6 +586,7 @@ export default function WatchTogetherRoomPage() {
         description="Start a new watch party or join another room to keep watching together."
       >
         <Button type="button" onClick={() => navigate("/rooms/join")}>
+          <Plus />
           Start a new party
         </Button>
       </RoomTerminalState>
@@ -662,6 +665,7 @@ export default function WatchTogetherRoomPage() {
                 size="sm"
                 onClick={() => setEndConfirmOpen(true)}
               >
+                <X />
                 End
               </Button>
             </>

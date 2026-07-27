@@ -17,6 +17,7 @@ import {
 import { useWizardContext } from "../WizardContext";
 import { WizardActions } from "../WizardActions";
 
+import { Loader2, Save, SkipForward } from "lucide-react";
 const KEYS = [
   "recommendations.enabled",
   "recommendations.embedding_base_url",
@@ -212,6 +213,7 @@ export function RecommendationsStep() {
 
       <WizardActions>
         <Button type="submit" disabled={submitting || form.isSaving}>
+          {submitting || form.isSaving ? <Loader2 className="animate-spin" /> : <Save />}
           {submitting || form.isSaving ? "Saving..." : "Save & continue"}
         </Button>
         <Button
@@ -220,6 +222,7 @@ export function RecommendationsStep() {
           onClick={handleSkip}
           disabled={submitting || form.isSaving}
         >
+          <SkipForward />
           Skip
         </Button>
       </WizardActions>

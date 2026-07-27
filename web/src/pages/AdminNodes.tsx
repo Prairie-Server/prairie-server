@@ -23,7 +23,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Plus, Pencil, Trash2, RefreshCw, Info, AlertTriangle } from "lucide-react";
+import { AlertTriangle, Info, Loader2, Pencil, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { formatDateTime } from "@/lib/datetime";
 
@@ -337,6 +337,7 @@ function NodeForm({
       )}
 
       <Button type="submit" className="w-full" disabled={isPending}>
+        {isPending ? <Loader2 className="animate-spin" /> : <Save />}
         {isPending ? "Saving..." : "Save"}
       </Button>
     </form>

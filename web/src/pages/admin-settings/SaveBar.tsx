@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2, Save, Undo2 } from "lucide-react";
 import { RestartServerButton } from "./RestartServerButton";
 
 interface SaveBarProps {
@@ -32,9 +32,11 @@ export function SaveBar({
         <div className="flex flex-col gap-2 sm:flex-row">
           {restartRequired && <RestartServerButton />}
           <Button variant="outline" size="sm" onClick={onDiscard} disabled={dirtyCount === 0}>
+            <Undo2 />
             Discard
           </Button>
           <Button size="sm" onClick={onSave} disabled={dirtyCount === 0 || isSaving}>
+            {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
             {isSaving ? "Saving..." : "Save Changes"}
           </Button>
         </div>

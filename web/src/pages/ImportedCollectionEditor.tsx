@@ -6,9 +6,13 @@ import {
   ExternalLink,
   Hash,
   Link2,
+  Loader2,
   Lock,
   RefreshCw,
+  Save,
   Trash2,
+  Undo2,
+  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -981,6 +985,7 @@ function SaveDock({
           onClick={onCancel}
           disabled={isSaving}
         >
+          <X />
           Cancel
         </Button>
         <Button
@@ -991,6 +996,7 @@ function SaveDock({
           onClick={onDiscard}
           disabled={isSaving}
         >
+          <Undo2 />
           Discard
         </Button>
         <Button
@@ -999,6 +1005,7 @@ function SaveDock({
           className="h-8 px-4 text-xs font-semibold"
           disabled={isSaving || saveBlocked}
         >
+          {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
           {isSaving ? "Saving..." : "Save changes"}
         </Button>
       </div>

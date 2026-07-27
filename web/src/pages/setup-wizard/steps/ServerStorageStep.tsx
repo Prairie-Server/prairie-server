@@ -15,7 +15,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertCircle, CheckCircle2, ChevronRight, Download } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronRight,
+  Download,
+  Loader2,
+  Save,
+  SkipForward,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   useCheckAdminSettingsConnection,
@@ -733,6 +741,7 @@ export function ServerStorageStep() {
 
       <WizardActions className="flex flex-wrap gap-3 pt-4">
         <Button type="submit" disabled={submitting || form.isSaving}>
+          {submitting || form.isSaving ? <Loader2 className="animate-spin" /> : <Save />}
           {submitting || form.isSaving ? "Saving..." : "Save & continue"}
         </Button>
         <Button
@@ -741,6 +750,7 @@ export function ServerStorageStep() {
           onClick={handleSkip}
           disabled={submitting || form.isSaving}
         >
+          <SkipForward />
           Skip
         </Button>
       </WizardActions>

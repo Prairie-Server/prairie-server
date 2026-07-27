@@ -47,6 +47,7 @@ import { Switch } from "@/components/ui/switch";
 import { MDBListBrowser } from "./MDBListBrowser";
 import { TemplatePosterField, type TemplatePosterMode } from "./TemplatePosterField";
 
+import { Loader2, Plus, X } from "lucide-react";
 interface Props {
   template: CollectionTemplate;
   onCancel: () => void;
@@ -354,9 +355,11 @@ export function UserCollectionTemplateConfigForm({ template, onCancel, onCreated
 
       <div className="border-border flex justify-end gap-2 border-t pt-4">
         <Button type="button" variant="ghost" onClick={onCancel} disabled={isPending}>
+          <X />
           Cancel
         </Button>
         <Button type="submit" disabled={submitDisabled}>
+          {isPending ? <Loader2 className="animate-spin" /> : <Plus />}
           {isPending ? "Importing..." : "Create Collection"}
         </Button>
       </div>

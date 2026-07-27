@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from "react";
-import { Lock, Unlock } from "lucide-react";
+import { Loader2, Lock, RotateCcw, Save, Unlock, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -672,6 +672,7 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                   onClick={() => setShowResetConfirm(true)}
                   className="text-muted-foreground hover:text-foreground"
                 >
+                  <RotateCcw />
                   Reset to Provider
                 </Button>
               )}
@@ -683,6 +684,7 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                 onClick={() => onOpenChange(false)}
                 className="max-sm:flex-1"
               >
+                <X />
                 Cancel
               </Button>
               <Button
@@ -691,6 +693,7 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                 disabled={updateMutation.isPending}
                 className="max-sm:flex-1"
               >
+                {updateMutation.isPending ? <Loader2 className="animate-spin" /> : <Save />}
                 {updateMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </div>

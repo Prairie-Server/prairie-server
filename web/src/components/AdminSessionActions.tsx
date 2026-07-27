@@ -1,6 +1,15 @@
 import type { ReactNode } from "react";
 import { useEffect, useState } from "react";
-import { MoreHorizontal, MessageSquare, Pause, Play, Square, OctagonAlert } from "lucide-react";
+import {
+  MessageSquare,
+  MoreHorizontal,
+  OctagonAlert,
+  Pause,
+  Play,
+  Send,
+  Square,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { api } from "@/api/client";
 import type { AdminSession } from "@/api/types";
@@ -266,9 +275,11 @@ export function AdminSessionActions({
               onClick={() => setMessageOpen(false)}
               disabled={pendingAction === "message"}
             >
+              <X />
               Cancel
             </Button>
             <Button onClick={() => void sendMessage()} disabled={pendingAction === "message"}>
+              <Send />
               Send Message
             </Button>
           </DialogFooter>

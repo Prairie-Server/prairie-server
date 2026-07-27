@@ -41,13 +41,17 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   History,
-  Plus,
+  Loader2,
   Pencil,
-  Trash2,
-  Settings2,
+  Plus,
+  Save,
   Search,
+  Settings2,
+  Trash2,
   X,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -359,6 +363,7 @@ export default function AdminUsers() {
                     onClick={() => setPage((p) => p - 1)}
                     disabled={page === 0}
                   >
+                    <ChevronLeft />
                     Previous
                   </Button>
                   <Button
@@ -367,6 +372,7 @@ export default function AdminUsers() {
                     onClick={() => setPage((p) => p + 1)}
                     disabled={(page + 1) * pageSize >= total}
                   >
+                    <ChevronRight />
                     Next
                   </Button>
                 </div>
@@ -801,6 +807,7 @@ function UserForm({ user, onClose }: { user: AdminUser | null; onClose: () => vo
 
       <div className="border-border mt-4 border-t pt-4">
         <Button type="submit" className="w-full" disabled={isPending}>
+          {isPending ? <Loader2 className="animate-spin" /> : <Save />}
           {isPending ? "Saving..." : "Save"}
         </Button>
       </div>

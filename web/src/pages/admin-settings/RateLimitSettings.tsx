@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { AlertTriangle } from "lucide-react";
+import { AlertTriangle, Loader2, Save } from "lucide-react";
 import { useRateLimitConfig, useUpdateRateLimitConfig } from "@/hooks/queries/admin/rateLimits";
 import type {
   RateLimitConfig,
@@ -429,6 +429,7 @@ export default function RateLimitSettings() {
 
         <div className="pt-2">
           <Button onClick={handleSave} disabled={updateConfig.isPending}>
+            {updateConfig.isPending ? <Loader2 className="animate-spin" /> : <Save />}
             {updateConfig.isPending ? "Saving..." : "Save Changes"}
           </Button>
         </div>

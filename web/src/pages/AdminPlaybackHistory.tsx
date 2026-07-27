@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { History, RefreshCw } from "lucide-react";
+import { ChevronLeft, ChevronRight, History, RefreshCw, RotateCcw } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -189,6 +189,7 @@ export default function AdminPlaybackHistory() {
           </Select>
 
           <Button variant="outline" size="sm" onClick={resetFilters}>
+            <RotateCcw />
             Reset
           </Button>
           <Button
@@ -383,6 +384,7 @@ export default function AdminPlaybackHistory() {
                       onClick={() => setPage((p) => p - 1)}
                       disabled={page === 0}
                     >
+                      <ChevronLeft />
                       Previous
                     </Button>
                     <Button
@@ -391,6 +393,7 @@ export default function AdminPlaybackHistory() {
                       onClick={() => setPage((p) => p + 1)}
                       disabled={(page + 1) * pageSize >= total}
                     >
+                      <ChevronRight />
                       Next
                     </Button>
                   </div>

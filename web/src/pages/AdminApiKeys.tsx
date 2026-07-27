@@ -34,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Copy } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Loader2, Plus, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -225,6 +225,7 @@ export default function AdminApiKeys() {
                 onClick={() => setPage((p) => p - 1)}
                 disabled={page === 0}
               >
+                <ChevronLeft />
                 Previous
               </Button>
               <Button
@@ -233,6 +234,7 @@ export default function AdminApiKeys() {
                 onClick={() => setPage((p) => p + 1)}
                 disabled={(page + 1) * pageSize >= total}
               >
+                <ChevronRight />
                 Next
               </Button>
             </div>
@@ -315,6 +317,7 @@ function CreateApiKeyForm({ onClose }: { onClose: () => void }) {
         </Select>
       </div>
       <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+        {createMutation.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
         {createMutation.isPending ? "Creating..." : "Create"}
       </Button>
     </form>

@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
-import { Plus, Radar, RefreshCw, Trash2 } from "lucide-react";
+import { Plus, Radar, RefreshCw, Trash2, X } from "lucide-react";
 import type { LiveTVDiscoveredTuner } from "@/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -510,6 +510,7 @@ function RecordingsTab() {
               disabled={cancelRecording.isPending}
               onClick={() => cancelRecording.mutate(rec.id)}
             >
+              <X />
               Cancel
             </Button>
           ) : null}

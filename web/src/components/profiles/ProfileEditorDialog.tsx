@@ -1,5 +1,5 @@
 import { useEffect, useId, useMemo, useState, type FormEvent } from "react";
-import { RefreshCw } from "lucide-react";
+import { Loader2, RefreshCw, Save, Trash2, X } from "lucide-react";
 
 import type { Profile, UserLibrary } from "@/api/types";
 import { ImageUploadField } from "@/components/ImageUploadField";
@@ -392,6 +392,7 @@ function ProfileEditorForm({
                     setErrors((current) => ({ ...current, pin: undefined }));
                   }}
                 >
+                  {draft.clearPin ? <Loader2 className="animate-spin" /> : <Trash2 />}
                   {draft.clearPin ? "Keep existing PIN" : "Remove PIN"}
                 </Button>
               ) : null}
@@ -640,9 +641,11 @@ function ProfileEditorForm({
 
       <DialogFooter>
         <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <X />
           Cancel
         </Button>
         <Button type="submit" disabled={isPending}>
+          {isPending ? <Loader2 className="animate-spin" /> : <Save />}
           {isPending ? "Saving..." : "Save profile"}
         </Button>
       </DialogFooter>

@@ -57,7 +57,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowUpRight, ChevronRight, Pencil, RotateCcw, Settings2, UserCircle } from "lucide-react";
+import {
+  ArrowUpRight,
+  ChevronRight,
+  Loader2,
+  Pencil,
+  RotateCcw,
+  Save,
+  Settings2,
+  Trash2,
+  UserCircle,
+  X,
+} from "lucide-react";
 import { useNavigate } from "react-router";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useAuth } from "@/hooks/useAuth";
@@ -172,6 +183,7 @@ export default function AdminUserDetail() {
             onClick={handleDelete}
             disabled={deleteMutation.isPending}
           >
+            <Trash2 />
             Delete
           </Button>
         </div>
@@ -760,6 +772,7 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
                   setJsonValue("");
                 }}
               >
+                <X />
                 Cancel
               </Button>
               <Button
@@ -783,6 +796,7 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
                   );
                 }}
               >
+                <Save />
                 Save override
               </Button>
             </div>
@@ -1182,6 +1196,7 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
 
       <div className="border-border mt-4 border-t pt-4">
         <Button type="submit" className="w-full" disabled={updateMutation.isPending}>
+          {updateMutation.isPending ? <Loader2 className="animate-spin" /> : <Save />}
           {updateMutation.isPending ? "Saving..." : "Save"}
         </Button>
       </div>

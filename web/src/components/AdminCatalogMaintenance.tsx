@@ -41,7 +41,7 @@ import {
   updatePathRewrite,
 } from "./adminCatalogMaintenancePathRewrites";
 import { formatExportProgressLabel, formatJobProgress } from "./adminCatalogMaintenanceFormatters";
-import { Download, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
+import { Copy, Download, Loader2, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { formatDateTime } from "@/lib/datetime";
 
 export default function AdminCatalogMaintenance() {
@@ -381,6 +381,7 @@ export default function AdminCatalogMaintenance() {
                   or incomplete rewrites will fail fast instead of seeding broken paths.
                 </div>
                 <Button type="submit" className="w-full" disabled={isImportSubmitDisabled}>
+                  {importMutation.isPending ? <Loader2 className="animate-spin" /> : <Download />}
                   {importMutation.isPending ? "Importing..." : "Import Catalog"}
                 </Button>
               </form>
@@ -575,6 +576,7 @@ export default function AdminCatalogMaintenance() {
                         onClick={() => publishMutation.mutate(job.id)}
                         disabled={publishMutation.isPending}
                       >
+                        <Upload />
                         Publish
                       </Button>
                     ) : null}
@@ -586,6 +588,7 @@ export default function AdminCatalogMaintenance() {
                           await navigator.clipboard.writeText(job.public_url ?? "");
                         }}
                       >
+                        <Copy />
                         Copy URL
                       </Button>
                     ) : null}

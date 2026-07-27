@@ -15,6 +15,7 @@ import { AuthBrandHero } from "@/components/auth/AuthBrandHero";
 import { sanitizeAuthRedirect } from "@/lib/authRedirect";
 import { toast } from "sonner";
 
+import { Loader2, UserPlus } from "lucide-react";
 export default function Signup() {
   const [searchParams] = useSearchParams();
   const [username, setUsername] = useState("");
@@ -159,6 +160,7 @@ export default function Signup() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={submitting}>
+                {submitting ? <Loader2 className="animate-spin" /> : <UserPlus />}
                 {submitting ? "Creating account..." : "Create account"}
               </Button>
             </form>

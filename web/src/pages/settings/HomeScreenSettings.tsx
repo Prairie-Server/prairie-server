@@ -28,7 +28,7 @@ import type { AddPayload } from "@/components/RecipeGallery/RecipeConfigDrawer";
 import type { GalleryPreset, RecipeDefinition } from "@/lib/recipes";
 import { fetchRecipeCatalog } from "@/lib/recipes";
 import { randomUUID } from "@/lib/uuid";
-import { Plus } from "lucide-react";
+import { Plus, RotateCcw } from "lucide-react";
 import {
   SectionDragOverlay,
   SortableSectionCardRow,
@@ -510,6 +510,7 @@ export default function HomeScreenSettings() {
             <Plus className="mr-1 h-4 w-4" /> Add Section
           </Button>
           <Button size="sm" variant="outline" onClick={handleReset} disabled={!canEditSections}>
+            <RotateCcw />
             Reset to Default
           </Button>
           <Badge variant="secondary" className="ml-auto">

@@ -1,4 +1,4 @@
-import { ArrowLeft, Plus, Trash2, UsersRound } from "lucide-react";
+import { ArrowLeft, Loader2, Plus, Save, Trash2, UsersRound, X } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type { AccessGroup, AccessGroupInput } from "@/api/types";
@@ -135,6 +135,7 @@ export default function AdminAccessGroups() {
             autoFocus
           />
           <Button type="button" onClick={create} disabled={createGroup.isPending}>
+            <Plus />
             Create
           </Button>
           <Button
@@ -145,6 +146,7 @@ export default function AdminAccessGroups() {
               setNewName("");
             }}
           >
+            <X />
             Cancel
           </Button>
         </div>
@@ -439,6 +441,7 @@ function AccessGroupEditor({ group, onDeleted }: AccessGroupEditorProps) {
           )}
         </div>
         <Button type="button" onClick={save} disabled={updateGroup.isPending}>
+          {updateGroup.isPending ? <Loader2 className="animate-spin" /> : <Save />}
           {updateGroup.isPending ? "Saving..." : "Save changes"}
         </Button>
       </div>

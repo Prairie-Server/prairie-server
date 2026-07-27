@@ -1,6 +1,15 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Database, FolderOpen, Settings2, SlidersHorizontal } from "lucide-react";
+import {
+  Database,
+  FolderOpen,
+  Loader2,
+  Plus,
+  Save,
+  Settings2,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 
 import type { Library } from "@/api/types";
 import { Button } from "@/components/ui/button";
@@ -208,10 +217,12 @@ function LibraryEditorBody({
         ) : null}
         <DialogClose asChild>
           <Button type="button" variant="ghost">
+            <X />
             Cancel
           </Button>
         </DialogClose>
         <Button type="submit" disabled={form.isPending}>
+          {form.isPending ? <Loader2 className="animate-spin" /> : library ? <Save /> : <Plus />}
           {form.isPending
             ? library
               ? "Saving…"

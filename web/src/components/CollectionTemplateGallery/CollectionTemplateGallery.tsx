@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, Layers3, Search } from "lucide-react";
+import { Check, ChevronLeft, Eye, Layers3, Loader2, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -516,9 +516,11 @@ function TemplateBundleApplyView({
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" disabled={disabled} onClick={preview}>
+          <Eye />
           Preview
         </Button>
         <Button type="button" disabled={disabled} onClick={apply}>
+          {queueBundleApply.isPending ? <Loader2 className="animate-spin" /> : <Check />}
           {queueBundleApply.isPending ? "Queueing..." : "Apply Defaults"}
         </Button>
       </div>

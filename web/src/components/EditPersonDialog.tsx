@@ -13,6 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { Loader2, Save, X } from "lucide-react";
 interface EditPersonDialogProps {
   person: Person;
   open: boolean;
@@ -160,9 +161,11 @@ export default function EditPersonDialog({ person, open, onOpenChange }: EditPer
 
         <DialogFooter>
           <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+            <X />
             Cancel
           </Button>
           <Button type="button" onClick={handleSave} disabled={mutation.isPending}>
+            {mutation.isPending ? <Loader2 className="animate-spin" /> : <Save />}
             {mutation.isPending ? "Saving..." : "Save"}
           </Button>
         </DialogFooter>

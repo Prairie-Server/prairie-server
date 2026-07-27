@@ -1,5 +1,5 @@
 import { Fragment, useState } from "react";
-import { Wrench } from "lucide-react";
+import { ChevronLeft, ChevronRight, RefreshCw, Wrench } from "lucide-react";
 
 import type { Library } from "@/api/types";
 import { CollapsibleDiagnosticsSection } from "@/components/admin/CollapsibleDiagnosticsSection";
@@ -145,6 +145,7 @@ export function MetadataMatcherQueuesSection({ libraries }: { libraries: Library
                           retry.mutate(queue.library_id);
                         }}
                       >
+                        <RefreshCw />
                         Retry now
                       </Button>
                     </TableCell>
@@ -229,6 +230,7 @@ export function MetadataMatcherQueuesSection({ libraries }: { libraries: Library
                                     setDetailOffset((current) => Math.max(0, current - detailLimit))
                                   }
                                 >
+                                  <ChevronLeft />
                                   Previous
                                 </Button>
                                 <Button
@@ -240,6 +242,7 @@ export function MetadataMatcherQueuesSection({ libraries }: { libraries: Library
                                     setDetailOffset((current) => current + detailLimit)
                                   }
                                 >
+                                  <ChevronRight />
                                   Next
                                 </Button>
                               </div>

@@ -40,6 +40,7 @@ import {
 } from "@/hooks/queries/useAllUserCollections";
 import { randomUUID } from "@/lib/uuid";
 
+import { Plus, Save, X } from "lucide-react";
 const CATEGORY_LABELS: Record<Category, string> = {
   library_staples: "Library",
   personalized: "For You",
@@ -562,9 +563,11 @@ export default function SectionEditorDrawer(props: SectionEditorDrawerProps) {
 
         <SheetFooter>
           <Button variant="outline" onClick={() => props.onOpenChange(false)}>
+            <X />
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={saveDisabled || isSubmitting}>
+            {isEdit ? <Save /> : <Plus />}
             {isEdit ? "Save" : "Add Section"}
           </Button>
         </SheetFooter>

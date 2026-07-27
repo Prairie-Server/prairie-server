@@ -4,6 +4,7 @@ import { toast } from "sonner";
 import { useWizardContext } from "../WizardContext";
 import { WizardActions } from "../WizardActions";
 
+import { ArrowRight, SkipForward } from "lucide-react";
 export function LibraryStep() {
   const { libraries, markDone, refetchLibraries } = useWizardContext();
 
@@ -48,9 +49,11 @@ export function LibraryStep() {
 
       <WizardActions className="flex flex-wrap gap-3 pt-3">
         <Button type="button" onClick={() => markDone("library")} disabled={libraries.length === 0}>
+          <ArrowRight />
           Continue
         </Button>
         <Button type="button" variant="ghost" onClick={handleSkip}>
+          <SkipForward />
           Skip
         </Button>
       </WizardActions>

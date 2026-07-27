@@ -10,6 +10,7 @@ import { useSettingsForm } from "@/hooks/useSettingsForm";
 import { useWizardContext } from "../WizardContext";
 import { WizardActions } from "../WizardActions";
 
+import { Loader2, Save, SkipForward } from "lucide-react";
 const KEYS = [
   "download.enabled",
   "download.server_bandwidth_mbps",
@@ -139,6 +140,7 @@ export function DownloadsStep() {
 
       <WizardActions>
         <Button type="submit" disabled={submitting || form.isSaving}>
+          {submitting || form.isSaving ? <Loader2 className="animate-spin" /> : <Save />}
           {submitting || form.isSaving ? "Saving..." : "Save & continue"}
         </Button>
         <Button
@@ -147,6 +149,7 @@ export function DownloadsStep() {
           onClick={handleSkip}
           disabled={submitting || form.isSaving}
         >
+          <SkipForward />
           Skip
         </Button>
       </WizardActions>

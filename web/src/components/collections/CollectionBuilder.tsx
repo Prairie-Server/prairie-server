@@ -39,6 +39,7 @@ import CollectionGuidedRulesEditor from "./CollectionGuidedRulesEditor";
 import CollectionOrderingEditor from "./CollectionOrderingEditor";
 import CollectionPreviewPane from "./CollectionPreviewPane";
 import CollectionRulesEditor from "./CollectionRulesEditor";
+import { Loader2, Save } from "lucide-react";
 import {
   SMART_COLLECTION_DEFAULT_LIMIT,
   SMART_COLLECTION_MAX_LIMIT,
@@ -350,6 +351,7 @@ export default function CollectionBuilder({
       ) : null}
 
       <Button type="submit" className="w-full" disabled={isPending || readOnly}>
+        {isPending ? <Loader2 className="animate-spin" /> : <Save />}
         {isPending ? "Saving..." : submitLabel}
       </Button>
     </>

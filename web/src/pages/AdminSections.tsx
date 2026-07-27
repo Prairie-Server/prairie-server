@@ -37,7 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, RotateCcw } from "lucide-react";
+import { Plus, RotateCcw, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { toast } from "sonner";
 import { buildSectionReorderEntries } from "./adminSectionOrder";
@@ -431,6 +431,7 @@ export default function AdminSections() {
                   setResetProfiles(false);
                 }}
               >
+                <X />
                 Cancel
               </Button>
               <Button
@@ -456,6 +457,7 @@ export default function AdminSections() {
                   );
                 }}
               >
+                <RotateCcw />
                 Restore Defaults
               </Button>
             </div>

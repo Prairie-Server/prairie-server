@@ -34,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, ListPlus, Sparkles, TrendingUp } from "lucide-react";
+import { Download, ListPlus, Loader2, Save, Sparkles, TrendingUp } from "lucide-react";
 import { SyncScheduleField } from "@/components/collections/SyncScheduleField";
 
 export type CollectionSourceType = "manual" | "mdblist" | "tmdb" | "trakt";
@@ -899,6 +899,7 @@ export function TMDBPresetForm({
           className="w-full"
           disabled={mutation.isPending || libraryIds.length === 0 || hasInvalidLimit}
         >
+          {mutation.isPending ? <Loader2 className="animate-spin" /> : <Download />}
           {mutation.isPending ? "Importing..." : "Import TMDB Collection"}
         </Button>
       </form>
@@ -1176,6 +1177,7 @@ export function TraktPresetForm({
             missingListURL
           }
         >
+          {mutation.isPending ? <Loader2 className="animate-spin" /> : <Download />}
           {mutation.isPending ? "Importing..." : "Import Trakt Collection"}
         </Button>
       </form>
@@ -1342,6 +1344,7 @@ export function MDBListImportForm({
           className="w-full"
           disabled={mutation.isPending || libraryIds.length === 0 || hasInvalidLimit}
         >
+          {mutation.isPending ? <Loader2 className="animate-spin" /> : <Download />}
           {mutation.isPending ? "Importing..." : "Import MDBList Collection"}
         </Button>
       </form>
@@ -1864,6 +1867,7 @@ export function CollectionEditForm({
             missingTraktProfile
           }
         >
+          {updateMutation.isPending ? <Loader2 className="animate-spin" /> : <Save />}
           {updateMutation.isPending ? "Saving..." : "Save Collection"}
         </Button>
       </form>
