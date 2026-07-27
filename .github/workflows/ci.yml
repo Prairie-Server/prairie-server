@@ -194,6 +194,7 @@ jobs:
         with:
           name: web-vitest-blob-${{ matrix.shard }}
           path: web/.vitest-reports
+          include-hidden-files: true
           if-no-files-found: error
           retention-days: 1
 
