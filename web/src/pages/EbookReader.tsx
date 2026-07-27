@@ -592,7 +592,7 @@ export default function EbookReader() {
   }
 
   return (
-    <div className="bg-background min-h-screen">
+    <div className="bg-background min-h-[100dvh]">
       <header className="border-border/70 bg-background/95 sticky top-0 z-20 border-b backdrop-blur">
         <div className="flex h-14 items-center gap-3 px-4">
           <Button asChild variant="ghost" size="icon" aria-label="Back">
@@ -733,7 +733,7 @@ export default function EbookReader() {
 
       <main
         className={cn(
-          "grid h-[calc(100vh-6rem)] min-h-0 w-full overflow-hidden",
+          "grid h-[calc(100dvh-6rem)] min-h-0 w-full overflow-hidden",
           panelOpen ? "grid-cols-1 lg:grid-cols-[minmax(0,1fr)_20rem]" : "grid-cols-1",
         )}
       >
@@ -1274,7 +1274,7 @@ export default function EbookReader() {
         )}
       </main>
       {showEndOfBookNext && nextChapter && nextChapterHref && (
-        <div className="fixed inset-x-0 bottom-6 z-30 flex justify-center px-4">
+        <div className="bottom-safe-6 fixed inset-x-0 z-30 flex justify-center px-4">
           <Button
             asChild
             size="lg"

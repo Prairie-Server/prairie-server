@@ -29,6 +29,11 @@ interface VolumeControlProps {
    * audiobook mini bar.
    */
   tone?: "overlay" | "surface";
+  /**
+   * When false, only the mute button is shown (no slider). Useful on narrow
+   * player HUDs where the full control would crowd the utility rail.
+   */
+  showSlider?: boolean;
 }
 
 export function VolumeControl({
@@ -37,6 +42,7 @@ export function VolumeControl({
   onVolumeChange,
   onMutedChange,
   tone = "overlay",
+  showSlider = true,
 }: VolumeControlProps) {
   const sliderRef = useRef<HTMLDivElement>(null);
 
@@ -171,36 +177,38 @@ export function VolumeControl({
         )}
       </button>
 
-      {/* Always-visible slider. Uses the same thin resting height as the seek
-          bar, grows subtly on hover for richer feedback, and reveals a small
-          thumb dot at the playhead when hovered. */}
-      <div
-        ref={sliderRef}
-        role="slider"
-        tabIndex={0}
-        aria-label="Volume"
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-valuenow={Math.round(displayVolume * 100)}
-        aria-valuetext={`Volume ${Math.round(displayVolume * 100)}%`}
-        className={`group/vol-slider relative flex h-6 w-24 cursor-pointer touch-none items-center rounded-full focus-visible:ring-2 focus-visible:outline-none ${sliderFocusClass}`}
-        onMouseDown={handleMouseDown}
-        onTouchStart={handleTouchStart}
-        onKeyDown={handleKeyDown}
-      >
+      {/* Always-visible slider (unless compact mute-only). Uses the same thin
+          resting height as the seek bar, grows subtly on hover for richer
+          feedback, and reveals a small thumb dot at the playhead when hovered. */}
+      {showSlider ? (
         <div
-          className={`relative h-[3px] w-full rounded-full transition-[height] duration-150 ease-out group-hover/vol-slider:h-[5px] ${trackClass}`}
+          ref={sliderRef}
+          role="slider"
+          tabIndex={0}
+          aria-label="Volume"
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuenow={Math.round(displayVolume * 100)}
+          aria-valuetext={`Volume ${Math.round(displayVolume * 100)}%`}
+          className={`group/vol-slider relative flex h-6 w-24 cursor-pointer touch-none items-center rounded-full focus-visible:ring-2 focus-visible:outline-none ${sliderFocusClass}`}
+          onMouseDown={handleMouseDown}
+          onTouchStart={handleTouchStart}
+          onKeyDown={handleKeyDown}
         >
           <div
-            className={`absolute inset-y-0 left-0 rounded-full ${fillClass}`}
-            style={{ width: `${displayVolume * 100}%` }}
-          />
-          <div
-            className={`absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-0 shadow-[0_2px_8px_rgb(0_0_0/0.5)] ring-1 transition-opacity duration-150 group-hover/vol-slider:opacity-100 ${thumbClass}`}
-            style={{ left: `${displayVolume * 100}%` }}
-          />
+            className={`relative h-[3px] w-full rounded-full transition-[height] duration-150 ease-out group-hover/vol-slider:h-[5px] ${trackClass}`}
+          >
+            <div
+              className={`absolute inset-y-0 left-0 rounded-full ${fillClass}`}
+              style={{ width: `${displayVolume * 100}%` }}
+            />
+            <div
+              className={`absolute top-1/2 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full opacity-0 shadow-[0_2px_8px_rgb(0_0_0/0.5)] ring-1 transition-opacity duration-150 group-hover/vol-slider:opacity-100 ${thumbClass}`}
+              style={{ left: `${displayVolume * 100}%` }}
+            />
+          </div>
         </div>
-      </div>
+      ) : null}
     </div>
   );
 }

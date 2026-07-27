@@ -72,15 +72,15 @@ export default function DetailHero({
   const posterSizeClass = (() => {
     switch (posterOrientation) {
       case "portrait":
-        return isCompact ? "w-[140px] sm:w-[160px]" : "w-[170px] sm:w-[220px]";
+        return isCompact ? "w-[120px] sm:w-[160px]" : "w-[140px] sm:w-[220px]";
       case "square":
         // Bigger than portrait — square posters are visually smaller per
         // pixel than 2:3 ones at the same width, so bump dimensions to
         // keep them feeling like a comparable hero focal element.
-        return isCompact ? "w-[180px] sm:w-[200px]" : "w-[200px] sm:w-[260px]";
+        return isCompact ? "w-[160px] sm:w-[200px]" : "w-[180px] sm:w-[260px]";
       case "landscape":
       default:
-        return isCompact ? "w-[200px] sm:w-[260px]" : "w-[240px] sm:w-[320px]";
+        return isCompact ? "w-[180px] sm:w-[260px]" : "w-[200px] sm:w-[320px]";
     }
   })();
 
@@ -139,7 +139,7 @@ export default function DetailHero({
       <div
         className={`page-shell-wide relative flex flex-col justify-end pb-8 ${
           isCompact
-            ? "h-[35vh] min-h-[300px] pt-20 lg:h-[42vh]"
+            ? "h-[35dvh] min-h-[300px] pt-20 lg:h-[42dvh]"
             : "min-h-[60dvh] pt-28 lg:min-h-[72dvh]"
         }`}
       >

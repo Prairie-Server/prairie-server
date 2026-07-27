@@ -382,11 +382,12 @@ export const LAYOUT = {
     },
   },
 
-  /** Hero section dimensions — cinematic, not banner-sized */
+  /** Hero section dimensions — cinematic, not banner-sized.
+   *  Prefer dvh so mobile browser chrome doesn't leave dead space. */
   hero: {
     height: {
-      mobile: "h-[50vh]",
-      desktop: "h-[60vh]",
+      mobile: "h-[50dvh]",
+      desktop: "h-[60dvh]",
     },
     maxHeight: "max-h-[700px]",
     minHeight: "min-h-[350px]",
@@ -395,8 +396,8 @@ export const LAYOUT = {
   /** Detail page hero — even more immersive */
   detailHero: {
     height: {
-      mobile: "h-[50vh]",
-      desktop: "h-[65vh]",
+      mobile: "h-[50dvh]",
+      desktop: "h-[65dvh]",
     },
     maxHeight: "max-h-[800px]",
     minHeight: "min-h-[400px]",
@@ -664,17 +665,17 @@ export const PAGE_CONTAINER = "px-4 py-4 sm:px-6 lg:px-12 lg:py-6";
  * Hero banner container sizing — shared between HeroBanner and Home skeletons.
  * Full-bleed first viewport; no inset rounded media cards.
  */
-export const HERO_BANNER_SIZE = "h-[50vh] min-h-[350px] max-h-[700px] lg:h-[60vh]";
+export const HERO_BANNER_SIZE = "h-[50dvh] min-h-[350px] max-h-[700px] lg:h-[60dvh]";
 
 /**
  * Taller cinematic hero sizing used by the Library page Recommended tab.
  * The marquee header sits on top, so the hero needs extra height to
  * keep the title block comfortably clear of the nav bar.
  */
-export const HERO_BANNER_SIZE_TALL = "h-[60vh] min-h-[420px] max-h-[760px] lg:h-[72vh]";
+export const HERO_BANNER_SIZE_TALL = "h-[60dvh] min-h-[420px] max-h-[760px] lg:h-[72dvh]";
 
 /**
  * Brand welcome hero used when Home has no featured media slot.
  * Keeps the first viewport as one branded composition.
  */
-export const HOME_BRAND_HERO_SIZE = "min-h-[42vh] lg:min-h-[48vh]";
+export const HOME_BRAND_HERO_SIZE = "min-h-[42dvh] lg:min-h-[48dvh]";

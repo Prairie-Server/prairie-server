@@ -78,7 +78,7 @@ export function MarkerEditPanel({ editor, currentTime }: MarkerEditPanelProps) {
   return (
     <div
       ref={panelRef}
-      className="absolute bottom-40 left-4 z-50 w-[22rem] overflow-hidden rounded-2xl border border-white/10 bg-neutral-900/95 text-white shadow-2xl backdrop-blur-xl sm:bottom-44 sm:left-6"
+      className="absolute bottom-40 left-3 z-50 w-[min(22rem,calc(100%-1.5rem))] overflow-hidden rounded-2xl border border-white/10 bg-neutral-900/95 text-white shadow-2xl backdrop-blur-xl sm:bottom-44 sm:left-6"
       style={{ transform: `translate(${offset.x}px, ${offset.y}px)` }}
       onClick={(e) => e.stopPropagation()}
     >
@@ -194,11 +194,11 @@ export function MarkerEditPanel({ editor, currentTime }: MarkerEditPanelProps) {
       )}
 
       {/* Footer */}
-      <div className="flex items-center justify-between gap-3 border-t border-white/[0.06] bg-black/20 px-4 py-3">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/[0.06] bg-black/20 px-4 py-3">
         <span className="shrink-0 font-mono text-[11px] whitespace-nowrap text-white/40 tabular-nums">
           {formatTime(currentTime)}
         </span>
-        <div className="flex shrink-0 items-center gap-1.5">
+        <div className="flex min-w-0 flex-wrap items-center justify-end gap-1.5">
           {dirty && (
             <button
               type="button"

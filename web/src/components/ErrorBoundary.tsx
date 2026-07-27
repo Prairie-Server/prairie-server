@@ -52,7 +52,7 @@ class ErrorBoundaryInner extends Component<ErrorBoundaryProps, ErrorBoundaryStat
   override render() {
     if (this.state.hasError) {
       return (
-        <div className="bg-background flex min-h-screen items-center justify-center p-8">
+        <div className="bg-background flex min-h-[100dvh] items-center justify-center p-8">
           <div className="max-w-md text-center">
             <h1 className="text-foreground mb-4 text-2xl font-bold">Something went wrong</h1>
             <p className="text-muted-foreground mb-6">

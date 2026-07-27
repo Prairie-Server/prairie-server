@@ -133,14 +133,14 @@ export default function Layout({ children }: LayoutProps) {
       {/* Mobile header — visible below lg. Slides up on scroll-down within
           the Calendar route to free vertical space; pulling up reveals it. */}
       <div
-        className={`mobile-header glass-dark border-border/70 sticky top-0 z-30 mx-3 mt-3 flex items-center justify-between rounded-2xl border px-4 py-3 transition-transform duration-200 ease-out lg:hidden ${
+        className={`mobile-header glass-dark border-border/70 sticky top-0 z-30 mx-3 mt-3 flex items-center justify-between rounded-2xl border px-4 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-3 transition-transform duration-200 ease-out lg:hidden ${
           mobileHeaderHidden ? "-translate-y-[140%]" : "translate-y-0"
         }`}
       >
         <div className="flex items-center gap-3">
           <button
             onClick={() => setMobileOpen(true)}
-            className="text-muted-foreground hover:text-foreground hover:bg-accent/60 flex h-10 w-10 items-center justify-center rounded-xl transition-all active:scale-[0.98]"
+            className="text-muted-foreground hover:text-foreground hover:bg-accent/60 flex h-11 w-11 items-center justify-center rounded-xl transition-all active:scale-[0.98]"
             aria-label="Open menu"
           >
             <Menu className="h-5 w-5" />
@@ -152,14 +152,14 @@ export default function Layout({ children }: LayoutProps) {
         <div className="flex items-center gap-2">
           <ViewTransitionLink
             to={buildQueryCatalogHref()}
-            className="text-muted-foreground hover:text-foreground hover:bg-accent/60 flex h-10 w-10 items-center justify-center rounded-xl transition-all active:scale-[0.98]"
+            className="text-muted-foreground hover:text-foreground hover:bg-accent/60 flex h-11 w-11 items-center justify-center rounded-xl transition-all active:scale-[0.98]"
           >
             <Search className="h-5 w-5" />
           </ViewTransitionLink>
           {showAdminActivity && <ServerActivity hideWhenEmpty />}
           <Link
             to="/settings/playback"
-            className="bg-primary text-primary-foreground flex h-9 w-9 items-center justify-center rounded-xl text-xs font-bold shadow-[0_16px_32px_-22px_rgba(0,0,0,0.7)]"
+            className="bg-primary text-primary-foreground flex h-11 w-11 items-center justify-center rounded-xl text-xs font-bold shadow-[0_16px_32px_-22px_rgba(0,0,0,0.7)]"
           >
             {profile?.name?.charAt(0).toUpperCase() ??
               user?.username?.charAt(0).toUpperCase() ??
@@ -188,7 +188,7 @@ export default function Layout({ children }: LayoutProps) {
       {/* Main content — offset by sidebar width on desktop */}
       <main
         id="main-content"
-        className={`main-transition relative min-h-screen ${
+        className={`main-transition relative min-h-[100dvh] ${
           isDetailImmersion ? "lg:ml-16" : "lg:ml-[260px]"
         } ${hasBackgroundBar ? "pb-32 sm:pb-36" : ""}`}
         style={{ viewTransitionName: "main-content" }}

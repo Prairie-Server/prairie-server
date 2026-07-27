@@ -176,7 +176,7 @@ export function PlayerControls({
           utility rail right. Seek bar spans the full width above the row
           so the playhead is always anchored to the frame edge.           */}
       <div
-        className="player-hud player-rise absolute inset-x-0 bottom-0 z-10 px-3 pt-4 pb-3 sm:px-6 sm:pb-5"
+        className="player-hud player-rise absolute inset-x-0 bottom-0 z-10 px-3 pt-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-6 sm:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]"
         onClick={(e) => e.stopPropagation()}
       >
         <SeekBar
@@ -194,10 +194,11 @@ export function PlayerControls({
         {/* Grid keeps the playback cluster visually locked to the centerline
             of the frame regardless of how long the title or utility rail is.
             `minmax(0,1fr)` forces the side columns to honor 1fr behaviour
-            rather than growing with their content — the cluster stays put. */}
-        <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-5">
-          {/* ─── Left: Title / episode / time ─── */}
-          <div className="flex min-w-0 flex-col gap-0.5">
+            rather than growing with their content — the cluster stays put.
+            Below sm the title column collapses so the utility rail has room. */}
+        <div className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] items-center gap-2 sm:grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] sm:gap-5">
+          {/* ─── Left: Title / episode / time (sm+) ─── */}
+          <div className="hidden min-w-0 flex-col gap-0.5 sm:flex">
             {title ? (
               <div
                 className="truncate text-[15px] leading-tight font-semibold tracking-tight text-white sm:text-base"
@@ -233,7 +234,7 @@ export function PlayerControls({
               exactly on the cluster's centerline even at the first or last
               episode. For movies the slots are omitted entirely, leaving a
               symmetric 3-button cluster that's also perfectly centered. */}
-          <div className="flex items-center justify-center gap-2 sm:gap-3">
+          <div className="flex items-center justify-start gap-2 sm:justify-center sm:gap-3">
             {showEpisodeSlots ? (
               hasPrevEpisode ? (
                 <CircleButton
@@ -298,7 +299,17 @@ export function PlayerControls({
           </div>
 
           {/* ─── Right: Utility rail ─── */}
-          <div className="flex items-center justify-end gap-0.5">
+          <div className="flex min-w-0 items-center justify-end gap-0.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+            {/* Mute always available; full slider from sm+ */}
+            <div className="sm:hidden">
+              <VolumeControl
+                volume={volume}
+                muted={muted}
+                onVolumeChange={onVolumeChange}
+                onMutedChange={onMutedChange}
+                showSlider={false}
+              />
+            </div>
             <div className="hidden sm:block">
               <VolumeControl
                 volume={volume}
@@ -348,7 +359,7 @@ export function PlayerControls({
             {markerEditAvailable && onToggleMarkerEdit && (
               <button
                 type="button"
-                className="player-utility-btn"
+                className="player-utility-btn hidden sm:inline-flex"
                 onClick={onToggleMarkerEdit}
                 aria-label="Edit markers"
                 aria-pressed={markerEditActive}
@@ -361,7 +372,7 @@ export function PlayerControls({
 
             <button
               type="button"
-              className="player-utility-btn"
+              className="player-utility-btn hidden sm:inline-flex"
               onClick={onTogglePlaybackInfo}
               aria-label="Playback info"
               data-active={showPlaybackInfo ? "true" : "false"}
@@ -372,7 +383,7 @@ export function PlayerControls({
             {onTogglePiP && document.pictureInPictureEnabled && (
               <button
                 type="button"
-                className="player-utility-btn"
+                className="player-utility-btn hidden sm:inline-flex"
                 onClick={onTogglePiP}
                 aria-label="Picture in Picture (P)"
                 title="Picture in Picture (P)"

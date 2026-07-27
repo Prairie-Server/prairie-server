@@ -45,7 +45,7 @@ export default function BulkApplyDialog({ open, onClose, onConfirm }: Props) {
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-      <div className="w-[420px] rounded-xl border border-white/10 bg-zinc-900 p-5">
+      <div className="mx-4 w-full max-w-[420px] rounded-xl border border-white/10 bg-zinc-900 p-5">
         <h3 className="mb-3 text-sm font-semibold">Apply to which libraries?</h3>
         <div className="max-h-[40vh] space-y-2 overflow-y-auto">
           {libraries.map((l) => (

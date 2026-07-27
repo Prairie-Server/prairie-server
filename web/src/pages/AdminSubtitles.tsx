@@ -151,7 +151,7 @@ export default function AdminSubtitles() {
                 setPage(0);
               }}
             >
-              <SelectTrigger className="w-[110px]">
+              <SelectTrigger className="w-full sm:w-[110px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

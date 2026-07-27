@@ -309,7 +309,7 @@ export function SubtitleSearchModal({
         )}
 
         {/* Results */}
-        <div className="max-h-[60vh] overflow-y-auto px-4 pb-4">
+        <div className="max-h-[min(60dvh,24rem)] overflow-y-auto px-4 pb-4">
           {results.length === 0 && !searching && !error && (
             <p className="py-6 text-center text-xs text-white/40">
               Select a language and press Search.

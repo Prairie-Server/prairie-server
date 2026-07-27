@@ -42,7 +42,7 @@ export function PlayerSettingsMenu({ prefs }: PlayerSettingsMenuProps) {
         <div
           role="dialog"
           aria-label="Player settings"
-          className="absolute right-0 bottom-full mb-2 flex w-[260px] flex-col gap-4 rounded-lg bg-black/90 px-4 py-3.5 shadow-xl backdrop-blur-sm"
+          className="absolute right-0 bottom-full mb-2 flex w-[min(260px,calc(100vw-1rem))] flex-col gap-4 rounded-lg bg-black/90 px-4 py-3.5 shadow-xl backdrop-blur-sm"
         >
           <SkipIntervalRow label="Skip back" value={prefs.skipBack} onChange={prefs.setSkipBack} />
           <SkipIntervalRow

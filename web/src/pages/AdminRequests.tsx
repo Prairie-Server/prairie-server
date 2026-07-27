@@ -186,7 +186,7 @@ function RequestQueueTab() {
     <div className="space-y-4">
       <div className="border-border bg-card flex flex-wrap items-center gap-3 rounded-lg border p-3">
         <Select value={status} onValueChange={(value) => setStatus(value as StatusFilter)}>
-          <SelectTrigger className="w-[170px]">
+          <SelectTrigger className="w-full sm:w-[170px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -198,7 +198,7 @@ function RequestQueueTab() {
           </SelectContent>
         </Select>
         <Select value={outcome} onValueChange={(value) => setOutcome(value as OutcomeFilter)}>
-          <SelectTrigger className="w-[170px]">
+          <SelectTrigger className="w-full sm:w-[170px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>

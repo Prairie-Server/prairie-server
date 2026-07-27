@@ -349,7 +349,7 @@ function Step1FiltersAndPreview({
         />
       )}
 
-      <div className="bg-background/95 supports-[backdrop-filter]:bg-background/70 fixed right-4 bottom-4 z-40 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-xl backdrop-blur sm:right-6 lg:right-10 xl:right-12">
+      <div className="bg-background/95 supports-[backdrop-filter]:bg-background/70 bottom-safe-3 fixed right-4 z-40 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-xl backdrop-blur sm:right-6 lg:right-10 xl:right-12">
         <span className="text-muted-foreground hidden text-xs sm:inline">
           {adminMissingLibrary
             ? "Pick at least one library to continue"
@@ -681,7 +681,7 @@ function SaveBar({
   saveLabel: string;
 }) {
   return (
-    <div className="bg-background/95 supports-[backdrop-filter]:bg-background/70 fixed right-4 bottom-4 z-40 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-xl backdrop-blur sm:right-6 lg:right-10 xl:right-12">
+    <div className="bg-background/95 supports-[backdrop-filter]:bg-background/70 bottom-safe-3 fixed right-4 z-40 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-xl backdrop-blur sm:right-6 lg:right-10 xl:right-12">
       <Button type="button" variant="outline" size="sm" onClick={onBack} disabled={isPending}>
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back

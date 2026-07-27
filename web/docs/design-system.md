@@ -233,9 +233,10 @@ Colors are organized as semantic layers. Theme files provide the actual values; 
 
 The hero should feel cinematic, not like a banner. On first load the hero should dominate the viewport, with content rows discoverable via scroll.
 
-- Mobile: `h-[60vh]`, `min-h-[400px]`
-- Desktop: `h-[75vh]`, `min-h-[500px]`, `max-h-[900px]`
+- Mobile: `h-[60dvh]`, `min-h-[400px]` (prefer `dvh` over `vh` so mobile browser chrome does not leave dead space)
+- Desktop: `h-[75dvh]`, `min-h-[500px]`, `max-h-[900px]`
 - Detail page heroes can be taller since they are the entire context for the page
+- Fixed/sticky top and bottom chrome should clear notches and home indicators via `env(safe-area-inset-*)` (see `.pt-safe` / `.pb-safe-offset` utilities in `app.css`)
 
 ## Motion
 
