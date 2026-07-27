@@ -118,13 +118,13 @@ func TestSVTOutputSize(t *testing.T) {
 	cases := []struct {
 		w, h, wantW, wantH int
 	}{
-		{500, 80, 500, 80},   // landscape already safe
-		{500, 55, 582, 64},   // short edge upscaled to 64, aspect kept
-		{40, 30, 86, 64},     // both below floor
-		{501, 80, 502, 80},   // odd width → +1 pad
-		{500, 81, 500, 82},   // odd height → +1 pad
-		{64, 64, 64, 64},     // exact floor
-		{63, 100, 64, 102},   // width floor + even height
+		{500, 80, 500, 80}, // landscape already safe
+		{500, 55, 582, 64}, // short edge upscaled to 64, aspect kept
+		{40, 30, 86, 64},   // both below floor
+		{501, 80, 502, 80}, // odd width → +1 pad
+		{500, 81, 500, 82}, // odd height → +1 pad
+		{64, 64, 64, 64},   // exact floor
+		{63, 100, 64, 102}, // width floor + even height
 	}
 	for _, tc := range cases {
 		gotW, gotH := svtOutputSize(tc.w, tc.h)
