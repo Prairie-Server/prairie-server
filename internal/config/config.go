@@ -344,11 +344,15 @@ type MetadataConfig struct {
 	// AVIFEncoder selects the still-image AVIF backend: auto|svt|nvenc|wasm.
 	// auto prefers NVENC (Ada+) when available, else SVT-AV1 via ffmpeg, else WASM.
 	AVIFEncoder string `yaml:"-"`
-	// AVIFFFmpegPath is the ffmpeg binary for svt/nvenc (needs libsvtav1 + avif muxer).
-	// Empty → "ffmpeg". Distinct from playback.ffmpeg_path (jellyfin-ffmpeg).
+	// AVIFFFmpegPath is the ffmpeg binary for svt/nvenc/webp (needs libsvtav1 +
+	// avif muxer for AVIF; libwebp for WebP). Empty → "ffmpeg". Distinct from
+	// playback.ffmpeg_path (jellyfin-ffmpeg).
 	AVIFFFmpegPath string `yaml:"-"`
 	// AVIFNVENCSessions caps concurrent NVENC still encodes. 0 → 3.
 	AVIFNVENCSessions int `yaml:"-"`
+	// WebPEncoder selects the still-image WebP backend: auto|ffmpeg|wasm.
+	// auto prefers ffmpeg/libwebp when available, else WASM.
+	WebPEncoder string `yaml:"-"`
 }
 
 // ArtworkConfig holds local artwork cache settings used when public S3 is off.

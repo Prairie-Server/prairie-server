@@ -230,6 +230,7 @@ type ChannelPatch struct {
 	Enabled        *bool
 	NumberOverride *string
 	GuideStationID *string
+	LogoURL        *string
 }
 
 type SessionCreate struct {

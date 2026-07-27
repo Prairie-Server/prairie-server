@@ -1225,6 +1225,9 @@ func (s *memoryStore) UpdateChannel(_ context.Context, id string, patch ChannelP
 	if patch.GuideStationID != nil {
 		ch.GuideStationID = *patch.GuideStationID
 	}
+	if patch.LogoURL != nil {
+		ch.LogoURL = *patch.LogoURL
+	}
 	s.channels[id] = ch
 	return &ch, nil
 }

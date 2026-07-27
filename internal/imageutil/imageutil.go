@@ -1,15 +1,11 @@
 // Package imageutil provides image resizing and thumbhash generation
 // for collection poster and backdrop uploads.
 //
-// Resizing and WebP encoding run in-process via an embedded Rust WASI module
-// (tools/imageutil-wasm) executed by wazero — CGO-free, sandboxed decode.
-//
-// AVIF siblings use a pluggable native backend by default (SVT-AV1 via ffmpeg
-// subprocess, optional AV1 NVENC with CPU fallback). The legacy rav1e-WASM
-// path remains available as metadata.avif_encoder=wasm. Trading hermetic
-// vendored-WASM AVIF for native libs in the Docker image (debian ffmpeg /
-// libsvtav1) is intentional: WASM rav1e cannot match native SIMD/threads on
-// small nodes.
+// WebP and AVIF still-image work prefer native ffmpeg backends (libwebp /
+// libsvtav1, optional AV1 NVENC) with the embedded Rust WASI module as
+// fallback. Trading hermetic vendored-WASM encode for native libs in the
+// Docker image is intentional: WASM cannot match native SIMD/threads on
+// small nodes. Hostile-byte decode stays in ffmpeg/WASI — not CGO libvips.
 package imageutil
 
 import (
@@ -72,12 +68,16 @@ func GenerateVariants(data []byte, widths []int) (*VariantResult, error) {
 
 // GenerateWebPVariants is the fast phase of artwork caching: WebP only, no
 // AVIF. Callers that need AVIF coverage schedule GenerateAVIFSiblings afterward.
+// Uses the configured native ffmpeg/libwebp backend when available, else WASM.
 func GenerateWebPVariants(data []byte, widths []int) (*VariantResult, error) {
-	return generateVariants(data, widths, "webp")
+	if forceWebPWASMForTest.Load() {
+		return generateVariants(data, widths, "webp")
+	}
+	return currentWebPEncoder().GenerateVariants(context.Background(), data, widths)
 }
 
-// GenerateAVIFSiblings resizes the display-width ladder (WebP via WASM) then
-// encodes AVIF siblings with the configured backend (svt/nvenc/wasm).
+// GenerateAVIFSiblings resizes the display-width ladder (WebP via the configured
+// backend) then encodes AVIF siblings with the configured AVIF backend.
 // The "original" key keeps WebP only: full-size AVIF dominates encode cost and
 // clients already fall through to WebP for it. Callers discard regenerated
 // WebP and upload only the AVIF payloads.
@@ -109,11 +109,11 @@ func generateVariants(data []byte, widths []int, formats string, noAVIFKeys ...s
 // a square original plus resized square variants, encoded as WebP with AVIF
 // siblings.
 func GenerateSquareVariants(data []byte, sizes []int) (*VariantResult, error) {
-	p, err := getProcessor()
-	if err != nil {
-		return nil, err
-	}
 	if ActiveAVIFBackend() == BackendWASM || forceWASMForTest.Load() {
+		p, err := getProcessor()
+		if err != nil {
+			return nil, err
+		}
 		args := []string{
 			"--quality", strconv.Itoa(webpQuality),
 			"--avif-speed", strconv.Itoa(avifSpeed),
@@ -124,15 +124,26 @@ func GenerateSquareVariants(data []byte, sizes []int) (*VariantResult, error) {
 		}
 		return p.run(context.Background(), "square-variants", data, args)
 	}
-	args := []string{
-		"--quality", strconv.Itoa(webpQuality),
-		"--avif-speed", strconv.Itoa(avifSpeed),
-		"--formats", "webp",
+
+	var webp *VariantResult
+	var err error
+	if forceWebPWASMForTest.Load() || ActiveWebPBackend() == WebPBackendWASM {
+		p, perr := getProcessor()
+		if perr != nil {
+			return nil, perr
+		}
+		args := []string{
+			"--quality", strconv.Itoa(webpQuality),
+			"--avif-speed", strconv.Itoa(avifSpeed),
+			"--formats", "webp",
+		}
+		if csv := joinUintCSV(sizes); csv != "" {
+			args = append(args, "--sizes", csv)
+		}
+		webp, err = p.run(context.Background(), "square-variants", data, args)
+	} else {
+		webp, err = currentWebPEncoder().GenerateSquareVariants(context.Background(), data, sizes)
 	}
-	if csv := joinUintCSV(sizes); csv != "" {
-		args = append(args, "--sizes", csv)
-	}
-	webp, err := p.run(context.Background(), "square-variants", data, args)
 	if err != nil {
 		return nil, err
 	}

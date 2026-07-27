@@ -1424,6 +1424,7 @@ func main() {
 			}
 			avifBackfillProcessor = metadata.NewAVIFBackfillProcessor(avifBackfillJobs, imageCacher)
 			configureAVIFEncoder(cfg)
+			configureWebPEncoder(cfg)
 			avifWorkers := metadata.ResolveAVIFBackfillWorkersFor(
 				cfg.Metadata.AVIFBackfillWorkers,
 				imageutil.ActiveAVIFBackend(),
@@ -1431,11 +1432,11 @@ func main() {
 			)
 			avifBackfillProcessor.SetWorkers(avifWorkers)
 			imageCacher.SetAVIFBackfillConcurrency(avifWorkers)
-			imageutil.SetEncodeBudgetSize(avifWorkers) // CPU: slots≈workers≈cores; NVENC: slots≈sessions
-			if imageutil.ActiveAVIFBackend() != imageutil.BackendNVENC {
-				// On CPU backends the shared budget must stay at NumCPU even when
-				// AVIF workers are lowered — WebP cache workers share the same pool.
-				imageutil.SetEncodeBudgetSize(0)
+			// Shared WebP+AVIF in-flight cap: NumCPU on CPU backends so a 4-core
+			// box is not oversubscribed by (WebP workers)+(AVIF workers).
+			imageutil.SetEncodeBudgetSize(0)
+			if imageutil.ActiveAVIFBackend() == imageutil.BackendNVENC {
+				imageutil.SetEncodeBudgetSize(avifWorkers)
 			}
 			if artworkChecker := artworkObjectChecker(deps); artworkChecker != nil {
 				avifBackfillProcessor.SetDiscoverer(metadata.NewAVIFSiblingReconciler(deps.DB, artworkChecker))
@@ -1452,6 +1453,7 @@ func main() {
 				metadataImageCacheProcessor.SetEnabled(updated.Metadata.CacheImages)
 				avifBackfillProcessor.SetEnabled(updated.Metadata.CacheImages)
 				configureAVIFEncoder(updated)
+				configureWebPEncoder(updated)
 				avifWorkers := metadata.ResolveAVIFBackfillWorkersFor(
 					updated.Metadata.AVIFBackfillWorkers,
 					imageutil.ActiveAVIFBackend(),
@@ -1459,10 +1461,9 @@ func main() {
 				)
 				avifBackfillProcessor.SetWorkers(avifWorkers)
 				imageCacher.SetAVIFBackfillConcurrency(avifWorkers)
+				imageutil.SetEncodeBudgetSize(0)
 				if imageutil.ActiveAVIFBackend() == imageutil.BackendNVENC {
 					imageutil.SetEncodeBudgetSize(avifWorkers)
-				} else {
-					imageutil.SetEncodeBudgetSize(0)
 				}
 				if updated.Metadata.CacheImages && !wasEnabled {
 					// Enabling caching must backfill existing item posters, not
@@ -2088,6 +2089,21 @@ func main() {
 			dvrPath = config.DefaultLiveTVDVRPath
 		}
 		liveTVSvc.SetRecorder(livetv.NewRecorder(liveTVSvc, dvrPath, ffmpegPath))
+		// Lazy Live TV artwork (channel logos + visible programme images) shares
+		// the WebP/AVIF pipeline; fall through to provider URLs until cached.
+		if imageCacher != nil && deps.ImageResolver != nil {
+			livetvArt := livetv.NewArtworkCache(deps.DB, imageCacher, deps.ImageResolver)
+			if deleter := artworkRevisionDeleter(deps); deleter != nil {
+				livetvArt.SetObjectDeleter(deleter)
+			}
+			livetvArt.SetEnabled(cfg.Metadata.CacheImages)
+			liveTVSvc.SetArtworkCache(livetvArt)
+			configWatcher.OnChange(func(_, updated *config.Config) {
+				if updated != nil {
+					livetvArt.SetEnabled(updated.Metadata.CacheImages)
+				}
+			})
+		}
 		deps.LiveTV = liveTVSvc
 	}
 
@@ -3014,6 +3030,19 @@ func configureAVIFEncoder(cfg *config.Config) {
 		EnableNVENC:   true,
 	}); err != nil {
 		slog.Warn("imageutil: AVIF encoder configure failed; keeping previous backend",
+			"component", "imageutil", "error", err)
+	}
+}
+
+func configureWebPEncoder(cfg *config.Config) {
+	if cfg == nil {
+		return
+	}
+	if _, err := imageutil.ConfigureWebPEncoder(imageutil.WebPEncoderConfig{
+		Backend:    cfg.Metadata.WebPEncoder,
+		FFmpegPath: cfg.Metadata.AVIFFFmpegPath,
+	}); err != nil {
+		slog.Warn("imageutil: WebP encoder configure failed; keeping previous backend",
 			"component", "imageutil", "error", err)
 	}
 }

@@ -67,6 +67,7 @@ type Service struct {
 	httpClient     *http.Client
 	playbackBridge PlaybackBridge
 	recorder       *Recorder
+	artwork        *ArtworkCache
 	now            func() time.Time
 }
 
@@ -129,6 +130,22 @@ func (s *Service) SetPlaybackBridge(bridge PlaybackBridge) {
 // SetRecorder attaches the FFmpeg DVR recorder used by ProcessRecordings.
 func (s *Service) SetRecorder(recorder *Recorder) {
 	s.recorder = recorder
+}
+
+// SetArtworkCache attaches the lazy Live TV WebP/AVIF artwork cache.
+func (s *Service) SetArtworkCache(cache *ArtworkCache) {
+	if s != nil {
+		s.artwork = cache
+	}
+}
+
+// ReapExpiredArtwork deletes expired programme artwork from the cache index
+// and object storage. Safe to call from the guide sync task.
+func (s *Service) ReapExpiredArtwork(ctx context.Context) (int, error) {
+	if s == nil || s.artwork == nil {
+		return 0, nil
+	}
+	return s.artwork.ReapExpired(ctx, 500)
 }
 
 // PlaybackBridge returns the configured bridge, if any.
@@ -417,7 +434,14 @@ func (s *Service) ListChannels(ctx context.Context, tunerID string) ([]Channel, 
 	if err := s.requireStore(); err != nil {
 		return nil, err
 	}
-	return s.store.ListChannels(ctx, tunerID)
+	channels, err := s.store.ListChannels(ctx, tunerID)
+	if err != nil {
+		return nil, err
+	}
+	if s.artwork != nil {
+		channels = s.artwork.EnrichChannels(ctx, channels)
+	}
+	return channels, nil
 }
 
 func (s *Service) GetChannel(ctx context.Context, id string) (*Channel, error) {
@@ -430,6 +454,12 @@ func (s *Service) GetChannel(ctx context.Context, id string) (*Channel, error) {
 	}
 	if channel == nil {
 		return nil, ErrNotFound
+	}
+	if s.artwork != nil {
+		enriched := s.artwork.EnrichChannels(ctx, []Channel{*channel})
+		if len(enriched) == 1 {
+			channel = &enriched[0]
+		}
 	}
 	return channel, nil
 }
@@ -825,6 +855,23 @@ func (s *Service) syncXMLSync(ctx context.Context, source *GuideSource) error {
 		return fmt.Errorf("%w: no channels mapped to XML sync stations; set guide station IDs or match channel numbers/callsigns", ErrInvalidArgument)
 	}
 
+	// Persist Gracenote station logos onto channels (stable, small set) so the
+	// artwork cache can WebP/AVIF them without scanning the full EPG.
+	stationThumb := map[string]string{}
+	for _, st := range stations {
+		stationThumb[strings.TrimSpace(st.ChannelID)] = gracenote.StationLogoURL(st.Thumbnail)
+	}
+	for channelID, stationID := range stationByChannelID {
+		logo := strings.TrimSpace(stationThumb[stationID])
+		if logo == "" {
+			continue
+		}
+		logoCopy := logo
+		if _, err := s.store.UpdateChannel(ctx, channelID, ChannelPatch{LogoURL: &logoCopy}); err != nil {
+			return err
+		}
+	}
+
 	channelByStation := map[string]string{}
 	for channelID, stationID := range stationByChannelID {
 		channelByStation[stationID] = channelID
@@ -1208,7 +1255,14 @@ func (s *Service) ListGuide(ctx context.Context, channelIDs []string, start, end
 	if err := s.requireStore(); err != nil {
 		return nil, err
 	}
-	return s.store.ListGuide(ctx, channelIDs, start, end)
+	programs, err := s.store.ListGuide(ctx, channelIDs, start, end)
+	if err != nil {
+		return nil, err
+	}
+	if s.artwork != nil {
+		programs = s.artwork.EnrichPrograms(ctx, programs)
+	}
+	return programs, nil
 }
 
 func (s *Service) GetProgram(ctx context.Context, id string) (*Program, error) {
@@ -1221,6 +1275,12 @@ func (s *Service) GetProgram(ctx context.Context, id string) (*Program, error) {
 	}
 	if program == nil {
 		return nil, ErrNotFound
+	}
+	if s.artwork != nil {
+		enriched := s.artwork.EnrichPrograms(ctx, []Program{*program})
+		if len(enriched) == 1 {
+			program = &enriched[0]
+		}
 	}
 	return program, nil
 }

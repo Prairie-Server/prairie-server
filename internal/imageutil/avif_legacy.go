@@ -43,8 +43,9 @@ func (wasmAVIFEncoder) Encode(ctx context.Context, imageBytes []byte, _ int) ([]
 	return nil, fmt.Errorf("wasm avif: no AVIF payload in manifest")
 }
 
-// encodeAVIFLadder resizes via WASM (WebP) then encodes display-width AVIFs
-// with the configured backend. original is skipped when listed in noAVIFKeys.
+// encodeAVIFLadder resizes via the configured WebP backend then encodes
+// display-width AVIFs with the configured AVIF backend. original is skipped
+// when listed in noAVIFKeys.
 func encodeAVIFLadder(ctx context.Context, data []byte, widths []int, noAVIFKeys []string) (*VariantResult, error) {
 	skip := map[string]bool{}
 	for _, k := range noAVIFKeys {
@@ -54,8 +55,7 @@ func encodeAVIFLadder(ctx context.Context, data []byte, widths []int, noAVIFKeys
 		}
 	}
 
-	// Resize through the WASI helper (sandboxed decode) — WebP only, fast.
-	webp, err := generateVariants(data, widths, "webp")
+	webp, err := GenerateWebPVariants(data, widths)
 	if err != nil {
 		return nil, err
 	}

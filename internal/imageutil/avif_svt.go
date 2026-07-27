@@ -66,6 +66,8 @@ func (e *svtEncoder) encodeUnlocked(ctx context.Context, imageBytes []byte) ([]b
 	// not oversubscribe (SVT otherwise grabs all cores per process).
 	args := []string{
 		"-hide_banner", "-loglevel", "error", "-y",
+		"-threads", "1",
+		"-filter_threads", "1",
 		"-i", inPath,
 	}
 	if vf := svtPrepareFilter(imageBytes); vf != "" {
@@ -82,6 +84,7 @@ func (e *svtEncoder) encodeUnlocked(ctx context.Context, imageBytes []byte) ([]b
 		outPath,
 	)
 	cmd := exec.CommandContext(ctx, e.ffmpeg, args...)
+	cmd.Env = append(os.Environ(), "OMP_NUM_THREADS=1")
 	var stderr bytes.Buffer
 	cmd.Stderr = &stderr
 	if err := cmd.Run(); err != nil {
