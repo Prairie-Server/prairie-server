@@ -292,6 +292,24 @@ export default function AdminLibraries() {
     });
   }
 
+  const libraryRowActivity = {
+    activeRefreshJobsByLibraryId,
+    activeScansByLibraryId,
+    lastMountCheckByLibraryId,
+    scanPending: scanMutation.isPending,
+    scanTarget: scanMutation.variables,
+    refreshPending: refreshMutation.isPending,
+    refreshTarget: refreshMutation.variables,
+    mountCheckPending: mountCheckMutation.isPending,
+    mountCheckTarget: mountCheckMutation.variables,
+    cancelScansPending: cancelScansMutation.isPending,
+    cancelScansTarget: cancelScansMutation.variables,
+    cancelJobPending: cancelAdminJobMutation.isPending,
+    cancelJobTarget: cancelAdminJobMutation.variables,
+    confirmCleanupPending: confirmEmptyRootCleanupMutation.isPending,
+    confirmCleanupTarget: confirmEmptyRootCleanupMutation.variables,
+  };
+
   if (isLoading) return <div className="p-8">Loading libraries...</div>;
 
   return (
@@ -407,26 +425,14 @@ export default function AdminLibraries() {
             >
               <TableBody>
                 {orderedLibraries.map((lib) => {
-                  const isScanning = scanMutation.isPending && scanMutation.variables === lib.id;
-                  const activeRefreshJob = activeRefreshJobsByLibraryId.get(lib.id);
-                  const activeLibraryScans = activeScansByLibraryId.get(lib.id) ?? [];
-                  const runningLibraryScans = activeLibraryScans.filter(
-                    (scan) => scan.status === "running",
-                  ).length;
-                  const queuedLibraryScans = activeLibraryScans.length - runningLibraryScans;
-                  const isRefreshStarting =
-                    refreshMutation.isPending && refreshMutation.variables === lib.id;
-                  const isCheckingMount =
-                    mountCheckMutation.isPending && mountCheckMutation.variables === lib.id;
-                  const mountCheck = lastMountCheckByLibraryId[lib.id];
-                  const hasActiveWork =
-                    activeRefreshJob !== undefined || activeLibraryScans.length > 0;
-                  const isCancellingLibraryScans =
-                    cancelScansMutation.isPending && cancelScansMutation.variables === lib.id;
-                  const isCancellingRefreshJob =
-                    activeRefreshJob !== undefined &&
-                    cancelAdminJobMutation.isPending &&
-                    cancelAdminJobMutation.variables === activeRefreshJob.id;
+                  const row = getLibraryRowState(lib, libraryRowActivity);
+                  const {
+                    activeRefreshJob,
+                    activeLibraryScans,
+                    runningLibraryScans,
+                    queuedLibraryScans,
+                    hasActiveWork,
+                  } = row;
                   return (
                     <Fragment key={lib.id}>
                       <SortableLibraryRow id={lib.id}>
@@ -483,121 +489,33 @@ export default function AdminLibraries() {
                         </TableCell>
                         <TableCell className="w-[15rem] align-middle">
                           <div className="flex flex-nowrap items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={cn(
-                                "h-7 w-7",
-                                activeLibraryScans.length > 0 && "text-destructive",
-                              )}
-                              title={
-                                activeLibraryScans.length > 0
-                                  ? "Stop Library Scans"
-                                  : "Scan Library"
-                              }
-                              aria-label={
-                                activeLibraryScans.length > 0
-                                  ? "Stop Library Scans"
-                                  : "Scan Library"
-                              }
-                              disabled={
-                                activeLibraryScans.length > 0
-                                  ? isCancellingLibraryScans
-                                  : isScanning
-                              }
-                              onClick={() => {
+                            <LibraryRowActions
+                              lib={lib}
+                              state={row}
+                              iconClassName="h-3 w-3"
+                              buttonClassName="h-7 w-7"
+                              onScanOrStop={() => {
                                 if (activeLibraryScans.length > 0) {
                                   cancelScansMutation.mutate(lib.id);
                                   return;
                                 }
                                 scanMutation.mutate(lib.id);
                               }}
-                            >
-                              {activeLibraryScans.length > 0 ? (
-                                <Square className="h-3 w-3 fill-current" />
-                              ) : (
-                                <RefreshCw
-                                  className={`h-3 w-3 ${isScanning ? "animate-spin" : ""}`}
-                                />
-                              )}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={cn("h-7 w-7", activeRefreshJob && "text-destructive")}
-                              title={activeRefreshJob ? "Stop Metadata Refresh" : "Rescan Metadata"}
-                              aria-label={
-                                activeRefreshJob ? "Stop Metadata Refresh" : "Rescan Metadata"
-                              }
-                              disabled={
-                                activeRefreshJob ? isCancellingRefreshJob : isRefreshStarting
-                              }
-                              onClick={() => {
+                              onRefreshOrStop={() => {
                                 if (activeRefreshJob) {
                                   cancelAdminJobMutation.mutate(activeRefreshJob.id);
                                   return;
                                 }
                                 refreshMutation.mutate(lib.id);
                               }}
-                            >
-                              {activeRefreshJob ? (
-                                <Square className="h-3 w-3 fill-current" />
-                              ) : (
-                                <DatabaseBackup className="h-3 w-3" />
-                              )}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              title={
-                                mountCheck ? formatMountCheckMessage(mountCheck) : "Verify Mounts"
-                              }
-                              aria-label={
-                                mountCheck ? formatMountCheckMessage(mountCheck) : "Verify Mounts"
-                              }
-                              disabled={isCheckingMount}
-                              onClick={() => handleMountCheck(lib.id)}
-                            >
-                              <MountCheckButtonIcon pending={isCheckingMount} result={mountCheck} />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              aria-label={`Edit ${lib.name}`}
-                              onClick={() => {
+                              onMountCheck={() => handleMountCheck(lib.id)}
+                              onEdit={() => {
                                 setEditingLib(lib);
                                 setDialogOpen(true);
                               }}
-                            >
-                              <Pencil className="h-3 w-3" aria-hidden="true" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              aria-label={`Delete ${lib.name}`}
-                              onClick={() => handleDelete(lib)}
-                            >
-                              <Trash2 className="h-3 w-3" aria-hidden="true" />
-                            </Button>
-                            {lib.scan_warning_code === "empty_root" ||
-                            lib.scan_warning_code === "dead_root" ? (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive h-7 w-7"
-                                title="Confirm cleanup for missing or empty roots"
-                                disabled={
-                                  confirmEmptyRootCleanupMutation.isPending &&
-                                  confirmEmptyRootCleanupMutation.variables === lib.id
-                                }
-                                onClick={() => handleConfirmEmptyRootCleanup(lib)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            ) : null}
+                              onDelete={() => handleDelete(lib)}
+                              onConfirmCleanup={() => handleConfirmEmptyRootCleanup(lib)}
+                            />
                           </div>
                         </TableCell>
                       </SortableLibraryRow>
@@ -725,24 +643,13 @@ export default function AdminLibraries() {
           </div>
         ) : (
           orderedLibraries.map((lib) => {
-            const isScanning = scanMutation.isPending && scanMutation.variables === lib.id;
-            const activeRefreshJob = activeRefreshJobsByLibraryId.get(lib.id);
-            const activeLibraryScans = activeScansByLibraryId.get(lib.id) ?? [];
-            const runningLibraryScans = activeLibraryScans.filter(
-              (scan) => scan.status === "running",
-            ).length;
-            const queuedLibraryScans = activeLibraryScans.length - runningLibraryScans;
-            const isRefreshStarting =
-              refreshMutation.isPending && refreshMutation.variables === lib.id;
-            const isCheckingMount =
-              mountCheckMutation.isPending && mountCheckMutation.variables === lib.id;
-            const mountCheck = lastMountCheckByLibraryId[lib.id];
-            const isCancellingLibraryScans =
-              cancelScansMutation.isPending && cancelScansMutation.variables === lib.id;
-            const isCancellingRefreshJob =
-              activeRefreshJob !== undefined &&
-              cancelAdminJobMutation.isPending &&
-              cancelAdminJobMutation.variables === activeRefreshJob.id;
+            const row = getLibraryRowState(lib, libraryRowActivity);
+            const {
+              activeRefreshJob,
+              activeLibraryScans,
+              runningLibraryScans,
+              queuedLibraryScans,
+            } = row;
 
             return (
               <div key={lib.id} className="flex flex-col gap-3 px-4 py-3">
@@ -776,82 +683,33 @@ export default function AdminLibraries() {
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center justify-end gap-1">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn("h-9 w-9", activeLibraryScans.length > 0 && "text-destructive")}
-                    title={activeLibraryScans.length > 0 ? "Stop Library Scans" : "Scan Library"}
-                    aria-label={
-                      activeLibraryScans.length > 0 ? "Stop Library Scans" : "Scan Library"
-                    }
-                    disabled={activeLibraryScans.length > 0 ? isCancellingLibraryScans : isScanning}
-                    onClick={() => {
+                  <LibraryRowActions
+                    lib={lib}
+                    state={row}
+                    iconClassName="h-3.5 w-3.5"
+                    buttonClassName="h-9 w-9"
+                    onScanOrStop={() => {
                       if (activeLibraryScans.length > 0) {
                         cancelScansMutation.mutate(lib.id);
                         return;
                       }
                       scanMutation.mutate(lib.id);
                     }}
-                  >
-                    {activeLibraryScans.length > 0 ? (
-                      <Square className="h-3.5 w-3.5 fill-current" />
-                    ) : (
-                      <RefreshCw className={`h-3.5 w-3.5 ${isScanning ? "animate-spin" : ""}`} />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className={cn("h-9 w-9", activeRefreshJob && "text-destructive")}
-                    title={activeRefreshJob ? "Stop Metadata Refresh" : "Rescan Metadata"}
-                    aria-label={activeRefreshJob ? "Stop Metadata Refresh" : "Rescan Metadata"}
-                    disabled={activeRefreshJob ? isCancellingRefreshJob : isRefreshStarting}
-                    onClick={() => {
+                    onRefreshOrStop={() => {
                       if (activeRefreshJob) {
                         cancelAdminJobMutation.mutate(activeRefreshJob.id);
                         return;
                       }
                       refreshMutation.mutate(lib.id);
                     }}
-                  >
-                    {activeRefreshJob ? (
-                      <Square className="h-3.5 w-3.5 fill-current" />
-                    ) : (
-                      <DatabaseBackup className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9"
-                    title={mountCheck ? formatMountCheckMessage(mountCheck) : "Verify Mounts"}
-                    aria-label={mountCheck ? formatMountCheckMessage(mountCheck) : "Verify Mounts"}
-                    disabled={isCheckingMount}
-                    onClick={() => handleMountCheck(lib.id)}
-                  >
-                    <MountCheckButtonIcon pending={isCheckingMount} result={mountCheck} />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9"
-                    aria-label={`Edit ${lib.name}`}
-                    onClick={() => {
+                    onMountCheck={() => handleMountCheck(lib.id)}
+                    onEdit={() => {
                       setEditingLib(lib);
                       setDialogOpen(true);
                     }}
-                  >
-                    <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9"
-                    aria-label={`Delete ${lib.name}`}
-                    onClick={() => handleDelete(lib)}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
-                  </Button>
+                    onDelete={() => handleDelete(lib)}
+                    onConfirmCleanup={() => handleConfirmEmptyRootCleanup(lib)}
+                  />
                 </div>
               </div>
             );
@@ -1091,6 +949,183 @@ function ScanQueueGroup({
 
 function getLibraryScanGroupName(library: Library | null, libraryID: number) {
   return library?.name ?? `Library #${libraryID}`;
+}
+
+/** Shared derived activity flags for one library row (desktop table + mobile cards). */
+function getLibraryRowState(
+  lib: Library,
+  ctx: {
+    activeRefreshJobsByLibraryId: Map<number, AdminJob>;
+    activeScansByLibraryId: Map<number, ScanRun[]>;
+    lastMountCheckByLibraryId: Record<number, LibraryMountCheckResponse | undefined>;
+    scanPending: boolean;
+    scanTarget: number | undefined;
+    refreshPending: boolean;
+    refreshTarget: number | undefined;
+    mountCheckPending: boolean;
+    mountCheckTarget: number | undefined;
+    cancelScansPending: boolean;
+    cancelScansTarget: number | undefined;
+    cancelJobPending: boolean;
+    cancelJobTarget: string | undefined;
+    confirmCleanupPending: boolean;
+    confirmCleanupTarget: number | undefined;
+  },
+) {
+  const isScanning = ctx.scanPending && ctx.scanTarget === lib.id;
+  const activeRefreshJob = ctx.activeRefreshJobsByLibraryId.get(lib.id);
+  const activeLibraryScans = ctx.activeScansByLibraryId.get(lib.id) ?? [];
+  const runningLibraryScans = activeLibraryScans.filter((scan) => scan.status === "running").length;
+  const queuedLibraryScans = activeLibraryScans.length - runningLibraryScans;
+  const isRefreshStarting = ctx.refreshPending && ctx.refreshTarget === lib.id;
+  const isCheckingMount = ctx.mountCheckPending && ctx.mountCheckTarget === lib.id;
+  const mountCheck = ctx.lastMountCheckByLibraryId[lib.id];
+  const hasActiveWork = activeRefreshJob !== undefined || activeLibraryScans.length > 0;
+  const isCancellingLibraryScans = ctx.cancelScansPending && ctx.cancelScansTarget === lib.id;
+  const isCancellingRefreshJob =
+    activeRefreshJob !== undefined &&
+    ctx.cancelJobPending &&
+    ctx.cancelJobTarget === activeRefreshJob.id;
+  const isConfirmingCleanup = ctx.confirmCleanupPending && ctx.confirmCleanupTarget === lib.id;
+  const needsRootCleanup =
+    lib.scan_warning_code === "empty_root" || lib.scan_warning_code === "dead_root";
+
+  return {
+    isScanning,
+    activeRefreshJob,
+    activeLibraryScans,
+    runningLibraryScans,
+    queuedLibraryScans,
+    isRefreshStarting,
+    isCheckingMount,
+    mountCheck,
+    hasActiveWork,
+    isCancellingLibraryScans,
+    isCancellingRefreshJob,
+    isConfirmingCleanup,
+    needsRootCleanup,
+  };
+}
+
+type LibraryRowState = ReturnType<typeof getLibraryRowState>;
+
+function LibraryRowActions({
+  lib,
+  state,
+  iconClassName,
+  buttonClassName,
+  onScanOrStop,
+  onRefreshOrStop,
+  onMountCheck,
+  onEdit,
+  onDelete,
+  onConfirmCleanup,
+}: {
+  lib: Library;
+  state: LibraryRowState;
+  iconClassName: string;
+  buttonClassName: string;
+  onScanOrStop: () => void;
+  onRefreshOrStop: () => void;
+  onMountCheck: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
+  onConfirmCleanup: () => void;
+}) {
+  const {
+    isScanning,
+    activeRefreshJob,
+    activeLibraryScans,
+    isRefreshStarting,
+    isCheckingMount,
+    mountCheck,
+    isCancellingLibraryScans,
+    isCancellingRefreshJob,
+    isConfirmingCleanup,
+    needsRootCleanup,
+  } = state;
+  const hasActiveScans = activeLibraryScans.length > 0;
+
+  return (
+    <>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn(buttonClassName, hasActiveScans && "text-destructive")}
+        title={hasActiveScans ? "Stop Library Scans" : "Scan Library"}
+        aria-label={hasActiveScans ? "Stop Library Scans" : "Scan Library"}
+        disabled={hasActiveScans ? isCancellingLibraryScans : isScanning}
+        onClick={onScanOrStop}
+      >
+        {hasActiveScans ? (
+          <Square className={cn(iconClassName, "fill-current")} />
+        ) : (
+          <RefreshCw className={cn(iconClassName, isScanning && "animate-spin")} />
+        )}
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={cn(buttonClassName, activeRefreshJob && "text-destructive")}
+        title={activeRefreshJob ? "Stop Metadata Refresh" : "Rescan Metadata"}
+        aria-label={activeRefreshJob ? "Stop Metadata Refresh" : "Rescan Metadata"}
+        disabled={activeRefreshJob ? isCancellingRefreshJob : isRefreshStarting}
+        onClick={onRefreshOrStop}
+      >
+        {activeRefreshJob ? (
+          <Square className={cn(iconClassName, "fill-current")} />
+        ) : (
+          <DatabaseBackup className={iconClassName} />
+        )}
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={buttonClassName}
+        title={mountCheck ? formatMountCheckMessage(mountCheck) : "Verify Mounts"}
+        aria-label={mountCheck ? formatMountCheckMessage(mountCheck) : "Verify Mounts"}
+        disabled={isCheckingMount}
+        onClick={onMountCheck}
+      >
+        <MountCheckButtonIcon
+          className={iconClassName}
+          pending={isCheckingMount}
+          result={mountCheck}
+        />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={buttonClassName}
+        aria-label={`Edit ${lib.name}`}
+        onClick={onEdit}
+      >
+        <Pencil className={iconClassName} aria-hidden="true" />
+      </Button>
+      <Button
+        variant="ghost"
+        size="icon"
+        className={buttonClassName}
+        aria-label={`Delete ${lib.name}`}
+        onClick={onDelete}
+      >
+        <Trash2 className={iconClassName} aria-hidden="true" />
+      </Button>
+      {needsRootCleanup ? (
+        <Button
+          variant="ghost"
+          size="icon"
+          className={cn(buttonClassName, "text-destructive")}
+          title="Confirm cleanup for missing or empty roots"
+          aria-label={`Confirm cleanup for ${lib.name}`}
+          disabled={isConfirmingCleanup}
+          onClick={onConfirmCleanup}
+        >
+          <Trash2 className={iconClassName} />
+        </Button>
+      ) : null}
+    </>
+  );
 }
 
 function SortableLibraryRow({ id, children }: { id: number; children: React.ReactNode }) {
