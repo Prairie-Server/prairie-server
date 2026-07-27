@@ -87,7 +87,7 @@ export default function AdminSidebar({ onNavigate }: AdminSidebarProps) {
           aria-label="Go to app home"
           className="focus-visible:ring-ring/50 inline-flex rounded-md transition-opacity hover:opacity-85 focus-visible:ring-[3px] focus-visible:outline-none"
         >
-          <PrairieBrand className="brand-reveal h-14 w-[132px]" />
+          <PrairieBrand className="brand-reveal h-8 w-[12.5rem]" />
         </Link>
       </div>
       {/* Nav sections */}

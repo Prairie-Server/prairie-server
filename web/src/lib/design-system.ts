@@ -86,9 +86,9 @@ export const DESIGN_PRINCIPLES = [
       "wordmark or mark is a hero-level signal — not a small nav label. Product " +
       "headlines must not overpower the brand on those surfaces.",
     examples: [
-      "Login: PrairieBrand above the form, display-scale server name secondary",
+      "Login / empty home: mark + display-scale server name (not wordmark + title)",
       "App shell: wordmark sized for recognition in the sidebar and mobile header",
-      "Empty home: brand welcome composition before section rows",
+      "Empty home: compact brand welcome before section rows",
     ],
   },
   {
@@ -676,6 +676,7 @@ export const HERO_BANNER_SIZE_TALL = "h-[60dvh] min-h-[420px] max-h-[760px] lg:h
 
 /**
  * Brand welcome hero used when Home has no featured media slot.
- * Keeps the first viewport as one branded composition.
+ * Compact enough that section rows stay near the first viewport; tall
+ * enough for mark + server name + tagline as one composition.
  */
-export const HOME_BRAND_HERO_SIZE = "min-h-[42dvh] lg:min-h-[48dvh]";
+export const HOME_BRAND_HERO_SIZE = "min-h-[28dvh] lg:min-h-[32dvh]";

@@ -8,7 +8,7 @@ Code-backed tokens and utility constants live in [../src/lib/design-system.ts](.
 
 Prairie should feel **simple, pretty, and usable** — not like a generic dark SaaS / AI template (the trap Silo fell into). Cinema-first media discovery still leads, but branded surfaces are warm and human: dusk over open land, amber wheat, clear hierarchy, little chrome.
 
-**Do:** large Prairie wordmark, one quiet atmospheric plane, readable forms, content-forward browse.
+**Do:** clear Prairie brand (mark + name, or a single wordmark — never both stacked), one quiet atmospheric plane, readable forms, content-forward browse.
 **Don't:** stacked glow orbs, glassmorphism cards, purple gradients, pill clusters, dashboard-dense first viewports, Inter/Roboto defaults.
 
 ### Default theme: Prairie Dusk
@@ -46,7 +46,7 @@ Examples:
 - Login uses `AuthBrandHero` above the form.
 - Setup wizard, Profiles, and Activate Device use the same auth brand composition (`AuthBackground` + `AuthBrandHero`).
 - App shell and Admin mobile header use `PrairieBrand` (wordmark / mark), not glyph placeholders.
-- Empty home shows a brand welcome composition before section rows.
+- Empty home uses the same mark + server-name welcome as auth (not a second wordmark beside the sidebar).
 - Admin page titles use `.page-title` consistently with user settings.
 
 ### 1. Content Is King
