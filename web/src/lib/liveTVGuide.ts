@@ -75,7 +75,7 @@ export type GuideWindow = {
   pxPerMs: number;
 };
 
-export const GUIDE_HOUR_WIDTH_PX = 240;
+export const GUIDE_HOUR_WIDTH_PX = 360;
 
 /** Build a guide layout window snapped to half-hour boundaries. */
 export function buildGuideWindow(
@@ -155,7 +155,7 @@ export function layoutProgramsForChannel(
       start: program.start,
       stop: program.stop,
       leftPx: (clampedStart - window.startMs) * window.pxPerMs,
-      widthPx: Math.max(48, (clampedStop - clampedStart) * window.pxPerMs),
+      widthPx: Math.max(96, (clampedStop - clampedStart) * window.pxPerMs),
       isNow: start <= nowMs && stop > nowMs,
       canRecord: stop > nowMs,
     });

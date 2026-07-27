@@ -157,7 +157,7 @@ export default function LiveTV() {
   );
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-6 sm:px-6">
+    <div className="mx-auto flex w-full max-w-[100rem] flex-col gap-6 px-4 py-6 sm:px-6">
       <header className="space-y-1">
         <div className="flex flex-wrap items-center gap-3">
           <Radio className="text-primary h-7 w-7" aria-hidden />
