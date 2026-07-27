@@ -40,7 +40,8 @@ func appendUniquePath(paths []string, seen map[string]struct{}, path string) []s
 
 // artworkFormatsFromResolved picks canonical + signed sibling URLs from a
 // PresignURLsWithExpiry result. Missing sibling objects still get a signed URL
-// that 404s; clients fall through via ArtworkImage onError.
+// that 404s; clients fall through via ArtworkImage onError (AVIF→WebP→PNG).
+// New caches omit PNG; the PNG URL remains for legacy objects and older clients.
 func artworkFormatsFromResolved(resolved map[string]catalog.ResolvedImageURL, path string) artworkFormats {
 	if path == "" || path == "-" {
 		return artworkFormats{}

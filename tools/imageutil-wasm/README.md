@@ -56,7 +56,8 @@ cargo clippy --manifest-path tools/imageutil-wasm/Cargo.toml --all-targets -- -D
 ```
 
 CI runs the same gates in the `Rust imageutil` job. Canonical keys stay `.webp`;
-the web client prefers AVIF siblings, then WebP, with PNG as a further fallback.
+the web client prefers AVIF siblings, then WebP (PNG remains a signed fallback
+for legacy caches / older clients via 404 fall-through).
 
 ## CLI surface (used by Go)
 
@@ -64,13 +65,16 @@ the web client prefers AVIF siblings, then WebP, with PNG as a further fallback.
 imageutil-wasm --mode variants|square-variants|normalize-png \
   --input /in/src.bin --outdir /out \
   [--widths 500,300] [--sizes 512,256] \
-  [--quality 90] [--max-original 1920] [--max-dim 100] \
-  [--formats webp,avif,png]
+  [--quality 90] [--avif-speed 10] [--max-original 1920] [--max-dim 100] \
+  [--formats webp,avif]
 ```
 
+`--avif-speed` is the rav1e preset (1..=10; 10 = fastest). Go passes
+`avifSpeed=10` by default.
+
 Prints a JSON manifest on stdout. `ext` stays `.webp` (canonical cache key);
-AVIF and PNG siblings are listed per variant:
+AVIF (and optional PNG) siblings are listed per variant:
 
 ```json
-{"ext":".webp","variants":[{"key":"original","file":"original.webp","avif_file":"original.avif","png_file":"original.png"}]}
+{"ext":".webp","variants":[{"key":"original","file":"original.webp","avif_file":"original.avif"}]}
 ```

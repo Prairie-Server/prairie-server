@@ -13,9 +13,9 @@ import (
 	"golang.org/x/image/webp"
 )
 
-// fastFormats skips AVIF encode. Most tests only need WebP/PNG; AVIF is covered
+// fastFormats skips AVIF encode. Most tests only need WebP; AVIF is covered
 // by TestPublicVariantAPIs so CI stays cheap.
-const fastFormats = "webp,png"
+const fastFormats = "webp"
 
 func TestGenerateVariants(t *testing.T) {
 	t.Parallel()
@@ -58,8 +58,8 @@ func TestGenerateVariants(t *testing.T) {
 		if len(v.AVIF) != 0 {
 			t.Fatalf("variant %s unexpectedly included AVIF", v.Key)
 		}
-		if len(v.PNG) < 8 || string(v.PNG[:4]) != "\x89PNG" {
-			t.Fatalf("variant %s missing PNG payload", v.Key)
+		if len(v.PNG) != 0 {
+			t.Fatalf("variant %s unexpectedly included PNG", v.Key)
 		}
 	}
 }
@@ -67,7 +67,7 @@ func TestGenerateVariants(t *testing.T) {
 func TestPublicVariantAPIs(t *testing.T) {
 	t.Parallel()
 	// Exercises GenerateVariants / GenerateSquareVariants wrappers (default
-	// webp,avif,png) on a small canvas so CI time stays modest.
+	// webp,avif) on a small canvas so CI time stays modest.
 	src := makeTestJPEG(t, 160, 120)
 
 	result, err := GenerateVariants(src, []int{80})
@@ -79,6 +79,9 @@ func TestPublicVariantAPIs(t *testing.T) {
 		keys[v.Key] = true
 		if len(v.AVIF) < 12 || string(v.AVIF[4:8]) != "ftyp" {
 			t.Fatalf("variant %s missing AVIF payload", v.Key)
+		}
+		if len(v.PNG) != 0 {
+			t.Fatalf("variant %s unexpectedly included PNG", v.Key)
 		}
 	}
 	for _, key := range []string{"original", "w80"} {
@@ -143,8 +146,8 @@ func TestGenerateSquareVariants(t *testing.T) {
 		if cfg.Width != cfg.Height {
 			t.Fatalf("%s not square: %dx%d", v.Key, cfg.Width, cfg.Height)
 		}
-		if len(v.PNG) < 8 || string(v.PNG[:4]) != "\x89PNG" {
-			t.Fatalf("variant %s missing PNG payload", v.Key)
+		if len(v.PNG) != 0 {
+			t.Fatalf("variant %s unexpectedly included PNG", v.Key)
 		}
 		if v.Key == "w128" {
 			found = true
@@ -243,7 +246,10 @@ func mustRunVariants(t *testing.T, op, flagName string, data []byte, values []in
 	if err != nil {
 		t.Fatalf("getProcessor: %v", err)
 	}
-	args := append([]string{"--quality", strconv.Itoa(webpQuality)}, extraArgs...)
+	args := append([]string{
+		"--quality", strconv.Itoa(webpQuality),
+		"--avif-speed", strconv.Itoa(avifSpeed),
+	}, extraArgs...)
 	args = append(args, "--formats", formats)
 	if csv := joinUintCSV(values); csv != "" {
 		args = append(args, "--"+flagName, csv)

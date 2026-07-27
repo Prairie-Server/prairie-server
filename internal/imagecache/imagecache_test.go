@@ -188,6 +188,7 @@ func TestCacheBytesTracksExactRevisionBeforeUpload(t *testing.T) {
 	if err != nil {
 		t.Fatalf("CacheBytes: %v", err)
 	}
+	cacher.WaitAVIFBackfill()
 
 	calls := tracker.recorded()
 	if len(calls) != 1 {
@@ -199,11 +200,10 @@ func TestCacheBytesTracksExactRevisionBeforeUpload(t *testing.T) {
 	if calls[0].imageType != "poster" {
 		t.Fatalf("tracked image type = %q, want poster", calls[0].imageType)
 	}
-	wantKeys := make([]string, 0, len(result.VariantPaths)*3)
+	wantKeys := make([]string, 0, len(result.VariantPaths)*2)
 	for _, key := range result.VariantPaths {
 		wantKeys = append(wantKeys, key)
 		wantKeys = append(wantKeys, artworkkey.WebPAVIFSibling(key))
-		wantKeys = append(wantKeys, artworkkey.WebPPNGSibling(key))
 	}
 	sort.Strings(wantKeys)
 	if !slices.Equal(calls[0].objectKeys, wantKeys) {
@@ -297,6 +297,7 @@ func TestCache_Poster(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cache poster: %v", err)
 	}
+	c.WaitAVIFBackfill()
 
 	wantBase := "tmdb/movies/550/poster"
 	if result.BasePath != wantBase {
@@ -307,9 +308,9 @@ func TestCache_Poster(t *testing.T) {
 	}
 
 	keys := s3.keys()
-	// Expect 3 WebP variants + 3 AVIF + 3 PNG siblings: original, w500, w300
-	if len(keys) != 9 {
-		t.Errorf("expected 9 uploaded objects (webp+avif+png), got %d: %v", len(keys), keys)
+	// Expect 3 WebP variants + 3 AVIF siblings: original, w500, w300
+	if len(keys) != 6 {
+		t.Errorf("expected 6 uploaded objects (webp+avif), got %d: %v", len(keys), keys)
 	}
 	for _, variant := range []string{"original", "w500", "w300"} {
 		want := result.VariantPaths[variant]
@@ -318,9 +319,6 @@ func TestCache_Poster(t *testing.T) {
 		}
 		if !hasKey(keys, artworkkey.WebPAVIFSibling(want)) {
 			t.Errorf("missing AVIF sibling for %q in %v", want, keys)
-		}
-		if !hasKey(keys, artworkkey.WebPPNGSibling(want)) {
-			t.Errorf("missing PNG sibling for %q in %v", want, keys)
 		}
 	}
 }
@@ -344,10 +342,11 @@ func TestCacheSkipsUploadingVariantsThatAlreadyExist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("prime immutable variants: %v", err)
 	}
-	existing := make([]string, 0, 9)
+	c.WaitAVIFBackfill()
+	existing := make([]string, 0, 6)
 	for _, variant := range []string{"original", "w500", "w300"} {
 		key := first.VariantPaths[variant]
-		existing = append(existing, key, artworkkey.WebPAVIFSibling(key), artworkkey.WebPPNGSibling(key))
+		existing = append(existing, key, artworkkey.WebPAVIFSibling(key))
 	}
 	s3.setExisting(existing...)
 	s3.resetCalls()
@@ -355,14 +354,16 @@ func TestCacheSkipsUploadingVariantsThatAlreadyExist(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cache poster with existing variants: %v", err)
 	}
+	c.WaitAVIFBackfill()
 	if result.BasePath != wantBase {
 		t.Fatalf("BasePath = %q, want %q", result.BasePath, wantBase)
 	}
 	if got := s3.keys(); len(got) != 0 {
 		t.Fatalf("uploaded keys = %v, want none when variants already exist", got)
 	}
-	if result.UploadedVariants != 0 || result.ExistingVariants != 9 {
-		t.Fatalf("upload stats = uploaded %d existing %d, want uploaded 0 existing 9", result.UploadedVariants, result.ExistingVariants)
+	// Sync return counts WebP phase only; AVIF backfill also finds existing objects.
+	if result.UploadedVariants != 0 || result.ExistingVariants != 3 {
+		t.Fatalf("upload stats = uploaded %d existing %d, want uploaded 0 existing 3", result.UploadedVariants, result.ExistingVariants)
 	}
 	for _, key := range existing {
 		if !hasKey(s3.checkedKeys(), key) {
@@ -381,15 +382,17 @@ func TestCacheDifferentContentCreatesDifferentImmutableRevision(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cache first poster: %v", err)
 	}
+	c.WaitAVIFBackfill()
 	second, err := c.CacheBytes(context.Background(), png, req)
 	if err != nil {
 		t.Fatalf("cache replacement poster: %v", err)
 	}
+	c.WaitAVIFBackfill()
 	if first.Revision == second.Revision || first.OriginalPath == second.OriginalPath {
 		t.Fatalf("different content reused revision: first=%q second=%q", first.OriginalPath, second.OriginalPath)
 	}
-	if got := s3.keys(); len(got) != 18 {
-		t.Fatalf("uploaded keys = %v, want both immutable three-variant revisions with AVIF+PNG siblings", got)
+	if got := s3.keys(); len(got) != 12 {
+		t.Fatalf("uploaded keys = %v, want both immutable three-variant revisions with AVIF siblings", got)
 	}
 }
 
@@ -411,23 +414,22 @@ func TestCacheUploadsOnlyMissingVariants(t *testing.T) {
 	if err != nil {
 		t.Fatalf("prime immutable variants: %v", err)
 	}
+	c.WaitAVIFBackfill()
 	s3.setExisting(
 		first.VariantPaths["original"],
 		artworkkey.WebPAVIFSibling(first.VariantPaths["original"]),
-		artworkkey.WebPPNGSibling(first.VariantPaths["original"]),
 		first.VariantPaths["w500"],
 		artworkkey.WebPAVIFSibling(first.VariantPaths["w500"]),
-		artworkkey.WebPPNGSibling(first.VariantPaths["w500"]),
 	)
 	s3.resetCalls()
 	result, err := c.Cache(context.Background(), req)
 	if err != nil {
 		t.Fatalf("Cache poster with partial existing variants: %v", err)
 	}
+	c.WaitAVIFBackfill()
 	wantUploads := []string{
 		result.VariantPaths["w300"],
 		artworkkey.WebPAVIFSibling(result.VariantPaths["w300"]),
-		artworkkey.WebPPNGSibling(result.VariantPaths["w300"]),
 	}
 	got := s3.keys()
 	sort.Strings(got)
@@ -435,8 +437,9 @@ func TestCacheUploadsOnlyMissingVariants(t *testing.T) {
 	if !slices.Equal(got, wantUploads) {
 		t.Fatalf("uploaded keys = %v, want %v", got, wantUploads)
 	}
-	if result.UploadedVariants != 3 || result.ExistingVariants != 6 {
-		t.Fatalf("upload stats = uploaded %d existing %d, want uploaded 3 existing 6", result.UploadedVariants, result.ExistingVariants)
+	// Sync return counts WebP phase only (w300 upload + original/w500 existing).
+	if result.UploadedVariants != 1 || result.ExistingVariants != 2 {
+		t.Fatalf("upload stats = uploaded %d existing %d, want uploaded 1 existing 2", result.UploadedVariants, result.ExistingVariants)
 	}
 }
 
@@ -457,6 +460,7 @@ func TestCache_Backdrop(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cache backdrop: %v", err)
 	}
+	c.WaitAVIFBackfill()
 
 	wantBase := "tmdb/movies/550/backdrop"
 	if result.BasePath != wantBase {
@@ -464,9 +468,9 @@ func TestCache_Backdrop(t *testing.T) {
 	}
 
 	keys := s3.keys()
-	// Expect 4 WebP variants + 4 AVIF + 4 PNG siblings: original, w1920, w1280, w300
-	if len(keys) != 12 {
-		t.Errorf("expected 12 uploaded objects (webp+avif+png), got %d: %v", len(keys), keys)
+	// Expect 4 WebP variants + 4 AVIF siblings: original, w1920, w1280, w300
+	if len(keys) != 8 {
+		t.Errorf("expected 8 uploaded objects (webp+avif), got %d: %v", len(keys), keys)
 	}
 	for _, variant := range []string{"original", "w1920", "w1280", "w300"} {
 		want := result.VariantPaths[variant]
@@ -475,9 +479,6 @@ func TestCache_Backdrop(t *testing.T) {
 		}
 		if !hasKey(keys, artworkkey.WebPAVIFSibling(want)) {
 			t.Errorf("missing AVIF sibling for %q in %v", want, keys)
-		}
-		if !hasKey(keys, artworkkey.WebPPNGSibling(want)) {
-			t.Errorf("missing PNG sibling for %q in %v", want, keys)
 		}
 	}
 	// Must not have w500
@@ -503,6 +504,7 @@ func TestCache_Logo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cache logo: %v", err)
 	}
+	c.WaitAVIFBackfill()
 
 	wantBase := "tmdb/series/1396/logo"
 	if result.BasePath != wantBase {
@@ -510,9 +512,9 @@ func TestCache_Logo(t *testing.T) {
 	}
 
 	keys := s3.keys()
-	// Expect 2 WebP variants + 2 AVIF + 2 PNG siblings: original, w500 — NO w300 or w1280
-	if len(keys) != 6 {
-		t.Errorf("expected 6 uploaded objects (webp+avif+png), got %d: %v", len(keys), keys)
+	// Expect 2 WebP variants + 2 AVIF siblings: original, w500 — NO w300 or w1280
+	if len(keys) != 4 {
+		t.Errorf("expected 4 uploaded objects (webp+avif), got %d: %v", len(keys), keys)
 	}
 	for _, variant := range []string{"original", "w500"} {
 		want := result.VariantPaths[variant]
@@ -521,9 +523,6 @@ func TestCache_Logo(t *testing.T) {
 		}
 		if !hasKey(keys, artworkkey.WebPAVIFSibling(want)) {
 			t.Errorf("missing AVIF sibling for %q in %v", want, keys)
-		}
-		if !hasKey(keys, artworkkey.WebPPNGSibling(want)) {
-			t.Errorf("missing PNG sibling for %q in %v", want, keys)
 		}
 	}
 	for _, forbidden := range []string{"w300", "w1280"} {
@@ -554,6 +553,7 @@ func TestCache_ConvertsSVGLogo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cache SVG logo: %v", err)
 	}
+	c.WaitAVIFBackfill()
 	if result.Thumbhash == "" {
 		t.Fatal("Thumbhash is empty")
 	}
@@ -586,6 +586,7 @@ func TestCache_CapsLargeOriginalVariant(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cache large logo: %v", err)
 	}
+	c.WaitAVIFBackfill()
 	original := s3.objectData(result.OriginalPath)
 	if len(original) == 0 {
 		t.Fatal("missing original.webp upload")
@@ -620,6 +621,7 @@ func TestCache_LocalizedPosterUsesLanguageScopedPath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cache localized poster: %v", err)
 	}
+	c.WaitAVIFBackfill()
 
 	wantBase := "tmdb/series/1396/localizations/fr-ca/poster"
 	if result.BasePath != wantBase {
@@ -647,6 +649,7 @@ func TestCache_ProfileUsesProfileImagePath(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cache profile: %v", err)
 	}
+	c.WaitAVIFBackfill()
 
 	wantBase := "tmdb/people/287/profile"
 	if result.BasePath != wantBase {
@@ -741,6 +744,7 @@ func TestCache_SeasonPoster_NestsUnderSeries(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cache season poster: %v", err)
 	}
+	c.WaitAVIFBackfill()
 
 	wantBase := "tmdb/series/1396/seasons/2/poster"
 	if result.BasePath != wantBase {
@@ -774,6 +778,7 @@ func TestCache_EpisodeStill_NestsUnderSeasonAndEpisode(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cache episode still: %v", err)
 	}
+	c.WaitAVIFBackfill()
 
 	wantBase := "tmdb/series/1396/seasons/2/episodes/5/still"
 	if result.BasePath != wantBase {
@@ -841,6 +846,7 @@ func TestCache_SeasonZero_Specials(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cache specials poster: %v", err)
 	}
+	c.WaitAVIFBackfill()
 	if result.BasePath != "tmdb/series/1396/seasons/0/poster" {
 		t.Errorf("BasePath = %q, want %q", result.BasePath, "tmdb/series/1396/seasons/0/poster")
 	}
@@ -906,6 +912,7 @@ func TestCache_ResolvesPluginURL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Cache plugin URL: %v", err)
 	}
+	c.WaitAVIFBackfill()
 	if result.BasePath != "tmdb/movies/550/poster" {
 		t.Errorf("BasePath = %q, want %q", result.BasePath, "tmdb/movies/550/poster")
 	}

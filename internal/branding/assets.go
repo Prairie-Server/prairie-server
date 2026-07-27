@@ -69,7 +69,7 @@ var imageUploadTypes = map[string]bool{
 // imageVariantFunc matches imageutil.GenerateVariants / GenerateSquareVariants.
 type imageVariantFunc func(data []byte, sizes []int) (*imageutil.VariantResult, error)
 
-// processWebP re-encodes any accepted image to a size-capped WebP (+ AVIF/PNG
+// processWebP re-encodes any accepted image to a size-capped WebP (+ AVIF
 // siblings) using the given variant generator. The aspect ratio is preserved by
 // the generator; narrower images are not upscaled.
 func processWebP(generate imageVariantFunc, size int) func([]byte, string) ([]byte, []byte, []byte, string, string, error) {
