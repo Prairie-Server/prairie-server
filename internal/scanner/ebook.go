@@ -416,7 +416,7 @@ func validISBN10(candidate string) bool {
 	}
 	sum := 0
 	for i, r := range candidate {
-		value := 0
+		var value int
 		switch {
 		case r >= '0' && r <= '9':
 			value = int(r - '0')

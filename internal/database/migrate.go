@@ -65,7 +65,7 @@ func RunMigrations(ctx context.Context, pool *pgxpool.Pool, fsys fs.FS, dir stri
 	if err != nil {
 		return err
 	}
-	defer provider.Close()
+	defer func() { _ = provider.Close() }()
 
 	if _, err := provider.Up(ctx); err != nil {
 		return fmt.Errorf("running goose migrations: %w", err)
@@ -87,7 +87,7 @@ func MigrationStatuses(ctx context.Context, pool *pgxpool.Pool, fsys fs.FS, dir 
 	if err != nil {
 		return nil, err
 	}
-	defer provider.Close()
+	defer func() { _ = provider.Close() }()
 
 	gooseStatuses, err := provider.Status(ctx)
 	if err != nil {

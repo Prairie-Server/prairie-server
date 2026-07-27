@@ -300,7 +300,7 @@ func extractPathEvidence(filePath string, libraryType string) RootAssignment {
 		}
 	}
 
-	rootPath := parentDir
+	var rootPath string
 	if inferredType == itemTypeSeries {
 		rootPath = deriveInferSeriesRootPath(cleanFilePath, dirParts)
 	} else {

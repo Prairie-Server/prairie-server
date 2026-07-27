@@ -139,7 +139,6 @@ func buildListNextUpQuery(q NextUpQuery, limit int) (string, []interface{}) {
 	if q.DateCutoff != nil {
 		dateCutoffFilter = fmt.Sprintf(" AND uwp.updated_at >= $%d", argIdx)
 		args = append(args, *q.DateCutoff)
-		argIdx++
 	}
 
 	// When resumable items are disabled, suppress next-up only if the series has

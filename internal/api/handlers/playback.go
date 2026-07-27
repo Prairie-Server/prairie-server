@@ -3843,7 +3843,7 @@ func (h *PlaybackHandler) proxyToTranscodeNode(w http.ResponseWriter, r *http.Re
 	// WriteTimeout; roll the write deadline with progress instead.
 	sw := httpstream.NewRollingDeadlineWriter(w)
 	sw.WriteHeader(resp.StatusCode)
-	io.Copy(sw, resp.Body)
+	_, _ = io.Copy(sw, resp.Body)
 }
 
 // maybeStartThrottler reads throttle settings and starts the throttler if enabled.

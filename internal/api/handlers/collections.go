@@ -1013,13 +1013,12 @@ func (h *CollectionHandler) processCollectionPoster(
 	var fileData []byte
 	if isMultipart {
 		data, err := readCollectionImageMultipart(r, imageTypePoster)
-		switch err {
-		case nil:
+		if err != nil {
+			if !errors.Is(err, http.ErrMissingFile) {
+				return fmt.Errorf("poster: %w", err)
+			}
+		} else {
 			fileData = data
-		case http.ErrMissingFile:
-			// fall through to source URL handling
-		default:
-			return fmt.Errorf("poster: %w", err)
 		}
 	}
 	if fileData == nil {

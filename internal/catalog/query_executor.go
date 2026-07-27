@@ -501,7 +501,6 @@ func buildLibraryScopeJoin(
 			tableName, keyColumn, itemContentExpr, argIdx,
 		))
 		args = append(args, disabledLibraryIDs)
-		argIdx++
 	}
 
 	return strings.Join(clauses, " AND "), args, true

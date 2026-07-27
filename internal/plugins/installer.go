@@ -594,7 +594,7 @@ func loadManifestFromBinary(ctx context.Context, binaryData []byte) (*pluginv1.P
 	if err != nil {
 		return nil, fmt.Errorf("create temp dir for binary manifest: %w", err)
 	}
-	defer os.RemoveAll(tmpDir)
+	defer func() { _ = os.RemoveAll(tmpDir) }()
 
 	tmpBinary := filepath.Join(tmpDir, "plugin")
 	if err := os.WriteFile(tmpBinary, binaryData, 0755); err != nil {

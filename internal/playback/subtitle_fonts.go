@@ -97,7 +97,7 @@ func dumpFontAttachments(ctx context.Context, inputPath string, ffmpegPath strin
 	if err != nil {
 		return nil, fmt.Errorf("subtitle fonts: create temp dir: %w", err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
 	// A fresh temp dir guarantees the dump targets don't pre-exist, so ffmpeg
 	// never prompts to overwrite (which would hang the process).

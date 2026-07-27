@@ -337,7 +337,7 @@ func NewPlaybackHandler(
 		if h.sessionMgr != nil && h.tm.CloseTranscodeSessionIf(sessionID, dead, nodeURL) {
 			if h.playbackStore != nil {
 				if playSession, ok := h.playbackStore.FindByUpstreamSessionID(sessionID); ok {
-					h.dispatchCompatScrobble(ctx, compatScrobblePause, playSession, upstreamSession, nil)
+					_ = h.dispatchCompatScrobble(ctx, compatScrobblePause, playSession, upstreamSession, nil)
 				}
 			}
 			_ = h.sessionMgr.StopSession(sessionID)

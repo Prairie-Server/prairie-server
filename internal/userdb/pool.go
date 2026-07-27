@@ -213,7 +213,7 @@ func (p *UserDBPool) evict() {
 			break
 		}
 		entry := p.dbs[c.userID]
-		entry.db.Close()
+		_ = entry.db.Close()
 		delete(p.dbs, c.userID)
 		evicted++
 	}

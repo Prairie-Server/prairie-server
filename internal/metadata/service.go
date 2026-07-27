@@ -741,7 +741,7 @@ func (s *MetadataService) itemLibrariesAgreeOnLanguage(ctx context.Context, cont
 func parseProcessFolderID(raw string) int {
 	folderID := 0
 	if raw != "" {
-		fmt.Sscanf(raw, "%d", &folderID)
+		_, _ = fmt.Sscanf(raw, "%d", &folderID)
 	}
 	return folderID
 }
@@ -2416,7 +2416,7 @@ func (s *MetadataService) mergeAndPersist(
 	// this point; it uses the matched-only upsert as a secondary confirmation.
 	if req.Mode == ModeInitialMatch && req.FolderID != "" {
 		folderID := 0
-		fmt.Sscanf(req.FolderID, "%d", &folderID)
+		_, _ = fmt.Sscanf(req.FolderID, "%d", &folderID)
 		if err := s.upsertLibraryMembershipIfMatched(ctx, contentID, folderID); err != nil {
 			s.logLibraryMembershipError("ensuring matched library membership", contentID, folderID, err)
 		}

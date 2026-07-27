@@ -86,7 +86,7 @@ func (h *PlaybackHandler) HandleSessionWebSocket(w http.ResponseWriter, r *http.
 	realtimeConn := &sessionRealtimeConn{conn: conn}
 	registration := h.RealtimeHub.Register(sessionID, realtimeConn)
 	if registration == nil {
-		conn.Close()
+		_ = conn.Close()
 		slog.WarnContext(r.Context(), "failed to register realtime websocket", "component", "api", "session", sessionID, "playback_session_id", sessionID)
 		return
 	}

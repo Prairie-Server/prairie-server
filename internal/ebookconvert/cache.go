@@ -41,7 +41,7 @@ type SourceKey struct {
 
 func (k SourceKey) hash() string {
 	h := sha256.New()
-	fmt.Fprintf(h, "v1|mod=%s|id=%d|sz=%d|mt=%d|ck=%s",
+	_, _ = fmt.Fprintf(h, "v1|mod=%s|id=%d|sz=%d|mt=%d|ck=%s",
 		moduleVersion, k.FileID, k.Size, k.ModTimeNano, k.Checksum)
 	return hex.EncodeToString(h.Sum(nil))
 }
@@ -169,7 +169,11 @@ func (c *Cache) GetOrConvert(ctx context.Context, srcPath string, key SourceKey)
 		if res.Err != nil {
 			return "", res.Err
 		}
-		return res.Val.(string), nil
+		path, ok := res.Val.(string)
+		if !ok {
+			return "", fmt.Errorf("ebook convert cache: unexpected value type %T", res.Val)
+		}
+		return path, nil
 	case <-ctx.Done():
 		return "", ctx.Err()
 	}

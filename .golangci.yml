@@ -57,7 +57,7 @@ linters:
 
     errcheck:
       check-type-assertions: true
-      # Best-effort closes/rollbacks in defer can't usefully propagate; ignore.
+      # Best-effort closes/rollbacks/cleanup can't usefully propagate; ignore.
       # pgx documents defer tx.Rollback(ctx) as safe after Commit.
       exclude-functions:
         - io.Closer.Close
@@ -67,6 +67,7 @@ linters:
         - (*compress/gzip.Reader).Close
         - (*compress/gzip.Writer).Close
         - (*archive/zip.ReadCloser).Close
+        - (*database/sql.DB).Close
         - (*database/sql.Rows).Close
         - (*database/sql.Tx).Rollback
         - (github.com/jackc/pgx/v5.Tx).Rollback
@@ -74,12 +75,17 @@ linters:
         - (*github.com/jackc/pgx/v5/pgxpool.Pool).Close
         - (*github.com/redis/go-redis/v9.Client).Close
         - (*github.com/redis/go-redis/v9.ClusterClient).Close
+        - (*github.com/gorilla/websocket.Conn).Close
         - (github.com/gorilla/websocket.Conn).Close
         - (*net/http.Response).Body.Close
         - (*net.TCPListener).Close
         - (mime/multipart.File).Close
         - (*mime/multipart.Part).Close
         - (*github.com/fsnotify/fsnotify.Watcher).Close
+        # HTTP response writes / temp cleanup are best-effort once committed.
+        - (*encoding/json.Encoder).Encode
+        - os.Remove
+        - os.RemoveAll
 
     errorlint:
       errorf: true
@@ -148,5 +154,8 @@ linters:
     misspell:
       locale: US
       # Domain enum / API / DB values intentionally use British "cancelled".
+      # XMLTV's element name is British "programme".
       ignore-rules:
         - cancelled
+        - programme
+        - programmes

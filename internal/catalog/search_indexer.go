@@ -126,7 +126,7 @@ func (i *CatalogSearchIndexer) SyncOutbox(ctx context.Context, progress SearchIn
 		reportSearchIndexProgress(progress, 100, "Another catalog search index maintenance task is already running")
 		return stats, nil
 	}
-	defer lock.Close(context.Background())
+	defer func() { _ = lock.Close(context.Background()) }()
 
 	state, err := i.events.GetState(ctx, SearchProviderMeilisearch)
 	if err != nil {
@@ -259,7 +259,7 @@ func (i *CatalogSearchIndexer) Rebuild(ctx context.Context, progress SearchIndex
 		reportSearchIndexProgress(progress, 100, "Another catalog search index maintenance task is already running")
 		return stats, nil
 	}
-	defer lock.Close(context.Background())
+	defer func() { _ = lock.Close(context.Background()) }()
 
 	rebuildEventHighWater, err := i.events.MaxEventID(ctx, SearchProviderMeilisearch)
 	if err != nil {

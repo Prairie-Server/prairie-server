@@ -337,7 +337,7 @@ func ServeRemuxWithDVMode(w http.ResponseWriter, r *http.Request, filePath, outp
 		http.Error(w, "failed to start remux", http.StatusInternalServerError)
 		return err
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	w.Header().Set("Content-Type", containerMIME(outputFormat))
 	w.Header().Set("Transfer-Encoding", "chunked")

@@ -99,7 +99,11 @@ func (ml *MemoryLimiter) Allow(_ context.Context, key string, limit Rate) AllowR
 
 func (ml *MemoryLimiter) getOrCreate(key string, limit Rate) *memoryEntry {
 	if val, ok := ml.entries.Load(key); ok {
-		return val.(*memoryEntry)
+		entry, ok := val.(*memoryEntry)
+		if !ok {
+			panic("ratelimit: unexpected memory entry type")
+		}
+		return entry
 	}
 	minuteBurst := int(math.Ceil(limit.RequestsPerMinute))
 	if minuteBurst < 1 {
@@ -111,7 +115,11 @@ func (ml *MemoryLimiter) getOrCreate(key string, limit Rate) *memoryEntry {
 	}
 	entry.touch()
 	actual, _ := ml.entries.LoadOrStore(key, entry)
-	return actual.(*memoryEntry)
+	memEntry, ok := actual.(*memoryEntry)
+	if !ok {
+		panic("ratelimit: unexpected memory entry type")
+	}
+	return memEntry
 }
 
 // Clear removes all entries (called on config reload).
@@ -136,7 +144,11 @@ func (ml *MemoryLimiter) evictLoop() {
 		case <-ticker.C:
 			cutoff := time.Now().Add(-10 * time.Minute)
 			ml.entries.Range(func(key, value any) bool {
-				if value.(*memoryEntry).lastUsedTime().Before(cutoff) {
+				entry, ok := value.(*memoryEntry)
+				if !ok {
+					return true
+				}
+				if entry.lastUsedTime().Before(cutoff) {
 					ml.entries.Delete(key)
 				}
 				return true

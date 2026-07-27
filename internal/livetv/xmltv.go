@@ -41,23 +41,23 @@ type xmltvDoc struct {
 }
 
 type xmltvChannel struct {
-	ID           string       `xml:"id,attr"`
-	DisplayNames []string     `xml:"display-name"`
-	Icon         *xmltvIcon   `xml:"icon"`
+	ID           string     `xml:"id,attr"`
+	DisplayNames []string   `xml:"display-name"`
+	Icon         *xmltvIcon `xml:"icon"`
 }
 
 type xmltvProgramme struct {
-	Channel string          `xml:"channel,attr"`
-	Start   string          `xml:"start,attr"`
-	Stop    string          `xml:"stop,attr"`
-	Titles  []string        `xml:"title"`
-	Sub     []string        `xml:"sub-title"`
-	Desc    []string        `xml:"desc"`
-	Cats    []string        `xml:"category"`
-	Episode []xmltvEpisode  `xml:"episode-num"`
-	Icon    *xmltvIcon      `xml:"icon"`
-	New     *struct{}        `xml:"new"`
-	Live    *struct{}        `xml:"live"`
+	Channel string         `xml:"channel,attr"`
+	Start   string         `xml:"start,attr"`
+	Stop    string         `xml:"stop,attr"`
+	Titles  []string       `xml:"title"`
+	Sub     []string       `xml:"sub-title"`
+	Desc    []string       `xml:"desc"`
+	Cats    []string       `xml:"category"`
+	Episode []xmltvEpisode `xml:"episode-num"`
+	Icon    *xmltvIcon     `xml:"icon"`
+	New     *struct{}      `xml:"new"`
+	Live    *struct{}      `xml:"live"`
 }
 
 type xmltvEpisode struct {

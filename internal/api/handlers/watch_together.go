@@ -680,7 +680,7 @@ func (h *WatchTogetherHandler) HandleRoomWebSocket(w http.ResponseWriter, r *htt
 	if err != nil {
 		return
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	realtimeConn := &watchTogetherRoomConn{conn: conn}
 	ctx, cancel := context.WithCancel(r.Context())

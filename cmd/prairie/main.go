@@ -1566,7 +1566,7 @@ func main() {
 			userStoreProvider = pgstore.NewPostgresProvider(deps.DB)
 			slog.Info("user store initialized", "backend", "postgres")
 		}
-		defer userStoreProvider.Close()
+		defer func() { _ = userStoreProvider.Close() }()
 	}
 
 	var policySystem *policy.System
@@ -1824,7 +1824,7 @@ func main() {
 				perKeyLimiter = ratelimit.NewRedisLimiter(redisClient)
 				globalLimiter = ratelimit.NewRedisLimiter(redisClient)
 				isMemory = false
-				defer redisClient.Close()
+				defer func() { _ = redisClient.Close() }()
 			}
 		}
 
@@ -1899,7 +1899,7 @@ func main() {
 			activityWriter = activitylog.NewRedisWriter(actRedisClient)
 			activityConsumer = activitylog.NewConsumer(pool, actRedisClient, logStreamHub)
 			go activityConsumer.RunRedis(appCtx)
-			defer actRedisClient.Close()
+			defer func() { _ = actRedisClient.Close() }()
 		}
 	}
 

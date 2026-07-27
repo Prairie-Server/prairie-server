@@ -392,7 +392,7 @@ func (s *Server) Handler() http.Handler {
 
 func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(HealthResponse{
+	_ = json.NewEncoder(w).Encode(HealthResponse{
 		Status:     "ok",
 		ActiveJobs: s.activeJobs.Load(),
 	})
@@ -406,7 +406,7 @@ func (s *Server) handleHWCapabilities(w http.ResponseWriter, r *http.Request) {
 	info := playback.DetectHWAccelWithFFmpeg(ffmpegPath)
 	info.Transformations = playback.ProbeTransformationRegistryV3(r.Context(), ffmpegPath).Advertised()
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(info)
+	_ = json.NewEncoder(w).Encode(info)
 }
 
 func (s *Server) handleChapterThumbnailExtract(w http.ResponseWriter, r *http.Request) {
@@ -532,7 +532,7 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 		if err := os.Rename(outputDir, staleDir); err == nil {
 			go func() { _ = os.RemoveAll(staleDir) }()
 		} else {
-			os.RemoveAll(outputDir)
+			_ = os.RemoveAll(outputDir)
 		}
 	} else {
 		s.mu.Unlock()
@@ -580,7 +580,7 @@ func (s *Server) handleStart(w http.ResponseWriter, r *http.Request) {
 	})
 
 	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(TranscodeStartResponse{
+	_ = json.NewEncoder(w).Encode(TranscodeStartResponse{
 		SessionID: req.SessionID,
 		Status:    "started",
 		HWAccel:   effectiveHWAccel,
@@ -807,7 +807,7 @@ func (s *Server) handleStop(w http.ResponseWriter, r *http.Request) {
 
 	cfg := s.watcher.Config()
 	outputDir := filepath.Join(cfg.Playback.TranscodeDir, sessionID)
-	os.RemoveAll(outputDir)
+	_ = os.RemoveAll(outputDir)
 
 	// Drop the recipe so a buffered/retrying request after a node restart cannot
 	// reconstruct a new ffmpeg for this now-stopped session. Best-effort: a stop
@@ -854,7 +854,7 @@ func (s *Server) handleManifest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
 	w.Header().Set("Cache-Control", "no-store, max-age=0")
 	w.Header().Set("Pragma", "no-cache")
-	w.Write(manifest)
+	_, _ = w.Write(manifest)
 }
 
 func (s *Server) handleSegment(w http.ResponseWriter, r *http.Request) {
@@ -995,8 +995,8 @@ func (s *Server) handleForceReload(w http.ResponseWriter, r *http.Request) {
 	s.mu.Lock()
 	stopped := make([]string, 0, len(s.sessions))
 	for id, session := range s.sessions {
-		session.Close()
-		os.RemoveAll(filepath.Join(cfg.Playback.TranscodeDir, id))
+		_ = session.Close()
+		_ = os.RemoveAll(filepath.Join(cfg.Playback.TranscodeDir, id))
 		delete(s.sessions, id)
 		delete(s.lastAccess, id)
 		stopped = append(stopped, id)
@@ -1035,7 +1035,7 @@ func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 		ActiveJobs int32    `json:"active_jobs"`
 		Sessions   []string `json:"sessions"`
 	}
-	json.NewEncoder(w).Encode(statusResponse{
+	_ = json.NewEncoder(w).Encode(statusResponse{
 		Status:     "ok",
 		ActiveJobs: s.activeJobs.Load(),
 		Sessions:   sessionIDs,

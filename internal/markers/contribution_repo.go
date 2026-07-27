@@ -48,9 +48,9 @@ func NewContributionStore(pool *pgxpool.Pool) *ContributionStore {
 // correction or rematch to a different provider identity hashes differently.
 func ContentHash(segmentKind string, startMs, endMs, durationMs *int64, targetParts ...string) string {
 	h := sha256.New()
-	fmt.Fprintf(h, "%s|%s|%s|%s", segmentKind, ptrIntStr(startMs), ptrIntStr(endMs), ptrIntStr(durationMs))
+	_, _ = fmt.Fprintf(h, "%s|%s|%s|%s", segmentKind, ptrIntStr(startMs), ptrIntStr(endMs), ptrIntStr(durationMs))
 	for _, part := range targetParts {
-		fmt.Fprintf(h, "|%s", part)
+		_, _ = fmt.Fprintf(h, "|%s", part)
 	}
 	return hex.EncodeToString(h.Sum(nil))[:32]
 }

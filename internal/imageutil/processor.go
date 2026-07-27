@@ -146,7 +146,7 @@ func (p *processor) run(ctx context.Context, mode string, data []byte, extraArgs
 	if err != nil {
 		return nil, fmt.Errorf("imageutil: scratch: %w", err)
 	}
-	defer os.RemoveAll(scratch)
+	defer func() { _ = os.RemoveAll(scratch) }()
 
 	inDir := filepath.Join(scratch, "in")
 	outDir := filepath.Join(scratch, "out")

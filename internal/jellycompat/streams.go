@@ -1284,7 +1284,7 @@ func (h *PlaybackHandler) handlePlaybackReport(w http.ResponseWriter, r *http.Re
 		if req.IsPaused {
 			action = compatScrobblePause
 		}
-		h.dispatchCompatScrobbleAt(
+		_ = h.dispatchCompatScrobbleAt(
 			r.Context(), action, playSession, &updatedSession,
 			findMediaSource(playSession, req.MediaSourceID), &positionSeconds,
 		)
@@ -1412,7 +1412,7 @@ func (h *PlaybackHandler) ensureUpstreamPlayback(ctx context.Context, compatSess
 						h.recordCompatProgressPersistence(playSession.ID, reconstructed.DisableProgressPersistence)
 					}
 					_ = h.syncUpstreamAudioSelection(playSession, source)
-					h.dispatchCompatScrobble(ctx, compatScrobbleStart, playSession, reconstructed, &source)
+					_ = h.dispatchCompatScrobble(ctx, compatScrobbleStart, playSession, reconstructed, &source)
 					return playSession, nil
 				}
 			}
@@ -1459,7 +1459,7 @@ func (h *PlaybackHandler) ensureUpstreamPlayback(ctx context.Context, compatSess
 		transcodeNodeURL := ""
 		if current, err := h.sessionMgr.GetSession(oldUpstreamSessionID); err == nil {
 			transcodeNodeURL = current.TranscodeNodeURL
-			h.dispatchCompatScrobble(ctx, compatScrobbleStop, playSession, current, nil)
+			_ = h.dispatchCompatScrobble(ctx, compatScrobbleStop, playSession, current, nil)
 		}
 		_ = h.sessionMgr.StopSession(oldUpstreamSessionID)
 		h.tm.CloseTranscodeSession(oldUpstreamSessionID, transcodeNodeURL)
@@ -1523,7 +1523,7 @@ func (h *PlaybackHandler) ensureUpstreamPlayback(ctx context.Context, compatSess
 		return nil, ErrSessionNotFound
 	}
 	h.syncSessionsNow(ctx, "compat_start")
-	h.dispatchCompatScrobble(ctx, compatScrobbleStart, updated, session, &source)
+	_ = h.dispatchCompatScrobble(ctx, compatScrobbleStart, updated, session, &source)
 	return updated, nil
 }
 

@@ -1634,7 +1634,6 @@ func (r *Repo) FilterAccessibleItemIDs(ctx context.Context, itemIDs []string, fi
 		}
 		conditions = append(conditions, fmt.Sprintf("mi.content_rating = ANY($%d)", argIdx))
 		args = append(args, allowedRatings)
-		argIdx++
 	}
 
 	rows, err := r.pool.Query(ctx, fmt.Sprintf(`

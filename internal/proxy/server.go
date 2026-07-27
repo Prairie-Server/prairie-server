@@ -110,7 +110,7 @@ func (s *Server) handleHealth(w http.ResponseWriter, _ *http.Request) {
 		activeJobs = s.tracker.ActiveCount()
 	}
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(healthResponse{
+	_ = json.NewEncoder(w).Encode(healthResponse{
 		Status:     "ok",
 		ActiveJobs: activeJobs,
 		EgressKbps: s.egress.RateKbps(),
@@ -372,7 +372,7 @@ func (s *Server) proxyToTranscodeNode(w http.ResponseWriter, r *http.Request, cl
 		}
 	}
 	w.WriteHeader(resp.StatusCode)
-	io.Copy(w, resp.Body)
+	_, _ = io.Copy(w, resp.Body)
 }
 
 func (s *Server) handleForceReload(w http.ResponseWriter, r *http.Request) {
@@ -390,7 +390,7 @@ type statusResponse struct {
 
 func (s *Server) handleStatus(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(statusResponse{
+	_ = json.NewEncoder(w).Encode(statusResponse{
 		ActiveSessions: s.tracker.ActiveCount(),
 	})
 }

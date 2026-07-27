@@ -1518,7 +1518,7 @@ func (s *TranscodeSession) cleanStaleSegments(startSegment int) {
 	for _, entry := range entries {
 		name := entry.Name()
 		if name == "stream.m3u8" {
-			os.Remove(filepath.Join(s.outputDir, name))
+			_ = os.Remove(filepath.Join(s.outputDir, name))
 			continue
 		}
 		if name == "init.mp4" {
@@ -1529,7 +1529,7 @@ func (s *TranscodeSession) cleanStaleSegments(startSegment int) {
 			continue
 		}
 		if segNum >= startSegment {
-			os.Remove(filepath.Join(s.outputDir, name))
+			_ = os.Remove(filepath.Join(s.outputDir, name))
 		}
 	}
 }

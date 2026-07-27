@@ -172,7 +172,7 @@ func (c *Converter) Convert(ctx context.Context, srcPath, dstPath string) error 
 	if err != nil {
 		return fmt.Errorf("%w: scratch: %w", ErrConversionFailed, err)
 	}
-	defer os.RemoveAll(scratch)
+	defer func() { _ = os.RemoveAll(scratch) }()
 
 	inDir := filepath.Join(scratch, "in")
 	outDir := filepath.Join(scratch, "out")
@@ -436,7 +436,7 @@ func moveFile(src, dst string) error {
 	in, err := os.Open(src)
 	if err != nil {
 		tmp.Close()
-		os.Remove(tmpName)
+		_ = os.Remove(tmpName)
 		return err
 	}
 	_, copyErr := io.Copy(tmp, in)
@@ -448,11 +448,11 @@ func moveFile(src, dst string) error {
 		copyErr = cerr
 	}
 	if copyErr != nil {
-		os.Remove(tmpName)
+		_ = os.Remove(tmpName)
 		return copyErr
 	}
 	if err := os.Rename(tmpName, dst); err != nil {
-		os.Remove(tmpName)
+		_ = os.Remove(tmpName)
 		return err
 	}
 	return os.Remove(src)

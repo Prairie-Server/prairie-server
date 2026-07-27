@@ -199,7 +199,7 @@ func (h *EmailLinkHandler) HandleUnsubscribe(w http.ResponseWriter, r *http.Requ
 func writeEmailLinkPage(w http.ResponseWriter, status int, title, detail string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
-	fmt.Fprintf(w, `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s — Prairie</title></head>
+	_, _ = fmt.Fprintf(w, `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s — Prairie</title></head>
 <body style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#101014;color:#e8e8ec;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;">
 <div style="max-width:420px;padding:32px;text-align:center;">
 <h1 style="font-size:20px;margin:0 0 12px;">%s</h1>
