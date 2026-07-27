@@ -164,7 +164,7 @@ func TestResolve(t *testing.T) {
 			t.Parallel()
 
 			overrideRevision, overrideDirty := parseOverrides(tc.overrideRevision, tc.overrideDirty)
-			got := resolve(tc.settings, overrideRevision, overrideDirty)
+			got := resolve(tc.settings, overrideRevision, overrideDirty, "")
 			if got != tc.want {
 				t.Fatalf("resolve() = %#v, want %#v", got, tc.want)
 			}

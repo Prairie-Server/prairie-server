@@ -23,10 +23,12 @@ JELLYFIN_WEB_VERSION ?= 10.11.6
 
 # Build version stamping: inject the git revision so the admin Build panel shows a
 # version even when Go's VCS metadata isn't embedded (mirrors the Dockerfile ldflags).
+# BUILD_VERSION is the optional marketing semver (e.g. from a release tag).
 BUILDINFO_PKG := github.com/prairie-server/prairie-server/internal/buildinfo
 BUILD_REVISION ?= $(shell git rev-parse HEAD 2>/dev/null)
 BUILD_DIRTY ?= $(shell test -n "$$(git status --porcelain 2>/dev/null)" && echo true || echo false)
-GO_LDFLAGS := -X $(BUILDINFO_PKG).revisionOverride=$(BUILD_REVISION) -X $(BUILDINFO_PKG).dirtyOverride=$(BUILD_DIRTY)
+BUILD_VERSION ?= $(shell git describe --tags --abbrev=0 2>/dev/null)
+GO_LDFLAGS := -X $(BUILDINFO_PKG).revisionOverride=$(BUILD_REVISION) -X $(BUILDINFO_PKG).dirtyOverride=$(BUILD_DIRTY) -X $(BUILDINFO_PKG).versionOverride=$(BUILD_VERSION)
 
 # Build the frontend (requires pnpm)
 frontend:

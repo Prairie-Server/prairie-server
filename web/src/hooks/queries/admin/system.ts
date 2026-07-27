@@ -8,6 +8,11 @@ export interface BuildInfo {
   dirty: boolean;
   vcs_time: string;
   available: boolean;
+  version?: string;
+  latest_version?: string;
+  update_status?: "up_to_date" | "update_available" | "unknown";
+  changelog_url?: string;
+  release_url?: string;
 }
 
 export interface HWAccelInfo {
@@ -22,7 +27,8 @@ export function useBuildInfo() {
   return useQuery({
     queryKey: adminKeys.buildInfo(),
     queryFn: () => api<BuildInfo>("/admin/system/build"),
-    staleTime: Number.POSITIVE_INFINITY,
+    // Allow periodic refresh so update status can catch newly published releases.
+    staleTime: 5 * 60_000,
     retry: false,
   });
 }

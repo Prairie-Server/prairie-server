@@ -67,6 +67,7 @@ describe("AdminSettingsLayout", () => {
     const markup = renderLayout();
 
     for (const label of [
+      "About",
       "General",
       "Branding",
       "Theming",

@@ -119,6 +119,7 @@ jobs:
           build-args: |
             BUILD_REVISION=${{ github.sha }}
             BUILD_DIRTY=false
+            BUILD_VERSION=${{ startsWith(github.ref, 'refs/tags/v') && github.ref_name || '' }}
           cache-from: type=gha,scope=docker-${{ env.PLATFORM_PAIR }}
           cache-to: type=gha,scope=docker-${{ env.PLATFORM_PAIR }},mode=max
           outputs: type=image,name=${{ env.REGISTRY }}/${{ env.IMAGE_LC }},push-by-digest=true,name-canonical=true,push=true

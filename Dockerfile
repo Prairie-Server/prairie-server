@@ -35,10 +35,11 @@ COPY internal/ internal/
 COPY migrations/ migrations/
 ARG BUILD_REVISION
 ARG BUILD_DIRTY=false
+ARG BUILD_VERSION=
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
     go build \
-    -ldflags "-X github.com/prairie-server/prairie-server/internal/buildinfo.revisionOverride=${BUILD_REVISION} -X github.com/prairie-server/prairie-server/internal/buildinfo.dirtyOverride=${BUILD_DIRTY}" \
+    -ldflags "-X github.com/prairie-server/prairie-server/internal/buildinfo.revisionOverride=${BUILD_REVISION} -X github.com/prairie-server/prairie-server/internal/buildinfo.dirtyOverride=${BUILD_DIRTY} -X github.com/prairie-server/prairie-server/internal/buildinfo.versionOverride=${BUILD_VERSION}" \
     -o /prairie ./cmd/prairie/
 
 # Stage 3: Runtime

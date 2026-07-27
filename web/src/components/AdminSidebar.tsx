@@ -131,14 +131,26 @@ export default function AdminSidebar({ onNavigate }: AdminSidebarProps) {
 
       {/* Footer */}
       <div className="space-y-3 px-3 pb-4">
-        <div className="border-sidebar-border/70 bg-sidebar-accent/40 rounded-xl border px-3 py-2">
+        <Link
+          to="/admin/settings?tab=about"
+          onClick={onNavigate}
+          className="border-sidebar-border/70 bg-sidebar-accent/40 hover:bg-sidebar-accent/70 block rounded-xl border px-3 py-2 transition-colors"
+        >
           <div className="text-muted-foreground text-[10px] font-semibold tracking-[0.18em] uppercase">
             Build
           </div>
           <div className="text-sidebar-foreground mt-1 font-mono text-[12px] leading-5">
             {buildDisplay}
           </div>
-        </div>
+          {buildInfo.data?.update_status === "update_available" ? (
+            <div className="mt-1 text-[11px] font-medium text-amber-500">Update available</div>
+          ) : null}
+          {buildInfo.data?.latest_version && buildInfo.data.update_status === "update_available" ? (
+            <div className="text-muted-foreground mt-0.5 font-mono text-[11px]">
+              Latest {buildInfo.data.latest_version}
+            </div>
+          ) : null}
+        </Link>
         {/* Back to app */}
         <Link
           to="/"

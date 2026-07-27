@@ -6,6 +6,7 @@ import {
   Download,
   Gauge,
   HardDrive,
+  Info,
   Layers,
   Mail,
   Image,
@@ -43,6 +44,14 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
   {
     label: "Server",
     items: [
+      {
+        id: "about",
+        label: "About",
+        description: "Server version, update status, and changelog.",
+        keywords: ["version", "build", "update", "changelog", "release notes", "revision", "git"],
+        settings: settingIndex("Version", "Update status", "Latest version", "Changelog"),
+        icon: Info,
+      },
       {
         id: "general",
         label: "General",
