@@ -392,6 +392,10 @@ func (h *LiveTVHandler) HandleSessionStream(w http.ResponseWriter, r *http.Reque
 		writeLiveTVError(w, err)
 		return
 	}
+	if err := h.service.TouchSession(r.Context(), sessionID); err != nil {
+		slog.WarnContext(r.Context(), "livetv touch session failed",
+			"session_id", sessionID, "error", err)
+	}
 	w.Header().Set("Content-Type", "video/mp2t")
 	if r.Method == http.MethodHead {
 		w.WriteHeader(http.StatusOK)
@@ -418,6 +422,29 @@ func (h *LiveTVHandler) HandleSessionStream(w http.ResponseWriter, r *http.Reque
 	if _, err := io.Copy(w, resp.Body); err != nil && !errors.Is(err, context.Canceled) {
 		slog.WarnContext(r.Context(), "livetv session stream copy ended", "session_id", sessionID, "error", err)
 	}
+}
+
+// HandleSessionHeartbeat keeps an owned session's tuner claimed while a client
+// still has the player open, including while paused (no segment fetches).
+func (h *LiveTVHandler) HandleSessionHeartbeat(w http.ResponseWriter, r *http.Request) {
+	sessionID := chi.URLParam(r, "sessionId")
+	userID := apimw.GetUserID(r.Context())
+	profileID := apimw.GetProfileID(r.Context())
+	enforceOwner := !apimw.IsAdmin(r.Context())
+	session, err := h.service.GetSessionForViewer(r.Context(), sessionID, userID, profileID, enforceOwner)
+	if err != nil {
+		writeLiveTVError(w, err)
+		return
+	}
+	if session.Status != "active" {
+		writeError(w, http.StatusNotFound, "not_found", "session not found")
+		return
+	}
+	if err := h.service.TouchSession(r.Context(), sessionID); err != nil {
+		writeLiveTVError(w, err)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
 }
 
 func (h *LiveTVHandler) HandleReleaseSession(w http.ResponseWriter, r *http.Request) {
@@ -586,6 +613,12 @@ func (h *LiveTVHandler) HandleLiveHLS(w http.ResponseWriter, r *http.Request) {
 	if err := bridge.Authorize(playbackID, userID, profileID, enforceOwner); err != nil {
 		writeLiveTVError(w, err)
 		return
+	}
+	// Fetching media is proof the stream is still being watched, so the tuner
+	// stays claimed and the stale-session reclaim skips it.
+	if err := h.service.TouchSession(r.Context(), playbackID); err != nil {
+		slog.WarnContext(r.Context(), "livetv touch session failed",
+			"playback_session_id", playbackID, "error", err)
 	}
 	filePath, err := bridge.ResolvePlaylistFile(playbackID, name)
 	if err != nil {

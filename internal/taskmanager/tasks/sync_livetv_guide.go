@@ -109,15 +109,23 @@ func (t *LiveTVDVRTickTask) Execute(ctx context.Context, progress taskmanager.Pr
 	if err != nil {
 		return fmt.Errorf("livetv process recordings: %w", err)
 	}
+	// Free tuners held by sessions nobody is watching, so capacity comes back
+	// without waiting for someone to attempt another tune.
+	progress.Report(80, "Reclaiming stale Live TV sessions")
+	reclaimed, err := t.service.ReclaimStaleSessions(ctx)
+	if err != nil {
+		return fmt.Errorf("livetv reclaim stale sessions: %w", err)
+	}
 	result, _ := json.Marshal(map[string]int{
 		"started":   started,
 		"completed": completed,
 		"failed":    failed,
+		"reclaimed": reclaimed,
 	})
 	progress.SetResultData(result)
 	progress.Report(100, fmt.Sprintf(
-		"Live TV DVR tick complete (started=%d completed=%d failed=%d)",
-		started, completed, failed,
+		"Live TV DVR tick complete (started=%d completed=%d failed=%d reclaimed=%d)",
+		started, completed, failed, reclaimed,
 	))
 	return nil
 }

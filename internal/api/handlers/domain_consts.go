@@ -7,6 +7,7 @@ const (
 	itemTypeMovie         = "movie"
 	itemTypeSeason        = "season"
 	itemTypeSeries        = "series"
+	playbackModeDirect    = "direct"
 	playbackModeRemux     = "remux"
 	playbackModeTranscode = "transcode"
 	sectionTypeLibrary    = "library"

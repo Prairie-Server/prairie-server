@@ -786,8 +786,24 @@ func (h *AdminHandler) HandleListPlaybackHistory(w http.ResponseWriter, r *http.
 			COALESCE(NULLIF(h.profile_name, ''), h.profile_id),
 			h.media_item_id,
 			h.media_file_id,
-			COALESCE(ep.title, mi.title, ''),
-			COALESCE(CASE WHEN ep.content_id IS NOT NULL THEN 'episode' ELSE mi.type END, ''),
+			COALESCE(
+				ep.title,
+				mi.title,
+				NULLIF(CONCAT_WS(
+					' · ',
+					NULLIF(COALESCE(NULLIF(lc.number_override, ''), lc.number), ''),
+					NULLIF(COALESCE(NULLIF(lc.callsign, ''), lc.name), '')
+				), ''),
+				''
+			),
+			COALESCE(
+				CASE
+					WHEN ep.content_id IS NOT NULL THEN 'episode'
+					WHEN lc.id IS NOT NULL THEN 'livetv'
+					ELSE mi.type
+				END,
+				''
+			),
 			h.play_method,
 			h.started_at,
 			h.ended_at,
@@ -798,6 +814,8 @@ func (h *AdminHandler) HandleListPlaybackHistory(w http.ResponseWriter, r *http.
 		LEFT JOIN users u ON u.id = h.user_id
 		LEFT JOIN media_items mi ON mi.content_id = h.media_item_id
 		LEFT JOIN episodes ep ON ep.content_id = h.media_item_id
+		LEFT JOIN livetv_channels lc
+			ON h.media_item_id LIKE 'livetv:%' AND lc.id = substring(h.media_item_id from 8)
 	`
 	if len(conditions) > 0 {
 		query += " WHERE " + strings.Join(conditions, " AND ")

@@ -43,6 +43,13 @@ type Store interface {
 	CreateSession(ctx context.Context, input SessionCreate) (*LiveSession, error)
 	GetSession(ctx context.Context, id string) (*LiveSession, error)
 	ReleaseSession(ctx context.Context, id string) (*LiveSession, error)
+	// TouchSession marks an active session as still being watched. id matches
+	// either the live session id or its playback bridge session id, so both the
+	// MPEG-TS proxy and the live-HLS handler can keep a tuner claimed.
+	TouchSession(ctx context.Context, id string) error
+	// ReleaseSessionsLastSeenBefore releases active sessions that stopped being
+	// watched, returning the rows it reclaimed so their bridges can be stopped.
+	ReleaseSessionsLastSeenBefore(ctx context.Context, cutoff time.Time) ([]LiveSession, error)
 
 	ListRecordings(ctx context.Context, status string) ([]Recording, error)
 	GetRecording(ctx context.Context, id string) (*Recording, error)
@@ -509,6 +516,8 @@ func (s *PgStore) ActiveSessionTunerIndices(ctx context.Context, tunerID string)
 	return indices, rows.Err()
 }
 
+const sessionSelectCols = `id, channel_id, tuner_id, tuner_index, user_id, profile_id, playback_session_id, status, created_at, released_at, last_seen_at`
+
 func (s *PgStore) CreateSession(ctx context.Context, input SessionCreate) (*LiveSession, error) {
 	id, err := idgen.NextID()
 	if err != nil {
@@ -517,7 +526,7 @@ func (s *PgStore) CreateSession(ctx context.Context, input SessionCreate) (*Live
 	session, err := scanSession(s.db.QueryRow(ctx, `
 		INSERT INTO livetv_sessions (id, channel_id, tuner_id, tuner_index, user_id, profile_id, playback_session_id, status)
 		VALUES ($1, $2, $3, $4, $5, $6, $7, 'active')
-		RETURNING id, channel_id, tuner_id, tuner_index, user_id, profile_id, playback_session_id, status, created_at, released_at`,
+		RETURNING `+sessionSelectCols,
 		id, input.ChannelID, input.TunerID, input.TunerIndex, nullInt(input.UserID), input.ProfileID, input.PlaybackSessionID))
 	if err != nil {
 		if isUniqueViolation(err) {
@@ -529,7 +538,7 @@ func (s *PgStore) CreateSession(ctx context.Context, input SessionCreate) (*Live
 }
 
 func (s *PgStore) GetSession(ctx context.Context, id string) (*LiveSession, error) {
-	session, err := scanSession(s.db.QueryRow(ctx, `SELECT id, channel_id, tuner_id, tuner_index, user_id, profile_id, playback_session_id, status, created_at, released_at FROM livetv_sessions WHERE id = $1`, id))
+	session, err := scanSession(s.db.QueryRow(ctx, `SELECT `+sessionSelectCols+` FROM livetv_sessions WHERE id = $1`, id))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -543,7 +552,7 @@ func (s *PgStore) ReleaseSession(ctx context.Context, id string) (*LiveSession, 
 	session, err := scanSession(s.db.QueryRow(ctx, `
 		UPDATE livetv_sessions SET status = 'released', released_at = now()
 		WHERE id = $1
-		RETURNING id, channel_id, tuner_id, tuner_index, user_id, profile_id, playback_session_id, status, created_at, released_at`, id))
+		RETURNING `+sessionSelectCols, id))
 	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
@@ -551,6 +560,38 @@ func (s *PgStore) ReleaseSession(ctx context.Context, id string) (*LiveSession, 
 		return nil, fmt.Errorf("release session: %w", err)
 	}
 	return &session, nil
+}
+
+func (s *PgStore) TouchSession(ctx context.Context, id string) error {
+	if id == "" {
+		return nil
+	}
+	if _, err := s.db.Exec(ctx, `
+		UPDATE livetv_sessions SET last_seen_at = now()
+		WHERE status = 'active' AND (id = $1 OR playback_session_id = $1)`, id); err != nil {
+		return fmt.Errorf("touch session: %w", err)
+	}
+	return nil
+}
+
+func (s *PgStore) ReleaseSessionsLastSeenBefore(ctx context.Context, cutoff time.Time) ([]LiveSession, error) {
+	rows, err := s.db.Query(ctx, `
+		UPDATE livetv_sessions SET status = 'released', released_at = now()
+		WHERE status = 'active' AND last_seen_at < $1
+		RETURNING `+sessionSelectCols, cutoff)
+	if err != nil {
+		return nil, fmt.Errorf("release stale sessions: %w", err)
+	}
+	defer rows.Close()
+	var released []LiveSession
+	for rows.Next() {
+		session, err := scanSession(rows)
+		if err != nil {
+			return nil, err
+		}
+		released = append(released, session)
+	}
+	return released, rows.Err()
 }
 
 const recordingSelectCols = `id, COALESCE(program_id, ''), channel_id, COALESCE(series_rule_id, ''), user_id, COALESCE(profile_id, ''), status, path, COALESCE(library_item_id, ''), start_at, stop_at, title, last_error`
@@ -812,7 +853,7 @@ func scanSession(row scanner) (LiveSession, error) {
 	var userID sql.NullInt64
 	var released sql.NullTime
 	if err := row.Scan(&session.ID, &session.ChannelID, &session.TunerID, &session.TunerIndex, &userID, &session.ProfileID,
-		&session.PlaybackSessionID, &session.Status, &session.CreatedAt, &released); err != nil {
+		&session.PlaybackSessionID, &session.Status, &session.CreatedAt, &released, &session.LastSeenAt); err != nil {
 		return LiveSession{}, err
 	}
 	if userID.Valid {

@@ -9,6 +9,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -59,6 +60,33 @@ type PlaybackBridgeStopper interface {
 	StopLiveStream(ctx context.Context, playbackSessionID string) error
 }
 
+// SessionHistoryEntry is one finished Live TV view, for admin playback history.
+type SessionHistoryEntry struct {
+	SessionID      string
+	ChannelID      string
+	UserID         int
+	ProfileID      string
+	Transport      string
+	StartedAt      time.Time
+	EndedAt        time.Time
+	WatchedSeconds float64
+}
+
+// HistoryRecorder persists finished Live TV views alongside VOD playback history.
+type HistoryRecorder interface {
+	RecordLiveSession(ctx context.Context, entry SessionHistoryEntry) error
+}
+
+// StaleSessionTTL is how long an active session may go without a segment fetch
+// or client heartbeat before its tuner is reclaimed. Live HLS segments are ~1s
+// and clients heartbeat every 30s, so this only trips on abandoned sessions.
+const StaleSessionTTL = 90 * time.Second
+
+// touchThrottle bounds how often one session writes last_seen_at; hls.js
+// re-fetches the playlist about once per segment, which is far more often than
+// the tuner reclaim clock needs.
+const touchThrottle = 10 * time.Second
+
 type Service struct {
 	store          Store
 	hdhr           HDHomeRunClient
@@ -68,7 +96,11 @@ type Service struct {
 	playbackBridge PlaybackBridge
 	recorder       *Recorder
 	artwork        *ArtworkCache
+	history        HistoryRecorder
 	now            func() time.Time
+
+	touchMu   sync.Mutex
+	lastTouch map[string]time.Time
 }
 
 func NewService(db *pgxpool.Pool) *Service {
@@ -90,7 +122,20 @@ func NewServiceWithStore(store Store) *Service {
 		gn:         gracenote.NewClient(gnHTTP),
 		httpClient: httpClient,
 		now:        time.Now,
+		lastTouch:  map[string]time.Time{},
 	}
+}
+
+// HistoryMediaItemIDPrefix namespaces Live TV rows in playback history, which is
+// otherwise keyed by media item. Channels are not library items.
+const HistoryMediaItemIDPrefix = "livetv:"
+
+// HistoryMediaItemID is the playback-history key for a Live TV channel.
+func HistoryMediaItemID(channelID string) string {
+	if channelID == "" {
+		return ""
+	}
+	return HistoryMediaItemIDPrefix + channelID
 }
 
 // PublicSessionStreamPath is the authenticated relative URL clients should play.
@@ -146,6 +191,11 @@ func (s *Service) ReapExpiredArtwork(ctx context.Context) (int, error) {
 		return 0, nil
 	}
 	return s.artwork.ReapExpired(ctx, 500)
+}
+
+// SetHistoryRecorder attaches the admin playback-history writer.
+func (s *Service) SetHistoryRecorder(recorder HistoryRecorder) {
+	s.history = recorder
 }
 
 // PlaybackBridge returns the configured bridge, if any.
@@ -1303,6 +1353,21 @@ func (s *Service) StartChannelSession(ctx context.Context, channelID string, use
 	if tuner == nil {
 		return nil, ErrNotFound
 	}
+
+	// Reclaim tuners held by sessions nobody is watching (closed tab, killed
+	// app, crashed server) before deciding this tune has no capacity.
+	if _, err := s.ReclaimStaleSessions(ctx); err != nil {
+		slog.WarnContext(ctx, "livetv stale session reclaim failed", "error", err)
+	}
+	// Fail before spawning ffmpeg when the tuner is genuinely full.
+	indices, err := s.store.ActiveSessionTunerIndices(ctx, tuner.ID)
+	if err != nil {
+		return nil, err
+	}
+	if _, ok := firstFreeIndex(tuner.TunerCount, indices); !ok {
+		return nil, ErrNoTuner
+	}
+
 	playbackID := ""
 	streamURL := channel.StreamURL
 	// Without a playback bridge, clients play MPEG-TS via the authenticated
@@ -1371,6 +1436,97 @@ func (s *Service) stopBridge(ctx context.Context, playbackSessionID string) {
 	}
 }
 
+// TouchSession marks a session as still being watched. id may be the live
+// session id or the playback bridge session id. Writes are throttled so
+// per-segment requests don't turn into per-segment UPDATEs.
+func (s *Service) TouchSession(ctx context.Context, id string) error {
+	if err := s.requireStore(); err != nil {
+		return err
+	}
+	if id == "" {
+		return nil
+	}
+	now := s.now()
+	s.touchMu.Lock()
+	if s.lastTouch == nil {
+		s.lastTouch = map[string]time.Time{}
+	}
+	if last, ok := s.lastTouch[id]; ok && now.Sub(last) < touchThrottle {
+		s.touchMu.Unlock()
+		return nil
+	}
+	s.lastTouch[id] = now
+	s.touchMu.Unlock()
+	return s.store.TouchSession(ctx, id)
+}
+
+// ReclaimStaleSessions releases active sessions that stopped being watched and
+// tears down their remux processes, freeing the tuner index for a new tune.
+func (s *Service) ReclaimStaleSessions(ctx context.Context) (int, error) {
+	if err := s.requireStore(); err != nil {
+		return 0, err
+	}
+	cutoff := s.now().Add(-StaleSessionTTL)
+	released, err := s.store.ReleaseSessionsLastSeenBefore(ctx, cutoff)
+	if err != nil {
+		return 0, err
+	}
+	for _, session := range released {
+		slog.InfoContext(ctx, "livetv reclaimed stale session",
+			"session_id", session.ID, "channel_id", session.ChannelID, "tuner_index", session.TunerIndex)
+		s.stopBridge(ctx, session.PlaybackSessionID)
+		s.forgetTouch(session)
+		s.recordSessionHistory(ctx, session)
+	}
+	return len(released), nil
+}
+
+func (s *Service) forgetTouch(session LiveSession) {
+	s.touchMu.Lock()
+	defer s.touchMu.Unlock()
+	delete(s.lastTouch, session.ID)
+	if session.PlaybackSessionID != "" {
+		delete(s.lastTouch, session.PlaybackSessionID)
+	}
+}
+
+// recordSessionHistory writes a finished view to admin playback history. Live TV
+// has no media file, so the entry is keyed by channel instead.
+func (s *Service) recordSessionHistory(ctx context.Context, session LiveSession) {
+	if s.history == nil || session.ChannelID == "" {
+		return
+	}
+	ended := s.now()
+	if session.ReleasedAt != nil {
+		ended = *session.ReleasedAt
+	}
+	watched := ended.Sub(session.CreatedAt).Seconds()
+	if watched < 0 {
+		watched = 0
+	}
+	transport := session.Transport
+	if transport == "" {
+		if session.PlaybackSessionID != "" {
+			transport = "hls"
+		} else {
+			transport = "mpegts"
+		}
+	}
+	if err := s.history.RecordLiveSession(ctx, SessionHistoryEntry{
+		SessionID:      session.ID,
+		ChannelID:      session.ChannelID,
+		UserID:         session.UserID,
+		ProfileID:      session.ProfileID,
+		Transport:      transport,
+		StartedAt:      session.CreatedAt,
+		EndedAt:        ended,
+		WatchedSeconds: watched,
+	}); err != nil {
+		slog.WarnContext(ctx, "livetv playback history write failed",
+			"session_id", session.ID, "error", err)
+	}
+}
+
 // ReleaseSession releases a live tuner session.
 // When enforceOwner is true, the caller must own the session (matching user_id,
 // and profile_id when the session recorded one). Pass enforceOwner=false for
@@ -1408,6 +1564,8 @@ func (s *Service) ReleaseSession(ctx context.Context, id string, userID int, pro
 			}
 		}
 	}
+	s.forgetTouch(*session)
+	s.recordSessionHistory(ctx, *session)
 	return session, nil
 }
 

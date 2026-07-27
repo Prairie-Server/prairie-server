@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { api } from "@/api/client";
@@ -19,6 +20,9 @@ import type {
 import { adminKeys } from "./keys";
 
 const LIVETV_STALE_TIME = 30_000;
+
+/** Well inside the server's stale-session TTL so a paused player keeps its tuner. */
+export const LIVETV_HEARTBEAT_INTERVAL_MS = 30_000;
 
 export function useLiveTVTuners() {
   return useQuery({
@@ -286,6 +290,25 @@ export function useStartLiveTVSession() {
       toast.error(err instanceof Error ? err.message : "Failed to start Live TV session");
     },
   });
+}
+
+/**
+ * Keeps a live session's tuner claimed while the player is open. The server
+ * reclaims sessions that stop being watched, so a paused player (which stops
+ * fetching segments) still needs to check in.
+ */
+export function useLiveTVSessionHeartbeat(sessionId: string | null, enabled = true) {
+  useEffect(() => {
+    if (!sessionId || !enabled) return;
+    const send = () => {
+      void api(`/livetv/sessions/${encodeURIComponent(sessionId)}/heartbeat`, {
+        method: "POST",
+      }).catch(() => undefined);
+    };
+    send();
+    const id = window.setInterval(send, LIVETV_HEARTBEAT_INTERVAL_MS);
+    return () => window.clearInterval(id);
+  }, [sessionId, enabled]);
 }
 
 export function useReleaseLiveTVSession() {

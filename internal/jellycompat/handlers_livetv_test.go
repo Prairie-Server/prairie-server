@@ -154,6 +154,27 @@ func (s *livetvTestStore) ReleaseSession(_ context.Context, id string) (*livetv.
 	s.sessions[id] = sess
 	return &sess, nil
 }
+func (s *livetvTestStore) TouchSession(_ context.Context, id string) error {
+	for key, sess := range s.sessions {
+		if sess.Status == "active" && (sess.ID == id || sess.PlaybackSessionID == id) {
+			sess.LastSeenAt = time.Now().UTC()
+			s.sessions[key] = sess
+		}
+	}
+	return nil
+}
+func (s *livetvTestStore) ReleaseSessionsLastSeenBefore(_ context.Context, cutoff time.Time) ([]livetv.LiveSession, error) {
+	var released []livetv.LiveSession
+	for key, sess := range s.sessions {
+		if sess.Status != "active" || !sess.LastSeenAt.Before(cutoff) {
+			continue
+		}
+		sess.Status = "released"
+		s.sessions[key] = sess
+		released = append(released, sess)
+	}
+	return released, nil
+}
 func (s *livetvTestStore) ListRecordings(_ context.Context, status string) ([]livetv.Recording, error) {
 	out := make([]livetv.Recording, 0, len(s.recordings))
 	for _, rec := range s.recordings {
