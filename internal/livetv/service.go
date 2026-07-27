@@ -4,15 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/livetv/hdhomerun"
+	"github.com/prairie-server/prairie-server/internal/livetv/schedulesdirect"
 )
 
 var (
@@ -30,6 +31,15 @@ type HDHomeRunClient interface {
 	FetchLineup(ctx context.Context, baseURL string) ([]hdhomerun.LineupChannel, error)
 }
 
+type SchedulesDirectClient interface {
+	Token(ctx context.Context, username, passwordSHA1 string) (string, error)
+	Headends(ctx context.Context, token, country, postalCode string) ([]schedulesdirect.Headend, error)
+	AddLineup(ctx context.Context, token, lineupID string) error
+	Lineup(ctx context.Context, token, lineupID string) (*schedulesdirect.LineupDetail, error)
+	Schedules(ctx context.Context, token string, reqs []schedulesdirect.ScheduleRequest) ([]schedulesdirect.StationSchedule, error)
+	Programs(ctx context.Context, token string, ids []string) ([]schedulesdirect.ProgramDetail, error)
+}
+
 type PlaybackBridge interface {
 	StartLiveStream(ctx context.Context, channelID, sourceStreamURL string, userID int, profileID string) (playbackSessionID, playbackURL string, err error)
 }
@@ -37,6 +47,7 @@ type PlaybackBridge interface {
 type Service struct {
 	store          Store
 	hdhr           HDHomeRunClient
+	sd             SchedulesDirectClient
 	httpClient     *http.Client
 	playbackBridge PlaybackBridge
 	now            func() time.Time
@@ -52,9 +63,11 @@ func NewService(db *pgxpool.Pool) *Service {
 
 func NewServiceWithStore(store Store) *Service {
 	httpClient := NewMediaHTTPClient()
+	sdHTTP := &http.Client{Timeout: 2 * time.Minute}
 	return &Service{
 		store:      store,
 		hdhr:       hdhomerun.NewClient(httpClient),
+		sd:         schedulesdirect.NewClient(sdHTTP),
 		httpClient: httpClient,
 		now:        time.Now,
 	}
@@ -80,6 +93,10 @@ func IsClientSafePlayURL(raw string) bool {
 
 func (s *Service) SetHDHomeRunClient(client HDHomeRunClient) {
 	s.hdhr = client
+}
+
+func (s *Service) SetSchedulesDirectClient(client SchedulesDirectClient) {
+	s.sd = client
 }
 
 func (s *Service) SetPlaybackBridge(bridge PlaybackBridge) {
@@ -399,11 +416,21 @@ func (s *Service) ListGuideSources(ctx context.Context) ([]GuideSource, error) {
 	if err := s.requireStore(); err != nil {
 		return nil, err
 	}
-	return s.store.ListGuideSources(ctx, false)
+	sources, err := s.store.ListGuideSources(ctx, false)
+	if err != nil {
+		return nil, err
+	}
+	for i := range sources {
+		sources[i].Config = RedactGuideSourceConfig(sources[i].Config)
+	}
+	return sources, nil
 }
 
 func (s *Service) CreateGuideSource(ctx context.Context, source *GuideSource) (*GuideSource, error) {
 	if err := s.requireStore(); err != nil {
+		return nil, err
+	}
+	if err := s.prepareGuideSourceConfig(ctx, source, nil); err != nil {
 		return nil, err
 	}
 	if err := validateGuideSource(source); err != nil {
@@ -416,7 +443,11 @@ func (s *Service) CreateGuideSource(ctx context.Context, source *GuideSource) (*
 	if err != nil {
 		return nil, err
 	}
-	return created, s.reorderGuideSourcePriorities(ctx)
+	if err := s.reorderGuideSourcePriorities(ctx); err != nil {
+		return nil, err
+	}
+	created.Config = RedactGuideSourceConfig(created.Config)
+	return created, nil
 }
 
 func (s *Service) UpdateGuideSource(ctx context.Context, source *GuideSource) (*GuideSource, error) {
@@ -444,6 +475,9 @@ func (s *Service) UpdateGuideSource(ctx context.Context, source *GuideSource) (*
 	}
 	source.LastError = existing.LastError
 	source.LastSyncAt = existing.LastSyncAt
+	if err := s.prepareGuideSourceConfig(ctx, source, existing); err != nil {
+		return nil, err
+	}
 	if err := validateGuideSource(source); err != nil {
 		return nil, err
 	}
@@ -457,7 +491,11 @@ func (s *Service) UpdateGuideSource(ctx context.Context, source *GuideSource) (*
 	if updated == nil {
 		return nil, ErrNotFound
 	}
-	return updated, s.reorderGuideSourcePriorities(ctx)
+	if err := s.reorderGuideSourcePriorities(ctx); err != nil {
+		return nil, err
+	}
+	updated.Config = RedactGuideSourceConfig(updated.Config)
+	return updated, nil
 }
 
 func (s *Service) DeleteGuideSource(ctx context.Context, id string) error {
@@ -503,10 +541,8 @@ func (s *Service) SyncGuideSource(ctx context.Context, id string) error {
 	_ = s.store.SetGuideSourceSyncStatus(ctx, id, "syncing", "", nil, source.NextSyncAt)
 	var syncErr error
 	switch source.Type {
-	case GuideSourceXMLTVURL:
-		syncErr = s.syncXMLTV(ctx, source)
 	case GuideSourceSchedulesDirect:
-		syncErr = fmt.Errorf("%w: schedules direct guide sync is not implemented yet", ErrNotImplemented)
+		syncErr = s.syncSchedulesDirect(ctx, source)
 	default:
 		syncErr = fmt.Errorf("%w: unsupported guide source type %q", ErrInvalidArgument, source.Type)
 	}
@@ -519,83 +555,355 @@ func (s *Service) SyncGuideSource(ctx context.Context, id string) error {
 	return s.store.SetGuideSourceSyncStatus(ctx, id, "ready", "", &now, &next)
 }
 
-func (s *Service) syncXMLTV(ctx context.Context, source *GuideSource) error {
-	url := strings.TrimSpace(source.Config["url"])
-	if url == "" {
-		return fmt.Errorf("%w: xmltv url is required", ErrInvalidArgument)
+// ListSchedulesDirectLineups authenticates and returns lineups for a postal code.
+func (s *Service) ListSchedulesDirectLineups(ctx context.Context, req SchedulesDirectLineupsRequest) ([]schedulesdirect.LineupOption, error) {
+	if s == nil || s.sd == nil {
+		return nil, ErrNotConfigured
 	}
-	if err := ValidateMediaFetchURL(url); err != nil {
-		return err
+	username := strings.TrimSpace(req.Username)
+	passwordSHA1 := strings.TrimSpace(req.PasswordSHA1)
+	if password := strings.TrimSpace(req.Password); password != "" {
+		passwordSHA1 = schedulesdirect.HashPassword(password)
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	postal := strings.TrimSpace(req.PostalCode)
+	if username == "" || passwordSHA1 == "" || postal == "" {
+		return nil, fmt.Errorf("%w: username, password, and postalcode are required", ErrInvalidArgument)
+	}
+	country := strings.TrimSpace(req.Country)
+	if country == "" {
+		country = DefaultSchedulesDirectCountry
+	}
+	token, err := s.sd.Token(ctx, username, passwordSHA1)
+	if err != nil {
+		return nil, err
+	}
+	headends, err := s.sd.Headends(ctx, token, country, postal)
+	if err != nil {
+		return nil, err
+	}
+	return schedulesdirect.FlattenLineups(headends), nil
+}
+
+func (s *Service) syncSchedulesDirect(ctx context.Context, source *GuideSource) error {
+	if s.sd == nil {
+		return ErrNotConfigured
+	}
+	username := strings.TrimSpace(source.Config["username"])
+	passwordSHA1 := strings.TrimSpace(source.Config["password_sha1"])
+	lineupID := strings.TrimSpace(source.Config["lineup"])
+	if username == "" || passwordSHA1 == "" || lineupID == "" {
+		return fmt.Errorf("%w: schedules direct username, password_sha1, and lineup are required", ErrInvalidArgument)
+	}
+	days := DefaultSchedulesDirectDays
+	if raw := strings.TrimSpace(source.Config["days"]); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n > 0 && n <= 21 {
+			days = n
+		}
+	}
+
+	token, err := s.sd.Token(ctx, username, passwordSHA1)
 	if err != nil {
 		return err
 	}
-	resp, err := s.httpClient.Do(req)
-	if err != nil {
-		return fmt.Errorf("fetch xmltv: %w", err)
+	if err := s.sd.AddLineup(ctx, token, lineupID); err != nil {
+		return err
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return fmt.Errorf("fetch xmltv: status %d", resp.StatusCode)
-	}
-	parsed, err := ParseXMLTV(io.LimitReader(resp.Body, 64<<20))
+	detail, err := s.sd.Lineup(ctx, token, lineupID)
 	if err != nil {
 		return err
 	}
+
 	channels, err := s.store.ListChannels(ctx, "")
 	if err != nil {
 		return err
 	}
-	xmlChannelNames := map[string]string{}
-	for _, ch := range parsed.Channels {
-		xmlChannelNames[strings.ToLower(ch.ID)] = strings.ToLower(ch.DisplayName)
+	stationByChannelID, err := s.mapChannelsToStations(ctx, channels, detail)
+	if err != nil {
+		return err
 	}
-	channelByKey := map[string]string{}
-	for _, ch := range channels {
-		addKey := func(key string) {
-			key = strings.ToLower(strings.TrimSpace(key))
-			if key != "" {
-				channelByKey[key] = ch.ID
+	if len(stationByChannelID) == 0 {
+		return fmt.Errorf("%w: no channels mapped to Schedules Direct stations; set guide station IDs or match channel numbers/callsigns", ErrInvalidArgument)
+	}
+
+	stationIDs := uniqueStrings(valuesOf(stationByChannelID))
+	dates := scheduleDates(s.now(), days)
+	reqs := make([]schedulesdirect.ScheduleRequest, 0, len(stationIDs))
+	for _, stationID := range stationIDs {
+		reqs = append(reqs, schedulesdirect.ScheduleRequest{StationID: stationID, Date: dates})
+	}
+	schedules, err := s.sd.Schedules(ctx, token, reqs)
+	if err != nil {
+		return err
+	}
+
+	programIDs := make([]string, 0)
+	seenProgram := map[string]bool{}
+	for _, sched := range schedules {
+		if sched.Code != 0 {
+			continue
+		}
+		for _, p := range sched.Programs {
+			id := strings.TrimSpace(p.ProgramID)
+			if id == "" || seenProgram[id] {
+				continue
 			}
+			seenProgram[id] = true
+			programIDs = append(programIDs, id)
 		}
-		addKey(ch.GuideStationID)
-		addKey(ch.Callsign)
-		addKey(ch.Number)
-		addKey(ch.ID)
-		addKey(ch.Name)
 	}
-	programs := make([]Program, 0, len(parsed.Programmes))
-	for _, p := range parsed.Programmes {
-		channelID := channelByKey[strings.ToLower(strings.TrimSpace(p.ChannelID))]
-		if channelID == "" {
-			channelID = channelByKey[xmlChannelNames[strings.ToLower(strings.TrimSpace(p.ChannelID))]]
+	programDetails, err := s.sd.Programs(ctx, token, programIDs)
+	if err != nil {
+		return err
+	}
+	byProgramID := map[string]schedulesdirect.ProgramDetail{}
+	for _, p := range programDetails {
+		byProgramID[p.ProgramID] = p
+	}
+
+	channelByStation := map[string]string{}
+	for channelID, stationID := range stationByChannelID {
+		channelByStation[stationID] = channelID
+	}
+
+	programs := make([]Program, 0)
+	for _, sched := range schedules {
+		if sched.Code != 0 {
+			continue
 		}
+		channelID := channelByStation[sched.StationID]
 		if channelID == "" {
 			continue
 		}
-		programs = append(programs, Program{
-			ChannelID:   channelID,
-			SourceID:    source.ID,
-			SeriesID:    stableSeriesID(p.Title),
-			ExternalID:  p.ChannelID + ":" + p.Start.UTC().Format(time.RFC3339) + ":" + p.Title,
-			Start:       p.Start,
-			Stop:        p.Stop,
-			Title:       p.Title,
-			Subtitle:    p.Subtitle,
-			Description: p.Description,
-			Season:      p.Season,
-			Episode:     p.Episode,
-			Genres:      p.Genres,
-			ImageURL:    p.ImageURL,
-			IsNew:       p.IsNew,
-			IsLive:      p.IsLive,
-		})
+		for _, airing := range sched.Programs {
+			start, err := time.Parse(time.RFC3339, airing.AirDateTime)
+			if err != nil {
+				continue
+			}
+			if airing.Duration <= 0 {
+				continue
+			}
+			stop := start.Add(time.Duration(airing.Duration) * time.Second)
+			detail := byProgramID[airing.ProgramID]
+			title := detail.Title()
+			if title == "" {
+				title = airing.ProgramID
+			}
+			season, episode := detail.SeasonEpisode()
+			isNew := airing.New != nil && *airing.New
+			isLive := airing.Live != nil && *airing.Live
+			programs = append(programs, Program{
+				ChannelID:   channelID,
+				SourceID:    source.ID,
+				SeriesID:    schedulesDirectSeriesID(airing.ProgramID, title),
+				ExternalID:  airing.ProgramID + ":" + start.UTC().Format(time.RFC3339),
+				Start:       start.UTC(),
+				Stop:        stop.UTC(),
+				Title:       title,
+				Subtitle:    strings.TrimSpace(detail.EpisodeTitle150),
+				Description: detail.Description(),
+				Season:      season,
+				Episode:     episode,
+				Genres:      detail.Genres,
+				IsNew:       isNew,
+				IsLive:      isLive,
+			})
+		}
 	}
 	if err := s.store.UpsertPrograms(ctx, source.ID, programs); err != nil {
 		return err
 	}
 	return s.ApplySeriesRules(ctx)
+}
+
+func (s *Service) mapChannelsToStations(ctx context.Context, channels []Channel, detail *schedulesdirect.LineupDetail) (map[string]string, error) {
+	stationCallsign := map[string]string{}
+	for _, st := range detail.Stations {
+		stationCallsign[st.StationID] = strings.ToLower(strings.TrimSpace(st.Callsign))
+	}
+	stationByChannelNumber := map[string]string{}
+	for _, m := range detail.Map {
+		stationByChannelNumber[normalizeChannelNumber(m.Channel)] = m.StationID
+	}
+
+	out := map[string]string{}
+	for _, ch := range channels {
+		stationID := strings.TrimSpace(ch.GuideStationID)
+		if stationID == "" {
+			stationID = stationByChannelNumber[normalizeChannelNumber(channelDisplayNumber(ch))]
+		}
+		if stationID == "" {
+			want := strings.ToLower(strings.TrimSpace(ch.Callsign))
+			if want != "" {
+				for id, callsign := range stationCallsign {
+					if callsign == want || strings.HasPrefix(callsign, want) || strings.HasPrefix(want, callsign) {
+						stationID = id
+						break
+					}
+				}
+			}
+		}
+		if stationID == "" {
+			continue
+		}
+		out[ch.ID] = stationID
+		if strings.TrimSpace(ch.GuideStationID) == "" {
+			id := stationID
+			if _, err := s.store.UpdateChannel(ctx, ch.ID, ChannelPatch{GuideStationID: &id}); err != nil {
+				return nil, err
+			}
+		}
+	}
+	return out, nil
+}
+
+func (s *Service) prepareGuideSourceConfig(ctx context.Context, source *GuideSource, existing *GuideSource) error {
+	if source.Type == "" {
+		source.Type = GuideSourceSchedulesDirect
+	}
+	if source.Type != GuideSourceSchedulesDirect {
+		return fmt.Errorf("%w: unsupported guide source type %q", ErrInvalidArgument, source.Type)
+	}
+	if source.Config == nil {
+		source.Config = map[string]string{}
+	}
+	cfg := map[string]string{}
+	for k, v := range source.Config {
+		cfg[k] = v
+	}
+	if existing != nil {
+		for k, v := range existing.Config {
+			if _, ok := cfg[k]; !ok || strings.TrimSpace(cfg[k]) == "" {
+				cfg[k] = v
+			}
+		}
+	}
+
+	username := strings.TrimSpace(cfg["username"])
+	passwordSHA1 := strings.ToLower(strings.TrimSpace(cfg["password_sha1"]))
+	if password := strings.TrimSpace(cfg["password"]); password != "" {
+		passwordSHA1 = schedulesdirect.HashPassword(password)
+	}
+	country := strings.TrimSpace(cfg["country"])
+	if country == "" {
+		country = DefaultSchedulesDirectCountry
+	}
+	postal := strings.TrimSpace(cfg["postalcode"])
+	lineup := strings.TrimSpace(cfg["lineup"])
+	if username == "" || passwordSHA1 == "" || lineup == "" {
+		return fmt.Errorf("%w: schedules direct username, password, and lineup are required", ErrInvalidArgument)
+	}
+	if len(passwordSHA1) != 40 {
+		return fmt.Errorf("%w: schedules direct password_sha1 must be a 40-character sha1 hex digest", ErrInvalidArgument)
+	}
+
+	if s.sd != nil {
+		credsChanged := existing == nil ||
+			strings.TrimSpace(existing.Config["username"]) != username ||
+			strings.TrimSpace(existing.Config["password_sha1"]) != passwordSHA1 ||
+			strings.TrimSpace(existing.Config["lineup"]) != lineup
+		if credsChanged {
+			token, err := s.sd.Token(ctx, username, passwordSHA1)
+			if err != nil {
+				return err
+			}
+			if err := s.sd.AddLineup(ctx, token, lineup); err != nil {
+				return err
+			}
+		}
+	}
+
+	source.Config = map[string]string{
+		"username":      username,
+		"password_sha1": passwordSHA1,
+		"country":       country,
+		"postalcode":    postal,
+		"lineup":        lineup,
+	}
+	if days := strings.TrimSpace(cfg["days"]); days != "" {
+		source.Config["days"] = days
+	}
+	if source.DisplayName == "" {
+		source.DisplayName = "Schedules Direct"
+	}
+	return nil
+}
+
+// RedactGuideSourceConfig removes secrets from guide source config for API responses.
+func RedactGuideSourceConfig(cfg map[string]string) map[string]string {
+	if cfg == nil {
+		return map[string]string{}
+	}
+	out := map[string]string{}
+	for k, v := range cfg {
+		switch k {
+		case "password", "password_sha1":
+			continue
+		default:
+			out[k] = v
+		}
+	}
+	if strings.TrimSpace(cfg["password_sha1"]) != "" || strings.TrimSpace(cfg["password"]) != "" {
+		out["password_configured"] = "true"
+	}
+	return out
+}
+
+func channelDisplayNumber(ch Channel) string {
+	if ch.NumberOverride != nil && strings.TrimSpace(*ch.NumberOverride) != "" {
+		return *ch.NumberOverride
+	}
+	return ch.Number
+}
+
+func normalizeChannelNumber(raw string) string {
+	raw = strings.TrimSpace(strings.ToLower(raw))
+	raw = strings.TrimLeft(raw, "0")
+	if raw == "" {
+		return "0"
+	}
+	return raw
+}
+
+func scheduleDates(now time.Time, days int) []string {
+	if days <= 0 {
+		days = DefaultSchedulesDirectDays
+	}
+	out := make([]string, 0, days)
+	day := now.UTC()
+	for i := 0; i < days; i++ {
+		out = append(out, day.AddDate(0, 0, i).Format("2006-01-02"))
+	}
+	return out
+}
+
+func schedulesDirectSeriesID(programID, title string) string {
+	programID = strings.TrimSpace(programID)
+	if len(programID) >= 10 && (strings.HasPrefix(programID, "EP") || strings.HasPrefix(programID, "SH") || strings.HasPrefix(programID, "MV")) {
+		return strings.ToLower(programID[:10])
+	}
+	return stableSeriesID(title)
+}
+
+func uniqueStrings(in []string) []string {
+	seen := map[string]bool{}
+	out := make([]string, 0, len(in))
+	for _, v := range in {
+		v = strings.TrimSpace(v)
+		if v == "" || seen[v] {
+			continue
+		}
+		seen[v] = true
+		out = append(out, v)
+	}
+	return out
+}
+
+func valuesOf(m map[string]string) []string {
+	out := make([]string, 0, len(m))
+	for _, v := range m {
+		out = append(out, v)
+	}
+	return out
 }
 
 func (s *Service) ListGuide(ctx context.Context, channelIDs []string, start, end time.Time) ([]Program, error) {
@@ -966,7 +1274,7 @@ func (s *Service) FailDueRecordings(ctx context.Context) (int, error) {
 
 func validateGuideSource(source *GuideSource) error {
 	switch source.Type {
-	case GuideSourceXMLTVURL, GuideSourceSchedulesDirect:
+	case GuideSourceSchedulesDirect:
 	default:
 		return fmt.Errorf("%w: unsupported guide source type %q", ErrInvalidArgument, source.Type)
 	}

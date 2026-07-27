@@ -19,11 +19,13 @@ import {
   useLiveTVGuideSources,
   useLiveTVRecordings,
   useLiveTVTuners,
+  useLookupSchedulesDirectLineups,
   usePatchLiveTVChannel,
   useScanLiveTVTuner,
   useSyncLiveTVGuideSource,
   useUpdateLiveTVGuideSource,
 } from "@/hooks/queries/useLiveTV";
+import type { SchedulesDirectLineupOption } from "@/api/types";
 
 const LIVETV_TABS = ["tuners", "channels", "guide", "recordings"] as const;
 type LiveTVTab = (typeof LIVETV_TABS)[number];
@@ -269,8 +271,8 @@ function ChannelsTab() {
   return (
     <div className="space-y-4">
       <p className="text-muted-foreground text-sm">
-        Enable channels for Live TV, override display numbers, and map each channel to a guide
-        station ID from your XMLTV / Schedules Direct source.
+        Enable channels for Live TV, override display numbers, and map each channel to a Schedules
+        Direct station ID. Syncing a guide source can auto-map by channel number or callsign.
       </p>
       {channels.isLoading ? (
         <p className="text-muted-foreground text-sm">Loading channels…</p>
@@ -349,32 +351,77 @@ function GuideTab() {
   const updateSource = useUpdateLiveTVGuideSource();
   const deleteSource = useDeleteLiveTVGuideSource();
   const syncSource = useSyncLiveTVGuideSource();
-  const [displayName, setDisplayName] = useState("XMLTV");
-  const [xmltvURL, setXmltvURL] = useState("");
+  const lookupLineups = useLookupSchedulesDirectLineups();
+  const [displayName, setDisplayName] = useState("Schedules Direct");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [country, setCountry] = useState("USA");
+  const [postalCode, setPostalCode] = useState("");
+  const [lineup, setLineup] = useState("");
+  const [lineups, setLineups] = useState<SchedulesDirectLineupOption[]>([]);
 
-  function addXMLTV() {
-    createSource.mutate(
+  function findLineups() {
+    lookupLineups.mutate(
       {
-        type: "xmltv_url",
-        enabled: true,
-        display_name: displayName.trim() || "XMLTV",
-        priority: 100,
-        config: { url: xmltvURL.trim() },
+        username: username.trim(),
+        password,
+        country: country.trim() || "USA",
+        postalcode: postalCode.trim(),
       },
       {
-        onSuccess: () => {
-          setXmltvURL("");
+        onSuccess: (found) => {
+          setLineups(found);
+          const preferred =
+            found.find((item) => /antenna|ota/i.test(`${item.transport} ${item.name}`)) ?? found[0];
+          setLineup(preferred?.lineup ?? "");
         },
       },
     );
   }
 
+  function addSchedulesDirect() {
+    createSource.mutate(
+      {
+        type: "schedules_direct",
+        enabled: true,
+        display_name: displayName.trim() || "Schedules Direct",
+        priority: 100,
+        config: {
+          username: username.trim(),
+          password,
+          country: country.trim() || "USA",
+          postalcode: postalCode.trim(),
+          lineup: lineup.trim(),
+        },
+      },
+      {
+        onSuccess: () => {
+          setPassword("");
+          setLineups([]);
+        },
+      },
+    );
+  }
+
+  const canAdd =
+    Boolean(username.trim() && password && lineup.trim()) &&
+    (sources.data?.filter((s) => s.enabled).length ?? 0) < 3;
+
   return (
     <div className="space-y-6">
       <div className="max-w-xl space-y-4">
         <p className="text-muted-foreground text-sm">
-          Up to three enabled guide sources, priority-ordered like marker providers. XMLTV URL sync
-          works now; Schedules Direct lands next.
+          Up to three enabled guide sources, priority-ordered like marker providers. Enter your{" "}
+          <a
+            href="https://www.schedulesdirect.org/"
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2"
+          >
+            Schedules Direct
+          </a>{" "}
+          account, look up lineups by postal code (for example{" "}
+          <span className="font-mono">76052</span>), then add the source and sync.
         </p>
         <div className="space-y-1.5">
           <Label htmlFor="guide-name">Display name</Label>
@@ -384,25 +431,90 @@ function GuideTab() {
             onChange={(e) => setDisplayName(e.target.value)}
           />
         </div>
-        <div className="space-y-1.5">
-          <Label htmlFor="xmltv-url">XMLTV URL</Label>
-          <Input
-            id="xmltv-url"
-            placeholder="https://example.com/guide.xml"
-            value={xmltvURL}
-            onChange={(e) => setXmltvURL(e.target.value)}
-          />
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="sd-username">Username</Label>
+            <Input
+              id="sd-username"
+              autoComplete="username"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="sd-password">Password</Label>
+            <Input
+              id="sd-password"
+              type="password"
+              autoComplete="current-password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
+          </div>
         </div>
-        <Button
-          onClick={addXMLTV}
-          disabled={
-            createSource.isPending ||
-            !xmltvURL.trim() ||
-            (sources.data?.filter((s) => s.enabled).length ?? 0) >= 3
-          }
-        >
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="sd-country">Country</Label>
+            <Input
+              id="sd-country"
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              placeholder="USA"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="sd-postal">Postal / ZIP code</Label>
+            <Input
+              id="sd-postal"
+              value={postalCode}
+              onChange={(e) => setPostalCode(e.target.value)}
+              placeholder="76052"
+            />
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={findLineups}
+            disabled={
+              lookupLineups.isPending || !username.trim() || !password || !postalCode.trim()
+            }
+          >
+            <Radar />
+            {lookupLineups.isPending ? "Looking up…" : "Find lineups"}
+          </Button>
+        </div>
+        {lineups.length > 0 ? (
+          <div className="space-y-1.5">
+            <Label htmlFor="sd-lineup">Lineup</Label>
+            <select
+              id="sd-lineup"
+              className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+              value={lineup}
+              onChange={(e) => setLineup(e.target.value)}
+            >
+              {lineups.map((item) => (
+                <option key={item.lineup} value={item.lineup}>
+                  {item.transport} · {item.name} ({item.lineup})
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <div className="space-y-1.5">
+            <Label htmlFor="sd-lineup-manual">Lineup ID</Label>
+            <Input
+              id="sd-lineup-manual"
+              value={lineup}
+              onChange={(e) => setLineup(e.target.value)}
+              placeholder="USA-OTA-76052"
+            />
+          </div>
+        )}
+        <Button onClick={addSchedulesDirect} disabled={createSource.isPending || !canAdd}>
           <Plus />
-          {createSource.isPending ? "Adding…" : "Add XMLTV source"}
+          {createSource.isPending ? "Adding…" : "Add Schedules Direct source"}
         </Button>
       </div>
 
@@ -422,7 +534,8 @@ function GuideTab() {
                   <Badge variant="outline">{source.status}</Badge>
                 </div>
                 <p className="text-muted-foreground truncate text-xs">
-                  {source.config?.url || "No URL"}
+                  {source.config?.lineup || "No lineup"}
+                  {source.config?.postalcode ? ` · ${source.config.postalcode}` : ""}
                   {source.last_sync_at
                     ? ` · last sync ${new Date(source.last_sync_at).toLocaleString()}`
                     : ""}
@@ -446,7 +559,7 @@ function GuideTab() {
                     onCheckedChange={(checked) =>
                       updateSource.mutate({
                         id: source.id,
-                        body: { ...source, enabled: checked },
+                        body: { enabled: checked },
                       })
                     }
                   />

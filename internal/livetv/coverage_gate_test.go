@@ -44,7 +44,7 @@ func TestNewServiceNilDBAndRequireStoreGuards(t *testing.T) {
 	if _, err := svc.ListGuideSources(ctx); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("ListGuideSources: %v", err)
 	}
-	if _, err := svc.CreateGuideSource(ctx, &GuideSource{Type: GuideSourceXMLTVURL}); !errors.Is(err, ErrNotConfigured) {
+	if _, err := svc.CreateGuideSource(ctx, &GuideSource{Type: GuideSourceSchedulesDirect}); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("CreateGuideSource: %v", err)
 	}
 	if _, err := svc.UpdateGuideSource(ctx, &GuideSource{ID: "x"}); !errors.Is(err, ErrNotConfigured) {
@@ -272,13 +272,13 @@ func TestAddTunerDeviceIDValidationAndDiscoverError(t *testing.T) {
 }
 
 func TestUpdateGuideSourceNotFoundAndInvalid(t *testing.T) {
-	svc := NewServiceWithStore(newMemoryStore())
-	if _, err := svc.UpdateGuideSource(context.Background(), &GuideSource{ID: "missing", Type: GuideSourceXMLTVURL}); !errors.Is(err, ErrNotFound) {
+	svc, _ := newTestService(newMemoryStore())
+	if _, err := svc.UpdateGuideSource(context.Background(), &GuideSource{ID: "missing", Type: GuideSourceSchedulesDirect}); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("UpdateGuideSource: %v", err)
 	}
 	src, err := svc.CreateGuideSource(context.Background(), &GuideSource{
-		Type: GuideSourceXMLTVURL, Enabled: false, DisplayName: "A",
-		Config: map[string]string{"url": "https://example.test/a.xml"},
+		Type: GuideSourceSchedulesDirect, Enabled: false, DisplayName: "A",
+		Config: validSDConfig(),
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -430,55 +430,28 @@ func TestOwnerMatchesAndCancelRecording(t *testing.T) {
 	}
 }
 
-func TestSyncGuideSourceXMLTVErrorBranches(t *testing.T) {
-	allowLoopbackMediaFetch(t)
+func TestSyncGuideSourceSchedulesDirectErrorBranches(t *testing.T) {
 	store := newMemoryStore()
-	svc := NewServiceWithStore(store)
+	svc, fake := newTestService(store)
 
-	metadata, err := svc.CreateGuideSource(context.Background(), &GuideSource{
-		Type:        GuideSourceXMLTVURL,
-		DisplayName: "metadata",
-		Config:      map[string]string{"url": "http://169.254.169.254/xmltv.xml"},
+	fake.tokenErr = errors.New("auth failed")
+	src, err := store.CreateGuideSource(context.Background(), &GuideSource{
+		Type:        GuideSourceSchedulesDirect,
+		DisplayName: "bad auth",
+		Config:      storedSDConfig(),
+		Enabled:     true,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := svc.SyncGuideSource(context.Background(), metadata.ID); !errors.Is(err, ErrInvalidArgument) {
-		t.Fatalf("metadata url = %v", err)
+	if err := svc.SyncGuideSource(context.Background(), src.ID); err == nil || !strings.Contains(err.Error(), "auth failed") {
+		t.Fatalf("auth error = %v", err)
 	}
 
-	statusSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		http.Error(w, "nope", http.StatusBadGateway)
-	}))
-	defer statusSrv.Close()
-	svc.httpClient = statusSrv.Client()
-	statusSource, err := svc.CreateGuideSource(context.Background(), &GuideSource{
-		Type:        GuideSourceXMLTVURL,
-		DisplayName: "status",
-		Config:      map[string]string{"url": statusSrv.URL + "/xmltv.xml"},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := svc.SyncGuideSource(context.Background(), statusSource.ID); err == nil || !strings.Contains(err.Error(), "status 502") {
-		t.Fatalf("status error = %v", err)
-	}
-
-	badXMLSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`not xml`))
-	}))
-	defer badXMLSrv.Close()
-	svc.httpClient = badXMLSrv.Client()
-	badXMLSource, err := svc.CreateGuideSource(context.Background(), &GuideSource{
-		Type:        GuideSourceXMLTVURL,
-		DisplayName: "bad xml",
-		Config:      map[string]string{"url": badXMLSrv.URL + "/xmltv.xml"},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := svc.SyncGuideSource(context.Background(), badXMLSource.ID); err == nil || !strings.Contains(err.Error(), "parse xmltv") {
-		t.Fatalf("bad xml error = %v", err)
+	fake.tokenErr = nil
+	fake.lineupErr = errors.New("lineup missing")
+	if err := svc.SyncGuideSource(context.Background(), src.ID); err == nil || !strings.Contains(err.Error(), "lineup missing") {
+		t.Fatalf("lineup error = %v", err)
 	}
 
 	store.guideSources["unsupported"] = GuideSource{ID: "unsupported", Type: "mystery", Config: map[string]string{}}
@@ -489,17 +462,14 @@ func TestSyncGuideSourceXMLTVErrorBranches(t *testing.T) {
 
 func TestSyncSchedulesDirectAndUpdateFill(t *testing.T) {
 	store := newMemoryStore()
-	svc := NewServiceWithStore(store)
+	svc, _ := newTestService(store)
 	src, err := svc.CreateGuideSource(context.Background(), &GuideSource{
 		Type: GuideSourceSchedulesDirect, Enabled: false, DisplayName: "SD",
-		Config: map[string]string{"username": "u"},
+		Config: validSDConfig(),
 		Status: "ready",
 	})
 	if err != nil {
 		t.Fatal(err)
-	}
-	if err := svc.SyncGuideSource(context.Background(), src.ID); !errors.Is(err, ErrNotImplemented) {
-		t.Fatalf("schedules direct sync: %v", err)
 	}
 
 	updated, err := svc.UpdateGuideSource(context.Background(), &GuideSource{
@@ -513,21 +483,26 @@ func TestSyncSchedulesDirectAndUpdateFill(t *testing.T) {
 	if updated.Type != GuideSourceSchedulesDirect || updated.DisplayName != "SD" {
 		t.Fatalf("fill-from-existing: %+v", updated)
 	}
+	if updated.Config["password_configured"] != "true" {
+		t.Fatalf("expected redacted password marker: %+v", updated.Config)
+	}
 
 	n, err := svc.SyncAllEnabledGuideSources(context.Background())
 	if err != nil || n != 0 {
 		t.Fatalf("sync all disabled: n=%d err=%v", n, err)
 	}
 	if _, err := svc.CreateGuideSource(context.Background(), &GuideSource{
-		Type: GuideSourceXMLTVURL, Enabled: true, DisplayName: "X",
-		Config: map[string]string{"url": "https://example.test/x.xml"},
+		Type: GuideSourceSchedulesDirect, Enabled: true, DisplayName: "X",
+		Config: validSDConfig(),
 	}); err != nil {
 		t.Fatal(err)
 	}
+	store.channels["ch1"] = Channel{
+		ID: "ch1", Number: "5.1", Callsign: "KING-HD", Enabled: true,
+	}
 	n, err = svc.SyncAllEnabledGuideSources(context.Background())
-	if n != 1 || err == nil {
-		// sync will fail fetching example.test — that's fine, covers error path
-		t.Logf("sync all enabled: n=%d err=%v", n, err)
+	if err != nil || n != 1 {
+		t.Fatalf("sync all enabled: n=%d err=%v", n, err)
 	}
 }
 
@@ -561,30 +536,28 @@ func TestDiscoverTunersEmptyLANAndAddTunerURLCases(t *testing.T) {
 	}
 }
 
-func TestXMLTVHelpersCoverage(t *testing.T) {
-	if _, err := parseXMLTVTime(""); err == nil {
-		t.Fatal("empty time")
+func TestSchedulesDirectHelpersCoverage(t *testing.T) {
+	if got := normalizeChannelNumber("005.1"); got != "5.1" {
+		t.Fatalf("normalizeChannelNumber = %q", got)
 	}
-	if _, err := parseXMLTVTime("not-a-time"); err == nil {
-		t.Fatal("bad time")
+	if got := normalizeChannelNumber(""); got != "0" {
+		t.Fatalf("empty channel = %q", got)
 	}
-	if oneBasedXMLTVPart("") != nil || oneBasedXMLTVPart("x") != nil {
-		t.Fatal("oneBased edge")
+	dates := scheduleDates(time.Date(2026, 7, 25, 12, 0, 0, 0, time.UTC), 2)
+	if len(dates) != 2 || dates[0] != "2026-07-25" || dates[1] != "2026-07-26" {
+		t.Fatalf("dates = %v", dates)
 	}
-	if got := oneBasedXMLTVPart("2"); got == nil || *got != 3 {
-		t.Fatalf("oneBased ok: %v", got)
+	if schedulesDirectSeriesID("EP012801050074", "Blue Bloods") != "ep01280105" {
+		t.Fatalf("series id from program")
 	}
-	s, e := parseEpisodeNumbers("S01E02")
-	if s == nil || e == nil || *s != 1 || *e != 2 {
-		t.Fatalf("S01E02: %v %v", s, e)
+	if schedulesDirectSeriesID("X", "Evening News") != "evening-news" {
+		t.Fatalf("series id from title")
 	}
-	s, e = parseEpisodeNumbers("E07")
-	if s != nil || e == nil || *e != 7 {
-		t.Fatalf("E07: %v %v", s, e)
-	}
-	s, e = parseEpisodeNumbers("   ")
-	if s != nil || e != nil {
-		t.Fatalf("blank: %v %v", s, e)
+	redacted := RedactGuideSourceConfig(map[string]string{
+		"username": "u", "password": "x", "password_sha1": testSDPasswordSHA1, "lineup": testSDLineup,
+	})
+	if redacted["password"] != "" || redacted["password_sha1"] != "" || redacted["password_configured"] != "true" {
+		t.Fatalf("redacted = %+v", redacted)
 	}
 	if err := ValidateMediaFetchURL("://"); err == nil {
 		t.Fatal("invalid url")

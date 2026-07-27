@@ -15,6 +15,7 @@ import (
 
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	"github.com/prairie-server/prairie-server/internal/livetv"
+	"github.com/prairie-server/prairie-server/internal/livetv/schedulesdirect"
 )
 
 // LiveTVHandler exposes Live TV / OTA / DVR APIs under /api/v1/livetv.
@@ -147,6 +148,25 @@ func (h *LiveTVHandler) HandleListGuideSources(w http.ResponseWriter, r *http.Re
 	writeJSON(w, http.StatusOK, struct {
 		GuideSources []livetv.GuideSource `json:"guide_sources"`
 	}{GuideSources: sources})
+}
+
+func (h *LiveTVHandler) HandleLookupSchedulesDirectLineups(w http.ResponseWriter, r *http.Request) {
+	var body livetv.SchedulesDirectLineupsRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body", "invalid JSON body")
+		return
+	}
+	lineups, err := h.service.ListSchedulesDirectLineups(r.Context(), body)
+	if err != nil {
+		writeLiveTVError(w, err)
+		return
+	}
+	if lineups == nil {
+		lineups = []schedulesdirect.LineupOption{}
+	}
+	writeJSON(w, http.StatusOK, struct {
+		Lineups []schedulesdirect.LineupOption `json:"lineups"`
+	}{Lineups: lineups})
 }
 
 func (h *LiveTVHandler) HandleCreateGuideSource(w http.ResponseWriter, r *http.Request) {

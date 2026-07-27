@@ -116,37 +116,37 @@ func TestServiceAddTunerScansLineup(t *testing.T) {
 
 func TestGuideSourceMaxThreeEnabled(t *testing.T) {
 	store := newMemoryStore()
-	svc := NewServiceWithStore(store)
+	svc, _ := newTestService(store)
 
 	for i := 0; i < MaxGuideSources; i++ {
 		_, err := svc.CreateGuideSource(context.Background(), &GuideSource{
-			Type:        GuideSourceXMLTVURL,
+			Type:        GuideSourceSchedulesDirect,
 			Priority:    100 + i,
 			Enabled:     true,
-			DisplayName: "XMLTV",
-			Config:      map[string]string{"url": "https://example.test/xmltv.xml"},
+			DisplayName: "SD",
+			Config:      validSDConfig(),
 		})
 		if err != nil {
 			t.Fatalf("CreateGuideSource(%d) error = %v", i, err)
 		}
 	}
 	_, err := svc.CreateGuideSource(context.Background(), &GuideSource{
-		Type:        GuideSourceXMLTVURL,
+		Type:        GuideSourceSchedulesDirect,
 		Priority:    400,
 		Enabled:     true,
 		DisplayName: "Too many",
-		Config:      map[string]string{"url": "https://example.test/xmltv.xml"},
+		Config:      validSDConfig(),
 	})
 	if !errors.Is(err, ErrLimitExceeded) {
 		t.Fatalf("CreateGuideSource fourth enabled error = %v, want ErrLimitExceeded", err)
 	}
 
 	disabled, err := svc.CreateGuideSource(context.Background(), &GuideSource{
-		Type:        GuideSourceXMLTVURL,
+		Type:        GuideSourceSchedulesDirect,
 		Priority:    500,
 		Enabled:     false,
 		DisplayName: "Disabled",
-		Config:      map[string]string{"url": "https://example.test/xmltv.xml"},
+		Config:      validSDConfig(),
 	})
 	if err != nil {
 		t.Fatalf("CreateGuideSource disabled error = %v", err)
@@ -154,10 +154,10 @@ func TestGuideSourceMaxThreeEnabled(t *testing.T) {
 
 	_, err = svc.UpdateGuideSource(context.Background(), &GuideSource{
 		ID:          disabled.ID,
-		Type:        GuideSourceXMLTVURL,
+		Type:        GuideSourceSchedulesDirect,
 		Enabled:     true,
 		DisplayName: "Disabled",
-		Config:      map[string]string{"url": "https://example.test/xmltv.xml"},
+		Config:      validSDConfig(),
 	})
 	if !errors.Is(err, ErrLimitExceeded) {
 		t.Fatalf("UpdateGuideSource enable error = %v, want ErrLimitExceeded", err)
@@ -166,25 +166,25 @@ func TestGuideSourceMaxThreeEnabled(t *testing.T) {
 
 func TestGuideSourceReorderPriorities(t *testing.T) {
 	store := newMemoryStore()
-	svc := NewServiceWithStore(store)
+	svc, _ := newTestService(store)
 
 	a, err := svc.CreateGuideSource(context.Background(), &GuideSource{
-		Type: GuideSourceXMLTVURL, Priority: 50, Enabled: false, DisplayName: "A",
-		Config: map[string]string{"url": "https://example.test/a.xml"},
+		Type: GuideSourceSchedulesDirect, Priority: 50, Enabled: false, DisplayName: "A",
+		Config: validSDConfig(),
 	})
 	if err != nil {
 		t.Fatalf("create A: %v", err)
 	}
 	b, err := svc.CreateGuideSource(context.Background(), &GuideSource{
-		Type: GuideSourceXMLTVURL, Priority: 10, Enabled: false, DisplayName: "B",
-		Config: map[string]string{"url": "https://example.test/b.xml"},
+		Type: GuideSourceSchedulesDirect, Priority: 10, Enabled: false, DisplayName: "B",
+		Config: validSDConfig(),
 	})
 	if err != nil {
 		t.Fatalf("create B: %v", err)
 	}
 	c, err := svc.CreateGuideSource(context.Background(), &GuideSource{
-		Type: GuideSourceXMLTVURL, Priority: 200, Enabled: false, DisplayName: "C",
-		Config: map[string]string{"url": "https://example.test/c.xml"},
+		Type: GuideSourceSchedulesDirect, Priority: 200, Enabled: false, DisplayName: "C",
+		Config: validSDConfig(),
 	})
 	if err != nil {
 		t.Fatalf("create C: %v", err)
@@ -203,6 +203,9 @@ func TestGuideSourceReorderPriorities(t *testing.T) {
 	if sources[0].ID != b.ID || sources[1].ID != a.ID || sources[2].ID != c.ID {
 		t.Fatalf("order by original priority wrong: %+v", sources)
 	}
+	if sources[0].Config["password_sha1"] != "" || sources[0].Config["password_configured"] != "true" {
+		t.Fatalf("expected redacted config, got %+v", sources[0].Config)
+	}
 
 	if err := svc.DeleteGuideSource(context.Background(), a.ID); err != nil {
 		t.Fatalf("DeleteGuideSource: %v", err)
@@ -216,44 +219,20 @@ func TestGuideSourceReorderPriorities(t *testing.T) {
 	}
 }
 
-func TestSyncGuideSourceXMLTVMapsChannels(t *testing.T) {
-	allowLoopbackMediaFetch(t)
-	xmlBody := `<?xml version="1.0" encoding="UTF-8"?>
-<tv>
-  <channel id="KING"><display-name>KING-HD</display-name></channel>
-  <channel id="orphan"><display-name>Orphan</display-name></channel>
-  <programme start="20260725190000 +0000" stop="20260725200000 +0000" channel="KING">
-    <title>Evening News</title>
-    <sub-title>Weekend</sub-title>
-    <desc>Headlines</desc>
-    <category>News</category>
-    <new/>
-  </programme>
-  <programme start="20260725200000 +0000" stop="20260725210000 +0000" channel="orphan">
-    <title>Unmapped</title>
-  </programme>
-</tv>`
-
-	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		w.Header().Set("Content-Type", "application/xml")
-		_, _ = w.Write([]byte(xmlBody))
-	}))
-	defer srv.Close()
-
+func TestSyncGuideSourceSchedulesDirectMapsChannels(t *testing.T) {
 	store := newMemoryStore()
 	store.tuners["t1"] = Tuner{ID: "t1", Type: TunerTypeHDHomeRun, DeviceID: "d1", TunerCount: 2, Status: "ready"}
 	store.channels["ch1"] = Channel{
 		ID: "ch1", TunerID: "t1", Number: "5.1", Callsign: "KING-HD", Name: "KING-HD", Enabled: true, StreamURL: "http://x/auto/v5.1",
 	}
 
-	svc := NewServiceWithStore(store)
-	svc.httpClient = srv.Client()
+	svc, _ := newTestService(store)
 	fixed := time.Date(2026, 7, 25, 12, 0, 0, 0, time.UTC)
 	svc.now = func() time.Time { return fixed }
 
 	source, err := svc.CreateGuideSource(context.Background(), &GuideSource{
-		Type: GuideSourceXMLTVURL, Enabled: true, DisplayName: "XMLTV",
-		Config: map[string]string{"url": srv.URL + "/xmltv.xml"},
+		Type: GuideSourceSchedulesDirect, Enabled: true, DisplayName: "SD",
+		Config: validSDConfig(),
 	})
 	if err != nil {
 		t.Fatalf("CreateGuideSource: %v", err)
@@ -266,6 +245,10 @@ func TestSyncGuideSourceXMLTVMapsChannels(t *testing.T) {
 	if err != nil || got == nil || got.Status != "ready" {
 		t.Fatalf("source status = %+v err=%v", got, err)
 	}
+	ch, err := store.GetChannel(context.Background(), "ch1")
+	if err != nil || ch == nil || ch.GuideStationID != "20454" {
+		t.Fatalf("auto-mapped guide station = %+v err=%v", ch, err)
+	}
 
 	start := time.Date(2026, 7, 25, 18, 0, 0, 0, time.UTC)
 	end := time.Date(2026, 7, 25, 22, 0, 0, 0, time.UTC)
@@ -276,7 +259,7 @@ func TestSyncGuideSourceXMLTVMapsChannels(t *testing.T) {
 	if len(programs) != 1 || programs[0].Title != "Evening News" || programs[0].ChannelID != "ch1" {
 		t.Fatalf("programs = %+v", programs)
 	}
-	if programs[0].SeriesID != "evening-news" || !programs[0].IsNew {
+	if programs[0].SeriesID != "ep00000001" || !programs[0].IsNew {
 		t.Fatalf("unexpected program fields: %+v", programs[0])
 	}
 
@@ -291,32 +274,44 @@ func TestSyncGuideSourceXMLTVMapsChannels(t *testing.T) {
 	}
 }
 
-func TestSyncGuideSourceSchedulesDirectNotImplemented(t *testing.T) {
+func TestListSchedulesDirectLineups(t *testing.T) {
+	svc, _ := newTestService(newMemoryStore())
+	lineups, err := svc.ListSchedulesDirectLineups(context.Background(), SchedulesDirectLineupsRequest{
+		Username:   "tester",
+		Password:   testSDPassword,
+		Country:    "USA",
+		PostalCode: "76052",
+	})
+	if err != nil {
+		t.Fatalf("ListSchedulesDirectLineups: %v", err)
+	}
+	if len(lineups) != 1 || lineups[0].Lineup != testSDLineup {
+		t.Fatalf("lineups = %+v", lineups)
+	}
+}
+
+func TestSyncGuideSourceMissingCredentials(t *testing.T) {
 	store := newMemoryStore()
-	svc := NewServiceWithStore(store)
-	source, err := svc.CreateGuideSource(context.Background(), &GuideSource{
+	svc, _ := newTestService(store)
+	source, err := store.CreateGuideSource(context.Background(), &GuideSource{
 		Type: GuideSourceSchedulesDirect, Enabled: true, DisplayName: "SD",
 		Config: map[string]string{"username": "u"},
 	})
 	if err != nil {
-		t.Fatalf("CreateGuideSource: %v", err)
+		t.Fatalf("CreateGuideSource store: %v", err)
 	}
 	err = svc.SyncGuideSource(context.Background(), source.ID)
-	if !errors.Is(err, ErrNotImplemented) {
-		t.Fatalf("error = %v, want ErrNotImplemented", err)
+	if !errors.Is(err, ErrInvalidArgument) {
+		t.Fatalf("error = %v, want ErrInvalidArgument", err)
 	}
 }
 
-func TestSyncGuideSourceMissingURL(t *testing.T) {
-	store := newMemoryStore()
-	svc := NewServiceWithStore(store)
-	source, err := svc.CreateGuideSource(context.Background(), &GuideSource{
-		Type: GuideSourceXMLTVURL, Enabled: true, DisplayName: "XMLTV", Config: map[string]string{},
+func TestCreateGuideSourceRequiresLineup(t *testing.T) {
+	svc, _ := newTestService(newMemoryStore())
+	_, err := svc.CreateGuideSource(context.Background(), &GuideSource{
+		Type: GuideSourceSchedulesDirect, Enabled: true, DisplayName: "SD",
+		Config: map[string]string{"username": "u", "password": "secret"},
 	})
-	if err != nil {
-		t.Fatalf("CreateGuideSource: %v", err)
-	}
-	err = svc.SyncGuideSource(context.Background(), source.ID)
 	if !errors.Is(err, ErrInvalidArgument) {
 		t.Fatalf("error = %v, want ErrInvalidArgument", err)
 	}
@@ -829,7 +824,7 @@ func TestCreateGuideSourceInvalidType(t *testing.T) {
 	if !errors.Is(err, ErrInvalidArgument) {
 		t.Fatalf("error = %v", err)
 	}
-	_, err = svc.UpdateGuideSource(context.Background(), &GuideSource{ID: "missing", Type: GuideSourceXMLTVURL})
+	_, err = svc.UpdateGuideSource(context.Background(), &GuideSource{ID: "missing", Type: GuideSourceSchedulesDirect})
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("update missing = %v", err)
 	}
@@ -912,24 +907,18 @@ func TestServiceStoreErrorBranches(t *testing.T) {
 		t.Fatalf("persistent conflict = %v", err)
 	}
 
-	xmlSrv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
-		_, _ = w.Write([]byte(`<?xml version="1.0"?><tv><channel id="KING"><display-name>KING</display-name></channel><programme start="20260725190000" stop="20260725200000" channel="KING"><title>News</title></programme></tv>`)) //nolint:misspell // XMLTV element name
-	}))
-	defer xmlSrv.Close()
-
 	channelErr := &erroringStore{memoryStore: newMemoryStore(), listChannelsErr: true}
-	svc = NewServiceWithStore(channelErr)
-	svc.httpClient = xmlSrv.Client()
-	if err := svc.syncXMLTV(context.Background(), &GuideSource{ID: "src", Config: map[string]string{"url": xmlSrv.URL}}); !errors.Is(err, errStoreBoom) {
-		t.Fatalf("syncXMLTV ListChannels error = %v", err)
+	svc, fake := newTestService(channelErr)
+	if err := svc.syncSchedulesDirect(context.Background(), &GuideSource{ID: "src", Config: storedSDConfig()}); !errors.Is(err, errStoreBoom) {
+		t.Fatalf("syncSchedulesDirect ListChannels error = %v", err)
 	}
 
 	upsertErr := &erroringStore{memoryStore: newMemoryStore(), upsertProgramsErr: true}
-	upsertErr.channels["ch1"] = Channel{ID: "ch1", Callsign: "KING", Enabled: true}
-	svc = NewServiceWithStore(upsertErr)
-	svc.httpClient = xmlSrv.Client()
-	if err := svc.syncXMLTV(context.Background(), &GuideSource{ID: "src", Config: map[string]string{"url": xmlSrv.URL}}); !errors.Is(err, errStoreBoom) {
-		t.Fatalf("syncXMLTV UpsertPrograms error = %v", err)
+	upsertErr.channels["ch1"] = Channel{ID: "ch1", Number: "5.1", Callsign: "KING-HD", Enabled: true}
+	svc, fake = newTestService(upsertErr)
+	_ = fake
+	if err := svc.syncSchedulesDirect(context.Background(), &GuideSource{ID: "src", Config: storedSDConfig()}); !errors.Is(err, errStoreBoom) {
+		t.Fatalf("syncSchedulesDirect UpsertPrograms error = %v", err)
 	}
 }
 
