@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import { Link, Outlet, useLocation } from "react-router";
 import {
   Play,
@@ -440,7 +440,15 @@ export default function SettingsLayout() {
 
           <div className="min-w-0 flex-1 pt-8 lg:pt-0">
             <div className="mx-auto w-full max-w-3xl">
-              <Outlet />
+              <Suspense
+                fallback={
+                  <div className="p-8" role="status" aria-live="polite">
+                    Loading...
+                  </div>
+                }
+              >
+                <Outlet />
+              </Suspense>
             </div>
           </div>
         </div>

@@ -26,34 +26,18 @@ import { RealtimeEventsProvider } from "@/components/RealtimeEventsProvider";
 import { useEventChannel } from "@/components/realtimeEventsContext";
 import Layout from "@/components/Layout";
 import AdminLayout from "@/components/AdminLayout";
-import { useFavorites } from "@/hooks/queries/favorites";
-import { useRequestFeatureStatus } from "@/hooks/queries/useRequests";
-import { isTasteSeedDismissed } from "@/lib/tasteSeed";
-import {
-  WatchPlaybackBar,
-  WatchPlaybackHost,
-  WatchPlaybackProvider,
-} from "@/playback/WatchPlaybackChrome";
-import { AudiobookPlaybackProvider } from "@/pages/audiobooks/player/audiobookPlaybackContext";
-import type { ReactNode } from "react";
-import {
-  buildLegacyBrowseCatalogHref,
-  buildPersonalCatalogHref,
-  buildQueryCatalogHref,
-  buildUserCollectionCatalogHref,
-} from "@/pages/catalogSearchParams";
-import { buildLegacyWebhookSyncRedirectTarget } from "@/lib/webhookSync";
-import { toast } from "sonner";
 
-const Home = lazy(() => import("@/pages/Home"));
-const Login = lazy(() => import("@/pages/Login"));
-const OAuthComplete = lazy(() => import("@/pages/OAuthComplete"));
-const ActivateDevice = lazy(() => import("@/pages/ActivateDevice"));
-const SetupWizard = lazy(() => import("@/pages/SetupWizard"));
-const Profiles = lazy(() => import("@/pages/Profiles"));
-const Catalog = lazy(() => import("@/pages/Catalog"));
-const LibraryPage = lazy(() => import("@/pages/LibraryPage"));
-const ItemDetail = lazy(() => import("@/pages/ItemDetail/index"));
+import Home from "@/pages/Home";
+import Login from "@/pages/Login";
+import OAuthComplete from "@/pages/OAuthComplete";
+import ActivateDevice from "@/pages/ActivateDevice";
+import SetupWizard from "@/pages/SetupWizard";
+import Profiles from "@/pages/Profiles";
+import Catalog from "@/pages/Catalog";
+import LibraryPage from "@/pages/LibraryPage";
+import ItemDetail from "@/pages/ItemDetail/index";
+import Signup from "@/pages/Signup";
+
 const EbookReader = lazy(() => import("@/pages/EbookReader"));
 const PersonDetail = lazy(() => import("@/pages/PersonDetail"));
 const Collections = lazy(() => import("@/pages/Collections"));
@@ -95,20 +79,16 @@ const AdminPolicyLayout = lazy(() => import("@/pages/admin-policy/AdminPolicyLay
 const Recommendations = lazy(() => import("@/pages/Recommendations"));
 const RecommendationsSection = lazy(() => import("@/pages/RecommendationsSection"));
 const Calendar = lazy(() => import("@/pages/Calendar"));
-const Signup = lazy(() => import("@/pages/Signup"));
 const TasteSeed = lazy(() => import("@/pages/TasteSeed"));
-const SettingsLayout = lazy(() => import("@/pages/SettingsLayout"));
+import SettingsLayout from "@/pages/SettingsLayout";
 const AppearanceSettings = lazy(() => import("@/pages/settings/AppearanceSettings"));
 const AccessibilitySettings = lazy(() => import("@/pages/settings/AccessibilitySettings"));
-const PlaybackSettings = lazy(() => import("@/pages/settings/PlaybackSettings"));
+import PlaybackSettings from "@/pages/settings/PlaybackSettings";
 const ProfilesSettings = lazy(() => import("@/pages/settings/ProfilesSettings"));
 const LibrarySettings = lazy(() => import("@/pages/settings/LibrarySettings"));
 const HistoryImportSettings = lazy(() => import("@/pages/settings/HistoryImportSettings"));
 const WebhookSyncSettings = lazy(() => import("@/pages/settings/WebhookSyncSettings"));
 const WatchProvidersSettings = lazy(() => import("@/pages/settings/WatchProvidersSettings"));
-const SubtitleAppearanceSettings = lazy(
-  () => import("@/pages/settings/SubtitleAppearanceSettings"),
-);
 const HomeScreenSettings = lazy(() => import("@/pages/settings/HomeScreenSettings"));
 const ThemeEditorSettings = lazy(() => import("@/pages/settings/ThemeEditorSettings"));
 const CardOverlaySettings = lazy(() => import("@/pages/settings/CardOverlaySettings"));
@@ -117,6 +97,29 @@ const WatchTogetherJoin = lazy(() => import("@/pages/WatchTogetherJoin"));
 const WatchTogetherRoomPage = lazy(() => import("@/pages/WatchTogetherRoomPage"));
 const WatchRoute = lazy(() => import("@/pages/WatchRoute"));
 const ProfileCustomizeHome = lazy(() => import("@/pages/ProfileCustomizeHome"));
+
+import { useFavorites } from "@/hooks/queries/favorites";
+import { useRequestFeatureStatus } from "@/hooks/queries/useRequests";
+import { isTasteSeedDismissed } from "@/lib/tasteSeed";
+import {
+  WatchPlaybackBar,
+  WatchPlaybackHost,
+  WatchPlaybackProvider,
+} from "@/playback/WatchPlaybackChrome";
+import { AudiobookPlaybackProvider } from "@/pages/audiobooks/player/audiobookPlaybackContext";
+import type { ReactNode } from "react";
+import {
+  buildLegacyBrowseCatalogHref,
+  buildPersonalCatalogHref,
+  buildQueryCatalogHref,
+  buildUserCollectionCatalogHref,
+} from "@/pages/catalogSearchParams";
+import { buildLegacyWebhookSyncRedirectTarget } from "@/lib/webhookSync";
+import { toast } from "sonner";
+
+const SubtitleAppearanceSettings = lazy(
+  () => import("@/pages/settings/SubtitleAppearanceSettings"),
+);
 
 function PageFallback() {
   return (
