@@ -297,7 +297,9 @@ export function useTriggerWatchProviderSync(provider: string) {
       queryClient.setQueryData(watchProviderKeys.syncRuns(profileId, provider), {
         runs: [response.run],
       });
-      void queryClient.invalidateQueries({ queryKey: watchProviderKeys.syncRuns(profileId, provider) });
+      void queryClient.invalidateQueries({
+        queryKey: watchProviderKeys.syncRuns(profileId, provider),
+      });
       void queryClient.invalidateQueries({
         queryKey: watchProviderKeys.connection(profileId, provider),
       });

@@ -244,7 +244,9 @@ export function useUpsertLibraryRootOverride() {
         body: JSON.stringify(body),
       }),
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: adminKeys.libraryRoots(variables.library_id) });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.libraryRoots(variables.library_id),
+      });
       toast.success("Root override saved");
     },
     onError: (err) => {
@@ -262,7 +264,9 @@ export function useDeleteLibraryRootOverride() {
         body: JSON.stringify(body),
       }),
     onSuccess: (_data, variables) => {
-      void queryClient.invalidateQueries({ queryKey: adminKeys.libraryRoots(variables.library_id) });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.libraryRoots(variables.library_id),
+      });
       toast.success("Root override removed");
     },
     onError: (err) => {

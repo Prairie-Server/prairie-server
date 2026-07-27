@@ -427,7 +427,9 @@ export function useUpdateRequestUserLimit() {
       }),
     onSuccess: (_data, variables) => {
       toast.success("User request limit saved");
-      void queryClient.invalidateQueries({ queryKey: adminKeys.requestUserLimit(variables.userId) });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.requestUserLimit(variables.userId),
+      });
       invalidateRequestSurfaces(queryClient);
     },
     onError: (err) => {

@@ -312,7 +312,9 @@ export function useCheckPluginUpdates() {
       ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: adminKeys.tasks() });
-      void queryClient.invalidateQueries({ queryKey: adminKeys.task(CHECK_PLUGIN_UPDATES_TASK_KEY) });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.task(CHECK_PLUGIN_UPDATES_TASK_KEY),
+      });
       void invalidatePluginQueries(queryClient);
       toast.success("Plugin update check started");
     },
