@@ -1425,19 +1425,10 @@ func main() {
 			avifBackfillProcessor = metadata.NewAVIFBackfillProcessor(avifBackfillJobs, imageCacher)
 			configureAVIFEncoder(cfg)
 			configureWebPEncoder(cfg)
-			avifWorkers := metadata.ResolveAVIFBackfillWorkersFor(
-				cfg.Metadata.AVIFBackfillWorkers,
-				imageutil.ActiveAVIFBackend(),
-				cfg.Metadata.AVIFNVENCSessions,
-			)
+			avifWorkers := resolveArtworkAVIFWorkers(cfg)
 			avifBackfillProcessor.SetWorkers(avifWorkers)
 			imageCacher.SetAVIFBackfillConcurrency(avifWorkers)
-			// Shared WebP+AVIF in-flight cap: NumCPU on CPU backends so a 4-core
-			// box is not oversubscribed by (WebP workers)+(AVIF workers).
-			imageutil.SetEncodeBudgetSize(0)
-			if imageutil.ActiveAVIFBackend() == imageutil.BackendNVENC {
-				imageutil.SetEncodeBudgetSize(avifWorkers)
-			}
+			applyArtworkEncodeBudget(cfg, avifWorkers)
 			if artworkChecker := artworkObjectChecker(deps); artworkChecker != nil {
 				avifBackfillProcessor.SetDiscoverer(metadata.NewAVIFSiblingReconciler(deps.DB, artworkChecker))
 			}
@@ -1454,17 +1445,10 @@ func main() {
 				avifBackfillProcessor.SetEnabled(updated.Metadata.CacheImages)
 				configureAVIFEncoder(updated)
 				configureWebPEncoder(updated)
-				avifWorkers := metadata.ResolveAVIFBackfillWorkersFor(
-					updated.Metadata.AVIFBackfillWorkers,
-					imageutil.ActiveAVIFBackend(),
-					updated.Metadata.AVIFNVENCSessions,
-				)
+				avifWorkers := resolveArtworkAVIFWorkers(updated)
 				avifBackfillProcessor.SetWorkers(avifWorkers)
 				imageCacher.SetAVIFBackfillConcurrency(avifWorkers)
-				imageutil.SetEncodeBudgetSize(0)
-				if imageutil.ActiveAVIFBackend() == imageutil.BackendNVENC {
-					imageutil.SetEncodeBudgetSize(avifWorkers)
-				}
+				applyArtworkEncodeBudget(updated, avifWorkers)
 				if updated.Metadata.CacheImages && !wasEnabled {
 					// Enabling caching must backfill existing item posters, not
 					// wait for the next match/refresh of each title.
@@ -2198,10 +2182,20 @@ func main() {
 		if refreshWorker != nil && metadataService != nil {
 			taskMgr.Register(tasks.NewRefreshMetadataTask(refreshWorker, metadataService))
 		}
+		// Artwork encoding competes with playback ffmpeg for the same cores, so
+		// both artwork tasks consult live session state: the AVIF backfill stands
+		// down entirely (durable queue, resumes on the next tick) and the WebP
+		// cache drops to a single encode slot.
+		playbackActive := func() bool { return sessionMgr.HasActiveSessions() }
+		artworkPauseEnabled := func() bool { return configWatcher.Config().Metadata.PauseArtworkDuringPlayback }
+		artworkShouldYield := func() bool { return artworkPauseEnabled() && playbackActive() }
 		if metadataImageCacheProcessor != nil {
-			taskMgr.Register(tasks.NewCacheMetadataImagesTask(metadataImageCacheProcessor))
+			cacheImagesTask := tasks.NewCacheMetadataImagesTask(metadataImageCacheProcessor)
+			cacheImagesTask.SetPlaybackActivityCheck(artworkShouldYield)
+			taskMgr.Register(cacheImagesTask)
 		}
 		if avifBackfillProcessor != nil {
+			avifBackfillProcessor.SetPlaybackActivityCheck(artworkShouldYield)
 			taskMgr.Register(tasks.NewBackfillAVIFSiblingsTask(avifBackfillProcessor))
 		}
 		if artworkChecker := artworkObjectChecker(deps); artworkChecker != nil {
@@ -3045,6 +3039,40 @@ func configureWebPEncoder(cfg *config.Config) {
 		slog.Warn("imageutil: WebP encoder configure failed; keeping previous backend",
 			"component", "imageutil", "error", err)
 	}
+}
+
+// resolveArtworkAVIFWorkers picks the AVIF backfill concurrency. The dedicated
+// avif_backfill_workers setting wins; otherwise the shared artwork encode
+// budget governs, so one knob caps total artwork encode work.
+func resolveArtworkAVIFWorkers(cfg *config.Config) int {
+	if cfg == nil {
+		return metadata.ResolveAVIFBackfillWorkers(0)
+	}
+	configured := cfg.Metadata.AVIFBackfillWorkers
+	if configured <= 0 {
+		configured = cfg.Metadata.ArtworkEncodeWorkers
+	}
+	return metadata.ResolveAVIFBackfillWorkersFor(
+		configured,
+		imageutil.ActiveAVIFBackend(),
+		cfg.Metadata.AVIFNVENCSessions,
+	)
+}
+
+// applyArtworkEncodeBudget sets the shared WebP+AVIF in-flight cap. An explicit
+// admin budget always wins; otherwise NVENC follows its session cap and CPU
+// backends take the automatic budget, which stays well below the core count so
+// playback ffmpeg is never crowded out by artwork encoding.
+func applyArtworkEncodeBudget(cfg *config.Config, avifWorkers int) {
+	if cfg != nil && cfg.Metadata.ArtworkEncodeWorkers > 0 {
+		imageutil.SetEncodeBudgetSize(cfg.Metadata.ArtworkEncodeWorkers)
+		return
+	}
+	if imageutil.ActiveAVIFBackend() == imageutil.BackendNVENC {
+		imageutil.SetEncodeBudgetSize(avifWorkers)
+		return
+	}
+	imageutil.SetEncodeBudgetSize(0)
 }
 
 func artworkBackendName(deps api.Dependencies) string {

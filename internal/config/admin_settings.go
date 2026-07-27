@@ -43,18 +43,20 @@ var adminSettingDefaults = map[string]string{
 	"userdb.pool_max_open":     "500",
 	"userdb.idle_timeout":      "12h",
 
-	"scanner.workers":                "8",
-	"matcher.workers":                "8",
-	"matcher.batch_size":             "500",
-	"metadata.cache_images":          "true",
-	"metadata.avif_backfill_workers": "0",
-	"metadata.avif_encoder":          "auto",
-	"metadata.avif_ffmpeg_path":      "ffmpeg",
-	"metadata.avif_nvenc_sessions":   "0",
-	"metadata.webp_encoder":          "auto",
-	"artwork.local_dir":              "/var/lib/prairie/artwork",
-	"markers.mode":                   "local",
-	"markers.lazy_playback":          "false",
+	"scanner.workers":                        "8",
+	"matcher.workers":                        "8",
+	"matcher.batch_size":                     "500",
+	"metadata.cache_images":                  "true",
+	"metadata.artwork_encode_workers":        "0",
+	"metadata.pause_artwork_during_playback": "true",
+	"metadata.avif_backfill_workers":         "0",
+	"metadata.avif_encoder":                  "auto",
+	"metadata.avif_ffmpeg_path":              "ffmpeg",
+	"metadata.avif_nvenc_sessions":           "0",
+	"metadata.webp_encoder":                  "auto",
+	"artwork.local_dir":                      "/var/lib/prairie/artwork",
+	"markers.mode":                           "local",
+	"markers.lazy_playback":                  "false",
 
 	"playback.ffmpeg_path":                     "/usr/lib/jellyfin-ffmpeg/ffmpeg",
 	"playback.transcode_dir":                   DefaultTranscodeDir,
@@ -299,6 +301,8 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 	case "scanner.workers", "matcher.workers":
 		return normalizeAdminInt(key, value, 1, 1024)
 	case "metadata.avif_backfill_workers":
+		return normalizeAdminInt(key, value, 0, 1024)
+	case "metadata.artwork_encode_workers":
 		return normalizeAdminInt(key, value, 0, 1024)
 	case "metadata.avif_nvenc_sessions":
 		return normalizeAdminInt(key, value, 0, 64)
