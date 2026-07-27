@@ -2,7 +2,6 @@ package livetv
 
 import (
 	"context"
-	"strings"
 	"sync"
 
 	"github.com/prairie-server/prairie-server/internal/livetv/schedulesdirect"
@@ -144,17 +143,4 @@ func newTestService(store Store) (*Service, *fakeSD) {
 	fake := newFakeSD()
 	svc.SetSchedulesDirectClient(fake)
 	return svc, fake
-}
-
-func sdConfigOrDefault(cfg map[string]string) map[string]string {
-	if cfg == nil {
-		return validSDConfig()
-	}
-	out := validSDConfig()
-	for k, v := range cfg {
-		if strings.TrimSpace(v) != "" {
-			out[k] = v
-		}
-	}
-	return out
 }

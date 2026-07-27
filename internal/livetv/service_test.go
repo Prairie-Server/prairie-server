@@ -908,15 +908,14 @@ func TestServiceStoreErrorBranches(t *testing.T) {
 	}
 
 	channelErr := &erroringStore{memoryStore: newMemoryStore(), listChannelsErr: true}
-	svc, fake := newTestService(channelErr)
+	svc, _ = newTestService(channelErr)
 	if err := svc.syncSchedulesDirect(context.Background(), &GuideSource{ID: "src", Config: storedSDConfig()}); !errors.Is(err, errStoreBoom) {
 		t.Fatalf("syncSchedulesDirect ListChannels error = %v", err)
 	}
 
 	upsertErr := &erroringStore{memoryStore: newMemoryStore(), upsertProgramsErr: true}
 	upsertErr.channels["ch1"] = Channel{ID: "ch1", Number: "5.1", Callsign: "KING-HD", Enabled: true}
-	svc, fake = newTestService(upsertErr)
-	_ = fake
+	svc, _ = newTestService(upsertErr)
 	if err := svc.syncSchedulesDirect(context.Background(), &GuideSource{ID: "src", Config: storedSDConfig()}); !errors.Is(err, errStoreBoom) {
 		t.Fatalf("syncSchedulesDirect UpsertPrograms error = %v", err)
 	}
@@ -965,6 +964,11 @@ type erroringStore struct {
 	upsertProgramsErr bool
 	activeIndicesErr  bool
 	createSessionErr  bool
+	createGuideErr    bool
+	listGuideErr      bool
+	getGuideErr       bool
+	updateGuideErr    bool
+	deleteGuideErr    bool
 }
 
 func (s *erroringStore) CreateTuner(ctx context.Context, tuner *Tuner) (*Tuner, error) {
@@ -1021,6 +1025,41 @@ func (s *erroringStore) CreateSession(ctx context.Context, input SessionCreate) 
 		return nil, errStoreBoom
 	}
 	return s.memoryStore.CreateSession(ctx, input)
+}
+
+func (s *erroringStore) ListGuideSources(ctx context.Context, enabledOnly bool) ([]GuideSource, error) {
+	if s.listGuideErr {
+		return nil, errStoreBoom
+	}
+	return s.memoryStore.ListGuideSources(ctx, enabledOnly)
+}
+
+func (s *erroringStore) GetGuideSource(ctx context.Context, id string) (*GuideSource, error) {
+	if s.getGuideErr {
+		return nil, errStoreBoom
+	}
+	return s.memoryStore.GetGuideSource(ctx, id)
+}
+
+func (s *erroringStore) CreateGuideSource(ctx context.Context, source *GuideSource) (*GuideSource, error) {
+	if s.createGuideErr {
+		return nil, errStoreBoom
+	}
+	return s.memoryStore.CreateGuideSource(ctx, source)
+}
+
+func (s *erroringStore) UpdateGuideSource(ctx context.Context, source *GuideSource) (*GuideSource, error) {
+	if s.updateGuideErr {
+		return nil, errStoreBoom
+	}
+	return s.memoryStore.UpdateGuideSource(ctx, source)
+}
+
+func (s *erroringStore) DeleteGuideSource(ctx context.Context, id string) error {
+	if s.deleteGuideErr {
+		return errStoreBoom
+	}
+	return s.memoryStore.DeleteGuideSource(ctx, id)
 }
 
 type memoryStore struct {
