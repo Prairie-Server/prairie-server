@@ -29,6 +29,26 @@ export function preconnectToStreamOrigin(streamUrl: string): void {
   document.head.appendChild(link);
 }
 
+/**
+ * Join an API base (`/api/v1` or an absolute origin) with a server-supplied
+ * stream path. Paths that already include `/api/` must not be double-prefixed
+ * when `apiBaseUrl` is the relative `/api/v1` mount (legacy responses returned
+ * bare `/stream/...` / `/playback/...` and relied on the prefix).
+ */
+export function joinApiStreamPath(apiBaseUrl: string, streamPath: string): string {
+  if (streamPath.startsWith("http://") || streamPath.startsWith("https://")) {
+    return streamPath;
+  }
+  const path = streamPath.startsWith("/") ? streamPath : `/${streamPath}`;
+  if (path.startsWith("/api/")) {
+    if (apiBaseUrl.startsWith("http://") || apiBaseUrl.startsWith("https://")) {
+      return `${apiBaseUrl.replace(/\/+$/, "")}${path}`;
+    }
+    return path;
+  }
+  return `${apiBaseUrl.replace(/\/+$/, "")}${path}`;
+}
+
 export function buildPlayerStreamUrl(
   apiBaseUrl: string,
   streamPath: string,
@@ -47,10 +67,7 @@ export function buildPlayerStreamUrl(
   }
 
   const query = params.toString();
-  const base =
-    streamPath.startsWith("http://") || streamPath.startsWith("https://")
-      ? streamPath
-      : `${apiBaseUrl}${streamPath}`;
+  const base = joinApiStreamPath(apiBaseUrl, streamPath);
   if (!query) {
     return base;
   }

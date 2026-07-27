@@ -35,7 +35,7 @@ function transcodeStartResponse(overrides: Record<string, unknown> = {}) {
     json: async () => ({
       session_id: "sess-1",
       status: "started",
-      manifest_url: "/playback/transcode/sess-1/master.m3u8",
+      manifest_url: "/api/v1/playback/transcode/sess-1/master.m3u8",
       duration_seconds: 7200,
       player_start_seconds: 0,
       timeline_offset_seconds: 0,

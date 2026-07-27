@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePlayerConfig } from "../context/PlayerConfigContext";
 import { PlayerFetchError, playerFetch } from "../player-fetch";
 import { describeTranscodingPolicyError } from "../playback-errors";
+import { joinApiStreamPath } from "../stream-url";
 import type {
   PlaybackTransportRestart,
   PlayMethod,
@@ -447,8 +448,9 @@ export function useTranscodeQuality({
 
           let manifestUrl = resp.manifest_url;
           if (manifestUrl.startsWith("/")) {
-            // Relative path — prepend API base URL.
-            manifestUrl = `${config.apiBaseUrl}${manifestUrl}`;
+            // Relative path — join with API base without double-prefixing
+            // `/api/v1` when the server already returned a full API path.
+            manifestUrl = joinApiStreamPath(config.apiBaseUrl, manifestUrl);
           }
           if (query) {
             manifestUrl += (manifestUrl.includes("?") ? "&" : "?") + query;

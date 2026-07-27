@@ -575,7 +575,7 @@ func TestBuildTranscodeStartResponse_UnifiedSeekAnywhere(t *testing.T) {
 		},
 		file,
 		nil,
-		"/playback/transcode/session-copy/master.m3u8",
+		"/api/v1/playback/transcode/session-copy/master.m3u8",
 		16,
 	)
 	if copyResp.CanSeekAnywhere {
@@ -599,7 +599,7 @@ func TestBuildTranscodeStartResponse_UnifiedSeekAnywhere(t *testing.T) {
 		},
 		file,
 		nil,
-		"/playback/transcode/session-encoded/master.m3u8",
+		"/api/v1/playback/transcode/session-encoded/master.m3u8",
 		0,
 	)
 	if !encodedResp.CanSeekAnywhere {
@@ -2903,6 +2903,129 @@ func TestHandleStartTranscode_SeekedCopyAllowedWhenVideoTranscodingDisabled(t *t
 	t.Cleanup(func() { _ = transcodeSession.Close() })
 	if got := transcodeSession.Opts().TargetCodecVideo; got != "copy" {
 		t.Fatalf("target video codec = %q, want copy", got)
+	}
+}
+
+func TestPlaybackAdvertisedURLsIncludeAPIV1Prefix(t *testing.T) {
+	sessionMgr := playback.NewSessionManager(0, 0)
+	file := &models.MediaFile{
+		ID:          42,
+		ContentID:   "movie-1",
+		FilePath:    writePlaybackTestMediaFile(t, "movie-api-prefix.mkv"),
+		Resolution:  "1080p",
+		CodecVideo:  "h264",
+		CodecAudio:  "aac",
+		Container:   "mp4",
+		Bitrate:     8000,
+		Duration:    3600,
+		AudioTracks: []models.AudioTrack{{Codec: "aac", Default: true}},
+	}
+
+	direct, err := sessionMgr.StartSession(1, "profile-1", file.ID, playback.PlayDirect, false)
+	if err != nil {
+		t.Fatalf("StartSession direct: %v", err)
+	}
+	handler := NewPlaybackHandler(sessionMgr, testPlaybackFileResolver{file: file})
+	handler.ItemAccess = allowAllPlaybackItemAccess{}
+	handler.JWTSecret = "test-secret"
+	handler.PlaybackConfig = playbackTestConfig(writePlaybackTestFFmpeg(t), t.TempDir())
+
+	streamURL := handler.playbackStreamURL(direct)
+	parsedStream, err := url.Parse(streamURL)
+	if err != nil {
+		t.Fatalf("parse stream_url: %v", err)
+	}
+	wantStream := "/api/v1/stream/" + direct.ID
+	if parsedStream.Path != wantStream {
+		t.Fatalf("direct stream_url path = %q, want %q (clients join this to the origin verbatim)", parsedStream.Path, wantStream)
+	}
+
+	remux, err := sessionMgr.StartSession(1, "profile-1", file.ID, playback.PlayRemux, true)
+	if err != nil {
+		t.Fatalf("StartSession remux: %v", err)
+	}
+	transcodeReq := httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/playback/transcode/start",
+		strings.NewReader(`{"session_id":"`+remux.ID+`","seek_seconds":0,"target_resolution":"","target_codec_video":"copy","target_codec_audio":"aac","target_bitrate_kbps":0,"segment_duration":2,"subtitle_track_index":-1}`),
+	).WithContext(newAuthorizedPlaybackContext())
+	transcodeRR := httptest.NewRecorder()
+	handler.HandleStartTranscode(transcodeRR, transcodeReq)
+	if transcodeRR.Code != http.StatusAccepted {
+		t.Fatalf("transcode status = %d, body = %s", transcodeRR.Code, transcodeRR.Body.String())
+	}
+	t.Cleanup(func() { handler.tm.CloseTranscodeSession(remux.ID, "") })
+
+	var response transcodeStartResponse
+	if err := json.NewDecoder(transcodeRR.Body).Decode(&response); err != nil {
+		t.Fatalf("decode transcode response: %v", err)
+	}
+	manifestURL, err := url.Parse(response.ManifestURL)
+	if err != nil {
+		t.Fatalf("parse manifest_url: %v", err)
+	}
+	wantManifest := "/api/v1/playback/transcode/" + remux.ID + "/master.m3u8"
+	if manifestURL.Path != wantManifest {
+		t.Fatalf("manifest_url path = %q, want %q", manifestURL.Path, wantManifest)
+	}
+	if !strings.HasPrefix(response.ManifestURL, "/api/v1/") {
+		t.Fatalf("manifest_url = %q, must be an /api/v1-relative fetchable path", response.ManifestURL)
+	}
+}
+
+func TestHandleStartTranscode_ClientRequested4KBypassesAllow4KGate(t *testing.T) {
+	sessionMgr := playback.NewSessionManager(0, 0)
+	file := &models.MediaFile{
+		ID:          42,
+		ContentID:   "movie-1",
+		FilePath:    writePlaybackTestMediaFile(t, "movie-4k-client-request.mkv"),
+		Resolution:  "2160p",
+		CodecVideo:  "hevc",
+		CodecAudio:  "aac",
+		Container:   "mkv",
+		Bitrate:     25000,
+		Duration:    3600,
+		AudioTracks: []models.AudioTrack{{Codec: "aac", Default: true}},
+	}
+	session, err := sessionMgr.StartSession(1, "profile-1", file.ID, playback.PlayTranscode, false)
+	if err != nil {
+		t.Fatalf("StartSession: %v", err)
+	}
+
+	handler := NewPlaybackHandler(sessionMgr, testPlaybackFileResolver{file: file})
+	handler.ItemAccess = allowAllPlaybackItemAccess{}
+	handler.SettingsRepo = testPlaybackSettingsRepo{values: map[string]string{"allow_4k_transcode": "false"}}
+	handler.PlaybackConfig = playbackTestConfig(writePlaybackTestFFmpeg(t), t.TempDir())
+
+	// Without an explicit 4K target the admin gate rejects (no alternate version).
+	blockedReq := httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/playback/transcode/start",
+		strings.NewReader(`{"session_id":"`+session.ID+`","seek_seconds":0,"target_resolution":"1080p","target_codec_video":"h264","target_codec_audio":"aac","target_bitrate_kbps":6000,"segment_duration":2,"subtitle_track_index":-1}`),
+	).WithContext(newAuthorizedPlaybackContext())
+	blockedRR := httptest.NewRecorder()
+	handler.HandleStartTranscode(blockedRR, blockedReq)
+	if blockedRR.Code != http.StatusUnprocessableEntity {
+		t.Fatalf("1080p request status = %d, want 422 when allow_4k is off and no alternate exists", blockedRR.Code)
+	}
+
+	allowedReq := httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/playback/transcode/start",
+		strings.NewReader(`{"session_id":"`+session.ID+`","seek_seconds":0,"target_resolution":"2160p","target_codec_video":"h264","target_codec_audio":"aac","target_bitrate_kbps":20000,"segment_duration":2,"subtitle_track_index":-1}`),
+	).WithContext(newAuthorizedPlaybackContext())
+	allowedRR := httptest.NewRecorder()
+	handler.HandleStartTranscode(allowedRR, allowedReq)
+	if allowedRR.Code != http.StatusAccepted {
+		t.Fatalf("2160p client request status = %d, body = %s", allowedRR.Code, allowedRR.Body.String())
+	}
+	t.Cleanup(func() { handler.tm.CloseTranscodeSession(session.ID, "") })
+	ts := handler.tm.GetTranscodeSession(session.ID)
+	if ts == nil {
+		t.Fatal("expected 4K encode session")
+	}
+	if got := ts.Opts().TargetResolution; got != "2160p" {
+		t.Fatalf("target resolution = %q, want 2160p", got)
 	}
 }
 

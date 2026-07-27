@@ -723,7 +723,7 @@ func (h *PlaybackHandler) prepareLocalTransportV3(r *http.Request, session *play
 		return preparedTransportV3{}, &transportErrorV3{reason: "transcode_start_failed", message: "The playback transport exited during startup.", retryable: true}
 	}
 	card := playback.NewRecipeCard(session.UserID, session.ProfileID, file.ID, "", ts.Opts())
-	url := appendStreamToken(fmt.Sprintf("/playback/transcode/%s/master.m3u8", session.ID), h.signSessionToken(card))
+	url := appendStreamToken(localTranscodeManifestPath(session.ID), h.signSessionToken(card))
 	committed := false
 	previousNodeURL := session.TranscodeNodeURL
 	previousTransportID := remoteTransportID(session)
