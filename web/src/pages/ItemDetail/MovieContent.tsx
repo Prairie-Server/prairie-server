@@ -95,13 +95,15 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
     ],
   );
   const [manualSelectedFileId, setManualSelectedFileId] = useState<number | null>(null);
-  const selectedVersion = useMemo(
-    () =>
-      (manualSelectedFileId != null
-        ? (sortedVersions.find((version) => version.file_id === manualSelectedFileId) ?? null)
-        : null) ?? defaultSelectedVersion,
-    [defaultSelectedVersion, manualSelectedFileId, sortedVersions],
-  );
+  const selectedVersion = useMemo(() => {
+    if (manualSelectedFileId == null) {
+      return defaultSelectedVersion;
+    }
+    return (
+      sortedVersions.find((version) => version.file_id === manualSelectedFileId) ??
+      defaultSelectedVersion
+    );
+  }, [defaultSelectedVersion, manualSelectedFileId, sortedVersions]);
   const selectedMediaSummary = useMemo(
     () => resolveSelectedMediaSummary(selectedVersion, item.playback_variants, item.runtime ?? 0),
     [item.playback_variants, item.runtime, selectedVersion],
