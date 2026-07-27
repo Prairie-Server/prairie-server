@@ -29,7 +29,7 @@ export function useTriggerEmbeddings() {
   return useMutation({
     mutationFn: () => api("/admin/recommendations/trigger/embeddings", { method: "POST" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.recommendationsStatus() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.recommendationsStatus() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to trigger embeddings");
@@ -42,7 +42,7 @@ export function useTriggerTasteProfiles() {
   return useMutation({
     mutationFn: () => api("/admin/recommendations/trigger/taste-profiles", { method: "POST" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.recommendationsStatus() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.recommendationsStatus() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to trigger taste profiles");
@@ -55,7 +55,7 @@ export function useTriggerCowatch() {
   return useMutation({
     mutationFn: () => api("/admin/recommendations/trigger/cowatch", { method: "POST" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.recommendationsStatus() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.recommendationsStatus() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to trigger co-watch computation");
@@ -68,7 +68,7 @@ export function useTriggerRecommendations() {
   return useMutation({
     mutationFn: () => api("/admin/recommendations/trigger/recommendations", { method: "POST" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.recommendationsStatus() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.recommendationsStatus() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to trigger recommendations");

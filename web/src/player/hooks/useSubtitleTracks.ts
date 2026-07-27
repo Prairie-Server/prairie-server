@@ -393,22 +393,22 @@ export function useSubtitleTracks(
           ? toMediaTime(videoEl.currentTime, streamOriginRef.current ?? 0)
           : (fetchAnchorRef.current ?? 0);
       if (!hasFetched) {
-        fetchWindow(Math.max(0, mediaTime - SEEK_BACKOFF), true);
+        void fetchWindow(Math.max(0, mediaTime - SEEK_BACKOFF), true);
         return;
       }
       if (mediaTime < coverageStart - 1) {
         atEOF = false;
-        fetchWindow(Math.max(0, mediaTime - SEEK_BACKOFF), true);
+        void fetchWindow(Math.max(0, mediaTime - SEEK_BACKOFF), true);
         return;
       }
       if (mediaTime > windowEnd + 1) {
         atEOF = false;
-        fetchWindow(Math.max(0, mediaTime - SEEK_BACKOFF), true);
+        void fetchWindow(Math.max(0, mediaTime - SEEK_BACKOFF), true);
         return;
       }
       if (!atEOF && mediaTime > windowEnd - PREFETCH_LEAD) {
         const nextStart = Math.max(windowEnd - WINDOW_OVERLAP, mediaTime);
-        fetchWindow(nextStart, false);
+        void fetchWindow(nextStart, false);
       }
     }
 

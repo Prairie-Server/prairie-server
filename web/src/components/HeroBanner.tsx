@@ -3,6 +3,7 @@ import { Link } from "react-router";
 import { Info, ChevronLeft, ChevronRight, Play, Pause, BookOpen } from "lucide-react";
 import { ArtworkImage } from "@/components/ArtworkImage";
 import { decodeThumbhash } from "@/lib/thumbhash";
+import { BACKDROP_WIDTHS } from "@/lib/artworkUrl";
 import { HERO_BANNER_SIZE } from "@/lib/design-system";
 import { useAmbientColor } from "@/hooks/useAmbientColor";
 import { cn } from "@/lib/utils";
@@ -198,6 +199,8 @@ export default function HeroBanner({
               <ArtworkImage
                 src={slide.backdrop_url}
                 alt=""
+                widths={BACKDROP_WIDTHS}
+                sizes="100vw"
                 className={`h-full w-full object-cover object-[center_20%] transition-opacity duration-[--duration-slow] will-change-transform ${loaded[i] ? "opacity-100" : "opacity-0"}`}
                 style={{
                   animation: `var(--animate-ken-burns-${i % 2 === 0 ? "a" : "b"})`,

@@ -171,7 +171,7 @@ export function useAddItemToCollection() {
         return invalidateUserCollectionQueries(queryClient, vars.collectionId);
       }
       // Library collection: invalidate its items query.
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: ["libraryCollections", "items", vars.collectionId],
       });
     },

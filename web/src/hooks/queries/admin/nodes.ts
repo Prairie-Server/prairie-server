@@ -24,7 +24,7 @@ export function useCreateNode() {
       }),
     onSuccess: () => {
       toast.success("Node created");
-      queryClient.invalidateQueries({ queryKey: adminKeys.nodes() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.nodes() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to save");
@@ -41,7 +41,7 @@ export function useUpdateNode() {
         body: JSON.stringify(body),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.nodes() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.nodes() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to update node");
@@ -55,7 +55,7 @@ export function useDeleteNode() {
     mutationFn: (id: number) => api(`/admin/nodes/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Node deleted");
-      queryClient.invalidateQueries({ queryKey: adminKeys.nodes() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.nodes() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to delete node");
@@ -72,7 +72,7 @@ export function useCheckNodeHealth() {
       }).then((result) => ({ node, result })),
     onSuccess: ({ node, result }) => {
       toast.success(result.healthy ? `${node.name} is healthy` : `${node.name} is unhealthy`);
-      queryClient.invalidateQueries({ queryKey: adminKeys.nodes() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.nodes() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Health check failed");
@@ -90,7 +90,7 @@ export function useToggleNode() {
       }),
     onSuccess: (updated) => {
       toast.success(`${updated.name} ${updated.enabled ? "enabled" : "disabled"}`);
-      queryClient.invalidateQueries({ queryKey: adminKeys.nodes() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.nodes() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to update node");

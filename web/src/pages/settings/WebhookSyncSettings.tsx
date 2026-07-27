@@ -268,7 +268,7 @@ export default function WebhookSyncSettings() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { profile } = useCurrentProfile();
-  const { data: profiles = [] } = useProfiles();
+  const { data: profiles } = useProfiles();
   const connectionsQuery = useWebhookSyncConnections();
   const createConnectionMutation = useCreateWebhookSyncConnection();
   const deleteConnectionMutation = useDeleteWebhookSyncConnection();

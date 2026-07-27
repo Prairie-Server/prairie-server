@@ -73,7 +73,7 @@ export default function CardStack({
     onClose();
     const target = playTargetForSwipeCard(card);
     if (!target.isVideo) {
-      navigate(target.href);
+      void navigate(target.href);
       return;
     }
     playbackController.startPlayback({

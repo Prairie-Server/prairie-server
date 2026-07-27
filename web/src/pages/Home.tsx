@@ -35,7 +35,7 @@ function useHomeRefreshSignal() {
 export default function Home() {
   const queryClient = useQueryClient();
   const { data, isLoading, isError, refetch } = useHomeLayout();
-  const { data: homeRefreshSignal = 0 } = useHomeRefreshSignal();
+  const { data: homeRefreshSignal } = useHomeRefreshSignal();
   const [loadedSections, setLoadedSections] = useState<Map<string, ResolvedSection>>(new Map());
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
   const [inFlightIds, setInFlightIds] = useState<Set<string>>(new Set());

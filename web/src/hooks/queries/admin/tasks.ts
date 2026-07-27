@@ -83,8 +83,8 @@ export function useRunTask() {
         method: "POST",
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.tasks() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.taskMetrics("refresh_metadata") });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.tasks() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.taskMetrics("refresh_metadata") });
       toast.success("Task started");
     },
     onError: (error: Error) => {
@@ -105,8 +105,8 @@ export function useCancelTask() {
         method: "POST",
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.tasks() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.taskMetrics("refresh_metadata") });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.tasks() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.taskMetrics("refresh_metadata") });
       toast.success("Cancellation requested");
     },
     onError: () => {
@@ -124,9 +124,9 @@ export function useUpdateTriggers() {
         body: JSON.stringify(triggers),
       }),
     onSuccess: (_data, { key }) => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.task(key) });
-      queryClient.invalidateQueries({ queryKey: adminKeys.tasks() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.taskMetrics(key) });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.task(key) });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.tasks() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.taskMetrics(key) });
       toast.success("Schedule updated");
     },
     onError: () => {

@@ -63,7 +63,7 @@ export function useCreateProfile() {
       }),
     onSuccess: () => {
       toast.success("Profile created");
-      queryClient.invalidateQueries({ queryKey: profileKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: profileKeys.list() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to save profile");
@@ -88,7 +88,7 @@ export function useUpdateProfile() {
         };
       });
       toast.success("Profile updated");
-      queryClient.invalidateQueries({ queryKey: profileKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: profileKeys.list() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to save profile");
@@ -113,7 +113,7 @@ export function useUploadProfileAvatar() {
         avatar_upload_enabled: current?.avatar_upload_enabled ?? false,
       }));
       toast.success("Avatar updated");
-      queryClient.invalidateQueries({ queryKey: profileKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: profileKeys.list() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to upload avatar");
@@ -134,7 +134,7 @@ export function useDeleteProfileAvatar() {
         avatar_upload_enabled: current?.avatar_upload_enabled ?? false,
       }));
       toast.success("Avatar removed");
-      queryClient.invalidateQueries({ queryKey: profileKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: profileKeys.list() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to remove avatar");
@@ -148,7 +148,7 @@ export function useDeleteProfile() {
     mutationFn: (id: string) => api(`/profiles/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Profile deleted");
-      queryClient.invalidateQueries({ queryKey: profileKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: profileKeys.list() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to delete");

@@ -1413,8 +1413,8 @@ export interface QueryDefinition {
 
 export interface QueryDefinitionInput {
   library_ids?: number[];
-  media_scope?: QueryDefinition["media_scope"] | string;
-  match?: QueryDefinition["match"] | string;
+  media_scope?: QueryDefinition["media_scope"];
+  match?: QueryDefinition["match"];
   groups?: QueryGroup[];
   sort?: {
     field?: string;
@@ -2265,7 +2265,7 @@ export interface LiveTVTunersResponse {
 }
 
 export interface LiveTVDiscoveredTuner {
-  kind: "hdhomerun" | "dispatcharr" | string;
+  kind: "hdhomerun" | "dispatcharr";
   device_id: string;
   friendly_name: string;
   model: string;
@@ -2273,7 +2273,7 @@ export interface LiveTVDiscoveredTuner {
   tuner_count: number;
   discover_url: string;
   base_url: string;
-  source: "udp" | "probe" | string;
+  source: "udp" | "probe";
   already_added: boolean;
 }
 
@@ -2302,7 +2302,7 @@ export interface LiveTVChannelsResponse {
 
 export interface LiveTVGuideSource {
   id: string;
-  type: "schedules_direct" | "xmltv_url" | string;
+  type: "schedules_direct" | "xmltv_url";
   priority: number;
   enabled: boolean;
   display_name: string;
@@ -3290,8 +3290,8 @@ export interface LibraryRoot {
   library_name: string;
   root_path: string;
   state: "resolved" | "ambiguous";
-  inferred_type: "movie" | "series" | string;
-  type_confidence: "low" | "medium" | "high" | string;
+  inferred_type: "movie" | "series";
+  type_confidence: "low" | "medium" | "high";
   title: string;
   year: number;
   tmdb_id?: string;

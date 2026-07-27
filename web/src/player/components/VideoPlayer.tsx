@@ -71,6 +71,24 @@ const LIVE_SUBTITLE_INDEX = 1_000_000;
 // playhead; a hard cap also resumes so we never wait forever.
 const TRANSLATION_RESUME_TIMEOUT_MS = 30_000;
 
+const DISCONNECTED_WATCH_TOGETHER = {
+  connectionState: "disconnected",
+  room: null,
+  suggestions: [],
+  closedReason: null,
+  transportCommand: null,
+  serverTimeOffsetMs: 0,
+  sendRoomMessage: () => ({ ok: false }),
+  updatePolicy: async () => null,
+  selectItem: async () => null,
+  closeRoom: async () => {},
+  createSuggestion: async () => {},
+  deleteSuggestion: async () => {},
+  vote: async () => {},
+  unvote: async () => {},
+  promoteSuggestion: async () => null,
+} satisfies WatchTogetherRoomConnectionResult;
+
 interface VideoPlayerProps {
   title: string;
   year?: number;
@@ -419,25 +437,7 @@ export function VideoPlayer({
     typeof navigator !== "undefined" &&
     /firefox/i.test(navigator.userAgent) &&
     !/seamonkey/i.test(navigator.userAgent);
-  const watchTogether =
-    watchTogetherConnection ??
-    ({
-      connectionState: "disconnected",
-      room: null,
-      suggestions: [],
-      closedReason: null,
-      transportCommand: null,
-      serverTimeOffsetMs: 0,
-      sendRoomMessage: () => ({ ok: false }),
-      updatePolicy: async () => null,
-      selectItem: async () => null,
-      closeRoom: async () => {},
-      createSuggestion: async () => {},
-      deleteSuggestion: async () => {},
-      vote: async () => {},
-      unvote: async () => {},
-      promoteSuggestion: async () => null,
-    } satisfies WatchTogetherRoomConnectionResult);
+  const watchTogether = watchTogetherConnection ?? DISCONNECTED_WATCH_TOGETHER;
   const watchTogetherSync = useWatchTogetherPlaybackSync({
     roomConnection: watchTogether,
     sessionId,
@@ -717,7 +717,9 @@ export function VideoPlayer({
       performPlayerSeek,
       sessionId,
       showWatchTogetherNotice,
-      watchTogether,
+      watchTogether.closedReason,
+      watchTogether.connectionState,
+      watchTogether.room,
       watchTogetherRoomId,
       watchTogetherSync,
     ],
@@ -1412,7 +1414,7 @@ export function VideoPlayer({
       }
     }
 
-    init();
+    void init();
 
     return () => {
       destroyed = true;
@@ -1890,7 +1892,15 @@ export function VideoPlayer({
     }
 
     video.pause();
-  }, [sessionId, showWatchTogetherNotice, watchTogether, watchTogetherRoomId, watchTogetherSync]);
+  }, [
+    sessionId,
+    showWatchTogetherNotice,
+    watchTogether.closedReason,
+    watchTogether.connectionState,
+    watchTogether.room,
+    watchTogetherRoomId,
+    watchTogetherSync,
+  ]);
 
   useEffect(() => {
     reportRoomReadyRef.current = watchTogetherSync.reportReady;
@@ -2218,12 +2228,12 @@ export function VideoPlayer({
     async (policy: "host_only" | "guest_play_pause") => {
       await setWatchTogetherGuestControl(watchTogether.updatePolicy, policy);
     },
-    [watchTogether],
+    [watchTogether.updatePolicy],
   );
 
   const handleEndRoom = useCallback(async () => {
     await endWatchTogetherRoom(watchTogether.closeRoom);
-  }, [watchTogether]);
+  }, [watchTogether.closeRoom]);
 
   // -- Render --
 

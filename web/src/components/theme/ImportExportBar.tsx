@@ -60,7 +60,7 @@ export function ImportExportBar({ currentTheme, vars, customCss, onImport }: Imp
         className="hidden"
         onChange={(e) => {
           const file = e.target.files?.[0];
-          if (file) handleImport(file);
+          if (file) void handleImport(file);
           e.target.value = "";
         }}
       />

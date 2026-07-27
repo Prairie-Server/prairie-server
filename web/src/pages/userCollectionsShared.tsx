@@ -22,7 +22,7 @@ import CollectionBuilder, {
 import { ImageUploadField } from "@/components/ImageUploadField";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 
-export function buildUserCollectionEditorPath(id: "new" | string) {
+export function buildUserCollectionEditorPath(id: string) {
   return id === "new" ? "/collections/new" : `/collections/${id}/edit`;
 }
 
@@ -170,7 +170,7 @@ export function UserCollectionForm({
   const createMutation = useCreateCollection();
   const updateMutation = useUpdateCollection();
   const deletePosterMutation = useDeleteUserCollectionImage();
-  const { data: profiles = [] } = useProfiles();
+  const { data: profiles } = useProfiles();
   const { data: libraries = [] } = useUserLibraries();
   const { profile } = useCurrentProfile();
   const isPending = createMutation.isPending || updateMutation.isPending;

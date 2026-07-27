@@ -37,7 +37,7 @@ export function useCreateAdminMapping() {
       }),
     onSuccess: (_data, variables) => {
       toast.success("User mapping created");
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: adminKeys.historyImportMappings(variables.source_id),
       });
     },
@@ -57,7 +57,7 @@ export function useUpdateAdminMapping() {
       }),
     onSuccess: () => {
       toast.success("Mapping updated");
-      queryClient.invalidateQueries({ queryKey: ["admin", "historyImportMappings"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "historyImportMappings"] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to update mapping");
@@ -71,7 +71,7 @@ export function useDeleteAdminMapping() {
     mutationFn: (id: number) => api(`/admin/history-imports/mappings/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Mapping deleted");
-      queryClient.invalidateQueries({ queryKey: ["admin", "historyImportMappings"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "historyImportMappings"] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to delete mapping");
@@ -90,8 +90,8 @@ export function useCreateAdminRunForMapping() {
       }),
     onSuccess: () => {
       toast.success("Import started");
-      queryClient.invalidateQueries({ queryKey: ["admin", "historyImportAdminRuns"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "historyImportMappings"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "historyImportAdminRuns"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "historyImportMappings"] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to start import");
@@ -109,8 +109,8 @@ export function useAdminBulkRun() {
     onSuccess: (data) => {
       const count = data?.runs?.length ?? 0;
       toast.success(`Started ${count} import${count !== 1 ? "s" : ""}`);
-      queryClient.invalidateQueries({ queryKey: ["admin", "historyImportAdminRuns"] });
-      queryClient.invalidateQueries({ queryKey: ["admin", "historyImportMappings"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "historyImportAdminRuns"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "historyImportMappings"] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to start bulk import");
@@ -146,7 +146,7 @@ export function useCancelAdminRun() {
       api(`/admin/history-imports/runs/${runId}/cancel`, { method: "POST" }),
     onSuccess: () => {
       toast.success("Run cancelled");
-      queryClient.invalidateQueries({ queryKey: ["admin", "historyImportAdminRuns"] });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "historyImportAdminRuns"] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to cancel run");

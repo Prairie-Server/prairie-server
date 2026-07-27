@@ -67,7 +67,7 @@ export function useASSSubtitles(
     // or no video element is available.
     if (!activeUrl || !video || isDetached) {
       if (jassubRef.current) {
-        jassubRef.current.destroy();
+        void jassubRef.current.destroy();
         jassubRef.current = null;
       }
       return;
@@ -167,14 +167,14 @@ export function useASSSubtitles(
 
       // Guard against the effect being cleaned up while the constructor ran.
       if (cancelled) {
-        instance.destroy();
+        void instance.destroy();
         return;
       }
 
       jassubRef.current = instance;
     }
 
-    initJASSUB();
+    void initJASSUB();
 
     return () => {
       cancelled = true;
@@ -183,7 +183,7 @@ export function useASSSubtitles(
       // (e.g. track switch or unmount). This covers the common case where
       // initJASSUB has already completed and stored the instance.
       if (jassubRef.current) {
-        jassubRef.current.destroy();
+        void jassubRef.current.destroy();
         jassubRef.current = null;
       }
     };
@@ -207,7 +207,7 @@ export function useASSSubtitles(
   useEffect(() => {
     return () => {
       if (jassubRef.current) {
-        jassubRef.current.destroy();
+        void jassubRef.current.destroy();
         jassubRef.current = null;
       }
     };

@@ -18,6 +18,7 @@ import { QualityMenu } from "./QualityMenu";
 import { SubtitleMenu } from "./SubtitleMenu";
 import { AudioTrackMenu } from "./AudioTrackMenu";
 import { ChaptersMenu } from "./ChaptersMenu";
+import { PlayerMoreMenu } from "./PlayerMoreMenu";
 import type {
   MarkerKind,
   MarkerRegionView,
@@ -391,6 +392,15 @@ export function PlayerControls({
                 <PictureInPicture2 className="h-[18px] w-[18px]" />
               </button>
             )}
+
+            <PlayerMoreMenu
+              markerEditAvailable={markerEditAvailable}
+              markerEditActive={markerEditActive}
+              onToggleMarkerEdit={onToggleMarkerEdit}
+              showPlaybackInfo={showPlaybackInfo}
+              onTogglePlaybackInfo={onTogglePlaybackInfo}
+              onTogglePiP={onTogglePiP}
+            />
 
             <button
               type="button"

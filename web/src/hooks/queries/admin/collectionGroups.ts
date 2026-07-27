@@ -83,7 +83,7 @@ export function useCreateCollectionGroup(libraryId: number) {
         body: JSON.stringify(input),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: adminKeys.collectionGroups(libraryId),
       });
       toast.success("Group created");
@@ -109,7 +109,7 @@ export function useUpdateCollectionGroup(libraryId: number) {
         body: JSON.stringify(patch),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: adminKeys.collectionGroups(libraryId),
       });
     },
@@ -123,7 +123,7 @@ export function useDeleteCollectionGroup(libraryId: number) {
   return useMutation({
     mutationFn: (id: string) => api<void>(`/admin/collection-groups/${id}`, { method: "DELETE" }),
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: adminKeys.collectionGroups(libraryId),
       });
       toast.success("Group deleted");
@@ -142,7 +142,7 @@ export function useReorderCollectionGroups(libraryId: number) {
         body: JSON.stringify({ ids: orderedIDs }),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: adminKeys.collectionGroups(libraryId),
       });
     },
@@ -180,7 +180,7 @@ export function useReorderCollectionsInGroup(libraryId: number) {
       });
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: adminKeys.collectionGroups(libraryId),
       });
     },

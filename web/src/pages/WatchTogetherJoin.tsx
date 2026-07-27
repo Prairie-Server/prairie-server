@@ -89,7 +89,7 @@ export default function WatchTogetherJoin() {
         if (!response.room_access_token) {
           throw new Error("Room access token was missing from the join response.");
         }
-        navigate(`/rooms/${response.room.room_id}?room_token=${response.room_access_token}`, {
+        void navigate(`/rooms/${response.room.room_id}?room_token=${response.room_access_token}`, {
           replace: true,
           viewTransition: true,
         });
@@ -110,7 +110,7 @@ export default function WatchTogetherJoin() {
       if (!response.room_access_token) {
         throw new Error("Room access token was missing from the create response.");
       }
-      navigate(`/rooms/${response.room.room_id}?room_token=${response.room_access_token}`, {
+      void navigate(`/rooms/${response.room.room_id}?room_token=${response.room_access_token}`, {
         replace: true,
         viewTransition: true,
       });

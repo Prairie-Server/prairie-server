@@ -168,7 +168,7 @@ export default function MediaItemMenu({
 
   useEffect(() => {
     setCurrentUserState(userState);
-  }, [userState?.played, userState?.is_favorite, userState?.in_watchlist]);
+  }, [userState]);
 
   const watchedMutation = useWatchedStateMutation({
     content_id: contentId,

@@ -84,7 +84,7 @@ export default function Login() {
     loading,
     setupLoading,
     setupRequired,
-    providers = [],
+    providers,
   } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -114,7 +114,7 @@ export default function Login() {
 
   const navigateAfterLogin = useCallback(async () => {
     if (redirectTarget) {
-      navigate(redirectTarget, { replace: true });
+      void navigate(redirectTarget, { replace: true });
       return;
     }
 
@@ -123,14 +123,14 @@ export default function Login() {
       const soleProfile = getBootstrapProfile(profileList.profiles ?? []);
       if (soleProfile) {
         selectProfile(soleProfile);
-        navigate("/");
+        void navigate("/");
         return;
       }
     } catch {
-      navigate("/profiles");
+      void navigate("/profiles");
       return;
     }
-    navigate("/profiles");
+    void navigate("/profiles");
   }, [navigate, redirectTarget, selectProfile]);
 
   useEffect(() => {

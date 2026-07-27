@@ -208,7 +208,7 @@ export default function ActionBar({
     (href: string, restartOverride?: boolean) => {
       const parsed = parseWatchHref(href);
       if (!parsed) {
-        navigate(href);
+        void navigate(href);
         return;
       }
 

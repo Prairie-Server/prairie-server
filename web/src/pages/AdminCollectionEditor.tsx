@@ -163,7 +163,7 @@ export default function AdminCollectionEditor() {
         libraries={libraries}
         initialLibraryId={initialLibraryId}
         onCreated={() => {
-          if (isCreate) navigate(returnPath);
+          if (isCreate) void navigate(returnPath);
         }}
       />
 

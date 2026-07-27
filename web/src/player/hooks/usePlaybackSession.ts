@@ -488,7 +488,7 @@ export function usePlaybackSession(
     const sid = sessionIdRef.current;
     if (!mediaFile || !sid) return;
 
-    (async () => {
+    void (async () => {
       try {
         const resp = await playerFetch<{ subtitles: DownloadedSubtitle[] }>(
           config,
@@ -532,7 +532,7 @@ export function usePlaybackSession(
       const sid = sessionIdRef.current;
       if (!sid) return;
 
-      (async () => {
+      void (async () => {
         try {
           const resp = await playerFetch<ChangeAudioResponse>(config, `/playback/${sid}/audio`, {
             method: "PATCH",
@@ -580,7 +580,7 @@ export function usePlaybackSession(
       if (newFileId === state.mediaFileId) return;
       switchingRef.current = true;
 
-      (async () => {
+      void (async () => {
         try {
           await loadSession({
             preferredFileId: newFileId,

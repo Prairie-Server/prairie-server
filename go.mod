@@ -37,7 +37,7 @@ require (
 	go.n16f.net/thumbhash v1.1.0
 	golang.org/x/image v0.43.0
 	golang.org/x/net v0.55.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260724162435-b2f20204f0df
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	modernc.org/sqlite v1.54.0
 )
@@ -131,7 +131,7 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20260726225228-1dfb0aebf7e0
+	github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20260727023613-3937da1c3659
 	github.com/prometheus/common v0.67.5 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1

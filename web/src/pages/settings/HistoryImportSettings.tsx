@@ -79,7 +79,7 @@ export default function HistoryImportSettings() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { profile } = useCurrentProfile();
-  const { data: profiles = [] } = useProfiles();
+  const { data: profiles } = useProfiles();
   const { data: sources = [], isLoading: sourcesLoading } = useHistoryImportSources();
   const { data: recentRuns = [] } = useHistoryImportRuns();
 

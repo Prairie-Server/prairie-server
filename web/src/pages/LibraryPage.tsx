@@ -127,6 +127,7 @@ export default function LibraryPage() {
   }, [
     activeTab,
     browseType,
+    id,
     queryDefinition,
     libraryType,
     searchParams,

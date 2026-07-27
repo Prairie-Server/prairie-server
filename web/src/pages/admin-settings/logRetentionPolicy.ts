@@ -1,3 +1,4 @@
+import { stringifyUnknown } from "@/lib/stringifyUnknown";
 export const OPSLOG_RETENTION_DAYS_KEY = "opslog.retention_days";
 export const OPSLOG_CLEANUP_INTERVAL_KEY = "opslog.cleanup_interval_minutes";
 export const OPSLOG_MAX_ROWS_KEY = "opslog.max_rows";
@@ -46,8 +47,8 @@ export function parseBucketPolicies(raw: string): LogRetentionBucketPolicy[] {
       if (!entry || typeof entry !== "object") {
         return null;
       }
-      const component = String((entry as { component?: unknown }).component ?? "").trim();
-      const level = String((entry as { level?: unknown }).level ?? "")
+      const component = stringifyUnknown((entry as { component?: unknown }).component).trim();
+      const level = stringifyUnknown((entry as { level?: unknown }).level)
         .trim()
         .toLowerCase();
       if (!component || !LOG_LEVEL_OPTIONS.includes(level as (typeof LOG_LEVEL_OPTIONS)[number])) {

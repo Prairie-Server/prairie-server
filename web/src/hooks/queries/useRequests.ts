@@ -65,8 +65,8 @@ function invalidateRequestSurfaces(queryClient: ReturnType<typeof useQueryClient
   // requestKeys.all = ["requests"], so invalidating it cascades to nested keys,
   // including requestKeys.search(...). Policy mutations rely on this to refresh
   // viewer-scoped search results when request eligibility changes.
-  queryClient.invalidateQueries({ queryKey: requestKeys.all });
-  queryClient.invalidateQueries({ queryKey: adminKeys.requestsRoot() });
+  void queryClient.invalidateQueries({ queryKey: requestKeys.all });
+  void queryClient.invalidateQueries({ queryKey: adminKeys.requestsRoot() });
 }
 
 export function useRequestDiscovery() {
@@ -315,8 +315,8 @@ export function useUpdateRequestSettings() {
       }),
     onSuccess: () => {
       toast.success("Request settings saved");
-      queryClient.invalidateQueries({ queryKey: adminKeys.requestSettings() });
-      queryClient.invalidateQueries({ queryKey: requestKeys.status() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.requestSettings() });
+      void queryClient.invalidateQueries({ queryKey: requestKeys.status() });
       invalidateRequestSurfaces(queryClient);
     },
     onError: (err) => {
@@ -346,7 +346,7 @@ export function useCreateRequestIntegration() {
       }),
     onSuccess: () => {
       toast.success("Integration created");
-      queryClient.invalidateQueries({ queryKey: adminKeys.requestIntegrations() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.requestIntegrations() });
       invalidateRequestSurfaces(queryClient);
     },
     onError: (err) => {
@@ -366,7 +366,7 @@ export function useUpdateRequestIntegration() {
       }),
     onSuccess: () => {
       toast.success("Integration saved");
-      queryClient.invalidateQueries({ queryKey: adminKeys.requestIntegrations() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.requestIntegrations() });
       invalidateRequestSurfaces(queryClient);
     },
     onError: (err) => {
@@ -385,7 +385,7 @@ export function useDeleteRequestIntegration() {
       }),
     onSuccess: () => {
       toast.success("Integration deleted");
-      queryClient.invalidateQueries({ queryKey: adminKeys.requestIntegrations() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.requestIntegrations() });
       invalidateRequestSurfaces(queryClient);
     },
     onError: (err) => {
@@ -427,7 +427,9 @@ export function useUpdateRequestUserLimit() {
       }),
     onSuccess: (_data, variables) => {
       toast.success("User request limit saved");
-      queryClient.invalidateQueries({ queryKey: adminKeys.requestUserLimit(variables.userId) });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.requestUserLimit(variables.userId),
+      });
       invalidateRequestSurfaces(queryClient);
     },
     onError: (err) => {

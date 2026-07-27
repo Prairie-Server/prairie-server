@@ -26,6 +26,7 @@ import { applyPlaybackProgressToCache } from "@/hooks/queries/playbackProgressCa
 import { invalidatePlaybackSurfaceQueries } from "@/hooks/queries/playbackSurfaceRefresh";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
+import { useVisualViewportOffset } from "@/hooks/useVisualViewportOffset";
 import { PlayerConfigProvider, WatchPage } from "@/player";
 import type {
   EpisodeRef,
@@ -212,7 +213,7 @@ export function WatchPlaybackProvider({ children }: { children: ReactNode }) {
           });
         }
 
-        navigate(buildWatchHref(request), {
+        void navigate(buildWatchHref(request), {
           state: buildWatchLocationState(request),
           viewTransition: true,
         });
@@ -287,7 +288,7 @@ export function WatchPlaybackProvider({ children }: { children: ReactNode }) {
       return;
     }
 
-    navigate(buildWatchHref(request), {
+    void navigate(buildWatchHref(request), {
       replace: true,
       state: buildWatchLocationState(request),
       viewTransition: true,
@@ -474,7 +475,7 @@ export function WatchPlaybackHost() {
     const prefetchAndNavigate = async () => {
       if (request.returnHref) {
         clearPendingReturnNavigation(request.requestKey);
-        navigate(returnHref, { replace: true });
+        void navigate(returnHref, { replace: true });
         return;
       }
 
@@ -489,7 +490,7 @@ export function WatchPlaybackHost() {
 
       if (!cancelled) {
         clearPendingReturnNavigation(request.requestKey);
-        navigate(fallbackItemHref, { replace: true });
+        void navigate(fallbackItemHref, { replace: true });
       }
     };
 
@@ -513,7 +514,7 @@ export function WatchPlaybackHost() {
       return;
     }
 
-    navigate(buildWatchHref(request), {
+    void navigate(buildWatchHref(request), {
       replace: true,
       state: buildWatchLocationState(request),
     });
@@ -554,7 +555,7 @@ export function WatchPlaybackHost() {
       if (activeRequest) {
         if (exitState?.destinationHref) {
           exitPlayback({ destinationHref: exitState.destinationHref });
-          navigate(exitState.destinationHref, {
+          void navigate(exitState.destinationHref, {
             replace: true,
             viewTransition: true,
           });
@@ -563,7 +564,7 @@ export function WatchPlaybackHost() {
 
         if (activeRequest.roomId && activeRequest.roomToken) {
           exitPlayback();
-          navigate(`/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`, {
+          void navigate(`/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`, {
             replace: true,
             viewTransition: true,
             state: {
@@ -578,7 +579,7 @@ export function WatchPlaybackHost() {
         }
 
         exitPlayback();
-        navigate(buildPlaybackReturnHref(activeRequest), {
+        void navigate(buildPlaybackReturnHref(activeRequest), {
           replace: true,
           viewTransition: true,
         });
@@ -586,7 +587,7 @@ export function WatchPlaybackHost() {
       }
 
       exitPlayback();
-      navigate(-1);
+      void navigate(-1);
     },
     [activeRequest, applyExitStateToCache, exitPlayback, navigate, state.mode],
   );
@@ -603,7 +604,7 @@ export function WatchPlaybackHost() {
       flushSync(() => {
         minimizePlayback();
       });
-      navigate(returnHref, {
+      void navigate(returnHref, {
         replace: true,
         viewTransition: true,
       });
@@ -615,7 +616,7 @@ export function WatchPlaybackHost() {
     (nextContentId: string) => {
       if (!activeRequest) return;
       if (activeRequest.roomId && activeRequest.roomToken) {
-        navigate(`/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`, {
+        void navigate(`/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`, {
           replace: true,
           viewTransition: true,
         });
@@ -686,7 +687,7 @@ export function WatchPlaybackHost() {
       if (!requestKeyValue) return;
       if (activeRequest?.roomId && activeRequest.roomToken) {
         stopPlayback();
-        navigate(`/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`, {
+        void navigate(`/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`, {
           replace: true,
           viewTransition: true,
         });
@@ -722,7 +723,7 @@ export function WatchPlaybackHost() {
       if (!activeItem?.series_id) {
         if (activeRequest) {
           stopPlayback();
-          navigate(buildWatchItemHref(activeRequest));
+          void navigate(buildWatchItemHref(activeRequest));
         }
         return;
       }
@@ -747,7 +748,7 @@ export function WatchPlaybackHost() {
   const handlePostRollClose = useCallback(() => {
     if (activeRequest) {
       stopPlayback();
-      navigate(buildWatchItemHref(activeRequest));
+      void navigate(buildWatchItemHref(activeRequest));
     }
   }, [activeRequest, stopPlayback, navigate]);
 
@@ -906,6 +907,7 @@ export function WatchPlaybackBar() {
   const transport = state.transport;
   const { data: item } = useWatchDetail(request?.contentId, request?.fileId, request?.libraryId);
   const [scrubValue, setScrubValue] = useState<number | null>(null);
+  const { bottomOffset } = useVisualViewportOffset();
 
   if (!isBackgroundBarVisible || !request) {
     return null;
@@ -916,7 +918,10 @@ export function WatchPlaybackBar() {
   const displayedTime = scrubValue ?? snapshot?.currentTime ?? 0;
 
   return (
-    <div className="bottom-safe-3 pointer-events-none fixed inset-x-3 z-40 flex justify-center">
+    <div
+      className="bottom-safe-3 pointer-events-none fixed inset-x-3 z-40 flex justify-center"
+      style={bottomOffset > 0 ? { transform: `translateY(-${bottomOffset}px)` } : undefined}
+    >
       <div className="glass-dark border-border/70 pointer-events-auto w-full max-w-4xl rounded-2xl border px-4 py-3 shadow-[0_24px_80px_-32px_rgba(0,0,0,0.7)] backdrop-blur-xl">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">

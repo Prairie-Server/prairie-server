@@ -119,7 +119,7 @@ export function NodesFinishStep() {
       selectProfile(chosenProfile);
     }
     clearProgress();
-    navigate(destination);
+    void navigate(destination);
   }
 
   function handleFinish() {

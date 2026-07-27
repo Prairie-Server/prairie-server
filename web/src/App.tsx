@@ -308,7 +308,7 @@ function AppChrome() {
 
     try {
       await endImpersonation();
-      navigate(returnPath, { replace: true });
+      void navigate(returnPath, { replace: true });
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to end impersonation");
     }
