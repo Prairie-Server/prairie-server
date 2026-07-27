@@ -34,7 +34,7 @@ export default function AdminLayout() {
       </div>
 
       {/* Mobile header */}
-      <div className="glass-dark border-border/70 sticky top-0 z-30 mx-3 mt-3 flex items-center justify-between rounded-2xl border px-4 py-3 pt-safe-offset lg:hidden">
+      <div className="glass-dark border-border/70 sticky top-0 z-30 mx-3 mt-3 flex items-center justify-between rounded-2xl border px-4 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-3 lg:hidden">
         <div className="flex items-center gap-3">
           <button
             onClick={() => setMobileOpen(true)}

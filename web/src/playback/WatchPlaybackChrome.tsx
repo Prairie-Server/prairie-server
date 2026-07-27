@@ -916,7 +916,7 @@ export function WatchPlaybackBar() {
   const displayedTime = scrubValue ?? snapshot?.currentTime ?? 0;
 
   return (
-    <div className="pointer-events-none fixed inset-x-3 bottom-safe-3 z-40 flex justify-center">
+    <div className="bottom-safe-3 pointer-events-none fixed inset-x-3 z-40 flex justify-center">
       <div className="glass-dark border-border/70 pointer-events-auto w-full max-w-4xl rounded-2xl border px-4 py-3 shadow-[0_24px_80px_-32px_rgba(0,0,0,0.7)] backdrop-blur-xl">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">

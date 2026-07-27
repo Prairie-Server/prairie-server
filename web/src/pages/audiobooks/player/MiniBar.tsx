@@ -36,7 +36,7 @@ export function MiniBar({
 
   return (
     <div
-      className="bg-background fixed right-0 bottom-0 z-40 border-t px-3 pt-2 pb-safe-offset-sm shadow-lg sm:px-6"
+      className="bg-background fixed right-0 bottom-0 z-40 border-t px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] shadow-lg sm:px-6"
       style={{ left: "var(--app-sidebar-offset, 0px)" }}
     >
       <SeekBar

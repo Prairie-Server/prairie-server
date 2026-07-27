@@ -176,7 +176,7 @@ export function PlayerControls({
           utility rail right. Seek bar spans the full width above the row
           so the playhead is always anchored to the frame edge.           */}
       <div
-        className="player-hud player-rise absolute inset-x-0 bottom-0 z-10 px-3 pt-4 pb-safe-offset sm:px-6 sm:pb-5"
+        className="player-hud player-rise absolute inset-x-0 bottom-0 z-10 px-3 pt-4 pb-[max(0.75rem,env(safe-area-inset-bottom,0px))] sm:px-6 sm:pb-[max(1.25rem,env(safe-area-inset-bottom,0px))]"
         onClick={(e) => e.stopPropagation()}
       >
         <SeekBar

@@ -133,7 +133,7 @@ export default function Layout({ children }: LayoutProps) {
       {/* Mobile header — visible below lg. Slides up on scroll-down within
           the Calendar route to free vertical space; pulling up reveals it. */}
       <div
-        className={`mobile-header glass-dark border-border/70 sticky top-0 z-30 mx-3 mt-3 flex items-center justify-between rounded-2xl border px-4 py-3 pt-safe-offset transition-transform duration-200 ease-out lg:hidden ${
+        className={`mobile-header glass-dark border-border/70 sticky top-0 z-30 mx-3 mt-3 flex items-center justify-between rounded-2xl border px-4 pt-[max(0.75rem,env(safe-area-inset-top,0px))] pb-3 transition-transform duration-200 ease-out lg:hidden ${
           mobileHeaderHidden ? "-translate-y-[140%]" : "translate-y-0"
         }`}
       >

@@ -1274,7 +1274,7 @@ export default function EbookReader() {
         )}
       </main>
       {showEndOfBookNext && nextChapter && nextChapterHref && (
-        <div className="fixed inset-x-0 bottom-safe-6 z-30 flex justify-center px-4">
+        <div className="bottom-safe-6 fixed inset-x-0 z-30 flex justify-center px-4">
           <Button
             asChild
             size="lg"
