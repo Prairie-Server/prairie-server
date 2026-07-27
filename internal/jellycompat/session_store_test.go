@@ -10,6 +10,7 @@ func fixedNow() time.Time {
 }
 
 func TestDeleteByUserID(t *testing.T) {
+	t.Parallel()
 	store := NewSessionStore(24*time.Hour, fixedNow)
 
 	// Insert sessions for two different users.
@@ -31,6 +32,7 @@ func TestDeleteByUserID(t *testing.T) {
 }
 
 func TestGetSlidingWindow_ExtendsWhenBelowHalfTTL(t *testing.T) {
+	t.Parallel()
 	ttl := 30 * 24 * time.Hour // 30 days
 	now := fixedNow()
 	clock := func() time.Time { return now }
@@ -54,6 +56,7 @@ func TestGetSlidingWindow_ExtendsWhenBelowHalfTTL(t *testing.T) {
 }
 
 func TestGetSlidingWindow_NoExtensionAboveHalfTTL(t *testing.T) {
+	t.Parallel()
 	ttl := 30 * 24 * time.Hour
 	now := fixedNow()
 	clock := func() time.Time { return now }
@@ -77,6 +80,7 @@ func TestGetSlidingWindow_NoExtensionAboveHalfTTL(t *testing.T) {
 }
 
 func TestGet_ExpiredSession_ReturnsNotFound(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 	store := NewSessionStore(1*time.Hour, clock)

@@ -6,6 +6,7 @@ import (
 )
 
 func TestFavoriteItemsNeedBrowseFilters(t *testing.T) {
+	t.Parallel()
 	if favoriteItemsNeedBrowseFilters(itemsQuery{}) {
 		t.Fatal("plain favorite query should keep the lightweight favorites path")
 	}
@@ -17,6 +18,7 @@ func TestFavoriteItemsNeedBrowseFilters(t *testing.T) {
 }
 
 func TestParseItemsQueryAcceptsIsFavoriteParam(t *testing.T) {
+	t.Parallel()
 	req := httptest.NewRequest("GET", "/Users/user/Items?isFavorite=true&IncludeItemTypes=Series", nil)
 
 	query := parseItemsQuery(req, NewResourceIDCodec())
@@ -30,6 +32,7 @@ func TestParseItemsQueryAcceptsIsFavoriteParam(t *testing.T) {
 }
 
 func TestBuildBrowseParamsPropagatesEnableTotalRecordCount(t *testing.T) {
+	t.Parallel()
 	req := httptest.NewRequest("GET", "/Items?EnableTotalRecordCount=false", nil)
 
 	query := parseItemsQuery(req, NewResourceIDCodec())
@@ -41,6 +44,7 @@ func TestBuildBrowseParamsPropagatesEnableTotalRecordCount(t *testing.T) {
 }
 
 func TestParseItemsQueryAppliesExcludeItemTypesToDefaultVideoScope(t *testing.T) {
+	t.Parallel()
 	req := httptest.NewRequest("GET", "/Items?SearchTerm=sponge+bob"+
 		"&ExcludeItemTypes=Movie&ExcludeItemTypes=Episode&ExcludeItemTypes=TvChannel", nil)
 
@@ -55,6 +59,7 @@ func TestParseItemsQueryAppliesExcludeItemTypesToDefaultVideoScope(t *testing.T)
 }
 
 func TestParseItemsQuerySubtractsExcludeItemTypesFromIncludeItemTypes(t *testing.T) {
+	t.Parallel()
 	req := httptest.NewRequest("GET", "/Items?IncludeItemTypes=Movie,Series&ExcludeItemTypes=Movie", nil)
 
 	query := parseItemsQuery(req, NewResourceIDCodec())
@@ -65,6 +70,7 @@ func TestParseItemsQuerySubtractsExcludeItemTypesFromIncludeItemTypes(t *testing
 }
 
 func TestMapSortByReleaseDate(t *testing.T) {
+	t.Parallel()
 	tests := []string{
 		"PremiereDate",
 		"PremiereDate,SortName,ProductionYear",
@@ -78,6 +84,7 @@ func TestMapSortByReleaseDate(t *testing.T) {
 }
 
 func TestMapSortByDateLastContentAdded(t *testing.T) {
+	t.Parallel()
 	// Jellyfin's standard "Latest" sort for TV libraries orders shows by
 	// their most recently added episode. It must map to the
 	// latest_episode_added sort (issue #202), not series creation date.
@@ -94,6 +101,7 @@ func TestMapSortByDateLastContentAdded(t *testing.T) {
 }
 
 func TestParseItemsQueryDateLastContentAddedSortScope(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		path string
@@ -129,6 +137,7 @@ func TestParseItemsQueryDateLastContentAddedSortScope(t *testing.T) {
 }
 
 func TestParseContentIDParam(t *testing.T) {
+	t.Parallel()
 	got := parseContentIDParam(" movie-1, movie-2, movie-1 ,, ")
 	want := []string{"movie-1", "movie-2"}
 	if len(got) != len(want) {

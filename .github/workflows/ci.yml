@@ -86,7 +86,7 @@ jobs:
       - name: Oxlint
         run: pnpm run lint
 
-      - name: Prettier check
+      - name: Oxfmt check
         run: pnpm run format:check
 
       - name: Typecheck (tsc -b)
@@ -159,8 +159,12 @@ jobs:
           if-no-files-found: ignore
 
   web-test-coverage:
-    name: Web tests + coverage
+    name: Web tests (${{ matrix.shard }}/4)
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
     defaults:
       run:
         working-directory: web
@@ -187,14 +191,60 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      # typecheck + lint already run in web-lint (parallel job). Keep this job
-      # focused on Vitest so the critical path is ~vitest wall-clock only.
-      # Vitest coverage thresholds (95% statements/lines/functions/branches) apply
-      # to the include list in web/vite.config.ts (pure helpers under src/lib/).
-      # Expand that list as more modules gain unit tests rather than gating the
-      # entire web tree, which is still well below 95% overall.
-      - name: Run Vitest with coverage
-        run: pnpm exec vitest run --coverage
+      # Shard Vitest across runners; blob reports merge in web-coverage-report.
+      # happy-dom + forks cut per-shard wall clock; thresholds are enforced on merge.
+      - name: Run Vitest shard with coverage
+        env:
+          VITEST_SHARD: "1"
+        run: pnpm exec vitest run --coverage --shard=${{ matrix.shard }}/4 --reporter=blob
+
+      - name: Upload blob report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-vitest-blob-${{ matrix.shard }}
+          path: web/.vitest-reports
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  web-coverage-report:
+    name: Web coverage gate
+    needs: web-test-coverage
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Download blob reports
+        uses: actions/download-artifact@v8
+        with:
+          pattern: web-vitest-blob-*
+          path: web/.vitest-reports
+          merge-multiple: true
+
+      - name: Merge shard reports and enforce coverage
+        run: pnpm exec vitest --mergeReports --coverage
 
       - name: npm audit (production deps)
         run: pnpm audit --prod --audit-level=high

@@ -12,6 +12,7 @@ import (
 )
 
 func TestRequireSession_SkipsRefreshWhenNoAuthService(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 	store := NewSessionStore(30*24*time.Hour, clock)
@@ -50,6 +51,7 @@ func TestRequireSession_SkipsRefreshWhenNoAuthService(t *testing.T) {
 }
 
 func TestRequireSession_PassesThroughNonExpiringToken(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 	store := NewSessionStore(30*24*time.Hour, clock)
@@ -85,6 +87,7 @@ func TestRequireSession_PassesThroughNonExpiringToken(t *testing.T) {
 }
 
 func TestRequireSession_NoAuthService_PassesThroughExpiredStreamAppToken(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 	store := NewSessionStore(30*24*time.Hour, clock)
@@ -120,6 +123,7 @@ func TestRequireSession_NoAuthService_PassesThroughExpiredStreamAppToken(t *test
 }
 
 func TestPlaybackSessionAuth_CaseInsensitivePlaySessionId(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 	sessions := NewSessionStore(30*24*time.Hour, clock)
@@ -165,6 +169,7 @@ func TestPlaybackSessionAuth_CaseInsensitivePlaySessionId(t *testing.T) {
 }
 
 func TestExtractToken_CaseInsensitiveAPIKey(t *testing.T) {
+	t.Parallel()
 	// "ApiKey" is Jellyfin's current query spelling (PascalCase); "api_key" is
 	// the legacy spelling. Native clients (incl. Jellyfin Android TV) build
 	// direct-play /Videos/{id}/stream URLs with "ApiKey", so rejecting it 401s
@@ -178,6 +183,7 @@ func TestExtractToken_CaseInsensitiveAPIKey(t *testing.T) {
 }
 
 func TestRequireAdminAPIKey_AcceptsAdminKey(t *testing.T) {
+	t.Parallel()
 	authn := newAdminAPIKeyAuthForTest(
 		&fakeAPIKeyValidator{key: &models.APIKey{ID: 1, UserID: 2, Key: "sa_test"}},
 		&fakeAPIKeyUserLoader{user: &models.User{ID: 2, Role: "admin", Enabled: true}},
@@ -199,6 +205,7 @@ func TestRequireAdminAPIKey_AcceptsAdminKey(t *testing.T) {
 }
 
 func TestRequireAdminAPIKey_RejectsNonAdminKey(t *testing.T) {
+	t.Parallel()
 	authn := newAdminAPIKeyAuthForTest(
 		&fakeAPIKeyValidator{key: &models.APIKey{ID: 1, UserID: 2, Key: "sa_test"}},
 		&fakeAPIKeyUserLoader{user: &models.User{ID: 2, Role: "user", Enabled: true}},
@@ -217,6 +224,7 @@ func TestRequireAdminAPIKey_RejectsNonAdminKey(t *testing.T) {
 }
 
 func TestRequireAdminAPIKey_RejectsNilAPIKey(t *testing.T) {
+	t.Parallel()
 	authn := newAdminAPIKeyAuthForTest(
 		&fakeAPIKeyValidator{returnNilWithoutError: true},
 		&fakeAPIKeyUserLoader{user: &models.User{ID: 2, Role: "admin", Enabled: true}},
@@ -235,6 +243,7 @@ func TestRequireAdminAPIKey_RejectsNilAPIKey(t *testing.T) {
 }
 
 func TestRequireAdminAPIKey_LastUsedUpdateHasDeadline(t *testing.T) {
+	t.Parallel()
 	called := make(chan bool, 1)
 	authn := newAdminAPIKeyAuthForTest(
 		&fakeAPIKeyValidator{

@@ -10,6 +10,7 @@ import (
 )
 
 func TestCompatScopedTypes(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		in   string
 		want string
@@ -34,6 +35,7 @@ func TestCompatScopedTypes(t *testing.T) {
 }
 
 func TestCompatScopedSearchTypes(t *testing.T) {
+	t.Parallel()
 	if got := compatScopedSearchTypes(nil); len(got) != 3 {
 		t.Fatalf("expected video type default, got %v", got)
 	}
@@ -48,6 +50,7 @@ func TestCompatScopedSearchTypes(t *testing.T) {
 }
 
 func TestIsCompatHiddenLibraryType(t *testing.T) {
+	t.Parallel()
 	for _, val := range []string{"audiobooks", "audiobook", " Audiobooks ", "podcast", "podcasts"} {
 		if !isCompatHiddenLibraryType(val) {
 			t.Errorf("expected %q to be hidden from the compat surface", val)
@@ -61,6 +64,7 @@ func TestIsCompatHiddenLibraryType(t *testing.T) {
 }
 
 func TestCompatAccessFilterResolverStampsExclusions(t *testing.T) {
+	t.Parallel()
 	resolved := compatAccessFilterResolver(nil)(context.Background(), 1, "p1")
 	if len(resolved.ExcludedMediaTypes) == 0 {
 		t.Fatalf("expected exclusions on nil base resolver, got %+v", resolved)
@@ -126,6 +130,7 @@ func (f *scopeFakeFolderRepo) ListByIDs(_ context.Context, ids []int) ([]*models
 }
 
 func TestListUserLibrariesExcludesABSFolders(t *testing.T) {
+	t.Parallel()
 	svc := &directContentService{
 		folderRepo: &scopeFakeFolderRepo{folders: []*models.MediaFolder{
 			{ID: 1, Name: "Movies", Type: "movies", Enabled: true},
@@ -171,6 +176,7 @@ func (f *scopeFakeBrowseSource) ListGenres(_ context.Context, filters catalog.Br
 }
 
 func TestBrowseItemsDefaultsToVideoTypeScope(t *testing.T) {
+	t.Parallel()
 	browse := &scopeFakeBrowseSource{}
 	svc := &directContentService{browseRepo: browse}
 	session := &Session{StreamAppUserID: 1, ProfileID: "p1"}
@@ -193,6 +199,7 @@ func TestBrowseItemsDefaultsToVideoTypeScope(t *testing.T) {
 }
 
 func TestListItemFiltersDefaultsToVideoTypeScope(t *testing.T) {
+	t.Parallel()
 	browse := &scopeFakeBrowseSource{}
 	svc := &directContentService{browseRepo: browse}
 

@@ -8,6 +8,7 @@ import (
 )
 
 func TestItemImageTagsUseStableCanonicalSeed(t *testing.T) {
+	t.Parallel()
 	m := newMapper(NewResourceIDCodec(), &config.Config{})
 	updatedAt := time.Date(2026, 5, 12, 12, 0, 0, 0, time.UTC)
 	item := upstreamListItem{
@@ -39,6 +40,7 @@ func TestItemImageTagsUseStableCanonicalSeed(t *testing.T) {
 }
 
 func TestItemImageTagsFallbackToURLWhenCanonicalSeedMissing(t *testing.T) {
+	t.Parallel()
 	m := newMapper(NewResourceIDCodec(), &config.Config{})
 	item := upstreamListItem{
 		ContentID: "movie-1",
@@ -57,6 +59,7 @@ func TestItemImageTagsFallbackToURLWhenCanonicalSeedMissing(t *testing.T) {
 }
 
 func TestItemImageTagsUseConfiguredSecret(t *testing.T) {
+	t.Parallel()
 	item := upstreamListItem{
 		ContentID:       "movie-1",
 		Type:            "movie",
@@ -80,6 +83,7 @@ func TestItemImageTagsUseConfiguredSecret(t *testing.T) {
 }
 
 func TestEpisodeListImageTagsUseStillThumbhash(t *testing.T) {
+	t.Parallel()
 	secret := "image-secret"
 	updatedAt := time.Date(2026, 5, 12, 12, 0, 0, 0, time.UTC)
 	item := upstreamListItem{
@@ -108,6 +112,7 @@ func TestEpisodeListImageTagsUseStillThumbhash(t *testing.T) {
 }
 
 func TestLibraryImageTagsUseStablePosterPath(t *testing.T) {
+	t.Parallel()
 	secret := "image-secret"
 	codec := NewResourceIDCodec()
 	library := upstreamUserLibrary{
@@ -144,6 +149,7 @@ func TestLibraryImageTagsUseStablePosterPath(t *testing.T) {
 }
 
 func TestApplySeriesImagesUsesCanonicalSeriesSeeds(t *testing.T) {
+	t.Parallel()
 	secret := "image-secret"
 	codec := NewResourceIDCodec()
 	seriesContentID := "series-1"

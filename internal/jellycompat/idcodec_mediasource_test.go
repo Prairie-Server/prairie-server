@@ -3,6 +3,7 @@ package jellycompat
 import "testing"
 
 func TestMediaSourceIDsEqual(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		a    string

@@ -202,6 +202,7 @@ func (s *recordingCompatWatchScrobbler) ScrobbleStopConfirmed(ctx context.Contex
 }
 
 func TestEnsureUpstreamPlaybackStartsWatchProviderScrobble(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{}
 	h, store := newActiveEncodingsHandler(mgr)
 	scrobbler := &recordingCompatWatchScrobbler{}
@@ -242,6 +243,7 @@ func TestEnsureUpstreamPlaybackStartsWatchProviderScrobble(t *testing.T) {
 }
 
 func TestFailedTranscodeStartupClosesWatchProviderScrobble(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{}
 	h, store := newActiveEncodingsHandler(mgr)
 	scrobbler := &recordingCompatWatchScrobbler{}
@@ -274,6 +276,7 @@ func TestFailedTranscodeStartupClosesWatchProviderScrobble(t *testing.T) {
 }
 
 func TestCanceledTranscodeStartupKeepsWatchProviderSessionRetryable(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{}
 	h, store := newActiveEncodingsHandler(mgr)
 	scrobbler := &recordingCompatWatchScrobbler{}
@@ -305,6 +308,7 @@ func TestCanceledTranscodeStartupKeepsWatchProviderSessionRetryable(t *testing.T
 }
 
 func TestFailedTranscodeStartupStillClosesWhenRequestCancelsAfterFailure(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{}
 	h, store := newActiveEncodingsHandler(mgr)
 	scrobbler := &recordingCompatWatchScrobbler{}
@@ -334,6 +338,7 @@ func TestFailedTranscodeStartupStillClosesWhenRequestCancelsAfterFailure(t *test
 }
 
 func TestEnsureUpstreamPlaybackStopsDiscardedMethodScrobble(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{
 		"upstream-old": {
 			ID:          "upstream-old",
@@ -371,6 +376,7 @@ func TestEnsureUpstreamPlaybackStopsDiscardedMethodScrobble(t *testing.T) {
 }
 
 func TestHandlePlaybackReportScrobblesPauseAndResumeTransitions(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, sourceID := newReportLivenessHandler("upstream-1", true)
 	scrobbler := &recordingCompatWatchScrobbler{}
 	handler.WatchScrobbler = scrobbler
@@ -407,6 +413,7 @@ func TestHandlePlaybackReportScrobblesPauseAndResumeTransitions(t *testing.T) {
 }
 
 func TestHandlePlaybackReportPreservesExplicitZeroOnPause(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, sourceID := newReportLivenessHandler("upstream-1", true)
 	scrobbler := &recordingCompatWatchScrobbler{}
 	handler.WatchScrobbler = scrobbler
@@ -437,6 +444,7 @@ func TestHandlePlaybackReportPreservesExplicitZeroOnPause(t *testing.T) {
 }
 
 func TestCompatTeardownScrobblesAuthoritativeStopExactlyOnce(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		stoppedFirst  bool
@@ -513,6 +521,7 @@ func TestCompatTeardownScrobblesAuthoritativeStopExactlyOnce(t *testing.T) {
 }
 
 func TestActiveEncodingsOnNonOwnerDefersScrobbleToStoppedReport(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{}}
 	h, store := newActiveEncodingsHandler(mgr)
 	scrobbler := &recordingCompatWatchScrobbler{}
@@ -564,6 +573,7 @@ func TestActiveEncodingsOnNonOwnerDefersScrobbleToStoppedReport(t *testing.T) {
 }
 
 func TestActiveEncodingsFallbackAllowsLaterAuthoritativeStop(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{
 		"upstream-1": {
 			ID:          "upstream-1",
@@ -632,6 +642,7 @@ func TestActiveEncodingsFallbackAllowsLaterAuthoritativeStop(t *testing.T) {
 }
 
 func TestPositionlessLateStopPreservesAndDeliversPendingFallback(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{
 		"upstream-1": {
 			ID:          "upstream-1",
@@ -692,6 +703,7 @@ func TestPositionlessLateStopPreservesAndDeliversPendingFallback(t *testing.T) {
 }
 
 func TestStoppedScrobbleQueueFailureRetainsAndRetriesTerminalEvent(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, sourceID := newReportLivenessHandler("upstream-1", true)
 	scrobbler := &channelCompatWatchScrobbler{
 		stopEvents: make(chan watchsync.ScrobbleEvent, 1),
@@ -729,6 +741,7 @@ func TestStoppedScrobbleQueueFailureRetainsAndRetriesTerminalEvent(t *testing.T)
 }
 
 func TestStoppedScrobbleRestagesAfterTerminalPersistenceFailure(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, sourceID := newReportLivenessHandler("upstream-1", true)
 	baseStore := handler.playbackStore.(*PlaybackSessionStore)
 	flakyStore := &flakyTerminalPlaybackStore{PlaybackSessionStore: baseStore, failStages: 1}
@@ -775,6 +788,7 @@ func TestStoppedScrobbleRestagesAfterTerminalPersistenceFailure(t *testing.T) {
 }
 
 func TestStoppedScrobblePreservesExplicitZeroPosition(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, sourceID := newReportLivenessHandler("upstream-1", true)
 	scrobbler := &channelCompatWatchScrobbler{stopEvents: make(chan watchsync.ScrobbleEvent, 1)}
 	handler.WatchScrobbler = scrobbler
@@ -801,6 +815,7 @@ func TestStoppedScrobblePreservesExplicitZeroPosition(t *testing.T) {
 }
 
 func TestTerminalScrobbleRecoveryDeliversPersistedEventAfterRestart(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "token-1"})
 	event := watchsync.ScrobbleEvent{
@@ -833,6 +848,7 @@ func TestTerminalScrobbleRecoveryDeliversPersistedEventAfterRestart(t *testing.T
 }
 
 func TestTerminalScrobbleRecoveryWaitsForConfirmedProviderStop(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "token-1"})
 	event := watchsync.ScrobbleEvent{PlaybackSessionID: "upstream-1"}
@@ -862,6 +878,7 @@ func TestTerminalScrobbleRecoveryWaitsForConfirmedProviderStop(t *testing.T) {
 }
 
 func TestTerminalScrobbleRecoveryRetainsEventWithoutConfirmationSupport(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "token-1"})
 	event := watchsync.ScrobbleEvent{PlaybackSessionID: "upstream-1"}
@@ -882,6 +899,7 @@ func TestTerminalScrobbleRecoveryRetainsEventWithoutConfirmationSupport(t *testi
 }
 
 func TestTerminalScrobbleRecoveryKeepsFallbackReplaceable(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "token-1"})
 	event := watchsync.ScrobbleEvent{
@@ -914,6 +932,7 @@ func TestTerminalScrobbleRecoveryKeepsFallbackReplaceable(t *testing.T) {
 }
 
 func TestStartTerminalScrobbleRecoverySignalsInitialScanCompletion(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "token-1"})
 	event := watchsync.ScrobbleEvent{PlaybackSessionID: "upstream-1"}
@@ -937,6 +956,7 @@ func TestStartTerminalScrobbleRecoverySignalsInitialScanCompletion(t *testing.T)
 }
 
 func TestInitialTerminalScrobbleRecoveryDrainsMultipleBatches(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	for i := 0; i <= compatTerminalRecoveryBatchSize; i++ {
 		id := fmt.Sprintf("play-%03d", i)
@@ -961,6 +981,7 @@ func TestInitialTerminalScrobbleRecoveryDrainsMultipleBatches(t *testing.T) {
 }
 
 func TestTerminalScrobbleRecoveryHonorsFallbackGracePeriod(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "token-1"})
 	event := watchsync.ScrobbleEvent{
@@ -993,6 +1014,7 @@ func TestTerminalScrobbleRecoveryHonorsFallbackGracePeriod(t *testing.T) {
 }
 
 func TestTerminalScrobbleRecoveryLeavesRetryToNextScan(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "token-1"})
 	event := watchsync.ScrobbleEvent{PlaybackSessionID: "upstream-1"}
@@ -1015,6 +1037,7 @@ func TestTerminalScrobbleRecoveryLeavesRetryToNextScan(t *testing.T) {
 }
 
 func TestTerminalScrobbleRecoveryRotatesPastPoisonBatch(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	for i := 0; i <= compatTerminalRecoveryBatchSize; i++ {
 		id := fmt.Sprintf("play-%03d", i)
@@ -1049,6 +1072,7 @@ func TestTerminalScrobbleRecoveryRotatesPastPoisonBatch(t *testing.T) {
 }
 
 func TestReapedSessionFallbackHonorsProgressPersistencePolicy(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		known    bool
@@ -1088,6 +1112,7 @@ func TestReapedSessionFallbackHonorsProgressPersistencePolicy(t *testing.T) {
 }
 
 func TestHandleSessionStoppedScrobblesAfterUpstreamSessionWasReaped(t *testing.T) {
+	t.Parallel()
 	handler, _, _, sourceID := newReportLivenessHandler("upstream-reaped", false)
 	scrobbler := &recordingCompatWatchScrobbler{}
 	handler.WatchScrobbler = scrobbler
@@ -1118,6 +1143,7 @@ func TestHandleSessionStoppedScrobblesAfterUpstreamSessionWasReaped(t *testing.T
 }
 
 func TestTeardownStillCleansLocalPlaybackAfterAnotherCallerClaimsStop(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{
 		"upstream-1": {ID: "upstream-1", UserID: 7, ProfileID: "profile-1", MediaFileID: 42},
 	}}

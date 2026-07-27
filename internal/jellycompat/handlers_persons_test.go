@@ -3,6 +3,7 @@ package jellycompat
 import "testing"
 
 func TestLooksLikePersonName_AcceptsRealNames(t *testing.T) {
+	t.Parallel()
 	cases := []string{"Christopher Nolan", "Tom Hanks", "Émilie Dequenne", "O'Brien"}
 	for _, name := range cases {
 		name := name
@@ -15,6 +16,7 @@ func TestLooksLikePersonName_AcceptsRealNames(t *testing.T) {
 }
 
 func TestLooksLikePersonName_RejectsMediaTitles(t *testing.T) {
+	t.Parallel()
 	cases := []string{"Avatar 2", "Star Wars: A New Hope", "1917"}
 	for _, q := range cases {
 		q := q
@@ -27,6 +29,7 @@ func TestLooksLikePersonName_RejectsMediaTitles(t *testing.T) {
 }
 
 func TestLooksLikePersonName_EdgeCases(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name string
 		term string

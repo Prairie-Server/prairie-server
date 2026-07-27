@@ -7,6 +7,7 @@ import (
 )
 
 func TestParseItemsQuery_ImageTypesBackdropFilter(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	cases := []struct {
 		name        string

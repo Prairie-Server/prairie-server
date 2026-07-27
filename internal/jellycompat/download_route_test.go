@@ -18,6 +18,7 @@ import (
 // the original media file. The route backs CanDownload=true, which Infuse
 // requires before it will Direct Play an item.
 func TestHandleDownload_ServesOriginalFile(t *testing.T) {
+	t.Parallel()
 	dir := t.TempDir()
 	filePath := filepath.Join(dir, "movie.mkv")
 	content := []byte("fake media bytes")
@@ -70,6 +71,7 @@ func TestHandleDownload_ServesOriginalFile(t *testing.T) {
 // CanDownload flag: Infuse refuses Direct Play (Static=true streaming) of
 // items it believes it cannot download, so playable items must advertise it.
 func TestItemDetail_AdvertisesCanDownload(t *testing.T) {
+	t.Parallel()
 	m := newMapper(NewResourceIDCodec(), nil)
 	detail := upstreamItemDetail{
 		ContentID: "movie-1",

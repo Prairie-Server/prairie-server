@@ -16,6 +16,7 @@ func ep(id string) *models.Episode {
 // series has no progress row of its own, so Played/UnplayedCount/
 // InProgressCount are aggregated from per-episode progress.
 func TestSeriesUserDataFromEpisodes(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name           string
 		episodes       []*models.Episode
@@ -112,6 +113,7 @@ func TestSeriesUserDataFromEpisodes(t *testing.T) {
 // TestModelEpisodeContentIDs verifies nil episodes and empty content ids are
 // dropped — these ids feed SQL IN-lists.
 func TestModelEpisodeContentIDs(t *testing.T) {
+	t.Parallel()
 	got := modelEpisodeContentIDs([]*models.Episode{nil, ep(""), ep("a"), ep("b")})
 	if len(got) != 2 || got[0] != "a" || got[1] != "b" {
 		t.Errorf("modelEpisodeContentIDs = %v, want [a b]", got)
@@ -119,6 +121,7 @@ func TestModelEpisodeContentIDs(t *testing.T) {
 }
 
 func TestSeriesUserDataFromEpisodesIncludesCompletedHistory(t *testing.T) {
+	t.Parallel()
 	got := catalog.EpisodeRollupUserData(
 		[]*models.Episode{ep("progress-complete"), ep("history-complete"), ep("unplayed")},
 		map[string]userstore.WatchProgress{

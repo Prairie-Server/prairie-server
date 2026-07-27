@@ -21,6 +21,7 @@ func withCompatSession(req *http.Request, tok string) *http.Request {
 }
 
 func TestAudioSelectionChanged(t *testing.T) {
+	t.Parallel()
 	selected := 2
 	session := &PlaybackSession{
 		MediaSources: []PlaybackMediaSource{
@@ -55,6 +56,7 @@ func TestAudioSelectionChanged(t *testing.T) {
 }
 
 func TestGenerateFullManifest_HLSVersionForResumeStartTag(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name        string
 		fmp4        bool
@@ -82,6 +84,7 @@ func TestGenerateFullManifest_HLSVersionForResumeStartTag(t *testing.T) {
 }
 
 func TestRewriteManifest_PreservesPlaybackAndMediaSourceIDs(t *testing.T) {
+	t.Parallel()
 	manifest := strings.Join([]string{
 		"#EXTM3U",
 		"#EXT-X-VERSION:7",
@@ -107,6 +110,7 @@ func TestRewriteManifest_PreservesPlaybackAndMediaSourceIDs(t *testing.T) {
 }
 
 func TestEnsureUpstreamPlayback_ReplacesStaleUpstreamWhenRecipeMissing(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{
 		ID:                 "ps-1",
@@ -163,6 +167,7 @@ func newActiveEncodingsHandler(mgr *testCompatSessionManager) (*PlaybackHandler,
 // happy path: the upstream session is stopped and the compat play session is
 // removed from the store, returning 204.
 func TestHandleDeleteActiveEncodings_StopsTranscodeAndDeletesSession(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{"upstream-1": {ID: "upstream-1"}}}
 	h, store := newActiveEncodingsHandler(mgr)
 	store.Put(PlaybackSession{ID: "ps-1", UpstreamSessionID: "upstream-1", CompatToken: "tok"})
@@ -186,6 +191,7 @@ func TestHandleDeleteActiveEncodings_StopsTranscodeAndDeletesSession(t *testing.
 // drops the node recipe keyed by the upstream session id, so a buffered/retrying
 // request after a node restart cannot resurrect ffmpeg for the stopped session.
 func TestTeardownPlaySession_DeletesNodeRecipe(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{"upstream-1": {ID: "upstream-1"}}}
 	h, store := newActiveEncodingsHandler(mgr)
 	recipeStore := &stubRecipeNodeStore{cards: map[string]playback.RecipeCard{
@@ -211,6 +217,7 @@ func TestTeardownPlaySession_DeletesNodeRecipe(t *testing.T) {
 // TestHandleDeleteActiveEncodings_MissingPlaySessionIdReturns204 verifies a
 // request with no PlaySessionId is a 204 no-op (no teardown).
 func TestHandleDeleteActiveEncodings_MissingPlaySessionIdReturns204(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{"upstream-1": {ID: "upstream-1"}}}
 	h, store := newActiveEncodingsHandler(mgr)
 	store.Put(PlaybackSession{ID: "ps-1", UpstreamSessionID: "upstream-1", CompatToken: "tok"})
@@ -233,6 +240,7 @@ func TestHandleDeleteActiveEncodings_MissingPlaySessionIdReturns204(t *testing.T
 // TestHandleDeleteActiveEncodings_UnknownPlaySessionReturns204 verifies an
 // unknown PlaySessionId is a 204 no-op (idempotent "already gone" semantics).
 func TestHandleDeleteActiveEncodings_UnknownPlaySessionReturns204(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{}
 	h, _ := newActiveEncodingsHandler(mgr)
 
@@ -252,6 +260,7 @@ func TestHandleDeleteActiveEncodings_UnknownPlaySessionReturns204(t *testing.T) 
 // lowercase playSessionId key (as Wholphin sends) still resolves and tears down
 // the session — the reason newCaseInsensitiveQuery is used.
 func TestHandleDeleteActiveEncodings_CaseInsensitivePlaySessionId(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{"upstream-1": {ID: "upstream-1"}}}
 	h, store := newActiveEncodingsHandler(mgr)
 	store.Put(PlaybackSession{ID: "ps-1", UpstreamSessionID: "upstream-1", CompatToken: "tok"})
@@ -273,6 +282,7 @@ func TestHandleDeleteActiveEncodings_CaseInsensitivePlaySessionId(t *testing.T) 
 // CompatToken gets a uniform 204 no-op and does NOT tear down the foreign
 // session (no cross-session IDOR teardown).
 func TestHandleDeleteActiveEncodings_ForeignPlaySessionNotTornDown(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{"upstream-1": {ID: "upstream-1"}}}
 	h, store := newActiveEncodingsHandler(mgr)
 	store.Put(PlaybackSession{ID: "ps-1", UpstreamSessionID: "upstream-1", CompatToken: "owner"})
@@ -296,6 +306,7 @@ func TestHandleDeleteActiveEncodings_ForeignPlaySessionNotTornDown(t *testing.T)
 // JellyCon call shape (DeviceId present alongside PlaySessionId): with a
 // matching-token session the session is still torn down (DeviceId ignored).
 func TestHandleDeleteActiveEncodings_RealClientShape(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{"upstream-1": {ID: "upstream-1"}}}
 	h, store := newActiveEncodingsHandler(mgr)
 	store.Put(PlaybackSession{ID: "ps-1", UpstreamSessionID: "upstream-1", CompatToken: "tok"})
@@ -322,6 +333,7 @@ func TestHandleDeleteActiveEncodings_RealClientShape(t *testing.T) {
 // manifest request still resolves (mirrors the Stopped report path). Removing
 // the UpstreamSessionID == "" guard makes this test fail.
 func TestHandleDeleteActiveEncodings_NotYetStartedNotTornDown(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{}
 	h, store := newActiveEncodingsHandler(mgr)
 	store.Put(PlaybackSession{ID: "ps-1", CompatToken: "tok"})
@@ -349,6 +361,7 @@ func TestHandleDeleteActiveEncodings_NotYetStartedNotTornDown(t *testing.T) {
 // Recipe.AudioTrackIndex keeps the original value and the stream silently
 // resumes on the wrong language after a restart.
 func TestRestartCompatTranscodeForAudioSelection_LocalRePersistsRecipe(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	version := testCompatVersion() // 1 video track, 2 audio tracks.
 
@@ -470,6 +483,7 @@ func (s *recordingSessionSyncer) SyncNow(ctx context.Context) error {
 // snapshot right away, so the activity dashboard doesn't show a ghost stream
 // until the next reconciler tick (issue #205).
 func TestHandleSessionPlayingStopped_TearsDownAndSyncsImmediately(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{"upstream-1": {ID: "upstream-1"}}}
 	h, store := newActiveEncodingsHandler(mgr)
 	syncer := &recordingSessionSyncer{}
@@ -508,6 +522,7 @@ func TestHandleSessionPlayingStopped_TearsDownAndSyncsImmediately(t *testing.T) 
 // TestHandleSessionPlayingStopped_UnknownSessionDoesNotSync verifies a stop
 // report that tears nothing down doesn't trigger a sync round trip.
 func TestHandleSessionPlayingStopped_UnknownSessionDoesNotSync(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{}
 	h, _ := newActiveEncodingsHandler(mgr)
 	syncer := &recordingSessionSyncer{}
@@ -529,6 +544,7 @@ func TestHandleSessionPlayingStopped_UnknownSessionDoesNotSync(t *testing.T) {
 // TestHandleDeleteActiveEncodings_SyncsSessionsImmediately verifies the
 // explicit encoder-teardown path also flushes the live-session snapshot.
 func TestHandleDeleteActiveEncodings_SyncsSessionsImmediately(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{"upstream-1": {ID: "upstream-1"}}}
 	h, store := newActiveEncodingsHandler(mgr)
 	syncer := &recordingSessionSyncer{}
@@ -551,6 +567,7 @@ func TestHandleDeleteActiveEncodings_SyncsSessionsImmediately(t *testing.T) {
 // session start flushes the live-session snapshot so the new stream appears in
 // the activity dashboard immediately.
 func TestEnsureUpstreamPlayback_SyncsOnNewSession(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{}
 	h, store := newActiveEncodingsHandler(mgr)
 	syncer := &recordingSessionSyncer{}

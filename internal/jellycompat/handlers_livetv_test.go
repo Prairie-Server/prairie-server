@@ -39,9 +39,12 @@ func newLivetvTestStore() *livetvTestStore {
 	}
 }
 
-
-func (s *livetvTestStore) GetRecording(context.Context, string) (*livetv.Recording, error) { return nil, nil }
-func (s *livetvTestStore) GetSeriesRule(context.Context, string) (*livetv.SeriesRule, error) { return nil, nil }
+func (s *livetvTestStore) GetRecording(context.Context, string) (*livetv.Recording, error) {
+	return nil, nil
+}
+func (s *livetvTestStore) GetSeriesRule(context.Context, string) (*livetv.SeriesRule, error) {
+	return nil, nil
+}
 func (s *livetvTestStore) ListTuners(context.Context) ([]livetv.Tuner, error) {
 	return s.tuners, nil
 }
@@ -220,6 +223,7 @@ func newTestLiveTVHandler(store *livetvTestStore) *LiveTVHandler {
 }
 
 func TestLiveTVHandleInfo(t *testing.T) {
+	t.Parallel()
 	store := newLivetvTestStore()
 	store.tuners = []livetv.Tuner{{ID: "t1", DeviceID: "HDHR1", Model: "HDHR5", TunerCount: 2}}
 	h := newTestLiveTVHandler(store)
@@ -243,6 +247,7 @@ func TestLiveTVHandleInfo(t *testing.T) {
 }
 
 func TestLiveTVHandleChannelsMapping(t *testing.T) {
+	t.Parallel()
 	store := newLivetvTestStore()
 	override := "7.1"
 	store.channels["ch1"] = livetv.Channel{
@@ -286,6 +291,7 @@ func TestLiveTVHandleChannelsMapping(t *testing.T) {
 }
 
 func TestLiveTVHandlePrograms(t *testing.T) {
+	t.Parallel()
 	store := newLivetvTestStore()
 	store.channels["ch1"] = livetv.Channel{ID: "ch1", Enabled: true, Number: "5.1", Name: "KING"}
 	start := time.Date(2026, 7, 25, 19, 0, 0, 0, time.UTC)
@@ -320,6 +326,7 @@ func TestLiveTVHandlePrograms(t *testing.T) {
 }
 
 func TestLiveTVTimersMapping(t *testing.T) {
+	t.Parallel()
 	store := newLivetvTestStore()
 	store.channels["ch1"] = livetv.Channel{ID: "ch1", Enabled: true, Number: "5.1", Name: "KING"}
 	start := time.Date(2026, 7, 26, 20, 0, 0, 0, time.UTC)
@@ -375,6 +382,7 @@ func TestLiveTVTimersMapping(t *testing.T) {
 }
 
 func TestCopyLiveStreamWithReconnect(t *testing.T) {
+	t.Parallel()
 	var opens atomic.Int32
 	payloads := [][]byte{[]byte("AAAA"), []byte("BBBB")}
 	ctx, cancel := context.WithCancel(context.Background())
@@ -427,6 +435,7 @@ func (r *flakyReader) Read(p []byte) (int, error) {
 }
 
 func TestLiveTVGetChannelService(t *testing.T) {
+	t.Parallel()
 	store := newLivetvTestStore()
 	store.channels["ch1"] = livetv.Channel{ID: "ch1", Number: "5.1", Enabled: true}
 	svc := livetv.NewServiceWithStore(store)
@@ -441,6 +450,7 @@ func TestLiveTVGetChannelService(t *testing.T) {
 }
 
 func TestLiveTVHandleChannelRoute(t *testing.T) {
+	t.Parallel()
 	store := newLivetvTestStore()
 	store.channels["ch1"] = livetv.Channel{ID: "ch1", Number: "5.1", Name: "KING", Enabled: true}
 	h := newTestLiveTVHandler(store)

@@ -84,6 +84,7 @@ func postProgressReport(handler *PlaybackHandler, body string) *httptest.Respons
 // Without the fallback the report is a silent 204 no-op, the Activity View
 // position freezes, and stale cleanup later drops the live session.
 func TestHandlePlaybackReport_ClientPlaySessionIDFallsBackToItemRoute(t *testing.T) {
+	t.Parallel()
 	handler, mgr, encodedItemID, sourceID := newReportLivenessHandler("upstream-1", true)
 
 	rec := postProgressReport(handler,
@@ -108,6 +109,7 @@ func TestHandlePlaybackReport_ClientPlaySessionIDFallsBackToItemRoute(t *testing
 // that omit or send an unmatchable ItemId: the MediaSourceId in the report
 // still identifies the play session.
 func TestHandlePlaybackReport_MediaSourceIDFallbackWhenItemUnknown(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, sourceID := newReportLivenessHandler("upstream-1", true)
 
 	rec := postProgressReport(handler,
@@ -128,6 +130,7 @@ func TestHandlePlaybackReport_MediaSourceIDFallbackWhenItemUnknown(t *testing.T)
 // scoped to the caller's own compat token: a report authenticated with a
 // different token must not read or touch another user's play session.
 func TestHandlePlaybackReport_ForeignTokenDoesNotMatch(t *testing.T) {
+	t.Parallel()
 	handler, mgr, encodedItemID, sourceID := newReportLivenessHandler("upstream-1", true)
 
 	req := httptest.NewRequest(http.MethodPost, "/Sessions/Playing/Progress", strings.NewReader(
@@ -150,6 +153,7 @@ func TestHandlePlaybackReport_ForeignTokenDoesNotMatch(t *testing.T) {
 // recreates the upstream session instead of silently dropping the report, so
 // the still-playing client reappears in the admin Activity View.
 func TestHandlePlaybackReport_RevivesReapedUpstreamSession(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, sourceID := newReportLivenessHandler("upstream-reaped", false)
 
 	rec := postProgressReport(handler,
@@ -178,6 +182,7 @@ func TestHandlePlaybackReport_RevivesReapedUpstreamSession(t *testing.T) {
 // path does not resurrect a session for a Stopped report: stopping playback of
 // an already-reaped session must stay a no-op teardown, not create a ghost.
 func TestHandlePlaybackReport_StoppedDoesNotReviveUpstream(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, sourceID := newReportLivenessHandler("upstream-reaped", false)
 
 	req := httptest.NewRequest(http.MethodPost, "/Sessions/Playing/Stopped", strings.NewReader(
@@ -202,6 +207,7 @@ func TestHandlePlaybackReport_StoppedDoesNotReviveUpstream(t *testing.T) {
 // heals a reaped upstream session: the next range request must recreate it
 // rather than early-returning a dangling UpstreamSessionID forever.
 func TestEnsureUpstreamPlayback_RecreatesReapedSession(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, _ := newReportLivenessHandler("upstream-reaped", false)
 	playSession, _ := handler.playbackStore.Get("play-1")
 	source := playSession.MediaSources[0]
@@ -223,6 +229,7 @@ func TestEnsureUpstreamPlayback_RecreatesReapedSession(t *testing.T) {
 // TestEnsureUpstreamPlayback_ReusesLiveSession guards the reuse path: a live
 // upstream session must not be torn down or recreated by subsequent requests.
 func TestEnsureUpstreamPlayback_ReusesLiveSession(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, _ := newReportLivenessHandler("upstream-1", true)
 	playSession, _ := handler.playbackStore.Get("play-1")
 	source := playSession.MediaSources[0]
@@ -246,6 +253,7 @@ func TestEnsureUpstreamPlayback_ReusesLiveSession(t *testing.T) {
 // a report carrying the client's own PlaySessionId binds the session that
 // recorded it as an alias — not whichever the route scan happens to hit first.
 func TestHandlePlaybackReport_AliasBindsDeterministicallyAmongDuplicates(t *testing.T) {
+	t.Parallel()
 	handler, mgr, encodedItemID, sourceID := newReportLivenessHandler("upstream-1", true)
 	// A second live play of the same item under the same token, no alias.
 	other, _ := handler.playbackStore.Get("play-1")
@@ -280,6 +288,7 @@ func TestHandlePlaybackReport_AliasBindsDeterministicallyAmongDuplicates(t *test
 // path records the client-generated PlaySessionId so subsequent playback
 // reports resolve the session without relying on ItemId/route matching.
 func TestHandleVideoStream_StaticRecordsClientPlaySessionAlias(t *testing.T) {
+	t.Parallel()
 	handler, encodedID, _ := newStaticDirectPlayHandler(t)
 
 	rec := serveStaticStream(handler, encodedID, "Static=true&PlaySessionId=infuse-client-psid")
@@ -311,6 +320,7 @@ func TestHandleVideoStream_StaticRecordsClientPlaySessionAlias(t *testing.T) {
 // resolved through the recorded alias still tears the play session down —
 // the alias is an exact, caller-owned match.
 func TestHandlePlaybackReport_StopViaAliasTearsDown(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, sourceID := newReportLivenessHandler("upstream-1", true)
 	if err := handler.playbackStore.Update("play-1", func(current *PlaybackSession) error {
 		current.ClientPlaySessionID = "infuse-client-psid"
@@ -340,6 +350,7 @@ func TestHandlePlaybackReport_StopViaAliasTearsDown(t *testing.T) {
 // TestHandlePlaybackReport_StopViaUniqueRouteDoesNotTearDown proves a delayed
 // Stopped report cannot use a same-item route to tear down a newer play.
 func TestHandlePlaybackReport_StopViaUniqueRouteDoesNotTearDown(t *testing.T) {
+	t.Parallel()
 	handler, mgr, encodedItemID, sourceID := newReportLivenessHandler("upstream-1", true)
 
 	req := httptest.NewRequest(http.MethodPost, "/Sessions/Playing/Stopped", strings.NewReader(
@@ -367,6 +378,7 @@ func TestHandlePlaybackReport_StopViaUniqueRouteDoesNotTearDown(t *testing.T) {
 // fallback refuses to choose when the same item/source is playing twice under
 // one token.
 func TestHandlePlaybackReport_StopViaAmbiguousRouteDoesNotTearDown(t *testing.T) {
+	t.Parallel()
 	handler, mgr, encodedItemID, sourceID := newReportLivenessHandler("upstream-1", true)
 	original, ok := handler.playbackStore.Get("play-1")
 	if !ok {
@@ -400,6 +412,7 @@ func TestHandlePlaybackReport_StopViaAmbiguousRouteDoesNotTearDown(t *testing.T)
 }
 
 func TestHandlePlaybackReport_StopRejectsMixedRouteIdentifiers(t *testing.T) {
+	t.Parallel()
 	handler, mgr, encodedItemID, _ := newReportLivenessHandler("upstream-1", true)
 	original, ok := handler.playbackStore.Get("play-1")
 	if !ok {
@@ -440,6 +453,7 @@ func TestHandlePlaybackReport_StopRejectsMixedRouteIdentifiers(t *testing.T) {
 // transcode still keyed to the stale upstream id is closed first — otherwise
 // a second ffmpeg would start alongside the orphaned one.
 func TestEnsureUpstreamPlayback_ReviveClosesStaleTranscode(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, _ := newReportLivenessHandler("upstream-reaped", false)
 	// Stale transcode still keyed by the reaped id (never-started session; Close is a no-op).
 	staleTranscode := &playback.TranscodeSession{}
@@ -466,6 +480,7 @@ func TestEnsureUpstreamPlayback_ReviveClosesStaleTranscode(t *testing.T) {
 // mutations must key on the resolved play session id, not the client's own
 // PlaySessionId (which is not a store key for Static direct play).
 func TestHandlePlaybackReport_AliasResolvedAudioSelectionApplies(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, sourceID := newReportLivenessHandler("upstream-1", true)
 	if err := handler.playbackStore.Update("play-1", func(current *PlaybackSession) error {
 		current.ClientPlaySessionID = "infuse-client-psid"
@@ -499,6 +514,7 @@ func TestHandlePlaybackReport_AliasResolvedAudioSelectionApplies(t *testing.T) {
 // and a Stopped report with only the ambiguous alias (no ItemId) tears nothing
 // down.
 func TestHandlePlaybackReport_DuplicateAliasFallsBackToRoute(t *testing.T) {
+	t.Parallel()
 	handler, mgr, encodedItemID, sourceID := newReportLivenessHandler("upstream-1", true)
 	// Same client alias on a second live session for a DIFFERENT item.
 	otherItemID := handler.codec.EncodeStringID(EncodedIDItem, "movie-2")
@@ -545,6 +561,7 @@ func TestHandlePlaybackReport_DuplicateAliasFallsBackToRoute(t *testing.T) {
 // whose session disagrees with the report's ItemId is rejected (a stale or
 // reused client id) and the report resolves by route instead.
 func TestHandlePlaybackReport_AliasContradictedByItemFallsBack(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, _ := newReportLivenessHandler("upstream-1", true)
 	// Alias points at play-1 (movie-1), but the report is about movie-2.
 	if err := handler.playbackStore.Update("play-1", func(current *PlaybackSession) error {
@@ -596,6 +613,7 @@ func (m *racingStartSessionManager) StartSession(userID int, profileID string, f
 // of a concurrent attach race stops its own freshly created session and
 // adopts the winner when the winner serves the same play method.
 func TestEnsureUpstreamPlayback_CASLoserAdoptsSameMethodWinner(t *testing.T) {
+	t.Parallel()
 	handler, _, _, _ := newReportLivenessHandler("", false)
 	base := handler.sessionMgr.(*testCompatSessionManager)
 	racer := &racingStartSessionManager{
@@ -626,6 +644,7 @@ func TestEnsureUpstreamPlayback_CASLoserAdoptsSameMethodWinner(t *testing.T) {
 // session and surfaces a conflict instead of continuing with mismatched
 // transcode bookkeeping.
 func TestEnsureUpstreamPlayback_CASLoserRejectsMethodSwitch(t *testing.T) {
+	t.Parallel()
 	handler, _, _, _ := newReportLivenessHandler("", false)
 	base := handler.sessionMgr.(*testCompatSessionManager)
 	racer := &racingStartSessionManager{
@@ -654,6 +673,7 @@ func TestEnsureUpstreamPlayback_CASLoserRejectsMethodSwitch(t *testing.T) {
 // direct-play range transfer emits no activity and stale cleanup reaps the
 // session mid-transfer.
 func TestHandleVideoStream_DirectPlayMarksTransport(t *testing.T) {
+	t.Parallel()
 	handler, encodedID, body := newStaticDirectPlayHandler(t)
 	mgr := handler.sessionMgr.(*testCompatSessionManager)
 

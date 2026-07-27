@@ -18,6 +18,7 @@ import (
 // buildBrowseParams in the future — must disqualify the request rather than be
 // silently ignored by the cached path.
 func TestLatestFastPathEligible(t *testing.T) {
+	t.Parallel()
 	played := true
 	base := func() itemsQuery { return itemsQuery{parentLibraryID: 7, startIndex: 0, limit: 24} }
 	paramsFor := func(q itemsQuery) url.Values { return buildLatestBrowseParams(q) }
@@ -80,6 +81,7 @@ func TestLatestFastPathEligible(t *testing.T) {
 // same limit + same ORDER BY mil.first_seen_at DESC ⇒ identical membership and
 // ordering.
 func TestLatestRecentlyAddedConfigParity(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name           string
 		itemTypes      []string
@@ -110,6 +112,7 @@ func TestLatestRecentlyAddedConfigParity(t *testing.T) {
 // concrete single video type is preserved while anything that clamps to a
 // multi-type or no-match set falls back to the all-types (nil) config.
 func TestLatestRecentlyAddedConfigUsesScopedTypes(t *testing.T) {
+	t.Parallel()
 	if cfg := latestRecentlyAddedConfig([]string{"Movie"}); cfg == nil {
 		t.Fatalf("a movie-typed library should yield a non-nil filter_type config")
 	}
@@ -189,6 +192,7 @@ func (p *completedProgressStoreProvider) Close() error { return nil }
 // only supplies the same list items and is covered by the config-parity tests
 // above.
 func TestLoadLatestViaSectionsEnrichesSeriesUserData(t *testing.T) {
+	t.Parallel()
 	// series-1 has 3 episodes; 2 are completed ⇒ 1 unplayed, not fully played.
 	episodeSrc := &seriesEpisodeSource{
 		bySeries: map[string][]*models.Episode{

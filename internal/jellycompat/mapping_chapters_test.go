@@ -8,6 +8,7 @@ import (
 )
 
 func TestCompatChapters(t *testing.T) {
+	t.Parallel()
 	addedAt := time.Date(2025, 6, 1, 12, 0, 0, 0, time.UTC)
 	items := compatChapters([]catalog.VersionChapter{
 		{
@@ -49,6 +50,7 @@ func TestCompatChapters(t *testing.T) {
 }
 
 func TestCompatChaptersZeroAddedAt(t *testing.T) {
+	t.Parallel()
 	items := compatChapters([]catalog.VersionChapter{
 		{Title: "Chapter 1", StartSeconds: 0, EndSeconds: 30},
 	}, time.Time{})

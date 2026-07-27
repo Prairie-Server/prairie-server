@@ -181,6 +181,7 @@ func testCompatSource(codec *ResourceIDCodec, version catalog.FileVersion) Playb
 }
 
 func TestBuildPlaybackSource_SeedsRequestedAudioStreamIndex(t *testing.T) {
+	t.Parallel()
 	handler := &PlaybackHandler{codec: NewResourceIDCodec()}
 	version := testCompatVersion()
 	requestedAudioStreamIndex := len(version.VideoTracks) + 1
@@ -203,6 +204,7 @@ func TestBuildPlaybackSource_SeedsRequestedAudioStreamIndex(t *testing.T) {
 }
 
 func TestPlaybackInfoRequest_AcceptsStringAudioStreamIndex(t *testing.T) {
+	t.Parallel()
 	var req playbackInfoRequest
 	if err := json.Unmarshal([]byte(`{"AudioStreamIndex":"1"}`), &req); err != nil {
 		t.Fatalf("unmarshal playback request: %v", err)
@@ -216,6 +218,7 @@ func TestPlaybackInfoRequest_AcceptsStringAudioStreamIndex(t *testing.T) {
 }
 
 func TestHandlePlaybackReport_UpdatesSelectedAudioStreamAndUpstreamTrack(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	version := testCompatVersion()
 	source := testCompatSource(codec, version)
@@ -278,6 +281,7 @@ func TestHandlePlaybackReport_UpdatesSelectedAudioStreamAndUpstreamTrack(t *test
 }
 
 func TestEnsureTranscodeSession_UsesSelectedAudioTrack(t *testing.T) {
+	t.Parallel()
 	version := testCompatVersion()
 	codec := NewResourceIDCodec()
 	source := testCompatSource(codec, version)
@@ -314,6 +318,7 @@ func TestEnsureTranscodeSession_UsesSelectedAudioTrack(t *testing.T) {
 }
 
 func TestStartRemoteTranscode_IncludesSelectedAudioTrack(t *testing.T) {
+	t.Parallel()
 	version := testCompatVersion()
 	codec := NewResourceIDCodec()
 	source := testCompatSource(codec, version)

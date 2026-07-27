@@ -14,6 +14,7 @@ import (
 )
 
 func TestWebComponentStatusMissing(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	cfg, err := config.LoadFromDB(map[string]string{
 		"jellyfin_compat.enabled":         "true",
@@ -41,6 +42,7 @@ func TestWebComponentStatusMissing(t *testing.T) {
 }
 
 func TestWebComponentStatusInstalledWithProvenance(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	release := filepath.Join(root, "10.11.6")
 	if err := os.MkdirAll(release, 0o755); err != nil {
@@ -84,6 +86,7 @@ func TestWebComponentStatusInstalledWithProvenance(t *testing.T) {
 }
 
 func TestWebComponentStatusUpdateAvailable(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	release := filepath.Join(root, "10.11.6")
 	writeValidWebRelease(t, release, "10.11.6")
@@ -98,6 +101,7 @@ func TestWebComponentStatusUpdateAvailable(t *testing.T) {
 }
 
 func TestWebComponentStatusUsesPersistedSettingsForDisplay(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	cfg, err := config.LoadFromDB(map[string]string{
 		"jellyfin_compat.enabled":     "false",
@@ -137,6 +141,7 @@ func TestWebComponentStatusUsesPersistedSettingsForDisplay(t *testing.T) {
 }
 
 func TestWebComponentStatusDoesNotRequireRestartForLiveIdentitySettings(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	cfg, err := config.LoadFromDB(map[string]string{
 		"jellyfin_compat.enabled":                 "true",
@@ -174,6 +179,7 @@ func TestWebComponentStatusDoesNotRequireRestartForLiveIdentitySettings(t *testi
 }
 
 func TestWebComponentStatusDoesNotDefaultPinnedVersionToEmulatedVersion(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	cfg, err := config.LoadFromDB(map[string]string{
 		"jellyfin_compat.emulated_server_version": "10.12.0",
@@ -196,6 +202,7 @@ func TestWebComponentStatusDoesNotDefaultPinnedVersionToEmulatedVersion(t *testi
 }
 
 func TestWebComponentStatusDisablesWebUIWhenProxyDisabled(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	cfg, err := config.LoadFromDB(map[string]string{
 		"jellyfin_compat.enabled":         "false",
@@ -220,6 +227,7 @@ func TestWebComponentStatusDisablesWebUIWhenProxyDisabled(t *testing.T) {
 }
 
 func TestWebComponentStatusReportsWebEnabledSetting(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	cfg, err := config.LoadFromDB(map[string]string{
 		"jellyfin_compat.enabled":         "true",
@@ -245,6 +253,7 @@ func TestWebComponentStatusReportsWebEnabledSetting(t *testing.T) {
 }
 
 func TestSelectCompatibleWebVersion(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name      string
 		api       string
@@ -291,6 +300,7 @@ func TestSelectCompatibleWebVersion(t *testing.T) {
 }
 
 func TestSelectCompatibleWebVersionRejectsInvalidInputs(t *testing.T) {
+	t.Parallel()
 	if _, err := SelectCompatibleWebVersion("not-a-version", []string{"10.11.6"}); err == nil {
 		t.Fatal("SelectCompatibleWebVersion returned nil error for invalid API version")
 	}
@@ -300,6 +310,7 @@ func TestSelectCompatibleWebVersionRejectsInvalidInputs(t *testing.T) {
 }
 
 func TestParseRemoteWebReleaseVersions(t *testing.T) {
+	t.Parallel()
 	versions, err := parseRemoteWebReleaseVersions(strings.NewReader(`[
 		{"tag_name":"v10.11.6","draft":false,"prerelease":false},
 		{"tag_name":"10.12.0","draft":true,"prerelease":false},
@@ -321,6 +332,7 @@ func TestParseRemoteWebReleaseVersions(t *testing.T) {
 }
 
 func TestInstallWebComponentRejectsUnsafeVersion(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	_, err := InstallWebComponent(context.Background(), WebComponentInstallOptions{
 		InstallRoot: root,
@@ -336,6 +348,7 @@ func TestInstallWebComponentRejectsUnsafeVersion(t *testing.T) {
 }
 
 func TestInstallWebComponentRejectsUnofficialSource(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	_, err := InstallWebComponent(context.Background(), WebComponentInstallOptions{
 		InstallRoot: root,
@@ -352,6 +365,7 @@ func TestInstallWebComponentRejectsUnofficialSource(t *testing.T) {
 }
 
 func TestRemoveWebComponentOnlyRemovesGeneratedAssets(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	release := filepath.Join(root, "10.11.6")
 	if err := os.MkdirAll(release, 0o755); err != nil {
@@ -399,6 +413,7 @@ func TestRemoveWebComponentOnlyRemovesGeneratedAssets(t *testing.T) {
 }
 
 func TestStartWebComponentRemovePublishesProgress(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	release := filepath.Join(root, "10.11.6")
 	writeValidWebRelease(t, release, "10.11.6")
@@ -461,6 +476,7 @@ func TestStartWebComponentRemovePublishesProgress(t *testing.T) {
 }
 
 func TestWebComponentStatusRecoversLegacyStaleOperationLock(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	if err := os.WriteFile(filepath.Join(root, webInstallLock), []byte("installing"), 0o644); err != nil {
 		t.Fatalf("write legacy lock: %v", err)
@@ -487,6 +503,7 @@ func TestWebComponentStatusRecoversLegacyStaleOperationLock(t *testing.T) {
 }
 
 func TestWebComponentOperationProgressPersistsToStatus(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	op, err := beginWebOperation(root, WebComponentOperationInstall)
 	if err != nil {
@@ -534,6 +551,7 @@ func TestWebComponentOperationProgressPersistsToStatus(t *testing.T) {
 }
 
 func TestBeginWebOperationRejectsFreshMalformedLock(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	if err := os.MkdirAll(root, 0o755); err != nil {
 		t.Fatalf("mkdir root: %v", err)
@@ -550,6 +568,7 @@ func TestBeginWebOperationRejectsFreshMalformedLock(t *testing.T) {
 }
 
 func TestBeginWebOperationRecoversDeadProcessLock(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	host, _ := os.Hostname()
 	stale := WebComponentOperationStatus{
@@ -583,6 +602,7 @@ func TestBeginWebOperationRecoversDeadProcessLock(t *testing.T) {
 }
 
 func TestBeginWebOperationRecoversDeadProcessLockFromDifferentHost(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	stale := WebComponentOperationStatus{
 		ID:        "install-dead-host",
@@ -612,6 +632,7 @@ func TestBeginWebOperationRecoversDeadProcessLockFromDifferentHost(t *testing.T)
 }
 
 func TestBeginWebOperationRejectsLiveProcessLock(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	host, _ := os.Hostname()
 	live := WebComponentOperationStatus{
@@ -638,6 +659,7 @@ func TestBeginWebOperationRejectsLiveProcessLock(t *testing.T) {
 }
 
 func TestFinishWebOperationDoesNotClearDifferentLock(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	first, err := beginWebOperation(root, WebComponentOperationInstall)
 	if err != nil {
@@ -665,6 +687,7 @@ func TestFinishWebOperationDoesNotClearDifferentLock(t *testing.T) {
 }
 
 func TestResolveCompatWebFSHonorsWebEnabledSetting(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	release := filepath.Join(root, "10.11.6")
 	writeValidWebRelease(t, release, "10.11.6")
@@ -721,6 +744,7 @@ func TestResolveCompatWebFSHonorsWebEnabledSetting(t *testing.T) {
 }
 
 func TestResolveCompatWebFSDoesNotFallbackToVendoredDirectory(t *testing.T) {
+	t.Parallel()
 	cfg := &config.Config{}
 
 	webFS, _, err := resolveCompatWebFS(context.Background(), Dependencies{Config: cfg})

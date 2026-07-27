@@ -11,6 +11,7 @@ import "testing"
 //
 // Regression guard for the post-perf-overhaul code review (Codex P2).
 func TestFavoriteBrowseFiltersSupportedBySQL_RejectsUnsupportedSorts(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		sort string
 		want bool
@@ -44,6 +45,7 @@ func TestFavoriteBrowseFiltersSupportedBySQL_RejectsUnsupportedSorts(t *testing.
 // against accidentally reordering or removing them when adding the sort
 // allowlist).
 func TestFavoriteBrowseFiltersSupportedBySQL_NonSortGuardsStillFire(t *testing.T) {
+	t.Parallel()
 	played := true
 	if favoriteBrowseFiltersSupportedBySQL(itemsQuery{isPlayed: &played, sort: "added_at"}) {
 		t.Errorf("isPlayed must disable SQL path")

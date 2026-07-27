@@ -14,6 +14,7 @@ import (
 // process started then died) maps to 404 like Jellyfin, and only genuinely
 // unexpected errors keep the 500.
 func TestHLSSegmentErrorResponse(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name       string
 		err        error

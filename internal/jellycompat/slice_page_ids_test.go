@@ -7,6 +7,7 @@ import "testing"
 // writeNextUpResponse, and any divergence would attach detail upgrades to
 // the wrong DTOs.
 func TestSlicePageIDs(t *testing.T) {
+	t.Parallel()
 	ids := []string{"a", "b", "c", "d"}
 	cases := []struct {
 		name       string

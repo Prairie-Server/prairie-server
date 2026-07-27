@@ -133,6 +133,7 @@ func testRemoteTranscodeSource() PlaybackMediaSource {
 // rebuilds the same recipe the node would re-spawn ffmpeg from (rather than a
 // Redis miss → 404).
 func TestStartRemoteTranscode_NodeRestartReconstruct(t *testing.T) {
+	t.Parallel()
 	recipeStore := &stubRecipeNodeStore{}
 	node := fakeTranscodeNode(t, nil)
 	handler, _, playbackStore := newRemoteTranscodeHandler(t, node.URL, recipeStore)
@@ -190,6 +191,7 @@ func TestStartRemoteTranscode_NodeRestartReconstruct(t *testing.T) {
 // session from the stored recipe rather than returning SessionMissing (which a
 // remote segment serve renders as a 404).
 func TestStartRemoteTranscode_CentralRestartReconstruct(t *testing.T) {
+	t.Parallel()
 	recipeStore := &stubRecipeNodeStore{}
 	node := fakeTranscodeNode(t, nil)
 	handler, _, playbackStore := newRemoteTranscodeHandler(t, node.URL, recipeStore)
@@ -249,6 +251,7 @@ func TestStartRemoteTranscode_CentralRestartReconstruct(t *testing.T) {
 // rollback is mirrored: a compat-store Update failure closes the already-started
 // node ffmpeg (DELETE /transcode/{id}) so it isn't leaked.
 func TestStartRemoteTranscode_UpdateFailureRollsBackNode(t *testing.T) {
+	t.Parallel()
 	recipeStore := &stubRecipeNodeStore{}
 	deleted := make(chan string, 1)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

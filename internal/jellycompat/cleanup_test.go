@@ -18,6 +18,7 @@ func (f *fakePlaybackSessionExpirer) DeleteExpired(context.Context) (int64, erro
 }
 
 func TestCleanupExpiredCompatStateIncludesPlaybackSessions(t *testing.T) {
+	t.Parallel()
 	expirer := &fakePlaybackSessionExpirer{count: 3}
 
 	authDeleted, playbackDeleted, err := cleanupExpiredCompatState(

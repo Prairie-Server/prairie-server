@@ -13,6 +13,7 @@ import (
 )
 
 func TestRenderCollectionPosterPNG(t *testing.T) {
+	t.Parallel()
 	got, err := generatedCollectionPoster("My Favorite Films")
 	if err != nil {
 		t.Fatalf("render poster: %v", err)
@@ -38,6 +39,7 @@ func TestRenderCollectionPosterPNG(t *testing.T) {
 }
 
 func TestServeCollectionImageServesBundledTemplatePoster(t *testing.T) {
+	t.Parallel()
 	const secret = "image-secret"
 	codec := NewResourceIDCodec()
 	collectionID := "129510738770395144"
@@ -83,6 +85,7 @@ func TestServeCollectionImageServesBundledTemplatePoster(t *testing.T) {
 }
 
 func TestServeCollectionImageGeneratesFallbackWhenNoPoster(t *testing.T) {
+	t.Parallel()
 	const secret = "image-secret"
 	codec := NewResourceIDCodec()
 	collectionID := "abc123"
@@ -121,6 +124,7 @@ func TestServeCollectionImageGeneratesFallbackWhenNoPoster(t *testing.T) {
 }
 
 func TestServeCollectionImageRejectsBadTagWithoutSession(t *testing.T) {
+	t.Parallel()
 	const secret = "image-secret"
 	codec := NewResourceIDCodec()
 	collectionID := "abc123"
@@ -145,6 +149,7 @@ func TestServeCollectionImageRejectsBadTagWithoutSession(t *testing.T) {
 }
 
 func TestServeCollectionsViewImageGeneratesTile(t *testing.T) {
+	t.Parallel()
 	const secret = "image-secret"
 	codec := NewResourceIDCodec()
 	tag := newImageTagSigner(secret).Tag(
