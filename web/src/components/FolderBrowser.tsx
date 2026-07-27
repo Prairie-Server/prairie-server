@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -151,6 +152,9 @@ export default function FolderBrowser({
       <DialogContent className="overflow-x-hidden sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>Browse Library Folders</DialogTitle>
+          <DialogDescription>
+            Navigate the server filesystem and select one or more folders to add to this library.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="min-w-0 space-y-3">
