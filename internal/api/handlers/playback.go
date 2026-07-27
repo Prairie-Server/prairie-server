@@ -701,6 +701,32 @@ func appendStreamToken(rawURL, token string) string {
 	return rawURL + sep + streamTokenParam + "=" + token
 }
 
+// Playback routes are mounted under /api/v1 (see router.go). Clients that join
+// these paths to the server origin verbatim (SmartTV, and Android/Apple when
+// the path already starts with /api/) need the full mount prefix here —
+// returning bare /playback/... or /stream/... 404s at the origin root.
+const apiV1Prefix = "/api/v1"
+
+func localTranscodeManifestPath(sessionID string) string {
+	return fmt.Sprintf("%s/playback/transcode/%s/master.m3u8", apiV1Prefix, sessionID)
+}
+
+func localStreamPath(sessionID string) string {
+	return fmt.Sprintf("%s/stream/%s", apiV1Prefix, sessionID)
+}
+
+// clientRequests4KTarget reports whether the client explicitly asked for a 4K
+// encode ladder. Used to bypass the admin allow_4k_transcode gate when a
+// capable panel opts into 2160p.
+func clientRequests4KTarget(targetResolution string) bool {
+	switch strings.ToLower(strings.TrimSpace(targetResolution)) {
+	case "2160p", "4k", "uhd", "3840x2160":
+		return true
+	default:
+		return false
+	}
+}
+
 // playbackStreamURL builds the native serve URL for a session and appends an
 // identity stream token so a direct-play/remux session survives a restart (the
 // client re-supplies its byte position). Transcode sessions receive their
@@ -711,10 +737,10 @@ func (h *PlaybackHandler) playbackStreamURL(s *playback.Session) string {
 		return ""
 	}
 	if s.PlayMethod == playback.PlayTranscode {
-		return fmt.Sprintf("/playback/transcode/%s/master.m3u8", s.ID)
+		return localTranscodeManifestPath(s.ID)
 	}
 	card := identityRecipeCard(s)
-	return appendStreamToken(fmt.Sprintf("/stream/%s", s.ID), h.signSessionToken(card))
+	return appendStreamToken(localStreamPath(s.ID), h.signSessionToken(card))
 }
 
 // identityRecipeCard builds the identity-only recipe for a direct-play or remux
@@ -2114,14 +2140,14 @@ func buildSubtitleURLs(
 }
 
 func subtitleStreamURL(sessionID string, trackIndex int, codec string, fileID int) string {
-	return fmt.Sprintf("/stream/%s/subtitles/%d%s?file_id=%d", sessionID, trackIndex, subtitleURLExt(codec), fileID)
+	return fmt.Sprintf("%s/subtitles/%d%s?file_id=%d", localStreamPath(sessionID), trackIndex, subtitleURLExt(codec), fileID)
 }
 
 func subtitleFontBundleURL(sessionID string, trackIndex int, codec string, fileID int) string {
 	if !playback.IsASS(codec) {
 		return ""
 	}
-	return fmt.Sprintf("/stream/%s/subtitles/%d/fonts?file_id=%d", sessionID, trackIndex, fileID)
+	return fmt.Sprintf("%s/subtitles/%d/fonts?file_id=%d", localStreamPath(sessionID), trackIndex, fileID)
 }
 
 func firstNonEmptyString(values ...string) string {
@@ -2526,7 +2552,7 @@ func (h *PlaybackHandler) HandleChangeAudioTrack(w http.ResponseWriter, r *http.
 		if ts := h.tm.GetTranscodeSession(sessionID); ts != nil {
 			card := playback.NewRecipeCard(updatedSession.UserID, updatedSession.ProfileID, updatedSession.MediaFileID, updatedSession.TranscodeNodeURL, ts.Opts())
 			streamURL = appendStreamToken(
-				fmt.Sprintf("/playback/transcode/%s/master.m3u8", sessionID),
+				localTranscodeManifestPath(sessionID),
 				h.signSessionToken(card),
 			)
 		}
@@ -3165,14 +3191,15 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 	}
 
 	// 4K transcode guard: if source is 4K and allow_4k_transcode is disabled,
-	// switch to an alternate non-4K file version for transcoding.
-	// Skip the guard when target_codec_video is "copy" — no actual video
-	// encoding happens, so the 4K cost concern doesn't apply.
+	// switch to an alternate non-4K file version for transcoding — unless the
+	// client explicitly requested a 4K target (SmartTV/Apple panels that can
+	// decode 2160p). Skip the guard when target_codec_video is "copy" — no
+	// actual video encoding happens, so the 4K cost concern doesn't apply.
 	var switchedFileID *int
 	videoCopy := strings.EqualFold(req.TargetCodecVideo, "copy")
 	if file.Resolution == "2160p" && h.SettingsRepo != nil && !videoCopy {
 		allow4K, _ := h.SettingsRepo.Get(r.Context(), "allow_4k_transcode")
-		if allow4K != "true" {
+		if allow4K != "true" && !clientRequests4KTarget(req.TargetResolution) {
 			alt, altErr := h.findAlternateFile(r.Context(), file)
 			if altErr != nil || alt == nil {
 				writeError(w, http.StatusUnprocessableEntity, "no_alternate_version",
@@ -3541,7 +3568,7 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 	// query parameter; the manifest rewriter propagates it onto every segment URI.
 	card := playback.NewRecipeCard(session.UserID, session.ProfileID, session.MediaFileID, "", transcodeSession.Opts())
 	manifestURL := appendStreamToken(
-		fmt.Sprintf("/playback/transcode/%s/master.m3u8", req.SessionID),
+		localTranscodeManifestPath(req.SessionID),
 		h.signSessionToken(card),
 	)
 	h.syncSessionsNow(r.Context(), "transcode_start")
@@ -3798,7 +3825,7 @@ func (h *PlaybackHandler) HandleGetTranscodeSegment(w http.ResponseWriter, r *ht
 // the ?st= query parameter so the integrated server can reconstruct from it.
 func (h *PlaybackHandler) buildProxyManifestURL(card playback.RecipeCard, proxyNode *nodepool.Node) string {
 	token := h.signSessionToken(card)
-	localURL := fmt.Sprintf("/playback/transcode/%s/master.m3u8", card.SessionID)
+	localURL := localTranscodeManifestPath(card.SessionID)
 	if proxyNode == nil {
 		return appendStreamToken(localURL, token)
 	}

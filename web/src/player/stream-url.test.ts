@@ -1,5 +1,25 @@
 import { describe, expect, it } from "vitest";
-import { buildPlayerStreamUrl } from "./stream-url";
+import { buildPlayerStreamUrl, joinApiStreamPath } from "./stream-url";
+
+describe("joinApiStreamPath", () => {
+  it("does not double-prefix when the path already includes /api/", () => {
+    expect(joinApiStreamPath("/api/v1", "/api/v1/playback/transcode/s/master.m3u8")).toBe(
+      "/api/v1/playback/transcode/s/master.m3u8",
+    );
+  });
+
+  it("still prefixes legacy bare playback paths with the API mount", () => {
+    expect(joinApiStreamPath("/api/v1", "/playback/transcode/s/master.m3u8")).toBe(
+      "/api/v1/playback/transcode/s/master.m3u8",
+    );
+  });
+
+  it("joins an absolute origin with an already-prefixed API path", () => {
+    expect(
+      joinApiStreamPath("https://api.example.com", "/api/v1/stream/abc"),
+    ).toBe("https://api.example.com/api/v1/stream/abc");
+  });
+});
 
 describe("buildPlayerStreamUrl", () => {
   it("joins the access token with `&` when the stream path already has `?st=`", () => {

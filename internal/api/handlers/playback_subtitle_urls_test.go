@@ -46,7 +46,7 @@ func TestBuildSubtitleURLs_IncludesAllBitmapTracksForBurnInClients(t *testing.T)
 	}
 
 	srt := urls[0]
-	if srt.MediaFileID != file.ID || srt.Codec != "subrip" || srt.URL != "/stream/sess-1/subtitles/0.vtt?file_id=42" {
+	if srt.MediaFileID != file.ID || srt.Codec != "subrip" || srt.URL != "/api/v1/stream/sess-1/subtitles/0.vtt?file_id=42" {
 		t.Errorf("unexpected text track entry: %+v", srt)
 	}
 
@@ -54,7 +54,7 @@ func TestBuildSubtitleURLs_IncludesAllBitmapTracksForBurnInClients(t *testing.T)
 	if pgs.MediaFileID != file.ID || pgs.Codec != "hdmv_pgs_subtitle" {
 		t.Errorf("expected PGS track to be included, got %+v", pgs)
 	}
-	if pgs.URL != "/stream/sess-1/subtitles/1.sup?file_id=42" {
+	if pgs.URL != "/api/v1/stream/sess-1/subtitles/1.sup?file_id=42" {
 		t.Errorf("PGS track should get a .sup URL, got %q", pgs.URL)
 	}
 	if pgs.FontBundleURL != "" {
@@ -106,7 +106,7 @@ func TestBuildSubtitleURLs_PGSIndexAccountsForExternalOffset(t *testing.T) {
 		t.Fatalf("expected 2 subtitle URLs, got %d: %+v", len(urls), urls)
 	}
 	pgs := urls[1]
-	if pgs.Index != 1 || pgs.URL != "/stream/sess-2/subtitles/1.sup?file_id=44" {
+	if pgs.Index != 1 || pgs.URL != "/api/v1/stream/sess-2/subtitles/1.sup?file_id=44" {
 		t.Errorf("PGS track index should include the external offset, got %+v", pgs)
 	}
 }
