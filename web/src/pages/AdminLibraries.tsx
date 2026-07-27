@@ -388,7 +388,7 @@ export default function AdminLibraries() {
         onDragEnd={handleDragEnd}
         onDragCancel={handleDragCancel}
       >
-        <div className="surface-panel overflow-x-auto rounded-2xl border-0">
+        <div className="surface-panel hidden overflow-x-auto rounded-2xl border-0 sm:block">
           <Table>
             <TableHeader>
               <TableRow>
@@ -716,6 +716,148 @@ export default function AdminLibraries() {
           ) : null}
         </DragOverlay>
       </DndContext>
+
+      {/* Mobile cards — reorder stays desktop-only (DnD). */}
+      <div className="surface-panel divide-border divide-y overflow-hidden rounded-2xl border-0 sm:hidden">
+        {orderedLibraries.length === 0 ? (
+          <div className="text-muted-foreground px-4 py-8 text-center text-sm">
+            No libraries yet.
+          </div>
+        ) : (
+          orderedLibraries.map((lib) => {
+            const isScanning = scanMutation.isPending && scanMutation.variables === lib.id;
+            const activeRefreshJob = activeRefreshJobsByLibraryId.get(lib.id);
+            const activeLibraryScans = activeScansByLibraryId.get(lib.id) ?? [];
+            const runningLibraryScans = activeLibraryScans.filter(
+              (scan) => scan.status === "running",
+            ).length;
+            const queuedLibraryScans = activeLibraryScans.length - runningLibraryScans;
+            const isRefreshStarting =
+              refreshMutation.isPending && refreshMutation.variables === lib.id;
+            const isCheckingMount =
+              mountCheckMutation.isPending && mountCheckMutation.variables === lib.id;
+            const mountCheck = lastMountCheckByLibraryId[lib.id];
+            const isCancellingLibraryScans =
+              cancelScansMutation.isPending && cancelScansMutation.variables === lib.id;
+            const isCancellingRefreshJob =
+              activeRefreshJob !== undefined &&
+              cancelAdminJobMutation.isPending &&
+              cancelAdminJobMutation.variables === activeRefreshJob.id;
+
+            return (
+              <div key={lib.id} className="flex flex-col gap-3 px-4 py-3">
+                <div className="min-w-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-sm font-semibold">{lib.name}</span>
+                    <Badge variant="secondary">{lib.type}</Badge>
+                    <Badge variant={lib.enabled ? "outline" : "destructive"}>
+                      {lib.enabled ? "Enabled" : "Disabled"}
+                    </Badge>
+                  </div>
+                  <p className="text-muted-foreground mt-1 truncate font-mono text-xs">
+                    {lib.paths.length === 1 ? lib.paths[0] : `${lib.paths.length} folders`}
+                  </p>
+                  <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-1.5 text-[11px]">
+                    <span>
+                      Scanned {lib.last_scanned_at ? formatDateTime(lib.last_scanned_at) : "Never"}
+                    </span>
+                    {runningLibraryScans > 0 ? (
+                      <Badge variant="secondary">{runningLibraryScans} running</Badge>
+                    ) : null}
+                    {queuedLibraryScans > 0 ? (
+                      <Badge variant="secondary">{queuedLibraryScans} queued</Badge>
+                    ) : null}
+                    {lib.scan_warning_code === "empty_root" ? (
+                      <Badge variant="destructive">Empty root</Badge>
+                    ) : null}
+                    {lib.scan_warning_code === "dead_root" ? (
+                      <Badge variant="destructive">Unreachable</Badge>
+                    ) : null}
+                  </div>
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-1">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn("h-9 w-9", activeLibraryScans.length > 0 && "text-destructive")}
+                    title={activeLibraryScans.length > 0 ? "Stop Library Scans" : "Scan Library"}
+                    aria-label={
+                      activeLibraryScans.length > 0 ? "Stop Library Scans" : "Scan Library"
+                    }
+                    disabled={activeLibraryScans.length > 0 ? isCancellingLibraryScans : isScanning}
+                    onClick={() => {
+                      if (activeLibraryScans.length > 0) {
+                        cancelScansMutation.mutate(lib.id);
+                        return;
+                      }
+                      scanMutation.mutate(lib.id);
+                    }}
+                  >
+                    {activeLibraryScans.length > 0 ? (
+                      <Square className="h-3.5 w-3.5 fill-current" />
+                    ) : (
+                      <RefreshCw className={`h-3.5 w-3.5 ${isScanning ? "animate-spin" : ""}`} />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className={cn("h-9 w-9", activeRefreshJob && "text-destructive")}
+                    title={activeRefreshJob ? "Stop Metadata Refresh" : "Rescan Metadata"}
+                    aria-label={activeRefreshJob ? "Stop Metadata Refresh" : "Rescan Metadata"}
+                    disabled={activeRefreshJob ? isCancellingRefreshJob : isRefreshStarting}
+                    onClick={() => {
+                      if (activeRefreshJob) {
+                        cancelAdminJobMutation.mutate(activeRefreshJob.id);
+                        return;
+                      }
+                      refreshMutation.mutate(lib.id);
+                    }}
+                  >
+                    {activeRefreshJob ? (
+                      <Square className="h-3.5 w-3.5 fill-current" />
+                    ) : (
+                      <DatabaseBackup className="h-3.5 w-3.5" />
+                    )}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9"
+                    title={mountCheck ? formatMountCheckMessage(mountCheck) : "Verify Mounts"}
+                    aria-label={mountCheck ? formatMountCheckMessage(mountCheck) : "Verify Mounts"}
+                    disabled={isCheckingMount}
+                    onClick={() => handleMountCheck(lib.id)}
+                  >
+                    <MountCheckButtonIcon pending={isCheckingMount} result={mountCheck} />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9"
+                    aria-label={`Edit ${lib.name}`}
+                    onClick={() => {
+                      setEditingLib(lib);
+                      setDialogOpen(true);
+                    }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-9 w-9"
+                    aria-label={`Delete ${lib.name}`}
+                    onClick={() => handleDelete(lib)}
+                  >
+                    <Trash2 className="h-3.5 w-3.5" aria-hidden="true" />
+                  </Button>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
 
       <UnmatchedItemsSection />
       <MetadataMatcherQueuesSection libraries={libraries} />

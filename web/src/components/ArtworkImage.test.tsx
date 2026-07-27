@@ -53,4 +53,30 @@ describe("ArtworkImage", () => {
     fireEvent.error(img);
     expect(onError).toHaveBeenCalledOnce();
   });
+
+  it("emits srcSet from width variants when widths are provided", () => {
+    render(
+      <ArtworkImage src="/art/poster/w300.webp" alt="Poster" widths={[300, 500]} sizes="160px" />,
+    );
+    const img = screen.getByRole("img", { name: "Poster" });
+    // Format fallback prefers AVIF sibling first.
+    expect(img).toHaveAttribute("src", "/art/poster/w300.avif");
+    expect(img.getAttribute("srcset")).toContain("300w");
+    expect(img.getAttribute("srcset")).toContain("500w");
+    expect(img).toHaveAttribute("sizes", "160px");
+  });
+
+  it("omits srcSet for signed artwork URLs", () => {
+    render(
+      <ArtworkImage
+        src="https://cdn.example.com/art/w300.webp?X-Amz-Signature=abc"
+        alt="Poster"
+        widths={[300, 500]}
+        sizes="160px"
+      />,
+    );
+    const img = screen.getByRole("img", { name: "Poster" });
+    expect(img.getAttribute("srcset")).toBeNull();
+    expect(img.getAttribute("sizes")).toBeNull();
+  });
 });

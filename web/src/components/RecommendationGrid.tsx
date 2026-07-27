@@ -1,4 +1,5 @@
 import { ArtworkImage } from "@/components/ArtworkImage";
+import { POSTER_WIDTHS } from "@/lib/artworkUrl";
 import ViewTransitionLink from "@/components/ViewTransitionLink";
 import { useCatalogItemDetail } from "@/hooks/queries/catalogRead";
 
@@ -23,6 +24,8 @@ function RecommendationItemCard({ itemId }: RecommendationItemCardProps) {
           <ArtworkImage
             src={item.poster_url}
             alt={item.title}
+            widths={POSTER_WIDTHS}
+            sizes="(max-width: 640px) 30vw, 140px"
             className="h-full w-full object-cover transition-transform group-hover:scale-105"
           />
         ) : (

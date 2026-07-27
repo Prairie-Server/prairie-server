@@ -1,6 +1,7 @@
 import { useImageLoaded } from "@/hooks/useImageLoaded";
 import { Check, Layers } from "lucide-react";
 import { ArtworkImage } from "@/components/ArtworkImage";
+import { POSTER_WIDTHS } from "@/lib/artworkUrl";
 import ViewTransitionLink from "@/components/ViewTransitionLink";
 import type { BrowseItem } from "@/api/types";
 import { decodeThumbhash } from "@/lib/thumbhash";
@@ -218,6 +219,8 @@ export default function ItemCard({
               <ArtworkImage
                 src={item.poster_url}
                 alt={displayTitle}
+                widths={POSTER_WIDTHS}
+                sizes="(max-width: 640px) 42vw, (max-width: 1024px) 18vw, 160px"
                 className={`h-full w-full object-cover transition-opacity duration-300 ${loaded ? "opacity-100" : "opacity-0"}`}
                 onLoad={onLoad}
               />
