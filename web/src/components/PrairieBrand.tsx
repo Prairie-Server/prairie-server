@@ -16,7 +16,9 @@ interface PrairieBrandProps {
 /**
  * Brand mark / wordmark. The bundled mark is 1024² (sharp on retina at ~44px);
  * the bundled wordmark is a modest 142×96 PNG — prefer a custom upload via
- * branding settings for crisp wordmarks on high-DPI displays.
+ * branding settings for crisp wordmarks on high-DPI displays. Bundled assets
+ * use PictureImage (AVIF → WebP → PNG); custom assets are content-negotiated
+ * by the branding API.
  */
 export function PrairieBrand({
   className,
@@ -29,28 +31,24 @@ export function PrairieBrand({
   const customSrc = isMark ? markUrl : wordmarkUrl;
   const defaultSrc = isMark ? PRAIRIE_MARK_SRC : PRAIRIE_WORDMARK_SRC;
   const imageClass = cn("h-full w-full object-contain", isMark && "rounded-lg", imageClassName);
+  // Intrinsic pixel size of the bundled assets — helps decode prioritization
+  // on high-DPI displays when CSS sizes the element down.
+  const intrinsic = isMark ? { width: 1024, height: 1024 } : { width: 142, height: 96 };
 
   return (
     <span className={cn("block shrink-0", !isMark && "overflow-hidden", className)}>
-<<<<<<< HEAD
       {customSrc ? (
-        // Custom branding assets are content-negotiated by the server (Accept).
-        <img src={customSrc} alt={serverName} className={imageClass} />
+        <img src={customSrc} alt={serverName} decoding="async" className={imageClass} />
       ) : (
-        <PictureImage src={defaultSrc} alt={serverName} className={imageClass} />
+        <PictureImage
+          src={defaultSrc}
+          alt={serverName}
+          decoding="async"
+          width={intrinsic.width}
+          height={intrinsic.height}
+          className={imageClass}
+        />
       )}
-=======
-      <img
-        src={src}
-        alt={serverName}
-        decoding="async"
-        // Bundled mark is large enough for 3×; hint display size so the browser
-        // can prioritize decode. Custom branding URLs keep single-src behavior.
-        width={isMark ? 1024 : 142}
-        height={isMark ? 1024 : 96}
-        className={cn("h-full w-full object-contain", isMark && "rounded-lg", imageClassName)}
-      />
->>>>>>> 0c2eafb9 (feat(web): finish mobile responsive deferred follow-ups)
     </span>
   );
 }
