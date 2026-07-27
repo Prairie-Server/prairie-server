@@ -66,11 +66,18 @@ jobs:
               - 'tools/imageutil-wasm/**'
               - '.github/workflows/ci.yml'
 
+  # Shard full-module lint across runners. PRs with a small .go diff usually put
+  # all packages in shard 0 and no-op the rest; workflow-only PRs emit zero
+  # packages and skip analysis entirely.
   go-lint:
-    name: Go lint
+    name: Go lint (${{ matrix.shard }}/4)
     needs: changes
     if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3]
     steps:
       - name: Check out sources
         uses: actions/checkout@v7
@@ -115,6 +122,8 @@ jobs:
         env:
           # PRs lint changed packages only; main/dispatch keep a full-module pass.
           CI_GO_LINT_FULL: ${{ github.event_name == 'pull_request' && '0' || '1' }}
+          CI_GO_LINT_SHARD: ${{ matrix.shard }}
+          CI_GO_LINT_SHARDS: "4"
           CI_GO_LINT_NEW_FROM_MERGE_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
           CI_GO_LINT_NEW_FROM_REV: ${{ github.event_name != 'pull_request' && 'HEAD~1' || '' }}
         run: |
@@ -125,6 +134,19 @@ jobs:
           else
             ./scripts/ci-go-lint.sh
           fi
+
+  go-lint-gate:
+    name: Go lint
+    needs: [changes, go-lint]
+    if: always() && needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require lint shards
+        run: |
+          set -euo pipefail
+          result="${{ needs.go-lint.result }}"
+          echo "go-lint matrix result: ${result}"
+          test "$result" = "success"
 
   web-lint:
     name: Web lint + format
@@ -184,8 +206,25 @@ jobs:
           go-version-file: go.mod
           cache: true
 
+      # setup-go already caches modules; keep a go.sum-keyed build cache with
+      # broad restore-keys so dependency objects survive across PRs even when
+      # jellycompat sources change (tests are ~3s; cold compile is ~40–60s).
+      - name: Cache Go build
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/go-build
+          key: ${{ runner.os }}-jellycompat-gobuild-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/jellycompat/**/*.go') }}
+          restore-keys: |
+            ${{ runner.os }}-jellycompat-gobuild-${{ hashFiles('go.sum') }}-
+            ${{ runner.os }}-jellycompat-gobuild-
+
       - name: Run jellycompat tests
-        run: go test ./internal/jellycompat/... -count=1
+        # -vet=off: golangci already covers vet/staticcheck; vet-during-test
+        # re-typechecks the 600+ dependency graph on cold runners.
+        run: |
+          set -euo pipefail
+          go mod download
+          go test ./internal/jellycompat/... -count=1 -vet=off
 
   # Embedded WASI AVIF encode is CPU-heavy; keep it off the coverage-package path
   # and only run when imageutil / its WASM toolchain changes.
@@ -207,7 +246,7 @@ jobs:
           cache: true
 
       - name: Run imageutil WASM smoke tests
-        run: go test ./internal/imageutil/ -count=1
+        run: go test ./internal/imageutil/ -count=1 -vet=off
 
   go-test-coverage:
     name: Go tests + coverage
@@ -254,7 +293,7 @@ jobs:
             ./internal/secret/... \
             ./internal/providerid/... \
             ./internal/buildinfo/... \
-            -count=1 -covermode=set -coverprofile=coverage.out
+            -count=1 -vet=off -covermode=set -coverprofile=coverage.out
 
       - name: Enforce coverage gate
         run: |

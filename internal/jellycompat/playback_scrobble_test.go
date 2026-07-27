@@ -993,8 +993,8 @@ func TestTerminalScrobbleRecoveryHonorsFallbackGracePeriod(t *testing.T) {
 	}
 	scrobbler := &channelCompatWatchScrobbler{stopEvents: make(chan watchsync.ScrobbleEvent, 1)}
 	handler := &PlaybackHandler{
-		playbackStore:         store,
-		WatchScrobbler:        scrobbler,
+		playbackStore:  store,
+		WatchScrobbler: scrobbler,
 		// Keep short so CI wall clock stays small; grace still exceeds the
 		// "must not deliver yet" probe below.
 		terminalFallbackDelay: 40 * time.Millisecond,
