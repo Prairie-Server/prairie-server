@@ -15,6 +15,7 @@ import (
 
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	"github.com/prairie-server/prairie-server/internal/livetv"
+	"github.com/prairie-server/prairie-server/internal/livetv/gracenote"
 	"github.com/prairie-server/prairie-server/internal/livetv/schedulesdirect"
 )
 
@@ -166,6 +167,25 @@ func (h *LiveTVHandler) HandleLookupSchedulesDirectLineups(w http.ResponseWriter
 	}
 	writeJSON(w, http.StatusOK, struct {
 		Lineups []schedulesdirect.LineupOption `json:"lineups"`
+	}{Lineups: lineups})
+}
+
+func (h *LiveTVHandler) HandleLookupXMLSyncLineups(w http.ResponseWriter, r *http.Request) {
+	var body livetv.XMLSyncLineupsRequest
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body", "invalid JSON body")
+		return
+	}
+	lineups, err := h.service.ListXMLSyncLineups(r.Context(), body)
+	if err != nil {
+		writeLiveTVError(w, err)
+		return
+	}
+	if lineups == nil {
+		lineups = []gracenote.LineupOption{}
+	}
+	writeJSON(w, http.StatusOK, struct {
+		Lineups []gracenote.LineupOption `json:"lineups"`
 	}{Lineups: lineups})
 }
 

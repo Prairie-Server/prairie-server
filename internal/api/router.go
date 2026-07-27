@@ -2245,6 +2245,7 @@ func NewRouter(deps Dependencies) chi.Router {
 							r.Patch("/channels/{channelId}", liveTVHandler.HandlePatchChannel)
 							r.Get("/guide-sources", liveTVHandler.HandleListGuideSources)
 							r.Post("/guide-sources/schedules-direct/lineups", liveTVHandler.HandleLookupSchedulesDirectLineups)
+							r.Post("/guide-sources/xml-sync/lineups", liveTVHandler.HandleLookupXMLSyncLineups)
 							r.Post("/guide-sources", liveTVHandler.HandleCreateGuideSource)
 							r.Patch("/guide-sources/{sourceId}", liveTVHandler.HandleUpdateGuideSource)
 							r.Delete("/guide-sources/{sourceId}", liveTVHandler.HandleDeleteGuideSource)
