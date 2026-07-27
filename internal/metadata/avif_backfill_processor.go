@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"runtime"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -12,6 +11,7 @@ import (
 
 	"github.com/google/uuid"
 
+	"github.com/prairie-server/prairie-server/internal/imageutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
@@ -61,6 +61,9 @@ type AVIFBackfillStats struct {
 	PNGChecked       int  `json:"png_checked"`
 	PNGDeleted       int  `json:"png_deleted"`
 	RuntimeLimited   bool `json:"runtime_limited,omitempty"`
+	// PausedForPlayback records that the pass yielded because playback or a
+	// transcode was active. The queue is durable, so the next tick resumes.
+	PausedForPlayback bool `json:"paused_for_playback,omitempty"`
 }
 
 // AVIFBackfillProcessor drains the durable AVIF queue and periodically
@@ -73,6 +76,10 @@ type AVIFBackfillProcessor struct {
 	logger   *slog.Logger
 	enabled  atomic.Bool
 	workers  atomic.Int32
+
+	// playbackActive reports whether any playback/transcode session is live.
+	// Artwork encoding yields to it entirely rather than competing for cores.
+	playbackActive atomic.Pointer[func() bool]
 
 	discoveryMu   sync.Mutex
 	lastDiscovery time.Time
@@ -128,6 +135,31 @@ func (p *AVIFBackfillProcessor) SetEnabled(enabled bool) {
 	}
 }
 
+// SetPlaybackActivityCheck wires the predicate that reports live playback or
+// transcode sessions. While it returns true the processor stops claiming work:
+// jobs stay in the durable queue and the next tick picks them up.
+func (p *AVIFBackfillProcessor) SetPlaybackActivityCheck(fn func() bool) {
+	if p == nil {
+		return
+	}
+	if fn == nil {
+		p.playbackActive.Store(nil)
+		return
+	}
+	p.playbackActive.Store(&fn)
+}
+
+func (p *AVIFBackfillProcessor) playbackIsActive() bool {
+	if p == nil {
+		return false
+	}
+	fn := p.playbackActive.Load()
+	if fn == nil || *fn == nil {
+		return false
+	}
+	return (*fn)()
+}
+
 // RunUntilIdle claims and processes AVIF backfill jobs until the queue is idle
 // or maxRuntime elapses. When discovery is due it also enqueues missing siblings.
 func (p *AVIFBackfillProcessor) RunUntilIdle(ctx context.Context, concurrency int, maxRuntime time.Duration, onProgress func(float64, string)) (AVIFBackfillStats, error) {
@@ -145,6 +177,14 @@ func (p *AVIFBackfillProcessor) RunUntilIdle(ctx context.Context, concurrency in
 		onProgress = func(float64, string) {}
 	}
 
+	// Yield the whole pass while someone is watching: artwork encodes and
+	// playback ffmpeg contend for the same cores, and this queue is durable.
+	if p.playbackIsActive() {
+		stats.PausedForPlayback = true
+		onProgress(100, "Paused: playback session active")
+		return stats, nil
+	}
+
 	if p.discoveryDue() {
 		if err := p.discoverMissing(ctx, &stats, onProgress); err != nil {
 			return stats, err
@@ -156,6 +196,12 @@ func (p *AVIFBackfillProcessor) RunUntilIdle(ctx context.Context, concurrency in
 	for ctx.Err() == nil {
 		if time.Now().After(deadline) {
 			stats.RuntimeLimited = true
+			break
+		}
+		// Re-check between claim passes so playback starting mid-run stops the
+		// drain at the next batch boundary instead of at the runtime cap.
+		if p.playbackIsActive() {
+			stats.PausedForPlayback = true
 			break
 		}
 		claimLimit := concurrency
@@ -231,10 +277,14 @@ func (p *AVIFBackfillProcessor) RunUntilIdle(ctx context.Context, concurrency in
 		}
 	}
 
-	onProgress(100, fmt.Sprintf(
+	message := fmt.Sprintf(
 		"AVIF backfill: enqueued %d, claimed %d, succeeded %d, failed %d, deleted %d old successes, png checked %d deleted %d",
 		stats.EnqueuedExisting, stats.Claimed, stats.Succeeded, stats.Failed, stats.DeletedSucceeded, stats.PNGChecked, stats.PNGDeleted,
-	))
+	)
+	if stats.PausedForPlayback {
+		message += ", paused for playback"
+	}
+	onProgress(100, message)
 	return stats, nil
 }
 
@@ -305,14 +355,15 @@ func avifBackfillConcurrencyDefault() int {
 }
 
 // ResolveAVIFBackfillWorkers maps a configured worker count to a concrete
-// concurrency. Values <= 0 mean runtime.NumCPU().
+// concurrency. Values <= 0 mean the shared artwork encode budget.
 func ResolveAVIFBackfillWorkers(configured int) int {
 	return ResolveAVIFBackfillWorkersFor(configured, "", 0)
 }
 
 // ResolveAVIFBackfillWorkersFor is the backend-aware variant used at wiring
 // time. When backend is "nvenc" and configured <= 0, concurrency follows the
-// NVENC session cap (default 3) instead of NumCPU.
+// NVENC session cap (default 3); CPU backends follow the shared artwork encode
+// budget, which stays well below the core count so playback keeps headroom.
 func ResolveAVIFBackfillWorkersFor(configured int, backend string, nvencSessions int) int {
 	if configured > 0 {
 		return configured
@@ -323,7 +374,7 @@ func ResolveAVIFBackfillWorkersFor(configured int, backend string, nvencSessions
 		}
 		return 3
 	}
-	n := runtime.NumCPU()
+	n := imageutil.DefaultEncodeBudgetSize()
 	if n < 1 {
 		return 1
 	}
