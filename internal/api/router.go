@@ -2402,38 +2402,60 @@ func NewRouter(deps Dependencies) chi.Router {
 					r.Get("/metadata/ai/status", handlers.WriteMetadataAIDisabledStatus)
 				}
 
-				// Subtitle search + AI translation routes.
-				if subtitleSearchHandler != nil {
-					if deps.FileRepo != nil && itemRepo != nil {
-						fileAuthorizer := &handlers.MediaFileAuthorizer{
-							FileResolver:  deps.FileRepo,
-							ItemAccess:    itemRepo,
-							EpisodeLookup: episodeRepo,
-							ExtraLookup:   extraRepo,
-						}
-						subtitleSearchHandler.FileAuthorizer = fileAuthorizer
-						if subtitleAIHandler != nil {
-							subtitleAIHandler.FileAuthorizer = fileAuthorizer
-						}
+				// Media-file authorizer shared by subtitle search and subtitle AI
+				// routes. Built independently of either handler so the AI routes
+				// below (registered even without object storage) still get a
+				// working authorizer.
+				var subtitleFileAuthorizer *handlers.MediaFileAuthorizer
+				if deps.FileRepo != nil && itemRepo != nil {
+					subtitleFileAuthorizer = &handlers.MediaFileAuthorizer{
+						FileResolver:  deps.FileRepo,
+						ItemAccess:    itemRepo,
+						EpisodeLookup: episodeRepo,
+						ExtraLookup:   extraRepo,
 					}
+				}
+				if subtitleSearchHandler != nil {
+					subtitleSearchHandler.FileAuthorizer = subtitleFileAuthorizer
+				}
+				if subtitleAIHandler != nil {
+					subtitleAIHandler.FileAuthorizer = subtitleFileAuthorizer
+				}
+
+				// Subtitle AI translation/ASR routes. Registered independently of
+				// subtitleSearchHandler: that handler (and the capability probe's
+				// intended graceful-negative fallback) previously lived inside the
+				// `subtitleSearchHandler != nil` block below, which requires object
+				// storage (S3) for downloaded-subtitle search results. A server
+				// without S3 configured — a common self-hosted setup — never
+				// registered "/subtitles/ai/status" at all in that case, so the
+				// player's capability probe got a bare 404 instead of the intended
+				// {"enabled": false}, and genuinely-enabled AI translation/ASR was
+				// unreachable too even though neither depends on object storage.
+				if subtitleAIHandler != nil {
+					r.Route("/subtitles/ai", func(r chi.Router) {
+						r.Get("/status", subtitleAIHandler.HandleStatus)
+						r.Get("/quota", subtitleAIHandler.HandleQuota)
+						r.Post("/translate", subtitleAIHandler.HandleTranslate)
+						r.Get("/jobs", subtitleAIHandler.HandleListJobs)
+						r.Get("/jobs/{job_id}", subtitleAIHandler.HandleGetJob)
+						r.Post("/jobs/{job_id}/cancel", subtitleAIHandler.HandleCancelJob)
+					})
+				} else {
+					// Answer the capability probe with 200 {"enabled": false} when
+					// AI translation isn't wired, so the client gets a clean
+					// negative instead of a 404.
+					r.Get("/subtitles/ai/status", handlers.WriteSubtitleAIDisabledStatus)
+				}
+
+				// Subtitle search + download routes (require object storage for
+				// downloaded-subtitle persistence).
+				if subtitleSearchHandler != nil {
 					r.Route("/subtitles", func(r chi.Router) {
 						r.Post("/search", subtitleSearchHandler.HandleSearch)
 						r.Post("/download", subtitleSearchHandler.HandleDownload)
 						r.Post("/upload", subtitleSearchHandler.HandleUpload)
 						r.Post("/detect-language", subtitleSearchHandler.HandleDetectLanguage)
-						if subtitleAIHandler != nil {
-							r.Get("/ai/status", subtitleAIHandler.HandleStatus)
-							r.Get("/ai/quota", subtitleAIHandler.HandleQuota)
-							r.Post("/ai/translate", subtitleAIHandler.HandleTranslate)
-							r.Get("/ai/jobs", subtitleAIHandler.HandleListJobs)
-							r.Get("/ai/jobs/{job_id}", subtitleAIHandler.HandleGetJob)
-							r.Post("/ai/jobs/{job_id}/cancel", subtitleAIHandler.HandleCancelJob)
-						} else {
-							// Answer the capability probe with 200 {"enabled": false}
-							// when AI translation isn't wired, so the client gets a
-							// clean negative instead of a 404.
-							r.Get("/ai/status", handlers.WriteSubtitleAIDisabledStatus)
-						}
 						r.Get("/{media_file_id}", subtitleSearchHandler.HandleList)
 						r.Delete("/{id}", subtitleSearchHandler.HandleDelete)
 					})
