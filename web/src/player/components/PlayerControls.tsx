@@ -300,7 +300,7 @@ export function PlayerControls({
           </div>
 
           {/* ─── Right: Utility rail ─── */}
-          <div className="flex min-w-0 items-center justify-end gap-0.5 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex min-w-0 [scrollbar-width:none] items-center justify-end gap-0.5 overflow-x-auto [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
             {/* Mute always available; full slider from sm+ */}
             <div className="sm:hidden">
               <VolumeControl
