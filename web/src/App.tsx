@@ -93,6 +93,7 @@ const HomeScreenSettings = lazy(() => import("@/pages/settings/HomeScreenSetting
 const ThemeEditorSettings = lazy(() => import("@/pages/settings/ThemeEditorSettings"));
 const CardOverlaySettings = lazy(() => import("@/pages/settings/CardOverlaySettings"));
 const PersonalizeSettings = lazy(() => import("@/pages/settings/PersonalizeSettings"));
+const ConnectAppsSettings = lazy(() => import("@/pages/settings/ConnectAppsSettings"));
 const WatchTogetherJoin = lazy(() => import("@/pages/WatchTogetherJoin"));
 const WatchTogetherRoomPage = lazy(() => import("@/pages/WatchTogetherRoomPage"));
 const WatchRoute = lazy(() => import("@/pages/WatchRoute"));
@@ -495,6 +496,7 @@ function AppRoutes() {
                     <Route path="card-overlays" element={<CardOverlaySettings />} />
                     <Route path="personalize" element={<PersonalizeSettings />} />
                     <Route path="notifications" element={<NotificationsSettings />} />
+                    <Route path="connect-apps" element={<ConnectAppsSettings />} />
                     <Route path="*" element={<Navigate to="/settings/playback" replace />} />
                   </Route>
                   <Route
