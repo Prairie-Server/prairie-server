@@ -2327,7 +2327,7 @@ export interface LiveTVChannelsResponse {
 
 export interface LiveTVGuideSource {
   id: string;
-  type: "schedules_direct";
+  type: "schedules_direct" | "xml_sync";
   priority: number;
   enabled: boolean;
   display_name: string;
@@ -2352,6 +2352,19 @@ export interface SchedulesDirectLineupOption {
 
 export interface SchedulesDirectLineupsResponse {
   lineups: SchedulesDirectLineupOption[];
+}
+
+export interface XMLSyncLineupOption {
+  lineup: string;
+  name: string;
+  transport: string;
+  location: string;
+  headend: string;
+  device: string;
+}
+
+export interface XMLSyncLineupsResponse {
+  lineups: XMLSyncLineupOption[];
 }
 
 export interface LiveTVProgram {

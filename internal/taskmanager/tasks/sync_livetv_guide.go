@@ -21,7 +21,7 @@ func NewSyncLiveTVGuideTask(service *livetv.Service) *SyncLiveTVGuideTask {
 func (t *SyncLiveTVGuideTask) Key() string  { return "sync_livetv_guide" }
 func (t *SyncLiveTVGuideTask) Name() string { return "Sync Live TV Guide" }
 func (t *SyncLiveTVGuideTask) Description() string {
-	return "Syncs enabled Live TV guide sources (Schedules Direct) and applies series recording rules"
+	return "Syncs enabled Live TV guide sources (Schedules Direct / XML sync) and applies series recording rules"
 }
 func (t *SyncLiveTVGuideTask) Category() taskmanager.TaskCategory {
 	return taskmanager.TaskCategoryLibrary

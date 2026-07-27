@@ -20,12 +20,13 @@ import {
   useLiveTVRecordings,
   useLiveTVTuners,
   useLookupSchedulesDirectLineups,
+  useLookupXMLSyncLineups,
   usePatchLiveTVChannel,
   useScanLiveTVTuner,
   useSyncLiveTVGuideSource,
   useUpdateLiveTVGuideSource,
 } from "@/hooks/queries/useLiveTV";
-import type { SchedulesDirectLineupOption } from "@/api/types";
+import type { SchedulesDirectLineupOption, XMLSyncLineupOption } from "@/api/types";
 
 const LIVETV_TABS = ["tuners", "channels", "guide", "recordings"] as const;
 type LiveTVTab = (typeof LIVETV_TABS)[number];
@@ -274,8 +275,8 @@ function ChannelsTab() {
   return (
     <div className="space-y-4">
       <p className="text-muted-foreground text-sm">
-        Enable channels for Live TV. After you sync a Schedules Direct source, station IDs are
-        matched automatically from HDHomeRun numbers and callsigns (for example{" "}
+        Enable channels for Live TV. After you sync a Schedules Direct or XML sync source, station
+        IDs are matched automatically from HDHomeRun numbers and callsigns (for example{" "}
         <span className="font-mono">2.1 · KDTN-DT</span>). Use override only if a match is wrong.
       </p>
       {sorted.length > 0 ? (
@@ -320,7 +321,7 @@ function ChannelsTab() {
                         <Input
                           id={`station-${channel.id}`}
                           className="w-48"
-                          placeholder="Schedules Direct station ID"
+                          placeholder="Guide station ID"
                           autoFocus
                           value={stationValue}
                           onChange={(e) =>
@@ -407,29 +408,62 @@ function GuideTab() {
   const updateSource = useUpdateLiveTVGuideSource();
   const deleteSource = useDeleteLiveTVGuideSource();
   const syncSource = useSyncLiveTVGuideSource();
-  const lookupLineups = useLookupSchedulesDirectLineups();
-  const [displayName, setDisplayName] = useState("Schedules Direct");
+  const lookupSDLineups = useLookupSchedulesDirectLineups();
+  const lookupXMLLineups = useLookupXMLSyncLineups();
+
+  const [sdDisplayName, setSDDisplayName] = useState("Schedules Direct");
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [country, setCountry] = useState("USA");
-  const [postalCode, setPostalCode] = useState("");
-  const [lineup, setLineup] = useState("");
-  const [lineups, setLineups] = useState<SchedulesDirectLineupOption[]>([]);
+  const [sdCountry, setSDCountry] = useState("USA");
+  const [sdPostalCode, setSDPostalCode] = useState("");
+  const [sdLineup, setSDLineup] = useState("");
+  const [sdLineups, setSDLineups] = useState<SchedulesDirectLineupOption[]>([]);
 
-  function findLineups() {
-    lookupLineups.mutate(
+  const [xmlDisplayName, setXMLDisplayName] = useState("XML sync");
+  const [xmlCountry, setXMLCountry] = useState("USA");
+  const [xmlPostalCode, setXMLPostalCode] = useState("");
+  const [xmlLineup, setXMLLineup] = useState("");
+  const [xmlHeadend, setXMLHeadend] = useState("");
+  const [xmlDevice, setXMLDevice] = useState("-");
+  const [xmlLineups, setXMLLineups] = useState<XMLSyncLineupOption[]>([]);
+
+  const enabledCount = sources.data?.filter((s) => s.enabled).length ?? 0;
+
+  function findSDLineups() {
+    lookupSDLineups.mutate(
       {
         username: username.trim(),
         password,
-        country: country.trim() || "USA",
-        postalcode: postalCode.trim(),
+        country: sdCountry.trim() || "USA",
+        postalcode: sdPostalCode.trim(),
       },
       {
         onSuccess: (found) => {
-          setLineups(found);
+          setSDLineups(found);
           const preferred =
             found.find((item) => /antenna|ota/i.test(`${item.transport} ${item.name}`)) ?? found[0];
-          setLineup(preferred?.lineup ?? "");
+          setSDLineup(preferred?.lineup ?? "");
+        },
+      },
+    );
+  }
+
+  function findXMLLineups() {
+    lookupXMLLineups.mutate(
+      {
+        country: xmlCountry.trim() || "USA",
+        postalcode: xmlPostalCode.trim(),
+      },
+      {
+        onSuccess: (found) => {
+          setXMLLineups(found);
+          const preferred =
+            found.find((item) =>
+              /ota|antenna|over the air/i.test(`${item.transport} ${item.name}`),
+            ) ?? found[0];
+          setXMLLineup(preferred?.lineup ?? "");
+          setXMLHeadend(preferred?.headend ?? "");
+          setXMLDevice(preferred?.device || "-");
         },
       },
     );
@@ -440,51 +474,176 @@ function GuideTab() {
       {
         type: "schedules_direct",
         enabled: true,
-        display_name: displayName.trim() || "Schedules Direct",
+        display_name: sdDisplayName.trim() || "Schedules Direct",
         priority: 100,
         config: {
           username: username.trim(),
           password,
-          country: country.trim() || "USA",
-          postalcode: postalCode.trim(),
-          lineup: lineup.trim(),
+          country: sdCountry.trim() || "USA",
+          postalcode: sdPostalCode.trim(),
+          lineup: sdLineup.trim(),
         },
       },
       {
         onSuccess: () => {
           setPassword("");
-          setLineups([]);
+          setSDLineups([]);
         },
       },
     );
   }
 
-  const canAdd =
-    Boolean(username.trim() && password && lineup.trim()) &&
-    (sources.data?.filter((s) => s.enabled).length ?? 0) < 3;
+  function addXMLSync() {
+    createSource.mutate(
+      {
+        type: "xml_sync",
+        enabled: true,
+        display_name: xmlDisplayName.trim() || "XML sync",
+        priority: 100,
+        config: {
+          country: xmlCountry.trim() || "USA",
+          postalcode: xmlPostalCode.trim(),
+          lineup: xmlLineup.trim(),
+          headend: xmlHeadend.trim(),
+          device: xmlDevice.trim() || "-",
+        },
+      },
+      {
+        onSuccess: () => {
+          setXMLLineups([]);
+        },
+      },
+    );
+  }
+
+  const canAddSD = Boolean(username.trim() && password && sdLineup.trim()) && enabledCount < 3;
+  const canAddXML = Boolean(xmlPostalCode.trim() && xmlLineup.trim()) && enabledCount < 3;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
+      <p className="text-muted-foreground max-w-2xl text-sm">
+        Up to three enabled guide sources, priority-ordered like marker providers. Use{" "}
+        <span className="text-foreground font-medium">XML sync</span> for a native Zap2XML-style
+        Gracenote pull (postal/ZIP only), or{" "}
+        <a
+          href="https://www.schedulesdirect.org/"
+          target="_blank"
+          rel="noreferrer"
+          className="underline underline-offset-2"
+        >
+          Schedules Direct
+        </a>{" "}
+        with an account.
+      </p>
+
       <div className="max-w-xl space-y-4">
+        <h3 className="text-sm font-medium">XML sync (Gracenote)</h3>
         <p className="text-muted-foreground text-sm">
-          Up to three enabled guide sources, priority-ordered like marker providers. Enter your{" "}
-          <a
-            href="https://www.schedulesdirect.org/"
-            target="_blank"
-            rel="noreferrer"
-            className="underline underline-offset-2"
-          >
-            Schedules Direct
-          </a>{" "}
-          account, look up lineups by postal code (for example{" "}
-          <span className="font-mono">12345</span>), then add the source and sync.
+          Built-in listings sync based on the Zap2XML Gracenote grid flow. No separate grabber or
+          hosted XMLTV file — enter a postal code (for example{" "}
+          <span className="font-mono">12345</span>), pick a lineup, then sync. Artwork uses{" "}
+          <span className="font-mono text-xs">emby.tmsimg.com/assets</span>.
         </p>
+        <div className="space-y-1.5">
+          <Label htmlFor="xml-guide-name">Display name</Label>
+          <Input
+            id="xml-guide-name"
+            value={xmlDisplayName}
+            onChange={(e) => setXMLDisplayName(e.target.value)}
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="xml-country">Country</Label>
+            <Input
+              id="xml-country"
+              value={xmlCountry}
+              onChange={(e) => setXMLCountry(e.target.value)}
+              placeholder="USA"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="xml-postal">Postal / ZIP code</Label>
+            <Input
+              id="xml-postal"
+              value={xmlPostalCode}
+              onChange={(e) => setXMLPostalCode(e.target.value)}
+              placeholder="12345"
+            />
+          </div>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={findXMLLineups}
+            disabled={lookupXMLLineups.isPending || !xmlPostalCode.trim()}
+          >
+            <Radar />
+            {lookupXMLLineups.isPending ? "Looking up…" : "Find lineups"}
+          </Button>
+        </div>
+        {xmlLineups.length > 0 ? (
+          <div className="space-y-1.5">
+            <Label htmlFor="xml-lineup">Lineup</Label>
+            <select
+              id="xml-lineup"
+              className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
+              value={xmlLineup}
+              onChange={(e) => {
+                const next = e.target.value;
+                setXMLLineup(next);
+                const match = xmlLineups.find((item) => item.lineup === next);
+                if (match) {
+                  setXMLHeadend(match.headend);
+                  setXMLDevice(match.device || "-");
+                }
+              }}
+            >
+              {xmlLineups.map((item) => (
+                <option key={`${item.lineup}:${item.headend}`} value={item.lineup}>
+                  {item.transport} · {item.name}
+                  {item.location ? ` (${item.location})` : ""} · {item.lineup}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="xml-lineup-manual">Lineup ID</Label>
+              <Input
+                id="xml-lineup-manual"
+                value={xmlLineup}
+                onChange={(e) => setXMLLineup(e.target.value)}
+                placeholder="USA-lineupId-DEFAULT"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="xml-headend-manual">Headend ID</Label>
+              <Input
+                id="xml-headend-manual"
+                value={xmlHeadend}
+                onChange={(e) => setXMLHeadend(e.target.value)}
+                placeholder="lineupId"
+              />
+            </div>
+          </div>
+        )}
+        <Button onClick={addXMLSync} disabled={createSource.isPending || !canAddXML}>
+          <Plus />
+          {createSource.isPending ? "Adding…" : "Add XML sync source"}
+        </Button>
+      </div>
+
+      <div className="max-w-xl space-y-4">
+        <h3 className="text-sm font-medium">Schedules Direct</h3>
         <div className="space-y-1.5">
           <Label htmlFor="guide-name">Display name</Label>
           <Input
             id="guide-name"
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
+            value={sdDisplayName}
+            onChange={(e) => setSDDisplayName(e.target.value)}
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -513,8 +672,8 @@ function GuideTab() {
             <Label htmlFor="sd-country">Country</Label>
             <Input
               id="sd-country"
-              value={country}
-              onChange={(e) => setCountry(e.target.value)}
+              value={sdCountry}
+              onChange={(e) => setSDCountry(e.target.value)}
               placeholder="USA"
             />
           </div>
@@ -522,8 +681,8 @@ function GuideTab() {
             <Label htmlFor="sd-postal">Postal / ZIP code</Label>
             <Input
               id="sd-postal"
-              value={postalCode}
-              onChange={(e) => setPostalCode(e.target.value)}
+              value={sdPostalCode}
+              onChange={(e) => setSDPostalCode(e.target.value)}
               placeholder="12345"
             />
           </div>
@@ -532,25 +691,25 @@ function GuideTab() {
           <Button
             type="button"
             variant="outline"
-            onClick={findLineups}
+            onClick={findSDLineups}
             disabled={
-              lookupLineups.isPending || !username.trim() || !password || !postalCode.trim()
+              lookupSDLineups.isPending || !username.trim() || !password || !sdPostalCode.trim()
             }
           >
             <Radar />
-            {lookupLineups.isPending ? "Looking up…" : "Find lineups"}
+            {lookupSDLineups.isPending ? "Looking up…" : "Find lineups"}
           </Button>
         </div>
-        {lineups.length > 0 ? (
+        {sdLineups.length > 0 ? (
           <div className="space-y-1.5">
             <Label htmlFor="sd-lineup">Lineup</Label>
             <select
               id="sd-lineup"
               className="border-input bg-background h-9 w-full rounded-md border px-3 text-sm"
-              value={lineup}
-              onChange={(e) => setLineup(e.target.value)}
+              value={sdLineup}
+              onChange={(e) => setSDLineup(e.target.value)}
             >
-              {lineups.map((item) => (
+              {sdLineups.map((item) => (
                 <option key={item.lineup} value={item.lineup}>
                   {item.transport} · {item.name} ({item.lineup})
                 </option>
@@ -562,13 +721,13 @@ function GuideTab() {
             <Label htmlFor="sd-lineup-manual">Lineup ID</Label>
             <Input
               id="sd-lineup-manual"
-              value={lineup}
-              onChange={(e) => setLineup(e.target.value)}
+              value={sdLineup}
+              onChange={(e) => setSDLineup(e.target.value)}
               placeholder="USA-OTA-12345"
             />
           </div>
         )}
-        <Button onClick={addSchedulesDirect} disabled={createSource.isPending || !canAdd}>
+        <Button onClick={addSchedulesDirect} disabled={createSource.isPending || !canAddSD}>
           <Plus />
           {createSource.isPending ? "Adding…" : "Add Schedules Direct source"}
         </Button>

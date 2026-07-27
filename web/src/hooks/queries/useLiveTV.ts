@@ -14,6 +14,7 @@ import type {
   LiveTVTuner,
   LiveTVTunersResponse,
   SchedulesDirectLineupsResponse,
+  XMLSyncLineupsResponse,
 } from "@/api/types";
 import { adminKeys } from "./keys";
 
@@ -227,6 +228,19 @@ export function useLookupSchedulesDirectLineups() {
       }).then((data) => data.lineups ?? []),
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to look up lineups");
+    },
+  });
+}
+
+export function useLookupXMLSyncLineups() {
+  return useMutation({
+    mutationFn: (body: { country?: string; postalcode: string; lang?: string }) =>
+      api<XMLSyncLineupsResponse>("/livetv/guide-sources/xml-sync/lineups", {
+        method: "POST",
+        body: JSON.stringify(body),
+      }).then((data) => data.lineups ?? []),
+    onError: (err) => {
+      toast.error(err instanceof Error ? err.message : "Failed to look up XML sync lineups");
     },
   });
 }
