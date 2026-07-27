@@ -144,11 +144,26 @@ vi.mock("@/components/ui/dropdown-menu", () => ({
   DropdownMenuSeparator: () => <hr />,
 }));
 
-function renderSidebar(entry: string, { collapsed = false }: { collapsed?: boolean } = {}) {
+function renderSidebar(
+  entry: string,
+  {
+    collapsed = false,
+    showCollapseControl = false,
+  }: { collapsed?: boolean; showCollapseControl?: boolean } = {},
+) {
   return renderToStaticMarkup(
     <MemoryRouter initialEntries={[entry]}>
       <Routes>
-        <Route path="*" element={<AppSidebar collapsed={collapsed} />} />
+        <Route
+          path="*"
+          element={
+            <AppSidebar
+              collapsed={collapsed}
+              showCollapseControl={showCollapseControl}
+              onToggleCollapse={showCollapseControl ? () => undefined : undefined}
+            />
+          }
+        />
       </Routes>
     </MemoryRouter>,
   );
@@ -187,6 +202,16 @@ describe("AppSidebar", () => {
     expect(markup).toContain('src="/prairie-icon-1024.png"');
     expect(markup).not.toContain('src="/prairie-wordmark-sidebar.png"');
     expect(markup).toContain("sidebar-logo flex items-center py-5 justify-center px-2");
+  });
+
+  it("renders a collapse control when the parent enables it", () => {
+    const markup = renderSidebar("/", { showCollapseControl: true });
+    expect(markup).toContain('aria-label="Collapse sidebar"');
+  });
+
+  it("renders an expand control when collapsed with the control enabled", () => {
+    const markup = renderSidebar("/", { collapsed: true, showCollapseControl: true });
+    expect(markup).toContain('aria-label="Expand sidebar"');
   });
 
   it("uses the cinema highlight text color for active pinned catalog destinations", () => {

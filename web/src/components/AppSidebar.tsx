@@ -57,6 +57,7 @@ import {
   Home,
   UsersRound,
   ChevronDown,
+  ChevronLeft,
   ChevronRight,
   PinOff,
   LayoutGrid,
@@ -185,9 +186,18 @@ function SidebarSectionHeader({
 interface AppSidebarProps {
   onNavigate?: () => void;
   collapsed?: boolean;
+  /** Desktop collapse/expand control. Mobile drawer keeps its own UX. */
+  onToggleCollapse?: () => void;
+  /** Parent can hide the control on immersion/detail pages. */
+  showCollapseControl?: boolean;
 }
 
-export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebarProps) {
+export default function AppSidebar({
+  onNavigate,
+  collapsed = false,
+  onToggleCollapse,
+  showCollapseControl = false,
+}: AppSidebarProps) {
   const location = useLocation();
   const navigate = useViewTransitionNavigate();
   const params = useParams<{ libraryId: string }>();
@@ -274,6 +284,7 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
 
   const sidebarExpanded = isSidebarExpanded(collapsed, hovered, profileMenuOpen);
   const showLabels = sidebarExpanded;
+  const showCollapseButton = Boolean(showCollapseControl && onToggleCollapse);
   const [librariesExpanded, setLibrariesExpanded] = useState(true);
   const [expandedLibraries, setExpandedLibraries] = useState<Set<number>>(
     () =>
@@ -791,6 +802,24 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
 
       {/* Footer */}
       <div className="sidebar-footer border-sidebar-border/70 space-y-2 border-t px-3 py-3">
+        {showCollapseButton && (
+          <button
+            type="button"
+            onClick={onToggleCollapse}
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            className={`hover:bg-sidebar-accent/70 flex items-center rounded-xl py-3 transition-colors duration-150 ${
+              showLabels ? "w-full gap-2.5 px-3" : "mx-auto h-10 w-10 justify-center px-0"
+            }`}
+          >
+            {collapsed ? (
+              <ChevronRight className="h-4 w-4 opacity-60" />
+            ) : (
+              <ChevronLeft className="h-4 w-4 opacity-60" />
+            )}
+            <SidebarLabel show={showLabels}>{collapsed ? "Expand" : "Collapse"}</SidebarLabel>
+          </button>
+        )}
+
         {showAdminNav && (
           <Link
             to="/admin"
