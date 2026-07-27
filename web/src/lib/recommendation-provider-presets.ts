@@ -6,6 +6,10 @@ export interface RecommendationProviderPreset {
   baseUrl: string;
   model: string;
   needsToken: boolean;
+  /** Shown in empty inputs when this preset is selected (wizard). */
+  urlPlaceholder?: string;
+  /** Shown in empty inputs when this preset is selected (wizard). */
+  modelPlaceholder?: string;
 }
 
 export const RECOMMENDATION_PROVIDER_PRESETS: RecommendationProviderPreset[] = [
@@ -22,9 +26,11 @@ export const RECOMMENDATION_PROVIDER_PRESETS: RecommendationProviderPreset[] = [
     id: "ollama",
     label: "Ollama",
     tag: "Local",
-    description: "Free, self-hosted. Needs Ollama running.",
+    description: "Free, self-hosted. Needs Ollama running. Uses Qwen3 Embedding 0.6B (~640MB).",
     baseUrl: "http://ollama:11434",
-    model: "qwen3-embedding:latest",
+    // Prefer the 0.6B tag: :latest is the 8B (~4.7GB) model and emits 4096-d
+    // vectors, which exceed Prairie's 3072 canonical storage width.
+    model: "qwen3-embedding:0.6b",
     needsToken: false,
   },
   {
@@ -40,10 +46,12 @@ export const RECOMMENDATION_PROVIDER_PRESETS: RecommendationProviderPreset[] = [
 export const RECOMMENDATION_CUSTOM_PROVIDER_PRESET: RecommendationProviderPreset = {
   id: "custom",
   label: "Custom",
-  description: "Any OpenAI-compatible endpoint.",
+  description: "Any OpenAI-compatible endpoint (LM Studio, vLLM, etc.). Example model uses ~640MB.",
   baseUrl: "",
   model: "",
   needsToken: false,
+  urlPlaceholder: "http://host.docker.internal:1234",
+  modelPlaceholder: "text-embedding-qwen3-embedding-0.6b",
 };
 
 export const RECOMMENDATION_PROVIDER_OPTIONS: RecommendationProviderPreset[] = [

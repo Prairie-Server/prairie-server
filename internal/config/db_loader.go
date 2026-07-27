@@ -423,7 +423,7 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 		if m["recommendations.embedding_provider"] == "openai" {
 			return "text-embedding-3-small"
 		}
-		return "all-minilm"
+		return "qwen3-embedding:0.6b"
 	}())
 	cfg.Recommendations.EmbeddingAuthToken = stringOr(m, "recommendations.embedding_auth_token", stringOr(m, "recommendations.openai_api_key", ""))
 	cfg.Recommendations.EmbeddingsCron = stringOr(m, "recommendations.embeddings_cron", "0 3 * * *")
