@@ -203,12 +203,13 @@ export function useSyncLiveTVGuideSource() {
         method: "POST",
       }),
     onSuccess: () => {
-      toast.success("Guide sync started");
+      toast.success("Guide sync finished");
       void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVGuideSources() });
       void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVChannels() });
       void queryClient.invalidateQueries({ queryKey: ["livetv", "guide"] });
     },
     onError: (err) => {
+      void queryClient.invalidateQueries({ queryKey: adminKeys.liveTVGuideSources() });
       toast.error(err instanceof Error ? err.message : "Failed to sync guide source");
     },
   });

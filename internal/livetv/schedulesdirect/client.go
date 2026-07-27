@@ -45,13 +45,14 @@ func HashPassword(password string) string {
 	return hex.EncodeToString(sum[:])
 }
 
-type apiError struct {
+// APIError is a Schedules Direct JSON API error payload.
+type APIError struct {
 	Response string `json:"response"`
 	Code     int    `json:"code"`
 	Message  string `json:"message"`
 }
 
-func (e apiError) Error() string {
+func (e APIError) Error() string {
 	if e.Message != "" {
 		return fmt.Sprintf("schedules direct: %s (code %d)", e.Message, e.Code)
 	}
@@ -78,7 +79,7 @@ func (c *Client) Token(ctx context.Context, username, passwordSHA1 string) (stri
 		return "", err
 	}
 	if out.Code != 0 || strings.TrimSpace(out.Token) == "" {
-		return "", apiError{Code: out.Code, Message: out.Message, Response: "TOKEN_FAILED"}
+		return "", APIError{Code: out.Code, Message: out.Message, Response: "TOKEN_FAILED"}
 	}
 	return out.Token, nil
 }
@@ -164,7 +165,7 @@ func (c *Client) AddLineup(ctx context.Context, token, lineupID string) error {
 		if strings.Contains(msg, "already") || strings.Contains(msg, "duplicate") {
 			return nil
 		}
-		return apiError{Code: out.Code, Message: out.Message}
+		return APIError{Code: out.Code, Message: out.Message}
 	}
 	return nil
 }
@@ -358,7 +359,7 @@ func (c *Client) doJSON(ctx context.Context, method, path, token string, body an
 		return fmt.Errorf("schedules direct read: %w", err)
 	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		var apiErr apiError
+		var apiErr APIError
 		_ = json.Unmarshal(raw, &apiErr)
 		if apiErr.Code != 0 || apiErr.Message != "" || apiErr.Response != "" {
 			return apiErr
@@ -370,7 +371,7 @@ func (c *Client) doJSON(ctx context.Context, method, path, token string, body an
 	}
 	if err := json.Unmarshal(raw, out); err != nil {
 		// Some error payloads still return HTTP 200 with a code field.
-		var apiErr apiError
+		var apiErr APIError
 		if json.Unmarshal(raw, &apiErr) == nil && apiErr.Code != 0 {
 			return apiErr
 		}

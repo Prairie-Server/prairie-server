@@ -208,6 +208,17 @@ func TestSchedulesDirectCoverageBranches(t *testing.T) {
 			t.Fatalf("add: %v", err)
 		}
 		fake.addErr = nil
+		fake.tokenErr = schedulesdirect.APIError{Code: 4003, Message: "Invalid username or password.", Response: "INVALID_USER"}
+		if err := svc.syncSchedulesDirect(context.Background(), &GuideSource{Config: storedSDConfig()}); !errors.Is(err, ErrInvalidArgument) {
+			t.Fatalf("token api error: %v", err)
+		}
+		if err := wrapSchedulesDirectErr(nil); err != nil {
+			t.Fatalf("wrap nil: %v", err)
+		}
+		if err := wrapSchedulesDirectErr(errors.New("network")); errors.Is(err, ErrInvalidArgument) {
+			t.Fatalf("wrap network should stay opaque: %v", err)
+		}
+		fake.tokenErr = nil
 		fake.schedErr = errors.New("sched boom")
 		store := newMemoryStore()
 		store.channels["ch1"] = Channel{ID: "ch1", Number: "5.1", Callsign: "KING-HD", Enabled: true}
@@ -222,6 +233,10 @@ func TestSchedulesDirectCoverageBranches(t *testing.T) {
 			t.Fatalf("programs: %v", err)
 		}
 		fake.programsErr = nil
+		fake.schedules = []schedulesdirect.StationSchedule{{StationID: "20454", Programs: nil}}
+		if err := svc.syncSchedulesDirect(context.Background(), &GuideSource{ID: "s", Config: storedSDConfig()}); err != nil {
+			t.Fatalf("empty program ids: %v", err)
+		}
 		empty := newMemoryStore()
 		svc, _ = newTestService(empty)
 		if err := svc.syncSchedulesDirect(context.Background(), &GuideSource{ID: "s", Config: storedSDConfig()}); !errors.Is(err, ErrInvalidArgument) {
