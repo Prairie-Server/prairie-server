@@ -26,6 +26,11 @@ describe("webPAVIFSibling", () => {
   it("is case-insensitive on the WebP extension", () => {
     expect(webPAVIFSibling("poster.WEBP")).toBe("poster.avif");
   });
+
+  it("returns empty for malformed absolute URLs", () => {
+    expect(webPAVIFSibling("https://[::1")).toBe("");
+    expect(webPPNGSibling("not-a-url://poster.webp")).toBe("");
+  });
 });
 
 describe("webPPNGSibling", () => {

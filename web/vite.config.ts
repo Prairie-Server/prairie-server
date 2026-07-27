@@ -110,7 +110,7 @@ export default defineConfig(({ mode }) => {
       pool: "forks",
       fileParallelism: true,
       maxWorkers: "50%",
-      // Enforce 90% on pure helpers under src/lib/. Prefer modules that already
+      // Enforce 95% on pure helpers under src/lib/. Prefer modules that already
       // have *.test.ts coverage; write tests before adding a file here.
       // Thin React Query / mutation wrappers are left out until they are
       // meaningfully unit-tested.

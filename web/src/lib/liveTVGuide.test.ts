@@ -5,8 +5,11 @@ import { channelDisplayNumber, channelLabel, formatGuideTime, pickNowNext } from
 describe("liveTVGuide", () => {
   it("prefers number overrides", () => {
     expect(channelDisplayNumber({ number: "5.1", number_override: " 99.1 " })).toBe("99.1");
+    expect(channelDisplayNumber({ number: "5.1", number_override: "   " })).toBe("5.1");
     expect(channelDisplayNumber({ number: "5.1" })).toBe("5.1");
     expect(channelLabel({ number: "5.1", callsign: "KING", name: "King" })).toBe("5.1 · KING");
+    expect(channelLabel({ number: "5.1", callsign: "", name: "King" })).toBe("5.1 · King");
+    expect(channelLabel({ number: "5.1", callsign: "", name: "" })).toBe("5.1 · Channel");
   });
 
   it("picks now and next programmes for a channel", () => {
