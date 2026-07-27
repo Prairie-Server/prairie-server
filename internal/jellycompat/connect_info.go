@@ -30,7 +30,7 @@ type ConnectInfo struct {
 // and cmd/prairie builds the compat server from the boot config alone. Reporting
 // the stored value would promise credentials for a listener that does not exist
 // yet, or claim the API is off while the running listener keeps serving. The
-// address fields apply without a restart, so those do honour the override.
+// address fields apply without a restart, so those do honor the override.
 func ConnectInfoForConfig(cfg *config.Config, settings map[string]string) ConnectInfo {
 	info := ConnectInfo{}
 	if cfg != nil {

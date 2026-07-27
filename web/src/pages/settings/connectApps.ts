@@ -58,7 +58,7 @@ export function isLoopbackURL(rawURL: string): boolean {
     host === "::1" ||
     host === "0.0.0.0" ||
     host.endsWith(".localhost") ||
-    /^127\./.test(host)
+    host.startsWith("127.")
   );
 }
 
