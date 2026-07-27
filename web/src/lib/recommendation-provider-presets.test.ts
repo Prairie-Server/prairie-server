@@ -21,6 +21,15 @@ describe("recommendation provider presets", () => {
     ).toBe("openai");
   });
 
+  it("normalizes provider URLs before matching presets", () => {
+    expect(
+      matchRecommendationProviderPreset(
+        " HTTPS://GENERATIVELANGUAGE.GOOGLEAPIS.COM/// ",
+        " gemini-embedding-001 ",
+      )?.id,
+    ).toBe("gemini");
+  });
+
   it("recommends the lightweight Qwen3 Embedding 0.6B Ollama tag", () => {
     const ollama = RECOMMENDATION_PROVIDER_OPTIONS.find((preset) => preset.id === "ollama");
     expect(ollama?.model).toBe("qwen3-embedding:0.6b");
@@ -36,5 +45,11 @@ describe("recommendation provider presets", () => {
 
   it("returns null when the settings do not match a built-in provider", () => {
     expect(matchRecommendationProviderPreset("http://localhost:9999", "custom-model")).toBeNull();
+  });
+
+  it("returns null for incomplete provider settings", () => {
+    expect(matchRecommendationProviderPreset(undefined, "text-embedding-3-large")).toBeNull();
+    expect(matchRecommendationProviderPreset("https://api.openai.com", null)).toBeNull();
+    expect(matchRecommendationProviderPreset("   ", "text-embedding-3-large")).toBeNull();
   });
 });
