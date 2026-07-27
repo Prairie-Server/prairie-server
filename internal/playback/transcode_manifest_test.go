@@ -158,6 +158,132 @@ func TestBuildPlaybackManifest_EncodedTranscodeUsesSyntheticVODManifest(t *testi
 	if strings.Contains(text, "#EXT-X-MAP:") {
 		t.Fatalf("encoded manifest should not use fMP4 init map:\n%s", text)
 	}
+	if strings.Contains(text, "#EXT-X-START:") {
+		t.Fatalf("from-start manifest should not emit EXT-X-START:\n%s", text)
+	}
+}
+
+func TestGenerateFullManifest_ResumeEmitsStartOffsetAtSegmentBoundary(t *testing.T) {
+	const (
+		resumeSeconds = 100.0
+		segDur        = 2
+	)
+	startSeg := int(resumeSeconds) / segDur // ⌊N/segDur⌋
+
+	session := &TranscodeSession{
+		opts: TranscodeOpts{
+			TargetCodecVideo:   "h264",
+			TargetCodecAudio:   "aac",
+			SegmentDuration:    segDur,
+			TotalDuration:      600,
+			SeekSeconds:        resumeSeconds,
+			StartSegmentNumber: startSeg,
+		},
+	}
+
+	text := string(session.GenerateFullManifest("segment/", "token=test"))
+	wantStart := fmt.Sprintf("#EXT-X-START:TIME-OFFSET=%.6f,PRECISE=YES", resumeSeconds)
+	if !strings.Contains(text, wantStart) {
+		t.Fatalf("missing %q; manifest:\n%s", wantStart, text)
+	}
+	if !strings.Contains(text, "#EXT-X-VERSION:6\n") {
+		t.Fatalf("TS resume playlist must advertise HLS v6 for EXT-X-START; manifest:\n%s", text)
+	}
+	// Full playlist still lists seg_00000 — players begin at ⌊N/segDur⌋ via
+	// EXT-X-START, not by trimming the front of the playlist.
+	if !strings.Contains(text, "segment/seg_00000.ts?token=test") {
+		t.Fatalf("resume playlist must still list seg_00000:\n%s", text)
+	}
+	wantSeg := fmt.Sprintf("segment/seg_%05d.ts?token=test", startSeg)
+	if !strings.Contains(text, wantSeg) {
+		t.Fatalf("resume playlist missing start segment %q:\n%s", wantSeg, text)
+	}
+	if strings.Contains(text, "#EXT-X-MEDIA-SEQUENCE:"+strconv.Itoa(startSeg)) {
+		t.Fatalf("resume playlist must keep MEDIA-SEQUENCE:0 (full timeline):\n%s", text)
+	}
+}
+
+func TestSegmentRecoveryDecision_StartupProbeBeforeResumeDoesNotRestart(t *testing.T) {
+	// Resume window starts at seg 50. A player probing seg 0 during initial
+	// buffering must not trigger a seek-restart that discards the resume offset.
+	session := &TranscodeSession{
+		outputDir: t.TempDir(),
+		running:   true,
+		opts: TranscodeOpts{
+			TargetCodecVideo:   "h264",
+			SegmentDuration:    2,
+			SeekSeconds:        100,
+			StartSegmentNumber: 50,
+		},
+	}
+
+	decision := session.SegmentRecoveryDecision(0, time.Now())
+	if decision.Reason != "before_start_segment_startup" {
+		t.Fatalf("Reason = %q, want before_start_segment_startup", decision.Reason)
+	}
+	if decision.RestartOnTimeout {
+		t.Fatal("RestartOnTimeout = true, want false (startup probe must preserve resume offset)")
+	}
+	if decision.Wait {
+		t.Fatal("Wait = true, want false (seg 0 will never be produced for this resume window)")
+	}
+}
+
+func TestSegmentRecoveryDecision_ExplicitSeekBeforeStartRestarts(t *testing.T) {
+	// After the resume window has produced media, a request before
+	// StartSegmentNumber is an explicit user seek and should restart.
+	tempDir := t.TempDir()
+	now := time.Now()
+	writeManifestRange(t, tempDir, 50, 52, ".ts")
+	writeSegmentFile(t, tempDir, "seg_00050.ts", []byte("x"), now.Add(-2*time.Second))
+	writeSegmentFile(t, tempDir, "seg_00051.ts", []byte("x"), now.Add(-time.Second))
+
+	session := &TranscodeSession{
+		outputDir:            tempDir,
+		running:              true,
+		lastRequestedSegment: 51,
+		opts: TranscodeOpts{
+			TargetCodecVideo:   "h264",
+			SegmentDuration:    2,
+			SeekSeconds:        100,
+			StartSegmentNumber: 50,
+		},
+	}
+
+	decision := session.SegmentRecoveryDecision(10, now)
+	if decision.Reason != "before_start_segment" {
+		t.Fatalf("Reason = %q, want before_start_segment", decision.Reason)
+	}
+	if !decision.RestartOnTimeout {
+		t.Fatal("RestartOnTimeout = false, want true (explicit mid-stream seek)")
+	}
+}
+
+func TestRestartSeekTarget_MidStreamSeekUsesSegmentIndexNotZero(t *testing.T) {
+	const segDur = 2
+	session := &TranscodeSession{
+		opts: TranscodeOpts{
+			TargetCodecVideo:   "h264",
+			SegmentDuration:    segDur,
+			SeekSeconds:        100,
+			StartSegmentNumber: 50,
+		},
+	}
+
+	// Seeking to segment 80 must land at 160s, not restart to 0.
+	got, ok, err := session.RestartSeekTarget(80)
+	if err != nil {
+		t.Fatalf("RestartSeekTarget: %v", err)
+	}
+	if !ok {
+		t.Fatal("RestartSeekTarget returned ok=false")
+	}
+	if got != float64(80*segDur) {
+		t.Fatalf("RestartSeekTarget(80) = %v, want %v", got, float64(80*segDur))
+	}
+	if got == 0 {
+		t.Fatal("mid-stream seek must not collapse to a restart-to-0")
+	}
 }
 
 func TestBuildPlaybackManifest_UnknownDurationRejectsBrokenManifest(t *testing.T) {
