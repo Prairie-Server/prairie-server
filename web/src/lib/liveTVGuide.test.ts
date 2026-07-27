@@ -230,12 +230,12 @@ describe("liveTVGuide helpers", () => {
     expect(laid.every((p) => p.id !== "before-window")).toBe(true);
   });
 
-  it("starts the default guide window at now and hides ended programmes", () => {
+  it("snaps the default guide window to the current half-hour", () => {
     const now = new Date("2026-07-27T15:18:00Z");
     const window = buildGuideWindow(now);
-    expect(window.startMs).toBe(now.getTime());
+    expect(window.startMs).toBe(Date.parse("2026-07-27T15:00:00Z"));
     expect(window.endMs - window.startMs).toBe(6 * 60 * 60 * 1000);
-    expect(guideTimeTicks(window)[0]).toBe(Date.parse("2026-07-27T15:30:00Z"));
+    expect(guideTimeTicks(window)[0]).toBe(Date.parse("2026-07-27T15:00:00Z"));
 
     const laid = layoutProgramsForChannel(
       [
@@ -247,10 +247,17 @@ describe("liveTVGuide helpers", () => {
           stop: "2026-07-27T15:00:00Z",
         },
         {
-          id: "airing",
+          id: "ending-soon",
           channel_id: "ch1",
-          title: "Still on",
+          title: "Ends at half hour",
           start: "2026-07-27T15:00:00Z",
+          stop: "2026-07-27T15:30:00Z",
+        },
+        {
+          id: "next",
+          channel_id: "ch1",
+          title: "Up next",
+          start: "2026-07-27T15:30:00Z",
           stop: "2026-07-27T16:00:00Z",
         },
       ],
@@ -258,8 +265,12 @@ describe("liveTVGuide helpers", () => {
       window,
       now,
     );
-    expect(laid.map((p) => p.id)).toEqual(["airing"]);
-    expect(laid[0]?.leftPx).toBe(0);
+    expect(laid.map((p) => p.id)).toEqual(["ending-soon", "next"]);
+    const endingSoon = laid.find((p) => p.id === "ending-soon");
+    expect(endingSoon?.leftPx).toBe(0);
+    // Full half-hour cell — not a thin sliver of the remaining 12 minutes.
+    expect(endingSoon?.widthPx).toBeCloseTo(GUIDE_HOUR_WIDTH_PX / 2, 0);
+    expect(laid.find((p) => p.id === "next")?.leftPx).toBeCloseTo(GUIDE_HOUR_WIDTH_PX / 2, 0);
   });
 
   it("computes progress fraction edges", () => {
