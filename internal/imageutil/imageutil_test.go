@@ -90,6 +90,26 @@ func TestPublicVariantAPIs(t *testing.T) {
 		}
 	}
 
+	siblings, err := GenerateAVIFSiblings(src, []int{80})
+	if err != nil {
+		t.Fatalf("GenerateAVIFSiblings: %v", err)
+	}
+	for _, v := range siblings.Variants {
+		switch v.Key {
+		case "original":
+			if len(v.AVIF) != 0 {
+				t.Fatalf("GenerateAVIFSiblings must skip original AVIF, got %d bytes", len(v.AVIF))
+			}
+			if len(v.Data) == 0 {
+				t.Fatal("GenerateAVIFSiblings original WebP missing")
+			}
+		case "w80":
+			if len(v.AVIF) < 12 || string(v.AVIF[4:8]) != "ftyp" {
+				t.Fatalf("display variant %s missing AVIF payload", v.Key)
+			}
+		}
+	}
+
 	square, err := GenerateSquareVariants(src, []int{64})
 	if err != nil {
 		t.Fatalf("GenerateSquareVariants: %v", err)

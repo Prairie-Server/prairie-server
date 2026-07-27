@@ -5,7 +5,13 @@ import { SaveBar } from "./SaveBar";
 import { FieldGroup } from "./FieldGroup";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const KEYS = ["scanner.workers", "matcher.workers", "matcher.batch_size", "metadata.cache_images"];
+const KEYS = [
+  "scanner.workers",
+  "matcher.workers",
+  "matcher.batch_size",
+  "metadata.cache_images",
+  "metadata.avif_backfill_workers",
+];
 
 export default function ScannerSettings() {
   const form = useSettingsForm({ keys: useMemo(() => KEYS, []) });
@@ -71,6 +77,13 @@ export default function ScannerSettings() {
             hint="Download artwork from metadata providers and store resized WebP/AVIF/PNG variants. Uses public S3 when configured; otherwise stores on the local artwork volume."
             value={form.getValue("metadata.cache_images")}
             onChange={(v) => form.setValue("metadata.cache_images", v)}
+          />
+          <SettingField
+            label="AVIF Backfill Workers"
+            type="number"
+            hint="Concurrent AVIF encodes for deferred sibling backfill. 0 = use all CPU cores. Raise this once the WebP cache queue has drained so AVIF coverage can catch up."
+            value={form.getValue("metadata.avif_backfill_workers")}
+            onChange={(v) => form.setValue("metadata.avif_backfill_workers", v)}
           />
         </FieldGroup>
       </div>

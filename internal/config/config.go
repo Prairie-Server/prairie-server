@@ -338,6 +338,9 @@ type PolicyConfig struct {
 // MetadataConfig holds metadata pipeline settings.
 type MetadataConfig struct {
 	CacheImages bool `yaml:"-"`
+	// AVIFBackfillWorkers is the durable + eager AVIF encode concurrency.
+	// 0 means runtime.NumCPU() (auto).
+	AVIFBackfillWorkers int `yaml:"-"`
 }
 
 // ArtworkConfig holds local artwork cache settings used when public S3 is off.

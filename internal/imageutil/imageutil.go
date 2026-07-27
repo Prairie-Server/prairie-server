@@ -16,6 +16,7 @@ import (
 	_ "image/jpeg"
 	_ "image/png"
 	"strconv"
+	"strings"
 
 	"go.n16f.net/thumbhash"
 )
@@ -66,15 +67,17 @@ func GenerateWebPVariants(data []byte, widths []int) (*VariantResult, error) {
 	return generateVariants(data, widths, "webp")
 }
 
-// GenerateAVIFSiblings re-encodes the same width ladder as WebP+AVIF so callers
-// can upload only the AVIF payloads after a WebP-first publish. Canonical WebP
-// bytes are regenerated (discarded by callers that already uploaded them);
-// AVIF dominates cost so the extra WebP pass is cheap by comparison.
+// GenerateAVIFSiblings re-encodes the display-width ladder as WebP+AVIF so
+// callers can upload only the AVIF payloads after a WebP-first publish.
+// The "original" key keeps WebP only (via --no-avif-keys): the full-size AVIF
+// dominate encode cost and clients already fall through to WebP for it.
+// Canonical WebP bytes are regenerated (discarded by callers that already
+// uploaded them); AVIF dominates cost so the extra WebP pass is cheap.
 func GenerateAVIFSiblings(data []byte, widths []int) (*VariantResult, error) {
-	return generateVariants(data, widths, "webp,avif")
+	return generateVariants(data, widths, "webp,avif", "original")
 }
 
-func generateVariants(data []byte, widths []int, formats string) (*VariantResult, error) {
+func generateVariants(data []byte, widths []int, formats string, noAVIFKeys ...string) (*VariantResult, error) {
 	p, err := getProcessor()
 	if err != nil {
 		return nil, err
@@ -87,6 +90,9 @@ func generateVariants(data []byte, widths []int, formats string) (*VariantResult
 	}
 	if csv := joinUintCSV(widths); csv != "" {
 		args = append(args, "--widths", csv)
+	}
+	if len(noAVIFKeys) > 0 {
+		args = append(args, "--no-avif-keys", strings.Join(noAVIFKeys, ","))
 	}
 	return p.run(context.Background(), "variants", data, args)
 }

@@ -213,8 +213,13 @@ func TestCacheBytesTracksExactRevisionBeforeUpload(t *testing.T) {
 		t.Fatalf("tracked image type = %q, want poster", calls[0].imageType)
 	}
 	wantKeys := make([]string, 0, len(result.VariantPaths)*2)
-	for _, key := range result.VariantPaths {
+	for name, key := range result.VariantPaths {
 		wantKeys = append(wantKeys, key)
+		// original.avif is intentionally not tracked: GenerateAVIFSiblings
+		// skips AVIF for the original key.
+		if name == artworkkey.OriginalVariant {
+			continue
+		}
 		wantKeys = append(wantKeys, artworkkey.WebPAVIFSibling(key))
 	}
 	sort.Strings(wantKeys)
@@ -320,18 +325,24 @@ func TestCache_Poster(t *testing.T) {
 	}
 
 	keys := s3.keys()
-	// Expect 3 WebP variants + 3 AVIF siblings: original, w500, w300
-	if len(keys) != 6 {
-		t.Errorf("expected 6 uploaded objects (webp+avif), got %d: %v", len(keys), keys)
+	// Expect 3 WebP variants + 2 AVIF siblings (w500, w300). original stays WebP-only.
+	if len(keys) != 5 {
+		t.Errorf("expected 5 uploaded objects (webp+display avif), got %d: %v", len(keys), keys)
 	}
 	for _, variant := range []string{"original", "w500", "w300"} {
 		want := result.VariantPaths[variant]
 		if !hasKey(keys, want) {
 			t.Errorf("missing S3 key %q in %v", want, keys)
 		}
+	}
+	for _, variant := range []string{"w500", "w300"} {
+		want := result.VariantPaths[variant]
 		if !hasKey(keys, artworkkey.WebPAVIFSibling(want)) {
 			t.Errorf("missing AVIF sibling for %q in %v", want, keys)
 		}
+	}
+	if hasKey(keys, artworkkey.WebPAVIFSibling(result.VariantPaths["original"])) {
+		t.Errorf("unexpected original.avif in %v", keys)
 	}
 }
 
@@ -355,10 +366,14 @@ func TestCacheSkipsUploadingVariantsThatAlreadyExist(t *testing.T) {
 		t.Fatalf("prime immutable variants: %v", err)
 	}
 	c.WaitAVIFBackfill()
-	existing := make([]string, 0, 6)
+	existing := make([]string, 0, 5)
 	for _, variant := range []string{"original", "w500", "w300"} {
 		key := first.VariantPaths[variant]
-		existing = append(existing, key, artworkkey.WebPAVIFSibling(key))
+		existing = append(existing, key)
+		if variant == "original" {
+			continue
+		}
+		existing = append(existing, artworkkey.WebPAVIFSibling(key))
 	}
 	s3.setExisting(existing...)
 	s3.resetCalls()
@@ -403,8 +418,9 @@ func TestCacheDifferentContentCreatesDifferentImmutableRevision(t *testing.T) {
 	if first.Revision == second.Revision || first.OriginalPath == second.OriginalPath {
 		t.Fatalf("different content reused revision: first=%q second=%q", first.OriginalPath, second.OriginalPath)
 	}
-	if got := s3.keys(); len(got) != 12 {
-		t.Fatalf("uploaded keys = %v, want both immutable three-variant revisions with AVIF siblings", got)
+	// Two revisions × (3 WebP + 2 display AVIF) = 10 objects.
+	if got := s3.keys(); len(got) != 10 {
+		t.Fatalf("uploaded keys = %v, want both immutable three-variant revisions with display AVIF siblings", got)
 	}
 }
 
@@ -429,7 +445,6 @@ func TestCacheUploadsOnlyMissingVariants(t *testing.T) {
 	c.WaitAVIFBackfill()
 	s3.setExisting(
 		first.VariantPaths["original"],
-		artworkkey.WebPAVIFSibling(first.VariantPaths["original"]),
 		first.VariantPaths["w500"],
 		artworkkey.WebPAVIFSibling(first.VariantPaths["w500"]),
 	)
@@ -480,18 +495,24 @@ func TestCache_Backdrop(t *testing.T) {
 	}
 
 	keys := s3.keys()
-	// Expect 4 WebP variants + 4 AVIF siblings: original, w1920, w1280, w300
-	if len(keys) != 8 {
-		t.Errorf("expected 8 uploaded objects (webp+avif), got %d: %v", len(keys), keys)
+	// Expect 4 WebP variants + 3 AVIF siblings (display ladder only).
+	if len(keys) != 7 {
+		t.Errorf("expected 7 uploaded objects (webp+display avif), got %d: %v", len(keys), keys)
 	}
 	for _, variant := range []string{"original", "w1920", "w1280", "w300"} {
 		want := result.VariantPaths[variant]
 		if !hasKey(keys, want) {
 			t.Errorf("missing S3 key %q in %v", want, keys)
 		}
+	}
+	for _, variant := range []string{"w1920", "w1280", "w300"} {
+		want := result.VariantPaths[variant]
 		if !hasKey(keys, artworkkey.WebPAVIFSibling(want)) {
 			t.Errorf("missing AVIF sibling for %q in %v", want, keys)
 		}
+	}
+	if hasKey(keys, artworkkey.WebPAVIFSibling(result.VariantPaths["original"])) {
+		t.Errorf("unexpected original.avif in %v", keys)
 	}
 	// Must not have w500
 	if _, ok := result.VariantPaths["w500"]; ok {
@@ -524,18 +545,21 @@ func TestCache_Logo(t *testing.T) {
 	}
 
 	keys := s3.keys()
-	// Expect 2 WebP variants + 2 AVIF siblings: original, w500 — NO w300 or w1280
-	if len(keys) != 4 {
-		t.Errorf("expected 4 uploaded objects (webp+avif), got %d: %v", len(keys), keys)
+	// Expect 2 WebP variants + 1 AVIF sibling (w500 only) — NO w300 or w1280
+	if len(keys) != 3 {
+		t.Errorf("expected 3 uploaded objects (webp+display avif), got %d: %v", len(keys), keys)
 	}
 	for _, variant := range []string{"original", "w500"} {
 		want := result.VariantPaths[variant]
 		if !hasKey(keys, want) {
 			t.Errorf("missing S3 key %q in %v", want, keys)
 		}
-		if !hasKey(keys, artworkkey.WebPAVIFSibling(want)) {
-			t.Errorf("missing AVIF sibling for %q in %v", want, keys)
-		}
+	}
+	if !hasKey(keys, artworkkey.WebPAVIFSibling(result.VariantPaths["w500"])) {
+		t.Errorf("missing AVIF sibling for w500 in %v", keys)
+	}
+	if hasKey(keys, artworkkey.WebPAVIFSibling(result.VariantPaths["original"])) {
+		t.Errorf("unexpected original.avif in %v", keys)
 	}
 	for _, forbidden := range []string{"w300", "w1280"} {
 		if _, ok := result.VariantPaths[forbidden]; ok {

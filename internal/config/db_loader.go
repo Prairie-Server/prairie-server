@@ -313,6 +313,11 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 		return nil, err
 	}
 	cfg.Metadata.CacheImages = cacheImages
+	avifWorkers, err := intOr(m, "metadata.avif_backfill_workers", 0)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Metadata.AVIFBackfillWorkers = avifWorkers
 
 	// Artwork (local filesystem cache when public S3 is unconfigured)
 	cfg.Artwork.LocalDir = stringOr(m, "artwork.local_dir", "/var/lib/prairie/artwork")

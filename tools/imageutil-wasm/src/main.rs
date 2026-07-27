@@ -73,6 +73,12 @@ struct Args {
     /// (thumbhash normalize still uses PNG) but is not dual-written by default.
     #[arg(long, value_delimiter = ',', default_value = "webp,avif")]
     formats: Vec<String>,
+
+    /// Variant keys that should keep WebP but skip AVIF encode (comma-separated).
+    /// GenerateAVIFSiblings passes `original` so only the display ladder
+    /// (w300/w500/…) pays for rav1e — the largest frame is the slowest.
+    #[arg(long, value_delimiter = ',', default_value = "")]
+    no_avif_keys: Vec<String>,
 }
 
 /// Fastest rav1e preset. Tunable via `--avif-speed` / Go `avifSpeed`.
@@ -178,7 +184,7 @@ fn process_variants(img: &DynamicImage, args: &Args) -> Result<Manifest, String>
         &original,
         args.quality,
         args.avif_speed,
-        &formats,
+        &formats_for_key("original", &formats, &args.no_avif_keys),
     )?);
 
     let mut widths = args.widths.clone();
@@ -193,13 +199,14 @@ fn process_variants(img: &DynamicImage, args: &Args) -> Result<Manifest, String>
         } else {
             img.clone()
         };
+        let key = format!("w{w}");
         variants.push(write_variant_pair(
             &args.outdir,
-            &format!("w{w}"),
+            &key,
             &out,
             args.quality,
             args.avif_speed,
-            &formats,
+            &formats_for_key(&key, &formats, &args.no_avif_keys),
         )?);
     }
 
@@ -221,7 +228,7 @@ fn process_square_variants(img: &DynamicImage, args: &Args) -> Result<Manifest, 
         &square,
         args.quality,
         args.avif_speed,
-        &formats,
+        &formats_for_key("original", &formats, &args.no_avif_keys),
     )?);
 
     let mut sizes = args.sizes.clone();
@@ -240,13 +247,14 @@ fn process_square_variants(img: &DynamicImage, args: &Args) -> Result<Manifest, 
                 FilterType::Triangle,
             ))
         };
+        let key = format!("w{size}");
         variants.push(write_variant_pair(
             &args.outdir,
-            &format!("w{size}"),
+            &key,
             &out,
             args.quality,
             args.avif_speed,
-            &formats,
+            &formats_for_key(&key, &formats, &args.no_avif_keys),
         )?);
     }
 
@@ -254,6 +262,22 @@ fn process_square_variants(img: &DynamicImage, args: &Args) -> Result<Manifest, 
         ext: ".webp".into(),
         variants,
     })
+}
+
+fn formats_for_key(key: &str, formats: &FormatFlags, no_avif_keys: &[String]) -> FormatFlags {
+    let mut out = FormatFlags {
+        webp: formats.webp,
+        avif: formats.avif,
+        png: formats.png,
+    };
+    if out.avif
+        && no_avif_keys
+            .iter()
+            .any(|k| !k.is_empty() && k.eq_ignore_ascii_case(key))
+    {
+        out.avif = false;
+    }
+    out
 }
 
 fn process_normalize_png(img: &DynamicImage, args: &Args) -> Result<Manifest, String> {
