@@ -17,17 +17,5 @@
     "**/node_modules/**",
     "web/vendor/**",
     "internal/compat/**"
-<<<<<<< HEAD
-  ],
-  "packageRules": [
-    {
-      "description": "typescript-eslint peer range is still <6.1; stay on TypeScript 6.0.x until that catches up",
-      "matchPackageNames": [
-        "typescript"
-      ],
-      "allowedVersions": "<6.1"
-    }
-=======
->>>>>>> 3c6b0c0e (chore(web): replace ESLint with Oxlint and adopt TypeScript 7)
   ]
 }
