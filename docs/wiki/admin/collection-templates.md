@@ -77,7 +77,7 @@ is created.
 Built-in templates ship with poster artwork under
 `web/public/images/collection-templates/`. Poster filenames match template
 IDs, for example `tmdb_popular_movies.jpg`; raw generated plates live in
-`web/public/images/collection-templates/raw/` so typography can be regenerated
+`web/public/images/collection-templates/raw/` so typography can be regenerated (Vite omits `raw/` from `web/dist` / the embedded binary; only the JPG posters ship)
 without re-running image generation.
 
 The poster style is intentionally close to Kometa/Plex collection posters:

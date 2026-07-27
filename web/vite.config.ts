@@ -2,6 +2,7 @@ import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import path from "path";
+import fs from "fs";
 import os from "os";
 
 /// <reference types="vitest" />
@@ -31,7 +32,44 @@ export default defineConfig(({ mode }) => {
   );
 
   return {
-    plugins: [react(), tailwindcss()],
+    plugins: [
+      react(),
+      tailwindcss(),
+      // Authoring plates under collection-templates/raw (~231MB) are only used to
+      // regenerate JPG posters. Keep them in public/ for that workflow, but do not
+      // ship them in dist (and thus the Go embed binary).
+      {
+        name: "omit-collection-template-raw",
+        closeBundle() {
+          const rawDir = path.resolve(__dirname, "dist/images/collection-templates/raw");
+          fs.rmSync(rawDir, { recursive: true, force: true });
+        },
+      },
+    ],
+    build: {
+      target: "es2020",
+      cssCodeSplit: true,
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (!id.includes("node_modules")) return;
+            if (
+              id.includes("/react-dom") ||
+              id.includes("/react/") ||
+              id.includes("react-router") ||
+              id.includes("/scheduler")
+            ) {
+              return "react-vendor";
+            }
+            if (id.includes("@radix-ui")) return "radix";
+            if (id.includes("framer-motion")) return "motion";
+            if (id.includes("@codemirror") || id.includes("codemirror")) return "codemirror";
+            if (id.includes("lucide-react")) return "icons";
+            if (id.includes("@tanstack")) return "tanstack";
+          },
+        },
+      },
+    },
     worker: {
       format: "es",
     },
@@ -69,6 +107,9 @@ export default defineConfig(({ mode }) => {
       environment: "jsdom",
       globals: true,
       setupFiles: ["./src/test-setup.ts"],
+      pool: "forks",
+      fileParallelism: true,
+      maxWorkers: "50%",
       // Enforce 90% on pure helpers under src/lib/. Prefer modules that already
       // have *.test.ts coverage; write tests before adding a file here.
       // Thin React Query / mutation wrappers are left out until they are
