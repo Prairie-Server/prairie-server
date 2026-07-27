@@ -22,7 +22,8 @@ type LiveTVGuideGridProps = {
   onWatch: (channelId: string) => void;
   onRecord: (programId: string) => void;
   recordDisabled?: boolean;
-  watchDisabled?: boolean;
+  /** Channel currently starting a watch session; only that row's Play is disabled. */
+  startingChannelId?: string | null;
 };
 
 export function LiveTVGuideGrid({
@@ -34,7 +35,7 @@ export function LiveTVGuideGrid({
   onWatch,
   onRecord,
   recordDisabled,
-  watchDisabled,
+  startingChannelId = null,
 }: LiveTVGuideGridProps) {
   const window = buildGuideWindow(now);
   const ticks = guideTimeTicks(window);
@@ -126,11 +127,14 @@ export function LiveTVGuideGrid({
                       <div className="flex shrink-0 gap-1">
                         {program.isNow ? (
                           <Button
+                            type="button"
                             size="sm"
                             variant="secondary"
                             className="h-8 px-2.5"
-                            disabled={watchDisabled}
-                            onClick={() => {
+                            disabled={startingChannelId === channel.id}
+                            aria-label={`Watch ${channel.callsign || channel.name}`}
+                            onClick={(e) => {
+                              e.stopPropagation();
                               onSelectChannel(channel.id);
                               onWatch(channel.id);
                             }}
@@ -140,11 +144,15 @@ export function LiveTVGuideGrid({
                         ) : null}
                         {program.canRecord ? (
                           <Button
+                            type="button"
                             size="sm"
                             variant="outline"
                             className="h-8 px-2.5"
                             disabled={recordDisabled}
-                            onClick={() => onRecord(program.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              onRecord(program.id);
+                            }}
                             aria-label={`Record ${program.title}`}
                           >
                             <Circle />

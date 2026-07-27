@@ -85,7 +85,7 @@ export default function LiveTVOnNowRow() {
           return (
             <Link
               key={channel.id}
-              to="/livetv?tab=guide"
+              to={`/livetv?channel=${encodeURIComponent(channel.id)}&watch=1`}
               className="group block w-[130px] sm:w-[150px] lg:w-[178px]"
             >
               <div className="bg-muted relative aspect-[2/3] overflow-hidden rounded-lg">

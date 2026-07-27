@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { Circle, Play, Radio, Square, X } from "lucide-react";
 import { toast } from "sonner";
@@ -40,6 +40,8 @@ export default function LiveTV() {
   useDocumentTitle("Live TV");
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = normalizeTab(searchParams.get("tab"));
+  const channelFromUrl = searchParams.get("channel");
+  const shouldAutoWatch = searchParams.get("watch") === "1";
   const channelsQuery = useLiveTVChannels();
   const channels = useMemo(
     () => (channelsQuery.data ?? []).filter((ch) => ch.enabled),
@@ -50,10 +52,14 @@ export default function LiveTV() {
   const selected = channels.find((ch) => ch.id === selectedId) ?? channels[0] ?? null;
 
   useEffect(() => {
+    if (channelFromUrl && channels.some((ch) => ch.id === channelFromUrl)) {
+      setSelectedId(channelFromUrl);
+      return;
+    }
     if (!selectedId && channels[0]) {
       setSelectedId(channels[0].id);
     }
-  }, [channels, selectedId]);
+  }, [channels, selectedId, channelFromUrl]);
 
   // Refresh the guide window periodically so "now" stays accurate.
   const [nowMs, setNowMs] = useState(() => Date.now());
@@ -89,6 +95,9 @@ export default function LiveTV() {
   const [streamURL, setStreamURL] = useState<string | null>(null);
   const [streamTransport, setStreamTransport] = useState<"mpegts" | "hls">("mpegts");
   const [watchingChannelId, setWatchingChannelId] = useState<string | null>(null);
+  const [startingChannelId, setStartingChannelId] = useState<string | null>(null);
+  const autoWatchAttempted = useRef<string | null>(null);
+  const playerSectionRef = useRef<HTMLElement | null>(null);
 
   const selectedGuide = selected
     ? pickNowNext(programs, selected.id, now)
@@ -112,30 +121,62 @@ export default function LiveTV() {
     setSearchParams(params, { replace: true });
   }
 
+  function clearWatchParam() {
+    if (!shouldAutoWatch) return;
+    const params = new URLSearchParams(searchParams);
+    params.delete("watch");
+    setSearchParams(params, { replace: true });
+  }
+
   async function onWatch(channelId?: string) {
     const targetId = channelId ?? selected?.id;
-    if (!targetId) return;
+    if (!targetId || startingChannelId) return;
     const channel = channels.find((ch) => ch.id === targetId) ?? selected;
     if (!channel) return;
-    if (activeSessionId) {
-      try {
-        await releaseSession.mutateAsync(activeSessionId);
-      } catch {
-        // Continue — a new tune should still attempt to start.
-      }
-    }
-    const session = await startSession.mutateAsync(channel.id);
-    setActiveSessionId(session.session_id);
-    setWatchingChannelId(channel.id);
+    setStartingChannelId(channel.id);
     setSelectedId(channel.id);
-    setStreamURL(session.hls_url || session.stream_url || null);
-    setStreamTransport(session.transport === "hls" ? "hls" : "mpegts");
-    if (session.note) {
-      toast.message(session.note);
-    } else {
-      toast.success(`Watching ${channelLabel(channel)}`);
+    try {
+      if (activeSessionId) {
+        try {
+          await releaseSession.mutateAsync(activeSessionId);
+        } catch {
+          // Continue — a new tune should still attempt to start.
+        }
+      }
+      const session = await startSession.mutateAsync(channel.id);
+      const nextUrl = session.hls_url || session.stream_url || null;
+      setActiveSessionId(session.session_id);
+      setWatchingChannelId(channel.id);
+      setStreamURL(nextUrl);
+      setStreamTransport(session.transport === "hls" ? "hls" : "mpegts");
+      if (!nextUrl) {
+        toast.error("Live TV session started but no stream URL was returned");
+      } else if (session.note) {
+        toast.message(session.note);
+      } else {
+        toast.success(`Watching ${channelLabel(channel)}`);
+      }
+      requestAnimationFrame(() => {
+        playerSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+      });
+    } catch {
+      // useStartLiveTVSession already toasts.
+    } finally {
+      setStartingChannelId(null);
     }
   }
+
+  useEffect(() => {
+    if (!shouldAutoWatch || !channelFromUrl || channels.length === 0) return;
+    if (!channels.some((ch) => ch.id === channelFromUrl)) return;
+    if (autoWatchAttempted.current === channelFromUrl) return;
+    autoWatchAttempted.current = channelFromUrl;
+    void onWatch(channelFromUrl).finally(() => {
+      clearWatchParam();
+    });
+    // Intentionally once per channel deep-link; onWatch closes over latest channels/session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [shouldAutoWatch, channelFromUrl, channels]);
 
   async function onStop() {
     if (!activeSessionId) {
@@ -143,12 +184,17 @@ export default function LiveTV() {
       setWatchingChannelId(null);
       return;
     }
-    await releaseSession.mutateAsync(activeSessionId);
-    setActiveSessionId(null);
-    setStreamURL(null);
-    setStreamTransport("mpegts");
-    setWatchingChannelId(null);
-    toast.success("Live TV session released");
+    try {
+      await releaseSession.mutateAsync(activeSessionId);
+      toast.success("Live TV session released");
+    } catch {
+      // useReleaseLiveTVSession already toasts.
+    } finally {
+      setActiveSessionId(null);
+      setStreamURL(null);
+      setStreamTransport("mpegts");
+      setWatchingChannelId(null);
+    }
   }
 
   const scheduled = (recordings.data ?? []).filter((r) =>
@@ -173,7 +219,7 @@ export default function LiveTV() {
       </header>
 
       {streamURL ? (
-        <section className="border-border overflow-hidden rounded-xl border">
+        <section ref={playerSectionRef} className="border-border overflow-hidden rounded-xl border">
           <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2">
             <div className="min-w-0">
               <p className="text-muted-foreground text-[10px] font-semibold tracking-[0.18em] uppercase">
@@ -187,6 +233,7 @@ export default function LiveTV() {
               </p>
             </div>
             <Button
+              type="button"
               size="sm"
               variant="outline"
               onClick={() => void onStop()}
@@ -239,7 +286,7 @@ export default function LiveTV() {
                 onWatch={(id) => void onWatch(id)}
                 onRecord={(programId) => scheduleRecording.mutate({ program_id: programId })}
                 recordDisabled={scheduleRecording.isPending}
-                watchDisabled={startSession.isPending}
+                startingChannelId={startingChannelId}
               />
             )}
           </TabsContent>
@@ -265,7 +312,8 @@ export default function LiveTV() {
                   now={now}
                   active={selected?.id === channel.id}
                   watching={watchingChannelId === channel.id}
-                  busy={startSession.isPending || scheduleRecording.isPending}
+                  watchBusy={startingChannelId === channel.id}
+                  recordBusy={scheduleRecording.isPending}
                   onSelect={() => setSelectedId(channel.id)}
                   onWatch={() => void onWatch(channel.id)}
                   onRecordNow={(programId) => scheduleRecording.mutate({ program_id: programId })}
@@ -310,7 +358,8 @@ function ChannelListRow({
   now,
   active,
   watching,
-  busy,
+  watchBusy,
+  recordBusy,
   onSelect,
   onWatch,
   onRecordNow,
@@ -327,7 +376,8 @@ function ChannelListRow({
   now: Date;
   active: boolean;
   watching: boolean;
-  busy: boolean;
+  watchBusy: boolean;
+  recordBusy: boolean;
   onSelect: () => void;
   onWatch: () => void;
   onRecordNow: (programId: string) => void;
@@ -379,23 +429,25 @@ function ChannelListRow({
           </div>
         </button>
         <div className="flex flex-wrap gap-2 sm:shrink-0">
-          <Button size="sm" onClick={onWatch} disabled={busy}>
+          <Button type="button" size="sm" onClick={onWatch} disabled={watchBusy}>
             <Play />
             Watch
           </Button>
           <Button
+            type="button"
             size="sm"
             variant="outline"
-            disabled={!slot.now || busy}
+            disabled={!slot.now || recordBusy}
             onClick={() => slot.now && onRecordNow(slot.now.id)}
           >
             <Circle />
             Record now
           </Button>
           <Button
+            type="button"
             size="sm"
             variant="outline"
-            disabled={!slot.next || busy}
+            disabled={!slot.next || recordBusy}
             onClick={() => slot.next && onRecordNext(slot.next.id)}
           >
             <Circle />
