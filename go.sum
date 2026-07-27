@@ -192,8 +192,8 @@ github.com/pgvector/pgvector-go v0.4.0 h1:879hQCnuix1bkfa5TQISnnK9ik4Fo+cHj2vuZS
 github.com/pgvector/pgvector-go v0.4.0/go.mod h1:4fSXyjl1TYAIdByAql6JazKWRr2s7J0g4hcRY5cBFCk=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
-github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20260727023613-3937da1c3659 h1:MPnVjjdZasXJuXdZUVTdDDbjW0Zmvxz7w6CdNYR3d14=
-github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20260727023613-3937da1c3659/go.mod h1:G+brXLx+euqAiLHkiPX/IvnDVVfH3Z+LpTjIsiqJV/A=
+github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20260727030716-97c09e8758ec h1:lbo0J6DMc3FCFOXgQcQ4IjLESAZzjsNp8BkR/Q32uMI=
+github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20260727030716-97c09e8758ec/go.mod h1:G+brXLx+euqAiLHkiPX/IvnDVVfH3Z+LpTjIsiqJV/A=
 github.com/pressly/goose/v3 v3.27.3 h1:pIglVHjw99r4e/hDHHwbl9vfOsDMqUokfkXo6+n/RxA=
 github.com/pressly/goose/v3 v3.27.3/go.mod h1:Dag+xpV6o20HR2LFY1j0q6MDwc3f7vPUFDA77R+0yGY=
 github.com/prometheus/client_golang v1.24.1 h1:JnJkREXzWxUdCuPFpIWZiPispT9xVV59uiuyR2bPlnU=
