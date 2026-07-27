@@ -67,6 +67,7 @@ func apiKeyRequest() *http.Request {
 }
 
 func TestRequireSessionOrAPIKeySession_SynthesizesPrimaryProfile(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 	keyAuth, provider, _ := adminKeyAuthWithPrimary(t, clock)
@@ -112,6 +113,7 @@ func TestRequireSessionOrAPIKeySession_SynthesizesPrimaryProfile(t *testing.T) {
 }
 
 func TestRequireSessionOrAPIKeySession_RejectsNonAdminKey(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 	validator := &fakeAPIKeyValidator{key: &models.APIKey{ID: 1, UserID: 2, Key: "sa_test"}}
@@ -135,6 +137,7 @@ func TestRequireSessionOrAPIKeySession_RejectsNonAdminKey(t *testing.T) {
 }
 
 func TestRequireSessionOrAPIKeySession_RejectsUnknownKey(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 	keyAuth, _, _ := adminKeyAuthWithPrimary(t, clock)
@@ -157,6 +160,7 @@ func TestRequireSessionOrAPIKeySession_RejectsUnknownKey(t *testing.T) {
 // authenticator or one without a UserStoreProvider must fall through to session
 // auth (clean 401) rather than panic.
 func TestRequireSessionOrAPIKeySession_FallsThroughWhenSynthesisUnavailable(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 	sessionAuth := &Authenticator{sessions: NewSessionStore(time.Hour, clock)}
@@ -187,6 +191,7 @@ func TestRequireSessionOrAPIKeySession_FallsThroughWhenSynthesisUnavailable(t *t
 // validated on every call (so revocation is immediate), while the primary-profile
 // lookup is cached until apiKeyProfileCacheTTL.
 func TestResolveSession_RevalidatesEachCallCachesProfile(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 	keyAuth, provider, validator := adminKeyAuthWithPrimary(t, clock)
@@ -220,6 +225,7 @@ func TestResolveSession_RevalidatesEachCallCachesProfile(t *testing.T) {
 // TestResolveSession_RevocationIsImmediate: once a key is revoked, the very next
 // request fails — no cached authorization decision survives (Finding 2).
 func TestResolveSession_RevocationIsImmediate(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 	keyAuth, _, validator := adminKeyAuthWithPrimary(t, clock)
@@ -246,6 +252,7 @@ func TestResolveSession_RevocationIsImmediate(t *testing.T) {
 // only PlaySessionId. When the negotiated session's CompatToken is an sa_ key,
 // PlaybackSessionAuth must still resolve it (Finding 1).
 func TestPlaybackSessionAuth_APIKeyViaPlaySessionId(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 	keyAuth, _, _ := adminKeyAuthWithPrimary(t, clock)
@@ -275,6 +282,7 @@ func TestPlaybackSessionAuth_APIKeyViaPlaySessionId(t *testing.T) {
 // TestPlaybackSessionAuth_RevokedAPIKeyViaPlaySessionId: a revoked key fails even
 // through the PlaySessionId fallback.
 func TestPlaybackSessionAuth_RevokedAPIKeyViaPlaySessionId(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 	keyAuth, _, validator := adminKeyAuthWithPrimary(t, clock)
@@ -297,6 +305,7 @@ func TestPlaybackSessionAuth_RevokedAPIKeyViaPlaySessionId(t *testing.T) {
 // TestValidatePseudoUser confirms the path-userId guard a synthesized session
 // relies on: empty or matching ids pass; a mismatched id 404s.
 func TestValidatePseudoUser(t *testing.T) {
+	t.Parallel()
 	session := &Session{PseudoUserID: PseudoUserID(2, "p1")}
 
 	if !validatePseudoUser(httptest.NewRecorder(), "", session) {
@@ -315,6 +324,7 @@ func TestValidatePseudoUser(t *testing.T) {
 }
 
 func TestHandleUsers_ReturnsCallerAsSingleElement(t *testing.T) {
+	t.Parallel()
 	h := NewAuthHandler(func() *config.Config { return &config.Config{} }, nil, nil)
 	session := &Session{PseudoUserID: PseudoUserID(2, "p1"), Username: "admin"}
 
@@ -342,6 +352,7 @@ func TestHandleUsers_ReturnsCallerAsSingleElement(t *testing.T) {
 }
 
 func TestHandleUsers_RequiresSession(t *testing.T) {
+	t.Parallel()
 	h := NewAuthHandler(func() *config.Config { return &config.Config{} }, nil, nil)
 	rec := httptest.NewRecorder()
 	h.HandleUsers(rec, httptest.NewRequest(http.MethodGet, "/Users", nil))
@@ -351,6 +362,7 @@ func TestHandleUsers_RequiresSession(t *testing.T) {
 }
 
 func TestRouter_UsersRequiresAuth(t *testing.T) {
+	t.Parallel()
 	cfg, err := config.LoadFromDB(map[string]string{})
 	if err != nil {
 		t.Fatalf("LoadFromDB: %v", err)

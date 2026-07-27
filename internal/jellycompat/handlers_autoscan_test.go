@@ -74,6 +74,7 @@ func (q *fakeAutoscanQueue) EnqueueScans(_ context.Context, targets []scantrigge
 }
 
 func TestAutoscanVirtualFoldersIncludesEnabledLocationsForAdminKey(t *testing.T) {
+	t.Parallel()
 	enabledRoot := t.TempDir()
 	disabledRoot := t.TempDir()
 	handler := NewAutoscanHandler(&fakeAutoscanFolders{folders: []*models.MediaFolder{
@@ -103,6 +104,7 @@ func TestAutoscanVirtualFoldersIncludesEnabledLocationsForAdminKey(t *testing.T)
 }
 
 func TestAutoscanMediaUpdatedEnqueuesResolvedPath(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	filePath := filepath.Join(root, "Movie.mkv")
 	if err := os.WriteFile(filePath, []byte("test"), 0o644); err != nil {
@@ -138,6 +140,7 @@ func TestAutoscanMediaUpdatedEnqueuesResolvedPath(t *testing.T) {
 }
 
 func TestAutoscanMediaUpdatedRejectsAmbiguousLibraryWithoutPartialEnqueue(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	ambiguousRoot := t.TempDir()
 	filePath := filepath.Join(root, "Movie.mkv")
@@ -195,6 +198,7 @@ func TestAutoscanMediaUpdatedRejectsAmbiguousLibraryWithoutPartialEnqueue(t *tes
 }
 
 func TestAutoscanMediaUpdatedIgnoresUnsupportedSidecars(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	movieDir := filepath.Join(root, "Movie (2024)")
 	if err := os.Mkdir(movieDir, 0o755); err != nil {
@@ -243,6 +247,7 @@ func TestAutoscanMediaUpdatedIgnoresUnsupportedSidecars(t *testing.T) {
 }
 
 func TestAutoscanMediaUpdatedSidecarsScanParent(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	movieDir := filepath.Join(root, "Movie (2024)")
 	if err := os.Mkdir(movieDir, 0o755); err != nil {
@@ -289,6 +294,7 @@ func TestAutoscanMediaUpdatedSidecarsScanParent(t *testing.T) {
 }
 
 func TestAutoscanMediaUpdatedRootSidecarDoesNotScanLibrary(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	anchorPath := filepath.Join(root, ".plexignore")
 	if err := os.WriteFile(anchorPath, []byte("test"), 0o644); err != nil {
@@ -327,6 +333,7 @@ func TestAutoscanMediaUpdatedRootSidecarDoesNotScanLibrary(t *testing.T) {
 }
 
 func TestAutoscanMediaUpdatedFallsBackToParentForMissingFiles(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	movieDir := filepath.Join(root, "Movie (2024)")
 	if err := os.Mkdir(movieDir, 0o755); err != nil {
@@ -370,6 +377,7 @@ func TestAutoscanMediaUpdatedFallsBackToParentForMissingFiles(t *testing.T) {
 }
 
 func TestAutoscanMediaUpdatedIgnoresUnmatchedLibraryPaths(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	unmatchedRoot := t.TempDir()
 	filePath := filepath.Join(root, "Movie.mkv")
@@ -413,6 +421,7 @@ func TestAutoscanMediaUpdatedIgnoresUnmatchedLibraryPaths(t *testing.T) {
 }
 
 func TestAutoscanMediaUpdatedHidesInternalQueueError(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	filePath := filepath.Join(root, "Movie.mkv")
 	if err := os.WriteFile(filePath, []byte("test"), 0o644); err != nil {

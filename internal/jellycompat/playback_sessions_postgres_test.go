@@ -278,6 +278,7 @@ func TestDurableCompatPlaybackStore_InjectedClockExpiry(t *testing.T) {
 // With a nil pool the durable store degrades to the in-memory cache only, so it
 // still satisfies the interface and basic operations work (no DB available).
 func TestDurableCompatPlaybackStore_NilPoolInMemory(t *testing.T) {
+	t.Parallel()
 	store := NewDurableCompatPlaybackStore(nil, time.Hour, nil)
 	store.Put(PlaybackSession{ID: "x", UpstreamSessionID: "u"})
 	if got, ok := store.Get("x"); !ok || got.UpstreamSessionID != "u" {
@@ -290,6 +291,7 @@ func TestDurableCompatPlaybackStore_NilPoolInMemory(t *testing.T) {
 }
 
 func TestPlaybackSessionStoreTerminalClaimIsAtomicAndOwnerScoped(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "owner", UpstreamSessionID: "upstream-1"})
 	event := watchsync.ScrobbleEvent{PlaybackSessionID: "upstream-1"}
@@ -314,6 +316,7 @@ func TestPlaybackSessionStoreTerminalClaimIsAtomicAndOwnerScoped(t *testing.T) {
 }
 
 func TestPlaybackSessionStoreDeactivateRetainsOnlyFinalReportLookup(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{
 		ID:                  "play-1",
@@ -351,6 +354,7 @@ func TestPlaybackSessionStoreDeactivateRetainsOnlyFinalReportLookup(t *testing.T
 }
 
 func TestPlaybackSessionStoreFinalAliasLookupDisambiguatesReusedAlias(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{
 		ID:                  "old-play",
@@ -401,6 +405,7 @@ func TestPlaybackSessionStoreFinalAliasLookupDisambiguatesReusedAlias(t *testing
 }
 
 func TestPlaybackSessionStoreExpiredTerminalLeaseCanBeReclaimed(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, 7, 22, 12, 0, 0, 0, time.UTC)
 	store := NewPlaybackSessionStore(time.Hour, func() time.Time { return now })
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "owner"})
@@ -430,6 +435,7 @@ func TestPlaybackSessionStoreExpiredTerminalLeaseCanBeReclaimed(t *testing.T) {
 }
 
 func TestPlaybackSessionStorePendingScanEvictsExpiredTerminal(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, 7, 22, 12, 0, 0, 0, time.UTC)
 	store := NewPlaybackSessionStore(time.Minute, func() time.Time { return now })
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "owner"})
@@ -455,6 +461,7 @@ func TestPlaybackSessionStorePendingScanEvictsExpiredTerminal(t *testing.T) {
 }
 
 func TestDurableCompatPlaybackStoreExpiryClearsFailureBookkeeping(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, 7, 22, 12, 0, 0, 0, time.UTC)
 	store := NewDurableCompatPlaybackStore(nil, time.Minute, func() time.Time { return now })
 	store.mem.Put(PlaybackSession{ID: "play-1", CompatToken: "owner"})
@@ -474,6 +481,7 @@ func TestDurableCompatPlaybackStoreExpiryClearsFailureBookkeeping(t *testing.T) 
 }
 
 func TestDurableCompatPlaybackStoreBoundsGenerationTombstones(t *testing.T) {
+	t.Parallel()
 	store := NewDurableCompatPlaybackStore(nil, time.Hour, nil)
 	before := store.idGenerationSnapshot("old-session")
 	for i := 0; i <= compatValidationCacheLimit; i++ {
@@ -492,6 +500,7 @@ func TestDurableCompatPlaybackStoreBoundsGenerationTombstones(t *testing.T) {
 }
 
 func TestDurableCompatPlaybackStoreIDWriteDoesNotRefreshTokenSnapshot(t *testing.T) {
+	t.Parallel()
 	now := time.Date(2026, 7, 22, 12, 0, 0, 0, time.UTC)
 	store := NewDurableCompatPlaybackStore(nil, time.Hour, func() time.Time { return now })
 	store.markTokenValidated("owner")
@@ -504,6 +513,7 @@ func TestDurableCompatPlaybackStoreIDWriteDoesNotRefreshTokenSnapshot(t *testing
 }
 
 func TestPlaybackSessionStoreNewAuthoritativeEventSurvivesStaleCompletion(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "owner"})
 	firstEvent := watchsync.ScrobbleEvent{PlaybackSessionID: "upstream-1", PositionSeconds: 45}
@@ -710,6 +720,7 @@ func TestDurableCompatPlaybackStorePreservesUnpersistedTerminalOnRevalidation(t 
 }
 
 func TestDurableCompatPlaybackStoreDiscardsTokenSnapshotAfterLocalMutation(t *testing.T) {
+	t.Parallel()
 	store := NewDurableCompatPlaybackStore(nil, time.Hour, nil)
 	generation := store.tokenGenerationSnapshot("owner")
 	store.cacheMutationMu.Lock()
@@ -726,6 +737,7 @@ func TestDurableCompatPlaybackStoreDiscardsTokenSnapshotAfterLocalMutation(t *te
 }
 
 func TestDurableCompatPlaybackStoreAppliesTokenSnapshotAfterUnrelatedMutation(t *testing.T) {
+	t.Parallel()
 	store := NewDurableCompatPlaybackStore(nil, time.Hour, nil)
 	store.mem.Put(PlaybackSession{ID: "stale-session", CompatToken: "owner", RouteItemID: "route-1"})
 	generation := store.tokenGenerationSnapshot("owner")
@@ -743,6 +755,7 @@ func TestDurableCompatPlaybackStoreAppliesTokenSnapshotAfterUnrelatedMutation(t 
 }
 
 func TestDurableCompatPlaybackStoreDoesNotReviveLocalTerminalFromActiveSnapshot(t *testing.T) {
+	t.Parallel()
 	store := NewDurableCompatPlaybackStore(nil, time.Hour, nil)
 	active := PlaybackSession{ID: "play-1", CompatToken: "owner", RouteItemID: "route-1"}
 	store.mem.Put(active)
@@ -763,6 +776,7 @@ func TestDurableCompatPlaybackStoreDoesNotReviveLocalTerminalFromActiveSnapshot(
 }
 
 func TestDurableCompatPlaybackStorePreservesPendingUpdateFromOlderSnapshot(t *testing.T) {
+	t.Parallel()
 	store := NewDurableCompatPlaybackStore(nil, time.Hour, nil)
 	local := PlaybackSession{ID: "play-1", CompatToken: "owner", UpstreamSessionID: "upstream-new"}
 	store.mem.Put(local)
@@ -783,6 +797,7 @@ func TestDurableCompatPlaybackStorePreservesPendingUpdateFromOlderSnapshot(t *te
 }
 
 func TestDurableCompatPlaybackStoreDropsPendingSessionMissingFromSnapshot(t *testing.T) {
+	t.Parallel()
 	store := NewDurableCompatPlaybackStore(nil, time.Hour, nil)
 	store.mem.Put(PlaybackSession{ID: "play-1", CompatToken: "owner", RouteItemID: "route-1"})
 	store.appendPendingUpdate("play-1", "owner", func(session *PlaybackSession) error {
@@ -803,6 +818,7 @@ func TestDurableCompatPlaybackStoreDropsPendingSessionMissingFromSnapshot(t *tes
 }
 
 func TestDurableCompatPlaybackStoreTokenSnapshotKeepsOtherTokenPendingUpdates(t *testing.T) {
+	t.Parallel()
 	store := NewDurableCompatPlaybackStore(nil, time.Hour, nil)
 	store.mem.Put(PlaybackSession{ID: "play-a", CompatToken: "owner-a"})
 	store.mem.Put(PlaybackSession{ID: "play-b", CompatToken: "owner-b"})
@@ -823,6 +839,7 @@ func TestDurableCompatPlaybackStoreTokenSnapshotKeepsOtherTokenPendingUpdates(t 
 }
 
 func TestDurableCompatPlaybackStoreSerializesSameSessionMutations(t *testing.T) {
+	t.Parallel()
 	store := NewDurableCompatPlaybackStore(nil, time.Hour, nil)
 	unlock := store.lockSessionMutation("play-1")
 	acquired := make(chan struct{})

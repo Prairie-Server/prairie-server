@@ -116,6 +116,7 @@ func (r *countingEpisodeRepo) ListAdjacentInSeries(context.Context, string, int,
 }
 
 func TestFilterContentIDsForLibrary_AppliesMembershipAndPreservesOrder(t *testing.T) {
+	t.Parallel()
 	libraryID := 7
 
 	filtered, err := filterContentIDsForLibrary(
@@ -135,6 +136,7 @@ func TestFilterContentIDsForLibrary_AppliesMembershipAndPreservesOrder(t *testin
 }
 
 func TestFilterContentIDsForLibrary_PropagatesMembershipErrors(t *testing.T) {
+	t.Parallel()
 	libraryID := 7
 	wantErr := errors.New("boom")
 
@@ -155,6 +157,7 @@ func TestFilterContentIDsForLibrary_PropagatesMembershipErrors(t *testing.T) {
 // itemRepo.GetByIDsWithAccess instead of fetching items then looping
 // EnsureAccessible per item (audit 2026-05-01 §3.3, Pattern C).
 func TestFetchCompatItemsByContentIDsFallback_UsesBatchedAccessQuery(t *testing.T) {
+	t.Parallel()
 	repo := &countingItemRepo{
 		itemsByID: map[string]*models.MediaItem{
 			"a": {ContentID: "a", Type: "movie", Title: "A"},
@@ -194,6 +197,7 @@ func TestFetchCompatItemsByContentIDsFallback_UsesBatchedAccessQuery(t *testing.
 // GetByIDsWithAccess can gate it in a single SQL statement instead of pre-
 // filtering with GetItemsInLibrary then re-checking via EnsureAccessible.
 func TestFetchCompatItemsByContentIDsFallback_NarrowsAccessToLibraryArg(t *testing.T) {
+	t.Parallel()
 	repo := &countingItemRepo{
 		itemsByID: map[string]*models.MediaItem{
 			"a": {ContentID: "a", Type: "movie", Title: "A"},
@@ -223,6 +227,7 @@ func TestFetchCompatItemsByContentIDsFallback_NarrowsAccessToLibraryArg(t *testi
 // allowlist, the fallback returns an empty result without hitting the
 // repository.
 func TestFetchCompatItemsByContentIDsFallback_LibraryOutsideAllowlistShortCircuits(t *testing.T) {
+	t.Parallel()
 	repo := &countingItemRepo{itemsByID: map[string]*models.MediaItem{}}
 	h := &ItemsHandler{
 		itemRepo: repo,
@@ -254,6 +259,7 @@ func TestFetchCompatItemsByContentIDsFallback_LibraryOutsideAllowlistShortCircui
 // populated image type, not one singular call per item. The resolver batch
 // count stays bounded by image type as the item count grows.
 func TestFetchCompatItemsByContentIDsFallback_BatchesPresign(t *testing.T) {
+	t.Parallel()
 	resolver := &countingCompatImageResolver{}
 	detailSvc := &catalog.DetailService{}
 	detailSvc.SetImageResolver(resolver)
@@ -295,6 +301,7 @@ func TestFetchCompatItemsByContentIDsFallback_BatchesPresign(t *testing.T) {
 // through itemRepo.GetByIDsWithAccess instead of iterating EnsureAccessible
 // per series (audit 2026-05-01 §3.3, Pattern C).
 func TestFetchCompatEpisodeTargetsByContentIDsFallback_UsesBatchedSeriesAccess(t *testing.T) {
+	t.Parallel()
 	itemRepo := &countingItemRepo{
 		itemsByID: map[string]*models.MediaItem{
 			"series-1": {ContentID: "series-1", Type: "series", Title: "Show"},

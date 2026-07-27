@@ -50,6 +50,7 @@ func seedDirectPlaySession(t *testing.T, clock func() time.Time) (*SessionStore,
 // route patterns and both lookup branches (by mediaSourceId, and by route item
 // id when mediaSourceId is absent).
 func TestPlaybackSessionAuth_DirectPlayNoToken(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 
@@ -87,6 +88,7 @@ func TestPlaybackSessionAuth_DirectPlayNoToken(t *testing.T) {
 // token-less request stays a 401 (proves the playback-session match gates it,
 // not a missing compat session).
 func TestPlaybackSessionAuth_DirectPlayNoMatchingSession(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 	sessions := NewSessionStore(time.Hour, clock)
@@ -116,6 +118,7 @@ func TestPlaybackSessionAuth_DirectPlayNoMatchingSession(t *testing.T) {
 // to a session for a DIFFERENT route item must not authorize the request — the
 // session's RouteItemID must match the requested item.
 func TestPlaybackSessionAuth_DirectPlayCrossItemDenied(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 	sessions := NewSessionStore(time.Hour, clock)
@@ -151,6 +154,7 @@ func TestPlaybackSessionAuth_DirectPlayCrossItemDenied(t *testing.T) {
 // resolvable compat session AND a PlaybackSession exist for the same item id, so
 // the 401 proves route scoping rather than a missing session.
 func TestPlaybackSessionAuth_DownloadNotLoosened(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	clock := func() time.Time { return now }
 	sessions, playback := seedDirectPlaySession(t, clock)

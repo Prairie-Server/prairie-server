@@ -85,6 +85,7 @@ func dtoNames(dtos []baseItemDTO) []string {
 // superseded entries never reach Jellyfin clients, mirroring the first-party
 // Continue Watching row.
 func TestLoadProgressPage_ResumeHidesFilteredEntries(t *testing.T) {
+	t.Parallel()
 	items := map[string]*models.MediaItem{
 		"movie-1": {ContentID: "movie-1", Type: "movie", Title: "Movie One"},
 		"movie-2": {ContentID: "movie-2", Type: "movie", Title: "Movie Two"},
@@ -122,6 +123,7 @@ func TestLoadProgressPage_ResumeHidesFilteredEntries(t *testing.T) {
 // the visible page. Before the cap was made unconditional, the scan only stopped
 // once len(items) >= limit, so a page that never fills walked every row.
 func TestLoadProgressPage_BoundsScanForSparseVisibleSet(t *testing.T) {
+	t.Parallel()
 	const total = 5000
 	entries := make([]upstreamProgress, 0, total)
 	items := make(map[string]*models.MediaItem, total)
@@ -163,6 +165,7 @@ func TestLoadProgressPage_BoundsScanForSparseVisibleSet(t *testing.T) {
 // the end here even though the other bounds test (which sets
 // EnableTotalRecordCount=true) routes around this branch entirely.
 func TestLoadProgressPage_BoundsFastPathScanForSparseVisibleSet(t *testing.T) {
+	t.Parallel()
 	const total = 5000
 	entries := make([]upstreamProgress, 0, total)
 	items := make(map[string]*models.MediaItem, total)
@@ -198,6 +201,7 @@ func TestLoadProgressPage_BoundsFastPathScanForSparseVisibleSet(t *testing.T) {
 // TotalRecordCount, so it must keep scanning past the cap. Mirrors the Codex
 // review concern that the cap not leak into watched-items pagination.
 func TestLoadProgressPage_CompletedScanNotCapped(t *testing.T) {
+	t.Parallel()
 	const total = resumeScanMaxRows * 3
 	entries := make([]upstreamProgress, 0, total)
 	items := make(map[string]*models.MediaItem, total)
@@ -227,6 +231,7 @@ func TestLoadProgressPage_CompletedScanNotCapped(t *testing.T) {
 // scan-from-zero branch (IncludeItemTypes present): filtering must apply
 // there too, and visible pagination must skip filtered entries.
 func TestLoadProgressPage_ResumeFilterAppliesWithTypeFilter(t *testing.T) {
+	t.Parallel()
 	items := map[string]*models.MediaItem{
 		"movie-1": {ContentID: "movie-1", Type: "movie", Title: "Movie One"},
 		"movie-2": {ContentID: "movie-2", Type: "movie", Title: "Movie Two"},
@@ -264,6 +269,7 @@ func TestLoadProgressPage_ResumeFilterAppliesWithTypeFilter(t *testing.T) {
 // view ("completed" status) is served unfiltered: dismissals and superseded
 // hiding are Continue Watching semantics only.
 func TestLoadProgressPage_CompletedSkipsResumeFilter(t *testing.T) {
+	t.Parallel()
 	items := map[string]*models.MediaItem{
 		"movie-1": {ContentID: "movie-1", Type: "movie", Title: "Movie One"},
 	}
@@ -294,6 +300,7 @@ func TestLoadProgressPage_CompletedSkipsResumeFilter(t *testing.T) {
 // through ListProgressFiltered — the SQL pre-filter — instead of the full-set
 // ListProgress scan it replaced.
 func TestLoadProgressPage_CompletedTypeFilterUsesFilteredFetch(t *testing.T) {
+	t.Parallel()
 	items := map[string]*models.MediaItem{
 		"movie-1": {ContentID: "movie-1", Type: "movie", Title: "Movie One"},
 		"movie-2": {ContentID: "movie-2", Type: "movie", Title: "Movie Two"},
@@ -358,6 +365,7 @@ func (p *fakeDismissalStoreProvider) Close() error { return nil }
 // passes through. The superseded check is disabled via a nil pool — its
 // behavior is pinned by the catalog package tests.
 func TestDirectUserDataServiceFilterResumeProgressDropsDismissedEntries(t *testing.T) {
+	t.Parallel()
 	dismissedAt := "2025-01-01T00:00:00Z"
 	svc := &directUserDataService{
 		storeProvider: &fakeDismissalStoreProvider{store: &fakeDismissalStore{

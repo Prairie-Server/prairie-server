@@ -136,6 +136,7 @@ func performEpisodesRequest(t *testing.T, h *ItemsHandler, target, seriesID stri
 }
 
 func TestHandleEpisodes_StartItemIDTrimsPlayFromHereQueue(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	seriesContentID := "series-1"
 	seasonContentID := "season-1"
@@ -183,6 +184,7 @@ func TestHandleEpisodes_StartItemIDTrimsPlayFromHereQueue(t *testing.T) {
 }
 
 func TestHandleEpisodes_StartItemIDMissingReturnsEmptyQueue(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	seriesContentID := "series-1"
 	seasonContentID := "season-1"
@@ -212,6 +214,7 @@ func TestHandleEpisodes_StartItemIDMissingReturnsEmptyQueue(t *testing.T) {
 }
 
 func TestHandleEpisodes_AdjacentToReturnsPrevSelfNextWindow(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	seriesContentID := "series-1"
 	seasonContentID := "season-1"
@@ -252,6 +255,7 @@ func TestHandleEpisodes_AdjacentToReturnsPrevSelfNextWindow(t *testing.T) {
 }
 
 func TestHandleEpisodes_AdjacentToUnknownReturnsEmptyPage(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	seriesContentID := "series-1"
 	seasonContentID := "season-1"
@@ -281,6 +285,7 @@ func TestHandleEpisodes_AdjacentToUnknownReturnsEmptyPage(t *testing.T) {
 }
 
 func TestHandleItems_SeriesParentSeasonFilterReturnsPagedSeasons(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	seriesContentID := "series-1"
 	encodedSeriesID := codec.EncodeStringID(EncodedIDItem, seriesContentID)
@@ -340,6 +345,7 @@ func TestHandleItems_SeriesParentSeasonFilterReturnsPagedSeasons(t *testing.T) {
 }
 
 func TestHandleItemsSearchPropagatesEnableTotalRecordCount(t *testing.T) {
+	t.Parallel()
 	for _, tc := range []struct {
 		name          string
 		querySuffix   string
@@ -386,6 +392,7 @@ func TestHandleItemsSearchPropagatesEnableTotalRecordCount(t *testing.T) {
 }
 
 func TestHandleItemsSearchMediaTypesVideoExcludeMovieEpisodeSearchesSeries(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	contentSvc := &recordingSearchContentService{}
 	h := &ItemsHandler{
@@ -431,6 +438,7 @@ func TestHandleItemsSearchMediaTypesVideoExcludeMovieEpisodeSearchesSeries(t *te
 }
 
 func TestHandleItemsSearchSeriesScopeReachesProvider(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	contentSvc := &recordingSearchContentService{}
 	h := &ItemsHandler{
@@ -471,6 +479,7 @@ func TestHandleItemsSearchSeriesScopeReachesProvider(t *testing.T) {
 // image URLs are already cached. Cached URLs are not enough to build stable
 // signed tags after Jellycompat restarts.
 func TestHandleItem_Episode_FetchesSeriesDetailForStableParentImageTags(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	episodeContentID := "ep1"
 	seriesContentID := "series-1"
@@ -529,6 +538,7 @@ func TestHandleItem_Episode_FetchesSeriesDetailForStableParentImageTags(t *testi
 // the ImageCache has no entry for the parent series, the handler still falls
 // back to fetching the series detail.
 func TestHandleItem_Episode_FallsBackToSeriesDetailOnCacheMiss(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	episodeContentID := "ep1"
 	seriesContentID := "series-1"
@@ -585,6 +595,7 @@ func TestHandleItem_Episode_FallsBackToSeriesDetailOnCacheMiss(t *testing.T) {
 // fall back to the series-detail fetch so the response carries both URLs
 // rather than silently degrading with an empty backdrop tag.
 func TestHandleItem_Episode_PartialCacheFallsBackToSeriesDetail(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	episodeContentID := "ep1"
 	seriesContentID := "series-1"
@@ -643,6 +654,7 @@ func TestHandleItem_Episode_PartialCacheFallsBackToSeriesDetail(t *testing.T) {
 // w500/w1920 featured sizing for size="") and do NOT pollute the "small"
 // bucket seeded by list paths.
 func TestRememberDetailImages_SeedsMediumWithoutTouchingSmall(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	contentID := "movie-42"
 	encodedID := codec.EncodeStringID(EncodedIDItem, contentID)
@@ -683,6 +695,7 @@ func TestRememberDetailImages_SeedsMediumWithoutTouchingSmall(t *testing.T) {
 // detail.Type=="season" the route bucket is keyed under EncodedIDSeason so
 // no-tag image lookups for seasons hit the cache.
 func TestRememberDetailImages_SeasonRouteIDUsesEncodedIDSeason(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	contentID := "season-7"
 	encodedItemID := codec.EncodeStringID(EncodedIDItem, contentID)
@@ -710,6 +723,7 @@ func TestRememberDetailImages_SeasonRouteIDUsesEncodedIDSeason(t *testing.T) {
 
 // TestHandleUpcoming_Unauthorized confirms the endpoint requires a session.
 func TestHandleUpcoming_Unauthorized(t *testing.T) {
+	t.Parallel()
 	h := &ItemsHandler{codec: NewResourceIDCodec()}
 	req := httptest.NewRequest("GET", "/Shows/Upcoming", nil)
 	rec := httptest.NewRecorder()
@@ -725,6 +739,7 @@ func TestHandleUpcoming_Unauthorized(t *testing.T) {
 // Android TV fallback to global /Shows/NextUp that this handler exists to
 // suppress (see error-report-2026-05-08.md §11).
 func TestHandleUpcoming_MissingSeriesId_ReturnsEmptyNot404(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	h := &ItemsHandler{codec: codec, mapper: newMapper(codec, &config.Config{})}
 
@@ -747,6 +762,7 @@ func TestHandleUpcoming_MissingSeriesId_ReturnsEmptyNot404(t *testing.T) {
 // TestHandleUpcoming_InvalidSeriesId_ReturnsEmptyNot404 — same contract for
 // undecodable IDs. Decode failure must NOT 404 for the same reason.
 func TestHandleUpcoming_InvalidSeriesId_ReturnsEmptyNot404(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	h := &ItemsHandler{codec: codec, mapper: newMapper(codec, &config.Config{})}
 

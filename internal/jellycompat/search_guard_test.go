@@ -3,6 +3,7 @@ package jellycompat
 import "testing"
 
 func TestAuxSearchTermTooShort(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		term string
 		want bool
@@ -26,6 +27,7 @@ func TestAuxSearchTermTooShort(t *testing.T) {
 }
 
 func TestClampAuxSearchLimit(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		in   int
 		want int

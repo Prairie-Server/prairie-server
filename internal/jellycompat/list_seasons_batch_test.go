@@ -78,6 +78,7 @@ func (c *countingEpisodeListSource) GetByIDs(_ context.Context, _ []string) ([]*
 // calls) and exactly one ListProgressByMediaItems call (replacing N
 // per-season fetches inside enrichSeasonUserData) (audit 2026-05-01 §2.2).
 func TestListSeasons_UsesBatchEpisodeFetch(t *testing.T) {
+	t.Parallel()
 	provider := newProgressCountingStoreProvider()
 	episodeRepo := &countingEpisodeListSource{
 		groupedReturn: map[int][]*models.Episode{
@@ -136,6 +137,7 @@ func TestListSeasons_UsesBatchEpisodeFetch(t *testing.T) {
 // and derives synthetic seasons without issuing an extra aggregation
 // query (audit 2026-05-01 §2.2 fallback path).
 func TestListSeasons_FallbackUsesGroupedEpisodes(t *testing.T) {
+	t.Parallel()
 	provider := newProgressCountingStoreProvider()
 	episodeRepo := &countingEpisodeListSource{
 		groupedReturn: map[int][]*models.Episode{

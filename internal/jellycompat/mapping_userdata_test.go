@@ -7,6 +7,7 @@ import (
 )
 
 func TestUserDataDTOPlayedReportsZeroPosition(t *testing.T) {
+	t.Parallel()
 	// Watched rows store position 0, so played items naturally report 0 ticks.
 	data := &catalog.SeasonUserData{
 		PositionSeconds: 0,
@@ -26,6 +27,7 @@ func TestUserDataDTOPlayedReportsZeroPosition(t *testing.T) {
 }
 
 func TestUserDataDTOPlayedRewatchReportsResumePosition(t *testing.T) {
+	t.Parallel()
 	// A rewatch in flight keeps Played=true with a live resume point; clients
 	// must see both the checkmark and the position (matches Jellyfin).
 	data := &catalog.SeasonUserData{
@@ -44,6 +46,7 @@ func TestUserDataDTOPlayedRewatchReportsResumePosition(t *testing.T) {
 }
 
 func TestUserDataDTOClampsPositionPastDuration(t *testing.T) {
+	t.Parallel()
 	data := &catalog.SeasonUserData{
 		PositionSeconds: 1290.33,
 		DurationSeconds: 1290.0,
@@ -60,6 +63,7 @@ func TestUserDataDTOClampsPositionPastDuration(t *testing.T) {
 }
 
 func TestUserDataDTOPreservesValidPosition(t *testing.T) {
+	t.Parallel()
 	data := &catalog.SeasonUserData{
 		PositionSeconds: 600.0,
 		DurationSeconds: 1290.0,
@@ -73,6 +77,7 @@ func TestUserDataDTOPreservesValidPosition(t *testing.T) {
 }
 
 func TestUserDataDTOProgressCompletedZeros(t *testing.T) {
+	t.Parallel()
 	// Completed rows store position 0, so watched items report 0 ticks.
 	progress := &upstreamProgress{
 		MediaItemID:     "x",
@@ -93,6 +98,7 @@ func TestUserDataDTOProgressCompletedZeros(t *testing.T) {
 }
 
 func TestUserDataDTOProgressDoesNotClearPlayedData(t *testing.T) {
+	t.Parallel()
 	data := &catalog.SeasonUserData{Played: true}
 	progress := &upstreamProgress{
 		MediaItemID:     "x",
@@ -111,6 +117,7 @@ func TestUserDataDTOProgressDoesNotClearPlayedData(t *testing.T) {
 }
 
 func TestUserDataDTOProgressRewatchKeepsPlayedAndPosition(t *testing.T) {
+	t.Parallel()
 	progress := &upstreamProgress{
 		MediaItemID:     "x",
 		PositionSeconds: 600.0,
@@ -135,6 +142,7 @@ func TestUserDataDTOProgressRewatchKeepsPlayedAndPosition(t *testing.T) {
 }
 
 func TestUserDataDTOProgressClampsPosition(t *testing.T) {
+	t.Parallel()
 	progress := &upstreamProgress{
 		MediaItemID:     "x",
 		PositionSeconds: 2000.0,
@@ -149,6 +157,7 @@ func TestUserDataDTOProgressClampsPosition(t *testing.T) {
 }
 
 func TestClampSeekSecondsCapsToLongestSource(t *testing.T) {
+	t.Parallel()
 	sources := []PlaybackMediaSource{
 		{Version: catalog.FileVersion{Duration: 1290}},
 		{Version: catalog.FileVersion{Duration: 1500}},
@@ -160,6 +169,7 @@ func TestClampSeekSecondsCapsToLongestSource(t *testing.T) {
 }
 
 func TestClampSeekSecondsPassesValidSeek(t *testing.T) {
+	t.Parallel()
 	sources := []PlaybackMediaSource{
 		{Version: catalog.FileVersion{Duration: 1290}},
 	}
@@ -170,6 +180,7 @@ func TestClampSeekSecondsPassesValidSeek(t *testing.T) {
 }
 
 func TestClampSeekSecondsHandlesNegative(t *testing.T) {
+	t.Parallel()
 	got := clampSeekSeconds(-5, []PlaybackMediaSource{{Version: catalog.FileVersion{Duration: 100}}})
 	if got != 0 {
 		t.Fatalf("clampSeekSeconds = %v, want 0", got)
@@ -177,6 +188,7 @@ func TestClampSeekSecondsHandlesNegative(t *testing.T) {
 }
 
 func TestClampSeekSecondsNoDurationLeavesValue(t *testing.T) {
+	t.Parallel()
 	got := clampSeekSeconds(42, []PlaybackMediaSource{{Version: catalog.FileVersion{Duration: 0}}})
 	if got != 42 {
 		t.Fatalf("clampSeekSeconds = %v, want 42", got)

@@ -24,6 +24,7 @@ func (s *genresContentService) ListItemFilters(context.Context, *Session, url.Va
 }
 
 func TestHandleGenreByName(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	h := &ItemsHandler{
 		content:  &genresContentService{genres: []string{"Action", "Science Fiction"}},

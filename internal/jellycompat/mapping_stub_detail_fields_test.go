@@ -14,6 +14,7 @@ import (
 // and streams, so a missing field would be a never-before-seen shape for
 // strict client deserializers.
 func TestStubDetailListFields_PopulatesSingleElementSlicesForRequestedFields(t *testing.T) {
+	t.Parallel()
 	dto := baseItemDTO{}
 	fields := map[string]bool{
 		"people":       true,
@@ -43,6 +44,7 @@ func TestStubDetailListFields_PopulatesSingleElementSlicesForRequestedFields(t *
 // (key absent in JSON), matching what the list mapper would have returned for
 // a request without that field.
 func TestStubDetailListFields_LeavesUnrequestedFieldsNil(t *testing.T) {
+	t.Parallel()
 	dto := baseItemDTO{}
 	stubDetailListFields(&dto, map[string]bool{"people": true})
 
@@ -64,6 +66,7 @@ func TestStubDetailListFields_LeavesUnrequestedFieldsNil(t *testing.T) {
 // nothing when the request didn't include any Fields= parameter. This is the
 // common case for clients that just want a basic list.
 func TestStubDetailListFields_NilOrEmptyFieldsIsNoop(t *testing.T) {
+	t.Parallel()
 	dto := baseItemDTO{}
 	stubDetailListFields(&dto, nil)
 	if dto.People != nil || dto.Chapters != nil || dto.MediaStreams != nil || dto.MediaSources != nil {
@@ -80,6 +83,7 @@ func TestStubDetailListFields_NilOrEmptyFieldsIsNoop(t *testing.T) {
 // does not clobber values already present on the DTO. The list mapper does not
 // populate these four fields today, but a future caller may.
 func TestStubDetailListFields_PreservesNonNilExistingValues(t *testing.T) {
+	t.Parallel()
 	existingPeople := []personDTO{{ID: "p1"}, {ID: "p2"}}
 	existingChapters := []map[string]any{{"Name": "Cold Open"}}
 	existingStreams := []mediaStreamDTO{{Index: 7}}
@@ -117,6 +121,7 @@ func TestStubDetailListFields_PreservesNonNilExistingValues(t *testing.T) {
 // non-empty array. Regression guard against accidentally reverting to empty
 // slices (which would be omitted under omitempty).
 func TestStubDetailListFields_JSONShapeKeepsFieldsPresent(t *testing.T) {
+	t.Parallel()
 	dto := baseItemDTO{}
 	stubDetailListFields(&dto, map[string]bool{
 		"people":       true,
@@ -142,6 +147,7 @@ func TestStubDetailListFields_JSONShapeKeepsFieldsPresent(t *testing.T) {
 // — maps are reference-typed in Go, so a shared package-level value would let
 // downstream code mutate every Resume response's chapter at once.
 func TestStubDetailListFields_FreshChapterMapPerCall(t *testing.T) {
+	t.Parallel()
 	a := baseItemDTO{}
 	b := baseItemDTO{}
 	fields := map[string]bool{"chapters": true}
@@ -164,6 +170,7 @@ func TestStubDetailListFields_FreshChapterMapPerCall(t *testing.T) {
 // all-false playability stub made them drop every entry (the Continue
 // Watching row showed empty while item-page resume worked fine).
 func TestStubDetailListFields_MediaSourceStubLooksPlayable(t *testing.T) {
+	t.Parallel()
 	dto := baseItemDTO{Name: "Pilot", RunTimeTicks: 34800000000}
 	stubDetailListFields(&dto, map[string]bool{"mediasources": true})
 
@@ -197,6 +204,7 @@ func TestStubDetailListFields_MediaSourceStubLooksPlayable(t *testing.T) {
 // reference-typed fields (slices/maps) remain nil. Mirrors the existing
 // chapter-map guard.
 func TestStubDetailListFields_FreshMediaSourcePerCall(t *testing.T) {
+	t.Parallel()
 	a := baseItemDTO{}
 	b := baseItemDTO{}
 	fields := map[string]bool{"mediasources": true}

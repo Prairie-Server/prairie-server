@@ -21,6 +21,7 @@ func (s stubSettingsReader) Get(_ context.Context, key string) (string, error) {
 }
 
 func TestAllow4KVideoTranscode(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name string
 		repo SettingsReader
@@ -43,6 +44,7 @@ func TestAllow4KVideoTranscode(t *testing.T) {
 }
 
 func TestIs4KResolution(t *testing.T) {
+	t.Parallel()
 	for res, want := range map[string]bool{
 		"2160p": true,
 		"4320p": true,
@@ -57,6 +59,7 @@ func TestIs4KResolution(t *testing.T) {
 }
 
 func TestBuildPlaybackSource4KVideoTranscodeGate(t *testing.T) {
+	t.Parallel()
 	version4K := catalog.FileVersion{
 		FileID:     1,
 		Resolution: "2160p",
@@ -134,6 +137,7 @@ func TestBuildPlaybackSource4KVideoTranscodeGate(t *testing.T) {
 }
 
 func TestEnsureTranscodeSession4KGuard(t *testing.T) {
+	t.Parallel()
 	h := &PlaybackHandler{} // nil SettingsRepo: 4K video transcodes denied
 
 	source := PlaybackMediaSource{
@@ -153,6 +157,7 @@ func TestEnsureTranscodeSession4KGuard(t *testing.T) {
 }
 
 func TestStartRemoteTranscode4KGuard(t *testing.T) {
+	t.Parallel()
 	h := &PlaybackHandler{} // nil SettingsRepo: 4K video transcodes denied
 
 	source := PlaybackMediaSource{

@@ -14,6 +14,7 @@ import (
 )
 
 func TestMediaItemToListItemUsesMovieReleaseDateForPremiereDate(t *testing.T) {
+	t.Parallel()
 	releaseDate := "2026-02-13"
 	item := mediaItemToListItem(&models.MediaItem{
 		ContentID:   "movie-1",
@@ -29,6 +30,7 @@ func TestMediaItemToListItemUsesMovieReleaseDateForPremiereDate(t *testing.T) {
 }
 
 func TestItemDetailToUpstreamUsesMovieReleaseDateForPremiereDate(t *testing.T) {
+	t.Parallel()
 	releaseDate := "2026-02-13"
 	detail := itemDetailToUpstream(&catalog.ItemDetail{
 		ContentID:   "movie-1",
@@ -44,6 +46,7 @@ func TestItemDetailToUpstreamUsesMovieReleaseDateForPremiereDate(t *testing.T) {
 }
 
 func TestItemEtagIncludesPremiereDate(t *testing.T) {
+	t.Parallel()
 	base := upstreamListItem{
 		ContentID: "movie-1",
 		Title:     "Future Movie",
@@ -96,6 +99,7 @@ func (r *countingCompatImageResolver) ResolveImageURLsWithExpiry(_ context.Conte
 }
 
 func TestPresignListItemsBatchResolvesImages(t *testing.T) {
+	t.Parallel()
 	resolver := &countingCompatImageResolver{}
 	detailSvc := &catalog.DetailService{}
 	detailSvc.SetImageResolver(resolver)
@@ -150,6 +154,7 @@ func TestPresignListItemsBatchResolvesImages(t *testing.T) {
 // exactly one PresignImageURLsWithExpiry batch for the whole season collection
 // (one image type), not one singular call per season.
 func TestPresignSeasonsBatchResolvesImages(t *testing.T) {
+	t.Parallel()
 	resolver := &countingCompatImageResolver{}
 	detailSvc := &catalog.DetailService{}
 	detailSvc.SetImageResolver(resolver)
@@ -180,6 +185,7 @@ func TestPresignSeasonsBatchResolvesImages(t *testing.T) {
 // TestPresignEpisodesBatchResolvesImages pins Fix #2c for episodes: one still
 // batch for the whole collection regardless of episode count.
 func TestPresignEpisodesBatchResolvesImages(t *testing.T) {
+	t.Parallel()
 	resolver := &countingCompatImageResolver{}
 	detailSvc := &catalog.DetailService{}
 	detailSvc.SetImageResolver(resolver)
@@ -208,6 +214,7 @@ func TestPresignEpisodesBatchResolvesImages(t *testing.T) {
 // home/Latest rail path: the loop builds the whole page first, then presigns in
 // one batch per populated image type independent of item count.
 func TestCompatListItemsFromModelsBatchesPresign(t *testing.T) {
+	t.Parallel()
 	resolver := &countingCompatImageResolver{}
 	detailSvc := &catalog.DetailService{}
 	detailSvc.SetImageResolver(resolver)
@@ -562,6 +569,7 @@ func (s *stubBrowseSource) BrowsePage(_ context.Context, filters catalog.BrowseF
 }
 
 func TestBrowseItems_RecentlyAddedNoParentFansOutAcrossLibraries(t *testing.T) {
+	t.Parallel()
 	browse := &stubBrowseSource{items: makeBrowseTestMediaItems(10), total: 10}
 	svc := newDirectContentServiceForTest(browse, nil)
 	svc.folderRepo = &stubFolderSource{
@@ -591,6 +599,7 @@ func TestBrowseItems_RecentlyAddedNoParentFansOutAcrossLibraries(t *testing.T) {
 }
 
 func TestBrowseItems_RecentlyAddedWithOffsetFallsBackToBrowsePage(t *testing.T) {
+	t.Parallel()
 	browse := &stubBrowseSource{items: makeBrowseTestMediaItems(40), total: 40}
 	svc := newDirectContentServiceForTest(browse, nil)
 	svc.folderRepo = &stubFolderSource{
@@ -618,6 +627,7 @@ func TestBrowseItems_RecentlyAddedWithOffsetFallsBackToBrowsePage(t *testing.T) 
 }
 
 func TestBrowseItems_RecentlyAddedSingleLibraryUsesBrowsePage(t *testing.T) {
+	t.Parallel()
 	browse := &stubBrowseSource{items: makeBrowseTestMediaItems(10), total: 10}
 	svc := newDirectContentServiceForTest(browse, nil)
 	svc.folderRepo = &stubFolderSource{
@@ -703,6 +713,7 @@ func newDirectContentServiceForTest(browse browseSource, provider userstore.User
 }
 
 func TestSearchItemsUsesCatalogSearchProviderWithCompatScope(t *testing.T) {
+	t.Parallel()
 	libraryID := 7
 	provider := &recordingCatalogSearchProvider{
 		result: &catalog.CatalogSearchResult{
@@ -763,6 +774,7 @@ func TestSearchItemsUsesCatalogSearchProviderWithCompatScope(t *testing.T) {
 }
 
 func TestSearchItemsFallsBackToItemRepoWhenProviderMissing(t *testing.T) {
+	t.Parallel()
 	itemRepo := &recordingItemAccessSource{
 		items: []*models.MediaItem{{
 			ContentID: "movie-1",
@@ -804,6 +816,7 @@ func TestSearchItemsFallsBackToItemRepoWhenProviderMissing(t *testing.T) {
 // counting store and fail this assertion. The fixed code only enriches when
 // filtering by played status, so neither method is called.
 func TestBrowseItems_DoesNotFetchProgressWhenNoPlayedFilter(t *testing.T) {
+	t.Parallel()
 	provider := newProgressCountingStoreProvider()
 	browse := &stubBrowseSource{
 		items: []*models.MediaItem{
@@ -833,6 +846,7 @@ func TestBrowseItems_DoesNotFetchProgressWhenNoPlayedFilter(t *testing.T) {
 // status. Without enrichment, is_played=true would always return zero
 // items and is_played=false would always return everything.
 func TestBrowseItems_FetchesProgressWhenPlayedFilterSet(t *testing.T) {
+	t.Parallel()
 	provider := newProgressCountingStoreProvider()
 	browse := &stubBrowseSource{
 		items: []*models.MediaItem{
@@ -858,6 +872,7 @@ func TestBrowseItems_FetchesProgressWhenPlayedFilterSet(t *testing.T) {
 }
 
 func TestBrowseItems_FillsLargeJellyfinLimitInSingleCatalogPage(t *testing.T) {
+	t.Parallel()
 	provider := newProgressCountingStoreProvider()
 	browse := &stubBrowseSource{
 		items: makeBrowseTestMediaItems(400),
@@ -904,6 +919,7 @@ func TestBrowseItems_FillsLargeJellyfinLimitInSingleCatalogPage(t *testing.T) {
 }
 
 func TestBrowseItems_HonorsIncludeTotalFalse(t *testing.T) {
+	t.Parallel()
 	browse := &stubBrowseSource{
 		items: makeBrowseTestMediaItems(300),
 		total: 300,
@@ -939,6 +955,7 @@ func TestBrowseItems_HonorsIncludeTotalFalse(t *testing.T) {
 // enrichListItemsUserData makes exactly one batched ListProgressByMediaItems
 // call regardless of batch size — not N+1 per-item fetches.
 func TestEnrichListItemsUserData_BatchesIntoSingleFetch(t *testing.T) {
+	t.Parallel()
 	provider := newProgressCountingStoreProvider()
 	svc := newDirectContentServiceForTest(nil, provider)
 
@@ -997,6 +1014,7 @@ func (s *seriesRollupCountingStore) SeriesEpisodeWatchCounts(_ context.Context, 
 // no episode-list materialization, no chunked per-episode progress queries —
 // and produces the same SeasonUserData shape as the chunked path.
 func TestEnrichSeriesUserDataUsesSQLRollup(t *testing.T) {
+	t.Parallel()
 	store := &seriesRollupCountingStore{
 		progressCountingStore: &progressCountingStore{},
 		counts: map[string]userstore.SeriesWatchCounts{
@@ -1041,6 +1059,7 @@ func TestEnrichSeriesUserDataUsesSQLRollup(t *testing.T) {
 // TestSeasonUserDataFromCountsMatchesEpisodeRollup pins the SQL-side counts
 // mapping to the in-memory EpisodeRollupUserData it replaces.
 func TestSeasonUserDataFromCountsMatchesEpisodeRollup(t *testing.T) {
+	t.Parallel()
 	episodes := []*models.Episode{
 		{ContentID: "ep-1"},
 		{ContentID: "ep-2"},

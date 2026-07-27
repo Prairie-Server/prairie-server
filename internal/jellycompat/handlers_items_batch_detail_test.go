@@ -103,6 +103,7 @@ func newEquivalenceContent(failBatch bool) *equivalencePageContent {
 // the details came from the batched GetItemDetailsByIDs path or the per-item
 // GetItemDetail fallback — and must carry the load-bearing MediaSources.
 func TestHandleBrowseItems_BatchDetailMatchesPerItem(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	query := itemsQuery{
 		needsDetailFields: true,

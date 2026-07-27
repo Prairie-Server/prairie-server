@@ -7,6 +7,7 @@ import (
 )
 
 func TestItemDetailSortNamePrefersSortTitle(t *testing.T) {
+	t.Parallel()
 	m := newMapper(NewResourceIDCodec(), &config.Config{})
 	dto := m.itemFromDetail(upstreamItemDetail{
 		ContentID:     "movie-1",
@@ -24,6 +25,7 @@ func TestItemDetailSortNamePrefersSortTitle(t *testing.T) {
 }
 
 func TestItemListSortNamePrefersSortTitle(t *testing.T) {
+	t.Parallel()
 	m := newMapper(NewResourceIDCodec(), &config.Config{})
 	dto := m.itemFromList(upstreamListItem{
 		ContentID: "movie-1",
@@ -37,6 +39,7 @@ func TestItemListSortNamePrefersSortTitle(t *testing.T) {
 }
 
 func TestSeriesListIncludesSeasonCount(t *testing.T) {
+	t.Parallel()
 	m := newMapper(NewResourceIDCodec(), &config.Config{})
 	seasonCount := 4
 	dto := m.itemFromList(upstreamListItem{
@@ -55,6 +58,7 @@ func TestSeriesListIncludesSeasonCount(t *testing.T) {
 }
 
 func TestSeriesDetailIncludesSeasonCount(t *testing.T) {
+	t.Parallel()
 	m := newMapper(NewResourceIDCodec(), &config.Config{})
 	seasonCount := 4
 	dto := m.itemFromDetail(upstreamItemDetail{
