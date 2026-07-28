@@ -27,8 +27,9 @@ import {
   useUpdateLiveTVGuideSource,
 } from "@/hooks/queries/useLiveTV";
 import type { SchedulesDirectLineupOption, XMLSyncLineupOption } from "@/api/types";
+import { LiveTVTranscodingTab } from "@/pages/livetv/LiveTVTranscodingTab";
 
-const LIVETV_TABS = ["tuners", "channels", "guide", "recordings"] as const;
+const LIVETV_TABS = ["tuners", "channels", "guide", "recordings", "transcoding"] as const;
 type LiveTVTab = (typeof LIVETV_TABS)[number];
 
 function normalizeTab(value: string | null): LiveTVTab {
@@ -898,6 +899,7 @@ export default function AdminLiveTV() {
           <TabsTrigger value="channels">Channels</TabsTrigger>
           <TabsTrigger value="guide">Guide sources</TabsTrigger>
           <TabsTrigger value="recordings">Recordings</TabsTrigger>
+          <TabsTrigger value="transcoding">Transcoding</TabsTrigger>
         </TabsList>
         <TabsContent value="tuners">
           <TunersTab />
@@ -910,6 +912,9 @@ export default function AdminLiveTV() {
         </TabsContent>
         <TabsContent value="recordings">
           <RecordingsTab />
+        </TabsContent>
+        <TabsContent value="transcoding">
+          <LiveTVTranscodingTab />
         </TabsContent>
       </Tabs>
     </div>
