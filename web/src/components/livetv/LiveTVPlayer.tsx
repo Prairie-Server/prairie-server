@@ -109,9 +109,15 @@ export function LiveTVPlayer({
       }
       const hls = new Hls({
         enableWorker: true,
-        lowLatencyMode: true,
+        // The live bridge emits standard HLS: 1s MPEG-TS segments, no
+        // #EXT-X-PART and no #EXT-X-SERVER-CONTROL:CAN-BLOCK-RELOAD. Low-latency
+        // mode plus a tight max-latency ceiling made hls.js chase a live edge
+        // that briefly outruns it at startup (the encoder bursts above realtime
+        // draining the tuner buffer), forcing an edge seek into an unbuffered
+        // gap → bufferStalledError → teardown after ~3 segments.
+        lowLatencyMode: false,
         liveSyncDurationCount: 3,
-        liveMaxLatencyDurationCount: 6,
+        backBufferLength: 30,
         manifestLoadPolicy: { default: retryingLoadPolicy },
         playlistLoadPolicy: { default: retryingLoadPolicy },
         fragLoadPolicy: { default: retryingLoadPolicy },
@@ -139,6 +145,12 @@ export function LiveTVPlayer({
       });
       hls.on(Hls.Events.ERROR, (_event, data) => {
         if (!data.fatal) return;
+        // Surface the real cause: the handler used to swallow details, which hid
+        // whether a stall was a network, media, or buffer problem.
+        console.warn("livetv hls fatal error", {
+          type: data.type,
+          details: data.details,
+        });
         const now = Date.now();
         if (now - lastRecoveryAtRef.current < 1500) return;
         lastRecoveryAtRef.current = now;
@@ -146,6 +158,21 @@ export function LiveTVPlayer({
         if (data.type === Hls.ErrorTypes.NETWORK_ERROR && networkRecoveryRef.current < 8) {
           networkRecoveryRef.current += 1;
           // Playlist often 404s for a beat while ffmpeg writes the first segment.
+          hls.startLoad();
+          return;
+        }
+        // A live encode can briefly outrun the player; a stall means the buffer
+        // drained, not that the media is undecodable. Jump back to the live edge
+        // and resume loading instead of the disruptive full-MSE reset that
+        // recoverMediaError() performs (which tore the session down on startup).
+        if (
+          data.details === Hls.ErrorDetails.BUFFER_STALLED_ERROR &&
+          networkRecoveryRef.current < 8
+        ) {
+          networkRecoveryRef.current += 1;
+          if (hls.liveSyncPosition != null) {
+            video.currentTime = hls.liveSyncPosition;
+          }
           hls.startLoad();
           return;
         }
