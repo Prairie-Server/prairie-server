@@ -219,10 +219,18 @@ func StartLiveHLS(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession, er
 
 	// Block until the playlist lists at least one segment. Returning earlier
 	// caused clients to GET index.m3u8 → 404 → hls.js manifestLoadError.
+	// Readiness is checked before the exit status so a run that finished
+	// writing playable segments as it exited is not reported as a failure.
 	deadline := time.Now().Add(20 * time.Second)
 	for time.Now().Before(deadline) {
+		if liveHLSPlaylistReady(playlist) {
+			return session, nil
+		}
 		select {
 		case <-session.done:
+			if liveHLSPlaylistReady(playlist) {
+				return session, nil
+			}
 			session.errMu.Lock()
 			err := session.err
 			session.errMu.Unlock()
@@ -232,9 +240,6 @@ func StartLiveHLS(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession, er
 			_ = session.Close()
 			return nil, err
 		default:
-		}
-		if liveHLSPlaylistReady(playlist) {
-			return session, nil
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
