@@ -165,3 +165,75 @@ func TestPrefersAVIF(t *testing.T) {
 		}
 	}
 }
+
+func TestVariantName(t *testing.T) {
+	tests := map[string]string{
+		"a/poster/w200.rev.webp":     "w200",
+		"a/poster/original.rev.avif": "original",
+		"a/poster/w300.webp":         "w300",
+		"a/poster/original.webp":     "original",
+		"":                           "",
+	}
+	for input, want := range tests {
+		if got := VariantName(input); got != want {
+			t.Errorf("VariantName(%q) = %q, want %q", input, got, want)
+		}
+	}
+}
+
+func TestWiderVariantKeys(t *testing.T) {
+	// Narrowest first: sending the original would defeat the ladder.
+	got := WiderVariantKeys("tmdb/movies/550/poster/w200.rev.webp")
+	want := []string{
+		"tmdb/movies/550/poster/w300.rev.webp",
+		"tmdb/movies/550/poster/w500.rev.webp",
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("got %v, want %v", got, want)
+		}
+	}
+}
+
+func TestWiderVariantKeysUsesImageTypeLadder(t *testing.T) {
+	// Backdrops have their own ladder (1920/1280/300).
+	got := WiderVariantKeys("tmdb/movies/550/backdrop/w300.rev.webp")
+	want := []string{
+		"tmdb/movies/550/backdrop/w1280.rev.webp",
+		"tmdb/movies/550/backdrop/w1920.rev.webp",
+	}
+	if len(got) != len(want) {
+		t.Fatalf("got %v, want %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("got %v, want %v", got, want)
+		}
+	}
+}
+
+func TestWiderVariantKeysEdgeCases(t *testing.T) {
+	// Top of the ladder, "original", unrecognized names and URLs have no wider rung.
+	for _, input := range []string{
+		"tmdb/movies/550/poster/w500.rev.webp",
+		"tmdb/movies/550/poster/original.rev.webp",
+		"tmdb/movies/550/poster/thumb.rev.webp",
+		"https://cdn.example.com/poster/w200.webp",
+		"w200.rev.webp",
+		"",
+	} {
+		if got := WiderVariantKeys(input); len(got) != 0 {
+			t.Errorf("WiderVariantKeys(%q) = %v, want none", input, got)
+		}
+	}
+}
+
+func TestWiderVariantKeysPreservesLegacyUnrevisionedKeys(t *testing.T) {
+	got := WiderVariantKeys("tmdb/movies/550/poster/w200.webp")
+	if len(got) != 2 || got[0] != "tmdb/movies/550/poster/w300.webp" {
+		t.Fatalf("got %v, want legacy keys without a revision segment", got)
+	}
+}

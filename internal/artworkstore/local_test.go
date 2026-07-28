@@ -212,3 +212,146 @@ func TestObjectMatchesHashesContent(t *testing.T) {
 		t.Fatalf("match=%v err=%v", ok, err)
 	}
 }
+
+// serveKey presigns key and serves it, returning the recorder.
+func serveKey(t *testing.T, store *LocalStore, key string) *httptest.ResponseRecorder {
+	t.Helper()
+	signed, err := store.PresignGetURL(context.Background(), store.Bucket(), key, time.Hour)
+	if err != nil {
+		t.Fatalf("PresignGetURL(%s): %v", key, err)
+	}
+	rec := httptest.NewRecorder()
+	store.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, signed, nil))
+	return rec
+}
+
+// A rung added to the ladder after artwork was cached does not exist for that
+// artwork until the backfill reaches it. Serving the next rung up keeps clients
+// working through that window instead of 404ing every image.
+func TestLocalStoreServesWiderRungWhenVariantMissing(t *testing.T) {
+	t.Parallel()
+	store, err := NewLocalStore(LocalConfig{Root: t.TempDir(), URLSecret: "s", URLTTL: time.Hour})
+	if err != nil {
+		t.Fatalf("NewLocalStore: %v", err)
+	}
+	ctx := context.Background()
+	dir := "tmdb/movies/550/poster/"
+	w300 := []byte("three-hundred")
+	if err := store.PutObject(ctx, store.Bucket(), dir+"w300.rev.webp", w300); err != nil {
+		t.Fatalf("PutObject: %v", err)
+	}
+
+	rec := serveKey(t, store, dir+"w200.rev.webp")
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200 (should fall back to w300)", rec.Code)
+	}
+	if body, _ := io.ReadAll(rec.Body); string(body) != string(w300) {
+		t.Fatalf("body = %q, want the w300 bytes", body)
+	}
+	// Content type follows the requested key; the substitute differs only in width.
+	if got := rec.Header().Get("Content-Type"); got != "image/webp" {
+		t.Fatalf("Content-Type = %q", got)
+	}
+	// Critically: not immutable. The real w200 lands at this same URL later, and a
+	// year-long entry would hide it.
+	if got := rec.Header().Get("Cache-Control"); strings.Contains(got, "immutable") {
+		t.Fatalf("Cache-Control = %q, must not be immutable for a substituted rung", got)
+	}
+	if got := rec.Header().Get("Cache-Control"); !strings.Contains(got, "max-age=300") {
+		t.Fatalf("Cache-Control = %q, want a short max-age", got)
+	}
+}
+
+func TestLocalStorePrefersNarrowestAvailableRung(t *testing.T) {
+	t.Parallel()
+	store, err := NewLocalStore(LocalConfig{Root: t.TempDir(), URLSecret: "s", URLTTL: time.Hour})
+	if err != nil {
+		t.Fatalf("NewLocalStore: %v", err)
+	}
+	ctx := context.Background()
+	dir := "tmdb/movies/550/poster/"
+	for key, body := range map[string]string{
+		"w300.rev.webp":     "three-hundred",
+		"w500.rev.webp":     "five-hundred",
+		"original.rev.webp": "original",
+	} {
+		if err := store.PutObject(ctx, store.Bucket(), dir+key, []byte(body)); err != nil {
+			t.Fatalf("PutObject(%s): %v", key, err)
+		}
+	}
+
+	// Sending the original would defeat the ladder; w300 is the nearest rung up.
+	rec := serveKey(t, store, dir+"w200.rev.webp")
+	if body, _ := io.ReadAll(rec.Body); string(body) != "three-hundred" {
+		t.Fatalf("body = %q, want the narrowest available rung (w300)", body)
+	}
+}
+
+func TestLocalStoreExactRungStaysImmutable(t *testing.T) {
+	t.Parallel()
+	store, err := NewLocalStore(LocalConfig{Root: t.TempDir(), URLSecret: "s", URLTTL: time.Hour})
+	if err != nil {
+		t.Fatalf("NewLocalStore: %v", err)
+	}
+	key := "tmdb/movies/550/poster/w200.rev.webp"
+	if err := store.PutObject(context.Background(), store.Bucket(), key, []byte("two-hundred")); err != nil {
+		t.Fatalf("PutObject: %v", err)
+	}
+	rec := serveKey(t, store, key)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d", rec.Code)
+	}
+	if got := rec.Header().Get("Cache-Control"); !strings.Contains(got, "immutable") {
+		t.Fatalf("Cache-Control = %q, an exact hit must stay content-addressed", got)
+	}
+}
+
+func TestLocalStoreStill404sWhenNoRungExists(t *testing.T) {
+	t.Parallel()
+	store, err := NewLocalStore(LocalConfig{Root: t.TempDir(), URLSecret: "s", URLTTL: time.Hour})
+	if err != nil {
+		t.Fatalf("NewLocalStore: %v", err)
+	}
+	// Nothing cached at all: absence is still absence.
+	rec := serveKey(t, store, "tmdb/movies/550/poster/w200.rev.webp")
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", rec.Code)
+	}
+}
+
+func TestLocalStoreOriginalDoesNotFallBack(t *testing.T) {
+	t.Parallel()
+	store, err := NewLocalStore(LocalConfig{Root: t.TempDir(), URLSecret: "s", URLTTL: time.Hour})
+	if err != nil {
+		t.Fatalf("NewLocalStore: %v", err)
+	}
+	dir := "tmdb/movies/550/poster/"
+	if err := store.PutObject(context.Background(), store.Bucket(), dir+"w500.rev.webp", []byte("x")); err != nil {
+		t.Fatalf("PutObject: %v", err)
+	}
+	// "original" is the top of the ladder; a request for it must not be answered
+	// with a downscaled rung.
+	rec := serveKey(t, store, dir+"original.rev.webp")
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404 for a missing original", rec.Code)
+	}
+}
+
+// A substituted rung must never cross format: a client that asked for AVIF
+// cannot decode WebP bytes served under an .avif URL.
+func TestLocalStoreFallbackKeepsFormat(t *testing.T) {
+	t.Parallel()
+	store, err := NewLocalStore(LocalConfig{Root: t.TempDir(), URLSecret: "s", URLTTL: time.Hour})
+	if err != nil {
+		t.Fatalf("NewLocalStore: %v", err)
+	}
+	dir := "tmdb/movies/550/poster/"
+	// Only WebP exists at the wider rung; an AVIF request must not borrow it.
+	if err := store.PutObject(context.Background(), store.Bucket(), dir+"w300.rev.webp", []byte("webp")); err != nil {
+		t.Fatalf("PutObject: %v", err)
+	}
+	rec := serveKey(t, store, dir+"w200.rev.avif")
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404 rather than WebP bytes under an .avif URL", rec.Code)
+	}
+}
