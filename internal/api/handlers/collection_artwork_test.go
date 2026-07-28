@@ -145,6 +145,7 @@ func TestStoreBundledCollectionPosterIfS3Configured_UploadsTemplatePoster(t *tes
 		"/public-assets/collection-images/collection-1/poster/original.webp": true,
 		"/public-assets/collection-images/collection-1/poster/w500.webp":     true,
 		"/public-assets/collection-images/collection-1/poster/w300.webp":     true,
+		"/public-assets/collection-images/collection-1/poster/w200.webp":     true,
 	}
 	puts := recorder.putPaths()
 	if len(puts) != len(want) {

@@ -75,6 +75,9 @@ func TestFormatSiblingAndObjectKeysIncludeAVIFAndPNG(t *testing.T) {
 		"tmdb/movies/550/poster/w300.abc123.webp":     true,
 		"tmdb/movies/550/poster/w300.abc123.avif":     true,
 		"tmdb/movies/550/poster/w300.abc123.png":      true,
+		"tmdb/movies/550/poster/w200.abc123.webp":     true,
+		"tmdb/movies/550/poster/w200.abc123.avif":     true,
+		"tmdb/movies/550/poster/w200.abc123.png":      true,
 	}
 	if len(keys) != len(want) {
 		t.Fatalf("ObjectKeys len = %d, want %d (%v)", len(keys), len(want), keys)

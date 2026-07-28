@@ -134,7 +134,9 @@ func uploadCollectionImageVariants(
 	var widths []int
 	switch imageType {
 	case imageTypePoster:
-		widths = []int{500, 300}
+		// Keep the poster rungs in step with artworkkey.VariantWidths("poster")
+		// so collection posters serve the same w200 TV rung as item posters.
+		widths = []int{500, 300, 200}
 	case "backdrop":
 		widths = []int{1280, 300}
 	default:

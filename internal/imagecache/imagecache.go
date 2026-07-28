@@ -436,9 +436,15 @@ func (c *Cacher) scheduleAVIFBackfill(ctx context.Context, data []byte, widths [
 	}()
 }
 
-// EnsureAVIFSiblings generates and uploads AVIF siblings for an already-cached
-// WebP original. Used by the durable backfill processor when source bytes are
-// no longer in memory (restart recovery / reconcile).
+// EnsureAVIFSiblings ensures every cached width variant of an already-cached
+// WebP original exists — both the WebP rung and its AVIF sibling — regenerating
+// from the stored original and uploading only what is missing. Used by the
+// durable backfill processor when source bytes are no longer in memory (restart
+// recovery / reconcile). It ensures the full ladder rather than AVIF alone so
+// that adding a rung to artworkkey.VariantWidths (e.g. the w200 TV rung)
+// backfills the missing WebP variant too; the AVIF-centric name is retained
+// because it satisfies the durable queue's existing AVIFSiblingEnsuer interface.
+// The original itself is never re-uploaded (it is immutable and already stored).
 func (c *Cacher) EnsureAVIFSiblings(ctx context.Context, originalPath, imageType string) error {
 	if c == nil || c.s3 == nil {
 		return fmt.Errorf("imagecache: cacher not configured")
@@ -459,15 +465,22 @@ func (c *Cacher) EnsureAVIFSiblings(ctx context.Context, originalPath, imageType
 		return fmt.Errorf("imagecache: get WebP original: %w", err)
 	}
 	widths := artworkkey.VariantWidths(imageType)
-	avifResult, err := imageutil.GenerateAVIFSiblings(data, widths)
+	// GenerateAVIFSiblings yields WebP + AVIF for each display width (skipping the
+	// costly full-size original AVIF); uploadVariants then writes both formats.
+	result, err := imageutil.GenerateAVIFSiblings(data, widths)
 	if err != nil {
-		return fmt.Errorf("imagecache: generate AVIF siblings: %w", err)
+		return fmt.Errorf("imagecache: generate variant ladder: %w", err)
 	}
+	// Width variants only: the original stays as stored, and uploadVariants skips
+	// any rung that already matches, so only newly-added rungs are written.
 	paths := make(map[string]string, len(artworkkey.VariantNames(imageType)))
 	for _, name := range artworkkey.VariantNames(imageType) {
+		if name == artworkkey.OriginalVariant {
+			continue
+		}
 		paths[name] = artworkkey.Variant(originalPath, name)
 	}
-	if _, err := c.uploadAVIFSiblings(ctx, c.s3.Bucket(), avifResult, paths); err != nil {
+	if _, err := c.uploadVariants(ctx, c.s3.Bucket(), result, paths); err != nil {
 		return err
 	}
 	return nil
