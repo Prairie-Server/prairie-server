@@ -280,11 +280,31 @@ export function useLiveTVGuide(params: LiveTVGuideParams = {}, enabled = true) {
   });
 }
 
+/**
+ * Codecs this browser can decode, so the server knows whether it can hand us
+ * the broadcast streams untouched. OTA channels are MPEG-2 video with AC-3
+ * audio, neither of which Media Source Extensions decode — without this the
+ * bridge copies them and playback is a black screen with no sound.
+ */
+export type LiveTVClientCapabilities = {
+  codecs_video: string[];
+  codecs_audio: string[];
+  max_resolution?: string;
+};
+
 export function useStartLiveTVSession() {
   return useMutation({
-    mutationFn: (channelId: string) =>
+    mutationFn: ({
+      channelId,
+      capabilities,
+    }: {
+      channelId: string;
+      capabilities?: LiveTVClientCapabilities;
+    }) =>
       api<LiveTVSessionStartResponse>(`/livetv/channels/${encodeURIComponent(channelId)}/session`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(capabilities ?? {}),
       }),
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to start Live TV session");

@@ -73,7 +73,8 @@ var adminSettingDefaults = map[string]string{
 	"enable_transcode_throttle":                "false",
 	"transcode_throttle_seconds":               "300",
 
-	"livetv.dvr_path": DefaultLiveTVDVRPath,
+	"livetv.dvr_path":       DefaultLiveTVDVRPath,
+	"livetv.max_transcodes": "3",
 
 	"audiobookshelf_compat.enabled":           "true",
 	"jellyfin_compat.enabled":                 "true",

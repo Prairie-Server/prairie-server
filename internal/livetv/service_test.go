@@ -384,7 +384,7 @@ func TestStartAndReleaseChannelSession(t *testing.T) {
 	}
 	svc := NewServiceWithStore(store)
 
-	session, err := svc.StartChannelSession(context.Background(), "ch1", 7, "profile-1")
+	session, err := svc.StartChannelSession(context.Background(), "ch1", 7, "profile-1", ClientCapabilities{})
 	if err != nil {
 		t.Fatalf("StartChannelSession: %v", err)
 	}
@@ -398,7 +398,7 @@ func TestStartAndReleaseChannelSession(t *testing.T) {
 		t.Fatalf("expected mpegts transport, got %q", session.Transport)
 	}
 
-	_, err = svc.StartChannelSession(context.Background(), "ch1", 7, "profile-1")
+	_, err = svc.StartChannelSession(context.Background(), "ch1", 7, "profile-1", ClientCapabilities{})
 	if !errors.Is(err, ErrNoTuner) {
 		t.Fatalf("second session error = %v, want ErrNoTuner", err)
 	}
@@ -408,7 +408,7 @@ func TestStartAndReleaseChannelSession(t *testing.T) {
 		t.Fatalf("ReleaseSession = %+v err=%v", released, err)
 	}
 
-	session2, err := svc.StartChannelSession(context.Background(), "ch1", 7, "profile-1")
+	session2, err := svc.StartChannelSession(context.Background(), "ch1", 7, "profile-1", ClientCapabilities{})
 	if err != nil {
 		t.Fatalf("StartChannelSession after release: %v", err)
 	}
@@ -416,7 +416,7 @@ func TestStartAndReleaseChannelSession(t *testing.T) {
 		t.Fatalf("expected new session id")
 	}
 
-	_, err = svc.StartChannelSession(context.Background(), "missing", 1, "p")
+	_, err = svc.StartChannelSession(context.Background(), "missing", 1, "p", ClientCapabilities{})
 	if !errors.Is(err, ErrNotFound) {
 		t.Fatalf("missing channel = %v", err)
 	}
@@ -456,7 +456,7 @@ func TestStartChannelSessionWithPlaybackBridge(t *testing.T) {
 	svc := NewServiceWithStore(store)
 	svc.SetPlaybackBridge(stubPlaybackBridge{})
 
-	session, err := svc.StartChannelSession(context.Background(), "ch1", 3, "prof")
+	session, err := svc.StartChannelSession(context.Background(), "ch1", 3, "prof", ClientCapabilities{})
 	if err != nil {
 		t.Fatalf("StartChannelSession: %v", err)
 	}
@@ -476,15 +476,15 @@ func TestStartChannelSessionEdgePaths(t *testing.T) {
 	store.channels["bridge-fail"] = Channel{ID: "bridge-fail", TunerID: "t1", Enabled: true, StreamURL: "http://hdhr/auto/v3"}
 
 	svc := NewServiceWithStore(store)
-	if _, err := svc.StartChannelSession(context.Background(), "disabled", 1, "p"); !errors.Is(err, ErrNotFound) {
+	if _, err := svc.StartChannelSession(context.Background(), "disabled", 1, "p", ClientCapabilities{}); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("disabled channel = %v", err)
 	}
-	if _, err := svc.StartChannelSession(context.Background(), "missing-tuner", 1, "p"); !errors.Is(err, ErrNotFound) {
+	if _, err := svc.StartChannelSession(context.Background(), "missing-tuner", 1, "p", ClientCapabilities{}); !errors.Is(err, ErrNotFound) {
 		t.Fatalf("missing tuner = %v", err)
 	}
 
 	svc.SetPlaybackBridge(errorPlaybackBridge{})
-	if _, err := svc.StartChannelSession(context.Background(), "bridge-fail", 1, "p"); err == nil || !strings.Contains(err.Error(), "start playback bridge") {
+	if _, err := svc.StartChannelSession(context.Background(), "bridge-fail", 1, "p", ClientCapabilities{}); err == nil || !strings.Contains(err.Error(), "start playback bridge") {
 		t.Fatalf("bridge failure = %v", err)
 	}
 
@@ -492,7 +492,7 @@ func TestStartChannelSessionEdgePaths(t *testing.T) {
 	retryStore.tuners["t1"] = Tuner{ID: "t1", Type: TunerTypeHDHomeRun, DeviceID: "d1", TunerCount: 1, Status: "ready"}
 	retryStore.channels["ch1"] = Channel{ID: "ch1", TunerID: "t1", Enabled: true, StreamURL: "http://hdhr/auto/v4"}
 	svc = NewServiceWithStore(retryStore)
-	session, err := svc.StartChannelSession(context.Background(), "ch1", 1, "p")
+	session, err := svc.StartChannelSession(context.Background(), "ch1", 1, "p", ClientCapabilities{})
 	if err != nil {
 		t.Fatalf("retry after conflict: %v", err)
 	}
@@ -893,7 +893,7 @@ func TestServiceStoreErrorBranches(t *testing.T) {
 	activeErr.tuners["t1"] = Tuner{ID: "t1", TunerCount: 1}
 	activeErr.channels["ch1"] = Channel{ID: "ch1", TunerID: "t1", Enabled: true, StreamURL: "http://192.168.1.50/auto/v1"}
 	svc = NewServiceWithStore(activeErr)
-	if _, err := svc.StartChannelSession(context.Background(), "ch1", 1, "p"); !errors.Is(err, errStoreBoom) {
+	if _, err := svc.StartChannelSession(context.Background(), "ch1", 1, "p", ClientCapabilities{}); !errors.Is(err, errStoreBoom) {
 		t.Fatalf("ActiveSessionTunerIndices error = %v", err)
 	}
 
@@ -901,7 +901,7 @@ func TestServiceStoreErrorBranches(t *testing.T) {
 	createErr.tuners["t1"] = Tuner{ID: "t1", TunerCount: 1}
 	createErr.channels["ch1"] = Channel{ID: "ch1", TunerID: "t1", Enabled: true, StreamURL: "http://192.168.1.50/auto/v1"}
 	svc = NewServiceWithStore(createErr)
-	if _, err := svc.StartChannelSession(context.Background(), "ch1", 1, "p"); !errors.Is(err, errStoreBoom) {
+	if _, err := svc.StartChannelSession(context.Background(), "ch1", 1, "p", ClientCapabilities{}); !errors.Is(err, errStoreBoom) {
 		t.Fatalf("CreateSession error = %v", err)
 	}
 
@@ -909,7 +909,7 @@ func TestServiceStoreErrorBranches(t *testing.T) {
 	conflictStore.tuners["t1"] = Tuner{ID: "t1", TunerCount: 1}
 	conflictStore.channels["ch1"] = Channel{ID: "ch1", TunerID: "t1", Enabled: true, StreamURL: "http://192.168.1.50/auto/v1"}
 	svc = NewServiceWithStore(conflictStore)
-	if _, err := svc.StartChannelSession(context.Background(), "ch1", 1, "p"); !errors.Is(err, ErrNoTuner) {
+	if _, err := svc.StartChannelSession(context.Background(), "ch1", 1, "p", ClientCapabilities{}); !errors.Is(err, ErrNoTuner) {
 		t.Fatalf("persistent conflict = %v", err)
 	}
 
@@ -929,13 +929,13 @@ func TestServiceStoreErrorBranches(t *testing.T) {
 
 type stubPlaybackBridge struct{}
 
-func (stubPlaybackBridge) StartLiveStream(context.Context, string, string, int, string) (string, string, error) {
+func (stubPlaybackBridge) StartLiveStream(context.Context, LiveStreamRequest) (string, string, error) {
 	return "pb-1", "http://play/hls.m3u8", nil
 }
 
 type errorPlaybackBridge struct{}
 
-func (errorPlaybackBridge) StartLiveStream(context.Context, string, string, int, string) (string, string, error) {
+func (errorPlaybackBridge) StartLiveStream(context.Context, LiveStreamRequest) (string, string, error) {
 	return "", "", errors.New("bridge boom")
 }
 

@@ -363,6 +363,11 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 	cfg.Playback.TranscodeEnabled = transcodeEnabled
 
 	cfg.LiveTV.DVRPath = stringOr(m, "livetv.dvr_path", DefaultLiveTVDVRPath)
+	liveTVMaxTranscodes, err := intOr(m, "livetv.max_transcodes", DefaultLiveTVMaxTranscodes)
+	if err != nil {
+		return nil, err
+	}
+	cfg.LiveTV.MaxTranscodes = liveTVMaxTranscodes
 
 	// Redis
 	cfg.Redis.URL = stringOr(m, "redis.url", "")

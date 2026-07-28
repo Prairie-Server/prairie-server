@@ -29,16 +29,114 @@ type LiveHLSSession struct {
 	err    error
 }
 
-// LiveHLSOpts configures a live HLS remux session.
+// LiveHLSOpts configures a live HLS session. The default is a straight remux;
+// setting VideoCodec or AudioCodec to a target codec re-encodes that stream for
+// clients that cannot decode the broadcast format.
 type LiveHLSOpts struct {
 	ID         string
 	InputURL   string
 	OutputDir  string
 	FFmpegPath string
-	// SegmentSeconds is the target HLS segment duration (default 2).
+	// SegmentSeconds is the target HLS segment duration (default 1).
 	SegmentSeconds int
 	// ListSize is the sliding window size (default 6).
 	ListSize int
+	// VideoCodec is "copy" (default) or an encode target such as "h264".
+	VideoCodec string
+	// AudioCodec is "copy" (default) or an encode target such as "aac".
+	AudioCodec string
+	// AudioChannels caps re-encoded audio; 0 keeps the stereo downmix.
+	AudioChannels int
+	// TargetResolution optionally scales an encoded stream down ("720p").
+	TargetResolution string
+	// SourceVideoCodec / SourceAudioCodec describe the broadcast streams so the
+	// shared encoder helpers can apply the same source-specific rules as VOD.
+	SourceVideoCodec string
+	SourceAudioCodec string
+	// HWAccel mirrors playback.hw_accel ("auto", "nvenc", "qsv", "vaapi",
+	// "none"); "auto" probes the host exactly like the VOD transcode path.
+	HWAccel string
+	// HWDevice optionally pins the render device used for hardware encoding.
+	HWDevice string
+}
+
+func (o LiveHLSOpts) transcodesVideo() bool {
+	return o.VideoCodec != "" && !strings.EqualFold(o.VideoCodec, "copy")
+}
+
+func (o LiveHLSOpts) transcodesAudio() bool {
+	return o.AudioCodec != "" && !strings.EqualFold(o.AudioCodec, "copy")
+}
+
+// buildLiveHLSArgs builds the ffmpeg command line for a live session. Copy-only
+// sessions keep the low-latency remux flags; encoding sessions reuse the VOD
+// encoder/filter builders so live and on-demand transcodes stay on one set of
+// hardware and quality rules.
+func buildLiveHLSArgs(opts LiveHLSOpts, playlist, segPattern string, segmentSeconds, listSize int) []string {
+	encodeVideo := opts.transcodesVideo()
+	encodeAudio := opts.transcodesAudio()
+
+	// The VOD builders read their inputs from TranscodeOpts; borrowing the type
+	// keeps encoder selection, presets, and downmix rules in one place.
+	shared := TranscodeOpts{
+		TargetCodecVideo:    opts.VideoCodec,
+		TargetCodecAudio:    opts.AudioCodec,
+		TargetAudioChannels: opts.AudioChannels,
+		TargetResolution:    opts.TargetResolution,
+		SourceVideoCodec:    opts.SourceVideoCodec,
+		SourceAudioCodec:    opts.SourceAudioCodec,
+		SegmentDuration:     segmentSeconds,
+		SubtitleTrackIndex:  -1,
+		FFmpegPath:          opts.FFmpegPath,
+		HWAccel:             opts.HWAccel,
+		HWDevice:            opts.HWDevice,
+		// Live has no pre-roll to spend on encoder lookahead.
+		FastStart: true,
+	}
+	if !encodeVideo {
+		shared.TargetCodecVideo = "copy"
+	}
+	if !encodeAudio {
+		shared.TargetCodecAudio = "copy"
+	}
+	shared.HWAccel = resolveEffectiveTranscodeHWAccel(shared)
+
+	args := []string{"-hide_banner", "-loglevel", "error"}
+	if encodeVideo {
+		args = appendHWAccelArgs(args, shared)
+	}
+	args = append(args,
+		"-fflags", "+genpts+nobuffer",
+		"-flags", "low_delay",
+		"-i", opts.InputURL,
+		"-map", "0:v:0",
+		"-map", "0:a:0?",
+	)
+
+	if encodeVideo {
+		args = appendVideoArgs(args, shared)
+	} else {
+		args = append(args, "-c:v", "copy")
+	}
+	if encodeAudio {
+		args = appendAudioArgs(args, shared)
+	} else {
+		args = append(args, "-c:a", "copy")
+	}
+	if encodeVideo {
+		args = appendVideoFilterArgs(args, shared)
+		args = appendSegmentBoundaryArgs(args, shared)
+	}
+
+	return append(args,
+		"-f", "hls",
+		"-hls_time", fmt.Sprintf("%d", segmentSeconds),
+		"-hls_list_size", fmt.Sprintf("%d", listSize),
+		"-hls_flags", "delete_segments+omit_endlist+independent_segments+temp_file",
+		"-hls_segment_type", "mpegts",
+		"-hls_segment_filename", segPattern,
+		playlist,
+	)
 }
 
 // StartLiveHLS launches ffmpeg to remux InputURL into a live HLS playlist.
@@ -73,22 +171,7 @@ func StartLiveHLS(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession, er
 	playlist := filepath.Join(opts.OutputDir, "index.m3u8")
 	segPattern := filepath.Join(opts.OutputDir, "seg_%05d.ts")
 
-	args := []string{
-		"-hide_banner", "-loglevel", "error",
-		"-fflags", "+genpts+nobuffer",
-		"-flags", "low_delay",
-		"-i", opts.InputURL,
-		"-map", "0:v:0",
-		"-map", "0:a:0?",
-		"-c", "copy",
-		"-f", "hls",
-		"-hls_time", fmt.Sprintf("%d", seg),
-		"-hls_list_size", fmt.Sprintf("%d", listSize),
-		"-hls_flags", "delete_segments+omit_endlist+independent_segments+temp_file",
-		"-hls_segment_type", "mpegts",
-		"-hls_segment_filename", segPattern,
-		playlist,
-	}
+	args := buildLiveHLSArgs(opts, playlist, segPattern, seg, listSize)
 
 	cmd := exec.CommandContext(ctx, bin, args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}

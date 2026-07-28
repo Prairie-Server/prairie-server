@@ -15,6 +15,7 @@ import {
 import { releaseLiveTVSessionOnUnload } from "@/lib/liveTVWatch";
 import { channelLabel, pickNowNext } from "@/lib/liveTVGuide";
 import { CircleButton } from "@/player/components/CircleButton";
+import { useCodecDetection } from "@/player/hooks/useCodecDetection";
 
 /**
  * Fullscreen Live TV watch route — same shell as `/watch/:id` (fixed overlay,
@@ -58,6 +59,7 @@ export default function LiveWatchRoute() {
 
   const startSession = useStartLiveTVSession();
   const releaseSession = useReleaseLiveTVSession();
+  const { capabilities } = useCodecDetection();
   const sessionIdRef = useRef<string | null>(null);
   const releasedRef = useRef(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -103,7 +105,16 @@ export default function LiveWatchRoute() {
 
     void (async () => {
       try {
-        const session = await startSession.mutateAsync(channelId);
+        const session = await startSession.mutateAsync({
+          channelId,
+          // Browsers cannot decode the MPEG-2 / AC-3 an OTA tuner emits; the
+          // server re-encodes whatever is missing from this list.
+          capabilities: {
+            codecs_video: capabilities.codecs_video,
+            codecs_audio: capabilities.codecs_audio,
+            max_resolution: capabilities.max_resolution,
+          },
+        });
         if (cancelled) {
           await releaseSession.mutateAsync(session.session_id).catch(() => undefined);
           return;

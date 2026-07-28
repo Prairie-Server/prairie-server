@@ -65,7 +65,7 @@ func TestNewServiceNilDBAndRequireStoreGuards(t *testing.T) {
 	if _, err := svc.GetProgram(ctx, "x"); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("GetProgram: %v", err)
 	}
-	if _, err := svc.StartChannelSession(ctx, "x", 1, "p"); !errors.Is(err, ErrNotConfigured) {
+	if _, err := svc.StartChannelSession(ctx, "x", 1, "p", ClientCapabilities{}); !errors.Is(err, ErrNotConfigured) {
 		t.Fatalf("StartChannelSession: %v", err)
 	}
 	if _, err := svc.ReleaseSession(ctx, "x", 1, "p", true); !errors.Is(err, ErrNotConfigured) {

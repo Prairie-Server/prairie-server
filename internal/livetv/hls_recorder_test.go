@@ -49,7 +49,7 @@ func TestHLSBridgeStartStopAndAuthorize(t *testing.T) {
 	root := t.TempDir()
 	ffmpeg := writeFakeFFmpeg(t, root, fakeFFmpegStayAlive)
 
-	bridge := NewHLSBridge(root, ffmpeg)
+	bridge := NewHLSBridge(HLSBridgeOptions{Root: root, FFmpegPath: ffmpeg})
 	if bridge == nil {
 		t.Fatal("expected bridge")
 	}
@@ -58,7 +58,7 @@ func TestHLSBridgeStartStopAndAuthorize(t *testing.T) {
 	}
 
 	ctx := context.Background()
-	id, url, err := bridge.StartLiveStream(ctx, "ch1", "http://127.0.0.1/auto/v5.1", 7, "prof")
+	id, url, err := bridge.StartLiveStream(ctx, LiveStreamRequest{ChannelID: "ch1", SourceURL: "http://127.0.0.1/auto/v5.1", UserID: 7, ProfileID: "prof"})
 	if err != nil {
 		t.Fatalf("StartLiveStream: %v", err)
 	}
@@ -101,10 +101,10 @@ func TestHLSBridgeStartStopAndAuthorize(t *testing.T) {
 	}
 	_ = bridge.StopLiveStream(ctx, "")
 	_ = bridge.StopLiveStream(ctx, "already-gone")
-	_ = NewHLSBridge("", "")
+	_ = NewHLSBridge(HLSBridgeOptions{})
 
 	var nilBridge *HLSBridge
-	if _, _, err := nilBridge.StartLiveStream(ctx, "c", "http://127.0.0.1/x", 1, "p"); err == nil {
+	if _, _, err := nilBridge.StartLiveStream(ctx, LiveStreamRequest{ChannelID: "c", SourceURL: "http://127.0.0.1/x", UserID: 1, ProfileID: "p"}); err == nil {
 		t.Fatal("expected nil bridge start error")
 	}
 	_ = nilBridge.StopLiveStream(ctx, "x")
@@ -117,8 +117,8 @@ func TestHLSBridgeStartStopAndAuthorize(t *testing.T) {
 }
 
 func TestHLSBridgeRejectsBadURL(t *testing.T) {
-	bridge := NewHLSBridge(t.TempDir(), "ffmpeg")
-	_, _, err := bridge.StartLiveStream(context.Background(), "ch", "file:///etc/passwd", 1, "p")
+	bridge := NewHLSBridge(HLSBridgeOptions{Root: t.TempDir(), FFmpegPath: "ffmpeg"})
+	_, _, err := bridge.StartLiveStream(context.Background(), LiveStreamRequest{ChannelID: "ch", SourceURL: "file:///etc/passwd", UserID: 1, ProfileID: "p"})
 	if err == nil {
 		t.Fatal("expected reject")
 	}
@@ -131,8 +131,8 @@ func TestHLSBridgeStartLiveHLSFailure(t *testing.T) {
 echo boom >&2
 exit 1
 `)
-	bridge := NewHLSBridge(root, ffmpeg)
-	_, _, err := bridge.StartLiveStream(context.Background(), "ch", "http://127.0.0.1/auto/v1", 1, "p")
+	bridge := NewHLSBridge(HLSBridgeOptions{Root: root, FFmpegPath: ffmpeg})
+	_, _, err := bridge.StartLiveStream(context.Background(), LiveStreamRequest{ChannelID: "ch", SourceURL: "http://127.0.0.1/auto/v1", UserID: 1, ProfileID: "p"})
 	if err == nil {
 		t.Fatal("expected start failure")
 	}
@@ -391,7 +391,7 @@ func TestReleaseSessionStopsBridge(t *testing.T) {
 	if svc.PlaybackBridge() == nil {
 		t.Fatal("expected bridge")
 	}
-	session, err := svc.StartChannelSession(context.Background(), "ch1", 1, "p")
+	session, err := svc.StartChannelSession(context.Background(), "ch1", 1, "p", ClientCapabilities{})
 	if err != nil {
 		t.Fatalf("StartChannelSession: %v", err)
 	}
@@ -412,7 +412,7 @@ type stopRecordingBridge struct {
 	onStop   func(string)
 }
 
-func (b stopRecordingBridge) StartLiveStream(context.Context, string, string, int, string) (string, string, error) {
+func (b stopRecordingBridge) StartLiveStream(context.Context, LiveStreamRequest) (string, string, error) {
 	return b.startID, b.startURL, nil
 }
 
