@@ -15,6 +15,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/deviceclass"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/overlays"
 	"github.com/prairie-server/prairie-server/internal/playback"
@@ -3524,7 +3525,7 @@ func (s *DetailService) PresignImageURLsWithExpiry(ctx context.Context, paths []
 		if !strings.HasPrefix(path, "http://") &&
 			!strings.HasPrefix(path, "https://") &&
 			!strings.Contains(path, "://") {
-			normalized = cachedImageVariantPath(path, imageType, size)
+			normalized = cachedImageVariantPath(ctx, path, imageType, size)
 		}
 
 		if _, ok := originalsByNormalized[normalized]; !ok {
@@ -3633,7 +3634,7 @@ func (s *DetailService) presignArtworkPath(ctx context.Context, path, imageType 
 	if !strings.HasPrefix(path, "http://") &&
 		!strings.HasPrefix(path, "https://") &&
 		!strings.Contains(path, "://") {
-		resolvedPath = cachedImageVariantPath(path, imageType, "")
+		resolvedPath = cachedImageVariantPath(ctx, path, imageType, "")
 	}
 	paths := []string{resolvedPath}
 	avif, png := artworkkey.ObjectFormatSiblings(resolvedPath)
@@ -3672,7 +3673,7 @@ func (s *DetailService) presignPrimaryArtwork(ctx context.Context, posterPath, b
 		if !strings.HasPrefix(rawPath, "http://") &&
 			!strings.HasPrefix(rawPath, "https://") &&
 			!strings.Contains(rawPath, "://") {
-			resolvedPath = cachedImageVariantPath(rawPath, imageType, "")
+			resolvedPath = cachedImageVariantPath(ctx, rawPath, imageType, "")
 		}
 		pendingPaths = append(pendingPaths, pending{kind: kind, path: resolvedPath, imageType: imageType})
 		if _, ok := seen[resolvedPath]; !ok {
@@ -3740,14 +3741,17 @@ func (s *DetailService) PresignImageURLWithExpiry(ctx context.Context, path, ima
 		return ResolvedImageURL{URL: path}
 	}
 
-	return s.PresignURLWithExpiry(ctx, cachedImageVariantPath(path, imageType, size), sizeToVariant(size))
+	return s.PresignURLWithExpiry(ctx, cachedImageVariantPath(ctx, path, imageType, size), sizeToVariant(size))
 }
 
-func cachedImageVariantPath(path, imageType, size string) string {
+// cachedImageVariantPath rewrites a cached original key to the variant this
+// request should receive. ctx carries the device class; see
+// cachedImageVariantKeyFor.
+func cachedImageVariantPath(ctx context.Context, path, imageType, size string) string {
 	if strings.Contains(path, "://") {
 		return path
 	}
-	variant := cachedImageVariantKey(imageType, size)
+	variant := cachedImageVariantKeyFor(ctx, imageType, size)
 	if variant == "" {
 		return path
 	}
@@ -3789,6 +3793,40 @@ func BackdropVariantPath(path, desiredVariant string) string {
 		return path
 	}
 	return strings.Replace(path, "/original.", "/"+variant+".", 1)
+}
+
+// cachedImageVariantKeyFor picks the variant for one request, narrowing the
+// default for television clients.
+//
+// A TV renders artwork far smaller than its panel suggests. TV WebViews keep a
+// ~1920 CSS viewport even on 4K/8K and let the compositor upscale, so a poster
+// card lands at roughly 155–240 rendered px depending on the panel's chrome
+// scale — against which the desktop w500 rung is ~10x the pixels displayed and
+// ~6x the bytes (measured: 138 KB vs 24 KB for one poster). Decoded surface is
+// the cost that actually hurts there: it is what exhausts the memory budget and
+// triggers the GC pauses that read as the remote going unresponsive.
+//
+// An explicit `size` from the caller always wins — it encodes a known display
+// context ("small" for a rail thumbnail, "original" for a download) that is more
+// specific than anything inferred from the device.
+//
+// Sizes deliberately not narrowed for TV:
+//   - still: episode cards render ~358 px on UHD, which w300 only just covers
+//     and w200 would upscale. Stays w500.
+//   - logo: w500 is the only rung generated.
+func cachedImageVariantKeyFor(ctx context.Context, imageType, size string) string {
+	if size == "" && deviceclass.IsTV(ctx) {
+		switch imageType {
+		case "poster", "profile":
+			return "w200"
+		case "backdrop":
+			// The hero sits behind a shade layer and is upscaled by the panel
+			// anyway: 1280x720 costs ~3.7 MB of decoded surface where 1920x1080
+			// costs ~8 MB.
+			return "w1280"
+		}
+	}
+	return cachedImageVariantKey(imageType, size)
 }
 
 func cachedImageVariantKey(imageType, size string) string {
