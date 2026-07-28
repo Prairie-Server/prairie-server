@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"strings"
 
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/imageutil"
 	"github.com/prairie-server/prairie-server/internal/s3client"
 )
@@ -134,10 +135,11 @@ func uploadCollectionImageVariants(
 	var widths []int
 	switch imageType {
 	case imageTypePoster:
-		// Keep the poster rungs in step with artworkkey.VariantWidths("poster")
-		// so collection posters serve the same w200 TV rung as item posters.
-		widths = []int{500, 300, 200}
+		// Reuse the shared ladder so collection posters never drift from item
+		// artwork (includes the w200 TV rung).
+		widths = artworkkey.VariantWidths(imageTypePoster)
 	case "backdrop":
+		// Collages cap at 1280 (no 1920 rung), so this stays bespoke.
 		widths = []int{1280, 300}
 	default:
 		return "", "", fmt.Errorf("invalid image type: %s", imageType)
