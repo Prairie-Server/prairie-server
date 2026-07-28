@@ -6,7 +6,7 @@
 
 **Architecture:** Add one pure resolution-normalization helper in the playback API handler and invoke it exactly once after alternate-file selection. Mutate the request's target resolution at that boundary so remote transport, local transport, persistence, activity reporting, and reconstruction consume the same normalized recipe.
 
-**Tech Stack:** Go, `net/http` handler tests, Silo playback session and transcode-node test doubles.
+**Tech Stack:** Go, `net/http` handler tests, Prairie playback session and transcode-node test doubles.
 
 ## Global Constraints
 

@@ -1,22 +1,25 @@
 /**
- * Deep links into the native Silo apps via the silo:// custom scheme.
+ * Deep links into the native Prairie apps via the prairie:// custom scheme.
  *
- * Silo is self-hosted, so the store apps cannot pre-verify every server's
+ * Prairie is self-hosted, so the store apps cannot pre-verify every server's
  * domain for App Links / Universal Links; a custom scheme is the only
- * universal way in. The Android app already registers
- * `silo://invite?server=<url>&token=<token>` (see silo-android
- * InviteClaimRouteParser.kt and its navDeepLink) — this module emits that
- * exact contract, with `server` carrying the full origin so non-443 ports
- * and plain-http LAN servers need no extra convention.
+ * universal way in. `server` carries the full origin so non-443 ports and
+ * plain-http LAN servers need no extra convention.
  *
- * Custom-scheme URLs don't linkify in email or SMS and error when the app
- * is missing, so they are never sent anywhere: they only back an explicit
- * in-page button, rendered on platforms with a native app.
+ * Custom-scheme URLs don't linkify in email or SMS and error when the app is
+ * missing, so they are never sent anywhere: they only back an explicit
+ * in-page button.
+ *
+ * NOTE: no caller emits the invite link yet. prairie-android registers
+ * prairie:// for the device, item, play and downloads hosts only — there is no
+ * invite handling in that app, so a button would fire a link it cannot answer.
+ * See the comment in pages/InviteClaim.tsx. The contract is kept here, tested,
+ * and ready for the day the app claims the host.
  */
 
 export type MobilePlatform = "android" | "ios";
 
-/** Detects a platform with a native Silo app from the user agent. */
+/** Detects a platform with a native Prairie app from the user agent. */
 export function detectMobilePlatform(ua: string): MobilePlatform | null {
   // iPadOS 13+ Safari masquerades as macOS; maxTouchPoints tells it apart,
   // but that's a live-DOM concern — callers pass a UA and we keep this pure.
@@ -26,7 +29,7 @@ export function detectMobilePlatform(ua: string): MobilePlatform | null {
 }
 
 /**
- * Builds the silo:// deep link that opens the native invite claim flow.
+ * Builds the prairie:// deep link that opens the native invite claim flow.
  * Returns null for origins the apps can't talk to (non-http(s), userinfo).
  */
 export function buildInviteDeepLink(pageOrigin: string, token: string): string | null {
@@ -39,5 +42,5 @@ export function buildInviteDeepLink(pageOrigin: string, token: string): string |
   if (origin.username || origin.password) return null;
   if (origin.protocol !== "https:" && origin.protocol !== "http:") return null;
   const server = encodeURIComponent(origin.origin);
-  return `silo://invite?server=${server}&token=${encodeURIComponent(token)}`;
+  return `prairie://invite?server=${server}&token=${encodeURIComponent(token)}`;
 }
