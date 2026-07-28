@@ -6,6 +6,14 @@ import (
 	"time"
 )
 
+// Terminal statuses written to ExecutionResult.Status. Kept as untyped string
+// constants because the column and the JSON field are plain strings.
+const (
+	executionStatusCompleted = "completed"
+	executionStatusFailed    = "failed"
+	executionStatusCancelled = "cancelled"
+)
+
 // ExecutionResult records the outcome of a single task execution.
 type ExecutionResult struct {
 	ID           int64           `json:"id"`
