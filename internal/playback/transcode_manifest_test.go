@@ -163,7 +163,7 @@ func TestBuildPlaybackManifest_EncodedTranscodeUsesSyntheticVODManifest(t *testi
 	}
 }
 
-func TestGenerateFullManifest_ResumeEmitsStartOffsetAtSegmentBoundary(t *testing.T) {
+func TestGenerateFullManifest_ResumeWindowsAtStartSegment(t *testing.T) {
 	const (
 		resumeSeconds = 100.0
 		segDur        = 2
@@ -182,24 +182,34 @@ func TestGenerateFullManifest_ResumeEmitsStartOffsetAtSegmentBoundary(t *testing
 	}
 
 	text := string(session.GenerateFullManifest("segment/", "token=test"))
-	wantStart := fmt.Sprintf("#EXT-X-START:TIME-OFFSET=%.6f,PRECISE=YES", resumeSeconds)
-	if !strings.Contains(text, wantStart) {
-		t.Fatalf("missing %q; manifest:\n%s", wantStart, text)
+	// AVPlay ignores EXT-X-START and plays the first entry — the window head
+	// must BE the resume segment.
+	if strings.Contains(text, "#EXT-X-START:") {
+		t.Fatalf("windowed resume playlist must not rely on EXT-X-START:\n%s", text)
 	}
-	if !strings.Contains(text, "#EXT-X-VERSION:6\n") {
-		t.Fatalf("TS resume playlist must advertise HLS v6 for EXT-X-START; manifest:\n%s", text)
-	}
-	// Full playlist still lists seg_00000 — players begin at ⌊N/segDur⌋ via
-	// EXT-X-START, not by trimming the front of the playlist.
-	if !strings.Contains(text, "segment/seg_00000.ts?token=test") {
-		t.Fatalf("resume playlist must still list seg_00000:\n%s", text)
+	wantSeq := "#EXT-X-MEDIA-SEQUENCE:" + strconv.Itoa(startSeg)
+	if !strings.Contains(text, wantSeq) {
+		t.Fatalf("missing %q; manifest:\n%s", wantSeq, text)
 	}
 	wantSeg := fmt.Sprintf("segment/seg_%05d.ts?token=test", startSeg)
 	if !strings.Contains(text, wantSeg) {
 		t.Fatalf("resume playlist missing start segment %q:\n%s", wantSeg, text)
 	}
-	if strings.Contains(text, "#EXT-X-MEDIA-SEQUENCE:"+strconv.Itoa(startSeg)) {
-		t.Fatalf("resume playlist must keep MEDIA-SEQUENCE:0 (full timeline):\n%s", text)
+	if strings.Contains(text, "segment/seg_00000.ts?token=test") {
+		t.Fatalf("windowed resume playlist must not list seg_00000:\n%s", text)
+	}
+	// First media URI after the header tags must be the start segment.
+	var firstURI string
+	for _, line := range strings.Split(text, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		firstURI = trimmed
+		break
+	}
+	if firstURI != wantSeg {
+		t.Fatalf("first playlist URI = %q, want %q", firstURI, wantSeg)
 	}
 }
 
@@ -229,9 +239,10 @@ func TestSegmentRecoveryDecision_StartupProbeBeforeResumeDoesNotRestart(t *testi
 	}
 }
 
-func TestSegmentRecoveryDecision_ExplicitSeekBeforeStartRestarts(t *testing.T) {
+func TestSegmentRecoveryDecision_BeforeStartNeverRestartsAtZero(t *testing.T) {
 	// After the resume window has produced media, a request before
-	// StartSegmentNumber is an explicit user seek and should restart.
+	// StartSegmentNumber must still not auto-restart — RestartSeekTarget(0)
+	// would discard the resume window. Clients re-plan via /transcode/start.
 	tempDir := t.TempDir()
 	now := time.Now()
 	writeManifestRange(t, tempDir, 50, 52, ".ts")
@@ -250,12 +261,12 @@ func TestSegmentRecoveryDecision_ExplicitSeekBeforeStartRestarts(t *testing.T) {
 		},
 	}
 
-	decision := session.SegmentRecoveryDecision(10, now)
+	decision := session.SegmentRecoveryDecision(0, now)
 	if decision.Reason != "before_start_segment" {
 		t.Fatalf("Reason = %q, want before_start_segment", decision.Reason)
 	}
-	if !decision.RestartOnTimeout {
-		t.Fatal("RestartOnTimeout = false, want true (explicit mid-stream seek)")
+	if decision.RestartOnTimeout {
+		t.Fatal("RestartOnTimeout = true, want false (must not discard resume at seek_seconds=0)")
 	}
 }
 

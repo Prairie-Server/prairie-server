@@ -595,6 +595,7 @@ func TestBuildTranscodeStartResponse_UnifiedSeekAnywhere(t *testing.T) {
 		transcodeStartRequest{
 			SessionID:        "session-encoded",
 			SeekSeconds:      18.261,
+			SegmentDuration:  2,
 			TargetCodecVideo: "h264",
 		},
 		file,
@@ -602,17 +603,38 @@ func TestBuildTranscodeStartResponse_UnifiedSeekAnywhere(t *testing.T) {
 		"/api/v1/playback/transcode/session-encoded/master.m3u8",
 		0,
 	)
-	if !encodedResp.CanSeekAnywhere {
-		t.Fatal("encoded response should advertise seek-anywhere")
+	// Windowed encoded VOD: player t=0 at the resume segment; media time uses
+	// the aligned stream origin. Positions before the window re-plan.
+	if encodedResp.CanSeekAnywhere {
+		t.Fatal("encoded resume response should require re-plan for pre-window seeks")
 	}
-	if encodedResp.PlayerStartSeconds != 18.261 {
-		t.Fatalf("encoded PlayerStartSeconds = %v, want 18.261", encodedResp.PlayerStartSeconds)
+	if encodedResp.PlayerStartSeconds != 0 {
+		t.Fatalf("encoded PlayerStartSeconds = %v, want 0 (window head)", encodedResp.PlayerStartSeconds)
 	}
-	if encodedResp.StreamOriginSeconds != 0 {
-		t.Fatalf("encoded StreamOriginSeconds = %v, want 0", encodedResp.StreamOriginSeconds)
+	if encodedResp.StreamOriginSeconds != 18 {
+		t.Fatalf("encoded StreamOriginSeconds = %v, want 18 (aligned)", encodedResp.StreamOriginSeconds)
 	}
-	if encodedResp.TimelineOffsetSeconds != 0 {
-		t.Fatalf("encoded TimelineOffsetSeconds = %v, want 0", encodedResp.TimelineOffsetSeconds)
+	if encodedResp.TimelineOffsetSeconds != 18 {
+		t.Fatalf("encoded TimelineOffsetSeconds = %v, want 18", encodedResp.TimelineOffsetSeconds)
+	}
+
+	fromStart := buildTranscodeStartResponse(
+		transcodeStartRequest{
+			SessionID:        "session-encoded-start",
+			SeekSeconds:      0,
+			SegmentDuration:  2,
+			TargetCodecVideo: "h264",
+		},
+		file,
+		nil,
+		"/api/v1/playback/transcode/session-encoded-start/master.m3u8",
+		0,
+	)
+	if !fromStart.CanSeekAnywhere {
+		t.Fatal("encoded from-start response should advertise seek-anywhere")
+	}
+	if fromStart.PlayerStartSeconds != 0 || fromStart.StreamOriginSeconds != 0 {
+		t.Fatalf("encoded from-start timeline = player %v origin %v", fromStart.PlayerStartSeconds, fromStart.StreamOriginSeconds)
 	}
 }
 
