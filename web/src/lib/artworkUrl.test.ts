@@ -4,6 +4,7 @@ import {
   artworkCandidates,
   artworkSrcSet,
   artworkWidthVariant,
+  isPrairieSignedArtworkURL,
   isSignedArtworkURL,
   webPAVIFSibling,
   webPPNGSibling,
@@ -138,6 +139,36 @@ describe("artworkWidthVariant", () => {
   it("returns empty for unrecognized paths", () => {
     expect(artworkWidthVariant("/static/logo.png", 500)).toBe("");
     expect(artworkWidthVariant("", 500)).toBe("");
+  });
+});
+
+describe("Prairie's own artwork signature", () => {
+  // It covers the artwork revision, not the exact key, so selecting another rung
+  // of the same image still validates. Treating it as unrewritable disabled both
+  // srcSet and the sizes attribute, leaving 140-160px cards fetching w500.
+  it("is rewritable, unlike a third-party signature", () => {
+    const signed = "/artwork/tmdb/movies/550/poster/w500.rev.webp?expires=123&sig=abc";
+    expect(isPrairieSignedArtworkURL(signed)).toBe(true);
+    expect(isSignedArtworkURL(signed)).toBe(false);
+  });
+
+  it("only claims URLs carrying the store's full shape", () => {
+    // A third-party URL that happens to use "sig" must stay untouched.
+    const foreign = "https://cdn.example.com/art/w500.webp?sig=abc";
+    expect(isPrairieSignedArtworkURL(foreign)).toBe(false);
+    expect(isSignedArtworkURL(foreign)).toBe(true);
+    expect(isPrairieSignedArtworkURL("/artwork/x/w500.rev.webp?expires=1")).toBe(false);
+    expect(isPrairieSignedArtworkURL("https://x/?X-Amz-Signature=1&expires=1&sig=a")).toBe(false);
+  });
+
+  // The signature must travel with every candidate or each one 403s.
+  it("yields a srcSet whose entries all keep the query", () => {
+    const signed = "/artwork/tmdb/movies/550/poster/w500.rev.webp?expires=123&sig=abc";
+    expect(artworkSrcSet(signed, [200, 300, 500])).toBe(
+      "/artwork/tmdb/movies/550/poster/w200.rev.webp?expires=123&sig=abc 200w, " +
+        "/artwork/tmdb/movies/550/poster/w300.rev.webp?expires=123&sig=abc 300w, " +
+        "/artwork/tmdb/movies/550/poster/w500.rev.webp?expires=123&sig=abc 500w",
+    );
   });
 });
 

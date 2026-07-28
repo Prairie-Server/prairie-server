@@ -30,9 +30,11 @@ const (
 	// DefaultLocalRoot is the on-disk artwork cache when S3 public storage is off.
 	DefaultLocalRoot = "/var/lib/prairie/artwork"
 
-	localBucketName     = "local-artwork"
-	artworkURLPrefix    = "/artwork/"
-	signatureDomain     = "prairie:artwork:v1"
+	localBucketName  = "local-artwork"
+	artworkURLPrefix = "/artwork/"
+	// v2 signs an artwork revision rather than one exact object key; see
+	// signatureScope. v1 URLs do not validate under it and are not accepted.
+	signatureDomain     = "prairie:artwork:v2"
 	defaultPresignTTL   = 4 * time.Hour
 	signatureQueryParam = "sig"
 	expiresQueryParam   = "expires"
@@ -459,13 +461,45 @@ func (s *LocalStore) openObject(key string) (*os.File, fs.FileInfo, error) {
 	return f, info, nil
 }
 
+// signatureScope returns what a signature grants access to.
+//
+// Sized variants of one artwork revision share a single scope, so a signature
+// minted for any rung validates for the others — and for the AVIF/PNG siblings,
+// which differ only in encoding. That is what lets a client pick the rung that
+// fits the element it is about to draw.
+//
+// Both first-party clients ship the machinery to do this and neither could use
+// it: signing the exact key meant rewriting the variant produced a 403, so both
+// refuse to rewrite a signed URL and render whatever the server happened to
+// pick. On the web that disabled `srcSet` *and* the `sizes` attribute, leaving
+// 140-160px cards fetching w500 — around ten times the pixels displayed at DPR 1.
+//
+// `original` is scoped to itself. It is the full-size source, so a signature for
+// a display rung must not be widenable to it; a caller that genuinely wants the
+// original is issued a URL signed for exactly that.
+//
+// Narrowing is not a privilege escalation: every key in a scope is the same
+// image at a different size, and the holder already has a valid URL for it.
+func signatureScope(key string) string {
+	if artworkkey.VariantName(key) == artworkkey.OriginalVariant {
+		return key
+	}
+	dir := artworkkey.Directory(key)
+	if dir == "" {
+		return key
+	}
+	// Revision is empty for legacy unrevisioned keys, which have only one
+	// generation per directory, so the directory alone is the whole scope.
+	return dir + artworkkey.Revision(key)
+}
+
 func (s *LocalStore) sign(key string, expires int64) string {
 	mac := hmac.New(sha256.New, s.secret)
 	_, _ = mac.Write([]byte(signatureDomain))
 	_, _ = mac.Write([]byte{0})
 	_, _ = mac.Write([]byte(strconv.FormatInt(expires, 10)))
 	_, _ = mac.Write([]byte{0})
-	_, _ = mac.Write([]byte(key))
+	_, _ = mac.Write([]byte(signatureScope(key)))
 	return hex.EncodeToString(mac.Sum(nil))
 }
 
