@@ -20,9 +20,22 @@ const (
 	AVIFBackfillStatusSucceeded = "succeeded"
 	AVIFBackfillStatusFailed    = "failed"
 
-	avifBackfillLeaseDuration = 5 * time.Minute
+	// A claim must outlive the longest pass that can hold it. ClaimDue calls
+	// recoverExpiredRunning first, so a lease shorter than avifBackfillMaxRuntime
+	// lets a pass expire its own in-flight jobs at the next claim batch: the row
+	// goes back to queued, another batch re-encodes it, and the original worker's
+	// MarkSucceeded no longer matches locked_by — so the success is thrown away
+	// silently and the work repeats. Keep this comfortably above the 8-minute
+	// runtime cap (asserted in TestBackfillLeaseOutlivesAPass).
+	avifBackfillLeaseDuration = 20 * time.Minute
 	avifBackfillMaxAttempts   = 8
 )
+
+// ErrBackfillClaimLost reports that a status update matched no row because the
+// claim had already been taken away (lease recovery, or another worker). The
+// encode itself succeeded; only the bookkeeping was lost, so callers log it
+// rather than treating the artwork as failed.
+var ErrBackfillClaimLost = errors.New("artwork avif backfill: claim lost before status update")
 
 // AVIFBackfillJobRepository persists deferred AVIF sibling work.
 type AVIFBackfillJobRepository struct {
@@ -285,7 +298,7 @@ func (r *AVIFBackfillJobRepository) MarkSucceeded(ctx context.Context, id int64,
 	if r == nil || r.pool == nil {
 		return nil
 	}
-	_, err := r.pool.Exec(ctx, `
+	tag, err := r.pool.Exec(ctx, `
 		UPDATE artwork_avif_backfill_jobs
 		SET status = 'succeeded',
 			completed_at = NOW(),
@@ -300,6 +313,10 @@ func (r *AVIFBackfillJobRepository) MarkSucceeded(ctx context.Context, id int64,
 	if err != nil {
 		return fmt.Errorf("marking artwork AVIF backfill job succeeded: %w", err)
 	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("%w: job %d succeeded but the row is no longer claimed by %q",
+			ErrBackfillClaimLost, id, lockedBy)
+	}
 	return nil
 }
 
@@ -313,7 +330,7 @@ func (r *AVIFBackfillJobRepository) MarkFailed(ctx context.Context, id int64, at
 		status = AVIFBackfillStatusFailed
 	}
 	delay := avifBackfillRetryDelay(nextAttempt)
-	_, err := r.pool.Exec(ctx, `
+	tag, err := r.pool.Exec(ctx, `
 		UPDATE artwork_avif_backfill_jobs
 		SET status = $2,
 			attempt_count = $3,
@@ -328,6 +345,10 @@ func (r *AVIFBackfillJobRepository) MarkFailed(ctx context.Context, id int64, at
 	`, id, status, nextAttempt, intervalLiteral(delay), errText, lockedBy)
 	if err != nil {
 		return fmt.Errorf("marking artwork AVIF backfill job failed: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		return fmt.Errorf("%w: job %d failed but the row is no longer claimed by %q",
+			ErrBackfillClaimLost, id, lockedBy)
 	}
 	return nil
 }

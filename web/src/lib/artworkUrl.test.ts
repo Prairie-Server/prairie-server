@@ -6,6 +6,7 @@ import {
   artworkWidthVariant,
   isPrairieSignedArtworkURL,
   isSignedArtworkURL,
+  isSignedOriginalArtworkURL,
   webPAVIFSibling,
   webPPNGSibling,
 } from "./artworkUrl";
@@ -183,5 +184,37 @@ describe("artworkSrcSet", () => {
     expect(artworkSrcSet("/art/poster/w300.webp?X-Amz-Signature=x", [300, 500])).toBe("");
     expect(artworkSrcSet("/art/poster/w300.webp", [300])).toBe("");
     expect(isSignedArtworkURL("https://x/?Signature=1")).toBe(true);
+  });
+});
+
+describe("signed original artwork URLs", () => {
+  const signedOriginal = "/artwork/people/p1/profile/original.7.webp?sig=abc&expires=99";
+  const signedRung = "/artwork/people/p1/profile/w500.7.webp?sig=abc&expires=99";
+
+  // The store signs `original` against exactly itself, so any width rewrite is
+  // a 403. Cast portraits hit this: catalog.detail presigned the raw original.
+  it("refuses to rewrite the width of a signed original", () => {
+    expect(isSignedOriginalArtworkURL(signedOriginal)).toBe(true);
+    expect(artworkWidthVariant(signedOriginal, 200)).toBe("");
+    expect(artworkSrcSet(signedOriginal, [200, 300, 500])).toBe("");
+  });
+
+  it("still rewrites a signed sized rung, which shares the revision scope", () => {
+    expect(isSignedOriginalArtworkURL(signedRung)).toBe(false);
+    expect(artworkWidthVariant(signedRung, 200)).toContain("/w200.7.webp");
+    expect(artworkSrcSet(signedRung, [200, 300, 500])).toContain("200w");
+  });
+
+  // An unsigned original (local dev without a URL secret, and the tests) has no
+  // signature to invalidate, so the ladder still applies.
+  it("leaves unsigned originals rewritable", () => {
+    const unsigned = "/artwork/people/p1/profile/original.7.webp";
+    expect(isSignedOriginalArtworkURL(unsigned)).toBe(false);
+    expect(artworkWidthVariant(unsigned, 200)).toContain("/w200.7.webp");
+  });
+
+  it("does not mistake a third-party URL containing 'original' for ours", () => {
+    const external = "https://images.example.test/original.jpg?sig=abc&expires=99";
+    expect(isSignedOriginalArtworkURL(external)).toBe(false);
   });
 });

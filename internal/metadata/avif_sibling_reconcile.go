@@ -13,7 +13,38 @@ import (
 
 const (
 	avifReconcileHeadWorkers = 16
+	// Rows one discovery pass may examine while sweeping past already-covered
+	// windows. Enough to cross the whole corpus at this scale, so a cold cursor
+	// still reaches the last surface (people) within a single pass.
+	avifReconcileScanRowBudget = 24000
 )
+
+// scanCursor rotates a LIMIT/OFFSET window through the candidate query.
+//
+// Every scanner here shares one flaw if it does not rotate: the query is ordered
+// (rank, path), so a fixed window sees only the head of the corpus. With 11k
+// episode stills at rank 6, people photos at rank 7 are never reached — which is
+// how cast portraits went undiscovered, and how a sweep for retired still rungs
+// would never have found one.
+type scanCursor struct {
+	mu     sync.Mutex
+	offset int
+}
+
+// next returns the offset to scan and advances past it.
+func (c *scanCursor) next(window int) int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	offset := c.offset
+	c.offset += window
+	return offset
+}
+
+func (c *scanCursor) reset() {
+	c.mu.Lock()
+	c.offset = 0
+	c.mu.Unlock()
+}
 
 // ArtworkObjectDeleter deletes individual artwork objects (legacy PNG sweep).
 type ArtworkObjectDeleter interface {
@@ -24,9 +55,16 @@ type ArtworkObjectDeleter interface {
 
 // AVIFSiblingReconciler finds cached WebP originals whose AVIF sibling is
 // missing so the durable backfill queue can generate them.
+//
+// Scanning rotates. The candidate query is ordered (rank, path) with a LIMIT, so
+// a fixed window only ever sees the head of the corpus: with 11k episode stills
+// at rank 6, people photos at rank 7 were unreachable and cast portraits could
+// never be discovered at all. The cursor advances by the rows examined and wraps
+// at the end, so every surface gets its turn.
 type AVIFSiblingReconciler struct {
-	pool *pgxpool.Pool
-	s3   ArtworkObjectChecker
+	pool   *pgxpool.Pool
+	s3     ArtworkObjectChecker
+	cursor scanCursor
 }
 
 func NewAVIFSiblingReconciler(pool *pgxpool.Pool, s3 ArtworkObjectChecker) *AVIFSiblingReconciler {
@@ -46,14 +84,67 @@ func (r *AVIFSiblingReconciler) DiscoverMissing(ctx context.Context, limit int) 
 	if r == nil || r.pool == nil || r.s3 == nil || limit <= 0 {
 		return nil, nil
 	}
-	paths, err := r.listCachedWebPOriginals(ctx, limit*3) // oversample; HEAD filters
+
+	// Sweep forward from the cursor until this pass finds work, exhausts its row
+	// budget, or wraps. A window whose artwork is already covered costs only its
+	// HEAD probes, which run 16-wide, so skipping past covered regions is cheap —
+	// and it is the only way a scan that starts at rank 0 ever reaches people.
+	window := limit * 3
+	budget := avifReconcileScanRowBudget
+	var wrapped bool
+	// Cancellation ends the sweep through the loop condition rather than an
+	// if/return, matching RunUntilIdle: a cancelled pass reports no work, not a
+	// failure, because the caller is unwinding on the same context.
+	for scanned := 0; scanned < budget && ctx.Err() == nil; {
+		offset := r.cursor.next(window)
+		wrapped = wrapped || offset == 0
+		paths, err := r.listCachedWebPOriginals(ctx, window, offset)
+		if err != nil {
+			return nil, err
+		}
+		if len(paths) == 0 {
+			// Past the end of the corpus: restart from the top on the next window.
+			r.cursor.reset()
+			if wrapped {
+				return nil, nil
+			}
+			wrapped = true
+			continue
+		}
+		scanned += len(paths)
+		if len(paths) < window {
+			// Short read means this was the final window.
+			r.cursor.reset()
+		}
+		missing, err := r.probeMissing(ctx, paths, limit)
+		if err != nil {
+			return nil, err
+		}
+		if len(missing) > 0 {
+			return missing, nil
+		}
+	}
+	return nil, nil
+}
+
+// pageCachedWebPOriginals returns the next rotated page of cached WebP originals
+// for the given cursor, resetting it once a short page marks the end of the
+// corpus. Shared by every scanner here so the rotation cannot drift apart.
+func (r *AVIFSiblingReconciler) pageCachedWebPOriginals(ctx context.Context, cursor *scanCursor, limit int) ([]string, error) {
+	offset := cursor.next(limit)
+	paths, err := r.listCachedWebPOriginals(ctx, limit, offset)
 	if err != nil {
 		return nil, err
 	}
-	if len(paths) == 0 {
-		return nil, nil
+	if len(paths) < limit {
+		cursor.reset()
 	}
+	return paths, nil
+}
 
+// probeMissing HEADs the display-ladder keys for each candidate and returns the
+// originals with at least one absent object, up to limit.
+func (r *AVIFSiblingReconciler) probeMissing(ctx context.Context, paths []string, limit int) ([]AVIFBackfillEnqueueInput, error) {
 	type candidate struct {
 		path      string
 		imageType string
@@ -145,7 +236,7 @@ func displayAVIFKeys(originalPath, imageType string) []string {
 	return keys
 }
 
-func (r *AVIFSiblingReconciler) listCachedWebPOriginals(ctx context.Context, limit int) ([]string, error) {
+func (r *AVIFSiblingReconciler) listCachedWebPOriginals(ctx context.Context, limit, offset int) ([]string, error) {
 	// Prefer item posters/backdrops so the historical orphan gap fills user-visible
 	// art first — same visibility ranking as the image-cache discovery sweep.
 	query := `
@@ -176,9 +267,9 @@ func (r *AVIFSiblingReconciler) listCachedWebPOriginals(ctx context.Context, lim
 		)
 		SELECT path FROM paths
 		ORDER BY rank, path
-		LIMIT $1
+		LIMIT $1 OFFSET $2
 	`
-	rows, err := r.pool.Query(ctx, query, limit)
+	rows, err := r.pool.Query(ctx, query, limit, offset)
 	if err != nil {
 		return nil, fmt.Errorf("listing cached WebP originals: %w", err)
 	}
@@ -200,8 +291,9 @@ func (r *AVIFSiblingReconciler) listCachedWebPOriginals(ctx context.Context, lim
 // LegacyPNGSiblingCleaner deletes leftover .png siblings for live WebP artwork
 // (PNG generation was dropped; orphans remain until swept).
 type LegacyPNGSiblingCleaner struct {
-	pool *pgxpool.Pool
-	s3   ArtworkObjectDeleter
+	pool   *pgxpool.Pool
+	s3     ArtworkObjectDeleter
+	cursor scanCursor
 }
 
 func NewLegacyPNGSiblingCleaner(pool *pgxpool.Pool, s3 ArtworkObjectDeleter) *LegacyPNGSiblingCleaner {
@@ -216,7 +308,7 @@ func (c *LegacyPNGSiblingCleaner) CleanupLegacyPNG(ctx context.Context, limit in
 		return 0, 0, nil
 	}
 	reconciler := &AVIFSiblingReconciler{pool: c.pool, s3: nil}
-	paths, err := reconciler.listCachedWebPOriginals(ctx, limit)
+	paths, err := reconciler.pageCachedWebPOriginals(ctx, &c.cursor, limit)
 	if err != nil {
 		return 0, 0, err
 	}
@@ -256,8 +348,9 @@ func (c *LegacyPNGSiblingCleaner) CleanupLegacyPNG(ctx context.Context, limit in
 // naming it, so re-caching an item no longer overwrites it and no existence
 // check looks for it. The objects simply stop being read. This sweeps them.
 type RetiredVariantCleaner struct {
-	pool *pgxpool.Pool
-	s3   ArtworkObjectDeleter
+	pool   *pgxpool.Pool
+	s3     ArtworkObjectDeleter
+	cursor scanCursor
 }
 
 func NewRetiredVariantCleaner(pool *pgxpool.Pool, s3 ArtworkObjectDeleter) *RetiredVariantCleaner {
@@ -277,7 +370,9 @@ func (c *RetiredVariantCleaner) CleanupRetiredVariants(ctx context.Context, limi
 		return 0, 0, nil
 	}
 	reconciler := &AVIFSiblingReconciler{pool: c.pool, s3: nil}
-	paths, err := reconciler.listCachedWebPOriginals(ctx, limit)
+	// Rotates for the same reason discovery does: the retired rung being swept
+	// is a still, and stills sit at rank 6 — far past any fixed head window.
+	paths, err := reconciler.pageCachedWebPOriginals(ctx, &c.cursor, limit)
 	if err != nil {
 		return 0, 0, err
 	}

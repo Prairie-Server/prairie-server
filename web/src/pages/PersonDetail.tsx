@@ -27,6 +27,10 @@ export default function PersonDetail() {
   const { id } = useParams<{ id: string }>();
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [editOpen, setEditOpen] = useState(false);
+  // Falls back to initials rather than a broken-image glyph, keyed to the URL
+  // that failed so a re-signed URL or a different person recovers instead of
+  // inheriting the previous failure.
+  const [failedPhotoUrl, setFailedPhotoUrl] = useState<string | null>(null);
   const autoRefreshWindowRef = useRef<{ personId: number; until: number } | null>(null);
   const autoRefreshRequestedPersonIdRef = useRef<number | null>(null);
   const { user } = useAuth();
@@ -117,13 +121,14 @@ export default function PersonDetail() {
           {/* Photo */}
           <div className="shrink-0 self-start">
             <div className="media-card-image aspect-[2/3] w-[140px] overflow-hidden rounded-lg sm:w-[180px]">
-              {person.photo_url ? (
+              {person.photo_url && failedPhotoUrl !== person.photo_url ? (
                 <img
                   src={person.photo_url}
                   srcSet={photoSrcSet || undefined}
                   sizes={photoSrcSet ? "(min-width: 640px) 180px, 140px" : undefined}
                   alt={person.name}
                   className="h-full w-full object-cover"
+                  onError={() => setFailedPhotoUrl(person.photo_url ?? null)}
                 />
               ) : (
                 <div className="bg-surface text-muted-foreground flex h-full w-full items-center justify-center text-3xl font-semibold">
