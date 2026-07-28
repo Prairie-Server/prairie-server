@@ -39,6 +39,27 @@ func artworkCounter(t *testing.T, imageType, variant, format, outcome string) fl
 	return 0
 }
 
+func artworkBytes(t *testing.T, variant string) float64 {
+	t.Helper()
+	families, err := prometheus.DefaultGatherer.Gather()
+	if err != nil {
+		t.Fatalf("gathering metrics: %v", err)
+	}
+	for _, family := range families {
+		if family.GetName() != "streamapp_artwork_bytes_sent_total" {
+			continue
+		}
+		for _, metric := range family.GetMetric() {
+			for _, label := range metric.GetLabel() {
+				if label.GetName() == "variant" && label.GetValue() == variant {
+					return metric.GetCounter().GetValue()
+				}
+			}
+		}
+	}
+	return 0
+}
+
 // writeObject puts a file at key inside the store root.
 func writeObject(t *testing.T, root, key string, body string) {
 	t.Helper()
@@ -61,6 +82,7 @@ func TestArtworkMetricsCountServedAndSubstituted(t *testing.T) {
 
 	before := artworkCounter(t, "poster", "w500", "webp", outcomeServed)
 	beforeSub := artworkCounter(t, "poster", "w200", "webp", outcomeSubstituted)
+	beforeBytes := artworkBytes(t, "w500")
 
 	rec := httptest.NewRecorder()
 	store.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/artwork/m/1/poster/w500.9.webp", nil))
@@ -81,6 +103,9 @@ func TestArtworkMetricsCountServedAndSubstituted(t *testing.T) {
 	// that is the number that says whether clients want the rung we generate.
 	if got := artworkCounter(t, "poster", "w200", "webp", outcomeSubstituted); got != beforeSub+1 {
 		t.Errorf("substituted counter = %v, want %v", got, beforeSub+1)
+	}
+	if got, want := artworkBytes(t, "w500"), beforeBytes+float64(len("wide")); got != want {
+		t.Errorf("w500 bytes = %v, want %v", got, want)
 	}
 }
 
@@ -138,6 +163,7 @@ func TestArtworkMetricsCountHeadWithoutBytes(t *testing.T) {
 	store := &LocalStore{root: root}
 
 	before := artworkCounter(t, "backdrop", "w1280", "webp", outcomeServed)
+	beforeBytes := artworkBytes(t, "w1280")
 
 	rec := httptest.NewRecorder()
 	store.ServeHTTP(rec, httptest.NewRequest(http.MethodHead, "/artwork/m/3/backdrop/w1280.5.webp", nil))
@@ -149,5 +175,51 @@ func TestArtworkMetricsCountHeadWithoutBytes(t *testing.T) {
 	}
 	if got := artworkCounter(t, "backdrop", "w1280", "webp", outcomeServed); got != before+1 {
 		t.Errorf("served counter = %v, want %v", got, before+1)
+	}
+	if got := artworkBytes(t, "w1280"); got != beforeBytes {
+		t.Errorf("HEAD moved the bytes counter to %v, want %v — probe traffic must not look like bandwidth", got, beforeBytes)
+	}
+}
+
+// Every label here comes from a request path, and not_found is recorded before
+// any signature is validated — so an unauthenticated caller would otherwise pick
+// the label values and could mint a series per request.
+func TestArtworkMetricsBoundLabelCardinality(t *testing.T) {
+	store := &LocalStore{root: t.TempDir()}
+	before := artworkCounter(t, labelUnknown, labelUnknown, labelUnknown, outcomeNotFound)
+
+	for _, junk := range []string{
+		"/artwork/a/b/notatype/w999.1.tiff",
+		"/artwork/a/b/notatype/bogus.1.tiff",
+		"/artwork/x/y/z/w12345.2.exe",
+	} {
+		rec := httptest.NewRecorder()
+		store.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, junk, nil))
+		if rec.Code != http.StatusNotFound {
+			t.Fatalf("%s status = %d, want 404", junk, rec.Code)
+		}
+	}
+
+	if got := artworkCounter(t, labelUnknown, labelUnknown, labelUnknown, outcomeNotFound); got != before+3 {
+		t.Errorf("unknown-label counter = %v, want %v (all three must collapse into one series)", got, before+3)
+	}
+	if got := artworkCounter(t, "notatype", "w999", "tiff", outcomeNotFound); got != 0 {
+		t.Errorf("a request-derived label escaped the allowlist: %v", got)
+	}
+}
+
+// A real rung that has since been retired must keep its own label rather than
+// collapsing into unknown: a client still asking for it is worth seeing.
+func TestArtworkMetricsKeepRetiredRungLabels(t *testing.T) {
+	store := &LocalStore{root: t.TempDir()}
+	before := artworkCounter(t, "still", "w200", "webp", outcomeNotFound)
+
+	rec := httptest.NewRecorder()
+	store.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/artwork/s/1/still/w200.4.webp", nil))
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status = %d, want 404", rec.Code)
+	}
+	if got := artworkCounter(t, "still", "w200", "webp", outcomeNotFound); got != before+1 {
+		t.Errorf("retired rung counter = %v, want %v", got, before+1)
 	}
 }

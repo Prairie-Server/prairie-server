@@ -419,7 +419,13 @@ func (s *LocalStore) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	sent, _ := io.Copy(w, f)
+	sent, copyErr := io.Copy(w, f)
+	if copyErr != nil {
+		// A disconnected or truncated GET is not a served response. Bytes that did
+		// leave still count, so bandwidth stays honest.
+		recordArtworkRequest(key, outcomeError, sent)
+		return
+	}
 	recordArtworkRequest(key, outcome, sent)
 }
 

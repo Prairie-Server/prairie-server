@@ -2,6 +2,7 @@ package artworkstore
 
 import (
 	"path"
+	"strconv"
 	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -41,24 +42,82 @@ const (
 	outcomeError        = "error"
 )
 
+// labelUnknown replaces any label value that is not on an allowlist below.
+const labelUnknown = "unknown"
+
+// Every label on these metrics comes from a request path, and the outcomes that
+// matter most — not_found, bad_signature, expired — are recorded for requests
+// that never passed signature validation. So an unauthenticated caller picks the
+// label values. Without an allowlist, GET /artwork/x/<random>/<random>.<random>
+// in a loop mints a series per request and grows this process until it dies,
+// taking Prometheus cardinality with it.
+var (
+	knownImageTypes = map[string]bool{
+		"poster":   true,
+		"backdrop": true,
+		"logo":     true,
+		"still":    true,
+		"profile":  true,
+	}
+
+	// Widths any image type has ever generated, as one set rather than per type,
+	// so a retired rung still reports under its own name instead of collapsing
+	// into unknown — a client still asking for a retired rung is worth seeing.
+	knownVariantWidths = map[int]bool{
+		200:  true,
+		300:  true,
+		500:  true,
+		1280: true,
+		1920: true,
+	}
+
+	knownFormats = map[string]bool{
+		"webp": true,
+		"avif": true,
+		"png":  true,
+		"jpg":  true,
+		"jpeg": true,
+	}
+)
+
+func normalizedImageType(key string) string {
+	imageType := strings.ToLower(artworkkey.ImageTypeFromPath(key))
+	if knownImageTypes[imageType] {
+		return imageType
+	}
+	return labelUnknown
+}
+
+func normalizedVariant(key string) string {
+	variant := strings.ToLower(artworkkey.VariantName(key))
+	if variant == artworkkey.OriginalVariant {
+		return variant
+	}
+	if !strings.HasPrefix(variant, "w") {
+		return labelUnknown
+	}
+	width, err := strconv.Atoi(strings.TrimPrefix(variant, "w"))
+	if err != nil || !knownVariantWidths[width] {
+		return labelUnknown
+	}
+	return variant
+}
+
+func normalizedFormat(key string) string {
+	format := strings.ToLower(strings.TrimPrefix(path.Ext(key), "."))
+	if knownFormats[format] {
+		return format
+	}
+	return labelUnknown
+}
+
 // recordArtworkRequest counts one request. The key is the *requested* key, so a
 // substituted response is still attributed to the rung the client asked for —
 // which is the number you want when checking whether clients ask for the rungs
 // you generate.
 func recordArtworkRequest(key, outcome string, bytesSent int64) {
-	imageType := artworkkey.ImageTypeFromPath(key)
-	if imageType == "" {
-		imageType = "unknown"
-	}
-	variant := artworkkey.VariantName(key)
-	if variant == "" {
-		variant = "unknown"
-	}
-	format := strings.TrimPrefix(path.Ext(key), ".")
-	if format == "" {
-		format = "unknown"
-	}
-	artworkRequests.WithLabelValues(imageType, variant, format, outcome).Inc()
+	variant := normalizedVariant(key)
+	artworkRequests.WithLabelValues(normalizedImageType(key), variant, normalizedFormat(key), outcome).Inc()
 	if bytesSent > 0 {
 		artworkBytesSent.WithLabelValues(variant).Add(float64(bytesSent))
 	}
