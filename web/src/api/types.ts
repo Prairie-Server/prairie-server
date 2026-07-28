@@ -4308,6 +4308,7 @@ export interface CreateInvitationRequest {
 export interface SendInvitationResponse {
   invitation: Invitation;
   email_sent: boolean;
+  /** Only readable in this response — the server stores just the token hash. */
   claim_url?: string;
 }
 

@@ -83,6 +83,16 @@ export default function InviteClaim() {
 
   const invitation = lookup.data;
 
+  // Upstream leads this page with an "open in the app" button on Android.
+  // Deliberately not rendered here: prairie-android registers the prairie://
+  // scheme for the device, item, play and downloads hosts only, with no invite
+  // handling anywhere in that repo. The button would fire a link the installed
+  // app cannot answer, and a custom-scheme miss surfaces an OS error rather
+  // than falling through — worse than not offering it.
+  //
+  // lib/appDeepLink.ts already emits the correct prairie://invite URL, so
+  // enabling this is a one-line change once the app registers the host.
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     if (password !== confirmPassword) {
