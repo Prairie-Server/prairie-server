@@ -23,8 +23,12 @@ done
 if [ -n "$outdir" ]; then
   mkdir -p "$outdir"
   echo "$@" > "$outdir/args.txt"
-  printf '#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:2\n#EXTINF:1.0,\nseg_00000.ts\n' > "$outdir/index.m3u8"
-  printf 'seg' > "$outdir/seg_00000.ts"
+  # Three segments so encoding sessions clear DefaultLiveTranscodeLeadSegments.
+  printf '#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:2\n' > "$outdir/index.m3u8"
+  for i in 0 1 2; do
+    printf 'seg' > "$outdir/seg_0000$i.ts"
+    printf '#EXTINF:1.0,\nseg_0000%s.ts\n' "$i" >> "$outdir/index.m3u8"
+  done
 fi
 while true; do sleep 1; done
 `
@@ -146,6 +150,76 @@ func TestHLSBridgeUnlimitedTranscodes(t *testing.T) {
 		})
 		if err != nil {
 			t.Fatalf("start %s: %v", channel, err)
+		}
+		t.Cleanup(func() { _ = bridge.StopLiveStream(ctx, id) })
+	}
+}
+
+// Settings are read per tune so an admin change lands on the next channel
+// start instead of waiting for a restart.
+func TestHLSBridgeAppliesSettingsPerTune(t *testing.T) {
+	allowLoopbackMediaFetch(t)
+	root := t.TempDir()
+	ffmpeg := writeFakeFFmpeg(t, root, fakeFFmpegRecordingArgs)
+	settings := TranscodeSettings{HWAccel: "none", PlayMethod: PlayMethodAuto}
+	bridge := NewHLSBridge(HLSBridgeOptions{
+		Root:       root,
+		FFmpegPath: ffmpeg,
+		Settings:   func(context.Context) TranscodeSettings { return settings },
+	})
+	ctx := context.Background()
+	browserPlan := StreamPlan{VideoCodec: "h264", AudioCodec: "aac"}
+
+	first, _, err := bridge.StartLiveStream(ctx, LiveStreamRequest{
+		ChannelID: "ch1", SourceURL: "http://127.0.0.1/auto/v4.1", Plan: browserPlan,
+	})
+	if err != nil {
+		t.Fatalf("StartLiveStream: %v", err)
+	}
+	if args := readBridgeFFmpegArgs(t, root, first); !strings.Contains(args, "-c:v libx264") {
+		t.Fatalf("expected an encode, got: %s", args)
+	}
+	_ = bridge.StopLiveStream(ctx, first)
+
+	// Operator forces copy; the next tune must respect it without a restart.
+	settings.PlayMethod = PlayMethodCopy
+	second, _, err := bridge.StartLiveStream(ctx, LiveStreamRequest{
+		ChannelID: "ch1", SourceURL: "http://127.0.0.1/auto/v4.1", Plan: browserPlan,
+	})
+	if err != nil {
+		t.Fatalf("StartLiveStream after settings change: %v", err)
+	}
+	t.Cleanup(func() { _ = bridge.StopLiveStream(ctx, second) })
+	args := readBridgeFFmpegArgs(t, root, second)
+	if !strings.Contains(args, "-c:v copy") {
+		t.Fatalf("expected forced copy, got: %s", args)
+	}
+	if strings.Contains(args, "libx264") {
+		t.Fatalf("forced copy must not encode: %s", args)
+	}
+}
+
+// A forced copy is cheap, so it must not consume an encode slot.
+func TestHLSBridgeForcedCopySkipsTranscodeLimit(t *testing.T) {
+	allowLoopbackMediaFetch(t)
+	root := t.TempDir()
+	ffmpeg := writeFakeFFmpeg(t, root, fakeFFmpegRecordingArgs)
+	bridge := NewHLSBridge(HLSBridgeOptions{
+		Root:       root,
+		FFmpegPath: ffmpeg,
+		Settings: func(context.Context) TranscodeSettings {
+			return TranscodeSettings{PlayMethod: PlayMethodCopy, MaxTranscodes: 1}
+		},
+	})
+	ctx := context.Background()
+	browserPlan := StreamPlan{VideoCodec: "h264", AudioCodec: "aac"}
+
+	for _, channel := range []string{"ch1", "ch2", "ch3"} {
+		id, _, err := bridge.StartLiveStream(ctx, LiveStreamRequest{
+			ChannelID: channel, SourceURL: "http://127.0.0.1/auto/" + channel, Plan: browserPlan,
+		})
+		if err != nil {
+			t.Fatalf("forced-copy tune %s: %v", channel, err)
 		}
 		t.Cleanup(func() { _ = bridge.StopLiveStream(ctx, id) })
 	}

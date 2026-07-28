@@ -74,9 +74,13 @@ type TranscodeOpts struct {
 	TargetBitrateKbps   int     // max video bitrate in kbps; 0 = CRF-only (no cap)
 	TotalDuration       float64 // total media duration in seconds (for VOD manifest)
 	FastStart           bool    // use superfast preset for faster first-segment production
-	NodeType            string
-	ExecutionMode       string
-	FFmpegLogSink       FFmpegLogSink
+	// EncoderPreset trades compression for encode speed. Empty keeps the VOD
+	// defaults; live sessions ask for a low-latency preset because falling
+	// below realtime starves the player no matter how good the picture is.
+	EncoderPreset string
+	NodeType      string
+	ExecutionMode string
+	FFmpegLogSink FFmpegLogSink
 }
 
 // DV7ToHDR10BitstreamFilter strips Dolby Vision RPU metadata during a
@@ -531,6 +535,17 @@ func appendHWAccelArgs(args []string, opts TranscodeOpts) []string {
 	return args
 }
 
+// Encoder presets shared by the live and on-demand paths. Empty keeps the
+// historical VOD behavior.
+const (
+	// EncoderPresetLowLatency favors keeping up with a live source.
+	EncoderPresetLowLatency = "low_latency"
+	// EncoderPresetBalanced trades a little speed for compression.
+	EncoderPresetBalanced = "balanced"
+	// EncoderPresetQuality is the VOD-style quality-first preset.
+	EncoderPresetQuality = "quality"
+)
+
 // videoPreset returns an encoder-compatible preset. CPU encoders use a faster
 // fast-start preset for initial playback, while QSV stays on the fastest
 // preset family it supports.
@@ -538,10 +553,40 @@ func videoPreset(opts TranscodeOpts, hwAccel string) string {
 	if hwAccel == "qsv" {
 		return "veryfast"
 	}
+	switch opts.EncoderPreset {
+	case EncoderPresetLowLatency:
+		// x264 below "ultrafast" cannot hold 59.94fps on a busy host.
+		return "ultrafast"
+	case EncoderPresetBalanced:
+		return "veryfast"
+	}
 	if opts.FastStart {
 		return "superfast"
 	}
 	return "veryfast"
+}
+
+// nvencPresetArgs maps a preset onto NVENC's p1–p7 scale and latency tunes.
+// NVENC ignores the x264 preset names, so without this a "low latency" request
+// would silently run the driver's quality-oriented default.
+func nvencPresetArgs(preset string) []string {
+	switch preset {
+	case EncoderPresetLowLatency:
+		return []string{"-preset", "p2", "-tune", "ll"}
+	case EncoderPresetBalanced:
+		return []string{"-preset", "p4"}
+	default:
+		return nil
+	}
+}
+
+// x264LatencyArgs disables the lookahead and B-frame buffering that otherwise
+// hold frames back from a live segment.
+func x264LatencyArgs(preset string) []string {
+	if preset == EncoderPresetLowLatency {
+		return []string{"-tune", "zerolatency"}
+	}
+	return nil
 }
 
 // appendVideoArgs adds video codec arguments.
@@ -594,6 +639,7 @@ func appendVideoArgs(args []string, opts TranscodeOpts) []string {
 		}
 	case opts.HWAccel == hwAccelNVENC && codec == "h264":
 		args = append(args, "-c:v", "h264_nvenc", "-rc:v", "vbr")
+		args = append(args, nvencPresetArgs(opts.EncoderPreset)...)
 		if hasBitrateCap {
 			args = append(args,
 				"-b:v", fmt.Sprintf("%dk", opts.TargetBitrateKbps),
@@ -604,6 +650,7 @@ func appendVideoArgs(args []string, opts TranscodeOpts) []string {
 		}
 	case opts.HWAccel == hwAccelNVENC && codec == "hevc":
 		args = append(args, "-c:v", "hevc_nvenc", "-rc:v", "vbr")
+		args = append(args, nvencPresetArgs(opts.EncoderPreset)...)
 		if hasBitrateCap {
 			args = append(args,
 				"-b:v", fmt.Sprintf("%dk", opts.TargetBitrateKbps),
@@ -633,6 +680,7 @@ func appendVideoArgs(args []string, opts TranscodeOpts) []string {
 			args = append(args, "-c:v", "libx264", "-preset", preset, "-crf", "23",
 				"-pix_fmt", "yuv420p", "-profile:v", "high", "-level", "4.1")
 		}
+		args = append(args, x264LatencyArgs(opts.EncoderPreset)...)
 		if hasBitrateCap {
 			args = append(args,
 				"-maxrate", fmt.Sprintf("%dk", opts.TargetBitrateKbps),

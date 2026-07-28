@@ -175,6 +175,23 @@ type LiveTVConfig struct {
 	// clients which cannot decode the broadcast codecs (browsers on MPEG-2 /
 	// AC-3 OTA). 0 uses the default; a negative value disables the limit.
 	MaxTranscodes int `yaml:"max_transcodes"`
+	// HWAccel selects the encoder for live transcodes: auto, nvenc, qsv,
+	// vaapi, or none.
+	HWAccel string `yaml:"hw_accel"`
+	// HWDecode controls hardware decoding of the broadcast: auto, on, off.
+	// Software MPEG-2 decode at 59.94fps is the usual reason a live transcode
+	// cannot hold realtime.
+	HWDecode string `yaml:"hw_decode"`
+	// EncoderPreset trades compression for encode speed: low_latency,
+	// balanced, or quality.
+	EncoderPreset string `yaml:"encoder_preset"`
+	// FrameRateCap limits live output frame rate: source, 60, or 30. A
+	// fallback for hardware that cannot sustain the broadcast rate.
+	FrameRateCap string `yaml:"framerate_cap"`
+	// MaxResolution caps live output resolution: source, 1080p, or 720p.
+	MaxResolution string `yaml:"max_resolution"`
+	// PlayMethod forces the delivery decision: auto, copy, or transcode.
+	PlayMethod string `yaml:"play_method"`
 }
 
 // DefaultLiveTVDVRPath is the fallback livetv.dvr_path.
@@ -182,6 +199,18 @@ const DefaultLiveTVDVRPath = "/var/lib/prairie/dvr"
 
 // DefaultLiveTVMaxTranscodes is the fallback livetv.max_transcodes.
 const DefaultLiveTVMaxTranscodes = 3
+
+// Live TV transcoding defaults. Live favors keeping up with the broadcast:
+// hardware decode and encode when the host has them, a low-latency preset, and
+// no frame-rate or resolution reduction unless an operator asks for one.
+const (
+	DefaultLiveTVHWAccel       = "auto"
+	DefaultLiveTVHWDecode      = "auto"
+	DefaultLiveTVEncoderPreset = "low_latency"
+	DefaultLiveTVFrameRateCap  = "source"
+	DefaultLiveTVMaxResolution = "source"
+	DefaultLiveTVPlayMethod    = "auto"
+)
 
 // RedisConfig holds Redis connection settings.
 type RedisConfig struct {
@@ -524,6 +553,12 @@ func setDefaults() *configRaw {
 		LiveTV: LiveTVConfig{
 			DVRPath:       DefaultLiveTVDVRPath,
 			MaxTranscodes: DefaultLiveTVMaxTranscodes,
+			HWAccel:       DefaultLiveTVHWAccel,
+			HWDecode:      DefaultLiveTVHWDecode,
+			EncoderPreset: DefaultLiveTVEncoderPreset,
+			FrameRateCap:  DefaultLiveTVFrameRateCap,
+			MaxResolution: DefaultLiveTVMaxResolution,
+			PlayMethod:    DefaultLiveTVPlayMethod,
 		},
 		RateLimit: RateLimitConfig{
 			Enabled: true,

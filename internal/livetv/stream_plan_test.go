@@ -127,6 +127,17 @@ func TestLiveDownscaleResolution(t *testing.T) {
 	}
 }
 
+// A source with no known codec cannot be "supported", or an unknown stream
+// would be copied to a client that has no idea how to decode it.
+func TestSupportsCodecRejectsUnknownSource(t *testing.T) {
+	if supportsCodec([]string{"aac", ""}, "") {
+		t.Fatal("an empty source codec must never count as supported")
+	}
+	if !supportsCodec([]string{" AAC "}, "aac") {
+		t.Fatal("codec matching should ignore case and padding")
+	}
+}
+
 func TestClientCapabilitiesDeclared(t *testing.T) {
 	if (ClientCapabilities{}).Declared() {
 		t.Fatal("empty capabilities must not count as declared")

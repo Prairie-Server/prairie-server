@@ -75,6 +75,12 @@ var adminSettingDefaults = map[string]string{
 
 	"livetv.dvr_path":       DefaultLiveTVDVRPath,
 	"livetv.max_transcodes": "3",
+	"livetv.hw_accel":       DefaultLiveTVHWAccel,
+	"livetv.hw_decode":      DefaultLiveTVHWDecode,
+	"livetv.encoder_preset": DefaultLiveTVEncoderPreset,
+	"livetv.framerate_cap":  DefaultLiveTVFrameRateCap,
+	"livetv.max_resolution": DefaultLiveTVMaxResolution,
+	"livetv.play_method":    DefaultLiveTVPlayMethod,
 
 	"audiobookshelf_compat.enabled":           "true",
 	"jellyfin_compat.enabled":                 "true",
@@ -400,8 +406,18 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 		return normalizeAdminEnum(key, value, "debug", "info", "warn", "error")
 	case "userdb.backend":
 		return normalizeAdminEnum(key, value, "postgres", "sqlite")
-	case "playback.hw_accel":
+	case "playback.hw_accel", "livetv.hw_accel":
 		return normalizeAdminEnum(key, value, "auto", "qsv", "vaapi", "nvenc", "none")
+	case "livetv.hw_decode":
+		return normalizeAdminEnum(key, value, "auto", "on", "off")
+	case "livetv.encoder_preset":
+		return normalizeAdminEnum(key, value, "low_latency", "balanced", "quality")
+	case "livetv.framerate_cap":
+		return normalizeAdminEnum(key, value, "source", "60", "30")
+	case "livetv.max_resolution":
+		return normalizeAdminEnum(key, value, "source", "1080p", "720p")
+	case "livetv.play_method":
+		return normalizeAdminEnum(key, value, "auto", "copy", "transcode")
 	case "playback.chapter_thumbnail_execution":
 		return normalizeAdminEnum(key, value, "local", "prefer_transcode_nodes", "transcode_nodes_only")
 	case "playback.chapter_thumbnail_hdr_policy":

@@ -29,12 +29,14 @@ const DefaultMaxLiveTranscodes = 3
 type HLSBridge struct {
 	root       string
 	ffmpegPath string
-	hwAccel    string
-	// transcodeSlots bounds concurrent encoding sessions; nil disables gating.
-	transcodeSlots chan struct{}
+	// settings is read per tune so admin changes apply to the next channel
+	// start rather than waiting for a restart.
+	settings SettingsProvider
 
-	mu       sync.Mutex
-	sessions map[string]*bridgeSession
+	mu sync.Mutex
+	// activeTranscodes counts encoding sessions against the configured cap.
+	activeTranscodes int
+	sessions         map[string]*bridgeSession
 }
 
 type bridgeSession struct {
@@ -53,11 +55,15 @@ type HLSBridgeOptions struct {
 	// FFmpegPath optionally overrides the ffmpeg binary.
 	FFmpegPath string
 	// HWAccel mirrors playback.hw_accel so live encodes use the same GPU path
-	// as movie transcodes ("auto" probes the host).
+	// as movie transcodes ("auto" probes the host). Ignored when Settings is
+	// set, which carries the Live TV specific policy.
 	HWAccel string
 	// MaxTranscodes bounds concurrent encoding sessions; 0 uses
 	// DefaultMaxLiveTranscodes and a negative value disables the limit.
+	// Ignored when Settings is set.
 	MaxTranscodes int
+	// Settings supplies operator policy per tune. Optional.
+	Settings SettingsProvider
 }
 
 // NewHLSBridge creates a live HLS playback bridge under Root/livetv-hls.
@@ -66,20 +72,27 @@ func NewHLSBridge(opts HLSBridgeOptions) *HLSBridge {
 	if root == "" {
 		root = filepath.Join(os.TempDir(), "prairie-transcode")
 	}
-	maxTranscodes := opts.MaxTranscodes
-	if maxTranscodes == 0 {
-		maxTranscodes = DefaultMaxLiveTranscodes
+	settings := opts.Settings
+	if settings == nil {
+		static := TranscodeSettings{
+			HWAccel:       opts.HWAccel,
+			MaxTranscodes: opts.MaxTranscodes,
+		}
+		settings = func(context.Context) TranscodeSettings { return static }
 	}
-	bridge := &HLSBridge{
+	return &HLSBridge{
 		root:       filepath.Join(root, "livetv-hls"),
 		ffmpegPath: opts.FFmpegPath,
-		hwAccel:    opts.HWAccel,
+		settings:   settings,
 		sessions:   map[string]*bridgeSession{},
 	}
-	if maxTranscodes > 0 {
-		bridge.transcodeSlots = make(chan struct{}, maxTranscodes)
+}
+
+func (b *HLSBridge) currentSettings(ctx context.Context) TranscodeSettings {
+	if b == nil || b.settings == nil {
+		return TranscodeSettings{}
 	}
-	return bridge
+	return b.settings(ctx)
 }
 
 // LiveStreamRequest describes one client's tune.
@@ -102,7 +115,8 @@ func (b *HLSBridge) StartLiveStream(
 	if err := ValidateMediaFetchURL(req.SourceURL); err != nil {
 		return "", "", err
 	}
-	plan := req.Plan
+	settings := b.currentSettings(ctx)
+	plan := settings.applyTo(req.Plan)
 	if plan.VideoCodec == "" {
 		plan.VideoCodec = "copy"
 	}
@@ -110,13 +124,19 @@ func (b *HLSBridge) StartLiveStream(
 		plan.AudioCodec = "copy"
 	}
 	transcoding := plan.Transcodes()
-	if transcoding && !b.acquireTranscodeSlot() {
+	if transcoding && !b.acquireTranscodeSlot(settings.MaxTranscodes) {
 		return "", "", fmt.Errorf("%w: live transcode capacity reached", ErrLimitExceeded)
 	}
 	id, err := idgen.NextID()
 	if err != nil {
 		b.releaseTranscodeSlot(transcoding)
 		return "", "", err
+	}
+	// A copy session is already realtime, so it only waits for the first
+	// segment; an encode builds a lead the player can spend on rate variance.
+	lead := 1
+	if transcoding {
+		lead = DefaultLiveTranscodeLeadSegments
 	}
 	dir := filepath.Join(b.root, id)
 	live, err := playback.StartLiveHLS(ctx, playback.LiveHLSOpts{
@@ -130,7 +150,11 @@ func (b *HLSBridge) StartLiveStream(
 		TargetResolution: plan.MaxResolution,
 		SourceVideoCodec: BroadcastSourceCodecs.Video,
 		SourceAudioCodec: BroadcastSourceCodecs.Audio,
-		HWAccel:          b.hwAccel,
+		HWAccel:          settings.HWAccel,
+		HWDecode:         settings.HWDecode,
+		EncoderPreset:    settings.EncoderPreset,
+		FrameRateCap:     settings.frameRateCap(),
+		LeadSegments:     lead,
 	})
 	if err != nil {
 		b.releaseTranscodeSlot(transcoding)
@@ -156,28 +180,34 @@ func (b *HLSBridge) StartLiveStream(
 	return id, PublicLiveHLSPath(id), nil
 }
 
-// acquireTranscodeSlot takes an encode slot without blocking; a full pool means
-// the caller must be told the server is at capacity rather than queued behind
-// someone else's channel.
-func (b *HLSBridge) acquireTranscodeSlot() bool {
-	if b.transcodeSlots == nil {
+// acquireTranscodeSlot takes an encode slot without blocking; being at capacity
+// is reported to the caller rather than queued behind someone else's channel.
+// The limit is read per tune so an admin can change it without a restart.
+func (b *HLSBridge) acquireTranscodeSlot(maxTranscodes int) bool {
+	limit := maxTranscodes
+	if limit == 0 {
+		limit = DefaultMaxLiveTranscodes
+	}
+	if limit < 0 {
 		return true
 	}
-	select {
-	case b.transcodeSlots <- struct{}{}:
-		return true
-	default:
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.activeTranscodes >= limit {
 		return false
 	}
+	b.activeTranscodes++
+	return true
 }
 
 func (b *HLSBridge) releaseTranscodeSlot(held bool) {
-	if !held || b.transcodeSlots == nil {
+	if !held {
 		return
 	}
-	select {
-	case <-b.transcodeSlots:
-	default:
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	if b.activeTranscodes > 0 {
+		b.activeTranscodes--
 	}
 }
 
