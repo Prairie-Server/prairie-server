@@ -1915,6 +1915,7 @@ func (h *PlaybackHandler) handleStartPlaybackLegacy(w http.ResponseWriter, r *ht
 		ClientUserAgent:   clientInfo.UserAgent,
 		StreamBitrateKbps: streamBitrateKbps,
 		TargetAudioCodec:  targetAudioCodec,
+		ClientVideoCodecs: append([]string(nil), req.CodecsVideo...),
 	}); err != nil {
 		slog.ErrorContext(r.Context(), "failed to set stream state", "component", "api", "session", session.ID, "error", err)
 	}
@@ -3053,6 +3054,26 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 		writeError(w, http.StatusForbidden, "forbidden", "Session belongs to another user")
 		return
 	}
+	// When the client omits target_codec_video, pick best(client ∩ encodable).
+	// Remux "copy" is left alone. Explicit client values (legacy h264) still win.
+	playbackCfg := h.playbackConfig()
+	encodable := playback.DetectEncodableVideoCodecs(playbackCfg.FFmpegPath, playbackCfg.HWAccel)
+	requestedCodec := req.TargetCodecVideo
+	req.TargetCodecVideo = playback.NormalizeTranscodeVideoCodec(
+		requestedCodec,
+		session.ClientVideoCodecs,
+		encodable,
+	)
+	if req.TargetCodecVideo != strings.TrimSpace(requestedCodec) {
+		slog.InfoContext(r.Context(), "selected transcode video codec from capabilities",
+			"playback_session_id", req.SessionID,
+			"requested_target_codec_video", requestedCodec,
+			"client_codecs_video", session.ClientVideoCodecs,
+			"encodable_codecs_video", encodable,
+			"effective_target_codec_video", req.TargetCodecVideo,
+		)
+	}
+
 	requiresVideoTranscode := !strings.EqualFold(req.TargetCodecVideo, "copy")
 	if !h.ensureUserTranscodingAllowed(w, r, userID, requiresVideoTranscode) {
 		return
@@ -3152,13 +3173,14 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 	// encoding transcode so the burned frames are actually produced instead of
 	// the subtitle selection being silently dropped by the filter stage.
 	if req.SubtitleBurnIn && req.SubtitleTrackIndex >= 0 && strings.EqualFold(req.TargetCodecVideo, "copy") {
+		burnInCodec := playback.SelectTargetVideoCodec(session.ClientVideoCodecs, encodable)
 		slog.InfoContext(r.Context(), "forcing video transcode for subtitle burn-in request",
 			"playback_session_id", req.SessionID,
 			"subtitle_track_index", req.SubtitleTrackIndex,
-			"requested_target_codec_video", req.TargetCodecVideo,
-			"effective_target_codec_video", "h264",
+			"requested_target_codec_video", "copy",
+			"effective_target_codec_video", burnInCodec,
 		)
-		req.TargetCodecVideo = "h264"
+		req.TargetCodecVideo = burnInCodec
 	}
 
 	// A copy-video HLS output of a Dolby Vision Profile 7 source must strip the
@@ -3262,7 +3284,6 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 	// the requested position as FFmpeg's -ss input, but resolve that keyframe
 	// before selecting local/offloaded transport so filenames, reconstruction,
 	// and the client timeline all describe the media that is actually emitted.
-	playbackCfg := h.playbackConfig()
 	transportSeekSeconds := alignedSeekSeconds(req.SeekSeconds, req.SegmentDuration, req.TargetCodecVideo)
 	startSegmentNumber := computeStartSegment(transportSeekSeconds, req.SegmentDuration)
 	streamOriginSeconds := 0.0

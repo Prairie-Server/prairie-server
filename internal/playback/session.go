@@ -39,6 +39,11 @@ type Session struct {
 	TargetBitrateKbps int    // requested output bitrate cap for transcodes
 	TranscodeHWAccel  string // effective hardware acceleration mode for transcodes
 
+	// ClientVideoCodecs are the codecs advertised on /playback/start. Used when
+	// /playback/transcode/start omits target_codec_video so the server can pick
+	// best(client ∩ encodable) instead of hardcoding h264.
+	ClientVideoCodecs []string
+
 	// Byte-affecting transcode recipe fields the offloaded restart path needs to
 	// rebuild the exact same stream after an audio switch. Local transcodes read
 	// these from the live ts.Opts(); offloaded transcodes own no local runtime, so
@@ -82,6 +87,7 @@ type SessionStreamState struct {
 	TranscodeNodeURL     string
 	TranscodeTransportID string
 	TranscodeRouteSet    bool
+	ClientVideoCodecs    []string
 
 	// Byte-affecting transcode recipe fields preserved so an offloaded restart
 	// (e.g. audio switch) can rebuild the exact same stream. SubtitleTrackIndex
@@ -783,6 +789,9 @@ func applySessionStreamStateLocked(s *Session, state SessionStreamState) {
 	s.TargetAudioCodec = state.TargetAudioCodec
 	s.TargetBitrateKbps = state.TargetBitrateKbps
 	s.TranscodeHWAccel = state.TranscodeHWAccel
+	if len(state.ClientVideoCodecs) > 0 {
+		s.ClientVideoCodecs = append([]string(nil), state.ClientVideoCodecs...)
+	}
 	if state.TranscodeRouteSet {
 		s.TranscodeNodeURL = state.TranscodeNodeURL
 		s.TranscodeTransportID = state.TranscodeTransportID
@@ -818,6 +827,7 @@ func snapshotSessionStreamStateLocked(s *Session) SessionStreamState {
 		TranscodeNodeURL:     s.TranscodeNodeURL,
 		TranscodeTransportID: s.TranscodeTransportID,
 		TranscodeRouteSet:    true,
+		ClientVideoCodecs:    append([]string(nil), s.ClientVideoCodecs...),
 		SubtitleTrackIndex:   s.SubtitleTrackIndex,
 		SubtitleBurnIn:       s.SubtitleBurnIn,
 		SegmentDuration:      s.SegmentDuration,
@@ -842,6 +852,7 @@ func restoreSessionStreamStateLocked(s *Session, state SessionStreamState) {
 	s.TranscodeHWAccel = state.TranscodeHWAccel
 	s.TranscodeNodeURL = state.TranscodeNodeURL
 	s.TranscodeTransportID = state.TranscodeTransportID
+	s.ClientVideoCodecs = append([]string(nil), state.ClientVideoCodecs...)
 	s.SubtitleTrackIndex = state.SubtitleTrackIndex
 	s.SubtitleBurnIn = state.SubtitleBurnIn
 	s.SegmentDuration = state.SegmentDuration

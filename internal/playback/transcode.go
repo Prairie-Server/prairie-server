@@ -612,6 +612,17 @@ func appendVideoArgs(args []string, opts TranscodeOpts) []string {
 		} else {
 			args = append(args, "-cq:v", "28", "-b:v", "0")
 		}
+	case opts.HWAccel == hwAccelNVENC && codec == "av1":
+		// Ada+ NVENC only — DetectEncodableVideoCodecs gates advertising this.
+		args = append(args, "-c:v", "av1_nvenc", "-rc:v", "vbr")
+		if hasBitrateCap {
+			args = append(args,
+				"-b:v", fmt.Sprintf("%dk", opts.TargetBitrateKbps),
+				"-maxrate", fmt.Sprintf("%dk", opts.TargetBitrateKbps),
+				"-bufsize", fmt.Sprintf("%dk", opts.TargetBitrateKbps*2))
+		} else {
+			args = append(args, "-cq:v", "28", "-b:v", "0")
+		}
 	default:
 		// CPU fallback — match Jellyfin's proven browser-compatible settings.
 		// Force yuv420p to ensure 8-bit output (10-bit sources produce High 10

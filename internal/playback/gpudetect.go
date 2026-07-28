@@ -42,6 +42,7 @@ type HWAccelInfo struct {
 	Source          string             `json:"source"`
 	NodeURL         string             `json:"node_url,omitempty"`
 	Transformations []TransformationV3 `json:"transformations,omitempty"`
+	EncodableCodecs []string           `json:"encodable_codecs,omitempty"`
 }
 
 // DetectHWAccel probes this host's GPU hardware and returns structured info.
@@ -59,11 +60,13 @@ func DetectHWAccelWithFFmpeg(ffmpegPath string) HWAccelInfo {
 			break
 		}
 	}
+	resolved := ResolveHWAccelWithFFmpeg("auto", ffmpegPath)
 	return HWAccelInfo{
-		Resolved:      ResolveHWAccelWithFFmpeg("auto", ffmpegPath),
-		RenderDevices: devices,
-		IntelDetected: intel,
-		Source:        "local",
+		Resolved:        resolved,
+		RenderDevices:   devices,
+		IntelDetected:   intel,
+		Source:          "local",
+		EncodableCodecs: DetectEncodableVideoCodecs(ffmpegPath, resolved),
 	}
 }
 
