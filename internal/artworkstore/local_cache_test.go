@@ -3,7 +3,6 @@ package artworkstore_test
 import (
 	"bytes"
 	"context"
-	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -11,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/artworkstore"
 	"github.com/prairie-server/prairie-server/internal/imagecache"
 	"github.com/prairie-server/prairie-server/internal/metadata"
