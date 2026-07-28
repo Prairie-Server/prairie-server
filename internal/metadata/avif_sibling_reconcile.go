@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
@@ -65,6 +66,9 @@ type AVIFSiblingReconciler struct {
 	pool   *pgxpool.Pool
 	s3     ArtworkObjectChecker
 	cursor scanCursor
+	// skippedNoOriginal counts candidates dropped because the WebP original they
+	// name is not in the store. Reported per pass so the gap stays visible.
+	skippedNoOriginal atomic.Int64
 }
 
 func NewAVIFSiblingReconciler(pool *pgxpool.Pool, s3 ArtworkObjectChecker) *AVIFSiblingReconciler {
@@ -132,6 +136,17 @@ func (r *AVIFSiblingReconciler) DiscoverMissing(ctx context.Context, limit int) 
 	return missing, nil
 }
 
+// SkippedMissingOriginals returns and clears the number of candidates dropped
+// because the WebP original they name is absent from the store. A steady
+// non-zero value means that many catalog rows reference artwork that was never
+// cached — worth seeing, since those images render as fallbacks in every client.
+func (r *AVIFSiblingReconciler) SkippedMissingOriginals() int64 {
+	if r == nil {
+		return 0
+	}
+	return r.skippedNoOriginal.Swap(0)
+}
+
 // pageCachedWebPOriginals returns the next rotated page of cached WebP originals
 // for the given cursor, resetting it once a short page marks the end of the
 // corpus. Shared by every scanner here so the rotation cannot drift apart.
@@ -197,6 +212,26 @@ func (r *AVIFSiblingReconciler) probeMissing(ctx context.Context, paths []string
 				}
 				if exists {
 					continue
+				}
+				// A missing sibling is only work to do if the original is still
+				// there to encode from. Catalog rows name a cache path as soon as
+				// artwork is known, before (or without ever) fetching it: 8,027
+				// people rows point at a WebP original but only 7,551 exist in the
+				// store. Those paths probe as missing on every pass, and enqueueing
+				// them is a closed loop — the job burns avifBackfillMaxAttempts
+				// failures, retires to failed, and EnqueueBatch resets failed rows
+				// to queued with attempt_count 0 the next time discovery finds them.
+				// The queue then never drains and the failed count stops meaning
+				// anything. Probed here rather than with the ladder so the extra
+				// HEAD only lands on paths that were about to be enqueued.
+				originalExists, err := r.s3.ObjectExists(ctx, r.s3.Bucket(), c.path)
+				if err != nil {
+					results[i] = result{err: err}
+					return
+				}
+				if !originalExists {
+					r.skippedNoOriginal.Add(1)
+					return
 				}
 				results[i] = result{in: AVIFBackfillEnqueueInput{
 					OriginalPath: c.path,
