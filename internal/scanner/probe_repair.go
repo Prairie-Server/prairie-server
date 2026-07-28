@@ -89,6 +89,21 @@ func NewPlaybackProbeEnsurer(fileRepo *FileRepository, ffprobePath string, timeo
 	}
 }
 
+// NeedsRepair reports whether Ensure would actually reprobe this file.
+//
+// Lets callers that repair in the background skip scheduling work for files
+// that are already complete, without importing the predicate — `scanner`
+// imports `catalog`, so the dependency cannot run the other way.
+func (e *PlaybackProbeEnsurer) NeedsRepair(file *models.MediaFile) bool {
+	if file == nil {
+		return false
+	}
+	if e == nil || e.fileRepo == nil || strings.TrimSpace(e.ffprobePath) == "" {
+		return false
+	}
+	return NeedsCriticalProbeRepair(file)
+}
+
 func (e *PlaybackProbeEnsurer) Ensure(ctx context.Context, file *models.MediaFile) (*models.MediaFile, error) {
 	if file == nil || !NeedsCriticalProbeRepair(file) {
 		return file, nil

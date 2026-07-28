@@ -618,6 +618,10 @@ type DetailService struct {
 	originalLangFn    func(context.Context, string) string
 	probeEnsurer      PlaybackProbeEnsurer
 	chapterThumbs     ChapterThumbnailQueuer
+
+	// Built on first use so an ensurer set after construction is picked up.
+	probeBackfillOnce sync.Once
+	probeBackfill     *probeBackfiller
 }
 
 // NewDetailService creates a new DetailService.
@@ -1049,7 +1053,7 @@ func (s *DetailService) buildExtraItemDetail(ctx context.Context, contentID stri
 		return nil, fmt.Errorf("fetching extra files: %w", err)
 	}
 	files = FilterMediaFilesByAccess(files, filter)
-	files = s.preparePlaybackFiles(ctx, files)
+	files = s.preparePlaybackFilesDeferred(ctx, files)
 
 	detail := &ItemDetail{
 		ContentID: extra.ContentID,
@@ -1554,7 +1558,7 @@ func (s *DetailService) buildMediaItemDetail(ctx context.Context, item *models.M
 		if item.Type == "audiobook" {
 			sortAudiobookMediaFiles(files)
 		}
-		files = s.preparePlaybackFiles(ctx, files)
+		files = s.preparePlaybackFilesDeferred(ctx, files)
 		detail.Versions, detail.PlaybackVariants, detail.Subtitles, detail.Intro, detail.Credits, detail.Recap, detail.Preview = s.buildPlaybackInfo(
 			ctx,
 			files,
@@ -2405,7 +2409,7 @@ func (s *DetailService) buildEpisodeDetail(ctx context.Context, episode *models.
 		return nil, fmt.Errorf("fetching file versions: %w", err)
 	}
 	files = FilterMediaFilesByAccess(files, filter)
-	files = s.preparePlaybackFiles(ctx, files)
+	files = s.preparePlaybackFilesDeferred(ctx, files)
 	detail.Versions, detail.PlaybackVariants, detail.Subtitles, detail.Intro, detail.Credits, detail.Recap, detail.Preview = s.buildPlaybackInfo(
 		ctx,
 		files,
