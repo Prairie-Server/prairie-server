@@ -12,6 +12,7 @@ import PageBack from "@/components/PageBack";
 import { Button } from "@/components/ui/button";
 import { useCatalogWindow } from "@/hooks/queries/catalog";
 import { personKeys } from "@/hooks/queries/keys";
+import { artworkSrcSet, PROFILE_WIDTHS } from "@/lib/artworkUrl";
 import { useRefreshPerson } from "@/hooks/queries/people";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
@@ -103,6 +104,10 @@ export default function PersonDetail() {
     );
   }
 
+  // 140px, or 180px from the sm breakpoint up. No srcSet means the URL carries
+  // no variant segment to rewrite, and `sizes` alone would be meaningless.
+  const photoSrcSet = artworkSrcSet(person.photo_url, PROFILE_WIDTHS);
+
   return (
     <div>
       {/* Person Header */}
@@ -115,6 +120,8 @@ export default function PersonDetail() {
               {person.photo_url ? (
                 <img
                   src={person.photo_url}
+                  srcSet={photoSrcSet || undefined}
+                  sizes={photoSrcSet ? "(min-width: 640px) 180px, 140px" : undefined}
                   alt={person.name}
                   className="h-full w-full object-cover"
                 />

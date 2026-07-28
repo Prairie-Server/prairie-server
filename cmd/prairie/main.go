@@ -1434,6 +1434,10 @@ func main() {
 			}
 			if pngCleaner := artworkObjectDeleter(deps); pngCleaner != nil {
 				avifBackfillProcessor.SetPNGCleaner(metadata.NewLegacyPNGSiblingCleaner(deps.DB, pngCleaner))
+				// Reclaims rungs that have left an image type's ladder (the w200
+				// still). Nothing else deletes them: re-caching an item only
+				// overwrites the rungs the ladder still names.
+				avifBackfillProcessor.SetRetiredVariantSweeper(metadata.NewRetiredVariantCleaner(deps.DB, pngCleaner))
 			}
 			metadataService.SetAutoCacheImages(cfg.Metadata.CacheImages)
 			metadataImageCacheProcessor.SetEnabled(cfg.Metadata.CacheImages)

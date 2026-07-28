@@ -248,3 +248,65 @@ func (c *LegacyPNGSiblingCleaner) CleanupLegacyPNG(ctx context.Context, limit in
 	}
 	return checked, deleted, nil
 }
+
+// RetiredVariantCleaner deletes objects for width rungs that have left an image
+// type's ladder (see artworkkey.RetiredVariantWidths).
+//
+// Retiring a rung does not reclaim anything on its own: VariantWidths stops
+// naming it, so re-caching an item no longer overwrites it and no existence
+// check looks for it. The objects simply stop being read. This sweeps them.
+type RetiredVariantCleaner struct {
+	pool *pgxpool.Pool
+	s3   ArtworkObjectDeleter
+}
+
+func NewRetiredVariantCleaner(pool *pgxpool.Pool, s3 ArtworkObjectDeleter) *RetiredVariantCleaner {
+	if pool == nil || s3 == nil {
+		return nil
+	}
+	return &RetiredVariantCleaner{pool: pool, s3: s3}
+}
+
+// CleanupRetiredVariants deletes retired-rung objects for up to limit cached
+// originals. Returns how many keys were probed and how many were deleted.
+//
+// Originals whose type has retired nothing are skipped without a single HEAD,
+// so this costs nothing for the types that never lost a rung.
+func (c *RetiredVariantCleaner) CleanupRetiredVariants(ctx context.Context, limit int) (checked, deleted int, err error) {
+	if c == nil || c.pool == nil || c.s3 == nil || limit <= 0 {
+		return 0, 0, nil
+	}
+	reconciler := &AVIFSiblingReconciler{pool: c.pool, s3: nil}
+	paths, err := reconciler.listCachedWebPOriginals(ctx, limit)
+	if err != nil {
+		return 0, 0, err
+	}
+	return c.sweepPaths(ctx, paths)
+}
+
+// sweepPaths deletes retired-rung objects for the given originals. Split from
+// the query so the delete decisions are testable without a database.
+func (c *RetiredVariantCleaner) sweepPaths(ctx context.Context, paths []string) (checked, deleted int, err error) {
+	bucket := c.s3.Bucket()
+	for _, original := range paths {
+		if ctx.Err() != nil {
+			return checked, deleted, ctx.Err()
+		}
+		imageType := artworkkey.ImageTypeFromPath(original)
+		for _, key := range artworkkey.RetiredVariantKeys(original, imageType) {
+			checked++
+			exists, existsErr := c.s3.ObjectExists(ctx, bucket, key)
+			if existsErr != nil {
+				return checked, deleted, existsErr
+			}
+			if !exists {
+				continue
+			}
+			if delErr := c.s3.DeleteObject(ctx, bucket, key); delErr != nil {
+				return checked, deleted, delErr
+			}
+			deleted++
+		}
+	}
+	return checked, deleted, nil
+}

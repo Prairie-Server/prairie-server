@@ -51,6 +51,12 @@ type LegacyPNGCleaner interface {
 	CleanupLegacyPNG(ctx context.Context, limit int) (checked, deleted int, err error)
 }
 
+// RetiredVariantSweeper deletes objects for width rungs that have left an image
+// type's ladder. Satisfied by *RetiredVariantCleaner.
+type RetiredVariantSweeper interface {
+	CleanupRetiredVariants(ctx context.Context, limit int) (checked, deleted int, err error)
+}
+
 // AVIFBackfillStats summarizes one processor run.
 type AVIFBackfillStats struct {
 	EnqueuedExisting int  `json:"enqueued_existing"`
@@ -60,6 +66,8 @@ type AVIFBackfillStats struct {
 	DeletedSucceeded int  `json:"deleted_succeeded"`
 	PNGChecked       int  `json:"png_checked"`
 	PNGDeleted       int  `json:"png_deleted"`
+	RetiredChecked   int  `json:"retired_checked"`
+	RetiredDeleted   int  `json:"retired_deleted"`
 	RuntimeLimited   bool `json:"runtime_limited,omitempty"`
 	// PausedForPlayback records that the pass yielded because playback or a
 	// transcode was active. The queue is durable, so the next tick resumes.
@@ -73,6 +81,7 @@ type AVIFBackfillProcessor struct {
 	ensurer  AVIFSiblingEnsuer
 	discover AVIFMissingDiscoverer
 	pngClean LegacyPNGCleaner
+	retired  RetiredVariantSweeper
 	logger   *slog.Logger
 	enabled  atomic.Bool
 	workers  atomic.Int32
@@ -126,6 +135,12 @@ func (p *AVIFBackfillProcessor) SetDiscoverer(d AVIFMissingDiscoverer) {
 func (p *AVIFBackfillProcessor) SetPNGCleaner(c LegacyPNGCleaner) {
 	if p != nil {
 		p.pngClean = c
+	}
+}
+
+func (p *AVIFBackfillProcessor) SetRetiredVariantSweeper(s RetiredVariantSweeper) {
+	if p != nil {
+		p.retired = s
 	}
 }
 
@@ -268,6 +283,8 @@ func (p *AVIFBackfillProcessor) RunUntilIdle(ctx context.Context, concurrency in
 		stats.DeletedSucceeded = deleted
 	}
 
+	// Both sweeps only run once the queue is idle: encoding real artwork is
+	// always the better use of the cores, and neither sweep is urgent.
 	if p.pngClean != nil && stats.Claimed == 0 {
 		checked, deletedPNG, pngErr := p.pngClean.CleanupLegacyPNG(ctx, 200)
 		stats.PNGChecked = checked
@@ -277,9 +294,19 @@ func (p *AVIFBackfillProcessor) RunUntilIdle(ctx context.Context, concurrency in
 		}
 	}
 
+	if p.retired != nil && stats.Claimed == 0 {
+		checked, deletedRetired, retiredErr := p.retired.CleanupRetiredVariants(ctx, 200)
+		stats.RetiredChecked = checked
+		stats.RetiredDeleted = deletedRetired
+		if retiredErr != nil {
+			p.logger.WarnContext(ctx, "avif backfill: retired variant cleanup failed", "error", retiredErr)
+		}
+	}
+
 	message := fmt.Sprintf(
-		"AVIF backfill: enqueued %d, claimed %d, succeeded %d, failed %d, deleted %d old successes, png checked %d deleted %d",
-		stats.EnqueuedExisting, stats.Claimed, stats.Succeeded, stats.Failed, stats.DeletedSucceeded, stats.PNGChecked, stats.PNGDeleted,
+		"AVIF backfill: enqueued %d, claimed %d, succeeded %d, failed %d, deleted %d old successes, png checked %d deleted %d, retired checked %d deleted %d",
+		stats.EnqueuedExisting, stats.Claimed, stats.Succeeded, stats.Failed, stats.DeletedSucceeded,
+		stats.PNGChecked, stats.PNGDeleted, stats.RetiredChecked, stats.RetiredDeleted,
 	)
 	if stats.PausedForPlayback {
 		message += ", paused for playback"

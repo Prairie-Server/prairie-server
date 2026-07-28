@@ -162,12 +162,64 @@ func VariantWidths(imageType string) []int {
 		return []int{1920, 1280, 300}
 	case "logo":
 		return []int{500}
-	default: // poster, still, profile
+	case "still":
+		// No w200 rung. An episode still renders ~140 CSS-px in the browser
+		// (EpisodeRow) and ~358 px on a UHD television, so w300 covers both
+		// while w200 would be upscaled on the larger one. Nothing asks for a
+		// w200 still: cachedImageVariantKeyFor keeps stills at w500 for TV
+		// clients, the smart-TV client pins STILL_WIDTH to 500, and no caller
+		// passes size="small" for a still. Generating it cost one encode plus
+		// an AVIF sibling per episode for an object only a sweeper would read.
+		return []int{500, 300}
+	default: // poster, profile
 		// w200 is the TV rung: poster cards render ~155 CSS-px, so w300 decodes
 		// ~4x the pixels shown. w200 roughly halves decoded surface (and bytes)
 		// for the smart-TV clients without visibly softening the card.
 		return []int{500, 300, 200}
 	}
+}
+
+// RetiredVariantWidths returns widths this image type used to generate and no
+// longer does. Retiring a rung leaves objects behind that nothing will ever
+// request: VariantWidths stops naming them, so re-caching an item no longer
+// overwrites them and no existence check looks for them. Recording them here is
+// what lets the sweeper find and delete them (see metadata.RetiredVariantCleaner).
+//
+// Append when a rung is retired; never remove an entry, because installs that
+// generated it may still be carrying the objects years later.
+func RetiredVariantWidths(imageType string) []int {
+	switch strings.ToLower(strings.TrimSpace(imageType)) {
+	case "still":
+		// Retired 2026-07: nothing requested a w200 still, on any client.
+		return []int{200}
+	default:
+		return nil
+	}
+}
+
+// RetiredVariantKeys returns every object key for this original's retired rungs,
+// including the AVIF and PNG siblings each rung would have had. Safe to call for
+// any image type; returns nil when the type has retired nothing.
+func RetiredVariantKeys(originalPath, imageType string) []string {
+	widths := RetiredVariantWidths(imageType)
+	if len(widths) == 0 || strings.TrimSpace(originalPath) == "" {
+		return nil
+	}
+	keys := make([]string, 0, len(widths)*3)
+	for _, width := range widths {
+		webpKey := Variant(originalPath, "w"+strconv.Itoa(width))
+		if webpKey == "" {
+			continue
+		}
+		keys = append(keys, webpKey)
+		if avifKey := WebPAVIFSibling(webpKey); avifKey != "" {
+			keys = append(keys, avifKey)
+		}
+		if pngKey := WebPPNGSibling(webpKey); pngKey != "" {
+			keys = append(keys, pngKey)
+		}
+	}
+	return keys
 }
 
 // VariantNames returns the cached variants generated for an artwork type.

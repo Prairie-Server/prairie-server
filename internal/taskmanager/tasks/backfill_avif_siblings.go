@@ -73,6 +73,9 @@ func (t *BackfillAVIFSiblingsTask) Execute(ctx context.Context, progress taskman
 	if stats.PNGDeleted > 0 || stats.PNGChecked > 0 {
 		message += fmt.Sprintf(", legacy PNG checked %d deleted %d", stats.PNGChecked, stats.PNGDeleted)
 	}
+	if stats.RetiredDeleted > 0 || stats.RetiredChecked > 0 {
+		message += fmt.Sprintf(", retired rungs checked %d deleted %d", stats.RetiredChecked, stats.RetiredDeleted)
+	}
 	if stats.RuntimeLimited {
 		message += ", runtime budget reached"
 	}

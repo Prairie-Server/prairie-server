@@ -28,6 +28,20 @@ import { getImageFormats, orderRasterCandidates } from "@/lib/imageFormats";
 export const POSTER_WIDTHS = [200, 300, 500] as const;
 export const BACKDROP_WIDTHS = [300, 1280, 1920] as const;
 
+/**
+ * Portrait rungs. Cast cards render 160px and the person page 140-180px, so a
+ * 1x display is served w200 and a 2x one w300/w500 — where every one of these
+ * used to be w500, roughly 45 KB per face on a page that shows a dozen.
+ */
+export const PROFILE_WIDTHS = [200, 300, 500] as const;
+
+/**
+ * Episode still rungs. Stills have no w200: 140px at 2x needs 280, and the
+ * television surface renders ~358px, so w300 is the narrowest rung that covers
+ * a real still without upscaling. Mirrors artworkkey.VariantWidths("still").
+ */
+export const STILL_WIDTHS = [300, 500] as const;
+
 function pathnameOf(objectPath: string): string {
   if (!objectPath.includes("://")) return objectPath;
   try {
