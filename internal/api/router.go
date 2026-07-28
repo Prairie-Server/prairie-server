@@ -33,6 +33,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/catalogseed"
 	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/deviceclass"
 	"github.com/prairie-server/prairie-server/internal/diagnostics"
 	"github.com/prairie-server/prairie-server/internal/downloads"
 	evt "github.com/prairie-server/prairie-server/internal/events"
@@ -232,6 +233,10 @@ func NewRouter(deps Dependencies) chi.Router {
 	r.Use(apimw.RequestLogger(deps.NodeID))
 	r.Use(middleware.Recoverer)
 	r.Use(apimw.Metrics)
+
+	// Device class drives artwork variant selection, so it must be on the
+	// context before any handler mints an artwork URL.
+	r.Use(deviceclass.Middleware)
 
 	// Compress text-like responses (JSON, SVG, …); media content types are
 	// not in the middleware's allowlist and stream through untouched.
