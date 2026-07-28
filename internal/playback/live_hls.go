@@ -341,14 +341,16 @@ func startLiveHLSOnce(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession
 		return nil, livePipeline{}, fmt.Errorf("live hls mkdir: %w", err)
 	}
 
-	ctx, cancel := context.WithCancel(parent)
+	// The encoder must outlive the HTTP request that started it. Parent is only
+	// used to bound the readiness wait; process lifetime is owned by the session.
+	procCtx, cancel := context.WithCancel(context.Background())
 	bin := ResolveFFmpegPath(opts.FFmpegPath)
 	playlist := filepath.Join(opts.OutputDir, "index.m3u8")
 	segPattern := filepath.Join(opts.OutputDir, "seg_%05d.ts")
 
 	args, pipeline := buildLiveHLSArgs(opts, playlist, segPattern, seg, listSize)
 
-	cmd := exec.CommandContext(ctx, bin, args...)
+	cmd := exec.CommandContext(procCtx, bin, args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
@@ -386,9 +388,9 @@ func startLiveHLSOnce(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession
 		}
 		waitErr := cmd.Wait()
 		session.errMu.Lock()
-		if waitErr != nil && ctx.Err() == nil {
+		if waitErr != nil && procCtx.Err() == nil {
 			session.err = fmt.Errorf("live hls ffmpeg exited: %w (%s)", waitErr, tail.String())
-			slog.WarnContext(ctx, "live hls ffmpeg exited unexpectedly",
+			slog.WarnContext(procCtx, "live hls ffmpeg exited unexpectedly",
 				"session_id", opts.ID, "error", session.err)
 		}
 		session.errMu.Unlock()
@@ -405,7 +407,7 @@ func startLiveHLSOnce(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession
 	if lead < 1 {
 		lead = 1
 	}
-	slog.InfoContext(ctx, "live hls pipeline starting",
+	slog.InfoContext(parent, "live hls pipeline starting",
 		"session_id", opts.ID,
 		"hwaccel", pipeline.HWAccel,
 		"decode", pipeline.decodePath(),
@@ -421,6 +423,9 @@ func startLiveHLSOnce(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession
 			return session, pipeline, nil
 		}
 		select {
+		case <-parent.Done():
+			_ = session.Close()
+			return nil, pipeline, parent.Err()
 		case <-session.done:
 			if liveHLSPlaylistReady(playlist) {
 				return session, pipeline, nil

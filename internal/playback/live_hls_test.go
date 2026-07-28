@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+	"time"
 )
 
 func writeLiveHLSFakeFFmpeg(t *testing.T, script string) string {
@@ -57,6 +58,79 @@ func TestStartLiveHLSFailsWhenNothingIsWritten(t *testing.T) {
 		FFmpegPath: ffmpeg,
 	}); err == nil {
 		t.Fatal("expected an error when ffmpeg produces no playlist")
+	}
+}
+
+// StartLiveHLS must not tie ffmpeg lifetime to the caller context. The HTTP
+// handler cancels its request as soon as the start response is sent; the
+// encoder has to keep running until LiveHLSSession.Close().
+func TestStartLiveHLSSurvivesParentContextCancel(t *testing.T) {
+	ffmpeg := writeLiveHLSFakeFFmpeg(t, `#!/bin/sh
+outdir=""
+prev=""
+for arg in "$@"; do
+  if [ "$prev" = "-hls_segment_filename" ]; then
+    outdir=$(dirname "$arg")
+  fi
+  prev="$arg"
+done
+mkdir -p "$outdir"
+printf 'seg' > "$outdir/seg_00000.ts"
+printf '#EXTM3U\n#EXTINF:1.0,\nseg_00000.ts\n' > "$outdir/index.m3u8"
+while true; do sleep 1; done
+`)
+
+	parent, cancel := context.WithCancel(context.Background())
+	t.Cleanup(cancel)
+
+	session, err := StartLiveHLS(parent, LiveHLSOpts{
+		ID:           "survive",
+		InputURL:     "http://127.0.0.1/auto/v4.1",
+		OutputDir:    filepath.Join(t.TempDir(), "out"),
+		FFmpegPath:   ffmpeg,
+		LeadSegments: 1,
+	})
+	if err != nil {
+		t.Fatalf("StartLiveHLS = %v, want a ready session", err)
+	}
+	t.Cleanup(func() { _ = session.Close() })
+
+	cancel()
+	select {
+	case <-session.Done():
+		t.Fatal("ffmpeg exited when parent context was cancelled")
+	default:
+	}
+
+	if err := session.Close(); err != nil {
+		t.Fatalf("Close = %v", err)
+	}
+	select {
+	case <-session.Done():
+	default:
+		t.Fatal("ffmpeg still running after Close")
+	}
+}
+
+func TestStartLiveHLSAbortsWhenParentCancelledBeforeReady(t *testing.T) {
+	ffmpeg := writeLiveHLSFakeFFmpeg(t, `#!/bin/sh
+while true; do sleep 1; done
+`)
+
+	parent, cancel := context.WithCancel(context.Background())
+	go func() {
+		time.Sleep(200 * time.Millisecond)
+		cancel()
+	}()
+
+	if _, err := StartLiveHLS(parent, LiveHLSOpts{
+		ID:           "abort",
+		InputURL:     "http://127.0.0.1/auto/v4.1",
+		OutputDir:    filepath.Join(t.TempDir(), "out"),
+		FFmpegPath:   ffmpeg,
+		LeadSegments: 3,
+	}); err == nil {
+		t.Fatal("expected error when parent context cancelled before ready")
 	}
 }
 
