@@ -374,6 +374,14 @@ func (p *AVIFBackfillProcessor) discoverMissing(ctx context.Context, stats *AVIF
 		}
 		stats.EnqueuedExisting += len(ids)
 	}
+	// A full batch means the sweep stopped because it hit the batch size, not
+	// because the corpus is covered — so let the next tick discover again instead
+	// of idling for the discovery interval. With the queue now draining in
+	// seconds, waiting fifteen minutes between batches is the difference between
+	// clearing a backlog in minutes and in hours.
+	if len(inputs) >= avifBackfillDiscoverLimit {
+		return nil
+	}
 	p.markDiscovered()
 	return nil
 }

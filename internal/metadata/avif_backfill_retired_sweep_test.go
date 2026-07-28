@@ -100,3 +100,69 @@ func TestRunUntilIdleWithoutASweeper(t *testing.T) {
 		t.Errorf("stats retired = %d/%d, want 0/0 with no sweeper", stats.RetiredChecked, stats.RetiredDeleted)
 	}
 }
+
+type batchDiscoverer struct {
+	calls int
+	batch []AVIFBackfillEnqueueInput
+}
+
+func (d *batchDiscoverer) DiscoverMissing(context.Context, int) ([]AVIFBackfillEnqueueInput, error) {
+	d.calls++
+	return d.batch, nil
+}
+
+type recordingJobStore struct {
+	pauseTestJobStore
+	enqueued int
+}
+
+func (s *recordingJobStore) EnqueueBatch(_ context.Context, in []AVIFBackfillEnqueueInput) ([]int64, error) {
+	s.enqueued += len(in)
+	ids := make([]int64, len(in))
+	for i := range in {
+		ids[i] = int64(i + 1)
+	}
+	return ids, nil
+}
+
+func fullBatch(n int) []AVIFBackfillEnqueueInput {
+	out := make([]AVIFBackfillEnqueueInput, n)
+	for i := range out {
+		out[i] = AVIFBackfillEnqueueInput{OriginalPath: "p.webp", ImageType: "profile"}
+	}
+	return out
+}
+
+// A full batch means the sweep stopped on batch size, not because the corpus is
+// covered, so the next pass must discover again rather than idling out the
+// discovery interval — otherwise a backlog clears one batch per interval.
+func TestDiscoveryRepeatsImmediatelyAfterAFullBatch(t *testing.T) {
+	discoverer := &batchDiscoverer{batch: fullBatch(avifBackfillDiscoverLimit)}
+	p := NewAVIFBackfillProcessor(&recordingJobStore{}, &countingEnsurer{})
+	p.SetDiscoverer(discoverer)
+
+	for range 3 {
+		if _, err := p.RunUntilIdle(context.Background(), 1, time.Minute, nil); err != nil {
+			t.Fatalf("RunUntilIdle: %v", err)
+		}
+	}
+	if discoverer.calls != 3 {
+		t.Fatalf("discovery ran %d times, want 3 (a full batch must not start the interval)", discoverer.calls)
+	}
+}
+
+// A short batch means the sweep saw everything it could, so the interval applies.
+func TestDiscoveryWaitsForTheIntervalAfterAShortBatch(t *testing.T) {
+	discoverer := &batchDiscoverer{batch: fullBatch(1)}
+	p := NewAVIFBackfillProcessor(&recordingJobStore{}, &countingEnsurer{})
+	p.SetDiscoverer(discoverer)
+
+	for range 3 {
+		if _, err := p.RunUntilIdle(context.Background(), 1, time.Minute, nil); err != nil {
+			t.Fatalf("RunUntilIdle: %v", err)
+		}
+	}
+	if discoverer.calls != 1 {
+		t.Fatalf("discovery ran %d times, want 1 (a short batch starts the interval)", discoverer.calls)
+	}
+}
