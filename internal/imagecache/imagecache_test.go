@@ -497,21 +497,19 @@ func TestEnsureAVIFSiblingsBackfillsNewWidthRung(t *testing.T) {
 		t.Fatalf("EnsureAVIFSiblings: %v", err)
 	}
 
-	// Everything uploaded beyond the seeded original must be exactly the w200 rung.
-	var uploaded []string
-	for _, k := range s3.keys() {
-		if k != original {
-			uploaded = append(uploaded, k)
-		}
-	}
+	// The complete key set must be exactly the seeded original (once) plus the new
+	// w200 rung — so a backfill that re-encoded/re-uploaded the immutable original
+	// would fail here rather than being filtered out.
+	got := s3.keys()
 	want := []string{
+		original,
 		artworkkey.Variant(original, "w200"),
 		artworkkey.WebPAVIFSibling(artworkkey.Variant(original, "w200")),
 	}
-	sort.Strings(uploaded)
+	sort.Strings(got)
 	sort.Strings(want)
-	if !slices.Equal(uploaded, want) {
-		t.Fatalf("uploaded = %v, want only the new w200 rung %v", uploaded, want)
+	if !slices.Equal(got, want) {
+		t.Fatalf("uploaded keys = %v, want exactly the original plus the w200 rung %v", got, want)
 	}
 }
 
