@@ -38,8 +38,10 @@ func NewAVIFSiblingReconciler(pool *pgxpool.Pool, s3 ArtworkObjectChecker) *AVIF
 
 // DiscoverMissing scans catalog artwork surfaces for cached WebP paths whose
 // display-ladder AVIF siblings are absent. Original stays WebP-only (no
-// original.avif), so coverage is judged by w300/w500/… AVIFs. Does not reset
-// path columns — only enqueues AVIF work.
+// original.avif), so coverage is judged by w300/w500/… AVIFs — which now
+// includes the w200 TV rung, so art cached before that rung existed is flagged
+// here and the backfill ensures its WebP + AVIF (see Cacher.EnsureAVIFSiblings).
+// Does not reset path columns — only enqueues backfill work.
 func (r *AVIFSiblingReconciler) DiscoverMissing(ctx context.Context, limit int) ([]AVIFBackfillEnqueueInput, error) {
 	if r == nil || r.pool == nil || r.s3 == nil || limit <= 0 {
 		return nil, nil

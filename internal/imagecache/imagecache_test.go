@@ -325,17 +325,17 @@ func TestCache_Poster(t *testing.T) {
 	}
 
 	keys := s3.keys()
-	// Expect 3 WebP variants + 2 AVIF siblings (w500, w300). original stays WebP-only.
-	if len(keys) != 5 {
-		t.Errorf("expected 5 uploaded objects (webp+display avif), got %d: %v", len(keys), keys)
+	// Expect 4 WebP variants + 3 AVIF siblings (w500, w300, w200). original stays WebP-only.
+	if len(keys) != 7 {
+		t.Errorf("expected 7 uploaded objects (webp+display avif), got %d: %v", len(keys), keys)
 	}
-	for _, variant := range []string{"original", "w500", "w300"} {
+	for _, variant := range []string{"original", "w500", "w300", "w200"} {
 		want := result.VariantPaths[variant]
 		if !hasKey(keys, want) {
 			t.Errorf("missing S3 key %q in %v", want, keys)
 		}
 	}
-	for _, variant := range []string{"w500", "w300"} {
+	for _, variant := range []string{"w500", "w300", "w200"} {
 		want := result.VariantPaths[variant]
 		if !hasKey(keys, artworkkey.WebPAVIFSibling(want)) {
 			t.Errorf("missing AVIF sibling for %q in %v", want, keys)
@@ -366,8 +366,8 @@ func TestCacheSkipsUploadingVariantsThatAlreadyExist(t *testing.T) {
 		t.Fatalf("prime immutable variants: %v", err)
 	}
 	c.WaitAVIFBackfill()
-	existing := make([]string, 0, 5)
-	for _, variant := range []string{"original", "w500", "w300"} {
+	existing := make([]string, 0, 7)
+	for _, variant := range []string{"original", "w500", "w300", "w200"} {
 		key := first.VariantPaths[variant]
 		existing = append(existing, key)
 		if variant == "original" {
@@ -389,8 +389,8 @@ func TestCacheSkipsUploadingVariantsThatAlreadyExist(t *testing.T) {
 		t.Fatalf("uploaded keys = %v, want none when variants already exist", got)
 	}
 	// Sync return counts WebP phase only; AVIF backfill also finds existing objects.
-	if result.UploadedVariants != 0 || result.ExistingVariants != 3 {
-		t.Fatalf("upload stats = uploaded %d existing %d, want uploaded 0 existing 3", result.UploadedVariants, result.ExistingVariants)
+	if result.UploadedVariants != 0 || result.ExistingVariants != 4 {
+		t.Fatalf("upload stats = uploaded %d existing %d, want uploaded 0 existing 4", result.UploadedVariants, result.ExistingVariants)
 	}
 	for _, key := range existing {
 		if !hasKey(s3.checkedKeys(), key) {
@@ -418,8 +418,8 @@ func TestCacheDifferentContentCreatesDifferentImmutableRevision(t *testing.T) {
 	if first.Revision == second.Revision || first.OriginalPath == second.OriginalPath {
 		t.Fatalf("different content reused revision: first=%q second=%q", first.OriginalPath, second.OriginalPath)
 	}
-	// Two revisions × (3 WebP + 2 display AVIF) = 10 objects.
-	if got := s3.keys(); len(got) != 10 {
+	// Two revisions × (4 WebP + 3 display AVIF) = 14 objects.
+	if got := s3.keys(); len(got) != 14 {
 		t.Fatalf("uploaded keys = %v, want both immutable three-variant revisions with display AVIF siblings", got)
 	}
 }
@@ -457,6 +457,8 @@ func TestCacheUploadsOnlyMissingVariants(t *testing.T) {
 	wantUploads := []string{
 		result.VariantPaths["w300"],
 		artworkkey.WebPAVIFSibling(result.VariantPaths["w300"]),
+		result.VariantPaths["w200"],
+		artworkkey.WebPAVIFSibling(result.VariantPaths["w200"]),
 	}
 	got := s3.keys()
 	sort.Strings(got)
@@ -464,9 +466,52 @@ func TestCacheUploadsOnlyMissingVariants(t *testing.T) {
 	if !slices.Equal(got, wantUploads) {
 		t.Fatalf("uploaded keys = %v, want %v", got, wantUploads)
 	}
-	// Sync return counts WebP phase only (w300 upload + original/w500 existing).
-	if result.UploadedVariants != 1 || result.ExistingVariants != 2 {
-		t.Fatalf("upload stats = uploaded %d existing %d, want uploaded 1 existing 2", result.UploadedVariants, result.ExistingVariants)
+	// Sync return counts WebP phase only (w300+w200 upload, original/w500 existing).
+	if result.UploadedVariants != 2 || result.ExistingVariants != 2 {
+		t.Fatalf("upload stats = uploaded %d existing %d, want uploaded 2 existing 2", result.UploadedVariants, result.ExistingVariants)
+	}
+}
+
+// EnsureAVIFSiblings backfills a newly-added ladder rung (the w200 TV rung) for
+// artwork cached before the rung existed: the older rungs are already present,
+// so only the missing w200 WebP + AVIF are uploaded.
+func TestEnsureAVIFSiblingsBackfillsNewWidthRung(t *testing.T) {
+	jpeg := makeTestJPEG(t)
+	s3 := &mockS3{bucket: "media"}
+	c := newWithHTTPClient(s3, http.DefaultClient)
+
+	original := "tmdb/movies/550/poster/original.webp"
+	// Seed the stored original so EnsureAVIFSiblings can re-derive the ladder.
+	if err := s3.PutObject(context.Background(), "media", original, jpeg); err != nil {
+		t.Fatalf("seed original: %v", err)
+	}
+	// Pre-w200 art already has the w500/w300 rungs (WebP + AVIF).
+	s3.setExisting(
+		artworkkey.Variant(original, "w500"),
+		artworkkey.WebPAVIFSibling(artworkkey.Variant(original, "w500")),
+		artworkkey.Variant(original, "w300"),
+		artworkkey.WebPAVIFSibling(artworkkey.Variant(original, "w300")),
+	)
+
+	if err := c.EnsureAVIFSiblings(context.Background(), original, "poster"); err != nil {
+		t.Fatalf("EnsureAVIFSiblings: %v", err)
+	}
+
+	// Everything uploaded beyond the seeded original must be exactly the w200 rung.
+	var uploaded []string
+	for _, k := range s3.keys() {
+		if k != original {
+			uploaded = append(uploaded, k)
+		}
+	}
+	want := []string{
+		artworkkey.Variant(original, "w200"),
+		artworkkey.WebPAVIFSibling(artworkkey.Variant(original, "w200")),
+	}
+	sort.Strings(uploaded)
+	sort.Strings(want)
+	if !slices.Equal(uploaded, want) {
+		t.Fatalf("uploaded = %v, want only the new w200 rung %v", uploaded, want)
 	}
 }
 

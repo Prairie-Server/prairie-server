@@ -87,7 +87,10 @@ func VariantWidths(imageType string) []int {
 	case "logo":
 		return []int{500}
 	default: // poster, still, profile
-		return []int{500, 300}
+		// w200 is the TV rung: poster cards render ~155 CSS-px, so w300 decodes
+		// ~4x the pixels shown. w200 roughly halves decoded surface (and bytes)
+		// for the smart-TV clients without visibly softening the card.
+		return []int{500, 300, 200}
 	}
 }
 
