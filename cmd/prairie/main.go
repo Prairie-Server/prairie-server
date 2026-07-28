@@ -2066,11 +2066,29 @@ func main() {
 	if deps.DB != nil {
 		liveTVSvc = livetv.NewService(deps.DB)
 		ffmpegPath := cfg.Playback.FFmpegPath
+		// Read Live TV transcode policy per tune off the hot-reloaded config so
+		// an admin change lands on the next channel start, not the next restart.
+		liveTVSettings := func(context.Context) livetv.TranscodeSettings {
+			current := cfg
+			if deps.LiveConfig != nil {
+				if live := deps.LiveConfig(); live != nil {
+					current = live
+				}
+			}
+			return livetv.TranscodeSettings{
+				HWAccel:       current.LiveTV.HWAccel,
+				HWDecode:      current.LiveTV.HWDecode,
+				EncoderPreset: current.LiveTV.EncoderPreset,
+				FrameRateCap:  current.LiveTV.FrameRateCap,
+				MaxResolution: current.LiveTV.MaxResolution,
+				PlayMethod:    current.LiveTV.PlayMethod,
+				MaxTranscodes: current.LiveTV.MaxTranscodes,
+			}
+		}
 		bridge := livetv.NewHLSBridge(livetv.HLSBridgeOptions{
-			Root:          cfg.Playback.TranscodeDir,
-			FFmpegPath:    ffmpegPath,
-			HWAccel:       cfg.Playback.HWAccel,
-			MaxTranscodes: cfg.LiveTV.MaxTranscodes,
+			Root:       cfg.Playback.TranscodeDir,
+			FFmpegPath: ffmpegPath,
+			Settings:   liveTVSettings,
 		})
 		liveTVSvc.SetPlaybackBridge(bridge)
 		dvrPath := cfg.LiveTV.DVRPath

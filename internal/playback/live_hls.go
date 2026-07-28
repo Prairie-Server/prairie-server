@@ -58,6 +58,35 @@ type LiveHLSOpts struct {
 	HWAccel string
 	// HWDevice optionally pins the render device used for hardware encoding.
 	HWDevice string
+	// HWDecode selects hardware decoding: "auto" (default), "on", "off".
+	HWDecode string
+	// EncoderPreset trades compression for encode speed; empty means
+	// low latency, which is what a live source needs.
+	EncoderPreset string
+	// FrameRateCap optionally limits output frame rate ("30", "60"). Empty
+	// keeps the broadcast frame rate, which is the goal on capable hardware.
+	FrameRateCap string
+	// LeadSegments is how many segments must exist before the session is
+	// reported ready, giving the player buffer to absorb rate variance.
+	LeadSegments int
+}
+
+// livePipeline records what the built command line actually does, so the
+// effective decode path is visible in logs instead of inferred.
+type livePipeline struct {
+	HWAccel    string
+	Decoder    string
+	VideoCodec string
+	AudioCodec string
+	Preset     string
+	FrameRate  string
+}
+
+func (p livePipeline) decodePath() string {
+	if p.Decoder != "" {
+		return p.Decoder
+	}
+	return "software"
 }
 
 func (o LiveHLSOpts) transcodesVideo() bool {
@@ -72,7 +101,11 @@ func (o LiveHLSOpts) transcodesAudio() bool {
 // sessions keep the low-latency remux flags; encoding sessions reuse the VOD
 // encoder/filter builders so live and on-demand transcodes stay on one set of
 // hardware and quality rules.
-func buildLiveHLSArgs(opts LiveHLSOpts, playlist, segPattern string, segmentSeconds, listSize int) []string {
+func buildLiveHLSArgs(
+	opts LiveHLSOpts,
+	playlist, segPattern string,
+	segmentSeconds, listSize int,
+) ([]string, livePipeline) {
 	encodeVideo := opts.transcodesVideo()
 	encodeAudio := opts.transcodesAudio()
 
@@ -90,6 +123,7 @@ func buildLiveHLSArgs(opts LiveHLSOpts, playlist, segPattern string, segmentSeco
 		FFmpegPath:          opts.FFmpegPath,
 		HWAccel:             opts.HWAccel,
 		HWDevice:            opts.HWDevice,
+		EncoderPreset:       liveEncoderPreset(opts.EncoderPreset),
 		// Live has no pre-roll to spend on encoder lookahead.
 		FastStart: true,
 	}
@@ -101,9 +135,25 @@ func buildLiveHLSArgs(opts LiveHLSOpts, playlist, segPattern string, segmentSeco
 	}
 	shared.HWAccel = resolveEffectiveTranscodeHWAccel(shared)
 
+	pipeline := livePipeline{
+		HWAccel:    shared.HWAccel,
+		VideoCodec: shared.TargetCodecVideo,
+		AudioCodec: shared.TargetCodecAudio,
+	}
+	if encodeVideo {
+		pipeline.Preset = shared.EncoderPreset
+		pipeline.Decoder = resolveLiveVideoDecoder(
+			opts.HWDecode, shared.HWAccel, opts.SourceVideoCodec, opts.FFmpegPath)
+		pipeline.FrameRate = liveFrameRateArg(opts.FrameRateCap)
+	}
+
 	args := []string{"-hide_banner", "-loglevel", "error"}
 	if encodeVideo {
 		args = appendHWAccelArgs(args, shared)
+		if pipeline.Decoder != "" {
+			// Input option: it selects the decoder for the stream that follows.
+			args = append(args, "-c:v", pipeline.Decoder)
+		}
 	}
 	args = append(args,
 		"-fflags", "+genpts+nobuffer",
@@ -115,6 +165,9 @@ func buildLiveHLSArgs(opts LiveHLSOpts, playlist, segPattern string, segmentSeco
 
 	if encodeVideo {
 		args = appendVideoArgs(args, shared)
+		if pipeline.FrameRate != "" {
+			args = append(args, "-r", pipeline.FrameRate)
+		}
 	} else {
 		args = append(args, "-c:v", "copy")
 	}
@@ -136,21 +189,143 @@ func buildLiveHLSArgs(opts LiveHLSOpts, playlist, segPattern string, segmentSeco
 		"-hls_segment_type", "mpegts",
 		"-hls_segment_filename", segPattern,
 		playlist,
-	)
+	), pipeline
 }
 
-// StartLiveHLS launches ffmpeg to remux InputURL into a live HLS playlist.
-// The caller must eventually Close the session to stop ffmpeg and may RemoveAll
-// the OutputDir after Close.
+// liveEncoderPreset defaults live sessions to low latency: a live encode that
+// drops below realtime never catches up, so speed beats compression.
+func liveEncoderPreset(preset string) string {
+	switch strings.ToLower(strings.TrimSpace(preset)) {
+	case EncoderPresetBalanced:
+		return EncoderPresetBalanced
+	case EncoderPresetQuality:
+		return EncoderPresetQuality
+	default:
+		return EncoderPresetLowLatency
+	}
+}
+
+// liveFrameRateArg converts a frame-rate cap into an ffmpeg -r value. Broadcast
+// rates are fractional (59.94 / 29.97), so halving 60 has to stay fractional or
+// ffmpeg resamples against a rate the source never had.
+func liveFrameRateArg(cap string) string {
+	switch strings.ToLower(strings.TrimSpace(cap)) {
+	case "30":
+		return "30000/1001"
+	case "60":
+		return "60000/1001"
+	default:
+		return ""
+	}
+}
+
+// StartLiveHLS launches ffmpeg to package InputURL into a live HLS playlist,
+// re-encoding the streams the client cannot decode. The caller must eventually
+// Close the session to stop ffmpeg and may RemoveAll the OutputDir after Close.
+//
+// Hardware failures degrade instead of killing the channel: a GPU that cannot
+// decode this codec drops to software decode, and a GPU that cannot be used at
+// all drops to a software encode. Non-hardware failures (dead tuner, bad URL)
+// fail on the first attempt so a broken channel is not retried three times.
 func StartLiveHLS(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession, error) {
+	var lastErr error
+	ladder := liveFallbackLadder(opts)
+	for i, attempt := range ladder {
+		session, _, err := startLiveHLSAttempt(parent, attempt)
+		if err == nil {
+			if i > 0 {
+				slog.WarnContext(parent, "live hls started on a degraded pipeline",
+					"session_id", opts.ID, "hwaccel", attempt.HWAccel, "hw_decode", attempt.HWDecode)
+			}
+			return session, nil
+		}
+		lastErr = err
+		if i+1 >= len(ladder) || !looksLikeHardwareFailure(err) {
+			break
+		}
+		slog.WarnContext(parent, "live hls hardware pipeline failed, falling back",
+			"session_id", opts.ID,
+			"hwaccel", attempt.HWAccel,
+			"hw_decode", attempt.HWDecode,
+			"error", err)
+	}
+	return nil, lastErr
+}
+
+// liveFallbackLadder is the ordered set of pipelines to try, most capable
+// first. Copy sessions and software encodes have nothing to fall back from.
+func liveFallbackLadder(opts LiveHLSOpts) []LiveHLSOpts {
+	ladder := []LiveHLSOpts{opts}
+	if !opts.transcodesVideo() {
+		return ladder
+	}
+	hwAccel := ResolveHWAccelWithFFmpeg(opts.HWAccel, opts.FFmpegPath)
+	if hwAccel == "" || hwAccel == "none" {
+		return ladder
+	}
+	if !strings.EqualFold(strings.TrimSpace(opts.HWDecode), HWDecodeOff) {
+		softwareDecode := opts
+		softwareDecode.HWDecode = HWDecodeOff
+		ladder = append(ladder, softwareDecode)
+	}
+	softwareAll := opts
+	softwareAll.HWDecode = HWDecodeOff
+	softwareAll.HWAccel = "none"
+	return append(ladder, softwareAll)
+}
+
+// hardwareFailureMarkers are substrings ffmpeg prints when the GPU pipeline
+// itself is the problem, as opposed to the source being unreachable.
+var hardwareFailureMarkers = []string{
+	"hwaccel", "hardware device", "cuda", "cuvid", "nvenc", "nvdec",
+	"vaapi", "qsv", "impossible to convert between the formats",
+	"error initializing a simple filtergraph",
+}
+
+func looksLikeHardwareFailure(err error) bool {
+	if err == nil {
+		return false
+	}
+	message := strings.ToLower(err.Error())
+	for _, marker := range hardwareFailureMarkers {
+		if strings.Contains(message, marker) {
+			return true
+		}
+	}
+	return false
+}
+
+func startLiveHLSAttempt(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession, livePipeline, error) {
+	session, pipeline, err := startLiveHLSOnce(parent, opts)
+	if err != nil {
+		// Clear partial output so a retry starts from an empty directory.
+		_ = removeDirContents(opts.OutputDir)
+	}
+	return session, pipeline, err
+}
+
+func removeDirContents(dir string) error {
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return err
+	}
+	for _, entry := range entries {
+		if err := os.RemoveAll(filepath.Join(dir, entry.Name())); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func startLiveHLSOnce(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession, livePipeline, error) {
 	if opts.ID == "" {
-		return nil, errors.New("live hls: id required")
+		return nil, livePipeline{}, errors.New("live hls: id required")
 	}
 	if opts.InputURL == "" {
-		return nil, errors.New("live hls: input url required")
+		return nil, livePipeline{}, errors.New("live hls: input url required")
 	}
 	if opts.OutputDir == "" {
-		return nil, errors.New("live hls: output dir required")
+		return nil, livePipeline{}, errors.New("live hls: output dir required")
 	}
 	seg := opts.SegmentSeconds
 	if seg <= 0 {
@@ -163,7 +338,7 @@ func StartLiveHLS(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession, er
 		listSize = 6
 	}
 	if err := os.MkdirAll(opts.OutputDir, 0o755); err != nil {
-		return nil, fmt.Errorf("live hls mkdir: %w", err)
+		return nil, livePipeline{}, fmt.Errorf("live hls mkdir: %w", err)
 	}
 
 	ctx, cancel := context.WithCancel(parent)
@@ -171,18 +346,18 @@ func StartLiveHLS(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession, er
 	playlist := filepath.Join(opts.OutputDir, "index.m3u8")
 	segPattern := filepath.Join(opts.OutputDir, "seg_%05d.ts")
 
-	args := buildLiveHLSArgs(opts, playlist, segPattern, seg, listSize)
+	args, pipeline := buildLiveHLSArgs(opts, playlist, segPattern, seg, listSize)
 
 	cmd := exec.CommandContext(ctx, bin, args...)
 	cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	stderr, err := cmd.StderrPipe()
 	if err != nil {
 		cancel()
-		return nil, fmt.Errorf("live hls stderr pipe: %w", err)
+		return nil, pipeline, fmt.Errorf("live hls stderr pipe: %w", err)
 	}
 	if err := cmd.Start(); err != nil {
 		cancel()
-		return nil, fmt.Errorf("live hls start: %w", err)
+		return nil, pipeline, fmt.Errorf("live hls start: %w", err)
 	}
 
 	session := &LiveHLSSession{
@@ -195,12 +370,15 @@ func StartLiveHLS(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession, er
 	}
 
 	go func() {
+		// Keep a bounded tail rather than the last read: ffmpeg reports the
+		// cause first ("Hardware device setup failed") and the consequence
+		// last, and only the cause tells us whether a fallback would help.
+		tail := newBoundedTailBuffer(0)
 		buf := make([]byte, 4096)
-		var last []byte
 		for {
 			n, readErr := stderr.Read(buf)
 			if n > 0 {
-				last = append(last[:0], buf[:n]...)
+				_, _ = tail.Write(buf[:n])
 			}
 			if readErr != nil {
 				break
@@ -209,7 +387,7 @@ func StartLiveHLS(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession, er
 		waitErr := cmd.Wait()
 		session.errMu.Lock()
 		if waitErr != nil && ctx.Err() == nil {
-			session.err = fmt.Errorf("live hls ffmpeg exited: %w (%s)", waitErr, string(last))
+			session.err = fmt.Errorf("live hls ffmpeg exited: %w (%s)", waitErr, tail.String())
 			slog.WarnContext(ctx, "live hls ffmpeg exited unexpectedly",
 				"session_id", opts.ID, "error", session.err)
 		}
@@ -217,19 +395,35 @@ func StartLiveHLS(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession, er
 		close(session.done)
 	}()
 
-	// Block until the playlist lists at least one segment. Returning earlier
-	// caused clients to GET index.m3u8 → 404 → hls.js manifestLoadError.
+	// Block until the playlist lists enough segments. Returning earlier caused
+	// clients to GET index.m3u8 → 404 → hls.js manifestLoadError, and starting
+	// a transcode with a single segment leaves the player with no buffer to
+	// absorb encoder rate variance.
 	// Readiness is checked before the exit status so a run that finished
 	// writing playable segments as it exited is not reported as a failure.
+	lead := opts.LeadSegments
+	if lead < 1 {
+		lead = 1
+	}
+	slog.InfoContext(ctx, "live hls pipeline starting",
+		"session_id", opts.ID,
+		"hwaccel", pipeline.HWAccel,
+		"decode", pipeline.decodePath(),
+		"video", pipeline.VideoCodec,
+		"audio", pipeline.AudioCodec,
+		"preset", pipeline.Preset,
+		"frame_rate", pipeline.FrameRate,
+		"lead_segments", lead)
+
 	deadline := time.Now().Add(20 * time.Second)
 	for time.Now().Before(deadline) {
-		if liveHLSPlaylistReady(playlist) {
-			return session, nil
+		if liveHLSSegmentCount(playlist) >= lead {
+			return session, pipeline, nil
 		}
 		select {
 		case <-session.done:
 			if liveHLSPlaylistReady(playlist) {
-				return session, nil
+				return session, pipeline, nil
 			}
 			session.errMu.Lock()
 			err := session.err
@@ -238,41 +432,49 @@ func StartLiveHLS(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession, er
 				err = errors.New("live hls ffmpeg exited before playlist ready")
 			}
 			_ = session.Close()
-			return nil, err
+			return nil, pipeline, err
 		default:
 		}
 		time.Sleep(100 * time.Millisecond)
 	}
 	_ = session.Close()
-	return nil, errors.New("live hls playlist not ready within timeout")
+	return nil, pipeline, errors.New("live hls playlist not ready within timeout")
 }
 
 // liveHLSPlaylistReady reports whether the HLS playlist is safe for clients to
-// load: non-empty and either listing a segment (#EXTINF) or accompanied by a
-// non-empty .ts segment file in the same directory.
+// load at all: it lists at least one segment.
 func liveHLSPlaylistReady(playlist string) bool {
+	return liveHLSSegmentCount(playlist) >= 1
+}
+
+// liveHLSSegmentCount counts the segments a client could fetch right now. It
+// reads the playlist rather than the directory because a segment only becomes
+// fetchable once ffmpeg has advertised it.
+func liveHLSSegmentCount(playlist string) int {
 	data, err := os.ReadFile(playlist)
 	if err != nil || len(data) == 0 {
-		return false
+		return 0
 	}
-	if bytes.Contains(data, []byte("#EXTINF")) {
-		return true
+	if count := bytes.Count(data, []byte("#EXTINF")); count > 0 {
+		return count
 	}
+	// Some writers flush the playlist header before the first #EXTINF; fall
+	// back to segments already on disk so a ready stream is not missed.
 	dir := filepath.Dir(playlist)
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return false
+		return 0
 	}
+	count := 0
 	for _, e := range entries {
 		if e.IsDir() || !strings.HasSuffix(strings.ToLower(e.Name()), ".ts") {
 			continue
 		}
-		info, infoErr := e.Info()
-		if infoErr == nil && info.Size() > 0 {
-			return true
+		if info, infoErr := e.Info(); infoErr == nil && info.Size() > 0 {
+			count++
 		}
 	}
-	return false
+	return count
 }
 
 // Err returns a non-nil error if ffmpeg exited unexpectedly.

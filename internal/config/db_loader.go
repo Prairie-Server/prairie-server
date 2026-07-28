@@ -368,6 +368,12 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 		return nil, err
 	}
 	cfg.LiveTV.MaxTranscodes = liveTVMaxTranscodes
+	cfg.LiveTV.HWAccel = stringOr(m, "livetv.hw_accel", DefaultLiveTVHWAccel)
+	cfg.LiveTV.HWDecode = stringOr(m, "livetv.hw_decode", DefaultLiveTVHWDecode)
+	cfg.LiveTV.EncoderPreset = stringOr(m, "livetv.encoder_preset", DefaultLiveTVEncoderPreset)
+	cfg.LiveTV.FrameRateCap = stringOr(m, "livetv.framerate_cap", DefaultLiveTVFrameRateCap)
+	cfg.LiveTV.MaxResolution = stringOr(m, "livetv.max_resolution", DefaultLiveTVMaxResolution)
+	cfg.LiveTV.PlayMethod = stringOr(m, "livetv.play_method", DefaultLiveTVPlayMethod)
 
 	// Redis
 	cfg.Redis.URL = stringOr(m, "redis.url", "")
