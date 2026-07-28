@@ -6,6 +6,7 @@ package artworkkey
 import (
 	"net/url"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -75,6 +76,81 @@ func Revision(objectPath string) string {
 		return ""
 	}
 	return stem[firstDot+1:]
+}
+
+// VariantName extracts the variant segment from a key — "original", "w300", or
+// empty when the name is not variant-shaped.
+func VariantName(objectPath string) string {
+	name := path.Base(strings.TrimSpace(objectPath))
+	if name == "" || name == "." || name == "/" {
+		return ""
+	}
+	stem := strings.TrimSuffix(name, path.Ext(name))
+	if firstDot := strings.IndexByte(stem, '.'); firstDot >= 0 {
+		stem = stem[:firstDot]
+	}
+	return stem
+}
+
+// variantWidth parses the pixel width out of a "w<N>" variant name. Reports
+// false for "original" and anything not shaped like a rung.
+func variantWidth(variant string) (int, bool) {
+	if len(variant) < 2 || variant[0] != 'w' {
+		return 0, false
+	}
+	width, err := strconv.Atoi(variant[1:])
+	if err != nil || width <= 0 {
+		return 0, false
+	}
+	return width, true
+}
+
+// WiderVariantKeys returns keys for the rungs wider than the one in objectPath,
+// narrowest first, for the same artwork, revision and format.
+//
+// Used to stand in for a rung that has not been generated yet. A newly added
+// ladder entry does not exist for artwork cached before it, and the backfill
+// that fills it in runs for as long as the catalog is large — so a client that
+// asks for the new rung would otherwise get a 404 until that finishes. Serving
+// the next rung up is correct rather than merely convenient: it is the same
+// image, and it is what the client would have asked for before the rung existed.
+//
+// Narrowest-first because the point is to send as few bytes as possible; falling
+// straight to the original would defeat the ladder entirely.
+//
+// Returns nil for "original" (nothing is wider) and for unrecognized names.
+func WiderVariantKeys(objectPath string) []string {
+	objectPath = strings.TrimSpace(objectPath)
+	if objectPath == "" || strings.Contains(objectPath, "://") {
+		return nil
+	}
+	variant := VariantName(objectPath)
+	width, ok := variantWidth(variant)
+	if !ok {
+		return nil
+	}
+	name := path.Base(objectPath)
+	dir := path.Dir(objectPath)
+	if dir == "." || dir == "/" {
+		return nil
+	}
+	// Suffix is everything the rungs share: ".<revision>.<ext>", or just ".<ext>"
+	// on legacy unrevisioned keys.
+	suffix := strings.TrimPrefix(name, variant)
+
+	wider := make([]int, 0, 3)
+	for _, candidate := range VariantWidths(ImageTypeFromPath(objectPath)) {
+		if candidate > width {
+			wider = append(wider, candidate)
+		}
+	}
+	sort.Ints(wider)
+
+	keys := make([]string, 0, len(wider))
+	for _, candidate := range wider {
+		keys = append(keys, strings.TrimRight(dir, "/")+"/w"+strconv.Itoa(candidate)+suffix)
+	}
+	return keys
 }
 
 // VariantWidths returns the resize widths generated for an artwork type. This

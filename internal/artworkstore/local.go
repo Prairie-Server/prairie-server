@@ -22,6 +22,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
 )
 
 const (
@@ -369,12 +371,7 @@ func (s *LocalStore) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	path, err := s.objectPath(key)
-	if err != nil {
-		http.NotFound(w, r)
-		return
-	}
-	f, err := os.Open(path)
+	f, info, substituted, err := s.openWithRungFallback(key)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			http.NotFound(w, r)
@@ -385,23 +382,81 @@ func (s *LocalStore) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	defer f.Close()
 
-	info, err := f.Stat()
-	if err != nil || !info.Mode().IsRegular() {
-		http.NotFound(w, r)
-		return
-	}
-
+	// Content type comes from the requested key, which is correct either way: a
+	// substituted rung differs only in width, never in format.
 	if ct := ContentTypeFromKey(key); ct != "" {
 		w.Header().Set("Content-Type", ct)
 	}
-	// Revisioned object keys are content-addressed; allow long-lived browser cache.
-	w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	if substituted {
+		// A wider rung is standing in for one that has not been generated yet.
+		// This response must NOT be cached as content-addressed: the real object
+		// will appear at this exact URL once the backfill reaches it, and an
+		// immutable year-long entry would hide it for that long — on TV clients
+		// that is effectively forever. Keep it short so caches re-ask soon.
+		w.Header().Set("Cache-Control", "public, max-age=300")
+	} else {
+		// Revisioned object keys are content-addressed; allow long-lived browser cache.
+		w.Header().Set("Cache-Control", "public, max-age=31536000, immutable")
+	}
 	w.Header().Set("Content-Length", strconv.FormatInt(info.Size(), 10))
 	if r.Method == http.MethodHead {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 	_, _ = io.Copy(w, f)
+}
+
+// openWithRungFallback opens the object for key, falling back to wider rungs of
+// the same artwork when the requested one is absent. Reports whether the file it
+// returns is a substitute.
+//
+// Adding a width to the ladder does not create it for artwork cached earlier,
+// and the backfill that fills it in takes as long as the catalog is large.
+// Without this, a client asking for the new rung gets a 404 for that entire
+// period; the client cannot tell "not generated yet" from "gone", and probing
+// costs a wasted round-trip per image on exactly the low-powered devices the
+// narrow rung exists for.
+//
+// Substituting stays within the same artwork directory, revision and extension,
+// so it can only ever serve another rung of the very same image — a client could
+// request it directly with its own signed URL, so no access is widened.
+func (s *LocalStore) openWithRungFallback(key string) (*os.File, fs.FileInfo, bool, error) {
+	f, info, err := s.openObject(key)
+	if err == nil {
+		return f, info, false, nil
+	}
+	if !errors.Is(err, fs.ErrNotExist) {
+		return nil, nil, false, err
+	}
+	for _, wider := range artworkkey.WiderVariantKeys(key) {
+		f, info, widerErr := s.openObject(wider)
+		if widerErr == nil {
+			return f, info, true, nil
+		}
+		if !errors.Is(widerErr, fs.ErrNotExist) {
+			return nil, nil, false, widerErr
+		}
+	}
+	return nil, nil, false, err
+}
+
+// openObject opens one object by key, treating anything that is not a regular
+// file as absent.
+func (s *LocalStore) openObject(key string) (*os.File, fs.FileInfo, error) {
+	objectPath, err := s.objectPath(key)
+	if err != nil {
+		return nil, nil, fs.ErrNotExist
+	}
+	f, err := os.Open(objectPath)
+	if err != nil {
+		return nil, nil, err
+	}
+	info, err := f.Stat()
+	if err != nil || !info.Mode().IsRegular() {
+		_ = f.Close()
+		return nil, nil, fs.ErrNotExist
+	}
+	return f, info, nil
 }
 
 func (s *LocalStore) sign(key string, expires int64) string {
