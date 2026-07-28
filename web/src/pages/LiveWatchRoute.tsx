@@ -13,6 +13,7 @@ import {
   useStartLiveTVSession,
 } from "@/hooks/queries/useLiveTV";
 import { releaseLiveTVSessionOnUnload } from "@/lib/liveTVWatch";
+import { buildLiveTVCapabilities } from "@/lib/liveTVCapabilities";
 import { channelLabel, pickNowNext } from "@/lib/liveTVGuide";
 import { CircleButton } from "@/player/components/CircleButton";
 import { useCodecDetection } from "@/player/hooks/useCodecDetection";
@@ -109,11 +110,7 @@ export default function LiveWatchRoute() {
           channelId,
           // Browsers cannot decode the MPEG-2 / AC-3 an OTA tuner emits; the
           // server re-encodes whatever is missing from this list.
-          capabilities: {
-            codecs_video: capabilities.codecs_video,
-            codecs_audio: capabilities.codecs_audio,
-            max_resolution: capabilities.max_resolution,
-          },
+          capabilities: buildLiveTVCapabilities(capabilities),
         });
         if (cancelled) {
           await releaseSession.mutateAsync(session.session_id).catch(() => undefined);
