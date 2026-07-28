@@ -2,6 +2,7 @@ package metadata
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -59,16 +60,20 @@ type RetiredVariantSweeper interface {
 
 // AVIFBackfillStats summarizes one processor run.
 type AVIFBackfillStats struct {
-	EnqueuedExisting int  `json:"enqueued_existing"`
-	Claimed          int  `json:"claimed"`
-	Succeeded        int  `json:"succeeded"`
-	Failed           int  `json:"failed"`
-	DeletedSucceeded int  `json:"deleted_succeeded"`
-	PNGChecked       int  `json:"png_checked"`
-	PNGDeleted       int  `json:"png_deleted"`
-	RetiredChecked   int  `json:"retired_checked"`
-	RetiredDeleted   int  `json:"retired_deleted"`
-	RuntimeLimited   bool `json:"runtime_limited,omitempty"`
+	EnqueuedExisting int `json:"enqueued_existing"`
+	Claimed          int `json:"claimed"`
+	Succeeded        int `json:"succeeded"`
+	Failed           int `json:"failed"`
+	DeletedSucceeded int `json:"deleted_succeeded"`
+	PNGChecked       int `json:"png_checked"`
+	PNGDeleted       int `json:"png_deleted"`
+	RetiredChecked   int `json:"retired_checked"`
+	RetiredDeleted   int `json:"retired_deleted"`
+	// ClaimsLost counts encodes whose status update matched no row because the
+	// lease had been recovered underneath them. Any non-zero value means the
+	// same artwork is being encoded more than once.
+	ClaimsLost     int  `json:"claims_lost,omitempty"`
+	RuntimeLimited bool `json:"runtime_limited,omitempty"`
 	// PausedForPlayback records that the pass yielded because playback or a
 	// transcode was active. The queue is durable, so the next tick resumes.
 	PausedForPlayback bool `json:"paused_for_playback,omitempty"`
@@ -82,9 +87,12 @@ type AVIFBackfillProcessor struct {
 	discover AVIFMissingDiscoverer
 	pngClean LegacyPNGCleaner
 	retired  RetiredVariantSweeper
-	logger   *slog.Logger
-	enabled  atomic.Bool
-	workers  atomic.Int32
+	// claimsLost counts status updates that matched no row because the lease had
+	// already been recovered. Non-zero means work is being repeated.
+	claimsLost atomic.Int64
+	logger     *slog.Logger
+	enabled    atomic.Bool
+	workers    atomic.Int32
 
 	// playbackActive reports whether any playback/transcode session is live.
 	// Artwork encoding yields to it entirely rather than competing for cores.
@@ -276,6 +284,8 @@ func (p *AVIFBackfillProcessor) RunUntilIdle(ctx context.Context, concurrency in
 		}
 	}
 
+	stats.ClaimsLost = int(p.claimsLost.Swap(0))
+
 	deleted, err := p.jobs.DeleteSucceededBefore(ctx, time.Now().Add(-avifBackfillSucceededKeep), 1000)
 	if err != nil {
 		p.logger.WarnContext(ctx, "avif backfill: cleanup succeeded jobs failed", "error", err)
@@ -308,6 +318,9 @@ func (p *AVIFBackfillProcessor) RunUntilIdle(ctx context.Context, concurrency in
 		stats.EnqueuedExisting, stats.Claimed, stats.Succeeded, stats.Failed, stats.DeletedSucceeded,
 		stats.PNGChecked, stats.PNGDeleted, stats.RetiredChecked, stats.RetiredDeleted,
 	)
+	if stats.ClaimsLost > 0 {
+		message += fmt.Sprintf(", %d claim(s) lost (work repeated)", stats.ClaimsLost)
+	}
 	if stats.PausedForPlayback {
 		message += ", paused for playback"
 	}
@@ -321,11 +334,24 @@ func (p *AVIFBackfillProcessor) processOne(ctx context.Context, job *models.Artw
 		p.logger.WarnContext(ctx, "avif backfill: ensure failed",
 			"path", job.OriginalPath, "attempt", job.AttemptCount, "error", err)
 		if markErr := p.jobs.MarkFailed(ctx, job.ID, job.AttemptCount, workerID, err.Error()); markErr != nil {
+			if errors.Is(markErr, ErrBackfillClaimLost) {
+				p.claimsLost.Add(1)
+			}
 			p.logger.WarnContext(ctx, "avif backfill: mark failed", "job_id", job.ID, "error", markErr)
 		}
 		return false
 	}
 	if markErr := p.jobs.MarkSucceeded(ctx, job.ID, workerID); markErr != nil {
+		// A lost claim means the encode landed but the bookkeeping did not: the
+		// row will be handed out again and re-encoded. Worth a distinct message,
+		// because a run of these is the signature of a lease shorter than the
+		// pass that holds it.
+		if errors.Is(markErr, ErrBackfillClaimLost) {
+			p.logger.WarnContext(ctx, "avif backfill: claim lost before recording success; job will be retried",
+				"job_id", job.ID, "path", job.OriginalPath, "worker", workerID)
+			p.claimsLost.Add(1)
+			return true
+		}
 		p.logger.WarnContext(ctx, "avif backfill: mark succeeded", "job_id", job.ID, "error", markErr)
 	}
 	return true

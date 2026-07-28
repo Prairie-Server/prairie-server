@@ -99,6 +99,22 @@ export function isPrairieSignedArtworkURL(objectPath: string): boolean {
   return pathnameOf(objectPath).includes("/artwork/");
 }
 
+/**
+ * True when the URL is a signed `original` object.
+ *
+ * The server signs sized rungs against the artwork *revision* but signs
+ * `original` against exactly itself (artworkstore.signatureScope), because the
+ * original is the full-resolution source and holding a URL for a 200px rung
+ * should not hand over the master. So rewriting `original` to any width breaks
+ * the signature and the request comes back 403 — which is what happened to cast
+ * portraits: catalog.detail presigns the raw `original` path for credits, unlike
+ * the person endpoint, which converts to w500 first.
+ */
+export function isSignedOriginalArtworkURL(objectPath: string): boolean {
+  if (!isPrairieSignedArtworkURL(objectPath)) return false;
+  return /\/original(?=\.)/.test(pathnameOf(objectPath));
+}
+
 export type ArtworkFormatSources = {
   /** Canonical artwork URL (typically .webp). */
   src?: string | null;
@@ -158,7 +174,7 @@ function rewritePathWidthVariant(pathname: string, width: number): string {
 export function artworkWidthVariant(objectPath: string | null | undefined, width: number): string {
   const trimmed = objectPath?.trim() ?? "";
   if (!trimmed || !Number.isFinite(width) || width <= 0) return "";
-  if (isSignedArtworkURL(trimmed)) return "";
+  if (isSignedArtworkURL(trimmed) || isSignedOriginalArtworkURL(trimmed)) return "";
 
   if (trimmed.includes("://")) {
     try {
@@ -195,7 +211,7 @@ export function artworkSrcSet(
 ): string {
   const trimmed = objectPath?.trim() ?? "";
   if (!trimmed || widths.length === 0) return "";
-  if (isSignedArtworkURL(trimmed)) return "";
+  if (isSignedArtworkURL(trimmed) || isSignedOriginalArtworkURL(trimmed)) return "";
 
   // Must look like an artwork variant path for any rewrite to make sense.
   const pathname = pathnameOf(trimmed);

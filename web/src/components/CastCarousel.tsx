@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ViewTransitionLink from "@/components/ViewTransitionLink";
 import type { CastMember } from "@/api/types";
@@ -109,17 +110,23 @@ export function PersonCard({
   // yields no srcSet, and `sizes` without one is meaningless — mirrors what
   // ArtworkImage does for the same reason.
   const photoSrcSet = artworkSrcSet(photoUrl, PROFILE_WIDTHS);
+  // Portrait art is the flakiest kind: an expired signature, a rung the store
+  // never generated, or a provider 404 all end as a broken-image glyph in a
+  // face-shaped box. Initials are a better answer than a torn page.
+  const [photoFailed, setPhotoFailed] = useState(false);
+  const showPhoto = Boolean(photoUrl) && !photoFailed;
   const inner = (
     <>
       <div className="media-card-image mb-2.5 aspect-[2/3] overflow-hidden rounded-lg">
-        {photoUrl ? (
+        {showPhoto ? (
           <img
-            src={photoUrl}
+            src={photoUrl ?? undefined}
             srcSet={photoSrcSet || undefined}
             sizes={photoSrcSet ? "160px" : undefined}
             alt={name}
             className="h-full w-full object-cover transition-transform duration-300 group-hover/person:scale-105"
             loading="lazy"
+            onError={() => setPhotoFailed(true)}
           />
         ) : (
           <div className="bg-surface text-muted-foreground flex h-full w-full items-center justify-center text-lg font-semibold">

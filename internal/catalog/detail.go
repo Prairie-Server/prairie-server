@@ -1684,7 +1684,13 @@ func (s *DetailService) personCredits(ctx context.Context, people []models.ItemP
 			PlexGUID:  p.PlexGUID,
 		}
 		if p.PhotoPath != "" && p.PhotoPath != "-" {
-			pc.PhotoURL = s.PresignURL(ctx, p.PhotoPath, "featured")
+			// Presign a sized rung, never the raw original. The store signs
+			// `original` against exactly itself (artworkstore.signatureScope), so a
+			// client that rewrites the width — which every client now does — gets a
+			// 403, and an un-rewritten original is a full-resolution source image
+			// behind a 160px card. The person endpoint has always done this via
+			// featuredPosterPath; credits were the one path that did not.
+			pc.PhotoURL = s.PresignURL(ctx, cachedImageVariantPath(ctx, p.PhotoPath, "profile", ""), "featured")
 		}
 		if p.PhotoThumbhash != "" && p.PhotoThumbhash != "-" {
 			pc.PhotoThumbhash = p.PhotoThumbhash
