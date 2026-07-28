@@ -22,7 +22,7 @@ type Class string
 
 const (
 	// Unknown is any client that does not identify itself. Treated as desktop:
-	// the pre-existing behaviour, so nothing regresses by default.
+	// the pre-existing behavior, so nothing regresses by default.
 	Unknown Class = ""
 	// TV is a living-room client — a big screen viewed from far away, on a slow
 	// SoC with a small memory budget for decoded images.
