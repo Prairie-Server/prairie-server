@@ -412,7 +412,9 @@ export function useTranscodeQuality({
             session_id: sessionId,
             seek_seconds: currentPosition,
             target_resolution: isCopyOriginal ? "" : option.resolution,
-            target_codec_video: isCopyOriginal ? "copy" : "h264",
+            // Remux copy is explicit. Encodes omit the codec so the server picks
+            // best(client.codecs_video ∩ encodable) — hevc > h264 for TVs.
+            ...(isCopyOriginal ? { target_codec_video: "copy" } : {}),
             target_codec_audio: "aac",
             target_bitrate_kbps: isCopyOriginal ? 0 : option.bitrateKbps,
             // Shorter HLS segments reduce startup latency noticeably,

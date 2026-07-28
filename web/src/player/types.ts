@@ -336,7 +336,8 @@ export interface TranscodeStartRequest {
   session_id: string;
   seek_seconds: number;
   target_resolution: string;
-  target_codec_video: string;
+  /** `"copy"` for remux. Omit on encode so the server picks best(client ∩ encodable). */
+  target_codec_video?: string;
   target_codec_audio: string;
   target_bitrate_kbps: number;
   segment_duration: number;

@@ -161,8 +161,9 @@ describe("useTranscodeQuality", () => {
     expect(body.subtitle_burn_in).toBe(true);
     expect(body.subtitle_track_index).toBe(3);
     expect(body.subtitle_media_file_id).toBe(42);
-    // Burn-in composites into the frames, so codec copy must be off.
-    expect(body.target_codec_video).toBe("h264");
+    // Burn-in composites into the frames, so codec copy must be off — the
+    // server picks the encode codec from client ∩ encodable capabilities.
+    expect(body.target_codec_video).toBeUndefined();
   });
 
   it("preserves a pending quality when burn-in is selected in the same tick", async () => {
