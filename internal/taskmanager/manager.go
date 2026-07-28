@@ -80,6 +80,21 @@ func (m *TaskManager) Start(ctx context.Context) {
 
 		w.setTriggers(configs, m.triggerFactory, w.lastResult, false)
 
+		// A config the factory does not recognize is dropped silently, and a
+		// task left with no live trigger simply parks forever. Both are
+		// indistinguishable from "idle" without a log line.
+		w.mu.RLock()
+		live := len(w.triggers)
+		w.mu.RUnlock()
+		switch {
+		case live == 0 && len(configs) > 0:
+			m.logger.WarnContext(ctx, "task has no live triggers and will never run on a schedule",
+				"task", key, "configured", len(configs))
+		case live < len(configs):
+			m.logger.WarnContext(ctx, "some task triggers were not recognized and were dropped",
+				"task", key, "configured", len(configs), "live", live)
+		}
+
 		go m.triggerLoop(ctx, w)
 	}
 
@@ -164,6 +179,8 @@ func (m *TaskManager) triggerLoop(ctx context.Context, w *taskWorker) {
 			continue
 		}
 
+		m.logger.DebugContext(ctx, "scheduled task firing", "task", w.task.Key())
+
 		result, err := w.run(ctx)
 		if err != nil {
 			// If the task is already running (e.g. via manual RunTask), don't
@@ -176,6 +193,13 @@ func (m *TaskManager) triggerLoop(ctx context.Context, w *taskWorker) {
 		}
 
 		if result != nil {
+			if result.Status == executionStatusFailed {
+				m.logger.WarnContext(ctx, "scheduled task failed",
+					"task", w.task.Key(), "duration_ms", result.DurationMs, "error", result.ErrorMessage)
+			} else {
+				m.logger.DebugContext(ctx, "scheduled task finished",
+					"task", w.task.Key(), "status", result.Status, "duration_ms", result.DurationMs)
+			}
 			if insertErr := m.historyRepo.Insert(ctx, *result); insertErr != nil {
 				m.logger.ErrorContext(ctx, "failed to persist execution result",
 					"task", w.task.Key(), "error", insertErr)

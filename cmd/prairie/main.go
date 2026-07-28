@@ -2122,6 +2122,9 @@ func main() {
 		if deps.EventsHub != nil {
 			taskMgr.AddObserver(evt.NewTaskObserver(deps.EventsHub))
 		}
+		// Exposes last-run / next-run / trigger-count on /metrics so a stalled
+		// background queue can be diagnosed without a database session.
+		taskMgr.AddObserver(taskmanager.NewMetricsObserver())
 
 		if deps.FolderRepo != nil && deps.LibraryScanQueue != nil {
 			taskMgr.Register(tasks.NewScanLibrariesTask(deps.FolderRepo, deps.LibraryScanQueue, deps.EventBus))

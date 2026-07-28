@@ -250,6 +250,12 @@ func (s stubStore) GetAudioPreference(context.Context, string, string) (*usersto
 	panic("unused")
 }
 func (s stubStore) DeleteAudioPreference(context.Context, string, string) error { panic("unused") }
+func (s stubStore) GetOnboardingState(context.Context, string, string) (*userstore.OnboardingState, error) {
+	panic("unused")
+}
+func (s stubStore) UpsertOnboardingState(context.Context, userstore.OnboardingState) error {
+	panic("unused")
+}
 func (s stubStore) SetSeriesPlaybackPreference(context.Context, userstore.SeriesPlaybackPreference) error {
 	panic("unused")
 }
