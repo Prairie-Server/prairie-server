@@ -437,31 +437,28 @@ func appendStreamSelectionArgs(args []string, opts TranscodeOpts) []string {
 	return args
 }
 
-// appendTimestampNormalizationArgs selects timestamp handling based on the
-// playback mode. Copy-video full-file starts use zero-based timestamps so
-// fMP4 fragments always have sane local durations. Copy-video resumes
-// preserve source timestamps so each fragment's TFDT matches its playlist
-// position (segment K sits at playlist-time K*segDur); zero-basing here
-// makes seg_K carry TFDT=0, and strict players (Jellyfin Android TV /
-// ExoPlayer) read EXT-X-START, jump to seg_K expecting media at K*segDur,
-// see TFDT=0, treat the gap as a discontinuity, reload init.mp4, and
-// eventually abort — the symptom that crashes ATV on a second resume.
-// Encoded transcodes keep the source-timestamp policy unconditionally.
+// appendTimestampNormalizationArgs selects timestamp handling based on seek
+// state so playlist time and media PTS stay aligned with GenerateFullManifest.
+//
+// Full-file starts (SeekSeconds == 0) zero-base timestamps: segment K sits at
+// playlist-time K*segDur with media PTS ≈ K*segDur. Preserving a non-zero
+// source PTS under -copyts would shift every synthetic VOD boundary and make
+// a later seek to segment K land on the wrong media time.
+//
+// Resumes and mid-stream seeks preserve source timestamps with -copyts so
+// segment K carries PTS/TFDT ≈ K*segDur — matching EXT-X-START:TIME-OFFSET.
+// Zero-basing a resume makes seg_K carry TFDT=0 while the playlist still
+// places it at K*segDur; strict players (Jellyfin Android TV / ExoPlayer)
+// treat that gap as a discontinuity, reload init.mp4, and eventually abort.
 func appendTimestampNormalizationArgs(args []string, opts TranscodeOpts) []string {
-	if strings.EqualFold(opts.TargetCodecVideo, "copy") {
-		if opts.SeekSeconds > 0 {
-			return append(args,
-				"-copyts",
-				"-avoid_negative_ts", "disabled",
-			)
-		}
+	if opts.SeekSeconds > 0 {
 		return append(args,
-			"-avoid_negative_ts", "make_zero",
+			"-copyts",
+			"-avoid_negative_ts", "disabled",
 		)
 	}
 	return append(args,
-		"-copyts",
-		"-avoid_negative_ts", "disabled",
+		"-avoid_negative_ts", "make_zero",
 	)
 }
 
@@ -1322,7 +1319,17 @@ func (s *TranscodeSession) SegmentRecoveryDecision(segNum int, now time.Time) Se
 	case !progress.Running:
 		decision.Reason = "transcode_not_running"
 	case segNum < progress.StartSegmentNumber:
-		decision.Reason = "before_start_segment"
+		// Players often probe early playlist segments while buffering a
+		// resume start (even with EXT-X-START). Until the resume window
+		// has produced its first segment, those probes are not an
+		// explicit user seek — restarting at seg 0 would discard the
+		// session's resume offset.
+		if progress.ProducedHead < progress.StartSegmentNumber {
+			decision.RestartOnTimeout = false
+			decision.Reason = "before_start_segment_startup"
+		} else {
+			decision.Reason = "before_start_segment"
+		}
 	case segNum <= progress.ProducedHead:
 		decision.Reason = "segment_missing_behind_produced_head"
 	case !progress.HasManifest:
@@ -1353,6 +1360,13 @@ func (s *TranscodeSession) SegmentRecoveryDecision(segNum int, now time.Time) Se
 // The player can seek to any position immediately; the backend produces
 // segments on demand when they are requested via HandleGetTranscodeSegment.
 //
+// When the session resumes or seeks (SeekSeconds > 0), the playlist still
+// lists every segment from seg_00000 but emits #EXT-X-START:TIME-OFFSET so
+// players begin at the resume/seek position instead of segment 0. Trimming
+// the playlist would misalign clients that also apply their own initial seek.
+// Segment boundaries are K*segDur, matching media PTS under the -copyts
+// resume policy in appendTimestampNormalizationArgs.
+//
 // segPrefix is prepended to each segment filename (e.g. "segment/") and
 // rawQuery is appended as a query string (e.g. auth tokens).
 func (s *TranscodeSession) GenerateFullManifest(segPrefix, rawQuery string) []byte {
@@ -1371,15 +1385,27 @@ func (s *TranscodeSession) GenerateFullManifest(segPrefix, rawQuery string) []by
 		segCount = 1
 	}
 
+	startOffset := opts.SeekSeconds
+	if startOffset <= 0 && opts.StartSegmentNumber > 0 {
+		startOffset = float64(opts.StartSegmentNumber * segDur)
+	}
+	if startOffset < 0 || startOffset >= totalDur {
+		startOffset = 0
+	}
+
 	var suffix string
 	if rawQuery != "" {
 		suffix = "?" + rawQuery
 	}
 
 	segExt := hlsSegmentExtension(opts)
+	// EXT-X-START requires HLS protocol version 6+. fMP4 already needs 7.
 	hlsVersion := 3
-	if segExt == ".m4s" {
+	switch {
+	case segExt == ".m4s":
 		hlsVersion = 7
+	case startOffset > 0:
+		hlsVersion = 6
 	}
 
 	var buf bytes.Buffer
@@ -1388,6 +1414,9 @@ func (s *TranscodeSession) GenerateFullManifest(segPrefix, rawQuery string) []by
 	fmt.Fprintf(&buf, "#EXT-X-TARGETDURATION:%d\n", segDur)
 	buf.WriteString("#EXT-X-MEDIA-SEQUENCE:0\n")
 	buf.WriteString("#EXT-X-PLAYLIST-TYPE:VOD\n")
+	if startOffset > 0 {
+		fmt.Fprintf(&buf, "#EXT-X-START:TIME-OFFSET=%.6f,PRECISE=YES\n", startOffset)
+	}
 
 	if segExt == ".m4s" {
 		fmt.Fprintf(&buf, "#EXT-X-MAP:URI=\"%sinit.mp4%s\"\n", segPrefix, suffix)

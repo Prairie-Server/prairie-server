@@ -520,7 +520,7 @@ func TestBuildFFmpegArgs_VAAPIScalingUsesHardwareFilter(t *testing.T) {
 	}
 }
 
-func TestBuildFFmpegArgs_EncodedTranscodePreservesExistingTimestampPolicy(t *testing.T) {
+func TestBuildFFmpegArgs_EncodedTranscodeResumePreservesSourceTimestamps(t *testing.T) {
 	args := buildFFmpegArgs(TranscodeOpts{
 		InputPath:        "/media/movie.mkv",
 		OutputDir:        "/tmp/out",
@@ -532,11 +532,35 @@ func TestBuildFFmpegArgs_EncodedTranscodePreservesExistingTimestampPolicy(t *tes
 	})
 
 	joined := strings.Join(args, " ")
+	// Resume/seek must preserve source timestamps so seg_K PTS matches
+	// playlist time K*segDur (the EXT-X-START / synthetic VOD anchor).
 	if !strings.Contains(joined, "-copyts") {
-		t.Fatalf("encoded args should preserve original timestamps: %s", joined)
+		t.Fatalf("encoded resume should preserve source timestamps: %s", joined)
 	}
 	if !strings.Contains(joined, "-avoid_negative_ts disabled") {
-		t.Fatalf("encoded args should keep avoid_negative_ts disabled: %s", joined)
+		t.Fatalf("encoded resume should keep avoid_negative_ts disabled: %s", joined)
+	}
+	if strings.Contains(joined, "-avoid_negative_ts make_zero") {
+		t.Fatalf("encoded resume must not zero-base timestamps: %s", joined)
+	}
+}
+
+func TestBuildFFmpegArgs_EncodedTranscodeFromStartUsesZeroBasedTimestamps(t *testing.T) {
+	args := buildFFmpegArgs(TranscodeOpts{
+		InputPath:        "/media/movie.mkv",
+		OutputDir:        "/tmp/out",
+		SessionID:        "session-encoded-start",
+		TargetCodecVideo: "h264",
+		TargetCodecAudio: "aac",
+		SegmentDuration:  2,
+	})
+
+	joined := strings.Join(args, " ")
+	if strings.Contains(joined, "-copyts") {
+		t.Fatalf("encoded from-start should not preserve source timestamps: %s", joined)
+	}
+	if !strings.Contains(joined, "-avoid_negative_ts make_zero") {
+		t.Fatalf("encoded from-start should zero-base timestamps so seg_K PTS matches K*segDur: %s", joined)
 	}
 }
 
