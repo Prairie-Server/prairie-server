@@ -110,7 +110,7 @@ func variantWidth(variant string) (int, bool) {
 //
 // Used to stand in for a rung that has not been generated yet. A newly added
 // ladder entry does not exist for artwork cached before it, and the backfill
-// that fills it in runs for as long as the catalogue is large — so a client that
+// that fills it in runs for as long as the catalog is large — so a client that
 // asks for the new rung would otherwise get a 404 until that finishes. Serving
 // the next rung up is correct rather than merely convenient: it is the same
 // image, and it is what the client would have asked for before the rung existed.

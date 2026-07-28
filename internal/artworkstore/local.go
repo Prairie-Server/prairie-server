@@ -411,7 +411,7 @@ func (s *LocalStore) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 // returns is a substitute.
 //
 // Adding a width to the ladder does not create it for artwork cached earlier,
-// and the backfill that fills it in takes as long as the catalogue is large.
+// and the backfill that fills it in takes as long as the catalog is large.
 // Without this, a client asking for the new rung gets a 404 for that entire
 // period; the client cannot tell "not generated yet" from "gone", and probing
 // costs a wasted round-trip per image on exactly the low-powered devices the
