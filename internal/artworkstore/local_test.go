@@ -467,7 +467,7 @@ func TestSignatureDoesNotWidenToOriginal(t *testing.T) {
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("rung->original = %d, want 403", rec.Code)
 	}
-	// And the reverse: an original URL is not a licence to fetch rungs.
+	// And the reverse: an original URL is not a license to fetch rungs.
 	rec = serveKeySignedAs(t, store, dir+"original.rev1.webp", dir+"w300.rev1.webp")
 	if rec.Code != http.StatusForbidden {
 		t.Fatalf("original->rung = %d, want 403", rec.Code)
