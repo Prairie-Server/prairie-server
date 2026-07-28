@@ -183,47 +183,88 @@ var (
 	av1NVENCProbeCache   = map[string]bool{}
 )
 
+// The caches below hold the *complete* capability set for an ffmpeg binary, not
+// the answer to one question about it.
+//
+// They used to be filled with only the name the first caller asked about, while
+// still being keyed on the ffmpeg path alone. Every later question about the same
+// binary then hit that cache and was answered "no" from a map that had never
+// looked. In production the AVIF backend configures first and asks for the
+// "avif" muxer, so the WebP backend's "webp" muxer check one millisecond later
+// read {avif: true} and fell back to the WASM encoder — on a machine whose
+// ffmpeg lists both libwebp and the webp muxer. Every WebP encode in the process
+// took the slow path.
+
 func ffmpegHasEncoder(ffmpegPath, name string) bool {
 	ffmpegEncoderCacheMu.Lock()
 	defer ffmpegEncoderCacheMu.Unlock()
-	if m, ok := ffmpegEncoderCache[ffmpegPath]; ok {
-		return m[name]
-	}
-	m := map[string]bool{}
-	out, err := exec.Command(ffmpegPath, "-hide_banner", "-encoders").CombinedOutput()
-	if err == nil {
-		for _, line := range strings.Split(string(out), "\n") {
-			fields := strings.Fields(line)
-			if len(fields) >= 2 && (fields[0] == "V...." || strings.HasPrefix(fields[0], "V")) {
-				m[fields[1]] = true
-			}
-			// Also accept any line containing the encoder token.
-			if strings.Contains(line, name) {
-				m[name] = true
-			}
+	m, ok := ffmpegEncoderCache[ffmpegPath]
+	if !ok {
+		out, err := exec.Command(ffmpegPath, "-hide_banner", "-encoders").CombinedOutput()
+		if err != nil {
+			out = nil
 		}
+		m = parseFFmpegCapabilities(out)
+		ffmpegEncoderCache[ffmpegPath] = m
 	}
-	ffmpegEncoderCache[ffmpegPath] = m
 	return m[name]
 }
 
 func ffmpegHasMuxer(ffmpegPath, name string) bool {
 	ffmpegEncoderCacheMu.Lock()
 	defer ffmpegEncoderCacheMu.Unlock()
-	if m, ok := ffmpegMuxerCache[ffmpegPath]; ok {
-		return m[name]
+	m, ok := ffmpegMuxerCache[ffmpegPath]
+	if !ok {
+		out, err := exec.Command(ffmpegPath, "-hide_banner", "-muxers").CombinedOutput()
+		if err != nil {
+			out = nil
+		}
+		m = parseFFmpegCapabilities(out)
+		ffmpegMuxerCache[ffmpegPath] = m
 	}
-	m := map[string]bool{}
-	out, err := exec.Command(ffmpegPath, "-hide_banner", "-muxers").CombinedOutput()
-	if err == nil {
-		for _, line := range strings.Split(string(out), "\n") {
-			if strings.Contains(line, name) {
-				m[name] = true
+	return m[name]
+}
+
+// parseFFmpegCapabilities reads every name from an ffmpeg "-encoders" or
+// "-muxers" listing. Both share a layout of "<flags> <name> <description>",
+// where a name may be a comma-separated group ("matroska,webm").
+//
+// Lines before the dashed separator are the flag legend (" .E = Muxing
+// supported") and are skipped: their second field is "=", not a codec name. The
+// separator's width differs per listing — "--" for muxers, "------" for encoders
+// — so it is matched as "a lone run of dashes" rather than a literal.
+func parseFFmpegCapabilities(out []byte) map[string]bool {
+	names := map[string]bool{}
+	if len(out) == 0 {
+		return names
+	}
+	body := false
+	for _, line := range strings.Split(string(out), "\n") {
+		fields := strings.Fields(line)
+		if !body {
+			if len(fields) == 1 && isDashRun(fields[0]) {
+				body = true
+			}
+			continue
+		}
+		if len(fields) < 2 || fields[1] == "=" {
+			continue
+		}
+		for _, name := range strings.Split(fields[1], ",") {
+			if name != "" {
+				names[name] = true
 			}
 		}
 	}
-	ffmpegMuxerCache[ffmpegPath] = m
-	return m[name]
+	return names
+}
+
+// isDashRun reports whether s is one or more '-' and nothing else.
+func isDashRun(s string) bool {
+	if s == "" {
+		return false
+	}
+	return strings.Trim(s, "-") == ""
 }
 
 // probeAV1NVENC returns true when ffmpeg lists av1_nvenc, an NVIDIA device is
