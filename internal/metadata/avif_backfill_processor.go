@@ -47,6 +47,12 @@ type AVIFMissingDiscoverer interface {
 	DiscoverMissing(ctx context.Context, limit int) ([]AVIFBackfillEnqueueInput, error)
 }
 
+// missingOriginalReporter is the optional half of AVIFMissingDiscoverer that
+// reports candidates it declined to enqueue because their original is gone.
+type missingOriginalReporter interface {
+	SkippedMissingOriginals() int64
+}
+
 // LegacyPNGCleaner deletes orphaned pre-PNG-drop sibling objects.
 type LegacyPNGCleaner interface {
 	CleanupLegacyPNG(ctx context.Context, limit int) (checked, deleted int, err error)
@@ -72,8 +78,13 @@ type AVIFBackfillStats struct {
 	// ClaimsLost counts encodes whose status update matched no row because the
 	// lease had been recovered underneath them. Any non-zero value means the
 	// same artwork is being encoded more than once.
-	ClaimsLost     int  `json:"claims_lost,omitempty"`
-	RuntimeLimited bool `json:"runtime_limited,omitempty"`
+	ClaimsLost int `json:"claims_lost,omitempty"`
+	// SkippedMissingOriginals counts discovery candidates dropped because the
+	// WebP original they name is not in the store. Non-zero means that many
+	// catalog rows reference artwork that was never cached; they are skipped
+	// rather than enqueued because such a job can only ever fail.
+	SkippedMissingOriginals int  `json:"skipped_missing_originals,omitempty"`
+	RuntimeLimited          bool `json:"runtime_limited,omitempty"`
 	// PausedForPlayback records that the pass yielded because playback or a
 	// transcode was active. The queue is durable, so the next tick resumes.
 	PausedForPlayback bool `json:"paused_for_playback,omitempty"`
@@ -321,6 +332,9 @@ func (p *AVIFBackfillProcessor) RunUntilIdle(ctx context.Context, concurrency in
 	if stats.ClaimsLost > 0 {
 		message += fmt.Sprintf(", %d claim(s) lost (work repeated)", stats.ClaimsLost)
 	}
+	if stats.SkippedMissingOriginals > 0 {
+		message += fmt.Sprintf(", %d skipped (original never cached)", stats.SkippedMissingOriginals)
+	}
 	if stats.PausedForPlayback {
 		message += ", paused for playback"
 	}
@@ -364,6 +378,15 @@ func (p *AVIFBackfillProcessor) discoverMissing(ctx context.Context, stats *AVIF
 	}
 	onProgress(2, "Discovering WebP artwork missing AVIF siblings")
 	inputs, err := p.discover.DiscoverMissing(ctx, avifBackfillDiscoverLimit)
+	// Read the skip count even on error: a failed pass still probed, and the
+	// count is cleared by reading it, so skipping this would lose it.
+	if reporter, ok := p.discover.(missingOriginalReporter); ok {
+		if skipped := reporter.SkippedMissingOriginals(); skipped > 0 {
+			stats.SkippedMissingOriginals += int(skipped)
+			p.logger.WarnContext(ctx, "avif backfill: catalog rows name an uncached WebP original",
+				"skipped", skipped)
+		}
+	}
 	if err != nil {
 		return fmt.Errorf("discovering missing AVIF siblings: %w", err)
 	}
