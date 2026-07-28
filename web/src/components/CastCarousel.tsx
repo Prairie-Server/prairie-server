@@ -3,6 +3,7 @@ import ViewTransitionLink from "@/components/ViewTransitionLink";
 import type { CastMember } from "@/api/types";
 import { useCarouselEmbla } from "@/hooks/useCarouselEmbla";
 import { buildPersonCatalogHref } from "@/pages/catalogSearchParams";
+import { artworkSrcSet, PROFILE_WIDTHS } from "@/lib/artworkUrl";
 import { getInitials } from "@/lib/text";
 import { cn } from "@/lib/utils";
 
@@ -104,12 +105,18 @@ export function PersonCard({
   photoUrl?: string | null;
   href: string | null;
 }) {
+  // A non-artwork URL (third-party image, or a path with no variant segment)
+  // yields no srcSet, and `sizes` without one is meaningless — mirrors what
+  // ArtworkImage does for the same reason.
+  const photoSrcSet = artworkSrcSet(photoUrl, PROFILE_WIDTHS);
   const inner = (
     <>
       <div className="media-card-image mb-2.5 aspect-[2/3] overflow-hidden rounded-lg">
         {photoUrl ? (
           <img
             src={photoUrl}
+            srcSet={photoSrcSet || undefined}
+            sizes={photoSrcSet ? "160px" : undefined}
             alt={name}
             className="h-full w-full object-cover transition-transform duration-300 group-hover/person:scale-105"
             loading="lazy"
