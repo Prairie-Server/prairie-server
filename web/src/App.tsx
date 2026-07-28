@@ -81,6 +81,8 @@ const Recommendations = lazy(() => import("@/pages/Recommendations"));
 const RecommendationsSection = lazy(() => import("@/pages/RecommendationsSection"));
 const Calendar = lazy(() => import("@/pages/Calendar"));
 const TasteSeed = lazy(() => import("@/pages/TasteSeed"));
+const InviteClaim = lazy(() => import("@/pages/InviteClaim"));
+const HouseholdSetup = lazy(() => import("@/pages/HouseholdSetup"));
 import SettingsLayout from "@/pages/SettingsLayout";
 const AppearanceSettings = lazy(() => import("@/pages/settings/AppearanceSettings"));
 const AccessibilitySettings = lazy(() => import("@/pages/settings/AccessibilitySettings"));
@@ -103,6 +105,8 @@ const ProfileCustomizeHome = lazy(() => import("@/pages/ProfileCustomizeHome"));
 
 import { useFavorites } from "@/hooks/queries/favorites";
 import { useRequestFeatureStatus } from "@/hooks/queries/useRequests";
+import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
+import { useOnboardingState } from "@/hooks/queries/onboarding";
 import { isTasteSeedDismissed } from "@/lib/tasteSeed";
 import {
   WatchPlaybackBar,
@@ -253,8 +257,14 @@ function RequireRequestsEnabled({ children }: { children: ReactNode }) {
 function TasteSeedGate({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
   const { data: favorites, isPending, isError } = useFavorites();
+  const onboarding = useOnboardingState({ enabled: profile !== null });
 
   if (isPending || isError || !profile) return <>{children}</>;
+
+  // While the feature tour is pending (or its state unknown) the tour owns
+  // the first-run moment — it ends by handing off to /taste-seed itself, so
+  // redirecting now would jump the queue.
+  if (onboarding.data === undefined || !onboarding.data.done) return <>{children}</>;
 
   const hasFavorites = (favorites?.length ?? 0) > 0;
   const dismissed = isTasteSeedDismissed(profile.id);
@@ -391,6 +401,8 @@ function AppRoutes() {
         <Route path="/activate" element={<ActivateDevice />} />
         <Route path="/setup" element={<SetupWizard />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/invite/:token" element={<InviteClaim />} />
+        <Route path="/household-setup" element={<HouseholdSetup />} />
         <Route
           path="/*"
           element={
@@ -519,9 +531,11 @@ function AppRoutes() {
                             <Route
                               path="/"
                               element={
-                                <TasteSeedGate>
-                                  <Home />
-                                </TasteSeedGate>
+                                <OnboardingGate>
+                                  <TasteSeedGate>
+                                    <Home />
+                                  </TasteSeedGate>
+                                </OnboardingGate>
                               }
                             />
                             <Route path="/catalog" element={<Catalog />} />

@@ -39,6 +39,7 @@ import (
 	evt "github.com/prairie-server/prairie-server/internal/events"
 	"github.com/prairie-server/prairie-server/internal/historyimport"
 	"github.com/prairie-server/prairie-server/internal/intromarkers"
+	"github.com/prairie-server/prairie-server/internal/invitations"
 	"github.com/prairie-server/prairie-server/internal/libraryingest"
 	"github.com/prairie-server/prairie-server/internal/literaryworks"
 	"github.com/prairie-server/prairie-server/internal/livetv"
@@ -52,6 +53,7 @@ import (
 	metadatatranslation "github.com/prairie-server/prairie-server/internal/metadata/translation"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
 	"github.com/prairie-server/prairie-server/internal/notifications"
+	"github.com/prairie-server/prairie-server/internal/onboarding"
 	"github.com/prairie-server/prairie-server/internal/opslog"
 	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/prairie-server/prairie-server/internal/playback/planstore"
@@ -367,6 +369,7 @@ func NewRouter(deps Dependencies) chi.Router {
 	// Build auth handler and auth middleware if DB and config are available.
 	var userRepo *auth.UserRepository
 	var inviteCodeRepo *auth.InviteCodeRepository
+	var invitationService *invitations.Service
 	var apiKeyRepo *auth.APIKeyRepository
 	var authService *auth.Service
 	var authHandler *handlers.AuthHandler
@@ -407,6 +410,17 @@ func NewRouter(deps Dependencies) chi.Router {
 		)
 		for _, registration := range deps.AuthProviders {
 			authService.RegisterProvider(registration.Info, registration.Provider)
+		}
+		if settingsRepo != nil {
+			invitationService = invitations.NewService(
+				invitations.NewRepository(deps.DB),
+				userRepo,
+				auth.NewAccountProvisioner(userRepo, deps.UserStoreProvider),
+				authService,
+				mail.NewSMTPSender(settingsRepo),
+				settingsRepo,
+				deps.PublicURL,
+			)
 		}
 		profileTokenService = access.NewProfileTokenService(deps.Config.Auth.JWTSecret, 0)
 		deviceLoginService = auth.NewDeviceLoginService(
@@ -563,6 +577,10 @@ func NewRouter(deps Dependencies) chi.Router {
 	var catalogSearchService *catalog.CatalogSearchService
 	var webhookSyncHandler *handlers.WebhookSyncHandler
 	var requestHandler *handlers.RequestsHandler
+	var onboardingHandler *handlers.OnboardingHandler
+	// Declared here (assigned in the playback block below) so the onboarding
+	// gates closure can reference it before that block runs.
+	var watchTogetherHandler *handlers.WatchTogetherHandler
 	var autoscanHandler *handlers.AutoscanHandler
 	var liveTVHandler *handlers.LiveTVHandler
 	var ebookReaderHandler *handlers.EbookReaderHandler
@@ -710,6 +728,48 @@ func NewRouter(deps Dependencies) chi.Router {
 			requestSvc.SetLifecycleNotifier(lifecycle)
 		}
 		requestHandler = handlers.NewRequestsHandler(requestSvc)
+
+		// Onboarding tour manifest: gates consult live state at request time
+		// so admin toggles apply without a restart. The watch-together gate
+		// reads the handler variable assigned later in this function — by the
+		// time requests are served it is settled.
+		if deps.UserStoreProvider != nil {
+			onboardingGates := onboarding.Gates{
+				Requests: func(ctx context.Context) bool {
+					settings, err := requestsRepo.GetSettings(ctx)
+					return err == nil && settings.RequestsEnabled
+				},
+				WatchTogether: func(context.Context) bool {
+					return watchTogetherHandler != nil
+				},
+				Recommendations: func(ctx context.Context) bool {
+					if settingsRepo == nil {
+						return false
+					}
+					enabled, err := settingsRepo.Get(ctx, "recommendations.enabled")
+					return err == nil && enabled == "true"
+				},
+				Notifications: func(ctx context.Context) bool {
+					// The in-app inbox always exists; the step is about the
+					// wider system, so require a configured delivery channel.
+					return settingsRepo != nil && mail.NewSMTPSender(settingsRepo).Enabled(ctx)
+				},
+				JellyfinCompat: func(ctx context.Context) bool {
+					if settingsRepo == nil {
+						return false
+					}
+					// Unset means the default applies, and the default is on
+					// (config.DefaultAdminSettings) — only an explicit "false"
+					// hides the step.
+					enabled, err := settingsRepo.Get(ctx, "jellyfin_compat.enabled")
+					if err != nil {
+						return false
+					}
+					return strings.TrimSpace(enabled) != "false"
+				},
+			}
+			onboardingHandler = handlers.NewOnboardingHandler(deps.UserStoreProvider, onboardingGates)
+		}
 
 		liveTVHandler = handlers.NewLiveTVHandler(deps.LiveTV)
 		if liveTVHandler == nil && deps.DB != nil {
@@ -862,7 +922,6 @@ func NewRouter(deps Dependencies) chi.Router {
 	var adminPlaybackControlHandler *handlers.AdminPlaybackControlHandler
 	var playbackCommandDispatcher *playback.CommandDispatcher
 	var streamHandler *handlers.StreamHandler
-	var watchTogetherHandler *handlers.WatchTogetherHandler
 	if deps.SessionMgr != nil {
 		var playbackAdminStore handlers.PlaybackAdminStore
 		if deps.DB != nil {
@@ -1728,6 +1787,19 @@ func NewRouter(deps Dependencies) chi.Router {
 			}
 			authHandler.SetOAuthRoutesAvailable(oauthHandler != nil)
 
+			if invitationService != nil {
+				invitationHandler := handlers.NewInvitationHandler(invitationService)
+				r.Route("/invitations/{token}", func(r chi.Router) {
+					if deps.RateLimitMW != nil {
+						r.With(deps.RateLimitMW.AuthEndpointHandler("invitation")).Get("/", invitationHandler.HandleLookupInvitation)
+						r.With(deps.RateLimitMW.AuthEndpointHandler("invitation")).Post("/accept", invitationHandler.HandleAcceptInvitation)
+					} else {
+						r.Get("/", invitationHandler.HandleLookupInvitation)
+						r.Post("/accept", invitationHandler.HandleAcceptInvitation)
+					}
+				})
+			}
+
 			r.Route("/auth", func(r chi.Router) {
 				r.Get("/device/capability", authHandler.HandleDeviceCapability)
 				if deps.RateLimitMW != nil {
@@ -2280,6 +2352,16 @@ func NewRouter(deps Dependencies) chi.Router {
 							r.Delete("/guide-sources/{sourceId}", liveTVHandler.HandleDeleteGuideSource)
 							r.Post("/guide-sources/{sourceId}/sync", liveTVHandler.HandleSyncGuideSource)
 						})
+					})
+				}
+
+				// Onboarding tour routes (profile-scoped).
+				if onboardingHandler != nil {
+					r.Route("/onboarding", func(r chi.Router) {
+						r.Use(apimw.RequireProfile)
+						r.Get("/flow", onboardingHandler.HandleGetFlow)
+						r.Get("/state", onboardingHandler.HandleGetState)
+						r.Post("/progress", onboardingHandler.HandlePostProgress)
 					})
 				}
 
@@ -2971,6 +3053,16 @@ func NewRouter(deps Dependencies) chi.Router {
 									r.Post("/trigger/taste-profiles", adminRecsHandler.HandleTriggerTasteProfiles)
 									r.Post("/trigger/cowatch", adminRecsHandler.HandleTriggerCowatch)
 									r.Post("/trigger/recommendations", adminRecsHandler.HandleTriggerRecommendations)
+								})
+							}
+
+							if invitationService != nil {
+								adminInvitationHandler := handlers.NewAdminInvitationHandler(invitationService)
+								r.Route("/invitations", func(r chi.Router) {
+									r.Get("/", adminInvitationHandler.HandleListInvitations)
+									r.Post("/", adminInvitationHandler.HandleCreateInvitation)
+									r.Post("/{id}/resend", adminInvitationHandler.HandleResendInvitation)
+									r.Delete("/{id}", adminInvitationHandler.HandleRevokeInvitation)
 								})
 							}
 
