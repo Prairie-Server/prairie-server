@@ -564,10 +564,15 @@ func buildTranscodeStartResponse(
 		DurationSeconds: fileDurationSeconds(file),
 	}
 	if canSeekAnywhere(req, file) {
-		resp.PlayerStartSeconds = req.SeekSeconds
-		resp.StreamOriginSeconds = 0
-		resp.TimelineOffsetSeconds = 0
-		resp.CanSeekAnywhere = true
+		// Encoded synthetic VOD is a window beginning at the resume/seek
+		// segment. Player timeline is relative to that window (t=0 at the
+		// first entry); media time = player time + stream origin. Positions
+		// before the window need an explicit /transcode/start re-plan.
+		aligned := alignedSeekSeconds(req.SeekSeconds, req.SegmentDuration, req.TargetCodecVideo)
+		resp.PlayerStartSeconds = 0
+		resp.StreamOriginSeconds = aligned
+		resp.TimelineOffsetSeconds = aligned
+		resp.CanSeekAnywhere = aligned <= 0
 		return resp
 	}
 	resp.PlayerStartSeconds = max(0, req.SeekSeconds-streamOriginSeconds)

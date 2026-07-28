@@ -2050,13 +2050,23 @@ func configureHLSTimelineV3(plan *playback.PlanV3, videoCodec string, segmentDur
 		plan.Timeline.CanSeekAnywhere = false
 		plan.Timeline.SeekRestoration = "source_position"
 	} else {
-		plan.Timeline.PlayerStartSeconds = requested
-		plan.Timeline.StreamOriginSeconds = 0
-		plan.Timeline.TimelineOffsetSeconds = 0
-		plan.Timeline.SeekWindowStartSeconds = nil
-		plan.Timeline.SeekWindowEndSeconds = nil
-		plan.Timeline.CanSeekAnywhere = durationSeconds > 0
-		plan.Timeline.SeekRestoration = "player_position"
+		// Encoded synthetic VOD windows begin at the resume/seek segment
+		// (see GenerateFullManifest). Player t=0 is the window head.
+		plan.Timeline.PlayerStartSeconds = 0
+		plan.Timeline.StreamOriginSeconds = seek
+		plan.Timeline.TimelineOffsetSeconds = seek
+		if seek > 0 {
+			windowStart := seek
+			plan.Timeline.SeekWindowStartSeconds = &windowStart
+			plan.Timeline.SeekWindowEndSeconds = nil
+			plan.Timeline.CanSeekAnywhere = false
+			plan.Timeline.SeekRestoration = "source_position"
+		} else {
+			plan.Timeline.SeekWindowStartSeconds = nil
+			plan.Timeline.SeekWindowEndSeconds = nil
+			plan.Timeline.CanSeekAnywhere = durationSeconds > 0
+			plan.Timeline.SeekRestoration = "player_position"
+		}
 	}
 	return seek, startSegment
 }

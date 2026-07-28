@@ -1211,9 +1211,10 @@ func TestConfigureHLSTimelineV3MatchesTransportSeekSemantics(t *testing.T) {
 
 	encodePlan := &playback.PlanV3{Timeline: playback.TimelineV3{SourceStartSeconds: 17.3}}
 	encodeSeek, encodeSegment := configureHLSTimelineV3(encodePlan, "h264", 2, 600)
-	if encodeSeek != 16 || encodeSegment != 8 || encodePlan.Timeline.StreamOriginSeconds != 0 || encodePlan.Timeline.TimelineOffsetSeconds != 0 || encodePlan.Timeline.PlayerStartSeconds != 17.3 || !encodePlan.Timeline.CanSeekAnywhere ||
-		encodePlan.Timeline.SeekWindowStartSeconds != nil || encodePlan.Timeline.SeekWindowEndSeconds != nil ||
-		encodePlan.Timeline.SeekRestoration != "player_position" {
+	if encodeSeek != 16 || encodeSegment != 8 || encodePlan.Timeline.StreamOriginSeconds != 16 || encodePlan.Timeline.TimelineOffsetSeconds != 16 || encodePlan.Timeline.PlayerStartSeconds != 0 || encodePlan.Timeline.CanSeekAnywhere ||
+		encodePlan.Timeline.SeekWindowStartSeconds == nil || *encodePlan.Timeline.SeekWindowStartSeconds != 16 ||
+		encodePlan.Timeline.SeekWindowEndSeconds != nil ||
+		encodePlan.Timeline.SeekRestoration != "source_position" {
 		t.Fatalf("encode timeline=%#v seek=%v segment=%d", encodePlan.Timeline, encodeSeek, encodeSegment)
 	}
 	unknownDurationPlan := &playback.PlanV3{Timeline: playback.TimelineV3{SourceStartSeconds: 17.3}}

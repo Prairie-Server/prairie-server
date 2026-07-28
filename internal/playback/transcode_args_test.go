@@ -520,28 +520,33 @@ func TestBuildFFmpegArgs_VAAPIScalingUsesHardwareFilter(t *testing.T) {
 	}
 }
 
-func TestBuildFFmpegArgs_EncodedTranscodeResumePreservesSourceTimestamps(t *testing.T) {
+func TestBuildFFmpegArgs_EncodedTranscodeResumeUsesZeroBasedTimestamps(t *testing.T) {
 	args := buildFFmpegArgs(TranscodeOpts{
-		InputPath:        "/media/movie.mkv",
-		OutputDir:        "/tmp/out",
-		SessionID:        "session-encoded",
-		SeekSeconds:      2780.63,
-		TargetCodecVideo: "h264",
-		TargetCodecAudio: "aac",
-		SegmentDuration:  2,
+		InputPath:          "/media/movie.mkv",
+		OutputDir:          "/tmp/out",
+		SessionID:          "session-encoded",
+		SeekSeconds:        2780.63,
+		StartSegmentNumber: 1390,
+		TargetCodecVideo:   "h264",
+		TargetCodecAudio:   "aac",
+		SegmentDuration:    2,
 	})
 
 	joined := strings.Join(args, " ")
-	// Resume/seek must preserve source timestamps so seg_K PTS matches
-	// playlist time K*segDur (the EXT-X-START / synthetic VOD anchor).
-	if !strings.Contains(joined, "-copyts") {
-		t.Fatalf("encoded resume should preserve source timestamps: %s", joined)
+	// Windowed encoded VOD puts seg_K at playlist t=0; PTS must be zero-based
+	// so a seek to segment M lands on (M-start)*segDur player time / M*segDur
+	// source time — not a -copyts absolute PTS that drifts from the window.
+	if strings.Contains(joined, "-copyts") {
+		t.Fatalf("encoded resume must not preserve source timestamps: %s", joined)
 	}
-	if !strings.Contains(joined, "-avoid_negative_ts disabled") {
-		t.Fatalf("encoded resume should keep avoid_negative_ts disabled: %s", joined)
+	if !strings.Contains(joined, "-avoid_negative_ts make_zero") {
+		t.Fatalf("encoded resume should zero-base timestamps to the window head: %s", joined)
 	}
-	if strings.Contains(joined, "-avoid_negative_ts make_zero") {
-		t.Fatalf("encoded resume must not zero-base timestamps: %s", joined)
+	if !strings.Contains(joined, "expr:gte(t,n_forced*2)") {
+		t.Fatalf("encoded resume keyframes must use zero-based t, not t-SeekSeconds: %s", joined)
+	}
+	if strings.Contains(joined, "t-2780.630") {
+		t.Fatalf("encoded resume must not subtract SeekSeconds from force_key_frames: %s", joined)
 	}
 }
 
