@@ -85,28 +85,35 @@ func (r *AVIFSiblingReconciler) DiscoverMissing(ctx context.Context, limit int) 
 		return nil, nil
 	}
 
-	// Sweep forward from the cursor until this pass finds work, exhausts its row
-	// budget, or wraps. A window whose artwork is already covered costs only its
-	// HEAD probes, which run 16-wide, so skipping past covered regions is cheap —
-	// and it is the only way a scan that starts at rank 0 ever reaches people.
+	// Sweep forward from the cursor, accumulating across windows until the pass
+	// has a full batch, exhausts its row budget, or wraps.
+	//
+	// Returning at the first window with work looked reasonable and was not: the
+	// cursor advances one window per pass, so with 22k originals and work always
+	// waiting in the low offsets, the scan crawled forward one 1500-row step every
+	// fifteen minutes. People sit at offsets ~14k-22k, so cast portraits were
+	// still hours away from being looked at. Accumulating means one pass can cross
+	// the whole corpus, and a window whose artwork is already covered costs only
+	// its HEAD probes, which run 16-wide.
 	window := limit * 3
 	budget := avifReconcileScanRowBudget
+	missing := make([]AVIFBackfillEnqueueInput, 0, limit)
 	var wrapped bool
 	// Cancellation ends the sweep through the loop condition rather than an
-	// if/return, matching RunUntilIdle: a cancelled pass reports no work, not a
-	// failure, because the caller is unwinding on the same context.
-	for scanned := 0; scanned < budget && ctx.Err() == nil; {
+	// if/return, matching RunUntilIdle: a cancelled pass reports what it has
+	// rather than a failure, because the caller is unwinding on the same context.
+	for scanned := 0; scanned < budget && len(missing) < limit && ctx.Err() == nil; {
 		offset := r.cursor.next(window)
 		wrapped = wrapped || offset == 0
 		paths, err := r.listCachedWebPOriginals(ctx, window, offset)
 		if err != nil {
-			return nil, err
+			return missing, err
 		}
 		if len(paths) == 0 {
 			// Past the end of the corpus: restart from the top on the next window.
 			r.cursor.reset()
 			if wrapped {
-				return nil, nil
+				break
 			}
 			wrapped = true
 			continue
@@ -116,15 +123,13 @@ func (r *AVIFSiblingReconciler) DiscoverMissing(ctx context.Context, limit int) 
 			// Short read means this was the final window.
 			r.cursor.reset()
 		}
-		missing, err := r.probeMissing(ctx, paths, limit)
+		found, err := r.probeMissing(ctx, paths, limit-len(missing))
 		if err != nil {
-			return nil, err
+			return missing, err
 		}
-		if len(missing) > 0 {
-			return missing, nil
-		}
+		missing = append(missing, found...)
 	}
-	return nil, nil
+	return missing, nil
 }
 
 // pageCachedWebPOriginals returns the next rotated page of cached WebP originals
