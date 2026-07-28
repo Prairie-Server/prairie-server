@@ -92,7 +92,10 @@ func (r *AVIFSiblingReconciler) DiscoverMissing(ctx context.Context, limit int) 
 	window := limit * 3
 	budget := avifReconcileScanRowBudget
 	var wrapped bool
-	for scanned := 0; scanned < budget; {
+	// Cancellation ends the sweep through the loop condition rather than an
+	// if/return, matching RunUntilIdle: a cancelled pass reports no work, not a
+	// failure, because the caller is unwinding on the same context.
+	for scanned := 0; scanned < budget && ctx.Err() == nil; {
 		offset := r.cursor.next(window)
 		wrapped = wrapped || offset == 0
 		paths, err := r.listCachedWebPOriginals(ctx, window, offset)
@@ -120,13 +123,23 @@ func (r *AVIFSiblingReconciler) DiscoverMissing(ctx context.Context, limit int) 
 		if len(missing) > 0 {
 			return missing, nil
 		}
-		if ctx.Err() != nil {
-			// Cancelled mid-sweep: stop scanning and report no work rather than a
-			// failure. The caller is already unwinding on the same context.
-			break
-		}
 	}
 	return nil, nil
+}
+
+// pageCachedWebPOriginals returns the next rotated page of cached WebP originals
+// for the given cursor, resetting it once a short page marks the end of the
+// corpus. Shared by every scanner here so the rotation cannot drift apart.
+func (r *AVIFSiblingReconciler) pageCachedWebPOriginals(ctx context.Context, cursor *scanCursor, limit int) ([]string, error) {
+	offset := cursor.next(limit)
+	paths, err := r.listCachedWebPOriginals(ctx, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	if len(paths) < limit {
+		cursor.reset()
+	}
+	return paths, nil
 }
 
 // probeMissing HEADs the display-ladder keys for each candidate and returns the
@@ -295,13 +308,9 @@ func (c *LegacyPNGSiblingCleaner) CleanupLegacyPNG(ctx context.Context, limit in
 		return 0, 0, nil
 	}
 	reconciler := &AVIFSiblingReconciler{pool: c.pool, s3: nil}
-	offset := c.cursor.next(limit)
-	paths, err := reconciler.listCachedWebPOriginals(ctx, limit, offset)
+	paths, err := reconciler.pageCachedWebPOriginals(ctx, &c.cursor, limit)
 	if err != nil {
 		return 0, 0, err
-	}
-	if len(paths) < limit {
-		c.cursor.reset()
 	}
 	bucket := c.s3.Bucket()
 	for _, original := range paths {
@@ -363,13 +372,9 @@ func (c *RetiredVariantCleaner) CleanupRetiredVariants(ctx context.Context, limi
 	reconciler := &AVIFSiblingReconciler{pool: c.pool, s3: nil}
 	// Rotates for the same reason discovery does: the retired rung being swept
 	// is a still, and stills sit at rank 6 — far past any fixed head window.
-	offset := c.cursor.next(limit)
-	paths, err := reconciler.listCachedWebPOriginals(ctx, limit, offset)
+	paths, err := reconciler.pageCachedWebPOriginals(ctx, &c.cursor, limit)
 	if err != nil {
 		return 0, 0, err
-	}
-	if len(paths) < limit {
-		c.cursor.reset()
 	}
 	return c.sweepPaths(ctx, paths)
 }

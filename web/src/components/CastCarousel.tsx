@@ -113,8 +113,12 @@ export function PersonCard({
   // Portrait art is the flakiest kind: an expired signature, a rung the store
   // never generated, or a provider 404 all end as a broken-image glyph in a
   // face-shaped box. Initials are a better answer than a torn page.
-  const [photoFailed, setPhotoFailed] = useState(false);
-  const showPhoto = Boolean(photoUrl) && !photoFailed;
+  //
+  // Keyed to the URL that failed, not a boolean: carousel slides are reused as
+  // the cast list changes, and a re-signed URL arrives on the same instance. A
+  // sticky flag would strand a person on initials until the tree remounted.
+  const [failedPhotoUrl, setFailedPhotoUrl] = useState<string | null>(null);
+  const showPhoto = Boolean(photoUrl) && failedPhotoUrl !== photoUrl;
   const inner = (
     <>
       <div className="media-card-image mb-2.5 aspect-[2/3] overflow-hidden rounded-lg">
@@ -126,7 +130,7 @@ export function PersonCard({
             alt={name}
             className="h-full w-full object-cover transition-transform duration-300 group-hover/person:scale-105"
             loading="lazy"
-            onError={() => setPhotoFailed(true)}
+            onError={() => setFailedPhotoUrl(photoUrl ?? null)}
           />
         ) : (
           <div className="bg-surface text-muted-foreground flex h-full w-full items-center justify-center text-lg font-semibold">
