@@ -121,7 +121,9 @@ func (r *AVIFSiblingReconciler) DiscoverMissing(ctx context.Context, limit int) 
 			return missing, nil
 		}
 		if ctx.Err() != nil {
-			return nil, nil
+			// Cancelled mid-sweep: stop scanning and report no work rather than a
+			// failure. The caller is already unwinding on the same context.
+			break
 		}
 	}
 	return nil, nil
