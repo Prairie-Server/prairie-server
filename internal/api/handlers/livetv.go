@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -337,7 +338,12 @@ func (h *LiveTVHandler) HandleGetProgram(w http.ResponseWriter, r *http.Request)
 func (h *LiveTVHandler) HandleStartChannelSession(w http.ResponseWriter, r *http.Request) {
 	userID := apimw.GetUserID(r.Context())
 	profileID := apimw.GetProfileID(r.Context())
-	session, err := h.service.StartChannelSession(r.Context(), chi.URLParam(r, "channelId"), userID, profileID)
+	caps, err := decodeLiveTVClientCapabilities(r)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "invalid_body", "invalid JSON body")
+		return
+	}
+	session, err := h.service.StartChannelSession(r.Context(), chi.URLParam(r, "channelId"), userID, profileID, caps)
 	if err != nil {
 		writeLiveTVError(w, err)
 		return
@@ -370,6 +376,30 @@ func (h *LiveTVHandler) HandleStartChannelSession(w http.ResponseWriter, r *http
 		Transport:      transport,
 		Note:           session.Note,
 	})
+}
+
+// decodeLiveTVClientCapabilities reads the optional capability envelope from a
+// session start request. The body stays optional: clients released before
+// capability reporting send nothing, and those are native players that already
+// decode the broadcast codecs, so an empty value means "copy the streams".
+func decodeLiveTVClientCapabilities(r *http.Request) (livetv.ClientCapabilities, error) {
+	var caps livetv.ClientCapabilities
+	if r.Body == nil {
+		return caps, nil
+	}
+	// Bound the body: capability lists are small and this endpoint is reachable
+	// by any signed-in profile.
+	body, err := io.ReadAll(io.LimitReader(r.Body, 16<<10))
+	if err != nil {
+		return caps, err
+	}
+	if len(bytes.TrimSpace(body)) == 0 {
+		return caps, nil
+	}
+	if err := json.Unmarshal(body, &caps); err != nil {
+		return livetv.ClientCapabilities{}, err
+	}
+	return caps, nil
 }
 
 // HandleSessionStream proxies the upstream tuner for an owned active session.

@@ -836,7 +836,9 @@ func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session,
 		userID = session.StreamAppUserID
 		profileID = session.ProfileID
 	}
-	native, err := h.service.StartChannelSession(ctx, channelID, userID, profileID)
+	// Compat clients consume the raw MPEG-TS below, so they never want the
+	// bridge to re-encode: leave capabilities empty to keep the copy path.
+	native, err := h.service.StartChannelSession(ctx, channelID, userID, profileID, livetv.ClientCapabilities{})
 	if err != nil {
 		return mediaSourceDTO{}, err
 	}

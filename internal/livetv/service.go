@@ -51,7 +51,7 @@ type GracenoteClient interface {
 }
 
 type PlaybackBridge interface {
-	StartLiveStream(ctx context.Context, channelID, sourceStreamURL string, userID int, profileID string) (playbackSessionID, playbackURL string, err error)
+	StartLiveStream(ctx context.Context, req LiveStreamRequest) (playbackSessionID, playbackURL string, err error)
 }
 
 // PlaybackBridgeStopper is an optional extension for tearing down bridge-owned
@@ -1335,7 +1335,16 @@ func (s *Service) GetProgram(ctx context.Context, id string) (*Program, error) {
 	return program, nil
 }
 
-func (s *Service) StartChannelSession(ctx context.Context, channelID string, userID int, profileID string) (*LiveSession, error) {
+// StartChannelSession tunes a channel for one viewer. caps describes what the
+// client can decode; a zero value keeps the historical copy-only behavior for
+// native players that predate capability reporting.
+func (s *Service) StartChannelSession(
+	ctx context.Context,
+	channelID string,
+	userID int,
+	profileID string,
+	caps ClientCapabilities,
+) (*LiveSession, error) {
 	if err := s.requireStore(); err != nil {
 		return nil, err
 	}
@@ -1377,12 +1386,26 @@ func (s *Service) StartChannelSession(ctx context.Context, channelID string, use
 	transport := "mpegts"
 	note := ""
 	if s.playbackBridge != nil {
+		plan := PlanLiveStream(caps, BroadcastSourceCodecs)
 		var err error
-		playbackID, streamURL, err = s.playbackBridge.StartLiveStream(ctx, channel.ID, channel.StreamURL, userID, profileID)
+		playbackID, streamURL, err = s.playbackBridge.StartLiveStream(ctx, LiveStreamRequest{
+			ChannelID: channel.ID,
+			SourceURL: channel.StreamURL,
+			UserID:    userID,
+			ProfileID: profileID,
+			Plan:      plan,
+		})
 		if err != nil {
+			// Capacity errors are the caller's to act on, not a generic 500.
+			if errors.Is(err, ErrLimitExceeded) {
+				return nil, err
+			}
 			return nil, fmt.Errorf("start playback bridge: %w", err)
 		}
 		transport = "hls"
+		if plan.TranscodesVideo() {
+			note = "Transcoding this channel for your device"
+		}
 	}
 
 	// Allocate a free tuner index, then insert. A concurrent StartChannelSession

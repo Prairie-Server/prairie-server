@@ -2066,7 +2066,12 @@ func main() {
 	if deps.DB != nil {
 		liveTVSvc = livetv.NewService(deps.DB)
 		ffmpegPath := cfg.Playback.FFmpegPath
-		bridge := livetv.NewHLSBridge(cfg.Playback.TranscodeDir, ffmpegPath)
+		bridge := livetv.NewHLSBridge(livetv.HLSBridgeOptions{
+			Root:          cfg.Playback.TranscodeDir,
+			FFmpegPath:    ffmpegPath,
+			HWAccel:       cfg.Playback.HWAccel,
+			MaxTranscodes: cfg.LiveTV.MaxTranscodes,
+		})
 		liveTVSvc.SetPlaybackBridge(bridge)
 		dvrPath := cfg.LiveTV.DVRPath
 		if dvrPath == "" {

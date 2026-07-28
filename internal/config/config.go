@@ -171,10 +171,17 @@ type PlaybackConfig struct {
 type LiveTVConfig struct {
 	// DVRPath is where completed Live TV recordings are written.
 	DVRPath string `yaml:"dvr_path"`
+	// MaxTranscodes bounds concurrent Live TV sessions that re-encode for
+	// clients which cannot decode the broadcast codecs (browsers on MPEG-2 /
+	// AC-3 OTA). 0 uses the default; a negative value disables the limit.
+	MaxTranscodes int `yaml:"max_transcodes"`
 }
 
 // DefaultLiveTVDVRPath is the fallback livetv.dvr_path.
 const DefaultLiveTVDVRPath = "/var/lib/prairie/dvr"
+
+// DefaultLiveTVMaxTranscodes is the fallback livetv.max_transcodes.
+const DefaultLiveTVMaxTranscodes = 3
 
 // RedisConfig holds Redis connection settings.
 type RedisConfig struct {
@@ -515,7 +522,8 @@ func setDefaults() *configRaw {
 			TranscodeEnabled:             true,
 		},
 		LiveTV: LiveTVConfig{
-			DVRPath: DefaultLiveTVDVRPath,
+			DVRPath:       DefaultLiveTVDVRPath,
+			MaxTranscodes: DefaultLiveTVMaxTranscodes,
 		},
 		RateLimit: RateLimitConfig{
 			Enabled: true,

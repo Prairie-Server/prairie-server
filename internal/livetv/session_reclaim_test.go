@@ -33,12 +33,12 @@ func TestStartChannelSessionReclaimsAbandonedTuner(t *testing.T) {
 	svc, store := singleTunerService(t)
 	ctx := context.Background()
 
-	first, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1")
+	first, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1", ClientCapabilities{})
 	if err != nil {
 		t.Fatalf("first StartChannelSession: %v", err)
 	}
 
-	if _, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1"); !errors.Is(err, ErrNoTuner) {
+	if _, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1", ClientCapabilities{}); !errors.Is(err, ErrNoTuner) {
 		t.Fatalf("second session while watched = %v, want ErrNoTuner", err)
 	}
 
@@ -47,7 +47,7 @@ func TestStartChannelSessionReclaimsAbandonedTuner(t *testing.T) {
 	stale.LastSeenAt = time.Now().Add(-2 * StaleSessionTTL)
 	store.sessions[first.ID] = stale
 
-	second, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1")
+	second, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1", ClientCapabilities{})
 	if err != nil {
 		t.Fatalf("tune after abandonment: %v", err)
 	}
@@ -63,7 +63,7 @@ func TestTouchSessionKeepsTunerClaimed(t *testing.T) {
 	svc, store := singleTunerService(t)
 	ctx := context.Background()
 
-	session, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1")
+	session, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1", ClientCapabilities{})
 	if err != nil {
 		t.Fatalf("StartChannelSession: %v", err)
 	}
@@ -89,7 +89,7 @@ func TestTouchSessionKeepsTunerClaimed(t *testing.T) {
 func TestTouchSessionThrottlesRepeatWrites(t *testing.T) {
 	svc, store := singleTunerService(t)
 	ctx := context.Background()
-	session, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1")
+	session, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1", ClientCapabilities{})
 	if err != nil {
 		t.Fatalf("StartChannelSession: %v", err)
 	}
@@ -117,7 +117,7 @@ func TestReclaimStaleSessionsRecordsHistory(t *testing.T) {
 	svc.SetHistoryRecorder(history)
 	ctx := context.Background()
 
-	session, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1")
+	session, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1", ClientCapabilities{})
 	if err != nil {
 		t.Fatalf("StartChannelSession: %v", err)
 	}
@@ -147,7 +147,7 @@ func TestReleaseSessionRecordsHistory(t *testing.T) {
 	svc.SetHistoryRecorder(history)
 	ctx := context.Background()
 
-	session, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1")
+	session, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1", ClientCapabilities{})
 	if err != nil {
 		t.Fatalf("StartChannelSession: %v", err)
 	}
@@ -222,7 +222,7 @@ func TestRecordSessionHistoryTransportAndWriteFailure(t *testing.T) {
 	svc.SetHistoryRecorder(history)
 	ctx := context.Background()
 
-	session, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1")
+	session, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1", ClientCapabilities{})
 	if err != nil {
 		t.Fatalf("StartChannelSession: %v", err)
 	}
@@ -285,7 +285,7 @@ func TestReclaimStaleSessionsStopsBridge(t *testing.T) {
 	svc.SetPlaybackBridge(failingStopBridge{onStop: func(id string) { stopped = append(stopped, id) }})
 	ctx := context.Background()
 
-	session, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1")
+	session, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1", ClientCapabilities{})
 	if err != nil {
 		t.Fatalf("StartChannelSession: %v", err)
 	}
@@ -323,7 +323,7 @@ func TestReleaseSessionLogsBridgeStopFailure(t *testing.T) {
 	svc.SetPlaybackBridge(failingStopBridge{})
 	ctx := context.Background()
 
-	session, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1")
+	session, err := svc.StartChannelSession(ctx, "ch1", 7, "profile-1", ClientCapabilities{})
 	if err != nil {
 		t.Fatalf("StartChannelSession: %v", err)
 	}
@@ -348,7 +348,7 @@ type failingStopBridge struct {
 	onStop func(id string)
 }
 
-func (failingStopBridge) StartLiveStream(context.Context, string, string, int, string) (string, string, error) {
+func (failingStopBridge) StartLiveStream(context.Context, LiveStreamRequest) (string, string, error) {
 	return "pb-stop", "/api/v1/livetv/live-hls/pb-stop/index.m3u8", nil
 }
 
