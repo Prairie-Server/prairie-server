@@ -192,6 +192,10 @@ func TestArtworkMetricsBoundLabelCardinality(t *testing.T) {
 		"/artwork/a/b/notatype/w999.1.tiff",
 		"/artwork/a/b/notatype/bogus.1.tiff",
 		"/artwork/x/y/z/w12345.2.exe",
+		// Noncanonical spellings of a real width: Atoi parses these as 200, so
+		// an allowlist check alone would let each one become its own series.
+		"/artwork/a/b/notatype/w000200.1.tiff",
+		"/artwork/a/b/notatype/w+200.1.tiff",
 	} {
 		rec := httptest.NewRecorder()
 		store.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, junk, nil))
@@ -200,11 +204,34 @@ func TestArtworkMetricsBoundLabelCardinality(t *testing.T) {
 		}
 	}
 
-	if got := artworkCounter(t, labelUnknown, labelUnknown, labelUnknown, outcomeNotFound); got != before+3 {
-		t.Errorf("unknown-label counter = %v, want %v (all three must collapse into one series)", got, before+3)
+	if got := artworkCounter(t, labelUnknown, labelUnknown, labelUnknown, outcomeNotFound); got != before+5 {
+		t.Errorf("unknown-label counter = %v, want %v (all five must collapse into one series)", got, before+5)
 	}
 	if got := artworkCounter(t, "notatype", "w999", "tiff", outcomeNotFound); got != 0 {
 		t.Errorf("a request-derived label escaped the allowlist: %v", got)
+	}
+	for _, alias := range []string{"w000200", "w+200", "w0200"} {
+		if got := artworkCounter(t, labelUnknown, alias, labelUnknown, outcomeNotFound); got != 0 {
+			t.Errorf("noncanonical rung %q kept its own series: %v", alias, got)
+		}
+	}
+}
+
+func TestNormalizedVariantAcceptsOnlyCanonicalRungs(t *testing.T) {
+	for key, want := range map[string]string{
+		"a/b/poster/w200.1.webp":     "w200",
+		"a/b/poster/w1920.1.webp":    "w1920",
+		"a/b/poster/original.1.webp": "original",
+		"a/b/poster/w000200.1.webp":  labelUnknown,
+		"a/b/poster/w+200.1.webp":    labelUnknown,
+		"a/b/poster/w0200.1.webp":    labelUnknown,
+		"a/b/poster/w999.1.webp":     labelUnknown,
+		"a/b/poster/w.1.webp":        labelUnknown,
+		"a/b/poster/junk.1.webp":     labelUnknown,
+	} {
+		if got := normalizedVariant(key); got != want {
+			t.Errorf("normalizedVariant(%q) = %q, want %q", key, got, want)
+		}
 	}
 }
 

@@ -100,6 +100,15 @@ func normalizedVariant(key string) string {
 	if err != nil || !knownVariantWidths[width] {
 		return labelUnknown
 	}
+	// Atoi accepts noncanonical spellings — "000200" and "+200" both parse as
+	// 200 — so an allowlist hit alone is not enough: returning the string as
+	// written would give w200, w0200, w00200 … a series each, which is the
+	// unbounded cardinality this function exists to prevent. Only the exact
+	// spelling the store generates keeps its label; anything else is junk that
+	// would 404 anyway.
+	if variant != "w"+strconv.Itoa(width) {
+		return labelUnknown
+	}
 	return variant
 }
 
