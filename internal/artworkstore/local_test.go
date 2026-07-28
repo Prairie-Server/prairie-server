@@ -355,3 +355,140 @@ func TestLocalStoreFallbackKeepsFormat(t *testing.T) {
 		t.Fatalf("status = %d, want 404 rather than WebP bytes under an .avif URL", rec.Code)
 	}
 }
+
+// serveKeySignedAs presigns signKey, swaps the path to requestKey, and serves
+// it — i.e. a client selecting a different rung from the URL it was given.
+func serveKeySignedAs(t *testing.T, store *LocalStore, signKey, requestKey string) *httptest.ResponseRecorder {
+	t.Helper()
+	signed, err := store.PresignGetURL(context.Background(), store.Bucket(), signKey, time.Hour)
+	if err != nil {
+		t.Fatalf("PresignGetURL(%s): %v", signKey, err)
+	}
+	swapped := strings.Replace(signed, signKey, requestKey, 1)
+	if swapped == signed && signKey != requestKey {
+		t.Fatalf("failed to swap %q for %q in %q", signKey, requestKey, signed)
+	}
+	rec := httptest.NewRecorder()
+	store.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, swapped, nil))
+	return rec
+}
+
+func scopeStore(t *testing.T) *LocalStore {
+	t.Helper()
+	store, err := NewLocalStore(LocalConfig{Root: t.TempDir(), URLSecret: "scope-secret", URLTTL: time.Hour})
+	if err != nil {
+		t.Fatalf("NewLocalStore: %v", err)
+	}
+	return store
+}
+
+// One signature covers every display rung of an artwork revision, which is what
+// lets a client pick the width that fits the element it is drawing.
+func TestSignatureCoversSiblingRungsOfSameRevision(t *testing.T) {
+	t.Parallel()
+	store := scopeStore(t)
+	ctx := context.Background()
+	dir := "tmdb/movies/550/poster/"
+	for _, name := range []string{"w200.rev1.webp", "w300.rev1.webp", "w500.rev1.webp", "w300.rev1.avif"} {
+		if err := store.PutObject(ctx, store.Bucket(), dir+name, []byte(name)); err != nil {
+			t.Fatalf("PutObject(%s): %v", name, err)
+		}
+	}
+
+	for _, requested := range []string{"w200.rev1.webp", "w300.rev1.webp", "w300.rev1.avif"} {
+		rec := serveKeySignedAs(t, store, dir+"w500.rev1.webp", dir+requested)
+		if rec.Code != http.StatusOK {
+			t.Errorf("requesting %s with a w500 signature = %d, want 200", requested, rec.Code)
+		}
+		if body, _ := io.ReadAll(rec.Body); string(body) != requested {
+			t.Errorf("requesting %s served %q", requested, body)
+		}
+	}
+}
+
+// A different revision is different content and must not be reachable.
+func TestSignatureDoesNotCrossRevisions(t *testing.T) {
+	t.Parallel()
+	store := scopeStore(t)
+	ctx := context.Background()
+	dir := "tmdb/movies/550/poster/"
+	if err := store.PutObject(ctx, store.Bucket(), dir+"w300.rev1.webp", []byte("one")); err != nil {
+		t.Fatalf("PutObject: %v", err)
+	}
+	if err := store.PutObject(ctx, store.Bucket(), dir+"w300.rev2.webp", []byte("two")); err != nil {
+		t.Fatalf("PutObject: %v", err)
+	}
+
+	rec := serveKeySignedAs(t, store, dir+"w300.rev1.webp", dir+"w300.rev2.webp")
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("cross-revision request = %d, want 403", rec.Code)
+	}
+}
+
+// Nor another item's artwork.
+func TestSignatureDoesNotCrossArtwork(t *testing.T) {
+	t.Parallel()
+	store := scopeStore(t)
+	ctx := context.Background()
+	mine := "tmdb/movies/550/poster/w300.rev1.webp"
+	theirs := "tmdb/movies/999/poster/w300.rev1.webp"
+	for _, key := range []string{mine, theirs} {
+		if err := store.PutObject(ctx, store.Bucket(), key, []byte("x")); err != nil {
+			t.Fatalf("PutObject(%s): %v", key, err)
+		}
+	}
+
+	if rec := serveKeySignedAs(t, store, mine, theirs); rec.Code != http.StatusForbidden {
+		t.Fatalf("cross-artwork request = %d, want 403", rec.Code)
+	}
+	// Same directory but a different image type is also a different scope.
+	still := "tmdb/movies/550/still/w300.rev1.webp"
+	if err := store.PutObject(ctx, store.Bucket(), still, []byte("x")); err != nil {
+		t.Fatalf("PutObject: %v", err)
+	}
+	if rec := serveKeySignedAs(t, store, mine, still); rec.Code != http.StatusForbidden {
+		t.Fatalf("cross-image-type request = %d, want 403", rec.Code)
+	}
+}
+
+// The full-size source is scoped to itself: a display rung must not widen to it.
+func TestSignatureDoesNotWidenToOriginal(t *testing.T) {
+	t.Parallel()
+	store := scopeStore(t)
+	ctx := context.Background()
+	dir := "tmdb/movies/550/poster/"
+	for _, name := range []string{"w300.rev1.webp", "original.rev1.webp"} {
+		if err := store.PutObject(ctx, store.Bucket(), dir+name, []byte(name)); err != nil {
+			t.Fatalf("PutObject(%s): %v", name, err)
+		}
+	}
+
+	rec := serveKeySignedAs(t, store, dir+"w300.rev1.webp", dir+"original.rev1.webp")
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("rung->original = %d, want 403", rec.Code)
+	}
+	// And the reverse: an original URL is not a licence to fetch rungs.
+	rec = serveKeySignedAs(t, store, dir+"original.rev1.webp", dir+"w300.rev1.webp")
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("original->rung = %d, want 403", rec.Code)
+	}
+	// A caller issued an original URL can still use it.
+	if rec := serveKey(t, store, dir+"original.rev1.webp"); rec.Code != http.StatusOK {
+		t.Fatalf("original with its own signature = %d, want 200", rec.Code)
+	}
+}
+
+func TestSignatureScope(t *testing.T) {
+	t.Parallel()
+	for key, want := range map[string]string{
+		"a/b/poster/w300.rev1.webp":     "a/b/poster/rev1",
+		"a/b/poster/w500.rev1.avif":     "a/b/poster/rev1",
+		"a/b/poster/original.rev1.webp": "a/b/poster/original.rev1.webp",
+		// Legacy unrevisioned keys have one generation per directory.
+		"a/b/poster/w300.webp": "a/b/poster/",
+	} {
+		if got := signatureScope(key); got != want {
+			t.Errorf("signatureScope(%q) = %q, want %q", key, got, want)
+		}
+	}
+}

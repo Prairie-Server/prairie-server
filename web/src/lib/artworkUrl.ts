@@ -18,7 +18,14 @@
 import { staticRasterCandidates, staticRasterFormats } from "@/lib/staticImageUrl";
 import { getImageFormats, orderRasterCandidates } from "@/lib/imageFormats";
 
-export const POSTER_WIDTHS = [300, 500] as const;
+/**
+ * Poster rungs offered to the browser, narrowest first.
+ *
+ * w200 covers a 140-160px card at DPR 1, w300 the same card on a 2x display at
+ * the smaller end, w500 the detail-page poster. The browser picks using the
+ * `sizes` attribute each call site declares.
+ */
+export const POSTER_WIDTHS = [200, 300, 500] as const;
 export const BACKDROP_WIDTHS = [300, 1280, 1920] as const;
 
 function pathnameOf(objectPath: string): string {
@@ -46,10 +53,36 @@ export function webPPNGSibling(objectPath: string | null | undefined): string {
   return staticRasterFormats(objectPath)?.png ?? "";
 }
 
-/** True when rewriting the path would invalidate a cloud object signature. */
+/**
+ * True when rewriting the path would invalidate a signature we cannot reproduce.
+ *
+ * Third-party signatures (S3 SigV4, GCS, Cloudflare) cover the exact object
+ * path, so any rewrite breaks them and the URL must be used verbatim.
+ *
+ * Prairie's own artwork signature is deliberately excluded. It covers the
+ * artwork *revision*, not the exact key, so selecting a different width rung of
+ * the same image still validates — which is what makes `artworkSrcSet` and the
+ * width ladders work at all. Before that, this guard matched Prairie's `sig=`
+ * too, so every responsive path in this app was dead: no `srcSet`, no `sizes`,
+ * and 140-160px cards rendering w500.
+ */
 export function isSignedArtworkURL(objectPath: string): boolean {
-  // AWS SigV4, GCS, generic Signature/sig, and Cloudflare WAF token (?verify=).
+  if (isPrairieSignedArtworkURL(objectPath)) return false;
+  // AWS SigV4, GCS, generic Signature, and Cloudflare WAF token (?verify=).
   return /[?&](X-Amz-Signature|X-Goog-Signature|Signature|sig|verify)=/i.test(objectPath);
+}
+
+/**
+ * True for a URL signed by this server's artwork store.
+ *
+ * Identified by the pair of query params it always emits together plus the
+ * `/artwork/` path prefix it always serves from — deliberately narrow, so a
+ * third-party URL that happens to carry a `sig=` param is not mistaken for ours
+ * and rewritten into a 403.
+ */
+export function isPrairieSignedArtworkURL(objectPath: string): boolean {
+  if (!/[?&]sig=/.test(objectPath) || !/[?&]expires=/.test(objectPath)) return false;
+  return pathnameOf(objectPath).includes("/artwork/");
 }
 
 export type ArtworkFormatSources = {
