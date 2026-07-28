@@ -79,7 +79,8 @@ func NewPgStore(db *pgxpool.Pool) *PgStore {
 func (s *PgStore) ListTuners(ctx context.Context) ([]Tuner, error) {
 	rows, err := s.db.Query(ctx, `
 		SELECT t.id, t.type, t.device_id, t.discover_url, t.base_url, t.model, t.firmware,
-			t.tuner_count, t.status, COALESCE(c.channel_count, 0), t.last_error, t.last_scan_at
+			t.tuner_count, t.status, COALESCE(c.channel_count, 0), t.last_error, t.last_scan_at,
+			t.transcode_codecs
 		FROM livetv_tuners t
 		LEFT JOIN (
 			SELECT tuner_id, COUNT(*) AS channel_count FROM livetv_channels GROUP BY tuner_id
@@ -103,7 +104,8 @@ func (s *PgStore) ListTuners(ctx context.Context) ([]Tuner, error) {
 func (s *PgStore) GetTuner(ctx context.Context, id string) (*Tuner, error) {
 	row := s.db.QueryRow(ctx, `
 		SELECT t.id, t.type, t.device_id, t.discover_url, t.base_url, t.model, t.firmware,
-			t.tuner_count, t.status, COALESCE(c.channel_count, 0), t.last_error, t.last_scan_at
+			t.tuner_count, t.status, COALESCE(c.channel_count, 0), t.last_error, t.last_scan_at,
+			t.transcode_codecs
 		FROM livetv_tuners t
 		LEFT JOIN (
 			SELECT tuner_id, COUNT(*) AS channel_count FROM livetv_channels GROUP BY tuner_id
@@ -131,8 +133,8 @@ func (s *PgStore) CreateTuner(ctx context.Context, tuner *Tuner) (*Tuner, error)
 		tuner.Type = TunerTypeHDHomeRun
 	}
 	row := s.db.QueryRow(ctx, `
-		INSERT INTO livetv_tuners (id, type, device_id, discover_url, base_url, model, firmware, tuner_count, status, last_error, last_scan_at)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		INSERT INTO livetv_tuners (id, type, device_id, discover_url, base_url, model, firmware, tuner_count, status, last_error, last_scan_at, transcode_codecs)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
 		ON CONFLICT (type, device_id) DO UPDATE SET
 			discover_url = EXCLUDED.discover_url,
 			base_url = EXCLUDED.base_url,
@@ -142,10 +144,11 @@ func (s *PgStore) CreateTuner(ctx context.Context, tuner *Tuner) (*Tuner, error)
 			status = EXCLUDED.status,
 			last_error = EXCLUDED.last_error,
 			last_scan_at = COALESCE(EXCLUDED.last_scan_at, livetv_tuners.last_scan_at),
+			transcode_codecs = EXCLUDED.transcode_codecs,
 			updated_at = now()
-		RETURNING id, type, device_id, discover_url, base_url, model, firmware, tuner_count, status, 0, last_error, last_scan_at`,
+		RETURNING id, type, device_id, discover_url, base_url, model, firmware, tuner_count, status, 0, last_error, last_scan_at, transcode_codecs`,
 		tuner.ID, tuner.Type, tuner.DeviceID, tuner.DiscoverURL, tuner.BaseURL, tuner.Model, tuner.Firmware,
-		tuner.TunerCount, tuner.Status, tuner.LastError, tuner.LastScanAt)
+		tuner.TunerCount, tuner.Status, tuner.LastError, tuner.LastScanAt, joinCodecList(tuner.TranscodeCodecs))
 	out, err := scanTuner(row)
 	if err != nil {
 		return nil, fmt.Errorf("create tuner: %w", err)
@@ -794,11 +797,14 @@ type scanner interface {
 func scanTuner(row scanner) (Tuner, error) {
 	var tuner Tuner
 	var lastScan sql.NullTime
+	var transcodeCodecs string
 	if err := row.Scan(&tuner.ID, &tuner.Type, &tuner.DeviceID, &tuner.DiscoverURL, &tuner.BaseURL, &tuner.Model,
-		&tuner.Firmware, &tuner.TunerCount, &tuner.Status, &tuner.ChannelCount, &tuner.LastError, &lastScan); err != nil {
+		&tuner.Firmware, &tuner.TunerCount, &tuner.Status, &tuner.ChannelCount, &tuner.LastError, &lastScan,
+		&transcodeCodecs); err != nil {
 		return Tuner{}, err
 	}
 	tuner.LastScanAt = nullTimePtr(lastScan)
+	tuner.TranscodeCodecs = splitCodecList(transcodeCodecs)
 	return tuner, nil
 }
 

@@ -2283,6 +2283,8 @@ export interface LiveTVTuner {
   channel_count: number;
   last_error: string;
   last_scan_at?: string;
+  /** Device-side transcode profiles the tuner advertises; empty on current models. */
+  transcode_codecs?: string[];
 }
 
 export interface LiveTVTunersResponse {

@@ -93,6 +93,35 @@ func (s TranscodeSettings) applyTo(plan StreamPlan) StreamPlan {
 	return plan
 }
 
+// splitCodecList parses the stored comma-separated capability list.
+func splitCodecList(raw string) []string {
+	if strings.TrimSpace(raw) == "" {
+		return nil
+	}
+	parts := strings.Split(raw, ",")
+	out := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+// joinCodecList renders a capability list for storage.
+func joinCodecList(values []string) string {
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	return strings.Join(out, ",")
+}
+
 // resolutionRank orders resolution labels so the smaller ceiling wins.
 func resolutionRank(resolution string) int {
 	switch strings.ToLower(strings.TrimSpace(resolution)) {

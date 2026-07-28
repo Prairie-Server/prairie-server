@@ -79,6 +79,17 @@ type Tuner struct {
 	ChannelCount int        `json:"channel_count"`
 	LastError    string     `json:"last_error"`
 	LastScanAt   *time.Time `json:"last_scan_at,omitempty"`
+	// TranscodeCodecs are the device-side transcode profiles the tuner
+	// advertises. Empty on every current model, which is why Prairie
+	// transcodes on the server instead.
+	TranscodeCodecs []string `json:"transcode_codecs"`
+}
+
+// SupportsDeviceTranscode reports whether the tuner advertises device-side
+// transcoding. Sending ?transcode= to a device that does not is silently
+// ignored, so the admin UI greys the option out rather than pretending.
+func (t Tuner) SupportsDeviceTranscode() bool {
+	return len(t.TranscodeCodecs) > 0
 }
 
 type Channel struct {

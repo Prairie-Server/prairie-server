@@ -30,6 +30,12 @@ type DeviceInfo struct {
 	DeviceID        string
 	BaseURL         string
 	LineupURL       string
+	// TranscodeCodecs lists the device-side transcode profiles the tuner
+	// advertises ("heavy", "mobile", "internet480", …). Only the discontinued
+	// EXTEND ever shipped them; current models omit the field and silently
+	// ignore a ?transcode= query, so Prairie must never send one unless the
+	// device says it is supported.
+	TranscodeCodecs []string
 }
 
 type LineupChannel struct {
@@ -41,13 +47,54 @@ type LineupChannel struct {
 }
 
 type discoverJSON struct {
-	FriendlyName    string `json:"FriendlyName"`
-	ModelNumber     string `json:"ModelNumber"`
-	FirmwareVersion string `json:"FirmwareVersion"`
-	TunerCount      int    `json:"TunerCount"`
-	DeviceID        string `json:"DeviceID"`
-	BaseURL         string `json:"BaseURL"`
-	LineupURL       string `json:"LineupURL"`
+	FriendlyName    string          `json:"FriendlyName"`
+	ModelNumber     string          `json:"ModelNumber"`
+	FirmwareVersion string          `json:"FirmwareVersion"`
+	TunerCount      int             `json:"TunerCount"`
+	DeviceID        string          `json:"DeviceID"`
+	BaseURL         string          `json:"BaseURL"`
+	LineupURL       string          `json:"LineupURL"`
+	TranscodeCodecs transcodeCodecs `json:"TranscodeCodecs"`
+}
+
+// transcodeCodecs accepts the shapes devices use for TranscodeCodecs: a JSON
+// array on some firmware, a comma-separated string on others, and absent on
+// every model that cannot transcode.
+type transcodeCodecs []string
+
+func (c *transcodeCodecs) UnmarshalJSON(data []byte) error {
+	trimmed := strings.TrimSpace(string(data))
+	if trimmed == "" || trimmed == "null" {
+		*c = nil
+		return nil
+	}
+	if strings.HasPrefix(trimmed, "[") {
+		var list []string
+		if err := json.Unmarshal(data, &list); err != nil {
+			return err
+		}
+		*c = normalizeCodecList(list)
+		return nil
+	}
+	var joined string
+	if err := json.Unmarshal(data, &joined); err != nil {
+		return err
+	}
+	*c = normalizeCodecList(strings.Split(joined, ","))
+	return nil
+}
+
+func normalizeCodecList(values []string) []string {
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		if trimmed := strings.TrimSpace(value); trimmed != "" {
+			out = append(out, trimmed)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 // lineupBool accepts HDHomeRun lineup flags that devices may emit as booleans
@@ -210,6 +257,7 @@ func normalizeDeviceInfo(info discoverJSON, finalURL, fallbackDeviceID string) *
 		DeviceID:        id,
 		BaseURL:         base,
 		LineupURL:       lineup,
+		TranscodeCodecs: info.TranscodeCodecs,
 	}
 }
 

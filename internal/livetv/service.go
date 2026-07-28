@@ -410,14 +410,15 @@ func (s *Service) AddTuner(ctx context.Context, in AddTunerInput) (*Tuner, error
 		return nil, fmt.Errorf("%w: device_id is required", ErrInvalidArgument)
 	}
 	tuner, err := s.store.CreateTuner(ctx, &Tuner{
-		Type:        TunerTypeHDHomeRun,
-		DeviceID:    info.DeviceID,
-		DiscoverURL: strings.TrimSpace(discoverURL),
-		BaseURL:     info.BaseURL,
-		Model:       info.ModelNumber,
-		Firmware:    info.FirmwareVersion,
-		TunerCount:  info.TunerCount,
-		Status:      "discovered",
+		Type:            TunerTypeHDHomeRun,
+		DeviceID:        info.DeviceID,
+		DiscoverURL:     strings.TrimSpace(discoverURL),
+		BaseURL:         info.BaseURL,
+		Model:           info.ModelNumber,
+		Firmware:        info.FirmwareVersion,
+		TunerCount:      info.TunerCount,
+		TranscodeCodecs: info.TranscodeCodecs,
+		Status:          "discovered",
 	})
 	if err != nil {
 		return nil, err
