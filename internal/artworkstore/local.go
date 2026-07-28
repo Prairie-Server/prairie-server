@@ -363,11 +363,15 @@ func (s *LocalStore) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		sig := r.URL.Query().Get(signatureQueryParam)
 		expires, err := strconv.ParseInt(expiresStr, 10, 64)
 		if err != nil || expires < time.Now().Unix() {
+			recordArtworkRequest(key, outcomeExpired, 0)
 			http.Error(w, "url expired", http.StatusForbidden)
 			return
 		}
 		expected := s.sign(key, expires)
 		if subtle.ConstantTimeCompare([]byte(sig), []byte(expected)) != 1 {
+			// A spike here is the signature of a client rewriting a key outside
+			// its signing scope — how the cast-portrait 403s went unnoticed.
+			recordArtworkRequest(key, outcomeBadSignature, 0)
 			http.Error(w, "invalid signature", http.StatusForbidden)
 			return
 		}
@@ -376,13 +380,20 @@ func (s *LocalStore) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	f, info, substituted, err := s.openWithRungFallback(key)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
+			recordArtworkRequest(key, outcomeNotFound, 0)
 			http.NotFound(w, r)
 			return
 		}
+		recordArtworkRequest(key, outcomeError, 0)
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return
 	}
 	defer f.Close()
+
+	outcome := outcomeServed
+	if substituted {
+		outcome = outcomeSubstituted
+	}
 
 	// Content type comes from the requested key, which is correct either way: a
 	// substituted rung differs only in width, never in format.
@@ -402,10 +413,14 @@ func (s *LocalStore) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Length", strconv.FormatInt(info.Size(), 10))
 	if r.Method == http.MethodHead {
+		// HEAD is how the reconciler probes coverage, so it is counted as a
+		// request but never as bytes.
+		recordArtworkRequest(key, outcome, 0)
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	_, _ = io.Copy(w, f)
+	sent, _ := io.Copy(w, f)
+	recordArtworkRequest(key, outcome, sent)
 }
 
 // openWithRungFallback opens the object for key, falling back to wider rungs of
