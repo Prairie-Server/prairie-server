@@ -1968,6 +1968,13 @@ func NewRouter(deps Dependencies) chi.Router {
 		// All remaining routes require auth.
 		if authMiddleware != nil {
 			r.Group(func(r chi.Router) {
+				// Must precede RequireAuth: it marks HLS delivery requests that
+				// carry a valid session-bound stream token so auth and viewer
+				// access let them through. Adds authorization only — a request
+				// that already passes bearer auth is unaffected.
+				if deps.Config != nil {
+					r.Use(authMiddleware.StreamTokenAuth(deps.Config.Auth.JWTSecret))
+				}
 				r.Use(authMiddleware.RequireAuth)
 				if demoGuard != nil {
 					r.Use(demoGuard.Guard)
