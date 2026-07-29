@@ -28,6 +28,17 @@ func NewViewerAccessMiddleware(resolver ViewerResolver) *ViewerAccessMiddleware 
 // RequireViewerAccess resolves viewer scope from auth + profile headers.
 func (m *ViewerAccessMiddleware) RequireViewerAccess(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Stream-token delivery carries no identity by design, so there are no
+		// claims to resolve a viewer scope from. The scope was already enforced
+		// when the session was created (/playback/start runs full auth and
+		// viewer access); this request only fetches bytes for that session, and
+		// the signature naming it is the authorization. Without this skip the
+		// nil-claims branch below would 401 every playlist and segment fetch.
+		if IsStreamTokenAuthorized(r.Context()) {
+			next.ServeHTTP(w, r)
+			return
+		}
+
 		claims := GetClaims(r.Context())
 		if claims == nil {
 			writeUnauthorized(w, "Authentication required")
