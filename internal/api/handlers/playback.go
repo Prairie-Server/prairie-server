@@ -3837,9 +3837,15 @@ func (h *PlaybackHandler) HandleGetTranscodeSegment(w http.ResponseWriter, r *ht
 		return
 	}
 
-	// Report segment download for throttle tracking.
-	if segNum, parseErr := playback.ParseSegmentNumber(segmentName); parseErr == nil {
-		transcodeSession.ReportSegmentDownloaded(segNum)
+	// Report segment download for throttle tracking. HEAD is an existence probe,
+	// not a download: it must not advance lastRequestedSegment, which feeds the
+	// throttler and SegmentRecoveryDecision. Counting a probe as consumed would
+	// tell the server the client is further ahead than it is and change when a
+	// stalled transcode restarts.
+	if r.Method != http.MethodHead {
+		if segNum, parseErr := playback.ParseSegmentNumber(segmentName); parseErr == nil {
+			transcodeSession.ReportSegmentDownloaded(segNum)
+		}
 	}
 
 	w.Header().Set("Cache-Control", "no-store, max-age=0")
@@ -3880,7 +3886,11 @@ func (h *PlaybackHandler) proxyToTranscodeNode(w http.ResponseWriter, r *http.Re
 		targetURL += "?" + encoded
 	}
 
-	req, err := http.NewRequestWithContext(r.Context(), http.MethodGet, targetURL, nil)
+	// Forward the client's method. Identical to the previous hardcoded GET for
+	// every GET, but a HEAD probe must not drag a whole segment across the node
+	// boundary only for net/http to discard the body. A node that serves GET
+	// only answers 405, which is exactly what the client's fallback expects.
+	req, err := http.NewRequestWithContext(r.Context(), r.Method, targetURL, nil)
 	if err != nil {
 		http.Error(w, "internal error", http.StatusInternalServerError)
 		return

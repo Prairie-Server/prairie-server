@@ -2577,6 +2577,12 @@ func NewRouter(deps Dependencies) chi.Router {
 						// pattern as /stream/{session_id}.
 						r.Get("/transcode/{session_id}/master.m3u8", playbackHandler.HandleGetTranscodeManifest)
 						r.Get("/transcode/{session_id}/segment/{name}", playbackHandler.HandleGetTranscodeSegment)
+						// HEAD is how a client probes whether a segment exists yet
+						// before handing the playlist to its player. Without it the
+						// probe pays a 405 and retries as a ranged GET, so every
+						// readiness check costs two round-trips. Matches
+						// /stream/{session_id}, which has always served both.
+						r.Head("/transcode/{session_id}/segment/{name}", playbackHandler.HandleGetTranscodeSegment)
 
 						// Playback realtime control socket — needs auth but not profile.
 						r.Get("/sessions/{session_id}/control/ws", playbackHandler.HandleSessionWebSocket)
