@@ -133,6 +133,7 @@ export default function ConnectionsPanel() {
   const [testResult, setTestResult] = useState<AutoscanConnectionTestResult | null>(null);
 
   const arrIntegrations = (requestIntegrations.data ?? []).filter(isArrKind);
+  const enabledArrIntegrations = arrIntegrations.filter((integration) => integration.enabled);
 
   // -------------------------------------------------------------------------
   // Dialog helpers
@@ -144,7 +145,7 @@ export default function ConnectionsPanel() {
     // exists. Prairie already holds those credentials, so making "enter your own"
     // the default was asking operators to type the same API key twice — the
     // single most common piece of duplicated setup.
-    const firstIntegration = arrIntegrations[0];
+    const firstIntegration = enabledArrIntegrations[0];
     setDialog({
       ...BLANK_DIALOG,
       open: true,
@@ -389,9 +390,9 @@ export default function ConnectionsPanel() {
                 <Label>Requests integration</Label>
                 {requestIntegrations.isLoading ? (
                   <p className="text-muted-foreground text-sm">Loading integrations…</p>
-                ) : arrIntegrations.length === 0 ? (
+                ) : enabledArrIntegrations.length === 0 ? (
                   <p className="text-muted-foreground text-sm">
-                    No Sonarr/Radarr integrations found. Add one in the Requests page first.
+                    No enabled Sonarr/Radarr integrations found. Add one in the Requests page first.
                   </p>
                 ) : (
                   <Select
@@ -405,7 +406,7 @@ export default function ConnectionsPanel() {
                       <SelectValue placeholder="Select an integration…" />
                     </SelectTrigger>
                     <SelectContent>
-                      {arrIntegrations.map((integration) => (
+                      {enabledArrIntegrations.map((integration) => (
                         <SelectItem key={integration.id} value={integration.id}>
                           {integration.name} ({connectionKindLabel(integrationKind(integration))})
                         </SelectItem>

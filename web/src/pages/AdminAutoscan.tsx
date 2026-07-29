@@ -171,7 +171,7 @@ export default function AdminAutoscan() {
               ))}
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-            Silo re-scans a library as soon as something changes, instead of waiting for the next
+            Prairie re-scans a library as soon as something changes, instead of waiting for the next
             scheduled scan. Add a source for each thing you want watched.
           </p>
         </div>

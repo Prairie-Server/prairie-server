@@ -183,8 +183,15 @@ func DescriptorFromMetadata(metadata map[string]any) ScanSourceDescriptor {
 	}
 
 	if connection, ok := raw["connection"].(string); ok {
-		out.Connection = normalizeConnectionRequirement(connection)
-		out.markDeclared(fieldConnection)
+		normalized := normalizeConnectionRequirement(connection)
+		out.Connection = normalized
+		// Only mark declared when the manifest stated a recognized value.
+		// Unrecognized strings normalize to ConnectionOptional but should not
+		// prevent ApplyCompatibilityDescriptor from supplying its value.
+		trimmed := strings.ToLower(strings.TrimSpace(connection))
+		if trimmed == string(ConnectionNone) || trimmed == string(ConnectionRequired) || trimmed == string(ConnectionOptional) {
+			out.markDeclared(fieldConnection)
+		}
 	}
 	if kinds := stringSlice(raw["connection_kinds"]); len(kinds) > 0 {
 		out.ConnectionKinds = kinds

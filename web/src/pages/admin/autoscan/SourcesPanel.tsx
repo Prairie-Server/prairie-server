@@ -764,7 +764,15 @@ function SourceRow({
   const [parsedWith, setParsedWith] = useState(descriptor);
   if (parsedWith !== descriptor) {
     setParsedWith(descriptor);
-    if (!edit.dirty) setEdit(sourceToRowEdit(source, descriptor));
+    if (!edit.dirty) {
+      setEdit(sourceToRowEdit(source, descriptor));
+    } else {
+      // Re-parse only the sourceConfig portion, preserving user-edited fields.
+      setEdit((prev) => ({
+        ...prev,
+        sourceConfig: parseConfigValues(descriptor, sourceConfigForEdit(source)),
+      }));
+    }
   }
   const [intervalError, setIntervalError] = useState(false);
 
