@@ -873,20 +873,6 @@ func (f *fakeMDBListSettingsCheckClient) Check(ctx context.Context) error {
 	return nil
 }
 
-type fakeEmbeddingsSettingsCheckClient struct {
-	embed func(ctx context.Context, texts []string) ([][]float32, error)
-}
-
-func (f *fakeEmbeddingsSettingsCheckClient) Embed(
-	ctx context.Context,
-	texts []string,
-) ([][]float32, error) {
-	if f.embed != nil {
-		return f.embed(ctx, texts)
-	}
-	return [][]float32{{0.1, 0.2}}, nil
-}
-
 type fakeAISettingsCheckClient struct {
 	chat       func(ctx context.Context, messages []llm.Message, jsonObject bool) (string, error)
 	transcribe func(ctx context.Context, req llm.TranscribeRequest) (*llm.Transcription, error)

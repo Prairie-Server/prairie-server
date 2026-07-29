@@ -108,7 +108,7 @@ func (s *DetailService) ProbedDurationsByContentIDs(ctx context.Context, ids []s
 	}
 	durations, err := fetcher.FirstDurationsByContentIDs(ctx, ids)
 	if err != nil {
-		slog.Warn("failed to fetch probed content durations", "error", err, "id_count", len(ids))
+		slog.WarnContext(ctx, "failed to fetch probed content durations", "error", err, "id_count", len(ids))
 		return nil
 	}
 	return durations
@@ -126,7 +126,7 @@ func (s *DetailService) ProbedDurationsByEpisodeIDs(ctx context.Context, ids []s
 	}
 	durations, err := fetcher.FirstDurationsByEpisodeIDs(ctx, ids)
 	if err != nil {
-		slog.Warn("failed to fetch probed episode durations", "error", err, "id_count", len(ids))
+		slog.WarnContext(ctx, "failed to fetch probed episode durations", "error", err, "id_count", len(ids))
 		return nil
 	}
 	return durations
