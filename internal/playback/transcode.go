@@ -46,16 +46,21 @@ type TranscodeOpts struct {
 	// CopySeekAnchorResolved distinguishes a valid zero-second origin from
 	// older/shared recipes that never resolved a copy seek anchor.
 	CopySeekAnchorResolved bool
-	TargetResolution       string // e.g., 1080p, 720p
-	TargetCodecVideo       string // e.g., h264 (or hevc if allowed)
-	TargetCodecAudio       string // e.g., aac
-	SegmentDuration        int    // seconds, default 6
-	StartSegmentNumber     int    // -hls_segment_start_number, default 0
-	FFmpegPath             string // optional explicit ffmpeg binary path
-	HWAccel                string // auto, qsv, vaapi, nvenc, none
-	HWDevice               string // e.g., /dev/dri/renderD128 (default if empty)
-	SubtitleTrackIndex     int    // -1 = no subtitles
-	SubtitleBurnIn         bool
+	// SourceHeight is the probed height of the input video stream. It bounds the
+	// quality ladder: a rung above the source would spend encode time upscaling
+	// detail the file does not contain. 0 means the probe reported nothing, and
+	// the ladder falls back to offering every rung.
+	SourceHeight       int
+	TargetResolution   string // e.g., 1080p, 720p
+	TargetCodecVideo   string // e.g., h264 (or hevc if allowed)
+	TargetCodecAudio   string // e.g., aac
+	SegmentDuration    int    // seconds, default 6
+	StartSegmentNumber int    // -hls_segment_start_number, default 0
+	FFmpegPath         string // optional explicit ffmpeg binary path
+	HWAccel            string // auto, qsv, vaapi, nvenc, none
+	HWDevice           string // e.g., /dev/dri/renderD128 (default if empty)
+	SubtitleTrackIndex int    // -1 = no subtitles
+	SubtitleBurnIn     bool
 	// SubtitleCodec is the probed codec of the burn-in track (e.g. "subrip",
 	// "hdmv_pgs_subtitle"). Bitmap codecs (PGS/DVD/DVB) select the overlay
 	// filter_complex pipeline; text codecs use the libass subtitles filter.
