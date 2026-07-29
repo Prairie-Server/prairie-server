@@ -144,16 +144,23 @@ func TestBuildPlaybackManifest_EncodedTranscodeUsesSyntheticVODManifest(t *testi
 
 	text := string(got)
 	for _, want := range []string{
-		"#EXT-X-PLAYLIST-TYPE:VOD",
 		"#EXT-X-MEDIA-SEQUENCE:0",
 		"#EXTINF:2.000000,",
 		"#EXTINF:1.100000,",
 		"segment/seg_00000.ts?token=test",
 		"segment/seg_00002.ts?token=test",
+		// ENDLIST is the supported way to say "this playlist is complete", and
+		// it has to stay now that PLAYLIST-TYPE is gone.
+		"#EXT-X-ENDLIST",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("manifest missing %q:\n%s", want, text)
 		}
+	}
+	// Tizen lists EXT-X-PLAYLIST-TYPE as unsupported and abandons a playlist
+	// carrying it, silently, so the synthetic VOD manifest must not emit it.
+	if strings.Contains(text, "#EXT-X-PLAYLIST-TYPE") {
+		t.Fatalf("synthetic VOD manifest must not emit EXT-X-PLAYLIST-TYPE:\n%s", text)
 	}
 	if strings.Contains(text, "#EXT-X-MAP:") {
 		t.Fatalf("encoded manifest should not use fMP4 init map:\n%s", text)
@@ -923,5 +930,78 @@ func TestAppendManifestQueryParam_NonManifestUnchanged(t *testing.T) {
 	}
 	if got := AppendManifestQueryParam([]byte("#EXTM3U\nseg.ts\n"), "", "TOKEN"); !strings.Contains(string(got), "seg.ts\n") || strings.Contains(string(got), "seg.ts?") {
 		t.Fatalf("empty key should be a no-op, got:\n%s", got)
+	}
+}
+
+// Samsung documents #EXT-X-INDEPENDENT-SEGMENTS as unsupported on every Tizen
+// version, and their parser abandons the whole playlist instead of skipping the
+// line -- without surfacing an error, which the AVPlay plugin then swallows in
+// OnPrepareDone. Every media playlist reaches a client through this function,
+// so it is the backstop for manifests ffmpeg wrote under an older flag set.
+func TestRewriteManifestPathsStripsUnsupportedTizenTags(t *testing.T) {
+	manifest := strings.Join([]string{
+		"#EXTM3U",
+		"#EXT-X-VERSION:7",
+		"#EXT-X-TARGETDURATION:10",
+		"#EXT-X-MEDIA-SEQUENCE:0",
+		"#EXT-X-INDEPENDENT-SEGMENTS",
+		"#EXT-X-PLAYLIST-TYPE:VOD",
+		"#EXT-X-MAP:URI=\"init.mp4\"",
+		"#EXTINF:10.427000,",
+		"seg_00000.m4s",
+		"#EXT-X-ENDLIST",
+		"",
+	}, "\n")
+
+	got, err := RewriteManifestPaths([]byte(manifest), "segment/", "st=tok")
+	if err != nil {
+		t.Fatalf("RewriteManifestPaths: %v", err)
+	}
+	text := string(got)
+
+	for _, banned := range []string{"#EXT-X-INDEPENDENT-SEGMENTS", "#EXT-X-PLAYLIST-TYPE"} {
+		if strings.Contains(text, banned) {
+			t.Errorf("unsupported tag %q survived:\n%s", banned, text)
+		}
+	}
+	// Stripping must not disturb anything else: supported tags, the init map and
+	// the segment line all keep their rewritten prefix and query.
+	for _, want := range []string{
+		"#EXTM3U",
+		"#EXT-X-VERSION:7",
+		"#EXT-X-TARGETDURATION:10",
+		"#EXT-X-MAP:URI=\"segment/init.mp4?st=tok\"",
+		"#EXTINF:10.427000,",
+		"segment/seg_00000.m4s?st=tok",
+		"#EXT-X-ENDLIST",
+	} {
+		if !strings.Contains(text, want) {
+			t.Errorf("rewrite dropped %q:\n%s", want, text)
+		}
+	}
+	// #EXTM3U must remain the first line for the playlist to parse at all.
+	if !strings.HasPrefix(text, "#EXTM3U\n") {
+		t.Errorf("playlist no longer starts with #EXTM3U:\n%s", text)
+	}
+}
+
+// A tag that merely starts with the same characters must survive.
+func TestRewriteManifestPathsKeepsSimilarlyNamedTags(t *testing.T) {
+	manifest := strings.Join([]string{
+		"#EXTM3U",
+		"#EXT-X-VERSION:3",
+		"#EXT-X-TARGETDURATION:2",
+		"#EXT-X-INDEPENDENT-SEGMENTS-FUTURE:1",
+		"#EXTINF:2.000000,",
+		"seg_00000.ts",
+		"",
+	}, "\n")
+
+	got, err := RewriteManifestPaths([]byte(manifest), "segment/", "")
+	if err != nil {
+		t.Fatalf("RewriteManifestPaths: %v", err)
+	}
+	if !strings.Contains(string(got), "#EXT-X-INDEPENDENT-SEGMENTS-FUTURE:1") {
+		t.Errorf("prefix-only match was stripped:\n%s", got)
 	}
 }

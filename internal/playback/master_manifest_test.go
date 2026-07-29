@@ -117,3 +117,21 @@ func TestBuildMasterManifestShape(t *testing.T) {
 		t.Fatalf("EXT-X-STREAM-INF must be immediately followed by the URI:\n%s", strings.Join(lines, "\n"))
 	}
 }
+
+// The master playlist previously emitted #EXT-X-INDEPENDENT-SEGMENTS on line 3,
+// ahead of the variant URI. Samsung lists the tag as unsupported on every Tizen
+// version, and their parser abandons the playlist rather than skipping the tag,
+// which is why AVPlay fetched the master and then never requested the variant.
+func TestBuildMasterManifestOmitsUnsupportedTizenTags(t *testing.T) {
+	for _, opts := range []TranscodeOpts{
+		{TargetCodecVideo: "copy", SourceVideoCodec: "av1", TargetCodecAudio: "aac"},
+		{TargetCodecVideo: "hevc", TargetCodecAudio: "aac", TargetResolution: "2160p", TargetBitrateKbps: 20000},
+	} {
+		got := string(BuildMasterManifest("media.m3u8?st=tok", opts))
+		for _, banned := range []string{"#EXT-X-INDEPENDENT-SEGMENTS", "#EXT-X-PLAYLIST-TYPE"} {
+			if strings.Contains(got, banned) {
+				t.Errorf("unsupported tag %q present (%+v):\n%s", banned, opts, got)
+			}
+		}
+	}
+}

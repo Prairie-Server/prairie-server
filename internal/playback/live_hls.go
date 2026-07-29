@@ -185,7 +185,9 @@ func buildLiveHLSArgs(
 		"-f", "hls",
 		"-hls_time", fmt.Sprintf("%d", segmentSeconds),
 		"-hls_list_size", fmt.Sprintf("%d", listSize),
-		"-hls_flags", "delete_segments+omit_endlist+independent_segments+temp_file",
+		// independent_segments omitted: Tizen does not support the tag it emits
+		// and fails the playlist silently. See transcode.go for the details.
+		"-hls_flags", "delete_segments+omit_endlist+temp_file",
 		"-hls_segment_type", "mpegts",
 		"-hls_segment_filename", segPattern,
 		playlist,

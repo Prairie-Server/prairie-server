@@ -13,21 +13,30 @@ const defaultAdvertisedBandwidthBps = 8_000_000
 // BuildMasterManifest wraps a media playlist in a single-variant master
 // playlist.
 //
-// Samsung's PlusPlayer decides what decoder pipeline to build during prepare,
-// before it fetches any media, and a bare media playlist gives it no variant to
-// work from. Prepare then fails silently: the plugin's OnPrepareDone only calls
-// SendInitialized when ret is true and emits nothing otherwise, so the Dart
-// completer never completes and never errors and the client hangs in
-// initialize() until its own timeout. Every browser and hls.js path accepts a
-// bare media playlist, which is why this only ever showed up on the TV.
+// A single-variant master is the conventional shape every player expects, so
+// serving one costs nothing and removes a difference from mainstream servers.
+// It is not, on its own, what unblocked Tizen playback -- see below.
 //
-// CODECS is deliberately absent. RFC 6381 identifiers are not codec-family
-// names: avc1.4d401f pins Main profile at level 3.1, av01.0.08M.08 pins profile
-// 0 at level 4.0 Main tier 8-bit, and so on. The session carries only a codec
-// family ("av1", "hevc"), not the profile, tier, level and bit depth those
-// strings encode, so any value emitted from what we have here would be a guess
-// that a strict client is entitled to believe. Advertising a mismatched decoder
-// configuration is worse than advertising none, and the attribute is optional.
+// Only tags Samsung documents as supported may appear here. Their HLS tag
+// support table lists #EXT-X-INDEPENDENT-SEGMENTS and #EXT-X-PLAYLIST-TYPE as
+// "Not supported" on every Tizen version, and an unsupported tag does not
+// degrade gracefully: the parser abandons the playlist, prepare returns false
+// without raising a plusplayer error, and the AVPlay plugin's OnPrepareDone
+// only calls SendInitialized when ret is true (verified in plus_player.cc). The
+// Dart completer therefore never settles and never errors, and the client hangs
+// in initialize() until its own timeout with no diagnostic on any layer. This
+// playlist previously emitted #EXT-X-INDEPENDENT-SEGMENTS on line 3, before the
+// variant URI was ever reached. Browsers and hls.js support the tag, which is
+// why it only ever failed on the TV.
+//
+// CODECS is deliberately absent, and its absence is not believed to be a
+// playback blocker: Samsung documents no required EXT-X-STREAM-INF attributes,
+// and the same silent failure occurred against a plain media playlist that has
+// no EXT-X-STREAM-INF at all. Emitting one would also mean guessing. RFC 6381
+// identifiers are not codec-family names -- avc1.4d401f pins Main profile at
+// level 3.1, av01.0.08M.08 pins profile 0 at level 4.0 Main tier 8-bit -- while
+// the session carries only a family ("av1", "hevc"). A mismatched decoder
+// configuration a strict client is entitled to believe is worse than none.
 // Adding it properly means threading the probed stream parameters (Profile,
 // Level, and bit depth on the video stream model) through TranscodeOpts and
 // deriving exact values -- worth doing, but not by inventing them here.
@@ -40,7 +49,6 @@ func BuildMasterManifest(mediaURI string, opts TranscodeOpts) []byte {
 	// 3 is all a single-variant master needs; the media playlist carries its own
 	// higher version for fMP4.
 	b.WriteString("#EXT-X-VERSION:3\n")
-	b.WriteString("#EXT-X-INDEPENDENT-SEGMENTS\n")
 
 	b.WriteString("#EXT-X-STREAM-INF:BANDWIDTH=" + strconv.Itoa(advertisedBandwidthBps(opts)))
 	if res := resolutionAttribute(opts.TargetResolution); res != "" {
