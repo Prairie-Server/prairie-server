@@ -6,6 +6,29 @@ import { PlayerConfigProvider } from "../context/PlayerConfigContext";
 import type { PlayerConfig } from "../context/PlayerConfigContext";
 import type { PlayerFileVersion, TranscodeStartRequest } from "../types";
 
+// The ladder now comes from the server, and its request would otherwise land on
+// this file's fetch mock and shift every call count here. It is a separate unit
+// with its own tests (useQualityLadder.test.tsx), so stub it to the production
+// rungs and keep these assertions about transcode starts alone. Without this the
+// counts are also order-dependent, because the real hook caches at module scope.
+vi.mock("./useQualityLadder", () => ({
+  useQualityLadder: () => [
+    { id: "2160p", label: "4K", resolution: "2160p", height: 2160, bitrate_kbps: 20000 },
+    {
+      id: "1080p-high",
+      label: "1080p High",
+      resolution: "1080p",
+      height: 1080,
+      bitrate_kbps: 10000,
+    },
+    { id: "1080p", label: "1080p", resolution: "1080p", height: 1080, bitrate_kbps: 6000 },
+    { id: "720p-high", label: "720p High", resolution: "720p", height: 720, bitrate_kbps: 4000 },
+    { id: "720p", label: "720p", resolution: "720p", height: 720, bitrate_kbps: 2000 },
+    { id: "480p", label: "480p", resolution: "480p", height: 480, bitrate_kbps: 1500 },
+    { id: "420p", label: "420p", resolution: "420p", height: 420, bitrate_kbps: 720 },
+  ],
+}));
+
 const config: PlayerConfig = {
   apiBaseUrl: "/api/v1",
   getAccessToken: () => null,
