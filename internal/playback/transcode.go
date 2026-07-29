@@ -258,6 +258,25 @@ func IsMPEG2VideoCodec(codec string) bool {
 	}
 }
 
+// IsHEVCVideoCodec reports whether a probed video codec name identifies HEVC.
+// Accepts the same alias spread as IsMPEG2VideoCodec, including the two MP4
+// sample-entry spellings, since codec strings arrive from scan metadata, direct
+// probes, and client capability lists.
+func IsHEVCVideoCodec(codec string) bool {
+	normalized := strings.NewReplacer(
+		" ", "",
+		"-", "",
+		"_", "",
+		".", "",
+	).Replace(strings.ToLower(strings.TrimSpace(codec)))
+	switch normalized {
+	case "hevc", "h265", "x265", "hev1", "hvc1":
+		return true
+	default:
+		return false
+	}
+}
+
 // IsMPEG4Part2VideoCodec reports whether a codec name identifies MPEG-4 Part 2
 // video, commonly found in older XviD/DivX AVI files.
 func IsMPEG4Part2VideoCodec(codec string) bool {
@@ -322,10 +341,32 @@ func buildFFmpegArgs(opts TranscodeOpts) []string {
 	args = appendTimestampNormalizationArgs(args, opts)
 
 	// Video codec and encoding settings.
+	// Whether this session will package copied video as fMP4. Set here rather
+	// than with the HLS output options below, because the fMP4 sample entry is
+	// written from the video codec arguments.
+	copyVideoUsesFMP4 := isVideoCopy && !IsMPEG2VideoCodec(opts.SourceVideoCodec)
+
 	if isVideoCopy {
 		args = append(args, "-c:v", "copy")
 		if opts.VideoBitstreamFilter == DV7ToHDR10BitstreamFilter {
 			args = append(args, "-bsf:v", opts.VideoBitstreamFilter)
+		}
+		// Label copied HEVC as hvc1 instead of letting the muxer default to
+		// hev1. The two differ only in where parameter sets live -- hvc1 keeps
+		// VPS/SPS/PPS out-of-band in the init segment, hev1 permits them in-band
+		// -- but hardware demuxers are not equally forgiving: Samsung's Tizen
+		// pipeline and Apple's both reject hev1 in fMP4 outright, surfacing to
+		// the app as an unsupported format only after it has already fetched
+		// init.mp4. Remuxing out of Matroska yields out-of-band parameter sets
+		// anyway, so hvc1 is also the more accurate label for what we produce.
+		//
+		// fMP4 only: MPEG-TS carries HEVC in-band by design and has no sample
+		// entry to tag. Dolby Vision wants dvhe/dvh1 instead, which the
+		// progressive remux path sets, but a DV source arriving here has had its
+		// RPU stripped to plain HDR10 by DV7ToHDR10BitstreamFilter -- so hvc1
+		// describes what actually leaves this muxer.
+		if copyVideoUsesFMP4 && IsHEVCVideoCodec(opts.SourceVideoCodec) {
+			args = append(args, "-tag:v", "hvc1")
 		}
 	} else {
 		args = appendVideoArgs(args, opts)
@@ -357,7 +398,6 @@ func buildFFmpegArgs(opts TranscodeOpts) []string {
 	// race with fMP4 (hls.js #6337).
 	var segmentPattern string
 	segmentType := "mpegts"
-	copyVideoUsesFMP4 := isVideoCopy && !IsMPEG2VideoCodec(opts.SourceVideoCodec)
 	if copyVideoUsesFMP4 {
 		segmentType = "fmp4"
 		segmentPattern = filepath.Join(opts.OutputDir, "seg_%05d.m4s")

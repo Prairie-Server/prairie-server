@@ -1,0 +1,110 @@
+package playback
+
+import (
+	"strings"
+	"testing"
+)
+
+func copyHEVCOpts() TranscodeOpts {
+	return TranscodeOpts{
+		InputPath:        "/mnt/media/movie.mkv",
+		OutputDir:        "/tmp/out",
+		SourceVideoCodec: "hevc",
+		TargetCodecVideo: "copy",
+		TargetCodecAudio: "aac",
+		SegmentDuration:  2,
+		TotalDuration:    600,
+	}
+}
+
+// hev1 and hvc1 differ only in whether parameter sets may live in-band, but
+// Samsung's Tizen pipeline and Apple's both reject hev1 in fMP4 -- surfacing to
+// the app as an unsupported format only after init.mp4 has been fetched, which
+// is exactly how this presented on a retail TV.
+func TestCopiedHEVCInFMP4IsTaggedHvc1(t *testing.T) {
+	args := buildFFmpegArgs(copyHEVCOpts())
+
+	if !argsContainPair(args, "-tag:v", "hvc1") {
+		t.Fatalf("copied HEVC in fMP4 must be tagged hvc1, args=%v", strings.Join(args, " "))
+	}
+	// Guard the premise: if this stopped being an fMP4 session the tag would be
+	// wrong rather than merely unnecessary.
+	if !argsContainPair(args, "-hls_segment_type", "fmp4") {
+		t.Fatalf("expected an fMP4 session, args=%v", strings.Join(args, " "))
+	}
+	if !argsContainPair(args, "-c:v", "copy") {
+		t.Fatalf("expected copied video, args=%v", strings.Join(args, " "))
+	}
+}
+
+// MPEG-TS carries HEVC in-band by design and has no sample entry, so a tag
+// there would be meaningless. MPEG-2 sources are the codec-copy path that stays
+// on TS for Apple compatibility HLS.
+func TestCopiedHEVCInMPEGTSIsNotTagged(t *testing.T) {
+	opts := copyHEVCOpts()
+	opts.SourceVideoCodec = "mpeg2video"
+
+	args := buildFFmpegArgs(opts)
+	if argsContainPair(args, "-hls_segment_type", "fmp4") {
+		t.Fatalf("MPEG-2 copy should stay on MPEG-TS, args=%v", strings.Join(args, " "))
+	}
+	if argsContainPair(args, "-tag:v", "hvc1") {
+		t.Errorf("MPEG-TS session must not carry an fMP4 sample-entry tag, args=%v", strings.Join(args, " "))
+	}
+}
+
+// The tag describes a copied HEVC bitstream. An encode produces its own sample
+// entry from the encoder, and tagging a non-HEVC codec hvc1 would mislabel it.
+func TestHvc1TagOnlyForCopiedHEVC(t *testing.T) {
+	for _, tc := range []struct {
+		name             string
+		sourceVideoCodec string
+		targetCodecVideo string
+	}{
+		{name: "h264 copy", sourceVideoCodec: "h264", targetCodecVideo: "copy"},
+		{name: "av1 copy", sourceVideoCodec: "av1", targetCodecVideo: "copy"},
+		{name: "hevc encode", sourceVideoCodec: "hevc", targetCodecVideo: "hevc"},
+		{name: "hevc source encoded to h264", sourceVideoCodec: "hevc", targetCodecVideo: "h264"},
+	} {
+		opts := copyHEVCOpts()
+		opts.SourceVideoCodec = tc.sourceVideoCodec
+		opts.TargetCodecVideo = tc.targetCodecVideo
+		if tc.targetCodecVideo != "copy" {
+			opts.TargetResolution = resolution1080p
+		}
+
+		args := buildFFmpegArgs(opts)
+		if argsContainPair(args, "-tag:v", "hvc1") {
+			t.Errorf("%s must not be tagged hvc1, args=%v", tc.name, strings.Join(args, " "))
+		}
+	}
+}
+
+// A Dolby Vision source reaching the HLS copy path has had its RPU stripped to
+// plain HDR10, so the stream leaving the muxer really is ordinary HEVC and hvc1
+// is the correct label for it. The bitstream filter must survive alongside.
+func TestDolbyVisionStrippedCopyStillTaggedHvc1(t *testing.T) {
+	opts := copyHEVCOpts()
+	opts.VideoBitstreamFilter = DV7ToHDR10BitstreamFilter
+
+	args := buildFFmpegArgs(opts)
+	if !argsContainPair(args, "-bsf:v", DV7ToHDR10BitstreamFilter) {
+		t.Fatalf("DV->HDR10 bitstream filter was dropped, args=%v", strings.Join(args, " "))
+	}
+	if !argsContainPair(args, "-tag:v", "hvc1") {
+		t.Errorf("stripped DV copy is plain HEVC and must be tagged hvc1, args=%v", strings.Join(args, " "))
+	}
+}
+
+func TestIsHEVCVideoCodecAliases(t *testing.T) {
+	for _, alias := range []string{"hevc", "HEVC", "h265", "H.265", "h-265", "x265", "hev1", "hvc1", " hevc "} {
+		if !IsHEVCVideoCodec(alias) {
+			t.Errorf("IsHEVCVideoCodec(%q) = false, want true", alias)
+		}
+	}
+	for _, other := range []string{"", "h264", "avc1", "av1", "av01", "vp9", "mpeg2video"} {
+		if IsHEVCVideoCodec(other) {
+			t.Errorf("IsHEVCVideoCodec(%q) = true, want false", other)
+		}
+	}
+}
