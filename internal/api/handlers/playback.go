@@ -613,15 +613,14 @@ func (h *PlaybackHandler) ensurePlaybackProbe(ctx context.Context, file *models.
 	return file
 }
 
-// streamTokenParam is the query parameter that carries the signed stream token
-// on the native integrated serve path. The token is the durable reconstruction
-// descriptor: a front-end that lost its in-memory session rebuilds from it. It
-// rides a query parameter (not a path segment) because the integrated server is
-// hit directly by the client — there is no query-stripping proxy hop in between,
-// and the transcode manifest rewriter already appends the request RawQuery to
-// every segment URI, so segment requests inherit the token for free. The
-// proxy/node path keeps the token in the URL path (see the proxy server).
-const streamTokenParam = "st"
+// streamTokenParam is the query parameter carrying the signed stream token on
+// the native integrated serve path. The token is the durable reconstruction
+// descriptor: a front-end that lost its in-memory session rebuilds from it.
+//
+// Aliases the canonical name in streamtoken rather than repeating the literal —
+// the auth middleware authorizes on the same parameter, so a private copy here
+// could drift from what mints and verifies it.
+const streamTokenParam = streamtoken.QueryParam
 
 // signSessionToken mints a stream token carrying the session's full
 // reconstruction recipe. Returns "" when no signing secret is configured
@@ -3871,12 +3870,12 @@ func (h *PlaybackHandler) proxyToTranscodeNode(w http.ResponseWriter, r *http.Re
 	// Capture the signed stream token ("st") before stripping it from the URL.
 	// We forward it out-of-band as a header so the node can reconstruct after a
 	// self-restart, while keeping it out of the forwarded/logged URL.
-	stToken := r.URL.Query().Get("st")
+	stToken := r.URL.Query().Get(streamTokenParam)
 	// Strip the signed stream token ("st") before forwarding/logging: it is a
 	// 24h bearer reconstruction descriptor exposing media path + recipe claims.
 	// Other query params are preserved.
 	query := r.URL.Query()
-	query.Del("st")
+	query.Del(streamTokenParam)
 	if encoded := query.Encode(); encoded != "" {
 		targetURL += "?" + encoded
 	}

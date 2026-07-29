@@ -114,6 +114,22 @@ func TestStreamTokenAuthInertWithoutTokenOrSecret(t *testing.T) {
 	}
 }
 
+// The parameter name is a wire contract shared by the handler that appends it,
+// this middleware that authorizes on it, and the manifest rewriter that threads
+// it into segment URIs. Pin the value so a rename cannot silently stop the
+// player's URLs from authorizing.
+func TestStreamTokenQueryParamIsTheSharedContract(t *testing.T) {
+	if streamtoken.QueryParam != "st" {
+		t.Fatalf("streamtoken.QueryParam = %q, want \"st\" — existing clients and manifests carry this name", streamtoken.QueryParam)
+	}
+	const session = "session-1"
+	target := "/api/v1/playback/transcode/" + session + "/master.m3u8?" +
+		streamtoken.QueryParam + "=" + signStreamToken(t, session, time.Hour)
+	if !serveWithStreamTokenAuth(t, testStreamSecret, target) {
+		t.Error("a token presented under streamtoken.QueryParam was not honored")
+	}
+}
+
 func TestStreamTokenDeliverySessionParsing(t *testing.T) {
 	for target, want := range map[string]string{
 		"/api/v1/playback/transcode/abc/master.m3u8":       "abc",

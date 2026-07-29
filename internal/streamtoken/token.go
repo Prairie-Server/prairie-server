@@ -7,6 +7,22 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// QueryParam is the query parameter that carries a signed stream token on the
+// native integrated serve path.
+//
+// It rides a query parameter (not a path segment) because the integrated server
+// is hit directly by the client — there is no query-stripping proxy hop in
+// between, and the transcode manifest rewriter already appends the request
+// RawQuery to every segment URI, so segment requests inherit the token for free.
+// The proxy/node path keeps the token in the URL path instead (see the proxy
+// server).
+//
+// It lives here, beside Sign and Verify, because minting and verifying have to
+// agree on the name: the handler that appends it, the middleware that authorizes
+// on it, and the manifest rewriter that threads it into segment URIs are in
+// three different packages, and a private copy in each is how they drift.
+const QueryParam = "st"
+
 // Claims holds everything a stateless proxy or transcode node needs
 // to serve a streaming session without database access.
 //

@@ -12,10 +12,6 @@ import (
 // token rather than by a session bearer.
 const streamTokenAuthorizedKey contextKey = "stream_token_authorized"
 
-// streamTokenQueryParam is the query parameter carrying the signed stream token.
-// Mirrors handlers.streamTokenParam.
-const streamTokenQueryParam = "st"
-
 // HLS delivery lives at:
 //
 //	/api/v1/playback/transcode/{session_id}/master.m3u8
@@ -80,7 +76,7 @@ func (am *AuthMiddleware) StreamTokenAuth(secret string) func(http.Handler) http
 			return next
 		}
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			token := r.URL.Query().Get(streamTokenQueryParam)
+			token := r.URL.Query().Get(streamtoken.QueryParam)
 			if token == "" {
 				next.ServeHTTP(w, r)
 				return
