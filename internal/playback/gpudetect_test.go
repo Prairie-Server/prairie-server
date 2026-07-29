@@ -19,9 +19,11 @@ type fakeFFmpegProbe struct {
 	cuda       bool
 	h264NVENC  bool
 	hevcNVENC  bool
+	av1NVENC   bool
 	scaleCUDA  bool
 	uploadCUDA bool
 	smokeOK    bool
+	av1SmokeOK bool
 	hang       bool
 }
 
@@ -291,6 +293,9 @@ func writeFakeFFmpeg(t *testing.T, probe fakeFFmpegProbe) fakeFFmpegBinary {
 	if probe.hevcNVENC {
 		script += "    echo ' V..... hevc_nvenc NVIDIA NVENC hevc encoder'\n"
 	}
+	if probe.av1NVENC {
+		script += "    echo ' V..... av1_nvenc NVIDIA NVENC AV1 encoder'\n"
+	}
 	script += "    exit 0 ;;\n"
 	script += "  *-filters*)\n"
 	if probe.scaleCUDA {
@@ -300,6 +305,13 @@ func writeFakeFFmpeg(t *testing.T, probe fakeFFmpegProbe) fakeFFmpegBinary {
 		script += "    echo ' ... hwupload_cuda V->V upload CUDA frames'\n"
 	}
 	script += "    exit 0 ;;\n"
+	script += "  *av1_nvenc*)\n"
+	if probe.av1SmokeOK {
+		script += "    exit 0 ;;\n"
+	} else {
+		script += "    echo 'OpenEncodeSessionEx failed: unsupported device' >&2\n"
+		script += "    exit 1 ;;\n"
+	}
 	script += "  *)\n"
 	if probe.smokeOK {
 		script += "    exit 0 ;;\n"
@@ -319,4 +331,8 @@ func resetNVENCProbeCacheForTest() {
 	nvencProbeCache.Lock()
 	defer nvencProbeCache.Unlock()
 	nvencProbeCache.byPath = make(map[string]nvencProbeResult)
+
+	av1NVENCProbeCache.Lock()
+	defer av1NVENCProbeCache.Unlock()
+	av1NVENCProbeCache.byPath = make(map[string]nvencProbeResult)
 }

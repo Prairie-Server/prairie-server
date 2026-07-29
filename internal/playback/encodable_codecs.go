@@ -12,14 +12,18 @@ var preferredTranscodeVideoCodecs = []string{"av1", "hevc", "h264"}
 // DetectEncodableVideoCodecs returns video codecs this host can realtime-encode
 // for playback transcodes, given the resolved hw accel mode.
 //
-// AV1 is included only when av1_nvenc is present. Software (none) advertises
-// h264 only — libx265/libaom are not suitable for interactive TV playback.
+// AV1 is included only when this GPU can actually encode with av1_nvenc
+// (Ada+ / SM ≥ 8.9). Listing the encoder in ffmpeg is not enough — Ampere
+// cards like the RTX 3050 decode AV1 but cannot encode it, and a token-only
+// check would pick AV1 as the preferred target and fail mid-stream.
+// Software (none) advertises h264 only — libx265/libaom are not suitable for
+// interactive TV playback.
 func DetectEncodableVideoCodecs(ffmpegPath, hwAccel string) []string {
 	resolved := ResolveHWAccelWithFFmpeg(hwAccel, ffmpegPath)
 	switch resolved {
 	case hwAccelNVENC:
 		out := []string{"h264", "hevc"}
-		if ffmpegHasEncoderToken(ffmpegPath, "av1_nvenc") {
+		if ok, _ := ffmpegSupportsAV1NVENC(ffmpegPath); ok {
 			out = append(out, "av1")
 		}
 		return out
@@ -28,15 +32,6 @@ func DetectEncodableVideoCodecs(ffmpegPath, hwAccel string) []string {
 	default:
 		return []string{"h264"}
 	}
-}
-
-func ffmpegHasEncoderToken(ffmpegPath, encoder string) bool {
-	ffmpegPath = normalizeFFmpegPath(ffmpegPath)
-	output, err := runFFmpegProbe(ffmpegPath, "-hide_banner", "-encoders")
-	if err != nil {
-		return false
-	}
-	return ffmpegOutputHasToken(output, encoder)
 }
 
 // SelectTargetVideoCodec picks the best codec in clientCodecs ∩ encodableCodecs
