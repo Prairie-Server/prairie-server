@@ -15,6 +15,7 @@ const streamTokenAuthorizedKey contextKey = "stream_token_authorized"
 // HLS delivery lives at:
 //
 //	/api/v1/playback/transcode/{session_id}/master.m3u8
+//	/api/v1/playback/transcode/{session_id}/media.m3u8
 //	/api/v1/playback/transcode/{session_id}/segment/{name}
 //
 // Matched on the raw path rather than chi URL params on purpose: middleware
@@ -26,9 +27,14 @@ const transcodeDeliveryPrefix = "/playback/transcode/"
 // streamTokenDeliverySession returns the session ID a request is asking to be
 // delivered, and whether the path is an HLS delivery path at all.
 //
-// Only the two delivery shapes qualify. Everything else — including the
-// mutation routes under /playback — keeps requiring a session bearer, so a
-// stream token can never be spent as a general-purpose credential.
+// Only those delivery shapes qualify. Everything else — including the mutation
+// routes under /playback — keeps requiring a session bearer, so a stream token
+// can never be spent as a general-purpose credential.
+//
+// media.m3u8 has to be here for the same reason master.m3u8 is: the player
+// follows the master's variant URI itself, so that fetch carries the stream
+// token and no bearer. Omitting it 401s every variant fetch, which is exactly
+// what happened when the master playlist landed without this list being updated.
 func streamTokenDeliverySession(urlPath string) (string, bool) {
 	idx := strings.Index(urlPath, transcodeDeliveryPrefix)
 	if idx < 0 {
@@ -40,7 +46,7 @@ func streamTokenDeliverySession(urlPath string) (string, bool) {
 		return "", false
 	}
 	switch {
-	case tail == "master.m3u8":
+	case tail == "master.m3u8", tail == "media.m3u8":
 		return sessionID, true
 	case strings.HasPrefix(tail, "segment/") && len(tail) > len("segment/"):
 		// A segment name may not climb out of the segment namespace.
