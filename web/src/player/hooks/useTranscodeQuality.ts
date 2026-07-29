@@ -11,24 +11,7 @@ import type {
   TranscodeStartRequest,
 } from "../types";
 import { QUALITY_TO_RESOLUTION } from "./useCodecDetection";
-
-/** Quality tier definition. ID is frontend-only; backend receives resolution + bitrate separately. */
-interface QualityTierDef {
-  id: string;
-  label: string;
-  resolution: string;
-  bitrate: number;
-}
-
-/** All transcode-able quality tiers in descending quality order. */
-const QUALITY_TIERS: QualityTierDef[] = [
-  { id: "1080p-high", label: "1080p High", resolution: "1080p", bitrate: 10000 },
-  { id: "1080p", label: "1080p", resolution: "1080p", bitrate: 6000 },
-  { id: "720p-high", label: "720p High", resolution: "720p", bitrate: 4000 },
-  { id: "720p", label: "720p", resolution: "720p", bitrate: 2000 },
-  { id: "480p", label: "480p", resolution: "480p", bitrate: 1500 },
-  { id: "420p", label: "420p", resolution: "420p", bitrate: 720 },
-];
+import { type QualityLadderRung, useQualityLadder } from "./useQualityLadder";
 
 /** Numeric height for each resolution string. */
 const RESOLUTION_HEIGHT: Record<string, number> = {
@@ -106,10 +89,14 @@ function formatQualityBitrate(kbps: number): string {
   return `${kbps} kbps`;
 }
 
-function fallbackBitrateForResolution(resolution: string, sourceBitrate: number): number {
-  const tier = QUALITY_TIERS.find((candidate) => candidate.resolution === resolution);
+function fallbackBitrateForResolution(
+  resolution: string,
+  sourceBitrate: number,
+  ladder: QualityLadderRung[],
+): number {
+  const tier = ladder.find((candidate) => candidate.resolution === resolution);
   if (tier) {
-    return tier.bitrate;
+    return tier.bitrate_kbps;
   }
   if (sourceBitrate > 0) {
     return Math.min(sourceBitrate, 10000);
@@ -133,6 +120,7 @@ function playMethodLabel(method: PlayMethod | null): string {
 function buildQualityOptions(
   version: PlayerFileVersion | undefined,
   playMethod: PlayMethod | null,
+  ladder: QualityLadderRung[],
 ): QualityOption[] {
   if (!version) return [];
 
@@ -165,18 +153,18 @@ function buildQualityOptions(
   // Determine the file's native height.
   const nativeHeight = RESOLUTION_HEIGHT[version.resolution] ?? 0;
 
-  // Add transcode options at or below native resolution.
-  for (const tier of QUALITY_TIERS) {
-    const tierHeight = RESOLUTION_HEIGHT[tier.resolution];
-    if (tierHeight == null) continue;
-    if (tierHeight >= nativeHeight) continue;
+  // Add transcode options below native resolution. Rungs at or above native are
+  // omitted: "Original" already covers playing at source resolution, and an
+  // upscale would spend encode time on detail the file does not contain.
+  for (const tier of ladder) {
+    if (tier.height >= nativeHeight) continue;
 
     options.push({
       id: tier.id,
       label: tier.label,
-      sublabel: `~${formatQualityBitrate(tier.bitrate)}`,
+      sublabel: `~${formatQualityBitrate(tier.bitrate_kbps)}`,
       resolution: tier.resolution,
-      bitrateKbps: tier.bitrate,
+      bitrateKbps: tier.bitrate_kbps,
       isOriginal: false,
     });
   }
@@ -194,6 +182,7 @@ export function useTranscodeQuality({
   transportRestart,
 }: UseTranscodeQualityParams): UseTranscodeQualityResult {
   const config = usePlayerConfig();
+  const ladder = useQualityLadder();
   const [activeQualityId, setActiveQualityId] = useState("original");
   const [transcodeStreamUrl, setTranscodeStreamUrl] = useState<string | null>(null);
   const [playerStartSeconds, setPlayerStartSeconds] = useState(0);
@@ -235,8 +224,8 @@ export function useTranscodeQuality({
   }, [switchedFileId, versions, selectedVersion]);
 
   const qualityOptions = useMemo(
-    () => buildQualityOptions(effectiveVersion, playMethod),
-    [effectiveVersion, playMethod],
+    () => buildQualityOptions(effectiveVersion, playMethod, ladder),
+    [effectiveVersion, playMethod, ladder],
   );
 
   useEffect(() => {
@@ -358,6 +347,7 @@ export function useTranscodeQuality({
                 bitrateKbps: fallbackBitrateForResolution(
                   effectiveVersion.resolution,
                   effectiveVersion.bitrate,
+                  ladder,
                 ),
                 isOriginal: false,
               }
@@ -501,7 +491,7 @@ export function useTranscodeQuality({
         void dispatch();
       }, 0);
     },
-    [sessionId, activeQualityId, qualityOptions, config, effectiveVersion, playMethod],
+    [sessionId, activeQualityId, qualityOptions, config, effectiveVersion, playMethod, ladder],
   );
 
   const cancelPendingTranscodeStart = useCallback(() => {

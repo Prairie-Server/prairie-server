@@ -2268,6 +2268,30 @@ func (h *PlaybackHandler) HandleUpdateProgress(w http.ResponseWriter, r *http.Re
 	w.WriteHeader(http.StatusNoContent)
 }
 
+// HandleGetQualityLadder handles GET /playback/quality-ladder.
+//
+// Serves the whole ladder rather than a per-file subset. Clients cap it by the
+// source height themselves, which they already know from the file version, so
+// switching between versions mid-session needs no round trip. The optional
+// source_height query narrows it server-side for callers that would rather not
+// implement the capping rule.
+//
+// Exists so clients stop hardcoding rungs. The web player carried its own tier
+// table with bitrates that disagreed with the server's, which meant advice could
+// name a quality the menu could not select.
+func (h *PlaybackHandler) HandleGetQualityLadder(w http.ResponseWriter, r *http.Request) {
+	sourceHeight := 0
+	if raw := strings.TrimSpace(r.URL.Query().Get("source_height")); raw != "" {
+		parsed, err := strconv.Atoi(raw)
+		if err != nil || parsed < 0 {
+			writeError(w, http.StatusBadRequest, "bad_request", "source_height must be a non-negative integer")
+			return
+		}
+		sourceHeight = parsed
+	}
+	writeJSON(w, http.StatusOK, playback.QualityOptionsFor(sourceHeight))
+}
+
 // qualityAdvice asks the advice engine whether this session should change rung.
 //
 // The rung and the source height are read from the live transcode session rather
@@ -2289,6 +2313,7 @@ func (h *PlaybackHandler) qualityAdvice(sessionID string, req progressRequest) *
 	opts := transcode.Opts()
 	advice, ok := h.AdviceEngine.Observe(sessionID, playback.DeliveryReport{
 		Resolution:     opts.TargetResolution,
+		BitrateKbps:    opts.TargetBitrateKbps,
 		SourceHeight:   opts.SourceHeight,
 		ThroughputKbps: req.ThroughputKbps,
 		Rebuffering:    req.IsBuffering,

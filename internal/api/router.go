@@ -2572,6 +2572,10 @@ func NewRouter(deps Dependencies) chi.Router {
 
 					r.Route("/playback", func(r chi.Router) {
 						r.Get("/capability", playbackHandler.HandlePlaybackCapabilityV3)
+						// The transcode ladder, so clients render the same rungs
+						// the server advises against instead of each keeping its
+						// own copy that drifts.
+						r.Get("/quality-ladder", playbackHandler.HandleGetQualityLadder)
 						// HLS transcode delivery — no profile auth needed;
 						// session ID (UUID) serves as the access token, same
 						// pattern as /stream/{session_id}.

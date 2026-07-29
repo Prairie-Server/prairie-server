@@ -14,11 +14,14 @@ import (
 // /playback/{id}/replan. A client that ignores advice keeps playing exactly as
 // before, which is why this can ship before any client honors it.
 type Advice struct {
-	// Resolution is the ladder token to replan to, e.g. "720p".
-	Resolution string `json:"resolution"`
-	// BitrateKbps is that rung's cap, so a client can pass it as
-	// bandwidth_cap_kbps without knowing the ladder itself.
-	BitrateKbps int `json:"bitrate_kbps"`
+	// RungID is the ladder rung to switch to, matching the id a client renders
+	// in its quality menu. Resolutions are not unique (the "High" variants share
+	// one), so this is what a client should match on.
+	RungID string `json:"rung_id"`
+	// Resolution and BitrateKbps are the transcode-start parameters for that
+	// rung, so a client can act without holding its own copy of the ladder.
+	Resolution  string `json:"resolution"`
+	BitrateKbps int    `json:"bitrate_kbps"`
 	// Direction is "down" or "up", for logging and for clients that only want
 	// to honor downshifts (the safe half: a downshift fixes a stall, an upshift
 	// only risks creating one).
@@ -68,9 +71,11 @@ const (
 // dry, and a client can be stalled on its own decode while the socket looks
 // perfectly healthy.
 type DeliveryReport struct {
-	// Resolution is the rung currently playing, needed to know which way to
-	// step. Empty means unknown and no advice is possible.
-	Resolution string
+	// Resolution and BitrateKbps identify the rung currently playing, which is
+	// what decides which way the ladder can step. Empty resolution means there
+	// is no rung (auto/original/direct play) and no advice is possible.
+	Resolution  string
+	BitrateKbps int
 	// SourceHeight bounds upshifts to what the file actually contains.
 	SourceHeight int
 	// ThroughputKbps is the client's measured download rate. Zero means the
@@ -129,7 +134,7 @@ func (e *AdviceEngine) Observe(sessionID string, report DeliveryReport) (Advice,
 	if e == nil || sessionID == "" || report.Paused {
 		return Advice{}, false
 	}
-	current, ok := RungFor(report.Resolution)
+	current, ok := RungForSession(report.Resolution, report.BitrateKbps)
 	if !ok {
 		// "auto"/"original"/direct-play sessions have no rung to step from. A
 		// direct play is the source file itself; degrading it is a plan-level
@@ -188,7 +193,7 @@ func (e *AdviceEngine) adviseDown(
 	// Jump straight to a rung the measurement supports rather than stepping
 	// once per rebuffer. A client on a link carrying 2 Mbps should not endure
 	// 4K -> 1080p -> 720p, three switches and three rebuffers, to get there.
-	target, ok := StepDownFrom(current.Resolution, report.SourceHeight)
+	target, ok := StepDownFrom(current.ID, report.SourceHeight)
 	if !ok {
 		// Already at the floor: nothing to recommend, and saying so repeatedly
 		// would spend replan slots to stand still. Reset so the next genuine
@@ -209,6 +214,7 @@ func (e *AdviceEngine) adviseDown(
 	state.lastAdviceAt = now
 	state.unhealthy = 0
 	return Advice{
+		RungID:       target.ID,
 		Resolution:   target.Resolution,
 		BitrateKbps:  target.BitrateKbps,
 		Direction:    "down",
@@ -220,7 +226,7 @@ func (e *AdviceEngine) adviseDown(
 func (e *AdviceEngine) adviseUp(
 	state *adviceState, now time.Time, current QualityRung, report DeliveryReport, observed int,
 ) (Advice, bool) {
-	target, ok := StepUpFrom(current.Resolution, report.SourceHeight)
+	target, ok := StepUpFrom(current.ID, report.SourceHeight)
 	if !ok {
 		// Already at the source's best rung. Reset so the counter does not sit
 		// pinned at the threshold, re-firing the moment a cooldown lapses.
@@ -237,6 +243,7 @@ func (e *AdviceEngine) adviseUp(
 	state.lastAdviceAt = now
 	state.healthy = 0
 	return Advice{
+		RungID:       target.ID,
 		Resolution:   target.Resolution,
 		BitrateKbps:  target.BitrateKbps,
 		Direction:    "up",
