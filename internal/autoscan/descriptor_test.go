@@ -59,7 +59,7 @@ func TestDescriptorFromMetadataReadsDeclaredContract(t *testing.T) {
 }
 
 // Webhook delivery is accepted only for the host's built-in ARR identity (see
-// resolveDeliveryMode). Honouring a plugin's claim would offer a setup option
+// resolveDeliveryMode). Honoring a plugin's claim would offer a setup option
 // whose every submission is rejected with HTTP 400.
 func TestDescriptorFromMetadataIgnoresPluginDeclaredWebhook(t *testing.T) {
 	got := DescriptorFromMetadata(map[string]any{

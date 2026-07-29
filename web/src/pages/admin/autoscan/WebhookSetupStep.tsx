@@ -146,8 +146,8 @@ export function WebhookMappingEditor({
         <Label>Match its paths to yours</Label>
         <p className="text-muted-foreground text-xs">
           Sonarr/Radarr report the path of the <em>imported library file</em> — their root folder,
-          not the download client&apos;s working directory. If that root differs from the path Prairie
-          sees, map it here. Same path on both sides? Enter it twice.
+          not the download client&apos;s working directory. If that root differs from the path
+          Prairie sees, map it here. Same path on both sides? Enter it twice.
         </p>
       </div>
 

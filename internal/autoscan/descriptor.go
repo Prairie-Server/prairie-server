@@ -170,7 +170,7 @@ func DescriptorFromMetadata(metadata map[string]any) ScanSourceDescriptor {
 				// is only accepted for the host's built-in ARR identity (see
 				// resolveDeliveryMode in the autoscan handler), which supplies
 				// its descriptor directly rather than through this parser.
-				// Honouring a plugin's claim here would surface a setup option
+				// Honoring a plugin's claim here would surface a setup option
 				// whose every submission ends in HTTP 400.
 			}
 		}

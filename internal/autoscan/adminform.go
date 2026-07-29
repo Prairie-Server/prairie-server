@@ -122,7 +122,7 @@ func adminFormFromMetadata(value any) *AdminForm {
 	return &form
 }
 
-// withoutUnsupportedFields drops fields the source-config surface cannot honour.
+// withoutUnsupportedFields drops fields the source-config surface cannot honor.
 //
 // Secret fields: a source's values land in autoscan_sources.source_config,
 // which is plain JSONB and is returned verbatim by the source API — unlike
