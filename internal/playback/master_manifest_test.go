@@ -5,12 +5,9 @@ import (
 	"testing"
 )
 
-func TestBuildMasterManifestCopySessionAdvertisesSourceCodec(t *testing.T) {
-	// A copy session puts the source bytes on the wire, so that is what the
-	// player must be told to expect.
+func TestBuildMasterManifestEncodeAdvertisesLadderResolution(t *testing.T) {
 	got := string(BuildMasterManifest("media.m3u8?st=tok", TranscodeOpts{
-		TargetCodecVideo:  "copy",
-		SourceVideoCodec:  "av1",
+		TargetCodecVideo:  "hevc",
 		TargetCodecAudio:  "aac",
 		TargetResolution:  "2160p",
 		TargetBitrateKbps: 20000,
@@ -21,7 +18,6 @@ func TestBuildMasterManifestCopySessionAdvertisesSourceCodec(t *testing.T) {
 		"#EXT-X-STREAM-INF:",
 		"BANDWIDTH=20000000",
 		"RESOLUTION=3840x2160",
-		`CODECS="av01.0.08M.08,mp4a.40.2"`,
 		"\nmedia.m3u8?st=tok\n",
 	} {
 		if !strings.Contains(got, want) {
@@ -30,54 +26,56 @@ func TestBuildMasterManifestCopySessionAdvertisesSourceCodec(t *testing.T) {
 	}
 }
 
-func TestBuildMasterManifestEncodeSessionAdvertisesTargetCodec(t *testing.T) {
+// A copy session scales nothing, so TargetResolution is empty and RESOLUTION
+// must be omitted rather than restating dimensions nobody read.
+func TestBuildMasterManifestCopySessionOmitsResolution(t *testing.T) {
 	got := string(BuildMasterManifest("media.m3u8", TranscodeOpts{
-		TargetCodecVideo: "hevc",
+		TargetCodecVideo: "copy",
 		SourceVideoCodec: "av1",
 		TargetCodecAudio: "aac",
-		TargetResolution: "1080p",
 	}))
 
-	if !strings.Contains(got, `CODECS="hvc1.1.6.L123.b0,mp4a.40.2"`) {
-		t.Errorf("encode session should advertise the target codec, not the source:\n%s", got)
+	if strings.Contains(got, "RESOLUTION=") {
+		t.Errorf("copy session should advertise no RESOLUTION:\n%s", got)
 	}
-	if strings.Contains(got, "av01") {
-		t.Errorf("encode session must not advertise the source codec:\n%s", got)
-	}
-	// No cap configured: BANDWIDTH is required, so a plausible default stands in.
+	// BANDWIDTH is mandatory on EXT-X-STREAM-INF, so the default stands in.
 	if !strings.Contains(got, "BANDWIDTH=8000000") {
 		t.Errorf("missing default BANDWIDTH:\n%s", got)
 	}
 }
 
-// A wrong attribute is worse than an absent one: RESOLUTION and CODECS are both
-// optional, so anything unrecognised is omitted rather than guessed.
-func TestBuildMasterManifestOmitsUnknownAttributes(t *testing.T) {
-	got := string(BuildMasterManifest("media.m3u8", TranscodeOpts{
-		TargetCodecVideo: "someexoticcodec",
-		TargetCodecAudio: "alsoexotic",
-		TargetResolution: "not-a-ladder-rung",
-	}))
-
-	if strings.Contains(got, "RESOLUTION=") {
-		t.Errorf("unknown resolution should be omitted:\n%s", got)
-	}
-	if strings.Contains(got, "CODECS=") {
-		t.Errorf("unknown codecs should be omitted entirely:\n%s", got)
-	}
-	// BANDWIDTH is mandatory on EXT-X-STREAM-INF, so it must survive.
-	if !strings.Contains(got, "BANDWIDTH=") {
-		t.Errorf("BANDWIDTH is required by the spec:\n%s", got)
+// RFC 6381 identifiers pin profile, tier, level and bit depth. The session
+// carries only a codec family, so emitting one would be a guess a strict client
+// is entitled to believe — and a mismatched decoder configuration is worse than
+// none. This must stay absent until the probed stream parameters are threaded
+// through and exact values can be derived.
+func TestBuildMasterManifestNeverGuessesCodecs(t *testing.T) {
+	for _, opts := range []TranscodeOpts{
+		{TargetCodecVideo: "copy", SourceVideoCodec: "av1", TargetCodecAudio: "aac"},
+		{TargetCodecVideo: "hevc", TargetCodecAudio: "aac", TargetResolution: "1080p"},
+		{TargetCodecVideo: "h264", TargetCodecAudio: "ac3", TargetResolution: "720p"},
+	} {
+		got := string(BuildMasterManifest("media.m3u8", opts))
+		if strings.Contains(got, "CODECS=") {
+			t.Errorf("CODECS advertised without probed stream parameters (%+v):\n%s", opts, got)
+		}
+		for _, invented := range []string{"avc1.", "hvc1.", "av01.", "mp4a."} {
+			if strings.Contains(got, invented) {
+				t.Errorf("invented codec identifier %q present (%+v):\n%s", invented, opts, got)
+			}
+		}
 	}
 }
 
-func TestBuildMasterManifestAudioOnlyStillEmitsCodecs(t *testing.T) {
+func TestBuildMasterManifestOmitsUnknownResolution(t *testing.T) {
 	got := string(BuildMasterManifest("media.m3u8", TranscodeOpts{
-		TargetCodecVideo: "unknownvideo",
-		TargetCodecAudio: "ac3",
+		TargetResolution: "not-a-ladder-rung",
 	}))
-	if !strings.Contains(got, `CODECS="ac-3"`) {
-		t.Errorf("a recognised audio codec should still be advertised:\n%s", got)
+	if strings.Contains(got, "RESOLUTION=") {
+		t.Errorf("unknown resolution should be omitted:\n%s", got)
+	}
+	if !strings.Contains(got, "BANDWIDTH=") {
+		t.Errorf("BANDWIDTH is required by the spec:\n%s", got)
 	}
 }
 
@@ -97,7 +95,7 @@ func TestMasterManifestMediaURIPreservesQuery(t *testing.T) {
 func TestBuildMasterManifestShape(t *testing.T) {
 	lines := strings.Split(strings.TrimSpace(string(BuildMasterManifest("media.m3u8?st=t", TranscodeOpts{
 		TargetCodecVideo: "hevc",
-		TargetCodecAudio: "aac",
+		TargetResolution: "1080p",
 	}))), "\n")
 
 	if lines[0] != "#EXTM3U" {

@@ -14,13 +14,23 @@ const defaultAdvertisedBandwidthBps = 8_000_000
 // playlist.
 //
 // Samsung's PlusPlayer decides what decoder pipeline to build during prepare,
-// before it fetches any media. Handed a bare media playlist it has no CODECS or
-// RESOLUTION to work from, and prepare fails — silently, because the plugin
-// drops a failed prepare without emitting an error (see PlusPlayer::
-// OnPrepareDone, which only calls SendInitialized when ret is true). The client
-// then hangs in initialize() until its own timeout. Every browser and hls.js
-// path tolerates a bare media playlist, which is why this only ever showed up
-// on the TV.
+// before it fetches any media, and a bare media playlist gives it no variant to
+// work from. Prepare then fails silently: the plugin's OnPrepareDone only calls
+// SendInitialized when ret is true and emits nothing otherwise, so the Dart
+// completer never completes and never errors and the client hangs in
+// initialize() until its own timeout. Every browser and hls.js path accepts a
+// bare media playlist, which is why this only ever showed up on the TV.
+//
+// CODECS is deliberately absent. RFC 6381 identifiers are not codec-family
+// names: avc1.4d401f pins Main profile at level 3.1, av01.0.08M.08 pins profile
+// 0 at level 4.0 Main tier 8-bit, and so on. The session carries only a codec
+// family ("av1", "hevc"), not the profile, tier, level and bit depth those
+// strings encode, so any value emitted from what we have here would be a guess
+// that a strict client is entitled to believe. Advertising a mismatched decoder
+// configuration is worse than advertising none, and the attribute is optional.
+// Adding it properly means threading the probed stream parameters (Profile,
+// Level, and bit depth on the video stream model) through TranscodeOpts and
+// deriving exact values -- worth doing, but not by inventing them here.
 //
 // mediaURI is written verbatim, so callers keep control of the query string the
 // player must carry (the signed stream token rides there).
@@ -36,9 +46,6 @@ func BuildMasterManifest(mediaURI string, opts TranscodeOpts) []byte {
 	if res := resolutionAttribute(opts.TargetResolution); res != "" {
 		b.WriteString(",RESOLUTION=" + res)
 	}
-	if codecs := streamInfCodecs(opts); codecs != "" {
-		b.WriteString(`,CODECS="` + codecs + `"`)
-	}
 	b.WriteString("\n" + mediaURI + "\n")
 	return []byte(b.String())
 }
@@ -51,8 +58,13 @@ func advertisedBandwidthBps(opts TranscodeOpts) int {
 }
 
 // resolutionAttribute maps a ladder token to the WIDTHxHEIGHT form
-// EXT-X-STREAM-INF wants. Unknown or empty tokens are omitted rather than
-// guessed: RESOLUTION is optional, and a wrong one is worse than none.
+// EXT-X-STREAM-INF wants.
+//
+// Only meaningful for an encode, which is scaling to exactly this rung. Copy
+// sessions leave TargetResolution empty (the source dimensions pass through
+// untouched) and so advertise no RESOLUTION, which is correct: the attribute is
+// optional and the alternative would be restating a size we have not read.
+// Unknown tokens are omitted for the same reason.
 func resolutionAttribute(target string) string {
 	switch strings.ToLower(strings.TrimSpace(target)) {
 	case "2160p":
@@ -67,62 +79,6 @@ func resolutionAttribute(target string) string {
 		return "854x480"
 	case "360p":
 		return "640x360"
-	default:
-		return ""
-	}
-}
-
-// streamInfCodecs builds the CODECS attribute.
-//
-// For a copy session the bytes on the wire are the source codec, so that is
-// what gets advertised. Values are the generic RFC 6381 forms: a player needs
-// the family to pick a decoder, and inventing precise profile/level fields from
-// data we have not parsed would risk advertising something the stream does not
-// match. An unrecognised codec contributes nothing rather than a guess, and if
-// nothing is recognised the attribute is omitted entirely.
-func streamInfCodecs(opts TranscodeOpts) string {
-	video := opts.TargetCodecVideo
-	if strings.EqualFold(video, "copy") {
-		video = opts.SourceVideoCodec
-	}
-
-	parts := make([]string, 0, 2)
-	if tag := videoCodecTag(video); tag != "" {
-		parts = append(parts, tag)
-	}
-	if tag := audioCodecTag(opts.TargetCodecAudio); tag != "" {
-		parts = append(parts, tag)
-	}
-	return strings.Join(parts, ",")
-}
-
-func videoCodecTag(codec string) string {
-	switch strings.ToLower(strings.TrimSpace(codec)) {
-	case "h264", "avc", "avc1":
-		return "avc1.4d401f"
-	case "hevc", "h265", "hvc1":
-		return "hvc1.1.6.L123.b0"
-	case "av1", "av01":
-		return "av01.0.08M.08"
-	case "vp9":
-		return "vp09.00.10.08"
-	default:
-		return ""
-	}
-}
-
-func audioCodecTag(codec string) string {
-	switch strings.ToLower(strings.TrimSpace(codec)) {
-	case "aac", "mp4a":
-		return "mp4a.40.2"
-	case "ac3":
-		return "ac-3"
-	case "eac3":
-		return "ec-3"
-	case "opus":
-		return "opus"
-	case "flac":
-		return "fLaC"
 	default:
 		return ""
 	}
