@@ -2576,6 +2576,9 @@ func NewRouter(deps Dependencies) chi.Router {
 						// session ID (UUID) serves as the access token, same
 						// pattern as /stream/{session_id}.
 						r.Get("/transcode/{session_id}/master.m3u8", playbackHandler.HandleGetTranscodeManifest)
+						// The media playlist the master points at. Same handler:
+						// it serves whichever of the two the path names.
+						r.Get("/transcode/{session_id}/media.m3u8", playbackHandler.HandleGetTranscodeManifest)
 						r.Get("/transcode/{session_id}/segment/{name}", playbackHandler.HandleGetTranscodeSegment)
 						// HEAD is how a client probes whether a segment exists yet
 						// before handing the playlist to its player. Without it the

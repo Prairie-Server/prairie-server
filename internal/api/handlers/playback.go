@@ -3626,13 +3626,21 @@ func (h *PlaybackHandler) HandleGetTranscodeManifest(w http.ResponseWriter, r *h
 		return
 	}
 
+	// Which of the two playlists was asked for. Mirrored into the node path so a
+	// proxied media.m3u8 does not come back as another master playlist, which
+	// would point at media.m3u8 again and loop.
+	manifestName := "master.m3u8"
+	if strings.HasSuffix(r.URL.Path, "/media.m3u8") {
+		manifestName = "media.m3u8"
+	}
+
 	transcodeSession := h.tm.GetTranscodeSession(sessionID)
 	if transcodeSession == nil {
 		// No local session — try proxying to remote transcode node.
 		if session.TranscodeNodeURL != "" {
 			h.touchSessionActivity(sessionID)
 			h.proxyToTranscodeNode(w, r, session.TranscodeNodeURL,
-				"/transcode/"+remoteTransportID(session)+"/master.m3u8")
+				"/transcode/"+remoteTransportID(session)+"/"+manifestName)
 			return
 		}
 		// Local transcode whose process state was lost: reconstruct it from the
@@ -3649,6 +3657,24 @@ func (h *PlaybackHandler) HandleGetTranscodeManifest(w http.ResponseWriter, r *h
 		}
 	}
 	h.touchSessionActivity(sessionID)
+
+	// master.m3u8 returns a real master playlist; media.m3u8 returns the media
+	// playlist it points at. PlusPlayer picks its decoder pipeline during prepare
+	// from CODECS/RESOLUTION on EXT-X-STREAM-INF, before fetching any media, and
+	// a bare media playlist gives it nothing to work from. Browsers and hls.js
+	// accept either, so this endpoint used to serve the media playlist directly.
+	if manifestName == "master.m3u8" {
+		master := playback.BuildMasterManifest(
+			playback.MasterManifestMediaURI(r.URL.RawQuery),
+			transcodeSession.Opts(),
+		)
+		w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
+		w.Header().Set("Cache-Control", "no-store, max-age=0")
+		w.Header().Set("Pragma", "no-cache")
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(master)
+		return
+	}
 
 	manifest, err := transcodeSession.BuildPlaybackManifest("segment/", r.URL.RawQuery)
 	if err != nil {
