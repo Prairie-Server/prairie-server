@@ -162,22 +162,25 @@ type PlaybackHandler struct {
 	EpisodeLookup           PlaybackEpisodeLookup     // optional; resolves episode files to their series
 	ExtraLookup             PlaybackExtraLookup       // optional; resolves extras files to their parent item
 	OriginalLangLookup      PlaybackOriginalLanguageLookup
-	SettingsRepo            PlaybackSettingsReader     // optional; reads server settings (e.g., allow_4k_transcode)
-	FileVersionFetcher      PlaybackFileVersionFetcher // optional; queries sibling file versions for 4K guard
-	ProbeEnsurer            PlaybackProbeEnsurer       // optional; repairs missing probe metadata on demand
-	ChapterThumbnailQueuer  PlaybackChapterThumbnailQueuer
-	IntroAnalyzer           IntroEpisodeAnalyzer
-	IntroRepository         PlaybackIntroEligibilityChecker
-	MarkerRegistry          *markers.Registry
-	MarkerResolver          markers.ExternalIDResolver
-	MarkerUpserter          PlaybackMarkerUpserter
-	MarkerUpdateNotifier    PlaybackMarkerUpdateNotifier
-	MarkerLazyContext       context.Context
-	MarkerLazyInFlight      sync.Map
-	SubtitleRepo            subtitles.Repository // optional; enables downloaded subtitles in playback
-	RealtimeHub             *playback.RealtimeHub
-	CommandTracker          *playback.CommandTracker
-	CommandDispatcher       *playback.CommandDispatcher
+	// AdviceEngine is optional; nil disables quality advice entirely and the
+	// progress endpoint answers exactly as it did before.
+	AdviceEngine           *playback.AdviceEngine
+	SettingsRepo           PlaybackSettingsReader     // optional; reads server settings (e.g., allow_4k_transcode)
+	FileVersionFetcher     PlaybackFileVersionFetcher // optional; queries sibling file versions for 4K guard
+	ProbeEnsurer           PlaybackProbeEnsurer       // optional; repairs missing probe metadata on demand
+	ChapterThumbnailQueuer PlaybackChapterThumbnailQueuer
+	IntroAnalyzer          IntroEpisodeAnalyzer
+	IntroRepository        PlaybackIntroEligibilityChecker
+	MarkerRegistry         *markers.Registry
+	MarkerResolver         markers.ExternalIDResolver
+	MarkerUpserter         PlaybackMarkerUpserter
+	MarkerUpdateNotifier   PlaybackMarkerUpdateNotifier
+	MarkerLazyContext      context.Context
+	MarkerLazyInFlight     sync.Map
+	SubtitleRepo           subtitles.Repository // optional; enables downloaded subtitles in playback
+	RealtimeHub            *playback.RealtimeHub
+	CommandTracker         *playback.CommandTracker
+	CommandDispatcher      *playback.CommandDispatcher
 	// PlaybackConfig returns the current playback config (ffmpeg path,
 	// hwaccel, transcode dir). Wired to the live config in integrated mode
 	// so admin changes apply to newly started transcodes. Read it through
@@ -233,6 +236,9 @@ func NewPlaybackHandler(sessionMgr SessionManagerInterface, opts ...FilePathReso
 		realtimeCommands: make(map[string]playbackCommandRecord),
 		tm:               playback.NewTranscodeManager(),
 		PlanStoreV3:      playback.NewMemoryPlanStoreV3(),
+		// Costs nothing until a client opts in with ?advice=1: the engine only
+		// accumulates state for sessions that actually report delivery health.
+		AdviceEngine: playback.NewAdviceEngine(),
 	}
 	if len(opts) > 0 {
 		h.fileResolver = opts[0]
@@ -414,6 +420,23 @@ type startPlaybackRequest struct {
 type progressRequest struct {
 	Position float64 `json:"position"`
 	IsPaused bool    `json:"is_paused"`
+	// ThroughputKbps and IsBuffering feed the quality advice engine. Both are
+	// optional and reported by the client because that is the only place the
+	// truth lives: the server knows how fast it wrote bytes, not whether the
+	// player's buffer ran dry, and a client can starve on its own decode while
+	// the socket looks perfectly healthy. Omitted by every client that has not
+	// opted in, in which case no advice is produced.
+	ThroughputKbps int  `json:"throughput_kbps,omitempty"`
+	IsBuffering    bool `json:"is_buffering,omitempty"`
+}
+
+// progressResponse is returned only when the caller asks for advice with
+// ?advice=1. Without it the endpoint keeps answering 204 with no body, which is
+// what every existing client already expects.
+type progressResponse struct {
+	// Advice is absent in the steady state. A recommendation is the exception,
+	// because acting on one costs the viewer a rebuffer.
+	Advice *playback.Advice `json:"advice,omitempty"`
 }
 
 // playbackSessionResponse represents a playback session in JSON responses.
@@ -1511,6 +1534,12 @@ func (h *PlaybackHandler) finalizeSessionStop(ctx context.Context, session *play
 		ctx = context.Background()
 	}
 
+	// Drop delivery history here rather than in the stop handler, so every
+	// teardown path (user stop, abort, ffmpeg-exit cleanup) clears it. Otherwise
+	// a finished session's throughput could advise a later one that reuses the
+	// id, and a stale rebuffer count would downshift a healthy stream.
+	h.AdviceEngine.Forget(session.ID)
+
 	stopResult := h.persistStopAndHistory(ctx, session)
 	if h.WatchScrobbler != nil {
 		if event, ok := h.scrobbleEventForStoppedSession(ctx, session, stopResult); ok && (userInitiated || stopResult.Completed) {
@@ -2230,7 +2259,45 @@ func (h *PlaybackHandler) HandleUpdateProgress(w http.ResponseWriter, r *http.Re
 		}
 	}
 
+	// Advice is opt-in per request so the 204 contract every existing client
+	// depends on is untouched. Clients add ?advice=1 (one line) and get a body.
+	if r.URL.Query().Get("advice") == "1" {
+		writeJSON(w, http.StatusOK, progressResponse{Advice: h.qualityAdvice(sessionID, req)})
+		return
+	}
 	w.WriteHeader(http.StatusNoContent)
+}
+
+// qualityAdvice asks the advice engine whether this session should change rung.
+//
+// The rung and the source height are read from the live transcode session rather
+// than taken from the client: they decide which way the ladder can move, and the
+// server is the side that actually knows. The client supplies only what it alone
+// can measure -- throughput and whether its buffer ran dry.
+//
+// Returns nil whenever advice is unavailable or unwarranted, which is the common
+// case: a direct play has no rung to step from, and steady playback on a
+// sufficient link should never be told to change.
+func (h *PlaybackHandler) qualityAdvice(sessionID string, req progressRequest) *playback.Advice {
+	if h.AdviceEngine == nil {
+		return nil
+	}
+	transcode := h.tm.GetTranscodeSession(sessionID)
+	if transcode == nil {
+		return nil
+	}
+	opts := transcode.Opts()
+	advice, ok := h.AdviceEngine.Observe(sessionID, playback.DeliveryReport{
+		Resolution:     opts.TargetResolution,
+		SourceHeight:   opts.SourceHeight,
+		ThroughputKbps: req.ThroughputKbps,
+		Rebuffering:    req.IsBuffering,
+		Paused:         req.IsPaused,
+	})
+	if !ok {
+		return nil
+	}
+	return &advice
 }
 
 // HandleStopPlayback handles DELETE /playback/{session_id}.
