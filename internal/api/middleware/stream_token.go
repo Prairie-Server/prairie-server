@@ -64,14 +64,14 @@ func streamTokenDeliverySession(urlPath string) (string, bool) {
 // is AVPlay, which cannot attach an Authorization header or refresh an expired
 // access token — which is why the server mints "st" (a session-scoped, signed
 // descriptor) and threads it through manifests in the first place. Until now
-// nothing at the auth layer honoured it: RequireAuth ran first and rejected the
+// nothing at the auth layer honored it: RequireAuth ran first and rejected the
 // request before the handler ever read the token, so delivery depended on an
 // access token pasted into the URL. A stale or empty one produced an endless
 // 401 poll that looks exactly like a transcode that never becomes ready.
 //
 // This middleware only ever *adds* authorization: it marks the request and lets
 // RequireAuth and RequireViewerAccess skip it. A request that already passes
-// bearer auth is untouched, so no currently-working request changes behaviour;
+// bearer auth is untouched, so no currently-working request changes behavior;
 // only requests that would have 401'd can now succeed, and only for the two
 // delivery paths, and only with a signature that names their own session.
 func (am *AuthMiddleware) StreamTokenAuth(secret string) func(http.Handler) http.Handler {

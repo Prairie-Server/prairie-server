@@ -140,9 +140,9 @@ func TestStreamTokenDeliverySessionParsing(t *testing.T) {
 	}
 }
 
-// RequireAuth must honour the marker, since that is what actually unblocks the
+// RequireAuth must honor the marker, since that is what actually unblocks the
 // player, and must still reject an unmarked request with no bearer.
-func TestRequireAuthHonoursStreamTokenMarker(t *testing.T) {
+func TestRequireAuthHonorsStreamTokenMarker(t *testing.T) {
 	am := &AuthMiddleware{}
 	const session = "session-1"
 	target := "/api/v1/playback/transcode/" + session + "/master.m3u8?st=" + signStreamToken(t, session, time.Hour)
@@ -168,7 +168,7 @@ func TestRequireAuthHonoursStreamTokenMarker(t *testing.T) {
 	}
 }
 
-func TestRequireViewerAccessHonoursStreamTokenMarker(t *testing.T) {
+func TestRequireViewerAccessHonorsStreamTokenMarker(t *testing.T) {
 	// A nil resolver would panic if the skip did not short-circuit first, which
 	// also proves no viewer scope is resolved on this path.
 	m := &ViewerAccessMiddleware{}
