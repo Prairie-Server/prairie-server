@@ -80,3 +80,38 @@ func TestDetectEncodableVideoCodecs_softwareIsH264Only(t *testing.T) {
 		t.Fatalf("software encodable = %v, want [h264]", got)
 	}
 }
+
+func TestDetectEncodableVideoCodecs_av1RequiresWorkingNVENCEncode(t *testing.T) {
+	setupHWAccelTest(t)
+
+	listedOnly := writeFakeFFmpeg(t, fakeFFmpegProbe{
+		cuda: true, h264NVENC: true, hevcNVENC: true, av1NVENC: true,
+		scaleCUDA: true, uploadCUDA: true, smokeOK: true, av1SmokeOK: false,
+	})
+	got := DetectEncodableVideoCodecs(listedOnly.path, "nvenc")
+	if containsString(got, "av1") {
+		t.Fatalf("Ampere-style listed-but-broken av1_nvenc must not advertise av1: %v", got)
+	}
+	if !containsString(got, "h264") || !containsString(got, "hevc") {
+		t.Fatalf("h264/hevc still required: %v", got)
+	}
+
+	resetNVENCProbeCacheForTest()
+	working := writeFakeFFmpeg(t, fakeFFmpegProbe{
+		cuda: true, h264NVENC: true, hevcNVENC: true, av1NVENC: true,
+		scaleCUDA: true, uploadCUDA: true, smokeOK: true, av1SmokeOK: true,
+	})
+	got = DetectEncodableVideoCodecs(working.path, "nvenc")
+	if !containsString(got, "av1") {
+		t.Fatalf("working av1_nvenc smoke should advertise av1: %v", got)
+	}
+}
+
+func containsString(values []string, want string) bool {
+	for _, v := range values {
+		if v == want {
+			return true
+		}
+	}
+	return false
+}
