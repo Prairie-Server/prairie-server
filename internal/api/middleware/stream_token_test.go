@@ -40,6 +40,10 @@ func TestStreamTokenAuthAuthorizesDeliveryPaths(t *testing.T) {
 
 	for _, target := range []string{
 		"/api/v1/playback/transcode/" + session + "/master.m3u8?st=" + token,
+		// The player follows the master's variant URI itself, so this fetch
+		// carries the stream token and no bearer. It must authorize like the
+		// master does.
+		"/api/v1/playback/transcode/" + session + "/media.m3u8?st=" + token,
 		"/api/v1/playback/transcode/" + session + "/segment/seg-00001.m4s?st=" + token,
 	} {
 		if !serveWithStreamTokenAuth(t, testStreamSecret, target) {
@@ -55,6 +59,14 @@ func TestStreamTokenAuthRejectsCrossSessionToken(t *testing.T) {
 	target := "/api/v1/playback/transcode/session-b/master.m3u8?st=" + token
 	if serveWithStreamTokenAuth(t, testStreamSecret, target) {
 		t.Fatal("a token minted for session-a authorized delivery of session-b")
+	}
+}
+
+func TestStreamTokenAuthRejectsCrossSessionTokenOnMediaPlaylist(t *testing.T) {
+	token := signStreamToken(t, "session-a", time.Hour)
+	if serveWithStreamTokenAuth(t, testStreamSecret,
+		"/api/v1/playback/transcode/session-b/media.m3u8?st="+token) {
+		t.Fatal("a token for session-a authorized session-b's media playlist")
 	}
 }
 
@@ -133,6 +145,7 @@ func TestStreamTokenQueryParamIsTheSharedContract(t *testing.T) {
 func TestStreamTokenDeliverySessionParsing(t *testing.T) {
 	for target, want := range map[string]string{
 		"/api/v1/playback/transcode/abc/master.m3u8":       "abc",
+		"/api/v1/playback/transcode/abc/media.m3u8":        "abc",
 		"/api/v1/playback/transcode/abc/segment/seg-1.m4s": "abc",
 		"/playback/transcode/abc/master.m3u8":              "abc",
 		"/api/v1/playback/transcode//master.m3u8":          "",
