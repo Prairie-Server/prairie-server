@@ -375,7 +375,14 @@ func buildFFmpegArgs(opts TranscodeOpts) []string {
 		"-hls_segment_type", segmentType,
 		// Write segments to temp files first so the player never fetches a
 		// partially-written segment during a quality switch.
-		"-hls_flags", "independent_segments+temp_file",
+		// independent_segments is deliberately absent: it only writes the
+		// #EXT-X-INDEPENDENT-SEGMENTS assertion tag (segmentation and encoding
+		// are unaffected), and Samsung lists that tag as "Not supported" on
+		// every Tizen version. Their HLS parser abandons the playlist without
+		// reporting an error, and the AVPlay plugin then swallows the failed
+		// prepare in OnPrepareDone, so playback hangs with no diagnostic
+		// anywhere. See RewriteManifestPaths for the matching defensive strip.
+		"-hls_flags", "temp_file",
 		"-hls_segment_filename", segmentPattern,
 	)
 	// fMP4 segments need movflags=+frag_discont so each fragment writes
@@ -1483,7 +1490,11 @@ func (s *TranscodeSession) GenerateFullManifest(segPrefix, rawQuery string) []by
 	fmt.Fprintf(&buf, "#EXT-X-VERSION:%d\n", hlsVersion)
 	fmt.Fprintf(&buf, "#EXT-X-TARGETDURATION:%d\n", segDur)
 	fmt.Fprintf(&buf, "#EXT-X-MEDIA-SEQUENCE:%d\n", startSeg)
-	buf.WriteString("#EXT-X-PLAYLIST-TYPE:VOD\n")
+	// No #EXT-X-PLAYLIST-TYPE:VOD -- Tizen lists the tag as unsupported and
+	// abandons the playlist, and the #EXT-X-ENDLIST written below already tells
+	// every client this playlist is complete. This manifest is assembled with
+	// its prefixes inline rather than through RewriteManifestPaths, so the
+	// defensive strip there does not cover it.
 
 	if segExt == ".m4s" {
 		fmt.Fprintf(&buf, "#EXT-X-MAP:URI=\"%sinit.mp4%s\"\n", segPrefix, suffix)
@@ -1861,9 +1872,22 @@ func RewriteManifestPaths(manifest []byte, segPrefix, rawQuery string) ([]byte, 
 	}
 
 	lines := bytes.Split(manifest, []byte("\n"))
-	for i, line := range lines {
+	out := make([][]byte, 0, len(lines))
+	for _, line := range lines {
 		trimmed := bytes.TrimSpace(line)
 		if len(trimmed) == 0 {
+			out = append(out, line)
+			continue
+		}
+
+		// Drop tags Tizen does not support. Samsung's HLS tag support table
+		// marks these "Not supported" on every version, and their parser
+		// abandons the whole playlist rather than skipping the line -- silently,
+		// which the AVPlay plugin then swallows (see BuildMasterManifest). Every
+		// media playlist reaches a client through this function, so stripping
+		// here also covers manifests ffmpeg already wrote to disk under an older
+		// flag set and sessions restored by ReconstructTranscode.
+		if isUnsupportedTizenTag(trimmed) {
 			continue
 		}
 
@@ -1873,19 +1897,49 @@ func RewriteManifestPaths(manifest []byte, segPrefix, rawQuery string) ([]byte, 
 			if err != nil {
 				return nil, err
 			}
-			lines[i] = rewritten
+			out = append(out, rewritten)
 			continue
 		}
 
-		// Skip other tags/comments.
+		// Other tags/comments pass through untouched.
 		if trimmed[0] == '#' {
+			out = append(out, line)
 			continue
 		}
 
 		// Segment filename line.
-		lines[i] = []byte(segPrefix + string(trimmed) + suffix)
+		out = append(out, []byte(segPrefix+string(trimmed)+suffix))
 	}
-	return bytes.Join(lines, []byte("\n")), nil
+	return bytes.Join(out, []byte("\n")), nil
+}
+
+// unsupportedTizenTags are HLS tags Samsung's TV platform documents as "Not
+// supported" for every Tizen version. An unsupported tag is not skipped by
+// their parser -- the playlist is abandoned, with no error surfaced to the
+// application -- so none may ever reach a client.
+//
+// Both are pure metadata here: EXT-X-INDEPENDENT-SEGMENTS only asserts that
+// segments decode independently, and EXT-X-PLAYLIST-TYPE only restates what
+// the presence or absence of EXT-X-ENDLIST already conveys. Nothing is lost by
+// removing them, and EXT-X-ENDLIST itself is supported and stays.
+var unsupportedTizenTags = [][]byte{
+	[]byte("#EXT-X-INDEPENDENT-SEGMENTS"),
+	[]byte("#EXT-X-PLAYLIST-TYPE"),
+}
+
+func isUnsupportedTizenTag(trimmed []byte) bool {
+	for _, tag := range unsupportedTizenTags {
+		if !bytes.HasPrefix(trimmed, tag) {
+			continue
+		}
+		// Match the tag exactly or up to its ":" separator, so a longer tag that
+		// merely starts with the same characters is left alone.
+		rest := trimmed[len(tag):]
+		if len(rest) == 0 || rest[0] == ':' {
+			return true
+		}
+	}
+	return false
 }
 
 // rewriteMapURI rewrites the URI value inside an #EXT-X-MAP tag.
