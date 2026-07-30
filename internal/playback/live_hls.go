@@ -39,7 +39,7 @@ type LiveHLSOpts struct {
 	FFmpegPath string
 	// SegmentSeconds is the target HLS segment duration (default 1).
 	SegmentSeconds int
-	// ListSize is the sliding window size (default 6).
+	// ListSize is the sliding window size (default defaultLiveListSize).
 	ListSize int
 	// VideoCodec is "copy" (default) or an encode target such as "h264".
 	VideoCodec string
@@ -96,6 +96,23 @@ func (o LiveHLSOpts) transcodesVideo() bool {
 func (o LiveHLSOpts) transcodesAudio() bool {
 	return o.AudioCodec != "" && !strings.EqualFold(o.AudioCodec, "copy")
 }
+
+// defaultLiveListSize is how many segments stay in the sliding window.
+//
+// Sized for durability, not latency. hls_flags carries delete_segments, so the
+// window is also the retention policy: a segment that falls out of it is removed
+// from disk, and a player that stalls for longer than the window can hold gets a
+// 404 on the segment it was about to fetch. With 1s segments the previous value
+// of 6 gave a native TV player six seconds of margin for the whole round trip --
+// playlist refresh, segment fetch, decode, and any WiFi hiccup -- which is the
+// low-latency-HLS shape those players are not built for.
+//
+// Deepening this costs no startup latency. Cold-tune time is governed by
+// LeadSegments (how many segments must exist before the session reports ready),
+// which is unchanged; the window only decides how much history is kept behind the
+// live edge. The cost is disk: at roughly 2 MB per second of HD broadcast this is
+// tens of megabytes per active session, reclaimed when the session ends.
+const defaultLiveListSize = 20
 
 // buildLiveHLSArgs builds the ffmpeg command line for a live session. Copy-only
 // sessions keep the low-latency remux flags; encoding sessions reuse the VOD
@@ -357,7 +374,7 @@ func startLiveHLSOnce(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession
 	}
 	listSize := opts.ListSize
 	if listSize <= 0 {
-		listSize = 6
+		listSize = defaultLiveListSize
 	}
 	if err := os.MkdirAll(opts.OutputDir, 0o755); err != nil {
 		return nil, livePipeline{}, fmt.Errorf("live hls mkdir: %w", err)
