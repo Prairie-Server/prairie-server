@@ -6,6 +6,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -13,9 +14,37 @@ import (
 	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
+// liveHLSPathPrefix is the route the live HLS bridge is served from. Shared by
+// the URL builder and the delivery-ID parser so the two cannot drift.
+const liveHLSPathPrefix = "/api/v1/livetv/live-hls/"
+
 // PublicLiveHLSPath is the authenticated relative URL for a live HLS remux.
 func PublicLiveHLSPath(playbackSessionID string) string {
-	return "/api/v1/livetv/live-hls/" + playbackSessionID + "/index.m3u8"
+	return liveHLSPathPrefix + playbackSessionID + "/index.m3u8"
+}
+
+// LiveHLSDeliveryID reports the playback session ID a live HLS URL delivers, and
+// whether the URL is a live HLS path at all.
+//
+// Callers use it to decide whether a URL can carry a stream token and what that
+// token must be bound to. The other client-safe play URL -- the MPEG-TS session
+// proxy -- is keyed on a different ID, so returning false here keeps a token from
+// being minted against the wrong one.
+func LiveHLSDeliveryID(rawURL string) (string, bool) {
+	idx := strings.Index(rawURL, liveHLSPathPrefix)
+	if idx < 0 {
+		return "", false
+	}
+	rest := rawURL[idx+len(liveHLSPathPrefix):]
+	// Stop at a query string so an already-parameterized URL still resolves.
+	if q := strings.IndexAny(rest, "?#"); q >= 0 {
+		rest = rest[:q]
+	}
+	id, _, found := strings.Cut(rest, "/")
+	if !found || id == "" {
+		return "", false
+	}
+	return id, true
 }
 
 // DefaultMaxLiveTranscodes bounds concurrent re-encoding live sessions when the
