@@ -1,6 +1,6 @@
 import ViewTransitionLink from "@/components/ViewTransitionLink";
 import { ArtworkImage } from "@/components/ArtworkImage";
-import { BACKDROP_WIDTHS, POSTER_WIDTHS } from "@/lib/artworkUrl";
+import { BACKDROP_WIDTHS, POSTER_WIDTHS, STILL_WIDTHS } from "@/lib/artworkUrl";
 import { BookOpen, Play } from "lucide-react";
 import { useCallback } from "react";
 import { useLocation } from "react-router";
@@ -228,7 +228,15 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
   const usingPoster = Boolean(imageSrc && imageSrc === card.posterUrl);
   const imageAvif = usingPoster ? card.posterAvifUrl : card.backdropAvifUrl;
   const imagePng = usingPoster ? card.posterPngUrl : card.backdropPngUrl;
-  const imageWidths = isPoster ? POSTER_WIDTHS : BACKDROP_WIDTHS;
+  // The ladder has to match the kind of image that was actually chosen above,
+  // not the card's shape. An episode still is stored under a `still` key, whose
+  // only rungs are w300/w500 (artworkkey.VariantWidths), so offering it the
+  // backdrop ladder made the browser pick w1280 and 404 -- the card fell back to
+  // its placeholder while movie posters, whose ladder did match, rendered fine.
+  // Clients that request the canonical URL without a srcSet were unaffected,
+  // which is why the same episode looked correct on the TV app.
+  const usingStill = isSectionEpisode ? !usingPoster : card.type === "episode" && usingPoster;
+  const imageWidths = usingStill ? STILL_WIDTHS : isPoster ? POSTER_WIDTHS : BACKDROP_WIDTHS;
 
   return (
     <div className={`group/card ${containerWidth}`}>
