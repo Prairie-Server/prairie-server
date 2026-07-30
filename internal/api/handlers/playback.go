@@ -786,6 +786,8 @@ func identityRecipeCard(s *playback.Session) playback.RecipeCard {
 		// Carried so a session reconstructed after a restart re-encodes at the
 		// layout the client declared instead of silently dropping to stereo.
 		card.MaxAudioChannels = s.MaxAudioChannels
+		// And so it does not switch containers mid-stream on reconstruct.
+		card.RemuxContainer = s.RemuxContainer
 		return card
 	default:
 		return playback.NewDirectRecipeCard(s.ID, s.UserID, s.ProfileID, s.MediaFileID)
@@ -1983,6 +1985,11 @@ func (h *PlaybackHandler) handleStartPlaybackLegacy(w http.ResponseWriter, r *ht
 	// Carried onto the session because the progressive remux encodes audio at
 	// serve time, long after this request. Absent (0) keeps the stereo downmix.
 	session.MaxAudioChannels = req.MaxAudioChannels
+	// Same reason, and decided here for the same reason: the client's declared
+	// container list exists only on this request.
+	if effectiveFile != nil {
+		session.RemuxContainer = playback.RemuxOutputContainer(effectiveFile.Container, req.Containers)
+	}
 	h.persistSeriesPlaybackPreference(r.Context(), userID, profileID, effectiveFile)
 
 	if req.StartPosition != nil {

@@ -66,7 +66,10 @@ type RecipeCard struct {
 	// MaxAudioChannels mirrors Session.MaxAudioChannels. Without it a remux
 	// session reconstructed after a restart would silently fall back to the
 	// stereo default, quietly losing surround the client had declared.
-	MaxAudioChannels  int     `json:"max_audio_channels,omitempty"`
+	MaxAudioChannels int `json:"max_audio_channels,omitempty"`
+	// RemuxContainer mirrors Session.RemuxContainer. Without it a reconstructed
+	// remux would switch containers mid-stream, which no player survives.
+	RemuxContainer    string  `json:"remux_container,omitempty"`
 	TargetBitrateKbps int     `json:"target_bitrate_kbps,omitempty"`
 	TotalDuration     float64 `json:"total_duration"`
 	FastStart         bool    `json:"fast_start,omitempty"`
@@ -206,6 +209,7 @@ func (c RecipeCard) ToClaims() streamtoken.Claims {
 		PlayMethod:             string(c.PlayMethod),
 		TranscodeAudio:         c.TranscodeAudio,
 		MaxAudioChannels:       c.MaxAudioChannels,
+		RemuxContainer:         c.RemuxContainer,
 		RemuxDVMode:            string(c.RemuxDVMode),
 		TranscodeNode:          c.TranscodeNodeURL,
 		TranscodeTransportID:   c.TranscodeTransportID,
@@ -254,6 +258,7 @@ func RecipeCardFromClaims(c *streamtoken.Claims) RecipeCard {
 		PlayMethod:             method,
 		TranscodeAudio:         c.TranscodeAudio,
 		MaxAudioChannels:       c.MaxAudioChannels,
+		RemuxContainer:         c.RemuxContainer,
 		RemuxDVMode:            RemuxDVMode(c.RemuxDVMode),
 		InputPath:              c.MediaPath,
 		OutputSubdir:           c.OutputSubdir,

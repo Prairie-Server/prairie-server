@@ -37,6 +37,12 @@ type Session struct {
 	// because the progressive remux encodes audio at serve time, long after the
 	// request that declared it. 0 keeps the stereo downmix.
 	MaxAudioChannels int
+	// RemuxContainer is the container the progressive remux writes, chosen at
+	// /playback/start from the source container and the client's declared list.
+	// Carried for the same reason as MaxAudioChannels: the remux runs at serve
+	// time, long after the request that declared the capability. Empty means the
+	// MP4 default.
+	RemuxContainer string
 
 	StreamBitrateKbps int    // currently delivered bitrate, when known
 	TargetResolution  string // requested output resolution for transcodes

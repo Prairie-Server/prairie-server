@@ -194,12 +194,23 @@ func buildRemuxArgs(filePath, outputFormat string, seekSeconds float64, transcod
 	args = append(args,
 		"-avoid_negative_ts", "make_zero",
 		"-f", outputFormat,
-		// delay_moov lets the MP4 muxer inspect the first audio packet before
-		// writing codec configuration. empty_moov fails immediately for copied
-		// E-AC-3/Atmos tracks because their frame size is not known at header time.
-		"-movflags", "frag_keyframe+delay_moov+default_base_moof",
-		"pipe:1",
 	)
+
+	// Fragmentation is an MP4 requirement, not a general one. MP4 keeps its
+	// index in a moov box that a normal write patches at the end, which a
+	// non-seekable pipe cannot do -- so streaming MP4 means fragmenting it.
+	// Matroska is streamable as written and needs none of these flags; passing
+	// movflags to its muxer would just be ignored, but stating the distinction
+	// keeps the reason visible.
+	//
+	// delay_moov lets the MP4 muxer inspect the first audio packet before
+	// writing codec configuration. empty_moov fails immediately for copied
+	// E-AC-3/Atmos tracks because their frame size is not known at header time.
+	if outputFormat == "mp4" {
+		args = append(args, "-movflags", "frag_keyframe+delay_moov+default_base_moof")
+	}
+
+	args = append(args, "pipe:1")
 
 	return args
 }
@@ -323,7 +334,7 @@ func containerMIME(format string) string {
 		return "video/mp4"
 	case "webm":
 		return "video/webm"
-	case "matroska":
+	case "matroska", "mkv":
 		return "video/x-matroska"
 	case "mpegts":
 		return "video/mp2t"
