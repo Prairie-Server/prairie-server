@@ -3347,6 +3347,25 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 	// actual video encoding happens, so the 4K cost concern doesn't apply.
 	var switchedFileID *int
 	videoCopy := strings.EqualFold(req.TargetCodecVideo, "copy")
+	// A copied video stream cannot be rescaled. Asking for both leaves ffmpeg with
+	// -c:v copy and no scale filter, so it happily serves the source resolution
+	// under the label of the requested one: the request succeeds, the encode runs,
+	// and the picture never changes. A quality switch that reports success while
+	// changing nothing is worse than one that fails, because there is nothing to
+	// see and nothing to debug from either side.
+	//
+	// Only a downscale conflicts. An equal or higher target is a no-op for a copy
+	// and is what the AV1 path deliberately asks for -- copy a 2160p source while
+	// naming 2160p -- so it stays allowed.
+	if videoCopy {
+		if requested, ok := transcodeResolutionHeight(req.TargetResolution); ok {
+			if source, known := transcodeResolutionHeight(file.Resolution); known && requested < source {
+				writeError(w, http.StatusBadRequest, "bad_request",
+					"target_resolution below the source requires re-encoding video; omit target_codec_video=copy or request the source resolution")
+				return
+			}
+		}
+	}
 	if file.Resolution == "2160p" && h.SettingsRepo != nil && !videoCopy {
 		allow4K, _ := h.SettingsRepo.Get(r.Context(), "allow_4k_transcode")
 		if allow4K != "true" && !clientRequests4KTarget(req.TargetResolution) {
