@@ -24,10 +24,24 @@ const streamTokenAuthorizedKey contextKey = "stream_token_authorized"
 // path_pattern=/api/v1/playback/* instead of the real pattern.)
 const transcodeDeliveryPrefix = "/playback/transcode/"
 
-// streamTokenDeliverySession returns the session ID a request is asking to be
-// delivered, and whether the path is an HLS delivery path at all.
+// Progressive (direct-play / remux) delivery lives at:
 //
-// Only those delivery shapes qualify. Everything else — including the mutation
+//	/api/v1/stream/{session_id}
+//
+// A different prefix entirely, which is why it needs its own case: the token was
+// already minted for it (playbackStreamURL appends one to every non-transcode
+// stream_url) but nothing here honored it, so a native player following that URL
+// got a 401 on every attempt and reported a connection failure.
+const progressiveDeliveryPrefix = "/stream/"
+
+// apiVersionPrefix anchors the progressive match so "/stream/" is only honored
+// at the top level of the API, never as a nested segment of another route.
+const apiVersionPrefix = "/api/v1"
+
+// streamTokenDeliverySession returns the session ID a request is asking to be
+// delivered, and whether the path is a media delivery path at all.
+//
+// Only these delivery shapes qualify. Everything else — including the mutation
 // routes under /playback — keeps requiring a session bearer, so a stream token
 // can never be spent as a general-purpose credential.
 //
@@ -36,6 +50,13 @@ const transcodeDeliveryPrefix = "/playback/transcode/"
 // token and no bearer. Omitting it 401s every variant fetch, which is exactly
 // what happened when the master playlist landed without this list being updated.
 func streamTokenDeliverySession(urlPath string) (string, bool) {
+	if sessionID, ok := transcodeDeliverySession(urlPath); ok {
+		return sessionID, true
+	}
+	return progressiveDeliverySession(urlPath)
+}
+
+func transcodeDeliverySession(urlPath string) (string, bool) {
 	idx := strings.Index(urlPath, transcodeDeliveryPrefix)
 	if idx < 0 {
 		return "", false
@@ -57,6 +78,34 @@ func streamTokenDeliverySession(urlPath string) (string, bool) {
 	default:
 		return "", false
 	}
+}
+
+// progressiveDeliverySession matches the bare progressive stream path.
+//
+// Only the bare path: the session's own sub-resources (subtitles, fonts) are
+// deliberately excluded, because a stream token authorizes delivery of the
+// session's media bytes and nothing wider. Widening it later is a decision to
+// make on purpose rather than by accident of prefix matching.
+//
+// The prefix is anchored rather than searched. Searching for "/stream/"
+// anywhere would also match /api/v1/playback/transcode/{id}/stream/... and any
+// future route containing that segment, quietly extending what a stream token
+// authorizes.
+func progressiveDeliverySession(urlPath string) (string, bool) {
+	idx := strings.Index(urlPath, progressiveDeliveryPrefix)
+	if idx < 0 {
+		return "", false
+	}
+	// Must be a top-level /stream/ under the API prefix, not a nested segment of
+	// some other route.
+	if before := urlPath[:idx]; !strings.HasSuffix(before, apiVersionPrefix) {
+		return "", false
+	}
+	sessionID := urlPath[idx+len(progressiveDeliveryPrefix):]
+	if sessionID == "" || strings.Contains(sessionID, "/") {
+		return "", false
+	}
+	return sessionID, true
 }
 
 // StreamTokenAuth authorizes HLS delivery requests that carry a valid signed

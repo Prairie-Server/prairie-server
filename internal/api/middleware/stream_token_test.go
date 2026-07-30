@@ -154,7 +154,15 @@ func TestStreamTokenDeliverySessionParsing(t *testing.T) {
 		"/api/v1/playback/transcode/abc/segment":           "",
 		"/api/v1/playback/transcode/abc/segment/a/b":       "",
 		"/api/v1/playback/transcode/abc/master.m3u8/extra": "",
-		"/api/v1/stream/abc":                               "",
+		// Progressive (direct-play / remux) delivery. Previously excluded because
+		// this middleware was HLS-only, which 401'd every native-player fetch of
+		// the stream_url the server itself had signed.
+		"/api/v1/stream/abc": "abc",
+		// Sub-resources stay out: a stream token authorizes the session's media
+		// bytes and nothing wider.
+		"/api/v1/stream/abc/subtitles/2": "",
+		// Unanchored matching would let any route containing "/stream/" through.
+		"/api/v1/playback/transcode/abc/stream/evil": "",
 	} {
 		got, ok := streamTokenDeliverySession(target)
 		if want == "" {
@@ -213,5 +221,46 @@ func TestRequireViewerAccessHonorsStreamTokenMarker(t *testing.T) {
 	chain.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, target, nil))
 	if !reached || rec.Code != http.StatusOK {
 		t.Fatalf("stream-token delivery blocked by viewer access: status=%d reached=%v", rec.Code, reached)
+	}
+}
+
+// The progressive endpoint had a token minted for it all along --
+// playbackStreamURL appends one to every non-transcode stream_url -- but nothing
+// honored it here, so a native player following that URL got a 401 on every
+// attempt and surfaced it as a connection failure.
+func TestStreamTokenDeliverySessionAcceptsProgressiveStream(t *testing.T) {
+	sessionID, ok := streamTokenDeliverySession("/api/v1/stream/abc-123")
+	if !ok || sessionID != "abc-123" {
+		t.Fatalf("streamTokenDeliverySession(progressive) = (%q, %v), want (abc-123, true)", sessionID, ok)
+	}
+}
+
+// A stream token authorizes the session's media bytes and nothing wider. The
+// sub-resources are excluded on purpose, so widening that is a deliberate
+// decision rather than a side effect of prefix matching.
+func TestStreamTokenDeliverySessionRejectsProgressiveSubResources(t *testing.T) {
+	for _, path := range []string{
+		"/api/v1/stream/abc-123/subtitles/2",
+		"/api/v1/stream/abc-123/subtitles/2/fonts",
+		"/api/v1/stream/",
+		"/api/v1/stream/abc-123/",
+	} {
+		if sessionID, ok := streamTokenDeliverySession(path); ok {
+			t.Errorf("streamTokenDeliverySession(%q) = (%q, true), want no session", path, sessionID)
+		}
+	}
+}
+
+// Anchoring matters: an unanchored search for "/stream/" would also match a
+// nested segment of some other route and quietly widen what a token authorizes.
+func TestStreamTokenDeliverySessionRejectsNestedStreamSegment(t *testing.T) {
+	for _, path := range []string{
+		"/api/v1/playback/transcode/sess-1/stream/evil",
+		"/api/v2/stream/abc-123",
+		"/internal/stream/abc-123",
+	} {
+		if sessionID, ok := streamTokenDeliverySession(path); ok {
+			t.Errorf("streamTokenDeliverySession(%q) = (%q, true), want no session", path, sessionID)
+		}
 	}
 }
