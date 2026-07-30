@@ -155,13 +155,25 @@ func buildLiveHLSArgs(
 			args = append(args, "-c:v", pipeline.Decoder)
 		}
 	}
+	// discardcorrupt drops tuner bit errors that would otherwise produce a
+	// segment MSE cannot append (bufferAppendError). genpts still fills gaps.
 	args = append(args,
-		"-fflags", "+genpts+nobuffer",
+		"-fflags", "+genpts+nobuffer+discardcorrupt",
 		"-flags", "low_delay",
 		"-i", opts.InputURL,
 		"-map", "0:v:0",
-		"-map", "0:a:0?",
 	)
+	// When we re-encode audio, the track must be present from segment 0.
+	// Optional mapping (`0:a:0?`) lets ffmpeg emit video-only early segments
+	// while the AAC encoder primes; hls.js then opens a video-only SourceBuffer
+	// and fatals with bufferAppendError the moment audio appears (see
+	// video-dev/hls.js#5132 / #6339 / #7245). Copy sessions keep the optional
+	// map so a truly silent feed still remuxes.
+	if encodeAudio {
+		args = append(args, "-map", "0:a:0")
+	} else {
+		args = append(args, "-map", "0:a:0?")
+	}
 
 	if encodeVideo {
 		args = appendVideoArgs(args, shared)
@@ -173,12 +185,20 @@ func buildLiveHLSArgs(
 	}
 	if encodeAudio {
 		args = appendAudioArgs(args, shared)
+		// Keep audio continuous and starting at t=0 so the first MPEG-TS
+		// segment carries AAC packets instead of video alone.
+		args = append(args, "-af", "aresample=async=1:first_pts=0")
 	} else {
 		args = append(args, "-c:a", "copy")
 	}
 	if encodeVideo {
 		args = appendVideoFilterArgs(args, shared)
 		args = appendSegmentBoundaryArgs(args, shared)
+	}
+	if encodeVideo || encodeAudio {
+		// Match the VOD encode path: zero-base timestamps so hls.js does not
+		// see a negative or jumped PTS on the first append.
+		args = append(args, "-avoid_negative_ts", "make_zero")
 	}
 
 	return append(args,
@@ -422,16 +442,31 @@ func startLiveHLSOnce(parent context.Context, opts LiveHLSOpts) (*LiveHLSSession
 	deadline := time.Now().Add(20 * time.Second)
 	for time.Now().Before(deadline) {
 		if liveHLSSegmentCount(playlist) >= lead {
-			return session, pipeline, nil
+			// Re-check the process before advertising readiness: a playlist
+			// left behind by a dead encoder is not a live stream.
+			select {
+			case <-session.done:
+				session.errMu.Lock()
+				err := session.err
+				session.errMu.Unlock()
+				if err == nil {
+					err = errors.New("live hls ffmpeg exited before playlist ready")
+				}
+				_ = session.Close()
+				return nil, pipeline, err
+			default:
+				return session, pipeline, nil
+			}
 		}
 		select {
 		case <-parent.Done():
 			_ = session.Close()
 			return nil, pipeline, parent.Err()
 		case <-session.done:
-			if liveHLSPlaylistReady(playlist) {
-				return session, pipeline, nil
-			}
+			// A live playlist only advances while ffmpeg runs. Accepting a dead
+			// encoder that left a few segments on disk used to return a "ready"
+			// session whose MEDIA-SEQUENCE never moved — the player then looped
+			// recoverMediaError against the same bad fragments.
 			session.errMu.Lock()
 			err := session.err
 			session.errMu.Unlock()
@@ -456,32 +491,14 @@ func liveHLSPlaylistReady(playlist string) bool {
 
 // liveHLSSegmentCount counts the segments a client could fetch right now. It
 // reads the playlist rather than the directory because a segment only becomes
-// fetchable once ffmpeg has advertised it.
+// fetchable once ffmpeg has advertised it — counting bare .ts files made the
+// session look ready while index.m3u8 still had no media entries.
 func liveHLSSegmentCount(playlist string) int {
 	data, err := os.ReadFile(playlist)
 	if err != nil || len(data) == 0 {
 		return 0
 	}
-	if count := bytes.Count(data, []byte("#EXTINF")); count > 0 {
-		return count
-	}
-	// Some writers flush the playlist header before the first #EXTINF; fall
-	// back to segments already on disk so a ready stream is not missed.
-	dir := filepath.Dir(playlist)
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return 0
-	}
-	count := 0
-	for _, e := range entries {
-		if e.IsDir() || !strings.HasSuffix(strings.ToLower(e.Name()), ".ts") {
-			continue
-		}
-		if info, infoErr := e.Info(); infoErr == nil && info.Size() > 0 {
-			count++
-		}
-	}
-	return count
+	return bytes.Count(data, []byte("#EXTINF"))
 }
 
 // Err returns a non-nil error if ffmpeg exited unexpectedly.

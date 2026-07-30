@@ -17,9 +17,10 @@ func writeLiveHLSFakeFFmpeg(t *testing.T, script string) string {
 	return path
 }
 
-// ffmpeg can finish writing playable segments and exit in the same instant the
-// readiness loop looks at it; that is a usable stream, not a failed tune.
-func TestStartLiveHLSAcceptsPlaylistWrittenBeforeExit(t *testing.T) {
+// ffmpeg exiting after writing a playlist is not a usable live session: the
+// sliding window will never advance, and the player ends up re-appending the
+// same fragments until MSE fatals.
+func TestStartLiveHLSFailsWhenEncoderExits(t *testing.T) {
 	ffmpeg := writeLiveHLSFakeFFmpeg(t, `#!/bin/sh
 outdir=""
 prev=""
@@ -35,16 +36,14 @@ printf '#EXTM3U\n#EXTINF:1.0,\nseg_00000.ts\n' > "$outdir/index.m3u8"
 exit 0
 `)
 
-	session, err := StartLiveHLS(context.Background(), LiveHLSOpts{
+	if _, err := StartLiveHLS(context.Background(), LiveHLSOpts{
 		ID:         "finished",
 		InputURL:   "http://127.0.0.1/auto/v4.1",
 		OutputDir:  filepath.Join(t.TempDir(), "out"),
 		FFmpegPath: ffmpeg,
-	})
-	if err != nil {
-		t.Fatalf("StartLiveHLS = %v, want a ready session", err)
+	}); err == nil {
+		t.Fatal("expected an error when ffmpeg exits after writing a playlist")
 	}
-	t.Cleanup(func() { _ = session.Close() })
 }
 
 // A run that dies without producing anything is still a failed tune.
@@ -149,11 +148,13 @@ func TestLiveHLSPlaylistReady(t *testing.T) {
 		t.Fatal("empty media playlist without segments should not be ready")
 	}
 
+	// A .ts file on disk is not enough: clients can only fetch what the
+	// playlist advertises, so readiness follows #EXTINF only.
 	if err := os.WriteFile(filepath.Join(dir, "seg_00000.ts"), []byte("ts"), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	if !liveHLSPlaylistReady(playlist) {
-		t.Fatal("playlist with a non-empty .ts segment should be ready")
+	if liveHLSPlaylistReady(playlist) {
+		t.Fatal("unadvertised .ts files must not make the playlist ready")
 	}
 
 	if err := os.WriteFile(playlist, []byte("#EXTM3U\n#EXTINF:1.0,\nseg_00000.ts\n"), 0o644); err != nil {
