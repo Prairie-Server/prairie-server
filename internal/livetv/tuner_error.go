@@ -53,6 +53,13 @@ func DescribeTunerRefusal(ctx context.Context, client *http.Client, sourceURL st
 	}
 	resp, err := client.Do(req)
 	if err != nil {
+		// A canceled or timed-out probe learned nothing about the tuner, so it
+		// must not manufacture a verdict. Reporting "not reachable" here would
+		// overwrite the real startup error with a guess, and a tuner that is
+		// merely slow would be blamed for a failure that was not its own.
+		if ctx.Err() != nil {
+			return nil
+		}
 		// The tuner is unreachable, which is itself the explanation.
 		return fmt.Errorf("%w: tuner is not reachable", ErrNotFound)
 	}
@@ -100,17 +107,16 @@ func parseHDHomeRunError(header string) (code, message string) {
 	if header == "" {
 		return "", ""
 	}
-	code, message, found := strings.Cut(header, " ")
-	if !found {
-		if isAllDigits(code) {
-			return code, ""
-		}
-		return "", code
-	}
+	// Split on whitespace rather than a literal space: HTTP allows a tab to
+	// separate header tokens, and matching only " " would leave "807\tNo Video
+	// Data" looking like an unmapped message and quietly lose its ErrNoSignal
+	// mapping.
+	fields := strings.Fields(header)
+	code = fields[0]
 	if !isAllDigits(code) {
 		return "", header
 	}
-	return code, strings.TrimSpace(message)
+	return code, strings.Join(fields[1:], " ")
 }
 
 func isAllDigits(s string) bool {

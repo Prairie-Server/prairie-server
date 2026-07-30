@@ -1,6 +1,7 @@
 package livetv
 
 import (
+	"context"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +16,9 @@ func TestParseHDHomeRunError(t *testing.T) {
 		message string
 	}{
 		{"807 No Video Data", "807", "No Video Data"},
+		// HTTP allows a tab between header tokens, and a tab-separated code must
+		// still map rather than degrading to an unmapped message.
+		{"807\tNo Video Data", "807", "No Video Data"},
 		{"  807   No Video Data  ", "807", "No Video Data"},
 		{"802 Resource Locked", "802", "Resource Locked"},
 		{"807", "807", ""},
@@ -115,5 +119,31 @@ func TestDescribeTunerRefusalOnUnreachableTuner(t *testing.T) {
 func TestDescribeTunerRefusalIgnoresEmptyURL(t *testing.T) {
 	if err := DescribeTunerRefusal(t.Context(), nil, "   "); err != nil {
 		t.Errorf("empty URL = %v, want nil", err)
+	}
+}
+
+// A tab-separated code must reach the same sentinel as a space-separated one.
+func TestTunerRefusalErrorTabSeparated(t *testing.T) {
+	if err := tunerRefusalError(http.StatusServiceUnavailable, "807\tNo Video Data"); !errors.Is(err, ErrNoSignal) {
+		t.Errorf("tab-separated 807 = %v, want ErrNoSignal", err)
+	}
+}
+
+// A probe that times out or is canceled learned nothing, so it must return nil
+// and let the caller keep the real startup error rather than blaming the tuner.
+func TestDescribeTunerRefusalPreservesOriginalErrorOnCancel(t *testing.T) {
+	blocked := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		<-blocked
+		w.WriteHeader(http.StatusServiceUnavailable)
+	}))
+	defer srv.Close()
+	defer close(blocked)
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+
+	if err := DescribeTunerRefusal(ctx, srv.Client(), srv.URL); err != nil {
+		t.Errorf("canceled probe = %v, want nil so the caller keeps its own error", err)
 	}
 }
