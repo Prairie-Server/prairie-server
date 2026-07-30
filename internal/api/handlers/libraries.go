@@ -595,7 +595,7 @@ func (h *LibraryHandler) HandleCreateLibrary(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "bad_request", "Chapter thumbnails require configured artwork storage")
 		return
 	}
-	if req.TrickplayEnabled && !(h.TrickplayStoreReady || h.ChapterThumbnailStoreReady) {
+	if req.TrickplayEnabled && !h.TrickplayStoreReady && !h.ChapterThumbnailStoreReady {
 		writeError(w, http.StatusBadRequest, "bad_request", "Seek previews require configured artwork storage")
 		return
 	}
@@ -684,7 +684,7 @@ func (h *LibraryHandler) HandleUpdateLibrary(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "bad_request", "Chapter thumbnails require configured artwork storage")
 		return
 	}
-	if req.TrickplayEnabled != nil && *req.TrickplayEnabled && !(h.TrickplayStoreReady || h.ChapterThumbnailStoreReady) {
+	if req.TrickplayEnabled != nil && *req.TrickplayEnabled && !h.TrickplayStoreReady && !h.ChapterThumbnailStoreReady {
 		writeError(w, http.StatusBadRequest, "bad_request", "Seek previews require configured artwork storage")
 		return
 	}
