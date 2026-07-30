@@ -158,6 +158,9 @@ func TestStreamTokenDeliverySessionParsing(t *testing.T) {
 		// this middleware was HLS-only, which 401'd every native-player fetch of
 		// the stream_url the server itself had signed.
 		"/api/v1/stream/abc": "abc",
+		// chi trims the mount prefix for sub-routers, so the middleware sees this
+		// shape too. Requiring the API prefix here 401'd every real request.
+		"/stream/abc": "abc",
 		// Sub-resources stay out: a stream token authorizes the session's media
 		// bytes and nothing wider.
 		"/api/v1/stream/abc/subtitles/2": "",

@@ -96,9 +96,13 @@ func progressiveDeliverySession(urlPath string) (string, bool) {
 	if idx < 0 {
 		return "", false
 	}
-	// Must be a top-level /stream/ under the API prefix, not a nested segment of
-	// some other route.
-	if before := urlPath[:idx]; !strings.HasSuffix(before, apiVersionPrefix) {
+	// Must be a top-level /stream/, not a nested segment of some other route.
+	//
+	// An empty prefix counts: chi trims the mount prefix for sub-routers, so this
+	// middleware sees "/stream/{id}" as often as "/api/v1/stream/{id}" -- which is
+	// also why the transcode matcher searches instead of anchoring. Requiring the
+	// API prefix rejected every real request and 401'd the player.
+	if before := urlPath[:idx]; before != "" && !strings.HasSuffix(before, apiVersionPrefix) {
 		return "", false
 	}
 	sessionID := urlPath[idx+len(progressiveDeliveryPrefix):]
