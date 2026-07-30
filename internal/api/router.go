@@ -108,6 +108,7 @@ type Dependencies struct {
 	// the capability this API advertises cannot drift from whether the extraction
 	// service was actually constructed.
 	ChapterThumbnailStoreReady bool
+	TrickplayStoreReady        bool
 	BrandingService            *branding.Service                // white-label branding (nil when DB unavailable)
 	FolderRepo                 *catalog.FolderRepository        // media folder repository (may be nil)
 	FileRepo                   *scanner.FileRepository          // media file repository (may be nil)
@@ -175,6 +176,7 @@ type Dependencies struct {
 	MetadataService        handlers.MatchMetadataService     // metadata search+process (may be nil)
 	CollectionService      *catalog.LibraryCollectionService // collection service (may be nil)
 	ChapterThumbnailQueuer catalog.ChapterThumbnailQueuer
+	TrickplayQueuer        handlers.TrickplayQueuer
 	PlaybackRealtimeHub    *playback.RealtimeHub
 	OnUserSessionsRevoked  func(ctx context.Context, userID int)
 	OnServerSettingUpdated func(ctx context.Context, key, value string)
@@ -516,6 +518,10 @@ func NewRouter(deps Dependencies) chi.Router {
 	if deps.FolderRepo != nil {
 		libraryHandler = handlers.NewLibraryHandler(deps.FolderRepo, deps.LibraryIngester, userRepo, deps.DB, deps.Refresher, deps.AppContext)
 		libraryHandler.ChapterThumbnailStoreReady = deps.ChapterThumbnailStoreReady
+		libraryHandler.TrickplayStoreReady = deps.TrickplayStoreReady
+		if !libraryHandler.TrickplayStoreReady {
+			libraryHandler.TrickplayStoreReady = deps.ChapterThumbnailStoreReady
+		}
 		libraryHandler.EventBus = deps.EventBus
 		libraryHandler.EventsHub = deps.EventsHub
 		libraryHandler.ScanRegistry = deps.ScanRegistry
@@ -1005,6 +1011,7 @@ func NewRouter(deps Dependencies) chi.Router {
 		}
 		playbackHandler.ProbeEnsurer = deps.ProbeEnsurer
 		playbackHandler.ChapterThumbnailQueuer = deps.ChapterThumbnailQueuer
+		playbackHandler.TrickplayQueuer = deps.TrickplayQueuer
 		if settingsRepo != nil {
 			playbackHandler.SettingsRepo = settingsRepo
 		}

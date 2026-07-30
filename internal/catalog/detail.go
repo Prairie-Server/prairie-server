@@ -429,6 +429,7 @@ type FileVersion struct {
 	AudioTracks              []models.AudioTrack    `json:"audio_tracks,omitempty"`
 	SubtitleTracks           []VersionSubtitleTrack `json:"subtitle_tracks,omitempty"`
 	Chapters                 []VersionChapter       `json:"chapters,omitempty"`
+	Trickplay                *VersionTrickplay      `json:"trickplay,omitempty"`
 	Intro                    *Marker                `json:"intro,omitempty"`
 	Credits                  *Marker                `json:"credits,omitempty"`
 	Recap                    *Marker                `json:"recap,omitempty"`
@@ -465,6 +466,23 @@ type VersionChapter struct {
 	Source             string  `json:"source"`
 	ThumbnailURL       string  `json:"thumbnail_url,omitempty"`
 	ThumbnailThumbhash string  `json:"thumbnail_thumbhash,omitempty"`
+}
+
+// VersionTrickplay exposes interval sprite-sheet metadata for seek scrubbing.
+type VersionTrickplay struct {
+	IntervalSeconds float64                 `json:"interval_seconds"`
+	Width           int                     `json:"width"`
+	Height          int                     `json:"height"`
+	TileColumns     int                     `json:"tile_columns"`
+	TileRows        int                     `json:"tile_rows"`
+	ThumbnailCount  int                     `json:"thumbnail_count"`
+	Sheets          []VersionTrickplaySheet `json:"sheets"`
+}
+
+// VersionTrickplaySheet is one sprite sheet with a presigned URL.
+type VersionTrickplaySheet struct {
+	Index int    `json:"index"`
+	URL   string `json:"url"`
 }
 
 // VersionSubtitleTrack represents one embedded or external subtitle track in a file version.
@@ -3139,6 +3157,7 @@ func (s *DetailService) buildPlaybackInfo(
 			AudioTracks:              append([]models.AudioTrack(nil), f.AudioTracks...),
 			SubtitleTracks:           buildVersionSubtitleTracks(f),
 			Chapters:                 s.buildVersionChapters(ctx, f),
+			Trickplay:                s.buildVersionTrickplay(ctx, f),
 			Intro:                    versionIntro,
 			Credits:                  versionCredits,
 			Recap:                    versionRecap,
@@ -3464,6 +3483,40 @@ func (s *DetailService) buildVersionChapters(ctx context.Context, file *models.M
 		chapters = append(chapters, ch)
 	}
 	return chapters
+}
+
+func (s *DetailService) buildVersionTrickplay(ctx context.Context, file *models.MediaFile) *VersionTrickplay {
+	if file == nil || file.Trickplay == nil || file.Trickplay.ThumbnailCount <= 0 || len(file.Trickplay.Sheets) == 0 {
+		return nil
+	}
+
+	sheets := make([]VersionTrickplaySheet, 0, len(file.Trickplay.Sheets))
+	for _, sheet := range file.Trickplay.Sheets {
+		if sheet.Path == "" {
+			continue
+		}
+		url := s.PresignURL(ctx, sheet.Path, "card")
+		if url == "" {
+			continue
+		}
+		sheets = append(sheets, VersionTrickplaySheet{
+			Index: sheet.Index,
+			URL:   url,
+		})
+	}
+	if len(sheets) == 0 {
+		return nil
+	}
+
+	return &VersionTrickplay{
+		IntervalSeconds: file.Trickplay.IntervalSeconds,
+		Width:           file.Trickplay.Width,
+		Height:          file.Trickplay.Height,
+		TileColumns:     file.Trickplay.TileColumns,
+		TileRows:        file.Trickplay.TileRows,
+		ThumbnailCount:  file.Trickplay.ThumbnailCount,
+		Sheets:          sheets,
+	}
 }
 
 func buildVersionSubtitleTracks(file *models.MediaFile) []VersionSubtitleTrack {

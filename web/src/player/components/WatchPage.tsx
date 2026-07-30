@@ -443,6 +443,9 @@ export function WatchPage({
   const activeChapters =
     (playbackVersions.find((v) => v.file_id === session.mediaFileId) ?? selectedVersion)
       ?.chapters ?? [];
+  const activeTrickplay =
+    (playbackVersions.find((v) => v.file_id === session.mediaFileId) ?? selectedVersion)
+      ?.trickplay ?? null;
   const activeMarkers = resolveActiveVersionMarkers(selectedVersion);
 
   return (
@@ -457,6 +460,7 @@ export function WatchPage({
       versions={playbackVersions}
       activeFileId={session.mediaFileId}
       chapters={activeChapters}
+      trickplay={activeTrickplay}
       onSwitchVersion={handleSwitchVersion}
       subtitleUrls={playableSubtitles}
       initialPosition={session.initialPosition}

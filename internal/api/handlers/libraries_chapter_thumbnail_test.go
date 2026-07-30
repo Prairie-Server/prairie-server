@@ -64,3 +64,42 @@ func TestChapterThumbnailsSupportedFollowsStoreReadiness(t *testing.T) {
 		}
 	}
 }
+
+func TestTrickplaySupportedFollowsStoreReadiness(t *testing.T) {
+	for _, ready := range []bool{true, false} {
+		h := &LibraryHandler{TrickplayStoreReady: ready}
+		resp := h.toLibraryResponseWithPoster(t.Context(), &models.MediaFolder{ID: 1, Name: "Movies", Type: "movies"})
+		if resp.TrickplaySupported != ready {
+			t.Errorf("TrickplaySupported = %v, want %v", resp.TrickplaySupported, ready)
+		}
+	}
+	h := &LibraryHandler{ChapterThumbnailStoreReady: true}
+	resp := h.toLibraryResponseWithPoster(t.Context(), &models.MediaFolder{ID: 1, Name: "Movies", Type: "movies"})
+	if !resp.TrickplaySupported {
+		t.Fatal("TrickplaySupported should fall back to ChapterThumbnailStoreReady")
+	}
+}
+
+func TestHandleCreateLibrary_RejectsTrickplayWithoutArtworkStore(t *testing.T) {
+	handler := &LibraryHandler{}
+	req := httptest.NewRequest(
+		http.MethodPost,
+		"/api/v1/libraries",
+		strings.NewReader(`{
+			"name":"Movies",
+			"type":"movies",
+			"paths":["/mnt/media/movies"],
+			"trickplay_enabled":true
+		}`),
+	)
+	rr := httptest.NewRecorder()
+
+	handler.HandleCreateLibrary(rr, req)
+
+	if rr.Code != http.StatusBadRequest {
+		t.Fatalf("status = %d, want %d", rr.Code, http.StatusBadRequest)
+	}
+	if body := rr.Body.String(); !strings.Contains(body, "Seek previews require configured artwork storage") {
+		t.Fatalf("unexpected body: %s", body)
+	}
+}

@@ -129,6 +129,10 @@ type PlaybackChapterThumbnailQueuer interface {
 	QueuePriorityFileAtPosition(ctx context.Context, fileID int, targetSeconds float64)
 }
 
+type TrickplayQueuer interface {
+	QueuePriorityFileAtPosition(ctx context.Context, fileID int, targetSeconds float64)
+}
+
 // PlaybackOriginalLanguageLookup fetches the original language for a content item.
 type PlaybackOriginalLanguageLookup interface {
 	GetOriginalLanguage(ctx context.Context, contentID string) (string, error)
@@ -169,6 +173,7 @@ type PlaybackHandler struct {
 	FileVersionFetcher     PlaybackFileVersionFetcher // optional; queries sibling file versions for 4K guard
 	ProbeEnsurer           PlaybackProbeEnsurer       // optional; repairs missing probe metadata on demand
 	ChapterThumbnailQueuer PlaybackChapterThumbnailQueuer
+	TrickplayQueuer        TrickplayQueuer
 	IntroAnalyzer          IntroEpisodeAnalyzer
 	IntroRepository        PlaybackIntroEligibilityChecker
 	MarkerRegistry         *markers.Registry
@@ -2011,24 +2016,7 @@ func (h *PlaybackHandler) handleStartPlaybackLegacy(w http.ResponseWriter, r *ht
 			}
 		}
 	}
-	if h.ChapterThumbnailQueuer != nil && effectiveFile != nil {
-		slog.InfoContext(r.Context(),
-			"queueing chapter thumbnails", "component", "api",
-			"source",
-			"playback_start",
-			"content_id",
-			effectiveFile.ContentID,
-			"file_id",
-			effectiveFile.ID,
-			"target_seconds",
-			session.Position,
-		)
-		h.ChapterThumbnailQueuer.QueuePriorityFileAtPosition(
-			r.Context(),
-			effectiveFile.ID,
-			session.Position,
-		)
-	}
+	h.queuePlaybackPreviewAssets(r.Context(), effectiveFile, session.Position, "playback_start")
 	h.maybeQueueLazyPlaybackMarkers(r.Context(), session, effectiveFile)
 
 	// Direct-play and remux sessions reconstruct from the identity stream token

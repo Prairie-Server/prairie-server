@@ -138,6 +138,7 @@ export function useLibraryForm({
   const [chapterThumbnailsEnabled, setChapterThumbnailsEnabled] = useState(
     library?.chapter_thumbnails_enabled ?? false,
   );
+  const [trickplayEnabled, setTrickplayEnabled] = useState(library?.trickplay_enabled ?? false);
   const [introDetectionEnabled, setIntroDetectionEnabled] = useState(
     library?.intro_detection_enabled ?? false,
   );
@@ -266,6 +267,7 @@ export function useLibraryForm({
       metadata_language: metadataLanguage,
       auto_translate_metadata: autoTranslateMetadata,
       chapter_thumbnails_enabled: chapterThumbnailsEnabled,
+      trickplay_enabled: trickplayEnabled,
       intro_detection_enabled: introDetectionEnabled,
       trailer_kinds: trailerKinds,
     };
@@ -329,6 +331,8 @@ export function useLibraryForm({
     setAutoTranslateMetadata,
     chapterThumbnailsEnabled,
     setChapterThumbnailsEnabled,
+    trickplayEnabled,
+    setTrickplayEnabled,
     introDetectionEnabled,
     setIntroDetectionEnabled,
     trailerKinds,

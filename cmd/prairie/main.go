@@ -72,6 +72,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/markers"
 	"github.com/prairie-server/prairie-server/internal/mdblist"
 	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/trickplay"
 
 	// Built-in metadata providers self-register into the metadata package's
 	// builtin registry on import; buildProviders resolves their seeded chain
@@ -996,6 +997,7 @@ func main() {
 	// Published to the API from here rather than recomputed there: one decision,
 	// so the admin toggle cannot offer a capability the service does not have.
 	deps.ChapterThumbnailStoreReady = chapterThumbStore != nil
+	deps.TrickplayStoreReady = chapterThumbStore != nil
 	var chapterThumbService *chapterthumbs.Service
 	if deps.FileRepo != nil && deps.FolderRepo != nil && chapterThumbStore != nil {
 		chapterThumbService = chapterthumbs.NewService(
@@ -1014,6 +1016,22 @@ func main() {
 		if chapterThumbService != nil {
 			chapterThumbService.Start(appCtx)
 			deps.ChapterThumbnailQueuer = chapterThumbService
+		}
+	}
+	var trickplayService *trickplay.Service
+	trickplayObjStore := trickplayObjectStore(deps.S3Public, deps.ArtworkLocal)
+	if deps.FileRepo != nil && deps.FolderRepo != nil && trickplayObjStore != nil {
+		trickplayService = trickplay.NewService(
+			deps.FileRepo,
+			deps.FolderRepo,
+			settingsRepo,
+			trickplayObjStore,
+			cfg.Playback.FFmpegPath,
+			cfg.Playback.ChapterThumbnailWorkers,
+		)
+		if trickplayService != nil {
+			trickplayService.Start(appCtx)
+			deps.TrickplayQueuer = trickplayService
 		}
 	}
 
@@ -2164,6 +2182,9 @@ func main() {
 		}
 		if chapterBackfiller, ok := deps.ChapterThumbnailQueuer.(*chapterthumbs.Service); ok {
 			taskMgr.Register(tasks.NewChapterThumbnailBackfillTask(chapterBackfiller, 25))
+		}
+		if trickplayBackfiller, ok := deps.TrickplayQueuer.(*trickplay.Service); ok {
+			taskMgr.Register(tasks.NewTrickplayBackfillTask(trickplayBackfiller, 25))
 		}
 		taskMgr.Register(tasks.NewActivityLogCleanupTask(deps.DB, settingsRepo, activityPM))
 		taskMgr.Register(tasks.NewOperationalLogCleanupTask(deps.DB, settingsRepo, opsPM))
@@ -3642,6 +3663,19 @@ func (a *audiobooksSettingsAdapter) GetString(ctx context.Context, key string) (
 // assigned to an interface is not nil -- returning one would leave the caller's
 // `!= nil` guard satisfied by a store that panics on first use.
 func chapterThumbnailStore(s3 *s3client.Client, local *artworkstore.LocalStore) chapterthumbs.ObjectStore {
+	return selectArtworkObjectStore(s3, local)
+}
+
+func trickplayObjectStore(s3 *s3client.Client, local *artworkstore.LocalStore) trickplay.ObjectStore {
+	return selectArtworkObjectStore(s3, local)
+}
+
+type artworkObjectStore interface {
+	PutObject(ctx context.Context, bucket, key string, data []byte) error
+	Bucket() string
+}
+
+func selectArtworkObjectStore(s3 *s3client.Client, local *artworkstore.LocalStore) artworkObjectStore {
 	if s3 != nil {
 		return s3
 	}

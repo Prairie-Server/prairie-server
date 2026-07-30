@@ -120,6 +120,8 @@ function libraryFixture(partial: Pick<Library, "id" | "name" | "type">): Library
     auto_translate_metadata: false,
     chapter_thumbnails_enabled: false,
     chapter_thumbnails_supported: false,
+    trickplay_enabled: false,
+    trickplay_supported: false,
     intro_detection_enabled: false,
     trailer_kinds: [],
     sort_order: partial.id,

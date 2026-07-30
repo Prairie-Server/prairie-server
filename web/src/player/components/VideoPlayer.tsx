@@ -46,6 +46,7 @@ import type {
   PlaybackTransportRestart,
   PlayerAudioTrack,
   PlayerChapter,
+  PlayerTrickplay,
   PlayMethod,
   PlayerFileVersion,
   PlayerSubtitleInfo,
@@ -100,6 +101,7 @@ interface VideoPlayerProps {
   versions?: PlayerFileVersion[];
   activeFileId?: number | null;
   chapters?: PlayerChapter[];
+  trickplay?: PlayerTrickplay | null;
   onSwitchVersion?: (fileId: number, currentPosition: number) => void;
   subtitleUrls: PlayerSubtitleInfo[];
   initialPosition: number;
@@ -191,6 +193,7 @@ export function VideoPlayer({
   versions = [],
   activeFileId,
   chapters = [],
+  trickplay = null,
   onSwitchVersion,
   subtitleUrls,
   initialPosition,
@@ -2513,6 +2516,7 @@ export function VideoPlayer({
           duration={duration}
           buffered={buffered}
           chapters={chapters}
+          trickplay={trickplay}
           regions={markerRegions}
           editing={markerEditor.editing}
           activeEditKind={markerEditor.activeKind}
