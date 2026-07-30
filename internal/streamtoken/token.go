@@ -48,6 +48,10 @@ type Claims struct {
 	// MaxAudioChannels is the client's declared channel ceiling, carried so a
 	// reconstructed remux keeps the layout instead of defaulting to stereo.
 	MaxAudioChannels int `json:"mac,omitempty"`
+	// RemuxContainer is the chosen progressive-remux container, carried so a
+	// reconstructed remux does not silently switch containers mid-stream.
+	// Empty means the MP4 default.
+	RemuxContainer string `json:"rmc,omitempty"`
 	// DVProfile is the file's Dolby Vision profile (0 = none); remux nodes
 	// use it to strip dangling profile 7 RPUs. Absent in older tokens, which
 	// decodes as 0 (no strip — the pre-existing behavior).

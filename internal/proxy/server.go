@@ -177,7 +177,13 @@ func (s *Server) handleRemux(w http.ResponseWriter, r *http.Request) {
 	// Stereo: the stream token's recipe carries no channel ceiling, so a
 	// reconstructed proxy stream keeps the historical downmix rather than
 	// guessing a layout the client never declared.
-	_ = playback.ServeRemuxWithDVMode(w, r, claims.MediaPath, "mp4", seekSeconds, claims.TranscodeAudio, claims.AudioTrackIndex, claims.DVProfile, playback.RemuxDVMode(claims.RemuxDVMode), s.watcher.Config().Playback.FFmpegPath, 2)
+	//
+	// The container comes from the claims so that the same token yields the same
+	// container here as on the origin. Serving MP4 for a session the origin
+	// decided to keep as Matroska would make delivery depend on which server
+	// answered, which is exactly the kind of difference a mid-stream reconnect
+	// exposes.
+	_ = playback.ServeRemuxWithDVMode(w, r, claims.MediaPath, playback.RemuxFFmpegFormat(claims.RemuxContainer), seekSeconds, claims.TranscodeAudio, claims.AudioTrackIndex, claims.DVProfile, playback.RemuxDVMode(claims.RemuxDVMode), s.watcher.Config().Playback.FFmpegPath, 2)
 }
 
 func (s *Server) handleTranscodeManifest(w http.ResponseWriter, r *http.Request) {
