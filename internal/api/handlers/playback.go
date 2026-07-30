@@ -1142,8 +1142,7 @@ func adjustPlaybackForSelectedAudio(
 		return method, transcodeAudio, audioTrackIndex
 	}
 
-	selectedTrack := file.AudioTracks[audioTrackIndex]
-	audioSupported := clientSupportsAudioCodec(req, selectedTrack.Codec)
+	audioSupported := clientSupportsAudioCodec(req, file.AudioTracks[audioTrackIndex].Codec)
 
 	// When the selected track is undecodable, prefer switching tracks over
 	// re-encoding. A Blu-ray remux usually ships a lossy companion in the same
@@ -1160,7 +1159,6 @@ func adjustPlaybackForSelectedAudio(
 			file.AudioTracks, audioTrackIndex, req.CodecsAudio, req.MaxAudioChannels,
 		); ok {
 			audioTrackIndex = idx
-			selectedTrack = file.AudioTracks[idx]
 			audioSupported = true
 		}
 	}
