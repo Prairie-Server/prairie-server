@@ -64,6 +64,40 @@ describe("useQualityLadder", () => {
     expect(result.current.some((rung) => rung.id === "720p")).toBe(true);
   });
 
+  // All-or-nothing: a partially valid response means the contract shifted, and
+  // serving the survivors would hide that behind a truncated menu.
+  it("rejects a ladder with any incomplete rung", async () => {
+    playerFetch.mockResolvedValue({
+      rungs: [
+        { id: "1080p", label: "1080p", resolution: "1080p", height: 1080, bitrate_kbps: 6000 },
+        { id: "720p", label: "720p", resolution: "720p", height: 720 },
+      ],
+      modes: ["auto"],
+    });
+
+    const { result } = render();
+    await waitFor(() => expect(result.current.length).toBeGreaterThan(0));
+    // The fallback has 7 rungs; a two-rung response was not adopted.
+    expect(result.current.length).toBeGreaterThan(2);
+  });
+
+  // Caching the fallback after an invalid response would make every later mount
+  // skip the server for the rest of the page's lifetime.
+  it("does not cache the fallback after an invalid response", async () => {
+    playerFetch.mockResolvedValueOnce({ rungs: [], modes: [] });
+    const first = render();
+    await waitFor(() => expect(first.result.current.length).toBeGreaterThan(0));
+    first.unmount();
+
+    playerFetch.mockResolvedValue({
+      rungs: [{ id: "540p", label: "540p", resolution: "540p", height: 540, bitrate_kbps: 1800 }],
+      modes: ["auto"],
+    });
+    const second = render();
+    await waitFor(() => expect(second.result.current).toHaveLength(1));
+    expect(second.result.current[0]?.id).toBe("540p");
+  });
+
   it("never renders an empty ladder, even on the first frame", () => {
     playerFetch.mockReturnValue(new Promise(() => {}));
 

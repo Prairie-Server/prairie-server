@@ -99,6 +99,32 @@ function renderQuality() {
 }
 
 describe("useTranscodeQuality", () => {
+  // RESOLUTION_HEIGHT is a client-side allowlist, so a resolution the server
+  // introduces later resolves to 0 there -- and a native height of 0 filters out
+  // every rung, leaving the viewer no way to escape a stalling stream. The height
+  // must come from the matching ladder rung instead.
+  it("offers lower rungs for a resolution the client does not hardcode", async () => {
+    const exotic: PlayerFileVersion = { ...version, resolution: "1440p" };
+    const { result } = renderHook(
+      () =>
+        useTranscodeQuality({
+          sessionId: "sess-1",
+          selectedVersion: exotic,
+          versions: [exotic],
+          playMethod: "remux",
+          initialPosition: 0,
+        }),
+      { wrapper },
+    );
+
+    await waitFor(() => expect(result.current.qualityOptions.length).toBeGreaterThan(2));
+    const ids = result.current.qualityOptions.map((option) => option.id);
+    expect(ids).toContain("1080p");
+    expect(ids).toContain("720p");
+    // Nothing at or above the source: 1440p sits between the 2160p and 1080p rungs.
+    expect(ids).not.toContain("2160p");
+  });
+
   it("adopts an audio-switch transport without starting another transcode", async () => {
     const { result } = renderHook(
       () =>

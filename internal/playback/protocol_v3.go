@@ -22,6 +22,7 @@ const (
 	FeatureSeekReanchorV3         = "seek_reanchor_v1"
 	FeatureDirectStreamResumeV3   = "direct_stream_resume_v1"
 	FeaturePlanSourceDurationV3   = "plan_source_duration_v1"
+	FeatureQualityLadderV3        = "quality_ladder_v1"
 	PlanRecipeVersionV3           = "v3.2"
 	ClientDV7ToDV81V3             = "client_dv7_to_dv81"
 	ClientDV7ToHDR10V3            = "client_dv7_to_hdr10"
@@ -51,6 +52,11 @@ func ServerFeaturesV3() []string {
 		// absent field, and a client cannot decide whether its own catalog
 		// fallback is still required.
 		FeaturePlanSourceDurationV3,
+		// Advertises GET /playback/quality-ladder. Without it a client cannot
+		// distinguish "this server has no ladder endpoint" from a transport
+		// error, and would have to infer support from a 404 -- which is version
+		// sniffing, and indistinguishable from a proxy swallowing the route.
+		FeatureQualityLadderV3,
 	}
 }
 

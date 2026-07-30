@@ -117,6 +117,33 @@ function playMethodLabel(method: PlayMethod | null): string {
   }
 }
 
+/**
+ * The source's height in pixels, from the most authoritative source available.
+ *
+ * A native height of 0 filters out every rung, leaving an empty quality menu and
+ * no way for a viewer to escape a stalling stream — so this deliberately has
+ * three fallbacks rather than trusting any single table:
+ *
+ * 1. The runtime ladder, which is the server's own answer and needs no client
+ *    release when a rung is added.
+ * 2. RESOLUTION_HEIGHT, for resolutions the ladder does not mention (a source
+ *    above every rung, say).
+ * 3. The digits in the token itself. "1440p" means 1440 whether or not either
+ *    table has heard of it, and this mirrors resolutionHeightV3 server-side.
+ */
+function resolveNativeHeight(resolution: string, ladder: QualityLadderRung[]): number {
+  const fromLadder = ladder.find((rung) => rung.resolution === resolution)?.height;
+  if (fromLadder != null && fromLadder > 0) return fromLadder;
+
+  const fromTable = RESOLUTION_HEIGHT[resolution];
+  if (fromTable != null && fromTable > 0) return fromTable;
+
+  const normalized = resolution.trim().toLowerCase();
+  if (normalized === "4k" || normalized === "uhd") return 2160;
+  const parsed = Number.parseInt(normalized.replace(/p$/, ""), 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 0;
+}
+
 function buildQualityOptions(
   version: PlayerFileVersion | undefined,
   playMethod: PlayMethod | null,
@@ -150,8 +177,7 @@ function buildQualityOptions(
     isOriginal: false,
   });
 
-  // Determine the file's native height.
-  const nativeHeight = RESOLUTION_HEIGHT[version.resolution] ?? 0;
+  const nativeHeight = resolveNativeHeight(version.resolution, ladder);
 
   // Add transcode options below native resolution. Rungs at or above native are
   // omitted: "Original" already covers playing at source resolution, and an
