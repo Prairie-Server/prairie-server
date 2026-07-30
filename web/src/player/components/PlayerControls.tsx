@@ -300,7 +300,16 @@ export function PlayerControls({
           </div>
 
           {/* ─── Right: Utility rail ─── */}
-          <div className="flex min-w-0 [scrollbar-width:none] items-center justify-end gap-0.5 overflow-x-auto [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          {/* overflow-x-auto lets the rail scroll when too many controls are shown
+              to fit, but it also makes this a scroll container -- and a scroll
+              container clips both axes, because CSS computes an overflow of
+              `visible` to `auto` when the other axis is not `visible`. Every menu
+              in this rail opens upward (absolute bottom-full), so the panel lands
+              outside the container's box and is clipped away entirely: the menu
+              opens, the DOM contains it, and nothing is visible. Restoring
+              `visible` from sm up -- where the rail has room and does not need to
+              scroll -- lets those panels escape again. */}
+          <div className="flex min-w-0 [scrollbar-width:none] items-center justify-end gap-0.5 overflow-x-auto [-ms-overflow-style:none] sm:overflow-visible [&::-webkit-scrollbar]:hidden">
             {/* Mute always available; full slider from sm+ */}
             <div className="sm:hidden">
               <VolumeControl
