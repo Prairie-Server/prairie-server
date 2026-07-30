@@ -147,9 +147,15 @@ export function LiveTVPlayer({
         if (!data.fatal) return;
         // Surface the real cause: the handler used to swallow details, which hid
         // whether a stall was a network, media, or buffer problem.
+        const frag = data.frag as { sn?: number | string; url?: string } | undefined;
         console.warn("livetv hls fatal error", {
           type: data.type,
           details: data.details,
+          sourceBufferName: (data as { sourceBufferName?: string }).sourceBufferName,
+          error: data.error?.message ?? data.error,
+          fragSn: frag?.sn,
+          fragUrl: frag?.url,
+          mediaError: video.error?.message ?? video.error?.code ?? null,
         });
         const now = Date.now();
         if (now - lastRecoveryAtRef.current < 1500) return;
@@ -176,6 +182,22 @@ export function LiveTVPlayer({
           hls.startLoad();
           return;
         }
+        // bufferAppendError is usually a bad fragment (video-only first segment,
+        // corrupt TS, track layout change). recoverMediaError alone re-appends
+        // the same frag; skip forward to the live edge so the sliding window can
+        // age the offender out before we reset MSE.
+        if (
+          data.details === Hls.ErrorDetails.BUFFER_APPEND_ERROR &&
+          networkRecoveryRef.current < 5
+        ) {
+          networkRecoveryRef.current += 1;
+          if (hls.liveSyncPosition != null) {
+            video.currentTime = hls.liveSyncPosition;
+          }
+          hls.recoverMediaError();
+          hls.startLoad();
+          return;
+        }
         if (data.type === Hls.ErrorTypes.MEDIA_ERROR && networkRecoveryRef.current < 3) {
           networkRecoveryRef.current += 1;
           hls.recoverMediaError();
@@ -185,7 +207,9 @@ export function LiveTVPlayer({
         const friendly =
           detail === "manifestLoadError"
             ? "Could not load the live stream playlist. The channel may still be tuning — try again."
-            : detail;
+            : detail === "bufferAppendError"
+              ? "Live stream media was rejected by the browser. Try switching channels or refreshing."
+              : detail;
         setError(friendly);
         setStarting(false);
       });

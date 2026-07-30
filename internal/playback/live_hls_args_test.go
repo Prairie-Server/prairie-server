@@ -27,11 +27,17 @@ func TestBuildLiveHLSArgsCopiesByDefault(t *testing.T) {
 	if !hasFlagValue(args, "-c:v", "copy") || !hasFlagValue(args, "-c:a", "copy") {
 		t.Fatalf("expected copy for both streams: %s", argsString(args))
 	}
+	if !hasFlagValue(args, "-map", "0:a:0?") {
+		t.Fatalf("copy sessions keep optional audio mapping: %s", argsString(args))
+	}
 	if !hasFlagValue(args, "-flags", "low_delay") {
 		t.Fatalf("expected the low-latency remux flags: %s", argsString(args))
 	}
 	if strings.Contains(argsString(args), "libx264") {
 		t.Fatalf("copy session must not encode: %s", argsString(args))
+	}
+	if strings.Contains(argsString(args), "aresample=") || strings.Contains(argsString(args), "avoid_negative_ts") {
+		t.Fatalf("copy remux must not add encode-only continuity flags: %s", argsString(args))
 	}
 }
 
@@ -52,6 +58,18 @@ func TestBuildLiveHLSArgsEncodesForBrowsers(t *testing.T) {
 	}
 	if !hasFlagValue(args, "-c:a", "aac") || !hasFlagValue(args, "-ac", "2") {
 		t.Fatalf("expected an AAC stereo downmix: %s", joined)
+	}
+	if !hasFlagValue(args, "-map", "0:a:0") {
+		t.Fatalf("encoded audio must require an audio track: %s", joined)
+	}
+	if strings.Contains(joined, "0:a:0?") {
+		t.Fatalf("encoded audio must not use optional audio mapping: %s", joined)
+	}
+	if !hasFlagValue(args, "-af", "aresample=async=1:first_pts=0") {
+		t.Fatalf("expected audio continuity filter so segment 0 carries AAC: %s", joined)
+	}
+	if !hasFlagValue(args, "-avoid_negative_ts", "make_zero") {
+		t.Fatalf("expected zero-based timestamps for encoded live HLS: %s", joined)
 	}
 	if !hasFlagValue(args, "-pix_fmt", "yuv420p") {
 		t.Fatalf("expected 8-bit output for MSE: %s", joined)
