@@ -376,9 +376,11 @@ export function MetadataFields({ form }: { form: LibraryFormController }) {
 export function AdvancedFields({
   form,
   chapterThumbnailsSupported,
+  trickplaySupported,
 }: {
   form: LibraryFormController;
   chapterThumbnailsSupported: boolean;
+  trickplaySupported: boolean;
 }) {
   return (
     <div className="space-y-3">
@@ -399,6 +401,25 @@ export function AdvancedFields({
           checked={form.chapterThumbnailsEnabled}
           disabled={!chapterThumbnailsSupported}
           onCheckedChange={form.setChapterThumbnailsEnabled}
+        />
+      </SettingCard>
+      <SettingCard
+        htmlFor="trickplay-switch"
+        title="Generate seek previews"
+        description="Builds sprite-sheet previews for the scrubber so hovering or dragging the seek bar shows a frame from that moment. Stored with the rest of your artwork."
+        footer={
+          !trickplaySupported ? (
+            <p className="text-warning text-xs">
+              Artwork storage is not configured, so there is nowhere to put the generated images.
+            </p>
+          ) : null
+        }
+      >
+        <Switch
+          id="trickplay-switch"
+          checked={form.trickplayEnabled}
+          disabled={!trickplaySupported}
+          onCheckedChange={form.setTrickplayEnabled}
         />
       </SettingCard>
       <SettingCard

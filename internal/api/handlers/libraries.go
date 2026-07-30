@@ -66,14 +66,17 @@ type LibraryHandler struct {
 	// bucket, while thumbnails are written to the public asset store, which may be
 	// public S3 or the local artwork volume. Gating on S3Meta made the toggle
 	// unavailable on installs that store artwork locally and also checked the
-	// wrong bucket.
+	// wrong bucket. Trickplay sheets use the same store.
 	ChapterThumbnailStoreReady bool
-	PresignTTL                 time.Duration
-	appCtx                     context.Context
-	EventBus                   cache.EventBus
-	EventsHub                  *evt.Hub
-	ScanRegistry               *evt.ScanRegistry
-	ScanQueue                  libraryScanQueuer
+	// TrickplayStoreReady mirrors ChapterThumbnailStoreReady; both features share
+	// the artwork object store.
+	TrickplayStoreReady bool
+	PresignTTL          time.Duration
+	appCtx              context.Context
+	EventBus            cache.EventBus
+	EventsHub           *evt.Hub
+	ScanRegistry        *evt.ScanRegistry
+	ScanQueue           libraryScanQueuer
 }
 
 // LibraryImageStore provides S3 operations for library poster images.
@@ -194,6 +197,7 @@ type createLibraryRequest struct {
 	Name                     string   `json:"name"`
 	MetadataLanguage         string   `json:"metadata_language,omitempty"`
 	ChapterThumbnailsEnabled bool     `json:"chapter_thumbnails_enabled,omitempty"`
+	TrickplayEnabled         bool     `json:"trickplay_enabled,omitempty"`
 	IntroDetectionEnabled    bool     `json:"intro_detection_enabled,omitempty"`
 	// TrailerKinds is the allow-list of remote video kinds fetched during
 	// metadata refresh; omitted = default (all provider kinds).
@@ -209,6 +213,7 @@ type updateLibraryRequest struct {
 	MetadataLanguage         *string   `json:"metadata_language,omitempty"`
 	AutoTranslateMetadata    *bool     `json:"auto_translate_metadata,omitempty"`
 	ChapterThumbnailsEnabled *bool     `json:"chapter_thumbnails_enabled,omitempty"`
+	TrickplayEnabled         *bool     `json:"trickplay_enabled,omitempty"`
 	IntroDetectionEnabled    *bool     `json:"intro_detection_enabled,omitempty"`
 	// TrailerKinds is the allow-list of remote video kinds fetched during
 	// metadata refresh (ExtraKind values); empty array disables remote videos.
@@ -248,6 +253,8 @@ type libraryResponse struct {
 	AutoTranslateMetadata      bool       `json:"auto_translate_metadata"`
 	ChapterThumbnailsEnabled   bool       `json:"chapter_thumbnails_enabled"`
 	ChapterThumbnailsSupported bool       `json:"chapter_thumbnails_supported"`
+	TrickplayEnabled           bool       `json:"trickplay_enabled"`
+	TrickplaySupported         bool       `json:"trickplay_supported"`
 	IntroDetectionEnabled      bool       `json:"intro_detection_enabled"`
 	TrailerKinds               []string   `json:"trailer_kinds"`
 	SortOrder                  int        `json:"sort_order"`
@@ -384,6 +391,8 @@ func toLibraryResponse(f *models.MediaFolder) libraryResponse {
 		AutoTranslateMetadata:      f.AutoTranslateMetadata,
 		ChapterThumbnailsEnabled:   f.ChapterThumbnailsEnabled,
 		ChapterThumbnailsSupported: false,
+		TrickplayEnabled:           f.TrickplayEnabled,
+		TrickplaySupported:         false,
 		IntroDetectionEnabled:      f.IntroDetectionEnabled,
 		TrailerKinds:               trailerKinds,
 		SortOrder:                  f.SortOrder,
@@ -399,6 +408,7 @@ func toLibraryResponse(f *models.MediaFolder) libraryResponse {
 func (h *LibraryHandler) toLibraryResponseWithPoster(ctx context.Context, f *models.MediaFolder) libraryResponse {
 	resp := toLibraryResponse(f)
 	resp.ChapterThumbnailsSupported = h.ChapterThumbnailStoreReady
+	resp.TrickplaySupported = h.TrickplayStoreReady || h.ChapterThumbnailStoreReady
 	if f.PosterPath != "" && h.S3Meta != nil {
 		ttl := h.PresignTTL
 		if ttl <= 0 {
@@ -585,6 +595,10 @@ func (h *LibraryHandler) HandleCreateLibrary(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "bad_request", "Chapter thumbnails require configured artwork storage")
 		return
 	}
+	if req.TrickplayEnabled && !(h.TrickplayStoreReady || h.ChapterThumbnailStoreReady) {
+		writeError(w, http.StatusBadRequest, "bad_request", "Seek previews require configured artwork storage")
+		return
+	}
 
 	folder, err := h.folderRepo.Create(r.Context(), catalog.CreateFolderInput{
 		Paths:                    req.Paths,
@@ -592,6 +606,7 @@ func (h *LibraryHandler) HandleCreateLibrary(w http.ResponseWriter, r *http.Requ
 		Name:                     req.Name,
 		MetadataLanguage:         req.MetadataLanguage,
 		ChapterThumbnailsEnabled: req.ChapterThumbnailsEnabled,
+		TrickplayEnabled:         req.TrickplayEnabled,
 		IntroDetectionEnabled:    req.IntroDetectionEnabled,
 		TrailerKinds:             req.TrailerKinds,
 	})
@@ -669,6 +684,10 @@ func (h *LibraryHandler) HandleUpdateLibrary(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "bad_request", "Chapter thumbnails require configured artwork storage")
 		return
 	}
+	if req.TrickplayEnabled != nil && *req.TrickplayEnabled && !(h.TrickplayStoreReady || h.ChapterThumbnailStoreReady) {
+		writeError(w, http.StatusBadRequest, "bad_request", "Seek previews require configured artwork storage")
+		return
+	}
 
 	// Fetch the folder before updating so we can detect path changes.
 	oldFolder, err := h.folderRepo.GetByID(r.Context(), id)
@@ -690,6 +709,7 @@ func (h *LibraryHandler) HandleUpdateLibrary(w http.ResponseWriter, r *http.Requ
 		MetadataLanguage:         req.MetadataLanguage,
 		AutoTranslateMetadata:    req.AutoTranslateMetadata,
 		ChapterThumbnailsEnabled: req.ChapterThumbnailsEnabled,
+		TrickplayEnabled:         req.TrickplayEnabled,
 		IntroDetectionEnabled:    req.IntroDetectionEnabled,
 		TrailerKinds:             req.TrailerKinds,
 	})

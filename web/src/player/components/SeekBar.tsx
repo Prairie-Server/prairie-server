@@ -1,11 +1,12 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import type { MarkerKind, MarkerRegionView, PlayerChapter } from "../types";
+import type { MarkerKind, MarkerRegionView, PlayerChapter, PlayerTrickplay } from "../types";
 
 interface SeekBarProps {
   currentTime: number;
   duration: number;
   buffered: TimeRanges | null;
   chapters?: PlayerChapter[];
+  trickplay?: PlayerTrickplay | null;
   /** Marker regions to highlight on the track (intro/recap/credits/preview). */
   regions?: MarkerRegionView[];
   /** When true, the active region shows draggable start/end handles. */
@@ -47,6 +48,48 @@ const MARKER_LABELS: Record<MarkerKind, string> = {
   preview: "Preview",
 };
 
+export interface TrickplayTilePreview {
+  url: string;
+  width: number;
+  height: number;
+  backgroundPosition: string;
+  backgroundSize: string;
+}
+
+export function resolveTrickplayTile(
+  trickplay: PlayerTrickplay | null | undefined,
+  seconds: number,
+): TrickplayTilePreview | null {
+  if (!trickplay || trickplay.thumbnail_count <= 0 || !trickplay.sheets?.length) {
+    return null;
+  }
+  const interval = trickplay.interval_seconds > 0 ? trickplay.interval_seconds : 10;
+  const columns = trickplay.tile_columns > 0 ? trickplay.tile_columns : 10;
+  const rows = trickplay.tile_rows > 0 ? trickplay.tile_rows : 10;
+  const width = trickplay.width > 0 ? trickplay.width : 320;
+  const height = trickplay.height > 0 ? trickplay.height : Math.round(width * 9) / 16;
+  const tilesPerSheet = columns * rows;
+  const tileIndex = Math.min(
+    Math.max(0, Math.floor(seconds / interval)),
+    Math.max(0, trickplay.thumbnail_count - 1),
+  );
+  const sheetIndex = Math.floor(tileIndex / tilesPerSheet);
+  const sheet = trickplay.sheets.find((entry) => entry.index === sheetIndex);
+  if (!sheet?.url) {
+    return null;
+  }
+  const local = tileIndex % tilesPerSheet;
+  const col = local % columns;
+  const row = Math.floor(local / columns);
+  return {
+    url: sheet.url,
+    width,
+    height,
+    backgroundPosition: `-${col * width}px -${row * height}px`,
+    backgroundSize: `${columns * width}px ${rows * height}px`,
+  };
+}
+
 function findChapterAtTime(chapters: PlayerChapter[], time: number): PlayerChapter | null {
   for (const chapter of chapters) {
     if (time >= chapter.start_seconds && time < chapter.end_seconds) {
@@ -85,6 +128,7 @@ export function SeekBar({
   duration,
   buffered,
   chapters = [],
+  trickplay = null,
   regions = [],
   editing = false,
   activeEditKind = null,
@@ -122,9 +166,18 @@ export function SeekBar({
   );
 
   const [dragTime, setDragTime] = useState<number | null>(null);
-  const hoverChapter = useMemo(
-    () => (hoverTime === null ? null : findChapterAtTime(chapters, hoverTime)),
-    [chapters, hoverTime],
+  const previewTime = dragTime ?? hoverTime;
+  const previewChapter = useMemo(
+    () => (previewTime === null ? null : findChapterAtTime(chapters, previewTime)),
+    [chapters, previewTime],
+  );
+  const previewRegion = useMemo(
+    () => (previewTime === null ? null : findRegionAtTime(regions, previewTime)),
+    [regions, previewTime],
+  );
+  const trickplayTile = useMemo(
+    () => (previewTime === null ? null : resolveTrickplayTile(trickplay, previewTime)),
+    [previewTime, trickplay],
   );
   const hoverRegion = useMemo(
     () => (hoverTime === null ? null : findRegionAtTime(regions, hoverTime)),
@@ -264,15 +317,16 @@ export function SeekBar({
 
   const activeRegion =
     editing && activeEditKind ? (regions.find((r) => r.kind === activeEditKind) ?? null) : null;
+  const showPreviewBubble = previewTime !== null && edgeDrag === null;
 
   return (
     <div className="player-seekbar group/seek relative w-full px-2">
-      {/* Hover time preview */}
-      {hoverTime !== null && !dragging && edgeDrag === null && (
+      {/* Hover / drag time preview */}
+      {showPreviewBubble && (
         <div
           className="pointer-events-none absolute z-10 flex flex-col items-center"
           style={{
-            left: `clamp(24px, ${(hoverTime / (duration || 1)) * 100}%, calc(100% - 24px))`,
+            left: `clamp(24px, ${(previewTime! / (duration || 1)) * 100}%, calc(100% - 24px))`,
             bottom: "calc(100% + 8px)",
             transform: "translateX(-50%)",
           }}
@@ -280,15 +334,26 @@ export function SeekBar({
           <div
             className={[
               "overflow-hidden rounded-lg border border-white/[0.08] bg-neutral-900/95 text-white shadow-2xl backdrop-blur-md",
-              hoverChapter || hoverRegion ? "w-44" : "",
+              trickplayTile || previewChapter || previewRegion ? "w-44" : "",
             ].join(" ")}
           >
-            {/* Thumbnail or chapter placeholder */}
-            {hoverChapter &&
-              (hoverChapter.thumbnail_url ? (
+            {trickplayTile ? (
+              <div
+                className="aspect-video w-full bg-black"
+                style={{
+                  backgroundImage: `url(${trickplayTile.url})`,
+                  backgroundRepeat: "no-repeat",
+                  backgroundPosition: trickplayTile.backgroundPosition,
+                  backgroundSize: trickplayTile.backgroundSize,
+                }}
+                role="img"
+                aria-label="Seek preview"
+              />
+            ) : previewChapter ? (
+              previewChapter.thumbnail_url ? (
                 <img
-                  src={hoverChapter.thumbnail_url}
-                  alt={hoverChapter.title}
+                  src={previewChapter.thumbnail_url}
+                  alt={previewChapter.title}
                   className="aspect-video w-full object-cover"
                 />
               ) : (
@@ -306,29 +371,30 @@ export function SeekBar({
                     <path d="m7 2 0 20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5" />
                   </svg>
                 </div>
-              ))}
+              )
+            ) : null}
             <div className="px-2.5 py-1.5">
-              {hoverRegion && (
+              {previewRegion && (
                 <div className="mb-1 flex items-center gap-1.5 text-[11px] leading-tight font-semibold text-white">
                   <span
                     aria-hidden="true"
                     className={[
                       "h-1.5 w-1.5 rounded-full",
-                      REGION_DOT_COLORS[hoverRegion.kind],
+                      REGION_DOT_COLORS[previewRegion.kind],
                     ].join(" ")}
                   />
-                  <span className="truncate">{MARKER_LABELS[hoverRegion.kind]}</span>
+                  <span className="truncate">{MARKER_LABELS[previewRegion.kind]}</span>
                   <span className="text-white/45 tabular-nums">
-                    {formatTime(hoverRegion.start)}-{formatTime(hoverRegion.end)}
+                    {formatTime(previewRegion.start)}-{formatTime(previewRegion.end)}
                   </span>
                 </div>
               )}
               <div className="text-xs font-semibold text-white tabular-nums">
-                {formatTime(hoverTime)}
+                {formatTime(previewTime!)}
               </div>
-              {hoverChapter && (
+              {previewChapter && (
                 <div className="mt-0.5 truncate text-[11px] leading-tight text-white/50">
-                  {hoverChapter.title}
+                  {previewChapter.title}
                 </div>
               )}
             </div>

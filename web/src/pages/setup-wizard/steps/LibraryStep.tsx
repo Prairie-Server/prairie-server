@@ -41,6 +41,7 @@ export function LibraryStep() {
       <LibraryForm
         library={null}
         chapterThumbnailsSupported={libraries[0]?.chapter_thumbnails_supported ?? true}
+        trickplaySupported={libraries[0]?.trickplay_supported ?? true}
         onSaved={handleLibrarySaved}
         resetAfterCreate
         submitLabel="Add library"

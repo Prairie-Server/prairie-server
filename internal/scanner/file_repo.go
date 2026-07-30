@@ -52,6 +52,7 @@ const fileColumns = `id, content_id, episode_id, extra_id, season_number, episod
 	codec_video, codec_audio, resolution, audio_channels, hdr, container,
 	duration, bitrate, video_tracks, audio_tracks, subtitle_tracks, external_subtitles, chapters,
 	chapter_thumbnail_retry_after, chapter_thumbnail_failure_count, chapter_thumbnail_last_error,
+	trickplay,
 	intro_start, intro_end, credits_start, credits_end, recap_start, recap_end, preview_start, preview_end, markers_source, markers_confidence,
 	intro_markers_source, intro_markers_provider, intro_markers_confidence, intro_markers_algorithm, intro_markers_detected_at,
 	credits_markers_source, credits_markers_provider, credits_markers_confidence, credits_markers_algorithm, credits_markers_detected_at,
@@ -75,6 +76,7 @@ const mfFileColumns = `mf.id, mf.content_id, mf.episode_id, mf.extra_id, mf.seas
 	mf.codec_video, mf.codec_audio, mf.resolution, mf.audio_channels, mf.hdr, mf.container,
 	mf.duration, mf.bitrate, mf.video_tracks, mf.audio_tracks, mf.subtitle_tracks, mf.external_subtitles, mf.chapters,
 	mf.chapter_thumbnail_retry_after, mf.chapter_thumbnail_failure_count, mf.chapter_thumbnail_last_error,
+	mf.trickplay,
 	mf.intro_start, mf.intro_end, mf.credits_start, mf.credits_end, mf.recap_start, mf.recap_end, mf.preview_start, mf.preview_end, mf.markers_source, mf.markers_confidence,
 	mf.intro_markers_source, mf.intro_markers_provider, mf.intro_markers_confidence, mf.intro_markers_algorithm, mf.intro_markers_detected_at,
 	mf.credits_markers_source, mf.credits_markers_provider, mf.credits_markers_confidence, mf.credits_markers_algorithm, mf.credits_markers_detected_at,
@@ -118,7 +120,7 @@ func scanMediaFile(row pgx.Row) (*models.MediaFile, error) {
 	var multiEpisodeStart, multiEpisodeEnd *int
 	var presentationKind, presentationGroupKey *string
 	var chapterThumbnailRetryAfter *time.Time
-	var videoTracksJSON, audioTracksJSON, subtitleTracksJSON, externalSubtitlesJSON, chaptersJSON []byte
+	var videoTracksJSON, audioTracksJSON, subtitleTracksJSON, externalSubtitlesJSON, chaptersJSON, trickplayJSON []byte
 
 	err := row.Scan(
 		&f.ID,
@@ -157,6 +159,7 @@ func scanMediaFile(row pgx.Row) (*models.MediaFile, error) {
 		&chapterThumbnailRetryAfter,
 		&chapterThumbnailFailureCount,
 		&chapterThumbnailLastError,
+		&trickplayJSON,
 		&f.IntroStart,
 		&f.IntroEnd,
 		&f.CreditsStart,
@@ -390,6 +393,14 @@ func scanMediaFile(row pgx.Row) (*models.MediaFile, error) {
 		}
 	}
 
+	if len(trickplayJSON) > 0 {
+		var trickplay models.MediaTrickplay
+		if err := json.Unmarshal(trickplayJSON, &trickplay); err != nil {
+			return nil, fmt.Errorf("unmarshaling trickplay: %w", err)
+		}
+		f.Trickplay = &trickplay
+	}
+
 	return &f, nil
 }
 
@@ -428,7 +439,7 @@ func scanMediaFiles(rows pgx.Rows) ([]*models.MediaFile, error) {
 		var multiEpisodeStart, multiEpisodeEnd *int
 		var presentationKind, presentationGroupKey *string
 		var chapterThumbnailRetryAfter *time.Time
-		var videoTracksJSON, audioTracksJSON, subtitleTracksJSON, externalSubtitlesJSON, chaptersJSON []byte
+		var videoTracksJSON, audioTracksJSON, subtitleTracksJSON, externalSubtitlesJSON, chaptersJSON, trickplayJSON []byte
 
 		err := rows.Scan(
 			&f.ID,
@@ -467,6 +478,7 @@ func scanMediaFiles(rows pgx.Rows) ([]*models.MediaFile, error) {
 			&chapterThumbnailRetryAfter,
 			&chapterThumbnailFailureCount,
 			&chapterThumbnailLastError,
+			&trickplayJSON,
 			&f.IntroStart,
 			&f.IntroEnd,
 			&f.CreditsStart,
@@ -694,6 +706,14 @@ func scanMediaFiles(rows pgx.Rows) ([]*models.MediaFile, error) {
 			if err := json.Unmarshal(chaptersJSON, &f.Chapters); err != nil {
 				return nil, fmt.Errorf("unmarshaling chapters: %w", err)
 			}
+		}
+
+		if len(trickplayJSON) > 0 {
+			var trickplay models.MediaTrickplay
+			if err := json.Unmarshal(trickplayJSON, &trickplay); err != nil {
+				return nil, fmt.Errorf("unmarshaling trickplay: %w", err)
+			}
+			f.Trickplay = &trickplay
 		}
 
 		files = append(files, &f)
@@ -3649,6 +3669,63 @@ func (r *FileRepository) ListMissingChapterThumbnails(ctx context.Context, limit
 	rows, err := r.pool.Query(ctx, query, limit)
 	if err != nil {
 		return nil, fmt.Errorf("querying files missing chapter thumbnails: %w", err)
+	}
+	defer rows.Close()
+
+	return scanMediaFiles(rows)
+}
+
+func (r *FileRepository) UpdateTrickplayState(
+	ctx context.Context,
+	fileID int,
+	trickplay *models.MediaTrickplay,
+) (*models.MediaFile, error) {
+	var trickplayJSON []byte
+	var err error
+	if trickplay != nil {
+		trickplayJSON, err = serializeJSONB(trickplay)
+		if err != nil {
+			return nil, fmt.Errorf("marshaling trickplay: %w", err)
+		}
+	}
+
+	row := r.pool.QueryRow(ctx, `
+		UPDATE media_files
+		SET trickplay = $2,
+		    updated_at = NOW()
+		WHERE id = $1
+		RETURNING `+fileColumns,
+		fileID,
+		trickplayJSON,
+	)
+	return scanMediaFile(row)
+}
+
+// ListMissingTrickplay returns present media files in enabled, opted-in
+// libraries that still need seek-preview sprite sheets.
+func (r *FileRepository) ListMissingTrickplay(ctx context.Context, limit int) ([]*models.MediaFile, error) {
+	query := `SELECT ` + mfFileColumns + ` FROM media_files mf
+		JOIN media_folders folders ON folders.id = mf.media_folder_id
+		WHERE mf.missing_since IS NULL
+		  AND mf.duration > 0
+		  AND folders.enabled = true
+		  AND folders.trickplay_enabled = true
+		  AND (
+			mf.trickplay IS NULL
+			OR COALESCE(mf.trickplay->>'retry_after', '') = ''
+			OR (mf.trickplay->>'retry_after')::timestamptz <= NOW()
+		  )
+		  AND (
+			mf.trickplay IS NULL
+			OR COALESCE((mf.trickplay->>'thumbnail_count')::int, 0) = 0
+			OR COALESCE((mf.trickplay->>'duration_seconds')::int, 0) != mf.duration
+			OR COALESCE(mf.trickplay->>'last_error', '') <> ''
+		  )
+		ORDER BY mf.probe_updated_at ASC NULLS FIRST, mf.id ASC
+		LIMIT $1`
+	rows, err := r.pool.Query(ctx, query, limit)
+	if err != nil {
+		return nil, fmt.Errorf("querying files missing trickplay: %w", err)
 	}
 	defer rows.Close()
 

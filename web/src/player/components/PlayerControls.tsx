@@ -25,6 +25,7 @@ import type {
   PlayerAudioTrack,
   PlayerChapter,
   PlayerSubtitleInfo,
+  PlayerTrickplay,
   QualityOption,
 } from "../types";
 import type { VersionInfo } from "./QualityMenu";
@@ -40,6 +41,7 @@ interface PlayerControlsProps {
   buffered: TimeRanges | null;
   // Seek bar markers
   chapters?: PlayerChapter[];
+  trickplay?: PlayerTrickplay | null;
   regions?: MarkerRegionView[];
   // Marker editing
   editing?: boolean;
@@ -107,6 +109,7 @@ export function PlayerControls({
   duration,
   buffered,
   chapters,
+  trickplay = null,
   regions,
   editing,
   activeEditKind,
@@ -185,6 +188,7 @@ export function PlayerControls({
           duration={duration}
           buffered={buffered}
           chapters={chapters}
+          trickplay={trickplay}
           regions={regions}
           editing={editing}
           activeEditKind={activeEditKind}
