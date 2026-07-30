@@ -21,6 +21,23 @@ const (
 // stalls on the first dip.
 const DefaultLiveTranscodeLeadSegments = 3
 
+// DefaultLiveCopyLeadSegments is the same lead for a stream-copy session.
+//
+// Copy sessions used to advertise their playlist after a single segment, on the
+// reasoning that a copy is already realtime. That conflates two different things:
+// realtime describes whether FFmpeg keeps up with the source, not whether the
+// player has anything buffered. With one-second segments the player attached at
+// the live edge holding one second of media, so the first network or decode
+// hiccup drained it -- which is why a channel would sometimes play for minutes
+// and sometimes stop after four segments.
+//
+// The cost is tune latency: the playlist is advertised once this many segments
+// exist, so this is roughly this many seconds before playback starts. Trading a
+// few seconds of tune time for a buffer the player can actually spend is worth
+// it on a living-room client, which cannot recover from an underrun as
+// gracefully as a browser can.
+const DefaultLiveCopyLeadSegments = 4
+
 // TranscodeSettings is the operator-facing policy for live sessions. Values are
 // read per tune so an admin change applies to the next channel start without a
 // server restart.
