@@ -385,11 +385,11 @@ export function AdvancedFields({
       <SettingCard
         htmlFor="chapter-thumbnails-switch"
         title="Generate chapter thumbnails"
-        description="Stores chapter preview images in the configured public asset S3 bucket. Chapter markers and chapter menus still work without thumbnails."
+        description="Stores chapter preview images alongside the rest of your artwork — the public asset S3 bucket when one is configured, otherwise the local data volume. Chapter markers and chapter menus still work without thumbnails."
         footer={
           !chapterThumbnailsSupported ? (
             <p className="text-warning text-xs">
-              Public asset S3 storage is required before this can be enabled.
+              Artwork storage is not configured, so there is nowhere to put the generated images.
             </p>
           ) : null
         }

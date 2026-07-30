@@ -510,6 +510,10 @@ func NewRouter(deps Dependencies) chi.Router {
 	var libraryHandler *handlers.LibraryHandler
 	if deps.FolderRepo != nil {
 		libraryHandler = handlers.NewLibraryHandler(deps.FolderRepo, deps.LibraryIngester, userRepo, deps.DB, deps.Refresher, deps.AppContext)
+		// Chapter thumbnails need somewhere to live, which is public S3 when
+		// configured and the local artwork volume otherwise -- the same choice
+		// main.go makes when constructing the extraction service.
+		libraryHandler.ChapterThumbnailStoreReady = deps.S3Public != nil || deps.ArtworkLocal != nil
 		libraryHandler.EventBus = deps.EventBus
 		libraryHandler.EventsHub = deps.EventsHub
 		libraryHandler.ScanRegistry = deps.ScanRegistry

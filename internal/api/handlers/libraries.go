@@ -61,12 +61,19 @@ type LibraryHandler struct {
 	SectionRepo           *sections.Repository
 	StoreProvider         userstore.UserStoreProvider
 	S3Meta                LibraryImageStore
-	PresignTTL            time.Duration
-	appCtx                context.Context
-	EventBus              cache.EventBus
-	EventsHub             *evt.Hub
-	ScanRegistry          *evt.ScanRegistry
-	ScanQueue             libraryScanQueuer
+	// ChapterThumbnailStoreReady reports whether a store exists to hold chapter
+	// thumbnails. It is deliberately separate from S3Meta: that is the metadata
+	// bucket, while thumbnails are written to the public asset store, which may be
+	// public S3 or the local artwork volume. Gating on S3Meta made the toggle
+	// unavailable on installs that store artwork locally and also checked the
+	// wrong bucket.
+	ChapterThumbnailStoreReady bool
+	PresignTTL                 time.Duration
+	appCtx                     context.Context
+	EventBus                   cache.EventBus
+	EventsHub                  *evt.Hub
+	ScanRegistry               *evt.ScanRegistry
+	ScanQueue                  libraryScanQueuer
 }
 
 // LibraryImageStore provides S3 operations for library poster images.
@@ -391,7 +398,7 @@ func toLibraryResponse(f *models.MediaFolder) libraryResponse {
 // and presigns the poster URL if a poster path is set.
 func (h *LibraryHandler) toLibraryResponseWithPoster(ctx context.Context, f *models.MediaFolder) libraryResponse {
 	resp := toLibraryResponse(f)
-	resp.ChapterThumbnailsSupported = h.S3Meta != nil
+	resp.ChapterThumbnailsSupported = h.ChapterThumbnailStoreReady
 	if f.PosterPath != "" && h.S3Meta != nil {
 		ttl := h.PresignTTL
 		if ttl <= 0 {
@@ -574,8 +581,8 @@ func (h *LibraryHandler) HandleCreateLibrary(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "bad_request", "Invalid metadata_language; must be a valid ISO 639-1 code")
 		return
 	}
-	if req.ChapterThumbnailsEnabled && h.S3Meta == nil {
-		writeError(w, http.StatusBadRequest, "bad_request", "Chapter thumbnails require configured public asset S3 storage")
+	if req.ChapterThumbnailsEnabled && !h.ChapterThumbnailStoreReady {
+		writeError(w, http.StatusBadRequest, "bad_request", "Chapter thumbnails require configured artwork storage")
 		return
 	}
 
@@ -658,8 +665,8 @@ func (h *LibraryHandler) HandleUpdateLibrary(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "bad_request", "Invalid metadata_language; must be a valid ISO 639-1 code")
 		return
 	}
-	if req.ChapterThumbnailsEnabled != nil && *req.ChapterThumbnailsEnabled && h.S3Meta == nil {
-		writeError(w, http.StatusBadRequest, "bad_request", "Chapter thumbnails require configured public asset S3 storage")
+	if req.ChapterThumbnailsEnabled != nil && *req.ChapterThumbnailsEnabled && !h.ChapterThumbnailStoreReady {
+		writeError(w, http.StatusBadRequest, "bad_request", "Chapter thumbnails require configured artwork storage")
 		return
 	}
 
