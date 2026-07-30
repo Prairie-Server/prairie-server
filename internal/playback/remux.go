@@ -118,7 +118,7 @@ const (
 // the RPUs would dangle — stripping yields a clean HDR10 base layer (the
 // Apple-parity fallback for devices without a P7 decoder). Profile 8 RPUs
 // stay: the base layer is self-contained and DV clients can render it.
-func buildRemuxArgs(filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, tagDVSampleEntry bool, audioChannels int) []string {
+func buildRemuxArgs(filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, tagDVSampleEntry bool, audioChannels int, totalDuration float64, timelineOriginSeconds float64) []string {
 	args := []string{
 		"-nostdin",
 		"-hide_banner",
@@ -210,10 +210,53 @@ func buildRemuxArgs(filePath, outputFormat string, seekSeconds float64, transcod
 		args = append(args, "-movflags", "frag_keyframe+delay_moov+default_base_moof")
 	}
 
+	// Declare how long the output runs so the player gets a real timeline.
+	//
+	// A remux written to a pipe cannot go back and patch a duration in, so
+	// normally the client is told nothing useful: Matroska omits the SegmentInfo
+	// Duration entirely (players report 0) and a fragmented MP4's moov declares
+	// only the span it happened to buffer before writing -- measured at 10.4s for
+	// a 104-minute film. A zero or wrong duration is not cosmetic: it makes every
+	// seek fail, because there is no timeline to seek within.
+	//
+	// Giving the muxer an explicit output length fixes that for Matroska, which
+	// then writes the true duration into the header where a client reading the
+	// first few hundred KB can see it. It does not help MP4 -- measured: the
+	// fragmented moov still declares only the buffered span -- so MP4 keeps
+	// whatever it would have said, and clients on that path still need the
+	// duration from media metadata instead.
+	//
+	// The length is measured from timelineOriginSeconds, not from seekSeconds.
+	// Those differ on a seeked stream copy: -ss sits before -i, so FFmpeg starts
+	// at the keyframe at or before the request and cannot discard the pre-roll
+	// while keeping -c:v copy. The output therefore begins at that keyframe, and
+	// it is the keyframe -- not the requested position -- that is the stream's
+	// real timeline origin. Measuring from the request instead understates the
+	// output by the pre-roll, which on a long-GOP 4K remux is several seconds of
+	// timeline the player would never be able to reach.
+	//
+	// This does not risk cutting the tail. -t is applied relative to the -ss
+	// request, so the pre-roll passes through on top of it either way; measured
+	// with a 9s keyframe gap, capped and uncapped output carried an identical
+	// packet count. Anchoring is about declaring the right number, not about
+	// avoiding truncation.
+	//
+	// The margin guards the one way this can go wrong. Durations are stored as
+	// whole seconds, so the stored value can sit just below the true length, and
+	// an output capped a fraction short would drop the end of the film. Erring
+	// long costs a slightly overlong progress bar; erring short loses content.
+	if remainder := totalDuration - timelineOriginSeconds; totalDuration > 0 && remainder > 0 {
+		args = append(args, "-t", strconv.FormatFloat(remainder+remuxDurationMargin, 'f', 3, 64))
+	}
+
 	args = append(args, "pipe:1")
 
 	return args
 }
+
+// remuxDurationMargin is added to the declared output length so a duration
+// stored as whole seconds can never truncate the end of the stream.
+const remuxDurationMargin = 2.0
 
 // StartRemux starts an ffmpeg process that copies codecs to a new container.
 // When transcodeAudio is false the command is:
@@ -223,14 +266,14 @@ func buildRemuxArgs(filePath, outputFormat string, seekSeconds float64, transcod
 // When transcodeAudio is true video is copied but audio is transcoded to AAC.
 // The caller must call Close() when done to clean up resources.
 func StartRemux(ctx context.Context, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int) (*RemuxSession, error) {
-	return StartRemuxWithDVMode(ctx, filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, RemuxDVLegacyAutoV3, "", audioChannelsStereo)
+	return StartRemuxWithDVMode(ctx, filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, RemuxDVLegacyAutoV3, "", audioChannelsStereo, 0, 0)
 }
 
 // StartRemuxWithDVMode starts a remux with explicit Dolby Vision behavior.
 // ffmpegPath selects the binary to execute (empty = process-global discovery);
 // v3 callers must pass the configured playback path so the strip capability
 // promised by the planner's probe holds for the binary that actually runs.
-func StartRemuxWithDVMode(ctx context.Context, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, mode RemuxDVMode, ffmpegPath string, audioChannels int) (*RemuxSession, error) {
+func StartRemuxWithDVMode(ctx context.Context, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, mode RemuxDVMode, ffmpegPath string, audioChannels int, totalDuration float64, timelineOriginSeconds float64) (*RemuxSession, error) {
 	ctx, cancel := context.WithCancel(ctx)
 
 	bin := ResolveFFmpegPath(ffmpegPath)
@@ -292,7 +335,7 @@ func StartRemuxWithDVMode(ctx context.Context, filePath, outputFormat string, se
 		cancel()
 		return nil, fmt.Errorf("unknown remux Dolby Vision mode %q", mode)
 	}
-	args := buildRemuxArgs(filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, effectiveProfile, tagDVSampleEntry, audioChannels)
+	args := buildRemuxArgs(filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, effectiveProfile, tagDVSampleEntry, audioChannels, totalDuration, timelineOriginSeconds)
 	cmd := exec.CommandContext(ctx, bin, args...)
 
 	stdout, err := cmd.StdoutPipe()
@@ -349,12 +392,12 @@ func containerMIME(format string) string {
 // total size is not known in advance.
 // When transcodeAudio is true, audio is transcoded to AAC while video is copied.
 func ServeRemux(w http.ResponseWriter, r *http.Request, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int) error {
-	return ServeRemuxWithDVMode(w, r, filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, RemuxDVLegacyAutoV3, "", audioChannelsStereo)
+	return ServeRemuxWithDVMode(w, r, filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, RemuxDVLegacyAutoV3, "", audioChannelsStereo, 0, 0)
 }
 
 // ServeRemuxWithDVMode streams an explicitly declared Dolby Vision recipe.
 // ffmpegPath selects the binary to execute (empty = process-global discovery).
-func ServeRemuxWithDVMode(w http.ResponseWriter, r *http.Request, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, mode RemuxDVMode, ffmpegPath string, audioChannels int) error {
+func ServeRemuxWithDVMode(w http.ResponseWriter, r *http.Request, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, mode RemuxDVMode, ffmpegPath string, audioChannels int, totalDuration float64, timelineOriginSeconds float64) error {
 	// Remux output streams for the length of the title; roll the write
 	// deadline with progress instead of the server's absolute WriteTimeout.
 	w = httpstream.NewRollingDeadlineWriter(w)
@@ -370,7 +413,7 @@ func ServeRemuxWithDVMode(w http.ResponseWriter, r *http.Request, filePath, outp
 		return err
 	}
 
-	session, err := StartRemuxWithDVMode(r.Context(), filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, mode, ffmpegPath, audioChannels)
+	session, err := StartRemuxWithDVMode(r.Context(), filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, mode, ffmpegPath, audioChannels, totalDuration, timelineOriginSeconds)
 	if err != nil {
 		http.Error(w, "failed to start remux", http.StatusInternalServerError)
 		return err
