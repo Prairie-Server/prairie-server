@@ -394,11 +394,11 @@ func scanMediaFile(row pgx.Row) (*models.MediaFile, error) {
 	}
 
 	if len(trickplayJSON) > 0 {
-		var trickplay models.MediaTrickplay
-		if err := json.Unmarshal(trickplayJSON, &trickplay); err != nil {
-			return nil, fmt.Errorf("unmarshaling trickplay: %w", err)
+		trickplay, err := decodeTrickplay(trickplayJSON)
+		if err != nil {
+			return nil, err
 		}
-		f.Trickplay = &trickplay
+		f.Trickplay = trickplay
 	}
 
 	return &f, nil
@@ -709,11 +709,11 @@ func scanMediaFiles(rows pgx.Rows) ([]*models.MediaFile, error) {
 		}
 
 		if len(trickplayJSON) > 0 {
-			var trickplay models.MediaTrickplay
-			if err := json.Unmarshal(trickplayJSON, &trickplay); err != nil {
-				return nil, fmt.Errorf("unmarshaling trickplay: %w", err)
+			trickplay, err := decodeTrickplay(trickplayJSON)
+			if err != nil {
+				return nil, err
 			}
-			f.Trickplay = &trickplay
+			f.Trickplay = trickplay
 		}
 
 		files = append(files, &f)
@@ -3675,6 +3675,17 @@ func (r *FileRepository) ListMissingChapterThumbnails(ctx context.Context, limit
 	return scanMediaFiles(rows)
 }
 
+func decodeTrickplay(raw []byte) (*models.MediaTrickplay, error) {
+	if len(raw) == 0 {
+		return nil, nil
+	}
+	var trickplay models.MediaTrickplay
+	if err := json.Unmarshal(raw, &trickplay); err != nil {
+		return nil, fmt.Errorf("unmarshaling trickplay: %w", err)
+	}
+	return &trickplay, nil
+}
+
 func (r *FileRepository) UpdateTrickplayState(
 	ctx context.Context,
 	fileID int,
@@ -3702,7 +3713,11 @@ func (r *FileRepository) UpdateTrickplayState(
 }
 
 // ListMissingTrickplay returns present media files in enabled, opted-in
-// libraries that still need seek-preview sprite sheets.
+// libraries that are candidates for seek-preview generation.
+//
+// The SQL filter is intentionally a broad prefilter (duration mismatch, empty
+// sheets, or fewer sheets than duration/interval/grid implies). Final
+// completeness is decided by trickplay.IsIncomplete inside processRequest.
 func (r *FileRepository) ListMissingTrickplay(ctx context.Context, limit int) ([]*models.MediaFile, error) {
 	query := `SELECT ` + mfFileColumns + ` FROM media_files mf
 		JOIN media_folders folders ON folders.id = mf.media_folder_id
@@ -3717,15 +3732,19 @@ func (r *FileRepository) ListMissingTrickplay(ctx context.Context, limit int) ([
 		  )
 		  AND (
 			mf.trickplay IS NULL
-			OR COALESCE((mf.trickplay->>'thumbnail_count')::int, 0) = 0
 			OR COALESCE((mf.trickplay->>'duration_seconds')::int, 0) != mf.duration
 			OR COALESCE(mf.trickplay->>'last_error', '') <> ''
+			OR jsonb_array_length(COALESCE(mf.trickplay->'sheets', '[]'::jsonb)) = 0
 			OR jsonb_array_length(COALESCE(mf.trickplay->'sheets', '[]'::jsonb)) <
 				CEIL(
-					GREATEST(COALESCE((mf.trickplay->>'thumbnail_count')::numeric, 0), 1)
+					mf.duration::numeric
 					/ GREATEST(
-						COALESCE((mf.trickplay->>'tile_columns')::numeric, 10)
-							* COALESCE((mf.trickplay->>'tile_rows')::numeric, 10),
+						COALESCE(NULLIF(mf.trickplay->>'interval_seconds', '')::numeric, 10),
+						0.001
+					)
+					/ GREATEST(
+						COALESCE(NULLIF(mf.trickplay->>'tile_columns', '')::numeric, 10)
+							* COALESCE(NULLIF(mf.trickplay->>'tile_rows', '')::numeric, 10),
 						1
 					)
 				)

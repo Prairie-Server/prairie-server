@@ -3663,16 +3663,19 @@ func (a *audiobooksSettingsAdapter) GetString(ctx context.Context, key string) (
 // assigned to an interface is not nil -- returning one would leave the caller's
 // `!= nil` guard satisfied by a store that panics on first use.
 func chapterThumbnailStore(s3 *s3client.Client, local *artworkstore.LocalStore) chapterthumbs.ObjectStore {
-	if s3 != nil {
-		return s3
-	}
-	if local != nil {
-		return local
-	}
-	return nil
+	return selectArtworkObjectStore(s3, local)
 }
 
 func trickplayObjectStore(s3 *s3client.Client, local *artworkstore.LocalStore) trickplay.ObjectStore {
+	return selectArtworkObjectStore(s3, local)
+}
+
+type artworkObjectStore interface {
+	PutObject(ctx context.Context, bucket, key string, data []byte) error
+	Bucket() string
+}
+
+func selectArtworkObjectStore(s3 *s3client.Client, local *artworkstore.LocalStore) artworkObjectStore {
 	if s3 != nil {
 		return s3
 	}

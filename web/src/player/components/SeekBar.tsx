@@ -67,7 +67,7 @@ export function resolveTrickplayTile(
   const columns = trickplay.tile_columns > 0 ? trickplay.tile_columns : 10;
   const rows = trickplay.tile_rows > 0 ? trickplay.tile_rows : 10;
   const width = trickplay.width > 0 ? trickplay.width : 320;
-  const height = trickplay.height > 0 ? trickplay.height : Math.round(width * 9) / 16;
+  const height = trickplay.height > 0 ? trickplay.height : Math.round((width * 9) / 16);
   const tilesPerSheet = columns * rows;
   const tileIndex = Math.min(
     Math.max(0, Math.floor(seconds / interval)),
@@ -81,12 +81,16 @@ export function resolveTrickplayTile(
   const local = tileIndex % tilesPerSheet;
   const col = local % columns;
   const row = Math.floor(local / columns);
+  // Percentage sprite math scales with the rendered preview size (e.g. w-44).
+  const backgroundPosition = `${columns > 1 ? (col / (columns - 1)) * 100 : 0}% ${
+    rows > 1 ? (row / (rows - 1)) * 100 : 0
+  }%`;
   return {
     url: sheet.url,
     width,
     height,
-    backgroundPosition: `-${col * width}px -${row * height}px`,
-    backgroundSize: `${columns * width}px ${rows * height}px`,
+    backgroundPosition,
+    backgroundSize: `${columns * 100}% ${rows * 100}%`,
   };
 }
 
@@ -339,8 +343,9 @@ export function SeekBar({
           >
             {trickplayTile ? (
               <div
-                className="aspect-video w-full bg-black"
+                className="w-full bg-black"
                 style={{
+                  aspectRatio: `${trickplayTile.width} / ${trickplayTile.height}`,
                   backgroundImage: `url(${trickplayTile.url})`,
                   backgroundRepeat: "no-repeat",
                   backgroundPosition: trickplayTile.backgroundPosition,

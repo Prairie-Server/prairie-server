@@ -2016,42 +2016,7 @@ func (h *PlaybackHandler) handleStartPlaybackLegacy(w http.ResponseWriter, r *ht
 			}
 		}
 	}
-	if h.ChapterThumbnailQueuer != nil && effectiveFile != nil {
-		slog.InfoContext(r.Context(),
-			"queueing chapter thumbnails", "component", "api",
-			"source",
-			"playback_start",
-			"content_id",
-			effectiveFile.ContentID,
-			"file_id",
-			effectiveFile.ID,
-			"target_seconds",
-			session.Position,
-		)
-		h.ChapterThumbnailQueuer.QueuePriorityFileAtPosition(
-			r.Context(),
-			effectiveFile.ID,
-			session.Position,
-		)
-	}
-	if h.TrickplayQueuer != nil && effectiveFile != nil {
-		slog.InfoContext(r.Context(),
-			"queueing trickplay", "component", "api",
-			"source",
-			"playback_start",
-			"content_id",
-			effectiveFile.ContentID,
-			"file_id",
-			effectiveFile.ID,
-			"target_seconds",
-			session.Position,
-		)
-		h.TrickplayQueuer.QueuePriorityFileAtPosition(
-			r.Context(),
-			effectiveFile.ID,
-			session.Position,
-		)
-	}
+	h.queuePlaybackPreviewAssets(r.Context(), effectiveFile, session.Position, "playback_start")
 	h.maybeQueueLazyPlaybackMarkers(r.Context(), session, effectiveFile)
 
 	// Direct-play and remux sessions reconstruct from the identity stream token

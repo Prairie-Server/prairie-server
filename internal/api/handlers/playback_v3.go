@@ -565,6 +565,8 @@ func (h *PlaybackHandler) startPlannedPlaybackV3(r *http.Request, userID int, pr
 	}
 	transport.commit()
 	h.syncSessionsNow(r.Context(), "v3_start")
+	h.queuePlaybackPreviewAssets(r.Context(), effectiveFile, session.Position, "playback_start_v3")
+	h.maybeQueueLazyPlaybackMarkers(r.Context(), session, effectiveFile)
 	h.enqueueRouteEventV3(playback.RouteEventRecordV3{RouteEventV3: playback.RouteEventV3{ProtocolVersion: playback.ProtocolV3, PlaybackAttemptID: req.PlaybackAttemptID, SessionID: session.ID, PlanID: result.Plan.PlanID, Event: playback.RouteEventPlanSelectedV3, AppliedQuirkIDs: appliedQuirkIDsV3(result.Plan), QuirkRegistryRevision: appliedQuirkRevisionV3(result.Plan), OutputRouteGeneration: req.OutputRouteGeneration}, UserID: userID, ProfileID: profileID, ClientName: clientInfo.Name, ClientVersion: clientInfo.Version, ClientModel: req.ClientPlaybackContext.Device.Model})
 	return response, nil
 }

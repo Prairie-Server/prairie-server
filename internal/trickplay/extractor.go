@@ -76,7 +76,7 @@ func buildSheetExtractArgs(
 	width, columns, rows int,
 	toneMap bool,
 ) []string {
-	vf := fmt.Sprintf("fps=1/%.0f,scale=%d:-2,tile=%dx%d", interval, width, columns, rows)
+	vf := fmt.Sprintf("fps=1/%g,scale=%d:-2,tile=%dx%d", interval, width, columns, rows)
 	if toneMap {
 		vf = "zscale=t=linear:npl=100,format=gbrpf32le,tonemap=bt2390,zscale=p=bt709:t=bt709:m=bt709:r=tv,format=yuv420p," + vf
 	}

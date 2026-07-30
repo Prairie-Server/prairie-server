@@ -198,13 +198,40 @@ func (s *Service) BackfillMissing(ctx context.Context, limit int) (int, error) {
 		if file == nil {
 			continue
 		}
-		if _, err := s.processRequest(ctx, TrickplayRequest{FileID: file.ID}, false); err != nil {
+		if !s.claim(file.ID) {
+			continue
+		}
+		_, err := s.processRequest(ctx, TrickplayRequest{FileID: file.ID}, false)
+		s.finishProcessing(file.ID)
+		if err != nil {
 			slog.WarnContext(ctx, "trickplay backfill failed", "component", "trickplay", "file_id", file.ID, "error", err)
 			continue
 		}
 		processed++
 	}
 	return processed, nil
+}
+
+// claim marks fileID as in progress so backfill and queue workers cannot
+// overwrite each other's trickplay JSONB writes. Returns false when another
+// worker already owns the file.
+func (s *Service) claim(fileID int) bool {
+	if s == nil || fileID <= 0 {
+		return false
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, busy := s.inProgress[fileID]; busy {
+		return false
+	}
+	if _, queued := s.queuedPriority[fileID]; queued {
+		return false
+	}
+	if _, queued := s.queuedNormal[fileID]; queued {
+		return false
+	}
+	s.inProgress[fileID] = struct{}{}
+	return true
 }
 
 func (s *Service) worker(ctx context.Context, priorityOnly bool) {
@@ -262,7 +289,7 @@ func (s *Service) processRequest(ctx context.Context, req TrickplayRequest, prio
 	}
 
 	now := s.now()
-	if file.Trickplay != nil && file.Trickplay.RetryAfter != nil && file.Trickplay.RetryAfter.After(now) {
+	if !IsRetryEligible(file.Trickplay, now) {
 		slog.InfoContext(ctx,
 			"trickplay request skipped", "component", "trickplay",
 			"file_id", req.FileID,
@@ -358,7 +385,7 @@ func (s *Service) processRequest(ctx context.Context, req TrickplayRequest, prio
 	state.ThumbnailCount = expectedThumbs
 	state.DurationSeconds = file.Duration
 
-	if lastErr != nil && generated == 0 {
+	if lastErr != nil {
 		nextCount := state.FailureCount + 1
 		retryAfter := now.Add(retryDurationForCount(nextCount))
 		state.FailureCount = nextCount
@@ -367,6 +394,16 @@ func (s *Service) processRequest(ctx context.Context, req TrickplayRequest, prio
 		if _, persistErr := s.fileRepo.UpdateTrickplayState(ctx, file.ID, state); persistErr != nil {
 			return false, persistErr
 		}
+		slog.InfoContext(ctx,
+			"trickplay processing finished", "component", "trickplay",
+			"file_id", req.FileID,
+			"priority", priority,
+			"generated_count", generated,
+			"failed", true,
+			"requeue", false,
+		)
+		// Keep failure/backoff state even after partial progress; backfill or a
+		// later priority queue will resume once RetryAfter elapses.
 		return false, lastErr
 	}
 
