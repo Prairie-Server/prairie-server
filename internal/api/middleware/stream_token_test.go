@@ -166,6 +166,18 @@ func TestStreamTokenDeliverySessionParsing(t *testing.T) {
 		"/api/v1/stream/abc/subtitles/2": "",
 		// Unanchored matching would let any route containing "/stream/" through.
 		"/api/v1/playback/transcode/abc/stream/evil": "",
+		// Live TV HLS delivery. The app embeds its own access token here and hands
+		// the URL to a native player that cannot refresh it, so a rotating bearer
+		// 401'd the player forever once the token went stale.
+		"/api/v1/livetv/live-hls/abc/index.m3u8":   "abc",
+		"/api/v1/livetv/live-hls/abc/seg_00001.ts": "abc",
+		"/livetv/live-hls/abc/index.m3u8":          "abc",
+		// The name is one path segment: a token must not walk out of its session.
+		"/api/v1/livetv/live-hls/abc/../../evil": "",
+		"/api/v1/livetv/live-hls/abc/a/b":        "",
+		"/api/v1/livetv/live-hls/abc":            "",
+		"/api/v1/livetv/live-hls/abc/":           "",
+		"/api/v1/livetv/live-hls//index.m3u8":    "",
 	} {
 		got, ok := streamTokenDeliverySession(target)
 		if want == "" {
@@ -264,6 +276,53 @@ func TestStreamTokenDeliverySessionRejectsNestedStreamSegment(t *testing.T) {
 	} {
 		if sessionID, ok := streamTokenDeliverySession(path); ok {
 			t.Errorf("streamTokenDeliverySession(%q) = (%q, true), want no session", path, sessionID)
+		}
+	}
+}
+
+// Live TV segments must authorize alongside the playlist. serveLiveHLSPlaylist
+// copies the request query onto every relative media URI, so the player's
+// segment fetches carry the stream token and no bearer -- authorizing only the
+// playlist would 401 every segment and stall playback after the first fetch.
+func TestStreamTokenAuthAuthorizesLiveHLSDelivery(t *testing.T) {
+	const session = "136434354095130390"
+	token := signStreamToken(t, session, time.Hour)
+
+	for _, target := range []string{
+		"/api/v1/livetv/live-hls/" + session + "/index.m3u8?st=" + token,
+		"/api/v1/livetv/live-hls/" + session + "/seg_00000.ts?st=" + token,
+	} {
+		if !serveWithStreamTokenAuth(t, testStreamSecret, target) {
+			t.Errorf("%s was not authorized by a valid session-bound stream token", target)
+		}
+	}
+}
+
+// The session binding has to hold for Live TV too, or the migration would trade
+// an expiring credential for an unbounded one.
+func TestStreamTokenAuthRejectsCrossSessionLiveHLSToken(t *testing.T) {
+	token := signStreamToken(t, "session-a", time.Hour)
+	target := "/api/v1/livetv/live-hls/session-b/index.m3u8?st=" + token
+	if serveWithStreamTokenAuth(t, testStreamSecret, target) {
+		t.Error("a token minted for session-a authorized session-b's live HLS bytes")
+	}
+}
+
+// Live TV's mutation and metadata routes must keep requiring a bearer, so the
+// token cannot be spent as a general-purpose Live TV credential.
+func TestStreamTokenAuthOnlyAppliesToLiveHLSDelivery(t *testing.T) {
+	const session = "abc"
+	token := signStreamToken(t, session, time.Hour)
+
+	for _, target := range []string{
+		"/api/v1/livetv/guide?st=" + token,
+		"/api/v1/livetv/channels?st=" + token,
+		"/api/v1/livetv/recordings?st=" + token,
+		"/api/v1/livetv/sessions/" + session + "?st=" + token,
+		"/api/v1/livetv/channels/" + session + "/session?st=" + token,
+	} {
+		if serveWithStreamTokenAuth(t, testStreamSecret, target) {
+			t.Errorf("%s was authorized by a stream token; only delivery paths may be", target)
 		}
 	}
 }

@@ -776,6 +776,11 @@ func NewRouter(deps Dependencies) chi.Router {
 			// Tests / alternate entrypoints may omit deps.LiveTV.
 			liveTVHandler = handlers.NewLiveTVHandler(livetv.NewService(deps.DB))
 		}
+		if liveTVHandler != nil && deps.Config != nil {
+			// Signs the stream token on the returned live HLS URL, the same secret
+			// StreamTokenAuth verifies it with.
+			liveTVHandler.JWTSecret = deps.Config.Auth.JWTSecret
+		}
 		if deps.LiveTV != nil && deps.DB != nil {
 			// Finished live views land in the same admin playback history as VOD.
 			deps.LiveTV.SetHistoryRecorder(handlers.NewLiveTVHistoryRecorder(

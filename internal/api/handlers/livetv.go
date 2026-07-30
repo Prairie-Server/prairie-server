@@ -20,11 +20,18 @@ import (
 	"github.com/prairie-server/prairie-server/internal/livetv"
 	"github.com/prairie-server/prairie-server/internal/livetv/gracenote"
 	"github.com/prairie-server/prairie-server/internal/livetv/schedulesdirect"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 // LiveTVHandler exposes Live TV / OTA / DVR APIs under /api/v1/livetv.
 type LiveTVHandler struct {
 	service *livetv.Service
+	// JWTSecret signs the stream token appended to the returned HLS URL, so the
+	// native player fetching it carries a session-bound credential instead of the
+	// app's rotating access token. Empty disables minting (tests / minimal
+	// setups), which leaves the pre-existing bearer-in-the-query behavior.
+	JWTSecret string
 }
 
 func NewLiveTVHandler(service *livetv.Service) *LiveTVHandler {
@@ -32,6 +39,28 @@ func NewLiveTVHandler(service *livetv.Service) *LiveTVHandler {
 		return nil
 	}
 	return &LiveTVHandler{service: service}
+}
+
+// signLiveStreamToken mints a stream token bound to the delivery ID that appears
+// in the live HLS URL's path. The middleware authorizes only when the signature
+// names that same ID, so the token is useless against any other session.
+//
+// Identity claims ride along as lookup keys, matching how the VOD tokens carry
+// them; authorization itself comes from the session binding, never from these.
+func (h *LiveTVHandler) signLiveStreamToken(deliveryID string, userID int, profileID string) string {
+	if h.JWTSecret == "" || deliveryID == "" {
+		return ""
+	}
+	token, err := streamtoken.Sign(streamtoken.Claims{
+		SessionID: deliveryID,
+		UserID:    userID,
+		ProfileID: profileID,
+	}, h.JWTSecret, playback.MaxTokenTTL)
+	if err != nil {
+		slog.Warn("sign live stream token failed", "error", err, "playback_session_id", deliveryID)
+		return ""
+	}
+	return token
 }
 
 func (h *LiveTVHandler) HandleListTuners(w http.ResponseWriter, r *http.Request) {
@@ -357,6 +386,12 @@ func (h *LiveTVHandler) HandleStartChannelSession(w http.ResponseWriter, r *http
 		// Never return raw tuner URLs — clients play via the authenticated proxy.
 		hlsURL = livetv.PublicSessionStreamPath(session.ID)
 	}
+	// Hand back a self-authorizing URL. The client passes this straight to a
+	// native player that cannot set headers or refresh a token, so the credential
+	// has to be in the URL and has to outlive the app's access token.
+	if deliveryID, ok := livetv.LiveHLSDeliveryID(hlsURL); ok {
+		hlsURL = appendStreamToken(hlsURL, h.signLiveStreamToken(deliveryID, userID, profileID))
+	}
 	transport := session.Transport
 	if transport == "" {
 		transport = "mpegts"
@@ -640,6 +675,16 @@ func (h *LiveTVHandler) HandleLiveHLS(w http.ResponseWriter, r *http.Request) {
 	userID := apimw.GetUserID(r.Context())
 	profileID := apimw.GetProfileID(r.Context())
 	enforceOwner := !apimw.IsAdmin(r.Context())
+	// A stream token carries no bearer identity on purpose, so an owner check
+	// against an absent user would reject every native-player fetch -- the exact
+	// 401 poll this migration removes. The token is the authorization instead, and
+	// it is narrower than a bearer rather than wider: the middleware admits it only
+	// when the verified signature names this same playback session, so it cannot
+	// reach another session's bytes. Ownership was already decided when the session
+	// was created for this user, which is when the token was minted.
+	if userID == 0 && apimw.IsStreamTokenAuthorized(r.Context()) {
+		enforceOwner = false
+	}
 	if err := bridge.Authorize(playbackID, userID, profileID, enforceOwner); err != nil {
 		writeLiveTVError(w, err)
 		return

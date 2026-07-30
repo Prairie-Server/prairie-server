@@ -38,6 +38,19 @@ const progressiveDeliveryPrefix = "/stream/"
 // at the top level of the API, never as a nested segment of another route.
 const apiVersionPrefix = "/api/v1"
 
+// Live TV HLS delivery lives at:
+//
+//	/api/v1/livetv/live-hls/{playback_session_id}/index.m3u8
+//	/api/v1/livetv/live-hls/{playback_session_id}/seg_00000.ts
+//
+// Same disease as the progressive path above, one route later. The app embeds
+// its own access token in this URL and hands it to the native player, which
+// cannot refresh or retry -- so the moment that token goes stale the player
+// polls 401 forever while the app's own requests sail through on refresh. A live
+// session outlives a short access token by design, which makes a rotating
+// bearer the wrong credential for it.
+const liveHLSDeliveryPrefix = "/livetv/live-hls/"
+
 // streamTokenDeliverySession returns the session ID a request is asking to be
 // delivered, and whether the path is a media delivery path at all.
 //
@@ -53,7 +66,35 @@ func streamTokenDeliverySession(urlPath string) (string, bool) {
 	if sessionID, ok := transcodeDeliverySession(urlPath); ok {
 		return sessionID, true
 	}
+	if sessionID, ok := liveHLSDeliverySession(urlPath); ok {
+		return sessionID, true
+	}
 	return progressiveDeliverySession(urlPath)
+}
+
+// liveHLSDeliverySession matches a Live TV playlist or segment fetch.
+//
+// The playlist and its segments both have to qualify, for the same reason
+// media.m3u8 does above: serveLiveHLSPlaylist copies the request query onto every
+// relative media URI, so the player's segment fetches carry the stream token and
+// no bearer. Authorizing only the playlist would 401 every segment.
+//
+// The name is confined to a single path segment so a token for one session cannot
+// be spent walking out of its own directory.
+func liveHLSDeliverySession(urlPath string) (string, bool) {
+	idx := strings.Index(urlPath, liveHLSDeliveryPrefix)
+	if idx < 0 {
+		return "", false
+	}
+	rest := urlPath[idx+len(liveHLSDeliveryPrefix):]
+	sessionID, name, found := strings.Cut(rest, "/")
+	if !found || sessionID == "" || name == "" {
+		return "", false
+	}
+	if strings.Contains(name, "/") {
+		return "", false
+	}
+	return sessionID, true
 }
 
 func transcodeDeliverySession(urlPath string) (string, bool) {
