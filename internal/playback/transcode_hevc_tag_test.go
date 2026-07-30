@@ -108,3 +108,35 @@ func TestIsHEVCVideoCodecAliases(t *testing.T) {
 		}
 	}
 }
+
+// E-AC-3 is fine to copy -- a source E-AC-3 track passes through via the copy
+// path, which is the direct-play route -- but it must never be an encode target:
+// Tizen accepts E-AC-3 for direct play and not for transcode, and AC-3 has
+// broader hardware decode support at the same layout.
+func TestEAC3IsNeverAnEncodeTarget(t *testing.T) {
+	opts := copyHEVCOpts()
+	opts.TargetCodecAudio = "eac3"
+	opts.SourceAudioCodec = "truehd"
+	opts.SourceAudioChannels = 8
+
+	args := buildFFmpegArgs(opts)
+	if argsContainPair(args, "-c:a", "eac3") {
+		t.Errorf("E-AC-3 was selected as an encode target, args=%v", strings.Join(args, " "))
+	}
+	if !argsContainPair(args, "-c:a", "ac3") {
+		t.Errorf("expected an AC-3 fallback, args=%v", strings.Join(args, " "))
+	}
+}
+
+// Copying a source E-AC-3 track is unaffected -- that is the direct-play case
+// Tizen does support.
+func TestEAC3SourceStillCopies(t *testing.T) {
+	opts := copyHEVCOpts()
+	opts.TargetCodecAudio = "copy"
+	opts.SourceAudioCodec = "eac3"
+
+	args := buildFFmpegArgs(opts)
+	if !argsContainPair(args, "-c:a", "copy") {
+		t.Errorf("a copy target must still copy, args=%v", strings.Join(args, " "))
+	}
+}
