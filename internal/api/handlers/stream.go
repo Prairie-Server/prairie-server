@@ -188,7 +188,7 @@ func (h *StreamHandler) HandleStream(w http.ResponseWriter, r *http.Request) {
 		// list was in hand; an empty value is a session that predates the choice
 		// (or a reconstruct from an older token) and keeps the MP4 default.
 		remuxFormat := playback.RemuxFFmpegFormat(session.RemuxContainer)
-		if err := playback.ServeRemuxWithDVMode(w, r, file.FilePath, remuxFormat, seekSeconds, session.TranscodeAudio, session.AudioTrackIndex, file.PrimaryDVProfile(), session.RemuxDVMode, h.ffmpegPath(), audioChannels); err != nil {
+		if err := playback.ServeRemuxWithDVMode(w, r, file.FilePath, remuxFormat, seekSeconds, session.TranscodeAudio, session.AudioTrackIndex, file.PrimaryDVProfile(), session.RemuxDVMode, h.ffmpegPath(), audioChannels, float64(file.Duration)); err != nil {
 			h.handleTransportStartFailure(r.Context(), session, file, err)
 		}
 

@@ -183,7 +183,7 @@ func (s *Server) handleRemux(w http.ResponseWriter, r *http.Request) {
 	// decided to keep as Matroska would make delivery depend on which server
 	// answered, which is exactly the kind of difference a mid-stream reconnect
 	// exposes.
-	_ = playback.ServeRemuxWithDVMode(w, r, claims.MediaPath, playback.RemuxFFmpegFormat(claims.RemuxContainer), seekSeconds, claims.TranscodeAudio, claims.AudioTrackIndex, claims.DVProfile, playback.RemuxDVMode(claims.RemuxDVMode), s.watcher.Config().Playback.FFmpegPath, 2)
+	_ = playback.ServeRemuxWithDVMode(w, r, claims.MediaPath, playback.RemuxFFmpegFormat(claims.RemuxContainer), seekSeconds, claims.TranscodeAudio, claims.AudioTrackIndex, claims.DVProfile, playback.RemuxDVMode(claims.RemuxDVMode), s.watcher.Config().Playback.FFmpegPath, 2, claims.TotalDuration)
 }
 
 func (s *Server) handleTranscodeManifest(w http.ResponseWriter, r *http.Request) {

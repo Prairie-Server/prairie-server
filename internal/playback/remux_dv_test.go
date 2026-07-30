@@ -23,7 +23,7 @@ func argsContainPair(args []string, a, b string) bool {
 // Stripping the RPUs yields a clean HDR10 stream — both a correctness fix and
 // the Apple-parity fallback presentation for devices without a P7 decoder.
 func TestBuildRemuxArgsStripsDolbyVisionRPUForProfile7(t *testing.T) {
-	args := buildRemuxArgs("/x.mkv", "mp4", 0, false, -1, 7, false, 2)
+	args := buildRemuxArgs("/x.mkv", "mp4", 0, false, -1, 7, false, 2, 0)
 	if !argsContainPair(args, "-bsf:v", "dovi_rpu=strip=1") {
 		t.Fatalf("profile 7 remux must strip DV RPUs from the base layer, args=%v", strings.Join(args, " "))
 	}
@@ -52,7 +52,7 @@ func TestRemuxDVProfileFallsBackWithoutFilterSupport(t *testing.T) {
 // enhancement layer and DV-capable clients can render it. Never strip.
 func TestBuildRemuxArgsKeepsRPUForProfile8AndPlainFiles(t *testing.T) {
 	for _, profile := range []int{0, 5, 8} {
-		args := buildRemuxArgs("/x.mkv", "mp4", 0, false, -1, profile, false, 2)
+		args := buildRemuxArgs("/x.mkv", "mp4", 0, false, -1, profile, false, 2, 0)
 		if argsContainPair(args, "-bsf:v", "dovi_rpu=strip=1") {
 			t.Fatalf("profile %d remux must not strip DV RPUs, args=%v", profile, strings.Join(args, " "))
 		}
@@ -63,15 +63,15 @@ func TestBuildRemuxArgsKeepsRPUForProfile8AndPlainFiles(t *testing.T) {
 // Media3 keys decoder selection from it, but legacy web/jellycompat consumers
 // rely on the pre-v3 hev1 labeling their demuxers accept.
 func TestBuildRemuxArgsTagsPreservedDolbyVisionOnlyWhenRequested(t *testing.T) {
-	args := buildRemuxArgs("/x.mkv", "mp4", 0, false, -1, 8, true, 2)
+	args := buildRemuxArgs("/x.mkv", "mp4", 0, false, -1, 8, true, 2, 0)
 	if !argsContainPair(args, "-tag:v", "dvhe") {
 		t.Fatalf("preserved Dolby Vision must retain a DV sample entry, args=%v", strings.Join(args, " "))
 	}
-	legacy := buildRemuxArgs("/x.mkv", "mp4", 0, false, -1, 8, false, 2)
+	legacy := buildRemuxArgs("/x.mkv", "mp4", 0, false, -1, 8, false, 2, 0)
 	if argsContainPair(legacy, "-tag:v", "dvhe") {
 		t.Fatalf("legacy remux consumers must keep hev1 labeling, args=%v", strings.Join(legacy, " "))
 	}
-	stripped := buildRemuxArgs("/x.mkv", "mp4", 0, false, -1, 7, false, 2)
+	stripped := buildRemuxArgs("/x.mkv", "mp4", 0, false, -1, 7, false, 2, 0)
 	if argsContainPair(stripped, "-tag:v", "dvhe") {
 		t.Fatalf("HDR10 fallback must not retain a DV sample entry, args=%v", strings.Join(stripped, " "))
 	}
@@ -81,7 +81,7 @@ func TestBuildRemuxArgsTagsPreservedDolbyVisionOnlyWhenRequested(t *testing.T) {
 // explicit preserve recipe must fail fast instead of emitting a stream with
 // dangling RPUs and no enhancement layer.
 func TestStartRemuxRejectsPreservedProfile7(t *testing.T) {
-	if _, err := StartRemuxWithDVMode(t.Context(), "/nonexistent.mkv", "mp4", 0, false, -1, 7, RemuxDVPreserveV3, "", 2); err == nil {
+	if _, err := StartRemuxWithDVMode(t.Context(), "/nonexistent.mkv", "mp4", 0, false, -1, 7, RemuxDVPreserveV3, "", 2, 0); err == nil {
 		t.Fatal("preserve mode accepted a profile 7 source")
 	}
 }
@@ -89,14 +89,14 @@ func TestStartRemuxRejectsPreservedProfile7(t *testing.T) {
 // An unknown mode must fail for every profile, not only Profile 7 sources.
 func TestStartRemuxRejectsUnknownModeForAllProfiles(t *testing.T) {
 	for _, profile := range []int{0, 5, 7, 8} {
-		if _, err := StartRemuxWithDVMode(t.Context(), "/nonexistent.mkv", "mp4", 0, false, -1, profile, RemuxDVMode("bogus"), "", 2); err == nil {
+		if _, err := StartRemuxWithDVMode(t.Context(), "/nonexistent.mkv", "mp4", 0, false, -1, profile, RemuxDVMode("bogus"), "", 2, 0); err == nil {
 			t.Fatalf("unknown remux DV mode accepted for profile %d", profile)
 		}
 	}
 }
 
 func TestBuildRemuxArgsDelaysMoovForCopiedAtmosConfiguration(t *testing.T) {
-	args := buildRemuxArgs("/x.mkv", "mp4", 0, false, -1, 8, false, 2)
+	args := buildRemuxArgs("/x.mkv", "mp4", 0, false, -1, 8, false, 2, 0)
 	if !argsContainPair(args, "-movflags", "frag_keyframe+delay_moov+default_base_moof") {
 		t.Fatalf("remux must delay moov until copied audio is parsed, args=%v", strings.Join(args, " "))
 	}
@@ -142,7 +142,7 @@ func TestLegacyRemuxDropsTheStripForAnUnstrippableSource(t *testing.T) {
 	bin, argLog := writeProbeAwareFFmpeg(t)
 	path := remuxSourceFile(t)
 
-	session, err := StartRemuxWithDVMode(context.Background(), path, "mp4", 0, false, -1, 7, RemuxDVLegacyAutoV3, bin, 2)
+	session, err := StartRemuxWithDVMode(context.Background(), path, "mp4", 0, false, -1, 7, RemuxDVLegacyAutoV3, bin, 2, 0)
 	if err != nil {
 		t.Fatalf("legacy remux refused to start: %v", err)
 	}
@@ -168,7 +168,7 @@ func TestExplicitStripRecipeRefusesAnUnstrippableSource(t *testing.T) {
 	bin, _ := writeProbeAwareFFmpeg(t)
 	path := remuxSourceFile(t)
 
-	session, err := StartRemuxWithDVMode(context.Background(), path, "mp4", 0, false, -1, 7, RemuxDVStripToHDR10V3, bin, 2)
+	session, err := StartRemuxWithDVMode(context.Background(), path, "mp4", 0, false, -1, 7, RemuxDVStripToHDR10V3, bin, 2, 0)
 	if err == nil {
 		session.Close()
 		t.Fatal("the explicit HDR10 strip accepted a source it cannot strip")
