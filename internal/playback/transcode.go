@@ -811,7 +811,16 @@ func appendAudioArgs(args []string, opts TranscodeOpts) []string {
 		// back to AC-3 keeps surround while staying decodable, where emitting
 		// E-AC-3 risks silent audio on exactly the devices that asked for
 		// surround.
-		args = append(args, "-c:a", "ac3", "-b:a", "448k")
+		//
+		// The layout is capped explicitly: the encoder stops at 5.1, and the
+		// client's max_audio_channels has to be honored here as much as on the
+		// AAC path. EffectiveAC3Channels returns 0 when it has nothing to go on,
+		// in which case the layout is left to FFmpeg's negotiation.
+		channels := EffectiveAC3Channels(opts.SourceAudioChannels, opts.TargetAudioChannels)
+		args = append(args, "-c:a", "ac3", "-b:a", AC3BitrateForChannels(channels))
+		if channels > 0 {
+			args = append(args, "-ac", strconv.Itoa(channels))
+		}
 	default:
 		// Preserve surround from multichannel sources up to the client's declared
 		// ceiling; the historical default stays a stereo 192k downmix when no

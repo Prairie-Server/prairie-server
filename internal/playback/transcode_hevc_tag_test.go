@@ -126,6 +126,73 @@ func TestEAC3IsNeverAnEncodeTarget(t *testing.T) {
 	if !argsContainPair(args, "-c:a", "ac3") {
 		t.Errorf("expected an AC-3 fallback, args=%v", strings.Join(args, " "))
 	}
+	// The fixture is 8-channel and the AC-3 encoder tops out at 5.1, so the
+	// fallback has to state a layout it can actually encode. Asserting the codec
+	// alone would pass while emitting an unencodable 7.1 request.
+	if !argsContainPair(args, "-ac", "6") {
+		t.Errorf("8-channel source must be capped at 5.1 for AC-3, args=%v", strings.Join(args, " "))
+	}
+	if !argsContainPair(args, "-b:a", "448k") {
+		t.Errorf("5.1 AC-3 should pair with the surround bitrate, args=%v", strings.Join(args, " "))
+	}
+}
+
+// The AC-3 target is the surround-preserving route, so it must not inherit the
+// AAC path's fragile-lossless stereo downmix: a TrueHD source is exactly the
+// case where a client asked for AC-3 to keep 5.1 for its receiver.
+func TestAC3TargetKeepsSurroundForTrueHDSource(t *testing.T) {
+	opts := copyHEVCOpts()
+	opts.TargetCodecAudio = "ac3"
+	opts.SourceAudioCodec = "truehd"
+	opts.SourceAudioChannels = 8
+	opts.TargetAudioChannels = 6
+
+	args := buildFFmpegArgs(opts)
+	if argsContainPair(args, "-ac", "2") {
+		t.Errorf("AC-3 target must not downmix TrueHD to stereo, args=%v", strings.Join(args, " "))
+	}
+	if !argsContainPair(args, "-ac", "6") {
+		t.Errorf("want 5.1, args=%v", strings.Join(args, " "))
+	}
+}
+
+// A client that declared a stereo ceiling must not be handed 5.1, and the
+// bitrate should follow the layout down rather than padding the stream.
+func TestAC3TargetHonorsClientChannelCeiling(t *testing.T) {
+	opts := copyHEVCOpts()
+	opts.TargetCodecAudio = "ac3"
+	opts.SourceAudioCodec = "dts"
+	opts.SourceAudioChannels = 6
+	opts.TargetAudioChannels = 2
+
+	args := buildFFmpegArgs(opts)
+	if !argsContainPair(args, "-ac", "2") {
+		t.Errorf("declared stereo ceiling must cap the AC-3 layout, args=%v", strings.Join(args, " "))
+	}
+	if !argsContainPair(args, "-b:a", "192k") {
+		t.Errorf("stereo AC-3 should not carry the 5.1 bitrate, args=%v", strings.Join(args, " "))
+	}
+}
+
+// With no probed source count and no binding client ceiling there is nothing to
+// choose from, so the layout is left to FFmpeg rather than guessed at -- naming
+// 5.1 here would upmix a source that turns out to be stereo.
+func TestAC3TargetLeavesUnknownLayoutToFFmpeg(t *testing.T) {
+	opts := copyHEVCOpts()
+	opts.TargetCodecAudio = "ac3"
+	opts.SourceAudioCodec = "dts"
+	opts.SourceAudioChannels = 0
+	opts.TargetAudioChannels = 0
+
+	args := buildFFmpegArgs(opts)
+	for _, n := range []string{"1", "2", "6", "8"} {
+		if argsContainPair(args, "-ac", n) {
+			t.Errorf("unknown layout must not be pinned to %s channels, args=%v", n, strings.Join(args, " "))
+		}
+	}
+	if !argsContainPair(args, "-c:a", "ac3") {
+		t.Errorf("expected an AC-3 encode, args=%v", strings.Join(args, " "))
+	}
 }
 
 // Copying a source E-AC-3 track is unaffected -- that is the direct-play case

@@ -105,3 +105,72 @@ func TestEffectiveAudioChannelsPreservesMono(t *testing.T) {
 		t.Errorf("EffectiveAudioChannels(8, 1) = %d, want 1 (client ceiling)", got)
 	}
 }
+
+// EffectiveAC3Channels is capped by the encoder, the source, and the client's
+// declared ceiling -- tightest wins. The 5.1 cap is not a style choice: our own
+// image's `ffmpeg -h encoder=ac3` lists 5.1 as the widest supported layout.
+func TestEffectiveAC3Channels(t *testing.T) {
+	cases := []struct {
+		name         string
+		source, ceil int
+		want         int
+	}{
+		{"7.1 source capped at the encoder's 5.1", 8, 8, 6},
+		{"no client ceiling still capped at 5.1", 8, 0, 6},
+		{"5.1 source passes through", 6, 6, 6},
+		{"stereo ceiling wins over a 5.1 source", 6, 2, 2},
+		{"stereo source is not upmixed to a 5.1 ceiling", 2, 6, 2},
+		{"mono source stays mono", 1, 6, 1},
+		{"mono ceiling honored from a surround source", 8, 1, 1},
+		{"odd ceiling snaps down to a real layout", 8, 5, 2},
+		{"unknown source with a binding ceiling still caps", 0, 2, 2},
+		{"over-claimed ceiling clamps to the encoder max", 8, 99, 6},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := EffectiveAC3Channels(tc.source, tc.ceil); got != tc.want {
+				t.Errorf("EffectiveAC3Channels(%d, %d) = %d, want %d", tc.source, tc.ceil, got, tc.want)
+			}
+		})
+	}
+}
+
+// 0 means "leave the layout to FFmpeg", which is only correct when we genuinely
+// have nothing to go on. Guessing 5.1 there would upmix an unknown stereo source.
+func TestEffectiveAC3ChannelsDefersWhenNothingIsKnown(t *testing.T) {
+	if got := EffectiveAC3Channels(0, 0); got != 0 {
+		t.Errorf("EffectiveAC3Channels(0, 0) = %d, want 0 (defer to FFmpeg)", got)
+	}
+	// A ceiling that does not bind tighter than the encoder tells us nothing the
+	// encoder would not already enforce, so it also defers.
+	if got := EffectiveAC3Channels(0, 8); got != 0 {
+		t.Errorf("EffectiveAC3Channels(0, 8) = %d, want 0", got)
+	}
+}
+
+// The AC-3 target exists to carry surround to a receiver. Inheriting the AAC
+// path's TrueHD-to-stereo safety would defeat the only reason to pick it -- that
+// stall is in the TrueHD-to-AAC path, not here.
+func TestEffectiveAC3ChannelsIgnoresFragileLosslessDownmix(t *testing.T) {
+	if got := EffectiveAC3Channels(8, 6); got != 6 {
+		t.Errorf("EffectiveAC3Channels(8, 6) = %d, want 6 even for a TrueHD source", got)
+	}
+	// Contrast with the AAC path, which must downmix the same source.
+	if got := EffectiveAudioChannels(8, 6, "truehd"); got != 2 {
+		t.Errorf("EffectiveAudioChannels(8, 6, truehd) = %d, want 2", got)
+	}
+}
+
+func TestAC3BitrateForChannels(t *testing.T) {
+	cases := map[int]string{
+		0: "448k", // deferred layout cannot exceed 5.1, so pair the surround rate
+		6: "448k",
+		2: "192k",
+		1: "96k",
+	}
+	for channels, want := range cases {
+		if got := AC3BitrateForChannels(channels); got != want {
+			t.Errorf("AC3BitrateForChannels(%d) = %q, want %q", channels, got, want)
+		}
+	}
+}

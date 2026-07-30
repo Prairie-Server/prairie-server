@@ -3240,6 +3240,10 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 	// TrueHD/MLP/DTS — software TrueHD decode is a known stall source.
 	audioTrackIndex := session.AudioTrackIndex
 	sourceAudioCodec := ""
+	// Probed channel count of the track we actually map. The channel resolvers
+	// need it to honor "never exceed the source" -- without it a stereo track
+	// asked for at a 5.1 ceiling gets upmixed into channels it does not have.
+	sourceAudioChannels := 0
 	if playback.TranscodesAudio(req.TargetCodecAudio) && len(file.AudioTracks) > 0 {
 		preferred := playback.PreferTranscodeFriendlyAudioTrack(file.AudioTracks, audioTrackIndex)
 		if preferred != audioTrackIndex {
@@ -3254,6 +3258,7 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 			audioTrackIndex = preferred
 		}
 		sourceAudioCodec = playback.AudioTrackCodecAt(file.AudioTracks, audioTrackIndex)
+		sourceAudioChannels = playback.AudioTrackChannelsAt(file.AudioTracks, audioTrackIndex)
 	}
 
 	requestedFile := file
@@ -3468,6 +3473,7 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 			InputPath:              file.FilePath,
 			SourceVideoCodec:       file.CodecVideo,
 			SourceAudioCodec:       sourceAudioCodec,
+			SourceAudioChannels:    sourceAudioChannels,
 			VideoBitstreamFilter:   videoBitstreamFilter,
 			SeekSeconds:            transportSeekSeconds,
 			StreamOriginSeconds:    streamOriginSeconds,
@@ -3604,6 +3610,7 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 		SessionID:              req.SessionID,
 		SourceVideoCodec:       file.CodecVideo,
 		SourceAudioCodec:       sourceAudioCodec,
+		SourceAudioChannels:    sourceAudioChannels,
 		VideoBitstreamFilter:   videoBitstreamFilter,
 		SeekSeconds:            transportSeekSeconds,
 		StreamOriginSeconds:    streamOriginSeconds,
