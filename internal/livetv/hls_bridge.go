@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -61,6 +62,9 @@ type HLSBridge struct {
 	// settings is read per tune so admin changes apply to the next channel
 	// start rather than waiting for a restart.
 	settings SettingsProvider
+	// httpClient asks the tuner why it refused a channel. Nil is fine --
+	// DescribeTunerRefusal falls back to a default client.
+	httpClient *http.Client
 
 	mu sync.Mutex
 	// activeTranscodes counts encoding sessions against the configured cap.
@@ -188,6 +192,15 @@ func (b *HLSBridge) StartLiveStream(
 	if err != nil {
 		b.releaseTranscodeSlot(transcoding)
 		_ = os.RemoveAll(dir)
+		// FFmpeg reports a tuner refusal as "Server returned 5XX Server Error
+		// reply" and drops the header that says why, so the raw error reaches the
+		// viewer as an unactionable exit status. Ask the tuner for its own reason
+		// and answer with that instead.
+		if refusal := DescribeTunerRefusal(ctx, b.httpClient, req.SourceURL); refusal != nil {
+			slog.WarnContext(ctx, "livetv tuner refused the channel",
+				"playback_session_id", id, "error", refusal, "ffmpeg_error", err)
+			return "", "", refusal
+		}
 		return "", "", err
 	}
 
