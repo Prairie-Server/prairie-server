@@ -23,9 +23,11 @@ done
 if [ -n "$outdir" ]; then
   mkdir -p "$outdir"
   echo "$@" > "$outdir/args.txt"
-  # Three segments so encoding sessions clear DefaultLiveTranscodeLeadSegments.
+  # Enough segments to clear the larger of DefaultLiveCopyLeadSegments and
+  # DefaultLiveTranscodeLeadSegments; a stub source is free to produce them
+  # instantly, so this only needs to keep pace with whichever lead is bigger.
   printf '#EXTM3U\n#EXT-X-VERSION:3\n#EXT-X-TARGETDURATION:2\n' > "$outdir/index.m3u8"
-  for i in 0 1 2; do
+  for i in 0 1 2 3 4; do
     printf 'seg' > "$outdir/seg_0000$i.ts"
     printf '#EXTINF:1.0,\nseg_0000%s.ts\n' "$i" >> "$outdir/index.m3u8"
   done

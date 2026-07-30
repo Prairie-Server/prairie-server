@@ -165,9 +165,10 @@ func (b *HLSBridge) StartLiveStream(
 		b.releaseTranscodeSlot(transcoding)
 		return "", "", err
 	}
-	// A copy session is already realtime, so it only waits for the first
-	// segment; an encode builds a lead the player can spend on rate variance.
-	lead := 1
+	// Both routes build a lead the player can spend before it needs the next
+	// segment. A copy is realtime with respect to the source, which says nothing
+	// about what the client has buffered, so it gets a lead too.
+	lead := DefaultLiveCopyLeadSegments
 	if transcoding {
 		lead = DefaultLiveTranscodeLeadSegments
 	}
