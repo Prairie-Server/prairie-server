@@ -345,7 +345,7 @@ func remuxAudioCopySafe(codec string, caps ClientCapabilities) bool {
 // probe ("E-AC-3", "DTS-HD MA", "eac3" depending on the muxer), and the client
 // list is hand-written or table-generated ("eac3", "ec3", "Dolby Digital Plus").
 // Comparing them raw means a client that canonically claims ["eac3"] fails to
-// match a source labelled "E-AC-3" and has its declared sink passthrough
+// match a source labeled "E-AC-3" and has its declared sink passthrough
 // silently downmixed to AAC -- the exact promise this list exists to keep.
 //
 // Scoped to the remux decision on purpose. Direct play hands over the original
