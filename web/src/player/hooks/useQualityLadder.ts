@@ -49,11 +49,33 @@ async function loadLadder(
     method: "GET",
   })
     .then((resp) => {
-      // An empty or malformed ladder is treated as a failure: an empty quality
-      // menu is worse than a stale one.
-      const rungs = resp?.rungs?.filter((rung) => rung?.id && rung.height > 0) ?? [];
-      cachedLadder = rungs.length > 0 ? rungs : FALLBACK_LADDER;
-      return cachedLadder;
+      // An empty or malformed ladder is a failure, and failures are not cached:
+      // caching the fallback here would make every later mount skip the server
+      // for the rest of the page's lifetime.
+      //
+      // All-or-nothing rather than filtering out bad rungs. A partially valid
+      // response means the contract has shifted, and silently serving the
+      // survivors would hide that while handing the viewer a truncated menu.
+      const rungs = resp?.rungs;
+      const valid =
+        Array.isArray(rungs) &&
+        rungs.length > 0 &&
+        rungs.every(
+          (rung) =>
+            typeof rung?.id === "string" &&
+            rung.id.length > 0 &&
+            typeof rung.label === "string" &&
+            rung.label.length > 0 &&
+            typeof rung.resolution === "string" &&
+            rung.resolution.length > 0 &&
+            Number.isFinite(rung.height) &&
+            rung.height > 0 &&
+            Number.isFinite(rung.bitrate_kbps) &&
+            rung.bitrate_kbps > 0,
+        );
+      if (!valid) return FALLBACK_LADDER;
+      cachedLadder = rungs;
+      return rungs;
     })
     .catch(() => {
       // Do not cache a failure — a transient error should not pin the fallback

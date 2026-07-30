@@ -1,6 +1,7 @@
 package playback
 
 import (
+	"strings"
 	"testing"
 	"time"
 )
@@ -29,14 +30,18 @@ func TestQualityLadderResolutionsAreScalable(t *testing.T) {
 	}
 }
 
-// Rung ids must be unique, since clients key their selection on them.
+// Rung ids must be unique, since clients key their selection on them. Compared
+// case-insensitively because RungByID and the step helpers use strings.EqualFold:
+// two rungs differing only in case would collide there while looking distinct in
+// a case-sensitive check.
 func TestQualityLadderIDsAreUnique(t *testing.T) {
 	seen := map[string]bool{}
 	for _, rung := range QualityLadderFor(0) {
-		if seen[rung.ID] {
-			t.Errorf("duplicate rung id %q", rung.ID)
+		key := strings.ToLower(rung.ID)
+		if seen[key] {
+			t.Errorf("duplicate rung id %q (case-insensitively)", rung.ID)
 		}
-		seen[rung.ID] = true
+		seen[key] = true
 	}
 }
 
