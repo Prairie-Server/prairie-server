@@ -25,7 +25,9 @@ func TestEffectiveAudioChannelsRespectsClientCeiling(t *testing.T) {
 		// Odd ceilings snap down to a real layout.
 		{name: "ceiling of 7 snaps to 5.1", sourceChannels: 8, maxChannels: 7, want: 6},
 		{name: "ceiling of 5 snaps to stereo", sourceChannels: 8, maxChannels: 5, want: 2},
-		{name: "ceiling of 1 still yields stereo", sourceChannels: 8, maxChannels: 1, want: 2},
+		// A mono ceiling is honored rather than rounded up: "never exceed the
+		// client's ceiling" has to include the bottom of the ladder.
+		{name: "ceiling of 1 yields mono", sourceChannels: 8, maxChannels: 1, want: 1},
 		// Unknown source count must not collapse a surround mix to mono.
 		{name: "unknown source count follows the ceiling", sourceChannels: 0, maxChannels: 6, want: 6},
 	} {
@@ -85,5 +87,21 @@ func TestEffectiveAudioChannelsAlwaysReturnsALadderRung(t *testing.T) {
 func TestAudioTrackChannelsAtBounds(t *testing.T) {
 	if got := AudioTrackChannelsAt(nil, 0); got != 0 {
 		t.Errorf("AudioTrackChannelsAt(nil, 0) = %d, want 0", got)
+	}
+}
+
+// "Never exceed the source" has to include mono, or the rule is only a
+// suggestion. Duplicating a mono track into stereo doubles the bitrate for no
+// information gain.
+func TestEffectiveAudioChannelsPreservesMono(t *testing.T) {
+	if got := EffectiveAudioChannels(1, 6, "aac"); got != 1 {
+		t.Errorf("EffectiveAudioChannels(1, 6) = %d, want 1 (mono source stays mono)", got)
+	}
+	if got := EffectiveAudioChannels(1, 8, "eac3"); got != 1 {
+		t.Errorf("EffectiveAudioChannels(1, 8) = %d, want 1", got)
+	}
+	// A mono ceiling is honored even from a surround source.
+	if got := EffectiveAudioChannels(8, 1, "aac"); got != 1 {
+		t.Errorf("EffectiveAudioChannels(8, 1) = %d, want 1 (client ceiling)", got)
 	}
 }

@@ -782,7 +782,11 @@ func (h *PlaybackHandler) playbackStreamURL(s *playback.Session) string {
 func identityRecipeCard(s *playback.Session) playback.RecipeCard {
 	switch s.PlayMethod {
 	case playback.PlayRemux:
-		return playback.NewRemuxRecipeCard(s.ID, s.UserID, s.ProfileID, s.MediaFileID, s.TranscodeAudio, s.AudioTrackIndex, s.RemuxDVMode)
+		card := playback.NewRemuxRecipeCard(s.ID, s.UserID, s.ProfileID, s.MediaFileID, s.TranscodeAudio, s.AudioTrackIndex, s.RemuxDVMode)
+		// Carried so a session reconstructed after a restart re-encodes at the
+		// layout the client declared instead of silently dropping to stereo.
+		card.MaxAudioChannels = s.MaxAudioChannels
+		return card
 	default:
 		return playback.NewDirectRecipeCard(s.ID, s.UserID, s.ProfileID, s.MediaFileID)
 	}
