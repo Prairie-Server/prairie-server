@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import {
   Heart,
+  History,
   Plus,
   Check,
   Captions,
@@ -414,6 +415,7 @@ export default function ActionBar({
                       navigate(`/admin/history?media_item_id=${encodeURIComponent(contentId)}`)
                     }
                   >
+                    <History className="size-4" />
                     View Play History
                   </DropdownMenuItem>
                 )}
@@ -424,7 +426,7 @@ export default function ActionBar({
                       setRefreshDialogOpen(true);
                     }}
                   >
-                    {isRefreshing && <RefreshCw className="size-4 animate-spin" />}
+                    <RefreshCw className={`size-4 ${isRefreshing ? "animate-spin" : ""}`} />
                     Refresh Metadata
                   </DropdownMenuItem>
                 )}
