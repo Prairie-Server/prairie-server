@@ -993,6 +993,9 @@ func main() {
 	// already generate WebP/AVIF locally, even though LocalStore satisfies the
 	// PutObject/Bucket contract the service asks for.
 	chapterThumbStore := chapterThumbnailStore(deps.S3Public, deps.ArtworkLocal)
+	// Published to the API from here rather than recomputed there: one decision,
+	// so the admin toggle cannot offer a capability the service does not have.
+	deps.ChapterThumbnailStoreReady = chapterThumbStore != nil
 	var chapterThumbService *chapterthumbs.Service
 	if deps.FileRepo != nil && deps.FolderRepo != nil && chapterThumbStore != nil {
 		chapterThumbService = chapterthumbs.NewService(
