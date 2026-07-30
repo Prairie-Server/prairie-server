@@ -66,6 +66,15 @@ func Resolve(file *models.MediaFile, caps ClientCapabilities, settings AdminSett
 	// (EAC3/AC3/DTS/TrueHD) to HDMI AVRs instead of re-encoding to stereo AAC.
 	audioOK := containsStr(caps.CodecsAudio, file.CodecAudio) ||
 		containsStr(caps.AudioPassthroughCodecs, file.CodecAudio)
+	// The same question for the remux route, but alias-tolerant. Probes and
+	// client tables spell these codecs differently ("E-AC-3" vs "eac3" vs "ec3"),
+	// and on the remux path a spelling mismatch is not harmless: it skips the
+	// container-safety decision entirely and re-encodes audio that the client had
+	// in fact claimed. audioOK keeps its raw comparison because it also gates
+	// direct play, where a wider notion of "supported" would change more routes
+	// than this fix intends.
+	remuxAudioOK := audioCodecClaimed(caps.CodecsAudio, file.CodecAudio) ||
+		audioCodecClaimed(caps.AudioPassthroughCodecs, file.CodecAudio)
 	// Check if client supports the container.
 	containerOK := containsStr(caps.Containers, file.Container)
 
@@ -108,7 +117,7 @@ func Resolve(file *models.MediaFile, caps ClientCapabilities, settings AdminSett
 	// hands over the original file, where a flat codecs_audio claim is the right
 	// question to ask; a remux rewrites into MP4, where it is not. See
 	// remuxAudioCopySafe.
-	if videoOK && audioOK && !containerOK && !copyUnsafe {
+	if videoOK && remuxAudioOK && !containerOK && !copyUnsafe {
 		if !remuxAudioCopySafe(file.CodecAudio, caps) {
 			return &PlayDecision{
 				Method:         PlayRemux,
@@ -323,10 +332,36 @@ func remuxAudioCopySafe(codec string, caps ClientCapabilities) bool {
 	case "aac":
 		return true
 	case "ac3", "eac3", "dts", "truehd":
-		return containsStr(caps.AudioPassthroughCodecs, codec)
+		return audioCodecClaimed(caps.AudioPassthroughCodecs, codec)
 	default:
 		return false
 	}
+}
+
+// audioCodecClaimed reports whether a capability list names a codec, comparing
+// both sides through normalizeAudioCodecForRemux.
+//
+// Both ends of this comparison are free-form. The source codec comes from a
+// probe ("E-AC-3", "DTS-HD MA", "eac3" depending on the muxer), and the client
+// list is hand-written or table-generated ("eac3", "ec3", "Dolby Digital Plus").
+// Comparing them raw means a client that canonically claims ["eac3"] fails to
+// match a source labeled "E-AC-3" and has its declared sink passthrough
+// silently downmixed to AAC -- the exact promise this list exists to keep.
+//
+// Scoped to the remux decision on purpose. Direct play hands over the original
+// file and its raw comparison decides a wider set of routes, so widening what
+// counts as a match there is a separate change with its own blast radius.
+func audioCodecClaimed(list []string, codec string) bool {
+	normalized := normalizeAudioCodecForRemux(codec)
+	if normalized == "" {
+		return false
+	}
+	for _, candidate := range list {
+		if normalizeAudioCodecForRemux(candidate) == normalized {
+			return true
+		}
+	}
+	return false
 }
 
 func normalizeAudioCodecForRemux(codec string) string {
