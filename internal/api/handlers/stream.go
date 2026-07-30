@@ -188,7 +188,26 @@ func (h *StreamHandler) HandleStream(w http.ResponseWriter, r *http.Request) {
 		// list was in hand; an empty value is a session that predates the choice
 		// (or a reconstruct from an older token) and keeps the MP4 default.
 		remuxFormat := playback.RemuxFFmpegFormat(session.RemuxContainer)
-		if err := playback.ServeRemuxWithDVMode(w, r, file.FilePath, remuxFormat, seekSeconds, session.TranscodeAudio, session.AudioTrackIndex, file.PrimaryDVProfile(), session.RemuxDVMode, h.ffmpegPath(), audioChannels, float64(file.Duration)); err != nil {
+		// A remux always copies video, so a seek lands on the keyframe at or
+		// before the request and the output begins there. That keyframe is the
+		// stream's timeline origin, and the declared duration has to be measured
+		// from it or it understates the output by the pre-roll. A failed probe
+		// falls back to the requested position, which is the pre-anchor behavior.
+		timelineOrigin := seekSeconds
+		if seekSeconds > 0 {
+			anchor, _, err := playback.ResolveCopySeekAnchor(r.Context(), h.ffmpegPath(), file.FilePath, seekSeconds, 0)
+			if err != nil {
+				slog.WarnContext(r.Context(), "remux copy seek anchor probe failed; declaring duration from the requested position",
+					"component", "api",
+					"playback_session_id", session.ID,
+					"seek_seconds", seekSeconds,
+					"error", err,
+				)
+			} else if anchor > 0 {
+				timelineOrigin = anchor
+			}
+		}
+		if err := playback.ServeRemuxWithDVMode(w, r, file.FilePath, remuxFormat, seekSeconds, session.TranscodeAudio, session.AudioTrackIndex, file.PrimaryDVProfile(), session.RemuxDVMode, h.ffmpegPath(), audioChannels, float64(file.Duration), timelineOrigin); err != nil {
 			h.handleTransportStartFailure(r.Context(), session, file, err)
 		}
 

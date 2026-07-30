@@ -171,6 +171,23 @@ func (s *Server) handleRemux(w http.ResponseWriter, r *http.Request) {
 			seekSeconds = v
 		}
 	}
+	// Measure the declared duration from the keyframe the copy seek actually
+	// starts on, matching the origin server. A failed probe falls back to the
+	// requested position rather than failing the stream.
+	timelineOrigin := seekSeconds
+	if seekSeconds > 0 {
+		anchor, _, err := playback.ResolveCopySeekAnchor(r.Context(), s.watcher.Config().Playback.FFmpegPath, claims.MediaPath, seekSeconds, 0)
+		if err != nil {
+			slog.WarnContext(r.Context(), "proxy remux copy seek anchor probe failed; declaring duration from the requested position",
+				"component", "proxy",
+				"playback_session_id", claims.SessionID,
+				"seek_seconds", seekSeconds,
+				"error", err,
+			)
+		} else if anchor > 0 {
+			timelineOrigin = anchor
+		}
+	}
 	// Honor the Dolby Vision mode frozen in the token (empty decodes as the
 	// legacy auto behavior for old tokens), mirroring how the integrated
 	// server's stream handler serves the same claims.
@@ -183,7 +200,7 @@ func (s *Server) handleRemux(w http.ResponseWriter, r *http.Request) {
 	// decided to keep as Matroska would make delivery depend on which server
 	// answered, which is exactly the kind of difference a mid-stream reconnect
 	// exposes.
-	_ = playback.ServeRemuxWithDVMode(w, r, claims.MediaPath, playback.RemuxFFmpegFormat(claims.RemuxContainer), seekSeconds, claims.TranscodeAudio, claims.AudioTrackIndex, claims.DVProfile, playback.RemuxDVMode(claims.RemuxDVMode), s.watcher.Config().Playback.FFmpegPath, 2, claims.TotalDuration)
+	_ = playback.ServeRemuxWithDVMode(w, r, claims.MediaPath, playback.RemuxFFmpegFormat(claims.RemuxContainer), seekSeconds, claims.TranscodeAudio, claims.AudioTrackIndex, claims.DVProfile, playback.RemuxDVMode(claims.RemuxDVMode), s.watcher.Config().Playback.FFmpegPath, 2, claims.TotalDuration, timelineOrigin)
 }
 
 func (s *Server) handleTranscodeManifest(w http.ResponseWriter, r *http.Request) {
