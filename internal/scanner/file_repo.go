@@ -3720,6 +3720,15 @@ func (r *FileRepository) ListMissingTrickplay(ctx context.Context, limit int) ([
 			OR COALESCE((mf.trickplay->>'thumbnail_count')::int, 0) = 0
 			OR COALESCE((mf.trickplay->>'duration_seconds')::int, 0) != mf.duration
 			OR COALESCE(mf.trickplay->>'last_error', '') <> ''
+			OR jsonb_array_length(COALESCE(mf.trickplay->'sheets', '[]'::jsonb)) <
+				CEIL(
+					GREATEST(COALESCE((mf.trickplay->>'thumbnail_count')::numeric, 0), 1)
+					/ GREATEST(
+						COALESCE((mf.trickplay->>'tile_columns')::numeric, 10)
+							* COALESCE((mf.trickplay->>'tile_rows')::numeric, 10),
+						1
+					)
+				)
 		  )
 		ORDER BY mf.probe_updated_at ASC NULLS FIRST, mf.id ASC
 		LIMIT $1`
