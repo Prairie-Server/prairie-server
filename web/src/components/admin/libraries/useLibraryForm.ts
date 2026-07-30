@@ -138,9 +138,7 @@ export function useLibraryForm({
   const [chapterThumbnailsEnabled, setChapterThumbnailsEnabled] = useState(
     library?.chapter_thumbnails_enabled ?? false,
   );
-  const [trickplayEnabled, setTrickplayEnabled] = useState(
-    library?.trickplay_enabled ?? false,
-  );
+  const [trickplayEnabled, setTrickplayEnabled] = useState(library?.trickplay_enabled ?? false);
   const [introDetectionEnabled, setIntroDetectionEnabled] = useState(
     library?.intro_detection_enabled ?? false,
   );
