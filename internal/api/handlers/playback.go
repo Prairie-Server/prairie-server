@@ -1137,32 +1137,51 @@ func adjustPlaybackForSelectedAudio(
 	transcodeAudio bool,
 	audioTrackIndex int,
 	preserveDirectAudioSelection bool,
-) (playback.PlayMethod, bool) {
+) (playback.PlayMethod, bool, int) {
 	if file == nil || len(file.AudioTracks) == 0 || audioTrackIndex < 0 || audioTrackIndex >= len(file.AudioTracks) {
-		return method, transcodeAudio
+		return method, transcodeAudio, audioTrackIndex
 	}
 
-	selectedTrack := file.AudioTracks[audioTrackIndex]
-	audioSupported := clientSupportsAudioCodec(req, selectedTrack.Codec)
+	audioSupported := clientSupportsAudioCodec(req, file.AudioTracks[audioTrackIndex].Codec)
+
+	// When the selected track is undecodable, prefer switching tracks over
+	// re-encoding. A Blu-ray remux usually ships a lossy companion in the same
+	// language beside its lossless default, and copying that beats re-encoding
+	// on every axis: no CPU, no quality loss, and surround survives instead of
+	// collapsing to stereo. Only re-encode when no decodable track exists.
+	//
+	// Never applied when the caller named a track. An explicit audio_track_index
+	// is the user's choice, and silently playing different audio than they asked
+	// for is worse than re-encoding what they picked -- so re-selection only fills
+	// in for a default the client cannot decode, never overrides an instruction.
+	if !audioSupported && req.AudioTrackIndex == nil && !preserveDirectAudioSelection {
+		if idx, ok := playback.SelectClientPlayableAudioTrack(
+			file.AudioTracks, audioTrackIndex, req.CodecsAudio, req.MaxAudioChannels,
+		); ok {
+			audioTrackIndex = idx
+			audioSupported = true
+		}
+	}
 
 	switch method {
 	case playback.PlayDirect:
 		if preserveDirectAudioSelection {
-			return playback.PlayDirect, false
+			return playback.PlayDirect, false, audioTrackIndex
 		}
-		// Direct play cannot force the browser onto a non-default audio stream.
-		// Promote to remux so ffmpeg can map the selected track explicitly.
+		// Direct play cannot force the player onto a non-default audio stream --
+		// it serves the container and the player takes the default track. Promote
+		// to remux so ffmpeg can map the chosen one explicitly.
 		if audioTrackIndex != directPlayAudioTrackIndex(file) {
-			return playback.PlayRemux, !audioSupported
+			return playback.PlayRemux, !audioSupported, audioTrackIndex
 		}
 		if !audioSupported {
-			return playback.PlayRemux, true
+			return playback.PlayRemux, true, audioTrackIndex
 		}
-		return method, false
+		return method, false, audioTrackIndex
 	case playback.PlayRemux:
-		return method, !audioSupported
+		return method, !audioSupported, audioTrackIndex
 	default:
-		return method, transcodeAudio
+		return method, transcodeAudio, audioTrackIndex
 	}
 }
 
@@ -1193,9 +1212,9 @@ func resolvePlaybackMethodForFile(
 	req startPlaybackRequest,
 	audioTrackIndex int,
 	adminSettings playback.AdminSettings,
-) (playback.PlayMethod, bool) {
+) (playback.PlayMethod, bool, int) {
 	if file == nil {
-		return "", false
+		return "", false, audioTrackIndex
 	}
 
 	caps := playback.ClientCapabilities{
@@ -1225,7 +1244,7 @@ func (h *PlaybackHandler) resolveCapabilityPlaybackSelection(
 
 	audioTrackIndex = normalizeAudioTrackIndex(requestedFile, audioTrackIndex)
 	adminSettings := playbackAdminSettingsFromRequest(ctx, h.SettingsRepo, h.playbackConfig().TranscodeEnabled)
-	method, transcodeAudio := resolvePlaybackMethodForFile(requestedFile, req, audioTrackIndex, adminSettings)
+	method, transcodeAudio, audioTrackIndex := resolvePlaybackMethodForFile(requestedFile, req, audioTrackIndex, adminSettings)
 
 	if requestedFile.Resolution == "2160p" &&
 		method == playback.PlayTranscode &&
@@ -1248,7 +1267,7 @@ func (h *PlaybackHandler) resolveCapabilityPlaybackSelection(
 				)
 			}
 			audioTrackIndex = effectiveAudioTrackIndex
-			method, transcodeAudio = resolvePlaybackMethodForFile(effectiveFile, req, audioTrackIndex, adminSettings)
+			method, transcodeAudio, audioTrackIndex = resolvePlaybackMethodForFile(effectiveFile, req, audioTrackIndex, adminSettings)
 			return effectiveFile, method, transcodeAudio, audioTrackIndex
 		}
 	}
@@ -1853,7 +1872,7 @@ func (h *PlaybackHandler) handleStartPlaybackLegacy(w http.ResponseWriter, r *ht
 	preserveDirectAudioSelection := method == playback.PlayDirect &&
 		strings.EqualFold(req.PlayMethod, string(playback.PlayDirect)) &&
 		req.PreserveDirectAudioSelection
-	method, transcodeAudio = adjustPlaybackForSelectedAudio(
+	method, transcodeAudio, audioTrackIndex = adjustPlaybackForSelectedAudio(
 		effectiveFile,
 		req,
 		method,
@@ -3221,6 +3240,10 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 	// TrueHD/MLP/DTS — software TrueHD decode is a known stall source.
 	audioTrackIndex := session.AudioTrackIndex
 	sourceAudioCodec := ""
+	// Probed channel count of the track we actually map. The channel resolvers
+	// need it to honor "never exceed the source" -- without it a stereo track
+	// asked for at a 5.1 ceiling gets upmixed into channels it does not have.
+	sourceAudioChannels := 0
 	if playback.TranscodesAudio(req.TargetCodecAudio) && len(file.AudioTracks) > 0 {
 		preferred := playback.PreferTranscodeFriendlyAudioTrack(file.AudioTracks, audioTrackIndex)
 		if preferred != audioTrackIndex {
@@ -3235,6 +3258,7 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 			audioTrackIndex = preferred
 		}
 		sourceAudioCodec = playback.AudioTrackCodecAt(file.AudioTracks, audioTrackIndex)
+		sourceAudioChannels = playback.AudioTrackChannelsAt(file.AudioTracks, audioTrackIndex)
 	}
 
 	requestedFile := file
@@ -3449,6 +3473,7 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 			InputPath:              file.FilePath,
 			SourceVideoCodec:       file.CodecVideo,
 			SourceAudioCodec:       sourceAudioCodec,
+			SourceAudioChannels:    sourceAudioChannels,
 			VideoBitstreamFilter:   videoBitstreamFilter,
 			SeekSeconds:            transportSeekSeconds,
 			StreamOriginSeconds:    streamOriginSeconds,
@@ -3585,6 +3610,7 @@ func (h *PlaybackHandler) HandleStartTranscode(w http.ResponseWriter, r *http.Re
 		SessionID:              req.SessionID,
 		SourceVideoCodec:       file.CodecVideo,
 		SourceAudioCodec:       sourceAudioCodec,
+		SourceAudioChannels:    sourceAudioChannels,
 		VideoBitstreamFilter:   videoBitstreamFilter,
 		SeekSeconds:            transportSeekSeconds,
 		StreamOriginSeconds:    streamOriginSeconds,

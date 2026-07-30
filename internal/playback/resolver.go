@@ -335,7 +335,17 @@ func remuxAudioCopySafe(codec string, caps ClientCapabilities) bool {
 	switch normalizeAudioCodecForRemux(codec) {
 	case "aac":
 		return true
-	case "ac3", "eac3", "dts", "truehd":
+	case "ac3", "eac3":
+		// Decodable from MP4 wherever the codec itself is decodable: Samsung
+		// reports AC-3 on all models and E-AC-3 on 2018+, and Apple platforms
+		// handle both. A plain claim is therefore evidence enough, and requiring
+		// sink passthrough here only forced needless re-encodes.
+		return audioCodecClaimed(caps.CodecsAudio, codec) ||
+			audioCodecClaimed(caps.AudioPassthroughCodecs, codec)
+	case "dts", "truehd":
+		// Genuinely fragile in MP4: DTS-in-MP4 is rare and Tizen reports no DTS
+		// decode at all, while TrueHD in MP4 is unsupported essentially
+		// everywhere. Only a declared sink passthrough justifies a copy.
 		return audioCodecClaimed(caps.AudioPassthroughCodecs, codec)
 	default:
 		return false

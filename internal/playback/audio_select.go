@@ -203,3 +203,70 @@ func AudioTrackChannelsAt(tracks []models.AudioTrack, index int) int {
 	}
 	return tracks[index].Channels
 }
+
+// SelectClientPlayableAudioTrack finds the best track the client can decode
+// itself, so an unplayable default can be answered by choosing a different
+// track rather than by re-encoding.
+//
+// This is the difference between "the TV cannot play this audio" and "the TV
+// cannot play this file". A Blu-ray remux typically ships a lossless default
+// (TrueHD/DTS-HD) alongside a lossy companion in the same language, and the
+// companion is usually both decodable and multichannel. Copying it beats
+// re-encoding the lossless track on every axis: no CPU, no quality loss, and
+// surround survives instead of being downmixed to stereo.
+//
+// Preference order, strongest first:
+//
+//  1. The client claims the codec. A track it cannot decode is no use however
+//     good it is.
+//  2. Same language as the originally selected track. Correct language in
+//     stereo beats the wrong language in 5.1.
+//  3. Most channels, bounded by maxChannels. A client that declared a 5.1
+//     ceiling gains nothing from a 7.1 track and may fail on it outright.
+//  4. Lowest index, so the choice is deterministic for equal candidates.
+//
+// Reports false when no track qualifies, leaving the caller to fall back to
+// re-encoding. maxChannels <= 0 means the client declared no ceiling, in which
+// case channel count is still preferred but nothing is excluded for it -- a
+// decodable track is better than a re-encode either way.
+func SelectClientPlayableAudioTrack(
+	tracks []models.AudioTrack,
+	selected int,
+	claimedCodecs []string,
+	maxChannels int,
+) (int, bool) {
+	if len(tracks) == 0 || len(claimedCodecs) == 0 {
+		return selected, false
+	}
+
+	preferredLang := ""
+	if selected >= 0 && selected < len(tracks) {
+		preferredLang = tracks[selected].Language
+	}
+
+	best := -1
+	bestLangMatch := false
+	bestChannels := -1
+	for i, track := range tracks {
+		if !audioCodecClaimed(claimedCodecs, track.Codec) {
+			continue
+		}
+		// A track above the client's ceiling is exactly what this exists to
+		// avoid handing over.
+		if maxChannels > 0 && track.Channels > maxChannels {
+			continue
+		}
+
+		langMatch := preferredLang == "" || track.Language == "" ||
+			langMatch(track.Language, preferredLang)
+		if best < 0 ||
+			(langMatch && !bestLangMatch) ||
+			(langMatch == bestLangMatch && track.Channels > bestChannels) {
+			best, bestLangMatch, bestChannels = i, langMatch, track.Channels
+		}
+	}
+	if best < 0 {
+		return selected, false
+	}
+	return best, true
+}

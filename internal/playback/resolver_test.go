@@ -345,9 +345,14 @@ func TestResolveRemuxConvertsAudioNotSafeInMP4(t *testing.T) {
 		wantTranArg  bool
 		wanteDescrip string
 	}{
-		{codec: "ac3", wantTranArg: true, wanteDescrip: "AC-3 is unreliable in MP4 without sink evidence"},
-		{codec: "eac3", wantTranArg: true, wanteDescrip: "E-AC-3 likewise"},
-		{codec: "dts", wantTranArg: true, wanteDescrip: "DTS likewise"},
+		// AC-3/E-AC-3 copy on a plain claim: Samsung reports AC-3 on all models
+		// and E-AC-3 on 2018+, and Apple platforms handle both, so requiring sink
+		// passthrough only forced needless re-encodes.
+		{codec: "ac3", wantTranArg: false, wanteDescrip: "AC-3 decodes from MP4 wherever the codec does"},
+		{codec: "eac3", wantTranArg: false, wanteDescrip: "E-AC-3 likewise"},
+		// DTS and TrueHD stay evidence-gated: Tizen reports no DTS decode, and
+		// TrueHD in MP4 is unsupported essentially everywhere.
+		{codec: "dts", wantTranArg: true, wanteDescrip: "DTS is fragile in MP4 without sink evidence"},
 		{codec: "truehd", wantTranArg: true, wanteDescrip: "TrueHD likewise"},
 		{codec: "mp3", wantTranArg: true, wanteDescrip: "MP3 in MP4 is marginal"},
 		{codec: "aac", wantTranArg: false, wanteDescrip: "AAC is MP4's native audio codec"},
@@ -434,18 +439,19 @@ func TestResolveRemuxHonorsAliasedPassthroughClaim(t *testing.T) {
 	}
 }
 
-// Without passthrough evidence the same aliased source still converts, so alias
-// tolerance widens matching without weakening the container-safety gate.
+// A fragile codec without passthrough evidence still converts, so alias
+// tolerance widens matching without weakening the container-safety gate. DTS
+// stands in for the fragile set now that the AC-3 family copies on a plain claim.
 func TestResolveRemuxAliasedSourceStillConvertsWithoutEvidence(t *testing.T) {
 	settings := playback.AdminSettings{TranscodeEnabled: true}
 	caps := playback.ClientCapabilities{
 		CodecsVideo:   []string{"hevc"},
-		CodecsAudio:   []string{"aac", "eac3"},
+		CodecsAudio:   []string{"aac", "dts"},
 		Containers:    []string{"mp4"},
 		MaxResolution: "2160p",
 	}
 	file := &models.MediaFile{
-		CodecVideo: "hevc", CodecAudio: "E-AC-3", Container: "mkv", Resolution: "2160p",
+		CodecVideo: "hevc", CodecAudio: "DTS-HD MA", Container: "mkv", Resolution: "2160p",
 	}
 
 	decision := playback.Resolve(file, caps, settings)

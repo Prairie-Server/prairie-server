@@ -802,13 +802,25 @@ func appendAudioArgs(args []string, opts TranscodeOpts) []string {
 		args = append(args, "-c:a", "copy")
 	case "opus":
 		args = append(args, "-c:a", "libopus", "-b:a", "192k", "-ac", "2")
-	case "eac3":
-		// Typical Dolby Digital Plus 5.1 bitrate; let the source dictate channel
-		// count so we preserve surround when possible.
-		args = append(args, "-c:a", "eac3", "-b:a", "384k")
-	case "ac3":
-		// Legacy Dolby Digital; universal AVR support.
-		args = append(args, "-c:a", "ac3", "-b:a", "448k")
+	case "eac3", "ac3":
+		// AC-3 for both. E-AC-3 is fine to *copy* -- a source E-AC-3 track
+		// passes through untouched via the "copy" case above, which is the
+		// direct-play route -- but it is not used as an encode target: Tizen
+		// accepts E-AC-3 for direct play and not for transcode, and AC-3 has
+		// broader hardware decode support at the same channel layout. Falling
+		// back to AC-3 keeps surround while staying decodable, where emitting
+		// E-AC-3 risks silent audio on exactly the devices that asked for
+		// surround.
+		//
+		// The layout is capped explicitly: the encoder stops at 5.1, and the
+		// client's max_audio_channels has to be honored here as much as on the
+		// AAC path. EffectiveAC3Channels returns 0 when it has nothing to go on,
+		// in which case the layout is left to FFmpeg's negotiation.
+		channels := EffectiveAC3Channels(opts.SourceAudioChannels, opts.TargetAudioChannels)
+		args = append(args, "-c:a", "ac3", "-b:a", AC3BitrateForChannels(channels))
+		if channels > 0 {
+			args = append(args, "-ac", strconv.Itoa(channels))
+		}
 	default:
 		// Preserve surround from multichannel sources up to the client's declared
 		// ceiling; the historical default stays a stereo 192k downmix when no
