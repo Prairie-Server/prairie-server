@@ -399,17 +399,22 @@ type audioPassthroughCapabilities struct {
 
 // startPlaybackRequest represents the JSON body for POST /playback/start.
 type startPlaybackRequest struct {
-	FileID                       int                           `json:"file_id"`
-	ProfileID                    string                        `json:"profile_id"`
-	PlayMethod                   string                        `json:"play_method"`
-	StartPosition                *float64                      `json:"start_position,omitempty"`
-	AudioTrackIndex              *int                          `json:"audio_track_index,omitempty"`
-	PreserveDirectAudioSelection bool                          `json:"preserve_direct_audio_selection,omitempty"`
-	DisableProgressPersistence   bool                          `json:"disable_progress_persistence,omitempty"`
-	CodecsVideo                  []string                      `json:"codecs_video"`
-	CodecsAudio                  []string                      `json:"codecs_audio"`
-	Containers                   []string                      `json:"containers"`
-	MaxResolution                string                        `json:"max_resolution"`
+	FileID                       int      `json:"file_id"`
+	ProfileID                    string   `json:"profile_id"`
+	PlayMethod                   string   `json:"play_method"`
+	StartPosition                *float64 `json:"start_position,omitempty"`
+	AudioTrackIndex              *int     `json:"audio_track_index,omitempty"`
+	PreserveDirectAudioSelection bool     `json:"preserve_direct_audio_selection,omitempty"`
+	DisableProgressPersistence   bool     `json:"disable_progress_persistence,omitempty"`
+	CodecsVideo                  []string `json:"codecs_video"`
+	CodecsAudio                  []string `json:"codecs_audio"`
+	Containers                   []string `json:"containers"`
+	MaxResolution                string   `json:"max_resolution"`
+	// MaxAudioChannels caps the channel layout a re-encode may target. A panel
+	// that tops out at 5.1 sends 6; an 8K panel sends 8. Absent (0) keeps the
+	// historical stereo downmix, because silence about a capability is not
+	// evidence of it.
+	MaxAudioChannels             int                           `json:"max_audio_channels,omitempty"`
 	HDR                          bool                          `json:"hdr"`
 	HdrDetails                   *hdrDetails                   `json:"hdr_details,omitempty"`
 	AudioPassthrough             *audioPassthroughCapabilities `json:"audio_passthrough,omitempty"`
@@ -777,7 +782,11 @@ func (h *PlaybackHandler) playbackStreamURL(s *playback.Session) string {
 func identityRecipeCard(s *playback.Session) playback.RecipeCard {
 	switch s.PlayMethod {
 	case playback.PlayRemux:
-		return playback.NewRemuxRecipeCard(s.ID, s.UserID, s.ProfileID, s.MediaFileID, s.TranscodeAudio, s.AudioTrackIndex, s.RemuxDVMode)
+		card := playback.NewRemuxRecipeCard(s.ID, s.UserID, s.ProfileID, s.MediaFileID, s.TranscodeAudio, s.AudioTrackIndex, s.RemuxDVMode)
+		// Carried so a session reconstructed after a restart re-encodes at the
+		// layout the client declared instead of silently dropping to stereo.
+		card.MaxAudioChannels = s.MaxAudioChannels
+		return card
 	default:
 		return playback.NewDirectRecipeCard(s.ID, s.UserID, s.ProfileID, s.MediaFileID)
 	}
@@ -1190,11 +1199,12 @@ func resolvePlaybackMethodForFile(
 	}
 
 	caps := playback.ClientCapabilities{
-		CodecsVideo:   req.CodecsVideo,
-		CodecsAudio:   req.CodecsAudio,
-		Containers:    req.Containers,
-		MaxResolution: req.MaxResolution,
-		HDR:           req.HDR,
+		CodecsVideo:      req.CodecsVideo,
+		CodecsAudio:      req.CodecsAudio,
+		Containers:       req.Containers,
+		MaxResolution:    req.MaxResolution,
+		MaxAudioChannels: req.MaxAudioChannels,
+		HDR:              req.HDR,
 	}
 	if req.AudioPassthrough != nil {
 		caps.AudioPassthroughCodecs = req.AudioPassthrough.PassthroughCodecs
@@ -1951,6 +1961,9 @@ func (h *PlaybackHandler) handleStartPlaybackLegacy(w http.ResponseWriter, r *ht
 	session.ClientIP = clientip.FromContext(r.Context())
 	session.StreamBitrateKbps = streamBitrateKbps
 	session.TargetAudioCodec = targetAudioCodec
+	// Carried onto the session because the progressive remux encodes audio at
+	// serve time, long after this request. Absent (0) keeps the stereo downmix.
+	session.MaxAudioChannels = req.MaxAudioChannels
 	h.persistSeriesPlaybackPreference(r.Context(), userID, profileID, effectiveFile)
 
 	if req.StartPosition != nil {

@@ -190,3 +190,16 @@ func AudioTrackCodecAt(tracks []models.AudioTrack, index int) string {
 	}
 	return tracks[index].Codec
 }
+
+// AudioTrackChannelsAt returns the channel count for tracks[index], or 0 when
+// the inventory is missing / out of range.
+//
+// 0 is a meaningful answer: EffectiveAudioChannels treats it as "the source
+// count is unknown" and falls back to the client's ceiling alone, rather than
+// assuming mono and collapsing a surround mix.
+func AudioTrackChannelsAt(tracks []models.AudioTrack, index int) int {
+	if index < 0 || index >= len(tracks) {
+		return 0
+	}
+	return tracks[index].Channels
+}

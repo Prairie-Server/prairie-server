@@ -175,7 +175,16 @@ func (h *StreamHandler) HandleStream(w http.ResponseWriter, r *http.Request) {
 				seekSeconds = s
 			}
 		}
-		if err := playback.ServeRemuxWithDVMode(w, r, file.FilePath, "mp4", seekSeconds, session.TranscodeAudio, session.AudioTrackIndex, file.PrimaryDVProfile(), session.RemuxDVMode, h.ffmpegPath()); err != nil {
+		// The channel layout is decided here rather than at plan time because this
+		// is where the encode actually happens. EffectiveAudioChannels bounds the
+		// client's declared ceiling by what the source carries and keeps the
+		// fragile-lossless stereo downmix regardless of what was asked for.
+		audioChannels := playback.EffectiveAudioChannels(
+			playback.AudioTrackChannelsAt(file.AudioTracks, session.AudioTrackIndex),
+			session.MaxAudioChannels,
+			playback.AudioTrackCodecAt(file.AudioTracks, session.AudioTrackIndex),
+		)
+		if err := playback.ServeRemuxWithDVMode(w, r, file.FilePath, "mp4", seekSeconds, session.TranscodeAudio, session.AudioTrackIndex, file.PrimaryDVProfile(), session.RemuxDVMode, h.ffmpegPath(), audioChannels); err != nil {
 			h.handleTransportStartFailure(r.Context(), session, file, err)
 		}
 

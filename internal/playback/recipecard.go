@@ -63,9 +63,13 @@ type RecipeCard struct {
 	SubtitleBurnIn         bool    `json:"subtitle_burn_in,omitempty"`
 	SubtitleCodec          string  `json:"subtitle_codec,omitempty"`
 	AudioTrackIndex        int     `json:"audio_track_index"`
-	TargetBitrateKbps      int     `json:"target_bitrate_kbps,omitempty"`
-	TotalDuration          float64 `json:"total_duration"`
-	FastStart              bool    `json:"fast_start,omitempty"`
+	// MaxAudioChannels mirrors Session.MaxAudioChannels. Without it a remux
+	// session reconstructed after a restart would silently fall back to the
+	// stereo default, quietly losing surround the client had declared.
+	MaxAudioChannels  int     `json:"max_audio_channels,omitempty"`
+	TargetBitrateKbps int     `json:"target_bitrate_kbps,omitempty"`
+	TotalDuration     float64 `json:"total_duration"`
+	FastStart         bool    `json:"fast_start,omitempty"`
 }
 
 // NewRecipeCard builds a RecipeCard from the durable identity fields plus the
@@ -168,12 +172,16 @@ func (c RecipeCard) TranscodeOpts(outputDir, ffmpegPath string, logSink FFmpegLo
 		SubtitleBurnIn:         c.SubtitleBurnIn,
 		SubtitleCodec:          c.SubtitleCodec,
 		AudioTrackIndex:        c.AudioTrackIndex,
-		TargetBitrateKbps:      c.TargetBitrateKbps,
-		TotalDuration:          c.TotalDuration,
-		FastStart:              c.FastStart,
-		NodeType:               "integrated",
-		ExecutionMode:          "integrated",
-		FFmpegLogSink:          logSink,
+		// The card's ceiling becomes the encode target, so a reconstructed
+		// transcode re-encodes at the layout the client declared rather than
+		// dropping to the stereo default.
+		TargetAudioChannels: c.MaxAudioChannels,
+		TargetBitrateKbps:   c.TargetBitrateKbps,
+		TotalDuration:       c.TotalDuration,
+		FastStart:           c.FastStart,
+		NodeType:            "integrated",
+		ExecutionMode:       "integrated",
+		FFmpegLogSink:       logSink,
 	}
 }
 
@@ -197,6 +205,7 @@ func (c RecipeCard) ToClaims() streamtoken.Claims {
 		OutputSubdir:           c.OutputSubdir,
 		PlayMethod:             string(c.PlayMethod),
 		TranscodeAudio:         c.TranscodeAudio,
+		MaxAudioChannels:       c.MaxAudioChannels,
 		RemuxDVMode:            string(c.RemuxDVMode),
 		TranscodeNode:          c.TranscodeNodeURL,
 		TranscodeTransportID:   c.TranscodeTransportID,
@@ -244,6 +253,7 @@ func RecipeCardFromClaims(c *streamtoken.Claims) RecipeCard {
 		TranscodeTransportID:   c.TranscodeTransportID,
 		PlayMethod:             method,
 		TranscodeAudio:         c.TranscodeAudio,
+		MaxAudioChannels:       c.MaxAudioChannels,
 		RemuxDVMode:            RemuxDVMode(c.RemuxDVMode),
 		InputPath:              c.MediaPath,
 		OutputSubdir:           c.OutputSubdir,

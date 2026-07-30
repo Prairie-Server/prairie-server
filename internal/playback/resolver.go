@@ -32,7 +32,11 @@ type ClientCapabilities struct {
 	AudioPassthroughCodecs []string `json:"audio_passthrough_codecs,omitempty"`
 	Containers             []string `json:"containers"`     // e.g., mp4, webm, mkv
 	MaxResolution          string   `json:"max_resolution"` // e.g., 1080p, 2160p
-	HDR                    bool     `json:"hdr"`
+	// MaxAudioChannels caps the layout a re-encode may target (6 for a 5.1
+	// panel, 8 for 7.1). 0 means the client did not say, which keeps the stereo
+	// downmix. See EffectiveAudioChannels.
+	MaxAudioChannels int  `json:"max_audio_channels,omitempty"`
+	HDR              bool `json:"hdr"`
 }
 
 // AdminSettings controls server-side playback constraints.
