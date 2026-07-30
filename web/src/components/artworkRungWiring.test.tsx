@@ -3,13 +3,24 @@ import { MemoryRouter } from "react-router";
 import { describe, expect, it, vi } from "vitest";
 import CastCarousel from "./CastCarousel";
 import EpisodeRow from "./EpisodeRow";
+import ContinueWatchingCard from "./ContinueWatchingCard";
 import { PROFILE_WIDTHS, STILL_WIDTHS } from "@/lib/artworkUrl";
 
 vi.mock("@/components/overlays/CardOverlays", () => ({ default: () => null }));
 vi.mock("@/hooks/useOverlayPrefs", () => ({ useOverlayPrefs: () => ({ prefs: null }) }));
+// ContinueWatchingCard reaches for the playback controller, which only exists
+// under the watch host. These tests render markup to inspect srcSet rungs, so a
+// no-op controller is enough.
+// The row's overflow menu pulls in admin/auth hooks that need providers these
+// markup-only tests do not stand up.
+vi.mock("@/components/MediaItemMenu", () => ({ default: () => null }));
+vi.mock("@/playback/watchPlaybackContext", () => ({
+  useWatchPlaybackController: () => ({ startPlayback: () => {} }),
+}));
 
 const STILL_URL = "/artwork/tv/series-1/ep-1/still/w500.4.webp?sig=abc&expires=99";
 const PHOTO_URL = "/artwork/people/person-1/profile/w500.2.webp?sig=abc&expires=99";
+const POSTER_URL = "/artwork/tmdb/movie/856/poster/w500.7.webp?sig=abc&expires=99";
 
 /**
  * These images used to be plain <img src> tags pinned to whatever rung the
@@ -94,6 +105,60 @@ describe("artwork rung wiring", () => {
     expect(markup).toContain('src="https://images.example.test/harbour.jpg"');
     expect(markup).not.toContain("srcSet");
     expect(markup).not.toContain("sizes=");
+  });
+
+  // A Continue Watching episode shows its still, which has no rung above w500.
+  // Offering the backdrop ladder here made the browser choose w1280 and 404, so
+  // the card rendered its placeholder -- while the same episode looked right on
+  // clients that fetch the canonical URL with no srcSet.
+  it("offers the still ladder to a continue-watching episode", () => {
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <ContinueWatchingCard
+          sectionItem={
+            {
+              content_id: "ep-001",
+              type: "episode",
+              title: "Pilot",
+              series_title: "Severance",
+              season_number: 2,
+              episode_number: 7,
+              backdrop_url: STILL_URL,
+            } as never
+          }
+        />
+      </MemoryRouter>,
+    );
+
+    expect(markup).toContain("300w");
+    expect(markup).toContain("500w");
+    // The rungs the server never generated for a still.
+    expect(markup).not.toContain("1280w");
+    expect(markup).not.toContain("1920w");
+    expect(markup).not.toContain("/w1280.");
+    expect(markup).not.toContain("/w1920.");
+  });
+
+  // A movie keeps the backdrop ladder: this is the case that already worked, and
+  // narrowing every card to the still rungs would regress it.
+  it("keeps the backdrop ladder for a continue-watching movie", () => {
+    const markup = renderToStaticMarkup(
+      <MemoryRouter>
+        <ContinueWatchingCard
+          sectionItem={
+            {
+              content_id: "movie-856",
+              type: "movie",
+              title: "Arrival",
+              backdrop_url: "/artwork/tmdb/movie/856/backdrop/w1280.7.webp?sig=abc&expires=99",
+              poster_url: POSTER_URL,
+            } as never
+          }
+        />
+      </MemoryRouter>,
+    );
+
+    expect(markup).toContain("1280w");
   });
 
   // The ladders mirror artworkkey.VariantWidths; drifting apart means the
