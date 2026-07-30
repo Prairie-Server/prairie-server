@@ -410,3 +410,47 @@ func TestResolveDirectPlayUnaffectedByRemuxAudioGate(t *testing.T) {
 		t.Errorf("Method = %q, want direct (container matches; nothing is rewritten)", decision.Method)
 	}
 }
+
+// An aliased source label against a canonical client claim must still take the
+// remux route with audio copied, rather than being routed to an AAC re-encode
+// before the container-safety decision is ever consulted.
+func TestResolveRemuxHonorsAliasedPassthroughClaim(t *testing.T) {
+	settings := playback.AdminSettings{TranscodeEnabled: true}
+	caps := playback.ClientCapabilities{
+		CodecsVideo:            []string{"hevc"},
+		CodecsAudio:            []string{"aac"},
+		AudioPassthroughCodecs: []string{"eac3"},
+		Containers:             []string{"mp4"},
+		MaxResolution:          "2160p",
+	}
+	file := &models.MediaFile{
+		CodecVideo: "hevc", CodecAudio: "E-AC-3", Container: "mkv", Resolution: "2160p",
+	}
+
+	decision := playback.Resolve(file, caps, settings)
+	if decision.Method != playback.PlayRemux || decision.TranscodeAudio {
+		t.Fatalf("got (%q, transcodeAudio=%v), want remux with audio copied",
+			decision.Method, decision.TranscodeAudio)
+	}
+}
+
+// Without passthrough evidence the same aliased source still converts, so alias
+// tolerance widens matching without weakening the container-safety gate.
+func TestResolveRemuxAliasedSourceStillConvertsWithoutEvidence(t *testing.T) {
+	settings := playback.AdminSettings{TranscodeEnabled: true}
+	caps := playback.ClientCapabilities{
+		CodecsVideo:   []string{"hevc"},
+		CodecsAudio:   []string{"aac", "eac3"},
+		Containers:    []string{"mp4"},
+		MaxResolution: "2160p",
+	}
+	file := &models.MediaFile{
+		CodecVideo: "hevc", CodecAudio: "E-AC-3", Container: "mkv", Resolution: "2160p",
+	}
+
+	decision := playback.Resolve(file, caps, settings)
+	if decision.Method != playback.PlayRemux || !decision.TranscodeAudio {
+		t.Fatalf("got (%q, transcodeAudio=%v), want remux with audio transcoded",
+			decision.Method, decision.TranscodeAudio)
+	}
+}
