@@ -987,14 +987,23 @@ func main() {
 		slog.Info("scanner initialized")
 	}
 
+	// Chapter thumbnails write through the same object store as the rest of the
+	// artwork, which is public S3 when configured and the local data volume
+	// otherwise. Requiring S3 here made the feature unavailable on installs that
+	// already generate WebP/AVIF locally, even though LocalStore satisfies the
+	// PutObject/Bucket contract the service asks for.
+	chapterThumbStore := chapterThumbnailStore(deps.S3Public, deps.ArtworkLocal)
+	// Published to the API from here rather than recomputed there: one decision,
+	// so the admin toggle cannot offer a capability the service does not have.
+	deps.ChapterThumbnailStoreReady = chapterThumbStore != nil
 	var chapterThumbService *chapterthumbs.Service
-	if deps.FileRepo != nil && deps.FolderRepo != nil && deps.S3Public != nil {
+	if deps.FileRepo != nil && deps.FolderRepo != nil && chapterThumbStore != nil {
 		chapterThumbService = chapterthumbs.NewService(
 			deps.FileRepo,
 			deps.FolderRepo,
 			deps.ProbeEnsurer,
 			settingsRepo,
-			deps.S3Public,
+			chapterThumbStore,
 			nil,
 			deps.TranscodePool,
 			cfg.Playback.FFmpegPath,
@@ -1776,9 +1785,11 @@ func main() {
 	}
 	deps.SessionMgr = sessionMgr
 	deps.PlaybackRealtimeHub = playback.NewRealtimeHub()
-	if chapterThumbService != nil && deps.S3Public != nil {
+	// The notifier presigns the URL it pushes to active players, so it has to read
+	// from whichever store the thumbnails were written to.
+	if presigner := chapterThumbnailPresigner(deps.S3Public, deps.ArtworkLocal); chapterThumbService != nil && presigner != nil {
 		chapterThumbService.SetNotifier(
-			playback.NewChapterThumbnailNotifier(sessionMgr, deps.PlaybackRealtimeHub, deps.S3Public, 0),
+			playback.NewChapterThumbnailNotifier(sessionMgr, deps.PlaybackRealtimeHub, presigner, 0),
 		)
 	}
 
@@ -3622,4 +3633,41 @@ type audiobooksSettingsAdapter struct {
 
 func (a *audiobooksSettingsAdapter) GetString(ctx context.Context, key string) (string, error) {
 	return a.repo.Get(ctx, key)
+}
+
+// chapterThumbnailStore picks the object store chapter thumbnails are written to:
+// public S3 when configured, otherwise the local artwork volume.
+//
+// Both branches check for a nil pointer before returning, because a typed nil
+// assigned to an interface is not nil -- returning one would leave the caller's
+// `!= nil` guard satisfied by a store that panics on first use.
+func chapterThumbnailStore(s3 *s3client.Client, local *artworkstore.LocalStore) chapterthumbs.ObjectStore {
+	if s3 != nil {
+		return s3
+	}
+	if local != nil {
+		return local
+	}
+	return nil
+}
+
+// chapterThumbnailReadURLSigner is the read-URL contract the thumbnail notifier
+// needs. Declared here rather than exported from playback: this is the wiring
+// layer that has to choose between two concrete stores, and Go interfaces are
+// structural, so a value satisfying this also satisfies the notifier's own.
+type chapterThumbnailReadURLSigner interface {
+	PresignGetURL(ctx context.Context, bucket, key string, expiry time.Duration) (string, error)
+	Bucket() string
+}
+
+// chapterThumbnailPresigner mirrors chapterThumbnailStore for read URLs, so the
+// notifier presigns against whichever store holds the bytes.
+func chapterThumbnailPresigner(s3 *s3client.Client, local *artworkstore.LocalStore) chapterThumbnailReadURLSigner {
+	if s3 != nil {
+		return s3
+	}
+	if local != nil {
+		return local
+	}
+	return nil
 }
