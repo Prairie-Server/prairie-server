@@ -80,12 +80,6 @@ func NewStreamHandler(sessionMgr SessionManagerInterface, fileResolver FilePathR
 // For remux: starts an ffmpeg remux and streams the output.
 // For transcode: returns 400 (transcode uses manifest/segment endpoints).
 func (h *StreamHandler) HandleStream(w http.ResponseWriter, r *http.Request) {
-	userID := apimw.GetUserID(r.Context())
-	if userID == 0 {
-		writeError(w, http.StatusUnauthorized, "unauthorized", "Authentication required")
-		return
-	}
-
 	sessionID := chi.URLParam(r, "session_id")
 	if sessionID == "" {
 		writeError(w, http.StatusBadRequest, "bad_request", "Session ID is required")
@@ -100,6 +94,28 @@ func (h *StreamHandler) HandleStream(w http.ResponseWriter, r *http.Request) {
 	// Without a token (or signing secret) reconstruct is off, collapsing to a
 	// plain GetSession + ownership check.
 	card := streamCardFromToken(r.URL.Query().Get(streamTokenParam), sessionID, h.JWTSecret)
+
+	userID := apimw.GetUserID(r.Context())
+	if userID == 0 && card != nil && apimw.IsStreamTokenAuthorized(r.Context()) {
+		// A stream token deliberately carries no bearer identity, so passing the
+		// auth middleware still leaves no user in the context and this handler
+		// used to 401 anyway -- which is what made every native-player fetch of a
+		// progressive stream fail with "streaming connection failed".
+		//
+		// The signed card names the owner. Trusting it here is the same trust the
+		// reconstruct path below already places in it, and it is safe for the same
+		// reason: streamCardFromToken returns non-nil only for a token whose
+		// signature verifies and whose session matches this path, so a token
+		// cannot name a different session's owner. Ownership is still enforced --
+		// LoadOrReconstructSession compares the session's user against this value
+		// and answers SessionForbidden on a mismatch.
+		userID = card.UserID
+	}
+	if userID == 0 {
+		writeError(w, http.StatusUnauthorized, "unauthorized", "Authentication required")
+		return
+	}
+
 	session, status := h.TM.LoadOrReconstructSession(r.Context(), h.sessionMgr.GetSession, sessionID, userID, card)
 	switch status {
 	case playback.SessionMissing:
