@@ -202,6 +202,9 @@ export function SeekBar({
         onSeek(finalTime);
         setDragging(false);
         setDragTime(null);
+        // Keep the bubble at the release point instead of snapping back to the
+        // pre-drag hoverTime (hover updates are paused while dragging).
+        setHoverTime(finalTime);
         document.removeEventListener("mousemove", handleMouseMove);
         document.removeEventListener("mouseup", handleMouseUp);
       };
