@@ -32,6 +32,11 @@ type Session struct {
 	TranscodeNodeURL     string // URL of assigned transcode node (empty = local/integrated)
 	TranscodeTransportID string // remote node process identity; empty means session ID
 	AudioTrackIndex      int
+	// MaxAudioChannels is the client's declared channel ceiling from
+	// /playback/start (6 for a 5.1 panel, 8 for 7.1). Carried on the session
+	// because the progressive remux encodes audio at serve time, long after the
+	// request that declared it. 0 keeps the stereo downmix.
+	MaxAudioChannels int
 
 	StreamBitrateKbps int    // currently delivered bitrate, when known
 	TargetResolution  string // requested output resolution for transcodes

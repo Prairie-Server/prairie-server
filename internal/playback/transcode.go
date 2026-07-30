@@ -72,6 +72,11 @@ type TranscodeOpts struct {
 	// the AAC path forces a stereo downmix — multichannel TrueHD decode is a
 	// known stall source (quant_step_size / huff_lsbs warnings).
 	SourceAudioCodec string
+	// SourceAudioChannels is the probed channel count of the mapped audio track.
+	// It bounds the re-encode: upmixing invents channels, costs bitrate and gains
+	// nothing. 0 means the probe reported none, and the ceiling then comes from
+	// the client alone.
+	SourceAudioChannels int
 	// TargetAudioChannels caps the re-encoded channel count. 0 (or anything
 	// below 3) keeps the historical stereo downmix; 6 preserves 5.1 from a
 	// surround source. Ignored for copy/passthrough audio targets.
@@ -805,16 +810,14 @@ func appendAudioArgs(args []string, opts TranscodeOpts) []string {
 		// Legacy Dolby Digital; universal AVR support.
 		args = append(args, "-c:a", "ac3", "-b:a", "448k")
 	default:
-		// Preserve surround from multichannel sources when the planner asked
-		// for it (AAC 5.1 decodes universally in Media3); the historical
-		// default stays a stereo 192k downmix. Fragile lossless sources
-		// (TrueHD/MLP) always downmix to stereo — software TrueHD→5.1 AAC
-		// stalls segment muxing on some Blu-ray titles.
-		if opts.TargetAudioChannels >= 6 && !IsFragileLosslessAudioCodec(opts.SourceAudioCodec) {
-			args = append(args, "-c:a", "aac", "-b:a", "384k", "-ac", "6")
-		} else {
-			args = append(args, "-c:a", "aac", "-b:a", "192k", "-ac", "2")
-		}
+		// Preserve surround from multichannel sources up to the client's declared
+		// ceiling; the historical default stays a stereo 192k downmix when no
+		// ceiling was declared. Fragile lossless sources (TrueHD/MLP) always
+		// downmix to stereo — software TrueHD→5.1 AAC stalls segment muxing on
+		// some Blu-ray titles — which EffectiveAudioChannels enforces, so that
+		// safety cannot be lost by a client asking for more.
+		channels := EffectiveAudioChannels(opts.SourceAudioChannels, opts.TargetAudioChannels, opts.SourceAudioCodec)
+		args = append(args, "-c:a", "aac", "-b:a", AudioBitrateForChannels(channels), "-ac", strconv.Itoa(channels))
 	}
 
 	return args

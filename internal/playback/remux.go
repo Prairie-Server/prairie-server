@@ -118,7 +118,7 @@ const (
 // the RPUs would dangle — stripping yields a clean HDR10 base layer (the
 // Apple-parity fallback for devices without a P7 decoder). Profile 8 RPUs
 // stay: the base layer is self-contained and DV clients can render it.
-func buildRemuxArgs(filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, tagDVSampleEntry bool) []string {
+func buildRemuxArgs(filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, tagDVSampleEntry bool, audioChannels int) []string {
 	args := []string{
 		"-nostdin",
 		"-hide_banner",
@@ -184,8 +184,8 @@ func buildRemuxArgs(filePath, outputFormat string, seekSeconds float64, transcod
 			"-filter_complex_threads", "1",
 			"-c:v", "copy",
 			"-c:a", "aac",
-			"-ac", "2",
-			"-b:a", "192k",
+			"-ac", strconv.Itoa(audioChannels),
+			"-b:a", AudioBitrateForChannels(audioChannels),
 		)
 	} else {
 		args = append(args, "-c", "copy")
@@ -212,14 +212,14 @@ func buildRemuxArgs(filePath, outputFormat string, seekSeconds float64, transcod
 // When transcodeAudio is true video is copied but audio is transcoded to AAC.
 // The caller must call Close() when done to clean up resources.
 func StartRemux(ctx context.Context, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int) (*RemuxSession, error) {
-	return StartRemuxWithDVMode(ctx, filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, RemuxDVLegacyAutoV3, "")
+	return StartRemuxWithDVMode(ctx, filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, RemuxDVLegacyAutoV3, "", audioChannelsStereo)
 }
 
 // StartRemuxWithDVMode starts a remux with explicit Dolby Vision behavior.
 // ffmpegPath selects the binary to execute (empty = process-global discovery);
 // v3 callers must pass the configured playback path so the strip capability
 // promised by the planner's probe holds for the binary that actually runs.
-func StartRemuxWithDVMode(ctx context.Context, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, mode RemuxDVMode, ffmpegPath string) (*RemuxSession, error) {
+func StartRemuxWithDVMode(ctx context.Context, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, mode RemuxDVMode, ffmpegPath string, audioChannels int) (*RemuxSession, error) {
 	ctx, cancel := context.WithCancel(ctx)
 
 	bin := ResolveFFmpegPath(ffmpegPath)
@@ -281,7 +281,7 @@ func StartRemuxWithDVMode(ctx context.Context, filePath, outputFormat string, se
 		cancel()
 		return nil, fmt.Errorf("unknown remux Dolby Vision mode %q", mode)
 	}
-	args := buildRemuxArgs(filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, effectiveProfile, tagDVSampleEntry)
+	args := buildRemuxArgs(filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, effectiveProfile, tagDVSampleEntry, audioChannels)
 	cmd := exec.CommandContext(ctx, bin, args...)
 
 	stdout, err := cmd.StdoutPipe()
@@ -338,12 +338,12 @@ func containerMIME(format string) string {
 // total size is not known in advance.
 // When transcodeAudio is true, audio is transcoded to AAC while video is copied.
 func ServeRemux(w http.ResponseWriter, r *http.Request, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int) error {
-	return ServeRemuxWithDVMode(w, r, filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, RemuxDVLegacyAutoV3, "")
+	return ServeRemuxWithDVMode(w, r, filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, RemuxDVLegacyAutoV3, "", audioChannelsStereo)
 }
 
 // ServeRemuxWithDVMode streams an explicitly declared Dolby Vision recipe.
 // ffmpegPath selects the binary to execute (empty = process-global discovery).
-func ServeRemuxWithDVMode(w http.ResponseWriter, r *http.Request, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, mode RemuxDVMode, ffmpegPath string) error {
+func ServeRemuxWithDVMode(w http.ResponseWriter, r *http.Request, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, mode RemuxDVMode, ffmpegPath string, audioChannels int) error {
 	// Remux output streams for the length of the title; roll the write
 	// deadline with progress instead of the server's absolute WriteTimeout.
 	w = httpstream.NewRollingDeadlineWriter(w)
@@ -359,7 +359,7 @@ func ServeRemuxWithDVMode(w http.ResponseWriter, r *http.Request, filePath, outp
 		return err
 	}
 
-	session, err := StartRemuxWithDVMode(r.Context(), filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, mode, ffmpegPath)
+	session, err := StartRemuxWithDVMode(r.Context(), filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, mode, ffmpegPath, audioChannels)
 	if err != nil {
 		http.Error(w, "failed to start remux", http.StatusInternalServerError)
 		return err
