@@ -324,3 +324,89 @@ func TestSelectVersionFiltered_StaysWithinEditionAndPresentation(t *testing.T) {
 		t.Fatalf("file ID = %d, want 1", decision.File.ID)
 	}
 }
+
+// A remux rewrites the container under the client, so a flat codecs_audio claim
+// ("I can decode ac3") is not the same claim as "I can decode ac3 in MP4".
+// Conflating them produced a 4K AV1 stream that played video with no sound: the
+// TV listed ac3 from an unprobed static default, the source had an AC3 companion
+// track, the audio was copied into MP4, and the TV reported "not supported audio
+// codec but video can be played".
+func TestResolveRemuxConvertsAudioNotSafeInMP4(t *testing.T) {
+	settings := playback.AdminSettings{TranscodeEnabled: true}
+	caps := playback.ClientCapabilities{
+		CodecsVideo:   []string{"av1", "hevc", "h264"},
+		CodecsAudio:   []string{"aac", "ac3", "eac3", "mp3"},
+		Containers:    []string{"mp4"},
+		MaxResolution: "2160p",
+	}
+
+	for _, tc := range []struct {
+		codec        string
+		wantTranArg  bool
+		wanteDescrip string
+	}{
+		{codec: "ac3", wantTranArg: true, wanteDescrip: "AC-3 is unreliable in MP4 without sink evidence"},
+		{codec: "eac3", wantTranArg: true, wanteDescrip: "E-AC-3 likewise"},
+		{codec: "dts", wantTranArg: true, wanteDescrip: "DTS likewise"},
+		{codec: "truehd", wantTranArg: true, wanteDescrip: "TrueHD likewise"},
+		{codec: "mp3", wantTranArg: true, wanteDescrip: "MP3 in MP4 is marginal"},
+		{codec: "aac", wantTranArg: false, wanteDescrip: "AAC is MP4's native audio codec"},
+	} {
+		file := &models.MediaFile{
+			CodecVideo: "av1", CodecAudio: tc.codec, Container: "mkv", Resolution: "2160p",
+		}
+		decision := playback.Resolve(file, caps, settings)
+		if decision.Method != playback.PlayRemux {
+			t.Errorf("%s: Method = %q, want remux", tc.codec, decision.Method)
+			continue
+		}
+		if decision.TranscodeAudio != tc.wantTranArg {
+			t.Errorf("%s: TranscodeAudio = %v, want %v (%s)",
+				tc.codec, decision.TranscodeAudio, tc.wantTranArg, tc.wanteDescrip)
+		}
+	}
+}
+
+// A declared sink passthrough is evidence about delivery, not merely about a
+// decoder existing somewhere, so surround audio is still stream-copied to an AVR
+// instead of being downmixed to stereo AAC.
+func TestResolveRemuxKeepsPassthroughAudio(t *testing.T) {
+	settings := playback.AdminSettings{TranscodeEnabled: true}
+	caps := playback.ClientCapabilities{
+		CodecsVideo:            []string{"hevc"},
+		CodecsAudio:            []string{"aac"},
+		AudioPassthroughCodecs: []string{"eac3", "truehd"},
+		Containers:             []string{"mp4"},
+		MaxResolution:          "2160p",
+	}
+
+	for _, codec := range []string{"eac3", "truehd"} {
+		file := &models.MediaFile{
+			CodecVideo: "hevc", CodecAudio: codec, Container: "mkv", Resolution: "2160p",
+		}
+		decision := playback.Resolve(file, caps, settings)
+		if decision.Method != playback.PlayRemux || decision.TranscodeAudio {
+			t.Errorf("%s: got (%q, transcodeAudio=%v), want remux with audio copied",
+				codec, decision.Method, decision.TranscodeAudio)
+		}
+	}
+}
+
+// Direct play hands over the original file untouched, so the flat codec claim is
+// the right question there and this change must not disturb it.
+func TestResolveDirectPlayUnaffectedByRemuxAudioGate(t *testing.T) {
+	settings := playback.AdminSettings{TranscodeEnabled: true}
+	caps := playback.ClientCapabilities{
+		CodecsVideo:   []string{"hevc"},
+		CodecsAudio:   []string{"aac", "ac3"},
+		Containers:    []string{"mkv"},
+		MaxResolution: "2160p",
+	}
+	file := &models.MediaFile{
+		CodecVideo: "hevc", CodecAudio: "ac3", Container: "mkv", Resolution: "2160p",
+	}
+
+	if decision := playback.Resolve(file, caps, settings); decision.Method != playback.PlayDirect {
+		t.Errorf("Method = %q, want direct (container matches; nothing is rewritten)", decision.Method)
+	}
+}

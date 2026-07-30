@@ -63,8 +63,20 @@ func TestResolvePrepareTarget(t *testing.T) {
 		t.Fatalf("remux target = %+v, want copy video / aac audio / mp4", rt)
 	}
 
-	// remux with a decodable audio codec → copy both streams.
-	capsAudioOK := ClientCapabilities{CodecsVideo: []string{"h264"}, CodecsAudio: []string{"aac", "dts"}, Containers: []string{"mp4"}, MaxResolution: "2160p"}
+	// remux with audio the client can take in the remux container → copy both.
+	//
+	// DTS needs declared sink passthrough, not just a flat codecs_audio entry:
+	// the remux rewrites into MP4, where DTS (like AC-3, E-AC-3 and TrueHD) is
+	// spec-legal but unreliable, so a bare codec claim is not evidence it will
+	// play. AudioPassthroughCodecs is that evidence -- it describes delivery to a
+	// sink rather than a decoder existing somewhere. See remuxAudioCopySafe.
+	capsAudioOK := ClientCapabilities{
+		CodecsVideo:            []string{"h264"},
+		CodecsAudio:            []string{"aac", "dts"},
+		AudioPassthroughCodecs: []string{"dts"},
+		Containers:             []string{"mp4"},
+		MaxResolution:          "2160p",
+	}
 	rt = ResolvePrepareTarget(file, "remux", capsAudioOK, settings)
 	if rt.CodecAudio != "copy" {
 		t.Fatalf("remux audio = %q, want copy", rt.CodecAudio)

@@ -4,6 +4,7 @@ package playback
 
 import (
 	"slices"
+	"strings"
 
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/models"
@@ -102,7 +103,20 @@ func Resolve(file *models.MediaFile, caps ClientCapabilities, settings AdminSett
 	copyUnsafe := videoCopyUnsafeFile(file)
 
 	// Case 2: Client supports codecs but not container → remux.
+	//
+	// The audio still has to survive the new container. Direct play (Case 1)
+	// hands over the original file, where a flat codecs_audio claim is the right
+	// question to ask; a remux rewrites into MP4, where it is not. See
+	// remuxAudioCopySafe.
 	if videoOK && audioOK && !containerOK && !copyUnsafe {
+		if !remuxAudioCopySafe(file.CodecAudio, caps) {
+			return &PlayDecision{
+				Method:         PlayRemux,
+				File:           file,
+				TranscodeAudio: true,
+				Reason:         "client supports codecs but not container; remuxing with audio transcode to AAC (source audio is not reliably carried in MP4)",
+			}
+		}
 		return &PlayDecision{
 			Method: PlayRemux,
 			File:   file,
@@ -278,4 +292,57 @@ func videoCopyUnsafeFile(file *models.MediaFile) bool {
 	}
 	track := file.VideoTracks[0]
 	return track.VideoCopyUnsafe || (track.MultiplePPS != nil && *track.MultiplePPS)
+}
+
+// remuxAudioCopySafe reports whether a source audio codec can be carried into
+// the remux container (MP4) untouched, given what the client actually told us.
+//
+// A remux changes the container under the client, and a flat codecs_audio entry
+// only claims "I can decode this codec", not "I can decode it in MP4". Those are
+// different claims, and treating them as one is what produced a 4K AV1 stream
+// that played video with no sound: the client listed ac3 (an unprobed static
+// default), the source had an AC3 companion track, so audio was copied into MP4
+// and the TV could not decode it -- reporting "not supported audio codec but
+// video can be played".
+//
+// AAC is unconditionally safe: it is MP4's native audio codec and the format
+// every client that accepts MP4 at all can decode.
+//
+// AC-3, E-AC-3, DTS and TrueHD are spec-legal in MP4 (and genuinely work on
+// Apple platforms and through an HDMI sink) but unreliable elsewhere, so they
+// need evidence beyond a flat codec list. AudioPassthroughCodecs is exactly that
+// evidence: it means a sink decodes the codec bit-exact, which is a claim about
+// delivery rather than about a decoder existing somewhere. Without it the audio
+// is converted to AAC -- a cheap, single-threaded encode next to a video copy,
+// and far better than silence.
+//
+// Anything else falls through to conversion. Being wrong in this direction costs
+// a small amount of CPU; being wrong the other way costs the viewer their audio.
+func remuxAudioCopySafe(codec string, caps ClientCapabilities) bool {
+	switch normalizeAudioCodecForRemux(codec) {
+	case "aac":
+		return true
+	case "ac3", "eac3", "dts", "truehd":
+		return containsStr(caps.AudioPassthroughCodecs, codec)
+	default:
+		return false
+	}
+}
+
+func normalizeAudioCodecForRemux(codec string) string {
+	normalized := strings.NewReplacer(" ", "", "-", "", "_", "", ".", "").Replace(strings.ToLower(strings.TrimSpace(codec)))
+	switch normalized {
+	case "aac", "mp4a", "aaclc", "heaac":
+		return "aac"
+	case "ac3", "dolbydigital":
+		return "ac3"
+	case "eac3", "ec3", "dolbydigitalplus", "ddp":
+		return "eac3"
+	case "dts", "dtshd", "dtshdma", "dtsx":
+		return "dts"
+	case "truehd", "mlp":
+		return "truehd"
+	default:
+		return normalized
+	}
 }
