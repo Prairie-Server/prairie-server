@@ -25,6 +25,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/prairie-server/prairie-server/internal/config"
 	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/httpheaders"
 	"github.com/prairie-server/prairie-server/internal/httpstream"
 	"github.com/prairie-server/prairie-server/internal/markers"
 	"github.com/prairie-server/prairie-server/internal/models"
@@ -39,7 +40,6 @@ import (
 	"github.com/prairie-server/prairie-server/internal/userstore"
 	"github.com/prairie-server/prairie-server/internal/watchstate"
 	"github.com/prairie-server/prairie-server/internal/watchsync"
-	"github.com/prairie-server/prairie-server/internal/httpheaders"
 )
 
 // SessionManagerInterface defines the operations the PlaybackHandler needs

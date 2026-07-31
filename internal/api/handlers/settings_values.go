@@ -16,6 +16,7 @@ import (
 	"time"
 
 	"github.com/go-chi/chi/v5"
+	"golang.org/x/text/language"
 
 	"github.com/prairie-server/prairie-server/internal/access"
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
@@ -26,7 +27,6 @@ import (
 	"github.com/prairie-server/prairie-server/internal/settingskeys"
 	"github.com/prairie-server/prairie-server/internal/settingsresolve"
 	"github.com/prairie-server/prairie-server/internal/userstore"
-	"golang.org/x/text/language"
 )
 
 // SettingValuesHandler serves the canonical settings API: the contract itself,

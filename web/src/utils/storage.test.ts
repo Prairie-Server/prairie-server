@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { appearanceCache, storage } from "./storage";
+import { appearanceCache, ensureStorageSchema, isUpgradePreservedKey, storage } from "./storage";
 
 const KEYS = storage.KEYS;
 
@@ -81,5 +81,73 @@ describe("appearance cache namespacing", () => {
     expect(appearanceCache.get(KEYS.UI_CUSTOM_CSS, "2")).toBeNull();
     expect(appearanceCache.get(KEYS.UI_DATE_FORMAT, "2")).toBe("iso");
     expect(appearanceCache.get(KEYS.UI_DATE_FORMAT, "1")).toBeNull();
+  });
+});
+
+describe("ensureStorageSchema", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("writes the schema version when missing", () => {
+    expect(localStorage.getItem("prairie-storage-schema-version")).toBeNull();
+    expect(ensureStorageSchema()).toBe(1);
+    expect(localStorage.getItem("prairie-storage-schema-version")).toBe("1");
+  });
+
+  it("rewrites invalid or non-integer stored versions", () => {
+    localStorage.setItem("prairie-storage-schema-version", "nope");
+    expect(ensureStorageSchema()).toBe(1);
+    expect(localStorage.getItem("prairie-storage-schema-version")).toBe("1");
+
+    localStorage.setItem("prairie-storage-schema-version", "1.5");
+    expect(ensureStorageSchema()).toBe(1);
+    expect(localStorage.getItem("prairie-storage-schema-version")).toBe("1");
+
+    localStorage.setItem("prairie-storage-schema-version", "-1");
+    expect(ensureStorageSchema()).toBe(1);
+    expect(localStorage.getItem("prairie-storage-schema-version")).toBe("1");
+  });
+
+  it("leaves a current version untouched", () => {
+    localStorage.setItem("prairie-storage-schema-version", "1");
+    expect(ensureStorageSchema()).toBe(1);
+    expect(localStorage.getItem("prairie-storage-schema-version")).toBe("1");
+  });
+
+  it("survives localStorage throwing", () => {
+    const original = localStorage.getItem;
+    localStorage.getItem = () => {
+      throw new Error("blocked");
+    };
+    try {
+      expect(ensureStorageSchema()).toBe(1);
+    } finally {
+      localStorage.getItem = original;
+    }
+  });
+});
+
+describe("isUpgradePreservedKey", () => {
+  it("recognizes session keys and rejects preference keys", () => {
+    expect(isUpgradePreservedKey(storage.KEYS.REFRESH_TOKEN)).toBe(true);
+    expect(isUpgradePreservedKey(storage.KEYS.DEVICE_ID)).toBe(true);
+    expect(isUpgradePreservedKey(storage.KEYS.THEME)).toBe(false);
+    expect(isUpgradePreservedKey("unknown")).toBe(false);
+  });
+});
+
+describe("appearanceCache.remove", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("drops only the named owner's cached value", () => {
+    appearanceCache.set(KEYS.THEME, "cobalt-studio", "1");
+    appearanceCache.set(KEYS.THEME, "oxblood-noir", "2");
+    appearanceCache.remove(KEYS.THEME, "1");
+
+    expect(appearanceCache.get(KEYS.THEME, "1")).toBeNull();
+    expect(appearanceCache.get(KEYS.THEME, "2")).toBe("oxblood-noir");
   });
 });

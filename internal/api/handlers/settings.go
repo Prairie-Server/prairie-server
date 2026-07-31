@@ -16,10 +16,10 @@ import (
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	"github.com/prairie-server/prairie-server/internal/cache"
 	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/httpheaders"
 	"github.com/prairie-server/prairie-server/internal/settingscontract"
 	"github.com/prairie-server/prairie-server/internal/settingsmigrate"
 	"github.com/prairie-server/prairie-server/internal/userstore"
-	"github.com/prairie-server/prairie-server/internal/httpheaders"
 )
 
 // deviceSeenThrottle bounds how often a device's last_seen_at is refreshed from
