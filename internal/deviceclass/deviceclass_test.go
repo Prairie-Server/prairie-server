@@ -9,16 +9,21 @@ import (
 
 func TestFromPlatform(t *testing.T) {
 	for platform, want := range map[string]Class{
-		"smarttv":   TV,
-		"SmartTV":   TV,
-		"  tizen  ": TV,
-		"webos":     TV,
-		"androidtv": TV,
-		"tvos":      TV,
-		"web":       Unknown,
-		"ios":       Unknown,
-		"android":   Unknown,
-		"":          Unknown,
+		"smarttv":    TV,
+		"SmartTV":    TV,
+		"  tizen  ":  TV,
+		"webos":      TV,
+		"androidtv":  TV,
+		"android-tv": TV,
+		"Android-TV": TV,
+		"android_tv": TV,
+		"tvos":       TV,
+		"roku":       TV,
+		"Roku":       TV,
+		"web":        Unknown,
+		"ios":        Unknown,
+		"android":    Unknown,
+		"":           Unknown,
 	} {
 		if got := FromPlatform(platform); got != want {
 			t.Errorf("FromPlatform(%q) = %q, want %q", platform, got, want)

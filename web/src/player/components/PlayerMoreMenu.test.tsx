@@ -27,7 +27,7 @@ describe("PlayerMoreMenu", () => {
     expect(onToggleMarkerEdit).toHaveBeenCalledOnce();
 
     fireEvent.click(screen.getByRole("button", { name: "More" }));
-    fireEvent.click(screen.getByRole("menuitem", { name: "Playback info" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Stats for nerds" }));
     expect(onTogglePlaybackInfo).toHaveBeenCalledOnce();
 
     fireEvent.click(screen.getByRole("button", { name: "More" }));

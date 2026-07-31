@@ -388,7 +388,8 @@ export function PlayerControls({
               type="button"
               className="player-utility-btn hidden sm:inline-flex"
               onClick={onTogglePlaybackInfo}
-              aria-label="Playback info"
+              aria-label="Stats for nerds"
+              title="Stats for nerds"
               data-active={showPlaybackInfo ? "true" : "false"}
             >
               <Info className="h-[18px] w-[18px]" />
