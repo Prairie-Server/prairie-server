@@ -86,9 +86,9 @@ export function effectiveSettingsQueryKey(options?: {
     "values",
     "effective",
     activeProfileId(),
-    keys ? [...keys].sort().join(",") : "*",
-    libraryIds ? [...libraryIds].sort().join(",") : "",
-    seriesIds ? [...seriesIds].sort().join(",") : "",
+    keys ? [...keys].sort((a, b) => a.localeCompare(b)).join(",") : "*",
+    libraryIds ? [...libraryIds].sort((a, b) => a - b).join(",") : "",
+    seriesIds ? [...seriesIds].sort((a, b) => a.localeCompare(b)).join(",") : "",
   ] as const;
 }
 
@@ -182,7 +182,7 @@ export function useSetSettingValue() {
         body: JSON.stringify({ value }),
       }),
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: [...settingsKeys.all, "values"] });
+      void qc.invalidateQueries({ queryKey: [...settingsKeys.all, "values"] });
     },
   });
 }
@@ -195,7 +195,7 @@ export function useClearSettingValue() {
     mutationFn: ({ key, identity }: { key: SettingKey; identity: SettingIdentity }) =>
       api(`/settings/values/${key}?${identityQuery(identity)}`, { method: "DELETE" }),
     onSettled: () => {
-      qc.invalidateQueries({ queryKey: [...settingsKeys.all, "values"] });
+      void qc.invalidateQueries({ queryKey: [...settingsKeys.all, "values"] });
     },
   });
 }
@@ -263,7 +263,7 @@ export function useSettingValuesRealtime() {
         const activeProfile = activeProfileId();
         if (changedProfile && activeProfile && changedProfile !== activeProfile) return;
 
-        qc.invalidateQueries({ queryKey: [...settingsKeys.all, "values"] });
+        void qc.invalidateQueries({ queryKey: [...settingsKeys.all, "values"] });
       },
     }),
     [qc],

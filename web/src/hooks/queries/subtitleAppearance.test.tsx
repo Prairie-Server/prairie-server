@@ -52,13 +52,14 @@ describe("useSubtitleAppearanceSetting", () => {
     await result.current.save({ ...DEFAULT_SUBTITLE_APPEARANCE, fontSize: "xlarge" });
 
     const write = apiMock.mock.calls.find(([path]) => (path as string).includes("?scope="));
-    expect(write?.[0]).toBe(
+    expect(write).toBeDefined();
+    expect(write![0]).toBe(
       `/settings/values/${SETTING_KEYS.PLAYBACK_SUBTITLE_APPEARANCE}?scope=profile_device`,
     );
-    expect(write?.[1]).toMatchObject({ method: "PUT" });
+    expect(write![1]).toMatchObject({ method: "PUT" });
     // The contract types this value as an object, so the body carries the
     // object itself rather than the JSON-encoded string the legacy route took.
-    expect(JSON.parse((write?.[1] as RequestInit).body as string)).toEqual({
+    expect(JSON.parse((write![1] as RequestInit).body as string)).toEqual({
       value: { ...DEFAULT_SUBTITLE_APPEARANCE, fontSize: "xlarge" },
     });
   });

@@ -14,7 +14,12 @@
         "series_ids": ["s-101"]
       },
       "stored": [
-        { "key": "playback.subtitle_language", "scope": "profile", "profile_id": "p1", "value": "en" },
+        {
+          "key": "playback.subtitle_language",
+          "scope": "profile",
+          "profile_id": "p1",
+          "value": "en"
+        },
         {
           "key": "playback.subtitle_language",
           "scope": "profile_device",
@@ -52,7 +57,12 @@
         "series_ids": ["s-101"]
       },
       "stored": [
-        { "key": "playback.subtitle_language", "scope": "profile", "profile_id": "p1", "value": "en" },
+        {
+          "key": "playback.subtitle_language",
+          "scope": "profile",
+          "profile_id": "p1",
+          "value": "en"
+        },
         {
           "key": "playback.subtitle_language",
           "scope": "profile_device",
@@ -83,7 +93,12 @@
         "series_ids": ["s-101"]
       },
       "stored": [
-        { "key": "playback.subtitle_language", "scope": "profile", "profile_id": "p1", "value": "en" },
+        {
+          "key": "playback.subtitle_language",
+          "scope": "profile",
+          "profile_id": "p1",
+          "value": "en"
+        },
         {
           "key": "playback.subtitle_language",
           "scope": "profile_device",
@@ -107,7 +122,12 @@
         "series_ids": ["s-101"]
       },
       "stored": [
-        { "key": "playback.subtitle_language", "scope": "profile", "profile_id": "p1", "value": "en" }
+        {
+          "key": "playback.subtitle_language",
+          "scope": "profile",
+          "profile_id": "p1",
+          "value": "en"
+        }
       ],
       "expected": [{ "key": "playback.subtitle_language", "value": "en", "source": "profile" }]
     },
@@ -141,7 +161,12 @@
       "keys": ["playback.subtitle_language"],
       "context": { "profile_id": "p1" },
       "stored": [
-        { "key": "playback.subtitle_language", "scope": "profile", "profile_id": "p1", "value": "en" },
+        {
+          "key": "playback.subtitle_language",
+          "scope": "profile",
+          "profile_id": "p1",
+          "value": "en"
+        },
         {
           "key": "playback.subtitle_language",
           "scope": "profile_device",
@@ -158,7 +183,12 @@
       "keys": ["playback.subtitle_language"],
       "context": { "profile_id": "p1", "device_id": "d1", "series_ids": ["s-101"] },
       "stored": [
-        { "key": "playback.subtitle_language", "scope": "profile", "profile_id": "p2", "value": "xx" },
+        {
+          "key": "playback.subtitle_language",
+          "scope": "profile",
+          "profile_id": "p2",
+          "value": "xx"
+        },
         {
           "key": "playback.subtitle_language",
           "scope": "profile_device",
@@ -196,11 +226,7 @@
     {
       "name": "batch_resolves_each_key_independently",
       "description": "One batch, three keys, three different sources: a device override, a profile value, and a default.",
-      "keys": [
-        "playback.preferred_quality",
-        "playback.subtitle_mode",
-        "playback.audio_language"
-      ],
+      "keys": ["playback.preferred_quality", "playback.subtitle_mode", "playback.audio_language"],
       "context": { "profile_id": "p1", "device_id": "d1" },
       "stored": [
         {
@@ -210,7 +236,12 @@
           "device_id": "d1",
           "value": "1080p"
         },
-        { "key": "playback.subtitle_mode", "scope": "profile", "profile_id": "p1", "value": "always" }
+        {
+          "key": "playback.subtitle_mode",
+          "scope": "profile",
+          "profile_id": "p1",
+          "value": "always"
+        }
       ],
       "expected": [
         { "key": "playback.preferred_quality", "value": "1080p", "source": "profile_device" },
@@ -306,7 +337,12 @@
       "keys": ["playback.max_bitrate_kbps"],
       "context": { "profile_id": "p1" },
       "stored": [
-        { "key": "playback.max_bitrate_kbps", "scope": "profile", "profile_id": "p1", "value": null }
+        {
+          "key": "playback.max_bitrate_kbps",
+          "scope": "profile",
+          "profile_id": "p1",
+          "value": null
+        }
       ],
       "constraint_bindings": [
         {
@@ -357,7 +393,12 @@
       "keys": ["playback.max_bitrate_kbps"],
       "context": { "profile_id": "p1" },
       "stored": [
-        { "key": "playback.max_bitrate_kbps", "scope": "profile", "profile_id": "p1", "value": null }
+        {
+          "key": "playback.max_bitrate_kbps",
+          "scope": "profile",
+          "profile_id": "p1",
+          "value": null
+        }
       ],
       "constraint_bindings": [
         {
@@ -399,7 +440,12 @@
       "keys": ["catalog.metadata_language"],
       "context": { "profile_id": "p1" },
       "stored": [
-        { "key": "catalog.metadata_language", "scope": "profile", "profile_id": "p1", "value": "ja" }
+        {
+          "key": "catalog.metadata_language",
+          "scope": "profile",
+          "profile_id": "p1",
+          "value": "ja"
+        }
       ],
       "constraint_bindings": [
         {
@@ -426,7 +472,12 @@
       "keys": ["catalog.metadata_language"],
       "context": { "profile_id": "p1" },
       "stored": [
-        { "key": "catalog.metadata_language", "scope": "profile", "profile_id": "p1", "value": "fr" }
+        {
+          "key": "catalog.metadata_language",
+          "scope": "profile",
+          "profile_id": "p1",
+          "value": "fr"
+        }
       ],
       "constraint_bindings": [
         {

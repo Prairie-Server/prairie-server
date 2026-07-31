@@ -540,7 +540,7 @@ function IPHistoryTab({ userId }: { userId: number }) {
 }
 
 function UserSettingsTab({ userId }: { userId: number }) {
-  const { data: settings = [], isLoading } = useAdminUserSettings(userId);
+  const { data: settings, isLoading } = useAdminUserSettings(userId);
   const updateSetting = useUpdateAdminUserSetting();
   const deleteSetting = useDeleteAdminUserSetting();
   // Object-valued settings (pinned sidebar items, per-library overlays, the
@@ -736,7 +736,7 @@ function UserSettingsTab({ userId }: { userId: number }) {
 }
 
 function DeviceOverridesTab({ userId }: { userId: number }) {
-  const { data: settings = [], isLoading } = useAdminUserDeviceSettings(userId);
+  const { data: settings, isLoading } = useAdminUserDeviceSettings(userId);
   const updateSetting = useUpdateAdminUserDeviceSetting();
   const deleteSetting = useDeleteAdminUserDeviceSetting();
   const deleteDevice = useDeleteAllAdminUserDeviceSettingsForDevice();
