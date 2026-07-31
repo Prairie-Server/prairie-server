@@ -25,18 +25,21 @@ import (
 	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/prairie-server/prairie-server/internal/config"
 	evt "github.com/prairie-server/prairie-server/internal/events"
-	"github.com/prairie-server/prairie-server/internal/httpheaders"
 	"github.com/prairie-server/prairie-server/internal/httpstream"
 	"github.com/prairie-server/prairie-server/internal/markers"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
 	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/settingskeys"
+	"github.com/prairie-server/prairie-server/internal/settingsresolve"
 	"github.com/prairie-server/prairie-server/internal/streamtoken"
 	"github.com/prairie-server/prairie-server/internal/subtitles"
 	"github.com/prairie-server/prairie-server/internal/transcodenode"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 	"github.com/prairie-server/prairie-server/internal/watchstate"
 	"github.com/prairie-server/prairie-server/internal/watchsync"
+	"github.com/prairie-server/prairie-server/internal/httpheaders"
 )
 
 // SessionManagerInterface defines the operations the PlaybackHandler needs
@@ -1313,6 +1316,34 @@ func (h *PlaybackHandler) resolveOriginalLanguage(ctx context.Context, file *mod
 	return lang
 }
 
+// resolvedProfileAudioLanguage returns the effective playback.audio_language
+// for the profile with no content context, resolved through the settings
+// contract — the canonical replacement for reading the legacy
+// user_profiles.language column, matching catalog's detail resolution. It may
+// return playback.OriginalLanguageSentinel, which the caller resolves to a
+// concrete language. Returns "" when nothing is stored: the contract default
+// is null, "no preference".
+func resolvedProfileAudioLanguage(ctx context.Context, store userstore.UserStore, profileID string) string {
+	if store == nil || profileID == "" {
+		return ""
+	}
+	contract, err := settingscontract.Load()
+	if err != nil {
+		return ""
+	}
+	resolved, err := settingsresolve.New(contract).Resolve(ctx, store,
+		settingsresolve.Context{ProfileID: profileID},
+		[]string{settingskeys.PlaybackAudioLanguage}, nil)
+	if err != nil || len(resolved) == 0 {
+		return ""
+	}
+	var language string
+	if json.Unmarshal(resolved[0].Value, &language) != nil {
+		return ""
+	}
+	return strings.TrimSpace(language)
+}
+
 func (h *PlaybackHandler) restoreSessionProgress(
 	ctx context.Context,
 	session *playback.Session,
@@ -1823,9 +1854,7 @@ func (h *PlaybackHandler) handleStartPlaybackLegacy(w http.ResponseWriter, r *ht
 			if seriesPref != nil && seriesPref.AudioLanguage == playback.OriginalLanguageSentinel {
 				seriesPref.AudioLanguage = h.resolveOriginalLanguage(r.Context(), file)
 			}
-			if profile, profErr := store.GetProfile(r.Context(), profileID); profErr == nil && profile != nil {
-				preferredLang = profile.Language
-			}
+			preferredLang = resolvedProfileAudioLanguage(r.Context(), store, profileID)
 
 			// Resolve library override (if no series sticky pref exists).
 			var libraryAudioLang string

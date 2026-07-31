@@ -59,7 +59,7 @@ Decisions locked with the requester:
   One table, one endpoint family, and the format/transcode machinery is shared by web and mobile alike.
 - **Device identity already exists in Postgres.** `migrations/sql/180_user_devices.sql` defines
   `public.user_devices` keyed `(user_id, profile_id, device_id)` with FKs to `users` and
-  `user_profiles`. Device id arrives in the `X-Silo-Device-Id` header (see
+  `user_profiles`. Device id arrives in the `X-Prairie-Device-Id` header (see
   `internal/api/handlers/settings.go:37`). Managed entries reference it; ephemeral rows leave it NULL.
 - **The last-write-wins primitive already exists.** `userstore.UserStore.SetProgressIfNewer(... updatedAt) (bool, error)`
   (`internal/userstore/store.go:26`, implemented in `internal/userdb/progress.go:131`) is exactly the
@@ -503,7 +503,7 @@ The web app is updated in lockstep, so existing endpoints are reshaped rather th
 **Reshaped (existing):**
 ```
 POST   /downloads            body {content_id, episode_id?, file_id?, quality?, series?, caps?};
-                             X-Silo-Device-Id present → managed entry; absent → ephemeral/web row.
+                             X-Prairie-Device-Id present → managed entry; absent → ephemeral/web row.
                              `quality` is original by default; bitrate presets are single-item only.
 GET    /downloads            managed entries for the CALLING device (device from header); ephemeral rows otherwise
 DELETE /downloads/{id}       remove a row owned by (user, profile, header device)
@@ -512,7 +512,7 @@ GET|HEAD /direct-download    one-shot browser download, original-only (browser-f
 ```
 The response DTO gains `device_id`, `quality`, `effective_quality`, `delivery_format`,
 `target_bitrate_kbps`, `revision`, artifact-derived readiness, and the new statuses.
-**`device_id` is authoritative only from the `X-Silo-Device-Id` header — never from the body or query**
+**`device_id` is authoritative only from the `X-Prairie-Device-Id` header — never from the body or query**
 (a body/query value could only ever be a display hint, and is not accepted as authority).
 
 **Bitrate qualities are single-item only.** A series batch (`series:true`) and
@@ -548,7 +548,7 @@ Routes mount in the existing authenticated group where the current download rout
 `/file`, `/manifest`, `/artwork`, `/subtitles` — is profile-scoped (`RequireProfile`) and authorizes the
 row on `(user_id, profile_id, header device_id)`** (not `user_id` alone — household profiles share a
 `user_id`, so a user-only check would leak one profile's downloads to another). A managed call requires
-`X-Silo-Device-Id` (missing header on a managed create → `400 device_id_required`); ephemeral web rows
+`X-Prairie-Device-Id` (missing header on a managed create → `400 device_id_required`); ephemeral web rows
 omit it and stay account-scoped. Byte-serving and asset endpoints additionally **re-check per-profile
 content/library access** (the existing access filter / `EnsureAccessible`) before serving, so a stale or
 out-of-scope row — e.g. a child profile, or a profile that lost library access — cannot pull restricted
@@ -566,7 +566,7 @@ client → GET /downloads/{id}/file → serveContent(source|artifact, Range, thr
 
 **Register a managed bitrate download (mobile)**
 ```
-POST /downloads {content_id, quality:"5mbps", caps:{...}}  (+X-Silo-Device-Id, +X-Profile-Id)
+POST /downloads {content_id, quality:"5mbps", caps:{...}}  (+X-Prairie-Device-Id, +X-Profile-Id)
  → Resolve: cfg.TranscodeEnabled && user.DownloadTranscodeAllowed → delivery_format=transcode
  → upsert downloads (device entry, status=preparing)
  → ArtifactManager.Ensure(media_file_id, params): ON CONFLICT dedup → enqueue encode if new
@@ -594,7 +594,7 @@ client (on notify) → GET /downloads/{id}/file → serveContent(artifact, Range
   (`web/src/hooks/queries/downloads.ts`, `web/src/components/DownloadVersionPicker.tsx`) to the reshaped
   DTOs. Delete `internal/download`.
 - **Phase 1 — Managed device entries.** Device-aware create/list/patch/delete; managed-entry serving for
-  `original`; `X-Silo-Device-Id` handling + the device-entry unique constraint. **Invariant 2** lands
+  `original`; `X-Prairie-Device-Id` handling + the device-entry unique constraint. **Invariant 2** lands
   here: profile+device authorization on every managed endpoint, header-only `device_id` authority.
   *Acceptance tests:* a second profile on the same `user_id` is denied a managed row's `/file` and
   `PATCH`/`DELETE`; a body/query `device_id` cannot override the header.
@@ -620,7 +620,7 @@ depends on 1. Remux can ship in Phase 3 even if transcode stays admin-off.
 ## Client impact
 
 - **Android (`silo-android`):** persist a stable `device_id` (UUID in app storage) and send
-  `X-Silo-Device-Id`; call `/downloads/capability` on login to gate UI; register downloads, poll/listen
+  `X-Prairie-Device-Id`; call `/downloads/capability` on login to gate UI; register downloads, poll/listen
   for `ready`, pull the file, store the manifest + artwork + subtitle files locally; play the local file
   with ExoPlayer; queue offline progress with timestamps in a Room table and flush via
   `POST /sync/progress`, then pull deltas with `GET /progress?since=`.

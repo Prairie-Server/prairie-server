@@ -379,7 +379,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/requests/arrclient"
+	"github.com/prairie-server/prairie-server/internal/requests/arrclient"
 )
 
 // HistoryClient reads recently-imported file paths from a Radarr/Sonarr instance.
@@ -678,8 +678,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/scantrigger"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/scantrigger"
 )
 
 type fakeStore struct {
@@ -792,7 +792,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/scantrigger"
+	"github.com/prairie-server/prairie-server/internal/scantrigger"
 )
 
 const scanTrigger = "autoscan"
@@ -944,7 +944,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 type AutoscanPoller interface {

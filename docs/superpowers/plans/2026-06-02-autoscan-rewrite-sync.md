@@ -325,8 +325,8 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/requests/arrclient"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/requests/arrclient"
 )
 
 // RootFolderClient lists a Radarr/Sonarr instance's configured root folder paths.

@@ -15,11 +15,14 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/artworkkey"
-	"github.com/prairie-server/prairie-server/internal/deviceclass"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/overlays"
 	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/settingskeys"
+	"github.com/prairie-server/prairie-server/internal/settingsresolve"
 	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/deviceclass"
 )
 
 // FileVersionFetcher retrieves media files linked to a content ID.
@@ -682,6 +685,10 @@ type DetailService struct {
 	// Built on first use so an ensurer set after construction is picked up.
 	probeBackfillOnce sync.Once
 	probeBackfill     *probeBackfiller
+
+	// resolver is built once on first use; see settingsResolver.
+	resolverOnce sync.Once
+	resolver     *settingsresolve.Resolver
 }
 
 // NewDetailService creates a new DetailService.
@@ -2701,6 +2708,18 @@ func (s *DetailService) newWatchDetail(
 	}
 }
 
+// effectiveSubtitleDefaults resolves the subtitle preferences that apply to one
+// item, through the canonical resolver.
+//
+// This used to be four levels of hand-written precedence — profile columns,
+// then a library preference row, then a series preference row, each partially
+// overriding the last through Has* flags. The order lives in the manifest now
+// (profile_series, profile_library, profile_device, profile, default), so this
+// function and the contract cannot disagree about which override wins, and a
+// new scope is a manifest change rather than another branch here.
+//
+// The track signature stays on its specialized table: it identifies a concrete
+// track rather than expressing a preference, so it is not a setting.
 func (s *DetailService) effectiveSubtitleDefaults(
 	ctx context.Context,
 	filter AccessFilter,
@@ -2718,44 +2737,50 @@ func (s *DetailService) effectiveSubtitleDefaults(
 		return defaults
 	}
 
-	if profile, err := store.GetProfile(ctx, filter.ProfileID); err == nil && profile != nil {
-		defaults.Language = profile.SubtitleLanguage
-		defaults.Mode = profile.SubtitleMode
-		defaults.ShowForced = profile.ShowForcedSubtitles
-		defaults.HasLanguage = true
-		defaults.HasMode = true
-		defaults.HasShowForced = true
+	rc := settingsresolve.Context{ProfileID: filter.ProfileID}
+	if libraryID := preferredPlayableLibraryID(files, filter.SelectedFileID); libraryID > 0 {
+		rc.LibraryIDs = []int{libraryID}
+	}
+	if seriesID != "" {
+		rc.SeriesIDs = []string{seriesID}
 	}
 
-	if libraryID := preferredPlayableLibraryID(files, filter.SelectedFileID); libraryID > 0 {
-		if pref, err := store.GetLibraryPlaybackPreference(ctx, filter.ProfileID, libraryID); err == nil && pref != nil {
-			if pref.HasSubtitleLanguage {
-				defaults.Language = pref.SubtitleLanguage
-				defaults.HasLanguage = true
-			}
-			if pref.HasSubtitleMode {
-				defaults.Mode = pref.SubtitleMode
-				defaults.HasMode = true
-			}
-			if pref.HasShowForcedSubtitles {
-				defaults.ShowForced = pref.ShowForcedSubtitles
-				defaults.HasShowForced = true
+	resolved, err := s.settingsResolver().Resolve(ctx, store, rc, []string{
+		settingskeys.PlaybackSubtitleLanguage,
+		settingskeys.PlaybackSubtitleMode,
+		settingskeys.PlaybackShowForcedSubtitles,
+	}, nil)
+	if err == nil {
+		for _, eff := range resolved {
+			// A value that resolved to the contract default is not a stored
+			// preference, and the callers distinguish the two through the Has*
+			// flags: an unset language must not read as "the user chose empty".
+			stored := eff.Source != settingscontract.ScopeDefault
+			switch eff.Key {
+			case settingskeys.PlaybackSubtitleLanguage:
+				var language string
+				if json.Unmarshal(eff.Value, &language) == nil && stored {
+					defaults.Language = language
+					defaults.HasLanguage = true
+				}
+			case settingskeys.PlaybackSubtitleMode:
+				var mode string
+				if json.Unmarshal(eff.Value, &mode) == nil && stored {
+					defaults.Mode = mode
+					defaults.HasMode = true
+				}
+			case settingskeys.PlaybackShowForcedSubtitles:
+				var forced bool
+				if json.Unmarshal(eff.Value, &forced) == nil && stored {
+					defaults.ShowForced = forced
+					defaults.HasShowForced = true
+				}
 			}
 		}
 	}
 
 	if seriesID != "" {
 		if pref, err := store.GetSubtitlePreference(ctx, filter.ProfileID, seriesID); err == nil && pref != nil {
-			defaults.Language = pref.SubtitleLanguage
-			defaults.HasLanguage = true
-			if pref.SubtitleMode != "" {
-				defaults.Mode = pref.SubtitleMode
-				defaults.HasMode = true
-			}
-			if pref.HasShowForcedSubtitles {
-				defaults.ShowForced = pref.ShowForcedSubtitles
-				defaults.HasShowForced = true
-			}
 			if pref.TrackSignature != nil && !pref.TrackSignature.IsZero() {
 				defaults.TrackSignature = pref.TrackSignature
 			}
@@ -2763,6 +2788,23 @@ func (s *DetailService) effectiveSubtitleDefaults(
 	}
 
 	return defaults
+}
+
+// settingsResolver lazily builds the resolver over the embedded contract.
+//
+// The contract is validated at startup, so a load failure here is unreachable;
+// returning a resolver with no contract makes Resolve error rather than panic,
+// which degrades this to "no stored preferences" instead of failing the detail
+// request.
+func (s *DetailService) settingsResolver() *settingsresolve.Resolver {
+	s.resolverOnce.Do(func() {
+		contract, err := settingscontract.Load()
+		if err != nil {
+			return
+		}
+		s.resolver = settingsresolve.New(contract)
+	})
+	return s.resolver
 }
 
 func (s *DetailService) effectiveVersionDefaults(
@@ -2851,7 +2893,17 @@ type audioPrefResolver struct {
 	originalDone bool
 	originalLang string
 
-	libLang map[int]string
+	resolvedLang map[int]string
+}
+
+func (r *audioPrefResolver) profileLanguage(ctx context.Context) string {
+	if !r.profileDone {
+		r.profileDone = true
+		r.profileLang = r.svc.resolvedAudioLanguage(ctx, r.store, settingsresolve.Context{
+			ProfileID: r.profileID,
+		})
+	}
+	return r.profileLang
 }
 
 // newAudioPrefResolver resolves the per-user store once and prepares the
@@ -2859,10 +2911,10 @@ type audioPrefResolver struct {
 // is intended to be threaded through a single sequential file loop.
 func (s *DetailService) newAudioPrefResolver(ctx context.Context, filter AccessFilter, audioPreferenceContentID string) *audioPrefResolver {
 	r := &audioPrefResolver{
-		svc:       s,
-		profileID: filter.ProfileID,
-		contentID: audioPreferenceContentID,
-		libLang:   map[int]string{},
+		svc:          s,
+		profileID:    filter.ProfileID,
+		contentID:    audioPreferenceContentID,
+		resolvedLang: map[int]string{},
 	}
 	if s.userStoreProvider == nil || filter.UserID == 0 || filter.ProfileID == "" {
 		return r
@@ -2899,26 +2951,44 @@ func (r *audioPrefResolver) audioPreference(ctx context.Context) *playback.Audio
 	return &cp
 }
 
-func (r *audioPrefResolver) profileLanguage(ctx context.Context) string {
-	if !r.profileDone {
-		r.profileDone = true
-		if profile, profileErr := r.store.GetProfile(ctx, r.profileID); profileErr == nil && profile != nil {
-			r.profileLang = strings.TrimSpace(profile.Language)
-		}
-	}
-	return r.profileLang
-}
-
-func (r *audioPrefResolver) libraryAudioLanguage(ctx context.Context, libraryID int) string {
-	if lang, ok := r.libLang[libraryID]; ok {
+// audioLanguage resolves with every content identity in context. The language
+// preference lives in the canonical table at profile_series/profile_library/
+// profile scopes; the specialized audio row supplies only concrete track
+// identity. Caching by library keeps a multi-file item at one canonical read
+// per distinct folder rather than one read per file.
+func (r *audioPrefResolver) audioLanguage(ctx context.Context, libraryID int) string {
+	if lang, ok := r.resolvedLang[libraryID]; ok {
 		return lang
 	}
-	lang := ""
-	if pref, prefErr := r.store.GetLibraryPlaybackPreference(ctx, r.profileID, libraryID); prefErr == nil && pref != nil {
-		lang = strings.TrimSpace(pref.AudioLanguage)
+	rc := settingsresolve.Context{
+		ProfileID:  r.profileID,
+		LibraryIDs: []int{libraryID},
 	}
-	r.libLang[libraryID] = lang
+	if strings.TrimSpace(r.contentID) != "" {
+		rc.SeriesIDs = []string{r.contentID}
+	}
+	lang := r.svc.resolvedAudioLanguage(ctx, r.store, rc)
+	r.resolvedLang[libraryID] = lang
 	return lang
+}
+
+// resolvedAudioLanguage returns the effective playback.audio_language for one
+// context, or "" when nothing is stored.
+func (s *DetailService) resolvedAudioLanguage(
+	ctx context.Context, store userstore.UserStore, rc settingsresolve.Context,
+) string {
+	resolved, err := s.settingsResolver().Resolve(ctx, store, rc,
+		[]string{settingskeys.PlaybackAudioLanguage}, nil)
+	if err != nil || len(resolved) == 0 {
+		return ""
+	}
+	// The contract default is null, which means "no preference" — the caller
+	// treats "" the same way, so an unset language needs no special case.
+	var language string
+	if json.Unmarshal(resolved[0].Value, &language) != nil {
+		return ""
+	}
+	return strings.TrimSpace(language)
 }
 
 func (r *audioPrefResolver) originalLanguage(ctx context.Context) string {
@@ -2957,13 +3027,7 @@ func (s *DetailService) effectiveAudioSelectionWith(
 	}
 
 	seriesPref := r.audioPreference(ctx)
-
-	preferredLang := r.profileLanguage(ctx)
-
-	libraryAudioLang := ""
-	if seriesPref == nil {
-		libraryAudioLang = r.libraryAudioLanguage(ctx, file.MediaFolderID)
-	}
+	preferredLang := r.audioLanguage(ctx, file.MediaFolderID)
 
 	originalLanguage := ""
 	resolveOriginalLanguage := func() string {
@@ -2973,31 +3037,31 @@ func (s *DetailService) effectiveAudioSelectionWith(
 		return originalLanguage
 	}
 
-	seriesUsesOriginal := seriesPref != nil && seriesPref.AudioLanguage == playback.OriginalLanguageSentinel
-	profileUsesOriginal := preferredLang == playback.OriginalLanguageSentinel
-	libraryUsesOriginal := libraryAudioLang == playback.OriginalLanguageSentinel
-
-	if seriesUsesOriginal {
-		seriesPref.AudioLanguage = resolveOriginalLanguage()
-	}
-	if profileUsesOriginal {
+	usesOriginal := preferredLang == playback.OriginalLanguageSentinel
+	if usesOriginal {
 		preferredLang = resolveOriginalLanguage()
+		if preferredLang == "" {
+			// "original" used to fall through to the roaming profile choice
+			// when the item's original language could not be resolved. Keep that
+			// failure behavior while moving the content-scoped read to canonical
+			// storage.
+			preferredLang = r.profileLanguage(ctx)
+			if preferredLang == playback.OriginalLanguageSentinel {
+				preferredLang = resolveOriginalLanguage()
+			}
+		}
 	}
-	if libraryUsesOriginal {
-		libraryAudioLang = resolveOriginalLanguage()
+	if seriesPref != nil {
+		// The signature/index remain the concrete selection. Language comes
+		// from canonical resolution so a stale legacy language cannot outrank a
+		// profile_series write made through /settings/values.
+		seriesPref.AudioLanguage = preferredLang
 	}
-	if libraryAudioLang != "" {
-		preferredLang = libraryAudioLang
-	}
-
-	useOriginalFallback := seriesUsesOriginal ||
-		(libraryUsesOriginal && libraryAudioLang != "") ||
-		(profileUsesOriginal && libraryAudioLang == "")
 
 	index := playback.SelectAudioTrack(file.AudioTracks, preferredLang, seriesPref)
 	return effectiveAudioSelection{
 		Index:    index,
-		Language: resolveSelectedAudioLanguage(file, index, originalLanguage, useOriginalFallback),
+		Language: resolveSelectedAudioLanguage(file, index, originalLanguage, usesOriginal),
 	}
 }
 

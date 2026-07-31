@@ -50,9 +50,9 @@ func TestNormalizeTMDBIDLeavesNonIdentifiersAlone(t *testing.T) {
 }
 
 func TestAttachTMDBIDRejectsEquivalentSlugOwner(t *testing.T) {
-	dsn := strings.TrimSpace(os.Getenv("SILO_TEST_DATABASE_URL"))
+	dsn := strings.TrimSpace(os.Getenv("PRAIRIE_TEST_DATABASE_URL"))
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)

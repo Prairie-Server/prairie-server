@@ -45,9 +45,15 @@ describe("downloadDiagnosticReport", () => {
     const click = vi
       .spyOn(HTMLAnchorElement.prototype, "click")
       .mockImplementation(() => undefined);
-    mocks.apiResponse.mockResolvedValue({
-      blob: async () => new Blob(["bundle"], { type: "application/gzip" }),
-    });
+    // A string body, not a Blob: `new Response(blob)` reads the body via
+    // `blob.stream()`, which jsdom's Blob does not implement on Node 22 — the
+    // version the Dockerfile builds with — so the Blob form passes locally on
+    // Node 24 and throws "object.stream is not a function" in CI. Nothing here
+    // asserts on the body's contents, only that the object URL and filename
+    // reach the anchor, so the string is equivalent and version-independent.
+    mocks.apiResponse.mockResolvedValue(
+      new Response("bundle", { headers: { "Content-Type": "application/gzip" } }),
+    );
 
     await downloadDiagnosticReport(report);
 
@@ -60,10 +66,8 @@ describe("downloadDiagnosticReport", () => {
     // assert it carried the blob URL and expected filename before cleanup.
     const clickedAnchor = click.mock.contexts[0] as HTMLAnchorElement;
     expect(clickedAnchor.href).toBe("blob:diagnostic");
-    expect(clickedAnchor.download).toBe("prairie-diagnostics-ABCDEF123456.tar.gz");
-    expect(
-      document.querySelector('a[download="prairie-diagnostics-ABCDEF123456.tar.gz"]'),
-    ).toBeNull();
+    expect(clickedAnchor.download).toBe("silo-diagnostics-ABCDEF123456.tar.gz");
+    expect(document.querySelector('a[download="silo-diagnostics-ABCDEF123456.tar.gz"]')).toBeNull();
 
     await new Promise((resolve) => window.setTimeout(resolve, 0));
     expect(revokeObjectURL).toHaveBeenCalledWith("blob:diagnostic");

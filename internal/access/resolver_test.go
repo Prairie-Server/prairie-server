@@ -2,11 +2,14 @@ package access
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 	"time"
 
 	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/settingskeys"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
@@ -39,6 +42,10 @@ type stubStore struct {
 	profile  *userstore.Profile
 	err      error
 	settings map[string]string
+	// settingValues are the canonical setting rows the resolver may read
+	// through ListSettingValuesForResolution. Scope matching is the
+	// resolver's job, so the stub returns them unfiltered.
+	settingValues []userstore.SettingValue
 }
 
 func (s stubStore) CreateProfile(context.Context, userstore.Profile) error { panic("unused") }
@@ -216,7 +223,19 @@ func (s stubStore) GetSetting(_ context.Context, key string) (string, error) {
 	}
 	return "", nil
 }
-func (s stubStore) SetSetting(context.Context, string, string) error               { panic("unused") }
+func (s stubStore) SetSetting(context.Context, string, string) error { panic("unused") }
+func (s stubStore) GetOnboardingState(context.Context, string, string) (*userstore.OnboardingState, error) {
+	panic("unused")
+}
+func (s stubStore) UpsertOnboardingState(context.Context, userstore.OnboardingState) error {
+	panic("unused")
+}
+func (s stubStore) GetJellycompatDisplayPrefs(context.Context, string, string) (string, error) {
+	panic("unused")
+}
+func (s stubStore) SetJellycompatDisplayPrefs(context.Context, string, string, string) error {
+	panic("unused")
+}
 func (s stubStore) DeleteSetting(context.Context, string) error                    { panic("unused") }
 func (s stubStore) ListSettings(context.Context) ([]userstore.SettingEntry, error) { panic("unused") }
 func (s stubStore) GetDeviceSetting(context.Context, string, string, string) (*userstore.DeviceSettingEntry, error) {
@@ -250,12 +269,6 @@ func (s stubStore) GetAudioPreference(context.Context, string, string) (*usersto
 	panic("unused")
 }
 func (s stubStore) DeleteAudioPreference(context.Context, string, string) error { panic("unused") }
-func (s stubStore) GetOnboardingState(context.Context, string, string) (*userstore.OnboardingState, error) {
-	panic("unused")
-}
-func (s stubStore) UpsertOnboardingState(context.Context, userstore.OnboardingState) error {
-	panic("unused")
-}
 func (s stubStore) SetSeriesPlaybackPreference(context.Context, userstore.SeriesPlaybackPreference) error {
 	panic("unused")
 }
@@ -275,6 +288,42 @@ func (s stubStore) UpsertLibraryPlaybackPreference(context.Context, userstore.Li
 	panic("unused")
 }
 func (s stubStore) DeleteLibraryPlaybackPreference(context.Context, string, int) error {
+	panic("unused")
+}
+func (s stubStore) GetSettingValue(context.Context, userstore.SettingIdentity) (*userstore.SettingValue, error) {
+	panic("unused")
+}
+func (s stubStore) ListSettingValuesForResolution(context.Context, userstore.SettingResolutionQuery) ([]userstore.SettingValue, error) {
+	return s.settingValues, nil
+}
+func (s stubStore) ListAllSettingValues(context.Context) ([]userstore.SettingValue, error) {
+	panic("unused")
+}
+func (s stubStore) UpsertSettingValue(context.Context, userstore.SettingIdentity, json.RawMessage) (*userstore.SettingValue, error) {
+	panic("unused")
+}
+func (s stubStore) DeleteSettingValue(context.Context, userstore.SettingIdentity) (bool, error) {
+	panic("unused")
+}
+func (s stubStore) DeleteSettingValuesForProfile(context.Context, string) (int64, error) {
+	panic("unused")
+}
+func (s stubStore) DeleteSettingValuesForDevice(context.Context, string, string) (int64, error) {
+	panic("unused")
+}
+func (s stubStore) DeleteSettingValuesForLibrary(context.Context, int) (int64, error) {
+	panic("unused")
+}
+func (s stubStore) DeleteSettingValuesForSeries(context.Context, string) (int64, error) {
+	panic("unused")
+}
+func (s stubStore) GetSettingMutation(context.Context, string) (*userstore.SettingMutationRecord, error) {
+	panic("unused")
+}
+func (s stubStore) PutSettingMutation(context.Context, userstore.SettingMutationRecord) (userstore.SettingMutationRecord, bool, error) {
+	panic("unused")
+}
+func (s stubStore) DeleteExpiredSettingMutations(context.Context, time.Time) (int64, error) {
 	panic("unused")
 }
 
@@ -412,6 +461,93 @@ func TestResolver_DisabledLibraries_RestrictedUser(t *testing.T) {
 	}
 }
 
+func TestResolver_DisabledLibraries_CanonicalRowWins(t *testing.T) {
+	// The canonical profile-scoped ui.disabled_library_ids row wins; the
+	// legacy account key carries a decoy value that must not be read once a
+	// canonical row exists.
+	resolver := NewResolver(
+		stubUserRepo{user: &models.User{ID: 1, AccessPolicyRevision: 5}},
+		stubStoreProvider{store: stubStore{
+			profile:  &userstore.Profile{ID: "prof-1"},
+			settings: map[string]string{"disabled_library_ids": "[9]"},
+			settingValues: []userstore.SettingValue{{
+				SettingIdentity: userstore.SettingIdentity{
+					Key:       settingskeys.UiDisabledLibraryIds,
+					Scope:     settingscontract.ScopeProfile,
+					ProfileID: "prof-1",
+				},
+				Value: json.RawMessage(`[3,5]`),
+			}},
+		}},
+		nil,
+	)
+
+	scope, err := resolver.Resolve(context.Background(), ResolveInput{UserID: 1, ProfileID: "prof-1"})
+	if err != nil {
+		t.Fatalf("Resolve() error: %v", err)
+	}
+	if len(scope.DisabledLibraryIDs) != 2 || scope.DisabledLibraryIDs[0] != 3 || scope.DisabledLibraryIDs[1] != 5 {
+		t.Fatalf("DisabledLibraryIDs = %v, want canonical [3 5]", scope.DisabledLibraryIDs)
+	}
+}
+
+func TestResolver_DisabledLibraries_CanonicalNullClearsLegacy(t *testing.T) {
+	// A stored null spells "no hidden libraries" and still wins over the
+	// legacy key: the row exists, so the profile has decided.
+	resolver := NewResolver(
+		stubUserRepo{user: &models.User{ID: 1, AccessPolicyRevision: 5}},
+		stubStoreProvider{store: stubStore{
+			profile:  &userstore.Profile{ID: "prof-1"},
+			settings: map[string]string{"disabled_library_ids": "[9]"},
+			settingValues: []userstore.SettingValue{{
+				SettingIdentity: userstore.SettingIdentity{
+					Key:       settingskeys.UiDisabledLibraryIds,
+					Scope:     settingscontract.ScopeProfile,
+					ProfileID: "prof-1",
+				},
+				Value: json.RawMessage(`null`),
+			}},
+		}},
+		nil,
+	)
+
+	scope, err := resolver.Resolve(context.Background(), ResolveInput{UserID: 1, ProfileID: "prof-1"})
+	if err != nil {
+		t.Fatalf("Resolve() error: %v", err)
+	}
+	if len(scope.DisabledLibraryIDs) != 0 {
+		t.Fatalf("DisabledLibraryIDs = %v, want empty", scope.DisabledLibraryIDs)
+	}
+}
+
+func TestResolver_DisabledLibraries_ProfileIsolation(t *testing.T) {
+	// Profile A's canonical hidden-library list must not leak into profile B:
+	// with no canonical row of its own and no legacy key, B hides nothing.
+	resolver := NewResolver(
+		stubUserRepo{user: &models.User{ID: 1, AccessPolicyRevision: 5}},
+		stubStoreProvider{store: stubStore{
+			profile: &userstore.Profile{ID: "prof-b"},
+			settingValues: []userstore.SettingValue{{
+				SettingIdentity: userstore.SettingIdentity{
+					Key:       settingskeys.UiDisabledLibraryIds,
+					Scope:     settingscontract.ScopeProfile,
+					ProfileID: "prof-a",
+				},
+				Value: json.RawMessage(`[3,5]`),
+			}},
+		}},
+		nil,
+	)
+
+	scope, err := resolver.Resolve(context.Background(), ResolveInput{UserID: 1, ProfileID: "prof-b"})
+	if err != nil {
+		t.Fatalf("Resolve() error: %v", err)
+	}
+	if len(scope.DisabledLibraryIDs) != 0 {
+		t.Fatalf("DisabledLibraryIDs = %v, want empty for the other profile", scope.DisabledLibraryIDs)
+	}
+}
+
 func TestResolver_DisabledLibraries_NoProfile(t *testing.T) {
 	resolver := NewResolver(
 		stubUserRepo{user: &models.User{ID: 1, AccessPolicyRevision: 5}},
@@ -430,6 +566,60 @@ func TestResolver_DisabledLibraries_NoProfile(t *testing.T) {
 	}
 	if len(scope.DisabledLibraryIDs) != 1 || scope.DisabledLibraryIDs[0] != 7 {
 		t.Fatalf("DisabledLibraryIDs = %v, want [7]", scope.DisabledLibraryIDs)
+	}
+}
+
+func TestResolver_MetadataLanguageResolvesCanonically(t *testing.T) {
+	// The canonical catalog.metadata_language row wins; the legacy profile
+	// column carries a decoy value that must no longer be read.
+	resolver := NewResolver(
+		stubUserRepo{user: &models.User{ID: 1, AccessPolicyRevision: 5}},
+		stubStoreProvider{store: stubStore{
+			profile: &userstore.Profile{
+				ID:                        "prof-1",
+				PreferredMetadataLanguage: "fr",
+			},
+			settingValues: []userstore.SettingValue{{
+				SettingIdentity: userstore.SettingIdentity{
+					Key:       settingskeys.CatalogMetadataLanguage,
+					Scope:     settingscontract.ScopeProfile,
+					ProfileID: "prof-1",
+				},
+				Value: json.RawMessage(`"de"`),
+			}},
+		}},
+		nil,
+	)
+
+	scope, err := resolver.Resolve(context.Background(), ResolveInput{UserID: 1, ProfileID: "prof-1"})
+	if err != nil {
+		t.Fatalf("Resolve() error: %v", err)
+	}
+	if scope.PreferredMetadataLanguage != "de" {
+		t.Fatalf("PreferredMetadataLanguage = %q, want canonical value %q", scope.PreferredMetadataLanguage, "de")
+	}
+}
+
+func TestResolver_MetadataLanguageIgnoresLegacyColumn(t *testing.T) {
+	// A profile with only the legacy column value falls to the contract
+	// default ("" — inherit), proving the column is no longer read.
+	resolver := NewResolver(
+		stubUserRepo{user: &models.User{ID: 1, AccessPolicyRevision: 5}},
+		stubStoreProvider{store: stubStore{
+			profile: &userstore.Profile{
+				ID:                        "prof-1",
+				PreferredMetadataLanguage: "fr",
+			},
+		}},
+		nil,
+	)
+
+	scope, err := resolver.Resolve(context.Background(), ResolveInput{UserID: 1, ProfileID: "prof-1"})
+	if err != nil {
+		t.Fatalf("Resolve() error: %v", err)
+	}
+	if scope.PreferredMetadataLanguage != "" {
+		t.Fatalf("PreferredMetadataLanguage = %q, want contract default \"\"", scope.PreferredMetadataLanguage)
 	}
 }
 

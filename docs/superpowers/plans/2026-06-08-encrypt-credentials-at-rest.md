@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking. Do not edit this plan file while implementing.
 
-**Issue:** [#45 — Encrypt arr integration credentials at rest (Requests + Autoscan)](https://github.com/Silo-Server/silo-server/issues/45)
+**Issue:** [#45 — Encrypt arr integration credentials at rest (Requests + Autoscan)](https://github.com/prairie-server/prairie-server/issues/45)
 
 > **Revision note (post-review):** This plan was revised after a code review. Key corrections baked in:
 > the arr backfill now **resolves the legacy `server_settings` reference before encrypting** (otherwise

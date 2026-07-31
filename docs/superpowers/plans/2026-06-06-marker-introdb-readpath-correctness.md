@@ -405,7 +405,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/markers"
+	"github.com/prairie-server/prairie-server/internal/markers"
 )
 
 func newProvider(t *testing.T, body string) *Provider {

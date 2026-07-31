@@ -796,7 +796,7 @@ tasks are registered. No DB writes happen.
 ### Step 6.5: Run the test to verify it passes
 
 - [ ] **Run:** `go test ./internal/audiobooks/...`
-  Expected: `ok  github.com/Silo-Server/silo-server/internal/audiobooks ...`
+  Expected: `ok  github.com/prairie-server/prairie-server/internal/audiobooks ...`
 
 ### Step 6.6: Wire the constructor into `cmd/silo/main.go`
 
@@ -826,7 +826,7 @@ are constructed and pass a settings store to.
 - [ ] **Add** the import to the import block at the top of `cmd/silo/main.go`:
 
   ```go
-  "github.com/Silo-Server/silo-server/internal/audiobooks"
+  "github.com/prairie-server/prairie-server/internal/audiobooks"
   ```
 
 ### Step 6.7: Verify everything still compiles and tests pass

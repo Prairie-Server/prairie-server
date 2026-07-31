@@ -98,6 +98,11 @@ jobs:
           mkdir -p web/dist
           printf '%s\n' '<!doctype html><title>prairie</title>' > web/dist/index.html
 
+      # A manifest change that does not regenerate leaves every client reading
+      # stale keys, which the contract exists to prevent.
+      - name: Verify settings bindings are current
+        run: make verify-settings-bindings
+
       # Prefer git merge-base over the action's only-new-issues PR-patch fetch.
       # GitHub refuses PR diffs over 300 files, and the action then falls back to
       # linting the whole tree against ~2k pre-existing findings (goconst/errcheck
@@ -175,6 +180,17 @@ jobs:
 
       - name: Typecheck (tsc -b)
         run: pnpm exec tsc -b --pretty false
+
+      # Web settings binding needs pnpm/prettier; Go job covers the Go half.
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Verify the generated web settings binding is current
+        working-directory: .
+        run: make verify-settings-bindings-web
 
   # jellycompat is the heavy suite (~17k test LOC). Run it in parallel with the
   # coverage-gated packages and imageutil WASM smoke so wall clock is ~max(suite)

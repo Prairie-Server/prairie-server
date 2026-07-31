@@ -237,7 +237,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type Permission string
@@ -326,7 +326,7 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func TestNormalizePermissions_DeduplicatesAndSorts(t *testing.T) {
@@ -726,8 +726,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type fakePermissionUserLoader struct {
@@ -844,8 +844,8 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type PermissionUserLoader interface {
@@ -1023,9 +1023,9 @@ package handlers
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/adminjob"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/adminjob"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func TestCanReadAdminJob_AdminCanReadAnyJob(t *testing.T) {
@@ -1109,7 +1109,7 @@ func canReadAdminJob(claims *auth.Claims, job *models.AdminJob) bool {
 Add the `auth` import if it is not already present:
 
 ```go
-"github.com/Silo-Server/silo-server/internal/auth"
+"github.com/prairie-server/prairie-server/internal/auth"
 ```
 
 - [ ] **Step 4: Instantiate permission middleware in the router**

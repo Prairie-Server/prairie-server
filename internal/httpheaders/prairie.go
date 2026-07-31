@@ -7,7 +7,7 @@ import (
 
 const (
 	prairiePrefix = "X-Prairie-"
-	siloPrefix    = "X-Silo-"
+	siloPrefix    = "X-Prairie-"
 
 	HeaderDeviceID           = prairiePrefix + "Device-Id"
 	HeaderDeviceName         = prairiePrefix + "Device-Name"
@@ -38,7 +38,7 @@ const (
 	HeaderImageFormats = prairiePrefix + "Image-Formats"
 )
 
-// LegacyName returns the corresponding pre-rebrand X-Silo-* header name.
+// LegacyName returns the corresponding pre-rebrand X-Prairie-* header name.
 func LegacyName(name string) string {
 	if strings.HasPrefix(name, prairiePrefix) {
 		return siloPrefix + strings.TrimPrefix(name, prairiePrefix)
@@ -46,7 +46,7 @@ func LegacyName(name string) string {
 	return name
 }
 
-// Get prefers X-Prairie-* and falls back to the equivalent X-Silo-* header.
+// Get prefers X-Prairie-* and falls back to the equivalent X-Prairie-* header.
 func Get(headers http.Header, name string) string {
 	if headers == nil {
 		return ""
@@ -61,7 +61,7 @@ func Get(headers http.Header, name string) string {
 	return headers.Get(legacy)
 }
 
-// RequestValue prefers X-Prairie-* and falls back to the equivalent X-Silo-* header.
+// RequestValue prefers X-Prairie-* and falls back to the equivalent X-Prairie-* header.
 func RequestValue(r *http.Request, name string) string {
 	if r == nil {
 		return ""

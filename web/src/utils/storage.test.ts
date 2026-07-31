@@ -1,150 +1,85 @@
 import { beforeEach, describe, expect, it } from "vitest";
+import { appearanceCache, storage } from "./storage";
 
-import {
-  STORAGE_SCHEMA_VERSION,
-  UPGRADE_PRESERVED_KEYS,
-  ensureStorageSchema,
-  isUpgradePreservedKey,
-  storage,
-} from "./storage";
+const KEYS = storage.KEYS;
 
-function installMemoryLocalStorage() {
-  const state = new Map<string, string>();
-  Object.defineProperty(globalThis, "localStorage", {
-    value: {
-      get length() {
-        return state.size;
-      },
-      getItem: (key: string) => state.get(key) ?? null,
-      key: (index: number) => Array.from(state.keys())[index] ?? null,
-      setItem: (key: string, value: string) => {
-        state.set(key, value);
-      },
-      removeItem: (key: string) => {
-        state.delete(key);
-      },
-      clear: () => {
-        state.clear();
-      },
-    } satisfies Storage,
-    configurable: true,
-  });
-  return state;
-}
-
-describe("storage upgrade persistence", () => {
-  let state: Map<string, string>;
-
+describe("appearance cache namespacing", () => {
   beforeEach(() => {
-    state = installMemoryLocalStorage();
+    localStorage.clear();
   });
 
-  it("keeps STORAGE_KEYS names stable (auth contract)", () => {
-    expect(storage.KEYS.REFRESH_TOKEN).toBe("refresh_token");
-    expect(storage.KEYS.PROFILE_ID).toBe("profile_id");
-    expect(storage.KEYS.PROFILE_TOKEN).toBe("profile_token");
-    expect(storage.KEYS.CURRENT_PROFILE).toBe("current_profile");
-    expect(storage.KEYS.DEVICE_ID).toBe("prairie-device-id");
-    expect(storage.KEYS.ACCESS_TOKEN).toBe("access_token");
+  it("reads back what the same account wrote", () => {
+    appearanceCache.set(KEYS.THEME, "cobalt-studio", "1");
+
+    expect(appearanceCache.get(KEYS.THEME, "1")).toBe("cobalt-studio");
   });
 
-  it("lists upgrade-preserved auth/profile keys", () => {
-    expect([...UPGRADE_PRESERVED_KEYS]).toEqual([
-      "refresh_token",
-      "profile_id",
-      "profile_token",
-      "current_profile",
-      "prairie-device-id",
-      "impersonation_admin_session",
-    ]);
-    for (const key of UPGRADE_PRESERVED_KEYS) {
-      expect(isUpgradePreservedKey(key)).toBe(true);
-    }
-    expect(isUpgradePreservedKey("prairie-theme")).toBe(false);
+  it("hides another account's cached values", () => {
+    appearanceCache.set(KEYS.THEME, "cobalt-studio", "1");
+    appearanceCache.set(KEYS.UI_TEXT_SCALE, "large", "1");
+
+    expect(appearanceCache.get(KEYS.THEME, "2")).toBeNull();
+    expect(appearanceCache.get(KEYS.UI_TEXT_SCALE, "2")).toBeNull();
   });
 
-  it("does not clear auth keys when applying a storage schema bump", () => {
-    storage.set(storage.KEYS.REFRESH_TOKEN, "keep-me");
-    storage.set(storage.KEYS.PROFILE_ID, "profile-7");
-    storage.set(storage.KEYS.PROFILE_TOKEN, "profile-tok");
-    storage.set(storage.KEYS.CURRENT_PROFILE, '{"id":"profile-7"}');
-    storage.set(storage.KEYS.DEVICE_ID, "device-abc");
-    storage.set(
-      storage.KEYS.IMPERSONATION_ADMIN_SESSION,
-      '{"accessToken":"a","refreshToken":"r","returnPath":"/admin"}',
-    );
-    storage.set(storage.KEYS.THEME, "dark");
+  it("keeps both accounts' values, so returning to the first still warm starts", () => {
+    appearanceCache.set(KEYS.THEME, "cobalt-studio", "1");
+    appearanceCache.set(KEYS.THEME, "oxblood-noir", "2");
 
-    expect(ensureStorageSchema()).toBe(STORAGE_SCHEMA_VERSION);
-
-    for (const key of UPGRADE_PRESERVED_KEYS) {
-      expect(state.has(key)).toBe(true);
-    }
-    expect(storage.get(storage.KEYS.REFRESH_TOKEN)).toBe("keep-me");
-    expect(storage.get(storage.KEYS.PROFILE_ID)).toBe("profile-7");
-    expect(storage.get(storage.KEYS.PROFILE_TOKEN)).toBe("profile-tok");
-    expect(storage.get(storage.KEYS.CURRENT_PROFILE)).toBe('{"id":"profile-7"}');
-    expect(storage.get(storage.KEYS.DEVICE_ID)).toBe("device-abc");
-    expect(storage.get(storage.KEYS.IMPERSONATION_ADMIN_SESSION)).toContain("refreshToken");
-    expect(storage.get(storage.KEYS.THEME)).toBe("dark");
-    expect(localStorage.getItem("prairie-storage-schema-version")).toBe(
-      String(STORAGE_SCHEMA_VERSION),
-    );
+    expect(appearanceCache.get(KEYS.THEME, "1")).toBe("cobalt-studio");
+    expect(appearanceCache.get(KEYS.THEME, "2")).toBe("oxblood-noir");
   });
 
-  it("survives a second schema ensure without wiping session state", () => {
-    storage.set(storage.KEYS.REFRESH_TOKEN, "still-here");
-    ensureStorageSchema();
-    ensureStorageSchema();
-    expect(storage.get(storage.KEYS.REFRESH_TOKEN)).toBe("still-here");
+  it("ignores values written before namespacing existed", () => {
+    storage.set(KEYS.THEME, "cobalt-studio");
+
+    expect(appearanceCache.get(KEYS.THEME, "1")).toBeNull();
   });
 
-  it("rewrites malformed schema-version markers", () => {
-    for (const bad of ["1junk", "1.5", "NaN", "-1"]) {
-      state.set("prairie-storage-schema-version", bad);
-      expect(ensureStorageSchema()).toBe(STORAGE_SCHEMA_VERSION);
-      expect(localStorage.getItem("prairie-storage-schema-version")).toBe(
-        String(STORAGE_SCHEMA_VERSION),
-      );
-    }
-  });
-});
+  it("falls back to the last account that wrote while nobody is signed in", () => {
+    appearanceCache.set(KEYS.THEME, "cobalt-studio", "1");
 
-describe("storage get/set/remove", () => {
-  beforeEach(() => {
-    installMemoryLocalStorage();
+    expect(appearanceCache.get(KEYS.THEME, null)).toBe("cobalt-studio");
   });
 
-  it("round-trips values", () => {
-    expect(storage.get(storage.KEYS.VOLUME)).toBeNull();
-    storage.set(storage.KEYS.VOLUME, "0.5");
-    expect(storage.get(storage.KEYS.VOLUME)).toBe("0.5");
-    storage.remove(storage.KEYS.VOLUME);
-    expect(storage.get(storage.KEYS.VOLUME)).toBeNull();
+  it("follows the pointer to the most recent account, not the first", () => {
+    appearanceCache.set(KEYS.THEME, "cobalt-studio", "1");
+    appearanceCache.set(KEYS.THEME, "oxblood-noir", "2");
+
+    expect(appearanceCache.get(KEYS.THEME, null)).toBe("oxblood-noir");
   });
 
-  it("swallows localStorage failures", () => {
-    Object.defineProperty(globalThis, "localStorage", {
-      value: {
-        getItem: () => {
-          throw new Error("blocked");
-        },
-        setItem: () => {
-          throw new Error("blocked");
-        },
-        removeItem: () => {
-          throw new Error("blocked");
-        },
-        clear: () => {},
-        key: () => null,
-        length: 0,
-      } satisfies Storage,
-      configurable: true,
-    });
+  it("keeps a never-signed-in device's values in their own namespace", () => {
+    appearanceCache.set(KEYS.THEME, "cobalt-studio", null);
 
-    expect(storage.get(storage.KEYS.THEME)).toBeNull();
-    expect(() => storage.set(storage.KEYS.THEME, "dark")).not.toThrow();
-    expect(() => storage.remove(storage.KEYS.THEME)).not.toThrow();
-    expect(ensureStorageSchema()).toBe(STORAGE_SCHEMA_VERSION);
+    expect(appearanceCache.get(KEYS.THEME, null)).toBe("cobalt-studio");
+    // Not the bare key, and not visible to a real account.
+    expect(storage.get(KEYS.THEME)).toBeNull();
+    expect(appearanceCache.get(KEYS.THEME, "1")).toBeNull();
+  });
+
+  it("routes a signed-out write into the last account's namespace without moving the pointer", () => {
+    appearanceCache.set(KEYS.THEME, "cobalt-studio", "1");
+    appearanceCache.set(KEYS.THEME, "evergreen-studio", null);
+
+    // Reads and writes resolve their namespace the same way, so a theme change
+    // made on the login screen is the one the next read sees. It lands in the
+    // last account's cache, which is only a warm start: their server value
+    // still wins once the settings request resolves.
+    expect(storage.get(KEYS.UI_CACHE_OWNER)).toBe("1");
+    expect(appearanceCache.get(KEYS.THEME, null)).toBe("evergreen-studio");
+    expect(appearanceCache.get(KEYS.THEME, "1")).toBe("evergreen-studio");
+    expect(appearanceCache.get(KEYS.THEME, "2")).toBeNull();
+  });
+
+  it("keeps every key in the group independently namespaced", () => {
+    appearanceCache.set(KEYS.THEME, "cobalt-studio", "1");
+    appearanceCache.set(KEYS.UI_CUSTOM_CSS, "body{}", "1");
+    appearanceCache.set(KEYS.UI_DATE_FORMAT, "iso", "2");
+
+    expect(appearanceCache.get(KEYS.UI_CUSTOM_CSS, "1")).toBe("body{}");
+    expect(appearanceCache.get(KEYS.UI_CUSTOM_CSS, "2")).toBeNull();
+    expect(appearanceCache.get(KEYS.UI_DATE_FORMAT, "2")).toBe("iso");
+    expect(appearanceCache.get(KEYS.UI_DATE_FORMAT, "1")).toBeNull();
   });
 });

@@ -1000,7 +1000,7 @@ Expected: FAIL (`routeTargets`/`plannedTarget` undefined).
 ```go
 package requests
 
-import "github.com/Silo-Server/silo-server/internal/access"
+import "github.com/prairie-server/prairie-server/internal/access"
 
 // plannedTarget is a routing decision: which instance, at which quality, with
 // which profile/folder/tags resolved (standard vs anime).

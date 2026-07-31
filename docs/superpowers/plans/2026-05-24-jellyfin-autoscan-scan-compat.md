@@ -56,8 +56,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type fakeFolderRepo struct {
@@ -211,9 +211,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/scanner"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/scanner"
 )
 
 const (
@@ -487,7 +487,7 @@ git commit -m "refactor(scan): extract scan trigger resolver"
 In `internal/api/handlers/libraries.go`, add:
 
 ```go
-	"github.com/Silo-Server/silo-server/internal/scantrigger"
+	"github.com/prairie-server/prairie-server/internal/scantrigger"
 ```
 
 Remove now-unused imports after the refactor:
@@ -640,7 +640,7 @@ In `internal/jellycompat/server.go`, extend `Dependencies`:
 Add the import:
 
 ```go
-	"github.com/Silo-Server/silo-server/internal/scantrigger"
+	"github.com/prairie-server/prairie-server/internal/scantrigger"
 ```
 
 - [ ] **Step 2: Add failing auth tests**
@@ -723,8 +723,8 @@ Update imports in `auth_test.go`:
 ```go
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/models"
 ```
 
 - [ ] **Step 3: Run auth tests to verify failure**
@@ -750,7 +750,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type adminAPIKeyContextKey string
@@ -918,8 +918,8 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type fakeAutoscanFolders struct {
@@ -1079,8 +1079,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/scantrigger"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/scantrigger"
 )
 
 const autoscanTrigger = "jellyfin_autoscan"

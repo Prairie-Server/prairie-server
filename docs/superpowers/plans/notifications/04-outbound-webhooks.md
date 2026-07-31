@@ -14,7 +14,7 @@ Silo should let each profile send their notifications to user-chosen webhook des
 Two webhook types ship in v1:
 
 - **Discord** — native Discord embed payload. The user pastes a Discord channel webhook URL; Silo POSTs Discord-formatted embeds.
-- **Generic** — canonical Silo JSON, HMAC-SHA256 signed via `X-Silo-Signature`. Suitable for Slack-incoming-webhook-style targets, custom user automations, or any HTTP endpoint.
+- **Generic** — canonical Silo JSON, HMAC-SHA256 signed via `X-Prairie-Signature`. Suitable for Slack-incoming-webhook-style targets, custom user automations, or any HTTP endpoint.
 
 ## Why this is different from APNs / FCM
 
@@ -397,14 +397,14 @@ Headers:
 
 - `Content-Type: application/json`
 - `User-Agent: Silo-Webhook/1.0`
-- `X-Silo-Event: notification.created`
-- `X-Silo-Webhook-Id: 01J...` — the webhook row ID
-- `X-Silo-Delivery-Id: 01J...` — the underlying `notification_deliveries.id`
-- `X-Silo-Timestamp: 1714299296` — Unix epoch seconds, integer
-- `X-Silo-Signature: t=1714299296,v1=<hex-hmac-sha256>`
-  - HMAC-SHA256 of the byte string `{X-Silo-Timestamp}.{request body bytes}` using the per-webhook signing secret. The result is hex-encoded.
+- `X-Prairie-Event: notification.created`
+- `X-Prairie-Webhook-Id: 01J...` — the webhook row ID
+- `X-Prairie-Delivery-Id: 01J...` — the underlying `notification_deliveries.id`
+- `X-Prairie-Timestamp: 1714299296` — Unix epoch seconds, integer
+- `X-Prairie-Signature: t=1714299296,v1=<hex-hmac-sha256>`
+  - HMAC-SHA256 of the byte string `{X-Prairie-Timestamp}.{request body bytes}` using the per-webhook signing secret. The result is hex-encoded.
   - Format follows Stripe's signing convention so receivers can use existing libraries (Stripe Go SDK, `stripe-signature` ports, etc.).
-  - **The timestamp value in the body's `timestamp` field is informational and may be RFC3339 for human readability; only the `X-Silo-Timestamp` header value (Unix epoch integer) participates in the HMAC computation.**
+  - **The timestamp value in the body's `timestamp` field is informational and may be RFC3339 for human readability; only the `X-Prairie-Timestamp` header value (Unix epoch integer) participates in the HMAC computation.**
 
 Body:
 
@@ -451,7 +451,7 @@ Notes on the generic payload:
 Receivers verify by:
 
 ```
-parts = X-Silo-Signature.split(",")
+parts = X-Prairie-Signature.split(",")
 ts = parts.find("t=").value           // Unix epoch integer (string form)
 v1 = parts.find("v1=").value          // hex string
 

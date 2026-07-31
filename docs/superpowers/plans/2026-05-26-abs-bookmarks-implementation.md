@@ -332,7 +332,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // ---------------------------------------------------------------------------
@@ -1271,7 +1271,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/oklog/ulid/v2"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abs"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
 )
 
 // ABSBookmarkStore implements abs.BookmarkStore against the

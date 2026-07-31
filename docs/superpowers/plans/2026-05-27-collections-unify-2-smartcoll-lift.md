@@ -25,7 +25,7 @@
 - `internal/audiobooks/smartcoll/query_test.go` → `internal/smartcoll/query_test.go`
 
 **Modify (import path):**
-- Every file that imports `github.com/Silo-Server/silo-server/internal/audiobooks/smartcoll` — change to `github.com/Silo-Server/silo-server/internal/smartcoll`.
+- Every file that imports `github.com/prairie-server/prairie-server/internal/audiobooks/smartcoll` — change to `github.com/prairie-server/prairie-server/internal/smartcoll`.
 
 **Add (new test, cross-type coverage):**
 - `internal/smartcoll/cross_type_test.go` — three tests verifying audiobook-specific rules no-op against non-audiobook items.
@@ -48,7 +48,7 @@ Expected: 4 files (evaluator.go, evaluator_test.go, query.go, query_test.go). If
 - [ ] **Step 2: Verify nothing outside the package references it (yet) besides the known caller**
 
 ```bash
-grep -rln '"github.com/Silo-Server/silo-server/internal/audiobooks/smartcoll"' --include="*.go" .
+grep -rln '"github.com/prairie-server/prairie-server/internal/audiobooks/smartcoll"' --include="*.go" .
 ```
 
 Expected: `internal/audiobooks/abs_smart_collection_store.go` and possibly its test, plus the package's own test files. If you find any other importer, pause and add it to the import-update list in Task 2.
@@ -102,7 +102,7 @@ The typical pattern in the existing caller is:
 ```go
 import (
     // ...
-    "github.com/Silo-Server/silo-server/internal/audiobooks/smartcoll"
+    "github.com/prairie-server/prairie-server/internal/audiobooks/smartcoll"
 )
 ```
 
@@ -111,14 +111,14 @@ Becomes:
 ```go
 import (
     // ...
-    "github.com/Silo-Server/silo-server/internal/smartcoll"
+    "github.com/prairie-server/prairie-server/internal/smartcoll"
 )
 ```
 
 For each file in the Task 1 Step 2 grep result, run:
 
 ```bash
-sed -i 's|"github.com/Silo-Server/silo-server/internal/audiobooks/smartcoll"|"github.com/Silo-Server/silo-server/internal/smartcoll"|' <file>
+sed -i 's|"github.com/prairie-server/prairie-server/internal/audiobooks/smartcoll"|"github.com/prairie-server/prairie-server/internal/smartcoll"|' <file>
 ```
 
 Or edit by hand using your editor's find-and-replace.
@@ -126,7 +126,7 @@ Or edit by hand using your editor's find-and-replace.
 - [ ] **Step 2: Verify no stale import remains**
 
 ```bash
-grep -rln '"github.com/Silo-Server/silo-server/internal/audiobooks/smartcoll"' --include="*.go" . || echo "clean"
+grep -rln '"github.com/prairie-server/prairie-server/internal/audiobooks/smartcoll"' --include="*.go" . || echo "clean"
 ```
 
 Expected: `clean` (no matches).
@@ -190,7 +190,7 @@ package smartcoll
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // TestNarratorRuleNoopOnMovie verifies that an audiobook-specific narrator
@@ -269,6 +269,6 @@ all types."
 
 **Placeholder scan:** Task 3's `t.Skip(...)` lines are explicit failing-test stubs that Step 4 fills in. The instructions in Step 4 say to read the existing tests first rather than guess. Not a TBD — it's a "read-existing, then write" workflow with explicit guidance.
 
-**Type consistency:** Package name `smartcoll` consistent. Import path `github.com/Silo-Server/silo-server/internal/smartcoll` consistent. Rule-kind names depend on what Step 1 of Task 3 discovers — the plan flags this explicitly.
+**Type consistency:** Package name `smartcoll` consistent. Import path `github.com/prairie-server/prairie-server/internal/smartcoll` consistent. Rule-kind names depend on what Step 1 of Task 3 discovers — the plan flags this explicitly.
 
 **Risk:** Pure refactor. The chance of breakage is low (Go's import system catches missed renames at compile time). The cross-type tests are new functionality, but they assert behavior that already exists in the engine (no-op on type-mismatch) so they should pass without code changes.

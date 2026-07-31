@@ -780,7 +780,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type authorSeriesStubMediaStore struct {
@@ -1066,7 +1066,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // recordingProgressFake captures SetHideFromContinue calls.
@@ -1294,7 +1294,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abs"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
 )
 
 type ABSRSSFeedStore struct {
@@ -1561,7 +1561,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type memRSSFeedStore struct {
@@ -1871,7 +1871,7 @@ func (h *Handler) handlePublicFeedFile(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-Need to add `"strconv"` to the imports of `rss_feeds_handler.go` (likely already present from the `strings.TrimSuffix` and earlier code — verify). Also add `"github.com/Silo-Server/silo-server/internal/models"`.
+Need to add `"strconv"` to the imports of `rss_feeds_handler.go` (likely already present from the `strings.TrimSuffix` and earlier code — verify). Also add `"github.com/prairie-server/prairie-server/internal/models"`.
 
 - [ ] **Step 2: Append public tests**
 

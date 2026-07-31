@@ -455,7 +455,7 @@ git commit -m "feat(calendar): add per-profile followed/favorites/watchlist/watc
 
 - [ ] **Step 1: Write the failing tests**
 
-Append to `internal/api/handlers/calendar_test.go`. (Add the imports `"github.com/Silo-Server/silo-server/internal/recommendations"` and `"github.com/Silo-Server/silo-server/internal/sections"` to the existing import block.)
+Append to `internal/api/handlers/calendar_test.go`. (Add the imports `"github.com/prairie-server/prairie-server/internal/recommendations"` and `"github.com/prairie-server/prairie-server/internal/sections"` to the existing import block.)
 
 ```go
 type stubCalendarPersonal struct {
@@ -635,9 +635,9 @@ In `internal/api/handlers/calendar.go`, add to the import block:
 	"strconv"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/recommendations"
-	"github.com/Silo-Server/silo-server/internal/sections"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/recommendations"
+	"github.com/prairie-server/prairie-server/internal/sections"
 ```
 
 Replace the `calendarRepository` interface / handler struct / constructor region with:

@@ -297,7 +297,7 @@ func (h *ProfileHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	writeJSON(w, http.StatusOK, h.toProfileResponse(r.Context(), *updatedProfile))
+	writeJSON(w, http.StatusOK, h.toProfileResponse(r.Context(), store, *updatedProfile))
 }
 
 func (h *ProfileHandler) HandleDeleteAvatar(w http.ResponseWriter, r *http.Request) {
@@ -339,5 +339,5 @@ func (h *ProfileHandler) HandleDeleteAvatar(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	writeJSON(w, http.StatusOK, h.toProfileResponse(r.Context(), *updatedProfile))
+	writeJSON(w, http.StatusOK, h.toProfileResponse(r.Context(), store, *updatedProfile))
 }

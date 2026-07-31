@@ -30,7 +30,9 @@ require (
 	github.com/oklog/ulid/v2 v2.1.2
 	github.com/open-policy-agent/opa v1.18.2
 	github.com/pgvector/pgvector-go v0.4.0
+	github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20260727030716-97c09e8758ec
 	github.com/pressly/goose/v3 v3.27.3
+	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2
 	github.com/tetratelabs/wazero v1.12.0
 	github.com/wneessen/go-mail v0.8.1
 	github.com/zishang520/socket.io/v2 v2.5.0
@@ -77,7 +79,6 @@ require (
 	github.com/quic-go/webtransport-go v0.11.1 // indirect
 	github.com/rcrowley/go-metrics v0.0.0-20250401214520-65e299d6c5c9 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	github.com/santhosh-tekuri/jsonschema/v6 v6.0.2 // indirect
 	github.com/segmentio/asm v1.2.1 // indirect
 	github.com/sethvargo/go-retry v0.4.0 // indirect
 	github.com/sirupsen/logrus v1.9.4 // indirect
@@ -125,7 +126,6 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20260727030716-97c09e8758ec
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1

@@ -1366,7 +1366,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"github.com/Silo-Server/silo-server/internal/metadata/tmdb"
+	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
 )
 
 // DiscoverBrandCard is one card on the Studios / Networks / Genres carousels.
@@ -1862,7 +1862,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 )
 
 // fakeRequestService implements the handlers.RequestService interface for

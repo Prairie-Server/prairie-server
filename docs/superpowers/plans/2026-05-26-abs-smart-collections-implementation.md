@@ -1310,7 +1310,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type memSmartCollectionStore struct {
@@ -1489,7 +1489,7 @@ import (
 
 	"github.com/oklog/ulid/v2"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/smartcoll"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/smartcoll"
 )
 
 // smartCollectionBody is the JSON body for POST and PATCH
@@ -2269,8 +2269,8 @@ import (
 
 	"github.com/oklog/ulid/v2"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/smartcoll"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/smartcoll"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 ```
 
@@ -2329,7 +2329,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abs"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
 )
 
 // ABSSmartCollectionStore implements abs.SmartCollectionStore against

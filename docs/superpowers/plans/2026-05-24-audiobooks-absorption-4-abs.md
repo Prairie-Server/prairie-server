@@ -20,7 +20,7 @@
 - `minified.go` — generic helpers (likely small)
 
 **Adapt steps:**
-1. Replace import paths: `github.com/RXWatcher/silo-plugin-audiobooks/...` → `github.com/Silo-Server/silo-server/internal/audiobooks/...`
+1. Replace import paths: `github.com/RXWatcher/silo-plugin-audiobooks/...` → `github.com/prairie-server/prairie-server/internal/audiobooks/...`
 2. Replace plugin SDK references with direct silo equivalents:
    - Plugin's `*pgx.Pool` field on Handler → silo's `*pgxpool.Pool` (same type via different import alias)
    - Plugin's `Logger` → silo's `log/slog` package-level functions

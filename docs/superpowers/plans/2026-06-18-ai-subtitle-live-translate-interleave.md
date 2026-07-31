@@ -1,6 +1,6 @@
 # Plan: interleave `transcribe_translate` so live AI subtitles follow the playhead
 
-Issue: https://github.com/Silo-Server/silo-server/issues/154
+Issue: https://github.com/prairie-server/prairie-server/issues/154
 Area: `internal/subtitles/ai` (+ `internal/playback` extraction, `internal/config`)
 Type: bug fix to an existing (shipped) capability — makes the chained AI-subtitle
 path deliver its designed live behavior. No new client-facing contract.

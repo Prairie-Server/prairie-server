@@ -369,8 +369,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/sections/recipes"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/sections/recipes"
 )
 
 type fakeSectionLister struct {
@@ -576,8 +576,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/sections/recipes"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/sections/recipes"
 )
 
 // trendingFetchCap is the over-fetch size for each refresh. Library-only
@@ -851,7 +851,7 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 // TrendingDiscoverRefresher runs a single pass of the trending refresh.
@@ -1211,7 +1211,7 @@ Add directly below it:
 
 - [ ] **Step 6: Verify imports and build the whole binary**
 
-`cmd/silo/main.go` already imports `github.com/Silo-Server/silo-server/internal/sections` (used for `sectionRepo`) and `.../internal/catalog` and `.../internal/taskmanager/tasks`. No new imports needed.
+`cmd/silo/main.go` already imports `github.com/prairie-server/prairie-server/internal/sections` (used for `sectionRepo`) and `.../internal/catalog` and `.../internal/taskmanager/tasks`. No new imports needed.
 
 Run: `go build ./...`
 Expected: success (no output).

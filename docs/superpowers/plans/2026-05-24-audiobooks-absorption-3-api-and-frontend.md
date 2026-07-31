@@ -56,8 +56,8 @@ import (
 	"net/http"
 	"strconv"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 type AudiobookHandler struct {

@@ -409,7 +409,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // ---------------------------------------------------------------------------
@@ -1605,7 +1605,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abs"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
 )
 
 // ABSCollectionStore implements abs.CollectionStore against the
@@ -2190,7 +2190,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // memPlaylistStore is an in-memory PlaylistStore for handler tests.
@@ -3740,7 +3740,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abs"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
 )
 
 // ABSPlaylistStore implements abs.PlaylistStore against the abs_playlists
