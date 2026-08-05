@@ -130,7 +130,7 @@ export function PlayerMoreMenu({
               aria-pressed={showPlaybackInfo}
             >
               <Info className="h-4 w-4 shrink-0" />
-              Playback info
+              Stats for nerds
             </button>
 
             {pipEnabled && onTogglePiP ? (

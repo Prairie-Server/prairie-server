@@ -42,11 +42,14 @@ const deviceClassKey contextKey = "device_class"
 // "tvos-companion" or a user-agent containing "tv" cannot silently opt a
 // desktop-sized screen into television artwork.
 var tvPlatforms = map[string]Class{
-	"smarttv":   TV,
-	"tizen":     TV,
-	"webos":     TV,
-	"androidtv": TV,
-	"tvos":      TV,
+	"smarttv":    TV,
+	"tizen":      TV,
+	"webos":      TV,
+	"androidtv":  TV,
+	"android-tv": TV,
+	"android_tv": TV,
+	"tvos":       TV,
+	"roku":       TV,
 }
 
 // FromPlatform maps a platform identifier to a class.
