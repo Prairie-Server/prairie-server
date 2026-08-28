@@ -9,6 +9,7 @@
  */
 export function searchShortcutLabel(): string {
   const isApple =
-    typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
+    typeof navigator !== "undefined" &&
+    /Mac|iPhone|iPad|iPod/.test(navigator.userAgent);
   return isApple ? "⌘ K" : "Ctrl K";
 }

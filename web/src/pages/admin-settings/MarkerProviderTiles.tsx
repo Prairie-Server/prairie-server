@@ -2,7 +2,11 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 
-import type { MarkerProviderConfig, MarkerUserStats, PluginInstallation } from "@/api/types";
+import type {
+  MarkerProviderConfig,
+  MarkerUserStats,
+  PluginInstallation,
+} from "@/api/types";
 import {
   ProviderPanelActions,
   ProviderTile,
@@ -22,7 +26,11 @@ import {
   useUpdateMarkerProvider,
   useValidateMarkerProvider,
 } from "@/hooks/queries/admin/markers";
-import { SETTINGS_NUMBER_WIDTH, SettingField, SettingFieldRow } from "./SettingField";
+import {
+  SETTINGS_NUMBER_WIDTH,
+  SettingField,
+  SettingFieldRow,
+} from "./SettingField";
 
 const INTEGER_INPUT_PATTERN = /^[+-]?\d+$/;
 
@@ -81,7 +89,9 @@ export function MarkerProviderTiles({
   // Installed plugins render the credential state; the tiles are useful before
   // that query lands, so they are never blocked on it.
   const { data: installations } = useAdminPluginInstallations();
-  const [results, setResults] = useState<Record<string, MarkerValidation | undefined>>({});
+  const [results, setResults] = useState<
+    Record<string, MarkerValidation | undefined>
+  >({});
 
   if (providers.isLoading) {
     return (
@@ -131,7 +141,9 @@ export function MarkerProviderTiles({
             onExpand={() => onExpand(id)}
             onCollapse={onCollapse}
             result={results[id]}
-            onValidated={(result) => setResults((current) => ({ ...current, [id]: result }))}
+            onValidated={(result) =>
+              setResults((current) => ({ ...current, [id]: result }))
+            }
           />
         );
       })}
@@ -163,8 +175,12 @@ function MarkerProviderTile({
   const minConfidenceID = `marker-min-confidence-${slug}`;
   const priorityID = `marker-priority-${slug}`;
   const [fetchEnabled, setFetchEnabled] = useState(provider.fetch_enabled);
-  const [fetchPriority, setFetchPriority] = useState(String(provider.fetch_priority));
-  const [contributeEnabled, setContributeEnabled] = useState(provider.contribute_enabled);
+  const [fetchPriority, setFetchPriority] = useState(
+    String(provider.fetch_priority),
+  );
+  const [contributeEnabled, setContributeEnabled] = useState(
+    provider.contribute_enabled,
+  );
   const [autoLocal, setAutoLocal] = useState(provider.contribute_auto_local);
   const [minConfidence, setMinConfidence] = useState(
     String(provider.contribute_min_confidence ?? 0.95),
@@ -172,11 +188,14 @@ function MarkerProviderTile({
 
   const parsedMinConfidence = Number.parseFloat(minConfidence);
   const confidenceValid =
-    Number.isFinite(parsedMinConfidence) && parsedMinConfidence >= 0 && parsedMinConfidence <= 1;
+    Number.isFinite(parsedMinConfidence) &&
+    parsedMinConfidence >= 0 &&
+    parsedMinConfidence <= 1;
   const fetchPriorityInput = fetchPriority.trim();
   const parsedFetchPriority = Number(fetchPriorityInput);
   const priorityValid =
-    INTEGER_INPUT_PATTERN.test(fetchPriorityInput) && Number.isInteger(parsedFetchPriority);
+    INTEGER_INPUT_PATTERN.test(fetchPriorityInput) &&
+    Number.isInteger(parsedFetchPriority);
   const dirty =
     provider.fetch_enabled !== fetchEnabled ||
     provider.fetch_priority !== parsedFetchPriority ||
@@ -231,7 +250,8 @@ function MarkerProviderTile({
           onValidated({
             test: {
               ok: false,
-              message: error instanceof Error ? error.message : "Validation failed.",
+              message:
+                error instanceof Error ? error.message : "Validation failed.",
               at: Date.now(),
               durationMs: Date.now() - started,
             },
@@ -273,7 +293,12 @@ function MarkerProviderTile({
       busy={updateProvider.isPending || validateProvider.isPending}
       expanded={expanded}
       primaryAction={{
-        label: test && !test.ok ? "Fix" : credentialsReady === false ? "Set up" : "Manage",
+        label:
+          test && !test.ok
+            ? "Fix"
+            : credentialsReady === false
+              ? "Set up"
+              : "Manage",
         onClick: onExpand,
       }}
     >
@@ -371,7 +396,9 @@ function MarkerProviderTile({
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Acceptance rate</dt>
-              <dd className="font-medium">{formatRate(stats.acceptance_rate)}</dd>
+              <dd className="font-medium">
+                {formatRate(stats.acceptance_rate)}
+              </dd>
             </div>
             <div className="flex justify-between gap-3">
               <dt className="text-muted-foreground">Best streak</dt>
@@ -386,7 +413,12 @@ function MarkerProviderTile({
           type="button"
           size="sm"
           onClick={save}
-          disabled={!dirty || !priorityValid || !confidenceValid || updateProvider.isPending}
+          disabled={
+            !dirty ||
+            !priorityValid ||
+            !confidenceValid ||
+            updateProvider.isPending
+          }
         >
           {updateProvider.isPending ? "Saving..." : "Save"}
         </Button>

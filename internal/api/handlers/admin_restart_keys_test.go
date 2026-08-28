@@ -8,7 +8,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 // The admin UI badges restart-required fields from this endpoint, so it has to

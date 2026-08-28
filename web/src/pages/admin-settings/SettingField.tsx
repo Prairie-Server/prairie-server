@@ -30,7 +30,8 @@ interface SelectOption {
 export const SETTINGS_CONTROL_WIDTH = "w-full sm:w-[var(--settings-control-w)]";
 
 /** Width of a number control inside a settings row. See {@link SETTINGS_CONTROL_WIDTH}. */
-export const SETTINGS_NUMBER_WIDTH = "w-full sm:w-[var(--settings-control-w-num)]";
+export const SETTINGS_NUMBER_WIDTH =
+  "w-full sm:w-[var(--settings-control-w-num)]";
 
 /**
  * One-line probe result rendered under a field description, e.g.
@@ -141,7 +142,10 @@ export function SettingFieldRow({
           </span>
         ) : null}
         {description ? (
-          <p id={descriptionId} className="text-muted-foreground mt-1 text-xs leading-relaxed">
+          <p
+            id={descriptionId}
+            className="text-muted-foreground mt-1 text-xs leading-relaxed"
+          >
             {description}
           </p>
         ) : null}
@@ -267,7 +271,11 @@ export function SettingField({
         </SelectTrigger>
         <SelectContent>
           {options.map((opt) => (
-            <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
+            <SelectItem
+              key={opt.value}
+              value={opt.value}
+              disabled={opt.disabled}
+            >
               {opt.label}
             </SelectItem>
           ))}
@@ -281,7 +289,9 @@ export function SettingField({
       <Input
         id={controlId}
         type="password"
-        placeholder={sensitiveConfigured ? "configured" : (hint ?? "Not configured")}
+        placeholder={
+          sensitiveConfigured ? "configured" : (hint ?? "Not configured")
+        }
         value={value}
         onChange={(e) => onChange(e.target.value)}
         disabled={disabled}

@@ -4,7 +4,9 @@ import { beforeEach, describe, expect, it } from "vitest";
 
 import { AdvancedSection } from "@/components/settings/AdvancedSection";
 
-function renderSection(props: Partial<Parameters<typeof AdvancedSection>[0]> = {}) {
+function renderSection(
+  props: Partial<Parameters<typeof AdvancedSection>[0]> = {},
+) {
   return render(
     <AdvancedSection id="playback.transcoding" count={3} {...props}>
       <div>ffmpeg path</div>
@@ -20,7 +22,9 @@ describe("AdvancedSection", () => {
   it("starts collapsed and labels the disclosure with the setting count", () => {
     renderSection();
 
-    const toggle = screen.getByRole("button", { name: /Advanced · 3 settings/ });
+    const toggle = screen.getByRole("button", {
+      name: /Advanced · 3 settings/,
+    });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.queryByText("ffmpeg path")).not.toBeInTheDocument();
   });
@@ -28,13 +32,17 @@ describe("AdvancedSection", () => {
   it("uses the singular form for a single setting", () => {
     renderSection({ count: 1 });
 
-    expect(screen.getByRole("button", { name: /Advanced · 1 setting$/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Advanced · 1 setting$/ }),
+    ).toBeInTheDocument();
   });
 
   it("shows the count as a bare number and spells it out for screen readers", () => {
     renderSection({ count: 9 });
 
-    expect(screen.getByRole("button", { name: "Advanced · 9 settings" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Advanced · 9 settings" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("9")).toBeInTheDocument();
   });
 
@@ -44,14 +52,18 @@ describe("AdvancedSection", () => {
 
     await user.click(screen.getByRole("button", { name: /Advanced/ }));
     expect(screen.getByText("ffmpeg path")).toBeInTheDocument();
-    expect(localStorage.getItem("silo.admin.advanced.playback.transcoding")).toBe("true");
+    expect(
+      localStorage.getItem("silo.admin.advanced.playback.transcoding"),
+    ).toBe("true");
 
     unmount();
     renderSection();
     expect(screen.getByText("ffmpeg path")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: /Advanced/ }));
-    expect(localStorage.getItem("silo.admin.advanced.playback.transcoding")).toBe("false");
+    expect(
+      localStorage.getItem("silo.admin.advanced.playback.transcoding"),
+    ).toBe("false");
     expect(screen.queryByText("ffmpeg path")).not.toBeInTheDocument();
   });
 

@@ -1110,7 +1110,8 @@ export const SETTING_DEFINITIONS: Record<SettingKey, SettingDefinition> = {
     resolutionOrder: ["profile", "default"],
     defaultValue: null,
     label: "Card quick actions enabled",
-    description: "Show the selected favorite and watched shortcuts on media cards.",
+    description:
+      "Show the selected favorite and watched shortcuts on media cards.",
     category: "appearance",
     control: "switch",
     platforms: ["web"],

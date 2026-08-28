@@ -140,7 +140,9 @@ export function createBucketRow(
 }
 
 export function recommendedBucketRows(): LogRetentionBucketRow[] {
-  return DEFAULT_BUCKET_POLICIES.map((policy, index) => createBucketRow(policy, String(index + 1)));
+  return DEFAULT_BUCKET_POLICIES.map((policy, index) =>
+    createBucketRow(policy, String(index + 1)),
+  );
 }
 
 export interface LogRetentionBucketRowsState {
@@ -158,23 +160,31 @@ export function bucketRowsFromRaw(raw: string): LogRetentionBucketRowsState {
   try {
     const parsed = parseBucketPolicies(raw);
     return {
-      rows: parsed.map((policy, index) => createBucketRow(policy, String(index + 1))),
+      rows: parsed.map((policy, index) =>
+        createBucketRow(policy, String(index + 1)),
+      ),
       error: "",
     };
   } catch (error) {
     return {
       rows: recommendedBucketRows(),
-      error: error instanceof Error ? error.message : "Failed to parse bucket rules",
+      error:
+        error instanceof Error ? error.message : "Failed to parse bucket rules",
     };
   }
 }
 
 function nextBucketRowID(rows: LogRetentionBucketRow[]): string {
-  const highest = rows.reduce((max, row) => Math.max(max, Number.parseInt(row.id, 10) || 0), 0);
+  const highest = rows.reduce(
+    (max, row) => Math.max(max, Number.parseInt(row.id, 10) || 0),
+    0,
+  );
   return String(highest + 1);
 }
 
-export function appendBucketRow(rows: LogRetentionBucketRow[]): LogRetentionBucketRow[] {
+export function appendBucketRow(
+  rows: LogRetentionBucketRow[],
+): LogRetentionBucketRow[] {
   return [...rows, createBucketRow(undefined, nextBucketRowID(rows))];
 }
 

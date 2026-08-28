@@ -4,7 +4,8 @@ import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import "@/styles/admin-settings.css";
 
-export type ProviderTileState = "connected" | "not_connected" | "error" | "editing";
+export type ProviderTileState =
+  "connected" | "not_connected" | "error" | "editing";
 
 export interface ProviderTileAction {
   label: string;
@@ -71,11 +72,16 @@ export function ProviderState({
       data-state={state}
       className={cn(
         "inline-flex shrink-0 items-center gap-1.5 text-[11.5px] whitespace-nowrap",
-        state === "error" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground",
+        state === "error"
+          ? "text-amber-600 dark:text-amber-400"
+          : "text-muted-foreground",
         className,
       )}
     >
-      <span aria-hidden="true" className={cn("size-1.5 rounded-full", STATE_DOT_CLASSES[state])} />
+      <span
+        aria-hidden="true"
+        className={cn("size-1.5 rounded-full", STATE_DOT_CLASSES[state])}
+      />
       {label ?? STATE_LABELS[state]}
     </span>
   );
@@ -94,7 +100,9 @@ export function ProviderTileGrid({
   className?: string;
   children: ReactNode;
 }) {
-  return <div className={cn("grid gap-3 sm:grid-cols-2", className)}>{children}</div>;
+  return (
+    <div className={cn("grid gap-3 sm:grid-cols-2", className)}>{children}</div>
+  );
 }
 
 /** Two letters for a provider whose logo square is just its name, e.g. "AniList" → "AN". */
@@ -118,7 +126,8 @@ export interface ProviderTestState {
 
 function testedLabel(test: ProviderTestState): string {
   const seconds = Math.max(0, Math.round((Date.now() - test.at) / 1000));
-  const ago = seconds < 60 ? `${seconds}s ago` : `${Math.round(seconds / 60)}m ago`;
+  const ago =
+    seconds < 60 ? `${seconds}s ago` : `${Math.round(seconds / 60)}m ago`;
   return `Tested ${ago} · ${test.durationMs} ms`;
 }
 
@@ -230,7 +239,9 @@ export function ProviderTile({
             {badge}
           </div>
           {tagline ? (
-            <p className="text-muted-foreground mt-0.5 text-xs leading-snug">{tagline}</p>
+            <p className="text-muted-foreground mt-0.5 text-xs leading-snug">
+              {tagline}
+            </p>
           ) : null}
         </div>
         <div className="flex shrink-0 items-center gap-2.5">
@@ -263,7 +274,9 @@ export function ProviderTile({
           className={cn(
             "text-[11.5px]",
             !expanded && primaryAction ? "mt-2.5" : "mt-auto pt-2.5",
-            state === "error" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground",
+            state === "error"
+              ? "text-amber-600 dark:text-amber-400"
+              : "text-muted-foreground",
           )}
         >
           {meta}
@@ -271,7 +284,9 @@ export function ProviderTile({
       ) : null}
 
       {expanded && children ? (
-        <div className="border-border/70 mt-3.5 border-t pt-3.5">{children}</div>
+        <div className="border-border/70 mt-3.5 border-t pt-3.5">
+          {children}
+        </div>
       ) : null}
     </fieldset>
   );

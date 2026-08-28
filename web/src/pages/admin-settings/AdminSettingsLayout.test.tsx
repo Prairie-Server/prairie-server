@@ -5,7 +5,10 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { SettingsOverviewModel } from "@/hooks/admin/useSettingsOverview";
-import { ADMIN_SETTINGS_NAV, LEGACY_ADMIN_SETTINGS_PAGE_ALIASES } from "@/lib/adminSettingsSearch";
+import {
+  ADMIN_SETTINGS_NAV,
+  LEGACY_ADMIN_SETTINGS_PAGE_ALIASES,
+} from "@/lib/adminSettingsSearch";
 
 import AdminSettingsLayout from "./AdminSettingsLayout";
 
@@ -52,11 +55,14 @@ vi.mock("@/hooks/useSettingsForm", async () => {
 
 vi.mock("@/hooks/queries/admin/settings", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/hooks/queries/admin/settings")>()),
-  useAdminServerStatus: (...args: unknown[]) => mocks.useAdminServerStatus(...args),
+  useAdminServerStatus: (...args: unknown[]) =>
+    mocks.useAdminServerStatus(...args),
 }));
 
 vi.mock("@/hooks/admin/useSettingsOverview", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/hooks/admin/useSettingsOverview")>()),
+  ...(await importOriginal<
+    typeof import("@/hooks/admin/useSettingsOverview")
+  >()),
   useSettingsOverview: () => mocks.useSettingsOverview(),
 }));
 
@@ -69,7 +75,9 @@ function overviewModel(): SettingsOverviewModel {
 }
 
 beforeEach(() => {
-  mocks.useAdminServerStatus.mockReturnValue({ data: { restart_required: false } });
+  mocks.useAdminServerStatus.mockReturnValue({
+    data: { restart_required: false },
+  });
   mocks.useSettingsOverview.mockReturnValue(overviewModel());
   mocks.dirtyCount = 0;
 });
@@ -82,7 +90,9 @@ afterEach(() => {
 // `useBlocker`, which the declarative `<MemoryRouter>` cannot serve. The second
 // route stands in for the rest of the admin area (the sidebar's targets).
 function renderInteractiveLayout(suffix = "") {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   const router = createMemoryRouter(
     [
       { path: "/admin/settings/*", element: <AdminSettingsLayout /> },
@@ -105,15 +115,21 @@ describe("AdminSettingsLayout", () => {
   it("lands on the overview at the settings index", () => {
     renderInteractiveLayout();
 
-    expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
-    expect(screen.queryByRole("link", { name: "All settings" })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Settings" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "All settings" }),
+    ).not.toBeInTheDocument();
   });
 
   it("renders a settings category with the page rail beside it", () => {
     vi.stubGlobal("scrollTo", vi.fn());
     renderInteractiveLayout("/general");
 
-    expect(screen.getByRole("region", { name: "General settings" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "General settings" }),
+    ).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "All settings" })).toHaveAttribute(
       "href",
       "/admin/settings",
@@ -137,7 +153,9 @@ describe("AdminSettingsLayout", () => {
     for (const item of ADMIN_SETTINGS_NAV) {
       const { unmount } = renderInteractiveLayout(`/${item.id}`);
 
-      expect(screen.getByRole("region", { name: `${item.label} settings` })).toBeInTheDocument();
+      expect(
+        screen.getByRole("region", { name: `${item.label} settings` }),
+      ).toBeInTheDocument();
       unmount();
     }
   });
@@ -147,14 +165,18 @@ describe("AdminSettingsLayout", () => {
     vi.stubGlobal("scrollTo", scrollTo);
     renderInteractiveLayout("/general");
 
-    const region = await screen.findByRole("region", { name: "General settings" });
+    const region = await screen.findByRole("region", {
+      name: "General settings",
+    });
     expect(scrollTo).toHaveBeenCalledWith(0, 0);
     expect(region).toHaveFocus();
   });
 
   it("leaves the restart prompt to the admin shell", () => {
     vi.stubGlobal("scrollTo", vi.fn());
-    mocks.useAdminServerStatus.mockReturnValue({ data: { restart_required: true } });
+    mocks.useAdminServerStatus.mockReturnValue({
+      data: { restart_required: true },
+    });
 
     renderInteractiveLayout("/general");
 
@@ -166,12 +188,18 @@ describe("AdminSettingsLayout", () => {
   it("redirects legacy query-string tabs to their canonical pages", async () => {
     vi.stubGlobal("scrollTo", vi.fn());
 
-    for (const [legacy, current] of Object.entries(LEGACY_ADMIN_SETTINGS_PAGE_ALIASES)) {
-      const label = ADMIN_SETTINGS_NAV.find((item) => item.id === current)?.label;
+    for (const [legacy, current] of Object.entries(
+      LEGACY_ADMIN_SETTINGS_PAGE_ALIASES,
+    )) {
+      const label = ADMIN_SETTINGS_NAV.find(
+        (item) => item.id === current,
+      )?.label;
       expect(label).toBeDefined();
 
       const { unmount } = renderInteractiveLayout(`?tab=${legacy}`);
-      expect(await screen.findByRole("region", { name: `${label} settings` })).toBeInTheDocument();
+      expect(
+        await screen.findByRole("region", { name: `${label} settings` }),
+      ).toBeInTheDocument();
       unmount();
     }
   });
@@ -189,7 +217,9 @@ describe("AdminSettingsLayout", () => {
     vi.stubGlobal("scrollTo", vi.fn());
     renderInteractiveLayout("/not-a-page");
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Settings" }),
+    ).toBeInTheDocument();
   });
 
   it("keeps the rail filter inside the rail, clear of the fixed admin header controls", () => {
@@ -204,9 +234,9 @@ describe("AdminSettingsLayout", () => {
     expect(aside).toContainElement(box);
     // AdminLayout floats its own Search ⌘K control over the top-right corner,
     // so the back-link row has to stay free of a second search input.
-    expect(screen.getByRole("link", { name: "All settings" }).parentElement).not.toContainElement(
-      box,
-    );
+    expect(
+      screen.getByRole("link", { name: "All settings" }).parentElement,
+    ).not.toContainElement(box);
   });
 
   it("filters the page rail from the settings search box", async () => {
@@ -217,18 +247,26 @@ describe("AdminSettingsLayout", () => {
     await userEvent.type(box, "transcode");
 
     const rail = screen.getByRole("navigation", { name: "Settings pages" });
-    expect(within(rail).getByRole("link", { name: "Playback" })).toBeInTheDocument();
-    expect(within(rail).queryByRole("link", { name: "General" })).not.toBeInTheDocument();
+    expect(
+      within(rail).getByRole("link", { name: "Playback" }),
+    ).toBeInTheDocument();
+    expect(
+      within(rail).queryByRole("link", { name: "General" }),
+    ).not.toBeInTheDocument();
 
     await userEvent.clear(box);
-    expect(within(rail).getByRole("link", { name: "General" })).toBeInTheDocument();
+    expect(
+      within(rail).getByRole("link", { name: "General" }),
+    ).toBeInTheDocument();
   });
 
   it("keeps `ai` pointing at the AI Services page rather than an alias", () => {
     vi.stubGlobal("scrollTo", vi.fn());
     renderInteractiveLayout("/ai");
 
-    expect(screen.getByRole("region", { name: "AI Services settings" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "AI Services settings" }),
+    ).toBeInTheDocument();
   });
 });
 
@@ -247,7 +285,9 @@ describe("AdminSettingsLayout unsaved-changes guard", () => {
     const rail = screen.getByRole("navigation", { name: "Settings pages" });
     await user.click(within(rail).getByRole("link", { name: "Playback" }));
 
-    expect(screen.getByRole("region", { name: "Playback settings" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "Playback settings" }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
@@ -259,17 +299,23 @@ describe("AdminSettingsLayout unsaved-changes guard", () => {
     await user.click(within(rail).getByRole("link", { name: "Playback" }));
 
     expect(
-      await screen.findByRole("alertdialog", { name: "Discard unsaved changes?" }),
+      await screen.findByRole("alertdialog", {
+        name: "Discard unsaved changes?",
+      }),
     ).toBeInTheDocument();
     expect(router.state.location.pathname).toBe("/admin/settings/general");
 
     await user.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(screen.getByRole("region", { name: "General settings" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "General settings" }),
+    ).toBeInTheDocument();
 
     await user.click(within(rail).getByRole("link", { name: "Playback" }));
     await user.click(await screen.findByRole("button", { name: "Discard" }));
 
-    expect(await screen.findByRole("region", { name: "Playback settings" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("region", { name: "Playback settings" }),
+    ).toBeInTheDocument();
   });
 
   it("guards the back link out of the settings shell", async () => {
@@ -282,7 +328,9 @@ describe("AdminSettingsLayout unsaved-changes guard", () => {
 
     await user.click(screen.getByRole("button", { name: "Discard" }));
 
-    expect(await screen.findByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Settings" }),
+    ).toBeInTheDocument();
   });
 
   it("guards a navigation that leaves the settings area entirely", async () => {
@@ -298,6 +346,8 @@ describe("AdminSettingsLayout unsaved-changes guard", () => {
     expect(await screen.findByRole("alertdialog")).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", { name: "Cancel" }));
-    expect(screen.getByRole("region", { name: "General settings" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("region", { name: "General settings" }),
+    ).toBeInTheDocument();
   });
 });

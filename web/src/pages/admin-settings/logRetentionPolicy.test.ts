@@ -140,8 +140,20 @@ describe("logRetentionPolicy bucket rows", () => {
   it("gives every parsed row a stable id", () => {
     const { rows, error } = bucketRowsFromRaw(
       JSON.stringify([
-        { component: "metadata", level: "info", retention_days: 1, max_rows: 10, max_size_mb: 8 },
-        { component: "scanner", level: "warn", retention_days: 7, max_rows: 20, max_size_mb: 16 },
+        {
+          component: "metadata",
+          level: "info",
+          retention_days: 1,
+          max_rows: 10,
+          max_size_mb: 8,
+        },
+        {
+          component: "scanner",
+          level: "warn",
+          retention_days: 7,
+          max_rows: 20,
+          max_size_mb: 16,
+        },
       ]),
     );
 
@@ -179,7 +191,12 @@ describe("logRetentionPolicy bucket rows", () => {
   });
 
   it("serializes rows without their editor ids", () => {
-    const rows = updateBucketRow(appendBucketRow([]), "1", "component", "metadata");
+    const rows = updateBucketRow(
+      appendBucketRow([]),
+      "1",
+      "component",
+      "metadata",
+    );
 
     expect(JSON.parse(serializeBucketRows(rows))).toEqual([
       {

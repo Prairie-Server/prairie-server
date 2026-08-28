@@ -12,18 +12,24 @@ const useCheckAdminSettingsConnectionMock = vi.fn();
 // Most cases drive the page from a hand-written form so a single render can
 // describe any staged state. The cases that have to prove a value reaches the
 // server flip this and run the real hook instead.
-const { realForm, serverSettings, sensitiveStatus, updateSettingsMock } = vi.hoisted(() => ({
-  realForm: { enabled: false },
-  serverSettings: { current: {} as Record<string, string> },
-  sensitiveStatus: { current: { configured: [] as string[], managed_by_env: [] as string[] } },
-  updateSettingsMock: vi.fn(),
-}));
+const { realForm, serverSettings, sensitiveStatus, updateSettingsMock } =
+  vi.hoisted(() => ({
+    realForm: { enabled: false },
+    serverSettings: { current: {} as Record<string, string> },
+    sensitiveStatus: {
+      current: { configured: [] as string[], managed_by_env: [] as string[] },
+    },
+    updateSettingsMock: vi.fn(),
+  }));
 
 vi.mock("@/hooks/useSettingsForm", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/hooks/useSettingsForm")>();
+  const actual =
+    await importOriginal<typeof import("@/hooks/useSettingsForm")>();
   return {
     useSettingsForm: (options: { keys: string[] }) =>
-      realForm.enabled ? actual.useSettingsForm(options) : settingsFormMock(options),
+      realForm.enabled
+        ? actual.useSettingsForm(options)
+        : settingsFormMock(options),
   };
 });
 
@@ -34,19 +40,32 @@ vi.mock("@/hooks/useRestartKeys", () => ({
 vi.mock("@/hooks/queries/admin/settings", () => ({
   useCheckAdminSettingsConnection: (...args: unknown[]) =>
     useCheckAdminSettingsConnectionMock(...args),
-  useAdminServerSettings: () => ({ data: serverSettings.current, isLoading: false }),
-  useAdminSensitiveStatus: () => ({ data: sensitiveStatus.current, isError: false }),
-  useUpdateServerSettings: () => ({ mutateAsync: updateSettingsMock, isPending: false }),
+  useAdminServerSettings: () => ({
+    data: serverSettings.current,
+    isLoading: false,
+  }),
+  useAdminSensitiveStatus: () => ({
+    data: sensitiveStatus.current,
+    isError: false,
+  }),
+  useUpdateServerSettings: () => ({
+    mutateAsync: updateSettingsMock,
+    isPending: false,
+  }),
 }));
 
-useCheckAdminSettingsConnectionMock.mockReturnValue({ isPending: false, mutateAsync: vi.fn() });
+useCheckAdminSettingsConnectionMock.mockReturnValue({
+  isPending: false,
+  mutateAsync: vi.fn(),
+});
 
 type FormOverrides = Partial<Record<string, unknown>>;
 
 function mockForm(overrides: FormOverrides = {}) {
   const form = {
     isLoading: false,
-    getValue: (key: string) => (key === "s3.public_url_auth" ? "presigned" : ""),
+    getValue: (key: string) =>
+      key === "s3.public_url_auth" ? "presigned" : "",
     setValue: vi.fn(),
     resetValue: vi.fn(),
     dirtyCount: 0,
@@ -74,7 +93,13 @@ describe("InfrastructureSettings", () => {
 
     const markup = renderToStaticMarkup(<InfrastructureSettings />);
 
-    for (const heading of ["Redis", "Public storage", "Private storage", "Database", "Logs"]) {
+    for (const heading of [
+      "Redis",
+      "Public storage",
+      "Private storage",
+      "Database",
+      "Logs",
+    ]) {
       expect(markup).toContain(heading);
     }
   });
@@ -88,7 +113,9 @@ describe("InfrastructureSettings", () => {
       screen.getByRole("heading", { level: 1, name: "Storage & Database" }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText("Where Silo keeps its data. Changes here take effect after a restart."),
+      screen.queryByText(
+        "Where Silo keeps its data. Changes here take effect after a restart.",
+      ),
     ).not.toBeInTheDocument();
     expect(screen.queryByText("Redis not configured")).not.toBeInTheDocument();
     expect(screen.queryByText("No public bucket set")).not.toBeInTheDocument();
@@ -99,11 +126,17 @@ describe("InfrastructureSettings", () => {
 
     render(<InfrastructureSettings />);
 
-    expect(screen.getAllByText("Changes on this page apply after a restart.")).toHaveLength(1);
+    expect(
+      screen.getAllByText("Changes on this page apply after a restart."),
+    ).toHaveLength(1);
     // No group repeats its own "Changes apply after a restart" line, and no
     // individual field shows a restart chip either.
-    expect(screen.queryByText("Changes apply after a restart")).not.toBeInTheDocument();
-    expect(screen.queryAllByLabelText("Takes effect after a server restart")).toHaveLength(0);
+    expect(
+      screen.queryByText("Changes apply after a restart"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryAllByLabelText("Takes effect after a server restart"),
+    ).toHaveLength(0);
   });
 
   it("puts units beside the control rather than in the label", () => {
@@ -123,9 +156,15 @@ describe("InfrastructureSettings", () => {
 
     const calls = settingsFormMock.mock.calls as [{ keys: string[] }][];
     const keys = calls[calls.length - 1]?.[0].keys ?? [];
-    expect(keys).toEqual(expect.arrayContaining(["redis.url", "database.max_connections"]));
     expect(keys).toEqual(
-      expect.arrayContaining(["s3.public_bucket", "s3.private_bucket", OPSLOG_BUCKET_POLICIES_KEY]),
+      expect.arrayContaining(["redis.url", "database.max_connections"]),
+    );
+    expect(keys).toEqual(
+      expect.arrayContaining([
+        "s3.public_bucket",
+        "s3.private_bucket",
+        OPSLOG_BUCKET_POLICIES_KEY,
+      ]),
     );
     // The disabled Litestream storage tab is gone; its keys keep working through the API.
     expect(keys.filter((key) => key.startsWith("s3.user_db_"))).toEqual([]);
@@ -163,7 +202,9 @@ describe("InfrastructureSettings", () => {
     // The value stays read-only — only writes are refused for env-managed keys —
     // but the check runs against the value the server merged from REDIS_URL.
     expect(redisGroup.getByLabelText("Connection URL")).toBeDisabled();
-    expect(redisGroup.getByRole("button", { name: "Check Connection" })).toBeEnabled();
+    expect(
+      redisGroup.getByRole("button", { name: "Check Connection" }),
+    ).toBeEnabled();
   });
 
   it("renders Check Connection as a filled button rather than flat text", () => {
@@ -171,13 +212,18 @@ describe("InfrastructureSettings", () => {
 
     render(<InfrastructureSettings />);
 
-    for (const button of screen.getAllByRole("button", { name: "Check Connection" })) {
+    for (const button of screen.getAllByRole("button", {
+      name: "Check Connection",
+    })) {
       expect(button).toHaveAttribute("data-variant", "secondary");
     }
   });
 
   it("opens an Advanced section while one of its fields is unsaved", () => {
-    mockForm({ isDirty: (key: string) => key === "database.max_connections", dirtyCount: 1 });
+    mockForm({
+      isDirty: (key: string) => key === "database.max_connections",
+      dirtyCount: 1,
+    });
 
     const markup = renderToStaticMarkup(<InfrastructureSettings />);
 
@@ -186,7 +232,10 @@ describe("InfrastructureSettings", () => {
   });
 
   it("warns about the artwork cache when a public storage identity field is edited", () => {
-    mockForm({ isDirty: (key: string) => key === "s3.public_bucket", dirtyCount: 1 });
+    mockForm({
+      isDirty: (key: string) => key === "s3.public_bucket",
+      dirtyCount: 1,
+    });
 
     const markup = renderToStaticMarkup(<InfrastructureSettings />);
 
@@ -198,17 +247,25 @@ describe("InfrastructureSettings", () => {
     const form = mockForm({
       sensitiveConfigured: ["s3.public_access_key", "s3.public_secret_key"],
       getValue: (key: string) =>
-        key === "s3.public_access_key" ? "draft" : key === "s3.public_url_auth" ? "presigned" : "",
+        key === "s3.public_access_key"
+          ? "draft"
+          : key === "s3.public_url_auth"
+            ? "presigned"
+            : "",
     });
 
     render(<InfrastructureSettings />);
 
     // No Replace step: the saved credential is a masked, always-editable input.
-    const publicGroup = within(screen.getByRole("group", { name: "Public storage" }));
+    const publicGroup = within(
+      screen.getByRole("group", { name: "Public storage" }),
+    );
     const input = publicGroup.getByLabelText("Access Key");
     expect(input).toHaveAttribute("type", "password");
     expect(input).toHaveAttribute("placeholder", "••••••••••••");
-    expect(publicGroup.queryByRole("button", { name: /Replace/ })).not.toBeInTheDocument();
+    expect(
+      publicGroup.queryByRole("button", { name: /Replace/ }),
+    ).not.toBeInTheDocument();
 
     // Deleting the draft means "keep the saved secret", never "clear it".
     await userEvent.clear(input);
@@ -225,11 +282,16 @@ describe("InfrastructureSettings", () => {
 
     render(<InfrastructureSettings />);
 
-    const privateGroup = within(screen.getByRole("group", { name: "Private storage" }));
+    const privateGroup = within(
+      screen.getByRole("group", { name: "Private storage" }),
+    );
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() =>
-      expect(privateGroup.getByLabelText("Access Key")).toHaveAttribute("type", "password"),
+      expect(privateGroup.getByLabelText("Access Key")).toHaveAttribute(
+        "type",
+        "password",
+      ),
     );
   });
 
@@ -270,7 +332,9 @@ describe("InfrastructureSettings", () => {
 
     render(<InfrastructureSettings />);
 
-    await userEvent.click(screen.getByRole("button", { name: /Remove metadata rule/ }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /Remove metadata rule/ }),
+    );
 
     expect(setValue).toHaveBeenCalledWith(OPSLOG_BUCKET_POLICIES_KEY, "[]");
   });
@@ -279,9 +343,15 @@ describe("InfrastructureSettings", () => {
     beforeEach(() => {
       realForm.enabled = true;
       serverSettings.current = { "s3.public_url_auth": "presigned" };
-      sensitiveStatus.current = { configured: ["s3.public_access_key"], managed_by_env: [] };
+      sensitiveStatus.current = {
+        configured: ["s3.public_access_key"],
+        managed_by_env: [],
+      };
       updateSettingsMock.mockReset();
-      updateSettingsMock.mockResolvedValue({ values: {}, restart_required: false });
+      updateSettingsMock.mockResolvedValue({
+        values: {},
+        restart_required: false,
+      });
     });
 
     afterEach(() => {
@@ -291,24 +361,36 @@ describe("InfrastructureSettings", () => {
     it("stages the clear in the save bar and saves it as an empty value", async () => {
       render(<InfrastructureSettings />);
 
-      const publicGroup = within(screen.getByRole("group", { name: "Public storage" }));
-      await userEvent.click(publicGroup.getByRole("button", { name: "Clear saved value" }));
+      const publicGroup = within(
+        screen.getByRole("group", { name: "Public storage" }),
+      );
+      await userEvent.click(
+        publicGroup.getByRole("button", { name: "Clear saved value" }),
+      );
 
       expect(screen.getByText("1 unsaved change")).toBeInTheDocument();
 
       await userEvent.click(screen.getByRole("button", { name: "Save" }));
 
       await waitFor(() =>
-        expect(updateSettingsMock).toHaveBeenCalledWith({ "s3.public_access_key": "" }),
+        expect(updateSettingsMock).toHaveBeenCalledWith({
+          "s3.public_access_key": "",
+        }),
       );
     });
 
     it("takes the clear back out of the save bar when the saved value is kept", async () => {
       render(<InfrastructureSettings />);
 
-      const publicGroup = within(screen.getByRole("group", { name: "Public storage" }));
-      await userEvent.click(publicGroup.getByRole("button", { name: "Clear saved value" }));
-      await userEvent.click(publicGroup.getByRole("button", { name: "Keep saved value" }));
+      const publicGroup = within(
+        screen.getByRole("group", { name: "Public storage" }),
+      );
+      await userEvent.click(
+        publicGroup.getByRole("button", { name: "Clear saved value" }),
+      );
+      await userEvent.click(
+        publicGroup.getByRole("button", { name: "Keep saved value" }),
+      );
 
       expect(screen.queryByText("1 unsaved change")).not.toBeInTheDocument();
       expect(publicGroup.getByLabelText("Access Key")).toHaveAttribute(

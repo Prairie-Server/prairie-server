@@ -50,7 +50,11 @@ import { THEME_IDS, THEMES } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 import { FieldGroup } from "./FieldGroup";
 import { SaveBar } from "./SaveBar";
-import { SETTINGS_CONTROL_WIDTH, SettingField, SettingFieldRow } from "./SettingField";
+import {
+  SETTINGS_CONTROL_WIDTH,
+  SettingField,
+  SettingFieldRow,
+} from "./SettingField";
 
 const IMAGE_ACCEPT = "image/png,image/jpeg,image/webp";
 const FAVICON_ACCEPT =
@@ -75,7 +79,13 @@ const CATALOG_URL_KEY = "theme.catalog_url";
 const OVERLAYS_ENABLED_KEY = "overlays.enabled";
 const OVERLAY_DEFAULTS_KEY = "defaults.card_overlays";
 
-const THEME_KEYS = [ACCENT_KEY, DEFAULT_THEME_KEY, THEME_VARS_KEY, CUSTOM_CSS_KEY, CATALOG_URL_KEY];
+const THEME_KEYS = [
+  ACCENT_KEY,
+  DEFAULT_THEME_KEY,
+  THEME_VARS_KEY,
+  CUSTOM_CSS_KEY,
+  CATALOG_URL_KEY,
+];
 
 const OVERLAY_KEYS = [OVERLAYS_ENABLED_KEY, OVERLAY_DEFAULTS_KEY];
 
@@ -112,15 +122,19 @@ export default function AppearanceSettings() {
   // essential edit. Track use of the advanced controls themselves instead.
   const [tokensTouched, setTokensTouched] = useState(false);
   const [overlayItemsTouched, setOverlayItemsTouched] = useState(false);
-  const [confirmRestoreOverlaysOpen, setConfirmRestoreOverlaysOpen] = useState(false);
+  const [confirmRestoreOverlaysOpen, setConfirmRestoreOverlaysOpen] =
+    useState(false);
   // Which sample the badge preview stands in for. View state only — show-only
   // overlays (network, show status) are otherwise impossible to see here.
-  const [previewVariant, setPreviewVariant] = useState<OverlayPreviewVariant>("movie");
+  const [previewVariant, setPreviewVariant] =
+    useState<OverlayPreviewVariant>("movie");
 
   const accentColor = form.getValue(ACCENT_KEY);
   const customAccentActive =
     Boolean(accentColor) &&
-    !ACCENT_PRESETS.some((hex) => hex.toLowerCase() === accentColor.toLowerCase());
+    !ACCENT_PRESETS.some(
+      (hex) => hex.toLowerCase() === accentColor.toLowerCase(),
+    );
   const defaultTheme = form.getValue(DEFAULT_THEME_KEY);
   const vars = parseVarsJson(form.getValue(THEME_VARS_KEY));
   const savedCss = form.getValue(CUSTOM_CSS_KEY);
@@ -139,7 +153,8 @@ export default function AppearanceSettings() {
   const overlayDefaultsAreBuiltIn =
     serializeOverlayPrefs(overlayPrefs) === BUILT_IN_OVERLAY_DEFAULTS;
 
-  const setVars = (next: ThemeVarOverrides) => form.setValue(THEME_VARS_KEY, JSON.stringify(next));
+  const setVars = (next: ThemeVarOverrides) =>
+    form.setValue(THEME_VARS_KEY, JSON.stringify(next));
 
   // Accent recolors the primary action color, focus ring, and sidebar accent
   // (ACCENT_TOKENS). It merges into the staged token overrides so a pick never
@@ -194,7 +209,10 @@ export default function AppearanceSettings() {
     setOverlayItemsTouched(true);
     setOverlayPrefs({
       ...overlayPrefs,
-      items: { ...overlayPrefs.items, [id]: { ...overlayPrefs.items[id], ...patch } },
+      items: {
+        ...overlayPrefs.items,
+        [id]: { ...overlayPrefs.items[id], ...patch },
+      },
     });
   };
 
@@ -214,9 +232,12 @@ export default function AppearanceSettings() {
   };
 
   const themeAdvancedDirty =
-    tokensTouched || form.isDirty(CUSTOM_CSS_KEY) || form.isDirty(CATALOG_URL_KEY);
+    tokensTouched ||
+    form.isDirty(CUSTOM_CSS_KEY) ||
+    form.isDirty(CATALOG_URL_KEY);
 
-  const allRestart = (keys: string[]) => keys.every((key) => restartKeys.has(key));
+  const allRestart = (keys: string[]) =>
+    keys.every((key) => restartKeys.has(key));
 
   if (form.isLoading) return <div>Loading...</div>;
 
@@ -235,7 +256,10 @@ export default function AppearanceSettings() {
                 ) : (
                   <>
                     Image uploads need a public S3 bucket, set in{" "}
-                    <span className="text-foreground font-medium">Infrastructure</span> settings.
+                    <span className="text-foreground font-medium">
+                      Infrastructure
+                    </span>{" "}
+                    settings.
                   </>
                 )}
               </p>
@@ -257,7 +281,9 @@ export default function AppearanceSettings() {
               description="Optional. Shown on light themes; falls back to the main logo."
               kind="wordmark_light"
               currentUrl={branding.wordmarkLightUrl}
-              fallbackUrl={branding.wordmarkUrl ?? BRANDING_ASSET_SPECS.wordmark.defaultUrl}
+              fallbackUrl={
+                branding.wordmarkUrl ?? BRANDING_ASSET_SPECS.wordmark.defaultUrl
+              }
               accept={IMAGE_ACCEPT}
               enabled={assetStorageAvailable}
               preview="wide"
@@ -277,7 +303,9 @@ export default function AppearanceSettings() {
               description="Optional. Shown on light themes; falls back to the main icon."
               kind="mark_light"
               currentUrl={branding.markLightUrl}
-              fallbackUrl={branding.markUrl ?? BRANDING_ASSET_SPECS.mark.defaultUrl}
+              fallbackUrl={
+                branding.markUrl ?? BRANDING_ASSET_SPECS.mark.defaultUrl
+              }
               accept={IMAGE_ACCEPT}
               enabled={assetStorageAvailable}
               preview="square"
@@ -304,7 +332,10 @@ export default function AppearanceSettings() {
           </div>
         </FieldGroup>
 
-        <FieldGroup label="Colors and theme" restartAll={allRestart(THEME_KEYS)}>
+        <FieldGroup
+          label="Colors and theme"
+          restartAll={allRestart(THEME_KEYS)}
+        >
           <SettingFieldRow
             label="Accent color"
             description="Recolors buttons, focus outlines, and the sidebar."
@@ -330,7 +361,8 @@ export default function AppearanceSettings() {
                 <RotateCcw className="h-3.5 w-3.5" />
               </button>
               {ACCENT_PRESETS.map((hex) => {
-                const selected = accentColor.toLowerCase() === hex.toLowerCase();
+                const selected =
+                  accentColor.toLowerCase() === hex.toLowerCase();
                 return (
                   <button
                     key={hex}
@@ -417,10 +449,16 @@ export default function AppearanceSettings() {
             </div>
           </SettingFieldRow>
 
-          <AdvancedSection id="appearance.theme" count={3} forceOpen={themeAdvancedDirty}>
+          <AdvancedSection
+            id="appearance.theme"
+            count={3}
+            forceOpen={themeAdvancedDirty}
+          >
             <div className="space-y-3 py-3.5">
               <div className="space-y-1">
-                <Label className="text-sm font-medium">Individual colors and fonts</Label>
+                <Label className="text-sm font-medium">
+                  Individual colors and fonts
+                </Label>
                 <p className="text-muted-foreground text-xs leading-relaxed">
                   Applied on top of the chosen theme.
                 </p>
@@ -438,7 +476,11 @@ export default function AppearanceSettings() {
                   </button>
                 </div>
               )}
-              <TokenEditor vars={vars} onSetVar={setToken} onResetVar={resetToken} />
+              <TokenEditor
+                vars={vars}
+                onSetVar={setToken}
+                onResetVar={resetToken}
+              />
             </div>
 
             <div className="space-y-2 py-3.5">
@@ -492,7 +534,9 @@ export default function AppearanceSettings() {
               strip instead of squatting in the row's control column. */}
           <div
             inert={!overlaysEnabled}
-            className={overlaysEnabled ? undefined : "pointer-events-none opacity-50"}
+            className={
+              overlaysEnabled ? undefined : "pointer-events-none opacity-50"
+            }
           >
             <SettingFieldRow
               label="Badge style"
@@ -500,9 +544,14 @@ export default function AppearanceSettings() {
             >
               <Select
                 value={overlayPrefs.preset}
-                onValueChange={(v) => setOverlayPrefs({ ...overlayPrefs, preset: v as PresetId })}
+                onValueChange={(v) =>
+                  setOverlayPrefs({ ...overlayPrefs, preset: v as PresetId })
+                }
               >
-                <SelectTrigger className={SETTINGS_CONTROL_WIDTH} aria-label="Badge style">
+                <SelectTrigger
+                  className={SETTINGS_CONTROL_WIDTH}
+                  aria-label="Badge style"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -519,17 +568,26 @@ export default function AppearanceSettings() {
                 <span className="text-muted-foreground text-[11px] font-medium tracking-wide uppercase">
                   Preview
                 </span>
-                <OverlayPreviewVariantToggle value={previewVariant} onChange={setPreviewVariant} />
+                <OverlayPreviewVariantToggle
+                  value={previewVariant}
+                  onChange={setPreviewVariant}
+                />
               </div>
               <div className="mt-3 flex justify-center pb-1">
-                <OverlayPreviewCard prefs={overlayPrefs} size="sm" variant={previewVariant} />
+                <OverlayPreviewCard
+                  prefs={overlayPrefs}
+                  size="sm"
+                  variant={previewVariant}
+                />
               </div>
             </div>
           </div>
 
           <div
             inert={!overlaysEnabled}
-            className={cn(overlaysEnabled ? "" : "pointer-events-none opacity-50")}
+            className={cn(
+              overlaysEnabled ? "" : "pointer-events-none opacity-50",
+            )}
           >
             <AdvancedSection
               id="appearance.overlays"
@@ -537,7 +595,9 @@ export default function AppearanceSettings() {
               forceOpen={overlayItemsTouched}
             >
               {OVERLAY_CATEGORIES.map((category) => {
-                const overlays = OVERLAY_REGISTRY.filter((d) => d.category === category);
+                const overlays = OVERLAY_REGISTRY.filter(
+                  (d) => d.category === category,
+                );
                 if (overlays.length === 0) return null;
                 return (
                   <div key={category} className="min-w-0">
@@ -557,7 +617,9 @@ export default function AppearanceSettings() {
                               value={config.position}
                               disabled={!config.enabled}
                               onValueChange={(pos) =>
-                                updateOverlayItem(def.id, { position: pos as OverlayPosition })
+                                updateOverlayItem(def.id, {
+                                  position: pos as OverlayPosition,
+                                })
                               }
                             >
                               <SelectTrigger

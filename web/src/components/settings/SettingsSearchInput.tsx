@@ -49,7 +49,8 @@ export function SettingsSearchInput({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || !(event.metaKey || event.ctrlKey)) return;
       if (event.key.toLowerCase() !== "k") return;
-      if (shortcutMediaQuery && !window.matchMedia(shortcutMediaQuery).matches) return;
+      if (shortcutMediaQuery && !window.matchMedia(shortcutMediaQuery).matches)
+        return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -83,7 +84,10 @@ export function SettingsSearchInput({
           value={value}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
-          className={cn("h-11 rounded-xl pr-10 pl-9", showShortcutHint && !hasQuery && "sm:pr-16")}
+          className={cn(
+            "h-11 rounded-xl pr-10 pl-9",
+            showShortcutHint && !hasQuery && "sm:pr-16",
+          )}
           autoComplete="off"
         />
         {hasQuery ? (
@@ -106,7 +110,10 @@ export function SettingsSearchInput({
       </div>
       {/* Always mounted so the live region reliably announces count changes;
           visually collapses to nothing while idle. */}
-      <p className={cn("text-muted-foreground text-xs", status && "mt-2")} aria-live="polite">
+      <p
+        className={cn("text-muted-foreground text-xs", status && "mt-2")}
+        aria-live="polite"
+      >
         {status}
       </p>
     </div>

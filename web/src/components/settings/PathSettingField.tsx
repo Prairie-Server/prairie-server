@@ -2,7 +2,10 @@ import { useId, type ReactNode } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { SETTINGS_CONTROL_WIDTH, SettingFieldRow } from "@/pages/admin-settings/SettingField";
+import {
+  SETTINGS_CONTROL_WIDTH,
+  SettingFieldRow,
+} from "@/pages/admin-settings/SettingField";
 import { cn } from "@/lib/utils";
 
 export interface PathSettingFieldProps {

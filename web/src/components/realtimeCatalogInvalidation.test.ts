@@ -1,6 +1,10 @@
 import { QueryClient } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { catalogKeys, mediaSurfaceKeys, sectionKeys } from "@/hooks/queries/keys";
+import {
+  catalogKeys,
+  mediaSurfaceKeys,
+  sectionKeys,
+} from "@/hooks/queries/keys";
 import {
   createCatalogInvalidationScheduler,
   PROGRESS_HOME_REFRESH_WINDOW_MS,
@@ -30,7 +34,8 @@ function seedLibraries(queryClient: QueryClient, libraryIds: number[]) {
 
 function invalidatedLibraries(queryClient: QueryClient, libraryIds: number[]) {
   return libraryIds.filter(
-    (libraryId) => queryClient.getQueryState(catalogListKey(libraryId))?.isInvalidated,
+    (libraryId) =>
+      queryClient.getQueryState(catalogListKey(libraryId))?.isInvalidated,
   );
 }
 
@@ -41,7 +46,10 @@ describe("createCatalogInvalidationScheduler", () => {
   it("invalidates the first event immediately", async () => {
     const queryClient = new QueryClient();
     seedLibraries(queryClient, [1, 3]);
-    const scheduler = createCatalogInvalidationScheduler(queryClient, WINDOW_MS);
+    const scheduler = createCatalogInvalidationScheduler(
+      queryClient,
+      WINDOW_MS,
+    );
 
     scheduler.schedule({ libraryId: 3, allowDashboardRefetch: false });
     await vi.advanceTimersByTimeAsync(0);
@@ -52,14 +60,21 @@ describe("createCatalogInvalidationScheduler", () => {
   it("coalesces a burst into a single trailing sweep", async () => {
     const queryClient = new QueryClient();
     const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
-    const scheduler = createCatalogInvalidationScheduler(queryClient, WINDOW_MS);
+    const scheduler = createCatalogInvalidationScheduler(
+      queryClient,
+      WINDOW_MS,
+    );
 
     scheduler.schedule({ libraryId: 3, allowDashboardRefetch: false });
     await vi.advanceTimersByTimeAsync(0);
     const afterLeadingEdge = invalidateQueries.mock.calls.length;
 
     for (let i = 0; i < 50; i += 1) {
-      scheduler.schedule({ itemId: `item-${i}`, libraryId: 3, allowDashboardRefetch: false });
+      scheduler.schedule({
+        itemId: `item-${i}`,
+        libraryId: 3,
+        allowDashboardRefetch: false,
+      });
     }
     await vi.advanceTimersByTimeAsync(WINDOW_MS - 1);
 
@@ -74,7 +89,10 @@ describe("createCatalogInvalidationScheduler", () => {
   it("widens to an unscoped sweep when a window spans several libraries", async () => {
     const queryClient = new QueryClient();
     seedLibraries(queryClient, [1, 3]);
-    const scheduler = createCatalogInvalidationScheduler(queryClient, WINDOW_MS);
+    const scheduler = createCatalogInvalidationScheduler(
+      queryClient,
+      WINDOW_MS,
+    );
 
     // Leading edge consumes the first event; the rest share one window.
     scheduler.schedule({ libraryId: 3, allowDashboardRefetch: false });
@@ -91,17 +109,25 @@ describe("createCatalogInvalidationScheduler", () => {
   it("still invalidates the touched library's own sections on a scoped sweep", async () => {
     const queryClient = new QueryClient();
     queryClient.setQueryData(sectionKeys.libraryLayout(3), { sections: [] });
-    const scheduler = createCatalogInvalidationScheduler(queryClient, WINDOW_MS);
+    const scheduler = createCatalogInvalidationScheduler(
+      queryClient,
+      WINDOW_MS,
+    );
 
     scheduler.schedule({ libraryId: 3, allowDashboardRefetch: false });
     await vi.advanceTimersByTimeAsync(0);
 
-    expect(queryClient.getQueryState(sectionKeys.libraryLayout(3))?.isInvalidated).toBe(true);
+    expect(
+      queryClient.getQueryState(sectionKeys.libraryLayout(3))?.isInvalidated,
+    ).toBe(true);
   });
 
   it("drops queued work on cancel", async () => {
     const queryClient = new QueryClient();
-    const scheduler = createCatalogInvalidationScheduler(queryClient, WINDOW_MS);
+    const scheduler = createCatalogInvalidationScheduler(
+      queryClient,
+      WINDOW_MS,
+    );
 
     scheduler.schedule({ libraryId: 3, allowDashboardRefetch: false });
     await vi.advanceTimersByTimeAsync(0);
@@ -125,14 +151,19 @@ describe("createCatalogInvalidationScheduler", () => {
     const homeItemsKey = sectionKeys.homeItems("recently-added");
     queryClient.setQueryData(sectionKeys.homeLayout(), { sections: [] });
     queryClient.setQueryData(homeItemsKey, { items: [] });
-    const scheduler = createCatalogInvalidationScheduler(queryClient, WINDOW_MS);
+    const scheduler = createCatalogInvalidationScheduler(
+      queryClient,
+      WINDOW_MS,
+    );
 
     scheduler.schedule({ libraryId: 3, allowDashboardRefetch: false });
     await vi.advanceTimersByTimeAsync(0);
 
     // Stale, so the throttled home queue reset fetches real data instead of
     // re-rendering the fresh-but-outdated cache…
-    expect(queryClient.getQueryState(sectionKeys.homeLayout())?.isInvalidated).toBe(true);
+    expect(
+      queryClient.getQueryState(sectionKeys.homeLayout())?.isInvalidated,
+    ).toBe(true);
     expect(queryClient.getQueryState(homeItemsKey)?.isInvalidated).toBe(true);
     // …but the sweep itself never refetches them (no observers here, and the
     // invalidation is refetchType "none").
@@ -143,7 +174,13 @@ describe("createCatalogInvalidationScheduler", () => {
 describe("userStateChangeAffectsSectionMembership", () => {
   it("ignores progress ticks and accepts every membership change", () => {
     expect(userStateChangeAffectsSectionMembership("progress")).toBe(false);
-    for (const change of ["favorite", "watchlist", "history", "watched", "home_dismissal"]) {
+    for (const change of [
+      "favorite",
+      "watchlist",
+      "history",
+      "watched",
+      "home_dismissal",
+    ]) {
       expect(userStateChangeAffectsSectionMembership(change)).toBe(true);
     }
   });
@@ -164,7 +201,8 @@ describe("scheduleProgressHomeRefresh", () => {
 
   it("coalesces a stream of progress ticks into one trailing refresh", () => {
     const queryClient = new QueryClient();
-    const signal = () => queryClient.getQueryData<number>(mediaSurfaceKeys.refreshSignal()) ?? 0;
+    const signal = () =>
+      queryClient.getQueryData<number>(mediaSurfaceKeys.refreshSignal()) ?? 0;
 
     for (let i = 0; i < 10; i += 1) {
       scheduleProgressHomeRefresh(queryClient);

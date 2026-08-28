@@ -16,7 +16,10 @@ import {
 import ConnectionsPanel from "@/pages/admin/autoscan/ConnectionsPanel";
 import ActivityPanel from "@/pages/admin/autoscan/ActivityPanel";
 import SourcesPanel from "@/pages/admin/autoscan/SourcesPanel";
-import { isLegacyAdvancedTab, normalizeTab } from "@/pages/autoscanSearchParams";
+import {
+  isLegacyAdvancedTab,
+  normalizeTab,
+} from "@/pages/autoscanSearchParams";
 
 // ---------------------------------------------------------------------------
 // Settings tab
@@ -33,7 +36,11 @@ function SettingsTab() {
   // Merge server data into local form on first load (and after invalidation).
   const serverData = settings.data;
   const effective: AutoscanSettings = form ??
-    serverData ?? { enabled: false, default_poll_interval_seconds: 300, debounce_seconds: 10 };
+    serverData ?? {
+      enabled: false,
+      default_poll_interval_seconds: 300,
+      debounce_seconds: 10,
+    };
 
   function patch(delta: Partial<AutoscanSettings>) {
     setForm((prev) => ({
@@ -50,14 +57,18 @@ function SettingsTab() {
   }
 
   if (settings.isLoading) {
-    return <p className="text-muted-foreground py-4 text-sm">Loading settings…</p>;
+    return (
+      <p className="text-muted-foreground py-4 text-sm">Loading settings…</p>
+    );
   }
 
   return (
     <div className="max-w-lg space-y-6">
       {/* Default poll interval */}
       <div className="space-y-1.5">
-        <Label htmlFor="default-poll-interval">Default check interval (seconds)</Label>
+        <Label htmlFor="default-poll-interval">
+          Default check interval (seconds)
+        </Label>
         <div className="flex items-center gap-2">
           <Input
             id="default-poll-interval"
@@ -66,7 +77,9 @@ function SettingsTab() {
             min={1}
             value={effective.default_poll_interval_seconds}
             onChange={(e) =>
-              patch({ default_poll_interval_seconds: Number(e.target.value) || 300 })
+              patch({
+                default_poll_interval_seconds: Number(e.target.value) || 300,
+              })
             }
             onBlur={() => save()}
           />
@@ -87,7 +100,9 @@ function SettingsTab() {
             type="number"
             min={0}
             value={effective.debounce_seconds}
-            onChange={(e) => patch({ debounce_seconds: Number(e.target.value) || 0 })}
+            onChange={(e) =>
+              patch({ debounce_seconds: Number(e.target.value) || 0 })
+            }
             onBlur={() => save()}
           />
           <span className="text-muted-foreground text-sm">sec</span>
@@ -113,7 +128,9 @@ interface AdminAutoscanProps {
   embedded?: boolean;
 }
 
-export default function AdminAutoscan({ embedded = false }: AdminAutoscanProps = {}) {
+export default function AdminAutoscan({
+  embedded = false,
+}: AdminAutoscanProps = {}) {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = embedded ? "view" : "tab";
   const requestedTab = searchParams.get(tabParam);
@@ -124,7 +141,9 @@ export default function AdminAutoscan({ embedded = false }: AdminAutoscanProps =
 
   // Open Advanced automatically when arriving from an old connections/settings
   // link, so a bookmark still lands on the thing it pointed at.
-  const [advancedOpen, setAdvancedOpen] = useState(() => isLegacyAdvancedTab(requestedTab));
+  const [advancedOpen, setAdvancedOpen] = useState(() =>
+    isLegacyAdvancedTab(requestedTab),
+  );
 
   const enabled = settings.data?.enabled ?? false;
 
@@ -165,13 +184,17 @@ export default function AdminAutoscan({ embedded = false }: AdminAutoscanProps =
               ))}
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-            Silo re-scans a library as soon as something changes, instead of waiting for the next
-            scheduled scan. Add a source for each thing you want watched.
+            Silo re-scans a library as soon as something changes, instead of
+            waiting for the next scheduled scan. Add a source for each thing you
+            want watched.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <Label htmlFor="autoscan-enabled" className="text-muted-foreground text-sm">
+            <Label
+              htmlFor="autoscan-enabled"
+              className="text-muted-foreground text-sm"
+            >
               Autoscan
             </Label>
             <Switch
@@ -195,7 +218,10 @@ export default function AdminAutoscan({ embedded = false }: AdminAutoscanProps =
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-5">
-        <TabsList variant="line" className="border-border w-full justify-start border-b">
+        <TabsList
+          variant="line"
+          className="border-border w-full justify-start border-b"
+        >
           <TabsTrigger value="sources">Sources</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
@@ -226,7 +252,10 @@ export default function AdminAutoscan({ embedded = false }: AdminAutoscanProps =
             </button>
 
             {advancedOpen && (
-              <div id="autoscan-advanced" className="space-y-8 border-t px-4 py-5">
+              <div
+                id="autoscan-advanced"
+                className="space-y-8 border-t px-4 py-5"
+              >
                 <ConnectionsPanel />
                 <div className="space-y-4">
                   <div className="space-y-1">

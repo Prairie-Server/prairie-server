@@ -83,9 +83,13 @@ describe("SecretField", () => {
     expect(input).toHaveAttribute("type", "password");
     expect(input).toHaveAttribute("placeholder", "••••••••••••");
     expect(
-      screen.getByText("Type to replace the saved value; leave blank to keep it."),
+      screen.getByText(
+        "Type to replace the saved value; leave blank to keep it.",
+      ),
     ).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /Replace/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Replace/ }),
+    ).not.toBeInTheDocument();
 
     await user.type(input, "new-secret");
     expect(onChange).toHaveBeenLastCalledWith("new-secret");
@@ -174,7 +178,9 @@ describe("SecretField", () => {
     const input = screen.getByLabelText("Secret key");
     expect(input).toHaveAttribute("placeholder", "Will be cleared on save");
     expect(
-      screen.getByText("Save clears the stored value; type to set a new one instead."),
+      screen.getByText(
+        "Save clears the stored value; type to set a new one instead.",
+      ),
     ).toBeInTheDocument();
 
     await user.click(screen.getByRole("button", KEEP));

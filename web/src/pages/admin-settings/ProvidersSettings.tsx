@@ -55,7 +55,9 @@ const KEYS = ["mdblist.api_key"];
 // ---------------------------------------------------------------------------
 
 /** Marks the elapsed time of a request without each caller re-deriving it. */
-async function timed<T>(run: () => Promise<T>): Promise<{ result: T; durationMs: number }> {
+async function timed<T>(
+  run: () => Promise<T>,
+): Promise<{ result: T; durationMs: number }> {
   const started = Date.now();
   const result = await run();
   return { result, durationMs: Date.now() - started };
@@ -78,7 +80,12 @@ function DisconnectButton({
 
   return (
     <>
-      <Button type="button" size="sm" variant="outline" onClick={() => setOpen(true)}>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        onClick={() => setOpen(true)}
+      >
         {label}
       </Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
@@ -177,7 +184,8 @@ function SubtitleProviderTile({
 
   const enabled = enabledDraft ?? config.enabled;
   const providerName = config.provider_name;
-  const { name, tagline, monogram, monogramClass } = presentationFor(providerName);
+  const { name, tagline, monogram, monogramClass } =
+    presentationFor(providerName);
   const usesAccount = providerName === "opensubtitles";
   const configured = usesAccount ? config.has_credentials : config.has_api_key;
 
@@ -185,7 +193,10 @@ function SubtitleProviderTile({
   // Tile drafts live outside useSettingsForm, so the navigation guard and
   // the reload prompt only see them if the tile reports them itself.
   useReportUnsavedChanges(
-    enabledDraft !== null || username !== "" || password !== "" || apiKey !== "",
+    enabledDraft !== null ||
+      username !== "" ||
+      password !== "" ||
+      apiKey !== "",
   );
 
   function resetDrafts() {
@@ -252,7 +263,10 @@ function SubtitleProviderTile({
 
   function handleClear() {
     updateProvider.mutate(
-      { provider: providerName, config: { enabled: false, clear_credentials: true } },
+      {
+        provider: providerName,
+        config: { enabled: false, clear_credentials: true },
+      },
       {
         onSuccess: () => {
           resetDrafts();
@@ -264,7 +278,8 @@ function SubtitleProviderTile({
 
   const connected = configured && enabled;
   const state = resolveProviderTileState({ expanded, test, connected });
-  const statePill = !expanded && configured && !enabled ? "Connected · off" : undefined;
+  const statePill =
+    !expanded && configured && !enabled ? "Connected · off" : undefined;
   // Only a failure earns the extra line: "connected" is already in the header.
   const meta = !expanded && test && !test.ok ? test.message : undefined;
 
@@ -300,7 +315,9 @@ function SubtitleProviderTile({
             value={username}
             onChange={handleUsernameChange}
             description={
-              config.has_credentials ? "Leave blank to keep the saved username." : undefined
+              config.has_credentials
+                ? "Leave blank to keep the saved username."
+                : undefined
             }
           />
           <SecretField
@@ -319,7 +336,12 @@ function SubtitleProviderTile({
         />
       )}
       <ProviderPanelActions test={test}>
-        <Button type="button" size="sm" onClick={handleSave} disabled={updateProvider.isPending}>
+        <Button
+          type="button"
+          size="sm"
+          onClick={handleSave}
+          disabled={updateProvider.isPending}
+        >
           {updateProvider.isPending ? "Saving..." : "Save"}
         </Button>
         <Button
@@ -343,7 +365,9 @@ function SubtitleProviderTile({
           Close
         </Button>
       </ProviderPanelActions>
-      <p className="text-muted-foreground mt-2 text-xs">Test uses the values typed here.</p>
+      <p className="text-muted-foreground mt-2 text-xs">
+        Test uses the values typed here.
+      </p>
     </ProviderTile>
   );
 }
@@ -416,11 +440,17 @@ function MDBListTile({
           },
         }),
       );
-      onTested({ ok: result.success, message: result.message, at: Date.now(), durationMs });
+      onTested({
+        ok: result.success,
+        message: result.message,
+        at: Date.now(),
+        durationMs,
+      });
     } catch (error) {
       onTested({
         ok: false,
-        message: error instanceof Error ? error.message : "Connection check failed.",
+        message:
+          error instanceof Error ? error.message : "Connection check failed.",
         at: Date.now(),
         durationMs: 0,
       });
@@ -429,7 +459,11 @@ function MDBListTile({
     }
   }
 
-  const state = resolveProviderTileState({ expanded, test, connected: configured });
+  const state = resolveProviderTileState({
+    expanded,
+    test,
+    connected: configured,
+  });
   const meta = !expanded && test && !test.ok ? test.message : undefined;
 
   return (
@@ -519,7 +553,9 @@ export default function ProvidersSettings() {
   // One expanded tile at a time: the panel is the page's focus while it is
   // open, and two open panels lose the list the admin is working through.
   const [expandedTile, setExpandedTile] = useState<string | null>(null);
-  const [tests, setTests] = useState<Record<string, ProviderTestState | undefined>>({});
+  const [tests, setTests] = useState<
+    Record<string, ProviderTestState | undefined>
+  >({});
 
   function recordTest(id: string, test: ProviderTestState | undefined) {
     setTests((current) => ({ ...current, [id]: test }));
@@ -530,7 +566,11 @@ export default function ProvidersSettings() {
   // key is read, not staged — this page never saves it.
   const markerMode = form.getValue("markers.mode");
   const offlineMarkerMode =
-    markerMode === "off" ? "Off" : markerMode === "local" ? "Detect on this server" : null;
+    markerMode === "off"
+      ? "Off"
+      : markerMode === "local"
+        ? "Detect on this server"
+        : null;
 
   const providers = [...(data?.providers ?? [])].sort((a, b) => {
     const ai = SUBTITLE_PROVIDER_ORDER.indexOf(a.provider_name);
@@ -543,7 +583,11 @@ export default function ProvidersSettings() {
 
   if (form.isLoading || isLoading) {
     return (
-      <div className="max-w-5xl space-y-6" role="status" aria-label="Loading providers">
+      <div
+        className="max-w-5xl space-y-6"
+        role="status"
+        aria-label="Loading providers"
+      >
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-40 w-full" />
@@ -560,7 +604,9 @@ export default function ProvidersSettings() {
       <FieldGroup label="Subtitle providers">
         <div className="py-3.5">
           {providers.length === 0 ? (
-            <p className="text-muted-foreground text-sm">No subtitle providers are available.</p>
+            <p className="text-muted-foreground text-sm">
+              No subtitle providers are available.
+            </p>
           ) : (
             <ProviderTileGrid>
               {providers.map((provider) => (

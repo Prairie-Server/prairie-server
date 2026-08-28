@@ -3,21 +3,33 @@ import { Check, Monitor } from "lucide-react";
 
 import { SettingsGroup } from "@/components/settings/SettingsGroup";
 import { Button } from "@/components/ui/button";
-import { useDateTimeFormat, useDateTimeFormatSettings } from "@/hooks/useDateTimeFormat";
+import {
+  useDateTimeFormat,
+  useDateTimeFormatSettings,
+} from "@/hooks/useDateTimeFormat";
 import { isKeyboardFocus, useTheme } from "@/hooks/useTheme";
 import { formatDate, formatTime } from "@/lib/datetime";
-import type { DateFormatPreference, TimeFormatPreference } from "@/lib/datetime";
+import type {
+  DateFormatPreference,
+  TimeFormatPreference,
+} from "@/lib/datetime";
 import { CURATED_THEME_IDS, THEMES } from "@/lib/themes";
 import { cn } from "@/lib/utils";
 
-const DATE_FORMAT_CHOICES: ReadonlyArray<{ value: DateFormatPreference; label: string }> = [
+const DATE_FORMAT_CHOICES: ReadonlyArray<{
+  value: DateFormatPreference;
+  label: string;
+}> = [
   { value: "auto", label: "Auto (browser)" },
   { value: "DD/MM/YYYY", label: "DD/MM/YYYY" },
   { value: "MM/DD/YYYY", label: "MM/DD/YYYY" },
   { value: "YYYY-MM-DD", label: "YYYY-MM-DD" },
 ];
 
-const TIME_FORMAT_CHOICES: ReadonlyArray<{ value: TimeFormatPreference; label: string }> = [
+const TIME_FORMAT_CHOICES: ReadonlyArray<{
+  value: TimeFormatPreference;
+  label: string;
+}> = [
   { value: "auto", label: "Auto (browser)" },
   { value: "12h", label: "12-hour" },
   { value: "24h", label: "24-hour" },
@@ -26,7 +38,8 @@ const TIME_FORMAT_CHOICES: ReadonlyArray<{ value: TimeFormatPreference; label: s
 export default function AppearanceSettings() {
   const { theme, setTheme, previewTheme, resetPreviewTheme } = useTheme();
   const activeTheme = THEMES[theme];
-  const { dateFormat, timeFormat, setDateFormat, setTimeFormat } = useDateTimeFormatSettings();
+  const { dateFormat, timeFormat, setDateFormat, setTimeFormat } =
+    useDateTimeFormatSettings();
   useDateTimeFormat();
   const dateFormatLabelId = useId();
   const timeFormatLabelId = useId();
@@ -34,7 +47,9 @@ export default function AppearanceSettings() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Appearance</h2>
+      <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+        Appearance
+      </h2>
 
       <SettingsGroup
         title="Theme"
@@ -70,8 +85,12 @@ export default function AppearanceSettings() {
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <div className="flex items-center gap-2">
-                      <span className="text-sm font-semibold tracking-tight">{def.label}</span>
-                      {isActive ? <Check className="text-primary h-4 w-4" /> : null}
+                      <span className="text-sm font-semibold tracking-tight">
+                        {def.label}
+                      </span>
+                      {isActive ? (
+                        <Check className="text-primary h-4 w-4" />
+                      ) : null}
                     </div>
                     {def.description ? (
                       <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
@@ -92,7 +111,8 @@ export default function AppearanceSettings() {
                   className="mt-4 overflow-hidden rounded-[1rem] border"
                   style={{
                     backgroundColor: def.previewBg,
-                    borderColor: "color-mix(in srgb, var(--border) 60%, transparent)",
+                    borderColor:
+                      "color-mix(in srgb, var(--border) 60%, transparent)",
                   }}
                 >
                   <div className="px-3 py-3">
@@ -181,8 +201,8 @@ export default function AppearanceSettings() {
           </div>
 
           <p className="text-muted-foreground text-[13px]">
-            Preview: {formatDate(previewDate)} · {formatDate(previewDate, "medium")} ·{" "}
-            {formatTime(previewDate)}
+            Preview: {formatDate(previewDate)} ·{" "}
+            {formatDate(previewDate, "medium")} · {formatTime(previewDate)}
           </p>
         </div>
       </SettingsGroup>

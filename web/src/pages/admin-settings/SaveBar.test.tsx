@@ -6,7 +6,13 @@ import { SaveBar } from "./SaveBar";
 
 function renderBar(props: Partial<Parameters<typeof SaveBar>[0]> = {}) {
   return render(
-    <SaveBar dirtyCount={2} onSave={vi.fn()} onDiscard={vi.fn()} isSaving={false} {...props} />,
+    <SaveBar
+      dirtyCount={2}
+      onSave={vi.fn()}
+      onDiscard={vi.fn()}
+      isSaving={false}
+      {...props}
+    />,
   );
 }
 

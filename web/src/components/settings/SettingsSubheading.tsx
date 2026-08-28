@@ -19,14 +19,19 @@ export interface SettingsSubheadingProps {
  * separates rows without competing with them, which is what four different
  * hand-rolled versions of this were each guessing at.
  */
-export function SettingsSubheading({ children, caption }: SettingsSubheadingProps) {
+export function SettingsSubheading({
+  children,
+  caption,
+}: SettingsSubheadingProps) {
   return (
     <div className="pt-4 pb-1">
       <h4 className="text-muted-foreground/80 text-[11px] font-semibold tracking-wider uppercase">
         {children}
       </h4>
       {caption ? (
-        <p className="text-muted-foreground mt-1 text-xs leading-relaxed">{caption}</p>
+        <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+          {caption}
+        </p>
       ) : null}
     </div>
   );

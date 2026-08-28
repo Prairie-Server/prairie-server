@@ -1,5 +1,8 @@
 import { SideNavItem, SideNavSection } from "@/components/SideNav";
-import { ADMIN_SETTINGS_NAV, type AdminSettingsSearchItem } from "@/lib/adminSettingsSearch";
+import {
+  ADMIN_SETTINGS_NAV,
+  type AdminSettingsSearchItem,
+} from "@/lib/adminSettingsSearch";
 import { settingsPageHref } from "@/hooks/admin/useSettingsOverview";
 
 export interface SettingsPageRailProps {
@@ -15,9 +18,15 @@ export interface SettingsPageRailProps {
  * settings surfaces read identically. Desktop only — on smaller screens the
  * Overview (via the All settings link) is the directory.
  */
-export function SettingsPageRail({ activeId, items = ADMIN_SETTINGS_NAV }: SettingsPageRailProps) {
+export function SettingsPageRail({
+  activeId,
+  items = ADMIN_SETTINGS_NAV,
+}: SettingsPageRailProps) {
   return (
-    <nav aria-label="Settings pages" className="sticky top-6 space-y-5 py-5 pr-3 pl-5">
+    <nav
+      aria-label="Settings pages"
+      className="sticky top-6 space-y-5 py-5 pr-3 pl-5"
+    >
       <SideNavSection label="Settings" idPrefix="admin-settings-nav">
         {items.map((item) => (
           <SideNavItem
@@ -30,7 +39,9 @@ export function SettingsPageRail({ activeId, items = ADMIN_SETTINGS_NAV }: Setti
         ))}
       </SideNavSection>
       {items.length === 0 ? (
-        <p className="text-muted-foreground px-2 text-sm">No matching settings</p>
+        <p className="text-muted-foreground px-2 text-sm">
+          No matching settings
+        </p>
       ) : null}
     </nav>
   );

@@ -216,7 +216,9 @@ describe("useSettingsForm unsaved-changes guard", () => {
   });
 
   it("stops warning after the hook unmounts", () => {
-    const { result, unmount } = renderHook(() => useSettingsForm({ keys: KEYS }));
+    const { result, unmount } = renderHook(() =>
+      useSettingsForm({ keys: KEYS }),
+    );
 
     act(() => {
       result.current.setValue("branding.server_name", "Casa");

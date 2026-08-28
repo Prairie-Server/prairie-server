@@ -21,7 +21,10 @@ vi.mock("@/hooks/useRestartKeys", () => ({
 }));
 
 vi.mock("@/hooks/queries/admin/settings", () => ({
-  useCheckAdminSettingsConnection: () => ({ mutateAsync: vi.fn(), isPending: false }),
+  useCheckAdminSettingsConnection: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
   useCatalogSearchStatus: () => ({ data: undefined, isLoading: true }),
 }));
 
@@ -42,7 +45,8 @@ function makeForm(values: Record<string, string>, dirty: string[] = []) {
     setValue: vi.fn(),
     resetValue: vi.fn(),
     isDirty: (key: string) => dirtySet.has(key),
-    isClearStaged: (key: string) => dirtySet.has(key) && (values[key] ?? "") === "",
+    isClearStaged: (key: string) =>
+      dirtySet.has(key) && (values[key] ?? "") === "",
     dirtyCount: dirtySet.size,
     save: vi.fn(),
     discard: vi.fn(),
@@ -92,7 +96,12 @@ describe("LibraryMetadataSettings", () => {
   it("renders every field group heading", () => {
     const rendered = text(render({ "catalog.search.provider": "meilisearch" }));
 
-    for (const heading of ["Metadata", "Scanning", "Intro and credits markers", "Search"]) {
+    for (const heading of [
+      "Metadata",
+      "Scanning",
+      "Intro and credits markers",
+      "Search",
+    ]) {
       expect(rendered).toContain(heading);
     }
   });
@@ -167,29 +176,37 @@ describe("LibraryMetadataSettings", () => {
   });
 
   it("keeps advanced settings collapsed but expands a section holding a staged edit", () => {
-    expect(text(render({ "catalog.search.provider": "postgres" }))).not.toContain(
-      "Scanner workers",
-    );
+    expect(
+      text(render({ "catalog.search.provider": "postgres" })),
+    ).not.toContain("Scanner workers");
 
-    expect(text(render({ "catalog.search.provider": "postgres" }, ["scanner.workers"]))).toContain(
-      "Scanner workers",
-    );
+    expect(
+      text(
+        render({ "catalog.search.provider": "postgres" }, ["scanner.workers"]),
+      ),
+    ).toContain("Scanner workers");
   });
 
   it("hides Meilisearch connection fields until that engine is selected", () => {
-    expect(text(render({ "catalog.search.provider": "postgres" }))).not.toContain(
-      "Meilisearch URL",
-    );
+    expect(
+      text(render({ "catalog.search.provider": "postgres" })),
+    ).not.toContain("Meilisearch URL");
 
-    expect(text(render({ "catalog.search.provider": "meilisearch" }))).toContain("Meilisearch URL");
+    expect(
+      text(render({ "catalog.search.provider": "meilisearch" })),
+    ).toContain("Meilisearch URL");
   });
 
   it("leaves S3 image caching editable and unannotated while public storage is active", () => {
     const rendered = render({ "s3.public_bucket": "silo-public" });
 
     expect(text(rendered)).toContain("S3 image caching");
-    expect(text(rendered)).not.toContain("Restart the server for image caching to start");
-    expect(text(rendered)).not.toContain("Image caching needs a public S3 bucket");
+    expect(text(rendered)).not.toContain(
+      "Restart the server for image caching to start",
+    );
+    expect(text(rendered)).not.toContain(
+      "Image caching needs a public S3 bucket",
+    );
     expect(toggleDisabled(rendered, "S3 image caching")).toBe(false);
   });
 
@@ -198,7 +215,9 @@ describe("LibraryMetadataSettings", () => {
 
     const rendered = render({ "s3.public_bucket": "silo-public" });
 
-    expect(text(rendered)).toContain("Restart the server for image caching to start");
+    expect(text(rendered)).toContain(
+      "Restart the server for image caching to start",
+    );
     expect(toggleDisabled(rendered, "S3 image caching")).toBe(false);
   });
 
@@ -234,7 +253,9 @@ describe("LibraryMetadataSettings", () => {
   it("marks a restart-required field with the restart badge inside a mixed group", () => {
     useRestartKeysMock.mockReturnValue(new Set(["scanner.workers"]));
 
-    const rendered = render({ "catalog.search.provider": "postgres" }, ["scanner.workers"]);
+    const rendered = render({ "catalog.search.provider": "postgres" }, [
+      "scanner.workers",
+    ]);
 
     expect(rendered).toContain("Takes effect after a server restart");
     expect(text(rendered)).not.toContain("Changes apply after a restart");

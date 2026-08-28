@@ -18,7 +18,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useRateLimitConfig, useUpdateRateLimitConfig } from "@/hooks/queries/admin/rateLimits";
+import {
+  useRateLimitConfig,
+  useUpdateRateLimitConfig,
+} from "@/hooks/queries/admin/rateLimits";
 import { useRestartKeys } from "@/hooks/useRestartKeys";
 import { useSettingsForm } from "@/hooks/useSettingsForm";
 import { useReportUnsavedChanges } from "@/hooks/useUnsavedChanges";
@@ -58,7 +61,11 @@ const DEFAULT_CONFIG: RateLimitConfig = {
   global_requests_per_second: 1000,
   tiers: {
     standard: { requests_per_second: 20, requests_per_minute: 1200, burst: 20 },
-    elevated: { requests_per_second: 100, requests_per_minute: 6000, burst: 100 },
+    elevated: {
+      requests_per_second: 100,
+      requests_per_minute: 6000,
+      burst: 100,
+    },
   },
   ip_requests_per_second: 120,
   ip_requests_per_minute: 6000,
@@ -108,7 +115,10 @@ function RateBox({
 }) {
   return (
     <span className="flex flex-col items-end gap-1">
-      <Label htmlFor={id} className="text-muted-foreground text-[11px] font-normal">
+      <Label
+        htmlFor={id}
+        className="text-muted-foreground text-[11px] font-normal"
+      >
         {caption}
       </Label>
       <Input
@@ -147,7 +157,11 @@ function RateTriadRow({
   const baseId = useId();
 
   return (
-    <SettingFieldRow label={label} htmlFor={`${baseId}-rpm`} description={description}>
+    <SettingFieldRow
+      label={label}
+      htmlFor={`${baseId}-rpm`}
+      description={description}
+    >
       <div className="flex flex-wrap items-end justify-end gap-2.5">
         {perSecond && (
           <RateBox
@@ -157,8 +171,18 @@ function RateTriadRow({
             disabled={disabled}
           />
         )}
-        <RateBox id={`${baseId}-rpm`} caption="Per minute" field={perMinute} disabled={disabled} />
-        <RateBox id={`${baseId}-burst`} caption="Burst" field={burst} disabled={disabled} />
+        <RateBox
+          id={`${baseId}-rpm`}
+          caption="Per minute"
+          field={perMinute}
+          disabled={disabled}
+        />
+        <RateBox
+          id={`${baseId}-burst`}
+          caption="Burst"
+          field={burst}
+          disabled={disabled}
+        />
       </div>
     </SettingFieldRow>
   );
@@ -167,11 +191,15 @@ function RateTriadRow({
 export default function SecurityAccessSettings() {
   const form = useSettingsForm({ keys: useMemo(() => KEYS, []) });
   const restartKeys = useRestartKeys();
-  const allRestart = (keys: string[]) => keys.every((key) => restartKeys.has(key));
-  const { data: serverConfig, isLoading: rateLimitsLoading } = useRateLimitConfig();
+  const allRestart = (keys: string[]) =>
+    keys.every((key) => restartKeys.has(key));
+  const { data: serverConfig, isLoading: rateLimitsLoading } =
+    useRateLimitConfig();
   const updateConfig = useUpdateRateLimitConfig();
 
-  const trustedProxiesManaged = form.sensitiveManagedByEnv.includes("clientip.trusted_proxies");
+  const trustedProxiesManaged = form.sensitiveManagedByEnv.includes(
+    "clientip.trusted_proxies",
+  );
 
   // The save endpoint rejects the Redis backend unless Redis is configured, so
   // mirror that rule on the option itself. The server stays the source of
@@ -185,10 +213,14 @@ export default function SecurityAccessSettings() {
   // without the flag, and a restart alone may not fix it, so the hint states
   // the mismatch instead of prescribing a restart.
   const savedBackend = serverConfig?.backend || "memory";
-  const limiterInactive = serverConfig?.enabled === true && serverConfig.active === false;
-  const runningBackend = serverConfig?.active === true ? serverConfig.active_backend : undefined;
-  const runningBackendDiffers = Boolean(runningBackend) && runningBackend !== savedBackend;
-  const backendNoun = (backend?: string) => (backend === "redis" ? "Redis" : "in-memory");
+  const limiterInactive =
+    serverConfig?.enabled === true && serverConfig.active === false;
+  const runningBackend =
+    serverConfig?.active === true ? serverConfig.active_backend : undefined;
+  const runningBackendDiffers =
+    Boolean(runningBackend) && runningBackend !== savedBackend;
+  const backendNoun = (backend?: string) =>
+    backend === "redis" ? "Redis" : "in-memory";
 
   const hydratedConfig = useMemo<RateLimitConfig>(() => {
     if (!serverConfig) return DEFAULT_CONFIG;
@@ -197,13 +229,17 @@ export default function SecurityAccessSettings() {
       backend: serverConfig.backend || "memory",
       global_requests_per_second: serverConfig.global_requests_per_second,
       tiers: {
-        standard: serverConfig.tiers?.standard ?? DEFAULT_CONFIG.tiers.standard!,
-        elevated: serverConfig.tiers?.elevated ?? DEFAULT_CONFIG.tiers.elevated!,
+        standard:
+          serverConfig.tiers?.standard ?? DEFAULT_CONFIG.tiers.standard!,
+        elevated:
+          serverConfig.tiers?.elevated ?? DEFAULT_CONFIG.tiers.elevated!,
       },
       ip_requests_per_second:
-        serverConfig.ip_requests_per_second ?? DEFAULT_CONFIG.ip_requests_per_second,
+        serverConfig.ip_requests_per_second ??
+        DEFAULT_CONFIG.ip_requests_per_second,
       ip_requests_per_minute:
-        serverConfig.ip_requests_per_minute ?? DEFAULT_CONFIG.ip_requests_per_minute,
+        serverConfig.ip_requests_per_minute ??
+        DEFAULT_CONFIG.ip_requests_per_minute,
       ip_burst: serverConfig.ip_burst ?? DEFAULT_CONFIG.ip_burst,
       auth_endpoints: Object.fromEntries(
         Object.keys(AUTH_ENDPOINT_LABELS).map((endpoint) => [
@@ -219,13 +255,19 @@ export default function SecurityAccessSettings() {
   // Keyed on the hydrated snapshot so a refetch that actually changes the saved
   // config wins over a stale draft instead of silently resurrecting it.
   const hydratedKey = JSON.stringify(hydratedConfig);
-  const [configState, setConfigState] = useState<{ key: string; config: RateLimitConfig }>({
+  const [configState, setConfigState] = useState<{
+    key: string;
+    config: RateLimitConfig;
+  }>({
     key: hydratedKey,
     config: hydratedConfig,
   });
-  const config = configState.key === hydratedKey ? configState.config : hydratedConfig;
+  const config =
+    configState.key === hydratedKey ? configState.config : hydratedConfig;
 
-  function updateConfigState(updater: (prev: RateLimitConfig) => RateLimitConfig) {
+  function updateConfigState(
+    updater: (prev: RateLimitConfig) => RateLimitConfig,
+  ) {
     setConfigState((prev) => {
       const base = prev.key === hydratedKey ? prev.config : hydratedConfig;
       return { key: hydratedKey, config: updater(base) };
@@ -240,10 +282,17 @@ export default function SecurityAccessSettings() {
     };
   }
 
-  function handleTierChange(tier: string, field: keyof RateLimitTierConfig, value: number) {
+  function handleTierChange(
+    tier: string,
+    field: keyof RateLimitTierConfig,
+    value: number,
+  ) {
     updateConfigState((prev) => {
       const existing: RateLimitTierConfig = prev.tiers[tier] ?? DEFAULT_TIER;
-      return { ...prev, tiers: { ...prev.tiers, [tier]: { ...existing, [field]: value } } };
+      return {
+        ...prev,
+        tiers: { ...prev.tiers, [tier]: { ...existing, [field]: value } },
+      };
     });
   }
 
@@ -257,7 +306,10 @@ export default function SecurityAccessSettings() {
         prev.auth_endpoints[endpoint] ?? DEFAULT_AUTH_ENDPOINT;
       return {
         ...prev,
-        auth_endpoints: { ...prev.auth_endpoints, [endpoint]: { ...existing, [field]: value } },
+        auth_endpoints: {
+          ...prev.auth_endpoints,
+          [endpoint]: { ...existing, [field]: value },
+        },
       };
     });
   }
@@ -273,7 +325,10 @@ export default function SecurityAccessSettings() {
     JSON.stringify({ ...config, enabled: true }) !==
     JSON.stringify({ ...hydratedConfig, enabled: true });
   const advancedCount =
-    2 + 3 + Object.keys(TIER_LABELS).length * 3 + Object.keys(AUTH_ENDPOINT_LABELS).length * 2;
+    2 +
+    3 +
+    Object.keys(TIER_LABELS).length * 3 +
+    Object.keys(AUTH_ENDPOINT_LABELS).length * 2;
 
   /**
    * One Save, two writers — and they are ordered, not concurrent. The
@@ -325,7 +380,10 @@ export default function SecurityAccessSettings() {
       <SettingsPageHeader title="Security & Access" className="mb-8" />
 
       <div className="flex-1 space-y-5">
-        <FieldGroup label="Sign-in sessions" restartAll={allRestart(SESSION_KEYS)}>
+        <FieldGroup
+          label="Sign-in sessions"
+          restartAll={allRestart(SESSION_KEYS)}
+        >
           <SettingField
             label="Access token expiry"
             type="duration"
@@ -365,13 +423,15 @@ export default function SecurityAccessSettings() {
             label="Enable rate limiting"
             type="toggle"
             value={config.enabled ? "true" : "false"}
-            onChange={(v) => updateConfigState((prev) => ({ ...prev, enabled: v === "true" }))}
+            onChange={(v) =>
+              updateConfigState((prev) => ({ ...prev, enabled: v === "true" }))
+            }
             disabled={savingRateLimits}
             status={
               limiterInactive ? (
                 <SettingFieldStatus tone="warn">
-                  Enabled, but no limiter is running in this process — it may have failed to start.
-                  Check the server logs.
+                  Enabled, but no limiter is running in this process — it may
+                  have failed to start. Check the server logs.
                 </SettingFieldStatus>
               ) : undefined
             }
@@ -393,9 +453,10 @@ export default function SecurityAccessSettings() {
               status={
                 runningBackendDiffers ? (
                   <SettingFieldStatus tone="warn">
-                    The running limiter is using {backendNoun(runningBackend)} counters, not the
-                    saved {backendNoun(savedBackend)} backend. If a restart does not fix it, check
-                    that the saved backend is reachable.
+                    The running limiter is using {backendNoun(runningBackend)}{" "}
+                    counters, not the saved {backendNoun(savedBackend)} backend.
+                    If a restart does not fix it, check that the saved backend
+                    is reachable.
                   </SettingFieldStatus>
                 ) : undefined
               }
@@ -407,7 +468,10 @@ export default function SecurityAccessSettings() {
                 }
                 disabled={savingRateLimits}
               >
-                <SelectTrigger id="rate-limit-backend" className={SETTINGS_CONTROL_WIDTH}>
+                <SelectTrigger
+                  id="rate-limit-backend"
+                  className={SETTINGS_CONTROL_WIDTH}
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -435,7 +499,10 @@ export default function SecurityAccessSettings() {
                 value={config.global_requests_per_second}
                 onChange={(e) =>
                   setNumber((num) =>
-                    updateConfigState((prev) => ({ ...prev, global_requests_per_second: num })),
+                    updateConfigState((prev) => ({
+                      ...prev,
+                      global_requests_per_second: num,
+                    })),
                   )(e.target.value)
                 }
                 disabled={savingRateLimits}
@@ -450,13 +517,19 @@ export default function SecurityAccessSettings() {
               perSecond={{
                 value: config.ip_requests_per_second,
                 onChange: setNumber((num) =>
-                  updateConfigState((prev) => ({ ...prev, ip_requests_per_second: num })),
+                  updateConfigState((prev) => ({
+                    ...prev,
+                    ip_requests_per_second: num,
+                  })),
                 ),
               }}
               perMinute={{
                 value: config.ip_requests_per_minute,
                 onChange: setNumber((num) =>
-                  updateConfigState((prev) => ({ ...prev, ip_requests_per_minute: num })),
+                  updateConfigState((prev) => ({
+                    ...prev,
+                    ip_requests_per_minute: num,
+                  })),
                 ),
               }}
               burst={{
@@ -488,15 +561,20 @@ export default function SecurityAccessSettings() {
                   }}
                   burst={{
                     value: tierConfig.burst,
-                    onChange: setNumber((num) => handleTierChange(tier, "burst", num)),
+                    onChange: setNumber((num) =>
+                      handleTierChange(tier, "burst", num),
+                    ),
                   }}
                 />
               );
             })}
 
-            <SettingsSubheading>Sign-in and webhook endpoints</SettingsSubheading>
+            <SettingsSubheading>
+              Sign-in and webhook endpoints
+            </SettingsSubheading>
             {Object.keys(AUTH_ENDPOINT_LABELS).map((endpoint) => {
-              const epConfig = config.auth_endpoints[endpoint] ?? DEFAULT_AUTH_ENDPOINT;
+              const epConfig =
+                config.auth_endpoints[endpoint] ?? DEFAULT_AUTH_ENDPOINT;
               return (
                 <RateTriadRow
                   key={endpoint}
@@ -505,12 +583,18 @@ export default function SecurityAccessSettings() {
                   perMinute={{
                     value: epConfig.requests_per_minute,
                     onChange: setNumber((num) =>
-                      handleAuthEndpointChange(endpoint, "requests_per_minute", num),
+                      handleAuthEndpointChange(
+                        endpoint,
+                        "requests_per_minute",
+                        num,
+                      ),
                     ),
                   }}
                   burst={{
                     value: epConfig.burst,
-                    onChange: setNumber((num) => handleAuthEndpointChange(endpoint, "burst", num)),
+                    onChange: setNumber((num) =>
+                      handleAuthEndpointChange(endpoint, "burst", num),
+                    ),
                   }}
                 />
               );

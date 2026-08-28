@@ -52,7 +52,9 @@ function renderAdmin(initialPath = "/admin") {
 }
 
 beforeEach(() => {
-  mocks.useAdminServerStatus.mockReturnValue({ data: { restart_required: true } });
+  mocks.useAdminServerStatus.mockReturnValue({
+    data: { restart_required: true },
+  });
   vi.stubGlobal("matchMedia", (query: string) => ({
     matches: query === "(min-width: 64rem)",
     media: query,
@@ -75,20 +77,28 @@ describe("AdminLayout search shortcut hint", () => {
   // this keyboard actually has — a hardcoded ⌘ is a dead instruction on Windows
   // and Linux, which is most self-hosters.
   it("names Ctrl off Apple platforms", () => {
-    stubUserAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36");
+    stubUserAgent(
+      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36",
+    );
     renderAdmin();
 
-    const [search] = screen.getAllByRole("button", { name: "Search admin sections" });
+    const [search] = screen.getAllByRole("button", {
+      name: "Search admin sections",
+    });
     expect(search).toHaveAttribute("title", "Search admin sections (Ctrl K)");
     expect(screen.getByText("Ctrl K")).toBeInTheDocument();
     expect(screen.queryByText(/⌘/)).not.toBeInTheDocument();
   });
 
   it("names the command glyph on Apple platforms", () => {
-    stubUserAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15");
+    stubUserAgent(
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15",
+    );
     renderAdmin();
 
-    const [search] = screen.getAllByRole("button", { name: "Search admin sections" });
+    const [search] = screen.getAllByRole("button", {
+      name: "Search admin sections",
+    });
     expect(search).toHaveAttribute("title", "Search admin sections (⌘ K)");
     expect(screen.getByText("⌘ K")).toBeInTheDocument();
   });
@@ -96,10 +106,14 @@ describe("AdminLayout search shortcut hint", () => {
 
 describe("AdminLayout restart banner", () => {
   it("stays quiet while no restart is owed", () => {
-    mocks.useAdminServerStatus.mockReturnValue({ data: { restart_required: false } });
+    mocks.useAdminServerStatus.mockReturnValue({
+      data: { restart_required: false },
+    });
     renderAdmin();
 
-    expect(screen.getByRole("heading", { name: "Admin dashboard" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Admin dashboard" }),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Restart required")).not.toBeInTheDocument();
   });
 
@@ -111,7 +125,9 @@ describe("AdminLayout restart banner", () => {
 
     expect(banner).toHaveTextContent("Restart required");
     // Node.DOCUMENT_POSITION_FOLLOWING: the page comes after the banner.
-    expect(banner.compareDocumentPosition(page) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      banner.compareDocumentPosition(page) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("keeps a dismissal across admin navigation", async () => {
@@ -126,7 +142,9 @@ describe("AdminLayout restart banner", () => {
       await router.navigate("/admin/users");
     });
 
-    expect(screen.getByRole("heading", { name: "Admin users" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Admin users" }),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Restart required")).not.toBeInTheDocument();
   });
 });

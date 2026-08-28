@@ -46,7 +46,11 @@ export function SettingSlider({
   return (
     // Defaults to the shared settings control width so a slider row ends on the
     // same edge as the inputs and selects it is stacked against.
-    <div className={className ?? cn("flex items-center gap-3", SETTINGS_CONTROL_WIDTH)}>
+    <div
+      className={
+        className ?? cn("flex items-center gap-3", SETTINGS_CONTROL_WIDTH)
+      }
+    >
       <Slider
         value={[shown]}
         min={min}

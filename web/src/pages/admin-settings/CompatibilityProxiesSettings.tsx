@@ -52,7 +52,10 @@ const KEYS = [...JELLYFIN_KEYS, ...AUDIOBOOKSHELF_KEYS];
 
 // Installing or removing the Jellyfin Web files uses the saved values, so the
 // buttons stay disabled while either of these is only staged in the form.
-const WEB_INSTALL_KEYS = ["jellyfin_compat.web_version", "jellyfin_compat.web_install_dir"];
+const WEB_INSTALL_KEYS = [
+  "jellyfin_compat.web_version",
+  "jellyfin_compat.web_install_dir",
+];
 
 function statusLabel(value: string): string {
   return value
@@ -77,7 +80,9 @@ function webStateLabel(value?: string): string {
 }
 
 function operationTitle(kind?: string): string {
-  return kind === "remove" ? "Removing Jellyfin Web UI" : "Installing Jellyfin Web UI";
+  return kind === "remove"
+    ? "Removing Jellyfin Web UI"
+    : "Installing Jellyfin Web UI";
 }
 
 function formatTimestamp(value?: string): string {
@@ -109,8 +114,16 @@ function StatusLine({
   return (
     <div className="flex min-h-9 items-center justify-between gap-4 py-2 text-sm">
       <span className="text-muted-foreground">{label}</span>
-      <span className={mono ? "max-w-[60%] truncate font-mono text-xs" : "text-right"}>
-        {typeof value === "boolean" ? (value ? "Yes" : "No") : value || "Not set"}
+      <span
+        className={
+          mono ? "max-w-[60%] truncate font-mono text-xs" : "text-right"
+        }
+      >
+        {typeof value === "boolean"
+          ? value
+            ? "Yes"
+            : "No"
+          : value || "Not set"}
       </span>
     </div>
   );
@@ -119,7 +132,8 @@ function StatusLine({
 export default function CompatibilityProxiesSettings() {
   const form = useSettingsForm({ keys: useMemo(() => KEYS, []) });
   const restartKeys = useRestartKeys();
-  const allRestart = (keys: string[]) => keys.every((key) => restartKeys.has(key));
+  const allRestart = (keys: string[]) =>
+    keys.every((key) => restartKeys.has(key));
   const statusQuery = useJellyfinCompatStatus();
   const installWeb = useInstallJellyfinCompatWeb();
   const removeWeb = useRemoveJellyfinCompatWeb();
@@ -147,18 +161,26 @@ export default function CompatibilityProxiesSettings() {
 
   const dirtyKeys: string[] = form.dirtyKeys ?? [];
   const isDirty = (key: string) => dirtyKeys.includes(key);
-  const hasDirtyWebConfig = dirtyKeys.some((key) => WEB_INSTALL_KEYS.includes(key));
-  const jellyfinAdvancedDirty = JELLYFIN_ADVANCED_KEYS.filter((key) => isDirty(key));
+  const hasDirtyWebConfig = dirtyKeys.some((key) =>
+    WEB_INSTALL_KEYS.includes(key),
+  );
+  const jellyfinAdvancedDirty = JELLYFIN_ADVANCED_KEYS.filter((key) =>
+    isDirty(key),
+  );
   const operationRunning =
     status?.operation?.state === "running" ||
     status?.web_state === "installing" ||
     status?.web_state === "removing";
-  const missingPrerequisites = status?.prerequisites?.filter((item) => !item.available) ?? [];
+  const missingPrerequisites =
+    status?.prerequisites?.filter((item) => !item.available) ?? [];
   const jellyfinEnabledValue = form.getValue("jellyfin_compat.enabled");
   const jellyfinEnabledChecked =
-    jellyfinEnabledValue === "" ? Boolean(status?.enabled) : jellyfinEnabledValue === "true";
+    jellyfinEnabledValue === ""
+      ? Boolean(status?.enabled)
+      : jellyfinEnabledValue === "true";
   const jellyfinProxyRunning = Boolean(status?.enabled);
-  const jellyfinWebServing = jellyfinProxyRunning && status?.web_enabled !== false;
+  const jellyfinWebServing =
+    jellyfinProxyRunning && status?.web_enabled !== false;
   const installedWebAssetsPresent = Boolean(status?.installed_version);
   const pinnedJellyfinWebInstalled = hasPinnedJellyfinWebInstalled(status);
 
@@ -210,14 +232,20 @@ export default function CompatibilityProxiesSettings() {
                 Jellyfin mobile and TV apps expect to find it on the server.
               </p>
               <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1">
-                <SettingFieldStatus tone={installedWebAssetsPresent ? "ok" : "muted"}>
+                <SettingFieldStatus
+                  tone={installedWebAssetsPresent ? "ok" : "muted"}
+                >
                   {installedWebAssetsPresent
                     ? `Version ${status?.installed_version} installed`
                     : webStateLabel(status?.web_state)}
                 </SettingFieldStatus>
                 {jellyfinProxyRunning && installedWebAssetsPresent ? (
-                  <SettingFieldStatus tone={jellyfinWebServing ? "ok" : "muted"}>
-                    {jellyfinWebServing ? "Served to clients" : "Not served to clients"}
+                  <SettingFieldStatus
+                    tone={jellyfinWebServing ? "ok" : "muted"}
+                  >
+                    {jellyfinWebServing
+                      ? "Served to clients"
+                      : "Not served to clients"}
                   </SettingFieldStatus>
                 ) : null}
                 {status?.installer_ready === false ? (
@@ -230,7 +258,9 @@ export default function CompatibilityProxiesSettings() {
 
             {status?.operation?.state === "running" &&
               (() => {
-                const progress = clampProgressPercent(status.operation.progress_percent);
+                const progress = clampProgressPercent(
+                  status.operation.progress_percent,
+                );
                 const phase = formatOperationPhase(status.operation.phase);
                 const message =
                   status.operation.message ||
@@ -243,7 +273,9 @@ export default function CompatibilityProxiesSettings() {
                     <Loader2 className="text-muted-foreground mt-0.5 h-4 w-4 flex-shrink-0 animate-spin" />
                     <div className="min-w-0 flex-1 space-y-2">
                       <div className="flex flex-wrap items-center justify-between gap-2">
-                        <p className="font-medium">{operationTitle(status.operation.kind)}</p>
+                        <p className="font-medium">
+                          {operationTitle(status.operation.kind)}
+                        </p>
                         {progress !== null && (
                           <span className="text-muted-foreground text-xs font-medium">
                             {progress}%
@@ -251,11 +283,16 @@ export default function CompatibilityProxiesSettings() {
                         )}
                       </div>
                       <div className="space-y-1">
-                        <p className="text-muted-foreground leading-relaxed">{message}</p>
+                        <p className="text-muted-foreground leading-relaxed">
+                          {message}
+                        </p>
                         <p className="text-muted-foreground text-xs">{phase}</p>
                       </div>
                       {progress !== null && (
-                        <Progress value={progress} aria-label="Jellyfin Web install progress" />
+                        <Progress
+                          value={progress}
+                          aria-label="Jellyfin Web install progress"
+                        />
                       )}
                       <p className="text-muted-foreground text-xs">
                         Started {formatTimestamp(status.operation.started_at)}
@@ -291,9 +328,15 @@ export default function CompatibilityProxiesSettings() {
                   type="button"
                   size="sm"
                   variant={jellyfinWebServing ? "outline" : "default"}
-                  onClick={() => updateCompatSettings.mutate({ web_enabled: !jellyfinWebServing })}
+                  onClick={() =>
+                    updateCompatSettings.mutate({
+                      web_enabled: !jellyfinWebServing,
+                    })
+                  }
                   disabled={
-                    !jellyfinProxyRunning || updateCompatSettings.isPending || operationRunning
+                    !jellyfinProxyRunning ||
+                    updateCompatSettings.isPending ||
+                    operationRunning
                   }
                 >
                   {jellyfinWebServing ? (
@@ -321,12 +364,14 @@ export default function CompatibilityProxiesSettings() {
               </Button>
               {hasDirtyWebConfig && (
                 <span className="text-muted-foreground text-sm">
-                  Save your changes before installing or removing the web player.
+                  Save your changes before installing or removing the web
+                  player.
                 </span>
               )}
               {missingPrerequisites.length > 0 && (
                 <span className="text-muted-foreground text-sm">
-                  Silo cannot download it until these commands are installed on the server:{" "}
+                  Silo cannot download it until these commands are installed on
+                  the server:{" "}
                   {missingPrerequisites.map((item) => item.command).join(", ")}
                 </span>
               )}
@@ -352,7 +397,9 @@ export default function CompatibilityProxiesSettings() {
                 aria-expanded={showDiagnostics}
                 onClick={() => setShowDiagnostics((current) => !current)}
               >
-                {showDiagnostics ? "Hide download details" : "Show download details"}
+                {showDiagnostics
+                  ? "Hide download details"
+                  : "Show download details"}
               </Button>
               {showDiagnostics && (
                 <div className="grid gap-x-8 pt-2 md:grid-cols-2">
@@ -360,13 +407,24 @@ export default function CompatibilityProxiesSettings() {
                     label="API state"
                     value={status ? statusLabel(status.api_state) : ""}
                   />
-                  <StatusLine label="Listen address" value={status?.listen} mono />
-                  <StatusLine label="Public URL in use" value={status?.public_url} mono />
+                  <StatusLine
+                    label="Listen address"
+                    value={status?.listen}
+                    mono
+                  />
+                  <StatusLine
+                    label="Public URL in use"
+                    value={status?.public_url}
+                    mono
+                  />
                   <StatusLine
                     label="Jellyfin version reported"
                     value={status?.emulated_server_version}
                   />
-                  <StatusLine label="Version chosen" value={status?.pinned_version} />
+                  <StatusLine
+                    label="Version chosen"
+                    value={status?.pinned_version}
+                  />
                   <StatusLine
                     label="Current job"
                     value={
@@ -375,12 +433,30 @@ export default function CompatibilityProxiesSettings() {
                         : "None"
                     }
                   />
-                  <StatusLine label="Downloaded from" value={status?.source_url} mono />
-                  <StatusLine label="Source commit" value={status?.commit_sha} mono />
+                  <StatusLine
+                    label="Downloaded from"
+                    value={status?.source_url}
+                    mono
+                  />
+                  <StatusLine
+                    label="Source commit"
+                    value={status?.commit_sha}
+                    mono
+                  />
                   <StatusLine label="Checksum" value={status?.checksum} mono />
-                  <StatusLine label="Installed at" value={status?.install_path} mono />
-                  <StatusLine label="License file present" value={status?.license_present} />
-                  <StatusLine label="Download record present" value={status?.provenance_present} />
+                  <StatusLine
+                    label="Installed at"
+                    value={status?.install_path}
+                    mono
+                  />
+                  <StatusLine
+                    label="License file present"
+                    value={status?.license_present}
+                  />
+                  <StatusLine
+                    label="Download record present"
+                    value={status?.provenance_present}
+                  />
                 </div>
               )}
             </div>
@@ -409,8 +485,12 @@ export default function CompatibilityProxiesSettings() {
               label="Jellyfin version to report"
               description="Leave as is unless an app refuses to connect."
               value={form.getValue("jellyfin_compat.emulated_server_version")}
-              onChange={(v) => form.setValue("jellyfin_compat.emulated_server_version", v)}
-              restartRequired={restartKeys.has("jellyfin_compat.emulated_server_version")}
+              onChange={(v) =>
+                form.setValue("jellyfin_compat.emulated_server_version", v)
+              }
+              restartRequired={restartKeys.has(
+                "jellyfin_compat.emulated_server_version",
+              )}
             />
             <SettingField
               label="Stay signed in for"
@@ -425,8 +505,12 @@ export default function CompatibilityProxiesSettings() {
               type="duration"
               description="For example 6h."
               value={form.getValue("jellyfin_compat.playback_session_ttl")}
-              onChange={(v) => form.setValue("jellyfin_compat.playback_session_ttl", v)}
-              restartRequired={restartKeys.has("jellyfin_compat.playback_session_ttl")}
+              onChange={(v) =>
+                form.setValue("jellyfin_compat.playback_session_ttl", v)
+              }
+              restartRequired={restartKeys.has(
+                "jellyfin_compat.playback_session_ttl",
+              )}
             />
             <SettingField
               label="Web player version to install"
@@ -439,13 +523,20 @@ export default function CompatibilityProxiesSettings() {
               label="Web player install folder"
               description="Leave blank to use the folder Silo manages."
               value={form.getValue("jellyfin_compat.web_install_dir")}
-              onChange={(v) => form.setValue("jellyfin_compat.web_install_dir", v)}
-              restartRequired={restartKeys.has("jellyfin_compat.web_install_dir")}
+              onChange={(v) =>
+                form.setValue("jellyfin_compat.web_install_dir", v)
+              }
+              restartRequired={restartKeys.has(
+                "jellyfin_compat.web_install_dir",
+              )}
             />
           </AdvancedSection>
         </FieldGroup>
 
-        <FieldGroup label="Audiobookshelf" restartAll={allRestart(AUDIOBOOKSHELF_KEYS)}>
+        <FieldGroup
+          label="Audiobookshelf"
+          restartAll={allRestart(AUDIOBOOKSHELF_KEYS)}
+        >
           <SettingField
             label="Allow Audiobookshelf apps to connect"
             type="toggle"

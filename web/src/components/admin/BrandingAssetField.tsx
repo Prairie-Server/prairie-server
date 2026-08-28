@@ -79,7 +79,10 @@ export function BrandingAssetField({
             <img
               src={shownUrl}
               alt={`${label} preview`}
-              className={cn("h-full w-full object-contain", showingDefault && "opacity-40")}
+              className={cn(
+                "h-full w-full object-contain",
+                showingDefault && "opacity-40",
+              )}
             />
           ) : (
             <span
@@ -97,7 +100,9 @@ export function BrandingAssetField({
 
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">{label}</p>
-        {description && <p className="text-muted-foreground mt-0.5 text-xs">{description}</p>}
+        {description && (
+          <p className="text-muted-foreground mt-0.5 text-xs">{description}</p>
+        )}
         <p className="text-muted-foreground/80 mt-0.5 text-[11px] leading-relaxed">
           {spec.guidance}
         </p>

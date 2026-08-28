@@ -14,7 +14,10 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import type { SettingsSearchGroup, SettingsSearchItem } from "@/components/settings/settingsSearch";
+import type {
+  SettingsSearchGroup,
+  SettingsSearchItem,
+} from "@/components/settings/settingsSearch";
 
 export interface AdminSettingsSearchItem extends SettingsSearchItem {
   id: string;
@@ -23,7 +26,11 @@ export interface AdminSettingsSearchItem extends SettingsSearchItem {
   /** The named sections visible inside this settings destination. */
   groups: readonly string[];
   keywords?: readonly string[];
-  settings?: readonly { label: string; description?: string; keywords?: readonly string[] }[];
+  settings?: readonly {
+    label: string;
+    description?: string;
+    keywords?: readonly string[];
+  }[];
   icon: LucideIcon;
   /**
    * Short qualifier rendered next to the label in a nav that wants one. The
@@ -34,9 +41,11 @@ export interface AdminSettingsSearchItem extends SettingsSearchItem {
   badge?: string;
 }
 
-export type AdminSettingsSearchGroup = SettingsSearchGroup<AdminSettingsSearchItem>;
+export type AdminSettingsSearchGroup =
+  SettingsSearchGroup<AdminSettingsSearchItem>;
 
-const settingIndex = (...labels: string[]) => labels.map((label) => ({ label }));
+const settingIndex = (...labels: string[]) =>
+  labels.map((label) => ({ label }));
 
 // Page ids are stable route segments. Old ids from the 20-tab layout are kept
 // working by LEGACY_ADMIN_SETTINGS_PAGE_ALIASES below — regroup or reorder
@@ -77,8 +86,15 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "infrastructure",
         label: "Storage & Database",
-        description: "Redis, S3 storage buckets, the database, and log retention.",
-        groups: ["Redis", "Public storage", "Private storage", "Database", "Logs"],
+        description:
+          "Redis, S3 storage buckets, the database, and log retention.",
+        groups: [
+          "Redis",
+          "Public storage",
+          "Private storage",
+          "Database",
+          "Logs",
+        ],
         keywords: [
           "redis",
           "s3",
@@ -132,7 +148,8 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "appearance",
         label: "Appearance",
-        description: "Logos, accent color, default theme, custom CSS, and poster badges.",
+        description:
+          "Logos, accent color, default theme, custom CSS, and poster badges.",
         groups: ["Logos and icons", "Colors and theme", "Card overlays"],
         keywords: [
           "logo",
@@ -178,7 +195,8 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "security",
         label: "Security & Access",
-        description: "Sign-in sessions, trusted proxies, and request rate limits.",
+        description:
+          "Sign-in sessions, trusted proxies, and request rate limits.",
         groups: ["Sign-in sessions", "Network", "Rate limiting"],
         keywords: [
           "access token",
@@ -214,7 +232,8 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "library",
         label: "Library & Metadata",
-        description: "Artwork caching, scanning, intro and credits markers, and catalog search.",
+        description:
+          "Artwork caching, scanning, intro and credits markers, and catalog search.",
         groups: ["Metadata", "Scanning", "Intro and credits markers", "Search"],
         keywords: [
           "scanner workers",
@@ -263,7 +282,8 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "playback",
         label: "Playback",
-        description: "Transcoding, hardware acceleration, and watch thresholds.",
+        description:
+          "Transcoding, hardware acceleration, and watch thresholds.",
         groups: ["Transcoding", "Watch behavior"],
         keywords: [
           "ffmpeg",
@@ -298,7 +318,8 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "downloads",
         label: "Downloads",
-        description: "Offline downloads, per-user and server-wide limits, and prepared copies.",
+        description:
+          "Offline downloads, per-user and server-wide limits, and prepared copies.",
         groups: ["Downloads"],
         keywords: [
           "downloads",
@@ -332,8 +353,13 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "providers",
         label: "Subtitles & Metadata",
-        description: "Subtitle provider accounts, the MDBList metadata key, and marker providers.",
-        groups: ["Subtitle providers", "Metadata providers", "Marker providers"],
+        description:
+          "Subtitle provider accounts, the MDBList metadata key, and marker providers.",
+        groups: [
+          "Subtitle providers",
+          "Metadata providers",
+          "Marker providers",
+        ],
         keywords: [
           "opensubtitles",
           "subdl",
@@ -388,13 +414,20 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
           "integrations",
           "plugin",
         ],
-        settings: settingIndex("Watch providers", "Trakt", "Simkl", "Client ID", "Client secret"),
+        settings: settingIndex(
+          "Watch providers",
+          "Trakt",
+          "Simkl",
+          "Client ID",
+          "Client secret",
+        ),
         icon: RefreshCw,
       },
       {
         id: "ai",
         label: "AI Services",
-        description: "Text and speech-to-text models, and the features that spend them.",
+        description:
+          "Text and speech-to-text models, and the features that spend them.",
         groups: ["Models", "Features", "Usage and tuning"],
         keywords: [
           "openai",
@@ -432,7 +465,8 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "notifications",
         label: "Notifications",
-        description: "Release events, delivery channels, the mail server, and webhooks.",
+        description:
+          "Release events, delivery channels, the mail server, and webhooks.",
         groups: ["Release events", "Delivery channels", "Tuning", "Retention"],
         keywords: [
           "release events",
@@ -534,16 +568,22 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
   },
 ];
 
-export const ADMIN_SETTINGS_NAV = ADMIN_SETTINGS_GROUPS.flatMap((group) => group.items);
+export const ADMIN_SETTINGS_NAV = ADMIN_SETTINGS_GROUPS.flatMap(
+  (group) => group.items,
+);
 
-const ADMIN_SETTINGS_PAGE_IDS = new Set(ADMIN_SETTINGS_NAV.map((item) => item.id));
+const ADMIN_SETTINGS_PAGE_IDS = new Set(
+  ADMIN_SETTINGS_NAV.map((item) => item.id),
+);
 
 /**
  * Deep links from earlier layouts. Bookmarks, docs, and older client builds
  * still point at these ids, so every one of them resolves to the page that
  * absorbed it rather than falling through to the settings overview.
  */
-export const LEGACY_ADMIN_SETTINGS_PAGE_ALIASES: Readonly<Record<string, string>> = {
+export const LEGACY_ADMIN_SETTINGS_PAGE_ALIASES: Readonly<
+  Record<string, string>
+> = {
   branding: "appearance",
   theming: "appearance",
   overlays: "appearance",
@@ -563,7 +603,9 @@ export const LEGACY_ADMIN_SETTINGS_PAGE_ALIASES: Readonly<Record<string, string>
 };
 
 /** Resolves a route segment or legacy `?tab=` value to a current page id. */
-export function resolveAdminSettingsPageID(value: string | null): string | null {
+export function resolveAdminSettingsPageID(
+  value: string | null,
+): string | null {
   if (!value) return null;
   if (ADMIN_SETTINGS_PAGE_IDS.has(value)) return value;
   return LEGACY_ADMIN_SETTINGS_PAGE_ALIASES[value] ?? null;

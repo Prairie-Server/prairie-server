@@ -8,7 +8,9 @@ import {
 
 describe("buildLegacyAutoscanRedirectTarget", () => {
   it("lands a bare link on the Autoscan tab", () => {
-    expect(buildLegacyAutoscanRedirectTarget("")).toBe("/admin/libraries?tab=autoscan");
+    expect(buildLegacyAutoscanRedirectTarget("")).toBe(
+      "/admin/libraries?tab=autoscan",
+    );
   });
 
   it("translates the legacy tab into the embedded page's view parameter", () => {
@@ -33,7 +35,9 @@ describe("buildLegacyAutoscanRedirectTarget", () => {
   it("leaves the default view implicit", () => {
     // An absent `view` already means Sources, and the panel deletes the param
     // when Sources is selected.
-    expect(buildLegacyAutoscanRedirectTarget("?tab=sources")).toBe("/admin/libraries?tab=autoscan");
+    expect(buildLegacyAutoscanRedirectTarget("?tab=sources")).toBe(
+      "/admin/libraries?tab=autoscan",
+    );
   });
 
   it("drops a tab value nothing answers to", () => {

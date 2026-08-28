@@ -1,17 +1,27 @@
 import { useMemo } from "react";
 import { useSettingsForm } from "@/hooks/useSettingsForm";
 import { useRestartKeys } from "@/hooks/useRestartKeys";
-import { useHWAccelDetection, type HWAccelInfo } from "@/hooks/queries/admin/system";
+import {
+  useHWAccelDetection,
+  type HWAccelInfo,
+} from "@/hooks/queries/admin/system";
 import { useAdminNodes } from "@/hooks/queries/admin/nodes";
 import { Switch } from "@/components/ui/switch";
 import { AdvancedSection } from "@/components/settings/AdvancedSection";
 import { PathSettingField } from "@/components/settings/PathSettingField";
 import { SettingsPageHeader } from "@/components/settings/SettingsPageHeader";
 import { SettingsSubheading } from "@/components/settings/SettingsSubheading";
-import { SettingField, SettingFieldRow, SettingFieldStatus } from "./SettingField";
+import {
+  SettingField,
+  SettingFieldRow,
+  SettingFieldStatus,
+} from "./SettingField";
 import { SaveBar } from "./SaveBar";
 import { FieldGroup } from "./FieldGroup";
-import { DEFAULT_FFMPEG_PATH, DEFAULT_TRANSCODE_DIR } from "./settingsPathDefaults";
+import {
+  DEFAULT_FFMPEG_PATH,
+  DEFAULT_TRANSCODE_DIR,
+} from "./settingsPathDefaults";
 import {
   CHAPTER_THUMBNAIL_EXECUTION_DEFAULT,
   buildHWDeviceRows,
@@ -45,7 +55,10 @@ const TRANSCODING_ADVANCED_KEYS = [
   "playback.chapter_thumbnail_software_tone_map_enabled",
 ];
 
-const WATCH_KEYS = ["playback.watched_threshold", "playback.min_resume_threshold"];
+const WATCH_KEYS = [
+  "playback.watched_threshold",
+  "playback.min_resume_threshold",
+];
 
 // `playback.chapter_thumbnail_node_capacity` is deliberately absent from the
 // UI (hidden tier): it is still saved and read through the settings API, but
@@ -53,7 +66,11 @@ const WATCH_KEYS = ["playback.watched_threshold", "playback.min_resume_threshold
 //
 // The `download.*` family is its own page (DownloadsSettings), so it is not
 // loaded or saved here.
-const KEYS = [...TRANSCODING_ESSENTIAL_KEYS, ...TRANSCODING_ADVANCED_KEYS, ...WATCH_KEYS];
+const KEYS = [
+  ...TRANSCODING_ESSENTIAL_KEYS,
+  ...TRANSCODING_ADVANCED_KEYS,
+  ...WATCH_KEYS,
+];
 
 export default function PlaybackSettings() {
   const form = useSettingsForm({ keys: useMemo(() => KEYS, []) });
@@ -63,26 +80,33 @@ export default function PlaybackSettings() {
   const hwDevice = form.getValue("playback.hw_device");
   const selectedDevices = parseHWDeviceList(hwDevice);
   const deviceRows = buildHWDeviceRows(hwDetection.data, hwDevice);
-  const detectedPaths = deviceRows.filter((row) => row.detected).map((row) => row.path);
+  const detectedPaths = deviceRows
+    .filter((row) => row.detected)
+    .map((row) => row.path);
   // Balancing is QSV/VAAPI-only: NVENC addresses GPUs by CUDA index/UUID, so
   // the multi-select picker is hidden for it (the server uses the first
   // configured entry).
   const isNvenc =
-    hwAccel === "nvenc" || (hwAccel === "auto" && hwDetection.data?.resolved === "nvenc");
+    hwAccel === "nvenc" ||
+    (hwAccel === "auto" && hwDetection.data?.resolved === "nvenc");
   const inventoriesDiverge = nodeInventoriesDiverge(hwDetection.data);
-  const showDevicePicker = hwAccel !== "none" && !isNvenc && deviceRows.length > 0;
+  const showDevicePicker =
+    hwAccel !== "none" && !isNvenc && deviceRows.length > 0;
 
   const nodes = useAdminNodes();
   const chapterExecution =
-    form.getValue("playback.chapter_thumbnail_execution") || CHAPTER_THUMBNAIL_EXECUTION_DEFAULT;
+    form.getValue("playback.chapter_thumbnail_execution") ||
+    CHAPTER_THUMBNAIL_EXECUTION_DEFAULT;
   // Gate the node-backed extraction modes only on a node list we actually
   // have: while the query is in flight or after it failed, leave every option
   // reachable rather than blocking a valid choice on a transient error.
-  const transcodeNodeAvailable = !nodes.isSuccess || hasUsableTranscodeNode(nodes.data);
+  const transcodeNodeAvailable =
+    !nodes.isSuccess || hasUsableTranscodeNode(nodes.data);
 
   const isDirty = form.isDirty;
   const anyDirty = (keys: string[]) => keys.some((key) => isDirty(key));
-  const allRestart = (keys: string[]) => keys.every((key) => restartKeys.has(key));
+  const allRestart = (keys: string[]) =>
+    keys.every((key) => restartKeys.has(key));
 
   const detection = hwAccel === "none" ? undefined : hwDetection.data;
   const detectedLabel = describeDetection(detection);
@@ -97,7 +121,11 @@ export default function PlaybackSettings() {
           detectedLabel ? (
             <SettingFieldStatus
               key="detected"
-              tone={detection?.resolved && detection.resolved !== "none" ? "ok" : "warn"}
+              tone={
+                detection?.resolved && detection.resolved !== "none"
+                  ? "ok"
+                  : "warn"
+              }
             >
               {detectedLabel}
             </SettingFieldStatus>
@@ -126,7 +154,10 @@ export default function PlaybackSettings() {
       <div className="flex-1 space-y-5">
         <FieldGroup
           label="Transcoding"
-          restartAll={allRestart([...TRANSCODING_ESSENTIAL_KEYS, ...TRANSCODING_ADVANCED_KEYS])}
+          restartAll={allRestart([
+            ...TRANSCODING_ESSENTIAL_KEYS,
+            ...TRANSCODING_ADVANCED_KEYS,
+          ])}
         >
           <SettingField
             label="Transcoding"
@@ -164,7 +195,9 @@ export default function PlaybackSettings() {
 
           <AdvancedSection
             id="playback.transcoding"
-            count={TRANSCODING_ADVANCED_KEYS.length - (showDevicePicker ? 0 : 1)}
+            count={
+              TRANSCODING_ADVANCED_KEYS.length - (showDevicePicker ? 0 : 1)
+            }
             forceOpen={anyDirty(TRANSCODING_ADVANCED_KEYS)}
           >
             <PathSettingField
@@ -198,7 +231,8 @@ export default function PlaybackSettings() {
                 </SettingsSubheading>
                 {inventoriesDiverge && (
                   <p className="pb-2 text-xs text-amber-500">
-                    Nodes report different devices. Only paths on every node are safe to select.
+                    Nodes report different devices. Only paths on every node are
+                    safe to select.
                   </p>
                 )}
                 {/* One shared row shell per device, so these switches land on the
@@ -208,7 +242,11 @@ export default function PlaybackSettings() {
                   <SettingFieldRow
                     key={row.path}
                     label={
-                      <span className={row.detected ? undefined : "text-muted-foreground"}>
+                      <span
+                        className={
+                          row.detected ? undefined : "text-muted-foreground"
+                        }
+                      >
                         {row.description}
                       </span>
                     }
@@ -245,25 +283,45 @@ export default function PlaybackSettings() {
               label="Local transcode fallback"
               type="toggle"
               description="Encode here when no transcode node is free."
-              value={form.getValue("playback.local_transcode_fallback") || "true"}
-              onChange={(v) => form.setValue("playback.local_transcode_fallback", v)}
-              restartRequired={restartKeys.has("playback.local_transcode_fallback")}
+              value={
+                form.getValue("playback.local_transcode_fallback") || "true"
+              }
+              onChange={(v) =>
+                form.setValue("playback.local_transcode_fallback", v)
+              }
+              restartRequired={restartKeys.has(
+                "playback.local_transcode_fallback",
+              )}
             />
             <SettingField
               label="Enable Hardware HDR Tone Mapping"
               type="toggle"
               hint="Allows validated local or remote GPU executors to convert HDR video to SDR when transcoding."
-              value={form.getValue("playback.transcode_hardware_tone_map_enabled") || "false"}
-              onChange={(v) => form.setValue("playback.transcode_hardware_tone_map_enabled", v)}
-              restartRequired={restartKeys.has("playback.transcode_hardware_tone_map_enabled")}
+              value={
+                form.getValue("playback.transcode_hardware_tone_map_enabled") ||
+                "false"
+              }
+              onChange={(v) =>
+                form.setValue("playback.transcode_hardware_tone_map_enabled", v)
+              }
+              restartRequired={restartKeys.has(
+                "playback.transcode_hardware_tone_map_enabled",
+              )}
             />
             <SettingField
               label="Enable Software HDR Tone Mapping"
               type="toggle"
               hint="Allows the CPU to convert HDR video to SDR when transcoding. This can be very CPU-intensive."
-              value={form.getValue("playback.transcode_software_tone_map_enabled") || "false"}
-              onChange={(v) => form.setValue("playback.transcode_software_tone_map_enabled", v)}
-              restartRequired={restartKeys.has("playback.transcode_software_tone_map_enabled")}
+              value={
+                form.getValue("playback.transcode_software_tone_map_enabled") ||
+                "false"
+              }
+              onChange={(v) =>
+                form.setValue("playback.transcode_software_tone_map_enabled", v)
+              }
+              restartRequired={restartKeys.has(
+                "playback.transcode_software_tone_map_enabled",
+              )}
             />
             <SettingField
               label="Throttle transcoding"
@@ -288,13 +346,20 @@ export default function PlaybackSettings() {
               type="number"
               description="Parallel extraction jobs per library scan."
               value={form.getValue("playback.chapter_thumbnail_workers")}
-              onChange={(v) => form.setValue("playback.chapter_thumbnail_workers", v)}
-              restartRequired={restartKeys.has("playback.chapter_thumbnail_workers")}
+              onChange={(v) =>
+                form.setValue("playback.chapter_thumbnail_workers", v)
+              }
+              restartRequired={restartKeys.has(
+                "playback.chapter_thumbnail_workers",
+              )}
             />
             <SettingField
               label="Generate chapter thumbnails on"
               type="select"
-              options={chapterThumbnailExecutionOptions(chapterExecution, transcodeNodeAvailable)}
+              options={chapterThumbnailExecutionOptions(
+                chapterExecution,
+                transcodeNodeAvailable,
+              )}
               status={
                 transcodeNodeAvailable ? undefined : (
                   <SettingFieldStatus tone="warn">
@@ -303,8 +368,12 @@ export default function PlaybackSettings() {
                 )
               }
               value={chapterExecution}
-              onChange={(v) => form.setValue("playback.chapter_thumbnail_execution", v)}
-              restartRequired={restartKeys.has("playback.chapter_thumbnail_execution")}
+              onChange={(v) =>
+                form.setValue("playback.chapter_thumbnail_execution", v)
+              }
+              restartRequired={restartKeys.has(
+                "playback.chapter_thumbnail_execution",
+              )}
             />
             <SettingField
               label="HDR handling"
@@ -314,21 +383,36 @@ export default function PlaybackSettings() {
                 { value: "disabled", label: "Skip HDR and Dolby Vision" },
               ]}
               description="HDR frames need extra color conversion."
-              value={form.getValue("playback.chapter_thumbnail_hdr_policy") || "best_effort"}
-              onChange={(v) => form.setValue("playback.chapter_thumbnail_hdr_policy", v)}
-              restartRequired={restartKeys.has("playback.chapter_thumbnail_hdr_policy")}
+              value={
+                form.getValue("playback.chapter_thumbnail_hdr_policy") ||
+                "best_effort"
+              }
+              onChange={(v) =>
+                form.setValue("playback.chapter_thumbnail_hdr_policy", v)
+              }
+              restartRequired={restartKeys.has(
+                "playback.chapter_thumbnail_hdr_policy",
+              )}
             />
             <SettingField
               label="Software HDR tone mapping"
               type="toggle"
               description="Slow, but works without graphics hardware."
               value={
-                form.getValue("playback.chapter_thumbnail_software_tone_map_enabled") || "false"
+                form.getValue(
+                  "playback.chapter_thumbnail_software_tone_map_enabled",
+                ) || "false"
               }
               onChange={(v) =>
-                form.setValue("playback.chapter_thumbnail_software_tone_map_enabled", v)
+                form.setValue(
+                  "playback.chapter_thumbnail_software_tone_map_enabled",
+                  v,
+                )
               }
-              disabled={form.getValue("playback.chapter_thumbnail_hdr_policy") === "disabled"}
+              disabled={
+                form.getValue("playback.chapter_thumbnail_hdr_policy") ===
+                "disabled"
+              }
               restartRequired={restartKeys.has(
                 "playback.chapter_thumbnail_software_tone_map_enabled",
               )}
@@ -389,10 +473,14 @@ function formatResolved(resolved: string): string {
  * undefined while nothing has been probed yet so the caller can show its own
  * "detecting" state instead of an empty phrase.
  */
-function describeDetection(detection: HWAccelInfo | undefined): string | undefined {
+function describeDetection(
+  detection: HWAccelInfo | undefined,
+): string | undefined {
   if (!detection) return undefined;
-  if (detection.resolved === "none") return "No supported graphics hardware found";
+  if (detection.resolved === "none")
+    return "No supported graphics hardware found";
   const device = detection.render_devices?.[0];
-  const onNode = detection.source === "transcode_node" ? " (transcode node)" : "";
+  const onNode =
+    detection.source === "transcode_node" ? " (transcode node)" : "";
   return `Detected ${formatResolved(detection.resolved)}${device ? ` on ${device}` : ""}${onNode}`;
 }

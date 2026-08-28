@@ -21,7 +21,11 @@ export function useGroupRestartAll(): boolean {
  * this context.
  */
 export function RestartAllProvider({ children }: { children: ReactNode }) {
-  return <GroupRestartContext.Provider value={true}>{children}</GroupRestartContext.Provider>;
+  return (
+    <GroupRestartContext.Provider value={true}>
+      {children}
+    </GroupRestartContext.Provider>
+  );
 }
 
 export interface FieldGroupProps {
@@ -61,8 +65,14 @@ export function FieldGroup({
   const effectiveRestartAll = restartAll || inheritedRestartAll;
 
   const dirtyDot = dirty ? (
-    <span className="inline-flex items-center" title="Unsaved changes in this group">
-      <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--settings-accent)]" />
+    <span
+      className="inline-flex items-center"
+      title="Unsaved changes in this group"
+    >
+      <span
+        aria-hidden="true"
+        className="size-1.5 rounded-full bg-[var(--settings-accent)]"
+      />
       <span className="sr-only">Unsaved changes in this group</span>
     </span>
   ) : null;

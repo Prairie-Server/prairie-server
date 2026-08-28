@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from "vitest";
-import { prefetchRouteChunks, type RouteChunkScheduler } from "./routeChunkPrefetch";
+import {
+  prefetchRouteChunks,
+  type RouteChunkScheduler,
+} from "./routeChunkPrefetch";
 
 /** Collects scheduled tasks so a test drives the idle queue explicitly. */
 function manualScheduler() {
@@ -60,7 +63,10 @@ describe("prefetchRouteChunks", () => {
     const second = vi.fn(() => Promise.resolve());
     const scheduler = manualScheduler();
 
-    prefetchRouteChunks([() => Promise.reject(new Error("offline")), second], scheduler.schedule);
+    prefetchRouteChunks(
+      [() => Promise.reject(new Error("offline")), second],
+      scheduler.schedule,
+    );
 
     await scheduler.runNext();
     await scheduler.runNext();
@@ -72,7 +78,10 @@ describe("prefetchRouteChunks", () => {
     const second = vi.fn(() => Promise.resolve());
     const scheduler = manualScheduler();
 
-    const cancel = prefetchRouteChunks([() => Promise.resolve(), second], scheduler.schedule);
+    const cancel = prefetchRouteChunks(
+      [() => Promise.resolve(), second],
+      scheduler.schedule,
+    );
 
     await scheduler.runNext();
     expect(scheduler.pending()).toBe(1);

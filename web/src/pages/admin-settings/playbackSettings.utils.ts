@@ -106,15 +106,22 @@ export function nodeInventoriesDiverge(
 
 export const CHAPTER_THUMBNAIL_EXECUTION_DEFAULT = "local";
 
-const NODE_BACKED_CHAPTER_THUMBNAIL_MODES = ["prefer_transcode_nodes", "transcode_nodes_only"];
+const NODE_BACKED_CHAPTER_THUMBNAIL_MODES = [
+  "prefer_transcode_nodes",
+  "transcode_nodes_only",
+];
 
 /**
  * True when at least one transcode node could take an extraction. Mirrors the
  * server's reservation rule (internal/chapterthumbs reserveRemoteNode): a node
  * counts only while it is both enabled and healthy.
  */
-export function hasUsableTranscodeNode(nodes: StreamNode[] | undefined): boolean {
-  return (nodes ?? []).some((node) => node.type === "transcode" && node.enabled && node.healthy);
+export function hasUsableTranscodeNode(
+  nodes: StreamNode[] | undefined,
+): boolean {
+  return (nodes ?? []).some(
+    (node) => node.type === "transcode" && node.enabled && node.healthy,
+  );
 }
 
 export interface ChapterThumbnailExecutionOption {
@@ -135,7 +142,10 @@ export function chapterThumbnailExecutionOptions(
 ): ChapterThumbnailExecutionOption[] {
   return [
     { value: CHAPTER_THUMBNAIL_EXECUTION_DEFAULT, label: "This server" },
-    { value: "prefer_transcode_nodes", label: "Transcode nodes when available" },
+    {
+      value: "prefer_transcode_nodes",
+      label: "Transcode nodes when available",
+    },
     { value: "transcode_nodes_only", label: "Transcode nodes only" },
   ].map((option) => ({
     ...option,

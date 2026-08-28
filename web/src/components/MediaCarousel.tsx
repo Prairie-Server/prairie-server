@@ -38,7 +38,8 @@ export default function MediaCarousel({
   headerActions,
   edgePadding = true,
 }: MediaCarouselProps) {
-  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } = useCarouselEmbla();
+  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
+    useCarouselEmbla();
   const { cardPresentation } = useUICustomization();
   // Page-edge padding is opt-out so the carousel can also be embedded in an
   // already-padded container without double-padding the header and cards.
@@ -60,14 +61,19 @@ export default function MediaCarousel({
       className="section-row media-carousel group/carousel relative isolate"
       style={
         {
-          "--carousel-intrinsic-h": carouselIntrinsicHeight(cardPresentation.poster_size),
+          "--carousel-intrinsic-h": carouselIntrinsicHeight(
+            cardPresentation.poster_size,
+          ),
         } as CSSProperties
       }
     >
       <div className={`mb-5 flex items-end justify-between gap-4${headerPadX}`}>
         <div className="flex items-center gap-2">
           {titleHref ? (
-            <Link to={titleHref} className="group/title hover:text-primary transition-colors">
+            <Link
+              to={titleHref}
+              className="group/title hover:text-primary transition-colors"
+            >
               <h2 className="text-foreground text-xl font-semibold tracking-tight">
                 {title}
                 <span className="text-muted-foreground group-hover/title:text-primary ml-2 text-sm transition-colors">
@@ -76,7 +82,9 @@ export default function MediaCarousel({
               </h2>
             </Link>
           ) : (
-            <h2 className="text-foreground text-xl font-semibold tracking-tight">{title}</h2>
+            <h2 className="text-foreground text-xl font-semibold tracking-tight">
+              {title}
+            </h2>
           )}
           {headerActions}
         </div>

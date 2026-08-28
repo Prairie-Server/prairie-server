@@ -22,7 +22,11 @@ const CACHE_IMAGES_KEY = "metadata.cache_images";
 
 const METADATA_KEYS = [CACHE_IMAGES_KEY];
 
-const SCANNER_KEYS = ["scanner.workers", "matcher.workers", "matcher.batch_size"];
+const SCANNER_KEYS = [
+  "scanner.workers",
+  "matcher.workers",
+  "matcher.batch_size",
+];
 
 const MARKER_KEYS = ["markers.mode", "markers.lazy_playback"];
 
@@ -46,14 +50,20 @@ const SEARCH_KEYS = ["catalog.search.provider", ...MEILI_KEYS];
 // without a control here because the defaults are right for every deployment we
 // support — catalog.search.meilisearch.{rebuild_batch_size,
 // rebuild_task_queue_depth,index_types,embedder,binary_quantized}.
-const KEYS = [...METADATA_KEYS, ...SCANNER_KEYS, ...MARKER_KEYS, ...SEARCH_KEYS];
+const KEYS = [
+  ...METADATA_KEYS,
+  ...SCANNER_KEYS,
+  ...MARKER_KEYS,
+  ...SEARCH_KEYS,
+];
 
 export default function LibraryMetadataSettings() {
   const form = useSettingsForm({ keys: useMemo(() => KEYS, []) });
   const branding = useBranding();
   const restartKeys = useRestartKeys();
   const checkConnection = useCheckAdminSettingsConnection();
-  const [connectionResult, setConnectionResult] = useState<ConnectionCheckResponse | null>(null);
+  const [connectionResult, setConnectionResult] =
+    useState<ConnectionCheckResponse | null>(null);
 
   // Image caching writes provider artwork into the public bucket, so the server
   // rejects enabling it when no bucket is configured at all. `storage_available`
@@ -67,12 +77,14 @@ export default function LibraryMetadataSettings() {
   const cacheImagesOn = form.getValue(CACHE_IMAGES_KEY) === "true";
   // Never trap an admin with it on: turning it off stays available even when
   // the bucket went away.
-  const cacheImagesLocked = !imageStorageAvailable && !publicBucketSaved && !cacheImagesOn;
+  const cacheImagesLocked =
+    !imageStorageAvailable && !publicBucketSaved && !cacheImagesOn;
 
   const provider = form.getValue("catalog.search.provider") || "postgres";
   const meiliEnabled = provider === "meilisearch";
   const anyDirty = (keys: string[]) => keys.some((key) => form.isDirty(key));
-  const allRestart = (keys: string[]) => keys.every((key) => restartKeys.has(key));
+  const allRestart = (keys: string[]) =>
+    keys.every((key) => restartKeys.has(key));
   // Staged Meilisearch edits stay reachable after switching the provider back,
   // so the save bar can never count a change the admin cannot see.
   const showMeili = meiliEnabled || anyDirty(MEILI_KEYS);
@@ -88,7 +100,8 @@ export default function LibraryMetadataSettings() {
     } catch (error) {
       setConnectionResult({
         success: false,
-        message: error instanceof Error ? error.message : "Connection check failed.",
+        message:
+          error instanceof Error ? error.message : "Connection check failed.",
       });
     }
   }
@@ -203,7 +216,10 @@ export default function LibraryMetadataSettings() {
             options={[
               { value: "off", label: "Off" },
               { value: "local", label: "Detect on this server" },
-              { value: "both", label: "Detect on this server, then look online" },
+              {
+                value: "both",
+                label: "Detect on this server, then look online",
+              },
               { value: "online", label: "Look online only" },
             ]}
             value={markerMode}
@@ -231,7 +247,9 @@ export default function LibraryMetadataSettings() {
             type="select"
             description="Meilisearch tolerates typos but runs as its own service. If it goes down, search falls back to the built-in engine automatically."
             value={provider}
-            onChange={(value) => form.setValue("catalog.search.provider", value)}
+            onChange={(value) =>
+              form.setValue("catalog.search.provider", value)
+            }
             options={[
               { value: "postgres", label: "Built-in (Postgres)" },
               { value: "meilisearch", label: "Meilisearch" },
@@ -277,70 +295,124 @@ export default function LibraryMetadataSettings() {
               >
                 <SettingField
                   label="Index name prefix"
-                  value={form.getValue("catalog.search.meilisearch.index") || "silo_media_items"}
-                  onChange={(value) => form.setValue("catalog.search.meilisearch.index", value)}
+                  value={
+                    form.getValue("catalog.search.meilisearch.index") ||
+                    "silo_media_items"
+                  }
+                  onChange={(value) =>
+                    form.setValue("catalog.search.meilisearch.index", value)
+                  }
                   description="Only needed when Silo servers share one Meilisearch."
                   disabled={!meiliEnabled}
-                  restartRequired={restartKeys.has("catalog.search.meilisearch.index")}
+                  restartRequired={restartKeys.has(
+                    "catalog.search.meilisearch.index",
+                  )}
                 />
                 <SettingField
                   label="Query timeout"
                   type="number"
                   unit="ms"
-                  value={form.getValue("catalog.search.meilisearch.timeout_ms") || "800"}
+                  value={
+                    form.getValue("catalog.search.meilisearch.timeout_ms") ||
+                    "800"
+                  }
                   onChange={(value) =>
-                    form.setValue("catalog.search.meilisearch.timeout_ms", value)
+                    form.setValue(
+                      "catalog.search.meilisearch.timeout_ms",
+                      value,
+                    )
                   }
                   description="Searches that take longer fall back to the built-in engine."
                   disabled={!meiliEnabled}
-                  restartRequired={restartKeys.has("catalog.search.meilisearch.timeout_ms")}
+                  restartRequired={restartKeys.has(
+                    "catalog.search.meilisearch.timeout_ms",
+                  )}
                 />
                 <SettingField
                   label="When a search has several words"
                   type="select"
-                  value={form.getValue("catalog.search.meilisearch.matching_strategy") || "last"}
+                  value={
+                    form.getValue(
+                      "catalog.search.meilisearch.matching_strategy",
+                    ) || "last"
+                  }
                   onChange={(value) =>
-                    form.setValue("catalog.search.meilisearch.matching_strategy", value)
+                    form.setValue(
+                      "catalog.search.meilisearch.matching_strategy",
+                      value,
+                    )
                   }
                   options={[
-                    { value: "last", label: "Drop trailing words until something matches" },
+                    {
+                      value: "last",
+                      label: "Drop trailing words until something matches",
+                    },
                     { value: "all", label: "Require every word" },
                   ]}
                   disabled={!meiliEnabled}
-                  restartRequired={restartKeys.has("catalog.search.meilisearch.matching_strategy")}
+                  restartRequired={restartKeys.has(
+                    "catalog.search.meilisearch.matching_strategy",
+                  )}
                 />
                 <SettingField
                   label="Items sent to the index per batch"
                   type="number"
-                  value={form.getValue("catalog.search.meilisearch.sync_batch_size") || "500"}
+                  value={
+                    form.getValue(
+                      "catalog.search.meilisearch.sync_batch_size",
+                    ) || "500"
+                  }
                   onChange={(value) =>
-                    form.setValue("catalog.search.meilisearch.sync_batch_size", value)
+                    form.setValue(
+                      "catalog.search.meilisearch.sync_batch_size",
+                      value,
+                    )
                   }
                   description="Larger batches index faster and use more memory."
                   disabled={!meiliEnabled}
-                  restartRequired={restartKeys.has("catalog.search.meilisearch.sync_batch_size")}
+                  restartRequired={restartKeys.has(
+                    "catalog.search.meilisearch.sync_batch_size",
+                  )}
                 />
                 <SettingField
                   label="Match by meaning as well as words"
                   type="toggle"
-                  value={form.getValue("catalog.search.meilisearch.semantic_enabled") || "false"}
+                  value={
+                    form.getValue(
+                      "catalog.search.meilisearch.semantic_enabled",
+                    ) || "false"
+                  }
                   onChange={(value) =>
-                    form.setValue("catalog.search.meilisearch.semantic_enabled", value)
+                    form.setValue(
+                      "catalog.search.meilisearch.semantic_enabled",
+                      value,
+                    )
                   }
                   description="Also matches items whose description means something similar."
                   disabled={!meiliEnabled}
-                  restartRequired={restartKeys.has("catalog.search.meilisearch.semantic_enabled")}
+                  restartRequired={restartKeys.has(
+                    "catalog.search.meilisearch.semantic_enabled",
+                  )}
                 />
                 <SettingField
                   label="Meaning-based share of results"
                   type="number"
-                  value={form.getValue("catalog.search.meilisearch.semantic_ratio") || "0.50"}
+                  value={
+                    form.getValue(
+                      "catalog.search.meilisearch.semantic_ratio",
+                    ) || "0.50"
+                  }
                   onChange={(value) =>
-                    form.setValue("catalog.search.meilisearch.semantic_ratio", value)
+                    form.setValue(
+                      "catalog.search.meilisearch.semantic_ratio",
+                      value,
+                    )
                   }
                   description="0 ranks by words, 1 by meaning."
                   disabled={!meiliEnabled}
-                  restartRequired={restartKeys.has("catalog.search.meilisearch.semantic_ratio")}
+                  restartRequired={restartKeys.has(
+                    "catalog.search.meilisearch.semantic_ratio",
+                  )}
                 />
               </AdvancedSection>
             </>

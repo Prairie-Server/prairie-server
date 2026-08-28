@@ -52,29 +52,48 @@ describe("SettingField", () => {
       />,
     );
 
-    expect(screen.getByLabelText("Takes effect after a server restart")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Takes effect after a server restart"),
+    ).toBeInTheDocument();
   });
 
   it("omits the chip by default", () => {
     render(<SettingField label="FFmpeg path" value="" onChange={vi.fn()} />);
 
-    expect(screen.queryByLabelText("Takes effect after a server restart")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Takes effect after a server restart"),
+    ).not.toBeInTheDocument();
   });
 
   it("drops its chip inside a group that already says every field restarts", () => {
     render(
       <FieldGroup label="Redis" restartAll>
-        <SettingField label="Connection URL" value="" onChange={vi.fn()} restartRequired />
+        <SettingField
+          label="Connection URL"
+          value=""
+          onChange={vi.fn()}
+          restartRequired
+        />
       </FieldGroup>,
     );
 
-    expect(screen.getByText("Changes apply after a restart")).toBeInTheDocument();
-    expect(screen.queryByLabelText("Takes effect after a server restart")).not.toBeInTheDocument();
+    expect(
+      screen.getByText("Changes apply after a restart"),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Takes effect after a server restart"),
+    ).not.toBeInTheDocument();
   });
 
   it("puts the unit beside the control instead of in the label", () => {
     render(
-      <SettingField label="Mark watched at" type="number" unit="%" value="90" onChange={vi.fn()} />,
+      <SettingField
+        label="Mark watched at"
+        type="number"
+        unit="%"
+        value="90"
+        onChange={vi.fn()}
+      />,
     );
 
     expect(screen.getByLabelText("Mark watched at")).toHaveValue(90);
@@ -93,8 +112,12 @@ describe("SettingField", () => {
       />,
     );
 
-    expect(screen.getByText("Offload video encoding to the GPU.")).toBeInTheDocument();
-    expect(screen.getByText("Detected VA-API on renderD128")).toBeInTheDocument();
+    expect(
+      screen.getByText("Offload video encoding to the GPU."),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Detected VA-API on renderD128"),
+    ).toBeInTheDocument();
   });
 
   it("keeps describing the control with its description", () => {

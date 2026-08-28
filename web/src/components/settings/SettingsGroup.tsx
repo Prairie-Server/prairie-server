@@ -38,14 +38,21 @@ export function SettingsGroup({
     >
       <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
         <div className="min-w-0 space-y-1">
-          <h3 id={titleId} className="text-foreground text-sm font-semibold tracking-tight">
+          <h3
+            id={titleId}
+            className="text-foreground text-sm font-semibold tracking-tight"
+          >
             {title}
           </h3>
           {description ? (
-            <p className="text-muted-foreground text-[13px] leading-relaxed">{description}</p>
+            <p className="text-muted-foreground text-[13px] leading-relaxed">
+              {description}
+            </p>
           ) : null}
         </div>
-        {actions ? <div className="flex shrink-0 items-center gap-2">{actions}</div> : null}
+        {actions ? (
+          <div className="flex shrink-0 items-center gap-2">{actions}</div>
+        ) : null}
       </div>
       <div className={flush ? "mt-2" : "mt-5 space-y-4"}>{children}</div>
     </section>

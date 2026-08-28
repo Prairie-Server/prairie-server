@@ -70,7 +70,11 @@ const PUBLIC_S3_KEYS = [
 // Changing any of these moves where cached artwork objects live. Silo detects
 // that change after restart but requires an explicit manual reconcile so an
 // incomplete bucket migration cannot rewrite the artwork catalog.
-const PUBLIC_S3_IDENTITY_KEYS = ["s3.public_endpoint", "s3.public_bucket", "s3.public_key_prefix"];
+const PUBLIC_S3_IDENTITY_KEYS = [
+  "s3.public_endpoint",
+  "s3.public_bucket",
+  "s3.public_key_prefix",
+];
 
 const PRIVATE_S3_KEYS = [
   "s3.private_endpoint",
@@ -84,7 +88,11 @@ const PRIVATE_S3_KEYS = [
 
 // The overall trim limits are what an admin comes here to change; the policy
 // decision log and the per-area rules are debugging tools behind Advanced.
-const LOG_ESSENTIAL_KEYS = [OPSLOG_RETENTION_DAYS_KEY, OPSLOG_MAX_ROWS_KEY, OPSLOG_MAX_SIZE_MB_KEY];
+const LOG_ESSENTIAL_KEYS = [
+  OPSLOG_RETENTION_DAYS_KEY,
+  OPSLOG_MAX_ROWS_KEY,
+  OPSLOG_MAX_SIZE_MB_KEY,
+];
 
 const LOG_ADVANCED_KEYS = [
   "policy.decision_log_retention_days",
@@ -95,7 +103,13 @@ const LOG_ADVANCED_KEYS = [
 
 const LOG_KEYS = [...LOG_ESSENTIAL_KEYS, ...LOG_ADVANCED_KEYS];
 
-const KEYS = [...REDIS_KEYS, ...DATABASE_KEYS, ...PUBLIC_S3_KEYS, ...PRIVATE_S3_KEYS, ...LOG_KEYS];
+const KEYS = [
+  ...REDIS_KEYS,
+  ...DATABASE_KEYS,
+  ...PUBLIC_S3_KEYS,
+  ...PRIVATE_S3_KEYS,
+  ...LOG_KEYS,
+];
 
 function countDirty(form: SettingsForm, keys: string[]): number {
   return keys.filter((key) => form.isDirty(key)).length;
@@ -124,7 +138,8 @@ function RedisGroup({
   secrets: SecretEditors;
 }) {
   const checkConnection = useCheckAdminSettingsConnection();
-  const [connectionResult, setConnectionResult] = useState<ConnectionCheckResponse | null>(null);
+  const [connectionResult, setConnectionResult] =
+    useState<ConnectionCheckResponse | null>(null);
   const redisUrl = form.getValue("redis.url");
   const managedByEnv = form.sensitiveManagedByEnv.includes("redis.url");
   const configured = form.sensitiveConfigured.includes("redis.url");
@@ -150,7 +165,8 @@ function RedisGroup({
     } catch (error) {
       setConnectionResult({
         success: false,
-        message: error instanceof Error ? error.message : "Connection check failed.",
+        message:
+          error instanceof Error ? error.message : "Connection check failed.",
       });
     }
   }
@@ -161,7 +177,9 @@ function RedisGroup({
         label="Use Redis"
         type="toggle"
         description={
-          managedByEnv ? "Set by REDIS_URL" : "Needed when running more than one server."
+          managedByEnv
+            ? "Set by REDIS_URL"
+            : "Needed when running more than one server."
         }
         value={enabled ? "true" : "false"}
         onChange={(value) => {
@@ -188,7 +206,9 @@ function RedisGroup({
             configured={configured}
             onKeep={() => secrets.keepSaved("redis.url")}
             onChange={(v) => secrets.setSecret("redis.url", v)}
-            hint={managedByEnv ? "Value supplied by REDIS_URL" : "redis://host:6379"}
+            hint={
+              managedByEnv ? "Value supplied by REDIS_URL" : "redis://host:6379"
+            }
             disabled={managedByEnv || secrets.disabled}
             restartRequired={restartKeys.has("redis.url")}
           />
@@ -225,7 +245,8 @@ function S3Group({
   checkKind: "s3_public" | "s3_private";
 }) {
   const checkConnection = useCheckAdminSettingsConnection();
-  const [connectionResult, setConnectionResult] = useState<ConnectionCheckResponse | null>(null);
+  const [connectionResult, setConnectionResult] =
+    useState<ConnectionCheckResponse | null>(null);
   const keys = scope === "public" ? PUBLIC_S3_KEYS : PRIVATE_S3_KEYS;
   const key = (suffix: string) => `s3.${scope}_${suffix}`;
   const urlAuth = form.getValue("s3.public_url_auth") || "presigned";
@@ -245,7 +266,9 @@ function S3Group({
       : ["s3.private_region", "s3.private_path_style", "s3.private_key_prefix"];
   const advancedCount =
     scope === "public"
-      ? 4 + (urlAuth !== "presigned" ? 1 : 0) + (urlAuth === "cloudflare_token" ? 3 : 0)
+      ? 4 +
+        (urlAuth !== "presigned" ? 1 : 0) +
+        (urlAuth === "cloudflare_token" ? 3 : 0)
       : 3;
   const advancedChanged = countDirty(form, advancedKeys);
 
@@ -260,7 +283,8 @@ function S3Group({
     } catch (error) {
       setConnectionResult({
         success: false,
-        message: error instanceof Error ? error.message : "Connection check failed.",
+        message:
+          error instanceof Error ? error.message : "Connection check failed.",
       });
     }
   }
@@ -280,23 +304,28 @@ function S3Group({
         onChange={(v) => form.setValue(key("bucket"), v)}
         restartRequired={restartKeys.has(key("bucket"))}
       />
-      {scope === "public" && PUBLIC_S3_IDENTITY_KEYS.some((k) => form.isDirty(k)) && (
-        <div className="my-3 flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
-          <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
-          <div className="text-[13px] leading-relaxed">
-            <p className="font-medium text-amber-500">Storage location change</p>
-            <p className="text-muted-foreground mt-1">
-              Artwork is cached in this bucket. Silo will not change artwork cache records
-              automatically after restart. Copy or migrate the existing bucket objects first, then
-              manually run Reconcile Artwork Cache only if you intend every missing record to be
-              reset or cleared. Re-downloading those reset provider images is a separate, manual
-              Backfill Metadata Images action; normal scheduled caching only processes artwork
-              queued by new or changed metadata. Uploaded images (custom posters, collection
-              artwork, branding) cannot be re-downloaded.
-            </p>
+      {scope === "public" &&
+        PUBLIC_S3_IDENTITY_KEYS.some((k) => form.isDirty(k)) && (
+          <div className="my-3 flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+            <div className="text-[13px] leading-relaxed">
+              <p className="font-medium text-amber-500">
+                Storage location change
+              </p>
+              <p className="text-muted-foreground mt-1">
+                Artwork is cached in this bucket. Silo will not change artwork
+                cache records automatically after restart. Copy or migrate the
+                existing bucket objects first, then manually run Reconcile
+                Artwork Cache only if you intend every missing record to be
+                reset or cleared. Re-downloading those reset provider images is
+                a separate, manual Backfill Metadata Images action; normal
+                scheduled caching only processes artwork queued by new or
+                changed metadata. Uploaded images (custom posters, collection
+                artwork, branding) cannot be re-downloaded.
+              </p>
+            </div>
           </div>
-        </div>
-      )}
+        )}
       {/*
         The access and secret keys must stay configured together, so clearing
         one alone is refused at save time. Both carry the action, which is what
@@ -393,11 +422,15 @@ function S3Group({
                 <SecretField
                   label="Token Secret"
                   value={form.getValue("s3.public_token_secret")}
-                  configured={form.sensitiveConfigured.includes("s3.public_token_secret")}
+                  configured={form.sensitiveConfigured.includes(
+                    "s3.public_token_secret",
+                  )}
                   onKeep={() => secrets.keepSaved("s3.public_token_secret")}
                   onClear={() => secrets.clearSaved("s3.public_token_secret")}
                   cleared={form.isClearStaged("s3.public_token_secret")}
-                  onChange={(v) => secrets.setSecret("s3.public_token_secret", v)}
+                  onChange={(v) =>
+                    secrets.setSecret("s3.public_token_secret", v)
+                  }
                   hint="Signing key configured in Cloudflare"
                   disabled={secrets.disabled}
                   restartRequired={restartKeys.has("s3.public_token_secret")}
@@ -439,7 +472,11 @@ function DatabaseGroup({
 
   return (
     <FieldGroup label="Database">
-      <AdvancedSection id="infrastructure.database" count={sqlite ? 4 : 2} forceOpen={changed > 0}>
+      <AdvancedSection
+        id="infrastructure.database"
+        count={sqlite ? 4 : 2}
+        forceOpen={changed > 0}
+      >
         <SettingField
           label="Maximum Postgres connections"
           type="number"
@@ -493,7 +530,11 @@ function BucketOverridesEditor({
   onChange: (rows: LogRetentionBucketRow[]) => void;
   onRestore: () => void;
 }) {
-  function edit(id: string, field: keyof LogRetentionBucketPolicy, value: string) {
+  function edit(
+    id: string,
+    field: keyof LogRetentionBucketPolicy,
+    value: string,
+  ) {
     onChange(updateBucketRow(rows, id, field, value));
   }
 
@@ -502,14 +543,20 @@ function BucketOverridesEditor({
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
         <div className="min-w-0">
           <h4 className="text-sm font-medium">Per-area limits</h4>
-          <p className="text-muted-foreground mt-1 text-xs">A limit of 0 turns that rule off.</p>
+          <p className="text-muted-foreground mt-1 text-xs">
+            A limit of 0 turns that rule off.
+          </p>
         </div>
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
           <Button type="button" size="sm" variant="outline" onClick={onRestore}>
             <RotateCcw className="size-4" />
             Restore Recommended Rules
           </Button>
-          <Button type="button" size="sm" onClick={() => onChange(appendBucketRow(rows))}>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => onChange(appendBucketRow(rows))}
+          >
             <Plus className="size-4" />
             Add Rule
           </Button>
@@ -518,8 +565,8 @@ function BucketOverridesEditor({
 
       {parseError ? (
         <div className="border-warning/30 bg-warning/10 text-warning rounded-[1rem] border px-3 py-2 text-sm">
-          The saved rules could not be read. The editor loaded the recommended rules so you can
-          recover cleanly. Details: {parseError}
+          The saved rules could not be read. The editor loaded the recommended
+          rules so you can recover cleanly. Details: {parseError}
         </div>
       ) : null}
 
@@ -538,7 +585,10 @@ function BucketOverridesEditor({
           <tbody>
             {rows.length === 0 ? (
               <tr>
-                <td colSpan={6} className="text-muted-foreground px-3 py-6 text-center">
+                <td
+                  colSpan={6}
+                  className="text-muted-foreground px-3 py-6 text-center"
+                >
                   No per-area rules configured.
                 </td>
               </tr>
@@ -548,7 +598,9 @@ function BucketOverridesEditor({
                   <td className="px-3 py-2">
                     <Input
                       value={row.component}
-                      onChange={(event) => edit(row.id, "component", event.target.value)}
+                      onChange={(event) =>
+                        edit(row.id, "component", event.target.value)
+                      }
                       placeholder="metadata"
                       aria-label={`Component for rule ${row.id}`}
                     />
@@ -575,7 +627,9 @@ function BucketOverridesEditor({
                       type="number"
                       min="0"
                       value={String(row.retention_days)}
-                      onChange={(event) => edit(row.id, "retention_days", event.target.value)}
+                      onChange={(event) =>
+                        edit(row.id, "retention_days", event.target.value)
+                      }
                       className="w-[110px]"
                       aria-label={`Days for rule ${row.id}`}
                     />
@@ -585,7 +639,9 @@ function BucketOverridesEditor({
                       type="number"
                       min="0"
                       value={String(row.max_rows)}
-                      onChange={(event) => edit(row.id, "max_rows", event.target.value)}
+                      onChange={(event) =>
+                        edit(row.id, "max_rows", event.target.value)
+                      }
                       className="w-[140px]"
                       aria-label={`Max rows for rule ${row.id}`}
                     />
@@ -595,7 +651,9 @@ function BucketOverridesEditor({
                       type="number"
                       min="0"
                       value={String(row.max_size_mb)}
-                      onChange={(event) => edit(row.id, "max_size_mb", event.target.value)}
+                      onChange={(event) =>
+                        edit(row.id, "max_size_mb", event.target.value)
+                      }
                       className="w-[140px]"
                       aria-label={`Max size for rule ${row.id}`}
                     />
@@ -621,10 +679,18 @@ function BucketOverridesEditor({
   );
 }
 
-function LogsGroup({ form, restartKeys }: { form: SettingsForm; restartKeys: RestartKeyMatcher }) {
+function LogsGroup({
+  form,
+  restartKeys,
+}: {
+  form: SettingsForm;
+  restartKeys: RestartKeyMatcher;
+}) {
   // The bucket rules are one JSON setting edited as a table, so the rows live
   // here while they are dirty and re-hydrate from the saved value otherwise.
-  const [draftRows, setDraftRows] = useState<LogRetentionBucketRow[] | null>(null);
+  const [draftRows, setDraftRows] = useState<LogRetentionBucketRow[] | null>(
+    null,
+  );
   const raw = form.getValue(OPSLOG_BUCKET_POLICIES_KEY);
   const bucketDirty = form.isDirty(OPSLOG_BUCKET_POLICIES_KEY);
   const hydrated = useMemo(() => bucketRowsFromRaw(raw), [raw]);
@@ -676,8 +742,12 @@ function LogsGroup({ form, restartKeys }: { form: SettingsForm; restartKeys: Res
           type="number"
           unit="days"
           value={form.getValue("policy.decision_log_retention_days")}
-          onChange={(v) => form.setValue("policy.decision_log_retention_days", v)}
-          restartRequired={restartKeys.has("policy.decision_log_retention_days")}
+          onChange={(v) =>
+            form.setValue("policy.decision_log_retention_days", v)
+          }
+          restartRequired={restartKeys.has(
+            "policy.decision_log_retention_days",
+          )}
         />
         <SettingField
           label="How much to record"
@@ -696,8 +766,12 @@ function LogsGroup({ form, restartKeys }: { form: SettingsForm; restartKeys: Res
           type="number"
           description="Denials and errors are always recorded."
           value={form.getValue("policy.decision_log_scope_sample_rate")}
-          onChange={(v) => form.setValue("policy.decision_log_scope_sample_rate", v)}
-          restartRequired={restartKeys.has("policy.decision_log_scope_sample_rate")}
+          onChange={(v) =>
+            form.setValue("policy.decision_log_scope_sample_rate", v)
+          }
+          restartRequired={restartKeys.has(
+            "policy.decision_log_scope_sample_rate",
+          )}
         />
 
         <BucketOverridesEditor
@@ -760,7 +834,9 @@ export default function InfrastructureSettings() {
       >
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
         <div>
-          <p className="text-sm font-medium">Protected credential status is unavailable</p>
+          <p className="text-sm font-medium">
+            Protected credential status is unavailable
+          </p>
           <p className="text-muted-foreground mt-1 text-xs">
             Reload this page before editing infrastructure settings.
           </p>

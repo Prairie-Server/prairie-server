@@ -35,9 +35,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { CARD_QUICK_ACTION_OPTIONS, type EnabledCardQuickActionMode } from "@/lib/cardQuickActions";
+import {
+  CARD_QUICK_ACTION_OPTIONS,
+  type EnabledCardQuickActionMode,
+} from "@/lib/cardQuickActions";
 
 interface SettingRowProps {
   label: string;
@@ -54,8 +61,12 @@ function SettingRow({ label, description, hint, control }: SettingRowProps) {
         <Label htmlFor={controlId} className="text-sm font-medium">
           {label}
         </Label>
-        <p className="text-muted-foreground text-[13px] leading-relaxed">{description}</p>
-        {hint && <p className="text-muted-foreground/70 text-xs italic">{hint}</p>}
+        <p className="text-muted-foreground text-[13px] leading-relaxed">
+          {description}
+        </p>
+        {hint && (
+          <p className="text-muted-foreground/70 text-xs italic">{hint}</p>
+        )}
       </div>
       <div className="w-full sm:w-auto">{control({ id: controlId })}</div>
     </div>
@@ -69,7 +80,12 @@ interface AccentSwatchProps {
   onChange: (next: string | undefined) => void;
 }
 
-function AccentSwatch({ value, defaultValue, disabled, onChange }: AccentSwatchProps) {
+function AccentSwatch({
+  value,
+  defaultValue,
+  disabled,
+  onChange,
+}: AccentSwatchProps) {
   const [open, setOpen] = useState(false);
   const display = value ?? defaultValue ?? "#94a3b8";
   const hasOverride = !!value;
@@ -87,7 +103,9 @@ function AccentSwatch({ value, defaultValue, disabled, onChange }: AccentSwatchP
       </PopoverTrigger>
       <PopoverContent align="end" className="w-[200px] p-3">
         <div className="space-y-2">
-          <div className="text-xs font-medium tracking-wide uppercase">Accent color</div>
+          <div className="text-xs font-medium tracking-wide uppercase">
+            Accent color
+          </div>
           <div className="grid grid-cols-6 gap-1.5">
             {ACCENT_PALETTE.map((color) => (
               <button
@@ -141,7 +159,8 @@ function OverlayToggle({ overlayId, prefs, onUpdate }: OverlayToggleProps) {
   if (!def) return null;
   const config = prefs.items[overlayId];
   const preset = getPreset(prefs.preset);
-  const resolvedShowIcon = !!def.iconCapable && (config.showIcon ?? preset.preferIcon);
+  const resolvedShowIcon =
+    !!def.iconCapable && (config.showIcon ?? preset.preferIcon);
   const suppressed = config.enabled && isOverlaySuppressed(overlayId, prefs);
 
   return (
@@ -172,7 +191,11 @@ function OverlayToggle({ overlayId, prefs, onUpdate }: OverlayToggleProps) {
               title={resolvedShowIcon ? "Hide icon" : "Show icon"}
               aria-label={resolvedShowIcon ? "Hide icon" : "Show icon"}
             >
-              {resolvedShowIcon ? <ImageIcon size={16} /> : <ImageOff size={16} />}
+              {resolvedShowIcon ? (
+                <ImageIcon size={16} />
+              ) : (
+                <ImageOff size={16} />
+              )}
             </button>
           )}
           <AccentSwatch
@@ -197,7 +220,10 @@ function OverlayToggle({ overlayId, prefs, onUpdate }: OverlayToggleProps) {
                 ...prefs,
                 items: {
                   ...prefs.items,
-                  [overlayId]: { ...config, position: value as OverlayPosition },
+                  [overlayId]: {
+                    ...config,
+                    position: value as OverlayPosition,
+                  },
                 },
               })
             }
@@ -257,14 +283,18 @@ function PresetPicker({ value, onChange }: PresetPickerProps) {
             <div className="flex h-12 items-center justify-center rounded-md bg-gradient-to-br from-slate-700 to-slate-900">
               <span
                 className={preset.badgeClass}
-                style={preset.badgeStyle(preset.id === "vibrant" ? "#f5c518" : undefined)}
+                style={preset.badgeStyle(
+                  preset.id === "vibrant" ? "#f5c518" : undefined,
+                )}
               >
                 Sample
               </span>
             </div>
             <div>
               <div className="text-sm font-medium">{preset.label}</div>
-              <div className="text-muted-foreground text-xs leading-snug">{preset.description}</div>
+              <div className="text-muted-foreground text-xs leading-snug">
+                {preset.description}
+              </div>
             </div>
           </button>
         );
@@ -288,7 +318,8 @@ export default function CardOverlaySettings() {
     isResetting,
     isLoading,
   } = useOverlayPrefs();
-  const [previewVariant, setPreviewVariant] = useState<OverlayPreviewVariant>("movie");
+  const [previewVariant, setPreviewVariant] =
+    useState<OverlayPreviewVariant>("movie");
   const [confirmRestoreOpen, setConfirmRestoreOpen] = useState(false);
 
   const handleUpdate = (next: CardOverlayPrefs) => {
@@ -330,14 +361,19 @@ export default function CardOverlaySettings() {
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Card Overlays</h2>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Card Overlays
+        </h2>
         <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
-          Choose the quick actions and badges shown on media cards, where badges sit, and how they
-          look. Inspired by Kometa.
+          Choose the quick actions and badges shown on media cards, where badges
+          sit, and how they look. Inspired by Kometa.
         </p>
       </div>
 
-      <SettingsGroup title="General" description="Override the server defaults for this profile.">
+      <SettingsGroup
+        title="General"
+        description="Override the server defaults for this profile."
+      >
         <SettingRow
           label="Card quick actions"
           description="Choose the favorite and watched shortcuts shown for this profile."
@@ -347,10 +383,15 @@ export default function CardOverlaySettings() {
                 value={quickActionPreference}
                 disabled={!quickActionsEnabled}
                 onValueChange={(value) =>
-                  handleQuickActionModeChange(value as EnabledCardQuickActionMode)
+                  handleQuickActionModeChange(
+                    value as EnabledCardQuickActionMode,
+                  )
                 }
               >
-                <SelectTrigger className="w-[190px]" aria-label="Card quick action mode">
+                <SelectTrigger
+                  className="w-[190px]"
+                  aria-label="Card quick action mode"
+                >
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -418,13 +459,22 @@ export default function CardOverlaySettings() {
                 Restore default server settings
               </button>
             ) : (
-              <span className="text-muted-foreground text-xs">Following the server defaults</span>
+              <span className="text-muted-foreground text-xs">
+                Following the server defaults
+              </span>
             )
           }
         >
           <div className="flex flex-col items-center gap-4">
-            <OverlayPreviewCard prefs={displayPrefs} variant={previewVariant} size="md" />
-            <OverlayPreviewVariantToggle value={previewVariant} onChange={setPreviewVariant} />
+            <OverlayPreviewCard
+              prefs={displayPrefs}
+              variant={previewVariant}
+              size="md"
+            />
+            <OverlayPreviewVariantToggle
+              value={previewVariant}
+              onChange={setPreviewVariant}
+            />
           </div>
         </SettingsGroup>
 
@@ -436,10 +486,16 @@ export default function CardOverlaySettings() {
 
           <TabsContent value="overlays" className="mt-4 space-y-6">
             {CATEGORY_GROUPS.map(({ category, title, description }) => {
-              const overlays = OVERLAY_REGISTRY.filter((d) => d.category === category);
+              const overlays = OVERLAY_REGISTRY.filter(
+                (d) => d.category === category,
+              );
               if (overlays.length === 0) return null;
               return (
-                <SettingsGroup key={category} title={title} description={description}>
+                <SettingsGroup
+                  key={category}
+                  title={title}
+                  description={description}
+                >
                   {overlays.map((def) => (
                     <OverlayToggle
                       key={def.id}
@@ -460,27 +516,36 @@ export default function CardOverlaySettings() {
             >
               <PresetPicker
                 value={displayPrefs.preset}
-                onChange={(next) => handleUpdate({ ...displayPrefs, preset: next })}
+                onChange={(next) =>
+                  handleUpdate({ ...displayPrefs, preset: next })
+                }
               />
             </SettingsGroup>
-            <SettingsGroup title="How styling works" description="Where to find what.">
+            <SettingsGroup
+              title="How styling works"
+              description="Where to find what."
+            >
               <ul className="text-muted-foreground list-disc space-y-1 pl-5 text-sm">
                 <li>
-                  <strong className="text-foreground">Preset</strong> sets the badge shape,
-                  background, font, and whether icons show by default.
+                  <strong className="text-foreground">Preset</strong> sets the
+                  badge shape, background, font, and whether icons show by
+                  default.
                 </li>
                 <li>
-                  <strong className="text-foreground">Accent color</strong> (per overlay) tints that
-                  badge — gold for IMDb, red for RT, etc.
+                  <strong className="text-foreground">Accent color</strong> (per
+                  overlay) tints that badge — gold for IMDb, red for RT, etc.
                 </li>
                 <li>
-                  <strong className="text-foreground">Icon toggle</strong> (per overlay) overrides
-                  the preset's icon default for a single overlay.
+                  <strong className="text-foreground">Icon toggle</strong> (per
+                  overlay) overrides the preset's icon default for a single
+                  overlay.
                 </li>
                 <li>
-                  <strong className="text-foreground">Position</strong> picks which corner the badge
-                  sits in. Multiple badges in the same corner stack vertically. Bottom corners share
-                  space with the card's quick actions, which draw over the badge while they show.
+                  <strong className="text-foreground">Position</strong> picks
+                  which corner the badge sits in. Multiple badges in the same
+                  corner stack vertically. Bottom corners share space with the
+                  card's quick actions, which draw over the badge while they
+                  show.
                 </li>
               </ul>
             </SettingsGroup>

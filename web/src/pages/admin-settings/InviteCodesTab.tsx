@@ -30,7 +30,14 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { AlertTriangle, ArrowRight, Copy, Plus, PlusCircle, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Copy,
+  Plus,
+  PlusCircle,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { formatDate } from "@/lib/datetime";
@@ -44,7 +51,9 @@ export default function InviteCodesTab() {
   const deleteCode = useDeleteInviteCode();
   const [createOpen, setCreateOpen] = useState(false);
   const [topUpCode, setTopUpCode] = useState<InviteCode | null>(null);
-  const [confirmDeleteCode, setConfirmDeleteCode] = useState<InviteCode | null>(null);
+  const [confirmDeleteCode, setConfirmDeleteCode] = useState<InviteCode | null>(
+    null,
+  );
 
   function handleToggleCode(code: InviteCode) {
     updateCode.mutate({ id: code.id, body: { enabled: !code.enabled } });
@@ -88,11 +97,16 @@ export default function InviteCodesTab() {
           <DialogHeader>
             <DialogTitle>Top Up Invite Code</DialogTitle>
             <DialogDescription>
-              Add extra uses to {topUpCode?.code}. Current usage is {topUpCode?.use_count} /{" "}
-              {topUpCode?.max_uses}.
+              Add extra uses to {topUpCode?.code}. Current usage is{" "}
+              {topUpCode?.use_count} / {topUpCode?.max_uses}.
             </DialogDescription>
           </DialogHeader>
-          {topUpCode && <TopUpInviteCodeForm code={topUpCode} onClose={() => setTopUpCode(null)} />}
+          {topUpCode && (
+            <TopUpInviteCodeForm
+              code={topUpCode}
+              onClose={() => setTopUpCode(null)}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
@@ -128,8 +142,10 @@ export default function InviteCodesTab() {
           <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
             <p className="text-[13px] leading-relaxed">
-              <span className="font-medium text-amber-500">Public signups are off</span> — these
-              codes won't work until you enable them.{" "}
+              <span className="font-medium text-amber-500">
+                Public signups are off
+              </span>{" "}
+              — these codes won't work until you enable them.{" "}
               <Link
                 to="/admin/settings/general"
                 className="text-foreground inline-flex items-center gap-1 font-medium hover:underline"
@@ -155,7 +171,10 @@ export default function InviteCodesTab() {
         <TableBody>
           {codes.length === 0 && (
             <TableRow>
-              <TableCell colSpan={6} className="text-muted-foreground text-center">
+              <TableCell
+                colSpan={6}
+                className="text-muted-foreground text-center"
+              >
                 No invite codes yet. Create one to get started.
               </TableCell>
             </TableRow>
@@ -181,13 +200,20 @@ export default function InviteCodesTab() {
                 {code.label || <span className="text-muted-foreground">-</span>}
               </TableCell>
               <TableCell>
-                <span className={code.use_count >= code.max_uses ? "text-destructive" : ""}>
+                <span
+                  className={
+                    code.use_count >= code.max_uses ? "text-destructive" : ""
+                  }
+                >
                   {code.use_count} / {code.max_uses}
                 </span>
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  <Switch checked={code.enabled} onCheckedChange={() => handleToggleCode(code)} />
+                  <Switch
+                    checked={code.enabled}
+                    onCheckedChange={() => handleToggleCode(code)}
+                  />
                   <Badge variant={code.enabled ? "outline" : "secondary"}>
                     {code.enabled ? "Active" : "Disabled"}
                   </Badge>
@@ -273,14 +299,24 @@ function CreateInviteCodeForm({ onClose }: { onClose: () => void }) {
           required
         />
       </div>
-      <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={createMutation.isPending}
+      >
         {createMutation.isPending ? "Creating..." : "Create"}
       </Button>
     </form>
   );
 }
 
-function TopUpInviteCodeForm({ code, onClose }: { code: InviteCode; onClose: () => void }) {
+function TopUpInviteCodeForm({
+  code,
+  onClose,
+}: {
+  code: InviteCode;
+  onClose: () => void;
+}) {
   const [additionalUses, setAdditionalUses] = useState("1");
   const topUpMutation = useTopUpInviteCode();
 
@@ -310,7 +346,11 @@ function TopUpInviteCodeForm({ code, onClose }: { code: InviteCode; onClose: () 
           required
         />
       </div>
-      <Button type="submit" className="w-full" disabled={topUpMutation.isPending}>
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={topUpMutation.isPending}
+      >
         {topUpMutation.isPending ? "Adding..." : "Add Uses"}
       </Button>
     </form>

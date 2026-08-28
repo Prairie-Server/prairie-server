@@ -9,7 +9,9 @@ import NotificationsAdminSettings from "./NotificationsAdminSettings";
 
 const useSettingsFormMock = vi.fn();
 const restartKeysMock = vi.fn(() => new Set<string>());
-const updateSettingsMock = vi.fn(() => Promise.resolve({ values: {}, restart_required: false }));
+const updateSettingsMock = vi.fn(() =>
+  Promise.resolve({ values: {}, restart_required: false }),
+);
 
 const mocks = vi.hoisted(() => ({
   copyTextToClipboard: vi.fn(),
@@ -18,7 +20,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/lib/clipboard", () => ({
-  copyTextToClipboard: (...args: unknown[]) => mocks.copyTextToClipboard(...args),
+  copyTextToClipboard: (...args: unknown[]) =>
+    mocks.copyTextToClipboard(...args),
 }));
 
 vi.mock("sonner", () => ({
@@ -26,7 +29,10 @@ vi.mock("sonner", () => ({
 }));
 
 vi.mock("@/hooks/queries/admin/settings", () => ({
-  useUpdateServerSettings: () => ({ mutateAsync: updateSettingsMock, isPending: false }),
+  useUpdateServerSettings: () => ({
+    mutateAsync: updateSettingsMock,
+    isPending: false,
+  }),
 }));
 
 vi.mock("@/hooks/useSettingsForm", () => ({
@@ -86,7 +92,9 @@ function makeForm(overrides: Record<string, string> = {}) {
 }
 
 function renderPage() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
 
   return (
     <QueryClientProvider client={client}>
@@ -168,7 +176,11 @@ describe("NotificationsAdminSettings", () => {
     ]) {
       expect(options.keys).toContain(key);
     }
-    for (const key of ["discord.client_id", "discord.client_secret", "discord.bot_token"]) {
+    for (const key of [
+      "discord.client_id",
+      "discord.client_secret",
+      "discord.bot_token",
+    ]) {
       expect(options.keys).toContain(key);
     }
   });
@@ -194,14 +206,22 @@ describe("NotificationsAdminSettings", () => {
     expect(screen.getByText(/delivered by APNs or FCM/)).toBeInTheDocument();
     expect(screen.getByText("Relay configured")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /Silo Push Relay/ }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /Silo Push Relay/ }),
+    );
 
     expect(screen.getByText("Privacy disclosure")).toBeInTheDocument();
     expect(screen.getByText("Apple Push (APNs)")).toBeInTheDocument();
     expect(screen.getByText("Android Push (FCM)")).toBeInTheDocument();
-    expect(screen.getByText(/content-free request to Silo's push relay/)).toBeInTheDocument();
-    expect(screen.getByText(/does not receive notification titles/)).toBeInTheDocument();
-    expect(screen.getByText(/fetches private content directly/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/content-free request to Silo's push relay/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/does not receive notification titles/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/fetches private content directly/),
+    ).toBeInTheDocument();
     expect(screen.getByText("Deployment ID")).toBeInTheDocument();
     expect(screen.getByText("Rotate credential")).toBeInTheDocument();
     expect(screen.getByText("Credential: cap_v1_test")).toBeInTheDocument();
@@ -235,9 +255,13 @@ describe("NotificationsAdminSettings", () => {
     expect(screen.getByText("Port")).toBeInTheDocument();
     expect(screen.getByText("Encryption")).toBeInTheDocument();
     expect(screen.getByText("Password")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Send test" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Send test" }),
+    ).toBeInTheDocument();
     // The restart badge comes from the compiled key list, not from hint text.
-    expect(screen.getAllByLabelText("Takes effect after a server restart").length).toBe(1);
+    expect(
+      screen.getAllByLabelText("Takes effect after a server restart").length,
+    ).toBe(1);
   });
 
   it("shows the saved SMTP password as a masked, editable input", async () => {
@@ -252,29 +276,45 @@ describe("NotificationsAdminSettings", () => {
     const input = screen.getByLabelText("Password");
     expect(input).toHaveAttribute("type", "password");
     expect(input).toHaveAttribute("placeholder", "••••••••••••");
-    expect(screen.queryByRole("button", { name: /Replace/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Replace/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("configures the Discord application inside the Discord channel card", async () => {
-    useSettingsFormMock.mockReturnValue(makeForm({ "discord.client_id": "1234567890" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "discord.client_id": "1234567890" }),
+    );
 
     render(renderPage());
     await openChannel(DISCORD_CHANNEL);
 
-    expect(screen.queryByRole("link", { name: "Integrations tab" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Integrations tab" }),
+    ).not.toBeInTheDocument();
     expect(screen.getByLabelText("Client ID")).toHaveValue("1234567890");
     expect(screen.getByText("Client secret")).toBeInTheDocument();
     expect(screen.getByText("Bot token")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Test bot token" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Show setup guide/ })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /Invite bot to server/ })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Test bot token" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Show setup guide/ }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Invite bot to server/ }),
+    ).toBeInTheDocument();
     // Delivery and appearance stay here.
     expect(screen.getByText("Artwork")).toBeInTheDocument();
-    expect(screen.getByText("Let people pick a DM per episode")).toBeInTheDocument();
+    expect(
+      screen.getByText("Let people pick a DM per episode"),
+    ).toBeInTheDocument();
   });
 
   it("confirms the invite link copy only once it has actually happened", async () => {
-    useSettingsFormMock.mockReturnValue(makeForm({ "discord.client_id": "1234567890" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "discord.client_id": "1234567890" }),
+    );
 
     render(renderPage());
     await openChannel(DISCORD_CHANNEL);
@@ -283,7 +323,9 @@ describe("NotificationsAdminSettings", () => {
     expect(mocks.copyTextToClipboard).toHaveBeenCalledWith(
       expect.stringContaining("client_id=1234567890"),
     );
-    await waitFor(() => expect(mocks.toastSuccess).toHaveBeenCalledWith("Invite link copied"));
+    await waitFor(() =>
+      expect(mocks.toastSuccess).toHaveBeenCalledWith("Invite link copied"),
+    );
     expect(mocks.toastError).not.toHaveBeenCalled();
   });
 
@@ -291,7 +333,9 @@ describe("NotificationsAdminSettings", () => {
     // Denied permission, or a browser that only exposes the clipboard on a
     // secure origin — which a LAN server reached over plain HTTP is not.
     mocks.copyTextToClipboard.mockRejectedValue(new Error("clipboard blocked"));
-    useSettingsFormMock.mockReturnValue(makeForm({ "discord.client_id": "1234567890" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "discord.client_id": "1234567890" }),
+    );
 
     render(renderPage());
     await openChannel(DISCORD_CHANNEL);
@@ -313,7 +357,9 @@ describe("NotificationsAdminSettings", () => {
     await openChannel(DISCORD_CHANNEL);
     await userEvent.click(screen.getByRole("button", { name: "Save" }));
 
-    expect(updateSettingsMock).toHaveBeenCalledWith({ "discord.client_id": "1234567890" });
+    expect(updateSettingsMock).toHaveBeenCalledWith({
+      "discord.client_id": "1234567890",
+    });
     expect(form.save).not.toHaveBeenCalled();
   });
 
@@ -323,9 +369,13 @@ describe("NotificationsAdminSettings", () => {
 
     render(renderPage());
     await openChannel(DISCORD_CHANNEL);
-    await userEvent.click(screen.getByRole("button", { name: "Clear credentials" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Clear credentials" }),
+    );
 
-    expect(screen.getByText("Clear Discord app credentials?")).toBeInTheDocument();
+    expect(
+      screen.getByText("Clear Discord app credentials?"),
+    ).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: /^Clear$/ }));
 
     expect(updateSettingsMock).toHaveBeenCalledWith({
@@ -340,12 +390,16 @@ describe("NotificationsAdminSettings", () => {
 
     render(renderPage());
 
-    expect(screen.getByRole("heading", { level: 1, name: "Notifications" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Notifications" }),
+    ).toBeInTheDocument();
     expect(screen.getByText("5/7 channels on")).toBeInTheDocument();
   });
 
   it("warns on the pipeline card when sending is paused", () => {
-    useSettingsFormMock.mockReturnValue(makeForm({ "notifications.fanout_enabled": "false" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "notifications.fanout_enabled": "false" }),
+    );
 
     render(renderPage());
 
@@ -364,7 +418,9 @@ describe("NotificationsAdminSettings", () => {
     expect(screen.queryByText("Read notifications")).not.toBeInTheDocument();
     expect(screen.queryByText("Webhooks per person")).not.toBeInTheDocument();
 
-    for (const toggle of screen.getAllByRole("button", { name: /Advanced · 3 settings/ })) {
+    for (const toggle of screen.getAllByRole("button", {
+      name: /Advanced · 3 settings/,
+    })) {
       await userEvent.click(toggle);
     }
 
@@ -375,7 +431,9 @@ describe("NotificationsAdminSettings", () => {
 
   it("auto-expands an advanced disclosure that holds a staged change", async () => {
     const form = makeForm();
-    form.isDirty = vi.fn((key: string) => key === "notifications.retention.read_days");
+    form.isDirty = vi.fn(
+      (key: string) => key === "notifications.retention.read_days",
+    );
     useSettingsFormMock.mockReturnValue(form);
 
     render(renderPage());

@@ -4,7 +4,10 @@ import ViewTransitionLink from "@/components/ViewTransitionLink";
 import MediaItemMenu from "@/components/MediaItemMenu";
 import CardOverlays from "@/components/overlays/CardOverlays";
 import { decodeThumbhash } from "@/lib/thumbhash";
-import { overlayDataFromSectionItem, type CardOverlayPrefs } from "@/lib/overlays";
+import {
+  overlayDataFromSectionItem,
+  type CardOverlayPrefs,
+} from "@/lib/overlays";
 import type { CardQuickActionMode } from "@/lib/cardQuickActions";
 import { buildEpisodeCardLabels } from "@/lib/episodeCardLabels";
 import {
@@ -33,12 +36,18 @@ export default function SectionItemCard({
   quickActionMode = "none",
 }: SectionItemCardProps) {
   const { loaded, onLoad } = useImageLoaded(item.poster_url);
-  const thumbhashUrl = item.poster_thumbhash ? decodeThumbhash(item.poster_thumbhash) : "";
+  const thumbhashUrl = item.poster_thumbhash
+    ? decodeThumbhash(item.poster_thumbhash)
+    : "";
   const itemHref = buildItemHref({ contentId: item.content_id, libraryId });
   const upcomingEvent = item.upcoming_event;
   const subtitle = upcomingEvent ? formatUpcomingSubtitle(upcomingEvent) : "";
-  const airDateLabel = upcomingEvent ? formatUpcomingDate(upcomingEvent.air_date) : "";
-  const airTimeLabel = upcomingEvent ? formatUpcomingTime(upcomingEvent.air_time) : null;
+  const airDateLabel = upcomingEvent
+    ? formatUpcomingDate(upcomingEvent.air_date)
+    : "";
+  const airTimeLabel = upcomingEvent
+    ? formatUpcomingTime(upcomingEvent.air_time)
+    : null;
   const episodeLabels = !upcomingEvent ? buildEpisodeCardLabels(item) : null;
   const headingHref =
     item.type === "episode" && item.series_id
@@ -53,7 +62,10 @@ export default function SectionItemCard({
   return (
     <div ref={cardRef} className="media-card media-card-longpress group/card">
       <div className="group/media relative">
-        <ViewTransitionLink to={itemHref} className="block overflow-hidden rounded-xl">
+        <ViewTransitionLink
+          to={itemHref}
+          className="block overflow-hidden rounded-xl"
+        >
           <div
             className={`media-card-image relative ${
               item.type === "audiobook" ? "aspect-square" : "aspect-[2/3]"
@@ -78,7 +90,9 @@ export default function SectionItemCard({
               />
             ) : (
               <div className="text-muted-foreground flex h-full w-full flex-col items-center justify-center gap-1 p-3 text-center text-sm">
-                <span className="line-clamp-3 font-medium">{item.title || "No Poster"}</span>
+                <span className="line-clamp-3 font-medium">
+                  {item.title || "No Poster"}
+                </span>
               </div>
             )}
             <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/55 to-transparent opacity-90" />
@@ -88,7 +102,10 @@ export default function SectionItemCard({
               </span>
             )}
             {item.status === "matched" && overlayPrefs && (
-              <CardOverlays data={overlayDataFromSectionItem(item)} prefs={overlayPrefs} />
+              <CardOverlays
+                data={overlayDataFromSectionItem(item)}
+                prefs={overlayPrefs}
+              />
             )}
             {upcomingEvent && upcomingEvent.badges.length > 0 && (
               <div className="absolute top-2.5 left-2.5 flex max-w-[calc(100%-2.5rem)] flex-wrap gap-1">
@@ -143,7 +160,9 @@ export default function SectionItemCard({
               <div className="mt-1.5 flex min-w-0 items-center gap-1.5 text-[11px] font-medium">
                 <span className="text-foreground shrink-0">{airDateLabel}</span>
                 {airTimeLabel && (
-                  <span className="text-muted-foreground min-w-0 truncate">{airTimeLabel}</span>
+                  <span className="text-muted-foreground min-w-0 truncate">
+                    {airTimeLabel}
+                  </span>
                 )}
               </div>
             </ViewTransitionLink>
@@ -158,12 +177,17 @@ export default function SectionItemCard({
                 {episodeLabels.episodeCode}
               </div>
             </ViewTransitionLink>
-          ) : showMetadata && item.item_source === "next_in_series" && item.series_title ? (
+          ) : showMetadata &&
+            item.item_source === "next_in_series" &&
+            item.series_title ? (
             <ViewTransitionLink
               to={itemHref}
               className="text-muted-foreground mt-1 block truncate text-[11px] font-medium tracking-[0.14em] uppercase hover:underline"
             >
-              {[item.badges?.find((badge) => badge.startsWith("Book ")), item.series_title]
+              {[
+                item.badges?.find((badge) => badge.startsWith("Book ")),
+                item.series_title,
+              ]
                 .filter(Boolean)
                 .join(" · ")}
             </ViewTransitionLink>
@@ -172,7 +196,8 @@ export default function SectionItemCard({
               to={itemHref}
               className="text-muted-foreground mt-1 block truncate text-[11px] font-medium tracking-[0.14em] uppercase hover:underline"
             >
-              {item.year ? `${item.year}` : ""} {item.type === "series" ? "Series" : ""}
+              {item.year ? `${item.year}` : ""}{" "}
+              {item.type === "series" ? "Series" : ""}
             </ViewTransitionLink>
           ) : null}
         </div>

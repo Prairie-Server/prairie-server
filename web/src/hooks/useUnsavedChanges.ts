@@ -77,5 +77,9 @@ export function useReportUnsavedChanges(hasUnsavedChanges: boolean) {
 
 /** True while any mounted form has edits that were never saved. */
 export function useHasUnsavedChanges(): boolean {
-  return useSyncExternalStore(subscribe, hasUnsavedChangesSnapshot, hasUnsavedChangesSnapshot);
+  return useSyncExternalStore(
+    subscribe,
+    hasUnsavedChangesSnapshot,
+    hasUnsavedChangesSnapshot,
+  );
 }

@@ -51,7 +51,9 @@ export function RestartBanner({
   // restart-required save only shows up as a change in the signal. A
   // dismissal therefore holds exactly until the signature it silenced changes.
   const signature = String(restartSignal ?? "");
-  const [dismissedSignature, setDismissedSignature] = useState<string | null>(null);
+  const [dismissedSignature, setDismissedSignature] = useState<string | null>(
+    null,
+  );
   // Forgotten entirely once nothing is owed (a restart happened), so the next
   // requirement always prompts again even with an identical key list.
   if (!pending && dismissedSignature !== null) {
@@ -83,7 +85,11 @@ export function RestartBanner({
         </p>
       </div>
       <div className="flex shrink-0 items-center gap-2">
-        <Button variant="ghost" size="sm" onClick={() => setDismissedSignature(signature)}>
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setDismissedSignature(signature)}
+        >
           Later
         </Button>
         <RestartServerButton label="Restart server" />

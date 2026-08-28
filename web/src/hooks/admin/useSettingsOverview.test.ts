@@ -9,13 +9,17 @@ import {
 } from "./useSettingsOverview";
 
 function tile(input: SettingsOverviewInput, id: string): OverviewTile {
-  const found = buildSettingsOverview(input).tiles.find((entry) => entry.id === id);
+  const found = buildSettingsOverview(input).tiles.find(
+    (entry) => entry.id === id,
+  );
   if (!found) throw new Error(`no tile ${id}`);
   return found;
 }
 
 function card(input: SettingsOverviewInput, id: string): OverviewCard {
-  const found = buildSettingsOverview(input).cards.find((entry) => entry.id === id);
+  const found = buildSettingsOverview(input).cards.find(
+    (entry) => entry.id === id,
+  );
   if (!found) throw new Error(`no card ${id}`);
   return found;
 }
@@ -46,7 +50,10 @@ describe("buildSettingsOverview health tiles", () => {
     const storage = tile(
       {
         storageAvailable: true,
-        settings: { "s3.public_bucket": "silo-art", "s3.private_bucket": "silo-private" },
+        settings: {
+          "s3.public_bucket": "silo-art",
+          "s3.private_bucket": "silo-private",
+        },
       },
       "storage",
     );
@@ -119,7 +126,10 @@ describe("buildSettingsOverview health tiles", () => {
   it("reports the detected accelerator on the transcoding tile", () => {
     const transcoding = tile(
       {
-        settings: { "playback.transcode_enabled": "true", "playback.hw_accel": "auto" },
+        settings: {
+          "playback.transcode_enabled": "true",
+          "playback.hw_accel": "auto",
+        },
         hwAccel: {
           resolved: "vaapi",
           render_devices: ["/dev/dri/renderD128"],
@@ -139,7 +149,10 @@ describe("buildSettingsOverview health tiles", () => {
     // A saved database key owes a restart; neither storage nor transcoding
     // changed, so neither tile may claim "Restart pending".
     const base = {
-      settings: { "playback.transcode_enabled": "true", "s3.public_bucket": "silo-art" },
+      settings: {
+        "playback.transcode_enabled": "true",
+        "s3.public_bucket": "silo-art",
+      },
       serverStatus: {
         started_at: "2026-01-01T00:00:00Z",
         restart_required: true,
@@ -158,10 +171,15 @@ describe("buildSettingsOverview health tiles", () => {
       serverStatus: {
         ...base.serverStatus,
         restart_required_reason: "jellyfin_compat",
-        restart_required_reasons: ["setting:playback.hw_accel", "jellyfin_compat"],
+        restart_required_reasons: [
+          "setting:playback.hw_accel",
+          "jellyfin_compat",
+        ],
       },
     };
-    expect(tile(playbackPending, "transcoding").stateText).toBe("Restart pending");
+    expect(tile(playbackPending, "transcoding").stateText).toBe(
+      "Restart pending",
+    );
     expect(tile(playbackPending, "storage").stateText).toBe("Not set up");
 
     const storagePending = {
@@ -212,7 +230,10 @@ describe("buildSettingsOverview health tiles", () => {
   });
 
   it("marks search as informational on Postgres and healthy on Meilisearch", () => {
-    const postgres = tile({ settings: { "catalog.search.provider": "postgres" } }, "search");
+    const postgres = tile(
+      { settings: { "catalog.search.provider": "postgres" } },
+      "search",
+    );
     expect(postgres.state).toBe("info");
     expect(postgres.stateText).toBe("Postgres");
     expect(postgres.detail).toBe("Meilisearch not connected");
@@ -231,7 +252,10 @@ describe("buildSettingsOverview health tiles", () => {
   });
 
   it("does not report Meilisearch as broken before its status resolves", () => {
-    const pending = tile({ settings: { "catalog.search.provider": "meilisearch" } }, "search");
+    const pending = tile(
+      { settings: { "catalog.search.provider": "meilisearch" } },
+      "search",
+    );
 
     expect(pending.state).toBe("info");
     expect(pending.detail).toBe("Checking connection");
@@ -239,12 +263,19 @@ describe("buildSettingsOverview health tiles", () => {
   });
 
   it("only calls email ready when it is on with a host and a sender address", () => {
-    expect(tile({ settings: { "email.enabled": "true" } }, "email").stateText).toBe("Not set up");
+    expect(
+      tile({ settings: { "email.enabled": "true" } }, "email").stateText,
+    ).toBe("Not set up");
     // The server refuses to enable email without a from-address, but legacy
     // rows and single-key writes can still store this state — it cannot send.
     expect(
       tile(
-        { settings: { "email.enabled": "true", "email.smtp_host": "smtp.example.com" } },
+        {
+          settings: {
+            "email.enabled": "true",
+            "email.smtp_host": "smtp.example.com",
+          },
+        },
         "email",
       ).stateText,
     ).toBe("Not set up");

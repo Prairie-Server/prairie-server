@@ -21,7 +21,11 @@ export function OverlayPreviewVariantToggle({
   className,
 }: OverlayPreviewVariantToggleProps) {
   return (
-    <div className={cn("flex gap-1.5", className)} role="group" aria-label="Preview sample">
+    <div
+      className={cn("flex gap-1.5", className)}
+      role="group"
+      aria-label="Preview sample"
+    >
       {VARIANTS.map((variant) => (
         <button
           key={variant}

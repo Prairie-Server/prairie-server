@@ -12,7 +12,9 @@ export function sidebarDetailsRevealDelay(reduceMotion: boolean): number {
   return reduceMotion ? 0 : SIDEBAR_TRANSITION_FALLBACK_MS;
 }
 
-export function isCollapsedSidebarSurface(target: EventTarget | null): target is HTMLElement {
+export function isCollapsedSidebarSurface(
+  target: EventTarget | null,
+): target is HTMLElement {
   return (
     target instanceof HTMLElement &&
     target.classList.contains("sidebar-surface") &&
@@ -34,7 +36,9 @@ export function hasRunningSidebarTransition(surface: HTMLElement): boolean {
     );
 }
 
-export function parseOptionalLibraryId(rawLibraryId: string | null): number | undefined {
+export function parseOptionalLibraryId(
+  rawLibraryId: string | null,
+): number | undefined {
   if (!rawLibraryId) return undefined;
   const parsedLibraryId = Number(rawLibraryId);
   return Number.isFinite(parsedLibraryId) ? parsedLibraryId : undefined;
@@ -52,13 +56,21 @@ export function parseItemNavigationHref(
 ): { contentId: string; libraryId?: number } | null {
   try {
     const destination = new URL(href, origin);
-    if (destination.origin !== origin || !destination.pathname.startsWith("/item/")) return null;
+    if (
+      destination.origin !== origin ||
+      !destination.pathname.startsWith("/item/")
+    )
+      return null;
 
-    const contentId = decodeURIComponent(destination.pathname.slice("/item/".length));
+    const contentId = decodeURIComponent(
+      destination.pathname.slice("/item/".length),
+    );
     if (!contentId) return null;
     return {
       contentId,
-      libraryId: parseOptionalLibraryId(destination.searchParams.get("libraryId")),
+      libraryId: parseOptionalLibraryId(
+        destination.searchParams.get("libraryId"),
+      ),
     };
   } catch {
     return null;

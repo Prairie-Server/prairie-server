@@ -46,12 +46,20 @@ export function SearchStatusPanel() {
     <div className="divide-border divide-y">
       <StatusRow
         label="Answering searches"
-        value={status.active_provider === "meilisearch" ? "Meilisearch" : "Postgres full-text"}
+        value={
+          status.active_provider === "meilisearch"
+            ? "Meilisearch"
+            : "Postgres full-text"
+        }
         badge={status.configured_provider}
       />
       <StatusRow
         label="Health"
-        value={status.meilisearch.healthy ? "Healthy" : status.meilisearch.circuit_state}
+        value={
+          status.meilisearch.healthy
+            ? "Healthy"
+            : status.meilisearch.circuit_state
+        }
         badge={status.meilisearch.configured ? "configured" : "not configured"}
       />
       <StatusRow
@@ -59,8 +67,14 @@ export function SearchStatusPanel() {
         value={status.index.active_index_uid || "Not built"}
         badge={`schema ${status.index.schema_version}/${status.index.expected_schema_version}`}
       />
-      <StatusRow label="Documents" value={String(status.index.document_count)} />
-      <StatusRow label="Indexed types" value={formatIndexedTypes(status.meilisearch.index_types)} />
+      <StatusRow
+        label="Documents"
+        value={String(status.index.document_count)}
+      />
+      <StatusRow
+        label="Indexed types"
+        value={formatIndexedTypes(status.meilisearch.index_types)}
+      />
       <StatusRow
         label="Compressed vectors"
         value={status.meilisearch.binary_quantized ? "Enabled" : "Disabled"}
@@ -74,13 +88,20 @@ export function SearchStatusPanel() {
         label="Meaning-based share of results"
         value={formatSemanticRatio(status.meilisearch.semantic_ratio)}
       />
-      <StatusRow label="Items with vectors" value={String(status.index.vector_document_count)} />
+      <StatusRow
+        label="Items with vectors"
+        value={String(status.index.vector_document_count)}
+      />
       {status.semantic && (
         <>
           <StatusRow
             label="Meaning-based readiness"
             value={status.semantic.ready ? "Ready" : "Not ready"}
-            badge={status.semantic.ready ? undefined : status.semantic.disabled_reason}
+            badge={
+              status.semantic.ready
+                ? undefined
+                : status.semantic.disabled_reason
+            }
           />
           <StatusRow
             label="Vector coverage"
@@ -88,7 +109,9 @@ export function SearchStatusPanel() {
           />
           <StatusRow
             label="Coverage updated"
-            value={formatStatusDate(status.semantic.coverage_updated_at) || "Never"}
+            value={
+              formatStatusDate(status.semantic.coverage_updated_at) || "Never"
+            }
           />
           <StatusRow
             label="Embedding model"
@@ -104,7 +127,10 @@ export function SearchStatusPanel() {
               <span className="text-sm font-medium">Coverage by type</span>
               <div className="divide-border/60 divide-y">
                 {status.semantic.per_type.map((t) => (
-                  <div key={t.type} className="flex items-center justify-between gap-2 py-1.5">
+                  <div
+                    key={t.type}
+                    className="flex items-center justify-between gap-2 py-1.5"
+                  >
                     <span className="text-muted-foreground min-w-0 truncate text-sm">
                       {t.type}: {t.vectorized}/{t.eligible} (
                       {formatPercent(t.vector_coverage_ratio)})
@@ -119,7 +145,10 @@ export function SearchStatusPanel() {
           )}
         </>
       )}
-      <StatusRow label="Pending events" value={String(status.index.pending_events)} />
+      <StatusRow
+        label="Pending events"
+        value={String(status.index.pending_events)}
+      />
       {status.index.dead_lettered_events > 0 && (
         <StatusRow
           label="Dropped events"
@@ -127,9 +156,15 @@ export function SearchStatusPanel() {
           badge="stale until rebuild"
         />
       )}
-      <StatusRow label="Last sync" value={formatStatusDate(status.index.last_sync_at) || "Never"} />
+      <StatusRow
+        label="Last sync"
+        value={formatStatusDate(status.index.last_sync_at) || "Never"}
+      />
       {status.meilisearch.last_fallback && (
-        <StatusRow label="Last fallback" value={status.meilisearch.last_fallback} />
+        <StatusRow
+          label="Last fallback"
+          value={status.meilisearch.last_fallback}
+        />
       )}
       <SearchTaskLinks />
     </div>
@@ -141,7 +176,9 @@ function SearchTaskLinks() {
   return (
     <div className="flex flex-wrap gap-2 py-3">
       <Button asChild size="sm" variant="outline">
-        <Link to="/admin/tasks/rebuild_catalog_search_index">Rebuild index</Link>
+        <Link to="/admin/tasks/rebuild_catalog_search_index">
+          Rebuild index
+        </Link>
       </Button>
       <Button asChild size="sm" variant="ghost">
         <Link to="/admin/tasks/sync_catalog_search_index">Sync history</Link>
@@ -150,7 +187,15 @@ function SearchTaskLinks() {
   );
 }
 
-function StatusRow({ label, value, badge }: { label: string; value: string; badge?: string }) {
+function StatusRow({
+  label,
+  value,
+  badge,
+}: {
+  label: string;
+  value: string;
+  badge?: string;
+}) {
   return (
     <div className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
       <span className="text-sm font-medium">{label}</span>

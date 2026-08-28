@@ -23,7 +23,9 @@ function render(ui: React.ReactElement) {
   return renderDOM(<MemoryRouter>{ui}</MemoryRouter>);
 }
 
-function markerProvider(overrides: Partial<MarkerProviderConfig> = {}): MarkerProviderConfig {
+function markerProvider(
+  overrides: Partial<MarkerProviderConfig> = {},
+): MarkerProviderConfig {
   return {
     provider: "plugin:6:introdb",
     display_name: "TheIntroDB",
@@ -45,9 +47,18 @@ let markerProviders: MarkerProviderConfig[] = [];
 let pluginInstallations: Partial<PluginInstallation>[] = [];
 
 vi.mock("@/hooks/queries/admin/markers", () => ({
-  useMarkerProviders: () => ({ data: { providers: markerProviders }, isLoading: false }),
-  useUpdateMarkerProvider: () => ({ mutate: mocks.updateMarkerProvider, isPending: false }),
-  useValidateMarkerProvider: () => ({ mutate: mocks.validateMarkerProvider, isPending: false }),
+  useMarkerProviders: () => ({
+    data: { providers: markerProviders },
+    isLoading: false,
+  }),
+  useUpdateMarkerProvider: () => ({
+    mutate: mocks.updateMarkerProvider,
+    isPending: false,
+  }),
+  useValidateMarkerProvider: () => ({
+    mutate: mocks.validateMarkerProvider,
+    isPending: false,
+  }),
 }));
 
 vi.mock("@/hooks/queries/admin/plugins", () => ({
@@ -82,7 +93,8 @@ vi.mock("@/hooks/useUnsavedChanges", () => ({
 }));
 
 vi.mock("@/hooks/useSettingsForm", () => ({
-  useSettingsForm: (options: { keys: string[] }) => useSettingsFormMock(options),
+  useSettingsForm: (options: { keys: string[] }) =>
+    useSettingsFormMock(options),
 }));
 
 vi.mock("@/hooks/useRestartKeys", () => ({
@@ -90,7 +102,10 @@ vi.mock("@/hooks/useRestartKeys", () => ({
 }));
 
 vi.mock("@/hooks/queries/admin/settings", () => ({
-  useUpdateServerSettings: () => ({ mutateAsync: mocks.updateSettings, isPending: false }),
+  useUpdateServerSettings: () => ({
+    mutateAsync: mocks.updateSettings,
+    isPending: false,
+  }),
   useCheckAdminSettingsConnection: () => ({
     mutateAsync: mocks.checkConnection,
     isPending: false,
@@ -126,8 +141,14 @@ vi.mock("@/hooks/queries/admin/subtitles", () => ({
     },
     isLoading: false,
   }),
-  useUpdateSubtitleProvider: () => ({ mutate: mocks.updateProvider, isPending: false }),
-  useTestSubtitleProvider: () => ({ mutate: mocks.testProvider, isPending: false }),
+  useUpdateSubtitleProvider: () => ({
+    mutate: mocks.updateProvider,
+    isPending: false,
+  }),
+  useTestSubtitleProvider: () => ({
+    mutate: mocks.testProvider,
+    isPending: false,
+  }),
 }));
 
 vi.mock("sonner", () => ({
@@ -155,19 +176,29 @@ describe("ProvidersSettings", () => {
       screen.getByRole("heading", { level: 1, name: "Subtitles & Metadata" }),
     ).toBeInTheDocument();
     expect(
-      screen.queryByText("Where Silo fetches subtitles, artwork, and descriptions."),
+      screen.queryByText(
+        "Where Silo fetches subtitles, artwork, and descriptions.",
+      ),
     ).not.toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "Subtitle providers" })).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "Metadata providers" })).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "Marker providers" })).toBeInTheDocument();
-    expect(screen.queryByText("Searched in order, top to bottom")).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: "Subtitle providers" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: "Metadata providers" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("group", { name: "Marker providers" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText("Searched in order, top to bottom"),
+    ).not.toBeInTheDocument();
   });
 
   it("shows one tile per provider, in search order", () => {
     render(<ProvidersSettings />);
 
-    const tiles = ["OpenSubtitles", "SubDL", "SubSource", "MDBList"].map((name) =>
-      screen.getByRole("group", { name }),
+    const tiles = ["OpenSubtitles", "SubDL", "SubSource", "MDBList"].map(
+      (name) => screen.getByRole("group", { name }),
     );
     for (const tile of tiles) expect(tile).toBeInTheDocument();
     expect(tiles[0]?.compareDocumentPosition(tiles[1] as Node)).toBe(
@@ -182,12 +213,16 @@ describe("ProvidersSettings", () => {
     expect(openSubtitles).toHaveAttribute("data-state", "connected");
     expect(within(openSubtitles).getByText("Connected")).toBeInTheDocument();
     // The state word is the only signal: no "credentials stored" line repeating it.
-    expect(within(openSubtitles).queryByText(/credentials stored/)).not.toBeInTheDocument();
+    expect(
+      within(openSubtitles).queryByText(/credentials stored/),
+    ).not.toBeInTheDocument();
 
     const subdl = screen.getByRole("group", { name: "SubDL" });
     expect(subdl).toHaveAttribute("data-state", "not_connected");
     expect(within(subdl).getByText("Not connected")).toBeInTheDocument();
-    expect(within(subdl).getByRole("button", { name: "Connect" })).toBeInTheDocument();
+    expect(
+      within(subdl).getByRole("button", { name: "Connect" }),
+    ).toBeInTheDocument();
 
     // Configured but switched off: not searched, so not "connected".
     const subsource = screen.getByRole("group", { name: "SubSource" });
@@ -197,7 +232,9 @@ describe("ProvidersSettings", () => {
     // MDBList's credential is a server setting, read from sensitive status.
     const mdblist = screen.getByRole("group", { name: "MDBList" });
     expect(mdblist).toHaveAttribute("data-state", "connected");
-    expect(within(mdblist).getByRole("button", { name: "Manage" })).toBeInTheDocument();
+    expect(
+      within(mdblist).getByRole("button", { name: "Manage" }),
+    ).toBeInTheDocument();
   });
 
   it("counts a missing MDBList key as not connected", () => {
@@ -217,9 +254,12 @@ describe("ProvidersSettings", () => {
     reportUnsavedMock.mockClear();
 
     await user.click(
-      within(screen.getByRole("group", { name: "OpenSubtitles" })).getByRole("button", {
-        name: /Manage|Connect|Set up/,
-      }),
+      within(screen.getByRole("group", { name: "OpenSubtitles" })).getByRole(
+        "button",
+        {
+          name: /Manage|Connect|Set up/,
+        },
+      ),
     );
     await user.type(screen.getByLabelText(/Username/i), "user");
 
@@ -235,20 +275,28 @@ describe("ProvidersSettings", () => {
     expect(screen.queryByLabelText("API key")).not.toBeInTheDocument();
 
     await user.click(
-      within(screen.getByRole("group", { name: "SubDL" })).getByRole("button", { name: "Connect" }),
+      within(screen.getByRole("group", { name: "SubDL" })).getByRole("button", {
+        name: "Connect",
+      }),
     );
 
     const subdl = screen.getByRole("group", { name: "SubDL" });
     expect(subdl).toHaveAttribute("data-expanded", "true");
     expect(subdl).toHaveAttribute("data-state", "editing");
     expect(within(subdl).getByLabelText("API key")).toBeInTheDocument();
-    expect(within(subdl).getByRole("button", { name: "Test connection" })).toBeInTheDocument();
+    expect(
+      within(subdl).getByRole("button", { name: "Test connection" }),
+    ).toBeInTheDocument();
     // Only one panel is open at a time.
-    expect(screen.getByRole("group", { name: "SubSource" })).not.toHaveAttribute("data-expanded");
+    expect(
+      screen.getByRole("group", { name: "SubSource" }),
+    ).not.toHaveAttribute("data-expanded");
 
     await user.click(within(subdl).getByRole("button", { name: "Close" }));
 
-    expect(screen.getByRole("group", { name: "SubDL" })).not.toHaveAttribute("data-expanded");
+    expect(screen.getByRole("group", { name: "SubDL" })).not.toHaveAttribute(
+      "data-expanded",
+    );
     expect(screen.queryByLabelText("API key")).not.toBeInTheDocument();
   });
 
@@ -257,16 +305,26 @@ describe("ProvidersSettings", () => {
     render(<ProvidersSettings />);
 
     await user.click(
-      within(screen.getByRole("group", { name: "SubDL" })).getByRole("button", { name: "Connect" }),
-    );
-    await user.click(
-      within(screen.getByRole("group", { name: "MDBList" })).getByRole("button", {
-        name: "Manage",
+      within(screen.getByRole("group", { name: "SubDL" })).getByRole("button", {
+        name: "Connect",
       }),
     );
+    await user.click(
+      within(screen.getByRole("group", { name: "MDBList" })).getByRole(
+        "button",
+        {
+          name: "Manage",
+        },
+      ),
+    );
 
-    expect(screen.getByRole("group", { name: "SubDL" })).not.toHaveAttribute("data-expanded");
-    expect(screen.getByRole("group", { name: "MDBList" })).toHaveAttribute("data-expanded", "true");
+    expect(screen.getByRole("group", { name: "SubDL" })).not.toHaveAttribute(
+      "data-expanded",
+    );
+    expect(screen.getByRole("group", { name: "MDBList" })).toHaveAttribute(
+      "data-expanded",
+      "true",
+    );
   });
 
   it("saves a subtitle provider from its own panel", async () => {
@@ -274,7 +332,9 @@ describe("ProvidersSettings", () => {
     render(<ProvidersSettings />);
 
     await user.click(
-      within(screen.getByRole("group", { name: "SubDL" })).getByRole("button", { name: "Connect" }),
+      within(screen.getByRole("group", { name: "SubDL" })).getByRole("button", {
+        name: "Connect",
+      }),
     );
     const subdl = screen.getByRole("group", { name: "SubDL" });
     await user.type(within(subdl).getByLabelText("API key"), "key-123");
@@ -294,25 +354,38 @@ describe("ProvidersSettings", () => {
     render(<ProvidersSettings />);
 
     await user.click(
-      within(screen.getByRole("group", { name: "SubSource" })).getByRole("button", {
-        name: "Manage",
-      }),
+      within(screen.getByRole("group", { name: "SubSource" })).getByRole(
+        "button",
+        {
+          name: "Manage",
+        },
+      ),
     );
     await user.click(
-      within(screen.getByRole("group", { name: "SubSource" })).getByRole("button", {
-        name: "Test connection",
-      }),
+      within(screen.getByRole("group", { name: "SubSource" })).getByRole(
+        "button",
+        {
+          name: "Test connection",
+        },
+      ),
     );
     await user.click(
-      within(screen.getByRole("group", { name: "SubSource" })).getByRole("button", {
-        name: "Close",
-      }),
+      within(screen.getByRole("group", { name: "SubSource" })).getByRole(
+        "button",
+        {
+          name: "Close",
+        },
+      ),
     );
 
     const subsource = screen.getByRole("group", { name: "SubSource" });
     expect(subsource).toHaveAttribute("data-state", "error");
-    expect(within(subsource).getByRole("button", { name: "Fix" })).toBeInTheDocument();
-    expect(within(subsource).getByText("401 — key rejected")).toBeInTheDocument();
+    expect(
+      within(subsource).getByRole("button", { name: "Fix" }),
+    ).toBeInTheDocument();
+    expect(
+      within(subsource).getByText("401 — key rejected"),
+    ).toBeInTheDocument();
   });
 
   it("gives every panel action a resting affordance instead of ghost text", async () => {
@@ -320,16 +393,18 @@ describe("ProvidersSettings", () => {
     render(<ProvidersSettings />);
 
     await user.click(
-      within(screen.getByRole("group", { name: "SubSource" })).getByRole("button", {
-        name: "Manage",
-      }),
+      within(screen.getByRole("group", { name: "SubSource" })).getByRole(
+        "button",
+        {
+          name: "Manage",
+        },
+      ),
     );
 
     const subsource = screen.getByRole("group", { name: "SubSource" });
-    expect(within(subsource).getByRole("button", { name: "Test connection" })).toHaveAttribute(
-      "data-variant",
-      "secondary",
-    );
+    expect(
+      within(subsource).getByRole("button", { name: "Test connection" }),
+    ).toHaveAttribute("data-variant", "secondary");
     for (const name of ["Disconnect", "Close"]) {
       expect(within(subsource).getByRole("button", { name })).toHaveAttribute(
         "data-variant",
@@ -341,18 +416,24 @@ describe("ProvidersSettings", () => {
   it("points metadata plugins at the plugins page instead of faking tiles", () => {
     render(<ProvidersSettings />);
 
-    expect(screen.getByRole("link", { name: "Plugins" })).toHaveAttribute("href", "/admin/plugins");
-    expect(screen.queryByRole("group", { name: "TMDB" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Plugins" })).toHaveAttribute(
+      "href",
+      "/admin/plugins",
+    );
+    expect(
+      screen.queryByRole("group", { name: "TMDB" }),
+    ).not.toBeInTheDocument();
   });
 
   it("says so plainly when no marker provider plugin is installed", () => {
     render(<ProvidersSettings />);
 
-    expect(screen.getByText(/No marker provider plugins are installed/)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "plugin catalog" })).toHaveAttribute(
-      "href",
-      "/admin/plugins?tab=catalog",
-    );
+    expect(
+      screen.getByText(/No marker provider plugins are installed/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "plugin catalog" }),
+    ).toHaveAttribute("href", "/admin/plugins?tab=catalog");
   });
 
   it("counts a marker provider whose plugin has no saved key as not connected", () => {
@@ -363,7 +444,12 @@ describe("ProvidersSettings", () => {
         plugin_id: "silo.theintrodb",
         enabled: true,
         global_config_schema: [
-          { key: "account", title: "Account", json_schema: "{}", required: false },
+          {
+            key: "account",
+            title: "Account",
+            json_schema: "{}",
+            required: false,
+          },
         ],
         global_configs: [],
       },
@@ -376,7 +462,9 @@ describe("ProvidersSettings", () => {
     expect(within(tile).getByText("Needs setup")).toBeInTheDocument();
     // The next step is the plugin's own page, so the tile does not offer to
     // "Manage" settings that cannot work yet.
-    expect(within(tile).getByRole("button", { name: "Set up" })).toBeInTheDocument();
+    expect(
+      within(tile).getByRole("button", { name: "Set up" }),
+    ).toBeInTheDocument();
   });
 
   it("counts a configured, lookup-enabled marker provider as connected", () => {
@@ -387,9 +475,16 @@ describe("ProvidersSettings", () => {
         plugin_id: "silo.theintrodb",
         enabled: true,
         global_config_schema: [
-          { key: "account", title: "Account", json_schema: "{}", required: true },
+          {
+            key: "account",
+            title: "Account",
+            json_schema: "{}",
+            required: true,
+          },
         ],
-        global_configs: [{ key: "account", value: {}, configured_secrets: ["api_key"] }],
+        global_configs: [
+          { key: "account", value: {}, configured_secrets: ["api_key"] },
+        ],
       },
     ];
 
@@ -408,9 +503,16 @@ describe("ProvidersSettings", () => {
         plugin_id: "silo.theintrodb",
         enabled: true,
         global_config_schema: [
-          { key: "account", title: "Account", json_schema: "{}", required: true },
+          {
+            key: "account",
+            title: "Account",
+            json_schema: "{}",
+            required: true,
+          },
         ],
-        global_configs: [{ key: "account", value: {}, configured_secrets: ["api_key"] }],
+        global_configs: [
+          { key: "account", value: {}, configured_secrets: ["api_key"] },
+        ],
       },
     ];
 
@@ -428,16 +530,21 @@ describe("ProvidersSettings", () => {
     render(<ProvidersSettings />);
 
     await user.click(
-      within(screen.getByRole("group", { name: "TheIntroDB" })).getByRole("button", {
-        name: "Manage",
-      }),
+      within(screen.getByRole("group", { name: "TheIntroDB" })).getByRole(
+        "button",
+        {
+          name: "Manage",
+        },
+      ),
     );
 
     const tile = screen.getByRole("group", { name: "TheIntroDB" });
     expect(tile).toHaveAttribute("data-expanded", "true");
     expect(within(tile).getByLabelText("Lookup order")).toHaveValue(10);
     // Credentials are the plugin's, not Silo's: the panel links out for them.
-    expect(within(tile).getByRole("link", { name: "plugin page" })).toHaveAttribute(
+    expect(
+      within(tile).getByRole("link", { name: "plugin page" }),
+    ).toHaveAttribute(
       "href",
       "/admin/plugins?installed_q=silo.theintrodb&configure=silo.theintrodb",
     );
@@ -464,8 +571,12 @@ describe("ProvidersSettings", () => {
 
     render(<ProvidersSettings />);
 
-    expect(screen.getByText(/Nothing here is searched right now/)).toBeInTheDocument();
-    expect(screen.getByText(/is set to Detect on this server/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Nothing here is searched right now/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/is set to Detect on this server/),
+    ).toBeInTheDocument();
   });
 
   it("says when providers are in play instead", () => {
@@ -475,7 +586,9 @@ describe("ProvidersSettings", () => {
     render(<ProvidersSettings />);
 
     expect(screen.getByText(/Providers are searched when/)).toBeInTheDocument();
-    expect(screen.queryByText(/Nothing here is searched right now/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Nothing here is searched right now/),
+    ).not.toBeInTheDocument();
   });
 
   it("closes a subtitle panel when a marker tile is opened", async () => {
@@ -485,15 +598,22 @@ describe("ProvidersSettings", () => {
     render(<ProvidersSettings />);
 
     await user.click(
-      within(screen.getByRole("group", { name: "SubDL" })).getByRole("button", { name: "Connect" }),
-    );
-    await user.click(
-      within(screen.getByRole("group", { name: "TheIntroDB" })).getByRole("button", {
-        name: "Manage",
+      within(screen.getByRole("group", { name: "SubDL" })).getByRole("button", {
+        name: "Connect",
       }),
     );
+    await user.click(
+      within(screen.getByRole("group", { name: "TheIntroDB" })).getByRole(
+        "button",
+        {
+          name: "Manage",
+        },
+      ),
+    );
 
-    expect(screen.getByRole("group", { name: "SubDL" })).not.toHaveAttribute("data-expanded");
+    expect(screen.getByRole("group", { name: "SubDL" })).not.toHaveAttribute(
+      "data-expanded",
+    );
     expect(screen.getByRole("group", { name: "TheIntroDB" })).toHaveAttribute(
       "data-expanded",
       "true",

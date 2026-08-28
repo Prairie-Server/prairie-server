@@ -30,16 +30,22 @@ vi.mock("@/components/overlays/OverlayPreviewCard", () => ({
 
 vi.mock("@/components/ui/select", () => ({
   Select: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SelectContent: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
   SelectItem: ({ children, value }: { children: ReactNode; value: string }) => (
     <div data-value={value}>{children}</div>
   ),
-  SelectTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SelectTrigger: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
   SelectValue: () => null,
 }));
 
 function switchMarkup(markup: string, label: string) {
-  return markup.match(new RegExp(`<button[^>]*aria-label="${label}"[^>]*>`))?.[0];
+  return markup.match(
+    new RegExp(`<button[^>]*aria-label="${label}"[^>]*>`),
+  )?.[0];
 }
 
 describe("CardOverlaySettings", () => {
@@ -57,15 +63,22 @@ describe("CardOverlaySettings", () => {
     expect(markup).toContain("Both");
     expect(markup).toContain("Favorites only");
     expect(markup).toContain("Watch indicator only");
-    expect(markup.indexOf("Card quick actions")).toBeLessThan(markup.indexOf("Overlay preview"));
+    expect(markup.indexOf("Card quick actions")).toBeLessThan(
+      markup.indexOf("Overlay preview"),
+    );
     expect(markup).toContain('aria-label="Enable card quick actions"');
   });
 
   it("keeps the profile quick-action switch operable when the server default is off", () => {
     const markup = renderToStaticMarkup(<CardOverlaySettings />);
 
-    expect(markup).not.toContain("Card quick actions have been disabled by your server");
-    const quickActionsSwitch = switchMarkup(markup, "Enable card quick actions");
+    expect(markup).not.toContain(
+      "Card quick actions have been disabled by your server",
+    );
+    const quickActionsSwitch = switchMarkup(
+      markup,
+      "Enable card quick actions",
+    );
     expect(quickActionsSwitch).toBeDefined();
     // Tailwind `disabled:` variants live in the class list, so match the
     // rendered attribute rather than the bare word.
@@ -78,7 +91,9 @@ describe("CardOverlaySettings", () => {
 
     expect(markup).toContain("Card overlay badges");
     expect(markup).toContain('aria-label="Enable card overlay badges"');
-    expect(markup.indexOf("Card overlay badges")).toBeLessThan(markup.indexOf("Overlay preview"));
+    expect(markup.indexOf("Card overlay badges")).toBeLessThan(
+      markup.indexOf("Overlay preview"),
+    );
     expect(markup).not.toContain("pointer-events-none opacity-50");
   });
 
@@ -86,15 +101,17 @@ describe("CardOverlaySettings", () => {
     mocks.overlaysEnabled = false;
     const markup = renderToStaticMarkup(<CardOverlaySettings />);
 
-    expect(markup).not.toContain("Card overlays have been disabled by your server");
+    expect(markup).not.toContain(
+      "Card overlays have been disabled by your server",
+    );
     expect(markup).toContain("pointer-events-none opacity-50");
     const overlaysSwitch = switchMarkup(markup, "Enable card overlay badges");
     expect(overlaysSwitch).toBeDefined();
     expect(overlaysSwitch).not.toContain('disabled=""');
     expect(overlaysSwitch).not.toContain("data-disabled");
     // The switch sits outside the dimmed region.
-    expect(markup.indexOf('aria-label="Enable card overlay badges"')).toBeLessThan(
-      markup.indexOf("pointer-events-none opacity-50"),
-    );
+    expect(
+      markup.indexOf('aria-label="Enable card overlay badges"'),
+    ).toBeLessThan(markup.indexOf("pointer-events-none opacity-50"));
   });
 });

@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { ApiClientError, api } from "@/api/client";
 import type { ConnectionCheckResponse } from "@/api/types";
 import { ConnectionCheckAction } from "@/components/admin/ConnectionCheckAction";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -16,7 +17,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { AlertCircle, CheckCircle2, ChevronRight, Download } from "lucide-react";
+import {
+  AlertCircle,
+  CheckCircle2,
+  ChevronRight,
+  Download,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   useCheckAdminSettingsConnection,
@@ -61,7 +67,12 @@ const PRIVATE_S3_KEYS = [
 
 const META_KEYS = ["metadata.cache_images"];
 
-const ALL_KEYS = [...SERVER_KEYS, ...PUBLIC_S3_KEYS, ...PRIVATE_S3_KEYS, ...META_KEYS];
+const ALL_KEYS = [
+  ...SERVER_KEYS,
+  ...PUBLIC_S3_KEYS,
+  ...PRIVATE_S3_KEYS,
+  ...META_KEYS,
+];
 
 async function fetchSettingValue(key: string): Promise<string | null> {
   try {
@@ -90,7 +101,11 @@ function Section({
         <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.1em] uppercase">
           {label}
         </p>
-        {description && <p className="text-muted-foreground/70 mt-0.5 text-xs">{description}</p>}
+        {description && (
+          <p className="text-muted-foreground/70 mt-0.5 text-xs">
+            {description}
+          </p>
+        )}
       </div>
       {children}
     </div>
@@ -118,24 +133,38 @@ function StorageBlock({
         <ChevronRight
           className={`h-3.5 w-3.5 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
         />
-        <span className="text-[11px] font-semibold tracking-[0.1em] uppercase">{title}</span>
+        <span className="text-[11px] font-semibold tracking-[0.1em] uppercase">
+          {title}
+        </span>
       </button>
 
       {expanded && (
-        <div className="mt-4 animate-[fade-in_0.15s_ease-out] space-y-4">{children}</div>
+        <div className="mt-4 animate-[fade-in_0.15s_ease-out] space-y-4">
+          {children}
+        </div>
       )}
     </div>
   );
 }
 
-function KeyPrefixField({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+function KeyPrefixField({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+}) {
   return (
     <div className="space-y-1.5">
       <Label className="text-xs">Key Prefix</Label>
-      <Input value={value} onChange={(e) => onChange(e.target.value)} placeholder="silo/dev" />
+      <Input
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder="prairie/dev"
+      />
       <p className="text-muted-foreground/70 text-xs">
-        Optional. Stores all Silo objects under this folder inside the bucket. Leave blank to use
-        the bucket root.
+        Optional. Stores all Prairie objects under this folder inside the bucket.
+        Leave blank to use the bucket root.
       </p>
     </div>
   );
@@ -158,7 +187,8 @@ export function ServerStorageStep() {
   const jellyfinStatusQuery = useJellyfinCompatStatus();
   const installJellyfinWeb = useInstallJellyfinCompatWeb();
   const [submitting, setSubmitting] = useState(false);
-  const [jellyfinWebInstallRequested, setJellyfinWebInstallRequested] = useState(false);
+  const [jellyfinWebInstallRequested, setJellyfinWebInstallRequested] =
+    useState(false);
   const [publicExpanded, setPublicExpanded] = useState(true);
   const [privateExpanded, setPrivateExpanded] = useState(false);
   const [redisHydrated, setRedisHydrated] = useState(false);
@@ -179,11 +209,31 @@ export function ServerStorageStep() {
     form.setValue("redis.url", redisQuery.data);
   }, [redisQuery.data, redisHydrated, form]);
 
+  const redisUrl = form.getValue("redis.url");
+  const redisManagedByEnv = form.sensitiveManagedByEnv.includes("redis.url");
+  const redisConfigured =
+    redisUrl.trim() !== "" || form.sensitiveConfigured.includes("redis.url");
+  const redisDirty = form.isDirty("redis.url");
+  const redisNeedsLiveCheck =
+    !redisManagedByEnv && redisDirty && redisUrl.trim() !== "";
+
+  useEffect(() => {
+    setRedisConnectionResult(null);
+  }, [redisUrl]);
+
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const shouldInstallJellyfinWeb = jellyfinWebInstallRequested && !pinnedJellyfinWebInstalled;
+    const shouldInstallJellyfinWeb =
+      jellyfinWebInstallRequested && !pinnedJellyfinWebInstalled;
     if (form.dirtyCount === 0 && !shouldInstallJellyfinWeb) {
       markDone("server");
+      return;
+    }
+
+    if (redisNeedsLiveCheck && redisConnectionResult?.success !== true) {
+      toast.error(
+        "Test the Redis connection successfully before saving, or clear the URL to continue without Redis.",
+      );
       return;
     }
 
@@ -199,7 +249,9 @@ export function ServerStorageStep() {
       }
       markDone("server");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save server settings");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save server settings",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -220,7 +272,8 @@ export function ServerStorageStep() {
     } catch (error) {
       setRedisConnectionResult({
         success: false,
-        message: error instanceof Error ? error.message : "Connection check failed.",
+        message:
+          error instanceof Error ? error.message : "Connection check failed.",
       });
     }
   }
@@ -236,7 +289,8 @@ export function ServerStorageStep() {
     } catch (error) {
       setPublicS3ConnectionResult({
         success: false,
-        message: error instanceof Error ? error.message : "Connection check failed.",
+        message:
+          error instanceof Error ? error.message : "Connection check failed.",
       });
     }
   }
@@ -252,7 +306,8 @@ export function ServerStorageStep() {
     } catch (error) {
       setPrivateS3ConnectionResult({
         success: false,
-        message: error instanceof Error ? error.message : "Connection check failed.",
+        message:
+          error instanceof Error ? error.message : "Connection check failed.",
       });
     }
   }
@@ -280,25 +335,54 @@ export function ServerStorageStep() {
     jellyfinStatus?.web_state === "removing";
   const jellyfinMissingPrerequisites =
     jellyfinStatus?.prerequisites?.filter((item) => !item.available) ?? [];
-  const jellyfinSettingsDirty = form.dirtyKeys.some((key) => key.startsWith("jellyfin_compat."));
-  const pinnedJellyfinWebInstalled = hasPinnedJellyfinWebInstalled(jellyfinStatus);
+  const jellyfinSettingsDirty = form.dirtyKeys.some((key) =>
+    key.startsWith("jellyfin_compat."),
+  );
+  const pinnedJellyfinWebInstalled =
+    hasPinnedJellyfinWebInstalled(jellyfinStatus);
 
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
-      <Section label="Redis" description="Required for multi-node deployments.">
-        <Input
-          id="setup-redis-url"
-          type="password"
-          value={form.getValue("redis.url")}
-          onChange={(e) => form.setValue("redis.url", e.target.value)}
-          placeholder="redis://localhost:6379"
-        />
-        <ConnectionCheckAction
-          onClick={handleRedisCheck}
-          result={redisConnectionResult}
-          isPending={redisConnectionCheck.isPending}
-          disabled={submitting || form.isSaving}
-        />
+      <Section
+        label="Redis"
+        description="Optional for single-node setups. Required for multi-node fanout and Redis-backed rate limits."
+      >
+        {redisManagedByEnv ? (
+          <div className="space-y-2">
+            <Badge variant="outline">Managed by environment</Badge>
+            <p className="text-muted-foreground text-xs leading-relaxed">
+              Redis is configured by the <code>REDIS_URL</code> environment variable. Change your
+              deployment configuration and restart the server to update or disable Redis.
+            </p>
+          </div>
+        ) : (
+          <>
+            <Input
+              id="setup-redis-url"
+              type="password"
+              value={redisUrl}
+              onChange={(e) => form.setValue("redis.url", e.target.value)}
+              placeholder={
+                redisConfigured && !redisDirty
+                  ? "Configured — enter a new URL to replace"
+                  : "redis://localhost:6379"
+              }
+              autoComplete="off"
+            />
+            <ConnectionCheckAction
+              onClick={handleRedisCheck}
+              result={redisConnectionResult}
+              isPending={redisConnectionCheck.isPending}
+              disabled={submitting || form.isSaving || redisUrl.trim() === ""}
+            />
+            {redisNeedsLiveCheck && redisConnectionResult?.success !== true ? (
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                Run a successful connection check before saving a Redis URL. A failed check used to
+                leave an unreachable URL that could restart-loop the server after save.
+              </p>
+            ) : null}
+          </>
+        )}
       </Section>
 
       <Section label="Playback">
@@ -310,7 +394,9 @@ export function ServerStorageStep() {
             <Input
               id="setup-ffmpeg-path"
               value={form.getValue("playback.ffmpeg_path")}
-              onChange={(e) => form.setValue("playback.ffmpeg_path", e.target.value)}
+              onChange={(e) =>
+                form.setValue("playback.ffmpeg_path", e.target.value)
+              }
               placeholder="/usr/lib/jellyfin-ffmpeg/ffmpeg"
             />
           </div>
@@ -321,8 +407,10 @@ export function ServerStorageStep() {
             <Input
               id="setup-transcode-dir"
               value={form.getValue("playback.transcode_dir")}
-              onChange={(e) => form.setValue("playback.transcode_dir", e.target.value)}
-              placeholder="/tmp/silo-transcode"
+              onChange={(e) =>
+                form.setValue("playback.transcode_dir", e.target.value)
+              }
+              placeholder="/tmp/prairie-transcode"
             />
           </div>
         </div>
@@ -342,7 +430,9 @@ export function ServerStorageStep() {
                 <SelectItem value="auto">Auto</SelectItem>
                 <SelectItem value="vaapi">VAAPI</SelectItem>
                 <SelectItem value="nvenc">NVENC</SelectItem>
-                <SelectItem value="videotoolbox">VideoToolbox (macOS)</SelectItem>
+                <SelectItem value="videotoolbox">
+                  VideoToolbox (macOS)
+                </SelectItem>
                 <SelectItem value="qsv">QSV</SelectItem>
                 <SelectItem value="none">None</SelectItem>
               </SelectContent>
@@ -353,7 +443,10 @@ export function ServerStorageStep() {
               id="setup-transcode-enabled"
               checked={form.getValue("playback.transcode_enabled") !== "false"}
               onCheckedChange={(v) =>
-                form.setValue("playback.transcode_enabled", v ? "true" : "false")
+                form.setValue(
+                  "playback.transcode_enabled",
+                  v ? "true" : "false",
+                )
               }
             />
             <Label htmlFor="setup-transcode-enabled" className="text-xs">
@@ -371,14 +464,16 @@ export function ServerStorageStep() {
           <div className="border-foreground/[0.06] bg-background/40 rounded-lg border px-3 py-3">
             <p className="text-xs font-medium">API layer</p>
             <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-              Lets Jellyfin-compatible apps discover Silo, sign in, browse libraries, fetch
-              metadata, and start playback through Silo's compatibility API.
+              Lets Jellyfin-compatible apps discover Prairie, sign in, browse
+              libraries, fetch metadata, and start playback through Prairie's
+              compatibility API.
             </p>
           </div>
           <div className="border-foreground/[0.06] bg-background/40 rounded-lg border px-3 py-3">
             <p className="text-xs font-medium">Web UI layer</p>
             <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-              Downloads and builds Jellyfin Web assets for clients that expect Jellyfin's web route.
+              Downloads and builds Jellyfin Web assets for clients that expect
+              Jellyfin's web route.
             </p>
           </div>
         </div>
@@ -403,7 +498,9 @@ export function ServerStorageStep() {
             <Input
               id="setup-jellyfin-url"
               value={form.getValue("jellyfin_compat.public_url")}
-              onChange={(e) => form.setValue("jellyfin_compat.public_url", e.target.value)}
+              onChange={(e) =>
+                form.setValue("jellyfin_compat.public_url", e.target.value)
+              }
               placeholder="http://your-server:8096"
             />
           </div>
@@ -414,8 +511,10 @@ export function ServerStorageStep() {
             <Input
               id="setup-jellyfin-name"
               value={form.getValue("jellyfin_compat.server_name")}
-              onChange={(e) => form.setValue("jellyfin_compat.server_name", e.target.value)}
-              placeholder="Silo"
+              onChange={(e) =>
+                form.setValue("jellyfin_compat.server_name", e.target.value)
+              }
+              placeholder="Prairie"
             />
           </div>
         </div>
@@ -428,26 +527,40 @@ export function ServerStorageStep() {
               <Input
                 id="setup-jellyfin-web-version"
                 value={form.getValue("jellyfin_compat.web_version")}
-                onChange={(e) => form.setValue("jellyfin_compat.web_version", e.target.value)}
+                onChange={(e) =>
+                  form.setValue("jellyfin_compat.web_version", e.target.value)
+                }
                 placeholder="Auto-select compatible release"
               />
               <p className="text-muted-foreground/70 text-xs">
-                Optional. Leave blank to use the latest compatible released Jellyfin Web patch.
+                Optional. Leave blank to use the latest compatible released
+                Jellyfin Web patch.
               </p>
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="setup-jellyfin-web-install-dir" className="text-xs">
+              <Label
+                htmlFor="setup-jellyfin-web-install-dir"
+                className="text-xs"
+              >
                 Web install directory
               </Label>
               <Input
                 id="setup-jellyfin-web-install-dir"
                 value={form.getValue("jellyfin_compat.web_install_dir")}
-                onChange={(e) => form.setValue("jellyfin_compat.web_install_dir", e.target.value)}
-                placeholder="Use Silo managed directory"
+                onChange={(e) =>
+                  form.setValue(
+                    "jellyfin_compat.web_install_dir",
+                    e.target.value,
+                  )
+                }
+                placeholder="Use Prairie managed directory"
               />
               <p className="text-muted-foreground/70 text-xs">
                 Optional. Defaults to{" "}
-                <span className="font-mono">/var/lib/silo/compat/jellyfin-web</span>.
+                <span className="font-mono">
+                  /var/lib/prairie/compat/jellyfin-web
+                </span>
+                .
               </p>
             </div>
           </div>
@@ -463,11 +576,15 @@ export function ServerStorageStep() {
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-muted-foreground">Installed version</span>
-              <span>{jellyfinStatus?.installed_version || "Not installed"}</span>
+              <span>
+                {jellyfinStatus?.installed_version || "Not installed"}
+              </span>
             </div>
             <div className="space-y-0.5 sm:col-span-2">
               <span className="text-muted-foreground">Install path</span>
-              <div className="truncate font-mono">{jellyfinStatus?.install_path || "Not set"}</div>
+              <div className="truncate font-mono">
+                {jellyfinStatus?.install_path || "Not set"}
+              </div>
             </div>
           </div>
 
@@ -499,7 +616,9 @@ export function ServerStorageStep() {
                   jellyfinOperationRunning ||
                   jellyfinStatus?.installer_ready === false
                 }
-                onClick={() => setJellyfinWebInstallRequested((requested) => !requested)}
+                onClick={() =>
+                  setJellyfinWebInstallRequested((requested) => !requested)
+                }
               >
                 {jellyfinWebInstallRequested ? (
                   <CheckCircle2 className="mr-2 h-4 w-4" />
@@ -521,12 +640,13 @@ export function ServerStorageStep() {
                 Pinned Web UI version installed
               </span>
             )}
-            {jellyfinStatus?.license_present && jellyfinStatus?.provenance_present && (
-              <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
-                <CheckCircle2 className="h-3.5 w-3.5" />
-                License and provenance files found
-              </span>
-            )}
+            {jellyfinStatus?.license_present &&
+              jellyfinStatus?.provenance_present && (
+                <span className="text-muted-foreground inline-flex items-center gap-1 text-xs">
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                  License and provenance files found
+                </span>
+              )}
             {!jellyfinAPIEnabled && !pinnedJellyfinWebInstalled && (
               <span className="text-muted-foreground text-xs">
                 Enable the Jellyfin-compatible API before installing Web UI.
@@ -540,7 +660,9 @@ export function ServerStorageStep() {
             {jellyfinMissingPrerequisites.length > 0 && (
               <span className="text-muted-foreground text-xs">
                 Missing installer prerequisites:{" "}
-                {jellyfinMissingPrerequisites.map((item) => item.command).join(", ")}
+                {jellyfinMissingPrerequisites
+                  .map((item) => item.command)
+                  .join(", ")}
               </span>
             )}
           </div>
@@ -553,15 +675,18 @@ export function ServerStorageStep() {
         onToggle={() => setPublicExpanded((value) => !value)}
       >
         <p className="text-muted-foreground/80 text-xs leading-relaxed">
-          Stores client-facing assets such as artwork, chapter thumbnails, and subtitle files.
-          Private bucket + presigned URLs is fully supported. A public bucket is optional.
+          Stores client-facing assets such as artwork, chapter thumbnails, and
+          subtitle files. Private bucket + presigned URLs is fully supported. A
+          public bucket is optional.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label className="text-xs">Endpoint</Label>
             <Input
               value={form.getValue("s3.public_endpoint")}
-              onChange={(e) => form.setValue("s3.public_endpoint", e.target.value)}
+              onChange={(e) =>
+                form.setValue("s3.public_endpoint", e.target.value)
+              }
               placeholder="https://s3.amazonaws.com"
             />
           </div>
@@ -569,7 +694,9 @@ export function ServerStorageStep() {
             <Label className="text-xs">Bucket</Label>
             <Input
               value={form.getValue("s3.public_bucket")}
-              onChange={(e) => form.setValue("s3.public_bucket", e.target.value)}
+              onChange={(e) =>
+                form.setValue("s3.public_bucket", e.target.value)
+              }
             />
           </div>
         </div>
@@ -583,14 +710,18 @@ export function ServerStorageStep() {
             type="password"
             value={form.getValue("s3.public_access_key")}
             onChange={(v) => form.setValue("s3.public_access_key", v)}
-            sensitiveConfigured={form.sensitiveConfigured.includes("s3.public_access_key")}
+            sensitiveConfigured={form.sensitiveConfigured.includes(
+              "s3.public_access_key",
+            )}
           />
           <SettingField
             label="Secret Key"
             type="password"
             value={form.getValue("s3.public_secret_key")}
             onChange={(v) => form.setValue("s3.public_secret_key", v)}
-            sensitiveConfigured={form.sensitiveConfigured.includes("s3.public_secret_key")}
+            sensitiveConfigured={form.sensitiveConfigured.includes(
+              "s3.public_secret_key",
+            )}
           />
         </div>
         <div className="border-foreground/[0.06] border-t pt-3">
@@ -628,14 +759,17 @@ export function ServerStorageStep() {
         onToggle={() => setPrivateExpanded((value) => !value)}
       >
         <p className="text-muted-foreground/80 text-xs leading-relaxed">
-          Stores non-public Silo objects such as imports, exports, and internal artifacts.
+          Stores non-public Prairie objects such as imports, exports, and internal
+          artifacts.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
             <Label className="text-xs">Endpoint</Label>
             <Input
               value={form.getValue("s3.private_endpoint")}
-              onChange={(e) => form.setValue("s3.private_endpoint", e.target.value)}
+              onChange={(e) =>
+                form.setValue("s3.private_endpoint", e.target.value)
+              }
               placeholder="https://s3.amazonaws.com"
             />
           </div>
@@ -643,7 +777,9 @@ export function ServerStorageStep() {
             <Label className="text-xs">Bucket</Label>
             <Input
               value={form.getValue("s3.private_bucket")}
-              onChange={(e) => form.setValue("s3.private_bucket", e.target.value)}
+              onChange={(e) =>
+                form.setValue("s3.private_bucket", e.target.value)
+              }
             />
           </div>
         </div>
@@ -657,14 +793,18 @@ export function ServerStorageStep() {
             type="password"
             value={form.getValue("s3.private_access_key")}
             onChange={(v) => form.setValue("s3.private_access_key", v)}
-            sensitiveConfigured={form.sensitiveConfigured.includes("s3.private_access_key")}
+            sensitiveConfigured={form.sensitiveConfigured.includes(
+              "s3.private_access_key",
+            )}
           />
           <SettingField
             label="Secret Key"
             type="password"
             value={form.getValue("s3.private_secret_key")}
             onChange={(v) => form.setValue("s3.private_secret_key", v)}
-            sensitiveConfigured={form.sensitiveConfigured.includes("s3.private_secret_key")}
+            sensitiveConfigured={form.sensitiveConfigured.includes(
+              "s3.private_secret_key",
+            )}
           />
         </div>
         <ConnectionCheckAction
@@ -682,14 +822,16 @@ export function ServerStorageStep() {
               S3 Image Caching
             </p>
             <p className="text-muted-foreground/70 mt-0.5 text-xs">
-              Copies posters and backdrops from metadata providers into your public S3 bucket
-              instead of proxying external URLs.
+              Copies posters and backdrops from metadata providers into your
+              public S3 bucket instead of proxying external URLs.
             </p>
           </div>
           <Switch
             id="setup-cache-images"
             checked={form.getValue("metadata.cache_images") === "true"}
-            onCheckedChange={(v) => form.setValue("metadata.cache_images", v ? "true" : "false")}
+            onCheckedChange={(v) =>
+              form.setValue("metadata.cache_images", v ? "true" : "false")
+            }
             className="ml-4 shrink-0"
           />
         </div>

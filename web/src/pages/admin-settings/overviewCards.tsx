@@ -33,11 +33,21 @@ const TILE_ICONS: Record<string, LucideIcon> = {
 const CARD_METADATA = Object.fromEntries(
   ADMIN_SETTINGS_NAV.map((item) => [
     item.id,
-    { description: item.description, groups: item.groups, icon: item.icon, label: item.label },
+    {
+      description: item.description,
+      groups: item.groups,
+      icon: item.icon,
+      label: item.label,
+    },
   ]),
 ) as Record<
   AdminSettingsPageID,
-  { description: string; groups: readonly string[]; icon: LucideIcon; label: string }
+  {
+    description: string;
+    groups: readonly string[];
+    icon: LucideIcon;
+    label: string;
+  }
 >;
 
 const PANEL = "border-border/70 rounded-xl border";
@@ -58,16 +68,23 @@ export function HealthTile({ tile }: { tile: OverviewTile }) {
     >
       <span className="flex items-center gap-2">
         <Icon
-          className={cn("size-4 shrink-0", warn ? "text-amber-400" : "text-muted-foreground")}
+          className={cn(
+            "size-4 shrink-0",
+            warn ? "text-amber-400" : "text-muted-foreground",
+          )}
           aria-hidden="true"
         />
         <span className="text-muted-foreground text-xs">{tile.label}</span>
       </span>
-      <span className={cn("mt-1.5 text-sm font-medium", warn && "text-amber-300")}>
+      <span
+        className={cn("mt-1.5 text-sm font-medium", warn && "text-amber-300")}
+      >
         {tile.stateText}
       </span>
       {tile.detail ? (
-        <span className="text-muted-foreground mt-1 text-xs leading-snug">{tile.detail}</span>
+        <span className="text-muted-foreground mt-1 text-xs leading-snug">
+          {tile.detail}
+        </span>
       ) : null}
       {tile.action ? (
         <Link
@@ -107,7 +124,9 @@ export function SectionCard({ card }: { card: OverviewCard }) {
           <Icon className="size-[18px]" aria-hidden="true" />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-base leading-6 font-semibold tracking-tight">{metadata?.label}</h3>
+          <h3 className="text-base leading-6 font-semibold tracking-tight">
+            {metadata?.label}
+          </h3>
           <p className="text-muted-foreground mt-1.5 max-w-2xl text-[13px] leading-relaxed">
             {metadata?.description}
           </p>

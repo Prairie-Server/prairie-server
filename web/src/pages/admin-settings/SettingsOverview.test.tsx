@@ -10,11 +10,15 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/hooks/admin/useSettingsOverview", async (importOriginal) => ({
-  ...(await importOriginal<typeof import("@/hooks/admin/useSettingsOverview")>()),
+  ...(await importOriginal<
+    typeof import("@/hooks/admin/useSettingsOverview")
+  >()),
   useSettingsOverview: () => mocks.useSettingsOverview(),
 }));
 
-function model(overrides: Partial<SettingsOverviewModel> = {}): SettingsOverviewModel {
+function model(
+  overrides: Partial<SettingsOverviewModel> = {},
+): SettingsOverviewModel {
   return {
     isLoading: false,
     tiles: [
@@ -42,7 +46,12 @@ function model(overrides: Partial<SettingsOverviewModel> = {}): SettingsOverview
         action: { label: "Set up", page: "notifications" },
       },
     ],
-    cards: [{ id: "playback" }, { id: "downloads" }, { id: "notifications" }, { id: "watch-sync" }],
+    cards: [
+      { id: "playback" },
+      { id: "downloads" },
+      { id: "notifications" },
+      { id: "watch-sync" },
+    ],
     ...overrides,
   };
 }
@@ -63,24 +72,36 @@ describe("SettingsOverview", () => {
   it("renders the page heading and nothing else above the content", () => {
     renderOverview();
 
-    expect(screen.getByRole("heading", { level: 1, name: "Settings" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Settings" }),
+    ).toBeInTheDocument();
     expect(
       screen.getByText(/Configure the server, media processing, integrations/),
     ).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: "Setup & health" })).toBeInTheDocument();
-    expect(screen.getByText(/Recommendations and configuration problems/)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { level: 2, name: "Settings groups" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Setup & health" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Recommendations and configuration problems/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { level: 2, name: "Settings groups" }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("searchbox")).not.toBeInTheDocument();
   });
 
   it("shows only the health tiles that need something, with their action", () => {
     renderOverview();
 
-    expect(screen.queryByTestId("overview-tile-storage")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("overview-tile-storage"),
+    ).not.toBeInTheDocument();
 
     const transcoding = screen.getByTestId("overview-tile-transcoding");
     expect(transcoding).toHaveAttribute("data-state", "warn");
-    expect(within(transcoding).getByText("Restart pending")).toBeInTheDocument();
+    expect(
+      within(transcoding).getByText("Restart pending"),
+    ).toBeInTheDocument();
     expect(within(transcoding).getByRole("link")).toHaveAttribute(
       "href",
       "/admin/settings/playback",
@@ -97,8 +118,12 @@ describe("SettingsOverview", () => {
     renderOverview();
 
     expect(screen.getByText("No action needed")).toBeInTheDocument();
-    expect(screen.getByText(/restart-required changes will appear here/)).toBeInTheDocument();
-    expect(screen.queryByTestId("overview-tile-storage")).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/restart-required changes will appear here/),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByTestId("overview-tile-storage"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders one group card per entry with its named subareas", () => {
@@ -108,7 +133,9 @@ describe("SettingsOverview", () => {
     expect(playback).toHaveAttribute("href", "/admin/settings/playback");
     expect(within(playback).getByText("Playback")).toBeInTheDocument();
     expect(
-      within(playback).getByText("Transcoding, hardware acceleration, and watch thresholds."),
+      within(playback).getByText(
+        "Transcoding, hardware acceleration, and watch thresholds.",
+      ),
     ).toBeInTheDocument();
     expect(within(playback).getByText("Transcoding")).toBeInTheDocument();
     expect(within(playback).getByText("Watch behavior")).toBeInTheDocument();
@@ -129,15 +156,21 @@ describe("SettingsOverview", () => {
     renderOverview();
 
     const notifications = screen.getByTestId("overview-card-notifications");
-    expect(within(notifications).queryByText("Email channel has no SMTP")).not.toBeInTheDocument();
+    expect(
+      within(notifications).queryByText("Email channel has no SMTP"),
+    ).not.toBeInTheDocument();
   });
 
   it("shows skeletons instead of tiles and cards on first load", () => {
     mocks.useSettingsOverview.mockReturnValue(model({ isLoading: true }));
     renderOverview();
 
-    expect(screen.queryByTestId("overview-tile-transcoding")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("overview-card-playback")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("overview-tile-transcoding"),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("overview-card-playback"),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("No action needed")).not.toBeInTheDocument();
   });
 });

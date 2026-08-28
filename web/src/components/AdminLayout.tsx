@@ -118,7 +118,10 @@ export default function AdminLayout() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <AdminSearchButton onClick={() => setCommandOpen(true)} className="h-11 w-11" />
+            <AdminSearchButton
+              onClick={() => setCommandOpen(true)}
+              className="h-11 w-11"
+            />
             <ServerActivity className="h-11 w-11" />
           </div>
         </div>
@@ -211,7 +214,9 @@ function AdminSearchButton({
       <Search className="h-4 w-4" aria-hidden="true" />
       {showShortcut ? (
         <>
-          <span className="hidden text-[13px] font-medium xl:inline">Search</span>
+          <span className="hidden text-[13px] font-medium xl:inline">
+            Search
+          </span>
           <kbd className="border-border/70 pointer-events-none rounded border px-1.5 py-0.5 font-mono text-[10px] whitespace-nowrap select-none">
             {shortcut}
           </kbd>

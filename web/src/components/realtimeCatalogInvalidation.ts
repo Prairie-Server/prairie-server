@@ -14,7 +14,12 @@ export function invalidateCatalogState(
   queryClient: QueryClient,
   options: CatalogInvalidationOptions,
 ) {
-  const { itemId, libraryId, allowDashboardRefetch, includeLibraryLists = true } = options;
+  const {
+    itemId,
+    libraryId,
+    allowDashboardRefetch,
+    includeLibraryLists = true,
+  } = options;
   // Library-scoped sweeps leave home section queries out (see
   // activeSectionQueryMatchesLibrary) so a scan cannot storm them — but the
   // refresh-signal bump below still reloads Home's rows through fetchQuery,
@@ -22,17 +27,24 @@ export function invalidateCatalogState(
   // stale without refetching, so only the (already throttled) queue reset
   // fetches, and it fetches real data.
   if (libraryId !== undefined) {
-    void queryClient.invalidateQueries({ queryKey: sectionKeys.home(), refetchType: "none" });
+    void queryClient.invalidateQueries({
+      queryKey: sectionKeys.home(),
+      refetchType: "none",
+    });
   }
-  void invalidateMediaSurfaceQueries(queryClient, { itemId, libraryId }).then(() => {
-    bumpHomeRefreshSignal(queryClient);
-  });
+  void invalidateMediaSurfaceQueries(queryClient, { itemId, libraryId }).then(
+    () => {
+      bumpHomeRefreshSignal(queryClient);
+    },
+  );
   if (includeLibraryLists) {
     void queryClient.invalidateQueries({
       queryKey: adminKeys.libraries(),
       refetchType: allowDashboardRefetch ? "active" : "none",
     });
-    void queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueStatuses() });
+    void queryClient.invalidateQueries({
+      queryKey: adminKeys.libraryMatchQueueStatuses(),
+    });
     void queryClient.invalidateQueries({ queryKey: libraryKeys.all });
   }
   void queryClient.invalidateQueries({
@@ -126,18 +138,25 @@ function mergeCatalogInvalidation(
   } else {
     next.libraryIds.add(options.libraryId);
   }
-  next.allowDashboardRefetch = next.allowDashboardRefetch || options.allowDashboardRefetch;
-  next.includeLibraryLists = next.includeLibraryLists || (options.includeLibraryLists ?? true);
+  next.allowDashboardRefetch =
+    next.allowDashboardRefetch || options.allowDashboardRefetch;
+  next.includeLibraryLists =
+    next.includeLibraryLists || (options.includeLibraryLists ?? true);
 
   return next;
 }
 
-function resolveBatch(batch: PendingCatalogInvalidation): CatalogInvalidationOptions {
+function resolveBatch(
+  batch: PendingCatalogInvalidation,
+): CatalogInvalidationOptions {
   const [onlyItemId] = batch.itemIds;
   const [onlyLibraryId] = batch.libraryIds;
   return {
     itemId: batch.itemIds.size === 1 ? onlyItemId : undefined,
-    libraryId: !batch.hasUnscopedEvent && batch.libraryIds.size === 1 ? onlyLibraryId : undefined,
+    libraryId:
+      !batch.hasUnscopedEvent && batch.libraryIds.size === 1
+        ? onlyLibraryId
+        : undefined,
     allowDashboardRefetch: batch.allowDashboardRefetch,
     includeLibraryLists: batch.includeLibraryLists,
   };
@@ -150,7 +169,9 @@ function resolveBatch(batch: PendingCatalogInvalidation): CatalogInvalidationOpt
  * position, so they must not reset the home load queue per event; they refresh
  * through `scheduleProgressHomeRefresh` instead.
  */
-export function userStateChangeAffectsSectionMembership(change: string | undefined): boolean {
+export function userStateChangeAffectsSectionMembership(
+  change: string | undefined,
+): boolean {
   return change !== "progress";
 }
 

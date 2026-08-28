@@ -3,7 +3,10 @@ import { useId } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
-import { SETTINGS_CONTROL_WIDTH, SettingFieldRow } from "@/pages/admin-settings/SettingField";
+import {
+  SETTINGS_CONTROL_WIDTH,
+  SettingFieldRow,
+} from "@/pages/admin-settings/SettingField";
 
 export interface SecretFieldProps {
   label: string;
@@ -38,7 +41,8 @@ export interface SecretFieldProps {
 }
 
 /** Description shown while a clear is staged, in place of `hint`. */
-const CLEARED_DESCRIPTION = "Save clears the stored value; type to set a new one instead.";
+const CLEARED_DESCRIPTION =
+  "Save clears the stored value; type to set a new one instead.";
 
 /**
  * The single credential control for admin settings: one always-editable
@@ -75,7 +79,9 @@ export function SecretField({
   const description = clearStaged
     ? CLEARED_DESCRIPTION
     : (hint ??
-      (configured ? "Type to replace the saved value; leave blank to keep it." : undefined));
+      (configured
+        ? "Type to replace the saved value; leave blank to keep it."
+        : undefined));
 
   function keepSaved() {
     if (onKeep) onKeep();
@@ -120,7 +126,11 @@ export function SecretField({
           id={controlId}
           type="password"
           placeholder={
-            clearStaged ? "Will be cleared on save" : configured ? "••••••••••••" : "Not configured"
+            clearStaged
+              ? "Will be cleared on save"
+              : configured
+                ? "••••••••••••"
+                : "Not configured"
           }
           value={value}
           onChange={(e) => handleChange(e.target.value)}

@@ -9,7 +9,10 @@ import CardOverlays from "@/components/overlays/CardOverlays";
 import { useOverlayPrefs } from "@/hooks/useOverlayPrefs";
 import { usePrefetchCatalogItemDetail } from "@/hooks/queries/catalogRead";
 import type { CardQuickActionMode } from "@/lib/cardQuickActions";
-import { overlayDataFromEpisodeListItem, type CardOverlayPrefs } from "@/lib/overlays";
+import {
+  overlayDataFromEpisodeListItem,
+  type CardOverlayPrefs,
+} from "@/lib/overlays";
 import { EpisodeGridSkeleton } from "./SectionSkeletons";
 import type { EpisodeNavigationState } from "../itemDetailLayout";
 
@@ -84,7 +87,11 @@ function SeasonEpisodeCard({
       onTouchStart={onPrefetch}
     >
       <div className="relative">
-        <Link to={`/item/${episode.content_id}`} state={episodeLinkState} className="group block">
+        <Link
+          to={`/item/${episode.content_id}`}
+          state={episodeLinkState}
+          className="group block"
+        >
           <div className="media-card-image relative aspect-video">
             {episode.still_url ? (
               <img
@@ -139,12 +146,20 @@ function SeasonEpisodeCard({
           itemTitle={episodeTitle}
         />
       </div>
-      <Link to={`/item/${episode.content_id}`} state={episodeLinkState} className="block">
+      <Link
+        to={`/item/${episode.content_id}`}
+        state={episodeLinkState}
+        className="block"
+      >
         <div className="text-muted-foreground mt-2 flex items-center gap-2 text-xs">
           <span>Episode {episode.episode_number}</span>
-          {episode.user_data?.played && <WatchedCheckIndicator className="ml-auto" />}
+          {episode.user_data?.played && (
+            <WatchedCheckIndicator className="ml-auto" />
+          )}
         </div>
-        <p className="text-foreground truncate text-sm font-semibold">{episodeTitle}</p>
+        <p className="text-foreground truncate text-sm font-semibold">
+          {episodeTitle}
+        </p>
         <div className="mt-1.5 space-y-1">
           <div className="text-muted-foreground flex items-center gap-2 text-xs">
             {episode.runtime > 0 && <span>{episode.runtime}m</span>}

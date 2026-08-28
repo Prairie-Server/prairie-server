@@ -39,7 +39,10 @@ const DOWNLOAD_ARTIFACT_DIR_NAME = "silo-download-artifacts";
  * transcode path before taking its parent, so a trailing slash still yields
  * the sibling directory rather than nesting inside the transcode root.
  */
-export function effectiveDownloadArtifactDir(artifactDir: string, transcodeDir: string): string {
+export function effectiveDownloadArtifactDir(
+  artifactDir: string,
+  transcodeDir: string,
+): string {
   if (artifactDir !== "") return artifactDir;
   const base = transcodeDir === "" ? DEFAULT_TRANSCODE_DIR : transcodeDir;
   return joinPath(dirName(cleanPath(base)), DOWNLOAD_ARTIFACT_DIR_NAME);

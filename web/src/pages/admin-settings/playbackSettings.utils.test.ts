@@ -207,7 +207,9 @@ describe("hasUsableTranscodeNode", () => {
     expect(hasUsableTranscodeNode([node({ enabled: false })])).toBe(false);
     expect(hasUsableTranscodeNode([node({ healthy: false })])).toBe(false);
     expect(hasUsableTranscodeNode([node({ type: "streaming" })])).toBe(false);
-    expect(hasUsableTranscodeNode([node({ healthy: false }), node({ id: 2 })])).toBe(true);
+    expect(
+      hasUsableTranscodeNode([node({ healthy: false }), node({ id: 2 })]),
+    ).toBe(true);
   });
 });
 
@@ -229,11 +231,17 @@ describe("chapterThumbnailExecutionOptions", () => {
   });
 
   it("keeps a saved node-backed mode selectable so it can be changed", () => {
-    expect(disabledValues("transcode_nodes_only", false)).toEqual(["prefer_transcode_nodes"]);
-    expect(disabledValues("prefer_transcode_nodes", false)).toEqual(["transcode_nodes_only"]);
+    expect(disabledValues("transcode_nodes_only", false)).toEqual([
+      "prefer_transcode_nodes",
+    ]);
+    expect(disabledValues("prefer_transcode_nodes", false)).toEqual([
+      "transcode_nodes_only",
+    ]);
   });
 
   it("never disables local extraction", () => {
-    expect(disabledValues("transcode_nodes_only", false)).not.toContain("local");
+    expect(disabledValues("transcode_nodes_only", false)).not.toContain(
+      "local",
+    );
   });
 });

@@ -62,7 +62,9 @@ export function AdvancedSection({
 }: AdvancedSectionProps) {
   // Persisted choice, read once: a section's id is fixed for the life of the
   // instance (give the component a `key` if a caller ever swaps ids).
-  const [persistedOpen, setPersistedOpen] = useState(() => readPersisted(id) ?? defaultOpen);
+  const [persistedOpen, setPersistedOpen] = useState(
+    () => readPersisted(id) ?? defaultOpen,
+  );
   // Explicit toggle this session, which also wins over `forceOpen` so an
   // auto-expanded section can still be collapsed.
   const [override, setOverride] = useState<boolean | null>(null);
@@ -90,7 +92,9 @@ export function AdvancedSection({
   // The number reads as a bare count on screen; the accessible name spells out
   // what it counts, since it is visually pushed to the right of the row.
   const accessibleLabel =
-    typeof count === "number" ? `${title} · ${count} setting${count === 1 ? "" : "s"}` : title;
+    typeof count === "number"
+      ? `${title} · ${count} setting${count === 1 ? "" : "s"}`
+      : title;
 
   return (
     <div className="min-w-0">
@@ -108,13 +112,18 @@ export function AdvancedSection({
         <ChevronRight
           className={cn(
             "size-3.5 shrink-0 transition-transform",
-            open ? "rotate-90 text-[var(--settings-accent)]" : "text-muted-foreground",
+            open
+              ? "rotate-90 text-[var(--settings-accent)]"
+              : "text-muted-foreground",
           )}
           aria-hidden="true"
         />
         <span className="min-w-0 font-medium">{title}</span>
         {typeof count === "number" ? (
-          <span aria-hidden="true" className="text-muted-foreground ml-auto shrink-0 text-[11.5px]">
+          <span
+            aria-hidden="true"
+            className="text-muted-foreground ml-auto shrink-0 text-[11.5px]"
+          >
             {count}
           </span>
         ) : null}

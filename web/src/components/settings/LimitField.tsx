@@ -1,7 +1,10 @@
 import { useId, useState } from "react";
 
 import { Input } from "@/components/ui/input";
-import { SETTINGS_NUMBER_WIDTH, SettingFieldRow } from "@/pages/admin-settings/SettingField";
+import {
+  SETTINGS_NUMBER_WIDTH,
+  SettingFieldRow,
+} from "@/pages/admin-settings/SettingField";
 
 export interface LimitFieldProps {
   label: string;
@@ -82,7 +85,9 @@ export function LimitField({
   // scaled field does not eat the "." of "1." or rewrite "1.50" mid-keystroke.
   const [draft, setDraft] = useState<string | null>(null);
   const displayed =
-    draft !== null && toStoredUnits(draft, scale) === value ? draft : toDisplayUnits(value, scale);
+    draft !== null && toStoredUnits(draft, scale) === value
+      ? draft
+      : toDisplayUnits(value, scale);
 
   function changeLimit(next: string) {
     setDraft(next);
@@ -113,7 +118,10 @@ export function LimitField({
             right of the control edge, so anything between the input and that
             edge would knock this field's box out of line with the plain number
             fields it is stacked against. */}
-        <label htmlFor={checkboxId} className="flex shrink-0 items-center gap-2 text-sm">
+        <label
+          htmlFor={checkboxId}
+          className="flex shrink-0 items-center gap-2 text-sm"
+        >
           <input
             id={checkboxId}
             type="checkbox"

@@ -14,9 +14,17 @@
 :root {
   --settings-accent: #a78bfa;
   /* 15% alpha variant for tinted bleeds and soft chip fills. */
-  --settings-accent-soft: color-mix(in srgb, var(--settings-accent) 15%, transparent);
+  --settings-accent-soft: color-mix(
+    in srgb,
+    var(--settings-accent) 15%,
+    transparent
+  );
   /* Slightly stronger, for 1px hairlines that still have to read as violet. */
-  --settings-accent-line: color-mix(in srgb, var(--settings-accent) 32%, transparent);
+  --settings-accent-line: color-mix(
+    in srgb,
+    var(--settings-accent) 32%,
+    transparent
+  );
 }
 
 /* ================================================================

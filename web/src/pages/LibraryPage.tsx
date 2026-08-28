@@ -1,4 +1,11 @@
-import { startTransition, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  startTransition,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link, useParams, useSearchParams } from "react-router";
 import type { QueryDefinition } from "@/api/types";
 import { Tabs, TabsContent } from "@/components/ui/tabs";

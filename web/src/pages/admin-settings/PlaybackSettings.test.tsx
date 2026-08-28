@@ -10,7 +10,8 @@ class ResizeObserverStub {
   unobserve() {}
   disconnect() {}
 }
-globalThis.ResizeObserver ??= ResizeObserverStub as unknown as typeof ResizeObserver;
+globalThis.ResizeObserver ??=
+  ResizeObserverStub as unknown as typeof ResizeObserver;
 if (!window.HTMLElement.prototype.hasPointerCapture) {
   window.HTMLElement.prototype.hasPointerCapture = () => false;
 }
@@ -40,7 +41,14 @@ vi.mock("@/hooks/queries/admin/nodes", () => ({
 
 /** A transcode node the chapter-thumbnail extractor could reserve. */
 function transcodeNode(overrides: Record<string, unknown> = {}) {
-  return { id: 1, name: "node-1", type: "transcode", enabled: true, healthy: true, ...overrides };
+  return {
+    id: 1,
+    name: "node-1",
+    type: "transcode",
+    enabled: true,
+    healthy: true,
+    ...overrides,
+  };
 }
 
 function makeForm(values: Record<string, string>, dirty: string[] = []) {
@@ -69,7 +77,9 @@ function labelled(container: HTMLElement, text: string): Element {
   const label = Array.from(container.querySelectorAll("label")).find(
     (candidate) => candidate.textContent === text,
   );
-  const control = label?.htmlFor ? container.querySelector(`[id="${label.htmlFor}"]`) : null;
+  const control = label?.htmlFor
+    ? container.querySelector(`[id="${label.htmlFor}"]`)
+    : null;
   if (!control) throw new Error(`no control rendered for label: ${text}`);
   return control;
 }
@@ -85,27 +95,42 @@ beforeEach(() => {
   localStorage.clear();
   useSettingsFormMock.mockReset();
   useHWAccelDetectionMock.mockReset();
-  useHWAccelDetectionMock.mockReturnValue({ data: undefined, isLoading: false });
+  useHWAccelDetectionMock.mockReturnValue({
+    data: undefined,
+    isLoading: false,
+  });
   useAdminNodesMock.mockReset();
-  useAdminNodesMock.mockReturnValue({ data: [transcodeNode()], isSuccess: true });
+  useAdminNodesMock.mockReturnValue({
+    data: [transcodeNode()],
+    isSuccess: true,
+  });
 });
 
 describe("PlaybackSettings layout", () => {
   it("renders every field group heading", () => {
-    useSettingsFormMock.mockReturnValue(makeForm({ "playback.hw_accel": "none" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "playback.hw_accel": "none" }),
+    );
 
     const container = parse(renderToStaticMarkup(<PlaybackSettings />));
-    const headings = Array.from(container.querySelectorAll("[role=group]")).map((group) => {
-      const labelId = group.getAttribute("aria-labelledby");
-      return labelId ? (container.querySelector(`[id="${labelId}"]`)?.textContent ?? "") : "";
-    });
+    const headings = Array.from(container.querySelectorAll("[role=group]")).map(
+      (group) => {
+        const labelId = group.getAttribute("aria-labelledby");
+        return labelId
+          ? (container.querySelector(`[id="${labelId}"]`)?.textContent ?? "")
+          : "";
+      },
+    );
 
     expect(headings).toEqual(["Transcoding", "Watch behavior"]);
   });
 
   it("opens with the title alone: no breadcrumb, lede, or status strip", () => {
     useSettingsFormMock.mockReturnValue(
-      makeForm({ "playback.hw_accel": "none", "playback.transcode_enabled": "true" }),
+      makeForm({
+        "playback.hw_accel": "none",
+        "playback.transcode_enabled": "true",
+      }),
     );
 
     const container = parse(renderToStaticMarkup(<PlaybackSettings />));
@@ -117,16 +142,23 @@ describe("PlaybackSettings layout", () => {
   });
 
   it("puts the percent unit beside the control instead of in the label", () => {
-    useSettingsFormMock.mockReturnValue(makeForm({ "playback.watched_threshold": "90" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "playback.watched_threshold": "90" }),
+    );
 
     const container = parse(renderToStaticMarkup(<PlaybackSettings />));
 
-    expect(labelled(container, "Mark watched at")).toHaveAttribute("value", "90");
+    expect(labelled(container, "Mark watched at")).toHaveAttribute(
+      "value",
+      "90",
+    );
     expect(container.textContent).not.toContain("Mark watched at (%)");
   });
 
   it("manages the playback key family and leaves downloads to their own page", () => {
-    useSettingsFormMock.mockReturnValue(makeForm({ "playback.hw_accel": "none" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "playback.hw_accel": "none" }),
+    );
 
     renderToStaticMarkup(<PlaybackSettings />);
     const keys: string[] = useSettingsFormMock.mock.calls[0]?.[0]?.keys ?? [];
@@ -139,7 +171,9 @@ describe("PlaybackSettings layout", () => {
   });
 
   it("keeps advanced settings collapsed until they are opened", () => {
-    useSettingsFormMock.mockReturnValue(makeForm({ "playback.hw_accel": "none" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "playback.hw_accel": "none" }),
+    );
 
     const container = parse(renderToStaticMarkup(<PlaybackSettings />));
 
@@ -159,10 +193,14 @@ describe("PlaybackSettings layout", () => {
 
   it("marks restart-required fields from the restart key list", () => {
     expandAdvanced();
-    useSettingsFormMock.mockReturnValue(makeForm({ "playback.hw_accel": "none" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "playback.hw_accel": "none" }),
+    );
 
     const container = parse(renderToStaticMarkup(<PlaybackSettings />));
-    const badges = container.querySelectorAll("[aria-label='Takes effect after a server restart']");
+    const badges = container.querySelectorAll(
+      "[aria-label='Takes effect after a server restart']",
+    );
 
     expect(badges).toHaveLength(1);
   });
@@ -189,12 +227,18 @@ describe("PlaybackSettings CPU tone mapping", () => {
   });
 
   it("offers VideoToolbox hardware acceleration", async () => {
-    useSettingsFormMock.mockReturnValue(makeForm({ "playback.hw_accel": "auto" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "playback.hw_accel": "auto" }),
+    );
 
     render(<PlaybackSettings />);
-    await userEvent.click(screen.getByRole("combobox", { name: "Hardware acceleration" }));
+    await userEvent.click(
+      screen.getByRole("combobox", { name: "Hardware acceleration" }),
+    );
 
-    expect(screen.getByRole("option", { name: "VideoToolbox (macOS)" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "VideoToolbox (macOS)" }),
+    ).toBeInTheDocument();
   });
 
   it("disables the toggle while HDR chapter thumbnails are disabled", () => {
@@ -219,21 +263,21 @@ describe("PlaybackSettings transcode tone mapping", () => {
   beforeEach(expandAdvanced);
 
   it("registers independent hardware and software settings disabled by default", () => {
-    useSettingsFormMock.mockReturnValue(makeForm({ "playback.hw_accel": "auto" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "playback.hw_accel": "auto" }),
+    );
 
     const container = parse(renderToStaticMarkup(<PlaybackSettings />));
     const keys = useSettingsFormMock.mock.calls[0]?.[0]?.keys as string[];
 
     expect(keys).toContain("playback.transcode_hardware_tone_map_enabled");
     expect(keys).toContain("playback.transcode_software_tone_map_enabled");
-    expect(labelled(container, "Enable Hardware HDR Tone Mapping")).toHaveAttribute(
-      "aria-checked",
-      "false",
-    );
-    expect(labelled(container, "Enable Software HDR Tone Mapping")).toHaveAttribute(
-      "aria-checked",
-      "false",
-    );
+    expect(
+      labelled(container, "Enable Hardware HDR Tone Mapping"),
+    ).toHaveAttribute("aria-checked", "false");
+    expect(
+      labelled(container, "Enable Software HDR Tone Mapping"),
+    ).toHaveAttribute("aria-checked", "false");
   });
 
   it("keeps the two policies independent", () => {
@@ -247,14 +291,12 @@ describe("PlaybackSettings transcode tone mapping", () => {
 
     const container = parse(renderToStaticMarkup(<PlaybackSettings />));
 
-    expect(labelled(container, "Enable Hardware HDR Tone Mapping")).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
-    expect(labelled(container, "Enable Software HDR Tone Mapping")).toHaveAttribute(
-      "aria-checked",
-      "false",
-    );
+    expect(
+      labelled(container, "Enable Hardware HDR Tone Mapping"),
+    ).toHaveAttribute("aria-checked", "true");
+    expect(
+      labelled(container, "Enable Software HDR Tone Mapping"),
+    ).toHaveAttribute("aria-checked", "false");
   });
 
   it("keeps hardware tone mapping configurable for remote executors when local acceleration is off", () => {
@@ -308,7 +350,9 @@ describe("PlaybackSettings path defaults", () => {
   const RESET_TRANSCODE_DIR = { name: "Reset Transcode directory to default" };
 
   it("shows the effective default of each path field as its placeholder", () => {
-    useSettingsFormMock.mockReturnValue(makeForm({ "playback.hw_accel": "none" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "playback.hw_accel": "none" }),
+    );
 
     const container = parse(renderToStaticMarkup(<PlaybackSettings />));
 
@@ -323,9 +367,12 @@ describe("PlaybackSettings path defaults", () => {
   });
 
   it("says in words what leaving each path blank does", () => {
-    useSettingsFormMock.mockReturnValue(makeForm({ "playback.hw_accel": "none" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "playback.hw_accel": "none" }),
+    );
 
-    const text = parse(renderToStaticMarkup(<PlaybackSettings />)).textContent ?? "";
+    const text =
+      parse(renderToStaticMarkup(<PlaybackSettings />)).textContent ?? "";
 
     expect(text).toContain("Leave blank to use /tmp/silo-transcode.");
     expect(text).toContain(
@@ -335,11 +382,16 @@ describe("PlaybackSettings path defaults", () => {
 
   it("offers no reset while a path field already runs the default", () => {
     useSettingsFormMock.mockReturnValue(
-      makeForm({ "playback.hw_accel": "none", "playback.transcode_dir": "/tmp/silo-transcode" }),
+      makeForm({
+        "playback.hw_accel": "none",
+        "playback.transcode_dir": "/tmp/silo-transcode",
+      }),
     );
     render(<PlaybackSettings />);
 
-    expect(screen.queryByRole("button", RESET_TRANSCODE_DIR)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", RESET_TRANSCODE_DIR),
+    ).not.toBeInTheDocument();
   });
 
   it("stages an empty value when an overridden path is reset", () => {
@@ -365,7 +417,9 @@ describe("PlaybackSettings path defaults", () => {
 
     expect(screen.getByLabelText("Transcode directory")).toHaveValue("");
     expect(screen.getByText("1 unsaved change")).toBeInTheDocument();
-    expect(screen.queryByRole("button", RESET_TRANSCODE_DIR)).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", RESET_TRANSCODE_DIR),
+    ).not.toBeInTheDocument();
   });
 });
 
@@ -374,10 +428,15 @@ describe("PlaybackSettings chapter thumbnail execution", () => {
 
   it("warns when no transcode node can take an extraction", () => {
     useAdminNodesMock.mockReturnValue({
-      data: [transcodeNode({ healthy: false }), transcodeNode({ id: 2, type: "streaming" })],
+      data: [
+        transcodeNode({ healthy: false }),
+        transcodeNode({ id: 2, type: "streaming" }),
+      ],
       isSuccess: true,
     });
-    useSettingsFormMock.mockReturnValue(makeForm({ "playback.hw_accel": "none" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "playback.hw_accel": "none" }),
+    );
 
     const container = parse(renderToStaticMarkup(<PlaybackSettings />));
 
@@ -385,19 +444,27 @@ describe("PlaybackSettings chapter thumbnail execution", () => {
   });
 
   it("stays quiet while a healthy transcode node is connected", () => {
-    useSettingsFormMock.mockReturnValue(makeForm({ "playback.hw_accel": "none" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "playback.hw_accel": "none" }),
+    );
 
     const container = parse(renderToStaticMarkup(<PlaybackSettings />));
 
-    expect(container.textContent).not.toContain("No transcode nodes are connected");
+    expect(container.textContent).not.toContain(
+      "No transcode nodes are connected",
+    );
   });
 
   it("does not warn before the node list has loaded", () => {
     useAdminNodesMock.mockReturnValue({ data: undefined, isSuccess: false });
-    useSettingsFormMock.mockReturnValue(makeForm({ "playback.hw_accel": "none" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "playback.hw_accel": "none" }),
+    );
 
     const container = parse(renderToStaticMarkup(<PlaybackSettings />));
 
-    expect(container.textContent).not.toContain("No transcode nodes are connected");
+    expect(container.textContent).not.toContain(
+      "No transcode nodes are connected",
+    );
   });
 });

@@ -80,7 +80,9 @@ describe("LimitField", () => {
     const onChange = vi.fn();
     render(<Harness initial="10" unlimitedValue="-1" onChange={onChange} />);
 
-    expect(screen.getByRole("checkbox", { name: "Unlimited" })).not.toBeChecked();
+    expect(
+      screen.getByRole("checkbox", { name: "Unlimited" }),
+    ).not.toBeChecked();
     await user.click(screen.getByRole("checkbox", { name: "Unlimited" }));
     expect(onChange).toHaveBeenLastCalledWith("-1");
     expect(screen.getByRole("checkbox", { name: "Unlimited" })).toBeChecked();
@@ -96,7 +98,13 @@ describe("LimitField", () => {
   });
 });
 
-function ScaledHarness({ initial, onChange }: { initial: string; onChange?: (v: string) => void }) {
+function ScaledHarness({
+  initial,
+  onChange,
+}: {
+  initial: string;
+  onChange?: (v: string) => void;
+}) {
   const [value, setValue] = useState(initial);
   return (
     <LimitField
@@ -116,7 +124,9 @@ describe("LimitField scaled units", () => {
   it("shows a stored byte value in the display unit", () => {
     render(<ScaledHarness initial="53687091200" />);
 
-    expect(screen.getByLabelText("Prepared file storage budget")).toHaveValue(53.687);
+    expect(screen.getByLabelText("Prepared file storage budget")).toHaveValue(
+      53.687,
+    );
   });
 
   it("stores what was typed in the underlying unit", async () => {
@@ -124,7 +134,10 @@ describe("LimitField scaled units", () => {
     const onChange = vi.fn();
     render(<ScaledHarness initial="" onChange={onChange} />);
 
-    await user.type(screen.getByLabelText("Prepared file storage budget"), "50");
+    await user.type(
+      screen.getByLabelText("Prepared file storage budget"),
+      "50",
+    );
     expect(onChange).toHaveBeenLastCalledWith("50000000000");
   });
 
@@ -133,7 +146,10 @@ describe("LimitField scaled units", () => {
     const onChange = vi.fn();
     render(<ScaledHarness initial="" onChange={onChange} />);
 
-    await user.type(screen.getByLabelText("Prepared file storage budget"), "1.5");
+    await user.type(
+      screen.getByLabelText("Prepared file storage budget"),
+      "1.5",
+    );
     expect(onChange).toHaveBeenLastCalledWith("1500000000");
   });
 
@@ -144,6 +160,8 @@ describe("LimitField scaled units", () => {
 
     await user.click(screen.getByRole("checkbox", { name: "Unlimited" }));
     expect(onChange).toHaveBeenLastCalledWith("0");
-    expect(screen.getByLabelText("Prepared file storage budget")).toHaveValue(null);
+    expect(screen.getByLabelText("Prepared file storage budget")).toHaveValue(
+      null,
+    );
   });
 });

@@ -6,6 +6,10 @@
  * One rule for every surface (settings page, overview tile) so they cannot
  * drift into disagreeing about readiness.
  */
-export function emailReady(enabled: boolean, smtpHost: string, fromAddress: string): boolean {
+export function emailReady(
+  enabled: boolean,
+  smtpHost: string,
+  fromAddress: string,
+): boolean {
   return enabled && smtpHost.trim() !== "" && fromAddress.trim() !== "";
 }

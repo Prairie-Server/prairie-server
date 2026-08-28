@@ -178,7 +178,13 @@ export default function Layout({ children }: LayoutProps) {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [isItemRoute, itemRouteLocation, pendingLocationKey, queryClient, revealItemDetails]);
+  }, [
+    isItemRoute,
+    itemRouteLocation,
+    pendingLocationKey,
+    queryClient,
+    revealItemDetails,
+  ]);
 
   const handleSidebarTransitionEnd = useCallback(
     (event: ReactTransitionEvent<HTMLDivElement>) => {
@@ -381,11 +387,18 @@ export default function Layout({ children }: LayoutProps) {
  * already in the query cache — either prefetched by `beginItemNavigation` or
  * left behind by an earlier visit.
  */
-function hasCachedItemDetail(queryClient: QueryClient, itemRouteLocation: string): boolean {
-  const target = parseItemNavigationHref(itemRouteLocation, window.location.origin);
+function hasCachedItemDetail(
+  queryClient: QueryClient,
+  itemRouteLocation: string,
+): boolean {
+  const target = parseItemNavigationHref(
+    itemRouteLocation,
+    window.location.origin,
+  );
   if (!target) return false;
   return (
-    queryClient.getQueryData(catalogKeys.itemDetail(target.contentId, target.libraryId)) !==
-    undefined
+    queryClient.getQueryData(
+      catalogKeys.itemDetail(target.contentId, target.libraryId),
+    ) !== undefined
   );
 }

@@ -9,7 +9,10 @@ import { Button } from "@/components/ui/button";
 import { useTasks, useRunTask } from "@/hooks/queries/admin/tasks";
 import { formatDateTime } from "@/lib/datetime";
 
-function numberFromResultData(data: Record<string, unknown> | undefined, key: string) {
+function numberFromResultData(
+  data: Record<string, unknown> | undefined,
+  key: string,
+) {
   const value = data?.[key];
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -56,13 +59,19 @@ function TaskActionRow({
     <div className="border-border flex flex-col gap-3 border-b py-4 last:border-b-0 sm:flex-row sm:items-center">
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-sm font-semibold">{task?.name ?? fallbackName}</h3>
-          {task?.last_execution && <TaskStatusBadge result={task.last_execution} />}
+          <h3 className="text-sm font-semibold">
+            {task?.name ?? fallbackName}
+          </h3>
+          {task?.last_execution && (
+            <TaskStatusBadge result={task.last_execution} />
+          )}
         </div>
         <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
           {task?.description ?? fallbackDescription}
         </p>
-        <p className="text-muted-foreground mt-1 text-xs">Last result: {formatTaskResult(task)}</p>
+        <p className="text-muted-foreground mt-1 text-xs">
+          Last result: {formatTaskResult(task)}
+        </p>
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -71,7 +80,12 @@ function TaskActionRow({
             <Link to={`/admin/tasks/${key}`}>History</Link>
           </Button>
         )}
-        <Button type="button" size="sm" onClick={onRun} disabled={!task || running || pending}>
+        <Button
+          type="button"
+          size="sm"
+          onClick={onRun}
+          disabled={!task || running || pending}
+        >
           {pending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
@@ -91,10 +105,14 @@ export function MarkerTasksCard() {
   const runTask = useRunTask();
   // Per-task, not one shared value: both tasks can be started back to back,
   // and the first completion must not re-enable the row that is still running.
-  const [pendingTasks, setPendingTasks] = useState<ReadonlySet<string>>(new Set());
+  const [pendingTasks, setPendingTasks] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
 
   const detectTask = tasks?.find((task) => task.key === "detect_intro_markers");
-  const contributeTask = tasks?.find((task) => task.key === "contribute_markers");
+  const contributeTask = tasks?.find(
+    (task) => task.key === "contribute_markers",
+  );
 
   async function run(key: string) {
     setPendingTasks((current) => new Set(current).add(key));

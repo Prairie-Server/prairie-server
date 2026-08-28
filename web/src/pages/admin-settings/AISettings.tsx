@@ -5,7 +5,10 @@ import { toast } from "sonner";
 
 import { AdvancedSection } from "@/components/settings/AdvancedSection";
 import { LimitField } from "@/components/settings/LimitField";
-import { ProviderTile, ProviderTileGrid } from "@/components/settings/ProviderTile";
+import {
+  ProviderTile,
+  ProviderTileGrid,
+} from "@/components/settings/ProviderTile";
 import type { ProviderTileState } from "@/components/settings/ProviderTile";
 import { SecretField } from "@/components/settings/SecretField";
 import { SettingsPageHeader } from "@/components/settings/SettingsPageHeader";
@@ -43,7 +46,11 @@ const SPEECH_AI_KEYS = [
  * held open by a staged edit — the shared text keys are edited in the text
  * tile, so counting them here would expand both tiles at once.
  */
-const SPEECH_ONLY_KEYS = ["ai.asr_base_url", "ai.asr_model", "ai.asr_api_key"] as const;
+const SPEECH_ONLY_KEYS = [
+  "ai.asr_base_url",
+  "ai.asr_model",
+  "ai.asr_api_key",
+] as const;
 /**
  * Pre-`ai.*` keys. They are still read as a fallback so a server that was
  * configured before the rename keeps working until the modern key is saved.
@@ -111,7 +118,8 @@ const TRANSCRIPTION_PRESETS = [
   {
     id: "openai",
     label: "OpenAI",
-    description: "Hosted whisper-1. The transcription key can inherit the Text AI key.",
+    description:
+      "Hosted whisper-1. The transcription key can inherit the Text AI key.",
     baseUrl: "https://api.openai.com",
     model: "whisper-1",
   },
@@ -138,7 +146,8 @@ function hostLabel(rawURL: string): string {
   const trimmed = rawURL.trim();
   if (!trimmed) return "";
   try {
-    return new URL(trimmed.includes("://") ? trimmed : `https://${trimmed}`).host;
+    return new URL(trimmed.includes("://") ? trimmed : `https://${trimmed}`)
+      .host;
   } catch {
     return trimmed;
   }
@@ -161,7 +170,8 @@ interface AITestState {
 
 function testedLabel(test: AITestState): string {
   const seconds = Math.max(0, Math.round((Date.now() - test.at) / 1000));
-  const ago = seconds < 60 ? `${seconds}s ago` : `${Math.round(seconds / 60)}m ago`;
+  const ago =
+    seconds < 60 ? `${seconds}s ago` : `${Math.round(seconds / 60)}m ago`;
   return `Tested ${ago} · ${test.durationMs} ms`;
 }
 
@@ -203,7 +213,9 @@ function ModelPanelActions({
           aria-live="polite"
           className={cn(
             "mr-auto text-[11.5px]",
-            test.ok ? "text-muted-foreground" : "text-amber-600 dark:text-amber-400",
+            test.ok
+              ? "text-muted-foreground"
+              : "text-amber-600 dark:text-amber-400",
           )}
         >
           {test.ok ? `${test.message} · ${testedLabel(test)}` : test.message}
@@ -257,7 +269,9 @@ function TuningScope({
 function PendingSaveNote({ dirty }: { dirty: boolean }) {
   if (!dirty) return null;
   return (
-    <p className="text-muted-foreground mt-2 text-xs">Unsaved. Test uses what is typed here.</p>
+    <p className="text-muted-foreground mt-2 text-xs">
+      Unsaved. Test uses what is typed here.
+    </p>
   );
 }
 
@@ -315,7 +329,12 @@ function TextModelTile({
     <ProviderTile
       name="Text model"
       tagline="Subtitle text, descriptions, and taglines"
-      logo={<Languages className="text-muted-foreground size-4" aria-hidden="true" />}
+      logo={
+        <Languages
+          className="text-muted-foreground size-4"
+          aria-hidden="true"
+        />
+      }
       state={state}
       statePill={!expanded && ready && !test?.ok ? "Configured" : undefined}
       meta={
@@ -442,7 +461,12 @@ function SpeechModelTile({
     <ProviderTile
       name="Speech-to-text"
       tagline="Writes subtitles from an audio track"
-      logo={<AudioLines className="text-muted-foreground size-4" aria-hidden="true" />}
+      logo={
+        <AudioLines
+          className="text-muted-foreground size-4"
+          aria-hidden="true"
+        />
+      }
       state={state}
       statePill={expanded ? undefined : statePill}
       meta={
@@ -464,7 +488,8 @@ function SpeechModelTile({
       </p>
       <div className="flex flex-wrap gap-2 py-2">
         {TRANSCRIPTION_PRESETS.map((preset) => {
-          const active = asrBaseURL === preset.baseUrl && asrModel === preset.model;
+          const active =
+            asrBaseURL === preset.baseUrl && asrModel === preset.model;
           return (
             <button
               key={preset.id}
@@ -496,7 +521,8 @@ function SpeechModelTile({
         <div className="my-2 flex gap-2 rounded-md border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-xs leading-relaxed">
           <CircleAlert className="mt-0.5 size-3.5 shrink-0 text-amber-600" />
           <span>
-            Empty sends audio to the text endpoint, which may not transcribe. Test it first.
+            Empty sends audio to the text endpoint, which may not transcribe.
+            Test it first.
           </span>
         </div>
       )}
@@ -531,8 +557,8 @@ function SpeechModelTile({
         test={test}
       />
       <p className="text-muted-foreground mt-2 text-xs">
-        Use a host the Silo container can reach;<code className="mx-1">localhost</code>is Silo
-        itself.
+        Use a host the Silo container can reach;
+        <code className="mx-1">localhost</code>is Silo itself.
       </p>
       <PendingSaveNote dirty={dirty} />
     </ProviderTile>
@@ -548,13 +574,21 @@ export default function AISettings() {
   const restartKeys = useRestartKeys();
   const textCheck = useCheckAdminSettingsConnection();
   const speechCheck = useCheckAdminSettingsConnection();
-  const [textResult, setTextResult] = useState<AITestState | undefined>(undefined);
-  const [speechResult, setSpeechResult] = useState<AITestState | undefined>(undefined);
+  const [textResult, setTextResult] = useState<AITestState | undefined>(
+    undefined,
+  );
+  const [speechResult, setSpeechResult] = useState<AITestState | undefined>(
+    undefined,
+  );
   const [expandedTile, setExpandedTile] = useState<string | null>(null);
 
   if (form.isLoading) {
     return (
-      <div className="max-w-5xl space-y-6" role="status" aria-label="Loading AI Services settings">
+      <div
+        className="max-w-5xl space-y-6"
+        role="status"
+        aria-label="Loading AI Services settings"
+      >
         <Skeleton className="h-9 w-48" />
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-40 w-full" />
@@ -575,21 +609,32 @@ export default function AISettings() {
     "subtitle_ai.base_url",
     "https://api.openai.com",
   );
-  const chatModel = effectiveValue("ai.chat_model", "subtitle_ai.chat_model", "gpt-4o-mini");
+  const chatModel = effectiveValue(
+    "ai.chat_model",
+    "subtitle_ai.chat_model",
+    "gpt-4o-mini",
+  );
   const asrBaseURL = value("ai.asr_base_url");
   const asrModel = value("ai.asr_model", "whisper-1");
   const textReady = textBaseURL.trim() !== "" && chatModel.trim() !== "";
   const speechUsesTextEndpoint = asrBaseURL.trim() === "";
   const speechCheckable =
-    (asrBaseURL.trim() !== "" || textBaseURL.trim() !== "") && asrModel.trim() !== "";
-  const speechCompatible = !isChatOnlyGateway(speechUsesTextEndpoint ? textBaseURL : asrBaseURL);
+    (asrBaseURL.trim() !== "" || textBaseURL.trim() !== "") &&
+    asrModel.trim() !== "";
+  const speechCompatible = !isChatOnlyGateway(
+    speechUsesTextEndpoint ? textBaseURL : asrBaseURL,
+  );
   const speechReady = speechCheckable && speechCompatible;
-  const subtitleTranslateEnabled = value("subtitle_ai.enabled", "false") === "true";
-  const transcribeEnabled = value("subtitle_ai.transcribe_enabled", "false") === "true";
+  const subtitleTranslateEnabled =
+    value("subtitle_ai.enabled", "false") === "true";
+  const transcribeEnabled =
+    value("subtitle_ai.transcribe_enabled", "false") === "true";
   const descriptionEnabled = value("metadata_ai.enabled", "false") === "true";
   const textDirty = TEXT_AI_KEYS.some((key) => form.isDirty(key));
   const speechDirty = SPEECH_ONLY_KEYS.some((key) => form.isDirty(key));
-  const advancedChangedCount = AI_ADVANCED_KEYS.filter((key) => form.isDirty(key)).length;
+  const advancedChangedCount = AI_ADVANCED_KEYS.filter((key) =>
+    form.isDirty(key),
+  ).length;
 
   function setValue(key: string, nextValue: string) {
     form.setValue(key, nextValue);
@@ -617,7 +662,10 @@ export default function AISettings() {
     } catch (error) {
       setTextResult({
         ok: false,
-        message: error instanceof Error ? error.message : "Text model connection check failed.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Text model connection check failed.",
         at: Date.now(),
         durationMs: Date.now() - started,
       });
@@ -640,7 +688,10 @@ export default function AISettings() {
     } catch (error) {
       setSpeechResult({
         ok: false,
-        message: error instanceof Error ? error.message : "Speech-to-text connection check failed.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Speech-to-text connection check failed.",
         at: Date.now(),
         durationMs: Date.now() - started,
       });
@@ -649,11 +700,21 @@ export default function AISettings() {
 
   async function save() {
     const batchSize = parseStrictInteger(value("subtitle_ai.batch_size", "40"));
-    const contextLines = parseStrictInteger(value("subtitle_ai.context_neighbors", "2"));
-    const chunkSeconds = parseStrictInteger(value("subtitle_ai.asr_chunk_seconds", "600"));
-    const quotaJobs = parseStrictInteger(value("subtitle_ai.transcribe_quota_jobs", "0"));
+    const contextLines = parseStrictInteger(
+      value("subtitle_ai.context_neighbors", "2"),
+    );
+    const chunkSeconds = parseStrictInteger(
+      value("subtitle_ai.asr_chunk_seconds", "600"),
+    );
+    const quotaJobs = parseStrictInteger(
+      value("subtitle_ai.transcribe_quota_jobs", "0"),
+    );
     const maxConcurrent = parseStrictInteger(
-      effectiveValue("ai.max_concurrent_jobs", "subtitle_ai.max_concurrent_jobs", "2"),
+      effectiveValue(
+        "ai.max_concurrent_jobs",
+        "subtitle_ai.max_concurrent_jobs",
+        "2",
+      ),
     );
 
     if (!textReady) {
@@ -669,15 +730,21 @@ export default function AISettings() {
       return;
     }
     if (contextLines === null || contextLines < 0) {
-      toast.error("Subtitle context lines must be zero or a positive whole number.");
+      toast.error(
+        "Subtitle context lines must be zero or a positive whole number.",
+      );
       return;
     }
     if (chunkSeconds === null || chunkSeconds < 60 || chunkSeconds > 600) {
-      toast.error("Transcription chunk length must be between 60 and 600 seconds.");
+      toast.error(
+        "Transcription chunk length must be between 60 and 600 seconds.",
+      );
       return;
     }
     if (quotaJobs === null || quotaJobs < 0) {
-      toast.error("Transcription limit must be zero or a positive whole number.");
+      toast.error(
+        "Transcription limit must be zero or a positive whole number.",
+      );
       return;
     }
     await form.save();
@@ -730,7 +797,9 @@ export default function AISettings() {
               asrBaseURL={asrBaseURL}
               asrModel={asrModel}
               apiKeyValue={value("ai.asr_api_key")}
-              apiKeyConfigured={form.sensitiveConfigured.includes("ai.asr_api_key")}
+              apiKeyConfigured={form.sensitiveConfigured.includes(
+                "ai.asr_api_key",
+              )}
               apiKeyCleared={form.isClearStaged("ai.asr_api_key")}
               usesTextEndpoint={speechUsesTextEndpoint}
               compatible={speechCompatible}
@@ -754,9 +823,9 @@ export default function AISettings() {
 
       <FieldGroup label="Features">
         <p className="text-muted-foreground py-3.5 text-xs leading-relaxed">
-          Nothing here runs on a schedule: subtitle work starts when a viewer or admin asks for a
-          track, and description translation when an admin queues it or a viewer opens a detail
-          page.
+          Nothing here runs on a schedule: subtitle work starts when a viewer or
+          admin asks for a track, and description translation when an admin
+          queues it or a viewer opens a detail page.
         </p>
         {/*
           A feature whose model is not configured only queues jobs that fail at
@@ -773,7 +842,9 @@ export default function AISettings() {
           disabled={!textReady && !subtitleTranslateEnabled}
           status={
             textReady ? undefined : (
-              <SettingFieldStatus tone="warn">Needs the text model</SettingFieldStatus>
+              <SettingFieldStatus tone="warn">
+                Needs the text model
+              </SettingFieldStatus>
             )
           }
           restartRequired={restartKeys.has("subtitle_ai.enabled")}
@@ -787,7 +858,9 @@ export default function AISettings() {
           disabled={!speechReady && !transcribeEnabled}
           status={
             speechReady ? undefined : (
-              <SettingFieldStatus tone="warn">Needs speech-to-text</SettingFieldStatus>
+              <SettingFieldStatus tone="warn">
+                Needs speech-to-text
+              </SettingFieldStatus>
             )
           }
           restartRequired={restartKeys.has("subtitle_ai.transcribe_enabled")}
@@ -801,7 +874,9 @@ export default function AISettings() {
           disabled={!textReady && !descriptionEnabled}
           status={
             textReady ? undefined : (
-              <SettingFieldStatus tone="warn">Needs the text model</SettingFieldStatus>
+              <SettingFieldStatus tone="warn">
+                Needs the text model
+              </SettingFieldStatus>
             )
           }
           restartRequired={restartKeys.has("metadata_ai.enabled")}
@@ -818,7 +893,9 @@ export default function AISettings() {
             { value: "auto", label: "Automatic on view" },
           ]}
           description={
-            descriptionEnabled ? undefined : "Inactive until Translate descriptions is on."
+            descriptionEnabled
+              ? undefined
+              : "Inactive until Translate descriptions is on."
           }
           restartRequired={restartKeys.has("metadata_ai.on_view")}
         />
@@ -854,7 +931,9 @@ export default function AISettings() {
               label="Surrounding lines sent for context"
               type="number"
               value={value("subtitle_ai.context_neighbors", "2")}
-              onChange={(next) => setValue("subtitle_ai.context_neighbors", next)}
+              onChange={(next) =>
+                setValue("subtitle_ai.context_neighbors", next)
+              }
               restartRequired={restartKeys.has("subtitle_ai.context_neighbors")}
             />
             <SettingField
@@ -862,7 +941,9 @@ export default function AISettings() {
               type="number"
               unit="seconds"
               value={value("subtitle_ai.asr_chunk_seconds", "600")}
-              onChange={(next) => setValue("subtitle_ai.asr_chunk_seconds", next)}
+              onChange={(next) =>
+                setValue("subtitle_ai.asr_chunk_seconds", next)
+              }
               description="Between 60 and 600."
               restartRequired={restartKeys.has("subtitle_ai.asr_chunk_seconds")}
             />
@@ -874,22 +955,30 @@ export default function AISettings() {
             <LimitField
               label="Transcriptions per account"
               value={value("subtitle_ai.transcribe_quota_jobs", "0")}
-              onChange={(next) => setValue("subtitle_ai.transcribe_quota_jobs", next)}
+              onChange={(next) =>
+                setValue("subtitle_ai.transcribe_quota_jobs", next)
+              }
               fallbackValue="10"
               hint="Every profile on the account draws from this one allowance."
-              restartRequired={restartKeys.has("subtitle_ai.transcribe_quota_jobs")}
+              restartRequired={restartKeys.has(
+                "subtitle_ai.transcribe_quota_jobs",
+              )}
             />
             <SettingField
               label="Allowance resets"
               type="select"
               value={value("subtitle_ai.transcribe_quota_period", "day")}
-              onChange={(next) => setValue("subtitle_ai.transcribe_quota_period", next)}
+              onChange={(next) =>
+                setValue("subtitle_ai.transcribe_quota_period", next)
+              }
               options={QUOTA_PERIODS.map((period) => ({
                 value: period,
                 label: `Per ${period} (rolling ${QUOTA_PERIOD_WINDOW_LABELS[period]})`,
               }))}
               description="Rolling window for the transcription allowance above."
-              restartRequired={restartKeys.has("subtitle_ai.transcribe_quota_period")}
+              restartRequired={restartKeys.has(
+                "subtitle_ai.transcribe_quota_period",
+              )}
             />
           </TuningScope>
         </AdvancedSection>

@@ -516,16 +516,22 @@ describe("AdminPlugins", () => {
     });
 
     render(
-      <MemoryRouter initialEntries={[`/admin/plugins?configure=${installation.plugin_id}`]}>
+      <MemoryRouter
+        initialEntries={[`/admin/plugins?configure=${installation.plugin_id}`]}
+      >
         <AdminPlugins />
       </MemoryRouter>,
     );
 
     const dialog = await screen.findByRole("dialog");
     expect(
-      within(dialog).getByText("Configure bindings, credentials, and runtime settings."),
+      within(dialog).getByText(
+        "Configure bindings, credentials, and runtime settings.",
+      ),
     ).toBeInTheDocument();
-    expect(within(dialog).getByText(installation.plugin_id)).toBeInTheDocument();
+    expect(
+      within(dialog).getByText(installation.plugin_id),
+    ).toBeInTheDocument();
   });
 
   it("ignores a ?configure deep link for a plugin that is not installed", async () => {
@@ -538,14 +544,18 @@ describe("AdminPlugins", () => {
     });
 
     render(
-      <MemoryRouter initialEntries={["/admin/plugins?configure=silo.not-installed"]}>
+      <MemoryRouter
+        initialEntries={["/admin/plugins?configure=silo.not-installed"]}
+      >
         <AdminPlugins />
       </MemoryRouter>,
     );
 
     await waitFor(() =>
       expect(
-        screen.queryByText("Configure bindings, credentials, and runtime settings."),
+        screen.queryByText(
+          "Configure bindings, credentials, and runtime settings.",
+        ),
       ).not.toBeInTheDocument(),
     );
   });

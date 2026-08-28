@@ -9,7 +9,10 @@ import { SETTING_DEFINITIONS, SETTING_KEYS } from "@/lib/settingsContract";
 // labels derive from the contract directly.
 describe("card quick action modes", () => {
   it("lists exactly the contract's enum members, in manifest order", () => {
-    const members = SETTING_DEFINITIONS[SETTING_KEYS.UI_CARD_QUICK_ACTIONS].values ?? [];
-    expect(CARD_QUICK_ACTION_MODES).toEqual(members.map((member) => member.value));
+    const members =
+      SETTING_DEFINITIONS[SETTING_KEYS.UI_CARD_QUICK_ACTIONS].values ?? [];
+    expect(CARD_QUICK_ACTION_MODES).toEqual(
+      members.map((member) => member.value),
+    );
   });
 });

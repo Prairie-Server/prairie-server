@@ -42,7 +42,8 @@ export function useLongPress(
 
     let timer: number | null = null;
     let suppressionCleanupTimer: number | null = null;
-    let press: { pointerId: number; clientX: number; clientY: number } | null = null;
+    let press: { pointerId: number; clientX: number; clientY: number } | null =
+      null;
     let suppressUntil = 0;
 
     function removeSuppressionListeners() {
@@ -73,7 +74,8 @@ export function useLongPress(
     function handlePointerMove(event: PointerEvent) {
       if (!press || event.pointerId !== press.pointerId) return;
       if (
-        Math.abs(event.clientX - press.clientX) > LONG_PRESS_MOVE_TOLERANCE_PX ||
+        Math.abs(event.clientX - press.clientX) >
+          LONG_PRESS_MOVE_TOLERANCE_PX ||
         Math.abs(event.clientY - press.clientY) > LONG_PRESS_MOVE_TOLERANCE_PX
       ) {
         stopTracking();
@@ -94,7 +96,11 @@ export function useLongPress(
       removeSuppressionListeners();
       if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
 
-      press = { pointerId: event.pointerId, clientX: event.clientX, clientY: event.clientY };
+      press = {
+        pointerId: event.pointerId,
+        clientX: event.clientX,
+        clientY: event.clientY,
+      };
       // These listeners are only needed while a touch/pen gesture is active
       // and for the short suppression window after a successful hold. Keeping
       // them off every idle card avoids hundreds of redundant listeners on

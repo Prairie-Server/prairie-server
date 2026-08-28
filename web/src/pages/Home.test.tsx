@@ -18,7 +18,8 @@ const mockFetchHomeSectionItems = vi.fn();
 
 vi.mock("@/hooks/queries/sections", () => ({
   useHomeLayout: (...args: unknown[]) => mockUseHomeLayout(...args),
-  fetchHomeSectionItems: (...args: unknown[]) => mockFetchHomeSectionItems(...args),
+  fetchHomeSectionItems: (...args: unknown[]) =>
+    mockFetchHomeSectionItems(...args),
   HOME_SECTION_STALE_TIME: 10 * 60 * 1000,
   HOME_SECTION_GC_TIME: 60 * 60 * 1000,
 }));
@@ -69,7 +70,10 @@ describe("Home", () => {
   });
 
   it("does not invalidate cached home sections on mount", async () => {
-    const invalidateQueries = vi.spyOn(QueryClient.prototype, "invalidateQueries");
+    const invalidateQueries = vi.spyOn(
+      QueryClient.prototype,
+      "invalidateQueries",
+    );
     const queryClient = new QueryClient();
 
     await act(async () => {
@@ -108,7 +112,9 @@ describe("Home", () => {
       section: { id: "recent", items: [], total_count: 0 },
     });
     // The client default is what evicts observer-less section entries today.
-    const queryClient = new QueryClient({ defaultOptions: { queries: { gcTime: 10 * 60_000 } } });
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { gcTime: 10 * 60_000 } },
+    });
 
     await act(async () => {
       root.render(

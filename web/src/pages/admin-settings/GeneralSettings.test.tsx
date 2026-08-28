@@ -56,7 +56,9 @@ describe("GeneralSettings", () => {
   it("opens with the title alone: no breadcrumb, lede, or status strip", () => {
     renderPage();
 
-    expect(screen.getByRole("heading", { name: "General" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "General" }),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Server name: Silo")).not.toBeInTheDocument();
     expect(screen.queryByText(/Settings ›/)).not.toBeInTheDocument();
   });
@@ -76,21 +78,21 @@ describe("GeneralSettings", () => {
   it("shows the public signup toggle in its saved state and links to invite codes", () => {
     renderPage();
 
-    expect(screen.getByRole("switch", { name: /Public signups/i })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
+    expect(
+      screen.getByRole("switch", { name: /Public signups/i }),
+    ).toHaveAttribute("aria-checked", "true");
     // Deep-links straight to the Invite Codes tab rather than the Users tab.
-    expect(screen.getByRole("link", { name: /Manage invite codes/i })).toHaveAttribute(
-      "href",
-      "/admin/users?tab=invite-codes",
-    );
+    expect(
+      screen.getByRole("link", { name: /Manage invite codes/i }),
+    ).toHaveAttribute("href", "/admin/users?tab=invite-codes");
   });
 
   it("keeps quiet log prefixes behind the advanced disclosure", () => {
     renderPage();
 
-    expect(screen.queryByLabelText("Quiet log prefixes")).not.toBeInTheDocument();
+    expect(
+      screen.queryByLabelText("Quiet log prefixes"),
+    ).not.toBeInTheDocument();
     expect(screen.getByRole("button", { name: /Advanced/i })).toHaveAttribute(
       "aria-expanded",
       "false",

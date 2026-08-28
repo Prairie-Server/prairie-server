@@ -15,7 +15,9 @@ export type AutoscanTab = (typeof AUTOSCAN_TABS)[number];
 const LEGACY_ADVANCED_TABS = new Set(["connections", "settings"]);
 
 export function normalizeTab(value: string | null): AutoscanTab {
-  return AUTOSCAN_TABS.includes(value as AutoscanTab) ? (value as AutoscanTab) : "sources";
+  return AUTOSCAN_TABS.includes(value as AutoscanTab)
+    ? (value as AutoscanTab)
+    : "sources";
 }
 
 export function isLegacyAdvancedTab(value: string | null): boolean {
@@ -24,7 +26,10 @@ export function isLegacyAdvancedTab(value: string | null): boolean {
 
 /** Every value the panel still reacts to, current or legacy. */
 function isKnownAutoscanView(value: string): boolean {
-  return AUTOSCAN_TABS.includes(value as AutoscanTab) || LEGACY_ADVANCED_TABS.has(value);
+  return (
+    AUTOSCAN_TABS.includes(value as AutoscanTab) ||
+    LEGACY_ADVANCED_TABS.has(value)
+  );
 }
 
 /**
@@ -43,7 +48,11 @@ export function buildLegacyAutoscanRedirectTarget(search: string): string {
   legacy.delete("view");
 
   const target = new URLSearchParams({ tab: "autoscan" });
-  if (legacyView && legacyView !== "sources" && isKnownAutoscanView(legacyView)) {
+  if (
+    legacyView &&
+    legacyView !== "sources" &&
+    isKnownAutoscanView(legacyView)
+  ) {
     target.set("view", legacyView);
   }
   // Anything else on the old URL is none of this redirect's business; carry it.

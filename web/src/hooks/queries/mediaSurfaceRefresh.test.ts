@@ -377,7 +377,9 @@ describe("invalidateMediaSurfaceQueries", () => {
     const homeItemsKey = sectionKeys.homeItems("recently-added");
 
     queryClient.setQueryData(homeLayoutKey, { sections: [] });
-    queryClient.setQueryData(homeItemsKey, { section: { id: "recently-added", items: [] } });
+    queryClient.setQueryData(homeItemsKey, {
+      section: { id: "recently-added", items: [] },
+    });
 
     await invalidateMediaSurfaceQueries(queryClient, { libraryId: 3 });
 

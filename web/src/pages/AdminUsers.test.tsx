@@ -21,7 +21,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/hooks/queries/admin/settings", () => ({
-  useAdminServerSettings: (...args: unknown[]) => mocks.useAdminServerSettings(...args),
+  useAdminServerSettings: (...args: unknown[]) =>
+    mocks.useAdminServerSettings(...args),
 }));
 
 vi.mock("@/hooks/queries/admin/libraries", () => ({
@@ -42,7 +43,9 @@ vi.mock("./admin-settings/InviteCodesTab", () => ({
 
 function LocationProbe() {
   const location = useLocation();
-  return <span data-testid="location">{`${location.pathname}${location.search}`}</span>;
+  return (
+    <span data-testid="location">{`${location.pathname}${location.search}`}</span>
+  );
 }
 
 function renderPage(entry = "/admin/users") {
@@ -100,7 +103,9 @@ describe("AdminUsers tabs", () => {
     renderPage();
 
     await userEvent.click(tab("Invitations"));
-    expect(screen.getByTestId("location")).toHaveTextContent("/admin/users?tab=invitations");
+    expect(screen.getByTestId("location")).toHaveTextContent(
+      "/admin/users?tab=invitations",
+    );
 
     await userEvent.click(tab("Users"));
     expect(screen.getByTestId("location")).toHaveTextContent("/admin/users");
@@ -140,7 +145,10 @@ describe("AdminUsers public-signup status badge", () => {
   });
 
   it("renders no signup-status badge while settings are still loading", () => {
-    mocks.useAdminServerSettings.mockReturnValue({ data: undefined, isLoading: true });
+    mocks.useAdminServerSettings.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
     renderPage();
 
     expect(screen.queryByText("Public signups on")).not.toBeInTheDocument();

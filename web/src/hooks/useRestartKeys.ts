@@ -1,6 +1,9 @@
 import { useMemo } from "react";
 
-import { useAdminRestartKeys, type RestartKeysResponse } from "@/hooks/queries/admin/settings";
+import {
+  useAdminRestartKeys,
+  type RestartKeysResponse,
+} from "@/hooks/queries/admin/settings";
 
 /**
  * Prefix-aware lookup over the server's restart-required registry. It is
@@ -19,12 +22,19 @@ const EMPTY_MATCHER: RestartKeyMatcher = { has: () => false };
  * to serve the endpoint — degrades to "no key needs a restart" rather than to
  * a broken page.
  */
-export function createRestartKeyMatcher(data: RestartKeysResponse | undefined): RestartKeyMatcher {
-  const exact = new Set(Array.isArray(data?.keys) ? data.keys.filter(isNonEmptyString) : []);
-  const prefixes = Array.isArray(data?.prefixes) ? data.prefixes.filter(isNonEmptyString) : [];
+export function createRestartKeyMatcher(
+  data: RestartKeysResponse | undefined,
+): RestartKeyMatcher {
+  const exact = new Set(
+    Array.isArray(data?.keys) ? data.keys.filter(isNonEmptyString) : [],
+  );
+  const prefixes = Array.isArray(data?.prefixes)
+    ? data.prefixes.filter(isNonEmptyString)
+    : [];
   if (exact.size === 0 && prefixes.length === 0) return EMPTY_MATCHER;
   return {
-    has: (key: string) => exact.has(key) || prefixes.some((prefix) => key.startsWith(prefix)),
+    has: (key: string) =>
+      exact.has(key) || prefixes.some((prefix) => key.startsWith(prefix)),
   };
 }
 

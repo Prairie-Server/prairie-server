@@ -786,7 +786,11 @@ describe("MediaItemMenu trigger visibility", () => {
   });
 
   it("shows only the quick actions selected by the resolved profile mode", () => {
-    const userState = { played: false, is_favorite: false, in_watchlist: false };
+    const userState = {
+      played: false,
+      is_favorite: false,
+      in_watchlist: false,
+    };
     const renderMenu = (quickActionMode: "favorites" | "watched" | "none") => (
       <MemoryRouter>
         <MediaItemMenu
@@ -800,15 +804,21 @@ describe("MediaItemMenu trigger visibility", () => {
     );
     const { rerender } = render(renderMenu("favorites"));
 
-    expect(screen.getByRole("button", { name: "Add to favorites" })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: "Add to favorites" }),
+    ).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Mark Watched" })).toBeNull();
 
     rerender(renderMenu("watched"));
-    expect(screen.queryByRole("button", { name: "Add to favorites" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Add to favorites" }),
+    ).toBeNull();
     expect(screen.getByRole("button", { name: "Mark Watched" })).toBeTruthy();
 
     rerender(renderMenu("none"));
-    expect(screen.queryByRole("button", { name: "Add to favorites" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Add to favorites" }),
+    ).toBeNull();
     expect(screen.queryByRole("button", { name: "Mark Watched" })).toBeNull();
     expect(screen.getByRole("button", { name: "More actions" })).toBeTruthy();
   });
@@ -1404,14 +1414,18 @@ describe("MediaItemMenu long-press action sheet", () => {
     render(<LongPressCard />);
 
     expect(screen.queryByRole("button", { name: "Mark Watched" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Add to favorites" })).toBeNull();
+    expect(
+      screen.queryByRole("button", { name: "Add to favorites" }),
+    ).toBeNull();
     expect(screen.getByRole("button", { name: "More actions" })).toBeTruthy();
 
     pressCard();
     holdPastLongPress();
 
     expect(
-      within(screen.getByRole("dialog")).getByRole("button", { name: "Mark Watched" }),
+      within(screen.getByRole("dialog")).getByRole("button", {
+        name: "Mark Watched",
+      }),
     ).toBeTruthy();
   });
 });

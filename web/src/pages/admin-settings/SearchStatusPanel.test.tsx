@@ -54,7 +54,9 @@ describe("SearchStatusPanel", () => {
 
     renderPanel();
 
-    expect(screen.queryByText(/Couldn't load search status/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Couldn't load search status/),
+    ).not.toBeInTheDocument();
     expect(screen.queryByText("Answering searches")).not.toBeInTheDocument();
   });
 
@@ -69,12 +71,18 @@ describe("SearchStatusPanel", () => {
     renderPanel();
 
     expect(
-      screen.getByText("Couldn't load search status: search status unavailable"),
+      screen.getByText(
+        "Couldn't load search status: search status unavailable",
+      ),
     ).toBeInTheDocument();
     // The maintenance tasks are exactly what an admin wants when the index is
     // unhealthy enough for the status endpoint to fail, so they stay reachable.
-    expect(screen.getByRole("link", { name: "Rebuild index" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "Sync history" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Rebuild index" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "Sync history" }),
+    ).toBeInTheDocument();
   });
 
   it("falls back to a bare message when the failure carries none", () => {
@@ -87,7 +95,9 @@ describe("SearchStatusPanel", () => {
 
     renderPanel();
 
-    expect(screen.getByText("Couldn't load search status.")).toBeInTheDocument();
+    expect(
+      screen.getByText("Couldn't load search status."),
+    ).toBeInTheDocument();
   });
 
   it("renders the status rows once the request resolves", () => {
@@ -102,6 +112,8 @@ describe("SearchStatusPanel", () => {
 
     expect(screen.getByText("Answering searches")).toBeInTheDocument();
     expect(screen.getByText("Postgres full-text")).toBeInTheDocument();
-    expect(screen.queryByText(/Couldn't load search status/)).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Couldn't load search status/),
+    ).not.toBeInTheDocument();
   });
 });

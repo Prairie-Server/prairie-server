@@ -1173,7 +1173,8 @@ export default function AppSidebar({
                         // an unconditional focus preview would bypass the hover
                         // intent delay. Keyboard focus only.
                         onFocus={(event) => {
-                          if (isKeyboardFocus(event.currentTarget)) previewTheme(id);
+                          if (isKeyboardFocus(event.currentTarget))
+                            previewTheme(id);
                         }}
                         onBlur={resetPreviewTheme}
                         aria-label={def.label}

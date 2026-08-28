@@ -23,7 +23,10 @@ function DraftPage() {
       <h1>Draft page</h1>
       <label>
         Server name
-        <input value={draft} onChange={(event) => setDraft(event.target.value)} />
+        <input
+          value={draft}
+          onChange={(event) => setDraft(event.target.value)}
+        />
       </label>
       <Link to="/other">Other page</Link>
       <Link to="/draft?tab=advanced">Same page, other tab</Link>
@@ -57,7 +60,9 @@ describe("UnsavedChangesGuard", () => {
 
     await user.click(screen.getByRole("link", { name: "Other page" }));
 
-    expect(screen.getByRole("heading", { name: "Other page" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Other page" }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
@@ -69,7 +74,9 @@ describe("UnsavedChangesGuard", () => {
     await user.click(screen.getByRole("link", { name: "Other page" }));
 
     expect(
-      await screen.findByRole("alertdialog", { name: "Discard unsaved changes?" }),
+      await screen.findByRole("alertdialog", {
+        name: "Discard unsaved changes?",
+      }),
     ).toBeInTheDocument();
     // The page behind an open modal is aria-hidden, so it is only reachable by
     // text while the prompt is up.
@@ -78,7 +85,9 @@ describe("UnsavedChangesGuard", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Draft page" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Draft page" }),
+    ).toBeInTheDocument();
     expect(screen.getByLabelText("Server name")).toHaveValue("Casa");
   });
 
@@ -89,7 +98,9 @@ describe("UnsavedChangesGuard", () => {
     await user.click(screen.getByRole("link", { name: "Other page" }));
     await user.click(await screen.findByRole("button", { name: "Discard" }));
 
-    expect(await screen.findByRole("heading", { name: "Other page" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Other page" }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
@@ -106,17 +117,23 @@ describe("UnsavedChangesGuard", () => {
 
     await user.click(screen.getByRole("button", { name: "Discard" }));
 
-    expect(await screen.findByRole("heading", { name: "Other page" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { name: "Other page" }),
+    ).toBeInTheDocument();
   });
 
   it("does not prompt when only the search string changes", async () => {
     renderGuard();
 
     await user.type(screen.getByLabelText("Server name"), "Casa");
-    await user.click(screen.getByRole("link", { name: "Same page, other tab" }));
+    await user.click(
+      screen.getByRole("link", { name: "Same page, other tab" }),
+    );
 
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Draft page" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Draft page" }),
+    ).toBeInTheDocument();
   });
 
   it("stops guarding once the form goes clean", async () => {
@@ -127,7 +144,9 @@ describe("UnsavedChangesGuard", () => {
     await user.clear(field);
     await user.click(screen.getByRole("link", { name: "Other page" }));
 
-    expect(screen.getByRole("heading", { name: "Other page" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: "Other page" }),
+    ).toBeInTheDocument();
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 });

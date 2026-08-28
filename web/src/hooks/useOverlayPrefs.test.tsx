@@ -12,7 +12,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/api/client", async () => {
-  const actual = await vi.importActual<typeof import("@/api/client")>("@/api/client");
+  const actual =
+    await vi.importActual<typeof import("@/api/client")>("@/api/client");
   return { ...actual, api: mocks.api };
 });
 
@@ -23,7 +24,10 @@ vi.mock("@/hooks/queries/settingValues", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/hooks/queries/settingValues")>()),
   useEffectiveSettings: () => ({ data: mocks.effective, isLoading: false }),
   useSetSettingValue: () => ({ mutate: mocks.setValue }),
-  useClearSettingValue: () => ({ mutateAsync: mocks.clearValue, isPending: false }),
+  useClearSettingValue: () => ({
+    mutateAsync: mocks.clearValue,
+    isPending: false,
+  }),
 }));
 
 vi.mock("@/utils/storage", () => ({
@@ -101,7 +105,9 @@ describe("useOverlayPrefs", () => {
       quick_actions_enabled: false,
       quick_actions_default: "favorites",
     });
-    const { result } = renderHook(() => useOverlayPrefs(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useOverlayPrefs(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -118,7 +124,9 @@ describe("useOverlayPrefs", () => {
       quick_actions_enabled: true,
       quick_actions_default: "favorites",
     });
-    const { result } = renderHook(() => useOverlayPrefs(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useOverlayPrefs(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -137,7 +145,9 @@ describe("useOverlayPrefs", () => {
       quick_actions_enabled: false,
       quick_actions_default: "favorites",
     });
-    const { result } = renderHook(() => useOverlayPrefs(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useOverlayPrefs(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -176,7 +186,9 @@ describe("useOverlayPrefs", () => {
       quick_actions_enabled: true,
       quick_actions_default: "favorites",
     });
-    const { result } = renderHook(() => useOverlayPrefs(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useOverlayPrefs(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -208,7 +220,9 @@ describe("useOverlayPrefs", () => {
     mocks.profileId = "profile-1";
     mocks.effective = {};
     mocks.api.mockResolvedValue({ enabled: false });
-    const { result } = renderHook(() => useOverlayPrefs(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useOverlayPrefs(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -220,7 +234,9 @@ describe("useOverlayPrefs", () => {
     mocks.profileId = "profile-1";
     mocks.effective = { "ui.card_overlays_enabled": { value: true } };
     mocks.api.mockResolvedValue({ enabled: false });
-    const { result } = renderHook(() => useOverlayPrefs(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useOverlayPrefs(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -242,7 +258,9 @@ describe("useOverlayPrefs", () => {
     mocks.profileId = "profile-1";
     mocks.effective = { "ui.card_overlays_enabled": { value: false } };
     mocks.api.mockResolvedValue({ enabled: true });
-    const { result } = renderHook(() => useOverlayPrefs(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useOverlayPrefs(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -267,7 +285,9 @@ describe("useOverlayPrefs", () => {
     mocks.profileId = "profile-1";
     mocks.effective = {};
     mocks.api.mockResolvedValue({ enabled: false });
-    const { result } = renderHook(() => useOverlayPrefs(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useOverlayPrefs(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -296,7 +316,9 @@ describe("useOverlayPrefs", () => {
     const { result } = renderHook(() => useUpdateServerSettings(), { wrapper });
 
     await act(async () => {
-      await result.current.mutateAsync({ "defaults.card_quick_actions": "favorites" });
+      await result.current.mutateAsync({
+        "defaults.card_quick_actions": "favorites",
+      });
     });
 
     expect(invalidateQueries).toHaveBeenCalledWith({
@@ -308,7 +330,12 @@ describe("useOverlayPrefs", () => {
     mocks.profileId = "profile-1";
     mocks.api.mockResolvedValue({
       enabled: true,
-      defaults: JSON.stringify({ version: 2, preset: "vibrant", order: [], items: {} }),
+      defaults: JSON.stringify({
+        version: 2,
+        preset: "vibrant",
+        order: [],
+        items: {},
+      }),
     });
     mocks.effective = effectiveOverlayValue({
       version: 2,
@@ -317,7 +344,9 @@ describe("useOverlayPrefs", () => {
       items: {},
     }).data as Record<string, { value: unknown }>;
 
-    const { result } = renderHook(() => useOverlayPrefs(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useOverlayPrefs(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -331,7 +360,12 @@ describe("useOverlayPrefs", () => {
     mocks.profileId = "profile-1";
     mocks.api.mockResolvedValue({
       enabled: true,
-      defaults: JSON.stringify({ version: 2, preset: "vibrant", order: [], items: {} }),
+      defaults: JSON.stringify({
+        version: 2,
+        preset: "vibrant",
+        order: [],
+        items: {},
+      }),
     });
     mocks.effective = effectiveOverlayValue({
       version: 2,
@@ -341,7 +375,9 @@ describe("useOverlayPrefs", () => {
     }).data as Record<string, { value: unknown }>;
     mocks.clearValue.mockResolvedValue(undefined);
 
-    const { result, rerender } = renderHook(() => useOverlayPrefs(), { wrapper: createWrapper() });
+    const { result, rerender } = renderHook(() => useOverlayPrefs(), {
+      wrapper: createWrapper(),
+    });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     await act(async () => {
@@ -355,7 +391,10 @@ describe("useOverlayPrefs", () => {
 
     // The effective read now resolves to the contract default (null), which is
     // exactly what lets the admin document apply.
-    mocks.effective = effectiveOverlayValue(null).data as Record<string, { value: unknown }>;
+    mocks.effective = effectiveOverlayValue(null).data as Record<
+      string,
+      { value: unknown }
+    >;
     rerender();
 
     expect(result.current.hasOverride).toBe(false);
@@ -365,10 +404,17 @@ describe("useOverlayPrefs", () => {
   it("treats a 404 from the canonical delete as already inheriting", async () => {
     mocks.profileId = "profile-1";
     mocks.api.mockResolvedValue({ enabled: true });
-    mocks.effective = effectiveOverlayValue(null).data as Record<string, { value: unknown }>;
-    mocks.clearValue.mockRejectedValue(new ApiClientError(404, "not_found", "no stored value"));
+    mocks.effective = effectiveOverlayValue(null).data as Record<
+      string,
+      { value: unknown }
+    >;
+    mocks.clearValue.mockRejectedValue(
+      new ApiClientError(404, "not_found", "no stored value"),
+    );
 
-    const { result } = renderHook(() => useOverlayPrefs(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useOverlayPrefs(), {
+      wrapper: createWrapper(),
+    });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     await act(async () => {
@@ -385,9 +431,13 @@ describe("useOverlayPrefs", () => {
       order: [],
       items: {},
     }).data as Record<string, { value: unknown }>;
-    mocks.clearValue.mockRejectedValue(new ApiClientError(500, "server_error", "boom"));
+    mocks.clearValue.mockRejectedValue(
+      new ApiClientError(500, "server_error", "boom"),
+    );
 
-    const { result } = renderHook(() => useOverlayPrefs(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useOverlayPrefs(), {
+      wrapper: createWrapper(),
+    });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     await act(async () => {

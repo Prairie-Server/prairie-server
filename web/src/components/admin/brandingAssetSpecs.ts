@@ -37,7 +37,10 @@ const megabytes = (bytes: number) => `${Math.round(bytes / MB)} MB`;
  * files `PrairieBrand` and the favicon link fall back to. The login background has
  * none: the auth pages just keep their theme gradient.
  */
-export const BRANDING_ASSET_SPECS: Record<BrandingAssetKind, BrandingAssetSpec> = {
+export const BRANDING_ASSET_SPECS: Record<
+  BrandingAssetKind,
+  BrandingAssetSpec
+> = {
   wordmark: {
     storedPx: WORDMARK_PX,
     maxUploadBytes: WORDMARK_MAX_BYTES,

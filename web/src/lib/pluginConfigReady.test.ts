@@ -4,7 +4,9 @@ import type { PluginInstallation } from "@/api/types";
 
 import { installationConfigReady } from "./pluginConfigReady";
 
-function installation(overrides: Partial<PluginInstallation>): PluginInstallation {
+function installation(
+  overrides: Partial<PluginInstallation>,
+): PluginInstallation {
   return {
     id: 1,
     repository_id: 1,
@@ -42,7 +44,10 @@ describe("installationConfigReady", () => {
   it("is not ready when configuration is declared but nothing is saved", () => {
     expect(
       installationConfigReady(
-        installation({ global_config_schema: [schema("account", true)], global_configs: [] }),
+        installation({
+          global_config_schema: [schema("account", true)],
+          global_configs: [],
+        }),
       ),
     ).toBe(false);
   });
@@ -52,7 +57,9 @@ describe("installationConfigReady", () => {
       installationConfigReady(
         installation({
           global_config_schema: [schema("account", true)],
-          global_configs: [{ key: "account", value: {}, configured_secrets: ["api_key"] }],
+          global_configs: [
+            { key: "account", value: {}, configured_secrets: ["api_key"] },
+          ],
         }),
       ),
     ).toBe(true);
@@ -65,7 +72,13 @@ describe("installationConfigReady", () => {
       installationConfigReady(
         installation({
           global_config_schema: [schema("advanced", true)],
-          global_configs: [{ key: "advanced", value: { advanced: false }, configured_secrets: [] }],
+          global_configs: [
+            {
+              key: "advanced",
+              value: { advanced: false },
+              configured_secrets: [],
+            },
+          ],
         }),
       ),
     ).toBe(true);
@@ -76,7 +89,13 @@ describe("installationConfigReady", () => {
       installationConfigReady(
         installation({
           global_config_schema: [schema("account", true)],
-          global_configs: [{ key: "account", value: { api_key: "   " }, configured_secrets: [] }],
+          global_configs: [
+            {
+              key: "account",
+              value: { api_key: "   " },
+              configured_secrets: [],
+            },
+          ],
         }),
       ),
     ).toBe(false);

@@ -26,7 +26,10 @@ vi.mock("@/hooks/queries/admin/settings", () => ({
   }),
   useInstallJellyfinCompatWeb: () => ({ mutate: vi.fn(), isPending: false }),
   useRemoveJellyfinCompatWeb: () => ({ mutate: vi.fn(), isPending: false }),
-  useUpdateJellyfinCompatSettings: () => ({ mutate: vi.fn(), isPending: false }),
+  useUpdateJellyfinCompatSettings: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
 }));
 
 function mockForm(overrides: Record<string, unknown> = {}) {
@@ -34,7 +37,8 @@ function mockForm(overrides: Record<string, unknown> = {}) {
     isLoading: false,
     getValue: (key: string) => {
       if (key === "audiobookshelf_compat.enabled") return "true";
-      if (key === "jellyfin_compat.public_url") return "https://jellyfin.example.test";
+      if (key === "jellyfin_compat.public_url")
+        return "https://jellyfin.example.test";
       return "";
     },
     setValue: vi.fn(),
@@ -104,6 +108,8 @@ describe("CompatibilityProxiesSettings", () => {
     const markup = renderToStaticMarkup(<CompatibilityProxiesSettings />);
 
     expect(markup).toContain("Web player version to install");
-    expect(markup).toContain("Save your changes before installing or removing the web player.");
+    expect(markup).toContain(
+      "Save your changes before installing or removing the web player.",
+    );
   });
 });

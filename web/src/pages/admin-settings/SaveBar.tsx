@@ -19,7 +19,12 @@ function plural(count: number, word: string) {
  * prompt is `RestartBanner`, rendered once by the admin shell at the top of
  * every admin page.
  */
-export function SaveBar({ dirtyCount, onSave, onDiscard, isSaving }: SaveBarProps) {
+export function SaveBar({
+  dirtyCount,
+  onSave,
+  onDiscard,
+  isSaving,
+}: SaveBarProps) {
   if (dirtyCount <= 0) return null;
 
   return (
@@ -46,7 +51,12 @@ export function SaveBar({ dirtyCount, onSave, onDiscard, isSaving }: SaveBarProp
             {plural(dirtyCount, "unsaved change")}
           </span>
           <span className="flex shrink-0 items-center gap-1.5">
-            <Button variant="ghost" size="sm" className="rounded-full" onClick={onDiscard}>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="rounded-full"
+              onClick={onDiscard}
+            >
               Discard
             </Button>
             <Button
