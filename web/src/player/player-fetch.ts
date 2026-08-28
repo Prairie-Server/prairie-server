@@ -70,12 +70,18 @@ export async function playerFetch<T>(
     if (text) {
       try {
         const parsed = JSON.parse(text) as PlayerErrorEnvelope;
-        if (typeof parsed.message === "string" && parsed.message.trim().length > 0) {
+        if (
+          typeof parsed.message === "string" &&
+          parsed.message.trim().length > 0
+        ) {
           message = parsed.message.trim();
         } else if (text.trim().length > 0) {
           message = text.trim();
         }
-        if (typeof parsed.error === "string" && parsed.error.trim().length > 0) {
+        if (
+          typeof parsed.error === "string" &&
+          parsed.error.trim().length > 0
+        ) {
           code = parsed.error.trim();
         }
       } catch {

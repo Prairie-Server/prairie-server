@@ -66,7 +66,11 @@ export function DeviceSettingGroups({
         devicePlatform,
         keysWithStoredValues: storedHere,
       }).map((group) => (
-        <SettingsGroup key={group.id} title={group.title} description={group.description}>
+        <SettingsGroup
+          key={group.id}
+          title={group.title}
+          description={group.description}
+        >
           {group.keys.map((key) => (
             <DeviceSettingRow
               key={key}
@@ -166,7 +170,8 @@ function DeviceSettingRow({
               "text-muted-foreground hover:text-foreground order-2 inline-flex min-h-11 shrink-0 items-center gap-1 text-[13px] transition-colors disabled:opacity-50 sm:order-none sm:min-h-0 sm:text-xs",
               // Inline rows have no room beside the switch; the reset sits
               // under the description instead.
-              inlineControl && "col-start-1 row-start-2 -mt-1 sm:col-auto sm:row-auto sm:mt-0",
+              inlineControl &&
+                "col-start-1 row-start-2 -mt-1 sm:col-auto sm:row-auto sm:mt-0",
             )}
           >
             <RotateCcw className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
@@ -186,7 +191,9 @@ function DeviceSettingRow({
   );
 }
 
-function constraintExplanation(effective: EffectiveSetting | undefined): string {
+function constraintExplanation(
+  effective: EffectiveSetting | undefined,
+): string {
   if (!effective) return "";
   const permitted = effective.value;
   if (effective.constraint_kind === "locked") {
@@ -194,7 +201,10 @@ function constraintExplanation(effective: EffectiveSetting | undefined): string 
   }
   // The stored preference is still theirs; it is just capped today. Saying so
   // beats silently showing a value they did not choose.
-  if (effective.stored_value !== undefined && effective.stored_value !== permitted) {
+  if (
+    effective.stored_value !== undefined &&
+    effective.stored_value !== permitted
+  ) {
     return `Your household settings limit this to ${String(permitted)}, so your choice of ${String(effective.stored_value)} isn't available right now.`;
   }
   return "Your household settings limit this option.";
@@ -254,7 +264,8 @@ function DeviceSettingControl({
   }
 
   if (control === "slider" || control === "stepper") {
-    const numeric = typeof value === "number" ? value : Number(definition.defaultValue ?? 0);
+    const numeric =
+      typeof value === "number" ? value : Number(definition.defaultValue ?? 0);
     return (
       <SettingSlider
         className="order-1 flex w-full items-center gap-3 sm:order-none sm:max-w-[260px]"
@@ -278,9 +289,16 @@ function DeviceSettingControl({
   // typed rather than fetched from the catalog. A permitted_values constraint
   // pins the list closed, so the free entry disappears with it.
   if (definition.type === "language_tag") {
-    const permitted = (effective as { permitted_values?: unknown[] } | undefined)?.permitted_values;
-    const languageOptions = namedLanguageOptionsFor(settingKey, asString || undefined).filter(
-      (option) => !permitted?.length || permitted.some((entry) => String(entry) === option.value),
+    const permitted = (
+      effective as { permitted_values?: unknown[] } | undefined
+    )?.permitted_values;
+    const languageOptions = namedLanguageOptionsFor(
+      settingKey,
+      asString || undefined,
+    ).filter(
+      (option) =>
+        !permitted?.length ||
+        permitted.some((entry) => String(entry) === option.value),
     );
     return (
       <div className="order-1 w-full sm:order-none sm:w-[220px] sm:min-w-[180px]">
@@ -291,10 +309,14 @@ function DeviceSettingControl({
           disabled={disabled}
           allowOther={!permitted?.length}
           className="h-11 w-full text-base sm:h-9 sm:text-sm"
-          onValueChange={(next) => onChange(settingKey, next === EMPTY_SELECT_VALUE ? null : next)}
+          onValueChange={(next) =>
+            onChange(settingKey, next === EMPTY_SELECT_VALUE ? null : next)
+          }
         >
           {definition.nullable && (
-            <SelectItem value={EMPTY_SELECT_VALUE}>{definition.unsetLabel ?? "Unset"}</SelectItem>
+            <SelectItem value={EMPTY_SELECT_VALUE}>
+              {definition.unsetLabel ?? "Unset"}
+            </SelectItem>
           )}
         </LanguageSelect>
       </div>
@@ -306,14 +328,22 @@ function DeviceSettingControl({
   // showing nothing at all. Present the range as bandwidth choices people
   // recognise instead, and keep the stored value visible if it is not one of
   // them.
-  const numericChoices = numericSelectChoices(settingKey, definition, options, asString);
+  const numericChoices = numericSelectChoices(
+    settingKey,
+    definition,
+    options,
+    asString,
+  );
   if (numericChoices) {
     return (
       <Select
         value={asString === "" ? EMPTY_SELECT_VALUE : asString}
         disabled={disabled}
         onValueChange={(next) =>
-          onChange(settingKey, next === EMPTY_SELECT_VALUE ? null : Number(next))
+          onChange(
+            settingKey,
+            next === EMPTY_SELECT_VALUE ? null : Number(next),
+          )
         }
       >
         <SelectTrigger
@@ -345,7 +375,9 @@ function DeviceSettingControl({
       onValueChange={(next) =>
         onChange(
           settingKey,
-          next === EMPTY_SELECT_VALUE ? null : typedSelectValue(settingKey, next),
+          next === EMPTY_SELECT_VALUE
+            ? null
+            : typedSelectValue(settingKey, next),
         )
       }
     >
@@ -376,13 +408,19 @@ function DeviceSettingControl({
  * manifest's list for a viewer under a policy cap, so a child's quality picker
  * shows what they can have rather than offering 4K and delivering 1080p.
  */
-function permittedOptions(settingKey: SettingKey, effective: EffectiveSetting | undefined) {
+function permittedOptions(
+  settingKey: SettingKey,
+  effective: EffectiveSetting | undefined,
+) {
   const definition = SETTING_DEFINITIONS[settingKey];
   const all = optionsFor(definition);
-  const permitted = (effective as { permitted_values?: unknown[] } | undefined)?.permitted_values;
+  const permitted = (effective as { permitted_values?: unknown[] } | undefined)
+    ?.permitted_values;
   if (!permitted?.length) return all;
   const allowed = new Set(permitted.map((entry) => String(entry)));
-  const narrowed = all.filter((option) => option.value === "" || allowed.has(option.value));
+  const narrowed = all.filter(
+    (option) => option.value === "" || allowed.has(option.value),
+  );
   return narrowed.length > 0 ? narrowed : all;
 }
 
@@ -400,11 +438,13 @@ function numericSelectChoices(
   options: { value: string; label: string }[],
   currentValue: string,
 ): { value: string; label: string }[] | null {
-  const isNumeric = definition.type === "integer" || definition.type === "number";
+  const isNumeric =
+    definition.type === "integer" || definition.type === "number";
   const hasMembers = options.some((option) => option.value !== "");
   if (!isNumeric || hasMembers) return null;
 
-  const unsetLabel = settingKey === "playback.max_bitrate_kbps" ? "No limit" : "Unset";
+  const unsetLabel =
+    settingKey === "playback.max_bitrate_kbps" ? "No limit" : "Unset";
   return bitrateSelectChoices(definition, currentValue, unsetLabel);
 }
 

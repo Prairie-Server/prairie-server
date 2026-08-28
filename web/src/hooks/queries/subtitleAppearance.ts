@@ -7,7 +7,10 @@ import {
   type SettingIdentity,
 } from "@/hooks/queries/settingValues";
 import { SETTING_KEYS } from "@/lib/settingsContract";
-import { parseSubtitleAppearance, type SubtitleAppearance } from "@/lib/subtitleAppearance";
+import {
+  parseSubtitleAppearance,
+  type SubtitleAppearance,
+} from "@/lib/subtitleAppearance";
 
 /**
  * The one place subtitle appearance is read and written.
@@ -31,7 +34,9 @@ import { parseSubtitleAppearance, type SubtitleAppearance } from "@/lib/subtitle
 const DEVICE_SCOPE: SettingIdentity = { scope: "profile_device" };
 
 export function useSubtitleAppearanceSetting() {
-  const query = useEffectiveSettings({ keys: [SETTING_KEYS.PLAYBACK_SUBTITLE_APPEARANCE] });
+  const query = useEffectiveSettings({
+    keys: [SETTING_KEYS.PLAYBACK_SUBTITLE_APPEARANCE],
+  });
   const setValue = useSetSettingValue();
   const clearValue = useClearSettingValue();
 
@@ -39,7 +44,10 @@ export function useSubtitleAppearanceSetting() {
   // The manifest default is the same object DEFAULT_SUBTITLE_APPEARANCE spells,
   // and the effective endpoint always answers, so an unset value arrives as the
   // default rather than as nothing to parse.
-  const appearance = useMemo(() => parseSubtitleAppearance(entry?.value), [entry?.value]);
+  const appearance = useMemo(
+    () => parseSubtitleAppearance(entry?.value),
+    [entry?.value],
+  );
 
   /**
    * Whether this device holds its own override, which is what gates the

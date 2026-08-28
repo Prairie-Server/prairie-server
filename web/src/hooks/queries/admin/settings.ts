@@ -83,7 +83,8 @@ export interface CatalogSearchStatus {
 export function useAdminServerSettings() {
   return useQuery({
     queryKey: adminKeys.serverSettings(),
-    queryFn: () => api<ServerSettings>("/admin/settings/effective").then((d) => d ?? {}),
+    queryFn: () =>
+      api<ServerSettings>("/admin/settings/effective").then((d) => d ?? {}),
     staleTime: 30_000,
   });
 }
@@ -110,12 +111,17 @@ export function useUpdateServerSettings() {
         queryClient.invalidateQueries({ queryKey: adminKeys.serverSettings() }),
         queryClient.invalidateQueries({ queryKey: adminKeys.serverStatus() }),
         queryClient.invalidateQueries({
-          queryKey: [...adminKeys.serverSettings(), "sensitive-status"] as const,
+          queryKey: [
+            ...adminKeys.serverSettings(),
+            "sensitive-status",
+          ] as const,
         }),
       ];
       if (keys.some((key) => key.startsWith("jellyfin_compat."))) {
         invalidations.push(
-          queryClient.invalidateQueries({ queryKey: adminKeys.jellyfinCompatStatus() }),
+          queryClient.invalidateQueries({
+            queryKey: adminKeys.jellyfinCompatStatus(),
+          }),
           // The user-facing Connect Apps card reads the same settings and
           // caches them for minutes, so it has to drop its copy too.
           queryClient.invalidateQueries({ queryKey: compatKeys.all }),
@@ -123,10 +129,16 @@ export function useUpdateServerSettings() {
       }
       if (keys.some((key) => key.startsWith("catalog.search."))) {
         invalidations.push(
-          queryClient.invalidateQueries({ queryKey: adminKeys.catalogSearchStatus() }),
+          queryClient.invalidateQueries({
+            queryKey: adminKeys.catalogSearchStatus(),
+          }),
         );
       }
-      if (keys.some((key) => key.startsWith("branding.") || key.startsWith("ui.admin_"))) {
+      if (
+        keys.some(
+          (key) => key.startsWith("branding.") || key.startsWith("ui.admin_"),
+        )
+      ) {
         invalidations.push(
           queryClient.invalidateQueries({ queryKey: themeKeys.adminCss() }),
           queryClient.invalidateQueries({ queryKey: themeKeys.branding() }),
@@ -134,13 +146,17 @@ export function useUpdateServerSettings() {
       }
       if (keys.some(affectsOverlayConfig)) {
         invalidations.push(
-          queryClient.invalidateQueries({ queryKey: settingsKeys.overlayConfig() }),
+          queryClient.invalidateQueries({
+            queryKey: settingsKeys.overlayConfig(),
+          }),
         );
       }
       await Promise.all(invalidations);
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to update settings");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update settings",
+      );
     },
   });
 }
@@ -158,24 +174,34 @@ export function useUpdateServerSetting() {
         queryClient.invalidateQueries({ queryKey: adminKeys.serverSettings() }),
         queryClient.invalidateQueries({ queryKey: adminKeys.serverStatus() }),
         queryClient.invalidateQueries({
-          queryKey: [...adminKeys.serverSettings(), "sensitive-status"] as const,
+          queryKey: [
+            ...adminKeys.serverSettings(),
+            "sensitive-status",
+          ] as const,
         }),
       ];
       if (variables.key.startsWith("jellyfin_compat.")) {
         invalidations.push(
-          queryClient.invalidateQueries({ queryKey: adminKeys.jellyfinCompatStatus() }),
+          queryClient.invalidateQueries({
+            queryKey: adminKeys.jellyfinCompatStatus(),
+          }),
         );
       }
       if (variables.key.startsWith("catalog.search.")) {
         invalidations.push(
-          queryClient.invalidateQueries({ queryKey: adminKeys.catalogSearchStatus() }),
+          queryClient.invalidateQueries({
+            queryKey: adminKeys.catalogSearchStatus(),
+          }),
         );
       }
       // Branding and admin theme settings are served live by public endpoints
       // (`/theme/branding`, `/theme/admin-css`) and require no restart. Refresh
       // those caches so saved changes apply immediately instead of waiting out
       // the 60s / 5min stale windows.
-      if (variables.key.startsWith("branding.") || variables.key.startsWith("ui.admin_")) {
+      if (
+        variables.key.startsWith("branding.") ||
+        variables.key.startsWith("ui.admin_")
+      ) {
         invalidations.push(
           queryClient.invalidateQueries({ queryKey: themeKeys.adminCss() }),
           queryClient.invalidateQueries({ queryKey: themeKeys.branding() }),
@@ -183,13 +209,17 @@ export function useUpdateServerSetting() {
       }
       if (affectsOverlayConfig(variables.key)) {
         invalidations.push(
-          queryClient.invalidateQueries({ queryKey: settingsKeys.overlayConfig() }),
+          queryClient.invalidateQueries({
+            queryKey: settingsKeys.overlayConfig(),
+          }),
         );
       }
       await Promise.all(invalidations);
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to update setting");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update setting",
+      );
     },
   });
 }
@@ -197,14 +227,21 @@ export function useUpdateServerSetting() {
 export function useAdminSensitiveStatus() {
   return useQuery({
     queryKey: [...adminKeys.serverSettings(), "sensitive-status"] as const,
-    queryFn: () => api<SensitiveStatusResponse>("/admin/settings/sensitive-status"),
+    queryFn: () =>
+      api<SensitiveStatusResponse>("/admin/settings/sensitive-status"),
     staleTime: 30_000,
   });
 }
 
 export function useCheckAdminSettingsConnection() {
   return useMutation({
-    mutationFn: ({ kind, body }: { kind: string; body: AdminSettingsConnectionCheckRequest }) =>
+    mutationFn: ({
+      kind,
+      body,
+    }: {
+      kind: string;
+      body: AdminSettingsConnectionCheckRequest;
+    }) =>
       api<ConnectionCheckResponse>(`/admin/settings/check/${kind}`, {
         method: "POST",
         body: JSON.stringify(body),
@@ -238,7 +275,9 @@ export function useUpdateJellyfinCompatSettings() {
       }),
     onSuccess: async () => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: adminKeys.jellyfinCompatStatus() }),
+        queryClient.invalidateQueries({
+          queryKey: adminKeys.jellyfinCompatStatus(),
+        }),
         queryClient.invalidateQueries({ queryKey: adminKeys.serverSettings() }),
         queryClient.invalidateQueries({ queryKey: adminKeys.serverStatus() }),
         // Keeps the user-facing Connect Apps card from serving a stale
@@ -247,7 +286,11 @@ export function useUpdateJellyfinCompatSettings() {
       ]);
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to update Jellyfin compatibility");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to update Jellyfin compatibility",
+      );
     },
   });
 }
@@ -263,13 +306,19 @@ export function useInstallJellyfinCompatWeb() {
     onSuccess: async () => {
       toast.success("Jellyfin Web install started");
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: adminKeys.jellyfinCompatStatus() }),
+        queryClient.invalidateQueries({
+          queryKey: adminKeys.jellyfinCompatStatus(),
+        }),
         queryClient.invalidateQueries({ queryKey: adminKeys.serverSettings() }),
         queryClient.invalidateQueries({ queryKey: adminKeys.serverStatus() }),
       ]);
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to install Jellyfin Web assets");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to install Jellyfin Web assets",
+      );
     },
   });
 }
@@ -285,13 +334,19 @@ export function useRemoveJellyfinCompatWeb() {
     onSuccess: async () => {
       toast.success("Jellyfin Web removal started");
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: adminKeys.jellyfinCompatStatus() }),
+        queryClient.invalidateQueries({
+          queryKey: adminKeys.jellyfinCompatStatus(),
+        }),
         queryClient.invalidateQueries({ queryKey: adminKeys.serverSettings() }),
         queryClient.invalidateQueries({ queryKey: adminKeys.serverStatus() }),
       ]);
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to remove Jellyfin Web assets");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to remove Jellyfin Web assets",
+      );
     },
   });
 }

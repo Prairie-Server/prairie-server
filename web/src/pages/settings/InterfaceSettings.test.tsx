@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { SETTING_KEYS } from "@/lib/settingsContract";
@@ -23,7 +29,8 @@ vi.mock("@/hooks/queries/libraries", () => ({
 
 vi.mock("@/hooks/queries/settingValues", () => ({
   useSetSettingValue: (...args: unknown[]) => mocks.useSetSettingValue(...args),
-  useClearSettingValue: (...args: unknown[]) => mocks.useClearSettingValue(...args),
+  useClearSettingValue: (...args: unknown[]) =>
+    mocks.useClearSettingValue(...args),
 }));
 
 vi.mock("sonner", () => ({
@@ -56,7 +63,10 @@ describe("InterfaceSettings card resets", () => {
       isUnavailable: false,
     });
     mocks.useUserLibraries.mockReturnValue({ data: [] });
-    mocks.useSetSettingValue.mockReturnValue({ isPending: false, mutateAsync: setMutateAsync });
+    mocks.useSetSettingValue.mockReturnValue({
+      isPending: false,
+      mutateAsync: setMutateAsync,
+    });
     mocks.useClearSettingValue.mockReturnValue({
       isPending: false,
       mutateAsync: clearMutateAsync,
@@ -68,7 +78,9 @@ describe("InterfaceSettings card resets", () => {
   it("resets the web-family card preference at profile_client scope", async () => {
     render(<InterfaceSettings />);
 
-    const reset = screen.getByRole("button", { name: "Reset web-family card layout" });
+    const reset = screen.getByRole("button", {
+      name: "Reset web-family card layout",
+    });
     expect(reset).toHaveAccessibleDescription(
       "Remove the layout shared by web browsers and inherit the profile or app default.",
     );
@@ -99,7 +111,9 @@ describe("InterfaceSettings card resets", () => {
     expect(
       screen.queryByRole("button", { name: "Reset web-family card layout" }),
     ).not.toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Use web-family layout" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Use web-family layout" }),
+    );
 
     await waitFor(() =>
       expect(clearMutateAsync).toHaveBeenCalledWith({
@@ -132,7 +146,9 @@ describe("InterfaceSettings card resets", () => {
     });
 
     render(<InterfaceSettings />);
-    fireEvent.click(screen.getByRole("button", { name: "Remove Movies · Library" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Remove Movies · Library" }),
+    );
     expect(screen.queryByText("Movies · Library")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Reset to default" }));
@@ -167,10 +183,14 @@ describe("InterfaceSettings card resets", () => {
     }));
 
     const view = render(<InterfaceSettings />);
-    fireEvent.click(screen.getByRole("button", { name: "Remove Movies · Library" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Remove Movies · Library" }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Save menu" }));
     await waitFor(() => expect(setMutateAsync).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Save menu" })).toBeDisabled());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Save menu" })).toBeDisabled(),
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Remove Calendar" }));
     effectiveMenu = {
@@ -203,10 +223,14 @@ describe("InterfaceSettings card resets", () => {
     });
 
     render(<InterfaceSettings />);
-    fireEvent.click(screen.getByRole("button", { name: "Remove Movies · Library" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Remove Movies · Library" }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Save menu" }));
     await waitFor(() => expect(setMutateAsync).toHaveBeenCalledTimes(1));
-    await waitFor(() => expect(screen.getByRole("button", { name: "Save menu" })).toBeDisabled());
+    await waitFor(() =>
+      expect(screen.getByRole("button", { name: "Save menu" })).toBeDisabled(),
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Reset to default" }));
 
@@ -237,7 +261,9 @@ describe("InterfaceSettings card resets", () => {
     });
 
     render(<InterfaceSettings />);
-    fireEvent.click(screen.getByRole("button", { name: "Remove Movies · Library" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Remove Movies · Library" }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Reset to default" }));
 
     expect(clearMutateAsync).not.toHaveBeenCalled();
@@ -260,9 +286,15 @@ describe("InterfaceSettings card resets", () => {
 
     render(<InterfaceSettings />);
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Server upgrade required");
-    expect(screen.queryByRole("radiogroup", { name: "Poster size" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Save menu" })).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Server upgrade required",
+    );
+    expect(
+      screen.queryByRole("radiogroup", { name: "Poster size" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Save menu" }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps editors closed when effective customization could not be loaded", () => {
@@ -280,10 +312,18 @@ describe("InterfaceSettings card resets", () => {
 
     render(<InterfaceSettings />);
 
-    expect(screen.getByRole("alert")).toHaveTextContent("Customization unavailable");
-    expect(screen.getByRole("alert")).toHaveTextContent("Editing stays disabled");
-    expect(screen.queryByRole("radiogroup", { name: "Poster size" })).not.toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Save menu" })).not.toBeInTheDocument();
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Customization unavailable",
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Editing stays disabled",
+    );
+    expect(
+      screen.queryByRole("radiogroup", { name: "Poster size" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Save menu" }),
+    ).not.toBeInTheDocument();
     expect(setMutateAsync).not.toHaveBeenCalled();
     expect(clearMutateAsync).not.toHaveBeenCalled();
   });

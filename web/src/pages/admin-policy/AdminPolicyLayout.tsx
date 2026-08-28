@@ -20,12 +20,14 @@ const PIPELINE_STEPS = [
   {
     icon: PackageCheck,
     title: "Prairie decides the baseline",
-    detail: "Built-in rules ship with every release: profile restrictions, ratings, limits.",
+    detail:
+      "Built-in rules ship with every release: profile restrictions, ratings, limits.",
   },
   {
     icon: PenLine,
     title: "Your overrides narrow it",
-    detail: "Custom rules can tighten the baseline — never grant more than it allows.",
+    detail:
+      "Custom rules can tighten the baseline — never grant more than it allows.",
   },
   {
     icon: ScrollText,
@@ -40,10 +42,15 @@ function PolicyPipelineStrip() {
       <ol className="grid gap-4 md:grid-cols-3">
         {PIPELINE_STEPS.map((step, index) => (
           <li key={step.title} className="relative flex items-start gap-3">
-            <step.icon aria-hidden className="text-muted-foreground mt-0.5 size-4 shrink-0" />
+            <step.icon
+              aria-hidden
+              className="text-muted-foreground mt-0.5 size-4 shrink-0"
+            />
             <div className="min-w-0">
               <p className="text-sm font-medium">{step.title}</p>
-              <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">{step.detail}</p>
+              <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
+                {step.detail}
+              </p>
             </div>
             {index < PIPELINE_STEPS.length - 1 && (
               <ArrowRight
@@ -86,20 +93,26 @@ export default function AdminPolicyLayout() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Policy</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Household access rules: what Prairie allows by default, and where you tighten it.
+            Household access rules: what Prairie allows by default, and where
+            you tighten it.
           </p>
         </div>
       </div>
 
       {capability.isLoading && (
-        <p className="text-muted-foreground text-sm">Loading policy capability...</p>
+        <p className="text-muted-foreground text-sm">
+          Loading policy capability...
+        </p>
       )}
 
       {unavailable && (
         <div className="surface-panel-subtle rounded-2xl p-6">
-          <h2 className="text-lg font-semibold">Policy workspace unavailable</h2>
+          <h2 className="text-lg font-semibold">
+            Policy workspace unavailable
+          </h2>
           <p className="text-muted-foreground mt-2 text-sm">
-            The policy engine or editor API is not available from this server process.
+            The policy engine or editor API is not available from this server
+            process.
           </p>
         </div>
       )}
@@ -122,7 +135,9 @@ export default function AdminPolicyLayout() {
               <PolicyVendorViewer />
             </TabsContent>
             <TabsContent value="decisions" className="space-y-5">
-              <PolicyDecisionLogTable domains={capability.data.decision_types} />
+              <PolicyDecisionLogTable
+                domains={capability.data.decision_types}
+              />
             </TabsContent>
           </Tabs>
         </>

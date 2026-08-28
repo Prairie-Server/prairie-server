@@ -32,7 +32,10 @@ export function detectMobilePlatform(ua: string): MobilePlatform | null {
  * Builds the prairie:// deep link that opens the native invite claim flow.
  * Returns null for origins the apps can't talk to (non-http(s), userinfo).
  */
-export function buildInviteDeepLink(pageOrigin: string, token: string): string | null {
+export function buildInviteDeepLink(
+  pageOrigin: string,
+  token: string,
+): string | null {
   let origin: URL;
   try {
     origin = new URL(pageOrigin);

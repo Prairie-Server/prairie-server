@@ -12,7 +12,8 @@ vi.mock("react-router", () => ({
 }));
 
 vi.mock("@/hooks/queries/catalogRead", () => ({
-  useCatalogItemDetail: (...args: unknown[]) => mocks.useCatalogItemDetail(...args),
+  useCatalogItemDetail: (...args: unknown[]) =>
+    mocks.useCatalogItemDetail(...args),
 }));
 
 vi.mock("sonner", () => ({
@@ -42,7 +43,9 @@ vi.mock("@/pages/ItemDetail/AudiobookContent", () => ({
 }));
 
 vi.mock("@/pages/ItemDetail/EbookContent", () => ({
-  default: ({ item }: { item: { title: string } }) => <div>Ebook: {item.title}</div>,
+  default: ({ item }: { item: { title: string } }) => (
+    <div>Ebook: {item.title}</div>
+  ),
 }));
 
 import ItemDetail from "./index";
@@ -62,12 +65,19 @@ describe("ItemDetail", () => {
     const markup = renderToStaticMarkup(<ItemDetail />);
 
     expect(markup).toContain("Catalog Detail");
-    expect(mocks.useCatalogItemDetail).toHaveBeenCalledWith("movie-123", undefined);
+    expect(mocks.useCatalogItemDetail).toHaveBeenCalledWith(
+      "movie-123",
+      undefined,
+    );
   });
 
   it("routes ebook items to ebook detail content", () => {
     mocks.useCatalogItemDetail.mockReturnValue({
-      data: { content_id: "ebook-123", title: "A Psalm for the Wild-Built", type: "ebook" },
+      data: {
+        content_id: "ebook-123",
+        title: "A Psalm for the Wild-Built",
+        type: "ebook",
+      },
       isLoading: false,
       error: null,
     });

@@ -37,9 +37,15 @@ export function MetadataTranslatePanel({ item }: { item: ItemDetail }) {
   const [watching, setWatching] = useState(false);
 
   const translateMutation = useTranslateItemMetadata(item.content_id);
-  const { data: jobsData } = useMetadataTranslationJobs(item.content_id, enabled && watching);
+  const { data: jobsData } = useMetadataTranslationJobs(
+    item.content_id,
+    enabled && watching,
+  );
 
-  const activeJob = useMemo(() => (jobsData?.jobs ?? []).find(isActive), [jobsData]);
+  const activeJob = useMemo(
+    () => (jobsData?.jobs ?? []).find(isActive),
+    [jobsData],
+  );
   const lastJob = jobsData?.jobs?.[0];
 
   // When the job we were watching reaches a terminal state, surface the
@@ -59,7 +65,9 @@ export function MetadataTranslatePanel({ item }: { item: ItemDetail }) {
           ? "Nothing to translate — all descriptions are already localized."
           : `Translated ${lastJob.fields_done} description${lastJob.fields_done === 1 ? "" : "s"}.`,
       );
-      void invalidateMediaSurfaceQueries(queryClient, { itemId: item.content_id });
+      void invalidateMediaSurfaceQueries(queryClient, {
+        itemId: item.content_id,
+      });
     } else if (lastJob.status === "failed") {
       toast.error(lastJob.error_message || "Translation failed.");
     }
@@ -82,7 +90,11 @@ export function MetadataTranslatePanel({ item }: { item: ItemDetail }) {
       return;
     }
     translateMutation.mutate(
-      { target_language: targetLang, include_children: translatesChildren, force },
+      {
+        target_language: targetLang,
+        include_children: translatesChildren,
+        force,
+      },
       { onSuccess: () => setWatching(true) },
     );
   }
@@ -94,8 +106,9 @@ export function MetadataTranslatePanel({ item }: { item: ItemDetail }) {
         <span className="text-sm font-medium">Translate with AI</span>
       </div>
       <p className="text-muted-foreground text-xs">
-        {description} into the chosen language. Translations are served to libraries using that
-        metadata language; provider data replaces them when it becomes available.
+        {description} into the chosen language. Translations are served to
+        libraries using that metadata language; provider data replaces them when
+        it becomes available.
       </p>
       <div className="flex flex-wrap items-end gap-3">
         <div className="space-y-1">
@@ -118,7 +131,12 @@ export function MetadataTranslatePanel({ item }: { item: ItemDetail }) {
           </select>
         </div>
         <div className="flex h-9 items-center gap-2">
-          <Switch id="translate-force" checked={force} onCheckedChange={setForce} disabled={busy} />
+          <Switch
+            id="translate-force"
+            checked={force}
+            onCheckedChange={setForce}
+            disabled={busy}
+          />
           <Label htmlFor="translate-force" className="text-xs">
             Re-translate existing
           </Label>

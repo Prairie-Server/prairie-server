@@ -14,8 +14,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
+    "@tanstack/react-query",
+  );
   return {
     ...actual,
     useQuery: (...args: unknown[]) => mocks.useQuery(...args),
@@ -57,7 +58,9 @@ vi.mock("@/components/RequestToAddSection", () => ({
 vi.mock("@/components/ui/dialog", () => ({
   Dialog: ({ children, open }: { children: ReactNode; open: boolean }) =>
     open ? <div data-testid="dialog">{children}</div> : null,
-  DialogContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  DialogContent: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
   DialogTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
 }));
 
@@ -110,7 +113,9 @@ const browseFixture = {
   backdrop_thumbhash: "",
 };
 
-function renderSearchMarkup(props: Partial<Parameters<typeof GlobalSearch>[0]> = {}) {
+function renderSearchMarkup(
+  props: Partial<Parameters<typeof GlobalSearch>[0]> = {},
+) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
   });
@@ -151,7 +156,10 @@ describe("GlobalSearch", () => {
   });
 
   it("renders preview rows and an approximate more-results hint", () => {
-    const markup = renderSearchMarkup({ defaultOpen: true, initialQuery: "Test" });
+    const markup = renderSearchMarkup({
+      defaultOpen: true,
+      initialQuery: "Test",
+    });
 
     expect(markup).toContain('data-testid="dialog"');
     expect(markup).toContain('placeholder="Search library..."');
@@ -172,7 +180,10 @@ describe("GlobalSearch", () => {
       isError: false,
     });
 
-    const markup = renderSearchMarkup({ defaultOpen: true, initialQuery: "Test" });
+    const markup = renderSearchMarkup({
+      defaultOpen: true,
+      initialQuery: "Test",
+    });
     expect(markup).toContain('href="/watch/movie-99"');
     expect(markup).toContain('aria-label="Play Test Movie"');
     expect(markup).toContain('data-size="compact"');
@@ -195,7 +206,10 @@ describe("GlobalSearch", () => {
       isError: false,
     });
 
-    const markup = renderSearchMarkup({ defaultOpen: true, initialQuery: "Reader" });
+    const markup = renderSearchMarkup({
+      defaultOpen: true,
+      initialQuery: "Reader",
+    });
 
     expect(markup).toContain("2020 · Ebook");
   });
@@ -213,7 +227,9 @@ describe("GlobalSearch", () => {
     );
 
     expect(mocks.useQuery).toHaveBeenCalled();
-    const lastCall = mocks.useQuery.mock.calls[mocks.useQuery.mock.calls.length - 1]![0] as {
+    const lastCall = mocks.useQuery.mock.calls[
+      mocks.useQuery.mock.calls.length - 1
+    ]![0] as {
       enabled: boolean;
     };
     expect(lastCall.enabled).toBe(false);
@@ -266,7 +282,9 @@ describe("GlobalSearch", () => {
       isError: false,
     });
 
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
@@ -283,16 +301,26 @@ describe("GlobalSearch", () => {
   it("tracks selection with aria-activedescendant while keeping typing focus in the input", async () => {
     const input = renderTwoResults();
 
-    expect(input).toHaveAttribute("aria-controls", "global-search-library-results");
+    expect(input).toHaveAttribute(
+      "aria-controls",
+      "global-search-library-results",
+    );
     expect(input).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByRole("listbox", { name: "Library search results" })).toBeInTheDocument();
-    expect(screen.queryByRole("option", { selected: true })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("listbox", { name: "Library search results" }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { selected: true }),
+    ).not.toBeInTheDocument();
 
     fireEvent.keyDown(input, { key: "ArrowDown" });
 
     expect(input).toHaveFocus();
     expect(input).toHaveAttribute("aria-activedescendant", "search-result-0");
-    expect(screen.getByRole("option", { selected: true })).toHaveAttribute("id", "search-result-0");
+    expect(screen.getByRole("option", { selected: true })).toHaveAttribute(
+      "id",
+      "search-result-0",
+    );
 
     // Keystrokes after selecting must still reach the input, and a new query
     // clears the selection.
@@ -308,7 +336,9 @@ describe("GlobalSearch", () => {
 
     fireEvent.keyDown(input, { key: "ArrowUp" });
     expect(input).toHaveAttribute("aria-activedescendant", "search-result-1");
-    expect(screen.getByRole("option", { selected: true })).toHaveTextContent("Second Movie");
+    expect(screen.getByRole("option", { selected: true })).toHaveTextContent(
+      "Second Movie",
+    );
     expect(input).toHaveFocus();
 
     // Past the end wraps back to the first result.
@@ -336,7 +366,9 @@ describe("GlobalSearch", () => {
       isError: false,
     });
 
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
     render(
       <QueryClientProvider client={client}>
         <MemoryRouter>
@@ -358,7 +390,9 @@ describe("GlobalSearch", () => {
 
     const play = screen.getByRole("link", { name: "Play Test Movie" });
     expect(play).toBeInTheDocument();
-    const option = screen.getByRole("option", { name: "Test Movie, 2020, Movie" });
+    const option = screen.getByRole("option", {
+      name: "Test Movie, 2020, Movie",
+    });
     expect(option).toBeInTheDocument();
 
     // role="option" is "Children Presentational: True": a link INSIDE the
@@ -424,7 +458,10 @@ describe("GlobalSearch + RequestToAddSection wiring", () => {
       isLoading: false,
       isError: false,
     });
-    const markup = renderSearchMarkup({ defaultOpen: true, initialQuery: "Dune" });
+    const markup = renderSearchMarkup({
+      defaultOpen: true,
+      initialQuery: "Dune",
+    });
 
     expect(markup).toContain('data-testid="request-section"');
     expect(markup).toContain("libraryHadHits=&quot;true&quot;");
@@ -460,7 +497,10 @@ describe("GlobalSearch + RequestToAddSection wiring", () => {
       isLoading: false,
       isError: false,
     });
-    const markup = renderSearchMarkup({ defaultOpen: true, initialQuery: "ThisDoesNotExist" });
+    const markup = renderSearchMarkup({
+      defaultOpen: true,
+      initialQuery: "ThisDoesNotExist",
+    });
 
     expect(markup).toContain("libraryHadHits=&quot;false&quot;");
   });
@@ -473,7 +513,10 @@ describe("GlobalSearch + RequestToAddSection wiring", () => {
     });
     renderSearchMarkup({ defaultOpen: true, initialQuery: "Dune" });
 
-    const call = mocks.useRequestSearch.mock.calls[mocks.useRequestSearch.mock.calls.length - 1];
+    const call =
+      mocks.useRequestSearch.mock.calls[
+        mocks.useRequestSearch.mock.calls.length - 1
+      ];
     expect(call?.[3]).toEqual({
       enabled: false,
       requireProfile: true,
@@ -487,7 +530,10 @@ describe("GlobalSearch + RequestToAddSection wiring", () => {
       isResolving: false,
       submitDisabledReason: null,
     });
-    const markup = renderSearchMarkup({ defaultOpen: true, initialQuery: "Dune" });
+    const markup = renderSearchMarkup({
+      defaultOpen: true,
+      initialQuery: "Dune",
+    });
 
     expect(markup).not.toContain('data-testid="request-section"');
   });
@@ -508,7 +554,10 @@ describe("GlobalSearch + RequestToAddSection wiring", () => {
       isLoading: true,
       isError: false,
     });
-    const markup = renderSearchMarkup({ defaultOpen: true, initialQuery: "Pending" });
+    const markup = renderSearchMarkup({
+      defaultOpen: true,
+      initialQuery: "Pending",
+    });
 
     expect(markup).not.toContain("No matches");
   });
@@ -542,7 +591,10 @@ describe("GlobalSearch + RequestToAddSection wiring", () => {
       isLoading: false,
       isError: false,
     });
-    const markup = renderSearchMarkup({ defaultOpen: true, initialQuery: "FoundOnTmdb" });
+    const markup = renderSearchMarkup({
+      defaultOpen: true,
+      initialQuery: "FoundOnTmdb",
+    });
 
     expect(markup).not.toContain("No matches");
   });
@@ -563,7 +615,10 @@ describe("GlobalSearch + RequestToAddSection wiring", () => {
       isLoading: false,
       isError: false,
     });
-    const markup = renderSearchMarkup({ defaultOpen: true, initialQuery: "ZzzNothing" });
+    const markup = renderSearchMarkup({
+      defaultOpen: true,
+      initialQuery: "ZzzNothing",
+    });
 
     expect(markup).toContain("No matches");
   });

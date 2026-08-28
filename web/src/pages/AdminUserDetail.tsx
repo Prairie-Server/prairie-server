@@ -22,7 +22,12 @@ import { useAdminUserProfiles } from "@/hooks/queries/admin/history";
 import { useAdminPlaybackHistory } from "@/hooks/queries/admin/history";
 import { useAdminLibraries } from "@/hooks/queries/admin/libraries";
 import { useUserIPs } from "@/hooks/queries/admin/ips";
-import type { AdminUser, AdminUserProfile, UpdateUserRequest, UserIPEntry } from "@/api/types";
+import type {
+  AdminUser,
+  AdminUserProfile,
+  UpdateUserRequest,
+  UserIPEntry,
+} from "@/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -117,7 +122,9 @@ export default function AdminUserDetail() {
 
   if (isLoading) return <div className="page-shell py-8">Loading user...</div>;
   if (error || !user)
-    return <div className="page-shell text-destructive py-8">User not found.</div>;
+    return (
+      <div className="page-shell text-destructive py-8">User not found.</div>
+    );
 
   const impersonationDisabled = user.role === "admin" || !user.enabled;
 
@@ -135,7 +142,10 @@ export default function AdminUserDetail() {
           Admin
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
-        <Link to="/admin/users" className="hover:text-foreground transition-colors">
+        <Link
+          to="/admin/users"
+          className="hover:text-foreground transition-colors"
+        >
           Users
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
@@ -145,8 +155,12 @@ export default function AdminUserDetail() {
       <div className="page-header gap-5">
         <div className="min-w-0 flex-1 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">{user.username}</h1>
-            <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
+            <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
+              {user.username}
+            </h1>
+            <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+              {user.role}
+            </Badge>
             <Badge variant={user.enabled ? "outline" : "destructive"}>
               {user.enabled ? "Active" : "Disabled"}
             </Badge>
@@ -165,7 +179,11 @@ export default function AdminUserDetail() {
           </Button>
           <Dialog open={editOpen} onOpenChange={setEditOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 sm:flex-none"
+              >
                 <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
               </Button>
             </DialogTrigger>
@@ -238,7 +256,11 @@ export default function AdminUserDetail() {
               void navigate("/profiles");
             })
             .catch((error: unknown) => {
-              toast.error(error instanceof Error ? error.message : "Failed to start impersonation");
+              toast.error(
+                error instanceof Error
+                  ? error.message
+                  : "Failed to start impersonation",
+              );
             });
         }}
       />
@@ -281,8 +303,8 @@ function OverviewTab({ user }: { user: AdminUser }) {
   const groupName =
     user.access_group_id === null
       ? "None"
-      : (accessGroups.find((group) => group.id === user.access_group_id)?.name ??
-        `#${user.access_group_id}`);
+      : (accessGroups.find((group) => group.id === user.access_group_id)
+          ?.name ?? `#${user.access_group_id}`);
 
   // Effective values, annotated when the account overrides its group.
   const overridden = (isOverride: boolean) => (isOverride ? " (override)" : "");
@@ -298,7 +320,10 @@ function OverviewTab({ user }: { user: AdminUser }) {
           <DetailRow label="Username" value={user.username} />
           <DetailRow label="Email" value={user.email} />
           <DetailRow label="Role" value={user.role} />
-          <DetailRow label="Status" value={user.enabled ? "Active" : "Disabled"} />
+          <DetailRow
+            label="Status"
+            value={user.enabled ? "Active" : "Disabled"}
+          />
           <DetailRow label="Created" value={formatDate(user.created_at)} />
           <DetailRow label="Updated" value={formatDate(user.updated_at)} />
         </div>
@@ -308,8 +333,8 @@ function OverviewTab({ user }: { user: AdminUser }) {
         <div className="border-border border-b px-4 py-3">
           <h3 className="text-sm font-medium">Permissions & Limits</h3>
           <p className="text-muted-foreground text-xs">
-            Effective values. Fields marked (override) are set on this account; everything else
-            follows the group.
+            Effective values. Fields marked (override) are set on this account;
+            everything else follows the group.
           </p>
         </div>
         <div className="divide-border divide-y">
@@ -320,12 +345,20 @@ function OverviewTab({ user }: { user: AdminUser }) {
           />
           <DetailRow
             label="Marker Editing"
-            value={allowed(hasAssignedPermission(effective.permissions, PERMISSION_MARKER_EDIT))}
+            value={allowed(
+              hasAssignedPermission(
+                effective.permissions,
+                PERMISSION_MARKER_EDIT,
+              ),
+            )}
           />
           <DetailRow
             label="Metadata Curation"
             value={allowed(
-              hasAssignedPermission(effective.permissions, PERMISSION_METADATA_CURATION),
+              hasAssignedPermission(
+                effective.permissions,
+                PERMISSION_METADATA_CURATION,
+              ),
             )}
           />
           <DetailRow
@@ -338,7 +371,9 @@ function OverviewTab({ user }: { user: AdminUser }) {
           <DetailRow
             label="Max Streams"
             value={
-              (effective.max_streams === 0 ? "Unlimited" : String(effective.max_streams)) +
+              (effective.max_streams === 0
+                ? "Unlimited"
+                : String(effective.max_streams)) +
               overridden(user.max_streams !== null)
             }
           />
@@ -349,7 +384,8 @@ function OverviewTab({ user }: { user: AdminUser }) {
                 ? "Disabled"
                 : effective.max_transcodes === 0
                   ? "Unlimited"
-                  : String(effective.max_transcodes)) + overridden(user.max_transcodes !== null)
+                  : String(effective.max_transcodes)) +
+              overridden(user.max_transcodes !== null)
             }
           />
           <DetailRow
@@ -362,7 +398,10 @@ function OverviewTab({ user }: { user: AdminUser }) {
           <DetailRow label="Max Profiles" value={String(user.max_profiles)} />
           <DetailRow
             label="Downloads"
-            value={allowed(effective.download_allowed) + overridden(user.download_allowed !== null)}
+            value={
+              allowed(effective.download_allowed) +
+              overridden(user.download_allowed !== null)
+            }
           />
           <DetailRow
             label="Download Transcode"
@@ -373,7 +412,10 @@ function OverviewTab({ user }: { user: AdminUser }) {
           />
           <DetailRow
             label="Media Requests"
-            value={allowed(effective.requests_allowed) + overridden(user.requests_allowed !== null)}
+            value={
+              allowed(effective.requests_allowed) +
+              overridden(user.requests_allowed !== null)
+            }
           />
         </div>
       </div>
@@ -395,7 +437,9 @@ function ProfilesTab({ userId }: { userId: number }) {
 
   if (isLoading)
     return (
-      <div className="text-muted-foreground py-8 text-center text-sm">Loading profiles...</div>
+      <div className="text-muted-foreground py-8 text-center text-sm">
+        Loading profiles...
+      </div>
     );
 
   if (!profiles || profiles.length === 0)
@@ -438,12 +482,16 @@ function WatchHistoryTab({ userId }: { userId: number }) {
 
   if (isLoading)
     return (
-      <div className="text-muted-foreground py-8 text-center text-sm">Loading watch history...</div>
+      <div className="text-muted-foreground py-8 text-center text-sm">
+        Loading watch history...
+      </div>
     );
 
   if (error)
     return (
-      <div className="text-destructive py-8 text-center text-sm">Failed to load watch history.</div>
+      <div className="text-destructive py-8 text-center text-sm">
+        Failed to load watch history.
+      </div>
     );
 
   if (rows.length === 0)
@@ -468,7 +516,10 @@ function WatchHistoryTab({ userId }: { userId: number }) {
         </TableHeader>
         <TableBody>
           {rows.map((row) => {
-            const title = row.media_title || row.media_item_id || `File #${row.media_file_id}`;
+            const title =
+              row.media_title ||
+              row.media_item_id ||
+              `File #${row.media_file_id}`;
             return (
               <TableRow key={row.session_id}>
                 <TableCell>
@@ -482,7 +533,9 @@ function WatchHistoryTab({ userId }: { userId: number }) {
                   ) : (
                     <div className="font-medium">{title}</div>
                   )}
-                  <div className="text-muted-foreground text-xs">{row.media_type || "unknown"}</div>
+                  <div className="text-muted-foreground text-xs">
+                    {row.media_type || "unknown"}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <Link
@@ -526,7 +579,9 @@ function IPHistoryTab({ userId }: { userId: number }) {
 
   if (isLoading)
     return (
-      <div className="text-muted-foreground py-8 text-center text-sm">Loading IP history...</div>
+      <div className="text-muted-foreground py-8 text-center text-sm">
+        Loading IP history...
+      </div>
     );
 
   if (ips.length === 0)
@@ -550,10 +605,14 @@ function IPHistoryTab({ userId }: { userId: number }) {
         <TableBody>
           {ips.map((entry: UserIPEntry) => (
             <TableRow key={entry.client_ip}>
-              <TableCell className="font-mono text-sm">{entry.client_ip}</TableCell>
+              <TableCell className="font-mono text-sm">
+                {entry.client_ip}
+              </TableCell>
               <TableCell>{formatDateTime(entry.first_seen)}</TableCell>
               <TableCell>{formatDateTime(entry.last_seen)}</TableCell>
-              <TableCell className="text-right">{entry.request_count.toLocaleString()}</TableCell>
+              <TableCell className="text-right">
+                {entry.request_count.toLocaleString()}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -581,7 +640,9 @@ function UserSettingsTab({ userId }: { userId: number }) {
 
   if (isLoading) {
     return (
-      <div className="text-muted-foreground py-8 text-center text-sm">Loading settings...</div>
+      <div className="text-muted-foreground py-8 text-center text-sm">
+        Loading settings...
+      </div>
     );
   }
 
@@ -634,7 +695,9 @@ function UserSettingsTab({ userId }: { userId: number }) {
               {entry.scope}
             </span>
           </div>
-          <p className="text-muted-foreground text-[13px] leading-relaxed">{description}</p>
+          <p className="text-muted-foreground text-[13px] leading-relaxed">
+            {description}
+          </p>
           <p className="text-muted-foreground text-xs">
             Current: {formatSettingValue(entry.key, entry.value)}
             {scopeDetail ? ` · ${scopeDetail}` : ""}
@@ -672,7 +735,9 @@ function UserSettingsTab({ userId }: { userId: number }) {
             variant="ghost"
             size="sm"
             className="h-7 rounded-full px-2 text-xs"
-            onClick={() => deleteSetting.mutate({ userId, key: entry.key, identity })}
+            onClick={() =>
+              deleteSetting.mutate({ userId, key: entry.key, identity })
+            }
             disabled={updateSetting.isPending || deleteSetting.isPending}
           >
             <RotateCcw className="mr-1 h-3 w-3" />
@@ -699,8 +764,9 @@ function UserSettingsTab({ userId }: { userId: number }) {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-muted-foreground text-[12.5px]">
-              Edit the raw value. This setting has no inline control, so saving replaces the stored
-              value wholesale — clearing it entirely is what the Reset button does.
+              Edit the raw value. This setting has no inline control, so saving
+              replaces the stored value wholesale — clearing it entirely is what
+              the Reset button does.
             </p>
             <textarea
               spellCheck={false}
@@ -742,8 +808,8 @@ function UserSettingsTab({ userId }: { userId: number }) {
           <div>
             <h3 className="text-sm font-semibold">User Settings</h3>
             <p className="text-muted-foreground text-sm">
-              Explicit values this user has stored, across account, profile, library and series
-              scopes. Device overrides live in the next tab.
+              Explicit values this user has stored, across account, profile,
+              library and series scopes. Device overrides live in the next tab.
             </p>
           </div>
         </div>
@@ -772,7 +838,8 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
     profileName?: string;
     keys: string[];
   } | null>(null);
-  const [settingToReset, setSettingToReset] = useState<AdminDeviceSetting | null>(null);
+  const [settingToReset, setSettingToReset] =
+    useState<AdminDeviceSetting | null>(null);
   const [jsonEditor, setJsonEditor] = useState<AdminDeviceSetting | null>(null);
   const [jsonValue, setJsonValue] = useState("");
 
@@ -794,7 +861,10 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
     }
     return Array.from(grouped, ([deviceId, profileMap]) => ({
       deviceId,
-      profiles: Array.from(profileMap, ([profileId, entries]) => ({ profileId, entries })),
+      profiles: Array.from(profileMap, ([profileId, entries]) => ({
+        profileId,
+        entries,
+      })),
     }));
   }, [settings]);
 
@@ -807,7 +877,9 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
   }
 
   const totalOverrides = settings.length;
-  const totalProfiles = new Set(settings.map((s) => s.profile_id || UNKNOWN_PROFILE_ID)).size;
+  const totalProfiles = new Set(
+    settings.map((s) => s.profile_id || UNKNOWN_PROFILE_ID),
+  ).size;
 
   return (
     <div className="space-y-4">
@@ -868,12 +940,14 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
       >
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="font-mono text-sm">{jsonEditor?.key ?? "JSON"}</DialogTitle>
+            <DialogTitle className="font-mono text-sm">
+              {jsonEditor?.key ?? "JSON"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-muted-foreground text-[12.5px]">
-              Edit the raw value. Invalid JSON is saved as-is and may cause clients to fall back to
-              defaults.
+              Edit the raw value. Invalid JSON is saved as-is and may cause
+              clients to fall back to defaults.
             </p>
             <textarea
               spellCheck={false}
@@ -925,12 +999,16 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
       {deviceEntries.length > 0 && (
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] tabular-nums">
           <span>
-            <span className="text-foreground font-medium">{deviceEntries.length}</span>{" "}
+            <span className="text-foreground font-medium">
+              {deviceEntries.length}
+            </span>{" "}
             {deviceEntries.length === 1 ? "device" : "devices"}
           </span>
           <span className="text-muted-foreground/40">·</span>
           <span>
-            <span className="text-foreground font-medium">{totalOverrides}</span>{" "}
+            <span className="text-foreground font-medium">
+              {totalOverrides}
+            </span>{" "}
             {totalOverrides === 1 ? "override" : "overrides"}
           </span>
           <span className="text-muted-foreground/40">·</span>
@@ -943,9 +1021,12 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
 
       {deviceEntries.length === 0 ? (
         <div className="surface-panel rounded-xl border-0 px-6 py-12 text-center">
-          <p className="text-foreground text-sm font-medium">No device overrides</p>
+          <p className="text-foreground text-sm font-medium">
+            No device overrides
+          </p>
           <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-[12.5px] leading-relaxed">
-            Overrides appear here as soon as this user tunes a per-device playback setting.
+            Overrides appear here as soon as this user tunes a per-device
+            playback setting.
           </p>
         </div>
       ) : (
@@ -962,7 +1043,10 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
             const overrideCount = allEntries.length;
 
             return (
-              <section key={deviceId} className="surface-panel overflow-hidden rounded-xl border-0">
+              <section
+                key={deviceId}
+                className="surface-panel overflow-hidden rounded-xl border-0"
+              >
                 <header className="border-border/60 flex flex-wrap items-start justify-between gap-3 border-b px-4 py-3 sm:px-5">
                   <div className="flex min-w-0 items-start gap-3">
                     <PlatformTile kind={kind} />
@@ -988,7 +1072,9 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
                           variant="outline"
                           className="border-border/60 bg-background/60 rounded-full px-2 py-0.5 text-[10.5px] font-normal tabular-nums"
                         >
-                          <span className="text-foreground font-medium">{profileCount}</span>
+                          <span className="text-foreground font-medium">
+                            {profileCount}
+                          </span>
                           <span className="text-muted-foreground">
                             {profileCount === 1 ? "profile" : "profiles"}
                           </span>
@@ -997,7 +1083,9 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
                           variant="outline"
                           className="border-border/60 bg-background/60 rounded-full px-2 py-0.5 text-[10.5px] font-normal tabular-nums"
                         >
-                          <span className="text-foreground font-medium">{overrideCount}</span>
+                          <span className="text-foreground font-medium">
+                            {overrideCount}
+                          </span>
                           <span className="text-muted-foreground">
                             {overrideCount === 1 ? "override" : "overrides"}
                           </span>
@@ -1006,7 +1094,9 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
                     </div>
                   </div>
                   <Button variant="outline" size="sm" asChild>
-                    <Link to={`/admin/devices/${userId}/${encodeURIComponent(deviceId)}`}>
+                    <Link
+                      to={`/admin/devices/${userId}/${encodeURIComponent(deviceId)}`}
+                    >
                       Open device
                       <ArrowUpRight className="h-3 w-3" />
                     </Link>
@@ -1058,7 +1148,13 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
   );
 }
 
-function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void }) {
+function EditUserForm({
+  user,
+  onClose,
+}: {
+  user: AdminUser;
+  onClose: () => void;
+}) {
   const { data: libraries = [] } = useAdminLibraries();
   const { data: accessGroups = [] } = useAccessGroups();
   const [username, setUsername] = useState(user.username);
@@ -1066,8 +1162,12 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
   const [password, setPassword] = useState("");
   const [role, setRole] = useState(user.role);
   const [enabled, setEnabled] = useState(user.enabled);
-  const [permissions, setPermissions] = useState<string[]>(user.permissions ?? []);
-  const [accessGroupID, setAccessGroupID] = useState<number | null>(user.access_group_id);
+  const [permissions, setPermissions] = useState<string[]>(
+    user.permissions ?? [],
+  );
+  const [accessGroupID, setAccessGroupID] = useState<number | null>(
+    user.access_group_id,
+  );
   const [policy, setPolicy] = useState(() => policyStateFromUser(user));
   const [maxProfiles, setMaxProfiles] = useState(user.max_profiles);
   const accessGroupSelectId = useId();
@@ -1075,7 +1175,8 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
   const markerEditId = useId();
   const metadataCurationId = useId();
   const updateMutation = useUpdateUser();
-  const accessGroupValue = accessGroupID === null ? "none" : String(accessGroupID);
+  const accessGroupValue =
+    accessGroupID === null ? "none" : String(accessGroupID);
   // Hints come from the group selected right now, so they follow the picker
   // instead of describing the group the account was last saved with. When that
   // group is not in the loaded list, fall back to the resolved policy the
@@ -1087,7 +1188,8 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
     policyInheritHints(hintGroupID, accessGroups) ??
     (hintGroupID === user.access_group_id ? user.effective_policy : undefined);
   const selectedGroupMissing =
-    accessGroupID !== null && !accessGroups.some((group) => group.id === accessGroupID);
+    accessGroupID !== null &&
+    !accessGroups.some((group) => group.id === accessGroupID);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -1110,7 +1212,10 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
   return (
     <form onSubmit={handleSubmit} className="flex max-h-[70vh] flex-col">
       <Tabs defaultValue="account" className="min-h-0 flex-1">
-        <TabsList variant="line" className="border-border mb-4 w-full justify-start border-b pb-1">
+        <TabsList
+          variant="line"
+          className="border-border mb-4 w-full justify-start border-b pb-1"
+        >
           <TabsTrigger value="account" className="flex-none px-1">
             Account
           </TabsTrigger>
@@ -1127,7 +1232,11 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Username</Label>
-                <Input value={username} onChange={(e) => setUsername(e.target.value)} required />
+                <Input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>
@@ -1189,7 +1298,9 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
                 <SelectContent>
                   <SelectItem value="none">No group</SelectItem>
                   {selectedGroupMissing && (
-                    <SelectItem value={String(accessGroupID)}>#{accessGroupID}</SelectItem>
+                    <SelectItem value={String(accessGroupID)}>
+                      #{accessGroupID}
+                    </SelectItem>
                   )}
                   {accessGroups.map((group) => (
                     <SelectItem key={group.id} value={String(group.id)}>
@@ -1203,15 +1314,23 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
               <div>
                 <Label htmlFor={markerEditId}>Marker Editing</Label>
                 <p className="text-muted-foreground text-xs">
-                  Edit intro, recap, credits, and preview markers within assigned libraries.
+                  Edit intro, recap, credits, and preview markers within
+                  assigned libraries.
                 </p>
               </div>
               <Switch
                 id={markerEditId}
-                checked={hasAssignedPermission(permissions, PERMISSION_MARKER_EDIT)}
+                checked={hasAssignedPermission(
+                  permissions,
+                  PERMISSION_MARKER_EDIT,
+                )}
                 onCheckedChange={(checked) =>
                   setPermissions((current) =>
-                    setAssignedPermission(current, PERMISSION_MARKER_EDIT, checked),
+                    setAssignedPermission(
+                      current,
+                      PERMISSION_MARKER_EDIT,
+                      checked,
+                    ),
                   )
                 }
               />
@@ -1225,10 +1344,17 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
               </div>
               <Switch
                 id={metadataCurationId}
-                checked={hasAssignedPermission(permissions, PERMISSION_METADATA_CURATION)}
+                checked={hasAssignedPermission(
+                  permissions,
+                  PERMISSION_METADATA_CURATION,
+                )}
                 onCheckedChange={(checked) =>
                   setPermissions((current) =>
-                    setAssignedPermission(current, PERMISSION_METADATA_CURATION, checked),
+                    setAssignedPermission(
+                      current,
+                      PERMISSION_METADATA_CURATION,
+                      checked,
+                    ),
                   )
                 }
               />
@@ -1242,7 +1368,11 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
           </TabsContent>
 
           <TabsContent value="limits" className="mt-0 space-y-4">
-            <PolicyLimitFields state={policy} onChange={setPolicy} effective={inheritHints} />
+            <PolicyLimitFields
+              state={policy}
+              onChange={setPolicy}
+              effective={inheritHints}
+            />
             <div className="space-y-1">
               <Label>Max Profiles</Label>
               <Input
@@ -1257,8 +1387,16 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
       </Tabs>
 
       <div className="border-border mt-4 border-t pt-4">
-        <Button type="submit" className="w-full" disabled={updateMutation.isPending}>
-          {updateMutation.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={updateMutation.isPending}
+        >
+          {updateMutation.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
           {updateMutation.isPending ? "Saving..." : "Save"}
         </Button>
       </div>

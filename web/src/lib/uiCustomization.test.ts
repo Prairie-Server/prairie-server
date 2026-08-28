@@ -14,26 +14,37 @@ import {
 describe("UI customization contract helpers", () => {
   it("falls back when card presentation is incomplete or unknown", () => {
     expect(parseCardPresentation(null)).toEqual(DEFAULT_CARD_PRESENTATION);
-    expect(parseCardPresentation({ poster_size: "large" })).toEqual(DEFAULT_CARD_PRESENTATION);
-    expect(parseCardPresentation({ poster_size: "huge", caption: "artwork" })).toEqual(
+    expect(parseCardPresentation({ poster_size: "large" })).toEqual(
       DEFAULT_CARD_PRESENTATION,
     );
+    expect(
+      parseCardPresentation({ poster_size: "huge", caption: "artwork" }),
+    ).toEqual(DEFAULT_CARD_PRESENTATION);
   });
 
   it("accepts every supported card dimension", () => {
-    expect(parseCardPresentation({ poster_size: "large", caption: "artwork" })).toEqual({
+    expect(
+      parseCardPresentation({ poster_size: "large", caption: "artwork" }),
+    ).toEqual({
       poster_size: "large",
       caption: "artwork",
     });
-    expect(parseCardPresentation({ poster_size: "compact", caption: "title" })).toEqual({
+    expect(
+      parseCardPresentation({ poster_size: "compact", caption: "title" }),
+    ).toEqual({
       poster_size: "compact",
       caption: "title",
     });
   });
 
   it("keeps the named presets aligned with the cross-client contract", () => {
-    expect(CARD_PRESENTATION_PRESETS.map(({ id, value }) => ({ id, value }))).toEqual([
-      { id: "balanced", value: { poster_size: "standard", caption: "title_metadata" } },
+    expect(
+      CARD_PRESENTATION_PRESETS.map(({ id, value }) => ({ id, value })),
+    ).toEqual([
+      {
+        id: "balanced",
+        value: { poster_size: "standard", caption: "title_metadata" },
+      },
       { id: "compact", value: { poster_size: "compact", caption: "title" } },
       { id: "cinema", value: { poster_size: "large", caption: "title" } },
       { id: "artwork", value: { poster_size: "large", caption: "artwork" } },
@@ -41,7 +52,11 @@ describe("UI customization contract helpers", () => {
   });
 
   it("rejects a custom menu without exactly one home destination", () => {
-    expect(parsePrimaryMenu({ items: [{ type: "builtin", destination: "calendar" }] })).toBeNull();
+    expect(
+      parsePrimaryMenu({
+        items: [{ type: "builtin", destination: "calendar" }],
+      }),
+    ).toBeNull();
     expect(
       parsePrimaryMenu({
         items: [
@@ -75,13 +90,27 @@ describe("UI customization contract helpers", () => {
       parseShortcuts({
         items: [
           { type: "builtin", destination: "home" },
-          { type: "section", library_id: 7, section_id: "recent", label: "Recent" },
-          { type: "collection", collection_id: "favorites", label: "Favorites" },
+          {
+            type: "section",
+            library_id: 7,
+            section_id: "recent",
+            label: "Recent",
+          },
+          {
+            type: "collection",
+            collection_id: "favorites",
+            label: "Favorites",
+          },
         ],
       }),
     ).toEqual({
       items: [
-        { type: "section", library_id: 7, section_id: "recent", label: "Recent" },
+        {
+          type: "section",
+          library_id: 7,
+          section_id: "recent",
+          label: "Recent",
+        },
         { type: "collection", collection_id: "favorites", label: "Favorites" },
       ],
     });
@@ -100,8 +129,12 @@ describe("UI customization contract helpers", () => {
       label: "Library favorites",
     };
 
-    expect(menuItemKey(globalCollection)).not.toBe(menuItemKey(libraryCollection));
-    expect(parseShortcuts({ items: [globalCollection, libraryCollection] })).toEqual({
+    expect(menuItemKey(globalCollection)).not.toBe(
+      menuItemKey(libraryCollection),
+    );
+    expect(
+      parseShortcuts({ items: [globalCollection, libraryCollection] }),
+    ).toEqual({
       items: [globalCollection, libraryCollection],
     });
   });
@@ -110,7 +143,12 @@ describe("UI customization contract helpers", () => {
     expect(
       parseShortcuts({
         items: [
-          { type: "section", library_id: 7, section_id: "   ", label: "Recent" },
+          {
+            type: "section",
+            library_id: 7,
+            section_id: "   ",
+            label: "Recent",
+          },
           { type: "collection", collection_id: "\t", label: "Favorites" },
         ],
       }),
@@ -129,7 +167,11 @@ describe("UI customization contract helpers", () => {
   it("moves items without mutating the source and ignores an out-of-range move", () => {
     const original = defaultWebPrimaryMenu().items;
     const moved = moveMenuItem(original, 1, -1);
-    expect(moved.map(menuItemKey)).toEqual(["builtin:for_you", "builtin:home", "builtin:calendar"]);
+    expect(moved.map(menuItemKey)).toEqual([
+      "builtin:for_you",
+      "builtin:home",
+      "builtin:calendar",
+    ]);
     expect(original.map(menuItemKey)).toEqual([
       "builtin:home",
       "builtin:for_you",

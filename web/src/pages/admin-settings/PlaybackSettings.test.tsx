@@ -10,7 +10,8 @@ class ResizeObserverStub {
   unobserve() {}
   disconnect() {}
 }
-globalThis.ResizeObserver ??= ResizeObserverStub as unknown as typeof ResizeObserver;
+globalThis.ResizeObserver ??=
+  ResizeObserverStub as unknown as typeof ResizeObserver;
 if (!window.HTMLElement.prototype.hasPointerCapture) {
   window.HTMLElement.prototype.hasPointerCapture = () => false;
 }
@@ -23,7 +24,10 @@ const useHWAccelDetectionMock = vi.fn();
 
 beforeEach(() => {
   useSettingsFormMock.mockClear();
-  useHWAccelDetectionMock.mockReturnValue({ data: undefined, isLoading: false });
+  useHWAccelDetectionMock.mockReturnValue({
+    data: undefined,
+    isLoading: false,
+  });
 });
 
 vi.mock("@/hooks/useSettingsForm", () => ({
@@ -53,7 +57,9 @@ function settingSwitch(markup: string, labelText: string): Element {
   const label = Array.from(container.querySelectorAll("label")).find(
     (candidate) => candidate.textContent === labelText,
   );
-  const toggle = label?.htmlFor ? container.querySelector(`[id="${label.htmlFor}"]`) : null;
+  const toggle = label?.htmlFor
+    ? container.querySelector(`[id="${label.htmlFor}"]`)
+    : null;
   if (!toggle) throw new Error(`${labelText} toggle was not rendered`);
   return toggle;
 }
@@ -80,12 +86,18 @@ describe("PlaybackSettings CPU tone mapping", () => {
   });
 
   it("offers VideoToolbox hardware acceleration", async () => {
-    useSettingsFormMock.mockReturnValue(makeForm({ "playback.hw_accel": "auto" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "playback.hw_accel": "auto" }),
+    );
 
     render(<PlaybackSettings />);
-    await userEvent.click(screen.getByRole("combobox", { name: "Hardware Acceleration" }));
+    await userEvent.click(
+      screen.getByRole("combobox", { name: "Hardware Acceleration" }),
+    );
 
-    expect(screen.getByRole("option", { name: "VideoToolbox (macOS)" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "VideoToolbox (macOS)" }),
+    ).toBeInTheDocument();
   });
 
   it("disables the toggle while HDR chapter thumbnails are disabled", () => {
@@ -109,21 +121,21 @@ describe("PlaybackSettings CPU tone mapping", () => {
 
 describe("PlaybackSettings transcode tone mapping", () => {
   it("registers independent hardware and software settings disabled by default", () => {
-    useSettingsFormMock.mockReturnValue(makeForm({ "playback.hw_accel": "auto" }));
+    useSettingsFormMock.mockReturnValue(
+      makeForm({ "playback.hw_accel": "auto" }),
+    );
 
     const markup = renderToStaticMarkup(<PlaybackSettings />);
     const keys = useSettingsFormMock.mock.calls[0]?.[0]?.keys as string[];
 
     expect(keys).toContain("playback.transcode_hardware_tone_map_enabled");
     expect(keys).toContain("playback.transcode_software_tone_map_enabled");
-    expect(settingSwitch(markup, "Enable Hardware HDR Tone Mapping")).toHaveAttribute(
-      "aria-checked",
-      "false",
-    );
-    expect(settingSwitch(markup, "Enable Software HDR Tone Mapping")).toHaveAttribute(
-      "aria-checked",
-      "false",
-    );
+    expect(
+      settingSwitch(markup, "Enable Hardware HDR Tone Mapping"),
+    ).toHaveAttribute("aria-checked", "false");
+    expect(
+      settingSwitch(markup, "Enable Software HDR Tone Mapping"),
+    ).toHaveAttribute("aria-checked", "false");
   });
 
   it("keeps the two policies independent", () => {
@@ -137,14 +149,12 @@ describe("PlaybackSettings transcode tone mapping", () => {
 
     const markup = renderToStaticMarkup(<PlaybackSettings />);
 
-    expect(settingSwitch(markup, "Enable Hardware HDR Tone Mapping")).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
-    expect(settingSwitch(markup, "Enable Software HDR Tone Mapping")).toHaveAttribute(
-      "aria-checked",
-      "false",
-    );
+    expect(
+      settingSwitch(markup, "Enable Hardware HDR Tone Mapping"),
+    ).toHaveAttribute("aria-checked", "true");
+    expect(
+      settingSwitch(markup, "Enable Software HDR Tone Mapping"),
+    ).toHaveAttribute("aria-checked", "false");
   });
 
   it("keeps hardware tone mapping configurable for remote executors when local acceleration is off", () => {

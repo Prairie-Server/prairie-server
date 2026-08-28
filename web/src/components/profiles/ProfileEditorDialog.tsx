@@ -36,7 +36,10 @@ import {
   resolveProfileAvatarImage,
   resolveProfileAvatarPreset,
 } from "@/lib/profile-avatars";
-import { PLAYBACK_QUALITY_OPTIONS, type PlaybackQualityPreset } from "@/lib/playback-quality";
+import {
+  PLAYBACK_QUALITY_OPTIONS,
+  type PlaybackQualityPreset,
+} from "@/lib/playback-quality";
 import {
   applyKidsPreset,
   buildProfileRequestFromDraft,
@@ -84,7 +87,8 @@ export function ProfileEditorDialog({
 }: ProfileEditorDialogProps) {
   const mode = profile ? "edit" : "create";
   const sortedLibraries = useMemo(
-    () => [...libraries].sort((left, right) => left.sort_order - right.sort_order),
+    () =>
+      [...libraries].sort((left, right) => left.sort_order - right.sort_order),
     [libraries],
   );
 
@@ -92,7 +96,9 @@ export function ProfileEditorDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>{mode === "edit" ? "Edit profile" : "New profile"}</DialogTitle>
+          <DialogTitle>
+            {mode === "edit" ? "Edit profile" : "New profile"}
+          </DialogTitle>
           <DialogDescription>
             Set the avatar, name, PIN, and access rules for this profile.
           </DialogDescription>
@@ -144,7 +150,9 @@ function ProfileEditorForm({
     uploadAvatarMutation.isPending ||
     deleteAvatarMutation.isPending;
 
-  const [draft, setDraft] = useState<ProfileDraft>(() => createProfileDraft(profile));
+  const [draft, setDraft] = useState<ProfileDraft>(() =>
+    createProfileDraft(profile),
+  );
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [removeUploadedAvatar, setRemoveUploadedAvatar] = useState(false);
   const [activePresetStyle, setActivePresetStyle] = useState(
@@ -164,7 +172,9 @@ function ProfileEditorForm({
   const playbackQualityId = useId();
   const restrictLibrariesId = useId();
   const selectedContentRatingValue =
-    draft.maxContentRating === "" ? ANY_CONTENT_RATING_VALUE : draft.maxContentRating;
+    draft.maxContentRating === ""
+      ? ANY_CONTENT_RATING_VALUE
+      : draft.maxContentRating;
 
   const selectedPreset = resolveProfileAvatarPreset(draft.avatarPreset);
   const visiblePresets = useMemo(
@@ -179,7 +189,8 @@ function ProfileEditorForm({
     !removeUploadedAvatar && profile?.avatar_source === "upload"
       ? resolveProfileAvatarImage(profile)
       : "";
-  const previewImage = filePreviewURL || selectedPreset?.previewUrl || existingUploadedAvatarURL;
+  const previewImage =
+    filePreviewURL || selectedPreset?.previewUrl || existingUploadedAvatarURL;
 
   useEffect(() => {
     return () => {
@@ -189,7 +200,10 @@ function ProfileEditorForm({
     };
   }, [filePreviewURL]);
 
-  function updateDraft<K extends keyof ProfileDraft>(key: K, value: ProfileDraft[K]) {
+  function updateDraft<K extends keyof ProfileDraft>(
+    key: K,
+    value: ProfileDraft[K],
+  ) {
     setDraft((current) => ({
       ...current,
       [key]: value,
@@ -198,7 +212,10 @@ function ProfileEditorForm({
 
   function selectPreset(presetID: string) {
     setRemoveUploadedAvatar(true);
-    updateDraft("avatarPreset", draft.avatarPreset === presetID ? "" : presetID);
+    updateDraft(
+      "avatarPreset",
+      draft.avatarPreset === presetID ? "" : presetID,
+    );
   }
 
   function toggleLibrary(libraryID: number, checked: boolean) {
@@ -240,7 +257,10 @@ function ProfileEditorForm({
       nextErrors.pin = "PIN must be exactly 4 digits.";
     }
 
-    if (current.libraryRestrictionsEnabled && current.allowedLibraryIDs.length === 0) {
+    if (
+      current.libraryRestrictionsEnabled &&
+      current.allowedLibraryIDs.length === 0
+    ) {
       nextErrors.libraries = "Choose at least one library.";
     }
 
@@ -278,7 +298,10 @@ function ProfileEditorForm({
     let savedProfile: Profile;
     try {
       if (mode === "edit" && profile) {
-        savedProfile = await updateMutation.mutateAsync({ id: profile.id, body });
+        savedProfile = await updateMutation.mutateAsync({
+          id: profile.id,
+          body,
+        });
       } else {
         savedProfile = await createMutation.mutateAsync(body);
       }
@@ -313,21 +336,28 @@ function ProfileEditorForm({
       <section className="border-border space-y-4 rounded-md border p-4">
         <div className="space-y-1">
           <h3 className="text-sm font-semibold">Profile</h3>
-          <p className="text-muted-foreground text-sm">Choose an avatar and basic details.</p>
+          <p className="text-muted-foreground text-sm">
+            Choose an avatar and basic details.
+          </p>
         </div>
 
         <div className="flex flex-col gap-4 lg:flex-row">
           <div className="flex flex-col items-center gap-3 rounded-xl border px-5 py-4 lg:w-52">
             <Avatar className="ring-border h-24 w-24 ring-2">
               {previewImage ? (
-                <AvatarImage src={previewImage} alt={draft.name || "Profile avatar"} />
+                <AvatarImage
+                  src={previewImage}
+                  alt={draft.name || "Profile avatar"}
+                />
               ) : null}
               <AvatarFallback className="bg-surface text-primary text-3xl font-bold">
                 {(draft.name || profile?.name || "?").charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="text-center">
-              <div className="text-sm font-medium">{draft.name.trim() || "Preview"}</div>
+              <div className="text-sm font-medium">
+                {draft.name.trim() || "Preview"}
+              </div>
               <div className="text-muted-foreground text-xs">
                 {avatarFile
                   ? "Custom upload selected"
@@ -352,7 +382,9 @@ function ProfileEditorForm({
                 }}
                 required
               />
-              {errors.name ? <p className="text-destructive text-sm">{errors.name}</p> : null}
+              {errors.name ? (
+                <p className="text-destructive text-sm">{errors.name}</p>
+              ) : null}
             </div>
 
             <div className="space-y-2">
@@ -368,11 +400,16 @@ function ProfileEditorForm({
                 type="password"
                 inputMode="numeric"
                 maxLength={4}
-                placeholder={draft.clearPin ? "PIN will be removed on save" : "4 digits"}
+                placeholder={
+                  draft.clearPin ? "PIN will be removed on save" : "4 digits"
+                }
                 value={draft.clearPin ? "" : draft.pin}
                 disabled={draft.clearPin}
                 onChange={(event) => {
-                  updateDraft("pin", event.target.value.replace(/\D/g, "").slice(0, 4));
+                  updateDraft(
+                    "pin",
+                    event.target.value.replace(/\D/g, "").slice(0, 4),
+                  );
                   setErrors((current) => ({ ...current, pin: undefined }));
                 }}
               />
@@ -392,11 +429,17 @@ function ProfileEditorForm({
                     setErrors((current) => ({ ...current, pin: undefined }));
                   }}
                 >
-                  {draft.clearPin ? <Loader2 className="animate-spin" /> : <Trash2 />}
+                  {draft.clearPin ? (
+                    <Loader2 className="animate-spin" />
+                  ) : (
+                    <Trash2 />
+                  )}
                   {draft.clearPin ? "Keep existing PIN" : "Remove PIN"}
                 </Button>
               ) : null}
-              {errors.pin ? <p className="text-destructive text-sm">{errors.pin}</p> : null}
+              {errors.pin ? (
+                <p className="text-destructive text-sm">{errors.pin}</p>
+              ) : null}
             </div>
           </div>
         </div>
@@ -405,8 +448,8 @@ function ProfileEditorForm({
           <div className="space-y-1">
             <Label>Preset avatars</Label>
             <p className="text-muted-foreground text-xs">
-              Pick a DiceBear style, shuffle fun options, or leave it blank to keep initials. A
-              custom upload overrides presets.
+              Pick a DiceBear style, shuffle fun options, or leave it blank to
+              keep initials. A custom upload overrides presets.
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
@@ -429,15 +472,21 @@ function ProfileEditorForm({
                   )}
                 >
                   <div className="text-sm font-medium">{style.label}</div>
-                  <div className="text-muted-foreground mt-1 text-xs">{style.summary}</div>
+                  <div className="text-muted-foreground mt-1 text-xs">
+                    {style.summary}
+                  </div>
                 </button>
               );
             })}
           </div>
           <div className="flex items-center justify-between gap-3">
             <p className="text-muted-foreground text-xs">
-              {PROFILE_AVATAR_STYLES.find((style) => style.id === activePresetStyle)?.summary}.
-              Showing {visiblePresets.length} options right now.
+              {
+                PROFILE_AVATAR_STYLES.find(
+                  (style) => style.id === activePresetStyle,
+                )?.summary
+              }
+              . Showing {visiblePresets.length} options right now.
             </p>
             <Button
               type="button"
@@ -506,7 +555,8 @@ function ProfileEditorForm({
           <div className="rounded-md border border-dashed px-4 py-3 text-sm">
             <p className="font-medium">Custom uploads are unavailable</p>
             <p className="text-muted-foreground mt-1 text-xs">
-              Configure private S3 avatar storage to enable uploaded profile avatars.
+              Configure private S3 avatar storage to enable uploaded profile
+              avatars.
             </p>
           </div>
         )}
@@ -541,7 +591,10 @@ function ProfileEditorForm({
               value={selectedContentRatingValue}
               onValueChange={(value) => {
                 setContentRatingTouched(true);
-                updateDraft("maxContentRating", value === ANY_CONTENT_RATING_VALUE ? "" : value);
+                updateDraft(
+                  "maxContentRating",
+                  value === ANY_CONTENT_RATING_VALUE ? "" : value,
+                );
               }}
             >
               <SelectTrigger id={contentRatingId} className="w-full">
@@ -551,7 +604,11 @@ function ProfileEditorForm({
                 {CONTENT_RATING_OPTIONS.map((option) => (
                   <SelectItem
                     key={option.value || ANY_CONTENT_RATING_VALUE}
-                    value={option.value === "" ? ANY_CONTENT_RATING_VALUE : option.value}
+                    value={
+                      option.value === ""
+                        ? ANY_CONTENT_RATING_VALUE
+                        : option.value
+                    }
                   >
                     {option.label}
                   </SelectItem>
@@ -565,7 +622,10 @@ function ProfileEditorForm({
             <Select
               value={draft.maxPlaybackQuality}
               onValueChange={(value) =>
-                updateDraft("maxPlaybackQuality", value as PlaybackQualityPreset)
+                updateDraft(
+                  "maxPlaybackQuality",
+                  value as PlaybackQualityPreset,
+                )
               }
             >
               <SelectTrigger id={playbackQualityId} className="w-full">
@@ -605,10 +665,14 @@ function ProfileEditorForm({
             <div className="space-y-2">
               <div className="grid gap-2">
                 {libraries.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">No libraries available.</p>
+                  <p className="text-muted-foreground text-sm">
+                    No libraries available.
+                  </p>
                 ) : (
                   libraries.map((library) => {
-                    const checked = draft.allowedLibraryIDs.includes(library.id);
+                    const checked = draft.allowedLibraryIDs.includes(
+                      library.id,
+                    );
 
                     return (
                       <div
@@ -616,14 +680,18 @@ function ProfileEditorForm({
                         className="border-border flex items-center justify-between rounded-md border px-3 py-2"
                       >
                         <div className="space-y-0.5">
-                          <div className="text-sm font-medium">{library.name}</div>
+                          <div className="text-sm font-medium">
+                            {library.name}
+                          </div>
                           <div className="text-muted-foreground text-xs capitalize">
                             {library.type}
                           </div>
                         </div>
                         <Switch
                           checked={checked}
-                          onCheckedChange={(nextChecked) => toggleLibrary(library.id, nextChecked)}
+                          onCheckedChange={(nextChecked) =>
+                            toggleLibrary(library.id, nextChecked)
+                          }
                         />
                       </div>
                     );
@@ -640,7 +708,11 @@ function ProfileEditorForm({
       </section>
 
       <DialogFooter>
-        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => onOpenChange(false)}
+        >
           <X />
           Cancel
         </Button>

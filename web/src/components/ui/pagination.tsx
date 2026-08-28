@@ -1,4 +1,9 @@
-import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+} from "lucide-react";
 
 import { pageWindow } from "@/components/ui/pagination.utils";
 import { Button } from "@/components/ui/button";
@@ -64,9 +69,17 @@ export function TablePagination({
     >
       <div className="text-muted-foreground flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
         <span className={cn("transition-opacity", isFetching && "opacity-60")}>
-          Showing <span className="text-foreground font-medium tabular-nums">{from}</span>–
-          <span className="text-foreground font-medium tabular-nums">{to}</span> of{" "}
-          <span className="text-foreground font-medium tabular-nums">{total}</span> {noun}
+          Showing{" "}
+          <span className="text-foreground font-medium tabular-nums">
+            {from}
+          </span>
+          –
+          <span className="text-foreground font-medium tabular-nums">{to}</span>{" "}
+          of{" "}
+          <span className="text-foreground font-medium tabular-nums">
+            {total}
+          </span>{" "}
+          {noun}
         </span>
         {onPageSizeChange ? (
           <label className="flex items-center gap-2">
@@ -80,7 +93,11 @@ export function TablePagination({
               </SelectTrigger>
               <SelectContent>
                 {pageSizeOptions.map((size) => (
-                  <SelectItem key={size} value={String(size)} className="tabular-nums">
+                  <SelectItem
+                    key={size}
+                    value={String(size)}
+                    className="tabular-nums"
+                  >
                     {size}
                   </SelectItem>
                 ))}

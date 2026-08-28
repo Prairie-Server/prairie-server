@@ -46,7 +46,9 @@ export default function SearchBar({
       return;
     }
     if (debouncedQuery.trim()) {
-      navigate(buildSearchHrefRef.current(debouncedQuery.trim()), { replace: true });
+      navigate(buildSearchHrefRef.current(debouncedQuery.trim()), {
+        replace: true,
+      });
     }
   }, [debouncedQuery, prominent, navigate]);
 

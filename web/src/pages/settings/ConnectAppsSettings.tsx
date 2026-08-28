@@ -55,7 +55,14 @@ interface FieldRowProps {
   copyValue?: string;
 }
 
-function FieldRow({ label, icon: Icon, kind, hint, children, copyValue }: FieldRowProps) {
+function FieldRow({
+  label,
+  icon: Icon,
+  kind,
+  hint,
+  children,
+  copyValue,
+}: FieldRowProps) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
@@ -78,7 +85,9 @@ function FieldRow({ label, icon: Icon, kind, hint, children, copyValue }: FieldR
     <div
       className={cn(
         "rounded-md border px-3.5 py-2.5",
-        kind === "jellyfin" ? "border-info/25 bg-info/[0.06]" : "border-border bg-background/40",
+        kind === "jellyfin"
+          ? "border-info/25 bg-info/[0.06]"
+          : "border-border bg-background/40",
       )}
     >
       <div className="text-muted-foreground flex items-center gap-1.5 text-[10px] font-semibold tracking-[0.16em] uppercase">
@@ -88,12 +97,25 @@ function FieldRow({ label, icon: Icon, kind, hint, children, copyValue }: FieldR
       <div className="mt-1.5 flex items-center gap-2">
         <div className="min-w-0 flex-1 text-[15px] break-all">{children}</div>
         {copyValue ? (
-          <Button size="icon-sm" variant="ghost" aria-label={`Copy ${label}`} onClick={handleCopy}>
-            {copied ? <Check className="text-success h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          <Button
+            size="icon-sm"
+            variant="ghost"
+            aria-label={`Copy ${label}`}
+            onClick={handleCopy}
+          >
+            {copied ? (
+              <Check className="text-success h-4 w-4" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
           </Button>
         ) : null}
       </div>
-      {hint ? <p className="text-muted-foreground mt-1 text-xs leading-relaxed">{hint}</p> : null}
+      {hint ? (
+        <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+          {hint}
+        </p>
+      ) : null}
     </div>
   );
 }
@@ -104,7 +126,9 @@ function ScopeBanner({ kind }: { kind: AppKind }) {
     <div
       className={cn(
         "flex items-start gap-2.5 rounded-md border px-3.5 py-2.5",
-        isJellyfin ? "border-info/30 bg-info/[0.07]" : "border-border bg-background/40",
+        isJellyfin
+          ? "border-info/30 bg-info/[0.07]"
+          : "border-border bg-background/40",
       )}
     >
       {isJellyfin ? (
@@ -114,7 +138,9 @@ function ScopeBanner({ kind }: { kind: AppKind }) {
       )}
       <div className="min-w-0 space-y-0.5">
         <p className="text-sm font-medium">
-          {isJellyfin ? "For Jellyfin-compatible apps only" : "For Prairie's own apps"}
+          {isJellyfin
+            ? "For Jellyfin-compatible apps only"
+            : "For Prairie's own apps"}
         </p>
         <p className="text-muted-foreground text-xs leading-relaxed">
           {isJellyfin ? JELLYFIN_APP_EXAMPLES : PRAIRIE_APP_EXAMPLES}.{" "}
@@ -158,13 +184,17 @@ function ProfilePicker({
               )}
             >
               <Avatar className="h-6 w-6">
-                {profile.avatar_url ? <AvatarImage src={profile.avatar_url} alt="" /> : null}
+                {profile.avatar_url ? (
+                  <AvatarImage src={profile.avatar_url} alt="" />
+                ) : null}
                 <AvatarFallback className="text-[10px] font-semibold">
                   {profile.name.charAt(0).toUpperCase()}
                 </AvatarFallback>
               </Avatar>
               {profile.name}
-              {profile.has_pin ? <KeyRound className="text-muted-foreground h-3.5 w-3.5" /> : null}
+              {profile.has_pin ? (
+                <KeyRound className="text-muted-foreground h-3.5 w-3.5" />
+              ) : null}
             </button>
           );
         })}
@@ -246,7 +276,11 @@ function TroubleshootingPanel({
 
 export default function ConnectAppsSettings() {
   const { user, profile: activeProfile } = useAuth();
-  const { data: profiles, isLoading: profilesLoading, isError: profilesFailed } = useProfiles();
+  const {
+    data: profiles,
+    isLoading: profilesLoading,
+    isError: profilesFailed,
+  } = useProfiles();
   const {
     data: connectInfo,
     isLoading: connectInfoLoading,
@@ -254,7 +288,9 @@ export default function ConnectAppsSettings() {
   } = useCompatConnectInfo();
 
   const [kind, setKind] = useState<AppKind>("jellyfin");
-  const [selectedProfileID, setSelectedProfileID] = useState<string | null>(null);
+  const [selectedProfileID, setSelectedProfileID] = useState<string | null>(
+    null,
+  );
 
   // Default to the profile the user is already using — the one they're most
   // likely setting an app up for.
@@ -268,13 +304,15 @@ export default function ConnectAppsSettings() {
   }, [activeProfile?.id, profiles, selectedProfileID]);
 
   const accountUsername = user?.username ?? "";
-  const prairieURL = typeof window === "undefined" ? "" : window.location.origin;
+  const prairieURL =
+    typeof window === "undefined" ? "" : window.location.origin;
   const compatEnabled = connectInfo?.jellyfin.enabled ?? false;
   const compatPendingRestart = connectInfo?.jellyfin.pending_restart ?? false;
   const compatURL = connectInfo?.jellyfin.public_url?.trim() || null;
   const compatURLIsLoopback = compatURL !== null && isLoopbackURL(compatURL);
   // Absent field (older server) means the account can use a password.
-  const passwordLoginAvailable = connectInfo?.account?.password_login_available ?? true;
+  const passwordLoginAvailable =
+    connectInfo?.account?.password_login_available ?? true;
   const isJellyfin = kind === "jellyfin";
   const isLoading = profilesLoading || connectInfoLoading;
   // A failed load must not read as "compat is switched off", and an empty
@@ -283,21 +321,29 @@ export default function ConnectAppsSettings() {
   // Everything below the credential panel is only meaningful when we actually
   // showed credentials above it.
   const showCompatCredentials =
-    isJellyfin && !isLoading && !loadFailed && compatEnabled && passwordLoginAvailable;
+    isJellyfin &&
+    !isLoading &&
+    !loadFailed &&
+    compatEnabled &&
+    passwordLoginAvailable;
 
   const jellyfinUsername = selectedProfile
     ? buildJellyfinUsername(accountUsername, selectedProfile.name)
     : "";
-  const usernameIssue = selectedProfile ? jellyfinUsernameIssue(selectedProfile.name) : null;
+  const usernameIssue = selectedProfile
+    ? jellyfinUsernameIssue(selectedProfile.name)
+    : null;
 
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Connect Apps</h2>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Connect Apps
+        </h2>
         <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
-          Exactly what to type on a sign-in screen. Pick the kind of app you're using — the
-          credentials are different for each. To approve a TV or other device without a password,
-          use{" "}
+          Exactly what to type on a sign-in screen. Pick the kind of app you're
+          using — the credentials are different for each. To approve a TV or
+          other device without a password, use{" "}
           <a
             className="text-foreground underline underline-offset-2"
             href="/settings/quick-connect"
@@ -315,7 +361,11 @@ export default function ConnectAppsSettings() {
       >
         {(
           [
-            { id: "prairie", label: "Prairie app or website", icon: MonitorSmartphone },
+            {
+              id: "prairie",
+              label: "Prairie app or website",
+              icon: MonitorSmartphone,
+            },
             { id: "jellyfin", label: "Jellyfin-compatible app", icon: Cast },
           ] as const
         ).map((option) => {
@@ -359,19 +409,24 @@ export default function ConnectAppsSettings() {
           </div>
         ) : loadFailed ? (
           <div className="border-destructive/40 rounded-md border border-dashed px-3.5 py-4">
-            <p className="text-sm font-medium">Couldn't load your sign-in details</p>
+            <p className="text-sm font-medium">
+              Couldn't load your sign-in details
+            </p>
             <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
-              Reload the page to try again. Credentials are withheld rather than guessed, so nothing
-              here is stale or wrong.
+              Reload the page to try again. Credentials are withheld rather than
+              guessed, so nothing here is stale or wrong.
             </p>
           </div>
         ) : isJellyfin && !passwordLoginAvailable ? (
           <div className="border-border rounded-md border border-dashed px-3.5 py-4">
-            <p className="text-sm font-medium">This account can't sign in to a Jellyfin app</p>
+            <p className="text-sm font-medium">
+              This account can't sign in to a Jellyfin app
+            </p>
             <p className="text-muted-foreground mt-1 text-sm leading-relaxed">
-              It signs in through an external provider rather than a Prairie password, and the
-              compatibility API only accepts Prairie passwords. Use a Prairie app, or ask an
-              administrator about an account with password sign-in.
+              It signs in through an external provider rather than a Prairie
+              password, and the compatibility API only accepts Prairie
+              passwords. Use a Prairie app, or ask an administrator about an
+              account with password sign-in.
             </p>
           </div>
         ) : isJellyfin && !compatEnabled ? (
@@ -420,7 +475,10 @@ export default function ConnectAppsSettings() {
                 {isJellyfin ? (
                   compatURL ? (
                     <code
-                      className={cn("font-mono", compatURLIsLoopback && "text-muted-foreground")}
+                      className={cn(
+                        "font-mono",
+                        compatURLIsLoopback && "text-muted-foreground",
+                      )}
                     >
                       {compatURL}
                     </code>
@@ -453,7 +511,10 @@ export default function ConnectAppsSettings() {
                 }
               >
                 {isJellyfin && selectedProfile ? (
-                  <HashString before={accountUsername} after={selectedProfile.name} />
+                  <HashString
+                    before={accountUsername}
+                    after={selectedProfile.name}
+                  />
                 ) : (
                   <code className="font-mono">{accountUsername}</code>
                 )}
@@ -481,16 +542,16 @@ export default function ConnectAppsSettings() {
               <p className="text-muted-foreground flex items-start gap-1.5 text-xs leading-relaxed">
                 <X className="text-info mt-0.5 h-3.5 w-3.5 shrink-0" />
                 <span>
-                  Jellyfin apps offer only two boxes and never prompt for a profile, so the profile
-                  name and PIN are appended here. This format is rejected on a Prairie sign-in
-                  screen.
+                  Jellyfin apps offer only two boxes and never prompt for a
+                  profile, so the profile name and PIN are appended here. This
+                  format is rejected on a Prairie sign-in screen.
                 </span>
               </p>
             ) : (
               <div className="border-border/70 rounded-md border border-dashed px-3.5 py-2.5">
                 <p className="text-muted-foreground text-xs leading-relaxed">
-                  After signing in you'll choose a profile from the profile picker, and
-                  PIN-protected profiles prompt for their PIN there.
+                  After signing in you'll choose a profile from the profile
+                  picker, and PIN-protected profiles prompt for their PIN there.
                 </p>
               </div>
             )}
@@ -499,7 +560,10 @@ export default function ConnectAppsSettings() {
       </section>
 
       {showCompatCredentials ? (
-        <TroubleshootingPanel accountUsername={accountUsername} compatURL={compatURL} />
+        <TroubleshootingPanel
+          accountUsername={accountUsername}
+          compatURL={compatURL}
+        />
       ) : null}
 
       {showCompatCredentials && profiles.length > 1 ? (
@@ -511,21 +575,33 @@ export default function ConnectAppsSettings() {
               // username the resolver can't parse, so don't list one here either.
               const issue = jellyfinUsernameIssue(profile.name);
               return (
-                <li key={profile.id} className="flex flex-wrap items-center gap-2 text-sm">
+                <li
+                  key={profile.id}
+                  className="flex flex-wrap items-center gap-2 text-sm"
+                >
                   {issue ? (
                     <>
                       <span className="text-muted-foreground font-mono line-through">
                         {profile.name}
                       </span>
-                      <Badge variant="outline" className="text-muted-foreground">
+                      <Badge
+                        variant="outline"
+                        className="text-muted-foreground"
+                      >
                         rename to use from a Jellyfin app
                       </Badge>
                     </>
                   ) : (
                     <>
-                      <HashString before={accountUsername} after={profile.name} />
+                      <HashString
+                        before={accountUsername}
+                        after={profile.name}
+                      />
                       {profile.has_pin ? (
-                        <Badge variant="outline" className="text-muted-foreground">
+                        <Badge
+                          variant="outline"
+                          className="text-muted-foreground"
+                        >
                           needs #PIN
                         </Badge>
                       ) : null}

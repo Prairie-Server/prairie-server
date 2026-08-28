@@ -55,18 +55,26 @@ const descriptor: PluginAdminForm = {
 describe("evaluateShowWhen", () => {
   it("shows when all conditions match (stringified)", () => {
     expect(
-      evaluateShowWhen([{ field: "service_kind", equals: ["sonarr"] }], { service_kind: "sonarr" }),
+      evaluateShowWhen([{ field: "service_kind", equals: ["sonarr"] }], {
+        service_kind: "sonarr",
+      }),
     ).toBe(true);
     expect(
-      evaluateShowWhen([{ field: "service_kind", equals: ["sonarr"] }], { service_kind: "radarr" }),
+      evaluateShowWhen([{ field: "service_kind", equals: ["sonarr"] }], {
+        service_kind: "radarr",
+      }),
     ).toBe(false);
   });
   it("matches booleans by stringified value", () => {
     expect(
-      evaluateShowWhen([{ field: "anime_enabled", equals: ["true"] }], { anime_enabled: true }),
+      evaluateShowWhen([{ field: "anime_enabled", equals: ["true"] }], {
+        anime_enabled: true,
+      }),
     ).toBe(true);
     expect(
-      evaluateShowWhen([{ field: "anime_enabled", equals: ["true"] }], { anime_enabled: false }),
+      evaluateShowWhen([{ field: "anime_enabled", equals: ["true"] }], {
+        anime_enabled: false,
+      }),
     ).toBe(false);
   });
   it("empty conditions => always visible", () => {
@@ -84,7 +92,13 @@ describe("evaluateShowWhen", () => {
         default_value: true,
       },
     ];
-    expect(evaluateShowWhen([{ field: "anime_enabled", equals: ["true"] }], {}, fields)).toBe(true);
+    expect(
+      evaluateShowWhen(
+        [{ field: "anime_enabled", equals: ["true"] }],
+        {},
+        fields,
+      ),
+    ).toBe(true);
   });
 });
 
@@ -229,7 +243,11 @@ describe("buildSchemaValues type-driven coercion (#15)", () => {
     const out = buildSchemaValues(
       d,
       { quality_profile_id: "3", root_folder: "007", tags: ["1", "2"] },
-      { quality_profile_id: "integer", root_folder: "string", tags: "array:int" },
+      {
+        quality_profile_id: "integer",
+        root_folder: "string",
+        tags: "array:int",
+      },
     );
     expect(out.quality_profile_id).toBe(3);
     expect(out.root_folder).toBe("007"); // string preserved, NOT 7
@@ -438,21 +456,26 @@ describe("coerceFieldValue boolean coercion (CodeRabbit #4)", () => {
 
 describe("coerceFieldValue array:num coercion (CodeRabbit #5)", () => {
   it("coerces decimal numeric strings, not just integers", () => {
-    expect(coerceFieldValue(numArrayField, ["1.5", "2"], "array:num")).toEqual([1.5, 2]);
+    expect(coerceFieldValue(numArrayField, ["1.5", "2"], "array:num")).toEqual([
+      1.5, 2,
+    ]);
   });
   it("leaves array:int as integer-only and non-numeric strings untouched", () => {
-    expect(coerceFieldValue(numArrayField, ["1.5", "2"], "array:int")).toEqual(["1.5", 2]);
-    expect(coerceFieldValue(numArrayField, ["abc"], "array:num")).toEqual(["abc"]);
+    expect(coerceFieldValue(numArrayField, ["1.5", "2"], "array:int")).toEqual([
+      "1.5",
+      2,
+    ]);
+    expect(coerceFieldValue(numArrayField, ["abc"], "array:num")).toEqual([
+      "abc",
+    ]);
   });
 });
 
 describe("coerceFieldValue array:bool coercion", () => {
   it("coerces boolean multi-select values using their declared item type", () => {
-    expect(coerceFieldValue(numArrayField, ["true", "false", true], "array:bool")).toEqual([
-      true,
-      false,
-      true,
-    ]);
+    expect(
+      coerceFieldValue(numArrayField, ["true", "false", true], "array:bool"),
+    ).toEqual([true, false, true]);
   });
 });
 
@@ -490,18 +513,26 @@ describe("section visibility", () => {
   };
 
   it("does not validate required fields in a hidden section", () => {
-    expect(validateSchemaValues(sectionDescriptor, { endpoint: "stale" })).toEqual({});
-    expect(validateSchemaValues(sectionDescriptor, { advanced_enabled: true }).endpoint).toMatch(
-      /required/i,
-    );
+    expect(
+      validateSchemaValues(sectionDescriptor, { endpoint: "stale" }),
+    ).toEqual({});
+    expect(
+      validateSchemaValues(sectionDescriptor, { advanced_enabled: true })
+        .endpoint,
+    ).toMatch(/required/i);
   });
 
   it("does not persist stale values from a hidden section", () => {
-    expect(buildSchemaValues(sectionDescriptor, { endpoint: "stale" })).toEqual({
-      advanced_enabled: false,
-    });
+    expect(buildSchemaValues(sectionDescriptor, { endpoint: "stale" })).toEqual(
+      {
+        advanced_enabled: false,
+      },
+    );
     expect(
-      buildSchemaValues(sectionDescriptor, { advanced_enabled: true, endpoint: "active" }),
+      buildSchemaValues(sectionDescriptor, {
+        advanced_enabled: true,
+        endpoint: "active",
+      }),
     ).toEqual({ advanced_enabled: true, endpoint: "active" });
   });
 });

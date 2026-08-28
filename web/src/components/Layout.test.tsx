@@ -18,7 +18,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-router", async () => {
-  const actual = await vi.importActual<typeof import("react-router")>("react-router");
+  const actual =
+    await vi.importActual<typeof import("react-router")>("react-router");
   return {
     ...actual,
     useLocation: () => mocks.location,
@@ -27,12 +28,18 @@ vi.mock("react-router", async () => {
 });
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
-  return { ...actual, useQueryClient: () => ({ prefetchQuery: mocks.prefetchQuery }) };
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
+    "@tanstack/react-query",
+  );
+  return {
+    ...actual,
+    useQueryClient: () => ({ prefetchQuery: mocks.prefetchQuery }),
+  };
 });
 
-vi.mock("@/hooks/useAuth", () => ({ useAuth: () => ({ user: { username: "Admin" } }) }));
+vi.mock("@/hooks/useAuth", () => ({
+  useAuth: () => ({ user: { username: "Admin" } }),
+}));
 vi.mock("@/hooks/useCurrentProfile", () => ({
   useCurrentProfile: () => ({ profile: mocks.profile }),
 }));
@@ -43,17 +50,27 @@ vi.mock("@/playback/watchPlaybackContext", () => ({
 vi.mock("@/pages/audiobooks/player/audiobookPlaybackContext", () => ({
   useAudiobookPlaybackController: () => null,
 }));
-vi.mock("@/hooks/queries/catalogRead", () => ({ fetchCatalogItemDetail: vi.fn() }));
+vi.mock("@/hooks/queries/catalogRead", () => ({
+  fetchCatalogItemDetail: vi.fn(),
+}));
 vi.mock("@/components/GlobalSearch", () => ({ GlobalSearch: () => null }));
 vi.mock("@/components/ServerActivity", () => ({ default: () => null }));
-vi.mock("@/components/PrairieBrand", () => ({ PrairieBrand: () => <span>Prairie</span> }));
+vi.mock("@/components/PrairieBrand", () => ({
+  PrairieBrand: () => <span>Prairie</span>,
+}));
 vi.mock("@/components/ui/avatar", () => ({
   Avatar: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  AvatarImage: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} />,
-  AvatarFallback: ({ children }: { children: ReactNode }) => <span>{children}</span>,
+  AvatarImage: ({ src, alt }: { src: string; alt: string }) => (
+    <img src={src} alt={alt} />
+  ),
+  AvatarFallback: ({ children }: { children: ReactNode }) => (
+    <span>{children}</span>
+  ),
 }));
 vi.mock("@/components/ViewTransitionLink", () => ({
-  default: ({ children }: { children: ReactNode }) => <a href="/">{children}</a>,
+  default: ({ children }: { children: ReactNode }) => (
+    <a href="/">{children}</a>
+  ),
 }));
 vi.mock("@/components/ui/sheet", () => ({
   Sheet: () => null,
@@ -161,7 +178,10 @@ describe("Layout mobile profile", () => {
     const avatar = screen.getByRole("img", { name: "Admin" });
 
     expect(settingsLink).toContainElement(avatar);
-    expect(avatar).toHaveAttribute("src", "https://example.com/admin-avatar.webp");
+    expect(avatar).toHaveAttribute(
+      "src",
+      "https://example.com/admin-avatar.webp",
+    );
   });
 });
 
@@ -223,7 +243,9 @@ describe("Layout item navigation", () => {
     fireEvent.click(screen.getByRole("button", { name: "begin item" }));
 
     expect(mocks.prefetchQuery).toHaveBeenCalledWith(
-      expect.objectContaining({ queryKey: catalogKeys.itemDetail("movie-1", 2) }),
+      expect.objectContaining({
+        queryKey: catalogKeys.itemDetail("movie-1", 2),
+      }),
     );
     expect(mocks.navigate).toHaveBeenCalledWith("/item/movie-1?libraryId=2", {
       replace: true,
@@ -249,7 +271,9 @@ describe("Layout detail reveal", () => {
       ),
     );
 
-    expect(screen.getByRole("status", { name: "details-ready" })).toHaveTextContent("true");
+    expect(
+      screen.getByRole("status", { name: "details-ready" }),
+    ).toHaveTextContent("true");
   });
 
   it("reveals as soon as the surface settles", () => {
@@ -264,12 +288,18 @@ describe("Layout detail reveal", () => {
         </MemoryRouter>,
       ),
     );
-    expect(screen.getByRole("status", { name: "details-ready" })).toHaveTextContent("false");
+    expect(
+      screen.getByRole("status", { name: "details-ready" }),
+    ).toHaveTextContent("false");
 
-    screen.getByTestId("sidebar-surface").setAttribute("data-collapsed", "true");
+    screen
+      .getByTestId("sidebar-surface")
+      .setAttribute("data-collapsed", "true");
     act(() => vi.advanceTimersByTime(50));
 
-    expect(screen.getByRole("status", { name: "details-ready" })).toHaveTextContent("true");
+    expect(
+      screen.getByRole("status", { name: "details-ready" }),
+    ).toHaveTextContent("true");
   });
 
   it("reveals by the deadline while hover expansion holds the surface open", () => {
@@ -287,7 +317,9 @@ describe("Layout detail reveal", () => {
 
     act(() => vi.advanceTimersByTime(SIDEBAR_DETAILS_REVEAL_DEADLINE_MS));
 
-    expect(screen.getByRole("status", { name: "details-ready" })).toHaveTextContent("true");
+    expect(
+      screen.getByRole("status", { name: "details-ready" }),
+    ).toHaveTextContent("true");
   });
 
   it("reveals by the deadline when requestAnimationFrame never fires", () => {
@@ -305,7 +337,9 @@ describe("Layout detail reveal", () => {
 
     act(() => vi.advanceTimersByTime(SIDEBAR_DETAILS_REVEAL_DEADLINE_MS));
 
-    expect(screen.getByRole("status", { name: "details-ready" })).toHaveTextContent("true");
+    expect(
+      screen.getByRole("status", { name: "details-ready" }),
+    ).toHaveTextContent("true");
   });
 
   it("cancels reveal polling on unmount", () => {
@@ -342,12 +376,20 @@ describe("Layout detail reveal", () => {
     const surface = screen.getByTestId("sidebar-surface");
     surface.setAttribute("data-collapsed", "true");
 
-    fireEvent.transitionEnd(screen.getByTestId("sidebar-inner"), { propertyName: "transform" });
-    fireEvent.transitionEnd(screen.getByTestId("sidebar-row"), { propertyName: "transform" });
+    fireEvent.transitionEnd(screen.getByTestId("sidebar-inner"), {
+      propertyName: "transform",
+    });
+    fireEvent.transitionEnd(screen.getByTestId("sidebar-row"), {
+      propertyName: "transform",
+    });
     fireEvent.transitionEnd(surface, { propertyName: "opacity" });
-    expect(screen.getByRole("status", { name: "details-ready" })).toHaveTextContent("false");
+    expect(
+      screen.getByRole("status", { name: "details-ready" }),
+    ).toHaveTextContent("false");
 
     fireEvent.transitionEnd(surface, { propertyName: "transform" });
-    expect(screen.getByRole("status", { name: "details-ready" })).toHaveTextContent("true");
+    expect(
+      screen.getByRole("status", { name: "details-ready" }),
+    ).toHaveTextContent("true");
   });
 });

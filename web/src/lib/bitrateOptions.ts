@@ -42,12 +42,17 @@ export function bitrateSelectChoices(
 ): { value: string; label: string }[] {
   const min = definition.minimum ?? 0;
   const max = definition.maximum ?? Number.MAX_SAFE_INTEGER;
-  const choices = BITRATE_CHOICES_KBPS.filter((kbps) => kbps >= min && kbps <= max).map((kbps) => ({
+  const choices = BITRATE_CHOICES_KBPS.filter(
+    (kbps) => kbps >= min && kbps <= max,
+  ).map((kbps) => ({
     value: String(kbps),
     label: formatBitrateKbps(kbps),
   }));
 
-  if (currentValue !== "" && !choices.some((choice) => choice.value === currentValue)) {
+  if (
+    currentValue !== "" &&
+    !choices.some((choice) => choice.value === currentValue)
+  ) {
     const parsed = Number(currentValue);
     if (Number.isFinite(parsed)) {
       choices.push({ value: currentValue, label: formatBitrateKbps(parsed) });

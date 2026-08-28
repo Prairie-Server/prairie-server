@@ -4,7 +4,10 @@ import {
   seriesSubtitleSettingValues,
 } from "@/lib/seriesSubtitleSettings";
 import type { SubtitleInventoryItemV3 } from "../protocol-v3";
-import type { PlayerSubtitleInfo, PlayerSubtitleTrackSignature } from "../types";
+import type {
+  PlayerSubtitleInfo,
+  PlayerSubtitleTrackSignature,
+} from "../types";
 import { derivePersistedSubtitleMode } from "./subtitleMode";
 
 /** One PUT the player issues to persist a subtitle choice. */
@@ -77,7 +80,10 @@ export function buildSubtitleChoiceRequests({
         }
       : null;
   const track =
-    pushedTrack ?? (index !== null ? tracks.find((candidate) => candidate.index === index) : null);
+    pushedTrack ??
+    (index !== null
+      ? tracks.find((candidate) => candidate.index === index)
+      : null);
   if (index !== null && !track) return [];
 
   const trackSignature: PlayerSubtitleTrackSignature | null = track
@@ -94,12 +100,17 @@ export function buildSubtitleChoiceRequests({
   const mode = derivePersistedSubtitleMode(index);
   // Turning subtitles off stores mode "off" and clears the language rather
   // than storing an empty one.
-  const chosen = seriesSubtitleSettingValues({ language: track?.language ?? null, mode });
+  const chosen = seriesSubtitleSettingValues({
+    language: track?.language ?? null,
+    mode,
+  });
 
-  const requests: SubtitleChoiceRequest[] = SERIES_SUBTITLE_SETTING_KEYS.map((key) => ({
-    path: seriesSubtitleSettingPath(key, seriesId),
-    body: { value: chosen[key] },
-  }));
+  const requests: SubtitleChoiceRequest[] = SERIES_SUBTITLE_SETTING_KEYS.map(
+    (key) => ({
+      path: seriesSubtitleSettingPath(key, seriesId),
+      body: { value: chosen[key] },
+    }),
+  );
 
   requests.push({
     path: `/subtitle-prefs/${seriesId}`,
@@ -115,7 +126,9 @@ export function buildSubtitleChoiceRequests({
   return requests;
 }
 
-function subtitleSourceOf(source: string): PlayerSubtitleTrackSignature["source"] {
+function subtitleSourceOf(
+  source: string,
+): PlayerSubtitleTrackSignature["source"] {
   switch (source) {
     case "external":
     case "embedded":

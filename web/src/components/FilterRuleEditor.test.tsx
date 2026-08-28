@@ -18,17 +18,26 @@ describe("FilterRuleEditor", () => {
         <FilterRuleEditor
           value={{
             match: "all",
-            groups: [{ match: "all", rules: [{ field: "genre", op: "is", value: "" }] }],
+            groups: [
+              {
+                match: "all",
+                rules: [{ field: "genre", op: "is", value: "" }],
+              },
+            ],
           }}
           onChange={() => {}}
         />
       </form>,
     );
 
-    const buttons = [...markup.matchAll(/<button\b[^>]*>/g)].map((match) => match[0]);
+    const buttons = [...markup.matchAll(/<button\b[^>]*>/g)].map(
+      (match) => match[0],
+    );
 
     expect(buttons.length).toBeGreaterThan(0);
-    expect(buttons.every((button) => button.includes('type="button"'))).toBe(true);
+    expect(buttons.every((button) => button.includes('type="button"'))).toBe(
+      true,
+    );
     expect(markup).not.toContain('type="submit"');
   });
 
@@ -49,9 +58,15 @@ describe("FilterRuleEditor", () => {
         "in_watchlist",
       ]),
     );
-    expect(COLLECTION_SORT_OPTIONS.map((sort) => sort.value)).toContain("rating_imdb");
-    expect(COLLECTION_SORT_OPTIONS.map((sort) => sort.value)).not.toContain("rating");
-    expect(getCollectionSortOptions(false).map((sort) => sort.value)).not.toContain("progress");
+    expect(COLLECTION_SORT_OPTIONS.map((sort) => sort.value)).toContain(
+      "rating_imdb",
+    );
+    expect(COLLECTION_SORT_OPTIONS.map((sort) => sort.value)).not.toContain(
+      "rating",
+    );
+    expect(
+      getCollectionSortOptions(false).map((sort) => sort.value),
+    ).not.toContain("progress");
   });
 
   it("describes range and boolean editing for shared rule fields", () => {
@@ -81,10 +96,14 @@ describe("FilterRuleEditor", () => {
     const ebookOptions = getFilterRuleFieldOptions(true, "ebook");
     const movieOptions = getFilterRuleFieldOptions(true, "movie");
 
-    expect(ebookOptions.find((option) => option.value === "watched")?.label).toBe("Read");
-    expect(ebookOptions.find((option) => option.value === "in_progress")?.label).toBe(
-      "In Progress",
-    );
-    expect(movieOptions.find((option) => option.value === "watched")?.label).toBe("Watched");
+    expect(
+      ebookOptions.find((option) => option.value === "watched")?.label,
+    ).toBe("Read");
+    expect(
+      ebookOptions.find((option) => option.value === "in_progress")?.label,
+    ).toBe("In Progress");
+    expect(
+      movieOptions.find((option) => option.value === "watched")?.label,
+    ).toBe("Watched");
   });
 });

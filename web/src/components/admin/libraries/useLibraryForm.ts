@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
 
-import type { CreateLibraryRequest, Library, LibraryProviderChainResponse } from "@/api/types";
+import type {
+  CreateLibraryRequest,
+  Library,
+  LibraryProviderChainResponse,
+} from "@/api/types";
 import {
   useCreateLibrary,
   useLibraryProviderDefaults,
@@ -23,7 +27,9 @@ export type LevelChainItem = {
 // plugin" empty state. Built-in host providers (NFO) appear in the server
 // response without any plugin installation, so this gate must not depend on
 // installed plugins.
-export function hasChainProviders(chains: Record<string, LevelChainItem[]>): boolean {
+export function hasChainProviders(
+  chains: Record<string, LevelChainItem[]>,
+): boolean {
   return Object.values(chains).some((items) => items.length > 0);
 }
 
@@ -105,7 +111,9 @@ export function mergeChainWithDefaults(
   return merged;
 }
 
-function buildProviderChainBody(activeLevelChains: Record<string, LevelChainItem[]>) {
+function buildProviderChainBody(
+  activeLevelChains: Record<string, LevelChainItem[]>,
+) {
   return {
     levels: Object.fromEntries(
       Object.entries(activeLevelChains).map(([level, items]) => [
@@ -128,24 +136,32 @@ export function useLibraryForm({
   resetAfterCreate = false,
 }: UseLibraryFormOptions) {
   const [name, setName] = useState(library?.name ?? "");
-  const [paths, setPaths] = useState<string[]>(library?.paths?.length ? library.paths : [""]);
+  const [paths, setPaths] = useState<string[]>(
+    library?.paths?.length ? library.paths : [""],
+  );
   const [type, setType] = useState(library?.type ?? "movies");
   const [enabled, setEnabled] = useState(library?.enabled ?? true);
-  const [metadataLanguage, setMetadataLanguage] = useState(library?.metadata_language ?? "en");
+  const [metadataLanguage, setMetadataLanguage] = useState(
+    library?.metadata_language ?? "en",
+  );
   const [autoTranslateMetadata, setAutoTranslateMetadata] = useState(
     library?.auto_translate_metadata ?? false,
   );
   const [chapterThumbnailsEnabled, setChapterThumbnailsEnabled] = useState(
     library?.chapter_thumbnails_enabled ?? false,
   );
-  const [trickplayEnabled, setTrickplayEnabled] = useState(library?.trickplay_enabled ?? false);
+  const [trickplayEnabled, setTrickplayEnabled] = useState(
+    library?.trickplay_enabled ?? false,
+  );
   const [introDetectionEnabled, setIntroDetectionEnabled] = useState(
     library?.intro_detection_enabled ?? false,
   );
   const [trailerKinds, setTrailerKinds] = useState<string[]>(
     library?.trailer_kinds ?? [...PROVIDER_TRAILER_KINDS],
   );
-  const [levelChains, setLevelChains] = useState<Record<string, LevelChainItem[]>>({});
+  const [levelChains, setLevelChains] = useState<
+    Record<string, LevelChainItem[]>
+  >({});
   const [chainDirty, setChainDirty] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
 
@@ -155,10 +171,13 @@ export function useLibraryForm({
   const { data: currentChain } = useLibraryProviders(library?.id ?? null);
   // The server computes default chains (same logic that seeds them on create),
   // so the form never re-derives defaults from plugin manifests client-side.
-  const { data: providerDefaults, isLoading: defaultsLoading } = useLibraryProviderDefaults(type);
+  const { data: providerDefaults, isLoading: defaultsLoading } =
+    useLibraryProviderDefaults(type);
 
   const isPending =
-    createMutation.isPending || updateMutation.isPending || setChainMutation.isPending;
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    setChainMutation.isPending;
 
   const defaultLevelChains = useMemo(
     () => levelChainsFromResponse(providerDefaults),
@@ -171,19 +190,25 @@ export function useLibraryForm({
     if (currentChain === undefined) {
       return levelChains;
     }
-    return mergeChainWithDefaults(levelChainsFromResponse(currentChain), defaultLevelChains, type);
+    return mergeChainWithDefaults(
+      levelChainsFromResponse(currentChain),
+      defaultLevelChains,
+      type,
+    );
   }, [currentChain, defaultLevelChains, levelChains, library, type]);
   const activeLevelChains = chainDirty ? levelChains : resolvedLevelChains;
   // The chain editor has nothing truthful to show until the server chain (for
   // an existing library) and the type's defaults have arrived; local edits
   // always render immediately.
   const chainLoading =
-    !chainDirty && (defaultsLoading || (library !== null && currentChain === undefined));
+    !chainDirty &&
+    (defaultsLoading || (library !== null && currentChain === undefined));
 
   const allErrors = useMemo<LibraryFormErrors>(() => {
     const next: LibraryFormErrors = {};
     if (!name.trim()) next.name = "Give this library a name.";
-    if (!paths.some((p) => p.trim())) next.paths = "Add at least one folder to scan.";
+    if (!paths.some((p) => p.trim()))
+      next.paths = "Add at least one folder to scan.";
     return next;
   }, [name, paths]);
   const errors: LibraryFormErrors = submitAttempted ? allErrors : {};
@@ -225,7 +250,9 @@ export function useLibraryForm({
 
   function toggleTrailerKind(kind: string) {
     setTrailerKinds((current) =>
-      current.includes(kind) ? current.filter((k) => k !== kind) : [...current, kind],
+      current.includes(kind)
+        ? current.filter((k) => k !== kind)
+        : [...current, kind],
     );
   }
 

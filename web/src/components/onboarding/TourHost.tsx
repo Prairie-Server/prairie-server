@@ -15,14 +15,21 @@ import {
   Wand2,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import type { OnboardingFlow, OnboardingStep, OnboardingStepLink } from "@/api/types";
+import type {
+  OnboardingFlow,
+  OnboardingStep,
+  OnboardingStepLink,
+} from "@/api/types";
 import { getProfileToken } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useOnboardingProgress } from "@/hooks/queries/onboarding";
 import { useUpdateProfile } from "@/hooks/queries/profiles";
 import { settingValueFromString } from "@/hooks/queries/admin/users";
-import { useSetSettingValue, type SettingIdentity } from "@/hooks/queries/settingValues";
+import {
+  useSetSettingValue,
+  type SettingIdentity,
+} from "@/hooks/queries/settingValues";
 import type { SettingKey } from "@/lib/settingsContract";
 import { cn } from "@/lib/utils";
 
@@ -35,7 +42,12 @@ import { cn } from "@/lib/utils";
 
 // Step kinds this client understands. A manifest step whose kind isn't
 // listed here is dropped at render time, never an error.
-const KNOWN_KINDS = new Set(["welcome", "feature_card", "setting_choice", "handoff"]);
+const KNOWN_KINDS = new Set([
+  "welcome",
+  "feature_card",
+  "setting_choice",
+  "handoff",
+]);
 
 const ILLUSTRATIONS: Record<string, LucideIcon> = {
   welcome: Sparkles,
@@ -57,7 +69,10 @@ interface TourHostProps {
 }
 
 export function TourHost({ flow, onDone }: TourHostProps) {
-  const steps = useMemo(() => flow.steps.filter((s) => KNOWN_KINDS.has(s.kind)), [flow.steps]);
+  const steps = useMemo(
+    () => flow.steps.filter((s) => KNOWN_KINDS.has(s.kind)),
+    [flow.steps],
+  );
   const [index, setIndex] = useState(0);
   const progress = useOnboardingProgress();
   const navigate = useNavigate();
@@ -130,7 +145,10 @@ export function TourHost({ flow, onDone }: TourHostProps) {
           </Button>
           <div className="flex min-w-0 items-center gap-4">
             {/* Pips are decorative; on phones they'd crowd the buttons out. */}
-            <div className="hidden items-center gap-1.5 sm:flex" aria-hidden="true">
+            <div
+              className="hidden items-center gap-1.5 sm:flex"
+              aria-hidden="true"
+            >
               {steps.map((s, i) => (
                 <span
                   key={s.id}
@@ -143,12 +161,19 @@ export function TourHost({ flow, onDone }: TourHostProps) {
             </div>
             <div className="flex shrink-0 gap-2">
               {index > 0 && (
-                <Button variant="outline" size="sm" onClick={() => setIndex(index - 1)}>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIndex(index - 1)}
+                >
                   Back
                 </Button>
               )}
               {step.kind === "handoff" ? (
-                <Button size="sm" onClick={() => finish({ skipped: false, route: step.route })}>
+                <Button
+                  size="sm"
+                  onClick={() => finish({ skipped: false, route: step.route })}
+                >
                   {step.title ?? "Finish"}
                 </Button>
               ) : (
@@ -173,9 +198,15 @@ function StepBody({ step }: { step: OnboardingStep }) {
       <div className="bg-secondary mb-5 grid size-12 place-items-center rounded-xl">
         <Icon className="text-foreground size-6" aria-hidden="true" />
       </div>
-      {step.title && <h2 className="text-xl font-bold tracking-tight sm:text-2xl">{step.title}</h2>}
+      {step.title && (
+        <h2 className="text-xl font-bold tracking-tight sm:text-2xl">
+          {step.title}
+        </h2>
+      )}
       {step.body && (
-        <p className="text-muted-foreground mt-2.5 text-sm leading-relaxed">{step.body}</p>
+        <p className="text-muted-foreground mt-2.5 text-sm leading-relaxed">
+          {step.body}
+        </p>
       )}
       {step.kind === "setting_choice" && step.setting && (
         <div className="border-border bg-popover mt-5 rounded-xl border p-4">
@@ -202,7 +233,9 @@ function StoreLink({ link }: { link: OnboardingStepLink }) {
   const brand = link.url.includes("apple.com")
     ? {
         Icon: AppleLogo,
-        eyebrow: link.url.includes("testflight") ? "TestFlight beta" : "App Store",
+        eyebrow: link.url.includes("testflight")
+          ? "TestFlight beta"
+          : "App Store",
       }
     : link.url.includes("play.google.com")
       ? { Icon: GooglePlayLogo, eyebrow: "Google Play" }
@@ -213,7 +246,10 @@ function StoreLink({ link }: { link: OnboardingStepLink }) {
       <Button variant="outline" size="sm" asChild className="max-w-full">
         <a href={link.url} target="_blank" rel="noopener noreferrer">
           <span className="truncate">{link.label}</span>
-          <ExternalLink className="ml-1.5 size-3.5 shrink-0" aria-hidden="true" />
+          <ExternalLink
+            className="ml-1.5 size-3.5 shrink-0"
+            aria-hidden="true"
+          />
         </a>
       </Button>
     );
@@ -231,7 +267,9 @@ function StoreLink({ link }: { link: OnboardingStepLink }) {
         <span className="text-muted-foreground block text-[10px] leading-tight tracking-wide uppercase">
           {brand.eyebrow}
         </span>
-        <span className="block truncate text-sm leading-tight font-semibold">{link.label}</span>
+        <span className="block truncate text-sm leading-tight font-semibold">
+          {link.label}
+        </span>
       </span>
     </a>
   );
@@ -240,7 +278,12 @@ function StoreLink({ link }: { link: OnboardingStepLink }) {
 /** Apple logo mark (brand shape, rendered in the current text color). */
 function AppleLogo({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
       <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
     </svg>
   );
@@ -249,7 +292,12 @@ function AppleLogo({ className }: { className?: string }) {
 /** Google Play logo mark (brand shape, rendered in the current text color). */
 function GooglePlayLogo({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden="true">
+    <svg
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
       <path d="M3.61 1.81c-.36.38-.57.97-.57 1.73v16.92c0 .76.21 1.35.57 1.73l.09.08 9.48-9.48v-.22L3.7 1.72l-.09.09z" />
       <path d="M16.34 15.95l-3.16-3.16v-.22l3.16-3.16.07.04 3.74 2.13c1.07.6 1.07 1.6 0 2.21l-3.74 2.12-.07.04z" />
       <path d="M16.41 15.91l-3.23-3.23-9.57 9.57c.35.37 .93.42 1.59.05l11.21-6.39z" />
@@ -271,9 +319,12 @@ function SettingControl({ step }: { step: OnboardingStep }) {
 
   const currentValue =
     spec.target === "profile_field" && profile
-      ? ((profile as unknown as Record<string, unknown>)[spec.key] as string | undefined)
+      ? ((profile as unknown as Record<string, unknown>)[spec.key] as
+          string | undefined)
       : undefined;
-  const [value, setValue] = useState<string>(currentValue || spec.default || "");
+  const [value, setValue] = useState<string>(
+    currentValue || spec.default || "",
+  );
 
   function save(next: string) {
     setValue(next);
@@ -282,7 +333,8 @@ function SettingControl({ step }: { step: OnboardingStep }) {
       updateProfile.mutate(
         { id: profile.id, body: { [spec.key]: next } },
         {
-          onSuccess: (updated) => selectProfile(updated, getProfileToken() ?? undefined),
+          onSuccess: (updated) =>
+            selectProfile(updated, getProfileToken() ?? undefined),
         },
       );
       return;
@@ -290,7 +342,9 @@ function SettingControl({ step }: { step: OnboardingStep }) {
     // "setting" and "device_setting" write the same canonical mutation; they
     // differ only in the scope the value is stored at.
     const identity: SettingIdentity =
-      spec.target === "device_setting" ? { scope: "profile_device" } : { scope: "profile" };
+      spec.target === "device_setting"
+        ? { scope: "profile_device" }
+        : { scope: "profile" };
     setSettingValue.mutate({
       key: spec.key as SettingKey,
       value: settingValueFromString(spec.key, next),
@@ -331,7 +385,9 @@ function SettingControl({ step }: { step: OnboardingStep }) {
           onClick={() => save(opt.value)}
           className={cn(
             "flex items-center gap-3 rounded-lg px-3 py-2 text-left text-sm transition-colors",
-            value === opt.value ? "bg-secondary font-medium" : "hover:bg-secondary/50",
+            value === opt.value
+              ? "bg-secondary font-medium"
+              : "hover:bg-secondary/50",
           )}
         >
           <span
@@ -341,7 +397,9 @@ function SettingControl({ step }: { step: OnboardingStep }) {
             )}
             aria-hidden="true"
           >
-            {value === opt.value && <span className="bg-primary size-2 rounded-full" />}
+            {value === opt.value && (
+              <span className="bg-primary size-2 rounded-full" />
+            )}
           </span>
           {opt.label}
         </button>

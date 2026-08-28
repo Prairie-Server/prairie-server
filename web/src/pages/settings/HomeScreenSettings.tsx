@@ -44,7 +44,11 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { toast } from "sonner";
 
@@ -79,7 +83,10 @@ export function applySectionDeletion(
   sections: SettingsSectionEntry[],
   removedSystemSections: RemovedSystemOverride[],
   id: string,
-): { sections: SettingsSectionEntry[]; removedSystemSections: RemovedSystemOverride[] } {
+): {
+  sections: SettingsSectionEntry[];
+  removedSystemSections: RemovedSystemOverride[];
+} {
   const target = sections.find((section) => section.id === id);
   if (!target) {
     return { sections, removedSystemSections };
@@ -148,7 +155,9 @@ export function shouldRestoreLatestSaveFailure(
   );
 }
 
-function toEditableSection(section: SettingsSectionEntry): EditableSectionViewModel {
+function toEditableSection(
+  section: SettingsSectionEntry,
+): EditableSectionViewModel {
   return {
     id: section.id,
     title: section.title,
@@ -199,19 +208,27 @@ export default function HomeScreenSettings() {
   const rawOverridesQuery = useProfileSectionOverrides(scope, libraryId);
   const saveMutation = useSaveProfileOverrides();
   const resetMutation = useResetProfileOverrides();
-  const canEditSections = canMutateSectionSettings(settingsQuery, rawOverridesQuery);
+  const canEditSections = canMutateSectionSettings(
+    settingsQuery,
+    rawOverridesQuery,
+  );
   const activeSelectionValue = scopeValue;
   const activeSelectionRef = useRef(activeSelectionValue);
   const latestSaveAttemptRef = useRef(0);
 
   // DnD state
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [orderedSections, setOrderedSections] = useState<SettingsSectionEntry[]>([]);
-  const [removedSystemSections, setRemovedSystemSections] = useState<RemovedSystemOverride[]>([]);
+  const [orderedSections, setOrderedSections] = useState<
+    SettingsSectionEntry[]
+  >([]);
+  const [removedSystemSections, setRemovedSystemSections] = useState<
+    RemovedSystemOverride[]
+  >([]);
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerSection, setDrawerSection] = useState<SettingsSectionEntry | null>(null);
+  const [drawerSection, setDrawerSection] =
+    useState<SettingsSectionEntry | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [pickedRecipe, setPickedRecipe] = useState<{
     def: RecipeDefinition;
@@ -221,13 +238,14 @@ export default function HomeScreenSettings() {
   // Reset confirm state
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [pendingDeleteSection, setPendingDeleteSection] = useState<SettingsSectionEntry | null>(
-    null,
-  );
+  const [pendingDeleteSection, setPendingDeleteSection] =
+    useState<SettingsSectionEntry | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   // Sync from server
@@ -244,7 +262,9 @@ export default function HomeScreenSettings() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRemovedSystemSections(hydrateRemovedSystemSections(rawOverridesQuery.data?.overrides));
+    setRemovedSystemSections(
+      hydrateRemovedSystemSections(rawOverridesQuery.data?.overrides),
+    );
   }, [rawOverridesQuery.data?.overrides]);
 
   // Save helper
@@ -280,8 +300,11 @@ export default function HomeScreenSettings() {
             return;
           }
 
-          if (settingsQuery.data?.sections) setOrderedSections(settingsQuery.data.sections);
-          setRemovedSystemSections(hydrateRemovedSystemSections(rawOverridesQuery.data?.overrides));
+          if (settingsQuery.data?.sections)
+            setOrderedSections(settingsQuery.data.sections);
+          setRemovedSystemSections(
+            hydrateRemovedSystemSections(rawOverridesQuery.data?.overrides),
+          );
         },
       },
     );
@@ -315,14 +338,18 @@ export default function HomeScreenSettings() {
     setActiveId(null);
   }
 
-  const activeSection = activeId ? (orderedSections.find((s) => s.id === activeId) ?? null) : null;
+  const activeSection = activeId
+    ? (orderedSections.find((s) => s.id === activeId) ?? null)
+    : null;
 
   // Toggle visibility
   function handleToggleHidden(id: string) {
     if (!canEditSections) {
       return;
     }
-    const next = orderedSections.map((s) => (s.id === id ? { ...s, hidden: !s.hidden } : s));
+    const next = orderedSections.map((s) =>
+      s.id === id ? { ...s, hidden: !s.hidden } : s,
+    );
     setOrderedSections(next);
     saveOverrides(next);
   }
@@ -387,7 +414,10 @@ export default function HomeScreenSettings() {
     if (existing) {
       next = orderedSections.map((s) => (s.id === updated.id ? updated : s));
     } else {
-      next = [...orderedSections, { ...updated, position: orderedSections.length }];
+      next = [
+        ...orderedSections,
+        { ...updated, position: orderedSections.length },
+      ];
     }
     setOrderedSections(next);
     saveOverrides(next);
@@ -419,7 +449,10 @@ export default function HomeScreenSettings() {
     if (!canEditSections) {
       return;
     }
-    const next = [...orderedSections, buildProfileGallerySection(payload, orderedSections.length)];
+    const next = [
+      ...orderedSections,
+      buildProfileGallerySection(payload, orderedSections.length),
+    ];
     setOrderedSections(next);
     setPickedRecipe(null);
     saveOverrides(next);
@@ -428,7 +461,9 @@ export default function HomeScreenSettings() {
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Home screen</h2>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Home screen
+        </h2>
         <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
           Choose a scope, then arrange the sections that appear on that screen.
         </p>
@@ -455,7 +490,11 @@ export default function HomeScreenSettings() {
       <ConfirmDialog
         open={confirmDeleteOpen}
         onOpenChange={handleDeleteDialogChange}
-        title={pendingDeleteSection?.is_custom ? "Delete custom section?" : "Remove section?"}
+        title={
+          pendingDeleteSection?.is_custom
+            ? "Delete custom section?"
+            : "Remove section?"
+        }
         description={
           pendingDeleteSection?.is_custom
             ? "Delete this custom section?"
@@ -509,7 +548,12 @@ export default function HomeScreenSettings() {
           <Button size="sm" onClick={handleOpenAdd} disabled={!canEditSections}>
             <Plus className="mr-1 h-4 w-4" /> Add Section
           </Button>
-          <Button size="sm" variant="outline" onClick={handleReset} disabled={!canEditSections}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={handleReset}
+            disabled={!canEditSections}
+          >
             <RotateCcw />
             Reset to Default
           </Button>

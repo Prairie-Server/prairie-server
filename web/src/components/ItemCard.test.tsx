@@ -64,7 +64,9 @@ describe("ItemCard SortMeta", () => {
       libraryId: 12,
     });
 
-    expect(markup).toContain('href="/item/ebook%201%2Fisbn%3A978?libraryId=12"');
+    expect(markup).toContain(
+      'href="/item/ebook%201%2Fisbn%3A978?libraryId=12"',
+    );
   });
 
   it("passes root watched state to the poster action menu", () => {
@@ -75,7 +77,12 @@ describe("ItemCard SortMeta", () => {
     };
 
     renderCard({
-      item: { ...baseItem, content_id: "movie-1", type: "movie", user_state: userState },
+      item: {
+        ...baseItem,
+        content_id: "movie-1",
+        type: "movie",
+        user_state: userState,
+      },
     });
 
     expect(mocks.mediaItemMenu).toHaveBeenCalledWith(
@@ -194,8 +201,12 @@ describe("ItemCard SortMeta", () => {
       },
     };
 
-    expect(renderCard({ sortField: "author", item: audiobook })).toContain("Brandon Sanderson");
-    expect(renderCard({ sortField: "narrator", item: audiobook })).toContain("Michael Kramer");
+    expect(renderCard({ sortField: "author", item: audiobook })).toContain(
+      "Brandon Sanderson",
+    );
+    expect(renderCard({ sortField: "narrator", item: audiobook })).toContain(
+      "Michael Kramer",
+    );
     expect(renderCard({ sortField: "series", item: audiobook })).toContain(
       "The Stormlight Archive",
     );
@@ -331,7 +342,12 @@ describe("ItemCard SortMeta", () => {
 
   it("does not render a status chip on non-manga cards or when status is absent", () => {
     const noStatus = renderCard({
-      item: { ...baseItem, content_id: "manga-ns", type: "manga", title: "No Status" },
+      item: {
+        ...baseItem,
+        content_id: "manga-ns",
+        type: "manga",
+        title: "No Status",
+      },
     });
     expect(noStatus).not.toContain("Ongoing");
     const ebook = renderCard({

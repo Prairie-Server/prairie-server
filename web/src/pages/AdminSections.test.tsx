@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { queryDefinitionFromSectionConfig, queryDefinitionToSectionConfig } from "@/api/types";
+import {
+  queryDefinitionFromSectionConfig,
+  queryDefinitionToSectionConfig,
+} from "@/api/types";
 
 import AdminSections from "./AdminSections";
 
@@ -14,7 +17,12 @@ describe("AdminSections", () => {
       filter_type: "movie",
       filter_library_ids: [2],
       match: "all",
-      groups: [{ match: "all", rules: [{ field: "genre", op: "is", value: "Action" }] }],
+      groups: [
+        {
+          match: "all",
+          rules: [{ field: "genre", op: "is", value: "Action" }],
+        },
+      ],
       sort: "rating",
       order: "desc",
     });

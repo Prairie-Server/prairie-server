@@ -7,7 +7,9 @@ import { useCallback } from "react";
  * covers the progressive and direct-play cases, where the element's own
  * `currentTime` is the whole story.
  */
-export function useRemuxSeeking(videoRef: React.RefObject<HTMLVideoElement | null>): {
+export function useRemuxSeeking(
+  videoRef: React.RefObject<HTMLVideoElement | null>,
+): {
   handleSeek: (seconds: number) => void;
 } {
   const handleSeek = useCallback(

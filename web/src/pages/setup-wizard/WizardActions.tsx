@@ -17,7 +17,10 @@ export function WizardActions({
 }: WizardActionsProps) {
   const { canGoBack, goBack } = useWizardContext();
 
-  if (!canGoBack && (children === undefined || children === null || children === false)) {
+  if (
+    !canGoBack &&
+    (children === undefined || children === null || children === false)
+  ) {
     return null;
   }
 

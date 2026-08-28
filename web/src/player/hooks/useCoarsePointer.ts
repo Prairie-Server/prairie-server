@@ -4,7 +4,9 @@ const QUERY = "(pointer: coarse)";
 
 export function useCoarsePointer(): boolean {
   const [isCoarse, setIsCoarse] = useState(() =>
-    typeof window === "undefined" || !window.matchMedia ? false : window.matchMedia(QUERY).matches,
+    typeof window === "undefined" || !window.matchMedia
+      ? false
+      : window.matchMedia(QUERY).matches,
   );
 
   useEffect(() => {

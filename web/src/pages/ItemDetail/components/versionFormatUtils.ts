@@ -1,6 +1,14 @@
-import type { VersionAudioTrack, VersionSubtitleTrack, VersionVideoTrack } from "@/api/types";
+import type {
+  VersionAudioTrack,
+  VersionSubtitleTrack,
+  VersionVideoTrack,
+} from "@/api/types";
 import { englishLanguageName, getLanguageName } from "@/lib/languageNames";
-import { formatBitrate, formatChannels, formatSampleRate } from "@/lib/mediaFormat";
+import {
+  formatBitrate,
+  formatChannels,
+  formatSampleRate,
+} from "@/lib/mediaFormat";
 
 export function formatPageCount(pages?: number): string {
   if (!pages || pages <= 0) return "";
@@ -61,7 +69,10 @@ export function metadataLine(parts: Array<string | undefined | false>): string {
 export function videoTitle(track: VersionVideoTrack): string {
   return (
     track.title ||
-    [track.width && track.height ? `${track.width}x${track.height}` : "", track.codec]
+    [
+      track.width && track.height ? `${track.width}x${track.height}` : "",
+      track.codec,
+    ]
       .filter(Boolean)
       .join(" ") ||
     "Video"
@@ -72,14 +83,17 @@ export function audioTitle(track: VersionAudioTrack): string {
   return (
     track.title ||
     track.embedded_title ||
-    [track.language, track.codec, formatChannels(track.channels)].filter(Boolean).join(" ") ||
+    [track.language, track.codec, formatChannels(track.channels)]
+      .filter(Boolean)
+      .join(" ") ||
     "Audio"
   );
 }
 
 export function subtitleTitle(track: VersionSubtitleTrack): string {
   const language = formatLanguageName(track.language);
-  const title = track.title || track.embedded_title || track.codec || "Subtitle";
+  const title =
+    track.title || track.embedded_title || track.codec || "Subtitle";
 
   const languageLower = language.toLowerCase();
   const titleLower = title.toLowerCase();

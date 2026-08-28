@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from "vitest";
 
-import { isSafariBrowserV3, resolveHLSEngineV3, selectHLSEngineV3 } from "./hlsEngine";
+import {
+  isSafariBrowserV3,
+  resolveHLSEngineV3,
+  selectHLSEngineV3,
+} from "./hlsEngine";
 
 const safariUA =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 Version/26.0 Safari/605.1.15";
@@ -13,7 +17,10 @@ describe("isSafariBrowserV3", () => {
     expect(isSafariBrowserV3(chromeUA)).toBe(false);
   });
 
-  it.each(["CriOS/151.0 Mobile/15E148 Safari/604.1", "FxiOS/151.0 Mobile/15E148 Safari/605.1.15"])(
+  it.each([
+    "CriOS/151.0 Mobile/15E148 Safari/604.1",
+    "FxiOS/151.0 Mobile/15E148 Safari/605.1.15",
+  ])(
     "does not classify an iOS alternative browser as Safari: %s",
     (userAgent) => expect(isSafariBrowserV3(userAgent)).toBe(false),
   );
@@ -46,7 +53,9 @@ describe("selectHLSEngineV3", () => {
   it("selects native Safari HLS without loading hls.js", async () => {
     const loadHLSJS = vi.fn(async () => ({ isSupported: () => true }));
 
-    await expect(resolveHLSEngineV3("sdr", true, loadHLSJS, undefined, true)).resolves.toEqual({
+    await expect(
+      resolveHLSEngineV3("sdr", true, loadHLSJS, undefined, true),
+    ).resolves.toEqual({
       engine: "native",
     });
     expect(loadHLSJS).not.toHaveBeenCalled();
@@ -76,7 +85,9 @@ describe("selectHLSEngineV3", () => {
   it("returns the loaded hls.js engine when Media Source Extensions are supported", async () => {
     const hlsjs = { isSupported: () => true };
 
-    await expect(resolveHLSEngineV3("sdr", false, async () => hlsjs)).resolves.toEqual({
+    await expect(
+      resolveHLSEngineV3("sdr", false, async () => hlsjs),
+    ).resolves.toEqual({
       engine: "hlsjs",
       hlsjs,
     });

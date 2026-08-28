@@ -1,4 +1,8 @@
-import { useInfiniteQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { api } from "@/api/client";
 import type { SectionItem } from "@/api/types";
 import { recKeys, favoriteKeys } from "./keys";

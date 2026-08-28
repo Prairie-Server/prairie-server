@@ -6,11 +6,17 @@ export const PLAYBACK_QUALITY_OPTIONS: Array<{
   description: string;
 }> = [
   { value: "any", label: "Any", description: "Allow all resolutions" },
-  { value: "standard", label: "Standard", description: "Hide 4K and higher versions" },
+  {
+    value: "standard",
+    label: "Standard",
+    description: "Hide 4K and higher versions",
+  },
   { value: "4k", label: "4K", description: "Allow 4K and lower versions" },
 ];
 
-export function canonicalPlaybackQuality(value: string | null | undefined): string {
+export function canonicalPlaybackQuality(
+  value: string | null | undefined,
+): string {
   switch ((value ?? "").trim().toLowerCase()) {
     case "":
     case "any":
@@ -43,7 +49,9 @@ export function playbackQualityPresetFromValue(
   }
 }
 
-export function playbackQualityValueFromPreset(preset: PlaybackQualityPreset): string {
+export function playbackQualityValueFromPreset(
+  preset: PlaybackQualityPreset,
+): string {
   switch (preset) {
     case "standard":
       return "1080p";
@@ -54,7 +62,9 @@ export function playbackQualityValueFromPreset(preset: PlaybackQualityPreset): s
   }
 }
 
-export function formatPlaybackQualityPreset(value: string | null | undefined): string {
+export function formatPlaybackQualityPreset(
+  value: string | null | undefined,
+): string {
   switch (playbackQualityPresetFromValue(value)) {
     case "standard":
       return "Standard";

@@ -9,11 +9,16 @@ import TasteSeedBanner from "@/components/TasteSeedBanner";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { HomeSectionItemsResponse, ResolvedSection } from "@/api/types";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import { HERO_BANNER_SIZE } from "@/lib/design-system";
+import { HERO_BANNER_SIZE, HOME_BRAND_HERO_SIZE } from "@/lib/design-system";
+import { PrairieBrand } from "@/components/PrairieBrand";
+import { useServerBranding } from "@/hooks/useServerBranding";
 import { sectionKeys } from "@/hooks/queries/keys";
 import { fetchHomeSectionItems, useHomeLayout } from "@/hooks/queries/sections";
 import { planNextHomeSectionBatch } from "./homeSectionQueue";
-import { buildHomeSectionViewModel, type HomeSectionSlot } from "./homeSectionState";
+import {
+  buildHomeSectionViewModel,
+  type HomeSectionSlot,
+} from "./homeSectionState";
 import { collectCachedHomeSections } from "./homeSectionCache";
 import { useSectionRefreshSignal } from "./homeSurfaceRefresh";
 
@@ -25,7 +30,9 @@ export default function Home() {
   const queryClient = useQueryClient();
   const { data, isLoading, isError, refetch } = useHomeLayout();
   const { data: homeRefreshSignal = 0 } = useSectionRefreshSignal();
-  const [loadedSections, setLoadedSections] = useState<Map<string, ResolvedSection>>(new Map());
+  const [loadedSections, setLoadedSections] = useState<
+    Map<string, ResolvedSection>
+  >(new Map());
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
   const [inFlightIds, setInFlightIds] = useState<Set<string>>(new Set());
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
@@ -46,7 +53,9 @@ export default function Home() {
     activeSectionIdsRef.current = new Set(activeIds);
     setLoadedSections(
       collectCachedHomeSections(layout, (sectionId) =>
-        queryClient.getQueryData<HomeSectionItemsResponse>(sectionKeys.homeItems(sectionId)),
+        queryClient.getQueryData<HomeSectionItemsResponse>(
+          sectionKeys.homeItems(sectionId),
+        ),
       ),
     );
     setFailedIds(new Set());
@@ -56,7 +65,9 @@ export default function Home() {
     return () => {
       activeSectionIdsRef.current = new Set();
       activeIds.forEach((sectionId) => {
-        void queryClient.cancelQueries({ queryKey: sectionKeys.homeItems(sectionId) });
+        void queryClient.cancelQueries({
+          queryKey: sectionKeys.homeItems(sectionId),
+        });
       });
     };
   }, [homeRefreshSignal, layout, layoutResetKey, queryClient]);
@@ -185,7 +196,11 @@ export default function Home() {
     <>
       <h1 className="sr-only">Home</h1>
       <div className={`space-y-10 ${hasHeroSlot ? "pb-2" : "pt-6 pb-2"}`}>
-        {heroSlot}
+        {hasHeroSlot ? (
+          heroSlot
+        ) : layout.length === 0 ? (
+          <HomeBrandHero />
+        ) : null}
         <TasteSeedBanner />
 
         {viewModel.rows.map((slot) => {
@@ -204,16 +219,22 @@ export default function Home() {
               />
             );
           }
-          return <SectionLoadingRow key={slot.layout.id} title={slot.layout.title} />;
+          return (
+            <SectionLoadingRow key={slot.layout.id} title={slot.layout.title} />
+          );
         })}
 
         {layout.length === 0 && !isLoading && (
           <div className="surface-panel flex h-64 flex-col items-center justify-center gap-3 rounded-[1.8rem] border-0 px-6 text-center">
             <LayoutDashboard className="text-muted-foreground h-10 w-10" />
             <p className="text-muted-foreground text-sm">
-              Your home screen is empty. Customize it by adding sections to display your media.
+              Your home screen is empty. Customize it by adding sections to
+              display your media.
             </p>
-            <Link to="/settings/home" className="text-primary text-sm font-medium hover:underline">
+            <Link
+              to="/settings/home"
+              className="text-primary text-sm font-medium hover:underline"
+            >
               Customize Home Screen
             </Link>
           </div>
@@ -223,11 +244,19 @@ export default function Home() {
   );
 }
 
-function renderHeroSlot(hero: HomeSectionSlot | null, retrySection: (sectionId: string) => void) {
+function renderHeroSlot(
+  hero: HomeSectionSlot | null,
+  retrySection: (sectionId: string) => void,
+) {
   if (!hero) return null;
 
   if (hero.state === "ready" && hero.section) {
-    return <HeroBanner items={hero.section.items} maxSlides={hero.layout.item_limit} />;
+    return (
+      <HeroBanner
+        items={hero.section.items}
+        maxSlides={hero.layout.item_limit}
+      />
+    );
   }
 
   if (hero.state === "error") {
@@ -299,12 +328,20 @@ function SectionLoadingRow({ title }: { title: string }) {
   );
 }
 
-function SectionErrorRow({ title, onRetry }: { title: string; onRetry: () => void }) {
+function SectionErrorRow({
+  title,
+  onRetry,
+}: {
+  title: string;
+  onRetry: () => void;
+}) {
   return (
     <section className="space-y-3 px-4 sm:px-6 lg:px-12">
       <h2 className="text-foreground h-6 text-sm font-semibold">{title}</h2>
       <div className="surface-panel flex items-center justify-between rounded-[1.4rem] border-0 px-5 py-4">
-        <p className="text-muted-foreground text-sm">This section could not be loaded right now.</p>
+        <p className="text-muted-foreground text-sm">
+          This section could not be loaded right now.
+        </p>
         <button
           type="button"
           onClick={onRetry}
@@ -312,6 +349,43 @@ function SectionErrorRow({ title, onRetry }: { title: string; onRetry: () => voi
         >
           Retry
         </button>
+      </div>
+    </section>
+  );
+}
+
+function HomeBrandHero() {
+  const { serverName } = useServerBranding();
+
+  return (
+    <section
+      className={`home-hero border-border/60 relative overflow-hidden border-b ${HOME_BRAND_HERO_SIZE}`}
+      aria-label="Welcome"
+    >
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0"
+        style={{
+          background: `
+            linear-gradient(180deg, color-mix(in srgb, #1a2230 55%, var(--background)) 0%, var(--background) 100%),
+            radial-gradient(ellipse 70% 120% at 0% 50%, color-mix(in srgb, var(--primary) 14%, transparent), transparent 60%)
+          `,
+        }}
+      />
+      <div className="relative z-10 flex w-full items-center gap-4 px-4 sm:gap-5 sm:px-6 lg:px-10 xl:px-12">
+        <PrairieBrand
+          variant="mark"
+          className="brand-reveal h-11 w-11 shrink-0 sm:h-12 sm:w-12"
+          imageClassName="rounded-xl"
+        />
+        <div className="auth-brand-copy min-w-0 space-y-1">
+          <p className="font-display text-2xl font-semibold tracking-[-0.03em] sm:text-3xl">
+            {serverName}
+          </p>
+          <p className="text-muted-foreground text-sm leading-5">
+            Your library, ready when you are.
+          </p>
+        </div>
       </div>
     </section>
   );

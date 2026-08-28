@@ -17,7 +17,9 @@ export function SettingRow({ label, description, control }: SettingRowProps) {
         <Label htmlFor={id} className="text-sm font-medium">
           {label}
         </Label>
-        <p className="text-muted-foreground text-[13px] leading-relaxed">{description}</p>
+        <p className="text-muted-foreground text-[13px] leading-relaxed">
+          {description}
+        </p>
       </div>
       <div className="flex md:justify-end">{control(id)}</div>
     </div>

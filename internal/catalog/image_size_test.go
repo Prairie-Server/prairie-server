@@ -1,6 +1,9 @@
 package catalog
 
-import "testing"
+import (
+	"context"
+	"testing"
+)
 
 // The literals below are the variants this package returned before the
 // image_size parameter existed. Routing the size hint through
@@ -103,13 +106,13 @@ func TestCachedImageVariantPathRewritesKey(t *testing.T) {
 		"original": original,
 	}
 	for size, wantPath := range tests {
-		if got := cachedImageVariantPath(original, "poster", size); got != wantPath {
+		if got := cachedImageVariantPath(context.Background(), original, "poster", size); got != wantPath {
 			t.Errorf("cachedImageVariantPath(%q, poster, %q) = %q, want %q", original, size, got, wantPath)
 		}
 	}
 
 	const pluginPath = "plugin://tmdb/poster/original.webp"
-	if got := cachedImageVariantPath(pluginPath, "poster", "large"); got != pluginPath {
+	if got := cachedImageVariantPath(context.Background(), pluginPath, "poster", "large"); got != pluginPath {
 		t.Errorf("cachedImageVariantPath(plugin path) = %q, want it unchanged", got)
 	}
 }

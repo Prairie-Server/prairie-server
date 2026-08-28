@@ -18,7 +18,11 @@ import {
   normalizeMetadataLanguageOverrides,
   type MetadataLanguageOverrides,
 } from "@/lib/metadataLanguagePreferences";
-import { SETTING_DEFINITIONS, SETTING_KEYS, type SettingKey } from "@/lib/settingsContract";
+import {
+  SETTING_DEFINITIONS,
+  SETTING_KEYS,
+  type SettingKey,
+} from "@/lib/settingsContract";
 import { bitrateSelectChoices } from "@/lib/bitrateOptions";
 import {
   settingsCapabilitiesSupportKey,
@@ -52,8 +56,12 @@ const BASE_PLAYBACK_KEYS: SettingKey[] = [
   SETTING_KEYS.UI_NEXT_UP_MODE,
 ];
 
-const NEXT_UP_MODES = optionsFor(SETTING_DEFINITIONS[SETTING_KEYS.UI_NEXT_UP_MODE]);
-const INTRO_SKIP_MODES = optionsFor(SETTING_DEFINITIONS[SETTING_KEYS.PLAYBACK_INTRO_SKIP_MODE]);
+const NEXT_UP_MODES = optionsFor(
+  SETTING_DEFINITIONS[SETTING_KEYS.UI_NEXT_UP_MODE],
+);
+const INTRO_SKIP_MODES = optionsFor(
+  SETTING_DEFINITIONS[SETTING_KEYS.PLAYBACK_INTRO_SKIP_MODE],
+);
 
 // Radix Select cannot represent "" as an item value, so the unset entry needs
 // a sentinel that never collides with a stored bitrate.
@@ -71,21 +79,28 @@ const NO_BITRATE_LIMIT = "__no_limit__";
  */
 function QualitySetting() {
   const { data: effective } = useEffectiveSettings({
-    keys: [SETTING_KEYS.PLAYBACK_PREFERRED_QUALITY, SETTING_KEYS.PLAYBACK_MAX_BITRATE_KBPS],
+    keys: [
+      SETTING_KEYS.PLAYBACK_PREFERRED_QUALITY,
+      SETTING_KEYS.PLAYBACK_MAX_BITRATE_KBPS,
+    ],
   });
   const { save, reset, isSaving } = useProfileDefaultWriter(effective);
 
-  const qualityDefinition = SETTING_DEFINITIONS[SETTING_KEYS.PLAYBACK_PREFERRED_QUALITY];
-  const bitrateDefinition = SETTING_DEFINITIONS[SETTING_KEYS.PLAYBACK_MAX_BITRATE_KBPS];
+  const qualityDefinition =
+    SETTING_DEFINITIONS[SETTING_KEYS.PLAYBACK_PREFERRED_QUALITY];
+  const bitrateDefinition =
+    SETTING_DEFINITIONS[SETTING_KEYS.PLAYBACK_MAX_BITRATE_KBPS];
 
-  const resolution = (effective?.[SETTING_KEYS.PLAYBACK_PREFERRED_QUALITY]?.value ??
-    qualityDefinition.defaultValue) as string;
+  const resolution = (effective?.[SETTING_KEYS.PLAYBACK_PREFERRED_QUALITY]
+    ?.value ?? qualityDefinition.defaultValue) as string;
   const bitrate = effective?.[SETTING_KEYS.PLAYBACK_MAX_BITRATE_KBPS]?.value as
-    | number
-    | null
-    | undefined;
+    number | null | undefined;
   const bitrateValue = bitrate == null ? "" : String(bitrate);
-  const bitrateChoices = bitrateSelectChoices(bitrateDefinition, bitrateValue, "No limit");
+  const bitrateChoices = bitrateSelectChoices(
+    bitrateDefinition,
+    bitrateValue,
+    "No limit",
+  );
 
   return (
     <>
@@ -132,7 +147,9 @@ function QualitySetting() {
                 next === NO_BITRATE_LIMIT
                   ? reset(SETTING_KEYS.PLAYBACK_MAX_BITRATE_KBPS)
                   : save(SETTING_KEYS.PLAYBACK_MAX_BITRATE_KBPS, Number(next));
-              request.catch(() => toast.error("Failed to save maximum bitrate"));
+              request.catch(() =>
+                toast.error("Failed to save maximum bitrate"),
+              );
             }}
           >
             <SelectTrigger id={id} className="w-full sm:w-[220px]">
@@ -178,7 +195,9 @@ function AutoPlayNextSetting() {
           checked={enabled}
           disabled={isSaving}
           onCheckedChange={(checked) => {
-            setEnabled(checked).catch(() => toast.error("Failed to save playback setting"));
+            setEnabled(checked).catch(() =>
+              toast.error("Failed to save playback setting"),
+            );
           }}
         />
       )}
@@ -234,12 +253,18 @@ export default function PlaybackSettings() {
   // several of these keys are device-overridable, and without the clear the
   // control would snap back to the override it cannot see.
   const saveValue = (key: SettingKey, value: unknown) => {
-    saveProfileDefault(key, value).catch(() => toast.error("Failed to save playback setting"));
+    saveProfileDefault(key, value).catch(() =>
+      toast.error("Failed to save playback setting"),
+    );
   };
 
   const nextUpMode = read<string>(SETTING_KEYS.UI_NEXT_UP_MODE);
-  const audioLanguage = read<string | null>(SETTING_KEYS.PLAYBACK_AUDIO_LANGUAGE);
-  const metadataLanguage = read<string | null>(SETTING_KEYS.CATALOG_METADATA_LANGUAGE);
+  const audioLanguage = read<string | null>(
+    SETTING_KEYS.PLAYBACK_AUDIO_LANGUAGE,
+  );
+  const metadataLanguage = read<string | null>(
+    SETTING_KEYS.CATALOG_METADATA_LANGUAGE,
+  );
   const audioLanguageOptions = namedLanguageOptionsFor(
     SETTING_KEYS.PLAYBACK_AUDIO_LANGUAGE,
     audioLanguage,
@@ -252,14 +277,18 @@ export default function PlaybackSettings() {
   );
   // Whether the profile has actually chosen, which is what gates the reset
   // affordance: the resolved value is the default until a row exists.
-  const nextUpChosen = effective?.[SETTING_KEYS.UI_NEXT_UP_MODE]?.source === "profile";
+  const nextUpChosen =
+    effective?.[SETTING_KEYS.UI_NEXT_UP_MODE]?.source === "profile";
   const pending = isSaving;
 
   const saveMetadataOverrides = (overrides: MetadataLanguageOverrides) => {
     const request =
       Object.keys(overrides).length === 0
         ? resetProfileDefault(SETTING_KEYS.CATALOG_METADATA_LANGUAGE_OVERRIDES)
-        : saveProfileDefault(SETTING_KEYS.CATALOG_METADATA_LANGUAGE_OVERRIDES, overrides);
+        : saveProfileDefault(
+            SETTING_KEYS.CATALOG_METADATA_LANGUAGE_OVERRIDES,
+            overrides,
+          );
     return request.catch((error) => {
       toast.error("Failed to save metadata language exceptions");
       throw error;
@@ -278,7 +307,9 @@ export default function PlaybackSettings() {
     <div className="space-y-6">
       <div className="space-y-4">
         <div className="space-y-3">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Playback</h2>
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Playback
+          </h2>
           <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
             Choose the defaults Silo should use when playback starts.
           </p>
@@ -306,7 +337,10 @@ export default function PlaybackSettings() {
                 onValueChange={(value) =>
                   // The contract spells "no preference" as null, where the
                   // legacy profile column spelled it as the empty string.
-                  saveValue(SETTING_KEYS.PLAYBACK_AUDIO_LANGUAGE, value === "none" ? null : value)
+                  saveValue(
+                    SETTING_KEYS.PLAYBACK_AUDIO_LANGUAGE,
+                    value === "none" ? null : value,
+                  )
                 }
               >
                 <SelectItem value="none">No preference</SelectItem>
@@ -336,7 +370,9 @@ export default function PlaybackSettings() {
               <Select
                 value={read<string>(SETTING_KEYS.PLAYBACK_INTRO_SKIP_MODE)}
                 disabled={pending}
-                onValueChange={(value) => saveValue(SETTING_KEYS.PLAYBACK_INTRO_SKIP_MODE, value)}
+                onValueChange={(value) =>
+                  saveValue(SETTING_KEYS.PLAYBACK_INTRO_SKIP_MODE, value)
+                }
               >
                 <SelectTrigger id={id} className="w-full sm:w-[220px]">
                   <SelectValue />
@@ -426,7 +462,9 @@ export default function PlaybackSettings() {
           control={(id) => (
             <Switch
               id={id}
-              checked={read<boolean>(SETTING_KEYS.PLAYBACK_AUTO_PLAY_NEXT_PREVIEW)}
+              checked={read<boolean>(
+                SETTING_KEYS.PLAYBACK_AUTO_PLAY_NEXT_PREVIEW,
+              )}
               disabled={pending}
               onCheckedChange={(checked) =>
                 saveValue(SETTING_KEYS.PLAYBACK_AUTO_PLAY_NEXT_PREVIEW, checked)
@@ -444,7 +482,9 @@ export default function PlaybackSettings() {
             <div className="flex items-center gap-2">
               <Select
                 value={nextUpMode}
-                onValueChange={(value) => saveValue(SETTING_KEYS.UI_NEXT_UP_MODE, value)}
+                onValueChange={(value) =>
+                  saveValue(SETTING_KEYS.UI_NEXT_UP_MODE, value)
+                }
                 disabled={pending}
               >
                 <SelectTrigger id={id} className="w-full sm:w-[240px]">

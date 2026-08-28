@@ -7,8 +7,14 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { ArrowUp, ArrowDown } from "lucide-react";
-import { getDefaultQuerySortOrder, getQuerySortOptions } from "@/lib/querySortOptions";
-import { ADVANCED_FILTER_CONTENT_RATINGS, ADVANCED_FILTER_GENRES } from "./advancedFilterOptions";
+import {
+  getDefaultQuerySortOrder,
+  getQuerySortOptions,
+} from "@/lib/querySortOptions";
+import {
+  ADVANCED_FILTER_CONTENT_RATINGS,
+  ADVANCED_FILTER_GENRES,
+} from "./advancedFilterOptions";
 import type { AdvancedFilters } from "./advancedFilterOptions";
 
 interface AdvancedFilterBarProps {
@@ -19,12 +25,16 @@ interface AdvancedFilterBarProps {
 
 const filterTrigger = (active: boolean) =>
   `h-9 rounded-full text-[13px] ${
-    active ? "border-primary/40 bg-primary/8 text-foreground" : "border-border/50 bg-transparent"
+    active
+      ? "border-primary/40 bg-primary/8 text-foreground"
+      : "border-border/50 bg-transparent"
   }`;
 
 const yearInput = (active: boolean) =>
   `h-9 w-[4.5rem] rounded-full text-center text-[13px] [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none ${
-    active ? "border-primary/40 bg-primary/8 text-foreground" : "border-border/50 bg-transparent"
+    active
+      ? "border-primary/40 bg-primary/8 text-foreground"
+      : "border-border/50 bg-transparent"
   }`;
 
 export default function AdvancedFilterBar({
@@ -43,7 +53,10 @@ export default function AdvancedFilterBar({
   return (
     <div className="flex flex-wrap items-center gap-2">
       {showTypeFilter && (
-        <Select value={filters.type} onValueChange={(v) => onChange({ ...filters, type: v })}>
+        <Select
+          value={filters.type}
+          onValueChange={(v) => onChange({ ...filters, type: v })}
+        >
           <SelectTrigger className={filterTrigger(filters.type !== "all")}>
             <SelectValue placeholder="Type" />
           </SelectTrigger>
@@ -55,7 +68,10 @@ export default function AdvancedFilterBar({
         </Select>
       )}
 
-      <Select value={filters.genre} onValueChange={(v) => onChange({ ...filters, genre: v })}>
+      <Select
+        value={filters.genre}
+        onValueChange={(v) => onChange({ ...filters, genre: v })}
+      >
         <SelectTrigger className={filterTrigger(filters.genre !== "all")}>
           <SelectValue placeholder="Genre" />
         </SelectTrigger>
@@ -96,7 +112,9 @@ export default function AdvancedFilterBar({
         value={filters.content_rating}
         onValueChange={(v) => onChange({ ...filters, content_rating: v })}
       >
-        <SelectTrigger className={filterTrigger(filters.content_rating !== "all")}>
+        <SelectTrigger
+          className={filterTrigger(filters.content_rating !== "all")}
+        >
           <SelectValue placeholder="Rating" />
         </SelectTrigger>
         <SelectContent>

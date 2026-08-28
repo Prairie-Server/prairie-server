@@ -1,4 +1,7 @@
-import { getDefaultQuerySortOrder, normalizeQuerySortField } from "@/lib/querySortOptions";
+import {
+  getDefaultQuerySortOrder,
+  normalizeQuerySortField,
+} from "@/lib/querySortOptions";
 import type { SchemaOption } from "@/components/admin/plugins/schemaFormUtils";
 
 // Auth
@@ -351,7 +354,8 @@ export interface WebhookSyncEventLog {
   received_at: string;
   request_id?: string;
   http_status: number;
-  outcome: "applied" | "ignored" | "unmatched" | "skipped" | "rejected" | "error";
+  outcome:
+    "applied" | "ignored" | "unmatched" | "skipped" | "rejected" | "error";
   summary: string;
   error_message?: string | null;
   body_excerpt?: string | null;
@@ -808,7 +812,8 @@ export interface BrowseItemSortMetrics {
 export interface BrowseItem {
   content_id: string;
   play_content_id?: string;
-  type: "movie" | "series" | "season" | "episode" | "audiobook" | "ebook" | "manga";
+  type:
+    "movie" | "series" | "season" | "episode" | "audiobook" | "ebook" | "manga";
   title: string;
   series_id?: string;
   series_title?: string;
@@ -1132,7 +1137,9 @@ export type MarkerSegmentInput = { start?: number | null; end?: number | null };
  * acted on: an object sets the segment, null clears it, an absent key is
  * left unchanged.
  */
-export type SetMarkersRequest = Partial<Record<MarkerKind, MarkerSegmentInput | null>>;
+export type SetMarkersRequest = Partial<
+  Record<MarkerKind, MarkerSegmentInput | null>
+>;
 
 /**
  * Remote provider video (trailer, teaser, featurette, ...) attached to an
@@ -1160,7 +1167,15 @@ export interface ItemExtra {
 export interface ItemDetail {
   content_id: string;
   play_content_id?: string;
-  type: "movie" | "series" | "season" | "episode" | "audiobook" | "ebook" | "manga" | "podcast";
+  type:
+    | "movie"
+    | "series"
+    | "season"
+    | "episode"
+    | "audiobook"
+    | "ebook"
+    | "manga"
+    | "podcast";
   status?: "pending" | "matched" | "unmatched" | "ambiguous";
 
   // Metadata (served inline from Postgres).
@@ -1329,15 +1344,18 @@ export interface EpisodesResponse {
 }
 
 // Collections
-export type UserCollectionType = "manual" | "smart" | "mdblist" | "tmdb" | "trakt";
+export type UserCollectionType =
+  "manual" | "smart" | "mdblist" | "tmdb" | "trakt";
 
-export type UserCollectionSyncStatus = "" | "running" | "success" | "failed" | "warning";
+export type UserCollectionSyncStatus =
+  "" | "running" | "success" | "failed" | "warning";
 // UI-only presets for the two display-filter dropdowns. They no longer map to
 // dedicated API fields — the server stores the equivalent rules in
 // `display_query_definition` (a filter-only QueryDefinition fragment).
 export type UserCollectionWatchFilter = "all" | "unwatched" | "watched";
 export type UserCollectionMediaFilter = "all" | "movie" | "series";
-export type GroupSortMode = "manual" | "name_asc" | "name_desc" | "recent" | "most_items";
+export type GroupSortMode =
+  "manual" | "name_asc" | "name_desc" | "recent" | "most_items";
 export type LibraryCollectionGroupKind = "regular" | "user_collections";
 
 export interface Collection {
@@ -1476,7 +1494,8 @@ export interface QuerySort {
 
 export interface QueryDefinition {
   library_ids: number[];
-  media_scope?: "movie" | "series" | "episode" | "audiobook" | "ebook" | "manga" | "video";
+  media_scope?:
+    "movie" | "series" | "episode" | "audiobook" | "ebook" | "manga" | "video";
   match: "all" | "any";
   groups: QueryGroup[];
   sort: QuerySort;
@@ -1580,7 +1599,8 @@ export interface LibraryCollection {
   updated_at: string;
 }
 
-export type LibraryCollectionManagementMode = "manual" | "section" | "template_bundle";
+export type LibraryCollectionManagementMode =
+  "manual" | "section" | "template_bundle";
 
 export interface LibraryCollectionGroup {
   id: string;
@@ -1827,7 +1847,10 @@ export interface ImportUserTraktCollectionRequest extends UserImportSharedFields
 
 // A completed sync always has a non-empty status; the empty-string variant in
 // UserCollectionSyncStatus only appears on un-synced rows.
-export type UserCollectionSyncResultStatus = Exclude<UserCollectionSyncStatus, "">;
+export type UserCollectionSyncResultStatus = Exclude<
+  UserCollectionSyncStatus,
+  ""
+>;
 
 export interface UserCollectionSyncResult {
   status: UserCollectionSyncResultStatus;
@@ -1846,8 +1869,10 @@ export interface ImportUserCollectionResponse {
 // Media Requests
 export type RequestMediaType = "movie" | "series";
 export type RequestSearchMediaType = RequestMediaType | "all";
-export type MediaRequestStatus = "pending" | "approved" | "queued" | "downloading" | "completed";
-export type MediaRequestOutcome = "active" | "declined" | "cancelled" | "failed";
+export type MediaRequestStatus =
+  "pending" | "approved" | "queued" | "downloading" | "completed";
+export type MediaRequestOutcome =
+  "active" | "declined" | "cancelled" | "failed";
 export type RequestAvailability = "missing" | "available";
 export type RequestLimitMode = "inherit" | "custom" | "unlimited" | "blocked";
 export type RequestApprovalMode = "inherit" | "manual" | "auto" | "blocked";
@@ -2280,7 +2305,8 @@ export interface AutoscanStatus {
   latest_event_at?: string;
 }
 
-export type AutoscanEventStatus = "running" | "success" | "error" | "unresolved";
+export type AutoscanEventStatus =
+  "running" | "success" | "error" | "unresolved";
 
 export interface AutoscanEventScanRun {
   id: string;
@@ -2323,7 +2349,8 @@ export interface AutoscanEventsResponse {
   offset: number;
 }
 
-export type AutoscanScanStatus = "accepted" | "running" | "completed" | "failed" | "cancelled";
+export type AutoscanScanStatus =
+  "accepted" | "running" | "completed" | "failed" | "cancelled";
 
 export interface AutoscanScan {
   id: string;
@@ -2783,7 +2810,8 @@ export interface AuditLogListResponse {
   next_cursor?: string;
 }
 
-export type DiagnosticAvailabilityStatus = "available" | "disabled" | "storage_unavailable";
+export type DiagnosticAvailabilityStatus =
+  "available" | "disabled" | "storage_unavailable";
 
 export interface DiagnosticStatus {
   status: DiagnosticAvailabilityStatus;
@@ -2797,12 +2825,7 @@ export interface DiagnosticStatus {
 
 export type DiagnosticReportState = "receiving" | "ready" | "failed";
 export type DiagnosticReportType =
-  | "crash"
-  | "anr"
-  | "native_crash"
-  | "hang"
-  | "abnormal_exit"
-  | "manual";
+  "crash" | "anr" | "native_crash" | "hang" | "abnormal_exit" | "manual";
 export type DiagnosticPlatform = "android" | "android-tv" | "ios" | "tvos";
 
 export interface ClientDiagnosticManifest {
@@ -3097,19 +3120,28 @@ export interface NotificationAccountChannelCapability {
 
 export interface NotificationCapability {
   in_app: { enabled: boolean };
-  apple_push: { available: boolean; provider: string; supported_modes: string[] };
-  android_push: { available: boolean; provider: string; supported_modes: string[] };
+  apple_push: {
+    available: boolean;
+    provider: string;
+    supported_modes: string[];
+  };
+  android_push: {
+    available: boolean;
+    provider: string;
+    supported_modes: string[];
+  };
   web_push: { available: boolean; public_key?: string };
-  webhooks: { available: boolean; max_per_profile: number; supported_types: string[] };
+  webhooks: {
+    available: boolean;
+    max_per_profile: number;
+    supported_types: string[];
+  };
   email: NotificationAccountChannelCapability;
   discord: NotificationAccountChannelCapability;
 }
 
 export type NotificationChannelMode =
-  | "off"
-  | "per_episode"
-  | "daily_digest"
-  | "per_episode_and_digest";
+  "off" | "per_episode" | "daily_digest" | "per_episode_and_digest";
 export type NotificationEmailMode = NotificationChannelMode;
 export type NotificationDiscordMode = NotificationChannelMode;
 
@@ -3220,9 +3252,7 @@ export type EventsStreamMessage =
   | EventsErrorMessage;
 
 export type AdminLogStreamMessage =
-  | AdminLogSnapshotMessage
-  | AdminLogAppendMessage
-  | AdminLogErrorMessage;
+  AdminLogSnapshotMessage | AdminLogAppendMessage | AdminLogErrorMessage;
 
 export interface AdminPlaybackHistoryItem {
   session_id: string;
@@ -3623,7 +3653,8 @@ export interface CatalogSeedImportResponse {
   unmatched_roots?: string[];
 }
 
-export type AdminJobStatus = "queued" | "running" | "completed" | "failed" | "cancelled";
+export type AdminJobStatus =
+  "queued" | "running" | "completed" | "failed" | "cancelled";
 
 export interface LibraryRefreshJobRequest {
   library_id: number;
@@ -3647,8 +3678,12 @@ export interface AdminJob {
   job_type: string;
   status: AdminJobStatus;
   created_by_user_id: number;
-  request_payload: CatalogSeedExportRequest | LibraryRefreshJobRequest | Record<string, unknown>;
-  result_payload: CatalogSeedExportResult | LibraryRefreshJobResult | Record<string, unknown>;
+  request_payload:
+    | CatalogSeedExportRequest
+    | LibraryRefreshJobRequest
+    | Record<string, unknown>;
+  result_payload:
+    CatalogSeedExportResult | LibraryRefreshJobResult | Record<string, unknown>;
   message: string;
   error_message?: string;
   progress_current: number;
@@ -3754,7 +3789,14 @@ export interface PluginAdminFormField {
   key: string;
   label: string;
   description?: string;
-  control: "TEXT" | "TEXTAREA" | "PASSWORD" | "NUMBER" | "SWITCH" | "SELECT" | "MULTI_SELECT";
+  control:
+    | "TEXT"
+    | "TEXTAREA"
+    | "PASSWORD"
+    | "NUMBER"
+    | "SWITCH"
+    | "SELECT"
+    | "MULTI_SELECT";
   placeholder?: string;
   required: boolean;
   secret: boolean;
@@ -4222,8 +4264,11 @@ export function createEmptyQueryDefinition(): QueryDefinition {
   };
 }
 
-export function normalizeQueryDefinition(value?: QueryDefinitionInput | null): QueryDefinition {
-  const normalizeField = (field?: string) => normalizeQuerySortField(field) ?? field;
+export function normalizeQueryDefinition(
+  value?: QueryDefinitionInput | null,
+): QueryDefinition {
+  const normalizeField = (field?: string) =>
+    normalizeQuerySortField(field) ?? field;
 
   return {
     library_ids: [...(value?.library_ids ?? [])],
@@ -4266,14 +4311,22 @@ export function queryDefinitionFromSectionConfig(
   const libraryIds: number[] = [];
   if (Array.isArray(config.library_ids)) {
     for (const value of config.library_ids) {
-      if (typeof value === "number" && Number.isInteger(value) && !libraryIds.includes(value)) {
+      if (
+        typeof value === "number" &&
+        Number.isInteger(value) &&
+        !libraryIds.includes(value)
+      ) {
         libraryIds.push(value);
       }
     }
   }
   if (Array.isArray(config.filter_library_ids)) {
     for (const value of config.filter_library_ids) {
-      if (typeof value === "number" && Number.isInteger(value) && !libraryIds.includes(value)) {
+      if (
+        typeof value === "number" &&
+        Number.isInteger(value) &&
+        !libraryIds.includes(value)
+      ) {
         libraryIds.push(value);
       }
     }
@@ -4286,7 +4339,9 @@ export function queryDefinitionFromSectionConfig(
     libraryIds.push(config.filter_library_id);
   }
 
-  const maybeGroups = Array.isArray(config.groups) ? (config.groups as QueryGroup[]) : [];
+  const maybeGroups = Array.isArray(config.groups)
+    ? (config.groups as QueryGroup[])
+    : [];
   const mediaScope =
     config.media_scope === "movie" || config.filter_type === "movie"
       ? "movie"
@@ -4294,7 +4349,8 @@ export function queryDefinitionFromSectionConfig(
         ? "series"
         : config.media_scope === "episode" || config.filter_type === "episode"
           ? "episode"
-          : config.media_scope === "audiobook" || config.filter_type === "audiobook"
+          : config.media_scope === "audiobook" ||
+              config.filter_type === "audiobook"
             ? "audiobook"
             : config.media_scope === "ebook" || config.filter_type === "ebook"
               ? "ebook"
@@ -4302,8 +4358,10 @@ export function queryDefinitionFromSectionConfig(
                 ? "manga"
                 : undefined;
 
-  const legacySortField = typeof config.sort === "string" ? config.sort : undefined;
-  const legacySortOrder = typeof config.order === "string" ? config.order : undefined;
+  const legacySortField =
+    typeof config.sort === "string" ? config.sort : undefined;
+  const legacySortOrder =
+    typeof config.order === "string" ? config.order : undefined;
 
   return normalizeQueryDefinition({
     library_ids: libraryIds,
@@ -4314,13 +4372,17 @@ export function queryDefinitionFromSectionConfig(
       config.sort && typeof config.sort === "object"
         ? (config.sort as QuerySort)
         : {
-            field: (legacySortField as QuerySort["field"] | undefined) ?? "added_at",
-            order: (legacySortOrder as QuerySort["order"] | undefined) ?? "desc",
+            field:
+              (legacySortField as QuerySort["field"] | undefined) ?? "added_at",
+            order:
+              (legacySortOrder as QuerySort["order"] | undefined) ?? "desc",
           },
   });
 }
 
-export function queryDefinitionToSectionConfig(query: QueryDefinition): Record<string, unknown> {
+export function queryDefinitionToSectionConfig(
+  query: QueryDefinition,
+): Record<string, unknown> {
   const normalized = normalizeQueryDefinition(query);
   return {
     library_ids: normalized.library_ids,
@@ -4837,7 +4899,12 @@ export interface TaskInfo {
 export interface MatchCandidate {
   title: string;
   original_title?: string;
-  aliases?: Array<{ title: string; language?: string; kind: string; provider?: string }>;
+  aliases?: Array<{
+    title: string;
+    language?: string;
+    kind: string;
+    provider?: string;
+  }>;
   title_language?: string;
   title_is_fallback?: boolean;
   matched_title?: string;

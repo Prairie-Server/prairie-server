@@ -58,7 +58,9 @@ export function useTaskHistory(key: string) {
   return useQuery({
     queryKey: adminKeys.taskHistory(key),
     queryFn: () =>
-      api<ExecutionResult[]>(`/admin/tasks/${encodeURIComponent(key)}/history?limit=20`),
+      api<ExecutionResult[]>(
+        `/admin/tasks/${encodeURIComponent(key)}/history?limit=20`,
+      ),
     staleTime: 0,
   });
 }
@@ -68,7 +70,10 @@ export function useTaskMetrics(key: string) {
 
   return useQuery({
     queryKey: adminKeys.taskMetrics(key),
-    queryFn: () => api<MetadataRefreshMetrics>(`/admin/tasks/${encodeURIComponent(key)}/metrics`),
+    queryFn: () =>
+      api<MetadataRefreshMetrics>(
+        `/admin/tasks/${encodeURIComponent(key)}/metrics`,
+      ),
     enabled: key === "refresh_metadata",
     staleTime: 0,
     refetchInterval: pageActivity.canApplyRealtimeUpdates ? 30_000 : false,
@@ -84,7 +89,9 @@ export function useRunTask() {
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: adminKeys.tasks() });
-      void queryClient.invalidateQueries({ queryKey: adminKeys.taskMetrics("refresh_metadata") });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.taskMetrics("refresh_metadata"),
+      });
       toast.success("Task started");
     },
     onError: (error: Error) => {
@@ -101,12 +108,17 @@ export function useCancelTask() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (key: string) =>
-      api<{ status: string }>(`/admin/tasks/${encodeURIComponent(key)}/cancel`, {
-        method: "POST",
-      }),
+      api<{ status: string }>(
+        `/admin/tasks/${encodeURIComponent(key)}/cancel`,
+        {
+          method: "POST",
+        },
+      ),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: adminKeys.tasks() });
-      void queryClient.invalidateQueries({ queryKey: adminKeys.taskMetrics("refresh_metadata") });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.taskMetrics("refresh_metadata"),
+      });
       toast.success("Cancellation requested");
     },
     onError: () => {
@@ -118,7 +130,13 @@ export function useCancelTask() {
 export function useUpdateTriggers() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ key, triggers }: { key: string; triggers: TriggerConfig[] }) =>
+    mutationFn: ({
+      key,
+      triggers,
+    }: {
+      key: string;
+      triggers: TriggerConfig[];
+    }) =>
       api<TaskInfo>(`/admin/tasks/${encodeURIComponent(key)}/triggers`, {
         method: "PUT",
         body: JSON.stringify(triggers),
@@ -126,7 +144,9 @@ export function useUpdateTriggers() {
     onSuccess: (_data, { key }) => {
       void queryClient.invalidateQueries({ queryKey: adminKeys.task(key) });
       void queryClient.invalidateQueries({ queryKey: adminKeys.tasks() });
-      void queryClient.invalidateQueries({ queryKey: adminKeys.taskMetrics(key) });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.taskMetrics(key),
+      });
       toast.success("Schedule updated");
     },
     onError: () => {

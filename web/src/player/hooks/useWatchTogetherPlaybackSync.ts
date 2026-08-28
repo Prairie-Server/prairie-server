@@ -27,8 +27,14 @@ interface UseWatchTogetherPlaybackSyncResult {
     positionSeconds: number,
     isPaused: boolean,
   ) => TransportRequestResult;
-  reportReady: (positionSeconds?: number, isPaused?: boolean) => TransportRequestResult;
-  reportBuffering: (positionSeconds?: number, isPaused?: boolean) => TransportRequestResult;
+  reportReady: (
+    positionSeconds?: number,
+    isPaused?: boolean,
+  ) => TransportRequestResult;
+  reportBuffering: (
+    positionSeconds?: number,
+    isPaused?: boolean,
+  ) => TransportRequestResult;
 }
 
 const stateReportIntervalMs = 1_500;
@@ -52,10 +58,19 @@ export function useWatchTogetherPlaybackSync({
   const waitingStateRef = useRef<"idle" | "buffering" | "ready">("idle");
 
   useEffect(() => {
-    if (!sessionId || attachedSessionId !== sessionId || room?.playback_state !== "waiting") {
+    if (
+      !sessionId ||
+      attachedSessionId !== sessionId ||
+      room?.playback_state !== "waiting"
+    ) {
       waitingStateRef.current = "idle";
     }
-  }, [attachedSessionId, room?.playback_state, room?.selection_revision, sessionId]);
+  }, [
+    attachedSessionId,
+    room?.playback_state,
+    room?.selection_revision,
+    sessionId,
+  ]);
 
   useEffect(() => {
     if (!sessionId || connectionState !== "connected") {
@@ -76,7 +91,8 @@ export function useWatchTogetherPlaybackSync({
         return;
       }
       if (transportCommand?.session_id === sessionId) {
-        const localExecuteAt = Date.parse(transportCommand.execute_at) - serverTimeOffsetMs;
+        const localExecuteAt =
+          Date.parse(transportCommand.execute_at) - serverTimeOffsetMs;
         if (
           Number.isFinite(localExecuteAt) &&
           localExecuteAt + pendingCommandQuietPeriodMs > Date.now()
@@ -88,7 +104,10 @@ export function useWatchTogetherPlaybackSync({
       sendRoomMessage({
         type: "state_report",
         session_id: sessionId,
-        position_seconds: toMediaTime(video.currentTime, streamOriginRef.current),
+        position_seconds: toMediaTime(
+          video.currentTime,
+          streamOriginRef.current,
+        ),
         is_paused: video.paused,
       });
     }, stateReportIntervalMs);
@@ -108,7 +127,11 @@ export function useWatchTogetherPlaybackSync({
   ]);
 
   const requestTransport = useCallback(
-    (action: "play" | "pause" | "seek", positionSeconds: number, isPaused: boolean) => {
+    (
+      action: "play" | "pause" | "seek",
+      positionSeconds: number,
+      isPaused: boolean,
+    ) => {
       if (
         connectionState !== "connected" ||
         !roomConnected ||
@@ -124,7 +147,13 @@ export function useWatchTogetherPlaybackSync({
         is_paused: isPaused,
       });
     },
-    [attachedSessionId, connectionState, roomConnected, sendRoomMessage, sessionId],
+    [
+      attachedSessionId,
+      connectionState,
+      roomConnected,
+      sendRoomMessage,
+      sessionId,
+    ],
   );
 
   const reportReady = useCallback(
@@ -147,7 +176,8 @@ export function useWatchTogetherPlaybackSync({
         session_id: sessionId,
         position_seconds: Math.max(
           0,
-          positionSeconds ?? toMediaTime(video.currentTime, streamOriginRef.current),
+          positionSeconds ??
+            toMediaTime(video.currentTime, streamOriginRef.current),
         ),
         is_paused: isPaused ?? video.paused,
       });
@@ -188,7 +218,8 @@ export function useWatchTogetherPlaybackSync({
         session_id: sessionId,
         position_seconds: Math.max(
           0,
-          positionSeconds ?? toMediaTime(video.currentTime, streamOriginRef.current),
+          positionSeconds ??
+            toMediaTime(video.currentTime, streamOriginRef.current),
         ),
         is_paused: isPaused ?? video.paused,
       });

@@ -25,14 +25,17 @@ export function RelatedRail({
 }: RelatedRailProps) {
   const { cardPresentation } = useUICustomization();
   if (items.length === 0) return null;
-  const coverAspectClass = coverAspect === "poster" ? "aspect-[2/3]" : "aspect-square";
+  const coverAspectClass =
+    coverAspect === "poster" ? "aspect-[2/3]" : "aspect-square";
   const showCaption = cardPresentation.caption !== "artwork";
   const showMetadata = cardPresentation.caption === "title_metadata";
   return (
     <section>
       <div className="mb-4">
         <h2 className="text-xl font-semibold tracking-tight">{heading}</h2>
-        {subtitle && <p className="text-muted-foreground mt-1 text-xs">{subtitle}</p>}
+        {subtitle && (
+          <p className="text-muted-foreground mt-1 text-xs">{subtitle}</p>
+        )}
       </div>
       <div className="-mx-2 -mt-1 flex scrollbar-none gap-3 overflow-x-auto px-2 pt-1 pb-2 [&::-webkit-scrollbar]:hidden">
         {items.map((item) => (
@@ -43,7 +46,9 @@ export function RelatedRail({
           >
             <div
               className={`bg-muted relative ${coverAspectClass} overflow-hidden rounded-lg ${
-                item.highlight ? "ring-primary ring-offset-background ring-2 ring-offset-2" : ""
+                item.highlight
+                  ? "ring-primary ring-offset-background ring-2 ring-offset-2"
+                  : ""
               }`}
             >
               {item.poster_url ? (
@@ -56,10 +61,14 @@ export function RelatedRail({
               ) : null}
             </div>
             {showCaption ? (
-              <div className="mt-2 truncate text-sm font-medium">{item.title}</div>
+              <div className="mt-2 truncate text-sm font-medium">
+                {item.title}
+              </div>
             ) : null}
             {showMetadata && item.subtitle ? (
-              <div className="text-muted-foreground truncate text-xs">{item.subtitle}</div>
+              <div className="text-muted-foreground truncate text-xs">
+                {item.subtitle}
+              </div>
             ) : null}
           </ViewTransitionLink>
         ))}

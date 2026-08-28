@@ -6,7 +6,10 @@ import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AdminUser, UpdateUserRequest } from "@/api/types";
-import { PERMISSION_MARKER_EDIT, PERMISSION_METADATA_CURATION } from "@/lib/permissions";
+import {
+  PERMISSION_MARKER_EDIT,
+  PERMISSION_METADATA_CURATION,
+} from "@/lib/permissions";
 import { SETTING_KEYS } from "@/lib/settingsContract";
 
 import AdminUserDetail from "./AdminUserDetail";
@@ -95,11 +98,26 @@ vi.mock("@/hooks/queries/admin/users", () => ({
   useImpersonateUser: () => ({ mutateAsync: vi.fn(), isPending: false }),
   useAdminUserDeviceSettings: () => ({ data: [], isLoading: false }),
   useAdminUserSettings: () => ({ data: mocks.userSettings, isLoading: false }),
-  useDeleteAdminUserDeviceSetting: () => ({ mutate: vi.fn(), isPending: false }),
-  useDeleteAdminUserSetting: () => ({ mutate: mocks.deleteSettingMutate, isPending: false }),
-  useDeleteAllAdminUserDeviceSettingsForDevice: () => ({ mutate: vi.fn(), isPending: false }),
-  useUpdateAdminUserDeviceSetting: () => ({ mutate: vi.fn(), isPending: false }),
-  useUpdateAdminUserSetting: () => ({ mutate: mocks.updateSettingMutate, isPending: false }),
+  useDeleteAdminUserDeviceSetting: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useDeleteAdminUserSetting: () => ({
+    mutate: mocks.deleteSettingMutate,
+    isPending: false,
+  }),
+  useDeleteAllAdminUserDeviceSettingsForDevice: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useUpdateAdminUserDeviceSetting: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
+  useUpdateAdminUserSetting: () => ({
+    mutate: mocks.updateSettingMutate,
+    isPending: false,
+  }),
 }));
 
 vi.mock("@/hooks/queries/admin/accessGroups", () => ({
@@ -205,7 +223,8 @@ describe("AdminUserDetail access group picker", () => {
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(mocks.updateUserMutate).toHaveBeenCalled());
-    const call = mocks.updateUserMutate.mock.calls[0]?.[0] as UpdateUserMutationArg | undefined;
+    const call = mocks.updateUserMutate.mock.calls[0]?.[0] as
+      UpdateUserMutationArg | undefined;
     expect(call).toBeDefined();
     expect(call?.id).toBe(7);
     expect(call?.body.access_group_id).toBe(5);
@@ -222,7 +241,8 @@ describe("AdminUserDetail access group picker", () => {
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(mocks.updateUserMutate).toHaveBeenCalled());
-    const call = mocks.updateUserMutate.mock.calls[0]?.[0] as UpdateUserMutationArg | undefined;
+    const call = mocks.updateUserMutate.mock.calls[0]?.[0] as
+      UpdateUserMutationArg | undefined;
     expect(call?.body.role).toBe("admin");
     expect(call?.body.access_group_id).toBeNull();
   });
@@ -244,14 +264,17 @@ describe("AdminUserDetail access group picker", () => {
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(mocks.updateUserMutate).toHaveBeenCalled());
-    const call = mocks.updateUserMutate.mock.calls[0]?.[0] as UpdateUserMutationArg | undefined;
+    const call = mocks.updateUserMutate.mock.calls[0]?.[0] as
+      UpdateUserMutationArg | undefined;
     expect(call?.body.role).toBe("user");
     expect(call?.body.access_group_id).toBe(5);
   });
 });
 
 describe("AdminUserDetail user settings tab", () => {
-  const pins = JSON.stringify({ "1": [{ type: "collection", id: "42", label: "Pinned Horror" }] });
+  const pins = JSON.stringify({
+    "1": [{ type: "collection", id: "42", label: "Pinned Horror" }],
+  });
 
   it("edits an object-valued setting through the JSON editor, not a select", async () => {
     // Every non-device canonical row lands in this tab, including the
@@ -290,7 +313,10 @@ describe("AdminUserDetail user settings tab", () => {
       identity: { scope: string; profileId?: string };
     };
     expect(call.key).toBe(SETTING_KEYS.UI_SIDEBAR_PINS);
-    expect(call.identity).toMatchObject({ scope: "profile", profileId: "profile-1" });
+    expect(call.identity).toMatchObject({
+      scope: "profile",
+      profileId: "profile-1",
+    });
     expect(JSON.parse(call.value)).toEqual(JSON.parse(edited));
   });
 
@@ -308,7 +334,9 @@ describe("AdminUserDetail user settings tab", () => {
 
     await user.click(screen.getByRole("tab", { name: "Settings" }));
 
-    expect(screen.queryByRole("button", { name: "Edit JSON" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Edit JSON" }),
+    ).not.toBeInTheDocument();
     const toggle = screen.getByRole("switch");
     expect(toggle).not.toBeChecked();
     await user.click(toggle);
@@ -344,10 +372,14 @@ describe("AdminUserDetail user settings tab", () => {
     await user.click(screen.getByRole("tab", { name: "Settings" }));
 
     const tvIdentity = screen.getByText(/profile profile-1 · family tv$/);
-    expect(screen.getByText(/profile profile-1 · family web$/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/profile profile-1 · family web$/),
+    ).toBeInTheDocument();
     const tvRow = tvIdentity.parentElement?.parentElement;
     expect(tvRow).not.toBeNull();
-    await user.click(within(tvRow as HTMLElement).getByRole("button", { name: "Reset" }));
+    await user.click(
+      within(tvRow as HTMLElement).getByRole("button", { name: "Reset" }),
+    );
     expect(mocks.deleteSettingMutate).toHaveBeenCalledWith({
       userId: 7,
       key: SETTING_KEYS.UI_CARD_PRESENTATION,
@@ -360,7 +392,9 @@ describe("AdminUserDetail user settings tab", () => {
       },
     });
 
-    await user.click(within(tvRow as HTMLElement).getByRole("button", { name: "Edit JSON" }));
+    await user.click(
+      within(tvRow as HTMLElement).getByRole("button", { name: "Edit JSON" }),
+    );
     await user.click(screen.getByRole("button", { name: "Save value" }));
 
     await waitFor(() => expect(mocks.updateSettingMutate).toHaveBeenCalled());
@@ -384,17 +418,24 @@ describe("AdminUserDetail transcode limits", () => {
     await user.click(screen.getByRole("tab", { name: "Limits" }));
 
     // Inheriting fields show the group-derived effective value.
-    expect(screen.getAllByText("Inherited: Unlimited").length).toBeGreaterThan(0);
+    expect(screen.getAllByText("Inherited: Unlimited").length).toBeGreaterThan(
+      0,
+    );
 
-    await user.click(screen.getByRole("combobox", { name: "Video Transcoding" }));
+    await user.click(
+      screen.getByRole("combobox", { name: "Video Transcoding" }),
+    );
     await user.click(screen.getByRole("option", { name: "Not allowed" }));
-    await user.click(screen.getByRole("combobox", { name: "Audio Transcoding" }));
+    await user.click(
+      screen.getByRole("combobox", { name: "Audio Transcoding" }),
+    );
     await user.click(screen.getByRole("option", { name: "Not allowed" }));
 
     await user.click(screen.getByRole("button", { name: "Save" }));
 
     await waitFor(() => expect(mocks.updateUserMutate).toHaveBeenCalled());
-    const call = mocks.updateUserMutate.mock.calls[0]?.[0] as UpdateUserMutationArg | undefined;
+    const call = mocks.updateUserMutate.mock.calls[0]?.[0] as
+      UpdateUserMutationArg | undefined;
     expect(call?.body.transcode_allowed).toBe(false);
     expect(call?.body.audio_transcode_allowed).toBe(false);
     // Untouched policy fields stay inherited (explicit null, not a pinned value).
@@ -414,7 +455,8 @@ async function openLimitsTab(user: ReturnType<typeof userEvent.setup>) {
 function overrideSwitch(index: number): HTMLElement {
   const switches = screen.getAllByRole("switch", { name: "Override" });
   const target = switches[index];
-  if (target === undefined) throw new Error(`no Override switch at index ${index}`);
+  if (target === undefined)
+    throw new Error(`no Override switch at index ${index}`);
   return target;
 }
 
@@ -436,7 +478,9 @@ describe("AdminUserDetail inherit hints", () => {
     await selectGuestsGroup(user);
     // The access tab's hints follow the picker straight away.
     await user.click(screen.getByRole("combobox", { name: "Downloads" }));
-    expect(await screen.findByRole("option", { name: "Inherited: Not allowed" })).toBeVisible();
+    expect(
+      await screen.findByRole("option", { name: "Inherited: Not allowed" }),
+    ).toBeVisible();
     await user.keyboard("{Escape}");
 
     // ...and so do the limits tab's, which used to keep reading the stale
@@ -460,7 +504,8 @@ describe("AdminUserDetail inherit hints", () => {
 
     await user.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(mocks.updateUserMutate).toHaveBeenCalled());
-    const call = mocks.updateUserMutate.mock.calls[0]?.[0] as UpdateUserMutationArg | undefined;
+    const call = mocks.updateUserMutate.mock.calls[0]?.[0] as
+      UpdateUserMutationArg | undefined;
     expect(call?.body.max_streams).toBe(1);
   });
 
@@ -482,7 +527,8 @@ describe("AdminUserDetail inherit hints", () => {
     await user.type(maxStreams, "3");
     await user.click(screen.getByRole("button", { name: "Save" }));
     await waitFor(() => expect(mocks.updateUserMutate).toHaveBeenCalled());
-    const call = mocks.updateUserMutate.mock.calls[0]?.[0] as UpdateUserMutationArg | undefined;
+    const call = mocks.updateUserMutate.mock.calls[0]?.[0] as
+      UpdateUserMutationArg | undefined;
     expect(call?.body.max_streams).toBe(3);
   });
 });

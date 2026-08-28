@@ -1,7 +1,12 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import type { AdminJob, Library, LibraryCollection, LibraryCollectionGroup } from "@/api/types";
+import type {
+  AdminJob,
+  Library,
+  LibraryCollection,
+  LibraryCollectionGroup,
+} from "@/api/types";
 import { useAdminLibraries } from "@/hooks/queries/admin/libraries";
 import {
   useAdminCollectionsBoard,
@@ -53,16 +58,17 @@ export default function AdminCollections() {
   const { data: libraries = [] } = useAdminLibraries();
   const requestedLibraryId = Number(searchParams.get("libraryId"));
   const initialLibraryId =
-    Number.isFinite(requestedLibraryId) && requestedLibraryId > 0 ? requestedLibraryId : null;
+    Number.isFinite(requestedLibraryId) && requestedLibraryId > 0
+      ? requestedLibraryId
+      : null;
   const selectedLibraryId = initialLibraryId;
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [editingGroup, setEditingGroup] = useState<{
     mode: "create" | "edit";
     id?: string;
   } | null>(null);
-  const [confirmDeleteCollection, setConfirmDeleteCollection] = useState<LibraryCollection | null>(
-    null,
-  );
+  const [confirmDeleteCollection, setConfirmDeleteCollection] =
+    useState<LibraryCollection | null>(null);
 
   const allCollections = useAdminCollections();
   const libraryCounts = useMemo(
@@ -92,11 +98,17 @@ export default function AdminCollections() {
   const applyJobs = useTemplateBundleApplyJobs();
   useEventChannel("jobs");
   const latestApplyJob = applyJobs.data?.[0] ?? null;
-  const activeApplyJob = latestApplyJob ? isActiveTemplateBundleApplyJob(latestApplyJob) : false;
+  const activeApplyJob = latestApplyJob
+    ? isActiveTemplateBundleApplyJob(latestApplyJob)
+    : false;
   const lastInvalidatedJobID = useRef<string | null>(null);
 
   useEffect(() => {
-    if (!latestApplyJob || activeApplyJob || lastInvalidatedJobID.current === latestApplyJob.id) {
+    if (
+      !latestApplyJob ||
+      activeApplyJob ||
+      lastInvalidatedJobID.current === latestApplyJob.id
+    ) {
       return;
     }
     lastInvalidatedJobID.current = latestApplyJob.id;
@@ -122,7 +134,10 @@ export default function AdminCollections() {
 
   const boardCollectionCount =
     (board.data?.ungrouped.length ?? 0) +
-    (board.data?.groups.reduce((sum, group) => sum + group.collections.length, 0) ?? 0);
+    (board.data?.groups.reduce(
+      (sum, group) => sum + group.collections.length,
+      0,
+    ) ?? 0);
   const hasRegularBoardGroups =
     board.data?.groups.some((group) => group.kind === "regular") ?? false;
   const showScopedEmpty =
@@ -147,7 +162,8 @@ export default function AdminCollections() {
           if (confirmDeleteCollection) {
             deleteCollection.mutate({
               id: confirmDeleteCollection.id,
-              libraryId: selectedLibraryId ?? confirmDeleteCollection.library_id,
+              libraryId:
+                selectedLibraryId ?? confirmDeleteCollection.library_id,
             });
           }
           setConfirmDeleteCollection(null);
@@ -156,7 +172,9 @@ export default function AdminCollections() {
 
       <div className="page-header gap-5">
         <div className="space-y-3">
-          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Collections</h1>
+          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
+            Collections
+          </h1>
           <p className="page-subtitle text-sm sm:text-base">
             Curate library shelves and sync them from MDBList or TMDB trending.
           </p>
@@ -171,16 +189,26 @@ export default function AdminCollections() {
             onChange={setSelectedLibraryId}
           />
           {!isAllLibraries ? (
-            <Button size="sm" variant="outline" onClick={() => setEditingGroup({ mode: "create" })}>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setEditingGroup({ mode: "create" })}
+            >
               <Plus className="mr-1 h-4 w-4" /> New Group
             </Button>
           ) : null}
-          <Button size="sm" variant="outline" onClick={() => setGalleryOpen(true)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setGalleryOpen(true)}
+          >
             <Sparkles className="mr-1 h-4 w-4" /> Browse Templates
           </Button>
           <Button
             size="sm"
-            onClick={() => navigate(buildAdminCollectionEditorPath("new", selectedLibraryId))}
+            onClick={() =>
+              navigate(buildAdminCollectionEditorPath("new", selectedLibraryId))
+            }
           >
             <Plus className="mr-1 h-4 w-4" /> Add Collection
           </Button>
@@ -233,9 +261,13 @@ export default function AdminCollections() {
           ungroupedSortOrder={board.data.ungroupedSortOrder}
           onEditGroup={(id) => setEditingGroup({ mode: "edit", id })}
           onEditCollection={(collection) =>
-            navigate(buildAdminCollectionEditorPath(collection.id, selectedLibraryId))
+            navigate(
+              buildAdminCollectionEditorPath(collection.id, selectedLibraryId),
+            )
           }
-          onDeleteCollection={(collection) => setConfirmDeleteCollection(collection)}
+          onDeleteCollection={(collection) =>
+            setConfirmDeleteCollection(collection)
+          }
           onSyncCollection={(collection) =>
             syncCollection.mutate({
               id: collection.id,
@@ -251,17 +283,26 @@ export default function AdminCollections() {
           <div className="space-y-1">
             <p className="text-sm font-medium">No collections yet</p>
             <p className="text-muted-foreground max-w-sm text-xs">
-              Create collections for this library, or sync them from MDBList or TMDB trending.
+              Create collections for this library, or sync them from MDBList or
+              TMDB trending.
             </p>
           </div>
           <div className="flex flex-wrap items-center justify-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setGalleryOpen(true)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setGalleryOpen(true)}
+            >
               <Sparkles className="mr-1 h-4 w-4" /> Start from a template
             </Button>
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => navigate(buildAdminCollectionEditorPath("new", selectedLibraryId))}
+              onClick={() =>
+                navigate(
+                  buildAdminCollectionEditorPath("new", selectedLibraryId),
+                )
+              }
             >
               <Plus className="mr-1 h-4 w-4" /> Create from scratch
             </Button>
@@ -279,7 +320,10 @@ export default function AdminCollections() {
               if (editingGroup.mode === "create") {
                 await createGroup.mutateAsync(input);
               } else if (editingGroup.id) {
-                await updateGroup.mutateAsync({ id: editingGroup.id, ...input });
+                await updateGroup.mutateAsync({
+                  id: editingGroup.id,
+                  ...input,
+                });
               }
               setEditingGroup(null);
             } catch {
@@ -322,8 +366,12 @@ function CollectionApplyJobBanner({ job }: { job: AdminJob | null }) {
         <div className="flex items-start gap-3">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <div className="min-w-0 space-y-1">
-            <p className="text-sm font-medium">Collection defaults apply failed</p>
-            <p className="text-xs">{job.error_message || job.message || "The job failed."}</p>
+            <p className="text-sm font-medium">
+              Collection defaults apply failed
+            </p>
+            <p className="text-xs">
+              {job.error_message || job.message || "The job failed."}
+            </p>
           </div>
         </div>
       </div>
@@ -337,7 +385,9 @@ function CollectionApplyJobBanner({ job }: { job: AdminJob | null }) {
           <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
           <div className="min-w-0 space-y-1">
             <p className="text-sm font-medium">Collection defaults applied</p>
-            <p className="text-muted-foreground text-xs">{templateBundleApplySummary(job)}</p>
+            <p className="text-muted-foreground text-xs">
+              {templateBundleApplySummary(job)}
+            </p>
           </div>
         </div>
       </div>
@@ -351,10 +401,15 @@ function CollectionApplyJobBanner({ job }: { job: AdminJob | null }) {
         <div className="min-w-0 flex-1 space-y-2">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <p className="text-sm font-medium">Applying collection defaults</p>
-            <p className="text-muted-foreground text-xs">{job.message || "Working..."}</p>
+            <p className="text-muted-foreground text-xs">
+              {job.message || "Working..."}
+            </p>
           </div>
           <div className="progress-bar">
-            <div className="progress-fill animate-pulse" style={{ width: "40%" }} />
+            <div
+              className="progress-fill animate-pulse"
+              style={{ width: "40%" }}
+            />
           </div>
         </div>
       </div>
@@ -392,7 +447,10 @@ function templateBundleApplySummary(job: AdminJob) {
   return parts.join("; ");
 }
 
-function resultArrayLength(payload: Record<string, unknown> | undefined, key: string) {
+function resultArrayLength(
+  payload: Record<string, unknown> | undefined,
+  key: string,
+) {
   const value = payload?.[key];
   return Array.isArray(value) ? value.length : 0;
 }
@@ -473,8 +531,8 @@ function AllLibraryCollectionsOverview({
         <div className="space-y-1">
           <p className="text-sm font-medium">No collections yet</p>
           <p className="text-muted-foreground max-w-sm text-xs">
-            Create collections to curate library shelves, or sync them from MDBList or TMDB
-            trending.
+            Create collections to curate library shelves, or sync them from
+            MDBList or TMDB trending.
           </p>
         </div>
         <div className="flex flex-wrap items-center justify-center gap-2">
@@ -492,11 +550,15 @@ function AllLibraryCollectionsOverview({
   return (
     <div className="space-y-4">
       {sections.map((section) => (
-        <section key={section.library.id} className="bg-background rounded-lg border">
+        <section
+          key={section.library.id}
+          className="bg-background rounded-lg border"
+        >
           <div className="flex items-center justify-between gap-3 border-b px-4 py-3">
             <h2 className="text-base font-semibold">{section.library.name}</h2>
             <Badge variant="outline">
-              {section.collections.length} collection{section.collections.length === 1 ? "" : "s"}
+              {section.collections.length} collection
+              {section.collections.length === 1 ? "" : "s"}
             </Badge>
           </div>
           <div className="divide-y">
@@ -538,7 +600,10 @@ function AllLibraryCollectionRow({
 }) {
   const syncable = collection.collection_type !== "manual";
   const collectionLibraries = collectionLibraryIDs(collection)
-    .map((id) => libraries.find((library) => library.id === id)?.name ?? `Library ${id}`)
+    .map(
+      (id) =>
+        libraries.find((library) => library.id === id)?.name ?? `Library ${id}`,
+    )
     .join(", ");
 
   return (
@@ -555,8 +620,12 @@ function AllLibraryCollectionRow({
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">
           <p className="truncate text-sm font-medium">{collection.title}</p>
-          {collection.featured ? <Badge variant="secondary">Featured</Badge> : null}
-          {collection.visibility === "hidden" ? <Badge variant="outline">Hidden</Badge> : null}
+          {collection.featured ? (
+            <Badge variant="secondary">Featured</Badge>
+          ) : null}
+          {collection.visibility === "hidden" ? (
+            <Badge variant="outline">Hidden</Badge>
+          ) : null}
         </div>
         <div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-2 text-xs">
           <span>{collection.item_count} items</span>
@@ -576,7 +645,9 @@ function AllLibraryCollectionRow({
             disabled={isSyncing}
             onClick={onSync}
           >
-            <RefreshCw className={isSyncing ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"} />
+            <RefreshCw
+              className={isSyncing ? "h-3.5 w-3.5 animate-spin" : "h-3.5 w-3.5"}
+            />
           </Button>
         ) : null}
         <Button
@@ -616,17 +687,27 @@ function countCollectionsByLibrary(
   return counts;
 }
 
-function buildAllLibrarySections(libraries: Library[], collections: LibraryCollection[]) {
+function buildAllLibrarySections(
+  libraries: Library[],
+  collections: LibraryCollection[],
+) {
   return libraries
     .map((library) => ({
       library,
       collections: collections
-        .filter((collection) => collectionLibraryIDs(collection).includes(library.id))
-        .sort((a, b) => a.sort_order - b.sort_order || a.title.localeCompare(b.title)),
+        .filter((collection) =>
+          collectionLibraryIDs(collection).includes(library.id),
+        )
+        .sort(
+          (a, b) =>
+            a.sort_order - b.sort_order || a.title.localeCompare(b.title),
+        ),
     }))
     .filter((section) => section.collections.length > 0);
 }
 
 function collectionLibraryIDs(collection: LibraryCollection): number[] {
-  return collection.library_ids.length > 0 ? collection.library_ids : [collection.library_id];
+  return collection.library_ids.length > 0
+    ? collection.library_ids
+    : [collection.library_id];
 }

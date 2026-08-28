@@ -60,7 +60,10 @@ export async function uploadFileInChunks<TComplete>({
       if (!isRequestTooLarge(error) || nextChunkSize <= MIN_UPLOAD_CHUNK_SIZE) {
         throw error;
       }
-      nextChunkSize = Math.max(MIN_UPLOAD_CHUNK_SIZE, Math.floor(nextChunkSize / 2));
+      nextChunkSize = Math.max(
+        MIN_UPLOAD_CHUNK_SIZE,
+        Math.floor(nextChunkSize / 2),
+      );
     }
   }
 }
@@ -93,15 +96,22 @@ async function uploadFileInChunksAttempt<TComplete>({
 
     reportProgress(session, file.size, onProgress);
 
-    for (let index = session.received_chunks; index < session.total_chunks; index += 1) {
+    for (
+      let index = session.received_chunks;
+      index < session.total_chunks;
+      index += 1
+    ) {
       const start = index * session.chunk_size;
       const end = Math.min(start + session.chunk_size, file.size);
 
-      const progress = await api<ChunkedUploadSession>(chunkPath(session.upload_id, index), {
-        method: "PUT",
-        headers: { "Content-Type": "application/octet-stream" },
-        body: file.slice(start, end),
-      });
+      const progress = await api<ChunkedUploadSession>(
+        chunkPath(session.upload_id, index),
+        {
+          method: "PUT",
+          headers: { "Content-Type": "application/octet-stream" },
+          body: file.slice(start, end),
+        },
+      );
 
       reportProgress(progress, file.size, onProgress);
     }
@@ -134,7 +144,8 @@ function reportProgress(
 
   const totalBytes = session.size_bytes || fallbackTotalBytes;
   const uploadedBytes = Math.min(session.received_bytes, totalBytes);
-  const percent = totalBytes > 0 ? Math.round((uploadedBytes / totalBytes) * 100) : 0;
+  const percent =
+    totalBytes > 0 ? Math.round((uploadedBytes / totalBytes) * 100) : 0;
 
   onProgress({
     uploadId: session.upload_id,

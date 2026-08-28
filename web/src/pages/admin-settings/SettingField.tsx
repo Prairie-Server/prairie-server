@@ -82,7 +82,11 @@ export function SettingField({
           </SelectTrigger>
           <SelectContent>
             {options.map((opt) => (
-              <SelectItem key={opt.value} value={opt.value} disabled={opt.disabled}>
+              <SelectItem
+                key={opt.value}
+                value={opt.value}
+                disabled={opt.disabled}
+              >
                 {opt.label}
               </SelectItem>
             ))}
@@ -98,7 +102,9 @@ export function SettingField({
   }
 
   if (type === "password") {
-    const placeholder = sensitiveConfigured ? "configured" : (hint ?? "Not configured");
+    const placeholder = sensitiveConfigured
+      ? "configured"
+      : (hint ?? "Not configured");
     return (
       <div className="space-y-1 py-2">
         <Label htmlFor={controlId} className="text-sm font-medium">

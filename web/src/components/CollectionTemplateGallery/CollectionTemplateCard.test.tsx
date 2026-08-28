@@ -22,7 +22,10 @@ describe("CollectionTemplateCard", () => {
   it("shows the template title, description, source badge, and media kind", () => {
     const markup = renderToStaticMarkup(
       <CollectionTemplateCard
-        template={{ ...baseTemplate, poster_path: "/images/collection-templates/trending.webp" }}
+        template={{
+          ...baseTemplate,
+          poster_path: "/images/collection-templates/trending.webp",
+        }}
         onPick={() => {}}
       />,
     );

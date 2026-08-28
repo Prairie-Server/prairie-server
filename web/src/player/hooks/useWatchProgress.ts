@@ -29,7 +29,10 @@ export function useWatchProgress(
     if (!video) return null;
 
     return {
-      position: toMediaTime(video.currentTime ?? 0, streamOriginRef?.current ?? 0),
+      position: toMediaTime(
+        video.currentTime ?? 0,
+        streamOriginRef?.current ?? 0,
+      ),
       isPaused: video.paused ?? true,
     };
   }, [streamOriginRef, videoRef]);

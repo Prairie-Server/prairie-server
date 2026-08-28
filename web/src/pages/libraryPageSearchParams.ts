@@ -15,15 +15,23 @@ export type LibraryPageTab = "recommended" | "library" | "collections";
 // "series" | "episode" are the series-library browse modes; "books" |
 // "series" | "authors" | "narrators" are the audiobook-library browse axes
 // ("series" is shared — its meaning follows the library type).
-export type LibraryBrowseType = "series" | "episode" | "books" | "authors" | "narrators";
+export type LibraryBrowseType =
+  "series" | "episode" | "books" | "authors" | "narrators";
 
-export const AUDIOBOOK_BROWSE_AXES = ["books", "series", "authors", "narrators"] as const;
+export const AUDIOBOOK_BROWSE_AXES = [
+  "books",
+  "series",
+  "authors",
+  "narrators",
+] as const;
 export type AudiobookBrowseAxis = (typeof AUDIOBOOK_BROWSE_AXES)[number];
 
 export function audiobookBrowseAxisFromBrowseType(
   browseType: LibraryBrowseType,
 ): AudiobookBrowseAxis {
-  return browseType === "series" || browseType === "authors" || browseType === "narrators"
+  return browseType === "series" ||
+    browseType === "authors" ||
+    browseType === "narrators"
     ? browseType
     : "books";
 }
@@ -35,8 +43,10 @@ export interface LibraryPageState {
 }
 
 const GROUP_MATCH_PATTERN = /^groups\[(\d+)\]\[match\]$/;
-const GROUP_RULE_PATTERN = /^groups\[(\d+)\]\[rules\]\[(\d+)\]\[(field|op|value)\]$/;
-const GROUP_RULE_VALUE_PATTERN = /^groups\[(\d+)\]\[rules\]\[(\d+)\]\[value\]\[(\d+)\]$/;
+const GROUP_RULE_PATTERN =
+  /^groups\[(\d+)\]\[rules\]\[(\d+)\]\[(field|op|value)\]$/;
+const GROUP_RULE_VALUE_PATTERN =
+  /^groups\[(\d+)\]\[rules\]\[(\d+)\]\[value\]\[(\d+)\]$/;
 
 const LIBRARY_QUERY_KEYS = new Set([
   "tab",
@@ -69,12 +79,18 @@ function createDefaultLibraryQueryDefinition(): QueryDefinition {
   });
 }
 
-function parseSeriesLibraryBrowseType(value: string | undefined): LibraryBrowseType {
+function parseSeriesLibraryBrowseType(
+  value: string | undefined,
+): LibraryBrowseType {
   return value === "episode" ? "episode" : "series";
 }
 
-function parseAudiobookLibraryBrowseType(value: string | undefined): LibraryBrowseType {
-  return value === "series" || value === "authors" || value === "narrators" ? value : "books";
+function parseAudiobookLibraryBrowseType(
+  value: string | undefined,
+): LibraryBrowseType {
+  return value === "series" || value === "authors" || value === "narrators"
+    ? value
+    : "books";
 }
 
 export function getLibrarySortRelevanceScope(
@@ -147,7 +163,10 @@ function parseScalar(value: string): string | number | boolean {
   return value;
 }
 
-function ensureGroup(groups: Map<number, GroupBuilder>, index: number): GroupBuilder {
+function ensureGroup(
+  groups: Map<number, GroupBuilder>,
+  index: number,
+): GroupBuilder {
   let group = groups.get(index);
   if (!group) {
     group = { rules: new Map<number, RuleBuilder>() };
@@ -177,7 +196,8 @@ function parseGroups(searchParams: URLSearchParams): QueryGroup[] {
     const groupMatch = key.match(GROUP_MATCH_PATTERN);
     if (groupMatch) {
       const groupIndex = Number(groupMatch[1]);
-      ensureGroup(groups, groupIndex).match = rawValue === "any" ? "any" : "all";
+      ensureGroup(groups, groupIndex).match =
+        rawValue === "any" ? "any" : "all";
       return;
     }
 
@@ -229,7 +249,9 @@ function parseGroups(searchParams: URLSearchParams): QueryGroup[] {
 }
 
 function hasRuleForField(groups: QueryGroup[], field: string): boolean {
-  return groups.some((group) => group.rules.some((rule) => rule.field === field));
+  return groups.some((group) =>
+    group.rules.some((rule) => rule.field === field),
+  );
 }
 
 function buildLegacyImplicitGroups(
@@ -326,12 +348,15 @@ export function parseLibraryPageState(
     libraryType === "series" && browseType === "episode"
       ? "all"
       : getLibrarySortRelevanceScope(libraryType, mediaScope);
-  const sortField = normalizeQuerySortField(readString(searchParams.get("sort")));
+  const sortField = normalizeQuerySortField(
+    readString(searchParams.get("sort")),
+  );
   const orderParam = readString(searchParams.get("order"));
   const normalizedSort = normalizeQuerySortForScope(
     {
       field: sortField ?? defaultQueryDefinition.sort.field,
-      order: orderParam === "asc" || orderParam === "desc" ? orderParam : undefined,
+      order:
+        orderParam === "asc" || orderParam === "desc" ? orderParam : undefined,
     },
     { includePersonalized: true, relevanceScope: sortRelevanceScope },
   );
@@ -349,7 +374,9 @@ export function parseLibraryPageState(
   };
 }
 
-export function hasLibraryPageSearchParams(searchParams: URLSearchParams): boolean {
+export function hasLibraryPageSearchParams(
+  searchParams: URLSearchParams,
+): boolean {
   for (const key of searchParams.keys()) {
     if (
       LIBRARY_QUERY_KEYS.has(key) ||
@@ -376,7 +403,9 @@ function deleteLibraryQueryParams(nextSearchParams: URLSearchParams) {
   }
 }
 
-export function serializeLibraryPageSearchParams(searchParams: URLSearchParams): string {
+export function serializeLibraryPageSearchParams(
+  searchParams: URLSearchParams,
+): string {
   const librarySearchParams = new URLSearchParams(searchParams);
   for (const key of Array.from(librarySearchParams.keys())) {
     if (
@@ -423,7 +452,10 @@ export function updateLibraryPageSearchParams(
   const sortRelevanceScope =
     libraryType === "series" && state.browseType === "episode"
       ? "all"
-      : getLibrarySortRelevanceScope(libraryType, state.queryDefinition.media_scope);
+      : getLibrarySortRelevanceScope(
+          libraryType,
+          state.queryDefinition.media_scope,
+        );
   const queryDefinition = normalizeQueryDefinition({
     ...state.queryDefinition,
     sort: normalizeQuerySortForScope(state.queryDefinition.sort, {
@@ -468,8 +500,14 @@ export function updateLibraryPageSearchParams(
   queryDefinition.groups.forEach((group, groupIndex) => {
     nextSearchParams.set(`groups[${groupIndex}][match]`, group.match);
     group.rules.forEach((rule, ruleIndex) => {
-      nextSearchParams.set(`groups[${groupIndex}][rules][${ruleIndex}][field]`, rule.field);
-      nextSearchParams.set(`groups[${groupIndex}][rules][${ruleIndex}][op]`, rule.op);
+      nextSearchParams.set(
+        `groups[${groupIndex}][rules][${ruleIndex}][field]`,
+        rule.field,
+      );
+      nextSearchParams.set(
+        `groups[${groupIndex}][rules][${ruleIndex}][op]`,
+        rule.op,
+      );
       if (Array.isArray(rule.value)) {
         rule.value.forEach((entry, valueIndex) => {
           nextSearchParams.set(

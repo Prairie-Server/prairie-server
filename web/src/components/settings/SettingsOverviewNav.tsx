@@ -105,7 +105,10 @@ export function SettingsOverviewNav({
                           isDirectory && "lg:h-10 lg:w-10",
                         )}
                       >
-                        <Icon className="h-[18px] w-[18px]" aria-hidden="true" />
+                        <Icon
+                          className="h-[18px] w-[18px]"
+                          aria-hidden="true"
+                        />
                       </span>
                       <span className="min-w-0 flex-1">
                         <span

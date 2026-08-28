@@ -1,7 +1,14 @@
 import { useCallback, useEffect, useState } from "react";
 import type { FormEvent } from "react";
 import { Link } from "react-router";
-import { ArrowRight, Ban, Check, Loader2, MonitorSmartphone, QrCode } from "lucide-react";
+import {
+  ArrowRight,
+  Ban,
+  Check,
+  Loader2,
+  MonitorSmartphone,
+  QrCode,
+} from "lucide-react";
 import { toast } from "sonner";
 
 import { api } from "@/api/client";
@@ -26,7 +33,9 @@ function normalizeCode(value: string) {
 export default function QuickConnectSettings() {
   const [codeInput, setCodeInput] = useState("");
   const [activeCode, setActiveCode] = useState("");
-  const [details, setDetails] = useState<DeviceLoginLookupResponse | null>(null);
+  const [details, setDetails] = useState<DeviceLoginLookupResponse | null>(
+    null,
+  );
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [acting, setActing] = useState(false);
 
@@ -41,11 +50,15 @@ export default function QuickConnectSettings() {
     setLoadingDetails(true);
     try {
       const params = new URLSearchParams({ code });
-      const result = await api<DeviceLoginLookupResponse>(`/auth/device?${params.toString()}`);
+      const result = await api<DeviceLoginLookupResponse>(
+        `/auth/device?${params.toString()}`,
+      );
       setDetails(result);
     } catch (error) {
       setDetails(null);
-      toast.error(error instanceof Error ? error.message : "Device request not found");
+      toast.error(
+        error instanceof Error ? error.message : "Device request not found",
+      );
     } finally {
       setLoadingDetails(false);
     }
@@ -82,7 +95,9 @@ export default function QuickConnectSettings() {
       await loadDetails(activeCode);
       toast.success(action === "approve" ? "Device approved" : "Device denied");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : `Failed to ${action} request`);
+      toast.error(
+        error instanceof Error ? error.message : `Failed to ${action} request`,
+      );
     } finally {
       setActing(false);
     }
@@ -99,8 +114,9 @@ export default function QuickConnectSettings() {
       <div className="space-y-2">
         <h2 className="text-2xl font-semibold tracking-tight">Quick Connect</h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Approve sign-in for another Prairie device without typing a password there. Enter the code
-          shown on the TV, Roku, Smart TV, or web login screen.
+          Approve sign-in for another Prairie device without typing a password
+          there. Enter the code shown on the TV, Roku, Smart TV, or web login
+          screen.
         </p>
       </div>
 
@@ -111,7 +127,9 @@ export default function QuickConnectSettings() {
         {!activeCode ? (
           <form onSubmit={handleCodeSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="quick-connect-code">Code from the other screen</Label>
+              <Label htmlFor="quick-connect-code">
+                Code from the other screen
+              </Label>
               <Input
                 id="quick-connect-code"
                 value={codeInput}
@@ -128,10 +146,14 @@ export default function QuickConnectSettings() {
             </Button>
           </form>
         ) : loadingDetails ? (
-          <p className="text-muted-foreground text-sm">Looking up device request…</p>
+          <p className="text-muted-foreground text-sm">
+            Looking up device request…
+          </p>
         ) : !details ? (
           <div className="space-y-4">
-            <p className="text-sm">That sign-in request could not be found or has expired.</p>
+            <p className="text-sm">
+              That sign-in request could not be found or has expired.
+            </p>
             <Button type="button" variant="outline" onClick={reset}>
               <QrCode />
               Enter another code
@@ -144,21 +166,30 @@ export default function QuickConnectSettings() {
                 <MonitorSmartphone className="h-5 w-5" />
               </div>
               <div className="min-w-0 space-y-1">
-                <div className="text-lg font-semibold">{details.device_name || "This device"}</div>
+                <div className="text-lg font-semibold">
+                  {details.device_name || "This device"}
+                </div>
                 {details.device_platform ? (
-                  <div className="text-muted-foreground text-sm">{details.device_platform}</div>
+                  <div className="text-muted-foreground text-sm">
+                    {details.device_platform}
+                  </div>
                 ) : null}
                 {details.ip_address_hint ? (
-                  <div className="text-muted-foreground text-sm">{details.ip_address_hint}</div>
+                  <div className="text-muted-foreground text-sm">
+                    {details.ip_address_hint}
+                  </div>
                 ) : null}
                 {details.match_code ? (
                   <div className="mt-3">
                     <div className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
                       Match code
                     </div>
-                    <div className="text-lg font-semibold">{details.match_code}</div>
+                    <div className="text-lg font-semibold">
+                      {details.match_code}
+                    </div>
                     <p className="text-muted-foreground mt-1 text-xs">
-                      Confirm this phrase matches the other screen before approving.
+                      Confirm this phrase matches the other screen before
+                      approving.
                     </p>
                   </div>
                 ) : null}
@@ -167,7 +198,10 @@ export default function QuickConnectSettings() {
 
             {details.status === "pending" ? (
               <div className="flex flex-wrap gap-3">
-                <Button disabled={acting} onClick={() => void handleDecision("approve")}>
+                <Button
+                  disabled={acting}
+                  onClick={() => void handleDecision("approve")}
+                >
                   {acting ? <Loader2 className="animate-spin" /> : <Check />}
                   {acting ? "Approving…" : "Approve sign-in"}
                 </Button>
@@ -181,7 +215,9 @@ export default function QuickConnectSettings() {
                 </Button>
               </div>
             ) : details.status === "approved" ? (
-              <p className="text-sm">Approved. Finish sign-in on the other device.</p>
+              <p className="text-sm">
+                Approved. Finish sign-in on the other device.
+              </p>
             ) : details.status === "consumed" ? (
               <p className="text-sm">This device is already signed in.</p>
             ) : details.status === "denied" ? (
@@ -204,14 +240,21 @@ export default function QuickConnectSettings() {
       >
         <ol className="text-muted-foreground list-decimal space-y-2 pl-5 text-sm leading-relaxed">
           <li>
-            On the other device, choose Quick Connect (or Show QR code) on the sign-in screen.
+            On the other device, choose Quick Connect (or Show QR code) on the
+            sign-in screen.
           </li>
-          <li>Enter the displayed code here, confirm the match phrase, and approve.</li>
+          <li>
+            Enter the displayed code here, confirm the match phrase, and
+            approve.
+          </li>
           <li>The other device finishes signing in automatically.</li>
         </ol>
         <p className="text-muted-foreground text-sm">
           You can also approve from{" "}
-          <Link className="text-foreground underline underline-offset-2" to="/activate">
+          <Link
+            className="text-foreground underline underline-offset-2"
+            to="/activate"
+          >
             /activate
           </Link>{" "}
           or from the Prairie mobile app.

@@ -46,12 +46,15 @@ describe("imageFormats", () => {
     const formats = await detectImageFormats();
     expect(formats.length).toBeGreaterThan(0);
     expect(formats).toContain("png");
-    expect(localStorage.getItem("prairie.imageFormats.v2")).toBe(formats.join(","));
+    expect(localStorage.getItem("prairie.imageFormats.v2")).toBe(
+      formats.join(","),
+    );
   });
 
   it("uses ImageDecoder.isTypeSupported when available", async () => {
     vi.stubGlobal("ImageDecoder", {
-      isTypeSupported: (type: string) => type === "image/avif" || type === "image/webp",
+      isTypeSupported: (type: string) =>
+        type === "image/avif" || type === "image/webp",
     });
     const formats = await detectImageFormats();
     expect(formats[0]).toBe("avif");

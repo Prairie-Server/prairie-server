@@ -26,7 +26,11 @@ export default function ImpersonationBanner({
   const initial = userName.charAt(0).toUpperCase() || "?";
 
   return (
-    <div role="status" aria-live="polite" className="impersonation-banner sticky top-0 z-50">
+    <div
+      role="status"
+      aria-live="polite"
+      className="impersonation-banner sticky top-0 z-50"
+    >
       <div className="impersonation-banner-inner flex items-center gap-3 px-4 py-2 sm:gap-4 sm:px-6 lg:pr-8 lg:pl-8">
         <div className="flex shrink-0 items-center gap-2">
           <span className="relative inline-flex h-2 w-2" aria-hidden="true">
@@ -49,7 +53,10 @@ export default function ImpersonationBanner({
 
         <span className="text-muted-foreground hidden truncate text-xs sm:inline">
           <span className="text-muted-foreground/60 mr-2">·</span>
-          authorized by <span className="text-foreground/80 font-medium">{impersonatorName}</span>
+          authorized by{" "}
+          <span className="text-foreground/80 font-medium">
+            {impersonatorName}
+          </span>
         </span>
 
         <button

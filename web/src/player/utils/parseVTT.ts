@@ -10,7 +10,11 @@ export interface ParsedCue {
 function parseTimestamp(ts: string): number {
   const parts = ts.trim().split(":");
   if (parts.length === 3) {
-    return parseInt(parts[0]!, 10) * 3600 + parseInt(parts[1]!, 10) * 60 + parseFloat(parts[2]!);
+    return (
+      parseInt(parts[0]!, 10) * 3600 +
+      parseInt(parts[1]!, 10) * 60 +
+      parseFloat(parts[2]!)
+    );
   }
   if (parts.length === 2) {
     return parseInt(parts[0]!, 10) * 60 + parseFloat(parts[1]!);

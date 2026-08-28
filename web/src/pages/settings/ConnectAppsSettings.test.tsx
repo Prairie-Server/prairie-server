@@ -22,11 +22,13 @@ vi.mock("@/hooks/useAuth", () => ({
 }));
 
 vi.mock("@/hooks/queries/compat", () => ({
-  useCompatConnectInfo: (...args: unknown[]) => mocks.useCompatConnectInfo(...args),
+  useCompatConnectInfo: (...args: unknown[]) =>
+    mocks.useCompatConnectInfo(...args),
 }));
 
 vi.mock("@/lib/clipboard", () => ({
-  copyTextToClipboard: (...args: unknown[]) => mocks.copyTextToClipboard(...args),
+  copyTextToClipboard: (...args: unknown[]) =>
+    mocks.copyTextToClipboard(...args),
 }));
 
 import ConnectAppsSettings from "./ConnectAppsSettings";
@@ -109,7 +111,10 @@ describe("ConnectAppsSettings", () => {
     mocks.copyTextToClipboard.mockResolvedValue(undefined);
 
     mocks.useProfiles.mockReturnValue({
-      data: [makeProfile(), makeProfile({ id: "profile-2", name: "Kids", has_pin: true })],
+      data: [
+        makeProfile(),
+        makeProfile({ id: "profile-2", name: "Kids", has_pin: true }),
+      ],
       isLoading: false,
     });
     mocks.useAuth.mockReturnValue({
@@ -137,7 +142,9 @@ describe("ConnectAppsSettings", () => {
   it("defaults to the Jellyfin tab and shows the account#profile username", () => {
     render();
 
-    expect(container.textContent).toContain("For Jellyfin-compatible apps only");
+    expect(container.textContent).toContain(
+      "For Jellyfin-compatible apps only",
+    );
     expect(container.textContent).toContain("johndoe#Doe Household");
     expect(container.textContent).toContain("https://compat.example.test");
   });
@@ -148,7 +155,9 @@ describe("ConnectAppsSettings", () => {
     await click(findButton(container, "Prairie app or website"));
 
     expect(container.textContent).toContain("For Prairie's own apps");
-    expect(container.textContent).toContain("Don't add a # to either field here.");
+    expect(container.textContent).toContain(
+      "Don't add a # to either field here.",
+    );
     expect(container.textContent).not.toContain("johndoe#");
     // jsdom's default origin stands in for the deployed server address.
     expect(container.textContent).toContain(window.location.origin);
@@ -157,12 +166,16 @@ describe("ConnectAppsSettings", () => {
   it("switches the username and password format when another profile is picked", async () => {
     render();
 
-    expect(container.textContent).toContain("has no PIN — just your account password");
+    expect(container.textContent).toContain(
+      "has no PIN — just your account password",
+    );
 
     await click(findButton(container, "Kids"));
 
     expect(container.textContent).toContain("johndoe#Kids");
-    expect(container.textContent).toContain("Kids has a PIN, so append # and the PIN");
+    expect(container.textContent).toContain(
+      "Kids has a PIN, so append # and the PIN",
+    );
   });
 
   it("copies the compat username rather than the bare account name", async () => {
@@ -174,7 +187,9 @@ describe("ConnectAppsSettings", () => {
       ),
     );
 
-    expect(mocks.copyTextToClipboard).toHaveBeenCalledWith("johndoe#Doe Household");
+    expect(mocks.copyTextToClipboard).toHaveBeenCalledWith(
+      "johndoe#Doe Household",
+    );
   });
 
   it("explains that the compatibility API is off instead of showing credentials", () => {
@@ -185,7 +200,9 @@ describe("ConnectAppsSettings", () => {
 
     render();
 
-    expect(container.textContent).toContain("The Jellyfin compatibility API is turned off");
+    expect(container.textContent).toContain(
+      "The Jellyfin compatibility API is turned off",
+    );
     expect(container.textContent).not.toContain("https://compat.example.test");
   });
 
@@ -199,7 +216,9 @@ describe("ConnectAppsSettings", () => {
 
     await click(findButton(container, "Movie #2"));
 
-    expect(container.textContent).toContain("contains a #, which Jellyfin apps can't sign in with");
+    expect(container.textContent).toContain(
+      "contains a #, which Jellyfin apps can't sign in with",
+    );
     // No copy button, because the displayed string would not authenticate.
     expect(
       Array.from(container.querySelectorAll("button")).find(
@@ -229,18 +248,26 @@ describe("ConnectAppsSettings", () => {
 
     render();
 
-    expect(container.textContent).toContain("Couldn't load your sign-in details");
+    expect(container.textContent).toContain(
+      "Couldn't load your sign-in details",
+    );
     expect(container.textContent).not.toContain("is turned off");
   });
 
   // A failed profiles fetch leaves an empty list; without the error state the
   // page would fall through and present the bare account name as sufficient.
   it("withholds credentials when the profile list fails to load", () => {
-    mocks.useProfiles.mockReturnValue({ data: [], isLoading: false, isError: true });
+    mocks.useProfiles.mockReturnValue({
+      data: [],
+      isLoading: false,
+      isError: true,
+    });
 
     render();
 
-    expect(container.textContent).toContain("Couldn't load your sign-in details");
+    expect(container.textContent).toContain(
+      "Couldn't load your sign-in details",
+    );
     expect(container.textContent).not.toContain("Every profile at a glance");
   });
 
@@ -264,7 +291,9 @@ describe("ConnectAppsSettings", () => {
 
     render();
 
-    expect(container.textContent).toContain("This account can't sign in to a Jellyfin app");
+    expect(container.textContent).toContain(
+      "This account can't sign in to a Jellyfin app",
+    );
     expect(container.textContent).not.toContain("johndoe#Doe Household");
   });
 
@@ -293,7 +322,9 @@ describe("ConnectAppsSettings", () => {
     render();
 
     expect(container.textContent).toContain("Every profile at a glance");
-    expect(container.textContent).toContain("rename to use from a Jellyfin app");
+    expect(container.textContent).toContain(
+      "rename to use from a Jellyfin app",
+    );
     expect(container.textContent).not.toContain("johndoe#Movie #2");
   });
 });

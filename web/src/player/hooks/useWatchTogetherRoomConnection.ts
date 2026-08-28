@@ -20,7 +20,8 @@ import {
 } from "@/lib/watchTogether";
 import { storage } from "@/utils/storage";
 
-export type WatchTogetherConnectionState = "disconnected" | "connecting" | "connected";
+export type WatchTogetherConnectionState =
+  "disconnected" | "connecting" | "connected";
 
 interface UseWatchTogetherRoomConnectionOptions {
   roomId?: string | null;
@@ -39,16 +40,22 @@ export interface WatchTogetherRoomConnectionResult {
   transportCommand: WatchTogetherTransportCommand | null;
   serverTimeOffsetMs: number;
   sendRoomMessage: (message: Record<string, unknown>) => SendRoomMessageResult;
-  updatePolicy: (policy: GuestControlPolicy) => Promise<WatchTogetherRoomSnapshot | null>;
+  updatePolicy: (
+    policy: GuestControlPolicy,
+  ) => Promise<WatchTogetherRoomSnapshot | null>;
   selectItem: (
     input: SelectWatchTogetherRoomItemInput,
   ) => Promise<WatchTogetherRoomSnapshot | null>;
   closeRoom: () => Promise<void>;
-  createSuggestion: (input: CreateWatchTogetherSuggestionInput) => Promise<void>;
+  createSuggestion: (
+    input: CreateWatchTogetherSuggestionInput,
+  ) => Promise<void>;
   deleteSuggestion: (suggestionId: string) => Promise<void>;
   vote: (suggestionId: string) => Promise<void>;
   unvote: (suggestionId: string) => Promise<void>;
-  promoteSuggestion: (suggestionId: string) => Promise<WatchTogetherRoomSnapshot | null>;
+  promoteSuggestion: (
+    suggestionId: string,
+  ) => Promise<WatchTogetherRoomSnapshot | null>;
 }
 
 const reconnectDelays = [500, 1_000, 2_000, 5_000];
@@ -113,9 +120,8 @@ export function useWatchTogetherRoomConnection({
   const [room, setRoom] = useState<WatchTogetherRoomSnapshot | null>(null);
   const [suggestions, setSuggestions] = useState<WatchTogetherSuggestion[]>([]);
   const [closedReason, setClosedReason] = useState<string | null>(null);
-  const [transportCommand, setTransportCommand] = useState<WatchTogetherTransportCommand | null>(
-    null,
-  );
+  const [transportCommand, setTransportCommand] =
+    useState<WatchTogetherTransportCommand | null>(null);
   const [serverTimeOffsetMs, setServerTimeOffsetMs] = useState(0);
   const socketRef = useRef<WebSocket | null>(null);
   const closedReasonRef = useRef<string | null>(null);
@@ -219,7 +225,8 @@ export function useWatchTogetherRoomConnection({
       if (disposed || closedReasonRef.current) {
         return;
       }
-      const delay = reconnectDelays[Math.min(attempt, reconnectDelays.length - 1)];
+      const delay =
+        reconnectDelays[Math.min(attempt, reconnectDelays.length - 1)];
       attempt += 1;
       reconnectTimer = window.setTimeout(connect, delay);
     };
@@ -271,19 +278,23 @@ export function useWatchTogetherRoomConnection({
 
         switch (message.type) {
           case "snapshot": {
-            const payload = message.room as WatchTogetherRoomSnapshot | undefined;
+            const payload = message.room as
+              WatchTogetherRoomSnapshot | undefined;
             if (payload) {
               setRoom(payload);
             }
             return;
           }
           case "suggestions_update": {
-            const payload = message.suggestions as WatchTogetherSuggestion[] | undefined;
+            const payload = message.suggestions as
+              WatchTogetherSuggestion[] | undefined;
             if (payload) {
               // Server broadcasts strip voted_by_me (it's relative to the requester).
               // Merge from our local state so each user's votes are preserved.
               setSuggestions((prev) => {
-                const prevVotes = new Set(prev.filter((s) => s.voted_by_me).map((s) => s.id));
+                const prevVotes = new Set(
+                  prev.filter((s) => s.voted_by_me).map((s) => s.id),
+                );
                 return payload.map((s) => ({
                   ...s,
                   voted_by_me: prevVotes.has(s.id),
@@ -294,11 +305,16 @@ export function useWatchTogetherRoomConnection({
           }
           case "room_closed":
             setRoom(null);
-            markClosed(typeof message.reason === "string" ? message.reason : "room_closed");
+            markClosed(
+              typeof message.reason === "string"
+                ? message.reason
+                : "room_closed",
+            );
             socket.close();
             return;
           case "transport_command": {
-            const payload = message.command as WatchTogetherTransportCommand | undefined;
+            const payload = message.command as
+              WatchTogetherTransportCommand | undefined;
             if (payload) {
               setTransportCommand(payload);
             }
@@ -319,7 +335,8 @@ export function useWatchTogetherRoomConnection({
                 Number.isFinite(serverReceivedAt) &&
                 Number.isFinite(serverSentAt)
               ) {
-                const offset = (serverReceivedAt - sentAt + (serverSentAt - receivedAt)) / 2;
+                const offset =
+                  (serverReceivedAt - sentAt + (serverSentAt - receivedAt)) / 2;
                 setServerTimeOffsetMs(offset);
               }
             }
@@ -332,7 +349,11 @@ export function useWatchTogetherRoomConnection({
               markClosed(message.code === "gone" ? "ended" : "not_found");
               socket.close();
             } else {
-              console.warn("[watch-together]", message.code ?? "error", message.message ?? "");
+              console.warn(
+                "[watch-together]",
+                message.code ?? "error",
+                message.message ?? "",
+              );
             }
             return;
           }
@@ -371,7 +392,8 @@ export function useWatchTogetherRoomConnection({
       socketRef.current = null;
       if (
         socket &&
-        (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
+        (socket.readyState === WebSocket.OPEN ||
+          socket.readyState === WebSocket.CONNECTING)
       ) {
         socket.close();
       }
@@ -418,7 +440,11 @@ export function useWatchTogetherRoomConnection({
         return;
       }
 
-      const response = await createWatchTogetherSuggestion(roomId, roomToken, input);
+      const response = await createWatchTogetherSuggestion(
+        roomId,
+        roomToken,
+        input,
+      );
       setSuggestions(response.suggestions);
     },
     [roomId, roomToken],
@@ -430,7 +456,11 @@ export function useWatchTogetherRoomConnection({
         return;
       }
 
-      const response = await deleteWatchTogetherSuggestion(roomId, roomToken, suggestionId);
+      const response = await deleteWatchTogetherSuggestion(
+        roomId,
+        roomToken,
+        suggestionId,
+      );
       setSuggestions(response.suggestions);
     },
     [roomId, roomToken],
@@ -442,7 +472,11 @@ export function useWatchTogetherRoomConnection({
         return;
       }
 
-      const response = await voteWatchTogetherSuggestion(roomId, roomToken, suggestionId);
+      const response = await voteWatchTogetherSuggestion(
+        roomId,
+        roomToken,
+        suggestionId,
+      );
       setSuggestions(response.suggestions);
     },
     [roomId, roomToken],
@@ -454,7 +488,11 @@ export function useWatchTogetherRoomConnection({
         return;
       }
 
-      const response = await unvoteWatchTogetherSuggestion(roomId, roomToken, suggestionId);
+      const response = await unvoteWatchTogetherSuggestion(
+        roomId,
+        roomToken,
+        suggestionId,
+      );
       setSuggestions(response.suggestions);
     },
     [roomId, roomToken],
@@ -466,7 +504,11 @@ export function useWatchTogetherRoomConnection({
         return null;
       }
 
-      const response = await promoteWatchTogetherSuggestion(roomId, roomToken, suggestionId);
+      const response = await promoteWatchTogetherSuggestion(
+        roomId,
+        roomToken,
+        suggestionId,
+      );
       setRoom(response.room);
       return response.room;
     },

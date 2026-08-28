@@ -30,7 +30,9 @@ export async function copyWatchTogetherInvite(
 
 /** Applies a guest-control policy change with toast feedback. */
 export async function setWatchTogetherGuestControl(
-  updatePolicy: (policy: GuestControlPolicy) => Promise<WatchTogetherRoomSnapshot | null>,
+  updatePolicy: (
+    policy: GuestControlPolicy,
+  ) => Promise<WatchTogetherRoomSnapshot | null>,
   policy: GuestControlPolicy,
 ): Promise<void> {
   try {
@@ -43,12 +45,16 @@ export async function setWatchTogetherGuestControl(
       );
     }
   } catch (error) {
-    toast.error(error instanceof Error ? error.message : "Failed to update room");
+    toast.error(
+      error instanceof Error ? error.message : "Failed to update room",
+    );
   }
 }
 
 /** Ends the watch party with toast feedback. */
-export async function endWatchTogetherRoom(closeRoom: () => Promise<void>): Promise<void> {
+export async function endWatchTogetherRoom(
+  closeRoom: () => Promise<void>,
+): Promise<void> {
   try {
     await closeRoom();
     toast.success("Room ended");

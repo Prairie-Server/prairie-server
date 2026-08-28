@@ -27,9 +27,9 @@ export function useAllMarkerEditHistory(limit = 50) {
   return useQuery({
     queryKey: adminKeys.markerHistory(limit),
     queryFn: () =>
-      api<MarkerEditAuditResponse>(`/admin/markers/history?limit=${limit}`).then(
-        (data) => data.history ?? [],
-      ),
+      api<MarkerEditAuditResponse>(
+        `/admin/markers/history?limit=${limit}`,
+      ).then((data) => data.history ?? []),
     staleTime: ADMIN_STALE_TIME,
   });
 }
@@ -38,15 +38,26 @@ export function useUpdateMarkerProvider() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ provider, patch }: { provider: string; patch: MarkerProviderUpdateRequest }) =>
-      api<MarkerProviderConfig>(`/admin/markers/providers/${encodeURIComponent(provider)}`, {
-        method: "PUT",
-        body: JSON.stringify(patch),
-      }),
+    mutationFn: ({
+      provider,
+      patch,
+    }: {
+      provider: string;
+      patch: MarkerProviderUpdateRequest;
+    }) =>
+      api<MarkerProviderConfig>(
+        `/admin/markers/providers/${encodeURIComponent(provider)}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(patch),
+        },
+      ),
     onSuccess: async (_data, variables) => {
       toast.success("Marker provider settings saved");
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: adminKeys.markerProviders() }),
+        queryClient.invalidateQueries({
+          queryKey: adminKeys.markerProviders(),
+        }),
         queryClient.invalidateQueries({
           queryKey: adminKeys.markerProvider(variables.provider),
         }),
@@ -56,7 +67,11 @@ export function useUpdateMarkerProvider() {
       });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to save marker provider settings");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to save marker provider settings",
+      );
     },
   });
 }
@@ -75,7 +90,10 @@ export function useValidateMarkerProvider() {
     onSuccess: (data, variables) => {
       const label = variables.displayName || "Marker provider";
       const provider = variables.provider;
-      queryClient.setQueryData(adminKeys.markerProviderValidation(provider), data);
+      queryClient.setQueryData(
+        adminKeys.markerProviderValidation(provider),
+        data,
+      );
       if (data.valid) {
         toast.success(`${label} validated`);
       } else {
@@ -83,7 +101,11 @@ export function useValidateMarkerProvider() {
       }
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Marker provider validation failed");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Marker provider validation failed",
+      );
     },
   });
 }

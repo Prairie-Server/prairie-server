@@ -47,7 +47,9 @@ describe("SectionDrawer helpers", () => {
       title: "Recently Added in Movies",
       itemLimit: 24,
       featured: false,
-      queryDefinition: queryDefinitionFromSectionConfig({ filter_library_ids: [7] }),
+      queryDefinition: queryDefinitionFromSectionConfig({
+        filter_library_ids: [7],
+      }),
       selectedCollectionId: "",
     });
 
@@ -67,7 +69,9 @@ describe("SectionDrawer helpers", () => {
       itemLimit: 16,
       featured: false,
       enabled: false,
-      queryDefinition: queryDefinitionFromSectionConfig({ media_scope: "movie" }),
+      queryDefinition: queryDefinitionFromSectionConfig({
+        media_scope: "movie",
+      }),
       selectedCollectionId: "",
     });
 

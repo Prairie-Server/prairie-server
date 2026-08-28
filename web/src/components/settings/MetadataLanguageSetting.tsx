@@ -10,7 +10,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { withCurrentLanguageOption, type SettingOption } from "@/lib/languageOptions";
+import {
+  withCurrentLanguageOption,
+  type SettingOption,
+} from "@/lib/languageOptions";
 import { getLanguageName } from "@/lib/languageNames";
 import {
   ORIGINAL_METADATA_LANGUAGE,
@@ -25,7 +28,9 @@ interface MetadataLanguageSettingProps {
   languageOptions: readonly SettingOption[];
   disabled?: boolean;
   onFallbackChange: (language: string | null) => void;
-  onOverridesChange: (overrides: MetadataLanguageOverrides) => void | Promise<void>;
+  onOverridesChange: (
+    overrides: MetadataLanguageOverrides,
+  ) => void | Promise<void>;
 }
 
 const NO_PREFERENCE = "__library_default";
@@ -55,7 +60,8 @@ export function MetadataLanguageSetting({
     value: MetadataLanguageOverrides;
   } | null>(null);
   const currentOverrides =
-    optimisticOverrides !== null && overridesEqual(overrides, optimisticOverrides.base)
+    optimisticOverrides !== null &&
+    overridesEqual(overrides, optimisticOverrides.base)
       ? optimisticOverrides.value
       : overrides;
 
@@ -67,10 +73,15 @@ export function MetadataLanguageSetting({
     [currentOverrides],
   );
   const namedOptions = useMemo(
-    () => languageOptions.filter((language) => language.value !== ORIGINAL_METADATA_LANGUAGE),
+    () =>
+      languageOptions.filter(
+        (language) => language.value !== ORIGINAL_METADATA_LANGUAGE,
+      ),
     [languageOptions],
   );
-  const availableSources = namedOptions.filter((language) => !(language.value in currentOverrides));
+  const availableSources = namedOptions.filter(
+    (language) => !(language.value in currentOverrides),
+  );
   const optionsForTarget = (target: string) => {
     if (target === ORIGINAL_METADATA_LANGUAGE) return namedOptions;
     return withCurrentLanguageOption(namedOptions, target);
@@ -82,14 +93,20 @@ export function MetadataLanguageSetting({
     try {
       await onOverridesChange(next);
     } catch {
-      setOptimisticOverrides((current) => (current === pending ? null : current));
+      setOptimisticOverrides((current) =>
+        current === pending ? null : current,
+      );
     }
   };
 
   const addException = () => {
     if (!newSource) return;
     void changeOverrides(
-      withMetadataLanguageOverride(currentOverrides, newSource, ORIGINAL_METADATA_LANGUAGE),
+      withMetadataLanguageOverride(
+        currentOverrides,
+        newSource,
+        ORIGINAL_METADATA_LANGUAGE,
+      ),
     );
     setNewSource("");
   };
@@ -102,14 +119,18 @@ export function MetadataLanguageSetting({
         <div className="w-full min-w-0 space-y-3 md:w-[430px]">
           <Select
             value={fallback ?? NO_PREFERENCE}
-            onValueChange={(value) => onFallbackChange(value === NO_PREFERENCE ? null : value)}
+            onValueChange={(value) =>
+              onFallbackChange(value === NO_PREFERENCE ? null : value)
+            }
           >
             <SelectTrigger id={id} className="w-full" disabled={disabled}>
               <SelectValue placeholder="Library default" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value={NO_PREFERENCE}>Library default</SelectItem>
-              <SelectItem value={ORIGINAL_METADATA_LANGUAGE}>Original language</SelectItem>
+              <SelectItem value={ORIGINAL_METADATA_LANGUAGE}>
+                Original language
+              </SelectItem>
               {namedOptions.map((language) => (
                 <SelectItem key={language.value} value={language.value}>
                   {language.label}
@@ -125,12 +146,18 @@ export function MetadataLanguageSetting({
                   key={source}
                   className="grid min-w-0 grid-cols-[minmax(0,1fr)_auto] items-center gap-2 py-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,1.35fr)_auto]"
                 >
-                  <span className="truncate text-sm">{getLanguageName(source)}</span>
+                  <span className="truncate text-sm">
+                    {getLanguageName(source)}
+                  </span>
                   <Select
                     value={target}
                     onValueChange={(value) =>
                       void changeOverrides(
-                        withMetadataLanguageOverride(currentOverrides, source, value),
+                        withMetadataLanguageOverride(
+                          currentOverrides,
+                          source,
+                          value,
+                        ),
                       )
                     }
                   >
@@ -142,7 +169,9 @@ export function MetadataLanguageSetting({
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value={ORIGINAL_METADATA_LANGUAGE}>Original language</SelectItem>
+                      <SelectItem value={ORIGINAL_METADATA_LANGUAGE}>
+                        Original language
+                      </SelectItem>
                       {optionsForTarget(target).map((language) => (
                         <SelectItem key={language.value} value={language.value}>
                           {language.label}
@@ -159,7 +188,10 @@ export function MetadataLanguageSetting({
                     aria-label={`Remove ${getLanguageName(source)} exception`}
                     onClick={() =>
                       void changeOverrides(
-                        withoutMetadataLanguageOverride(currentOverrides, source),
+                        withoutMetadataLanguageOverride(
+                          currentOverrides,
+                          source,
+                        ),
                       )
                     }
                   >

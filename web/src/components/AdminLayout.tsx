@@ -23,10 +23,13 @@ export default function AdminLayout() {
   const location = useLocation();
   const { isBackgroundBarVisible } = useWatchPlaybackController();
   const audiobookPlayback = useAudiobookPlaybackController();
-  const hasBackgroundBar = isBackgroundBarVisible || audiobookPlayback?.isBackgroundBarVisible;
+  const hasBackgroundBar =
+    isBackgroundBarVisible || audiobookPlayback?.isBackgroundBarVisible;
   const documentTitle = resolveAdminDocumentTitle(location.pathname);
   const mobileTitle =
-    documentTitle === "Admin" ? "Dashboard" : documentTitle.replace(/^Admin /, "");
+    documentTitle === "Admin"
+      ? "Dashboard"
+      : documentTitle.replace(/^Admin /, "");
 
   useDocumentTitle(documentTitle);
 
@@ -39,7 +42,8 @@ export default function AdminLayout() {
     };
 
     desktopMedia.addEventListener("change", closeMobileNavigation);
-    return () => desktopMedia.removeEventListener("change", closeMobileNavigation);
+    return () =>
+      desktopMedia.removeEventListener("change", closeMobileNavigation);
   }, []);
 
   return (
@@ -92,7 +96,9 @@ export default function AdminLayout() {
           onCloseAutoFocus={(event) => {
             if (window.matchMedia(ADMIN_DESKTOP_MEDIA_QUERY).matches) {
               event.preventDefault();
-              document.getElementById("main-content")?.focus({ preventScroll: true });
+              document
+                .getElementById("main-content")
+                ?.focus({ preventScroll: true });
             }
           }}
           className="w-[320px] max-w-[calc(100vw-3rem)] gap-0 border-r-0 p-0 sm:max-w-[320px]"

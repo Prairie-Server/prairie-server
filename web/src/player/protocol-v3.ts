@@ -121,7 +121,8 @@ export type RouteEventNameV3 =
 export const FEATURE_PLAYBACK_PLAN_V3 = "playback_plan_v3";
 
 /** Server-minted attempt keys and intent replans from the neutral v3 contract. */
-export const FEATURE_NEUTRAL_PLAYBACK_V3_CONTRACT = "neutral_playback_v3_contract_v1";
+export const FEATURE_NEUTRAL_PLAYBACK_V3_CONTRACT =
+  "neutral_playback_v3_contract_v1";
 
 /** Server accepts output-capability refreshes without treating the route as failed. */
 export const FEATURE_OUTPUT_CHANGE_V3 = "output_change_v1";
@@ -581,8 +582,12 @@ export interface CapabilityResponseV3 {
 // ---------------------------------------------------------------------------
 
 /** True when both flags make the advertised delivery class eligible. */
-export function deliveryAvailableV3(capability: DeliveryCapabilityV3 | undefined): boolean {
-  return capability != null && capability.enabled && capability.supported_on_device;
+export function deliveryAvailableV3(
+  capability: DeliveryCapabilityV3 | undefined,
+): boolean {
+  return (
+    capability != null && capability.enabled && capability.supported_on_device
+  );
 }
 
 /**

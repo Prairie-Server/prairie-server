@@ -4,27 +4,39 @@ import { buildInviteDeepLink, detectMobilePlatform } from "./appDeepLink";
 describe("detectMobilePlatform", () => {
   it("detects Android", () => {
     expect(
-      detectMobilePlatform("Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36"),
+      detectMobilePlatform(
+        "Mozilla/5.0 (Linux; Android 15; Pixel 9) AppleWebKit/537.36",
+      ),
     ).toBe("android");
   });
 
   it("detects iPhone and iPad", () => {
-    expect(detectMobilePlatform("Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)")).toBe(
-      "ios",
-    );
-    expect(detectMobilePlatform("Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X)")).toBe("ios");
+    expect(
+      detectMobilePlatform(
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X)",
+      ),
+    ).toBe("ios");
+    expect(
+      detectMobilePlatform("Mozilla/5.0 (iPad; CPU OS 17_5 like Mac OS X)"),
+    ).toBe("ios");
   });
 
   it("returns null for desktop browsers", () => {
-    expect(detectMobilePlatform("Mozilla/5.0 (Windows NT 10.0; Win64; x64)")).toBeNull();
-    expect(detectMobilePlatform("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)")).toBeNull();
+    expect(
+      detectMobilePlatform("Mozilla/5.0 (Windows NT 10.0; Win64; x64)"),
+    ).toBeNull();
+    expect(
+      detectMobilePlatform("Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"),
+    ).toBeNull();
     expect(detectMobilePlatform("Mozilla/5.0 (X11; Linux x86_64)")).toBeNull();
   });
 });
 
 describe("buildInviteDeepLink", () => {
   it("emits the prairie://invite contract the Android app registers", () => {
-    expect(buildInviteDeepLink("https://prairie.arkyncdn.net", "wIAUTS99-abc")).toBe(
+    expect(
+      buildInviteDeepLink("https://prairie.arkyncdn.net", "wIAUTS99-abc"),
+    ).toBe(
       "prairie://invite?server=https%3A%2F%2Fprairie.arkyncdn.net&token=wIAUTS99-abc",
     );
   });
@@ -44,6 +56,8 @@ describe("buildInviteDeepLink", () => {
   it("rejects unrepresentable origins", () => {
     expect(buildInviteDeepLink("not a url", "t")).toBeNull();
     expect(buildInviteDeepLink("ftp://prairie.example.net", "t")).toBeNull();
-    expect(buildInviteDeepLink("https://user:pw@prairie.example.net", "t")).toBeNull();
+    expect(
+      buildInviteDeepLink("https://user:pw@prairie.example.net", "t"),
+    ).toBeNull();
   });
 });

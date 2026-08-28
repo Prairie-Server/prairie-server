@@ -2,7 +2,10 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { Film, Sparkles, Tv } from "lucide-react";
 import { useCanRequest } from "@/hooks/useCanRequest";
-import { useCreateMediaRequest, useRequestSearch } from "@/hooks/queries/useRequests";
+import {
+  useCreateMediaRequest,
+  useRequestSearch,
+} from "@/hooks/queries/useRequests";
 import type { RequestMediaResult } from "@/api/types";
 import {
   formatRequestReason,
@@ -13,7 +16,9 @@ import {
 import { cn } from "@/lib/utils";
 import RequestPosterCard from "./RequestPosterCard";
 
-function cardKey(item: Pick<RequestMediaResult, "media_type" | "tmdb_id">): string {
+function cardKey(
+  item: Pick<RequestMediaResult, "media_type" | "tmdb_id">,
+): string {
   return `${item.media_type}-${item.tmdb_id}`;
 }
 
@@ -37,7 +42,11 @@ export type RequestToAddSectionProps = {
   libraryHadHits: boolean;
 };
 
-export function RequestToAddSection({ variant, query, libraryHadHits }: RequestToAddSectionProps) {
+export function RequestToAddSection({
+  variant,
+  query,
+  libraryHadHits,
+}: RequestToAddSectionProps) {
   const { discoveryEnabled } = useCanRequest();
   const search = useRequestSearch("all", query, 1, {
     enabled: discoveryEnabled,
@@ -48,7 +57,9 @@ export function RequestToAddSection({ variant, query, libraryHadHits }: RequestT
   if (!discoveryEnabled) return null;
   if (search.isError && !search.data) return null;
 
-  const filtered = (search.data?.results ?? []).filter((item) => item.availability !== "available");
+  const filtered = (search.data?.results ?? []).filter(
+    (item) => item.availability !== "available",
+  );
   if (filtered.length === 0) return null;
 
   const limit = variant === "dialog" ? DIALOG_LIMIT : GRID_LIMIT;
@@ -60,7 +71,13 @@ export function RequestToAddSection({ variant, query, libraryHadHits }: RequestT
   return <GridVariant items={visible} libraryHadHits={libraryHadHits} />;
 }
 
-function HeaderCopy({ libraryHadHits, count }: { libraryHadHits: boolean; count: number }) {
+function HeaderCopy({
+  libraryHadHits,
+  count,
+}: {
+  libraryHadHits: boolean;
+  count: number;
+}) {
   if (libraryHadHits) {
     return (
       <div className="text-muted-foreground flex items-center gap-2 px-3 pt-2 pb-1 text-[10px] font-medium tracking-[0.1em] uppercase">
@@ -118,7 +135,12 @@ function DialogRow({ item }: { item: RequestMediaResult }) {
         )}
       >
         {poster ? (
-          <img src={poster} alt="" className="h-full w-full object-cover" loading="lazy" />
+          <img
+            src={poster}
+            alt=""
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
         ) : (
           <div className="text-muted-foreground flex h-full items-center justify-center">
             <Icon className="h-4 w-4" />
@@ -160,7 +182,9 @@ function GridVariant({
   // Track each in-flight card key independently; the shared `useMutation`
   // observer overwrites its `variables` on every `mutate` call, so rapid
   // clicks on different cards would otherwise trample each other's spinner.
-  const [pendingKeys, setPendingKeys] = useState<ReadonlySet<string>>(new Set());
+  const [pendingKeys, setPendingKeys] = useState<ReadonlySet<string>>(
+    new Set(),
+  );
   const submitCard = (item: RequestMediaResult) => {
     const key = cardKey(item);
     setPendingKeys((prev) => {
@@ -199,11 +223,15 @@ function GridVariant({
           <div className="flex items-center gap-2 text-amber-200/85">
             <Sparkles className="h-3.5 w-3.5" strokeWidth={2.2} aria-hidden />
             <span className="text-[10px] font-semibold tracking-[0.24em] uppercase">
-              {libraryHadHits ? "Discover · Outside your library" : "Outside your library"}
+              {libraryHadHits
+                ? "Discover · Outside your library"
+                : "Outside your library"}
             </span>
           </div>
           <h2 className="font-display text-foreground text-[clamp(1.25rem,1.6vw,1.55rem)] leading-tight font-semibold tracking-tight">
-            {libraryHadHits ? "Request to Add" : "Not in your library, but you can request"}
+            {libraryHadHits
+              ? "Request to Add"
+              : "Not in your library, but you can request"}
           </h2>
         </div>
         <span className="inline-flex items-center gap-1.5 self-end rounded-full border border-amber-400/15 bg-amber-400/[0.06] px-2.5 py-1 text-[11px] font-medium tracking-wide text-amber-100/75 tabular-nums">

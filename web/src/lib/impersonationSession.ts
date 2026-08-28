@@ -9,7 +9,10 @@ export interface StoredImpersonationAdminSession {
 export function saveStoredImpersonationAdminSession(
   session: StoredImpersonationAdminSession,
 ): void {
-  storage.set(storage.KEYS.IMPERSONATION_ADMIN_SESSION, JSON.stringify(session));
+  storage.set(
+    storage.KEYS.IMPERSONATION_ADMIN_SESSION,
+    JSON.stringify(session),
+  );
 }
 
 export function loadStoredImpersonationAdminSession(): StoredImpersonationAdminSession | null {
@@ -19,7 +22,9 @@ export function loadStoredImpersonationAdminSession(): StoredImpersonationAdminS
       return null;
     }
 
-    const parsed = JSON.parse(rawSession) as Partial<StoredImpersonationAdminSession>;
+    const parsed = JSON.parse(
+      rawSession,
+    ) as Partial<StoredImpersonationAdminSession>;
     if (
       typeof parsed.accessToken !== "string" ||
       typeof parsed.refreshToken !== "string" ||

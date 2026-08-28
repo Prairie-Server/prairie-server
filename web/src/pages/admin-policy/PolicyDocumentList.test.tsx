@@ -30,7 +30,10 @@ describe("PolicyDocumentList", () => {
             },
           ]);
         }
-        if (url === "/api/v1/admin/policy/documents/1/enabled" && method === "POST") {
+        if (
+          url === "/api/v1/admin/policy/documents/1/enabled" &&
+          method === "POST"
+        ) {
           return jsonResponse(
             {
               error: "conflict",
@@ -54,7 +57,9 @@ describe("PolicyDocumentList", () => {
 
     expect(await screen.findByText("Scope limits")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("switch", { name: "Set Scope limits enabled" }));
+    fireEvent.click(
+      screen.getByRole("switch", { name: "Set Scope limits enabled" }),
+    );
 
     expect(
       await screen.findByText("Policy domain already has an enabled document"),

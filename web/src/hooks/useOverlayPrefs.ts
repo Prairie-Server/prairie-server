@@ -1,12 +1,19 @@
 import { useMemo, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import { useEffectiveSettings, useSetSettingValue } from "@/hooks/queries/settingValues";
+import {
+  useEffectiveSettings,
+  useSetSettingValue,
+} from "@/hooks/queries/settingValues";
 import type { SettingIdentity } from "@/hooks/queries/settingValues";
 import { SETTING_KEYS } from "@/lib/settingsContract";
 import { settingsKeys } from "@/hooks/queries/keys";
 import { storage } from "@/utils/storage";
-import { parseOverlayPrefs, serializeOverlayPrefs, type CardOverlayPrefs } from "@/lib/overlays";
+import {
+  parseOverlayPrefs,
+  serializeOverlayPrefs,
+  type CardOverlayPrefs,
+} from "@/lib/overlays";
 
 /** `ui.card_overlays` is profile-wide in the contract (no device scope). */
 const PROFILE_SCOPE: SettingIdentity = { scope: "profile" };
@@ -60,11 +67,16 @@ export function useOverlayPrefs() {
       // through the parser so key ordering in the stored JSON is irrelevant.
       if (
         userValue != null &&
-        serializeOverlayPrefs(parseOverlayPrefs(userValue)) === serializeOverlayPrefs(next)
+        serializeOverlayPrefs(parseOverlayPrefs(userValue)) ===
+          serializeOverlayPrefs(next)
       ) {
         return;
       }
-      setValue.mutate({ key: SETTING_KEYS.UI_CARD_OVERLAYS, value: next, identity: PROFILE_SCOPE });
+      setValue.mutate({
+        key: SETTING_KEYS.UI_CARD_OVERLAYS,
+        value: next,
+        identity: PROFILE_SCOPE,
+      });
     },
     [userValue, setValue],
   );

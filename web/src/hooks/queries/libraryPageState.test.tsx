@@ -15,7 +15,10 @@ const mocks = vi.hoisted(() => ({
   profileId: "profile-1",
   preference: {
     version: 1 as const,
-    libraries: { "3": { search: "tab=collections" } } as Record<string, { search: string }>,
+    libraries: { "3": { search: "tab=collections" } } as Record<
+      string,
+      { search: string }
+    >,
   },
 }));
 
@@ -31,7 +34,8 @@ vi.mock("@/hooks/useAuth", () => ({
 }));
 
 vi.mock("@/hooks/queries/settingValues", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/hooks/queries/settingValues")>();
+  const actual =
+    await importOriginal<typeof import("@/hooks/queries/settingValues")>();
   return {
     ...actual,
     useEffectiveSettings: () => ({
@@ -110,14 +114,16 @@ describe("useLibraryPageStatePreference", () => {
 
   it("allows the same desired state to retry after a failed write", async () => {
     mocks.mutateAsync
-      .mockRejectedValueOnce(new ApiClientError(429, "rate_limited", "rate limited"))
+      .mockRejectedValueOnce(
+        new ApiClientError(429, "rate_limited", "rate limited"),
+      )
       .mockResolvedValueOnce({});
     const { result } = renderHook(() => useLibraryPageStatePreference());
 
     await act(async () => {
-      await expect(result.current.saveLibrarySearch(7, "tab=library&sort=year")).rejects.toThrow(
-        "rate limited",
-      );
+      await expect(
+        result.current.saveLibrarySearch(7, "tab=library&sort=year"),
+      ).rejects.toThrow("rate limited");
     });
     await act(async () => {
       await result.current.saveLibrarySearch(7, "tab=library&sort=year");
@@ -133,9 +139,9 @@ describe("useLibraryPageStatePreference", () => {
     const { result } = renderHook(() => useLibraryPageStatePreference());
 
     await act(async () => {
-      await expect(result.current.saveLibrarySearch(7, "tab=library&sort=year")).rejects.toThrow(
-        "network connection lost",
-      );
+      await expect(
+        result.current.saveLibrarySearch(7, "tab=library&sort=year"),
+      ).rejects.toThrow("network connection lost");
     });
     await act(async () => {
       await result.current.saveLibrarySearch(7, "tab=library&sort=year");
@@ -156,14 +162,19 @@ describe("useLibraryPageStatePreference", () => {
       .mockResolvedValueOnce({});
     const { result } = renderHook(() => useLibraryPageStatePreference());
 
-    const rejected = result.current.saveLibrarySearch(3, "tab=library&sort=year");
+    const rejected = result.current.saveLibrarySearch(
+      3,
+      "tab=library&sort=year",
+    );
     const rejectedError = rejected.catch((error: unknown) => error);
     const queued = result.current.saveLibrarySearch(9, "tab=collections");
 
     await waitFor(() => expect(mocks.mutateAsync).toHaveBeenCalledTimes(1));
     await act(async () => {
       rejectFirst?.(new ApiClientError(429, "rate_limited", "rate limited"));
-      expect(await rejectedError).toEqual(new ApiClientError(429, "rate_limited", "rate limited"));
+      expect(await rejectedError).toEqual(
+        new ApiClientError(429, "rate_limited", "rate limited"),
+      );
       await queued;
     });
 
@@ -189,14 +200,19 @@ describe("useLibraryPageStatePreference", () => {
       .mockResolvedValueOnce({});
     const { result } = renderHook(() => useLibraryPageStatePreference());
 
-    const ambiguous = result.current.saveLibrarySearch(7, "tab=library&sort=year");
+    const ambiguous = result.current.saveLibrarySearch(
+      7,
+      "tab=library&sort=year",
+    );
     const ambiguousError = ambiguous.catch((error: unknown) => error);
     const queued = result.current.saveLibrarySearch(9, "tab=collections");
 
     await waitFor(() => expect(mocks.mutateAsync).toHaveBeenCalledTimes(1));
     await act(async () => {
       rejectFirst?.(new TypeError("response connection lost"));
-      expect(await ambiguousError).toEqual(new TypeError("response connection lost"));
+      expect(await ambiguousError).toEqual(
+        new TypeError("response connection lost"),
+      );
       await queued;
     });
 
@@ -212,11 +228,16 @@ describe("useLibraryPageStatePreference", () => {
 
   it("treats a server error as ambiguous before advancing the queue", async () => {
     mocks.mutateAsync
-      .mockRejectedValueOnce(new ApiClientError(503, "unavailable", "service unavailable"))
+      .mockRejectedValueOnce(
+        new ApiClientError(503, "unavailable", "service unavailable"),
+      )
       .mockResolvedValueOnce({});
     const { result } = renderHook(() => useLibraryPageStatePreference());
 
-    const ambiguous = result.current.saveLibrarySearch(7, "tab=library&sort=year");
+    const ambiguous = result.current.saveLibrarySearch(
+      7,
+      "tab=library&sort=year",
+    );
     const ambiguousError = ambiguous.catch((error: unknown) => error);
     const queued = result.current.saveLibrarySearch(9, "tab=collections");
 
@@ -243,9 +264,14 @@ describe("useLibraryPageStatePreference", () => {
           }),
       )
       .mockResolvedValueOnce({});
-    const { result, rerender } = renderHook(() => useLibraryPageStatePreference());
+    const { result, rerender } = renderHook(() =>
+      useLibraryPageStatePreference(),
+    );
 
-    const ambiguous = result.current.saveLibrarySearch(7, "tab=library&sort=year");
+    const ambiguous = result.current.saveLibrarySearch(
+      7,
+      "tab=library&sort=year",
+    );
     const ambiguousError = ambiguous.catch((error: unknown) => error);
     const queued = result.current.saveLibrarySearch(9, "tab=collections");
 
@@ -287,7 +313,9 @@ describe("useLibraryPageStatePreference", () => {
           }),
       )
       .mockResolvedValueOnce({});
-    const { result, rerender } = renderHook(() => useLibraryPageStatePreference());
+    const { result, rerender } = renderHook(() =>
+      useLibraryPageStatePreference(),
+    );
 
     const first = result.current.saveLibrarySearch(7, "tab=library&sort=year");
     const queued = result.current.saveLibrarySearch(9, "tab=collections");
@@ -337,7 +365,9 @@ describe("useLibraryPageStatePreference", () => {
           }),
       )
       .mockResolvedValueOnce({});
-    const { result, rerender } = renderHook(() => useLibraryPageStatePreference());
+    const { result, rerender } = renderHook(() =>
+      useLibraryPageStatePreference(),
+    );
 
     const first = result.current.saveLibrarySearch(7, "tab=library&sort=year");
     const firstError = first.catch((error: unknown) => error);
@@ -397,7 +427,9 @@ describe("useLibraryPageStatePreference", () => {
           }),
       )
       .mockResolvedValueOnce({});
-    const { result, rerender } = renderHook(() => useLibraryPageStatePreference());
+    const { result, rerender } = renderHook(() =>
+      useLibraryPageStatePreference(),
+    );
 
     const first = result.current.saveLibrarySearch(7, "tab=library&sort=year");
     const second = result.current.saveLibrarySearch(9, "tab=collections");
@@ -443,12 +475,14 @@ describe("useLibraryPageStatePreference", () => {
     mocks.mutateAsync
       .mockRejectedValueOnce(new TypeError("response connection lost"))
       .mockResolvedValueOnce({});
-    const { result, rerender } = renderHook(() => useLibraryPageStatePreference());
+    const { result, rerender } = renderHook(() =>
+      useLibraryPageStatePreference(),
+    );
 
     await act(async () => {
-      await expect(result.current.saveLibrarySearch(7, "tab=library&sort=year")).rejects.toThrow(
-        "response connection lost",
-      );
+      await expect(
+        result.current.saveLibrarySearch(7, "tab=library&sort=year"),
+      ).rejects.toThrow("response connection lost");
     });
     act(() => {
       mocks.preference = {
@@ -485,9 +519,14 @@ describe("useLibraryPageStatePreference", () => {
           }),
       )
       .mockResolvedValueOnce({});
-    const { result, rerender } = renderHook(() => useLibraryPageStatePreference());
+    const { result, rerender } = renderHook(() =>
+      useLibraryPageStatePreference(),
+    );
 
-    const rejected = result.current.saveLibrarySearch(7, "tab=library&sort=year");
+    const rejected = result.current.saveLibrarySearch(
+      7,
+      "tab=library&sort=year",
+    );
     const rejectedError = rejected.catch((error: unknown) => error);
     const queued = result.current.saveLibrarySearch(9, "tab=collections");
 
@@ -527,12 +566,17 @@ describe("useLibraryPageStatePreference", () => {
             resolveFirst = resolve;
           }),
       )
-      .mockRejectedValueOnce(new ApiClientError(429, "rate_limited", "rate limited"));
+      .mockRejectedValueOnce(
+        new ApiClientError(429, "rate_limited", "rate limited"),
+      );
     const { result } = renderHook(() => useLibraryPageStatePreference());
 
     const first = result.current.saveLibrarySearch(7, "tab=library&sort=year");
     const tail = result.current.saveLibrarySearch(9, "tab=collections");
-    const coalesced = result.current.saveLibrarySearch(7, "tab=library&sort=year");
+    const coalesced = result.current.saveLibrarySearch(
+      7,
+      "tab=library&sort=year",
+    );
     const tailError = tail.catch((error: unknown) => error);
 
     expect(coalesced).toBe(first);
@@ -544,7 +588,9 @@ describe("useLibraryPageStatePreference", () => {
     });
 
     await expect(coalesced).resolves.toEqual({});
-    expect(await tailError).toEqual(new ApiClientError(429, "rate_limited", "rate limited"));
+    expect(await tailError).toEqual(
+      new ApiClientError(429, "rate_limited", "rate limited"),
+    );
     expect(mocks.mutateAsync).toHaveBeenCalledTimes(2);
   });
 
@@ -565,7 +611,10 @@ describe("useLibraryPageStatePreference", () => {
     const first = result.current.saveLibrarySearch(7, "tab=library&sort=year");
     const middle = result.current.saveLibrarySearch(9, "tab=collections");
     void result.current.saveLibrarySearch(7, "tab=library&sort=title");
-    const revisitedMiddle = result.current.saveLibrarySearch(9, "tab=collections");
+    const revisitedMiddle = result.current.saveLibrarySearch(
+      9,
+      "tab=collections",
+    );
 
     expect(revisitedMiddle).toBe(middle);
     await waitFor(() => expect(mocks.mutateAsync).toHaveBeenCalledTimes(1));
@@ -620,13 +669,22 @@ describe("useLibraryPageStatePreference", () => {
       .mockResolvedValueOnce({});
     const firstHook = renderHook(() => useLibraryPageStatePreference());
 
-    const blocker = firstHook.result.current.saveLibrarySearch(5, "tab=collections");
-    const cancelled = firstHook.result.current.saveLibrarySearch(7, "tab=library&sort=year");
+    const blocker = firstHook.result.current.saveLibrarySearch(
+      5,
+      "tab=collections",
+    );
+    const cancelled = firstHook.result.current.saveLibrarySearch(
+      7,
+      "tab=library&sort=year",
+    );
     const cancellation = cancelled.catch((error: unknown) => error);
     await waitFor(() => expect(mocks.mutateAsync).toHaveBeenCalledTimes(1));
 
     const secondHook = renderHook(() => useLibraryPageStatePreference());
-    const retained = secondHook.result.current.saveLibrarySearch(7, "tab=library&sort=year");
+    const retained = secondHook.result.current.saveLibrarySearch(
+      7,
+      "tab=library&sort=year",
+    );
     expect(retained).not.toBe(cancelled);
     firstHook.unmount();
 
@@ -655,12 +713,18 @@ describe("useLibraryPageStatePreference", () => {
       .mockResolvedValueOnce({});
     const firstHook = renderHook(() => useLibraryPageStatePreference());
 
-    const first = firstHook.result.current.saveLibrarySearch(7, "tab=library&sort=year");
+    const first = firstHook.result.current.saveLibrarySearch(
+      7,
+      "tab=library&sort=year",
+    );
     await waitFor(() => expect(mocks.mutateAsync).toHaveBeenCalledTimes(1));
     firstHook.unmount();
 
     const secondHook = renderHook(() => useLibraryPageStatePreference());
-    const second = secondHook.result.current.saveLibrarySearch(9, "tab=collections");
+    const second = secondHook.result.current.saveLibrarySearch(
+      9,
+      "tab=collections",
+    );
     await Promise.resolve();
     expect(mocks.mutateAsync).toHaveBeenCalledTimes(1);
 
@@ -689,7 +753,9 @@ describe("useLibraryPageStatePreference", () => {
           resolveFirst = resolve;
         }),
     );
-    const { result, rerender } = renderHook(() => useLibraryPageStatePreference());
+    const { result, rerender } = renderHook(() =>
+      useLibraryPageStatePreference(),
+    );
 
     const first = result.current.saveLibrarySearch(7, "tab=library&sort=year");
     const queued = result.current.saveLibrarySearch(9, "tab=collections");
@@ -707,7 +773,9 @@ describe("useLibraryPageStatePreference", () => {
 
     const cancellation = await queuedError;
     expect(cancellation).toEqual(
-      new Error("Library preference write cancelled because the active profile changed"),
+      new Error(
+        "Library preference write cancelled because the active profile changed",
+      ),
     );
     expect(shouldRetryLibraryPageStateWrite(cancellation)).toBe(true);
     expect(libraryPageStateWriteRetryDelay(cancellation, 2_000)).toBe(0);
@@ -718,12 +786,14 @@ describe("useLibraryPageStatePreference", () => {
     mocks.mutateAsync
       .mockRejectedValueOnce(new TypeError("response connection lost"))
       .mockResolvedValueOnce({});
-    const { result, rerender } = renderHook(() => useLibraryPageStatePreference());
+    const { result, rerender } = renderHook(() =>
+      useLibraryPageStatePreference(),
+    );
 
     await act(async () => {
-      await expect(result.current.saveLibrarySearch(7, "tab=library&sort=year")).rejects.toThrow(
-        "response connection lost",
-      );
+      await expect(
+        result.current.saveLibrarySearch(7, "tab=library&sort=year"),
+      ).rejects.toThrow("response connection lost");
     });
 
     act(() => {
@@ -754,7 +824,9 @@ describe("useLibraryPageStatePreference", () => {
       )
       .mockResolvedValueOnce({});
     const originalProfileId = mocks.profileId;
-    const { result, rerender } = renderHook(() => useLibraryPageStatePreference());
+    const { result, rerender } = renderHook(() =>
+      useLibraryPageStatePreference(),
+    );
 
     const first = result.current.saveLibrarySearch(7, "tab=library&sort=year");
     const firstError = first.catch((error: unknown) => error);
@@ -791,7 +863,11 @@ describe("useLibraryPageStatePreference", () => {
   });
 
   it("honors a rate-limit retry hint while keeping retries bounded by the caller", () => {
-    const error = new ApiClientError(429, "rate_limit_exceeded", "rate limited");
+    const error = new ApiClientError(
+      429,
+      "rate_limit_exceeded",
+      "rate limited",
+    );
     error.body = { retry_after: 30 };
 
     expect(shouldRetryLibraryPageStateWrite(error)).toBe(true);

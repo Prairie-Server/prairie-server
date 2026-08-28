@@ -52,7 +52,15 @@ const version: PlayerFileVersion = {
   file_size: 1,
   duration: 3600,
   bitrate: 1,
-  chapters: [{ index: 0, title: "Chapter", start_seconds: 0, end_seconds: 3600, source: "test" }],
+  chapters: [
+    {
+      index: 0,
+      title: "Chapter",
+      start_seconds: 0,
+      end_seconds: 3600,
+      source: "test",
+    },
+  ],
 };
 
 const watchPageProps: WatchPageProps = {
@@ -122,13 +130,18 @@ describe("derivePersistedSubtitleMode", () => {
 describe("WatchPage playback errors", () => {
   it("keeps the player mounted when a replan fails with an active plan", () => {
     playbackSessionMock.mockReturnValue(
-      playbackSession({ errorTitle: "Quality change failed", error: "Temporary server error" }),
+      playbackSession({
+        errorTitle: "Quality change failed",
+        error: "Temporary server error",
+      }),
     );
 
     render(createElement(WatchPage, watchPageProps));
 
     expect(screen.getByText("Mounted video player")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Go Back" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Go Back" }),
+    ).not.toBeInTheDocument();
   });
 
   it("shows the fatal error screen when startup fails without a plan", () => {
@@ -174,9 +187,12 @@ describe("WatchPage playback errors", () => {
     expect(props.subtitleMode).toBe("off");
     expect(props.showForcedSubtitles).toBe(false);
     expect(props.replanError).toBeNull();
-    expect(toastErrorMock).toHaveBeenCalledWith("That subtitle track can't be used", {
-      description: "Enable HDR transcoding to use this subtitle.",
-    });
+    expect(toastErrorMock).toHaveBeenCalledWith(
+      "That subtitle track can't be used",
+      {
+        description: "Enable HDR transcoding to use this subtitle.",
+      },
+    );
   });
 });
 
@@ -184,9 +200,13 @@ describe("WatchPage playback state", () => {
   it("keeps the session resume anchor current while forwarding state", () => {
     const updatePlaybackState = vi.fn();
     const onPlaybackStateChange = vi.fn();
-    playbackSessionMock.mockReturnValue(playbackSession({ updatePlaybackState }));
+    playbackSessionMock.mockReturnValue(
+      playbackSession({ updatePlaybackState }),
+    );
 
-    render(createElement(WatchPage, { ...watchPageProps, onPlaybackStateChange }));
+    render(
+      createElement(WatchPage, { ...watchPageProps, onPlaybackStateChange }),
+    );
 
     const props = videoPlayerMock.mock.calls[0]?.[0] as {
       onPlaybackStateChange?: (state: {

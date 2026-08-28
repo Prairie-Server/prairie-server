@@ -7,8 +7,15 @@ import MediaCarousel from "@/components/MediaCarousel";
 import { useCatalogItemDetail } from "@/hooks/queries/catalogRead";
 import { useAmbientColor } from "@/hooks/useAmbientColor";
 import { useOverlayPrefs } from "@/hooks/useOverlayPrefs";
-import { buildChapterList, findChapterAt, totalAudiobookDuration } from "@/lib/audiobooks/chapters";
-import { formatHoursMinutes, formatListeningTimeLeft } from "@/lib/audiobooks/duration";
+import {
+  buildChapterList,
+  findChapterAt,
+  totalAudiobookDuration,
+} from "@/lib/audiobooks/chapters";
+import {
+  formatHoursMinutes,
+  formatListeningTimeLeft,
+} from "@/lib/audiobooks/duration";
 import { audiobookFilesFromVersions } from "@/lib/audiobooks/files";
 import { buildItemHref, buildMediaPlayHref } from "@/lib/mediaNavigation";
 import { decodeThumbhash } from "@/lib/thumbhash";
@@ -20,7 +27,9 @@ interface NowListeningHeroProps {
   libraryId?: number;
 }
 
-function namesFromPeople(people: Array<{ name?: string }> | undefined): string | undefined {
+function namesFromPeople(
+  people: Array<{ name?: string }> | undefined,
+): string | undefined {
   const names = (people ?? [])
     .map((person) => person.name?.trim())
     .filter(Boolean)
@@ -35,21 +44,28 @@ function namesFromPeople(people: Array<{ name?: string }> | undefined): string |
  * cover, chapter position, hours left, and a Resume button — followed by a
  * row with the rest of the in-progress books.
  */
-export default function NowListeningHero({ section, libraryId }: NowListeningHeroProps) {
+export default function NowListeningHero({
+  section,
+  libraryId,
+}: NowListeningHeroProps) {
   const deck = section.items[0];
   const rest = section.items.slice(1);
   const { prefs: overlayPrefs } = useOverlayPrefs();
   const audiobookPlayback = useAudiobookPlaybackController();
   // The section payload has no chapters or credits; the item detail fills in
   // author/narrator, chapter marks, and the files needed for one-click resume.
-  const { data: fetchedDetail } = useCatalogItemDetail(deck?.content_id, libraryId);
+  const { data: fetchedDetail } = useCatalogItemDetail(
+    deck?.content_id,
+    libraryId,
+  );
   useAmbientColor(deck?.poster_thumbhash);
 
   // The detail query keeps previous data while a new deck item loads, so a
   // Resume click in that window could start the new book with the previous
   // book's files. Only trust a detail payload that matches the deck item.
   const detail =
-    fetchedDetail?.type === "audiobook" && fetchedDetail.content_id === deck?.content_id
+    fetchedDetail?.type === "audiobook" &&
+    fetchedDetail.content_id === deck?.content_id
       ? fetchedDetail
       : undefined;
 
@@ -62,12 +78,20 @@ export default function NowListeningHero({ section, libraryId }: NowListeningHer
   if (!deck) return null;
 
   const detailProgress =
-    detail?.user_data && "position_seconds" in detail.user_data ? detail.user_data : undefined;
+    detail?.user_data && "position_seconds" in detail.user_data
+      ? detail.user_data
+      : undefined;
   const isActive = audiobookPlayback?.active?.contentId === deck.content_id;
-  const isActivePlaying = isActive && Boolean(audiobookPlayback?.active?.playing);
-  const livePosition = isActive ? (audiobookPlayback?.active?.currentTime ?? null) : null;
+  const isActivePlaying =
+    isActive && Boolean(audiobookPlayback?.active?.playing);
+  const livePosition = isActive
+    ? (audiobookPlayback?.active?.currentTime ?? null)
+    : null;
   const positionSeconds =
-    livePosition ?? detailProgress?.position_seconds ?? deck.position_seconds ?? 0;
+    livePosition ??
+    detailProgress?.position_seconds ??
+    deck.position_seconds ??
+    0;
   const durationSeconds =
     detail?.audiobook?.total_duration_seconds ||
     totalAudiobookDuration(files) ||
@@ -76,13 +100,18 @@ export default function NowListeningHero({ section, libraryId }: NowListeningHer
 
   const author = namesFromPeople(detail?.audiobook?.authors);
   const narrator = namesFromPeople(detail?.audiobook?.narrators);
-  const chapter = chapters.length > 0 ? findChapterAt(chapters, positionSeconds) : null;
+  const chapter =
+    chapters.length > 0 ? findChapterAt(chapters, positionSeconds) : null;
   const progressPercent =
-    durationSeconds > 0 ? Math.min((positionSeconds / durationSeconds) * 100, 100) : 0;
+    durationSeconds > 0
+      ? Math.min((positionSeconds / durationSeconds) * 100, 100)
+      : 0;
   const timeLeft = formatListeningTimeLeft(positionSeconds, durationSeconds);
   const chapterLine = chapter
     ? `Chapter ${chapter.index} of ${chapters.length}` +
-      (chapter.label && chapter.label !== `Chapter ${chapter.index}` ? ` · ${chapter.label}` : "")
+      (chapter.label && chapter.label !== `Chapter ${chapter.index}`
+        ? ` · ${chapter.label}`
+        : "")
     : durationSeconds > 0
       ? formatHoursMinutes(durationSeconds)
       : "";
@@ -93,7 +122,9 @@ export default function NowListeningHero({ section, libraryId }: NowListeningHer
     libraryId,
   });
   const itemHref = buildItemHref({ contentId: deck.content_id, libraryId });
-  const thumbhashUrl = deck.poster_thumbhash ? decodeThumbhash(deck.poster_thumbhash) : "";
+  const thumbhashUrl = deck.poster_thumbhash
+    ? decodeThumbhash(deck.poster_thumbhash)
+    : "";
 
   const handleResumeClick = (event: MouseEvent<HTMLAnchorElement>) => {
     if (isActive) {
@@ -117,7 +148,11 @@ export default function NowListeningHero({ section, libraryId }: NowListeningHer
     // page link, which auto-starts playback via ?play=1.
   };
 
-  const resumeLabel = isActivePlaying ? "Pause" : positionSeconds > 0 ? "Resume" : "Listen";
+  const resumeLabel = isActivePlaying
+    ? "Pause"
+    : positionSeconds > 0
+      ? "Resume"
+      : "Listen";
 
   return (
     <>
@@ -131,7 +166,10 @@ export default function NowListeningHero({ section, libraryId }: NowListeningHer
           className="absolute inset-0"
           style={
             thumbhashUrl
-              ? { backgroundImage: `url(${thumbhashUrl})`, backgroundSize: "cover" }
+              ? {
+                  backgroundImage: `url(${thumbhashUrl})`,
+                  backgroundSize: "cover",
+                }
               : undefined
           }
         >
@@ -158,7 +196,10 @@ export default function NowListeningHero({ section, libraryId }: NowListeningHer
                 className="bg-muted aspect-square overflow-hidden rounded-2xl shadow-2xl"
                 style={
                   thumbhashUrl
-                    ? { backgroundImage: `url(${thumbhashUrl})`, backgroundSize: "cover" }
+                    ? {
+                        backgroundImage: `url(${thumbhashUrl})`,
+                        backgroundSize: "cover",
+                      }
                     : undefined
                 }
               >
@@ -198,8 +239,14 @@ export default function NowListeningHero({ section, libraryId }: NowListeningHer
                   />
                 </div>
                 <div className="mt-2 flex items-baseline justify-between gap-3 text-xs sm:text-sm">
-                  <span className="text-foreground/60 truncate">{chapterLine}</span>
-                  {timeLeft && <span className="text-foreground/85 shrink-0">{timeLeft}</span>}
+                  <span className="text-foreground/60 truncate">
+                    {chapterLine}
+                  </span>
+                  {timeLeft && (
+                    <span className="text-foreground/85 shrink-0">
+                      {timeLeft}
+                    </span>
+                  )}
                 </div>
               </div>
 

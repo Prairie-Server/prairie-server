@@ -29,7 +29,9 @@ vi.mock("@/components/catalog/CatalogFiltersPanel", () => ({
     <div>
       Filters
       {resultCountLoading ? <span>Loading item count</span> : null}
-      {!resultCountLoading && resultCountLabel ? <span>{resultCountLabel}</span> : null}
+      {!resultCountLoading && resultCountLabel ? (
+        <span>{resultCountLabel}</span>
+      ) : null}
     </div>
   ),
 }));
@@ -42,7 +44,9 @@ describe("LibraryBrowse", () => {
     mocks.useCatalogWindow.mockReturnValue({
       data: {
         totalItems: 1,
-        pages: new Map([[0, [{ content_id: "movie-1", title: "Heat", type: "movie" }]]]),
+        pages: new Map([
+          [0, [{ content_id: "movie-1", title: "Heat", type: "movie" }]],
+        ]),
       },
       isLoading: false,
     });
@@ -180,7 +184,10 @@ describe("LibraryBrowse", () => {
       mocks.useCatalogWindow.mock.calls.length - 1
     ] as [CatalogSearchState, Record<string, unknown>];
     expect(state.type_override).toBe("episode");
-    expect(state.query_definition.sort).toEqual({ field: "title", order: "asc" });
+    expect(state.query_definition.sort).toEqual({
+      field: "title",
+      order: "asc",
+    });
   });
 
   it("uses audiobook media scope for audiobook libraries", () => {
@@ -251,6 +258,9 @@ describe("LibraryBrowse", () => {
     const [state] = mocks.useCatalogWindow.mock.calls[
       mocks.useCatalogWindow.mock.calls.length - 1
     ] as [CatalogSearchState, Record<string, unknown>];
-    expect(state.query_definition.sort).toEqual({ field: "title", order: "asc" });
+    expect(state.query_definition.sort).toEqual({
+      field: "title",
+      order: "asc",
+    });
   });
 });

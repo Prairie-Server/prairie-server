@@ -13,7 +13,9 @@ export function tasteSeedDismissedKey(profileId: string): string {
   return `taste_seed_dismissed_${profileId}`;
 }
 
-export function isTasteSeedDismissed(profileId: string | null | undefined): boolean {
+export function isTasteSeedDismissed(
+  profileId: string | null | undefined,
+): boolean {
   if (!profileId) return false;
   try {
     return localStorage.getItem(tasteSeedDismissedKey(profileId)) === "true";
@@ -47,10 +49,14 @@ export function tasteSeedBannerDismissedKey(profileId: string): string {
   return `taste_seed_banner_dismissed_${profileId}`;
 }
 
-export function isTasteSeedBannerDismissed(profileId: string | null | undefined): boolean {
+export function isTasteSeedBannerDismissed(
+  profileId: string | null | undefined,
+): boolean {
   if (!profileId) return false;
   try {
-    return localStorage.getItem(tasteSeedBannerDismissedKey(profileId)) === "true";
+    return (
+      localStorage.getItem(tasteSeedBannerDismissedKey(profileId)) === "true"
+    );
   } catch {
     return false;
   }

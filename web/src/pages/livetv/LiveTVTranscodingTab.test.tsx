@@ -69,15 +69,21 @@ describe("LiveTVTranscodingTab", () => {
     render(<LiveTVTranscodingTab />);
 
     expect(screen.getByText("Not supported by this tuner")).toBeInTheDocument();
-    expect(screen.getByText(/No tuner reports device-side transcoding/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/No tuner reports device-side transcoding/),
+    ).toBeInTheDocument();
   });
 
   it("lists the profiles a capable tuner advertises", () => {
-    tuners = [tuner({ model: "HDHR EXTEND", transcode_codecs: ["heavy", "mobile"] })];
+    tuners = [
+      tuner({ model: "HDHR EXTEND", transcode_codecs: ["heavy", "mobile"] }),
+    ];
     render(<LiveTVTranscodingTab />);
 
     expect(screen.getByText("heavy")).toBeInTheDocument();
     expect(screen.getByText("mobile")).toBeInTheDocument();
-    expect(screen.queryByText("Not supported by this tuner")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Not supported by this tuner"),
+    ).not.toBeInTheDocument();
   });
 });

@@ -11,10 +11,13 @@ const apiWithProfileRequestContextMock = vi.hoisted(() => vi.fn());
 // Both guards are stubbed so these tests exercise the hook's own branching
 // rather than the client module's internal auth-generation counter.
 const isProfileRequestContextCurrentMock = vi.hoisted(() => vi.fn(() => true));
-const isCapturedProfileAuthorityActiveMock = vi.hoisted(() => vi.fn(() => true));
+const isCapturedProfileAuthorityActiveMock = vi.hoisted(() =>
+  vi.fn(() => true),
+);
 
 vi.mock("@/api/client", async () => {
-  const actual = await vi.importActual<typeof import("@/api/client")>("@/api/client");
+  const actual =
+    await vi.importActual<typeof import("@/api/client")>("@/api/client");
   return {
     ...actual,
     api: apiMock,
@@ -49,7 +52,10 @@ function renderSortPreferenceHook() {
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
-  return { queryClient, ...renderHook(() => useSetCollectionSortPreference(), { wrapper }) };
+  return {
+    queryClient,
+    ...renderHook(() => useSetCollectionSortPreference(), { wrapper }),
+  };
 }
 
 describe("useSetCollectionSortPreference", () => {
@@ -85,12 +91,18 @@ describe("useSetCollectionSortPreference", () => {
       });
     });
 
-    await waitFor(() => expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(1),
+    );
 
     first.resolve({});
-    await waitFor(() => expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(2),
+    );
     expect(
-      JSON.parse(apiWithProfileRequestContextMock.mock.calls[1]?.[2]?.body as string),
+      JSON.parse(
+        apiWithProfileRequestContextMock.mock.calls[1]?.[2]?.body as string,
+      ),
     ).toMatchObject({ field: "title", order: "asc" });
 
     second.resolve({});
@@ -101,7 +113,9 @@ describe("useSetCollectionSortPreference", () => {
   // member happens to be active when it finally sends.
   it("sends a queued write under the profile captured at selection time", async () => {
     const first = deferred<unknown>();
-    apiWithProfileRequestContextMock.mockReturnValueOnce(first.promise).mockResolvedValue({});
+    apiWithProfileRequestContextMock
+      .mockReturnValueOnce(first.promise)
+      .mockResolvedValue({});
 
     const { result } = renderSortPreferenceHook();
     const chooser = profileAuth("profile-1");
@@ -121,15 +135,21 @@ describe("useSetCollectionSortPreference", () => {
       });
     });
 
-    await waitFor(() => expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(1));
+    await waitFor(() =>
+      expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(1),
+    );
     first.resolve({});
-    await waitFor(() => expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(2));
+    await waitFor(() =>
+      expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(2),
+    );
 
     for (const call of apiWithProfileRequestContextMock.mock.calls) {
       expect(call[0]).toBe("/collections/sort-preference");
       expect(call[1]).toBe(chooser);
       // The snapshot is request authority, not part of the stored preference.
-      expect(JSON.parse(call[2]?.body as string)).not.toHaveProperty("profileAuth");
+      expect(JSON.parse(call[2]?.body as string)).not.toHaveProperty(
+        "profileAuth",
+      );
     }
   });
 

@@ -52,9 +52,12 @@ const DEFAULT_BRANDING: BrandingContextValue = {
 
 // A non-null default means useBranding() is safe to call anywhere (e.g. in
 // PrairieBrand rendered outside the provider in tests) and simply yields defaults.
-export const BrandingContext = createContext<BrandingContextValue>(DEFAULT_BRANDING);
+export const BrandingContext =
+  createContext<BrandingContextValue>(DEFAULT_BRANDING);
 
-function mapResponse(data: BrandingApiResponse | undefined): BrandingContextValue {
+function mapResponse(
+  data: BrandingApiResponse | undefined,
+): BrandingContextValue {
   return {
     serverName: data?.server_name || DEFAULT_SERVER_NAME,
     loginSubtitle: data?.login_subtitle || DEFAULT_LOGIN_SUBTITLE,

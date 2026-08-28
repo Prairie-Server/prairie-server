@@ -53,12 +53,17 @@ describe("resolveSelectedMediaSummary", () => {
   it("derives the video range label from the selected file's tracks", () => {
     const dolbyVision = makeVersion({
       hdr: true,
-      video_tracks: [{ dolby_vision: "Profile 8.1", video_range_type: "DOVIWithHDR10" }],
+      video_tracks: [
+        { dolby_vision: "Profile 8.1", video_range_type: "DOVIWithHDR10" },
+      ],
     });
 
-    expect(resolveSelectedMediaSummary(dolbyVision, undefined, 0).videoRangeLabel).toBe("DV HDR10");
     expect(
-      resolveSelectedMediaSummary(makeVersion({ hdr: true }), undefined, 0).videoRangeLabel,
+      resolveSelectedMediaSummary(dolbyVision, undefined, 0).videoRangeLabel,
+    ).toBe("DV HDR10");
+    expect(
+      resolveSelectedMediaSummary(makeVersion({ hdr: true }), undefined, 0)
+        .videoRangeLabel,
     ).toBe("HDR");
   });
 
@@ -71,23 +76,33 @@ describe("resolveSelectedMediaSummary", () => {
       ],
     });
 
-    expect(resolveSelectedMediaSummary(version, undefined, 0).audioLabel).toBe("TrueHD");
+    expect(resolveSelectedMediaSummary(version, undefined, 0).audioLabel).toBe(
+      "TrueHD",
+    );
   });
 
   it("uses the playback variant total for multipart editions", () => {
     const firstPart = makeVersion({ file_id: 1, duration: 3600 });
     const secondPart = makeVersion({ file_id: 2, duration: 4200 });
-    const variant = makeVariant([[firstPart], [secondPart]], { total_duration: 7800 });
+    const variant = makeVariant([[firstPart], [secondPart]], {
+      total_duration: 7800,
+    });
 
-    expect(resolveSelectedMediaSummary(firstPart, [variant], 0).durationMinutes).toBe(130);
+    expect(
+      resolveSelectedMediaSummary(firstPart, [variant], 0).durationMinutes,
+    ).toBe(130);
   });
 
   it("does not replace a single-part selected file duration with the variant maximum", () => {
     const selected = makeVersion({ file_id: 1, duration: 6000 });
     const longerAlternative = makeVersion({ file_id: 2, duration: 7200 });
-    const variant = makeVariant([[selected, longerAlternative]], { total_duration: 7200 });
+    const variant = makeVariant([[selected, longerAlternative]], {
+      total_duration: 7200,
+    });
 
-    expect(resolveSelectedMediaSummary(selected, [variant], 0).durationMinutes).toBe(100);
+    expect(
+      resolveSelectedMediaSummary(selected, [variant], 0).durationMinutes,
+    ).toBe(100);
   });
 
   it("falls back to item runtime when no selected file duration is available", () => {

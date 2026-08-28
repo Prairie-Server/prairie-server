@@ -11,7 +11,10 @@ const { mutateAsync } = vi.hoisted(() => ({ mutateAsync: vi.fn() }));
 // object and keys array (pages memoize keys), so fresh objects per render
 // would loop forever.
 const KEYS = ["branding.server_name", "database.max_connections"];
-const settingsData = { "branding.server_name": "Prairie", "database.max_connections": "20" };
+const settingsData = {
+  "branding.server_name": "Prairie",
+  "database.max_connections": "20",
+};
 const sensitiveData = { configured: [], managed_by_env: [] };
 
 vi.mock("@/hooks/queries/admin/settings", () => ({
@@ -41,7 +44,9 @@ describe("useSettingsForm save()", () => {
       await result.current.save();
     });
 
-    expect(mutateAsync).toHaveBeenCalledWith({ "branding.server_name": "Casa" });
+    expect(mutateAsync).toHaveBeenCalledWith({
+      "branding.server_name": "Casa",
+    });
     expect(result.current.restartRequired).toBe(false);
   });
 
@@ -65,7 +70,9 @@ describe("useSettingsForm save()", () => {
 
   it("erases a sensitive draft after the server omits it from the response", async () => {
     mutateAsync.mockResolvedValue({ values: {}, restart_required: false });
-    const { result } = renderHook(() => useSettingsForm({ keys: ["email.smtp_password"] }));
+    const { result } = renderHook(() =>
+      useSettingsForm({ keys: ["email.smtp_password"] }),
+    );
 
     act(() => {
       result.current.setValue("email.smtp_password", "temporary-secret");
@@ -80,7 +87,10 @@ describe("useSettingsForm save()", () => {
 
   it("preserves edits made while a save is in flight", async () => {
     let resolveMutation:
-      | ((value: { values: Record<string, string>; restart_required: boolean }) => void)
+      | ((value: {
+          values: Record<string, string>;
+          restart_required: boolean;
+        }) => void)
       | undefined;
     mutateAsync.mockReturnValue(
       new Promise((resolve) => {

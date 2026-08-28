@@ -4,7 +4,12 @@ import { playerFetch } from "../player-fetch";
 import type { MarkerDraft, MarkerKind, PlayerTimeRange } from "../types";
 
 /** Edit order shown in the panel: chronological-ish within an episode. */
-export const MARKER_KINDS: MarkerKind[] = ["intro", "recap", "credits", "preview"];
+export const MARKER_KINDS: MarkerKind[] = [
+  "intro",
+  "recap",
+  "credits",
+  "preview",
+];
 
 /** Human labels. "credits" doubles as the outro, so we say so. */
 export const MARKER_LABELS: Record<MarkerKind, string> = {
@@ -20,9 +25,17 @@ const NEW_MARKER_SPAN = 60;
 // Minimum gap kept between start and end so a range never inverts.
 const MIN_GAP = 0.5;
 
-const EMPTY_DRAFT: MarkerDraft = { intro: null, recap: null, credits: null, preview: null };
+const EMPTY_DRAFT: MarkerDraft = {
+  intro: null,
+  recap: null,
+  credits: null,
+  preview: null,
+};
 
-function rangesEqual(a: PlayerTimeRange | null, b: PlayerTimeRange | null): boolean {
+function rangesEqual(
+  a: PlayerTimeRange | null,
+  b: PlayerTimeRange | null,
+): boolean {
   if (a === null || b === null) return a === b;
   return a.start === b.start && a.end === b.end;
 }
@@ -40,7 +53,10 @@ function draftsEqual(a: MarkerDraft, b: MarkerDraft): boolean {
   return MARKER_KINDS.every((kind) => rangesEqual(a[kind], b[kind]));
 }
 
-function clampRangeToUpper(range: PlayerTimeRange, upper: number): PlayerTimeRange {
+function clampRangeToUpper(
+  range: PlayerTimeRange,
+  upper: number,
+): PlayerTimeRange {
   const start = Math.max(0, Math.min(upper, range.start));
   const end = Math.max(start, Math.min(upper, range.end));
   return { start, end };
@@ -120,7 +136,9 @@ export function useMarkerEditor({
     const snapshot = savedBaselineRef.current ?? normalizeDraft(markers);
     originalRef.current = snapshot;
     setDraft(snapshot);
-    setActiveKind(MARKER_KINDS.find((kind) => snapshot[kind] != null) ?? "intro");
+    setActiveKind(
+      MARKER_KINDS.find((kind) => snapshot[kind] != null) ?? "intro",
+    );
     setError(null);
     setEditing(true);
   }, [markers]);
@@ -140,15 +158,24 @@ export function useMarkerEditor({
         const existing = prev[kind];
         let next: PlayerTimeRange;
         if (!existing) {
-          const span = duration > 0 ? Math.min(NEW_MARKER_SPAN, duration) : NEW_MARKER_SPAN;
+          const span =
+            duration > 0
+              ? Math.min(NEW_MARKER_SPAN, duration)
+              : NEW_MARKER_SPAN;
           next =
             edge === "start"
               ? { start: clamped, end: Math.min(upper, clamped + span) }
               : { start: Math.max(0, clamped - span), end: clamped };
         } else if (edge === "start") {
-          next = { start: Math.min(clamped, existing.end - MIN_GAP), end: existing.end };
+          next = {
+            start: Math.min(clamped, existing.end - MIN_GAP),
+            end: existing.end,
+          };
         } else {
-          next = { start: existing.start, end: Math.max(clamped, existing.start + MIN_GAP) };
+          next = {
+            start: existing.start,
+            end: Math.max(clamped, existing.start + MIN_GAP),
+          };
         }
         return { ...prev, [kind]: clampRangeToUpper(next, upper) };
       });
@@ -178,7 +205,9 @@ export function useMarkerEditor({
     [draft],
   );
 
-  const dirty = MARKER_KINDS.some((kind) => !rangesEqual(draft[kind], originalRef.current[kind]));
+  const dirty = MARKER_KINDS.some(
+    (kind) => !rangesEqual(draft[kind], originalRef.current[kind]),
+  );
 
   const save = useCallback(async () => {
     if (fileId == null || !canEdit) return;

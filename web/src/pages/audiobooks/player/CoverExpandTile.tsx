@@ -7,7 +7,12 @@ interface CoverExpandTileProps {
   onExpand?: () => void;
 }
 
-export function CoverExpandTile({ contentId, posterUrl, title, onExpand }: CoverExpandTileProps) {
+export function CoverExpandTile({
+  contentId,
+  posterUrl,
+  title,
+  onExpand,
+}: CoverExpandTileProps) {
   return (
     <button
       type="button"
@@ -17,7 +22,11 @@ export function CoverExpandTile({ contentId, posterUrl, title, onExpand }: Cover
       style={{ viewTransitionName: `audiobook-cover-${contentId}` }}
     >
       {posterUrl ? (
-        <img src={posterUrl} alt={title ?? ""} className="h-full w-full object-cover" />
+        <img
+          src={posterUrl}
+          alt={title ?? ""}
+          className="h-full w-full object-cover"
+        />
       ) : null}
       <span className="pointer-events-none absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 transition-opacity group-hover/tile:opacity-100 group-focus-visible/tile:opacity-100">
         <Maximize2 className="h-3.5 w-3.5 text-white" />

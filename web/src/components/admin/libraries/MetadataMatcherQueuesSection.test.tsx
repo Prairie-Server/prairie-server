@@ -12,9 +12,12 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/hooks/queries/admin/libraries", () => ({
-  useLibraryMetadataMatchQueues: (...args: unknown[]) => mocks.useQueues(...args),
-  useLibraryMetadataMatchQueueDetail: (...args: unknown[]) => mocks.useDetail(...args),
-  useRetryLibraryMetadataMatchQueue: (...args: unknown[]) => mocks.useRetry(...args),
+  useLibraryMetadataMatchQueues: (...args: unknown[]) =>
+    mocks.useQueues(...args),
+  useLibraryMetadataMatchQueueDetail: (...args: unknown[]) =>
+    mocks.useDetail(...args),
+  useRetryLibraryMetadataMatchQueue: (...args: unknown[]) =>
+    mocks.useRetry(...args),
 }));
 
 describe("MetadataMatcherQueuesSection", () => {
@@ -47,11 +50,17 @@ describe("MetadataMatcherQueuesSection", () => {
         raw_files: [],
       },
     });
-    mocks.useRetry.mockReturnValue({ mutate: vi.fn(), isPending: false, variables: undefined });
+    mocks.useRetry.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      variables: undefined,
+    });
     const libraries = [{ id: 1, name: "Movies" }] as Library[];
 
     render(<MetadataMatcherQueuesSection libraries={libraries} />);
-    await userEvent.click(screen.getByRole("button", { name: /metadata matcher/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /metadata matcher/i }),
+    );
     await userEvent.click(screen.getByText("Movies"));
 
     expect(screen.getByText("candidate rejected")).toBeInTheDocument();
@@ -73,28 +82,36 @@ describe("MetadataMatcherQueuesSection", () => {
         },
       ],
     });
-    mocks.useDetail.mockImplementation((_libraryID: number | null, offset: number) => ({
-      data: {
-        limit: 10,
-        offset,
-        movie_count: 15,
-        series_count: 0,
-        raw_file_count: 0,
-        movies: Array.from({ length: offset === 0 ? 10 : 5 }, (_, index) => ({
-          media_file_id: offset + index + 1,
-          file_path: `/media/movies/Movie ${offset + index + 1}.mkv`,
-          state: "pending",
-        })),
-        series: [],
-        raw_files: [],
-      },
-      isFetching: false,
-    }));
-    mocks.useRetry.mockReturnValue({ mutate: vi.fn(), isPending: false, variables: undefined });
+    mocks.useDetail.mockImplementation(
+      (_libraryID: number | null, offset: number) => ({
+        data: {
+          limit: 10,
+          offset,
+          movie_count: 15,
+          series_count: 0,
+          raw_file_count: 0,
+          movies: Array.from({ length: offset === 0 ? 10 : 5 }, (_, index) => ({
+            media_file_id: offset + index + 1,
+            file_path: `/media/movies/Movie ${offset + index + 1}.mkv`,
+            state: "pending",
+          })),
+          series: [],
+          raw_files: [],
+        },
+        isFetching: false,
+      }),
+    );
+    mocks.useRetry.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+      variables: undefined,
+    });
     const libraries = [{ id: 1, name: "Movies" }] as Library[];
 
     render(<MetadataMatcherQueuesSection libraries={libraries} />);
-    await userEvent.click(screen.getByRole("button", { name: /metadata matcher/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /metadata matcher/i }),
+    );
     await userEvent.click(screen.getByText("Movies"));
     await userEvent.click(screen.getByRole("button", { name: "Next" }));
 

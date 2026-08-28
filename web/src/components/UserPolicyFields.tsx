@@ -1,6 +1,11 @@
 import { useId, useState } from "react";
 
-import type { AccessGroup, AdminUser, AdminUserEffectivePolicy, Library } from "@/api/types";
+import type {
+  AccessGroup,
+  AdminUser,
+  AdminUserEffectivePolicy,
+  Library,
+} from "@/api/types";
 import { LibraryAccessSelector } from "@/components/LibraryAccessSelector";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -61,11 +66,16 @@ type PolicyCreatePayload = {
 
 export function policyStateFromUser(user: AdminUser | null): UserPolicyState {
   return Object.fromEntries(
-    Object.entries(POLICY_FIELDS).map(([key, field]) => [key, user?.[field] ?? null]),
+    Object.entries(POLICY_FIELDS).map(([key, field]) => [
+      key,
+      user?.[field] ?? null,
+    ]),
   ) as unknown as UserPolicyState;
 }
 
-export function policyUpdateFields(state: UserPolicyState): PolicyUpdatePayload {
+export function policyUpdateFields(
+  state: UserPolicyState,
+): PolicyUpdatePayload {
   return Object.fromEntries(
     Object.entries(POLICY_FIELDS).map(([key, field]) => [
       field,
@@ -74,9 +84,13 @@ export function policyUpdateFields(state: UserPolicyState): PolicyUpdatePayload 
   ) as PolicyUpdatePayload;
 }
 
-export function policyCreateFields(state: UserPolicyState): PolicyCreatePayload {
+export function policyCreateFields(
+  state: UserPolicyState,
+): PolicyCreatePayload {
   return Object.fromEntries(
-    Object.entries(policyUpdateFields(state)).filter(([, value]) => value !== null),
+    Object.entries(policyUpdateFields(state)).filter(
+      ([, value]) => value !== null,
+    ),
   ) as PolicyCreatePayload;
 }
 
@@ -107,7 +121,9 @@ export function policyInheritHints(
   accessGroups: AccessGroup[],
 ): PolicyInheritHints | undefined {
   if (accessGroupID === null) return NO_GROUP_POLICY;
-  const group = accessGroups.find((candidate) => candidate.id === accessGroupID);
+  const group = accessGroups.find(
+    (candidate) => candidate.id === accessGroupID,
+  );
   if (group === undefined) return undefined;
   return {
     library_ids: group.library_ids,
@@ -125,7 +141,10 @@ export function policyInheritHints(
 // Admins are never grouped: the server clears access_group_id for the admin
 // role (auth.Repository.CreateUser/UpdateUser), so every form that shows or
 // submits a group for a user has to mirror that rule locally.
-export function effectiveAccessGroupID(role: string, accessGroupID: number | null): number | null {
+export function effectiveAccessGroupID(
+  role: string,
+  accessGroupID: number | null,
+): number | null {
   return role === "admin" ? null : accessGroupID;
 }
 
@@ -138,7 +157,9 @@ interface PolicyContext {
 }
 
 function inheritHint(effectiveText: string | undefined): string {
-  return effectiveText === undefined ? "Inherited from group" : `Inherited: ${effectiveText}`;
+  return effectiveText === undefined
+    ? "Inherited from group"
+    : `Inherited: ${effectiveText}`;
 }
 
 const INHERIT = "inherit" as const;
@@ -162,11 +183,15 @@ function BooleanPolicyRow({
     <div className="border-border flex items-center justify-between gap-3 rounded-md border px-3 py-2">
       <div className="min-w-0">
         <Label htmlFor={id}>{label}</Label>
-        {description && <p className="text-muted-foreground text-xs">{description}</p>}
+        {description && (
+          <p className="text-muted-foreground text-xs">{description}</p>
+        )}
       </div>
       <Select
         value={selectValue}
-        onValueChange={(next) => onValueChange(next === INHERIT ? null : next === "allowed")}
+        onValueChange={(next) =>
+          onValueChange(next === INHERIT ? null : next === "allowed")
+        }
       >
         <SelectTrigger id={id} className="w-40 shrink-0">
           <SelectValue />
@@ -174,7 +199,11 @@ function BooleanPolicyRow({
         <SelectContent>
           <SelectItem value={INHERIT}>
             {inheritHint(
-              effectiveValue === undefined ? undefined : effectiveValue ? "Allowed" : "Not allowed",
+              effectiveValue === undefined
+                ? undefined
+                : effectiveValue
+                  ? "Allowed"
+                  : "Not allowed",
             )}
           </SelectItem>
           <SelectItem value="allowed">Allowed</SelectItem>
@@ -211,7 +240,9 @@ function LimitPolicyField({
   const [overridden, setOverridden] = useState(value !== null);
   // The raw string stays local so a cleared or half-typed box is an unsaved
   // edit instead of collapsing to 0 or NaN.
-  const [draft, setDraft] = useState(() => (value === null ? "" : String(value)));
+  const [draft, setDraft] = useState(() =>
+    value === null ? "" : String(value),
+  );
   const draftValue = limitDraftValue(draft);
 
   function handleOverrideChange(checked: boolean) {
@@ -243,7 +274,11 @@ function LimitPolicyField({
           <Label htmlFor={overrideId} className="text-muted-foreground text-xs">
             Override
           </Label>
-          <Switch id={overrideId} checked={overridden} onCheckedChange={handleOverrideChange} />
+          <Switch
+            id={overrideId}
+            checked={overridden}
+            onCheckedChange={handleOverrideChange}
+          />
         </div>
       </div>
       {overridden ? (
@@ -304,7 +339,9 @@ export function PolicyAccessFields({
         <BooleanPolicyRow
           label="Downloads"
           value={state.downloadAllowed}
-          onValueChange={(downloadAllowed) => onChange({ ...state, downloadAllowed })}
+          onValueChange={(downloadAllowed) =>
+            onChange({ ...state, downloadAllowed })
+          }
           effectiveValue={effective?.download_allowed}
         />
         <BooleanPolicyRow
@@ -320,7 +357,9 @@ export function PolicyAccessFields({
         label="Media Requests"
         description="Request new movies and series when requests are enabled."
         value={state.requestsAllowed}
-        onValueChange={(requestsAllowed) => onChange({ ...state, requestsAllowed })}
+        onValueChange={(requestsAllowed) =>
+          onChange({ ...state, requestsAllowed })
+        }
         effectiveValue={effective?.requests_allowed}
       />
     </>
@@ -328,7 +367,11 @@ export function PolicyAccessFields({
 }
 
 // Limits-tab policy fields: stream/transcode ceilings and the quality gate.
-export function PolicyLimitFields({ state, onChange, effective }: PolicyContext) {
+export function PolicyLimitFields({
+  state,
+  onChange,
+  effective,
+}: PolicyContext) {
   const qualityId = useId();
   const qualityValue: PlaybackQualityPreset | typeof INHERIT =
     state.maxPlaybackQuality === null
@@ -346,7 +389,9 @@ export function PolicyLimitFields({ state, onChange, effective }: PolicyContext)
         <LimitPolicyField
           label="Max Transcodes"
           value={state.maxTranscodes}
-          onValueChange={(maxTranscodes) => onChange({ ...state, maxTranscodes })}
+          onValueChange={(maxTranscodes) =>
+            onChange({ ...state, maxTranscodes })
+          }
           effectiveValue={effective?.max_transcodes}
         />
       </div>
@@ -354,14 +399,18 @@ export function PolicyLimitFields({ state, onChange, effective }: PolicyContext)
         <BooleanPolicyRow
           label="Video Transcoding"
           value={state.transcodeAllowed}
-          onValueChange={(transcodeAllowed) => onChange({ ...state, transcodeAllowed })}
+          onValueChange={(transcodeAllowed) =>
+            onChange({ ...state, transcodeAllowed })
+          }
           effectiveValue={effective?.transcode_allowed}
         />
         <BooleanPolicyRow
           label="Audio Transcoding"
           description="Audio conversion without video encoding."
           value={state.audioTranscodeAllowed}
-          onValueChange={(audioTranscodeAllowed) => onChange({ ...state, audioTranscodeAllowed })}
+          onValueChange={(audioTranscodeAllowed) =>
+            onChange({ ...state, audioTranscodeAllowed })
+          }
           effectiveValue={effective?.audio_transcode_allowed}
         />
       </div>
@@ -375,7 +424,9 @@ export function PolicyLimitFields({ state, onChange, effective }: PolicyContext)
               maxPlaybackQuality:
                 value === INHERIT
                   ? null
-                  : playbackQualityValueFromPreset(value as PlaybackQualityPreset),
+                  : playbackQualityValueFromPreset(
+                      value as PlaybackQualityPreset,
+                    ),
             })
           }
         >
@@ -400,7 +451,9 @@ export function PolicyLimitFields({ state, onChange, effective }: PolicyContext)
         <p className="text-muted-foreground text-xs">
           {qualityValue === INHERIT
             ? "Uses the access group's quality ceiling."
-            : PLAYBACK_QUALITY_OPTIONS.find((option) => option.value === qualityValue)?.description}
+            : PLAYBACK_QUALITY_OPTIONS.find(
+                (option) => option.value === qualityValue,
+              )?.description}
         </p>
       </div>
     </>

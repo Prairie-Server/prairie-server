@@ -58,7 +58,9 @@ export function buildHWDeviceRows(
   configured: string | undefined,
 ): HWDeviceRow[] {
   const detected = detectedDevices(detection);
-  const respondingNodes = (detection?.nodes ?? []).filter((node) => !node.error);
+  const respondingNodes = (detection?.nodes ?? []).filter(
+    (node) => !node.error,
+  );
   const missingOn = (path: string) =>
     respondingNodes
       .filter((node) => !(node.render_devices ?? []).includes(path))
@@ -87,7 +89,9 @@ export function buildHWDeviceRows(
  * inventories differ — the cluster-wide hw_device value is only safe for
  * paths present on every node, so the UI shows a warning.
  */
-export function nodeInventoriesDiverge(detection: HWAccelInfo | undefined): boolean {
+export function nodeInventoriesDiverge(
+  detection: HWAccelInfo | undefined,
+): boolean {
   const inventories = (detection?.nodes ?? [])
     .filter((node) => !node.error)
     .map((node) => [...(node.render_devices ?? [])].sort().join(","));
@@ -98,9 +102,15 @@ function detectedDevices(
   detection: HWAccelInfo | undefined,
 ): { path: string; description: string }[] {
   if (!detection) return [];
-  if (detection.render_device_details && detection.render_device_details.length > 0) {
+  if (
+    detection.render_device_details &&
+    detection.render_device_details.length > 0
+  ) {
     return detection.render_device_details;
   }
   // Older nodes report only render_devices paths.
-  return (detection.render_devices ?? []).map((path) => ({ path, description: "GPU" }));
+  return (detection.render_devices ?? []).map((path) => ({
+    path,
+    description: "GPU",
+  }));
 }

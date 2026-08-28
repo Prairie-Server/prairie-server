@@ -45,7 +45,9 @@ export function defaultDeliveryMode(
  * Whether the operator must be asked how changes arrive. A source supporting a
  * single mode answers the question by itself, so the step is skipped.
  */
-export function needsDeliveryChoice(descriptor: AutoscanScanSourceDescriptor): boolean {
+export function needsDeliveryChoice(
+  descriptor: AutoscanScanSourceDescriptor,
+): boolean {
   return descriptor.delivery_modes.length > 1;
 }
 
@@ -68,7 +70,10 @@ export function connectionIsMandatory(
   descriptor: AutoscanScanSourceDescriptor,
   deliveryMode: AutoscanDeliveryMode,
 ): boolean {
-  return needsConnectionStep(descriptor, deliveryMode) && descriptor.connection === "required";
+  return (
+    needsConnectionStep(descriptor, deliveryMode) &&
+    descriptor.connection === "required"
+  );
 }
 
 /**
@@ -86,7 +91,9 @@ export function connectionMatchesKinds(
 }
 
 /** Config form fields, or an empty list when the source declares none. */
-export function configFields(descriptor: AutoscanScanSourceDescriptor): PluginAdminFormField[] {
+export function configFields(
+  descriptor: AutoscanScanSourceDescriptor,
+): PluginAdminFormField[] {
   return descriptor.config_form?.fields ?? [];
 }
 
@@ -100,7 +107,8 @@ export function initialConfigValues(
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const field of configFields(descriptor)) {
-    if (field.default_value === undefined || field.default_value === null) continue;
+    if (field.default_value === undefined || field.default_value === null)
+      continue;
     out[field.key] = field.default_value;
   }
   return out;
@@ -163,7 +171,9 @@ export function parseConfigValues(
   descriptor: AutoscanScanSourceDescriptor,
   stored: Record<string, string>,
 ): Record<string, unknown> {
-  const byKey = new Map(configFields(descriptor).map((field) => [field.key, field]));
+  const byKey = new Map(
+    configFields(descriptor).map((field) => [field.key, field]),
+  );
   const out: Record<string, unknown> = {};
 
   for (const [key, value] of Object.entries(stored)) {
@@ -224,7 +234,10 @@ export function fillValueFromLibraries(
   fillFrom: string | undefined,
   libraries: readonly Library[],
 ): string | null {
-  if (fillFrom !== FILL_FROM_MOVIE_LIBRARY_PATHS && fillFrom !== FILL_FROM_TV_LIBRARY_PATHS) {
+  if (
+    fillFrom !== FILL_FROM_MOVIE_LIBRARY_PATHS &&
+    fillFrom !== FILL_FROM_TV_LIBRARY_PATHS
+  ) {
     return null;
   }
   const want = fillFrom === FILL_FROM_MOVIE_LIBRARY_PATHS ? "movie" : "tv";

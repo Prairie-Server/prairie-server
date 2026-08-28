@@ -59,7 +59,9 @@ export default function OAuthComplete() {
         if (!cancelled) {
           setAccessToken(null);
           setRefreshToken(null);
-          setError(err instanceof Error ? err.message : "Failed to complete sign-in");
+          setError(
+            err instanceof Error ? err.message : "Failed to complete sign-in",
+          );
         }
       }
     })();

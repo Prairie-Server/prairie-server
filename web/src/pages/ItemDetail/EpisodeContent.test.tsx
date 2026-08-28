@@ -123,10 +123,11 @@ vi.mock("@/components/DownloadVersionPicker", () => ({
 
 vi.mock("./DetailHero", () => ({
   default: (
-    props: { context?: ReactNode; actions?: ReactNode; metadata?: ReactNode } & Record<
-      string,
-      unknown
-    >,
+    props: {
+      context?: ReactNode;
+      actions?: ReactNode;
+      metadata?: ReactNode;
+    } & Record<string, unknown>,
   ) => {
     mocks.capturedDetailHeroProps.value = props;
     return (
@@ -185,7 +186,9 @@ vi.mock("./components/EpisodeCarousel", () => ({
         <div
           key={ep.content_id}
           data-episode={ep.episode_number}
-          data-current={ep.episode_number === currentEpisodeNumber ? "true" : undefined}
+          data-current={
+            ep.episode_number === currentEpisodeNumber ? "true" : undefined
+          }
         >
           {ep.title}
         </div>
@@ -284,7 +287,10 @@ describe("EpisodeContent", () => {
     mocks.capturedQualityBadgesProps.value = null;
     mocks.useAuth.mockReturnValue({ user: null });
     mocks.useCurrentProfile.mockReturnValue({ profile: null });
-    mocks.useOnViewTranslation.mockReturnValue({ translating: false, onTranslate: undefined });
+    mocks.useOnViewTranslation.mockReturnValue({
+      translating: false,
+      onTranslate: undefined,
+    });
     mocks.useRefreshItemMetadata.mockReturnValue({
       mutate: vi.fn(),
       isPending: false,
@@ -303,7 +309,9 @@ describe("EpisodeContent", () => {
     mocks.useSeasonDetail.mockReturnValue({
       data: makeSeason(),
     });
-    mocks.useRating.mockReturnValue({ data: { rating: 3, rated_at: "2026-03-22T00:00:00Z" } });
+    mocks.useRating.mockReturnValue({
+      data: { rating: 3, rated_at: "2026-03-22T00:00:00Z" },
+    });
   });
 
   it("updates hero metadata when the selected episode version changes", () => {
@@ -326,11 +334,15 @@ describe("EpisodeContent", () => {
 
     render(
       <MemoryRouter initialEntries={["/item/episode-1"]}>
-        <EpisodeContent item={makeEpisodeItem({ versions: [hdrVersion, sdrVersion] })} />
+        <EpisodeContent
+          item={makeEpisodeItem({ versions: [hdrVersion, sdrVersion] })}
+        />
       </MemoryRouter>,
     );
 
-    expect(mocks.capturedMetadataBadgesProps.value).toMatchObject({ duration: "42m" });
+    expect(mocks.capturedMetadataBadgesProps.value).toMatchObject({
+      duration: "42m",
+    });
     expect(mocks.capturedQualityBadgesProps.value).toEqual({
       summary: {
         durationMinutes: 42,
@@ -341,13 +353,14 @@ describe("EpisodeContent", () => {
     });
 
     act(() => {
-      const selectVersion = mocks.capturedActionBarProps.value?.onSelectVersion as
-        | ((version: FileVersion) => void)
-        | undefined;
+      const selectVersion = mocks.capturedActionBarProps.value
+        ?.onSelectVersion as ((version: FileVersion) => void) | undefined;
       selectVersion?.(sdrVersion);
     });
 
-    expect(mocks.capturedMetadataBadgesProps.value).toMatchObject({ duration: "45m" });
+    expect(mocks.capturedMetadataBadgesProps.value).toMatchObject({
+      duration: "45m",
+    });
     expect(mocks.capturedQualityBadgesProps.value).toEqual({
       summary: {
         durationMinutes: 45,
@@ -404,7 +417,9 @@ describe("EpisodeContent", () => {
 
     renderToStaticMarkup(
       <MemoryRouter initialEntries={["/item/episode-1"]}>
-        <EpisodeContent item={makeEpisodeItem({ pending_translation_language: "fr" })} />
+        <EpisodeContent
+          item={makeEpisodeItem({ pending_translation_language: "fr" })}
+        />
       </MemoryRouter>,
     );
 
@@ -535,7 +550,9 @@ describe("EpisodeContent", () => {
     );
 
     expect(mocks.capturedActionBarProps.value).not.toHaveProperty("rating");
-    expect(mocks.capturedActionBarProps.value).not.toHaveProperty("onRatingChange");
+    expect(mocks.capturedActionBarProps.value).not.toHaveProperty(
+      "onRatingChange",
+    );
   });
 
   it("passes intro re-detection action only for admins", () => {

@@ -35,7 +35,10 @@ import {
 } from "@/hooks/queries/useRequests";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { cn } from "@/lib/utils";
-import { formatRequestStatus, requestInputFromMediaResult } from "@/lib/mediaRequests";
+import {
+  formatRequestStatus,
+  requestInputFromMediaResult,
+} from "@/lib/mediaRequests";
 
 type MineBucketKey = "motion" | "completed" | "issues";
 type RequestTab = "discover" | "yours";
@@ -46,26 +49,30 @@ type StatusGuideItem = {
 
 const REQUEST_TABS = ["discover", "yours"] as const;
 
-const MINE_BUCKET_META: Record<MineBucketKey, { title: string; eyebrow: string; accent: string }> =
-  {
-    motion: {
-      title: "In motion",
-      eyebrow: "On their way",
-      accent: "text-amber-200/90",
-    },
-    completed: {
-      title: "Landed in your library",
-      eyebrow: "Ready to watch",
-      accent: "text-emerald-200/90",
-    },
-    issues: {
-      title: "Needs attention",
-      eyebrow: "Hit a snag",
-      accent: "text-red-200/90",
-    },
-  };
+const MINE_BUCKET_META: Record<
+  MineBucketKey,
+  { title: string; eyebrow: string; accent: string }
+> = {
+  motion: {
+    title: "In motion",
+    eyebrow: "On their way",
+    accent: "text-amber-200/90",
+  },
+  completed: {
+    title: "Landed in your library",
+    eyebrow: "Ready to watch",
+    accent: "text-emerald-200/90",
+  },
+  issues: {
+    title: "Needs attention",
+    eyebrow: "Hit a snag",
+    accent: "text-red-200/90",
+  },
+};
 
-const REQUEST_PROGRESS_GUIDE: Array<StatusGuideItem & { status: MediaRequestStatus }> = [
+const REQUEST_PROGRESS_GUIDE: Array<
+  StatusGuideItem & { status: MediaRequestStatus }
+> = [
   {
     status: "pending",
     description: "Waiting for an admin to approve the request.",
@@ -78,7 +85,8 @@ const REQUEST_PROGRESS_GUIDE: Array<StatusGuideItem & { status: MediaRequestStat
   },
   {
     status: "queued",
-    description: "Sent to the request automation and waiting for download/import activity.",
+    description:
+      "Sent to the request automation and waiting for download/import activity.",
     tone: "bg-sky-500/15 text-sky-100 ring-sky-400/40",
   },
   {
@@ -141,7 +149,10 @@ export default function Requests() {
   const mine = useMyMediaRequests({ limit: 100 });
   const createRequest = useCreateMediaRequest();
   const pendingRequestKey = createRequest.variables
-    ? mediaRequestKey(createRequest.variables.media_type, createRequest.variables.tmdb_id)
+    ? mediaRequestKey(
+        createRequest.variables.media_type,
+        createRequest.variables.tmdb_id,
+      )
     : undefined;
 
   const hasSubmittedSearch = searchQuery.length > 1;
@@ -235,8 +246,14 @@ export default function Requests() {
     createRequest.mutate(requestInputFromMediaResult(item));
   }
 
-  const buckets = useMemo(() => groupMineRequests(mine.data ?? []), [mine.data]);
-  const mineCounts = useMemo(() => countMineStatuses(mine.data ?? []), [mine.data]);
+  const buckets = useMemo(
+    () => groupMineRequests(mine.data ?? []),
+    [mine.data],
+  );
+  const mineCounts = useMemo(
+    () => countMineStatuses(mine.data ?? []),
+    [mine.data],
+  );
   const totalMine = (mine.data ?? []).length;
 
   return (
@@ -257,7 +274,10 @@ export default function Requests() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <div className="px-4 sm:px-6 lg:px-10 xl:px-12">
-          <TabsList variant="line" className="border-border w-full justify-start border-b">
+          <TabsList
+            variant="line"
+            className="border-border w-full justify-start border-b"
+          >
             <TabsTrigger value="discover" className="px-3 text-[13px]">
               Discover
             </TabsTrigger>
@@ -349,11 +369,15 @@ export default function Requests() {
               <MineSummary counts={mineCounts} />
               <RequestStatusGuide />
               <div className="space-y-10">
-                {(Object.keys(MINE_BUCKET_META) as MineBucketKey[]).map((key) => {
-                  const items = buckets[key];
-                  if (items.length === 0) return null;
-                  return <MineBucketRow key={key} bucket={key} requests={items} />;
-                })}
+                {(Object.keys(MINE_BUCKET_META) as MineBucketKey[]).map(
+                  (key) => {
+                    const items = buckets[key];
+                    if (items.length === 0) return null;
+                    return (
+                      <MineBucketRow key={key} bucket={key} requests={items} />
+                    );
+                  },
+                )}
               </div>
             </>
           )}
@@ -365,16 +389,22 @@ export default function Requests() {
 
 function RequestStatusGuide() {
   return (
-    <section className="px-4 sm:px-6 lg:px-10 xl:px-12" aria-labelledby="request-status-guide">
+    <section
+      className="px-4 sm:px-6 lg:px-10 xl:px-12"
+      aria-labelledby="request-status-guide"
+    >
       <div className="border-border/60 bg-card/40 rounded-2xl border px-4 py-4 sm:px-5">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
           <div className="space-y-1 lg:w-[220px] lg:shrink-0">
-            <h2 id="request-status-guide" className="text-foreground text-sm font-semibold">
+            <h2
+              id="request-status-guide"
+              className="text-foreground text-sm font-semibold"
+            >
               Status guide
             </h2>
             <p className="text-muted-foreground text-[13px] leading-5">
-              Statuses update automatically as Prairie checks the library and connected request
-              integrations.
+              Statuses update automatically as Prairie checks the library and
+              connected request integrations.
             </p>
           </div>
           <div className="grid min-w-0 flex-1 gap-5 md:grid-cols-2">
@@ -405,7 +435,13 @@ function RequestStatusGuide() {
   );
 }
 
-function StatusGuideGroup({ title, children }: { title: string; children: React.ReactNode }) {
+function StatusGuideGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: React.ReactNode;
+}) {
   return (
     <section className="space-y-2">
       <h3 className="text-muted-foreground text-xs font-medium">{title}</h3>
@@ -435,7 +471,9 @@ function StatusGuideRow({
           {label}
         </span>
       </dt>
-      <dd className="text-muted-foreground text-[13px] leading-5">{description}</dd>
+      <dd className="text-muted-foreground text-[13px] leading-5">
+        {description}
+      </dd>
     </div>
   );
 }
@@ -453,8 +491,8 @@ function PageHeader() {
         Find something worth waiting for.
       </h1>
       <p className="text-muted-foreground max-w-xl text-sm leading-6">
-        Browse what's trending, search the full TMDB catalog, and watch your requests move from{" "}
-        <span className="text-foreground">pending</span> to{" "}
+        Browse what's trending, search the full TMDB catalog, and watch your
+        requests move from <span className="text-foreground">pending</span> to{" "}
         <span className="text-foreground">ready</span>.
       </p>
     </header>
@@ -485,7 +523,9 @@ function SearchBar({
     >
       <Select
         value={mediaType}
-        onValueChange={(value) => onMediaTypeChange(value as RequestSearchMediaType)}
+        onValueChange={(value) =>
+          onMediaTypeChange(value as RequestSearchMediaType)
+        }
       >
         <SelectTrigger className="border-border/60 bg-background/40 h-10 w-full rounded-xl border text-sm">
           <SelectValue />
@@ -553,7 +593,9 @@ function DiscoverySectionRow({
             variant="discover"
             item={item}
             isSubmitting={
-              isSubmitting && pendingRequestKey === mediaRequestKey(item.media_type, item.tmdb_id)
+              isSubmitting &&
+              pendingRequestKey ===
+                mediaRequestKey(item.media_type, item.tmdb_id)
             }
             onRequest={() => onRequest(item)}
           />
@@ -563,18 +605,33 @@ function DiscoverySectionRow({
   );
 }
 
-function MineBucketRow({ bucket, requests }: { bucket: MineBucketKey; requests: MediaRequest[] }) {
+function MineBucketRow({
+  bucket,
+  requests,
+}: {
+  bucket: MineBucketKey;
+  requests: MediaRequest[];
+}) {
   const meta = MINE_BUCKET_META[bucket];
   return (
     <section className="space-y-1">
       <div className="px-4 sm:px-6 lg:px-10 xl:px-12">
-        <span className={cn("text-[10px] font-semibold tracking-[0.22em] uppercase", meta.accent)}>
+        <span
+          className={cn(
+            "text-[10px] font-semibold tracking-[0.22em] uppercase",
+            meta.accent,
+          )}
+        >
           {meta.eyebrow}
         </span>
       </div>
       <MediaCarousel title={meta.title}>
         {requests.map((request) => (
-          <RequestPosterCard key={request.id} variant="mine" request={request} />
+          <RequestPosterCard
+            key={request.id}
+            variant="mine"
+            request={request}
+          />
         ))}
       </MediaCarousel>
     </section>
@@ -609,8 +666,17 @@ function SearchResultsView({
   onRequest: (item: RequestMediaResult) => void;
 }) {
   const typeLabel =
-    mediaType === "series" ? "series" : mediaType === "movie" ? "movies" : "movies and series";
-  const filterLabel = mediaType === "series" ? "Series" : mediaType === "movie" ? "Movies" : "All";
+    mediaType === "series"
+      ? "series"
+      : mediaType === "movie"
+        ? "movies"
+        : "movies and series";
+  const filterLabel =
+    mediaType === "series"
+      ? "Series"
+      : mediaType === "movie"
+        ? "Movies"
+        : "All";
   const shown = results.length;
   const showCount = !isLoading && !isError && shown > 0;
 
@@ -683,7 +749,8 @@ function SearchResultsView({
                 item={item}
                 isSubmitting={
                   isSubmitting &&
-                  pendingRequestKey === mediaRequestKey(item.media_type, item.tmdb_id)
+                  pendingRequestKey ===
+                    mediaRequestKey(item.media_type, item.tmdb_id)
                 }
                 onRequest={() => onRequest(item)}
                 fluid
@@ -703,7 +770,9 @@ function SearchResultsView({
                 Previous
               </Button>
               <span className="text-muted-foreground text-xs tabular-nums">
-                Page <span className="text-foreground font-semibold">{page}</span> of {totalPages}
+                Page{" "}
+                <span className="text-foreground font-semibold">{page}</span> of{" "}
+                {totalPages}
               </span>
               <Button
                 variant="outline"
@@ -725,7 +794,12 @@ function SearchResultsView({
 function MineSummary({
   counts,
 }: {
-  counts: { pending: number; inFlight: number; completed: number; issues: number };
+  counts: {
+    pending: number;
+    inFlight: number;
+    completed: number;
+    issues: number;
+  };
 }) {
   const chips: Array<{ label: string; value: number; tone: string }> = [];
   if (counts.pending > 0)
@@ -777,10 +851,12 @@ function EmptyMineState() {
   return (
     <div className="border-border/60 bg-card/40 mx-4 flex flex-col items-center justify-center gap-3 rounded-2xl border border-dashed px-6 py-16 text-center sm:mx-6 lg:mx-10 xl:mx-12">
       <Sparkles className="h-6 w-6 text-amber-300/70" />
-      <p className="text-foreground text-base font-semibold">Your wishlist is empty.</p>
+      <p className="text-foreground text-base font-semibold">
+        Your wishlist is empty.
+      </p>
       <p className="text-muted-foreground max-w-sm text-sm">
-        Browse the Discover tab or search above. The moment you request something, it'll show up
-        here with live status.
+        Browse the Discover tab or search above. The moment you request
+        something, it'll show up here with live status.
       </p>
     </div>
   );
@@ -790,7 +866,9 @@ function EmptyPanel({ title, detail }: { title: string; detail: string }) {
   return (
     <div className="border-border/60 bg-card/40 mx-4 flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed px-6 py-12 text-center sm:mx-6 lg:mx-10 xl:mx-12">
       <p className="text-foreground text-sm font-semibold">{title}</p>
-      <p className="text-muted-foreground max-w-sm text-sm leading-6">{detail}</p>
+      <p className="text-muted-foreground max-w-sm text-sm leading-6">
+        {detail}
+      </p>
     </div>
   );
 }
@@ -806,7 +884,10 @@ function DiscoveryCarouselSkeleton() {
           </div>
           <div className="flex gap-4 overflow-hidden px-4 sm:px-6 lg:px-10 xl:px-12">
             {Array.from({ length: 7 }).map((_, i) => (
-              <div key={i} className="w-[148px] shrink-0 sm:w-[164px] lg:w-[184px]">
+              <div
+                key={i}
+                className="w-[148px] shrink-0 sm:w-[164px] lg:w-[184px]"
+              >
                 <Skeleton className="aspect-[2/3] w-full rounded-xl" />
                 <Skeleton className="mt-2 h-4 w-3/4 rounded" />
                 <Skeleton className="mt-1 h-3 w-1/2 rounded" />
@@ -844,7 +925,9 @@ function normalizeRequestTab(value: string | null): RequestTab {
   return "discover";
 }
 
-function normalizeRequestMediaType(value: string | null): RequestSearchMediaType {
+function normalizeRequestMediaType(
+  value: string | null,
+): RequestSearchMediaType {
   if (value === "movie" || value === "series") return value;
   return "all";
 }
@@ -855,12 +938,17 @@ function normalizeSearchPage(value: string | null): number {
   return parsed;
 }
 
-function mediaRequestKey(mediaType: RequestMediaResult["media_type"], tmdbID: number): string {
+function mediaRequestKey(
+  mediaType: RequestMediaResult["media_type"],
+  tmdbID: number,
+): string {
   return `${mediaType}-${tmdbID}`;
 }
 
 function isIssueOutcome(outcome: MediaRequestOutcome): boolean {
-  return outcome === "declined" || outcome === "cancelled" || outcome === "failed";
+  return (
+    outcome === "declined" || outcome === "cancelled" || outcome === "failed"
+  );
 }
 
 function groupMineRequests(requests: MediaRequest[]) {

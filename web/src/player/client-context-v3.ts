@@ -59,7 +59,8 @@ export function detectHLSSupport(): HLSSupportProbe {
       // Fall through to the hls.js/MSE probe.
     }
   }
-  if (typeof MediaSource === "undefined") return { supported: false, native: false };
+  if (typeof MediaSource === "undefined")
+    return { supported: false, native: false };
   try {
     // hls.js muxes into fMP4/TS; the baseline it requires is an MSE that can
     // take an mp4 segment at all.
@@ -101,8 +102,12 @@ export interface WebCapabilityProbe {
  * way to tell software from hardware decode, and on the `declared` tier the
  * server treats the two lists identically.
  */
-export function buildClientCapabilitiesV3(probe: WebCapabilityProbe): ClientCodecCapabilitiesV3 {
-  const codecsVideo = Array.from(new Set([...probe.codecsVideo, ...probe.progressiveCodecsVideo]));
+export function buildClientCapabilitiesV3(
+  probe: WebCapabilityProbe,
+): ClientCodecCapabilitiesV3 {
+  const codecsVideo = Array.from(
+    new Set([...probe.codecsVideo, ...probe.progressiveCodecsVideo]),
+  );
   return {
     video_evidence: "declared",
     audio_evidence: "declared",
@@ -164,9 +169,15 @@ export function buildDeliveriesV3(
   delete nonProgressiveHDRDetails.hdr10_max_frame_rate;
   delete nonProgressiveHDRDetails.hdr10_max_bitrate_kbps;
   const nativeHLSPreferred = probe.nativeHLS && isSafariBrowserV3(userAgent);
-  const progressiveHDRDetails = nativeHLSPreferred ? nonProgressiveHDRDetails : probe.hdrDetails;
-  const hlsHDRDetails = nativeHLSPreferred ? probe.hdrDetails : nonProgressiveHDRDetails;
-  const hlsVideoCodecs = nativeHLSPreferred ? probe.progressiveCodecsVideo : probe.codecsVideo;
+  const progressiveHDRDetails = nativeHLSPreferred
+    ? nonProgressiveHDRDetails
+    : probe.hdrDetails;
+  const hlsHDRDetails = nativeHLSPreferred
+    ? probe.hdrDetails
+    : nonProgressiveHDRDetails;
+  const hlsVideoCodecs = nativeHLSPreferred
+    ? probe.progressiveCodecsVideo
+    : probe.codecsVideo;
   return {
     original_http: buildDeliveryCapability(probe, {
       hdr_details: nonProgressiveHDRDetails,
@@ -178,7 +189,9 @@ export function buildDeliveriesV3(
     }),
     hls: buildDeliveryCapability(probe, {
       supported_on_device: probe.hls,
-      ...(probe.hls ? {} : { failure_reason: "media_source_extensions_unavailable" }),
+      ...(probe.hls
+        ? {}
+        : { failure_reason: "media_source_extensions_unavailable" }),
       containers: ["hls"],
       video_codecs: hlsVideoCodecs,
       hdr_details: hlsHDRDetails,
@@ -199,7 +212,8 @@ interface NetworkInformationLike {
 
 function networkInformation(): NetworkInformationLike | undefined {
   if (typeof navigator === "undefined") return undefined;
-  return (navigator as Navigator & { connection?: NetworkInformationLike }).connection;
+  return (navigator as Navigator & { connection?: NetworkInformationLike })
+    .connection;
 }
 
 /**
@@ -222,7 +236,8 @@ export function detectMeteredV3(): boolean {
  */
 export function detectBandwidthEstimateKbpsV3(): number | undefined {
   const downlinkMbps = networkInformation()?.downlink;
-  if (typeof downlinkMbps !== "number" || !Number.isFinite(downlinkMbps)) return undefined;
+  if (typeof downlinkMbps !== "number" || !Number.isFinite(downlinkMbps))
+    return undefined;
   const kbps = Math.round(downlinkMbps * 1000);
   if (kbps < 100 || kbps > 1_000_000) return undefined;
   return kbps;
@@ -232,7 +247,12 @@ export function detectBandwidthEstimateKbpsV3(): number | undefined {
 function detectFormFactor(): string {
   if (typeof navigator === "undefined") return "desktop";
   const ua = navigator.userAgent.toLowerCase();
-  if (/\b(smart-?tv|smarttv|googletv|appletv|hbbtv|netcast|webos|tizen)\b/.test(ua)) return "tv";
+  if (
+    /\b(smart-?tv|smarttv|googletv|appletv|hbbtv|netcast|webos|tizen)\b/.test(
+      ua,
+    )
+  )
+    return "tv";
   if (/\b(ipad|tablet)\b/.test(ua)) return "tablet";
   if (/\b(iphone|ipod|android.*mobile|mobile)\b/.test(ua)) return "phone";
   return "desktop";
@@ -252,11 +272,18 @@ function boundedDetail(value: string | undefined): string | undefined {
  * and the server only ever compares that token for equality, so a synthesized
  * value would invalidate plans at random.
  */
-export function buildClientPlaybackContextV3(probe: WebCapabilityProbe): ClientPlaybackContextV3 {
+export function buildClientPlaybackContextV3(
+  probe: WebCapabilityProbe,
+): ClientPlaybackContextV3 {
   const platformDetails: Record<string, string> = {};
-  const userAgent = boundedDetail(typeof navigator !== "undefined" ? navigator.userAgent : "");
+  const userAgent = boundedDetail(
+    typeof navigator !== "undefined" ? navigator.userAgent : "",
+  );
   if (userAgent) platformDetails["user_agent"] = userAgent;
-  if (typeof window !== "undefined" && typeof window.devicePixelRatio === "number") {
+  if (
+    typeof window !== "undefined" &&
+    typeof window.devicePixelRatio === "number"
+  ) {
     platformDetails["device_pixel_ratio"] = String(window.devicePixelRatio);
   }
 
@@ -266,7 +293,9 @@ export function buildClientPlaybackContextV3(probe: WebCapabilityProbe): ClientP
     app_version: WEB_APP_VERSION,
     device: {
       platform: "web",
-      ...(Object.keys(platformDetails).length > 0 ? { platform_details: platformDetails } : {}),
+      ...(Object.keys(platformDetails).length > 0
+        ? { platform_details: platformDetails }
+        : {}),
     },
     output: { hdr_details: probe.hdrDetails },
     deliveries: buildDeliveriesV3(

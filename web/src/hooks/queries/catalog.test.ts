@@ -24,7 +24,10 @@ describe("catalog query helpers", () => {
       query_definition: createEmptyQueryDefinition(),
     });
 
-    expect(mocks.api).toHaveBeenCalledWith("/catalog/filters?source=query", undefined);
+    expect(mocks.api).toHaveBeenCalledWith(
+      "/catalog/filters?source=query",
+      undefined,
+    );
   });
 
   it("can request lightweight catalog filters for guided UIs", async () => {

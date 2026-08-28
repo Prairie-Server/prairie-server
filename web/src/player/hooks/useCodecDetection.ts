@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
-import { detectHLSSupport, type WebCapabilityProbe } from "../client-context-v3";
+import {
+  detectHLSSupport,
+  type WebCapabilityProbe,
+} from "../client-context-v3";
 import { isFirefoxUserAgent } from "../utils/browser";
 
 /** Maps our codec names to the MIME declarations browsers expose for them. */
@@ -25,7 +28,11 @@ const DOLBY_VISION_PROFILE_PROBES: Record<
   // The MIME codec string identifies Profile 8 but not its base-layer
   // compatibility ID. Conservatively claim only the Profile 8.1 shape that
   // this regression and Safari's progressive remux path exercise.
-  8: { mime: 'video/mp4; codecs="dvh1.08.06"', maxLevel: 6, blCompatibilityIds: [1] },
+  8: {
+    mime: 'video/mp4; codecs="dvh1.08.06"',
+    maxLevel: 6,
+    blCompatibilityIds: [1],
+  },
 };
 
 // Silo's Profile 7 fallback strips Dolby Vision metadata into a progressive
@@ -77,7 +84,10 @@ const CONTAINER_MAP: Record<string, string[]> = {
   ogg: ["audio/ogg"],
 };
 
-export function detectMaxResolutionFromScreen(screenWidth: number, screenHeight: number): string {
+export function detectMaxResolutionFromScreen(
+  screenWidth: number,
+  screenHeight: number,
+): string {
   const screenH = Math.max(screenHeight, screenWidth);
   if (screenH >= 2160) return "2160p";
   if (screenH >= 1440) return "1080p";
@@ -94,7 +104,9 @@ export function detectMaxResolutionFromScreen(screenWidth: number, screenHeight:
  */
 export type MatchMediaLike = (query: string) => Pick<MediaQueryList, "matches">;
 
-export function detectHDRFromMatchMedia(matchMediaFn: MatchMediaLike | undefined): boolean {
+export function detectHDRFromMatchMedia(
+  matchMediaFn: MatchMediaLike | undefined,
+): boolean {
   if (!matchMediaFn) return false;
   return (
     matchMediaFn("(dynamic-range: high)").matches ||
@@ -109,10 +121,13 @@ export function detectHDRFromMatchMedia(matchMediaFn: MatchMediaLike | undefined
  * content onto SDR outputs.
  */
 export async function probeHDR10PlaybackSupport(): Promise<boolean> {
-  if (typeof navigator === "undefined" || !navigator.mediaCapabilities) return false;
+  if (typeof navigator === "undefined" || !navigator.mediaCapabilities)
+    return false;
 
   try {
-    const result = await navigator.mediaCapabilities.decodingInfo(HDR10_PROGRESSIVE_CONFIGURATION);
+    const result = await navigator.mediaCapabilities.decodingInfo(
+      HDR10_PROGRESSIVE_CONFIGURATION,
+    );
     return result.supported && result.smooth;
   } catch {
     return false;
@@ -147,7 +162,9 @@ function testMediaType(mime: string): boolean {
   if (typeof document === "undefined") return false;
   try {
     return (
-      document.createElement(mime.startsWith("audio/") ? "audio" : "video").canPlayType(mime) !== ""
+      document
+        .createElement(mime.startsWith("audio/") ? "audio" : "video")
+        .canPlayType(mime) !== ""
     );
   } catch {
     return false;
@@ -182,7 +199,8 @@ export function probeWebCapabilities(): WebCapabilityProbe {
   const progressiveCodecsAudio: string[] = [];
   const containers: string[] = [];
   const isFirefox =
-    typeof navigator !== "undefined" && isFirefoxUserAgent(navigator.userAgent ?? "");
+    typeof navigator !== "undefined" &&
+    isFirefoxUserAgent(navigator.userAgent ?? "");
 
   // Test containers.
   for (const [name, mimeTypes] of Object.entries(CONTAINER_MAP)) {
@@ -211,7 +229,10 @@ export function probeWebCapabilities(): WebCapabilityProbe {
     }
     if (
       mimeTypes
-        .filter((mime) => mime.startsWith("audio/mp4") || mime.startsWith("video/mp4"))
+        .filter(
+          (mime) =>
+            mime.startsWith("audio/mp4") || mime.startsWith("video/mp4"),
+        )
         .some(testMediaType)
     ) {
       progressiveCodecsAudio.push(name);
@@ -229,13 +250,18 @@ export function probeWebCapabilities(): WebCapabilityProbe {
       : 1;
   const maxResolution =
     typeof screen !== "undefined"
-      ? detectMaxResolutionFromScreen(screen.width * pixelRatio, screen.height * pixelRatio)
+      ? detectMaxResolutionFromScreen(
+          screen.width * pixelRatio,
+          screen.height * pixelRatio,
+        )
       : "1080p";
 
   // HDR detection (best effort). Wrap matchMedia so it keeps its Window
   // receiver — invoking a detached reference throws in some browsers.
   const hdr = detectHDRFromMatchMedia(
-    typeof matchMedia !== "undefined" ? (query) => matchMedia(query) : undefined,
+    typeof matchMedia !== "undefined"
+      ? (query) => matchMedia(query)
+      : undefined,
   );
   // Decoder capability and active-output HDR are separate facts: browsers
   // tone-map HDR content onto SDR outputs, and Safari 26 reports
@@ -247,7 +273,10 @@ export function probeWebCapabilities(): WebCapabilityProbe {
     .filter(([, probe]) => testMediaElementType(probe.mime))
     .map(([profile]) => Number(profile));
   const progressiveCodecsVideo = [...codecsVideo];
-  if (dolbyVisionProfiles.length > 0 && !progressiveCodecsVideo.includes("hevc")) {
+  if (
+    dolbyVisionProfiles.length > 0 &&
+    !progressiveCodecsVideo.includes("hevc")
+  ) {
     // Every Dolby Vision profile probed above uses an HEVC base layer. The
     // planner requires the flat base-codec claim as well as the HDR profile,
     // but this media-element evidence must not leak into hls.js' MSE path.
@@ -298,10 +327,12 @@ export interface SettledWebCapabilityProbe extends WebCapabilityProbe {
 }
 
 export function useCodecDetection(): SettledWebCapabilityProbe {
-  const [capabilities, setCapabilities] = useState<SettledWebCapabilityProbe>(() => ({
-    ...probeWebCapabilities(),
-    settled: false,
-  }));
+  const [capabilities, setCapabilities] = useState<SettledWebCapabilityProbe>(
+    () => ({
+      ...probeWebCapabilities(),
+      settled: false,
+    }),
+  );
 
   useEffect(() => {
     let disposed = false;
@@ -309,7 +340,10 @@ export function useCodecDetection(): SettledWebCapabilityProbe {
     const queries =
       typeof matchMedia === "undefined"
         ? []
-        : [matchMedia("(dynamic-range: high)"), matchMedia("(video-dynamic-range: high)")];
+        : [
+            matchMedia("(dynamic-range: high)"),
+            matchMedia("(video-dynamic-range: high)"),
+          ];
     const refresh = (hdr10Probe: Promise<boolean>) => {
       const generation = ++probeGeneration;
       const next = probeWebCapabilities();

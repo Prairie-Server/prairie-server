@@ -24,7 +24,8 @@ export function OnboardingGate({ children }: { children: ReactNode }) {
   // before the state refetch lands.
   const [dismissed, setDismissed] = useState(false);
 
-  const shouldShow = enabled && !dismissed && state.data !== undefined && !state.data.done;
+  const shouldShow =
+    enabled && !dismissed && state.data !== undefined && !state.data.done;
 
   // An invitation sent with show_tour=false plants a local suppress hint
   // (before any profile existed). Convert it into a server-side skip for

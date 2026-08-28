@@ -12,16 +12,25 @@ export function invalidateCatalogState(
     includeLibraryLists?: boolean;
   },
 ) {
-  const { itemId, libraryId, allowDashboardRefetch, includeLibraryLists = true } = options;
-  void invalidateMediaSurfaceQueries(queryClient, { itemId, libraryId }).then(() => {
-    bumpHomeRefreshSignal(queryClient);
-  });
+  const {
+    itemId,
+    libraryId,
+    allowDashboardRefetch,
+    includeLibraryLists = true,
+  } = options;
+  void invalidateMediaSurfaceQueries(queryClient, { itemId, libraryId }).then(
+    () => {
+      bumpHomeRefreshSignal(queryClient);
+    },
+  );
   if (includeLibraryLists) {
     void queryClient.invalidateQueries({
       queryKey: adminKeys.libraries(),
       refetchType: allowDashboardRefetch ? "active" : "none",
     });
-    void queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueStatuses() });
+    void queryClient.invalidateQueries({
+      queryKey: adminKeys.libraryMatchQueueStatuses(),
+    });
     void queryClient.invalidateQueries({ queryKey: libraryKeys.all });
   }
   void queryClient.invalidateQueries({

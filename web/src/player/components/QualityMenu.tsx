@@ -65,7 +65,9 @@ export function QualityMenu({
   const handleMenuKeyDown = useCallback((e: React.KeyboardEvent) => {
     const items = menuItemsRef.current.filter(Boolean) as HTMLButtonElement[];
     if (items.length === 0) return;
-    const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
+    const currentIndex = items.indexOf(
+      document.activeElement as HTMLButtonElement,
+    );
     let nextIndex: number | null = null;
 
     switch (e.key) {
@@ -119,7 +121,9 @@ export function QualityMenu({
           onClose={() => setOpen(false)}
           onKeyDown={handleMenuKeyDown}
         >
-          {error && <div className="px-3 py-1 text-xs text-red-400">{error}</div>}
+          {error && (
+            <div className="px-3 py-1 text-xs text-red-400">{error}</div>
+          )}
           {/* Version switching (multiple file versions) */}
           {versions && versions.length > 1 && onSwitchVersion && (
             <>
@@ -190,7 +194,11 @@ export function QualityMenu({
                   <span className="text-xs text-white/40">{opt.sublabel}</span>
                   {opt.id === resolvedActiveId && (
                     <span className="flex size-4 shrink-0 items-center justify-center rounded-full bg-white text-black">
-                      <Check className="size-3" strokeWidth={3} aria-hidden="true" />
+                      <Check
+                        className="size-3"
+                        strokeWidth={3}
+                        aria-hidden="true"
+                      />
                       <span className="sr-only">Selected</span>
                     </span>
                   )}

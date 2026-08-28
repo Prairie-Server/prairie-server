@@ -40,8 +40,12 @@ export default function ThemeSwitcher() {
             </div>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <span className="truncate text-sm font-medium">{def.label}</span>
-                {isActive && <Check className="text-primary h-4 w-4 shrink-0" />}
+                <span className="truncate text-sm font-medium">
+                  {def.label}
+                </span>
+                {isActive && (
+                  <Check className="text-primary h-4 w-4 shrink-0" />
+                )}
               </div>
               {def.description ? (
                 <p className="text-muted-foreground mt-0.5 line-clamp-2 text-xs leading-relaxed">

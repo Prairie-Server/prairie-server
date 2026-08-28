@@ -18,7 +18,10 @@ const STALE_TIME = 15_000;
 export function useHistoryImportSources() {
   return useQuery({
     queryKey: historyImportKeys.sources(),
-    queryFn: () => api<HistoryImportSource[]>("/history-imports/sources").then((d) => d ?? []),
+    queryFn: () =>
+      api<HistoryImportSource[]>("/history-imports/sources").then(
+        (d) => d ?? [],
+      ),
     staleTime: STALE_TIME,
   });
 }
@@ -27,7 +30,9 @@ export function useHistoryImportRuns(limit = 10) {
   return useQuery({
     queryKey: historyImportKeys.runs(limit),
     queryFn: () =>
-      api<HistoryImportRun[]>(`/history-imports/runs?limit=${limit}`).then((d) => d ?? []),
+      api<HistoryImportRun[]>(`/history-imports/runs?limit=${limit}`).then(
+        (d) => d ?? [],
+      ),
     staleTime: 5_000,
   });
 }
@@ -48,7 +53,11 @@ export function useLoginEmbyConnect() {
         body: JSON.stringify(body),
       }),
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to sign in with Emby Connect");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to sign in with Emby Connect",
+      );
     },
   });
 }
@@ -60,7 +69,9 @@ export function useCreatePlexPin() {
         method: "POST",
       }),
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to start Plex sign-in");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to start Plex sign-in",
+      );
     },
   });
 }
@@ -71,7 +82,9 @@ export function useCheckPlexPin(sessionId?: string) {
     queryFn: () =>
       api<PlexCheckResponse>("/history-imports/plex/auth/check", {
         method: "POST",
-        body: JSON.stringify({ session_id: sessionId! } satisfies PlexCheckRequest),
+        body: JSON.stringify({
+          session_id: sessionId!,
+        } satisfies PlexCheckRequest),
       }),
     enabled: !!sessionId,
     refetchInterval: (query) => {
@@ -92,11 +105,17 @@ export function useCreateHistoryImportRun() {
       }),
     onSuccess: (run) => {
       toast.success("Import started");
-      void queryClient.invalidateQueries({ queryKey: historyImportKeys.runs() });
-      void queryClient.invalidateQueries({ queryKey: historyImportKeys.run(run.id) });
+      void queryClient.invalidateQueries({
+        queryKey: historyImportKeys.runs(),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: historyImportKeys.run(run.id),
+      });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to start import");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to start import",
+      );
     },
   });
 }

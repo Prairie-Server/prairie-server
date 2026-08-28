@@ -95,22 +95,26 @@ describe("formatHeroMetadata", () => {
     ]);
   });
 
-  it.each([Number.NaN, Number.NEGATIVE_INFINITY, Number.POSITIVE_INFINITY, -1, 0, 10.1])(
-    "omits invalid IMDb rating %s",
-    (ratingImdb) => {
-      expect(
-        formatHeroMetadata(
-          movieSlide({
-            runtime: undefined,
-            duration_seconds: undefined,
-            rating_imdb: ratingImdb,
-            genres: [],
-            content_rating: undefined,
-          }),
-        ),
-      ).toEqual([{ key: "year", label: "2025" }]);
-    },
-  );
+  it.each([
+    Number.NaN,
+    Number.NEGATIVE_INFINITY,
+    Number.POSITIVE_INFINITY,
+    -1,
+    0,
+    10.1,
+  ])("omits invalid IMDb rating %s", (ratingImdb) => {
+    expect(
+      formatHeroMetadata(
+        movieSlide({
+          runtime: undefined,
+          duration_seconds: undefined,
+          rating_imdb: ratingImdb,
+          genres: [],
+          content_rating: undefined,
+        }),
+      ),
+    ).toEqual([{ key: "year", label: "2025" }]);
+  });
 
   it("keeps a valid upper-bound IMDb rating", () => {
     expect(
@@ -136,7 +140,14 @@ describe("formatHeroMetadata", () => {
           runtime: undefined,
           duration_seconds: undefined,
           rating_imdb: undefined,
-          genres: [" Drama ", "", "Drama", "  Mystery  ", "Mystery", "Thriller"],
+          genres: [
+            " Drama ",
+            "",
+            "Drama",
+            "  Mystery  ",
+            "Mystery",
+            "Thriller",
+          ],
           content_rating: " r ",
         }),
       ),
@@ -286,33 +297,45 @@ describe("HeroBanner", () => {
       </MemoryRouter>,
     );
 
-    expect(heroMetadata(container)).toEqual(["2025", "2h 5m", "IMDb 8.1", "Drama", "Mystery"]);
+    expect(heroMetadata(container)).toEqual([
+      "2025",
+      "2h 5m",
+      "IMDb 8.1",
+      "Drama",
+      "Mystery",
+    ]);
   });
 
   it.each([
     { runtime: -1, duration_seconds: 0 },
     { runtime: 0, duration_seconds: 1 },
     { runtime: Number.NaN, duration_seconds: Number.NaN },
-    { runtime: Number.POSITIVE_INFINITY, duration_seconds: Number.POSITIVE_INFINITY },
-  ])("omits invalid runtime values: $runtime / $duration_seconds", (runtimeValues) => {
-    const { container } = render(
-      <MemoryRouter>
-        <HeroBanner
-          items={[
-            movieSlide({
-              ...runtimeValues,
-              year: 0,
-              rating_imdb: null,
-              genres: [],
-              content_rating: "",
-            }),
-          ]}
-        />
-      </MemoryRouter>,
-    );
+    {
+      runtime: Number.POSITIVE_INFINITY,
+      duration_seconds: Number.POSITIVE_INFINITY,
+    },
+  ])(
+    "omits invalid runtime values: $runtime / $duration_seconds",
+    (runtimeValues) => {
+      const { container } = render(
+        <MemoryRouter>
+          <HeroBanner
+            items={[
+              movieSlide({
+                ...runtimeValues,
+                year: 0,
+                rating_imdb: null,
+                genres: [],
+                content_rating: "",
+              }),
+            ]}
+          />
+        </MemoryRouter>,
+      );
 
-    expect(container.querySelector(".hero-meta-track")).toBeNull();
-  });
+      expect(container.querySelector(".hero-meta-track")).toBeNull();
+    },
+  );
 
   it("uses the episode editorial policy for episode slides", () => {
     const { container } = render(

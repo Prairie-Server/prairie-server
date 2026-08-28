@@ -7,7 +7,11 @@ import { Button } from "@/components/ui/button";
 import { videoRangeLabel } from "@/lib/videoRange";
 import DetailPopover from "./DetailPopover";
 import { sortPlaybackVariantsByEditionPreference } from "./versionRankingUtils";
-import { buildDetailLine, buildQualitySummary, sortByResolution } from "./VersionFlyout";
+import {
+  buildDetailLine,
+  buildQualitySummary,
+  sortByResolution,
+} from "./VersionFlyout";
 
 interface VersionDropdownProps {
   versions: FileVersion[];
@@ -39,10 +43,13 @@ function VersionDropdown({
     [playbackVariants, versions],
   );
 
-  const hasNamedEditions = editionOptions.some((option) => option.variant.edition_key);
+  const hasNamedEditions = editionOptions.some(
+    (option) => option.variant.edition_key,
+  );
   const showEditionDropdown =
     editionOptions.length > 1 &&
-    new Set(editionOptions.map((option) => option.label.toLowerCase())).size > 1 &&
+    new Set(editionOptions.map((option) => option.label.toLowerCase())).size >
+      1 &&
     hasNamedEditions;
 
   const selectedEdition = showEditionDropdown
@@ -50,7 +57,10 @@ function VersionDropdown({
     : null;
   const activeVersions = selectedEdition?.versions ?? sorted;
   const activeVersion =
-    selectedVersion ?? selectedEdition?.defaultVersion ?? activeVersions[0] ?? null;
+    selectedVersion ??
+    selectedEdition?.defaultVersion ??
+    activeVersions[0] ??
+    null;
   const showVersionDropdown = activeVersions.length > 1;
 
   if (!showEditionDropdown && !showVersionDropdown) {
@@ -93,16 +103,24 @@ function VersionDropdown({
                     setVersionOpen(false);
                   }}
                   className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
-                    isSelected ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
+                    isSelected
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-accent/50"
                   }`}
                 >
                   <div className="min-w-0 flex-1">
-                    <div className="truncate text-sm font-medium">{option.label}</div>
+                    <div className="truncate text-sm font-medium">
+                      {option.label}
+                    </div>
                     {detail && (
-                      <div className="text-muted-foreground truncate text-xs">{detail}</div>
+                      <div className="text-muted-foreground truncate text-xs">
+                        {detail}
+                      </div>
                     )}
                   </div>
-                  {isSelected && <Check className="text-primary size-4 shrink-0" />}
+                  {isSelected && (
+                    <Check className="text-primary size-4 shrink-0" />
+                  )}
                 </button>
               );
             })}
@@ -145,7 +163,9 @@ function VersionDropdown({
                     setVersionOpen(false);
                   }}
                   className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
-                    isSelected ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
+                    isSelected
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-accent/50"
                   }`}
                 >
                   <div className="min-w-0 flex-1">
@@ -154,16 +174,23 @@ function VersionDropdown({
                         {summary || `Version ${version.file_id}`}
                       </span>
                       {rangeLabel ? (
-                        <Badge variant="secondary" className="px-1.5 py-0 text-[10px] uppercase">
+                        <Badge
+                          variant="secondary"
+                          className="px-1.5 py-0 text-[10px] uppercase"
+                        >
                           {rangeLabel}
                         </Badge>
                       ) : null}
                     </div>
                     {detail && (
-                      <span className="text-muted-foreground block truncate text-xs">{detail}</span>
+                      <span className="text-muted-foreground block truncate text-xs">
+                        {detail}
+                      </span>
                     )}
                   </div>
-                  {isSelected && <Check className="text-primary size-4 shrink-0" />}
+                  {isSelected && (
+                    <Check className="text-primary size-4 shrink-0" />
+                  )}
                 </button>
               );
             })}
@@ -177,7 +204,11 @@ function VersionDropdown({
 export default memo(VersionDropdown);
 
 function buildVersionTriggerSummary(version: FileVersion): string {
-  return buildQualitySummary(version) || buildDetailLine(version) || `Version ${version.file_id}`;
+  return (
+    buildQualitySummary(version) ||
+    buildDetailLine(version) ||
+    `Version ${version.file_id}`
+  );
 }
 
 function buildEditionOptions(
@@ -188,12 +219,17 @@ function buildEditionOptions(
     return [];
   }
 
-  const orderedVariants = sortPlaybackVariantsByEditionPreference(playbackVariants);
-  const hasNamedEditions = orderedVariants.some((variant) => variant.edition_key);
+  const orderedVariants =
+    sortPlaybackVariantsByEditionPreference(playbackVariants);
+  const hasNamedEditions = orderedVariants.some(
+    (variant) => variant.edition_key,
+  );
 
   return orderedVariants
     .map((variant) => {
-      const firstPart = [...(variant.parts ?? [])].sort((a, b) => a.part_index - b.part_index)[0];
+      const firstPart = [...(variant.parts ?? [])].sort(
+        (a, b) => a.part_index - b.part_index,
+      )[0];
       if (!firstPart) {
         return null;
       }
@@ -201,7 +237,9 @@ function buildEditionOptions(
       const partVersions = sortByResolution([...(firstPart.versions ?? [])]);
       const defaultVersion =
         (firstPart.default_file_id != null
-          ? versions.find((version) => version.file_id === firstPart.default_file_id)
+          ? versions.find(
+              (version) => version.file_id === firstPart.default_file_id,
+            )
           : undefined) ?? partVersions[0];
       if (!defaultVersion) {
         return null;
@@ -229,7 +267,9 @@ function resolveSelectedEditionOption(
   if (selectedVersion) {
     const matching = editionOptions.find((option) =>
       option.variant.parts.some((part) =>
-        part.versions.some((candidate) => candidate.file_id === selectedVersion.file_id),
+        part.versions.some(
+          (candidate) => candidate.file_id === selectedVersion.file_id,
+        ),
       ),
     );
     if (matching) {
@@ -240,7 +280,10 @@ function resolveSelectedEditionOption(
   return editionOptions[0] ?? null;
 }
 
-function buildEditionLabel(variant: PlaybackVariant, hasNamedEditions: boolean): string {
+function buildEditionLabel(
+  variant: PlaybackVariant,
+  hasNamedEditions: boolean,
+): string {
   if (variant.edition_raw?.trim()) {
     return variant.edition_raw.trim();
   }

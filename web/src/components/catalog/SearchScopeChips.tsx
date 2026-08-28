@@ -17,7 +17,10 @@ export interface SearchScopeChipsProps {
  * series), Audiobooks, or All. Selecting a chip both filters the current
  * results and saves the choice as the user's default search scope.
  */
-export default function SearchScopeChips({ activeScope, onScopeChange }: SearchScopeChipsProps) {
+export default function SearchScopeChips({
+  activeScope,
+  onScopeChange,
+}: SearchScopeChipsProps) {
   return (
     <div
       role="radiogroup"

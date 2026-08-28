@@ -5,12 +5,16 @@ import { renderHook, waitFor } from "@testing-library/react";
 
 import { ApiClientError } from "@/api/client";
 import { SETTING_KEYS } from "@/lib/settingsContract";
-import { resolveSettingValues, type StoredSettingRow } from "@/lib/settingsResolve";
+import {
+  resolveSettingValues,
+  type StoredSettingRow,
+} from "@/lib/settingsResolve";
 import { useAutoPlayNextSetting } from "./autoPlayNext";
 
 const apiMock = vi.hoisted(() => vi.fn());
 vi.mock("@/api/client", async () => {
-  const actual = await vi.importActual<typeof import("@/api/client")>("@/api/client");
+  const actual =
+    await vi.importActual<typeof import("@/api/client")>("@/api/client");
   return { ...actual, api: apiMock };
 });
 
@@ -42,14 +46,18 @@ function fakeSettingsServer(initial: StoredSettingRow[] = []) {
       })[0]!;
       return Promise.resolve({
         revision: 1,
-        settings: [{ key: KEY, value: resolved.value, source: resolved.source }],
+        settings: [
+          { key: KEY, value: resolved.value, source: resolved.source },
+        ],
       });
     }
     const match = /^\/settings\/values\/([^?]+)\?scope=([a-z_]+)/.exec(path);
     if (!match) return Promise.resolve(undefined);
     const key = match[1]!;
     const scope = match[2]!;
-    const index = rows.findIndex((row) => row.key === key && row.scope === scope);
+    const index = rows.findIndex(
+      (row) => row.key === key && row.scope === scope,
+    );
     if (options?.method === "DELETE") {
       if (index < 0) {
         return Promise.reject(
@@ -59,7 +67,8 @@ function fakeSettingsServer(initial: StoredSettingRow[] = []) {
       rows.splice(index, 1);
       return Promise.resolve(undefined);
     }
-    const value = (JSON.parse(options?.body as string) as { value: unknown }).value;
+    const value = (JSON.parse(options?.body as string) as { value: unknown })
+      .value;
     const row: StoredSettingRow = {
       key,
       scope: scope as StoredSettingRow["scope"],
@@ -96,7 +105,9 @@ describe("useAutoPlayNextSetting", () => {
 
     await result.current.setEnabled(false);
 
-    expect(rows).toEqual([expect.objectContaining({ key: KEY, scope: "profile", value: false })]);
+    expect(rows).toEqual([
+      expect.objectContaining({ key: KEY, scope: "profile", value: false }),
+    ]);
   });
 
   it("clears a shadowing device row so the saved value actually takes effect", async () => {
@@ -121,14 +132,18 @@ describe("useAutoPlayNextSetting", () => {
     await result.current.setEnabled(true);
 
     expect(rows.some((row) => row.scope === "profile_device")).toBe(false);
-    expect(rows).toEqual([expect.objectContaining({ scope: "profile", value: true })]);
+    expect(rows).toEqual([
+      expect.objectContaining({ scope: "profile", value: true }),
+    ]);
     // The resolved answer now matches what was asked for, rather than the
     // device row's stale false.
     await waitFor(() => expect(result.current.enabled).toBe(true));
   });
 
   it("does not attempt a delete when nothing is shadowing the profile row", async () => {
-    fakeSettingsServer([{ key: KEY, scope: "profile", profileId: "profile-1", value: false }]);
+    fakeSettingsServer([
+      { key: KEY, scope: "profile", profileId: "profile-1", value: false },
+    ]);
     const { wrapper } = createHarness();
     const { result } = renderHook(() => useAutoPlayNextSetting(), { wrapper });
     await waitFor(() => expect(result.current.enabled).toBe(false));
@@ -136,7 +151,8 @@ describe("useAutoPlayNextSetting", () => {
     await result.current.setEnabled(true);
 
     const deletes = apiMock.mock.calls.filter(
-      ([, options]) => (options as RequestInit | undefined)?.method === "DELETE",
+      ([, options]) =>
+        (options as RequestInit | undefined)?.method === "DELETE",
     );
     expect(deletes).toHaveLength(0);
   });

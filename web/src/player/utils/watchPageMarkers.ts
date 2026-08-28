@@ -3,8 +3,14 @@ import type { PlayerFileVersion, PlayerTimeRange } from "../types";
 // rangesEqual treats undefined and null as equivalent (both mean "absent")
 // because the markers_updated event nulls out absent segments while the
 // initial version state may have them undefined.
-function rangesEqual(a: PlayerTimeRange | null | undefined, b: PlayerTimeRange | null | undefined) {
-  return (a?.start ?? null) === (b?.start ?? null) && (a?.end ?? null) === (b?.end ?? null);
+function rangesEqual(
+  a: PlayerTimeRange | null | undefined,
+  b: PlayerTimeRange | null | undefined,
+) {
+  return (
+    (a?.start ?? null) === (b?.start ?? null) &&
+    (a?.end ?? null) === (b?.end ?? null)
+  );
 }
 
 export function patchVersionMarkers(
@@ -57,7 +63,10 @@ export function patchVersionMarkers(
 }
 
 export function resolveActiveVersionMarkers(
-  version: Pick<PlayerFileVersion, "intro" | "credits" | "recap" | "preview"> | null | undefined,
+  version:
+    | Pick<PlayerFileVersion, "intro" | "credits" | "recap" | "preview">
+    | null
+    | undefined,
 ): {
   intro: PlayerTimeRange | null;
   credits: PlayerTimeRange | null;

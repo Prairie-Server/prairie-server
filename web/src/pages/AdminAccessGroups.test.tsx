@@ -1,10 +1,19 @@
 // @vitest-environment jsdom
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { installPolicyStorageMocks, jsonResponse } from "./admin-policy/policyTestUtils";
+import {
+  installPolicyStorageMocks,
+  jsonResponse,
+} from "./admin-policy/policyTestUtils";
 import AdminAccessGroups from "./AdminAccessGroups";
 
 const GROUP = {
@@ -26,7 +35,9 @@ const GROUP = {
 };
 
 function renderPage() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
     <QueryClientProvider client={client}>
       <AdminAccessGroups />
@@ -80,7 +91,9 @@ describe("AdminAccessGroups", () => {
     fireEvent.click(screen.getByRole("button", { name: /Kids/ }));
 
     // Drill-in editor seeds from the group; toggle downloads on and save.
-    fireEvent.click(await screen.findByRole("switch", { name: "Allow downloads" }));
+    fireEvent.click(
+      await screen.findByRole("switch", { name: "Allow downloads" }),
+    );
     fireEvent.click(screen.getByRole("button", { name: /save changes/i }));
 
     await waitFor(() => {
@@ -103,8 +116,14 @@ describe("AdminAccessGroups", () => {
 
     // The server rejects demoting or deleting the default group, so the
     // editor disables both paths and explains the promote-another-group flow.
-    expect(await screen.findByRole("switch", { name: "Default for new users" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: /delete group/i })).toBeDisabled();
-    expect(screen.getByText(/make another group the default first/i)).toBeInTheDocument();
+    expect(
+      await screen.findByRole("switch", { name: "Default for new users" }),
+    ).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: /delete group/i }),
+    ).toBeDisabled();
+    expect(
+      screen.getByText(/make another group the default first/i),
+    ).toBeInTheDocument();
   });
 });

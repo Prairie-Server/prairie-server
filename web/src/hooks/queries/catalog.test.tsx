@@ -65,7 +65,10 @@ describe("useCatalogWindow", () => {
     }
 
     // Page 0 is now fetched via useQuery (separate from the windowed pages).
-    const page0Data = { ...makePage(0, limit), snapshot: "2026-01-01T00:00:00Z" };
+    const page0Data = {
+      ...makePage(0, limit),
+      snapshot: "2026-01-01T00:00:00Z",
+    };
     mocks.useQuery.mockReturnValue({ data: page0Data, isLoading: false });
 
     mocks.useQueries.mockImplementation(
@@ -78,7 +81,9 @@ describe("useCatalogWindow", () => {
         }>;
       }) => {
         const offsets = queries.map((query) => query.queryKey[2].offset ?? 0);
-        const hasPlaceholderData = queries.some((query) => "placeholderData" in query);
+        const hasPlaceholderData = queries.some(
+          (query) => "placeholderData" in query,
+        );
 
         if (offsets.join(",") === "60") {
           return [{ data: makePage(60, limit), isLoading: false }];
@@ -87,10 +92,18 @@ describe("useCatalogWindow", () => {
         if (offsets.join(",") === "360,420,480") {
           return [
             hasPlaceholderData
-              ? { data: makePage(60, limit), isLoading: true, isPlaceholderData: true }
+              ? {
+                  data: makePage(60, limit),
+                  isLoading: true,
+                  isPlaceholderData: true,
+                }
               : { data: undefined, isLoading: true },
             hasPlaceholderData
-              ? { data: makePage(120, limit), isLoading: true, isPlaceholderData: true }
+              ? {
+                  data: makePage(120, limit),
+                  isLoading: true,
+                  isPlaceholderData: true,
+                }
               : { data: undefined, isLoading: true },
             { data: undefined, isLoading: true },
           ];
@@ -200,11 +213,15 @@ describe("useCatalogWindow", () => {
     renderToStaticMarkup(<Harness />);
 
     expect(pageQueries).toHaveLength(3);
-    expect(pageQueries?.map((query) => query.queryKey[2]?.offset)).toEqual([60, 120, 180]);
+    expect(pageQueries?.map((query) => query.queryKey[2]?.offset)).toEqual([
+      60, 120, 180,
+    ]);
     expect(pageQueries?.[1]?.queryKey[2]).toMatchObject({
       offset: 120,
     });
-    expect(pageQueries?.every((query) => query.queryKey[2]?.snapshot === undefined)).toBe(true);
+    expect(
+      pageQueries?.every((query) => query.queryKey[2]?.snapshot === undefined),
+    ).toBe(true);
     expect(pageQueries?.every((query) => query.enabled === true)).toBe(true);
   });
 
@@ -216,7 +233,11 @@ describe("useCatalogWindow", () => {
     const limit = 60;
 
     function Harness() {
-      useCatalogWindow(state, { limit, includeTotal: true, visibleRange: [120, 179] });
+      useCatalogWindow(state, {
+        limit,
+        includeTotal: true,
+        visibleRange: [120, 179],
+      });
       return null;
     }
 
@@ -233,13 +254,21 @@ describe("useCatalogWindow", () => {
     };
     let page0Query:
       | {
-          queryFn: (context: { signal: AbortSignal }) => Promise<CatalogResponse>;
-          queryKey: [string, string, { include_total?: boolean; offset?: number }];
+          queryFn: (context: {
+            signal: AbortSignal;
+          }) => Promise<CatalogResponse>;
+          queryKey: [
+            string,
+            string,
+            { include_total?: boolean; offset?: number },
+          ];
         }
       | undefined;
     let pageQueries:
       | Array<{
-          queryFn: (context: { signal: AbortSignal }) => Promise<CatalogResponse>;
+          queryFn: (context: {
+            signal: AbortSignal;
+          }) => Promise<CatalogResponse>;
           queryKey: [
             string,
             string,

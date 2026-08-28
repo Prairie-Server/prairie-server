@@ -1,5 +1,44 @@
-export function isSidebarExpanded(collapsed: boolean, hovered: boolean, profileMenuOpen: boolean) {
+import type { CSSProperties } from "react";
+
+/** Expanded sidebar surface width in px — must match `w-[260px]` in AppSidebar. */
+export const SIDEBAR_SURFACE_WIDTH = 260;
+
+/** Collapsed rail width in px — must match `lg:ml-16` / `ml-16` in Layout. */
+export const SIDEBAR_RAIL_WIDTH = 64;
+
+export function isSidebarExpanded(
+  collapsed: boolean,
+  hovered: boolean,
+  profileMenuOpen: boolean,
+) {
   return !collapsed || hovered || profileMenuOpen;
+}
+
+export function isSidebarRailCollapsed(
+  collapsed: boolean,
+  sidebarExpanded: boolean,
+) {
+  return collapsed && !sidebarExpanded;
+}
+
+export function libraryRowShift(hasPins: boolean) {
+  return hasPins ? "-18px" : "0px";
+}
+
+export function sidebarSurfaceStyle({
+  collapsed,
+  sidebarExpanded,
+}: {
+  collapsed: boolean;
+  sidebarExpanded: boolean;
+}): CSSProperties | undefined {
+  if (collapsed && sidebarExpanded) {
+    return {
+      zIndex: 45,
+      boxShadow: "0 25px 50px -12px rgb(0 0 0 / 0.25)",
+    };
+  }
+  return undefined;
 }
 
 export function getProfileMenuSide(collapsed: boolean) {

@@ -22,8 +22,16 @@ describe("buildMangaList", () => {
     ]);
 
     expect(entries).toEqual([
-      { kind: "volume", chapter: expect.objectContaining({ content_id: "v1" }), label: "Volume 1" },
-      { kind: "volume", chapter: expect.objectContaining({ content_id: "v2" }), label: "Volume 2" },
+      {
+        kind: "volume",
+        chapter: expect.objectContaining({ content_id: "v1" }),
+        label: "Volume 1",
+      },
+      {
+        kind: "volume",
+        chapter: expect.objectContaining({ content_id: "v2" }),
+        label: "Volume 2",
+      },
     ]);
   });
 
@@ -58,7 +66,10 @@ describe("buildMangaList", () => {
     expect(entry?.kind).toBe("section");
     if (entry?.kind === "section") {
       expect(entry.label).toBe("Volume 1");
-      expect(entry.chapters.map((c) => c.content_id)).toEqual(["v1-c1", "v1-c2"]);
+      expect(entry.chapters.map((c) => c.content_id)).toEqual([
+        "v1-c1",
+        "v1-c2",
+      ]);
     }
   });
 
@@ -70,7 +81,12 @@ describe("buildMangaList", () => {
       chapter({ content_id: "loose-3", chapter_index: 3, volume: "" }),
     ]);
 
-    expect(entries.map((e) => e.label)).toEqual(["Volume 1", "Chapter 3", "Chapter 5", "Volume 2"]);
+    expect(entries.map((e) => e.label)).toEqual([
+      "Volume 1",
+      "Chapter 3",
+      "Chapter 5",
+      "Volume 2",
+    ]);
   });
 
   it("orders a section by its minimum chapter index relative to other entries", () => {
@@ -85,7 +101,9 @@ describe("buildMangaList", () => {
   });
 
   it("labels a loose chapter without an index by its trimmed title", () => {
-    const entries = buildMangaList([chapter({ content_id: "bonus", title: "  Bonus  " })]);
+    const entries = buildMangaList([
+      chapter({ content_id: "bonus", title: "  Bonus  " }),
+    ]);
 
     expect(entries).toEqual([
       {
@@ -105,7 +123,11 @@ describe("buildMangaList", () => {
 
     expect(entries[0]?.kind).toBe("section");
     if (entries[0]?.kind === "section") {
-      expect(entries[0].chapters.map((c) => c.content_id)).toEqual(["v1-c1", "v1-c2", "v1-cNull"]);
+      expect(entries[0].chapters.map((c) => c.content_id)).toEqual([
+        "v1-c1",
+        "v1-c2",
+        "v1-cNull",
+      ]);
     }
   });
 
@@ -133,7 +155,12 @@ describe("volume token normalization", () => {
   it("buckets 'v01' and '1' into the same volume", () => {
     const entries = buildMangaList([
       { content_id: "a", title: "Series v01", chapter_index: 1, volume: "v01" },
-      { content_id: "b", title: "Series 1 extras", chapter_index: 2, volume: "1" },
+      {
+        content_id: "b",
+        title: "Series 1 extras",
+        chapter_index: 2,
+        volume: "1",
+      },
     ]);
 
     // One section labeled "Volume 1" holding both chapters — not two
@@ -149,7 +176,12 @@ describe("volume token normalization", () => {
 
   it("keeps non-numeric tokens distinct", () => {
     const entries = buildMangaList([
-      { content_id: "a", title: "Omnibus", chapter_index: 1, volume: "Omnibus" },
+      {
+        content_id: "a",
+        title: "Omnibus",
+        chapter_index: 1,
+        volume: "Omnibus",
+      },
       { content_id: "b", title: "v2", chapter_index: 2, volume: "v2" },
     ]);
     expect(entries).toHaveLength(2);

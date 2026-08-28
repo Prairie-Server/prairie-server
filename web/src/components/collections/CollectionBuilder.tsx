@@ -10,7 +10,10 @@ import type {
   UserCollectionMediaFilter,
   UserCollectionWatchFilter,
 } from "@/api/types";
-import { createEmptyQueryDefinition, normalizeQueryDefinition } from "@/api/types";
+import {
+  createEmptyQueryDefinition,
+  normalizeQueryDefinition,
+} from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -96,10 +99,13 @@ export function createCollectionBuilderValue(
     visibility: overrides?.visibility ?? "visible",
     featured: overrides?.featured ?? false,
     query_definition:
-      collectionType === "smart" ? withSmartCollectionLimit(queryDefinition) : queryDefinition,
+      collectionType === "smart"
+        ? withSmartCollectionLimit(queryDefinition)
+        : queryDefinition,
     sort_config: overrides?.sort_config ?? {},
     access: overrides?.access ?? { is_shared: false, allowed_profile_ids: [] },
-    include_in_server_collections: overrides?.include_in_server_collections ?? false,
+    include_in_server_collections:
+      overrides?.include_in_server_collections ?? false,
     display_query_definition: overrides?.display_query_definition,
   };
 }
@@ -135,8 +141,12 @@ export default function CollectionBuilder({
   const [advanced, setAdvanced] = useState(defaultAdvanced);
 
   const previewRequest = buildCollectionBuilderPreviewRequest(value);
-  const adminPreview = useAdminCollectionPreview(mode === "admin" ? previewRequest : null);
-  const userPreview = useUserCollectionPreview(mode === "user" ? previewRequest : null);
+  const adminPreview = useAdminCollectionPreview(
+    mode === "admin" ? previewRequest : null,
+  );
+  const userPreview = useUserCollectionPreview(
+    mode === "user" ? previewRequest : null,
+  );
   const previewQuery = mode === "admin" ? adminPreview : userPreview;
   const previewPanel =
     value.collection_type === "smart" ? (
@@ -178,7 +188,9 @@ export default function CollectionBuilder({
             <Input
               id={`collection-title-${mode}`}
               value={value.title}
-              onChange={(event) => onChange({ ...value, title: event.target.value })}
+              onChange={(event) =>
+                onChange({ ...value, title: event.target.value })
+              }
               disabled={readOnly}
               required
             />
@@ -219,7 +231,9 @@ export default function CollectionBuilder({
                 id="collection-description"
                 rows={4}
                 value={value.description}
-                onChange={(event) => onChange({ ...value, description: event.target.value })}
+                onChange={(event) =>
+                  onChange({ ...value, description: event.target.value })
+                }
                 disabled={readOnly}
                 className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[110px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
               />
@@ -231,7 +245,10 @@ export default function CollectionBuilder({
                 <Select
                   value={value.visibility}
                   onValueChange={(next) =>
-                    onChange({ ...value, visibility: next as "visible" | "hidden" })
+                    onChange({
+                      ...value,
+                      visibility: next as "visible" | "hidden",
+                    })
                   }
                   disabled={readOnly}
                 >
@@ -249,7 +266,9 @@ export default function CollectionBuilder({
                 title="Featured"
                 description="Surface this collection near the top of the library."
                 checked={value.featured}
-                onCheckedChange={(checked) => onChange({ ...value, featured: checked })}
+                onCheckedChange={(checked) =>
+                  onChange({ ...value, featured: checked })
+                }
                 disabled={readOnly}
               />
             </div>
@@ -260,17 +279,26 @@ export default function CollectionBuilder({
       {children}
 
       {mode === "user" && value.collection_type === "manual" ? (
-        <DisplayFilterControls mode={mode} value={value} onChange={onChange} readOnly={readOnly} />
+        <DisplayFilterControls
+          mode={mode}
+          value={value}
+          onChange={onChange}
+          readOnly={readOnly}
+        />
       ) : null}
 
       {value.collection_type === "smart" ? (
         <>
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold">{advanced ? "Rules" : "Filters"}</h2>
+            <h2 className="text-lg font-semibold">
+              {advanced ? "Rules" : "Filters"}
+            </h2>
             {advanced ? (
               <CollectionRulesEditor
                 value={value.query_definition}
-                onChange={(query_definition) => onChange({ ...value, query_definition })}
+                onChange={(query_definition) =>
+                  onChange({ ...value, query_definition })
+                }
                 libraries={libraries}
                 allowLibrarySelection={allowLibrarySelection}
                 allowPersonalizedFilters={mode === "user"}
@@ -280,7 +308,9 @@ export default function CollectionBuilder({
             ) : (
               <CollectionGuidedRulesEditor
                 value={value.query_definition}
-                onChange={(query_definition) => onChange({ ...value, query_definition })}
+                onChange={(query_definition) =>
+                  onChange({ ...value, query_definition })
+                }
                 libraries={libraries}
                 allowLibrarySelection={allowLibrarySelection}
                 allowPersonalizedFilters={mode === "user"}
@@ -294,7 +324,9 @@ export default function CollectionBuilder({
             <h2 className="text-lg font-semibold">Limit</h2>
             <SmartCollectionLimitField
               query={value.query_definition}
-              onQueryChange={(query_definition) => onChange({ ...value, query_definition })}
+              onQueryChange={(query_definition) =>
+                onChange({ ...value, query_definition })
+              }
               readOnly={readOnly}
             />
           </section>
@@ -305,8 +337,12 @@ export default function CollectionBuilder({
               <CollectionOrderingEditor
                 query={value.query_definition}
                 sortConfig={value.sort_config}
-                onQueryChange={(query_definition) => onChange({ ...value, query_definition })}
-                onSortConfigChange={(sort_config) => onChange({ ...value, sort_config })}
+                onQueryChange={(query_definition) =>
+                  onChange({ ...value, query_definition })
+                }
+                onSortConfigChange={(sort_config) =>
+                  onChange({ ...value, sort_config })
+                }
                 allowPersonalizedSorts={mode === "user"}
                 readOnly={readOnly}
               />
@@ -440,12 +476,20 @@ function DisplayFilterControls({
   onChange: (value: CollectionBuilderValue) => void;
   readOnly?: boolean;
 }) {
-  const { watch, media } = queryDefinitionToDisplayFilters(value.display_query_definition);
+  const { watch, media } = queryDefinitionToDisplayFilters(
+    value.display_query_definition,
+  );
 
-  function commit(nextWatch: UserCollectionWatchFilter, nextMedia: UserCollectionMediaFilter) {
+  function commit(
+    nextWatch: UserCollectionWatchFilter,
+    nextMedia: UserCollectionMediaFilter,
+  ) {
     onChange({
       ...value,
-      display_query_definition: displayFiltersToQueryDefinition(nextWatch, nextMedia),
+      display_query_definition: displayFiltersToQueryDefinition(
+        nextWatch,
+        nextMedia,
+      ),
     });
   }
 
@@ -454,7 +498,8 @@ function DisplayFilterControls({
       <div>
         <h2 className="text-lg font-semibold">Display filters</h2>
         <p className="text-muted-foreground mt-1 text-sm">
-          Uses the active profile&rsquo;s watched state. Shared profiles may see different results.
+          Uses the active profile&rsquo;s watched state. Shared profiles may see
+          different results.
         </p>
       </div>
       <div className="grid gap-4 md:grid-cols-2">
@@ -462,7 +507,9 @@ function DisplayFilterControls({
           <Label htmlFor={`collection-watch-filter-${mode}`}>Watch state</Label>
           <Select
             value={watch}
-            onValueChange={(next) => commit(next as UserCollectionWatchFilter, media)}
+            onValueChange={(next) =>
+              commit(next as UserCollectionWatchFilter, media)
+            }
             disabled={readOnly}
           >
             <SelectTrigger id={`collection-watch-filter-${mode}`}>
@@ -481,7 +528,9 @@ function DisplayFilterControls({
           <Label htmlFor={`collection-media-filter-${mode}`}>Content</Label>
           <Select
             value={media}
-            onValueChange={(next) => commit(watch, next as UserCollectionMediaFilter)}
+            onValueChange={(next) =>
+              commit(watch, next as UserCollectionMediaFilter)
+            }
             disabled={readOnly}
           >
             <SelectTrigger id={`collection-media-filter-${mode}`}>
@@ -520,7 +569,11 @@ function ToggleRow({
         <p className="text-sm font-medium">{title}</p>
         <p className="text-muted-foreground text-xs">{description}</p>
       </div>
-      <Switch checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
+      <Switch
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        disabled={disabled}
+      />
     </div>
   );
 }

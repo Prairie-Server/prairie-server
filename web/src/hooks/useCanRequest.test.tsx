@@ -18,15 +18,23 @@ vi.mock("@/hooks/useCurrentProfile", () => ({
 
 import { useCanRequest } from "./useCanRequest";
 
-function CaptureHook({ onResult }: { onResult: (r: ReturnType<typeof useCanRequest>) => void }) {
+function CaptureHook({
+  onResult,
+}: {
+  onResult: (r: ReturnType<typeof useCanRequest>) => void;
+}) {
   const result = useCanRequest();
   onResult(result);
   return null;
 }
 
 function render(child: ReactNode) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return renderToStaticMarkup(<QueryClientProvider client={client}>{child}</QueryClientProvider>);
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return renderToStaticMarkup(
+    <QueryClientProvider client={client}>{child}</QueryClientProvider>,
+  );
 }
 
 describe("useCanRequest", () => {
@@ -100,7 +108,10 @@ describe("useCanRequest", () => {
   });
 
   it("returns isResolving=true and discoveryEnabled=false while the feature status is still loading", () => {
-    mocks.useRequestFeatureStatus.mockReturnValue({ data: undefined, isLoading: true });
+    mocks.useRequestFeatureStatus.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+    });
     mocks.useCurrentProfile.mockReturnValue({ profile: { id: "p1" } });
 
     let captured: ReturnType<typeof useCanRequest> | null = null;

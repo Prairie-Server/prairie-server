@@ -2,7 +2,11 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { AuthProviderOption, Profile, SetupStatusResponse } from "@/api/types";
+import type {
+  AuthProviderOption,
+  Profile,
+  SetupStatusResponse,
+} from "@/api/types";
 import { storage } from "@/utils/storage";
 import { AuthProvider, useAuth } from "./useAuth";
 
@@ -18,7 +22,8 @@ const setRefreshTokenMock = vi.hoisted(() => vi.fn());
 const queryClientClearMock = vi.hoisted(() => vi.fn());
 
 vi.mock("@/api/client", async () => {
-  const actual = await vi.importActual<typeof import("@/api/client")>("@/api/client");
+  const actual =
+    await vi.importActual<typeof import("@/api/client")>("@/api/client");
 
   return {
     ...actual,
@@ -73,7 +78,9 @@ function ProviderProbe() {
 
   return (
     <div data-testid="providers">
-      {setupLoading ? "loading" : providers.map((entry) => `${entry.id}:${entry.mode}`).join(",")}
+      {setupLoading
+        ? "loading"
+        : providers.map((entry) => `${entry.id}:${entry.mode}`).join(",")}
     </div>
   );
 }
@@ -87,9 +94,15 @@ function ProfileSelectionProbe() {
   return (
     <div>
       <div data-testid="active-profile">{profile?.name ?? "none"}</div>
-      <button onClick={() => selectProfile(profileOne)}>Select profile one</button>
-      <button onClick={() => selectProfile(renamedProfileOne)}>Update profile one</button>
-      <button onClick={() => selectProfile(profileTwo)}>Select profile two</button>
+      <button onClick={() => selectProfile(profileOne)}>
+        Select profile one
+      </button>
+      <button onClick={() => selectProfile(renamedProfileOne)}>
+        Update profile one
+      </button>
+      <button onClick={() => selectProfile(profileTwo)}>
+        Select profile two
+      </button>
     </div>
   );
 }
@@ -106,7 +119,12 @@ describe("AuthProvider", () => {
 
   it("preserves OAuth login providers returned by the auth providers endpoint", async () => {
     const providers: AuthProviderOption[] = [
-      { id: "local", display_name: "Local", mode: "credentials", default: true },
+      {
+        id: "local",
+        display_name: "Local",
+        mode: "credentials",
+        default: true,
+      },
       {
         id: "plugin:41:oidc",
         display_name: "OIDC",
@@ -131,8 +149,12 @@ describe("AuthProvider", () => {
     renderWithAuthProvider(<ProviderProbe />);
 
     await waitFor(() => {
-      expect(screen.getByTestId("providers")).toHaveTextContent("local:credentials");
-      expect(screen.getByTestId("providers")).toHaveTextContent("plugin:41:oidc:oauth");
+      expect(screen.getByTestId("providers")).toHaveTextContent(
+        "local:credentials",
+      );
+      expect(screen.getByTestId("providers")).toHaveTextContent(
+        "plugin:41:oidc:oauth",
+      );
     });
   });
 
@@ -186,6 +208,8 @@ describe("AuthProvider", () => {
     });
 
     expect(queryClientClearMock).not.toHaveBeenCalled();
-    expect(screen.getByTestId("active-profile")).toHaveTextContent("Alex Updated");
+    expect(screen.getByTestId("active-profile")).toHaveTextContent(
+      "Alex Updated",
+    );
   });
 });

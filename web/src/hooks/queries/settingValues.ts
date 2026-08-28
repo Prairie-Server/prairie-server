@@ -88,14 +88,20 @@ interface EffectiveResponse {
 }
 
 /** The cache shape one effective-settings query resolves to. */
-export type EffectiveSettingsMap = Partial<Record<SettingKey, EffectiveSetting>>;
+export type EffectiveSettingsMap = Partial<
+  Record<SettingKey, EffectiveSetting>
+>;
 
 function identityQuery(identity: SettingIdentity): string {
   const params = new URLSearchParams({ scope: identity.scope });
-  if (identity.libraryId !== undefined) params.set("library_id", String(identity.libraryId));
-  if (identity.seriesId !== undefined) params.set("series_id", identity.seriesId);
-  if (identity.deviceId !== undefined) params.set("device_id", identity.deviceId);
-  if (identity.profileId !== undefined) params.set("profile_id", identity.profileId);
+  if (identity.libraryId !== undefined)
+    params.set("library_id", String(identity.libraryId));
+  if (identity.seriesId !== undefined)
+    params.set("series_id", identity.seriesId);
+  if (identity.deviceId !== undefined)
+    params.set("device_id", identity.deviceId);
+  if (identity.profileId !== undefined)
+    params.set("profile_id", identity.profileId);
   return params.toString();
 }
 
@@ -157,7 +163,13 @@ export function useEffectiveSettings(options?: {
   const profileId = options?.profileId;
 
   return useQuery({
-    queryKey: effectiveSettingsQueryKey({ keys, libraryIds, seriesIds, deviceId, profileId }),
+    queryKey: effectiveSettingsQueryKey({
+      keys,
+      libraryIds,
+      seriesIds,
+      deviceId,
+      profileId,
+    }),
     queryFn: async () => {
       const params = new URLSearchParams();
       if (keys?.length) params.set("keys", keys.join(","));
@@ -191,7 +203,11 @@ export function useEffectiveSettings(options?: {
  */
 export function useSettingValue<T = unknown>(
   key: SettingKey,
-  options?: { libraryIds?: readonly number[]; seriesIds?: readonly string[]; enabled?: boolean },
+  options?: {
+    libraryIds?: readonly number[];
+    seriesIds?: readonly string[];
+    enabled?: boolean;
+  },
 ) {
   const query = useEffectiveSettings({ keys: [key], ...options });
   const setting = query.data?.[key];
@@ -225,13 +241,17 @@ function invalidateSettingValueQueries(
   identity: SettingIdentity,
 ) {
   const invalidations = [
-    queryClient.invalidateQueries({ queryKey: [...settingsKeys.all, "values"] }),
+    queryClient.invalidateQueries({
+      queryKey: [...settingsKeys.all, "values"],
+    }),
   ];
   // A device-scoped write changes that device's "how many things differ"
   // count, which the device list shows. Without this the badge stays stale
   // until the list's own staleTime expires.
   if (identity.scope === "profile_device") {
-    invalidations.push(queryClient.invalidateQueries({ queryKey: deviceKeys.all }));
+    invalidations.push(
+      queryClient.invalidateQueries({ queryKey: deviceKeys.all }),
+    );
   }
   return Promise.all(invalidations).then(() => undefined);
 }
@@ -325,8 +345,13 @@ export function useSetNavigationShortcutPresence() {
           },
         );
       } finally {
-        if (invalidateOnSettled !== false && isProfileRequestContextCurrent(profileAuth)) {
-          void qc.invalidateQueries({ queryKey: [...settingsKeys.all, "values"] });
+        if (
+          invalidateOnSettled !== false &&
+          isProfileRequestContextCurrent(profileAuth)
+        ) {
+          void qc.invalidateQueries({
+            queryKey: [...settingsKeys.all, "values"],
+          });
         }
       }
     },
@@ -344,8 +369,16 @@ export function useClearSettingValue() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ key, identity }: { key: SettingKey; identity: SettingIdentity }) =>
-      api(`/settings/values/${key}?${identityQuery(identity)}`, { method: "DELETE" }),
+    mutationFn: ({
+      key,
+      identity,
+    }: {
+      key: SettingKey;
+      identity: SettingIdentity;
+    }) =>
+      api(`/settings/values/${key}?${identityQuery(identity)}`, {
+        method: "DELETE",
+      }),
     onSuccess: (_data, variables) => {
       return invalidateSettingValueQueries(qc, variables.identity);
     },
@@ -440,7 +473,10 @@ export function useSettingValuesRealtime() {
   const handlers = useMemo(
     () => ({
       onEvent: (message: unknown) => {
-        const event = message as { event?: string; data?: UserSettingsChangedPayload };
+        const event = message as {
+          event?: string;
+          data?: UserSettingsChangedPayload;
+        };
         if (event?.event !== "user_settings.changed") return;
 
         // One account can have several profiles, and admins additionally
@@ -451,7 +487,8 @@ export function useSettingValuesRealtime() {
         // account-scoped change carries no profile and does affect us.
         const changedProfile = event.data?.profile_id;
         const activeProfile = activeProfileId();
-        if (changedProfile && activeProfile && changedProfile !== activeProfile) return;
+        if (changedProfile && activeProfile && changedProfile !== activeProfile)
+          return;
 
         qc.invalidateQueries({ queryKey: [...settingsKeys.all, "values"] });
       },

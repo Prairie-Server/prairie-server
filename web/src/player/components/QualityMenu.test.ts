@@ -3,7 +3,11 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { createElement } from "react";
 import { describe, expect, it } from "vitest";
-import { buildVersionStatusLabels, QualityMenu, type VersionInfo } from "./QualityMenu";
+import {
+  buildVersionStatusLabels,
+  QualityMenu,
+  type VersionInfo,
+} from "./QualityMenu";
 
 function makeVersionInfo(overrides: Partial<VersionInfo> = {}): VersionInfo {
   return {
@@ -75,12 +79,13 @@ describe("QualityMenu", () => {
       }),
     );
 
-    expect(screen.getByRole("button", { name: "Quality" })).toHaveTextContent("1080p Medium");
+    expect(screen.getByRole("button", { name: "Quality" })).toHaveTextContent(
+      "1080p Medium",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Quality" }));
     expect(screen.getByRole("menu")).toHaveClass("z-30");
-    expect(screen.getByRole("menuitem", { name: /1080p Medium.*Selected/ })).toHaveAttribute(
-      "aria-current",
-      "true",
-    );
+    expect(
+      screen.getByRole("menuitem", { name: /1080p Medium.*Selected/ }),
+    ).toHaveAttribute("aria-current", "true");
   });
 });

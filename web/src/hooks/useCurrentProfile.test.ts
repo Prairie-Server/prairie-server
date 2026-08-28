@@ -31,12 +31,16 @@ describe("resolveCurrentProfile", () => {
     const authProfile = makeProfile({ quality_preference: "4k" });
     const fetchedProfile = makeProfile({ quality_preference: "720p" });
 
-    expect(resolveCurrentProfile([fetchedProfile], authProfile)?.quality_preference).toBe("720p");
+    expect(
+      resolveCurrentProfile([fetchedProfile], authProfile)?.quality_preference,
+    ).toBe("720p");
   });
 
   it("falls back to the auth profile when the query list is unavailable", () => {
     const authProfile = makeProfile({ quality_preference: "4k" });
 
-    expect(resolveCurrentProfile([], authProfile)?.quality_preference).toBe("4k");
+    expect(resolveCurrentProfile([], authProfile)?.quality_preference).toBe(
+      "4k",
+    );
   });
 });

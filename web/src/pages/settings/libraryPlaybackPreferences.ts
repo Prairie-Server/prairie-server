@@ -1,4 +1,7 @@
-import type { EffectiveSettingsMap, SettingIdentity } from "@/hooks/queries/settingValues";
+import type {
+  EffectiveSettingsMap,
+  SettingIdentity,
+} from "@/hooks/queries/settingValues";
 import { getLanguageName } from "@/lib/languageNames";
 import { SETTING_KEYS, type SettingKey } from "@/lib/settingsContract";
 import { optionsFor } from "@/lib/settingsDisplay";
@@ -53,18 +56,24 @@ export function getLanguageLabel(code: string) {
 }
 
 export function getSubtitleModeLabel(mode: string) {
-  return SUBTITLE_MODE_OPTIONS.find((option) => option.value === mode)?.label ?? mode;
+  return (
+    SUBTITLE_MODE_OPTIONS.find((option) => option.value === mode)?.label ?? mode
+  );
 }
 
 export function getSubtitleLanguageLabel(value: string) {
-  return value === "" || value === NONE_VALUE ? "None" : getLanguageLabel(value);
+  return value === "" || value === NONE_VALUE
+    ? "None"
+    : getLanguageLabel(value);
 }
 
 export function getForcedSubtitlesLabel(value: string) {
   return value === "on" ? "On" : "Off";
 }
 
-export function buildLibraryPlaybackSummaryFromState(state: LibraryPlaybackEditorState) {
+export function buildLibraryPlaybackSummaryFromState(
+  state: LibraryPlaybackEditorState,
+) {
   const parts: string[] = [];
 
   if (state.audioLanguage !== INHERIT_VALUE) {
@@ -79,7 +88,9 @@ export function buildLibraryPlaybackSummaryFromState(state: LibraryPlaybackEdito
     parts.push(`Behavior: ${getSubtitleModeLabel(state.subtitleMode)}`);
   }
   if (state.showForcedSubtitles !== INHERIT_VALUE) {
-    parts.push(`Forced subtitles: ${getForcedSubtitlesLabel(state.showForcedSubtitles)}`);
+    parts.push(
+      `Forced subtitles: ${getForcedSubtitlesLabel(state.showForcedSubtitles)}`,
+    );
   }
 
   return parts.length > 0 ? parts.join(" • ") : "Uses profile defaults";
@@ -106,12 +117,18 @@ export function createLibraryPlaybackEditorState(
   const forced = overridden(SETTING_KEYS.PLAYBACK_SHOW_FORCED_SUBTITLES);
 
   return {
-    audioLanguage: (audio?.value as string | null) ?? (audio ? NONE_VALUE : INHERIT_VALUE),
+    audioLanguage:
+      (audio?.value as string | null) ?? (audio ? NONE_VALUE : INHERIT_VALUE),
     subtitleLanguage:
-      (subtitleLanguage?.value as string | null) ?? (subtitleLanguage ? NONE_VALUE : INHERIT_VALUE),
+      (subtitleLanguage?.value as string | null) ??
+      (subtitleLanguage ? NONE_VALUE : INHERIT_VALUE),
     subtitleMode: (subtitleMode?.value as string | undefined) ?? INHERIT_VALUE,
     showForcedSubtitles:
-      forced === undefined ? INHERIT_VALUE : (forced.value as boolean) ? "on" : "off",
+      forced === undefined
+        ? INHERIT_VALUE
+        : (forced.value as boolean)
+          ? "on"
+          : "off",
   };
 }
 
@@ -136,7 +153,10 @@ export function buildLibraryPlaybackMutations(
 ): LibraryPlaybackMutation[] {
   return [
     planLanguage(SETTING_KEYS.PLAYBACK_AUDIO_LANGUAGE, state.audioLanguage),
-    planLanguage(SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE, state.subtitleLanguage),
+    planLanguage(
+      SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE,
+      state.subtitleLanguage,
+    ),
     state.subtitleMode === INHERIT_VALUE
       ? { key: SETTING_KEYS.PLAYBACK_SUBTITLE_MODE }
       : { key: SETTING_KEYS.PLAYBACK_SUBTITLE_MODE, value: state.subtitleMode },
@@ -169,22 +189,32 @@ export function buildInheritedSubtitleModeLabel(_value: string) {
   return "Profile default";
 }
 
-export function buildInheritedShowForcedSubtitlesLabel(_value: boolean | undefined) {
+export function buildInheritedShowForcedSubtitlesLabel(
+  _value: boolean | undefined,
+) {
   return "Profile default";
 }
 
-export function getProfileDefaultLanguageHint(value: string | null | undefined) {
+export function getProfileDefaultLanguageHint(
+  value: string | null | undefined,
+) {
   return `Default: ${value ? getLanguageLabel(value) : "No preference"}`;
 }
 
-export function getProfileDefaultSubtitleLanguageHint(value: string | null | undefined) {
+export function getProfileDefaultSubtitleLanguageHint(
+  value: string | null | undefined,
+) {
   return `Default: ${value ? getLanguageLabel(value) : "None"}`;
 }
 
-export function getProfileDefaultSubtitleModeHint(value: string | null | undefined) {
+export function getProfileDefaultSubtitleModeHint(
+  value: string | null | undefined,
+) {
   return `Default: ${getSubtitleModeLabel(value || DEFAULT_SUBTITLE_MODE)}`;
 }
 
-export function getProfileDefaultForcedSubtitlesHint(value: boolean | undefined) {
+export function getProfileDefaultForcedSubtitlesHint(
+  value: boolean | undefined,
+) {
   return `Default: ${getForcedSubtitlesLabel((value ?? DEFAULT_SHOW_FORCED_SUBTITLES) ? "on" : "off")}`;
 }

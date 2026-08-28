@@ -395,6 +395,9 @@ describe("ContinueWatchingCard", () => {
   it("always points the artwork at the item detail page", () => {
     expect(renderCard()).toHaveAttribute("href", "/item/movie-001");
     // The caption also reaches the detail page.
-    expect(screen.getByText("Apex").closest("a")).toHaveAttribute("href", "/item/movie-001");
+    expect(screen.getByText("Apex").closest("a")).toHaveAttribute(
+      "href",
+      "/item/movie-001",
+    );
   });
 });

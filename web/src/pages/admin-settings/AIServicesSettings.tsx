@@ -79,7 +79,8 @@ const TRANSCRIPTION_PRESETS = [
   {
     id: "openai",
     label: "OpenAI",
-    description: "Hosted whisper-1. The transcription key can inherit the Text AI key.",
+    description:
+      "Hosted whisper-1. The transcription key can inherit the Text AI key.",
     baseUrl: "https://api.openai.com",
     model: "whisper-1",
   },
@@ -180,8 +181,11 @@ export default function AIServicesSettings() {
   const form = useSettingsForm({ keys: KEYS });
   const textCheck = useCheckAdminSettingsConnection();
   const speechCheck = useCheckAdminSettingsConnection();
-  const [textResult, setTextResult] = useState<ConnectionCheckResponse | null>(null);
-  const [speechResult, setSpeechResult] = useState<ConnectionCheckResponse | null>(null);
+  const [textResult, setTextResult] = useState<ConnectionCheckResponse | null>(
+    null,
+  );
+  const [speechResult, setSpeechResult] =
+    useState<ConnectionCheckResponse | null>(null);
 
   if (form.isLoading) {
     return (
@@ -203,14 +207,21 @@ export default function AIServicesSettings() {
     "subtitle_ai.base_url",
     "https://api.openai.com",
   );
-  const chatModel = effectiveValue("ai.chat_model", "subtitle_ai.chat_model", "gpt-4o-mini");
+  const chatModel = effectiveValue(
+    "ai.chat_model",
+    "subtitle_ai.chat_model",
+    "gpt-4o-mini",
+  );
   const asrBaseURL = value("ai.asr_base_url");
   const asrModel = value("ai.asr_model", "whisper-1");
   const textReady = textBaseURL.trim() !== "" && chatModel.trim() !== "";
   const speechUsesTextEndpoint = asrBaseURL.trim() === "";
   const speechCheckable =
-    (asrBaseURL.trim() !== "" || textBaseURL.trim() !== "") && asrModel.trim() !== "";
-  const speechCompatible = !isChatOnlyGateway(speechUsesTextEndpoint ? textBaseURL : asrBaseURL);
+    (asrBaseURL.trim() !== "" || textBaseURL.trim() !== "") &&
+    asrModel.trim() !== "";
+  const speechCompatible = !isChatOnlyGateway(
+    speechUsesTextEndpoint ? textBaseURL : asrBaseURL,
+  );
   const speechReady = speechCheckable && speechCompatible;
   const descriptionEnabled = value("metadata_ai.enabled", "false") === "true";
 
@@ -235,7 +246,10 @@ export default function AIServicesSettings() {
     } catch (error) {
       setTextResult({
         success: false,
-        message: error instanceof Error ? error.message : "Text AI connection check failed.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Text AI connection check failed.",
       });
     }
   }
@@ -251,18 +265,32 @@ export default function AIServicesSettings() {
     } catch (error) {
       setSpeechResult({
         success: false,
-        message: error instanceof Error ? error.message : "Speech-to-text connection check failed.",
+        message:
+          error instanceof Error
+            ? error.message
+            : "Speech-to-text connection check failed.",
       });
     }
   }
 
   async function save() {
     const batchSize = parseStrictInteger(value("subtitle_ai.batch_size", "40"));
-    const contextLines = parseStrictInteger(value("subtitle_ai.context_neighbors", "2"));
-    const chunkSeconds = parseStrictInteger(value("subtitle_ai.asr_chunk_seconds", "600"));
-    const quotaJobs = Number.parseInt(value("subtitle_ai.transcribe_quota_jobs", "0"), 10);
+    const contextLines = parseStrictInteger(
+      value("subtitle_ai.context_neighbors", "2"),
+    );
+    const chunkSeconds = parseStrictInteger(
+      value("subtitle_ai.asr_chunk_seconds", "600"),
+    );
+    const quotaJobs = Number.parseInt(
+      value("subtitle_ai.transcribe_quota_jobs", "0"),
+      10,
+    );
     const maxConcurrent = parseStrictInteger(
-      effectiveValue("ai.max_concurrent_jobs", "subtitle_ai.max_concurrent_jobs", "2"),
+      effectiveValue(
+        "ai.max_concurrent_jobs",
+        "subtitle_ai.max_concurrent_jobs",
+        "2",
+      ),
     );
 
     if (!textReady) {
@@ -278,15 +306,21 @@ export default function AIServicesSettings() {
       return;
     }
     if (contextLines === null || contextLines < 0) {
-      toast.error("Subtitle context lines must be zero or a positive whole number.");
+      toast.error(
+        "Subtitle context lines must be zero or a positive whole number.",
+      );
       return;
     }
     if (chunkSeconds === null || chunkSeconds < 60 || chunkSeconds > 600) {
-      toast.error("Transcription chunk length must be between 60 and 600 seconds.");
+      toast.error(
+        "Transcription chunk length must be between 60 and 600 seconds.",
+      );
       return;
     }
     if (!Number.isInteger(quotaJobs) || quotaJobs < 0) {
-      toast.error("Transcription limit must be zero or a positive whole number.");
+      toast.error(
+        "Transcription limit must be zero or a positive whole number.",
+      );
       return;
     }
     await form.save();
@@ -303,8 +337,8 @@ export default function AIServicesSettings() {
       <div className="mb-6 space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">AI Services</h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Configure text translation and speech-to-text independently, then enable only the features
-          that use them.
+          Configure text translation and speech-to-text independently, then
+          enable only the features that use them.
         </p>
       </div>
 
@@ -368,12 +402,19 @@ export default function AIServicesSettings() {
                       ? "Configured separately"
                       : "Not configured"
             }
-            statusTone={speechUsesTextEndpoint ? "warning" : speechReady ? "ready" : "warning"}
+            statusTone={
+              speechUsesTextEndpoint
+                ? "warning"
+                : speechReady
+                  ? "ready"
+                  : "warning"
+            }
           />
           <div className="ml-0 space-y-3 sm:ml-11">
             <div className="flex flex-wrap gap-2">
               {TRANSCRIPTION_PRESETS.map((preset) => {
-                const active = asrBaseURL === preset.baseUrl && asrModel === preset.model;
+                const active =
+                  asrBaseURL === preset.baseUrl && asrModel === preset.model;
                 return (
                   <button
                     key={preset.id}
@@ -404,9 +445,10 @@ export default function AIServicesSettings() {
               <div className="flex max-w-2xl gap-2 rounded-md border border-amber-500/25 bg-amber-500/5 px-3 py-2 text-xs leading-relaxed">
                 <CircleAlert className="mt-0.5 size-3.5 shrink-0 text-amber-600" />
                 <span>
-                  Uses the Text translation endpoint and API key. This only works when that provider
-                  implements OpenAI-compatible <code>/audio/transcriptions</code> with timestamped
-                  segments. Test it before enabling audio generation.
+                  Uses the Text translation endpoint and API key. This only
+                  works when that provider implements OpenAI-compatible{" "}
+                  <code>/audio/transcriptions</code> with timestamped segments.
+                  Test it before enabling audio generation.
                 </span>
               </div>
             )}
@@ -421,11 +463,14 @@ export default function AIServicesSettings() {
               type="password"
               value={value("ai.asr_api_key")}
               onChange={(next) => setValue("ai.asr_api_key", next)}
-              sensitiveConfigured={form.sensitiveConfigured.includes("ai.asr_api_key")}
+              sensitiveConfigured={form.sensitiveConfigured.includes(
+                "ai.asr_api_key",
+              )}
               hint="Optional. A saved or inherited key is reused for tests only when the endpoint host is unchanged."
             />
             <p className="text-muted-foreground max-w-2xl text-xs leading-relaxed">
-              For self-hosted services, use a hostname or IP reachable from the Prairie container.
+              For self-hosted services, use a hostname or IP reachable from the
+              Prairie container.
               <code className="mx-1">localhost</code>
               points back to Prairie itself.
             </p>
@@ -444,8 +489,8 @@ export default function AIServicesSettings() {
           <div>
             <h3 className="text-sm font-semibold">Features</h3>
             <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-              Generated subtitles and translated metadata are saved once and served to every client
-              through Prairie&apos;s normal pipelines.
+              Generated subtitles and translated metadata are saved once and
+              served to every client through Prairie&apos;s normal pipelines.
             </p>
           </div>
 
@@ -469,7 +514,9 @@ export default function AIServicesSettings() {
                 label="Subtitle generation from audio"
                 type="toggle"
                 value={value("subtitle_ai.transcribe_enabled", "false")}
-                onChange={(next) => setValue("subtitle_ai.transcribe_enabled", next)}
+                onChange={(next) =>
+                  setValue("subtitle_ai.transcribe_enabled", next)
+                }
                 hint="Speech-to-text required - Uses Whisper to create timed subtitles from the selected audio track."
               />
               <RequirementNote
@@ -501,7 +548,10 @@ export default function AIServicesSettings() {
                 disabled={!descriptionEnabled}
                 options={[
                   { value: "off", label: "Off" },
-                  { value: "button", label: "Translate button on detail pages" },
+                  {
+                    value: "button",
+                    label: "Translate button on detail pages",
+                  },
                   { value: "auto", label: "Automatic on view" },
                 ]}
                 hint={
@@ -520,7 +570,8 @@ export default function AIServicesSettings() {
               <div>
                 <h3 className="text-sm font-semibold">Advanced</h3>
                 <p className="text-muted-foreground mt-1 text-xs">
-                  Job concurrency, translation batching, transcription chunks, and account quotas.
+                  Job concurrency, translation batching, transcription chunks,
+                  and account quotas.
                 </p>
               </div>
               <ChevronDown className="text-muted-foreground size-4 transition-transform group-open:rotate-180" />
@@ -548,28 +599,36 @@ export default function AIServicesSettings() {
                 label="Subtitle context lines"
                 type="number"
                 value={value("subtitle_ai.context_neighbors", "2")}
-                onChange={(next) => setValue("subtitle_ai.context_neighbors", next)}
+                onChange={(next) =>
+                  setValue("subtitle_ai.context_neighbors", next)
+                }
                 hint="Previous source cues included for scene continuity."
               />
               <SettingField
                 label="Transcription chunk length (seconds)"
                 type="number"
                 value={value("subtitle_ai.asr_chunk_seconds", "600")}
-                onChange={(next) => setValue("subtitle_ai.asr_chunk_seconds", next)}
+                onChange={(next) =>
+                  setValue("subtitle_ai.asr_chunk_seconds", next)
+                }
                 hint="60-600. Shorter chunks reduce timestamp drift but make more requests."
               />
               <SettingField
                 label="Transcription limit per account"
                 type="number"
                 value={value("subtitle_ai.transcribe_quota_jobs", "0")}
-                onChange={(next) => setValue("subtitle_ai.transcribe_quota_jobs", next)}
+                onChange={(next) =>
+                  setValue("subtitle_ai.transcribe_quota_jobs", next)
+                }
                 hint="0 = unlimited. Profiles share their account's limit."
               />
               <SettingField
                 label="Transcription limit period"
                 type="select"
                 value={value("subtitle_ai.transcribe_quota_period", "day")}
-                onChange={(next) => setValue("subtitle_ai.transcribe_quota_period", next)}
+                onChange={(next) =>
+                  setValue("subtitle_ai.transcribe_quota_period", next)
+                }
                 options={QUOTA_PERIODS.map((period) => ({
                   value: period,
                   label: `Per ${period} (rolling ${QUOTA_PERIOD_WINDOW_LABELS[period]})`,
@@ -583,9 +642,12 @@ export default function AIServicesSettings() {
 
       <div className="bg-muted/30 mt-6 flex flex-col gap-3 rounded-md px-4 py-3 text-sm sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-medium">Recommendation embeddings are configured separately</p>
+          <p className="font-medium">
+            Recommendation embeddings are configured separately
+          </p>
           <p className="text-muted-foreground mt-0.5 text-xs">
-            Search vectors and recommendations do not use the translation or speech endpoints above.
+            Search vectors and recommendations do not use the translation or
+            speech endpoints above.
           </p>
         </div>
         <a

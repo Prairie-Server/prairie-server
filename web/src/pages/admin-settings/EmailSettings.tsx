@@ -44,7 +44,9 @@ function TestEmailRow() {
         toast.success("Test email sent");
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Test request failed");
+      toast.error(
+        error instanceof Error ? error.message : "Test request failed",
+      );
     } finally {
       setPending(false);
     }
@@ -73,7 +75,9 @@ function TestEmailRow() {
         </Button>
       </div>
       {result && (
-        <p className={`text-xs ${result.ok ? "text-emerald-500" : "text-amber-500"}`}>
+        <p
+          className={`text-xs ${result.ok ? "text-emerald-500" : "text-amber-500"}`}
+        >
           {result.ok
             ? `Delivered to the SMTP server in ${result.duration_ms}ms.`
             : result.message || "Test failed."}
@@ -96,8 +100,8 @@ export default function EmailSettings() {
       <div className="mb-6 space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Email</h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Outbound email via your own SMTP server. Used for notification-address verification and
-          notification digests once those features are enabled.
+          Outbound email via your own SMTP server. Used for notification-address
+          verification and notification digests once those features are enabled.
         </p>
       </div>
 
@@ -159,7 +163,9 @@ export default function EmailSettings() {
           <SettingField
             label="Password"
             type="password"
-            sensitiveConfigured={form.sensitiveConfigured.includes("email.smtp_password")}
+            sensitiveConfigured={form.sensitiveConfigured.includes(
+              "email.smtp_password",
+            )}
             value={form.getValue("email.smtp_password")}
             onChange={(v) => form.setValue("email.smtp_password", v)}
           />

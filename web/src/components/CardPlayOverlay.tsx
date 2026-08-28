@@ -27,7 +27,11 @@ export default function CardPlayOverlay({
 }: CardPlayOverlayProps) {
   const location = useLocation();
   const playbackController = useWatchPlaybackController();
-  const watchHref = buildMediaPlayHref({ contentId, type: mediaType, libraryId });
+  const watchHref = buildMediaPlayHref({
+    contentId,
+    type: mediaType,
+    libraryId,
+  });
 
   const handleClick = useCallback(
     (event: React.MouseEvent<HTMLAnchorElement>) => {
@@ -57,7 +61,13 @@ export default function CardPlayOverlay({
         returnHref: `${location.pathname}${location.search}`,
       });
     },
-    [location.pathname, location.search, onPlaybackStart, playbackController, watchHref],
+    [
+      location.pathname,
+      location.search,
+      onPlaybackStart,
+      playbackController,
+      watchHref,
+    ],
   );
 
   return (
@@ -75,7 +85,10 @@ export default function CardPlayOverlay({
       )}
     >
       <Play
-        className={cn("ml-px", size === "compact" ? "h-2.5 w-2.5" : "h-[15px] w-[15px]")}
+        className={cn(
+          "ml-px",
+          size === "compact" ? "h-2.5 w-2.5" : "h-[15px] w-[15px]",
+        )}
         fill="currentColor"
       />
     </ViewTransitionLink>

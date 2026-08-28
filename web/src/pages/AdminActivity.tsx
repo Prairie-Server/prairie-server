@@ -9,7 +9,11 @@ import { usePageActivity } from "@/hooks/usePageActivity";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { DropdownMenuItem } from "@/components/ui/dropdown-menu";
-import type { AdminSession, OperationalLogEntry, IPUserEntry } from "@/api/types";
+import type {
+  AdminSession,
+  OperationalLogEntry,
+  IPUserEntry,
+} from "@/api/types";
 import { useIPUsers } from "@/hooks/queries/admin/ips";
 import { useAdminSessions } from "@/hooks/queries/admin/stats";
 import {
@@ -66,7 +70,11 @@ type SortDir = "asc" | "desc";
 const REFRESH_SPINNER_MIN_VISIBLE_MS = 1_000;
 
 export default function AdminActivity() {
-  const { data: sessions = [], isLoading, refetch: refresh } = useAdminSessions();
+  const {
+    data: sessions = [],
+    isLoading,
+    refetch: refresh,
+  } = useAdminSessions();
   const { connectionState } = useRealtimeEvents();
   const pageActivity = usePageActivity();
   const error = undefined;
@@ -122,7 +130,11 @@ export default function AdminActivity() {
 
     wasRealtimePausedRef.current = false;
     void refreshActivity({ manual: true });
-  }, [isManualRefreshPending, pageActivity.canApplyRealtimeUpdates, refreshActivity]);
+  }, [
+    isManualRefreshPending,
+    pageActivity.canApplyRealtimeUpdates,
+    refreshActivity,
+  ]);
 
   // Aggregate counts
   const methods = useMemo(() => {
@@ -137,7 +149,8 @@ export default function AdminActivity() {
   const nodes = useMemo(() => {
     const counts: Record<string, number> = {};
     for (const s of sessions)
-      counts[s.reporting_node || "unknown"] = (counts[s.reporting_node || "unknown"] || 0) + 1;
+      counts[s.reporting_node || "unknown"] =
+        (counts[s.reporting_node || "unknown"] || 0) + 1;
     return counts;
   }, [sessions]);
 
@@ -160,8 +173,10 @@ export default function AdminActivity() {
           s.client_ip?.toLowerCase().includes(q),
       );
     }
-    if (methodFilter) result = result.filter((s) => classifyActivityMethod(s) === methodFilter);
-    if (nodeFilter) result = result.filter((s) => s.reporting_node === nodeFilter);
+    if (methodFilter)
+      result = result.filter((s) => classifyActivityMethod(s) === methodFilter);
+    if (nodeFilter)
+      result = result.filter((s) => s.reporting_node === nodeFilter);
     if (typeFilter) result = result.filter((s) => s.media_type === typeFilter);
 
     return [...result].sort((a, b) => {
@@ -174,18 +189,30 @@ export default function AdminActivity() {
           cmp = getDisplayTitle(a).localeCompare(getDisplayTitle(b));
           break;
         case "method":
-          cmp = compareActivityMethods(classifyActivityMethod(a), classifyActivityMethod(b));
+          cmp = compareActivityMethods(
+            classifyActivityMethod(a),
+            classifyActivityMethod(b),
+          );
           break;
         case "node":
           cmp = (a.reporting_node || "").localeCompare(b.reporting_node || "");
           break;
         case "started":
-          cmp = new Date(a.started_at).getTime() - new Date(b.started_at).getTime();
+          cmp =
+            new Date(a.started_at).getTime() - new Date(b.started_at).getTime();
           break;
       }
       return sortDir === "asc" ? cmp : -cmp;
     });
-  }, [sessions, search, methodFilter, nodeFilter, typeFilter, sortField, sortDir]);
+  }, [
+    sessions,
+    search,
+    methodFilter,
+    nodeFilter,
+    typeFilter,
+    sortField,
+    sortDir,
+  ]);
 
   const toggleSort = (field: SortField) => {
     if (sortField === field) {
@@ -196,7 +223,9 @@ export default function AdminActivity() {
     }
   };
 
-  const activeFilters = [methodFilter, nodeFilter, typeFilter].filter(Boolean).length;
+  const activeFilters = [methodFilter, nodeFilter, typeFilter].filter(
+    Boolean,
+  ).length;
 
   const runIPLookup = useCallback((ip: string) => {
     const trimmed = ip.trim();
@@ -208,11 +237,15 @@ export default function AdminActivity() {
     setActiveIP(trimmed);
     setIPLookupOpen(true);
     window.requestAnimationFrame(() => {
-      ipLookupRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      ipLookupRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "nearest",
+      });
     });
   }, []);
 
-  if (isLoading) return <div className="text-muted-foreground p-8">Loading activity...</div>;
+  if (isLoading)
+    return <div className="text-muted-foreground p-8">Loading activity...</div>;
 
   return (
     <div className="space-y-5 lg:space-y-6">
@@ -220,7 +253,9 @@ export default function AdminActivity() {
       <div className="page-header">
         <div className="space-y-3">
           <div className="flex items-center gap-3">
-            <h1 className="page-title text-[clamp(2rem,4vw,3.25rem)]">Activity</h1>
+            <h1 className="page-title text-[clamp(2rem,4vw,3.25rem)]">
+              Activity
+            </h1>
             {sessions.length > 0 && (
               <span className="live-badge flex items-center gap-1.5">
                 <Radio className="h-3 w-3" />
@@ -243,15 +278,21 @@ export default function AdminActivity() {
             disabled={isManualRefreshPending}
             aria-busy={isManualRefreshPending}
           >
-            <RefreshCw className={`h-3.5 w-3.5 ${isManualRefreshPending ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`h-3.5 w-3.5 ${isManualRefreshPending ? "animate-spin" : ""}`}
+            />
             {isManualRefreshPending ? "Refreshing..." : "Refresh"}
           </Button>
           <div className="min-w-[8.75rem] px-1 text-right">
             <div className="text-muted-foreground text-[10px] font-semibold tracking-wider uppercase">
               Realtime Updates
             </div>
-            <div className="text-[12px]">{formatConnectionState(connectionState)}</div>
-            {error && <div className="text-muted-foreground text-[11px]">{error}</div>}
+            <div className="text-[12px]">
+              {formatConnectionState(connectionState)}
+            </div>
+            {error && (
+              <div className="text-muted-foreground text-[11px]">{error}</div>
+            )}
           </div>
         </div>
       </div>
@@ -281,7 +322,12 @@ export default function AdminActivity() {
               onChange={(e) => setIPSearch(e.target.value)}
               className="max-w-xs font-mono text-sm"
             />
-            <Button type="submit" variant="outline" size="sm" disabled={!ipSearch.trim()}>
+            <Button
+              type="submit"
+              variant="outline"
+              size="sm"
+              disabled={!ipSearch.trim()}
+            >
               <Search className="mr-1 h-3.5 w-3.5" />
               Lookup
             </Button>
@@ -318,7 +364,9 @@ export default function AdminActivity() {
                         <TableCell className="text-sm">
                           {formatDateTime(entry.first_seen)}
                         </TableCell>
-                        <TableCell className="text-sm">{formatDateTime(entry.last_seen)}</TableCell>
+                        <TableCell className="text-sm">
+                          {formatDateTime(entry.last_seen)}
+                        </TableCell>
                         <TableCell className="text-right">
                           {entry.request_count.toLocaleString()}
                         </TableCell>
@@ -357,16 +405,22 @@ export default function AdminActivity() {
                 .map(([method, count]) => (
                   <button
                     key={method}
-                    onClick={() => setMethodFilter(methodFilter === method ? null : method)}
+                    onClick={() =>
+                      setMethodFilter(methodFilter === method ? null : method)
+                    }
                     className={`flex items-center gap-1.5 text-[11px] transition-opacity ${
-                      methodFilter && methodFilter !== method ? "opacity-30" : ""
+                      methodFilter && methodFilter !== method
+                        ? "opacity-30"
+                        : ""
                     }`}
                   >
                     <span
                       className={`inline-block h-2 w-2 rounded-full ${activityMethodMeta(method).swatchClass}`}
                     />
                     <span className="font-medium capitalize">{method}</span>
-                    <span className="text-muted-foreground tabular-nums">{count}</span>
+                    <span className="text-muted-foreground tabular-nums">
+                      {count}
+                    </span>
                   </button>
                 ))}
             </div>
@@ -384,7 +438,9 @@ export default function AdminActivity() {
                   .map(([node, count]) => (
                     <button
                       key={node}
-                      onClick={() => setNodeFilter(nodeFilter === node ? null : node)}
+                      onClick={() =>
+                        setNodeFilter(nodeFilter === node ? null : node)
+                      }
                       className={`bg-surface border-border hover:border-primary/20 rounded-md border px-2.5 py-1 text-[11px] font-medium transition-all ${
                         nodeFilter === node
                           ? "border-primary/40 bg-primary/10 text-primary"
@@ -394,7 +450,9 @@ export default function AdminActivity() {
                       }`}
                     >
                       {node}
-                      <span className="text-muted-foreground ml-1.5 tabular-nums">{count}</span>
+                      <span className="text-muted-foreground ml-1.5 tabular-nums">
+                        {count}
+                      </span>
                     </button>
                   ))}
               </div>
@@ -466,16 +524,36 @@ export default function AdminActivity() {
         <div className="bg-card border-border overflow-hidden rounded-lg border">
           {/* Table header */}
           <div className="border-border bg-surface/50 hidden grid-cols-[minmax(120px,1.1fr)_minmax(190px,1.7fr)_minmax(220px,1.9fr)_minmax(90px,0.8fr)_minmax(125px,0.9fr)_minmax(220px,1.4fr)] items-center gap-2 border-b px-3 py-2.5 sm:grid">
-            <SortHeader field="username" current={sortField} dir={sortDir} onClick={toggleSort}>
+            <SortHeader
+              field="username"
+              current={sortField}
+              dir={sortDir}
+              onClick={toggleSort}
+            >
               User
             </SortHeader>
-            <SortHeader field="media" current={sortField} dir={sortDir} onClick={toggleSort}>
+            <SortHeader
+              field="media"
+              current={sortField}
+              dir={sortDir}
+              onClick={toggleSort}
+            >
               Stream
             </SortHeader>
-            <SortHeader field="method" current={sortField} dir={sortDir} onClick={toggleSort}>
+            <SortHeader
+              field="method"
+              current={sortField}
+              dir={sortDir}
+              onClick={toggleSort}
+            >
               Playback
             </SortHeader>
-            <SortHeader field="node" current={sortField} dir={sortDir} onClick={toggleSort}>
+            <SortHeader
+              field="node"
+              current={sortField}
+              dir={sortDir}
+              onClick={toggleSort}
+            >
               Node
             </SortHeader>
             <SortHeader
@@ -531,7 +609,9 @@ function StreamRow({
   const itemHref = session.content_id ? `/item/${session.content_id}` : "";
   const sourceContainer = session.source_container?.trim().toUpperCase();
   const streamBitrate = formatSessionBitrate(session.stream_bitrate_kbps);
-  const streamMeta = [sourceContainer, streamBitrate].filter(Boolean).join(" · ");
+  const streamMeta = [sourceContainer, streamBitrate]
+    .filter(Boolean)
+    .join(" · ");
   const clientIP = session.client_ip?.trim() || "";
   const clientLabel = getSessionClientLabel(session);
   // The row stays compact; the exact version, build, and channel live in the
@@ -546,9 +626,12 @@ function StreamRow({
   const toneMap = formatToneMapSummary(session);
   const activityMethod = classifyActivityMethod(session);
   const containerDecision = normalizeContainerDecision(session.play_method);
-  const videoDecision = normalizeStreamDecision(session.video_decision || session.play_method);
+  const videoDecision = normalizeStreamDecision(
+    session.video_decision || session.play_method,
+  );
   const audioDecision = normalizeStreamDecision(
-    session.audio_decision || (session.transcode_audio ? "transcode" : session.play_method),
+    session.audio_decision ||
+      (session.transcode_audio ? "transcode" : session.play_method),
   );
   const logsHref = `/admin/logs?playback_session_id=${encodeURIComponent(session.session_id)}&focus=playback`;
   const ffmpegLogsHref = `${logsHref}&component=ffmpeg`;
@@ -593,7 +676,10 @@ function StreamRow({
       <div className="hidden grid-cols-[minmax(120px,1.1fr)_minmax(190px,1.7fr)_minmax(220px,1.9fr)_minmax(90px,0.8fr)_minmax(125px,0.9fr)_minmax(220px,1.4fr)] items-center gap-2 px-3 py-2.5 sm:grid">
         {/* User */}
         <div className="flex min-w-0 items-center gap-2">
-          <Link to={userHref} className="hover:text-primary shrink-0 transition-colors">
+          <Link
+            to={userHref}
+            className="hover:text-primary shrink-0 transition-colors"
+          >
             <div
               className="text-primary-foreground flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[9px] font-bold"
               style={{ background: "var(--primary)" }}
@@ -602,7 +688,10 @@ function StreamRow({
             </div>
           </Link>
           <div className="min-w-0">
-            <Link to={userHref} className="hover:text-primary block truncate transition-colors">
+            <Link
+              to={userHref}
+              className="hover:text-primary block truncate transition-colors"
+            >
               <span className="text-[13px] font-medium">{username}</span>
             </Link>
             {profileDisplay ? (
@@ -616,11 +705,16 @@ function StreamRow({
               <div className="text-muted-foreground mt-1 flex min-w-0 items-center gap-1.5 text-[10px]">
                 <JellyfinSessionPill session={session} />
                 {clientLabel ? (
-                  <span title={clientTitle} className="max-w-[8rem] min-w-0 truncate">
+                  <span
+                    title={clientTitle}
+                    className="max-w-[8rem] min-w-0 truncate"
+                  >
                     {clientLabel}
                   </span>
                 ) : null}
-                {clientLabel && clientIP ? <span className="shrink-0">·</span> : null}
+                {clientLabel && clientIP ? (
+                  <span className="shrink-0">·</span>
+                ) : null}
                 {clientIP ? (
                   <button
                     type="button"
@@ -638,7 +732,10 @@ function StreamRow({
         {/* Stream */}
         <div className="min-w-0">
           {itemHref ? (
-            <Link to={itemHref} className="hover:text-primary block min-w-0 transition-colors">
+            <Link
+              to={itemHref}
+              className="hover:text-primary block min-w-0 transition-colors"
+            >
               <div className="truncate text-[13px] font-medium">{title}</div>
               {subtitle && (
                 <div className="text-muted-foreground hover:text-primary truncate text-[10px] transition-colors">
@@ -655,10 +752,14 @@ function StreamRow({
             <>
               <div className="truncate text-[13px] font-medium">{title}</div>
               {subtitle && (
-                <div className="text-muted-foreground truncate text-[10px]">{subtitle}</div>
+                <div className="text-muted-foreground truncate text-[10px]">
+                  {subtitle}
+                </div>
               )}
               {streamMeta && (
-                <div className="text-muted-foreground truncate text-[10px]">{streamMeta}</div>
+                <div className="text-muted-foreground truncate text-[10px]">
+                  {streamMeta}
+                </div>
               )}
             </>
           )}
@@ -667,7 +768,9 @@ function StreamRow({
         {/* Playback */}
         <div className="min-w-0">
           <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-            {transcodeMode ? <TranscodeModeBadge label={transcodeMode} /> : null}
+            {transcodeMode ? (
+              <TranscodeModeBadge label={transcodeMode} />
+            ) : null}
             {toneMap ? <ToneMapModeBadge summary={toneMap} /> : null}
             <button
               type="button"
@@ -784,7 +887,10 @@ function StreamRow({
         </Link>
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <Link to={userHref} className="hover:text-primary truncate transition-colors">
+            <Link
+              to={userHref}
+              className="hover:text-primary truncate transition-colors"
+            >
               <span className="text-[13px] font-semibold">{username}</span>
               {profileDisplay ? (
                 <span className="border-primary/30 bg-primary/15 text-primary ml-1.5 rounded border px-1.5 py-0.5 text-[10px] leading-none">
@@ -801,23 +907,33 @@ function StreamRow({
           </div>
           <div className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-[11px]">
             {itemHref ? (
-              <Link to={itemHref} className="hover:text-primary truncate transition-colors">
+              <Link
+                to={itemHref}
+                className="hover:text-primary truncate transition-colors"
+              >
                 {title}
               </Link>
             ) : (
               <span className="truncate">{title}</span>
             )}
             <span className="flex-shrink-0">·</span>
-            <span className="flex-shrink-0 font-mono tabular-nums">{elapsed}</span>
+            <span className="flex-shrink-0 font-mono tabular-nums">
+              {elapsed}
+            </span>
           </div>
           {(clientLabel || clientIP || streamMeta) && (
             <div className="text-muted-foreground mt-1 flex min-w-0 gap-1.5 text-[10px]">
               {clientLabel ? (
-                <span title={clientTitle} className="max-w-[9rem] shrink-0 truncate">
+                <span
+                  title={clientTitle}
+                  className="max-w-[9rem] shrink-0 truncate"
+                >
                   {clientLabel}
                 </span>
               ) : null}
-              {clientLabel && (clientIP || streamMeta) ? <span className="shrink-0">·</span> : null}
+              {clientLabel && (clientIP || streamMeta) ? (
+                <span className="shrink-0">·</span>
+              ) : null}
               {clientIP ? (
                 <button
                   type="button"
@@ -827,10 +943,15 @@ function StreamRow({
                   {clientIP}
                 </button>
               ) : null}
-              {clientIP && streamMeta ? <span className="shrink-0">·</span> : null}
+              {clientIP && streamMeta ? (
+                <span className="shrink-0">·</span>
+              ) : null}
               {streamMeta ? (
                 itemHref ? (
-                  <Link to={itemHref} className="hover:text-primary min-w-0 truncate">
+                  <Link
+                    to={itemHref}
+                    className="hover:text-primary min-w-0 truncate"
+                  >
                     {streamMeta}
                   </Link>
                 ) : (
@@ -858,7 +979,9 @@ function StreamRow({
           </div>
           <div className="mt-2 rounded-md border border-white/6 bg-white/[0.03] px-2 py-1.5">
             <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-              {transcodeMode ? <TranscodeModeBadge label={transcodeMode} /> : null}
+              {transcodeMode ? (
+                <TranscodeModeBadge label={transcodeMode} />
+              ) : null}
               {toneMap ? <ToneMapModeBadge summary={toneMap} /> : null}
               <button
                 type="button"
@@ -1049,7 +1172,9 @@ function PlaybackExpandedPanel({
               Stream details{showFFmpeg ? " and live transcode console" : ""}
             </div>
           </div>
-          <div className="text-muted-foreground mt-1 font-mono text-[10px]">{sessionID}</div>
+          <div className="text-muted-foreground mt-1 font-mono text-[10px]">
+            {sessionID}
+          </div>
         </div>
         {showFFmpeg && isFetching ? (
           <div className="text-muted-foreground text-[10px]">Refreshing…</div>
@@ -1080,7 +1205,9 @@ function PlaybackExpandedPanel({
           delivered={formatDeliveredAudioSummary(session)}
           detail={formatAudioDetail(session)}
           mode={
-            audioDecision === "transcode" && videoDecision !== "transcode" ? transcodeMode : null
+            audioDecision === "transcode" && videoDecision !== "transcode"
+              ? transcodeMode
+              : null
           }
         />
         <PlaybackClientCard session={session} />
@@ -1103,8 +1230,9 @@ function PlaybackExpandedPanel({
               </div>
             ) : rows.length === 0 ? (
               <div className="px-4 py-6 font-mono text-[11px] text-[var(--terminal-muted)]">
-                No ffmpeg rows yet for this session. If the session is direct play or remux without
-                a transcode worker, nothing will appear here.
+                No ffmpeg rows yet for this session. If the session is direct
+                play or remux without a transcode worker, nothing will appear
+                here.
               </div>
             ) : (
               <div className="max-h-64 overflow-y-auto">
@@ -1134,7 +1262,9 @@ function PlaybackExpandedPanel({
                           <span>{stringAttr(row, "hw_accel")}</span>
                         )}
                         {stringAttr(row, "restart_count") !== "-" && (
-                          <span>restart {stringAttr(row, "restart_count")}</span>
+                          <span>
+                            restart {stringAttr(row, "restart_count")}
+                          </span>
                         )}
                       </div>
                     </div>
@@ -1180,7 +1310,9 @@ function PlaybackDetailCard({
       <PlaybackDetailLine label="Source" value={source} />
       <PlaybackDetailLine label="Delivered" value={delivered} />
       {mode ? <PlaybackDetailLine label="Mode" value={mode} /> : null}
-      {toneMapping ? <PlaybackDetailLine label="Tone mapping" value={toneMapping} /> : null}
+      {toneMapping ? (
+        <PlaybackDetailLine label="Tone mapping" value={toneMapping} />
+      ) : null}
       <PlaybackDetailLine label="Detail" value={detail} muted />
     </PlaybackDetailCardShell>
   );
@@ -1197,7 +1329,9 @@ function PlaybackClientCard({ session }: { session: AdminSession }) {
   return (
     <PlaybackDetailCardShell label="Client">
       <PlaybackDetailLine label="App" value={label} />
-      {userAgent ? <PlaybackDetailLine label="Agent" value={userAgent} muted /> : null}
+      {userAgent ? (
+        <PlaybackDetailLine label="Agent" value={userAgent} muted />
+      ) : null}
     </PlaybackDetailCardShell>
   );
 }
@@ -1271,7 +1405,9 @@ function SortHeader({
       } ${className}`}
     >
       {children}
-      {active && <span className="text-[8px]">{dir === "asc" ? "▲" : "▼"}</span>}
+      {active && (
+        <span className="text-[8px]">{dir === "asc" ? "▲" : "▼"}</span>
+      )}
     </button>
   );
 }
@@ -1328,14 +1464,25 @@ function EmptyState({ hasData }: { hasData: boolean }) {
 // --- Helpers ---
 
 function getDisplayTitle(session: AdminSession): string {
-  if (session.series_name && session.season_number != null && session.episode_number != null) {
-    return session.episode_name || `S${session.season_number}E${session.episode_number}`;
+  if (
+    session.series_name &&
+    session.season_number != null &&
+    session.episode_number != null
+  ) {
+    return (
+      session.episode_name ||
+      `S${session.season_number}E${session.episode_number}`
+    );
   }
   return session.media_title || `File #${session.media_file_id}`;
 }
 
 function getDisplaySubtitle(session: AdminSession): string | null {
-  if (session.series_name && session.season_number != null && session.episode_number != null) {
+  if (
+    session.series_name &&
+    session.season_number != null &&
+    session.episode_number != null
+  ) {
     const ep = `S${session.season_number}E${session.episode_number}`;
     return session.series_name ? `${ep} · ${session.series_name}` : ep;
   }
@@ -1350,7 +1497,8 @@ function getElapsed(dateStr: string): string {
   const h = Math.floor(totalSec / 3600);
   const m = Math.floor((totalSec % 3600) / 60);
   const s = totalSec % 60;
-  if (h > 0) return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+  if (h > 0)
+    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
@@ -1363,7 +1511,10 @@ function formatPlaybackPosition(session: AdminSession): string {
 }
 
 function formatClockTime(seconds: number): string {
-  const safeSeconds = Math.max(0, Math.floor(Number.isFinite(seconds) ? seconds : 0));
+  const safeSeconds = Math.max(
+    0,
+    Math.floor(Number.isFinite(seconds) ? seconds : 0),
+  );
   const h = Math.floor(safeSeconds / 3600);
   const m = Math.floor((safeSeconds % 3600) / 60);
   const s = safeSeconds % 60;

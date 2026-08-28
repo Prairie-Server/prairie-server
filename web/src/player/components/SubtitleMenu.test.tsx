@@ -38,7 +38,10 @@ describe("SubtitleMenu", () => {
   });
 
   it("does not probe AI subtitle status until the menu opens", async () => {
-    playerFetchMock.mockResolvedValue({ enabled: false, transcribe_enabled: false });
+    playerFetchMock.mockResolvedValue({
+      enabled: false,
+      transcribe_enabled: false,
+    });
 
     render(
       <SubtitleMenu
@@ -55,15 +58,23 @@ describe("SubtitleMenu", () => {
 
     expect(playerFetchMock).not.toHaveBeenCalled();
 
-    await userEvent.click(screen.getByRole("button", { name: /enable captions/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /enable captions/i }),
+    );
 
     await waitFor(() => {
-      expect(playerFetchMock).toHaveBeenCalledWith(config, "/subtitles/ai/status");
+      expect(playerFetchMock).toHaveBeenCalledWith(
+        config,
+        "/subtitles/ai/status",
+      );
     });
   });
 
   it("probes AI subtitle status only once per menu session", async () => {
-    playerFetchMock.mockResolvedValue({ enabled: false, transcribe_enabled: false });
+    playerFetchMock.mockResolvedValue({
+      enabled: false,
+      transcribe_enabled: false,
+    });
 
     render(
       <SubtitleMenu

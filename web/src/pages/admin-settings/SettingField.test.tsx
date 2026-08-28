@@ -6,11 +6,19 @@ import { SettingField } from "./SettingField";
 
 vi.mock("@/components/ui/select", () => ({
   Select: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectItem: ({ children, disabled }: { children: ReactNode; disabled?: boolean }) => (
-    <button disabled={disabled}>{children}</button>
+  SelectContent: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
   ),
-  SelectTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SelectItem: ({
+    children,
+    disabled,
+  }: {
+    children: ReactNode;
+    disabled?: boolean;
+  }) => <button disabled={disabled}>{children}</button>,
+  SelectTrigger: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
   SelectValue: () => null,
 }));
 

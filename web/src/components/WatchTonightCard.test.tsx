@@ -69,9 +69,8 @@ describe("WatchTonightCard", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("link", { name: "Listen Book One" })).toHaveAttribute(
-      "href",
-      "/item/book-1?play=1",
-    );
+    expect(
+      screen.getByRole("link", { name: "Listen Book One" }),
+    ).toHaveAttribute("href", "/item/book-1?play=1");
   });
 });

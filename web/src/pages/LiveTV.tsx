@@ -30,7 +30,9 @@ const LIVETV_TABS = ["guide", "channels", "recordings"] as const;
 type LiveTVTab = (typeof LIVETV_TABS)[number];
 
 function normalizeTab(value: string | null): LiveTVTab {
-  return LIVETV_TABS.includes(value as LiveTVTab) ? (value as LiveTVTab) : "guide";
+  return LIVETV_TABS.includes(value as LiveTVTab)
+    ? (value as LiveTVTab)
+    : "guide";
 }
 
 export default function LiveTV() {
@@ -47,7 +49,8 @@ export default function LiveTV() {
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [channelFilter, setChannelFilter] = useState("");
-  const selected = channels.find((ch) => ch.id === selectedId) ?? channels[0] ?? null;
+  const selected =
+    channels.find((ch) => ch.id === selectedId) ?? channels[0] ?? null;
 
   useEffect(() => {
     if (channelFromUrl && channels.some((ch) => ch.id === channelFromUrl)) {
@@ -62,8 +65,11 @@ export default function LiveTV() {
   // Legacy deep-link from older On now cards: send straight into the watch player.
   useEffect(() => {
     if (!shouldAutoWatch || !channelFromUrl) return;
-    if (channels.length > 0 && !channels.some((ch) => ch.id === channelFromUrl)) return;
-    void navigate(buildLiveWatchHref(channelFromUrl, "/livetv"), { replace: true });
+    if (channels.length > 0 && !channels.some((ch) => ch.id === channelFromUrl))
+      return;
+    void navigate(buildLiveWatchHref(channelFromUrl, "/livetv"), {
+      replace: true,
+    });
   }, [shouldAutoWatch, channelFromUrl, channels, navigate]);
 
   // Refresh the guide window periodically so "now" stays accurate.
@@ -99,7 +105,8 @@ export default function LiveTV() {
     const q = channelFilter.trim().toLowerCase();
     if (!q) return channels;
     return channels.filter((ch) => {
-      const hay = `${channelDisplayNumber(ch)} ${ch.callsign} ${ch.name}`.toLowerCase();
+      const hay =
+        `${channelDisplayNumber(ch)} ${ch.callsign} ${ch.name}`.toLowerCase();
       return hay.includes(q);
     });
   }, [channelFilter, channels]);
@@ -130,12 +137,14 @@ export default function LiveTV() {
       <header className="space-y-1">
         <div className="flex flex-wrap items-center gap-3">
           <Radio className="text-primary h-7 w-7" aria-hidden />
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">Live TV</h1>
+          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
+            Live TV
+          </h1>
           <Badge variant="secondary">{channels.length} channels</Badge>
         </div>
         <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-          Guide grid, channel lineup, and your recordings — play opens the same fullscreen player
-          used for movies and shows.
+          Guide grid, channel lineup, and your recordings — play opens the same
+          fullscreen player used for movies and shows.
         </p>
       </header>
 
@@ -143,11 +152,15 @@ export default function LiveTV() {
         <p className="text-muted-foreground text-sm">Loading channels…</p>
       ) : channels.length === 0 ? (
         <p className="text-muted-foreground text-sm">
-          No Live TV channels yet. An admin can add an HDHomeRun tuner under Admin → Live TV.
+          No Live TV channels yet. An admin can add an HDHomeRun tuner under
+          Admin → Live TV.
         </p>
       ) : (
         <Tabs value={activeTab} onValueChange={setTab} className="gap-5">
-          <TabsList variant="line" className="border-border w-full justify-start border-b">
+          <TabsList
+            variant="line"
+            className="border-border w-full justify-start border-b"
+          >
             <TabsTrigger value="guide">Guide</TabsTrigger>
             <TabsTrigger value="channels">Channels</TabsTrigger>
             <TabsTrigger value="recordings">
@@ -171,7 +184,9 @@ export default function LiveTV() {
                 now={now}
                 onSelectChannel={setSelectedId}
                 onWatch={(id) => onWatch(id)}
-                onRecord={(programId) => scheduleRecording.mutate({ program_id: programId })}
+                onRecord={(programId) =>
+                  scheduleRecording.mutate({ program_id: programId })
+                }
                 recordDisabled={scheduleRecording.isPending}
                 startingChannelId={null}
               />
@@ -201,8 +216,12 @@ export default function LiveTV() {
                   recordBusy={scheduleRecording.isPending}
                   onSelect={() => setSelectedId(channel.id)}
                   onWatch={() => onWatch(channel.id)}
-                  onRecordNow={(programId) => scheduleRecording.mutate({ program_id: programId })}
-                  onRecordNext={(programId) => scheduleRecording.mutate({ program_id: programId })}
+                  onRecordNow={(programId) =>
+                    scheduleRecording.mutate({ program_id: programId })
+                  }
+                  onRecordNext={(programId) =>
+                    scheduleRecording.mutate({ program_id: programId })
+                  }
                 />
               ))}
               {filteredChannels.length === 0 ? (
@@ -265,7 +284,9 @@ function ChannelListRow({
   onRecordNext: (programId: string) => void;
 }) {
   const slot = pickNowNext(programs, channel.id, now);
-  const progress = slot.now ? progressFraction(slot.now.start, slot.now.stop, now) : 0;
+  const progress = slot.now
+    ? progressFraction(slot.now.start, slot.now.stop, now)
+    : 0;
 
   return (
     <li>
@@ -275,7 +296,11 @@ function ChannelListRow({
           active && "bg-muted/40 -mx-2 rounded-lg px-2",
         )}
       >
-        <button type="button" onClick={onSelect} className="min-w-0 flex-1 text-left">
+        <button
+          type="button"
+          onClick={onSelect}
+          className="min-w-0 flex-1 text-left"
+        >
           <div className="flex items-center gap-3">
             {channel.logo_url ? (
               <img
@@ -293,7 +318,9 @@ function ChannelListRow({
                 <span className="text-muted-foreground tabular-nums">
                   {channelDisplayNumber(channel)}
                 </span>
-                <span className="truncate">{channel.callsign || channel.name}</span>
+                <span className="truncate">
+                  {channel.callsign || channel.name}
+                </span>
                 {channel.hd ? <Badge variant="outline">HD</Badge> : null}
               </p>
               <p className="text-muted-foreground truncate text-xs">
@@ -302,7 +329,10 @@ function ChannelListRow({
               </p>
               {slot.now ? (
                 <div className="bg-muted mt-1.5 h-1 w-full max-w-xs overflow-hidden rounded-full">
-                  <div className="bg-primary h-full" style={{ width: `${progress * 100}%` }} />
+                  <div
+                    className="bg-primary h-full"
+                    style={{ width: `${progress * 100}%` }}
+                  />
                 </div>
               ) : null}
             </div>
@@ -372,10 +402,15 @@ function RecordingsSection({
           {recordings.map((rec) => {
             const channel = channelById.get(rec.channel_id);
             return (
-              <li key={rec.id} className="flex flex-wrap items-center justify-between gap-3 py-3">
+              <li
+                key={rec.id}
+                className="flex flex-wrap items-center justify-between gap-3 py-3"
+              >
                 <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="font-medium">{rec.title || "Untitled"}</span>
+                    <span className="font-medium">
+                      {rec.title || "Untitled"}
+                    </span>
                     <Badge variant="secondary">{rec.status}</Badge>
                   </div>
                   <p className="text-muted-foreground text-xs">
@@ -384,7 +419,9 @@ function RecordingsSection({
                     {formatGuideTime(rec.start)} – {formatGuideTime(rec.stop)}
                   </p>
                   {rec.last_error ? (
-                    <p className="text-destructive mt-1 text-xs">{rec.last_error}</p>
+                    <p className="text-destructive mt-1 text-xs">
+                      {rec.last_error}
+                    </p>
                   ) : null}
                   {rec.library_item_id ? (
                     <p className="text-muted-foreground mt-1 text-xs">

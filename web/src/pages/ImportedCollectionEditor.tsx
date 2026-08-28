@@ -55,7 +55,10 @@ import {
   queryDefinitionToDisplayFilters,
 } from "@/lib/collectionDisplayFilters";
 import { CollectionDefaultSortField } from "@/components/collections/CollectionDefaultSortField";
-import { changedSortConfig, sortConfigToSelectValue } from "@/lib/collectionSortConfig";
+import {
+  changedSortConfig,
+  sortConfigToSelectValue,
+} from "@/lib/collectionSortConfig";
 import { CollectionLibraryPicker } from "@/pages/adminCollectionsShared";
 
 import { isCollectionReadOnly } from "./userCollectionsShared";
@@ -106,7 +109,10 @@ interface ImportedCollectionEditorProps {
   onClose: () => void;
 }
 
-export function ImportedCollectionEditor({ collection, onClose }: ImportedCollectionEditorProps) {
+export function ImportedCollectionEditor({
+  collection,
+  onClose,
+}: ImportedCollectionEditorProps) {
   const importedType = collection.collection_type as ImportedType;
   const theme = SOURCE_THEMES[importedType];
 
@@ -134,8 +140,10 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
   const [name, setName] = useState(collection.name);
   const [description, setDescription] = useState(initialDescription);
   const [libraryIds, setLibraryIds] = useState<number[]>(initialLibraryIds);
-  const [watchFilter, setWatchFilter] = useState<UserCollectionWatchFilter>(initialWatchFilter);
-  const [mediaFilter, setMediaFilter] = useState<UserCollectionMediaFilter>(initialMediaFilter);
+  const [watchFilter, setWatchFilter] =
+    useState<UserCollectionWatchFilter>(initialWatchFilter);
+  const [mediaFilter, setMediaFilter] =
+    useState<UserCollectionMediaFilter>(initialMediaFilter);
   const [defaultSort, setDefaultSort] = useState<string>(initialDefaultSort);
   const [isShared, setIsShared] = useState(collection.is_shared);
   const [allowedProfileIds, setAllowedProfileIds] = useState<string[]>(
@@ -156,7 +164,8 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
   const parsedMaxItems = parseMaxItemsInput(maxItemsInput);
 
   const builderLibraries = useMemo(
-    () => libraries.map((lib) => ({ id: lib.id, name: lib.name, type: lib.type })),
+    () =>
+      libraries.map((lib) => ({ id: lib.id, name: lib.name, type: lib.type })),
     [libraries],
   );
 
@@ -175,7 +184,9 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
   );
   const mediaFilterOptions = useMemo(
     () =>
-      collectionMediaFilterOptionsFromPresets(collectionCapabilities?.display_filter_presets.media),
+      collectionMediaFilterOptionsFromPresets(
+        collectionCapabilities?.display_filter_presets.media,
+      ),
     [collectionCapabilities],
   );
 
@@ -215,7 +226,10 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
       is_shared: isShared,
       allowed_profile_ids: allowedProfileIds,
       library_ids: libraryIds,
-      display_query_definition: displayFiltersToQueryDefinition(watchFilter, mediaFilter),
+      display_query_definition: displayFiltersToQueryDefinition(
+        watchFilter,
+        mediaFilter,
+      ),
       include_in_server_collections: includeOnServer,
       poster_source_url: trimmedPosterSource || undefined,
     };
@@ -323,7 +337,9 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
             </div>
 
             <div className="space-y-2">
-              <FieldLabel htmlFor="imported-collection-description">Description</FieldLabel>
+              <FieldLabel htmlFor="imported-collection-description">
+                Description
+              </FieldLabel>
               <textarea
                 id="imported-collection-description"
                 value={description}
@@ -334,20 +350,27 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
                 className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[88px] w-full resize-y rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px] disabled:cursor-not-allowed disabled:opacity-60"
               />
               <p className="text-muted-foreground text-xs leading-relaxed">
-                Imported with the collection on first sync. Edits stick — future syncs won't
-                overwrite this.
+                Imported with the collection on first sync. Edits stick — future
+                syncs won't overwrite this.
               </p>
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
-                <FieldLabel htmlFor="imported-collection-watch-filter">Watch state</FieldLabel>
+                <FieldLabel htmlFor="imported-collection-watch-filter">
+                  Watch state
+                </FieldLabel>
                 <Select
                   value={watchFilter}
-                  onValueChange={(next) => setWatchFilter(next as UserCollectionWatchFilter)}
+                  onValueChange={(next) =>
+                    setWatchFilter(next as UserCollectionWatchFilter)
+                  }
                   disabled={readOnly}
                 >
-                  <SelectTrigger id="imported-collection-watch-filter" className="h-11 w-full">
+                  <SelectTrigger
+                    id="imported-collection-watch-filter"
+                    className="h-11 w-full"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -360,13 +383,20 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
                 </Select>
               </div>
               <div className="space-y-2">
-                <FieldLabel htmlFor="imported-collection-media-filter">Content</FieldLabel>
+                <FieldLabel htmlFor="imported-collection-media-filter">
+                  Content
+                </FieldLabel>
                 <Select
                   value={mediaFilter}
-                  onValueChange={(next) => setMediaFilter(next as UserCollectionMediaFilter)}
+                  onValueChange={(next) =>
+                    setMediaFilter(next as UserCollectionMediaFilter)
+                  }
                   disabled={readOnly}
                 >
-                  <SelectTrigger id="imported-collection-media-filter" className="h-11 w-full">
+                  <SelectTrigger
+                    id="imported-collection-media-filter"
+                    className="h-11 w-full"
+                  >
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -389,8 +419,8 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
               />
             </div>
             <p className="text-muted-foreground text-xs leading-relaxed">
-              Uses the active profile&rsquo;s watched state. Shared profiles may see different
-              results.
+              Uses the active profile&rsquo;s watched state. Shared profiles may
+              see different results.
             </p>
 
             <div className="space-y-2">
@@ -402,8 +432,8 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
                 eligibility={eligibility}
               />
               <p className="text-muted-foreground text-xs leading-relaxed">
-                Items resolve only inside libraries you select. Leave empty to span every library
-                you can see.
+                Items resolve only inside libraries you select. Leave empty to
+                span every library you can see.
               </p>
             </div>
           </FormSection>
@@ -428,23 +458,34 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
                     className="h-11 font-mono text-[0.85rem]"
                   />
                   {sourceUrlInvalid ? (
-                    <p className="text-destructive text-xs">A list URL is required.</p>
+                    <p className="text-destructive text-xs">
+                      A list URL is required.
+                    </p>
                   ) : (
                     <p className="text-muted-foreground text-xs leading-relaxed">
-                      The MDBList JSON URL the next sync will pull from. Trailing
-                      <code className="bg-muted/40 mx-1 rounded px-1 py-px text-[10px]">/json</code>
+                      The MDBList JSON URL the next sync will pull from.
+                      Trailing
+                      <code className="bg-muted/40 mx-1 rounded px-1 py-px text-[10px]">
+                        /json
+                      </code>
                       is added automatically.
                     </p>
                   )}
                 </>
               ) : (
-                <PresetReadout label={sourcePresetLabel} url={sourceUrl} themeLabel={theme.label} />
+                <PresetReadout
+                  label={sourcePresetLabel}
+                  url={sourceUrl}
+                  themeLabel={theme.label}
+                />
               )}
             </div>
 
             <div className="grid gap-5 sm:grid-cols-2">
               <div className="space-y-2">
-                <FieldLabel htmlFor="imported-collection-max-items">Max items</FieldLabel>
+                <FieldLabel htmlFor="imported-collection-max-items">
+                  Max items
+                </FieldLabel>
                 <Input
                   id="imported-collection-max-items"
                   type="number"
@@ -458,10 +499,13 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
                   className="h-11 tabular-nums"
                 />
                 {maxItemsInvalid ? (
-                  <p className="text-destructive text-xs">Enter a whole number, or leave empty.</p>
+                  <p className="text-destructive text-xs">
+                    Enter a whole number, or leave empty.
+                  </p>
                 ) : (
                   <p className="text-muted-foreground text-xs leading-relaxed">
-                    Cap how many items the source contributes per sync. Leave empty for no cap.
+                    Cap how many items the source contributes per sync. Leave
+                    empty for no cap.
                   </p>
                 )}
               </div>
@@ -469,8 +513,8 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
                 <FieldLabel>Sync schedule</FieldLabel>
                 <ScheduleReadout schedule={collection.sync_schedule} />
                 <p className="text-muted-foreground text-xs leading-relaxed">
-                  Set when imported. Recreate the collection from a {theme.label} template to change
-                  it.
+                  Set when imported. Recreate the collection from a{" "}
+                  {theme.label} template to change it.
                 </p>
               </div>
             </div>
@@ -482,12 +526,18 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
             description="Decide which profiles on this account can browse the collection."
           >
             <CollectionAccessEditor
-              value={{ is_shared: isShared, allowed_profile_ids: allowedProfileIds }}
+              value={{
+                is_shared: isShared,
+                allowed_profile_ids: allowedProfileIds,
+              }}
               onChange={(next) => {
                 setIsShared(next.is_shared);
                 setAllowedProfileIds(next.allowed_profile_ids);
               }}
-              profiles={profiles.map((entry) => ({ id: entry.id, name: entry.name }))}
+              profiles={profiles.map((entry) => ({
+                id: entry.id,
+                name: entry.name,
+              }))}
               readOnly={readOnly}
               creatorProfileId={collection.creator_profile_id}
             />
@@ -522,7 +572,11 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
                 onSourceUrlChange={setPosterSourceUrl}
                 onDelete={
                   collection.poster_url
-                    ? () => deletePosterMutation.mutate({ id: collection.id, type: "poster" })
+                    ? () =>
+                        deletePosterMutation.mutate({
+                          id: collection.id,
+                          type: "poster",
+                        })
                     : undefined
                 }
               />
@@ -628,7 +682,9 @@ function SourceBanner({
                   />
                   {theme.label}
                 </span>
-                <span className="text-foreground/85 text-sm font-medium">{sourcePresetLabel}</span>
+                <span className="text-foreground/85 text-sm font-medium">
+                  {sourcePresetLabel}
+                </span>
                 {readOnly ? (
                   <span className="text-muted-foreground border-border/70 inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[10px] font-medium tracking-[0.16em] uppercase">
                     <Lock className="h-3 w-3" /> Read-only
@@ -636,10 +692,14 @@ function SourceBanner({
                 ) : null}
               </div>
               <p className="text-muted-foreground max-w-md text-sm leading-relaxed">
-                Synced from {theme.tagline} — items, posters, and ordering are managed by the
-                source.
+                Synced from {theme.tagline} — items, posters, and ordering are
+                managed by the source.
               </p>
-              <SyncPulse status={collection.last_sync_status} text={last} accent={theme.accent} />
+              <SyncPulse
+                status={collection.last_sync_status}
+                text={last}
+                accent={theme.accent}
+              />
             </div>
           </div>
 
@@ -663,7 +723,9 @@ function SourceBanner({
                 color: "#0b0b0c",
               }}
             >
-              <RefreshCw className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`h-3.5 w-3.5 ${isSyncing ? "animate-spin" : ""}`}
+              />
               {isSyncing ? "Syncing..." : "Sync now"}
             </Button>
           </div>
@@ -710,7 +772,10 @@ function SyncPulse({
   return (
     <div className="text-muted-foreground inline-flex items-center gap-2 text-xs font-medium">
       <span className="relative flex h-2 w-2" aria-hidden>
-        <span className="absolute inset-0 rounded-full" style={{ backgroundColor: dotColor }} />
+        <span
+          className="absolute inset-0 rounded-full"
+          style={{ backgroundColor: dotColor }}
+        />
         {isRunning ? (
           <span
             className="absolute inset-0 animate-ping rounded-full opacity-60"
@@ -723,7 +788,10 @@ function SyncPulse({
   );
 }
 
-function statusDotColor(status: Collection["last_sync_status"], themeAccent: string): string {
+function statusDotColor(
+  status: Collection["last_sync_status"],
+  themeAccent: string,
+): string {
   switch (status) {
     case "running":
       return themeAccent;
@@ -755,15 +823,25 @@ function FormSection({
         <div className="text-muted-foreground/70 font-mono text-[10px] tracking-[0.3em] tabular-nums">
           {number}
         </div>
-        <h3 className="text-foreground text-base font-semibold tracking-tight">{title}</h3>
-        <p className="text-muted-foreground max-w-[18rem] text-xs leading-relaxed">{description}</p>
+        <h3 className="text-foreground text-base font-semibold tracking-tight">
+          {title}
+        </h3>
+        <p className="text-muted-foreground max-w-[18rem] text-xs leading-relaxed">
+          {description}
+        </p>
       </div>
       <div className="min-w-0 space-y-5">{children}</div>
     </section>
   );
 }
 
-function FieldLabel({ children, htmlFor }: { children: ReactNode; htmlFor?: string }) {
+function FieldLabel({
+  children,
+  htmlFor,
+}: {
+  children: ReactNode;
+  htmlFor?: string;
+}) {
   return (
     <Label
       htmlFor={htmlFor}
@@ -795,9 +873,15 @@ function ToggleRow({
     >
       <div className="min-w-0 pr-2">
         <p className="text-sm font-medium">{title}</p>
-        <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">{description}</p>
+        <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
+          {description}
+        </p>
       </div>
-      <Switch checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
+      <Switch
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        disabled={disabled}
+      />
     </label>
   );
 }
@@ -813,7 +897,10 @@ function SourceSpecSheet({
   sourceUrl: string | null;
   sourcePresetLabel: string;
 }) {
-  const itemCount = collection.item_count != null ? collection.item_count.toLocaleString() : "—";
+  const itemCount =
+    collection.item_count != null
+      ? collection.item_count.toLocaleString()
+      : "—";
   return (
     <div
       className="surface-panel relative overflow-hidden rounded-[1.4rem]"
@@ -843,7 +930,11 @@ function SourceSpecSheet({
         </p>
 
         <div className="mt-4 divide-y divide-[color-mix(in_srgb,var(--border)_45%,transparent)]">
-          <SpecRow icon={Hash} label={`${theme.label} preset`} value={sourcePresetLabel} />
+          <SpecRow
+            icon={Hash}
+            label={`${theme.label} preset`}
+            value={sourcePresetLabel}
+          />
           {sourceUrl ? (
             <SpecRow
               icon={Link2}
@@ -865,7 +956,11 @@ function SourceSpecSheet({
           {collection.last_sync_message ? (
             <SpecRow
               icon={CalendarClock}
-              label={collection.last_sync_status === "failed" ? "Last error" : "Last note"}
+              label={
+                collection.last_sync_status === "failed"
+                  ? "Last error"
+                  : "Last note"
+              }
               value={
                 <span
                   className={
@@ -904,7 +999,9 @@ function PresetReadout({
       <div className="min-w-0">
         <p className="truncate text-sm font-medium">{label}</p>
         {url ? (
-          <p className="text-muted-foreground mt-0.5 truncate font-mono text-[11px]">{url}</p>
+          <p className="text-muted-foreground mt-0.5 truncate font-mono text-[11px]">
+            {url}
+          </p>
         ) : null}
       </div>
       <span className="text-muted-foreground inline-flex shrink-0 items-center gap-1 text-[10px] font-semibold tracking-[0.16em] uppercase">
@@ -959,7 +1056,9 @@ function SpecRow({
         <Icon className="h-3 w-3 opacity-70" />
         {label}
       </span>
-      <span className="text-foreground/90 text-right text-xs font-medium">{value}</span>
+      <span className="text-foreground/90 text-right text-xs font-medium">
+        {value}
+      </span>
     </div>
   );
 }
@@ -983,7 +1082,9 @@ function SaveDock({
     <div
       aria-hidden={!visible}
       className={`bottom-safe-3 pointer-events-none fixed inset-x-0 z-40 flex justify-center px-4 transition-all duration-300 ${
-        visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0"
+        visible
+          ? "translate-y-0 opacity-100"
+          : "pointer-events-none translate-y-6 opacity-0"
       }`}
     >
       <div className="bg-background/85 border-border/80 pointer-events-auto flex items-center gap-3 rounded-full border px-3.5 py-2 shadow-[0_18px_40px_-18px_rgba(0,0,0,0.55)] backdrop-blur-xl">
@@ -1101,7 +1202,10 @@ function readSourceConfigLimit(collection: Collection): number | null {
 function sanitizeLibraryIDs(raw: unknown): number[] {
   if (!Array.isArray(raw)) return [];
   const ids = raw
-    .filter((id): id is number => typeof id === "number" && Number.isFinite(id) && id > 0)
+    .filter(
+      (id): id is number =>
+        typeof id === "number" && Number.isFinite(id) && id > 0,
+    )
     .map((id) => Math.trunc(id));
   return Array.from(new Set(ids));
 }
@@ -1141,7 +1245,8 @@ function sourcePresetSummary(collection: Collection, fallback: string): string {
     const window = (cfg as Record<string, unknown>).time_window;
     const parts: string[] = [];
     if (typeof preset === "string" && preset) parts.push(prettyPreset(preset));
-    if (typeof mediaType === "string" && mediaType) parts.push(prettyMediaType(mediaType));
+    if (typeof mediaType === "string" && mediaType)
+      parts.push(prettyMediaType(mediaType));
     if (typeof window === "string" && window) parts.push(`this ${window}`);
     if (parts.length > 0) return parts.join(" · ");
   }

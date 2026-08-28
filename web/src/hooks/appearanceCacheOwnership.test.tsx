@@ -18,9 +18,15 @@ vi.mock("@/hooks/useAuth", () => ({
 }));
 
 vi.mock("@/hooks/queries/settingValues", () => ({
-  useEffectiveSettings: (options?: { keys?: readonly string[]; enabled?: boolean }) =>
-    mocks.useEffectiveSettings(options),
-  useSetSettingValue: () => ({ mutate: mocks.mutate, mutateAsync: mocks.mutate, isPending: false }),
+  useEffectiveSettings: (options?: {
+    keys?: readonly string[];
+    enabled?: boolean;
+  }) => mocks.useEffectiveSettings(options),
+  useSetSettingValue: () => ({
+    mutate: mocks.mutate,
+    mutateAsync: mocks.mutate,
+    isPending: false,
+  }),
   useClearSettingValue: () => ({
     mutate: mocks.clearMutate,
     mutateAsync: mocks.clearMutate,
@@ -84,7 +90,11 @@ function seedAppearance(owner: string): void {
   appearanceCache.set(KEYS.UI_TEXT_SCALE, "large", owner);
   appearanceCache.set(KEYS.UI_TEXT_WEIGHT, "strong", owner);
   appearanceCache.set(KEYS.UI_HIGH_CONTRAST, "true", owner);
-  appearanceCache.set(KEYS.UI_CUSTOM_THEME_VARS, JSON.stringify({ "color-bg": "#ff0000" }), owner);
+  appearanceCache.set(
+    KEYS.UI_CUSTOM_THEME_VARS,
+    JSON.stringify({ "color-bg": "#ff0000" }),
+    owner,
+  );
   appearanceCache.set(KEYS.UI_CUSTOM_CSS, "body { filter: invert(1); }", owner);
 }
 
@@ -105,10 +115,13 @@ function signedInAs(id: number, profileId = "p1"): void {
  * Build a canonical effective-settings answer: each entry carries the scope it
  * resolved from, and `source: "default"` marks a value nobody stored.
  */
-function effectiveAnswer(values: Record<string, { value: unknown; source?: string }>): {
+function effectiveAnswer(
+  values: Record<string, { value: unknown; source?: string }>,
+): {
   data: Record<string, { key: string; value: unknown; source: string }>;
 } {
-  const data: Record<string, { key: string; value: unknown; source: string }> = {};
+  const data: Record<string, { key: string; value: unknown; source: string }> =
+    {};
   for (const [key, entry] of Object.entries(values)) {
     data[key] = { key, value: entry.value, source: entry.source ?? "profile" };
   }
@@ -162,7 +175,9 @@ describe("appearance cache ownership", () => {
     // flash on every cold start from then on.
     expect(appearanceCache.get(KEYS.THEME, "1:p1")).toBe("cobalt-studio");
     expect(appearanceCache.get(KEYS.UI_TEXT_SCALE, "1:p1")).toBe("large");
-    expect(appearanceCache.get(KEYS.UI_CUSTOM_CSS, "1:p1")).toBe("body { filter: invert(1); }");
+    expect(appearanceCache.get(KEYS.UI_CUSTOM_CSS, "1:p1")).toBe(
+      "body { filter: invert(1); }",
+    );
   });
 
   it("still applies the admin default theme to an identity with no cached appearance", () => {
@@ -191,7 +206,11 @@ describe("appearance cache ownership", () => {
 
   it("keeps the warm start while auth is still bootstrapping", () => {
     seedAccountOneAppearance();
-    mocks.useOptionalAuth.mockReturnValue({ loading: true, user: null, profile: null });
+    mocks.useOptionalAuth.mockReturnValue({
+      loading: true,
+      user: null,
+      profile: null,
+    });
 
     const { captured } = renderAppearance();
 
@@ -202,7 +221,11 @@ describe("appearance cache ownership", () => {
 
   it("keeps the warm start on the profile picker, before a profile is chosen", () => {
     seedAccountOneAppearance();
-    mocks.useOptionalAuth.mockReturnValue({ loading: false, user: { id: 1 }, profile: null });
+    mocks.useOptionalAuth.mockReturnValue({
+      loading: false,
+      user: { id: 1 },
+      profile: null,
+    });
 
     const { captured } = renderAppearance();
 
@@ -267,7 +290,9 @@ describe("appearance cache ownership", () => {
 
     expect(view.captured.theme.theme).toBe("oxblood-noir");
     expect(view.captured.theme.textScale).toBe("x-large");
-    expect(document.documentElement.getAttribute("data-theme")).toBe("oxblood-noir");
+    expect(document.documentElement.getAttribute("data-theme")).toBe(
+      "oxblood-noir",
+    );
   });
 
   it("mirrors the server's appearance so the next cold start paints it", () => {
@@ -308,7 +333,10 @@ describe("appearance cache ownership", () => {
     // be mirrored as if the profile had chosen it.
     mocks.useEffectiveSettings.mockReturnValue(
       effectiveAnswer({
-        [SETTING_KEYS.UI_THEME]: { value: "midnight-cinema", source: "default" },
+        [SETTING_KEYS.UI_THEME]: {
+          value: "midnight-cinema",
+          source: "default",
+        },
         [SETTING_KEYS.UI_TEXT_SCALE]: { value: "default", source: "default" },
         [SETTING_KEYS.UI_TEXT_WEIGHT]: { value: "default", source: "default" },
         [SETTING_KEYS.UI_HIGH_CONTRAST]: { value: false, source: "default" },
@@ -551,6 +579,8 @@ describe("custom theme debounced writes", () => {
       value: "body { color: red; }",
       identity: { scope: "profile" },
     });
-    expect(appearanceCache.get(KEYS.UI_CUSTOM_CSS, "1:p1")).toBe("body { color: red; }");
+    expect(appearanceCache.get(KEYS.UI_CUSTOM_CSS, "1:p1")).toBe(
+      "body { color: red; }",
+    );
   });
 });

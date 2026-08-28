@@ -57,9 +57,11 @@ function makeEpisodeItem(overrides: Partial<ItemDetail> = {}): ItemDetail {
     release_date: overrides.release_date ?? null,
     season_count: overrides.season_count ?? null,
     series_id: "series_id" in overrides ? overrides.series_id : "series-1",
-    series_title: "series_title" in overrides ? overrides.series_title : "Series 1",
+    series_title:
+      "series_title" in overrides ? overrides.series_title : "Series 1",
     season_number: "season_number" in overrides ? overrides.season_number : 2,
-    episode_number: "episode_number" in overrides ? overrides.episode_number : 5,
+    episode_number:
+      "episode_number" in overrides ? overrides.episode_number : 5,
     episode_count: overrides.episode_count ?? null,
     air_date: overrides.air_date ?? null,
     is_specials: overrides.is_specials ?? false,
@@ -295,9 +297,9 @@ describe("formatSeasonMeta", () => {
   });
 
   it("returns episode count when user data is missing", () => {
-    expect(formatSeasonMeta(makeSeason({ episode_count: 8, user_data: undefined }))).toBe(
-      "8 episodes",
-    );
+    expect(
+      formatSeasonMeta(makeSeason({ episode_count: 8, user_data: undefined })),
+    ).toBe("8 episodes");
   });
 });
 

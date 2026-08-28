@@ -41,12 +41,15 @@ export default function PlaybackSettings() {
   const hwDevice = form.getValue("playback.hw_device");
   const selectedDevices = parseHWDeviceList(hwDevice);
   const deviceRows = buildHWDeviceRows(hwDetection.data, hwDevice);
-  const detectedPaths = deviceRows.filter((row) => row.detected).map((row) => row.path);
+  const detectedPaths = deviceRows
+    .filter((row) => row.detected)
+    .map((row) => row.path);
   // Balancing is QSV/VAAPI-only: NVENC addresses GPUs by CUDA index/UUID, so
   // the multi-select picker is hidden for it (the server uses the first
   // configured entry).
   const isNvenc =
-    hwAccel === "nvenc" || (hwAccel === "auto" && hwDetection.data?.resolved === "nvenc");
+    hwAccel === "nvenc" ||
+    (hwAccel === "auto" && hwDetection.data?.resolved === "nvenc");
   const inventoriesDiverge = nodeInventoriesDiverge(hwDetection.data);
 
   if (form.isLoading) return <div>Loading...</div>;
@@ -86,27 +89,35 @@ export default function PlaybackSettings() {
             value={form.getValue("playback.hw_accel")}
             onChange={(v) => form.setValue("playback.hw_accel", v)}
           />
-          {form.getValue("playback.hw_accel") === "auto" && hwDetection.data && (
-            <div className="-mt-1 flex items-center gap-2 text-xs">
-              <span
-                className={`inline-block h-1.5 w-1.5 rounded-full ${
-                  hwDetection.data.resolved !== "none" ? "bg-emerald-500" : "bg-amber-500"
-                }`}
-              />
-              <span className="text-muted-foreground">
-                {formatResolved(hwDetection.data.resolved)}
-                {hwDetection.data.render_devices?.[0] && ` — ${hwDetection.data.render_devices[0]}`}
-                {hwDetection.data.source === "transcode_node" && " (transcode node)"}
-              </span>
-            </div>
-          )}
-          {form.getValue("playback.hw_accel") === "auto" && hwDetection.isLoading && (
-            <p className="text-muted-foreground -mt-1 text-xs">Detecting hardware...</p>
-          )}
+          {form.getValue("playback.hw_accel") === "auto" &&
+            hwDetection.data && (
+              <div className="-mt-1 flex items-center gap-2 text-xs">
+                <span
+                  className={`inline-block h-1.5 w-1.5 rounded-full ${
+                    hwDetection.data.resolved !== "none"
+                      ? "bg-emerald-500"
+                      : "bg-amber-500"
+                  }`}
+                />
+                <span className="text-muted-foreground">
+                  {formatResolved(hwDetection.data.resolved)}
+                  {hwDetection.data.render_devices?.[0] &&
+                    ` — ${hwDetection.data.render_devices[0]}`}
+                  {hwDetection.data.source === "transcode_node" &&
+                    " (transcode node)"}
+                </span>
+              </div>
+            )}
+          {form.getValue("playback.hw_accel") === "auto" &&
+            hwDetection.isLoading && (
+              <p className="text-muted-foreground -mt-1 text-xs">
+                Detecting hardware...
+              </p>
+            )}
           {hwAccel !== "none" && isNvenc && selectedDevices.length > 1 && (
             <p className="-mt-1 text-xs text-amber-500">
-              Multi-GPU balancing supports QSV/VA-API only; with NVENC the server uses the first
-              configured device ({selectedDevices[0]}).
+              Multi-GPU balancing supports QSV/VA-API only; with NVENC the
+              server uses the first configured device ({selectedDevices[0]}).
             </p>
           )}
           {hwAccel !== "none" && !isNvenc && deviceRows.length > 0 && (
@@ -124,21 +135,27 @@ export default function PlaybackSettings() {
                 </p>
                 {inventoriesDiverge && (
                   <p className="text-xs text-amber-500">
-                    This setting applies to every transcode node, but the nodes report different
-                    devices. Only paths present on all nodes are safe to select.
+                    This setting applies to every transcode node, but the nodes
+                    report different devices. Only paths present on all nodes
+                    are safe to select.
                   </p>
                 )}
               </div>
               <div className="space-y-2">
                 {deviceRows.map((row) => (
-                  <div key={row.path} className="flex items-center justify-between gap-3">
+                  <div
+                    key={row.path}
+                    className="flex items-center justify-between gap-3"
+                  >
                     <div className="min-w-0">
                       <p
                         className={`truncate text-sm ${row.detected ? "" : "text-muted-foreground"}`}
                       >
                         {row.description}
                       </p>
-                      <p className="text-muted-foreground truncate font-mono text-xs">{row.path}</p>
+                      <p className="text-muted-foreground truncate font-mono text-xs">
+                        {row.path}
+                      </p>
                       {row.missingOnNodes.length > 0 && (
                         <p className="truncate text-xs text-amber-500">
                           Not present on: {row.missingOnNodes.join(", ")}
@@ -174,21 +191,33 @@ export default function PlaybackSettings() {
             type="toggle"
             hint="When no eligible transcode node is available, transcode on this server instead. Disable to keep all transcoding on dedicated nodes — playback that requires transcoding fails while no node is eligible."
             value={form.getValue("playback.local_transcode_fallback") || "true"}
-            onChange={(v) => form.setValue("playback.local_transcode_fallback", v)}
+            onChange={(v) =>
+              form.setValue("playback.local_transcode_fallback", v)
+            }
           />
           <SettingField
             label="Enable Hardware HDR Tone Mapping"
             type="toggle"
             hint="Allows validated local or remote GPU executors to convert HDR video to SDR when transcoding."
-            value={form.getValue("playback.transcode_hardware_tone_map_enabled") || "false"}
-            onChange={(v) => form.setValue("playback.transcode_hardware_tone_map_enabled", v)}
+            value={
+              form.getValue("playback.transcode_hardware_tone_map_enabled") ||
+              "false"
+            }
+            onChange={(v) =>
+              form.setValue("playback.transcode_hardware_tone_map_enabled", v)
+            }
           />
           <SettingField
             label="Enable Software HDR Tone Mapping"
             type="toggle"
             hint="Allows the CPU to convert HDR video to SDR when transcoding. This can be very CPU-intensive."
-            value={form.getValue("playback.transcode_software_tone_map_enabled") || "false"}
-            onChange={(v) => form.setValue("playback.transcode_software_tone_map_enabled", v)}
+            value={
+              form.getValue("playback.transcode_software_tone_map_enabled") ||
+              "false"
+            }
+            onChange={(v) =>
+              form.setValue("playback.transcode_software_tone_map_enabled", v)
+            }
           />
           <SettingField
             label="Allow 4K Transcoding"
@@ -219,26 +248,37 @@ export default function PlaybackSettings() {
             type="number"
             hint="Global chapter thumbnail dispatcher concurrency. Higher values improve throughput but can drive more local or remote extraction work at once."
             value={form.getValue("playback.chapter_thumbnail_workers")}
-            onChange={(v) => form.setValue("playback.chapter_thumbnail_workers", v)}
+            onChange={(v) =>
+              form.setValue("playback.chapter_thumbnail_workers", v)
+            }
           />
           <SettingField
             label="Chapter Thumbnail Execution"
             type="select"
             options={[
               { value: "local", label: "Local only" },
-              { value: "prefer_transcode_nodes", label: "Prefer transcode nodes" },
+              {
+                value: "prefer_transcode_nodes",
+                label: "Prefer transcode nodes",
+              },
               { value: "transcode_nodes_only", label: "Transcode nodes only" },
             ]}
             hint="Controls whether chapter thumbnails run on the API node or are offloaded to available transcode nodes."
-            value={form.getValue("playback.chapter_thumbnail_execution") || "local"}
-            onChange={(v) => form.setValue("playback.chapter_thumbnail_execution", v)}
+            value={
+              form.getValue("playback.chapter_thumbnail_execution") || "local"
+            }
+            onChange={(v) =>
+              form.setValue("playback.chapter_thumbnail_execution", v)
+            }
           />
           <SettingField
             label="Chapter Thumbnail Node Capacity"
             type="number"
             hint="Per transcode-node budget for chapter thumbnail jobs when remote execution is enabled."
             value={form.getValue("playback.chapter_thumbnail_node_capacity")}
-            onChange={(v) => form.setValue("playback.chapter_thumbnail_node_capacity", v)}
+            onChange={(v) =>
+              form.setValue("playback.chapter_thumbnail_node_capacity", v)
+            }
           />
           <SettingField
             label="HDR Chapter Thumbnail Policy"
@@ -248,18 +288,33 @@ export default function PlaybackSettings() {
               { value: "disabled", label: "Disable HDR/DV thumbnails" },
             ]}
             hint="Controls whether chapter thumbnails are generated for HDR or Dolby Vision sources. SDR files are unaffected."
-            value={form.getValue("playback.chapter_thumbnail_hdr_policy") || "best_effort"}
-            onChange={(v) => form.setValue("playback.chapter_thumbnail_hdr_policy", v)}
+            value={
+              form.getValue("playback.chapter_thumbnail_hdr_policy") ||
+              "best_effort"
+            }
+            onChange={(v) =>
+              form.setValue("playback.chapter_thumbnail_hdr_policy", v)
+            }
           />
           <SettingField
             label="Enable CPU Tone Mapping"
             type="toggle"
             hint="Allows CPU/software tone mapping when hardware HDR chapter-thumbnail extraction is unavailable or fails. Disabled by default because it can be CPU-intensive."
-            value={form.getValue("playback.chapter_thumbnail_software_tone_map_enabled") || "false"}
-            onChange={(v) =>
-              form.setValue("playback.chapter_thumbnail_software_tone_map_enabled", v)
+            value={
+              form.getValue(
+                "playback.chapter_thumbnail_software_tone_map_enabled",
+              ) || "false"
             }
-            disabled={form.getValue("playback.chapter_thumbnail_hdr_policy") === "disabled"}
+            onChange={(v) =>
+              form.setValue(
+                "playback.chapter_thumbnail_software_tone_map_enabled",
+                v,
+              )
+            }
+            disabled={
+              form.getValue("playback.chapter_thumbnail_hdr_policy") ===
+              "disabled"
+            }
           />
         </FieldGroup>
 

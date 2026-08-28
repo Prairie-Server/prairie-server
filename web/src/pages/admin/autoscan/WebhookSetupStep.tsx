@@ -8,7 +8,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
 import type { MappingDraft } from "./webhookSetup";
-import { expandedRootsFor, newMapping, settingsPathFor, triggersFor } from "./webhookSetup";
+import {
+  expandedRootsFor,
+  newMapping,
+  settingsPathFor,
+  triggersFor,
+} from "./webhookSetup";
 
 /**
  * The copy-the-URL-into-your-arr half of webhook setup.
@@ -64,8 +69,9 @@ export function WebhookInstructions({
           {settingsPathFor(provider)}
         </p>
         <p className="text-muted-foreground text-xs">
-          Paste the URL into <span className="font-medium">Webhook URL</span> and leave the method
-          as <span className="font-medium">POST</span>. No username or password is needed.
+          Paste the URL into <span className="font-medium">Webhook URL</span>{" "}
+          and leave the method as <span className="font-medium">POST</span>. No
+          username or password is needed.
         </p>
       </div>
 
@@ -82,8 +88,12 @@ export function WebhookInstructions({
               </span>
               <span className="min-w-0">
                 <span className="font-medium">{trigger.label}</span>
-                {!trigger.required && <span className="text-muted-foreground"> (optional)</span>}
-                <span className="text-muted-foreground block text-xs">{trigger.reason}</span>
+                {!trigger.required && (
+                  <span className="text-muted-foreground"> (optional)</span>
+                )}
+                <span className="text-muted-foreground block text-xs">
+                  {trigger.reason}
+                </span>
               </span>
             </li>
           ))}
@@ -95,8 +105,8 @@ export function WebhookInstructions({
 
       <p className="text-muted-foreground text-xs">
         Save the connection in your download manager. You can use its
-        <span className="font-medium"> Test </span> button — Prairie accepts test payloads and will
-        show the delivery on this source.
+        <span className="font-medium"> Test </span> button — Prairie accepts
+        test payloads and will show the delivery on this source.
       </p>
     </div>
   );
@@ -126,7 +136,9 @@ export function WebhookMappingEditor({
   libraryPaths?: readonly string[];
 }) {
   function update(index: number, patch: Partial<MappingDraft>) {
-    onChange(mappings.map((row, i) => (i === index ? { ...row, ...patch } : row)));
+    onChange(
+      mappings.map((row, i) => (i === index ? { ...row, ...patch } : row)),
+    );
   }
 
   /** Replace a collapsed row with one row per child directory. */
@@ -145,9 +157,10 @@ export function WebhookMappingEditor({
       <div className="space-y-1">
         <Label>Match its paths to yours</Label>
         <p className="text-muted-foreground text-xs">
-          Sonarr/Radarr report the path of the <em>imported library file</em> — their root folder,
-          not the download client&apos;s working directory. If that root differs from the path
-          Prairie sees, map it here. Same path on both sides? Enter it twice.
+          Sonarr/Radarr report the path of the <em>imported library file</em> —
+          their root folder, not the download client&apos;s working directory.
+          If that root differs from the path Prairie sees, map it here. Same
+          path on both sides? Enter it twice.
         </p>
       </div>
 
@@ -163,7 +176,10 @@ export function WebhookMappingEditor({
               <div key={row.id} className="space-y-1">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
                   <div className="min-w-0 flex-1 space-y-1">
-                    <Label htmlFor={`map-from-${index}`} className="text-muted-foreground text-xs">
+                    <Label
+                      htmlFor={`map-from-${index}`}
+                      className="text-muted-foreground text-xs"
+                    >
                       Sonarr/Radarr root folder
                     </Label>
                     <Input
@@ -174,9 +190,14 @@ export function WebhookMappingEditor({
                       onChange={(e) => update(index, { from: e.target.value })}
                     />
                   </div>
-                  <span className="text-muted-foreground hidden pb-2 text-xs sm:block">→</span>
+                  <span className="text-muted-foreground hidden pb-2 text-xs sm:block">
+                    →
+                  </span>
                   <div className="min-w-0 flex-1 space-y-1">
-                    <Label htmlFor={`map-to-${index}`} className="text-muted-foreground text-xs">
+                    <Label
+                      htmlFor={`map-to-${index}`}
+                      className="text-muted-foreground text-xs"
+                    >
                       Path Prairie uses
                     </Label>
                     <Input
@@ -193,7 +214,9 @@ export function WebhookMappingEditor({
                     size="icon-sm"
                     aria-label={`Remove mapping ${index + 1}`}
                     className="sm:mb-1"
-                    onClick={() => onChange(mappings.filter((_, i) => i !== index))}
+                    onClick={() =>
+                      onChange(mappings.filter((_, i) => i !== index))
+                    }
                   >
                     <Trash2 className="text-destructive" />
                   </Button>
@@ -204,8 +227,8 @@ export function WebhookMappingEditor({
                     className="text-muted-foreground hover:text-foreground text-xs underline-offset-4 hover:underline"
                     onClick={() => expand(index, children)}
                   >
-                    Does your download manager use a different folder per type? Split into{" "}
-                    {children.length} rows
+                    Does your download manager use a different folder per type?
+                    Split into {children.length} rows
                   </button>
                 )}
               </div>

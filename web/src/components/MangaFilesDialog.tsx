@@ -39,7 +39,10 @@ export default function MangaFilesDialog({
 }) {
   const { data, isLoading, error } = useMangaSeriesFiles(contentId, open);
   const files = data?.files ?? [];
-  const totalBytes = files.reduce((sum, file) => sum + (file.file_size || 0), 0);
+  const totalBytes = files.reduce(
+    (sum, file) => sum + (file.file_size || 0),
+    0,
+  );
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -79,7 +82,9 @@ export default function MangaFilesDialog({
               </div>
             )}
             {files.length === 0 ? (
-              <p className="text-muted-foreground py-4 text-sm">No files found.</p>
+              <p className="text-muted-foreground py-4 text-sm">
+                No files found.
+              </p>
             ) : (
               <ul className="divide-border/40 border-border/40 divide-y rounded-md border">
                 {files.map((file) => (

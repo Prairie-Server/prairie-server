@@ -28,7 +28,11 @@ export interface AppearanceAuth {
  * last look" behavior as the login screen — and gates off the settings request,
  * which cannot resolve profile scope without an active profile anyway.
  */
-export function appearanceCacheOwner({ loading, user, profile }: AppearanceAuth): string | null {
+export function appearanceCacheOwner({
+  loading,
+  user,
+  profile,
+}: AppearanceAuth): string | null {
   return !loading && user && profile ? `${user.id}:${profile.id}` : null;
 }
 
@@ -50,8 +54,13 @@ export function useAppearanceCacheOwner(): string | null {
   });
 }
 
-export function isValidTheme(value: string | null | undefined): value is ThemeId {
-  return typeof value === "string" && (THEME_IDS as readonly string[]).includes(value);
+export function isValidTheme(
+  value: string | null | undefined,
+): value is ThemeId {
+  return (
+    typeof value === "string" &&
+    (THEME_IDS as readonly string[]).includes(value)
+  );
 }
 
 export function parseTextScale(value: string | null | undefined): TextScale {

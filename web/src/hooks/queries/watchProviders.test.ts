@@ -50,7 +50,9 @@ vi.mock("@/api/client", () => ({
 
 describe("watch provider queries", () => {
   it("uses the profile-scoped watch provider endpoints", async () => {
-    await expect(fetchWatchProviders()).resolves.toMatchObject({ path: "/watch-providers" });
+    await expect(fetchWatchProviders()).resolves.toMatchObject({
+      path: "/watch-providers",
+    });
     await expect(startWatchProviderDeviceAuth("trakt")).resolves.toMatchObject({
       id: "auth-1",
       provider: "trakt",
@@ -59,7 +61,9 @@ describe("watch provider queries", () => {
       interval_seconds: 5,
       expires_at: "2026-05-04T15:57:08Z",
     });
-    await expect(pollWatchProviderDeviceAuth("trakt", "auth-1")).resolves.toMatchObject({
+    await expect(
+      pollWatchProviderDeviceAuth("trakt", "auth-1"),
+    ).resolves.toMatchObject({
       path: "/watch-providers/trakt/auth/poll",
       method: "POST",
     });
@@ -72,7 +76,9 @@ describe("watch provider queries", () => {
       method: "POST",
       body: JSON.stringify({
         api_key: "token",
-        connection_config: { floppy: { base_url: "https://floppy.example.com" } },
+        connection_config: {
+          floppy: { base_url: "https://floppy.example.com" },
+        },
       }),
     });
     await expect(

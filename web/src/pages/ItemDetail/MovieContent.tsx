@@ -1,10 +1,16 @@
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import type { FileVersion, ItemDetail } from "@/api/types";
-import type { PlayerSubtitleTrackSignature, PrePlaySubtitleSelection } from "@/player/types";
+import type {
+  PlayerSubtitleTrackSignature,
+  PrePlaySubtitleSelection,
+} from "@/player/types";
 import { useRefreshItemMetadata } from "@/hooks/queries/items";
 import { useSimilarItems } from "@/hooks/queries/recommendations";
-import { useDeleteSubtitlePreference, useSetSubtitlePreference } from "@/hooks/queries/subtitles";
+import {
+  useDeleteSubtitlePreference,
+  useSetSubtitlePreference,
+} from "@/hooks/queries/subtitles";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
 import { useAmbientColor } from "@/hooks/useAmbientColor";
@@ -41,7 +47,11 @@ import {
 import { formatRuntimeMinutes } from "@/lib/mediaFormat";
 import { useQualityPreference } from "@/hooks/queries/qualityPreference";
 
-export default function MovieContent({ item }: { item: ItemDetail & { type: "movie" } }) {
+export default function MovieContent({
+  item,
+}: {
+  item: ItemDetail & { type: "movie" };
+}) {
   const { translating: overviewTranslating, onTranslate: onTranslateOverview } =
     useOnViewTranslation(item);
   const navigate = useNavigate();
@@ -52,7 +62,9 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
   // The resolution cap comes from the settings contract, where the quality
   // picker writes; the profile column it falls back to is only the pre-cutover
   // choice, since that picker no longer mirrors into it.
-  const qualityPreference = useQualityPreference(currentProfile?.quality_preference);
+  const qualityPreference = useQualityPreference(
+    currentProfile?.quality_preference,
+  );
   const canCurateMetadata = canCurateMetadataForUser(user, currentProfile);
   const canEditMarkers = canEditMarkersForUser(user, currentProfile);
 
@@ -68,9 +80,14 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
   const [mediaInfoFileId, setMediaInfoFileId] = useState<number | null>(null);
 
   // Version selection state — drives the Play button and inline stream popovers.
-  const sortedVersions = useMemo(() => sortByResolution(item.versions), [item.versions]);
+  const sortedVersions = useMemo(
+    () => sortByResolution(item.versions),
+    [item.versions],
+  );
   const userData =
-    item.user_data && "position_seconds" in item.user_data ? item.user_data : undefined;
+    item.user_data && "position_seconds" in item.user_data
+      ? item.user_data
+      : undefined;
   const defaultSelectedVersion = useMemo(
     () =>
       selectDefaultPlaybackVariantVersion(
@@ -88,18 +105,26 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
       userData,
     ],
   );
-  const [manualSelectedFileId, setManualSelectedFileId] = useState<number | null>(null);
+  const [manualSelectedFileId, setManualSelectedFileId] = useState<
+    number | null
+  >(null);
   const selectedVersion = useMemo(() => {
     if (manualSelectedFileId == null) {
       return defaultSelectedVersion;
     }
     return (
-      sortedVersions.find((version) => version.file_id === manualSelectedFileId) ??
-      defaultSelectedVersion
+      sortedVersions.find(
+        (version) => version.file_id === manualSelectedFileId,
+      ) ?? defaultSelectedVersion
     );
   }, [defaultSelectedVersion, manualSelectedFileId, sortedVersions]);
   const selectedMediaSummary = useMemo(
-    () => resolveSelectedMediaSummary(selectedVersion, item.playback_variants, item.runtime ?? 0),
+    () =>
+      resolveSelectedMediaSummary(
+        selectedVersion,
+        item.playback_variants,
+        item.runtime ?? 0,
+      ),
     [item.playback_variants, item.runtime, selectedVersion],
   );
   const openMediaInfo = useCallback(
@@ -109,11 +134,15 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
     },
     [selectedVersion?.file_id],
   );
-  const [audioSelectionMode, setAudioSelectionMode] = useState<"auto" | "explicit">("auto");
-  const [explicitAudioTrackIndex, setExplicitAudioTrackIndex] = useState<number | null>(null);
-  const [subtitleSelectionMode, setSubtitleSelectionMode] = useState<"auto" | "off" | "explicit">(
-    "auto",
-  );
+  const [audioSelectionMode, setAudioSelectionMode] = useState<
+    "auto" | "explicit"
+  >("auto");
+  const [explicitAudioTrackIndex, setExplicitAudioTrackIndex] = useState<
+    number | null
+  >(null);
+  const [subtitleSelectionMode, setSubtitleSelectionMode] = useState<
+    "auto" | "off" | "explicit"
+  >("auto");
   const [explicitSubtitleSelection, setExplicitSubtitleSelection] =
     useState<PrePlaySubtitleSelection | null>(null);
 
@@ -180,7 +209,9 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
     primaryAction.label === "Resume" && item.versions.length > 0
       ? `/watch/${item.content_id}?restart=1`
       : undefined;
-  const { data: similarData, isLoading: similarLoading } = useSimilarItems(item.content_id);
+  const { data: similarData, isLoading: similarLoading } = useSimilarItems(
+    item.content_id,
+  );
 
   const preferredSubtitleTrackSignature: PlayerSubtitleTrackSignature | null =
     item.effective_subtitle_track_signature
@@ -197,7 +228,8 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
           codec: item.effective_subtitle_track_signature.codec,
           label: item.effective_subtitle_track_signature.label,
           forced: item.effective_subtitle_track_signature.forced,
-          hearing_impaired: item.effective_subtitle_track_signature.hearing_impaired,
+          hearing_impaired:
+            item.effective_subtitle_track_signature.hearing_impaired,
         }
       : null;
 
@@ -227,7 +259,10 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
             <MetadataBadges
               year={year || undefined}
               contentRating={item.content_rating || undefined}
-              duration={formatRuntimeMinutes(selectedMediaSummary.durationMinutes) || undefined}
+              duration={
+                formatRuntimeMinutes(selectedMediaSummary.durationMinutes) ||
+                undefined
+              }
             />
             <QualityBadges summary={selectedMediaSummary} />
           </div>
@@ -247,7 +282,9 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
           <MediaUserActionBar
             item={item}
             contentId={item.content_id}
-            playHref={item.versions.length > 0 ? `/watch/${item.content_id}` : undefined}
+            playHref={
+              item.versions.length > 0 ? `/watch/${item.content_id}` : undefined
+            }
             playLabel={primaryAction.label}
             playProgress={primaryAction.progress}
             restartHref={restartHref}
@@ -267,7 +304,9 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
                 : undefined
             }
             resumeHdr={
-              item.user_data && "last_hdr" in item.user_data ? item.user_data.last_hdr : undefined
+              item.user_data && "last_hdr" in item.user_data
+                ? item.user_data.last_hdr
+                : undefined
             }
             onRefresh={
               canCurateMetadata
@@ -275,7 +314,8 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
                     refreshMetadataMutation.mutate({
                       item,
                       mode,
-                      onReplaced: (contentID) => navigate(`/item/${contentID}`, { replace: true }),
+                      onReplaced: (contentID) =>
+                        navigate(`/item/${contentID}`, { replace: true }),
                     })
                 : undefined
             }
@@ -283,13 +323,21 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
             isAdmin={isAdmin}
             canCurateMetadata={canCurateMetadata}
             canEditMarkers={canEditMarkers}
-            onEditMetadata={canCurateMetadata ? () => setEditOpen(true) : undefined}
-            onMatchItem={canCurateMetadata ? () => setMatchOpen(true) : undefined}
+            onEditMetadata={
+              canCurateMetadata ? () => setEditOpen(true) : undefined
+            }
+            onMatchItem={
+              canCurateMetadata ? () => setMatchOpen(true) : undefined
+            }
             onSplitItem={
-              canCurateMetadata && item.versions.length > 1 ? () => setSplitOpen(true) : undefined
+              canCurateMetadata && item.versions.length > 1
+                ? () => setSplitOpen(true)
+                : undefined
             }
             onShowMediaInfo={
-              canCurateMetadata && item.versions.length > 0 ? () => openMediaInfo() : undefined
+              canCurateMetadata && item.versions.length > 0
+                ? () => openMediaInfo()
+                : undefined
             }
             versions={item.versions}
             playbackVariants={item.playback_variants}
@@ -301,7 +349,9 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
                 : undefined
             }
             onSearchSubtitles={
-              item.versions.length > 0 ? () => setSubtitleSearchOpen(true) : undefined
+              item.versions.length > 0
+                ? () => setSubtitleSearchOpen(true)
+                : undefined
             }
             qualityPreference={qualityPreference}
             audioSelectionMode={audioSelectionMode}
@@ -315,7 +365,10 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
             onResetSubtitleSelection={handleResetSubtitleSelection}
             preferredSubtitleLanguage={item.effective_subtitle_language}
             preferredSubtitleTrackSignature={preferredSubtitleTrackSignature}
-            subtitleMode={item.effective_subtitle_mode as "off" | "auto" | "always" | undefined}
+            subtitleMode={
+              item.effective_subtitle_mode as
+                "off" | "auto" | "always" | undefined
+            }
             showForcedSubtitles={item.effective_show_forced_subtitles}
             profileLanguage={currentProfile?.language}
           />
@@ -331,9 +384,13 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
           />
         )}
 
-        {item.videos && item.videos.length > 0 && <TrailersSection videos={item.videos} />}
+        {item.videos && item.videos.length > 0 && (
+          <TrailersSection videos={item.videos} />
+        )}
 
-        {item.extras && item.extras.length > 0 && <ExtrasSection extras={item.extras} />}
+        {item.extras && item.extras.length > 0 && (
+          <ExtrasSection extras={item.extras} />
+        )}
 
         {item.cast && item.cast.length > 0 && (
           <div>
@@ -351,14 +408,20 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
           similarData?.items &&
           similarData.items.length > 0 && (
             <div>
-              <h2 className="mb-5 text-xl font-semibold tracking-tight">More Like This</h2>
+              <h2 className="mb-5 text-xl font-semibold tracking-tight">
+                More Like This
+              </h2>
               <RecommendationGrid items={similarData.items} />
             </div>
           )
         )}
       </div>
       {canCurateMetadata && (
-        <EditMetadataDialog item={item} open={editOpen} onOpenChange={setEditOpen} />
+        <EditMetadataDialog
+          item={item}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
       )}
       {canCurateMetadata && (
         <MatchItemDialog

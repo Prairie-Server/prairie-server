@@ -5,14 +5,18 @@ import { renderHook, waitFor } from "@testing-library/react";
 
 import { ApiClientError } from "@/api/client";
 import { SETTING_KEYS } from "@/lib/settingsContract";
-import { resolveSettingValues, type StoredSettingRow } from "@/lib/settingsResolve";
+import {
+  resolveSettingValues,
+  type StoredSettingRow,
+} from "@/lib/settingsResolve";
 import { buildSubtitleChoiceRequests } from "@/player/utils/subtitleChoicePersistence";
 import type { PlayerSubtitleInfo } from "@/player/types";
 import { useDeleteSubtitlePreference } from "./subtitles";
 
 const apiMock = vi.hoisted(() => vi.fn());
 vi.mock("@/api/client", async () => {
-  const actual = await vi.importActual<typeof import("@/api/client")>("@/api/client");
+  const actual =
+    await vi.importActual<typeof import("@/api/client")>("@/api/client");
   return { ...actual, api: apiMock };
 });
 
@@ -46,7 +50,9 @@ function rowsFromInPlayerPick(seriesId: string): StoredSettingRow[] {
   return buildSubtitleChoiceRequests({ seriesId, index: 0, tracks: TRACKS })
     .filter((request) => request.path.startsWith("/settings/values/"))
     .map((request) => ({
-      key: decodeURIComponent(request.path.slice("/settings/values/".length).split("?")[0]!),
+      key: decodeURIComponent(
+        request.path.slice("/settings/values/".length).split("?")[0]!,
+      ),
       scope: "profile_series" as const,
       profileId: "profile-1",
       seriesId,
@@ -67,8 +73,11 @@ describe("useDeleteSubtitlePreference", () => {
     const store = rowsFromInPlayerPick("series-1");
     apiMock.mockImplementation((path: string, options?: RequestInit) => {
       if (options?.method !== "DELETE") return Promise.resolve(undefined);
-      if (path.startsWith("/subtitle-prefs/")) return Promise.resolve(undefined);
-      const key = decodeURIComponent(path.slice("/settings/values/".length).split("?")[0]!);
+      if (path.startsWith("/subtitle-prefs/"))
+        return Promise.resolve(undefined);
+      const key = decodeURIComponent(
+        path.slice("/settings/values/".length).split("?")[0]!,
+      );
       expect(path).toContain("scope=profile_series&series_id=series-1");
       const index = store.findIndex((row) => row.key === key);
       if (index < 0) {
@@ -81,7 +90,9 @@ describe("useDeleteSubtitlePreference", () => {
     });
 
     const { wrapper } = createHarness();
-    const { result } = renderHook(() => useDeleteSubtitlePreference(), { wrapper });
+    const { result } = renderHook(() => useDeleteSubtitlePreference(), {
+      wrapper,
+    });
 
     await result.current.mutateAsync("series-1");
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
@@ -91,34 +102,50 @@ describe("useDeleteSubtitlePreference", () => {
       "/subtitle-prefs/series-1",
     );
     // Resolution falls all the way back to the contract default again.
-    const [language] = resolveSettingValues([SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE], store, {
-      profileId: "profile-1",
-      seriesIds: ["series-1"],
-    });
+    const [language] = resolveSettingValues(
+      [SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE],
+      store,
+      {
+        profileId: "profile-1",
+        seriesIds: ["series-1"],
+      },
+    );
     expect(language?.source).toBe("default");
   });
 
   it("treats an already-absent canonical row as success", async () => {
     apiMock.mockImplementation((path: string) => {
-      if (path.startsWith("/subtitle-prefs/")) return Promise.resolve(undefined);
-      return Promise.reject(new ApiClientError(404, "not_found", "No value is set at this scope"));
+      if (path.startsWith("/subtitle-prefs/"))
+        return Promise.resolve(undefined);
+      return Promise.reject(
+        new ApiClientError(404, "not_found", "No value is set at this scope"),
+      );
     });
 
     const { wrapper } = createHarness();
-    const { result } = renderHook(() => useDeleteSubtitlePreference(), { wrapper });
+    const { result } = renderHook(() => useDeleteSubtitlePreference(), {
+      wrapper,
+    });
 
-    await expect(result.current.mutateAsync("series-1")).resolves.toBeUndefined();
+    await expect(
+      result.current.mutateAsync("series-1"),
+    ).resolves.toBeUndefined();
   });
 
   it("surfaces a real failure rather than reporting a reset that did not happen", async () => {
     apiMock.mockImplementation((path: string) => {
-      if (path.startsWith("/subtitle-prefs/")) return Promise.resolve(undefined);
+      if (path.startsWith("/subtitle-prefs/"))
+        return Promise.resolve(undefined);
       return Promise.reject(new ApiClientError(500, "internal_error", "boom"));
     });
 
     const { wrapper } = createHarness();
-    const { result } = renderHook(() => useDeleteSubtitlePreference(), { wrapper });
+    const { result } = renderHook(() => useDeleteSubtitlePreference(), {
+      wrapper,
+    });
 
-    await expect(result.current.mutateAsync("series-1")).rejects.toThrow("boom");
+    await expect(result.current.mutateAsync("series-1")).rejects.toThrow(
+      "boom",
+    );
   });
 });

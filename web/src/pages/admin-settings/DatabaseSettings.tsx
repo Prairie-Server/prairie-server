@@ -22,11 +22,15 @@ const KEYS = [
 export default function DatabaseSettings() {
   const form = useSettingsForm({ keys: useMemo(() => KEYS, []) });
   const checkConnection = useCheckAdminSettingsConnection();
-  const [connectionResult, setConnectionResult] = useState<ConnectionCheckResponse | null>(null);
+  const [connectionResult, setConnectionResult] =
+    useState<ConnectionCheckResponse | null>(null);
   const redisUrl = form.getValue("redis.url");
   const redisManagedByEnv = form.sensitiveManagedByEnv.includes("redis.url");
-  const redisConfigured = redisUrl.trim() !== "" || form.sensitiveConfigured.includes("redis.url");
-  const [redisEnabledOverride, setRedisEnabledOverride] = useState<boolean | null>(null);
+  const redisConfigured =
+    redisUrl.trim() !== "" || form.sensitiveConfigured.includes("redis.url");
+  const [redisEnabledOverride, setRedisEnabledOverride] = useState<
+    boolean | null
+  >(null);
   const effectiveRedisEnabled = redisEnabledOverride ?? redisConfigured;
 
   useEffect(() => {
@@ -46,7 +50,8 @@ export default function DatabaseSettings() {
     } catch (error) {
       setConnectionResult({
         success: false,
-        message: error instanceof Error ? error.message : "Connection check failed.",
+        message:
+          error instanceof Error ? error.message : "Connection check failed.",
       });
     }
   }
@@ -58,7 +63,8 @@ export default function DatabaseSettings() {
       <div className="mb-6 space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Database</h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Configure connection pooling, Redis, and user database replication behavior.
+          Configure connection pooling, Redis, and user database replication
+          behavior.
         </p>
       </div>
 
@@ -79,8 +85,9 @@ export default function DatabaseSettings() {
                 <Badge variant="outline">Managed by environment</Badge>
               </div>
               <p className="text-muted-foreground text-sm">
-                Redis is configured by the <code>REDIS_URL</code> environment variable. Change your
-                deployment configuration and restart the server to update or disable Redis.
+                Redis is configured by the <code>REDIS_URL</code> environment
+                variable. Change your deployment configuration and restart the
+                server to update or disable Redis.
               </p>
             </div>
           )}
@@ -109,10 +116,16 @@ export default function DatabaseSettings() {
               <SettingField
                 label="Connection URL"
                 type="password"
-                hint={redisManagedByEnv ? "Value supplied by REDIS_URL" : "redis://host:6379"}
+                hint={
+                  redisManagedByEnv
+                    ? "Value supplied by REDIS_URL"
+                    : "redis://host:6379"
+                }
                 value={redisUrl}
                 onChange={(v) => form.setValue("redis.url", v)}
-                sensitiveConfigured={form.sensitiveConfigured.includes("redis.url")}
+                sensitiveConfigured={form.sensitiveConfigured.includes(
+                  "redis.url",
+                )}
                 disabled={redisManagedByEnv}
               />
               <ConnectionCheckAction
@@ -122,8 +135,9 @@ export default function DatabaseSettings() {
                 disabled={form.isSaving || redisManagedByEnv}
               />
               <p className="text-muted-foreground text-xs leading-relaxed">
-                Saving a Redis URL requires a reachable server. Unreachable URLs are rejected so a
-                failed check cannot brick startup after restart.
+                Saving a Redis URL requires a reachable server. Unreachable URLs
+                are rejected so a failed check cannot brick startup after
+                restart.
               </p>
             </>
           )}

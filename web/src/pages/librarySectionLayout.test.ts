@@ -46,7 +46,12 @@ describe("splitLibrarySections", () => {
   });
 
   it("ignores featured sections with no items", () => {
-    const emptyFeatured = makeSection({ id: "empty", featured: true, items: [], total_count: 0 });
+    const emptyFeatured = makeSection({
+      id: "empty",
+      featured: true,
+      items: [],
+      total_count: 0,
+    });
     const row = makeSection({ id: "row", title: "Row" });
 
     const result = splitLibrarySections([emptyFeatured, row]);

@@ -162,6 +162,62 @@ func TestSanitizeURLErrorPreservesMultiPercentWFmtMessage(t *testing.T) {
 	}
 }
 
+func TestSanitizeURLErrorReplacesRawURLWhenMissingFromMessage(t *testing.T) {
+	cause := errors.New("connection refused")
+	err := fmt.Errorf("fetch node capabilities: %w", &url.Error{
+		Op:  "Get",
+		URL: "https://operator:node-password@node.example/hw-capabilities?access_token=query-secret",
+		Err: cause,
+	})
+
+	// Simulate a wrapper whose message omits the nested URL error text.
+	wrapped := &sanitizedWrapperError{message: "fetch node capabilities", cause: err}
+	sanitized := SanitizeURLError(wrapped)
+	if message := sanitized.Error(); strings.Contains(message, "node-password") || strings.Contains(message, "query-secret") {
+		t.Fatalf("sanitized wrapper without URL text leaked credentials: %q", message)
+	}
+	if !errors.Is(sanitized, cause) {
+		t.Fatalf("sanitized wrapper does not preserve its cause: %v", sanitized)
+	}
+}
+
+func TestSanitizeURLErrorJoinsWhenMultiComponentTextMissing(t *testing.T) {
+	cause := errors.New("connection refused")
+	urlErr := &url.Error{
+		Op:  "Get",
+		URL: "https://operator:node-password@node.example/hw-capabilities?access_token=query-secret",
+		Err: cause,
+	}
+	err := errors.Join(errors.New("outer"), urlErr)
+
+	sanitized := SanitizeURLError(err)
+	message := sanitized.Error()
+	if strings.Contains(message, "node-password") || strings.Contains(message, "query-secret") {
+		t.Fatalf("sanitized joined error leaked credentials: %q", message)
+	}
+	if !errors.Is(sanitized, cause) {
+		t.Fatalf("sanitized joined error does not preserve its cause: %v", sanitized)
+	}
+}
+
+func TestSanitizeURLErrorReturnsOriginalWhenMultiMessageUnchanged(t *testing.T) {
+	cause := errors.New("connection refused")
+	urlErr := &url.Error{
+		Op:  "Get",
+		URL: "https://operator:node-password@node.example/hw-capabilities?access_token=query-secret",
+		Err: cause,
+	}
+	err := fmt.Errorf("capability request failed (%w)", urlErr)
+
+	sanitized := SanitizeURLError(err)
+	if sanitized == err {
+		t.Fatal("expected sanitized clone, got identical pointer")
+	}
+	if message := sanitized.Error(); strings.Contains(message, "node-password") || strings.Contains(message, "query-secret") {
+		t.Fatalf("sanitized error leaked credentials: %q", message)
+	}
+}
+
 func TestSanitizeURLFailsClosedForMalformedInput(t *testing.T) {
 	const secret = "node-password"
 	got := SanitizeURL("https://operator:" + secret + "@node.example/\x00")

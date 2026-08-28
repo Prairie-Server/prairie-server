@@ -49,8 +49,8 @@ export function CollectionDefaultSortField({
         </SelectContent>
       </Select>
       <p className="text-muted-foreground text-xs">
-        The order viewers get when they open this collection. They can still sort it their own way,
-        and that choice is remembered for them.
+        The order viewers get when they open this collection. They can still
+        sort it their own way, and that choice is remembered for them.
       </p>
     </div>
   );

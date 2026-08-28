@@ -316,7 +316,11 @@ export const TYPOGRAPHY = {
     "5xl": { px: 48, rem: "3rem", use: "Hero titles (desktop)" },
     "6xl": { px: 60, rem: "3.75rem", use: "Cinematic display titles" },
     "7xl": { px: 72, rem: "4.5rem", use: "Large cinematic titles (desktop)" },
-    "8xl": { px: 96, rem: "6rem", use: "Full-bleed cinematic display (desktop, short titles)" },
+    "8xl": {
+      px: 96,
+      rem: "6rem",
+      use: "Full-bleed cinematic display (desktop, short titles)",
+    },
   },
 
   /**
@@ -644,7 +648,8 @@ export const POSTER_GRID =
 /**
  * Standard backdrop (landscape) grid class string.
  */
-export const BACKDROP_GRID = "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4";
+export const BACKDROP_GRID =
+  "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 md:gap-4";
 
 /**
  * Standard section header styles.
@@ -665,14 +670,16 @@ export const PAGE_CONTAINER = "px-4 py-4 sm:px-6 lg:px-12 lg:py-6";
  * Hero banner container sizing — shared between HeroBanner and Home skeletons.
  * Full-bleed first viewport; no inset rounded media cards.
  */
-export const HERO_BANNER_SIZE = "h-[50dvh] min-h-[350px] max-h-[700px] lg:h-[60dvh]";
+export const HERO_BANNER_SIZE =
+  "h-[50dvh] min-h-[350px] max-h-[700px] lg:h-[60dvh]";
 
 /**
  * Taller cinematic hero sizing used by the Library page Recommended tab.
  * The marquee header sits on top, so the hero needs extra height to
  * keep the title block comfortably clear of the nav bar.
  */
-export const HERO_BANNER_SIZE_TALL = "h-[60dvh] min-h-[420px] max-h-[760px] lg:h-[72dvh]";
+export const HERO_BANNER_SIZE_TALL =
+  "h-[60dvh] min-h-[420px] max-h-[760px] lg:h-[72dvh]";
 
 /**
  * Compact brand welcome used only on an empty Home (no sections yet).

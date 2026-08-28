@@ -5,7 +5,9 @@ import { describe, expect, it } from "vitest";
 import { UICustomizationContext } from "@/contexts/uiCustomizationContext";
 import { RelatedRail } from "./RelatedRail";
 
-const items = [{ content_id: "book-1", title: "Book One", poster_url: "/cover.jpg" }];
+const items = [
+  { content_id: "book-1", title: "Book One", poster_url: "/cover.jpg" },
+];
 
 describe("RelatedRail", () => {
   it("keeps square cover geometry by default", () => {

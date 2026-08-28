@@ -42,7 +42,11 @@ describe("PlayerMenuSurface", () => {
         Item
       </PlayerMenuSurface>,
     );
-    expect(screen.getByRole("menu")).toHaveClass("fixed", "bottom-0", "rounded-t-2xl");
+    expect(screen.getByRole("menu")).toHaveClass(
+      "fixed",
+      "bottom-0",
+      "rounded-t-2xl",
+    );
     fireEvent.click(screen.getByRole("button", { name: "Close menu" }));
     expect(onClose).toHaveBeenCalledOnce();
   });

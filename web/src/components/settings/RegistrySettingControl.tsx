@@ -7,7 +7,11 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { SettingSlider } from "@/components/settings/SettingSlider";
-import { controlKindFor, optionsFor, type SettingDisplay } from "@/lib/settingsDisplay";
+import {
+  controlKindFor,
+  optionsFor,
+  type SettingDisplay,
+} from "@/lib/settingsDisplay";
 
 const EMPTY_SELECT_VALUE = "__empty__";
 
@@ -56,7 +60,8 @@ export function RegistrySettingControl({
   if (control === "slider" || control === "stepper") {
     const fallback = Number(definition.defaultValue ?? 0);
     const parsed = Number(value);
-    const numericValue = Number.isFinite(parsed) && value !== "" ? parsed : fallback;
+    const numericValue =
+      Number.isFinite(parsed) && value !== "" ? parsed : fallback;
     return (
       <SettingSlider
         className="flex w-full max-w-[260px] items-center gap-3"
@@ -75,7 +80,9 @@ export function RegistrySettingControl({
   return (
     <Select
       value={value === "" ? EMPTY_SELECT_VALUE : value}
-      onValueChange={(nextValue) => onChange(nextValue === EMPTY_SELECT_VALUE ? "" : nextValue)}
+      onValueChange={(nextValue) =>
+        onChange(nextValue === EMPTY_SELECT_VALUE ? "" : nextValue)
+      }
       disabled={disabled}
     >
       <SelectTrigger className="w-full min-w-[180px] sm:w-[220px]">

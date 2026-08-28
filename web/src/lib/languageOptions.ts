@@ -83,7 +83,12 @@ export function languageOptionsFor(
   runtimeValues: readonly string[] = [],
   revision = SETTINGS_REVISION,
 ): SettingOption[] {
-  const named = namedLanguageOptionsFor(key, currentValue, runtimeValues, revision);
+  const named = namedLanguageOptionsFor(
+    key,
+    currentValue,
+    runtimeValues,
+    revision,
+  );
   const definition = SETTING_DEFINITIONS[key];
   if (!definition.nullable) return named;
   return [{ value: "", label: definition.unsetLabel ?? "Unset" }, ...named];

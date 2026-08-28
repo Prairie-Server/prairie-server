@@ -13,11 +13,13 @@ export function libraryCollectionsQueryOptions(libraryId: number) {
   return {
     queryKey: libraryCollectionKeys.list(libraryId),
     queryFn: () =>
-      api<LibraryTabResponse>(`/library/${libraryId}/collections`).then((data) => ({
-        ...data,
-        collections: data.collections ?? [],
-        groups: data.groups ?? [],
-      })),
+      api<LibraryTabResponse>(`/library/${libraryId}/collections`).then(
+        (data) => ({
+          ...data,
+          collections: data.collections ?? [],
+          groups: data.groups ?? [],
+        }),
+      ),
     enabled: Number.isFinite(libraryId) && libraryId > 0,
   };
 }
@@ -55,13 +57,16 @@ export function getLibraryCollectionList(
   return resp?.collections ?? [];
 }
 
-export function useLibraryCollectionItems(libraryId: number, collectionId: string | null) {
+export function useLibraryCollectionItems(
+  libraryId: number,
+  collectionId: string | null,
+) {
   return useQuery({
     queryKey: libraryCollectionKeys.items(libraryId, collectionId ?? ""),
     queryFn: () =>
-      api<{ items: BrowseItem[] }>(`/library/${libraryId}/collections/${collectionId}/items`).then(
-        (data) => data.items ?? [],
-      ),
+      api<{ items: BrowseItem[] }>(
+        `/library/${libraryId}/collections/${collectionId}/items`,
+      ).then((data) => data.items ?? []),
     enabled:
       Number.isFinite(libraryId) &&
       libraryId > 0 &&

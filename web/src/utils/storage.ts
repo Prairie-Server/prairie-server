@@ -5,6 +5,8 @@ const STORAGE_KEYS = {
   PROFILE_TOKEN: "profile_token",
   CURRENT_PROFILE: "current_profile",
   DEVICE_ID: "silo-device-id",
+  /** Admin session stash while impersonating — must survive schema bumps. */
+  IMPERSONATION_ADMIN_SESSION: "impersonation_admin_session",
   VOLUME: "player-volume",
   MUTED: "player-muted",
   AUDIOBOOK_SKIP_BACK: "audiobook-skip-back",

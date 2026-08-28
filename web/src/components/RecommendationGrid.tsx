@@ -22,7 +22,10 @@ function RecommendationItemCard({ itemId }: RecommendationItemCardProps) {
   return (
     <div className="group/card">
       <div className="group/media relative">
-        <ViewTransitionLink to={`/item/${encodeURIComponent(itemId)}`} className="group block">
+        <ViewTransitionLink
+          to={`/item/${encodeURIComponent(itemId)}`}
+          className="group block"
+        >
           <div className="aspect-[2/3] overflow-hidden rounded-lg">
             {item.poster_url ? (
               <img
@@ -57,12 +60,18 @@ function RecommendationItemCard({ itemId }: RecommendationItemCardProps) {
   );
 }
 
-export default function RecommendationGrid({ items, maxItems = 12 }: RecommendationGridProps) {
+export default function RecommendationGrid({
+  items,
+  maxItems = 12,
+}: RecommendationGridProps) {
   const { cardPresentation } = useUICustomization();
   return (
     <div className={cardGridClasses(cardPresentation.poster_size)}>
       {items.slice(0, maxItems).map((si) => (
-        <RecommendationItemCard key={si.media_item_id} itemId={si.media_item_id} />
+        <RecommendationItemCard
+          key={si.media_item_id}
+          itemId={si.media_item_id}
+        />
       ))}
     </div>
   );

@@ -1,4 +1,10 @@
-import { useEffect, useMemo, useRef, useState, type ComponentType } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentType,
+} from "react";
 import { AlertTriangle, ChevronLeft } from "lucide-react";
 import { Link, useSearchParams } from "react-router";
 
@@ -81,10 +87,15 @@ function settingsComponent(id: string) {
   return component;
 }
 
-const SETTINGS_GROUPS: SettingsNavGroup[] = ADMIN_SETTINGS_GROUPS.map((group) => ({
-  ...group,
-  items: group.items.map((item) => ({ ...item, component: settingsComponent(item.id) })),
-}));
+const SETTINGS_GROUPS: SettingsNavGroup[] = ADMIN_SETTINGS_GROUPS.map(
+  (group) => ({
+    ...group,
+    items: group.items.map((item) => ({
+      ...item,
+      component: settingsComponent(item.id),
+    })),
+  }),
+);
 
 const SETTINGS_NAV: SettingsNav[] = ADMIN_SETTINGS_NAV.map((item) => ({
   ...item,
@@ -100,7 +111,8 @@ export default function AdminSettingsLayout() {
   const activeHeadingRef = useRef<HTMLHeadingElement>(null);
   const { data: serverStatus } = useAdminServerStatus();
   const rawActiveId = searchParams.get("tab");
-  const activeId = rawActiveId === "jellyfin" ? "compatibility-proxies" : rawActiveId;
+  const activeId =
+    rawActiveId === "jellyfin" ? "compatibility-proxies" : rawActiveId;
   const filteredSettingsGroups = useMemo(
     () => filterSettingsSearchGroups(SETTINGS_GROUPS, settingsSearch),
     [settingsSearch],
@@ -119,12 +131,16 @@ export default function AdminSettingsLayout() {
       })),
     [filteredSettingsGroups],
   );
-  const filteredSettingsCount = countSettingsSearchItems(filteredSettingsGroups);
+  const filteredSettingsCount = countSettingsSearchItems(
+    filteredSettingsGroups,
+  );
 
   function setActiveId(id: string) {
     setSearchParams({ tab: id }, { replace: true });
   }
-  const active = activeId ? SETTINGS_NAV.find((item) => item.id === activeId) : undefined;
+  const active = activeId
+    ? SETTINGS_NAV.find((item) => item.id === activeId)
+    : undefined;
   const ActiveComponent = active?.component;
 
   useEffect(() => {
@@ -134,7 +150,9 @@ export default function AdminSettingsLayout() {
     if (activeContentRef.current) {
       activeContentRef.current.scrollTop = 0;
     }
-    (activeHeadingRef.current ?? activeContentRef.current)?.focus({ preventScroll: true });
+    (activeHeadingRef.current ?? activeContentRef.current)?.focus({
+      preventScroll: true,
+    });
   }, [active]);
 
   return (
@@ -153,8 +171,8 @@ export default function AdminSettingsLayout() {
         <div className="min-w-0 space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Settings</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Configure server-wide settings. Most changes apply live; startup-bound fields show a
-            restart warning after they are saved.
+            Configure server-wide settings. Most changes apply live;
+            startup-bound fields show a restart warning after they are saved.
           </p>
         </div>
         <SettingsSearchInput
@@ -175,7 +193,9 @@ export default function AdminSettingsLayout() {
         >
           <div className="text-foreground/80 flex items-center gap-2 text-sm">
             <AlertTriangle className="h-4 w-4" />
-            <span>Server restart required for saved settings to take effect.</span>
+            <span>
+              Server restart required for saved settings to take effect.
+            </span>
           </div>
           <RestartServerButton />
         </div>
@@ -188,7 +208,11 @@ export default function AdminSettingsLayout() {
             className="border-border hidden space-y-5 border-r px-3 py-4 lg:block lg:w-60 lg:flex-shrink-0"
           >
             {filteredSettingsGroups.map((group) => (
-              <SideNavSection key={group.label} label={group.label} idPrefix="admin-settings-nav">
+              <SideNavSection
+                key={group.label}
+                label={group.label}
+                idPrefix="admin-settings-nav"
+              >
                 {group.items.map((item) => (
                   <SideNavItem
                     key={item.id}
@@ -201,7 +225,9 @@ export default function AdminSettingsLayout() {
               </SideNavSection>
             ))}
             {filteredSettingsGroups.length === 0 ? (
-              <p className="text-muted-foreground px-2 text-sm">No matching settings</p>
+              <p className="text-muted-foreground px-2 text-sm">
+                No matching settings
+              </p>
             ) : null}
           </nav>
 

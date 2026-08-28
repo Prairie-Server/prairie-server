@@ -23,7 +23,12 @@ describe("CollectionSearchableSelect", () => {
       <CollectionSearchableSelect
         options={[
           { id: "col-1", title: "Trending", group: "Movies", source: "user" },
-          { id: "col-2", title: "Weekly", group: "TV Shows", source: "library" },
+          {
+            id: "col-2",
+            title: "Weekly",
+            group: "TV Shows",
+            source: "library",
+          },
         ]}
         value=""
         onChange={() => {}}

@@ -2,7 +2,10 @@ import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PlayerConfigProvider } from "../context/PlayerConfigContext";
-import { __resetQualityLadderCache, useQualityLadder } from "./useQualityLadder";
+import {
+  __resetQualityLadderCache,
+  useQualityLadder,
+} from "./useQualityLadder";
 
 const playerFetch = vi.fn();
 vi.mock("../player-fetch", () => ({
@@ -16,7 +19,11 @@ const config = {
 };
 
 function wrapper({ children }: { children: ReactNode }) {
-  return <PlayerConfigProvider config={config as never}>{children}</PlayerConfigProvider>;
+  return (
+    <PlayerConfigProvider config={config as never}>
+      {children}
+    </PlayerConfigProvider>
+  );
 }
 
 function render() {
@@ -32,8 +39,20 @@ describe("useQualityLadder", () => {
   it("serves the server ladder once loaded", async () => {
     playerFetch.mockResolvedValue({
       rungs: [
-        { id: "1080p", label: "1080p", resolution: "1080p", height: 1080, bitrate_kbps: 6000 },
-        { id: "540p", label: "540p", resolution: "540p", height: 540, bitrate_kbps: 1800 },
+        {
+          id: "1080p",
+          label: "1080p",
+          resolution: "1080p",
+          height: 1080,
+          bitrate_kbps: 6000,
+        },
+        {
+          id: "540p",
+          label: "540p",
+          resolution: "540p",
+          height: 540,
+          bitrate_kbps: 1800,
+        },
       ],
       modes: ["auto", "original"],
     });
@@ -69,7 +88,13 @@ describe("useQualityLadder", () => {
   it("rejects a ladder with any incomplete rung", async () => {
     playerFetch.mockResolvedValue({
       rungs: [
-        { id: "1080p", label: "1080p", resolution: "1080p", height: 1080, bitrate_kbps: 6000 },
+        {
+          id: "1080p",
+          label: "1080p",
+          resolution: "1080p",
+          height: 1080,
+          bitrate_kbps: 6000,
+        },
         { id: "720p", label: "720p", resolution: "720p", height: 720 },
       ],
       modes: ["auto"],
@@ -90,7 +115,15 @@ describe("useQualityLadder", () => {
     first.unmount();
 
     playerFetch.mockResolvedValue({
-      rungs: [{ id: "540p", label: "540p", resolution: "540p", height: 540, bitrate_kbps: 1800 }],
+      rungs: [
+        {
+          id: "540p",
+          label: "540p",
+          resolution: "540p",
+          height: 540,
+          bitrate_kbps: 1800,
+        },
+      ],
       modes: ["auto"],
     });
     const second = render();
@@ -109,7 +142,15 @@ describe("useQualityLadder", () => {
   // repeatedly must not re-request it.
   it("caches across mounts", async () => {
     playerFetch.mockResolvedValue({
-      rungs: [{ id: "720p", label: "720p", resolution: "720p", height: 720, bitrate_kbps: 2000 }],
+      rungs: [
+        {
+          id: "720p",
+          label: "720p",
+          resolution: "720p",
+          height: 720,
+          bitrate_kbps: 2000,
+        },
+      ],
       modes: ["auto"],
     });
 
@@ -130,7 +171,15 @@ describe("useQualityLadder", () => {
     first.unmount();
 
     playerFetch.mockResolvedValue({
-      rungs: [{ id: "480p", label: "480p", resolution: "480p", height: 480, bitrate_kbps: 1500 }],
+      rungs: [
+        {
+          id: "480p",
+          label: "480p",
+          resolution: "480p",
+          height: 480,
+          bitrate_kbps: 1500,
+        },
+      ],
       modes: ["auto"],
     });
     const second = render();

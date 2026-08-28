@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { isASSCodec, isBitmapCodec, isPGSCodec, isSubtitleFormatLabel } from "./subtitleCodecs";
+import {
+  isASSCodec,
+  isBitmapCodec,
+  isPGSCodec,
+  isSubtitleFormatLabel,
+} from "./subtitleCodecs";
 
 describe("isPGSCodec", () => {
   it("matches PGS codec names case-insensitively", () => {

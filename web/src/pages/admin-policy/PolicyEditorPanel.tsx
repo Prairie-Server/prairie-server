@@ -34,8 +34,16 @@ import { cn } from "@/lib/utils";
 
 import { PolicySimulatePanel } from "./PolicySimulatePanel";
 import { PolicyVersionHistory } from "./PolicyVersionHistory";
-import { compileIssuesFromError, defaultPolicySource, messageFromError } from "./policyPageUtils";
-import { PolicyStatusPill, policyDocumentStatus, policyDomainMeta } from "./policyPresentation";
+import {
+  compileIssuesFromError,
+  defaultPolicySource,
+  messageFromError,
+} from "./policyPageUtils";
+import {
+  PolicyStatusPill,
+  policyDocumentStatus,
+  policyDomainMeta,
+} from "./policyPresentation";
 
 interface PolicyEditorPanelProps {
   documentId?: number;
@@ -99,10 +107,19 @@ function lifecycleProgress(step: LifecycleStep) {
   }
 }
 
-function LifecycleRail({ step, liveVersion }: { step: LifecycleStep; liveVersion?: number }) {
+function LifecycleRail({
+  step,
+  liveVersion,
+}: {
+  step: LifecycleStep;
+  liveVersion?: number;
+}) {
   const reached = lifecycleProgress(step);
   return (
-    <ol aria-label="Policy lifecycle" className="flex flex-wrap items-center gap-1.5">
+    <ol
+      aria-label="Policy lifecycle"
+      className="flex flex-wrap items-center gap-1.5"
+    >
       {LIFECYCLE_LABELS.map((label, index) => {
         const done = index < reached;
         const current = index === reached;
@@ -111,7 +128,10 @@ function LifecycleRail({ step, liveVersion }: { step: LifecycleStep; liveVersion
             {index > 0 && (
               <span
                 aria-hidden
-                className={cn("h-px w-4", done ? "bg-emerald-400/60" : "bg-border")}
+                className={cn(
+                  "h-px w-4",
+                  done ? "bg-emerald-400/60" : "bg-border",
+                )}
               />
             )}
             <span
@@ -134,7 +154,9 @@ function LifecycleRail({ step, liveVersion }: { step: LifecycleStep; liveVersion
   );
 }
 
-function activationTargetFromVersion(version: PolicyVersionSummary | undefined) {
+function activationTargetFromVersion(
+  version: PolicyVersionSummary | undefined,
+) {
   if (!version || !version.compiled_ok) return undefined;
   return { id: version.id, version_number: version.version_number };
 }
@@ -143,18 +165,26 @@ function issueKey(issue: PolicyCompileIssue, index: number) {
   return `${issue.row}-${issue.col}-${issue.message}-${index}`;
 }
 
-function seedKey(document: PolicyDocument, seedVersion: PolicyVersion | undefined) {
+function seedKey(
+  document: PolicyDocument,
+  seedVersion: PolicyVersion | undefined,
+) {
   return `${document.id}:${seedVersion?.id ?? "template"}:${
     seedVersion?.source_sha256 ?? document.domain
   }`;
 }
 
-export function PolicyEditorPanel({ documentId, domains }: PolicyEditorPanelProps) {
+export function PolicyEditorPanel({
+  documentId,
+  domains,
+}: PolicyEditorPanelProps) {
   const documentQuery = usePolicyDocument(documentId);
   const versionsQuery = usePolicyVersions(documentId);
   const document = documentQuery.data;
   const latestVersionId =
-    document?.active_version?.source !== undefined ? undefined : versionsQuery.data?.[0]?.id;
+    document?.active_version?.source !== undefined
+      ? undefined
+      : versionsQuery.data?.[0]?.id;
   const latestVersionQuery = usePolicyVersion(documentId, latestVersionId);
   const seedVersion: PolicyVersion | undefined =
     document?.active_version?.source !== undefined
@@ -163,7 +193,8 @@ export function PolicyEditorPanel({ documentId, domains }: PolicyEditorPanelProp
   const waitingForSeedSource = Boolean(
     document &&
     document.active_version?.source === undefined &&
-    (versionsQuery.isLoading || (latestVersionId !== undefined && latestVersionQuery.isLoading)),
+    (versionsQuery.isLoading ||
+      (latestVersionId !== undefined && latestVersionQuery.isLoading)),
   );
 
   // The seed we are currently editing against. It only advances to a newer
@@ -184,7 +215,11 @@ export function PolicyEditorPanel({ documentId, domains }: PolicyEditorPanelProp
   }
 
   if (documentQuery.isLoading || waitingForSeedSource) {
-    return <p className="text-muted-foreground text-sm">Loading policy document...</p>;
+    return (
+      <p className="text-muted-foreground text-sm">
+        Loading policy document...
+      </p>
+    );
   }
 
   if (!document) {
@@ -199,7 +234,9 @@ export function PolicyEditorPanel({ documentId, domains }: PolicyEditorPanelProp
     documentId: document.id,
     key: seedKey(document, seedVersion),
     initialSource: seedVersion?.source ?? defaultPolicySource(document.domain),
-    seedIsActive: seedVersion !== undefined && seedVersion.id === document.active_version_id,
+    seedIsActive:
+      seedVersion !== undefined &&
+      seedVersion.id === document.active_version_id,
     seedVersion,
   };
 
@@ -217,8 +254,12 @@ export function PolicyEditorPanel({ documentId, domains }: PolicyEditorPanelProp
     editorState !== null &&
     (editorState.draft !== pinned.initialSource || editorState.pending);
   const safeToAdopt =
-    !editorDirty || (editorState !== null && editorState.draft === fresh.initialSource);
-  const shouldAdopt = pinned === null || !sameDocument || (pinned.key !== fresh.key && safeToAdopt);
+    !editorDirty ||
+    (editorState !== null && editorState.draft === fresh.initialSource);
+  const shouldAdopt =
+    pinned === null ||
+    !sameDocument ||
+    (pinned.key !== fresh.key && safeToAdopt);
   const effective = shouldAdopt ? fresh : pinned;
   const keepingPinned = !shouldAdopt && pinned.key !== fresh.key;
 
@@ -243,7 +284,10 @@ export function PolicyEditorPanel({ documentId, domains }: PolicyEditorPanelProp
       onStateChange={setEditorState}
       newerSeed={
         keepingPinned
-          ? { versionNumber: fresh.seedVersion?.version_number, onAdopt: () => setPinned(fresh) }
+          ? {
+              versionNumber: fresh.seedVersion?.version_number,
+              onAdopt: () => setPinned(fresh),
+            }
           : undefined
       }
     />
@@ -265,7 +309,9 @@ const PolicyEditorState = memo(function PolicyEditorState({
   const [issues, setIssues] = useState<PolicyCompileIssue[]>([]);
   const [validation, setValidation] = useState<ValidationState | null>(null);
   const [message, setMessage] = useState("");
-  const [saved, setSaved] = useState<{ source: string; target: ActivationTarget } | undefined>();
+  const [saved, setSaved] = useState<
+    { source: string; target: ActivationTarget } | undefined
+  >();
   const [confirmActivate, setConfirmActivate] = useState(false);
   const validatePolicy = useValidatePolicy();
   const createVersion = useCreatePolicyVersion();
@@ -280,11 +326,14 @@ const PolicyEditorState = memo(function PolicyEditorState({
   }, [draft, pending, onStateChange]);
 
   const meta = policyDomainMeta(document.domain);
-  const validated = validation?.source === draft && validation.result.compiled_ok;
+  const validated =
+    validation?.source === draft && validation.result.compiled_ok;
 
   // An unedited seed from a compiled-but-inactive version is already "saved":
   // the remaining step is activation (e.g. after a page reload mid-flow).
-  const seedSummary = versions.find((version) => version.id === seedVersion?.id);
+  const seedSummary = versions.find(
+    (version) => version.id === seedVersion?.id,
+  );
   const savedTarget =
     saved?.source === draft
       ? saved.target
@@ -311,7 +360,9 @@ const PolicyEditorState = memo(function PolicyEditorState({
       });
       setValidation({ source: draft, result });
       setIssues(result.errors);
-      setMessage(result.compiled_ok ? "Validation passed — the draft compiles." : "");
+      setMessage(
+        result.compiled_ok ? "Validation passed — the draft compiles." : "",
+      );
     } catch (error) {
       const nextIssues = compileIssuesFromError(error);
       setIssues(nextIssues);
@@ -319,7 +370,11 @@ const PolicyEditorState = memo(function PolicyEditorState({
         source: draft,
         result: { compiled_ok: false, errors: nextIssues },
       });
-      setMessage(nextIssues.length > 0 ? "" : messageFromError(error, "Validation failed."));
+      setMessage(
+        nextIssues.length > 0
+          ? ""
+          : messageFromError(error, "Validation failed."),
+      );
     }
   }
 
@@ -353,7 +408,10 @@ const PolicyEditorState = memo(function PolicyEditorState({
   async function activateSavedVersion() {
     if (!savedTarget) return;
     try {
-      await activateVersion.mutateAsync({ documentId: document.id, version: savedTarget.id });
+      await activateVersion.mutateAsync({
+        documentId: document.id,
+        version: savedTarget.id,
+      });
       setConfirmActivate(false);
       setSaved(undefined);
       toast.success(`v${savedTarget.version_number} is now live`);
@@ -366,14 +424,22 @@ const PolicyEditorState = memo(function PolicyEditorState({
     switch (step) {
       case "validate":
         return (
-          <Button type="button" onClick={validateDraft} disabled={validatePolicy.isPending}>
+          <Button
+            type="button"
+            onClick={validateDraft}
+            disabled={validatePolicy.isPending}
+          >
             <CheckCircle2 className="size-4" />
             {validatePolicy.isPending ? "Validating..." : "Validate draft"}
           </Button>
         );
       case "save":
         return (
-          <Button type="button" onClick={saveVersion} disabled={createVersion.isPending}>
+          <Button
+            type="button"
+            onClick={saveVersion}
+            disabled={createVersion.isPending}
+          >
             <Save className="size-4" />
             {createVersion.isPending ? "Saving..." : "Save as version"}
           </Button>
@@ -396,14 +462,21 @@ const PolicyEditorState = memo(function PolicyEditorState({
         <div className="flex flex-col justify-between gap-4 xl:flex-row xl:items-start">
           <div className="min-w-0 space-y-2">
             <div className="flex flex-wrap items-center gap-2.5">
-              <h2 className="text-xl font-semibold tracking-tight">{document.name}</h2>
-              <span className="text-muted-foreground text-sm">{meta.title}</span>
+              <h2 className="text-xl font-semibold tracking-tight">
+                {document.name}
+              </h2>
+              <span className="text-muted-foreground text-sm">
+                {meta.title}
+              </span>
               <PolicyStatusPill
                 status={policyDocumentStatus(document)}
                 versionNumber={document.active_version?.version_number}
               />
             </div>
-            <LifecycleRail step={step} liveVersion={document.active_version?.version_number} />
+            <LifecycleRail
+              step={step}
+              liveVersion={document.active_version?.version_number}
+            />
           </div>
 
           <div className="flex shrink-0 flex-col items-stretch gap-2 sm:flex-row sm:items-center">
@@ -423,14 +496,14 @@ const PolicyEditorState = memo(function PolicyEditorState({
 
         {step === "live" && (
           <p className="text-muted-foreground mt-3 text-sm">
-            This source is what the live policy runs today. Edit it to start a new draft — nothing
-            changes until you activate the result.
+            This source is what the live policy runs today. Edit it to start a
+            new draft — nothing changes until you activate the result.
           </p>
         )}
         {!document.enabled && (
           <p className="text-warning mt-3 text-sm">
-            This override is disabled: the Prairie baseline applies unchanged until it is re-enabled
-            from the overrides list.
+            This override is disabled: the Prairie baseline applies unchanged
+            until it is re-enabled from the overrides list.
           </p>
         )}
 
@@ -486,10 +559,19 @@ const PolicyEditorState = memo(function PolicyEditorState({
         )}
       </div>
 
-      <RegoEditor value={draft} onChange={setDraft} issues={issues} height="520px" />
+      <RegoEditor
+        value={draft}
+        onChange={setDraft}
+        issues={issues}
+        height="520px"
+      />
 
       <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.7fr)]">
-        <PolicySimulatePanel domains={domains} domain={document.domain} source={draft} />
+        <PolicySimulatePanel
+          domains={domains}
+          domain={document.domain}
+          source={draft}
+        />
         <PolicyVersionHistory
           documentId={document.id}
           activeVersionId={document.active_version_id}
@@ -503,13 +585,16 @@ const PolicyEditorState = memo(function PolicyEditorState({
               Make v{savedTarget?.version_number} the live policy?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              New requests start using it immediately, on every server node. You can roll back to
-              any earlier version from the history below.
+              New requests start using it immediately, on every server node. You
+              can roll back to any earlier version from the history below.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={activateSavedVersion} disabled={activateVersion.isPending}>
+            <AlertDialogAction
+              onClick={activateSavedVersion}
+              disabled={activateVersion.isPending}
+            >
               <Play className="size-4" />
               Go live
             </AlertDialogAction>

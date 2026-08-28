@@ -101,12 +101,13 @@ describe("adminActivityPresentation", () => {
 
     expect(formatPlaybackDecisionSummary(session)).toBe("transcode");
     expect(normalizeContainerDecision(session.play_method)).toBe("hls");
-    expect(normalizeStreamDecision(session.video_decision || session.play_method)).toBe(
-      "transcode",
-    );
+    expect(
+      normalizeStreamDecision(session.video_decision || session.play_method),
+    ).toBe("transcode");
     expect(
       normalizeStreamDecision(
-        session.audio_decision || (session.transcode_audio ? "transcode" : session.play_method),
+        session.audio_decision ||
+          (session.transcode_audio ? "transcode" : session.play_method),
       ),
     ).toBe("transcode");
     expect(formatSourceContainerSummary(session)).toBe("MKV");
@@ -144,17 +145,23 @@ describe("adminActivityPresentation", () => {
   });
 
   it("labels hardware and software transcode modes", () => {
-    expect(formatTranscodeModeSummary(makeSession({ transcode_hw_accel: "qsv" }))).toBe("HW QSV");
-    expect(formatTranscodeModeSummary(makeSession({ transcode_hw_accel: "vaapi" }))).toBe(
-      "HW VAAPI",
-    );
-    expect(formatTranscodeModeSummary(makeSession({ transcode_hw_accel: "nvenc" }))).toBe(
-      "HW NVENC",
-    );
-    expect(formatTranscodeModeSummary(makeSession({ transcode_hw_accel: "videotoolbox" }))).toBe(
-      "HW VideoToolbox",
-    );
-    expect(formatTranscodeModeSummary(makeSession({ transcode_hw_accel: "none" }))).toBe("SW");
+    expect(
+      formatTranscodeModeSummary(makeSession({ transcode_hw_accel: "qsv" })),
+    ).toBe("HW QSV");
+    expect(
+      formatTranscodeModeSummary(makeSession({ transcode_hw_accel: "vaapi" })),
+    ).toBe("HW VAAPI");
+    expect(
+      formatTranscodeModeSummary(makeSession({ transcode_hw_accel: "nvenc" })),
+    ).toBe("HW NVENC");
+    expect(
+      formatTranscodeModeSummary(
+        makeSession({ transcode_hw_accel: "videotoolbox" }),
+      ),
+    ).toBe("HW VideoToolbox");
+    expect(
+      formatTranscodeModeSummary(makeSession({ transcode_hw_accel: "none" })),
+    ).toBe("SW");
     expect(
       formatTranscodeModeSummary(
         makeSession({
@@ -197,18 +204,24 @@ describe("adminActivityPresentation", () => {
   });
 
   it("reports only confirmed tone-map executors", () => {
-    expect(formatToneMapSummary(makeSession({ tone_map_mode: "hardware" }))).toEqual({
+    expect(
+      formatToneMapSummary(makeSession({ tone_map_mode: "hardware" })),
+    ).toEqual({
       badge: "HW Tone map",
       detail: "Hardware",
       mode: "hardware",
     });
-    expect(formatToneMapSummary(makeSession({ tone_map_mode: "software" }))).toEqual({
+    expect(
+      formatToneMapSummary(makeSession({ tone_map_mode: "software" })),
+    ).toEqual({
       badge: "SW Tone map",
       detail: "Software",
       mode: "software",
     });
     expect(formatToneMapSummary(makeSession())).toBeNull();
-    expect(formatToneMapSummary(makeSession({ tone_map_mode: "future-mode" }))).toBeNull();
+    expect(
+      formatToneMapSummary(makeSession({ tone_map_mode: "future-mode" })),
+    ).toBeNull();
     expect(
       formatToneMapSummary(
         makeSession({
@@ -338,17 +351,29 @@ describe("adminActivityPresentation", () => {
     const sorted = ["audio", "unknown", "transcode", "direct", "remux"].sort(
       compareActivityMethods,
     );
-    expect(sorted).toEqual(["direct", "remux", "transcode", "audio", "unknown"]);
+    expect(sorted).toEqual([
+      "direct",
+      "remux",
+      "transcode",
+      "audio",
+      "unknown",
+    ]);
   });
 
   it("tags Jellyfin-ecosystem clients for the JF pill", () => {
     // The server identifies Jellyfin-ecosystem clients (it owns the token
     // list) and emits is_jellyfin_client; the UI trusts only that field.
-    expect(isJellyfinSession(makeSession({ is_jellyfin_client: true }))).toBe(true);
-    expect(isJellyfinSession(makeSession({ is_jellyfin_client: false }))).toBe(false);
+    expect(isJellyfinSession(makeSession({ is_jellyfin_client: true }))).toBe(
+      true,
+    );
+    expect(isJellyfinSession(makeSession({ is_jellyfin_client: false }))).toBe(
+      false,
+    );
     // Servers without the field (or no client metadata at all) → no pill,
     // even when the client name looks like a Jellyfin client.
-    expect(isJellyfinSession(makeSession({ client_name: "Jellyfin Web" }))).toBe(false);
+    expect(
+      isJellyfinSession(makeSession({ client_name: "Jellyfin Web" })),
+    ).toBe(false);
     expect(isJellyfinSession(makeSession())).toBe(false);
   });
 
@@ -380,7 +405,9 @@ describe("adminActivityPresentation", () => {
       tone_map_mode: "hardware",
     });
 
-    expect(getSessionClientLabelFull(session)).toBe("Silo Android TV 1.0.0 (build 5, beta)");
+    expect(getSessionClientLabelFull(session)).toBe(
+      "Silo Android TV 1.0.0 (build 5, beta)",
+    );
     expect(formatToneMapSummary(session)?.detail).toBe("Hardware");
     // The compact row label keeps its unchanged width.
     expect(getSessionClientLabel(session)).toBe("Silo Android TV 1.0.0");
@@ -389,13 +416,21 @@ describe("adminActivityPresentation", () => {
   it("falls back to the compact label, then to name and version", () => {
     expect(
       getSessionClientLabelFull(
-        makeSession({ client_label: "Chrome 120", client_name: "Chrome", client_version: "120.0" }),
+        makeSession({
+          client_label: "Chrome 120",
+          client_name: "Chrome",
+          client_version: "120.0",
+        }),
       ),
     ).toBe("Chrome 120");
     expect(
-      getSessionClientLabelFull(makeSession({ client_name: "Silo iOS", client_version: "2.1.0" })),
+      getSessionClientLabelFull(
+        makeSession({ client_name: "Silo iOS", client_version: "2.1.0" }),
+      ),
     ).toBe("Silo iOS 2.1.0");
-    expect(getSessionClientLabelFull(makeSession({ client_name: "Silo iOS" }))).toBe("Silo iOS");
+    expect(
+      getSessionClientLabelFull(makeSession({ client_name: "Silo iOS" })),
+    ).toBe("Silo iOS");
     expect(getSessionClientLabelFull(makeSession())).toBe("");
   });
 });

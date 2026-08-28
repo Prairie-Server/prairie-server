@@ -13,7 +13,10 @@ import {
 } from "@/components/ui/select";
 import { useUICustomization } from "@/hooks/useUICustomization";
 import { useUserLibraries } from "@/hooks/queries/libraries";
-import { useClearSettingValue, useSetSettingValue } from "@/hooks/queries/settingValues";
+import {
+  useClearSettingValue,
+  useSetSettingValue,
+} from "@/hooks/queries/settingValues";
 import { SETTING_KEYS } from "@/lib/settingsContract";
 import {
   CARD_PRESENTATION_PRESETS,
@@ -48,14 +51,17 @@ const ADDABLE_WEB_BUILTINS: PrimaryMenuItem[] = [
 ];
 
 function menuItemLabel(item: PrimaryMenuItem): string {
-  if (item.type === "builtin") return BUILTIN_LABELS[item.destination] ?? item.destination;
+  if (item.type === "builtin")
+    return BUILTIN_LABELS[item.destination] ?? item.destination;
   if (item.type === "library") return `${item.label} · Library`;
   if (item.type === "section") return `${item.label} · Section`;
   return `${item.label} · Collection`;
 }
 
 function samePresentation(left: CardPresentation, right: CardPresentation) {
-  return left.poster_size === right.poster_size && left.caption === right.caption;
+  return (
+    left.poster_size === right.poster_size && left.caption === right.caption
+  );
 }
 
 function CardPreview({ presentation }: { presentation: CardPresentation }) {
@@ -87,10 +93,13 @@ function CardPreview({ presentation }: { presentation: CardPresentation }) {
 function InterfaceHeader() {
   return (
     <header className="space-y-2">
-      <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Navigation & cards</h2>
+      <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+        Navigation & cards
+      </h2>
       <p className="text-muted-foreground text-sm">
-        These choices sync between web browsers signed into this profile. TV, mobile, tablet, and
-        desktop-native apps keep their own matching-device layouts.
+        These choices sync between web browsers signed into this profile. TV,
+        mobile, tablet, and desktop-native apps keep their own matching-device
+        layouts.
       </p>
     </header>
   );
@@ -105,7 +114,10 @@ export default function InterfaceSettings() {
     () => customization.primaryMenu ?? defaultWebPrimaryMenu(),
     [customization.primaryMenu],
   );
-  const baselineKey = useMemo(() => JSON.stringify(baselineMenu.items), [baselineMenu.items]);
+  const baselineKey = useMemo(
+    () => JSON.stringify(baselineMenu.items),
+    [baselineMenu.items],
+  );
   const [menuDraft, setMenuDraft] = useState<{
     baselineKey: string;
     /** The just-saved baseline expected from the asynchronous query refresh. */
@@ -115,14 +127,21 @@ export default function InterfaceSettings() {
   } | null>(null);
   const [addItemKey, setAddItemKey] = useState("");
   const menuDraftMatchesBaseline =
-    menuDraft?.baselineKey === baselineKey || menuDraft?.pendingBaselineKey === baselineKey;
-  const menuItems = menuDraftMatchesBaseline ? menuDraft.items : baselineMenu.items;
+    menuDraft?.baselineKey === baselineKey ||
+    menuDraft?.pendingBaselineKey === baselineKey;
+  const menuItems = menuDraftMatchesBaseline
+    ? menuDraft.items
+    : baselineMenu.items;
   const menuDirty = menuDraftMatchesBaseline === true && menuDraft.dirty;
   const cardPresentation = customization.cardPresentation;
-  const cardDeviceOverride = customization.cardPresentationSource === "profile_device";
-  const cardClientOverride = customization.cardPresentationSource === "profile_client";
-  const menuDeviceOverride = customization.primaryMenuSource === "profile_device";
-  const menuClientOverride = customization.primaryMenuSource === "profile_client";
+  const cardDeviceOverride =
+    customization.cardPresentationSource === "profile_device";
+  const cardClientOverride =
+    customization.cardPresentationSource === "profile_client";
+  const menuDeviceOverride =
+    customization.primaryMenuSource === "profile_device";
+  const menuClientOverride =
+    customization.primaryMenuSource === "profile_client";
   const menuMutationPending = setValue.isPending || clearValue.isPending;
   const cardMutationPending = menuMutationPending || cardDeviceOverride;
   const menuAtLimit = menuItems.length >= 64;
@@ -132,15 +151,15 @@ export default function InterfaceSettings() {
     const visibleLibraryIds = new Set(libraries.map((library) => library.id));
     const candidates: PrimaryMenuItem[] = [
       ...ADDABLE_WEB_BUILTINS,
-      ...libraries.map(
-        (library): PrimaryMenuItem => ({
-          type: "library",
-          library_id: library.id,
-          label: library.name,
-        }),
-      ),
+      ...libraries.map((library): PrimaryMenuItem => ({
+        type: "library",
+        library_id: library.id,
+        label: library.name,
+      })),
       ...customization.shortcuts.items.filter(
-        (item) => item.library_id === undefined || visibleLibraryIds.has(item.library_id),
+        (item) =>
+          item.library_id === undefined ||
+          visibleLibraryIds.has(item.library_id),
       ),
     ];
     const unique = new Map<string, PrimaryMenuItem>();
@@ -150,7 +169,9 @@ export default function InterfaceSettings() {
     }
     return [...unique.values()];
   }, [customization.shortcuts.items, libraries, menuItems]);
-  const selectedAddItem = availableItems.find((item) => menuItemKey(item) === addItemKey);
+  const selectedAddItem = availableItems.find(
+    (item) => menuItemKey(item) === addItemKey,
+  );
 
   async function saveCardPresentation(next: CardPresentation) {
     try {
@@ -160,7 +181,9 @@ export default function InterfaceSettings() {
         identity: CLIENT_SCOPE,
       });
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save card layout");
+      toast.error(
+        error instanceof Error ? error.message : "Could not save card layout",
+      );
     }
   }
 
@@ -172,20 +195,29 @@ export default function InterfaceSettings() {
       });
       toast.success("Web-family card layout reset");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not reset card layout");
+      toast.error(
+        error instanceof Error ? error.message : "Could not reset card layout",
+      );
     }
   }
 
   async function clearDeviceOverride(
-    key: typeof SETTING_KEYS.UI_CARD_PRESENTATION | typeof SETTING_KEYS.NAV_PRIMARY_MENU,
+    key:
+      | typeof SETTING_KEYS.UI_CARD_PRESENTATION
+      | typeof SETTING_KEYS.NAV_PRIMARY_MENU,
     label: string,
   ) {
     try {
-      await clearValue.mutateAsync({ key, identity: { scope: "profile_device" } });
+      await clearValue.mutateAsync({
+        key,
+        identity: { scope: "profile_device" },
+      });
       toast.success(`${label} now follows the web-family preference`);
     } catch (error) {
       toast.error(
-        error instanceof Error ? error.message : `Could not clear ${label.toLowerCase()}`,
+        error instanceof Error
+          ? error.message
+          : `Could not clear ${label.toLowerCase()}`,
       );
     }
   }
@@ -225,7 +257,9 @@ export default function InterfaceSettings() {
       });
       toast.success("Web navigation saved");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not save navigation");
+      toast.error(
+        error instanceof Error ? error.message : "Could not save navigation",
+      );
     }
   }
 
@@ -244,7 +278,9 @@ export default function InterfaceSettings() {
       setMenuDraft(null);
       toast.success("Web navigation reset");
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Could not reset navigation");
+      toast.error(
+        error instanceof Error ? error.message : "Could not reset navigation",
+      );
     }
   }
 
@@ -263,11 +299,14 @@ export default function InterfaceSettings() {
     return (
       <div className="space-y-6">
         <InterfaceHeader />
-        <div className="surface-panel-subtle rounded-xl border p-5" role="alert">
+        <div
+          className="surface-panel-subtle rounded-xl border p-5"
+          role="alert"
+        >
           <p className="font-medium">Customization unavailable</p>
           <p className="text-muted-foreground mt-1 text-sm">
-            Saved navigation and card settings could not be loaded. Editing stays disabled to
-            protect your existing choices.
+            Saved navigation and card settings could not be loaded. Editing
+            stays disabled to protect your existing choices.
           </p>
         </div>
       </div>
@@ -278,10 +317,14 @@ export default function InterfaceSettings() {
     return (
       <div className="space-y-6">
         <InterfaceHeader />
-        <div className="surface-panel-subtle rounded-xl border p-5" role="alert">
+        <div
+          className="surface-panel-subtle rounded-xl border p-5"
+          role="alert"
+        >
           <p className="font-medium">Server upgrade required</p>
           <p className="text-muted-foreground mt-1 text-sm">
-            This server does not support synchronized navigation and card customization yet.
+            This server does not support synchronized navigation and card
+            customization yet.
           </p>
         </div>
       </div>
@@ -299,15 +342,18 @@ export default function InterfaceSettings() {
         {cardDeviceOverride ? (
           <div className="border-border/70 bg-muted/25 mb-4 flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between">
             <p className="text-muted-foreground text-sm">
-              This browser has a higher-priority device override. Clear it before editing the
-              preference shared by web browsers.
+              This browser has a higher-priority device override. Clear it
+              before editing the preference shared by web browsers.
             </p>
             <Button
               type="button"
               variant="outline"
               disabled={menuMutationPending}
               onClick={() =>
-                void clearDeviceOverride(SETTING_KEYS.UI_CARD_PRESENTATION, "Card layout")
+                void clearDeviceOverride(
+                  SETTING_KEYS.UI_CARD_PRESENTATION,
+                  "Card layout",
+                )
               }
             >
               Use web-family layout
@@ -326,7 +372,9 @@ export default function InterfaceSettings() {
                 disabled={cardMutationPending}
                 className={cn(
                   "surface-panel-subtle relative rounded-xl border p-4 text-left transition-colors",
-                  active ? "border-primary/50 bg-primary/8" : "border-border/70 hover:bg-accent/45",
+                  active
+                    ? "border-primary/50 bg-primary/8"
+                    : "border-border/70 hover:bg-accent/45",
                   "disabled:cursor-not-allowed disabled:opacity-60",
                 )}
               >
@@ -337,7 +385,9 @@ export default function InterfaceSettings() {
                       {preset.description}
                     </p>
                   </div>
-                  {active ? <Check className="text-primary h-4 w-4 shrink-0" /> : null}
+                  {active ? (
+                    <Check className="text-primary h-4 w-4 shrink-0" />
+                  ) : null}
                 </div>
               </button>
             );
@@ -353,7 +403,11 @@ export default function InterfaceSettings() {
           <div className="space-y-5">
             <div className="space-y-2">
               <p className="text-sm font-medium">Poster size</p>
-              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Poster size">
+              <div
+                className="flex flex-wrap gap-2"
+                role="radiogroup"
+                aria-label="Poster size"
+              >
                 {(
                   [
                     ["compact", "Compact"],
@@ -367,7 +421,11 @@ export default function InterfaceSettings() {
                     role="radio"
                     aria-checked={cardPresentation.poster_size === value}
                     size="sm"
-                    variant={cardPresentation.poster_size === value ? "default" : "outline"}
+                    variant={
+                      cardPresentation.poster_size === value
+                        ? "default"
+                        : "outline"
+                    }
                     disabled={cardMutationPending}
                     onClick={() =>
                       void saveCardPresentation({
@@ -383,7 +441,11 @@ export default function InterfaceSettings() {
             </div>
             <div className="space-y-2">
               <p className="text-sm font-medium">Caption</p>
-              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Card caption">
+              <div
+                className="flex flex-wrap gap-2"
+                role="radiogroup"
+                aria-label="Card caption"
+              >
                 {(
                   [
                     ["title_metadata", "Title & metadata"],
@@ -397,7 +459,9 @@ export default function InterfaceSettings() {
                     role="radio"
                     aria-checked={cardPresentation.caption === value}
                     size="sm"
-                    variant={cardPresentation.caption === value ? "default" : "outline"}
+                    variant={
+                      cardPresentation.caption === value ? "default" : "outline"
+                    }
                     disabled={cardMutationPending}
                     onClick={() =>
                       void saveCardPresentation({
@@ -416,8 +480,12 @@ export default function InterfaceSettings() {
         </div>
         {cardClientOverride ? (
           <div className="border-border/70 mt-5 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
-            <p id="card-layout-reset-description" className="text-muted-foreground text-sm">
-              Remove the layout shared by web browsers and inherit the profile or app default.
+            <p
+              id="card-layout-reset-description"
+              className="text-muted-foreground text-sm"
+            >
+              Remove the layout shared by web browsers and inherit the profile
+              or app default.
             </p>
             <Button
               type="button"
@@ -445,15 +513,18 @@ export default function InterfaceSettings() {
           {menuDeviceOverride ? (
             <div className="border-border/70 bg-muted/25 flex flex-col gap-3 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between">
               <p className="text-muted-foreground text-sm">
-                This browser has a higher-priority device menu. Clear it before editing the menu
-                shared by web browsers.
+                This browser has a higher-priority device menu. Clear it before
+                editing the menu shared by web browsers.
               </p>
               <Button
                 type="button"
                 variant="outline"
                 disabled={menuMutationPending}
                 onClick={() =>
-                  void clearDeviceOverride(SETTING_KEYS.NAV_PRIMARY_MENU, "Navigation")
+                  void clearDeviceOverride(
+                    SETTING_KEYS.NAV_PRIMARY_MENU,
+                    "Navigation",
+                  )
                 }
               >
                 Use web-family menu
@@ -462,7 +533,8 @@ export default function InterfaceSettings() {
           ) : null}
           <ol className="space-y-2">
             {menuItems.map((item, index) => {
-              const home = item.type === "builtin" && item.destination === "home";
+              const home =
+                item.type === "builtin" && item.destination === "home";
               return (
                 <li
                   key={menuItemKey(item)}
@@ -479,9 +551,13 @@ export default function InterfaceSettings() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      disabled={menuMutationPending || menuDeviceOverride || index === 0}
+                      disabled={
+                        menuMutationPending || menuDeviceOverride || index === 0
+                      }
                       aria-label={`Move ${menuItemLabel(item)} up`}
-                      onClick={() => updateMenu(moveMenuItem(menuItems, index, -1))}
+                      onClick={() =>
+                        updateMenu(moveMenuItem(menuItems, index, -1))
+                      }
                     >
                       <ArrowUp className="h-4 w-4" />
                     </Button>
@@ -490,10 +566,14 @@ export default function InterfaceSettings() {
                       variant="ghost"
                       size="icon"
                       disabled={
-                        menuMutationPending || menuDeviceOverride || index === menuItems.length - 1
+                        menuMutationPending ||
+                        menuDeviceOverride ||
+                        index === menuItems.length - 1
                       }
                       aria-label={`Move ${menuItemLabel(item)} down`}
-                      onClick={() => updateMenu(moveMenuItem(menuItems, index, 1))}
+                      onClick={() =>
+                        updateMenu(moveMenuItem(menuItems, index, 1))
+                      }
                     >
                       <ArrowDown className="h-4 w-4" />
                     </Button>
@@ -501,10 +581,20 @@ export default function InterfaceSettings() {
                       type="button"
                       variant="ghost"
                       size="icon"
-                      disabled={menuMutationPending || menuDeviceOverride || home}
-                      aria-label={home ? "Home cannot be removed" : `Remove ${menuItemLabel(item)}`}
+                      disabled={
+                        menuMutationPending || menuDeviceOverride || home
+                      }
+                      aria-label={
+                        home
+                          ? "Home cannot be removed"
+                          : `Remove ${menuItemLabel(item)}`
+                      }
                       onClick={() =>
-                        updateMenu(menuItems.filter((_, itemIndex) => itemIndex !== index))
+                        updateMenu(
+                          menuItems.filter(
+                            (_, itemIndex) => itemIndex !== index,
+                          ),
+                        )
                       }
                     >
                       <X className="h-4 w-4" />
@@ -520,14 +610,19 @@ export default function InterfaceSettings() {
               <Select
                 value={addItemKey}
                 onValueChange={setAddItemKey}
-                disabled={menuMutationPending || menuDeviceOverride || menuAtLimit}
+                disabled={
+                  menuMutationPending || menuDeviceOverride || menuAtLimit
+                }
               >
                 <SelectTrigger className="w-full sm:max-w-sm">
                   <SelectValue placeholder="Choose destination or shortcut" />
                 </SelectTrigger>
                 <SelectContent>
                   {availableItems.map((item) => (
-                    <SelectItem key={menuItemKey(item)} value={menuItemKey(item)}>
+                    <SelectItem
+                      key={menuItemKey(item)}
+                      value={menuItemKey(item)}
+                    >
                       {menuItemLabel(item)}
                     </SelectItem>
                   ))}
@@ -537,7 +632,10 @@ export default function InterfaceSettings() {
                 type="button"
                 variant="secondary"
                 disabled={
-                  !selectedAddItem || menuMutationPending || menuDeviceOverride || menuAtLimit
+                  !selectedAddItem ||
+                  menuMutationPending ||
+                  menuDeviceOverride ||
+                  menuAtLimit
                 }
                 onClick={() => {
                   if (!selectedAddItem) return;

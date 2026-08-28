@@ -49,7 +49,9 @@ export interface LanguageOption {
 }
 
 /** Sorted common-language list; labels come from the shared English CLDR resolver. */
-export const LANGUAGES: LanguageOption[] = COMMON_LANGUAGE_CODES.map((code) => ({
-  code,
-  label: getLanguageName(code),
-})).sort((a, b) => a.label.localeCompare(b.label));
+export const LANGUAGES: LanguageOption[] = COMMON_LANGUAGE_CODES.map(
+  (code) => ({
+    code,
+    label: getLanguageName(code),
+  }),
+).sort((a, b) => a.label.localeCompare(b.label));

@@ -29,12 +29,18 @@ import { adminKeys } from "../keys";
 const ADMIN_STALE_TIME = 30_000;
 export const CHECK_PLUGIN_UPDATES_TASK_KEY = "check_plugin_updates";
 
-function invalidatePluginQueries(queryClient: ReturnType<typeof useQueryClient>) {
+function invalidatePluginQueries(
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: adminKeys.pluginRepositories() }),
     queryClient.invalidateQueries({ queryKey: adminKeys.pluginCatalog() }),
-    queryClient.invalidateQueries({ queryKey: adminKeys.pluginInstallations() }),
-    queryClient.invalidateQueries({ queryKey: adminKeys.pluginCatalogSettings() }),
+    queryClient.invalidateQueries({
+      queryKey: adminKeys.pluginInstallations(),
+    }),
+    queryClient.invalidateQueries({
+      queryKey: adminKeys.pluginCatalogSettings(),
+    }),
   ]);
 }
 
@@ -45,7 +51,9 @@ export function useAdminPluginInstallations() {
   return useQuery({
     queryKey: adminKeys.pluginInstallations(),
     queryFn: () =>
-      api<PluginInstallation[]>("/admin/plugins/installations").then((data) => data ?? []),
+      api<PluginInstallation[]>("/admin/plugins/installations").then(
+        (data) => data ?? [],
+      ),
     staleTime: ADMIN_STALE_TIME,
   });
 }
@@ -54,26 +62,34 @@ export function useAdminPlugins() {
   const repositoriesQuery = useQuery({
     queryKey: adminKeys.pluginRepositories(),
     queryFn: () =>
-      api<PluginRepository[]>("/admin/plugins/repositories").then((data) => data ?? []),
+      api<PluginRepository[]>("/admin/plugins/repositories").then(
+        (data) => data ?? [],
+      ),
     staleTime: ADMIN_STALE_TIME,
   });
 
   const catalogQuery = useQuery({
     queryKey: adminKeys.pluginCatalog(),
-    queryFn: () => api<PluginCatalogEntry[]>("/admin/plugins/catalog").then((data) => data ?? []),
+    queryFn: () =>
+      api<PluginCatalogEntry[]>("/admin/plugins/catalog").then(
+        (data) => data ?? [],
+      ),
     staleTime: ADMIN_STALE_TIME,
   });
 
   const installationsQuery = useQuery({
     queryKey: adminKeys.pluginInstallations(),
     queryFn: () =>
-      api<PluginInstallation[]>("/admin/plugins/installations").then((data) => data ?? []),
+      api<PluginInstallation[]>("/admin/plugins/installations").then(
+        (data) => data ?? [],
+      ),
     staleTime: ADMIN_STALE_TIME,
   });
 
   const catalogSettingsQuery = useQuery({
     queryKey: adminKeys.pluginCatalogSettings(),
-    queryFn: () => api<PluginCatalogSettings>("/admin/plugins/catalog-settings"),
+    queryFn: () =>
+      api<PluginCatalogSettings>("/admin/plugins/catalog-settings"),
     staleTime: ADMIN_STALE_TIME,
   });
 
@@ -109,7 +125,9 @@ export function useUpdatePluginCatalogSettings() {
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update plugin catalog settings",
+        error instanceof Error
+          ? error.message
+          : "Failed to update plugin catalog settings",
       );
     },
   });
@@ -128,7 +146,9 @@ export function useCreatePluginRepository() {
       void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to add repository");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to add repository",
+      );
     },
   });
 }
@@ -136,7 +156,13 @@ export function useCreatePluginRepository() {
 export function useUpdatePluginRepository() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: number; body: UpdatePluginRepositoryRequest }) =>
+    mutationFn: ({
+      id,
+      body,
+    }: {
+      id: number;
+      body: UpdatePluginRepositoryRequest;
+    }) =>
       api<PluginRepository>(`/admin/plugins/repositories/${id}`, {
         method: "PUT",
         body: JSON.stringify(body),
@@ -146,7 +172,9 @@ export function useUpdatePluginRepository() {
       void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to update repository");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update repository",
+      );
     },
   });
 }
@@ -154,13 +182,16 @@ export function useUpdatePluginRepository() {
 export function useDeletePluginRepository() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => api(`/admin/plugins/repositories/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) =>
+      api(`/admin/plugins/repositories/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Repository removed");
       void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to remove repository");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to remove repository",
+      );
     },
   });
 }
@@ -178,7 +209,9 @@ export function useInstallPlugin() {
       void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to install plugin");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to install plugin",
+      );
     },
   });
 }
@@ -218,7 +251,9 @@ export function useUploadPlugin() {
       void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to upload plugin");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to upload plugin",
+      );
     },
   });
 }
@@ -254,7 +289,13 @@ export function usePluginUpload() {
 export function useUpdatePluginInstallation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: number; body: UpdatePluginInstallationRequest }) =>
+    mutationFn: ({
+      id,
+      body,
+    }: {
+      id: number;
+      body: UpdatePluginInstallationRequest;
+    }) =>
       api<PluginInstallation>(`/admin/plugins/installations/${id}`, {
         method: "PUT",
         body: JSON.stringify(body),
@@ -264,7 +305,9 @@ export function useUpdatePluginInstallation() {
       void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to update plugin");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update plugin",
+      );
     },
   });
 }
@@ -281,7 +324,9 @@ export function useApplyPluginUpdate() {
       void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to update plugin");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update plugin",
+      );
     },
   });
 }
@@ -289,13 +334,16 @@ export function useApplyPluginUpdate() {
 export function useDeletePluginInstallation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => api(`/admin/plugins/installations/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) =>
+      api(`/admin/plugins/installations/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Plugin removed");
       void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to remove plugin");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to remove plugin",
+      );
     },
   });
 }
@@ -319,7 +367,11 @@ export function useCheckPluginUpdates() {
       toast.success("Plugin update check started");
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to start plugin update check");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to start plugin update check",
+      );
     },
   });
 }
@@ -337,7 +389,9 @@ export function useSavePluginConfig() {
       await invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to save plugin config");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save plugin config",
+      );
     },
   });
 }
@@ -345,17 +399,26 @@ export function useSavePluginConfig() {
 export function useTestPluginConfig() {
   return useMutation({
     mutationFn: ({ id, body }: { id: number; body: SavePluginConfigRequest }) =>
-      api<ConnectionCheckResponse>(`/admin/plugins/installations/${id}/config/test`, {
-        method: "POST",
-        body: JSON.stringify(body),
-      }),
+      api<ConnectionCheckResponse>(
+        `/admin/plugins/installations/${id}/config/test`,
+        {
+          method: "POST",
+          body: JSON.stringify(body),
+        },
+      ),
   });
 }
 
 export function useSavePluginAuthBinding() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: number; body: SavePluginAuthBindingRequest }) =>
+    mutationFn: ({
+      id,
+      body,
+    }: {
+      id: number;
+      body: SavePluginAuthBindingRequest;
+    }) =>
       api(`/admin/plugins/installations/${id}/auth-binding`, {
         method: "PUT",
         body: JSON.stringify(body),
@@ -365,7 +428,9 @@ export function useSavePluginAuthBinding() {
       void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to save auth binding");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save auth binding",
+      );
     },
   });
 }
@@ -398,7 +463,9 @@ export function useSavePluginTaskBinding() {
       void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to save task binding");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to save task binding",
+      );
     },
   });
 }

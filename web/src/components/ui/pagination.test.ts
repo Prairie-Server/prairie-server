@@ -9,7 +9,15 @@ describe("pageWindow", () => {
   });
 
   it("anchors first/last and the current neighbours in the middle", () => {
-    expect(pageWindow(10, 20)).toEqual([0, "ellipsis", 9, 10, 11, "ellipsis", 19]);
+    expect(pageWindow(10, 20)).toEqual([
+      0,
+      "ellipsis",
+      9,
+      10,
+      11,
+      "ellipsis",
+      19,
+    ]);
   });
 
   it("collapses only the trailing gap near the start", () => {
@@ -26,7 +34,9 @@ describe("pageWindow", () => {
     for (let count = 1; count <= 30; count++) {
       for (let current = 0; current < count; current++) {
         const window = pageWindow(current, count);
-        const pages = window.filter((entry): entry is number => entry !== "ellipsis");
+        const pages = window.filter(
+          (entry): entry is number => entry !== "ellipsis",
+        );
         // Strictly increasing, in-range, and always includes the current page.
         expect(pages).toEqual([...pages].sort((a, b) => a - b));
         expect(new Set(pages).size).toBe(pages.length);

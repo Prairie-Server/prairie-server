@@ -13,7 +13,10 @@ import type {
   RequestMediaDetail,
   RequestMediaResult,
 } from "@/api/types";
-import { useCreateMediaRequest, useRequestMediaDetail } from "@/hooks/queries/useRequests";
+import {
+  useCreateMediaRequest,
+  useRequestMediaDetail,
+} from "@/hooks/queries/useRequests";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { cn } from "@/lib/utils";
 import {
@@ -25,7 +28,8 @@ import {
 
 export default function RequestDetail() {
   const params = useParams<{ mediaType: string; tmdbId: string }>();
-  const mediaType = (params.mediaType === "series" ? "series" : "movie") as "movie" | "series";
+  const mediaType = (params.mediaType === "series" ? "series" : "movie") as
+    "movie" | "series";
   const tmdbID = Number(params.tmdbId) || 0;
 
   const detail = useRequestMediaDetail(mediaType, tmdbID);
@@ -74,9 +78,12 @@ export default function RequestDetail() {
           <RequestActions
             item={item}
             isSubmitting={
-              createRequest.isPending && createRequest.variables?.tmdb_id === item.tmdb_id
+              createRequest.isPending &&
+              createRequest.variables?.tmdb_id === item.tmdb_id
             }
-            onRequest={() => createRequest.mutate(requestInputFromMediaResult(item))}
+            onRequest={() =>
+              createRequest.mutate(requestInputFromMediaResult(item))
+            }
           />
         }
       />
@@ -85,7 +92,9 @@ export default function RequestDetail() {
         {item.cast && item.cast.length > 0 && (
           <section className="section-row">
             <div className="mb-5 px-4 sm:px-6 lg:px-10 xl:px-12">
-              <h2 className="text-foreground text-xl font-semibold tracking-tight">Cast</h2>
+              <h2 className="text-foreground text-xl font-semibold tracking-tight">
+                Cast
+              </h2>
             </div>
             <CastCarousel cast={adaptRequestCast(item.cast)} fullBleed />
           </section>
@@ -96,7 +105,9 @@ export default function RequestDetail() {
             recommendations={item.recommendations}
             pendingTMDBID={createRequest.variables?.tmdb_id}
             isSubmitting={createRequest.isPending}
-            onRequest={(rec) => createRequest.mutate(requestInputFromMediaResult(rec))}
+            onRequest={(rec) =>
+              createRequest.mutate(requestInputFromMediaResult(rec))
+            }
           />
         )}
       </div>
@@ -126,9 +137,12 @@ function MetaPills({ item }: { item: RequestMediaDetail }) {
   const pills: string[] = [];
   if (item.year) pills.push(String(item.year));
   if (item.content_rating) pills.push(item.content_rating);
-  if (item.media_type === "movie" && item.runtime) pills.push(formatDuration(item.runtime));
+  if (item.media_type === "movie" && item.runtime)
+    pills.push(formatDuration(item.runtime));
   if (item.media_type === "series" && item.number_of_seasons)
-    pills.push(`${item.number_of_seasons} Season${item.number_of_seasons === 1 ? "" : "s"}`);
+    pills.push(
+      `${item.number_of_seasons} Season${item.number_of_seasons === 1 ? "" : "s"}`,
+    );
   if (item.media_type === "series" && item.status) pills.push(item.status);
 
   return (
@@ -159,11 +173,15 @@ function RequestScoreRow({ item }: { item: RequestMediaDetail }) {
     <div className="text-muted-foreground flex items-center gap-3 text-[13px]">
       <span className="inline-flex items-center gap-1.5">
         <Star className="h-3.5 w-3.5 fill-amber-300/90 text-amber-300/90" />
-        <span className="text-foreground tabular-nums">{item.vote_average.toFixed(1)}</span>
+        <span className="text-foreground tabular-nums">
+          {item.vote_average.toFixed(1)}
+        </span>
         <span className="opacity-60">TMDB</span>
       </span>
       {item.vote_count ? (
-        <span className="tabular-nums opacity-70">{formatVoteCount(item.vote_count)} votes</span>
+        <span className="tabular-nums opacity-70">
+          {formatVoteCount(item.vote_count)} votes
+        </span>
       ) : null}
     </div>
   );
@@ -201,10 +219,15 @@ function RequestActions({
   onRequest: () => void;
 }) {
   const requestable = item.request.requestable;
-  const statusLabel = item.request.status ? formatRequestStatus(item.request.status) : null;
+  const statusLabel = item.request.status
+    ? formatRequestStatus(item.request.status)
+    : null;
   const reasonLabel =
-    !requestable && !item.request.status ? formatRequestReason(item.request.reason) : null;
-  const availableInLibrary = item.availability === "available" && !item.request.status;
+    !requestable && !item.request.status
+      ? formatRequestReason(item.request.reason)
+      : null;
+  const availableInLibrary =
+    item.availability === "available" && !item.request.status;
 
   return (
     <div className="flex flex-wrap items-center gap-2">
@@ -311,7 +334,9 @@ function StatusBlock({
   );
 }
 
-function statusToneForStatus(status: string): "amber" | "sky" | "emerald" | "zinc" {
+function statusToneForStatus(
+  status: string,
+): "amber" | "sky" | "emerald" | "zinc" {
   switch (status) {
     case "pending":
       return "amber";
@@ -353,7 +378,11 @@ function RecommendationsRow({
 }
 
 function pickStudioLabel(item: RequestMediaDetail): string | undefined {
-  if (item.media_type === "series" && item.networks && item.networks.length > 0) {
+  if (
+    item.media_type === "series" &&
+    item.networks &&
+    item.networks.length > 0
+  ) {
     return item.networks[0];
   }
   if (item.production_companies && item.production_companies.length > 0) {
@@ -406,7 +435,10 @@ function RequestDetailSkeleton() {
           </div>
           <div className="flex gap-3 overflow-hidden pl-4 sm:pl-6 lg:pl-10 xl:pl-12">
             {Array.from({ length: 8 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-[2/3] w-[110px] shrink-0 rounded-lg" />
+              <Skeleton
+                key={i}
+                className="aspect-[2/3] w-[110px] shrink-0 rounded-lg"
+              />
             ))}
           </div>
         </div>

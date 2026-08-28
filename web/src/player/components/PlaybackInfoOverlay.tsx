@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { X } from "lucide-react";
-import { buildPlaybackInfoSections, type RuntimePlaybackStats } from "../playback-info";
+import {
+  buildPlaybackInfoSections,
+  type RuntimePlaybackStats,
+} from "../playback-info";
 import type { PlanV3 } from "../protocol-v3";
 import type { PlayerFileVersion } from "../types";
 
@@ -34,7 +37,9 @@ export function PlaybackInfoOverlay({
       if (!video) return;
 
       const quality = (
-        video as HTMLVideoElement & { getVideoPlaybackQuality?: () => VideoPlaybackQuality }
+        video as HTMLVideoElement & {
+          getVideoPlaybackQuality?: () => VideoPlaybackQuality;
+        }
       ).getVideoPlaybackQuality?.();
 
       setRuntimeStats({
@@ -85,9 +90,14 @@ export function PlaybackInfoOverlay({
               {section.title}
             </div>
             {section.rows.map((row) => (
-              <div key={row.label} className="flex justify-between gap-4 py-0.5">
+              <div
+                key={row.label}
+                className="flex justify-between gap-4 py-0.5"
+              >
                 <span className="shrink-0 text-white/60">{row.label}</span>
-                <span className="truncate text-right text-white/90">{row.value}</span>
+                <span className="truncate text-right text-white/90">
+                  {row.value}
+                </span>
               </div>
             ))}
           </div>

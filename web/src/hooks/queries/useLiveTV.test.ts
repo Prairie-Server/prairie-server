@@ -4,12 +4,17 @@ const mockUseQuery = vi.fn();
 const mockApi = vi.fn();
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
+    "@tanstack/react-query",
+  );
   return {
     ...actual,
     useQuery: (...args: unknown[]) => mockUseQuery(...args),
-    useMutation: () => ({ mutate: vi.fn(), mutateAsync: vi.fn(), isPending: false }),
+    useMutation: () => ({
+      mutate: vi.fn(),
+      mutateAsync: vi.fn(),
+      isPending: false,
+    }),
     useQueryClient: () => ({ invalidateQueries: vi.fn() }),
   };
 });
@@ -38,7 +43,9 @@ describe("useLiveTV guide and recordings", () => {
       start: "2026-07-25T18:00:00Z",
       end: "2026-07-26T00:00:00Z",
     });
-    const queryOptions = mockUseQuery.mock.calls[0]?.[0] as { queryFn: () => Promise<unknown> };
+    const queryOptions = mockUseQuery.mock.calls[0]?.[0] as {
+      queryFn: () => Promise<unknown>;
+    };
     await queryOptions.queryFn();
     expect(mockApi).toHaveBeenCalledWith(
       "/livetv/guide?channels=ch1%2Cch2&start=2026-07-25T18%3A00%3A00Z&end=2026-07-26T00%3A00%3A00Z",
@@ -47,7 +54,9 @@ describe("useLiveTV guide and recordings", () => {
 
   it("requests recordings with optional status", async () => {
     useLiveTVRecordings("scheduled");
-    const queryOptions = mockUseQuery.mock.calls[0]?.[0] as { queryFn: () => Promise<unknown> };
+    const queryOptions = mockUseQuery.mock.calls[0]?.[0] as {
+      queryFn: () => Promise<unknown>;
+    };
     await queryOptions.queryFn();
     expect(mockApi).toHaveBeenCalledWith("/livetv/recordings?status=scheduled");
   });

@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { formatPageCount, formatLanguageName, extractSourceHint } from "./versionFormatUtils";
+import {
+  formatPageCount,
+  formatLanguageName,
+  extractSourceHint,
+} from "./versionFormatUtils";
 
 describe("formatPageCount", () => {
   it("formats singular and plural ebook page counts", () => {

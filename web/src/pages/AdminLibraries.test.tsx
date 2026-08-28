@@ -38,17 +38,23 @@ const mocks = vi.hoisted(() => ({
 
 vi.mock("@/hooks/queries/admin/libraries", () => ({
   useAdminLibraries: (...args: unknown[]) => mocks.useAdminLibraries(...args),
-  useLibraryRefreshJobs: (...args: unknown[]) => mocks.useLibraryRefreshJobs(...args),
-  useSkippedLibraryRoots: (...args: unknown[]) => mocks.useSkippedLibraryRoots(...args),
+  useLibraryRefreshJobs: (...args: unknown[]) =>
+    mocks.useLibraryRefreshJobs(...args),
+  useSkippedLibraryRoots: (...args: unknown[]) =>
+    mocks.useSkippedLibraryRoots(...args),
   useStaleMediaIDs: (...args: unknown[]) => mocks.useStaleMediaIDs(...args),
-  useRematchStaleMediaID: (...args: unknown[]) => mocks.useRematchStaleMediaID(...args),
-  useCheckLibraryMount: (...args: unknown[]) => mocks.useCheckLibraryMount(...args),
+  useRematchStaleMediaID: (...args: unknown[]) =>
+    mocks.useRematchStaleMediaID(...args),
+  useCheckLibraryMount: (...args: unknown[]) =>
+    mocks.useCheckLibraryMount(...args),
   useCreateLibrary: (...args: unknown[]) => mocks.useCreateLibrary(...args),
   useUpdateLibrary: (...args: unknown[]) => mocks.useUpdateLibrary(...args),
   useDeleteLibrary: (...args: unknown[]) => mocks.useDeleteLibrary(...args),
   useScanLibrary: (...args: unknown[]) => mocks.useScanLibrary(...args),
-  useScanAllLibraries: (...args: unknown[]) => mocks.useScanAllLibraries(...args),
-  useRefreshLibraryMetadata: (...args: unknown[]) => mocks.useRefreshLibraryMetadata(...args),
+  useScanAllLibraries: (...args: unknown[]) =>
+    mocks.useScanAllLibraries(...args),
+  useRefreshLibraryMetadata: (...args: unknown[]) =>
+    mocks.useRefreshLibraryMetadata(...args),
   useLibraryMetadataMatchQueues: (...args: unknown[]) =>
     mocks.useLibraryMetadataMatchQueues(...args),
   useLibraryMetadataMatchQueueDetail: (...args: unknown[]) =>
@@ -57,18 +63,28 @@ vi.mock("@/hooks/queries/admin/libraries", () => ({
     mocks.useRetryLibraryMetadataMatchQueue(...args),
   useCancelLibraryMetadataMatchQueue: (...args: unknown[]) =>
     mocks.useCancelLibraryMetadataMatchQueue(...args),
-  useConfirmEmptyRootCleanup: (...args: unknown[]) => mocks.useConfirmEmptyRootCleanup(...args),
-  useLibraryProviders: (...args: unknown[]) => mocks.useLibraryProviders(...args),
-  useSetLibraryProviders: (...args: unknown[]) => mocks.useSetLibraryProviders(...args),
-  useReorderLibraries: (...args: unknown[]) => mocks.useReorderLibraries(...args),
-  useUploadLibraryPoster: (...args: unknown[]) => mocks.useUploadLibraryPoster(...args),
-  useDeleteLibraryPoster: (...args: unknown[]) => mocks.useDeleteLibraryPoster(...args),
-  useUnmatchedLibraryItems: (...args: unknown[]) => mocks.useUnmatchedLibraryItems(...args),
-  useCancelLibraryScans: (...args: unknown[]) => mocks.useCancelLibraryScans(...args),
+  useConfirmEmptyRootCleanup: (...args: unknown[]) =>
+    mocks.useConfirmEmptyRootCleanup(...args),
+  useLibraryProviders: (...args: unknown[]) =>
+    mocks.useLibraryProviders(...args),
+  useSetLibraryProviders: (...args: unknown[]) =>
+    mocks.useSetLibraryProviders(...args),
+  useReorderLibraries: (...args: unknown[]) =>
+    mocks.useReorderLibraries(...args),
+  useUploadLibraryPoster: (...args: unknown[]) =>
+    mocks.useUploadLibraryPoster(...args),
+  useDeleteLibraryPoster: (...args: unknown[]) =>
+    mocks.useDeleteLibraryPoster(...args),
+  useUnmatchedLibraryItems: (...args: unknown[]) =>
+    mocks.useUnmatchedLibraryItems(...args),
+  useCancelLibraryScans: (...args: unknown[]) =>
+    mocks.useCancelLibraryScans(...args),
   useCancelAdminJob: (...args: unknown[]) => mocks.useCancelAdminJob(...args),
   useLibraryRoots: (...args: unknown[]) => mocks.useLibraryRoots(...args),
-  useUpsertLibraryRootOverride: (...args: unknown[]) => mocks.useUpsertLibraryRootOverride(...args),
-  useDeleteLibraryRootOverride: (...args: unknown[]) => mocks.useDeleteLibraryRootOverride(...args),
+  useUpsertLibraryRootOverride: (...args: unknown[]) =>
+    mocks.useUpsertLibraryRootOverride(...args),
+  useDeleteLibraryRootOverride: (...args: unknown[]) =>
+    mocks.useDeleteLibraryRootOverride(...args),
   UNMATCHED_PAGE_SIZE: 10,
 }));
 
@@ -87,7 +103,9 @@ import AdminLibraries from "./AdminLibraries";
 // the <Link>s inside AdminLibraries. Without QueryClientProvider, even fully
 // mocked useQuery hooks throw "No QueryClient set" during render.
 const renderPage = () => {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return renderToStaticMarkup(
     <QueryClientProvider client={client}>
       <MemoryRouter>
@@ -213,7 +231,9 @@ describe("AdminLibraries", () => {
 
     const markup = renderPage();
 
-    expect(markup).toContain('title="Confirm cleanup for missing or empty roots"');
+    expect(markup).toContain(
+      'title="Confirm cleanup for missing or empty roots"',
+    );
   });
 
   it("renders the collapsed Ambiguous Roots section with a populated count", () => {
@@ -229,7 +249,8 @@ describe("AdminLibraries", () => {
           title: "Inception",
           year: 2010,
           observed_file_count: 1,
-          sample_file_path: "/media/movies/Inception (2010)/Inception (2010).mkv",
+          sample_file_path:
+            "/media/movies/Inception (2010)/Inception (2010).mkv",
           first_seen_at: "2026-03-23T20:00:00Z",
           last_seen_at: "2026-03-23T21:00:00Z",
         },
@@ -262,7 +283,9 @@ describe("AdminLibraries", () => {
     const markup = renderPage();
 
     expect(markup).toContain("Metadata Matcher");
-    expect(markup).toContain("Pending and parked items that still need a provider match.");
+    expect(markup).toContain(
+      "Pending and parked items that still need a provider match.",
+    );
     // The total renders as element text (">3<"); a bare "3" would also match
     // Tailwind class names like p-3 and prove nothing.
     expect(markup).toMatch(/>\s*3\s*</);
@@ -364,7 +387,9 @@ describe("AdminLibraries", () => {
     const markup = renderPage();
 
     expect(markup).toContain("Unmatched Items");
-    expect(markup).toContain("Items that could not be matched to any metadata provider.");
+    expect(markup).toContain(
+      "Items that could not be matched to any metadata provider.",
+    );
   });
 
   it("renders the Troubleshooting section collapsed by default when skipped roots exist", () => {

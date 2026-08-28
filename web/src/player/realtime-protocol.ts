@@ -1,6 +1,7 @@
 import type { SubtitleInventoryItemV3 } from "./protocol-v3";
 
-export type PlaybackRealtimeMessageType = "command" | "event" | "hello" | "ack" | "result";
+export type PlaybackRealtimeMessageType =
+  "command" | "event" | "hello" | "ack" | "result";
 
 export type PlaybackCommandName =
   | "pause"
@@ -251,7 +252,10 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 }
 
 function isCommandName(value: unknown): value is PlaybackCommandName {
-  return typeof value === "string" && ALL_PLAYBACK_COMMANDS.includes(value as PlaybackCommandName);
+  return (
+    typeof value === "string" &&
+    ALL_PLAYBACK_COMMANDS.includes(value as PlaybackCommandName)
+  );
 }
 
 /**
@@ -280,15 +284,22 @@ function isChapterThumbnailReadyPayload(
     typeof value.file_id === "number" &&
     typeof value.chapter_index === "number" &&
     typeof value.thumbnail_url === "string" &&
-    (value.thumbnail_thumbhash === undefined || typeof value.thumbnail_thumbhash === "string")
+    (value.thumbnail_thumbhash === undefined ||
+      typeof value.thumbnail_thumbhash === "string")
   );
 }
 
 function isTimeRangePayload(value: unknown): value is PlaybackTimeRangePayload {
-  return isRecord(value) && typeof value.start === "number" && typeof value.end === "number";
+  return (
+    isRecord(value) &&
+    typeof value.start === "number" &&
+    typeof value.end === "number"
+  );
 }
 
-function isMarkersUpdatedPayload(value: unknown): value is PlaybackMarkersUpdatedPayload {
+function isMarkersUpdatedPayload(
+  value: unknown,
+): value is PlaybackMarkersUpdatedPayload {
   const isOptionalRange = (range: unknown) =>
     range === undefined || range === null || isTimeRangePayload(range);
   return (
@@ -314,7 +325,9 @@ function isOptionalString(value: unknown): boolean {
  * client select the track without counting — so an entry missing it is worse
  * than no entry at all, and is rejected in favour of refetching the plan.
  */
-function isSubtitleInventoryItem(value: unknown): value is SubtitleInventoryItemV3 {
+function isSubtitleInventoryItem(
+  value: unknown,
+): value is SubtitleInventoryItemV3 {
   return (
     isRecord(value) &&
     typeof value.track_id === "string" &&
@@ -335,10 +348,14 @@ function isSubtitleInventoryItem(value: unknown): value is SubtitleInventoryItem
 }
 
 function isOptionalSubtitleInventoryItem(value: unknown): boolean {
-  return value === undefined || value === null || isSubtitleInventoryItem(value);
+  return (
+    value === undefined || value === null || isSubtitleInventoryItem(value)
+  );
 }
 
-function isSubtitleReadyPayload(value: unknown): value is PlaybackSubtitleReadyPayload {
+function isSubtitleReadyPayload(
+  value: unknown,
+): value is PlaybackSubtitleReadyPayload {
   return (
     isRecord(value) &&
     typeof value.session_id === "string" &&
@@ -374,7 +391,9 @@ function isTranslationStartedPayload(
   );
 }
 
-function isTranslationCuesPayload(value: unknown): value is PlaybackSubtitleTranslationCuesPayload {
+function isTranslationCuesPayload(
+  value: unknown,
+): value is PlaybackSubtitleTranslationCuesPayload {
   return (
     isRecord(value) &&
     typeof value.session_id === "string" &&
@@ -443,7 +462,8 @@ export function parsePlaybackRealtimeMessage(
           isRecord(value.issued_by) && typeof value.issued_by.kind === "string"
             ? { kind: value.issued_by.kind }
             : undefined,
-        deadline_ms: typeof value.deadline_ms === "number" ? value.deadline_ms : undefined,
+        deadline_ms:
+          typeof value.deadline_ms === "number" ? value.deadline_ms : undefined,
         payload: isRecord(value.payload) ? value.payload : {},
       };
     }
@@ -459,7 +479,10 @@ export function parsePlaybackRealtimeMessage(
           payload: value.payload,
         };
       }
-      if (value.name === "subtitle_ready" && isSubtitleReadyPayload(value.payload)) {
+      if (
+        value.name === "subtitle_ready" &&
+        isSubtitleReadyPayload(value.payload)
+      ) {
         return {
           type: "event",
           session_id: value.session_id,
@@ -467,7 +490,10 @@ export function parsePlaybackRealtimeMessage(
           payload: value.payload,
         };
       }
-      if (value.name === "markers_updated" && isMarkersUpdatedPayload(value.payload)) {
+      if (
+        value.name === "markers_updated" &&
+        isMarkersUpdatedPayload(value.payload)
+      ) {
         return {
           type: "event",
           session_id: value.session_id,
@@ -486,7 +512,10 @@ export function parsePlaybackRealtimeMessage(
           payload: value.payload,
         };
       }
-      if (value.name === "subtitle_translation_cues" && isTranslationCuesPayload(value.payload)) {
+      if (
+        value.name === "subtitle_translation_cues" &&
+        isTranslationCuesPayload(value.payload)
+      ) {
         return {
           type: "event",
           session_id: value.session_id,
@@ -523,7 +552,9 @@ export function parsePlaybackRealtimeMessage(
   }
 }
 
-export function parsePlaybackRealtimeCommand(data: string): PlaybackRealtimeCommandEnvelope | null {
+export function parsePlaybackRealtimeCommand(
+  data: string,
+): PlaybackRealtimeCommandEnvelope | null {
   const message = parsePlaybackRealtimeMessage(data);
   return message?.type === "command" ? message : null;
 }

@@ -12,7 +12,10 @@ import { deviceKeys, settingsKeys } from "./keys";
  * answers 403 otherwise. It defaults off so the ordinary screen cannot show the
  * family's devices by forgetting to ask for less.
  */
-export function useMyDevices(options?: { household?: boolean; enabled?: boolean }) {
+export function useMyDevices(options?: {
+  household?: boolean;
+  enabled?: boolean;
+}) {
   const household = options?.household ?? false;
 
   return useQuery({
@@ -33,7 +36,8 @@ function useDeviceMutation(path: (device: DeviceTarget) => string) {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: (device: DeviceTarget) => api(path(device), { method: "DELETE" }),
+    mutationFn: (device: DeviceTarget) =>
+      api(path(device), { method: "DELETE" }),
     onSettled: () => {
       void qc.invalidateQueries({ queryKey: deviceKeys.all });
       void qc.invalidateQueries({ queryKey: [...settingsKeys.all, "values"] });
@@ -48,20 +52,24 @@ export interface DeviceTarget {
 }
 
 function targetQuery(device: DeviceTarget): string {
-  return device.profileId ? `?profile_id=${encodeURIComponent(device.profileId)}` : "";
+  return device.profileId
+    ? `?profile_id=${encodeURIComponent(device.profileId)}`
+    : "";
 }
 
 /** Remove the device's settings and drop it from the registry. */
 export function useForgetDevice() {
   return useDeviceMutation(
-    (device) => `/devices/${encodeURIComponent(device.deviceId)}${targetQuery(device)}`,
+    (device) =>
+      `/devices/${encodeURIComponent(device.deviceId)}${targetQuery(device)}`,
   );
 }
 
 /** Return a device to the profile's own values without forgetting it. */
 export function useClearDeviceSettings() {
   return useDeviceMutation(
-    (device) => `/devices/${encodeURIComponent(device.deviceId)}/settings${targetQuery(device)}`,
+    (device) =>
+      `/devices/${encodeURIComponent(device.deviceId)}/settings${targetQuery(device)}`,
   );
 }
 
@@ -71,7 +79,10 @@ export function useClearDeviceSettings() {
  */
 export type DeviceRecencyGroup = "current" | "week" | "earlier";
 
-export function deviceRecencyGroup(device: UserDevice, now: number): DeviceRecencyGroup {
+export function deviceRecencyGroup(
+  device: UserDevice,
+  now: number,
+): DeviceRecencyGroup {
   if (device.is_current_device) return "current";
   const seen = Date.parse(device.last_seen_at);
   if (Number.isNaN(seen)) return "earlier";

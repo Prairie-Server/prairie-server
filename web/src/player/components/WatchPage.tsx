@@ -1,13 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
-import type { PlayerFileVersion, PlayerPlaybackStateChange, WatchPageProps } from "../types";
+import type {
+  PlayerFileVersion,
+  PlayerPlaybackStateChange,
+  WatchPageProps,
+} from "../types";
 import type { PlaybackRealtimeEventEnvelope } from "../realtime-protocol";
 import type { SubtitleInventoryItemV3 } from "../protocol-v3";
 import { usePlaybackSession } from "../hooks/usePlaybackSession";
 import { usePlayerConfig } from "../context/PlayerConfigContext";
 import { playerFetch } from "../player-fetch";
 import { resolvePlayableSubtitles } from "../utils/playableSubtitles";
-import { patchVersionMarkers, resolveActiveVersionMarkers } from "../utils/watchPageMarkers";
+import {
+  patchVersionMarkers,
+  resolveActiveVersionMarkers,
+} from "../utils/watchPageMarkers";
 import { buildSubtitleChoiceRequests } from "../utils/subtitleChoicePersistence";
 import { VideoPlayer } from "./VideoPlayer";
 import { fetchWatchDetail } from "@/hooks/queries/items";
@@ -121,7 +128,12 @@ export function WatchPage({
 
   const session = usePlaybackSession(
     playbackRequestKey ??
-      JSON.stringify([contentId, fileId ?? null, initialPosition, forceInitialPosition]),
+      JSON.stringify([
+        contentId,
+        fileId ?? null,
+        initialPosition,
+        forceInitialPosition,
+      ]),
     playbackVersions,
     playbackVariants,
     fileId,
@@ -141,13 +153,22 @@ export function WatchPage({
     const key = `${session.playbackAttemptId}:${session.initialSubtitleError}`;
     if (initialSubtitleErrorKeyRef.current === key) return;
     initialSubtitleErrorKeyRef.current = key;
-    toast.error(session.initialSubtitleErrorTitle ?? "That subtitle track can't be used", {
-      description: session.initialSubtitleError,
-    });
-  }, [session.initialSubtitleError, session.initialSubtitleErrorTitle, session.playbackAttemptId]);
+    toast.error(
+      session.initialSubtitleErrorTitle ?? "That subtitle track can't be used",
+      {
+        description: session.initialSubtitleError,
+      },
+    );
+  }, [
+    session.initialSubtitleError,
+    session.initialSubtitleErrorTitle,
+    session.playbackAttemptId,
+  ]);
 
   const audioTracks = useMemo(
-    () => playbackVersions.find((v) => v.file_id === session.mediaFileId)?.audio_tracks ?? [],
+    () =>
+      playbackVersions.find((v) => v.file_id === session.mediaFileId)
+        ?.audio_tracks ?? [],
     [playbackVersions, session.mediaFileId],
   );
   const playableSubtitles = useMemo(
@@ -163,7 +184,10 @@ export function WatchPage({
   );
 
   const activePlaybackVersion = useMemo(
-    () => playbackVersions.find((version) => version.file_id === session.mediaFileId),
+    () =>
+      playbackVersions.find(
+        (version) => version.file_id === session.mediaFileId,
+      ),
     [playbackVersions, session.mediaFileId],
   );
 
@@ -177,7 +201,12 @@ export function WatchPage({
       lastCodecVideo: activePlaybackVersion?.codec_video,
       lastEditionKey: activePlaybackVersion?.edition_key,
     });
-  }, [activePlaybackVersion, onEnded, session.durationSeconds, session.mediaFileId]);
+  }, [
+    activePlaybackVersion,
+    onEnded,
+    session.durationSeconds,
+    session.mediaFileId,
+  ]);
 
   const handleSwitchAudio = useCallback(
     (index: number, currentPosition: number) => {
@@ -272,7 +301,12 @@ export function WatchPage({
   ]);
 
   useEffect(() => {
-    if (!session.sessionId || !session.mediaFileId || session.loading || session.replacing) {
+    if (
+      !session.sessionId ||
+      !session.mediaFileId ||
+      session.loading ||
+      session.replacing
+    ) {
       return;
     }
 
@@ -353,7 +387,8 @@ export function WatchPage({
   const handleRealtimeEvent = useCallback(
     (event: PlaybackRealtimeEventEnvelope) => {
       if (event.name === "chapter_thumbnail_ready") {
-        const { file_id, chapter_index, thumbnail_url, thumbnail_thumbhash } = event.payload;
+        const { file_id, chapter_index, thumbnail_url, thumbnail_thumbhash } =
+          event.payload;
         if (file_id !== session.mediaFileId) {
           return;
         }
@@ -386,7 +421,14 @@ export function WatchPage({
       }
 
       setPlaybackVersions((current) =>
-        patchVersionMarkers(current, file_id, nextIntro, nextCredits, nextRecap, nextPreview),
+        patchVersionMarkers(
+          current,
+          file_id,
+          nextIntro,
+          nextCredits,
+          nextRecap,
+          nextPreview,
+        ),
       );
     },
     [session.mediaFileId],
@@ -438,13 +480,18 @@ export function WatchPage({
     playbackVersions.find((v) => v.file_id === session.mediaFileId)?.duration ??
     playbackVersions[0]?.duration;
   const selectedVersion =
-    playbackVersions.find((v) => v.file_id === session.mediaFileId) ?? playbackVersions[0];
+    playbackVersions.find((v) => v.file_id === session.mediaFileId) ??
+    playbackVersions[0];
   const activeChapters =
-    (playbackVersions.find((v) => v.file_id === session.mediaFileId) ?? selectedVersion)
-      ?.chapters ?? [];
+    (
+      playbackVersions.find((v) => v.file_id === session.mediaFileId) ??
+      selectedVersion
+    )?.chapters ?? [];
   const activeTrickplay =
-    (playbackVersions.find((v) => v.file_id === session.mediaFileId) ?? selectedVersion)
-      ?.trickplay ?? null;
+    (
+      playbackVersions.find((v) => v.file_id === session.mediaFileId) ??
+      selectedVersion
+    )?.trickplay ?? null;
   const activeMarkers = resolveActiveVersionMarkers(selectedVersion);
 
   return (
@@ -476,7 +523,9 @@ export function WatchPage({
       preferredSubtitleLanguage={preferredSubtitleLanguage}
       preferredSubtitleTrackSignature={preferredSubtitleTrackSignature}
       subtitleMode={session.initialSubtitleError ? "off" : subtitleMode}
-      showForcedSubtitles={session.initialSubtitleError ? false : showForcedSubtitles}
+      showForcedSubtitles={
+        session.initialSubtitleError ? false : showForcedSubtitles
+      }
       profileLanguage={profileLanguage}
       intro={activeMarkers.intro}
       introSkipMode={introSkipMode}

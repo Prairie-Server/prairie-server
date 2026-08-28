@@ -38,7 +38,10 @@ export default function DetailPopover({
   positionKey,
 }: DetailPopoverProps) {
   const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
-  const [position, setPosition] = useState<{ left: number; top: number } | null>(null);
+  const [position, setPosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
   const generatedId = useId();
   const triggerId = trigger.props.id ?? `${generatedId}-trigger`;
   const contentId = `${generatedId}-content`;
@@ -69,7 +72,8 @@ export default function DetailPopover({
     const gap = 8;
     const triggerRect = triggerElement.getBoundingClientRect();
     const contentRect = content.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - triggerRect.bottom - viewportPadding;
+    const spaceBelow =
+      window.innerHeight - triggerRect.bottom - viewportPadding;
     const top =
       spaceBelow >= contentRect.height + gap
         ? triggerRect.bottom + gap
@@ -93,9 +97,11 @@ export default function DetailPopover({
   useLayoutEffect(() => {
     if (!open) return;
     const triggerElement = triggerRef.current;
-    contentRef.current?.querySelector<HTMLElement>("button:not(:disabled)")?.focus({
-      preventScroll: true,
-    });
+    contentRef.current
+      ?.querySelector<HTMLElement>("button:not(:disabled)")
+      ?.focus({
+        preventScroll: true,
+      });
 
     // However the popover closes — Escape, activating an entry, the owner
     // flipping `open` — focus must come back to the trigger. Unmounting the
@@ -104,7 +110,9 @@ export default function DetailPopover({
     return () => {
       const active = document.activeElement;
       if (active && active !== document.body) return;
-      triggerElement?.querySelector<HTMLElement>("button")?.focus({ preventScroll: true });
+      triggerElement
+        ?.querySelector<HTMLElement>("button")
+        ?.focus({ preventScroll: true });
     };
   }, [open]);
 
@@ -114,7 +122,10 @@ export default function DetailPopover({
     const close = () => setOpen(false);
     const handlePointerDown = (event: PointerEvent) => {
       const target = event.target as Node;
-      if (!contentRef.current?.contains(target) && !triggerRef.current?.contains(target)) {
+      if (
+        !contentRef.current?.contains(target) &&
+        !triggerRef.current?.contains(target)
+      ) {
         close();
       }
     };
@@ -125,7 +136,10 @@ export default function DetailPopover({
     };
     const handleFocusIn = (event: FocusEvent) => {
       const target = event.target as Node;
-      if (!contentRef.current?.contains(target) && !triggerRef.current?.contains(target)) {
+      if (
+        !contentRef.current?.contains(target) &&
+        !triggerRef.current?.contains(target)
+      ) {
         close();
       }
     };
@@ -133,7 +147,8 @@ export default function DetailPopover({
     // dismissing on every wheel nudge. One measurement per frame at most.
     const handleScroll = (event: Event) => {
       const target = event.target;
-      if (target instanceof Node && contentRef.current?.contains(target)) return;
+      if (target instanceof Node && contentRef.current?.contains(target))
+        return;
       if (scrollFrameRef.current !== null) return;
       scrollFrameRef.current = requestAnimationFrame(() => {
         scrollFrameRef.current = null;
@@ -192,7 +207,11 @@ export default function DetailPopover({
               contentClassName,
             )}
             onClick={(event) => {
-              if ((event.target as Element).closest(`[${DETAIL_POPOVER_CLOSE_ATTR}]`)) {
+              if (
+                (event.target as Element).closest(
+                  `[${DETAIL_POPOVER_CLOSE_ATTR}]`,
+                )
+              ) {
                 setOpen(false);
               }
             }}

@@ -7,7 +7,9 @@ import {
   type AudiobookPrefs,
 } from "./useAudiobookPrefs";
 
-export function makePlayback(over: Partial<AudiobookPlayback> = {}): AudiobookPlayback {
+export function makePlayback(
+  over: Partial<AudiobookPlayback> = {},
+): AudiobookPlayback {
   return {
     audioRef: { current: null },
     streamUrl: "",

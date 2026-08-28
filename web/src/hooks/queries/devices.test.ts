@@ -30,14 +30,20 @@ describe("deviceRecencyGroup", () => {
   });
 
   it("splits the rest at a week", () => {
-    const recent = device({ last_seen_at: new Date(NOW - 6 * 24 * 60 * 60 * 1000).toISOString() });
-    const older = device({ last_seen_at: new Date(NOW - 8 * 24 * 60 * 60 * 1000).toISOString() });
+    const recent = device({
+      last_seen_at: new Date(NOW - 6 * 24 * 60 * 60 * 1000).toISOString(),
+    });
+    const older = device({
+      last_seen_at: new Date(NOW - 8 * 24 * 60 * 60 * 1000).toISOString(),
+    });
     expect(deviceRecencyGroup(recent, NOW)).toBe("week");
     expect(deviceRecencyGroup(older, NOW)).toBe("earlier");
   });
 
   it("treats an unparseable timestamp as old rather than throwing", () => {
-    expect(deviceRecencyGroup(device({ last_seen_at: "nonsense" }), NOW)).toBe("earlier");
+    expect(deviceRecencyGroup(device({ last_seen_at: "nonsense" }), NOW)).toBe(
+      "earlier",
+    );
   });
 });
 

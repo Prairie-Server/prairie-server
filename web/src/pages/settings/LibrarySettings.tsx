@@ -49,9 +49,19 @@ import {
   NONE_VALUE,
   SUBTITLE_MODE_OPTIONS,
 } from "./libraryPlaybackPreferences";
-import { namedLanguageOptionsFor, type SettingOption } from "@/lib/languageOptions";
+import {
+  namedLanguageOptionsFor,
+  type SettingOption,
+} from "@/lib/languageOptions";
 import { toast } from "sonner";
-import { ChevronDown, ChevronRight, Eye, EyeOff, GripVertical, RotateCcw } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronRight,
+  Eye,
+  EyeOff,
+  GripVertical,
+  RotateCcw,
+} from "lucide-react";
 import {
   DndContext,
   DragOverlay,
@@ -73,7 +83,9 @@ import { CSS } from "@dnd-kit/utilities";
 
 function sortLibrariesByOrder(libraries: UserLibrary[], ids: number[]) {
   const selected = new Set(ids);
-  return libraries.filter((library) => selected.has(library.id)).map((library) => library.id);
+  return libraries
+    .filter((library) => selected.has(library.id))
+    .map((library) => library.id);
 }
 
 /** Both library page state keys are profile+device scoped in the contract. */
@@ -84,7 +96,10 @@ const PROFILE_SCOPE: SettingIdentity = { scope: "profile" };
 
 // The canonical DELETE answers 404 when nothing was stored at that scope,
 // which for a reset flow means "already done", not a failure.
-async function clearIgnoringUnset(clear: ReturnType<typeof useClearSettingValue>, key: SettingKey) {
+async function clearIgnoringUnset(
+  clear: ReturnType<typeof useClearSettingValue>,
+  key: SettingKey,
+) {
   try {
     await clear.mutateAsync({ key, identity: DEVICE_SCOPE });
   } catch (error) {
@@ -110,10 +125,16 @@ function RememberLibraryPageStateSetting() {
     try {
       if (checked) {
         // Clear the device override so the setting inherits its default again.
-        await clearIgnoringUnset(clearValue, SETTING_KEYS.UI_REMEMBER_LIBRARY_PAGE_STATE);
+        await clearIgnoringUnset(
+          clearValue,
+          SETTING_KEYS.UI_REMEMBER_LIBRARY_PAGE_STATE,
+        );
       } else {
         // Turning the feature off also discards the state saved so far.
-        await clearIgnoringUnset(clearValue, SETTING_KEYS.UI_LIBRARY_PAGE_STATE);
+        await clearIgnoringUnset(
+          clearValue,
+          SETTING_KEYS.UI_LIBRARY_PAGE_STATE,
+        );
         await setValue.mutateAsync({
           key: SETTING_KEYS.UI_REMEMBER_LIBRARY_PAGE_STATE,
           value: false,
@@ -161,7 +182,10 @@ function PlaybackField({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor={controlId} className="text-muted-foreground text-xs font-medium">
+      <Label
+        htmlFor={controlId}
+        className="text-muted-foreground text-xs font-medium"
+      >
         {label}
       </Label>
       <Select value={value} onValueChange={onChange} disabled={disabled}>
@@ -170,7 +194,11 @@ function PlaybackField({
         </SelectTrigger>
         <SelectContent>{children}</SelectContent>
       </Select>
-      {hint && <p className="text-muted-foreground/70 text-[11px] leading-tight">{hint}</p>}
+      {hint && (
+        <p className="text-muted-foreground/70 text-[11px] leading-tight">
+          {hint}
+        </p>
+      )}
     </div>
   );
 }
@@ -197,7 +225,10 @@ function LanguageField({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <Label htmlFor={controlId} className="text-muted-foreground text-xs font-medium">
+      <Label
+        htmlFor={controlId}
+        className="text-muted-foreground text-xs font-medium"
+      >
         {label}
       </Label>
       <LanguageSelect
@@ -210,13 +241,30 @@ function LanguageField({
       >
         {children}
       </LanguageSelect>
-      {hint && <p className="text-muted-foreground/70 text-[11px] leading-tight">{hint}</p>}
+      {hint && (
+        <p className="text-muted-foreground/70 text-[11px] leading-tight">
+          {hint}
+        </p>
+      )}
     </div>
   );
 }
 
-function SortableLibraryCard({ id, children }: { id: number; children: React.ReactNode }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+function SortableLibraryCard({
+  id,
+  children,
+}: {
+  id: number;
+  children: React.ReactNode;
+}) {
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id,
   });
 
@@ -271,7 +319,9 @@ function LibraryCard({
   const setValue = useSetSettingValue();
   const clearValue = useClearSettingValue();
   const [expanded, setExpanded] = useState(false);
-  const [editorState, setEditorState] = useState(() => createLibraryPlaybackEditorState(effective));
+  const [editorState, setEditorState] = useState(() =>
+    createLibraryPlaybackEditorState(effective),
+  );
 
   useEffect(() => {
     // Keep the inline editor aligned with the resolved values, which change on
@@ -284,14 +334,16 @@ function LibraryCard({
   const hasOverride = hasLibraryPlaybackOverride(editorState);
   const audioLanguageOptions = namedLanguageOptionsFor(
     SETTING_KEYS.PLAYBACK_AUDIO_LANGUAGE,
-    editorState.audioLanguage === INHERIT_VALUE || editorState.audioLanguage === NONE_VALUE
+    editorState.audioLanguage === INHERIT_VALUE ||
+      editorState.audioLanguage === NONE_VALUE
       ? undefined
       : editorState.audioLanguage,
     effective?.[SETTING_KEYS.PLAYBACK_AUDIO_LANGUAGE]?.suggested_values,
   );
   const subtitleLanguageOptions = namedLanguageOptionsFor(
     SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE,
-    editorState.subtitleLanguage === INHERIT_VALUE || editorState.subtitleLanguage === NONE_VALUE
+    editorState.subtitleLanguage === INHERIT_VALUE ||
+      editorState.subtitleLanguage === NONE_VALUE
       ? undefined
       : editorState.subtitleLanguage,
     effective?.[SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE]?.suggested_values,
@@ -317,11 +369,15 @@ function LibraryCard({
       for (const mutation of buildLibraryPlaybackMutations(nextState)) {
         if (mutation.value === undefined) {
           try {
-            await clearValue.mutateAsync({ key: mutation.key, identity: scope });
+            await clearValue.mutateAsync({
+              key: mutation.key,
+              identity: scope,
+            });
           } catch (error) {
             // Nothing stored at this scope already inherits, which is the
             // state the clear asks for.
-            if (!(error instanceof ApiClientError && error.status === 404)) throw error;
+            if (!(error instanceof ApiClientError && error.status === 404))
+              throw error;
           }
           continue;
         }
@@ -340,7 +396,10 @@ function LibraryCard({
     }
   }
 
-  function handlePlaybackChange(field: keyof LibraryPlaybackEditorState, value: string) {
+  function handlePlaybackChange(
+    field: keyof LibraryPlaybackEditorState,
+    value: string,
+  ) {
     const rollbackState = editorState;
     const nextState = { ...editorState, [field]: value };
     void savePlaybackState(nextState, rollbackState);
@@ -364,7 +423,10 @@ function LibraryCard({
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="truncate text-sm font-medium">{library.name}</span>
-            <Badge variant="outline" className="shrink-0 text-[11px] capitalize">
+            <Badge
+              variant="outline"
+              className="shrink-0 text-[11px] capitalize"
+            >
               {library.type}
             </Badge>
             {hasOverride && (
@@ -373,7 +435,9 @@ function LibraryCard({
               </Badge>
             )}
           </div>
-          <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">{summaryText}</p>
+          <p className="text-muted-foreground mt-0.5 text-xs leading-relaxed">
+            {summaryText}
+          </p>
         </div>
 
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
@@ -389,7 +453,9 @@ function LibraryCard({
             ) : (
               <ChevronRight className="size-3.5" />
             )}
-            <span>{expanded ? "Hide playback overrides" : "Edit playback overrides"}</span>
+            <span>
+              {expanded ? "Hide playback overrides" : "Edit playback overrides"}
+            </span>
           </Button>
           <div className="surface-panel-subtle flex items-center justify-between rounded-[1rem] px-3 py-2 sm:min-w-[180px]">
             <Label htmlFor={controlId} className="text-xs font-medium">
@@ -408,8 +474,8 @@ function LibraryCard({
       {expanded && (
         <div className="border-border/50 bg-muted/20 border-t px-4 py-4 sm:px-5">
           <p className="text-muted-foreground mb-3 text-xs">
-            Override your profile&apos;s playback defaults for this library. Changes save
-            automatically.
+            Override your profile&apos;s playback defaults for this library.
+            Changes save automatically.
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
             <LanguageField
@@ -417,11 +483,15 @@ function LibraryCard({
               value={editorState.audioLanguage}
               options={audioLanguageOptions}
               disabled={playbackPending}
-              hint={getProfileDefaultLanguageHint(profileDefaults.audioLanguage)}
+              hint={getProfileDefaultLanguageHint(
+                profileDefaults.audioLanguage,
+              )}
               onChange={(value) => handlePlaybackChange("audioLanguage", value)}
             >
               <SelectItem value={INHERIT_VALUE}>
-                {buildInheritedLanguageLabel(profileDefaults.audioLanguage ?? "")}
+                {buildInheritedLanguageLabel(
+                  profileDefaults.audioLanguage ?? "",
+                )}
               </SelectItem>
             </LanguageField>
 
@@ -430,11 +500,17 @@ function LibraryCard({
               value={editorState.subtitleLanguage}
               options={subtitleLanguageOptions}
               disabled={playbackPending}
-              hint={getProfileDefaultSubtitleLanguageHint(profileDefaults.subtitleLanguage)}
-              onChange={(value) => handlePlaybackChange("subtitleLanguage", value)}
+              hint={getProfileDefaultSubtitleLanguageHint(
+                profileDefaults.subtitleLanguage,
+              )}
+              onChange={(value) =>
+                handlePlaybackChange("subtitleLanguage", value)
+              }
             >
               <SelectItem value={INHERIT_VALUE}>
-                {buildInheritedSubtitleLanguageLabel(profileDefaults.subtitleLanguage ?? "")}
+                {buildInheritedSubtitleLanguageLabel(
+                  profileDefaults.subtitleLanguage ?? "",
+                )}
               </SelectItem>
               <SelectItem value={NONE_VALUE}>None</SelectItem>
             </LanguageField>
@@ -443,7 +519,9 @@ function LibraryCard({
               label="Subtitle behavior"
               value={editorState.subtitleMode}
               disabled={playbackPending}
-              hint={getProfileDefaultSubtitleModeHint(profileDefaults.subtitleMode)}
+              hint={getProfileDefaultSubtitleModeHint(
+                profileDefaults.subtitleMode,
+              )}
               onChange={(value) => handlePlaybackChange("subtitleMode", value)}
             >
               <SelectItem value={INHERIT_VALUE}>
@@ -460,11 +538,17 @@ function LibraryCard({
               label="Forced subtitles"
               value={editorState.showForcedSubtitles}
               disabled={playbackPending}
-              hint={getProfileDefaultForcedSubtitlesHint(profileDefaults.showForcedSubtitles)}
-              onChange={(value) => handlePlaybackChange("showForcedSubtitles", value)}
+              hint={getProfileDefaultForcedSubtitlesHint(
+                profileDefaults.showForcedSubtitles,
+              )}
+              onChange={(value) =>
+                handlePlaybackChange("showForcedSubtitles", value)
+              }
             >
               <SelectItem value={INHERIT_VALUE}>
-                {buildInheritedShowForcedSubtitlesLabel(profileDefaults.showForcedSubtitles)}
+                {buildInheritedShowForcedSubtitlesLabel(
+                  profileDefaults.showForcedSubtitles,
+                )}
               </SelectItem>
               <SelectItem value="on">On</SelectItem>
               <SelectItem value="off">Off</SelectItem>
@@ -493,27 +577,32 @@ function LibraryCard({
 }
 
 export default function LibrarySettings() {
-  const { data: libraries, isLoading: librariesLoading } = useAvailableUserLibraries();
+  const { data: libraries, isLoading: librariesLoading } =
+    useAvailableUserLibraries();
   const {
     disabledLibraryIDs: savedDisabledLibraryIDs,
     libraryOrder: savedLibraryOrder,
     isLoading: libraryPrefsLoading,
   } = useLibraryDisplayPreferences();
-  const { profile: currentProfile, isLoading: profileLoading } = useCurrentProfile();
+  const { profile: currentProfile, isLoading: profileLoading } =
+    useCurrentProfile();
   // Resolved with no library in context, so these are exactly the values a
   // library inherits when it holds no override of its own — which is what the
   // "Profile default" hints on each card have to name.
-  const { data: profileDefaultSettings, isLoading: playbackPrefsLoading } = useEffectiveSettings({
-    keys: LIBRARY_PLAYBACK_KEYS,
-    enabled: !!currentProfile,
-  });
+  const { data: profileDefaultSettings, isLoading: playbackPrefsLoading } =
+    useEffectiveSettings({
+      keys: LIBRARY_PLAYBACK_KEYS,
+      enabled: !!currentProfile,
+    });
   const setSetting = useSetSettingValue();
   const [disabledLibraryIDs, setDisabledLibraryIDs] = useState<number[]>([]);
   const [orderedLibraries, setOrderedLibraries] = useState<UserLibrary[]>([]);
   const [activeId, setActiveId] = useState<number | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   useEffect(() => {
@@ -531,11 +620,16 @@ export default function LibrarySettings() {
     if (!libraries) return;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setOrderedLibraries(
-      savedLibraryOrder.length > 0 ? applyLibraryOrder(libraries, savedLibraryOrder) : libraries,
+      savedLibraryOrder.length > 0
+        ? applyLibraryOrder(libraries, savedLibraryOrder)
+        : libraries,
     );
   }, [libraries, savedLibraryOrder]);
 
-  function saveDisabledLibraries(nextDisabledLibraryIDs: number[], rollbackIDs: number[]) {
+  function saveDisabledLibraries(
+    nextDisabledLibraryIDs: number[],
+    rollbackIDs: number[],
+  ) {
     setDisabledLibraryIDs(nextDisabledLibraryIDs);
     setSetting.mutate(
       {
@@ -608,10 +702,18 @@ export default function LibrarySettings() {
     setActiveId(null);
   }
 
-  const activeLibrary = activeId != null ? orderedLibraries.find((l) => l.id === activeId) : null;
+  const activeLibrary =
+    activeId != null ? orderedLibraries.find((l) => l.id === activeId) : null;
 
-  if (librariesLoading || libraryPrefsLoading || profileLoading || playbackPrefsLoading) {
-    return <div className="text-muted-foreground pt-4">Loading libraries...</div>;
+  if (
+    librariesLoading ||
+    libraryPrefsLoading ||
+    profileLoading ||
+    playbackPrefsLoading
+  ) {
+    return (
+      <div className="text-muted-foreground pt-4">Loading libraries...</div>
+    );
   }
 
   if (!libraries || libraries.length === 0) {
@@ -623,37 +725,42 @@ export default function LibrarySettings() {
   }
 
   if (!currentProfile) {
-    return <div className="text-muted-foreground pt-4">Choose a profile to manage libraries.</div>;
+    return (
+      <div className="text-muted-foreground pt-4">
+        Choose a profile to manage libraries.
+      </div>
+    );
   }
 
-  const displayLibraries = orderedLibraries.length > 0 ? orderedLibraries : libraries;
+  const displayLibraries =
+    orderedLibraries.length > 0 ? orderedLibraries : libraries;
   const visibleCount = libraries.filter(
     (library) => !disabledLibraryIDs.includes(library.id),
   ).length;
   const profileDefaults = {
     audioLanguage:
-      (profileDefaultSettings?.[SETTING_KEYS.PLAYBACK_AUDIO_LANGUAGE]?.value as string | null) ??
-      null,
+      (profileDefaultSettings?.[SETTING_KEYS.PLAYBACK_AUDIO_LANGUAGE]?.value as
+        string | null) ?? null,
     subtitleLanguage:
-      (profileDefaultSettings?.[SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE]?.value as string | null) ??
-      null,
+      (profileDefaultSettings?.[SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE]
+        ?.value as string | null) ?? null,
     subtitleMode:
       (profileDefaultSettings?.[SETTING_KEYS.PLAYBACK_SUBTITLE_MODE]?.value as
-        | string
-        | undefined) ?? "auto",
+        string | undefined) ?? "auto",
     showForcedSubtitles:
-      (profileDefaultSettings?.[SETTING_KEYS.PLAYBACK_SHOW_FORCED_SUBTITLES]?.value as
-        | boolean
-        | undefined) ?? true,
+      (profileDefaultSettings?.[SETTING_KEYS.PLAYBACK_SHOW_FORCED_SUBTITLES]
+        ?.value as boolean | undefined) ?? true,
   };
 
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Libraries</h2>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Libraries
+        </h2>
         <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
-          Toggle which libraries appear in your navigation and customize playback defaults per
-          library.
+          Toggle which libraries appear in your navigation and customize
+          playback defaults per library.
         </p>
       </div>
 
@@ -666,8 +773,8 @@ export default function LibrarySettings() {
 
       <div className="surface-panel-subtle flex flex-col gap-4 rounded-[1.4rem] p-4 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-muted-foreground text-sm leading-relaxed">
-          <span className="text-foreground font-medium">{visibleCount}</span> of {libraries.length}{" "}
-          libraries visible for this profile.
+          <span className="text-foreground font-medium">{visibleCount}</span> of{" "}
+          {libraries.length} libraries visible for this profile.
         </p>
         <div className="flex flex-col gap-2 sm:flex-row">
           <Button
@@ -708,13 +815,18 @@ export default function LibrarySettings() {
             {displayLibraries.map((library) => {
               const enabled = !disabledLibraryIDs.includes(library.id);
               return (
-                <SortableLibraryCard key={`${currentProfile.id}:${library.id}`} id={library.id}>
+                <SortableLibraryCard
+                  key={`${currentProfile.id}:${library.id}`}
+                  id={library.id}
+                >
                   <LibraryCard
                     library={library}
                     enabled={enabled}
                     visibilityDisabled={setSetting.isPending}
                     profileDefaults={profileDefaults}
-                    onToggleVisibility={(checked) => handleLibraryToggle(library.id, checked)}
+                    onToggleVisibility={(checked) =>
+                      handleLibraryToggle(library.id, checked)
+                    }
                   />
                 </SortableLibraryCard>
               );

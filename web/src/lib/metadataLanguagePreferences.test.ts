@@ -21,7 +21,11 @@ describe("metadata language preferences", () => {
 
   it("adds and removes one original-language exception without mutating the input", () => {
     const initial = { ja: "en" };
-    const added = withMetadataLanguageOverride(initial, "nor", ORIGINAL_METADATA_LANGUAGE);
+    const added = withMetadataLanguageOverride(
+      initial,
+      "nor",
+      ORIGINAL_METADATA_LANGUAGE,
+    );
 
     expect(added).toEqual({ ja: "en", no: ORIGINAL_METADATA_LANGUAGE });
     expect(initial).toEqual({ ja: "en" });

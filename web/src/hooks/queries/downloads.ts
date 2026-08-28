@@ -3,7 +3,8 @@ import { api, getAccessToken } from "@/api/client";
 import { downloadKeys } from "./keys";
 import { toast } from "sonner";
 
-export type DownloadQuality = "original" | "20mbps" | "10mbps" | "5mbps" | "2mbps" | "1mbps";
+export type DownloadQuality =
+  "original" | "20mbps" | "10mbps" | "5mbps" | "2mbps" | "1mbps";
 export type DownloadDeliveryFormat = "original" | "remux" | "transcode";
 
 interface DownloadResponse {

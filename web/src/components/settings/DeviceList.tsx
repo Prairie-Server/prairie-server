@@ -8,7 +8,10 @@ import {
   PlatformIcon,
   platformKindLabel,
 } from "@/components/admin/deviceOverrides";
-import { deviceRecencyGroup, type DeviceRecencyGroup } from "@/hooks/queries/devices";
+import {
+  deviceRecencyGroup,
+  type DeviceRecencyGroup,
+} from "@/hooks/queries/devices";
 import { cn } from "@/lib/utils";
 
 const GROUP_TITLES: Record<DeviceRecencyGroup, string> = {
@@ -87,14 +90,19 @@ export function DeviceList({
   // Counts come from the unfiltered list so a chip keeps showing how many
   // devices it would reveal, rather than collapsing to zero once another chip
   // is active.
-  const profiles = useMemo(() => profileOptions(devices, ownProfileId), [devices, ownProfileId]);
+  const profiles = useMemo(
+    () => profileOptions(devices, ownProfileId),
+    [devices, ownProfileId],
+  );
 
   const matching = useMemo(() => {
     const query = search.trim().toLowerCase();
     return devices.filter((device) => {
       if (profileFilter && device.profile_id !== profileFilter) return false;
       if (!query) return true;
-      const platform = platformKindLabel(classifyPlatform(device.device_platform));
+      const platform = platformKindLabel(
+        classifyPlatform(device.device_platform),
+      );
       return (
         device.device_name.toLowerCase().includes(query) ||
         device.device_platform.toLowerCase().includes(query) ||
@@ -108,7 +116,10 @@ export function DeviceList({
   // everything — hiding a dormant device from its own name would be a bug.
   const searching = search.trim().length > 0;
   const dormantCount = useMemo(
-    () => (searching ? 0 : matching.filter((device) => isDormantDevice(device, now)).length),
+    () =>
+      searching
+        ? 0
+        : matching.filter((device) => isDormantDevice(device, now)).length,
     [matching, searching, now],
   );
   const filtered = useMemo(
@@ -121,7 +132,10 @@ export function DeviceList({
 
   const sections = useMemo(() => {
     if (groupByProfile && !profileFilter) {
-      const byProfile = new Map<string, { title: string; devices: UserDevice[] }>();
+      const byProfile = new Map<
+        string,
+        { title: string; devices: UserDevice[] }
+      >();
       for (const device of filtered) {
         const existing = byProfile.get(device.profile_id);
         if (existing) {
@@ -138,7 +152,9 @@ export function DeviceList({
 
     return GROUP_ORDER.map((group) => ({
       title: GROUP_TITLES[group],
-      devices: filtered.filter((device) => deviceRecencyGroup(device, now) === group),
+      devices: filtered.filter(
+        (device) => deviceRecencyGroup(device, now) === group,
+      ),
     })).filter((section) => section.devices.length > 0);
   }, [filtered, groupByProfile, profileFilter, now]);
 
@@ -180,7 +196,9 @@ export function DeviceList({
               count={profile.count}
               active={profileFilter === profile.id}
               onClick={() =>
-                onProfileFilterChange(profileFilter === profile.id ? null : profile.id)
+                onProfileFilterChange(
+                  profileFilter === profile.id ? null : profile.id,
+                )
               }
             />
           ))}
@@ -254,7 +272,10 @@ interface ProfileOption {
  * so a chip stays where someone last saw it, rather than moving whenever a
  * device is used.
  */
-function profileOptions(devices: UserDevice[], ownProfileId?: string): ProfileOption[] {
+function profileOptions(
+  devices: UserDevice[],
+  ownProfileId?: string,
+): ProfileOption[] {
   const byId = new Map<string, ProfileOption>();
   for (const device of devices) {
     const existing = byId.get(device.profile_id);
@@ -303,7 +324,10 @@ function ProfileChip({
     >
       {label}
       <span
-        className={cn("text-[11px]", active ? "text-muted-foreground" : "text-muted-foreground/70")}
+        className={cn(
+          "text-[11px]",
+          active ? "text-muted-foreground" : "text-muted-foreground/70",
+        )}
       >
         {count}
       </span>
@@ -333,7 +357,9 @@ function DeviceRow({
         // Rows are a tap target on a phone and a selection on a desktop, so
         // they carry a comfortable minimum height only where that matters.
         "min-h-14 xl:min-h-0",
-        selected ? "bg-surface-raised" : "hover:bg-surface-hover active:bg-surface-hover",
+        selected
+          ? "bg-surface-raised"
+          : "hover:bg-surface-hover active:bg-surface-hover",
       )}
     >
       <span className="bg-secondary text-muted-foreground flex h-9 w-9 shrink-0 items-center justify-center rounded-lg xl:h-7 xl:w-7">
@@ -365,7 +391,10 @@ function DeviceRow({
 function ChangedCount({ count }: { count: number }) {
   if (count <= 0) {
     return (
-      <span className="text-muted-foreground/50 shrink-0 text-[11px]" aria-label="Nothing changed">
+      <span
+        className="text-muted-foreground/50 shrink-0 text-[11px]"
+        aria-label="Nothing changed"
+      >
         —
       </span>
     );

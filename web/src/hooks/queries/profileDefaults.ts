@@ -38,7 +38,9 @@ export function isDeviceOverridable(key: SettingKey): boolean {
  * skipped when the resolved value did not come from a device row — the common
  * case, and a DELETE for a row that does not exist is a wasted round trip.
  */
-export function useProfileDefaultWriter(effective: EffectiveSettingsMap | undefined) {
+export function useProfileDefaultWriter(
+  effective: EffectiveSettingsMap | undefined,
+) {
   const setValue = useSetSettingValue();
   const clearValue = useClearSettingValue();
 

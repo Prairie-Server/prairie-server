@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { useEffectiveSettings, useSetSettingValue } from "@/hooks/queries/settingValues";
+import {
+  useEffectiveSettings,
+  useSetSettingValue,
+} from "@/hooks/queries/settingValues";
 import type { SettingIdentity } from "@/hooks/queries/settingValues";
 import { SETTING_KEYS } from "@/lib/settingsContract";
 import { useAppearanceCacheOwner } from "@/hooks/themePreferences";
@@ -13,7 +16,10 @@ export type ThemeVarOverrides = Partial<Record<ThemeToken, string>>;
 /** Both custom-theme keys are profile-wide in the contract (no device scope). */
 const PROFILE_SCOPE: SettingIdentity = { scope: "profile" };
 
-const CUSTOM_THEME_KEYS = [SETTING_KEYS.UI_CUSTOM_THEME_VARS, SETTING_KEYS.UI_CUSTOM_CSS] as const;
+const CUSTOM_THEME_KEYS = [
+  SETTING_KEYS.UI_CUSTOM_THEME_VARS,
+  SETTING_KEYS.UI_CUSTOM_CSS,
+] as const;
 
 /**
  * The canonical API stores `ui.custom_theme_vars` as a JSON object; the local
@@ -22,7 +28,9 @@ const CUSTOM_THEME_KEYS = [SETTING_KEYS.UI_CUSTOM_THEME_VARS, SETTING_KEYS.UI_CU
  */
 function parseVarsValue(value: unknown): ThemeVarOverrides {
   if (typeof value === "string") return parseVarsJson(value);
-  return typeof value === "object" && value !== null ? (value as ThemeVarOverrides) : {};
+  return typeof value === "object" && value !== null
+    ? (value as ThemeVarOverrides)
+    : {};
 }
 
 interface UseCustomThemeResult {
@@ -64,7 +72,9 @@ export function useCustomTheme(): UseCustomThemeResult {
 
   // Local draft state (for instant updates without waiting for API)
   const [localVars, setLocalVars] = useState<ThemeVarOverrides>(() =>
-    parseVarsJson(appearanceCache.get(storage.KEYS.UI_CUSTOM_THEME_VARS, cacheOwner)),
+    parseVarsJson(
+      appearanceCache.get(storage.KEYS.UI_CUSTOM_THEME_VARS, cacheOwner),
+    ),
   );
   const [localCss, setLocalCss] = useState<string>(
     () => appearanceCache.get(storage.KEYS.UI_CUSTOM_CSS, cacheOwner) ?? "",
@@ -72,8 +82,12 @@ export function useCustomTheme(): UseCustomThemeResult {
   const [isDirty, setIsDirty] = useState(false);
 
   // Debounce timers
-  const varsTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const cssTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const varsTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  const cssTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
 
   // A debounced persist closes over the identity it was scheduled for. Drop
   // any pending write when the owner changes — a different account, or a
@@ -96,8 +110,14 @@ export function useCustomTheme(): UseCustomThemeResult {
   const [seededOwner, setSeededOwner] = useState(cacheOwner);
   if (seededOwner !== cacheOwner) {
     setSeededOwner(cacheOwner);
-    setLocalVars(parseVarsJson(appearanceCache.get(storage.KEYS.UI_CUSTOM_THEME_VARS, cacheOwner)));
-    setLocalCss(appearanceCache.get(storage.KEYS.UI_CUSTOM_CSS, cacheOwner) ?? "");
+    setLocalVars(
+      parseVarsJson(
+        appearanceCache.get(storage.KEYS.UI_CUSTOM_THEME_VARS, cacheOwner),
+      ),
+    );
+    setLocalCss(
+      appearanceCache.get(storage.KEYS.UI_CUSTOM_CSS, cacheOwner) ?? "",
+    );
     setIsDirty(false);
   }
 
@@ -119,7 +139,11 @@ export function useCustomTheme(): UseCustomThemeResult {
     }
     const parsed = parseVarsValue(varsSetting.value);
     setLocalVars(parsed);
-    appearanceCache.set(storage.KEYS.UI_CUSTOM_THEME_VARS, JSON.stringify(parsed), cacheOwner);
+    appearanceCache.set(
+      storage.KEYS.UI_CUSTOM_THEME_VARS,
+      JSON.stringify(parsed),
+      cacheOwner,
+    );
   }, [loadApi, varsSetting, cacheOwner, isDirty]);
 
   useEffect(() => {
@@ -132,12 +156,20 @@ export function useCustomTheme(): UseCustomThemeResult {
     }
     if (typeof cssSetting.value !== "string") return;
     setLocalCss(cssSetting.value);
-    appearanceCache.set(storage.KEYS.UI_CUSTOM_CSS, cssSetting.value, cacheOwner);
+    appearanceCache.set(
+      storage.KEYS.UI_CUSTOM_CSS,
+      cssSetting.value,
+      cacheOwner,
+    );
   }, [loadApi, cssSetting, cacheOwner, isDirty]);
 
   const persistVars = useCallback(
     (vars: ThemeVarOverrides) => {
-      appearanceCache.set(storage.KEYS.UI_CUSTOM_THEME_VARS, JSON.stringify(vars), cacheOwner);
+      appearanceCache.set(
+        storage.KEYS.UI_CUSTOM_THEME_VARS,
+        JSON.stringify(vars),
+        cacheOwner,
+      );
       settingMutation.mutate({
         key: SETTING_KEYS.UI_CUSTOM_THEME_VARS,
         value: vars,

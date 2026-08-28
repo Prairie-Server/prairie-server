@@ -7,7 +7,10 @@ import { useViewTransitionNavigate } from "@/hooks/useViewTransition";
 import { useDebounce } from "@/hooks/useDebounce";
 import { buildQueryCatalogHref } from "@/pages/catalogSearchParams";
 import { createEmptyQueryDefinition, type BrowseItem } from "@/api/types";
-import { createCatalogSearchState, fetchCatalogPage } from "@/hooks/queries/catalog";
+import {
+  createCatalogSearchState,
+  fetchCatalogPage,
+} from "@/hooks/queries/catalog";
 import { useSearchMediaScope } from "@/hooks/useSearchMediaScope";
 import { useRequestSearch } from "@/hooks/queries/useRequests";
 import { useCanRequest } from "@/hooks/useCanRequest";
@@ -45,7 +48,8 @@ function typeLabel(type: BrowseItem["type"]): string {
 
 // Shared by the option row and the play-overlay layer stacked on top of it, so
 // the overlay always lands on the poster even if the row's spacing changes.
-const ROW_LAYOUT_CLASSES = "flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left";
+const ROW_LAYOUT_CLASSES =
+  "flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left";
 const ROW_POSTER_CLASSES = "relative h-14 w-10 shrink-0";
 
 function GlobalSearchResultRow({
@@ -62,7 +66,9 @@ function GlobalSearchResultRow({
   onPlay: () => void;
 }) {
   const { loaded, onLoad } = useImageLoaded(item.poster_url);
-  const thumbhashUrl = item.poster_thumbhash ? decodeThumbhash(item.poster_thumbhash) : "";
+  const thumbhashUrl = item.poster_thumbhash
+    ? decodeThumbhash(item.poster_thumbhash)
+    : "";
 
   // Virtual focus: keyboard focus stays in the search input and the option is
   // pointed at by aria-activedescendant, so the row is not a tab stop.
@@ -79,7 +85,11 @@ function GlobalSearchResultRow({
         id={`search-result-${index}`}
         role="option"
         aria-selected={isSelected}
-        aria-label={[item.title, item.year > 0 ? String(item.year) : null, typeLabel(item.type)]
+        aria-label={[
+          item.title,
+          item.year > 0 ? String(item.year) : null,
+          typeLabel(item.type),
+        ]
           .filter(Boolean)
           .join(", ")}
         data-selected={isSelected || undefined}
@@ -121,7 +131,9 @@ function GlobalSearchResultRow({
         </div>
       </div>
       {item.play_content_id ? (
-        <div className={`pointer-events-none absolute inset-0 ${ROW_LAYOUT_CLASSES}`}>
+        <div
+          className={`pointer-events-none absolute inset-0 ${ROW_LAYOUT_CLASSES}`}
+        >
           <div className={ROW_POSTER_CLASSES}>
             <CardPlayOverlay
               contentId={item.play_content_id}
@@ -155,11 +167,15 @@ export function GlobalSearch({
     staleTime: 5 * 60 * 1000,
   });
   const tmdbMissingCount =
-    tmdbQuery.data?.results?.filter((result) => result.availability !== "available").length ?? 0;
+    tmdbQuery.data?.results?.filter(
+      (result) => result.availability !== "available",
+    ).length ?? 0;
   // Cap at DIALOG_LIMIT (4) — RequestToAddSection slices results to that many rows.
   const tmdbVisibleCount = Math.min(tmdbMissingCount, 4);
   const tmdbStillLoading =
-    canRequest.discoveryEnabled && tmdbDebouncedQuery.length > 1 && tmdbQuery.isLoading;
+    canRequest.discoveryEnabled &&
+    tmdbDebouncedQuery.length > 1 &&
+    tmdbQuery.isLoading;
   const tmdbWillRender = canRequest.discoveryEnabled && tmdbMissingCount > 0;
   // Hide empty state while the TMDB debounce trails the library debounce; otherwise
   // the user sees "No matches" flash between t=200ms and t=400ms after typing.
@@ -196,7 +212,8 @@ export function GlobalSearch({
       limit: PREVIEW_LIMIT,
       offset: 0,
     }),
-    queryFn: ({ signal }) => fetchCatalogPage(searchState, PREVIEW_LIMIT, 0, { signal }, false),
+    queryFn: ({ signal }) =>
+      fetchCatalogPage(searchState, PREVIEW_LIMIT, 0, { signal }, false),
     enabled: open && debouncedQuery.length > 0,
     staleTime: 60 * 1000,
   });
@@ -242,9 +259,11 @@ export function GlobalSearch({
   // the input; aria-activedescendant carries the selection.
   useEffect(() => {
     if (selectedIndex >= 0) {
-      document.getElementById(`search-result-${selectedIndex}`)?.scrollIntoView?.({
-        block: "nearest",
-      });
+      document
+        .getElementById(`search-result-${selectedIndex}`)
+        ?.scrollIntoView?.({
+          block: "nearest",
+        });
     }
   }, [selectedIndex]);
 
@@ -269,7 +288,9 @@ export function GlobalSearch({
         searchInputRef.current?.focus();
         return;
       }
-      setSelectedIndex(((nextIndex % items.length) + items.length) % items.length);
+      setSelectedIndex(
+        ((nextIndex % items.length) + items.length) % items.length,
+      );
     },
     [items.length],
   );
@@ -290,7 +311,12 @@ export function GlobalSearch({
           <DialogTitle>Search</DialogTitle>
         </VisuallyHidden.Root>
         <form onSubmit={handleSubmit}>
-          <div className={cn("flex items-center px-5 sm:px-6", showResultsPanel && "border-b")}>
+          <div
+            className={cn(
+              "flex items-center px-5 sm:px-6",
+              showResultsPanel && "border-b",
+            )}
+          >
             <Search className="text-muted-foreground mr-2 h-4 w-4 shrink-0" />
             <input
               ref={searchInputRef}
@@ -305,7 +331,9 @@ export function GlobalSearch({
               aria-autocomplete="list"
               aria-controls="global-search-library-results"
               aria-activedescendant={
-                selectedIndex >= 0 ? `search-result-${selectedIndex}` : undefined
+                selectedIndex >= 0
+                  ? `search-result-${selectedIndex}`
+                  : undefined
               }
               onKeyDown={(e) => {
                 if (e.key === "ArrowDown") {
@@ -313,8 +341,14 @@ export function GlobalSearch({
                   moveResultFocus(selectedIndex + 1);
                 } else if (e.key === "ArrowUp") {
                   e.preventDefault();
-                  moveResultFocus(selectedIndex < 0 ? items.length - 1 : selectedIndex - 1);
-                } else if (e.key === "Enter" && selectedIndex >= 0 && items[selectedIndex]) {
+                  moveResultFocus(
+                    selectedIndex < 0 ? items.length - 1 : selectedIndex - 1,
+                  );
+                } else if (
+                  e.key === "Enter" &&
+                  selectedIndex >= 0 &&
+                  items[selectedIndex]
+                ) {
                   e.preventDefault();
                   handlePickItem(items[selectedIndex].content_id);
                 } else if (e.key === "Escape") {

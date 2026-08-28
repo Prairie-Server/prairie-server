@@ -22,7 +22,10 @@ vi.mock("@/hooks/queries/admin/settings", () => ({
   }),
   useInstallJellyfinCompatWeb: () => ({ mutate: vi.fn(), isPending: false }),
   useRemoveJellyfinCompatWeb: () => ({ mutate: vi.fn(), isPending: false }),
-  useUpdateJellyfinCompatSettings: () => ({ mutate: vi.fn(), isPending: false }),
+  useUpdateJellyfinCompatSettings: () => ({
+    mutate: vi.fn(),
+    isPending: false,
+  }),
 }));
 
 describe("CompatibilityProxiesSettings", () => {
@@ -31,7 +34,8 @@ describe("CompatibilityProxiesSettings", () => {
       isLoading: false,
       getValue: (key: string) => {
         if (key === "audiobookshelf_compat.enabled") return "true";
-        if (key === "jellyfin_compat.public_url") return "https://jellyfin.example.test";
+        if (key === "jellyfin_compat.public_url")
+          return "https://jellyfin.example.test";
         return "";
       },
       setValue: vi.fn(),

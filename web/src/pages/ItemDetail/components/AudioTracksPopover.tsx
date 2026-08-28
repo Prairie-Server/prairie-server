@@ -7,7 +7,10 @@ import { Button } from "@/components/ui/button";
 import { getLanguageName } from "@/player/utils/languageNames";
 import { formatChannels, mapAudioLabel } from "@/lib/mediaFormat";
 import { audioTitle, compactAudioMeta } from "./versionFormatUtils";
-import { formatAudioTrackSummary, resolveAudioTrackSelection } from "./prePlaySelection";
+import {
+  formatAudioTrackSummary,
+  resolveAudioTrackSelection,
+} from "./prePlaySelection";
 import DetailPopover from "./DetailPopover";
 
 interface AudioTracksPopoverProps {
@@ -38,7 +41,11 @@ function AudioOptionRow({
           <span className="text-sm font-medium">{title}</span>
           {badges}
         </div>
-        {description && <div className="text-muted-foreground mt-0.5 text-xs">{description}</div>}
+        {description && (
+          <div className="text-muted-foreground mt-0.5 text-xs">
+            {description}
+          </div>
+        )}
       </div>
       <div className="flex w-4 shrink-0 justify-end">
         {active && <Check className="text-primary size-4" />}
@@ -124,7 +131,8 @@ function AudioTracksPopover({
           const language = getLanguageName(track.language ?? "");
           const fallbackTitle = audioTitle(track);
           const title = language || fallbackTitle;
-          const embeddedTitle = track.title?.trim() || track.embedded_title?.trim() || "";
+          const embeddedTitle =
+            track.title?.trim() || track.embedded_title?.trim() || "";
           const meta = [
             embeddedTitle && embeddedTitle !== title ? embeddedTitle : "",
             compactAudioMeta(track),
@@ -146,17 +154,26 @@ function AudioTracksPopover({
               badges={
                 <>
                   {codec && (
-                    <Badge variant="secondary" className="px-1.5 py-0 text-[10px] uppercase">
+                    <Badge
+                      variant="secondary"
+                      className="px-1.5 py-0 text-[10px] uppercase"
+                    >
                       {codec}
                     </Badge>
                   )}
                   {channels && (
-                    <Badge variant="secondary" className="px-1.5 py-0 text-[10px]">
+                    <Badge
+                      variant="secondary"
+                      className="px-1.5 py-0 text-[10px]"
+                    >
                       {channels}
                     </Badge>
                   )}
                   {track.default && (
-                    <Badge variant="outline" className="px-1.5 py-0 text-[10px] uppercase">
+                    <Badge
+                      variant="outline"
+                      className="px-1.5 py-0 text-[10px] uppercase"
+                    >
                       Default
                     </Badge>
                   )}

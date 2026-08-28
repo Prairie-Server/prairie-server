@@ -22,7 +22,8 @@ const mockUseLibraryCollectionItems = vi.fn();
 
 vi.mock("@/hooks/queries/sections", () => ({
   useLibraryLayout: (...args: unknown[]) => mockUseLibraryLayout(...args),
-  fetchLibrarySectionItems: (...args: unknown[]) => mockFetchLibrarySectionItems(...args),
+  fetchLibrarySectionItems: (...args: unknown[]) =>
+    mockFetchLibrarySectionItems(...args),
 }));
 
 vi.mock("@/hooks/queries/sidebarPins", () => ({
@@ -30,7 +31,8 @@ vi.mock("@/hooks/queries/sidebarPins", () => ({
 }));
 
 vi.mock("@/hooks/queries/libraryCollections", () => ({
-  useLibraryCollectionItems: (...args: unknown[]) => mockUseLibraryCollectionItems(...args),
+  useLibraryCollectionItems: (...args: unknown[]) =>
+    mockUseLibraryCollectionItems(...args),
 }));
 
 vi.mock("@/components/MediaCarousel", () => ({
@@ -69,7 +71,9 @@ vi.mock("@/components/SectionRow", () => ({
     <div
       data-kind="section-row"
       data-section-type={section.section_type}
-      data-favorite={section.items[0]?.user_state?.is_favorite ? "true" : "false"}
+      data-favorite={
+        section.items[0]?.user_state?.is_favorite ? "true" : "false"
+      }
     >
       {section.title}
     </div>
@@ -167,23 +171,27 @@ describe("LibraryRecommended", () => {
       },
       isLoading: false,
     });
-    mockFetchLibrarySectionItems.mockImplementation((_libraryId: number, sectionId: string) =>
-      Promise.resolve({
-        section:
-          sectionId === "cw"
-            ? makeSection({
-                id: "cw",
-                section_type: "continue_watching",
-                title: "Continue Watching",
-              })
-            : makeSection({
-                id: "recent",
-                title: "Recently Added",
-              }),
-      }),
+    mockFetchLibrarySectionItems.mockImplementation(
+      (_libraryId: number, sectionId: string) =>
+        Promise.resolve({
+          section:
+            sectionId === "cw"
+              ? makeSection({
+                  id: "cw",
+                  section_type: "continue_watching",
+                  title: "Continue Watching",
+                })
+              : makeSection({
+                  id: "recent",
+                  title: "Recently Added",
+                }),
+        }),
     );
     mockUseSidebarPins.mockReturnValue({ pins: {} });
-    mockUseLibraryCollectionItems.mockReturnValue({ data: [], isLoading: false });
+    mockUseLibraryCollectionItems.mockReturnValue({
+      data: [],
+      isLoading: false,
+    });
   });
 
   afterEach(async () => {
@@ -196,7 +204,9 @@ describe("LibraryRecommended", () => {
   async function render(ui: ReactNode) {
     const queryClient = new QueryClient();
     await act(async () => {
-      root.render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
+      root.render(
+        <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>,
+      );
       await Promise.resolve();
       await Promise.resolve();
     });
@@ -208,12 +218,23 @@ describe("LibraryRecommended", () => {
 
     expect(container.textContent).toContain("Continue Watching");
     expect(container.textContent).toContain("Recently Added");
-    expect(mockFetchLibrarySectionItems).toHaveBeenCalledWith(42, "cw", expect.any(Object));
-    expect(mockFetchLibrarySectionItems).toHaveBeenCalledWith(42, "recent", expect.any(Object));
+    expect(mockFetchLibrarySectionItems).toHaveBeenCalledWith(
+      42,
+      "cw",
+      expect.any(Object),
+    );
+    expect(mockFetchLibrarySectionItems).toHaveBeenCalledWith(
+      42,
+      "recent",
+      expect.any(Object),
+    );
   });
 
   it("does not invalidate cached library sections on mount", async () => {
-    const invalidateQueries = vi.spyOn(QueryClient.prototype, "invalidateQueries");
+    const invalidateQueries = vi.spyOn(
+      QueryClient.prototype,
+      "invalidateQueries",
+    );
 
     await render(<LibraryRecommended libraryId={42} />);
 
@@ -223,15 +244,17 @@ describe("LibraryRecommended", () => {
 
   it("reloads locally held library rows after consecutive media surface refreshes", async () => {
     let isFavorite = false;
-    mockFetchLibrarySectionItems.mockImplementation((_libraryId: number, sectionId: string) =>
-      Promise.resolve({
-        section: makeSection({
-          id: sectionId,
-          title: sectionId === "cw" ? "Continue Watching" : "Recently Added",
-          section_type: sectionId === "cw" ? "continue_watching" : "recently_added",
-          isFavorite,
+    mockFetchLibrarySectionItems.mockImplementation(
+      (_libraryId: number, sectionId: string) =>
+        Promise.resolve({
+          section: makeSection({
+            id: sectionId,
+            title: sectionId === "cw" ? "Continue Watching" : "Recently Added",
+            section_type:
+              sectionId === "cw" ? "continue_watching" : "recently_added",
+            isFavorite,
+          }),
         }),
-      }),
     );
     const queryClient = await render(<LibraryRecommended libraryId={42} />);
 
@@ -280,13 +303,14 @@ describe("LibraryRecommended", () => {
       },
       isLoading: false,
     });
-    mockFetchLibrarySectionItems.mockImplementation((_libraryId: number, sectionId: string) =>
-      Promise.resolve({
-        section:
-          sectionId === "hero"
-            ? makeSection({ id: "hero", title: "Featured", featured: true })
-            : makeSection({ id: "recent", title: "Recently Added" }),
-      }),
+    mockFetchLibrarySectionItems.mockImplementation(
+      (_libraryId: number, sectionId: string) =>
+        Promise.resolve({
+          section:
+            sectionId === "hero"
+              ? makeSection({ id: "hero", title: "Featured", featured: true })
+              : makeSection({ id: "recent", title: "Recently Added" }),
+        }),
     );
 
     await render(<LibraryRecommended libraryId={42} />);
@@ -312,24 +336,32 @@ describe("LibraryRecommended", () => {
           { type: "collection", id: "col-1", label: "Pinned Horror" },
           { type: "section", id: "sec-1", label: "Recently Added" },
         ],
-        "99": [{ type: "collection", id: "col-2", label: "Other Library Collection" }],
+        "99": [
+          {
+            type: "collection",
+            id: "col-2",
+            label: "Other Library Collection",
+          },
+        ],
       },
     });
-    mockUseLibraryCollectionItems.mockImplementation((libraryId: number, collectionId: string) => {
-      if (libraryId === 42 && collectionId === "col-1") {
-        return {
-          data: [
-            {
-              content_id: "item-1",
-              title: "Scream",
-            },
-          ],
-          isLoading: false,
-        };
-      }
+    mockUseLibraryCollectionItems.mockImplementation(
+      (libraryId: number, collectionId: string) => {
+        if (libraryId === 42 && collectionId === "col-1") {
+          return {
+            data: [
+              {
+                content_id: "item-1",
+                title: "Scream",
+              },
+            ],
+            isLoading: false,
+          };
+        }
 
-      return { data: [], isLoading: false };
-    });
+        return { data: [], isLoading: false };
+      },
+    );
 
     await render(<LibraryRecommended libraryId={42} />);
 

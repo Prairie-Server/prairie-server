@@ -35,9 +35,12 @@ export default function AdminMarkerHistory() {
     <div className="page-shell space-y-6 py-4 sm:py-6">
       <div className="page-header gap-5">
         <div className="space-y-2">
-          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Marker History</h1>
+          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
+            Marker History
+          </h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Recent manual intro, recap, credits, and preview marker edits across the server.
+            Recent manual intro, recap, credits, and preview marker edits across
+            the server.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -62,7 +65,9 @@ export default function AdminMarkerHistory() {
             }}
             disabled={history.isFetching}
           >
-            <RefreshCw className={`size-4 ${history.isFetching ? "animate-spin" : ""}`} />
+            <RefreshCw
+              className={`size-4 ${history.isFetching ? "animate-spin" : ""}`}
+            />
             Refresh
           </Button>
         </div>
@@ -104,7 +109,8 @@ export default function AdminMarkerHistory() {
 }
 
 function MarkerHistoryRow({ row }: { row: MarkerEditAuditEntry }) {
-  const title = row.media_title || fileName(row.file_path) || `File ${row.media_file_id}`;
+  const title =
+    row.media_title || fileName(row.file_path) || `File ${row.media_file_id}`;
   const itemLabel = row.item_type ? `${title} (${row.item_type})` : title;
 
   return (
@@ -146,7 +152,9 @@ function MarkerHistoryRow({ row }: { row: MarkerEditAuditEntry }) {
       <TableCell>
         <div className="font-medium">{row.username ?? "Unknown user"}</div>
         {row.impersonator_username && (
-          <div className="text-muted-foreground text-xs">via {row.impersonator_username}</div>
+          <div className="text-muted-foreground text-xs">
+            via {row.impersonator_username}
+          </div>
         )}
       </TableCell>
       <TableCell>
@@ -179,7 +187,10 @@ function formatHistoryRange(marker: MarkerSegment | null): string {
 function formatHistoryDate(value: string): string {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return value;
-  const day = date.toLocaleDateString(preferredDateLocale(), { month: "short", day: "numeric" });
+  const day = date.toLocaleDateString(preferredDateLocale(), {
+    month: "short",
+    day: "numeric",
+  });
   return `${day}, ${formatTime(date)}`;
 }
 

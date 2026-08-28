@@ -72,7 +72,9 @@ function SuggestionCard({
               : "border-white/20 bg-black/50 text-white/80 hover:border-white/40 hover:bg-black/70"
           }`}
         >
-          <TriangleIcon className={`size-2.5 ${suggestion.voted_by_me ? "fill-primary" : ""}`} />
+          <TriangleIcon
+            className={`size-2.5 ${suggestion.voted_by_me ? "fill-primary" : ""}`}
+          />
           {suggestion.vote_count}
         </button>
 
@@ -108,9 +110,12 @@ function SuggestionCard({
 
       {/* Title */}
       <div className="px-0.5 pt-2.5">
-        <div className="truncate text-[13px] font-semibold tracking-tight">{suggestion.title}</div>
+        <div className="truncate text-[13px] font-semibold tracking-tight">
+          {suggestion.title}
+        </div>
         <div className="text-muted-foreground mt-0.5 text-[11px] font-medium tracking-[0.12em] uppercase">
-          {suggestion.subtitle || (suggestion.content_type === "episode" ? "Episode" : "Movie")}
+          {suggestion.subtitle ||
+            (suggestion.content_type === "episode" ? "Episode" : "Movie")}
         </div>
       </div>
     </div>
@@ -153,7 +158,11 @@ export function WatchTogetherSuggestionPanel({
       try {
         await onDelete(id);
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to remove suggestion");
+        toast.error(
+          error instanceof Error
+            ? error.message
+            : "Failed to remove suggestion",
+        );
       } finally {
         setLoadingId(null);
       }
@@ -168,7 +177,9 @@ export function WatchTogetherSuggestionPanel({
         await onPromote(id);
         toast.success("Playing suggestion for everyone");
       } catch (error) {
-        toast.error(error instanceof Error ? error.message : "Failed to start suggestion");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to start suggestion",
+        );
       } finally {
         setLoadingId(null);
       }
@@ -184,7 +195,9 @@ export function WatchTogetherSuggestionPanel({
             <TriangleIcon className="size-3.5 fill-current" />
           </div>
           <div>
-            <h2 className="text-lg font-semibold tracking-tight">Suggestions</h2>
+            <h2 className="text-lg font-semibold tracking-tight">
+              Suggestions
+            </h2>
             <p className="text-muted-foreground mt-0.5 text-sm">
               {suggestions.length === 0
                 ? "No suggestions yet — search for something to add."

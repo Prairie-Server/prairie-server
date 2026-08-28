@@ -13,7 +13,8 @@ interface UseSettingsFormOptions {
 
 export function useSettingsForm({ keys }: UseSettingsFormOptions) {
   const { data: settings, isLoading } = useAdminServerSettings();
-  const { data: sensitiveData, isError: sensitiveStatusError } = useAdminSensitiveStatus();
+  const { data: sensitiveData, isError: sensitiveStatusError } =
+    useAdminSensitiveStatus();
   const updateSettings = useUpdateServerSettings();
 
   const [localValues, setLocalValues] = useState<Record<string, string>>({});
@@ -89,7 +90,10 @@ export function useSettingsForm({ keys }: UseSettingsFormOptions) {
   const buildConnectionCheckRequest = useCallback(
     (selectedKeys: string[] = keys): AdminSettingsConnectionCheckRequest => ({
       values: Object.fromEntries(
-        selectedKeys.map((key) => [key, localValues[key] ?? settings?.[key] ?? ""]),
+        selectedKeys.map((key) => [
+          key,
+          localValues[key] ?? settings?.[key] ?? "",
+        ]),
       ),
       dirty_keys: selectedKeys.filter((key) => dirty.has(key)),
     }),
@@ -99,13 +103,16 @@ export function useSettingsForm({ keys }: UseSettingsFormOptions) {
   const save = useCallback(async () => {
     if (dirty.size === 0) return;
     const submittedKeys = Array.from(dirty);
-    const values = Object.fromEntries(submittedKeys.map((key) => [key, localValues[key] ?? ""]));
+    const values = Object.fromEntries(
+      submittedKeys.map((key) => [key, localValues[key] ?? ""]),
+    );
     const submittedVersions = new Map(
       submittedKeys.map((key) => [key, editVersions.current.get(key) ?? 0]),
     );
     const result = await updateSettings.mutateAsync(values);
     const settledKeys = submittedKeys.filter(
-      (key) => (editVersions.current.get(key) ?? 0) === submittedVersions.get(key),
+      (key) =>
+        (editVersions.current.get(key) ?? 0) === submittedVersions.get(key),
     );
     setLocalValues((previous) => {
       const next = { ...previous };

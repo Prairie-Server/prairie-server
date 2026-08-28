@@ -43,22 +43,31 @@ export function useUpdateDiagnosticsUploadsEnabled() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (enabled: boolean) =>
-      api<AdminSettingUpdateResponse>("/admin/settings/diagnostics.uploads_enabled", {
-        method: "PUT",
-        body: JSON.stringify({ value: enabled ? "true" : "false" }),
-      }),
+      api<AdminSettingUpdateResponse>(
+        "/admin/settings/diagnostics.uploads_enabled",
+        {
+          method: "PUT",
+          body: JSON.stringify({ value: enabled ? "true" : "false" }),
+        },
+      ),
     onSuccess: async (_result, enabled) => {
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: adminKeys.diagnosticStatus() }),
+        queryClient.invalidateQueries({
+          queryKey: adminKeys.diagnosticStatus(),
+        }),
         queryClient.invalidateQueries({ queryKey: adminKeys.serverSettings() }),
       ]);
       toast.success(
-        enabled ? "Client diagnostic uploads enabled" : "Client diagnostic uploads disabled",
+        enabled
+          ? "Client diagnostic uploads enabled"
+          : "Client diagnostic uploads disabled",
       );
     },
     onError: (error) => {
       toast.error(
-        error instanceof Error ? error.message : "Failed to update client diagnostic uploads",
+        error instanceof Error
+          ? error.message
+          : "Failed to update client diagnostic uploads",
       );
     },
   });
@@ -69,7 +78,9 @@ export function useDiagnosticReports(params: AdminDiagnosticsQuery) {
   return useQuery({
     queryKey: adminKeys.diagnosticReports({ ...params }),
     queryFn: () =>
-      api<DiagnosticReportListResponse>(`/admin/diagnostics/reports${query ? `?${query}` : ""}`),
+      api<DiagnosticReportListResponse>(
+        `/admin/diagnostics/reports${query ? `?${query}` : ""}`,
+      ),
     staleTime: 5_000,
   });
 }
@@ -77,7 +88,10 @@ export function useDiagnosticReports(params: AdminDiagnosticsQuery) {
 export function useDiagnosticReport(id?: string) {
   return useQuery({
     queryKey: adminKeys.diagnosticReport(id),
-    queryFn: () => api<DiagnosticReport>(`/admin/diagnostics/reports/${encodeURIComponent(id!)}`),
+    queryFn: () =>
+      api<DiagnosticReport>(
+        `/admin/diagnostics/reports/${encodeURIComponent(id!)}`,
+      ),
     enabled: Boolean(id),
   });
 }
@@ -97,12 +111,18 @@ export function useDeleteDiagnosticReport() {
       toast.success("Diagnostic report deleted");
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to delete diagnostic report");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to delete diagnostic report",
+      );
     },
   });
 }
 
-export async function downloadDiagnosticReport(report: DiagnosticReportSummary) {
+export async function downloadDiagnosticReport(
+  report: DiagnosticReportSummary,
+) {
   // Always stream the bundle through the server (proxy mode) instead of
   // following a presigned URL. When S3Private points at an endpoint only the
   // server can reach (an internal MinIO/R2 gateway), a presigned URL sends the

@@ -281,7 +281,9 @@ export interface WatchPageProps {
   onPictureInPictureChange?: (change: PlayerPictureInPictureChange) => void;
   autoEnterPictureInPicture?: boolean;
   onPlaybackStateChange?: (state: PlayerPlaybackStateChange) => void;
-  onPlaybackTransportReady?: (transport: PlayerPlaybackTransport | null) => void;
+  onPlaybackTransportReady?: (
+    transport: PlayerPlaybackTransport | null,
+  ) => void;
   onReturnFromPostRoll?: () => void;
 }
 

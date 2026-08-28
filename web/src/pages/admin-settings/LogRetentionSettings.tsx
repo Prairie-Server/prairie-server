@@ -10,7 +10,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useAdminServerSettings, useUpdateServerSettings } from "@/hooks/queries/admin/settings";
+import {
+  useAdminServerSettings,
+  useUpdateServerSettings,
+} from "@/hooks/queries/admin/settings";
 
 import { FieldGroup } from "./FieldGroup";
 import { SaveBar } from "./SaveBar";
@@ -38,11 +41,16 @@ const GLOBAL_KEYS = [
   "policy.decision_log_scope_sample_rate",
 ] as const;
 
-const POLICY_DECISION_LOG_RETENTION_DAYS_KEY = "policy.decision_log_retention_days";
+const POLICY_DECISION_LOG_RETENTION_DAYS_KEY =
+  "policy.decision_log_retention_days";
 const POLICY_DECISION_LOG_VERBOSITY_KEY = "policy.decision_log_verbosity";
-const POLICY_DECISION_LOG_SCOPE_SAMPLE_RATE_KEY = "policy.decision_log_scope_sample_rate";
+const POLICY_DECISION_LOG_SCOPE_SAMPLE_RATE_KEY =
+  "policy.decision_log_scope_sample_rate";
 
-function createBucketRow(policy?: Partial<LogRetentionBucketPolicy>, fallbackID = "0"): BucketRow {
+function createBucketRow(
+  policy?: Partial<LogRetentionBucketPolicy>,
+  fallbackID = "0",
+): BucketRow {
   return {
     id: fallbackID,
     component: policy?.component ?? "",
@@ -73,10 +81,14 @@ export default function LogRetentionSettings() {
     }
 
     try {
-      const parsed = parseBucketPolicies(settings?.[OPSLOG_BUCKET_POLICIES_KEY] ?? "");
+      const parsed = parseBucketPolicies(
+        settings?.[OPSLOG_BUCKET_POLICIES_KEY] ?? "",
+      );
       return {
         localValues: nextValues,
-        bucketRows: parsed.map((policy, index) => createBucketRow(policy, String(index + 1))),
+        bucketRows: parsed.map((policy, index) =>
+          createBucketRow(policy, String(index + 1)),
+        ),
         parseError: "",
         nextRowID: parsed.length + 1,
       };
@@ -86,7 +98,10 @@ export default function LogRetentionSettings() {
         bucketRows: DEFAULT_BUCKET_POLICIES.map((policy, index) =>
           createBucketRow(policy, String(index + 1)),
         ),
-        parseError: error instanceof Error ? error.message : "Failed to parse bucket rules",
+        parseError:
+          error instanceof Error
+            ? error.message
+            : "Failed to parse bucket rules",
         nextRowID: DEFAULT_BUCKET_POLICIES.length + 1,
       };
     }
@@ -115,7 +130,11 @@ export default function LogRetentionSettings() {
     setDirty((prev) => new Set(prev).add(key));
   }
 
-  function updateBucketRow(id: string, field: keyof LogRetentionBucketPolicy, value: string) {
+  function updateBucketRow(
+    id: string,
+    field: keyof LogRetentionBucketPolicy,
+    value: string,
+  ) {
     setBucketRows((prev) =>
       prev.map((row) =>
         row.id === id
@@ -151,7 +170,9 @@ export default function LogRetentionSettings() {
 
   function restoreRecommendedBuckets() {
     setBucketRows(
-      DEFAULT_BUCKET_POLICIES.map((policy, index) => createBucketRow(policy, String(index + 1))),
+      DEFAULT_BUCKET_POLICIES.map((policy, index) =>
+        createBucketRow(policy, String(index + 1)),
+      ),
     );
     nextRowID.current = DEFAULT_BUCKET_POLICIES.length + 1;
     setDirty((prev) => new Set(prev).add(OPSLOG_BUCKET_POLICIES_KEY));
@@ -202,13 +223,16 @@ export default function LogRetentionSettings() {
       <div className="mb-6 space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Log Retention</h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Prune oldest operational logs by global caps and per-bucket overrides. Bucket rules match
-          on component and level. Cleanup cadence and startup runs are configured in Scheduled
-          Tasks.
+          Prune oldest operational logs by global caps and per-bucket overrides.
+          Bucket rules match on component and level. Cleanup cadence and startup
+          runs are configured in Scheduled Tasks.
         </p>
       </div>
 
-      <fieldset disabled={updateSettings.isPending} className="flex-1 space-y-6">
+      <fieldset
+        disabled={updateSettings.isPending}
+        className="flex-1 space-y-6"
+      >
         <FieldGroup label="Global Limits">
           <SettingField
             label="Retention Days"
@@ -239,14 +263,18 @@ export default function LogRetentionSettings() {
             type="number"
             hint="Policy decisions older than this are pruned by the cleanup task."
             value={getValue(POLICY_DECISION_LOG_RETENTION_DAYS_KEY)}
-            onChange={(value) => setValue(POLICY_DECISION_LOG_RETENTION_DAYS_KEY, value)}
+            onChange={(value) =>
+              setValue(POLICY_DECISION_LOG_RETENTION_DAYS_KEY, value)
+            }
           />
           <SettingField
             label="Decision Log Verbosity"
             type="select"
             hint="Digest omits sampled input and result payloads. Verbose can store those samples in addition to decision metadata."
             value={getValue(POLICY_DECISION_LOG_VERBOSITY_KEY) || "digest"}
-            onChange={(value) => setValue(POLICY_DECISION_LOG_VERBOSITY_KEY, value)}
+            onChange={(value) =>
+              setValue(POLICY_DECISION_LOG_VERBOSITY_KEY, value)
+            }
             options={[
               { value: "digest", label: "Digest" },
               { value: "verbose", label: "Verbose" },
@@ -257,7 +285,9 @@ export default function LogRetentionSettings() {
             type="number"
             hint="Logs one sampled scope decision per N allowed decisions. Denials and errors always log."
             value={getValue(POLICY_DECISION_LOG_SCOPE_SAMPLE_RATE_KEY)}
-            onChange={(value) => setValue(POLICY_DECISION_LOG_SCOPE_SAMPLE_RATE_KEY, value)}
+            onChange={(value) =>
+              setValue(POLICY_DECISION_LOG_SCOPE_SAMPLE_RATE_KEY, value)
+            }
           />
         </FieldGroup>
 
@@ -266,8 +296,9 @@ export default function LogRetentionSettings() {
             <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
               <div className="text-muted-foreground text-sm">
                 Use tighter rules for noisy buckets like{" "}
-                <span className="font-mono">metadata/info</span>. Set a bucket limit to{" "}
-                <span className="font-mono">0</span> to disable that bucket-specific cap.
+                <span className="font-mono">metadata/info</span>. Set a bucket
+                limit to <span className="font-mono">0</span> to disable that
+                bucket-specific cap.
               </div>
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
                 <Button
@@ -288,8 +319,9 @@ export default function LogRetentionSettings() {
 
             {effectiveParseError ? (
               <div className="border-warning/30 bg-warning/10 text-warning rounded-[1rem] border px-3 py-2 text-sm">
-                Existing bucket policy JSON could not be parsed. The editor loaded the recommended
-                rules so you can recover cleanly. Details: {effectiveParseError}
+                Existing bucket policy JSON could not be parsed. The editor
+                loaded the recommended rules so you can recover cleanly.
+                Details: {effectiveParseError}
               </div>
             ) : null}
 
@@ -310,7 +342,10 @@ export default function LogRetentionSettings() {
                 <tbody>
                   {effectiveBucketRows.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="text-muted-foreground px-3 py-6 text-center">
+                      <td
+                        colSpan={6}
+                        className="text-muted-foreground px-3 py-6 text-center"
+                      >
                         No bucket overrides configured.
                       </td>
                     </tr>
@@ -321,7 +356,11 @@ export default function LogRetentionSettings() {
                           <Input
                             value={row.component}
                             onChange={(event) =>
-                              updateBucketRow(row.id, "component", event.target.value)
+                              updateBucketRow(
+                                row.id,
+                                "component",
+                                event.target.value,
+                              )
                             }
                             placeholder="metadata"
                           />
@@ -329,7 +368,9 @@ export default function LogRetentionSettings() {
                         <td className="px-3 py-2">
                           <Select
                             value={row.level}
-                            onValueChange={(value) => updateBucketRow(row.id, "level", value)}
+                            onValueChange={(value) =>
+                              updateBucketRow(row.id, "level", value)
+                            }
                           >
                             <SelectTrigger className="w-[120px]">
                               <SelectValue />
@@ -349,7 +390,11 @@ export default function LogRetentionSettings() {
                             min="0"
                             value={String(row.retention_days)}
                             onChange={(event) =>
-                              updateBucketRow(row.id, "retention_days", event.target.value)
+                              updateBucketRow(
+                                row.id,
+                                "retention_days",
+                                event.target.value,
+                              )
                             }
                             className="w-[110px]"
                           />
@@ -360,7 +405,11 @@ export default function LogRetentionSettings() {
                             min="0"
                             value={String(row.max_rows)}
                             onChange={(event) =>
-                              updateBucketRow(row.id, "max_rows", event.target.value)
+                              updateBucketRow(
+                                row.id,
+                                "max_rows",
+                                event.target.value,
+                              )
                             }
                             className="w-[140px]"
                           />
@@ -371,7 +420,11 @@ export default function LogRetentionSettings() {
                             min="0"
                             value={String(row.max_size_mb)}
                             onChange={(event) =>
-                              updateBucketRow(row.id, "max_size_mb", event.target.value)
+                              updateBucketRow(
+                                row.id,
+                                "max_size_mb",
+                                event.target.value,
+                              )
                             }
                             className="w-[140px]"
                           />
@@ -395,8 +448,9 @@ export default function LogRetentionSettings() {
             </div>
 
             <div className="text-muted-foreground text-xs leading-5">
-              Matching rows are pruned oldest-first when they exceed the bucket rule. Global caps
-              then prune the oldest rows across every remaining bucket.
+              Matching rows are pruned oldest-first when they exceed the bucket
+              rule. Global caps then prune the oldest rows across every
+              remaining bucket.
             </div>
           </div>
         </FieldGroup>

@@ -13,7 +13,12 @@ import {
   TRANSFORMATION_AUDIO_TO_AAC_V3,
   TRANSFORMATION_VIDEO_TO_H264_V3,
 } from "./protocol-v3";
-import type { PlayerAudioTrack, PlayerFileVersion, PlayerVideoTrack, QualityOption } from "./types";
+import type {
+  PlayerAudioTrack,
+  PlayerFileVersion,
+  PlayerVideoTrack,
+  QualityOption,
+} from "./types";
 
 export interface RuntimePlaybackStats {
   playerWidth?: number;
@@ -49,8 +54,12 @@ export function buildPlaybackInfoSections({
   requestedVersion,
   runtimeStats,
 }: BuildPlaybackInfoSectionsInput): PlaybackInfoSection[] {
-  const videoTrack = currentSourceVersion ? pickVideoTrack(currentSourceVersion) : undefined;
-  const audioTrack = currentSourceVersion ? pickAudioTrack(currentSourceVersion) : undefined;
+  const videoTrack = currentSourceVersion
+    ? pickVideoTrack(currentSourceVersion)
+    : undefined;
+  const audioTrack = currentSourceVersion
+    ? pickAudioTrack(currentSourceVersion)
+    : undefined;
   const requestedSource =
     requestedVersion &&
     currentSourceVersion &&
@@ -66,7 +75,9 @@ export function buildPlaybackInfoSections({
         { label: "Play method", value: formatDelivery(plan.delivery) },
         { label: "Protocol", value: formatProtocol(streamUrl) },
         { label: "Stream type", value: formatStreamType(plan) },
-        ...(requestedSource ? [{ label: "Auto-switched from", value: requestedSource }] : []),
+        ...(requestedSource
+          ? [{ label: "Auto-switched from", value: requestedSource }]
+          : []),
       ],
     },
     {
@@ -74,11 +85,17 @@ export function buildPlaybackInfoSections({
       rows: [
         {
           label: "Player dimensions",
-          value: formatDimensions(runtimeStats.playerWidth, runtimeStats.playerHeight),
+          value: formatDimensions(
+            runtimeStats.playerWidth,
+            runtimeStats.playerHeight,
+          ),
         },
         {
           label: "Video resolution",
-          value: formatDimensions(runtimeStats.videoWidth, runtimeStats.videoHeight),
+          value: formatDimensions(
+            runtimeStats.videoWidth,
+            runtimeStats.videoHeight,
+          ),
         },
         {
           label: "Dropped frames",
@@ -184,7 +201,14 @@ export function qualityOptionsFromPlanV3(plan: PlanV3): QualityOption[] {
   }
 
   return [
-    { id: "auto", label: "Auto", sublabel: "", resolution: "", bitrateKbps: 0, isOriginal: false },
+    {
+      id: "auto",
+      label: "Auto",
+      sublabel: "",
+      resolution: "",
+      bitrateKbps: 0,
+      isOriginal: false,
+    },
     ...rungs,
   ];
 }
@@ -200,16 +224,22 @@ export function resolveActiveQualityOptionId(
   preference: string,
 ): string | null {
   const normalized = preference.trim().toLowerCase();
-  const exact = options.find((option) => option.id.toLowerCase() === normalized);
+  const exact = options.find(
+    (option) => option.id.toLowerCase() === normalized,
+  );
   if (exact) return exact.id;
 
   const aliasHeight = qualityPreferenceHeight(normalized);
   if (aliasHeight === null) {
     const originalAlias = ["source", "max"].includes(normalized);
-    return originalAlias ? (options.find((option) => option.isOriginal)?.id ?? null) : null;
+    return originalAlias
+      ? (options.find((option) => option.isOriginal)?.id ?? null)
+      : null;
   }
 
-  const medium = options.find((option) => option.id === `${aliasHeight}p-medium`);
+  const medium = options.find(
+    (option) => option.id === `${aliasHeight}p-medium`,
+  );
   if (medium) return medium.id;
 
   const original = options.find((option) => option.isOriginal);
@@ -291,7 +321,8 @@ export function formatDelivery(delivery: DeliveryV3): string {
 
 export function formatProtocol(streamUrl: string): string {
   try {
-    const base = typeof window !== "undefined" ? window.location.href : "http://localhost";
+    const base =
+      typeof window !== "undefined" ? window.location.href : "http://localhost";
     return new URL(streamUrl, base).protocol.replace(":", "");
   } catch {
     return "—";
@@ -341,7 +372,8 @@ export function formatDeliveredAudioCodec(plan: PlanV3): string {
 
 function planTransforms(plan: PlanV3, name: string): boolean {
   return plan.transformations.some(
-    (transformation) => transformation.executor === "server" && transformation.name === name,
+    (transformation) =>
+      transformation.executor === "server" && transformation.name === name,
   );
 }
 
@@ -362,7 +394,9 @@ export function formatVideoRangeType(
 ): string {
   if (track?.dolby_vision) {
     const dolbyVision = dolbyVisionLabel(track.dolby_vision);
-    return track.video_range ? `${dolbyVision} (${track.video_range})` : dolbyVision;
+    return track.video_range
+      ? `${dolbyVision} (${track.video_range})`
+      : dolbyVision;
   }
   if (track?.video_range) {
     return track.video_range;
@@ -397,17 +431,27 @@ export function formatOriginalAudioCodec(
   return formatCodecLabel(track?.codec || version?.codec_audio);
 }
 
-export function formatAudioChannels(version?: PlayerFileVersion, track?: PlayerAudioTrack): string {
+export function formatAudioChannels(
+  version?: PlayerFileVersion,
+  track?: PlayerAudioTrack,
+): string {
   const channels = track?.channels ?? version?.audio_channels;
   return isPositive(channels) ? String(channels) : "—";
 }
 
-function pickVideoTrack(version: PlayerFileVersion): PlayerVideoTrack | undefined {
+function pickVideoTrack(
+  version: PlayerFileVersion,
+): PlayerVideoTrack | undefined {
   return version.video_tracks?.[0];
 }
 
-function pickAudioTrack(version: PlayerFileVersion): PlayerAudioTrack | undefined {
-  return version.audio_tracks?.find((track) => track.default) ?? version.audio_tracks?.[0];
+function pickAudioTrack(
+  version: PlayerFileVersion,
+): PlayerAudioTrack | undefined {
+  return (
+    version.audio_tracks?.find((track) => track.default) ??
+    version.audio_tracks?.[0]
+  );
 }
 
 function displayValue(value?: string): string {

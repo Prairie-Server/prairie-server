@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
@@ -18,7 +24,8 @@ class ResizeObserverStub {
   unobserve() {}
   disconnect() {}
 }
-globalThis.ResizeObserver ??= ResizeObserverStub as unknown as typeof ResizeObserver;
+globalThis.ResizeObserver ??=
+  ResizeObserverStub as unknown as typeof ResizeObserver;
 window.HTMLElement.prototype.hasPointerCapture ??= () => false;
 window.HTMLElement.prototype.scrollIntoView ??= () => {};
 
@@ -39,7 +46,9 @@ describe("MetadataLanguageSetting", () => {
 
     expect(screen.getByText("Norwegian")).toBeTruthy();
     expect(screen.getByText("Japanese")).toBeTruthy();
-    fireEvent.click(screen.getByRole("button", { name: "Remove Norwegian exception" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Remove Norwegian exception" }),
+    );
 
     expect(onOverridesChange).toHaveBeenCalledWith({ ja: "en" });
   });
@@ -55,10 +64,14 @@ describe("MetadataLanguageSetting", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Add exception" }).hasAttribute("disabled")).toBe(
-      true,
-    );
-    expect(screen.getByLabelText("Original language for new exception")).toBeTruthy();
+    expect(
+      screen
+        .getByRole("button", { name: "Add exception" })
+        .hasAttribute("disabled"),
+    ).toBe(true);
+    expect(
+      screen.getByLabelText("Original language for new exception"),
+    ).toBeTruthy();
   });
 
   it("shows a new exception immediately while its save is still pending", async () => {
@@ -74,14 +87,18 @@ describe("MetadataLanguageSetting", () => {
       />,
     );
 
-    await user.click(screen.getByLabelText("Original language for new exception"));
+    await user.click(
+      screen.getByLabelText("Original language for new exception"),
+    );
     await user.click(screen.getByRole("option", { name: "Norwegian" }));
     await user.click(screen.getByRole("button", { name: "Add exception" }));
 
-    expect(screen.getByLabelText("Metadata language for Norwegian")).toHaveTextContent(
-      "Original language",
-    );
-    expect(onOverridesChange).toHaveBeenCalledWith({ no: ORIGINAL_METADATA_LANGUAGE });
+    expect(
+      screen.getByLabelText("Metadata language for Norwegian"),
+    ).toHaveTextContent("Original language");
+    expect(onOverridesChange).toHaveBeenCalledWith({
+      no: ORIGINAL_METADATA_LANGUAGE,
+    });
   });
 
   it("rolls back an optimistic exception when its save fails", async () => {
@@ -103,15 +120,21 @@ describe("MetadataLanguageSetting", () => {
       />,
     );
 
-    await user.click(screen.getByLabelText("Original language for new exception"));
+    await user.click(
+      screen.getByLabelText("Original language for new exception"),
+    );
     await user.click(screen.getByRole("option", { name: "Norwegian" }));
     await user.click(screen.getByRole("button", { name: "Add exception" }));
-    expect(screen.getByLabelText("Metadata language for Norwegian")).toBeInTheDocument();
+    expect(
+      screen.getByLabelText("Metadata language for Norwegian"),
+    ).toBeInTheDocument();
 
     rejectSave(new Error("save failed"));
 
     await waitFor(() =>
-      expect(screen.queryByLabelText("Metadata language for Norwegian")).not.toBeInTheDocument(),
+      expect(
+        screen.queryByLabelText("Metadata language for Norwegian"),
+      ).not.toBeInTheDocument(),
     );
   });
 
@@ -126,8 +149,8 @@ describe("MetadataLanguageSetting", () => {
       />,
     );
 
-    expect(screen.getByLabelText("Metadata language for Norwegian").textContent).toContain(
-      "Portuguese",
-    );
+    expect(
+      screen.getByLabelText("Metadata language for Norwegian").textContent,
+    ).toContain("Portuguese");
   });
 });

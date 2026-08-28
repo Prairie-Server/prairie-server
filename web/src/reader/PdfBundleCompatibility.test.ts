@@ -15,7 +15,9 @@ describe("vendored PDF.js bundle compatibility", () => {
     });
 
     try {
-      const bundleURL = pathToFileURL(resolve(process.cwd(), "public/vendor/pdfjs/pdf.min.mjs"));
+      const bundleURL = pathToFileURL(
+        resolve(process.cwd(), "public/vendor/pdfjs/pdf.min.mjs"),
+      );
       bundleURL.searchParams.set("iterator-compat", String(Date.now()));
 
       const pdfjs = await import(bundleURL.href);

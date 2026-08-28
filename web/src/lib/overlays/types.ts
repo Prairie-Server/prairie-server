@@ -1,11 +1,21 @@
 import type { CSSProperties } from "react";
 
 // Position on the poster card where a badge group is anchored.
-export const OVERLAY_POSITIONS = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
+export const OVERLAY_POSITIONS = [
+  "top-left",
+  "top-right",
+  "bottom-left",
+  "bottom-right",
+] as const;
 export type OverlayPosition = (typeof OVERLAY_POSITIONS)[number];
 
 // Logical groupings used by the settings UI to organize controls.
-export const OVERLAY_CATEGORIES = ["tech", "ratings", "metadata", "ribbons"] as const;
+export const OVERLAY_CATEGORIES = [
+  "tech",
+  "ratings",
+  "metadata",
+  "ribbons",
+] as const;
 export type OverlayCategory = (typeof OVERLAY_CATEGORIES)[number];
 
 // Stable identifiers for every overlay the system knows about.

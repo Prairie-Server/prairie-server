@@ -2,7 +2,10 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router";
 import type { ItemDetail } from "@/api/types";
 import { useItemEpisodes } from "@/hooks/queries/episodes";
-import { useRefreshItemMetadata, useWatchedStateMutation } from "@/hooks/queries/items";
+import {
+  useRefreshItemMetadata,
+  useWatchedStateMutation,
+} from "@/hooks/queries/items";
 import { useAmbientColor } from "@/hooks/useAmbientColor";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
@@ -27,7 +30,11 @@ function seasonLabel(seasonNumber: number, title?: string) {
   return `Season ${seasonNumber}`;
 }
 
-export default function SeasonContent({ item }: { item: ItemDetail & { type: "season" } }) {
+export default function SeasonContent({
+  item,
+}: {
+  item: ItemDetail & { type: "season" };
+}) {
   const { translating: overviewTranslating, onTranslate: onTranslateOverview } =
     useOnViewTranslation(item);
   const navigate = useNavigate();
@@ -48,7 +55,9 @@ export default function SeasonContent({ item }: { item: ItemDetail & { type: "se
 
   const episodes = episodesData?.episodes ?? [];
   const seasonNumber = item.season_number ?? 0;
-  const label = item.is_specials ? "Specials" : seasonLabel(seasonNumber, item.title);
+  const label = item.is_specials
+    ? "Specials"
+    : seasonLabel(seasonNumber, item.title);
   const seriesTitle = item.series_title ?? "Series";
   const seriesId = item.series_id;
   const firstEpisode = episodes[0];
@@ -80,7 +89,9 @@ export default function SeasonContent({ item }: { item: ItemDetail & { type: "se
           &larr; Back to {seriesTitle}
         </Link>
         <p className="text-muted-foreground mt-6 text-sm">
-          {episodesError instanceof Error ? episodesError.message : "Season not found"}
+          {episodesError instanceof Error
+            ? episodesError.message
+            : "Season not found"}
         </p>
       </div>
     );
@@ -114,10 +125,14 @@ export default function SeasonContent({ item }: { item: ItemDetail & { type: "se
         actions={
           <ActionBar
             contentId={item.content_id}
-            playHref={firstEpisode ? `/watch/${firstEpisode.content_id}` : undefined}
+            playHref={
+              firstEpisode ? `/watch/${firstEpisode.content_id}` : undefined
+            }
             playLabel="Play First Episode"
             watchedLabel={getWatchedActionLabel(item)}
-            onToggleWatched={() => watchedMutation.mutate(!(item.user_data?.played ?? false))}
+            onToggleWatched={() =>
+              watchedMutation.mutate(!(item.user_data?.played ?? false))
+            }
             isUpdatingWatched={watchedMutation.isPending}
             onRefresh={
               canCurateMetadata
@@ -125,14 +140,17 @@ export default function SeasonContent({ item }: { item: ItemDetail & { type: "se
                     refreshMetadataMutation.mutate({
                       item,
                       mode,
-                      onReplaced: (contentID) => navigate(`/item/${contentID}`, { replace: true }),
+                      onReplaced: (contentID) =>
+                        navigate(`/item/${contentID}`, { replace: true }),
                     })
                 : undefined
             }
             isRefreshing={refreshMetadataMutation.isPending}
             isAdmin={isAdmin}
             canCurateMetadata={canCurateMetadata}
-            onEditMetadata={canCurateMetadata ? () => setEditOpen(true) : undefined}
+            onEditMetadata={
+              canCurateMetadata ? () => setEditOpen(true) : undefined
+            }
           />
         }
       />
@@ -165,7 +183,11 @@ export default function SeasonContent({ item }: { item: ItemDetail & { type: "se
         )}
       </div>
       {canCurateMetadata && (
-        <EditMetadataDialog item={item} open={editOpen} onOpenChange={setEditOpen} />
+        <EditMetadataDialog
+          item={item}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
       )}
     </div>
   );

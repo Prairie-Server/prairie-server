@@ -13,7 +13,11 @@
 
 import type { PlayerConfig } from "./context/PlayerConfigContext";
 import { playerFetch } from "./player-fetch";
-import { PROTOCOL_V3, type RouteEventNameV3, type RouteEventV3 } from "./protocol-v3";
+import {
+  PROTOCOL_V3,
+  type RouteEventNameV3,
+  type RouteEventV3,
+} from "./protocol-v3";
 
 /** The server drops unknown keys and truncates values; keep the payload small anyway. */
 const MAX_DIAGNOSTIC_ENTRIES = 32;
@@ -31,7 +35,9 @@ export interface RouteEventInput {
   diagnostics?: Record<string, string | number | boolean | undefined | null>;
 }
 
-function sanitizeDiagnostics(diagnostics: RouteEventInput["diagnostics"]): Record<string, string> {
+function sanitizeDiagnostics(
+  diagnostics: RouteEventInput["diagnostics"],
+): Record<string, string> {
   const out: Record<string, string> = {};
   if (!diagnostics) return out;
   for (const [key, value] of Object.entries(diagnostics)) {
@@ -68,7 +74,9 @@ export async function reportRouteEventV3(
     ...(input.failureClassification
       ? { failure_classification: input.failureClassification.slice(0, 64) }
       : {}),
-    ...(input.fallbackReason ? { fallback_reason: input.fallbackReason.slice(0, 64) } : {}),
+    ...(input.fallbackReason
+      ? { fallback_reason: input.fallbackReason.slice(0, 64) }
+      : {}),
   };
 
   try {

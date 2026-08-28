@@ -194,7 +194,11 @@ export function useSubtitleTracks(
     // and fires `cuechange` synchronously with the media clock, but
     // suppresses the browser's built-in cue renderer so the appearance
     // panel stays in charge of styling.
-    const track = videoEl.addTextTrack("subtitles", "Prairie", activeLang || undefined);
+    const track = videoEl.addTextTrack(
+      "subtitles",
+      "Prairie",
+      activeLang || undefined,
+    );
     track.mode = "hidden";
     trackRef.current = track;
     seenCueKeysRef.current = new Set();
@@ -210,7 +214,8 @@ export function useSubtitleTracks(
     // is installed as-is (its keys are source-time based and stay valid).
     const carried = carryoverRef.current;
     carryoverRef.current = null;
-    const restored = carried && carried.url === activeUrl && !activeIsLive ? carried : null;
+    const restored =
+      carried && carried.url === activeUrl && !activeIsLive ? carried : null;
     if (restored) {
       const origin = appliedOriginRef.current;
       const delaySec = appliedDelayMsRef.current / 1000;
@@ -241,7 +246,9 @@ export function useSubtitleTracks(
         setActiveCueTexts([]);
         return;
       }
-      setActiveCueTexts(Array.from(active).map((c) => stripVTTTags((c as VTTCue).text)));
+      setActiveCueTexts(
+        Array.from(active).map((c) => stripVTTTags((c as VTTCue).text)),
+      );
     }
 
     track.addEventListener("cuechange", handleCueChange);
@@ -295,7 +302,10 @@ export function useSubtitleTracks(
       let stallTimer: ReturnType<typeof setTimeout> | null = null;
       const armStallTimer = () => {
         if (stallTimer !== null) clearTimeout(stallTimer);
-        stallTimer = setTimeout(() => controller.abort(), FETCH_STALL_TIMEOUT_MS);
+        stallTimer = setTimeout(
+          () => controller.abort(),
+          FETCH_STALL_TIMEOUT_MS,
+        );
       };
 
       const url = appendPosition(activeUrl, seekStart);
@@ -304,7 +314,9 @@ export function useSubtitleTracks(
         armStallTimer();
         const resp = await fetch(url, { signal: controller.signal });
         if (!resp.ok || !resp.body) {
-          console.error(`[useSubtitleTracks] Failed to fetch ${url}: ${resp.status}`);
+          console.error(
+            `[useSubtitleTracks] Failed to fetch ${url}: ${resp.status}`,
+          );
           return;
         }
         const reader = resp.body.getReader();
@@ -472,7 +484,15 @@ export function useSubtitleTracks(
     // `streamGeneration` IS included: a stream restart reloads the <video>
     // element and orphans the current track, so it must be rebuilt.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeUrl, activeCodec, activeLang, activeIsLive, liveTrackKey, streamGeneration, videoRef]);
+  }, [
+    activeUrl,
+    activeCodec,
+    activeLang,
+    activeIsLive,
+    liveTrackKey,
+    streamGeneration,
+    videoRef,
+  ]);
 
   // Re-base already-loaded cues when the media timeline remaps — e.g. a
   // copy-mode session restarting at a new position after an out-of-window

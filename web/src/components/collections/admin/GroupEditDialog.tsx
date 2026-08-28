@@ -17,7 +17,9 @@ export function GroupEditDialog({
   onCancel,
 }: GroupEditDialogProps) {
   const [name, setName] = useState(group?.name ?? "");
-  const [sortMode, setSortMode] = useState<GroupSortMode>(group?.default_sort_mode ?? "manual");
+  const [sortMode, setSortMode] = useState<GroupSortMode>(
+    group?.default_sort_mode ?? "manual",
+  );
   const isUserKind = group?.kind === "user_collections";
 
   return (
@@ -63,7 +65,11 @@ export function GroupEditDialog({
             </button>
           )}
           <div className="flex-1" />
-          <button onClick={onCancel} className="rounded border px-3 py-1.5 text-sm" type="button">
+          <button
+            onClick={onCancel}
+            className="rounded border px-3 py-1.5 text-sm"
+            type="button"
+          >
             Cancel
           </button>
           <button

@@ -1,4 +1,8 @@
-import { OVERLAY_CATEGORIES, type OverlayCategory, type OverlayPosition } from "./types";
+import {
+  OVERLAY_CATEGORIES,
+  type OverlayCategory,
+  type OverlayPosition,
+} from "./types";
 
 // Shared UI metadata so user-facing and admin settings stay in sync. These
 // labels are presentational only; the canonical enums live in types.ts.
@@ -35,9 +39,12 @@ export const CATEGORY_META: Record<OverlayCategory, CategoryMeta> = {
   ribbons: {
     category: "ribbons",
     title: "Status & Awards",
-    description: "Series lifecycle and award badges. Some require upcoming data sources.",
+    description:
+      "Series lifecycle and award badges. Some require upcoming data sources.",
   },
 };
 
 // Iteration-friendly ordered list of category metadata.
-export const CATEGORY_GROUPS: CategoryMeta[] = OVERLAY_CATEGORIES.map((c) => CATEGORY_META[c]);
+export const CATEGORY_GROUPS: CategoryMeta[] = OVERLAY_CATEGORIES.map(
+  (c) => CATEGORY_META[c],
+);

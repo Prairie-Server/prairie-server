@@ -48,7 +48,9 @@ export function formatRequestStatus(status?: MediaRequestStatus): string {
   }
 }
 
-export function requestStatusBadgeVariant(status?: MediaRequestStatus): BadgeVariant {
+export function requestStatusBadgeVariant(
+  status?: MediaRequestStatus,
+): BadgeVariant {
   switch (status) {
     case "completed":
       return "default";
@@ -74,7 +76,9 @@ export function formatRequestOutcome(outcome?: MediaRequestOutcome): string {
   }
 }
 
-export function requestOutcomeBadgeVariant(outcome?: MediaRequestOutcome): BadgeVariant {
+export function requestOutcomeBadgeVariant(
+  outcome?: MediaRequestOutcome,
+): BadgeVariant {
   switch (outcome) {
     case "failed":
     case "declined":
@@ -109,7 +113,9 @@ export function tmdbImageURL(path?: string, size = "w342"): string | null {
   return `https://image.tmdb.org/t/p/${size}${path}`;
 }
 
-export function requestInputFromMediaResult(item: RequestMediaResult): CreateMediaRequestInput {
+export function requestInputFromMediaResult(
+  item: RequestMediaResult,
+): CreateMediaRequestInput {
   return {
     media_type: item.media_type,
     tmdb_id: item.tmdb_id,
@@ -121,6 +127,8 @@ export function requestInputFromMediaResult(item: RequestMediaResult): CreateMed
   };
 }
 
-export function formatRequestDate(request: Pick<MediaRequest, "created_at">): string {
+export function formatRequestDate(
+  request: Pick<MediaRequest, "created_at">,
+): string {
   return formatDate(request.created_at, "medium");
 }

@@ -56,7 +56,11 @@ function StreamRow({ session }: { session: AdminSession }) {
     <div className="border-border flex gap-3 rounded-md border px-3 py-3 sm:px-4">
       <div className="bg-muted h-14 w-10 shrink-0 overflow-hidden rounded">
         {session.poster_url ? (
-          <ArtworkImage src={session.poster_url} alt="" className="h-full w-full object-cover" />
+          <ArtworkImage
+            src={session.poster_url}
+            alt=""
+            className="h-full w-full object-cover"
+          />
         ) : null}
       </div>
 
@@ -64,10 +68,16 @@ function StreamRow({ session }: { session: AdminSession }) {
         <div className="flex flex-wrap items-center gap-2">
           <Badge variant="outline">{profileLabel}</Badge>
           <Badge variant="outline" className="gap-1">
-            {session.is_paused ? <Pause className="h-3 w-3" /> : <Play className="h-3 w-3" />}
+            {session.is_paused ? (
+              <Pause className="h-3 w-3" />
+            ) : (
+              <Play className="h-3 w-3" />
+            )}
             {session.is_paused ? "Paused" : "Playing"}
           </Badge>
-          <span className={`inline-flex h-2 w-2 rounded-full ${methodMeta.swatchClass}`} />
+          <span
+            className={`inline-flex h-2 w-2 rounded-full ${methodMeta.swatchClass}`}
+          />
           <span className="text-muted-foreground text-xs">
             {methodMeta.label}
             {bitrate ? ` · ${bitrate}` : ""}
@@ -77,13 +87,18 @@ function StreamRow({ session }: { session: AdminSession }) {
 
         <div className="min-w-0">
           {watchHref ? (
-            <Link to={watchHref} className="truncate text-sm font-semibold hover:underline">
+            <Link
+              to={watchHref}
+              className="truncate text-sm font-semibold hover:underline"
+            >
               {title}
             </Link>
           ) : (
             <p className="truncate text-sm font-semibold">{title}</p>
           )}
-          {subtitle ? <p className="text-muted-foreground truncate text-xs">{subtitle}</p> : null}
+          {subtitle ? (
+            <p className="text-muted-foreground truncate text-xs">{subtitle}</p>
+          ) : null}
         </div>
 
         <p className="text-muted-foreground text-xs">{streamMeta(session)}</p>
@@ -123,7 +138,9 @@ export function HouseholdStreamsPanel() {
           <Skeleton className="h-20 w-full rounded-md" />
         </div>
       ) : sessions.length === 0 ? (
-        <p className="text-muted-foreground text-sm">No one is streaming right now.</p>
+        <p className="text-muted-foreground text-sm">
+          No one is streaming right now.
+        </p>
       ) : (
         <div className="space-y-2">
           {sessions.map((session) => (

@@ -37,7 +37,8 @@ export default function SearchSettings() {
   const form = useSettingsForm({ keys: useMemo(() => KEYS, []) });
   const { data: status, isLoading: statusLoading } = useCatalogSearchStatus();
   const checkConnection = useCheckAdminSettingsConnection();
-  const [connectionResult, setConnectionResult] = useState<ConnectionCheckResponse | null>(null);
+  const [connectionResult, setConnectionResult] =
+    useState<ConnectionCheckResponse | null>(null);
   const provider = form.getValue("catalog.search.provider") || "postgres";
   const meiliEnabled = provider === "meilisearch";
 
@@ -52,7 +53,8 @@ export default function SearchSettings() {
     } catch (error) {
       setConnectionResult({
         success: false,
-        message: error instanceof Error ? error.message : "Connection check failed.",
+        message:
+          error instanceof Error ? error.message : "Connection check failed.",
       });
     }
   }
@@ -73,7 +75,8 @@ export default function SearchSettings() {
       <div className="mb-6 space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Search</h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Configure catalog search provider selection, Meilisearch connectivity, and index status.
+          Configure catalog search provider selection, Meilisearch connectivity,
+          and index status.
         </p>
       </div>
 
@@ -83,7 +86,9 @@ export default function SearchSettings() {
             label="Preferred Provider"
             type="select"
             value={provider}
-            onChange={(value) => form.setValue("catalog.search.provider", value)}
+            onChange={(value) =>
+              form.setValue("catalog.search.provider", value)
+            }
             options={[
               { value: "postgres", label: "Postgres FTS" },
               { value: "meilisearch", label: "Meilisearch" },
@@ -95,7 +100,9 @@ export default function SearchSettings() {
           <SettingField
             label="URL"
             value={form.getValue("catalog.search.meilisearch.url")}
-            onChange={(value) => form.setValue("catalog.search.meilisearch.url", value)}
+            onChange={(value) =>
+              form.setValue("catalog.search.meilisearch.url", value)
+            }
             hint="http://localhost:7700"
             disabled={!meiliEnabled}
           />
@@ -103,7 +110,9 @@ export default function SearchSettings() {
             label="API Key"
             type="password"
             value={form.getValue("catalog.search.meilisearch.api_key")}
-            onChange={(value) => form.setValue("catalog.search.meilisearch.api_key", value)}
+            onChange={(value) =>
+              form.setValue("catalog.search.meilisearch.api_key", value)
+            }
             sensitiveConfigured={form.sensitiveConfigured.includes(
               "catalog.search.meilisearch.api_key",
             )}
@@ -111,23 +120,38 @@ export default function SearchSettings() {
           />
           <SettingField
             label="Index Prefix"
-            value={form.getValue("catalog.search.meilisearch.index") || "prairie_media_items"}
-            onChange={(value) => form.setValue("catalog.search.meilisearch.index", value)}
+            value={
+              form.getValue("catalog.search.meilisearch.index") ||
+              "prairie_media_items"
+            }
+            onChange={(value) =>
+              form.setValue("catalog.search.meilisearch.index", value)
+            }
             disabled={!meiliEnabled}
           />
           <SettingField
             label="Timeout (ms)"
             type="number"
-            value={form.getValue("catalog.search.meilisearch.timeout_ms") || "800"}
-            onChange={(value) => form.setValue("catalog.search.meilisearch.timeout_ms", value)}
+            value={
+              form.getValue("catalog.search.meilisearch.timeout_ms") || "800"
+            }
+            onChange={(value) =>
+              form.setValue("catalog.search.meilisearch.timeout_ms", value)
+            }
             disabled={!meiliEnabled}
           />
           <SettingField
             label="Matching Strategy"
             type="select"
-            value={form.getValue("catalog.search.meilisearch.matching_strategy") || "last"}
+            value={
+              form.getValue("catalog.search.meilisearch.matching_strategy") ||
+              "last"
+            }
             onChange={(value) =>
-              form.setValue("catalog.search.meilisearch.matching_strategy", value)
+              form.setValue(
+                "catalog.search.meilisearch.matching_strategy",
+                value,
+              )
             }
             options={[
               { value: "last", label: "Last" },
@@ -138,41 +162,67 @@ export default function SearchSettings() {
           <SettingField
             label="Sync Batch Size"
             type="number"
-            value={form.getValue("catalog.search.meilisearch.sync_batch_size") || "500"}
-            onChange={(value) => form.setValue("catalog.search.meilisearch.sync_batch_size", value)}
+            value={
+              form.getValue("catalog.search.meilisearch.sync_batch_size") ||
+              "500"
+            }
+            onChange={(value) =>
+              form.setValue("catalog.search.meilisearch.sync_batch_size", value)
+            }
             disabled={!meiliEnabled}
           />
           <SettingField
             label="Rebuild Batch Size"
             type="number"
-            value={form.getValue("catalog.search.meilisearch.rebuild_batch_size") || "5000"}
+            value={
+              form.getValue("catalog.search.meilisearch.rebuild_batch_size") ||
+              "5000"
+            }
             onChange={(value) =>
-              form.setValue("catalog.search.meilisearch.rebuild_batch_size", value)
+              form.setValue(
+                "catalog.search.meilisearch.rebuild_batch_size",
+                value,
+              )
             }
             disabled={!meiliEnabled}
           />
           <SettingField
             label="Rebuild Queue Depth"
             type="number"
-            value={form.getValue("catalog.search.meilisearch.rebuild_task_queue_depth") || "4"}
+            value={
+              form.getValue(
+                "catalog.search.meilisearch.rebuild_task_queue_depth",
+              ) || "4"
+            }
             onChange={(value) =>
-              form.setValue("catalog.search.meilisearch.rebuild_task_queue_depth", value)
+              form.setValue(
+                "catalog.search.meilisearch.rebuild_task_queue_depth",
+                value,
+              )
             }
             disabled={!meiliEnabled}
           />
           <SettingField
             label="Indexed Types"
             value={form.getValue("catalog.search.meilisearch.index_types")}
-            onChange={(value) => form.setValue("catalog.search.meilisearch.index_types", value)}
+            onChange={(value) =>
+              form.setValue("catalog.search.meilisearch.index_types", value)
+            }
             hint="all, video, or movie,series"
             disabled={!meiliEnabled}
           />
           <SettingField
             label="Semantic Search"
             type="toggle"
-            value={form.getValue("catalog.search.meilisearch.semantic_enabled") || "false"}
+            value={
+              form.getValue("catalog.search.meilisearch.semantic_enabled") ||
+              "false"
+            }
             onChange={(value) =>
-              form.setValue("catalog.search.meilisearch.semantic_enabled", value)
+              form.setValue(
+                "catalog.search.meilisearch.semantic_enabled",
+                value,
+              )
             }
             hint="Uses existing recommendation embeddings for hybrid catalog search."
             disabled={!meiliEnabled}
@@ -180,25 +230,39 @@ export default function SearchSettings() {
           <SettingField
             label="Semantic Ratio"
             type="number"
-            value={form.getValue("catalog.search.meilisearch.semantic_ratio") || "0.50"}
-            onChange={(value) => form.setValue("catalog.search.meilisearch.semantic_ratio", value)}
+            value={
+              form.getValue("catalog.search.meilisearch.semantic_ratio") ||
+              "0.50"
+            }
+            onChange={(value) =>
+              form.setValue("catalog.search.meilisearch.semantic_ratio", value)
+            }
             hint="0.50"
             disabled={!meiliEnabled}
           />
           <SettingField
             label="Embedder"
             value={
-              form.getValue("catalog.search.meilisearch.embedder") || "prairie_recommendations"
+              form.getValue("catalog.search.meilisearch.embedder") ||
+              "prairie_recommendations"
             }
-            onChange={(value) => form.setValue("catalog.search.meilisearch.embedder", value)}
+            onChange={(value) =>
+              form.setValue("catalog.search.meilisearch.embedder", value)
+            }
             disabled={!meiliEnabled}
           />
           <SettingField
             label="Binary Quantized Vectors"
             type="toggle"
-            value={form.getValue("catalog.search.meilisearch.binary_quantized") || "false"}
+            value={
+              form.getValue("catalog.search.meilisearch.binary_quantized") ||
+              "false"
+            }
             onChange={(value) =>
-              form.setValue("catalog.search.meilisearch.binary_quantized", value)
+              form.setValue(
+                "catalog.search.meilisearch.binary_quantized",
+                value,
+              )
             }
             hint="~30x smaller raw vectors (overall index size roughly halves) with a small semantic-relevance cost. Only affects the index when Semantic Search is enabled. Changing this requires a full index rebuild (Rebuild Catalog Search Index) before sync resumes."
             disabled={!meiliEnabled}
@@ -224,31 +288,50 @@ export default function SearchSettings() {
             <div className="divide-border divide-y">
               <StatusRow
                 label="Active Provider"
-                value={status.active_provider === "meilisearch" ? "Meilisearch" : "Postgres FTS"}
+                value={
+                  status.active_provider === "meilisearch"
+                    ? "Meilisearch"
+                    : "Postgres FTS"
+                }
                 badge={status.configured_provider}
               />
               <StatusRow
                 label="Health"
-                value={status.meilisearch.healthy ? "Healthy" : status.meilisearch.circuit_state}
-                badge={status.meilisearch.configured ? "configured" : "not configured"}
+                value={
+                  status.meilisearch.healthy
+                    ? "Healthy"
+                    : status.meilisearch.circuit_state
+                }
+                badge={
+                  status.meilisearch.configured
+                    ? "configured"
+                    : "not configured"
+                }
               />
               <StatusRow
                 label="Active Index"
                 value={status.index.active_index_uid || "Not built"}
                 badge={`schema ${status.index.schema_version}/${status.index.expected_schema_version}`}
               />
-              <StatusRow label="Documents" value={String(status.index.document_count)} />
+              <StatusRow
+                label="Documents"
+                value={String(status.index.document_count)}
+              />
               <StatusRow
                 label="Indexed Types"
                 value={formatIndexedTypes(status.meilisearch.index_types)}
               />
               <StatusRow
                 label="Binary Quantized"
-                value={status.meilisearch.binary_quantized ? "Enabled" : "Disabled"}
+                value={
+                  status.meilisearch.binary_quantized ? "Enabled" : "Disabled"
+                }
               />
               <StatusRow
                 label="Semantic Search"
-                value={status.meilisearch.semantic_enabled ? "Enabled" : "Disabled"}
+                value={
+                  status.meilisearch.semantic_enabled ? "Enabled" : "Disabled"
+                }
                 badge={status.meilisearch.embedder}
               />
               <StatusRow
@@ -264,7 +347,11 @@ export default function SearchSettings() {
                   <StatusRow
                     label="Semantic Readiness"
                     value={status.semantic.ready ? "Ready" : "Not ready"}
-                    badge={status.semantic.ready ? undefined : status.semantic.disabled_reason}
+                    badge={
+                      status.semantic.ready
+                        ? undefined
+                        : status.semantic.disabled_reason
+                    }
                   />
                   <StatusRow
                     label="Vector Coverage"
@@ -272,7 +359,10 @@ export default function SearchSettings() {
                   />
                   <StatusRow
                     label="Coverage Updated"
-                    value={formatStatusDate(status.semantic.coverage_updated_at) || "Never"}
+                    value={
+                      formatStatusDate(status.semantic.coverage_updated_at) ||
+                      "Never"
+                    }
                   />
                   <StatusRow
                     label="Embedder Capability"
@@ -283,30 +373,38 @@ export default function SearchSettings() {
                     }
                     badge={status.semantic.capability.embedder}
                   />
-                  {status.semantic.per_type && status.semantic.per_type.length > 0 && (
-                    <div className="flex flex-col gap-2 py-3">
-                      <span className="text-sm font-medium">Per-Type Coverage</span>
-                      <div className="divide-border/60 divide-y">
-                        {status.semantic.per_type.map((t) => (
-                          <div
-                            key={t.type}
-                            className="flex items-center justify-between gap-2 py-1.5"
-                          >
-                            <span className="text-muted-foreground min-w-0 truncate text-sm">
-                              {t.type}: {t.vectorized}/{t.eligible} (
-                              {formatPercent(t.vector_coverage_ratio)})
-                            </span>
-                            <Badge variant={t.ready ? "secondary" : "outline"}>
-                              {t.ready ? "Ready" : "Not ready"}
-                            </Badge>
-                          </div>
-                        ))}
+                  {status.semantic.per_type &&
+                    status.semantic.per_type.length > 0 && (
+                      <div className="flex flex-col gap-2 py-3">
+                        <span className="text-sm font-medium">
+                          Per-Type Coverage
+                        </span>
+                        <div className="divide-border/60 divide-y">
+                          {status.semantic.per_type.map((t) => (
+                            <div
+                              key={t.type}
+                              className="flex items-center justify-between gap-2 py-1.5"
+                            >
+                              <span className="text-muted-foreground min-w-0 truncate text-sm">
+                                {t.type}: {t.vectorized}/{t.eligible} (
+                                {formatPercent(t.vector_coverage_ratio)})
+                              </span>
+                              <Badge
+                                variant={t.ready ? "secondary" : "outline"}
+                              >
+                                {t.ready ? "Ready" : "Not ready"}
+                              </Badge>
+                            </div>
+                          ))}
+                        </div>
                       </div>
-                    </div>
-                  )}
+                    )}
                 </>
               )}
-              <StatusRow label="Pending Events" value={String(status.index.pending_events)} />
+              <StatusRow
+                label="Pending Events"
+                value={String(status.index.pending_events)}
+              />
               {status.index.dead_lettered_events > 0 && (
                 <StatusRow
                   label="Dead-lettered Events"
@@ -319,14 +417,21 @@ export default function SearchSettings() {
                 value={formatStatusDate(status.index.last_sync_at) || "Never"}
               />
               {status.meilisearch.last_fallback && (
-                <StatusRow label="Last Fallback" value={status.meilisearch.last_fallback} />
+                <StatusRow
+                  label="Last Fallback"
+                  value={status.meilisearch.last_fallback}
+                />
               )}
               <div className="flex flex-wrap gap-2 py-3">
                 <Button asChild size="sm" variant="outline">
-                  <Link to="/admin/tasks/rebuild_catalog_search_index">Rebuild Index</Link>
+                  <Link to="/admin/tasks/rebuild_catalog_search_index">
+                    Rebuild Index
+                  </Link>
                 </Button>
                 <Button asChild size="sm" variant="ghost">
-                  <Link to="/admin/tasks/sync_catalog_search_index">Sync History</Link>
+                  <Link to="/admin/tasks/sync_catalog_search_index">
+                    Sync History
+                  </Link>
                 </Button>
               </div>
             </div>
@@ -345,7 +450,15 @@ export default function SearchSettings() {
   );
 }
 
-function StatusRow({ label, value, badge }: { label: string; value: string; badge?: string }) {
+function StatusRow({
+  label,
+  value,
+  badge,
+}: {
+  label: string;
+  value: string;
+  badge?: string;
+}) {
   return (
     <div className="flex flex-col gap-2 py-3 sm:flex-row sm:items-center sm:justify-between">
       <span className="text-sm font-medium">{label}</span>

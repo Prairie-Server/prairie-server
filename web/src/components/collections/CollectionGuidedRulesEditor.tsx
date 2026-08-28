@@ -14,7 +14,10 @@ import { FacetSearchSelect } from "@/components/ui/facet-search-select";
 import { PersonSearchSelect } from "@/components/ui/person-search-select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { SearchableMultiSelect, SearchableSelect } from "@/components/ui/searchable-select";
+import {
+  SearchableMultiSelect,
+  SearchableSelect,
+} from "@/components/ui/searchable-select";
 import { formatLanguage } from "@/lib/languageDisplay";
 import {
   Select,
@@ -35,13 +38,22 @@ import { stringifyUnknown } from "@/lib/stringifyUnknown";
 
 import { getCollectionSortOptions } from "./collectionBuilderFields";
 
-const DECADE_OPTIONS = Array.from({ length: 15 }, (_, index) => 2030 - index * 10).filter(
-  (year) => year >= 1900,
-);
+const DECADE_OPTIONS = Array.from(
+  { length: 15 },
+  (_, index) => 2030 - index * 10,
+).filter((year) => year >= 1900);
 
 /** Flat form state that maps 1-to-1 with friendly form fields. */
 export interface GuidedFormState {
-  mediaScope: "all" | "video" | "movie" | "series" | "episode" | "audiobook" | "ebook" | "manga";
+  mediaScope:
+    | "all"
+    | "video"
+    | "movie"
+    | "series"
+    | "episode"
+    | "audiobook"
+    | "ebook"
+    | "manga";
   libraryIds: number[];
   genres: string[];
   decade: string;
@@ -124,7 +136,9 @@ export function queryDefinitionToGuidedState(
     sortOrder: normalized.sort.order,
   };
 
-  const allRules: QueryRule[] = normalized.groups.flatMap((group) => group.rules);
+  const allRules: QueryRule[] = normalized.groups.flatMap(
+    (group) => group.rules,
+  );
   const genreValues: string[] = [];
   let watchedTrue = false;
   let watchedFalse = false;
@@ -139,7 +153,11 @@ export function queryDefinitionToGuidedState(
         }
         break;
       case "year":
-        if (rule.op === "between" && Array.isArray(rule.value) && rule.value.length === 2) {
+        if (
+          rule.op === "between" &&
+          Array.isArray(rule.value) &&
+          rule.value.length === 2
+        ) {
           state.yearFrom = String(rule.value[0] ?? "");
           state.yearTo = String(rule.value[1] ?? "");
           break;
@@ -273,16 +291,28 @@ export function guidedStateToQueryDefinition(
   }
 
   if (state.minRating) {
-    rules.push({ field: "rating_imdb", op: "gte", value: Number(state.minRating) });
+    rules.push({
+      field: "rating_imdb",
+      op: "gte",
+      value: Number(state.minRating),
+    });
   }
 
   if (state.contentRating) {
-    rules.push({ field: "content_rating", op: "is", value: state.contentRating });
+    rules.push({
+      field: "content_rating",
+      op: "is",
+      value: state.contentRating,
+    });
   }
   if (state.originalLanguages.length === 1) {
     // Single language stays inline so the AND group still satisfies; multi
     // is split into its own OR group below since an item has one language.
-    rules.push({ field: "original_language", op: "is", value: state.originalLanguages[0]! });
+    rules.push({
+      field: "original_language",
+      op: "is",
+      value: state.originalLanguages[0]!,
+    });
   }
   if (state.actor) {
     rules.push({ field: "actor", op: "is", value: state.actor });
@@ -331,7 +361,11 @@ export function guidedStateToQueryDefinition(
     rules.push({ field: "added_at", op: "in_last", value: state.addedInLast });
   }
   if (state.releasedInLast) {
-    rules.push({ field: "release_date", op: "in_last", value: state.releasedInLast });
+    rules.push({
+      field: "release_date",
+      op: "in_last",
+      value: state.releasedInLast,
+    });
   }
 
   if (state.fourK) {
@@ -416,11 +450,14 @@ export default function CollectionGuidedRulesEditor({
   const state = useMemo(() => queryDefinitionToGuidedState(value), [value]);
   const metadataFiltersQuery = useCatalogMetadataFilters();
   const filters = providedFilters ?? metadataFiltersQuery.data;
-  const filtersLoading = providedFiltersLoading ?? metadataFiltersQuery.isLoading;
+  const filtersLoading =
+    providedFiltersLoading ?? metadataFiltersQuery.isLoading;
   // Backend stores book library types as plurals, while some API surfaces
   // use singular media scopes; accept both.
   const isAudiobookLibrary =
-    libraryType === "audiobook" || libraryType === "audiobooks" || state.mediaScope === "audiobook";
+    libraryType === "audiobook" ||
+    libraryType === "audiobooks" ||
+    state.mediaScope === "audiobook";
   // Manga is read like ebooks, so it shares the ebook "Read Status" labels.
   const isEbookLibrary =
     libraryType === "ebook" ||
@@ -444,10 +481,16 @@ export default function CollectionGuidedRulesEditor({
     : isAudiobookLibrary
       ? "Unlistened"
       : "Unwatched";
-  const sortOptions = getCollectionSortOptions(allowPersonalizedSorts, sortRelevanceScope);
+  const sortOptions = getCollectionSortOptions(
+    allowPersonalizedSorts,
+    sortRelevanceScope,
+  );
   const selectedSort = normalizeQuerySortForScope(
     { field: state.sortField, order: state.sortOrder },
-    { includePersonalized: allowPersonalizedSorts, relevanceScope: sortRelevanceScope },
+    {
+      includePersonalized: allowPersonalizedSorts,
+      relevanceScope: sortRelevanceScope,
+    },
   );
 
   function update(patch: Partial<GuidedFormState>) {
@@ -477,7 +520,9 @@ export default function CollectionGuidedRulesEditor({
         <div
           className={cn(
             "grid gap-4",
-            showMediaScopeSelector && allowLibrarySelection ? "md:grid-cols-2" : undefined,
+            showMediaScopeSelector && allowLibrarySelection
+              ? "md:grid-cols-2"
+              : undefined,
           )}
         >
           {showMediaScopeSelector ? (
@@ -549,7 +594,9 @@ export default function CollectionGuidedRulesEditor({
           disabled={readOnly}
           isLoading={filtersLoading}
         />
-        <p className="text-muted-foreground text-xs">Items must match all selected genres.</p>
+        <p className="text-muted-foreground text-xs">
+          Items must match all selected genres.
+        </p>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -557,7 +604,9 @@ export default function CollectionGuidedRulesEditor({
           <Label>Decade</Label>
           <Select
             value={state.decade || "__custom__"}
-            onValueChange={(value) => updateDecade(value === "__custom__" ? "" : value)}
+            onValueChange={(value) =>
+              updateDecade(value === "__custom__" ? "" : value)
+            }
             disabled={readOnly}
           >
             <SelectTrigger>
@@ -795,7 +844,12 @@ export default function CollectionGuidedRulesEditor({
         </div>
       </div>
 
-      <div className={cn("grid gap-4", allowPersonalizedFilters ? "md:grid-cols-2" : undefined)}>
+      <div
+        className={cn(
+          "grid gap-4",
+          allowPersonalizedFilters ? "md:grid-cols-2" : undefined,
+        )}
+      >
         <div className="space-y-2">
           <Label>Match Status</Label>
           <Select
@@ -822,7 +876,10 @@ export default function CollectionGuidedRulesEditor({
               value={state.watchStatus || "__any__"}
               onValueChange={(value) =>
                 update({
-                  watchStatus: value === "__any__" ? "" : (value as GuidedFormState["watchStatus"]),
+                  watchStatus:
+                    value === "__any__"
+                      ? ""
+                      : (value as GuidedFormState["watchStatus"]),
                 })
               }
               disabled={readOnly}
@@ -832,8 +889,12 @@ export default function CollectionGuidedRulesEditor({
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="__any__">Any</SelectItem>
-                <SelectItem value="watched">{completedProgressLabel}</SelectItem>
-                <SelectItem value="unwatched">{unstartedProgressLabel}</SelectItem>
+                <SelectItem value="watched">
+                  {completedProgressLabel}
+                </SelectItem>
+                <SelectItem value="unwatched">
+                  {unstartedProgressLabel}
+                </SelectItem>
                 <SelectItem value="in_progress">In Progress</SelectItem>
               </SelectContent>
             </Select>
@@ -850,7 +911,8 @@ export default function CollectionGuidedRulesEditor({
               { key: "hdr", label: "HDR" },
               { key: "dolbyVision", label: "DOVI" },
             ].map((option) => {
-              const selected = state[option.key as keyof GuidedFormState] === true;
+              const selected =
+                state[option.key as keyof GuidedFormState] === true;
               return (
                 <Button
                   key={option.key}

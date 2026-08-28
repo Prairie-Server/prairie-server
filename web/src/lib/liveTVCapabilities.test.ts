@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import type { ClientCodecCapabilities } from "@/player/types";
 import { buildLiveTVCapabilities } from "./liveTVCapabilities";
 
-function caps(overrides: Partial<ClientCodecCapabilities> = {}): ClientCodecCapabilities {
+function caps(
+  overrides: Partial<ClientCodecCapabilities> = {},
+): ClientCodecCapabilities {
   return {
     codecs_video: ["h264"],
     codecs_audio: ["aac"],
@@ -26,7 +28,9 @@ describe("buildLiveTVCapabilities", () => {
   });
 
   it("matches codec names case-insensitively and ignores stray whitespace", () => {
-    const payload = buildLiveTVCapabilities(caps({ codecs_audio: [" AAC ", "AC3", "MP3"] }));
+    const payload = buildLiveTVCapabilities(
+      caps({ codecs_audio: [" AAC ", "AC3", "MP3"] }),
+    );
 
     expect(payload.codecs_audio).toEqual([" AAC ", "MP3"]);
   });

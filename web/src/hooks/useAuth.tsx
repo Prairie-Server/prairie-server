@@ -1,4 +1,11 @@
-import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import type { ReactNode } from "react";
 import {
   api,
@@ -39,15 +46,31 @@ interface AuthState {
   setupRequired: boolean;
   providers: AuthProviderOption[];
   isImpersonating: boolean;
-  login: (username: string, password: string, provider?: string) => Promise<void>;
+  login: (
+    username: string,
+    password: string,
+    provider?: string,
+  ) => Promise<void>;
   completeLogin: (data: LoginResponse) => void;
-  setupInitialUser: (username: string, email: string, password: string) => Promise<void>;
-  signup: (username: string, email: string, password: string, inviteCode: string) => Promise<void>;
+  setupInitialUser: (
+    username: string,
+    email: string,
+    password: string,
+  ) => Promise<void>;
+  signup: (
+    username: string,
+    email: string,
+    password: string,
+    inviteCode: string,
+  ) => Promise<void>;
   beginImpersonation: (data: LoginResponse, returnPath: string) => void;
   endImpersonation: () => Promise<void>;
   logout: () => void;
   selectProfile: (profile: Profile, profileToken?: string) => void;
-  verifyProfilePin: (profileId: string, pin: string) => Promise<VerifyPinResponse>;
+  verifyProfilePin: (
+    profileId: string,
+    pin: string,
+  ) => Promise<VerifyPinResponse>;
   clearProfile: () => void;
 }
 
@@ -133,7 +156,10 @@ export async function initializeAuthSession<TUser>({
     applyCurrentUser(currentUser);
     restoreProfile();
   } catch (error) {
-    if (hasStoredImpersonationAdminSession && isRecoverableImpersonationAuthError(error)) {
+    if (
+      hasStoredImpersonationAdminSession &&
+      isRecoverableImpersonationAuthError(error)
+    ) {
       try {
         const recovered = await recoverPreservedAdminSession();
         if (recovered) {
@@ -159,11 +185,15 @@ export async function endImpersonationWithRecovery({
 }: {
   endImpersonationRequest: () => Promise<void>;
   loadStoredImpersonationAdminSession: () => StoredImpersonationAdminSession | null;
-  restoreAdminUser: (storedSession: StoredImpersonationAdminSession) => Promise<void>;
+  restoreAdminUser: (
+    storedSession: StoredImpersonationAdminSession,
+  ) => Promise<void>;
   clearAuthState: () => void;
   clearActiveAuthState: () => void;
 }): Promise<void> {
-  const restorePreservedAdminSession = async (storedSession: StoredImpersonationAdminSession) => {
+  const restorePreservedAdminSession = async (
+    storedSession: StoredImpersonationAdminSession,
+  ) => {
     try {
       await restoreAdminUser(storedSession);
     } catch (error) {
@@ -307,7 +337,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const endImpersonation = useCallback(async () => {
     await endImpersonationWithRecovery({
-      endImpersonationRequest: () => api("/auth/impersonation/end", { method: "POST" }),
+      endImpersonationRequest: () =>
+        api("/auth/impersonation/end", { method: "POST" }),
       loadStoredImpersonationAdminSession,
       restoreAdminUser,
       clearAuthState,
@@ -381,7 +412,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         await initializeAuthSession({
           refreshToken: storage.get(storage.KEYS.REFRESH_TOKEN),
-          hasStoredImpersonationAdminSession: Boolean(loadStoredImpersonationAdminSession()),
+          hasStoredImpersonationAdminSession: Boolean(
+            loadStoredImpersonationAdminSession(),
+          ),
           bootstrapAccessToken: () => bootstrapAccessToken(),
           fetchCurrentUser: () => api<User>("/auth/me"),
           applyCurrentUser: (currentUser) => {
@@ -493,7 +526,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signup = useCallback(
-    async (username: string, email: string, password: string, inviteCode: string) => {
+    async (
+      username: string,
+      email: string,
+      password: string,
+      inviteCode: string,
+    ) => {
       const body: SignupRequest = {
         username,
         email,

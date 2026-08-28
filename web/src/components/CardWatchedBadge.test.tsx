@@ -5,7 +5,9 @@ import { WatchedCheckIndicator } from "./CardWatchedBadge";
 
 describe("WatchedCheckIndicator", () => {
   it("keeps the accessible episode-row circle check", () => {
-    const markup = renderToStaticMarkup(<WatchedCheckIndicator className="ml-auto" />);
+    const markup = renderToStaticMarkup(
+      <WatchedCheckIndicator className="ml-auto" />,
+    );
 
     expect(markup).toContain('data-watched-indicator="icon-only"');
     expect(markup).toContain('role="img"');

@@ -94,7 +94,10 @@ function toNowNextSlot(program: {
 export function formatGuideTime(iso: string, locale?: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return "";
-  return date.toLocaleTimeString(locale, { hour: "numeric", minute: "2-digit" });
+  return date.toLocaleTimeString(locale, {
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
 export type GuideWindow = {
@@ -123,7 +126,10 @@ export function buildGuideWindow(
     pastHours <= 0
       ? Math.floor(nowMs / halfHour) * halfHour
       : Math.floor((nowMs - pastHours * 60 * 60 * 1000) / halfHour) * halfHour;
-  const endMs = startMs + Math.max(pastHours, 0) * 60 * 60 * 1000 + futureHours * 60 * 60 * 1000;
+  const endMs =
+    startMs +
+    Math.max(pastHours, 0) * 60 * 60 * 1000 +
+    futureHours * 60 * 60 * 1000;
   return {
     startMs,
     endMs,
@@ -131,11 +137,18 @@ export function buildGuideWindow(
   };
 }
 
-export function guideTimeTicks(window: GuideWindow, stepMinutes = 30): number[] {
+export function guideTimeTicks(
+  window: GuideWindow,
+  stepMinutes = 30,
+): number[] {
   const step = stepMinutes * 60 * 1000;
   const ticks: number[] = [];
   // Snap labels to the step grid (default window start is already half-hour aligned).
-  for (let t = Math.ceil(window.startMs / step) * step; t < window.endMs; t += step) {
+  for (
+    let t = Math.ceil(window.startMs / step) * step;
+    t < window.endMs;
+    t += step
+  ) {
     ticks.push(t);
   }
   return ticks;

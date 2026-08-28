@@ -33,15 +33,17 @@ export function LiveTVTranscodingTab() {
     (tuner) => (tuner.transcode_codecs ?? []).length > 0,
   );
 
-  if (form.isLoading) return <p className="text-muted-foreground text-sm">Loading settings…</p>;
+  if (form.isLoading)
+    return <p className="text-muted-foreground text-sm">Loading settings…</p>;
 
   return (
     <div className="flex h-full flex-col">
       <div className="mb-6 space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Transcoding</h2>
         <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
-          How Prairie delivers live channels. Clients that can decode the broadcast get it
-          untouched; everything else is re-encoded, which needs to keep pace with the feed.
+          How Prairie delivers live channels. Clients that can decode the
+          broadcast get it untouched; everything else is re-encoded, which needs
+          to keep pace with the feed.
         </p>
       </div>
 
@@ -136,14 +138,17 @@ export function LiveTVTranscodingTab() {
         <FieldGroup label="Tuner transcoding">
           <div className="space-y-3 py-2">
             <p className="text-muted-foreground text-sm leading-relaxed">
-              Some discontinued HDHomeRun models (EXTEND) could transcode on the device itself.
-              Prairie only uses it when a tuner advertises the capability — current models ignore
-              the request and keep sending MPEG-2.
+              Some discontinued HDHomeRun models (EXTEND) could transcode on the
+              device itself. Prairie only uses it when a tuner advertises the
+              capability — current models ignore the request and keep sending
+              MPEG-2.
             </p>
             {tuners.isLoading ? (
               <p className="text-muted-foreground text-sm">Checking tuners…</p>
             ) : (tuners.data ?? []).length === 0 ? (
-              <p className="text-muted-foreground text-sm">No tuners configured.</p>
+              <p className="text-muted-foreground text-sm">
+                No tuners configured.
+              </p>
             ) : (
               <ul className="divide-border divide-y border-y">
                 {(tuners.data ?? []).map((tuner) => {
@@ -165,7 +170,10 @@ export function LiveTVTranscodingTab() {
                           ))}
                         </span>
                       ) : (
-                        <Badge variant="outline" className="text-muted-foreground">
+                        <Badge
+                          variant="outline"
+                          className="text-muted-foreground"
+                        >
                           Not supported by this tuner
                         </Badge>
                       )}
@@ -174,11 +182,13 @@ export function LiveTVTranscodingTab() {
                 })}
               </ul>
             )}
-            {deviceTranscodeTuners.length === 0 && (tuners.data ?? []).length > 0 && (
-              <p className="text-muted-foreground text-xs">
-                No tuner reports device-side transcoding, so Prairie transcodes on the server.
-              </p>
-            )}
+            {deviceTranscodeTuners.length === 0 &&
+              (tuners.data ?? []).length > 0 && (
+                <p className="text-muted-foreground text-xs">
+                  No tuner reports device-side transcoding, so Prairie
+                  transcodes on the server.
+                </p>
+              )}
           </div>
         </FieldGroup>
       </div>

@@ -23,17 +23,24 @@ function formatFailureKind(kind: string): string {
   return kind.replace(/_/g, " ");
 }
 
-export function MetadataMatcherQueuesSection({ libraries }: { libraries: Library[] }) {
+export function MetadataMatcherQueuesSection({
+  libraries,
+}: {
+  libraries: Library[];
+}) {
   const [open, setOpen] = useState(false);
-  const [selectedLibraryID, setSelectedLibraryID] = useState<number | null>(null);
+  const [selectedLibraryID, setSelectedLibraryID] = useState<number | null>(
+    null,
+  );
   const [detailOffset, setDetailOffset] = useState(0);
   const { data: queues = [] } = useLibraryMetadataMatchQueues();
   // Passing null while collapsed disables the detail query entirely so a
   // hidden expansion does not keep polling the per-library endpoint.
-  const { data: detail, isFetching: detailFetching } = useLibraryMetadataMatchQueueDetail(
-    open ? selectedLibraryID : null,
-    detailOffset,
-  );
+  const { data: detail, isFetching: detailFetching } =
+    useLibraryMetadataMatchQueueDetail(
+      open ? selectedLibraryID : null,
+      detailOffset,
+    );
   const retry = useRetryLibraryMetadataMatchQueue();
   const total = queues.reduce((sum, queue) => sum + queue.total_count, 0);
   const detailLimit = detail?.limit ?? 10;
@@ -75,7 +82,9 @@ export function MetadataMatcherQueuesSection({ libraries }: { libraries: Library
             path: entry.file_path,
             state: "pending" as const,
             failureKind: null,
-            message: identity ? `Awaiting initial match: ${identity}` : "Awaiting initial match",
+            message: identity
+              ? `Awaiting initial match: ${identity}`
+              : "Awaiting initial match",
             decision: undefined,
           };
         }),
@@ -112,7 +121,9 @@ export function MetadataMatcherQueuesSection({ libraries }: { libraries: Library
           <TableBody>
             {queues.map((queue) => {
               const selected = selectedLibraryID === queue.library_id;
-              const library = libraries.find((entry) => entry.id === queue.library_id);
+              const library = libraries.find(
+                (entry) => entry.id === queue.library_id,
+              );
               return (
                 <Fragment key={queue.library_id}>
                   <TableRow
@@ -125,10 +136,15 @@ export function MetadataMatcherQueuesSection({ libraries }: { libraries: Library
                     <TableCell className="font-medium">
                       {library?.name ?? `Library ${queue.library_id}`}
                     </TableCell>
-                    <TableCell className="text-right tabular-nums">{queue.pending_count}</TableCell>
+                    <TableCell className="text-right tabular-nums">
+                      {queue.pending_count}
+                    </TableCell>
                     <TableCell className="text-right tabular-nums">
                       {queue.parked_count > 0 ? (
-                        <Badge variant="outline" className="border-amber-500/30 text-amber-600">
+                        <Badge
+                          variant="outline"
+                          className="border-amber-500/30 text-amber-600"
+                        >
                           {queue.parked_count}
                         </Badge>
                       ) : (
@@ -139,7 +155,10 @@ export function MetadataMatcherQueuesSection({ libraries }: { libraries: Library
                       <Button
                         size="sm"
                         variant="outline"
-                        disabled={retry.isPending && retry.variables === queue.library_id}
+                        disabled={
+                          retry.isPending &&
+                          retry.variables === queue.library_id
+                        }
                         onClick={(event) => {
                           event.stopPropagation();
                           retry.mutate(queue.library_id);
@@ -155,14 +174,17 @@ export function MetadataMatcherQueuesSection({ libraries }: { libraries: Library
                       <TableCell colSpan={4} className="bg-muted/30 p-3">
                         <div className="space-y-2">
                           {detailEntries.map((entry) => {
-                            const { path, failureKind, message, decision } = entry;
+                            const { path, failureKind, message, decision } =
+                              entry;
                             return (
                               <div
                                 key={entry.key}
                                 className="bg-background/70 rounded-lg border p-2 text-xs"
                               >
                                 <div className="flex items-center justify-between gap-2">
-                                  <code className="min-w-0 truncate font-mono">{path}</code>
+                                  <code className="min-w-0 truncate font-mono">
+                                    {path}
+                                  </code>
                                   <div className="flex shrink-0 items-center gap-1.5">
                                     {failureKind ? (
                                       <Badge variant="outline">
@@ -170,41 +192,60 @@ export function MetadataMatcherQueuesSection({ libraries }: { libraries: Library
                                       </Badge>
                                     ) : null}
                                     <Badge
-                                      variant={entry.state === "parked" ? "outline" : "secondary"}
+                                      variant={
+                                        entry.state === "parked"
+                                          ? "outline"
+                                          : "secondary"
+                                      }
                                     >
                                       {entry.state}
                                     </Badge>
                                   </div>
                                 </div>
                                 {message ? (
-                                  <p className="text-muted-foreground mt-1">{message}</p>
+                                  <p className="text-muted-foreground mt-1">
+                                    {message}
+                                  </p>
                                 ) : null}
                                 {decision?.top_candidates?.length ? (
                                   <div className="mt-2 space-y-1 border-t pt-2">
-                                    {decision.top_candidates.map((candidate, candidateIndex) => (
-                                      <div
-                                        key={`${candidate.title}-${candidate.year ?? 0}-${candidate.score}-${candidateIndex}`}
-                                        className="text-muted-foreground flex flex-wrap items-baseline gap-x-2"
-                                      >
-                                        <span className="text-foreground font-medium">
-                                          {candidate.title}
-                                          {candidate.year ? ` (${candidate.year})` : ""}
-                                        </span>
-                                        <span className="tabular-nums">
-                                          score {candidate.score.toFixed(1)} / {decision.threshold}
-                                        </span>
-                                        {candidate.matched_title &&
-                                        candidate.matched_title !== candidate.title ? (
-                                          <span>matched “{candidate.matched_title}”</span>
-                                        ) : null}
-                                        {candidate.reasons?.length ? (
-                                          <span>{candidate.reasons.join(", ")}</span>
-                                        ) : null}
-                                        {candidate.sources?.length ? (
-                                          <span>via {candidate.sources.join(", ")}</span>
-                                        ) : null}
-                                      </div>
-                                    ))}
+                                    {decision.top_candidates.map(
+                                      (candidate, candidateIndex) => (
+                                        <div
+                                          key={`${candidate.title}-${candidate.year ?? 0}-${candidate.score}-${candidateIndex}`}
+                                          className="text-muted-foreground flex flex-wrap items-baseline gap-x-2"
+                                        >
+                                          <span className="text-foreground font-medium">
+                                            {candidate.title}
+                                            {candidate.year
+                                              ? ` (${candidate.year})`
+                                              : ""}
+                                          </span>
+                                          <span className="tabular-nums">
+                                            score {candidate.score.toFixed(1)} /{" "}
+                                            {decision.threshold}
+                                          </span>
+                                          {candidate.matched_title &&
+                                          candidate.matched_title !==
+                                            candidate.title ? (
+                                            <span>
+                                              matched “{candidate.matched_title}
+                                              ”
+                                            </span>
+                                          ) : null}
+                                          {candidate.reasons?.length ? (
+                                            <span>
+                                              {candidate.reasons.join(", ")}
+                                            </span>
+                                          ) : null}
+                                          {candidate.sources?.length ? (
+                                            <span>
+                                              via {candidate.sources.join(", ")}
+                                            </span>
+                                          ) : null}
+                                        </div>
+                                      ),
+                                    )}
                                   </div>
                                 ) : null}
                               </div>
@@ -218,16 +259,21 @@ export function MetadataMatcherQueuesSection({ libraries }: { libraries: Library
                           {hasPreviousDetailPage || hasNextDetailPage ? (
                             <div className="flex items-center justify-between pt-1">
                               <span className="text-muted-foreground text-xs">
-                                Page {Math.floor(detailOffset / detailLimit) + 1}
+                                Page{" "}
+                                {Math.floor(detailOffset / detailLimit) + 1}
                               </span>
                               <div className="flex gap-2">
                                 <Button
                                   type="button"
                                   size="sm"
                                   variant="outline"
-                                  disabled={!hasPreviousDetailPage || detailFetching}
+                                  disabled={
+                                    !hasPreviousDetailPage || detailFetching
+                                  }
                                   onClick={() =>
-                                    setDetailOffset((current) => Math.max(0, current - detailLimit))
+                                    setDetailOffset((current) =>
+                                      Math.max(0, current - detailLimit),
+                                    )
                                   }
                                 >
                                   <ChevronLeft />
@@ -237,9 +283,13 @@ export function MetadataMatcherQueuesSection({ libraries }: { libraries: Library
                                   type="button"
                                   size="sm"
                                   variant="outline"
-                                  disabled={!hasNextDetailPage || detailFetching}
+                                  disabled={
+                                    !hasNextDetailPage || detailFetching
+                                  }
                                   onClick={() =>
-                                    setDetailOffset((current) => current + detailLimit)
+                                    setDetailOffset(
+                                      (current) => current + detailLimit,
+                                    )
                                   }
                                 >
                                   <ChevronRight />

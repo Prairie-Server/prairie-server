@@ -30,7 +30,10 @@ const selectedVersion: FileVersion = {
 const playBranches: Array<[string, Partial<ActionBarProps>]> = [
   ["standard", {}],
   ["selected version", { selectedVersion }],
-  ["resume choice", { playLabel: "Resume", restartHref: "/watch/movie-1?restart=1" }],
+  [
+    "resume choice",
+    { playLabel: "Resume", restartHref: "/watch/movie-1?restart=1" },
+  ],
 ];
 
 function renderActionBar(overrides: Partial<ActionBarProps> = {}) {

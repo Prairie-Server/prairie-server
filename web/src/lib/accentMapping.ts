@@ -6,7 +6,11 @@ import type { ThemeToken } from "@/lib/themeTokens";
  * primary accent so the brand color shows across the prominent UI surfaces.
  * Admins who want finer control still have the full TokenEditor in Theming.
  */
-export const ACCENT_TOKENS: readonly ThemeToken[] = ["primary", "ring", "sidebar-primary"];
+export const ACCENT_TOKENS: readonly ThemeToken[] = [
+  "primary",
+  "ring",
+  "sidebar-primary",
+];
 
 /** Maps a chosen accent hex to the token overrides that recolor the UI accent. */
 export function accentColorToTokens(hex: string): Record<string, string> {

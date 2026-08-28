@@ -23,10 +23,14 @@ describe("deviceSettingGroups", () => {
     }
     const hidden = new Set(hiddenDeviceSettingKeys());
 
-    const unplaced = ALL_DEVICE_SETTING_KEYS.filter((key) => !grouped.has(key) && !hidden.has(key));
+    const unplaced = ALL_DEVICE_SETTING_KEYS.filter(
+      (key) => !grouped.has(key) && !hidden.has(key),
+    );
     expect(unplaced).toEqual([]);
 
-    const duplicated = [...grouped.entries()].filter(([, groups]) => groups.length > 1);
+    const duplicated = [...grouped.entries()].filter(
+      ([, groups]) => groups.length > 1,
+    );
     expect(duplicated).toEqual([]);
   });
 
@@ -53,18 +57,32 @@ describe("deviceSettingGroups", () => {
   // boolean is the only intro control it has — and the only way to see or clear
   // an override already stored on the device.
   it("keeps the legacy intro switch on a server without the replacement key", () => {
-    const legacyKeys: SettingKey[] = ["playback.auto_skip_intro", "playback.auto_play_next"];
-    expect(groupForDeviceSetting("playback.auto_skip_intro", legacyKeys)).toBe("episodes");
-    expect(hiddenDeviceSettingKeys(legacyKeys)).not.toContain("playback.auto_skip_intro");
+    const legacyKeys: SettingKey[] = [
+      "playback.auto_skip_intro",
+      "playback.auto_play_next",
+    ];
+    expect(groupForDeviceSetting("playback.auto_skip_intro", legacyKeys)).toBe(
+      "episodes",
+    );
+    expect(hiddenDeviceSettingKeys(legacyKeys)).not.toContain(
+      "playback.auto_skip_intro",
+    );
 
     const keys = groupDeviceSettings(legacyKeys).flatMap((group) => group.keys);
     expect(keys).toContain("playback.auto_skip_intro");
   });
 
   it("drops the legacy intro switch once the server offers the replacement", () => {
-    const modernKeys: SettingKey[] = ["playback.auto_skip_intro", "playback.intro_skip_mode"];
-    expect(groupForDeviceSetting("playback.auto_skip_intro", modernKeys)).toBeNull();
-    expect(hiddenDeviceSettingKeys(modernKeys)).toContain("playback.auto_skip_intro");
+    const modernKeys: SettingKey[] = [
+      "playback.auto_skip_intro",
+      "playback.intro_skip_mode",
+    ];
+    expect(
+      groupForDeviceSetting("playback.auto_skip_intro", modernKeys),
+    ).toBeNull();
+    expect(hiddenDeviceSettingKeys(modernKeys)).toContain(
+      "playback.auto_skip_intro",
+    );
 
     const keys = groupDeviceSettings(modernKeys).flatMap((group) => group.keys);
     expect(keys).toEqual(["playback.intro_skip_mode"]);
@@ -93,18 +111,26 @@ describe("deviceSettingGroups", () => {
 
   it("hides settings the manifest marks as not applying to the device", () => {
     // Screen orientation is ios/android only; audio sync is native-only.
-    expect(settingAppliesToPlatform("player.orientation_mode", "web")).toBe(false);
-    expect(settingAppliesToPlatform("player.orientation_mode", "ios")).toBe(true);
+    expect(settingAppliesToPlatform("player.orientation_mode", "web")).toBe(
+      false,
+    );
+    expect(settingAppliesToPlatform("player.orientation_mode", "ios")).toBe(
+      true,
+    );
     expect(settingAppliesToPlatform("player.audio_sync_ms", "web")).toBe(false);
     expect(settingAppliesToPlatform("player.audio_sync_ms", "tvos")).toBe(true);
     // An untagged setting is expected everywhere.
-    expect(settingAppliesToPlatform("playback.subtitle_mode", "web")).toBe(true);
-    // An unrecognized platform hides nothing.
-    expect(settingAppliesToPlatform("player.orientation_mode", null)).toBe(true);
-
-    const keys = groupDeviceSettings(undefined, { devicePlatform: "macOS Web" }).flatMap(
-      (group) => group.keys,
+    expect(settingAppliesToPlatform("playback.subtitle_mode", "web")).toBe(
+      true,
     );
+    // An unrecognized platform hides nothing.
+    expect(settingAppliesToPlatform("player.orientation_mode", null)).toBe(
+      true,
+    );
+
+    const keys = groupDeviceSettings(undefined, {
+      devicePlatform: "macOS Web",
+    }).flatMap((group) => group.keys);
     expect(keys).not.toContain("player.orientation_mode");
     expect(keys).not.toContain("player.match_frame_rate");
     expect(keys).not.toContain("player.audio_sync_ms");

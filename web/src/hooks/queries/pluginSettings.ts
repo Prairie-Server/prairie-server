@@ -19,10 +19,14 @@ export function usePluginSettingsList() {
   });
 }
 
-export function usePluginSettingsDetail(installationId: number, enabled = true) {
+export function usePluginSettingsDetail(
+  installationId: number,
+  enabled = true,
+) {
   return useQuery({
     queryKey: settingsKeys.pluginDetail(installationId),
-    queryFn: () => api<PluginSettingsDetailResponse>(`/settings/plugins/${installationId}`),
+    queryFn: () =>
+      api<PluginSettingsDetailResponse>(`/settings/plugins/${installationId}`),
     enabled,
     staleTime: 30_000,
   });
@@ -31,14 +35,22 @@ export function usePluginSettingsDetail(installationId: number, enabled = true) 
 export function useUpdatePluginSettings() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: number; body: UpdatePluginSettingsRequest }) =>
+    mutationFn: ({
+      id,
+      body,
+    }: {
+      id: number;
+      body: UpdatePluginSettingsRequest;
+    }) =>
       api(`/settings/plugins/${id}`, {
         method: "PUT",
         body: JSON.stringify(body),
       }),
     onSuccess: (_, { id }) => {
       void queryClient.invalidateQueries({ queryKey: settingsKeys.plugins() });
-      void queryClient.invalidateQueries({ queryKey: settingsKeys.pluginDetail(id) });
+      void queryClient.invalidateQueries({
+        queryKey: settingsKeys.pluginDetail(id),
+      });
     },
   });
 }

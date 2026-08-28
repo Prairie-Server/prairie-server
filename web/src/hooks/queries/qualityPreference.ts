@@ -22,7 +22,9 @@ import { SETTING_KEYS } from "@/lib/settingsContract";
  * column still holds the pre-cutover choice for anyone who has not re-picked.
  */
 export function useQualityPreference(fallback?: string | null): string | null {
-  const { data } = useEffectiveSettings({ keys: [SETTING_KEYS.PLAYBACK_PREFERRED_QUALITY] });
+  const { data } = useEffectiveSettings({
+    keys: [SETTING_KEYS.PLAYBACK_PREFERRED_QUALITY],
+  });
   const resolved = data?.[SETTING_KEYS.PLAYBACK_PREFERRED_QUALITY]?.value;
 
   if (typeof resolved !== "string") return fallback ?? null;

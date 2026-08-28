@@ -23,13 +23,18 @@ interface ImageSelectorTabProps {
   enabled: boolean;
 }
 
-export default function ImageSelectorTab({ item, enabled }: ImageSelectorTabProps) {
+export default function ImageSelectorTab({
+  item,
+  enabled,
+}: ImageSelectorTabProps) {
   const availableTabs = item.type === "season" ? SEASON_TABS : IMAGE_TABS;
   const [activeTab, setActiveTab] = useState<ImageTab>("poster");
   const [textlessOnly, setTextlessOnly] = useState(false);
   const [selectedImage, setSelectedImage] = useState<RemoteImage | null>(null);
   // Track which images were applied in this session (original_url per type).
-  const [appliedImages, setAppliedImages] = useState<Record<string, string>>({});
+  const [appliedImages, setAppliedImages] = useState<Record<string, string>>(
+    {},
+  );
 
   const { data, isLoading, isError } = useItemImages(item.content_id, enabled);
   const applyMutation = useApplyItemImage();
@@ -153,12 +158,16 @@ export default function ImageSelectorTab({ item, enabled }: ImageSelectorTabProp
         </div>
       ) : isError ? (
         <div className="flex flex-1 items-center justify-center">
-          <p className="text-muted-foreground text-sm">Failed to load images.</p>
+          <p className="text-muted-foreground text-sm">
+            Failed to load images.
+          </p>
         </div>
       ) : filteredImages.length === 0 ? (
         <div className="flex flex-1 items-center justify-center">
           <p className="text-muted-foreground text-sm">
-            {textlessOnly ? "No textless images available." : "No images available."}
+            {textlessOnly
+              ? "No textless images available."
+              : "No images available."}
           </p>
         </div>
       ) : (
@@ -166,13 +175,16 @@ export default function ImageSelectorTab({ item, enabled }: ImageSelectorTabProp
           <div
             className={cn(
               "grid gap-2 pr-3 pb-1",
-              activeTab === "poster" ? "grid-cols-3 sm:grid-cols-4" : "grid-cols-2 sm:grid-cols-3",
+              activeTab === "poster"
+                ? "grid-cols-3 sm:grid-cols-4"
+                : "grid-cols-2 sm:grid-cols-3",
             )}
           >
             {filteredImages.map((img, index) => {
               const isSelected = selectedImage === img;
               const isCurrent =
-                img.original_url === currentOriginalUrl || img.original_url === currentStoredPath;
+                img.original_url === currentOriginalUrl ||
+                img.original_url === currentStoredPath;
 
               return (
                 <button

@@ -20,7 +20,9 @@ describe("buildAllUserCollectionOptions", () => {
       [[libraryCollection("library", "Staff Picks")]],
     );
 
-    expect(options.map(({ id, source, group }) => ({ id, source, group }))).toEqual([
+    expect(
+      options.map(({ id, source, group }) => ({ id, source, group })),
+    ).toEqual([
       { id: "personal", source: "user", group: "My Collections" },
       { id: "library", source: "library", group: "Movies" },
     ]);

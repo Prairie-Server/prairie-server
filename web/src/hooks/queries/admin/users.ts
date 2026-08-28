@@ -9,7 +9,11 @@ import type {
   LoginResponse,
   UpdateUserRequest,
 } from "@/api/types";
-import { SETTING_DEFINITIONS, SETTING_KEYS, type SettingKey } from "@/lib/settingsContract";
+import {
+  SETTING_DEFINITIONS,
+  SETTING_KEYS,
+  type SettingKey,
+} from "@/lib/settingsContract";
 import { adminKeys } from "../keys";
 import { useAdminUserProfiles } from "./history";
 import { toast } from "sonner";
@@ -44,7 +48,8 @@ export type AdminSettingScope =
   | "profile_library"
   | "profile_series";
 
-export type AdminSettingClientFamily = "tv" | "mobile" | "tablet" | "desktop" | "web";
+export type AdminSettingClientFamily =
+  "tv" | "mobile" | "tablet" | "desktop" | "web";
 
 /** One stored row as GET /admin/users/{id}/settings/values reports it. */
 interface AdminSettingValueRow {
@@ -104,8 +109,10 @@ function identityQuery(identity: AdminSettingIdentity): string {
   if (identity.profileId) params.set("profile_id", identity.profileId);
   if (identity.clientFamily) params.set("client_family", identity.clientFamily);
   if (identity.deviceId) params.set("device_id", identity.deviceId);
-  if (identity.libraryId !== undefined) params.set("library_id", String(identity.libraryId));
-  if (identity.seriesId !== undefined) params.set("series_id", identity.seriesId);
+  if (identity.libraryId !== undefined)
+    params.set("library_id", String(identity.libraryId));
+  if (identity.seriesId !== undefined)
+    params.set("series_id", identity.seriesId);
   return params.toString();
 }
 
@@ -113,7 +120,8 @@ function identityQuery(identity: AdminSettingIdentity): string {
 export function settingValueToString(value: unknown): string {
   if (value === null || value === undefined) return "";
   if (typeof value === "string") return value;
-  if (typeof value === "boolean" || typeof value === "number") return String(value);
+  if (typeof value === "boolean" || typeof value === "number")
+    return String(value);
   return JSON.stringify(value);
 }
 
@@ -151,7 +159,11 @@ export function settingValueFromString(key: string, raw: string): unknown {
   }
 }
 
-function adminSettingValuePath(userId: number, key: string, identity: AdminSettingIdentity) {
+function adminSettingValuePath(
+  userId: number,
+  key: string,
+  identity: AdminSettingIdentity,
+) {
   return `/admin/users/${userId}/settings/values/${encodeURIComponent(key)}?${identityQuery(identity)}`;
 }
 
@@ -160,9 +172,9 @@ function useAdminUserSettingValues(userId: number) {
   return useQuery({
     queryKey: adminKeys.userSettings(userId),
     queryFn: () =>
-      api<AdminSettingValuesResponse>(`/admin/users/${userId}/settings/values`).then(
-        (response) => response?.values ?? [],
-      ),
+      api<AdminSettingValuesResponse>(
+        `/admin/users/${userId}/settings/values`,
+      ).then((response) => response?.values ?? []),
     staleTime: ADMIN_STALE_TIME,
   });
 }
@@ -222,8 +234,12 @@ export function useUpdateUser() {
     onSuccess: (_data, variables) => {
       toast.success("User updated");
       queryClient.invalidateQueries({ queryKey: adminKeys.users() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.userDetail(variables.id) });
-      queryClient.invalidateQueries({ queryKey: adminKeys.userProfiles(variables.id) });
+      queryClient.invalidateQueries({
+        queryKey: adminKeys.userDetail(variables.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: adminKeys.userProfiles(variables.id),
+      });
       queryClient.invalidateQueries({ queryKey: adminKeys.accessGroups() });
     },
     onError: (err) => {
@@ -293,10 +309,14 @@ export function useUpdateAdminUserSetting() {
       }),
     onSuccess: (_data, variables) => {
       toast.success("User setting updated");
-      queryClient.invalidateQueries({ queryKey: adminKeys.userSettings(variables.userId) });
+      queryClient.invalidateQueries({
+        queryKey: adminKeys.userSettings(variables.userId),
+      });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to save setting");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save setting",
+      );
     },
   });
 }
@@ -326,10 +346,14 @@ export function useDeleteAdminUserSetting() {
     },
     onSuccess: (_data, variables) => {
       toast.success("User setting reset");
-      queryClient.invalidateQueries({ queryKey: adminKeys.userSettings(variables.userId) });
+      queryClient.invalidateQueries({
+        queryKey: adminKeys.userSettings(variables.userId),
+      });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to reset setting");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to reset setting",
+      );
     },
   });
 }
@@ -365,7 +389,9 @@ export function useAdminUserDeviceSettings(userId: number) {
         return {
           user_id: userId,
           profile_id: row.profile_id ?? "",
-          profile_name: row.profile_id ? profileNames.get(row.profile_id) : undefined,
+          profile_name: row.profile_id
+            ? profileNames.get(row.profile_id)
+            : undefined,
           device_id: row.device_id ?? "",
           device_name: meta?.name ?? "",
           device_platform: meta?.platform ?? "",
@@ -414,10 +440,17 @@ export function useUpdateAdminUserDeviceSetting() {
       key: string;
       value: string;
     }) =>
-      api(adminSettingValuePath(userId, key, { scope: "profile_device", profileId, deviceId }), {
-        method: "PUT",
-        body: JSON.stringify({ value: settingValueFromString(key, value) }),
-      }),
+      api(
+        adminSettingValuePath(userId, key, {
+          scope: "profile_device",
+          profileId,
+          deviceId,
+        }),
+        {
+          method: "PUT",
+          body: JSON.stringify({ value: settingValueFromString(key, value) }),
+        },
+      ),
     onSuccess: (_data, variables) => {
       toast.success("Device override updated");
       invalidateAdminDeviceCaches(queryClient, variables.userId);
@@ -426,7 +459,9 @@ export function useUpdateAdminUserDeviceSetting() {
       });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to save device override");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save device override",
+      );
     },
   });
 }
@@ -445,9 +480,16 @@ export function useDeleteAdminUserDeviceSetting() {
       deviceId: string;
       key: string;
     }) =>
-      api(adminSettingValuePath(userId, key, { scope: "profile_device", profileId, deviceId }), {
-        method: "DELETE",
-      }),
+      api(
+        adminSettingValuePath(userId, key, {
+          scope: "profile_device",
+          profileId,
+          deviceId,
+        }),
+        {
+          method: "DELETE",
+        },
+      ),
     onSuccess: (_data, variables) => {
       toast.success("Device override reset");
       invalidateAdminDeviceCaches(queryClient, variables.userId);
@@ -456,7 +498,9 @@ export function useDeleteAdminUserDeviceSetting() {
       });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to reset override");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to reset override",
+      );
     },
   });
 }
@@ -484,7 +528,11 @@ export function useDeleteAllAdminUserDeviceSettingsForDevice() {
       for (const key of keys) {
         try {
           await api(
-            adminSettingValuePath(userId, key, { scope: "profile_device", profileId, deviceId }),
+            adminSettingValuePath(userId, key, {
+              scope: "profile_device",
+              profileId,
+              deviceId,
+            }),
             { method: "DELETE" },
           );
         } catch (err) {
@@ -501,7 +549,9 @@ export function useDeleteAllAdminUserDeviceSettingsForDevice() {
       });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to reset device");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to reset device",
+      );
     },
   });
 }
@@ -509,16 +559,23 @@ export function useDeleteAllAdminUserDeviceSettingsForDevice() {
 export function useAdminDevices() {
   return useQuery({
     queryKey: adminKeys.devices(),
-    queryFn: () => api<AdminDevicesResponse>("/admin/devices").then((d) => d.devices ?? []),
+    queryFn: () =>
+      api<AdminDevicesResponse>("/admin/devices").then((d) => d.devices ?? []),
     staleTime: ADMIN_STALE_TIME,
   });
 }
 
-export function useAdminDeviceDetail(userId: number, deviceId: string, enabled = true) {
+export function useAdminDeviceDetail(
+  userId: number,
+  deviceId: string,
+  enabled = true,
+) {
   return useQuery({
     queryKey: adminKeys.deviceDetail(userId, deviceId),
     queryFn: () =>
-      api<AdminDeviceDetail>(`/admin/devices/${userId}/${encodeURIComponent(deviceId)}`),
+      api<AdminDeviceDetail>(
+        `/admin/devices/${userId}/${encodeURIComponent(deviceId)}`,
+      ),
     enabled: enabled && userId > 0 && deviceId.length > 0,
     staleTime: ADMIN_STALE_TIME,
   });

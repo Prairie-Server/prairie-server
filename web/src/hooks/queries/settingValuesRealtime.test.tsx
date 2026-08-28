@@ -15,7 +15,8 @@ import type { EventChannelHandlers } from "@/components/realtimeEventsContext";
 
 const apiMock = vi.hoisted(() => vi.fn());
 vi.mock("@/api/client", async () => {
-  const actual = await vi.importActual<typeof import("@/api/client")>("@/api/client");
+  const actual =
+    await vi.importActual<typeof import("@/api/client")>("@/api/client");
   return { ...actual, api: apiMock };
 });
 
@@ -56,7 +57,11 @@ function createHarness() {
   return { queryClient, wrapper };
 }
 
-function changedFrame(data: { key: string; scope: string; profile_id?: string }) {
+function changedFrame(data: {
+  key: string;
+  scope: string;
+  profile_id?: string;
+}) {
   return {
     type: "event",
     channel: "user_settings",
@@ -71,7 +76,11 @@ function changedFrame(data: { key: string; scope: string; profile_id?: string })
 function seedEffective(queryClient: QueryClient, value: string) {
   const key = effectiveSettingsQueryKey({ keys: [SETTING_KEYS.UI_THEME] });
   queryClient.setQueryData<EffectiveSettingsMap>(key, {
-    [SETTING_KEYS.UI_THEME]: { key: SETTING_KEYS.UI_THEME, value, source: "profile" },
+    [SETTING_KEYS.UI_THEME]: {
+      key: SETTING_KEYS.UI_THEME,
+      value,
+      source: "profile",
+    },
   });
   return key;
 }
@@ -86,7 +95,9 @@ describe("useSettingValuesRealtime", () => {
   it("subscribes the user_settings channel", () => {
     const { wrapper } = createHarness();
     render(<Subscriber />, { wrapper });
-    expect(subscriptions.map((entry) => entry.channel)).toContain("user_settings");
+    expect(subscriptions.map((entry) => entry.channel)).toContain(
+      "user_settings",
+    );
   });
 
   it("refetches a mounted reader when another device changes this profile", async () => {
@@ -95,7 +106,9 @@ describe("useSettingValuesRealtime", () => {
     apiMock.mockImplementation(() =>
       Promise.resolve({
         revision: 1,
-        settings: [{ key: SETTING_KEYS.UI_THEME, value: served, source: "profile" }],
+        settings: [
+          { key: SETTING_KEYS.UI_THEME, value: served, source: "profile" },
+        ],
       }),
     );
 
@@ -106,7 +119,9 @@ describe("useSettingValuesRealtime", () => {
     }
 
     const view = render(<Reader />, { wrapper });
-    await waitFor(() => expect(view.getByTestId("theme").textContent).toBe("dark"));
+    await waitFor(() =>
+      expect(view.getByTestId("theme").textContent).toBe("dark"),
+    );
 
     // The other device's write lands on the server; this tab only learns of it
     // through the channel.
@@ -114,10 +129,16 @@ describe("useSettingValuesRealtime", () => {
     subscriptions
       .find((entry) => entry.channel === "user_settings")
       ?.handlers?.onEvent?.(
-        changedFrame({ key: SETTING_KEYS.UI_THEME, scope: "profile", profile_id: "profile-1" }),
+        changedFrame({
+          key: SETTING_KEYS.UI_THEME,
+          scope: "profile",
+          profile_id: "profile-1",
+        }),
       );
 
-    await waitFor(() => expect(view.getByTestId("theme").textContent).toBe("light"));
+    await waitFor(() =>
+      expect(view.getByTestId("theme").textContent).toBe("light"),
+    );
   });
 
   it("ignores a change addressed to another profile on the same account", () => {
@@ -128,7 +149,11 @@ describe("useSettingValuesRealtime", () => {
     subscriptions
       .find((entry) => entry.channel === "user_settings")
       ?.handlers?.onEvent?.(
-        changedFrame({ key: SETTING_KEYS.UI_THEME, scope: "profile", profile_id: "profile-2" }),
+        changedFrame({
+          key: SETTING_KEYS.UI_THEME,
+          scope: "profile",
+          profile_id: "profile-2",
+        }),
       );
 
     expect(queryClient.getQueryState(key)?.isInvalidated ?? false).toBe(false);
@@ -141,7 +166,9 @@ describe("useSettingValuesRealtime", () => {
 
     subscriptions
       .find((entry) => entry.channel === "user_settings")
-      ?.handlers?.onEvent?.(changedFrame({ key: SETTING_KEYS.UI_THEME, scope: "account" }));
+      ?.handlers?.onEvent?.(
+        changedFrame({ key: SETTING_KEYS.UI_THEME, scope: "account" }),
+      );
 
     expect(queryClient.getQueryState(key)?.isInvalidated ?? false).toBe(true);
   });
@@ -167,13 +194,17 @@ describe("useSettingValuesRealtime", () => {
     const { queryClient, wrapper } = createHarness();
     seedEffective(queryClient, "dark");
     render(<Subscriber />, { wrapper });
-    const handlers = subscriptions.find((entry) => entry.channel === "user_settings")?.handlers;
+    const handlers = subscriptions.find(
+      (entry) => entry.channel === "user_settings",
+    )?.handlers;
 
     // A burst of writes (a settings screen saving several keys at once) must
     // not fan out into a fetch per event: nothing is observing these queries,
     // so invalidation marks them stale and issues no request at all.
     for (const key of [SETTING_KEYS.UI_THEME, SETTING_KEYS.UI_DATE_FORMAT]) {
-      handlers?.onEvent?.(changedFrame({ key, scope: "profile", profile_id: "profile-1" }));
+      handlers?.onEvent?.(
+        changedFrame({ key, scope: "profile", profile_id: "profile-1" }),
+      );
     }
 
     expect(apiMock).not.toHaveBeenCalled();

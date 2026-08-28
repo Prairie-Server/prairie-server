@@ -3,7 +3,13 @@ import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { CollectionTemplateGallery } from "@/components/CollectionTemplateGallery";
 import { useAdminLibraries } from "@/hooks/queries/admin/libraries";
 import { useAdminCollections } from "@/hooks/queries/admin/collections";
@@ -21,7 +27,9 @@ import {
 } from "./adminCollectionsShared";
 import SmartCollectionWizard from "./SmartCollectionWizard";
 
-function inferCollectionSourceType(collectionType?: string): CollectionSourceType {
+function inferCollectionSourceType(
+  collectionType?: string,
+): CollectionSourceType {
   if (collectionType === "mdblist") return "mdblist";
   if (collectionType === "tmdb") return "tmdb";
   if (collectionType === "trakt") return "trakt";
@@ -29,7 +37,11 @@ function inferCollectionSourceType(collectionType?: string): CollectionSourceTyp
 }
 
 function isImportedAdminCollectionType(collectionType?: string): boolean {
-  return collectionType === "mdblist" || collectionType === "tmdb" || collectionType === "trakt";
+  return (
+    collectionType === "mdblist" ||
+    collectionType === "tmdb" ||
+    collectionType === "trakt"
+  );
 }
 
 export default function AdminCollectionEditor() {
@@ -45,7 +57,9 @@ export default function AdminCollectionEditor() {
     () => collections.find((entry) => entry.id === id) ?? null,
     [collections, id],
   );
-  const [sourceType, setSourceType] = useState<CollectionSourceType | null>(null);
+  const [sourceType, setSourceType] = useState<CollectionSourceType | null>(
+    null,
+  );
   const [galleryOpen, setGalleryOpen] = useState(false);
 
   const activeSourceType = collection
@@ -60,7 +74,8 @@ export default function AdminCollectionEditor() {
   };
   const title = collection
     ? `Edit ${collection.title}`
-    : (activeSourceType && sourceTypeTitles[activeSourceType]) || "Add Collection";
+    : (activeSourceType && sourceTypeTitles[activeSourceType]) ||
+      "Add Collection";
 
   const description = collection
     ? "Collections now open in a dedicated workspace so rules, artwork, and preview can stay visible."
@@ -86,7 +101,9 @@ export default function AdminCollectionEditor() {
         <Card className="surface-panel rounded-2xl border-0 shadow-none">
           <CardHeader>
             <CardTitle>Collection not found</CardTitle>
-            <CardDescription>The selected collection could not be loaded.</CardDescription>
+            <CardDescription>
+              The selected collection could not be loaded.
+            </CardDescription>
           </CardHeader>
         </Card>
       </div>
@@ -122,7 +139,9 @@ export default function AdminCollectionEditor() {
           </Button>
           <div>
             <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">{title}</h1>
-            <p className="page-subtitle mt-1 text-sm sm:text-base">{description}</p>
+            <p className="page-subtitle mt-1 text-sm sm:text-base">
+              {description}
+            </p>
           </div>
         </div>
 
@@ -138,8 +157,8 @@ export default function AdminCollectionEditor() {
           <CardHeader>
             <CardTitle>Choose a Collection Type</CardTitle>
             <CardDescription>
-              Smart/manual collections open the full query builder. Imports keep their
-              source-specific setup.
+              Smart/manual collections open the full query builder. Imports keep
+              their source-specific setup.
             </CardDescription>
           </CardHeader>
           <CardContent>

@@ -105,16 +105,21 @@ export function usePolicyDocument(id: number | undefined) {
 export function usePolicyVersions(id: number | undefined) {
   return useQuery({
     queryKey: adminKeys.policyVersions(id),
-    queryFn: () => api<PolicyVersionSummary[]>(`/admin/policy/documents/${id}/versions`),
+    queryFn: () =>
+      api<PolicyVersionSummary[]>(`/admin/policy/documents/${id}/versions`),
     enabled: id !== undefined,
     staleTime: 10_000,
   });
 }
 
-export function usePolicyVersion(id: number | undefined, version: number | undefined) {
+export function usePolicyVersion(
+  id: number | undefined,
+  version: number | undefined,
+) {
   return useQuery({
     queryKey: adminKeys.policyVersion(id, version),
-    queryFn: () => api<PolicyVersion>(`/admin/policy/documents/${id}/versions/${version}`),
+    queryFn: () =>
+      api<PolicyVersion>(`/admin/policy/documents/${id}/versions/${version}`),
     enabled: id !== undefined && version !== undefined,
     staleTime: 10_000,
   });
@@ -147,15 +152,24 @@ export function useCreatePolicyVersion() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ documentId, source, comment }: CreatePolicyVersionInput) =>
-      api<PolicyCreateVersionResult>(`/admin/policy/documents/${documentId}/versions`, {
-        method: "POST",
-        body: JSON.stringify({ source, comment: comment?.trim() || undefined }),
-      }),
+      api<PolicyCreateVersionResult>(
+        `/admin/policy/documents/${documentId}/versions`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            source,
+            comment: comment?.trim() || undefined,
+          }),
+        },
+      ),
     onSuccess: async (data, variables) => {
       await Promise.all([
         invalidatePolicyDocuments(queryClient, variables.documentId),
         queryClient.invalidateQueries({
-          queryKey: adminKeys.policyVersion(variables.documentId, data.version_number),
+          queryKey: adminKeys.policyVersion(
+            variables.documentId,
+            data.version_number,
+          ),
         }),
       ]);
     },
@@ -165,7 +179,13 @@ export function useCreatePolicyVersion() {
 export function useActivatePolicyVersion() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ documentId, version }: { documentId: number; version: number }) =>
+    mutationFn: ({
+      documentId,
+      version,
+    }: {
+      documentId: number;
+      version: number;
+    }) =>
       api<PolicyActivateVersionResult>(
         `/admin/policy/documents/${documentId}/versions/${version}/activate`,
         { method: "POST" },
@@ -179,11 +199,20 @@ export function useActivatePolicyVersion() {
 export function useSetPolicyDocumentEnabled() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ documentId, enabled }: { documentId: number; enabled: boolean }) =>
-      api<PolicySetDocumentEnabledResult>(`/admin/policy/documents/${documentId}/enabled`, {
-        method: "POST",
-        body: JSON.stringify({ enabled }),
-      }),
+    mutationFn: ({
+      documentId,
+      enabled,
+    }: {
+      documentId: number;
+      enabled: boolean;
+    }) =>
+      api<PolicySetDocumentEnabledResult>(
+        `/admin/policy/documents/${documentId}/enabled`,
+        {
+          method: "POST",
+          body: JSON.stringify({ enabled }),
+        },
+      ),
     onSuccess: async (_data, variables) => {
       await invalidatePolicyDocuments(queryClient, variables.documentId);
     },
@@ -221,17 +250,25 @@ export function useSimulatePolicy() {
   });
 }
 
-export function usePolicyDecisions(filters: PolicyDecisionFilters, enabled = true) {
+export function usePolicyDecisions(
+  filters: PolicyDecisionFilters,
+  enabled = true,
+) {
   const qs = toQueryString(filters);
   return useQuery({
     queryKey: adminKeys.policyDecisions({ ...filters }),
-    queryFn: () => api<PolicyDecisionListResult>(`/admin/policy/decisions${qs ? `?${qs}` : ""}`),
+    queryFn: () =>
+      api<PolicyDecisionListResult>(
+        `/admin/policy/decisions${qs ? `?${qs}` : ""}`,
+      ),
     staleTime: 5_000,
     enabled,
   });
 }
 
-export function isPolicyCompileIssue(value: unknown): value is PolicyCompileIssue {
+export function isPolicyCompileIssue(
+  value: unknown,
+): value is PolicyCompileIssue {
   return (
     typeof value === "object" &&
     value !== null &&

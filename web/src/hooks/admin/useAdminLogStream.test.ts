@@ -16,17 +16,24 @@ describe("buildAdminLogStreamQuery", () => {
         q: "",
         limit: 50,
       }),
-    ).toBe("request_id=req-1&component=api&playback_session_id=playback-123&limit=50");
+    ).toBe(
+      "request_id=req-1&component=api&playback_session_id=playback-123&limit=50",
+    );
   });
 });
 
 describe("buildAdminLogStreamUrl", () => {
   it("includes stream, filters, and auth token", () => {
     expect(
-      buildAdminLogStreamUrl("app", { request_id: "req-1", component: "api" }, "token-123", {
-        protocol: "https:",
-        host: "example.com",
-      }),
+      buildAdminLogStreamUrl(
+        "app",
+        { request_id: "req-1", component: "api" },
+        "token-123",
+        {
+          protocol: "https:",
+          host: "example.com",
+        },
+      ),
     ).toBe(
       "wss://example.com/api/v1/admin/logs/ws?stream=app&request_id=req-1&component=api&token=token-123",
     );

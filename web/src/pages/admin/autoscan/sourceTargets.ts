@@ -1,4 +1,8 @@
-import type { AutoscanScanSourceDescriptor, AutoscanSource, Library } from "@/api/types";
+import type {
+  AutoscanScanSourceDescriptor,
+  AutoscanSource,
+  Library,
+} from "@/api/types";
 
 import { configFields } from "./sourceDescriptor";
 
@@ -116,7 +120,8 @@ function targetsAreKnowable(
   // this purpose, and must still be warned about when its path fields are
   // empty. A `required` source with nothing bound is excluded because the row
   // already reports the missing connection, and that is the fault to fix first.
-  if (source.connection_id || descriptor.connection === "required") return false;
+  if (source.connection_id || descriptor.connection === "required")
+    return false;
   return configFields(descriptor).length > 0;
 }
 

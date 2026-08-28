@@ -1,4 +1,10 @@
-import { startTransition, useDeferredValue, useEffect, useMemo, useState } from "react";
+import {
+  startTransition,
+  useDeferredValue,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import { getAccessToken } from "@/api/client";
 import type {
   AdminLogAppendMessage,
@@ -63,7 +69,11 @@ export function buildAdminLogStreamUrl(
   return `${protocol}//${location.host}/api/v1/admin/logs/ws?${search.toString()}`;
 }
 
-export function applyAdminLogAppend<T extends { id: number }>(rows: T[], entry: T, limit: number) {
+export function applyAdminLogAppend<T extends { id: number }>(
+  rows: T[],
+  entry: T,
+  limit: number,
+) {
   const next = [entry, ...rows.filter((row) => row.id !== entry.id)];
   return next.slice(0, limit);
 }
@@ -73,7 +83,10 @@ export function applyAdminLogAppends<T extends { id: number }>(
   entries: T[],
   limit: number,
 ) {
-  return entries.reduce((current, entry) => applyAdminLogAppend(current, entry, limit), rows);
+  return entries.reduce(
+    (current, entry) => applyAdminLogAppend(current, entry, limit),
+    rows,
+  );
 }
 
 export function useAdminLogStream<TStream extends AdminLogStream>(
@@ -83,12 +96,16 @@ export function useAdminLogStream<TStream extends AdminLogStream>(
 ): AdminLogStreamResult<StreamEntryMap[TStream]> {
   const [rows, setRows] = useState<StreamEntryMap[TStream][]>([]);
   const [nextCursor, setNextCursor] = useState<string>();
-  const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
+  const [connectionState, setConnectionState] =
+    useState<ConnectionState>("disconnected");
   const [error, setError] = useState<string>();
   const [reconnectNonce, setReconnectNonce] = useState(0);
 
   const deferredParams = useDeferredValue(params);
-  const queryString = useMemo(() => buildAdminLogStreamQuery(deferredParams), [deferredParams]);
+  const queryString = useMemo(
+    () => buildAdminLogStreamQuery(deferredParams),
+    [deferredParams],
+  );
   const limit = deferredParams.limit ?? 100;
 
   useEffect(() => {
@@ -132,7 +149,12 @@ export function useAdminLogStream<TStream extends AdminLogStream>(
     // Debounce the initial attempt; an explicit reconnect() retries immediately.
     const connectDelay = reconnectNonce === 0 ? 250 : 0;
     const connectTimer = window.setTimeout(() => {
-      const url = buildAdminLogStreamUrl(stream, deferredParams, getAccessToken(), window.location);
+      const url = buildAdminLogStreamUrl(
+        stream,
+        deferredParams,
+        getAccessToken(),
+        window.location,
+      );
       try {
         ws = new WebSocket(url);
       } catch {
@@ -187,7 +209,11 @@ export function useAdminLogStream<TStream extends AdminLogStream>(
     return () => {
       window.clearTimeout(connectTimer);
       clearFlushTimer();
-      if (ws && (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING)) {
+      if (
+        ws &&
+        (ws.readyState === WebSocket.OPEN ||
+          ws.readyState === WebSocket.CONNECTING)
+      ) {
         ws.close();
       }
     };
@@ -204,16 +230,16 @@ export function useAdminLogStream<TStream extends AdminLogStream>(
   };
 }
 
-function parseAdminLogStreamMessage(value: unknown): AdminLogStreamMessage | null {
+function parseAdminLogStreamMessage(
+  value: unknown,
+): AdminLogStreamMessage | null {
   if (typeof value !== "string") {
     return null;
   }
 
   try {
     const parsed = JSON.parse(value) as
-      | AdminLogSnapshotMessage
-      | AdminLogAppendMessage
-      | AdminLogErrorMessage;
+      AdminLogSnapshotMessage | AdminLogAppendMessage | AdminLogErrorMessage;
     if (!parsed || typeof parsed.type !== "string") {
       return null;
     }

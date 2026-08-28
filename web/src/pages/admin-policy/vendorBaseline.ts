@@ -23,7 +23,11 @@ export function parseRankLadder(source: string): LadderTier[] | undefined {
 
   const tiers = new Map<number, string[]>();
   const entryPattern = /"([^"]*)"\s*:\s*(\d+)/g;
-  for (let entry = entryPattern.exec(table); entry; entry = entryPattern.exec(table)) {
+  for (
+    let entry = entryPattern.exec(table);
+    entry;
+    entry = entryPattern.exec(table)
+  ) {
     const [, rawLabel, rawRank] = entry;
     if (rawLabel === undefined || rawRank === undefined) continue;
     const label = rawLabel === "" ? "Any" : rawLabel;
@@ -48,7 +52,9 @@ export interface GroupedVendorModules {
   other: PolicyVendorModule[];
 }
 
-export function groupVendorModules(modules: readonly PolicyVendorModule[]): GroupedVendorModules {
+export function groupVendorModules(
+  modules: readonly PolicyVendorModule[],
+): GroupedVendorModules {
   const grouped: GroupedVendorModules = { domains: new Map(), other: [] };
   for (const module of modules) {
     const base = module.path.split("/").pop() ?? module.path;
@@ -58,7 +64,11 @@ export function groupVendorModules(modules: readonly PolicyVendorModule[]): Grou
       grouped.quality = module;
     } else {
       const domain = base.replace(/\.rego$/, "");
-      if (domain === "scope" || domain === "permission" || domain === "action") {
+      if (
+        domain === "scope" ||
+        domain === "permission" ||
+        domain === "action"
+      ) {
         grouped.domains.set(domain, module);
       } else {
         grouped.other.push(module);

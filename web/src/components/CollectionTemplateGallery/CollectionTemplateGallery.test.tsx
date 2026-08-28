@@ -20,7 +20,10 @@ if (typeof globalThis.ResizeObserver === "undefined") {
     value: ResizeObserverStub,
   });
 }
-if (typeof window !== "undefined" && !window.HTMLElement.prototype.hasPointerCapture) {
+if (
+  typeof window !== "undefined" &&
+  !window.HTMLElement.prototype.hasPointerCapture
+) {
   window.HTMLElement.prototype.hasPointerCapture = () => false;
   window.HTMLElement.prototype.scrollIntoView = () => {};
 }
@@ -75,7 +78,11 @@ const catalogResponse = {
           source: "tmdb",
           media_kind: "movie",
           default_limit: 50,
-          tmdb: { preset: "trending", media_type: "movie", time_window: "week" },
+          tmdb: {
+            preset: "trending",
+            media_type: "movie",
+            time_window: "week",
+          },
         },
       ],
     },
@@ -109,7 +116,9 @@ const bundlesResponse = {
   ],
 };
 
-function libraryFixture(partial: Pick<Library, "id" | "name" | "type">): Library {
+function libraryFixture(
+  partial: Pick<Library, "id" | "name" | "type">,
+): Library {
   return {
     id: partial.id,
     name: partial.name,
@@ -135,7 +144,9 @@ const libraries: Library[] = [
 ];
 
 function renderGallery() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
     <QueryClientProvider client={client}>
       <CollectionTemplateGallery
@@ -152,8 +163,10 @@ describe("CollectionTemplateGallery", () => {
   beforeEach(() => {
     fetchMock.mockReset();
     fetchMock.mockImplementation((path: string) => {
-      if (path === "/admin/collections/templates") return Promise.resolve(catalogResponse);
-      if (path === "/admin/collections/template-bundles") return Promise.resolve(bundlesResponse);
+      if (path === "/admin/collections/templates")
+        return Promise.resolve(catalogResponse);
+      if (path === "/admin/collections/template-bundles")
+        return Promise.resolve(bundlesResponse);
       throw new Error(`unexpected path: ${path}`);
     });
   });
@@ -184,7 +197,9 @@ describe("CollectionTemplateGallery", () => {
     });
 
     await user.type(screen.getByPlaceholderText("Search templates"), "trakt");
-    expect(screen.queryByText("Trending Movies This Week")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Trending Movies This Week"),
+    ).not.toBeInTheDocument();
     expect(screen.getByText("Trakt Popular Shows")).toBeInTheDocument();
   });
 
@@ -198,7 +213,9 @@ describe("CollectionTemplateGallery", () => {
 
     await user.click(screen.getByText("Trending Movies This Week"));
     // The drawer renders the explicit submit button.
-    expect(screen.getByRole("button", { name: /Create Collection/i })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Create Collection/i }),
+    ).toBeInTheDocument();
   });
 
   it("does not preselect an ineligible initial library for TV templates", async () => {
@@ -211,8 +228,12 @@ describe("CollectionTemplateGallery", () => {
 
     await user.click(screen.getByText("Trakt Popular Shows"));
 
-    expect(screen.getByRole("button", { name: /TV Shows/i })).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: /^Movies$/i })).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /TV Shows/i }),
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /^Movies$/i }),
+    ).not.toBeInTheDocument();
   });
 
   it("dispatches to the TMDB import endpoint when submitting a TMDB template", async () => {
@@ -224,8 +245,10 @@ describe("CollectionTemplateGallery", () => {
     });
 
     fetchMock.mockImplementation((path: string) => {
-      if (path === "/admin/collections/templates") return Promise.resolve(catalogResponse);
-      if (path === "/admin/collections/template-bundles") return Promise.resolve(bundlesResponse);
+      if (path === "/admin/collections/templates")
+        return Promise.resolve(catalogResponse);
+      if (path === "/admin/collections/template-bundles")
+        return Promise.resolve(bundlesResponse);
       if (path === "/admin/collections/import/tmdb") {
         return Promise.resolve({ collection: { id: "x" } });
       }
@@ -233,10 +256,15 @@ describe("CollectionTemplateGallery", () => {
     });
 
     await user.click(screen.getByText("Trending Movies This Week"));
-    await user.click(screen.getByRole("button", { name: /Create Collection/i }));
+    await user.click(
+      screen.getByRole("button", { name: /Create Collection/i }),
+    );
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith("/admin/collections/import/tmdb", expect.any(Object));
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/admin/collections/import/tmdb",
+        expect.any(Object),
+      );
     });
   });
 
@@ -249,8 +277,10 @@ describe("CollectionTemplateGallery", () => {
     });
 
     fetchMock.mockImplementation((path: string) => {
-      if (path === "/admin/collections/templates") return Promise.resolve(catalogResponse);
-      if (path === "/admin/collections/template-bundles") return Promise.resolve(bundlesResponse);
+      if (path === "/admin/collections/templates")
+        return Promise.resolve(catalogResponse);
+      if (path === "/admin/collections/template-bundles")
+        return Promise.resolve(bundlesResponse);
       if (path === "/admin/collections/import/trakt") {
         return Promise.resolve({ collection: { id: "y" } });
       }
@@ -258,10 +288,15 @@ describe("CollectionTemplateGallery", () => {
     });
 
     await user.click(screen.getByText("Trakt Popular Shows"));
-    await user.click(screen.getByRole("button", { name: /Create Collection/i }));
+    await user.click(
+      screen.getByRole("button", { name: /Create Collection/i }),
+    );
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith("/admin/collections/import/trakt", expect.any(Object));
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/admin/collections/import/trakt",
+        expect.any(Object),
+      );
     });
   });
 
@@ -274,8 +309,10 @@ describe("CollectionTemplateGallery", () => {
     });
 
     fetchMock.mockImplementation((path: string) => {
-      if (path === "/admin/collections/templates") return Promise.resolve(catalogResponse);
-      if (path === "/admin/collections/template-bundles") return Promise.resolve(bundlesResponse);
+      if (path === "/admin/collections/templates")
+        return Promise.resolve(catalogResponse);
+      if (path === "/admin/collections/template-bundles")
+        return Promise.resolve(bundlesResponse);
       if (path === "/admin/collections/template-bundles/core_defaults/apply") {
         return Promise.resolve({
           bundle_id: "core_defaults",
@@ -301,10 +338,13 @@ describe("CollectionTemplateGallery", () => {
     await user.click(screen.getByRole("button", { name: /^Preview$/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/Would create 1; skipped 0; failed 0/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/Would create 1; skipped 0; failed 0/i),
+      ).toBeInTheDocument();
     });
     const applyCall = fetchMock.mock.calls.find(
-      ([path]) => path === "/admin/collections/template-bundles/core_defaults/apply",
+      ([path]) =>
+        path === "/admin/collections/template-bundles/core_defaults/apply",
     );
     expect(JSON.parse(String(applyCall?.[1]?.body))).toMatchObject({
       featured: {
@@ -323,8 +363,10 @@ describe("CollectionTemplateGallery", () => {
     });
 
     fetchMock.mockImplementation((path: string) => {
-      if (path === "/admin/collections/templates") return Promise.resolve(catalogResponse);
-      if (path === "/admin/collections/template-bundles") return Promise.resolve(bundlesResponse);
+      if (path === "/admin/collections/templates")
+        return Promise.resolve(catalogResponse);
+      if (path === "/admin/collections/template-bundles")
+        return Promise.resolve(bundlesResponse);
       if (path === "/admin/collections/template-bundles/core_defaults/apply") {
         return Promise.resolve({
           bundle_id: "core_defaults",
@@ -359,7 +401,8 @@ describe("CollectionTemplateGallery", () => {
       ).toBeInTheDocument();
     });
     const applyCall = fetchMock.mock.calls.find(
-      ([path]) => path === "/admin/collections/template-bundles/core_defaults/apply",
+      ([path]) =>
+        path === "/admin/collections/template-bundles/core_defaults/apply",
     );
     expect(JSON.parse(String(applyCall?.[1]?.body))).toMatchObject({
       dry_run: true,
@@ -377,9 +420,13 @@ describe("CollectionTemplateGallery", () => {
     });
 
     fetchMock.mockImplementation((path: string) => {
-      if (path === "/admin/collections/templates") return Promise.resolve(catalogResponse);
-      if (path === "/admin/collections/template-bundles") return Promise.resolve(bundlesResponse);
-      if (path === "/admin/collections/template-bundles/core_defaults/apply-job") {
+      if (path === "/admin/collections/templates")
+        return Promise.resolve(catalogResponse);
+      if (path === "/admin/collections/template-bundles")
+        return Promise.resolve(bundlesResponse);
+      if (
+        path === "/admin/collections/template-bundles/core_defaults/apply-job"
+      ) {
         return Promise.resolve({
           id: "job-1",
           job_type: "template_bundle_apply",

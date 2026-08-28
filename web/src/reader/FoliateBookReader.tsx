@@ -1,11 +1,22 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react";
 import { type QueryClient, useQueryClient } from "@tanstack/react-query";
 
 import { api, apiBlob, apiKeepalive } from "@/api/client";
 import type { FileVersion } from "@/api/types";
 import { ebookKeys } from "@/hooks/queries/keys";
 import type { EbookReaderAnnotation } from "@/reader/ebookReaderApi";
-import { DocumentLoader, type BookDoc, type TOCItem } from "@/reader/readest/libs/document";
+import {
+  DocumentLoader,
+  type BookDoc,
+  type TOCItem,
+} from "@/reader/readest/libs/document";
 
 type FoliateViewElement = HTMLElement & {
   open: (book: BookDoc) => Promise<void>;
@@ -15,7 +26,12 @@ type FoliateViewElement = HTMLElement & {
   goTo?: (href: string) => void;
   getCFI?: (index: number, range: Range) => string;
   addAnnotation?: (
-    annotation: { value: string; color?: string; style?: string; note?: string },
+    annotation: {
+      value: string;
+      color?: string;
+      style?: string;
+      note?: string;
+    },
     remove?: boolean,
   ) => void;
   deselect?: () => void;
@@ -140,7 +156,17 @@ type RelocateDetail = {
 // but the readest BookDoc interface does not declare it.
 type DisposableBookDoc = BookDoc & { destroy?: () => void };
 
-const READEST_FORMATS = new Set(["epub", "pdf", "mobi", "azw", "azw3", "cbz", "cbr", "fb2", "fbz"]);
+const READEST_FORMATS = new Set([
+  "epub",
+  "pdf",
+  "mobi",
+  "azw",
+  "azw3",
+  "cbz",
+  "cbr",
+  "fb2",
+  "fbz",
+]);
 
 export const READER_FONT_STACKS = {
   inherit: "inherit",
@@ -203,7 +229,11 @@ export function readerFileFormat(file: FileVersion | undefined): string {
   const extension = /\.([a-z0-9]+)$/i.exec(fileName)?.[1]?.toLowerCase() ?? "";
   const container = file.container?.trim().toLowerCase();
   const normalizedContainer = container ? container.replace(/^\./, "") : "";
-  if (normalizedContainer && normalizedContainer !== "zip" && normalizedContainer !== "rar") {
+  if (
+    normalizedContainer &&
+    normalizedContainer !== "zip" &&
+    normalizedContainer !== "rar"
+  ) {
     return normalizedContainer;
   }
   return extension || normalizedContainer;
@@ -278,7 +308,10 @@ export function parseReaderLocation(
 }
 
 export function restoreProgressTarget(
-  progress: Pick<EbookReaderProgress, "file_id" | "location" | "progress"> | null | undefined,
+  progress:
+    | Pick<EbookReaderProgress, "file_id" | "location" | "progress">
+    | null
+    | undefined,
 ): RestoreProgressTarget | null {
   if (!progress || typeof progress.location !== "string") return null;
   const location = progress.location.trim();
@@ -291,13 +324,20 @@ export function restoreProgressTarget(
   return null;
 }
 
-export function formatReaderProgress(progress: number | null | undefined): string | null {
+export function formatReaderProgress(
+  progress: number | null | undefined,
+): string | null {
   if (typeof progress !== "number" || !Number.isFinite(progress)) return null;
   const bounded = Math.min(1, Math.max(0, progress));
   return `${Math.round(bounded * 100)}%`;
 }
 
-function clampNumber(value: unknown, fallback: number, min: number, max: number): number {
+function clampNumber(
+  value: unknown,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
   const number = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(number)) return fallback;
   return Math.min(max, Math.max(min, number));
@@ -316,37 +356,76 @@ function isReaderSpread(value: unknown): value is ReaderSpread {
 }
 
 function isReaderWritingMode(value: unknown): value is ReaderWritingMode {
-  return value === "auto" || value === "horizontal-tb" || value === "vertical-rl";
+  return (
+    value === "auto" || value === "horizontal-tb" || value === "vertical-rl"
+  );
 }
 
 function normalizeReaderFontFamily(value: unknown): string {
-  if (typeof value !== "string" || !value.trim()) return DEFAULT_READER_SETTINGS.fontFamily;
+  if (typeof value !== "string" || !value.trim())
+    return DEFAULT_READER_SETTINGS.fontFamily;
   const trimmed = value.trim();
   return LEGACY_READER_FONT_ALIASES[trimmed] ?? trimmed;
 }
 
-export function normalizeReaderSettings(settings?: Partial<ReaderSettings>): ReaderSettings {
+export function normalizeReaderSettings(
+  settings?: Partial<ReaderSettings>,
+): ReaderSettings {
   return {
-    theme: isReaderTheme(settings?.theme) ? settings.theme : DEFAULT_READER_SETTINGS.theme,
+    theme: isReaderTheme(settings?.theme)
+      ? settings.theme
+      : DEFAULT_READER_SETTINGS.theme,
     fontFamily: normalizeReaderFontFamily(settings?.fontFamily),
-    fontSize: clampNumber(settings?.fontSize, DEFAULT_READER_SETTINGS.fontSize, 80, 180),
-    fontWeight: clampNumber(settings?.fontWeight, DEFAULT_READER_SETTINGS.fontWeight, 300, 800),
+    fontSize: clampNumber(
+      settings?.fontSize,
+      DEFAULT_READER_SETTINGS.fontSize,
+      80,
+      180,
+    ),
+    fontWeight: clampNumber(
+      settings?.fontWeight,
+      DEFAULT_READER_SETTINGS.fontWeight,
+      300,
+      800,
+    ),
     hyphenation:
       typeof settings?.hyphenation === "boolean"
         ? settings.hyphenation
         : DEFAULT_READER_SETTINGS.hyphenation,
-    lineHeight: clampNumber(settings?.lineHeight, DEFAULT_READER_SETTINGS.lineHeight, 1.1, 2.4),
-    margin: clampNumber(settings?.margin, DEFAULT_READER_SETTINGS.margin, 0, 64),
-    maxWidth: clampNumber(settings?.maxWidth, DEFAULT_READER_SETTINGS.maxWidth, 42, 96),
-    spread: isReaderSpread(settings?.spread) ? settings.spread : DEFAULT_READER_SETTINGS.spread,
-    flow: isReaderFlow(settings?.flow) ? settings.flow : DEFAULT_READER_SETTINGS.flow,
+    lineHeight: clampNumber(
+      settings?.lineHeight,
+      DEFAULT_READER_SETTINGS.lineHeight,
+      1.1,
+      2.4,
+    ),
+    margin: clampNumber(
+      settings?.margin,
+      DEFAULT_READER_SETTINGS.margin,
+      0,
+      64,
+    ),
+    maxWidth: clampNumber(
+      settings?.maxWidth,
+      DEFAULT_READER_SETTINGS.maxWidth,
+      42,
+      96,
+    ),
+    spread: isReaderSpread(settings?.spread)
+      ? settings.spread
+      : DEFAULT_READER_SETTINGS.spread,
+    flow: isReaderFlow(settings?.flow)
+      ? settings.flow
+      : DEFAULT_READER_SETTINGS.flow,
     fontBrightness: clampNumber(
       settings?.fontBrightness,
       DEFAULT_READER_SETTINGS.fontBrightness,
       70,
       125,
     ),
-    rtl: typeof settings?.rtl === "boolean" ? settings.rtl : DEFAULT_READER_SETTINGS.rtl,
+    rtl:
+      typeof settings?.rtl === "boolean"
+        ? settings.rtl
+        : DEFAULT_READER_SETTINGS.rtl,
     writingMode: isReaderWritingMode(settings?.writingMode)
       ? settings.writingMode
       : DEFAULT_READER_SETTINGS.writingMode,
@@ -366,11 +445,20 @@ export function normalizeReaderSettings(settings?: Partial<ReaderSettings>): Rea
 export async function fetchEbookReaderProgress(
   contentID: string,
 ): Promise<EbookReaderProgress | null> {
-  const progress = await api<Partial<EbookReaderProgress>>(ebookProgressPath(contentID));
-  if (!progress || typeof progress.location !== "string" || progress.location.trim() === "") {
+  const progress = await api<Partial<EbookReaderProgress>>(
+    ebookProgressPath(contentID),
+  );
+  if (
+    !progress ||
+    typeof progress.location !== "string" ||
+    progress.location.trim() === ""
+  ) {
     return null;
   }
-  if (typeof progress.file_id !== "number" || typeof progress.progress !== "number") {
+  if (
+    typeof progress.file_id !== "number" ||
+    typeof progress.progress !== "number"
+  ) {
     return null;
   }
   return {
@@ -418,9 +506,12 @@ function readerColors(theme: ReaderTheme) {
   }
 }
 
-export function readerStyles(settings: ReaderSettings = DEFAULT_READER_SETTINGS) {
+export function readerStyles(
+  settings: ReaderSettings = DEFAULT_READER_SETTINGS,
+) {
   const colors = readerColors(settings.theme);
-  const contentMaxWidth = settings.flow === "scrolled" ? "none" : `${settings.maxWidth}ch`;
+  const contentMaxWidth =
+    settings.flow === "scrolled" ? "none" : `${settings.maxWidth}ch`;
   return `
     :root {
       --theme-bg-color: ${colors.background};
@@ -463,11 +554,16 @@ export function readerRendererAttributes(settings: ReaderSettings) {
   };
 }
 
-function searchResultLabel(result: FoliateSearchResult, item?: { label?: string }): string {
+function searchResultLabel(
+  result: FoliateSearchResult,
+  item?: { label?: string },
+): string {
   return item?.label || result.label || result.section?.label || "";
 }
 
-function flattenSearchResult(result: FoliateSearchResult): ReaderSearchResult[] {
+function flattenSearchResult(
+  result: FoliateSearchResult,
+): ReaderSearchResult[] {
   const direct = result.cfi
     ? [
         {
@@ -501,37 +597,40 @@ type FoliateBookReaderProps = {
   onSelectionChange?: (selection: ReaderSelection | null) => void;
 };
 
-const FoliateBookReader = forwardRef<FoliateBookReaderHandle, FoliateBookReaderProps>(
-  function FoliateBookReader(
-    {
-      contentID,
-      file,
-      title,
-      annotations = [],
-      settings,
-      onFileLoaded,
-      onProgressChange,
-      onReady,
-      onSelectionChange,
-    },
-    ref,
-  ) {
-    const queryClient = useQueryClient();
-    const containerRef = useRef<HTMLDivElement>(null);
-    const viewRef = useRef<FoliateViewElement | null>(null);
-    const initializedRef = useRef(false);
-    const saveTimerRef = useRef<number | null>(null);
-    const pendingProgressRef = useRef<EbookReaderProgressPayload | null>(null);
-    const progressSaveSeqRef = useRef(0);
-    const settingsRef = useRef(normalizeReaderSettings(settings));
-    const appliedRendererKeyRef = useRef("");
-    const annotationsRef = useRef<EbookReaderAnnotation[]>(annotations);
-    const drawnCfisRef = useRef<Set<string>>(new Set());
-    const selectionCleanupRef = useRef<(() => void)[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState("");
+const FoliateBookReader = forwardRef<
+  FoliateBookReaderHandle,
+  FoliateBookReaderProps
+>(function FoliateBookReader(
+  {
+    contentID,
+    file,
+    title,
+    annotations = [],
+    settings,
+    onFileLoaded,
+    onProgressChange,
+    onReady,
+    onSelectionChange,
+  },
+  ref,
+) {
+  const queryClient = useQueryClient();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const viewRef = useRef<FoliateViewElement | null>(null);
+  const initializedRef = useRef(false);
+  const saveTimerRef = useRef<number | null>(null);
+  const pendingProgressRef = useRef<EbookReaderProgressPayload | null>(null);
+  const progressSaveSeqRef = useRef(0);
+  const settingsRef = useRef(normalizeReaderSettings(settings));
+  const appliedRendererKeyRef = useRef("");
+  const annotationsRef = useRef<EbookReaderAnnotation[]>(annotations);
+  const drawnCfisRef = useRef<Set<string>>(new Set());
+  const selectionCleanupRef = useRef<(() => void)[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-    const applyReaderSettings = useCallback((nextSettings: Partial<ReaderSettings> | undefined) => {
+  const applyReaderSettings = useCallback(
+    (nextSettings: Partial<ReaderSettings> | undefined) => {
       const normalized = normalizeReaderSettings(nextSettings);
       settingsRef.current = normalized;
       const renderer = viewRef.current?.renderer;
@@ -554,388 +653,410 @@ const FoliateBookReader = forwardRef<FoliateBookReaderHandle, FoliateBookReaderP
         renderer.removeAttribute("flow");
       }
       void renderer.render?.();
-    }, []);
+    },
+    [],
+  );
 
-    const drawAnnotations = useCallback(() => {
-      const view = viewRef.current;
-      if (!view?.addAnnotation) return;
-      const activeCfis = new Set(
-        annotationsRef.current
-          .filter((annotation) => annotation.kind !== "bookmark" && annotation.cfi_range)
-          .map((annotation) => annotation.cfi_range || ""),
-      );
-      for (const cfi of drawnCfisRef.current) {
-        if (!activeCfis.has(cfi)) {
-          view.addAnnotation({ value: cfi }, true);
-          drawnCfisRef.current.delete(cfi);
-        }
-      }
-      for (const annotation of annotationsRef.current) {
-        if (annotation.kind === "bookmark" || !annotation.cfi_range) continue;
-        if (drawnCfisRef.current.has(annotation.cfi_range)) continue;
-        view.addAnnotation({
-          value: annotation.cfi_range,
-          color: annotation.color || "#facc15",
-          style: annotation.style || "highlight",
-          note: annotation.note || undefined,
-        });
-        drawnCfisRef.current.add(annotation.cfi_range);
-      }
-    }, []);
-
-    const createSelectionAnnotation = useCallback((): ReaderSelection | null => {
-      const view = viewRef.current;
-      const contents = view?.renderer?.getContents?.() ?? [];
-      if (!view?.getCFI) return null;
-      for (const content of contents) {
-        const selection = content.doc.getSelection();
-        if (!selection || selection.isCollapsed || selection.rangeCount === 0) continue;
-        const selectedText = selection.toString().trim();
-        if (!selectedText) continue;
-        const range = selection.getRangeAt(0);
-        const cfi = view.getCFI(content.index ?? 0, range);
-        const rangeRect = range.getBoundingClientRect();
-        const frameRect = content.doc.defaultView?.frameElement?.getBoundingClientRect();
-        return {
-          cfi,
-          selectedText,
-          rect: {
-            height: rangeRect.height,
-            left: rangeRect.left + (frameRect?.left ?? 0),
-            top: rangeRect.top + (frameRect?.top ?? 0),
-            width: rangeRect.width,
-          },
-        };
-      }
-      return null;
-    }, []);
-
-    const emitSelectionChange = useCallback(() => {
-      onSelectionChange?.(createSelectionAnnotation());
-    }, [createSelectionAnnotation, onSelectionChange]);
-
-    const attachSelectionListeners = useCallback(() => {
-      for (const cleanup of selectionCleanupRef.current) cleanup();
-      selectionCleanupRef.current = [];
-      const contents = viewRef.current?.renderer?.getContents?.() ?? [];
-      for (const content of contents) {
-        const doc = content.doc;
-        const handler = () => window.setTimeout(emitSelectionChange, 0);
-        doc.addEventListener("selectionchange", handler);
-        doc.addEventListener("pointerup", handler);
-        doc.addEventListener("keyup", handler);
-        selectionCleanupRef.current.push(() => {
-          doc.removeEventListener("selectionchange", handler);
-          doc.removeEventListener("pointerup", handler);
-          doc.removeEventListener("keyup", handler);
-        });
-      }
-    }, [emitSelectionChange]);
-
-    const getReadableText = useCallback(() => {
-      const contents = viewRef.current?.renderer?.getContents?.() ?? [];
-      for (const content of contents) {
-        const selectedText = content.doc.getSelection()?.toString().trim();
-        if (selectedText) return selectedText;
-      }
-      const primaryIndex = viewRef.current?.renderer?.primaryIndex;
-      const primary = contents.find((content) => content.index === primaryIndex) ?? contents[0];
-      return (primary?.doc.body?.innerText ?? "").replace(/\s+/g, " ").trim().slice(0, 5000);
-    }, []);
-
-    useImperativeHandle(
-      ref,
-      () => ({
-        next: () => viewRef.current?.next?.(),
-        prev: () => viewRef.current?.prev?.(),
-        goTo: (href: string) => viewRef.current?.goTo?.(href),
-        goToFraction: async (fraction: number) => {
-          await viewRef.current?.goToFraction(Math.min(1, Math.max(0, fraction)));
-        },
-        search: async (query: string) => {
-          const trimmed = query.trim();
-          const view = viewRef.current;
-          if (!trimmed || !view?.search) return [];
-          const results: ReaderSearchResult[] = [];
-          for await (const result of view.search({ query: trimmed, scope: "book" })) {
-            results.push(...flattenSearchResult(result));
-          }
-          return results;
-        },
-        clearSearch: () => viewRef.current?.clearSearch?.(),
-        clearSelection: () => {
-          viewRef.current?.deselect?.();
-          onSelectionChange?.(null);
-        },
-        createSelectionAnnotation,
-        getReadableText,
-      }),
-      [createSelectionAnnotation, getReadableText, onSelectionChange],
+  const drawAnnotations = useCallback(() => {
+    const view = viewRef.current;
+    if (!view?.addAnnotation) return;
+    const activeCfis = new Set(
+      annotationsRef.current
+        .filter(
+          (annotation) =>
+            annotation.kind !== "bookmark" && annotation.cfi_range,
+        )
+        .map((annotation) => annotation.cfi_range || ""),
     );
+    for (const cfi of drawnCfisRef.current) {
+      if (!activeCfis.has(cfi)) {
+        view.addAnnotation({ value: cfi }, true);
+        drawnCfisRef.current.delete(cfi);
+      }
+    }
+    for (const annotation of annotationsRef.current) {
+      if (annotation.kind === "bookmark" || !annotation.cfi_range) continue;
+      if (drawnCfisRef.current.has(annotation.cfi_range)) continue;
+      view.addAnnotation({
+        value: annotation.cfi_range,
+        color: annotation.color || "#facc15",
+        style: annotation.style || "highlight",
+        note: annotation.note || undefined,
+      });
+      drawnCfisRef.current.add(annotation.cfi_range);
+    }
+  }, []);
 
-    useEffect(() => {
-      applyReaderSettings(settings);
-    }, [applyReaderSettings, settings]);
-
-    useEffect(() => {
-      annotationsRef.current = annotations;
-      drawAnnotations();
-    }, [annotations, drawAnnotations]);
-
-    useEffect(() => {
-      let cancelled = false;
-      let objectUrl: string | null = null;
-      let openedBook: DisposableBookDoc | null = null;
-      let openedView: FoliateViewElement | null = null;
-      setLoading(true);
-      setError("");
-      onFileLoaded?.(null);
-      onProgressChange?.(null);
-
-      // Releases everything this effect run created. It runs from the effect
-      // cleanup and again from late continuations of a superseded open(); it is
-      // idempotent and never touches resources owned by a newer run.
-      const disposeOpenArtifacts = () => {
-        if (openedView) {
-          openedView.close?.();
-          openedView.remove();
-          if (viewRef.current === openedView) {
-            viewRef.current = null;
-          }
-          openedView = null;
-        }
-        if (openedBook) {
-          openedBook.destroy?.();
-          openedBook = null;
-        }
-        if (objectUrl) {
-          URL.revokeObjectURL(objectUrl);
-          objectUrl = null;
-        }
+  const createSelectionAnnotation = useCallback((): ReaderSelection | null => {
+    const view = viewRef.current;
+    const contents = view?.renderer?.getContents?.() ?? [];
+    if (!view?.getCFI) return null;
+    for (const content of contents) {
+      const selection = content.doc.getSelection();
+      if (!selection || selection.isCollapsed || selection.rangeCount === 0)
+        continue;
+      const selectedText = selection.toString().trim();
+      if (!selectedText) continue;
+      const range = selection.getRangeAt(0);
+      const cfi = view.getCFI(content.index ?? 0, range);
+      const rangeRect = range.getBoundingClientRect();
+      const frameRect =
+        content.doc.defaultView?.frameElement?.getBoundingClientRect();
+      return {
+        cfi,
+        selectedText,
+        rect: {
+          height: rangeRect.height,
+          left: rangeRect.left + (frameRect?.left ?? 0),
+          top: rangeRect.top + (frameRect?.top ?? 0),
+          width: rangeRect.width,
+        },
       };
+    }
+    return null;
+  }, []);
 
-      // Progress is deliberately per-content (one record per book): opening another
-      // format overwrites this position, keeping "your place in the book" shared
-      // across formats.
-      const flushProgress = (options?: { keepalive?: boolean }) => {
-        const pending = pendingProgressRef.current;
-        if (!pending) return;
-        pendingProgressRef.current = null;
-        const seq = ++progressSaveSeqRef.current;
-        if (options?.keepalive) {
-          // The page may be unloading; fire a keepalive PUT so the write survives
-          // teardown. The response cannot be observed, so skip cache updates.
-          apiKeepalive(ebookProgressPath(contentID), {
-            method: "PUT",
-            body: JSON.stringify(pending),
-          });
+  const emitSelectionChange = useCallback(() => {
+    onSelectionChange?.(createSelectionAnnotation());
+  }, [createSelectionAnnotation, onSelectionChange]);
+
+  const attachSelectionListeners = useCallback(() => {
+    for (const cleanup of selectionCleanupRef.current) cleanup();
+    selectionCleanupRef.current = [];
+    const contents = viewRef.current?.renderer?.getContents?.() ?? [];
+    for (const content of contents) {
+      const doc = content.doc;
+      const handler = () => window.setTimeout(emitSelectionChange, 0);
+      doc.addEventListener("selectionchange", handler);
+      doc.addEventListener("pointerup", handler);
+      doc.addEventListener("keyup", handler);
+      selectionCleanupRef.current.push(() => {
+        doc.removeEventListener("selectionchange", handler);
+        doc.removeEventListener("pointerup", handler);
+        doc.removeEventListener("keyup", handler);
+      });
+    }
+  }, [emitSelectionChange]);
+
+  const getReadableText = useCallback(() => {
+    const contents = viewRef.current?.renderer?.getContents?.() ?? [];
+    for (const content of contents) {
+      const selectedText = content.doc.getSelection()?.toString().trim();
+      if (selectedText) return selectedText;
+    }
+    const primaryIndex = viewRef.current?.renderer?.primaryIndex;
+    const primary =
+      contents.find((content) => content.index === primaryIndex) ?? contents[0];
+    return (primary?.doc.body?.innerText ?? "")
+      .replace(/\s+/g, " ")
+      .trim()
+      .slice(0, 5000);
+  }, []);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      next: () => viewRef.current?.next?.(),
+      prev: () => viewRef.current?.prev?.(),
+      goTo: (href: string) => viewRef.current?.goTo?.(href),
+      goToFraction: async (fraction: number) => {
+        await viewRef.current?.goToFraction(Math.min(1, Math.max(0, fraction)));
+      },
+      search: async (query: string) => {
+        const trimmed = query.trim();
+        const view = viewRef.current;
+        if (!trimmed || !view?.search) return [];
+        const results: ReaderSearchResult[] = [];
+        for await (const result of view.search({
+          query: trimmed,
+          scope: "book",
+        })) {
+          results.push(...flattenSearchResult(result));
+        }
+        return results;
+      },
+      clearSearch: () => viewRef.current?.clearSearch?.(),
+      clearSelection: () => {
+        viewRef.current?.deselect?.();
+        onSelectionChange?.(null);
+      },
+      createSelectionAnnotation,
+      getReadableText,
+    }),
+    [createSelectionAnnotation, getReadableText, onSelectionChange],
+  );
+
+  useEffect(() => {
+    applyReaderSettings(settings);
+  }, [applyReaderSettings, settings]);
+
+  useEffect(() => {
+    annotationsRef.current = annotations;
+    drawAnnotations();
+  }, [annotations, drawAnnotations]);
+
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl: string | null = null;
+    let openedBook: DisposableBookDoc | null = null;
+    let openedView: FoliateViewElement | null = null;
+    setLoading(true);
+    setError("");
+    onFileLoaded?.(null);
+    onProgressChange?.(null);
+
+    // Releases everything this effect run created. It runs from the effect
+    // cleanup and again from late continuations of a superseded open(); it is
+    // idempotent and never touches resources owned by a newer run.
+    const disposeOpenArtifacts = () => {
+      if (openedView) {
+        openedView.close?.();
+        openedView.remove();
+        if (viewRef.current === openedView) {
+          viewRef.current = null;
+        }
+        openedView = null;
+      }
+      if (openedBook) {
+        openedBook.destroy?.();
+        openedBook = null;
+      }
+      if (objectUrl) {
+        URL.revokeObjectURL(objectUrl);
+        objectUrl = null;
+      }
+    };
+
+    // Progress is deliberately per-content (one record per book): opening another
+    // format overwrites this position, keeping "your place in the book" shared
+    // across formats.
+    const flushProgress = (options?: { keepalive?: boolean }) => {
+      const pending = pendingProgressRef.current;
+      if (!pending) return;
+      pendingProgressRef.current = null;
+      const seq = ++progressSaveSeqRef.current;
+      if (options?.keepalive) {
+        // The page may be unloading; fire a keepalive PUT so the write survives
+        // teardown. The response cannot be observed, so skip cache updates.
+        apiKeepalive(ebookProgressPath(contentID), {
+          method: "PUT",
+          body: JSON.stringify(pending),
+        });
+        return;
+      }
+      saveEbookReaderProgress(contentID, pending).then(
+        (saved) => {
+          // Saves can resolve out of order; only the newest may cache its response.
+          if (seq === progressSaveSeqRef.current) {
+            cacheEbookReaderProgress(queryClient, contentID, saved);
+          }
+        },
+        () => {
+          // Progress saves are best-effort; the next relocate retries.
+        },
+      );
+    };
+
+    const scheduleProgressSave = (progress: EbookReaderProgressPayload) => {
+      pendingProgressRef.current = progress;
+      if (saveTimerRef.current !== null) {
+        window.clearTimeout(saveTimerRef.current);
+      }
+      saveTimerRef.current = window.setTimeout(() => {
+        saveTimerRef.current = null;
+        flushProgress();
+      }, 800);
+    };
+
+    const flushProgressOnVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        // The page is still alive when it merely hides, so use the normal
+        // authenticated path, which can refresh an expired access token.
+        // Keepalive (no refresh possible) is reserved for pagehide.
+        flushProgress();
+      }
+    };
+    const flushProgressOnPageHide = () => flushProgress({ keepalive: true });
+
+    async function open() {
+      try {
+        const format = readerFileFormat(file);
+        const [blob, savedProgress] = await Promise.all([
+          apiBlob(ebookReadPath(contentID, file.file_id)),
+          fetchEbookReaderProgress(contentID),
+        ]);
+        if (cancelled) return;
+
+        objectUrl = URL.createObjectURL(blob);
+        const filename = file.file_name || `${title}.${format || "ebook"}`;
+        onFileLoaded?.({ objectUrl, filename });
+        const documentFile = new File([blob], filename, {
+          type: blob.type || readerMimeType(format),
+        });
+        const { book } = await new DocumentLoader(documentFile).open();
+        openedBook = book as DisposableBookDoc;
+        if (cancelled) {
+          disposeOpenArtifacts();
           return;
         }
-        saveEbookReaderProgress(contentID, pending).then(
-          (saved) => {
-            // Saves can resolve out of order; only the newest may cache its response.
-            if (seq === progressSaveSeqRef.current) {
-              cacheEbookReaderProgress(queryClient, contentID, saved);
-            }
-          },
-          () => {
-            // Progress saves are best-effort; the next relocate retries.
-          },
-        );
-      };
 
-      const scheduleProgressSave = (progress: EbookReaderProgressPayload) => {
-        pendingProgressRef.current = progress;
-        if (saveTimerRef.current !== null) {
-          window.clearTimeout(saveTimerRef.current);
+        await import("foliate-js/view.js");
+        if (cancelled) {
+          disposeOpenArtifacts();
+          return;
         }
-        saveTimerRef.current = window.setTimeout(() => {
-          saveTimerRef.current = null;
-          flushProgress();
-        }, 800);
-      };
-
-      const flushProgressOnVisibilityChange = () => {
-        if (document.visibilityState === "hidden") {
-          // The page is still alive when it merely hides, so use the normal
-          // authenticated path, which can refresh an expired access token.
-          // Keepalive (no refresh possible) is reserved for pagehide.
-          flushProgress();
-        }
-      };
-      const flushProgressOnPageHide = () => flushProgress({ keepalive: true });
-
-      async function open() {
-        try {
-          const format = readerFileFormat(file);
-          const [blob, savedProgress] = await Promise.all([
-            apiBlob(ebookReadPath(contentID, file.file_id)),
-            fetchEbookReaderProgress(contentID),
-          ]);
-          if (cancelled) return;
-
-          objectUrl = URL.createObjectURL(blob);
-          const filename = file.file_name || `${title}.${format || "ebook"}`;
-          onFileLoaded?.({ objectUrl, filename });
-          const documentFile = new File([blob], filename, {
-            type: blob.type || readerMimeType(format),
-          });
-          const { book } = await new DocumentLoader(documentFile).open();
-          openedBook = book as DisposableBookDoc;
-          if (cancelled) {
-            disposeOpenArtifacts();
+        const view = document.createElement(
+          "foliate-view",
+        ) as FoliateViewElement;
+        openedView = view;
+        viewRef.current = view;
+        containerRef.current?.replaceChildren(view);
+        view.addEventListener("draw-annotation", async (event: Event) => {
+          const { Overlayer } = await import("foliate-js/overlayer.js");
+          const detail = (
+            event as CustomEvent<{
+              annotation: { color?: string; style?: string };
+              draw: (fn: unknown, options?: Record<string, unknown>) => void;
+            }>
+          ).detail;
+          const style = detail.annotation.style || "highlight";
+          const color = detail.annotation.color || "#facc15";
+          const draw =
+            style === "underline"
+              ? Overlayer.underline
+              : style === "squiggly"
+                ? Overlayer.squiggly
+                : Overlayer.highlight;
+          detail.draw(draw, { color });
+        });
+        view.addEventListener("external-link", (event: Event) => {
+          // The vendored foliate view would open the link itself via
+          // globalThis.open(href, "_blank") with no noopener and no scheme
+          // filter (reverse tabnabbing, javascript: URLs). Cancel its default
+          // and open only safe schemes without an opener reference.
+          event.preventDefault();
+          const href = (event as CustomEvent<{ href?: unknown }>).detail?.href;
+          if (typeof href !== "string") return;
+          let scheme = "";
+          try {
+            scheme = new URL(href).protocol;
+          } catch {
             return;
           }
-
-          await import("foliate-js/view.js");
-          if (cancelled) {
-            disposeOpenArtifacts();
-            return;
+          if (scheme === "http:" || scheme === "https:") {
+            window.open(href, "_blank", "noopener,noreferrer");
           }
-          const view = document.createElement("foliate-view") as FoliateViewElement;
-          openedView = view;
-          viewRef.current = view;
-          containerRef.current?.replaceChildren(view);
-          view.addEventListener("draw-annotation", async (event: Event) => {
-            const { Overlayer } = await import("foliate-js/overlayer.js");
-            const detail = (
-              event as CustomEvent<{
-                annotation: { color?: string; style?: string };
-                draw: (fn: unknown, options?: Record<string, unknown>) => void;
-              }>
-            ).detail;
-            const style = detail.annotation.style || "highlight";
-            const color = detail.annotation.color || "#facc15";
-            const draw =
-              style === "underline"
-                ? Overlayer.underline
-                : style === "squiggly"
-                  ? Overlayer.squiggly
-                  : Overlayer.highlight;
-            detail.draw(draw, { color });
-          });
-          view.addEventListener("external-link", (event: Event) => {
-            // The vendored foliate view would open the link itself via
-            // globalThis.open(href, "_blank") with no noopener and no scheme
-            // filter (reverse tabnabbing, javascript: URLs). Cancel its default
-            // and open only safe schemes without an opener reference.
-            event.preventDefault();
-            const href = (event as CustomEvent<{ href?: unknown }>).detail?.href;
-            if (typeof href !== "string") return;
-            let scheme = "";
-            try {
-              scheme = new URL(href).protocol;
-            } catch {
-              return;
-            }
-            if (scheme === "http:" || scheme === "https:") {
-              window.open(href, "_blank", "noopener,noreferrer");
-            }
-          });
-          view.addEventListener("create-overlay", () => {
-            attachSelectionListeners();
-            drawAnnotations();
-          });
-          view.addEventListener("relocate", (event: Event) => {
-            // Only the run that owns the live view may save progress for its file;
-            // a superseded view firing late relocates must not overwrite it.
-            if (!initializedRef.current || viewRef.current !== view) return;
-            const progress = progressFromRelocate(
-              (event as CustomEvent<RelocateDetail>).detail,
-              file.file_id,
-            );
-            if (progress) {
-              onProgressChange?.(progress.progress);
-              scheduleProgressSave(progress);
-            }
-          });
-          await view.open(book);
-          if (cancelled) {
-            disposeOpenArtifacts();
-            return;
-          }
-          onReady?.({ toc: book.toc ?? [] });
-          applyReaderSettings(settingsRef.current);
+        });
+        view.addEventListener("create-overlay", () => {
           attachSelectionListeners();
           drawAnnotations();
-          const savedFileProgress = savedProgress?.file_id === file.file_id ? savedProgress : null;
-          const restoreTarget = restoreProgressTarget(savedFileProgress);
-          if (savedFileProgress && restoreTarget?.type === "location") {
-            onProgressChange?.(savedFileProgress.progress);
-            await view.init({ lastLocation: restoreTarget.location });
-          } else if (savedFileProgress && restoreTarget?.type === "fraction") {
-            onProgressChange?.(savedFileProgress.progress);
-            await view.goToFraction(restoreTarget.fraction);
-          } else {
-            await view.goToFraction(0);
+        });
+        view.addEventListener("relocate", (event: Event) => {
+          // Only the run that owns the live view may save progress for its file;
+          // a superseded view firing late relocates must not overwrite it.
+          if (!initializedRef.current || viewRef.current !== view) return;
+          const progress = progressFromRelocate(
+            (event as CustomEvent<RelocateDetail>).detail,
+            file.file_id,
+          );
+          if (progress) {
+            onProgressChange?.(progress.progress);
+            scheduleProgressSave(progress);
           }
-          if (cancelled) {
-            disposeOpenArtifacts();
-            return;
-          }
-          initializedRef.current = true;
-          setLoading(false);
-        } catch (err) {
-          if (cancelled) {
-            disposeOpenArtifacts();
-            return;
-          }
-          setError(err instanceof Error ? err.message : "Unable to open ebook");
-          setLoading(false);
+        });
+        await view.open(book);
+        if (cancelled) {
+          disposeOpenArtifacts();
+          return;
         }
+        onReady?.({ toc: book.toc ?? [] });
+        applyReaderSettings(settingsRef.current);
+        attachSelectionListeners();
+        drawAnnotations();
+        const savedFileProgress =
+          savedProgress?.file_id === file.file_id ? savedProgress : null;
+        const restoreTarget = restoreProgressTarget(savedFileProgress);
+        if (savedFileProgress && restoreTarget?.type === "location") {
+          onProgressChange?.(savedFileProgress.progress);
+          await view.init({ lastLocation: restoreTarget.location });
+        } else if (savedFileProgress && restoreTarget?.type === "fraction") {
+          onProgressChange?.(savedFileProgress.progress);
+          await view.goToFraction(restoreTarget.fraction);
+        } else {
+          await view.goToFraction(0);
+        }
+        if (cancelled) {
+          disposeOpenArtifacts();
+          return;
+        }
+        initializedRef.current = true;
+        setLoading(false);
+      } catch (err) {
+        if (cancelled) {
+          disposeOpenArtifacts();
+          return;
+        }
+        setError(err instanceof Error ? err.message : "Unable to open ebook");
+        setLoading(false);
       }
+    }
 
-      void open();
-      const drawnCfis = drawnCfisRef.current;
-      document.addEventListener("visibilitychange", flushProgressOnVisibilityChange);
-      window.addEventListener("pagehide", flushProgressOnPageHide);
-      return () => {
-        cancelled = true;
-        initializedRef.current = false;
-        document.removeEventListener("visibilitychange", flushProgressOnVisibilityChange);
-        window.removeEventListener("pagehide", flushProgressOnPageHide);
-        if (saveTimerRef.current !== null) {
-          window.clearTimeout(saveTimerRef.current);
-          saveTimerRef.current = null;
-        }
-        flushProgress();
-        disposeOpenArtifacts();
-        appliedRendererKeyRef.current = "";
-        for (const cleanup of selectionCleanupRef.current) cleanup();
-        selectionCleanupRef.current = [];
-        drawnCfis.clear();
-        onFileLoaded?.(null);
-        onProgressChange?.(null);
-      };
-    }, [
-      applyReaderSettings,
-      attachSelectionListeners,
-      contentID,
-      drawAnnotations,
-      file,
-      onFileLoaded,
-      onProgressChange,
-      onReady,
-      queryClient,
-      title,
-    ]);
-
-    return (
-      <div className="relative h-full w-full overflow-hidden bg-white text-neutral-950">
-        <div ref={containerRef} className="h-full w-full" />
-        {loading && !error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white text-sm text-neutral-500">
-            Loading reader...
-          </div>
-        )}
-        {error && (
-          <div className="absolute inset-0 flex items-center justify-center bg-white p-6 text-center text-sm text-red-600">
-            {error}
-          </div>
-        )}
-      </div>
+    void open();
+    const drawnCfis = drawnCfisRef.current;
+    document.addEventListener(
+      "visibilitychange",
+      flushProgressOnVisibilityChange,
     );
-  },
-);
+    window.addEventListener("pagehide", flushProgressOnPageHide);
+    return () => {
+      cancelled = true;
+      initializedRef.current = false;
+      document.removeEventListener(
+        "visibilitychange",
+        flushProgressOnVisibilityChange,
+      );
+      window.removeEventListener("pagehide", flushProgressOnPageHide);
+      if (saveTimerRef.current !== null) {
+        window.clearTimeout(saveTimerRef.current);
+        saveTimerRef.current = null;
+      }
+      flushProgress();
+      disposeOpenArtifacts();
+      appliedRendererKeyRef.current = "";
+      for (const cleanup of selectionCleanupRef.current) cleanup();
+      selectionCleanupRef.current = [];
+      drawnCfis.clear();
+      onFileLoaded?.(null);
+      onProgressChange?.(null);
+    };
+  }, [
+    applyReaderSettings,
+    attachSelectionListeners,
+    contentID,
+    drawAnnotations,
+    file,
+    onFileLoaded,
+    onProgressChange,
+    onReady,
+    queryClient,
+    title,
+  ]);
+
+  return (
+    <div className="relative h-full w-full overflow-hidden bg-white text-neutral-950">
+      <div ref={containerRef} className="h-full w-full" />
+      {loading && !error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white text-sm text-neutral-500">
+          Loading reader...
+        </div>
+      )}
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-white p-6 text-center text-sm text-red-600">
+          {error}
+        </div>
+      )}
+    </div>
+  );
+});
 
 export default FoliateBookReader;

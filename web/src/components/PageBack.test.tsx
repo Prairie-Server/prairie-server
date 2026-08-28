@@ -8,7 +8,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-router", async () => {
-  const actual = await vi.importActual<typeof import("react-router")>("react-router");
+  const actual =
+    await vi.importActual<typeof import("react-router")>("react-router");
   return {
     ...actual,
     useNavigate: () => mocks.navigate,
@@ -40,7 +41,9 @@ describe("PageBack", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("button", { name: "Return to library" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Return to library" }),
+    ).toBeInTheDocument();
   });
 
   it("falls back to the default route when there is no router history", async () => {

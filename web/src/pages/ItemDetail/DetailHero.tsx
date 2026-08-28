@@ -1,5 +1,7 @@
 import { type ReactNode } from "react";
 import { Languages } from "lucide-react";
+import { ArtworkImage } from "@/components/ArtworkImage";
+import { POSTER_WIDTHS } from "@/lib/artworkUrl";
 import { decodeThumbhash } from "@/lib/thumbhash";
 import { useImageLoaded } from "@/hooks/useImageLoaded";
 
@@ -63,10 +65,16 @@ export default function DetailHero({
   variant = "full",
   topNav,
 }: DetailHeroProps) {
-  const { loaded: backdropLoaded, onLoad: onBackdropLoad } = useImageLoaded(backdropUrl);
-  const { loaded: posterLoaded, onLoad: onPosterLoad } = useImageLoaded(posterUrl);
-  const backdropPlaceholder = backdropThumbhash ? decodeThumbhash(backdropThumbhash) : "";
-  const posterPlaceholder = posterThumbhash ? decodeThumbhash(posterThumbhash) : "";
+  const { loaded: backdropLoaded, onLoad: onBackdropLoad } =
+    useImageLoaded(backdropUrl);
+  const { loaded: posterLoaded, onLoad: onPosterLoad } =
+    useImageLoaded(posterUrl);
+  const backdropPlaceholder = backdropThumbhash
+    ? decodeThumbhash(backdropThumbhash)
+    : "";
+  const posterPlaceholder = posterThumbhash
+    ? decodeThumbhash(posterThumbhash)
+    : "";
   const isCompact = variant === "compact";
 
   const posterSizeClass = (() => {
@@ -147,10 +155,14 @@ export default function DetailHero({
       >
         <div
           className={`grid gap-8 ${
-            !isCompact && aside ? "lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end" : ""
+            !isCompact && aside
+              ? "lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end"
+              : ""
           }`}
         >
-          <div className={`flex flex-col gap-6 ${!hidePoster ? "lg:flex-row lg:items-end" : ""}`}>
+          <div
+            className={`flex flex-col gap-6 ${!hidePoster ? "lg:flex-row lg:items-end" : ""}`}
+          >
             {/* Poster */}
             {!hidePoster && (
               <div
@@ -158,11 +170,13 @@ export default function DetailHero({
               >
                 {posterUrl ? (
                   <>
-                    <img
+                    <ArtworkImage
                       key={posterUrl}
                       src={posterUrl}
                       alt={title}
-                      className={`w-full object-cover ${posterAspect} ${posterLoaded ? "opacity-100" : "opacity-0"}`}
+                      widths={POSTER_WIDTHS}
+                      sizes="(max-width: 1024px) 40vw, 220px"
+                      className={`w-full object-cover ${posterAspect} transition-opacity duration-300 ${posterLoaded ? "opacity-100" : "opacity-0"}`}
                       onLoad={onPosterLoad}
                     />
                     <span
@@ -192,10 +206,15 @@ export default function DetailHero({
             {/* Info column */}
             <div
               className="max-w-3xl"
-              style={{ textShadow: "var(--hero-text-shadow, 0 1px 3px rgb(0 0 0 / 40%))" }}
+              style={{
+                textShadow:
+                  "var(--hero-text-shadow, 0 1px 3px rgb(0 0 0 / 40%))",
+              }}
             >
               {context && (
-                <div className="text-muted-foreground mb-4 text-sm font-medium">{context}</div>
+                <div className="text-muted-foreground mb-4 text-sm font-medium">
+                  {context}
+                </div>
               )}
 
               {studioLabel && (
@@ -246,7 +265,9 @@ export default function DetailHero({
                 <div className="max-w-2xl">
                   <p
                     className={`text-muted-foreground leading-7 ${
-                      isCompact ? "text-sm" : "text-foreground/72 text-sm sm:text-[15px]"
+                      isCompact
+                        ? "text-sm"
+                        : "text-foreground/72 text-sm sm:text-[15px]"
                     } ${overviewTranslating ? "animate-pulse opacity-50" : ""}`}
                   >
                     {overview}
@@ -301,7 +322,9 @@ export default function DetailHero({
             </div>
           </div>
 
-          {!isCompact && aside && <div className="lg:justify-self-end">{aside}</div>}
+          {!isCompact && aside && (
+            <div className="lg:justify-self-end">{aside}</div>
+          )}
         </div>
       </div>
     </section>

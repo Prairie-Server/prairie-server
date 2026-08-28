@@ -39,7 +39,8 @@ export default function AdminLogs() {
   const method = searchParams.get("method") ?? "";
   const clientIP = searchParams.get("client_ip") ?? "";
   const playbackSessionID = searchParams.get("playback_session_id") ?? "";
-  const [selectedEntry, setSelectedEntry] = useState<OperationalLogEntry | null>(null);
+  const [selectedEntry, setSelectedEntry] =
+    useState<OperationalLogEntry | null>(null);
 
   function updateSearchParam(key: string, value: string) {
     const next = new URLSearchParams(searchParams);
@@ -80,16 +81,21 @@ export default function AdminLogs() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Logs</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Search application logs and request audit trails without leaving the admin UI.
+            Search application logs and request audit trails without leaving the
+            admin UI.
           </p>
         </div>
         <div className="text-right">
           <div className="text-muted-foreground text-xs font-medium tracking-[0.2em] uppercase">
             Stream
           </div>
-          <div className="text-sm">{formatConnectionState(activeStream.connectionState)}</div>
+          <div className="text-sm">
+            {formatConnectionState(activeStream.connectionState)}
+          </div>
           {activeStream.error && (
-            <div className="text-muted-foreground text-xs">{activeStream.error}</div>
+            <div className="text-muted-foreground text-xs">
+              {activeStream.error}
+            </div>
           )}
           {activeStream.connectionState === "disconnected" && (
             <Button
@@ -110,7 +116,9 @@ export default function AdminLogs() {
           <Input
             placeholder="Playback Session ID"
             value={playbackSessionID}
-            onChange={(e) => updateSearchParam("playback_session_id", e.target.value)}
+            onChange={(e) =>
+              updateSearchParam("playback_session_id", e.target.value)
+            }
             className="max-w-md font-mono text-xs"
           />
           {playbackSessionID && (
@@ -128,13 +136,20 @@ export default function AdminLogs() {
           auditRows={auditLogs.rows}
           component={component}
           onFilterFFmpeg={() =>
-            updateSearchParam("component", component === "ffmpeg" ? "" : "ffmpeg")
+            updateSearchParam(
+              "component",
+              component === "ffmpeg" ? "" : "ffmpeg",
+            )
           }
         />
       )}
 
       <Tabs
-        value={playbackFocused && playbackSessionID && tabParam !== "audit" ? "app" : tab}
+        value={
+          playbackFocused && playbackSessionID && tabParam !== "audit"
+            ? "app"
+            : tab
+        }
         onValueChange={(value) => updateSearchParam("tab", value)}
       >
         <TabsList>
@@ -171,10 +186,15 @@ export default function AdminLogs() {
                     : "border-border bg-background text-muted-foreground"
                 }`}
                 onClick={() =>
-                  updateSearchParam("component", component === "ffmpeg" ? "" : "ffmpeg")
+                  updateSearchParam(
+                    "component",
+                    component === "ffmpeg" ? "" : "ffmpeg",
+                  )
                 }
               >
-                {component === "ffmpeg" ? "Showing ffmpeg only" : "Filter ffmpeg"}
+                {component === "ffmpeg"
+                  ? "Showing ffmpeg only"
+                  : "Filter ffmpeg"}
               </button>
             )}
           </div>
@@ -203,7 +223,8 @@ export default function AdminLogs() {
           />
           {appLogs.nextCursor && (
             <p className="text-muted-foreground text-xs">
-              More rows available. Phase 1 keeps cursor pagination server-side only.
+              More rows available. Phase 1 keeps cursor pagination server-side
+              only.
             </p>
           )}
         </TabsContent>
@@ -233,7 +254,9 @@ export default function AdminLogs() {
             rows={auditLogs.rows}
             isLoading={auditLogs.isConnecting && auditLogs.rows.length === 0}
             empty="No audit logs matched the current filters."
-            renderRow={(entry) => <AuditLogRow entry={entry} key={`audit-${entry.id}`} />}
+            renderRow={(entry) => (
+              <AuditLogRow entry={entry} key={`audit-${entry.id}`} />
+            )}
             header={
               <TableRow>
                 <TableHead>Time</TableHead>
@@ -250,42 +273,73 @@ export default function AdminLogs() {
           />
           {auditLogs.nextCursor && (
             <p className="text-muted-foreground text-xs">
-              More rows available. Add cursor paging in a follow-up UI pass if needed.
+              More rows available. Add cursor paging in a follow-up UI pass if
+              needed.
             </p>
           )}
         </TabsContent>
       </Tabs>
 
-      <Sheet open={selectedEntry !== null} onOpenChange={(open) => !open && setSelectedEntry(null)}>
+      <Sheet
+        open={selectedEntry !== null}
+        onOpenChange={(open) => !open && setSelectedEntry(null)}
+      >
         <SheetContent className="w-full sm:max-w-2xl">
           {selectedEntry && (
             <>
               <SheetHeader>
                 <SheetTitle>{selectedEntry.message}</SheetTitle>
                 <SheetDescription>
-                  {selectedEntry.component} · {selectedEntry.level.toUpperCase()} ·{" "}
+                  {selectedEntry.component} ·{" "}
+                  {selectedEntry.level.toUpperCase()} ·{" "}
                   {formatDateTime(selectedEntry.timestamp)}
                 </SheetDescription>
               </SheetHeader>
               <div className="space-y-4 overflow-y-auto px-4 pb-6">
                 <div className="grid grid-cols-2 gap-3 text-sm">
-                  <DetailField label="Request ID" value={selectedEntry.request_id || "-"} mono />
-                  <DetailField label="Node" value={selectedEntry.node_id || "-"} />
-                  <DetailField label="Method" value={stringAttr(selectedEntry, "method")} />
-                  <DetailField label="Status" value={stringAttr(selectedEntry, "status")} />
-                  <DetailField label="Duration" value={durationAttr(selectedEntry)} />
+                  <DetailField
+                    label="Request ID"
+                    value={selectedEntry.request_id || "-"}
+                    mono
+                  />
+                  <DetailField
+                    label="Node"
+                    value={selectedEntry.node_id || "-"}
+                  />
+                  <DetailField
+                    label="Method"
+                    value={stringAttr(selectedEntry, "method")}
+                  />
+                  <DetailField
+                    label="Status"
+                    value={stringAttr(selectedEntry, "status")}
+                  />
+                  <DetailField
+                    label="Duration"
+                    value={durationAttr(selectedEntry)}
+                  />
                   <DetailField
                     label="Client IP"
-                    value={selectedEntry.client_ip || stringAttr(selectedEntry, "client_ip")}
+                    value={
+                      selectedEntry.client_ip ||
+                      stringAttr(selectedEntry, "client_ip")
+                    }
                     mono
                   />
                   <DetailField
                     label="User ID"
-                    value={selectedEntry.user_id ? String(selectedEntry.user_id) : "-"}
+                    value={
+                      selectedEntry.user_id
+                        ? String(selectedEntry.user_id)
+                        : "-"
+                    }
                   />
                   <DetailField
                     label="Session ID"
-                    value={selectedEntry.session_id || stringAttr(selectedEntry, "session_id")}
+                    value={
+                      selectedEntry.session_id ||
+                      stringAttr(selectedEntry, "session_id")
+                    }
                     mono
                   />
                   <DetailField
@@ -306,7 +360,10 @@ export default function AdminLogs() {
                       const value =
                         selectedEntry.playback_session_id ||
                         stringAttr(selectedEntry, "playback_session_id");
-                      updateSearchParam("playback_session_id", value === "-" ? "" : value);
+                      updateSearchParam(
+                        "playback_session_id",
+                        value === "-" ? "" : value,
+                      );
                       setSelectedEntry(null);
                     }}
                   >
@@ -347,8 +404,12 @@ function LogTable<T>({
   header: ReactNode;
   renderRow: (row: T) => ReactNode;
 }) {
-  if (isLoading) return <div className="text-muted-foreground py-8 text-sm">Loading logs...</div>;
-  if (rows.length === 0) return <div className="text-muted-foreground py-8 text-sm">{empty}</div>;
+  if (isLoading)
+    return (
+      <div className="text-muted-foreground py-8 text-sm">Loading logs...</div>
+    );
+  if (rows.length === 0)
+    return <div className="text-muted-foreground py-8 text-sm">{empty}</div>;
 
   return (
     <Table>
@@ -373,7 +434,9 @@ const OperationalLogRow = memo(function OperationalLogRow({
       className={`cursor-pointer ${highlight ? "bg-primary/5" : ""}`}
       onClick={() => onSelectEntry(entry)}
     >
-      <TableCell className="whitespace-nowrap">{formatDateTime(entry.timestamp)}</TableCell>
+      <TableCell className="whitespace-nowrap">
+        {formatDateTime(entry.timestamp)}
+      </TableCell>
       <TableCell className="uppercase">{entry.level}</TableCell>
       <TableCell>{entry.component}</TableCell>
       <TableCell>{stringAttr(entry, "status")}</TableCell>
@@ -387,23 +450,40 @@ const OperationalLogRow = memo(function OperationalLogRow({
   );
 });
 
-const AuditLogRow = memo(function AuditLogRow({ entry }: { entry: AuditLogEntry }) {
+const AuditLogRow = memo(function AuditLogRow({
+  entry,
+}: {
+  entry: AuditLogEntry;
+}) {
   useDateTimeFormat();
   return (
     <TableRow>
-      <TableCell className="whitespace-nowrap">{formatDateTime(entry.timestamp)}</TableCell>
+      <TableCell className="whitespace-nowrap">
+        {formatDateTime(entry.timestamp)}
+      </TableCell>
       <TableCell>{entry.method}</TableCell>
       <TableCell>
-        <div className="max-w-[420px] truncate font-mono text-xs" title={entry.path}>
+        <div
+          className="max-w-[420px] truncate font-mono text-xs"
+          title={entry.path}
+        >
           {entry.path}
         </div>
       </TableCell>
       <TableCell>{entry.status_code}</TableCell>
-      <TableCell className="font-mono text-xs">{formatClientIP(entry.client_ip)}</TableCell>
+      <TableCell className="font-mono text-xs">
+        {formatClientIP(entry.client_ip)}
+      </TableCell>
       <TableCell>{entry.user_id ? `#${entry.user_id}` : "-"}</TableCell>
-      <TableCell className="font-mono text-xs">{entry.session_id || "-"}</TableCell>
-      <TableCell className="font-mono text-xs">{entry.playback_session_id || "-"}</TableCell>
-      <TableCell className="font-mono text-xs">{entry.request_id || "-"}</TableCell>
+      <TableCell className="font-mono text-xs">
+        {entry.session_id || "-"}
+      </TableCell>
+      <TableCell className="font-mono text-xs">
+        {entry.playback_session_id || "-"}
+      </TableCell>
+      <TableCell className="font-mono text-xs">
+        {entry.request_id || "-"}
+      </TableCell>
     </TableRow>
   );
 });
@@ -421,42 +501,57 @@ function PlaybackSessionSummary({
   component: string;
   onFilterFFmpeg: () => void;
 }) {
-  const { appCount, ffmpegCount, auditCount, firstSeen, lastSeen, nodes } = useMemo(() => {
-    const matchingAppRows = appRows.filter((row) => matchesPlaybackSession(row, playbackSessionID));
-    const matchingAuditRows = auditRows.filter((row) =>
-      matchesPlaybackSession(row, playbackSessionID),
-    );
-    const timestamps = [...matchingAppRows, ...matchingAuditRows]
-      .map((row) => row.timestamp)
-      .sort();
+  const { appCount, ffmpegCount, auditCount, firstSeen, lastSeen, nodes } =
+    useMemo(() => {
+      const matchingAppRows = appRows.filter((row) =>
+        matchesPlaybackSession(row, playbackSessionID),
+      );
+      const matchingAuditRows = auditRows.filter((row) =>
+        matchesPlaybackSession(row, playbackSessionID),
+      );
+      const timestamps = [...matchingAppRows, ...matchingAuditRows]
+        .map((row) => row.timestamp)
+        .sort();
 
-    return {
-      appCount: matchingAppRows.length,
-      ffmpegCount: matchingAppRows.filter((row) => row.component === "ffmpeg").length,
-      auditCount: matchingAuditRows.length,
-      firstSeen: timestamps[0],
-      lastSeen: timestamps[timestamps.length - 1],
-      nodes: new Set(
-        [...matchingAppRows, ...matchingAuditRows].map((row) => row.node_id).filter(Boolean),
-      ),
-    };
-  }, [appRows, auditRows, playbackSessionID]);
+      return {
+        appCount: matchingAppRows.length,
+        ffmpegCount: matchingAppRows.filter((row) => row.component === "ffmpeg")
+          .length,
+        auditCount: matchingAuditRows.length,
+        firstSeen: timestamps[0],
+        lastSeen: timestamps[timestamps.length - 1],
+        nodes: new Set(
+          [...matchingAppRows, ...matchingAuditRows]
+            .map((row) => row.node_id)
+            .filter(Boolean),
+        ),
+      };
+    }, [appRows, auditRows, playbackSessionID]);
 
   return (
     <div className="bg-card border-border rounded-lg border p-4 text-sm">
       <div className="mb-4 flex flex-wrap items-start justify-between gap-3">
         <div className="flex flex-wrap gap-3 md:grid md:flex-1 md:grid-cols-6">
-          <SummaryMetric label="Playback Session" value={shortID(playbackSessionID)} mono />
+          <SummaryMetric
+            label="Playback Session"
+            value={shortID(playbackSessionID)}
+            mono
+          />
           <SummaryMetric label="Application Logs" value={String(appCount)} />
           <SummaryMetric label="FFmpeg Logs" value={String(ffmpegCount)} />
           <SummaryMetric label="Audit Logs" value={String(auditCount)} />
-          <SummaryMetric label="First Seen" value={firstSeen ? formatDateTime(firstSeen) : "-"} />
+          <SummaryMetric
+            label="First Seen"
+            value={firstSeen ? formatDateTime(firstSeen) : "-"}
+          />
           <SummaryMetric
             label="Nodes Seen"
             value={nodes.size > 0 ? Array.from(nodes).join(", ") : "-"}
             mono={nodes.size > 0}
           />
-          {lastSeen && <SummaryMetric label="Last Seen" value={formatDateTime(lastSeen)} />}
+          {lastSeen && (
+            <SummaryMetric label="Last Seen" value={formatDateTime(lastSeen)} />
+          )}
         </div>
         <div className="flex items-center gap-2">
           <button
@@ -468,7 +563,9 @@ function PlaybackSessionSummary({
                 : "border-border bg-background text-muted-foreground"
             }`}
           >
-            {component === "ffmpeg" ? "Showing ffmpeg only" : "Open ffmpeg logs"}
+            {component === "ffmpeg"
+              ? "Showing ffmpeg only"
+              : "Open ffmpeg logs"}
           </button>
         </div>
       </div>
@@ -488,7 +585,9 @@ function SummaryMetric({
   return (
     <div>
       <div className="text-muted-foreground mb-1 text-xs">{label}</div>
-      <div className={mono ? "font-mono text-xs break-all" : "text-sm"}>{value}</div>
+      <div className={mono ? "font-mono text-xs break-all" : "text-sm"}>
+        {value}
+      </div>
     </div>
   );
 }
@@ -554,7 +653,9 @@ function DetailField({
   return (
     <div>
       <div className="text-muted-foreground mb-1 text-xs">{label}</div>
-      <div className={mono ? "font-mono text-xs break-all" : "text-sm"}>{value}</div>
+      <div className={mono ? "font-mono text-xs break-all" : "text-sm"}>
+        {value}
+      </div>
     </div>
   );
 }

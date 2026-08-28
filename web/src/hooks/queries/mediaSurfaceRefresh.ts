@@ -70,13 +70,20 @@ export function updateCatalogItemDetail(
 // `revert: true` restores the pre-fetch snapshot and leaves the query idle;
 // `revert: false` would instead put an in-flight query into an error state
 // carrying a CancelledError, which surfaces as a bogus "CancelledError" toast.
-export function cancelItemDetailQueries(queryClient: QueryClient, itemId: string) {
+export function cancelItemDetailQueries(
+  queryClient: QueryClient,
+  itemId: string,
+) {
   return queryClient.cancelQueries({
     predicate: (query) => isItemDetailQueryKey(query.queryKey, itemId),
   });
 }
 
-export function setCachedItemDetail(queryClient: QueryClient, itemId: string, detail: ItemDetail) {
+export function setCachedItemDetail(
+  queryClient: QueryClient,
+  itemId: string,
+  detail: ItemDetail,
+) {
   queryClient.setQueriesData<ItemDetail>(
     {
       predicate: (query) => isItemDetailQueryKey(query.queryKey, itemId),
@@ -105,7 +112,9 @@ export function removeItemFromHomeSectionCaches(
       if (sectionType && current.section.section_type !== sectionType) {
         return current;
       }
-      const nextItems = current.section.items.filter((item) => item.content_id !== itemId);
+      const nextItems = current.section.items.filter(
+        (item) => item.content_id !== itemId,
+      );
       if (nextItems.length === current.section.items.length) {
         return current;
       }
@@ -115,7 +124,8 @@ export function removeItemFromHomeSectionCaches(
           ...current.section,
           total_count: Math.max(
             0,
-            current.section.total_count - (current.section.items.length - nextItems.length),
+            current.section.total_count -
+              (current.section.items.length - nextItems.length),
           ),
           items: nextItems,
         },
@@ -131,11 +141,16 @@ export function isItemDetailQueryKey(queryKey: unknown, itemId: string) {
       queryKey[1] === "items" &&
       queryKey[2] === itemId &&
       queryKey[3] === "detail") ||
-      (queryKey[0] === "items" && queryKey[1] === "detail" && queryKey[2] === itemId))
+      (queryKey[0] === "items" &&
+        queryKey[1] === "detail" &&
+        queryKey[2] === itemId))
   );
 }
 
-function queryKeyStartsWith(queryKey: readonly unknown[], prefix: readonly unknown[]) {
+function queryKeyStartsWith(
+  queryKey: readonly unknown[],
+  prefix: readonly unknown[],
+) {
   return (
     prefix.length <= queryKey.length &&
     prefix.every((part, index) => {
@@ -158,7 +173,11 @@ function shouldInvalidateMediaSurfaceQuery(
   queryKey: readonly unknown[],
   options: InvalidateMediaSurfaceOptions,
 ) {
-  if (options.skipItemDetail && options.itemId && isItemDetailQueryKey(queryKey, options.itemId)) {
+  if (
+    options.skipItemDetail &&
+    options.itemId &&
+    isItemDetailQueryKey(queryKey, options.itemId)
+  ) {
     return false;
   }
 
@@ -175,11 +194,17 @@ function shouldInvalidateMediaSurfaceQuery(
     return options.libraryId === undefined || queryKey[2] === options.libraryId;
   }
 
-  if (MEDIA_SURFACE_PREFIXES.some((prefix) => queryKeyStartsWith(queryKey, prefix))) {
+  if (
+    MEDIA_SURFACE_PREFIXES.some((prefix) =>
+      queryKeyStartsWith(queryKey, prefix),
+    )
+  ) {
     return true;
   }
 
-  return (options.watchedKeys ?? []).some((key) => queryKeyStartsWith(queryKey, key));
+  return (options.watchedKeys ?? []).some((key) =>
+    queryKeyStartsWith(queryKey, key),
+  );
 }
 
 export async function invalidateMediaSurfaceQueries(
@@ -191,7 +216,8 @@ export async function invalidateMediaSurfaceQueries(
   // that predates the mutation satisfy the invalidation and land in the cache
   // as fresh.
   await queryClient.invalidateQueries({
-    predicate: (query) => shouldInvalidateMediaSurfaceQuery(query.queryKey, options),
+    predicate: (query) =>
+      shouldInvalidateMediaSurfaceQuery(query.queryKey, options),
   });
 }
 
@@ -220,10 +246,14 @@ export function scheduleMediaSurfaceInvalidation(
     skipSimilarItems: existing
       ? Boolean(existing.options.skipSimilarItems && options.skipSimilarItems)
       : options.skipSimilarItems,
-    watchedKeys: [...(existing?.options.watchedKeys ?? []), ...(options.watchedKeys ?? [])],
+    watchedKeys: [
+      ...(existing?.options.watchedKeys ?? []),
+      ...(options.watchedKeys ?? []),
+    ],
   };
   const now = Date.now();
-  const deadline = existing?.deadline ?? now + MEDIA_SURFACE_REFRESH_MAX_WAIT_MS;
+  const deadline =
+    existing?.deadline ?? now + MEDIA_SURFACE_REFRESH_MAX_WAIT_MS;
   const timer = setTimeout(
     () => {
       clientInvalidations?.delete(key);

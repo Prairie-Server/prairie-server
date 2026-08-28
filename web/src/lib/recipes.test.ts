@@ -11,7 +11,9 @@ describe("recipes API client", () => {
       ok: true,
       status: 200,
       text: async () =>
-        JSON.stringify({ categories: { library_staples: [{ type: "recently_added" }] } }),
+        JSON.stringify({
+          categories: { library_staples: [{ type: "recently_added" }] },
+        }),
     } as Response);
 
     const res = await fetchRecipeCatalog();
@@ -36,7 +38,8 @@ describe("recipes API client", () => {
     vi.spyOn(globalThis, "fetch").mockResolvedValue({
       ok: true,
       status: 200,
-      text: async () => JSON.stringify({ items: [{ content_id: "x" }], total_count: 1 }),
+      text: async () =>
+        JSON.stringify({ items: [{ content_id: "x" }], total_count: 1 }),
     } as Response);
 
     const res = await previewSection({

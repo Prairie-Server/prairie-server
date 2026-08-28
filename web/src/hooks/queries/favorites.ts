@@ -12,7 +12,8 @@ import {
 export function useFavorites() {
   return useQuery({
     queryKey: favoriteKeys.list(),
-    queryFn: () => api<{ items: BrowseItem[] }>("/favorites").then((d) => d.items ?? []),
+    queryFn: () =>
+      api<{ items: BrowseItem[] }>("/favorites").then((d) => d.items ?? []),
   });
 }
 
@@ -29,7 +30,8 @@ export function useToggleFavorite(itemId: string) {
       updateCatalogItemDetail(queryClient, itemId, (detail) => ({
         ...detail,
         user_state: {
-          played: detail.user_state?.played ?? detail.user_data?.played ?? false,
+          played:
+            detail.user_state?.played ?? detail.user_data?.played ?? false,
           is_favorite: !currentlyFavorite,
           in_watchlist: detail.user_state?.in_watchlist ?? false,
         },
@@ -41,7 +43,8 @@ export function useToggleFavorite(itemId: string) {
       updateCatalogItemDetail(queryClient, itemId, (detail) => ({
         ...detail,
         user_state: {
-          played: detail.user_state?.played ?? detail.user_data?.played ?? false,
+          played:
+            detail.user_state?.played ?? detail.user_data?.played ?? false,
           is_favorite: currentlyFavorite,
           in_watchlist: detail.user_state?.in_watchlist ?? false,
         },
@@ -49,7 +52,9 @@ export function useToggleFavorite(itemId: string) {
       toast.error("Failed to update favorites");
     },
     onSuccess: (_data, currentlyFavorite) => {
-      toast.success(currentlyFavorite ? "Removed from favorites" : "Added to favorites");
+      toast.success(
+        currentlyFavorite ? "Removed from favorites" : "Added to favorites",
+      );
     },
     onSettled: () => {
       scheduleMediaSurfaceInvalidation(queryClient, {

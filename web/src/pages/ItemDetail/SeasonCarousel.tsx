@@ -11,8 +11,11 @@ interface SeasonCarouselProps {
 }
 
 export default function SeasonCarousel({ seasons }: SeasonCarouselProps) {
-  const sorted = seasons.slice().sort((a, b) => a.season_number - b.season_number);
-  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } = useCarouselEmbla();
+  const sorted = seasons
+    .slice()
+    .sort((a, b) => a.season_number - b.season_number);
+  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
+    useCarouselEmbla();
   const prefetchSeason = usePrefetchCatalogSeason();
 
   if (sorted.length === 0) {
@@ -23,7 +26,9 @@ export default function SeasonCarousel({ seasons }: SeasonCarouselProps) {
     <section className="group/carousel">
       <div className="mb-5 flex items-end justify-between gap-4">
         <h2 className="text-xl font-semibold">Seasons</h2>
-        <span className="text-muted-foreground text-sm">{sorted.length} total</span>
+        <span className="text-muted-foreground text-sm">
+          {sorted.length} total
+        </span>
       </div>
 
       <div className="relative">
@@ -38,8 +43,14 @@ export default function SeasonCarousel({ seasons }: SeasonCarouselProps) {
           </button>
         )}
 
-        <div ref={emblaRef} className="embla__viewport -mt-1 overflow-hidden pt-1 pb-5">
-          <ul role="list" className="embla__container flex cursor-grab list-none gap-4">
+        <div
+          ref={emblaRef}
+          className="embla__viewport -mt-1 overflow-hidden pt-1 pb-5"
+        >
+          <ul
+            role="list"
+            className="embla__container flex cursor-grab list-none gap-4"
+          >
             {sorted.map((season) => {
               const userData = season.user_data;
               const isCompleted = userData?.played === true;
@@ -49,7 +60,9 @@ export default function SeasonCarousel({ seasons }: SeasonCarouselProps) {
                 (userData.watched_count > 0 || userData.in_progress_count > 0);
               const progressPercent =
                 hasProgress && season.episode_count > 0
-                  ? Math.round((userData.watched_count / season.episode_count) * 100)
+                  ? Math.round(
+                      (userData.watched_count / season.episode_count) * 100,
+                    )
                   : 0;
 
               return (
@@ -93,8 +106,12 @@ export default function SeasonCarousel({ seasons }: SeasonCarouselProps) {
                             <div
                               className="h-full rounded-full transition-all duration-300"
                               style={{
-                                width: isCompleted ? "100%" : `${progressPercent}%`,
-                                background: isCompleted ? "#4caf50" : "var(--primary)",
+                                width: isCompleted
+                                  ? "100%"
+                                  : `${progressPercent}%`,
+                                background: isCompleted
+                                  ? "#4caf50"
+                                  : "var(--primary)",
                               }}
                             />
                           </div>
@@ -110,7 +127,10 @@ export default function SeasonCarousel({ seasons }: SeasonCarouselProps) {
                     </div>
 
                     {/* Info — always the same height */}
-                    <Link to={`/item/${season.content_id}`} className="block px-0.5 pt-2.5">
+                    <Link
+                      to={`/item/${season.content_id}`}
+                      className="block px-0.5 pt-2.5"
+                    >
                       <div className="truncate text-[13px] font-semibold">
                         {getSeasonDisplayTitle(season)}
                       </div>

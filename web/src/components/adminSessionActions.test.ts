@@ -38,6 +38,9 @@ describe("getPrimaryPlaybackAction", () => {
   });
 
   it("returns pause for active sessions", () => {
-    expect(getPrimaryPlaybackAction(baseSession)).toEqual({ action: "pause", label: "Pause" });
+    expect(getPrimaryPlaybackAction(baseSession)).toEqual({
+      action: "pause",
+      label: "Pause",
+    });
   });
 });

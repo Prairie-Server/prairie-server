@@ -15,7 +15,11 @@ const stackVariants = {
   2: { scale: 0.9, y: 16, opacity: 0.4 },
 };
 
-const stackTransition = { type: "spring" as const, stiffness: 400, damping: 30 };
+const stackTransition = {
+  type: "spring" as const,
+  stiffness: 400,
+  damping: 30,
+};
 
 interface CardStackProps {
   cards: SwipeCardType[];
@@ -27,7 +31,10 @@ interface CardStackProps {
 }
 
 export function playTargetForSwipeCard(card: SwipeCardType) {
-  const href = buildMediaPlayHref({ contentId: card.content_id, type: card.type });
+  const href = buildMediaPlayHref({
+    contentId: card.content_id,
+    type: card.type,
+  });
   return {
     href,
     isVideo: isVideoWatchHref(href),
@@ -54,7 +61,12 @@ export default function CardStack({
   // Prefetch next page when 3 cards remain.
   useEffect(() => {
     const remaining = cards.length - topIndex;
-    if (remaining <= 3 && hasMore && !isFetching && !prefetchTriggered.current) {
+    if (
+      remaining <= 3 &&
+      hasMore &&
+      !isFetching &&
+      !prefetchTriggered.current
+    ) {
       prefetchTriggered.current = true;
       onNeedMore();
     }
@@ -80,7 +92,15 @@ export default function CardStack({
       contentId: card.content_id,
       returnHref: `${location.pathname}${location.search}`,
     });
-  }, [cards, topIndex, onClose, playbackController, location.pathname, location.search, navigate]);
+  }, [
+    cards,
+    topIndex,
+    onClose,
+    playbackController,
+    location.pathname,
+    location.search,
+    navigate,
+  ]);
 
   // Keyboard navigation.
   useEffect(() => {
@@ -169,7 +189,12 @@ export default function CardStack({
                 }}
                 transition={stackTransition}
               >
-                <SwipeCard card={card} isTop={isTop} onAccept={handlePlay} onReject={advance} />
+                <SwipeCard
+                  card={card}
+                  isTop={isTop}
+                  onAccept={handlePlay}
+                  onReject={advance}
+                />
               </motion.div>
             );
           })}
@@ -182,7 +207,9 @@ export default function CardStack({
           onReject={advance}
           onAccept={handlePlay}
           onPlay={handlePlay}
-          playLabel={visibleCards[0]?.type === "audiobook" ? "Listen now" : "Play now"}
+          playLabel={
+            visibleCards[0]?.type === "audiobook" ? "Listen now" : "Play now"
+          }
         />
       )}
 

@@ -8,8 +8,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
+    "@tanstack/react-query",
+  );
   return {
     ...actual,
     useMutation: (...args: unknown[]) => mocks.useMutation(...args),
@@ -18,11 +19,13 @@ vi.mock("@tanstack/react-query", async () => {
 });
 
 vi.mock("./mediaSurfaceRefresh", async () => {
-  const actual =
-    await vi.importActual<typeof import("./mediaSurfaceRefresh")>("./mediaSurfaceRefresh");
+  const actual = await vi.importActual<typeof import("./mediaSurfaceRefresh")>(
+    "./mediaSurfaceRefresh",
+  );
   return {
     ...actual,
-    cancelItemDetailQueries: (...args: unknown[]) => mocks.cancelItemDetailQueries(...args),
+    cancelItemDetailQueries: (...args: unknown[]) =>
+      mocks.cancelItemDetailQueries(...args),
     updateCatalogItemDetail: vi.fn(),
   };
 });
@@ -57,9 +60,15 @@ describe("rating mutations", () => {
       await options.onMutate(value);
 
       const filters = mocks.getQueriesData.mock.calls[0]?.[0];
-      expect(filters.predicate({ queryKey: catalogKeys.itemDetail("item-1") })).toBe(true);
-      expect(filters.predicate({ queryKey: itemKeys.detail("item-1") })).toBe(true);
-      expect(filters.predicate({ queryKey: catalogKeys.itemDetail("item-2") })).toBe(false);
+      expect(
+        filters.predicate({ queryKey: catalogKeys.itemDetail("item-1") }),
+      ).toBe(true);
+      expect(filters.predicate({ queryKey: itemKeys.detail("item-1") })).toBe(
+        true,
+      );
+      expect(
+        filters.predicate({ queryKey: catalogKeys.itemDetail("item-2") }),
+      ).toBe(false);
     },
   );
 });

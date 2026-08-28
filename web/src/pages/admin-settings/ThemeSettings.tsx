@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { AlertTriangle, RotateCcw } from "lucide-react";
-import { useAdminServerSettings, useUpdateServerSetting } from "@/hooks/queries/admin/settings";
+import {
+  useAdminServerSettings,
+  useUpdateServerSetting,
+} from "@/hooks/queries/admin/settings";
 import { TokenEditor } from "@/components/theme/TokenEditor";
 import { RawCssEditor } from "@/components/theme/RawCssEditor";
 import { ThemePreviewCard } from "@/components/theme/ThemePreviewCard";
@@ -36,8 +39,12 @@ export default function ThemeSettings() {
   }, [settings]);
 
   // Debounce timers
-  const varsTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
-  const cssTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+  const varsTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
+  const cssTimerRef = useRef<ReturnType<typeof setTimeout> | undefined>(
+    undefined,
+  );
   const pendingVarsRef = useRef<ThemeVarOverrides | null>(null);
   const pendingCssRef = useRef<string | null>(null);
 
@@ -139,10 +146,12 @@ export default function ThemeSettings() {
       <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
         <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
         <div className="text-[13px] leading-relaxed">
-          <p className="font-medium text-amber-500">Server-wide theme customization</p>
+          <p className="font-medium text-amber-500">
+            Server-wide theme customization
+          </p>
           <p className="text-muted-foreground mt-1">
-            These overrides apply to all users as a base layer. Individual users can further
-            customize on top of these settings.
+            These overrides apply to all users as a base layer. Individual users
+            can further customize on top of these settings.
           </p>
         </div>
       </div>
@@ -168,7 +177,11 @@ export default function ThemeSettings() {
       {/* Token editor */}
       <div>
         <h4 className="mb-2 text-sm font-medium">Token Overrides</h4>
-        <TokenEditor vars={vars} onSetVar={handleSetVar} onResetVar={handleResetVar} />
+        <TokenEditor
+          vars={vars}
+          onSetVar={handleSetVar}
+          onResetVar={handleResetVar}
+        />
       </div>
 
       {/* Raw CSS */}
@@ -181,8 +194,8 @@ export default function ThemeSettings() {
       <div>
         <h4 className="mb-2 text-sm font-medium">Theme Catalog URL</h4>
         <p className="text-muted-foreground mb-2 text-[13px]">
-          HTTPS URL of the GitHub-hosted community theme catalog JSON index. Users browse this in
-          their settings.
+          HTTPS URL of the GitHub-hosted community theme catalog JSON index.
+          Users browse this in their settings.
         </p>
         <input
           type="url"

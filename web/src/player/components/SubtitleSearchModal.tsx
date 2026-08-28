@@ -168,17 +168,24 @@ export function SubtitleSearchModal({
   );
 
   const handleDetectLanguage = useCallback(
-    async (file: File, fallbackLanguage?: string): Promise<SubtitleLanguageDetection> => {
+    async (
+      file: File,
+      fallbackLanguage?: string,
+    ): Promise<SubtitleLanguageDetection> => {
       const form = new FormData();
       form.set("file", file);
       if (fallbackLanguage) {
         form.set("language", fallbackLanguage);
       }
 
-      return playerFetch<SubtitleLanguageDetection>(playerConfig, "/subtitles/detect-language", {
-        method: "POST",
-        body: form,
-      });
+      return playerFetch<SubtitleLanguageDetection>(
+        playerConfig,
+        "/subtitles/detect-language",
+        {
+          method: "POST",
+          body: form,
+        },
+      );
     },
     [playerConfig],
   );
@@ -301,7 +308,10 @@ export function SubtitleSearchModal({
         {warnings.length > 0 && (
           <div role="status" className="mx-4 mb-2 space-y-1">
             {warnings.map((w, i) => (
-              <div key={i} className="rounded bg-yellow-900/40 px-3 py-1.5 text-xs text-yellow-300">
+              <div
+                key={i}
+                className="rounded bg-yellow-900/40 px-3 py-1.5 text-xs text-yellow-300"
+              >
                 {w}
               </div>
             ))}
@@ -342,7 +352,9 @@ export function SubtitleSearchModal({
                 </span>
 
                 {/* Release name */}
-                <span className="min-w-0 flex-1 truncate text-xs">{result.release_name}</span>
+                <span className="min-w-0 flex-1 truncate text-xs">
+                  {result.release_name}
+                </span>
 
                 {/* HI badge */}
                 {result.hearing_impaired && (
@@ -370,7 +382,10 @@ export function SubtitleSearchModal({
 
                 {/* Download spinner */}
                 {isDownloading && (
-                  <span className="shrink-0 text-xs text-white/60" aria-label="Downloading">
+                  <span
+                    className="shrink-0 text-xs text-white/60"
+                    aria-label="Downloading"
+                  >
                     ⟳
                   </span>
                 )}

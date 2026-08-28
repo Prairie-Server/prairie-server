@@ -13,9 +13,13 @@ interface ChaptersMenuProps {
   hideTrigger?: boolean;
 }
 
-function findActiveChapterIndex(chapters: PlayerChapter[], currentTime: number): number {
+function findActiveChapterIndex(
+  chapters: PlayerChapter[],
+  currentTime: number,
+): number {
   return chapters.findIndex(
-    (chapter) => currentTime >= chapter.start_seconds && currentTime < chapter.end_seconds,
+    (chapter) =>
+      currentTime >= chapter.start_seconds && currentTime < chapter.end_seconds,
   );
 }
 
@@ -64,7 +68,9 @@ export function ChaptersMenu({
   const handleMenuKeyDown = useCallback((e: React.KeyboardEvent) => {
     const items = menuItemsRef.current.filter(Boolean) as HTMLButtonElement[];
     if (items.length === 0) return;
-    const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
+    const currentIndex = items.indexOf(
+      document.activeElement as HTMLButtonElement,
+    );
     let nextIndex: number | null = null;
 
     switch (e.key) {
@@ -126,7 +132,9 @@ export function ChaptersMenu({
               role="menuitem"
               type="button"
               className={`flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none ${
-                index === activeIndex ? "bg-white/5 text-white" : "text-white/75"
+                index === activeIndex
+                  ? "bg-white/5 text-white"
+                  : "text-white/75"
               }`}
               onClick={() => {
                 onSeek(chapter.start_seconds);
@@ -150,14 +158,23 @@ export function ChaptersMenu({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   >
-                    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
+                    <rect
+                      x="2"
+                      y="2"
+                      width="20"
+                      height="20"
+                      rx="2.18"
+                      ry="2.18"
+                    />
                     <path d="m7 2 0 20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5" />
                   </svg>
                 </div>
               )}
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-sm">{chapter.title}</span>
-                <span className="text-xs text-white/45">{formatTime(chapter.start_seconds)}</span>
+                <span className="text-xs text-white/45">
+                  {formatTime(chapter.start_seconds)}
+                </span>
               </span>
             </button>
           ))}

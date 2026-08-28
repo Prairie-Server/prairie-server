@@ -5,7 +5,9 @@ import { randomUUID } from "../lib/uuid";
 type ProfileUnverifiedListener = () => void;
 let profileUnverifiedListener: ProfileUnverifiedListener | null = null;
 
-export function onProfileUnverified(listener: ProfileUnverifiedListener | null) {
+export function onProfileUnverified(
+  listener: ProfileUnverifiedListener | null,
+) {
   profileUnverifiedListener = listener;
 }
 
@@ -106,7 +108,9 @@ export interface ProfileRequestContextSnapshot {
 }
 
 function currentServerOrigin(): string {
-  return typeof globalThis.location === "undefined" ? "" : globalThis.location.origin;
+  return typeof globalThis.location === "undefined"
+    ? ""
+    : globalThis.location.origin;
 }
 
 /** Capture account, server, profile, and PIN authority in one synchronous turn. */
@@ -130,7 +134,9 @@ export function captureProfileRequestContext(): ProfileRequestContextSnapshot | 
  * Profile/PIN changes are excluded so an already-created intent remains bound
  * to its captured profile authority through a same-account refresh.
  */
-export function isProfileRequestContextCurrent(snapshot: ProfileRequestContextSnapshot): boolean {
+export function isProfileRequestContextCurrent(
+  snapshot: ProfileRequestContextSnapshot,
+): boolean {
   return (
     snapshot.authContextVersion === authContextVersion &&
     snapshot.serverOrigin === currentServerOrigin()
@@ -144,7 +150,9 @@ export function isProfileRequestContextCurrent(snapshot: ProfileRequestContextSn
  * profile-scoped caches can tell a household profile switch apart from a
  * same-account token refresh.
  */
-export function isCapturedProfileAuthorityActive(snapshot: ProfileRequestContextSnapshot): boolean {
+export function isCapturedProfileAuthorityActive(
+  snapshot: ProfileRequestContextSnapshot,
+): boolean {
   return (
     isProfileRequestContextCurrent(snapshot) &&
     getProfileId() === snapshot.profileId &&
@@ -187,9 +195,11 @@ function detectDeviceName(): string {
   const userAgent = navigator.userAgent;
 
   if (/Edg\//.test(userAgent)) browser = "Edge";
-  else if (/Chrome\//.test(userAgent) && !/Edg\//.test(userAgent)) browser = "Chrome";
+  else if (/Chrome\//.test(userAgent) && !/Edg\//.test(userAgent))
+    browser = "Chrome";
   else if (/Firefox\//.test(userAgent)) browser = "Firefox";
-  else if (/Safari\//.test(userAgent) && !/Chrome\//.test(userAgent)) browser = "Safari";
+  else if (/Safari\//.test(userAgent) && !/Chrome\//.test(userAgent))
+    browser = "Safari";
 
   return `${browser} on ${platform}`;
 }
@@ -233,7 +243,9 @@ async function attemptRefresh(): Promise<boolean> {
   }
 }
 
-export async function bootstrapAccessToken(fetchImpl: typeof fetch = fetch): Promise<boolean> {
+export async function bootstrapAccessToken(
+  fetchImpl: typeof fetch = fetch,
+): Promise<boolean> {
   if (accessToken) {
     return true;
   }
@@ -314,10 +326,15 @@ function fallbackApiErrorMessage(res: Response): string {
   return "Request failed.";
 }
 
-function normalizeApiError(apiErr: Partial<ApiError> | null, res: Response): ApiError {
+function normalizeApiError(
+  apiErr: Partial<ApiError> | null,
+  res: Response,
+): ApiError {
   const payload = apiErr && typeof apiErr === "object" ? apiErr : {};
   const code =
-    typeof payload.error === "string" && payload.error.trim() ? payload.error : "unknown";
+    typeof payload.error === "string" && payload.error.trim()
+      ? payload.error
+      : "unknown";
   const message =
     typeof payload.message === "string" && payload.message.trim()
       ? payload.message.trim()
@@ -335,7 +352,11 @@ function hasHeader(headers: Record<string, string>, name: string): boolean {
   return Object.keys(headers).some((key) => key.toLowerCase() === target);
 }
 
-function setHeader(headers: Record<string, string>, name: string, value: string): void {
+function setHeader(
+  headers: Record<string, string>,
+  name: string,
+  value: string,
+): void {
   const target = name.toLowerCase();
   for (const key of Object.keys(headers)) {
     if (key.toLowerCase() === target) delete headers[key];
@@ -365,8 +386,16 @@ async function parseApiError(res: Response): Promise<ParsedApiError> {
 }
 
 /** Builds an ApiClientError from a parsed error response, attaching the raw body. */
-function apiClientErrorFrom(status: number, parsed: ParsedApiError): ApiClientError {
-  const err = new ApiClientError(status, parsed.apiErr.error, parsed.apiErr.message, parsed.apiErr);
+function apiClientErrorFrom(
+  status: number,
+  parsed: ParsedApiError,
+): ApiClientError {
+  const err = new ApiClientError(
+    status,
+    parsed.apiErr.error,
+    parsed.apiErr.message,
+    parsed.apiErr,
+  );
   err.body = parsed.raw;
   return err;
 }
@@ -430,7 +459,10 @@ async function readApiResponse<T>(res: Response): Promise<T> {
   return JSON.parse(text) as T;
 }
 
-export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+export async function api<T>(
+  path: string,
+  options: RequestInit = {},
+): Promise<T> {
   return readApiResponse<T>(await apiResponse(path, options));
 }
 
@@ -451,7 +483,11 @@ export async function apiWithProfileRequestContext<T>(
   setHeader(headers, "Authorization", `Bearer ${snapshot.accessToken}`);
   setHeader(headers, "X-Profile-Id", snapshot.profileId);
   setHeader(headers, "X-Profile-Token", snapshot.profileToken ?? "");
-  const response = await apiResponseInternal(path, { ...options, headers }, snapshot);
+  const response = await apiResponseInternal(
+    path,
+    { ...options, headers },
+    snapshot,
+  );
   if (!isProfileRequestContextCurrent(snapshot)) {
     throw new StaleApiRequestContextError();
   }
@@ -460,13 +496,18 @@ export async function apiWithProfileRequestContext<T>(
 
 export class StaleApiRequestContextError extends Error {
   constructor() {
-    super("The account or server changed before the queued request could be sent.");
+    super(
+      "The account or server changed before the queued request could be sent.",
+    );
     this.name = "StaleApiRequestContextError";
   }
 }
 
 /** Performs an authenticated API request while leaving the successful body unread. */
-export async function apiResponse(path: string, options: RequestInit = {}): Promise<Response> {
+export async function apiResponse(
+  path: string,
+  options: RequestInit = {},
+): Promise<Response> {
   return apiResponseInternal(path, options);
 }
 
@@ -527,7 +568,10 @@ async function apiResponseInternal(
       } else {
         delete refreshedHeaders.Authorization;
       }
-      res = await fetch(`/api/v1${path}`, { ...options, headers: refreshedHeaders });
+      res = await fetch(`/api/v1${path}`, {
+        ...options,
+        headers: refreshedHeaders,
+      });
       if (snapshot && !isProfileRequestContextCurrent(snapshot)) {
         throw new StaleApiRequestContextError();
       }
@@ -541,7 +585,8 @@ async function apiResponseInternal(
       parsed.apiErr.error === "profile_unverified" &&
       (snapshot
         ? isCapturedProfileAuthorityActive(snapshot)
-        : getProfileId() === requestProfileId && getProfileToken() === requestProfileToken)
+        : getProfileId() === requestProfileId &&
+          getProfileToken() === requestProfileToken)
     ) {
       setProfileToken(null);
       profileUnverifiedListener?.();
@@ -555,7 +600,10 @@ function buildApiHeaders(options: RequestInit = {}): Record<string, string> {
   const headers: Record<string, string> = {
     ...(options.headers as Record<string, string>),
   };
-  if (!(options.body instanceof FormData) && !hasHeader(headers, "Content-Type")) {
+  if (
+    !(options.body instanceof FormData) &&
+    !hasHeader(headers, "Content-Type")
+  ) {
     headers["Content-Type"] = "application/json";
   }
   if (accessToken && !hasHeader(headers, "Authorization")) {
@@ -584,9 +632,11 @@ function buildApiHeaders(options: RequestInit = {}): Record<string, string> {
  */
 export function apiKeepalive(path: string, options: RequestInit = {}): void {
   const headers = buildApiHeaders(options);
-  void fetch(`/api/v1${path}`, { ...options, headers, keepalive: true }).catch(() => {
-    // Best-effort write during unload; nothing left to recover into.
-  });
+  void fetch(`/api/v1${path}`, { ...options, headers, keepalive: true }).catch(
+    () => {
+      // Best-effort write during unload; nothing left to recover into.
+    },
+  );
 }
 
 /** Downloads a binary API response and triggers a browser file save. */
@@ -612,7 +662,10 @@ export async function apiDownload(
  */
 export const API_BLOB_MAX_BYTES = 512 * 1024 * 1024;
 
-export async function apiBlob(path: string, options: RequestInit = {}): Promise<Blob> {
+export async function apiBlob(
+  path: string,
+  options: RequestInit = {},
+): Promise<Blob> {
   const res = await apiResponse(path, options);
 
   // Reject oversized bodies up front instead of crashing the tab while
@@ -633,7 +686,10 @@ export async function apiBlob(path: string, options: RequestInit = {}): Promise<
 }
 
 // People API
-export async function searchPeople(query: string, limit = 20): Promise<import("./types").Person[]> {
+export async function searchPeople(
+  query: string,
+  limit = 20,
+): Promise<import("./types").Person[]> {
   const params = new URLSearchParams({ q: query, limit: String(limit) });
   return api<import("./types").Person[]>(`/people?${params}`);
 }
@@ -645,12 +701,17 @@ export async function getPerson(id: string): Promise<import("./types").Person> {
 export async function refreshPerson(
   id: string,
 ): Promise<import("./types").PersonRefreshQueuedResponse> {
-  return api<import("./types").PersonRefreshQueuedResponse>(`/people/${id}/refresh`, {
-    method: "POST",
-  });
+  return api<import("./types").PersonRefreshQueuedResponse>(
+    `/people/${id}/refresh`,
+    {
+      method: "POST",
+    },
+  );
 }
 
-export async function adminRefreshPerson(id: string): Promise<import("./types").Person> {
+export async function adminRefreshPerson(
+  id: string,
+): Promise<import("./types").Person> {
   return api<import("./types").Person>(`/admin/people/${id}/refresh`, {
     method: "POST",
   });

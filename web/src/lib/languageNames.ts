@@ -66,7 +66,9 @@ export function englishLanguageName(value: string): string | null {
   ].filter((part): part is string => Boolean(part));
 
   if (exact && (qualifiers.length === 0 || exact !== language)) return exact;
-  return qualifiers.length > 0 ? `${language} (${qualifiers.join(", ")})` : language;
+  return qualifiers.length > 0
+    ? `${language} (${qualifiers.join(", ")})`
+    : language;
 }
 
 /** User-facing name with an explicit fallback for unassigned or invalid tags. */
@@ -83,7 +85,9 @@ export function formatLanguage(value: string): string {
 }
 
 /** Canonical ISO language subtag used for language matching and override keys. */
-export function normalizeLanguageCode(value: string | null | undefined): string {
+export function normalizeLanguageCode(
+  value: string | null | undefined,
+): string {
   const canonical = canonicalLanguageTag(value ?? "");
   if (!canonical) return "";
   return new Intl.Locale(canonical).language;

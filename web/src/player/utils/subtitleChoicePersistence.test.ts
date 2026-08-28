@@ -1,7 +1,10 @@
 import { describe, expect, it } from "vitest";
 
 import { SETTING_KEYS } from "@/lib/settingsContract";
-import { resolveSettingValues, type StoredSettingRow } from "@/lib/settingsResolve";
+import {
+  resolveSettingValues,
+  type StoredSettingRow,
+} from "@/lib/settingsResolve";
 import type { PlayerSubtitleInfo } from "../types";
 import { buildSubtitleChoiceRequests } from "./subtitleChoicePersistence";
 
@@ -18,13 +21,19 @@ const TRACKS: PlayerSubtitleInfo[] = [
   },
 ];
 
-function canonicalWrites(requests: ReturnType<typeof buildSubtitleChoiceRequests>) {
-  return requests.filter((request) => request.path.startsWith("/settings/values/"));
+function canonicalWrites(
+  requests: ReturnType<typeof buildSubtitleChoiceRequests>,
+) {
+  return requests.filter((request) =>
+    request.path.startsWith("/settings/values/"),
+  );
 }
 
 /** The key one canonical write addresses, parsed back out of its path. */
 function keyOf(path: string): string {
-  return decodeURIComponent(path.slice("/settings/values/".length).split("?")[0]!);
+  return decodeURIComponent(
+    path.slice("/settings/values/".length).split("?")[0]!,
+  );
 }
 
 describe("buildSubtitleChoiceRequests", () => {
@@ -61,9 +70,9 @@ describe("buildSubtitleChoiceRequests", () => {
         tracks: TRACKS,
         showForcedSubtitles,
       });
-      expect(canonicalWrites(requests).map((request) => keyOf(request.path))).not.toContain(
-        SETTING_KEYS.PLAYBACK_SHOW_FORCED_SUBTITLES,
-      );
+      expect(
+        canonicalWrites(requests).map((request) => keyOf(request.path)),
+      ).not.toContain(SETTING_KEYS.PLAYBACK_SHOW_FORCED_SUBTITLES);
     }
   });
 
@@ -88,7 +97,11 @@ describe("buildSubtitleChoiceRequests", () => {
 
   it("turning subtitles off clears the language rather than storing an empty one", () => {
     const canonical = canonicalWrites(
-      buildSubtitleChoiceRequests({ seriesId: "series-1", index: null, tracks: TRACKS }),
+      buildSubtitleChoiceRequests({
+        seriesId: "series-1",
+        index: null,
+        tracks: TRACKS,
+      }),
     );
 
     expect(canonical[0]?.body).toEqual({ value: null });
@@ -99,7 +112,11 @@ describe("buildSubtitleChoiceRequests", () => {
     // The AI live track's sentinel index: storing it would clobber the saved
     // preference with a nonexistent track and an empty language.
     expect(
-      buildSubtitleChoiceRequests({ seriesId: "series-1", index: 9999, tracks: TRACKS }),
+      buildSubtitleChoiceRequests({
+        seriesId: "series-1",
+        index: 9999,
+        tracks: TRACKS,
+      }),
     ).toEqual([]);
   });
 
@@ -125,7 +142,8 @@ describe("buildSubtitleChoiceRequests", () => {
 
     expect(canonicalWrites(requests)[0]?.body).toEqual({ value: "es" });
     expect(
-      requests.find((request) => request.path.startsWith("/subtitle-prefs/"))?.body,
+      requests.find((request) => request.path.startsWith("/subtitle-prefs/"))
+        ?.body,
     ).toMatchObject({
       subtitle_language: "es",
       subtitle_track_index: 4,
@@ -164,10 +182,14 @@ describe("buildSubtitleChoiceRequests", () => {
       value: false,
     });
 
-    const [forced] = resolveSettingValues([SETTING_KEYS.PLAYBACK_SHOW_FORCED_SUBTITLES], stored, {
-      profileId: "profile-1",
-      seriesIds: ["series-1"],
-    });
+    const [forced] = resolveSettingValues(
+      [SETTING_KEYS.PLAYBACK_SHOW_FORCED_SUBTITLES],
+      stored,
+      {
+        profileId: "profile-1",
+        seriesIds: ["series-1"],
+      },
+    );
     expect(forced?.value).toBe(false);
     expect(forced?.source).toBe("profile");
   });

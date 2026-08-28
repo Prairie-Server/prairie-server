@@ -1,6 +1,15 @@
-import { useMutation, useQuery, useQueries, useQueryClient } from "@tanstack/react-query";
+import {
+  useMutation,
+  useQuery,
+  useQueries,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { api } from "@/api/client";
-import type { ProgressListResponse, ProgressEntry, ItemDetail } from "@/api/types";
+import type {
+  ProgressListResponse,
+  ProgressEntry,
+  ItemDetail,
+} from "@/api/types";
 import { catalogKeys, progressKeys } from "./keys";
 import { fetchCatalogItemDetail } from "./catalogRead";
 
@@ -8,7 +17,10 @@ interface ContinueWatchingOptions {
   enabled?: boolean;
 }
 
-export function useProgressList(libraryId?: number, options?: ContinueWatchingOptions) {
+export function useProgressList(
+  libraryId?: number,
+  options?: ContinueWatchingOptions,
+) {
   return useQuery({
     queryKey: progressKeys.list("in_progress", libraryId),
     queryFn: () => {
@@ -39,9 +51,12 @@ export function useContinueWatching(
   isLoading: boolean;
 } {
   const enabled = options?.enabled ?? true;
-  const { data: progressData, isLoading: progressLoading } = useProgressList(libraryId, {
-    enabled,
-  });
+  const { data: progressData, isLoading: progressLoading } = useProgressList(
+    libraryId,
+    {
+      enabled,
+    },
+  );
 
   const entries = progressData?.progress ?? [];
 

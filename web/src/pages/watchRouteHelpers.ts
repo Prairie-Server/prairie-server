@@ -129,8 +129,10 @@ export function buildWatchItemHref(request: WatchRouteRequest): string {
 
 export function buildWatchHref(request: WatchRouteRequest): string {
   const searchParams = new URLSearchParams();
-  if (request.fileId != null) searchParams.set("fileId", String(request.fileId));
-  if (request.libraryId != null) searchParams.set("libraryId", String(request.libraryId));
+  if (request.fileId != null)
+    searchParams.set("fileId", String(request.fileId));
+  if (request.libraryId != null)
+    searchParams.set("libraryId", String(request.libraryId));
   if (request.roomId) searchParams.set("room_id", request.roomId);
   if (request.roomToken) searchParams.set("room_token", request.roomToken);
   if (request.restart) searchParams.set("restart", "1");
@@ -147,7 +149,10 @@ export function parseWatchHref(href: string): WatchRouteRequest | null {
       return null;
     }
 
-    return buildWatchRouteRequest(decodeURIComponent(match[1] ?? ""), url.searchParams);
+    return buildWatchRouteRequest(
+      decodeURIComponent(match[1] ?? ""),
+      url.searchParams,
+    );
   } catch {
     return null;
   }
@@ -170,7 +175,9 @@ type DerivedWatchPageProps = Omit<
  * screen no longer writes this column, so it only carries a choice made before
  * the contract landed.
  */
-function currentProfileQualityFallback(profile?: Profile | null): string | null {
+function currentProfileQualityFallback(
+  profile?: Profile | null,
+): string | null {
   return profile?.quality_preference || null;
 }
 
@@ -233,14 +240,19 @@ function buildInitialSubtitleTrackIndexes({
       tracks,
       preferredLanguage: preferredSubtitleLanguage,
       preferredTrackSignature: preferredSubtitleTrackSignature,
-      audioLanguage: resolveVersionAudioLanguage(version, selectedAudioTrackIndex),
+      audioLanguage: resolveVersionAudioLanguage(
+        version,
+        selectedAudioTrackIndex,
+      ),
       profileLanguage,
       showForcedSubtitles,
     });
     if (selectedSubtitleTrackIndex === null) {
       continue;
     }
-    const selectedTrack = tracks.find((track) => track.index === selectedSubtitleTrackIndex);
+    const selectedTrack = tracks.find(
+      (track) => track.index === selectedSubtitleTrackIndex,
+    );
     start[version.file_id] = selectedSubtitleTrackIndex;
     // Bitmap tracks (PGS/DVD/DVB) have to be burned in on the web player. Keep
     // their ordinals separately so a refused start can be retried without the
@@ -281,19 +293,23 @@ export function buildWatchPageProps({
     currentProfile?.subtitle_mode ??
     "auto") as SubtitleMode;
   const showForcedSubtitles =
-    item.effective_show_forced_subtitles ?? currentProfile?.show_forced_subtitles ?? true;
+    item.effective_show_forced_subtitles ??
+    currentProfile?.show_forced_subtitles ??
+    true;
   const profileLanguage = currentProfile?.language || null;
 
-  const subtitles: PlayerSubtitleInfo[] = item.subtitles.map((subtitle, index) => ({
-    index,
-    language: subtitle.language,
-    codec: subtitle.codec,
-    label: subtitle.title || subtitle.language,
-    source: subtitle.source === "external" ? "external" : "embedded",
-    forced: subtitle.forced,
-    hearing_impaired: subtitle.hearing_impaired,
-    url: "",
-  }));
+  const subtitles: PlayerSubtitleInfo[] = item.subtitles.map(
+    (subtitle, index) => ({
+      index,
+      language: subtitle.language,
+      codec: subtitle.codec,
+      label: subtitle.title || subtitle.language,
+      source: subtitle.source === "external" ? "external" : "embedded",
+      forced: subtitle.forced,
+      hearing_impaired: subtitle.hearing_impaired,
+      url: "",
+    }),
+  );
   const preferredSubtitleTrackSignature: PlayerSubtitleTrackSignature | null =
     item.effective_subtitle_track_signature
       ? {
@@ -309,7 +325,8 @@ export function buildWatchPageProps({
           codec: item.effective_subtitle_track_signature.codec,
           label: item.effective_subtitle_track_signature.label,
           forced: item.effective_subtitle_track_signature.forced,
-          hearing_impaired: item.effective_subtitle_track_signature.hearing_impaired,
+          hearing_impaired:
+            item.effective_subtitle_track_signature.hearing_impaired,
         }
       : null;
   const requestSubtitleSelection = request.prePlaySubtitleSelection;
@@ -355,12 +372,16 @@ export function buildWatchPageProps({
   // The profile DTO is the compatibility fallback for servers before settings
   // contract revision 7. WatchPlaybackHost replaces this with the canonical
   // enum whenever the connected server advertises it.
-  const introSkipMode: IntroSkipMode = currentProfile?.auto_skip_intro ? "always" : "ask";
+  const introSkipMode: IntroSkipMode = currentProfile?.auto_skip_intro
+    ? "always"
+    : "ask";
   const autoSkipRecap = currentProfile?.auto_skip_recap ?? false;
   const autoPlayNextPreview = currentProfile?.auto_play_next_preview ?? false;
   // Watched items store position 0, so any nonzero position is a live resume
   // point — including a rewatch in flight (played stays true).
-  const initialPosition = request.restart ? 0 : (item.user_data?.position_seconds ?? 0);
+  const initialPosition = request.restart
+    ? 0
+    : (item.user_data?.position_seconds ?? 0);
 
   const resumeHints: ResumeHints | undefined =
     item.user_data?.last_file_id != null ||

@@ -12,8 +12,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
+    "@tanstack/react-query",
+  );
 
   return {
     ...actual,
@@ -40,12 +41,18 @@ vi.mock("sonner", () => ({
   },
 }));
 
-import { type DismissHomeItemVariables, useDismissHomeItem } from "./homeDismissals";
+import {
+  type DismissHomeItemVariables,
+  useDismissHomeItem,
+} from "./homeDismissals";
 
 type MutationOptions = {
   mutationFn: (variables: DismissHomeItemVariables) => Promise<unknown>;
   onError?: (error: unknown) => void;
-  onSuccess?: (data: unknown, variables: DismissHomeItemVariables) => Promise<unknown> | unknown;
+  onSuccess?: (
+    data: unknown,
+    variables: DismissHomeItemVariables,
+  ) => Promise<unknown> | unknown;
 };
 
 function latestMutationOptions(index = 1): MutationOptions {
@@ -83,12 +90,15 @@ describe("home dismissal query hooks", () => {
       progressUpdatedAt: "2026-03-22T18:10:00Z",
     });
 
-    expect(mocks.api).toHaveBeenCalledWith("/home/dismissals/continue_watching/ep-1", {
-      method: "PUT",
-      body: JSON.stringify({
-        progress_updated_at: "2026-03-22T18:10:00Z",
-      }),
-    });
+    expect(mocks.api).toHaveBeenCalledWith(
+      "/home/dismissals/continue_watching/ep-1",
+      {
+        method: "PUT",
+        body: JSON.stringify({
+          progress_updated_at: "2026-03-22T18:10:00Z",
+        }),
+      },
+    );
   });
 
   it("encodes item IDs in the dismissal path", async () => {
@@ -148,9 +158,12 @@ describe("home dismissal query hooks", () => {
       "ep-1",
       "continue_watching",
     );
-    expect(mocks.invalidateMediaSurfaceQueries).toHaveBeenCalledWith(queryClient, {
-      itemId: "ep-1",
-    });
+    expect(mocks.invalidateMediaSurfaceQueries).toHaveBeenCalledWith(
+      queryClient,
+      {
+        itemId: "ep-1",
+      },
+    );
     expect(mocks.toastSuccess).toHaveBeenCalledWith(
       "Removed from Continue Watching",
       expect.objectContaining({

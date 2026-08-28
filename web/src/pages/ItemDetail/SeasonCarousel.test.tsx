@@ -34,7 +34,11 @@ describe("SeasonCarousel", () => {
           <SeasonCarousel
             seasons={[
               makeSeason(),
-              makeSeason({ content_id: "season-2", season_number: 2, title: "Season 2" }),
+              makeSeason({
+                content_id: "season-2",
+                season_number: 2,
+                title: "Season 2",
+              }),
             ]}
           />
         </MemoryRouter>
@@ -52,7 +56,9 @@ describe("SeasonCarousel", () => {
     const markup = renderToStaticMarkup(
       <QueryClientProvider client={new QueryClient()}>
         <MemoryRouter>
-          <SeasonCarousel seasons={[makeSeason({ play_content_id: "episode-2" })]} />
+          <SeasonCarousel
+            seasons={[makeSeason({ play_content_id: "episode-2" })]}
+          />
         </MemoryRouter>
       </QueryClientProvider>,
     );

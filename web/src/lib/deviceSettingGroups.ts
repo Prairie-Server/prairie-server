@@ -14,7 +14,8 @@ import { ALL_DEVICE_SETTING_KEYS } from "@/lib/settingsDisplay";
  * one group — so a key added to the manifest cannot silently disappear from
  * this screen.
  */
-export type DeviceSettingGroupId = "picture" | "sound" | "subtitles" | "episodes";
+export type DeviceSettingGroupId =
+  "picture" | "sound" | "subtitles" | "episodes";
 
 export interface DeviceSettingGroup {
   id: DeviceSettingGroupId;
@@ -24,14 +25,22 @@ export interface DeviceSettingGroup {
   keys: SettingKey[];
 }
 
-const GROUP_META: Record<DeviceSettingGroupId, { title: string; description: string }> = {
+const GROUP_META: Record<
+  DeviceSettingGroupId,
+  { title: string; description: string }
+> = {
   picture: { title: "Picture", description: "How video looks on this device" },
   sound: { title: "Sound", description: "Audio on this device" },
   subtitles: { title: "Subtitles", description: "On this device" },
   episodes: { title: "Episodes", description: "What happens between episodes" },
 };
 
-const GROUP_ORDER: DeviceSettingGroupId[] = ["picture", "sound", "subtitles", "episodes"];
+const GROUP_ORDER: DeviceSettingGroupId[] = [
+  "picture",
+  "sound",
+  "subtitles",
+  "episodes",
+];
 
 /** Keys whose group is not implied by their manifest category. */
 const EXPLICIT_GROUPS: Partial<Record<string, DeviceSettingGroupId>> = {
@@ -102,7 +111,10 @@ const SUPERSEDED_BY: Partial<Record<SettingKey, SettingKey>> = {
  * Gated on the manifest's own `deprecated` flag so the rule is contract-driven:
  * a key that stops being deprecated stops being hidden without an edit here.
  */
-function isSupersededOnServer(key: SettingKey, supportedKeys: readonly SettingKey[]): boolean {
+function isSupersededOnServer(
+  key: SettingKey,
+  supportedKeys: readonly SettingKey[],
+): boolean {
   if (!SETTING_DEFINITIONS[key]?.deprecated) return false;
   const replacement = SUPERSEDED_BY[key];
   return replacement !== undefined && supportedKeys.includes(replacement);
@@ -115,7 +127,8 @@ function isSupersededOnServer(key: SettingKey, supportedKeys: readonly SettingKe
  * "android-tv"), so editing another device means mapping that string onto
  * these before the advisory `platforms` tags can be applied.
  */
-export type ManifestPlatform = "web" | "ios" | "tvos" | "macos" | "android" | "android_tv";
+export type ManifestPlatform =
+  "web" | "ios" | "tvos" | "macos" | "android" | "android_tv";
 
 /**
  * Maps a device's self-reported platform string to a manifest platform, or
@@ -123,15 +136,22 @@ export type ManifestPlatform = "web" | "ios" | "tvos" | "macos" | "android" | "a
  * string ends in "Web" ("iOS Web", "Android Web"), so the web check runs
  * before the OS checks — an iPhone browser is a web device, not an iOS app.
  */
-export function manifestPlatformFor(devicePlatform: string | undefined): ManifestPlatform | null {
+export function manifestPlatformFor(
+  devicePlatform: string | undefined,
+): ManifestPlatform | null {
   if (!devicePlatform) return null;
   const p = devicePlatform.toLowerCase();
   if (p.includes("web") || p.includes("browser")) return "web";
-  if (p.includes("android-tv") || p.includes("android_tv") || p.includes("android tv")) {
+  if (
+    p.includes("android-tv") ||
+    p.includes("android_tv") ||
+    p.includes("android tv")
+  ) {
     return "android_tv";
   }
   if (p.includes("tvos") || p.includes("apple tv")) return "tvos";
-  if (p.includes("ios") || p.includes("iphone") || p.includes("ipad")) return "ios";
+  if (p.includes("ios") || p.includes("iphone") || p.includes("ipad"))
+    return "ios";
   if (p.includes("macos") || p.includes("mac os")) return "macos";
   if (p.includes("android")) return "android";
   return null;
@@ -163,7 +183,8 @@ export function groupForDeviceSetting(
   key: SettingKey,
   supportedKeys: readonly SettingKey[] = ALL_DEVICE_SETTING_KEYS,
 ): DeviceSettingGroupId | null {
-  if (HIDDEN_KEYS.has(key) || isSupersededOnServer(key, supportedKeys)) return null;
+  if (HIDDEN_KEYS.has(key) || isSupersededOnServer(key, supportedKeys))
+    return null;
   const explicit = EXPLICIT_GROUPS[key];
   if (explicit) return explicit;
 
@@ -190,7 +211,10 @@ export function groupForDeviceSetting(
  */
 export function groupDeviceSettings(
   keys: readonly SettingKey[] = ALL_DEVICE_SETTING_KEYS,
-  options?: { devicePlatform?: string; keysWithStoredValues?: ReadonlySet<string> },
+  options?: {
+    devicePlatform?: string;
+    keysWithStoredValues?: ReadonlySet<string>;
+  },
 ): DeviceSettingGroup[] {
   const platform = manifestPlatformFor(options?.devicePlatform);
   const byGroup = new Map<DeviceSettingGroupId, SettingKey[]>();
@@ -214,12 +238,14 @@ export function groupDeviceSettings(
     }
   }
 
-  return GROUP_ORDER.filter((id) => (byGroup.get(id)?.length ?? 0) > 0).map((id) => ({
-    id,
-    title: GROUP_META[id].title,
-    description: GROUP_META[id].description,
-    keys: byGroup.get(id) ?? [],
-  }));
+  return GROUP_ORDER.filter((id) => (byGroup.get(id)?.length ?? 0) > 0).map(
+    (id) => ({
+      id,
+      title: GROUP_META[id].title,
+      description: GROUP_META[id].description,
+      keys: byGroup.get(id) ?? [],
+    }),
+  );
 }
 
 /**

@@ -34,7 +34,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ChevronLeft, ChevronRight, Copy, Loader2, Plus, Trash2 } from "lucide-react";
+import {
+  ChevronLeft,
+  ChevronRight,
+  Copy,
+  Loader2,
+  Plus,
+  Trash2,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -52,7 +59,9 @@ export default function AdminApiKeys() {
   const deleteMutation = useAdminDeleteApiKey();
   const updateTier = useAdminUpdateApiKeyTier();
   const [createOpen, setCreateOpen] = useState(false);
-  const [confirmRevokeKey, setConfirmRevokeKey] = useState<AdminAPIKey | null>(null);
+  const [confirmRevokeKey, setConfirmRevokeKey] = useState<AdminAPIKey | null>(
+    null,
+  );
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(25);
   const total = keys.length;
@@ -97,7 +106,8 @@ export default function AdminApiKeys() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">API Keys</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Create and manage machine credentials for integrations, automation, and internal tools.
+            Create and manage machine credentials for integrations, automation,
+            and internal tools.
           </p>
         </div>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
@@ -131,7 +141,10 @@ export default function AdminApiKeys() {
           <TableBody>
             {keys.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-muted-foreground text-center">
+                <TableCell
+                  colSpan={7}
+                  className="text-muted-foreground text-center"
+                >
                   No API keys yet. Create one to get started.
                 </TableCell>
               </TableRow>
@@ -143,7 +156,11 @@ export default function AdminApiKeys() {
                 <TableCell>
                   <div className="flex items-center gap-1.5">
                     <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">
-                      {key.key ? maskKey(key.key) : key.key_prefix ? key.key_prefix : "Hidden"}
+                      {key.key
+                        ? maskKey(key.key)
+                        : key.key_prefix
+                          ? key.key_prefix
+                          : "Hidden"}
                     </code>
                     {key.key ? (
                       <Button
@@ -161,7 +178,9 @@ export default function AdminApiKeys() {
                 <TableCell>
                   <Select
                     value={key.rate_tier}
-                    onValueChange={(tier) => updateTier.mutate({ id: key.id, tier })}
+                    onValueChange={(tier) =>
+                      updateTier.mutate({ id: key.id, tier })
+                    }
                   >
                     <SelectTrigger className="w-[120px]">
                       <SelectValue />
@@ -197,7 +216,8 @@ export default function AdminApiKeys() {
           <div className="flex items-center justify-between px-4 py-4">
             <div className="flex items-center gap-4">
               <span className="text-muted-foreground text-sm">
-                Showing {page * pageSize + 1}-{Math.min((page + 1) * pageSize, total)} of {total}
+                Showing {page * pageSize + 1}-
+                {Math.min((page + 1) * pageSize, total)} of {total}
               </span>
               <Select
                 value={String(pageSize)}
@@ -282,7 +302,9 @@ function CreateApiKeyForm({ onClose }: { onClose: () => void }) {
         <p className="text-muted-foreground text-sm">
           Copy your API key now. You won't be able to see the full key again.
         </p>
-        <code className="bg-muted block rounded p-3 font-mono text-xs break-all">{createdKey}</code>
+        <code className="bg-muted block rounded p-3 font-mono text-xs break-all">
+          {createdKey}
+        </code>
         <Button className="w-full" onClick={handleCopyAndClose}>
           <Copy className="mr-1 h-4 w-4" /> Copy & Close
         </Button>
@@ -316,8 +338,16 @@ function CreateApiKeyForm({ onClose }: { onClose: () => void }) {
           </SelectContent>
         </Select>
       </div>
-      <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-        {createMutation.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={createMutation.isPending}
+      >
+        {createMutation.isPending ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Plus />
+        )}
         {createMutation.isPending ? "Creating..." : "Create"}
       </Button>
     </form>

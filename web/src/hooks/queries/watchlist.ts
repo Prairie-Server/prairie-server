@@ -12,7 +12,8 @@ import {
 export function useWatchlist() {
   return useQuery({
     queryKey: watchlistKeys.list(),
-    queryFn: () => api<{ items: BrowseItem[] }>("/watchlist").then((d) => d.items ?? []),
+    queryFn: () =>
+      api<{ items: BrowseItem[] }>("/watchlist").then((d) => d.items ?? []),
   });
 }
 
@@ -29,7 +30,8 @@ export function useToggleWatchlist(itemId: string) {
       updateCatalogItemDetail(queryClient, itemId, (detail) => ({
         ...detail,
         user_state: {
-          played: detail.user_state?.played ?? detail.user_data?.played ?? false,
+          played:
+            detail.user_state?.played ?? detail.user_data?.played ?? false,
           is_favorite: detail.user_state?.is_favorite ?? false,
           in_watchlist: !currentlyInWatchlist,
         },
@@ -41,7 +43,8 @@ export function useToggleWatchlist(itemId: string) {
       updateCatalogItemDetail(queryClient, itemId, (detail) => ({
         ...detail,
         user_state: {
-          played: detail.user_state?.played ?? detail.user_data?.played ?? false,
+          played:
+            detail.user_state?.played ?? detail.user_data?.played ?? false,
           is_favorite: detail.user_state?.is_favorite ?? false,
           in_watchlist: currentlyInWatchlist,
         },
@@ -49,7 +52,9 @@ export function useToggleWatchlist(itemId: string) {
       toast.error("Failed to update watchlist");
     },
     onSuccess: (_data, currentlyInWatchlist) => {
-      toast.success(currentlyInWatchlist ? "Removed from watchlist" : "Added to watchlist");
+      toast.success(
+        currentlyInWatchlist ? "Removed from watchlist" : "Added to watchlist",
+      );
     },
     onSettled: () => {
       scheduleMediaSurfaceInvalidation(queryClient, {

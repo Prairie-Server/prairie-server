@@ -16,31 +16,43 @@ describe("parseHWDeviceList", () => {
   });
 
   it("splits and trims a comma list", () => {
-    expect(parseHWDeviceList(" /dev/dri/renderD128 ,/dev/dri/renderD129")).toEqual(DETECTED);
+    expect(
+      parseHWDeviceList(" /dev/dri/renderD128 ,/dev/dri/renderD129"),
+    ).toEqual(DETECTED);
   });
 });
 
 describe("toggleHWDevice", () => {
   it("adds a device to an empty selection", () => {
-    expect(toggleHWDevice("", "/dev/dri/renderD129", DETECTED)).toBe("/dev/dri/renderD129");
+    expect(toggleHWDevice("", "/dev/dri/renderD129", DETECTED)).toBe(
+      "/dev/dri/renderD129",
+    );
   });
 
   it("keeps detection order regardless of click order", () => {
     const afterSecond = toggleHWDevice("", "/dev/dri/renderD129", DETECTED);
-    const afterBoth = toggleHWDevice(afterSecond, "/dev/dri/renderD128", DETECTED);
+    const afterBoth = toggleHWDevice(
+      afterSecond,
+      "/dev/dri/renderD128",
+      DETECTED,
+    );
     expect(afterBoth).toBe("/dev/dri/renderD128,/dev/dri/renderD129");
   });
 
   it("removes an already-selected device", () => {
     expect(
-      toggleHWDevice("/dev/dri/renderD128,/dev/dri/renderD129", "/dev/dri/renderD128", DETECTED),
+      toggleHWDevice(
+        "/dev/dri/renderD128,/dev/dri/renderD129",
+        "/dev/dri/renderD128",
+        DETECTED,
+      ),
     ).toBe("/dev/dri/renderD129");
   });
 
   it("preserves selected devices missing from the current detection pass", () => {
-    expect(toggleHWDevice("/dev/dri/renderD200", "/dev/dri/renderD128", DETECTED)).toBe(
-      "/dev/dri/renderD128,/dev/dri/renderD200",
-    );
+    expect(
+      toggleHWDevice("/dev/dri/renderD200", "/dev/dri/renderD128", DETECTED),
+    ).toBe("/dev/dri/renderD128,/dev/dri/renderD200");
   });
 });
 
@@ -49,7 +61,10 @@ describe("buildHWDeviceRows", () => {
     ({
       resolved: "qsv",
       render_devices: DETECTED,
-      render_device_details: DETECTED.map((path) => ({ path, description: "Intel GPU" })),
+      render_device_details: DETECTED.map((path) => ({
+        path,
+        description: "Intel GPU",
+      })),
       intel_detected: true,
       source: "local",
       ...overrides,
@@ -78,23 +93,41 @@ describe("buildHWDeviceRows", () => {
   });
 
   it("falls back to render_devices paths when an older node omits details", () => {
-    const rows = buildHWDeviceRows(detection({ render_device_details: undefined }), "");
+    const rows = buildHWDeviceRows(
+      detection({ render_device_details: undefined }),
+      "",
+    );
     expect(rows).toHaveLength(2);
-    expect(rows[0]).toMatchObject({ path: DETECTED[0], description: "GPU", detected: true });
+    expect(rows[0]).toMatchObject({
+      path: DETECTED[0],
+      description: "GPU",
+      detected: true,
+    });
   });
 
   it("merges detected and configured-but-missing devices", () => {
     const rows = buildHWDeviceRows(detection({}), "/dev/dri/renderD200");
     expect(rows).toHaveLength(3);
-    expect(rows[2]).toMatchObject({ path: "/dev/dri/renderD200", detected: false });
+    expect(rows[2]).toMatchObject({
+      path: "/dev/dri/renderD200",
+      detected: false,
+    });
   });
 
   it("marks devices missing from responding nodes", () => {
     const rows = buildHWDeviceRows(
       detection({
         nodes: [
-          { node_url: "http://a", node_name: "node-a", render_devices: DETECTED },
-          { node_url: "http://b", node_name: "node-b", render_devices: [DETECTED[0]] },
+          {
+            node_url: "http://a",
+            node_name: "node-a",
+            render_devices: DETECTED,
+          },
+          {
+            node_url: "http://b",
+            node_name: "node-b",
+            render_devices: [DETECTED[0]],
+          },
           { node_url: "http://c", node_name: "node-down", error: "boom" },
         ],
       }),
@@ -114,7 +147,9 @@ describe("nodeInventoriesDiverge", () => {
 
   it("is false without nodes or with one node", () => {
     expect(nodeInventoriesDiverge(undefined)).toBe(false);
-    expect(nodeInventoriesDiverge({ ...(base as object), nodes: [] } as never)).toBe(false);
+    expect(
+      nodeInventoriesDiverge({ ...(base as object), nodes: [] } as never),
+    ).toBe(false);
     expect(
       nodeInventoriesDiverge({
         ...(base as object),

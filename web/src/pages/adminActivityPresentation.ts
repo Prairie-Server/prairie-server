@@ -62,9 +62,12 @@ export function classifyActivityMethod(session: AdminSession): string {
   if (session.effective_play_method) {
     return session.effective_play_method;
   }
-  const videoDecision = normalizeStreamDecision(session.video_decision || session.play_method);
+  const videoDecision = normalizeStreamDecision(
+    session.video_decision || session.play_method,
+  );
   const audioDecision = normalizeStreamDecision(
-    session.audio_decision || (session.transcode_audio ? "transcode" : session.play_method),
+    session.audio_decision ||
+      (session.transcode_audio ? "transcode" : session.play_method),
   );
   if (videoDecision === "transcode") {
     return "transcode";
@@ -87,7 +90,13 @@ export function classifyActivityMethod(session: AdminSession): string {
 // Display order for the activity method buckets. Escalates by cost and keeps the
 // audio-transcode tag AFTER the video-transcode tag in the Play Method line and
 // the Server Activity popover; unknown sorts last.
-const ACTIVITY_METHOD_ORDER = ["direct", "remux", "transcode", "audio", "unknown"];
+const ACTIVITY_METHOD_ORDER = [
+  "direct",
+  "remux",
+  "transcode",
+  "audio",
+  "unknown",
+];
 
 function activityMethodRank(method: string): number {
   const index = ACTIVITY_METHOD_ORDER.indexOf(method);
@@ -174,9 +183,12 @@ export function isJellyfinSession(session: AdminSession): boolean {
 }
 
 export function formatPlaybackDecisionSummary(session: AdminSession): string {
-  const videoDecision = normalizeStreamDecision(session.video_decision || session.play_method);
+  const videoDecision = normalizeStreamDecision(
+    session.video_decision || session.play_method,
+  );
   const audioDecision = normalizeStreamDecision(
-    session.audio_decision || (session.transcode_audio ? "transcode" : session.play_method),
+    session.audio_decision ||
+      (session.transcode_audio ? "transcode" : session.play_method),
   );
 
   if (videoDecision && videoDecision === audioDecision) {
@@ -191,10 +203,15 @@ export function formatPlaybackDecisionSummary(session: AdminSession): string {
   return videoDecision || audioDecision || session.play_method || "";
 }
 
-export function formatTranscodeModeSummary(session: AdminSession): string | null {
-  const videoDecision = normalizeStreamDecision(session.video_decision || session.play_method);
+export function formatTranscodeModeSummary(
+  session: AdminSession,
+): string | null {
+  const videoDecision = normalizeStreamDecision(
+    session.video_decision || session.play_method,
+  );
   const audioDecision = normalizeStreamDecision(
-    session.audio_decision || (session.transcode_audio ? "transcode" : session.play_method),
+    session.audio_decision ||
+      (session.transcode_audio ? "transcode" : session.play_method),
   );
   if (videoDecision !== "transcode" && audioDecision !== "transcode") {
     return null;
@@ -235,8 +252,12 @@ export interface ToneMapSummary {
 }
 
 /** Format a confirmed HDR-to-SDR executor without guessing from legacy data. */
-export function formatToneMapSummary(session: AdminSession): ToneMapSummary | null {
-  const videoDecision = normalizeStreamDecision(session.video_decision || session.play_method);
+export function formatToneMapSummary(
+  session: AdminSession,
+): ToneMapSummary | null {
+  const videoDecision = normalizeStreamDecision(
+    session.video_decision || session.play_method,
+  );
   if (videoDecision !== "transcode") {
     return null;
   }
@@ -320,7 +341,10 @@ export function formatContainerDetail(session: AdminSession): string {
 
 export function formatVideoSummary(session: AdminSession): string {
   return (
-    [formatCodec(session.source_video_codec), session.source_video_resolution?.trim()]
+    [
+      formatCodec(session.source_video_codec),
+      session.source_video_resolution?.trim(),
+    ]
       .filter(Boolean)
       .join(" · ") || "Unknown source"
   );
@@ -340,9 +364,14 @@ export function formatDeliveredVideoSummary(session: AdminSession): string {
 }
 
 export function formatVideoDetail(session: AdminSession): string {
-  const decision = normalizeStreamDecision(session.video_decision || session.play_method);
+  const decision = normalizeStreamDecision(
+    session.video_decision || session.play_method,
+  );
   const requestedSource = formatRequestedVideoSource(session);
-  const target = [formatCodec(session.target_video_codec), session.target_resolution?.trim()]
+  const target = [
+    formatCodec(session.target_video_codec),
+    session.target_resolution?.trim(),
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -369,7 +398,8 @@ export function formatVideoDetail(session: AdminSession): string {
 }
 
 export function formatAudioSummary(session: AdminSession): string {
-  const lead = session.source_audio_title?.trim() || session.source_audio_language?.trim();
+  const lead =
+    session.source_audio_title?.trim() || session.source_audio_language?.trim();
   const format = [
     formatCodec(session.source_audio_codec),
     formatChannelLayout(session.source_audio_channels),
@@ -397,7 +427,8 @@ function formatTargetAudio(session: AdminSession): string {
 
 export function formatDeliveredAudioSummary(session: AdminSession): string {
   const decision =
-    session.audio_decision || (session.transcode_audio ? "transcode" : session.play_method);
+    session.audio_decision ||
+    (session.transcode_audio ? "transcode" : session.play_method);
   if (decision !== "transcode") {
     return formatAudioSummary(session);
   }
@@ -407,7 +438,8 @@ export function formatDeliveredAudioSummary(session: AdminSession): string {
 
 export function formatAudioDetail(session: AdminSession): string {
   const decision = normalizeStreamDecision(
-    session.audio_decision || (session.transcode_audio ? "transcode" : session.play_method),
+    session.audio_decision ||
+      (session.transcode_audio ? "transcode" : session.play_method),
   );
   if (decision === "transcode") {
     const target = formatTargetAudio(session);
@@ -448,16 +480,31 @@ function formatContainer(container?: string): string | null {
 }
 
 export function getPlaybackSessionTitle(session: AdminSession): string {
-  if (session.series_name && session.season_number != null && session.episode_number != null) {
-    return session.episode_name || `S${session.season_number}E${session.episode_number}`;
+  if (
+    session.series_name &&
+    session.season_number != null &&
+    session.episode_number != null
+  ) {
+    return (
+      session.episode_name ||
+      `S${session.season_number}E${session.episode_number}`
+    );
   }
   return session.media_title || `File #${session.media_file_id}`;
 }
 
-export function getPlaybackSessionSubtitle(session: AdminSession): string | null {
-  if (session.series_name && session.season_number != null && session.episode_number != null) {
+export function getPlaybackSessionSubtitle(
+  session: AdminSession,
+): string | null {
+  if (
+    session.series_name &&
+    session.season_number != null &&
+    session.episode_number != null
+  ) {
     const episode = `S${session.season_number}E${session.episode_number}`;
-    return session.series_name ? `${episode} · ${session.series_name}` : episode;
+    return session.series_name
+      ? `${episode} · ${session.series_name}`
+      : episode;
   }
   if (session.media_type === "movie") {
     return "Movie";

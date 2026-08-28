@@ -2,7 +2,10 @@ import { useQueries } from "@tanstack/react-query";
 import type { Collection, LibraryCollection } from "@/api/types";
 import { useUserLibraries } from "./libraries";
 import { useCollections } from "./collections";
-import { getLibraryCollectionList, libraryCollectionsQueryOptions } from "./libraryCollections";
+import {
+  getLibraryCollectionList,
+  libraryCollectionsQueryOptions,
+} from "./libraryCollections";
 
 export interface CollectionOption {
   id: string;
@@ -22,7 +25,9 @@ type UserCollectionSummary = Pick<Collection, "id" | "name">;
 export function buildAllUserCollectionOptions(
   libraries: readonly LibrarySummary[],
   userCollections: readonly UserCollectionSummary[] | undefined,
-  libraryCollectionsByLibrary: ReadonlyArray<readonly LibraryCollection[] | undefined>,
+  libraryCollectionsByLibrary: ReadonlyArray<
+    readonly LibraryCollection[] | undefined
+  >,
 ): CollectionOption[] {
   const collections: CollectionOption[] = [];
 
@@ -35,7 +40,10 @@ export function buildAllUserCollectionOptions(
     });
   }
 
-  const libraryOptions = new Map<string, { option: CollectionOption; libraryNames: string[] }>();
+  const libraryOptions = new Map<
+    string,
+    { option: CollectionOption; libraryNames: string[] }
+  >();
 
   for (let i = 0; i < libraries.length; i++) {
     const library = libraries[i]!;
@@ -62,7 +70,10 @@ export function buildAllUserCollectionOptions(
         source_config: collection.source_config,
         last_sync_status: collection.last_sync_status,
       };
-      libraryOptions.set(collection.id, { option, libraryNames: [library.name] });
+      libraryOptions.set(collection.id, {
+        option,
+        libraryNames: [library.name],
+      });
       collections.push(option);
     }
   }
@@ -72,7 +83,8 @@ export function buildAllUserCollectionOptions(
 
 export function useAllUserCollections() {
   const { data: libraries } = useUserLibraries();
-  const { data: userCollections, isLoading: userCollectionsLoading } = useCollections();
+  const { data: userCollections, isLoading: userCollectionsLoading } =
+    useCollections();
 
   const libraryQueries = useQueries({
     queries: (libraries ?? []).map((lib) => ({
@@ -81,7 +93,8 @@ export function useAllUserCollections() {
     })),
   });
 
-  const isLoading = libraryQueries.some((q) => q.isLoading) || userCollectionsLoading;
+  const isLoading =
+    libraryQueries.some((q) => q.isLoading) || userCollectionsLoading;
 
   const libraryCollectionsByLibrary = libraryQueries.map((result) =>
     Array.isArray(result.data) ? result.data : undefined,

@@ -1,7 +1,21 @@
-import { createContext, useCallback, useContext, useMemo, useState, type ReactNode } from "react";
-import { getAccessToken, getOrCreateDeviceId, getProfileToken } from "@/api/client";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
+import {
+  getAccessToken,
+  getOrCreateDeviceId,
+  getProfileToken,
+} from "@/api/client";
 import type { AudiobookFile } from "@/lib/audiobooks/types";
-import { PlayerConfigProvider, type PlayerConfig } from "@/player/context/PlayerConfigContext";
+import {
+  PlayerConfigProvider,
+  type PlayerConfig,
+} from "@/player/context/PlayerConfigContext";
 import { storage } from "@/utils/storage";
 import AudiobookPlayer, {
   type AudiobookPlayerControls,
@@ -32,18 +46,24 @@ export interface AudiobookPlaybackControllerValue {
   toggleActivePlayback: () => void;
 }
 
-const AudiobookPlaybackControllerContext = createContext<AudiobookPlaybackControllerValue | null>(
-  null,
-);
+const AudiobookPlaybackControllerContext =
+  createContext<AudiobookPlaybackControllerValue | null>(null);
 
 export function useAudiobookPlaybackController() {
   return useContext(AudiobookPlaybackControllerContext);
 }
 
-export function AudiobookPlaybackProvider({ children }: { children: ReactNode }) {
-  const [activeRequest, setActiveRequest] = useState<ActiveAudiobookPlayback | null>(null);
+export function AudiobookPlaybackProvider({
+  children,
+}: {
+  children: ReactNode;
+}) {
+  const [activeRequest, setActiveRequest] =
+    useState<ActiveAudiobookPlayback | null>(null);
   const [active, setActive] = useState<AudiobookPlayerStatus | null>(null);
-  const [controls, setControls] = useState<AudiobookPlayerControls | null>(null);
+  const [controls, setControls] = useState<AudiobookPlayerControls | null>(
+    null,
+  );
   const playerConfig = useMemo<PlayerConfig>(
     () => ({
       apiBaseUrl: "/api/v1",

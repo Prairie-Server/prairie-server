@@ -60,7 +60,11 @@ export function BrandingAssetField({
         )}
       >
         {currentUrl ? (
-          <img src={currentUrl} alt={`${label} preview`} className="h-full w-full object-contain" />
+          <img
+            src={currentUrl}
+            alt={`${label} preview`}
+            className="h-full w-full object-contain"
+          />
         ) : (
           <ImageOff className="text-muted-foreground h-5 w-5" />
         )}
@@ -68,7 +72,9 @@ export function BrandingAssetField({
 
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">{label}</p>
-        {description && <p className="text-muted-foreground mt-0.5 text-xs">{description}</p>}
+        {description && (
+          <p className="text-muted-foreground mt-0.5 text-xs">{description}</p>
+        )}
       </div>
 
       <input

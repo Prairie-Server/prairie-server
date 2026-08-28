@@ -29,7 +29,9 @@ export function AccountStep() {
       await setupInitialUser(username, email, password);
       toast.success("Admin account created");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create admin account");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to create admin account",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -40,8 +42,9 @@ export function AccountStep() {
     return (
       <div className="space-y-4">
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Admin account <span className="text-foreground font-medium">{user.username}</span> is
-          ready. Continue to review the next step.
+          Admin account{" "}
+          <span className="text-foreground font-medium">{user.username}</span>{" "}
+          is ready. Continue to review the next step.
         </p>
         <WizardActions>
           <Button type="button" onClick={goForward}>

@@ -55,7 +55,9 @@ export default function AboutSettings() {
     return (
       <div className="space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">About</h2>
-        <p className="text-muted-foreground text-sm">Could not load server build information.</p>
+        <p className="text-muted-foreground text-sm">
+          Could not load server build information.
+        </p>
       </div>
     );
   }
@@ -63,7 +65,8 @@ export default function AboutSettings() {
   const info = buildInfo.data;
   const version = info.version || info.display || "dev build";
   const changelogURL =
-    info.changelog_url || "https://github.com/Prairie-Server/prairie-server/releases";
+    info.changelog_url ||
+    "https://github.com/Prairie-Server/prairie-server/releases";
 
   return (
     <div className="space-y-6">
@@ -75,7 +78,10 @@ export default function AboutSettings() {
       </div>
 
       <section className="surface-panel-subtle rounded-[1.25rem] px-5 py-2">
-        <InfoRow label="Version" value={<span className="font-mono">{version}</span>} />
+        <InfoRow
+          label="Version"
+          value={<span className="font-mono">{version}</span>}
+        />
         {info.revision ? (
           <InfoRow
             label="Revision"
@@ -91,7 +97,10 @@ export default function AboutSettings() {
         <InfoRow
           label="Update status"
           value={
-            <Badge variant="outline" className={updateStatusBadgeClass(info.update_status)}>
+            <Badge
+              variant="outline"
+              className={updateStatusBadgeClass(info.update_status)}
+            >
               {updateStatusLabel(info.update_status)}
             </Badge>
           }

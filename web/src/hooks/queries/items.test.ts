@@ -16,8 +16,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
+    "@tanstack/react-query",
+  );
 
   return {
     ...actual,
@@ -35,9 +36,9 @@ vi.mock("@/components/realtimeEventsContext", () => ({
 }));
 
 vi.mock("@/pages/ItemDetail/watchedState", async () => {
-  const actual = await vi.importActual<typeof import("@/pages/ItemDetail/watchedState")>(
-    "@/pages/ItemDetail/watchedState",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/pages/ItemDetail/watchedState")
+  >("@/pages/ItemDetail/watchedState");
 
   return {
     ...actual,
@@ -46,12 +47,14 @@ vi.mock("@/pages/ItemDetail/watchedState", async () => {
 });
 
 vi.mock("./mediaSurfaceRefresh", () => ({
-  cancelItemDetailQueries: (...args: unknown[]) => mocks.cancelItemDetailQueries(...args),
+  cancelItemDetailQueries: (...args: unknown[]) =>
+    mocks.cancelItemDetailQueries(...args),
   invalidateMediaSurfaceQueries: (...args: unknown[]) =>
     mocks.invalidateMediaSurfaceQueries(...args),
   scheduleMediaSurfaceInvalidation: (...args: unknown[]) =>
     mocks.scheduleMediaSurfaceInvalidation(...args),
-  updateCatalogItemDetail: (...args: unknown[]) => mocks.updateCatalogItemDetail(...args),
+  updateCatalogItemDetail: (...args: unknown[]) =>
+    mocks.updateCatalogItemDetail(...args),
 }));
 
 vi.mock("@/pages/homeSurfaceRefresh", () => ({
@@ -138,9 +141,12 @@ describe("item query helpers", () => {
   it("encodes item IDs in admin item endpoints", async () => {
     await redetectEpisodeIntro("episode 1/id:abc");
 
-    expect(mocks.api).toHaveBeenCalledWith("/admin/items/episode%201%2Fid%3Aabc/redetect-intro", {
-      method: "POST",
-    });
+    expect(mocks.api).toHaveBeenCalledWith(
+      "/admin/items/episode%201%2Fid%3Aabc/redetect-intro",
+      {
+        method: "POST",
+      },
+    );
   });
 
   it("shows one spinning refresh notification and replaces it with success", async () => {
@@ -157,9 +163,15 @@ describe("item query helpers", () => {
     };
 
     const context = options.onMutate?.(variables);
-    expect(mocks.toastLoading).toHaveBeenCalledWith("Quick metadata refresh running…");
+    expect(mocks.toastLoading).toHaveBeenCalledWith(
+      "Quick metadata refresh running…",
+    );
 
-    await options.onSuccess?.({ job: { result_payload: {} } }, variables, context);
+    await options.onSuccess?.(
+      { job: { result_payload: {} } },
+      variables,
+      context,
+    );
     expect(mocks.toastSuccess).toHaveBeenCalledWith("Metadata refreshed", {
       id: "refresh-toast",
     });
@@ -184,7 +196,8 @@ describe("item query helpers", () => {
         job: {
           result_payload: {
             refresh_content_id: "series-1",
-            artwork_cache_warning: "2 refreshed artwork image(s) failed to cache",
+            artwork_cache_warning:
+              "2 refreshed artwork image(s) failed to cache",
           },
         },
       },
@@ -315,11 +328,14 @@ describe("item query helpers", () => {
     options.onSettled?.();
     // The item's own detail is deliberately not skipped: the server also zeroes
     // the resume position, which the optimistic patch cannot reconstruct.
-    expect(mocks.scheduleMediaSurfaceInvalidation).toHaveBeenCalledWith(expect.anything(), {
-      itemId: "ebook-1",
-      watchedKeys: [],
-      skipSimilarItems: true,
-    });
+    expect(mocks.scheduleMediaSurfaceInvalidation).toHaveBeenCalledWith(
+      expect.anything(),
+      {
+        itemId: "ebook-1",
+        watchedKeys: [],
+        skipSimilarItems: true,
+      },
+    );
   });
 
   it("updates watched state optimistically before refreshing derived surfaces", async () => {
@@ -333,7 +349,10 @@ describe("item query helpers", () => {
 
     await options.onMutate?.(true);
 
-    expect(mocks.cancelItemDetailQueries).toHaveBeenCalledWith(queryClient, "movie-1");
+    expect(mocks.cancelItemDetailQueries).toHaveBeenCalledWith(
+      queryClient,
+      "movie-1",
+    );
     expect(mocks.updateCatalogItemDetail).toHaveBeenCalledWith(
       queryClient,
       "movie-1",
@@ -343,7 +362,10 @@ describe("item query helpers", () => {
       detail: ItemDetail,
     ) => ItemDetail;
     expect(
-      updater({ user_data: { played: false }, user_state: { played: false } } as ItemDetail),
+      updater({
+        user_data: { played: false },
+        user_state: { played: false },
+      } as ItemDetail),
     ).toMatchObject({
       user_data: { played: true },
       user_state: { played: true },

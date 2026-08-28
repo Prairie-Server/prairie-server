@@ -45,14 +45,19 @@ export function useAutoPlayNextSetting() {
   // The effective endpoint resolves an unset key to the contract default, so
   // an absent answer (first paint) reads the same as a stored default rather
   // than as a local literal that could disagree with the server.
-  const enabled = (entry?.value ?? SETTING_DEFINITIONS[KEY].defaultValue) as boolean;
+  const enabled = (entry?.value ??
+    SETTING_DEFINITIONS[KEY].defaultValue) as boolean;
 
   /** Whether this device holds an override that outranks the profile row. */
   const hasDeviceOverride = entry?.source === "profile_device";
 
   const setEnabled = useCallback(
     async (next: boolean) => {
-      await setValue.mutateAsync({ key: KEY, value: next, identity: PROFILE_SCOPE });
+      await setValue.mutateAsync({
+        key: KEY,
+        value: next,
+        identity: PROFILE_SCOPE,
+      });
       // The profile value is the durable expression, so it is written first: a
       // failed clear leaves the choice stored rather than losing it. Nothing to
       // clear is the state this asks for, so a 404 is success.

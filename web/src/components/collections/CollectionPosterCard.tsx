@@ -30,11 +30,19 @@ export function CollectionPosterCard({
   const isUserCollection = kind === "user_collections";
   const href = isUserCollection
     ? buildUserCollectionCatalogHref(collection.id, collection.title)
-    : buildLibraryCollectionCatalogHref(collection.id, collection.title, libraryId);
+    : buildLibraryCollectionCatalogHref(
+        collection.id,
+        collection.title,
+        libraryId,
+      );
 
   return (
     <div className="group/card relative w-full text-left">
-      <button type="button" onClick={() => navigate(href)} className="block w-full text-left">
+      <button
+        type="button"
+        onClick={() => navigate(href)}
+        className="block w-full text-left"
+      >
         <div className="media-card-image relative aspect-[2/3] overflow-hidden rounded-xl">
           {collection.poster_url ? (
             <img
@@ -49,7 +57,9 @@ export function CollectionPosterCard({
           ) : (
             <div className="text-muted-foreground flex h-full w-full flex-col items-center justify-center gap-1 p-3 text-center text-sm">
               {isUserCollection && <User className="h-5 w-5 opacity-60" />}
-              <span className="line-clamp-3 font-medium">{collection.title}</span>
+              <span className="line-clamp-3 font-medium">
+                {collection.title}
+              </span>
             </div>
           )}
           <span className="bg-background/60 text-foreground absolute right-2 bottom-2 rounded-md px-2 py-0.5 text-[11px] font-bold backdrop-blur-sm">
@@ -58,9 +68,14 @@ export function CollectionPosterCard({
         </div>
         {cardPresentation.caption !== "artwork" ? (
           <div className="px-0.5 pt-2.5">
-            <div className="truncate text-[13px] font-semibold">{collection.title}</div>
-            {cardPresentation.caption === "title_metadata" && isUserCollection ? (
-              <div className="text-muted-foreground text-xs">User collection</div>
+            <div className="truncate text-[13px] font-semibold">
+              {collection.title}
+            </div>
+            {cardPresentation.caption === "title_metadata" &&
+            isUserCollection ? (
+              <div className="text-muted-foreground text-xs">
+                User collection
+              </div>
             ) : null}
           </div>
         ) : null}
@@ -84,7 +99,11 @@ export function CollectionPosterCard({
           }`}
           title={pinned ? "Unpin from sidebar" : "Pin to sidebar"}
         >
-          {pinned ? <PinOff className="h-3.5 w-3.5" /> : <Pin className="h-3.5 w-3.5" />}
+          {pinned ? (
+            <PinOff className="h-3.5 w-3.5" />
+          ) : (
+            <Pin className="h-3.5 w-3.5" />
+          )}
         </button>
       )}
     </div>

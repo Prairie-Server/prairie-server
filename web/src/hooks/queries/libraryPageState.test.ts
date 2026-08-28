@@ -43,13 +43,24 @@ describe("library page state preference helpers", () => {
   });
 
   it("treats null and undefined as an empty preference", () => {
-    expect(parseLibraryPageStatePreference(null)).toEqual({ version: 1, libraries: {} });
-    expect(parseLibraryPageStatePreference(undefined)).toEqual({ version: 1, libraries: {} });
+    expect(parseLibraryPageStatePreference(null)).toEqual({
+      version: 1,
+      libraries: {},
+    });
+    expect(parseLibraryPageStatePreference(undefined)).toEqual({
+      version: 1,
+      libraries: {},
+    });
   });
 
   it("ignores malformed, wrong-version, and non-string entries", () => {
-    expect(parseLibraryPageStatePreference("not json")).toEqual({ version: 1, libraries: {} });
-    expect(parseLibraryPageStatePreference({ version: 2, libraries: {} })).toEqual({
+    expect(parseLibraryPageStatePreference("not json")).toEqual({
+      version: 1,
+      libraries: {},
+    });
+    expect(
+      parseLibraryPageStatePreference({ version: 2, libraries: {} }),
+    ).toEqual({
       version: 1,
       libraries: {},
     });

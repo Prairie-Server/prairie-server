@@ -5,17 +5,21 @@ interface HLSJSSupportV3 {
 }
 
 export type ResolvedHLSEngineV3<T extends HLSJSSupportV3> =
-  | { engine: "native" | "unsupported" }
-  | { engine: "hlsjs"; hlsjs: T };
+  { engine: "native" | "unsupported" } | { engine: "hlsjs"; hlsjs: T };
 
 export function isSafariBrowserV3(userAgent: string): boolean {
   return (
     /Safari\//i.test(userAgent) &&
-    !/(?:Chrome|Chromium|CriOS|Edg|EdgiOS|OPR|OPiOS|Firefox|FxiOS)\//i.test(userAgent)
+    !/(?:Chrome|Chromium|CriOS|Edg|EdgiOS|OPR|OPiOS|Firefox|FxiOS)\//i.test(
+      userAgent,
+    )
   );
 }
 
-function nativeHLSPreferred(nativeSupported: boolean, preferNativeHLS: boolean): boolean {
+function nativeHLSPreferred(
+  nativeSupported: boolean,
+  preferNativeHLS: boolean,
+): boolean {
   return preferNativeHLS && nativeSupported;
 }
 

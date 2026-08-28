@@ -12,7 +12,9 @@ import { useUICustomization } from "@/hooks/useUICustomization";
 
 export default function CalendarEventCard({ event }: { event: CalendarEvent }) {
   const [loaded, setLoaded] = useState(false);
-  const thumbhashUrl = event.poster_thumbhash ? decodeThumbhash(event.poster_thumbhash) : "";
+  const thumbhashUrl = event.poster_thumbhash
+    ? decodeThumbhash(event.poster_thumbhash)
+    : "";
   const watched = event.watched === true;
   const { cardPresentation } = useUICustomization();
   const showCaption = cardPresentation.caption !== "artwork";
@@ -28,7 +30,10 @@ export default function CalendarEventCard({ event }: { event: CalendarEvent }) {
 
   return (
     <div className="media-card group/card">
-      <ViewTransitionLink to={href} className="block overflow-hidden rounded-xl">
+      <ViewTransitionLink
+        to={href}
+        className="block overflow-hidden rounded-xl"
+      >
         <div
           className={`media-card-image relative aspect-[2/3] ${watched ? "opacity-60 grayscale" : ""}`}
           style={
@@ -51,7 +56,9 @@ export default function CalendarEventCard({ event }: { event: CalendarEvent }) {
             />
           ) : (
             <div className="text-muted-foreground flex h-full w-full flex-col items-center justify-center gap-1 p-3 text-center text-sm">
-              <span className="line-clamp-3 font-medium">{event.title || "No Poster"}</span>
+              <span className="line-clamp-3 font-medium">
+                {event.title || "No Poster"}
+              </span>
             </div>
           )}
           <div className="from-background/70 pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t to-transparent opacity-90" />
@@ -92,7 +99,9 @@ export default function CalendarEventCard({ event }: { event: CalendarEvent }) {
             </div>
           ) : null}
           {showMetadata && airTime ? (
-            <div className="text-muted-foreground mt-0.5 text-[11px] font-medium">{airTime}</div>
+            <div className="text-muted-foreground mt-0.5 text-[11px] font-medium">
+              {airTime}
+            </div>
           ) : null}
         </ViewTransitionLink>
       ) : null}

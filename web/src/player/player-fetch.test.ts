@@ -28,7 +28,10 @@ describe("playerFetch", () => {
     );
 
     await expect(
-      playerFetch<{ job: { status: string } }>(config, "/subtitles/ai/translate"),
+      playerFetch<{ job: { status: string } }>(
+        config,
+        "/subtitles/ai/translate",
+      ),
     ).resolves.toEqual({
       job: { status: "running" },
     });
@@ -40,7 +43,9 @@ describe("playerFetch", () => {
       vi.fn(async () => new Response(null, { status: 202 })),
     );
 
-    await expect(playerFetch<void>(config, "/playback/route-events")).resolves.toBeUndefined();
+    await expect(
+      playerFetch<void>(config, "/playback/route-events"),
+    ).resolves.toBeUndefined();
   });
 
   it("sends the host application's stable device identity", async () => {
@@ -52,7 +57,9 @@ describe("playerFetch", () => {
     expect(fetchMock).toHaveBeenCalledWith(
       "/api/v1/playback/start",
       expect.objectContaining({
-        headers: expect.objectContaining({ "X-Silo-Device-Id": "web-player-device" }),
+        headers: expect.objectContaining({
+          "X-Silo-Device-Id": "web-player-device",
+        }),
       }),
     );
   });

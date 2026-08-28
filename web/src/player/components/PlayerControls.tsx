@@ -49,7 +49,11 @@ interface PlayerControlsProps {
   // Marker editing
   editing?: boolean;
   activeEditKind?: MarkerKind | null;
-  onRegionEdgeChange?: (kind: MarkerKind, edge: "start" | "end", seconds: number) => void;
+  onRegionEdgeChange?: (
+    kind: MarkerKind,
+    edge: "start" | "end",
+    seconds: number,
+  ) => void;
   markerEditAvailable?: boolean;
   markerEditActive?: boolean;
   onToggleMarkerEdit?: () => void;
@@ -164,9 +168,12 @@ export function PlayerControls({
   const [audioOpen, setAudioOpen] = useState(false);
   const [chaptersOpen, setChaptersOpen] = useState(false);
   const safeDuration = duration > 0 ? duration : 0;
-  const handleSkipBack = () => onSeek(Math.max(0, currentTime - SKIP_BACK_SECONDS));
+  const handleSkipBack = () =>
+    onSeek(Math.max(0, currentTime - SKIP_BACK_SECONDS));
   const handleSkipForward = () =>
-    onSeek(Math.min(safeDuration || currentTime, currentTime + SKIP_FORWARD_SECONDS));
+    onSeek(
+      Math.min(safeDuration || currentTime, currentTime + SKIP_FORWARD_SECONDS),
+    );
   // When playing any episode in a series (even the first or last), reserve
   // both prev/next slots so the cluster remains symmetric around the play
   // button. Movies (no episode nav at all) skip the slots entirely.
@@ -221,9 +228,17 @@ export function PlayerControls({
               onClick={onPlayPause}
             >
               {playing ? (
-                <Pause className="h-7 w-7" fill="currentColor" strokeWidth={0} />
+                <Pause
+                  className="h-7 w-7"
+                  fill="currentColor"
+                  strokeWidth={0}
+                />
               ) : (
-                <Play className="ml-1 h-7 w-7" fill="currentColor" strokeWidth={0} />
+                <Play
+                  className="ml-1 h-7 w-7"
+                  fill="currentColor"
+                  strokeWidth={0}
+                />
               )}
             </button>
             <CircleButton
@@ -386,7 +401,10 @@ export function PlayerControls({
                     ariaLabel="Previous episode"
                     onClick={onPrevEpisode}
                   >
-                    <SkipBack className="h-[18px] w-[18px]" fill="currentColor" />
+                    <SkipBack
+                      className="h-[18px] w-[18px]"
+                      fill="currentColor"
+                    />
                   </CircleButton>
                 ) : (
                   <ClusterSlotSpacer size="sm" />
@@ -410,9 +428,17 @@ export function PlayerControls({
                 data-paused={!playing}
               >
                 {playing ? (
-                  <Pause className="h-6 w-6" strokeWidth={0} fill="currentColor" />
+                  <Pause
+                    className="h-6 w-6"
+                    strokeWidth={0}
+                    fill="currentColor"
+                  />
                 ) : (
-                  <Play className="ml-[2px] h-6 w-6" strokeWidth={0} fill="currentColor" />
+                  <Play
+                    className="ml-[2px] h-6 w-6"
+                    strokeWidth={0}
+                    fill="currentColor"
+                  />
                 )}
               </CircleButton>
 
@@ -433,7 +459,10 @@ export function PlayerControls({
                     ariaLabel="Next episode"
                     onClick={onNextEpisode}
                   >
-                    <SkipForward className="h-[18px] w-[18px]" fill="currentColor" />
+                    <SkipForward
+                      className="h-[18px] w-[18px]"
+                      fill="currentColor"
+                    />
                   </CircleButton>
                 ) : (
                   <ClusterSlotSpacer size="sm" />
@@ -463,7 +492,11 @@ export function PlayerControls({
                 />
               )}
 
-              <ChaptersMenu chapters={chapters ?? []} currentTime={currentTime} onSeek={onSeek} />
+              <ChaptersMenu
+                chapters={chapters ?? []}
+                currentTime={currentTime}
+                onSeek={onSeek}
+              />
 
               <SubtitleMenu
                 tracks={subtitleTracks}
@@ -655,12 +688,19 @@ function OverflowAction({
  *  so the playback cluster stays symmetric when a neighboring episode isn't
  *  available (first/last episode in a series). */
 function ClusterSlotSpacer({ size }: { size: "sm" | "md" }) {
-  const sizing = size === "md" ? "h-12 w-12 sm:h-14 sm:w-14" : "h-10 w-10 sm:h-11 sm:w-11";
+  const sizing =
+    size === "md" ? "h-12 w-12 sm:h-14 sm:w-14" : "h-10 w-10 sm:h-11 sm:w-11";
   return <div aria-hidden="true" className={sizing} />;
 }
 
 /** Curved arrow with the skip-seconds number centered in the loop. */
-function SkipIcon({ direction, seconds }: { direction: "back" | "forward"; seconds: number }) {
+function SkipIcon({
+  direction,
+  seconds,
+}: {
+  direction: "back" | "forward";
+  seconds: number;
+}) {
   const Arrow = direction === "back" ? RotateCcw : RotateCw;
   return (
     <span className="relative flex h-7 w-7 items-center justify-center">

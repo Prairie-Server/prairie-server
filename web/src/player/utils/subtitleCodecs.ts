@@ -40,7 +40,9 @@ export function isBitmapCodec(codec: string | undefined): boolean {
  * Returns a human-readable format label for display in the subtitle menu,
  * or null if the codec is unknown/unset.
  */
-export function getSubtitleFormatLabel(codec: string | undefined): string | null {
+export function getSubtitleFormatLabel(
+  codec: string | undefined,
+): string | null {
   if (!codec) return null;
   switch (codec.toLowerCase()) {
     case "ass":
@@ -83,6 +85,7 @@ export function isSubtitleFormatLabel(
   const formatLabel = getSubtitleFormatLabel(codec);
   return (
     normalizedLabel === normalizeFormatName(codec) ||
-    (formatLabel !== null && normalizedLabel === normalizeFormatName(formatLabel))
+    (formatLabel !== null &&
+      normalizedLabel === normalizeFormatName(formatLabel))
   );
 }

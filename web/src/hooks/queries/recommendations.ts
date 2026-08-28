@@ -1,6 +1,10 @@
 import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import type { DiscoverResponse, RecommendationSectionResponse, SectionItem } from "@/api/types";
+import type {
+  DiscoverResponse,
+  RecommendationSectionResponse,
+  SectionItem,
+} from "@/api/types";
 import { recKeys } from "./keys";
 
 interface ScoredItem {
@@ -40,7 +44,8 @@ export type { ScoredItem, ForYouRow, ForYouResponse };
 export function useSimilarItems(itemId: string) {
   return useQuery({
     queryKey: recKeys.similar(itemId),
-    queryFn: () => api<RecommendationResponse>(`/recommendations/similar/${itemId}`),
+    queryFn: () =>
+      api<RecommendationResponse>(`/recommendations/similar/${itemId}`),
     staleTime: 3600_000,
     enabled: !!itemId,
   });
@@ -67,7 +72,8 @@ export function useForYouRows(enabled = true) {
 export function useBecauseWatched(itemId: string) {
   return useQuery({
     queryKey: recKeys.becauseWatched(itemId),
-    queryFn: () => api<RecommendationResponse>(`/recommendations/because-watched/${itemId}`),
+    queryFn: () =>
+      api<RecommendationResponse>(`/recommendations/because-watched/${itemId}`),
     staleTime: 300_000,
     enabled: !!itemId,
   });
@@ -76,7 +82,8 @@ export function useBecauseWatched(itemId: string) {
 export function useSimilarUsers(enabled = true) {
   return useQuery({
     queryKey: recKeys.similarUsers(),
-    queryFn: () => api<RecommendationResponse>(`/recommendations/similar-users`),
+    queryFn: () =>
+      api<RecommendationResponse>(`/recommendations/similar-users`),
     staleTime: 300_000,
     enabled,
   });
@@ -94,7 +101,8 @@ export function usePopular(days?: number) {
   const params = days ? `?days=${days}` : "";
   return useQuery({
     queryKey: [...recKeys.all, "popular", days ?? 30],
-    queryFn: () => api<RecommendationResponse>(`/recommendations/popular${params}`),
+    queryFn: () =>
+      api<RecommendationResponse>(`/recommendations/popular${params}`),
     staleTime: 600_000,
   });
 }
@@ -141,7 +149,8 @@ export function useRecentlyAdded(days?: number) {
   const params = days ? `?days=${days}` : "";
   return useQuery({
     queryKey: [...recKeys.all, "recently-added", days ?? 14],
-    queryFn: () => api<RecommendationResponse>(`/recommendations/recently-added${params}`),
+    queryFn: () =>
+      api<RecommendationResponse>(`/recommendations/recently-added${params}`),
     staleTime: 600_000,
   });
 }
@@ -167,14 +176,20 @@ export interface SwipeCardsPage {
   is_cold: boolean;
 }
 
-export function useSwipeCards(enabled: boolean, mode: SwipeMode, genres: string[]) {
+export function useSwipeCards(
+  enabled: boolean,
+  mode: SwipeMode,
+  genres: string[],
+) {
   return useInfiniteQuery({
     queryKey: recKeys.watchTonightCards(mode, genres),
     queryFn: ({ pageParam }: { pageParam: string[] }) => {
       const params = new URLSearchParams({ mode, limit: "12" });
       [...genres].sort().forEach((g) => params.append("genres[]", g));
       pageParam.forEach((id) => params.append("exclude_ids[]", id));
-      return api<SwipeCardsPage>(`/recommendations/watch-tonight/cards?${params}`);
+      return api<SwipeCardsPage>(
+        `/recommendations/watch-tonight/cards?${params}`,
+      );
     },
     initialPageParam: [] as string[],
     getNextPageParam: (lastPage, allPages) => {

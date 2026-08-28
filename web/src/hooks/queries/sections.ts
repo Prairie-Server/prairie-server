@@ -31,7 +31,9 @@ interface RawProfileSectionOverridesResponse {
   overrides: RawSectionOverride[];
 }
 
-function parseOverrideConfig(config?: string): Record<string, unknown> | undefined {
+function parseOverrideConfig(
+  config?: string,
+): Record<string, unknown> | undefined {
   if (!config) {
     return undefined;
   }
@@ -82,8 +84,14 @@ export function useHomeLayout() {
   });
 }
 
-export function fetchHomeSectionItems(sectionId: string, options?: RequestInit) {
-  return api<HomeSectionItemsResponse>(`/home/sections/${sectionId}/items`, options);
+export function fetchHomeSectionItems(
+  sectionId: string,
+  options?: RequestInit,
+) {
+  return api<HomeSectionItemsResponse>(
+    `/home/sections/${sectionId}/items`,
+    options,
+  );
 }
 
 export function fetchLibrarySectionItems(
@@ -173,7 +181,10 @@ export function useBulkCreateSections() {
 export function useUpdateSection() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, ...data }: Partial<PageSectionConfig> & { id: string }) =>
+    mutationFn: ({
+      id,
+      ...data
+    }: Partial<PageSectionConfig> & { id: string }) =>
       api<PageSectionConfig>(`/admin/sections/${id}`, {
         method: "PUT",
         body: JSON.stringify(data),
@@ -187,7 +198,8 @@ export function useUpdateSection() {
 export function useDeleteSection() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api<void>(`/admin/sections/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) =>
+      api<void>(`/admin/sections/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       void qc.invalidateQueries({ queryKey: sectionKeys.all });
       void invalidateAdminCollectionQueries(qc);
@@ -211,24 +223,32 @@ export function useReorderSections() {
 
 export function useProfileSectionSettings(scope: string, libraryId?: number) {
   return useQuery({
-    queryKey: sectionKeys.profileOverrides(scope, libraryId ? String(libraryId) : undefined),
+    queryKey: sectionKeys.profileOverrides(
+      scope,
+      libraryId ? String(libraryId) : undefined,
+    ),
     queryFn: () => {
       const params = new URLSearchParams({ scope });
       if (libraryId) params.set("library_id", String(libraryId));
-      return api<SettingsSectionsResponse>(`/profile/sections/settings?${params}`);
+      return api<SettingsSectionsResponse>(
+        `/profile/sections/settings?${params}`,
+      );
     },
   });
 }
 
 export function useProfileSectionOverrides(scope: string, libraryId?: number) {
   return useQuery({
-    queryKey: sectionKeys.profileOverridesRaw(scope, libraryId ? String(libraryId) : undefined),
+    queryKey: sectionKeys.profileOverridesRaw(
+      scope,
+      libraryId ? String(libraryId) : undefined,
+    ),
     queryFn: () => {
       const params = new URLSearchParams({ scope });
       if (libraryId) params.set("library_id", String(libraryId));
-      return api<RawProfileSectionOverridesResponse>(`/profile/sections?${params}`).then(
-        normalizeProfileSectionOverridesResponse,
-      );
+      return api<RawProfileSectionOverridesResponse>(
+        `/profile/sections?${params}`,
+      ).then(normalizeProfileSectionOverridesResponse);
     },
   });
 }
@@ -266,7 +286,11 @@ export function useResetProfileOverrides() {
 export function useRestoreDefaultSections() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (params: { scope: string; library_id?: number; reset_profiles?: boolean }) =>
+    mutationFn: (params: {
+      scope: string;
+      library_id?: number;
+      reset_profiles?: boolean;
+    }) =>
       api<PageSectionListResponse>("/admin/sections/restore-defaults", {
         method: "POST",
         body: JSON.stringify(params),

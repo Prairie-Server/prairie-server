@@ -35,7 +35,10 @@ function useSessionCount() {
   return sessions.length;
 }
 
-export default function AdminSidebar({ onNavigate, embedded = false }: AdminSidebarProps) {
+export default function AdminSidebar({
+  onNavigate,
+  embedded = false,
+}: AdminSidebarProps) {
   const location = useLocation();
   const sessionCount = useSessionCount();
   const buildInfo = useBuildInfo();
@@ -51,17 +54,23 @@ export default function AdminSidebar({ onNavigate, embedded = false }: AdminSide
   } else if (buildInfo.data?.available) {
     const buildNumber = buildInfo.data.build_number ?? 0;
     buildDisplay =
-      buildNumber > 0 ? `${buildNumber} · ${buildInfo.data.display}` : buildInfo.data.display;
+      buildNumber > 0
+        ? `${buildNumber} · ${buildInfo.data.display}`
+        : buildInfo.data.display;
   }
 
   const activityBadge =
-    sessionCount > 0 ? <span className="live-badge">{sessionCount} live</span> : undefined;
+    sessionCount > 0 ? (
+      <span className="live-badge">{sessionCount} live</span>
+    ) : undefined;
   const sections: SidebarSection[] = buildAdminNavSections({
     policyEditorAvailable: policyCapability.data?.editor_available === true,
   }).map((section) => ({
     ...section,
     items: section.items.map((item) =>
-      item.href === "/admin/activity" ? { ...item, badge: activityBadge } : item,
+      item.href === "/admin/activity"
+        ? { ...item, badge: activityBadge }
+        : item,
     ),
   }));
 
@@ -78,7 +87,10 @@ export default function AdminSidebar({ onNavigate, embedded = false }: AdminSide
 
   function isActive(item: SidebarItem) {
     if (item.exact) return location.pathname === item.href;
-    return location.pathname === item.href || location.pathname.startsWith(`${item.href}/`);
+    return (
+      location.pathname === item.href ||
+      location.pathname.startsWith(`${item.href}/`)
+    );
   }
 
   return (
@@ -108,7 +120,11 @@ export default function AdminSidebar({ onNavigate, embedded = false }: AdminSide
         className="sidebar-scroll flex-1 space-y-5 overflow-y-auto px-3"
       >
         {sections.map((section) => (
-          <SideNavSection key={section.label} label={section.label} idPrefix="admin-nav">
+          <SideNavSection
+            key={section.label}
+            label={section.label}
+            idPrefix="admin-nav"
+          >
             {section.items.map((item) =>
               item.external ? (
                 <SideNavItem
@@ -149,7 +165,11 @@ export default function AdminSidebar({ onNavigate, embedded = false }: AdminSide
           </div>
           <div
             className="text-sidebar-foreground mt-1 font-mono text-[12px] leading-5"
-            title={buildInfo.data?.built_at ? `Built ${buildInfo.data.built_at}` : undefined}
+            title={
+              buildInfo.data?.built_at
+                ? `Built ${buildInfo.data.built_at}`
+                : undefined
+            }
           >
             {buildDisplay}
           </div>

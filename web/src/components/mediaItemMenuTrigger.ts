@@ -7,14 +7,20 @@ type PosterActionSizeClasses = {
   trigger: string;
 };
 
-const POSTER_ACTION_SIZE_CLASSES: Record<PosterActionDensity | "wide", PosterActionSizeClasses> = {
+const POSTER_ACTION_SIZE_CLASSES: Record<
+  PosterActionDensity | "wide",
+  PosterActionSizeClasses
+> = {
   wide: { icon: "size-5", trigger: "size-9" },
   narrow: { icon: "size-3", trigger: "size-6" },
   compact: { icon: "size-3 sm:size-3.5", trigger: "size-6 sm:size-7" },
   standard: { icon: "size-3 sm:size-4", trigger: "size-6 sm:size-8" },
 };
 
-function posterActionSizeClasses(variant: "poster" | "wide", density: PosterActionDensity) {
+function posterActionSizeClasses(
+  variant: "poster" | "wide",
+  density: PosterActionDensity,
+) {
   return POSTER_ACTION_SIZE_CLASSES[variant === "wide" ? "wide" : density];
 }
 

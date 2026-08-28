@@ -25,7 +25,8 @@ describe("bootstrapAccessToken", () => {
           return localStorageState.size;
         },
         getItem: (key: string) => localStorageState.get(key) ?? null,
-        key: (index: number) => Array.from(localStorageState.keys())[index] ?? null,
+        key: (index: number) =>
+          Array.from(localStorageState.keys())[index] ?? null,
         setItem: (key: string, value: string) => {
           localStorageState.set(key, value);
         },
@@ -93,7 +94,9 @@ describe("getPersonCatalogItems", () => {
     });
 
     const fetchMock = vi.fn<typeof fetch>(async (input) => {
-      expect(String(input)).toBe("/api/v1/catalog?source=person&person_id=123&limit=24&offset=0");
+      expect(String(input)).toBe(
+        "/api/v1/catalog?source=person&person_id=123&limit=24&offset=0",
+      );
       return new Response(
         JSON.stringify({
           total: 0,
@@ -109,7 +112,9 @@ describe("getPersonCatalogItems", () => {
 
     vi.stubGlobal("fetch", fetchMock);
 
-    await expect(getPersonCatalogItems("123", undefined, 24, 0)).resolves.toEqual({
+    await expect(
+      getPersonCatalogItems("123", undefined, 24, 0),
+    ).resolves.toEqual({
       total: 0,
       has_more: false,
       items: [],
@@ -146,7 +151,9 @@ describe("apiBlob", () => {
       // 3 GiB; Response normally derives Content-Length from the body, so
       // override the header lookup instead of materializing a huge body.
       vi.spyOn(res.headers, "get").mockImplementation((name) =>
-        name.toLowerCase() === "content-length" ? String(3 * 1024 * 1024 * 1024) : null,
+        name.toLowerCase() === "content-length"
+          ? String(3 * 1024 * 1024 * 1024)
+          : null,
       );
       return res;
     });
@@ -181,7 +188,8 @@ describe("api", () => {
           return localStorageState.size;
         },
         getItem: (key: string) => localStorageState.get(key) ?? null,
-        key: (index: number) => Array.from(localStorageState.keys())[index] ?? null,
+        key: (index: number) =>
+          Array.from(localStorageState.keys())[index] ?? null,
         setItem: (key: string, value: string) => {
           localStorageState.set(key, value);
         },
@@ -250,8 +258,14 @@ describe("api", () => {
       ([input]) => String(input) !== "/api/v1/auth/refresh",
     );
     expect(requestCalls).toHaveLength(2);
-    const firstHeaders = requestCalls[0]?.[1]?.headers as Record<string, string>;
-    const retryHeaders = requestCalls[1]?.[1]?.headers as Record<string, string>;
+    const firstHeaders = requestCalls[0]?.[1]?.headers as Record<
+      string,
+      string
+    >;
+    const retryHeaders = requestCalls[1]?.[1]?.headers as Record<
+      string,
+      string
+    >;
     expect(firstHeaders).toMatchObject({
       Authorization: "Bearer old",
       "X-Profile-Id": "profile-old",
@@ -290,7 +304,10 @@ describe("api", () => {
 
     await api("/test", { headers: { "X-Profile-Id": "profile-old" } });
 
-    const headers = fetchMock.mock.calls[0]![1]!.headers as Record<string, string>;
+    const headers = fetchMock.mock.calls[0]![1]!.headers as Record<
+      string,
+      string
+    >;
     expect(headers["X-Profile-Id"]).toBe("profile-old");
   });
 
@@ -323,7 +340,10 @@ describe("api", () => {
         },
       });
 
-      const headers = fetchMock.mock.calls[0]![1]!.headers as Record<string, string>;
+      const headers = fetchMock.mock.calls[0]![1]!.headers as Record<
+        string,
+        string
+      >;
       expect(headers["X-Profile-Id"]).toBe("profile-old");
       expect(headers["X-Profile-Token"]).toBe("fake");
     } finally {
@@ -350,7 +370,9 @@ describe("api", () => {
     const fetchMock = vi.fn<typeof fetch>(async (input, init) => {
       const url = String(input);
       if (url === "/api/v1/auth/refresh") {
-        expect(JSON.parse(String(init?.body))).toEqual({ refresh_token: "dummy" });
+        expect(JSON.parse(String(init?.body))).toEqual({
+          refresh_token: "dummy",
+        });
         return Response.json({
           access_token: "example",
           refresh_token: "sample",
@@ -361,7 +383,10 @@ describe("api", () => {
       expect(headers["X-Profile-Id"]).toBe("profile-old");
       expect(headers["X-Profile-Token"]).toBe("fake");
       if (headers.Authorization === "Bearer fake") {
-        return Response.json({ error: "unauthorized", message: "expired" }, { status: 401 });
+        return Response.json(
+          { error: "unauthorized", message: "expired" },
+          { status: 401 },
+        );
       }
       expect(headers.Authorization).toBe("Bearer example");
       return Response.json({ ok: true });
@@ -394,12 +419,17 @@ describe("api", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn<typeof fetch>(async () =>
-        Response.json({ error: "profile_unverified", message: "PIN required" }, { status: 403 }),
+        Response.json(
+          { error: "profile_unverified", message: "PIN required" },
+          { status: 403 },
+        ),
       ),
     );
 
     try {
-      await expect(apiWithProfileRequestContext("/test", snapshot!)).rejects.toMatchObject({
+      await expect(
+        apiWithProfileRequestContext("/test", snapshot!),
+      ).rejects.toMatchObject({
         status: 403,
         code: "profile_unverified",
       });
@@ -449,7 +479,10 @@ describe("api", () => {
         await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledOnce());
         changeAuthority();
         resolveResponse(
-          Response.json({ error: "profile_unverified", message: "PIN required" }, { status: 403 }),
+          Response.json(
+            { error: "profile_unverified", message: "PIN required" },
+            { status: 403 },
+          ),
         );
 
         await expect(request).rejects.toMatchObject({
@@ -499,12 +532,17 @@ describe("api", () => {
       });
       const fetchMock = vi.fn<typeof fetch>(async (input) => {
         if (String(input) === "/api/v1/auth/refresh") return refreshResponse;
-        return Response.json({ error: "unauthorized", message: "expired" }, { status: 401 });
+        return Response.json(
+          { error: "unauthorized", message: "expired" },
+          { status: 401 },
+        );
       });
       vi.stubGlobal("fetch", fetchMock);
 
       try {
-        const request = apiWithProfileRequestContext("/test", snapshot!, { method: "PUT" });
+        const request = apiWithProfileRequestContext("/test", snapshot!, {
+          method: "PUT",
+        });
         await vi.waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
         if (changedContext === "account") {
           setAccessToken("sample");
@@ -523,9 +561,13 @@ describe("api", () => {
           }),
         );
 
-        await expect(request).rejects.toMatchObject({ name: "StaleApiRequestContextError" });
+        await expect(request).rejects.toMatchObject({
+          name: "StaleApiRequestContextError",
+        });
         expect(fetchMock).toHaveBeenCalledTimes(2);
-        expect(getAccessToken()).toBe(changedContext === "account" ? "sample" : "fake");
+        expect(getAccessToken()).toBe(
+          changedContext === "account" ? "sample" : "fake",
+        );
         expect(localStorage.getItem("refresh_token")).toBe(
           changedContext === "account" ? "placeholder" : "dummy",
         );
@@ -565,7 +607,9 @@ describe("api", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     try {
-      await expect(apiWithProfileRequestContext("/test", snapshot!)).rejects.toMatchObject({
+      await expect(
+        apiWithProfileRequestContext("/test", snapshot!),
+      ).rejects.toMatchObject({
         name: "StaleApiRequestContextError",
       });
       expect(fetchMock).not.toHaveBeenCalled();
@@ -595,10 +639,15 @@ describe("api", () => {
 
     await api("/test", { headers: { "x-silo-client-family": "tv" } });
 
-    const headers = fetchMock.mock.calls[0]![1]!.headers as Record<string, string>;
+    const headers = fetchMock.mock.calls[0]![1]!.headers as Record<
+      string,
+      string
+    >;
     expect(headers["X-Silo-Client-Family"]).toBe("web");
     expect(
-      Object.keys(headers).filter((key) => key.toLowerCase() === "x-silo-client-family"),
+      Object.keys(headers).filter(
+        (key) => key.toLowerCase() === "x-silo-client-family",
+      ),
     ).toEqual(["X-Silo-Client-Family"]);
   });
 
@@ -641,7 +690,9 @@ describe("api", () => {
       configurable: true,
     });
 
-    const fetchMock = vi.fn<typeof fetch>(async () => new Response(null, { status: 202 }));
+    const fetchMock = vi.fn<typeof fetch>(
+      async () => new Response(null, { status: 202 }),
+    );
     vi.stubGlobal("fetch", fetchMock);
 
     await expect(

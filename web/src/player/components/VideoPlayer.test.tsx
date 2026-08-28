@@ -1,8 +1,18 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { createElement, type ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { PlayerConfigProvider, type PlayerConfig } from "../context/PlayerConfigContext";
+import {
+  PlayerConfigProvider,
+  type PlayerConfig,
+} from "../context/PlayerConfigContext";
 import { fixturePlanV3 } from "../protocol-v3.fixtures";
 import type {
   PlaybackRealtimeCommandEnvelope,
@@ -15,7 +25,9 @@ import { VideoPlayer } from "./VideoPlayer";
 const realtimeOptions = vi.hoisted(() => ({
   current: null as null | {
     onEvent?: (event: PlaybackRealtimeEventEnvelope) => void;
-    onCommand: (command: PlaybackRealtimeCommandEnvelope) => Promise<void> | void;
+    onCommand: (
+      command: PlaybackRealtimeCommandEnvelope,
+    ) => Promise<void> | void;
   },
 }));
 const controls = vi.hoisted(() => ({
@@ -34,7 +46,9 @@ const subtitleTimeline = vi.hoisted(() => ({
 const toastError = vi.hoisted(() => vi.fn());
 const hlsJS = vi.hoisted(() => ({ supported: false, constructed: vi.fn() }));
 
-vi.mock("sonner", () => ({ toast: { error: toastError, success: vi.fn(), message: vi.fn() } }));
+vi.mock("sonner", () => ({
+  toast: { error: toastError, success: vi.fn(), message: vi.fn() },
+}));
 
 vi.mock("../hooks/usePlaybackRealtime", () => ({
   usePlaybackRealtime: vi.fn((options) => {
@@ -45,7 +59,9 @@ vi.mock("../hooks/usePlaybackRealtime", () => ({
 vi.mock("../hooks/useWatchProgress", () => ({
   useWatchProgress: () => vi.fn().mockResolvedValue(undefined),
 }));
-vi.mock("../hooks/useKeyboardShortcuts", () => ({ useKeyboardShortcuts: vi.fn() }));
+vi.mock("../hooks/useKeyboardShortcuts", () => ({
+  useKeyboardShortcuts: vi.fn(),
+}));
 vi.mock("../hooks/useRemuxSeeking", () => ({
   useRemuxSeeking: () => ({ handleSeek: playerSeek }),
 }));
@@ -78,7 +94,10 @@ vi.mock("hls.js", () => ({
       MANIFEST_PARSED: "manifestParsed",
       BUFFER_APPENDED: "bufferAppended",
     };
-    static ErrorTypes = { NETWORK_ERROR: "networkError", MEDIA_ERROR: "mediaError" };
+    static ErrorTypes = {
+      NETWORK_ERROR: "networkError",
+      MEDIA_ERROR: "mediaError",
+    };
     static isSupported = () => hlsJS.supported;
 
     constructor(config?: unknown) {
@@ -116,7 +135,10 @@ const playerConfig: PlayerConfig = {
 };
 
 function wrapper({ children }: { children: ReactNode }) {
-  return createElement(PlayerConfigProvider, { config: playerConfig, children });
+  return createElement(PlayerConfigProvider, {
+    config: playerConfig,
+    children,
+  });
 }
 
 const directPlan = fixturePlanV3({
@@ -129,7 +151,9 @@ const directPlan = fixturePlanV3({
   },
 });
 
-function playerProps(overrides: Partial<Parameters<typeof VideoPlayer>[0]> = {}) {
+function playerProps(
+  overrides: Partial<Parameters<typeof VideoPlayer>[0]> = {},
+) {
   return {
     title: "Test movie",
     streamUrl: "/api/v1/stream/session-1?token=token",
@@ -146,7 +170,9 @@ function playerProps(overrides: Partial<Parameters<typeof VideoPlayer>[0]> = {})
   };
 }
 
-function renderPlayer(overrides: Partial<Parameters<typeof VideoPlayer>[0]> = {}) {
+function renderPlayer(
+  overrides: Partial<Parameters<typeof VideoPlayer>[0]> = {},
+) {
   const props = playerProps(overrides);
   const rendered = render(createElement(VideoPlayer, props), { wrapper });
   return {
@@ -219,15 +245,25 @@ describe("VideoPlayer plan failure recovery", () => {
       const { container } = renderPlayer({ shouldAutoPlay: false });
       const video = container.querySelector("video");
       if (!video) throw new Error("expected video element");
-      Object.defineProperty(video, "readyState", { configurable: true, value: 3 });
-      Object.defineProperty(video, "currentTime", { configurable: true, value: 50 });
+      Object.defineProperty(video, "readyState", {
+        configurable: true,
+        value: 3,
+      });
+      Object.defineProperty(video, "currentTime", {
+        configurable: true,
+        value: 50,
+      });
       fireEvent.canPlay(video);
-      await vi.waitFor(() => expect(controls.current?.onSurfaceTap).toBeTypeOf("function"));
+      await vi.waitFor(() =>
+        expect(controls.current?.onSurfaceTap).toBeTypeOf("function"),
+      );
 
       act(() =>
         controls.current?.onSurfaceTap?.({
           clientX: 200,
-          currentTarget: { getBoundingClientRect: () => ({ left: 0, width: 390 }) },
+          currentTarget: {
+            getBoundingClientRect: () => ({ left: 0, width: 390 }),
+          },
         } as unknown as React.MouseEvent<HTMLElement>),
       );
       act(() => vi.advanceTimersByTime(250));
@@ -235,7 +271,9 @@ describe("VideoPlayer plan failure recovery", () => {
 
       const leftTap = {
         clientX: 20,
-        currentTarget: { getBoundingClientRect: () => ({ left: 0, width: 390 }) },
+        currentTarget: {
+          getBoundingClientRect: () => ({ left: 0, width: 390 }),
+        },
       } as unknown as React.MouseEvent<HTMLElement>;
       act(() => {
         controls.current?.onSurfaceTap?.(leftTap);
@@ -254,8 +292,13 @@ describe("VideoPlayer plan failure recovery", () => {
     const video = container.querySelector("video");
     if (!video) throw new Error("expected video element");
 
-    await waitFor(() => expect(video.src).toContain("/api/v1/stream/session-1"));
-    Object.defineProperty(video, "readyState", { configurable: true, value: 3 });
+    await waitFor(() =>
+      expect(video.src).toContain("/api/v1/stream/session-1"),
+    );
+    Object.defineProperty(video, "readyState", {
+      configurable: true,
+      value: 3,
+    });
     fireEvent.canPlay(video);
     expect(play).not.toHaveBeenCalled();
   });
@@ -281,7 +324,10 @@ describe("VideoPlayer plan failure recovery", () => {
       const video = container.querySelector("video");
       if (!video) throw new Error("expected video element");
 
-      Object.defineProperty(video, "readyState", { configurable: true, value: 3 });
+      Object.defineProperty(video, "readyState", {
+        configurable: true,
+        value: 3,
+      });
       fireEvent.canPlay(video);
       act(() => vi.advanceTimersByTime(HLS_STARTUP_TIMEOUT_MS));
 
@@ -303,7 +349,9 @@ describe("VideoPlayer plan failure recovery", () => {
     expect(onPlanFailure).toHaveBeenCalledOnce();
 
     rerenderPlayer({ replanError: "Recovery was refused." });
-    expect(await screen.findByText("Recovery was refused.")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Recovery was refused."),
+    ).toBeInTheDocument();
 
     const nextPlan = fixturePlanV3({
       ...directPlan,
@@ -312,12 +360,20 @@ describe("VideoPlayer plan failure recovery", () => {
     });
     rerenderPlayer({ plan: nextPlan, planRevision: 2, replanError: null });
     await waitFor(() =>
-      expect(screen.queryByText("Recovery was refused.")).not.toBeInTheDocument(),
+      expect(
+        screen.queryByText("Recovery was refused."),
+      ).not.toBeInTheDocument(),
     );
 
-    rerenderPlayer({ plan: nextPlan, planRevision: 2, replanError: "Unrelated replan error." });
+    rerenderPlayer({
+      plan: nextPlan,
+      planRevision: 2,
+      replanError: "Unrelated replan error.",
+    });
     await act(async () => Promise.resolve());
-    expect(screen.queryByText("Unrelated replan error.")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Unrelated replan error."),
+    ).not.toBeInTheDocument();
   });
 
   it("re-arms the plan failure guard after a transient recovery request failure", async () => {
@@ -347,7 +403,11 @@ describe("VideoPlayer plan failure recovery", () => {
       await onCommand(planInvalidatedCommand());
     });
 
-    expect(onPlanInvalidated).toHaveBeenCalledWith(directPlan.plan_id, "video_copy_unsafe", 0);
+    expect(onPlanInvalidated).toHaveBeenCalledWith(
+      directPlan.plan_id,
+      "video_copy_unsafe",
+      0,
+    );
   });
 
   // A rejected result is the server's cue to stop the session, which is what
@@ -398,9 +458,13 @@ describe("VideoPlayer plan failure recovery", () => {
     await waitFor(() => expect(onSubtitleTrackChange).toHaveBeenCalledOnce());
     expect(onSubtitleTrackChange).toHaveBeenCalledWith(2, 0);
 
-    rerenderPlayer({ replanError: "Silo could not apply the subtitle selection." });
+    rerenderPlayer({
+      replanError: "Silo could not apply the subtitle selection.",
+    });
 
-    await waitFor(() => expect(controls.current?.activeSubtitleIndex).toBeNull());
+    await waitFor(() =>
+      expect(controls.current?.activeSubtitleIndex).toBeNull(),
+    );
     expect(onSubtitleTrackChange).toHaveBeenCalledOnce();
 
     const nextPlan = fixturePlanV3({
@@ -409,7 +473,11 @@ describe("VideoPlayer plan failure recovery", () => {
       plan_attempt_key: "v3:next-session",
       session_id: "session-2",
     });
-    rerenderPlayer({ sessionId: "session-2", plan: nextPlan, replanError: null });
+    rerenderPlayer({
+      sessionId: "session-2",
+      plan: nextPlan,
+      replanError: null,
+    });
 
     await waitFor(() => expect(controls.current?.activeSubtitleIndex).toBe(2));
     expect(onSubtitleTrackChange).toHaveBeenCalledTimes(2);
@@ -441,14 +509,19 @@ describe("VideoPlayer plan failure recovery", () => {
     expect(toastError).not.toHaveBeenCalled();
 
     rerenderPlayer({
-      replanError: "The selected subtitle must be burned into the video, but 4K is disabled.",
+      replanError:
+        "The selected subtitle must be burned into the video, but 4K is disabled.",
       replanErrorTitle: "That subtitle track can't be used",
     });
 
     await waitFor(() => expect(toastError).toHaveBeenCalledOnce());
-    expect(toastError).toHaveBeenCalledWith("That subtitle track can't be used", {
-      description: "The selected subtitle must be burned into the video, but 4K is disabled.",
-    });
+    expect(toastError).toHaveBeenCalledWith(
+      "That subtitle track can't be used",
+      {
+        description:
+          "The selected subtitle must be burned into the video, but 4K is disabled.",
+      },
+    );
   });
 
   it("falls back to a generic subtitle refusal title and toasts once", async () => {
@@ -471,16 +544,25 @@ describe("VideoPlayer plan failure recovery", () => {
     });
 
     await waitFor(() => expect(onSubtitleTrackChange).toHaveBeenCalledOnce());
-    rerenderPlayer({ replanError: "Silo could not apply the subtitle selection." });
-    await waitFor(() => expect(toastError).toHaveBeenCalledOnce());
-    expect(toastError).toHaveBeenCalledWith("That subtitle track can't be used", {
-      description: "Silo could not apply the subtitle selection.",
+    rerenderPlayer({
+      replanError: "Silo could not apply the subtitle selection.",
     });
+    await waitFor(() => expect(toastError).toHaveBeenCalledOnce());
+    expect(toastError).toHaveBeenCalledWith(
+      "That subtitle track can't be used",
+      {
+        description: "Silo could not apply the subtitle selection.",
+      },
+    );
 
     // The ref cleared on rollback, so a re-render with the same refusal must
     // not stack a second toast.
-    rerenderPlayer({ replanError: "Silo could not apply the subtitle selection." });
-    await waitFor(() => expect(controls.current?.activeSubtitleIndex).toBeNull());
+    rerenderPlayer({
+      replanError: "Silo could not apply the subtitle selection.",
+    });
+    await waitFor(() =>
+      expect(controls.current?.activeSubtitleIndex).toBeNull(),
+    );
     expect(toastError).toHaveBeenCalledOnce();
   });
 });
@@ -513,12 +595,16 @@ describe("VideoPlayer intro skip prompt", () => {
 
   it("renders the ask pill and consumes Escape", async () => {
     await enterIntro("ask");
-    expect(await screen.findByRole("button", { name: "Skip Intro" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "Skip Intro" }),
+    ).toBeInTheDocument();
 
     fireEvent.keyDown(document, { key: "Escape" });
 
     await waitFor(() =>
-      expect(screen.queryByRole("button", { name: "Skip Intro" })).not.toBeInTheDocument(),
+      expect(
+        screen.queryByRole("button", { name: "Skip Intro" }),
+      ).not.toBeInTheDocument(),
     );
   });
 
@@ -536,11 +622,16 @@ describe("VideoPlayer intro skip prompt", () => {
   it("renders no intro action in never mode", async () => {
     await enterIntro("never");
 
-    expect(screen.queryByRole("button", { name: /Intro/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Intro/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("prompts for nothing while the intro mode is still unknown", async () => {
-    const rendered = renderPlayer({ intro: { start: 10, end: 20 }, introSkipMode: null });
+    const rendered = renderPlayer({
+      intro: { start: 10, end: 20 },
+      introSkipMode: null,
+    });
     const video = rendered.container.querySelector("video");
     if (!video) throw new Error("expected video element");
 
@@ -548,7 +639,9 @@ describe("VideoPlayer intro skip prompt", () => {
     fireEvent.timeUpdate(video);
     await act(async () => Promise.resolve());
 
-    expect(screen.queryByRole("button", { name: /Intro/ })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /Intro/ }),
+    ).not.toBeInTheDocument();
     // Nothing was skipped either: an unknown mode must not act like "always".
     expect(video.currentTime).toBe(12);
   });
@@ -592,8 +685,8 @@ describe("VideoPlayer native HLS timeline", () => {
     vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
     vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
     vi.spyOn(HTMLMediaElement.prototype, "load").mockImplementation(() => {});
-    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation((mime) =>
-      mime === "application/vnd.apple.mpegurl" ? "probably" : "",
+    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation(
+      (mime) => (mime === "application/vnd.apple.mpegurl" ? "probably" : ""),
     );
   });
 
@@ -625,7 +718,9 @@ describe("VideoPlayer native HLS timeline", () => {
     const video = container.querySelector("video");
     if (!video) throw new Error("expected video element");
 
-    await waitFor(() => expect(video.src).toContain("/api/v1/stream/session-1"));
+    await waitFor(() =>
+      expect(video.src).toContain("/api/v1/stream/session-1"),
+    );
     fireEvent.loadedMetadata(video);
 
     expect(video.currentTime).toBe(7);
@@ -666,7 +761,9 @@ describe("VideoPlayer native HLS timeline", () => {
     const video = container.querySelector("video");
     if (!video) throw new Error("expected video element");
 
-    await waitFor(() => expect(video.src).toContain("/api/v1/stream/session-1"));
+    await waitFor(() =>
+      expect(video.src).toContain("/api/v1/stream/session-1"),
+    );
     fireEvent.loadedMetadata(video);
 
     expect(video.currentTime).toBe(7);
@@ -735,8 +832,8 @@ describe("VideoPlayer server-invalidated transport swap", () => {
     vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue(undefined);
     vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
     vi.spyOn(HTMLMediaElement.prototype, "load").mockImplementation(() => {});
-    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation((mime) =>
-      mime === "application/vnd.apple.mpegurl" ? "probably" : "",
+    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation(
+      (mime) => (mime === "application/vnd.apple.mpegurl" ? "probably" : ""),
     );
   });
 
@@ -747,12 +844,15 @@ describe("VideoPlayer server-invalidated transport swap", () => {
 
   it("resumes playback and restores the position on the replacement transport", async () => {
     const play = vi.mocked(HTMLMediaElement.prototype.play);
-    let rerender: ((next: Partial<Parameters<typeof VideoPlayer>[0]>) => void) | null = null;
+    let rerender:
+      ((next: Partial<Parameters<typeof VideoPlayer>[0]>) => void) | null =
+      null;
     const onPlanInvalidated = vi.fn(async () => {
       rerender?.({
         plan: invalidatedHlsPlan,
         planRevision: 2,
-        streamUrl: "/api/v1/playback/transcode/session-1/master.m3u8?token=token",
+        streamUrl:
+          "/api/v1/playback/transcode/session-1/master.m3u8?token=token",
       });
       return true;
     });
@@ -762,7 +862,9 @@ describe("VideoPlayer server-invalidated transport swap", () => {
     const video = rendered.container.querySelector("video");
     if (!video) throw new Error("expected video element");
 
-    await waitFor(() => expect(video.src).toContain("/api/v1/stream/session-1"));
+    await waitFor(() =>
+      expect(video.src).toContain("/api/v1/stream/session-1"),
+    );
     play.mockClear();
 
     const onCommand = realtimeOptions.current?.onCommand;
@@ -775,7 +877,10 @@ describe("VideoPlayer server-invalidated transport swap", () => {
     fireEvent.loadedMetadata(video);
     expect(video.currentTime).toBe(24);
 
-    Object.defineProperty(video, "readyState", { configurable: true, value: 3 });
+    Object.defineProperty(video, "readyState", {
+      configurable: true,
+      value: 3,
+    });
     fireEvent.canPlay(video);
 
     expect(play).toHaveBeenCalledOnce();
@@ -791,7 +896,9 @@ describe("VideoPlayer server-invalidated transport swap", () => {
       const play = vi.mocked(HTMLMediaElement.prototype.play);
       play
         .mockRejectedValueOnce(
-          Object.assign(new Error("The play() request was interrupted"), { name: "AbortError" }),
+          Object.assign(new Error("The play() request was interrupted"), {
+            name: "AbortError",
+          }),
         )
         .mockResolvedValue(undefined);
 
@@ -802,11 +909,15 @@ describe("VideoPlayer server-invalidated transport swap", () => {
       rerenderPlayer({
         plan: invalidatedHlsPlan,
         planRevision: 2,
-        streamUrl: "/api/v1/playback/transcode/session-1/master.m3u8?token=token",
+        streamUrl:
+          "/api/v1/playback/transcode/session-1/master.m3u8?token=token",
       });
       play.mockClear();
 
-      Object.defineProperty(video, "readyState", { configurable: true, value: 3 });
+      Object.defineProperty(video, "readyState", {
+        configurable: true,
+        value: 3,
+      });
       fireEvent.canPlay(video);
       expect(play).toHaveBeenCalledOnce();
 
@@ -841,7 +952,10 @@ describe("VideoPlayer translation handoff", () => {
   it("selects the refreshed downloaded track and clears the live overlay", async () => {
     const onRefreshSubtitles = vi.fn();
     const onSubtitleChanged = vi.fn();
-    const { rerenderPlayer } = renderPlayer({ onRefreshSubtitles, onSubtitleChanged });
+    const { rerenderPlayer } = renderPlayer({
+      onRefreshSubtitles,
+      onSubtitleChanged,
+    });
 
     act(() => {
       realtimeOptions.current?.onEvent?.({
@@ -860,7 +974,9 @@ describe("VideoPlayer translation handoff", () => {
       });
     });
     expect(controls.current?.activeSubtitleIndex).toBe(1_000_000);
-    expect(controls.current?.subtitleTracks.some((track) => track.live)).toBe(true);
+    expect(controls.current?.subtitleTracks.some((track) => track.live)).toBe(
+      true,
+    );
 
     act(() => {
       realtimeOptions.current?.onEvent?.({
@@ -901,7 +1017,9 @@ describe("VideoPlayer translation handoff", () => {
       subtitleUrls: [downloadedTrack],
     });
 
-    await waitFor(() => expect(onSubtitleChanged).toHaveBeenCalledWith(4, undefined));
+    await waitFor(() =>
+      expect(onSubtitleChanged).toHaveBeenCalledWith(4, undefined),
+    );
     expect(controls.current?.activeSubtitleIndex).toBe(4);
     expect(controls.current?.subtitleTracks).toEqual([downloadedTrack]);
   });

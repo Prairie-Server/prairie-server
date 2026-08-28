@@ -23,7 +23,9 @@ const CustomThemeContext = createContext<CustomThemeContextValue | null>(null);
 const UNSAFE_VALUE = /[;{}]|\/\*|<\//;
 
 function buildVarOverrideCSS(vars: Record<string, string>): string {
-  const entries = Object.entries(vars).filter(([, v]) => v !== "" && !UNSAFE_VALUE.test(v));
+  const entries = Object.entries(vars).filter(
+    ([, v]) => v !== "" && !UNSAFE_VALUE.test(v),
+  );
   if (entries.length === 0) return "";
   const props = entries.map(([k, v]) => `  --${k}: ${v};`).join("\n");
   return `:root {\n${props}\n}`;
@@ -67,7 +69,9 @@ export function CustomThemeProvider({ children }: { children: ReactNode }) {
   // Inject admin variable overrides
   useEffect(() => {
     if (adminVarsRef.current) {
-      adminVarsRef.current.textContent = buildVarOverrideCSS(adminCss?.vars ?? {});
+      adminVarsRef.current.textContent = buildVarOverrideCSS(
+        adminCss?.vars ?? {},
+      );
     }
   }, [adminCss?.vars]);
 
@@ -81,7 +85,9 @@ export function CustomThemeProvider({ children }: { children: ReactNode }) {
   // Inject user variable overrides
   useEffect(() => {
     if (userVarsRef.current) {
-      userVarsRef.current.textContent = buildVarOverrideCSS(vars as Record<string, string>);
+      userVarsRef.current.textContent = buildVarOverrideCSS(
+        vars as Record<string, string>,
+      );
     }
   }, [vars]);
 
@@ -117,6 +123,9 @@ export function CustomThemeProvider({ children }: { children: ReactNode }) {
 
 export function useCustomThemeContext(): CustomThemeContextValue {
   const ctx = useContext(CustomThemeContext);
-  if (!ctx) throw new Error("useCustomThemeContext must be used within CustomThemeProvider");
+  if (!ctx)
+    throw new Error(
+      "useCustomThemeContext must be used within CustomThemeProvider",
+    );
   return ctx;
 }

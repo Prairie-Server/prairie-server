@@ -34,7 +34,10 @@ export interface BuildSectionsOptions {
 export function buildGroupedSections<T extends GroupedItemLike>(
   items: T[],
   groups: GroupDefLike[],
-  { hideEmpty = false, ungroupedTitle = "Ungrouped" }: BuildSectionsOptions = {},
+  {
+    hideEmpty = false,
+    ungroupedTitle = "Ungrouped",
+  }: BuildSectionsOptions = {},
 ): GroupedSection<T>[] {
   const itemsByLabel = new Map<string, T[]>();
   for (const item of items) {
@@ -61,7 +64,11 @@ export function buildGroupedSections<T extends GroupedItemLike>(
     .filter((label) => label !== UNGROUPED_LABEL && !seenLabels.has(label))
     .sort();
   for (const label of staleLabels) {
-    sections.push({ id: label, name: label, items: itemsByLabel.get(label) ?? [] });
+    sections.push({
+      id: label,
+      name: label,
+      items: itemsByLabel.get(label) ?? [],
+    });
   }
 
   const ungrouped = itemsByLabel.get(UNGROUPED_LABEL) ?? [];

@@ -21,11 +21,16 @@ vi.mock("@/hooks/queries/profiles", () => ({
     isPending: false,
     mutate: (...args: unknown[]) => mocks.deleteMutate(...args),
   }),
-  useHouseholdSessions: () => ({ data: [], isLoading: false, isFetching: false }),
+  useHouseholdSessions: () => ({
+    data: [],
+    isLoading: false,
+    isFetching: false,
+  }),
 }));
 
 vi.mock("@/hooks/queries/libraries", () => ({
-  useAvailableUserLibraries: (...args: unknown[]) => mocks.useAvailableUserLibraries(...args),
+  useAvailableUserLibraries: (...args: unknown[]) =>
+    mocks.useAvailableUserLibraries(...args),
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -44,7 +49,10 @@ vi.mock("@/components/profiles/ProfileEditorDialog", () => ({
   }: {
     open: boolean;
     profile?: Profile | null;
-    onSaveSuccess?: (profile: Profile, context: { mode: "create" | "edit"; pin: string }) => void;
+    onSaveSuccess?: (
+      profile: Profile,
+      context: { mode: "create" | "edit"; pin: string },
+    ) => void;
   }) =>
     open ? (
       <div data-testid="profile-editor">
@@ -83,7 +91,10 @@ vi.mock("@/components/profiles/ProfilePinDialog", () => ({
     onVerified: (profile: Profile, token: string) => void;
   }) =>
     profile ? (
-      <button type="button" onClick={() => onVerified(profile, "verified-token")}>
+      <button
+        type="button"
+        onClick={() => onVerified(profile, "verified-token")}
+      >
         confirm-pin
       </button>
     ) : null,
@@ -196,9 +207,11 @@ describe("ProfilesSettings", () => {
       selectProfile,
       verifyProfilePin,
     });
-    mocks.deleteMutate.mockImplementation((_id: string, options?: { onSuccess?: () => void }) => {
-      options?.onSuccess?.();
-    });
+    mocks.deleteMutate.mockImplementation(
+      (_id: string, options?: { onSuccess?: () => void }) => {
+        options?.onSuccess?.();
+      },
+    );
     mocks.getProfileToken.mockReturnValue(null);
   });
 
@@ -232,7 +245,9 @@ describe("ProfilesSettings", () => {
 
     expect(container.textContent).toContain("Profiles");
     expect(container.textContent).toContain("Current");
-    expect(container.textContent).toContain("PG max · 2 libraries · Standard quality");
+    expect(container.textContent).toContain(
+      "PG max · 2 libraries · Standard quality",
+    );
   });
 
   it("creates a profile without switching the current profile", async () => {
@@ -262,7 +277,9 @@ describe("ProfilesSettings", () => {
     const deleteButton = findButton(container, "Delete");
     expect(deleteButton).toBeDefined();
     expect((deleteButton as HTMLButtonElement).disabled).toBe(true);
-    expect(container.textContent).toContain("At least one profile is required.");
+    expect(container.textContent).toContain(
+      "At least one profile is required.",
+    );
   });
 
   it("shows the current-profile delete guard when other profiles still exist", async () => {
@@ -273,12 +290,14 @@ describe("ProfilesSettings", () => {
 
     await render(<ProfilesSettings />);
 
-    const deleteButtons = Array.from(container.querySelectorAll("button")).filter(
-      (button) => button.textContent?.trim() === "Delete",
-    );
+    const deleteButtons = Array.from(
+      container.querySelectorAll("button"),
+    ).filter((button) => button.textContent?.trim() === "Delete");
 
     expect((deleteButtons[0] as HTMLButtonElement).disabled).toBe(true);
-    expect(container.textContent).toContain("Switch to another profile before deleting this one.");
+    expect(container.textContent).toContain(
+      "Switch to another profile before deleting this one.",
+    );
   });
 
   it("switches to an unlocked profile from the list", async () => {

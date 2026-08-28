@@ -19,8 +19,11 @@ function MDBListCredentialCard() {
   const checkConnection = useCheckAdminSettingsConnection();
   const [apiKey, setApiKey] = useState("");
   const [confirmClear, setConfirmClear] = useState(false);
-  const [connectionResult, setConnectionResult] = useState<ConnectionCheckResponse | null>(null);
-  const configured = new Set(sensitive?.configured ?? []).has("mdblist.api_key");
+  const [connectionResult, setConnectionResult] =
+    useState<ConnectionCheckResponse | null>(null);
+  const configured = new Set(sensitive?.configured ?? []).has(
+    "mdblist.api_key",
+  );
 
   async function save() {
     if (apiKey.trim() === "") {
@@ -63,7 +66,8 @@ function MDBListCredentialCard() {
     } catch (error) {
       setConnectionResult({
         success: false,
-        message: error instanceof Error ? error.message : "Connection check failed.",
+        message:
+          error instanceof Error ? error.message : "Connection check failed.",
       });
     }
   }
@@ -77,8 +81,9 @@ function MDBListCredentialCard() {
         <div>
           <h3 className="text-sm font-semibold">MDBList</h3>
           <p className="text-muted-foreground text-xs">
-            Enables list search/browse when users add MDBList collections. Importing a list by URL
-            works without a key — only discovery requires one. Get a free key at{" "}
+            Enables list search/browse when users add MDBList collections.
+            Importing a list by URL works without a key — only discovery
+            requires one. Get a free key at{" "}
             <a
               href="https://mdblist.com/preferences/#api"
               target="_blank"
@@ -101,19 +106,33 @@ function MDBListCredentialCard() {
         hint="Leave blank to keep the current value."
       />
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" onClick={() => void save()} disabled={updateSettings.isPending}>
-          {updateSettings.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+        <Button
+          type="button"
+          onClick={() => void save()}
+          disabled={updateSettings.isPending}
+        >
+          {updateSettings.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
           {updateSettings.isPending ? "Saving..." : "Save MDBList API Key"}
         </Button>
         {configured && !confirmClear && (
-          <Button type="button" variant="outline" onClick={() => setConfirmClear(true)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setConfirmClear(true)}
+          >
             <RotateCcw />
             Clear API key
           </Button>
         )}
         {confirmClear && (
           <>
-            <span className="text-muted-foreground text-xs">Disable MDBList discovery?</span>
+            <span className="text-muted-foreground text-xs">
+              Disable MDBList discovery?
+            </span>
             <Button
               type="button"
               variant="destructive"
@@ -123,7 +142,11 @@ function MDBListCredentialCard() {
               <Check />
               Confirm clear
             </Button>
-            <Button type="button" variant="ghost" onClick={() => setConfirmClear(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setConfirmClear(false)}
+            >
               <X />
               Cancel
             </Button>
@@ -134,10 +157,13 @@ function MDBListCredentialCard() {
         onClick={() => void testKey()}
         result={connectionResult}
         isPending={checkConnection.isPending}
-        disabled={updateSettings.isPending || (!configured && apiKey.trim() === "")}
+        disabled={
+          updateSettings.isPending || (!configured && apiKey.trim() === "")
+        }
       />
       <p className="text-muted-foreground text-xs">
-        Test Connection uses the key entered above, or the saved key when the field is blank.
+        Test Connection uses the key entered above, or the saved key when the
+        field is blank.
       </p>
     </fieldset>
   );
@@ -149,8 +175,8 @@ export default function IntegrationsSettings() {
       <div className="mb-6 space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Integrations</h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          API keys for external services. Watch provider and subtitle credentials have their own
-          pages in the sidebar.
+          API keys for external services. Watch provider and subtitle
+          credentials have their own pages in the sidebar.
         </p>
       </div>
 

@@ -15,7 +15,14 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { downloadAdminSubtitle } from "@/hooks/queries/admin/subtitles";
 import { getLanguageName } from "@/player/utils/languageNames";
 import { cn } from "@/lib/utils";
-import { Download, Ear, Loader2, Pencil, RotateCcw, Trash2 } from "lucide-react";
+import {
+  Download,
+  Ear,
+  Loader2,
+  Pencil,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import AdminSubtitleEditSheet from "./AdminSubtitleEditSheet";
 import {
@@ -37,7 +44,10 @@ interface AdminSubtitlesTableProps {
 }
 
 function formatRelative(value: string): string {
-  return formatRelativeTime(value, { rounding: "floor", absoluteAfterDays: 30 }) ?? value;
+  return (
+    formatRelativeTime(value, { rounding: "floor", absoluteAfterDays: 30 }) ??
+    value
+  );
 }
 
 export default function AdminSubtitlesTable({
@@ -47,8 +57,11 @@ export default function AdminSubtitlesTable({
   onDelete,
   isDeleting,
 }: AdminSubtitlesTableProps) {
-  const [editTarget, setEditTarget] = useState<AdminDownloadedSubtitle | null>(null);
-  const [deleteTarget, setDeleteTarget] = useState<AdminDownloadedSubtitle | null>(null);
+  const [editTarget, setEditTarget] = useState<AdminDownloadedSubtitle | null>(
+    null,
+  );
+  const [deleteTarget, setDeleteTarget] =
+    useState<AdminDownloadedSubtitle | null>(null);
   const [downloadingId, setDownloadingId] = useState<number | null>(null);
 
   async function handleDownload(subtitle: AdminDownloadedSubtitle) {
@@ -57,7 +70,9 @@ export default function AdminSubtitlesTable({
       await downloadAdminSubtitle(subtitle);
       toast.success("Subtitle downloaded");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to download subtitle");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to download subtitle",
+      );
     } finally {
       setDownloadingId(null);
     }
@@ -72,7 +87,9 @@ export default function AdminSubtitlesTable({
           <span />
         </div>
         <h2 className="text-lg font-semibold tracking-tight">
-          {hasActiveFilters ? "No subtitles match these filters" : "No stored subtitles yet"}
+          {hasActiveFilters
+            ? "No subtitles match these filters"
+            : "No stored subtitles yet"}
         </h2>
         <p className="text-muted-foreground mx-auto mt-2 max-w-lg text-sm leading-relaxed">
           {hasActiveFilters
@@ -80,7 +97,12 @@ export default function AdminSubtitlesTable({
             : "User uploads and provider downloads will appear here once subtitles are stored in S3."}
         </p>
         {hasActiveFilters && (
-          <Button type="button" variant="outline" className="mt-5" onClick={onResetFilters}>
+          <Button
+            type="button"
+            variant="outline"
+            className="mt-5"
+            onClick={onResetFilters}
+          >
             <RotateCcw />
             Reset filters
           </Button>
@@ -109,7 +131,10 @@ export default function AdminSubtitlesTable({
           </TableHeader>
           <TableBody>
             {subtitles.map((subtitle, index) => (
-              <TableRow key={subtitle.id} className={cn("group", staggerRowClass(index))}>
+              <TableRow
+                key={subtitle.id}
+                className={cn("group", staggerRowClass(index))}
+              >
                 <TableCell className="max-w-[220px]">
                   <div className="space-y-1">
                     {subtitle.media_content_id ? (
@@ -125,7 +150,10 @@ export default function AdminSubtitlesTable({
                       </div>
                     )}
                     {subtitle.media_type === "episode" && (
-                      <Badge variant="outline" className="text-[10px] tracking-[0.12em] uppercase">
+                      <Badge
+                        variant="outline"
+                        className="text-[10px] tracking-[0.12em] uppercase"
+                      >
                         Episode
                       </Badge>
                     )}
@@ -169,7 +197,12 @@ export default function AdminSubtitlesTable({
                   {subtitle.release_name || "—"}
                 </TableCell>
                 <TableCell>
-                  <span className={cn("inline-flex rounded px-2 py-0.5", formatChipClass())}>
+                  <span
+                    className={cn(
+                      "inline-flex rounded px-2 py-0.5",
+                      formatChipClass(),
+                    )}
+                  >
                     .{subtitle.format}
                   </span>
                 </TableCell>
@@ -181,8 +214,13 @@ export default function AdminSubtitlesTable({
                     </span>
                   ) : null}
                 </TableCell>
-                <TableCell className="text-sm">{subtitle.uploader_username || "—"}</TableCell>
-                <TableCell className="text-muted-foreground text-sm" title={subtitle.created_at}>
+                <TableCell className="text-sm">
+                  {subtitle.uploader_username || "—"}
+                </TableCell>
+                <TableCell
+                  className="text-muted-foreground text-sm"
+                  title={subtitle.created_at}
+                >
                   {formatRelative(subtitle.created_at)}
                 </TableCell>
                 <TableCell className="text-right">

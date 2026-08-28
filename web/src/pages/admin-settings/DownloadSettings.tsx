@@ -62,7 +62,9 @@ export default function DownloadSettings() {
             label="Max Concurrent Downloads Per User"
             hint="How many downloads a user can have active at once. 0 = unlimited."
             value={form.getValue("download.max_concurrent_per_user")}
-            onChange={(v) => form.setValue("download.max_concurrent_per_user", v)}
+            onChange={(v) =>
+              form.setValue("download.max_concurrent_per_user", v)
+            }
           />
           <SettingField
             label="Max Downloads Per Period"
@@ -96,7 +98,9 @@ export default function DownloadSettings() {
             label="Max Concurrent Prepares"
             hint="Encode/remux worker-pool size for preparing download files."
             value={form.getValue("download.max_concurrent_prepares")}
-            onChange={(v) => form.setValue("download.max_concurrent_prepares", v)}
+            onChange={(v) =>
+              form.setValue("download.max_concurrent_prepares", v)
+            }
           />
           <SettingField
             label="Artifact Storage Budget (bytes)"

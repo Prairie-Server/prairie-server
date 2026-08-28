@@ -6,7 +6,10 @@ import { createElement } from "react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { installPolicyStorageMocks, jsonResponse } from "@/pages/admin-policy/policyTestUtils";
+import {
+  installPolicyStorageMocks,
+  jsonResponse,
+} from "@/pages/admin-policy/policyTestUtils";
 
 import { useSimulatePolicy } from "./policy";
 
@@ -47,8 +50,11 @@ describe("policy admin hooks", () => {
   });
 
   it("posts simulation requests through the shared API client", async () => {
-    const { result } = renderHook(() => useSimulatePolicy(), { wrapper: createWrapper() });
-    let response: Awaited<ReturnType<typeof result.current.mutateAsync>> | undefined;
+    const { result } = renderHook(() => useSimulatePolicy(), {
+      wrapper: createWrapper(),
+    });
+    let response:
+      Awaited<ReturnType<typeof result.current.mutateAsync>> | undefined;
 
     await act(async () => {
       response = await result.current.mutateAsync({

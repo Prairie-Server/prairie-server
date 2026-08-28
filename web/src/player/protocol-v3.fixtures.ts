@@ -112,9 +112,18 @@ export function fixturePlanV3(overrides: Partial<PlanV3> = {}): PlanV3 {
     },
     effective_recipe: { video_codec: "h264", audio_codec: "aac", height: 1080 },
     claims: {
-      video: { hdr10: false, hdr10_plus: false, hlg: false, dolby_vision: false },
+      video: {
+        hdr10: false,
+        hdr10_plus: false,
+        hlg: false,
+        dolby_vision: false,
+      },
       audio: { codec: "aac", passthrough: false, atmos_preserved: false },
-      subtitles: { ass_styling_preserved: false, bitmap_overlay: false, bitmap_sidecar: false },
+      subtitles: {
+        ass_styling_preserved: false,
+        bitmap_overlay: false,
+        bitmap_sidecar: false,
+      },
     },
     subtitle: { mode: "off", inventory: [] },
     transformations: [],

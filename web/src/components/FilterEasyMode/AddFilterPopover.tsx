@@ -37,7 +37,10 @@ export default function AddFilterPopover({ open, onAdd, onCancel }: Props) {
   const [value, setValue] = useState("");
   if (!open) return null;
   return (
-    <div className="rounded-lg border border-indigo-500/40 bg-zinc-900 p-3 shadow-lg" role="dialog">
+    <div
+      className="rounded-lg border border-indigo-500/40 bg-zinc-900 p-3 shadow-lg"
+      role="dialog"
+    >
       <div className="grid grid-cols-3 gap-2">
         <label className="flex flex-col text-[11px] text-white/70">
           Field

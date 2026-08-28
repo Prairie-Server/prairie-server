@@ -26,8 +26,17 @@ export {
   orderedOverlaysForPosition,
   isOverlaySuppressed,
 } from "./schema";
-export { OVERLAY_PRESETS, PRESET_IDS, getPreset, ACCENT_PALETTE } from "./presets";
-export { POSITION_OPTIONS, CATEGORY_GROUPS, CATEGORY_META } from "./ui-constants";
+export {
+  OVERLAY_PRESETS,
+  PRESET_IDS,
+  getPreset,
+  ACCENT_PALETTE,
+} from "./presets";
+export {
+  POSITION_OPTIONS,
+  CATEGORY_GROUPS,
+  CATEGORY_META,
+} from "./ui-constants";
 export { OverlayIcon } from "./icons";
 export {
   overlayDataFromBrowseItem,

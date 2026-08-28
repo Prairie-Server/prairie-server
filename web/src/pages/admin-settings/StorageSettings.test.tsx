@@ -101,7 +101,8 @@ describe("StorageSettings", () => {
     });
     useSettingsFormMock.mockReturnValue({
       isLoading: false,
-      getValue: (key: string) => (key === "s3.public_url_auth" ? "presigned" : ""),
+      getValue: (key: string) =>
+        key === "s3.public_url_auth" ? "presigned" : "",
       setValue,
       resetValue,
       dirtyCount: 1,
@@ -119,23 +120,39 @@ describe("StorageSettings", () => {
     render(<StorageSettings />);
 
     expect(screen.queryByLabelText("Access Key")).not.toBeInTheDocument();
-    await userEvent.click(screen.getByRole("button", { name: "Replace Access Key" }));
-    expect(screen.getByLabelText("Access Key")).toHaveAttribute("type", "password");
+    await userEvent.click(
+      screen.getByRole("button", { name: "Replace Access Key" }),
+    );
+    expect(screen.getByLabelText("Access Key")).toHaveAttribute(
+      "type",
+      "password",
+    );
 
-    await userEvent.click(screen.getByRole("button", { name: "Keep saved Access Key" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Keep saved Access Key" }),
+    );
     expect(resetValue).toHaveBeenCalledWith("s3.public_access_key");
     expect(screen.queryByLabelText("Access Key")).not.toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "Replace Secret Key" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Replace Secret Key" }),
+    );
     await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
     await waitFor(() => expect(save).toHaveBeenCalledOnce());
     setValue.mockClear();
-    await userEvent.type(screen.getByLabelText("Secret Key"), "late replacement");
+    await userEvent.type(
+      screen.getByLabelText("Secret Key"),
+      "late replacement",
+    );
     expect(setValue).not.toHaveBeenCalled();
     await act(async () => resolveSave?.());
-    await waitFor(() => expect(screen.queryByLabelText("Secret Key")).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByLabelText("Secret Key")).not.toBeInTheDocument(),
+    );
 
-    await userEvent.click(screen.getByRole("button", { name: "Replace Access Key" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Replace Access Key" }),
+    );
     await userEvent.click(screen.getByRole("button", { name: "Discard" }));
     expect(discard).toHaveBeenCalledOnce();
     expect(screen.queryByLabelText("Access Key")).not.toBeInTheDocument();
@@ -149,7 +166,8 @@ describe("StorageSettings", () => {
     });
     useSettingsFormMock.mockReturnValue({
       isLoading: false,
-      getValue: (key: string) => (key === "s3.public_url_auth" ? "presigned" : ""),
+      getValue: (key: string) =>
+        key === "s3.public_url_auth" ? "presigned" : "",
       setValue: vi.fn(),
       resetValue: vi.fn(),
       dirtyCount: 1,
@@ -166,11 +184,16 @@ describe("StorageSettings", () => {
 
     render(<StorageSettings />);
 
-    await userEvent.click(screen.getByRole("button", { name: "Replace Access Key" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Replace Access Key" }),
+    );
     await userEvent.click(screen.getByRole("button", { name: "Save Changes" }));
 
     await waitFor(() => expect(save).toHaveBeenCalledOnce());
-    expect(screen.getByLabelText("Access Key")).toHaveAttribute("type", "password");
+    expect(screen.getByLabelText("Access Key")).toHaveAttribute(
+      "type",
+      "password",
+    );
   });
 
   it("keeps credential inputs unmounted until protected status is available", () => {
@@ -181,7 +204,8 @@ describe("StorageSettings", () => {
     });
     useSettingsFormMock.mockImplementation(() => ({
       isLoading: false,
-      getValue: (key: string) => (key === "s3.public_url_auth" ? "presigned" : ""),
+      getValue: (key: string) =>
+        key === "s3.public_url_auth" ? "presigned" : "",
       setValue: vi.fn(),
       resetValue: vi.fn(),
       dirtyCount: 0,
@@ -198,13 +222,17 @@ describe("StorageSettings", () => {
 
     const { rerender } = render(<StorageSettings />);
 
-    expect(screen.getByRole("status", { name: "Loading settings" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("status", { name: "Loading settings" }),
+    ).toBeInTheDocument();
     expect(screen.queryByLabelText("Access Key")).not.toBeInTheDocument();
 
     sensitiveStatusReady = true;
     rerender(<StorageSettings />);
 
-    expect(screen.getByRole("button", { name: "Replace Access Key" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Replace Access Key" }),
+    ).toBeInTheDocument();
     expect(screen.queryByLabelText("Access Key")).not.toBeInTheDocument();
   });
 

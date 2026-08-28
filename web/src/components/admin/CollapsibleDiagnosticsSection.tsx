@@ -41,14 +41,18 @@ export function CollapsibleDiagnosticsSection({
         </div>
         <div className="min-w-0 flex-1 space-y-0.5">
           <h2 className="text-sm font-semibold tracking-wide">{title}</h2>
-          <p className="text-muted-foreground text-xs leading-relaxed">{description}</p>
+          <p className="text-muted-foreground text-xs leading-relaxed">
+            {description}
+          </p>
         </div>
         {open ? (
           <Badge variant="secondary" className="text-[11px] tabular-nums">
             {count}
           </Badge>
         ) : (
-          <div className="text-2xl leading-none font-bold tabular-nums">{count}</div>
+          <div className="text-2xl leading-none font-bold tabular-nums">
+            {count}
+          </div>
         )}
         <ChevronDown
           className={cn(

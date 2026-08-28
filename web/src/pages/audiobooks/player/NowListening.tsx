@@ -39,7 +39,9 @@ export function NowListening({
   const remaining = Math.max(0, playback.duration - playback.currentTime);
   // "At current speed" only exists as a distinct reading when rate ≠ 1.
   const effectiveMode =
-    timeMode === "remaining-at-speed" && playback.rate === 1 ? "remaining" : timeMode;
+    timeMode === "remaining-at-speed" && playback.rate === 1
+      ? "remaining"
+      : timeMode;
   const rightTimeLabel =
     effectiveMode === "total"
       ? formatTime(playback.duration)
@@ -59,7 +61,8 @@ export function NowListening({
 
   const hasChapters = playback.chapters.length > 0;
   const hasNextChapter =
-    playback.currentChapter != null && playback.currentChapter.index + 1 < playback.chapters.length;
+    playback.currentChapter != null &&
+    playback.currentChapter.index + 1 < playback.chapters.length;
 
   return (
     <div className="bg-background fixed inset-0 z-50 flex flex-col overflow-y-auto">
@@ -82,7 +85,11 @@ export function NowListening({
             style={{ viewTransitionName: `audiobook-cover-${contentId}` }}
           >
             {posterUrl ? (
-              <img src={posterUrl} alt={title} className="h-full w-full object-cover" />
+              <img
+                src={posterUrl}
+                alt={title}
+                className="h-full w-full object-cover"
+              />
             ) : null}
           </div>
         </div>
@@ -90,7 +97,9 @@ export function NowListening({
         <div className="flex max-w-xl flex-col gap-6 md:gap-8">
           <div className="space-y-1">
             <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
-            {author && <p className="text-muted-foreground text-base">{author}</p>}
+            {author && (
+              <p className="text-muted-foreground text-base">{author}</p>
+            )}
             {narrator && (
               <p className="text-muted-foreground text-sm">
                 Narrated by <span className="text-foreground">{narrator}</span>
@@ -103,7 +112,9 @@ export function NowListening({
               <p className="text-muted-foreground text-[11px] tracking-[0.18em] uppercase">
                 Chapter {playback.currentChapter.index + 1}
               </p>
-              <p className="text-foreground text-lg font-medium">{playback.currentChapter.title}</p>
+              <p className="text-foreground text-lg font-medium">
+                {playback.currentChapter.title}
+              </p>
             </div>
           )}
 
@@ -139,7 +150,11 @@ export function NowListening({
                 onClick={playback.prevChapter}
                 disabled={!playback.hasFile}
               >
-                <SkipBack className="h-4 w-4" strokeWidth={0} fill="currentColor" />
+                <SkipBack
+                  className="h-4 w-4"
+                  strokeWidth={0}
+                  fill="currentColor"
+                />
               </CircleButton>
             )}
 
@@ -165,9 +180,17 @@ export function NowListening({
               data-paused={!playback.playing}
             >
               {playback.playing ? (
-                <Pause className="h-8 w-8" strokeWidth={0} fill="currentColor" />
+                <Pause
+                  className="h-8 w-8"
+                  strokeWidth={0}
+                  fill="currentColor"
+                />
               ) : (
-                <Play className="ml-[2px] h-8 w-8" strokeWidth={0} fill="currentColor" />
+                <Play
+                  className="ml-[2px] h-8 w-8"
+                  strokeWidth={0}
+                  fill="currentColor"
+                />
               )}
             </CircleButton>
 
@@ -180,7 +203,11 @@ export function NowListening({
               onClick={() => playback.skip(prefs.skipForward)}
               disabled={!playback.hasFile}
             >
-              <SkipIcon direction="forward" seconds={prefs.skipForward} size="lg" />
+              <SkipIcon
+                direction="forward"
+                seconds={prefs.skipForward}
+                size="lg"
+              />
             </CircleButton>
 
             {hasChapters && (
@@ -192,7 +219,11 @@ export function NowListening({
                 onClick={playback.nextChapter}
                 disabled={!playback.hasFile || !hasNextChapter}
               >
-                <SkipForward className="h-4 w-4" strokeWidth={0} fill="currentColor" />
+                <SkipForward
+                  className="h-4 w-4"
+                  strokeWidth={0}
+                  fill="currentColor"
+                />
               </CircleButton>
             )}
           </div>

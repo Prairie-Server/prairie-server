@@ -42,7 +42,9 @@ export function SettingSlider({
   const shown = draft ?? value;
 
   return (
-    <div className={className ?? "flex w-full items-center gap-3 sm:max-w-[260px]"}>
+    <div
+      className={className ?? "flex w-full items-center gap-3 sm:max-w-[260px]"}
+    >
       <Slider
         value={[shown]}
         min={min}

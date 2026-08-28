@@ -44,10 +44,14 @@ describe("ServerActivity task progress", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Server activity: 1 active" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Server activity: 1 active" }),
+    );
 
     expect(screen.getByText("Running")).toBeInTheDocument();
-    expect(screen.getByText("Processed 1,000 images across 1 batch")).toBeInTheDocument();
+    expect(
+      screen.getByText("Processed 1,000 images across 1 batch"),
+    ).toBeInTheDocument();
     expect(screen.queryByText("0%")).not.toBeInTheDocument();
   });
 });

@@ -57,7 +57,9 @@ function preferenceWriteOwnerKey(
   accountId: number | null,
   profileId: string | null,
 ): string | null {
-  return accountId === null || profileId === null ? null : JSON.stringify([accountId, profileId]);
+  return accountId === null || profileId === null
+    ? null
+    : JSON.stringify([accountId, profileId]);
 }
 
 /**
@@ -65,7 +67,9 @@ function preferenceWriteOwnerKey(
  * null/undefined (the contract default), and always lands on a usable
  * preference.
  */
-export function parseLibraryPageStatePreference(raw: unknown): LibraryPageStatePreference {
+export function parseLibraryPageStatePreference(
+  raw: unknown,
+): LibraryPageStatePreference {
   if (raw == null) {
     return createEmptyLibraryPageStatePreference();
   }
@@ -90,13 +94,21 @@ export function parseLibraryPageStatePreference(raw: unknown): LibraryPageStateP
   if (maybePreference.version !== 1 || !maybePreference.libraries) {
     return createEmptyLibraryPageStatePreference();
   }
-  if (typeof maybePreference.libraries !== "object" || Array.isArray(maybePreference.libraries)) {
+  if (
+    typeof maybePreference.libraries !== "object" ||
+    Array.isArray(maybePreference.libraries)
+  ) {
     return createEmptyLibraryPageStatePreference();
   }
 
   const libraries: LibraryPageStatePreference["libraries"] = {};
   Object.entries(maybePreference.libraries).forEach(([libraryId, entry]) => {
-    if (!/^\d+$/.test(libraryId) || !entry || typeof entry !== "object" || Array.isArray(entry)) {
+    if (
+      !/^\d+$/.test(libraryId) ||
+      !entry ||
+      typeof entry !== "object" ||
+      Array.isArray(entry)
+    ) {
       return;
     }
     const search = (entry as { search?: unknown }).search;
@@ -156,7 +168,11 @@ function getPreferenceWriteQueue(
   if (existing !== undefined) {
     return existing;
   }
-  const queue = createPreferenceWriteQueue(ownerKey, ownerProfileId, preference);
+  const queue = createPreferenceWriteQueue(
+    ownerKey,
+    ownerProfileId,
+    preference,
+  );
   preferenceWriteQueues.set(ownerKey, queue);
   return queue;
 }
@@ -166,7 +182,8 @@ function applyPendingPreferenceWrites(
   writes: PendingPreferenceWrite[],
 ): LibraryPageStatePreference {
   return writes.reduce(
-    (next, write) => updateLibraryPageStatePreference(next, write.libraryId, write.search),
+    (next, write) =>
+      updateLibraryPageStatePreference(next, write.libraryId, write.search),
     preference,
   );
 }
@@ -175,7 +192,10 @@ function appendPreferenceWrite(
   writes: PendingPreferenceWrite[],
   write: PendingPreferenceWrite,
 ): PendingPreferenceWrite[] {
-  return [...writes.filter((candidate) => candidate.libraryId !== write.libraryId), write];
+  return [
+    ...writes.filter((candidate) => candidate.libraryId !== write.libraryId),
+    write,
+  ];
 }
 
 function findMatchingPendingWrite(
@@ -187,7 +207,9 @@ function findMatchingPendingWrite(
   for (let index = writes.length - 1; index >= 0; index -= 1) {
     const write = writes[index];
     if (write?.libraryId === libraryId) {
-      return write.lease === lease && write.lease.active && write.search === search
+      return write.lease === lease &&
+        write.lease.active &&
+        write.search === search
         ? write
         : undefined;
     }
@@ -200,7 +222,8 @@ function removeConfirmedPreferenceWrites(
   writes: PendingPreferenceWrite[],
 ): PendingPreferenceWrite[] {
   return writes.filter(
-    (write) => preference.libraries[String(write.libraryId)]?.search !== write.search,
+    (write) =>
+      preference.libraries[String(write.libraryId)]?.search !== write.search,
   );
 }
 
@@ -219,7 +242,10 @@ function settlePreferenceWrite(
     queue.unconfirmedWrites =
       authoritativePreference === null
         ? attemptedWrites
-        : removeConfirmedPreferenceWrites(authoritativePreference, attemptedWrites);
+        : removeConfirmedPreferenceWrites(
+            authoritativePreference,
+            attemptedWrites,
+          );
   } else if (authoritativePreference !== null) {
     queue.unconfirmedWrites = removeConfirmedPreferenceWrites(
       authoritativePreference,
@@ -228,11 +254,18 @@ function settlePreferenceWrite(
   }
   const resolvedBase =
     authoritativePreference ??
-    (outcome === "definitive_failure" ? queue.resolvedPreference : attemptedPreference) ??
+    (outcome === "definitive_failure"
+      ? queue.resolvedPreference
+      : attemptedPreference) ??
     queue.resolvedPreference;
-  queue.resolvedPreference = applyPendingPreferenceWrites(resolvedBase, queue.unconfirmedWrites);
+  queue.resolvedPreference = applyPendingPreferenceWrites(
+    resolvedBase,
+    queue.unconfirmedWrites,
+  );
   queue.deferredPreference = null;
-  queue.pendingWrites = queue.pendingWrites.filter((write) => write !== pendingWrite);
+  queue.pendingWrites = queue.pendingWrites.filter(
+    (write) => write !== pendingWrite,
+  );
 }
 
 class LibraryPreferenceWriteCancelledError extends Error {}
@@ -254,7 +287,10 @@ export function shouldRetryLibraryPageStateWrite(error: unknown): boolean {
   // certainty decision so rate limiting cannot make a page state terminal.
   if (error instanceof ApiClientError) {
     return (
-      error.status === 408 || error.status === 425 || error.status === 429 || error.status >= 500
+      error.status === 408 ||
+      error.status === 425 ||
+      error.status === 429 ||
+      error.status >= 500
     );
   }
   return !isDefinitiveSettingMutationRejection(error);
@@ -276,7 +312,11 @@ export function libraryPageStateWriteRetryDelay(
       body && typeof body === "object" && "retry_after" in body
         ? (body as { retry_after?: unknown }).retry_after
         : undefined;
-    if (typeof retryAfter === "number" && Number.isFinite(retryAfter) && retryAfter > 0) {
+    if (
+      typeof retryAfter === "number" &&
+      Number.isFinite(retryAfter) &&
+      retryAfter > 0
+    ) {
       return Math.max(fallbackDelayMs, retryAfter * 1_000);
     }
   }
@@ -289,14 +329,23 @@ export function useLibraryPageStatePreference() {
   const auth = useOptionalAuth();
   const activeAccountId = auth?.user?.id ?? null;
   const activeProfileId = storage.get(storage.KEYS.PROFILE_ID);
-  const activeOwnerKey = preferenceWriteOwnerKey(activeAccountId, activeProfileId);
+  const activeOwnerKey = preferenceWriteOwnerKey(
+    activeAccountId,
+    activeProfileId,
+  );
   const enabled = activeOwnerKey !== null;
-  const { data, isLoading } = useEffectiveSettings({ keys: PAGE_STATE_KEYS, enabled });
+  const { data, isLoading } = useEffectiveSettings({
+    keys: PAGE_STATE_KEYS,
+    enabled,
+  });
   const mutation = useSetSettingValue();
   const { mutateAsync } = mutation;
 
   const stateValue = data?.[SETTING_KEYS.UI_LIBRARY_PAGE_STATE]?.value;
-  const preference = useMemo(() => parseLibraryPageStatePreference(stateValue), [stateValue]);
+  const preference = useMemo(
+    () => parseLibraryPageStatePreference(stateValue),
+    [stateValue],
+  );
   // This setting is one last-write-wins document. Keep queued changes in the
   // same document and send them in order so a slower request cannot restore an
   // older library state over a newer one.
@@ -336,7 +385,11 @@ export function useLibraryPageStatePreference() {
   useEffect(() => {
     const queue = writeQueueRef.current;
     const lease = writeLeaseRef.current;
-    if (!lease.active || lease.ownerKey !== activeOwnerKey || queue.ownerKey !== activeOwnerKey) {
+    if (
+      !lease.active ||
+      lease.ownerKey !== activeOwnerKey ||
+      queue.ownerKey !== activeOwnerKey
+    ) {
       return;
     }
     if (queue.pendingWrites.length === 0) {
@@ -344,7 +397,10 @@ export function useLibraryPageStatePreference() {
         preference,
         queue.unconfirmedWrites,
       );
-      queue.resolvedPreference = applyPendingPreferenceWrites(preference, queue.unconfirmedWrites);
+      queue.resolvedPreference = applyPendingPreferenceWrites(
+        preference,
+        queue.unconfirmedWrites,
+      );
       queue.deferredPreference = null;
     } else {
       // A realtime update or mutation refetch can arrive while a local write
@@ -359,7 +415,8 @@ export function useLibraryPageStatePreference() {
   }, [activeOwnerKey, preference]);
   // The contract default is true; anything but an explicit false keeps the
   // feature on, matching the legacy `!== "false"` reading.
-  const rememberEnabled = data?.[SETTING_KEYS.UI_REMEMBER_LIBRARY_PAGE_STATE]?.value !== false;
+  const rememberEnabled =
+    data?.[SETTING_KEYS.UI_REMEMBER_LIBRARY_PAGE_STATE]?.value !== false;
   const saveLibrarySearch = useCallback(
     (libraryId: number, search: string) => {
       const queue = writeQueueRef.current;
@@ -372,7 +429,12 @@ export function useLibraryPageStatePreference() {
       ) {
         return Promise.reject(cancelledPreferenceWrite());
       }
-      const matchingWrite = findMatchingPendingWrite(queue.pendingWrites, lease, libraryId, search);
+      const matchingWrite = findMatchingPendingWrite(
+        queue.pendingWrites,
+        lease,
+        libraryId,
+        search,
+      );
       if (matchingWrite?.promise !== undefined) {
         return matchingWrite.promise;
       }
@@ -386,7 +448,10 @@ export function useLibraryPageStatePreference() {
       const write = queue.writeChain
         .catch(() => undefined)
         .then(() => {
-          if (!lease.active || storage.get(storage.KEYS.PROFILE_ID) !== queue.ownerProfileId) {
+          if (
+            !lease.active ||
+            storage.get(storage.KEYS.PROFILE_ID) !== queue.ownerProfileId
+          ) {
             throw cancelledPreferenceWrite();
           }
           attemptedPreference = updateLibraryPageStatePreference(
@@ -394,7 +459,10 @@ export function useLibraryPageStatePreference() {
             libraryId,
             search,
           );
-          attemptedWrites = appendPreferenceWrite(queue.unconfirmedWrites, pendingWrite);
+          attemptedWrites = appendPreferenceWrite(
+            queue.unconfirmedWrites,
+            pendingWrite,
+          );
           mutationStarted = true;
           return mutateAsync({
             key: SETTING_KEYS.UI_LIBRARY_PAGE_STATE,

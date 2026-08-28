@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 
-import { render, screen, cleanup, fireEvent, waitFor } from "@testing-library/react";
+import {
+  render,
+  screen,
+  cleanup,
+  fireEvent,
+  waitFor,
+} from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -12,10 +18,14 @@ class ResizeObserverStub {
   disconnect() {}
 }
 if (typeof globalThis.ResizeObserver === "undefined") {
-  (globalThis as unknown as { ResizeObserver: typeof ResizeObserverStub }).ResizeObserver =
-    ResizeObserverStub;
+  (
+    globalThis as unknown as { ResizeObserver: typeof ResizeObserverStub }
+  ).ResizeObserver = ResizeObserverStub;
 }
-if (typeof window !== "undefined" && !window.HTMLElement.prototype.hasPointerCapture) {
+if (
+  typeof window !== "undefined" &&
+  !window.HTMLElement.prototype.hasPointerCapture
+) {
   window.HTMLElement.prototype.hasPointerCapture = () => false;
   window.HTMLElement.prototype.scrollIntoView = () => {};
 }
@@ -43,15 +53,18 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/hooks/queries/settingValues", async () => {
-  const actual = await vi.importActual<typeof import("@/hooks/queries/settingValues")>(
-    "@/hooks/queries/settingValues",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/hooks/queries/settingValues")
+  >("@/hooks/queries/settingValues");
 
   return {
     ...actual,
-    useEffectiveSettings: (...args: unknown[]) => mocks.useEffectiveSettings(...args),
-    useSetSettingValue: (...args: unknown[]) => mocks.useSetSettingValue(...args),
-    useClearSettingValue: (...args: unknown[]) => mocks.useClearSettingValue(...args),
+    useEffectiveSettings: (...args: unknown[]) =>
+      mocks.useEffectiveSettings(...args),
+    useSetSettingValue: (...args: unknown[]) =>
+      mocks.useSetSettingValue(...args),
+    useClearSettingValue: (...args: unknown[]) =>
+      mocks.useClearSettingValue(...args),
     useSettingsCapabilities: () => ({
       data: mocks.capabilities,
       isLoading: false,
@@ -96,7 +109,11 @@ describe("PlaybackSettings", () => {
     clearMutateAsync = vi.fn().mockResolvedValue(undefined);
 
     mocks.useEffectiveSettings.mockReturnValue({ data: {}, isLoading: false });
-    mocks.useSetSettingValue.mockReturnValue({ isPending: false, mutate, mutateAsync });
+    mocks.useSetSettingValue.mockReturnValue({
+      isPending: false,
+      mutate,
+      mutateAsync,
+    });
     mocks.useClearSettingValue.mockReturnValue({
       isPending: false,
       mutate: vi.fn(),
@@ -124,17 +141,25 @@ describe("PlaybackSettings", () => {
       ([options]) => (options?.keys?.length ?? 0) > 2,
     );
     expect(batched?.[0].keys).toContain(SETTING_KEYS.PLAYBACK_INTRO_SKIP_MODE);
-    expect(batched?.[0].keys).not.toContain(SETTING_KEYS.PLAYBACK_AUTO_SKIP_INTRO);
+    expect(batched?.[0].keys).not.toContain(
+      SETTING_KEYS.PLAYBACK_AUTO_SKIP_INTRO,
+    );
     expect(batched?.[0].keys).toContain(SETTING_KEYS.UI_NEXT_UP_MODE);
     expect(batched?.[0].keys).toContain(SETTING_KEYS.CATALOG_METADATA_LANGUAGE);
-    expect(batched?.[0].keys).toContain(SETTING_KEYS.CATALOG_METADATA_LANGUAGE_OVERRIDES);
+    expect(batched?.[0].keys).toContain(
+      SETTING_KEYS.CATALOG_METADATA_LANGUAGE_OVERRIDES,
+    );
   });
 
   it("saves the selected intro mode as typed JSON at profile scope", async () => {
     render(<PlaybackSettings />);
 
-    await userEvent.click(screen.getByRole("combobox", { name: "Skip intros" }));
-    await userEvent.click(screen.getByRole("option", { name: "Skip automatically" }));
+    await userEvent.click(
+      screen.getByRole("combobox", { name: "Skip intros" }),
+    );
+    await userEvent.click(
+      screen.getByRole("option", { name: "Skip automatically" }),
+    );
 
     // Awaited rather than fire-and-forget: the write is followed by a clear of
     // any device override, which has to see whether the write landed.
@@ -151,7 +176,9 @@ describe("PlaybackSettings", () => {
     render(<PlaybackSettings />);
 
     expect(screen.getByLabelText("Auto-skip intros")).toBeInTheDocument();
-    expect(screen.queryByRole("combobox", { name: "Skip intros" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("combobox", { name: "Skip intros" }),
+    ).not.toBeInTheDocument();
   });
 
   // The deprecated boolean cannot represent "never": writing it against a
@@ -165,7 +192,9 @@ describe("PlaybackSettings", () => {
     render(<PlaybackSettings />);
 
     expect(screen.queryByLabelText("Auto-skip intros")).not.toBeInTheDocument();
-    expect(screen.getByRole("combobox", { name: "Skip intros" })).toBeDisabled();
+    expect(
+      screen.getByRole("combobox", { name: "Skip intros" }),
+    ).toBeDisabled();
   });
 
   it("reads a stored value in preference to the contract default", () => {
@@ -173,9 +202,11 @@ describe("PlaybackSettings", () => {
     // that proves the screen trusts the resolved answer: the bug this guards is
     // a default-on toggle that a client's own idea of the default flips back.
     render(<PlaybackSettings />);
-    expect(screen.getByLabelText("Auto-play next episode").getAttribute("aria-checked")).toBe(
-      "true",
-    );
+    expect(
+      screen
+        .getByLabelText("Auto-play next episode")
+        .getAttribute("aria-checked"),
+    ).toBe("true");
 
     cleanup();
     mocks.useEffectiveSettings.mockReturnValue({
@@ -184,9 +215,11 @@ describe("PlaybackSettings", () => {
     });
 
     render(<PlaybackSettings />);
-    expect(screen.getByLabelText("Auto-play next episode").getAttribute("aria-checked")).toBe(
-      "false",
-    );
+    expect(
+      screen
+        .getByLabelText("Auto-play next episode")
+        .getAttribute("aria-checked"),
+    ).toBe("false");
   });
 
   it("turning a default-on toggle off stores an explicit false", async () => {
@@ -209,14 +242,20 @@ describe("PlaybackSettings", () => {
     // place would keep shadowing this save and snap the switch back, with no
     // other web affordance able to remove it — so the save clears it.
     mocks.useEffectiveSettings.mockReturnValue({
-      data: resolved(SETTING_KEYS.PLAYBACK_AUTO_PLAY_NEXT, false, "profile_device"),
+      data: resolved(
+        SETTING_KEYS.PLAYBACK_AUTO_PLAY_NEXT,
+        false,
+        "profile_device",
+      ),
       isLoading: false,
     });
 
     render(<PlaybackSettings />);
-    expect(screen.getByLabelText("Auto-play next episode").getAttribute("aria-checked")).toBe(
-      "false",
-    );
+    expect(
+      screen
+        .getByLabelText("Auto-play next episode")
+        .getAttribute("aria-checked"),
+    ).toBe("false");
 
     fireEvent.click(screen.getByLabelText("Auto-play next episode"));
 
@@ -284,7 +323,9 @@ describe("PlaybackSettings", () => {
   it("saves the resolution cap as its own key", async () => {
     render(<PlaybackSettings />);
 
-    await userEvent.click(screen.getByRole("combobox", { name: "Preferred quality" }));
+    await userEvent.click(
+      screen.getByRole("combobox", { name: "Preferred quality" }),
+    );
     await userEvent.click(await screen.findByRole("option", { name: "1080p" }));
 
     await waitFor(() =>
@@ -299,8 +340,12 @@ describe("PlaybackSettings", () => {
   it("saves the bandwidth cap as a number", async () => {
     render(<PlaybackSettings />);
 
-    await userEvent.click(screen.getByRole("combobox", { name: "Maximum bitrate" }));
-    await userEvent.click(await screen.findByRole("option", { name: "10 Mbps" }));
+    await userEvent.click(
+      screen.getByRole("combobox", { name: "Maximum bitrate" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("option", { name: "10 Mbps" }),
+    );
 
     await waitFor(() =>
       expect(mutateAsync).toHaveBeenCalledWith({
@@ -319,8 +364,12 @@ describe("PlaybackSettings", () => {
 
     render(<PlaybackSettings />);
 
-    await userEvent.click(screen.getByRole("combobox", { name: "Maximum bitrate" }));
-    await userEvent.click(await screen.findByRole("option", { name: "No limit" }));
+    await userEvent.click(
+      screen.getByRole("combobox", { name: "Maximum bitrate" }),
+    );
+    await userEvent.click(
+      await screen.findByRole("option", { name: "No limit" }),
+    );
 
     // "No cap" is the absence of a value at every layer, so choosing it
     // deletes the profile row (and any device row) instead of writing one.
@@ -343,8 +392,8 @@ describe("PlaybackSettings", () => {
 
     render(<PlaybackSettings />);
 
-    expect(screen.getByRole("combobox", { name: "Maximum bitrate" }).textContent).toContain(
-      "12.3 Mbps",
-    );
+    expect(
+      screen.getByRole("combobox", { name: "Maximum bitrate" }).textContent,
+    ).toContain("12.3 Mbps");
   });
 });

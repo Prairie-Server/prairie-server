@@ -43,11 +43,21 @@ describe("setAppDocumentTitle / setActiveDocumentTitleLabel", () => {
 
 describe("resolveSettingsDocumentTitle", () => {
   it("resolves nested settings route labels", () => {
-    expect(resolveSettingsDocumentTitle("/settings/playback")).toBe("Playback Settings");
-    expect(resolveSettingsDocumentTitle("/settings/home-screen")).toBe("Home Screen Settings");
-    expect(resolveSettingsDocumentTitle("/settings/appearance")).toBe("Appearance Settings");
-    expect(resolveSettingsDocumentTitle("/settings/webhook-sync")).toBe("Webhook Sync Settings");
-    expect(resolveSettingsDocumentTitle("/settings/quick-connect")).toBe("Quick Connect Settings");
+    expect(resolveSettingsDocumentTitle("/settings/playback")).toBe(
+      "Playback Settings",
+    );
+    expect(resolveSettingsDocumentTitle("/settings/home-screen")).toBe(
+      "Home Screen Settings",
+    );
+    expect(resolveSettingsDocumentTitle("/settings/appearance")).toBe(
+      "Appearance Settings",
+    );
+    expect(resolveSettingsDocumentTitle("/settings/webhook-sync")).toBe(
+      "Webhook Sync Settings",
+    );
+    expect(resolveSettingsDocumentTitle("/settings/quick-connect")).toBe(
+      "Quick Connect Settings",
+    );
   });
 
   it("falls back to the base settings title", () => {
@@ -59,18 +69,28 @@ describe("resolveSettingsDocumentTitle", () => {
 describe("resolveAdminDocumentTitle", () => {
   it("resolves major admin sections", () => {
     expect(resolveAdminDocumentTitle("/admin")).toBe("Admin");
-    expect(resolveAdminDocumentTitle("/admin/access-groups")).toBe("Admin Access Groups");
+    expect(resolveAdminDocumentTitle("/admin/access-groups")).toBe(
+      "Admin Access Groups",
+    );
     expect(resolveAdminDocumentTitle("/admin/autoscan")).toBe("Admin Autoscan");
-    expect(resolveAdminDocumentTitle("/admin/collections")).toBe("Admin Collections");
-    expect(resolveAdminDocumentTitle("/admin/diagnostics")).toBe("Admin Client Diagnostics");
+    expect(resolveAdminDocumentTitle("/admin/collections")).toBe(
+      "Admin Collections",
+    );
+    expect(resolveAdminDocumentTitle("/admin/diagnostics")).toBe(
+      "Admin Client Diagnostics",
+    );
     expect(resolveAdminDocumentTitle("/admin/policy")).toBe("Admin Policy");
-    expect(resolveAdminDocumentTitle("/admin/tasks/refresh-metadata")).toBe("Admin Task");
+    expect(resolveAdminDocumentTitle("/admin/tasks/refresh-metadata")).toBe(
+      "Admin Task",
+    );
     expect(resolveAdminDocumentTitle("/admin/users/42")).toBe("Admin User");
     expect(resolveAdminDocumentTitle("/admin/unknown")).toBe("Admin");
   });
 
   it("handles editor routes with clearer labels", () => {
-    expect(resolveAdminDocumentTitle("/admin/collections/new")).toBe("New Admin Collection");
+    expect(resolveAdminDocumentTitle("/admin/collections/new")).toBe(
+      "New Admin Collection",
+    );
     expect(resolveAdminDocumentTitle("/admin/collections/col-7/edit")).toBe(
       "Edit Admin Collection",
     );

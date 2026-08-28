@@ -28,18 +28,24 @@ describe("detectMaxResolutionFromScreen", () => {
 
 describe("detectHDRFromMatchMedia", () => {
   const fakeMatchMedia = (matching: string[]) =>
-    ((query: string) => ({ matches: matching.includes(query) })) as unknown as typeof matchMedia;
+    ((query: string) => ({
+      matches: matching.includes(query),
+    })) as unknown as typeof matchMedia;
 
   it("returns false when matchMedia is unavailable", () => {
     expect(detectHDRFromMatchMedia(undefined)).toBe(false);
   });
 
   it("returns true when dynamic-range reports high", () => {
-    expect(detectHDRFromMatchMedia(fakeMatchMedia(["(dynamic-range: high)"]))).toBe(true);
+    expect(
+      detectHDRFromMatchMedia(fakeMatchMedia(["(dynamic-range: high)"])),
+    ).toBe(true);
   });
 
   it("returns true when only video-dynamic-range reports high (Firefox)", () => {
-    expect(detectHDRFromMatchMedia(fakeMatchMedia(["(video-dynamic-range: high)"]))).toBe(true);
+    expect(
+      detectHDRFromMatchMedia(fakeMatchMedia(["(video-dynamic-range: high)"])),
+    ).toBe(true);
   });
 
   it("returns false when neither query matches", () => {
@@ -56,7 +62,9 @@ describe("probeWebCapabilities", () => {
       keySystemAccess: null,
     });
     vi.stubGlobal("navigator", { mediaCapabilities: { decodingInfo } });
-    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("high") }));
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("high"),
+    }));
 
     await expect(probeHDR10PlaybackSupport()).resolves.toBe(true);
     expect(decodingInfo).toHaveBeenCalledWith(
@@ -75,12 +83,21 @@ describe("probeWebCapabilities", () => {
   // The strip remux delivers an hvc1-labeled file; support reported only for
   // hev1 is evidence for bytes Silo never sends and must not earn the claim.
   it("does not promote an hev1-only answer to an HDR10 claim", async () => {
-    const decodingInfo = vi.fn().mockImplementation((configuration: MediaDecodingConfiguration) => {
-      const supported = configuration.video?.contentType.includes("hev1") ?? false;
-      return Promise.resolve({ supported, smooth: supported, powerEfficient: supported });
-    });
+    const decodingInfo = vi
+      .fn()
+      .mockImplementation((configuration: MediaDecodingConfiguration) => {
+        const supported =
+          configuration.video?.contentType.includes("hev1") ?? false;
+        return Promise.resolve({
+          supported,
+          smooth: supported,
+          powerEfficient: supported,
+        });
+      });
     vi.stubGlobal("navigator", { mediaCapabilities: { decodingInfo } });
-    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("high") }));
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("high"),
+    }));
 
     await expect(probeHDR10PlaybackSupport()).resolves.toBe(false);
   });
@@ -102,11 +119,15 @@ describe("probeWebCapabilities", () => {
   });
 
   it("advertises native Dolby Vision Profile 8 from the dvh1 sample entry", () => {
-    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("high") }));
-    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation((mime) =>
-      mime === "application/vnd.apple.mpegurl" || mime === 'video/mp4; codecs="dvh1.08.06"'
-        ? "probably"
-        : "",
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("high"),
+    }));
+    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation(
+      (mime) =>
+        mime === "application/vnd.apple.mpegurl" ||
+        mime === 'video/mp4; codecs="dvh1.08.06"'
+          ? "probably"
+          : "",
     );
 
     const capabilities = probeWebCapabilities();
@@ -116,7 +137,9 @@ describe("probeWebCapabilities", () => {
       hdr10_plus: false,
       hlg: false,
       dolby_vision_profiles: [8],
-      dolby_vision_profile_levels: [{ profile: 8, max_level: 6, bl_compatibility_ids: [1] }],
+      dolby_vision_profile_levels: [
+        { profile: 8, max_level: 6, bl_compatibility_ids: [1] },
+      ],
     });
     expect(capabilities.codecsVideo).not.toContain("hevc");
     expect(capabilities.progressiveCodecsVideo).toContain("hevc");
@@ -126,9 +149,11 @@ describe("probeWebCapabilities", () => {
   // The preserve remux tags its output dvh1; a browser that answers only for
   // dvhe has given no evidence for that file and must not earn the claim.
   it("does not promote a dvhe-only answer to a Dolby Vision claim", () => {
-    vi.stubGlobal("matchMedia", (query: string) => ({ matches: query.includes("high") }));
-    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation((mime) =>
-      mime === 'video/mp4; codecs="dvhe.08.06"' ? "probably" : "",
+    vi.stubGlobal("matchMedia", (query: string) => ({
+      matches: query.includes("high"),
+    }));
+    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation(
+      (mime) => (mime === 'video/mp4; codecs="dvhe.08.06"' ? "probably" : ""),
     );
 
     expect(probeWebCapabilities().hdrDetails.dolby_vision_profiles).toEqual([]);
@@ -138,8 +163,8 @@ describe("probeWebCapabilities", () => {
   // reports no HDR on an XDR display while answering "probably" for dvh1.
   it("keeps a definitive Dolby Vision answer from an output reporting no HDR", () => {
     vi.stubGlobal("matchMedia", () => ({ matches: false }));
-    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation((mime) =>
-      mime === 'video/mp4; codecs="dvh1.08.06"' ? "probably" : "",
+    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation(
+      (mime) => (mime === 'video/mp4; codecs="dvh1.08.06"' ? "probably" : ""),
     );
 
     const capabilities = probeWebCapabilities();
@@ -153,8 +178,8 @@ describe("probeWebCapabilities", () => {
 
   it("does not promote an indeterminate media-element answer to Dolby Vision support", () => {
     vi.stubGlobal("matchMedia", () => ({ matches: true }));
-    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation((mime) =>
-      mime.startsWith('video/mp4; codecs="dv') ? "maybe" : "",
+    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation(
+      (mime) => (mime.startsWith('video/mp4; codecs="dv') ? "maybe" : ""),
     );
 
     expect(probeWebCapabilities().hdrDetails.dolby_vision_profiles).toEqual([]);
@@ -183,12 +208,15 @@ describe("probeWebCapabilities", () => {
     const listeners = new Set<() => void>();
     const query = {
       matches: false,
-      addEventListener: (_: string, listener: () => void) => listeners.add(listener),
-      removeEventListener: (_: string, listener: () => void) => listeners.delete(listener),
+      addEventListener: (_: string, listener: () => void) =>
+        listeners.add(listener),
+      removeEventListener: (_: string, listener: () => void) =>
+        listeners.delete(listener),
     };
     vi.stubGlobal("matchMedia", () => query);
-    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation((mime) =>
-      decodes && mime === 'video/mp4; codecs="dvh1.08.06"' ? "probably" : "",
+    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation(
+      (mime) =>
+        decodes && mime === 'video/mp4; codecs="dvh1.08.06"' ? "probably" : "",
     );
 
     const { result, unmount } = renderHook(() => useCodecDetection());
@@ -207,8 +235,10 @@ describe("probeWebCapabilities", () => {
     // The output reports no HDR: the decode probe must still run and be trusted.
     const query = {
       matches: false,
-      addEventListener: (_: string, listener: () => void) => listeners.add(listener),
-      removeEventListener: (_: string, listener: () => void) => listeners.delete(listener),
+      addEventListener: (_: string, listener: () => void) =>
+        listeners.add(listener),
+      removeEventListener: (_: string, listener: () => void) =>
+        listeners.delete(listener),
     };
     vi.stubGlobal("matchMedia", () => query);
     vi.stubGlobal("navigator", {
@@ -261,12 +291,13 @@ describe("probeWebCapabilities", () => {
   });
 
   it("advertises browser-playable MP3, FLAC, and OGG audio", () => {
-    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation((mime) =>
-      ["audio/mp4", "audio/mpeg", "audio/flac", "audio/ogg"].some((supported) =>
-        mime.startsWith(supported),
-      )
-        ? "probably"
-        : "",
+    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation(
+      (mime) =>
+        ["audio/mp4", "audio/mpeg", "audio/flac", "audio/ogg"].some(
+          (supported) => mime.startsWith(supported),
+        )
+          ? "probably"
+          : "",
     );
 
     const capabilities = probeWebCapabilities();
@@ -274,9 +305,13 @@ describe("probeWebCapabilities", () => {
     expect(capabilities.codecsAudio).toEqual(
       expect.arrayContaining(["mp3", "flac", "opus", "vorbis"]),
     );
-    expect(capabilities.progressiveCodecsAudio).toEqual(expect.arrayContaining(["flac", "opus"]));
+    expect(capabilities.progressiveCodecsAudio).toEqual(
+      expect.arrayContaining(["flac", "opus"]),
+    );
     expect(capabilities.progressiveCodecsAudio).not.toContain("vorbis");
-    expect(capabilities.containers).toEqual(expect.arrayContaining(["mp4", "mp3", "flac", "ogg"]));
+    expect(capabilities.containers).toEqual(
+      expect.arrayContaining(["mp4", "mp3", "flac", "ogg"]),
+    );
   });
 
   it("probes WebM with a codec that belongs to the container", () => {
@@ -289,8 +324,12 @@ describe("probeWebCapabilities", () => {
     const capabilities = probeWebCapabilities();
 
     expect(capabilities.containers).toContain("webm");
-    expect(canPlayType).toHaveBeenCalledWith('video/webm; codecs="vp09.00.10.08"');
-    expect(canPlayType).not.toHaveBeenCalledWith('video/webm; codecs="avc1.640028"');
+    expect(canPlayType).toHaveBeenCalledWith(
+      'video/webm; codecs="vp09.00.10.08"',
+    );
+    expect(canPlayType).not.toHaveBeenCalledWith(
+      'video/webm; codecs="avc1.640028"',
+    );
   });
 
   it("does not advertise native MKV playback on Firefox", () => {
@@ -304,8 +343,8 @@ describe("probeWebCapabilities", () => {
       'audio/mp4; codecs="mp4a.40.2"',
       'audio/webm; codecs="vorbis"',
     ]);
-    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation((mime) =>
-      supportedTypes.has(mime) ? "probably" : "",
+    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation(
+      (mime) => (supportedTypes.has(mime) ? "probably" : ""),
     );
 
     const capabilities = probeWebCapabilities();
@@ -323,8 +362,9 @@ describe("probeWebCapabilities", () => {
       userAgent:
         "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/140.0 Safari/537.36",
     });
-    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation((mime) =>
-      mime === 'video/x-matroska; codecs="avc1.640028"' ? "probably" : "",
+    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation(
+      (mime) =>
+        mime === 'video/x-matroska; codecs="avc1.640028"' ? "probably" : "",
     );
 
     expect(probeWebCapabilities().containers).toContain("mkv");

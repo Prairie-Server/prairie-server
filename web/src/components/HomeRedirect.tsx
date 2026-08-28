@@ -20,7 +20,10 @@ export default function HomeRedirect() {
   return (
     <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-2 px-6 text-center">
       <p>No visible libraries are available right now.</p>
-      <Link to="/settings/libraries" className="text-primary text-sm font-medium hover:underline">
+      <Link
+        to="/settings/libraries"
+        className="text-primary text-sm font-medium hover:underline"
+      >
         Manage library visibility in Settings
       </Link>
     </div>

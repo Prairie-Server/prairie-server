@@ -48,10 +48,11 @@ export default function LibraryPage() {
     rememberEnabled: rememberLibraryPageState,
     saveLibrarySearch,
   } = useLibraryPageStatePreference();
-  const [savedStateHydratedKey, setSavedStateHydratedKey] = useState<string | null>(null);
-  const [hydratedLibrarySearch, setHydratedLibrarySearch] = useState<HydratedLibrarySearch | null>(
-    null,
-  );
+  const [savedStateHydratedKey, setSavedStateHydratedKey] = useState<
+    string | null
+  >(null);
+  const [hydratedLibrarySearch, setHydratedLibrarySearch] =
+    useState<HydratedLibrarySearch | null>(null);
   const applyingSavedSearchParamsRef = useRef<string | null>(null);
   const applyingSavedSearchParamsKeyRef = useRef<string | null>(null);
   const submittedLibrarySearchRef = useRef<{ key: string } | null>(null);
@@ -91,8 +92,10 @@ export default function LibraryPage() {
     !libraryPageStateLoading &&
     ((hasInheritedHydratedSearch && !rememberLibraryPageState) ||
       (rememberLibraryPageState &&
-        (!hasLibraryPageSearchParams(searchParams) || hasInheritedHydratedSearch) &&
-        ((savedLibrarySearch != null && savedLibrarySearch !== currentLibrarySearch) ||
+        (!hasLibraryPageSearchParams(searchParams) ||
+          hasInheritedHydratedSearch) &&
+        ((savedLibrarySearch != null &&
+          savedLibrarySearch !== currentLibrarySearch) ||
           hasInheritedHydratedSearch)));
   const shouldWaitForSavedLibrarySearch =
     hasUnhydratedLibraryState &&
@@ -100,7 +103,8 @@ export default function LibraryPage() {
     (!hasLibraryPageSearchParams(searchParams) || hasInheritedHydratedSearch);
   const searchParamsKey = searchParams.toString();
   const { activeTab, browseType, queryDefinition } = useMemo(
-    () => parseLibraryPageState(new URLSearchParams(searchParamsKey), libraryType),
+    () =>
+      parseLibraryPageState(new URLSearchParams(searchParamsKey), libraryType),
     [libraryType, searchParamsKey],
   );
 
@@ -128,7 +132,12 @@ export default function LibraryPage() {
       // profile switch must treat it as an explicit user choice.
       setHydratedLibrarySearch(null);
     }
-  }, [currentLibrarySearch, hydratedLibrarySearch, id, libraryPageStateOwnerKey]);
+  }, [
+    currentLibrarySearch,
+    hydratedLibrarySearch,
+    id,
+    libraryPageStateOwnerKey,
+  ]);
 
   useEffect(() => {
     if (
@@ -225,7 +234,9 @@ export default function LibraryPage() {
       return;
     }
 
-    const canonicalSearch = serializeLibraryPageSearchParams(normalizedSearchParams);
+    const canonicalSearch = serializeLibraryPageSearchParams(
+      normalizedSearchParams,
+    );
     const retryKey = `${libraryPageStateKey}:${canonicalSearch}`;
     const pendingRetry = librarySaveRetryRef.current;
     if (pendingRetry !== null && pendingRetry.key !== retryKey) {
@@ -286,7 +297,8 @@ export default function LibraryPage() {
         submittedLibrarySearchRef.current = null;
 
         const previousRetry = librarySaveRetryRef.current;
-        const failures = previousRetry?.key === retryKey ? previousRetry.failures : 0;
+        const failures =
+          previousRetry?.key === retryKey ? previousRetry.failures : 0;
         if (failures >= LIBRARY_SAVE_RETRY_DELAYS_MS.length) {
           librarySaveRetryRef.current = {
             key: retryKey,
@@ -300,7 +312,10 @@ export default function LibraryPage() {
         if (fallbackRetryDelay === undefined) {
           return;
         }
-        const retryDelay = libraryPageStateWriteRetryDelay(error, fallbackRetryDelay);
+        const retryDelay = libraryPageStateWriteRetryDelay(
+          error,
+          fallbackRetryDelay,
+        );
         if (retryDelay === null) {
           librarySaveRetryRef.current = {
             key: retryKey,
@@ -346,7 +361,11 @@ export default function LibraryPage() {
       searchParams,
       {
         activeTab:
-          value === "library" ? "library" : value === "collections" ? "collections" : "recommended",
+          value === "library"
+            ? "library"
+            : value === "collections"
+              ? "collections"
+              : "recommended",
         browseType,
         queryDefinition,
       },
@@ -355,7 +374,9 @@ export default function LibraryPage() {
     setSearchParams(nextSearchParams);
   };
 
-  const handleQueryDefinitionChange = (nextQueryDefinition: QueryDefinition) => {
+  const handleQueryDefinitionChange = (
+    nextQueryDefinition: QueryDefinition,
+  ) => {
     const nextSearchParams = updateLibraryPageSearchParams(
       searchParams,
       {
@@ -384,7 +405,11 @@ export default function LibraryPage() {
     setSearchParams(nextSearchParams);
   };
 
-  if (isLoading || shouldWaitForSavedLibrarySearch || shouldApplySavedLibrarySearch) {
+  if (
+    isLoading ||
+    shouldWaitForSavedLibrarySearch ||
+    shouldApplySavedLibrarySearch
+  ) {
     return (
       <div className="h-full px-4 py-4 sm:px-6 sm:py-6 lg:px-10 xl:px-12">
         <Skeleton className="mb-6 h-10 w-48" />
@@ -404,7 +429,10 @@ export default function LibraryPage() {
     return (
       <div className="text-muted-foreground flex h-full flex-col items-center justify-center gap-3 px-6 text-center">
         <p>This library is hidden or unavailable for your account.</p>
-        <Link to="/settings/libraries" className="text-primary text-sm font-medium hover:underline">
+        <Link
+          to="/settings/libraries"
+          className="text-primary text-sm font-medium hover:underline"
+        >
           Manage library visibility in Settings
         </Link>
       </div>
@@ -420,7 +448,11 @@ export default function LibraryPage() {
   return (
     <div className="relative">
       <Tabs value={activeTab} onValueChange={handleTabChange}>
-        <LibraryHeader libraryName={library.name} libraryType={libraryType} overlay={useOverlay} />
+        <LibraryHeader
+          libraryName={library.name}
+          libraryType={libraryType}
+          overlay={useOverlay}
+        />
         <TabsContent value="recommended" className="mt-0">
           <LibraryRecommended
             libraryId={id}

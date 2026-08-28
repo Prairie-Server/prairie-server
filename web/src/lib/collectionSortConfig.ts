@@ -1,5 +1,8 @@
 import type { CollectionSortConfig, QuerySort } from "@/api/types";
-import { getDefaultQuerySortOrder, getQuerySortOptions } from "@/lib/querySortOptions";
+import {
+  getDefaultQuerySortOrder,
+  getQuerySortOptions,
+} from "@/lib/querySortOptions";
 
 // COLLECTION_SOURCE_ORDER is the in-form sentinel for "no default sort" — the
 // collection keeps the order its source supplied (MDBList list order, manual
@@ -23,15 +26,19 @@ export function collectionDefaultSortOptions(
 ): CollectionDefaultSortOption[] {
   return [
     { value: COLLECTION_SOURCE_ORDER, label: "Collection order (default)" },
-    ...getQuerySortOptions({ includePersonalized: allowPersonalized }).map((option) => ({
-      value: `${option.value}:${option.defaultOrder}`,
-      label: option.label,
-    })),
+    ...getQuerySortOptions({ includePersonalized: allowPersonalized }).map(
+      (option) => ({
+        value: `${option.value}:${option.defaultOrder}`,
+        label: option.label,
+      }),
+    ),
   ];
 }
 
 /** Read the form's select value out of a stored sort_config. */
-export function sortConfigToSelectValue(config: CollectionSortConfig | undefined | null): string {
+export function sortConfigToSelectValue(
+  config: CollectionSortConfig | undefined | null,
+): string {
   const field = typeof config?.field === "string" ? config.field.trim() : "";
   if (!field) return COLLECTION_SOURCE_ORDER;
   const order =
@@ -52,7 +59,10 @@ export function selectValueToSortConfig(value: string): CollectionSortConfig {
   if (!field) return {};
   return {
     field,
-    order: order === "asc" || order === "desc" ? order : getDefaultQuerySortOrder(field),
+    order:
+      order === "asc" || order === "desc"
+        ? order
+        : getDefaultQuerySortOrder(field),
   };
 }
 
@@ -71,7 +81,9 @@ export function changedSortConfig(
 }
 
 /** The catalog filter bar's sort state expressed as a collection sort value. */
-export function querySortToSelectValue(sort: QuerySort | undefined | null): string {
+export function querySortToSelectValue(
+  sort: QuerySort | undefined | null,
+): string {
   const field = typeof sort?.field === "string" ? sort.field.trim() : "";
   if (!field) return COLLECTION_SOURCE_ORDER;
   return `${field}:${sort?.order || getDefaultQuerySortOrder(field)}`;

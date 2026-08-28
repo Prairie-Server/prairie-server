@@ -3,7 +3,8 @@ import type { Profile } from "@/api/types";
 export const PRAIRIE_APP_EXAMPLES =
   "Prairie for iPhone, Apple TV, Android, Android TV, and this website";
 
-export const JELLYFIN_APP_EXAMPLES = "Infuse, Swiftfin, JellyCon, Findroid, Jellyfin Media Player";
+export const JELLYFIN_APP_EXAMPLES =
+  "Infuse, Swiftfin, JellyCon, Findroid, Jellyfin Media Player";
 
 /**
  * Builds the username a Jellyfin-protocol client must send.
@@ -12,7 +13,10 @@ export const JELLYFIN_APP_EXAMPLES = "Infuse, Swiftfin, JellyCon, Findroid, Jell
  * suffix against profile names case-insensitively, so the profile name is
  * appended verbatim — see internal/jellycompat/login.go.
  */
-export function buildJellyfinUsername(accountUsername: string, profileName: string): string {
+export function buildJellyfinUsername(
+  accountUsername: string,
+  profileName: string,
+): string {
   const account = accountUsername.trim();
   const profile = profileName.trim();
   if (account === "" || profile === "") {

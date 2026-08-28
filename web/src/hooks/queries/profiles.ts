@@ -1,11 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import type { AdminSession, Profile, CreateProfileRequest, ProfileListResponse } from "@/api/types";
+import type {
+  AdminSession,
+  Profile,
+  CreateProfileRequest,
+  ProfileListResponse,
+} from "@/api/types";
 import { useOptionalAuth } from "@/hooks/useAuth";
 import { profileKeys } from "./keys";
 import { toast } from "sonner";
 
-function replaceProfileInList(profiles: Profile[] | undefined, updatedProfile: Profile) {
+function replaceProfileInList(
+  profiles: Profile[] | undefined,
+  updatedProfile: Profile,
+) {
   if (!profiles || profiles.length === 0) {
     return [updatedProfile];
   }
@@ -29,7 +37,9 @@ export function useHouseholdSessions(enabled = true) {
   return useQuery({
     queryKey: profileKeys.householdSessions(),
     queryFn: () =>
-      api<AdminSession[]>("/profiles/household/sessions").then((sessions) => sessions ?? []),
+      api<AdminSession[]>("/profiles/household/sessions").then(
+        (sessions) => sessions ?? [],
+      ),
     enabled,
     staleTime: HOUSEHOLD_SESSIONS_POLL_MS,
     refetchInterval: HOUSEHOLD_SESSIONS_POLL_MS,
@@ -66,7 +76,9 @@ export function useCreateProfile() {
       void queryClient.invalidateQueries({ queryKey: profileKeys.list() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to save profile");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save profile",
+      );
     },
   });
 }
@@ -74,24 +86,38 @@ export function useCreateProfile() {
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: Partial<CreateProfileRequest> }) =>
+    mutationFn: ({
+      id,
+      body,
+    }: {
+      id: string;
+      body: Partial<CreateProfileRequest>;
+    }) =>
       api<Profile>(`/profiles/${id}`, {
         method: "PUT",
         body: JSON.stringify(body),
       }),
     onSuccess: (updatedProfile) => {
-      queryClient.setQueryData<ProfileListResponse | undefined>(profileKeys.list(), (current) => {
-        const profiles = replaceProfileInList(current?.profiles, updatedProfile);
-        return {
-          profiles,
-          avatar_upload_enabled: current?.avatar_upload_enabled ?? false,
-        };
-      });
+      queryClient.setQueryData<ProfileListResponse | undefined>(
+        profileKeys.list(),
+        (current) => {
+          const profiles = replaceProfileInList(
+            current?.profiles,
+            updatedProfile,
+          );
+          return {
+            profiles,
+            avatar_upload_enabled: current?.avatar_upload_enabled ?? false,
+          };
+        },
+      );
       toast.success("Profile updated");
       void queryClient.invalidateQueries({ queryKey: profileKeys.list() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to save profile");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save profile",
+      );
     },
   });
 }
@@ -108,15 +134,20 @@ export function useUploadProfileAvatar() {
       });
     },
     onSuccess: (updatedProfile) => {
-      queryClient.setQueryData<ProfileListResponse | undefined>(profileKeys.list(), (current) => ({
-        profiles: replaceProfileInList(current?.profiles, updatedProfile),
-        avatar_upload_enabled: current?.avatar_upload_enabled ?? false,
-      }));
+      queryClient.setQueryData<ProfileListResponse | undefined>(
+        profileKeys.list(),
+        (current) => ({
+          profiles: replaceProfileInList(current?.profiles, updatedProfile),
+          avatar_upload_enabled: current?.avatar_upload_enabled ?? false,
+        }),
+      );
       toast.success("Avatar updated");
       void queryClient.invalidateQueries({ queryKey: profileKeys.list() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to upload avatar");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to upload avatar",
+      );
     },
   });
 }
@@ -129,15 +160,20 @@ export function useDeleteProfileAvatar() {
         method: "DELETE",
       }),
     onSuccess: (updatedProfile) => {
-      queryClient.setQueryData<ProfileListResponse | undefined>(profileKeys.list(), (current) => ({
-        profiles: replaceProfileInList(current?.profiles, updatedProfile),
-        avatar_upload_enabled: current?.avatar_upload_enabled ?? false,
-      }));
+      queryClient.setQueryData<ProfileListResponse | undefined>(
+        profileKeys.list(),
+        (current) => ({
+          profiles: replaceProfileInList(current?.profiles, updatedProfile),
+          avatar_upload_enabled: current?.avatar_upload_enabled ?? false,
+        }),
+      );
       toast.success("Avatar removed");
       void queryClient.invalidateQueries({ queryKey: profileKeys.list() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to remove avatar");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to remove avatar",
+      );
     },
   });
 }

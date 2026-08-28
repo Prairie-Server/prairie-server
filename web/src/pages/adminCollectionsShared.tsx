@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import type { FormEvent, ReactNode } from "react";
-import type { CreateLibraryCollectionRequest, Library, LibraryCollection } from "@/api/types";
+import type {
+  CreateLibraryCollectionRequest,
+  Library,
+  LibraryCollection,
+} from "@/api/types";
 import { normalizeQueryDefinition } from "@/api/types";
 import {
   COLLECTION_MAX_ITEMS,
@@ -32,7 +36,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -40,7 +50,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Download, ListPlus, Loader2, Save, Sparkles, TrendingUp } from "lucide-react";
+import {
+  Download,
+  ListPlus,
+  Loader2,
+  Save,
+  Sparkles,
+  TrendingUp,
+} from "lucide-react";
 import { SyncScheduleField } from "@/components/collections/SyncScheduleField";
 
 export type CollectionSourceType = "manual" | "mdblist" | "tmdb" | "trakt";
@@ -77,13 +94,19 @@ interface TraktSourceConfig extends TraktPresetSourceConfig {
   listUrl: string;
 }
 
-export function buildAdminCollectionEditorPath(id: string, libraryId?: number | null) {
-  const base = id === "new" ? "/admin/collections/new" : `/admin/collections/${id}/edit`;
+export function buildAdminCollectionEditorPath(
+  id: string,
+  libraryId?: number | null,
+) {
+  const base =
+    id === "new" ? "/admin/collections/new" : `/admin/collections/${id}/edit`;
   return libraryId ? `${base}?libraryId=${libraryId}` : base;
 }
 
 export function buildAdminCollectionsReturnPath(libraryId?: number | null) {
-  return libraryId ? `/admin/collections?libraryId=${libraryId}` : "/admin/collections";
+  return libraryId
+    ? `/admin/collections?libraryId=${libraryId}`
+    : "/admin/collections";
 }
 
 export function toAdminCollectionBuilderValue(
@@ -102,7 +125,8 @@ export function toAdminCollectionBuilderValue(
   return createCollectionBuilderValue({
     title: collection?.title ?? "",
     description: collection?.description ?? "",
-    collection_type: collection?.collection_type === "manual" ? "manual" : "smart",
+    collection_type:
+      collection?.collection_type === "manual" ? "manual" : "smart",
     visibility: collection?.visibility ?? "visible",
     featured: collection?.featured ?? false,
     query_definition: normalizeQueryDefinition({
@@ -125,12 +149,16 @@ export function toAdminCollectionRequest(
     collection_type: value.collection_type,
     visibility: value.visibility,
     featured: value.featured,
-    query_definition: value.collection_type === "smart" ? value.query_definition : undefined,
-    sort_config: value.collection_type === "smart" ? value.sort_config : undefined,
+    query_definition:
+      value.collection_type === "smart" ? value.query_definition : undefined,
+    sort_config:
+      value.collection_type === "smart" ? value.sort_config : undefined,
   };
 }
 
-export function parseOptionalPositiveInteger(value: string): number | undefined {
+export function parseOptionalPositiveInteger(
+  value: string,
+): number | undefined {
   const trimmed = value.trim();
   if (trimmed.length === 0) {
     return undefined;
@@ -146,7 +174,9 @@ export function parseOptionalPositiveInteger(value: string): number | undefined 
 
 function getMDBListLimitValue(collection: LibraryCollection | null): string {
   const limit = collection?.source_config?.limit;
-  return typeof limit === "number" && Number.isFinite(limit) && limit > 0 ? String(limit) : "";
+  return typeof limit === "number" && Number.isFinite(limit) && limit > 0
+    ? String(limit)
+    : "";
 }
 
 function getTMDBPresetLabel(preset: TMDBPreset): string {
@@ -214,7 +244,10 @@ function tmdbPresetNeedsTimeWindow(preset: TMDBPreset): boolean {
   return preset === "trending";
 }
 
-function normalizeTMDBPresetMediaType(preset: TMDBPreset, mediaType: TMDBMediaType): TMDBMediaType {
+function normalizeTMDBPresetMediaType(
+  preset: TMDBPreset,
+  mediaType: TMDBMediaType,
+): TMDBMediaType {
   return getTMDBAllowedMediaTypes(preset).includes(mediaType)
     ? mediaType
     : getDefaultTMDBMediaType(preset);
@@ -236,7 +269,9 @@ export function parseTMDBPresetSourceConfig(
       : "trending";
   const mediaType = normalizeTMDBPresetMediaType(
     preset,
-    cfg?.media_type === "movie" || cfg?.media_type === "tv" || cfg?.media_type === "all"
+    cfg?.media_type === "movie" ||
+      cfg?.media_type === "tv" ||
+      cfg?.media_type === "all"
       ? (cfg.media_type as TMDBMediaType)
       : getDefaultTMDBMediaType(preset),
   );
@@ -245,7 +280,9 @@ export function parseTMDBPresetSourceConfig(
       ? (cfg.time_window as TMDBTimeWindow)
       : "day";
   const limit =
-    typeof cfg?.limit === "number" && Number.isFinite(cfg.limit) && cfg.limit > 0
+    typeof cfg?.limit === "number" &&
+    Number.isFinite(cfg.limit) &&
+    cfg.limit > 0
       ? String(cfg.limit)
       : "";
 
@@ -256,9 +293,12 @@ export function parseTraktPresetSourceConfig(
   collection: LibraryCollection | null,
 ): TraktSourceConfig {
   const cfg = collection?.source_config;
-  const sourceKind: TraktSourceKind = cfg?.mode === "trakt_list" ? "list" : "preset";
+  const sourceKind: TraktSourceKind =
+    cfg?.mode === "trakt_list" ? "list" : "preset";
   const preset: TraktPreset =
-    cfg?.preset === "popular" || cfg?.preset === "recommended" || cfg?.preset === "trending"
+    cfg?.preset === "popular" ||
+    cfg?.preset === "recommended" ||
+    cfg?.preset === "trending"
       ? cfg.preset
       : "trending";
   const mediaType: TraktMediaType = cfg?.media_type === "tv" ? "tv" : "movie";
@@ -271,7 +311,9 @@ export function parseTraktPresetSourceConfig(
         : "";
   const listUrl = configListUrl || collection?.source_url || "";
   const limit =
-    typeof cfg?.limit === "number" && Number.isFinite(cfg.limit) && cfg.limit > 0
+    typeof cfg?.limit === "number" &&
+    Number.isFinite(cfg.limit) &&
+    cfg.limit > 0
       ? String(cfg.limit)
       : "";
   return { sourceKind, preset, mediaType, profileId, listUrl, limit };
@@ -308,7 +350,13 @@ export function buildTMDBPresetSourceInput({
   };
 }
 
-function buildTraktListSourceInput({ listUrl, limit }: { listUrl: string; limit: string }): {
+function buildTraktListSourceInput({
+  listUrl,
+  limit,
+}: {
+  listUrl: string;
+  limit: string;
+}): {
   source_url: string;
   source_config: Record<string, unknown>;
 } {
@@ -396,17 +444,24 @@ function AdminCollectionSummary({
   sourceLabel: string;
 }) {
   const selectedLibraries = libraries
-    .filter((library) => value.query_definition.library_ids.includes(library.id))
+    .filter((library) =>
+      value.query_definition.library_ids.includes(library.id),
+    )
     .map((library) => library.name);
 
   return (
     <Card className="surface-panel gap-0 rounded-[1.5rem] border-0 shadow-none">
       <CardHeader>
         <CardTitle>Collection Summary</CardTitle>
-        <CardDescription>Keep the important state visible while you build.</CardDescription>
+        <CardDescription>
+          Keep the important state visible while you build.
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <SummaryRow label="Mode" value={value.collection_type === "smart" ? "Smart" : "Manual"} />
+        <SummaryRow
+          label="Mode"
+          value={value.collection_type === "smart" ? "Smart" : "Manual"}
+        />
         <SummaryRow label="Source" value={sourceLabel} />
         <SummaryRow
           label="Visibility"
@@ -415,13 +470,19 @@ function AdminCollectionSummary({
         <SummaryRow label="Featured" value={value.featured ? "Yes" : "No"} />
         <SummaryRow
           label="Libraries"
-          value={selectedLibraries.length > 0 ? selectedLibraries.join(", ") : "None selected"}
+          value={
+            selectedLibraries.length > 0
+              ? selectedLibraries.join(", ")
+              : "None selected"
+          }
         />
         {collection ? (
           <SummaryRow
             label="Items"
             value={
-              collection.collection_type === "smart" ? "\u2014" : String(collection.item_count)
+              collection.collection_type === "smart"
+                ? "\u2014"
+                : String(collection.item_count)
             }
           />
         ) : null}
@@ -493,7 +554,12 @@ export function CollectionForm({
         };
         if (collection) {
           updateMutation.mutate(
-            { id: collection.id, body, poster: posterFile, backdrop: backdropFile },
+            {
+              id: collection.id,
+              body,
+              poster: posterFile,
+              backdrop: backdropFile,
+            },
             { onSuccess: onClose },
           );
           return;
@@ -505,7 +571,10 @@ export function CollectionForm({
         );
       }}
       submitLabel="Save Collection"
-      libraries={libraries.map((library) => ({ id: library.id, name: library.name }))}
+      libraries={libraries.map((library) => ({
+        id: library.id,
+        name: library.name,
+      }))}
       isPending={isPending}
       previewLayout="sidebar"
       sidebarContent={
@@ -521,8 +590,8 @@ export function CollectionForm({
         <div>
           <h2 className="text-lg font-semibold">Libraries</h2>
           <p className="text-muted-foreground mt-1 text-sm">
-            Choose which libraries this collection should appear in. Smart rules apply across the
-            selected libraries.
+            Choose which libraries this collection should appear in. Smart rules
+            apply across the selected libraries.
           </p>
         </div>
         <CollectionLibraryPicker
@@ -610,9 +679,24 @@ export function SourceTypeSelector({
   }
 
   options.push(
-    { type: "manual", icon: ListPlus, label: "Manual", subtitle: "Curate items by hand" },
-    { type: "mdblist", icon: Download, label: "MDBList", subtitle: "Sync from an MDBList URL" },
-    { type: "tmdb", icon: TrendingUp, label: "TMDB", subtitle: "Auto-populate from TMDB presets" },
+    {
+      type: "manual",
+      icon: ListPlus,
+      label: "Manual",
+      subtitle: "Curate items by hand",
+    },
+    {
+      type: "mdblist",
+      icon: Download,
+      label: "MDBList",
+      subtitle: "Sync from an MDBList URL",
+    },
+    {
+      type: "tmdb",
+      icon: TrendingUp,
+      label: "TMDB",
+      subtitle: "Auto-populate from TMDB presets",
+    },
     {
       type: "trakt",
       icon: TrendingUp,
@@ -636,7 +720,11 @@ export function SourceTypeSelector({
           }
         >
           <opt.icon
-            className={opt.highlight ? "text-primary h-8 w-8" : "text-muted-foreground h-8 w-8"}
+            className={
+              opt.highlight
+                ? "text-primary h-8 w-8"
+                : "text-muted-foreground h-8 w-8"
+            }
           />
           <div>
             <p className="text-sm font-medium">{opt.label}</p>
@@ -684,7 +772,11 @@ export function TMDBPresetForm({
 }) {
   const mutation = useImportTMDBCollection();
   const [libraryIds, setLibraryIds] = useState<number[]>(() =>
-    initialLibraryId ? [initialLibraryId] : libraries[0]?.id ? [libraries[0].id] : [],
+    initialLibraryId
+      ? [initialLibraryId]
+      : libraries[0]?.id
+        ? [libraries[0].id]
+        : [],
   );
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -698,7 +790,9 @@ export function TMDBPresetForm({
   const [posterSourceUrl, setPosterSourceUrl] = useState("");
   const [backdropSourceUrl, setBackdropSourceUrl] = useState("");
   const [tmdbSyncSchedule, setTmdbSyncSchedule] = useState("");
-  const [tmdbDefaultSort, setTmdbDefaultSort] = useState<string>(COLLECTION_SOURCE_ORDER);
+  const [tmdbDefaultSort, setTmdbDefaultSort] = useState<string>(
+    COLLECTION_SOURCE_ORDER,
+  );
   const parsedLimit = parseOptionalPositiveInteger(limit);
   const hasInvalidLimit = limit.trim().length > 0 && parsedLimit === undefined;
   const allowedMediaTypes = getTMDBAllowedMediaTypes(preset);
@@ -720,7 +814,9 @@ export function TMDBPresetForm({
           title,
           description,
           preset,
-          time_window: tmdbPresetNeedsTimeWindow(preset) ? timeWindow : undefined,
+          time_window: tmdbPresetNeedsTimeWindow(preset)
+            ? timeWindow
+            : undefined,
           media_type: normalizedMediaType,
           limit: parsedLimit,
           featured,
@@ -748,7 +844,10 @@ export function TMDBPresetForm({
           <CardContent className="space-y-4">
             <SummaryRow label="Preset" value={getTMDBPresetLabel(preset)} />
             {tmdbPresetNeedsTimeWindow(preset) ? (
-              <SummaryRow label="Window" value={timeWindow === "day" ? "Daily" : "Weekly"} />
+              <SummaryRow
+                label="Window"
+                value={timeWindow === "day" ? "Daily" : "Weekly"}
+              />
             ) : null}
             <SummaryRow
               label="Media"
@@ -801,7 +900,10 @@ export function TMDBPresetForm({
         <div className="grid gap-4 md:grid-cols-2">
           <div className="space-y-2">
             <Label>Preset</Label>
-            <Select value={preset} onValueChange={(v) => setPreset(v as TMDBPreset)}>
+            <Select
+              value={preset}
+              onValueChange={(v) => setPreset(v as TMDBPreset)}
+            >
               <SelectTrigger>
                 <SelectValue />
               </SelectTrigger>
@@ -819,7 +921,10 @@ export function TMDBPresetForm({
           {tmdbPresetNeedsTimeWindow(preset) ? (
             <div className="space-y-2">
               <Label>Time Window</Label>
-              <Select value={timeWindow} onValueChange={(v) => setTimeWindow(v as TMDBTimeWindow)}>
+              <Select
+                value={timeWindow}
+                onValueChange={(v) => setTimeWindow(v as TMDBTimeWindow)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -896,7 +1001,10 @@ export function TMDBPresetForm({
           inputId="tmdb-default-sort"
         />
 
-        <SyncScheduleField value={tmdbSyncSchedule} onChange={setTmdbSyncSchedule} />
+        <SyncScheduleField
+          value={tmdbSyncSchedule}
+          onChange={setTmdbSyncSchedule}
+        />
 
         <div className="border-border flex items-center justify-between rounded-lg border px-4 py-3">
           <div>
@@ -911,9 +1019,15 @@ export function TMDBPresetForm({
         <Button
           type="submit"
           className="w-full"
-          disabled={mutation.isPending || libraryIds.length === 0 || hasInvalidLimit}
+          disabled={
+            mutation.isPending || libraryIds.length === 0 || hasInvalidLimit
+          }
         >
-          {mutation.isPending ? <Loader2 className="animate-spin" /> : <Download />}
+          {mutation.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Download />
+          )}
           {mutation.isPending ? "Importing..." : "Import TMDB Collection"}
         </Button>
       </form>
@@ -933,7 +1047,11 @@ export function TraktPresetForm({
   const mutation = useImportTraktCollection();
   const { data: profiles } = useProfiles();
   const [libraryIds, setLibraryIds] = useState<number[]>(() =>
-    initialLibraryId ? [initialLibraryId] : libraries[0]?.id ? [libraries[0].id] : [],
+    initialLibraryId
+      ? [initialLibraryId]
+      : libraries[0]?.id
+        ? [libraries[0].id]
+        : [],
   );
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -949,11 +1067,15 @@ export function TraktPresetForm({
   const [posterSourceUrl, setPosterSourceUrl] = useState("");
   const [backdropSourceUrl, setBackdropSourceUrl] = useState("");
   const [syncSchedule, setSyncSchedule] = useState("");
-  const [defaultSort, setDefaultSort] = useState<string>(COLLECTION_SOURCE_ORDER);
+  const [defaultSort, setDefaultSort] = useState<string>(
+    COLLECTION_SOURCE_ORDER,
+  );
   const parsedLimit = parseOptionalPositiveInteger(limit);
   const hasInvalidLimit = limit.trim().length > 0 && parsedLimit === undefined;
   const isListMode = sourceKind === "list";
-  const eligibility = libraryEligibilityForMediaKind(isListMode ? "mixed" : mediaType);
+  const eligibility = libraryEligibilityForMediaKind(
+    isListMode ? "mixed" : mediaType,
+  );
   const requiresProfile = !isListMode && preset === "recommended";
   const missingProfile = requiresProfile && profileId.trim().length === 0;
   const missingListURL = isListMode && listUrl.trim().length === 0;
@@ -1008,14 +1130,23 @@ export function TraktPresetForm({
               <SummaryRow label="Source" value="User list" />
             ) : (
               <>
-                <SummaryRow label="Preset" value={getTraktPresetLabel(preset)} />
-                <SummaryRow label="Media" value={mediaType === "tv" ? "TV Shows" : "Movies"} />
+                <SummaryRow
+                  label="Preset"
+                  value={getTraktPresetLabel(preset)}
+                />
+                <SummaryRow
+                  label="Media"
+                  value={mediaType === "tv" ? "TV Shows" : "Movies"}
+                />
               </>
             )}
             {requiresProfile ? (
               <SummaryRow
                 label="Profile"
-                value={profiles.find((profile) => profile.id === profileId)?.name ?? "Required"}
+                value={
+                  profiles.find((profile) => profile.id === profileId)?.name ??
+                  "Required"
+                }
               />
             ) : null}
             <SummaryRow label="Featured" value={featured ? "Yes" : "No"} />
@@ -1058,7 +1189,10 @@ export function TraktPresetForm({
 
         <div className="space-y-2">
           <Label>Source</Label>
-          <Select value={sourceKind} onValueChange={(v) => setSourceKind(v as TraktSourceKind)}>
+          <Select
+            value={sourceKind}
+            onValueChange={(v) => setSourceKind(v as TraktSourceKind)}
+          >
             <SelectTrigger>
               <SelectValue />
             </SelectTrigger>
@@ -1082,15 +1216,18 @@ export function TraktPresetForm({
               required
             />
             <p className="text-muted-foreground text-xs">
-              Paste a public Trakt list URL. Movies and shows in the list are matched against the
-              selected libraries in list order.
+              Paste a public Trakt list URL. Movies and shows in the list are
+              matched against the selected libraries in list order.
             </p>
           </div>
         ) : (
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Preset</Label>
-              <Select value={preset} onValueChange={(v) => setPreset(v as TraktPreset)}>
+              <Select
+                value={preset}
+                onValueChange={(v) => setPreset(v as TraktPreset)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -1103,7 +1240,10 @@ export function TraktPresetForm({
             </div>
             <div className="space-y-2">
               <Label>Media Type</Label>
-              <Select value={mediaType} onValueChange={(v) => setMediaType(v as TraktMediaType)}>
+              <Select
+                value={mediaType}
+                onValueChange={(v) => setMediaType(v as TraktMediaType)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -1132,8 +1272,8 @@ export function TraktPresetForm({
               </SelectContent>
             </Select>
             <p className="text-muted-foreground text-xs">
-              Recommended collections use this profile's existing Trakt connection from Watch
-              Providers settings.
+              Recommended collections use this profile's existing Trakt
+              connection from Watch Providers settings.
             </p>
           </div>
         ) : null}
@@ -1199,7 +1339,11 @@ export function TraktPresetForm({
             missingListURL
           }
         >
-          {mutation.isPending ? <Loader2 className="animate-spin" /> : <Download />}
+          {mutation.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Download />
+          )}
           {mutation.isPending ? "Importing..." : "Import Trakt Collection"}
         </Button>
       </form>
@@ -1218,7 +1362,11 @@ export function MDBListImportForm({
 }) {
   const mutation = useImportMDBListCollection();
   const [libraryIds, setLibraryIds] = useState<number[]>(() =>
-    initialLibraryId ? [initialLibraryId] : libraries[0]?.id ? [libraries[0].id] : [],
+    initialLibraryId
+      ? [initialLibraryId]
+      : libraries[0]?.id
+        ? [libraries[0].id]
+        : [],
   );
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -1230,7 +1378,9 @@ export function MDBListImportForm({
   const [posterSourceUrl, setPosterSourceUrl] = useState("");
   const [backdropSourceUrl, setBackdropSourceUrl] = useState("");
   const [syncSchedule, setSyncSchedule] = useState("");
-  const [defaultSort, setDefaultSort] = useState<string>(COLLECTION_SOURCE_ORDER);
+  const [defaultSort, setDefaultSort] = useState<string>(
+    COLLECTION_SOURCE_ORDER,
+  );
   const parsedLimit = parseOptionalPositiveInteger(limit);
   const hasInvalidLimit = limit.trim().length > 0 && parsedLimit === undefined;
 
@@ -1372,9 +1522,15 @@ export function MDBListImportForm({
         <Button
           type="submit"
           className="w-full"
-          disabled={mutation.isPending || libraryIds.length === 0 || hasInvalidLimit}
+          disabled={
+            mutation.isPending || libraryIds.length === 0 || hasInvalidLimit
+          }
         >
-          {mutation.isPending ? <Loader2 className="animate-spin" /> : <Download />}
+          {mutation.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Download />
+          )}
           {mutation.isPending ? "Importing..." : "Import MDBList Collection"}
         </Button>
       </form>
@@ -1394,7 +1550,8 @@ export function CollectionEditForm({
   onClose: () => void;
 }) {
   const [libraryIds, setLibraryIds] = useState<number[]>(() => {
-    if (collection.library_ids && collection.library_ids.length > 0) return collection.library_ids;
+    if (collection.library_ids && collection.library_ids.length > 0)
+      return collection.library_ids;
     if (collection.library_id) return [collection.library_id];
     if (initialLibraryId) return [initialLibraryId];
     return libraries[0]?.id ? [libraries[0].id] : [];
@@ -1405,7 +1562,9 @@ export function CollectionEditForm({
     sortConfigToSelectValue(collection.sort_config),
   );
   const [featured, setFeatured] = useState(collection.featured ?? false);
-  const [visibility, setVisibility] = useState<"visible" | "hidden">(collection.visibility);
+  const [visibility, setVisibility] = useState<"visible" | "hidden">(
+    collection.visibility,
+  );
   const [posterFile, setPosterFile] = useState<File | null>(null);
   const [backdropFile, setBackdropFile] = useState<File | null>(null);
   const [posterSourceUrl, setPosterSourceUrl] = useState("");
@@ -1414,19 +1573,33 @@ export function CollectionEditForm({
   const updateMutation = useUpdateAdminCollection();
   const { data: profiles } = useProfiles();
   const [sourceUrl, setSourceUrl] = useState(collection.source_url ?? "");
-  const [sourceLimit, setSourceLimit] = useState(getMDBListLimitValue(collection));
-  const [editSyncSchedule, setEditSyncSchedule] = useState(collection.sync_schedule ?? "");
+  const [sourceLimit, setSourceLimit] = useState(
+    getMDBListLimitValue(collection),
+  );
+  const [editSyncSchedule, setEditSyncSchedule] = useState(
+    collection.sync_schedule ?? "",
+  );
 
   const tmdbDefaults = parseTMDBPresetSourceConfig(collection);
   const [tmdbPreset, setTmdbPreset] = useState<TMDBPreset>(tmdbDefaults.preset);
-  const [tmdbTimeWindow, setTmdbTimeWindow] = useState<TMDBTimeWindow>(tmdbDefaults.timeWindow);
-  const [tmdbMediaType, setTmdbMediaType] = useState<TMDBMediaType>(tmdbDefaults.mediaType);
+  const [tmdbTimeWindow, setTmdbTimeWindow] = useState<TMDBTimeWindow>(
+    tmdbDefaults.timeWindow,
+  );
+  const [tmdbMediaType, setTmdbMediaType] = useState<TMDBMediaType>(
+    tmdbDefaults.mediaType,
+  );
   const [tmdbLimit, setTmdbLimit] = useState(tmdbDefaults.limit);
   const traktDefaults = parseTraktPresetSourceConfig(collection);
-  const [traktSourceKind, setTraktSourceKind] = useState<TraktSourceKind>(traktDefaults.sourceKind);
+  const [traktSourceKind, setTraktSourceKind] = useState<TraktSourceKind>(
+    traktDefaults.sourceKind,
+  );
   const [traktListUrl, setTraktListUrl] = useState(traktDefaults.listUrl);
-  const [traktPreset, setTraktPreset] = useState<TraktPreset>(traktDefaults.preset);
-  const [traktMediaType, setTraktMediaType] = useState<TraktMediaType>(traktDefaults.mediaType);
+  const [traktPreset, setTraktPreset] = useState<TraktPreset>(
+    traktDefaults.preset,
+  );
+  const [traktMediaType, setTraktMediaType] = useState<TraktMediaType>(
+    traktDefaults.mediaType,
+  );
   const [traktProfileId, setTraktProfileId] = useState(traktDefaults.profileId);
   const [traktLimit, setTraktLimit] = useState(traktDefaults.limit);
 
@@ -1434,22 +1607,32 @@ export function CollectionEditForm({
   const isTMDBCollection = collection.collection_type === "tmdb";
   const isTraktCollection = collection.collection_type === "trakt";
   const parsedSourceLimit = parseOptionalPositiveInteger(sourceLimit);
-  const hasInvalidSourceLimit = sourceLimit.trim().length > 0 && parsedSourceLimit === undefined;
+  const hasInvalidSourceLimit =
+    sourceLimit.trim().length > 0 && parsedSourceLimit === undefined;
   const missingSourceURL = isMDBListCollection && sourceUrl.trim().length === 0;
   const parsedTmdbLimit = parseOptionalPositiveInteger(tmdbLimit);
-  const hasInvalidTmdbLimit = tmdbLimit.trim().length > 0 && parsedTmdbLimit === undefined;
+  const hasInvalidTmdbLimit =
+    tmdbLimit.trim().length > 0 && parsedTmdbLimit === undefined;
   const parsedTraktLimit = parseOptionalPositiveInteger(traktLimit);
-  const hasInvalidTraktLimit = traktLimit.trim().length > 0 && parsedTraktLimit === undefined;
+  const hasInvalidTraktLimit =
+    traktLimit.trim().length > 0 && parsedTraktLimit === undefined;
   const isTraktListMode = isTraktCollection && traktSourceKind === "list";
   const traktNeedsProfile = !isTraktListMode && traktPreset === "recommended";
-  const missingTraktProfile = isTraktCollection && traktNeedsProfile && traktProfileId === "";
-  const missingTraktListURL = isTraktListMode && traktListUrl.trim().length === 0;
+  const missingTraktProfile =
+    isTraktCollection && traktNeedsProfile && traktProfileId === "";
+  const missingTraktListURL =
+    isTraktListMode && traktListUrl.trim().length === 0;
   const allowedTMDBMediaTypes = getTMDBAllowedMediaTypes(tmdbPreset);
-  const normalizedTMDBMediaType = normalizeTMDBPresetMediaType(tmdbPreset, tmdbMediaType);
+  const normalizedTMDBMediaType = normalizeTMDBPresetMediaType(
+    tmdbPreset,
+    tmdbMediaType,
+  );
   const editEligibility: LibraryEligibility | undefined = isTMDBCollection
     ? libraryEligibilityForMediaKind(normalizedTMDBMediaType)
     : isTraktCollection
-      ? libraryEligibilityForMediaKind(isTraktListMode ? "mixed" : traktMediaType)
+      ? libraryEligibilityForMediaKind(
+          isTraktListMode ? "mixed" : traktMediaType,
+        )
       : undefined;
 
   useEffect(() => {
@@ -1460,7 +1643,12 @@ export function CollectionEditForm({
 
   useEffect(() => {
     const firstProfileID = profiles[0]?.id;
-    if (isTraktCollection && traktNeedsProfile && traktProfileId === "" && firstProfileID) {
+    if (
+      isTraktCollection &&
+      traktNeedsProfile &&
+      traktProfileId === "" &&
+      firstProfileID
+    ) {
       setTraktProfileId(firstProfileID);
     }
   }, [isTraktCollection, profiles, traktNeedsProfile, traktProfileId]);
@@ -1468,7 +1656,8 @@ export function CollectionEditForm({
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
 
-    let sourceConfig: Record<string, unknown> | undefined = collection.source_config;
+    let sourceConfig: Record<string, unknown> | undefined =
+      collection.source_config;
     let sourceUrlValue: string | undefined;
 
     if (isMDBListCollection) {
@@ -1505,7 +1694,9 @@ export function CollectionEditForm({
           provider: "trakt",
           preset: traktPreset,
           media_type: traktMediaType,
-          ...(traktPreset === "recommended" ? { profile_id: traktProfileId } : {}),
+          ...(traktPreset === "recommended"
+            ? { profile_id: traktProfileId }
+            : {}),
           ...(parsedTraktLimit ? { limit: parsedTraktLimit } : {}),
         };
       }
@@ -1543,7 +1734,11 @@ export function CollectionEditForm({
     );
   }
 
-  const sourceLabel = isMDBListCollection ? "MDBList" : isTMDBCollection ? "TMDB" : "Trakt";
+  const sourceLabel = isMDBListCollection
+    ? "MDBList"
+    : isTMDBCollection
+      ? "TMDB"
+      : "Trakt";
 
   return (
     <ExternalEditorShell
@@ -1561,7 +1756,9 @@ export function CollectionEditForm({
             <SummaryRow
               label="Items"
               value={
-                collection.collection_type === "smart" ? "\u2014" : String(collection.item_count)
+                collection.collection_type === "smart"
+                  ? "\u2014"
+                  : String(collection.item_count)
               }
             />
           </CardContent>
@@ -1668,13 +1865,19 @@ export function CollectionEditForm({
           inputId="collection-edit-default-sort"
         />
 
-        <SyncScheduleField value={editSyncSchedule} onChange={setEditSyncSchedule} />
+        <SyncScheduleField
+          value={editSyncSchedule}
+          onChange={setEditSyncSchedule}
+        />
 
         {isTMDBCollection ? (
           <div className="grid gap-4 md:grid-cols-2">
             <div className="space-y-2">
               <Label>Preset</Label>
-              <Select value={tmdbPreset} onValueChange={(v) => setTmdbPreset(v as TMDBPreset)}>
+              <Select
+                value={tmdbPreset}
+                onValueChange={(v) => setTmdbPreset(v as TMDBPreset)}
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -1769,7 +1972,9 @@ export function CollectionEditForm({
             {isTraktListMode ? (
               <div className="grid gap-4 md:grid-cols-2">
                 <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="collection-trakt-list-url">Trakt list URL</Label>
+                  <Label htmlFor="collection-trakt-list-url">
+                    Trakt list URL
+                  </Label>
                   <Input
                     id="collection-trakt-list-url"
                     value={traktListUrl}
@@ -1778,8 +1983,8 @@ export function CollectionEditForm({
                     required
                   />
                   <p className="text-muted-foreground text-xs">
-                    Paste a public Trakt list URL. Movies and shows in the list are matched against
-                    the selected libraries in list order.
+                    Paste a public Trakt list URL. Movies and shows in the list
+                    are matched against the selected libraries in list order.
                   </p>
                 </div>
                 <div className="space-y-2">
@@ -1819,7 +2024,9 @@ export function CollectionEditForm({
                   <Label>Media Type</Label>
                   <Select
                     value={traktMediaType}
-                    onValueChange={(v) => setTraktMediaType(v as TraktMediaType)}
+                    onValueChange={(v) =>
+                      setTraktMediaType(v as TraktMediaType)
+                    }
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -1833,7 +2040,10 @@ export function CollectionEditForm({
                 {traktNeedsProfile ? (
                   <div className="space-y-2">
                     <Label>Profile</Label>
-                    <Select value={traktProfileId} onValueChange={setTraktProfileId}>
+                    <Select
+                      value={traktProfileId}
+                      onValueChange={setTraktProfileId}
+                    >
                       <SelectTrigger>
                         <SelectValue placeholder="Choose a profile" />
                       </SelectTrigger>
@@ -1871,7 +2081,9 @@ export function CollectionEditForm({
             <Label>Visibility</Label>
             <Select
               value={visibility}
-              onValueChange={(value) => setVisibility(value as "visible" | "hidden")}
+              onValueChange={(value) =>
+                setVisibility(value as "visible" | "hidden")
+              }
             >
               <SelectTrigger>
                 <SelectValue />
@@ -1907,7 +2119,11 @@ export function CollectionEditForm({
             missingTraktProfile
           }
         >
-          {updateMutation.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+          {updateMutation.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
           {updateMutation.isPending ? "Saving..." : "Save Collection"}
         </Button>
       </form>

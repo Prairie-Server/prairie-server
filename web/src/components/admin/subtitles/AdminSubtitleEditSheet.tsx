@@ -22,7 +22,11 @@ import { Switch } from "@/components/ui/switch";
 import { useAdminUpdateDownloadedSubtitle } from "@/hooks/queries/admin/subtitles";
 import { LANGUAGES, getLanguageName } from "@/player/utils/languageNames";
 import { cn } from "@/lib/utils";
-import { languageChipClass, providerBadgeClass, providerLabel } from "./subtitleAdminStyles";
+import {
+  languageChipClass,
+  providerBadgeClass,
+  providerLabel,
+} from "./subtitleAdminStyles";
 
 import { Save, X } from "lucide-react";
 interface AdminSubtitleEditSheetProps {
@@ -67,7 +71,9 @@ function AdminSubtitleEditForm({
   const updateMutation = useAdminUpdateDownloadedSubtitle();
   const [language, setLanguage] = useState(subtitle.language);
   const [releaseName, setReleaseName] = useState(subtitle.release_name);
-  const [hearingImpaired, setHearingImpaired] = useState(subtitle.hearing_impaired);
+  const [hearingImpaired, setHearingImpaired] = useState(
+    subtitle.hearing_impaired,
+  );
 
   const languageChanged = language !== subtitle.language;
 
@@ -88,13 +94,16 @@ function AdminSubtitleEditForm({
       <SheetHeader>
         <SheetTitle>Edit subtitle</SheetTitle>
         <SheetDescription>
-          Update stored metadata for this subtitle record. File content is not replaced.
+          Update stored metadata for this subtitle record. File content is not
+          replaced.
         </SheetDescription>
       </SheetHeader>
 
       <div className="space-y-6 px-1 py-2">
         <div className="surface-panel-subtle space-y-3 rounded-xl px-4 py-4">
-          <div className="text-sm font-semibold">{subtitle.media_title || "Unknown media"}</div>
+          <div className="text-sm font-semibold">
+            {subtitle.media_title || "Unknown media"}
+          </div>
           <div className="flex flex-wrap items-center gap-2">
             <span
               className={cn(
@@ -102,7 +111,8 @@ function AdminSubtitleEditForm({
                 languageChipClass(),
               )}
             >
-              {subtitle.language.toUpperCase()} · {getLanguageName(subtitle.language)}
+              {subtitle.language.toUpperCase()} ·{" "}
+              {getLanguageName(subtitle.language)}
             </span>
             <span
               className={cn(
@@ -149,7 +159,9 @@ function AdminSubtitleEditForm({
         <div className="border-border/60 flex items-center justify-between rounded-xl border px-4 py-3">
           <div className="space-y-1">
             <Label htmlFor="subtitle-hearing-impaired">Hearing impaired</Label>
-            <p className="text-muted-foreground text-xs">Marks this track as SDH/CC.</p>
+            <p className="text-muted-foreground text-xs">
+              Marks this track as SDH/CC.
+            </p>
           </div>
           <Switch
             id="subtitle-hearing-impaired"
@@ -164,7 +176,11 @@ function AdminSubtitleEditForm({
           <X />
           Cancel
         </Button>
-        <Button type="button" disabled={updateMutation.isPending} onClick={() => void handleSave()}>
+        <Button
+          type="button"
+          disabled={updateMutation.isPending}
+          onClick={() => void handleSave()}
+        >
           <Save />
           Save changes
         </Button>

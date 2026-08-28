@@ -10,7 +10,8 @@ const useUpdatePluginSettingsMock = vi.fn();
 
 vi.mock("@/hooks/queries/pluginSettings", () => ({
   usePluginSettingsList: () => usePluginSettingsListMock(),
-  usePluginSettingsDetail: (...args: unknown[]) => usePluginSettingsDetailMock(...args),
+  usePluginSettingsDetail: (...args: unknown[]) =>
+    usePluginSettingsDetailMock(...args),
   useUpdatePluginSettings: () => useUpdatePluginSettingsMock(),
 }));
 
@@ -34,7 +35,9 @@ describe("PluginsSettings user page", () => {
           id: 11,
           plugin_id: "example.remote",
           version: "1.2.3",
-          user_config_schema: [{ key: "theme", title: "Theme", json_schema: '{"type":"string"}' }],
+          user_config_schema: [
+            { key: "theme", title: "Theme", json_schema: '{"type":"string"}' },
+          ],
           routes: [
             {
               id: "panel",
@@ -47,13 +50,18 @@ describe("PluginsSettings user page", () => {
               static_asset: false,
             },
           ],
-          assets: [{ path: "assets/admin.js", content_type: "application/javascript" }],
+          assets: [
+            { path: "assets/admin.js", content_type: "application/javascript" },
+          ],
         },
         values: { theme: "ocean" },
       },
       isLoading: false,
     });
-    useUpdatePluginSettingsMock.mockReturnValue({ mutate: vi.fn(), isPending: false });
+    useUpdatePluginSettingsMock.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    });
 
     const markup = renderToStaticMarkup(
       <MemoryRouter>

@@ -1,4 +1,8 @@
-import type { PluginAdminForm, PluginAdminFormField, PluginConfigSchema } from "@/api/types";
+import type {
+  PluginAdminForm,
+  PluginAdminFormField,
+  PluginConfigSchema,
+} from "@/api/types";
 
 export function humanizeConfigKey(value: string) {
   return value
@@ -8,7 +12,9 @@ export function humanizeConfigKey(value: string) {
     .join(" ");
 }
 
-export function adminFormForConfigSchema(schema: PluginConfigSchema): PluginAdminForm | null {
+export function adminFormForConfigSchema(
+  schema: PluginConfigSchema,
+): PluginAdminForm | null {
   const explicitFields = schema.admin_form?.fields ?? [];
   try {
     const parsed = JSON.parse(schema.json_schema) as {
@@ -33,10 +39,14 @@ export function adminFormForConfigSchema(schema: PluginConfigSchema): PluginAdmi
     const inferredFields = Object.entries(parsed.properties).map(
       ([key, property]): PluginAdminFormField | null => {
         const propertyType = property.type;
-        if (!propertyType || !["string", "number", "integer", "boolean"].includes(propertyType)) {
+        if (
+          !propertyType ||
+          !["string", "number", "integer", "boolean"].includes(propertyType)
+        ) {
           return null;
         }
-        const secret = property.writeOnly === true || property.format === "password";
+        const secret =
+          property.writeOnly === true || property.format === "password";
         const control =
           propertyType === "boolean"
             ? "SWITCH"
@@ -70,7 +80,10 @@ export function adminFormForConfigSchema(schema: PluginConfigSchema): PluginAdmi
       const explicitKeys = new Set(explicitFields.map((field) => field.key));
       const sensitiveKeys = new Set(
         Object.entries(parsed.properties)
-          .filter(([, property]) => property.writeOnly === true || property.format === "password")
+          .filter(
+            ([, property]) =>
+              property.writeOnly === true || property.format === "password",
+          )
           .map(([key]) => key),
       );
       return {
@@ -80,7 +93,8 @@ export function adminFormForConfigSchema(schema: PluginConfigSchema): PluginAdmi
             sensitiveKeys.has(field.key) ? { ...field, secret: true } : field,
           ),
           ...inferredFields.filter(
-            (field): field is PluginAdminFormField => field != null && !explicitKeys.has(field.key),
+            (field): field is PluginAdminFormField =>
+              field != null && !explicitKeys.has(field.key),
           ),
         ],
       };
@@ -90,7 +104,9 @@ export function adminFormForConfigSchema(schema: PluginConfigSchema): PluginAdmi
 
     return {
       ...schema.admin_form,
-      fields: inferredFields.filter((field): field is PluginAdminFormField => field != null),
+      fields: inferredFields.filter(
+        (field): field is PluginAdminFormField => field != null,
+      ),
     };
   } catch {
     return explicitFields.length > 0 ? schema.admin_form! : null;

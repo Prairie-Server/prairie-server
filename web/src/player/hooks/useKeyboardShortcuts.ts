@@ -23,7 +23,11 @@ export function useKeyboardShortcuts(
       if (e.defaultPrevented) return;
       // Don't intercept keys when typing in inputs.
       const target = e.target as HTMLElement;
-      if (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable) {
+      if (
+        target.tagName === "INPUT" ||
+        target.tagName === "TEXTAREA" ||
+        target.isContentEditable
+      ) {
         return;
       }
 
@@ -90,5 +94,13 @@ export function useKeyboardShortcuts(
 
     document.addEventListener("keydown", handleKeyDown);
     return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [containerRef, enabled, handlePlayPause, handleSeek, toggleCaptions, togglePiP, videoRef]);
+  }, [
+    containerRef,
+    enabled,
+    handlePlayPause,
+    handleSeek,
+    toggleCaptions,
+    togglePiP,
+    videoRef,
+  ]);
 }

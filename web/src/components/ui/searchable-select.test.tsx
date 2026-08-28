@@ -20,10 +20,18 @@ import { SearchableMultiSelect, SearchableSelect } from "./searchable-select";
 describe("searchable select popovers", () => {
   it("render as non-modal popovers so nested dialog and sheet scrolling still works", () => {
     const singleMarkup = renderToStaticMarkup(
-      <SearchableSelect options={["Movies", "Shows"]} value="" onChange={() => {}} />,
+      <SearchableSelect
+        options={["Movies", "Shows"]}
+        value=""
+        onChange={() => {}}
+      />,
     );
     const multiMarkup = renderToStaticMarkup(
-      <SearchableMultiSelect options={["Movies", "Shows"]} value={[]} onChange={() => {}} />,
+      <SearchableMultiSelect
+        options={["Movies", "Shows"]}
+        value={[]}
+        onChange={() => {}}
+      />,
     );
 
     expect(singleMarkup).toContain('data-modal="false"');

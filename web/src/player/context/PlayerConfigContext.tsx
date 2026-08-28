@@ -27,11 +27,16 @@ export function PlayerConfigProvider({
   config: PlayerConfig;
   children: ReactNode;
 }) {
-  return <PlayerConfigCtx.Provider value={config}>{children}</PlayerConfigCtx.Provider>;
+  return (
+    <PlayerConfigCtx.Provider value={config}>
+      {children}
+    </PlayerConfigCtx.Provider>
+  );
 }
 
 export function usePlayerConfig(): PlayerConfig {
   const ctx = useContext(PlayerConfigCtx);
-  if (!ctx) throw new Error("usePlayerConfig must be used within PlayerConfigProvider");
+  if (!ctx)
+    throw new Error("usePlayerConfig must be used within PlayerConfigProvider");
   return ctx;
 }

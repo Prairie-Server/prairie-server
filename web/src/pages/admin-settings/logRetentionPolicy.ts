@@ -16,10 +16,34 @@ export interface LogRetentionBucketPolicy {
 }
 
 export const DEFAULT_BUCKET_POLICIES: LogRetentionBucketPolicy[] = [
-  { component: "metadata", level: "info", retention_days: 1, max_rows: 100000, max_size_mb: 128 },
-  { component: "scanner", level: "info", retention_days: 2, max_rows: 150000, max_size_mb: 192 },
-  { component: "metadata", level: "warn", retention_days: 7, max_rows: 250000, max_size_mb: 256 },
-  { component: "scanner", level: "warn", retention_days: 7, max_rows: 250000, max_size_mb: 256 },
+  {
+    component: "metadata",
+    level: "info",
+    retention_days: 1,
+    max_rows: 100000,
+    max_size_mb: 128,
+  },
+  {
+    component: "scanner",
+    level: "info",
+    retention_days: 2,
+    max_rows: 150000,
+    max_size_mb: 192,
+  },
+  {
+    component: "metadata",
+    level: "warn",
+    retention_days: 7,
+    max_rows: 250000,
+    max_size_mb: 256,
+  },
+  {
+    component: "scanner",
+    level: "warn",
+    retention_days: 7,
+    max_rows: 250000,
+    max_size_mb: 256,
+  },
 ];
 
 function normalizeBucketLimit(value: unknown): number {
@@ -47,11 +71,16 @@ export function parseBucketPolicies(raw: string): LogRetentionBucketPolicy[] {
       if (!entry || typeof entry !== "object") {
         return null;
       }
-      const component = stringifyUnknown((entry as { component?: unknown }).component).trim();
+      const component = stringifyUnknown(
+        (entry as { component?: unknown }).component,
+      ).trim();
       const level = stringifyUnknown((entry as { level?: unknown }).level)
         .trim()
         .toLowerCase();
-      if (!component || !LOG_LEVEL_OPTIONS.includes(level as (typeof LOG_LEVEL_OPTIONS)[number])) {
+      if (
+        !component ||
+        !LOG_LEVEL_OPTIONS.includes(level as (typeof LOG_LEVEL_OPTIONS)[number])
+      ) {
         return null;
       }
       return {
@@ -60,14 +89,20 @@ export function parseBucketPolicies(raw: string): LogRetentionBucketPolicy[] {
         retention_days: normalizeBucketLimit(
           (entry as { retention_days?: unknown }).retention_days,
         ),
-        max_rows: normalizeBucketLimit((entry as { max_rows?: unknown }).max_rows),
-        max_size_mb: normalizeBucketLimit((entry as { max_size_mb?: unknown }).max_size_mb),
+        max_rows: normalizeBucketLimit(
+          (entry as { max_rows?: unknown }).max_rows,
+        ),
+        max_size_mb: normalizeBucketLimit(
+          (entry as { max_size_mb?: unknown }).max_size_mb,
+        ),
       };
     })
     .filter((entry): entry is LogRetentionBucketPolicy => entry !== null);
 }
 
-export function serializeBucketPolicies(policies: LogRetentionBucketPolicy[]): string {
+export function serializeBucketPolicies(
+  policies: LogRetentionBucketPolicy[],
+): string {
   const normalized = policies
     .map((policy) => ({
       component: policy.component.trim(),
@@ -79,7 +114,9 @@ export function serializeBucketPolicies(policies: LogRetentionBucketPolicy[]): s
     .filter(
       (policy) =>
         policy.component &&
-        LOG_LEVEL_OPTIONS.includes(policy.level as (typeof LOG_LEVEL_OPTIONS)[number]),
+        LOG_LEVEL_OPTIONS.includes(
+          policy.level as (typeof LOG_LEVEL_OPTIONS)[number],
+        ),
     );
 
   return JSON.stringify(normalized);

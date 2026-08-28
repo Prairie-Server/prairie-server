@@ -19,7 +19,10 @@ interface WatchTonightDialogProps {
   onOpenChange: (open: boolean) => void;
 }
 
-export default function WatchTonightDialog({ open, onOpenChange }: WatchTonightDialogProps) {
+export default function WatchTonightDialog({
+  open,
+  onOpenChange,
+}: WatchTonightDialogProps) {
   const [step, setStep] = useState<Step>("mode-select");
   const [mode, setMode] = useState<SwipeMode>("discover");
   const [genres, setGenres] = useState<string[]>([]);
@@ -38,13 +41,13 @@ export default function WatchTonightDialog({ open, onOpenChange }: WatchTonightD
   }, [open]);
 
   const swipeEnabled = open && step === "swipe-deck";
-  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } = useSwipeCards(
-    swipeEnabled,
-    mode,
-    genres,
-  );
+  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage } =
+    useSwipeCards(swipeEnabled, mode, genres);
 
-  const cards = useMemo(() => data?.pages.flatMap((p) => p.cards) ?? [], [data]);
+  const cards = useMemo(
+    () => data?.pages.flatMap((p) => p.cards) ?? [],
+    [data],
+  );
 
   const hasMore = hasNextPage ?? false;
 
@@ -92,7 +95,8 @@ export default function WatchTonightDialog({ open, onOpenChange }: WatchTonightD
           </DialogTitle>
           <DialogDescription>
             {step === "mode-select" && "What are you in the mood for?"}
-            {step === "genre-picker" && "Pick some genres to narrow things down"}
+            {step === "genre-picker" &&
+              "Pick some genres to narrow things down"}
             {step === "swipe-deck" &&
               (mode === "continue"
                 ? "Swipe through your in-progress titles"
@@ -150,7 +154,11 @@ export default function WatchTonightDialog({ open, onOpenChange }: WatchTonightD
                 >
                   Back
                 </button>
-                <Button onClick={handleGenresConfirm} size="sm" className="gap-1.5">
+                <Button
+                  onClick={handleGenresConfirm}
+                  size="sm"
+                  className="gap-1.5"
+                >
                   {genres.length === 0 ? "All Genres" : `Go (${genres.length})`}
                   <ArrowRight className="h-4 w-4" />
                 </Button>

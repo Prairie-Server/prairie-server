@@ -14,10 +14,34 @@ import {
 } from "./webhookSetup";
 
 const libraries = [
-  { id: 1, name: "Movies", type: "movie", enabled: true, paths: ["/mnt/media/movies"] },
-  { id: 2, name: "TV Shows", type: "series", enabled: true, paths: ["/mnt/media/tv"] },
-  { id: 3, name: "Everything", type: "mixed", enabled: true, paths: ["/mnt/media/mixed"] },
-  { id: 4, name: "Archive", type: "movie", enabled: false, paths: ["/mnt/archive"] },
+  {
+    id: 1,
+    name: "Movies",
+    type: "movie",
+    enabled: true,
+    paths: ["/mnt/media/movies"],
+  },
+  {
+    id: 2,
+    name: "TV Shows",
+    type: "series",
+    enabled: true,
+    paths: ["/mnt/media/tv"],
+  },
+  {
+    id: 3,
+    name: "Everything",
+    type: "mixed",
+    enabled: true,
+    paths: ["/mnt/media/mixed"],
+  },
+  {
+    id: 4,
+    name: "Archive",
+    type: "movie",
+    enabled: false,
+    paths: ["/mnt/archive"],
+  },
 ] as unknown as Library[];
 
 describe("triggersFor", () => {
@@ -32,16 +56,24 @@ describe("triggersFor", () => {
   });
 
   it("names the delete trigger specific to each service", () => {
-    expect(triggersFor("sonarr").map((t) => t.label)).toContain("On Episode File Delete");
-    expect(triggersFor("radarr").map((t) => t.label)).toContain("On Movie File Delete");
+    expect(triggersFor("sonarr").map((t) => t.label)).toContain(
+      "On Episode File Delete",
+    );
+    expect(triggersFor("radarr").map((t) => t.label)).toContain(
+      "On Movie File Delete",
+    );
   });
 
   it("never offers a Sonarr-only trigger to Radarr", () => {
-    expect(triggersFor("radarr").map((t) => t.label)).not.toContain("On Episode File Delete");
+    expect(triggersFor("radarr").map((t) => t.label)).not.toContain(
+      "On Episode File Delete",
+    );
   });
 
   it("marks import and upgrade as required, rename as optional", () => {
-    const byLabel = new Map(triggersFor("sonarr").map((t) => [t.label, t.required]));
+    const byLabel = new Map(
+      triggersFor("sonarr").map((t) => [t.label, t.required]),
+    );
     expect(byLabel.get("On Import")).toBe(true);
     expect(byLabel.get("On Upgrade")).toBe(true);
     expect(byLabel.get("On Rename")).toBe(false);
@@ -50,7 +82,10 @@ describe("triggersFor", () => {
   it("shows a combined delete trigger when the provider is unknown", () => {
     const labels = triggersFor("auto").map((t) => t.label);
     expect(
-      labels.some((l) => l.includes("Episode File Delete") && l.includes("Movie File Delete")),
+      labels.some(
+        (l) =>
+          l.includes("Episode File Delete") && l.includes("Movie File Delete"),
+      ),
     ).toBe(true);
   });
 });
@@ -73,12 +108,18 @@ describe("collapseToRoots", () => {
   // so merely dropping nested paths would collapse nothing.
   it("collapses siblings to their common ancestor", () => {
     expect(
-      collapseToRoots(["/mnt/media/movies/00s", "/mnt/media/movies/10s", "/mnt/media/tv/anime"]),
+      collapseToRoots([
+        "/mnt/media/movies/00s",
+        "/mnt/media/movies/10s",
+        "/mnt/media/tv/anime",
+      ]),
     ).toEqual(["/mnt/media"]);
   });
 
   it("absorbs children into an ancestor that is also present", () => {
-    expect(collapseToRoots(["/mnt/media", "/mnt/media/movies/00s"])).toEqual(["/mnt/media"]);
+    expect(collapseToRoots(["/mnt/media", "/mnt/media/movies/00s"])).toEqual([
+      "/mnt/media",
+    ]);
   });
 
   it("keeps separate mount points apart", () => {
@@ -98,9 +139,9 @@ describe("collapseToRoots", () => {
   });
 
   it("de-duplicates and ignores trailing slashes and non-absolute entries", () => {
-    expect(collapseToRoots(["/mnt/media/", "/mnt/media", "  ", "relative/path"])).toEqual([
-      "/mnt/media",
-    ]);
+    expect(
+      collapseToRoots(["/mnt/media/", "/mnt/media", "  ", "relative/path"]),
+    ).toEqual(["/mnt/media"]);
   });
 
   it("collapses the real dev-server shape to one row per mount", () => {
@@ -112,7 +153,10 @@ describe("collapseToRoots", () => {
       "/mnt/sharedrives/zd-storage-books/audiobooks",
       "/tmp/silo-transcode/test-extras",
     ];
-    expect(collapseToRoots(real)).toEqual(["/mnt/sharedrives", "/tmp/silo-transcode/test-extras"]);
+    expect(collapseToRoots(real)).toEqual([
+      "/mnt/sharedrives",
+      "/tmp/silo-transcode/test-extras",
+    ]);
   });
 });
 
@@ -133,12 +177,17 @@ describe("expandedRootsFor", () => {
   it("offers nothing when every path shares one child", () => {
     // Splitting here would produce the same single rule, so it is not an option.
     expect(
-      expandedRootsFor("/mnt/media", ["/mnt/media/movies/00s", "/mnt/media/movies/10s"]),
+      expandedRootsFor("/mnt/media", [
+        "/mnt/media/movies/00s",
+        "/mnt/media/movies/10s",
+      ]),
     ).toEqual([]);
   });
 
   it("ignores paths outside the root", () => {
-    expect(expandedRootsFor("/mnt/media", ["/srv/other/movies", "/srv/other/tv"])).toEqual([]);
+    expect(
+      expandedRootsFor("/mnt/media", ["/srv/other/movies", "/srv/other/tv"]),
+    ).toEqual([]);
   });
 });
 
@@ -146,21 +195,39 @@ describe("seedMappings", () => {
   // These libraries all sit under /mnt/media, so each provider's selection
   // collapses to that single shared root — one row, not one per library.
   it("seeds one row for Sonarr's TV and mixed libraries", () => {
-    expect(seedMappings("sonarr", libraries).map((m) => m.to)).toEqual(["/mnt/media"]);
+    expect(seedMappings("sonarr", libraries).map((m) => m.to)).toEqual([
+      "/mnt/media",
+    ]);
   });
 
   it("seeds one row for Radarr's movie and mixed libraries", () => {
-    expect(seedMappings("radarr", libraries).map((m) => m.to)).toEqual(["/mnt/media"]);
+    expect(seedMappings("radarr", libraries).map((m) => m.to)).toEqual([
+      "/mnt/media",
+    ]);
   });
 
   it("seeds one row across every library when the provider is unknown", () => {
-    expect(seedMappings("auto", libraries).map((m) => m.to)).toEqual(["/mnt/media"]);
+    expect(seedMappings("auto", libraries).map((m) => m.to)).toEqual([
+      "/mnt/media",
+    ]);
   });
 
   it("still separates libraries on genuinely different mounts", () => {
     const split = [
-      { id: 1, name: "A", type: "movie", enabled: true, paths: ["/mnt/media/movies"] },
-      { id: 2, name: "B", type: "movie", enabled: true, paths: ["/srv/other/movies"] },
+      {
+        id: 1,
+        name: "A",
+        type: "movie",
+        enabled: true,
+        paths: ["/mnt/media/movies"],
+      },
+      {
+        id: 2,
+        name: "B",
+        type: "movie",
+        enabled: true,
+        paths: ["/srv/other/movies"],
+      },
     ] as unknown as Library[];
     expect(seedMappings("radarr", split).map((m) => m.to)).toEqual([
       "/mnt/media/movies",
@@ -185,15 +252,21 @@ describe("seedMappings", () => {
       },
     ] as unknown as Library[];
 
-    expect(seedMappings("radarr", sprawling).map((m) => m.to)).toEqual(["/mnt/sharedrives"]);
+    expect(seedMappings("radarr", sprawling).map((m) => m.to)).toEqual([
+      "/mnt/sharedrives",
+    ]);
   });
 
   it("skips disabled libraries", () => {
-    expect(seedMappings("auto", libraries).map((m) => m.to)).not.toContain("/mnt/archive");
+    expect(seedMappings("auto", libraries).map((m) => m.to)).not.toContain(
+      "/mnt/archive",
+    );
   });
 
   it("leaves the arr-side path blank for the operator to fill", () => {
-    expect(seedMappings("sonarr", libraries).every((m) => m.from === "")).toBe(true);
+    expect(seedMappings("sonarr", libraries).every((m) => m.from === "")).toBe(
+      true,
+    );
   });
 
   it("returns nothing when no libraries exist", () => {
@@ -212,7 +285,9 @@ describe("usableMappings", () => {
   });
 
   it("trims surrounding whitespace", () => {
-    expect(usableMappings([newMapping("  /b  ", "  /a  ")])).toEqual([{ from: "/a", to: "/b" }]);
+    expect(usableMappings([newMapping("  /b  ", "  /a  ")])).toEqual([
+      { from: "/a", to: "/b" },
+    ]);
   });
 });
 

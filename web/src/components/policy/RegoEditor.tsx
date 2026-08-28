@@ -56,7 +56,12 @@ export function RegoEditor({
   }, [issues, readOnly, value]);
 
   return (
-    <div className={cn("border-border overflow-hidden rounded-lg border", className)}>
+    <div
+      className={cn(
+        "border-border overflow-hidden rounded-lg border",
+        className,
+      )}
+    >
       <CodeMirror
         value={value}
         height={height}

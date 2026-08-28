@@ -5,7 +5,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { getDefaultQuerySortOrder, getQuerySortOptions } from "@/lib/querySortOptions";
+import {
+  getDefaultQuerySortOrder,
+  getQuerySortOptions,
+} from "@/lib/querySortOptions";
 
 interface Filters {
   type: string;
@@ -23,7 +26,10 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
 
   return (
     <div className="flex flex-wrap gap-3">
-      <Select value={filters.type} onValueChange={(v) => onChange({ ...filters, type: v })}>
+      <Select
+        value={filters.type}
+        onValueChange={(v) => onChange({ ...filters, type: v })}
+      >
         <SelectTrigger className="w-32">
           <SelectValue placeholder="Type" />
         </SelectTrigger>
@@ -36,7 +42,9 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
 
       <Select
         value={filters.sort}
-        onValueChange={(v) => onChange({ ...filters, sort: v, order: getDefaultQuerySortOrder(v) })}
+        onValueChange={(v) =>
+          onChange({ ...filters, sort: v, order: getDefaultQuerySortOrder(v) })
+        }
       >
         <SelectTrigger className="w-40">
           <SelectValue placeholder="Sort by" />
@@ -50,7 +58,10 @@ export default function FilterBar({ filters, onChange }: FilterBarProps) {
         </SelectContent>
       </Select>
 
-      <Select value={filters.order} onValueChange={(v) => onChange({ ...filters, order: v })}>
+      <Select
+        value={filters.order}
+        onValueChange={(v) => onChange({ ...filters, order: v })}
+      >
         <SelectTrigger className="w-28">
           <SelectValue placeholder="Order" />
         </SelectTrigger>

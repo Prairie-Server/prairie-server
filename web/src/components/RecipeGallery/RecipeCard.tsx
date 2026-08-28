@@ -16,7 +16,9 @@ export default function RecipeCard({ preset, category, onPick }: Props) {
     >
       <div className="text-lg">{preset.icon}</div>
       <div className="mt-1 text-sm font-semibold">{preset.display_name}</div>
-      <div className="mt-1 text-xs leading-tight text-white/60">{preset.description_short}</div>
+      <div className="mt-1 text-xs leading-tight text-white/60">
+        {preset.description_short}
+      </div>
       <div className="mt-2 text-[10px] tracking-wider text-white/45 uppercase">
         {category.replace("_", " ")}
       </div>

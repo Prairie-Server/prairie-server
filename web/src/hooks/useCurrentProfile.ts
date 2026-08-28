@@ -10,7 +10,9 @@ export function resolveCurrentProfile(
 ): Profile | null {
   const activeProfileId = selectedProfileId ?? cachedProfile?.id ?? null;
   if (activeProfileId) {
-    const freshProfile = profiles.find((profile) => profile.id === activeProfileId);
+    const freshProfile = profiles.find(
+      (profile) => profile.id === activeProfileId,
+    );
     if (freshProfile) {
       return freshProfile;
     }
@@ -24,7 +26,11 @@ export function useCurrentProfile() {
   const cachedProfile = useOptionalAuth()?.profile ?? null;
   const profilesQuery = useProfiles();
   const selectedProfileId = storage.get(storage.KEYS.PROFILE_ID);
-  const profile = resolveCurrentProfile(profilesQuery.data ?? [], cachedProfile, selectedProfileId);
+  const profile = resolveCurrentProfile(
+    profilesQuery.data ?? [],
+    cachedProfile,
+    selectedProfileId,
+  );
 
   // Return only the fields callers consume. Spreading the whole query result
   // would mark every query property as tracked, re-rendering every subscriber

@@ -32,7 +32,8 @@ function sourceLabel(track: PlayerSubtitleInfo): string {
 }
 
 function audioLabel(track: PlayerAudioTrack, i: number): string {
-  const lang = getLanguageName(track.language ?? "") || track.language || `Track ${i + 1}`;
+  const lang =
+    getLanguageName(track.language ?? "") || track.language || `Track ${i + 1}`;
   const layout = track.layout ? ` · ${track.layout}` : "";
   return `${lang}${layout}${track.default ? " · default" : ""}`;
 }
@@ -61,12 +62,17 @@ export function SubtitleTranslateModal({
 }: SubtitleTranslateModalProps) {
   // Only offer sources the server can actually translate (excludes live tracks,
   // bitmap embedded tracks, and ASS/non-text external/downloaded tracks).
-  const sourceTracks = useMemo(() => tracks.filter(isTranslatableSource), [tracks]);
+  const sourceTracks = useMemo(
+    () => tracks.filter(isTranslatableSource),
+    [tracks],
+  );
   const canTranslate = translateEnabled && sourceTracks.length > 0;
   const canTranscribe = transcribeEnabled && (audioTracks?.length ?? 0) > 0;
   // Subtitle translation is the default; generating from audio takes over when
   // it's the only possible path (e.g. bitmap-only files).
-  const [mode, setMode] = useState<SubtitleTranslateMode>(canTranslate ? "subtitles" : "audio");
+  const [mode, setMode] = useState<SubtitleTranslateMode>(
+    canTranslate ? "subtitles" : "audio",
+  );
   const [sourceIndex, setSourceIndex] = useState<number | null>(null);
   const [audioIndex, setAudioIndex] = useState(0);
   const [targetLang, setTargetLang] = useState("en");
@@ -76,7 +82,9 @@ export function SubtitleTranslateModal({
 
   const effectiveSourceIndex = sourceIndex ?? sourceTracks[0]?.index ?? null;
   const quotaExhausted = quota !== null && quota.remaining <= 0;
-  const quotaPeriodLabel = quota ? (QUOTA_PERIOD_WINDOW_LABELS[quota.period] ?? quota.period) : "";
+  const quotaPeriodLabel = quota
+    ? (QUOTA_PERIOD_WINDOW_LABELS[quota.period] ?? quota.period)
+    : "";
 
   // Best-effort: a failed lookup just hides the counter — the server still
   // enforces the quota.
@@ -128,7 +136,9 @@ export function SubtitleTranslateModal({
       // reload, or a second viewer) won't get its own live stream — tell the
       // user it's underway; it'll appear via the subtitle-ready refresh.
       if (res?.job?.status === "running") {
-        toast.info("A job for this track is already in progress — it'll appear when it's ready.");
+        toast.info(
+          "A job for this track is already in progress — it'll appear when it's ready.",
+        );
       }
       // Otherwise the player takes over: it pauses, streams cues in as they're
       // generated, then resumes once your position is covered.
@@ -181,7 +191,9 @@ export function SubtitleTranslateModal({
       >
         <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
           <h2 className="text-sm font-semibold">
-            {mode === "audio" ? "Generate subtitles with AI" : "Translate subtitles with AI"}
+            {mode === "audio"
+              ? "Generate subtitles with AI"
+              : "Translate subtitles with AI"}
           </h2>
           <button
             type="button"
@@ -195,7 +207,10 @@ export function SubtitleTranslateModal({
 
         <div className="space-y-3 px-4 py-4">
           {canTranslate && canTranscribe && (
-            <div className="flex gap-1 rounded bg-neutral-800 p-1" role="tablist">
+            <div
+              className="flex gap-1 rounded bg-neutral-800 p-1"
+              role="tablist"
+            >
               {(
                 [
                   ["subtitles", "From subtitles"],
@@ -208,7 +223,9 @@ export function SubtitleTranslateModal({
                   role="tab"
                   aria-selected={mode === value}
                   className={`flex-1 rounded px-2 py-1 text-xs font-medium focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none ${
-                    mode === value ? "bg-white/15 text-white" : "text-white/50 hover:text-white/80"
+                    mode === value
+                      ? "bg-white/15 text-white"
+                      : "text-white/50 hover:text-white/80"
                   }`}
                   onClick={() => setMode(value)}
                   disabled={submitting}
@@ -221,7 +238,8 @@ export function SubtitleTranslateModal({
 
           {!canTranslate && !canTranscribe ? (
             <p className="py-4 text-center text-xs text-white/50">
-              No text subtitle track is available to translate. Add or download one first.
+              No text subtitle track is available to translate. Add or download
+              one first.
             </p>
           ) : (
             <>
@@ -245,7 +263,9 @@ export function SubtitleTranslateModal({
                 </label>
               ) : (
                 <label className="block">
-                  <span className="mb-1 block text-xs font-medium text-white/60">Audio track</span>
+                  <span className="mb-1 block text-xs font-medium text-white/60">
+                    Audio track
+                  </span>
                   <select
                     className="w-full rounded bg-neutral-800 px-2 py-1.5 text-sm text-white focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none disabled:opacity-50"
                     value={audioIndex}
@@ -292,7 +312,10 @@ export function SubtitleTranslateModal({
               )}
 
               {error && (
-                <div role="alert" className="rounded bg-red-900/40 px-3 py-2 text-xs text-red-300">
+                <div
+                  role="alert"
+                  className="rounded bg-red-900/40 px-3 py-2 text-xs text-red-300"
+                >
                   {error}
                 </div>
               )}
@@ -315,7 +338,11 @@ export function SubtitleTranslateModal({
                     (mode === "audio" && quotaExhausted)
                   }
                 >
-                  {submitting ? "Starting…" : mode === "audio" ? "Generate" : "Translate"}
+                  {submitting
+                    ? "Starting…"
+                    : mode === "audio"
+                      ? "Generate"
+                      : "Translate"}
                 </button>
               </div>
 

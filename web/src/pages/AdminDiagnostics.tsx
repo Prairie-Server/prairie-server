@@ -14,7 +14,11 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
-import type { DiagnosticReport, DiagnosticReportState, DiagnosticReportSummary } from "@/api/types";
+import type {
+  DiagnosticReport,
+  DiagnosticReportState,
+  DiagnosticReportSummary,
+} from "@/api/types";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { DateTimePicker } from "@/components/DateTimePicker";
 import { Badge } from "@/components/ui/badge";
@@ -57,7 +61,14 @@ import {
 import { formatDateTime as formatPreferredDateTime } from "@/lib/datetime";
 
 const PAGE_SIZE = 25;
-const FILTER_KEYS = ["user_id", "platform", "report_type", "from", "to", "short_id"];
+const FILTER_KEYS = [
+  "user_id",
+  "platform",
+  "report_type",
+  "from",
+  "to",
+  "short_id",
+];
 
 interface FilterDraft {
   userID: string;
@@ -71,8 +82,12 @@ interface FilterDraft {
 export default function AdminDiagnostics() {
   useDateTimeFormat();
   const [searchParams, setSearchParams] = useSearchParams();
-  const appliedFilterKey = FILTER_KEYS.map((key) => searchParams.get(key) ?? "").join("\u0000");
-  const [filters, setFilters] = useState<FilterDraft>(() => draftFromSearchParams(searchParams));
+  const appliedFilterKey = FILTER_KEYS.map(
+    (key) => searchParams.get(key) ?? "",
+  ).join("\u0000");
+  const [filters, setFilters] = useState<FilterDraft>(() =>
+    draftFromSearchParams(searchParams),
+  );
   const [pagination, setPagination] = useState<{
     filterKey: string;
     cursor?: string;
@@ -92,8 +107,10 @@ export default function AdminDiagnostics() {
     setSelectedID(undefined);
   }, [appliedFilterKey, searchParams]);
 
-  const activeCursor = pagination.filterKey === appliedFilterKey ? pagination.cursor : undefined;
-  const activeCursorStack = pagination.filterKey === appliedFilterKey ? pagination.cursorStack : [];
+  const activeCursor =
+    pagination.filterKey === appliedFilterKey ? pagination.cursor : undefined;
+  const activeCursorStack =
+    pagination.filterKey === appliedFilterKey ? pagination.cursorStack : [];
 
   const query = useMemo(() => {
     return {
@@ -114,9 +131,13 @@ export default function AdminDiagnostics() {
   const selectedReport = useDiagnosticReport(selectedID);
   const deleteReport = useDeleteDiagnosticReport();
   const hasAppliedFilters = FILTER_KEYS.some((key) => searchParams.has(key));
-  const uploadsEnabled = status.data !== undefined && status.data.status !== "disabled";
+  const uploadsEnabled =
+    status.data !== undefined && status.data.status !== "disabled";
 
-  function setFilter<Key extends keyof FilterDraft>(key: Key, value: FilterDraft[Key]) {
+  function setFilter<Key extends keyof FilterDraft>(
+    key: Key,
+    value: FilterDraft[Key],
+  ) {
     setFilters((current) => ({ ...current, [key]: value }));
   }
 
@@ -129,8 +150,16 @@ export default function AdminDiagnostics() {
     }
     const next = new URLSearchParams(searchParams);
     setOrDelete(next, "user_id", userID);
-    setOrDelete(next, "platform", filters.platform === "all" ? "" : filters.platform);
-    setOrDelete(next, "report_type", filters.reportType === "all" ? "" : filters.reportType);
+    setOrDelete(
+      next,
+      "platform",
+      filters.platform === "all" ? "" : filters.platform,
+    );
+    setOrDelete(
+      next,
+      "report_type",
+      filters.reportType === "all" ? "" : filters.reportType,
+    );
     setOrDelete(next, "from", toRFC3339(filters.from));
     setOrDelete(next, "to", toRFC3339(filters.to));
     setOrDelete(next, "short_id", filters.shortID);
@@ -171,7 +200,11 @@ export default function AdminDiagnostics() {
     try {
       await downloadDiagnosticReport(report);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to download diagnostic report");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to download diagnostic report",
+      );
     } finally {
       setDownloading(false);
     }
@@ -181,21 +214,31 @@ export default function AdminDiagnostics() {
     <div className="space-y-6">
       <div className="page-header gap-5">
         <div className="space-y-3">
-          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Client Diagnostics</h1>
+          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
+            Client Diagnostics
+          </h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Review client crash reports, device context, and correlated playback sessions.
+            Review client crash reports, device context, and correlated playback
+            sessions.
           </p>
         </div>
         <div className="flex items-center gap-5 sm:gap-6">
           <div className="flex items-center gap-2">
-            <Label htmlFor="diagnostics-uploads-enabled" className="text-muted-foreground text-sm">
+            <Label
+              htmlFor="diagnostics-uploads-enabled"
+              className="text-muted-foreground text-sm"
+            >
               Client uploads
             </Label>
             <Switch
               id="diagnostics-uploads-enabled"
               checked={uploadsEnabled}
-              onCheckedChange={(enabled) => updateUploadsEnabled.mutate(enabled)}
-              disabled={!status.data || status.isError || updateUploadsEnabled.isPending}
+              onCheckedChange={(enabled) =>
+                updateUploadsEnabled.mutate(enabled)
+              }
+              disabled={
+                !status.data || status.isError || updateUploadsEnabled.isPending
+              }
             />
           </div>
           <div className="text-right">
@@ -203,15 +246,18 @@ export default function AdminDiagnostics() {
               Retention
             </div>
             <div className="text-sm">
-              {status.data ? `${status.data.retention_days} days` : "Loading..."}
+              {status.data
+                ? `${status.data.retention_days} days`
+                : "Loading..."}
             </div>
           </div>
         </div>
       </div>
 
-      {status.data?.status !== undefined && status.data.status !== "available" && (
-        <FeatureStatusBanner status={status.data.status} />
-      )}
+      {status.data?.status !== undefined &&
+        status.data.status !== "available" && (
+          <FeatureStatusBanner status={status.data.status} />
+        )}
 
       <form
         className="surface-panel-subtle flex flex-wrap items-end gap-x-3 gap-y-4 rounded-2xl p-4"
@@ -229,8 +275,15 @@ export default function AdminDiagnostics() {
             onChange={(event) => setFilter("userID", event.target.value)}
           />
         </FilterField>
-        <FilterField label="Platform" htmlFor="diagnostics-platform" className="min-w-36 flex-1">
-          <Select value={filters.platform} onValueChange={(value) => setFilter("platform", value)}>
+        <FilterField
+          label="Platform"
+          htmlFor="diagnostics-platform"
+          className="min-w-36 flex-1"
+        >
+          <Select
+            value={filters.platform}
+            onValueChange={(value) => setFilter("platform", value)}
+          >
             <SelectTrigger id="diagnostics-platform" className="w-full">
               <SelectValue />
             </SelectTrigger>
@@ -243,7 +296,11 @@ export default function AdminDiagnostics() {
             </SelectContent>
           </Select>
         </FilterField>
-        <FilterField label="Report type" htmlFor="diagnostics-type" className="min-w-36 flex-1">
+        <FilterField
+          label="Report type"
+          htmlFor="diagnostics-type"
+          className="min-w-36 flex-1"
+        >
           <Select
             value={filters.reportType}
             onValueChange={(value) => setFilter("reportType", value)}
@@ -262,21 +319,33 @@ export default function AdminDiagnostics() {
             </SelectContent>
           </Select>
         </FilterField>
-        <FilterField label="From" htmlFor="diagnostics-from" className="min-w-44 flex-1">
+        <FilterField
+          label="From"
+          htmlFor="diagnostics-from"
+          className="min-w-44 flex-1"
+        >
           <DateTimePicker
             id="diagnostics-from"
             value={filters.from}
             onChange={(value) => setFilter("from", value)}
           />
         </FilterField>
-        <FilterField label="To" htmlFor="diagnostics-to" className="min-w-44 flex-1">
+        <FilterField
+          label="To"
+          htmlFor="diagnostics-to"
+          className="min-w-44 flex-1"
+        >
           <DateTimePicker
             id="diagnostics-to"
             value={filters.to}
             onChange={(value) => setFilter("to", value)}
           />
         </FilterField>
-        <FilterField label="Short ID" htmlFor="diagnostics-short-id" className="min-w-32 flex-1">
+        <FilterField
+          label="Short ID"
+          htmlFor="diagnostics-short-id"
+          className="min-w-32 flex-1"
+        >
           <Input
             id="diagnostics-short-id"
             className="font-mono uppercase placeholder:normal-case"
@@ -319,29 +388,41 @@ export default function AdminDiagnostics() {
           <TableBody>
             {reports.isLoading && (
               <TableRow>
-                <TableCell colSpan={8} className="text-muted-foreground py-10 text-center">
+                <TableCell
+                  colSpan={8}
+                  className="text-muted-foreground py-10 text-center"
+                >
                   Loading diagnostic reports...
                 </TableCell>
               </TableRow>
             )}
             {reports.isError && (
               <TableRow>
-                <TableCell colSpan={8} className="text-destructive py-10 text-center">
+                <TableCell
+                  colSpan={8}
+                  className="text-destructive py-10 text-center"
+                >
                   {reports.error instanceof Error
                     ? reports.error.message
                     : "Failed to load diagnostic reports."}
                 </TableCell>
               </TableRow>
             )}
-            {!reports.isLoading && !reports.isError && reports.data?.reports.length === 0 && (
-              <TableRow>
-                <TableCell colSpan={8} className="py-14 text-center">
-                  <EmptyState filtered={hasAppliedFilters} />
-                </TableCell>
-              </TableRow>
-            )}
+            {!reports.isLoading &&
+              !reports.isError &&
+              reports.data?.reports.length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className="py-14 text-center">
+                    <EmptyState filtered={hasAppliedFilters} />
+                  </TableCell>
+                </TableRow>
+              )}
             {reports.data?.reports.map((report) => (
-              <DiagnosticReportRow key={report.id} report={report} onSelect={setSelectedID} />
+              <DiagnosticReportRow
+                key={report.id}
+                report={report}
+                onSelect={setSelectedID}
+              />
             ))}
           </TableBody>
         </Table>
@@ -394,7 +475,9 @@ export default function AdminDiagnostics() {
           </SheetHeader>
           <div className="overflow-y-auto px-4 pb-8">
             {selectedReport.isLoading && (
-              <p className="text-muted-foreground py-8 text-sm">Loading report details...</p>
+              <p className="text-muted-foreground py-8 text-sm">
+                Loading report details...
+              </p>
             )}
             {selectedReport.isError && (
               <p className="text-destructive py-8 text-sm">
@@ -484,8 +567,12 @@ function DiagnosticReportRow({
       onKeyDown={handleKeyDown}
       aria-label={`Open diagnostic report ${report.short_id}`}
     >
-      <TableCell className="whitespace-nowrap">{formatDateTime(report.received_at)}</TableCell>
-      <TableCell className="font-mono text-xs font-medium">{report.short_id}</TableCell>
+      <TableCell className="whitespace-nowrap">
+        {formatDateTime(report.received_at)}
+      </TableCell>
+      <TableCell className="font-mono text-xs font-medium">
+        {report.short_id}
+      </TableCell>
       <TableCell>
         <div>#{report.user_id}</div>
         {report.profile_id && (
@@ -546,7 +633,12 @@ function DiagnosticReportDetail({
           <Download />
           {downloading ? "Preparing..." : "Download bundle"}
         </Button>
-        <Button type="button" variant="destructive" onClick={onDelete} disabled={deleting}>
+        <Button
+          type="button"
+          variant="destructive"
+          onClick={onDelete}
+          disabled={deleting}
+        >
           <Trash2 />
           Delete
         </Button>
@@ -560,9 +652,14 @@ function DiagnosticReportDetail({
       <div className="surface-panel-subtle grid gap-4 rounded-xl p-4 sm:grid-cols-3">
         <DetailField
           label="Device"
-          value={[device.manufacturer, device.model].filter(Boolean).join(" ") || "—"}
+          value={
+            [device.manufacturer, device.model].filter(Boolean).join(" ") || "—"
+          }
         />
-        <DetailField label="OS" value={device.os || report.manifest.report.os_version || "—"} />
+        <DetailField
+          label="OS"
+          value={device.os || report.manifest.report.os_version || "—"}
+        />
         <DetailField
           label="App"
           value={`${report.app_version}${appBuild ? ` (${appBuild})` : ""}`}
@@ -573,11 +670,26 @@ function DiagnosticReportDetail({
         <DetailField label="State" value={formatToken(report.state)} />
         <DetailField label="User" value={`#${report.user_id}`} />
         <DetailField label="Profile" value={report.profile_id || "—"} mono />
-        <DetailField label="Captured" value={formatDateTime(report.captured_at)} />
-        <DetailField label="Received" value={formatDateTime(report.received_at)} />
-        <DetailField label="Form factor" value={formatToken(device.form_factor)} />
-        <DetailField label="Compressed" value={formatBytes(report.blob_bytes)} />
-        <DetailField label="Uncompressed" value={formatBytes(report.uncompressed_bytes)} />
+        <DetailField
+          label="Captured"
+          value={formatDateTime(report.captured_at)}
+        />
+        <DetailField
+          label="Received"
+          value={formatDateTime(report.received_at)}
+        />
+        <DetailField
+          label="Form factor"
+          value={formatToken(device.form_factor)}
+        />
+        <DetailField
+          label="Compressed"
+          value={formatBytes(report.blob_bytes)}
+        />
+        <DetailField
+          label="Uncompressed"
+          value={formatBytes(report.uncompressed_bytes)}
+        />
         <DetailField label="Report ID" value={report.id} mono />
       </div>
 
@@ -606,7 +718,9 @@ function DiagnosticReportDetail({
             ))}
           </div>
         ) : (
-          <p className="text-muted-foreground text-sm">No playback sessions were attached.</p>
+          <p className="text-muted-foreground text-sm">
+            No playback sessions were attached.
+          </p>
         )}
       </div>
 
@@ -622,7 +736,11 @@ function DiagnosticReportDetail({
   );
 }
 
-function FeatureStatusBanner({ status }: { status: "disabled" | "storage_unavailable" }) {
+function FeatureStatusBanner({
+  status,
+}: {
+  status: "disabled" | "storage_unavailable";
+}) {
   const message =
     status === "disabled"
       ? "Client diagnostic uploads are currently disabled. Use the Client uploads toggle above to enable them. Reports from when the feature was enabled may still be available below."
@@ -677,7 +795,11 @@ function DetailField({
   return (
     <div className="min-w-0">
       <div className="text-muted-foreground mb-1 text-xs">{label}</div>
-      <div className={mono ? "font-mono text-xs break-all" : "text-sm break-words"}>{value}</div>
+      <div
+        className={mono ? "font-mono text-xs break-all" : "text-sm break-words"}
+      >
+        {value}
+      </div>
     </div>
   );
 }
@@ -693,7 +815,11 @@ function draftFromSearchParams(searchParams: URLSearchParams): FilterDraft {
   };
 }
 
-function setOrDelete(params: URLSearchParams, key: string, value: string | undefined) {
+function setOrDelete(
+  params: URLSearchParams,
+  key: string,
+  value: string | undefined,
+) {
   const normalized = value?.trim();
   if (normalized) {
     params.set(key, normalized);

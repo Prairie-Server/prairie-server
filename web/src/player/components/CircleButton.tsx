@@ -36,7 +36,8 @@ export function CircleButton({
       : size === "md"
         ? "h-12 w-12 sm:h-14 sm:w-14"
         : "h-10 w-10 sm:h-11 sm:w-11";
-  const skin = variant === "primary" ? "player-disc-primary" : "player-disc-secondary";
+  const skin =
+    variant === "primary" ? "player-disc-primary" : "player-disc-secondary";
   return (
     <button
       type="button"

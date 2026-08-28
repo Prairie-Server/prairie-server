@@ -4,7 +4,10 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { Profile, UserLibrary } from "@/api/types";
-import type { EffectiveSetting, EffectiveSettingsMap } from "@/hooks/queries/settingValues";
+import type {
+  EffectiveSetting,
+  EffectiveSettingsMap,
+} from "@/hooks/queries/settingValues";
 import { SETTING_KEYS, type SettingKey } from "@/lib/settingsContract";
 import {
   buildLibraryPlaybackMutations,
@@ -22,28 +25,32 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/hooks/queries/libraries", async () => {
-  const actual = await vi.importActual<typeof import("@/hooks/queries/libraries")>(
-    "@/hooks/queries/libraries",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/hooks/queries/libraries")
+  >("@/hooks/queries/libraries");
 
   return {
     ...actual,
-    useAvailableUserLibraries: (...args: unknown[]) => mocks.useAvailableUserLibraries(...args),
+    useAvailableUserLibraries: (...args: unknown[]) =>
+      mocks.useAvailableUserLibraries(...args),
     useLibraryDisplayPreferences: (...args: unknown[]) =>
       mocks.useLibraryDisplayPreferences(...args),
   };
 });
 
 vi.mock("@/hooks/queries/settingValues", async () => {
-  const actual = await vi.importActual<typeof import("@/hooks/queries/settingValues")>(
-    "@/hooks/queries/settingValues",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/hooks/queries/settingValues")
+  >("@/hooks/queries/settingValues");
 
   return {
     ...actual,
-    useEffectiveSettings: (...args: unknown[]) => mocks.useEffectiveSettings(...args),
-    useSetSettingValue: (...args: unknown[]) => mocks.useSetSettingValue(...args),
-    useClearSettingValue: (...args: unknown[]) => mocks.useClearSettingValue(...args),
+    useEffectiveSettings: (...args: unknown[]) =>
+      mocks.useEffectiveSettings(...args),
+    useSetSettingValue: (...args: unknown[]) =>
+      mocks.useSetSettingValue(...args),
+    useClearSettingValue: (...args: unknown[]) =>
+      mocks.useClearSettingValue(...args),
   };
 });
 
@@ -110,15 +117,30 @@ describe("library playback editor state", () => {
       createLibraryPlaybackEditorState({
         // Same value as the profile default, but stored on the library: still
         // an override, which is why source rather than value decides.
-        ...resolved(SETTING_KEYS.PLAYBACK_AUDIO_LANGUAGE, "ja", "profile_library", {
-          library_id: 7,
-        }),
-        ...resolved(SETTING_KEYS.PLAYBACK_SUBTITLE_MODE, "always", "profile_library", {
-          library_id: 7,
-        }),
-        ...resolved(SETTING_KEYS.PLAYBACK_SHOW_FORCED_SUBTITLES, false, "profile_library", {
-          library_id: 7,
-        }),
+        ...resolved(
+          SETTING_KEYS.PLAYBACK_AUDIO_LANGUAGE,
+          "ja",
+          "profile_library",
+          {
+            library_id: 7,
+          },
+        ),
+        ...resolved(
+          SETTING_KEYS.PLAYBACK_SUBTITLE_MODE,
+          "always",
+          "profile_library",
+          {
+            library_id: 7,
+          },
+        ),
+        ...resolved(
+          SETTING_KEYS.PLAYBACK_SHOW_FORCED_SUBTITLES,
+          false,
+          "profile_library",
+          {
+            library_id: 7,
+          },
+        ),
       }),
     ).toEqual({
       audioLanguage: "ja",
@@ -133,18 +155,27 @@ describe("library playback editor state", () => {
     // not read as the inherit the absence of a row means.
     expect(
       createLibraryPlaybackEditorState(
-        resolved(SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE, null, "profile_library", {
-          library_id: 7,
-        }),
+        resolved(
+          SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE,
+          null,
+          "profile_library",
+          {
+            library_id: 7,
+          },
+        ),
       ).subtitleLanguage,
     ).toBe("none");
-    expect(createLibraryPlaybackEditorState({}).subtitleLanguage).toBe("inherit");
+    expect(createLibraryPlaybackEditorState({}).subtitleLanguage).toBe(
+      "inherit",
+    );
   });
 
   it("summarizes an untouched library as using profile defaults", () => {
-    expect(buildLibraryPlaybackSummaryFromState(createLibraryPlaybackEditorState({}))).toBe(
-      "Uses profile defaults",
-    );
+    expect(
+      buildLibraryPlaybackSummaryFromState(
+        createLibraryPlaybackEditorState({}),
+      ),
+    ).toBe("Uses profile defaults");
   });
 
   it("summarizes only the overridden playback fields", () => {
@@ -155,7 +186,9 @@ describe("library playback editor state", () => {
         subtitleMode: "always",
         showForcedSubtitles: "off",
       }),
-    ).toBe("Audio: Japanese • Subtitles: English • Behavior: Always on • Forced subtitles: Off");
+    ).toBe(
+      "Audio: Japanese • Subtitles: English • Behavior: Always on • Forced subtitles: Off",
+    );
   });
 });
 
@@ -249,18 +282,38 @@ describe("LibrarySettings", () => {
         return {
           isLoading: false,
           data: {
-            ...resolved(SETTING_KEYS.PLAYBACK_AUDIO_LANGUAGE, "ja", "profile_library", {
-              library_id: options.libraryIds[0],
-            }),
-            ...resolved(SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE, "en", "profile_library", {
-              library_id: options.libraryIds[0],
-            }),
-            ...resolved(SETTING_KEYS.PLAYBACK_SUBTITLE_MODE, "always", "profile_library", {
-              library_id: options.libraryIds[0],
-            }),
-            ...resolved(SETTING_KEYS.PLAYBACK_SHOW_FORCED_SUBTITLES, false, "profile_library", {
-              library_id: options.libraryIds[0],
-            }),
+            ...resolved(
+              SETTING_KEYS.PLAYBACK_AUDIO_LANGUAGE,
+              "ja",
+              "profile_library",
+              {
+                library_id: options.libraryIds[0],
+              },
+            ),
+            ...resolved(
+              SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE,
+              "en",
+              "profile_library",
+              {
+                library_id: options.libraryIds[0],
+              },
+            ),
+            ...resolved(
+              SETTING_KEYS.PLAYBACK_SUBTITLE_MODE,
+              "always",
+              "profile_library",
+              {
+                library_id: options.libraryIds[0],
+              },
+            ),
+            ...resolved(
+              SETTING_KEYS.PLAYBACK_SHOW_FORCED_SUBTITLES,
+              false,
+              "profile_library",
+              {
+                library_id: options.libraryIds[0],
+              },
+            ),
           },
         };
       },

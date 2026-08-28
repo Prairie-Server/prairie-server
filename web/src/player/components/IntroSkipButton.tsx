@@ -9,7 +9,11 @@ interface IntroSkipButtonProps {
    * confirmation and the action never read as one instruction.
    */
   caption?: string;
-  timer?: { durationMs: number; deadlineMs: number | null; remainingMs: number };
+  timer?: {
+    durationMs: number;
+    deadlineMs: number | null;
+    remainingMs: number;
+  };
   controlsVisible?: boolean;
   focusOnMount?: boolean;
 }
@@ -73,7 +77,9 @@ export function IntroSkipButton({
       className={`animate-in fade-in absolute right-5 z-50 flex flex-col items-end gap-1.5 duration-150 sm:right-7 ${controlsVisible ? "bottom-24 sm:bottom-28" : "bottom-5 sm:bottom-7"}`}
     >
       {caption ? (
-        <span className="pr-3 text-xs font-medium text-white/75 drop-shadow">{caption}</span>
+        <span className="pr-3 text-xs font-medium text-white/75 drop-shadow">
+          {caption}
+        </span>
       ) : null}
       {button}
     </div>

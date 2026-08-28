@@ -12,7 +12,9 @@ import {
 
 describe("computeSubtitleFontScale", () => {
   it("returns 1 at the 16:9 reference height", () => {
-    expect(computeSubtitleFontScale(1280, SUBTITLE_REFERENCE_HEIGHT, 16 / 9)).toBe(1);
+    expect(
+      computeSubtitleFontScale(1280, SUBTITLE_REFERENCE_HEIGHT, 16 / 9),
+    ).toBe(1);
   });
 
   it("scales proportionally with the rendered video height", () => {
@@ -25,7 +27,9 @@ describe("computeSubtitleFontScale", () => {
 
   it("tracks the letterboxed video, not the player, for narrow windows", () => {
     // A 16:9 video in a tall 1000x2000 player renders 1000 wide → 562.5 tall.
-    expect(computeSubtitleFontScale(1000, 2000, 16 / 9)).toBeCloseTo(562.5 / 720);
+    expect(computeSubtitleFontScale(1000, 2000, 16 / 9)).toBeCloseTo(
+      562.5 / 720,
+    );
   });
 
   it("uses the 16:9 reference frame for wider-than-16:9 content", () => {
@@ -53,7 +57,9 @@ describe("computeSubtitlePositionStyle", () => {
   it("anchors Lower Third to the rendered 16:9 video frame", () => {
     // The centered 16:9 frame is 562.5px tall, with 718.75px below it. The
     // lower-third inset adds 12% of that frame height: 718.75 + 67.5 = 786.25.
-    expect(computeSubtitlePositionStyle("lower-third", 1000, 2000, 16 / 9)).toEqual({
+    expect(
+      computeSubtitlePositionStyle("lower-third", 1000, 2000, 16 / 9),
+    ).toEqual({
       bottom: "786.25px",
     });
   });
@@ -80,7 +86,8 @@ describe("computeSubtitleStyles", () => {
     expect(DEFAULT_SUBTITLE_APPEARANCE.backgroundStyle).toBe("box");
     expect(DEFAULT_SUBTITLE_APPEARANCE.backgroundOpacity).toBe(75);
     expect(DEFAULT_SUBTITLE_APPEARANCE).toEqual(
-      SETTING_DEFINITIONS[SETTING_KEYS.PLAYBACK_SUBTITLE_APPEARANCE].defaultValue,
+      SETTING_DEFINITIONS[SETTING_KEYS.PLAYBACK_SUBTITLE_APPEARANCE]
+        .defaultValue,
     );
   });
 

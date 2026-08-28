@@ -69,7 +69,9 @@ describe("formatFileSize", () => {
 
   it("uses IEC unit labels when requested", () => {
     expect(formatFileSize(2 * 1024 ** 3, { iecUnits: true })).toBe("2.0 GiB");
-    expect(formatFileSize(512 * 1024 ** 2, { iecUnits: true })).toBe("512.0 MiB");
+    expect(formatFileSize(512 * 1024 ** 2, { iecUnits: true })).toBe(
+      "512.0 MiB",
+    );
     expect(formatFileSize(2 * 1024, { iecUnits: true })).toBe("2.0 KiB");
   });
 
@@ -137,7 +139,9 @@ describe("dolbyVisionLabel", () => {
   });
 
   it("keeps labels that already carry the prefix", () => {
-    expect(dolbyVisionLabel("Dolby Vision Profile 5")).toBe("Dolby Vision Profile 5");
+    expect(dolbyVisionLabel("Dolby Vision Profile 5")).toBe(
+      "Dolby Vision Profile 5",
+    );
   });
 });
 

@@ -71,10 +71,16 @@ interface ConformanceCase {
 }
 
 /** Fails on any object key outside `allowed` — the unknown-field gate. */
-function assertOnlyKnownFields(value: unknown, allowed: readonly string[], path: string): void {
+function assertOnlyKnownFields(
+  value: unknown,
+  allowed: readonly string[],
+  path: string,
+): void {
   expect(value, path).toBeTypeOf("object");
   expect(value, path).not.toBeNull();
-  expect(Array.isArray(value), `${path} must be an object, not an array`).toBe(false);
+  expect(Array.isArray(value), `${path} must be an object, not an array`).toBe(
+    false,
+  );
   const unknown = Object.keys(value as Record<string, unknown>).filter(
     (key) => !allowed.includes(key),
   );
@@ -90,7 +96,9 @@ function loadFixture(): ConformanceFixture {
     "fixture",
   );
   const typed = fixture as ConformanceFixture;
-  expect(Array.isArray(typed.cases), "fixture.cases must be an array").toBe(true);
+  expect(Array.isArray(typed.cases), "fixture.cases must be an array").toBe(
+    true,
+  );
 
   typed.cases.forEach((testCase, caseIndex) => {
     const casePath = `cases[${caseIndex}]`;
@@ -111,7 +119,13 @@ function loadFixture(): ConformanceFixture {
     if (testCase.context !== undefined) {
       assertOnlyKnownFields(
         testCase.context,
-        ["profile_id", "device_id", "client_family", "library_ids", "series_ids"],
+        [
+          "profile_id",
+          "device_id",
+          "client_family",
+          "library_ids",
+          "series_ids",
+        ],
         `${casePath}.context`,
       );
     }
@@ -131,7 +145,10 @@ function loadFixture(): ConformanceFixture {
         ],
         rowPath,
       );
-      expect("value" in row, `${rowPath} must spell an authored null as null`).toBe(true);
+      expect(
+        "value" in row,
+        `${rowPath} must spell an authored null as null`,
+      ).toBe(true);
     });
     testCase.constraint_bindings?.forEach((binding, bindingIndex) => {
       assertOnlyKnownFields(
@@ -144,12 +161,20 @@ function loadFixture(): ConformanceFixture {
       const expectationPath = `${casePath}.expected[${expectationIndex}]`;
       assertOnlyKnownFields(
         expectation,
-        ["key", "value", "source", "constrained", "stored_value", "constraint_kind"],
+        [
+          "key",
+          "value",
+          "source",
+          "constrained",
+          "stored_value",
+          "constraint_kind",
+        ],
         expectationPath,
       );
-      expect("value" in expectation, `${expectationPath} must spell an expected null as null`).toBe(
-        true,
-      );
+      expect(
+        "value" in expectation,
+        `${expectationPath} must spell an expected null as null`,
+      ).toBe(true);
     });
   });
   return typed;
@@ -171,83 +196,93 @@ describe("settings conformance fixture", () => {
     expect(new Set(names).size).toBe(names.length);
   });
 
-  describe.each(fixture.cases.map((testCase) => [testCase.name, testCase] as const))(
-    "%s",
-    (_name, testCase) => {
-      it("resolves to the expected effective values", () => {
-        const context: SettingResolutionContext = {
-          profileId: testCase.context?.profile_id,
-          deviceId: testCase.context?.device_id,
-          clientFamily: testCase.context?.client_family,
-          libraryIds: testCase.context?.library_ids,
-          seriesIds: testCase.context?.series_ids,
+  describe.each(
+    fixture.cases.map((testCase) => [testCase.name, testCase] as const),
+  )("%s", (_name, testCase) => {
+    it("resolves to the expected effective values", () => {
+      const context: SettingResolutionContext = {
+        profileId: testCase.context?.profile_id,
+        deviceId: testCase.context?.device_id,
+        clientFamily: testCase.context?.client_family,
+        libraryIds: testCase.context?.library_ids,
+        seriesIds: testCase.context?.series_ids,
+      };
+      const stored: StoredSettingRow[] = (testCase.stored ?? []).map((row) => ({
+        key: row.key,
+        scope: row.scope,
+        profileId: row.profile_id,
+        deviceId: row.device_id,
+        clientFamily: row.client_family,
+        libraryId: row.library_id,
+        seriesId: row.series_id,
+        value: row.value,
+      }));
+      const bindings: Record<string, SettingConstraintBinding> = {};
+      for (const binding of testCase.constraint_bindings ?? []) {
+        expect(
+          bindings[binding.key],
+          `duplicate binding for ${binding.key}`,
+        ).toBeUndefined();
+        bindings[binding.key] = {
+          policyInput: binding.policy_input,
+          constraint: binding.constraint,
         };
-        const stored: StoredSettingRow[] = (testCase.stored ?? []).map((row) => ({
-          key: row.key,
-          scope: row.scope,
-          profileId: row.profile_id,
-          deviceId: row.device_id,
-          clientFamily: row.client_family,
-          libraryId: row.library_id,
-          seriesId: row.series_id,
-          value: row.value,
-        }));
-        const bindings: Record<string, SettingConstraintBinding> = {};
-        for (const binding of testCase.constraint_bindings ?? []) {
-          expect(bindings[binding.key], `duplicate binding for ${binding.key}`).toBeUndefined();
-          bindings[binding.key] = {
-            policyInput: binding.policy_input,
-            constraint: binding.constraint,
-          };
-        }
+      }
 
-        const resolved = resolveSettingValues(
-          testCase.keys,
-          stored,
-          context,
-          testCase.constraints,
-          bindings,
+      const resolved = resolveSettingValues(
+        testCase.keys,
+        stored,
+        context,
+        testCase.constraints,
+        bindings,
+      );
+
+      expect(resolved).toHaveLength(testCase.expected.length);
+      const byKey = new Map(
+        resolved.map((entry) => [entry.key as string, entry]),
+      );
+      for (const expectation of testCase.expected) {
+        const entry = byKey.get(expectation.key);
+        expect(entry, `no resolved value for ${expectation.key}`).toBeDefined();
+        if (!entry) continue;
+        expect(
+          jsonEquals(entry.value, expectation.value),
+          `${expectation.key}: value ${JSON.stringify(entry.value)}, want ${JSON.stringify(expectation.value)}`,
+        ).toBe(true);
+        expect(entry.source, `${expectation.key}: source`).toBe(
+          expectation.source,
         );
-
-        expect(resolved).toHaveLength(testCase.expected.length);
-        const byKey = new Map(resolved.map((entry) => [entry.key as string, entry]));
-        for (const expectation of testCase.expected) {
-          const entry = byKey.get(expectation.key);
-          expect(entry, `no resolved value for ${expectation.key}`).toBeDefined();
-          if (!entry) continue;
+        expect(entry.constrained, `${expectation.key}: constrained`).toBe(
+          expectation.constrained ?? false,
+        );
+        expect(
+          entry.constraintKind,
+          `${expectation.key}: constraint_kind`,
+        ).toBe(expectation.constraint_kind);
+        if (expectation.constrained) {
           expect(
-            jsonEquals(entry.value, expectation.value),
-            `${expectation.key}: value ${JSON.stringify(entry.value)}, want ${JSON.stringify(expectation.value)}`,
+            "stored_value" in expectation,
+            `${expectation.key}: a constrained expectation must declare stored_value`,
           ).toBe(true);
-          expect(entry.source, `${expectation.key}: source`).toBe(expectation.source);
-          expect(entry.constrained, `${expectation.key}: constrained`).toBe(
-            expectation.constrained ?? false,
-          );
-          expect(entry.constraintKind, `${expectation.key}: constraint_kind`).toBe(
-            expectation.constraint_kind,
-          );
-          if (expectation.constrained) {
-            expect(
-              "stored_value" in expectation,
-              `${expectation.key}: a constrained expectation must declare stored_value`,
-            ).toBe(true);
-            expect(
-              "constraint_kind" in expectation,
-              `${expectation.key}: a constrained expectation must declare constraint_kind`,
-            ).toBe(true);
-            expect(
-              jsonEquals(entry.storedValue, expectation.stored_value),
-              `${expectation.key}: stored_value ${JSON.stringify(entry.storedValue)}, want ${JSON.stringify(expectation.stored_value)}`,
-            ).toBe(true);
-          } else {
-            expect(
-              "stored_value" in expectation,
-              `${expectation.key}: an unconstrained expectation must not declare stored_value`,
-            ).toBe(false);
-            expect(entry.storedValue, `${expectation.key}: stored_value`).toBeUndefined();
-          }
+          expect(
+            "constraint_kind" in expectation,
+            `${expectation.key}: a constrained expectation must declare constraint_kind`,
+          ).toBe(true);
+          expect(
+            jsonEquals(entry.storedValue, expectation.stored_value),
+            `${expectation.key}: stored_value ${JSON.stringify(entry.storedValue)}, want ${JSON.stringify(expectation.stored_value)}`,
+          ).toBe(true);
+        } else {
+          expect(
+            "stored_value" in expectation,
+            `${expectation.key}: an unconstrained expectation must not declare stored_value`,
+          ).toBe(false);
+          expect(
+            entry.storedValue,
+            `${expectation.key}: stored_value`,
+          ).toBeUndefined();
         }
-      });
-    },
-  );
+      }
+    });
+  });
 });

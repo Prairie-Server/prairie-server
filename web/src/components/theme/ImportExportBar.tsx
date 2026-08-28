@@ -1,7 +1,11 @@
 import { useRef } from "react";
 import { Upload, Download } from "lucide-react";
 import { toast } from "sonner";
-import { serializeTheme, downloadTheme, readThemeFile } from "@/lib/themeExport";
+import {
+  serializeTheme,
+  downloadTheme,
+  readThemeFile,
+} from "@/lib/themeExport";
 import type { ThemeId } from "@/lib/themes";
 import type { ThemeVarOverrides } from "@/hooks/useCustomTheme";
 
@@ -12,7 +16,12 @@ interface ImportExportBarProps {
   onImport: (vars: ThemeVarOverrides, css: string, baseTheme: ThemeId) => void;
 }
 
-export function ImportExportBar({ currentTheme, vars, customCss, onImport }: ImportExportBarProps) {
+export function ImportExportBar({
+  currentTheme,
+  vars,
+  customCss,
+  onImport,
+}: ImportExportBarProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   function handleExport() {
@@ -31,7 +40,9 @@ export function ImportExportBar({ currentTheme, vars, customCss, onImport }: Imp
       onImport(themeFile.vars, themeFile.customCss, themeFile.baseTheme);
       toast.success(`Imported "${themeFile.name}"`);
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to import theme file");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to import theme file",
+      );
     }
   }
 

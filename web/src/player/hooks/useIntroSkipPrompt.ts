@@ -16,7 +16,10 @@ const INTRO_PROMPT_MS = INTRO_PROMPT_SECONDS * 1_000;
  * offer the prompt a second time. A rejected promise counts as a refusal — the
  * prompt stays, which is the safe way to be wrong.
  */
-function settleSeek(outcome: boolean | Promise<boolean>, then: (accepted: boolean) => void) {
+function settleSeek(
+  outcome: boolean | Promise<boolean>,
+  then: (accepted: boolean) => void,
+) {
   if (typeof outcome === "boolean") {
     then(outcome);
     return;
@@ -87,7 +90,9 @@ export function useIntroSkipPrompt({
   enabled,
   onSeek,
 }: UseIntroSkipPromptOptions) {
-  const [activePrompt, setActivePromptState] = useState<ActivePrompt | null>(null);
+  const [activePrompt, setActivePromptState] = useState<ActivePrompt | null>(
+    null,
+  );
   const activePromptRef = useRef<ActivePrompt | null>(null);
   const resolvedKeysRef = useRef(new Set<string>());
   const contextRef = useRef<string | null>(null);
@@ -152,7 +157,10 @@ export function useIntroSkipPrompt({
         });
       }
 
-      expiryTimerRef.current = window.setTimeout(() => expirePromptRef.current(), boundedRemaining);
+      expiryTimerRef.current = window.setTimeout(
+        () => expirePromptRef.current(),
+        boundedRemaining,
+      );
     },
     [clearCountdownTimers, replacePrompt],
   );
@@ -174,7 +182,12 @@ export function useIntroSkipPrompt({
       clearCountdownTimers();
       clearPauseGraceTimer();
       remainingAtEdgeRef.current = null;
-      const next = { key, kind, deadlineMs: null, remainingMs: INTRO_PROMPT_MS };
+      const next = {
+        key,
+        kind,
+        deadlineMs: null,
+        remainingMs: INTRO_PROMPT_MS,
+      };
       replacePrompt(next);
       if (playingRef.current) {
         pausedRemainingRef.current = null;
@@ -186,7 +199,12 @@ export function useIntroSkipPrompt({
         deadlineRef.current = 0;
       }
     },
-    [clearCountdownTimers, clearPauseGraceTimer, replacePrompt, scheduleCountdown],
+    [
+      clearCountdownTimers,
+      clearPauseGraceTimer,
+      replacePrompt,
+      scheduleCountdown,
+    ],
   );
 
   useEffect(() => {
@@ -216,7 +234,10 @@ export function useIntroSkipPrompt({
       return;
     }
 
-    if (pausedRemainingRef.current !== null || pauseGraceTimerRef.current !== null) {
+    if (
+      pausedRemainingRef.current !== null ||
+      pauseGraceTimerRef.current !== null
+    ) {
       return;
     }
 
@@ -235,7 +256,11 @@ export function useIntroSkipPrompt({
       const remaining = remainingAtEdgeRef.current ?? 0;
       remainingAtEdgeRef.current = null;
       pausedRemainingRef.current = remaining;
-      replacePrompt({ ...activePromptRef.current, deadlineMs: null, remainingMs: remaining });
+      replacePrompt({
+        ...activePromptRef.current,
+        deadlineMs: null,
+        remainingMs: remaining,
+      });
     }, PLAYBACK_PAUSE_GRACE_MS);
   }, [
     activePrompt?.key,
@@ -257,7 +282,8 @@ export function useIntroSkipPrompt({
       clearPrompt();
     }
 
-    const inside = intro !== null && currentTime >= intro.start && currentTime < intro.end;
+    const inside =
+      intro !== null && currentTime >= intro.start && currentTime < intro.end;
     if (!enabled || mode === "never" || !intro || !introKey) {
       wasInsideRef.current = false;
       clearPrompt();
@@ -317,12 +343,18 @@ export function useIntroSkipPrompt({
   const select = useCallback(() => {
     const current = activePromptRef.current;
     if (!current || !intro) return false;
-    settleSeek(onSeekRef.current(current.kind === "skip" ? intro.end : intro.start), (accepted) => {
-      if (!accepted) return;
-      if (!promptStillActive(activePromptRef.current, current.key, current.kind)) return;
-      resolvedKeysRef.current.add(current.key);
-      clearPrompt();
-    });
+    settleSeek(
+      onSeekRef.current(current.kind === "skip" ? intro.end : intro.start),
+      (accepted) => {
+        if (!accepted) return;
+        if (
+          !promptStillActive(activePromptRef.current, current.key, current.kind)
+        )
+          return;
+        resolvedKeysRef.current.add(current.key);
+        clearPrompt();
+      },
+    );
     return true;
   }, [clearPrompt, intro]);
 

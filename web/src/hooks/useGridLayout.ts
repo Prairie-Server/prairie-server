@@ -12,7 +12,11 @@ interface UseGridLayoutOptions {
   layoutKey?: string;
 }
 
-export function useGridLayout({ gap, textAreaHeight, layoutKey = "" }: UseGridLayoutOptions) {
+export function useGridLayout({
+  gap,
+  textAreaHeight,
+  layoutKey = "",
+}: UseGridLayoutOptions) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [layout, setLayout] = useState<GridLayout>({
     columnCount: 8,

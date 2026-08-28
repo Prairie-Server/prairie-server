@@ -18,7 +18,9 @@ interface LibraryAccessSelectorProps {
 
 function sortByLibraryOrder(libraries: Library[], ids: number[]) {
   const selected = new Set(ids);
-  return libraries.filter((library) => selected.has(library.id)).map((library) => library.id);
+  return libraries
+    .filter((library) => selected.has(library.id))
+    .map((library) => library.id);
 }
 
 export function LibraryAccessSelector({
@@ -48,16 +50,23 @@ export function LibraryAccessSelector({
         <Label>Library Access</Label>
         <div className="flex items-center gap-2">
           <span className="text-muted-foreground text-xs">{allLabel}</span>
-          <Switch checked={allLibraries} onCheckedChange={handleAllLibrariesChange} />
+          <Switch
+            checked={allLibraries}
+            onCheckedChange={handleAllLibrariesChange}
+          />
         </div>
       </div>
 
-      {allLibraries && emptyHint && <p className="text-muted-foreground text-xs">{emptyHint}</p>}
+      {allLibraries && emptyHint && (
+        <p className="text-muted-foreground text-xs">{emptyHint}</p>
+      )}
 
       {!allLibraries && (
         <div className="grid gap-1.5">
           {libraries.length === 0 ? (
-            <p className="text-muted-foreground text-xs">No libraries available.</p>
+            <p className="text-muted-foreground text-xs">
+              No libraries available.
+            </p>
           ) : (
             libraries.map((library) => {
               const checked = value?.includes(library.id) ?? false;
@@ -69,15 +78,22 @@ export function LibraryAccessSelector({
                   <div className="flex min-w-0 items-center gap-2">
                     <span className="text-sm">{library.name}</span>
                     {!library.enabled && (
-                      <Badge variant="outline" className="px-1 py-0 text-[10px]">
+                      <Badge
+                        variant="outline"
+                        className="px-1 py-0 text-[10px]"
+                      >
                         Disabled
                       </Badge>
                     )}
-                    <span className="text-muted-foreground text-xs capitalize">{library.type}</span>
+                    <span className="text-muted-foreground text-xs capitalize">
+                      {library.type}
+                    </span>
                   </div>
                   <Switch
                     checked={checked}
-                    onCheckedChange={(nextChecked) => handleLibraryToggle(library.id, nextChecked)}
+                    onCheckedChange={(nextChecked) =>
+                      handleLibraryToggle(library.id, nextChecked)
+                    }
                   />
                 </div>
               );

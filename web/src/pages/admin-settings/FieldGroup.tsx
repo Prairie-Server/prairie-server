@@ -1,6 +1,12 @@
 import { useId } from "react";
 
-export function FieldGroup({ label, children }: { label: string; children: React.ReactNode }) {
+export function FieldGroup({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   const labelId = useId();
   return (
     <div

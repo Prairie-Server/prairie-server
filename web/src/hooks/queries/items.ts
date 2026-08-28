@@ -14,7 +14,13 @@ import type {
   ItemSplitResponse,
   WatchDetail,
 } from "@/api/types";
-import { adminKeys, catalogKeys, episodeKeys, itemKeys, sectionKeys } from "./keys";
+import {
+  adminKeys,
+  catalogKeys,
+  episodeKeys,
+  itemKeys,
+  sectionKeys,
+} from "./keys";
 import { toast } from "sonner";
 import {
   getCachedWatchedInvalidationKeys,
@@ -42,10 +48,17 @@ export async function fetchWatchDetail(
   if (fileId != null) searchParams.set("fileId", String(fileId));
   if (libraryId != null) searchParams.set("library_id", String(libraryId));
   const query = searchParams.toString();
-  return api<WatchDetail>(`/watch/${itemPathID(id)}${query ? `?${query}` : ""}`, options);
+  return api<WatchDetail>(
+    `/watch/${itemPathID(id)}${query ? `?${query}` : ""}`,
+    options,
+  );
 }
 
-export function useWatchDetail(id: string | undefined, fileId?: number, libraryId?: number) {
+export function useWatchDetail(
+  id: string | undefined,
+  fileId?: number,
+  libraryId?: number,
+) {
   return useQuery({
     queryKey: itemKeys.watchDetail(id!, fileId, libraryId),
     queryFn: () => fetchWatchDetail(id!, fileId, libraryId),
@@ -54,7 +67,10 @@ export function useWatchDetail(id: string | undefined, fileId?: number, libraryI
   });
 }
 
-type RefreshMutationItem = Pick<ItemDetail, "content_id" | "type" | "series_id" | "season_number">;
+type RefreshMutationItem = Pick<
+  ItemDetail,
+  "content_id" | "type" | "series_id" | "season_number"
+>;
 export type RefreshItemMetadataMode = "quick" | "complete";
 
 interface RefreshItemMetadataVariables {
@@ -85,7 +101,9 @@ export function useRefreshItemMetadata() {
   const queryClient = useQueryClient();
   const { awaitAdminJob } = useRealtimeEvents();
   return useMutation({
-    onMutate: ({ mode }: RefreshItemMetadataVariables): RefreshItemMetadataContext => ({
+    onMutate: ({
+      mode,
+    }: RefreshItemMetadataVariables): RefreshItemMetadataContext => ({
       toastID: toast.loading(
         mode === "complete"
           ? "Complete metadata refresh running…"
@@ -111,10 +129,13 @@ export function useRefreshItemMetadata() {
       const artworkWarning = result.artwork_cache_warning;
 
       if (artworkWarning) {
-        toast.warning("Metadata refreshed, but artwork caching did not finish", {
-          id: context?.toastID,
-          description: artworkWarning,
-        });
+        toast.warning(
+          "Metadata refreshed, but artwork caching did not finish",
+          {
+            id: context?.toastID,
+            description: artworkWarning,
+          },
+        );
       } else if (mode === "complete") {
         toast.success("Complete refresh finished", { id: context?.toastID });
       } else if (newFiles > 0) {
@@ -127,16 +148,22 @@ export function useRefreshItemMetadata() {
       }
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["items", "detail", item.content_id] }),
+        queryClient.invalidateQueries({
+          queryKey: ["items", "detail", item.content_id],
+        }),
         queryClient.invalidateQueries({
           queryKey: ["catalog", "items", item.content_id, "detail"],
         }),
-        queryClient.invalidateQueries({ queryKey: ["items", "watchDetail", item.content_id] }),
+        queryClient.invalidateQueries({
+          queryKey: ["items", "watchDetail", item.content_id],
+        }),
       ]);
 
       if (refreshContentID && refreshContentID !== item.content_id) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["items", "detail", refreshContentID] }),
+          queryClient.invalidateQueries({
+            queryKey: ["items", "detail", refreshContentID],
+          }),
           queryClient.invalidateQueries({
             queryKey: ["catalog", "items", refreshContentID, "detail"],
           }),
@@ -148,7 +175,9 @@ export function useRefreshItemMetadata() {
         detailContentID !== refreshContentID
       ) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["items", "detail", detailContentID] }),
+          queryClient.invalidateQueries({
+            queryKey: ["items", "detail", detailContentID],
+          }),
           queryClient.invalidateQueries({
             queryKey: ["catalog", "items", detailContentID, "detail"],
           }),
@@ -157,19 +186,28 @@ export function useRefreshItemMetadata() {
 
       if (item.type === "series") {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: episodeKeys.seasons(item.content_id) }),
+          queryClient.invalidateQueries({
+            queryKey: episodeKeys.seasons(item.content_id),
+          }),
           queryClient.invalidateQueries({
             queryKey: ["catalog", "series", item.content_id, "seasons"],
           }),
           queryClient.invalidateQueries({ queryKey: episodeKeys.all }),
         ]);
-      } else if ((item.type === "season" || item.type === "episode") && item.series_id) {
+      } else if (
+        (item.type === "season" || item.type === "episode") &&
+        item.series_id
+      ) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["items", "detail", item.series_id] }),
+          queryClient.invalidateQueries({
+            queryKey: ["items", "detail", item.series_id],
+          }),
           queryClient.invalidateQueries({
             queryKey: ["catalog", "items", item.series_id, "detail"],
           }),
-          queryClient.invalidateQueries({ queryKey: episodeKeys.seasons(item.series_id) }),
+          queryClient.invalidateQueries({
+            queryKey: episodeKeys.seasons(item.series_id),
+          }),
           queryClient.invalidateQueries({
             queryKey: ["catalog", "series", item.series_id, "seasons"],
           }),
@@ -180,18 +218,31 @@ export function useRefreshItemMetadata() {
             queryKey: episodeKeys.bySeason(item.series_id, item.season_number),
           });
           await queryClient.invalidateQueries({
-            queryKey: episodeKeys.seasonDetail(item.series_id, item.season_number),
+            queryKey: episodeKeys.seasonDetail(
+              item.series_id,
+              item.season_number,
+            ),
           });
           await queryClient.invalidateQueries({
-            queryKey: catalogKeys.seasonEpisodes(item.series_id, item.season_number),
+            queryKey: catalogKeys.seasonEpisodes(
+              item.series_id,
+              item.season_number,
+            ),
           });
           await queryClient.invalidateQueries({
-            queryKey: catalogKeys.seasonDetail(item.series_id, item.season_number),
+            queryKey: catalogKeys.seasonDetail(
+              item.series_id,
+              item.season_number,
+            ),
           });
         }
       }
 
-      if (detailContentID && detailContentID !== item.content_id && onReplaced) {
+      if (
+        detailContentID &&
+        detailContentID !== item.content_id &&
+        onReplaced
+      ) {
         await onReplaced(detailContentID);
       }
     },
@@ -210,9 +261,12 @@ export interface RedetectEpisodeIntroResponse {
 export async function redetectEpisodeIntro(
   episodeId: string,
 ): Promise<RedetectEpisodeIntroResponse> {
-  return api<RedetectEpisodeIntroResponse>(`/admin/items/${itemPathID(episodeId)}/redetect-intro`, {
-    method: "POST",
-  });
+  return api<RedetectEpisodeIntroResponse>(
+    `/admin/items/${itemPathID(episodeId)}/redetect-intro`,
+    {
+      method: "POST",
+    },
+  );
 }
 
 export function useRedetectEpisodeIntro() {
@@ -226,7 +280,9 @@ export function useRedetectEpisodeIntro() {
       );
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to start re-detection");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to start re-detection",
+      );
     },
   });
 }
@@ -272,13 +328,17 @@ export function useUpdateItemMetadata(contentId: string) {
         body: JSON.stringify(data),
       }),
     onSuccess: () => {
-      void invalidateMediaSurfaceQueries(queryClient, { itemId: contentId }).then(() => {
+      void invalidateMediaSurfaceQueries(queryClient, {
+        itemId: contentId,
+      }).then(() => {
         bumpHomeRefreshSignal(queryClient);
       });
       toast.success("Metadata saved");
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to save metadata");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save metadata",
+      );
     },
   });
 }
@@ -326,7 +386,9 @@ export function useWatchedStateMutation(item: WatchedMutationItem) {
           in_watchlist: detail.user_state?.in_watchlist ?? false,
         },
       }));
-      toast.error(err instanceof Error ? err.message : "Failed to update watched state");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update watched state",
+      );
     },
     onSuccess: (_data, nextPlayed) => {
       toast.success(getWatchedToastMessage(item, nextPlayed));
@@ -349,10 +411,13 @@ export function useSearchItemMatchCandidates(contentId: string) {
 
   return useMutation({
     mutationFn: (params: ItemMatchSearchRequest) =>
-      api<ItemMatchSearchResponse>(`/admin/items/${itemPathID(contentId)}/match/search`, {
-        method: "POST",
-        body: JSON.stringify(params),
-      }),
+      api<ItemMatchSearchResponse>(
+        `/admin/items/${itemPathID(contentId)}/match/search`,
+        {
+          method: "POST",
+          body: JSON.stringify(params),
+        },
+      ),
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Match search failed");
     },
@@ -360,7 +425,10 @@ export function useSearchItemMatchCandidates(contentId: string) {
   });
 }
 
-type ApplyMatchItem = Pick<ItemDetail, "content_id" | "series_id" | "season_number"> & {
+type ApplyMatchItem = Pick<
+  ItemDetail,
+  "content_id" | "series_id" | "season_number"
+> & {
   type: string;
   library_id?: number;
 };
@@ -388,30 +456,43 @@ export function useApplyItemMatch() {
       toast.success("Match applied successfully");
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["items", "detail", item.content_id] }),
+        queryClient.invalidateQueries({
+          queryKey: ["items", "detail", item.content_id],
+        }),
         queryClient.invalidateQueries({
           queryKey: ["catalog", "items", item.content_id, "detail"],
         }),
-        queryClient.invalidateQueries({ queryKey: ["items", "watchDetail", item.content_id] }),
+        queryClient.invalidateQueries({
+          queryKey: ["items", "watchDetail", item.content_id],
+        }),
         queryClient.invalidateQueries({ queryKey: adminKeys.staleMediaIDs() }),
         queryClient.invalidateQueries({ queryKey: adminKeys.unmatchedItems() }),
       ]);
 
       if (item.type === "series") {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: episodeKeys.seasons(item.content_id) }),
+          queryClient.invalidateQueries({
+            queryKey: episodeKeys.seasons(item.content_id),
+          }),
           queryClient.invalidateQueries({
             queryKey: ["catalog", "series", item.content_id, "seasons"],
           }),
           queryClient.invalidateQueries({ queryKey: episodeKeys.all }),
         ]);
-      } else if ((item.type === "season" || item.type === "episode") && item.series_id) {
+      } else if (
+        (item.type === "season" || item.type === "episode") &&
+        item.series_id
+      ) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["items", "detail", item.series_id] }),
+          queryClient.invalidateQueries({
+            queryKey: ["items", "detail", item.series_id],
+          }),
           queryClient.invalidateQueries({
             queryKey: ["catalog", "items", item.series_id, "detail"],
           }),
-          queryClient.invalidateQueries({ queryKey: episodeKeys.seasons(item.series_id) }),
+          queryClient.invalidateQueries({
+            queryKey: episodeKeys.seasons(item.series_id),
+          }),
           queryClient.invalidateQueries({
             queryKey: ["catalog", "series", item.series_id, "seasons"],
           }),
@@ -422,13 +503,22 @@ export function useApplyItemMatch() {
             queryKey: episodeKeys.bySeason(item.series_id, item.season_number),
           });
           await queryClient.invalidateQueries({
-            queryKey: episodeKeys.seasonDetail(item.series_id, item.season_number),
+            queryKey: episodeKeys.seasonDetail(
+              item.series_id,
+              item.season_number,
+            ),
           });
           await queryClient.invalidateQueries({
-            queryKey: catalogKeys.seasonEpisodes(item.series_id, item.season_number),
+            queryKey: catalogKeys.seasonEpisodes(
+              item.series_id,
+              item.season_number,
+            ),
           });
           await queryClient.invalidateQueries({
-            queryKey: catalogKeys.seasonDetail(item.series_id, item.season_number),
+            queryKey: catalogKeys.seasonDetail(
+              item.series_id,
+              item.season_number,
+            ),
           });
         }
       }
@@ -444,7 +534,10 @@ export function useApplyItemMatch() {
 export function useItemFiles(contentId: string | undefined) {
   return useQuery({
     queryKey: ["items", "files", contentId],
-    queryFn: () => api<ItemFilesResponse>(`/admin/items/${itemPathID(contentId ?? "")}/files`),
+    queryFn: () =>
+      api<ItemFilesResponse>(
+        `/admin/items/${itemPathID(contentId ?? "")}/files`,
+      ),
     enabled: Boolean(contentId),
     staleTime: 30_000,
   });
@@ -454,7 +547,13 @@ export function useSplitItem() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ contentId, request }: { contentId: string; request: ItemSplitRequest }) =>
+    mutationFn: ({
+      contentId,
+      request,
+    }: {
+      contentId: string;
+      request: ItemSplitRequest;
+    }) =>
       api<ItemSplitResponse>(`/admin/items/${itemPathID(contentId)}/split`, {
         method: "POST",
         body: JSON.stringify(request),
@@ -465,10 +564,18 @@ export function useSplitItem() {
         `Moved ${result.files_moved} file${result.files_moved === 1 ? "" : "s"} to a separate item`,
       );
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ["items", "detail", contentId] }),
-        queryClient.invalidateQueries({ queryKey: ["catalog", "items", contentId, "detail"] }),
-        queryClient.invalidateQueries({ queryKey: ["items", "watchDetail", contentId] }),
-        queryClient.invalidateQueries({ queryKey: ["items", "files", contentId] }),
+        queryClient.invalidateQueries({
+          queryKey: ["items", "detail", contentId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["catalog", "items", contentId, "detail"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["items", "watchDetail", contentId],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["items", "files", contentId],
+        }),
         queryClient.invalidateQueries({ queryKey: adminKeys.unmatchedItems() }),
       ]);
     },
@@ -483,13 +590,17 @@ export function useSplitItem() {
 export function useItemImages(contentId: string | undefined, enabled = true) {
   return useQuery({
     queryKey: adminKeys.itemImages(contentId!),
-    queryFn: () => api<ItemImagesResponse>(`/admin/items/${itemPathID(contentId!)}/images`),
+    queryFn: () =>
+      api<ItemImagesResponse>(`/admin/items/${itemPathID(contentId!)}/images`),
     enabled: !!contentId && enabled,
     staleTime: 5 * 60_000,
   });
 }
 
-type ApplyImageItem = Pick<ItemDetail, "content_id" | "type" | "series_id" | "season_number">;
+type ApplyImageItem = Pick<
+  ItemDetail,
+  "content_id" | "type" | "series_id" | "season_number"
+>;
 
 export function useApplyItemImage() {
   const queryClient = useQueryClient();
@@ -502,32 +613,48 @@ export function useApplyItemImage() {
       item: ApplyImageItem;
       request: ApplyItemImageRequest;
     }) =>
-      api<ApplyItemImageResponse>(`/admin/items/${itemPathID(item.content_id)}/images/apply`, {
-        method: "POST",
-        body: JSON.stringify(request),
-      }),
+      api<ApplyItemImageResponse>(
+        `/admin/items/${itemPathID(item.content_id)}/images/apply`,
+        {
+          method: "POST",
+          body: JSON.stringify(request),
+        },
+      ),
     onSuccess: async (_, { item }) => {
       toast.success("Image applied successfully");
 
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: adminKeys.itemImages(item.content_id) }),
-        queryClient.invalidateQueries({ queryKey: ["items", "detail", item.content_id] }),
+        queryClient.invalidateQueries({
+          queryKey: adminKeys.itemImages(item.content_id),
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["items", "detail", item.content_id],
+        }),
         queryClient.invalidateQueries({
           queryKey: ["catalog", "items", item.content_id, "detail"],
         }),
-        queryClient.invalidateQueries({ queryKey: ["items", "watchDetail", item.content_id] }),
+        queryClient.invalidateQueries({
+          queryKey: ["items", "watchDetail", item.content_id],
+        }),
         queryClient.invalidateQueries({ queryKey: catalogKeys.all }),
         queryClient.invalidateQueries({ queryKey: sectionKeys.all }),
       ]);
 
       // Cascade for seasons/episodes to parent series.
-      if ((item.type === "season" || item.type === "episode") && item.series_id) {
+      if (
+        (item.type === "season" || item.type === "episode") &&
+        item.series_id
+      ) {
         await Promise.all([
-          queryClient.invalidateQueries({ queryKey: ["items", "detail", item.series_id] }),
+          queryClient.invalidateQueries({
+            queryKey: ["items", "detail", item.series_id],
+          }),
           queryClient.invalidateQueries({
             queryKey: ["catalog", "items", item.series_id, "detail"],
           }),
-          queryClient.invalidateQueries({ queryKey: episodeKeys.seasons(item.series_id) }),
+          queryClient.invalidateQueries({
+            queryKey: episodeKeys.seasons(item.series_id),
+          }),
           queryClient.invalidateQueries({
             queryKey: ["catalog", "series", item.series_id, "seasons"],
           }),
@@ -568,7 +695,9 @@ export function useMetadataAIStatus(enabled = true) {
   return useQuery({
     queryKey: ["metadata-ai", "status"],
     queryFn: () =>
-      api<{ enabled: boolean; on_view?: "off" | "button" | "auto" }>("/metadata/ai/status"),
+      api<{ enabled: boolean; on_view?: "off" | "button" | "auto" }>(
+        "/metadata/ai/status",
+      ),
     staleTime: 5 * 60 * 1000,
     enabled,
   });
@@ -594,7 +723,9 @@ export function useTranslateItemMetadata(contentId: string) {
       });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to start translation");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to start translation",
+      );
     },
   });
 }
@@ -603,7 +734,10 @@ export function useTranslateItemMetadata(contentId: string) {
  * Recent translation jobs for an item. Polls while a job is active so the
  * metadata editor can show live progress without a websocket.
  */
-export function useMetadataTranslationJobs(contentId: string, enabled: boolean) {
+export function useMetadataTranslationJobs(
+  contentId: string,
+  enabled: boolean,
+) {
   return useQuery({
     queryKey: ["metadata-translation-jobs", contentId],
     queryFn: () =>
@@ -613,7 +747,9 @@ export function useMetadataTranslationJobs(contentId: string, enabled: boolean) 
     enabled,
     refetchInterval: (query) => {
       const jobs = query.state.data?.jobs ?? [];
-      return jobs.some((j) => j.status === "pending" || j.status === "running") ? 1500 : false;
+      return jobs.some((j) => j.status === "pending" || j.status === "running")
+        ? 1500
+        : false;
     },
   });
 }

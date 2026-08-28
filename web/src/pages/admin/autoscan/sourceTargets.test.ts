@@ -1,13 +1,33 @@
 import { describe, expect, it } from "vitest";
 
-import type { AutoscanScanSourceDescriptor, AutoscanSource, Library } from "@/api/types";
+import type {
+  AutoscanScanSourceDescriptor,
+  AutoscanSource,
+  Library,
+} from "@/api/types";
 
 import { DEFAULT_DESCRIPTOR } from "./sourceDescriptor";
-import { describeTargets, resolvedPathsFor, sourceTargets } from "./sourceTargets";
+import {
+  describeTargets,
+  resolvedPathsFor,
+  sourceTargets,
+} from "./sourceTargets";
 
 const libraries = [
-  { id: 1, name: "Movies", type: "movie", enabled: true, paths: ["/mnt/media/movies"] },
-  { id: 2, name: "TV Shows", type: "series", enabled: true, paths: ["/mnt/media/tv"] },
+  {
+    id: 1,
+    name: "Movies",
+    type: "movie",
+    enabled: true,
+    paths: ["/mnt/media/movies"],
+  },
+  {
+    id: 2,
+    name: "TV Shows",
+    type: "series",
+    enabled: true,
+    paths: ["/mnt/media/tv"],
+  },
 ] as unknown as Library[];
 
 function source(overrides: Partial<AutoscanSource> = {}): AutoscanSource {
@@ -54,7 +74,11 @@ describe("resolvedPathsFor", () => {
 
   it("falls back to path-shaped config for local watchers", () => {
     const got = resolvedPathsFor(
-      source({ source_config: { movie_flat_paths: "/mnt/media/movies\n/mnt/media/movies/4k" } }),
+      source({
+        source_config: {
+          movie_flat_paths: "/mnt/media/movies\n/mnt/media/movies/4k",
+        },
+      }),
       pathDescriptor,
     );
     expect(got).toEqual(["/mnt/media/movies", "/mnt/media/movies/4k"]);
@@ -142,7 +166,11 @@ describe("sourceTargets", () => {
   it("treats a native-path source with no rewrites as unknown", () => {
     const got = sourceTargets(
       source(),
-      { delivery_modes: ["poll"], connection: "none", emits_native_paths: true },
+      {
+        delivery_modes: ["poll"],
+        connection: "none",
+        emits_native_paths: true,
+      },
       libraries,
     );
     expect(got.unresolvable).toBe(false);
@@ -210,7 +238,9 @@ describe("sourceTargets", () => {
 
   it("does not match on a shared path prefix that is not a real parent", () => {
     const got = sourceTargets(
-      source({ path_rewrites: [{ from: "/dl", to: "/mnt/media/movies-archive" }] }),
+      source({
+        path_rewrites: [{ from: "/dl", to: "/mnt/media/movies-archive" }],
+      }),
       pathDescriptor,
       libraries,
     );
@@ -220,18 +250,18 @@ describe("sourceTargets", () => {
 
 describe("describeTargets", () => {
   it("names the libraries a source feeds", () => {
-    expect(describeTargets({ libraries, unresolvable: false, unknown: false })).toBe(
-      "Movies, TV Shows",
-    );
+    expect(
+      describeTargets({ libraries, unresolvable: false, unknown: false }),
+    ).toBe("Movies, TV Shows");
   });
 
   it("reports the two failure states distinctly", () => {
-    expect(describeTargets({ libraries: [], unresolvable: true, unknown: false })).toBe(
-      "No paths configured",
-    );
-    expect(describeTargets({ libraries: [], unresolvable: false, unknown: false })).toBe(
-      "No matching library",
-    );
+    expect(
+      describeTargets({ libraries: [], unresolvable: true, unknown: false }),
+    ).toBe("No paths configured");
+    expect(
+      describeTargets({ libraries: [], unresolvable: false, unknown: false }),
+    ).toBe("No matching library");
   });
 });
 

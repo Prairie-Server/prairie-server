@@ -48,12 +48,18 @@ export function ThemePreviewCard({ vars }: ThemePreviewCardProps) {
             />
             <div
               className="h-1.5 w-14 rounded-full"
-              style={{ backgroundColor: v("foreground", "#e8e8ec"), opacity: 0.7 }}
+              style={{
+                backgroundColor: v("foreground", "#e8e8ec"),
+                opacity: 0.7,
+              }}
             />
             <div className="flex-1" />
             <div
               className="h-1.5 w-8 rounded-full"
-              style={{ backgroundColor: v("muted-foreground", "#71717a"), opacity: 0.5 }}
+              style={{
+                backgroundColor: v("muted-foreground", "#71717a"),
+                opacity: 0.5,
+              }}
             />
           </div>
 
@@ -68,7 +74,10 @@ export function ThemePreviewCard({ vars }: ThemePreviewCardProps) {
             >
               <div
                 className="h-1.5 w-16 rounded-full"
-                style={{ backgroundColor: v("foreground", "#e8e8ec"), opacity: 0.8 }}
+                style={{
+                  backgroundColor: v("foreground", "#e8e8ec"),
+                  opacity: 0.8,
+                }}
               />
               <div
                 className="h-1.5 w-full rounded-full"

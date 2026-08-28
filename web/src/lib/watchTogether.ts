@@ -3,7 +3,8 @@ import { api } from "@/api/client";
 export type GuestControlPolicy = "host_only" | "guest_play_pause";
 export type WatchTogetherRole = "host" | "guest";
 export type WatchTogetherRoomPhase = "lobby" | "playing" | "ended";
-export type WatchTogetherPlaybackState = "idle" | "waiting" | "paused" | "playing";
+export type WatchTogetherPlaybackState =
+  "idle" | "waiting" | "paused" | "playing";
 export type WatchTogetherSelectionMode = "host_pick" | "vote";
 export type WatchTogetherTransportAction = "play" | "pause" | "seek";
 
@@ -105,7 +106,9 @@ export interface SelectWatchTogetherRoomItemInput {
   library_id?: number;
 }
 
-export async function createWatchTogetherRoom(input: CreateWatchTogetherRoomInput = {}) {
+export async function createWatchTogetherRoom(
+  input: CreateWatchTogetherRoomInput = {},
+) {
   return api<WatchTogetherRoomResponse>("/watch-together/rooms", {
     method: "POST",
     body: JSON.stringify(input),
@@ -121,27 +124,35 @@ export async function joinWatchTogetherRoom(input: JoinWatchTogetherRoomInput) {
 
 export async function getWatchTogetherRoom(roomId: string, roomToken: string) {
   const params = new URLSearchParams({ room_token: roomToken });
-  return api<WatchTogetherRoomResponse>(`/watch-together/rooms/${roomId}?${params.toString()}`);
+  return api<WatchTogetherRoomResponse>(
+    `/watch-together/rooms/${roomId}?${params.toString()}`,
+  );
 }
 
 export async function updateWatchTogetherRoomPolicy(
   roomId: string,
   guestControlPolicy: GuestControlPolicy,
 ) {
-  return api<WatchTogetherRoomResponse>(`/watch-together/rooms/${roomId}/policy`, {
-    method: "PATCH",
-    body: JSON.stringify({ guest_control_policy: guestControlPolicy }),
-  });
+  return api<WatchTogetherRoomResponse>(
+    `/watch-together/rooms/${roomId}/policy`,
+    {
+      method: "PATCH",
+      body: JSON.stringify({ guest_control_policy: guestControlPolicy }),
+    },
+  );
 }
 
 export async function selectWatchTogetherRoomItem(
   roomId: string,
   input: SelectWatchTogetherRoomItemInput,
 ) {
-  return api<WatchTogetherRoomResponse>(`/watch-together/rooms/${roomId}/selection`, {
-    method: "PUT",
-    body: JSON.stringify(input),
-  });
+  return api<WatchTogetherRoomResponse>(
+    `/watch-together/rooms/${roomId}/selection`,
+    {
+      method: "PUT",
+      body: JSON.stringify(input),
+    },
+  );
 }
 
 export async function closeWatchTogetherRoom(roomId: string) {
@@ -150,7 +161,10 @@ export async function closeWatchTogetherRoom(roomId: string) {
   });
 }
 
-export async function listWatchTogetherSuggestions(roomId: string, roomToken: string) {
+export async function listWatchTogetherSuggestions(
+  roomId: string,
+  roomToken: string,
+) {
   const params = new URLSearchParams({ room_token: roomToken });
   return api<WatchTogetherSuggestionsResponse>(
     `/watch-together/rooms/${roomId}/suggestions?${params.toString()}`,

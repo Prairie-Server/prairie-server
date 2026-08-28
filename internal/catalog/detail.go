@@ -15,6 +15,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/deviceclass"
 	"github.com/prairie-server/prairie-server/internal/imagesize"
 	"github.com/prairie-server/prairie-server/internal/lang"
 	"github.com/prairie-server/prairie-server/internal/models"
@@ -3970,7 +3971,7 @@ func (s *DetailService) PresignImageURLsWithExpiry(ctx context.Context, paths []
 		if !strings.HasPrefix(path, "http://") &&
 			!strings.HasPrefix(path, "https://") &&
 			!strings.Contains(path, "://") {
-			normalized = cachedImageVariantPath(path, imageType, size)
+			normalized = cachedImageVariantPath(ctx, path, imageType, size)
 		}
 
 		if _, ok := originalsByNormalized[normalized]; !ok {
@@ -4087,18 +4088,42 @@ func (s *DetailService) PresignImageURLWithExpiry(ctx context.Context, path, ima
 		return ResolvedImageURL{URL: path}
 	}
 
-	return s.PresignURLWithExpiry(ctx, cachedImageVariantPath(path, imageType, size), sizeToVariant(size))
+	return s.PresignURLWithExpiry(ctx, cachedImageVariantPath(ctx, path, imageType, size), sizeToVariant(size))
 }
 
-func cachedImageVariantPath(path, imageType, size string) string {
+func cachedImageVariantPath(ctx context.Context, path, imageType, size string) string {
 	if strings.Contains(path, "://") {
 		return path
 	}
-	variant := cachedImageVariantKey(imageType, size)
+	variant := cachedImageVariantKeyFor(ctx, imageType, size)
 	if variant == "" {
 		return path
 	}
 	return artworkkey.Variant(path, variant)
+}
+
+// cachedImageVariantKeyFor picks a cached artwork variant for the requesting
+// device. TV clients get smaller rungs when no explicit size hint is present;
+// an explicit size always wins because it encodes display context the device
+// class cannot infer (rail thumbnails, downloads, etc.).
+func cachedImageVariantKeyFor(ctx context.Context, imageType, size string) string {
+	if parsed, err := imagesize.Parse(size); err == nil && parsed != imagesize.Unset {
+		return cachedImageVariantKey(imageType, size)
+	}
+	if size == "original" || size == "small" {
+		return cachedImageVariantKey(imageType, size)
+	}
+	if deviceclass.FromContext(ctx) == deviceclass.TV {
+		switch imageType {
+		case "poster", "profile":
+			return "w200"
+		case "backdrop":
+			return "w1280"
+		case "still", "logo":
+			return "w500"
+		}
+	}
+	return cachedImageVariantKey(imageType, size)
 }
 
 // imageTypeFromCachedPath returns the image type segment ("poster", "backdrop",

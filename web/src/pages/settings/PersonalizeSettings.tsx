@@ -21,9 +21,12 @@ export default function PersonalizeSettings() {
   return (
     <div className="space-y-6">
       <header className="space-y-2">
-        <h2 className="text-foreground text-xl font-semibold tracking-tight">Personalize</h2>
+        <h2 className="text-foreground text-xl font-semibold tracking-tight">
+          Personalize
+        </h2>
         <p className="text-muted-foreground text-sm">
-          Pick titles you love so your home, recommendations, and "For You" rows reflect your taste.
+          Pick titles you love so your home, recommendations, and "For You" rows
+          reflect your taste.
         </p>
       </header>
 
@@ -34,10 +37,13 @@ export default function PersonalizeSettings() {
           </div>
           <div className="min-w-0 flex-1 space-y-3">
             <div>
-              <h3 className="text-base font-semibold">Refine your taste profile</h3>
+              <h3 className="text-base font-semibold">
+                Refine your taste profile
+              </h3>
               <p className="text-muted-foreground mt-1 text-sm">
-                Browse popular titles and pick the ones you love. Already-favorited titles will be
-                marked, so you can add to (or trim) your picks any time.
+                Browse popular titles and pick the ones you love.
+                Already-favorited titles will be marked, so you can add to (or
+                trim) your picks any time.
               </p>
             </div>
             <Button asChild>
@@ -57,10 +63,13 @@ export default function PersonalizeSettings() {
           </div>
           <div className="min-w-0 flex-1 space-y-3">
             <div>
-              <h3 className="text-base font-semibold">Replay the feature tour</h3>
+              <h3 className="text-base font-semibold">
+                Replay the feature tour
+              </h3>
               <p className="text-muted-foreground mt-1 text-sm">
-                A two-minute walkthrough of what this server can do — watch together, requests,
-                watchlists, and the playback settings worth knowing about.
+                A two-minute walkthrough of what this server can do — watch
+                together, requests, watchlists, and the playback settings worth
+                knowing about.
               </p>
             </div>
             <Button variant="outline" onClick={() => setReplaying(true)}>

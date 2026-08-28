@@ -31,7 +31,8 @@ export default function CollectionAccessEditor({
         <div>
           <Label className="text-sm font-medium">Share with this account</Label>
           <p className="text-muted-foreground mt-1 text-xs">
-            Shared collections appear for the selected profiles across the account.
+            Shared collections appear for the selected profiles across the
+            account.
           </p>
         </div>
         <Switch
@@ -64,7 +65,9 @@ export default function CollectionAccessEditor({
                     onChange({
                       ...value,
                       allowed_profile_ids: selected
-                        ? value.allowed_profile_ids.filter((id) => id !== profile.id)
+                        ? value.allowed_profile_ids.filter(
+                            (id) => id !== profile.id,
+                          )
                         : [...value.allowed_profile_ids, profile.id],
                     })
                   }

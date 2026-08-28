@@ -17,7 +17,11 @@ interface LibraryHeaderProps {
   availableTabs?: readonly LibraryTab[];
 }
 
-const DEFAULT_TABS: readonly LibraryTab[] = ["recommended", "library", "collections"];
+const DEFAULT_TABS: readonly LibraryTab[] = [
+  "recommended",
+  "library",
+  "collections",
+];
 
 const TAB_LABELS: Record<LibraryTab, string> = {
   recommended: "Recommended",
@@ -41,7 +45,9 @@ export default function LibraryHeader({
   overlay = false,
   availableTabs = DEFAULT_TABS,
 }: LibraryHeaderProps) {
-  const tabLabels = isAudiobookLibraryType(libraryType) ? AUDIOBOOK_TAB_LABELS : TAB_LABELS;
+  const tabLabels = isAudiobookLibraryType(libraryType)
+    ? AUDIOBOOK_TAB_LABELS
+    : TAB_LABELS;
   const [pastThreshold, setPastThreshold] = useState(false);
 
   useEffect(() => {
@@ -73,7 +79,11 @@ export default function LibraryHeader({
       </div>
       <TabsPrimitive.List className="marquee-tab-bar" aria-label="Library view">
         {availableTabs.map((tab) => (
-          <TabsPrimitive.Trigger key={tab} value={tab} className="marquee-tab-trigger">
+          <TabsPrimitive.Trigger
+            key={tab}
+            value={tab}
+            className="marquee-tab-trigger"
+          >
             {tabLabels[tab]}
           </TabsPrimitive.Trigger>
         ))}

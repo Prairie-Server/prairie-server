@@ -10,7 +10,8 @@ class ResizeObserverStub {
   unobserve() {}
   disconnect() {}
 }
-globalThis.ResizeObserver ??= ResizeObserverStub as unknown as typeof ResizeObserver;
+globalThis.ResizeObserver ??=
+  ResizeObserverStub as unknown as typeof ResizeObserver;
 if (!window.HTMLElement.prototype.hasPointerCapture) {
   window.HTMLElement.prototype.hasPointerCapture = () => false;
 }
@@ -35,8 +36,10 @@ vi.mock("../WizardContext", () => ({
 vi.mock("@/hooks/queries/admin/settings", () => ({
   useCheckAdminSettingsConnection: (...args: unknown[]) =>
     useCheckAdminSettingsConnectionMock(...args),
-  useJellyfinCompatStatus: (...args: unknown[]) => useJellyfinCompatStatusMock(...args),
-  useInstallJellyfinCompatWeb: (...args: unknown[]) => useInstallJellyfinCompatWebMock(...args),
+  useJellyfinCompatStatus: (...args: unknown[]) =>
+    useJellyfinCompatStatusMock(...args),
+  useInstallJellyfinCompatWeb: (...args: unknown[]) =>
+    useInstallJellyfinCompatWebMock(...args),
 }));
 
 const defaultValues: Record<string, string> = {
@@ -72,7 +75,11 @@ function mockStep({
 }: MockStepOptions = {}) {
   const formValues = { ...defaultValues, ...values };
 
-  useWizardContextMock.mockReturnValue({ markDone, canGoBack: false, goBack: vi.fn() });
+  useWizardContextMock.mockReturnValue({
+    markDone,
+    canGoBack: false,
+    goBack: vi.fn(),
+  });
   useCheckAdminSettingsConnectionMock.mockReturnValue({
     isPending: false,
     mutateAsync: vi.fn(),
@@ -137,9 +144,13 @@ describe("ServerStorageStep", () => {
     mockStep();
 
     render(<ServerStorageStep />);
-    await userEvent.click(screen.getByRole("combobox", { name: "Hardware accel" }));
+    await userEvent.click(
+      screen.getByRole("combobox", { name: "Hardware accel" }),
+    );
 
-    expect(screen.getByRole("option", { name: "VideoToolbox (macOS)" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("option", { name: "VideoToolbox (macOS)" }),
+    ).toBeInTheDocument();
   });
 
   it("uses Jellyfin runtime status when the explicit enabled setting is missing", () => {
@@ -155,11 +166,12 @@ describe("ServerStorageStep", () => {
 
     render(<ServerStorageStep />);
 
-    expect(screen.getByRole("switch", { name: "Enable Jellyfin-compatible API" })).toHaveAttribute(
-      "aria-checked",
-      "true",
-    );
-    expect(screen.getByRole("button", { name: "Install Web UI" })).toBeEnabled();
+    expect(
+      screen.getByRole("switch", { name: "Enable Jellyfin-compatible API" }),
+    ).toHaveAttribute("aria-checked", "true");
+    expect(
+      screen.getByRole("button", { name: "Install Web UI" }),
+    ).toBeEnabled();
   });
 
   it("waits for the queued Jellyfin Web install request to be accepted before continuing", async () => {
@@ -172,10 +184,16 @@ describe("ServerStorageStep", () => {
 
     render(<ServerStorageStep />);
 
-    await userEvent.click(screen.getByRole("button", { name: "Install Web UI" }));
-    expect(screen.getByRole("button", { name: "Web UI will be installed" })).toBeInTheDocument();
+    await userEvent.click(
+      screen.getByRole("button", { name: "Install Web UI" }),
+    );
+    expect(
+      screen.getByRole("button", { name: "Web UI will be installed" }),
+    ).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: "Save & continue" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Save & continue" }),
+    );
 
     expect(installMutateAsync).toHaveBeenCalledWith({});
     expect(markDone).not.toHaveBeenCalled();
@@ -202,20 +220,28 @@ describe("ServerStorageStep", () => {
     });
 
     render(<ServerStorageStep />);
-    await userEvent.click(screen.getByRole("button", { name: "Save & continue" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Save & continue" }),
+    );
 
     expect(save).not.toHaveBeenCalled();
     expect(markDone).not.toHaveBeenCalled();
   });
 
   it("does not continue when the queued Jellyfin Web install request is rejected", async () => {
-    const installMutateAsync = vi.fn().mockRejectedValue(new Error("missing prerequisite"));
+    const installMutateAsync = vi
+      .fn()
+      .mockRejectedValue(new Error("missing prerequisite"));
     const { markDone } = mockStep({ installMutateAsync });
 
     render(<ServerStorageStep />);
 
-    await userEvent.click(screen.getByRole("button", { name: "Install Web UI" }));
-    await userEvent.click(screen.getByRole("button", { name: "Save & continue" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Install Web UI" }),
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Save & continue" }),
+    );
 
     expect(installMutateAsync).toHaveBeenCalledWith({});
     await waitFor(() => expect(installMutateAsync).toHaveBeenCalled());

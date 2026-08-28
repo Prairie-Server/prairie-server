@@ -10,7 +10,8 @@ import { useClearSettingValue, useSetSettingValue } from "./settingValues";
 
 const apiMock = vi.hoisted(() => vi.fn());
 vi.mock("@/api/client", async () => {
-  const actual = await vi.importActual<typeof import("@/api/client")>("@/api/client");
+  const actual =
+    await vi.importActual<typeof import("@/api/client")>("@/api/client");
   return { ...actual, api: apiMock };
 });
 
@@ -30,7 +31,9 @@ describe("typed setting mutations", () => {
   });
 
   it("does not invalidate effective settings after a definitive rejected write", async () => {
-    apiMock.mockRejectedValueOnce(new ApiClientError(429, "rate_limited", "rate limited"));
+    apiMock.mockRejectedValueOnce(
+      new ApiClientError(429, "rate_limited", "rate limited"),
+    );
     const { queryClient, wrapper } = createHarness();
     const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
     const { result } = renderHook(() => useSetSettingValue(), { wrapper });
@@ -65,7 +68,9 @@ describe("typed setting mutations", () => {
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: [...settingsKeys.all, "values"],
     });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: deviceKeys.all });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: deviceKeys.all,
+    });
   });
 
   it("reconciles effective settings and device summaries after an ambiguous write failure", async () => {
@@ -87,11 +92,15 @@ describe("typed setting mutations", () => {
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: [...settingsKeys.all, "values"],
     });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: deviceKeys.all });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: deviceKeys.all,
+    });
   });
 
   it("reconciles effective settings and device summaries after a server write failure", async () => {
-    apiMock.mockRejectedValueOnce(new ApiClientError(503, "unavailable", "service unavailable"));
+    apiMock.mockRejectedValueOnce(
+      new ApiClientError(503, "unavailable", "service unavailable"),
+    );
     const { queryClient, wrapper } = createHarness();
     const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
     const { result } = renderHook(() => useSetSettingValue(), { wrapper });
@@ -109,11 +118,15 @@ describe("typed setting mutations", () => {
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: [...settingsKeys.all, "values"],
     });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: deviceKeys.all });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: deviceKeys.all,
+    });
   });
 
   it("does not invalidate effective settings after a definitive rejected clear", async () => {
-    apiMock.mockRejectedValueOnce(new ApiClientError(429, "rate_limited", "rate limited"));
+    apiMock.mockRejectedValueOnce(
+      new ApiClientError(429, "rate_limited", "rate limited"),
+    );
     const { queryClient, wrapper } = createHarness();
     const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
     const { result } = renderHook(() => useClearSettingValue(), { wrapper });
@@ -131,7 +144,9 @@ describe("typed setting mutations", () => {
   });
 
   it("reconciles effective settings and device summaries after an already-cleared response", async () => {
-    apiMock.mockRejectedValueOnce(new ApiClientError(404, "not_found", "setting not found"));
+    apiMock.mockRejectedValueOnce(
+      new ApiClientError(404, "not_found", "setting not found"),
+    );
     const { queryClient, wrapper } = createHarness();
     const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
     const { result } = renderHook(() => useClearSettingValue(), { wrapper });
@@ -148,7 +163,9 @@ describe("typed setting mutations", () => {
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: [...settingsKeys.all, "values"],
     });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: deviceKeys.all });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: deviceKeys.all,
+    });
   });
 
   it("invalidates effective settings and device summaries after a successful device clear", async () => {
@@ -167,7 +184,9 @@ describe("typed setting mutations", () => {
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: [...settingsKeys.all, "values"],
     });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: deviceKeys.all });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: deviceKeys.all,
+    });
   });
 
   it("reconciles effective settings and device summaries after an ambiguous clear failure", async () => {
@@ -188,6 +207,8 @@ describe("typed setting mutations", () => {
     expect(invalidateQueries).toHaveBeenCalledWith({
       queryKey: [...settingsKeys.all, "values"],
     });
-    expect(invalidateQueries).toHaveBeenCalledWith({ queryKey: deviceKeys.all });
+    expect(invalidateQueries).toHaveBeenCalledWith({
+      queryKey: deviceKeys.all,
+    });
   });
 });

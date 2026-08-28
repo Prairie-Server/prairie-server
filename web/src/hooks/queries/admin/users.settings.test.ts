@@ -6,7 +6,10 @@ import { createElement } from "react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { installPolicyStorageMocks, jsonResponse } from "@/pages/admin-policy/policyTestUtils";
+import {
+  installPolicyStorageMocks,
+  jsonResponse,
+} from "@/pages/admin-policy/policyTestUtils";
 import { SETTING_KEYS } from "@/lib/settingsContract";
 
 import {
@@ -85,7 +88,9 @@ describe("admin canonical settings hooks", () => {
       }),
     );
 
-    const { result } = renderHook(() => useAdminUserSettings(7), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useAdminUserSettings(7), {
+      wrapper: createWrapper(),
+    });
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     expect(result.current.data).toEqual([
@@ -199,7 +204,9 @@ describe("admin canonical settings hooks", () => {
     await waitFor(() => expect(result.current.data.length).toBe(1));
 
     // Only tv-1's row, and never a non-device-scoped row from the same list.
-    expect(result.current.data.map((setting) => setting.key)).toEqual(["player.audio_sync_ms"]);
+    expect(result.current.data.map((setting) => setting.key)).toEqual([
+      "player.audio_sync_ms",
+    ]);
     expect(result.current.data[0]?.device_id).toBe("tv-1");
   });
 
@@ -212,13 +219,19 @@ describe("admin canonical settings hooks", () => {
         );
         // Booleans travel typed, not as the "true" string the old registry stored.
         expect(JSON.parse(String(init.body))).toEqual({ value: true });
-        return jsonResponse({ key: "playback.auto_skip_intro", scope: "profile", value: true });
+        return jsonResponse({
+          key: "playback.auto_skip_intro",
+          scope: "profile",
+          value: true,
+        });
       }
       return jsonResponse(valuesResponse);
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const { result } = renderHook(() => useUpdateAdminUserSetting(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useUpdateAdminUserSetting(), {
+      wrapper: createWrapper(),
+    });
     result.current.mutate({
       userId: 7,
       key: "playback.auto_skip_intro",
@@ -260,7 +273,9 @@ describe("admin canonical settings hooks", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const listed = renderHook(() => useAdminUserSettings(7), { wrapper: createWrapper() });
+    const listed = renderHook(() => useAdminUserSettings(7), {
+      wrapper: createWrapper(),
+    });
     await waitFor(() => expect(listed.result.current.data.length).toBe(1));
     expect(listed.result.current.data[0]).toMatchObject({
       scope: "profile_client",
@@ -268,11 +283,17 @@ describe("admin canonical settings hooks", () => {
       client_family: "tv",
     });
 
-    const update = renderHook(() => useUpdateAdminUserSetting(), { wrapper: createWrapper() });
+    const update = renderHook(() => useUpdateAdminUserSetting(), {
+      wrapper: createWrapper(),
+    });
     update.result.current.mutate({
       userId: 7,
       key: SETTING_KEYS.UI_CARD_PRESENTATION,
-      identity: { scope: "profile_client", profileId: "p1", clientFamily: "tv" },
+      identity: {
+        scope: "profile_client",
+        profileId: "p1",
+        clientFamily: "tv",
+      },
       value: JSON.stringify({ poster_size: "large", caption: "artwork" }),
     });
     await waitFor(() => expect(update.result.current.isSuccess).toBe(true));
@@ -288,7 +309,9 @@ describe("admin canonical settings hooks", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const { result } = renderHook(() => useDeleteAdminUserSetting(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useDeleteAdminUserSetting(), {
+      wrapper: createWrapper(),
+    });
     result.current.mutate({
       userId: 7,
       key: "playback.subtitle_mode",
@@ -313,7 +336,9 @@ describe("admin canonical settings hooks", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const { result } = renderHook(() => useDeleteAdminUserSetting(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useDeleteAdminUserSetting(), {
+      wrapper: createWrapper(),
+    });
     result.current.mutate({
       userId: 7,
       key: SETTING_KEYS.NAV_SHORTCUTS,
@@ -329,7 +354,11 @@ describe("admin canonical settings hooks", () => {
           "/api/v1/admin/users/7/settings/values/player.audio_sync_ms?scope=profile_device&profile_id=p1&device_id=tv-1",
         );
         expect(JSON.parse(String(init.body))).toEqual({ value: 250 });
-        return jsonResponse({ key: "player.audio_sync_ms", scope: "profile_device", value: 250 });
+        return jsonResponse({
+          key: "player.audio_sync_ms",
+          scope: "profile_device",
+          value: 250,
+        });
       }
       return jsonResponse(valuesResponse);
     });
@@ -368,9 +397,12 @@ describe("admin canonical settings hooks", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const { result } = renderHook(() => useDeleteAllAdminUserDeviceSettingsForDevice(), {
-      wrapper: createWrapper(),
-    });
+    const { result } = renderHook(
+      () => useDeleteAllAdminUserDeviceSettingsForDevice(),
+      {
+        wrapper: createWrapper(),
+      },
+    );
     result.current.mutate({
       userId: 7,
       profileId: "p1",

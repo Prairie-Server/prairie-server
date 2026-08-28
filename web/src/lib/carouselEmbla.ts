@@ -7,7 +7,9 @@ const CAROUSEL_EMBLA_OPTIONS: EmblaOptionsType = {
   slidesToScroll: "auto",
 };
 
-export function getCarouselEmblaOptions(overrides: EmblaOptionsType = {}): EmblaOptionsType {
+export function getCarouselEmblaOptions(
+  overrides: EmblaOptionsType = {},
+): EmblaOptionsType {
   return {
     ...CAROUSEL_EMBLA_OPTIONS,
     ...overrides,

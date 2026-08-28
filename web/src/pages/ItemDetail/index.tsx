@@ -74,13 +74,19 @@ export default function ItemDetail() {
   const [searchParams] = useSearchParams();
   const libraryIdParam = searchParams.get("libraryId");
   const libraryId = libraryIdParam ? Number(libraryIdParam) : undefined;
-  const { data: item, isLoading: loading, error: itemError } = useCatalogItemDetail(id, libraryId);
+  const {
+    data: item,
+    isLoading: loading,
+    error: itemError,
+  } = useCatalogItemDetail(id, libraryId);
 
   useDocumentTitle(item?.title ?? "Item");
 
   useEffect(() => {
     if (itemError) {
-      toast.error(itemError instanceof Error ? itemError.message : "Failed to load item");
+      toast.error(
+        itemError instanceof Error ? itemError.message : "Failed to load item",
+      );
     }
   }, [itemError]);
 
@@ -89,7 +95,11 @@ export default function ItemDetail() {
   }
 
   if (!item) {
-    return <div className="page-shell text-muted-foreground py-8">Item not found.</div>;
+    return (
+      <div className="page-shell text-muted-foreground py-8">
+        Item not found.
+      </div>
+    );
   }
 
   switch (item.type) {
@@ -103,12 +113,25 @@ export default function ItemDetail() {
       return <EpisodeContent item={item as ItemDetail & { type: "episode" }} />;
     case "audiobook":
       return (
-        <AudiobookContent item={item as ItemDetail & { type: "audiobook" }} libraryId={libraryId} />
+        <AudiobookContent
+          item={item as ItemDetail & { type: "audiobook" }}
+          libraryId={libraryId}
+        />
       );
     case "ebook":
-      return <EbookContent item={item as ItemDetail & { type: "ebook" }} libraryId={libraryId} />;
+      return (
+        <EbookContent
+          item={item as ItemDetail & { type: "ebook" }}
+          libraryId={libraryId}
+        />
+      );
     case "manga":
-      return <MangaContent item={item as ItemDetail & { type: "manga" }} libraryId={libraryId} />;
+      return (
+        <MangaContent
+          item={item as ItemDetail & { type: "manga" }}
+          libraryId={libraryId}
+        />
+      );
     case "podcast":
       return <Navigate to={`/podcasts/show/${item.content_id}`} replace />;
     default:

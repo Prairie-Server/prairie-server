@@ -7,7 +7,10 @@ import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import type { AccessGroup } from "@/api/types";
-import { installPolicyStorageMocks, jsonResponse } from "@/pages/admin-policy/policyTestUtils";
+import {
+  installPolicyStorageMocks,
+  jsonResponse,
+} from "@/pages/admin-policy/policyTestUtils";
 
 import {
   useAccessGroups,
@@ -71,7 +74,9 @@ describe("access group admin hooks", () => {
       }),
     );
 
-    const { result } = renderHook(() => useAccessGroups(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useAccessGroups(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
@@ -91,7 +96,9 @@ describe("access group admin hooks", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const { result } = renderHook(() => useCreateAccessGroup(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useCreateAccessGroup(), {
+      wrapper: createWrapper(),
+    });
 
     await act(async () => {
       await result.current.mutateAsync({
@@ -112,11 +119,17 @@ describe("access group admin hooks", () => {
         description: "Pinned libraries",
         library_ids: [1, 2],
       });
-      return jsonResponse({ ...group, description: "Pinned libraries", library_ids: [1, 2] });
+      return jsonResponse({
+        ...group,
+        description: "Pinned libraries",
+        library_ids: [1, 2],
+      });
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const { result } = renderHook(() => useUpdateAccessGroup(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useUpdateAccessGroup(), {
+      wrapper: createWrapper(),
+    });
 
     await act(async () => {
       await result.current.mutateAsync({
@@ -139,7 +152,9 @@ describe("access group admin hooks", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
 
-    const { result } = renderHook(() => useDeleteAccessGroup(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useDeleteAccessGroup(), {
+      wrapper: createWrapper(),
+    });
 
     await act(async () => {
       await result.current.mutateAsync(11);

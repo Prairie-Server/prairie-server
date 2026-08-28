@@ -13,10 +13,14 @@ class ResizeObserverStub {
   disconnect() {}
 }
 if (typeof globalThis.ResizeObserver === "undefined") {
-  (globalThis as unknown as { ResizeObserver: typeof ResizeObserverStub }).ResizeObserver =
-    ResizeObserverStub;
+  (
+    globalThis as unknown as { ResizeObserver: typeof ResizeObserverStub }
+  ).ResizeObserver = ResizeObserverStub;
 }
-if (typeof window !== "undefined" && !window.HTMLElement.prototype.hasPointerCapture) {
+if (
+  typeof window !== "undefined" &&
+  !window.HTMLElement.prototype.hasPointerCapture
+) {
   window.HTMLElement.prototype.hasPointerCapture = () => false;
   window.HTMLElement.prototype.scrollIntoView = () => {};
 }
@@ -26,7 +30,9 @@ const OPTIONS = [
   { value: "fr", label: "French" },
 ];
 
-function renderSelect(props: Partial<Parameters<typeof LanguageSelect>[0]> = {}) {
+function renderSelect(
+  props: Partial<Parameters<typeof LanguageSelect>[0]> = {},
+) {
   const onValueChange = vi.fn();
   render(
     <LanguageSelect
@@ -58,7 +64,9 @@ describe("LanguageSelect", () => {
     await user.click(screen.getByRole("button", { name: "Use" }));
     expect(onValueChange).toHaveBeenCalledWith("is");
     // Committing closes the free-entry row.
-    expect(screen.queryByRole("textbox", { name: "Language code" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("textbox", { name: "Language code" }),
+    ).not.toBeInTheDocument();
   });
 
   it("refuses to commit an invalid tag and explains why", async () => {
@@ -72,7 +80,9 @@ describe("LanguageSelect", () => {
     await user.type(input, "not a language{Enter}");
 
     expect(onValueChange).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert")).toHaveTextContent("Not a valid language tag");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Not a valid language tag",
+    );
     expect(screen.getByRole("button", { name: "Use" })).toBeDisabled();
   });
 
@@ -85,7 +95,9 @@ describe("LanguageSelect", () => {
     await user.click(screen.getByRole("button", { name: "Cancel" }));
 
     expect(onValueChange).not.toHaveBeenCalled();
-    expect(screen.getByRole("combobox", { name: "Spoken language" })).toHaveTextContent("English");
+    expect(
+      screen.getByRole("combobox", { name: "Spoken language" }),
+    ).toHaveTextContent("English");
   });
 
   it("hides the Other entry when the value is constrained", async () => {
@@ -93,6 +105,8 @@ describe("LanguageSelect", () => {
     renderSelect({ allowOther: false });
 
     await user.click(screen.getByRole("combobox", { name: "Spoken language" }));
-    expect(screen.queryByRole("option", { name: "Other…" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("option", { name: "Other…" }),
+    ).not.toBeInTheDocument();
   });
 });

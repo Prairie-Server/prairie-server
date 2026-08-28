@@ -2,7 +2,10 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { HomeSectionItemsResponse, ResolvedSection } from "@/api/types";
 import { useLibraryCollectionItems } from "@/hooks/queries/libraryCollections";
-import { fetchLibrarySectionItems, useLibraryLayout } from "@/hooks/queries/sections";
+import {
+  fetchLibrarySectionItems,
+  useLibraryLayout,
+} from "@/hooks/queries/sections";
 import { useSidebarPins } from "@/hooks/queries/sidebarPins";
 import MediaCarousel from "@/components/MediaCarousel";
 import ItemCard from "@/components/ItemCard";
@@ -14,7 +17,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { HERO_BANNER_SIZE_TALL } from "@/lib/design-system";
 import { sectionKeys } from "@/hooks/queries/keys";
 import { planNextHomeSectionBatch } from "./homeSectionQueue";
-import { buildHomeSectionViewModel, type HomeSectionSlot } from "./homeSectionState";
+import {
+  buildHomeSectionViewModel,
+  type HomeSectionSlot,
+} from "./homeSectionState";
 import { collectCachedHomeSections } from "./homeSectionCache";
 import { isAudiobookLibraryType } from "./libraryPageSearchParams";
 import { useUICustomization } from "@/hooks/useUICustomization";
@@ -44,7 +50,9 @@ export default function LibraryRecommended({
   const queryClient = useQueryClient();
   const { data, isLoading } = useLibraryLayout(libraryId);
   const { data: sectionRefreshSignal = 0 } = useSectionRefreshSignal();
-  const [loadedSections, setLoadedSections] = useState<Map<string, ResolvedSection>>(new Map());
+  const [loadedSections, setLoadedSections] = useState<
+    Map<string, ResolvedSection>
+  >(new Map());
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
   const [inFlightIds, setInFlightIds] = useState<Set<string>>(new Set());
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
@@ -104,7 +112,8 @@ export default function LibraryRecommended({
       void queryClient
         .fetchQuery<HomeSectionItemsResponse>({
           queryKey: sectionKeys.libraryItems(libraryId, sectionId),
-          queryFn: ({ signal }) => fetchLibrarySectionItems(libraryId, sectionId, { signal }),
+          queryFn: ({ signal }) =>
+            fetchLibrarySectionItems(libraryId, sectionId, { signal }),
           staleTime: SECTION_STALE_TIME,
         })
         .then((response) => {
@@ -165,13 +174,16 @@ export default function LibraryRecommended({
   // considered a rendered hero, so the marquee header can drop back to its
   // glass variant (which is legible on any theme).
   const hasRenderedHero =
-    viewModel.hero?.state === "ready" && (viewModel.hero.section?.items.length ?? 0) > 0;
+    viewModel.hero?.state === "ready" &&
+    (viewModel.hero.section?.items.length ?? 0) > 0;
   useEffect(() => {
     onHeroStateChange?.(hasRenderedHero);
   }, [hasRenderedHero, onHeroStateChange]);
 
   const retrySection = (sectionId: string) => {
-    queryClient.removeQueries({ queryKey: sectionKeys.libraryItems(libraryId, sectionId) });
+    queryClient.removeQueries({
+      queryKey: sectionKeys.libraryItems(libraryId, sectionId),
+    });
     setFailedIds((prev) => {
       if (!prev.has(sectionId)) return prev;
       const next = new Set(prev);
@@ -198,7 +210,13 @@ export default function LibraryRecommended({
           return null;
         }
         if (slot.state === "ready" && slot.section) {
-          return <SectionRow key={slot.layout.id} section={slot.section} libraryId={libraryId} />;
+          return (
+            <SectionRow
+              key={slot.layout.id}
+              section={slot.section}
+              libraryId={libraryId}
+            />
+          );
         }
         if (slot.state === "error") {
           return (
@@ -209,7 +227,9 @@ export default function LibraryRecommended({
             />
           );
         }
-        return <SectionLoadingRow key={slot.layout.id} title={slot.layout.title} />;
+        return (
+          <SectionLoadingRow key={slot.layout.id} title={slot.layout.title} />
+        );
       })}
 
       {/* Pinned Collections */}
@@ -230,7 +250,10 @@ function renderHeroSlot(
     // Audiobook libraries feature their continue-listening section, rendered
     // as a resume deck — square covers have no backdrop to feed the cinematic
     // carousel hero.
-    if (isAudiobookLibraryType(libraryType) && hero.section.section_type === "continue_watching") {
+    if (
+      isAudiobookLibraryType(libraryType) &&
+      hero.section.section_type === "continue_watching"
+    ) {
       return <NowListeningHero section={hero.section} libraryId={libraryId} />;
     }
     return (
@@ -268,7 +291,9 @@ function renderHeroSlot(
     return null;
   }
 
-  return <Skeleton className={`w-full rounded-none ${HERO_BANNER_SIZE_TALL}`} />;
+  return (
+    <Skeleton className={`w-full rounded-none ${HERO_BANNER_SIZE_TALL}`} />
+  );
 }
 
 function SectionLoadingRow({ title }: { title: string }) {
@@ -279,12 +304,22 @@ function SectionLoadingRow({ title }: { title: string }) {
   );
 }
 
-function SectionErrorRow({ title, onRetry }: { title: string; onRetry: () => void }) {
+function SectionErrorRow({
+  title,
+  onRetry,
+}: {
+  title: string;
+  onRetry: () => void;
+}) {
   return (
     <section className="space-y-3 px-4 sm:px-6 lg:px-10 xl:px-12">
-      <h2 className="text-foreground text-xl font-semibold tracking-tight">{title}</h2>
+      <h2 className="text-foreground text-xl font-semibold tracking-tight">
+        {title}
+      </h2>
       <div className="surface-panel flex items-center justify-between rounded-[1.4rem] border-0 px-5 py-4">
-        <p className="text-muted-foreground text-sm">This section could not be loaded right now.</p>
+        <p className="text-muted-foreground text-sm">
+          This section could not be loaded right now.
+        </p>
         <button
           type="button"
           onClick={onRetry}
@@ -326,10 +361,15 @@ function PinnedCollectionCarousel({
   collectionId: string;
   name: string;
 }) {
-  const { data: items, isLoading } = useLibraryCollectionItems(libraryId, collectionId);
+  const { data: items, isLoading } = useLibraryCollectionItems(
+    libraryId,
+    collectionId,
+  );
   const { prefs: overlayPrefs } = useOverlayPrefs();
   const { cardPresentation } = useUICustomization();
-  const posterWidthClasses = carouselCardWidthClasses(cardPresentation.poster_size);
+  const posterWidthClasses = carouselCardWidthClasses(
+    cardPresentation.poster_size,
+  );
 
   if (!isLoading && (!items || items.length === 0)) return null;
 

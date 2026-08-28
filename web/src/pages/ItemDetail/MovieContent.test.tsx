@@ -136,7 +136,13 @@ vi.mock("@/components/RecommendationGrid", () => ({
 }));
 
 vi.mock("./DetailHero", () => ({
-  default: ({ actions, metadata }: { actions?: ReactNode; metadata?: ReactNode }) => (
+  default: ({
+    actions,
+    metadata,
+  }: {
+    actions?: ReactNode;
+    metadata?: ReactNode;
+  }) => (
     <div>
       {metadata}
       {actions}
@@ -190,7 +196,9 @@ function makeFileVersion(overrides: Partial<FileVersion> = {}): FileVersion {
   };
 }
 
-function makeMovieItem(overrides: Partial<ItemDetail & { type: "movie" }> = {}): ItemDetail & {
+function makeMovieItem(
+  overrides: Partial<ItemDetail & { type: "movie" }> = {},
+): ItemDetail & {
   type: "movie";
 } {
   return {
@@ -245,12 +253,23 @@ describe("MovieContent", () => {
     mocks.useToggleFavorite.mockReturnValue({ mutate: vi.fn() });
     mocks.useIsInWatchlist.mockReturnValue({ data: false });
     mocks.useToggleWatchlist.mockReturnValue({ mutate: vi.fn() });
-    mocks.useRefreshItemMetadata.mockReturnValue({ mutate: vi.fn(), isPending: false });
-    mocks.useWatchedStateMutation.mockReturnValue({ mutate: vi.fn(), isPending: false });
-    mocks.useRating.mockReturnValue({ data: { rating: 4, rated_at: "2026-03-22T00:00:00Z" } });
+    mocks.useRefreshItemMetadata.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    });
+    mocks.useWatchedStateMutation.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    });
+    mocks.useRating.mockReturnValue({
+      data: { rating: 4, rated_at: "2026-03-22T00:00:00Z" },
+    });
     mocks.useSetRating.mockReturnValue({ mutate: vi.fn() });
     mocks.useDeleteRating.mockReturnValue({ mutate: vi.fn() });
-    mocks.useSimilarItems.mockReturnValue({ data: { items: [] }, isLoading: false });
+    mocks.useSimilarItems.mockReturnValue({
+      data: { items: [] },
+      isLoading: false,
+    });
     mocks.useAuth.mockReturnValue({ user: null });
     mocks.useCurrentProfile.mockReturnValue({ profile: null });
   });
@@ -277,11 +296,18 @@ describe("MovieContent", () => {
 
     render(
       <MemoryRouter initialEntries={["/item/movie-1"]}>
-        <MovieContent item={makeMovieItem({ runtime: 163, versions: [standard, directorsCut] })} />
+        <MovieContent
+          item={makeMovieItem({
+            runtime: 163,
+            versions: [standard, directorsCut],
+          })}
+        />
       </MemoryRouter>,
     );
 
-    expect(mocks.capturedMetadataBadgesProps.value).toMatchObject({ duration: "2h 43m" });
+    expect(mocks.capturedMetadataBadgesProps.value).toMatchObject({
+      duration: "2h 43m",
+    });
     expect(mocks.capturedQualityBadgesProps.value).toEqual({
       summary: {
         durationMinutes: 163,
@@ -292,13 +318,14 @@ describe("MovieContent", () => {
     });
 
     act(() => {
-      const selectVersion = mocks.capturedActionBarProps.value?.onSelectVersion as
-        | ((version: FileVersion) => void)
-        | undefined;
+      const selectVersion = mocks.capturedActionBarProps.value
+        ?.onSelectVersion as ((version: FileVersion) => void) | undefined;
       selectVersion?.(directorsCut);
     });
 
-    expect(mocks.capturedMetadataBadgesProps.value).toMatchObject({ duration: "3h 16m" });
+    expect(mocks.capturedMetadataBadgesProps.value).toMatchObject({
+      duration: "3h 16m",
+    });
     expect(mocks.capturedQualityBadgesProps.value).toEqual({
       summary: {
         durationMinutes: 196,
@@ -377,7 +404,11 @@ describe("MovieContent", () => {
 
   it("allows marker editing without metadata curation permission", () => {
     mocks.useAuth.mockReturnValue({
-      user: { role: "user", permissions: ["marker_edit"], download_allowed: true },
+      user: {
+        role: "user",
+        permissions: ["marker_edit"],
+        download_allowed: true,
+      },
     });
 
     renderToStaticMarkup(

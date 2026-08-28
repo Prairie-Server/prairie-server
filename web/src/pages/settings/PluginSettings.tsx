@@ -14,7 +14,10 @@ import { navigateToPluginRoute } from "@/lib/buildPluginHref";
 
 import { Save } from "lucide-react";
 function PluginSettingsCard({ installationId }: { installationId: number }) {
-  const { data, isLoading } = usePluginSettingsDetail(installationId, installationId > 0);
+  const { data, isLoading } = usePluginSettingsDetail(
+    installationId,
+    installationId > 0,
+  );
   const updateSettings = useUpdatePluginSettings();
   const [values, setValues] = useState<Record<string, string>>({});
 
@@ -30,19 +33,28 @@ function PluginSettingsCard({ installationId }: { installationId: number }) {
   return (
     <section className="surface-panel-subtle space-y-4 rounded-[1.25rem] p-5">
       <div className="space-y-1">
-        <h3 className="text-base font-semibold">{data.installation.plugin_id}</h3>
-        <p className="text-muted-foreground text-xs">{data.installation.version}</p>
+        <h3 className="text-base font-semibold">
+          {data.installation.plugin_id}
+        </h3>
+        <p className="text-muted-foreground text-xs">
+          {data.installation.version}
+        </p>
       </div>
 
       <div className="grid gap-4">
         {data.installation.user_config_schema.map((schema) => (
           <div key={schema.key} className="space-y-2">
-            <Label htmlFor={`${installationId}-${schema.key}`}>{schema.title || schema.key}</Label>
+            <Label htmlFor={`${installationId}-${schema.key}`}>
+              {schema.title || schema.key}
+            </Label>
             <Input
               id={`${installationId}-${schema.key}`}
               value={mergedValues[schema.key] ?? ""}
               onChange={(event) =>
-                setValues((current) => ({ ...current, [schema.key]: event.target.value }))
+                setValues((current) => ({
+                  ...current,
+                  [schema.key]: event.target.value,
+                }))
               }
             />
           </div>
@@ -119,7 +131,10 @@ export default function PluginSettings() {
           </div>
         ) : (
           installations.map((installation) => (
-            <PluginSettingsCard key={installation.id} installationId={installation.id} />
+            <PluginSettingsCard
+              key={installation.id}
+              installationId={installation.id}
+            />
           ))
         )}
       </div>

@@ -109,7 +109,10 @@ export async function detectSubtitleLanguage(
 
 export function useDownloadedSubtitles(mediaFileId: number | undefined) {
   return useQuery({
-    queryKey: mediaFileId != null ? subtitleKeys.downloaded(mediaFileId) : subtitleKeys.all,
+    queryKey:
+      mediaFileId != null
+        ? subtitleKeys.downloaded(mediaFileId)
+        : subtitleKeys.all,
     queryFn: () => fetchDownloadedSubtitles(mediaFileId!),
     enabled: mediaFileId != null,
   });
@@ -117,7 +120,9 @@ export function useDownloadedSubtitles(mediaFileId: number | undefined) {
 
 // Subtitle preferences feed the effective defaults on item details; a
 // series-keyed preference feeds every episode's detail, so invalidate broadly.
-function invalidateItemDetails(queryClient: ReturnType<typeof useQueryClient>): Promise<unknown> {
+function invalidateItemDetails(
+  queryClient: ReturnType<typeof useQueryClient>,
+): Promise<unknown> {
   return Promise.all([
     queryClient.invalidateQueries({ queryKey: itemKeys.details() }),
     queryClient.invalidateQueries({ queryKey: ["catalog", "items"] }),
@@ -144,7 +149,9 @@ export function useDeleteSubtitlePreference() {
       await api<void>(`/subtitle-prefs/${prefId}`, { method: "DELETE" });
       await Promise.all(
         SERIES_SUBTITLE_SETTING_KEYS.map((key) =>
-          api<void>(seriesSubtitleSettingPath(key, prefId), { method: "DELETE" }).catch((error) => {
+          api<void>(seriesSubtitleSettingPath(key, prefId), {
+            method: "DELETE",
+          }).catch((error) => {
             // Nothing stored at this scope is the state a reset asks for.
             if (error instanceof ApiClientError && error.status === 404) return;
             throw error;
@@ -157,10 +164,16 @@ export function useDeleteSubtitlePreference() {
         invalidateItemDetails(queryClient),
         // The player and the settings screens read these keys through the
         // effective endpoint, so the cleared rows have to leave that cache too.
-        queryClient.invalidateQueries({ queryKey: [...settingsKeys.all, "values"] }),
+        queryClient.invalidateQueries({
+          queryKey: [...settingsKeys.all, "values"],
+        }),
       ]),
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to reset subtitle preference");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to reset subtitle preference",
+      );
     },
   });
 }
@@ -183,7 +196,11 @@ export function useSetSubtitlePreference() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ prefId, selection, showForcedSubtitles }: SetSubtitlePreferenceInput) =>
+    mutationFn: ({
+      prefId,
+      selection,
+      showForcedSubtitles,
+    }: SetSubtitlePreferenceInput) =>
       api<void>(`/subtitle-prefs/${prefId}`, {
         method: "PUT",
         body: JSON.stringify({
@@ -207,7 +224,11 @@ export function useSetSubtitlePreference() {
       }),
     onSuccess: () => invalidateItemDetails(queryClient),
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to save subtitle preference");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to save subtitle preference",
+      );
     },
   });
 }
@@ -224,7 +245,9 @@ export function useDownloadSubtitle() {
       });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to download subtitle");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to download subtitle",
+      );
     },
   });
 }
@@ -241,7 +264,9 @@ export function useUploadSubtitle() {
       });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to upload subtitle");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to upload subtitle",
+      );
     },
   });
 }

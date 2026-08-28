@@ -15,12 +15,15 @@ export interface PlaybackPolicyErrorDescription {
  * "playback was refused" surface is reason-keyed, and the server's own
  * `terminal.message` is the fallback for reasons this table does not name.
  */
-export function describePlanTerminal(terminal: TerminalV3): PlaybackPolicyErrorDescription {
+export function describePlanTerminal(
+  terminal: TerminalV3,
+): PlaybackPolicyErrorDescription {
   switch (terminal.reason) {
     case "transcoding_disabled":
       return {
         title: "Transcoding is disabled",
-        message: "Transcoding is disabled for your user. Ask your server administrator for access.",
+        message:
+          "Transcoding is disabled for your user. Ask your server administrator for access.",
       };
     case "audio_transcoding_disabled":
       return {
@@ -74,7 +77,8 @@ export function describePlanTerminal(terminal: TerminalV3): PlaybackPolicyErrorD
     case "audio_conversion_unsupported":
       return {
         title: "This file can't be converted",
-        message: "Silo can't convert this file into something this device can play.",
+        message:
+          "Silo can't convert this file into something this device can play.",
       };
     case "conversion_tool_unavailable":
     case "transcode_node_unavailable":
@@ -98,7 +102,8 @@ export function describePlanTerminal(terminal: TerminalV3): PlaybackPolicyErrorD
     case "session_expired":
       return {
         title: "Playback session expired",
-        message: "This playback session is no longer active. Start it again to keep watching.",
+        message:
+          "This playback session is no longer active. Start it again to keep watching.",
       };
     case "policy_denied":
       return {
@@ -152,7 +157,8 @@ export function describePlaybackTransportError(
   if (error.code === "playback_session_not_found") {
     return {
       title: "Playback session expired",
-      message: "This playback session is no longer active. Start it again to keep watching.",
+      message:
+        "This playback session is no longer active. Start it again to keep watching.",
     };
   }
 

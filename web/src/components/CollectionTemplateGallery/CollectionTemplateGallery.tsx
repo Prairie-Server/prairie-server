@@ -1,5 +1,12 @@
 import { useMemo, useState } from "react";
-import { Check, ChevronLeft, Eye, Layers3, Loader2, Search } from "lucide-react";
+import {
+  Check,
+  ChevronLeft,
+  Eye,
+  Layers3,
+  Loader2,
+  Search,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -70,13 +77,17 @@ export function CollectionTemplateGallery(props: Props) {
   const adminTemplates = useCollectionTemplates(!isUserMode && props.open);
   const adminBundles = useCollectionTemplateBundles(!isUserMode && props.open);
   const userTemplates = useUserCollectionTemplates(isUserMode && props.open);
-  const { data, isLoading, error } = isUserMode ? userTemplates : adminTemplates;
-  const galleryError = !isUserMode && adminBundles.error ? adminBundles.error : error;
+  const { data, isLoading, error } = isUserMode
+    ? userTemplates
+    : adminTemplates;
+  const galleryError =
+    !isUserMode && adminBundles.error ? adminBundles.error : error;
   const { open, onOpenChange, onCreated } = props;
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<ActiveCategory>("all");
   const [picked, setPicked] = useState<CollectionTemplate | null>(null);
-  const [pickedBundle, setPickedBundle] = useState<CollectionTemplateBundle | null>(null);
+  const [pickedBundle, setPickedBundle] =
+    useState<CollectionTemplateBundle | null>(null);
 
   const handleOpenChange = (next: boolean) => {
     // Reset internal state on close so the next open starts at the gallery
@@ -90,13 +101,19 @@ export function CollectionTemplateGallery(props: Props) {
     onOpenChange(next);
   };
 
-  const groups: CollectionTemplateGroup[] = useMemo(() => data?.categories ?? [], [data]);
+  const groups: CollectionTemplateGroup[] = useMemo(
+    () => data?.categories ?? [],
+    [data],
+  );
   const bundles = !isUserMode ? (adminBundles.data?.bundles ?? []) : [];
 
   const filtered = useMemo(() => {
     const term = search.trim().toLowerCase();
     return groups
-      .filter((group) => activeCategory === "all" || group.category === activeCategory)
+      .filter(
+        (group) =>
+          activeCategory === "all" || group.category === activeCategory,
+      )
       .map((group) => ({
         ...group,
         templates: group.templates.filter((tmpl) => {
@@ -111,7 +128,10 @@ export function CollectionTemplateGallery(props: Props) {
       .filter((group) => group.templates.length > 0);
   }, [groups, search, activeCategory]);
 
-  const totalMatches = filtered.reduce((sum, group) => sum + group.templates.length, 0);
+  const totalMatches = filtered.reduce(
+    (sum, group) => sum + group.templates.length,
+    0,
+  );
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -230,7 +250,8 @@ function GalleryView({
   if (error) {
     return (
       <div className="text-destructive rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm">
-        Failed to load templates: {error instanceof Error ? error.message : stringifyUnknown(error)}
+        Failed to load templates:{" "}
+        {error instanceof Error ? error.message : stringifyUnknown(error)}
       </div>
     );
   }
@@ -248,7 +269,9 @@ function GalleryView({
             >
               <Layers3 className="text-primary mt-0.5 h-4 w-4 shrink-0" />
               <span className="space-y-1">
-                <span className="block text-sm font-semibold">{bundle.title}</span>
+                <span className="block text-sm font-semibold">
+                  {bundle.title}
+                </span>
                 <span className="text-muted-foreground block text-xs leading-snug">
                   {bundle.description}
                 </span>
@@ -306,7 +329,11 @@ function GalleryView({
               </h3>
               <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {group.templates.map((tmpl) => (
-                  <CollectionTemplateCard key={tmpl.id} template={tmpl} onPick={onPick} />
+                  <CollectionTemplateCard
+                    key={tmpl.id}
+                    template={tmpl}
+                    onPick={onPick}
+                  />
                 ))}
               </div>
             </section>
@@ -344,11 +371,17 @@ function TemplateBundleApplyView({
   const [libraryIds, setLibraryIds] = useState<number[]>(initialIds);
   const [deleteExisting, setDeleteExisting] = useState(false);
   const [homeFeatured, setHomeFeatured] = useState<string | null>(null);
-  const [libraryFeatured, setLibraryFeatured] = useState<Record<number, string>>({});
-  const [result, setResult] = useState<ApplyCollectionTemplateBundleResponse | null>(null);
+  const [libraryFeatured, setLibraryFeatured] = useState<
+    Record<number, string>
+  >({});
+  const [result, setResult] =
+    useState<ApplyCollectionTemplateBundleResponse | null>(null);
   const applyBundle = useApplyCollectionTemplateBundle();
   const queueBundleApply = useQueueCollectionTemplateBundleApply();
-  const disabled = libraryIds.length === 0 || applyBundle.isPending || queueBundleApply.isPending;
+  const disabled =
+    libraryIds.length === 0 ||
+    applyBundle.isPending ||
+    queueBundleApply.isPending;
   const queuesInitialSyncs = bundle.id === "all_defaults";
   const selectedLibraries = useMemo(
     () => libraries.filter((library) => libraryIds.includes(library.id)),
@@ -369,7 +402,11 @@ function TemplateBundleApplyView({
         next[library.id] = previous;
         return;
       }
-      next[library.id] = defaultFeaturedTemplateId(bundle, templatesById, library);
+      next[library.id] = defaultFeaturedTemplateId(
+        bundle,
+        templatesById,
+        library,
+      );
     });
     return next;
   }, [bundle, libraryFeatured, selectedLibraries, templatesById]);
@@ -377,8 +414,12 @@ function TemplateBundleApplyView({
     if (homeFeatured === "none") return homeFeatured;
     if (homeFeatured) {
       const parsed = parseHomeFeaturedValue(homeFeatured);
-      const library = selectedLibraries.find((item) => item.id === parsed?.libraryId);
-      const template = parsed ? templatesById.get(parsed.templateId) : undefined;
+      const library = selectedLibraries.find(
+        (item) => item.id === parsed?.libraryId,
+      );
+      const template = parsed
+        ? templatesById.get(parsed.templateId)
+        : undefined;
       if (library && isBundleTemplateEligibleForLibrary(template, library)) {
         return homeFeatured;
       }
@@ -387,7 +428,10 @@ function TemplateBundleApplyView({
   }, [bundle, homeFeatured, selectedLibraries, templatesById]);
 
   const preview = () => {
-    const featured = buildFeaturedBundleRequest(effectiveHomeFeatured, effectiveLibraryFeatured);
+    const featured = buildFeaturedBundleRequest(
+      effectiveHomeFeatured,
+      effectiveLibraryFeatured,
+    );
     applyBundle.mutate(
       {
         bundleId: bundle.id,
@@ -407,7 +451,10 @@ function TemplateBundleApplyView({
   };
 
   const apply = () => {
-    const featured = buildFeaturedBundleRequest(effectiveHomeFeatured, effectiveLibraryFeatured);
+    const featured = buildFeaturedBundleRequest(
+      effectiveHomeFeatured,
+      effectiveLibraryFeatured,
+    );
     queueBundleApply.mutate(
       {
         bundleId: bundle.id,
@@ -427,11 +474,13 @@ function TemplateBundleApplyView({
     <div className="space-y-4">
       <div className="rounded-md border p-3">
         <div className="text-sm font-semibold">{bundle.title}</div>
-        <p className="text-muted-foreground mt-1 text-xs leading-snug">{bundle.description}</p>
+        <p className="text-muted-foreground mt-1 text-xs leading-snug">
+          {bundle.description}
+        </p>
         {queuesInitialSyncs ? (
           <p className="text-muted-foreground mt-2 text-xs leading-snug">
-            Collections are created first; initial syncs are queued so this large bundle can finish
-            without waiting on every source.
+            Collections are created first; initial syncs are queued so this
+            large bundle can finish without waiting on every source.
           </p>
         ) : null}
       </div>
@@ -464,14 +513,16 @@ function TemplateBundleApplyView({
             <SelectContent>
               <SelectItem value="none">No home hero</SelectItem>
               {selectedLibraries.flatMap((library) =>
-                eligibleBundleTemplates(bundle, templatesById, library).map((template) => (
-                  <SelectItem
-                    key={`${library.id}:${template.id}`}
-                    value={`${library.id}:${template.id}`}
-                  >
-                    {library.name} / {template.title}
-                  </SelectItem>
-                )),
+                eligibleBundleTemplates(bundle, templatesById, library).map(
+                  (template) => (
+                    <SelectItem
+                      key={`${library.id}:${template.id}`}
+                      value={`${library.id}:${template.id}`}
+                    >
+                      {library.name} / {template.title}
+                    </SelectItem>
+                  ),
+                ),
               )}
             </SelectContent>
           </Select>
@@ -484,7 +535,10 @@ function TemplateBundleApplyView({
               <Select
                 value={effectiveLibraryFeatured[library.id] ?? "none"}
                 onValueChange={(value) =>
-                  setLibraryFeatured((prev) => ({ ...prev, [library.id]: value }))
+                  setLibraryFeatured((prev) => ({
+                    ...prev,
+                    [library.id]: value,
+                  }))
                 }
               >
                 <SelectTrigger>
@@ -492,11 +546,13 @@ function TemplateBundleApplyView({
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="none">No library hero</SelectItem>
-                  {eligibleBundleTemplates(bundle, templatesById, library).map((template) => (
-                    <SelectItem key={template.id} value={template.id}>
-                      {template.title}
-                    </SelectItem>
-                  ))}
+                  {eligibleBundleTemplates(bundle, templatesById, library).map(
+                    (template) => (
+                      <SelectItem key={template.id} value={template.id}>
+                        {template.title}
+                      </SelectItem>
+                    ),
+                  )}
                 </SelectContent>
               </Select>
             </div>
@@ -506,21 +562,33 @@ function TemplateBundleApplyView({
 
       <label className="flex items-center justify-between gap-3 rounded-md border p-3">
         <span className="space-y-1">
-          <span className="block text-sm font-medium">Delete Existing Server Collections</span>
+          <span className="block text-sm font-medium">
+            Delete Existing Server Collections
+          </span>
           <span className="text-muted-foreground block text-xs">
-            Remove current server collections in the selected libraries before applying defaults.
+            Remove current server collections in the selected libraries before
+            applying defaults.
           </span>
         </span>
         <Switch checked={deleteExisting} onCheckedChange={setDeleteExisting} />
       </label>
 
       <div className="flex justify-end gap-2">
-        <Button type="button" variant="outline" disabled={disabled} onClick={preview}>
+        <Button
+          type="button"
+          variant="outline"
+          disabled={disabled}
+          onClick={preview}
+        >
           <Eye />
           Preview
         </Button>
         <Button type="button" disabled={disabled} onClick={apply}>
-          {queueBundleApply.isPending ? <Loader2 className="animate-spin" /> : <Check />}
+          {queueBundleApply.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Check />
+          )}
           {queueBundleApply.isPending ? "Queueing..." : "Apply Defaults"}
         </Button>
       </div>
@@ -570,7 +638,9 @@ function defaultFeaturedTemplateId(
       return id;
     }
   }
-  return eligibleBundleTemplates(bundle, templatesById, library)[0]?.id ?? "none";
+  return (
+    eligibleBundleTemplates(bundle, templatesById, library)[0]?.id ?? "none"
+  );
 }
 
 function defaultHomeFeaturedValue(
@@ -586,17 +656,24 @@ function defaultHomeFeaturedValue(
     if (library) return `${library.id}:${id}`;
   }
   for (const library of libraries) {
-    const templateID = defaultFeaturedTemplateId(bundle, templatesById, library);
+    const templateID = defaultFeaturedTemplateId(
+      bundle,
+      templatesById,
+      library,
+    );
     if (templateID !== "none") return `${library.id}:${templateID}`;
   }
   return "none";
 }
 
-function parseHomeFeaturedValue(value: string): { libraryId: number; templateId: string } | null {
+function parseHomeFeaturedValue(
+  value: string,
+): { libraryId: number; templateId: string } | null {
   if (value === "none") return null;
   const [libraryID, templateID] = value.split(":");
   const parsedLibraryID = Number(libraryID);
-  if (!Number.isInteger(parsedLibraryID) || parsedLibraryID <= 0 || !templateID) return null;
+  if (!Number.isInteger(parsedLibraryID) || parsedLibraryID <= 0 || !templateID)
+    return null;
   return { libraryId: parsedLibraryID, templateId: templateID };
 }
 
@@ -614,7 +691,9 @@ function buildFeaturedBundleRequest(
   }
 
   const libraries = Object.fromEntries(
-    Object.entries(libraryFeatured).filter(([, templateID]) => templateID !== "none"),
+    Object.entries(libraryFeatured).filter(
+      ([, templateID]) => templateID !== "none",
+    ),
   );
   if (Object.keys(libraries).length > 0) {
     request.libraries = libraries;
@@ -624,7 +703,11 @@ function buildFeaturedBundleRequest(
   return request;
 }
 
-function BundleApplyResult({ result }: { result: ApplyCollectionTemplateBundleResponse }) {
+function BundleApplyResult({
+  result,
+}: {
+  result: ApplyCollectionTemplateBundleResponse;
+}) {
   const actionLabel = result.dry_run ? "Would create" : "Created";
   const deleteActionLabel = result.dry_run ? "Would delete" : "Deleted";
   const created = result.created ?? [];
@@ -641,25 +724,27 @@ function BundleApplyResult({ result }: { result: ApplyCollectionTemplateBundleRe
       <div className="font-medium">
         {result.delete_existing ? (
           <>
-            {deleteActionLabel} {deleted.length}; delete skipped {deleteSkipped.length}; delete
-            failed {deleteFailed.length};{" "}
+            {deleteActionLabel} {deleted.length}; delete skipped{" "}
+            {deleteSkipped.length}; delete failed {deleteFailed.length};{" "}
           </>
         ) : null}
-        {actionLabel} {created.length}; skipped {skipped.length}; failed {failed.length}
-        {syncQueued.length > 0 ? `; sync queued ${syncQueued.length}` : ""}; featured{" "}
-        {featured.length}; featured failed {featuredFailed.length}
+        {actionLabel} {created.length}; skipped {skipped.length}; failed{" "}
+        {failed.length}
+        {syncQueued.length > 0 ? `; sync queued ${syncQueued.length}` : ""};
+        featured {featured.length}; featured failed {featuredFailed.length}
       </div>
       {syncQueued.length > 0 ? (
         <div className="text-muted-foreground text-xs leading-snug">
-          Initial syncs are running in the background. Collections are available now; items appear
-          as each sync finishes.
+          Initial syncs are running in the background. Collections are available
+          now; items appear as each sync finishes.
         </div>
       ) : null}
       {deleteFailed.length > 0 ? (
         <div className="text-destructive space-y-1 text-xs">
           {deleteFailed.slice(0, 5).map((entry) => (
             <div key={`delete:${entry.library_id}:${entry.collection_id}`}>
-              {entry.library_name} / {entry.collection_title ?? entry.collection_id}:{" "}
+              {entry.library_name} /{" "}
+              {entry.collection_title ?? entry.collection_id}:{" "}
               {entry.reason ?? "failed"}
             </div>
           ))}
@@ -669,7 +754,8 @@ function BundleApplyResult({ result }: { result: ApplyCollectionTemplateBundleRe
         <div className="text-destructive space-y-1 text-xs">
           {failed.slice(0, 5).map((entry) => (
             <div key={`${entry.library_id}:${entry.template_id}`}>
-              {entry.library_name} / {entry.template_title}: {entry.reason ?? "failed"}
+              {entry.library_name} / {entry.template_title}:{" "}
+              {entry.reason ?? "failed"}
             </div>
           ))}
         </div>
@@ -680,8 +766,8 @@ function BundleApplyResult({ result }: { result: ApplyCollectionTemplateBundleRe
             <div
               key={`featured:${entry.surface}:${entry.library_id ?? "home"}:${entry.template_id}`}
             >
-              {entry.surface === "home" ? "Home" : entry.library_name} / {entry.template_title}:{" "}
-              {entry.reason ?? "failed"}
+              {entry.surface === "home" ? "Home" : entry.library_name} /{" "}
+              {entry.template_title}: {entry.reason ?? "failed"}
             </div>
           ))}
         </div>

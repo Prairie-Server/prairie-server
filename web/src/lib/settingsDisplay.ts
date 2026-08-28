@@ -19,7 +19,8 @@ import { languageOptionsFor, type SettingOption } from "@/lib/languageOptions";
 export type SettingDisplay = SettingDefinition;
 
 /** Control shapes the admin/settings widgets can render. */
-export type SettingControlKind = "switch" | "select" | "slider" | "stepper" | "panel" | "text";
+export type SettingControlKind =
+  "switch" | "select" | "slider" | "stepper" | "panel" | "text";
 
 /** The generated definition for a key, or null when this build has no such key. */
 export function getSettingDefinition(key: string): SettingDisplay | null {
@@ -43,13 +44,17 @@ export function controlKindFor(definition: SettingDisplay): SettingControlKind {
       return definition.control;
   }
   if (definition.type === "boolean") return "switch";
-  if (definition.type === "enum" || definition.type === "language_tag") return "select";
-  if (definition.type === "integer" || definition.type === "number") return "slider";
+  if (definition.type === "enum" || definition.type === "language_tag")
+    return "select";
+  if (definition.type === "integer" || definition.type === "number")
+    return "slider";
   return "text";
 }
 
 /** Whether a definition is edited through a bespoke panel or raw JSON. */
-export function isStructuredSetting(definition: SettingDisplay | null): boolean {
+export function isStructuredSetting(
+  definition: SettingDisplay | null,
+): boolean {
   if (!definition) return true;
   return definition.type === "object" || controlKindFor(definition) === "panel";
 }
@@ -82,7 +87,10 @@ export function optionsFor(definition: SettingDisplay): SettingOption[] {
  * edits. Falls back to the raw value for a key this build does not know, which
  * is the older-client-newer-server case.
  */
-export function formatSettingValue(key: string, value: string | null | undefined): string {
+export function formatSettingValue(
+  key: string,
+  value: string | null | undefined,
+): string {
   const definition = getSettingDefinition(key);
   if (!definition) {
     return value ?? "Unset";
@@ -98,7 +106,9 @@ export function formatSettingValue(key: string, value: string | null | undefined
   }
   if (definition.values?.length) {
     const fallback = value ?? defaultValueToString(definition);
-    const match = definition.values.find((member) => String(member.value) === fallback);
+    const match = definition.values.find(
+      (member) => String(member.value) === fallback,
+    );
     return match ? match.label || String(match.value) : fallback || "Unset";
   }
   if (definition.unit) {
@@ -115,7 +125,8 @@ export function defaultValueToString(definition: SettingDisplay): string {
   const value = definition.defaultValue;
   if (value === null || value === undefined) return "";
   if (typeof value === "string") return value;
-  if (typeof value === "boolean" || typeof value === "number") return String(value);
+  if (typeof value === "boolean" || typeof value === "number")
+    return String(value);
   return JSON.stringify(value);
 }
 
@@ -128,18 +139,24 @@ export const ALL_DEVICE_SETTING_KEYS: SettingKey[] = (
   Object.keys(SETTING_DEFINITIONS) as SettingKey[]
 ).filter((key) => {
   const definition = SETTING_DEFINITIONS[key];
-  return definition.persistence === "remote" && definition.scopes.includes("profile_device");
+  return (
+    definition.persistence === "remote" &&
+    definition.scopes.includes("profile_device")
+  );
 });
 
 /** Device-setting keys understood by a connected server contract revision. */
-export function deviceSettingKeysForRevision(revision: number | undefined): SettingKey[] {
+export function deviceSettingKeysForRevision(
+  revision: number | undefined,
+): SettingKey[] {
   if (revision === undefined) return [];
   return ALL_DEVICE_SETTING_KEYS.filter((key) => {
     const definition = SETTING_DEFINITIONS[key];
     const scopeIndex = definition.scopes.indexOf("profile_device");
     return (
       scopeIndex >= 0 &&
-      (definition.scopeIntroducedIn[scopeIndex] ?? Number.POSITIVE_INFINITY) <= revision
+      (definition.scopeIntroducedIn[scopeIndex] ?? Number.POSITIVE_INFINITY) <=
+        revision
     );
   });
 }

@@ -19,7 +19,11 @@ export function chipsToFilterConfig(
   chips: FilterChipModel[],
   matchMode: "all" | "any",
 ): FilterConfig {
-  const rules: FilterRule[] = chips.map((c) => ({ field: c.field, op: c.op, value: c.value }));
+  const rules: FilterRule[] = chips.map((c) => ({
+    field: c.field,
+    op: c.op,
+    value: c.value,
+  }));
   const group: FilterGroup = { match: matchMode, rules };
   return { match: "all", groups: [group] };
 }
@@ -29,7 +33,9 @@ export function chipsToFilterConfig(
  * single-group configs; nested or multi-group configs are reported as
  * incompatible so the UI can fall back to Advanced Mode.
  */
-export function filterConfigToChips(config: FilterConfig | undefined | null): ConversionResult {
+export function filterConfigToChips(
+  config: FilterConfig | undefined | null,
+): ConversionResult {
   if (!config || !Array.isArray(config.groups) || config.groups.length === 0) {
     return { kind: "compatible", chips: [], matchMode: "all" };
   }
@@ -43,6 +49,10 @@ export function filterConfigToChips(config: FilterConfig | undefined | null): Co
   if (group.match !== "all" && group.match !== "any") {
     return { kind: "incompatible", reason: "unknown group match mode" };
   }
-  const chips = group.rules.map((r) => ({ field: r.field, op: r.op, value: r.value }));
+  const chips = group.rules.map((r) => ({
+    field: r.field,
+    op: r.op,
+    value: r.value,
+  }));
   return { kind: "compatible", chips, matchMode: group.match };
 }

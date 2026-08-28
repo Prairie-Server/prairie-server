@@ -55,7 +55,10 @@ export function LiveTVGuideGrid({
           >
             Channel
           </div>
-          <div className="relative" style={{ width: gridWidth, minWidth: gridWidth }}>
+          <div
+            className="relative"
+            style={{ width: gridWidth, minWidth: gridWidth }}
+          >
             {ticks.map((tick) => (
               <div
                 key={tick}
@@ -70,7 +73,12 @@ export function LiveTVGuideGrid({
         </div>
 
         {channels.map((channel) => {
-          const laid = layoutProgramsForChannel(programs, channel.id, window, now);
+          const laid = layoutProgramsForChannel(
+            programs,
+            channel.id,
+            window,
+            now,
+          );
           const selected = selectedChannelId === channel.id;
           return (
             <div
@@ -90,7 +98,9 @@ export function LiveTVGuideGrid({
                   <span className="text-muted-foreground tabular-nums">
                     {channelDisplayNumber(channel)}
                   </span>
-                  <span className="truncate">{channel.callsign || channel.name}</span>
+                  <span className="truncate">
+                    {channel.callsign || channel.name}
+                  </span>
                 </span>
                 <span className="text-muted-foreground truncate text-xs">
                   {laid.find((p) => p.isNow)?.title ?? "No guide data"}
@@ -98,7 +108,11 @@ export function LiveTVGuideGrid({
               </button>
               <div
                 className="relative"
-                style={{ width: gridWidth, minWidth: gridWidth, height: ROW_HEIGHT }}
+                style={{
+                  width: gridWidth,
+                  minWidth: gridWidth,
+                  height: ROW_HEIGHT,
+                }}
               >
                 <div
                   className="bg-primary/70 absolute top-1.5 bottom-1.5 z-10 w-px"
@@ -119,9 +133,12 @@ export function LiveTVGuideGrid({
                   >
                     <div className="flex h-full items-center justify-between gap-2">
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{program.title}</p>
+                        <p className="truncate text-sm font-medium">
+                          {program.title}
+                        </p>
                         <p className="text-muted-foreground truncate text-[11px]">
-                          {formatGuideTime(program.start)} – {formatGuideTime(program.stop)}
+                          {formatGuideTime(program.start)} –{" "}
+                          {formatGuideTime(program.stop)}
                         </p>
                       </div>
                       <div className="flex shrink-0 gap-1">

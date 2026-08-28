@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { getCarouselEmblaOptions, getCarouselWheelGestureOptions } from "./carouselEmbla";
+import {
+  getCarouselEmblaOptions,
+  getCarouselWheelGestureOptions,
+} from "./carouselEmbla";
 
 describe("carouselEmbla", () => {
   it("enables drag-free momentum with trimmed edge scrolling", () => {
@@ -28,7 +31,9 @@ describe("carouselEmbla", () => {
       forceWheelAxis: "x",
       target: undefined,
     });
-    expect(getCarouselEmblaOptions({ loop: true, dragFree: false })).toMatchObject({
+    expect(
+      getCarouselEmblaOptions({ loop: true, dragFree: false }),
+    ).toMatchObject({
       align: "start",
       loop: true,
       dragFree: false,

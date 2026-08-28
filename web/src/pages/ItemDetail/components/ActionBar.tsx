@@ -196,20 +196,28 @@ export default function ActionBar({
   const [playChoiceOpen, setPlayChoiceOpen] = useState(false);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const overflowMenuId = useId();
-  const [overflowPosition, setOverflowPosition] = useState<{ left: number; top: number } | null>(
-    null,
-  );
+  const [overflowPosition, setOverflowPosition] = useState<{
+    left: number;
+    top: number;
+  } | null>(null);
   const overflowTriggerRef = useRef<HTMLButtonElement>(null);
   const overflowMenuRef = useRef<HTMLDivElement>(null);
   const scrollFrameRef = useRef<number | null>(null);
-  const typeaheadRef = useRef<{ query: string; at: number }>({ query: "", at: 0 });
+  const typeaheadRef = useRef<{ query: string; at: number }>({
+    query: "",
+    at: 0,
+  });
   const [refreshDialogOpen, setRefreshDialogOpen] = useState(false);
   const [addToCollectionOpen, setAddToCollectionOpen] = useState(false);
   const [markerEditorOpen, setMarkerEditorOpen] = useState(false);
   const showMarkerEditor = canEditMarkers && !!contentId;
-  const hasMultipleVersions = (playbackVariants?.length ?? 0) > 1 || (versions?.length ?? 0) > 1;
+  const hasMultipleVersions =
+    (playbackVariants?.length ?? 0) > 1 || (versions?.length ?? 0) > 1;
   const showPlayChoiceDialog =
-    !hasMultipleVersions && playLabel === "Resume" && !!playHref && !!restartHref;
+    !hasMultipleVersions &&
+    playLabel === "Resume" &&
+    !!playHref &&
+    !!restartHref;
   const displayedPlayLabel = showPlayChoiceDialog ? "Play" : playLabel;
 
   const progressOverlay =
@@ -244,7 +252,12 @@ export default function ActionBar({
       prePlaySubtitleSelection:
         prePlaySubtitleMode === "explicit" ? explicitSubtitleSelection : null,
     }),
-    [audioSelectionMode, explicitAudioTrackIndex, explicitSubtitleSelection, prePlaySubtitleMode],
+    [
+      audioSelectionMode,
+      explicitAudioTrackIndex,
+      explicitSubtitleSelection,
+      prePlaySubtitleMode,
+    ],
   );
   const startPlaybackFromHref = useCallback(
     (href: string, restartOverride?: boolean) => {
@@ -264,7 +277,13 @@ export default function ActionBar({
         }),
       );
     },
-    [buildPrePlayStartInput, currentHref, navigate, playbackController, selectedVersion?.file_id],
+    [
+      buildPrePlayStartInput,
+      currentHref,
+      navigate,
+      playbackController,
+      selectedVersion?.file_id,
+    ],
   );
   const handleResumePlayback = () => {
     if (!playHref) return;
@@ -294,7 +313,8 @@ export default function ActionBar({
     const gap = 8;
     const triggerRect = trigger.getBoundingClientRect();
     const menuRect = menu.getBoundingClientRect();
-    const spaceBelow = window.innerHeight - triggerRect.bottom - viewportPadding;
+    const spaceBelow =
+      window.innerHeight - triggerRect.bottom - viewportPadding;
     const top =
       spaceBelow >= menuRect.height + gap
         ? triggerRect.bottom + gap
@@ -358,7 +378,8 @@ export default function ActionBar({
     // dismissing on every wheel nudge. One measurement per frame at most.
     const handleScroll = (event: Event) => {
       const target = event.target;
-      if (target instanceof Node && overflowMenuRef.current?.contains(target)) return;
+      if (target instanceof Node && overflowMenuRef.current?.contains(target))
+        return;
       if (scrollFrameRef.current !== null) return;
       scrollFrameRef.current = requestAnimationFrame(() => {
         scrollFrameRef.current = null;
@@ -382,7 +403,9 @@ export default function ActionBar({
     };
   }, [closeOverflowMenu, overflowOpen, positionOverflowMenu]);
   const handleOverflowKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
-    const isNavigationKey = ["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key);
+    const isNavigationKey = ["ArrowDown", "ArrowUp", "Home", "End"].includes(
+      event.key,
+    );
     // Printable single characters jump to the next item whose label starts with
     // what has been typed, the way the menu behaved before.
     const isTypeahead =
@@ -395,24 +418,32 @@ export default function ActionBar({
     if (!isNavigationKey && !isTypeahead) return;
 
     const items = Array.from(
-      event.currentTarget.querySelectorAll<HTMLButtonElement>('[role="menuitem"]:not(:disabled)'),
+      event.currentTarget.querySelectorAll<HTMLButtonElement>(
+        '[role="menuitem"]:not(:disabled)',
+      ),
     );
     if (items.length === 0) return;
 
     event.preventDefault();
-    const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
+    const currentIndex = items.indexOf(
+      document.activeElement as HTMLButtonElement,
+    );
 
     if (isTypeahead) {
       const now = Date.now();
       const typeahead = typeaheadRef.current;
-      typeahead.query = now - typeahead.at > 1000 ? event.key : typeahead.query + event.key;
+      typeahead.query =
+        now - typeahead.at > 1000 ? event.key : typeahead.query + event.key;
       typeahead.at = now;
       const query = typeahead.query.toLowerCase();
       // A repeated single character cycles through the items starting with it.
-      const startIndex = query.length === 1 ? currentIndex + 1 : Math.max(currentIndex, 0);
+      const startIndex =
+        query.length === 1 ? currentIndex + 1 : Math.max(currentIndex, 0);
       const match = items
         .map((_, offset) => items[(startIndex + offset) % items.length])
-        .find((item) => (item?.textContent ?? "").trim().toLowerCase().startsWith(query));
+        .find((item) =>
+          (item?.textContent ?? "").trim().toLowerCase().startsWith(query),
+        );
       match?.focus({ preventScroll: true });
       return;
     }
@@ -425,7 +456,10 @@ export default function ActionBar({
     } else if (event.key === "ArrowUp") {
       nextIndex = currentIndex <= 0 ? items.length - 1 : currentIndex - 1;
     } else {
-      nextIndex = currentIndex < 0 || currentIndex === items.length - 1 ? 0 : currentIndex + 1;
+      nextIndex =
+        currentIndex < 0 || currentIndex === items.length - 1
+          ? 0
+          : currentIndex + 1;
     }
     items[nextIndex]?.focus({ preventScroll: true });
   };
@@ -434,17 +468,23 @@ export default function ActionBar({
   );
   const hasAdminActions = Boolean(isAdmin && (contentId || onRedetectIntro));
   const hasMetadataActions = Boolean(
-    (canCurateMetadata && (onRefresh || onEditMetadata || onMatchItem || onShowMediaInfo)) ||
+    (canCurateMetadata &&
+      (onRefresh || onEditMetadata || onMatchItem || onShowMediaInfo)) ||
     showMarkerEditor,
   );
   const hasOverflowMenuItems =
-    hasOverflowActions || hasAdminActions || hasMetadataActions || Boolean(contentId);
+    hasOverflowActions ||
+    hasAdminActions ||
+    hasMetadataActions ||
+    Boolean(contentId);
 
   const formattedResumeTime = formatPlaybackTime(resumePositionSeconds ?? 0);
   const percentComplete =
     playProgress != null && Number.isFinite(playProgress)
       ? Math.round(playProgress)
-      : resumeDurationSeconds != null && resumeDurationSeconds > 0 && resumePositionSeconds != null
+      : resumeDurationSeconds != null &&
+          resumeDurationSeconds > 0 &&
+          resumePositionSeconds != null
         ? Math.round((resumePositionSeconds / resumeDurationSeconds) * 100)
         : null;
   const dialogDescription = showPlayChoiceDialog
@@ -464,7 +504,13 @@ export default function ActionBar({
         }),
       );
     },
-    [buildPrePlayStartInput, contentId, currentHref, playbackController, selectedVersion],
+    [
+      buildPrePlayStartInput,
+      contentId,
+      currentHref,
+      playbackController,
+      selectedVersion,
+    ],
   );
 
   // The subtitle control is available even when the selected file has no
@@ -539,7 +585,9 @@ export default function ActionBar({
             size="icon-lg"
             onClick={onToggleFavorite}
             title={isFavorite ? "Unfavorite" : "Favorite"}
-            aria-label={isFavorite ? "Remove from favorites" : "Add to favorites"}
+            aria-label={
+              isFavorite ? "Remove from favorites" : "Add to favorites"
+            }
             className={`${staticGlassActionClass} size-11 cursor-pointer rounded-full`}
           >
             <Heart
@@ -549,7 +597,11 @@ export default function ActionBar({
         )}
 
         {onRatingChange && (
-          <StarRating value={rating ?? null} onChange={onRatingChange} size={18} />
+          <StarRating
+            value={rating ?? null}
+            onChange={onRatingChange}
+            size={18}
+          />
         )}
 
         {hasOverflowMenuItems && (
@@ -593,8 +645,15 @@ export default function ActionBar({
                 </DetailOverflowMenuItem>
               )}
               {onToggleWatchlist && (
-                <DetailOverflowMenuItem closeMenu={closeOverflowMenu} onAction={onToggleWatchlist}>
-                  {inWatchlist ? <Check className="size-4" /> : <Plus className="size-4" />}
+                <DetailOverflowMenuItem
+                  closeMenu={closeOverflowMenu}
+                  onAction={onToggleWatchlist}
+                >
+                  {inWatchlist ? (
+                    <Check className="size-4" />
+                  ) : (
+                    <Plus className="size-4" />
+                  )}
                   {inWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
                 </DetailOverflowMenuItem>
               )}
@@ -608,13 +667,19 @@ export default function ActionBar({
                 </DetailOverflowMenuItem>
               )}
               {onDownload && (
-                <DetailOverflowMenuItem closeMenu={closeOverflowMenu} onAction={onDownload}>
+                <DetailOverflowMenuItem
+                  closeMenu={closeOverflowMenu}
+                  onAction={onDownload}
+                >
                   <Download className="size-4" />
                   Download
                 </DetailOverflowMenuItem>
               )}
               {onSearchSubtitles && (
-                <DetailOverflowMenuItem closeMenu={closeOverflowMenu} onAction={onSearchSubtitles}>
+                <DetailOverflowMenuItem
+                  closeMenu={closeOverflowMenu}
+                  onAction={onSearchSubtitles}
+                >
                   <Captions className="size-4" />
                   Search Subtitles
                 </DetailOverflowMenuItem>
@@ -622,7 +687,10 @@ export default function ActionBar({
               {(hasAdminActions || hasMetadataActions) && (
                 <>
                   {hasOverflowActions && (
-                    <div role="separator" className="bg-border -mx-1 my-1 h-px" />
+                    <div
+                      role="separator"
+                      className="bg-border -mx-1 my-1 h-px"
+                    />
                   )}
                   {canCurateMetadata && onShowMediaInfo && (
                     <DetailOverflowMenuItem
@@ -637,7 +705,9 @@ export default function ActionBar({
                     <DetailOverflowMenuItem
                       closeMenu={closeOverflowMenu}
                       onAction={() =>
-                        navigate(`/admin/history?media_item_id=${encodeURIComponent(contentId)}`)
+                        navigate(
+                          `/admin/history?media_item_id=${encodeURIComponent(contentId)}`,
+                        )
                       }
                     >
                       <MediaActionIcon action="viewPlayHistory" />
@@ -652,7 +722,10 @@ export default function ActionBar({
                         setRefreshDialogOpen(true);
                       }}
                     >
-                      <MediaActionIcon action="refreshMetadata" isPending={isRefreshing} />
+                      <MediaActionIcon
+                        action="refreshMetadata"
+                        isPending={isRefreshing}
+                      />
                       Refresh Metadata
                     </DetailOverflowMenuItem>
                   )}
@@ -662,12 +735,17 @@ export default function ActionBar({
                       disabled={isRedetectingIntro}
                       onAction={onRedetectIntro}
                     >
-                      <RefreshCw className={`size-4 ${isRedetectingIntro ? "animate-spin" : ""}`} />
+                      <RefreshCw
+                        className={`size-4 ${isRedetectingIntro ? "animate-spin" : ""}`}
+                      />
                       Re-detect Intro Markers
                     </DetailOverflowMenuItem>
                   )}
                   {canCurateMetadata && onEditMetadata && (
-                    <DetailOverflowMenuItem closeMenu={closeOverflowMenu} onAction={onEditMetadata}>
+                    <DetailOverflowMenuItem
+                      closeMenu={closeOverflowMenu}
+                      onAction={onEditMetadata}
+                    >
                       <MediaActionIcon action="editMetadata" />
                       Edit Metadata
                     </DetailOverflowMenuItem>
@@ -682,13 +760,19 @@ export default function ActionBar({
                     </DetailOverflowMenuItem>
                   )}
                   {canCurateMetadata && onMatchItem && (
-                    <DetailOverflowMenuItem closeMenu={closeOverflowMenu} onAction={onMatchItem}>
+                    <DetailOverflowMenuItem
+                      closeMenu={closeOverflowMenu}
+                      onAction={onMatchItem}
+                    >
                       <MediaActionIcon action="matchItem" />
                       Match Item
                     </DetailOverflowMenuItem>
                   )}
                   {canCurateMetadata && onSplitItem && (
-                    <DetailOverflowMenuItem closeMenu={closeOverflowMenu} onAction={onSplitItem}>
+                    <DetailOverflowMenuItem
+                      closeMenu={closeOverflowMenu}
+                      onAction={onSplitItem}
+                    >
                       <Scissors className="size-4" />
                       Split Versions
                     </DetailOverflowMenuItem>
@@ -702,8 +786,12 @@ export default function ActionBar({
           <Dialog open={playChoiceOpen} onOpenChange={setPlayChoiceOpen}>
             <DialogContent className="max-w-xs gap-3 p-5">
               <DialogHeader className="gap-1.5">
-                <DialogTitle className="text-base">Resume Playback?</DialogTitle>
-                <DialogDescription className="text-xs">{dialogDescription}</DialogDescription>
+                <DialogTitle className="text-base">
+                  Resume Playback?
+                </DialogTitle>
+                <DialogDescription className="text-xs">
+                  {dialogDescription}
+                </DialogDescription>
               </DialogHeader>
               <div className="grid gap-2">
                 <Button
@@ -753,23 +841,27 @@ export default function ActionBar({
           past narrow viewports, clipping the whole info column. */}
       {hasStreamControls && (
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          {versions && hasMultipleVersions && selectedVersion && onSelectVersion && (
-            <VersionDropdown
-              versions={versions}
-              playbackVariants={playbackVariants}
-              selectedVersion={selectedVersion}
-              onSelectVersion={onSelectVersion}
-            />
-          )}
-          {selectedVersion && (selectedVersion.audio_tracks?.length ?? 0) > 0 && (
-            <AudioTracksPopover
-              version={selectedVersion}
-              selectionMode={audioSelectionMode}
-              explicitTrackIndex={explicitAudioTrackIndex}
-              onSelectTrack={onSelectAudioTrack}
-              onResetSelection={onResetAudioSelection}
-            />
-          )}
+          {versions &&
+            hasMultipleVersions &&
+            selectedVersion &&
+            onSelectVersion && (
+              <VersionDropdown
+                versions={versions}
+                playbackVariants={playbackVariants}
+                selectedVersion={selectedVersion}
+                onSelectVersion={onSelectVersion}
+              />
+            )}
+          {selectedVersion &&
+            (selectedVersion.audio_tracks?.length ?? 0) > 0 && (
+              <AudioTracksPopover
+                version={selectedVersion}
+                selectionMode={audioSelectionMode}
+                explicitTrackIndex={explicitAudioTrackIndex}
+                onSelectTrack={onSelectAudioTrack}
+                onResetSelection={onResetAudioSelection}
+              />
+            )}
           {selectedVersion && (
             <SubtitlesPopover
               version={selectedVersion}
@@ -781,7 +873,9 @@ export default function ActionBar({
               showForcedSubtitles={showForcedSubtitles}
               profileLanguage={profileLanguage}
               activeAudioTrackIndex={
-                audioSelectionMode === "explicit" ? explicitAudioTrackIndex : null
+                audioSelectionMode === "explicit"
+                  ? explicitAudioTrackIndex
+                  : null
               }
               onSelectSubtitle={onSelectSubtitle}
               onSelectSubtitleOff={onSelectSubtitleOff}

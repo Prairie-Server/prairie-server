@@ -18,13 +18,19 @@ export function resolveVersionAudioLanguage<T extends AudioLanguageVersion>(
   trackIndex: number | null | undefined,
 ): string | null {
   const trackLanguage =
-    trackIndex != null ? normalizeLanguage(version?.audio_tracks?.[trackIndex]?.language) : null;
+    trackIndex != null
+      ? normalizeLanguage(version?.audio_tracks?.[trackIndex]?.language)
+      : null;
   if (trackLanguage) {
     return trackLanguage;
   }
 
   const effectiveTrackIndex = version?.effective_audio_track_index;
-  if (trackIndex == null || effectiveTrackIndex == null || trackIndex !== effectiveTrackIndex) {
+  if (
+    trackIndex == null ||
+    effectiveTrackIndex == null ||
+    trackIndex !== effectiveTrackIndex
+  ) {
     return null;
   }
 

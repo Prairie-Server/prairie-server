@@ -127,7 +127,10 @@ vi.mock("@/hooks/queries/notifications", () => ({
 }));
 
 vi.mock("@/hooks/queries/notificationWebhooks", () => ({
-  useNotificationCapability: () => ({ data: { in_app: { enabled: true } }, isError: false }),
+  useNotificationCapability: () => ({
+    data: { in_app: { enabled: true } },
+    isError: false,
+  }),
 }));
 
 vi.mock("@/hooks/useViewTransition", () => ({
@@ -136,7 +139,7 @@ vi.mock("@/hooks/useViewTransition", () => ({
 
 vi.mock("@/hooks/useServerBranding", () => ({
   useServerBranding: () => ({
-    serverName: "Silo",
+    serverName: "Prairie",
   }),
 }));
 
@@ -159,19 +162,34 @@ vi.mock("@/components/ThemeSwitcher", () => ({
 
 vi.mock("@/components/ui/avatar", () => ({
   Avatar: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  AvatarFallback: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  AvatarFallback: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 vi.mock("@/components/ui/dropdown-menu", () => ({
-  DropdownMenu: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  DropdownMenuTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  DropdownMenuContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  DropdownMenuItem: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  DropdownMenuLabel: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  DropdownMenu: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DropdownMenuTrigger: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DropdownMenuContent: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DropdownMenuItem: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DropdownMenuLabel: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
   DropdownMenuSeparator: () => <hr />,
 }));
 
-function renderSidebar(entry: string, { collapsed = false }: { collapsed?: boolean } = {}) {
+function renderSidebar(
+  entry: string,
+  { collapsed = false }: { collapsed?: boolean } = {},
+) {
   return renderToStaticMarkup(
     <MemoryRouter initialEntries={[entry]}>
       <Routes>
@@ -198,15 +216,19 @@ describe("AppSidebar", () => {
   it("uses the cinema highlight text color for active catalog source links", () => {
     const markup = renderSidebar("/catalog?source=query&q=heat");
 
-    expect(markup).toContain("text-sidebar-accent-foreground bg-sidebar-accent");
-    expect(markup).not.toContain("text-sidebar-primary-foreground bg-sidebar-accent");
+    expect(markup).toContain(
+      "text-sidebar-accent-foreground bg-sidebar-accent",
+    );
+    expect(markup).not.toContain(
+      "text-sidebar-primary-foreground bg-sidebar-accent",
+    );
   });
 
-  it("renders the Silo brand mark instead of the old play glyph", () => {
+  it("renders the Prairie brand mark instead of the old play glyph", () => {
     const markup = renderSidebar("/");
 
     expect(markup).toContain('src="/prairie-wordmark-sidebar.png"');
-    expect(markup).toContain('alt="Silo"');
+    expect(markup).toContain('alt="Prairie"');
     expect(markup).not.toContain("▶");
   });
 
@@ -256,8 +278,12 @@ describe("AppSidebar", () => {
       "/catalog?source=section&scope=library&library_id=7&section_id=featured&title=Featured",
     );
 
-    expect(markup).toContain("text-sidebar-accent-foreground bg-sidebar-accent");
-    expect(markup).not.toContain("text-sidebar-primary-foreground bg-sidebar-accent");
+    expect(markup).toContain(
+      "text-sidebar-accent-foreground bg-sidebar-accent",
+    );
+    expect(markup).not.toContain(
+      "text-sidebar-primary-foreground bg-sidebar-accent",
+    );
   });
 
   it("drops library-scoped menu targets when their library is not visible", () => {
@@ -313,9 +339,11 @@ describe("AppSidebar", () => {
     };
 
     const document = parseMarkup(renderSidebar("/"));
-    const primaryMenu = document.querySelector('nav[aria-label="Main navigation"] > ul');
-    const primaryHrefs = [...(primaryMenu?.querySelectorAll("a") ?? [])].map((link) =>
-      link.getAttribute("href"),
+    const primaryMenu = document.querySelector(
+      'nav[aria-label="Main navigation"] > ul',
+    );
+    const primaryHrefs = [...(primaryMenu?.querySelectorAll("a") ?? [])].map(
+      (link) => link.getAttribute("href"),
     );
 
     expect(primaryHrefs).toEqual(["/"]);
@@ -375,20 +403,26 @@ describe("AppSidebar", () => {
       );
 
     expect(findCustomLink(filtered)?.getAttribute("aria-current")).toBe("page");
-    expect(findCustomLink(otherLibrary)?.hasAttribute("aria-current")).toBe(false);
+    expect(findCustomLink(otherLibrary)?.hasAttribute("aria-current")).toBe(
+      false,
+    );
   });
 
   it("preserves the current library query when linking to the active library", () => {
     const markup = renderSidebar("/library/7?tab=library&sort=year&order=desc");
 
-    expect(markup).toContain('href="/library/7?tab=library&amp;sort=year&amp;order=desc"');
+    expect(markup).toContain(
+      'href="/library/7?tab=library&amp;sort=year&amp;order=desc"',
+    );
   });
 
   it("keeps collapsed navigation rows left-anchored instead of centering icons", () => {
     const markup = renderSidebar("/item/42", { collapsed: true });
 
     expect(markup).toContain('href="/"');
-    expect(markup).toContain('class="relative flex items-center gap-2.5 rounded-xl px-3 py-3');
+    expect(markup).toContain(
+      'class="relative flex items-center gap-2.5 rounded-xl px-3 py-3',
+    );
   });
 
   it("preserves section header slots when collapsed so nav groups do not shift upward", () => {
@@ -411,7 +445,9 @@ describe("AppSidebar", () => {
     const expanded = renderSidebar("/", { collapsed: false });
 
     for (const markup of [collapsed, expanded]) {
-      expect(markup).toContain("flex w-full items-center gap-2.5 rounded-xl px-3 py-3");
+      expect(markup).toContain(
+        "flex w-full items-center gap-2.5 rounded-xl px-3 py-3",
+      );
       expect(markup).not.toContain("mx-auto h-10 w-10 justify-center px-0");
     }
   });
@@ -467,8 +503,9 @@ describe("AppSidebar", () => {
     // the layout (preventing shifts) but is visually hidden when collapsed.
     expect(markup).toContain(">Tools<");
     expect(markup).toContain(">Extras<");
-    const hiddenHeaderCount = (markup.match(/aria-hidden="true" class="[^"]*opacity-0/g) ?? [])
-      .length;
+    const hiddenHeaderCount = (
+      markup.match(/aria-hidden="true" class="[^"]*opacity-0/g) ?? []
+    ).length;
     expect(hiddenHeaderCount).toBeGreaterThan(0);
   });
 });
@@ -477,7 +514,10 @@ describe("sidebar collapse surface", () => {
   it("keeps the surface 260px wide on a detail route and everywhere else", () => {
     // Nothing about the sidebar's box changes between states — the frame just
     // slides, so there is never a width to interpolate.
-    for (const markup of [renderSidebar("/"), renderSidebar("/item/42", { collapsed: true })]) {
+    for (const markup of [
+      renderSidebar("/"),
+      renderSidebar("/item/42", { collapsed: true }),
+    ]) {
       const aside = markup.match(/<aside[^>]*class="([^"]*)"/)?.[1] ?? "";
       expect(aside).toContain("w-[260px]");
       expect(aside).toContain("overflow-hidden");
@@ -498,20 +538,26 @@ describe("sidebar collapse surface", () => {
 
   it("keeps the rail border on the frame so it rides along to x=64", () => {
     const aside =
-      renderSidebar("/item/42", { collapsed: true }).match(/<aside[^>]*class="([^"]*)"/)?.[1] ?? "";
+      renderSidebar("/item/42", { collapsed: true }).match(
+        /<aside[^>]*class="([^"]*)"/,
+      )?.[1] ?? "";
     expect(aside).toContain("border-sidebar-border/70");
     expect(aside).toContain("border-r");
   });
 
   it("marks the surface collapsed only on a detail route", () => {
-    expect(renderSidebar("/item/42", { collapsed: true })).toContain('data-collapsed="true"');
+    expect(renderSidebar("/item/42", { collapsed: true })).toContain(
+      'data-collapsed="true"',
+    );
     expect(renderSidebar("/")).not.toContain("data-collapsed");
   });
 
   it("keeps labels at their full layout box so the nav never reflows", () => {
     const collapsed = renderSidebar("/item/42", { collapsed: true });
 
-    expect(collapsed).toContain("sidebar-fade max-w-[180px] truncate opacity-0");
+    expect(collapsed).toContain(
+      "sidebar-fade max-w-[180px] truncate opacity-0",
+    );
     // The old max-width animation relaid out the whole nav subtree per frame.
     expect(collapsed).not.toContain("max-w-0");
     expect(collapsed).not.toContain("transition-[opacity,max-width]");
@@ -551,15 +597,22 @@ describe("isSidebarRailCollapsed", () => {
 
 describe("sidebarSurfaceStyle", () => {
   it("floats hover expansion above the page instead of resizing it", () => {
-    const style = sidebarSurfaceStyle({ collapsed: true, sidebarExpanded: true });
+    const style = sidebarSurfaceStyle({
+      collapsed: true,
+      sidebarExpanded: true,
+    });
 
     expect(style?.zIndex).toBe(45);
     expect(style?.boxShadow).toContain("0 25px 50px -12px");
   });
 
   it("does not raise or shadow the surface in either resting state", () => {
-    expect(sidebarSurfaceStyle({ collapsed: true, sidebarExpanded: false })).toBeUndefined();
-    expect(sidebarSurfaceStyle({ collapsed: false, sidebarExpanded: true })).toBeUndefined();
+    expect(
+      sidebarSurfaceStyle({ collapsed: true, sidebarExpanded: false }),
+    ).toBeUndefined();
+    expect(
+      sidebarSurfaceStyle({ collapsed: false, sidebarExpanded: true }),
+    ).toBeUndefined();
   });
 });
 
@@ -581,7 +634,12 @@ describe("groupAppNavLinks", () => {
   });
 
   it("returns null when all links share the same first category segment", () => {
-    expect(groupAppNavLinks([link("a", "Tools/Utilities"), link("b", "Tools/Extras")])).toBeNull();
+    expect(
+      groupAppNavLinks([
+        link("a", "Tools/Utilities"),
+        link("b", "Tools/Extras"),
+      ]),
+    ).toBeNull();
   });
 
   it("groups by first segment, sorts alphabetically, and puts Other last", () => {
@@ -593,14 +651,22 @@ describe("groupAppNavLinks", () => {
     ]);
 
     expect(groups).not.toBeNull();
-    expect(groups?.map((g) => g.category)).toEqual(["Extras", "Tools", "Other"]);
+    expect(groups?.map((g) => g.category)).toEqual([
+      "Extras",
+      "Tools",
+      "Other",
+    ]);
     // Input order preserved within a group.
     expect(groups?.[1]?.links.map((l) => l.id)).toEqual(["a", "b"]);
     expect(groups?.[2]?.links.map((l) => l.id)).toEqual(["m"]);
   });
 
   it("treats blank or slash-only categories as uncategorized", () => {
-    const groups = groupAppNavLinks([link("a", "  "), link("b", "/Tools"), link("c", "Extras")]);
+    const groups = groupAppNavLinks([
+      link("a", "  "),
+      link("b", "/Tools"),
+      link("c", "Extras"),
+    ]);
 
     expect(groups?.map((g) => g.category)).toEqual(["Extras", "Other"]);
     expect(groups?.[1]?.links.map((l) => l.id)).toEqual(["a", "b"]);

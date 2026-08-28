@@ -19,7 +19,10 @@ interface SubtitleAppearancePanelProps {
  * The visual chrome lives in {@link SubtitleAppearancePanelView}; this
  * wrapper only binds the panel to the canonical setting.
  */
-export function SubtitleAppearancePanel({ open, onClose }: SubtitleAppearancePanelProps) {
+export function SubtitleAppearancePanel({
+  open,
+  onClose,
+}: SubtitleAppearancePanelProps) {
   const { appearance, save, reset } = useSubtitleAppearanceSetting();
 
   const update = useCallback(

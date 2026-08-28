@@ -35,10 +35,15 @@ describe("ActionBar detail menu", () => {
     expect(menu).toHaveClass("w-max", "max-w-[calc(100vw-2rem)]", "min-w-0");
     expect(menu).not.toHaveClass("w-56");
     for (const item of screen.getAllByRole("menuitem")) {
-      expect(item.querySelector("svg"), item.textContent ?? "menu item").toBeTruthy();
+      expect(
+        item.querySelector("svg"),
+        item.textContent ?? "menu item",
+      ).toBeTruthy();
     }
     expect(
-      screen.getByRole("menuitem", { name: "View Play History" }).querySelector(".lucide-history"),
+      screen
+        .getByRole("menuitem", { name: "View Play History" })
+        .querySelector(".lucide-history"),
     ).toBeTruthy();
     expect(
       screen

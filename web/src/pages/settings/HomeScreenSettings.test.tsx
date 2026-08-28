@@ -12,7 +12,9 @@ import {
   shouldRestoreSelectionState,
 } from "./HomeScreenSettings";
 
-function makeSection(overrides: Partial<SettingsSectionEntry> = {}): SettingsSectionEntry {
+function makeSection(
+  overrides: Partial<SettingsSectionEntry> = {},
+): SettingsSectionEntry {
   return {
     id: overrides.id ?? "section-1",
     section_type: overrides.section_type ?? "recently_added",
@@ -31,7 +33,12 @@ describe("HomeScreenSettings helpers", () => {
   it("serializes featured section overrides for persistence", () => {
     const overrides = buildSectionOverrides([
       makeSection({ id: "admin-1", featured: true }),
-      makeSection({ id: "custom-1", is_custom: true, featured: true, section_type: "genre" }),
+      makeSection({
+        id: "custom-1",
+        is_custom: true,
+        featured: true,
+        section_type: "genre",
+      }),
     ]);
 
     expect(overrides).toEqual([
@@ -108,7 +115,10 @@ describe("HomeScreenSettings helpers", () => {
       "custom-1",
     );
 
-    expect(result.sections.map((section) => section.id)).toEqual(["admin-1", "admin-2"]);
+    expect(result.sections.map((section) => section.id)).toEqual([
+      "admin-1",
+      "admin-2",
+    ]);
     expect(result.removedSystemSections).toEqual([]);
   });
 
@@ -123,7 +133,10 @@ describe("HomeScreenSettings helpers", () => {
       "admin-2",
     );
 
-    expect(result.sections.map((section) => section.id)).toEqual(["admin-1", "custom-1"]);
+    expect(result.sections.map((section) => section.id)).toEqual([
+      "admin-1",
+      "custom-1",
+    ]);
     expect(result.removedSystemSections).toEqual([{ id: "admin-2" }]);
   });
 
@@ -180,8 +193,14 @@ describe("HomeScreenSettings helpers", () => {
   });
 
   it("only restores rollback state for the latest save attempt in the current selection", () => {
-    expect(shouldRestoreLatestSaveFailure("library:1", "library:1", 3, 3)).toBe(true);
-    expect(shouldRestoreLatestSaveFailure("library:1", "library:1", 4, 3)).toBe(false);
-    expect(shouldRestoreLatestSaveFailure("library:2", "library:1", 3, 3)).toBe(false);
+    expect(shouldRestoreLatestSaveFailure("library:1", "library:1", 3, 3)).toBe(
+      true,
+    );
+    expect(shouldRestoreLatestSaveFailure("library:1", "library:1", 4, 3)).toBe(
+      false,
+    );
+    expect(shouldRestoreLatestSaveFailure("library:2", "library:1", 3, 3)).toBe(
+      false,
+    );
   });
 });

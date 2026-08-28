@@ -39,7 +39,8 @@ export function useLongPress(
     if (!target || !enabled) return;
 
     let timer: number | null = null;
-    let press: { pointerId: number; clientX: number; clientY: number } | null = null;
+    let press: { pointerId: number; clientX: number; clientY: number } | null =
+      null;
     let suppressUntil = 0;
 
     function stopTracking() {
@@ -56,7 +57,8 @@ export function useLongPress(
     function handlePointerMove(event: PointerEvent) {
       if (!press || event.pointerId !== press.pointerId) return;
       if (
-        Math.abs(event.clientX - press.clientX) > LONG_PRESS_MOVE_TOLERANCE_PX ||
+        Math.abs(event.clientX - press.clientX) >
+          LONG_PRESS_MOVE_TOLERANCE_PX ||
         Math.abs(event.clientY - press.clientY) > LONG_PRESS_MOVE_TOLERANCE_PX
       ) {
         stopTracking();
@@ -73,7 +75,11 @@ export function useLongPress(
       stopTracking();
       if (event.pointerType !== "touch" && event.pointerType !== "pen") return;
 
-      press = { pointerId: event.pointerId, clientX: event.clientX, clientY: event.clientY };
+      press = {
+        pointerId: event.pointerId,
+        clientX: event.clientX,
+        clientY: event.clientY,
+      };
       // Movement can leave the card (a swipe), so the follow-up listeners live
       // on the window rather than the element.
       window.addEventListener("pointermove", handlePointerMove);

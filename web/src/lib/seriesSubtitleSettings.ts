@@ -22,7 +22,8 @@ export const SERIES_SUBTITLE_SETTING_KEYS = [
   SETTING_KEYS.PLAYBACK_SUBTITLE_MODE,
 ] as const satisfies readonly SettingKey[];
 
-export type SeriesSubtitleSettingKey = (typeof SERIES_SUBTITLE_SETTING_KEYS)[number];
+export type SeriesSubtitleSettingKey =
+  (typeof SERIES_SUBTITLE_SETTING_KEYS)[number];
 
 /**
  * The values one subtitle pick stores, keyed the way the writer sends them.
@@ -45,6 +46,9 @@ export function seriesSubtitleSettingValues(selection: {
 }
 
 /** The canonical values path addressing one key at one series. */
-export function seriesSubtitleSettingPath(key: SettingKey, seriesId: string): string {
+export function seriesSubtitleSettingPath(
+  key: SettingKey,
+  seriesId: string,
+): string {
   return `/settings/values/${key}?scope=profile_series&series_id=${encodeURIComponent(seriesId)}`;
 }

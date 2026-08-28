@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { UserLibrary } from "@/api/types";
-import { filterVisibleLibraries, normalizeLibraryIDs, parseLibraryIDList } from "./libraries";
+import {
+  filterVisibleLibraries,
+  normalizeLibraryIDs,
+  parseLibraryIDList,
+} from "./libraries";
 
 const libraries: UserLibrary[] = [
   { id: 1, name: "Movies", type: "movies", sort_order: 0 },
@@ -40,6 +44,8 @@ describe("filterVisibleLibraries", () => {
   });
 
   it("filters out disabled libraries", () => {
-    expect(filterVisibleLibraries(libraries, [2, 99]).map((library) => library.id)).toEqual([1, 3]);
+    expect(
+      filterVisibleLibraries(libraries, [2, 99]).map((library) => library.id),
+    ).toEqual([1, 3]);
   });
 });

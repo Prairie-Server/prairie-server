@@ -91,9 +91,10 @@ export default function ProfileCustomizeHome() {
   const [sections, setSections] = useState<ProfileSection[]>([]);
   const [rawOverrides, setRawOverrides] = useState<RawOverride[]>([]);
   const [galleryOpen, setGalleryOpen] = useState(false);
-  const [picked, setPicked] = useState<{ def: RecipeDefinition; preset: GalleryPreset } | null>(
-    null,
-  );
+  const [picked, setPicked] = useState<{
+    def: RecipeDefinition;
+    preset: GalleryPreset;
+  } | null>(null);
   const [allowCustom, setAllowCustom] = useState(false);
 
   async function load() {
@@ -126,7 +127,9 @@ export default function ProfileCustomizeHome() {
 
   async function loadSetting() {
     try {
-      const j = await api<ProfileSectionsFlagResponse>("/profile/sections/flags");
+      const j = await api<ProfileSectionsFlagResponse>(
+        "/profile/sections/flags",
+      );
       setAllowCustom(!!j.allow_profile_custom_sections);
     } catch {
       // Setting just defaults to false on failure.
@@ -221,7 +224,10 @@ export default function ProfileCustomizeHome() {
             + Add from Gallery
           </button>
           {allowCustom && (
-            <button type="button" className="rounded border border-white/15 px-3 py-1.5 text-sm">
+            <button
+              type="button"
+              className="rounded border border-white/15 px-3 py-1.5 text-sm"
+            >
               + Build Custom
             </button>
           )}
@@ -229,7 +235,11 @@ export default function ProfileCustomizeHome() {
       </div>
 
       <div className="my-3 flex justify-end">
-        <button type="button" onClick={reset} className="text-xs underline opacity-65">
+        <button
+          type="button"
+          onClick={reset}
+          className="text-xs underline opacity-65"
+        >
           ↻ Reset to server defaults
         </button>
       </div>

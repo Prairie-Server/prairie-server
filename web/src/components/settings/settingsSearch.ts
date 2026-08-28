@@ -30,7 +30,10 @@ function searchTokens(query: string) {
   return normalized ? normalized.split(/\s+/) : [];
 }
 
-function itemSearchText<T extends SettingsSearchItem>(group: SettingsSearchGroup<T>, item: T) {
+function itemSearchText<T extends SettingsSearchItem>(
+  group: SettingsSearchGroup<T>,
+  item: T,
+) {
   const settingText = item.settings?.flatMap((setting) => [
     setting.label,
     setting.description,
@@ -38,21 +41,32 @@ function itemSearchText<T extends SettingsSearchItem>(group: SettingsSearchGroup
   ]);
 
   return normalizeSearchText(
-    [group.label, item.label, item.description, ...(item.keywords ?? []), ...(settingText ?? [])]
+    [
+      group.label,
+      item.label,
+      item.description,
+      ...(item.keywords ?? []),
+      ...(settingText ?? []),
+    ]
       .filter(Boolean)
       .join(" "),
   );
 }
 
 function entrySearchText(entry: SettingsSearchEntry) {
-  return normalizeSearchText([entry.label, entry.description, ...(entry.keywords ?? [])].join(" "));
+  return normalizeSearchText(
+    [entry.label, entry.description, ...(entry.keywords ?? [])].join(" "),
+  );
 }
 
 function textMatchesTokens(text: string, tokens: string[]) {
   const words = text.split(/\s+/).filter(Boolean);
 
   return tokens.every((token) =>
-    words.some((word) => word.startsWith(token) || (token.length >= 4 && word.includes(token))),
+    words.some(
+      (word) =>
+        word.startsWith(token) || (token.length >= 4 && word.includes(token)),
+    ),
   );
 }
 
@@ -66,7 +80,9 @@ export function filterSettingsSearchEntries(
     return [];
   }
 
-  return entries.filter((entry) => textMatchesTokens(entrySearchText(entry), tokens));
+  return entries.filter((entry) =>
+    textMatchesTokens(entrySearchText(entry), tokens),
+  );
 }
 
 export function filterSettingsSearchGroups<T extends SettingsSearchItem>(
@@ -85,7 +101,9 @@ export function filterSettingsSearchGroups<T extends SettingsSearchItem>(
       const groupMatches = textMatchesTokens(groupText, tokens);
       const items = groupMatches
         ? [...group.items]
-        : group.items.filter((item) => textMatchesTokens(itemSearchText(group, item), tokens));
+        : group.items.filter((item) =>
+            textMatchesTokens(itemSearchText(group, item), tokens),
+          );
 
       return { ...group, items };
     })

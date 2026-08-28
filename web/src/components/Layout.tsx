@@ -3,7 +3,12 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { Menu, Search } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
@@ -12,7 +17,10 @@ import ServerActivity from "@/components/ServerActivity";
 import { PrairieBrand } from "@/components/PrairieBrand";
 import { GlobalSearch } from "@/components/GlobalSearch";
 import ViewTransitionLink from "@/components/ViewTransitionLink";
-import { buildQueryCatalogHref, parseCatalogSearchParams } from "@/pages/catalogSearchParams";
+import {
+  buildQueryCatalogHref,
+  parseCatalogSearchParams,
+} from "@/pages/catalogSearchParams";
 import type { ReactNode, TransitionEvent as ReactTransitionEvent } from "react";
 import { useWatchPlaybackController } from "@/playback/watchPlaybackContext";
 import { useAudiobookPlaybackController } from "@/pages/audiobooks/player/audiobookPlaybackContext";
@@ -50,7 +58,8 @@ export default function Layout({ children }: LayoutProps) {
   const showAdminActivity = useIsActingAdmin();
   const { isBackgroundBarVisible } = useWatchPlaybackController();
   const audiobookPlayback = useAudiobookPlaybackController();
-  const hasBackgroundBar = isBackgroundBarVisible || audiobookPlayback?.isBackgroundBarVisible;
+  const hasBackgroundBar =
+    isBackgroundBarVisible || audiobookPlayback?.isBackgroundBarVisible;
 
   const isHomePath = location.pathname === "/";
   const isLibraryRoute = location.pathname.startsWith("/library/");
@@ -61,12 +70,16 @@ export default function Layout({ children }: LayoutProps) {
   const isSearchLandingRoute =
     location.pathname === "/catalog" &&
     (() => {
-      const state = parseCatalogSearchParams(new URLSearchParams(location.search));
+      const state = parseCatalogSearchParams(
+        new URLSearchParams(location.search),
+      );
       return state.source === "query" && !state.q;
     })();
   const isRecommendationsRoute = location.pathname === "/recommendations";
   const isCalendarRoute = location.pathname === "/calendar";
-  const isRequestDetailRoute = /^\/requests\/(movie|series)\//.test(location.pathname);
+  const isRequestDetailRoute = /^\/requests\/(movie|series)\//.test(
+    location.pathname,
+  );
   const needsNoPadding =
     isHomePath ||
     isLibraryRoute ||
@@ -81,7 +94,9 @@ export default function Layout({ children }: LayoutProps) {
   // and artwork are revealed only after that motion completes.
   const isDetailImmersion = isItemRoute;
   const targetDetailImmersion = isDetailImmersion;
-  const visualDetailImmersion = useImmediateSidebarCollapse(targetDetailImmersion);
+  const visualDetailImmersion = useImmediateSidebarCollapse(
+    targetDetailImmersion,
+  );
   const {
     itemDetailsReady,
     pendingLocationKey,
@@ -90,14 +105,21 @@ export default function Layout({ children }: LayoutProps) {
 
   const beginItemNavigation = useCallback(
     (request: SidebarItemNavigationRequest) => {
-      const itemTarget = parseItemNavigationHref(request.href, window.location.origin);
+      const itemTarget = parseItemNavigationHref(
+        request.href,
+        window.location.origin,
+      );
       if (isItemRoute || !itemTarget || !hasDesktopSidebar) {
         return false;
       }
 
       void queryClient.prefetchQuery({
-        queryKey: catalogKeys.itemDetail(itemTarget.contentId, itemTarget.libraryId),
-        queryFn: () => fetchCatalogItemDetail(itemTarget.contentId, itemTarget.libraryId),
+        queryKey: catalogKeys.itemDetail(
+          itemTarget.contentId,
+          itemTarget.libraryId,
+        ),
+        queryFn: () =>
+          fetchCatalogItemDetail(itemTarget.contentId, itemTarget.libraryId),
       });
       navigate(request.href, {
         replace: request.replace,
@@ -122,14 +144,20 @@ export default function Layout({ children }: LayoutProps) {
       if (cancelled) return;
       const surface = document.querySelector<HTMLElement>(".sidebar-surface");
       const deadlineReached =
-        prefersReducedMotion() || Date.now() - startedAt >= SIDEBAR_DETAILS_REVEAL_DEADLINE_MS;
+        prefersReducedMotion() ||
+        Date.now() - startedAt >= SIDEBAR_DETAILS_REVEAL_DEADLINE_MS;
       if (
         !deadlineReached &&
         surface &&
-        (!isCollapsedSidebarSurface(surface) || hasRunningSidebarTransition(surface))
+        (!isCollapsedSidebarSurface(surface) ||
+          hasRunningSidebarTransition(surface))
       ) {
-        const remaining = SIDEBAR_DETAILS_REVEAL_DEADLINE_MS - (Date.now() - startedAt);
-        timer = window.setTimeout(revealWhenSettled, Math.min(50, Math.max(0, remaining)));
+        const remaining =
+          SIDEBAR_DETAILS_REVEAL_DEADLINE_MS - (Date.now() - startedAt);
+        timer = window.setTimeout(
+          revealWhenSettled,
+          Math.min(50, Math.max(0, remaining)),
+        );
         return;
       }
       revealItemDetails(pendingLocationKey);
@@ -144,7 +172,10 @@ export default function Layout({ children }: LayoutProps) {
 
   const handleSidebarTransitionEnd = useCallback(
     (event: ReactTransitionEvent<HTMLDivElement>) => {
-      if (event.propertyName === "transform" && isCollapsedSidebarSurface(event.target)) {
+      if (
+        event.propertyName === "transform" &&
+        isCollapsedSidebarSurface(event.target)
+      ) {
         if (pendingLocationKey) revealItemDetails(pendingLocationKey);
       }
     },
@@ -222,7 +253,10 @@ export default function Layout({ children }: LayoutProps) {
   }, [mobileHeaderHidden]);
 
   return (
-    <SidebarItemNavigationProvider begin={beginItemNavigation} itemDetailsReady={itemDetailsReady}>
+    <SidebarItemNavigationProvider
+      begin={beginItemNavigation}
+      itemDetailsReady={itemDetailsReady}
+    >
       <div className="bg-background relative min-h-[100dvh] overflow-x-clip">
         <a
           href="#main-content"
@@ -235,7 +269,10 @@ export default function Layout({ children }: LayoutProps) {
         {/* Desktop sidebar — hidden below lg. Its box stays 260px wide in both
           states; `collapsed` only drives the moving frame that hides everything
           past the 64px rail, so entering a detail page never resizes it. */}
-        <div className="hidden lg:block" onTransitionEnd={handleSidebarTransitionEnd}>
+        <div
+          className="hidden lg:block"
+          onTransitionEnd={handleSidebarTransitionEnd}
+        >
           <AppSidebar collapsed={visualDetailImmersion} />
         </div>
 
@@ -305,8 +342,12 @@ export default function Layout({ children }: LayoutProps) {
         {/* Main content — offset by sidebar width on desktop */}
         <main
           id="main-content"
-          data-sidebar-target-collapsed={targetDetailImmersion ? "true" : undefined}
-          data-sidebar-visual-collapsed={visualDetailImmersion ? "true" : undefined}
+          data-sidebar-target-collapsed={
+            targetDetailImmersion ? "true" : undefined
+          }
+          data-sidebar-visual-collapsed={
+            visualDetailImmersion ? "true" : undefined
+          }
           className={`sidebar-main-stage relative min-h-screen ${
             targetDetailImmersion ? "lg:ml-16" : "lg:ml-[260px]"
           } ${hasBackgroundBar ? "pb-32 sm:pb-36" : ""}`}

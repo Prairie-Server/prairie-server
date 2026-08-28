@@ -31,15 +31,28 @@ export function PrairieBrand({
 
   const customSrc = isMark ? markUrl : wordmarkUrl;
   const defaultSrc = isMark ? PRAIRIE_MARK_SRC : PRAIRIE_WORDMARK_SRC;
-  const imageClass = cn("h-full w-full object-contain", isMark && "rounded-lg", imageClassName);
+  const imageClass = cn(
+    "h-full w-full object-contain",
+    isMark && "rounded-lg",
+    imageClassName,
+  );
   // Intrinsic pixel size of the bundled assets — helps decode prioritization
   // on high-DPI displays when CSS sizes the element down.
-  const intrinsic = isMark ? { width: 1024, height: 1024 } : { width: 274, height: 90 };
+  const intrinsic = isMark
+    ? { width: 1024, height: 1024 }
+    : { width: 274, height: 90 };
 
   return (
-    <span className={cn("block shrink-0", !isMark && "overflow-hidden", className)}>
+    <span
+      className={cn("block shrink-0", !isMark && "overflow-hidden", className)}
+    >
       {customSrc ? (
-        <img src={customSrc} alt={serverName} decoding="async" className={imageClass} />
+        <img
+          src={customSrc}
+          alt={serverName}
+          decoding="async"
+          className={imageClass}
+        />
       ) : (
         <PictureImage
           src={defaultSrc}

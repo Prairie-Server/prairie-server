@@ -4,8 +4,14 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "@/hooks/useTheme";
 
 export default function AccessibilitySettings() {
-  const { textScale, setTextScale, textWeight, setTextWeight, highContrast, setHighContrast } =
-    useTheme();
+  const {
+    textScale,
+    setTextScale,
+    textWeight,
+    setTextWeight,
+    highContrast,
+    setHighContrast,
+  } = useTheme();
 
   const textSizeLabelId = useId();
   const textWeightLabelId = useId();
@@ -13,7 +19,9 @@ export default function AccessibilitySettings() {
 
   return (
     <div className="space-y-6">
-      <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Accessibility</h2>
+      <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+        Accessibility
+      </h2>
 
       <SettingsGroup
         title="Readability"
@@ -112,10 +120,13 @@ export default function AccessibilitySettings() {
         description="See how text looks with your current readability settings."
       >
         <div className="border-border/50 space-y-2 rounded-lg border p-4">
-          <p className="text-lg font-semibold">The quick brown fox jumps over the lazy dog</p>
+          <p className="text-lg font-semibold">
+            The quick brown fox jumps over the lazy dog
+          </p>
           <p className="text-muted-foreground text-sm">
-            This sample paragraph reflects your current text size, weight, and contrast preferences.
-            Adjustments take effect across the entire interface.
+            This sample paragraph reflects your current text size, weight, and
+            contrast preferences. Adjustments take effect across the entire
+            interface.
           </p>
           <p className="text-muted-foreground/70 text-xs">
             Secondary text &middot; Metadata &middot; Captions

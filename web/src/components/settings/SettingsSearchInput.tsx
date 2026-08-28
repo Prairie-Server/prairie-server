@@ -33,7 +33,8 @@ export function SettingsSearchInput({
   const inputRef = useRef<HTMLInputElement>(null);
   const hasQuery = value.trim().length > 0;
   const shortcutHint =
-    typeof navigator !== "undefined" && /Mac|iPhone|iPad|iPod/.test(navigator.userAgent)
+    typeof navigator !== "undefined" &&
+    /Mac|iPhone|iPad|iPod/.test(navigator.userAgent)
       ? "⌘ K"
       : "Ctrl K";
   const status = hasQuery
@@ -46,7 +47,8 @@ export function SettingsSearchInput({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || !(event.metaKey || event.ctrlKey)) return;
       if (event.key.toLowerCase() !== "k") return;
-      if (shortcutMediaQuery && !window.matchMedia(shortcutMediaQuery).matches) return;
+      if (shortcutMediaQuery && !window.matchMedia(shortcutMediaQuery).matches)
+        return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -80,7 +82,10 @@ export function SettingsSearchInput({
           value={value}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
-          className={cn("h-11 rounded-xl pr-10 pl-9", showShortcutHint && !hasQuery && "sm:pr-16")}
+          className={cn(
+            "h-11 rounded-xl pr-10 pl-9",
+            showShortcutHint && !hasQuery && "sm:pr-16",
+          )}
           autoComplete="off"
         />
         {hasQuery ? (

@@ -16,7 +16,10 @@ interface LibraryOption {
   type?: string;
 }
 
-function isLibraryEligible(library: LibraryOption, eligibleKinds?: string[]): boolean {
+function isLibraryEligible(
+  library: LibraryOption,
+  eligibleKinds?: string[],
+): boolean {
   if (!eligibleKinds || eligibleKinds.length === 0) return true;
   if (!library.type) return true;
   if (library.type === "mixed") return true;
@@ -33,7 +36,10 @@ function formatLibraryFilterSummary(
   }
 
   const names = libraryIds
-    .map((libraryId) => libraries.find((library) => library.id === libraryId)?.name)
+    .map(
+      (libraryId) =>
+        libraries.find((library) => library.id === libraryId)?.name,
+    )
     .filter((name): name is string => Boolean(name));
 
   if (names.length === 0) {
@@ -54,7 +60,9 @@ function toggleLibrarySelection(
   checked: boolean,
 ): number[] {
   if (checked) {
-    return selectedIds.includes(libraryId) ? selectedIds : [...selectedIds, libraryId];
+    return selectedIds.includes(libraryId)
+      ? selectedIds
+      : [...selectedIds, libraryId];
   }
   return selectedIds.filter((id) => id !== libraryId);
 }

@@ -10,7 +10,8 @@ import { useSubtitleAppearanceSetting } from "./subtitleAppearance";
 
 const apiMock = vi.hoisted(() => vi.fn());
 vi.mock("@/api/client", async () => {
-  const actual = await vi.importActual<typeof import("@/api/client")>("@/api/client");
+  const actual =
+    await vi.importActual<typeof import("@/api/client")>("@/api/client");
   return { ...actual, api: apiMock };
 });
 
@@ -28,7 +29,9 @@ function createHarness() {
 function effectiveResponse(value: unknown, source: string) {
   return {
     revision: 1,
-    settings: [{ key: SETTING_KEYS.PLAYBACK_SUBTITLE_APPEARANCE, value, source }],
+    settings: [
+      { key: SETTING_KEYS.PLAYBACK_SUBTITLE_APPEARANCE, value, source },
+    ],
   };
 }
 
@@ -40,18 +43,29 @@ describe("useSubtitleAppearanceSetting", () => {
   it("saves the device override at profile_device scope", async () => {
     apiMock.mockImplementation((path: string) => {
       if (path.startsWith("/settings/values/effective")) {
-        return Promise.resolve(effectiveResponse(DEFAULT_SUBTITLE_APPEARANCE, "default"));
+        return Promise.resolve(
+          effectiveResponse(DEFAULT_SUBTITLE_APPEARANCE, "default"),
+        );
       }
       return Promise.resolve(undefined);
     });
 
     const { wrapper } = createHarness();
-    const { result } = renderHook(() => useSubtitleAppearanceSetting(), { wrapper });
-    await waitFor(() => expect(result.current.appearance.fontSize).toBe("large"));
+    const { result } = renderHook(() => useSubtitleAppearanceSetting(), {
+      wrapper,
+    });
+    await waitFor(() =>
+      expect(result.current.appearance.fontSize).toBe("large"),
+    );
 
-    await result.current.save({ ...DEFAULT_SUBTITLE_APPEARANCE, fontSize: "xlarge" });
+    await result.current.save({
+      ...DEFAULT_SUBTITLE_APPEARANCE,
+      fontSize: "xlarge",
+    });
 
-    const write = apiMock.mock.calls.find(([path]) => (path as string).includes("?scope="));
+    const write = apiMock.mock.calls.find(([path]) =>
+      (path as string).includes("?scope="),
+    );
     expect(write?.[0]).toBe(
       `/settings/values/${SETTING_KEYS.PLAYBACK_SUBTITLE_APPEARANCE}?scope=profile_device`,
     );
@@ -66,18 +80,24 @@ describe("useSubtitleAppearanceSetting", () => {
   it("resets by clearing the device row so the profile value applies again", async () => {
     apiMock.mockImplementation((path: string) => {
       if (path.startsWith("/settings/values/effective")) {
-        return Promise.resolve(effectiveResponse(DEFAULT_SUBTITLE_APPEARANCE, "profile_device"));
+        return Promise.resolve(
+          effectiveResponse(DEFAULT_SUBTITLE_APPEARANCE, "profile_device"),
+        );
       }
       return Promise.resolve(undefined);
     });
 
     const { wrapper } = createHarness();
-    const { result } = renderHook(() => useSubtitleAppearanceSetting(), { wrapper });
+    const { result } = renderHook(() => useSubtitleAppearanceSetting(), {
+      wrapper,
+    });
     await waitFor(() => expect(result.current.hasDeviceOverride).toBe(true));
 
     await result.current.reset();
 
-    const write = apiMock.mock.calls.find(([path]) => (path as string).includes("?scope="));
+    const write = apiMock.mock.calls.find(([path]) =>
+      (path as string).includes("?scope="),
+    );
     expect(write?.[0]).toBe(
       `/settings/values/${SETTING_KEYS.PLAYBACK_SUBTITLE_APPEARANCE}?scope=profile_device`,
     );
@@ -85,12 +105,18 @@ describe("useSubtitleAppearanceSetting", () => {
   });
 
   it("reports no device override when the value resolved from a wider scope", async () => {
-    apiMock.mockResolvedValue(effectiveResponse(DEFAULT_SUBTITLE_APPEARANCE, "profile"));
+    apiMock.mockResolvedValue(
+      effectiveResponse(DEFAULT_SUBTITLE_APPEARANCE, "profile"),
+    );
 
     const { wrapper } = createHarness();
-    const { result } = renderHook(() => useSubtitleAppearanceSetting(), { wrapper });
+    const { result } = renderHook(() => useSubtitleAppearanceSetting(), {
+      wrapper,
+    });
 
-    await waitFor(() => expect(result.current.appearance.fontSize).toBe("large"));
+    await waitFor(() =>
+      expect(result.current.appearance.fontSize).toBe("large"),
+    );
     // A profile-wide appearance is not this device's override, so offering
     // "reset this device" would be a no-op the user cannot see the effect of.
     expect(result.current.hasDeviceOverride).toBe(false);
@@ -99,7 +125,9 @@ describe("useSubtitleAppearanceSetting", () => {
   it("treats a reset with nothing stored as already done", async () => {
     apiMock.mockImplementation((path: string, options?: RequestInit) => {
       if (path.startsWith("/settings/values/effective")) {
-        return Promise.resolve(effectiveResponse(DEFAULT_SUBTITLE_APPEARANCE, "profile_device"));
+        return Promise.resolve(
+          effectiveResponse(DEFAULT_SUBTITLE_APPEARANCE, "profile_device"),
+        );
       }
       if (options?.method === "DELETE") {
         return Promise.reject(
@@ -110,7 +138,9 @@ describe("useSubtitleAppearanceSetting", () => {
     });
 
     const { wrapper } = createHarness();
-    const { result } = renderHook(() => useSubtitleAppearanceSetting(), { wrapper });
+    const { result } = renderHook(() => useSubtitleAppearanceSetting(), {
+      wrapper,
+    });
     await waitFor(() => expect(result.current.hasDeviceOverride).toBe(true));
 
     // The canonical DELETE answers 404 for "nothing stored here", which for a

@@ -86,7 +86,10 @@ vi.mock("./settingValues", () => ({
         },
     isLoading: false,
   }),
-  useSettingsCapabilities: () => ({ data: mocks.capabilities, isLoading: false }),
+  useSettingsCapabilities: () => ({
+    data: mocks.capabilities,
+    isLoading: false,
+  }),
   settingsCapabilitiesSupportKey: (
     capabilities:
       | {
@@ -133,7 +136,9 @@ function deferred() {
 
 function wrapper(queryClient: QueryClient) {
   return function Wrapper({ children }: { children: ReactNode }) {
-    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+    return (
+      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+    );
   };
 }
 
@@ -165,7 +170,10 @@ describe("serialized sidebar pin writes", () => {
       () => writes[mocks.mutateAsync.mock.calls.length - 1]!.promise,
     );
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
     const { result, rerender } = renderHook(
       () => ({ pins: useSidebarPins(), toggle: useToggleSidebarPin() }),
@@ -189,7 +197,9 @@ describe("serialized sidebar pin writes", () => {
     // Simulate the first write's server event/refetch returning only A while B
     // remains queued. The local overlay must continue to be the edit base.
     mocks.remoteValue = {
-      items: [{ type: "collection", library_id: 42, collection_id: "a", label: "A" }],
+      items: [
+        { type: "collection", library_id: 42, collection_id: "a", label: "A" },
+      ],
     };
     rerender();
     expect(result.current.pins.pins["42"]).toHaveLength(2);
@@ -214,7 +224,12 @@ describe("serialized sidebar pin writes", () => {
     writes[1]!.resolve({});
     await waitFor(() => expect(mocks.mutateAsync).toHaveBeenCalledTimes(3));
     expect(mocks.mutateAsync.mock.calls[2]![0]).toMatchObject({
-      item: { type: "collection", library_id: 42, collection_id: "c", label: "C" },
+      item: {
+        type: "collection",
+        library_id: 42,
+        collection_id: "c",
+        label: "C",
+      },
       present: true,
       mutationId: expect.any(String),
     });
@@ -225,7 +240,10 @@ describe("serialized sidebar pin writes", () => {
   it("serializes rapid toggles as stable desired-state operations", async () => {
     mocks.mutateAsync.mockResolvedValue({});
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
     const { result } = renderHook(() => useToggleSidebarPin(), {
       wrapper: wrapper(queryClient),
@@ -239,12 +257,22 @@ describe("serialized sidebar pin writes", () => {
 
     await waitFor(() => expect(mocks.mutateAsync).toHaveBeenCalledTimes(2));
     expect(mocks.mutateAsync.mock.calls[0]![0]).toMatchObject({
-      item: { type: "collection", library_id: 42, collection_id: "a", label: "A" },
+      item: {
+        type: "collection",
+        library_id: 42,
+        collection_id: "a",
+        label: "A",
+      },
       present: true,
       mutationId: expect.any(String),
     });
     expect(mocks.mutateAsync.mock.calls[1]![0]).toMatchObject({
-      item: { type: "collection", library_id: 42, collection_id: "a", label: "A" },
+      item: {
+        type: "collection",
+        library_id: 42,
+        collection_id: "a",
+        label: "A",
+      },
       present: false,
       mutationId: expect.any(String),
     });
@@ -259,10 +287,17 @@ describe("serialized sidebar pin writes", () => {
       () => writes[mocks.mutateAsync.mock.calls.length - 1]!.promise,
     );
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
-    const first = renderHook(() => useToggleSidebarPin(), { wrapper: wrapper(queryClient) });
-    const second = renderHook(() => useToggleSidebarPin(), { wrapper: wrapper(queryClient) });
+    const first = renderHook(() => useToggleSidebarPin(), {
+      wrapper: wrapper(queryClient),
+    });
+    const second = renderHook(() => useToggleSidebarPin(), {
+      wrapper: wrapper(queryClient),
+    });
     const pin = { type: "section" as const, id: "recent", label: "Recent" };
 
     act(() => {
@@ -270,11 +305,15 @@ describe("serialized sidebar pin writes", () => {
       second.result.current.togglePin(42, pin);
     });
     await waitFor(() => expect(mocks.mutateAsync).toHaveBeenCalledTimes(1));
-    expect(mocks.mutateAsync.mock.calls[0]![0]).toMatchObject({ present: true });
+    expect(mocks.mutateAsync.mock.calls[0]![0]).toMatchObject({
+      present: true,
+    });
 
     writes[0]!.resolve({});
     await waitFor(() => expect(mocks.mutateAsync).toHaveBeenCalledTimes(2));
-    expect(mocks.mutateAsync.mock.calls[1]![0]).toMatchObject({ present: false });
+    expect(mocks.mutateAsync.mock.calls[1]![0]).toMatchObject({
+      present: false,
+    });
     writes[1]!.resolve({});
   });
 
@@ -284,7 +323,10 @@ describe("serialized sidebar pin writes", () => {
       () => writes[mocks.mutateAsync.mock.calls.length - 1]!.promise,
     );
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
     const { result } = renderHook(() => useToggleSidebarPin(), {
       wrapper: wrapper(queryClient),
@@ -321,7 +363,10 @@ describe("serialized sidebar pin writes", () => {
       () => writes[mocks.mutateAsync.mock.calls.length - 1]!.promise,
     );
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
     const invalidate = vi.spyOn(queryClient, "invalidateQueries");
     const { result } = renderHook(() => useToggleSidebarPin(), {
@@ -358,7 +403,10 @@ describe("serialized sidebar pin writes", () => {
       supports_idempotent_writes: true,
     };
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
     const { result } = renderHook(() => useToggleSidebarPin(), {
       wrapper: wrapper(queryClient),
@@ -383,7 +431,10 @@ describe("serialized sidebar pin writes", () => {
       "42": [{ type: "collection", id: "legacy", label: "Legacy pin" }],
     };
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
 
     const { result } = renderHook(() => useSidebarPins(), {
@@ -397,11 +448,21 @@ describe("serialized sidebar pin writes", () => {
 
   it("hides cached shortcut data when no profile is active", () => {
     mocks.remoteValue = {
-      items: [{ type: "collection", library_id: 42, collection_id: "stale", label: "Stale" }],
+      items: [
+        {
+          type: "collection",
+          library_id: 42,
+          collection_id: "stale",
+          label: "Stale",
+        },
+      ],
     };
     mocks.profileId = "";
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
 
     const { result } = renderHook(() => useSidebarPins(), {

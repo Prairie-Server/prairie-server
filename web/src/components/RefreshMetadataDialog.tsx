@@ -28,7 +28,8 @@ export default function RefreshMetadataDialog({
         <DialogHeader>
           <DialogTitle>Refresh Metadata</DialogTitle>
           <DialogDescription>
-            Choose whether to refresh the existing item or rebuild it from the files on disk.
+            Choose whether to refresh the existing item or rebuild it from the
+            files on disk.
           </DialogDescription>
         </DialogHeader>
 
@@ -47,7 +48,8 @@ export default function RefreshMetadataDialog({
             <div className="space-y-1">
               <div className="text-sm font-semibold">Quick Refresh</div>
               <div className="text-muted-foreground text-sm">
-                Keep the current item and refresh metadata using the existing scan scope.
+                Keep the current item and refresh metadata using the existing
+                scan scope.
               </div>
             </div>
           </button>
@@ -66,15 +68,19 @@ export default function RefreshMetadataDialog({
             <div className="space-y-1">
               <div className="text-sm font-semibold">Complete Refresh</div>
               <div className="text-muted-foreground text-sm">
-                Clear the current match, re-scan, and rebuild the item from disk context. This can
-                recreate the item with a new ID or type.
+                Clear the current match, re-scan, and rebuild the item from disk
+                context. This can recreate the item with a new ID or type.
               </div>
             </div>
           </button>
         </div>
 
         <div className="flex justify-end">
-          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isPending}>
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isPending}
+          >
             <X />
             Cancel
           </Button>

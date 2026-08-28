@@ -17,7 +17,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-router", async () => {
-  const actual = await vi.importActual<typeof import("react-router")>("react-router");
+  const actual =
+    await vi.importActual<typeof import("react-router")>("react-router");
   return {
     ...actual,
     useNavigate: () => mocks.navigate,
@@ -30,7 +31,8 @@ vi.mock("@/hooks/queries/profiles", () => ({
 }));
 
 vi.mock("@/hooks/queries/libraries", () => ({
-  useAvailableUserLibraries: (...args: unknown[]) => mocks.useAvailableUserLibraries(...args),
+  useAvailableUserLibraries: (...args: unknown[]) =>
+    mocks.useAvailableUserLibraries(...args),
 }));
 
 vi.mock("@/hooks/useAuth", () => ({
@@ -43,7 +45,10 @@ vi.mock("@/components/profiles/ProfileEditorDialog", () => ({
     onSaveSuccess,
   }: {
     open: boolean;
-    onSaveSuccess?: (profile: Profile, context: { mode: "create" | "edit"; pin: string }) => void;
+    onSaveSuccess?: (
+      profile: Profile,
+      context: { mode: "create" | "edit"; pin: string },
+    ) => void;
   }) =>
     open ? (
       <button
@@ -76,7 +81,10 @@ vi.mock("@/components/profiles/ProfilePinDialog", () => ({
     onVerified: (profile: Profile, token: string) => void;
   }) =>
     profile ? (
-      <button type="button" onClick={() => onVerified(profile, "verified-token")}>
+      <button
+        type="button"
+        onClick={() => onVerified(profile, "verified-token")}
+      >
         confirm-pin
       </button>
     ) : null,
@@ -84,7 +92,9 @@ vi.mock("@/components/profiles/ProfilePinDialog", () => ({
 
 import Profiles from "./Profiles";
 
-const libraries: UserLibrary[] = [{ id: 1, name: "Movies", type: "movies", sort_order: 0 }];
+const libraries: UserLibrary[] = [
+  { id: 1, name: "Movies", type: "movies", sort_order: 0 },
+];
 
 function makeProfile(overrides: Partial<Profile> = {}): Profile {
   return {
@@ -251,7 +261,9 @@ describe("Profiles", () => {
   });
 
   it("returns to the sanitized redirect target after selecting a profile", async () => {
-    mocks.searchParams = new URLSearchParams("redirect=%2Frooms%2Fabc%3Froom_token%3Dxyz");
+    mocks.searchParams = new URLSearchParams(
+      "redirect=%2Frooms%2Fabc%3Froom_token%3Dxyz",
+    );
 
     await render(<Profiles />);
 
@@ -262,7 +274,9 @@ describe("Profiles", () => {
   });
 
   it("ignores unsafe redirect targets when selecting a profile", async () => {
-    mocks.searchParams = new URLSearchParams("redirect=https%3A%2F%2Fevil.example");
+    mocks.searchParams = new URLSearchParams(
+      "redirect=https%3A%2F%2Fevil.example",
+    );
 
     await render(<Profiles />);
 

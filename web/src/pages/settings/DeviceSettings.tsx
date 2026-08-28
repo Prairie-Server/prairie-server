@@ -13,7 +13,11 @@ import {
 import { DeviceList, lastSeenLabel } from "@/components/settings/DeviceList";
 import { DeviceSettingGroups } from "@/components/settings/DeviceSettingGroups";
 import { SubtitleAppearancePanelView } from "@/components/settings/SubtitleAppearancePanelView";
-import { useClearDeviceSettings, useForgetDevice, useMyDevices } from "@/hooks/queries/devices";
+import {
+  useClearDeviceSettings,
+  useForgetDevice,
+  useMyDevices,
+} from "@/hooks/queries/devices";
 import {
   settingsCapabilitiesSupportKey,
   useSettingsCapabilities,
@@ -25,7 +29,10 @@ import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
 import { deviceSettingKeysForRevision } from "@/lib/settingsDisplay";
 import { SETTING_KEYS, type SettingKey } from "@/lib/settingsContract";
-import { parseSubtitleAppearance, type SubtitleAppearance } from "@/lib/subtitleAppearance";
+import {
+  parseSubtitleAppearance,
+  type SubtitleAppearance,
+} from "@/lib/subtitleAppearance";
 import { cn } from "@/lib/utils";
 
 /**
@@ -70,7 +77,9 @@ export default function DeviceSettings() {
   // edited, which is the one thing this screen cannot afford to be vague about.
   const selectable = useMemo(
     () =>
-      profileFilter ? devices.filter((device) => device.profile_id === profileFilter) : devices,
+      profileFilter
+        ? devices.filter((device) => device.profile_id === profileFilter)
+        : devices,
     [devices, profileFilter],
   );
 
@@ -78,7 +87,10 @@ export default function DeviceSettings() {
   // immediately, and the one most people came here for.
   const selected = useMemo(() => {
     if (selectable.length === 0) return null;
-    return selectable.find((device) => device.device_id === selectedId) ?? selectable[0];
+    return (
+      selectable.find((device) => device.device_id === selectedId) ??
+      selectable[0]
+    );
   }, [selectable, selectedId]);
 
   useEffect(() => {
@@ -91,11 +103,16 @@ export default function DeviceSettings() {
     <div className="space-y-5">
       {/* Hidden below xl while the detail view is open: on a phone that screen
           is about one device, and its own header says which. */}
-      <header className={cn("space-y-2", showDetailOnMobile && "hidden xl:block")}>
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Your devices</h2>
+      <header
+        className={cn("space-y-2", showDetailOnMobile && "hidden xl:block")}
+      >
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Your devices
+        </h2>
         <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
-          Every phone, tablet, TV and browser you watch on. Pick one to see what&apos;s set
-          differently there and change it — from here, whichever device you&apos;re holding.
+          Every phone, tablet, TV and browser you watch on. Pick one to see
+          what&apos;s set differently there and change it — from here, whichever
+          device you&apos;re holding.
         </p>
       </header>
 
@@ -115,7 +132,10 @@ export default function DeviceSettings() {
       <div className="grid gap-5 xl:grid-cols-[minmax(230px,270px)_minmax(0,1fr)] xl:items-start">
         {isLoading ? (
           <Skeleton
-            className={cn("h-64 rounded-[1.5rem]", showDetailOnMobile && "hidden xl:block")}
+            className={cn(
+              "h-64 rounded-[1.5rem]",
+              showDetailOnMobile && "hidden xl:block",
+            )}
           />
         ) : (
           <div className={cn(showDetailOnMobile && "hidden xl:block")}>
@@ -144,7 +164,10 @@ export default function DeviceSettings() {
 
         {isLoading ? (
           <Skeleton
-            className={cn("h-96 rounded-[1.5rem]", !showDetailOnMobile && "hidden xl:block")}
+            className={cn(
+              "h-96 rounded-[1.5rem]",
+              !showDetailOnMobile && "hidden xl:block",
+            )}
           />
         ) : selected ? (
           <div className={cn(!showDetailOnMobile && "hidden xl:block")}>
@@ -235,7 +258,8 @@ function DeviceDetail({
 }) {
   // Acting for someone else changes the copy throughout: the banner, the reset
   // labels, and every mutation's identity.
-  const forSomeoneElse = Boolean(device.profile_id) && device.profile_id !== actingProfileId;
+  const forSomeoneElse =
+    Boolean(device.profile_id) && device.profile_id !== actingProfileId;
   const ownerLabel = forSomeoneElse ? `${device.profile_name}'s` : "your";
   const targetProfileId = forSomeoneElse ? device.profile_id : undefined;
 
@@ -249,16 +273,18 @@ function DeviceDetail({
   );
   const canUseDeviceSettings = supportedKeys.length > 0;
 
-  const { data: settings = {}, isLoading: settingsLoading } = useEffectiveSettings({
-    keys: supportedKeys,
-    deviceId: device.device_id,
-    profileId: targetProfileId,
-    // An empty key list means "all keys" to the API, so wait until the
-    // connected server confirms the complete settings capability contract.
-    enabled: canUseDeviceSettings,
-  });
+  const { data: settings = {}, isLoading: settingsLoading } =
+    useEffectiveSettings({
+      keys: supportedKeys,
+      deviceId: device.device_id,
+      profileId: targetProfileId,
+      // An empty key list means "all keys" to the API, so wait until the
+      // connected server confirms the complete settings capability contract.
+      enabled: canUseDeviceSettings,
+    });
   const isLoading = capabilities.isLoading || settingsLoading;
-  const capabilitiesUnavailable = !capabilities.isLoading && !canUseDeviceSettings;
+  const capabilitiesUnavailable =
+    !capabilities.isLoading && !canUseDeviceSettings;
 
   const setValue = useSetSettingValue();
   const clearValue = useClearSettingValue();
@@ -307,7 +333,9 @@ function DeviceDetail({
             <p className="text-muted-foreground mt-0.5 text-[13px] leading-snug">
               {[
                 platformKindLabel(kind),
-                device.is_current_device ? "using now" : lastSeenLabel(device.last_seen_at, now),
+                device.is_current_device
+                  ? "using now"
+                  : lastSeenLabel(device.last_seen_at, now),
                 changedCount > 0
                   ? `${changedCount} ${changedCount === 1 ? "thing" : "things"} set differently`
                   : "nothing changed here",
@@ -332,9 +360,14 @@ function DeviceDetail({
                 clearDevice.mutate(
                   { deviceId: device.device_id, profileId: targetProfileId },
                   {
-                    onSuccess: () => toast.success("Settings cleared on this device"),
+                    onSuccess: () =>
+                      toast.success("Settings cleared on this device"),
                     onError: (error) =>
-                      toast.error(error instanceof Error ? error.message : "Couldn't clear"),
+                      toast.error(
+                        error instanceof Error
+                          ? error.message
+                          : "Couldn't clear",
+                      ),
                   },
                 );
               }}
@@ -360,7 +393,11 @@ function DeviceDetail({
                   {
                     onSuccess: () => toast.success("Device forgotten"),
                     onError: (error) =>
-                      toast.error(error instanceof Error ? error.message : "Couldn't forget"),
+                      toast.error(
+                        error instanceof Error
+                          ? error.message
+                          : "Couldn't forget",
+                      ),
                   },
                 );
               }}
@@ -375,7 +412,8 @@ function DeviceDetail({
       {forSomeoneElse ? (
         <Callout tone="warning" icon={<Users className="h-4 w-4" />}>
           <strong className="text-foreground font-semibold">
-            You&apos;re changing {device.profile_name}&apos;s settings, not your own.
+            You&apos;re changing {device.profile_name}&apos;s settings, not your
+            own.
           </strong>{" "}
           {device.profile_name} will see these change on this device.
         </Callout>
@@ -388,13 +426,14 @@ function DeviceDetail({
         <span className="block">
           These apply to{" "}
           <strong className="text-foreground font-semibold">
-            this device, for {forSomeoneElse ? `${device.profile_name}'s` : "your"} profile only
+            this device, for{" "}
+            {forSomeoneElse ? `${device.profile_name}'s` : "your"} profile only
           </strong>
           .
         </span>
         <span className="text-muted-foreground/90 mt-1 block text-[12.5px]">
-          {forSomeoneElse ? `${device.profile_name}'s` : "Your"} other devices, and anyone else who
-          uses this one, are unaffected.
+          {forSomeoneElse ? `${device.profile_name}'s` : "Your"} other devices,
+          and anyone else who uses this one, are unaffected.
           {!device.is_current_device
             ? " This device picks up your changes the next time it's used."
             : ""}
@@ -407,10 +446,12 @@ function DeviceDetail({
           className="border-border/70 bg-surface space-y-3 rounded-[1.7rem] border p-5"
         >
           <div>
-            <p className="text-sm font-semibold">Couldn&apos;t check settings compatibility</p>
+            <p className="text-sm font-semibold">
+              Couldn&apos;t check settings compatibility
+            </p>
             <p className="text-muted-foreground mt-1 text-[13px] leading-relaxed">
-              Device controls stay unavailable until Silo confirms which settings this server
-              supports.
+              Device controls stay unavailable until Silo confirms which
+              settings this server supports.
             </p>
           </div>
           <Button
@@ -419,7 +460,9 @@ function DeviceDetail({
             disabled={capabilities.isFetching}
             onClick={() => void capabilities.refetch()}
           >
-            {capabilities.isFetching ? "Checking…" : "Retry compatibility check"}
+            {capabilities.isFetching
+              ? "Checking…"
+              : "Retry compatibility check"}
           </Button>
         </div>
       ) : isLoading ? (
@@ -436,7 +479,9 @@ function DeviceDetail({
               { key, value, identity },
               {
                 onError: (error) =>
-                  toast.error(error instanceof Error ? error.message : "Couldn't save"),
+                  toast.error(
+                    error instanceof Error ? error.message : "Couldn't save",
+                  ),
               },
             )
           }
@@ -445,7 +490,9 @@ function DeviceDetail({
               { key, identity },
               {
                 onError: (error) =>
-                  toast.error(error instanceof Error ? error.message : "Couldn't reset"),
+                  toast.error(
+                    error instanceof Error ? error.message : "Couldn't reset",
+                  ),
               },
             )
           }
@@ -460,13 +507,22 @@ function DeviceDetail({
         open={appearanceOpen && appearance !== null}
         value={appearance ?? parseSubtitleAppearance(undefined)}
         onChange={(patch) => {
-          const next = { ...(appearance ?? parseSubtitleAppearance(undefined)), ...patch };
+          const next = {
+            ...(appearance ?? parseSubtitleAppearance(undefined)),
+            ...patch,
+          };
           setAppearance(next);
           setValue.mutate(
-            { key: SETTING_KEYS.PLAYBACK_SUBTITLE_APPEARANCE, value: next, identity },
+            {
+              key: SETTING_KEYS.PLAYBACK_SUBTITLE_APPEARANCE,
+              value: next,
+              identity,
+            },
             {
               onError: (error) =>
-                toast.error(error instanceof Error ? error.message : "Couldn't save"),
+                toast.error(
+                  error instanceof Error ? error.message : "Couldn't save",
+                ),
             },
           );
         }}
@@ -477,7 +533,9 @@ function DeviceDetail({
             { key: SETTING_KEYS.PLAYBACK_SUBTITLE_APPEARANCE, identity },
             {
               onError: (error) =>
-                toast.error(error instanceof Error ? error.message : "Couldn't reset"),
+                toast.error(
+                  error instanceof Error ? error.message : "Couldn't reset",
+                ),
             },
           );
           setAppearanceOpen(false);
@@ -489,9 +547,11 @@ function DeviceDetail({
 
       {forSomeoneElse ? (
         <Callout tone="muted" icon={<ShieldCheck className="h-4 w-4" />}>
-          <strong className="text-foreground font-semibold">What you can&apos;t see here.</strong>{" "}
-          This page shows how Silo is set up on each device — not what anyone watched. Viewing
-          history stays private to each profile.
+          <strong className="text-foreground font-semibold">
+            What you can&apos;t see here.
+          </strong>{" "}
+          This page shows how Silo is set up on each device — not what anyone
+          watched. Viewing history stays private to each profile.
         </Callout>
       ) : null}
     </div>
@@ -512,7 +572,8 @@ function Callout({
       className={cn(
         "flex gap-2.5 rounded-2xl border px-4 py-3 text-[13px] leading-relaxed",
         tone === "info" && "border-info/25 bg-info/5 text-muted-foreground",
-        tone === "warning" && "border-amber-500/30 bg-amber-500/5 text-amber-100/90",
+        tone === "warning" &&
+          "border-amber-500/30 bg-amber-500/5 text-amber-100/90",
         tone === "muted" && "border-border/60 bg-surface text-muted-foreground",
       )}
     >

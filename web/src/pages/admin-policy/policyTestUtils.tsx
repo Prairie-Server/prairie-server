@@ -3,7 +3,12 @@ import { render } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router";
 
-import { setAccessToken, setProfileId, setProfileToken, setRefreshToken } from "@/api/client";
+import {
+  setAccessToken,
+  setProfileId,
+  setProfileToken,
+  setRefreshToken,
+} from "@/api/client";
 
 function memoryStorage() {
   const state = new Map<string, string>();

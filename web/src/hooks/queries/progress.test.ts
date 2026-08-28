@@ -12,7 +12,8 @@ vi.mock("@tanstack/react-query", () => ({
 }));
 
 vi.mock("./catalogRead", () => ({
-  fetchCatalogItemDetail: (...args: unknown[]) => mocks.fetchCatalogItemDetail(...args),
+  fetchCatalogItemDetail: (...args: unknown[]) =>
+    mocks.fetchCatalogItemDetail(...args),
 }));
 
 import { useContinueWatching } from "./progress";
@@ -34,7 +35,11 @@ describe("useContinueWatching", () => {
       isLoading: false,
     });
     mocks.useQueries.mockImplementation(
-      ({ queries }: { queries: Array<{ queryFn: () => Promise<unknown> }> }) => {
+      ({
+        queries,
+      }: {
+        queries: Array<{ queryFn: () => Promise<unknown> }>;
+      }) => {
         void queries[0]?.queryFn();
         return [{ data: undefined, isLoading: false }];
       },

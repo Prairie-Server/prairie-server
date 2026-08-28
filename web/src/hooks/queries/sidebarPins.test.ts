@@ -28,7 +28,9 @@ describe("sidebar pin helpers", () => {
 
   it("still accepts the legacy JSON-string encoding", () => {
     expect(
-      parseSidebarPins('{"42":[{"type":"collection","id":"col-1","label":"Pinned Horror"}]}'),
+      parseSidebarPins(
+        '{"42":[{"type":"collection","id":"col-1","label":"Pinned Horror"}]}',
+      ),
     ).toEqual({
       "42": [{ type: "collection", id: "col-1", label: "Pinned Horror" }],
     });
@@ -39,7 +41,12 @@ describe("sidebar pin helpers", () => {
       parseSidebarPins({
         items: [
           { type: "library", library_id: 42, label: "Movies" },
-          { type: "section", library_id: 42, section_id: "recent", label: "Recent" },
+          {
+            type: "section",
+            library_id: 42,
+            section_id: "recent",
+            label: "Recent",
+          },
           {
             type: "collection",
             library_id: 42,
@@ -67,7 +74,12 @@ describe("sidebar pin helpers", () => {
       }),
     ).toEqual({
       items: [
-        { type: "section", library_id: 42, section_id: "recent", label: "Recent" },
+        {
+          type: "section",
+          library_id: 42,
+          section_id: "recent",
+          label: "Recent",
+        },
         {
           type: "collection",
           library_id: 42,
@@ -95,7 +107,12 @@ describe("sidebar pin helpers", () => {
       items: [
         { type: "library", library_id: 42, label: "Movies" },
         { type: "collection", collection_id: "global", label: "Global" },
-        { type: "section", library_id: 42, section_id: "recent", label: "Recent" },
+        {
+          type: "section",
+          library_id: 42,
+          section_id: "recent",
+          label: "Recent",
+        },
       ],
     });
   });
@@ -124,7 +141,11 @@ describe("sidebar pin helpers", () => {
 
   it("adds a new pin to the target library", () => {
     expect(
-      toggleSidebarPins({}, 42, { type: "collection", id: "col-1", label: "Pinned Horror" }),
+      toggleSidebarPins({}, 42, {
+        type: "collection",
+        id: "col-1",
+        label: "Pinned Horror",
+      }),
     ).toEqual({
       "42": [{ type: "collection", id: "col-1", label: "Pinned Horror" }],
     });
@@ -151,7 +172,9 @@ describe("sidebar pin helpers", () => {
 
   it("builds the optimistic value as a typed object, not a JSON string", () => {
     const mutation = createSidebarPinsOptimisticMutation({
-      currentValue: { "42": [{ type: "section", id: "sec-1", label: "Recently Added" }] },
+      currentValue: {
+        "42": [{ type: "section", id: "sec-1", label: "Recently Added" }],
+      },
       currentRevision: null,
       libraryId: 42,
       pin: { type: "collection", id: "col-1", label: "Pinned Horror" },

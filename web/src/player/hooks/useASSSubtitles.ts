@@ -93,7 +93,10 @@ export function useASSSubtitles(
         const [response, loadedAttachedFontData] = await Promise.all([
           fetch(activeUrl!, { signal: controller.signal }),
           activeFontBundleUrl
-            ? loadSubtitleFontBundle(activeFontBundleUrl, controller.signal).catch((err) => {
+            ? loadSubtitleFontBundle(
+                activeFontBundleUrl,
+                controller.signal,
+              ).catch((err) => {
                 if ((err as Error).name !== "AbortError") {
                   console.error(
                     `[useASSSubtitles] Failed to load subtitle font bundle ${activeFontBundleUrl}:`,

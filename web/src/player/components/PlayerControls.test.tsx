@@ -61,7 +61,9 @@ describe("PlayerControls", () => {
   it("shows marker editing when available", () => {
     renderControls(true);
 
-    expect(screen.getByRole("button", { name: "Edit markers" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Edit markers" }),
+    ).toBeInTheDocument();
   });
 
   it("uses the mobile transport and hides hardware-volume controls on coarse pointers", () => {
@@ -81,8 +83,13 @@ describe("PlayerControls", () => {
 
     renderControls(false);
 
-    expect(screen.getByRole("button", { name: "More player options" })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "Play" })).toHaveClass("h-16", "w-16");
+    expect(
+      screen.getByRole("button", { name: "More player options" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Play" })).toHaveClass(
+      "h-16",
+      "w-16",
+    );
     expect(screen.queryByRole("button", { name: /mute/i })).toBeNull();
   });
 });

@@ -9,7 +9,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/hooks/queries/catalogRead", () => ({
-  useCatalogItemDetail: (...args: unknown[]) => mocks.useCatalogItemDetail(...args),
+  useCatalogItemDetail: (...args: unknown[]) =>
+    mocks.useCatalogItemDetail(...args),
 }));
 
 vi.mock("@/components/CardPlayOverlay", () => ({

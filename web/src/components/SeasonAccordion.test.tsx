@@ -8,8 +8,20 @@ vi.mock("@/hooks/queries/episodes", () => ({
 }));
 
 vi.mock("@/components/CardPlayOverlay", () => ({
-  default: ({ contentId, title, size }: { contentId: string; title: string; size: string }) => (
-    <a href={`/watch/${contentId}`} aria-label={`Play ${title}`} data-size={size} />
+  default: ({
+    contentId,
+    title,
+    size,
+  }: {
+    contentId: string;
+    title: string;
+    size: string;
+  }) => (
+    <a
+      href={`/watch/${contentId}`}
+      aria-label={`Play ${title}`}
+      data-size={size}
+    />
   ),
 }));
 

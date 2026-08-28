@@ -1,4 +1,8 @@
-import type { PlayerSubtitleInfo, PlayerSubtitleTrackSignature, SubtitleMode } from "../types";
+import type {
+  PlayerSubtitleInfo,
+  PlayerSubtitleTrackSignature,
+  SubtitleMode,
+} from "../types";
 import { normalizeLanguageCode } from "./languageNames";
 import { isBitmapCodec } from "./subtitleCodecs";
 
@@ -25,7 +29,9 @@ function normalize(value: string | undefined | null): string {
   return (value ?? "").trim().toLowerCase();
 }
 
-function normalizeConcreteLanguage(value: string | undefined | null): string | null {
+function normalizeConcreteLanguage(
+  value: string | undefined | null,
+): string | null {
   const normalized = normalize(value);
   if (!normalized || normalized === ORIGINAL_LANGUAGE_SENTINEL) {
     return null;
@@ -33,7 +39,10 @@ function normalizeConcreteLanguage(value: string | undefined | null): string | n
   return normalized;
 }
 
-function sameLanguageCode(a: string | undefined | null, b: string | undefined | null): boolean {
+function sameLanguageCode(
+  a: string | undefined | null,
+  b: string | undefined | null,
+): boolean {
   const left = normalizeConcreteLanguage(a);
   const right = normalizeConcreteLanguage(b);
   if (!left || !right) return false;
@@ -53,7 +62,8 @@ function subtitleTrackMatchesSignature(
     normalize(track.source) === normalize(signature.source) &&
     normalize(track.language) === normalize(signature.language) &&
     normalize(track.codec) === normalize(signature.codec) &&
-    (normalize(signature.label) === "" || normalize(track.label) === normalize(signature.label)) &&
+    (normalize(signature.label) === "" ||
+      normalize(track.label) === normalize(signature.label)) &&
     Boolean(track.forced) === Boolean(signature.forced) &&
     Boolean(track.hearing_impaired) === Boolean(signature.hearing_impaired)
   );
@@ -64,7 +74,9 @@ function findExactSubtitleSignatureMatch(
   signature: PlayerSubtitleTrackSignature | null,
 ): number | null {
   if (!signature) return null;
-  const match = tracks.find((track) => subtitleTrackMatchesSignature(track, signature));
+  const match = tracks.find((track) =>
+    subtitleTrackMatchesSignature(track, signature),
+  );
   return match?.index ?? null;
 }
 
@@ -76,14 +88,17 @@ function scoreSignatureFallback(
   let score = 0;
   if (normalize(track.source) === normalize(signature.source)) score += 4;
   if (Boolean(track.forced) === Boolean(signature.forced)) score += 2;
-  if (Boolean(track.hearing_impaired) === Boolean(signature.hearing_impaired)) score += 2;
+  if (Boolean(track.hearing_impaired) === Boolean(signature.hearing_impaired))
+    score += 2;
   if (normalize(track.codec) === normalize(signature.codec)) score += 1;
   if (normalize(track.label) === normalize(signature.label)) score += 1;
   return score;
 }
 
 /** Sort subtitle tracks: external first, then downloaded, then embedded. */
-export function sortSubtitlesBySource(tracks: PlayerSubtitleInfo[]): PlayerSubtitleInfo[] {
+export function sortSubtitlesBySource(
+  tracks: PlayerSubtitleInfo[],
+): PlayerSubtitleInfo[] {
   return [...tracks].sort((a, b) => {
     const pa = SOURCE_PRIORITY[a.source ?? "embedded"] ?? 2;
     const pb = SOURCE_PRIORITY[b.source ?? "embedded"] ?? 2;
@@ -96,7 +111,10 @@ export function sortSubtitlesBySource(tracks: PlayerSubtitleInfo[]): PlayerSubti
  * preferring external > downloaded > embedded.
  * Returns the track's backend index (track.index) or -1 if no match.
  */
-export function findPreferredSubtitleIndex(tracks: PlayerSubtitleInfo[], language: string): number {
+export function findPreferredSubtitleIndex(
+  tracks: PlayerSubtitleInfo[],
+  language: string,
+): number {
   let bestIdx = -1;
   let bestPriority = Infinity;
 
@@ -165,7 +183,9 @@ function findForcedSubtitleIndex(
  * Determines which subtitle track to auto-select on playback start.
  * Returns the track's backend index, or null if no track should be selected.
  */
-export function resolveSubtitleAutoSelect(options: SubtitleAutoSelectOptions): number | null {
+export function resolveSubtitleAutoSelect(
+  options: SubtitleAutoSelectOptions,
+): number | null {
   const {
     mode,
     tracks,
@@ -187,30 +207,48 @@ export function resolveSubtitleAutoSelect(options: SubtitleAutoSelectOptions): n
       : normalizedProfileLanguage === ""
         ? "en"
         : null);
-  const effectiveAudioLang = normalizeConcreteLanguage(audioLanguage) ?? effectiveProfileLang;
+  const effectiveAudioLang =
+    normalizeConcreteLanguage(audioLanguage) ?? effectiveProfileLang;
 
   switch (mode) {
     case "off":
-      return showForcedSubtitles ? findForcedSubtitleIndex(tracks, effectiveAudioLang) : null;
+      return showForcedSubtitles
+        ? findForcedSubtitleIndex(tracks, effectiveAudioLang)
+        : null;
 
     case "always": {
       const exactMatch = findExactSubtitleSignatureMatch(tracks, signature);
       if (exactMatch !== null) return exactMatch;
       if (!preferredLanguage) return null;
-      const match = findPreferredSubtitleIndexWithSignature(tracks, preferredLanguage, signature);
+      const match = findPreferredSubtitleIndexWithSignature(
+        tracks,
+        preferredLanguage,
+        signature,
+      );
       return match >= 0 ? match : null;
     }
 
     case "auto": {
       if (preferredLanguage === "") return null;
-      if (effectiveProfileLang && sameLanguageCode(effectiveAudioLang, effectiveProfileLang)) {
-        return showForcedSubtitles ? findForcedSubtitleIndex(tracks, effectiveAudioLang) : null;
+      if (
+        effectiveProfileLang &&
+        sameLanguageCode(effectiveAudioLang, effectiveProfileLang)
+      ) {
+        return showForcedSubtitles
+          ? findForcedSubtitleIndex(tracks, effectiveAudioLang)
+          : null;
       }
       const lang = preferredSubtitleLang ?? effectiveProfileLang;
       if (!lang) {
-        return showForcedSubtitles ? findForcedSubtitleIndex(tracks, effectiveAudioLang) : null;
+        return showForcedSubtitles
+          ? findForcedSubtitleIndex(tracks, effectiveAudioLang)
+          : null;
       }
-      const match = findPreferredSubtitleIndexWithSignature(tracks, lang, signature);
+      const match = findPreferredSubtitleIndexWithSignature(
+        tracks,
+        lang,
+        signature,
+      );
       return match >= 0 ? match : null;
     }
 

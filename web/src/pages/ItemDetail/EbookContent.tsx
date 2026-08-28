@@ -44,7 +44,9 @@ function ebookVersionSummary(version: ItemDetail["versions"][number]): string {
   ]);
 }
 
-function preferredReadVersion(versions: FileVersion[]): FileVersion | undefined {
+function preferredReadVersion(
+  versions: FileVersion[],
+): FileVersion | undefined {
   return (
     versions.find((version) => readerFileFormat(version) === "epub") ??
     versions.find((version) => isReaderSupportedFile(version))
@@ -56,7 +58,9 @@ function progressReadVersion(
   fileID: number | undefined,
 ): FileVersion | undefined {
   if (typeof fileID !== "number") return undefined;
-  return versions.find((version) => version.file_id === fileID && isReaderSupportedFile(version));
+  return versions.find(
+    (version) => version.file_id === fileID && isReaderSupportedFile(version),
+  );
 }
 
 function genreHref(genre: string, libraryId?: number): string {
@@ -91,10 +95,13 @@ export default function EbookContent({
   const progressLabel = formatReaderProgress(readerProgress?.progress);
   const hasSavedProgress = Boolean(readerProgress && progressLabel);
   const readVersion =
-    (hasSavedProgress ? progressReadVersion(item.versions, readerProgress?.file_id) : undefined) ??
-    preferredReadVersion(item.versions);
+    (hasSavedProgress
+      ? progressReadVersion(item.versions, readerProgress?.file_id)
+      : undefined) ?? preferredReadVersion(item.versions);
   const canRead = Boolean(readVersion);
-  const canDownload = Boolean(user?.download_allowed && item.versions.length > 0);
+  const canDownload = Boolean(
+    user?.download_allowed && item.versions.length > 0,
+  );
   const readerParams = new URLSearchParams();
   if (readVersion) {
     readerParams.set("file_id", String(readVersion.file_id));
@@ -140,7 +147,9 @@ export default function EbookContent({
           authors.length > 0 ? (
             <div className="text-muted-foreground text-[13px]">
               <span className="text-muted-foreground/60">By </span>
-              <span className="text-foreground/70 font-medium">{authors.join(", ")}</span>
+              <span className="text-foreground/70 font-medium">
+                {authors.join(", ")}
+              </span>
             </div>
           ) : undefined
         }
@@ -192,14 +201,20 @@ export default function EbookContent({
       <div className="page-shell space-y-12 py-10 sm:space-y-14">
         {item.ebook?.series && item.ebook.series.entries.length > 0 && (
           <RelatedRail
-            heading={item.ebook.series.name ? `In ${item.ebook.series.name}` : "In this series"}
+            heading={
+              item.ebook.series.name
+                ? `In ${item.ebook.series.name}`
+                : "In this series"
+            }
             coverAspect="poster"
             items={item.ebook.series.entries.map((entry) => ({
               content_id: entry.content_id,
               title: entry.title,
               poster_url: entry.poster_url,
               subtitle:
-                typeof entry.series_index === "number" ? `Book ${entry.series_index}` : undefined,
+                typeof entry.series_index === "number"
+                  ? `Book ${entry.series_index}`
+                  : undefined,
               highlight: entry.content_id === item.content_id,
             }))}
           />

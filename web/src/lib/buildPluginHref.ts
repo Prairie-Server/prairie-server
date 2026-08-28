@@ -18,7 +18,9 @@ export function buildPluginHref(basePath: string): string {
 // the admin/user UI so behavior matches the sidebar.
 export async function navigateToPluginRoute(basePath: string): Promise<void> {
   try {
-    await api<{ expires_in: number }>("/auth/plugin-launch", { method: "POST" });
+    await api<{ expires_in: number }>("/auth/plugin-launch", {
+      method: "POST",
+    });
   } catch (error) {
     console.warn("plugin launch preparation failed", error);
   }

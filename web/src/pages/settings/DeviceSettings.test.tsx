@@ -38,21 +38,25 @@ vi.mock("@/hooks/queries/devices", () => ({
 }));
 
 vi.mock("@/hooks/queries/settingValues", async (importOriginal) => {
-  const actual = await importOriginal<typeof import("@/hooks/queries/settingValues")>();
+  const actual =
+    await importOriginal<typeof import("@/hooks/queries/settingValues")>();
   return {
     ...actual,
     useSettingsCapabilities: () => ({
       ...mocks.capabilities,
       refetch: mocks.refetchCapabilities,
     }),
-    useEffectiveSettings: (...args: unknown[]) => mocks.useEffectiveSettings(...args),
+    useEffectiveSettings: (...args: unknown[]) =>
+      mocks.useEffectiveSettings(...args),
     useSetSettingValue: () => ({ mutate: vi.fn(), isPending: false }),
     useClearSettingValue: () => ({ mutate: vi.fn(), isPending: false }),
   };
 });
 
 vi.mock("@/hooks/useCurrentProfile", () => ({
-  useCurrentProfile: () => ({ profile: { id: "profile-1", is_primary: false } }),
+  useCurrentProfile: () => ({
+    profile: { id: "profile-1", is_primary: false },
+  }),
 }));
 
 vi.mock("@/hooks/useIsActingAdmin", () => ({
@@ -107,14 +111,21 @@ describe("DeviceSettings capability discovery", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       "Device controls stay unavailable until Silo confirms which settings this server supports.",
     );
-    expect(screen.queryByText("Editable device defaults")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Editable device defaults"),
+    ).not.toBeInTheDocument();
 
-    await user.click(screen.getByRole("button", { name: "Retry compatibility check" }));
+    await user.click(
+      screen.getByRole("button", { name: "Retry compatibility check" }),
+    );
     expect(mocks.refetchCapabilities).toHaveBeenCalledTimes(1);
   });
 
   it.each([
-    ["API version is incompatible", { ...compatibleCapabilities, api_version: 2 }],
+    [
+      "API version is incompatible",
+      { ...compatibleCapabilities, api_version: 2 },
+    ],
     [
       "batched effective reads are missing",
       { ...compatibleCapabilities, supports_batched_effective: undefined },
@@ -133,7 +144,9 @@ describe("DeviceSettings capability discovery", () => {
       expect.objectContaining({ keys: [], enabled: false }),
     );
     expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(screen.queryByText("Editable device defaults")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Editable device defaults"),
+    ).not.toBeInTheDocument();
   });
 
   it("enables only revision-supported keys when the full capability contract matches", () => {
@@ -143,7 +156,10 @@ describe("DeviceSettings capability discovery", () => {
 
     expect(mocks.useEffectiveSettings).toHaveBeenCalledWith(
       expect.objectContaining({
-        keys: expect.arrayContaining(["player.hdr_enabled", "ui.card_presentation"]),
+        keys: expect.arrayContaining([
+          "player.hdr_enabled",
+          "ui.card_presentation",
+        ]),
         enabled: true,
       }),
     );

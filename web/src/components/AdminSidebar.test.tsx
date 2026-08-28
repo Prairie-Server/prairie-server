@@ -82,7 +82,13 @@ describe("AdminSidebar", () => {
   it("renders the grouped navigation sections", () => {
     const markup = renderSidebar();
 
-    for (const section of ["Overview", "Content", "Automation", "Users", "System"]) {
+    for (const section of [
+      "Overview",
+      "Content",
+      "Automation",
+      "Users",
+      "System",
+    ]) {
       expect(markup).toContain(`>${section}<`);
     }
   });

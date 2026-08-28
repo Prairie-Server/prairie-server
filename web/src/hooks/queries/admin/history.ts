@@ -13,7 +13,9 @@ export interface AdminPlaybackHistoryParams {
   limit?: number;
 }
 
-export function buildAdminPlaybackHistorySearchParams(params: AdminPlaybackHistoryParams) {
+export function buildAdminPlaybackHistorySearchParams(
+  params: AdminPlaybackHistoryParams,
+) {
   const search = new URLSearchParams();
   if (params.userId) search.set("user_id", String(params.userId));
   if (params.profileId) search.set("profile_id", params.profileId);
@@ -44,7 +46,9 @@ export function useAdminUserProfiles(userId?: number) {
   return useQuery({
     queryKey: adminKeys.userProfiles(userId),
     queryFn: () =>
-      api<AdminUserProfile[]>(`/admin/users/${userId}/profiles`).then((rows) => rows ?? []),
+      api<AdminUserProfile[]>(`/admin/users/${userId}/profiles`).then(
+        (rows) => rows ?? [],
+      ),
     enabled: Boolean(userId),
     staleTime: ADMIN_HISTORY_STALE_TIME,
   });

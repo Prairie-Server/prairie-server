@@ -98,7 +98,13 @@ export function shortenId(id: string, visible = 8): string {
   return `${id.slice(0, visible)}…${id.slice(-visible)}`;
 }
 
-export function PlatformIcon({ kind, className }: { kind: PlatformKind; className?: string }) {
+export function PlatformIcon({
+  kind,
+  className,
+}: {
+  kind: PlatformKind;
+  className?: string;
+}) {
   switch (kind) {
     case "tv":
       return <Tv className={className} strokeWidth={1.6} />;
@@ -120,8 +126,14 @@ export function PlatformTile({
   kind: PlatformKind;
   size?: "sm" | "md" | "lg";
 }) {
-  const dims = size === "lg" ? "h-11 w-11" : size === "sm" ? "h-8 w-8" : "h-9 w-9";
-  const icon = size === "lg" ? "h-[18px] w-[18px]" : size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";
+  const dims =
+    size === "lg" ? "h-11 w-11" : size === "sm" ? "h-8 w-8" : "h-9 w-9";
+  const icon =
+    size === "lg"
+      ? "h-[18px] w-[18px]"
+      : size === "sm"
+        ? "h-3.5 w-3.5"
+        : "h-4 w-4";
   return (
     <div
       className={cn(
@@ -190,7 +202,8 @@ export function detectSettingConflicts(
   ) {
     out.set("player.dv_profile7_hdr10_fallback", {
       kind: "conflict",
-      reason: "Conflicts with HDR disabled — the fallback only applies when HDR is on.",
+      reason:
+        "Conflicts with HDR disabled — the fallback only applies when HDR is on.",
     });
     out.set("player.hdr_enabled", {
       kind: "conflict",
@@ -206,7 +219,8 @@ export function detectSettingConflicts(
   ) {
     out.set("playback.auto_skip_credits", {
       kind: "conflict",
-      reason: "Skipping credits with auto-play next disabled lands the player on a blank screen.",
+      reason:
+        "Skipping credits with auto-play next disabled lands the player on a blank screen.",
     });
   }
 
@@ -373,7 +387,11 @@ export function DeviceOverrideRow({
           {!isJsonOnly && definition && (
             <span className="text-muted-foreground/60">
               {" "}
-              · default {formatSettingValue(setting.key, defaultValueToString(definition))}
+              · default{" "}
+              {formatSettingValue(
+                setting.key,
+                defaultValueToString(definition),
+              )}
             </span>
           )}
         </div>
@@ -387,8 +405,14 @@ export function DeviceOverrideRow({
 
       <div className="flex flex-col items-stretch gap-2 md:min-w-[220px] md:items-end">
         {isJsonOnly || !definition ? (
-          <Button variant="outline" size="sm" onClick={() => onEditJson(setting, isOverride)}>
-            {setting.key === SETTING_KEYS.PLAYBACK_SUBTITLE_APPEARANCE ? "Customize" : "Edit JSON"}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEditJson(setting, isOverride)}
+          >
+            {setting.key === SETTING_KEYS.PLAYBACK_SUBTITLE_APPEARANCE
+              ? "Customize"
+              : "Edit JSON"}
           </Button>
         ) : (
           <RegistrySettingControl
@@ -484,30 +508,32 @@ function buildRenderedRows(
   if (!showAllSettings || !device) return overridden;
 
   const seen = new Set(overridden.map((r) => r.setting.key));
-  const synthetics: RenderedRow[] = ALL_DEVICE_SETTING_KEYS.filter((key) => !seen.has(key)).map(
-    (key) => {
-      const definition = getSettingDefinition(key);
-      return {
-        isOverride: false,
-        setting: {
-          user_id: device.userId,
-          profile_id: profile.profileId,
-          profile_name: profile.profileName,
-          device_id: device.deviceId,
-          device_name: device.deviceName,
-          device_platform: device.devicePlatform,
-          key: key as string,
-          value: definition ? defaultValueToString(definition) : "",
-          updated_at: "",
-        },
-      };
-    },
-  );
+  const synthetics: RenderedRow[] = ALL_DEVICE_SETTING_KEYS.filter(
+    (key) => !seen.has(key),
+  ).map((key) => {
+    const definition = getSettingDefinition(key);
+    return {
+      isOverride: false,
+      setting: {
+        user_id: device.userId,
+        profile_id: profile.profileId,
+        profile_name: profile.profileName,
+        device_id: device.deviceId,
+        device_name: device.deviceName,
+        device_platform: device.devicePlatform,
+        key: key as string,
+        value: definition ? defaultValueToString(definition) : "",
+        updated_at: "",
+      },
+    };
+  });
 
   // Render in canonical manifest order so the layout is stable as overrides
   // are added or removed (rather than "overrides bubble to top, defaults
   // sink").  Stable order > recency for an admin browsing fields.
-  const order = new Map<string, number>(ALL_DEVICE_SETTING_KEYS.map((key, idx) => [key, idx]));
+  const order = new Map<string, number>(
+    ALL_DEVICE_SETTING_KEYS.map((key, idx) => [key, idx]),
+  );
   const all = [...overridden, ...synthetics];
   all.sort(
     (a, b) =>
@@ -530,7 +556,9 @@ export function DeviceProfileTabs({
   updatePending,
   resetPending = false,
 }: DeviceProfileTabsProps) {
-  const [activeId, setActiveId] = useState<string | null>(initialProfileId ?? null);
+  const [activeId, setActiveId] = useState<string | null>(
+    initialProfileId ?? null,
+  );
 
   const active = useMemo(
     () => profiles.find((p) => p.profileId === activeId) ?? profiles[0] ?? null,
@@ -543,7 +571,10 @@ export function DeviceProfileTabs({
   // Conflicts depend on the active profile's settings as a whole. Memoize
   // by the active profile's reference + a content hash via the rendered
   // row keys/values — recomputes on profile switch and on save.
-  const conflictMap = useMemo(() => detectSettingConflicts(active?.settings ?? []), [active]);
+  const conflictMap = useMemo(
+    () => detectSettingConflicts(active?.settings ?? []),
+    [active],
+  );
   const anomaliesByKey = useMemo(() => {
     const out = new Map<string, SettingAnomaly>();
     for (const { setting, isOverride } of rows) {
@@ -577,7 +608,10 @@ export function DeviceProfileTabs({
           const isActive = profile.profileId === active.profileId;
           const tabAccent = profileAccent(profile.profileId);
           const initial =
-            (profile.profileName || profile.profileId).trim().charAt(0).toUpperCase() || "?";
+            (profile.profileName || profile.profileId)
+              .trim()
+              .charAt(0)
+              .toUpperCase() || "?";
           return (
             <button
               key={profile.profileId}
@@ -647,7 +681,9 @@ export function DeviceProfileTabs({
           <span className="truncate font-mono">{active.profileId}</span>
           <span className="text-muted-foreground/40">·</span>
           <span className="tabular-nums">
-            <span className="text-foreground/80 font-medium">{overrideCount}</span>{" "}
+            <span className="text-foreground/80 font-medium">
+              {overrideCount}
+            </span>{" "}
             {overrideCount === 1 ? "override" : "overrides"}
             {showAllSettings && rows.length > overrideCount && (
               <span className="text-muted-foreground/60">

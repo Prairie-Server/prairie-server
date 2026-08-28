@@ -32,7 +32,11 @@ function createWrapper() {
     defaultOptions: { queries: { retry: false } },
   });
   return function Wrapper({ children }: { children: ReactNode }) {
-    return createElement(QueryClientProvider, { client: queryClient }, children);
+    return createElement(
+      QueryClientProvider,
+      { client: queryClient },
+      children,
+    );
   };
 }
 
@@ -46,7 +50,9 @@ describe("useOverlayPrefs", () => {
 
   it("reads the server-wide overlay configuration without bypassing the shared query cache", async () => {
     mocks.api.mockResolvedValue({ enabled: true });
-    const { result } = renderHook(() => useOverlayPrefs(), { wrapper: createWrapper() });
+    const { result } = renderHook(() => useOverlayPrefs(), {
+      wrapper: createWrapper(),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
@@ -57,7 +63,10 @@ describe("useOverlayPrefs", () => {
 
   it("refreshes the shared overlay configuration immediately after an admin save", async () => {
     const queryClient = new QueryClient({
-      defaultOptions: { mutations: { retry: false }, queries: { retry: false } },
+      defaultOptions: {
+        mutations: { retry: false },
+        queries: { retry: false },
+      },
     });
     const invalidateQueries = vi.spyOn(queryClient, "invalidateQueries");
     mocks.api.mockResolvedValue({});

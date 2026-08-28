@@ -1,7 +1,10 @@
 import { useMemo, useCallback } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { SidebarPin, SidebarPins } from "@/api/types";
-import { captureProfileRequestContext, isProfileRequestContextCurrent } from "@/api/client";
+import {
+  captureProfileRequestContext,
+  isProfileRequestContextCurrent,
+} from "@/api/client";
 import { storage } from "@/utils/storage";
 import { randomUUID } from "@/lib/uuid";
 import { SETTING_KEYS } from "@/lib/settingsContract";
@@ -34,9 +37,15 @@ interface SidebarPinsWriteQueue {
 // callbacks still share one ordered stream per query client and active-profile
 // cache key, so a later remove cannot overtake an earlier add and one instance
 // cannot clear another's optimistic overlay while it still has work queued.
-const sidebarPinsWriteQueues = new WeakMap<object, Map<string, SidebarPinsWriteQueue>>();
+const sidebarPinsWriteQueues = new WeakMap<
+  object,
+  Map<string, SidebarPinsWriteQueue>
+>();
 
-function sidebarPinsWriteQueue(queryClient: object, pinsQueryKey: readonly unknown[]) {
+function sidebarPinsWriteQueue(
+  queryClient: object,
+  pinsQueryKey: readonly unknown[],
+) {
   let queues = sidebarPinsWriteQueues.get(queryClient);
   if (!queues) {
     queues = new Map();
@@ -89,13 +98,17 @@ export function parseSidebarPins(value: unknown): SidebarPins {
       return {};
     }
   }
-  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return {};
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
+    return {};
 
   // Revision 5 promotes web-only sidebar pins into the shared shortcut
   // catalog. Convert the flat cross-client shape back to the grouped view the
   // existing sidebar renders; library shortcuts live in the primary menu and
   // therefore do not appear as children of themselves.
-  if ("items" in parsed && Array.isArray((parsed as { items?: unknown }).items)) {
+  if (
+    "items" in parsed &&
+    Array.isArray((parsed as { items?: unknown }).items)
+  ) {
     const grouped: SidebarPins = {};
     for (const item of parseShortcuts(parsed).items) {
       if (item.type === "library" || item.library_id === undefined) continue;
@@ -135,10 +148,23 @@ export function sidebarPinsToShortcuts(pins: SidebarPins): ShortcutDocument {
   };
 }
 
-function shortcutFromSidebarPin(libraryId: number, pin: SidebarPin): ShortcutTarget {
+function shortcutFromSidebarPin(
+  libraryId: number,
+  pin: SidebarPin,
+): ShortcutTarget {
   return pin.type === "section"
-    ? { type: "section", library_id: libraryId, section_id: pin.id, label: pin.label }
-    : { type: "collection", library_id: libraryId, collection_id: pin.id, label: pin.label };
+    ? {
+        type: "section",
+        library_id: libraryId,
+        section_id: pin.id,
+        label: pin.label,
+      }
+    : {
+        type: "collection",
+        library_id: libraryId,
+        collection_id: pin.id,
+        label: pin.label,
+      };
 }
 
 function shortcutDocumentFromSidebarValue(value: unknown): ShortcutDocument {
@@ -184,11 +210,17 @@ export function setNavigationShortcutPresence(
 ): ShortcutDocument {
   const document = shortcutDocumentFromSidebarValue(value);
   const targetKey = menuItemKey(target);
-  const index = document.items.findIndex((item) => menuItemKey(item) === targetKey);
+  const index = document.items.findIndex(
+    (item) => menuItemKey(item) === targetKey,
+  );
   if (!present) {
     return index < 0
       ? document
-      : { items: document.items.filter((item) => menuItemKey(item) !== targetKey) };
+      : {
+          items: document.items.filter(
+            (item) => menuItemKey(item) !== targetKey,
+          ),
+        };
   }
   if (index < 0) return { items: [...document.items, target] };
   const items = [...document.items];
@@ -248,7 +280,11 @@ export function createSidebarPinsOptimisticMutation({
   const present = !shortcutDocumentFromSidebarValue(currentValue).items.some(
     (candidate) => menuItemKey(candidate) === menuItemKey(item),
   );
-  const optimisticDocument = setNavigationShortcutPresence(currentValue, item, present);
+  const optimisticDocument = setNavigationShortcutPresence(
+    currentValue,
+    item,
+    present,
+  );
 
   return {
     previousValue: currentValue ?? null,
@@ -317,7 +353,8 @@ export function useToggleSidebarPin() {
     SETTING_KEYS.NAV_SHORTCUTS,
   );
   const canToggle =
-    hasActiveProfile && settingsCapabilitiesSupportAtomicShortcuts(capabilities.data);
+    hasActiveProfile &&
+    settingsCapabilitiesSupportAtomicShortcuts(capabilities.data);
   const enabled = hasActiveProfile && supportsShortcuts;
   const { data } = useEffectiveSettings({ keys: PINS_KEYS, enabled });
   const renderValue = data?.[SETTING_KEYS.NAV_SHORTCUTS]?.value;
@@ -335,7 +372,9 @@ export function useToggleSidebarPin() {
    * from replacing newer local intent while that queue is draining.
    */
   const readCachedValue = useCallback(() => {
-    const overlay = queryClient.getQueryData<ShortcutDocument | null>(overlayQueryKey);
+    const overlay = queryClient.getQueryData<ShortcutDocument | null>(
+      overlayQueryKey,
+    );
     if (overlay) return overlay;
     const cached = queryClient.getQueryData<EffectiveSettingsMap>(
       effectiveSettingsQueryKey({ keys: PINS_KEYS }),
@@ -344,10 +383,16 @@ export function useToggleSidebarPin() {
   }, [overlayQueryKey, queryClient, renderValue]);
 
   const isPinned = useCallback(
-    (libraryId: number, pinType: SidebarPin["type"], targetId: string): boolean => {
+    (
+      libraryId: number,
+      pinType: SidebarPin["type"],
+      targetId: string,
+    ): boolean => {
       const pins = parseSidebarPins(readCachedValue());
       const key = String(libraryId);
-      return (pins[key] ?? []).some((p) => p.type === pinType && p.id === targetId);
+      return (pins[key] ?? []).some(
+        (p) => p.type === pinType && p.id === targetId,
+      );
     },
     [readCachedValue],
   );
@@ -358,26 +403,42 @@ export function useToggleSidebarPin() {
       const profileAuth = captureProfileRequestContext();
       if (!profileAuth) return;
       const profileId = profileAuth.profileId;
-      const pinsQueryKey = effectiveSettingsQueryKey({ keys: PINS_KEYS, profileId });
+      const pinsQueryKey = effectiveSettingsQueryKey({
+        keys: PINS_KEYS,
+        profileId,
+      });
       const operationOverlayQueryKey = sidebarPinsOverlayQueryKey(profileId);
       const revisionKey = [...pinsQueryKey, "optimistic-revision"] as const;
-      const { queue, queues, key: queueKey } = sidebarPinsWriteQueue(queryClient, pinsQueryKey);
+      const {
+        queue,
+        queues,
+        key: queueKey,
+      } = sidebarPinsWriteQueue(queryClient, pinsQueryKey);
       const previousEntry =
-        queryClient.getQueryData<EffectiveSettingsMap>(pinsQueryKey)?.[SETTING_KEYS.NAV_SHORTCUTS];
+        queryClient.getQueryData<EffectiveSettingsMap>(pinsQueryKey)?.[
+          SETTING_KEYS.NAV_SHORTCUTS
+        ];
       const previousOverlay =
-        queryClient.getQueryData<ShortcutDocument | null>(operationOverlayQueryKey) ?? null;
-      const cachedRevision = queryClient.getQueryData<number | null>(revisionKey) ?? null;
+        queryClient.getQueryData<ShortcutDocument | null>(
+          operationOverlayQueryKey,
+        ) ?? null;
+      const cachedRevision =
+        queryClient.getQueryData<number | null>(revisionKey) ?? null;
       nextSidebarPinsRevision += 1;
       const mutation = createSidebarPinsOptimisticMutation({
         currentValue:
-          previousOverlay ?? (previousEntry !== undefined ? previousEntry.value : renderValue),
+          previousOverlay ??
+          (previousEntry !== undefined ? previousEntry.value : renderValue),
         currentRevision: cachedRevision,
         libraryId,
         pin,
         revision: nextSidebarPinsRevision,
       });
 
-      queryClient.setQueryData(operationOverlayQueryKey, mutation.optimisticDocument);
+      queryClient.setQueryData(
+        operationOverlayQueryKey,
+        mutation.optimisticDocument,
+      );
       queryClient.setQueryData(revisionKey, mutation.revision);
       const queuedWrite = queue.tail
         .catch(() => undefined)
@@ -396,7 +457,9 @@ export function useToggleSidebarPin() {
           // this old account's optimistic predecessor back into aliased keys.
           if (!isProfileRequestContextCurrent(profileAuth)) return;
           const rollback = rollbackSidebarPinsOptimisticMutation({
-            currentRevision: queryClient.getQueryData<number | null>(revisionKey),
+            currentRevision: queryClient.getQueryData<number | null>(
+              revisionKey,
+            ),
             mutation,
           });
 
@@ -414,7 +477,10 @@ export function useToggleSidebarPin() {
           if (queues.get(queueKey) === queue) queues.delete(queueKey);
           return;
         }
-        await queryClient.invalidateQueries({ queryKey: pinsQueryKey, exact: true });
+        await queryClient.invalidateQueries({
+          queryKey: pinsQueryKey,
+          exact: true,
+        });
         if (queue.tail !== settledWrite) return;
         queryClient.setQueryData(operationOverlayQueryKey, null);
         queryClient.setQueryData(revisionKey, null);

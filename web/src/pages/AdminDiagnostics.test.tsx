@@ -3,7 +3,10 @@ import userEvent from "@testing-library/user-event";
 import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import type { DiagnosticAvailabilityStatus, DiagnosticStatus } from "@/api/types";
+import type {
+  DiagnosticAvailabilityStatus,
+  DiagnosticStatus,
+} from "@/api/types";
 
 const mocks = vi.hoisted(() => ({
   mutateUploadsEnabled: vi.fn(),
@@ -18,7 +21,11 @@ vi.mock("@/hooks/useDateTimeFormat", () => ({
 vi.mock("@/hooks/queries/admin/diagnostics", () => ({
   downloadDiagnosticReport: vi.fn(),
   useDeleteDiagnosticReport: () => ({ isPending: false, mutate: vi.fn() }),
-  useDiagnosticReport: () => ({ data: undefined, isError: false, isLoading: false }),
+  useDiagnosticReport: () => ({
+    data: undefined,
+    isError: false,
+    isLoading: false,
+  }),
   useDiagnosticReports: () => ({
     data: { reports: [] },
     isError: false,
@@ -26,12 +33,15 @@ vi.mock("@/hooks/queries/admin/diagnostics", () => ({
     isLoading: false,
   }),
   useDiagnosticsStatus: () => mocks.useDiagnosticsStatus(),
-  useUpdateDiagnosticsUploadsEnabled: () => mocks.useUpdateDiagnosticsUploadsEnabled(),
+  useUpdateDiagnosticsUploadsEnabled: () =>
+    mocks.useUpdateDiagnosticsUploadsEnabled(),
 }));
 
 import AdminDiagnostics from "./AdminDiagnostics";
 
-function diagnosticStatus(status: DiagnosticAvailabilityStatus): DiagnosticStatus {
+function diagnosticStatus(
+  status: DiagnosticAvailabilityStatus,
+): DiagnosticStatus {
   return {
     status,
     server_instance_id: "server-id",
@@ -73,7 +83,9 @@ describe("AdminDiagnostics uploads toggle", () => {
     const toggle = screen.getByRole("switch", { name: "Client uploads" });
 
     expect(toggle).not.toBeChecked();
-    expect(screen.getByText(/Use the Client uploads toggle above to enable them/)).toBeVisible();
+    expect(
+      screen.getByText(/Use the Client uploads toggle above to enable them/),
+    ).toBeVisible();
 
     await user.click(toggle);
 
@@ -106,8 +118,12 @@ describe("AdminDiagnostics uploads toggle", () => {
     });
     renderPage();
 
-    expect(screen.getByRole("switch", { name: "Client uploads" })).toBeChecked();
-    expect(screen.getByText(/Client diagnostic storage is currently unavailable/)).toBeVisible();
+    expect(
+      screen.getByRole("switch", { name: "Client uploads" }),
+    ).toBeChecked();
+    expect(
+      screen.getByText(/Client diagnostic storage is currently unavailable/),
+    ).toBeVisible();
   });
 
   it("disables the toggle while an update is pending", () => {
@@ -117,7 +133,9 @@ describe("AdminDiagnostics uploads toggle", () => {
     });
     renderPage();
 
-    expect(screen.getByRole("switch", { name: "Client uploads" })).toBeDisabled();
+    expect(
+      screen.getByRole("switch", { name: "Client uploads" }),
+    ).toBeDisabled();
   });
 
   it("disables the toggle when status is unavailable", () => {
@@ -128,6 +146,8 @@ describe("AdminDiagnostics uploads toggle", () => {
     });
     renderPage();
 
-    expect(screen.getByRole("switch", { name: "Client uploads" })).toBeDisabled();
+    expect(
+      screen.getByRole("switch", { name: "Client uploads" }),
+    ).toBeDisabled();
   });
 });

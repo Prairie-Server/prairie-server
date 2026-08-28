@@ -27,15 +27,26 @@ export function SaveBar({
       )}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <span className="text-muted-foreground text-sm">
-          {dirtyCount > 0 ? `${dirtyCount} unsaved change${dirtyCount > 1 ? "s" : ""}` : ""}
+          {dirtyCount > 0
+            ? `${dirtyCount} unsaved change${dirtyCount > 1 ? "s" : ""}`
+            : ""}
         </span>
         <div className="flex flex-col gap-2 sm:flex-row">
           {restartRequired && <RestartServerButton />}
-          <Button variant="outline" size="sm" onClick={onDiscard} disabled={dirtyCount === 0}>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={onDiscard}
+            disabled={dirtyCount === 0}
+          >
             <Undo2 />
             Discard
           </Button>
-          <Button size="sm" onClick={onSave} disabled={dirtyCount === 0 || isSaving}>
+          <Button
+            size="sm"
+            onClick={onSave}
+            disabled={dirtyCount === 0 || isSaving}
+          >
             {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
             {isSaving ? "Saving..." : "Save Changes"}
           </Button>

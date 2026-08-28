@@ -29,22 +29,30 @@ const STEP_TITLES: Record<WizardStepId, string> = {
 
 const STEP_DESCRIPTIONS: Record<WizardStepId, string> = {
   account: "This will be the admin account for managing your server.",
-  profile: "Profiles let different people track their own watch history and preferences.",
-  server: "Configure core infrastructure. All fields are optional and can be changed later.",
-  integrations: "Configure subtitle providers for automatic subtitle downloading.",
+  profile:
+    "Profiles let different people track their own watch history and preferences.",
+  server:
+    "Configure core infrastructure. All fields are optional and can be changed later.",
+  integrations:
+    "Configure subtitle providers for automatic subtitle downloading.",
   downloads: "Allow users to download media files for offline viewing.",
   recommendations: "AI-powered recommendations using embeddings.",
-  library: "Point Prairie at your media files. You can add more libraries later.",
+  library:
+    "Point Prairie at your media files. You can add more libraries later.",
   nodes: "Prairie is ready. Start exploring or fine-tune in admin settings.",
 };
 
 function WizardContent() {
-  const { user, profiles, librariesLoading, profilesLoading } = useWizardContext();
+  const { user, profiles, librariesLoading, profilesLoading } =
+    useWizardContext();
   const { steps, currentStep } = useWizardSteps();
   const isAdmin = user?.role === "admin";
   const profileComplete = profiles.length > 0;
 
-  if (profilesLoading || (user && profileComplete && isAdmin && librariesLoading)) {
+  if (
+    profilesLoading ||
+    (user && profileComplete && isAdmin && librariesLoading)
+  ) {
     return (
       <div className="auth-shell items-start py-10 sm:py-14">
         <AuthBackground />
@@ -56,7 +64,10 @@ function WizardContent() {
           <div className="space-y-3">
             <div className="flex gap-1">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="bg-foreground/[0.06] h-1 flex-1 rounded-full" />
+                <div
+                  key={i}
+                  className="bg-foreground/[0.06] h-1 flex-1 rounded-full"
+                />
               ))}
             </div>
             <div className="bg-foreground/[0.06] h-3 w-32 animate-pulse rounded" />
@@ -72,7 +83,10 @@ function WizardContent() {
     <div className="auth-shell items-start py-10 sm:py-14">
       <AuthBackground />
       <div className="auth-setup-panel relative z-1 w-full max-w-2xl p-1 pb-8 sm:p-2 sm:pb-10">
-        <AuthBrandHero className="mb-8" subtitle="First-run setup for your Prairie server." />
+        <AuthBrandHero
+          className="mb-8"
+          subtitle="First-run setup for your Prairie server."
+        />
         <div className="mb-10">
           <StepIndicator steps={steps} />
           <h1 className="font-display text-foreground mt-6 text-[1.7rem] leading-tight font-semibold tracking-[-0.03em] sm:text-3xl">
@@ -106,7 +120,9 @@ export default function SetupWizard() {
     return (
       <main className="auth-shell">
         <AuthBackground />
-        <div className="text-muted-foreground relative z-1 text-sm">Loading setup…</div>
+        <div className="text-muted-foreground relative z-1 text-sm">
+          Loading setup…
+        </div>
       </main>
     );
   }

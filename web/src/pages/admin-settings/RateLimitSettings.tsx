@@ -1,6 +1,9 @@
 import { useMemo, useState } from "react";
 import { AlertTriangle, Loader2, Save } from "lucide-react";
-import { useRateLimitConfig, useUpdateRateLimitConfig } from "@/hooks/queries/admin/rateLimits";
+import {
+  useRateLimitConfig,
+  useUpdateRateLimitConfig,
+} from "@/hooks/queries/admin/rateLimits";
 import type {
   RateLimitConfig,
   RateLimitTierConfig,
@@ -36,7 +39,11 @@ const DEFAULT_CONFIG: RateLimitConfig = {
   global_requests_per_second: 1000,
   tiers: {
     standard: { requests_per_second: 20, requests_per_minute: 1200, burst: 20 },
-    elevated: { requests_per_second: 100, requests_per_minute: 6000, burst: 100 },
+    elevated: {
+      requests_per_second: 100,
+      requests_per_minute: 6000,
+      burst: 100,
+    },
   },
   ip_requests_per_second: 120,
   ip_requests_per_minute: 6000,
@@ -77,13 +84,17 @@ export default function RateLimitSettings() {
       backend: serverConfig.backend || "memory",
       global_requests_per_second: serverConfig.global_requests_per_second,
       tiers: {
-        standard: serverConfig.tiers?.standard ?? DEFAULT_CONFIG.tiers.standard!,
-        elevated: serverConfig.tiers?.elevated ?? DEFAULT_CONFIG.tiers.elevated!,
+        standard:
+          serverConfig.tiers?.standard ?? DEFAULT_CONFIG.tiers.standard!,
+        elevated:
+          serverConfig.tiers?.elevated ?? DEFAULT_CONFIG.tiers.elevated!,
       },
       ip_requests_per_second:
-        serverConfig.ip_requests_per_second ?? DEFAULT_CONFIG.ip_requests_per_second,
+        serverConfig.ip_requests_per_second ??
+        DEFAULT_CONFIG.ip_requests_per_second,
       ip_requests_per_minute:
-        serverConfig.ip_requests_per_minute ?? DEFAULT_CONFIG.ip_requests_per_minute,
+        serverConfig.ip_requests_per_minute ??
+        DEFAULT_CONFIG.ip_requests_per_minute,
       ip_burst: serverConfig.ip_burst ?? DEFAULT_CONFIG.ip_burst,
       auth_endpoints: Object.fromEntries(
         Object.keys(AUTH_ENDPOINT_LABELS).map((endpoint) => [
@@ -96,13 +107,19 @@ export default function RateLimitSettings() {
     };
   }, [serverConfig]);
   const hydratedKey = JSON.stringify(hydratedConfig);
-  const [configState, setConfigState] = useState<{ key: string; config: RateLimitConfig }>({
+  const [configState, setConfigState] = useState<{
+    key: string;
+    config: RateLimitConfig;
+  }>({
     key: hydratedKey,
     config: hydratedConfig,
   });
-  const config = configState.key === hydratedKey ? configState.config : hydratedConfig;
+  const config =
+    configState.key === hydratedKey ? configState.config : hydratedConfig;
 
-  function updateConfigState(updater: (prev: RateLimitConfig) => RateLimitConfig) {
+  function updateConfigState(
+    updater: (prev: RateLimitConfig) => RateLimitConfig,
+  ) {
     setConfigState((prev) => {
       const base = prev.key === hydratedKey ? prev.config : hydratedConfig;
       return {
@@ -112,7 +129,11 @@ export default function RateLimitSettings() {
     });
   }
 
-  function handleTierChange(tier: string, field: keyof RateLimitTierConfig, value: string) {
+  function handleTierChange(
+    tier: string,
+    field: keyof RateLimitTierConfig,
+    value: string,
+  ) {
     const num = parseInt(value, 10);
     if (isNaN(num) || num <= 0) return;
     updateConfigState((prev) => {
@@ -173,17 +194,22 @@ export default function RateLimitSettings() {
       <div className="mb-6 space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Rate Limiting</h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Configure request budgets for protected API routes, API keys, and public authentication or
-          Autoscan endpoints.
+          Configure request budgets for protected API routes, API keys, and
+          public authentication or Autoscan endpoints.
         </p>
       </div>
 
-      <fieldset disabled={updateConfig.isPending} className="max-w-2xl space-y-4">
+      <fieldset
+        disabled={updateConfig.isPending}
+        className="max-w-2xl space-y-4"
+      >
         {pendingRestart && (
           <div className="surface-panel-subtle flex flex-col gap-3 rounded-xl p-4 sm:flex-row sm:items-center sm:justify-between">
             <div className="text-foreground/80 flex items-center gap-2 text-xs">
               <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
-              <span>Saved changes require a server restart to take effect.</span>
+              <span>
+                Saved changes require a server restart to take effect.
+              </span>
             </div>
             <RestartServerButton />
           </div>
@@ -191,7 +217,10 @@ export default function RateLimitSettings() {
         <div className="surface-panel rounded-2xl border-0 px-5 py-4">
           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div className="space-y-0.5">
-              <Label htmlFor="rate-limit-enabled" className="text-sm font-medium">
+              <Label
+                htmlFor="rate-limit-enabled"
+                className="text-sm font-medium"
+              >
                 Enable Rate Limiting
               </Label>
               <p className="text-muted-foreground text-xs">
@@ -215,7 +244,9 @@ export default function RateLimitSettings() {
             </Label>
             <Select
               value={config.backend}
-              onValueChange={(value) => updateConfigState((prev) => ({ ...prev, backend: value }))}
+              onValueChange={(value) =>
+                updateConfigState((prev) => ({ ...prev, backend: value }))
+              }
             >
               <SelectTrigger id="backend" className="w-full sm:w-40">
                 <SelectValue />
@@ -226,8 +257,9 @@ export default function RateLimitSettings() {
               </SelectContent>
             </Select>
             <p className="text-muted-foreground text-xs">
-              Backend changes require a restart. Redis is recommended for multi-instance deployments
-              and must first be configured under Database.
+              Backend changes require a restart. Redis is recommended for
+              multi-instance deployments and must first be configured under
+              Database.
             </p>
           </div>
         </div>
@@ -246,13 +278,17 @@ export default function RateLimitSettings() {
               onChange={(e) => {
                 const num = parseInt(e.target.value, 10);
                 if (!isNaN(num) && num > 0) {
-                  updateConfigState((prev) => ({ ...prev, global_requests_per_second: num }));
+                  updateConfigState((prev) => ({
+                    ...prev,
+                    global_requests_per_second: num,
+                  }));
                 }
               }}
               className="w-full sm:w-40"
             />
             <p className="text-muted-foreground text-xs">
-              Maximum requests per second across every route protected by the rate limiter.
+              Maximum requests per second across every route protected by the
+              rate limiter.
             </p>
           </div>
         </div>
@@ -260,8 +296,8 @@ export default function RateLimitSettings() {
         <div className="surface-panel rounded-2xl border-0 px-5 py-4">
           <div className="mb-1 text-sm font-semibold">Per-IP Limits</div>
           <p className="text-muted-foreground mb-3 text-xs">
-            Shared across protected authenticated routes and the public auth/Autoscan endpoints for
-            one IP address.
+            Shared across protected authenticated routes and the public
+            auth/Autoscan endpoints for one IP address.
           </p>
           <div className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1">
@@ -276,7 +312,10 @@ export default function RateLimitSettings() {
                 onChange={(e) => {
                   const num = parseInt(e.target.value, 10);
                   if (!isNaN(num) && num > 0) {
-                    updateConfigState((prev) => ({ ...prev, ip_requests_per_second: num }));
+                    updateConfigState((prev) => ({
+                      ...prev,
+                      ip_requests_per_second: num,
+                    }));
                   }
                 }}
                 className="w-full"
@@ -294,7 +333,10 @@ export default function RateLimitSettings() {
                 onChange={(e) => {
                   const num = parseInt(e.target.value, 10);
                   if (!isNaN(num) && num > 0) {
-                    updateConfigState((prev) => ({ ...prev, ip_requests_per_minute: num }));
+                    updateConfigState((prev) => ({
+                      ...prev,
+                      ip_requests_per_minute: num,
+                    }));
                   }
                 }}
                 className="w-full"
@@ -325,14 +367,23 @@ export default function RateLimitSettings() {
         {Object.keys(TIER_LABELS).map((tier) => {
           const tierConfig = config.tiers[tier] ?? DEFAULT_TIER;
           return (
-            <div key={tier} className="surface-panel rounded-2xl border-0 px-5 py-4">
-              <div className="mb-1 text-sm font-semibold">{TIER_LABELS[tier]} Tier</div>
+            <div
+              key={tier}
+              className="surface-panel rounded-2xl border-0 px-5 py-4"
+            >
+              <div className="mb-1 text-sm font-semibold">
+                {TIER_LABELS[tier]} Tier
+              </div>
               <p className="text-muted-foreground mb-3 text-xs">
-                Per API key limits for the {TIER_LABELS[tier]!.toLowerCase()} tier.
+                Per API key limits for the {TIER_LABELS[tier]!.toLowerCase()}{" "}
+                tier.
               </p>
               <div className="grid gap-4 sm:grid-cols-3">
                 <div className="space-y-1">
-                  <Label htmlFor={`${tier}-rps`} className="text-sm font-medium">
+                  <Label
+                    htmlFor={`${tier}-rps`}
+                    className="text-sm font-medium"
+                  >
                     Requests / Second
                   </Label>
                   <Input
@@ -340,12 +391,21 @@ export default function RateLimitSettings() {
                     type="number"
                     min={1}
                     value={tierConfig.requests_per_second}
-                    onChange={(e) => handleTierChange(tier, "requests_per_second", e.target.value)}
+                    onChange={(e) =>
+                      handleTierChange(
+                        tier,
+                        "requests_per_second",
+                        e.target.value,
+                      )
+                    }
                     className="w-full"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor={`${tier}-rpm`} className="text-sm font-medium">
+                  <Label
+                    htmlFor={`${tier}-rpm`}
+                    className="text-sm font-medium"
+                  >
                     Requests / Minute
                   </Label>
                   <Input
@@ -353,12 +413,21 @@ export default function RateLimitSettings() {
                     type="number"
                     min={1}
                     value={tierConfig.requests_per_minute}
-                    onChange={(e) => handleTierChange(tier, "requests_per_minute", e.target.value)}
+                    onChange={(e) =>
+                      handleTierChange(
+                        tier,
+                        "requests_per_minute",
+                        e.target.value,
+                      )
+                    }
                     className="w-full"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label htmlFor={`${tier}-burst`} className="text-sm font-medium">
+                  <Label
+                    htmlFor={`${tier}-burst`}
+                    className="text-sm font-medium"
+                  >
                     Burst
                   </Label>
                   <Input
@@ -366,7 +435,9 @@ export default function RateLimitSettings() {
                     type="number"
                     min={1}
                     value={tierConfig.burst}
-                    onChange={(e) => handleTierChange(tier, "burst", e.target.value)}
+                    onChange={(e) =>
+                      handleTierChange(tier, "burst", e.target.value)
+                    }
                     className="w-full"
                   />
                 </div>
@@ -378,12 +449,14 @@ export default function RateLimitSettings() {
         <div className="surface-panel rounded-2xl border-0 px-5 py-4">
           <div className="mb-1 text-sm font-semibold">Auth Endpoint Limits</div>
           <p className="text-muted-foreground mb-3 text-xs">
-            Per-IP limits for public authentication and Autoscan endpoints. These apply in addition
-            to the global and shared per-IP budgets above.
+            Per-IP limits for public authentication and Autoscan endpoints.
+            These apply in addition to the global and shared per-IP budgets
+            above.
           </p>
           <div className="space-y-4">
             {Object.keys(AUTH_ENDPOINT_LABELS).map((endpoint) => {
-              const epConfig = config.auth_endpoints[endpoint] ?? DEFAULT_AUTH_ENDPOINT;
+              const epConfig =
+                config.auth_endpoints[endpoint] ?? DEFAULT_AUTH_ENDPOINT;
               return (
                 <div key={endpoint}>
                   <div className="text-muted-foreground mb-2 text-xs font-medium">
@@ -391,7 +464,10 @@ export default function RateLimitSettings() {
                   </div>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1">
-                      <Label htmlFor={`${endpoint}-rpm`} className="text-sm font-medium">
+                      <Label
+                        htmlFor={`${endpoint}-rpm`}
+                        className="text-sm font-medium"
+                      >
                         Requests / Minute
                       </Label>
                       <Input
@@ -400,13 +476,20 @@ export default function RateLimitSettings() {
                         min={1}
                         value={epConfig.requests_per_minute}
                         onChange={(e) =>
-                          handleAuthEndpointChange(endpoint, "requests_per_minute", e.target.value)
+                          handleAuthEndpointChange(
+                            endpoint,
+                            "requests_per_minute",
+                            e.target.value,
+                          )
                         }
                         className="w-full"
                       />
                     </div>
                     <div className="space-y-1">
-                      <Label htmlFor={`${endpoint}-burst`} className="text-sm font-medium">
+                      <Label
+                        htmlFor={`${endpoint}-burst`}
+                        className="text-sm font-medium"
+                      >
                         Burst
                       </Label>
                       <Input
@@ -415,7 +498,11 @@ export default function RateLimitSettings() {
                         min={1}
                         value={epConfig.burst}
                         onChange={(e) =>
-                          handleAuthEndpointChange(endpoint, "burst", e.target.value)
+                          handleAuthEndpointChange(
+                            endpoint,
+                            "burst",
+                            e.target.value,
+                          )
                         }
                         className="w-full"
                       />
@@ -429,7 +516,11 @@ export default function RateLimitSettings() {
 
         <div className="pt-2">
           <Button onClick={handleSave} disabled={updateConfig.isPending}>
-            {updateConfig.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+            {updateConfig.isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )}
             {updateConfig.isPending ? "Saving..." : "Save Changes"}
           </Button>
         </div>

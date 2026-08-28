@@ -44,7 +44,11 @@ interface NavItem {
   icon: LucideIcon;
   description: string;
   keywords?: readonly string[];
-  settings?: readonly { label: string; description?: string; keywords?: readonly string[] }[];
+  settings?: readonly {
+    label: string;
+    description?: string;
+    keywords?: readonly string[];
+  }[];
   primaryOrAdmin?: boolean;
 }
 
@@ -53,7 +57,8 @@ interface NavSection {
   items: NavItem[];
 }
 
-const settingIndex = (...labels: string[]) => labels.map((label) => ({ label }));
+const settingIndex = (...labels: string[]) =>
+  labels.map((label) => ({ label }));
 
 /**
  * Settings pages that manage their own multi-column layout, so the shell's
@@ -243,15 +248,31 @@ const NAV_SECTIONS: NavSection[] = [
         icon: Eye,
         description: "Text size, weight, and contrast for easier reading.",
         keywords: ["contrast", "readability", "motion", "transparency", "text"],
-        settings: settingIndex("Text size", "Text weight", "Contrast", "High Contrast", "Preview"),
+        settings: settingIndex(
+          "Text size",
+          "Text weight",
+          "Contrast",
+          "High Contrast",
+          "Preview",
+        ),
       },
       {
         path: "theme-editor",
         label: "Theme Editor",
         icon: Wand2,
         description: "Fine-tune theme colors and add your own CSS.",
-        keywords: ["design tokens", "token overrides", "custom css", "community themes"],
-        settings: settingIndex("Preview", "Token Overrides", "Custom CSS", "Community Themes"),
+        keywords: [
+          "design tokens",
+          "token overrides",
+          "custom css",
+          "community themes",
+        ],
+        settings: settingIndex(
+          "Preview",
+          "Token Overrides",
+          "Custom CSS",
+          "Community Themes",
+        ),
       },
     ],
   },
@@ -263,7 +284,13 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Home Screen",
         icon: LayoutDashboard,
         description: "Which rows appear on Home, and in what order.",
-        keywords: ["sections", "rows", "continue watching", "next up", "library order"],
+        keywords: [
+          "sections",
+          "rows",
+          "continue watching",
+          "next up",
+          "library order",
+        ],
         settings: settingIndex(
           "Scope",
           "Sections",
@@ -279,14 +306,25 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Personalize",
         icon: Sparkles,
         description: "Re-tune the taste profile behind your recommendations.",
-        keywords: ["taste profile", "recommendations", "ratings", "likes", "dislikes"],
-        settings: settingIndex("Refine your taste profile", "Taste profile", "Recommendations"),
+        keywords: [
+          "taste profile",
+          "recommendations",
+          "ratings",
+          "likes",
+          "dislikes",
+        ],
+        settings: settingIndex(
+          "Refine your taste profile",
+          "Taste profile",
+          "Recommendations",
+        ),
       },
       {
         path: "libraries",
         label: "Libraries",
         icon: Library,
-        description: "Which libraries you see, their order, and per-library audio.",
+        description:
+          "Which libraries you see, their order, and per-library audio.",
         keywords: [
           "library visibility",
           "access",
@@ -344,7 +382,14 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Watch Providers",
         icon: Cloud,
         description: "Trakt watch history, favorites, and scrobbling.",
-        keywords: ["trakt", "import", "export", "scrobble", "favorites", "watch history"],
+        keywords: [
+          "trakt",
+          "import",
+          "export",
+          "scrobble",
+          "favorites",
+          "watch history",
+        ],
         settings: settingIndex(
           "Last imported",
           "Last exported",
@@ -366,7 +411,14 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Webhook Sync",
         icon: Server,
         description: "Take progress from Plex, Emby, and Jellyfin webhooks.",
-        keywords: ["plex", "emby", "jellyfin", "webhook", "progress", "watched"],
+        keywords: [
+          "plex",
+          "emby",
+          "jellyfin",
+          "webhook",
+          "progress",
+          "watched",
+        ],
         settings: settingIndex(
           "Add a connection",
           "Connected servers",
@@ -401,11 +453,40 @@ const NAV_SECTIONS: NavSection[] = [
     label: "Account",
     items: [
       {
+        path: "quick-connect",
+        label: "Quick Connect",
+        icon: MonitorSmartphone,
+        description: "Approve sign-in on another device",
+        keywords: [
+          "quick connect",
+          "pair device",
+          "device login",
+          "tv login",
+          "roku",
+          "smart tv",
+          "approve",
+          "code",
+          "qr",
+        ],
+        settings: settingIndex(
+          "Enter device code",
+          "Approve sign-in",
+          "Match code",
+          "How it works",
+        ),
+      },
+      {
         path: "profiles",
         label: "Profiles",
         icon: Users,
         description: "Household profile names, PINs, and library access.",
-        keywords: ["profile name", "pin", "access", "primary profile", "household"],
+        keywords: [
+          "profile name",
+          "pin",
+          "access",
+          "primary profile",
+          "household",
+        ],
         settings: settingIndex(
           "Profile name",
           "PIN",
@@ -421,7 +502,13 @@ const NAV_SECTIONS: NavSection[] = [
         label: "Notifications",
         icon: Bell,
         description: "New-episode alerts by email, Discord, push, or webhook.",
-        keywords: ["new episodes", "email", "discord", "browser push", "webhooks"],
+        keywords: [
+          "new episodes",
+          "email",
+          "discord",
+          "browser push",
+          "webhooks",
+        ],
         settings: settingIndex(
           "New Episode Notifications",
           "Email Notifications",
@@ -461,7 +548,9 @@ function SettingsOverview({ sections, profile }: SettingsOverviewProps) {
         className="surface-panel-subtle hover:bg-surface-hover/70 focus-visible:ring-ring flex min-h-16 items-center gap-3 rounded-2xl px-4 py-3 transition-colors focus-visible:ring-2 focus-visible:outline-none sm:max-w-md"
       >
         <Avatar className="border-border h-10 w-10 border">
-          {profile?.avatar_url ? <AvatarImage src={profile.avatar_url} alt="" /> : null}
+          {profile?.avatar_url ? (
+            <AvatarImage src={profile.avatar_url} alt="" />
+          ) : null}
           <AvatarFallback className="bg-accent text-foreground font-semibold">
             {profileName.charAt(0).toUpperCase()}
           </AvatarFallback>
@@ -470,7 +559,10 @@ function SettingsOverview({ sections, profile }: SettingsOverviewProps) {
           <p className="text-muted-foreground text-xs">Current profile</p>
           <p className="truncate text-sm font-semibold">{profileName}</p>
         </div>
-        <ChevronRight className="text-muted-foreground h-4 w-4 shrink-0" aria-hidden="true" />
+        <ChevronRight
+          className="text-muted-foreground h-4 w-4 shrink-0"
+          aria-hidden="true"
+        />
       </Link>
 
       <SettingsOverviewNav
@@ -502,13 +594,17 @@ export default function SettingsLayout() {
   const canManageProfiles = actingAdmin || profile?.is_primary === true;
   // Most settings pages are a single column of rows and read best measured.
   // A page that is itself two panes needs the room, so it opts out.
-  const wideSetting = activeSegment ? WIDE_SETTINGS_PAGES.has(activeSegment) : false;
+  const wideSetting = activeSegment
+    ? WIDE_SETTINGS_PAGES.has(activeSegment)
+    : false;
 
   const visibleSections = useMemo(
     () =>
       NAV_SECTIONS.map((section) => ({
         ...section,
-        items: section.items.filter((item) => !item.primaryOrAdmin || canManageProfiles),
+        items: section.items.filter(
+          (item) => !item.primaryOrAdmin || canManageProfiles,
+        ),
       })).filter((section) => section.items.length > 0),
     [canManageProfiles],
   );
@@ -542,9 +638,12 @@ export default function SettingsLayout() {
             </Link>
             <div className="page-header mt-10 hidden gap-5 sm:mt-12 lg:flex">
               <div className="min-w-0 space-y-3">
-                <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Settings</h1>
+                <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
+                  Settings
+                </h1>
                 <p className="page-subtitle text-sm sm:text-base">
-                  Manage your playback preferences, libraries, and display options.
+                  Manage your playback preferences, libraries, and display
+                  options.
                 </p>
               </div>
               <SettingsSearchInput
@@ -553,7 +652,9 @@ export default function SettingsLayout() {
                 resultCount={filteredSettingsCount}
                 totalCount={flatItems.length}
                 className="w-full sm:max-w-sm"
-                shortcutMediaQuery={activeSegment ? "(min-width: 64rem)" : undefined}
+                shortcutMediaQuery={
+                  activeSegment ? "(min-width: 64rem)" : undefined
+                }
               />
             </div>
 
@@ -590,13 +691,20 @@ export default function SettingsLayout() {
                     </SideNavSection>
                   ))}
                   {filteredSections.length === 0 ? (
-                    <p className="text-muted-foreground px-2 text-sm">No matching settings</p>
+                    <p className="text-muted-foreground px-2 text-sm">
+                      No matching settings
+                    </p>
                   ) : null}
                 </nav>
               </aside>
 
               <div className="min-w-0 flex-1 p-4 sm:p-6">
-                <div className={cn("w-full", wideSetting ? "max-w-none" : "max-w-3xl")}>
+                <div
+                  className={cn(
+                    "w-full",
+                    wideSetting ? "max-w-none" : "max-w-3xl",
+                  )}
+                >
                   <Outlet />
                 </div>
               </div>
@@ -607,7 +715,9 @@ export default function SettingsLayout() {
             <PageBack to="/" preferHistory={false} floating />
             <div className="page-header mt-10 mb-6 gap-5 sm:mt-12 sm:mb-8">
               <div className="min-w-0 space-y-3">
-                <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Settings</h1>
+                <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
+                  Settings
+                </h1>
                 <p className="page-subtitle text-sm sm:text-base">
                   Make Silo work the way you like.
                 </p>

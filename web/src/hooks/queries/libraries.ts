@@ -43,7 +43,10 @@ export function parseLibraryIDList(value: unknown): number[] {
   );
 }
 
-export function applyLibraryOrder(libraries: UserLibrary[], orderIDs: number[]): UserLibrary[] {
+export function applyLibraryOrder(
+  libraries: UserLibrary[],
+  orderIDs: number[],
+): UserLibrary[] {
   if (orderIDs.length === 0) return libraries;
   const pos = new Map(orderIDs.map((id, i) => [id, i]));
   const ordered: UserLibrary[] = [];
@@ -59,7 +62,10 @@ export function applyLibraryOrder(libraries: UserLibrary[], orderIDs: number[]):
   return [...ordered, ...tail];
 }
 
-export function filterVisibleLibraries(libraries: UserLibrary[], disabledLibraryIDs: number[]) {
+export function filterVisibleLibraries(
+  libraries: UserLibrary[],
+  disabledLibraryIDs: number[],
+) {
   if (disabledLibraryIDs.length === 0) return libraries;
   const disabled = new Set(disabledLibraryIDs);
   return libraries.filter((library) => !disabled.has(library.id));
@@ -82,13 +88,23 @@ export function useAvailableUserLibraries() {
  */
 export function useLibraryDisplayPreferences() {
   const { profile } = useAuth();
-  const query = useEffectiveSettings({ keys: LIBRARY_PREF_KEYS, enabled: Boolean(profile) });
-  const disabledValue = query.data?.[SETTING_KEYS.UI_DISABLED_LIBRARY_IDS]?.value;
+  const query = useEffectiveSettings({
+    keys: LIBRARY_PREF_KEYS,
+    enabled: Boolean(profile),
+  });
+  const disabledValue =
+    query.data?.[SETTING_KEYS.UI_DISABLED_LIBRARY_IDS]?.value;
   const orderValue = query.data?.[SETTING_KEYS.UI_LIBRARY_ORDER]?.value;
   // Memoized so effects keyed on these lists fire on saved-value changes, not
   // on every render.
-  const disabledLibraryIDs = useMemo(() => parseLibraryIDList(disabledValue), [disabledValue]);
-  const libraryOrder = useMemo(() => parseLibraryIDList(orderValue), [orderValue]);
+  const disabledLibraryIDs = useMemo(
+    () => parseLibraryIDList(disabledValue),
+    [disabledValue],
+  );
+  const libraryOrder = useMemo(
+    () => parseLibraryIDList(orderValue),
+    [orderValue],
+  );
   return {
     ...query,
     disabledLibraryIDs,

@@ -34,7 +34,9 @@ function makeProfile(overrides: Partial<Profile> = {}): Profile {
 
 describe("initializeAuthSession", () => {
   it("bootstraps the access token before fetching the current user", async () => {
-    const bootstrapAccessToken = vi.fn<() => Promise<boolean>>().mockResolvedValue(true);
+    const bootstrapAccessToken = vi
+      .fn<() => Promise<boolean>>()
+      .mockResolvedValue(true);
     const fetchCurrentUser = vi.fn<() => Promise<User>>().mockResolvedValue({
       id: 1,
       username: "admin",
@@ -46,7 +48,9 @@ describe("initializeAuthSession", () => {
     });
     const applyCurrentUser = vi.fn();
     const restoreProfile = vi.fn();
-    const recoverPreservedAdminSession = vi.fn<() => Promise<boolean>>().mockResolvedValue(false);
+    const recoverPreservedAdminSession = vi
+      .fn<() => Promise<boolean>>()
+      .mockResolvedValue(false);
     const clearTokens = vi.fn();
     const clearActiveAuthState = vi.fn();
 
@@ -73,11 +77,15 @@ describe("initializeAuthSession", () => {
   });
 
   it("clears stale tokens when bootstrap refresh fails", async () => {
-    const bootstrapAccessToken = vi.fn<() => Promise<boolean>>().mockResolvedValue(false);
+    const bootstrapAccessToken = vi
+      .fn<() => Promise<boolean>>()
+      .mockResolvedValue(false);
     const fetchCurrentUser = vi.fn<() => Promise<User>>();
     const applyCurrentUser = vi.fn();
     const restoreProfile = vi.fn();
-    const recoverPreservedAdminSession = vi.fn<() => Promise<boolean>>().mockResolvedValue(false);
+    const recoverPreservedAdminSession = vi
+      .fn<() => Promise<boolean>>()
+      .mockResolvedValue(false);
     const clearTokens = vi.fn();
     const clearActiveAuthState = vi.fn();
 
@@ -98,13 +106,17 @@ describe("initializeAuthSession", () => {
   });
 
   it("recovers the preserved admin session when impersonated auth is stale during init", async () => {
-    const bootstrapAccessToken = vi.fn<() => Promise<boolean>>().mockResolvedValue(true);
+    const bootstrapAccessToken = vi
+      .fn<() => Promise<boolean>>()
+      .mockResolvedValue(true);
     const fetchCurrentUser = vi
       .fn<() => Promise<User>>()
       .mockRejectedValue(new ApiClientError(401, "unauthorized", "expired"));
     const applyCurrentUser = vi.fn();
     const restoreProfile = vi.fn();
-    const recoverPreservedAdminSession = vi.fn<() => Promise<boolean>>().mockResolvedValue(true);
+    const recoverPreservedAdminSession = vi
+      .fn<() => Promise<boolean>>()
+      .mockResolvedValue(true);
     const clearTokens = vi.fn();
     const clearActiveAuthState = vi.fn();
 
@@ -129,13 +141,17 @@ describe("initializeAuthSession", () => {
   });
 
   it("clears stale impersonated tokens when admin recovery is not available", async () => {
-    const bootstrapAccessToken = vi.fn<() => Promise<boolean>>().mockResolvedValue(true);
+    const bootstrapAccessToken = vi
+      .fn<() => Promise<boolean>>()
+      .mockResolvedValue(true);
     const fetchCurrentUser = vi
       .fn<() => Promise<User>>()
       .mockRejectedValue(new ApiClientError(401, "unauthorized", "expired"));
     const applyCurrentUser = vi.fn();
     const restoreProfile = vi.fn();
-    const recoverPreservedAdminSession = vi.fn<() => Promise<boolean>>().mockResolvedValue(false);
+    const recoverPreservedAdminSession = vi
+      .fn<() => Promise<boolean>>()
+      .mockResolvedValue(false);
     const clearTokens = vi.fn();
     const clearActiveAuthState = vi.fn();
 
@@ -164,7 +180,9 @@ describe("getBootstrapProfile", () => {
   });
 
   it("returns null when multiple profiles exist", () => {
-    expect(getBootstrapProfile([makeProfile(), makeProfile({ id: "profile-2" })])).toBeNull();
+    expect(
+      getBootstrapProfile([makeProfile(), makeProfile({ id: "profile-2" })]),
+    ).toBeNull();
   });
 
   it("returns null when the only profile is PIN protected", () => {
@@ -182,7 +200,9 @@ describe("endImpersonationWithRecovery", () => {
       refreshToken: "admin-refresh",
       returnPath: "/admin/users/42",
     });
-    const restoreAdminUser = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const restoreAdminUser = vi
+      .fn<() => Promise<void>>()
+      .mockResolvedValue(undefined);
     const clearAuthState = vi.fn();
     const clearActiveAuthState = vi.fn();
 
@@ -208,13 +228,17 @@ describe("endImpersonationWithRecovery", () => {
   it("restores the preserved admin session when the server no longer considers the session impersonating", async () => {
     const endImpersonationRequest = vi
       .fn<() => Promise<void>>()
-      .mockRejectedValue(new ApiClientError(400, "not_impersonating", "already ended"));
+      .mockRejectedValue(
+        new ApiClientError(400, "not_impersonating", "already ended"),
+      );
     const loadStoredImpersonationAdminSession = vi.fn().mockReturnValue({
       accessToken: "admin-access",
       refreshToken: "admin-refresh",
       returnPath: "/admin/users/42",
     });
-    const restoreAdminUser = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const restoreAdminUser = vi
+      .fn<() => Promise<void>>()
+      .mockResolvedValue(undefined);
     const clearAuthState = vi.fn();
     const clearActiveAuthState = vi.fn();
 
@@ -237,13 +261,17 @@ describe("endImpersonationWithRecovery", () => {
 
   it("keeps non-auth failures surfaced instead of restoring the admin session", async () => {
     const error = new ApiClientError(500, "server_error", "boom");
-    const endImpersonationRequest = vi.fn<() => Promise<void>>().mockRejectedValue(error);
+    const endImpersonationRequest = vi
+      .fn<() => Promise<void>>()
+      .mockRejectedValue(error);
     const loadStoredImpersonationAdminSession = vi.fn().mockReturnValue({
       accessToken: "admin-access",
       refreshToken: "admin-refresh",
       returnPath: "/admin/users/42",
     });
-    const restoreAdminUser = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const restoreAdminUser = vi
+      .fn<() => Promise<void>>()
+      .mockResolvedValue(undefined);
     const clearAuthState = vi.fn();
     const clearActiveAuthState = vi.fn();
 
@@ -263,9 +291,13 @@ describe("endImpersonationWithRecovery", () => {
   });
 
   it("clears auth when ending impersonation succeeds without a preserved admin session", async () => {
-    const endImpersonationRequest = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const endImpersonationRequest = vi
+      .fn<() => Promise<void>>()
+      .mockResolvedValue(undefined);
     const loadStoredImpersonationAdminSession = vi.fn().mockReturnValue(null);
-    const restoreAdminUser = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const restoreAdminUser = vi
+      .fn<() => Promise<void>>()
+      .mockResolvedValue(undefined);
     const clearAuthState = vi.fn();
     const clearActiveAuthState = vi.fn();
 
@@ -283,13 +315,17 @@ describe("endImpersonationWithRecovery", () => {
   });
 
   it("restores the preserved admin session after a successful end request", async () => {
-    const endImpersonationRequest = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const endImpersonationRequest = vi
+      .fn<() => Promise<void>>()
+      .mockResolvedValue(undefined);
     const loadStoredImpersonationAdminSession = vi.fn().mockReturnValue({
       accessToken: "admin-access",
       refreshToken: "admin-refresh",
       returnPath: "/admin/users/42",
     });
-    const restoreAdminUser = vi.fn<() => Promise<void>>().mockResolvedValue(undefined);
+    const restoreAdminUser = vi
+      .fn<() => Promise<void>>()
+      .mockResolvedValue(undefined);
     const clearAuthState = vi.fn();
     const clearActiveAuthState = vi.fn();
 

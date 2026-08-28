@@ -14,14 +14,25 @@ describe("composeSourceLabel", () => {
 
   it("uses the operator label first, demoting connection to detail", () => {
     expect(
-      composeSourceLabel({ ...base, operatorLabel: "4K Movies", connectionName: "Radarr4k" }),
+      composeSourceLabel({
+        ...base,
+        operatorLabel: "4K Movies",
+        connectionName: "Radarr4k",
+      }),
     ).toEqual({ name: "4K Movies", detail: "Radarr4k · prairie.autoscan.arr" });
   });
 
   it("uses the connection name when no operator label", () => {
     expect(
-      composeSourceLabel({ ...base, connectionName: "Radarr4k", displayName: "Arr Watcher" }),
-    ).toEqual({ name: "Radarr4k", detail: "Arr Watcher · prairie.autoscan.arr" });
+      composeSourceLabel({
+        ...base,
+        connectionName: "Radarr4k",
+        displayName: "Arr Watcher",
+      }),
+    ).toEqual({
+      name: "Radarr4k",
+      detail: "Arr Watcher · prairie.autoscan.arr",
+    });
   });
 
   it("uses the manifest display name when no connection", () => {
@@ -35,7 +46,10 @@ describe("composeSourceLabel", () => {
   });
 
   it("falls back to capability id when nothing else is set", () => {
-    expect(composeSourceLabel(base)).toEqual({ name: "arr", detail: "prairie.autoscan.arr" });
+    expect(composeSourceLabel(base)).toEqual({
+      name: "arr",
+      detail: "prairie.autoscan.arr",
+    });
   });
 
   it("uses capability id as detail when plugin id is blank", () => {
@@ -46,7 +60,13 @@ describe("composeSourceLabel", () => {
   });
 
   it("ignores whitespace-only rungs", () => {
-    expect(composeSourceLabel({ ...base, operatorLabel: "   ", connectionName: "  " })).toEqual({
+    expect(
+      composeSourceLabel({
+        ...base,
+        operatorLabel: "   ",
+        connectionName: "  ",
+      }),
+    ).toEqual({
       name: "arr",
       detail: "prairie.autoscan.arr",
     });
@@ -78,7 +98,11 @@ describe("resolveEventSourceName", () => {
   it("resolves the connection name via the source reference", () => {
     expect(
       resolveEventSourceName(
-        { source_id: "src-1", capability_id: "arr", plugin_id: "prairie.autoscan.arr" },
+        {
+          source_id: "src-1",
+          capability_id: "arr",
+          plugin_id: "prairie.autoscan.arr",
+        },
         lookups,
       ),
     ).toBe("Radarr4k");
@@ -91,7 +115,11 @@ describe("resolveEventSourceName", () => {
     };
     expect(
       resolveEventSourceName(
-        { source_id: "src-1", capability_id: "arr", plugin_id: "prairie.autoscan.arr" },
+        {
+          source_id: "src-1",
+          capability_id: "arr",
+          plugin_id: "prairie.autoscan.arr",
+        },
         withLabel,
       ),
     ).toBe("4K Movies");
@@ -100,7 +128,11 @@ describe("resolveEventSourceName", () => {
   it("falls back to display name when the source was deleted (null source_id)", () => {
     expect(
       resolveEventSourceName(
-        { source_id: null, capability_id: "arr", plugin_id: "prairie.autoscan.arr" },
+        {
+          source_id: null,
+          capability_id: "arr",
+          plugin_id: "prairie.autoscan.arr",
+        },
         lookups,
       ),
     ).toBe("Arr Watcher");
@@ -109,18 +141,27 @@ describe("resolveEventSourceName", () => {
   it("returns empty string when the reference has no capability", () => {
     expect(resolveEventSourceName({ source_id: null }, lookups)).toBe("");
     expect(
-      resolveEventSourceName({ source_id: null, capability_id: "arr", plugin_id: null }, lookups),
+      resolveEventSourceName(
+        { source_id: null, capability_id: "arr", plugin_id: null },
+        lookups,
+      ),
     ).toBe("");
   });
 
   it("falls back to display name when the bound connection is missing (deleted)", () => {
     const orphaned: SourceLabelLookups = {
       ...lookups,
-      sourceByID: new Map([["src-1", { ...source, connection_id: "conn-gone" }]]),
+      sourceByID: new Map([
+        ["src-1", { ...source, connection_id: "conn-gone" }],
+      ]),
     };
     expect(
       resolveEventSourceName(
-        { source_id: "src-1", capability_id: "arr", plugin_id: "prairie.autoscan.arr" },
+        {
+          source_id: "src-1",
+          capability_id: "arr",
+          plugin_id: "prairie.autoscan.arr",
+        },
         orphaned,
       ),
     ).toBe("Arr Watcher");

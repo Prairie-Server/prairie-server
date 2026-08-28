@@ -34,7 +34,9 @@ export function hasPermission(
   // profile selected" case — the parameter is required so a missed call site
   // can't silently restore the admin bypass.
   if (isActingAdmin(user, profile)) return true;
-  return Array.isArray(user.permissions) && user.permissions.includes(permission);
+  return (
+    Array.isArray(user.permissions) && user.permissions.includes(permission)
+  );
 }
 
 export function canCurateMetadata(
@@ -51,11 +53,18 @@ export function canEditMarkers(
   return hasPermission(user, PERMISSION_MARKER_EDIT, profile);
 }
 
-export function hasAssignedPermission(permissions: string[] | undefined, permission: string) {
+export function hasAssignedPermission(
+  permissions: string[] | undefined,
+  permission: string,
+) {
   return Array.isArray(permissions) && permissions.includes(permission);
 }
 
-export function setAssignedPermission(permissions: string[], permission: string, enabled: boolean) {
+export function setAssignedPermission(
+  permissions: string[],
+  permission: string,
+  enabled: boolean,
+) {
   const next = new Set(permissions);
   if (enabled) {
     next.add(permission);

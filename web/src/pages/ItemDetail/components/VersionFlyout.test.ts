@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 import type { FileVersion } from "@/api/types";
-import { buildQualitySummary, buildDetailLine, sortByResolution } from "./VersionFlyout";
+import {
+  buildQualitySummary,
+  buildDetailLine,
+  sortByResolution,
+} from "./VersionFlyout";
 
 function makeVersion(overrides: Partial<FileVersion> = {}): FileVersion {
   return {
@@ -111,7 +115,10 @@ describe("buildDetailLine", () => {
   });
 
   it("shows source hint only when file_size is zero but name matches", () => {
-    const version = makeVersion({ file_size: 0, file_name: "Movie.WEB-DL.mkv" });
+    const version = makeVersion({
+      file_size: 0,
+      file_name: "Movie.WEB-DL.mkv",
+    });
     expect(buildDetailLine(version)).toBe("WEB-DL");
   });
 });

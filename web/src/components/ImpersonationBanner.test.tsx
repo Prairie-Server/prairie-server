@@ -7,7 +7,11 @@ describe("ImpersonationBanner", () => {
     const onEnd = vi.fn();
 
     const markup = renderToStaticMarkup(
-      <ImpersonationBanner userName="target-user" impersonatorName="admin-user" onEnd={onEnd} />,
+      <ImpersonationBanner
+        userName="target-user"
+        impersonatorName="admin-user"
+        onEnd={onEnd}
+      />,
     );
 
     expect(markup).toContain("Viewing as");
@@ -18,7 +22,11 @@ describe("ImpersonationBanner", () => {
 
   it("stays pinned above the page content while scrolling", () => {
     const markup = renderToStaticMarkup(
-      <ImpersonationBanner userName="target-user" impersonatorName="admin-user" onEnd={() => {}} />,
+      <ImpersonationBanner
+        userName="target-user"
+        impersonatorName="admin-user"
+        onEnd={() => {}}
+      />,
     );
 
     expect(markup).toContain("sticky top-0");

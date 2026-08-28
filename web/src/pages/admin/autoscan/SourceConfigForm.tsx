@@ -51,8 +51,9 @@ export function SourceConfigForm({
         field,
         value: fillValueFromLibraries(field.fill_from, libraries.data ?? []),
       }))
-      .filter((entry): entry is { field: (typeof fields)[number]; value: string } =>
-        Boolean(entry.value),
+      .filter(
+        (entry): entry is { field: (typeof fields)[number]; value: string } =>
+          Boolean(entry.value),
       );
   }, [fields, libraries.data]);
 

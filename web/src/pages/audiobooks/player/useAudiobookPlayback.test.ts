@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, fireEvent, render, renderHook } from "@testing-library/react";
-import { createElement, useEffect, type MutableRefObject, type ReactNode } from "react";
+import {
+  createElement,
+  useEffect,
+  type MutableRefObject,
+  type ReactNode,
+} from "react";
 import { PlayerConfigProvider, type PlayerConfig } from "@/player";
 import {
   audiobookAbsoluteTime,
@@ -14,7 +19,9 @@ import { resetCodecDetectionForTests } from "@/player/hooks/useCodecDetection";
 const realtimeOptions = vi.hoisted(() => ({
   current: null as null | {
     sessionId: string | null;
-    onCommand: (command: PlaybackRealtimeCommandEnvelope) => Promise<void> | void;
+    onCommand: (
+      command: PlaybackRealtimeCommandEnvelope,
+    ) => Promise<void> | void;
   },
 }));
 
@@ -34,8 +41,20 @@ const files: AudiobookFile[] = [
     path: "a.m4b",
     duration_seconds: 600,
     chapters: [
-      { index: 0, title: "One", source: "embedded", start_seconds: 0, end_seconds: 300 },
-      { index: 1, title: "Two", source: "embedded", start_seconds: 300, end_seconds: 600 },
+      {
+        index: 0,
+        title: "One",
+        source: "embedded",
+        start_seconds: 0,
+        end_seconds: 300,
+      },
+      {
+        index: 1,
+        title: "Two",
+        source: "embedded",
+        start_seconds: 300,
+        end_seconds: 600,
+      },
     ],
   },
 ];
@@ -45,13 +64,29 @@ const multiFile: AudiobookFile[] = [
     id: 1,
     path: "a.mp3",
     duration_seconds: 300,
-    chapters: [{ index: 0, title: "One", source: "embedded", start_seconds: 0, end_seconds: 300 }],
+    chapters: [
+      {
+        index: 0,
+        title: "One",
+        source: "embedded",
+        start_seconds: 0,
+        end_seconds: 300,
+      },
+    ],
   },
   {
     id: 2,
     path: "b.mp3",
     duration_seconds: 300,
-    chapters: [{ index: 0, title: "Two", source: "embedded", start_seconds: 0, end_seconds: 300 }],
+    chapters: [
+      {
+        index: 0,
+        title: "Two",
+        source: "embedded",
+        start_seconds: 0,
+        end_seconds: 300,
+      },
+    ],
   },
 ];
 
@@ -74,7 +109,10 @@ const playerConfig: PlayerConfig = {
 };
 
 function wrapper({ children }: { children: ReactNode }) {
-  return createElement(PlayerConfigProvider, { config: playerConfig, children });
+  return createElement(PlayerConfigProvider, {
+    config: playerConfig,
+    children,
+  });
 }
 
 function renderAudiobookPlayback(
@@ -183,23 +221,32 @@ async function flushAsyncWork() {
 describe("useAudiobookPlayback", () => {
   beforeEach(() => {
     vi.useFakeTimers();
-    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation((mime) =>
-      ["audio/mp4", "audio/mpeg", "audio/flac", "audio/ogg"].some((supported) =>
-        mime.startsWith(supported),
-      )
-        ? "probably"
-        : "",
+    vi.spyOn(HTMLMediaElement.prototype, "canPlayType").mockImplementation(
+      (mime) =>
+        ["audio/mp4", "audio/mpeg", "audio/flac", "audio/ogg"].some(
+          (supported) => mime.startsWith(supported),
+        )
+          ? "probably"
+          : "",
     );
     let sessionCount = 0;
     vi.stubGlobal(
       "fetch",
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
-        if (url.endsWith("/api/v1/playback/start") || url.endsWith("/playback/start")) {
+        if (
+          url.endsWith("/api/v1/playback/start") ||
+          url.endsWith("/playback/start")
+        ) {
           sessionCount += 1;
-          const body = JSON.parse(String(init?.body)) as { start_position?: number };
+          const body = JSON.parse(String(init?.body)) as {
+            start_position?: number;
+          };
           return jsonResponse(
-            audioOnlyDecision(`session-${sessionCount}`, body.start_position ?? 0),
+            audioOnlyDecision(
+              `session-${sessionCount}`,
+              body.start_position ?? 0,
+            ),
             { status: 201 },
           );
         }
@@ -234,7 +281,9 @@ describe("useAudiobookPlayback", () => {
 
     await flushAsyncWork();
 
-    expect(result.current.streamUrl).toBe("/api/v1/stream/session-1?token=token");
+    expect(result.current.streamUrl).toBe(
+      "/api/v1/stream/session-1?token=token",
+    );
 
     const startCall = vi
       .mocked(fetch)
@@ -255,9 +304,11 @@ describe("useAudiobookPlayback", () => {
 
   it("waits for the capability probe before starting playback", async () => {
     let resolveProbe!: (value: MediaCapabilitiesDecodingInfo) => void;
-    const probeResult = new Promise<MediaCapabilitiesDecodingInfo>((resolve) => {
-      resolveProbe = resolve;
-    });
+    const probeResult = new Promise<MediaCapabilitiesDecodingInfo>(
+      (resolve) => {
+        resolveProbe = resolve;
+      },
+    );
     vi.stubGlobal("navigator", {
       userAgent: "test-browser",
       mediaCapabilities: { decodingInfo: vi.fn(() => probeResult) },
@@ -266,7 +317,9 @@ describe("useAudiobookPlayback", () => {
     const { result } = renderAudiobookPlayback();
     await act(async () => Promise.resolve());
     expect(
-      vi.mocked(fetch).mock.calls.filter(([url]) => String(url).endsWith("/playback/start")),
+      vi
+        .mocked(fetch)
+        .mock.calls.filter(([url]) => String(url).endsWith("/playback/start")),
     ).toHaveLength(0);
 
     await act(async () => {
@@ -279,9 +332,13 @@ describe("useAudiobookPlayback", () => {
       await probeResult;
     });
     await flushAsyncWork();
-    expect(result.current.streamUrl).toBe("/api/v1/stream/session-1?token=token");
+    expect(result.current.streamUrl).toBe(
+      "/api/v1/stream/session-1?token=token",
+    );
     expect(
-      vi.mocked(fetch).mock.calls.filter(([url]) => String(url).endsWith("/playback/start")),
+      vi
+        .mocked(fetch)
+        .mock.calls.filter(([url]) => String(url).endsWith("/playback/start")),
     ).toHaveLength(1);
   });
 
@@ -303,11 +360,9 @@ describe("useAudiobookPlayback", () => {
     expect(body.client_capabilities.containers).toEqual(
       expect.arrayContaining(["mp4", "mp3", "flac", "ogg"]),
     );
-    expect(Object.keys(body.client_playback_context.deliveries).sort()).toEqual([
-      "hls",
-      "original_http",
-      "progressive",
-    ]);
+    expect(Object.keys(body.client_playback_context.deliveries).sort()).toEqual(
+      ["hls", "original_http", "progressive"],
+    );
   });
 
   it("replans a failed media-element route without starting a new attempt", async () => {
@@ -326,11 +381,19 @@ describe("useAudiobookPlayback", () => {
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         if (url.endsWith("/playback/start")) {
-          observed.startBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
-          return jsonResponse(audioOnlyDecision("session-1", 0), { status: 201 });
+          observed.startBody = JSON.parse(String(init?.body)) as Record<
+            string,
+            unknown
+          >;
+          return jsonResponse(audioOnlyDecision("session-1", 0), {
+            status: 201,
+          });
         }
         if (url.endsWith("/playback/session-1/replan")) {
-          observed.replanBody = JSON.parse(String(init?.body)) as Record<string, unknown>;
+          observed.replanBody = JSON.parse(String(init?.body)) as Record<
+            string,
+            unknown
+          >;
           return jsonResponse(replacement);
         }
         if (url.endsWith("/playback/route-events")) {
@@ -360,7 +423,9 @@ describe("useAudiobookPlayback", () => {
 
     const { container } = render(createElement(Harness), { wrapper });
     await flushAsyncWork();
-    expect(onPlayback.mock.lastCall?.[0].streamUrl).toContain("/stream/session-1");
+    expect(onPlayback.mock.lastCall?.[0].streamUrl).toContain(
+      "/stream/session-1",
+    );
 
     const audio = container.querySelector("audio");
     if (!audio) throw new Error("expected audio element");
@@ -371,7 +436,9 @@ describe("useAudiobookPlayback", () => {
     fireEvent.error(audio);
 
     await flushAsyncWork();
-    expect(onPlayback.mock.lastCall?.[0].streamUrl).toContain("/stream/replacement");
+    expect(onPlayback.mock.lastCall?.[0].streamUrl).toContain(
+      "/stream/replacement",
+    );
     expect(observed.replanBody).toMatchObject({
       operation: "failure_recovery",
       playback_attempt_id: observed.startBody?.playback_attempt_id,
@@ -387,7 +454,9 @@ describe("useAudiobookPlayback", () => {
     });
     expect(typeof observed.replanBody?.plan_attempt_id).toBe("string");
     expect(
-      vi.mocked(fetch).mock.calls.filter(([url]) => String(url).endsWith("/playback/start")),
+      vi
+        .mocked(fetch)
+        .mock.calls.filter(([url]) => String(url).endsWith("/playback/start")),
     ).toHaveLength(1);
   });
 
@@ -398,11 +467,16 @@ describe("useAudiobookPlayback", () => {
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         if (url.endsWith("/playback/start")) {
-          return jsonResponse(audioOnlyDecision("session-1", 0), { status: 201 });
+          return jsonResponse(audioOnlyDecision("session-1", 0), {
+            status: 201,
+          });
         }
         if (url.endsWith("/playback/session-1/replan")) {
           replanCount += 1;
-          return jsonResponse({ message: "temporary failure" }, { status: 503 });
+          return jsonResponse(
+            { message: "temporary failure" },
+            { status: 503 },
+          );
         }
         if (url.endsWith("/playback/route-events")) {
           return new Response(null, { status: 202 });
@@ -453,7 +527,9 @@ describe("useAudiobookPlayback", () => {
 
     await flushAsyncWork();
 
-    expect(result.current.streamUrl).toBe("/api/v1/stream/session-1?token=token");
+    expect(result.current.streamUrl).toBe(
+      "/api/v1/stream/session-1?token=token",
+    );
     expect(result.current.currentTime).toBe(450);
     expect(result.current.duration).toBe(600);
 
@@ -474,7 +550,9 @@ describe("useAudiobookPlayback", () => {
         const url = String(input);
         if (url.endsWith("/playback/start")) {
           sessionCount += 1;
-          const body = JSON.parse(String(init?.body)) as { start_position: number };
+          const body = JSON.parse(String(init?.body)) as {
+            start_position: number;
+          };
           return jsonResponse(
             audioOnlyDecision(`anchored-${sessionCount}`, body.start_position, {
               stream_origin_seconds: body.start_position,
@@ -485,7 +563,8 @@ describe("useAudiobookPlayback", () => {
             { status: 201 },
           );
         }
-        if (url.endsWith("/playback/route-events")) return new Response(null, { status: 202 });
+        if (url.endsWith("/playback/route-events"))
+          return new Response(null, { status: 202 });
         if (url.includes("/progress") || init?.method === "DELETE") {
           return new Response(null, { status: 204 });
         }
@@ -496,7 +575,8 @@ describe("useAudiobookPlayback", () => {
     const { result } = renderAudiobookPlayback({ initialPositionSeconds: 300 });
     const audio = makeAudio();
     act(() => {
-      (result.current.audioRef as MutableRefObject<HTMLAudioElement>).current = audio;
+      (result.current.audioRef as MutableRefObject<HTMLAudioElement>).current =
+        audio;
     });
     await flushAsyncWork();
     expect(audiobookAbsoluteTime(0, 300, 5)).toBe(305);
@@ -519,7 +599,9 @@ describe("useAudiobookPlayback", () => {
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         if (url.endsWith("/playback/start")) {
-          const body = JSON.parse(String(init?.body)) as { start_position: number };
+          const body = JSON.parse(String(init?.body)) as {
+            start_position: number;
+          };
           return jsonResponse(
             audioOnlyDecision("offset-contract", body.start_position, {
               stream_origin_seconds: 300,
@@ -530,7 +612,8 @@ describe("useAudiobookPlayback", () => {
             { status: 201 },
           );
         }
-        if (url.endsWith("/playback/route-events")) return new Response(null, { status: 202 });
+        if (url.endsWith("/playback/route-events"))
+          return new Response(null, { status: 202 });
         if (url.includes("/progress") || init?.method === "DELETE") {
           return new Response(null, { status: 204 });
         }
@@ -541,7 +624,8 @@ describe("useAudiobookPlayback", () => {
     const { result } = renderAudiobookPlayback({ initialPositionSeconds: 300 });
     const audio = makeAudio();
     act(() => {
-      (result.current.audioRef as MutableRefObject<HTMLAudioElement>).current = audio;
+      (result.current.audioRef as MutableRefObject<HTMLAudioElement>).current =
+        audio;
     });
     await flushAsyncWork();
 
@@ -555,7 +639,9 @@ describe("useAudiobookPlayback", () => {
       vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
         const url = String(input);
         if (url.endsWith("/playback/start")) {
-          const body = JSON.parse(String(init?.body)) as { start_position: number };
+          const body = JSON.parse(String(init?.body)) as {
+            start_position: number;
+          };
           return jsonResponse(
             audioOnlyDecision("negative-offset", body.start_position, {
               timeline_offset_seconds: -5,
@@ -565,7 +651,8 @@ describe("useAudiobookPlayback", () => {
             { status: 201 },
           );
         }
-        if (url.endsWith("/playback/route-events")) return new Response(null, { status: 202 });
+        if (url.endsWith("/playback/route-events"))
+          return new Response(null, { status: 202 });
         if (url.includes("/progress") || init?.method === "DELETE") {
           return new Response(null, { status: 204 });
         }
@@ -619,7 +706,8 @@ describe("useAudiobookPlayback", () => {
     const { result } = renderAudiobookPlayback();
     const audio = makeAudio();
     act(() => {
-      (result.current.audioRef as MutableRefObject<HTMLAudioElement>).current = audio;
+      (result.current.audioRef as MutableRefObject<HTMLAudioElement>).current =
+        audio;
     });
     act(() => result.current.togglePlay());
     expect(audio.play).toHaveBeenCalled();
@@ -633,7 +721,8 @@ describe("useAudiobookPlayback", () => {
     const { result } = renderAudiobookPlayback({ onStopRequested });
     const audio = makeAudio();
     act(() => {
-      (result.current.audioRef as MutableRefObject<HTMLAudioElement>).current = audio;
+      (result.current.audioRef as MutableRefObject<HTMLAudioElement>).current =
+        audio;
     });
 
     await flushAsyncWork();
@@ -652,7 +741,9 @@ describe("useAudiobookPlayback", () => {
     expect(audio.pause).toHaveBeenCalled();
 
     await act(async () => {
-      await realtimeOptions.current?.onCommand(realtimeCommand("seek", { position_seconds: 120 }));
+      await realtimeOptions.current?.onCommand(
+        realtimeCommand("seek", { position_seconds: 120 }),
+      );
     });
     expect(result.current.currentTime).toBe(120);
 
@@ -669,7 +760,8 @@ describe("useAudiobookPlayback", () => {
     const { result } = renderAudiobookPlayback();
     const audio = makeAudio();
     act(() => {
-      (result.current.audioRef as MutableRefObject<HTMLAudioElement>).current = audio;
+      (result.current.audioRef as MutableRefObject<HTMLAudioElement>).current =
+        audio;
     });
     act(() => result.current.seekTo(1_000_000));
     expect(audio.currentTime).toBe(599); // 600 - 1 (clamp to duration - 1 per existing behavior)
@@ -687,7 +779,8 @@ describe("useAudiobookPlayback", () => {
     const audio = makeAudio();
     Object.defineProperty(audio, "paused", { value: false, writable: true });
     act(() => {
-      (result.current.audioRef as MutableRefObject<HTMLAudioElement>).current = audio;
+      (result.current.audioRef as MutableRefObject<HTMLAudioElement>).current =
+        audio;
     });
     act(() => result.current.setSleep({ kind: "duration", seconds: 1 }));
     expect(result.current.sleep.remainingMs).toBeGreaterThan(0);

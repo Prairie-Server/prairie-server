@@ -37,7 +37,9 @@ export function DownloadsStep() {
       markDone("downloads");
       toast.success("Download settings saved");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save download settings");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save download settings",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -64,12 +66,16 @@ export function DownloadsStep() {
           <Label htmlFor="download-enabled" className="text-sm font-medium">
             Enable downloads
           </Label>
-          <p className="text-muted-foreground/70 mt-0.5 text-xs">Let users save files locally</p>
+          <p className="text-muted-foreground/70 mt-0.5 text-xs">
+            Let users save files locally
+          </p>
         </div>
         <Switch
           id="download-enabled"
           checked={enabled}
-          onCheckedChange={(v) => form.setValue("download.enabled", v ? "true" : "false")}
+          onCheckedChange={(v) =>
+            form.setValue("download.enabled", v ? "true" : "false")
+          }
         />
       </div>
 
@@ -80,7 +86,8 @@ export function DownloadsStep() {
               Bandwidth limits
             </p>
             <p className="text-muted-foreground/70 mt-0.5 text-xs">
-              How much bandwidth can downloads consume? Does not affect streaming.
+              How much bandwidth can downloads consume? Does not affect
+              streaming.
             </p>
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -93,7 +100,12 @@ export function DownloadsStep() {
                   id="dl-server-bw"
                   type="number"
                   value={form.getValue("download.server_bandwidth_mbps")}
-                  onChange={(e) => form.setValue("download.server_bandwidth_mbps", e.target.value)}
+                  onChange={(e) =>
+                    form.setValue(
+                      "download.server_bandwidth_mbps",
+                      e.target.value,
+                    )
+                  }
                   className="w-24"
                   autoComplete="off"
                 />
@@ -112,13 +124,20 @@ export function DownloadsStep() {
                   id="dl-user-bw"
                   type="number"
                   value={form.getValue("download.user_bandwidth_mbps")}
-                  onChange={(e) => form.setValue("download.user_bandwidth_mbps", e.target.value)}
+                  onChange={(e) =>
+                    form.setValue(
+                      "download.user_bandwidth_mbps",
+                      e.target.value,
+                    )
+                  }
                   className="w-24"
                   autoComplete="off"
                 />
                 <span className="text-muted-foreground text-xs">Mbps</span>
               </div>
-              <p className="text-muted-foreground/60 text-[11px]">0 = unlimited</p>
+              <p className="text-muted-foreground/60 text-[11px]">
+                0 = unlimited
+              </p>
             </div>
           </div>
           <div className="space-y-1.5">
@@ -129,18 +148,29 @@ export function DownloadsStep() {
               id="dl-concurrent"
               type="number"
               value={form.getValue("download.max_concurrent_per_user")}
-              onChange={(e) => form.setValue("download.max_concurrent_per_user", e.target.value)}
+              onChange={(e) =>
+                form.setValue(
+                  "download.max_concurrent_per_user",
+                  e.target.value,
+                )
+              }
               className="w-24"
               autoComplete="off"
             />
-            <p className="text-muted-foreground/60 text-[11px]">0 = unlimited</p>
+            <p className="text-muted-foreground/60 text-[11px]">
+              0 = unlimited
+            </p>
           </div>
         </div>
       )}
 
       <WizardActions>
         <Button type="submit" disabled={submitting || form.isSaving}>
-          {submitting || form.isSaving ? <Loader2 className="animate-spin" /> : <Save />}
+          {submitting || form.isSaving ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
           {submitting || form.isSaving ? "Saving..." : "Save & continue"}
         </Button>
         <Button

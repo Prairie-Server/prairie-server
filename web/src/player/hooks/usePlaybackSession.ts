@@ -2,7 +2,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePlayerConfig } from "../context/PlayerConfigContext";
 import type { PlayerConfig } from "../context/PlayerConfigContext";
 import { playerFetch } from "../player-fetch";
-import { describePlanTerminal, describePlaybackTransportError } from "../playback-errors";
+import {
+  describePlanTerminal,
+  describePlaybackTransportError,
+} from "../playback-errors";
 import { useCodecDetection } from "./useCodecDetection";
 import {
   buildClientCapabilitiesV3,
@@ -85,7 +88,10 @@ export interface UsePlaybackSessionResult extends PlaybackSessionState {
    * conversion. Sidecar tracks are fetched from the plan's inventory and drawn
    * by the client without involving the server.
    */
-  changeSubtitleTrack: (combinedIndex: number | null, currentPosition: number) => void;
+  changeSubtitleTrack: (
+    combinedIndex: number | null,
+    currentPosition: number,
+  ) => void;
   /** `quality_change` replan for a label taken from `plan.available_qualities`. */
   changeQuality: (label: string, currentPosition: number) => void;
   /** `failure_recovery` replan after the client could not play the plan. */
@@ -95,7 +101,11 @@ export interface UsePlaybackSessionResult extends PlaybackSessionState {
    * realtime `plan_invalidated` command. Resolves to whether a replacement plan
    * is now playing; the caller reports that back as the command's result.
    */
-  invalidatePlan: (planId: string, reason: string, currentPosition: number) => Promise<boolean>;
+  invalidatePlan: (
+    planId: string,
+    reason: string,
+    currentPosition: number,
+  ) => Promise<boolean>;
   /** `seek_reanchor` replan when the target lies outside the seekable window. */
   reanchorSeek: (positionSeconds: number) => void;
   /** Re-reads the subtitle inventory by replanning with the selection unchanged. */
@@ -110,7 +120,10 @@ export interface UsePlaybackSessionResult extends PlaybackSessionState {
     extra?: {
       failureClassification?: string;
       fallbackReason?: string;
-      diagnostics?: Record<string, string | number | boolean | undefined | null>;
+      diagnostics?: Record<
+        string,
+        string | number | boolean | undefined | null
+      >;
     },
   ) => void;
 }
@@ -152,7 +165,9 @@ function mapSubtitleInventory(
     source: subtitleSourceOf(item.source),
     forced: item.forced,
     hearing_impaired: item.hearing_impaired,
-    url: item.url ? buildPlayerStreamUrl(config.apiBaseUrl, item.url, token) : "",
+    url: item.url
+      ? buildPlayerStreamUrl(config.apiBaseUrl, item.url, token)
+      : "",
     font_bundle_url: item.font_bundle_url
       ? buildPlayerStreamUrl(config.apiBaseUrl, item.font_bundle_url, token)
       : undefined,
@@ -178,7 +193,11 @@ function planToSessionState(
   return {
     plan,
     planRevision,
-    streamUrl: buildPlayerStreamUrl(config.apiBaseUrl, plan.stream.url, config.getAccessToken()),
+    streamUrl: buildPlayerStreamUrl(
+      config.apiBaseUrl,
+      plan.stream.url,
+      config.getAccessToken(),
+    ),
     sessionId,
     playbackAttemptId,
     mediaFileId: plan.effective_media_file_id,
@@ -209,7 +228,9 @@ function planToSessionState(
  * fallback below is defensive handling for a malformed or future response; it
  * is not a third protocol outcome.
  */
-function describeDecisionWithoutPlan(decision: DecisionResponseV3): PlaybackSessionErrorState {
+function describeDecisionWithoutPlan(
+  decision: DecisionResponseV3,
+): PlaybackSessionErrorState {
   if (decision.terminal) {
     return describePlanTerminal(decision.terminal);
   }
@@ -268,8 +289,14 @@ export function usePlaybackSession(
   const config = usePlayerConfig();
   const probe = useCodecDetection();
   const capabilitiesSettled = probe.settled;
-  const clientCapabilities = useMemo(() => buildClientCapabilitiesV3(probe), [probe]);
-  const clientPlaybackContext = useMemo(() => buildClientPlaybackContextV3(probe), [probe]);
+  const clientCapabilities = useMemo(
+    () => buildClientCapabilitiesV3(probe),
+    [probe],
+  );
+  const clientPlaybackContext = useMemo(
+    () => buildClientPlaybackContextV3(probe),
+    [probe],
+  );
   const capabilityRequestKey = useMemo(
     () => JSON.stringify([clientCapabilities, clientPlaybackContext]),
     [clientCapabilities, clientPlaybackContext],
@@ -341,7 +368,9 @@ export function usePlaybackSession(
   // currently owns the session can still change what the invalidation should
   // decide against, so only it is waited on.
   const adoptionsInFlightRef = useRef(new Map<number, number>());
-  const adoptionWaitersRef = useRef<Array<{ loadSequence: number; resolve: () => void }>>([]);
+  const adoptionWaitersRef = useRef<
+    Array<{ loadSequence: number; resolve: () => void }>
+  >([]);
   const pendingReplanRef = useRef<{
     options: ReplanOptions;
     loadSequence: number;
@@ -350,7 +379,10 @@ export function usePlaybackSession(
     planId: string;
   } | null>(null);
   const issueReplanRef = useRef<
-    (options: ReplanOptions, retireSessionOnRefusal?: boolean) => Promise<boolean>
+    (
+      options: ReplanOptions,
+      retireSessionOnRefusal?: boolean,
+    ) => Promise<boolean>
   >(async () => false);
   const qualityRef = useRef(qualityPreference?.trim() || "auto");
 
@@ -381,9 +413,13 @@ export function usePlaybackSession(
     inFlight.delete(loadSequence);
     const waiters = adoptionWaitersRef.current;
     if (waiters.length === 0) return;
-    const settled = waiters.filter((waiter) => !inFlight.has(waiter.loadSequence));
+    const settled = waiters.filter(
+      (waiter) => !inFlight.has(waiter.loadSequence),
+    );
     if (settled.length === 0) return;
-    adoptionWaitersRef.current = waiters.filter((waiter) => inFlight.has(waiter.loadSequence));
+    adoptionWaitersRef.current = waiters.filter((waiter) =>
+      inFlight.has(waiter.loadSequence),
+    );
     for (const waiter of settled) waiter.resolve();
   }, []);
 
@@ -412,7 +448,10 @@ export function usePlaybackSession(
       extra?: {
         failureClassification?: string;
         fallbackReason?: string;
-        diagnostics?: Record<string, string | number | boolean | undefined | null>;
+        diagnostics?: Record<
+          string,
+          string | number | boolean | undefined | null
+        >;
       },
     ) => {
       const attemptId = playbackAttemptIdRef.current;
@@ -421,7 +460,11 @@ export function usePlaybackSession(
       void reportRouteEventV3(config, {
         event,
         playbackAttemptId: attemptId,
-        ...routeEventPlanIdentityV3(plan, sessionIdRef.current, planAttemptIdRef.current),
+        ...routeEventPlanIdentityV3(
+          plan,
+          sessionIdRef.current,
+          planAttemptIdRef.current,
+        ),
         ...extra,
       });
     },
@@ -442,7 +485,9 @@ export function usePlaybackSession(
       if (!plan) {
         const failure = describeDecisionWithoutPlan(decision);
         if (decision.terminal) {
-          reportEvent("terminal", { failureClassification: decision.terminal.reason });
+          reportEvent("terminal", {
+            failureClassification: decision.terminal.reason,
+          });
         }
         // The plan already on screen is left alone. A refused replan surfaces
         // its reason without taking away the stream that is still playing; a
@@ -458,7 +503,8 @@ export function usePlaybackSession(
         return false;
       }
 
-      const sessionId = plan.session_id ?? decision.session_id ?? sessionIdRef.current;
+      const sessionId =
+        plan.session_id ?? decision.session_id ?? sessionIdRef.current;
       planAttemptIdRef.current = randomUUID();
       planRef.current = plan;
       sessionIdRef.current = sessionId ?? null;
@@ -472,7 +518,8 @@ export function usePlaybackSession(
         // output refresh before the first timeupdate preserves server-resolved
         // resume state instead of falling back to the caller's default zero.
         playbackPositionRef.current = plan.timeline.source_start_seconds;
-        awaitingInitialPlayerPositionRef.current = plan.timeline.source_start_seconds > 0;
+        awaitingInitialPlayerPositionRef.current =
+          plan.timeline.source_start_seconds > 0;
       }
 
       setState((current) => ({
@@ -530,7 +577,13 @@ export function usePlaybackSession(
         body: JSON.stringify(body),
       });
     },
-    [clientCapabilities, clientPlaybackContext, config, explicitAudioTrackIndex, maxBitrateKbps],
+    [
+      clientCapabilities,
+      clientPlaybackContext,
+      config,
+      explicitAudioTrackIndex,
+      maxBitrateKbps,
+    ],
   );
 
   const stopSession = useCallback(
@@ -582,10 +635,16 @@ export function usePlaybackSession(
     (preferredFileId?: number) => {
       if (preferredFileId) return preferredFileId;
       if (resumeHints?.lastFileId) {
-        const exact = versions.find((v) => v.file_id === resumeHints.lastFileId);
+        const exact = versions.find(
+          (v) => v.file_id === resumeHints.lastFileId,
+        );
         if (exact) return exact.file_id;
       }
-      const variantFileId = selectDefaultVariantFile(playbackVariants, versions, resumeHints);
+      const variantFileId = selectDefaultVariantFile(
+        playbackVariants,
+        versions,
+        resumeHints,
+      );
       if (variantFileId) return variantFileId;
       return versions[0]?.file_id ?? null;
     },
@@ -610,7 +669,8 @@ export function usePlaybackSession(
     }) => {
       const previousState = stateRef.current;
       const previousSessionId = sessionIdRef.current;
-      const hasExistingSession = !!previousState.sessionId && !!previousState.streamUrl;
+      const hasExistingSession =
+        !!previousState.sessionId && !!previousState.streamUrl;
       const loadSequence = ++loadSequenceRef.current;
       const previousAttempt = {
         playbackAttemptId: playbackAttemptIdRef.current,
@@ -631,8 +691,12 @@ export function usePlaybackSession(
         replacing: hasExistingSession,
         errorTitle: hasExistingSession ? current.errorTitle : null,
         error: hasExistingSession ? current.error : null,
-        initialSubtitleErrorTitle: hasExistingSession ? current.initialSubtitleErrorTitle : null,
-        initialSubtitleError: hasExistingSession ? current.initialSubtitleError : null,
+        initialSubtitleErrorTitle: hasExistingSession
+          ? current.initialSubtitleErrorTitle
+          : null,
+        initialSubtitleError: hasExistingSession
+          ? current.initialSubtitleError
+          : null,
       }));
 
       // A start begins a new attempt chain: fresh attempt id, empty loop guard.
@@ -641,7 +705,10 @@ export function usePlaybackSession(
       attemptedPlanKeysRef.current = [];
       attemptCountRef.current = 1;
 
-      const retirePreviousSession = (nextError?: { title: string; message: string }) => {
+      const retirePreviousSession = (nextError?: {
+        title: string;
+        message: string;
+      }) => {
         if (previousSessionId) {
           void stopSession(previousSessionId).catch(() => {
             // Best effort — stale session will time out server-side.
@@ -685,7 +752,8 @@ export function usePlaybackSession(
         );
 
         if (loadSequence !== loadSequenceRef.current) {
-          const staleSessionId = decision.playback_plan?.session_id ?? decision.session_id;
+          const staleSessionId =
+            decision.playback_plan?.session_id ?? decision.session_id;
           if (staleSessionId) {
             await stopSession(staleSessionId).catch(() => {
               // Best effort cleanup for stale session starts.
@@ -696,7 +764,8 @@ export function usePlaybackSession(
 
         let decisionToAdopt = decision;
         let initialSubtitleFailure: PlaybackSessionErrorState | null = null;
-        const bitmapSubtitleTrackIndex = initialBitmapSubtitleTrackIndexByFileId?.[selectedFileId];
+        const bitmapSubtitleTrackIndex =
+          initialBitmapSubtitleTrackIndexByFileId?.[selectedFileId];
         if (!decision.playback_plan && bitmapSubtitleTrackIndex !== undefined) {
           initialSubtitleFailure = describeDecisionWithoutPlan(decision);
           if (decision.session_id) {
@@ -738,7 +807,11 @@ export function usePlaybackSession(
         }
 
         const adopted = adoptDecision(decisionToAdopt, initialSubtitleFailure);
-        if (!adopted && hasExistingSession && allowPreserveExistingSessionOnError) {
+        if (
+          !adopted &&
+          hasExistingSession &&
+          allowPreserveExistingSessionOnError
+        ) {
           restorePreviousAttempt();
           setState((current) => ({
             ...current,
@@ -753,7 +826,11 @@ export function usePlaybackSession(
           retirePreviousSession();
           return;
         }
-        if (adopted && previousSessionId && previousSessionId !== sessionIdRef.current) {
+        if (
+          adopted &&
+          previousSessionId &&
+          previousSessionId !== sessionIdRef.current
+        ) {
           void stopSession(previousSessionId).catch(() => {
             // Best effort — stale session will time out server-side.
           });
@@ -774,7 +851,10 @@ export function usePlaybackSession(
           return;
         }
 
-        const nextError = describePlaybackSessionError(err, initialErrorMessage);
+        const nextError = describePlaybackSessionError(
+          err,
+          initialErrorMessage,
+        );
         retirePreviousSession(nextError);
       } finally {
         endAdoption(loadSequence);
@@ -874,11 +954,13 @@ export function usePlaybackSession(
       if (!plan || !sessionId || !playbackAttemptId) return false;
       if (replanInFlightRef.current) {
         const isPendingFailureRecovery =
-          options.operation === "failure_recovery" || options.operation === "seek_failure_recovery";
+          options.operation === "failure_recovery" ||
+          options.operation === "seek_failure_recovery";
         const isPendingOutputChange = options.operation === "output_change";
         const queuedOperation = pendingReplanRef.current?.options.operation;
         const hasQueuedFailureRecovery =
-          queuedOperation === "failure_recovery" || queuedOperation === "seek_failure_recovery";
+          queuedOperation === "failure_recovery" ||
+          queuedOperation === "seek_failure_recovery";
         const hasQueuedOutputChange = queuedOperation === "output_change";
         if (
           options.operation === "seek_reanchor" &&
@@ -898,13 +980,17 @@ export function usePlaybackSession(
           return false;
         }
         const isPendingUserIntent =
-          options.operation === "track_change" || options.operation === "quality_change";
+          options.operation === "track_change" ||
+          options.operation === "quality_change";
         const hasQueuedUserIntent =
-          queuedOperation === "track_change" || queuedOperation === "quality_change";
+          queuedOperation === "track_change" ||
+          queuedOperation === "quality_change";
         const shouldQueue =
           isPendingFailureRecovery ||
           (isPendingUserIntent && !hasQueuedFailureRecovery) ||
-          (isPendingOutputChange && !hasQueuedFailureRecovery && !hasQueuedUserIntent) ||
+          (isPendingOutputChange &&
+            !hasQueuedFailureRecovery &&
+            !hasQueuedUserIntent) ||
           (options.operation === "seek_reanchor" &&
             !hasQueuedFailureRecovery &&
             !hasQueuedOutputChange &&
@@ -925,7 +1011,8 @@ export function usePlaybackSession(
       }
 
       const isFailureRecovery =
-        options.operation === "failure_recovery" || options.operation === "seek_failure_recovery";
+        options.operation === "failure_recovery" ||
+        options.operation === "seek_failure_recovery";
       if (isFailureRecovery && attemptCountRef.current > MAX_ATTEMPT_COUNT_V3) {
         setState((current) => ({
           ...current,
@@ -986,7 +1073,10 @@ export function usePlaybackSession(
 
         if (isFailureRecovery) {
           attemptedPlanKeysRef.current = attemptedPlanKeys;
-          attemptCountRef.current = Math.min(attemptCount + 1, MAX_ATTEMPT_COUNT_V3 + 1);
+          attemptCountRef.current = Math.min(
+            attemptCount + 1,
+            MAX_ATTEMPT_COUNT_V3 + 1,
+          );
         } else {
           attemptedPlanKeysRef.current = [];
           attemptCountRef.current = 1;
@@ -997,7 +1087,9 @@ export function usePlaybackSession(
         // the marker and lets the new server-selected track take ownership.
         const adopted = adoptDecision(
           decision,
-          options.operation === "track_change" && options.subtitle !== undefined ? null : undefined,
+          options.operation === "track_change" && options.subtitle !== undefined
+            ? null
+            : undefined,
         );
         if (!adopted && retireSessionOnRefusal) {
           const pending = pendingReplanRef.current;
@@ -1026,7 +1118,10 @@ export function usePlaybackSession(
           console.error("Failed to refresh playback output", err);
           return false;
         }
-        const nextError = describePlaybackSessionError(err, "Failed to update playback");
+        const nextError = describePlaybackSessionError(
+          err,
+          "Failed to update playback",
+        );
         setState((current) => ({
           ...current,
           replanning: false,
@@ -1036,7 +1131,9 @@ export function usePlaybackSession(
         return false;
       } finally {
         replanInFlightRef.current = false;
-        setState((current) => (current.replanning ? { ...current, replanning: false } : current));
+        setState((current) =>
+          current.replanning ? { ...current, replanning: false } : current,
+        );
 
         const pendingReplan = pendingReplanRef.current;
         pendingReplanRef.current = null;
@@ -1051,7 +1148,10 @@ export function usePlaybackSession(
             // render. Dispatch through the latest callback so its request carries
             // the current output evidence rather than the closed-over snapshot.
             void issueReplanRef
-              .current(pendingReplan.options, pendingReplan.retireSessionOnRefusal)
+              .current(
+                pendingReplan.options,
+                pendingReplan.retireSessionOnRefusal,
+              )
               .then(pendingReplan.resolve);
           } else {
             pendingReplan.resolve(false);
@@ -1094,8 +1194,12 @@ export function usePlaybackSession(
       const resumeFromAdoptedPlan = hasAdoptedPlanRef.current;
       void loadSession({
         preferredFileId: fileId,
-        position: resumeFromAdoptedPlan ? playbackPositionRef.current : startIntent.position,
-        forceStartPosition: resumeFromAdoptedPlan ? true : startIntent.forceStartPosition,
+        position: resumeFromAdoptedPlan
+          ? playbackPositionRef.current
+          : startIntent.position,
+        forceStartPosition: resumeFromAdoptedPlan
+          ? true
+          : startIntent.forceStartPosition,
         allowPreserveExistingSessionOnError: false,
         replacementErrorMessage: "Failed to refresh playback output",
         initialErrorMessage: "Failed to refresh playback output",
@@ -1147,7 +1251,8 @@ export function usePlaybackSession(
       void replan({
         operation: "track_change",
         positionSeconds: currentPosition,
-        subtitle: combinedIndex == null ? null : { id: "", index: combinedIndex },
+        subtitle:
+          combinedIndex == null ? null : { id: "", index: combinedIndex },
       });
     },
     [replan],
@@ -1159,17 +1264,18 @@ export function usePlaybackSession(
       const previousPreference = qualityRef.current;
       qualityRef.current = normalized;
       setState((current) => ({ ...current, qualityPreference: normalized }));
-      void replan({ operation: "quality_change", positionSeconds: currentPosition }).then(
-        (adopted) => {
-          if (adopted || qualityRef.current !== normalized) return;
-          qualityRef.current = previousPreference;
-          setState((current) =>
-            current.qualityPreference === normalized
-              ? { ...current, qualityPreference: previousPreference }
-              : current,
-          );
-        },
-      );
+      void replan({
+        operation: "quality_change",
+        positionSeconds: currentPosition,
+      }).then((adopted) => {
+        if (adopted || qualityRef.current !== normalized) return;
+        qualityRef.current = previousPreference;
+        setState((current) =>
+          current.qualityPreference === normalized
+            ? { ...current, qualityPreference: previousPreference }
+            : current,
+        );
+      });
     },
     [replan],
   );
@@ -1178,9 +1284,15 @@ export function usePlaybackSession(
     (failure: FailureV3, currentPosition: number) => {
       reportEvent("plan_failed", {
         failureClassification: failure.classification,
-        ...(failure.message ? { diagnostics: { message: failure.message } } : {}),
+        ...(failure.message
+          ? { diagnostics: { message: failure.message } }
+          : {}),
       });
-      void replan({ operation: "failure_recovery", positionSeconds: currentPosition, failure });
+      void replan({
+        operation: "failure_recovery",
+        positionSeconds: currentPosition,
+        failure,
+      });
     },
     [replan, reportEvent],
   );
@@ -1203,7 +1315,11 @@ export function usePlaybackSession(
    * the very route the server just withdrew.
    */
   const invalidatePlan = useCallback(
-    async (planId: string, reason: string, currentPosition: number): Promise<boolean> => {
+    async (
+      planId: string,
+      reason: string,
+      currentPosition: number,
+    ): Promise<boolean> => {
       const settling = awaitAdoptionSettled();
       if (settling) await settling;
       const plan = planRef.current;
@@ -1219,7 +1335,10 @@ export function usePlaybackSession(
       return replan({
         operation: "failure_recovery",
         positionSeconds: currentPosition,
-        failure: { classification, message: "The server invalidated this plan." },
+        failure: {
+          classification,
+          message: "The server invalidated this plan.",
+        },
       });
     },
     [awaitAdoptionSettled, replan, reportEvent],
@@ -1245,7 +1364,10 @@ export function usePlaybackSession(
   const refreshSubtitles = useCallback(
     (currentPosition: number) => {
       if (!planRef.current) return;
-      void replan({ operation: "track_change", positionSeconds: currentPosition });
+      void replan({
+        operation: "track_change",
+        positionSeconds: currentPosition,
+      });
     },
     [replan],
   );
@@ -1260,39 +1382,51 @@ export function usePlaybackSession(
       const plan = planRef.current;
       if (!plan) return;
       const inventory = [
-        ...plan.subtitle.inventory.filter((item) => item.combined_index !== track.combined_index),
+        ...plan.subtitle.inventory.filter(
+          (item) => item.combined_index !== track.combined_index,
+        ),
         track,
       ].sort((a, b) => a.combined_index - b.combined_index);
-      const nextPlan: PlanV3 = { ...plan, subtitle: { ...plan.subtitle, inventory } };
+      const nextPlan: PlanV3 = {
+        ...plan,
+        subtitle: { ...plan.subtitle, inventory },
+      };
       planRef.current = nextPlan;
       setState((current) => ({
         ...current,
         plan: nextPlan,
-        subtitleUrls: mapSubtitleInventory(inventory, nextPlan.effective_media_file_id, config),
+        subtitleUrls: mapSubtitleInventory(
+          inventory,
+          nextPlan.effective_media_file_id,
+          config,
+        ),
       }));
     },
     [config],
   );
 
-  const updatePlaybackState = useCallback((positionSeconds: number, playing: boolean) => {
-    if (Number.isFinite(positionSeconds) && positionSeconds >= 0) {
-      const isUninitializedPlayerZero =
-        awaitingInitialPlayerPositionRef.current &&
-        !playing &&
-        positionSeconds === 0 &&
-        playbackPositionRef.current > 0;
-      if (!isUninitializedPlayerZero) {
-        playbackPositionRef.current = positionSeconds;
-        awaitingInitialPlayerPositionRef.current = false;
+  const updatePlaybackState = useCallback(
+    (positionSeconds: number, playing: boolean) => {
+      if (Number.isFinite(positionSeconds) && positionSeconds >= 0) {
+        const isUninitializedPlayerZero =
+          awaitingInitialPlayerPositionRef.current &&
+          !playing &&
+          positionSeconds === 0 &&
+          playbackPositionRef.current > 0;
+        if (!isUninitializedPlayerZero) {
+          playbackPositionRef.current = positionSeconds;
+          awaitingInitialPlayerPositionRef.current = false;
+        }
       }
-    }
-    if (playing) {
-      playbackStartedRef.current = true;
-      playbackPlayingRef.current = true;
-    } else if (playbackStartedRef.current) {
-      playbackPlayingRef.current = false;
-    }
-  }, []);
+      if (playing) {
+        playbackStartedRef.current = true;
+        playbackPlayingRef.current = true;
+      } else if (playbackStartedRef.current) {
+        playbackPlayingRef.current = false;
+      }
+    },
+    [],
+  );
 
   const switchVersion = useCallback(
     (newFileId: number, currentPosition: number) => {
@@ -1356,23 +1490,31 @@ function selectDefaultVariantFile(
   let candidateVariants = playbackVariants;
   if (
     resumeHints?.lastEditionKey &&
-    playbackVariants.some((variant) => variant.edition_key === resumeHints.lastEditionKey)
+    playbackVariants.some(
+      (variant) => variant.edition_key === resumeHints.lastEditionKey,
+    )
   ) {
     candidateVariants = playbackVariants.filter(
       (variant) => variant.edition_key === resumeHints.lastEditionKey,
     );
   } else if (playbackVariants.some((variant) => !variant.edition_key)) {
-    candidateVariants = playbackVariants.filter((variant) => !variant.edition_key);
+    candidateVariants = playbackVariants.filter(
+      (variant) => !variant.edition_key,
+    );
   }
 
   for (const variant of candidateVariants) {
-    const firstPart = [...(variant.parts ?? [])].sort((a, b) => a.part_index - b.part_index)[0];
+    const firstPart = [...(variant.parts ?? [])].sort(
+      (a, b) => a.part_index - b.part_index,
+    )[0];
     if (!firstPart) {
       continue;
     }
 
     if (firstPart.default_file_id != null) {
-      const known = versions.find((version) => version.file_id === firstPart.default_file_id);
+      const known = versions.find(
+        (version) => version.file_id === firstPart.default_file_id,
+      );
       if (known) return known.file_id;
     }
 

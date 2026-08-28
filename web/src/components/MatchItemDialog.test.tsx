@@ -9,20 +9,26 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/hooks/queries/items", () => ({
-  useSearchItemMatchCandidates: (...args: unknown[]) => mocks.useSearchItemMatchCandidates(...args),
+  useSearchItemMatchCandidates: (...args: unknown[]) =>
+    mocks.useSearchItemMatchCandidates(...args),
   useApplyItemMatch: (...args: unknown[]) => mocks.useApplyItemMatch(...args),
 }));
 
 vi.mock("@/hooks/queries/catalogRead", () => ({
-  useCatalogItemDetail: (...args: unknown[]) => mocks.useCatalogItemDetail(...args),
+  useCatalogItemDetail: (...args: unknown[]) =>
+    mocks.useCatalogItemDetail(...args),
 }));
 
 // Mock Dialog components to render inline (Radix portals don't render in SSR)
 vi.mock("@/components/ui/dialog", () => ({
   Dialog: ({ children, open }: { children: ReactNode; open: boolean }) =>
     open ? <div data-testid="dialog">{children}</div> : null,
-  DialogContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  DialogHeader: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  DialogContent: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DialogHeader: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
   DialogTitle: ({ children }: { children: ReactNode }) => <h2>{children}</h2>,
 }));
 

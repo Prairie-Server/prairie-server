@@ -2,7 +2,11 @@ import { Link } from "react-router";
 import { Check, Film, Library, Loader2, Plus, Tv } from "lucide-react";
 import type { MediaRequest, RequestMediaResult } from "@/api/types";
 import { cn } from "@/lib/utils";
-import { formatRequestReason, formatRequestStatus, tmdbImageURL } from "@/lib/mediaRequests";
+import {
+  formatRequestReason,
+  formatRequestStatus,
+  tmdbImageURL,
+} from "@/lib/mediaRequests";
 
 const POSTER_WIDTH = "w-[148px] sm:w-[164px] lg:w-[184px]";
 
@@ -52,13 +56,21 @@ function DiscoverCard({
 }) {
   const poster = tmdbImageURL(item.poster_path);
   const requestable = item.request.requestable;
-  const statusLabel = item.request.status ? formatRequestStatus(item.request.status) : null;
+  const statusLabel = item.request.status
+    ? formatRequestStatus(item.request.status)
+    : null;
   const reasonLabel =
-    !requestable && !item.request.status ? formatRequestReason(item.request.reason) : null;
-  const availableInLibrary = item.availability === "available" && !item.request.status;
+    !requestable && !item.request.status
+      ? formatRequestReason(item.request.reason)
+      : null;
+  const availableInLibrary =
+    item.availability === "available" && !item.request.status;
 
   const ribbon: { kind: RibbonKind; label: string } | null = statusLabel
-    ? { kind: (item.request.status as RibbonKind) ?? "pending", label: statusLabel }
+    ? {
+        kind: (item.request.status as RibbonKind) ?? "pending",
+        label: statusLabel,
+      }
     : availableInLibrary
       ? { kind: "completed", label: "In library" }
       : reasonLabel
@@ -133,13 +145,22 @@ function DiscoverCard({
       )}
 
       {item.library_content_id ? (
-        <LibraryCardLink contentID={item.library_content_id} title={item.title} />
+        <LibraryCardLink
+          contentID={item.library_content_id}
+          title={item.title}
+        />
       ) : null}
     </div>
   );
 }
 
-function MineCard({ request, fluid }: { request: MediaRequest; fluid?: boolean }) {
+function MineCard({
+  request,
+  fluid,
+}: {
+  request: MediaRequest;
+  fluid?: boolean;
+}) {
   const poster = tmdbImageURL(request.poster_path);
   const isCompleted = request.status === "completed";
   const isFailed =
@@ -147,8 +168,12 @@ function MineCard({ request, fluid }: { request: MediaRequest; fluid?: boolean }
     request.outcome === "declined" ||
     request.outcome === "cancelled";
 
-  const kind: RibbonKind = isFailed ? "blocked" : (request.status as RibbonKind);
-  const label = isFailed ? formatOutcome(request.outcome) : formatRequestStatus(request.status);
+  const kind: RibbonKind = isFailed
+    ? "blocked"
+    : (request.status as RibbonKind);
+  const label = isFailed
+    ? formatOutcome(request.outcome)
+    : formatRequestStatus(request.status);
 
   return (
     <div
@@ -183,7 +208,11 @@ function MineCard({ request, fluid }: { request: MediaRequest; fluid?: boolean }
           )}
         </PosterFrame>
 
-        <CardMeta title={request.title} year={request.year} mediaType={request.media_type} />
+        <CardMeta
+          title={request.title}
+          year={request.year}
+          mediaType={request.media_type}
+        />
 
         {request.last_error ? (
           <p
@@ -196,13 +225,22 @@ function MineCard({ request, fluid }: { request: MediaRequest; fluid?: boolean }
       </Link>
 
       {request.library_content_id ? (
-        <LibraryCardLink contentID={request.library_content_id} title={request.title} />
+        <LibraryCardLink
+          contentID={request.library_content_id}
+          title={request.title}
+        />
       ) : null}
     </div>
   );
 }
 
-function LibraryCardLink({ contentID, title }: { contentID: string; title: string }) {
+function LibraryCardLink({
+  contentID,
+  title,
+}: {
+  contentID: string;
+  title: string;
+}) {
   return (
     <Link
       to={`/item/${encodeURIComponent(contentID)}`}
@@ -277,7 +315,8 @@ function PosterFallback({
       <div
         className="pointer-events-none absolute inset-0"
         style={{
-          backgroundImage: "radial-gradient(rgba(255,255,255,0.55) 1px, transparent 1px)",
+          backgroundImage:
+            "radial-gradient(rgba(255,255,255,0.55) 1px, transparent 1px)",
           backgroundSize: "9px 9px",
           opacity: 0.05,
         }}
@@ -324,7 +363,11 @@ function CardMeta({
       {hasMeta && (
         <div className="text-muted-foreground mt-1 flex items-center gap-1.5 text-[11px]">
           {mediaType && (
-            <Icon className="h-3 w-3 shrink-0 opacity-60" strokeWidth={2} aria-hidden />
+            <Icon
+              className="h-3 w-3 shrink-0 opacity-60"
+              strokeWidth={2}
+              aria-hidden
+            />
           )}
           {year ? <span className="tabular-nums">{year}</span> : null}
           {(year || mediaType) && rating ? (
@@ -343,16 +386,20 @@ function CardMeta({
   );
 }
 
-type RibbonKind = "pending" | "approved" | "queued" | "downloading" | "completed" | "blocked";
+type RibbonKind =
+  "pending" | "approved" | "queued" | "downloading" | "completed" | "blocked";
 
 const RIBBON_STYLES: Record<RibbonKind, string> = {
   pending:
     "bg-amber-950/75 text-amber-100 ring-amber-400/30 [&_.dot]:bg-amber-300 [&_.dot]:animate-pulse",
-  approved: "bg-emerald-950/75 text-emerald-100 ring-emerald-400/30 [&_.dot]:bg-emerald-300",
-  queued: "bg-sky-950/75 text-sky-100 ring-sky-400/30 [&_.dot]:bg-sky-300 [&_.dot]:animate-pulse",
+  approved:
+    "bg-emerald-950/75 text-emerald-100 ring-emerald-400/30 [&_.dot]:bg-emerald-300",
+  queued:
+    "bg-sky-950/75 text-sky-100 ring-sky-400/30 [&_.dot]:bg-sky-300 [&_.dot]:animate-pulse",
   downloading:
     "bg-sky-950/80 text-sky-100 ring-sky-400/35 [&_.dot]:bg-sky-300 [&_.dot]:animate-pulse",
-  completed: "bg-emerald-950/80 text-emerald-100 ring-emerald-400/30 [&_.dot]:bg-emerald-300",
+  completed:
+    "bg-emerald-950/80 text-emerald-100 ring-emerald-400/30 [&_.dot]:bg-emerald-300",
   blocked: "bg-zinc-900/80 text-zinc-200 ring-white/10 [&_.dot]:bg-zinc-400",
 };
 
@@ -365,12 +412,16 @@ function StatusRibbon({
   label: string;
   reserveLibrarySpace?: boolean;
 }) {
-  const kind = (RIBBON_STYLES[status as RibbonKind] ? status : "blocked") as RibbonKind;
+  const kind = (
+    RIBBON_STYLES[status as RibbonKind] ? status : "blocked"
+  ) as RibbonKind;
   return (
     <span
       className={cn(
         "absolute top-2 right-2 inline-flex items-center gap-1.5 rounded-full px-2 py-[3px] text-[10px] leading-none font-medium tracking-[0.06em] uppercase shadow-sm ring-1 shadow-black/40 backdrop-blur-md",
-        reserveLibrarySpace ? "max-w-[calc(100%-5.75rem)]" : "max-w-[calc(100%-1rem)]",
+        reserveLibrarySpace
+          ? "max-w-[calc(100%-5.75rem)]"
+          : "max-w-[calc(100%-1rem)]",
         RIBBON_STYLES[kind],
       )}
     >

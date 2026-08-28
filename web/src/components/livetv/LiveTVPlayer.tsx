@@ -103,7 +103,9 @@ export function LiveTVPlayer({
       if (!Hls.isSupported()) {
         // Safari can play HLS natively but cannot attach auth headers; require
         // hls.js (MSE) so X-Profile-Id reaches RequireProfile.
-        setError("HLS playback requires Media Source Extensions in this browser.");
+        setError(
+          "HLS playback requires Media Source Extensions in this browser.",
+        );
         setStarting(false);
         return;
       }
@@ -147,11 +149,13 @@ export function LiveTVPlayer({
         if (!data.fatal) return;
         // Surface the real cause: the handler used to swallow details, which hid
         // whether a stall was a network, media, or buffer problem.
-        const frag = data.frag as { sn?: number | string; url?: string } | undefined;
+        const frag = data.frag as
+          { sn?: number | string; url?: string } | undefined;
         console.warn("livetv hls fatal error", {
           type: data.type,
           details: data.details,
-          sourceBufferName: (data as { sourceBufferName?: string }).sourceBufferName,
+          sourceBufferName: (data as { sourceBufferName?: string })
+            .sourceBufferName,
           error: data.error?.message ?? data.error,
           fragSn: frag?.sn,
           fragUrl: frag?.url,
@@ -161,7 +165,10 @@ export function LiveTVPlayer({
         if (now - lastRecoveryAtRef.current < 1500) return;
         lastRecoveryAtRef.current = now;
 
-        if (data.type === Hls.ErrorTypes.NETWORK_ERROR && networkRecoveryRef.current < 8) {
+        if (
+          data.type === Hls.ErrorTypes.NETWORK_ERROR &&
+          networkRecoveryRef.current < 8
+        ) {
           networkRecoveryRef.current += 1;
           // Playlist often 404s for a beat while ffmpeg writes the first segment.
           hls.startLoad();
@@ -198,7 +205,10 @@ export function LiveTVPlayer({
           hls.startLoad();
           return;
         }
-        if (data.type === Hls.ErrorTypes.MEDIA_ERROR && networkRecoveryRef.current < 3) {
+        if (
+          data.type === Hls.ErrorTypes.MEDIA_ERROR &&
+          networkRecoveryRef.current < 3
+        ) {
           networkRecoveryRef.current += 1;
           hls.recoverMediaError();
           return;
@@ -240,14 +250,17 @@ export function LiveTVPlayer({
     );
     mpegtsRef.current = player;
     player.attachMediaElement(video);
-    player.on(mpegts.Events.ERROR, (_type: string, _detail: string, info: unknown) => {
-      const message =
-        typeof info === "object" && info && "msg" in info
-          ? String((info as { msg?: string }).msg ?? "Playback error")
-          : "Playback error";
-      setError(message);
-      setStarting(false);
-    });
+    player.on(
+      mpegts.Events.ERROR,
+      (_type: string, _detail: string, info: unknown) => {
+        const message =
+          typeof info === "object" && info && "msg" in info
+            ? String((info as { msg?: string }).msg ?? "Playback error")
+            : "Playback error";
+        setError(message);
+        setStarting(false);
+      },
+    );
     player.load();
     const playResult = player.play();
     if (playResult && typeof playResult.then === "function") {

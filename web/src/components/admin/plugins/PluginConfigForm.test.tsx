@@ -57,7 +57,10 @@ describe("PluginConfigForm secrets", () => {
     );
 
     expect(screen.getByLabelText("Base URL")).toBeInTheDocument();
-    expect(screen.getByLabelText("Api Key")).toHaveAttribute("type", "password");
+    expect(screen.getByLabelText("Api Key")).toHaveAttribute(
+      "type",
+      "password",
+    );
   });
 
   it("shows redacted saved state and only clears through an explicit action", async () => {
@@ -84,7 +87,9 @@ describe("PluginConfigForm secrets", () => {
       [],
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Clear saved secret" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Clear saved secret" }),
+    );
     await userEvent.click(screen.getByRole("button", { name: "Save config" }));
     expect(onSave).toHaveBeenLastCalledWith(
       "account",
@@ -113,7 +118,9 @@ describe("PluginConfigForm secrets", () => {
     );
 
     expect(screen.getByText("API Key: saved (required)")).toBeInTheDocument();
-    expect(screen.queryByRole("button", { name: "Clear saved secret" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Clear saved secret" }),
+    ).not.toBeInTheDocument();
   });
 
   it("keeps the submitted snapshot immutable while a save is pending", () => {
@@ -129,7 +136,9 @@ describe("PluginConfigForm secrets", () => {
 
     expect(screen.getByLabelText("Region")).toBeDisabled();
     expect(screen.getByRole("button", { name: "Save config" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Clear saved secret" })).toBeDisabled();
+    expect(
+      screen.getByRole("button", { name: "Clear saved secret" }),
+    ).toBeDisabled();
   });
 
   it("tests the exact draft including staged secret removals", async () => {
@@ -147,11 +156,17 @@ describe("PluginConfigForm secrets", () => {
       />,
     );
 
-    await userEvent.click(screen.getByRole("button", { name: "Clear saved secret" }));
-    await userEvent.click(screen.getByRole("button", { name: "Check Connection" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Clear saved secret" }),
+    );
+    await userEvent.click(
+      screen.getByRole("button", { name: "Check Connection" }),
+    );
 
-    expect(onTest).toHaveBeenCalledWith("account", expect.objectContaining({ region: "us-east" }), [
-      "api_key",
-    ]);
+    expect(onTest).toHaveBeenCalledWith(
+      "account",
+      expect.objectContaining({ region: "us-east" }),
+      ["api_key"],
+    );
   });
 });

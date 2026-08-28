@@ -83,10 +83,17 @@ import {
 import { useAdminLibraries } from "@/hooks/queries/admin/libraries";
 import SourceConfigForm from "./SourceConfigForm";
 import { ChoiceCard, StepTrail } from "./ChoiceCard";
-import InlineConnectionPicker, { type ConnectionOption } from "./InlineConnectionPicker";
+import InlineConnectionPicker, {
+  type ConnectionOption,
+} from "./InlineConnectionPicker";
 import { sourceTargets } from "./sourceTargets";
 import { WebhookInstructions, WebhookMappingEditor } from "./WebhookSetupStep";
-import { hasUsableMapping, seedMappings, usableMappings, type MappingDraft } from "./webhookSetup";
+import {
+  hasUsableMapping,
+  seedMappings,
+  usableMappings,
+  type MappingDraft,
+} from "./webhookSetup";
 import {
   connectionIsMandatory,
   parseConfigValues,
@@ -118,7 +125,9 @@ function resolveSourceName(
 ): string {
   return composeSourceLabel({
     operatorLabel: source.label,
-    connectionName: connectionOptions.find((c) => c.id === (source.connection_id ?? ""))?.name,
+    connectionName: connectionOptions.find(
+      (c) => c.id === (source.connection_id ?? ""),
+    )?.name,
     displayName: pluginDisplayNames.get(
       pluginDisplayNameKey(source.plugin_id, source.capability_id),
     ),
@@ -129,7 +138,10 @@ function resolveSourceName(
 
 function formatRelativeTime(isoString: string | null): string {
   return (
-    formatRelativeTimeBase(isoString, { rounding: "floor", justNowLabel: "Just now" }) ?? "Never"
+    formatRelativeTimeBase(isoString, {
+      rounding: "floor",
+      justNowLabel: "Just now",
+    }) ?? "Never"
   );
 }
 
@@ -156,7 +168,10 @@ function sourceToRowEdit(
 ): RowEdit {
   return {
     connectionId: source.connection_id ?? "",
-    intervalStr: source.poll_interval_seconds != null ? String(source.poll_interval_seconds) : "",
+    intervalStr:
+      source.poll_interval_seconds != null
+        ? String(source.poll_interval_seconds)
+        : "",
     rewrites: source.path_rewrites.map((r) => ({ ...r })),
     sourceConfig: parseConfigValues(descriptor, sourceConfigForEdit(source)),
     label: source.label ?? "",
@@ -218,7 +233,10 @@ const CEPHFS_PLUGIN_ID = "prairie.autoscan.cephfs";
 const CEPHFS_CAPABILITY_ID = "cephfs";
 
 function ownsLegacyAliases(source: AutoscanSource): boolean {
-  return source.plugin_id === CEPHFS_PLUGIN_ID && source.capability_id === CEPHFS_CAPABILITY_ID;
+  return (
+    source.plugin_id === CEPHFS_PLUGIN_ID &&
+    source.capability_id === CEPHFS_CAPABILITY_ID
+  );
 }
 
 /** Merge newline-separated values, de-duplicating and dropping blanks. */
@@ -245,7 +263,9 @@ function sourceConfigForEdit(source: AutoscanSource): Record<string, string> {
   const config = { ...(source.source_config ?? {}) };
   if (!ownsLegacyAliases(source)) return config;
 
-  for (const [legacyKey, currentKey] of Object.entries(LEGACY_CONFIG_KEY_ALIASES)) {
+  for (const [legacyKey, currentKey] of Object.entries(
+    LEGACY_CONFIG_KEY_ALIASES,
+  )) {
     if (config[legacyKey] === undefined) continue;
     config[currentKey] = mergeLines(config[currentKey], config[legacyKey]);
     delete config[legacyKey];
@@ -253,7 +273,9 @@ function sourceConfigForEdit(source: AutoscanSource): Record<string, string> {
   return config;
 }
 
-function normalizeSourceConfig(config: Record<string, string>): Record<string, string> {
+function normalizeSourceConfig(
+  config: Record<string, string>,
+): Record<string, string> {
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(config)) {
     const trimmedKey = key.trim();
@@ -287,7 +309,9 @@ function RewriteEditor({
   const [rewriteError, setRewriteError] = useState<string | null>(null);
 
   const suggest = useAutoscanRewriteSuggestions();
-  const [preview, setPreview] = useState<AutoscanRewriteSuggestions | null>(null);
+  const [preview, setPreview] = useState<AutoscanRewriteSuggestions | null>(
+    null,
+  );
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
   function updateRewrite(index: number, patch: Partial<AutoscanPathRewrite>) {
@@ -379,20 +403,33 @@ function RewriteEditor({
       </button>
 
       {open && (
-        <div id={panelId} className="space-y-3 px-3 pb-3" role="region" aria-label="Path rewrites">
+        <div
+          id={panelId}
+          className="space-y-3 px-3 pb-3"
+          role="region"
+          aria-label="Path rewrites"
+        >
           {rewrites.length === 0 ? (
             <p className="text-muted-foreground text-xs">
-              No path rewrites. Map remote paths (from the scan source) to local library paths.
+              No path rewrites. Map remote paths (from the scan source) to local
+              library paths.
             </p>
           ) : (
             <div className="space-y-2">
               {rewrites.map((rewrite, index) => (
-                <div key={index} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <div
+                  key={index}
+                  className="flex flex-col gap-2 sm:flex-row sm:items-end"
+                >
                   <div className="min-w-0 flex-1 space-y-1">
-                    <Label className="text-muted-foreground text-xs">From</Label>
+                    <Label className="text-muted-foreground text-xs">
+                      From
+                    </Label>
                     <Input
                       value={rewrite.from}
-                      onChange={(e) => updateRewrite(index, { from: e.target.value })}
+                      onChange={(e) =>
+                        updateRewrite(index, { from: e.target.value })
+                      }
                       placeholder="/remote/media"
                       className="h-8 text-sm"
                       aria-label={`Rewrite ${index + 1} from path`}
@@ -402,7 +439,9 @@ function RewriteEditor({
                     <Label className="text-muted-foreground text-xs">To</Label>
                     <Input
                       value={rewrite.to}
-                      onChange={(e) => updateRewrite(index, { to: e.target.value })}
+                      onChange={(e) =>
+                        updateRewrite(index, { to: e.target.value })
+                      }
                       placeholder="/media"
                       className="h-8 text-sm"
                       aria-label={`Rewrite ${index + 1} to path`}
@@ -423,10 +462,17 @@ function RewriteEditor({
             </div>
           )}
 
-          {rewriteError && <p className="text-destructive text-xs">{rewriteError}</p>}
+          {rewriteError && (
+            <p className="text-destructive text-xs">{rewriteError}</p>
+          )}
 
           <div className="flex flex-wrap items-center gap-2">
-            <Button type="button" variant="outline" size="sm" onClick={addRewrite}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={addRewrite}
+            >
               <Plus className="size-3.5" />
               Add rewrite
             </Button>
@@ -442,10 +488,17 @@ function RewriteEditor({
                   : "Bind a connection first"
               }
             >
-              <RefreshCw className={`size-3.5 ${suggest.isPending ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`size-3.5 ${suggest.isPending ? "animate-spin" : ""}`}
+              />
               {suggest.isPending ? "Syncing…" : "Sync from server"}
             </Button>
-            <Button type="button" size="sm" disabled={isSaving} onClick={handleSave}>
+            <Button
+              type="button"
+              size="sm"
+              disabled={isSaving}
+              onClick={handleSave}
+            >
               <Save />
               Save rewrites
             </Button>
@@ -461,10 +514,15 @@ function RewriteEditor({
               <div className="space-y-2">
                 <p className="text-sm font-medium">Proposed</p>
                 {preview.proposed.length === 0 ? (
-                  <p className="text-muted-foreground text-xs">No proposed rewrites.</p>
+                  <p className="text-muted-foreground text-xs">
+                    No proposed rewrites.
+                  </p>
                 ) : (
                   preview.proposed.map((proposal) => (
-                    <label key={proposal.from} className="flex items-center gap-2 text-sm">
+                    <label
+                      key={proposal.from}
+                      className="flex items-center gap-2 text-sm"
+                    >
                       <input
                         type="checkbox"
                         checked={selected.has(proposal.from)}
@@ -497,7 +555,9 @@ function RewriteEditor({
               {preview.ambiguous.length > 0 && (
                 <CollapsibleList
                   title={`Ambiguous (${preview.ambiguous.length})`}
-                  items={preview.ambiguous.map((a) => `${a.root} → ${a.candidates.join(", ")}`)}
+                  items={preview.ambiguous.map(
+                    (a) => `${a.root} → ${a.candidates.join(", ")}`,
+                  )}
                 />
               )}
 
@@ -509,11 +569,21 @@ function RewriteEditor({
               )}
 
               <div className="flex flex-wrap items-center gap-2">
-                <Button type="button" size="sm" disabled={isSaving} onClick={applySelected}>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={isSaving}
+                  onClick={applySelected}
+                >
                   <Check />
                   Apply selected
                 </Button>
-                <Button type="button" variant="outline" size="sm" onClick={() => setPreview(null)}>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPreview(null)}
+                >
                   <X />
                   Cancel
                 </Button>
@@ -547,7 +617,10 @@ function CollapsibleList({ title, items }: { title: string; items: string[] }) {
         <span className="text-sm font-medium">{title}</span>
       </button>
       {open && (
-        <ul id={panelId} className="text-muted-foreground space-y-0.5 pl-5 text-xs">
+        <ul
+          id={panelId}
+          className="text-muted-foreground space-y-0.5 pl-5 text-xs"
+        >
           {items.map((item) => (
             <li key={item} className="font-mono break-all">
               {item}
@@ -599,7 +672,10 @@ function WebhookEndpointSection({
             <div className="flex items-center gap-1.5">
               <Input
                 readOnly
-                value={url || `…${source.webhook_secret_suffix ?? ""} (URL unavailable)`}
+                value={
+                  url ||
+                  `…${source.webhook_secret_suffix ?? ""} (URL unavailable)`
+                }
                 className="h-8 font-mono text-xs"
                 aria-label="Webhook delivery URL"
                 onFocus={(e) => e.currentTarget.select()}
@@ -629,8 +705,8 @@ function WebhookEndpointSection({
               </Button>
             </div>
             <p className="text-muted-foreground text-xs">
-              Paste into Sonarr/Radarr → Settings → Connect → Webhook (On Import, On Rename, On File
-              Delete).
+              Paste into Sonarr/Radarr → Settings → Connect → Webhook (On
+              Import, On Rename, On File Delete).
             </p>
           </>
         ) : (
@@ -646,7 +722,8 @@ function WebhookEndpointSection({
               {createWebhook.isPending ? "Generating…" : "Generate webhook URL"}
             </Button>
             <p className="text-muted-foreground text-xs">
-              Creates the URL Sonarr/Radarr will POST import, rename, and delete events to.
+              Creates the URL Sonarr/Radarr will POST import, rename, and delete
+              events to.
             </p>
           </div>
         )}
@@ -659,7 +736,10 @@ function WebhookEndpointSection({
           onValueChange={(v) => onProviderChange(v as AutoscanWebhookProvider)}
           disabled={isSaving}
         >
-          <SelectTrigger className="w-full sm:w-[140px]" aria-label="Webhook payload provider">
+          <SelectTrigger
+            className="w-full sm:w-[140px]"
+            aria-label="Webhook payload provider"
+          >
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -679,8 +759,9 @@ function WebhookEndpointSection({
           <AlertDialogHeader>
             <AlertDialogTitle>Rotate webhook URL?</AlertDialogTitle>
             <AlertDialogDescription>
-              The current URL stops working immediately. Sonarr/Radarr keep sending to the old URL
-              until you paste the new one into their webhook settings.
+              The current URL stops working immediately. Sonarr/Radarr keep
+              sending to the old URL until you paste the new one into their
+              webhook settings.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -713,7 +794,10 @@ function WebhookEndpointSection({
  *   the source's currently-persisted value so an unrelated save (enable toggle,
  *   connection change) never corrupts the interval.
  */
-function parseInterval(intervalStr: string, current: number | null): number | null {
+function parseInterval(
+  intervalStr: string,
+  current: number | null,
+): number | null {
   const t = intervalStr.trim();
   if (t === "") return null;
   const n = Number(t);
@@ -745,7 +829,9 @@ function SourceRow({
 }) {
   const update = useUpdateAutoscanSource();
   const libraries = useAdminLibraries();
-  const [edit, setEdit] = useState<RowEdit>(() => sourceToRowEdit(source, descriptor));
+  const [edit, setEdit] = useState<RowEdit>(() =>
+    sourceToRowEdit(source, descriptor),
+  );
 
   // /sources and /scan-source-plugins are independent queries. When the row
   // mounts first it parses with DEFAULT_DESCRIPTOR, leaving switch and
@@ -764,7 +850,10 @@ function SourceRow({
       // Re-parse only the sourceConfig portion, preserving user-edited fields.
       setEdit((prev) => ({
         ...prev,
-        sourceConfig: parseConfigValues(descriptor, sourceConfigForEdit(source)),
+        sourceConfig: parseConfigValues(
+          descriptor,
+          sourceConfigForEdit(source),
+        ),
       }));
     }
   }
@@ -773,11 +862,18 @@ function SourceRow({
   const isDirty =
     edit.connectionId !== (source.connection_id ?? "") ||
     edit.intervalStr !==
-      (source.poll_interval_seconds != null ? String(source.poll_interval_seconds) : "");
+      (source.poll_interval_seconds != null
+        ? String(source.poll_interval_seconds)
+        : "");
 
   /** Build the full desired state to send on every mutation — always includes path_rewrites. */
-  function fullBody(overrides: Partial<AutoscanSourceInput>): AutoscanSourceInput {
-    const intervalVal = parseInterval(edit.intervalStr, source.poll_interval_seconds);
+  function fullBody(
+    overrides: Partial<AutoscanSourceInput>,
+  ): AutoscanSourceInput {
+    const intervalVal = parseInterval(
+      edit.intervalStr,
+      source.poll_interval_seconds,
+    );
     // Trim and drop empty rewrite rows before sending.
     const path_rewrites = edit.rewrites
       .map((r) => ({ from: r.from.trim(), to: r.to.trim() }))
@@ -792,7 +888,9 @@ function SourceRow({
       // the validity gate and could enable a source the plugin cannot use. Send
       // what is already persisted instead; the config button owns config saves.
       source_config: edit.configValid
-        ? normalizeSourceConfig(serializeConfigValues(edit.sourceConfig, descriptor))
+        ? normalizeSourceConfig(
+            serializeConfigValues(edit.sourceConfig, descriptor),
+          )
         : { ...(source.source_config ?? {}) },
       label: edit.label.trim(),
       ...overrides,
@@ -856,7 +954,9 @@ function SourceRow({
     update.mutate({
       id: source.id,
       body: fullBody({
-        source_config: normalizeSourceConfig(serializeConfigValues(sourceConfig, descriptor)),
+        source_config: normalizeSourceConfig(
+          serializeConfigValues(sourceConfig, descriptor),
+        ),
       }),
     });
   }
@@ -872,7 +972,8 @@ function SourceRow({
 
   // Whether this source has a bound connection (server-side or pending edit).
   // Used to gate the Sync-from-server button, which needs a server to query.
-  const hasEffectiveConnection = Boolean(source.connection_id) || Boolean(edit.connectionId);
+  const hasEffectiveConnection =
+    Boolean(source.connection_id) || Boolean(edit.connectionId);
 
   const isWebhook = isWebhookSource(source);
 
@@ -888,14 +989,19 @@ function SourceRow({
   const hasError = isWebhook
     ? webhookErrorMs > 0 && webhookErrorMs >= webhookReceivedMs
     : Boolean(source.last_error);
-  const hasRun = isWebhook ? webhookReceivedMs > 0 : Boolean(source.last_run_at);
+  const hasRun = isWebhook
+    ? webhookReceivedMs > 0
+    : Boolean(source.last_run_at);
   const statusErrorMessage = isWebhook
-    ? source.webhook_last_error_message || source.last_error || "Delivery failed"
+    ? source.webhook_last_error_message ||
+      source.last_error ||
+      "Delivery failed"
     : (source.last_error ?? "");
   const statusTimestamp = isWebhook
     ? (source.webhook_last_received_at ?? null)
     : source.last_run_at;
-  const connectionSelectClass = layout === "card" ? "!w-full min-w-0 max-w-full" : "w-[200px]";
+  const connectionSelectClass =
+    layout === "card" ? "!w-full min-w-0 max-w-full" : "w-[200px]";
   const statusMessageClass =
     layout === "card"
       ? "text-muted-foreground min-w-0 max-w-full whitespace-normal break-words text-xs [overflow-wrap:anywhere]"
@@ -921,7 +1027,9 @@ function SourceRow({
   // was the most common "I set it up and nothing happened" report.
   const targets = sourceTargets(source, descriptor, libraries.data ?? []);
   const targetSummary = libraries.isLoading ? null : targets.unknown ? (
-    <p className="text-muted-foreground text-xs">Targets determined at scan time</p>
+    <p className="text-muted-foreground text-xs">
+      Targets determined at scan time
+    </p>
   ) : targets.unresolvable ? (
     <p className="text-destructive flex items-center gap-1 text-xs">
       <AlertTriangle className="size-3 shrink-0" />
@@ -935,7 +1043,11 @@ function SourceRow({
     <p className="text-muted-foreground flex flex-wrap items-center gap-1 text-xs">
       <span>Feeds</span>
       {targets.libraries.map((library) => (
-        <Badge key={library.id} variant="outline" className="text-xs font-normal">
+        <Badge
+          key={library.id}
+          variant="outline"
+          className="text-xs font-normal"
+        >
           {library.name}
         </Badge>
       ))}
@@ -998,7 +1110,10 @@ function SourceRow({
   // Editing must respect the same contract the add flow enforced, or an
   // operator can unbind a `required` source, bind an incompatible kind, or
   // attach credentials to a `none` source right after creating it correctly.
-  const rowConnectionRequired = connectionIsMandatory(descriptor, source.delivery_mode);
+  const rowConnectionRequired = connectionIsMandatory(
+    descriptor,
+    source.delivery_mode,
+  );
   const rowEligibleConnections = connectionOptions.filter((c) =>
     connectionMatchesKinds(descriptor, c.kind),
   );
@@ -1008,7 +1123,9 @@ function SourceRow({
       Not needed — Sonarr/Radarr deliver directly
     </span>
   ) : !needsConnectionStep(descriptor, source.delivery_mode) ? (
-    <span className="text-muted-foreground text-xs">Not needed — reads locally</span>
+    <span className="text-muted-foreground text-xs">
+      Not needed — reads locally
+    </span>
   ) : source.connection_id === null && !edit.connectionId ? (
     <div className="flex max-w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center">
       <Select value="__none__" onValueChange={handleConnectionChange}>
@@ -1019,7 +1136,9 @@ function SourceRow({
           <SelectValue placeholder="No connection" />
         </SelectTrigger>
         <SelectContent>
-          {!rowConnectionRequired && <SelectItem value="__none__">— No connection —</SelectItem>}
+          {!rowConnectionRequired && (
+            <SelectItem value="__none__">— No connection —</SelectItem>
+          )}
           {rowEligibleConnections.map((c) => (
             <SelectItem key={c.id} value={c.id}>
               {c.name}
@@ -1039,7 +1158,10 @@ function SourceRow({
       </Badge>
     </div>
   ) : (
-    <Select value={edit.connectionId || "__none__"} onValueChange={handleConnectionChange}>
+    <Select
+      value={edit.connectionId || "__none__"}
+      onValueChange={handleConnectionChange}
+    >
       <SelectTrigger
         className={connectionSelectClass}
         aria-label={`Connection for ${resolvedLabel.name}`}
@@ -1047,7 +1169,9 @@ function SourceRow({
         <SelectValue placeholder="No connection" />
       </SelectTrigger>
       <SelectContent>
-        {!rowConnectionRequired && <SelectItem value="__none__">— No connection —</SelectItem>}
+        {!rowConnectionRequired && (
+          <SelectItem value="__none__">— No connection —</SelectItem>
+        )}
         {rowEligibleConnections.map((c) => (
           <SelectItem key={c.id} value={c.id}>
             {c.name}
@@ -1089,13 +1213,18 @@ function SourceRow({
   const rowConfigDescriptor = useMemo(
     () => ({
       ...descriptor,
-      config_form: { ...(descriptor.config_form ?? { fields: [] }), fields: rowConfigFields },
+      config_form: {
+        ...(descriptor.config_form ?? { fields: [] }),
+        fields: rowConfigFields,
+      },
     }),
     [descriptor, rowConfigFields],
   );
 
   const handleRowConfigValidity = useCallback((configValid: boolean) => {
-    setEdit((ed) => (ed.configValid === configValid ? ed : { ...ed, configValid }));
+    setEdit((ed) =>
+      ed.configValid === configValid ? ed : { ...ed, configValid },
+    );
   }, []);
 
   const sourceConfigEditor = rowConfigFields.length ? (
@@ -1103,7 +1232,9 @@ function SourceRow({
       <SourceConfigForm
         descriptor={rowConfigDescriptor}
         values={edit.sourceConfig}
-        onChange={(next) => setEdit((ed) => ({ ...ed, sourceConfig: next, dirty: true }))}
+        onChange={(next) =>
+          setEdit((ed) => ({ ...ed, sourceConfig: next, dirty: true }))
+        }
         onValidityChange={handleRowConfigValidity}
         idPrefix={`source-config-${source.id}`}
       />
@@ -1124,7 +1255,8 @@ function SourceRow({
       <WebhookEndpointSection
         source={source}
         provider={
-          (edit.sourceConfig[WEBHOOK_PROVIDER_KEY] as AutoscanWebhookProvider | undefined) ?? "auto"
+          (edit.sourceConfig[WEBHOOK_PROVIDER_KEY] as
+            AutoscanWebhookProvider | undefined) ?? "auto"
         }
         onProviderChange={handleProviderChange}
         isSaving={update.isPending}
@@ -1152,7 +1284,9 @@ function SourceRow({
         <span className="text-muted-foreground text-xs">sec</span>
       </div>
       {intervalError && (
-        <p className="text-destructive mt-1 text-xs">Must be a positive integer.</p>
+        <p className="text-destructive mt-1 text-xs">
+          Must be a positive integer.
+        </p>
       )}
       <p className="text-muted-foreground mt-1 text-xs">{intervalHelp}</p>
       {rewriteEditor}
@@ -1179,7 +1313,9 @@ function SourceRow({
         <div className="mt-4 grid min-w-0 gap-4">
           {!isWebhook && (
             <div className="grid min-w-0 gap-1.5">
-              <Label className="text-muted-foreground text-xs">Connection</Label>
+              <Label className="text-muted-foreground text-xs">
+                Connection
+              </Label>
               {connectionControl}
             </div>
           )}
@@ -1188,7 +1324,9 @@ function SourceRow({
             <div className="min-w-0">
               <p className="text-sm font-medium">Enabled</p>
               <p className="text-muted-foreground text-xs break-words">
-                {isWebhook ? "Accept webhook deliveries" : "Poll this source for changes"}
+                {isWebhook
+                  ? "Accept webhook deliveries"
+                  : "Poll this source for changes"}
               </p>
             </div>
             <Switch
@@ -1203,7 +1341,9 @@ function SourceRow({
             <Label className="text-muted-foreground text-xs">
               {isWebhook ? "Last delivery" : "Last run"}
             </Label>
-            <div className="min-w-0 overflow-hidden rounded-md border px-3 py-2">{statusNode}</div>
+            <div className="min-w-0 overflow-hidden rounded-md border px-3 py-2">
+              {statusNode}
+            </div>
           </div>
 
           <div className="grid min-w-0 gap-1.5">
@@ -1295,7 +1435,10 @@ function pluginKey(pluginId: string, capabilityId: string): string {
 }
 
 /** Human wording for a delivery mode, used on the choice cards. */
-const DELIVERY_MODE_COPY: Record<AutoscanDeliveryMode, { title: string; description: string }> = {
+const DELIVERY_MODE_COPY: Record<
+  AutoscanDeliveryMode,
+  { title: string; description: string }
+> = {
   webhook: {
     title: "The service tells Prairie",
     description:
@@ -1303,7 +1446,8 @@ const DELIVERY_MODE_COPY: Record<AutoscanDeliveryMode, { title: string; descript
   },
   poll: {
     title: "Prairie checks the service",
-    description: "Prairie asks on a schedule. Works without changing anything upstream.",
+    description:
+      "Prairie asks on a schedule. Works without changing anything upstream.",
   },
 };
 
@@ -1324,7 +1468,8 @@ function AddSourceDialog({
   // Set once a webhook source exists and its endpoint has been generated. The
   // dialog then shows the paste-this-into-your-arr instructions rather than
   // closing, so setup finishes in one place.
-  const [createdWebhookSource, setCreatedWebhookSource] = useState<AutoscanSource | null>(null);
+  const [createdWebhookSource, setCreatedWebhookSource] =
+    useState<AutoscanSource | null>(null);
 
   const plugins = available.data ?? [];
   const selectedPlugin = plugins.find(
@@ -1334,10 +1479,13 @@ function AddSourceDialog({
 
   // The chosen mode, or the descriptor's default while the operator has not
   // been asked (single-mode sources are never asked at all).
-  const deliveryMode: AutoscanDeliveryMode = form.deliveryMode || defaultDeliveryMode(descriptor);
+  const deliveryMode: AutoscanDeliveryMode =
+    form.deliveryMode || defaultDeliveryMode(descriptor);
 
-  const showDeliveryChoice = Boolean(selectedPlugin) && needsDeliveryChoice(descriptor);
-  const showConnection = Boolean(selectedPlugin) && needsConnectionStep(descriptor, deliveryMode);
+  const showDeliveryChoice =
+    Boolean(selectedPlugin) && needsDeliveryChoice(descriptor);
+  const showConnection =
+    Boolean(selectedPlugin) && needsConnectionStep(descriptor, deliveryMode);
   const connectionRequired = connectionIsMandatory(descriptor, deliveryMode);
   // Poll interval only means something when Prairie is the one asking.
   const showInterval = Boolean(selectedPlugin) && deliveryMode === "poll";
@@ -1384,7 +1532,9 @@ function AddSourceDialog({
   }, []);
 
   function selectPlugin(value: string) {
-    const plugin = plugins.find((p) => pluginKey(p.plugin_id, p.capability_id) === value);
+    const plugin = plugins.find(
+      (p) => pluginKey(p.plugin_id, p.capability_id) === value,
+    );
     const next = descriptorFor(plugin);
     // Reset per-source state on every change: config keys, delivery modes and
     // eligible connections all belong to the previously selected source.
@@ -1394,7 +1544,9 @@ function AddSourceDialog({
       pluginKey: value,
       sourceConfig: initialConfigValues(next),
       mappings:
-        nextMode === "webhook" ? seedMappings(webhookProviderOf(next), libraries.data ?? []) : [],
+        nextMode === "webhook"
+          ? seedMappings(webhookProviderOf(next), libraries.data ?? [])
+          : [],
     });
   }
 
@@ -1432,7 +1584,9 @@ function AddSourceDialog({
         delivery_mode: deliveryMode,
         poll_interval_seconds: pollInterval,
         path_rewrites: isWebhookFlow ? usableMappings(form.mappings) : [],
-        source_config: normalizeSourceConfig(serializeConfigValues(form.sourceConfig, descriptor)),
+        source_config: normalizeSourceConfig(
+          serializeConfigValues(form.sourceConfig, descriptor),
+        ),
       },
       {
         onSuccess: (created) => {
@@ -1461,7 +1615,8 @@ function AddSourceDialog({
   const intervalInvalid =
     showInterval &&
     form.intervalStr.trim() !== "" &&
-    (!Number.isInteger(Number(form.intervalStr)) || Number(form.intervalStr) < 1);
+    (!Number.isInteger(Number(form.intervalStr)) ||
+      Number(form.intervalStr) < 1);
 
   const isCreating = createSource.isPending || createWebhook.isPending;
 
@@ -1469,7 +1624,8 @@ function AddSourceDialog({
     Boolean(selectedPlugin) &&
     !intervalInvalid &&
     !isCreating &&
-    (!connectionRequired || Boolean(form.connectionId && form.connectionId !== "__none__")) &&
+    (!connectionRequired ||
+      Boolean(form.connectionId && form.connectionId !== "__none__")) &&
     // A webhook source with no mapping accepts deliveries and resolves nothing,
     // so require at least one before it can be created.
     (!isWebhookFlow || hasUsableMapping(form.mappings)) &&
@@ -1478,11 +1634,16 @@ function AddSourceDialog({
     form.configValid;
 
   return (
-    <Dialog open={open} onOpenChange={(o) => (o ? onOpenChange(true) : close())}>
+    <Dialog
+      open={open}
+      onOpenChange={(o) => (o ? onOpenChange(true) : close())}
+    >
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>
-            {createdWebhookSource ? "Almost done — connect your service" : "Add scan source"}
+            {createdWebhookSource
+              ? "Almost done — connect your service"
+              : "Add scan source"}
           </DialogTitle>
           <DialogDescription>
             {createdWebhookSource
@@ -1493,11 +1654,17 @@ function AddSourceDialog({
 
         {createdWebhookSource ? (
           <div className="space-y-4">
-            <StepTrail steps={stepLabels} currentIndex={stepLabels.length - 1} />
+            <StepTrail
+              steps={stepLabels}
+              currentIndex={stepLabels.length - 1}
+            />
             {createdWebhookSource.webhook_url ? (
               <WebhookInstructions
                 url={absoluteWebhookURL(createdWebhookSource.webhook_url)}
-                provider={webhookProviderOf(descriptor, createdWebhookSource.source_config)}
+                provider={webhookProviderOf(
+                  descriptor,
+                  createdWebhookSource.source_config,
+                )}
               />
             ) : (
               <div className="border-destructive/30 bg-destructive/10 space-y-3 rounded-md border p-3">
@@ -1506,8 +1673,8 @@ function AddSourceDialog({
                   Couldn&apos;t generate the webhook URL
                 </p>
                 <p className="text-muted-foreground text-xs">
-                  The source was created, but has no endpoint yet — it can&apos;t receive anything
-                  until one exists.
+                  The source was created, but has no endpoint yet — it
+                  can&apos;t receive anything until one exists.
                 </p>
                 <Button
                   type="button"
@@ -1516,7 +1683,8 @@ function AddSourceDialog({
                   disabled={createWebhook.isPending}
                   onClick={() =>
                     createWebhook.mutate(createdWebhookSource.id, {
-                      onSuccess: (withWebhook) => setCreatedWebhookSource(withWebhook),
+                      onSuccess: (withWebhook) =>
+                        setCreatedWebhookSource(withWebhook),
                     })
                   }
                 >
@@ -1527,11 +1695,16 @@ function AddSourceDialog({
             )}
           </div>
         ) : available.isLoading ? (
-          <p className="text-muted-foreground py-4 text-sm">Loading available sources…</p>
+          <p className="text-muted-foreground py-4 text-sm">
+            Loading available sources…
+          </p>
         ) : plugins.length === 0 ? (
           <p className="text-muted-foreground py-4 text-sm">
             No scan-source plugins installed. Install one from the{" "}
-            <Link to="/admin/plugins" className="text-primary underline-offset-4 hover:underline">
+            <Link
+              to="/admin/plugins"
+              className="text-primary underline-offset-4 hover:underline"
+            >
               Plugins page
             </Link>{" "}
             to add sources here.
@@ -1578,7 +1751,11 @@ function AddSourceDialog({
                         key={mode}
                         title={copy?.title ?? mode}
                         description={copy?.description}
-                        icon={mode === "webhook" ? <Webhook className="size-3.5" /> : undefined}
+                        icon={
+                          mode === "webhook" ? (
+                            <Webhook className="size-3.5" />
+                          ) : undefined
+                        }
                         badge={mode === "webhook" ? "Recommended" : undefined}
                         selected={deliveryMode === mode}
                         onSelect={() => selectDeliveryMode(mode)}
@@ -1593,7 +1770,9 @@ function AddSourceDialog({
               <WebhookMappingEditor
                 mappings={form.mappings}
                 onChange={(mappings) => setForm((f) => ({ ...f, mappings }))}
-                libraryPaths={(libraries.data ?? []).flatMap((library) => library.paths ?? [])}
+                libraryPaths={(libraries.data ?? []).flatMap(
+                  (library) => library.paths ?? [],
+                )}
               />
             )}
 
@@ -1605,7 +1784,9 @@ function AddSourceDialog({
                 // kind, or keep a now-ineligible reuse id selected.
                 key={form.pluginKey}
                 value={form.connectionId}
-                onChange={(connectionId) => setForm((f) => ({ ...f, connectionId }))}
+                onChange={(connectionId) =>
+                  setForm((f) => ({ ...f, connectionId }))
+                }
                 options={eligibleConnections}
                 required={connectionRequired}
                 connectionKinds={descriptor.connection_kinds ?? []}
@@ -1615,7 +1796,9 @@ function AddSourceDialog({
 
             {showInterval && (
               <div className="space-y-1.5">
-                <Label htmlFor="add-source-interval">Check interval (seconds)</Label>
+                <Label htmlFor="add-source-interval">
+                  Check interval (seconds)
+                </Label>
                 <div className="flex items-center gap-2">
                   <Input
                     id="add-source-interval"
@@ -1623,12 +1806,16 @@ function AddSourceDialog({
                     placeholder="Default"
                     value={form.intervalStr}
                     aria-invalid={intervalInvalid}
-                    onChange={(e) => setForm((f) => ({ ...f, intervalStr: e.target.value }))}
+                    onChange={(e) =>
+                      setForm((f) => ({ ...f, intervalStr: e.target.value }))
+                    }
                   />
                   <span className="text-muted-foreground text-sm">sec</span>
                 </div>
                 {intervalInvalid && (
-                  <p className="text-destructive text-xs">Must be a positive integer.</p>
+                  <p className="text-destructive text-xs">
+                    Must be a positive integer.
+                  </p>
                 )}
                 <p className="text-muted-foreground text-xs">
                   Optional — leave blank to use the global default.
@@ -1640,7 +1827,9 @@ function AddSourceDialog({
               <SourceConfigForm
                 descriptor={descriptor}
                 values={form.sourceConfig}
-                onChange={(sourceConfig) => setForm((f) => ({ ...f, sourceConfig }))}
+                onChange={(sourceConfig) =>
+                  setForm((f) => ({ ...f, sourceConfig }))
+                }
                 onValidityChange={handleAddConfigValidity}
                 idPrefix="add-source-config"
               />
@@ -1660,7 +1849,11 @@ function AddSourceDialog({
               </Button>
               {plugins.length > 0 && (
                 <Button onClick={handleSubmit} disabled={!canSubmit}>
-                  {isCreating ? "Adding…" : isWebhookFlow ? "Create and continue" : "Add source"}
+                  {isCreating
+                    ? "Adding…"
+                    : isWebhookFlow
+                      ? "Create and continue"
+                      : "Add source"}
                 </Button>
               )}
             </>
@@ -1696,7 +1889,8 @@ export default function SourcesPanel() {
     requestIntegrationId: c.request_integration_id ?? null,
   }));
 
-  const globalPollInterval = settings.data?.default_poll_interval_seconds ?? null;
+  const globalPollInterval =
+    settings.data?.default_poll_interval_seconds ?? null;
 
   // Descriptor per installed capability, so each row can render the config
   // fields its own plugin declares. A source whose capability is no longer
@@ -1704,14 +1898,20 @@ export default function SourcesPanel() {
   const descriptorsByKey = useMemo(() => {
     const map = new Map<string, AutoscanScanSourceDescriptor>();
     for (const plugin of available.data ?? []) {
-      map.set(pluginKey(plugin.plugin_id, plugin.capability_id), descriptorFor(plugin));
+      map.set(
+        pluginKey(plugin.plugin_id, plugin.capability_id),
+        descriptorFor(plugin),
+      );
     }
     return map;
   }, [available.data]);
 
-  function descriptorForSource(source: AutoscanSource): AutoscanScanSourceDescriptor {
+  function descriptorForSource(
+    source: AutoscanSource,
+  ): AutoscanScanSourceDescriptor {
     return (
-      descriptorsByKey.get(pluginKey(source.plugin_id, source.capability_id)) ?? DEFAULT_DESCRIPTOR
+      descriptorsByKey.get(pluginKey(source.plugin_id, source.capability_id)) ??
+      DEFAULT_DESCRIPTOR
     );
   }
 
@@ -1719,7 +1919,10 @@ export default function SourcesPanel() {
     <div className="flex flex-col items-start gap-3 sm:flex-row sm:items-center sm:justify-between">
       <p className="text-muted-foreground text-xs">
         Scan-source plugins are installed from the{" "}
-        <Link to="/admin/plugins" className="text-primary underline-offset-4 hover:underline">
+        <Link
+          to="/admin/plugins"
+          className="text-primary underline-offset-4 hover:underline"
+        >
           Plugins page
         </Link>
         . Add a source for each thing you want to watch.
@@ -1745,7 +1948,9 @@ export default function SourcesPanel() {
   );
 
   if (sources.isLoading) {
-    return <p className="text-muted-foreground py-4 text-sm">Loading sources…</p>;
+    return (
+      <p className="text-muted-foreground py-4 text-sm">Loading sources…</p>
+    );
   }
 
   if (sources.isError) {
@@ -1764,8 +1969,9 @@ export default function SourcesPanel() {
         {header}
         <div className="rounded-lg border border-dashed p-8 text-center">
           <p className="text-muted-foreground text-sm">
-            No scan sources yet. Click <span className="font-medium">Add source</span> to create one
-            from an installed scan-source plugin.
+            No scan sources yet. Click{" "}
+            <span className="font-medium">Add source</span> to create one from
+            an installed scan-source plugin.
           </p>
         </div>
         {addDialog}
@@ -1832,7 +2038,11 @@ export default function SourcesPanel() {
             <AlertDialogDescription>
               &ldquo;
               {deleteTarget
-                ? resolveSourceName(deleteTarget, connectionOptions, pluginDisplayNames)
+                ? resolveSourceName(
+                    deleteTarget,
+                    connectionOptions,
+                    pluginDisplayNames,
+                  )
                 : ""}
               &rdquo; will be permanently removed. This cannot be undone.
             </AlertDialogDescription>

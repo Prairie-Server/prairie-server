@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { buildCollectionPreviewRequest, previewFingerprint } from "./collectionPreviews";
+import {
+  buildCollectionPreviewRequest,
+  previewFingerprint,
+} from "./collectionPreviews";
 
 describe("collection preview helpers", () => {
   it("builds a normalized preview request", () => {
@@ -28,6 +31,8 @@ describe("collection preview helpers", () => {
   it("includes the scope in the preview cache fingerprint", () => {
     const request = buildCollectionPreviewRequest();
 
-    expect(previewFingerprint("user", request)).not.toEqual(previewFingerprint("admin", request));
+    expect(previewFingerprint("user", request)).not.toEqual(
+      previewFingerprint("admin", request),
+    );
   });
 });

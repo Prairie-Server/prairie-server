@@ -1,6 +1,10 @@
 import { useMemo, useState } from "react";
 import type { FormEvent } from "react";
-import type { Invitation, InvitationStatus, SendInvitationResponse } from "@/api/types";
+import type {
+  Invitation,
+  InvitationStatus,
+  SendInvitationResponse,
+} from "@/api/types";
 import {
   useAdminInvitations,
   useCreateInvitation,
@@ -74,7 +78,10 @@ function ClaimLinkBox({
   );
 }
 
-const STATUS_BADGES: Record<InvitationStatus, { label: string; variant: "default" | "outline" }> = {
+const STATUS_BADGES: Record<
+  InvitationStatus,
+  { label: string; variant: "default" | "outline" }
+> = {
   pending: { label: "Sent", variant: "default" },
   accepted: { label: "Accepted", variant: "outline" },
   expired: { label: "Expired", variant: "outline" },
@@ -89,7 +96,8 @@ export default function InvitationsTab() {
   const [confirmRevoke, setConfirmRevoke] = useState<Invitation | null>(null);
   // A resend mints a fresh single-use link; the response is the only chance
   // to read it, so we offer it for copying right away.
-  const [resendResult, setResendResult] = useState<SendInvitationResponse | null>(null);
+  const [resendResult, setResendResult] =
+    useState<SendInvitationResponse | null>(null);
 
   function handleCopy(text: string) {
     void navigator.clipboard.writeText(text);
@@ -151,8 +159,8 @@ export default function InvitationsTab() {
 
       <div className="flex items-start justify-between gap-4">
         <p className="text-muted-foreground max-w-xl text-sm">
-          Email someone a personal link. Their access is set here, so all they choose is a password
-          — their email address becomes their username.
+          Email someone a personal link. Their access is set here, so all they
+          choose is a password — their email address becomes their username.
         </p>
         <Dialog open={createOpen} onOpenChange={setCreateOpen}>
           <DialogTrigger asChild>
@@ -164,11 +172,14 @@ export default function InvitationsTab() {
             <DialogHeader>
               <DialogTitle>Invite someone</DialogTitle>
               <DialogDescription>
-                They get an email with a link. Their username is their email address, so all they
-                pick is a password.
+                They get an email with a link. Their username is their email
+                address, so all they pick is a password.
               </DialogDescription>
             </DialogHeader>
-            <CreateInvitationForm onClose={() => setCreateOpen(false)} onCopy={handleCopy} />
+            <CreateInvitationForm
+              onClose={() => setCreateOpen(false)}
+              onCopy={handleCopy}
+            />
           </DialogContent>
         </Dialog>
       </div>
@@ -217,7 +228,8 @@ function InvitationRow({
   resending: boolean;
 }) {
   const badge = STATUS_BADGES[invitation.status];
-  const showResend = invitation.status === "pending" || invitation.status === "expired";
+  const showResend =
+    invitation.status === "pending" || invitation.status === "expired";
   const showRevoke = invitation.status === "pending";
 
   return (
@@ -230,7 +242,9 @@ function InvitationRow({
           </div>
         )}
       </TableCell>
-      <TableCell className="text-muted-foreground capitalize">{invitation.role}</TableCell>
+      <TableCell className="text-muted-foreground capitalize">
+        {invitation.role}
+      </TableCell>
       <TableCell>
         <Badge variant={badge.variant}>{badge.label}</Badge>
         {invitation.status === "pending" && (
@@ -256,7 +270,12 @@ function InvitationRow({
             </Button>
           )}
           {showRevoke && (
-            <Button variant="ghost" size="sm" onClick={onRevoke} title="Revoke this link">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={onRevoke}
+              title="Revoke this link"
+            >
               <Trash2 className="h-4 w-4" />
             </Button>
           )}
@@ -286,9 +305,15 @@ function CreateInvitationForm({
   // After creation we keep the dialog open to show the claim link — the
   // token is only readable in this response, so this is the one chance to
   // copy it. emailSent changes the copy: delivered vs deliver-it-yourself.
-  const [result, setResult] = useState<{ claimUrl: string; emailSent: boolean } | null>(null);
+  const [result, setResult] = useState<{
+    claimUrl: string;
+    emailSent: boolean;
+  } | null>(null);
 
-  const defaultGroup = useMemo(() => accessGroups.find((g) => g.is_default), [accessGroups]);
+  const defaultGroup = useMemo(
+    () => accessGroups.find((g) => g.is_default),
+    [accessGroups],
+  );
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -357,8 +382,14 @@ function CreateInvitationForm({
         <div className="space-y-2">
           <Label>Access group</Label>
           <Select
-            value={role === "admin" || accessGroupID === null ? "default" : String(accessGroupID)}
-            onValueChange={(v) => setAccessGroupID(v === "default" ? null : Number(v))}
+            value={
+              role === "admin" || accessGroupID === null
+                ? "default"
+                : String(accessGroupID)
+            }
+            onValueChange={(v) =>
+              setAccessGroupID(v === "default" ? null : Number(v))
+            }
             disabled={role === "admin"}
           >
             <SelectTrigger>
@@ -366,7 +397,9 @@ function CreateInvitationForm({
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="default">
-                {defaultGroup ? `${defaultGroup.name} (default)` : "Server default"}
+                {defaultGroup
+                  ? `${defaultGroup.name} (default)`
+                  : "Server default"}
               </SelectItem>
               {accessGroups
                 .filter((g) => !g.is_default)
@@ -410,13 +443,17 @@ function CreateInvitationForm({
           rows={2}
           className="border-border bg-background text-foreground focus:border-ring focus:ring-ring/50 w-full resize-y rounded-md border px-3 py-2.5 text-sm shadow-xs transition-[color,box-shadow] outline-none focus:ring-[3px]"
         />
-        <p className="text-muted-foreground text-xs">Appears in the email. Plain text.</p>
+        <p className="text-muted-foreground text-xs">
+          Appears in the email. Plain text.
+        </p>
       </div>
 
       <div className="space-y-3">
         <div className="flex items-center justify-between">
           <div>
-            <Label htmlFor="invitation-create-profile">Create their first profile</Label>
+            <Label htmlFor="invitation-create-profile">
+              Create their first profile
+            </Label>
             <p className="text-muted-foreground text-xs">
               Named from the part before the @. They can rename it later.
             </p>
@@ -429,17 +466,26 @@ function CreateInvitationForm({
         </div>
         <div className="flex items-center justify-between">
           <div>
-            <Label htmlFor="invitation-show-tour">Show the feature tour on first sign-in</Label>
+            <Label htmlFor="invitation-show-tour">
+              Show the feature tour on first sign-in
+            </Label>
             <p className="text-muted-foreground text-xs">
-              Walks through what this server can do, skipping anything turned off.
+              Walks through what this server can do, skipping anything turned
+              off.
             </p>
           </div>
-          <Switch id="invitation-show-tour" checked={showTour} onCheckedChange={setShowTour} />
+          <Switch
+            id="invitation-show-tour"
+            checked={showTour}
+            onCheckedChange={setShowTour}
+          />
         </div>
       </div>
 
       <div className="flex items-center justify-between pt-2">
-        <p className="text-muted-foreground text-xs">Link expires in 7 days · single use</p>
+        <p className="text-muted-foreground text-xs">
+          Link expires in 7 days · single use
+        </p>
         <div className="flex gap-2">
           <Button type="button" variant="ghost" onClick={onClose}>
             Cancel

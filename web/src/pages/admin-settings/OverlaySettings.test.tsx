@@ -16,7 +16,8 @@ const values: Record<string, string> = {
 };
 
 vi.mock("@/hooks/useSettingsForm", () => ({
-  useSettingsForm: (options: { keys: string[] }) => mocks.useSettingsForm(options),
+  useSettingsForm: (options: { keys: string[] }) =>
+    mocks.useSettingsForm(options),
 }));
 
 vi.mock("@/components/ui/select", () => ({
@@ -43,11 +44,15 @@ vi.mock("@/components/ui/select", () => ({
       {children}
     </div>
   ),
-  SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SelectContent: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
   SelectItem: ({ children, value }: { children: ReactNode; value: string }) => (
     <div data-value={value}>{children}</div>
   ),
-  SelectTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SelectTrigger: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
   SelectValue: () => null,
 }));
 
@@ -142,9 +147,15 @@ describe("OverlaySettings", () => {
     const overlaySwitches = screen.getAllByTestId("overlay-switch");
     const defaultOverlaySwitches = overlaySwitches.slice(1);
 
-    expect(selectControls.every((control) => control.hasAttribute("disabled"))).toBe(true);
+    expect(
+      selectControls.every((control) => control.hasAttribute("disabled")),
+    ).toBe(true);
     expect(overlaySwitches[0]).not.toHaveAttribute("disabled");
-    expect(defaultOverlaySwitches.every((control) => control.hasAttribute("disabled"))).toBe(true);
+    expect(
+      defaultOverlaySwitches.every((control) =>
+        control.hasAttribute("disabled"),
+      ),
+    ).toBe(true);
 
     selectControls.forEach((control) => fireEvent.click(control));
     defaultOverlaySwitches.forEach((control) => fireEvent.click(control));

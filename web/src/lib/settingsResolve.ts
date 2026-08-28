@@ -1,4 +1,8 @@
-import { SETTING_DEFINITIONS, type SettingDefinition, type SettingKey } from "./settingsContract";
+import {
+  SETTING_DEFINITIONS,
+  type SettingDefinition,
+  type SettingKey,
+} from "./settingsContract";
 
 /**
  * Client-side settings resolution, mirroring the server's
@@ -27,7 +31,8 @@ export type RemoteSettingScope =
 /** Where a resolved value came from, or "default" when nothing was stored. */
 export type ResolvedSettingSource = RemoteSettingScope | "default";
 
-export type SettingConstraintKind = "ceiling" | "floor" | "allowlist" | "locked";
+export type SettingConstraintKind =
+  "ceiling" | "floor" | "allowlist" | "locked";
 
 /** One stored row, as the server's values API reports it. */
 export interface StoredSettingRow {
@@ -91,7 +96,9 @@ export function resolveSettingValues(
     if (!(key in SETTING_DEFINITIONS)) continue;
     const def = SETTING_DEFINITIONS[key as SettingKey];
     if (def.persistence !== "remote") continue;
-    out.push(resolveOne(def, stored, context, constraints, constraintBindings?.[key]));
+    out.push(
+      resolveOne(def, stored, context, constraints, constraintBindings?.[key]),
+    );
   }
   return out;
 }
@@ -224,19 +231,24 @@ function narrowValue(
       // null on a nullable numeric means "no cap of my own" — unbounded
       // above, which is exactly what a ceiling exists to bring down. It has
       // no rank, so a plain comparison would let it slip past the cap.
-      if (value === null && isNumeric(def)) return { value: limit, changed: true };
-      if (compareValues(def, value, limit) <= 0) return { value, changed: false };
+      if (value === null && isNumeric(def))
+        return { value: limit, changed: true };
+      if (compareValues(def, value, limit) <= 0)
+        return { value, changed: false };
       return { value: limit, changed: true };
 
     case "floor":
       // The mirror: unbounded above already satisfies any floor.
       if (value === null && isNumeric(def)) return { value, changed: false };
-      if (compareValues(def, value, limit) >= 0) return { value, changed: false };
+      if (compareValues(def, value, limit) >= 0)
+        return { value, changed: false };
       return { value: limit, changed: true };
 
     case "allowlist": {
-      if (!Array.isArray(limit) || limit.length === 0) return { value, changed: false };
-      if (limit.some((entry) => jsonEquals(entry, value))) return { value, changed: false };
+      if (!Array.isArray(limit) || limit.length === 0)
+        return { value, changed: false };
+      if (limit.some((entry) => jsonEquals(entry, value)))
+        return { value, changed: false };
       // Falling back to the first allowed member rather than the default:
       // the default may itself be outside the allowlist, and an effective
       // value the policy forbids is the one thing this must never return.
@@ -273,7 +285,8 @@ export function jsonEquals(a: unknown, b: unknown): boolean {
   if (a === b) return true;
   if (a === null || b === null) return false;
   if (Array.isArray(a) || Array.isArray(b)) {
-    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+    if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length)
+      return false;
     return a.every((entry, index) => jsonEquals(entry, b[index]));
   }
   if (typeof a === "object" && typeof b === "object") {
@@ -281,7 +294,9 @@ export function jsonEquals(a: unknown, b: unknown): boolean {
     const right = b as Record<string, unknown>;
     const keys = Object.keys(left);
     if (keys.length !== Object.keys(right).length) return false;
-    return keys.every((key) => key in right && jsonEquals(left[key], right[key]));
+    return keys.every(
+      (key) => key in right && jsonEquals(left[key], right[key]),
+    );
   }
   return false;
 }

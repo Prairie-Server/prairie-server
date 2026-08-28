@@ -11,7 +11,9 @@ export function planNextHomeSectionRequests(input: {
     .slice(0, input.limit);
 }
 
-export function getPrioritizedHomeSectionIds(layout: ResolvedSectionLayout[]): string[] {
+export function getPrioritizedHomeSectionIds(
+  layout: ResolvedSectionLayout[],
+): string[] {
   const featured = layout.find((section) => section.featured);
   if (!featured) {
     return layout.map((section) => section.id);
@@ -19,7 +21,9 @@ export function getPrioritizedHomeSectionIds(layout: ResolvedSectionLayout[]): s
 
   return [
     featured.id,
-    ...layout.filter((section) => section.id !== featured.id).map((section) => section.id),
+    ...layout
+      .filter((section) => section.id !== featured.id)
+      .map((section) => section.id),
   ];
 }
 

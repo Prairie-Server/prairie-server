@@ -53,7 +53,11 @@ export default function LiveTVOnNowRow() {
     channelIds.length > 0,
   );
 
-  if (channelsQuery.isLoading || channelsQuery.isError || channels.length === 0) {
+  if (
+    channelsQuery.isLoading ||
+    channelsQuery.isError ||
+    channels.length === 0
+  ) {
     return null;
   }
 
@@ -80,7 +84,11 @@ export default function LiveTVOnNowRow() {
         skeletonAspect="aspect-[2/3]"
       >
         {cards.map(({ channel, nowProgram }) => {
-          const progress = progressFraction(nowProgram.start, nowProgram.stop, now);
+          const progress = progressFraction(
+            nowProgram.start,
+            nowProgram.stop,
+            now,
+          );
           const posterUrl = nowProgram.image_url?.trim() || "";
           const logoUrl = channel.logo_url?.trim() || "";
           return (
@@ -118,7 +126,10 @@ export default function LiveTVOnNowRow() {
                     </span>
                   </div>
                   <div className="h-1 overflow-hidden rounded-full bg-white/25">
-                    <div className="bg-primary h-full" style={{ width: `${progress * 100}%` }} />
+                    <div
+                      className="bg-primary h-full"
+                      style={{ width: `${progress * 100}%` }}
+                    />
                   </div>
                 </div>
                 <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity group-hover:opacity-100">
@@ -127,9 +138,12 @@ export default function LiveTVOnNowRow() {
                   </span>
                 </div>
               </div>
-              <p className="mt-2 truncate text-sm font-medium">{nowProgram.title}</p>
+              <p className="mt-2 truncate text-sm font-medium">
+                {nowProgram.title}
+              </p>
               <p className="text-muted-foreground truncate text-xs">
-                {channelLabel(channel)} · until {formatGuideTime(nowProgram.stop)}
+                {channelLabel(channel)} · until{" "}
+                {formatGuideTime(nowProgram.stop)}
               </p>
             </Link>
           );

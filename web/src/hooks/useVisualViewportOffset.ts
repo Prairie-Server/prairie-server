@@ -25,7 +25,10 @@ export function useVisualViewportOffset(): VisualViewportOffset {
     const update = () => {
       // Keyboard (or browser chrome) eats space between layout viewport bottom
       // and visual viewport bottom. Lift fixed chrome by that delta.
-      const keyboardInset = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      const keyboardInset = Math.max(
+        0,
+        window.innerHeight - vv.height - vv.offsetTop,
+      );
       setOffset({
         bottomOffset: Math.round(keyboardInset),
         height: vv.height,

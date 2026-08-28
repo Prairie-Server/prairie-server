@@ -18,7 +18,11 @@ describe("CardPlayOverlay", () => {
   it("starts resumable playback in place and preserves the return location", () => {
     render(
       <MemoryRouter initialEntries={["/home?profile=primary"]}>
-        <CardPlayOverlay contentId="episode 1" title="Running Show" libraryId={12} />
+        <CardPlayOverlay
+          contentId="episode 1"
+          title="Running Show"
+          libraryId={12}
+        />
       </MemoryRouter>,
     );
 
@@ -46,7 +50,9 @@ describe("CardPlayOverlay", () => {
       </MemoryRouter>,
     );
 
-    fireEvent.click(screen.getByRole("link", { name: "Play Running Show" }), { ctrlKey: true });
+    fireEvent.click(screen.getByRole("link", { name: "Play Running Show" }), {
+      ctrlKey: true,
+    });
     expect(mocks.startPlayback).not.toHaveBeenCalled();
   });
 

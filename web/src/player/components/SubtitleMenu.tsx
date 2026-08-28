@@ -1,6 +1,13 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import { Captions, CaptionsOff, Languages, Minus, Plus, SlidersHorizontal } from "lucide-react";
+import {
+  Captions,
+  CaptionsOff,
+  Languages,
+  Minus,
+  Plus,
+  SlidersHorizontal,
+} from "lucide-react";
 import type { PlayerAudioTrack, PlayerSubtitleInfo } from "../types";
 import type { PlayerConfig } from "../context/PlayerConfigContext";
 import { SubtitleSearchModal } from "./SubtitleSearchModal";
@@ -9,7 +16,10 @@ import { SubtitleAppearancePanel } from "./SubtitleAppearancePanel";
 import { playerFetch } from "../player-fetch";
 import { getLanguageName } from "../utils/languageNames";
 import { sortSubtitlesBySource } from "../utils/subtitleSort";
-import { getSubtitleFormatLabel, isSubtitleFormatLabel } from "../utils/subtitleCodecs";
+import {
+  getSubtitleFormatLabel,
+  isSubtitleFormatLabel,
+} from "../utils/subtitleCodecs";
 import { isTranslatableSource } from "./subtitleTranslateRequest";
 import { PlayerMenuSurface } from "./PlayerMenuSurface";
 
@@ -137,7 +147,9 @@ export function SubtitleMenu({
   const handleMenuKeyDown = useCallback((e: React.KeyboardEvent) => {
     const items = menuItemsRef.current.filter(Boolean) as HTMLButtonElement[];
     if (items.length === 0) return;
-    const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
+    const currentIndex = items.indexOf(
+      document.activeElement as HTMLButtonElement,
+    );
     let nextIndex: number | null = null;
 
     switch (e.key) {
@@ -174,7 +186,9 @@ export function SubtitleMenu({
         className="player-utility-btn"
         data-active={activeIndex !== null ? "true" : "false"}
         onClick={() => setOpen((v) => !v)}
-        aria-label={activeIndex !== null ? "Disable captions" : "Enable captions"}
+        aria-label={
+          activeIndex !== null ? "Disable captions" : "Enable captions"
+        }
         aria-expanded={open}
         aria-haspopup="menu"
       >
@@ -213,7 +227,8 @@ export function SubtitleMenu({
             {sortedTracks.map((track) => {
               const isActive = track.index === activeIndex;
               const languageName = getLanguageName(track.language);
-              const sourceLabel = SOURCE_LABELS[track.source ?? "embedded"] ?? "Embedded";
+              const sourceLabel =
+                SOURCE_LABELS[track.source ?? "embedded"] ?? "Embedded";
               const formatLabel = getSubtitleFormatLabel(track.codec);
               const hasDetail =
                 track.label &&
@@ -267,7 +282,9 @@ export function SubtitleMenu({
           </div>
           <div className="shrink-0 border-t border-white/10 px-3 py-2">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-xs tracking-wide text-white/50 uppercase">Delay</span>
+              <span className="text-xs tracking-wide text-white/50 uppercase">
+                Delay
+              </span>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -358,7 +375,10 @@ export function SubtitleMenu({
         </PlayerMenuSurface>
       )}
 
-      <SubtitleAppearancePanel open={appearanceOpen} onClose={() => setAppearanceOpen(false)} />
+      <SubtitleAppearancePanel
+        open={appearanceOpen}
+        onClose={() => setAppearanceOpen(false)}
+      />
 
       {searchOpen &&
         mediaFileId &&

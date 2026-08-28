@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { describePlanTerminal, describePlaybackTransportError } from "./playback-errors";
+import {
+  describePlanTerminal,
+  describePlaybackTransportError,
+} from "./playback-errors";
 import { PlayerFetchError } from "./player-fetch";
 
 describe("describePlanTerminal", () => {
@@ -13,7 +16,8 @@ describe("describePlanTerminal", () => {
       }),
     ).toEqual({
       title: "Transcoding is disabled",
-      message: "Transcoding is disabled for your user. Ask your server administrator for access.",
+      message:
+        "Transcoding is disabled for your user. Ask your server administrator for access.",
     });
   });
 
@@ -64,18 +68,24 @@ describe("describePlanTerminal", () => {
     expect(
       describePlanTerminal({
         reason: "no_alternate_version",
-        message: "A lower-resolution source is required because 4K transcoding is disabled.",
+        message:
+          "A lower-resolution source is required because 4K transcoding is disabled.",
         retryable: false,
       }),
     ).toEqual({
       title: "No playable version found",
-      message: "A lower-resolution source is required because 4K transcoding is disabled.",
+      message:
+        "A lower-resolution source is required because 4K transcoding is disabled.",
     });
   });
 
   it("falls back to a generic sentence when no alternate version carries no message", () => {
     expect(
-      describePlanTerminal({ reason: "no_alternate_version", message: "   ", retryable: false }),
+      describePlanTerminal({
+        reason: "no_alternate_version",
+        message: "   ",
+        retryable: false,
+      }),
     ).toEqual({
       title: "No playable version found",
       message:
@@ -87,7 +97,8 @@ describe("describePlanTerminal", () => {
     expect(
       describePlanTerminal({
         reason: "adaptation_exhausted",
-        message: "All compatible playback recipes have already failed for this output route.",
+        message:
+          "All compatible playback recipes have already failed for this output route.",
         retryable: false,
       }),
     ).toEqual({
@@ -119,7 +130,8 @@ describe("describePlanTerminal", () => {
       }),
     ).toEqual({
       title: "Playback unavailable",
-      message: "The server couldn't start converting this file. Please try again.",
+      message:
+        "The server couldn't start converting this file. Please try again.",
     });
   });
 
@@ -138,7 +150,11 @@ describe("describePlanTerminal", () => {
 
   it("still says something useful when the server sends no message", () => {
     expect(
-      describePlanTerminal({ reason: "some_future_reason", message: "", retryable: false }),
+      describePlanTerminal({
+        reason: "some_future_reason",
+        message: "",
+        retryable: false,
+      }),
     ).toEqual({
       title: "Playback unavailable",
       message: "Silo could not start playback.",
@@ -148,7 +164,11 @@ describe("describePlanTerminal", () => {
 
 describe("describePlaybackTransportError", () => {
   it("renders 426 as an update-required state", () => {
-    const error = new PlayerFetchError(426, "Client upgrade required", "client_upgrade_required");
+    const error = new PlayerFetchError(
+      426,
+      "Client upgrade required",
+      "client_upgrade_required",
+    );
 
     expect(describePlaybackTransportError(error)).toEqual({
       title: "Update required",
@@ -164,17 +184,24 @@ describe("describePlaybackTransportError", () => {
   it("distinguishes an expired playback session from a missing item", () => {
     expect(
       describePlaybackTransportError(
-        new PlayerFetchError(404, "Playback session not found", "playback_session_not_found"),
+        new PlayerFetchError(
+          404,
+          "Playback session not found",
+          "playback_session_not_found",
+        ),
       ),
     ).toEqual({
       title: "Playback session expired",
-      message: "This playback session is no longer active. Start it again to keep watching.",
+      message:
+        "This playback session is no longer active. Start it again to keep watching.",
     });
   });
 
   it("ignores 4xx statuses it has nothing specific to say about", () => {
     expect(
-      describePlaybackTransportError(new PlayerFetchError(409, "Conflict", "stale_playback_plan")),
+      describePlaybackTransportError(
+        new PlayerFetchError(409, "Conflict", "stale_playback_plan"),
+      ),
     ).toBeNull();
   });
 });

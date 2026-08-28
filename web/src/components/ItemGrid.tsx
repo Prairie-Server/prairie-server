@@ -54,12 +54,18 @@ export default function ItemGrid(props: ItemGridProps) {
   const { cardPresentation } = useUICustomization();
   const gridGap = cardPresentation.poster_size === "large" ? 16 : 12;
   const gridClasses = cardGridClasses(cardPresentation.poster_size);
-  const totalItems = hasStaticItems(props) ? props.items.length : props.totalItems;
+  const totalItems = hasStaticItems(props)
+    ? props.items.length
+    : props.totalItems;
   const pages = hasStaticItems(props)
     ? new Map<number, BrowseItem[]>([[0, props.items]])
     : props.pages;
-  const pageSize = hasStaticItems(props) ? Math.max(props.items.length, 1) : props.pageSize;
-  const onVisibleRangeChange = hasStaticItems(props) ? () => undefined : props.onVisibleRangeChange;
+  const pageSize = hasStaticItems(props)
+    ? Math.max(props.items.length, 1)
+    : props.pageSize;
+  const onVisibleRangeChange = hasStaticItems(props)
+    ? () => undefined
+    : props.onVisibleRangeChange;
   const { containerRef, layout } = useGridLayout({
     gap: gridGap,
     textAreaHeight: cardTextAreaHeight(cardPresentation.caption),
@@ -67,7 +73,9 @@ export default function ItemGrid(props: ItemGridProps) {
   });
   const [anchorEl, setAnchorEl] = useState<HTMLDivElement | null>(null);
   const { columnCount, rowHeight } = layout;
-  const scrollMargin = anchorEl ? anchorEl.getBoundingClientRect().top + window.scrollY : 0;
+  const scrollMargin = anchorEl
+    ? anchorEl.getBoundingClientRect().top + window.scrollY
+    : 0;
 
   // Use the full totalItems for virtualizer height so the scrollbar reflects
   // the true list size from the first render. Unloaded positions render as
@@ -121,7 +129,9 @@ export default function ItemGrid(props: ItemGridProps) {
           ))}
         </div>
       ) : totalItems === 0 ? (
-        <div className="text-muted-foreground py-12 text-center">No items found.</div>
+        <div className="text-muted-foreground py-12 text-center">
+          No items found.
+        </div>
       ) : (
         <div
           style={{
@@ -161,7 +171,10 @@ export default function ItemGrid(props: ItemGridProps) {
                   );
                 } else {
                   cells.push(
-                    <div key={`${item.content_id}-${globalIndex}`} role="listitem">
+                    <div
+                      key={`${item.content_id}-${globalIndex}`}
+                      role="listitem"
+                    >
                       <ItemCard
                         item={item}
                         libraryId={libraryId}

@@ -22,7 +22,10 @@ export interface EditableSectionViewModel {
   config?: Record<string, unknown>;
 }
 
-export function recipeLabel(catalog: RecipeCatalogResponse | undefined, type: string): string {
+export function recipeLabel(
+  catalog: RecipeCatalogResponse | undefined,
+  type: string,
+): string {
   if (catalog) {
     for (const defs of Object.values(catalog.categories)) {
       const found = defs?.find((def) => def.type === type);
@@ -37,7 +40,10 @@ function continueTypeLabel(config?: Record<string, unknown>): string | null {
   if (value === "listening") return "Listening";
   if (value === "watching") return "Watching";
   if (value === "reading") return "Reading";
-  if (config?.filter_type === "audiobook" || config?.media_scope === "audiobook") {
+  if (
+    config?.filter_type === "audiobook" ||
+    config?.media_scope === "audiobook"
+  ) {
     return "Listening";
   }
   return null;
@@ -65,21 +71,35 @@ export function SectionSummaryBadges({
       : typeof section.config?.user_collection_id === "string"
         ? section.config.user_collection_id
         : undefined;
-  const collectionLabel = collectionId ? collectionLabels?.get(collectionId) : undefined;
+  const collectionLabel = collectionId
+    ? collectionLabels?.get(collectionId)
+    : undefined;
   const resumeLabel =
-    section.sectionType === "continue_watching" ? continueTypeLabel(section.config) : null;
+    section.sectionType === "continue_watching"
+      ? continueTypeLabel(section.config)
+      : null;
 
   return (
     <div className="flex flex-wrap gap-1">
-      <Badge variant="secondary">{recipeLabel(catalog, section.sectionType)}</Badge>
+      <Badge variant="secondary">
+        {recipeLabel(catalog, section.sectionType)}
+      </Badge>
       {resumeLabel ? <Badge variant="outline">{resumeLabel}</Badge> : null}
-      {queryDefinition.media_scope === "movie" ? <Badge variant="outline">Movies</Badge> : null}
-      {queryDefinition.media_scope === "series" ? <Badge variant="outline">Series</Badge> : null}
-      {queryDefinition.media_scope === "episode" ? <Badge variant="outline">Episodes</Badge> : null}
+      {queryDefinition.media_scope === "movie" ? (
+        <Badge variant="outline">Movies</Badge>
+      ) : null}
+      {queryDefinition.media_scope === "series" ? (
+        <Badge variant="outline">Series</Badge>
+      ) : null}
+      {queryDefinition.media_scope === "episode" ? (
+        <Badge variant="outline">Episodes</Badge>
+      ) : null}
       {queryDefinition.media_scope === "audiobook" ? (
         <Badge variant="outline">Audiobooks</Badge>
       ) : null}
-      {queryDefinition.media_scope === "ebook" ? <Badge variant="outline">Ebooks</Badge> : null}
+      {queryDefinition.media_scope === "ebook" ? (
+        <Badge variant="outline">Ebooks</Badge>
+      ) : null}
       {libraries
         ? queryDefinition.library_ids.map((libraryId) => {
             const library = libraries.find((entry) => entry.id === libraryId);
@@ -90,7 +110,9 @@ export function SectionSummaryBadges({
             ) : null;
           })
         : null}
-      {collectionLabel ? <Badge variant="outline">{collectionLabel}</Badge> : null}
+      {collectionLabel ? (
+        <Badge variant="outline">{collectionLabel}</Badge>
+      ) : null}
       {section.featured ? <Badge variant="default">Featured</Badge> : null}
       {showVisibility ? (
         <Badge variant={section.hidden ? "secondary" : "outline"}>
@@ -141,7 +163,14 @@ export function SortableSectionTableRow({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: section.id,
     disabled: !canReorder,
   });
@@ -179,7 +208,9 @@ export function SortableSectionTableRow({
       </TableCell>
       <TableCell>{section.itemLimit}</TableCell>
       <TableCell>
-        {section.featured ? <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" /> : null}
+        {section.featured ? (
+          <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+        ) : null}
       </TableCell>
       <TableCell>
         <Badge variant={section.enabled ? "default" : "secondary"}>
@@ -188,7 +219,12 @@ export function SortableSectionTableRow({
       </TableCell>
       <TableCell>
         <div className="flex gap-1">
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={onEdit}>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-7 w-7 p-0"
+            onClick={onEdit}
+          >
             <Pencil className="h-3.5 w-3.5" />
           </Button>
           <Button
@@ -222,7 +258,14 @@ export function SortableSectionCardRow({
   onDelete: () => void;
   actions?: ReactNode;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: section.id,
   });
   const style: React.CSSProperties = {
@@ -268,7 +311,11 @@ export function SortableSectionCardRow({
           >
             {section.title}
           </span>
-          <SectionSummaryBadges section={section} catalog={catalog} showVisibility />
+          <SectionSummaryBadges
+            section={section}
+            catalog={catalog}
+            showVisibility
+          />
         </div>
         <div className="text-muted-foreground text-[13px]">
           {sectionTypeLabel(section.sectionType)} . {section.itemLimit} items

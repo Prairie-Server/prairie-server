@@ -15,9 +15,12 @@ import {
 } from "./settingValues";
 
 const apiMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
-const apiWithProfileRequestContextMock = vi.hoisted(() => vi.fn().mockResolvedValue(undefined));
+const apiWithProfileRequestContextMock = vi.hoisted(() =>
+  vi.fn().mockResolvedValue(undefined),
+);
 vi.mock("@/api/client", async () => {
-  const actual = await vi.importActual<typeof import("@/api/client")>("@/api/client");
+  const actual =
+    await vi.importActual<typeof import("@/api/client")>("@/api/client");
   return {
     ...actual,
     api: apiMock,
@@ -29,7 +32,9 @@ function wrapper({ children }: { children: ReactNode }) {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
   });
-  return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  return (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
 }
 
 describe("self-service setting identities", () => {
@@ -64,11 +69,16 @@ describe("self-service setting identities", () => {
       `/settings/values/${SETTING_KEYS.UI_CARD_PRESENTATION}?scope=profile_client`,
       `/settings/values/${SETTING_KEYS.UI_CARD_PRESENTATION}?scope=profile_client`,
     ]);
-    expect(apiMock.mock.calls.map(([, options]) => options?.method)).toEqual(["PUT", "DELETE"]);
+    expect(apiMock.mock.calls.map(([, options]) => options?.method)).toEqual([
+      "PUT",
+      "DELETE",
+    ]);
   });
 
   it("sends an atomic shortcut with its captured profile and PIN token", async () => {
-    const shortcutHook = renderHook(() => useSetNavigationShortcutPresence(), { wrapper });
+    const shortcutHook = renderHook(() => useSetNavigationShortcutPresence(), {
+      wrapper,
+    });
 
     const profileAuth = {
       profileId: "profile-old",
@@ -106,7 +116,10 @@ describe("self-service setting identities", () => {
 
   it("keeps an ordinary write pending until effective values reconcile", async () => {
     const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      defaultOptions: {
+        queries: { retry: false },
+        mutations: { retry: false },
+      },
     });
     let releaseInvalidation!: () => void;
     const invalidation = new Promise<void>((resolve) => {
@@ -118,7 +131,9 @@ describe("self-service setting identities", () => {
     const localWrapper = ({ children }: { children: ReactNode }) => (
       <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
     );
-    const setHook = renderHook(() => useSetSettingValue(), { wrapper: localWrapper });
+    const setHook = renderHook(() => useSetSettingValue(), {
+      wrapper: localWrapper,
+    });
 
     let settled = false;
     const mutation = setHook.result.current
@@ -145,49 +160,64 @@ describe("self-service setting identities", () => {
 
   it.each([
     ["a successful reset", undefined],
-    ["an already-cleared 404 reset", new ApiClientError(404, "not_found", "Already cleared")],
-  ])("keeps %s pending until effective values reconcile", async (_label, apiError) => {
-    const queryClient = new QueryClient({
-      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
-    });
-    let releaseInvalidation!: () => void;
-    const invalidation = new Promise<void>((resolve) => {
-      releaseInvalidation = resolve;
-    });
-    const invalidateQueries = vi
-      .spyOn(queryClient, "invalidateQueries")
-      .mockReturnValue(invalidation);
-    const localWrapper = ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-    if (apiError) apiMock.mockRejectedValueOnce(apiError);
-    const clearHook = renderHook(() => useClearSettingValue(), { wrapper: localWrapper });
-
-    let settled = false;
-    const mutation = clearHook.result.current
-      .mutateAsync({
-        key: SETTING_KEYS.UI_CARD_PRESENTATION,
-        identity: { scope: "profile_client" },
-      })
-      .catch((error: unknown) => {
-        if (!apiError) throw error;
-        expect(error).toBe(apiError);
-      })
-      .then(() => {
-        settled = true;
+    [
+      "an already-cleared 404 reset",
+      new ApiClientError(404, "not_found", "Already cleared"),
+    ],
+  ])(
+    "keeps %s pending until effective values reconcile",
+    async (_label, apiError) => {
+      const queryClient = new QueryClient({
+        defaultOptions: {
+          queries: { retry: false },
+          mutations: { retry: false },
+        },
+      });
+      let releaseInvalidation!: () => void;
+      const invalidation = new Promise<void>((resolve) => {
+        releaseInvalidation = resolve;
+      });
+      const invalidateQueries = vi
+        .spyOn(queryClient, "invalidateQueries")
+        .mockReturnValue(invalidation);
+      const localWrapper = ({ children }: { children: ReactNode }) => (
+        <QueryClientProvider client={queryClient}>
+          {children}
+        </QueryClientProvider>
+      );
+      if (apiError) apiMock.mockRejectedValueOnce(apiError);
+      const clearHook = renderHook(() => useClearSettingValue(), {
+        wrapper: localWrapper,
       });
 
-    await waitFor(() => expect(invalidateQueries).toHaveBeenCalled());
-    expect(clearHook.result.current.isPending).toBe(true);
-    expect(settled).toBe(false);
+      let settled = false;
+      const mutation = clearHook.result.current
+        .mutateAsync({
+          key: SETTING_KEYS.UI_CARD_PRESENTATION,
+          identity: { scope: "profile_client" },
+        })
+        .catch((error: unknown) => {
+          if (!apiError) throw error;
+          expect(error).toBe(apiError);
+        })
+        .then(() => {
+          settled = true;
+        });
 
-    await act(async () => {
-      releaseInvalidation();
-      await mutation;
-    });
-    await waitFor(() => expect(clearHook.result.current.isPending).toBe(false));
-    expect(settled).toBe(true);
-  });
+      await waitFor(() => expect(invalidateQueries).toHaveBeenCalled());
+      expect(clearHook.result.current.isPending).toBe(true);
+      expect(settled).toBe(false);
+
+      await act(async () => {
+        releaseInvalidation();
+        await mutation;
+      });
+      await waitFor(() =>
+        expect(clearHook.result.current.isPending).toBe(false),
+      );
+      expect(settled).toBe(true);
+    },
+  );
 });
 
 describe("settings capability gates", () => {
@@ -200,7 +230,9 @@ describe("settings capability gates", () => {
   };
 
   it("requires a compatible API and the definition's introduced revision", () => {
-    expect(settingsCapabilitiesSupportKey(undefined, SETTING_KEYS.NAV_PRIMARY_MENU)).toBe(false);
+    expect(
+      settingsCapabilitiesSupportKey(undefined, SETTING_KEYS.NAV_PRIMARY_MENU),
+    ).toBe(false);
     expect(
       settingsCapabilitiesSupportKey(
         { ...revisionFive, api_version: 2 },
@@ -213,7 +245,12 @@ describe("settings capability gates", () => {
         SETTING_KEYS.NAV_PRIMARY_MENU,
       ),
     ).toBe(false);
-    expect(settingsCapabilitiesSupportKey(revisionFive, SETTING_KEYS.NAV_PRIMARY_MENU)).toBe(true);
+    expect(
+      settingsCapabilitiesSupportKey(
+        revisionFive,
+        SETTING_KEYS.NAV_PRIMARY_MENU,
+      ),
+    ).toBe(true);
   });
 
   it("requires batched reads and idempotent replay semantics", () => {
@@ -241,14 +278,24 @@ describe("settings capability gates", () => {
       contract_etag: "without-idempotency",
       supports_batched_effective: true,
     };
-    expect(settingsCapabilitiesSupportKey(withoutBatch, SETTING_KEYS.NAV_PRIMARY_MENU)).toBe(false);
-    expect(settingsCapabilitiesSupportKey(withoutIdempotency, SETTING_KEYS.NAV_PRIMARY_MENU)).toBe(
-      false,
-    );
+    expect(
+      settingsCapabilitiesSupportKey(
+        withoutBatch,
+        SETTING_KEYS.NAV_PRIMARY_MENU,
+      ),
+    ).toBe(false);
+    expect(
+      settingsCapabilitiesSupportKey(
+        withoutIdempotency,
+        SETTING_KEYS.NAV_PRIMARY_MENU,
+      ),
+    ).toBe(false);
   });
 
   it("requires an explicit atomic-shortcut capability", () => {
-    expect(settingsCapabilitiesSupportAtomicShortcuts(revisionFive)).toBe(false);
+    expect(settingsCapabilitiesSupportAtomicShortcuts(revisionFive)).toBe(
+      false,
+    );
     expect(
       settingsCapabilitiesSupportAtomicShortcuts({
         ...revisionFive,

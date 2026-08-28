@@ -12,8 +12,10 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/hooks/queries/settingValues", () => ({
-  useEffectiveSettings: (...args: unknown[]) => mocks.useEffectiveSettings(...args),
-  useSettingsCapabilities: (...args: unknown[]) => mocks.useSettingsCapabilities(...args),
+  useEffectiveSettings: (...args: unknown[]) =>
+    mocks.useEffectiveSettings(...args),
+  useSettingsCapabilities: (...args: unknown[]) =>
+    mocks.useSettingsCapabilities(...args),
   settingsCapabilitiesSupportKey: (
     capabilities:
       | {
@@ -108,7 +110,10 @@ describe("UICustomizationProvider capability gating", () => {
       ],
       enabled: false,
     });
-    expect(screen.getByRole("status")).toHaveAttribute("data-supported", "false");
+    expect(screen.getByRole("status")).toHaveAttribute(
+      "data-supported",
+      "false",
+    );
     expect(screen.getByRole("status")).toHaveAttribute("data-atomic", "false");
     expect(screen.getByRole("status")).toHaveTextContent("standard");
   });
@@ -137,7 +142,10 @@ describe("UICustomizationProvider capability gating", () => {
         enabled: true,
       }),
     );
-    expect(screen.getByRole("status")).toHaveAttribute("data-supported", "true");
+    expect(screen.getByRole("status")).toHaveAttribute(
+      "data-supported",
+      "true",
+    );
     expect(screen.getByRole("status")).toHaveAttribute("data-atomic", "false");
   });
 
@@ -165,7 +173,10 @@ describe("UICustomizationProvider capability gating", () => {
         enabled: false,
       }),
     );
-    expect(screen.getByRole("status")).toHaveAttribute("data-supported", "false");
+    expect(screen.getByRole("status")).toHaveAttribute(
+      "data-supported",
+      "false",
+    );
     expect(screen.getByRole("status")).toHaveAttribute("data-atomic", "false");
   });
 
@@ -227,9 +238,15 @@ describe("UICustomizationProvider capability gating", () => {
       </UICustomizationProvider>,
     );
 
-    expect(screen.getByRole("status")).toHaveAttribute("data-supported", "true");
+    expect(screen.getByRole("status")).toHaveAttribute(
+      "data-supported",
+      "true",
+    );
     expect(screen.getByRole("status")).toHaveAttribute("data-loading", "false");
-    expect(screen.getByRole("status")).toHaveAttribute("data-unavailable", "true");
+    expect(screen.getByRole("status")).toHaveAttribute(
+      "data-unavailable",
+      "true",
+    );
     expect(screen.getByRole("status")).toHaveTextContent("standard");
   });
 });

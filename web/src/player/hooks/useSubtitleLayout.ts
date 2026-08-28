@@ -1,5 +1,14 @@
-import { useEffect, useMemo, useState, type CSSProperties, type RefObject } from "react";
-import { computeSubtitleFontScale, computeSubtitlePositionStyle } from "@/lib/subtitleAppearance";
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type RefObject,
+} from "react";
+import {
+  computeSubtitleFontScale,
+  computeSubtitlePositionStyle,
+} from "@/lib/subtitleAppearance";
 import type { SubtitleAppearance } from "@/lib/subtitleAppearance";
 
 export interface SubtitleLayout {
@@ -21,13 +30,17 @@ export function useSubtitleLayout(
   videoRef: RefObject<HTMLVideoElement | null>,
   position: SubtitleAppearance["position"],
 ): SubtitleLayout {
-  const [playerSize, setPlayerSize] = useState<{ w: number; h: number }>({ w: 0, h: 0 });
+  const [playerSize, setPlayerSize] = useState<{ w: number; h: number }>({
+    w: 0,
+    h: 0,
+  });
   const [videoAspect, setVideoAspect] = useState(0);
 
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
-    const update = () => setPlayerSize({ w: el.clientWidth, h: el.clientHeight });
+    const update = () =>
+      setPlayerSize({ w: el.clientWidth, h: el.clientHeight });
     update();
     const ro = new ResizeObserver(update);
     ro.observe(el);
@@ -59,7 +72,11 @@ export function useSubtitleLayout(
         playerSize.h,
         videoAspect,
       ),
-      fontScale: computeSubtitleFontScale(playerSize.w, playerSize.h, videoAspect),
+      fontScale: computeSubtitleFontScale(
+        playerSize.w,
+        playerSize.h,
+        videoAspect,
+      ),
     }),
     [position, playerSize.w, playerSize.h, videoAspect],
   );

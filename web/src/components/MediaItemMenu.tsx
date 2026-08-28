@@ -26,8 +26,14 @@ import { useOptionalAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
 import { useCatalogItemDetail } from "@/hooks/queries/catalogRead";
-import { useRefreshItemMetadata, useWatchedStateMutation } from "@/hooks/queries/items";
-import { type DismissHomeItemVariables, useDismissHomeItem } from "@/hooks/queries/homeDismissals";
+import {
+  useRefreshItemMetadata,
+  useWatchedStateMutation,
+} from "@/hooks/queries/items";
+import {
+  type DismissHomeItemVariables,
+  useDismissHomeItem,
+} from "@/hooks/queries/homeDismissals";
 import { useToggleFavorite } from "@/hooks/queries/favorites";
 import { useToggleWatchlist } from "@/hooks/queries/watchlist";
 import { getWatchedActionLabel } from "@/pages/ItemDetail/watchedState";
@@ -90,7 +96,10 @@ type MediaItemMenuEntry =
     }
   | { kind: "separator" };
 
-type MediaItemMenuActionKey = Extract<MediaItemMenuEntry, { kind: "action" }>["key"];
+type MediaItemMenuActionKey = Extract<
+  MediaItemMenuEntry,
+  { kind: "action" }
+>["key"];
 
 interface BuildMediaItemMenuModelOptions {
   mediaType: MediaItemType;
@@ -135,7 +144,8 @@ export function buildMediaItemMenuModel({
 }: BuildMediaItemMenuModelOptions): MediaItemMenuEntry[] {
   const entries: MediaItemMenuEntry[] = [];
   const isAudiobook = mediaType === "audiobook";
-  const isLeaf = mediaType === "movie" || mediaType === "episode" || isAudiobook;
+  const isLeaf =
+    mediaType === "movie" || mediaType === "episode" || isAudiobook;
 
   if (isLeaf && (hasPartialProgress || userState?.played === true)) {
     entries.push({
@@ -149,7 +159,10 @@ export function buildMediaItemMenuModel({
     entries.push({
       kind: "action",
       key: "toggleWatched",
-      label: getWatchedActionLabel({ type: mediaType, user_data: { played: userState.played } }),
+      label: getWatchedActionLabel({
+        type: mediaType,
+        user_data: { played: userState.played },
+      }),
     });
   }
 
@@ -159,12 +172,16 @@ export function buildMediaItemMenuModel({
         {
           kind: "action",
           key: "toggleFavorite",
-          label: userState.is_favorite ? "Remove from Favorites" : "Add to Favorites",
+          label: userState.is_favorite
+            ? "Remove from Favorites"
+            : "Add to Favorites",
         },
         {
           kind: "action",
           key: "toggleWatchlist",
-          label: userState.in_watchlist ? "Remove from Watchlist" : "Add to Watchlist",
+          label: userState.in_watchlist
+            ? "Remove from Watchlist"
+            : "Add to Watchlist",
         },
       );
     }
@@ -226,7 +243,9 @@ export function buildMediaItemMenuModel({
   return entries;
 }
 
-function stopMenuEvent(event: Pick<Event, "preventDefault" | "stopPropagation">) {
+function stopMenuEvent(
+  event: Pick<Event, "preventDefault" | "stopPropagation">,
+) {
   event.preventDefault();
   event.stopPropagation();
 }
@@ -253,7 +272,10 @@ function MediaItemMenuActionIcon({
       return (
         <Heart
           aria-hidden="true"
-          className={cn("size-4", userState?.is_favorite && "fill-current text-red-400")}
+          className={cn(
+            "size-4",
+            userState?.is_favorite && "fill-current text-red-400",
+          )}
         />
       );
     case "toggleWatchlist":
@@ -269,7 +291,9 @@ function MediaItemMenuActionIcon({
     case "viewPlayHistory":
       return <MediaActionIcon action="viewPlayHistory" />;
     case "refreshMetadata":
-      return <MediaActionIcon action="refreshMetadata" isPending={isRefreshing} />;
+      return (
+        <MediaActionIcon action="refreshMetadata" isPending={isRefreshing} />
+      );
     case "editMetadata":
       return <MediaActionIcon action="editMetadata" />;
     case "matchItem":
@@ -329,8 +353,12 @@ function MediaItemActionSheet({
         className="max-h-[80svh] gap-0 overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)]"
       >
         <SheetHeader className="px-5 pt-4 pb-2">
-          <SheetTitle className="truncate text-left text-base">{title ?? "Actions"}</SheetTitle>
-          <SheetDescription className="sr-only">Choose an action for this item.</SheetDescription>
+          <SheetTitle className="truncate text-left text-base">
+            {title ?? "Actions"}
+          </SheetTitle>
+          <SheetDescription className="sr-only">
+            Choose an action for this item.
+          </SheetDescription>
         </SheetHeader>
         <div className="flex flex-col pb-3">
           {entries.map((entry, index) =>
@@ -408,7 +436,10 @@ function CardQuickActionButton({
       aria-pressed={pressed}
       title={label}
       disabled={isPending}
-      className={cn("relative cursor-pointer overflow-visible disabled:opacity-70", className)}
+      className={cn(
+        "relative cursor-pointer overflow-visible disabled:opacity-70",
+        className,
+      )}
       onPointerDown={(event) => {
         if (event.button !== 0) {
           pointerStartRef.current = null;
@@ -558,7 +589,10 @@ function WatchedQuickActionButton({
   density: PosterActionDensity;
   onToggle: () => void;
 }) {
-  const label = getWatchedActionLabel({ type: mediaType, user_data: { played: isWatched } });
+  const label = getWatchedActionLabel({
+    type: mediaType,
+    user_data: { played: isWatched },
+  });
   const Icon = isWatched ? Eye : EyeOff;
 
   return (
@@ -611,11 +645,17 @@ export function MetadataActionDialogHost({
 
   if (item) {
     return action === "edit" ? (
-      <EditMetadataDialog item={item} open onOpenChange={(open) => !open && onClose()} />
+      <EditMetadataDialog
+        item={item}
+        open
+        onOpenChange={(open) => !open && onClose()}
+      />
     ) : (
       <MatchItemDialog
         key={item.content_id}
-        item={libraryId === undefined ? item : { ...item, library_id: libraryId }}
+        item={
+          libraryId === undefined ? item : { ...item, library_id: libraryId }
+        }
         open
         onOpenChange={(open) => !open && onClose()}
       />
@@ -631,7 +671,9 @@ export function MetadataActionDialogHost({
         <DialogHeader>
           <DialogTitle>{actionLabel}</DialogTitle>
           <DialogDescription>
-            {loading ? "Loading the latest item details…" : "The item details could not be loaded."}
+            {loading
+              ? "Loading the latest item details…"
+              : "The item details could not be loaded."}
           </DialogDescription>
         </DialogHeader>
         {loading ? (
@@ -644,7 +686,12 @@ export function MetadataActionDialogHost({
             <p className="text-muted-foreground text-sm">
               {error instanceof Error ? error.message : "Please try again."}
             </p>
-            <Button type="button" variant="outline" size="sm" onClick={() => void refetch()}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => void refetch()}
+            >
               Try Again
             </Button>
           </div>
@@ -676,13 +723,16 @@ export default function MediaItemMenu({
   const { profile: currentProfile, hasSelectedProfile } = useCurrentProfile();
   const profileIsResolved = !hasSelectedProfile || Boolean(currentProfile);
   const isAdmin = useIsActingAdmin();
-  const canCurateMetadata = profileIsResolved && canCurateMetadataForUser(user, currentProfile);
+  const canCurateMetadata =
+    profileIsResolved && canCurateMetadataForUser(user, currentProfile);
   const { cardPresentation } = useUICustomization();
   const [currentUserState, setCurrentUserState] = useState(userState);
   const lastSyncedUserStateRef = useRef(userState);
   const [refreshDialogOpen, setRefreshDialogOpen] = useState(false);
   const [filesDialogOpen, setFilesDialogOpen] = useState(false);
-  const [metadataAction, setMetadataAction] = useState<MetadataAction | null>(null);
+  const [metadataAction, setMetadataAction] = useState<MetadataAction | null>(
+    null,
+  );
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   const menuTriggerRef = useRef<HTMLButtonElement>(null);
   const lastMenuInteractionRef = useRef<"keyboard" | "pointer" | null>(null);
@@ -704,7 +754,9 @@ export default function MediaItemMenu({
   const watchedMutation = useWatchedStateMutation({
     content_id: contentId,
     type: mediaType,
-    user_data: currentUserState ? { played: currentUserState.played } : undefined,
+    user_data: currentUserState
+      ? { played: currentUserState.played }
+      : undefined,
   });
   const favoriteMutation = useToggleFavorite(contentId);
   const watchlistMutation = useToggleWatchlist(contentId);
@@ -741,14 +793,17 @@ export default function MediaItemMenu({
   const showPosterFavorite =
     variant === "poster" &&
     showFavoriteShortcut &&
-    model.some((entry) => entry.kind === "action" && entry.key === "toggleFavorite");
+    model.some(
+      (entry) => entry.kind === "action" && entry.key === "toggleFavorite",
+    );
   const hasWatchedAction = model.some(
     (entry) => entry.kind === "action" && entry.key === "toggleWatched",
   );
   const rootPosterSupportsWatchedShortcut =
     variant === "poster" && (mediaType === "movie" || mediaType === "series");
   const showWatchedQuickAction =
-    hasWatchedAction && (rootPosterSupportsWatchedShortcut || showWatchedShortcut);
+    hasWatchedAction &&
+    (rootPosterSupportsWatchedShortcut || showWatchedShortcut);
   const posterActionDensity: PosterActionDensity =
     variant === "poster" && narrowPosterActions
       ? "narrow"
@@ -763,7 +818,10 @@ export default function MediaItemMenu({
     refreshMetadataMutation.isPending ||
     dismissHomeItemMutation.isPending;
 
-  const triggerClassName = mediaItemMenuTriggerClassName(variant, posterActionDensity);
+  const triggerClassName = mediaItemMenuTriggerClassName(
+    variant,
+    posterActionDensity,
+  );
 
   async function runOptimisticToggle(
     field: "played" | "is_favorite",
@@ -773,7 +831,9 @@ export default function MediaItemMenu({
     if (!currentUserState || pending) return;
     const previousValue = currentUserState[field];
     const nextValue = !previousValue;
-    setCurrentUserState((previous) => (previous ? { ...previous, [field]: nextValue } : previous));
+    setCurrentUserState((previous) =>
+      previous ? { ...previous, [field]: nextValue } : previous,
+    );
     try {
       await mutate(nextValue, previousValue);
     } catch {
@@ -784,14 +844,18 @@ export default function MediaItemMenu({
   }
 
   async function handleWatchedToggle() {
-    await runOptimisticToggle("played", watchedMutation.isPending, (nextValue) =>
-      watchedMutation.mutateAsync(nextValue),
+    await runOptimisticToggle(
+      "played",
+      watchedMutation.isPending,
+      (nextValue) => watchedMutation.mutateAsync(nextValue),
     );
   }
 
   async function handleFavoriteToggle() {
-    await runOptimisticToggle("is_favorite", favoriteMutation.isPending, (_, previousValue) =>
-      favoriteMutation.mutateAsync(previousValue),
+    await runOptimisticToggle(
+      "is_favorite",
+      favoriteMutation.isPending,
+      (_, previousValue) => favoriteMutation.mutateAsync(previousValue),
     );
   }
 
@@ -799,7 +863,14 @@ export default function MediaItemMenu({
     switch (actionKey) {
       case "playFromBeginning": {
         if (mediaType === "audiobook") {
-          navigate(buildMediaPlayHref({ contentId, type: mediaType, libraryId, restart: true }));
+          navigate(
+            buildMediaPlayHref({
+              contentId,
+              type: mediaType,
+              libraryId,
+              restart: true,
+            }),
+          );
           return;
         }
         playbackController.startPlayback({
@@ -830,7 +901,9 @@ export default function MediaItemMenu({
         return;
       }
       case "viewPlayHistory": {
-        navigate(`/admin/history?media_item_id=${encodeURIComponent(contentId)}`);
+        navigate(
+          `/admin/history?media_item_id=${encodeURIComponent(contentId)}`,
+        );
         return;
       }
       case "dismissFromHome": {
@@ -855,7 +928,10 @@ export default function MediaItemMenu({
 
   function handleRefreshConfirm(mode: "quick" | "complete") {
     setRefreshDialogOpen(false);
-    refreshMetadataMutation.mutate({ item: { content_id: contentId, type: mediaType }, mode });
+    refreshMetadataMutation.mutate({
+      item: { content_id: contentId, type: mediaType },
+      mode,
+    });
   }
 
   return (
@@ -914,8 +990,18 @@ export default function MediaItemMenu({
         onPointerDown={stopMenuEvent}
       >
         {model.length === 0 ? (
-          <button type="button" aria-label="More actions" disabled className={triggerClassName}>
-            <MoreVertical className={mediaItemMenuIconClassName(variant, posterActionDensity)} />
+          <button
+            type="button"
+            aria-label="More actions"
+            disabled
+            className={triggerClassName}
+          >
+            <MoreVertical
+              className={mediaItemMenuIconClassName(
+                variant,
+                posterActionDensity,
+              )}
+            />
           </button>
         ) : (
           <DropdownMenu
@@ -927,7 +1013,8 @@ export default function MediaItemMenu({
                 return;
               }
 
-              pointerClosedMenuRef.current = lastMenuInteractionRef.current === "pointer";
+              pointerClosedMenuRef.current =
+                lastMenuInteractionRef.current === "pointer";
               lastMenuInteractionRef.current = null;
             }}
           >
@@ -945,7 +1032,10 @@ export default function MediaItemMenu({
                 }}
               >
                 <MoreVertical
-                  className={mediaItemMenuIconClassName(variant, posterActionDensity)}
+                  className={mediaItemMenuIconClassName(
+                    variant,
+                    posterActionDensity,
+                  )}
                 />
               </button>
             </DropdownMenuTrigger>

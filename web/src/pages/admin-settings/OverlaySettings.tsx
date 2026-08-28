@@ -37,10 +37,17 @@ interface DefaultsEditorProps {
   overlaysEnabled: boolean;
 }
 
-function DefaultsEditor({ value, onChange, overlaysEnabled }: DefaultsEditorProps) {
+function DefaultsEditor({
+  value,
+  onChange,
+  overlaysEnabled,
+}: DefaultsEditorProps) {
   const prefs = parseOverlayPrefs(value || null);
 
-  const updateItem = (id: OverlayId, patch: Partial<CardOverlayPrefs["items"][OverlayId]>) => {
+  const updateItem = (
+    id: OverlayId,
+    patch: Partial<CardOverlayPrefs["items"][OverlayId]>,
+  ) => {
     const next: CardOverlayPrefs = {
       ...prefs,
       items: { ...prefs.items, [id]: { ...prefs.items[id], ...patch } },
@@ -77,7 +84,9 @@ function DefaultsEditor({ value, onChange, overlaysEnabled }: DefaultsEditorProp
       </div>
       <div className={overlaysEnabled ? "" : "pointer-events-none opacity-50"}>
         {OVERLAY_CATEGORIES.map((category) => {
-          const overlays = OVERLAY_REGISTRY.filter((d) => d.category === category);
+          const overlays = OVERLAY_REGISTRY.filter(
+            (d) => d.category === category,
+          );
           if (overlays.length === 0) return null;
           return (
             <div key={category} className="space-y-2">
@@ -93,15 +102,21 @@ function DefaultsEditor({ value, onChange, overlaysEnabled }: DefaultsEditorProp
                       className="flex flex-col justify-between gap-3 py-1.5 sm:flex-row sm:items-center"
                     >
                       <div className="min-w-0 space-y-0.5">
-                        <Label className="text-sm font-medium">{def.label}</Label>
-                        <p className="text-muted-foreground text-xs">{def.description}</p>
+                        <Label className="text-sm font-medium">
+                          {def.label}
+                        </Label>
+                        <p className="text-muted-foreground text-xs">
+                          {def.description}
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <Select
                           value={config.position}
                           disabled={!overlaysEnabled || !config.enabled}
                           onValueChange={(pos) =>
-                            updateItem(def.id, { position: pos as OverlayPosition })
+                            updateItem(def.id, {
+                              position: pos as OverlayPosition,
+                            })
                           }
                         >
                           <SelectTrigger className="w-[130px]">
@@ -118,7 +133,9 @@ function DefaultsEditor({ value, onChange, overlaysEnabled }: DefaultsEditorProp
                         <Switch
                           checked={config.enabled}
                           disabled={!overlaysEnabled}
-                          onCheckedChange={(checked) => updateItem(def.id, { enabled: checked })}
+                          onCheckedChange={(checked) =>
+                            updateItem(def.id, { enabled: checked })
+                          }
                         />
                       </div>
                     </div>
@@ -148,8 +165,8 @@ export default function OverlaySettings() {
       <div className="mb-6 space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Card Overlays</h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Configure the default overlay badges and style preset shown on poster cards. Users can
-          override these in their personal settings.
+          Configure the default overlay badges and style preset shown on poster
+          cards. Users can override these in their personal settings.
         </p>
       </div>
 
@@ -166,12 +183,15 @@ export default function OverlaySettings() {
 
         <FieldGroup label="Default Configuration">
           <p className="text-muted-foreground mb-4 text-xs">
-            These defaults apply to users who have not customized their overlay settings.
+            These defaults apply to users who have not customized their overlay
+            settings.
           </p>
           <div className="flex flex-col gap-6 lg:flex-row">
             <div className="flex-1">
               <DefaultsEditor
-                value={defaultsValue || serializeOverlayPrefs(buildDefaultPrefs())}
+                value={
+                  defaultsValue || serializeOverlayPrefs(buildDefaultPrefs())
+                }
                 onChange={(v) => form.setValue("defaults.card_overlays", v)}
                 overlaysEnabled={overlaysEnabled}
               />

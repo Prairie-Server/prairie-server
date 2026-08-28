@@ -26,7 +26,9 @@ export function useAdminCreateApiKey() {
       void queryClient.invalidateQueries({ queryKey: adminKeys.apiKeys() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to create API key");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to create API key",
+      );
     },
   });
 }
@@ -34,13 +36,16 @@ export function useAdminCreateApiKey() {
 export function useAdminDeleteApiKey() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => api(`/admin/api-keys/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) =>
+      api(`/admin/api-keys/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("API key revoked");
       void queryClient.invalidateQueries({ queryKey: adminKeys.apiKeys() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to revoke API key");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to revoke API key",
+      );
     },
   });
 }

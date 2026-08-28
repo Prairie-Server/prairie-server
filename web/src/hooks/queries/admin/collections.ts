@@ -30,7 +30,10 @@ const ADMIN_STALE_TIME = 30_000;
 function isLikelyRequestTimeout(error: unknown): boolean {
   if (error instanceof ApiClientError) {
     return (
-      error.status === 408 || error.status === 502 || error.status === 503 || error.status === 504
+      error.status === 408 ||
+      error.status === 502 ||
+      error.status === 503 ||
+      error.status === 504
     );
   }
   return error instanceof TypeError;
@@ -58,12 +61,16 @@ function buildCollectionFormData(
   return formData;
 }
 
-function fetchAdminCollections(libraryId?: number): Promise<LibraryCollectionsListResponse> {
+function fetchAdminCollections(
+  libraryId?: number,
+): Promise<LibraryCollectionsListResponse> {
   const query = libraryId ? `?library_id=${libraryId}` : "";
-  return api<LibraryCollectionsListResponse>(`/admin/collections${query}`).then((data) => ({
-    collections: data.collections ?? [],
-    groups: data.groups ?? [],
-  }));
+  return api<LibraryCollectionsListResponse>(`/admin/collections${query}`).then(
+    (data) => ({
+      collections: data.collections ?? [],
+      groups: data.groups ?? [],
+    }),
+  );
 }
 
 export function useAdminCollections(libraryId?: number) {
@@ -182,7 +189,9 @@ export function useQueueCollectionTemplateBundleApply() {
         },
       ),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("template_bundle_apply") });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.jobs("template_bundle_apply"),
+      });
       void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("__all") });
       toast.success("Applying collection defaults in the background");
     },
@@ -191,7 +200,11 @@ export function useQueueCollectionTemplateBundleApply() {
         toast.error("A collection defaults apply is already running");
         return;
       }
-      toast.error(error instanceof Error ? error.message : "Failed to queue collection defaults");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to queue collection defaults",
+      );
     },
   });
 }
@@ -200,9 +213,9 @@ export function useTemplateBundleApplyJobs() {
   return useQuery({
     queryKey: adminKeys.jobs("template_bundle_apply"),
     queryFn: () =>
-      api<AdminJobsResponse>("/admin/jobs?job_type=template_bundle_apply&limit=10").then(
-        (data) => data.jobs ?? [],
-      ),
+      api<AdminJobsResponse>(
+        "/admin/jobs?job_type=template_bundle_apply&limit=10",
+      ).then((data) => data.jobs ?? []),
     staleTime: 0,
     refetchInterval: 5000,
     refetchIntervalInBackground: true,
@@ -267,7 +280,11 @@ export interface ReorderAdminCollectionsArgs {
 export function useReorderAdminCollections() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ libraryId, orderedIds, groupId }: ReorderAdminCollectionsArgs) =>
+    mutationFn: ({
+      libraryId,
+      orderedIds,
+      groupId,
+    }: ReorderAdminCollectionsArgs) =>
       api<void>("/admin/collections/order", {
         method: "PUT",
         body: JSON.stringify({
@@ -279,7 +296,8 @@ export function useReorderAdminCollections() {
     onMutate: async ({ libraryId, orderedIds, groupId }) => {
       const key = adminKeys.collections(libraryId);
       await queryClient.cancelQueries({ queryKey: key });
-      const snapshot = queryClient.getQueryData<LibraryCollectionsListResponse>(key);
+      const snapshot =
+        queryClient.getQueryData<LibraryCollectionsListResponse>(key);
       if (snapshot) {
         const inScope = (c: LibraryCollection) =>
           groupId === undefined ? true : (c.group_id ?? null) === groupId;
@@ -287,7 +305,9 @@ export function useReorderAdminCollections() {
         // the pre-mutation values; in-place mutation on shared object refs
         // would corrupt onError's restore.
         const reordered = (() => {
-          const byId = new Map(snapshot.collections.filter(inScope).map((c) => [c.id, c]));
+          const byId = new Map(
+            snapshot.collections.filter(inScope).map((c) => [c.id, c]),
+          );
           const out: LibraryCollection[] = [];
           for (const id of orderedIds) {
             const c = byId.get(id);
@@ -312,7 +332,10 @@ export function useReorderAdminCollections() {
     },
     onError: (error, _vars, ctx) => {
       if (ctx?.snapshot) {
-        queryClient.setQueryData(adminKeys.collections(ctx.libraryId), ctx.snapshot);
+        queryClient.setQueryData(
+          adminKeys.collections(ctx.libraryId),
+          ctx.snapshot,
+        );
       }
       toast.error(error instanceof Error ? error.message : "Failed to reorder");
     },
@@ -334,12 +357,20 @@ export function useCreateAdminCollectionGroup() {
       slug?: string;
       defaultSortMode?: string;
     }) =>
-      api<LibraryCollectionGroup>(`/admin/libraries/${libraryId}/collection-groups`, {
-        method: "POST",
-        body: JSON.stringify({ name, slug, default_sort_mode: defaultSortMode }),
-      }),
+      api<LibraryCollectionGroup>(
+        `/admin/libraries/${libraryId}/collection-groups`,
+        {
+          method: "POST",
+          body: JSON.stringify({
+            name,
+            slug,
+            default_sort_mode: defaultSortMode,
+          }),
+        },
+      ),
     onSuccess: () => invalidateAdminCollectionQueries(queryClient),
-    onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to add group"),
+    onError: (err) =>
+      toast.error(err instanceof Error ? err.message : "Failed to add group"),
   });
 }
 
@@ -355,12 +386,18 @@ export function useUpdateAdminCollectionGroup() {
       name?: string;
       defaultSortMode?: string;
     }) =>
-      api<LibraryCollectionGroup>(`/admin/collection-groups/${encodeURIComponent(id)}`, {
-        method: "PUT",
-        body: JSON.stringify({ name, default_sort_mode: defaultSortMode }),
-      }),
+      api<LibraryCollectionGroup>(
+        `/admin/collection-groups/${encodeURIComponent(id)}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ name, default_sort_mode: defaultSortMode }),
+        },
+      ),
     onSuccess: () => invalidateAdminCollectionQueries(queryClient),
-    onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to rename group"),
+    onError: (err) =>
+      toast.error(
+        err instanceof Error ? err.message : "Failed to rename group",
+      ),
   });
 }
 
@@ -372,14 +409,23 @@ export function useDeleteAdminCollectionGroup() {
         method: "DELETE",
       }),
     onSuccess: () => invalidateAdminCollectionQueries(queryClient),
-    onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to delete group"),
+    onError: (err) =>
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete group",
+      ),
   });
 }
 
 export function useReorderAdminCollectionGroups() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ libraryId, orderedIds }: { libraryId: number; orderedIds: string[] }) =>
+    mutationFn: ({
+      libraryId,
+      orderedIds,
+    }: {
+      libraryId: number;
+      orderedIds: string[];
+    }) =>
       api<void>(`/admin/libraries/${libraryId}/collection-groups/reorder`, {
         method: "PUT",
         body: JSON.stringify({ ids: orderedIds }),
@@ -401,9 +447,14 @@ export function useReorderAdminCollectionGroups() {
     },
     onError: (err, _vars, ctx) => {
       if (ctx?.snapshot) {
-        queryClient.setQueryData(adminKeys.collectionGroups(ctx.libraryId), ctx.snapshot);
+        queryClient.setQueryData(
+          adminKeys.collectionGroups(ctx.libraryId),
+          ctx.snapshot,
+        );
       }
-      toast.error(err instanceof Error ? err.message : "Failed to reorder groups");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to reorder groups",
+      );
     },
     onSettled: () => invalidateAdminCollectionQueries(queryClient),
   });
@@ -418,7 +469,9 @@ export function useReorderAdminCollectionItems(collectionId: string) {
         body: JSON.stringify({ ordered_ids: orderedIds }),
       }),
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to reorder items");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to reorder items",
+      );
     },
     onSettled: () => invalidateAdminCollectionQueries(queryClient),
   });
@@ -445,7 +498,9 @@ export function useDeleteCollectionImage() {
       void invalidateAdminCollectionQueries(queryClient);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to remove image");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to remove image",
+      );
     },
   });
 }
@@ -460,7 +515,9 @@ export function useSyncAdminCollection() {
       }).then((data) => ({ data, libraryId })),
     onSuccess: ({ data, libraryId: _libraryId }) => {
       toast.success(
-        data.status === "warning" ? "Collection synced with warnings" : "Collection synced",
+        data.status === "warning"
+          ? "Collection synced with warnings"
+          : "Collection synced",
       );
       void invalidateAdminCollectionQueries(queryClient);
     },
@@ -484,10 +541,13 @@ export function useImportMDBListCollection() {
       backdrop?: File | null;
     }) => {
       const payload = buildCollectionFormData(body, poster, backdrop);
-      return api<ImportMDBListCollectionResponse>("/admin/collections/import/mdblist", {
-        method: "POST",
-        body: payload,
-      });
+      return api<ImportMDBListCollectionResponse>(
+        "/admin/collections/import/mdblist",
+        {
+          method: "POST",
+          body: payload,
+        },
+      );
     },
     onSuccess: (result) => {
       toast.success(
@@ -517,10 +577,13 @@ export function useImportTMDBCollection() {
       backdrop?: File | null;
     }) => {
       const payload = buildCollectionFormData(body, poster, backdrop);
-      return api<ImportTMDBCollectionResponse>("/admin/collections/import/tmdb", {
-        method: "POST",
-        body: payload,
-      });
+      return api<ImportTMDBCollectionResponse>(
+        "/admin/collections/import/tmdb",
+        {
+          method: "POST",
+          body: payload,
+        },
+      );
     },
     onSuccess: (result) => {
       toast.success(
@@ -550,10 +613,13 @@ export function useImportTraktCollection() {
       backdrop?: File | null;
     }) => {
       const payload = buildCollectionFormData(body, poster, backdrop);
-      return api<ImportTraktCollectionResponse>("/admin/collections/import/trakt", {
-        method: "POST",
-        body: payload,
-      });
+      return api<ImportTraktCollectionResponse>(
+        "/admin/collections/import/trakt",
+        {
+          method: "POST",
+          body: payload,
+        },
+      );
     },
     onSuccess: (result) => {
       const statusMessages: Record<string, string> = {

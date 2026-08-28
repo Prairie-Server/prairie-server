@@ -19,7 +19,8 @@ interface RecommendationsStatusResponse {
 export function useRecommendationsStatus() {
   return useQuery({
     queryKey: adminKeys.recommendationsStatus(),
-    queryFn: () => api<RecommendationsStatusResponse>("/admin/recommendations/status"),
+    queryFn: () =>
+      api<RecommendationsStatusResponse>("/admin/recommendations/status"),
     refetchInterval: 5000,
   });
 }
@@ -27,12 +28,17 @@ export function useRecommendationsStatus() {
 export function useTriggerEmbeddings() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => api("/admin/recommendations/trigger/embeddings", { method: "POST" }),
+    mutationFn: () =>
+      api("/admin/recommendations/trigger/embeddings", { method: "POST" }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: adminKeys.recommendationsStatus() });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.recommendationsStatus(),
+      });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to trigger embeddings");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to trigger embeddings",
+      );
     },
   });
 }
@@ -40,12 +46,17 @@ export function useTriggerEmbeddings() {
 export function useTriggerTasteProfiles() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => api("/admin/recommendations/trigger/taste-profiles", { method: "POST" }),
+    mutationFn: () =>
+      api("/admin/recommendations/trigger/taste-profiles", { method: "POST" }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: adminKeys.recommendationsStatus() });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.recommendationsStatus(),
+      });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to trigger taste profiles");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to trigger taste profiles",
+      );
     },
   });
 }
@@ -53,12 +64,19 @@ export function useTriggerTasteProfiles() {
 export function useTriggerCowatch() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => api("/admin/recommendations/trigger/cowatch", { method: "POST" }),
+    mutationFn: () =>
+      api("/admin/recommendations/trigger/cowatch", { method: "POST" }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: adminKeys.recommendationsStatus() });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.recommendationsStatus(),
+      });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to trigger co-watch computation");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to trigger co-watch computation",
+      );
     },
   });
 }
@@ -66,12 +84,19 @@ export function useTriggerCowatch() {
 export function useTriggerRecommendations() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => api("/admin/recommendations/trigger/recommendations", { method: "POST" }),
+    mutationFn: () =>
+      api("/admin/recommendations/trigger/recommendations", { method: "POST" }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: adminKeys.recommendationsStatus() });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.recommendationsStatus(),
+      });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to trigger recommendations");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to trigger recommendations",
+      );
     },
   });
 }

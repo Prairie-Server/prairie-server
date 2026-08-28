@@ -20,7 +20,9 @@ export default function BrandCard({
     const base = `/requests/browse/${kind}/${encodeURIComponent(card.slug)}`;
     if (kind === "genre") {
       const initial =
-        card.series_supported && defaultMediaTypeForGenre === "series" ? "series" : "movie";
+        card.series_supported && defaultMediaTypeForGenre === "series"
+          ? "series"
+          : "movie";
       void navigate(`${base}?media_type=${initial}`);
       return;
     }

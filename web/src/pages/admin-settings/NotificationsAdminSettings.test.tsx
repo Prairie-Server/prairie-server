@@ -59,7 +59,9 @@ function makeForm() {
 }
 
 function renderPage() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
 
   return (
     <QueryClientProvider client={client}>
@@ -75,7 +77,7 @@ function renderStaticPage() {
 }
 
 describe("NotificationsAdminSettings", () => {
-  it("registers Silo Push Relay settings with the shared settings form", () => {
+  it("registers Prairie Push Relay settings with the shared settings form", () => {
     useSettingsFormMock.mockReturnValue(makeForm());
 
     renderStaticPage();
@@ -99,27 +101,37 @@ describe("NotificationsAdminSettings", () => {
     expect(options.keys).toContain("notifications.push_relay_url");
   });
 
-  it("shows the Silo Push Relay channel status", async () => {
+  it("shows the Prairie Push Relay channel status", async () => {
     useSettingsFormMock.mockReturnValue(makeForm());
 
     render(renderPage());
 
-    expect(screen.getByText("Silo Push Relay")).toBeInTheDocument();
+    expect(screen.getByText("Prairie Push Relay")).toBeInTheDocument();
     expect(screen.getByText(/delivered by APNs or FCM/)).toBeInTheDocument();
     expect(screen.getByText("Relay configured")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /Silo Push Relay/ }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /Prairie Push Relay/ }),
+    );
 
     expect(screen.getByText("Privacy disclosure")).toBeInTheDocument();
     expect(screen.getByText("Apple Push (APNs)")).toBeInTheDocument();
     expect(screen.getByText("Android Push (FCM)")).toBeInTheDocument();
-    expect(screen.getByText(/content-free request to Silo's push relay/)).toBeInTheDocument();
-    expect(screen.getByText(/does not receive notification titles/)).toBeInTheDocument();
-    expect(screen.getByText(/fetches private content directly/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/content-free request to Prairie's push relay/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/does not receive notification titles/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/fetches private content directly/),
+    ).toBeInTheDocument();
     expect(screen.getByText("Deployment ID")).toBeInTheDocument();
     expect(screen.getByText("Rotate credential")).toBeInTheDocument();
     expect(screen.getByText("Credential: cap_v1_test")).toBeInTheDocument();
-    expect(screen.getByText(/Silo renews automatically/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Prairie renews automatically/),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Relay API Key")).not.toBeInTheDocument();
     expect(screen.queryByText("Smoke Test Profile ID")).not.toBeInTheDocument();
     expect(screen.queryByText("Server Device ID")).not.toBeInTheDocument();

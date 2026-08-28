@@ -1,6 +1,11 @@
 import type { ExecutionResult } from "@/api/types";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
 interface TaskStatusBadgeProps {
@@ -34,7 +39,10 @@ export function TaskStatusBadge({ result, className }: TaskStatusBadgeProps) {
             {badge}
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-[min(28rem,80vw)] whitespace-pre-wrap">
+        <TooltipContent
+          side="top"
+          className="max-w-[min(28rem,80vw)] whitespace-pre-wrap"
+        >
           {errorMessage}
         </TooltipContent>
       </Tooltip>

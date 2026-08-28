@@ -1,5 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { buildLiveWatchHref, releaseLiveTVSessionOnUnload } from "./liveTVWatch";
+import {
+  buildLiveWatchHref,
+  releaseLiveTVSessionOnUnload,
+} from "./liveTVWatch";
 
 vi.mock("@/api/client", () => ({
   getAccessToken: () => "access-token",
@@ -13,18 +16,24 @@ afterEach(() => {
 
 describe("buildLiveWatchHref", () => {
   it("builds a fullscreen watch path for the channel", () => {
-    expect(buildLiveWatchHref("ch-1")).toBe("/watch/live/ch-1?return=%2Flivetv");
+    expect(buildLiveWatchHref("ch-1")).toBe(
+      "/watch/live/ch-1?return=%2Flivetv",
+    );
   });
 
   it("encodes channel ids and custom return paths", () => {
     expect(buildLiveWatchHref("a/b", "/")).toBe("/watch/live/a%2Fb?return=%2F");
-    expect(buildLiveWatchHref("ch-2", "/home")).toBe("/watch/live/ch-2?return=%2Fhome");
+    expect(buildLiveWatchHref("ch-2", "/home")).toBe(
+      "/watch/live/ch-2?return=%2Fhome",
+    );
   });
 });
 
 describe("releaseLiveTVSessionOnUnload", () => {
   it("sends an authenticated keepalive DELETE so the tuner is freed", () => {
-    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }));
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(new Response(null, { status: 204 }));
     vi.stubGlobal("fetch", fetchMock);
 
     releaseLiveTVSessionOnUnload("sess-1");

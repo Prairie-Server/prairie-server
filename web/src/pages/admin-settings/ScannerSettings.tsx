@@ -43,10 +43,12 @@ export default function ScannerSettings() {
   return (
     <div className="flex h-full flex-col">
       <div className="mb-6 space-y-2">
-        <h2 className="text-xl font-semibold tracking-tight">Scanner & Matcher</h2>
+        <h2 className="text-xl font-semibold tracking-tight">
+          Scanner & Matcher
+        </h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Configure scanner performance and metadata matching. Startup and recurring scans are
-          managed in Scheduled Tasks.
+          Configure scanner performance and metadata matching. Startup and
+          recurring scans are managed in Scheduled Tasks.
         </p>
       </div>
 
@@ -88,14 +90,18 @@ export default function ScannerSettings() {
             type="number"
             hint="Total in-flight artwork encodes (WebP cache + AVIF backfill share this budget). 0 = auto: a quarter of the CPU cores, at most 4, so playback transcodes keep headroom."
             value={form.getValue("metadata.artwork_encode_workers")}
-            onChange={(v) => form.setValue("metadata.artwork_encode_workers", v)}
+            onChange={(v) =>
+              form.setValue("metadata.artwork_encode_workers", v)
+            }
           />
           <SettingField
             label="Pause Artwork During Playback"
             type="toggle"
             hint="Stop the AVIF backfill and throttle artwork caching to one encode while any playback or transcode session is active. Queued work resumes when streaming ends."
             value={form.getValue("metadata.pause_artwork_during_playback")}
-            onChange={(v) => form.setValue("metadata.pause_artwork_during_playback", v)}
+            onChange={(v) =>
+              form.setValue("metadata.pause_artwork_during_playback", v)
+            }
           />
           <SettingField
             label="AVIF Backfill Workers"

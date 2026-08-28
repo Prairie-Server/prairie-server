@@ -1,6 +1,19 @@
-import { useState, useEffect, useCallback, useMemo, type MouseEvent } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  type MouseEvent,
+} from "react";
 import { Link } from "react-router";
-import { Info, ChevronLeft, ChevronRight, Play, Pause, BookOpen } from "lucide-react";
+import {
+  Info,
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  Pause,
+  BookOpen,
+} from "lucide-react";
 import { decodeThumbhash } from "@/lib/thumbhash";
 import { HERO_BANNER_SIZE } from "@/lib/design-system";
 import { useAmbientColor } from "@/hooks/useAmbientColor";
@@ -37,7 +50,10 @@ interface HeroBannerProps {
   libraryId?: number;
 }
 
-function heroPlayLabel(item: SectionItem, activeAudiobookPlaying?: boolean | null): string {
+function heroPlayLabel(
+  item: SectionItem,
+  activeAudiobookPlaying?: boolean | null,
+): string {
   if (item.type === "ebook") {
     return "Read";
   }
@@ -112,7 +128,9 @@ export default function HeroBanner({
   // with the progress rail that restarts on slide change.
   useEffect(() => {
     if (slides.length <= 1 || paused) return;
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     if (prefersReducedMotion) return;
     const timer = setInterval(next, 8000);
     return () => clearInterval(timer);
@@ -128,7 +146,8 @@ export default function HeroBanner({
   const slideCount = slides.length;
   const padded = (n: number) => String(n).padStart(2, "0");
   const activeAudiobookPlaying =
-    current.type === "audiobook" && audiobookPlayback?.active?.contentId === current.content_id
+    current.type === "audiobook" &&
+    audiobookPlayback?.active?.contentId === current.content_id
       ? audiobookPlayback.active.playing
       : null;
   const playLabel = heroPlayLabel(current, activeAudiobookPlaying);
@@ -151,7 +170,9 @@ export default function HeroBanner({
       className={cn(
         "home-hero group relative w-full overflow-hidden",
         heightClassName,
-        bleed ? "-mt-[96px] mb-0 sm:-mt-[104px]" : "border-border/60 mb-10 border-b",
+        bleed
+          ? "-mt-[96px] mb-0 sm:-mt-[104px]"
+          : "border-border/60 mb-10 border-b",
       )}
       aria-roledescription="carousel"
       aria-label="Featured content"
@@ -164,7 +185,9 @@ export default function HeroBanner({
     >
       {/* Backdrop layers – all stacked, crossfade via opacity */}
       {slides.map((slide, i) => {
-        const thumbhash = slide.backdrop_thumbhash ? decodeThumbhash(slide.backdrop_thumbhash) : "";
+        const thumbhash = slide.backdrop_thumbhash
+          ? decodeThumbhash(slide.backdrop_thumbhash)
+          : "";
         const isActive = i === activeIndex;
         return (
           <div
@@ -317,7 +340,11 @@ export default function HeroBanner({
               aria-label={paused ? "Play slideshow" : "Pause slideshow"}
               className="glass-subtle flex h-7 w-7 items-center justify-center rounded-full text-white/80 transition-colors hover:text-white"
             >
-              {paused ? <Play className="size-3" /> : <Pause className="size-3" />}
+              {paused ? (
+                <Play className="size-3" />
+              ) : (
+                <Pause className="size-3" />
+              )}
             </button>
           </div>
           <div className="absolute right-6 bottom-6 z-20 hidden items-center gap-3 sm:flex lg:right-10 lg:bottom-8 xl:right-12">
@@ -343,7 +370,11 @@ export default function HeroBanner({
               aria-label={paused ? "Play slideshow" : "Pause slideshow"}
               className="flex h-7 w-7 items-center justify-center rounded-full text-white/70 transition-colors hover:text-white"
             >
-              {paused ? <Play className="size-3.5" /> : <Pause className="size-3.5" />}
+              {paused ? (
+                <Play className="size-3.5" />
+              ) : (
+                <Pause className="size-3.5" />
+              )}
             </button>
           </div>
         </>

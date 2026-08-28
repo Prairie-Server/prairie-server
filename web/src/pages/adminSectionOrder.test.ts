@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 import type { PageSectionConfig } from "@/api/types";
-import { buildSectionReorderEntries, moveSectionBeforeTarget } from "./adminSectionOrder";
+import {
+  buildSectionReorderEntries,
+  moveSectionBeforeTarget,
+} from "./adminSectionOrder";
 
 function makeSection(id: string, position: number): PageSectionConfig {
   return {
@@ -29,7 +32,11 @@ describe("adminSectionOrder", () => {
 
     const reordered = moveSectionBeforeTarget(sections, "top-rated", "recent");
 
-    expect(reordered.map((section) => section.id)).toEqual(["featured", "top-rated", "recent"]);
+    expect(reordered.map((section) => section.id)).toEqual([
+      "featured",
+      "top-rated",
+      "recent",
+    ]);
     expect(buildSectionReorderEntries(reordered)).toEqual([
       { id: "featured", position: 0 },
       { id: "top-rated", position: 1 },

@@ -10,7 +10,12 @@ import type {
 } from "./types";
 
 export function buildDefaultPrefs(): CardOverlayPrefs {
-  return { version: 2, preset: "classic", order: [], items: buildItems(undefined) };
+  return {
+    version: 2,
+    preset: "classic",
+    order: [],
+    items: buildItems(undefined),
+  };
 }
 
 // Ids that are legal in the contract schema (card-overlays.json) but have no
@@ -23,17 +28,24 @@ const PASSTHROUGH_IDS = [
   "imdb_top_250",
   "rt_certified_fresh",
 ] as const satisfies readonly OverlayId[];
-const PASSTHROUGH_BASE: OverlayItemConfig = { enabled: false, position: "top-right" };
+const PASSTHROUGH_BASE: OverlayItemConfig = {
+  enabled: false,
+  position: "top-right",
+};
 
 function isKnownOverlayId(v: unknown): v is OverlayId {
   return (
     typeof v === "string" &&
-    (OVERLAY_MAP.has(v as OverlayId) || (PASSTHROUGH_IDS as readonly string[]).includes(v))
+    (OVERLAY_MAP.has(v as OverlayId) ||
+      (PASSTHROUGH_IDS as readonly string[]).includes(v))
   );
 }
 
 function isValidPosition(v: unknown): v is OverlayPosition {
-  return typeof v === "string" && (OVERLAY_POSITIONS as readonly string[]).includes(v);
+  return (
+    typeof v === "string" &&
+    (OVERLAY_POSITIONS as readonly string[]).includes(v)
+  );
 }
 
 function isValidPreset(v: unknown): v is PresetId {
@@ -50,7 +62,11 @@ function looksLikeV2(parsed: unknown): boolean {
   if (!parsed || typeof parsed !== "object") return false;
   const obj = parsed as Record<string, unknown>;
   if (obj.version === 2) return true;
-  return typeof obj.preset === "string" && typeof obj.items === "object" && obj.items != null;
+  return (
+    typeof obj.preset === "string" &&
+    typeof obj.items === "object" &&
+    obj.items != null
+  );
 }
 
 function applyItemPatch(
@@ -73,7 +89,10 @@ function buildItems(
 ): Record<OverlayId, OverlayItemConfig> {
   const items = {} as Record<OverlayId, OverlayItemConfig>;
   for (const def of OVERLAY_REGISTRY) {
-    const base: OverlayItemConfig = { enabled: def.defaultEnabled, position: def.defaultPosition };
+    const base: OverlayItemConfig = {
+      enabled: def.defaultEnabled,
+      position: def.defaultPosition,
+    };
     const entry = source?.[def.id];
     items[def.id] =
       entry && typeof entry === "object"
@@ -83,24 +102,36 @@ function buildItems(
   for (const id of PASSTHROUGH_IDS) {
     const entry = source?.[id];
     if (entry && typeof entry === "object") {
-      items[id] = applyItemPatch(PASSTHROUGH_BASE, entry as Record<string, unknown>);
+      items[id] = applyItemPatch(
+        PASSTHROUGH_BASE,
+        entry as Record<string, unknown>,
+      );
     }
   }
   return items;
 }
 
 function migrateFromV1(parsed: Record<string, unknown>): CardOverlayPrefs {
-  return { version: 2, preset: "classic", order: [], items: buildItems(parsed) };
+  return {
+    version: 2,
+    preset: "classic",
+    order: [],
+    items: buildItems(parsed),
+  };
 }
 
 function parseV2(parsed: Record<string, unknown>): CardOverlayPrefs {
   const items = parsed.items;
   const sourceItems =
-    items && typeof items === "object" ? (items as Record<string, unknown>) : undefined;
+    items && typeof items === "object"
+      ? (items as Record<string, unknown>)
+      : undefined;
   return {
     version: 2,
     preset: isValidPreset(parsed.preset) ? parsed.preset : "classic",
-    order: Array.isArray(parsed.order) ? (parsed.order as unknown[]).filter(isKnownOverlayId) : [],
+    order: Array.isArray(parsed.order)
+      ? (parsed.order as unknown[]).filter(isKnownOverlayId)
+      : [],
     items: buildItems(sourceItems),
   };
 }
@@ -119,7 +150,8 @@ export function parseOverlayPrefs(raw: unknown): CardOverlayPrefs {
       return buildDefaultPrefs();
     }
   }
-  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) return buildDefaultPrefs();
+  if (!parsed || typeof parsed !== "object" || Array.isArray(parsed))
+    return buildDefaultPrefs();
   const obj = parsed as Record<string, unknown>;
   if (looksLikeV2(obj)) return parseV2(obj);
   return migrateFromV1(obj);
@@ -135,7 +167,10 @@ export function serializeOverlayPrefs(prefs: CardOverlayPrefs): string {
 // enabling the combined view on top of the defaults produces
 // "4K HDR 4K HDR" stacks. The user's stored prefs are left untouched so
 // toggling the combined badge off restores the standalones automatically.
-export function isOverlaySuppressed(id: OverlayId, prefs: CardOverlayPrefs): boolean {
+export function isOverlaySuppressed(
+  id: OverlayId,
+  prefs: CardOverlayPrefs,
+): boolean {
   if (id === "resolution" || id === "hdr") {
     return prefs.items["resolution_hdr"]?.enabled === true;
   }
@@ -144,7 +179,10 @@ export function isOverlaySuppressed(id: OverlayId, prefs: CardOverlayPrefs): boo
 
 // Returns enabled overlays for a position, in the user's chosen order
 // (falling back to registry order for any unranked ids).
-export function orderedOverlaysForPosition(prefs: CardOverlayPrefs, position: OverlayPosition) {
+export function orderedOverlaysForPosition(
+  prefs: CardOverlayPrefs,
+  position: OverlayPosition,
+) {
   const enabled = OVERLAY_REGISTRY.filter(
     (def) =>
       prefs.items[def.id]?.enabled &&
@@ -152,6 +190,10 @@ export function orderedOverlaysForPosition(prefs: CardOverlayPrefs, position: Ov
       !isOverlaySuppressed(def.id, prefs),
   );
   if (prefs.order.length === 0) return enabled;
-  const orderIndex = new Map<OverlayId, number>(prefs.order.map((id, i) => [id, i]));
-  return [...enabled].sort((a, b) => (orderIndex.get(a.id) ?? 999) - (orderIndex.get(b.id) ?? 999));
+  const orderIndex = new Map<OverlayId, number>(
+    prefs.order.map((id, i) => [id, i]),
+  );
+  return [...enabled].sort(
+    (a, b) => (orderIndex.get(a.id) ?? 999) - (orderIndex.get(b.id) ?? 999),
+  );
 }

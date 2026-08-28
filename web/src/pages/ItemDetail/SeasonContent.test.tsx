@@ -177,9 +177,18 @@ describe("SeasonContent", () => {
     mocks.capturedDetailHeroProps.value = null;
     mocks.capturedMediaMenuProps.length = 0;
     mocks.useAuth.mockReturnValue({ user: null });
-    mocks.useOnViewTranslation.mockReturnValue({ translating: false, onTranslate: undefined });
-    mocks.useRefreshItemMetadata.mockReturnValue({ mutate: vi.fn(), isPending: false });
-    mocks.useWatchedStateMutation.mockReturnValue({ mutate: vi.fn(), isPending: false });
+    mocks.useOnViewTranslation.mockReturnValue({
+      translating: false,
+      onTranslate: undefined,
+    });
+    mocks.useRefreshItemMetadata.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    });
+    mocks.useWatchedStateMutation.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    });
     mocks.useItemEpisodes.mockReturnValue({
       data: {
         episodes: [
@@ -195,7 +204,9 @@ describe("SeasonContent", () => {
       isLoading: false,
       error: null,
     });
-    mocks.useRating.mockReturnValue({ data: { rating: 4, rated_at: "2026-03-22T00:00:00Z" } });
+    mocks.useRating.mockReturnValue({
+      data: { rating: 4, rated_at: "2026-03-22T00:00:00Z" },
+    });
     mocks.useSetRating.mockReturnValue({ mutate: vi.fn() });
     mocks.useDeleteRating.mockReturnValue({ mutate: vi.fn() });
   });
@@ -208,7 +219,9 @@ describe("SeasonContent", () => {
     );
 
     expect(mocks.capturedActionBarProps.value).not.toHaveProperty("rating");
-    expect(mocks.capturedActionBarProps.value).not.toHaveProperty("onRatingChange");
+    expect(mocks.capturedActionBarProps.value).not.toHaveProperty(
+      "onRatingChange",
+    );
   });
 
   it("passes partial-progress restart eligibility to episode menus", () => {
@@ -257,7 +270,9 @@ describe("SeasonContent", () => {
 
     renderToStaticMarkup(
       <MemoryRouter initialEntries={["/item/season-1"]}>
-        <SeasonContent item={makeSeasonItem({ pending_translation_language: "fr" })} />
+        <SeasonContent
+          item={makeSeasonItem({ pending_translation_language: "fr" })}
+        />
       </MemoryRouter>,
     );
 

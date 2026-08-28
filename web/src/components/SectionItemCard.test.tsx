@@ -5,7 +5,9 @@ import { describe, expect, it, vi } from "vitest";
 import SectionItemCard from "./SectionItemCard";
 
 vi.mock("@/components/ViewTransitionLink", () => ({
-  default: ({ children, to }: { children: ReactNode; to: string }) => <a href={to}>{children}</a>,
+  default: ({ children, to }: { children: ReactNode; to: string }) => (
+    <a href={to}>{children}</a>
+  ),
 }));
 
 vi.mock("@/components/MediaItemMenu", () => ({
@@ -49,7 +51,9 @@ describe("SectionItemCard", () => {
       />,
     );
 
-    expect(markup).toContain('href="/item/ebook%201%2Fisbn%3A978?libraryId=12"');
+    expect(markup).toContain(
+      'href="/item/ebook%201%2Fisbn%3A978?libraryId=12"',
+    );
   });
 
   it("renders episode cards with series title, episode title, and episode code", () => {

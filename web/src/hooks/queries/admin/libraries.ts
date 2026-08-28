@@ -81,7 +81,9 @@ async function parseAdminJobError(res: Response): Promise<never> {
   );
 }
 
-async function createCatalogExportJob(body?: CatalogSeedExportRequest): Promise<AdminJob> {
+async function createCatalogExportJob(
+  body?: CatalogSeedExportRequest,
+): Promise<AdminJob> {
   const res = await fetch("/api/v1/admin/catalog/export-jobs", {
     method: "POST",
     headers: {
@@ -98,7 +100,9 @@ async function createCatalogExportJob(body?: CatalogSeedExportRequest): Promise<
   return (await res.json()) as AdminJob;
 }
 
-async function createCatalogImportJob(body: CatalogSeedImportRequest): Promise<AdminJob> {
+async function createCatalogImportJob(
+  body: CatalogSeedImportRequest,
+): Promise<AdminJob> {
   const form = new FormData();
   if (body.source === "local_path" && body.local_path) {
     form.append("local_path", body.local_path);
@@ -161,22 +165,25 @@ async function importCatalogSeed(
 }
 
 async function listCatalogImportSources(): Promise<CatalogSeedImportSource[]> {
-  return api<CatalogSeedImportSourcesResponse>("/admin/catalog/import-sources").then(
-    (data) => data.sources ?? [],
-  );
+  return api<CatalogSeedImportSourcesResponse>(
+    "/admin/catalog/import-sources",
+  ).then((data) => data.sources ?? []);
 }
 
 async function listLocalImportSources(): Promise<CatalogSeedImportSource[]> {
-  return api<CatalogSeedImportSourcesResponse>("/admin/catalog/local-import-sources").then(
-    (data) => data.sources ?? [],
-  );
+  return api<CatalogSeedImportSourcesResponse>(
+    "/admin/catalog/local-import-sources",
+  ).then((data) => data.sources ?? []);
 }
 
 async function publishCatalogExportJob(id: string): Promise<AdminJob> {
-  const res = await fetch(`/api/v1/admin/catalog/export-jobs/${encodeURIComponent(id)}/publish`, {
-    method: "POST",
-    headers: buildAdminHeaders(),
-  });
+  const res = await fetch(
+    `/api/v1/admin/catalog/export-jobs/${encodeURIComponent(id)}/publish`,
+    {
+      method: "POST",
+      headers: buildAdminHeaders(),
+    },
+  );
 
   if (!res.ok) {
     await parseAdminJobError(res);
@@ -206,7 +213,9 @@ export function useReorderLibraries() {
       void queryClient.invalidateQueries({ queryKey: libraryKeys.all });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to reorder libraries");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to reorder libraries",
+      );
     },
   });
 }
@@ -214,7 +223,10 @@ export function useReorderLibraries() {
 export function useSkippedLibraryRoots() {
   return useQuery({
     queryKey: adminKeys.librarySkippedRoots(),
-    queryFn: () => api<LibrarySkippedRoot[]>("/libraries/skipped-roots").then((d) => d ?? []),
+    queryFn: () =>
+      api<LibrarySkippedRoot[]>("/libraries/skipped-roots").then(
+        (d) => d ?? [],
+      ),
     staleTime: ADMIN_STALE_TIME,
   });
 }
@@ -226,9 +238,9 @@ export function useLibraryRoots(libraryId?: number, state?: string) {
       if (!libraryId) return Promise.resolve([] as LibraryRoot[]);
       const params = new URLSearchParams({ library_id: String(libraryId) });
       if (state) params.set("state", state);
-      return api<LibraryRootsResponse>(`/libraries/roots?${params.toString()}`).then(
-        (d) => d.items ?? [],
-      );
+      return api<LibraryRootsResponse>(
+        `/libraries/roots?${params.toString()}`,
+      ).then((d) => d.items ?? []);
     },
     enabled: !!libraryId,
     staleTime: ADMIN_STALE_TIME,
@@ -250,7 +262,9 @@ export function useUpsertLibraryRootOverride() {
       toast.success("Root override saved");
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to save root override");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save root override",
+      );
     },
   });
 }
@@ -270,7 +284,9 @@ export function useDeleteLibraryRootOverride() {
       toast.success("Root override removed");
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to remove root override");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to remove root override",
+      );
     },
   });
 }
@@ -278,7 +294,8 @@ export function useDeleteLibraryRootOverride() {
 export function useStaleMediaIDs() {
   return useQuery({
     queryKey: adminKeys.staleMediaIDs(),
-    queryFn: () => api<StaleMediaID[]>("/libraries/stale-ids").then((d) => d ?? []),
+    queryFn: () =>
+      api<StaleMediaID[]>("/libraries/stale-ids").then((d) => d ?? []),
     staleTime: ADMIN_STALE_TIME,
   });
 }
@@ -289,7 +306,9 @@ export function useRematchStaleMediaID() {
     mutationFn: (contentId: string) =>
       api(`/libraries/stale-ids/${contentId}/rematch`, { method: "POST" }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: adminKeys.staleMediaIDs() });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.staleMediaIDs(),
+      });
       toast.success("Re-match started");
     },
     onError: (err) => {
@@ -319,7 +338,13 @@ export function useCreateLibrary() {
 export function useUpdateLibrary() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, body }: { id: number; body: Partial<CreateLibraryRequest> }) =>
+    mutationFn: ({
+      id,
+      body,
+    }: {
+      id: number;
+      body: Partial<CreateLibraryRequest>;
+    }) =>
       api(`/libraries/${id}`, {
         method: "PUT",
         body: JSON.stringify(body),
@@ -337,11 +362,14 @@ export function useUpdateLibrary() {
 export function useDeleteLibrary() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => api<AdminJob>(`/libraries/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) =>
+      api<AdminJob>(`/libraries/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Library deletion started");
       void queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
-      void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("delete_library") });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.jobs("delete_library"),
+      });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to delete");
@@ -369,9 +397,15 @@ export function useCheckLibraryMount() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) =>
-      api<LibraryMountCheckResponse>(`/libraries/${id}/check-mount`, { method: "POST" }),
+      api<LibraryMountCheckResponse>(`/libraries/${id}/check-mount`, {
+        method: "POST",
+      }),
     onSuccess: (data) => {
-      toast.success(data.healthy ? "Mount check passed" : "Mount check found unreachable roots");
+      toast.success(
+        data.healthy
+          ? "Mount check passed"
+          : "Mount check found unreachable roots",
+      );
       void queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
     },
     onError: (err) => {
@@ -405,10 +439,14 @@ export function useCancelLibraryScans() {
       }),
     onSuccess: () => {
       toast.success("Scan cancellation requested");
-      void queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueStatuses() });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.libraryMatchQueueStatuses(),
+      });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to cancel scans");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to cancel scans",
+      );
     },
   });
 }
@@ -419,9 +457,9 @@ export function useLibraryMetadataMatchQueues() {
   return useQuery({
     queryKey: adminKeys.libraryMatchQueueStatuses(),
     queryFn: () =>
-      api<LibraryMetadataMatchQueueStatus[]>("/libraries/metadata-match-queue").then(
-        (data) => data ?? [],
-      ),
+      api<LibraryMetadataMatchQueueStatus[]>(
+        "/libraries/metadata-match-queue",
+      ).then((data) => data ?? []),
     staleTime: 0,
     refetchInterval: pageActivity.canApplyRealtimeUpdates ? 10_000 : false,
   });
@@ -429,7 +467,10 @@ export function useLibraryMetadataMatchQueues() {
 
 const METADATA_MATCH_QUEUE_PAGE_SIZE = 10;
 
-export function useLibraryMetadataMatchQueueDetail(libraryId: number | null, offset = 0) {
+export function useLibraryMetadataMatchQueueDetail(
+  libraryId: number | null,
+  offset = 0,
+) {
   const pageActivity = usePageActivity();
 
   return useQuery({
@@ -448,17 +489,26 @@ export function useRetryLibraryMetadataMatchQueue() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) =>
-      api<LibraryMetadataMatchQueueActionResponse>(`/libraries/${id}/metadata-match-queue/retry`, {
-        method: "POST",
-      }),
+      api<LibraryMetadataMatchQueueActionResponse>(
+        `/libraries/${id}/metadata-match-queue/retry`,
+        {
+          method: "POST",
+        },
+      ),
     onSuccess: (_data, id) => {
       toast.success("Metadata matcher backlog queued");
-      void queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueStatuses() });
-      void queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueDetail(id) });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.libraryMatchQueueStatuses(),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.libraryMatchQueueDetail(id),
+      });
     },
     onError: (err) => {
       toast.error(
-        err instanceof Error ? err.message : "Failed to rebuild metadata matcher backlog",
+        err instanceof Error
+          ? err.message
+          : "Failed to rebuild metadata matcher backlog",
       );
     },
   });
@@ -468,16 +518,27 @@ export function useCancelLibraryMetadataMatchQueue() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) =>
-      api<LibraryMetadataMatchQueueActionResponse>(`/libraries/${id}/metadata-match-queue/cancel`, {
-        method: "POST",
-      }),
+      api<LibraryMetadataMatchQueueActionResponse>(
+        `/libraries/${id}/metadata-match-queue/cancel`,
+        {
+          method: "POST",
+        },
+      ),
     onSuccess: (_data, id) => {
       toast.success("Metadata matcher backlog cancelled");
-      void queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueStatuses() });
-      void queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueDetail(id) });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.libraryMatchQueueStatuses(),
+      });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.libraryMatchQueueDetail(id),
+      });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to cancel metadata matcher backlog");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to cancel metadata matcher backlog",
+      );
     },
   });
 }
@@ -486,9 +547,9 @@ export function useLibraryProviders(libraryId: number | null) {
   return useQuery({
     queryKey: adminKeys.libraryProviders(libraryId ?? 0),
     queryFn: () =>
-      api<LibraryProviderChainResponse>(`/libraries/${libraryId}/providers`).then(
-        (d) => d ?? { levels: {} },
-      ),
+      api<LibraryProviderChainResponse>(
+        `/libraries/${libraryId}/providers`,
+      ).then((d) => d ?? { levels: {} }),
     enabled: libraryId !== null,
     staleTime: ADMIN_STALE_TIME,
   });
@@ -524,7 +585,9 @@ export function useSetLibraryProviders() {
       });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to update provider chain");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update provider chain",
+      );
     },
   });
 }
@@ -551,7 +614,9 @@ export function useUploadLibraryPoster() {
       void queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to upload poster");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to upload poster",
+      );
     },
   });
 }
@@ -559,13 +624,16 @@ export function useUploadLibraryPoster() {
 export function useDeleteLibraryPoster() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => api(`/libraries/${id}/poster`, { method: "DELETE" }),
+    mutationFn: (id: number) =>
+      api(`/libraries/${id}/poster`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Library poster removed");
       void queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to remove poster");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to remove poster",
+      );
     },
   });
 }
@@ -587,14 +655,20 @@ export function useRefreshLibraryMetadata() {
     },
     onSuccess: () => {
       toast.success("Metadata refresh queued");
-      void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("library_refresh") });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.jobs("library_refresh"),
+      });
       void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("__all") });
     },
     onError: (err) => {
       if (err instanceof AdminJobRequestError && err.activeJobId) {
         toast.error(err.message);
-        void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("library_refresh") });
-        void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("__all") });
+        void queryClient.invalidateQueries({
+          queryKey: adminKeys.jobs("library_refresh"),
+        });
+        void queryClient.invalidateQueries({
+          queryKey: adminKeys.jobs("__all"),
+        });
         return;
       }
       toast.error(err instanceof Error ? err.message : "Refresh failed");
@@ -606,10 +680,14 @@ export function useCancelAdminJob() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
-      api<AdminJob>(`/admin/jobs/${encodeURIComponent(id)}/cancel`, { method: "POST" }),
+      api<AdminJob>(`/admin/jobs/${encodeURIComponent(id)}/cancel`, {
+        method: "POST",
+      }),
     onSuccess: () => {
       toast.success("Cancellation requested");
-      void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("library_refresh") });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.jobs("library_refresh"),
+      });
       void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("__all") });
     },
     onError: (err) => {
@@ -648,7 +726,9 @@ export function useConfirmEmptyRootCleanup() {
       void queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to confirm cleanup");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to confirm cleanup",
+      );
     },
   });
 }
@@ -657,9 +737,9 @@ export function useCatalogExportJobs(jobType = "catalog_export") {
   return useQuery({
     queryKey: adminKeys.jobs(jobType),
     queryFn: () =>
-      api<AdminJobsResponse>(`/admin/jobs?job_type=${encodeURIComponent(jobType)}&limit=10`).then(
-        (data) => data.jobs ?? [],
-      ),
+      api<AdminJobsResponse>(
+        `/admin/jobs?job_type=${encodeURIComponent(jobType)}&limit=10`,
+      ).then((data) => data.jobs ?? []),
     staleTime: 0,
   });
 }
@@ -668,9 +748,9 @@ export function useCatalogImportJobs(jobType = "catalog_import") {
   return useQuery({
     queryKey: adminKeys.jobs(jobType),
     queryFn: () =>
-      api<AdminJobsResponse>(`/admin/jobs?job_type=${encodeURIComponent(jobType)}&limit=10`).then(
-        (data) => data.jobs ?? [],
-      ),
+      api<AdminJobsResponse>(
+        `/admin/jobs?job_type=${encodeURIComponent(jobType)}&limit=10`,
+      ).then((data) => data.jobs ?? []),
     staleTime: 0,
   });
 }
@@ -679,9 +759,9 @@ export function useLibraryDeleteJobs(jobType = "delete_library") {
   return useQuery({
     queryKey: adminKeys.jobs(jobType),
     queryFn: () =>
-      api<AdminJobsResponse>(`/admin/jobs?job_type=${encodeURIComponent(jobType)}&limit=20`).then(
-        (data) => data.jobs ?? [],
-      ),
+      api<AdminJobsResponse>(
+        `/admin/jobs?job_type=${encodeURIComponent(jobType)}&limit=20`,
+      ).then((data) => data.jobs ?? []),
     staleTime: 0,
   });
 }
@@ -690,9 +770,9 @@ export function useLibraryRefreshJobs(jobType = "library_refresh") {
   return useQuery({
     queryKey: adminKeys.jobs(jobType),
     queryFn: () =>
-      api<AdminJobsResponse>(`/admin/jobs?job_type=${encodeURIComponent(jobType)}&limit=50`).then(
-        (data) => data.jobs ?? [],
-      ),
+      api<AdminJobsResponse>(
+        `/admin/jobs?job_type=${encodeURIComponent(jobType)}&limit=50`,
+      ).then((data) => data.jobs ?? []),
     staleTime: 0,
   });
 }
@@ -701,7 +781,9 @@ export function useAllAdminJobs(limit = 30) {
   return useQuery({
     queryKey: adminKeys.jobs("__all"),
     queryFn: () =>
-      api<AdminJobsResponse>(`/admin/jobs?limit=${limit}`).then((data) => data.jobs ?? []),
+      api<AdminJobsResponse>(`/admin/jobs?limit=${limit}`).then(
+        (data) => data.jobs ?? [],
+      ),
     staleTime: 0,
   });
 }
@@ -727,18 +809,25 @@ export function useLocalImportSources() {
 export function useCreateCatalogExportJob() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (body?: CatalogSeedExportRequest) => createCatalogExportJob(body),
+    mutationFn: (body?: CatalogSeedExportRequest) =>
+      createCatalogExportJob(body),
     onSuccess: () => {
       toast.success("Catalog export queued");
-      void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("catalog_export") });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.jobs("catalog_export"),
+      });
     },
     onError: (err) => {
       if (err instanceof AdminJobRequestError && err.activeJobId) {
         toast.error(err.message);
-        void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("catalog_export") });
+        void queryClient.invalidateQueries({
+          queryKey: adminKeys.jobs("catalog_export"),
+        });
         return;
       }
-      toast.error(err instanceof Error ? err.message : "Failed to queue catalog export");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to queue catalog export",
+      );
     },
   });
 }
@@ -749,10 +838,14 @@ export function usePublishCatalogExportJob() {
     mutationFn: (id: string) => publishCatalogExportJob(id),
     onSuccess: () => {
       toast.success("Catalog export published");
-      void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("catalog_export") });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.jobs("catalog_export"),
+      });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to publish catalog export");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to publish catalog export",
+      );
     },
   });
 }
@@ -768,7 +861,8 @@ export function useImportCatalogSeed() {
         if (
           err instanceof AdminJobRequestError &&
           (err.status === 404 ||
-            (body.source !== "export_job" && err.message === "Job repository is not configured"))
+            (body.source !== "export_job" &&
+              err.message === "Job repository is not configured"))
         ) {
           const result = await importCatalogSeed(body);
           return { mode: "sync" as const, result };
@@ -779,7 +873,9 @@ export function useImportCatalogSeed() {
     onSuccess: (payload) => {
       if (payload.mode === "job") {
         toast.success("Catalog import queued");
-        void queryClient.invalidateQueries({ queryKey: adminKeys.jobs("catalog_import") });
+        void queryClient.invalidateQueries({
+          queryKey: adminKeys.jobs("catalog_import"),
+        });
         return;
       }
       toast.success(
@@ -794,7 +890,9 @@ export function useImportCatalogSeed() {
         );
         return;
       }
-      toast.error(err instanceof Error ? err.message : "Failed to import catalog seed");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to import catalog seed",
+      );
     },
   });
 }
@@ -813,5 +911,7 @@ export function useFilesystemBrowseWhen(path: string, enabled: boolean) {
 }
 
 export function fetchFilesystemBrowse(path: string) {
-  return api<FilesystemBrowseResponse>(`/admin/filesystem/browse?path=${encodeURIComponent(path)}`);
+  return api<FilesystemBrowseResponse>(
+    `/admin/filesystem/browse?path=${encodeURIComponent(path)}`,
+  );
 }

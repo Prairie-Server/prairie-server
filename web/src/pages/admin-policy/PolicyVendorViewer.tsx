@@ -11,7 +11,11 @@ import {
 import { usePolicyVendor } from "@/hooks/queries/admin/policy";
 
 import { policyDomainMeta } from "./policyPresentation";
-import { groupVendorModules, parseRankLadder, type LadderTier } from "./vendorBaseline";
+import {
+  groupVendorModules,
+  parseRankLadder,
+  type LadderTier,
+} from "./vendorBaseline";
 
 const DOMAIN_ORDER = ["scope", "permission", "action"] as const;
 
@@ -21,7 +25,10 @@ function ModuleSourceAccordion({ module }: { module: PolicyVendorModule }) {
       <AccordionItem value="source" className="border-0">
         <AccordionTrigger className="text-muted-foreground py-2 text-xs font-medium hover:no-underline [&>svg]:hidden">
           <span className="inline-flex items-center gap-1">
-            <ChevronRight aria-hidden className="size-3.5 transition-transform" />
+            <ChevronRight
+              aria-hidden
+              className="size-3.5 transition-transform"
+            />
             View Rego source
             <span className="font-mono font-normal">({module.path})</span>
           </span>
@@ -37,11 +44,22 @@ function ModuleSourceAccordion({ module }: { module: PolicyVendorModule }) {
 function Ladder({ tiers, caption }: { tiers: LadderTier[]; caption: string }) {
   return (
     <div className="space-y-2">
-      <div className="flex flex-wrap items-center gap-1.5" role="list" aria-label={caption}>
+      <div
+        className="flex flex-wrap items-center gap-1.5"
+        role="list"
+        aria-label={caption}
+      >
         {tiers.map((tier, index) => (
-          <div key={tier.rank} className="flex items-center gap-1.5" role="listitem">
+          <div
+            key={tier.rank}
+            className="flex items-center gap-1.5"
+            role="listitem"
+          >
             {index > 0 && (
-              <ChevronRight aria-hidden className="text-muted-foreground/50 size-3.5" />
+              <ChevronRight
+                aria-hidden
+                className="text-muted-foreground/50 size-3.5"
+              />
             )}
             <span className="bg-secondary text-foreground/85 rounded-md px-2 py-1 font-mono text-xs">
               {tier.labels.join(" · ")}
@@ -85,7 +103,11 @@ export function PolicyVendorViewer() {
   const { data: modules, isLoading, error } = usePolicyVendor();
 
   if (isLoading) {
-    return <p className="text-muted-foreground text-sm">Loading vendor policy modules...</p>;
+    return (
+      <p className="text-muted-foreground text-sm">
+        Loading vendor policy modules...
+      </p>
+    );
   }
 
   if (error) {
@@ -109,9 +131,9 @@ export function PolicyVendorViewer() {
   return (
     <div className="space-y-5">
       <p className="text-muted-foreground max-w-prose text-sm">
-        These rules ship with each Prairie release and always apply — upgrading Prairie updates them
-        without touching your overrides. Summaries below; the Rego source under each card is the
-        authoritative version.
+        These rules ship with each Prairie release and always apply — upgrading
+        Prairie updates them without touching your overrides. Summaries below;
+        the Rego source under each card is the authoritative version.
       </p>
 
       {DOMAIN_ORDER.map((domain) => {
@@ -119,13 +141,18 @@ export function PolicyVendorViewer() {
         if (!module) return null;
         const meta = policyDomainMeta(domain);
         return (
-          <section key={domain} className="surface-panel rounded-2xl border-0 p-5">
+          <section
+            key={domain}
+            className="surface-panel rounded-2xl border-0 p-5"
+          >
             <div className="flex items-start gap-3">
               <div className="bg-secondary text-secondary-foreground rounded-xl p-2.5">
                 <meta.icon aria-hidden className="size-5" />
               </div>
               <div className="min-w-0">
-                <h2 className="text-base font-semibold tracking-tight">{meta.title}</h2>
+                <h2 className="text-base font-semibold tracking-tight">
+                  {meta.title}
+                </h2>
                 <ul className="text-foreground/85 mt-3 space-y-2 text-sm">
                   {meta.baseline.map((rule) => (
                     <li key={rule} className="flex gap-2.5">
@@ -169,7 +196,10 @@ export function PolicyVendorViewer() {
       </div>
 
       {grouped.other.map((module) => (
-        <section key={module.path} className="surface-panel-subtle rounded-2xl p-5">
+        <section
+          key={module.path}
+          className="surface-panel-subtle rounded-2xl p-5"
+        >
           <h3 className="font-mono text-sm font-semibold">{module.path}</h3>
           <div className="mt-3">
             <RegoEditor value={module.source} readOnly height="320px" />

@@ -32,14 +32,20 @@ export function applyExclusivity(
   if (exclusive.length === 0) return withChange;
 
   return withChange.map((card) => {
-    if (card.key === changedKey || card.installationId !== changed.installationId) {
+    if (
+      card.key === changedKey ||
+      card.installationId !== changed.installationId
+    ) {
       return card;
     }
     let config = card.config;
     let mutated = false;
     for (const field of exclusive) {
       const group = field.exclusive_group_field as string;
-      if (isTruthy(card.config[field.key]) && card.config[group] === nextConfig[group]) {
+      if (
+        isTruthy(card.config[field.key]) &&
+        card.config[group] === nextConfig[group]
+      ) {
         if (!mutated) {
           config = { ...config };
           mutated = true;

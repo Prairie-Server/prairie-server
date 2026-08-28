@@ -5,6 +5,8 @@ export interface LibraryReorderEntry {
   position: number;
 }
 
-export function buildLibraryReorderEntries(libraries: Library[]): LibraryReorderEntry[] {
+export function buildLibraryReorderEntries(
+  libraries: Library[],
+): LibraryReorderEntry[] {
   return libraries.map((lib, index) => ({ id: lib.id, position: index }));
 }

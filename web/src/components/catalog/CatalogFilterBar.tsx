@@ -58,10 +58,15 @@ export default function CatalogFilterBar({
   sourceOrderLabel,
   allowEpisodeMediaScope = true,
 }: CatalogFilterBarProps) {
-  const sortOptions = getCollectionSortOptions(allowPersonalizedSorts, sortRelevanceScope);
+  const sortOptions = getCollectionSortOptions(
+    allowPersonalizedSorts,
+    sortRelevanceScope,
+  );
   const mediaScopeOptions = allowEpisodeMediaScope
     ? CATALOG_MEDIA_SCOPE_OPTIONS
-    : CATALOG_MEDIA_SCOPE_OPTIONS.filter((option) => option.value !== "episode");
+    : CATALOG_MEDIA_SCOPE_OPTIONS.filter(
+        (option) => option.value !== "episode",
+      );
   const usesSourceOrder = Boolean(
     sourceOrderLabel && state.sortField === CATALOG_SOURCE_ORDER_SORT_FIELD,
   );
@@ -69,7 +74,10 @@ export default function CatalogFilterBar({
     ? { field: CATALOG_SOURCE_ORDER_SORT_FIELD, order: state.sortOrder }
     : normalizeQuerySortForScope(
         { field: state.sortField, order: state.sortOrder },
-        { includePersonalized: allowPersonalizedSorts, relevanceScope: sortRelevanceScope },
+        {
+          includePersonalized: allowPersonalizedSorts,
+          relevanceScope: sortRelevanceScope,
+        },
       );
 
   return (
@@ -133,7 +141,9 @@ export default function CatalogFilterBar({
             sortOrder: getDefaultQuerySortOrder(v),
           };
           if (showMediaScopeSelector && sortOption && allowEpisodeMediaScope) {
-            const scopeTypes: Array<Exclude<QuerySortRelevanceScope, "all">> | null =
+            const scopeTypes: Array<
+              Exclude<QuerySortRelevanceScope, "all">
+            > | null =
               state.mediaScope === "all"
                 ? null
                 : state.mediaScope === "video"
@@ -145,12 +155,15 @@ export default function CatalogFilterBar({
                     : [state.mediaScope];
             const currentApplicable =
               !scopeTypes ||
-              scopeTypes.some((scope) => sortOption.applicableMediaScopes.includes(scope));
+              scopeTypes.some((scope) =>
+                sortOption.applicableMediaScopes.includes(scope),
+              );
             if (
               sortOption.preferredMediaScope &&
               state.mediaScope !== sortOption.preferredMediaScope
             ) {
-              patch.mediaScope = sortOption.preferredMediaScope as GuidedFormState["mediaScope"];
+              patch.mediaScope =
+                sortOption.preferredMediaScope as GuidedFormState["mediaScope"];
             } else if (!currentApplicable) {
               patch.mediaScope = sortOption
                 .applicableMediaScopes[0] as GuidedFormState["mediaScope"];
@@ -164,7 +177,9 @@ export default function CatalogFilterBar({
         </SelectTrigger>
         <SelectContent>
           {sourceOrderLabel ? (
-            <SelectItem value={CATALOG_SOURCE_ORDER_SORT_FIELD}>{sourceOrderLabel}</SelectItem>
+            <SelectItem value={CATALOG_SOURCE_ORDER_SORT_FIELD}>
+              {sourceOrderLabel}
+            </SelectItem>
           ) : null}
           {sortOptions.map((opt) => (
             <SelectItem key={opt.value} value={opt.value}>
@@ -191,7 +206,12 @@ export default function CatalogFilterBar({
       )}
 
       {/* Filters button */}
-      <Button variant="outline" size="sm" onClick={onOpenFilters} className="gap-2">
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={onOpenFilters}
+        className="gap-2"
+      >
         <SlidersHorizontal className="h-4 w-4" />
         Filters
         {activeFilterCount > 0 && (
@@ -206,7 +226,10 @@ export default function CatalogFilterBar({
           aria-label="Loading item count"
         />
       ) : resultCountLabel ? (
-        <span className="text-muted-foreground text-sm tabular-nums" aria-live="polite">
+        <span
+          className="text-muted-foreground text-sm tabular-nums"
+          aria-live="polite"
+        >
           {resultCountLabel}
         </span>
       ) : null}

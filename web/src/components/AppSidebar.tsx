@@ -21,7 +21,10 @@ import { useUnreadNotificationCount } from "@/hooks/queries/notifications";
 import { useNotificationCapability } from "@/hooks/queries/notificationWebhooks";
 import { usePluginSettingsList } from "@/hooks/queries/pluginSettings";
 import { useRequestFeatureStatus } from "@/hooks/queries/useRequests";
-import { useSidebarPins, useToggleSidebarPin } from "@/hooks/queries/sidebarPins";
+import {
+  useSidebarPins,
+  useToggleSidebarPin,
+} from "@/hooks/queries/sidebarPins";
 import { useViewTransitionNavigate } from "@/hooks/useViewTransition";
 import { pluginRouteHref } from "@/lib/pluginRouteHref";
 import {
@@ -100,9 +103,17 @@ function getLibraryIdFromPathname(pathname: string): number | null {
  * layout box in both states and only fade — the moving frame hides them. Animating
  * `max-width` here used to reflow the whole nav subtree on every frame.
  */
-function SidebarLabel({ children, show }: { children: ReactNode; show: boolean }) {
+function SidebarLabel({
+  children,
+  show,
+}: {
+  children: ReactNode;
+  show: boolean;
+}) {
   return (
-    <span className={`sidebar-fade max-w-[180px] truncate ${show ? "opacity-100" : "opacity-0"}`}>
+    <span
+      className={`sidebar-fade max-w-[180px] truncate ${show ? "opacity-100" : "opacity-0"}`}
+    >
       {children}
     </span>
   );
@@ -121,7 +132,8 @@ function SidebarSectionHeader({
   expanded?: boolean;
   onToggle?: () => void;
 }) {
-  const textClass = "text-muted-foreground text-[10px] font-semibold tracking-[0.22em] uppercase";
+  const textClass =
+    "text-muted-foreground text-[10px] font-semibold tracking-[0.22em] uppercase";
 
   // Centred on the 64px rail, not on the 260px surface. `-left-3` cancels the
   // nav's own `px-3`, so this box starts at the sidebar's left edge and spans
@@ -147,13 +159,21 @@ function SidebarSectionHeader({
           disabled={!show}
           aria-hidden={!show}
           aria-expanded={expanded}
-          aria-label={expanded ? `Collapse ${String(children)}` : `Expand ${String(children)}`}
+          aria-label={
+            expanded
+              ? `Collapse ${String(children)}`
+              : `Expand ${String(children)}`
+          }
           tabIndex={show ? 0 : -1}
           className={`${textClass} sidebar-fade hover:text-sidebar-foreground flex h-5 w-full items-center gap-1 px-3 ${
             show ? "opacity-100" : "pointer-events-none opacity-0"
           }`}
         >
-          {expanded ? <ChevronDown className="h-3 w-3" /> : <ChevronRight className="h-3 w-3" />}
+          {expanded ? (
+            <ChevronDown className="h-3 w-3" />
+          ) : (
+            <ChevronRight className="h-3 w-3" />
+          )}
           <span>{children}</span>
         </button>
       </div>
@@ -187,7 +207,10 @@ interface ResolvedPrimaryMenuLink {
   icon: ReactNode;
 }
 
-export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebarProps) {
+export default function AppSidebar({
+  onNavigate,
+  collapsed = false,
+}: AppSidebarProps) {
   const location = useLocation();
   const navigate = useViewTransitionNavigate();
   const params = useParams<{ libraryId: string }>();
@@ -231,14 +254,19 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
   }, [pluginSettings]);
   // Grouped view of the Apps entries (null → keep the flat list under the
   // single "Apps" header). See groupAppNavLinks for the SDK category contract.
-  const pluginNavGroups = useMemo(() => groupAppNavLinks(pluginNavLinks), [pluginNavLinks]);
+  const pluginNavGroups = useMemo(
+    () => groupAppNavLinks(pluginNavLinks),
+    [pluginNavLinks],
+  );
   const primaryMenuLinks = useMemo<ResolvedPrimaryMenuLink[] | null>(() => {
     if (!primaryMenu) return null;
 
     return primaryMenu.items.flatMap((item): ResolvedPrimaryMenuLink[] => {
       const key = menuItemKey(item);
       if (item.type === "library") {
-        const library = libraries?.find((candidate) => candidate.id === item.library_id);
+        const library = libraries?.find(
+          (candidate) => candidate.id === item.library_id,
+        );
         if (!library) return [];
         return [
           {
@@ -250,7 +278,8 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
         ];
       }
       if (item.type === "section") {
-        if (!libraries?.some((candidate) => candidate.id === item.library_id)) return [];
+        if (!libraries?.some((candidate) => candidate.id === item.library_id))
+          return [];
         return [
           {
             key,
@@ -367,7 +396,11 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
     };
   }, []);
 
-  const sidebarExpanded = isSidebarExpanded(collapsed, hovered, profileMenuOpen);
+  const sidebarExpanded = isSidebarExpanded(
+    collapsed,
+    hovered,
+    profileMenuOpen,
+  );
   const showLabels = sidebarExpanded;
   const railCollapsed = isSidebarRailCollapsed(collapsed, sidebarExpanded);
   const [librariesExpanded, setLibrariesExpanded] = useState(true);
@@ -394,10 +427,14 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
 
   function isActive(href: string, exact?: boolean) {
     if (exact) return location.pathname === href;
-    return location.pathname === href || location.pathname.startsWith(`${href}/`);
+    return (
+      location.pathname === href || location.pathname.startsWith(`${href}/`)
+    );
   }
 
-  function isCatalogSourceActive(source: "query" | "favorites" | "watchlist" | "history") {
+  function isCatalogSourceActive(
+    source: "query" | "favorites" | "watchlist" | "history",
+  ) {
     return location.pathname === "/catalog" && catalogState?.source === source;
   }
 
@@ -511,15 +548,20 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                 const active =
                   targetPath === "/"
                     ? isActive("/", true)
-                    : targetPath === "/catalog" && targetQuery !== undefined && catalogState
+                    : targetPath === "/catalog" &&
+                        targetQuery !== undefined &&
+                        catalogState
                       ? sameCatalogDestination(
                           catalogState,
-                          parseCatalogSearchParams(new URLSearchParams(targetQuery)),
+                          parseCatalogSearchParams(
+                            new URLSearchParams(targetQuery),
+                          ),
                         )
                       : targetQuery === undefined
                         ? location.pathname === targetPath ||
                           location.pathname.startsWith(`${targetPath}/`)
-                        : location.pathname === targetPath && location.search === `?${targetQuery}`;
+                        : location.pathname === targetPath &&
+                          location.search === `?${targetQuery}`;
                 return (
                   <li key={link.key}>
                     <ViewTransitionLink
@@ -535,7 +577,9 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                         />
                       ) : null}
                       {link.icon}
-                      <SidebarLabel show={showLabels}>{link.label}</SidebarLabel>
+                      <SidebarLabel show={showLabels}>
+                        {link.label}
+                      </SidebarLabel>
                     </ViewTransitionLink>
                   </li>
                 );
@@ -585,7 +629,8 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                         : baseHref;
                     const libraryPins = pins[String(lib.id)] ?? [];
                     const hasPins = libraryPins.length > 0;
-                    const isExpanded = hasPins && !expandedLibraries.has(lib.id);
+                    const isExpanded =
+                      hasPins && !expandedLibraries.has(lib.id);
 
                     return (
                       <li key={lib.id}>
@@ -610,7 +655,9 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                           <div
                             className="sidebar-row-shift flex flex-1 items-center"
                             style={
-                              { "--sidebar-row-shift": libraryRowShift(hasPins) } as CSSProperties
+                              {
+                                "--sidebar-row-shift": libraryRowShift(hasPins),
+                              } as CSSProperties
                             }
                           >
                             {hasPins ? (
@@ -621,10 +668,14 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                                 aria-hidden={!showLabels}
                                 tabIndex={showLabels ? 0 : -1}
                                 className={`sidebar-fade flex h-full items-center py-3 pr-1 pl-3 ${
-                                  showLabels ? "opacity-100" : "pointer-events-none opacity-0"
+                                  showLabels
+                                    ? "opacity-100"
+                                    : "pointer-events-none opacity-0"
                                 }`}
                                 aria-label={
-                                  isExpanded ? `Collapse ${lib.name}` : `Expand ${lib.name}`
+                                  isExpanded
+                                    ? `Collapse ${lib.name}`
+                                    : `Expand ${lib.name}`
                                 }
                                 aria-expanded={isExpanded}
                               >
@@ -646,7 +697,9 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                               <span className="flex w-[18px] flex-shrink-0 items-center justify-center">
                                 {getLibraryIcon(lib.type)}
                               </span>
-                              <SidebarLabel show={showLabels}>{lib.name}</SidebarLabel>
+                              <SidebarLabel show={showLabels}>
+                                {lib.name}
+                              </SidebarLabel>
                             </ViewTransitionLink>
                           </div>
                         </div>
@@ -657,14 +710,21 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                             {libraryPins.map((pin) => {
                               const pinHref =
                                 pin.type === "collection"
-                                  ? buildLibraryCollectionCatalogHref(pin.id, pin.label, lib.id)
+                                  ? buildLibraryCollectionCatalogHref(
+                                      pin.id,
+                                      pin.label,
+                                      lib.id,
+                                    )
                                   : buildSectionCatalogHref({
                                       scope: "library",
                                       libraryId: lib.id,
                                       sectionId: pin.id,
                                       title: pin.label,
                                     });
-                              const pinActive = isPinnedCatalogActive(lib.id, pin);
+                              const pinActive = isPinnedCatalogActive(
+                                lib.id,
+                                pin,
+                              );
 
                               return (
                                 <div
@@ -685,7 +745,9 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                                     ) : (
                                       <LayoutGrid className="h-3.5 w-3.5 opacity-60" />
                                     )}
-                                    <span className="truncate">{pin.label}</span>
+                                    <span className="truncate">
+                                      {pin.label}
+                                    </span>
                                   </ViewTransitionLink>
                                   {canToggle ? (
                                     <button
@@ -718,14 +780,20 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
 
           {/* Discover */}
           <div>
-            <SidebarSectionHeader show={showLabels}>Discover</SidebarSectionHeader>
+            <SidebarSectionHeader show={showLabels}>
+              Discover
+            </SidebarSectionHeader>
             <ul className="list-none space-y-0.5">
               <li>
                 <ViewTransitionLink
                   to={buildQueryCatalogHref()}
                   onClick={onNavigate}
-                  className={navLinkClassForState(isCatalogSourceActive("query"))}
-                  aria-current={isCatalogSourceActive("query") ? "page" : undefined}
+                  className={navLinkClassForState(
+                    isCatalogSourceActive("query"),
+                  )}
+                  aria-current={
+                    isCatalogSourceActive("query") ? "page" : undefined
+                  }
                 >
                   {isCatalogSourceActive("query") && (
                     <span
@@ -751,7 +819,9 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                     to="/recommendations"
                     onClick={onNavigate}
                     className={navLinkClass("/recommendations")}
-                    aria-current={isActive("/recommendations") ? "page" : undefined}
+                    aria-current={
+                      isActive("/recommendations") ? "page" : undefined
+                    }
                   >
                     {isActive("/recommendations") && (
                       <span
@@ -760,7 +830,9 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                       />
                     )}
                     <Sparkles className="h-[18px] w-[18px] shrink-0" />
-                    <SidebarLabel show={showLabels}>Recommendations</SidebarLabel>
+                    <SidebarLabel show={showLabels}>
+                      Recommendations
+                    </SidebarLabel>
                   </ViewTransitionLink>
                 </li>
               ) : null}
@@ -808,7 +880,9 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                     to="/notifications"
                     onClick={onNavigate}
                     className={navLinkClass("/notifications")}
-                    aria-current={isActive("/notifications") ? "page" : undefined}
+                    aria-current={
+                      isActive("/notifications") ? "page" : undefined
+                    }
                   >
                     {isActive("/notifications") && (
                       <span
@@ -834,9 +908,14 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                         className={`sidebar-fade ml-auto rounded-full px-1.5 py-0.5 text-[10px] leading-none font-semibold ${
                           showLabels ? "opacity-100" : "opacity-0"
                         }`}
-                        style={{ background: "var(--primary)", color: "var(--primary-foreground)" }}
+                        style={{
+                          background: "var(--primary)",
+                          color: "var(--primary-foreground)",
+                        }}
                       >
-                        {(unreadNotifications ?? 0) > 99 ? "99+" : unreadNotifications}
+                        {(unreadNotifications ?? 0) > 99
+                          ? "99+"
+                          : unreadNotifications}
                       </span>
                     )}
                   </ViewTransitionLink>
@@ -847,14 +926,20 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
 
           {/* Your Stuff */}
           <div className="sidebar-personal">
-            <SidebarSectionHeader show={showLabels}>Your Stuff</SidebarSectionHeader>
+            <SidebarSectionHeader show={showLabels}>
+              Your Stuff
+            </SidebarSectionHeader>
             <ul className="list-none space-y-0.5">
               <li>
                 <ViewTransitionLink
                   to={buildPersonalCatalogHref("favorites")}
                   onClick={onNavigate}
-                  className={navLinkClassForState(isCatalogSourceActive("favorites"))}
-                  aria-current={isCatalogSourceActive("favorites") ? "page" : undefined}
+                  className={navLinkClassForState(
+                    isCatalogSourceActive("favorites"),
+                  )}
+                  aria-current={
+                    isCatalogSourceActive("favorites") ? "page" : undefined
+                  }
                 >
                   {isCatalogSourceActive("favorites") && (
                     <span
@@ -870,8 +955,12 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                 <ViewTransitionLink
                   to={buildPersonalCatalogHref("watchlist")}
                   onClick={onNavigate}
-                  className={navLinkClassForState(isCatalogSourceActive("watchlist"))}
-                  aria-current={isCatalogSourceActive("watchlist") ? "page" : undefined}
+                  className={navLinkClassForState(
+                    isCatalogSourceActive("watchlist"),
+                  )}
+                  aria-current={
+                    isCatalogSourceActive("watchlist") ? "page" : undefined
+                  }
                 >
                   {isCatalogSourceActive("watchlist") && (
                     <span
@@ -921,8 +1010,12 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                 <ViewTransitionLink
                   to={buildPersonalCatalogHref("history")}
                   onClick={onNavigate}
-                  className={navLinkClassForState(isCatalogSourceActive("history"))}
-                  aria-current={isCatalogSourceActive("history") ? "page" : undefined}
+                  className={navLinkClassForState(
+                    isCatalogSourceActive("history"),
+                  )}
+                  aria-current={
+                    isCatalogSourceActive("history") ? "page" : undefined
+                  }
                 >
                   {isCatalogSourceActive("history") && (
                     <span
@@ -942,7 +1035,9 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
             distinct categories exist; flat list otherwise. */}
           {pluginNavLinks.length > 0 && (
             <div className="sidebar-apps">
-              <SidebarSectionHeader show={showLabels}>Apps</SidebarSectionHeader>
+              <SidebarSectionHeader show={showLabels}>
+                Apps
+              </SidebarSectionHeader>
               {pluginNavGroups ? (
                 <div className="space-y-3">
                   {pluginNavGroups.map((group) => (
@@ -1002,7 +1097,10 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                 <span className="flex w-[18px] shrink-0 items-center justify-center">
                   <Avatar className="h-7 w-7 shrink-0">
                     {profile?.avatar_url ? (
-                      <AvatarImage src={profile.avatar_url} alt={profile.name} />
+                      <AvatarImage
+                        src={profile.avatar_url}
+                        alt={profile.name}
+                      />
                     ) : null}
                     <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold shadow-[0_14px_32px_-20px_rgba(0,0,0,0.8)]">
                       {profile?.name?.charAt(0).toUpperCase() ??
@@ -1031,18 +1129,22 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
                     <AvatarImage src={profile.avatar_url} alt={profile.name} />
                   ) : null}
                   <AvatarFallback className="bg-primary text-primary-foreground text-sm font-bold">
-                    {(profile?.name ?? user?.username ?? "?").charAt(0).toUpperCase()}
+                    {(profile?.name ?? user?.username ?? "?")
+                      .charAt(0)
+                      .toUpperCase()}
                   </AvatarFallback>
                 </Avatar>
                 <div className="flex min-w-0 flex-col">
                   <span className="truncate text-[14px] font-semibold">
                     {profile?.name ?? user?.username ?? "User"}
                   </span>
-                  {profile && user?.username && user.username !== profile.name && (
-                    <span className="text-muted-foreground truncate text-[11px] font-normal">
-                      {user.username}
-                    </span>
-                  )}
+                  {profile &&
+                    user?.username &&
+                    user.username !== profile.name && (
+                      <span className="text-muted-foreground truncate text-[11px] font-normal">
+                        {user.username}
+                      </span>
+                    )}
                 </div>
               </DropdownMenuLabel>
 

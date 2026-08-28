@@ -111,10 +111,15 @@ describe("SeasonEpisodeGrid", () => {
     const watchedIndicator = screen.getByLabelText("Watched");
 
     expect(episodeLabel.parentElement).toContainElement(watchedIndicator);
-    expect(watchedIndicator).toHaveAttribute("data-watched-indicator", "icon-only");
+    expect(watchedIndicator).toHaveAttribute(
+      "data-watched-indicator",
+      "icon-only",
+    );
     expect(watchedIndicator.querySelector(".lucide-circle-check")).toBeTruthy();
     expect(watchedIndicator.closest(".media-card-image")).toBeNull();
-    expect(screen.getByText("Episode 2").parentElement).not.toContainElement(watchedIndicator);
+    expect(screen.getByText("Episode 2").parentElement).not.toContainElement(
+      watchedIndicator,
+    );
     expect(screen.getAllByLabelText("Watched")).toHaveLength(1);
   });
 });

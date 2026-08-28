@@ -40,13 +40,19 @@ const descriptor: AutoscanScanSourceDescriptor = {
  * what looped in production.
  */
 function Harness() {
-  const [form, setForm] = useState<{ values: Record<string, unknown>; valid: boolean }>({
+  const [form, setForm] = useState<{
+    values: Record<string, unknown>;
+    valid: boolean;
+  }>({
     values: {},
     valid: true,
   });
   const rebuilt = {
     ...descriptor,
-    config_form: { ...descriptor.config_form!, fields: descriptor.config_form!.fields },
+    config_form: {
+      ...descriptor.config_form!,
+      fields: descriptor.config_form!.fields,
+    },
   };
   return (
     <div>
@@ -55,7 +61,9 @@ function Harness() {
         descriptor={rebuilt}
         values={form.values}
         onChange={(values) => setForm((f) => ({ ...f, values }))}
-        onValidityChange={(valid) => setForm((f) => (f.valid === valid ? f : { ...f, valid }))}
+        onValidityChange={(valid) =>
+          setForm((f) => (f.valid === valid ? f : { ...f, valid }))
+        }
       />
     </div>
   );

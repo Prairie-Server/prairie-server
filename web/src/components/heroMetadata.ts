@@ -32,7 +32,9 @@ export interface HeroMetadataEntry {
   label: string;
 }
 
-function isNonNegativeInteger(value: number | undefined | null): value is number {
+function isNonNegativeInteger(
+  value: number | undefined | null,
+): value is number {
   return value != null && Number.isInteger(value) && value >= 0;
 }
 
@@ -42,14 +44,18 @@ export function formatHeroMetadata(item: SectionItem): HeroMetadataEntry[] {
   const contentRating = item.content_rating?.trim().toUpperCase();
 
   if (item.type === "episode") {
-    if (isNonNegativeInteger(item.season_number) && isNonNegativeInteger(item.episode_number)) {
+    if (
+      isNonNegativeInteger(item.season_number) &&
+      isNonNegativeInteger(item.episode_number)
+    ) {
       entries.push({
         key: "episode-identity",
         label: `S${item.season_number} · E${item.episode_number}`,
       });
     }
     if (runtime) entries.push({ key: "runtime", label: runtime });
-    if (contentRating) entries.push({ key: "content-rating", label: contentRating });
+    if (contentRating)
+      entries.push({ key: "content-rating", label: contentRating });
     return entries;
   }
 
@@ -66,11 +72,16 @@ export function formatHeroMetadata(item: SectionItem): HeroMetadataEntry[] {
     entries.push({ key: "imdb", label: `IMDb ${item.rating_imdb.toFixed(1)}` });
   }
 
-  const genres = [...new Set((item.genres ?? []).map((genre) => genre.trim()).filter(Boolean))];
+  const genres = [
+    ...new Set(
+      (item.genres ?? []).map((genre) => genre.trim()).filter(Boolean),
+    ),
+  ];
   genres.slice(0, 2).forEach((genre, index) => {
     entries.push({ key: `genre-${index}`, label: genre });
   });
 
-  if (contentRating) entries.push({ key: "content-rating", label: contentRating });
+  if (contentRating)
+    entries.push({ key: "content-rating", label: contentRating });
   return entries;
 }

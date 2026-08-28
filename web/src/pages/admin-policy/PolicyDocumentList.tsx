@@ -14,7 +14,11 @@ import {
 
 import { PolicyEditorPanel } from "./PolicyEditorPanel";
 import { formatPolicyDate, messageFromError } from "./policyPageUtils";
-import { PolicyStatusPill, policyDocumentStatus, policyDomainMeta } from "./policyPresentation";
+import {
+  PolicyStatusPill,
+  policyDocumentStatus,
+  policyDomainMeta,
+} from "./policyPresentation";
 
 interface PolicyDocumentListProps {
   domains: readonly string[];
@@ -32,7 +36,9 @@ export function PolicyDocumentList({ domains }: PolicyDocumentListProps) {
   const selectedDocumentId = parseDocumentID(searchParams.get("document"));
 
   const selectedExists = useMemo(
-    () => documents.data?.some((document) => document.id === selectedDocumentId) ?? false,
+    () =>
+      documents.data?.some((document) => document.id === selectedDocumentId) ??
+      false,
     [documents.data, selectedDocumentId],
   );
 
@@ -67,14 +73,18 @@ export function PolicyDocumentList({ domains }: PolicyDocumentListProps) {
   return (
     <div className="space-y-5">
       {documents.isLoading && (
-        <p className="text-muted-foreground text-sm">Loading policy documents...</p>
+        <p className="text-muted-foreground text-sm">
+          Loading policy documents...
+        </p>
       )}
       {!documents.isLoading &&
         domains.map((domain) => (
           <PolicyDomainCard
             key={domain}
             domain={domain}
-            documents={(documents.data ?? []).filter((document) => document.domain === domain)}
+            documents={(documents.data ?? []).filter(
+              (document) => document.domain === domain,
+            )}
             onSelect={selectDocument}
           />
         ))}
@@ -88,7 +98,11 @@ interface PolicyDomainCardProps {
   onSelect: (id: number) => void;
 }
 
-function PolicyDomainCard({ domain, documents, onSelect }: PolicyDomainCardProps) {
+function PolicyDomainCard({
+  domain,
+  documents,
+  onSelect,
+}: PolicyDomainCardProps) {
   const meta = policyDomainMeta(domain);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
@@ -104,7 +118,10 @@ function PolicyDomainCard({ domain, documents, onSelect }: PolicyDomainCardProps
       return;
     }
     try {
-      const document = await createDocument.mutateAsync({ domain, name: trimmedName });
+      const document = await createDocument.mutateAsync({
+        domain,
+        name: trimmedName,
+      });
       setName("");
       setCreating(false);
       onSelect(document.id);
@@ -130,12 +147,21 @@ function PolicyDomainCard({ domain, documents, onSelect }: PolicyDomainCardProps
             <meta.icon aria-hidden className="size-5" />
           </div>
           <div className="min-w-0 space-y-1">
-            <h2 className="text-base font-semibold tracking-tight">{meta.title}</h2>
-            <p className="text-muted-foreground max-w-prose text-sm">{meta.governs}</p>
+            <h2 className="text-base font-semibold tracking-tight">
+              {meta.title}
+            </h2>
+            <p className="text-muted-foreground max-w-prose text-sm">
+              {meta.governs}
+            </p>
           </div>
         </div>
         {!creating && (
-          <Button type="button" variant="outline" size="sm" onClick={() => setCreating(true)}>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => setCreating(true)}
+          >
             <Plus className="size-4" />
             New override
           </Button>
@@ -151,13 +177,20 @@ function PolicyDomainCard({ domain, documents, onSelect }: PolicyDomainCardProps
               if (event.key === "Enter") void create();
             }}
             placeholder={
-              meta.example ? `e.g. ${meta.example.replace(/[“”]/g, "")}` : "Override name"
+              meta.example
+                ? `e.g. ${meta.example.replace(/[“”]/g, "")}`
+                : "Override name"
             }
             aria-label={`New ${meta.title} override name`}
             className="max-w-sm"
             autoFocus
           />
-          <Button type="button" size="sm" onClick={create} disabled={createDocument.isPending}>
+          <Button
+            type="button"
+            size="sm"
+            onClick={create}
+            disabled={createDocument.isPending}
+          >
             <Plus />
             Create
           </Button>
@@ -189,10 +222,13 @@ function PolicyDomainCard({ domain, documents, onSelect }: PolicyDomainCardProps
                 className="hover:bg-secondary/40 focus-visible:ring-ring/60 -mx-2 flex cursor-pointer flex-wrap items-center gap-3 rounded-lg px-2 py-3 outline-none focus-visible:ring-2"
                 onClick={() => onSelect(document.id)}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ") onSelect(document.id);
+                  if (event.key === "Enter" || event.key === " ")
+                    onSelect(document.id);
                 }}
               >
-                <span className="min-w-0 flex-1 truncate text-sm font-medium">{document.name}</span>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                  {document.name}
+                </span>
                 <PolicyStatusPill status={policyDocumentStatus(document)} />
                 <span className="text-muted-foreground hidden text-xs sm:block">
                   Updated {formatPolicyDate(document.updated_at)}

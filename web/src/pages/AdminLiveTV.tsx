@@ -26,14 +26,25 @@ import {
   useSyncLiveTVGuideSource,
   useUpdateLiveTVGuideSource,
 } from "@/hooks/queries/useLiveTV";
-import type { SchedulesDirectLineupOption, XMLSyncLineupOption } from "@/api/types";
+import type {
+  SchedulesDirectLineupOption,
+  XMLSyncLineupOption,
+} from "@/api/types";
 import { LiveTVTranscodingTab } from "@/pages/livetv/LiveTVTranscodingTab";
 
-const LIVETV_TABS = ["tuners", "channels", "guide", "recordings", "transcoding"] as const;
+const LIVETV_TABS = [
+  "tuners",
+  "channels",
+  "guide",
+  "recordings",
+  "transcoding",
+] as const;
 type LiveTVTab = (typeof LIVETV_TABS)[number];
 
 function normalizeTab(value: string | null): LiveTVTab {
-  return LIVETV_TABS.includes(value as LiveTVTab) ? (value as LiveTVTab) : "tuners";
+  return LIVETV_TABS.includes(value as LiveTVTab)
+    ? (value as LiveTVTab)
+    : "tuners";
 }
 
 function kindLabel(kind: string): string {
@@ -104,14 +115,19 @@ function TunersTab() {
     <div className="space-y-6">
       <div className="max-w-2xl space-y-4">
         <p className="text-muted-foreground text-sm">
-          Auto-discover SiliconDust HDHomeRun tuners on the LAN (UDP) and probe a Dispatcharr URL
-          for its HDHomeRun emulation (`/hdhr/discover.json`). Prairie scans the lineup after you
-          add a candidate. Docker bridge networking usually blocks UDP discovery — on Linux enable{" "}
-          <code className="text-xs">docker-compose.livetv.yml</code> (host networking; see{" "}
-          <code className="text-xs">docs/livetv-tuner-discovery.md</code>) or use probe URL.
+          Auto-discover SiliconDust HDHomeRun tuners on the LAN (UDP) and probe
+          a Dispatcharr URL for its HDHomeRun emulation (`/hdhr/discover.json`).
+          Prairie scans the lineup after you add a candidate. Docker bridge
+          networking usually blocks UDP discovery — on Linux enable{" "}
+          <code className="text-xs">docker-compose.livetv.yml</code> (host
+          networking; see{" "}
+          <code className="text-xs">docs/livetv-tuner-discovery.md</code>) or
+          use probe URL.
         </p>
         <div className="space-y-1.5">
-          <Label htmlFor="probe-url">Dispatcharr / HDHR base URL (optional probe)</Label>
+          <Label htmlFor="probe-url">
+            Dispatcharr / HDHR base URL (optional probe)
+          </Label>
           <Input
             id="probe-url"
             placeholder="http://dispatcharr.local:9191 or http://192.168.1.50"
@@ -171,7 +187,9 @@ function TunersTab() {
                 <Button
                   size="sm"
                   disabled={
-                    c.already_added || addTuner.isPending || !(c.base_url || c.discover_url)
+                    c.already_added ||
+                    addTuner.isPending ||
+                    !(c.base_url || c.discover_url)
                   }
                   onClick={() => addCandidate(c)}
                 >
@@ -188,7 +206,8 @@ function TunersTab() {
         <p className="text-muted-foreground text-sm">
           Or add manually with a tuner base URL or host. Prairie probes{" "}
           <code className="text-xs">discover.json</code> (including Dispatcharr{" "}
-          <code className="text-xs">/hdhr/</code>) and stores the device identity from the response.
+          <code className="text-xs">/hdhr/</code>) and stores the device
+          identity from the response.
         </p>
         <div className="space-y-1.5">
           <Label htmlFor="tuner-url">Tuner URL</Label>
@@ -199,7 +218,10 @@ function TunersTab() {
             onChange={(e) => setTunerURL(e.target.value)}
           />
         </div>
-        <Button onClick={submit} disabled={addTuner.isPending || !tunerURL.trim()}>
+        <Button
+          onClick={submit}
+          disabled={addTuner.isPending || !tunerURL.trim()}
+        >
           <Plus />
           {addTuner.isPending ? "Adding…" : "Add tuner"}
         </Button>
@@ -208,20 +230,31 @@ function TunersTab() {
       {tuners.isLoading ? (
         <p className="text-muted-foreground text-sm">Loading tuners…</p>
       ) : (tuners.data?.length ?? 0) === 0 ? (
-        <p className="text-muted-foreground text-sm">No tuners configured yet.</p>
+        <p className="text-muted-foreground text-sm">
+          No tuners configured yet.
+        </p>
       ) : (
         <ul className="divide-border divide-y border-y">
           {tuners.data?.map((tuner) => (
-            <li key={tuner.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
+            <li
+              key={tuner.id}
+              className="flex flex-wrap items-center justify-between gap-3 py-4"
+            >
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">{tuner.model || tuner.device_id}</span>
+                  <span className="font-medium">
+                    {tuner.model || tuner.device_id}
+                  </span>
                   <Badge variant="secondary">{tuner.status}</Badge>
-                  <Badge variant="outline">{tuner.channel_count} channels</Badge>
+                  <Badge variant="outline">
+                    {tuner.channel_count} channels
+                  </Badge>
                 </div>
                 <p className="text-muted-foreground truncate text-xs">
                   {tuner.base_url || tuner.device_id}
-                  {tuner.base_url && tuner.device_id ? ` · ${tuner.device_id}` : ""}
+                  {tuner.base_url && tuner.device_id
+                    ? ` · ${tuner.device_id}`
+                    : ""}
                 </p>
                 {tuner.last_error ? (
                   <p className="text-destructive text-xs">{tuner.last_error}</p>
@@ -259,31 +292,44 @@ function ChannelsTab() {
   const channels = useLiveTVChannels();
   const patchChannel = usePatchLiveTVChannel();
   const [editingStation, setEditingStation] = useState<string | null>(null);
-  const [stationDrafts, setStationDrafts] = useState<Record<string, string>>({});
+  const [stationDrafts, setStationDrafts] = useState<Record<string, string>>(
+    {},
+  );
 
   const sorted = useMemo(
     () =>
       [...(channels.data ?? [])].sort((a, b) =>
-        (a.number_override || a.number).localeCompare(b.number_override || b.number, undefined, {
-          numeric: true,
-        }),
+        (a.number_override || a.number).localeCompare(
+          b.number_override || b.number,
+          undefined,
+          {
+            numeric: true,
+          },
+        ),
       ),
     [channels.data],
   );
 
-  const mappedCount = sorted.filter((ch) => Boolean(ch.guide_station_id)).length;
+  const mappedCount = sorted.filter((ch) =>
+    Boolean(ch.guide_station_id),
+  ).length;
 
   return (
     <div className="space-y-4">
       <p className="text-muted-foreground text-sm">
-        Enable channels for Live TV. After you sync a Schedules Direct or XML sync source, station
-        IDs are matched automatically from HDHomeRun numbers and callsigns (for example{" "}
-        <span className="font-mono">2.1 · KDTN-DT</span>). Use override only if a match is wrong.
+        Enable channels for Live TV. After you sync a Schedules Direct or XML
+        sync source, station IDs are matched automatically from HDHomeRun
+        numbers and callsigns (for example{" "}
+        <span className="font-mono">2.1 · KDTN-DT</span>). Use override only if
+        a match is wrong.
       </p>
       {sorted.length > 0 ? (
         <p className="text-muted-foreground text-xs">
           {mappedCount}/{sorted.length} channels mapped
-          {mappedCount < sorted.length ? " — sync a guide source to fill the rest" : ""}.
+          {mappedCount < sorted.length
+            ? " — sync a guide source to fill the rest"
+            : ""}
+          .
         </p>
       ) : null}
       {channels.isLoading ? (
@@ -297,9 +343,13 @@ function ChannelsTab() {
           {sorted.map((channel) => {
             const mapped = Boolean(channel.guide_station_id);
             const editing = editingStation === channel.id;
-            const stationValue = stationDrafts[channel.id] ?? channel.guide_station_id ?? "";
+            const stationValue =
+              stationDrafts[channel.id] ?? channel.guide_station_id ?? "";
             return (
-              <li key={channel.id} className="grid gap-3 py-4 sm:grid-cols-[1fr_auto]">
+              <li
+                key={channel.id}
+                className="grid gap-3 py-4 sm:grid-cols-[1fr_auto]"
+              >
                 <div className="space-y-2">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="font-medium">
@@ -308,7 +358,9 @@ function ChannelsTab() {
                     </span>
                     {channel.hd ? <Badge variant="secondary">HD</Badge> : null}
                     {mapped ? (
-                      <Badge variant="outline">guide {channel.guide_station_id}</Badge>
+                      <Badge variant="outline">
+                        guide {channel.guide_station_id}
+                      </Badge>
                     ) : (
                       <Badge variant="secondary">unmapped</Badge>
                     )}
@@ -316,7 +368,10 @@ function ChannelsTab() {
                   {editing ? (
                     <div className="flex flex-wrap items-end gap-2">
                       <div className="space-y-1">
-                        <Label htmlFor={`station-${channel.id}`} className="text-xs">
+                        <Label
+                          htmlFor={`station-${channel.id}`}
+                          className="text-xs"
+                        >
                           Guide station ID
                         </Label>
                         <Input
@@ -332,7 +387,9 @@ function ChannelsTab() {
                             }))
                           }
                           onBlur={() => {
-                            if (stationValue === (channel.guide_station_id || "")) {
+                            if (
+                              stationValue === (channel.guide_station_id || "")
+                            ) {
                               setEditingStation(null);
                               return;
                             }
@@ -442,7 +499,9 @@ function GuideTab() {
         onSuccess: (found) => {
           setSDLineups(found);
           const preferred =
-            found.find((item) => /antenna|ota/i.test(`${item.transport} ${item.name}`)) ?? found[0];
+            found.find((item) =>
+              /antenna|ota/i.test(`${item.transport} ${item.name}`),
+            ) ?? found[0];
           setSDLineup(preferred?.lineup ?? "");
         },
       },
@@ -460,7 +519,9 @@ function GuideTab() {
           setXMLLineups(found);
           const preferred =
             found.find((item) =>
-              /ota|antenna|over the air/i.test(`${item.transport} ${item.name}`),
+              /ota|antenna|over the air/i.test(
+                `${item.transport} ${item.name}`,
+              ),
             ) ?? found[0];
           setXMLLineup(preferred?.lineup ?? "");
           setXMLHeadend(preferred?.headend ?? "");
@@ -517,15 +578,18 @@ function GuideTab() {
     );
   }
 
-  const canAddSD = Boolean(username.trim() && password && sdLineup.trim()) && enabledCount < 3;
-  const canAddXML = Boolean(xmlPostalCode.trim() && xmlLineup.trim()) && enabledCount < 3;
+  const canAddSD =
+    Boolean(username.trim() && password && sdLineup.trim()) && enabledCount < 3;
+  const canAddXML =
+    Boolean(xmlPostalCode.trim() && xmlLineup.trim()) && enabledCount < 3;
 
   return (
     <div className="space-y-8">
       <p className="text-muted-foreground max-w-2xl text-sm">
-        Up to three enabled guide sources, priority-ordered like marker providers. Use{" "}
-        <span className="text-foreground font-medium">XML sync</span> for a native Zap2XML-style
-        Gracenote pull (postal/ZIP only), or{" "}
+        Up to three enabled guide sources, priority-ordered like marker
+        providers. Use{" "}
+        <span className="text-foreground font-medium">XML sync</span> for a
+        native Zap2XML-style Gracenote pull (postal/ZIP only), or{" "}
         <a
           href="https://www.schedulesdirect.org/"
           target="_blank"
@@ -540,9 +604,10 @@ function GuideTab() {
       <div className="max-w-xl space-y-4">
         <h3 className="text-sm font-medium">XML sync (Gracenote)</h3>
         <p className="text-muted-foreground text-sm">
-          Built-in listings sync based on the Zap2XML Gracenote grid flow. No separate grabber or
-          hosted XMLTV file — enter a postal code (for example{" "}
-          <span className="font-mono">12345</span>), pick a lineup, then sync. Artwork uses{" "}
+          Built-in listings sync based on the Zap2XML Gracenote grid flow. No
+          separate grabber or hosted XMLTV file — enter a postal code (for
+          example <span className="font-mono">12345</span>), pick a lineup, then
+          sync. Artwork uses{" "}
           <span className="font-mono text-xs">emby.tmsimg.com/assets</span>.
         </p>
         <div className="space-y-1.5">
@@ -602,7 +667,10 @@ function GuideTab() {
               }}
             >
               {xmlLineups.map((item) => (
-                <option key={`${item.lineup}:${item.headend}`} value={item.lineup}>
+                <option
+                  key={`${item.lineup}:${item.headend}`}
+                  value={item.lineup}
+                >
                   {item.transport} · {item.name}
                   {item.location ? ` (${item.location})` : ""} · {item.lineup}
                 </option>
@@ -631,7 +699,10 @@ function GuideTab() {
             </div>
           </div>
         )}
-        <Button onClick={addXMLSync} disabled={createSource.isPending || !canAddXML}>
+        <Button
+          onClick={addXMLSync}
+          disabled={createSource.isPending || !canAddXML}
+        >
           <Plus />
           {createSource.isPending ? "Adding…" : "Add XML sync source"}
         </Button>
@@ -702,7 +773,10 @@ function GuideTab() {
             variant="outline"
             onClick={findSDLineups}
             disabled={
-              lookupSDLineups.isPending || !username.trim() || !password || !sdPostalCode.trim()
+              lookupSDLineups.isPending ||
+              !username.trim() ||
+              !password ||
+              !sdPostalCode.trim()
             }
           >
             <Radar />
@@ -745,27 +819,38 @@ function GuideTab() {
       {sources.isLoading ? (
         <p className="text-muted-foreground text-sm">Loading guide sources…</p>
       ) : (sources.data?.length ?? 0) === 0 ? (
-        <p className="text-muted-foreground text-sm">No guide sources configured.</p>
+        <p className="text-muted-foreground text-sm">
+          No guide sources configured.
+        </p>
       ) : (
         <ul className="divide-border divide-y border-y">
           {sources.data?.map((source) => (
-            <li key={source.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
+            <li
+              key={source.id}
+              className="flex flex-wrap items-center justify-between gap-3 py-4"
+            >
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="font-medium">{source.display_name || source.type}</span>
+                  <span className="font-medium">
+                    {source.display_name || source.type}
+                  </span>
                   <Badge variant="secondary">{source.type}</Badge>
                   <Badge variant="outline">priority {source.priority}</Badge>
                   <Badge variant="outline">{source.status}</Badge>
                 </div>
                 <p className="text-muted-foreground truncate text-xs">
                   {source.config?.lineup || "No lineup"}
-                  {source.config?.postalcode ? ` · ${source.config.postalcode}` : ""}
+                  {source.config?.postalcode
+                    ? ` · ${source.config.postalcode}`
+                    : ""}
                   {source.last_sync_at
                     ? ` · last sync ${new Date(source.last_sync_at).toLocaleString()}`
                     : ""}
                 </p>
                 {source.last_error ? (
-                  <p className="text-destructive text-xs">{source.last_error}</p>
+                  <p className="text-destructive text-xs">
+                    {source.last_error}
+                  </p>
                 ) : null}
               </div>
               <div className="flex flex-wrap items-center gap-2">
@@ -829,14 +914,18 @@ function RecordingsTab() {
   return (
     <ul className="divide-border divide-y border-y">
       {recordings.data?.map((rec) => (
-        <li key={rec.id} className="flex flex-wrap items-center justify-between gap-3 py-4">
+        <li
+          key={rec.id}
+          className="flex flex-wrap items-center justify-between gap-3 py-4"
+        >
           <div className="min-w-0 space-y-1">
             <div className="flex flex-wrap items-center gap-2">
               <span className="font-medium">{rec.title || "Untitled"}</span>
               <Badge variant="secondary">{rec.status}</Badge>
             </div>
             <p className="text-muted-foreground text-xs">
-              {new Date(rec.start).toLocaleString()} – {new Date(rec.stop).toLocaleString()}
+              {new Date(rec.start).toLocaleString()} –{" "}
+              {new Date(rec.stop).toLocaleString()}
               {rec.last_error ? ` · ${rec.last_error}` : ""}
             </p>
           </div>
@@ -881,20 +970,26 @@ export default function AdminLiveTV() {
           <div className="flex items-center gap-2.5">
             <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Live TV</h1>
             <Badge variant="secondary">{tuners.data?.length ?? 0} tuners</Badge>
-            <Badge variant="outline">{channels.data?.length ?? 0} channels</Badge>
+            <Badge variant="outline">
+              {channels.data?.length ?? 0} channels
+            </Badge>
             <Badge variant="outline">
               {sources.data?.filter((s) => s.enabled).length ?? 0}/3 guides
             </Badge>
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-            Configure HDHomeRun OTA tuners, sync Schedules Direct for the EPG, and channels map to
-            guide stations automatically from number and callsign.
+            Configure HDHomeRun OTA tuners, sync Schedules Direct for the EPG,
+            and channels map to guide stations automatically from number and
+            callsign.
           </p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-5">
-        <TabsList variant="line" className="border-border w-full justify-start border-b">
+        <TabsList
+          variant="line"
+          className="border-border w-full justify-start border-b"
+        >
           <TabsTrigger value="tuners">Tuners</TabsTrigger>
           <TabsTrigger value="channels">Channels</TabsTrigger>
           <TabsTrigger value="guide">Guide sources</TabsTrigger>

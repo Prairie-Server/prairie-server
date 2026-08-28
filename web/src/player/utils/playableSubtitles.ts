@@ -19,7 +19,9 @@ export function resolvePlayableSubtitles(
   sessionTracks: PlayerSubtitleInfo[],
   fallbackTracks: PlayerSubtitleInfo[],
 ): PlayerSubtitleInfo[] {
-  const selectableSessionTracks = sessionTracks.filter(isSelectableSessionTrack);
+  const selectableSessionTracks = sessionTracks.filter(
+    isSelectableSessionTrack,
+  );
   if (selectableSessionTracks.length > 0) {
     return selectableSessionTracks;
   }
@@ -44,7 +46,10 @@ export function pendingServerSubtitleSelection(
   // A selected track in an already burn-in plan is authoritative even when
   // the inventory also exposes a sidecar artifact. Re-requesting that same
   // ordinal cannot improve the route; it only reloads the identical stream.
-  if (planSelectedIndex === activeIndex && (planBurnsIn || !activeRequiresBurnIn)) {
+  if (
+    planSelectedIndex === activeIndex &&
+    (planBurnsIn || !activeRequiresBurnIn)
+  ) {
     return undefined;
   }
   return activeIndex;
