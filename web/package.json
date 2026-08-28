@@ -47,7 +47,7 @@
     "motion": "^12.38.0",
     "mpegts.js": "^1.8.0",
     "node-unrar-js": "^2.0.2",
-    "pdfjs-dist": "^5.7.284",
+    "pdfjs-dist": "^6.2.108",
     "radix-ui": "^1.4.3",
     "react": "^19.2.7",
     "react-day-picker": "^10.0.1",
