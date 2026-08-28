@@ -173,7 +173,27 @@ func GenerateSquareVariants(data []byte, sizes []int) (*VariantResult, error) {
 		variants = append(variants, Variant{Key: fmt.Sprintf("w%d", square), Data: out})
 	}
 
-	return &VariantResult{Variants: variants, Ext: ".webp"}, nil
+	return encodeAVIFForVariants(context.Background(), &VariantResult{Variants: variants, Ext: ".webp"})
+}
+
+func encodeAVIFForVariants(ctx context.Context, result *VariantResult) (*VariantResult, error) {
+	if result == nil {
+		return nil, fmt.Errorf("imageutil: nil variant result")
+	}
+	enc := currentAVIFEncoder()
+	out := &VariantResult{Ext: result.Ext, Variants: make([]Variant, len(result.Variants))}
+	for i, v := range result.Variants {
+		out.Variants[i] = v
+		if len(v.Data) == 0 {
+			continue
+		}
+		avif, err := enc.Encode(ctx, v.Data, widthFromKey(v.Key))
+		if err != nil {
+			return nil, fmt.Errorf("imageutil: AVIF encode %s (%s): %w", v.Key, enc.Name(), err)
+		}
+		out.Variants[i].AVIF = avif
+	}
+	return out, nil
 }
 
 // Thumbhash computes a base64-encoded thumbhash from raw image bytes.
