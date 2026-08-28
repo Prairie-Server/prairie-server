@@ -2,53 +2,54 @@ import { useEffect, useId, useRef } from "react";
 import { Search, X } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
+import { searchShortcutLabel } from "@/lib/keyboardShortcut";
 import { cn } from "@/lib/utils";
 
 interface SettingsSearchInputProps {
   value: string;
   onChange: (value: string) => void;
   resultCount: number;
-  totalCount: number;
   placeholder?: string;
-  itemLabel?: string;
   emptyLabel?: string;
   className?: string;
   shortcutMediaQuery?: string;
   showShortcutHint?: boolean;
+  /**
+   * Focus the input on ⌘K / Ctrl-K. Turn off where another surface owns that
+   * shortcut (the admin area's command palette).
+   */
+  captureShortcut?: boolean;
 }
 
 export function SettingsSearchInput({
   value,
   onChange,
   resultCount,
-  totalCount,
   placeholder = "Search settings",
-  itemLabel = "settings sections",
   emptyLabel = "No matching settings",
   className,
   shortcutMediaQuery,
   showShortcutHint = false,
+  captureShortcut = true,
 }: SettingsSearchInputProps) {
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const hasQuery = value.trim().length > 0;
-  const shortcutHint =
-    typeof navigator !== "undefined" &&
-    /Mac|iPhone|iPad|iPod/.test(navigator.userAgent)
-      ? "⌘ K"
-      : "Ctrl K";
+  const shortcutHint = searchShortcutLabel();
+  // Idle shows nothing: a "12 settings pages" style count under an untouched
+  // box is noise. The line only speaks while a query is filtering.
   const status = hasQuery
     ? resultCount === 0
       ? emptyLabel
       : `${resultCount} ${resultCount === 1 ? "match" : "matches"}`
-    : `${totalCount} ${itemLabel}`;
+    : null;
 
   useEffect(() => {
+    if (!captureShortcut) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || !(event.metaKey || event.ctrlKey)) return;
       if (event.key.toLowerCase() !== "k") return;
-      if (shortcutMediaQuery && !window.matchMedia(shortcutMediaQuery).matches)
-        return;
+      if (shortcutMediaQuery && !window.matchMedia(shortcutMediaQuery).matches) return;
 
       event.preventDefault();
       event.stopPropagation();
@@ -63,7 +64,7 @@ export function SettingsSearchInput({
       window.removeEventListener("keydown", onKeyDown, { capture: true });
       document.removeEventListener("keydown", onKeyDown, { capture: true });
     };
-  }, [shortcutMediaQuery]);
+  }, [captureShortcut, shortcutMediaQuery]);
 
   return (
     <div className={cn("w-full", className)}>
@@ -82,10 +83,7 @@ export function SettingsSearchInput({
           value={value}
           placeholder={placeholder}
           onChange={(event) => onChange(event.target.value)}
-          className={cn(
-            "h-11 rounded-xl pr-10 pl-9",
-            showShortcutHint && !hasQuery && "sm:pr-16",
-          )}
+          className={cn("h-11 rounded-xl pr-10 pl-9", showShortcutHint && !hasQuery && "sm:pr-16")}
           autoComplete="off"
         />
         {hasQuery ? (
@@ -106,7 +104,9 @@ export function SettingsSearchInput({
           </kbd>
         ) : null}
       </div>
-      <p className="text-muted-foreground mt-2 text-xs" aria-live="polite">
+      {/* Always mounted so the live region reliably announces count changes;
+          visually collapses to nothing while idle. */}
+      <p className={cn("text-muted-foreground text-xs", status && "mt-2")} aria-live="polite">
         {status}
       </p>
     </div>

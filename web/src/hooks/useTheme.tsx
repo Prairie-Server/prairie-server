@@ -1,10 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-  useCallback,
-} from "react";
+import { createContext, useContext, useEffect, useRef, useState, useCallback } from "react";
 import type { ReactNode } from "react";
 import type { ThemeId } from "@/lib/themes";
 import { useEffectiveSettings } from "@/hooks/queries/settingValues";
@@ -45,6 +39,32 @@ interface ThemeContextValue {
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
 /**
+ * Hover intent for theme previews. A preview restyles the entire app, so a
+ * cursor merely crossing a row of swatches on its way somewhere else used to
+ * flash the whole UI — most visibly on the light theme. Arming the preview
+ * behind a short delay keeps a deliberate hover instant enough to feel live
+ * while a pass-through never flips anything.
+ */
+export const THEME_PREVIEW_INTENT_MS = 250;
+
+/**
+ * Whether an element was focused by keyboard rather than by the pointer.
+ *
+ * Radix moves DOM focus to the menu item under the cursor, so previewing on
+ * every focus would re-trigger exactly the flash the hover delay suppresses.
+ * Engines that do not know `:focus-visible` (jsdom included) simply never
+ * preview on focus, which is the safe direction to fail.
+ */
+export function isKeyboardFocus(element: Element | null | undefined): boolean {
+  if (!element) return false;
+  try {
+    return element.matches(":focus-visible");
+  } catch {
+    return false;
+  }
+}
+
+/**
  * The four appearance keys this provider needs, fetched in one batched
  * effective read rather than a query per key.
  */
@@ -80,10 +100,7 @@ function applyTextWeightToDOM(weight: TextWeight): void {
 }
 
 function applyHighContrastToDOM(value: boolean): void {
-  document.documentElement.setAttribute(
-    "data-high-contrast",
-    value ? "true" : "false",
-  );
+  document.documentElement.setAttribute("data-high-contrast", value ? "true" : "false");
 }
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
@@ -96,26 +113,15 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const [themePreference, setThemePreference] = useState<ThemeId>(() =>
     getInitialTheme(cacheOwner),
   );
-  const [previewThemeState, setPreviewThemeState] = useState<ThemeId | null>(
-    null,
+  const [previewThemeState, setPreviewThemeState] = useState<ThemeId | null>(null);
+  const [textScalePreference, setTextScalePreference] = useState<TextScale>(() =>
+    parseTextScale(appearanceCache.get(storage.KEYS.UI_TEXT_SCALE, cacheOwner)),
   );
-  const [textScalePreference, setTextScalePreference] = useState<TextScale>(
-    () =>
-      parseTextScale(
-        appearanceCache.get(storage.KEYS.UI_TEXT_SCALE, cacheOwner),
-      ),
+  const [textWeightPreference, setTextWeightPreference] = useState<TextWeight>(() =>
+    parseTextWeight(appearanceCache.get(storage.KEYS.UI_TEXT_WEIGHT, cacheOwner)),
   );
-  const [textWeightPreference, setTextWeightPreference] = useState<TextWeight>(
-    () =>
-      parseTextWeight(
-        appearanceCache.get(storage.KEYS.UI_TEXT_WEIGHT, cacheOwner),
-      ),
-  );
-  const [highContrastPreference, setHighContrastPreference] = useState<boolean>(
-    () =>
-      parseHighContrast(
-        appearanceCache.get(storage.KEYS.UI_HIGH_CONTRAST, cacheOwner),
-      ),
+  const [highContrastPreference, setHighContrastPreference] = useState<boolean>(() =>
+    parseHighContrast(appearanceCache.get(storage.KEYS.UI_HIGH_CONTRAST, cacheOwner)),
   );
 
   // This state was seeded for whoever was signed in when the provider mounted.
@@ -133,19 +139,13 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     setSeededOwner(cacheOwner);
     setThemePreference(getInitialTheme(cacheOwner));
     setTextScalePreference(
-      parseTextScale(
-        appearanceCache.get(storage.KEYS.UI_TEXT_SCALE, cacheOwner),
-      ),
+      parseTextScale(appearanceCache.get(storage.KEYS.UI_TEXT_SCALE, cacheOwner)),
     );
     setTextWeightPreference(
-      parseTextWeight(
-        appearanceCache.get(storage.KEYS.UI_TEXT_WEIGHT, cacheOwner),
-      ),
+      parseTextWeight(appearanceCache.get(storage.KEYS.UI_TEXT_WEIGHT, cacheOwner)),
     );
     setHighContrastPreference(
-      parseHighContrast(
-        appearanceCache.get(storage.KEYS.UI_HIGH_CONTRAST, cacheOwner),
-      ),
+      parseHighContrast(appearanceCache.get(storage.KEYS.UI_HIGH_CONTRAST, cacheOwner)),
     );
   }
 
@@ -163,23 +163,17 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   });
   const storedValue = (key: (typeof APPEARANCE_KEYS)[number]): unknown => {
     const setting = effectiveSettings?.[key];
-    return setting !== undefined && setting.source !== "default"
-      ? setting.value
-      : undefined;
+    return setting !== undefined && setting.source !== "default" ? setting.value : undefined;
   };
   const rawApiTheme = storedValue(SETTING_KEYS.UI_THEME);
   const apiTheme = typeof rawApiTheme === "string" ? rawApiTheme : undefined;
   const rawApiTextScale = storedValue(SETTING_KEYS.UI_TEXT_SCALE);
-  const apiTextScale =
-    typeof rawApiTextScale === "string" ? rawApiTextScale : undefined;
+  const apiTextScale = typeof rawApiTextScale === "string" ? rawApiTextScale : undefined;
   const rawApiTextWeight = storedValue(SETTING_KEYS.UI_TEXT_WEIGHT);
-  const apiTextWeight =
-    typeof rawApiTextWeight === "string" ? rawApiTextWeight : undefined;
+  const apiTextWeight = typeof rawApiTextWeight === "string" ? rawApiTextWeight : undefined;
   const rawApiHighContrast = storedValue(SETTING_KEYS.UI_HIGH_CONTRAST);
-  const apiHighContrast =
-    typeof rawApiHighContrast === "boolean" ? rawApiHighContrast : undefined;
-  const { save: saveProfileDefault } =
-    useProfileDefaultWriter(effectiveSettings);
+  const apiHighContrast = typeof rawApiHighContrast === "boolean" ? rawApiHighContrast : undefined;
+  const { save: saveProfileDefault } = useProfileDefaultWriter(effectiveSettings);
 
   // Admin-set server default theme applies only when the user has expressed no
   // preference of their own (no stored local choice and no profile ui.theme).
@@ -190,29 +184,21 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
   const localTextScale = textScalePreference;
   const localTextWeight = textWeightPreference;
   const localHighContrast = highContrastPreference;
-  const hasStoredThemeChoice =
-    appearanceCache.get(storage.KEYS.THEME, cacheOwner) != null;
+  const hasStoredThemeChoice = appearanceCache.get(storage.KEYS.THEME, cacheOwner) != null;
   const fallbackTheme: ThemeId =
-    !hasStoredThemeChoice && isValidTheme(adminDefaultTheme)
-      ? adminDefaultTheme
-      : localTheme;
+    !hasStoredThemeChoice && isValidTheme(adminDefaultTheme) ? adminDefaultTheme : localTheme;
 
   // The server's value is this profile's own stored choice, so it wins outright
   // whenever it is present and valid. It is deliberately not compared against
   // the local cache: the effect below mirrors the server's value into that very
   // cache, so any such comparison stops holding after the first render and the
   // theme silently reverts to the default on the second.
-  const theme =
-    loadApiTheme && isValidTheme(apiTheme) ? apiTheme : fallbackTheme;
-  const textScale = loadApiTheme
-    ? parseTextScale(apiTextScale ?? localTextScale)
-    : localTextScale;
+  const theme = loadApiTheme && isValidTheme(apiTheme) ? apiTheme : fallbackTheme;
+  const textScale = loadApiTheme ? parseTextScale(apiTextScale ?? localTextScale) : localTextScale;
   const textWeight = loadApiTheme
     ? parseTextWeight(apiTextWeight ?? localTextWeight)
     : localTextWeight;
-  const highContrast = loadApiTheme
-    ? (apiHighContrast ?? localHighContrast)
-    : localHighContrast;
+  const highContrast = loadApiTheme ? (apiHighContrast ?? localHighContrast) : localHighContrast;
 
   // Mirror the server's values into this identity's namespace so the next cold
   // start paints them before the settings request resolves. Without this the
@@ -254,16 +240,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         storage.KEYS.THEME,
         isValidTheme(apiTheme) ? apiTheme : undefined,
       ),
-      textScale: mirror(
-        SETTING_KEYS.UI_TEXT_SCALE,
-        storage.KEYS.UI_TEXT_SCALE,
-        apiTextScale,
-      ),
-      textWeight: mirror(
-        SETTING_KEYS.UI_TEXT_WEIGHT,
-        storage.KEYS.UI_TEXT_WEIGHT,
-        apiTextWeight,
-      ),
+      textScale: mirror(SETTING_KEYS.UI_TEXT_SCALE, storage.KEYS.UI_TEXT_SCALE, apiTextScale),
+      textWeight: mirror(SETTING_KEYS.UI_TEXT_WEIGHT, storage.KEYS.UI_TEXT_WEIGHT, apiTextWeight),
       highContrast: mirror(
         SETTING_KEYS.UI_HIGH_CONTRAST,
         storage.KEYS.UI_HIGH_CONTRAST,
@@ -278,8 +256,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     // out when the value is already that, so this cannot loop.
     if (cleared.textScale) setTextScalePreference(parseTextScale(undefined));
     if (cleared.textWeight) setTextWeightPreference(parseTextWeight(undefined));
-    if (cleared.highContrast)
-      setHighContrastPreference(parseHighContrast(undefined));
+    if (cleared.highContrast) setHighContrastPreference(parseHighContrast(undefined));
     if (cleared.theme) setThemePreference(getInitialTheme(cacheOwner));
   }, [
     loadApiTheme,
@@ -312,24 +289,51 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyHighContrastToDOM(highContrast);
   }, [highContrast]);
 
+  // Pending hover-intent timer for previewTheme. A ref rather than state: an
+  // armed preview is not something the tree renders, and re-rendering every
+  // swatch on hover is exactly the cost this is trying to avoid.
+  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelPendingPreview = useCallback(() => {
+    if (previewTimerRef.current !== null) {
+      clearTimeout(previewTimerRef.current);
+      previewTimerRef.current = null;
+    }
+  }, []);
+
+  // A timer that outlives the provider would restyle a document nobody is
+  // looking at any more.
+  useEffect(() => cancelPendingPreview, [cancelPendingPreview]);
+
   const setTheme = useCallback(
     (newTheme: ThemeId) => {
+      cancelPendingPreview();
       setPreviewThemeState(null);
       setThemePreference(newTheme);
       applyThemeToDOM(newTheme);
       appearanceCache.set(storage.KEYS.THEME, newTheme, cacheOwner);
       void saveProfileDefault(SETTING_KEYS.UI_THEME, newTheme);
     },
-    [saveProfileDefault, cacheOwner],
+    [saveProfileDefault, cacheOwner, cancelPendingPreview],
   );
 
-  const previewTheme = useCallback((newTheme: ThemeId) => {
-    setPreviewThemeState(newTheme);
-  }, []);
+  // Arm the preview instead of applying it, so leaving within the intent window
+  // — the pass-through case — never repaints the app at all.
+  const previewTheme = useCallback(
+    (newTheme: ThemeId) => {
+      cancelPendingPreview();
+      previewTimerRef.current = setTimeout(() => {
+        previewTimerRef.current = null;
+        setPreviewThemeState(newTheme);
+      }, THEME_PREVIEW_INTENT_MS);
+    },
+    [cancelPendingPreview],
+  );
 
   const resetPreviewTheme = useCallback(() => {
+    cancelPendingPreview();
     setPreviewThemeState(null);
-  }, []);
+  }, [cancelPendingPreview]);
 
   const setTextScale = useCallback(
     (value: TextScale) => {
@@ -355,11 +359,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     (value: boolean) => {
       setHighContrastPreference(value);
       applyHighContrastToDOM(value);
-      appearanceCache.set(
-        storage.KEYS.UI_HIGH_CONTRAST,
-        String(value),
-        cacheOwner,
-      );
+      appearanceCache.set(storage.KEYS.UI_HIGH_CONTRAST, String(value), cacheOwner);
       void saveProfileDefault(SETTING_KEYS.UI_HIGH_CONTRAST, value);
     },
     [saveProfileDefault, cacheOwner],

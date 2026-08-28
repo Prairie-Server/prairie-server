@@ -1,17 +1,14 @@
 import { useState, useId, useMemo } from "react";
 import type { FormEvent, ReactNode } from "react";
-import { Link } from "react-router";
-import type {
-  AdminUser,
-  CreateUserRequest,
-  UpdateUserRequest,
-} from "@/api/types";
+import { Link, useSearchParams } from "react-router";
+import type { AdminUser, CreateUserRequest, UpdateUserRequest } from "@/api/types";
 import {
   useAdminUsers,
   useCreateUser,
   useUpdateUser,
   useDeleteUser,
 } from "@/hooks/queries/admin/users";
+import { useAdminServerSettings } from "@/hooks/queries/admin/settings";
 import { useAdminLibraries } from "@/hooks/queries/admin/libraries";
 import { useAccessGroups } from "@/hooks/queries/admin/accessGroups";
 import {
@@ -52,18 +49,15 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
+  ArrowRight,
   ChevronDown,
-  ChevronLeft,
-  ChevronRight,
   ChevronUp,
   History,
-  Loader2,
-  Pencil,
   Plus,
-  Save,
-  Search,
-  Settings2,
+  Pencil,
   Trash2,
+  Settings2,
+  Search,
   X,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -79,17 +73,27 @@ import {
 import { formatDateTime as formatDateTimePreferred } from "@/lib/datetime";
 
 const PAGE_SIZE_OPTIONS = ["25", "50", "100"] as const;
-type UserSortField =
-  "username" | "email" | "role" | "enabled" | "created_at" | "last_active_at";
+type UserSortField = "username" | "email" | "role" | "enabled" | "created_at" | "last_active_at";
 type SortDirection = "asc" | "desc";
+
+// Tab ids are a URL contract: other pages deep-link here (General settings
+// points at ?tab=invite-codes), so reuse the trigger values verbatim.
+const ADMIN_USERS_TABS = ["users", "invitations", "invite-codes"] as const;
+type AdminUsersTab = (typeof ADMIN_USERS_TABS)[number];
+
+function normalizeAdminUsersTab(value: string | null): AdminUsersTab {
+  return ADMIN_USERS_TABS.includes(value as AdminUsersTab) ? (value as AdminUsersTab) : "users";
+}
 
 export default function AdminUsers() {
   const { data: users = [], isLoading } = useAdminUsers();
+  const { data: serverSettings } = useAdminServerSettings();
+  const signupsEnabled = serverSettings?.["signup.enabled"] === "true";
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = normalizeAdminUsersTab(searchParams.get("tab"));
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<AdminUser | null>(null);
-  const [confirmDeleteUser, setConfirmDeleteUser] = useState<AdminUser | null>(
-    null,
-  );
+  const [confirmDeleteUser, setConfirmDeleteUser] = useState<AdminUser | null>(null);
   const deleteMutation = useDeleteUser();
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(0);
@@ -101,9 +105,7 @@ export default function AdminUsers() {
     if (!search) return users;
     const q = search.toLowerCase();
     return users.filter(
-      (u) =>
-        u.username?.toLowerCase().includes(q) ||
-        u.email?.toLowerCase().includes(q),
+      (u) => u.username?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q),
     );
   }, [users, search]);
 
@@ -113,10 +115,7 @@ export default function AdminUsers() {
   );
 
   const total = sortedUsers.length;
-  const paginatedUsers = sortedUsers.slice(
-    page * pageSize,
-    (page + 1) * pageSize,
-  );
+  const paginatedUsers = sortedUsers.slice(page * pageSize, (page + 1) * pageSize);
 
   function handleSort(field: UserSortField) {
     setPage(0);
@@ -125,13 +124,25 @@ export default function AdminUsers() {
       return;
     }
     setSortField(field);
-    setSortDir(
-      field === "created_at" || field === "last_active_at" ? "desc" : "asc",
-    );
+    setSortDir(field === "created_at" || field === "last_active_at" ? "desc" : "asc");
   }
 
   function handleDelete(u: AdminUser) {
     setConfirmDeleteUser(u);
+  }
+
+  function setActiveTab(value: string) {
+    const nextTab = normalizeAdminUsersTab(value);
+    const next = new URLSearchParams(searchParams);
+
+    // The default tab stays the bare /admin/users URL.
+    if (nextTab === "users") {
+      next.delete("tab");
+    } else {
+      next.set("tab", nextTab);
+    }
+
+    setSearchParams(next, { replace: true });
   }
 
   if (isLoading)
@@ -164,9 +175,26 @@ export default function AdminUsers() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Users</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Manage access, defaults, and invite flow for the people using
-            Prairie.
+            Manage access, defaults, and invite flow for the people using Silo.
           </p>
+          {serverSettings !== undefined && (
+            <Link
+              to="/admin/settings/general"
+              className="inline-flex w-fit items-center gap-1 hover:opacity-80"
+            >
+              <Badge
+                variant={signupsEnabled ? "outline" : "secondary"}
+                className={
+                  signupsEnabled
+                    ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-500"
+                    : undefined
+                }
+              >
+                {signupsEnabled ? "Public signups on" : "Public signups off"}
+                <ArrowRight className="h-3 w-3" aria-hidden="true" />
+              </Badge>
+            </Link>
+          )}
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" asChild>
@@ -188,9 +216,7 @@ export default function AdminUsers() {
             </DialogTrigger>
             <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
-                <DialogTitle>
-                  {editingUser ? "Edit User" : "Create User"}
-                </DialogTitle>
+                <DialogTitle>{editingUser ? "Edit User" : "Create User"}</DialogTitle>
               </DialogHeader>
               <UserForm
                 user={editingUser}
@@ -204,11 +230,8 @@ export default function AdminUsers() {
         </div>
       </div>
 
-      <Tabs defaultValue="users">
-        <TabsList
-          variant="line"
-          className="border-border w-full justify-start border-b"
-        >
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList variant="line" className="border-border w-full justify-start border-b">
           <TabsTrigger value="users">Users</TabsTrigger>
           <TabsTrigger value="invitations">Invitations</TabsTrigger>
           <TabsTrigger value="invite-codes">Invite Codes</TabsTrigger>
@@ -298,20 +321,13 @@ export default function AdminUsers() {
                 {paginatedUsers.map((u) => (
                   <TableRow key={u.id}>
                     <TableCell>
-                      <Link
-                        to={`/admin/users/${u.id}`}
-                        className="font-medium hover:underline"
-                      >
+                      <Link to={`/admin/users/${u.id}`} className="font-medium hover:underline">
                         {u.username}
                       </Link>
                     </TableCell>
                     <TableCell>{u.email}</TableCell>
                     <TableCell>
-                      <Badge
-                        variant={u.role === "admin" ? "default" : "secondary"}
-                      >
-                        {u.role}
-                      </Badge>
+                      <Badge variant={u.role === "admin" ? "default" : "secondary"}>{u.role}</Badge>
                     </TableCell>
                     <TableCell>
                       <Badge variant={u.enabled ? "outline" : "destructive"}>
@@ -321,23 +337,12 @@ export default function AdminUsers() {
                     <TableCell title={formatFullDateTime(u.created_at)}>
                       {formatDateTime(u.created_at)}
                     </TableCell>
-                    <TableCell
-                      title={
-                        u.last_active_at
-                          ? formatFullDateTime(u.last_active_at)
-                          : ""
-                      }
-                    >
+                    <TableCell title={u.last_active_at ? formatFullDateTime(u.last_active_at) : ""}>
                       {formatRelativeTime(u.last_active_at, "Never")}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
-                        <Button
-                          asChild
-                          variant="ghost"
-                          size="icon"
-                          className="h-7 w-7"
-                        >
+                        <Button asChild variant="ghost" size="icon" className="h-7 w-7">
                           <Link
                             to={`/admin/history?user_id=${u.id}`}
                             aria-label={`View ${u.username} playback history`}
@@ -376,8 +381,8 @@ export default function AdminUsers() {
               <div className="flex items-center justify-between px-4 py-4">
                 <div className="flex items-center gap-4">
                   <span className="text-muted-foreground text-sm">
-                    Showing {page * pageSize + 1}-
-                    {Math.min((page + 1) * pageSize, total)} of {total}
+                    Showing {page * pageSize + 1}-{Math.min((page + 1) * pageSize, total)} of{" "}
+                    {total}
                   </span>
                   <Select
                     value={String(pageSize)}
@@ -405,7 +410,6 @@ export default function AdminUsers() {
                     onClick={() => setPage((p) => p - 1)}
                     disabled={page === 0}
                   >
-                    <ChevronLeft />
                     Previous
                   </Button>
                   <Button
@@ -414,7 +418,6 @@ export default function AdminUsers() {
                     onClick={() => setPage((p) => p + 1)}
                     disabled={(page + 1) * pageSize >= total}
                   >
-                    <ChevronRight />
                     Next
                   </Button>
                 </div>
@@ -449,11 +452,7 @@ function SortableUserHead({
   const active = field === activeField;
 
   return (
-    <TableHead
-      aria-sort={
-        active ? (activeDir === "asc" ? "ascending" : "descending") : "none"
-      }
-    >
+    <TableHead aria-sort={active ? (activeDir === "asc" ? "ascending" : "descending") : "none"}>
       <button
         type="button"
         className="hover:text-foreground inline-flex items-center gap-1 transition-colors"
@@ -474,11 +473,7 @@ function SortableUserHead({
   );
 }
 
-function sortAdminUsers(
-  users: AdminUser[],
-  field: UserSortField,
-  dir: SortDirection,
-) {
+function sortAdminUsers(users: AdminUser[], field: UserSortField, dir: SortDirection) {
   const direction = dir === "asc" ? 1 : -1;
 
   return [...users].sort((a, b) => {
@@ -494,10 +489,7 @@ function sortAdminUsers(
         result = compareText(a.role, b.role);
         break;
       case "enabled":
-        result = compareText(
-          a.enabled ? "active" : "disabled",
-          b.enabled ? "active" : "disabled",
-        );
+        result = compareText(a.enabled ? "active" : "disabled", b.enabled ? "active" : "disabled");
         break;
       case "created_at":
         result = compareTime(a.created_at, b.created_at, dir);
@@ -508,9 +500,7 @@ function sortAdminUsers(
     }
 
     if (result !== 0) {
-      return field === "created_at" || field === "last_active_at"
-        ? result
-        : result * direction;
+      return field === "created_at" || field === "last_active_at" ? result : result * direction;
     }
 
     return compareText(a.username, b.username) || a.id - b.id;
@@ -518,17 +508,10 @@ function sortAdminUsers(
 }
 
 function compareText(a?: string | null, b?: string | null) {
-  return (a ?? "").localeCompare(b ?? "", undefined, {
-    numeric: true,
-    sensitivity: "base",
-  });
+  return (a ?? "").localeCompare(b ?? "", undefined, { numeric: true, sensitivity: "base" });
 }
 
-function compareTime(
-  a?: string | null,
-  b?: string | null,
-  dir: SortDirection = "asc",
-) {
+function compareTime(a?: string | null, b?: string | null, dir: SortDirection = "asc") {
   const aTime = parseTime(a);
   const bTime = parseTime(b);
   if (aTime === null && bTime === null) return 0;
@@ -545,10 +528,7 @@ function parseTime(value?: string | null) {
 function formatDateTime(value?: string | null, fallback = "-") {
   const timestamp = parseTime(value);
   if (timestamp === null) return fallback;
-  return formatDateTimePreferred(timestamp, {
-    dateStyle: "medium",
-    seconds: false,
-  });
+  return formatDateTimePreferred(timestamp, { dateStyle: "medium", seconds: false });
 }
 
 function formatFullDateTime(value?: string | null) {
@@ -571,9 +551,7 @@ function formatRelativeTime(value?: string | null, fallback = "-") {
     ["minute", 60],
     ["second", 1],
   ];
-  const formatter = new Intl.RelativeTimeFormat(undefined, {
-    numeric: "always",
-  });
+  const formatter = new Intl.RelativeTimeFormat(undefined, { numeric: "always" });
 
   for (const [unit, secondsPerUnit] of ranges) {
     if (Math.abs(seconds) >= secondsPerUnit || unit === "second") {
@@ -584,13 +562,7 @@ function formatRelativeTime(value?: string | null, fallback = "-") {
   return fallback;
 }
 
-function UserForm({
-  user,
-  onClose,
-}: {
-  user: AdminUser | null;
-  onClose: () => void;
-}) {
+function UserForm({ user, onClose }: { user: AdminUser | null; onClose: () => void }) {
   const { data: libraries = [] } = useAdminLibraries();
   const { data: accessGroups = [] } = useAccessGroups();
   const [username, setUsername] = useState(user?.username ?? "");
@@ -603,9 +575,7 @@ function UserForm({
   );
   // Policy fields inherit from the access group unless explicitly overridden.
   const [policy, setPolicy] = useState(() => policyStateFromUser(user));
-  const [maxProfiles, setMaxProfiles] = useState<number>(
-    user?.max_profiles ?? 5,
-  );
+  const [maxProfiles, setMaxProfiles] = useState<number>(user?.max_profiles ?? 5);
   const usernameId = useId();
   const emailId = useId();
   const passwordId = useId();
@@ -620,12 +590,8 @@ function UserForm({
   // This form has no group picker: editing keeps the account's group, while a
   // new account lands on the default group — except an admin, which the server
   // deliberately leaves ungrouped (auth.Repository.CreateUser).
-  const defaultGroupID =
-    accessGroups.find((group) => group.is_default)?.id ?? null;
-  const inheritGroupID = effectiveAccessGroupID(
-    role,
-    user ? user.access_group_id : defaultGroupID,
-  );
+  const defaultGroupID = accessGroups.find((group) => group.is_default)?.id ?? null;
+  const inheritGroupID = effectiveAccessGroupID(role, user ? user.access_group_id : defaultGroupID);
   const inheritHints =
     policyInheritHints(inheritGroupID, accessGroups) ??
     (role === "admin" ? undefined : user?.effective_policy);
@@ -643,10 +609,7 @@ function UserForm({
         ...policyUpdateFields(policy),
       };
       if (role === "admin") {
-        body.access_group_id = effectiveAccessGroupID(
-          role,
-          user.access_group_id,
-        );
+        body.access_group_id = effectiveAccessGroupID(role, user.access_group_id);
       }
       if (password) body.password = password;
       updateMutation.mutate({ id: user.id, body }, { onSuccess: onClose });
@@ -668,10 +631,7 @@ function UserForm({
   return (
     <form onSubmit={handleSubmit} className="flex max-h-[70vh] flex-col">
       <Tabs defaultValue="account" className="min-h-0 flex-1">
-        <TabsList
-          variant="line"
-          className="border-border mb-4 w-full justify-start border-b pb-1"
-        >
+        <TabsList variant="line" className="border-border mb-4 w-full justify-start border-b pb-1">
           <TabsTrigger value="account" className="flex-none px-1">
             Account
           </TabsTrigger>
@@ -742,11 +702,7 @@ function UserForm({
                   <Label htmlFor={enabledId} className="text-xs">
                     Enabled
                   </Label>
-                  <Switch
-                    id={enabledId}
-                    checked={enabled}
-                    onCheckedChange={setEnabled}
-                  />
+                  <Switch id={enabledId} checked={enabled} onCheckedChange={setEnabled} />
                 </div>
               </div>
             )}
@@ -757,23 +713,15 @@ function UserForm({
               <div>
                 <Label htmlFor={markerEditId}>Marker Editing</Label>
                 <p className="text-muted-foreground text-xs">
-                  Edit intro, recap, credits, and preview markers within
-                  assigned libraries.
+                  Edit intro, recap, credits, and preview markers within assigned libraries.
                 </p>
               </div>
               <Switch
                 id={markerEditId}
-                checked={hasAssignedPermission(
-                  permissions,
-                  PERMISSION_MARKER_EDIT,
-                )}
+                checked={hasAssignedPermission(permissions, PERMISSION_MARKER_EDIT)}
                 onCheckedChange={(checked) =>
                   setPermissions((current) =>
-                    setAssignedPermission(
-                      current,
-                      PERMISSION_MARKER_EDIT,
-                      checked,
-                    ),
+                    setAssignedPermission(current, PERMISSION_MARKER_EDIT, checked),
                   )
                 }
               />
@@ -787,17 +735,10 @@ function UserForm({
               </div>
               <Switch
                 id={metadataCurationId}
-                checked={hasAssignedPermission(
-                  permissions,
-                  PERMISSION_METADATA_CURATION,
-                )}
+                checked={hasAssignedPermission(permissions, PERMISSION_METADATA_CURATION)}
                 onCheckedChange={(checked) =>
                   setPermissions((current) =>
-                    setAssignedPermission(
-                      current,
-                      PERMISSION_METADATA_CURATION,
-                      checked,
-                    ),
+                    setAssignedPermission(current, PERMISSION_METADATA_CURATION, checked),
                   )
                 }
               />
@@ -811,11 +752,7 @@ function UserForm({
           </TabsContent>
 
           <TabsContent value="limits" className="mt-0 space-y-4">
-            <PolicyLimitFields
-              state={policy}
-              onChange={setPolicy}
-              effective={inheritHints}
-            />
+            <PolicyLimitFields state={policy} onChange={setPolicy} effective={inheritHints} />
             <div className="space-y-1">
               <Label htmlFor={maxProfilesId}>Max Profiles</Label>
               <Input
@@ -832,7 +769,6 @@ function UserForm({
 
       <div className="border-border mt-4 border-t pt-4">
         <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? <Loader2 className="animate-spin" /> : <Save />}
           {isPending ? "Saving..." : "Save"}
         </Button>
       </div>

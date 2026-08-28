@@ -29,15 +29,17 @@ import {
   type RealtimeConnectionState,
   type RealtimeEventsContextValue,
 } from "@/components/realtimeEventsContext";
-import { invalidateCatalogState } from "@/components/realtimeCatalogInvalidation";
+import {
+  createCatalogInvalidationScheduler,
+  invalidateCatalogState,
+  scheduleProgressHomeRefresh,
+  userStateChangeAffectsSectionMembership,
+} from "@/components/realtimeCatalogInvalidation";
+import { bumpHomeRefreshSignal } from "@/pages/homeSurfaceRefresh";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
 import { usePageActivity } from "@/hooks/usePageActivity";
-import {
-  adminKeys,
-  historyImportKeys,
-  libraryKeys,
-} from "@/hooks/queries/keys";
+import { adminKeys, historyImportKeys, libraryKeys, sectionKeys } from "@/hooks/queries/keys";
 import {
   scheduleMediaSurfaceInvalidation,
   updateCatalogItemDetail,
@@ -56,13 +58,7 @@ interface UserStatePayload {
   profile_id: string;
   content_id?: string;
   series_id?: string;
-  change:
-    | "progress"
-    | "favorite"
-    | "watchlist"
-    | "history"
-    | "watched"
-    | "home_dismissal";
+  change: "progress" | "favorite" | "watchlist" | "history" | "watched" | "home_dismissal";
   played?: boolean;
   is_favorite?: boolean;
   in_watchlist?: boolean;
@@ -72,10 +68,6 @@ const CATALOG_ITEM_CHANGED_EVENTS = new Set([
   "catalog.item.changed",
   "library.item_added",
   "metadata.updated",
-]);
-const SCOPED_CATALOG_LIBRARY_EVENTS = new Set([
-  "catalog.library.changed",
-  "library.changed",
 ]);
 const DASHBOARD_QUERY_KEYS = [
   adminKeys.stats(),
@@ -142,11 +134,7 @@ function parseEventsMessage(value: unknown): EventsStreamMessage | null {
 }
 
 function isTerminalJob(job: AdminJob) {
-  return (
-    job.status === "completed" ||
-    job.status === "failed" ||
-    job.status === "cancelled"
-  );
+  return job.status === "completed" || job.status === "failed" || job.status === "cancelled";
 }
 
 async function pollAdminJobUntilTerminal(jobId: string): Promise<AdminJob> {
@@ -178,11 +166,7 @@ function sortJobs(jobs: AdminJob[]) {
   });
 }
 
-function upsertJob(
-  existing: AdminJob[] | undefined,
-  nextJob: AdminJob,
-  limit = 50,
-) {
+function upsertJob(existing: AdminJob[] | undefined, nextJob: AdminJob, limit = 50) {
   if (!nextJob || !nextJob.id) {
     return existing ?? [];
   }
@@ -201,30 +185,23 @@ function applyJellyfinCompatOperationUpdate(
   operation: JellyfinCompatOperationStatus,
 ) {
   if (!operation?.id) {
-    void queryClient.invalidateQueries({
-      queryKey: adminKeys.jellyfinCompatStatus(),
-    });
+    void queryClient.invalidateQueries({ queryKey: adminKeys.jellyfinCompatStatus() });
     return;
   }
 
-  queryClient.setQueryData<JellyfinCompatStatus>(
-    adminKeys.jellyfinCompatStatus(),
-    (existing) => {
-      if (!existing) {
-        return existing;
-      }
-      return {
-        ...existing,
-        web_state: jellyfinCompatOperationWebState(operation),
-        operation,
-      };
-    },
-  );
+  queryClient.setQueryData<JellyfinCompatStatus>(adminKeys.jellyfinCompatStatus(), (existing) => {
+    if (!existing) {
+      return existing;
+    }
+    return {
+      ...existing,
+      web_state: jellyfinCompatOperationWebState(operation),
+      operation,
+    };
+  });
 
   if (operation.state !== "running") {
-    void queryClient.invalidateQueries({
-      queryKey: adminKeys.jellyfinCompatStatus(),
-    });
+    void queryClient.invalidateQueries({ queryKey: adminKeys.jellyfinCompatStatus() });
   }
 }
 
@@ -259,9 +236,8 @@ function hydrateAdminJobSnapshot(queryClient: QueryClient, jobs: AdminJob[]) {
 }
 
 function applyAdminJobUpdate(queryClient: QueryClient, job: AdminJob) {
-  queryClient.setQueryData<AdminJob[]>(
-    adminKeys.jobs(job.job_type),
-    (existing) => upsertJob(existing, job, 50),
+  queryClient.setQueryData<AdminJob[]>(adminKeys.jobs(job.job_type), (existing) =>
+    upsertJob(existing, job, 50),
   );
   queryClient.setQueryData<AdminJob[]>(adminKeys.jobs("__all"), (existing) =>
     upsertJob(existing, job, 50),
@@ -287,10 +263,7 @@ function findCachedAdminJob(queryClient: QueryClient, jobId: string) {
   return null;
 }
 
-function invalidateDashboardQueries(
-  queryClient: QueryClient,
-  allowRefetch: boolean,
-) {
+function invalidateDashboardQueries(queryClient: QueryClient, allowRefetch: boolean) {
   for (const queryKey of DASHBOARD_QUERY_KEYS) {
     void queryClient.invalidateQueries({
       queryKey,
@@ -304,9 +277,15 @@ function catalogEventLibraryID(data: unknown) {
     return undefined;
   }
   const value = (data as { library_id?: unknown }).library_id;
-  return typeof value === "number" && Number.isFinite(value)
-    ? value
-    : undefined;
+  return typeof value === "number" && Number.isFinite(value) ? value : undefined;
+}
+
+function catalogEventContentID(data: unknown) {
+  if (!data || typeof data !== "object" || !("content_id" in data)) {
+    return undefined;
+  }
+  const value = (data as { content_id?: unknown }).content_id;
+  return typeof value === "string" && value ? value : undefined;
 }
 
 function handleJobSideEffects(
@@ -353,9 +332,7 @@ function hydrateTasks(queryClient: QueryClient, tasks: TaskInfo[]) {
 }
 
 function applyTaskUpdate(queryClient: QueryClient, task: TaskInfo) {
-  const previousTask = queryClient.getQueryData<TaskInfo>(
-    adminKeys.task(task.key),
-  );
+  const previousTask = queryClient.getQueryData<TaskInfo>(adminKeys.task(task.key));
   queryClient.setQueryData<TaskInfo[]>(adminKeys.tasks(), (existing) => {
     const tasks = existing ? [...existing] : [];
     const index = tasks.findIndex((entry) => entry.key === task.key);
@@ -371,15 +348,10 @@ function applyTaskUpdate(queryClient: QueryClient, task: TaskInfo) {
   if (
     task.state === "idle" &&
     task.last_execution?.completed_at &&
-    previousTask?.last_execution?.completed_at !==
-      task.last_execution.completed_at
+    previousTask?.last_execution?.completed_at !== task.last_execution.completed_at
   ) {
-    void queryClient.invalidateQueries({
-      queryKey: adminKeys.taskHistory(task.key),
-    });
-    void queryClient.invalidateQueries({
-      queryKey: adminKeys.taskMetrics(task.key),
-    });
+    void queryClient.invalidateQueries({ queryKey: adminKeys.taskHistory(task.key) });
+    void queryClient.invalidateQueries({ queryKey: adminKeys.taskMetrics(task.key) });
   }
 }
 
@@ -387,11 +359,7 @@ function hydrateScans(queryClient: QueryClient, scans: ScanRun[]) {
   queryClient.setQueryData(adminKeys.activeScans(), scans);
 }
 
-function applyScanUpdate(
-  queryClient: QueryClient,
-  scan: ScanRun,
-  eventName: string,
-) {
+function applyScanUpdate(queryClient: QueryClient, scan: ScanRun, eventName: string) {
   queryClient.setQueryData<ScanRun[]>(adminKeys.activeScans(), (existing) => {
     const scans = existing ? [...existing] : [];
     const index = scans.findIndex((entry) => entry.id === scan.id);
@@ -412,16 +380,11 @@ function applyScanUpdate(
     eventName === "scan.cancelled"
   ) {
     void queryClient.invalidateQueries({ queryKey: adminKeys.libraries() });
-    void queryClient.invalidateQueries({
-      queryKey: adminKeys.libraryMatchQueueStatuses(),
-    });
+    void queryClient.invalidateQueries({ queryKey: adminKeys.libraryMatchQueueStatuses() });
   }
 }
 
-function updateHistoryImportCaches(
-  queryClient: QueryClient,
-  run?: HistoryImportRun,
-) {
+function updateHistoryImportCaches(queryClient: QueryClient, run?: HistoryImportRun) {
   if (run) {
     queryClient.setQueryData(historyImportKeys.run(run.id), run);
     queryClient.setQueryData(adminKeys.historyImportAdminRun(run.id), run);
@@ -453,25 +416,16 @@ function handleUserStateEvent(
   activeProfileID: string | null | undefined,
   allowDashboardRefetch: boolean,
 ) {
-  if (
-    payload.profile_id &&
-    activeProfileID &&
-    payload.profile_id !== activeProfileID
-  ) {
+  if (payload.profile_id && activeProfileID && payload.profile_id !== activeProfileID) {
     return;
   }
 
   if (payload.content_id) {
     updateCatalogItemDetail(queryClient, payload.content_id, (detail) => {
       const played =
-        payload.played ??
-        detail.user_state?.played ??
-        detail.user_data?.played ??
-        false;
-      const isFavorite =
-        payload.is_favorite ?? detail.user_state?.is_favorite ?? false;
-      const inWatchlist =
-        payload.in_watchlist ?? detail.user_state?.in_watchlist ?? false;
+        payload.played ?? detail.user_state?.played ?? detail.user_data?.played ?? false;
+      const isFavorite = payload.is_favorite ?? detail.user_state?.is_favorite ?? false;
+      const inWatchlist = payload.in_watchlist ?? detail.user_state?.in_watchlist ?? false;
       if (
         played === (detail.user_data?.played ?? false) &&
         played === (detail.user_state?.played ?? false) &&
@@ -486,11 +440,7 @@ function handleUserStateEvent(
           payload.played == null
             ? detail.user_data
             : { ...detail.user_data, played: payload.played },
-        user_state: {
-          played,
-          is_favorite: isFavorite,
-          in_watchlist: inWatchlist,
-        },
+        user_state: { played, is_favorite: isFavorite, in_watchlist: inWatchlist },
       };
     });
   }
@@ -500,8 +450,7 @@ function handleUserStateEvent(
   // above all, which arrives with no state at all — also moves fields the patch
   // cannot reconstruct (position_seconds, is_in_progress, season counts), so the
   // detail query still has to be refreshed for those.
-  const detailFullyPatched =
-    payload.change === "favorite" || payload.change === "watchlist";
+  const detailFullyPatched = payload.change === "favorite" || payload.change === "watchlist";
   scheduleMediaSurfaceInvalidation(
     queryClient,
     payload.content_id
@@ -512,6 +461,18 @@ function handleUserStateEvent(
         }
       : { skipSimilarItems: true },
   );
+  // Resetting home's load queue re-runs every section fetch. Membership
+  // changes do it immediately; progress ticks coalesce into one trailing
+  // refresh per window so an open home still catches another client's
+  // playback without a per-tick storm. Mark the home sections stale before
+  // an immediate reset because the surface invalidation above is debounced.
+  if (userStateChangeAffectsSectionMembership(payload.change)) {
+    void queryClient
+      .invalidateQueries({ queryKey: sectionKeys.home(), refetchType: "none" })
+      .then(() => bumpHomeRefreshSignal(queryClient));
+  } else {
+    scheduleProgressHomeRefresh(queryClient);
+  }
   void queryClient.invalidateQueries({
     queryKey: adminKeys.stats(),
     refetchType: allowDashboardRefetch ? "active" : "none",
@@ -525,12 +486,13 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
   const pageActivity = usePageActivity();
   const location = useLocation();
   const authenticatedUserID = user?.id ?? null;
-  const isDashboardRoute =
-    location.pathname === "/admin" || location.pathname === "/admin/";
-  const allowDashboardRealtimeUpdates =
-    !isDashboardRoute || pageActivity.canPollDashboard;
-  const [connectionState, setConnectionState] =
-    useState<RealtimeConnectionState>("connecting");
+  const isDashboardRoute = location.pathname === "/admin" || location.pathname === "/admin/";
+  const allowDashboardRealtimeUpdates = !isDashboardRoute || pageActivity.canPollDashboard;
+  const [connectionState, setConnectionState] = useState<RealtimeConnectionState>("connecting");
+  const catalogInvalidation = useMemo(
+    () => createCatalogInvalidationScheduler(queryClient),
+    [queryClient],
+  );
   const reconnectTimerRef = useRef<number | undefined>(undefined);
   const profileRebindAttemptsRef = useRef(0);
   const nextReconnectDelayRef = useRef<number | null>(null);
@@ -538,23 +500,19 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
   const helloReceivedRef = useRef(false);
   const requestCounterRef = useRef(0);
   const channelRefsRef = useRef(new Map<EventChannel, number>());
-  const channelHandlersRef = useRef(
-    new Map<EventChannel, Map<number, EventChannelHandlers>>(),
-  );
+  const channelHandlersRef = useRef(new Map<EventChannel, Map<number, EventChannelHandlers>>());
   const nextHandlerIDRef = useRef(1);
   const waitersRef = useRef(new Map<string, JobWaiter>());
   const activeProfileIDRef = useRef<string | null | undefined>(profile?.id);
-  const canApplyRealtimeUpdatesRef = useRef(
-    pageActivity.canApplyRealtimeUpdates,
-  );
-  const allowDashboardRealtimeUpdatesRef = useRef(
-    allowDashboardRealtimeUpdates,
-  );
+  const canApplyRealtimeUpdatesRef = useRef(pageActivity.canApplyRealtimeUpdates);
+  const allowDashboardRealtimeUpdatesRef = useRef(allowDashboardRealtimeUpdates);
   const shouldCatchUpOnFocusRef = useRef(!pageActivity.canApplyRealtimeUpdates);
 
   activeProfileIDRef.current = profile?.id;
   canApplyRealtimeUpdatesRef.current = pageActivity.canApplyRealtimeUpdates;
   allowDashboardRealtimeUpdatesRef.current = allowDashboardRealtimeUpdates;
+
+  useEffect(() => () => catalogInvalidation.cancel(), [catalogInvalidation]);
 
   const settleWaiterRef = useRef<(job: AdminJob) => void>(() => {});
   settleWaiterRef.current = (job: AdminJob) => {
@@ -583,11 +541,7 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
 
   const sendSubscribe = useCallback(() => {
     const socket = socketRef.current;
-    if (
-      !socket ||
-      socket.readyState !== WebSocket.OPEN ||
-      !helloReceivedRef.current
-    ) {
+    if (!socket || socket.readyState !== WebSocket.OPEN || !helloReceivedRef.current) {
       return;
     }
     requestCounterRef.current += 1;
@@ -602,17 +556,13 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
 
   const subscribeChannel = useCallback(
     (channel: EventChannel, handlers?: EventChannelHandlers) => {
-      channelRefsRef.current.set(
-        channel,
-        (channelRefsRef.current.get(channel) ?? 0) + 1,
-      );
+      channelRefsRef.current.set(channel, (channelRefsRef.current.get(channel) ?? 0) + 1);
 
       let handlerID: number | null = null;
       if (handlers) {
         handlerID = nextHandlerIDRef.current++;
         const channelHandlers =
-          channelHandlersRef.current.get(channel) ??
-          new Map<number, EventChannelHandlers>();
+          channelHandlersRef.current.get(channel) ?? new Map<number, EventChannelHandlers>();
         channelHandlers.set(handlerID, handlers);
         channelHandlersRef.current.set(channel, channelHandlers);
       }
@@ -687,10 +637,7 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
         break;
       case "notifications":
         if (Array.isArray(message.data)) {
-          applyNotificationsSnapshot(
-            queryClient,
-            message.data as AppNotification[],
-          );
+          applyNotificationsSnapshot(queryClient, message.data as AppNotification[]);
         }
         break;
       default:
@@ -710,15 +657,10 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
         return;
       }
       applyNotificationCreated(queryClient, notification);
-      if (
-        notification.type === "episode.available" &&
-        notification.series_title
-      ) {
+      if (notification.type === "episode.available" && notification.series_title) {
         const episodeCode = formatEpisodeCode(notification);
         toast(`New episode of ${notification.series_title}`, {
-          description: [episodeCode, notification.episode_title]
-            .filter(Boolean)
-            .join(" — "),
+          description: [episodeCode, notification.episode_title].filter(Boolean).join(" — "),
         });
       } else if (notification.type === "request.fulfilled") {
         toast(
@@ -731,26 +673,19 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
         notification.type === "request.approved" ||
         notification.type === "request.declined"
       ) {
-        const verb =
-          notification.type === "request.approved" ? "approved" : "declined";
+        const verb = notification.type === "request.approved" ? "approved" : "declined";
         const title = notification.reason_flags?.title;
-        toast(
-          title ? `Request ${verb}: ${title}` : `Your request was ${verb}`,
-          {
-            description:
-              notification.type === "request.declined"
-                ? notification.reason_flags?.reason
-                : undefined,
-          },
-        );
+        toast(title ? `Request ${verb}: ${title}` : `Your request was ${verb}`, {
+          description:
+            notification.type === "request.declined"
+              ? notification.reason_flags?.reason
+              : undefined,
+        });
       }
       return;
     }
     if (message.event === "notification.read") {
-      applyNotificationRead(
-        queryClient,
-        message.data as NotificationReadEventPayload,
-      );
+      applyNotificationRead(queryClient, message.data as NotificationReadEventPayload);
     }
   }
 
@@ -758,33 +693,15 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
     switch (message.channel) {
       case "catalog":
         {
-          const eventLibraryID = catalogEventLibraryID(message.data);
-          if (CATALOG_ITEM_CHANGED_EVENTS.has(message.event)) {
-            invalidateCatalogState(queryClient, {
-              itemId:
-                typeof message.data === "object" &&
-                message.data &&
-                "content_id" in message.data
-                  ? (message.data as { content_id?: string }).content_id
-                  : undefined,
-              libraryId: eventLibraryID,
-              allowDashboardRefetch: allowDashboardRealtimeUpdatesRef.current,
-              includeLibraryLists: false,
-            });
-          } else if (
-            SCOPED_CATALOG_LIBRARY_EVENTS.has(message.event) &&
-            eventLibraryID
-          ) {
-            invalidateCatalogState(queryClient, {
-              libraryId: eventLibraryID,
-              allowDashboardRefetch: allowDashboardRealtimeUpdatesRef.current,
-            });
-          } else {
-            invalidateCatalogState(queryClient, {
-              libraryId: eventLibraryID,
-              allowDashboardRefetch: allowDashboardRealtimeUpdatesRef.current,
-            });
-          }
+          const isItemChange = CATALOG_ITEM_CHANGED_EVENTS.has(message.event);
+          catalogInvalidation.schedule({
+            itemId: isItemChange ? catalogEventContentID(message.data) : undefined,
+            libraryId: catalogEventLibraryID(message.data),
+            allowDashboardRefetch: allowDashboardRealtimeUpdatesRef.current,
+            // An item changing inside a library does not change the set of
+            // libraries, so the admin library lists stay untouched.
+            includeLibraryLists: !isItemChange,
+          });
         }
         break;
       case "jobs":
@@ -815,10 +732,7 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
         applyScanUpdate(queryClient, message.data as ScanRun, message.event);
         break;
       case "history_import":
-        updateHistoryImportCaches(
-          queryClient,
-          message.data as HistoryImportRun,
-        );
+        updateHistoryImportCaches(queryClient, message.data as HistoryImportRun);
         break;
       case "settings":
         if (message.event === "jellyfin_compat.web_operation.updated") {
@@ -864,11 +778,6 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
     });
   }, [authenticatedUserID, pageActivity.canApplyRealtimeUpdates, queryClient]);
 
-  const handleSnapshotRef = useRef(handleSnapshot);
-  handleSnapshotRef.current = handleSnapshot;
-  const handleEventRef = useRef(handleEvent);
-  handleEventRef.current = handleEvent;
-
   useEffect(() => {
     if (!authenticatedUserID || !pageActivity.canApplyRealtimeUpdates) {
       setConnectionState("disconnected");
@@ -877,8 +786,6 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
 
     let closedByEffect = false;
     let activeSocket: WebSocket | null = null;
-    // Capture once; waiters are mutated in place for the lifetime of this provider.
-    const waiters = waitersRef.current;
 
     const clearReconnect = () => {
       if (reconnectTimerRef.current !== undefined) {
@@ -929,9 +836,7 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
     const openSocket = (ticket: string | null) => {
       let socket: WebSocket;
       try {
-        socket = new WebSocket(
-          buildEventsUrl(getAccessToken(), window.location, ticket),
-        );
+        socket = new WebSocket(buildEventsUrl(getAccessToken(), window.location, ticket));
       } catch {
         setConnectionState("disconnected");
         scheduleReconnect();
@@ -971,9 +876,7 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
             // alone, this socket would stay healthy for hours while silently
             // delivering no notifications — reconnect with backoff to re-mint.
             const profileRequired = (message.rejected ?? []).some(
-              (entry) =>
-                entry.channel === "notifications" &&
-                entry.code === "profile_required",
+              (entry) => entry.channel === "notifications" && entry.code === "profile_required",
             );
             if (profileRequired && activeProfileIDRef.current) {
               // Rebinding requires a fresh handshake (tickets are consumed at
@@ -993,10 +896,10 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
             return;
           }
           case "snapshot":
-            handleSnapshotRef.current(message);
+            handleSnapshot(message);
             return;
           case "event":
-            handleEventRef.current(message);
+            handleEvent(message);
             return;
           case "error":
             return;
@@ -1029,15 +932,11 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
     return () => {
       closedByEffect = true;
       clearReconnect();
-      for (const [jobId, waiter] of waiters) {
+      for (const [jobId, waiter] of waitersRef.current) {
         window.clearTimeout(waiter.timeoutId);
-        waiter.reject(
-          new Error(
-            `Realtime events provider closed before job ${jobId} finished`,
-          ),
-        );
+        waiter.reject(new Error(`Realtime events provider closed before job ${jobId} finished`));
       }
-      waiters.clear();
+      waitersRef.current.clear();
       const socket = activeSocket;
       if (socket && socketRef.current === socket) {
         socketRef.current = null;
@@ -1045,8 +944,7 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
       activeSocket = null;
       if (
         socket &&
-        (socket.readyState === WebSocket.OPEN ||
-          socket.readyState === WebSocket.CONNECTING)
+        (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
       ) {
         socket.close();
       }
@@ -1071,15 +969,11 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
         }
         if (cachedJob.status === "failed") {
           return Promise.reject(
-            new Error(
-              cachedJob.error_message || cachedJob.message || "Job failed",
-            ),
+            new Error(cachedJob.error_message || cachedJob.message || "Job failed"),
           );
         }
         if (cachedJob.status === "cancelled") {
-          return Promise.reject(
-            new Error(cachedJob.message || "Job cancelled"),
-          );
+          return Promise.reject(new Error(cachedJob.message || "Job cancelled"));
         }
       }
 
@@ -1116,11 +1010,7 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
     [awaitAdminJob, connectionState, subscribeChannel],
   );
 
-  return (
-    <RealtimeEventsContext.Provider value={value}>
-      {children}
-    </RealtimeEventsContext.Provider>
-  );
+  return <RealtimeEventsContext.Provider value={value}>{children}</RealtimeEventsContext.Provider>;
 }
 
 export { buildEventsUrl };

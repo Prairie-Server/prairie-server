@@ -874,3 +874,64 @@ func TestExtractFrameResolvesMultiDeviceListToOneDevice(t *testing.T) {
 		t.Fatalf("ffmpeg args missing a resolved device:\n%s", joined)
 	}
 }
+
+// failingSettingsReader stands in for a settings repo that cannot answer, so
+// the fallback path can be told apart from a configured-empty value.
+type failingSettingsReader struct{}
+
+func (failingSettingsReader) Get(_ context.Context, _ string) (string, error) {
+	return "", errors.New("settings unavailable")
+}
+
+// TestResolveHWConfigFollowsLiveSettings is the regression guard for the
+// restart-required conversion: hardware acceleration is read from the settings
+// repo per extraction, so an admin changing playback.hw_accel or
+// playback.hw_device does not have to restart the server for chapter
+// thumbnails to follow.
+func TestResolveHWConfigFollowsLiveSettings(t *testing.T) {
+	values := map[string]string{
+		"playback.hw_accel":  "vaapi",
+		"playback.hw_device": "/dev/dri/renderD128",
+	}
+	service := &Service{
+		// Deliberately different from the settings rows: the boot values must
+		// not win over the live configuration.
+		hwAccel:  "none",
+		hwDevice: "/dev/dri/renderD200",
+		settings: testSettingsReader{values: values},
+	}
+
+	accel, device := service.resolveHWConfig(context.Background())
+	if accel != "vaapi" || device != "/dev/dri/renderD128" {
+		t.Fatalf("resolveHWConfig() = (%q, %q), want (vaapi, /dev/dri/renderD128)", accel, device)
+	}
+
+	values["playback.hw_accel"] = "qsv"
+	values["playback.hw_device"] = "/dev/dri/renderD129"
+
+	accel, device = service.resolveHWConfig(context.Background())
+	if accel != "qsv" || device != "/dev/dri/renderD129" {
+		t.Fatalf("resolveHWConfig() after settings change = (%q, %q), want (qsv, /dev/dri/renderD129)", accel, device)
+	}
+
+	// An emptied device row means "auto-detect", not "keep the previous one".
+	values["playback.hw_device"] = ""
+	if _, device = service.resolveHWConfig(context.Background()); device != "" {
+		t.Fatalf("resolveHWConfig() device after clearing = %q, want empty", device)
+	}
+}
+
+// TestResolveHWConfigFallsBackWhenSettingsUnavailable keeps a database blip
+// from silently switching extraction off the configured accelerator.
+func TestResolveHWConfigFallsBackWhenSettingsUnavailable(t *testing.T) {
+	service := &Service{
+		hwAccel:  "vaapi",
+		hwDevice: "/dev/dri/renderD128",
+		settings: failingSettingsReader{},
+	}
+
+	accel, device := service.resolveHWConfig(context.Background())
+	if accel != "vaapi" || device != "/dev/dri/renderD128" {
+		t.Fatalf("resolveHWConfig() = (%q, %q), want the boot values", accel, device)
+	}
+}

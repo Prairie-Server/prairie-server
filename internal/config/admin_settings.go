@@ -43,6 +43,10 @@ const ArtworkStorageReconcileCheckpointKey = "s3.public_storage_reconcile_checkp
 // readers that own each setting. The UI must never invent a second set of
 // defaults: an untouched form should describe the behavior the server is
 // actually running.
+// Setting keys and default values are a data table; naming each repeated
+// literal would bury what the table says.
+//
+//nolint:goconst
 var adminSettingDefaults = map[string]string{
 	"auth.access_token_expiry":  "8h",
 	"auth.refresh_token_expiry": "30d",
@@ -53,23 +57,30 @@ var adminSettingDefaults = map[string]string{
 	"clientip.trusted_proxies":  "10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, ::1/128",
 	"theme.catalog_url":         DefaultThemeCatalogURL,
 
-	"database.max_connections": "20",
-	"s3.public_path_style":     "true",
-	"s3.public_url_auth":       "presigned",
-	"s3.public_token_param":    "verify",
-	"s3.public_token_ttl":      "10800",
-	"s3.private_path_style":    "true",
-	"s3.user_db_path_style":    "true",
-	"userdb.backend":           "postgres",
-	"userdb.pool_max_open":     "500",
-	"userdb.idle_timeout":      "12h",
+	"database.max_connections":   "20",
+	"s3.public_path_style":       "true",
+	"s3.public_url_auth":         "presigned",
+	"s3.public_token_param":      "verify",
+	"s3.public_token_ttl":        "10800",
+	"s3.private_path_style":      "true",
+	"s3.metadata_presign_expiry": "4h",
+	"s3.user_db_path_style":      "true",
+	"userdb.backend":             "postgres",
+	"userdb.pool_max_open":       "500",
+	"userdb.idle_timeout":        "12h",
 
-	"scanner.workers":       "8",
-	"matcher.workers":       "8",
-	"matcher.batch_size":    "500",
-	"metadata.cache_images": "false",
-	"markers.mode":          "local",
-	"markers.lazy_playback": "false",
+	"scanner.workers":                      "8",
+	"scanner.max_concurrent_libraries":     "1",
+	"scanner.max_concurrent_scoped":        "2",
+	"scanner.file_removal_grace":           "24h",
+	"scanner.empty_trash_after_scan":       "true",
+	"matcher.workers":                      "8",
+	"matcher.batch_size":                   "500",
+	"matcher.enable_tv_series_root_queue":  "true",
+	"matcher.enable_tv_series_group_queue": "false",
+	"metadata.cache_images":                "false",
+	"markers.mode":                         "local",
+	"markers.lazy_playback":                "false",
 
 	"playback.ffmpeg_path":                     "",
 	playbackTranscodeDirSettingKey:             DefaultTranscodeDir,
@@ -101,6 +112,8 @@ var adminSettingDefaults = map[string]string{
 	"jellyfin_compat.playback_session_ttl":    "6h",
 
 	"recommendations.enabled":                    "false",
+	"recommendations.embedding_provider":         "ollama",
+	"recommendations.embeddings_job_timeout":     "24h",
 	"recommendations.embedding_base_url":         "http://ollama:11434",
 	"recommendations.embedding_model":            "all-minilm",
 	"recommendations.embeddings_cron":            "0 3 * * *",
@@ -119,6 +132,7 @@ var adminSettingDefaults = map[string]string{
 	"subtitle_ai.batch_size":              "40",
 	"subtitle_ai.context_neighbors":       "2",
 	"subtitle_ai.asr_chunk_seconds":       "600",
+	"subtitle_ai.live_asr_chunk_seconds":  "30",
 	"subtitle_ai.transcribe_quota_jobs":   "0",
 	"subtitle_ai.transcribe_quota_period": "day",
 	"metadata_ai.enabled":                 "false",
@@ -134,6 +148,8 @@ var adminSettingDefaults = map[string]string{
 	"download.max_concurrent_prepares": "2",
 	"download.artifact_max_bytes":      "0",
 
+	"policy.editor_enabled":                 "false",
+	"policy.eval_timeout_ms":                "25",
 	"policy.decision_log_verbosity":         "digest",
 	"policy.decision_log_scope_sample_rate": "50",
 	"policy.decision_log_retention_days":    "14",
@@ -173,6 +189,7 @@ var adminSettingDefaults = map[string]string{
 	"taskmanager.history_retention_days": "30",
 	"taskmanager.history_keep_per_task":  "1000",
 
+	"opslog.capture_level":            "info",
 	"opslog.retention_days":           "7",
 	"opslog.cleanup_interval_minutes": "15",
 	"opslog.max_rows":                 "1000000",
@@ -302,6 +319,8 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 		"jellyfin_compat.enabled", "jellyfin_compat.web_enabled", "recommendations.enabled",
 		"subtitle_ai.enabled", "subtitle_ai.transcribe_enabled", "metadata_ai.enabled",
 		"download.enabled", "download.transcode_enabled", "email.enabled", "signup.enabled",
+		"scanner.empty_trash_after_scan", "matcher.enable_tv_series_root_queue",
+		"matcher.enable_tv_series_group_queue", "policy.editor_enabled",
 		"overlays.enabled", "notifications.release_events_enabled", "notifications.fanout_enabled",
 		"notifications.ui_enabled", "notifications.webhooks_enabled",
 		"notifications.webhooks.allow_private_destinations", "notifications.email_enabled",
@@ -317,7 +336,8 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 		return normalizeAdminInt(key, value, 1, 10000)
 	case "userdb.pool_max_open":
 		return normalizeAdminInt(key, value, 1, 100000)
-	case "scanner.workers", "matcher.workers":
+	case "scanner.workers", "matcher.workers",
+		"scanner.max_concurrent_libraries", "scanner.max_concurrent_scoped":
 		return normalizeAdminInt(key, value, 1, 1024)
 	case "matcher.batch_size":
 		return normalizeAdminInt(key, value, 1, 100000)
@@ -337,6 +357,10 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 		return normalizeAdminInt(key, value, 0, 100)
 	case "subtitle_ai.asr_chunk_seconds":
 		return normalizeAdminInt(key, value, 60, 600)
+	case "subtitle_ai.live_asr_chunk_seconds":
+		// 15s is the transcriber's hard floor (clampASRChunkSeconds); accepting
+		// less would store a value the runtime silently raises.
+		return normalizeAdminInt(key, value, 15, 600)
 	case "subtitle_ai.transcribe_quota_jobs":
 		return normalizeAdminInt(key, value, 0, math.MaxInt32)
 	case "download.server_bandwidth_mbps", "download.user_bandwidth_mbps":
@@ -346,6 +370,8 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 		return normalizeAdminInt64(key, value, 0, math.MaxInt64)
 	case "policy.decision_log_scope_sample_rate", "policy.decision_log_retention_days":
 		return normalizeAdminInt(key, value, 1, math.MaxInt32)
+	case "policy.eval_timeout_ms":
+		return normalizeAdminInt(key, value, 1, 60000)
 	case "email.smtp_port":
 		return normalizeAdminInt(key, value, 1, 65535)
 	case "notifications.fanout.settle_seconds":
@@ -391,11 +417,24 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 
 	case "auth.access_token_expiry", "auth.refresh_token_expiry", "userdb.idle_timeout",
 		"download.period_duration", "jellyfin_compat.session_ttl",
-		"jellyfin_compat.playback_session_ttl":
+		"jellyfin_compat.playback_session_ttl", "s3.metadata_presign_expiry",
+		"recommendations.embeddings_job_timeout":
 		return normalizeAdminDuration(key, value)
+	case "scanner.file_removal_grace":
+		// The scanner deliberately tolerates a zero or negative grace as
+		// "remove missing files immediately" (LoadFromDB warns and clamps to
+		// zero), so only require a parseable duration here.
+		if _, err := parseDuration(value); err != nil {
+			return "", fmt.Errorf("%s must be a duration", key)
+		}
+		return value, nil
 
 	case "server.log_level":
 		return normalizeAdminEnum(key, value, "debug", "info", "warn", "error")
+	case "opslog.capture_level":
+		// "warning" is accepted because the startup reader in cmd/silo treats
+		// it as an alias for "warn".
+		return normalizeAdminEnum(key, value, "debug", "info", "warn", "warning", "error")
 	case "userdb.backend":
 		return normalizeAdminEnum(key, value, "postgres", "sqlite")
 	case "playback.hw_accel":

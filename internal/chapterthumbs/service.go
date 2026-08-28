@@ -37,6 +37,14 @@ const (
 	chapterThumbnailHDRPolicyDisabled      = "disabled"
 	chapterThumbnailHDRPolicyBestEffort    = "best_effort"
 	chapterThumbnailSoftwareToneMapSetting = "playback.chapter_thumbnail_software_tone_map_enabled"
+
+	// Hardware acceleration is read per extraction from these keys, not frozen
+	// at startup, so an admin change applies to the next chapter thumbnail.
+	// playbackHWAccelDefault mirrors the config loader's default for an unset
+	// row (internal/config/admin_settings.go).
+	playbackHWAccelSetting  = "playback.hw_accel"
+	playbackHWDeviceSetting = "playback.hw_device"
+	playbackHWAccelDefault  = "auto"
 )
 
 var chapterThumbnailRetrySchedule = []time.Duration{
@@ -94,16 +102,28 @@ type ChapterThumbnailRequest struct {
 }
 
 type Service struct {
-	fileRepo        FileRepository
-	folderRepo      FolderRepository
-	probeEnsurer    ProbeEnsurer
-	settings        SettingsReader
-	store           ObjectStore
-	notifier        ThumbnailNotifier
-	ffmpegPath      string
-	hwAccel         string
-	hwDevice        string
-	hwResolveOnce   sync.Once
+	fileRepo     FileRepository
+	folderRepo   FolderRepository
+	probeEnsurer ProbeEnsurer
+	settings     SettingsReader
+	store        ObjectStore
+	notifier     ThumbnailNotifier
+	ffmpegPath   string
+	// hwAccel and hwDevice hold the playback.hw_accel / playback.hw_device
+	// values captured when the service was built. They are only the fallback:
+	// resolveHWConfig re-reads both settings per extraction so an admin who
+	// changes hardware acceleration does not have to restart the server for
+	// chapter-thumbnail extraction to follow.
+	hwAccel  string
+	hwDevice string
+
+	// hwMu guards the resolved-accelerator memo below. Resolving "auto" execs
+	// an FFmpeg capability probe and logs the verdict, so the result is cached
+	// against the configured value that produced it and recomputed only when
+	// that value actually changes.
+	hwMu            sync.Mutex
+	hwResolved      bool
+	hwResolvedFrom  string
 	resolvedHWAccel string
 
 	notifyNormal        chan struct{}
@@ -207,7 +227,9 @@ func (s *Service) Start(ctx context.Context) {
 		return
 	}
 
-	resolvedAccel, resolvedDevice := s.resolveHWConfig()
+	// Logged for the boot record only: both values are re-read per extraction,
+	// so a later settings change is honored without a restart.
+	resolvedAccel, resolvedDevice := s.resolveHWConfig(ctx)
 	slog.InfoContext(ctx,
 		"chapter thumbnail service started", "component", "chapterthumbs",
 		"workers",
@@ -650,7 +672,7 @@ func (s *Service) extractFrameLocal(
 	toneMap bool,
 	allowSoftwareToneMap bool,
 ) ([]byte, string, error) {
-	resolvedAccel, resolvedDevice := s.resolveHWConfig()
+	resolvedAccel, resolvedDevice := s.resolveHWConfig(ctx)
 	return ExtractFrame(ctx, FrameExtractOptions{
 		InputPath:            inputPath,
 		SeekSeconds:          seekSeconds,
@@ -663,13 +685,62 @@ func (s *Service) extractFrameLocal(
 	})
 }
 
-func (s *Service) resolveHWConfig() (string, string) {
-	s.hwResolveOnce.Do(func() {
-		s.resolvedHWAccel = playback.ResolveHWAccelWithFFmpeg(s.hwAccel, s.ffmpegPath)
-	})
+// resolveHWConfig returns the accelerator and device this extraction should
+// use. Both come from the live settings repo rather than from a value frozen at
+// startup, which is what lets playback.hw_accel / playback.hw_device take
+// effect without a server restart.
+func (s *Service) resolveHWConfig(ctx context.Context) (string, string) {
+	configuredAccel, configuredDevice := s.configuredHWConfig(ctx)
+
+	s.hwMu.Lock()
+	defer s.hwMu.Unlock()
+	if !s.hwResolved || s.hwResolvedFrom != configuredAccel {
+		s.resolvedHWAccel = playback.ResolveHWAccelWithFFmpeg(configuredAccel, s.ffmpegPath)
+		s.hwResolvedFrom = configuredAccel
+		s.hwResolved = true
+	}
 	// The configured device value passes through raw: ExtractFrame resolves it
 	// (multi-device balancing, empty-value auto-detection) per extraction.
-	return s.resolvedHWAccel, s.hwDevice
+	return s.resolvedHWAccel, configuredDevice
+}
+
+// configuredHWConfig reads playback.hw_accel / playback.hw_device from the
+// settings repo, mirroring how the config loader defaults them. A settings repo
+// that is absent (test doubles) or failing falls back to the values captured at
+// construction, so a database blip keeps the boot configuration instead of
+// silently dropping extraction to software.
+func (s *Service) configuredHWConfig(ctx context.Context) (string, string) {
+	if s == nil {
+		return "", ""
+	}
+	accel := s.hwAccel
+	if value, ok := s.readSetting(ctx, playbackHWAccelSetting); ok {
+		accel = value
+		if accel == "" {
+			accel = playbackHWAccelDefault
+		}
+	}
+	device := s.hwDevice
+	if value, ok := s.readSetting(ctx, playbackHWDeviceSetting); ok {
+		// An empty device is a meaningful value ("auto-detect one"), so unlike
+		// the accelerator it is not replaced by a default.
+		device = value
+	}
+	return accel, device
+}
+
+// readSetting reports the trimmed setting value and whether the settings repo
+// answered at all. The second result is what lets callers tell "configured
+// empty" apart from "could not read".
+func (s *Service) readSetting(ctx context.Context, key string) (string, bool) {
+	if s == nil || s.settings == nil {
+		return "", false
+	}
+	value, err := s.settings.Get(ctx, key)
+	if err != nil {
+		return "", false
+	}
+	return strings.TrimSpace(value), true
 }
 
 func (s *Service) chapterThumbnailExecutionMode(ctx context.Context) string {

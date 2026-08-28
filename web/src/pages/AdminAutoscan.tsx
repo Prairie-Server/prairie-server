@@ -16,31 +16,7 @@ import {
 import ConnectionsPanel from "@/pages/admin/autoscan/ConnectionsPanel";
 import ActivityPanel from "@/pages/admin/autoscan/ActivityPanel";
 import SourcesPanel from "@/pages/admin/autoscan/SourcesPanel";
-
-// ---------------------------------------------------------------------------
-// Tab routing helpers
-// ---------------------------------------------------------------------------
-
-const AUTOSCAN_TABS = ["sources", "activity"] as const;
-type AutoscanTab = (typeof AUTOSCAN_TABS)[number];
-
-/**
- * Connections and settings used to be peer tabs, which read as "set these up
- * first" — most operators never needed either. They now live in an Advanced
- * section on the Sources view, so their old deep links land on Sources with
- * that section already open rather than 404-ing into a missing tab.
- */
-const LEGACY_ADVANCED_TABS = new Set(["connections", "settings"]);
-
-function normalizeTab(value: string | null): AutoscanTab {
-  return AUTOSCAN_TABS.includes(value as AutoscanTab)
-    ? (value as AutoscanTab)
-    : "sources";
-}
-
-function isLegacyAdvancedTab(value: string | null): boolean {
-  return value !== null && LEGACY_ADVANCED_TABS.has(value);
-}
+import { isLegacyAdvancedTab, normalizeTab } from "@/pages/autoscanSearchParams";
 
 // ---------------------------------------------------------------------------
 // Settings tab
@@ -57,11 +33,7 @@ function SettingsTab() {
   // Merge server data into local form on first load (and after invalidation).
   const serverData = settings.data;
   const effective: AutoscanSettings = form ??
-    serverData ?? {
-      enabled: false,
-      default_poll_interval_seconds: 300,
-      debounce_seconds: 10,
-    };
+    serverData ?? { enabled: false, default_poll_interval_seconds: 300, debounce_seconds: 10 };
 
   function patch(delta: Partial<AutoscanSettings>) {
     setForm((prev) => ({
@@ -78,18 +50,14 @@ function SettingsTab() {
   }
 
   if (settings.isLoading) {
-    return (
-      <p className="text-muted-foreground py-4 text-sm">Loading settings…</p>
-    );
+    return <p className="text-muted-foreground py-4 text-sm">Loading settings…</p>;
   }
 
   return (
     <div className="max-w-lg space-y-6">
       {/* Default poll interval */}
       <div className="space-y-1.5">
-        <Label htmlFor="default-poll-interval">
-          Default check interval (seconds)
-        </Label>
+        <Label htmlFor="default-poll-interval">Default check interval (seconds)</Label>
         <div className="flex items-center gap-2">
           <Input
             id="default-poll-interval"
@@ -98,9 +66,7 @@ function SettingsTab() {
             min={1}
             value={effective.default_poll_interval_seconds}
             onChange={(e) =>
-              patch({
-                default_poll_interval_seconds: Number(e.target.value) || 300,
-              })
+              patch({ default_poll_interval_seconds: Number(e.target.value) || 300 })
             }
             onBlur={() => save()}
           />
@@ -121,9 +87,7 @@ function SettingsTab() {
             type="number"
             min={0}
             value={effective.debounce_seconds}
-            onChange={(e) =>
-              patch({ debounce_seconds: Number(e.target.value) || 0 })
-            }
+            onChange={(e) => patch({ debounce_seconds: Number(e.target.value) || 0 })}
             onBlur={() => save()}
           />
           <span className="text-muted-foreground text-sm">sec</span>
@@ -140,9 +104,19 @@ function SettingsTab() {
 // Page
 // ---------------------------------------------------------------------------
 
-export default function AdminAutoscan() {
+interface AdminAutoscanProps {
+  /**
+   * Rendered inside the Libraries page rather than as its own route. The
+   * heading drops to an h2 and the Sources/Activity selection moves to `view`,
+   * because `tab` already names the Libraries tab that hosts this panel.
+   */
+  embedded?: boolean;
+}
+
+export default function AdminAutoscan({ embedded = false }: AdminAutoscanProps = {}) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const requestedTab = searchParams.get("tab");
+  const tabParam = embedded ? "view" : "tab";
+  const requestedTab = searchParams.get(tabParam);
   const activeTab = normalizeTab(requestedTab);
   const trigger = useTriggerAutoscan();
   const settings = useAutoscanSettings();
@@ -150,9 +124,7 @@ export default function AdminAutoscan() {
 
   // Open Advanced automatically when arriving from an old connections/settings
   // link, so a bookmark still lands on the thing it pointed at.
-  const [advancedOpen, setAdvancedOpen] = useState(() =>
-    isLegacyAdvancedTab(requestedTab),
-  );
+  const [advancedOpen, setAdvancedOpen] = useState(() => isLegacyAdvancedTab(requestedTab));
 
   const enabled = settings.data?.enabled ?? false;
 
@@ -164,9 +136,9 @@ export default function AdminAutoscan() {
   function setActiveTab(value: string) {
     const next = new URLSearchParams(searchParams);
     if (value === "sources") {
-      next.delete("tab");
+      next.delete(tabParam);
     } else {
-      next.set("tab", value);
+      next.set(tabParam, value);
     }
     setSearchParams(next, { replace: true });
   }
@@ -176,7 +148,13 @@ export default function AdminAutoscan() {
       <div className="page-header">
         <div className="space-y-2">
           <div className="flex items-center gap-2.5">
-            <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Autoscan</h1>
+            {embedded ? (
+              <h2 className="text-xl font-semibold tracking-tight">Autoscan</h2>
+            ) : (
+              <h1 className="text-3xl font-semibold tracking-normal text-balance sm:text-4xl">
+                Autoscan
+              </h1>
+            )}
             {settings.data &&
               (enabled ? (
                 <Badge variant="secondary">Enabled</Badge>
@@ -187,17 +165,13 @@ export default function AdminAutoscan() {
               ))}
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-            Prairie re-scans a library as soon as something changes, instead of
-            waiting for the next scheduled scan. Add a source for each thing you
-            want watched.
+            Silo re-scans a library as soon as something changes, instead of waiting for the next
+            scheduled scan. Add a source for each thing you want watched.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <Label
-              htmlFor="autoscan-enabled"
-              className="text-muted-foreground text-sm"
-            >
+            <Label htmlFor="autoscan-enabled" className="text-muted-foreground text-sm">
               Autoscan
             </Label>
             <Switch
@@ -221,10 +195,7 @@ export default function AdminAutoscan() {
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-5">
-        <TabsList
-          variant="line"
-          className="border-border w-full justify-start border-b"
-        >
+        <TabsList variant="line" className="border-border w-full justify-start border-b">
           <TabsTrigger value="sources">Sources</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
@@ -255,10 +226,7 @@ export default function AdminAutoscan() {
             </button>
 
             {advancedOpen && (
-              <div
-                id="autoscan-advanced"
-                className="space-y-8 border-t px-4 py-5"
-              >
+              <div id="autoscan-advanced" className="space-y-8 border-t px-4 py-5">
                 <ConnectionsPanel />
                 <div className="space-y-4">
                   <div className="space-y-1">

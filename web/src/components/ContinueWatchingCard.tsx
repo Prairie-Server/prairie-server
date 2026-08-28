@@ -1,6 +1,4 @@
 import ViewTransitionLink from "@/components/ViewTransitionLink";
-import { ArtworkImage } from "@/components/ArtworkImage";
-import { BACKDROP_WIDTHS, POSTER_WIDTHS, STILL_WIDTHS } from "@/lib/artworkUrl";
 import { BookOpen, Play } from "lucide-react";
 import { useCallback, useRef } from "react";
 import { useLocation } from "react-router";
@@ -8,25 +6,16 @@ import type { ItemDetail, SectionItem } from "@/api/types";
 import type { ProgressEntry } from "@/api/types";
 import MediaItemMenu from "@/components/MediaItemMenu";
 import CardOverlays from "@/components/overlays/CardOverlays";
-import {
-  overlayDataFromSectionItem,
-  type CardOverlayPrefs,
-} from "@/lib/overlays";
+import { overlayDataFromSectionItem, type CardOverlayPrefs } from "@/lib/overlays";
 import { formatListeningTimeLeft } from "@/lib/audiobooks/duration";
-import {
-  upcomingBadgeClass,
-  upcomingBadgeLabel,
-} from "@/lib/upcomingEventPresentation";
+import { upcomingBadgeClass, upcomingBadgeLabel } from "@/lib/upcomingEventPresentation";
 import { useWatchPlaybackController } from "@/playback/watchPlaybackContext";
 import { parseWatchHref } from "@/pages/watchRouteHelpers";
-import {
-  buildItemHref,
-  buildMediaPlayHref,
-  isVideoWatchHref,
-} from "@/lib/mediaNavigation";
+import { buildItemHref, buildMediaPlayHref, isVideoWatchHref } from "@/lib/mediaNavigation";
 import { useUICustomization } from "@/hooks/useUICustomization";
 import { carouselCardWidthClasses } from "@/lib/uiCustomization";
 import CardPlayOverlay from "@/components/CardPlayOverlay";
+import type { CardQuickActionMode } from "@/lib/cardQuickActions";
 
 type ContinueWatchingCardProps = (
   | {
@@ -41,6 +30,7 @@ type ContinueWatchingCardProps = (
     }
 ) & {
   overlayPrefs?: CardOverlayPrefs | null;
+  quickActionMode?: CardQuickActionMode;
   libraryId?: number;
   variant?: "wide" | "poster";
 };
@@ -69,11 +59,7 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
           seasonNumber: props.sectionItem.season_number,
           episodeNumber: props.sectionItem.episode_number,
           backdropUrl: props.sectionItem.backdrop_url,
-          backdropAvifUrl: props.sectionItem.backdrop_avif_url,
-          backdropPngUrl: props.sectionItem.backdrop_png_url,
           posterUrl: props.sectionItem.poster_url,
-          posterAvifUrl: props.sectionItem.poster_avif_url,
-          posterPngUrl: props.sectionItem.poster_png_url,
           positionSeconds: props.sectionItem.position_seconds ?? 0,
           durationSeconds: props.sectionItem.duration_seconds ?? 0,
           type: props.sectionItem.type,
@@ -95,18 +81,13 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
           seasonNumber: props.detail.season_number,
           episodeNumber: props.detail.episode_number,
           backdropUrl: props.detail.backdrop_url,
-          backdropAvifUrl: props.detail.backdrop_avif_url,
-          backdropPngUrl: props.detail.backdrop_png_url,
           posterUrl: props.detail.poster_url,
-          posterAvifUrl: props.detail.poster_avif_url,
-          posterPngUrl: props.detail.poster_png_url,
           positionSeconds: props.progress.position_seconds,
           durationSeconds: props.progress.duration_seconds,
           type: props.detail.type,
         };
 
-  const isNextUp =
-    "sectionItem" in props && props.sectionItem?.item_source === "next_up";
+  const isNextUp = "sectionItem" in props && props.sectionItem?.item_source === "next_up";
   const dismissAction =
     "sectionItem" in props && props.sectionItem
       ? props.sectionItem.item_source === "next_up"
@@ -133,19 +114,16 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
           progressUpdatedAt: props.progress.updated_at,
         };
   const progressPercent =
-    card.durationSeconds > 0
-      ? (card.positionSeconds / card.durationSeconds) * 100
-      : 0;
+    card.durationSeconds > 0 ? (card.positionSeconds / card.durationSeconds) * 100 : 0;
   const hasPartialProgress = progressPercent > 0 && progressPercent < 100;
-  const hasEpisodeMeta =
-    card.seasonNumber != null && card.episodeNumber != null;
+  // Drives both the bar itself and the overlay row's clearance above it.
+  const showProgressBar = !isNextUp && progressPercent > 0;
+  const hasEpisodeMeta = card.seasonNumber != null && card.episodeNumber != null;
   // A manga chapter is an ebook item that carries its owning series; the card
   // presents the series (heading, links) since the chapter's own item detail
   // is an internal page that loops back into the reader.
-  const isMangaChapter =
-    card.type === "ebook" && !!card.seriesId && !!card.seriesTitle;
-  const headingIsSeries =
-    (hasEpisodeMeta && !!card.seriesTitle) || isMangaChapter;
+  const isMangaChapter = card.type === "ebook" && !!card.seriesId && !!card.seriesTitle;
+  const headingIsSeries = (hasEpisodeMeta && !!card.seriesTitle) || isMangaChapter;
   const heading = headingIsSeries ? card.seriesTitle : card.title;
   const playTitle = heading ?? card.title ?? "item";
   // The heading shows the series title for episodes, so it should navigate to
@@ -231,8 +209,7 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
       ? "aspect-square"
       : "aspect-[2/3]"
     : "aspect-video";
-  const isSectionEpisode =
-    "sectionItem" in props && props.sectionItem?.type === "episode";
+  const isSectionEpisode = "sectionItem" in props && props.sectionItem?.type === "episode";
   // Episodes store the horizontal still in poster_url (see
   // episode_catalog_source.go); wide-variant movies/series/seasons need the
   // backdrop for the 16:9 card. Poster variant always wants the vertical
@@ -253,47 +230,16 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
         ? card.backdropUrl
         : card.posterUrl;
   const imageSrc = imagePrimary || imageFallback;
-  const usingPoster = Boolean(imageSrc && imageSrc === card.posterUrl);
-  const imageAvif = usingPoster ? card.posterAvifUrl : card.backdropAvifUrl;
-  const imagePng = usingPoster ? card.posterPngUrl : card.backdropPngUrl;
-  // The ladder has to match the kind of image that was actually chosen above,
-  // not the card's shape. An episode still is stored under a `still` key, whose
-  // only rungs are w300/w500 (artworkkey.VariantWidths), so offering it the
-  // backdrop ladder made the browser pick w1280 and 404 -- the card fell back to
-  // its placeholder while movie posters, whose ladder did match, rendered fine.
-  // Clients that request the canonical URL without a srcSet were unaffected,
-  // which is why the same episode looked correct on the TV app.
-  const usingStill = isSectionEpisode
-    ? !usingPoster
-    : card.type === "episode" && usingPoster;
-  const imageWidths = usingStill
-    ? STILL_WIDTHS
-    : isPoster
-      ? POSTER_WIDTHS
-      : BACKDROP_WIDTHS;
 
   return (
-    <div
-      ref={cardRef}
-      className={`media-card-longpress group/card ${containerWidth}`}
-    >
+    <div ref={cardRef} className={`media-card-longpress group/card ${containerWidth}`}>
       <div className="group/media relative">
         <ViewTransitionLink to={detailHref} className="block">
-          <div
-            className={`media-card-image relative ${imageAspect} overflow-hidden rounded-xl`}
-          >
+          <div className={`media-card-image relative ${imageAspect} overflow-hidden rounded-xl`}>
             {imageSrc ? (
-              <ArtworkImage
+              <img
                 src={imageSrc}
-                avifSrc={imageAvif}
-                pngSrc={imagePng}
                 alt={heading}
-                widths={imageWidths}
-                sizes={
-                  isPoster
-                    ? "(max-width: 640px) 42vw, (max-width: 1024px) 18vw, 160px"
-                    : "(max-width: 640px) 85vw, (max-width: 1024px) 40vw, 320px"
-                }
                 className="h-full w-full object-cover transition-transform duration-300 group-hover/media:scale-105"
                 loading="lazy"
               />
@@ -303,22 +249,21 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
               </div>
             )}
 
-            {"sectionItem" in props &&
-              props.sectionItem &&
-              props.overlayPrefs && (
-                <CardOverlays
-                  data={overlayDataFromSectionItem(props.sectionItem)}
-                  prefs={props.overlayPrefs}
-                  variant={variant}
-                />
-              )}
+            {"sectionItem" in props && props.sectionItem && props.overlayPrefs && (
+              <CardOverlays
+                data={overlayDataFromSectionItem(props.sectionItem)}
+                prefs={props.overlayPrefs}
+                variant={variant}
+                hasProgressBar={showProgressBar}
+              />
+            )}
 
             {/* Hover dim behind the play button */}
             <div className="media-card-hover-dim absolute inset-0 bg-black/0 transition-colors duration-150" />
 
             {/* Progress bar — inset pill so a full bar doesn't read as a
                 stray edge along the artwork */}
-            {!isNextUp && progressPercent > 0 && (
+            {showProgressBar && (
               <div className="absolute inset-x-2.5 bottom-2 h-[3px] overflow-hidden rounded-full bg-black/40">
                 <div
                   className="h-full rounded-full transition-all duration-300"
@@ -359,9 +304,7 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
               : props.detail.content_id
           }
           mediaType={
-            "sectionItem" in props && props.sectionItem
-              ? props.sectionItem.type
-              : props.detail.type
+            "sectionItem" in props && props.sectionItem ? props.sectionItem.type : props.detail.type
           }
           libraryId={props.libraryId}
           userState={
@@ -374,6 +317,7 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
           showFavoriteShortcut={false}
           dismissAction={dismissAction}
           hasPartialProgress={hasPartialProgress}
+          quickActionMode={props.quickActionMode ?? "none"}
           longPressRef={cardRef}
           itemTitle={heading}
         />
@@ -410,9 +354,7 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
           {showMetadata &&
             timeLeftLabel &&
             (timeLeftLabel === "\u00A0" ? (
-              <div className="text-muted-foreground text-xs">
-                {timeLeftLabel}
-              </div>
+              <div className="text-muted-foreground text-xs">{timeLeftLabel}</div>
             ) : (
               <ViewTransitionLink
                 to={isMangaChapter ? card.watchHref : card.itemHref}

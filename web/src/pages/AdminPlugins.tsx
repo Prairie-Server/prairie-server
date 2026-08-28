@@ -100,9 +100,8 @@ function capabilityLabel(type: string): string {
 
 function sourceLabel(sourceKind: string): string {
   switch (sourceKind) {
-    case "prairie":
     case "silo":
-      return "Prairie maintained";
+      return "Silo maintained";
     case "approved_community":
       return "Approved community";
     default:
@@ -110,15 +109,12 @@ function sourceLabel(sourceKind: string): string {
   }
 }
 
-function pluginDisplayName(
-  pluginID: string,
-  presentation?: PluginPresentation,
-): string {
+function pluginDisplayName(pluginID: string, presentation?: PluginPresentation): string {
   const displayName = presentation?.display_name.trim();
   if (displayName) return displayName;
 
   return pluginID
-    .replace(/^(?:prairie|silo)[._-]?/, "")
+    .replace(/^silo[._-]?/, "")
     .split(/[._-]+/)
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -133,9 +129,8 @@ function pluginSummary(
   if (summary) return summary;
 
   return (
-    capabilities
-      .find((capability) => capability.description?.trim())
-      ?.description?.trim() ?? "No description provided."
+    capabilities.find((capability) => capability.description?.trim())?.description?.trim() ??
+    "No description provided."
   );
 }
 
@@ -143,9 +138,7 @@ function safeExternalURL(rawURL?: string): string | undefined {
   if (!rawURL) return undefined;
   try {
     const url = new URL(rawURL);
-    return url.protocol === "http:" || url.protocol === "https:"
-      ? url.toString()
-      : undefined;
+    return url.protocol === "http:" || url.protocol === "https:" ? url.toString() : undefined;
   } catch {
     return undefined;
   }
@@ -159,10 +152,7 @@ function PluginResourceLinks({
   repoURL?: string;
 }) {
   const links = [
-    {
-      label: "Source",
-      url: safeExternalURL(presentation?.source_url || repoURL),
-    },
+    { label: "Source", url: safeExternalURL(presentation?.source_url || repoURL) },
     { label: "Changelog", url: safeExternalURL(presentation?.changelog_url) },
     { label: "Support", url: safeExternalURL(presentation?.support_url) },
   ].filter((link): link is { label: string; url: string } => Boolean(link.url));
@@ -272,13 +262,8 @@ function PluginListToolbar({
           </Button>
         ) : null}
       </div>
-      <span
-        className="text-muted-foreground shrink-0 text-xs tabular-nums"
-        aria-live="polite"
-      >
-        {query.trim()
-          ? `${matchingTotal} of ${total} plugins`
-          : `${total} plugins`}
+      <span className="text-muted-foreground shrink-0 text-xs tabular-nums" aria-live="polite">
+        {query.trim() ? `${matchingTotal} of ${total} plugins` : `${total} plugins`}
       </span>
     </div>
   );
@@ -338,15 +323,11 @@ function InstalledPluginCard({
                     variant="outline"
                     className="border-amber-500/40 text-[11px] text-amber-500"
                   >
-                    {installation.version} &rarr;{" "}
-                    {installation.available_version} available
+                    {installation.version} &rarr; {installation.available_version} available
                   </Badge>
                 )}
                 {installation.updates_paused ? (
-                  <Badge
-                    variant="outline"
-                    className="text-muted-foreground text-[11px]"
-                  >
+                  <Badge variant="outline" className="text-muted-foreground text-[11px]">
                     Updates paused
                   </Badge>
                 ) : null}
@@ -398,10 +379,7 @@ function InstalledPluginCard({
                   ))}
                 </div>
               )}
-              <PluginResourceLinks
-                presentation={presentation}
-                repoURL={repoURL}
-              />
+              <PluginResourceLinks presentation={presentation} repoURL={repoURL} />
             </div>
           </div>
 
@@ -434,11 +412,7 @@ function InstalledPluginCard({
                 </Button>
               </>
             ) : (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => onConfigure(installation)}
-              >
+              <Button variant="outline" size="sm" onClick={() => onConfigure(installation)}>
                 <Settings2 className="mr-1.5 h-3.5 w-3.5" />
                 Configure
               </Button>
@@ -466,10 +440,7 @@ function InstalledPluginCard({
                 size="sm"
                 checked={installation.enabled}
                 onCheckedChange={(checked) =>
-                  updateInstallation.mutate({
-                    id: installation.id,
-                    body: { enabled: checked },
-                  })
+                  updateInstallation.mutate({ id: installation.id, body: { enabled: checked } })
                 }
               />
             </div>
@@ -489,12 +460,11 @@ function InstalledPluginCard({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              Uninstall{" "}
-              {pluginDisplayName(installation.plugin_id, presentation)}?
+              Uninstall {pluginDisplayName(installation.plugin_id, presentation)}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Prairie will stop the plugin, then remove its installation,
-              configuration, and installed files. This cannot be undone.
+              Silo will stop the plugin, then remove its installation, configuration, and installed
+              files. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -504,9 +474,7 @@ function InstalledPluginCard({
               disabled={deleteInstallation.isPending}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              {deleteInstallation.isPending
-                ? "Uninstalling..."
-                : "Uninstall plugin"}
+              {deleteInstallation.isPending ? "Uninstalling..." : "Uninstall plugin"}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -534,15 +502,9 @@ function ConfigureDialog({
   const authBindings = installation.auth_bindings ?? [];
   const taskBindings = installation.task_bindings ?? [];
   const routes = installation.routes ?? [];
-  const authCapabilities = capabilities.filter(
-    (c) => c.type === "auth_provider.v1",
-  );
-  const taskCapabilities = capabilities.filter(
-    (c) => c.type === "scheduled_task.v1",
-  );
-  const adminRoutes = routes.filter(
-    (r) => r.navigable && r.navigation_kind === "admin",
-  );
+  const authCapabilities = capabilities.filter((c) => c.type === "auth_provider.v1");
+  const taskCapabilities = capabilities.filter((c) => c.type === "scheduled_task.v1");
+  const adminRoutes = routes.filter((r) => r.navigable && r.navigation_kind === "admin");
   const hasSections =
     globalConfigSchema.length > 0 ||
     authCapabilities.length > 0 ||
@@ -565,11 +527,7 @@ function ConfigureDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <Accordion
-          type="multiple"
-          className="w-full"
-          defaultValue={["config", "analyzers"]}
-        >
+        <Accordion type="multiple" className="w-full" defaultValue={["config", "analyzers"]}>
           {/* Global Config */}
           {globalConfigSchema.length > 0 && (
             <AccordionItem value="config">
@@ -585,24 +543,16 @@ function ConfigureDialog({
                     <PluginConfigForm
                       key={schema.key}
                       schema={schema}
-                      value={
-                        globalConfigs.find((entry) => entry.key === schema.key)
-                          ?.value
-                      }
+                      value={globalConfigs.find((entry) => entry.key === schema.key)?.value}
                       configuredSecrets={
-                        globalConfigs.find((entry) => entry.key === schema.key)
-                          ?.configured_secrets
+                        globalConfigs.find((entry) => entry.key === schema.key)?.configured_secrets
                       }
                       isSaving={saveConfig.isPending}
                       isTesting={testConfig.isPending}
                       onTest={(key, nextValue, clearSecrets) =>
                         testConfig.mutateAsync({
                           id: installation.id,
-                          body: {
-                            key,
-                            value: nextValue,
-                            clear_secrets: clearSecrets,
-                          },
+                          body: { key, value: nextValue, clear_secrets: clearSecrets },
                         })
                       }
                       onSave={(key, nextValue, clearSecrets) =>
@@ -634,13 +584,11 @@ function ConfigureDialog({
               <AccordionContent>
                 <div className="space-y-3">
                   <p className="text-muted-foreground text-xs">
-                    Auth-provider bindings are registered at server startup.
-                    Saved changes require a restart.
+                    Auth-provider bindings are registered at server startup. Saved changes require a
+                    restart.
                   </p>
                   {authCapabilities.map((capability, index) => {
-                    const binding = authBindings.find(
-                      (e) => e.capability_id === capability.id,
-                    );
+                    const binding = authBindings.find((e) => e.capability_id === capability.id);
                     return (
                       <div
                         key={capability.id}
@@ -650,9 +598,7 @@ function ConfigureDialog({
                           <p className="text-sm font-medium">
                             {capability.display_name || capability.id}
                           </p>
-                          <p className="text-muted-foreground font-mono text-xs">
-                            {capability.id}
-                          </p>
+                          <p className="text-muted-foreground font-mono text-xs">{capability.id}</p>
                         </div>
                         <Switch
                           checked={binding?.enabled ?? false}
@@ -663,8 +609,7 @@ function ConfigureDialog({
                               body: {
                                 capability_id: capability.id,
                                 enabled: checked,
-                                display_order:
-                                  binding?.display_order ?? index + 1,
+                                display_order: binding?.display_order ?? index + 1,
                                 auto_provision: binding?.auto_provision ?? true,
                                 default_login: binding?.default_login ?? false,
                               },
@@ -691,14 +636,11 @@ function ConfigureDialog({
               <AccordionContent>
                 <div className="space-y-3">
                   <p className="text-muted-foreground text-xs">
-                    Enable or disable each declared task binding. Task
-                    registration is rebuilt at server startup, so saved changes
-                    require a restart.
+                    Enable or disable each declared task binding. Task registration is rebuilt at
+                    server startup, so saved changes require a restart.
                   </p>
                   {taskCapabilities.map((capability) => {
-                    const binding = taskBindings.find(
-                      (e) => e.capability_id === capability.id,
-                    );
+                    const binding = taskBindings.find((e) => e.capability_id === capability.id);
                     return (
                       <div
                         key={capability.id}
@@ -708,14 +650,9 @@ function ConfigureDialog({
                           <p className="text-sm font-medium">
                             {capability.display_name || capability.id}
                           </p>
-                          <p className="text-muted-foreground font-mono text-xs">
-                            {capability.id}
-                          </p>
+                          <p className="text-muted-foreground font-mono text-xs">{capability.id}</p>
                           <p className="text-muted-foreground mt-1 text-xs">
-                            Trigger:{" "}
-                            {JSON.stringify(
-                              binding?.trigger ?? { type: "startup" },
-                            )}
+                            Trigger: {JSON.stringify(binding?.trigger ?? { type: "startup" })}
                           </p>
                         </div>
                         <Switch
@@ -727,9 +664,7 @@ function ConfigureDialog({
                               capabilityId: capability.id,
                               body: {
                                 enabled: checked,
-                                trigger: binding?.trigger ?? {
-                                  type: "startup",
-                                },
+                                trigger: binding?.trigger ?? { type: "startup" },
                               },
                             })
                           }
@@ -790,13 +725,7 @@ function ConfigureDialog({
 
 /* ─── Available plugin card ─────────────────────────────────────── */
 
-function CatalogCard({
-  entry,
-  isInstalled,
-}: {
-  entry: PluginCatalogEntry;
-  isInstalled: boolean;
-}) {
+function CatalogCard({ entry, isInstalled }: { entry: PluginCatalogEntry; isInstalled: boolean }) {
   const installPlugin = useInstallPlugin();
   const capabilities = entry.capabilities ?? [];
 
@@ -818,9 +747,7 @@ function CatalogCard({
               {sourceLabel(entry.source_kind)}
             </Badge>
           </div>
-          <p className="text-muted-foreground font-mono text-[11px]">
-            {entry.plugin_id}
-          </p>
+          <p className="text-muted-foreground font-mono text-[11px]">{entry.plugin_id}</p>
           <p className="text-muted-foreground line-clamp-2 text-xs leading-relaxed">
             {pluginSummary(entry.presentation, capabilities)}
           </p>
@@ -839,10 +766,7 @@ function CatalogCard({
         </div>
       </div>
       <div className="flex flex-wrap items-center justify-between gap-3 border-t pt-3">
-        <PluginResourceLinks
-          presentation={entry.presentation}
-          repoURL={entry.repo_url}
-        />
+        <PluginResourceLinks presentation={entry.presentation} repoURL={entry.repo_url} />
         {isInstalled ? (
           <Badge variant="outline" className="text-muted-foreground text-xs">
             Installed
@@ -868,11 +792,7 @@ function CatalogCard({
   );
 }
 
-function CommunityCatalogControl({
-  settings,
-}: {
-  settings: PluginCatalogSettings;
-}) {
+function CommunityCatalogControl({ settings }: { settings: PluginCatalogSettings }) {
   const updateSettings = useUpdatePluginCatalogSettings();
   const [confirmDisable, setConfirmDisable] = useState(false);
 
@@ -895,24 +815,18 @@ function CommunityCatalogControl({
         <div className="max-w-2xl space-y-1">
           <div className="flex items-center gap-2">
             <Shield className="text-muted-foreground h-4 w-4" />
-            <label
-              htmlFor="approved-community-plugins"
-              className="text-sm font-medium"
-            >
+            <label htmlFor="approved-community-plugins" className="text-sm font-medium">
               Include approved community plugins
             </label>
           </div>
           <p className="text-muted-foreground text-xs leading-relaxed">
-            Reviewed by Prairie maintainers to work as described and be safe for
-            their documented use. These plugins remain maintained and supported
-            by community contributors.
+            Reviewed by Silo maintainers to work as described and be safe for their documented use.
+            These plugins remain maintained and supported by community contributors.
           </p>
           {settings.migrated_plugin_count > 0 ? (
             <p className="text-muted-foreground text-xs">
               {settings.migrated_plugin_count} existing{" "}
-              {settings.migrated_plugin_count === 1
-                ? "installation was"
-                : "installations were"}{" "}
+              {settings.migrated_plugin_count === 1 ? "installation was" : "installations were"}{" "}
               moved here without changing configuration.
             </p>
           ) : null}
@@ -929,16 +843,13 @@ function CommunityCatalogControl({
       <AlertDialog open={confirmDisable} onOpenChange={setConfirmDisable}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>
-              Hide approved community plugins?
-            </AlertDialogTitle>
+            <AlertDialogTitle>Hide approved community plugins?</AlertDialogTitle>
             <AlertDialogDescription>
               {settings.installed_community_plugin_count}{" "}
               {settings.installed_community_plugin_count === 1
                 ? "installed plugin will"
                 : "installed plugins will"}{" "}
-              keep running, but update discovery will pause until this catalog
-              is included again.
+              keep running, but update discovery will pause until this catalog is included again.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -971,11 +882,7 @@ function RepositorySection() {
   function handleSubmit(event: FormEvent) {
     event.preventDefault();
     if (!name.trim() || !url.trim()) return;
-    createRepository.mutate({
-      display_name: name.trim(),
-      url: url.trim(),
-      enabled: true,
-    });
+    createRepository.mutate({ display_name: name.trim(), url: url.trim(), enabled: true });
     setName("");
     setUrl("");
     setShowForm(false);
@@ -986,15 +893,9 @@ function RepositorySection() {
       <div className="flex items-center justify-between">
         <div>
           <h3 className="text-sm font-semibold">Repositories</h3>
-          <p className="text-muted-foreground text-xs">
-            Sources for discovering plugins.
-          </p>
+          <p className="text-muted-foreground text-xs">Sources for discovering plugins.</p>
         </div>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setShowForm(!showForm)}
-        >
+        <Button variant="outline" size="sm" onClick={() => setShowForm(!showForm)}>
           {showForm ? (
             <X className="mr-1.5 h-3.5 w-3.5" />
           ) : (
@@ -1022,7 +923,6 @@ function RepositorySection() {
             className="sm:flex-[2]"
           />
           <Button type="submit" size="sm">
-            <Plus />
             Add
           </Button>
         </form>
@@ -1037,32 +937,23 @@ function RepositorySection() {
             >
               <div className="min-w-0 space-y-0.5">
                 <div className="flex items-center gap-2">
-                  <p className="truncate text-sm font-medium">
-                    {repo.display_name}
-                  </p>
+                  <p className="truncate text-sm font-medium">{repo.display_name}</p>
                   <span
                     className={`inline-block h-1.5 w-1.5 rounded-full ${repo.enabled ? "bg-success" : "bg-muted-foreground"}`}
                   />
                 </div>
-                <p className="text-muted-foreground truncate font-mono text-xs">
-                  {repo.url}
-                </p>
+                <p className="text-muted-foreground truncate font-mono text-xs">{repo.url}</p>
               </div>
               <div className="flex shrink-0 gap-2">
                 {repo.managed ? (
-                  <span className="text-muted-foreground self-center text-xs">
-                    Managed by Prairie
-                  </span>
+                  <span className="text-muted-foreground self-center text-xs">Managed by Silo</span>
                 ) : (
                   <>
                     <Button
                       variant="outline"
                       size="xs"
                       onClick={() =>
-                        updateRepository.mutate({
-                          id: repo.id,
-                          body: { enabled: !repo.enabled },
-                        })
+                        updateRepository.mutate({ id: repo.id, body: { enabled: !repo.enabled } })
                       }
                     >
                       {repo.enabled ? "Disable" : "Enable"}
@@ -1108,9 +999,7 @@ function UploadSection() {
     <div className="space-y-3">
       <div>
         <h3 className="text-sm font-semibold">Manual Install</h3>
-        <p className="text-muted-foreground text-xs">
-          Upload a plugin binary directly.
-        </p>
+        <p className="text-muted-foreground text-xs">Upload a plugin binary directly.</p>
       </div>
       <form
         onSubmit={handleSubmit}
@@ -1127,19 +1016,12 @@ function UploadSection() {
             onChange={(e) => setFile(e.target.files?.[0] ?? null)}
           />
         </label>
-        <Button
-          type="submit"
-          variant="outline"
-          size="sm"
-          disabled={!file || isPending}
-        >
+        <Button type="submit" variant="outline" size="sm" disabled={!file || isPending}>
           <Upload className="mr-1.5 h-3.5 w-3.5" />
           {isPending ? "Uploading..." : "Upload"}
         </Button>
       </form>
-      {progress !== null && (
-        <Progress value={progress} aria-label="Plugin upload progress" />
-      )}
+      {progress !== null && <Progress value={progress} aria-label="Plugin upload progress" />}
     </div>
   );
 }
@@ -1147,15 +1029,11 @@ function UploadSection() {
 /* ─── Main page ─────────────────────────────────────────────────── */
 
 export default function AdminPlugins() {
-  const { installations, catalog, catalogSettings, isLoading } =
-    useAdminPlugins();
+  const { installations, catalog, catalogSettings, isLoading } = useAdminPlugins();
   const [searchParams, setSearchParams] = useSearchParams();
   const queryClient = useQueryClient();
   const checkPluginUpdates = useCheckPluginUpdates();
   const { data: pluginUpdateTask } = useTask(CHECK_PLUGIN_UPDATES_TASK_KEY);
-  const [configuring, setConfiguring] = useState<PluginInstallation | null>(
-    null,
-  );
   const previousTaskState = useRef<string | null>(null);
 
   const installedIds = useMemo(
@@ -1166,8 +1044,7 @@ export default function AdminPlugins() {
     () => new Map(catalog.map((entry) => [entry.plugin_id, entry])),
     [catalog],
   );
-  const activeTab =
-    searchParams.get("tab") === "catalog" ? "catalog" : "installed";
+  const activeTab = searchParams.get("tab") === "catalog" ? "catalog" : "installed";
   const installedQuery = searchParams.get("installed_q") ?? "";
   const catalogQuery = searchParams.get("catalog_q") ?? "";
   const filteredInstallations = useMemo(
@@ -1203,10 +1080,7 @@ export default function AdminPlugins() {
     1,
     Math.ceil(filteredInstallations.length / INSTALLED_PAGE_SIZE),
   );
-  const catalogPageCount = Math.max(
-    1,
-    Math.ceil(filteredCatalog.length / CATALOG_PAGE_SIZE),
-  );
+  const catalogPageCount = Math.max(1, Math.ceil(filteredCatalog.length / CATALOG_PAGE_SIZE));
   const installedPage = Math.min(
     parsePluginPage(searchParams.get("installed_page")),
     installedPageCount - 1,
@@ -1225,15 +1099,11 @@ export default function AdminPlugins() {
   );
   const visibleCatalog = useMemo(
     () =>
-      filteredCatalog.slice(
-        catalogPage * CATALOG_PAGE_SIZE,
-        (catalogPage + 1) * CATALOG_PAGE_SIZE,
-      ),
+      filteredCatalog.slice(catalogPage * CATALOG_PAGE_SIZE, (catalogPage + 1) * CATALOG_PAGE_SIZE),
     [catalogPage, filteredCatalog],
   );
   const isCheckingUpdates =
-    pluginUpdateTask?.state === "running" ||
-    pluginUpdateTask?.state === "cancelling";
+    pluginUpdateTask?.state === "running" || pluginUpdateTask?.state === "cancelling";
 
   function updatePluginView(
     updates: Record<string, string | undefined>,
@@ -1247,6 +1117,17 @@ export default function AdminPlugins() {
     setSearchParams(next, { replace: options.replace ?? true });
   }
 
+  // The configure dialog is URL state: ?configure=<plugin_id>. Provider tiles
+  // on the settings pages deep-link straight into a plugin's credential dialog
+  // this way, and closing the dialog (or browser back) just drops the param.
+  // An id that matches no installation renders nothing.
+  const configuring = useMemo(
+    () =>
+      installations.find((candidate) => candidate.plugin_id === searchParams.get("configure")) ??
+      null,
+    [installations, searchParams],
+  );
+
   useEffect(() => {
     const currentState = pluginUpdateTask?.state ?? null;
     const previousState = previousTaskState.current;
@@ -1256,15 +1137,9 @@ export default function AdminPlugins() {
       (previousState === "running" || previousState === "cancelling") &&
       currentState === "idle"
     ) {
-      void queryClient.invalidateQueries({
-        queryKey: adminKeys.pluginRepositories(),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: adminKeys.pluginCatalog(),
-      });
-      void queryClient.invalidateQueries({
-        queryKey: adminKeys.pluginInstallations(),
-      });
+      queryClient.invalidateQueries({ queryKey: adminKeys.pluginRepositories() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.pluginCatalog() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.pluginInstallations() });
     }
 
     previousTaskState.current = currentState;
@@ -1276,12 +1151,10 @@ export default function AdminPlugins() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Plugins</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Extend Prairie with community and first-party plugins.
+            Extend Silo with community and first-party plugins.
           </p>
         </div>
-        <div className="text-muted-foreground py-12 text-center text-sm">
-          Loading plugins...
-        </div>
+        <div className="text-muted-foreground py-12 text-center text-sm">Loading plugins...</div>
       </div>
     );
   }
@@ -1292,7 +1165,7 @@ export default function AdminPlugins() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Plugins</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Extend Prairie with community and first-party plugins.
+            Extend Silo with community and first-party plugins.
           </p>
         </div>
         <Button
@@ -1308,10 +1181,7 @@ export default function AdminPlugins() {
       <Tabs
         value={activeTab}
         onValueChange={(value) =>
-          updatePluginView(
-            { tab: value === "catalog" ? "catalog" : undefined },
-            { replace: false },
-          )
+          updatePluginView({ tab: value === "catalog" ? "catalog" : undefined }, { replace: false })
         }
       >
         <TabsList variant="line" className="mb-2">
@@ -1342,10 +1212,7 @@ export default function AdminPlugins() {
               matchingTotal={filteredInstallations.length}
               placeholder="Search installed plugins"
               onQueryChange={(query) =>
-                updatePluginView({
-                  installed_q: query || undefined,
-                  installed_page: undefined,
-                })
+                updatePluginView({ installed_q: query || undefined, installed_page: undefined })
               }
             />
           ) : null}
@@ -1361,17 +1228,12 @@ export default function AdminPlugins() {
             </div>
           ) : filteredInstallations.length === 0 ? (
             <div className="py-12 text-center">
-              <p className="text-sm font-medium">
-                No installed plugins match your search
-              </p>
+              <p className="text-sm font-medium">No installed plugins match your search</p>
               <button
                 type="button"
                 className="text-muted-foreground hover:text-foreground mt-1 text-xs transition-colors"
                 onClick={() =>
-                  updatePluginView({
-                    installed_q: undefined,
-                    installed_page: undefined,
-                  })
+                  updatePluginView({ installed_q: undefined, installed_page: undefined })
                 }
               >
                 Clear search
@@ -1385,7 +1247,10 @@ export default function AdminPlugins() {
                     key={installation.id}
                     installation={installation}
                     catalogEntry={catalogByPluginID.get(installation.plugin_id)}
-                    onConfigure={setConfiguring}
+                    onConfigure={(target) =>
+                      // Push (not replace) so browser back closes the dialog.
+                      updatePluginView({ configure: target.plugin_id }, { replace: false })
+                    }
                   />
                 ))}
               </div>
@@ -1396,9 +1261,7 @@ export default function AdminPlugins() {
                   total={filteredInstallations.length}
                   itemNoun="plugin"
                   onPageChange={(page) =>
-                    updatePluginView({
-                      installed_page: page === 0 ? undefined : String(page + 1),
-                    })
+                    updatePluginView({ installed_page: page === 0 ? undefined : String(page + 1) })
                   }
                   className="border-t pt-3"
                 />
@@ -1409,9 +1272,7 @@ export default function AdminPlugins() {
 
         {/* ── Catalog ── */}
         <TabsContent value="catalog" className="space-y-8">
-          {catalogSettings ? (
-            <CommunityCatalogControl settings={catalogSettings} />
-          ) : null}
+          {catalogSettings ? <CommunityCatalogControl settings={catalogSettings} /> : null}
           {catalog.length > 0 ? (
             <PluginListToolbar
               query={catalogQuery}
@@ -1419,10 +1280,7 @@ export default function AdminPlugins() {
               matchingTotal={filteredCatalog.length}
               placeholder="Search the plugin catalog"
               onQueryChange={(query) =>
-                updatePluginView({
-                  catalog_q: query || undefined,
-                  catalog_page: undefined,
-                })
+                updatePluginView({ catalog_q: query || undefined, catalog_page: undefined })
               }
             />
           ) : null}
@@ -1439,18 +1297,11 @@ export default function AdminPlugins() {
             </div>
           ) : filteredCatalog.length === 0 ? (
             <div className="py-12 text-center">
-              <p className="text-sm font-medium">
-                No catalog plugins match your search
-              </p>
+              <p className="text-sm font-medium">No catalog plugins match your search</p>
               <button
                 type="button"
                 className="text-muted-foreground hover:text-foreground mt-1 text-xs transition-colors"
-                onClick={() =>
-                  updatePluginView({
-                    catalog_q: undefined,
-                    catalog_page: undefined,
-                  })
-                }
+                onClick={() => updatePluginView({ catalog_q: undefined, catalog_page: undefined })}
               >
                 Clear search
               </button>
@@ -1473,9 +1324,7 @@ export default function AdminPlugins() {
                   total={filteredCatalog.length}
                   itemNoun="plugin"
                   onPageChange={(page) =>
-                    updatePluginView({
-                      catalog_page: page === 0 ? undefined : String(page + 1),
-                    })
+                    updatePluginView({ catalog_page: page === 0 ? undefined : String(page + 1) })
                   }
                   className="border-t pt-3"
                 />
@@ -1492,7 +1341,7 @@ export default function AdminPlugins() {
       {configuring && (
         <ConfigureDialog
           installation={configuring}
-          onClose={() => setConfiguring(null)}
+          onClose={() => updatePluginView({ configure: undefined })}
         />
       )}
     </div>

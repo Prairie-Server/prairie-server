@@ -8,22 +8,12 @@ import {
   useTopUpInviteCode,
   useDeleteInviteCode,
 } from "@/hooks/queries/admin/inviteCodes";
-import {
-  useAdminServerSettings,
-  useUpdateServerSetting,
-} from "@/hooks/queries/admin/settings";
+import { useAdminServerSettings } from "@/hooks/queries/admin/settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -40,36 +30,21 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Copy, Loader2, Plus, PlusCircle, Trash2 } from "lucide-react";
+import { AlertTriangle, ArrowRight, Copy, Plus, PlusCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { formatDate } from "@/lib/datetime";
+import { Link } from "react-router";
 
 export default function InviteCodesTab() {
   const { data: codes = [], isLoading } = useAdminInviteCodes();
-  const { data: settings } = useAdminServerSettings();
-  const updateSetting = useUpdateServerSetting();
+  const { data: serverSettings } = useAdminServerSettings();
+  const signupsEnabled = serverSettings?.["signup.enabled"] === "true";
   const updateCode = useUpdateInviteCode();
   const deleteCode = useDeleteInviteCode();
   const [createOpen, setCreateOpen] = useState(false);
   const [topUpCode, setTopUpCode] = useState<InviteCode | null>(null);
-  const [confirmDeleteCode, setConfirmDeleteCode] = useState<InviteCode | null>(
-    null,
-  );
-
-  const signupEnabled = settings?.["signup.enabled"] === "true";
-
-  function handleToggleSignup(enabled: boolean) {
-    updateSetting.mutate(
-      { key: "signup.enabled", value: enabled ? "true" : "false" },
-      {
-        onSuccess: () =>
-          toast.success(
-            enabled ? "Public signups enabled" : "Public signups disabled",
-          ),
-      },
-    );
-  }
+  const [confirmDeleteCode, setConfirmDeleteCode] = useState<InviteCode | null>(null);
 
   function handleToggleCode(code: InviteCode) {
     updateCode.mutate({ id: code.id, body: { enabled: !code.enabled } });
@@ -80,7 +55,7 @@ export default function InviteCodesTab() {
   }
 
   function handleCopy(text: string) {
-    void navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
   }
 
@@ -113,16 +88,11 @@ export default function InviteCodesTab() {
           <DialogHeader>
             <DialogTitle>Top Up Invite Code</DialogTitle>
             <DialogDescription>
-              Add extra uses to {topUpCode?.code}. Current usage is{" "}
-              {topUpCode?.use_count} / {topUpCode?.max_uses}.
+              Add extra uses to {topUpCode?.code}. Current usage is {topUpCode?.use_count} /{" "}
+              {topUpCode?.max_uses}.
             </DialogDescription>
           </DialogHeader>
-          {topUpCode && (
-            <TopUpInviteCodeForm
-              code={topUpCode}
-              onClose={() => setTopUpCode(null)}
-            />
-          )}
+          {topUpCode && <TopUpInviteCodeForm code={topUpCode} onClose={() => setTopUpCode(null)} />}
         </DialogContent>
       </Dialog>
 
@@ -142,25 +112,34 @@ export default function InviteCodesTab() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Public Signups</CardTitle>
-          <CardDescription>
-            When enabled, users with a valid invite code can create their own
-            accounts.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-3">
-            <Switch
-              checked={signupEnabled}
-              onCheckedChange={handleToggleSignup}
-              disabled={updateSetting.isPending}
-            />
-            <Label>{signupEnabled ? "Enabled" : "Disabled"}</Label>
+      {serverSettings !== undefined &&
+        (signupsEnabled ? (
+          <p className="text-muted-foreground text-sm">
+            Codes only work while public signups are on.{" "}
+            <Link
+              to="/admin/settings/general"
+              className="text-foreground inline-flex items-center gap-1 font-medium hover:underline"
+            >
+              Public signups setting
+              <ArrowRight className="h-3 w-3" aria-hidden="true" />
+            </Link>
+          </p>
+        ) : (
+          <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+            <p className="text-[13px] leading-relaxed">
+              <span className="font-medium text-amber-500">Public signups are off</span> — these
+              codes won't work until you enable them.{" "}
+              <Link
+                to="/admin/settings/general"
+                className="text-foreground inline-flex items-center gap-1 font-medium hover:underline"
+              >
+                Public signups setting
+                <ArrowRight className="h-3 w-3" aria-hidden="true" />
+              </Link>
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        ))}
 
       <Table>
         <TableHeader>
@@ -176,10 +155,7 @@ export default function InviteCodesTab() {
         <TableBody>
           {codes.length === 0 && (
             <TableRow>
-              <TableCell
-                colSpan={6}
-                className="text-muted-foreground text-center"
-              >
+              <TableCell colSpan={6} className="text-muted-foreground text-center">
                 No invite codes yet. Create one to get started.
               </TableCell>
             </TableRow>
@@ -205,20 +181,13 @@ export default function InviteCodesTab() {
                 {code.label || <span className="text-muted-foreground">-</span>}
               </TableCell>
               <TableCell>
-                <span
-                  className={
-                    code.use_count >= code.max_uses ? "text-destructive" : ""
-                  }
-                >
+                <span className={code.use_count >= code.max_uses ? "text-destructive" : ""}>
                   {code.use_count} / {code.max_uses}
                 </span>
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  <Switch
-                    checked={code.enabled}
-                    onCheckedChange={() => handleToggleCode(code)}
-                  />
+                  <Switch checked={code.enabled} onCheckedChange={() => handleToggleCode(code)} />
                   <Badge variant={code.enabled ? "outline" : "secondary"}>
                     {code.enabled ? "Active" : "Disabled"}
                   </Badge>
@@ -304,29 +273,14 @@ function CreateInviteCodeForm({ onClose }: { onClose: () => void }) {
           required
         />
       </div>
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={createMutation.isPending}
-      >
-        {createMutation.isPending ? (
-          <Loader2 className="animate-spin" />
-        ) : (
-          <Plus />
-        )}
+      <Button type="submit" className="w-full" disabled={createMutation.isPending}>
         {createMutation.isPending ? "Creating..." : "Create"}
       </Button>
     </form>
   );
 }
 
-function TopUpInviteCodeForm({
-  code,
-  onClose,
-}: {
-  code: InviteCode;
-  onClose: () => void;
-}) {
+function TopUpInviteCodeForm({ code, onClose }: { code: InviteCode; onClose: () => void }) {
   const [additionalUses, setAdditionalUses] = useState("1");
   const topUpMutation = useTopUpInviteCode();
 
@@ -356,16 +310,7 @@ function TopUpInviteCodeForm({
           required
         />
       </div>
-      <Button
-        type="submit"
-        className="w-full"
-        disabled={topUpMutation.isPending}
-      >
-        {topUpMutation.isPending ? (
-          <Loader2 className="animate-spin" />
-        ) : (
-          <Plus />
-        )}
+      <Button type="submit" className="w-full" disabled={topUpMutation.isPending}>
         {topUpMutation.isPending ? "Adding..." : "Add Uses"}
       </Button>
     </form>

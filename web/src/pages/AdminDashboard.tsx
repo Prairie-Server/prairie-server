@@ -2,15 +2,8 @@ import type { ReactNode } from "react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { AdminSessionActions } from "@/components/AdminSessionActions";
-import { AdminSectionCommandDialog } from "@/components/AdminSectionCommandDialog";
 import { useEventChannel } from "@/components/realtimeEventsContext";
-import {
-  fetchAdminStats,
-  useAdminStats,
-  useAdminSessions,
-} from "@/hooks/queries/admin/stats";
-import { useAdminPluginInstallations } from "@/hooks/queries/admin/plugins";
-import { usePolicyCapability } from "@/hooks/queries/admin/policy";
+import { fetchAdminStats, useAdminStats, useAdminSessions } from "@/hooks/queries/admin/stats";
 import { useAdminUsers } from "@/hooks/queries/admin/users";
 import {
   useAdminLibraries,
@@ -56,12 +49,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { adminKeys } from "@/hooks/queries/keys";
 import { usePageActivity } from "@/hooks/usePageActivity";
 import { cn } from "@/lib/utils";
-import { buildAdminCommandNavSections } from "@/lib/adminNavigation";
-import {
-  compareActiveScans,
-  formatActiveScanMode,
-  formatActiveScanProgress,
-} from "@/lib/scanRuns";
+import { compareActiveScans, formatActiveScanMode, formatActiveScanProgress } from "@/lib/scanRuns";
 import { JellyfinSessionPill } from "@/components/JellyfinSessionPill";
 import {
   activityMethodMeta,
@@ -80,19 +68,12 @@ function formatFileCount(count: number | null | undefined) {
   return count === 1 ? "1 file" : `${count.toLocaleString()} files`;
 }
 
-function formatDashboardLibraryScanProgress(
-  scan: ScanRun,
-  activeScanCount: number,
-) {
+function formatDashboardLibraryScanProgress(scan: ScanRun, activeScanCount: number) {
   const status = scan.status === "running" ? "Scanning" : "Queued";
   const progress = formatActiveScanProgress(scan);
   const detail =
-    progress ||
-    (scan.status === "running"
-      ? formatActiveScanMode(scan)
-      : "Waiting for capacity");
-  const extraScans =
-    activeScanCount > 1 ? ` + ${activeScanCount - 1} more` : "";
+    progress || (scan.status === "running" ? formatActiveScanMode(scan) : "Waiting for capacity");
+  const extraScans = activeScanCount > 1 ? ` + ${activeScanCount - 1} more` : "";
   return `${status}: ${detail}${extraScans}`;
 }
 
@@ -102,19 +83,13 @@ export default function AdminDashboard() {
   const sessionsQuery = useAdminSessions();
   const librariesQuery = useAdminLibraries();
   const usersQuery = useAdminUsers();
-  const { data: adminInstallations } = useAdminPluginInstallations();
-  const policyCapability = usePolicyCapability();
   const scanAll = useScanAllLibraries();
   const pageActivity = usePageActivity();
   const manualRefreshStartedAtRef = useRef<number | null>(null);
   const wasDashboardPollingPausedRef = useRef(!pageActivity.canPollDashboard);
   const [isManualRefreshPending, setIsManualRefreshPending] = useState(false);
-  const [lastDashboardUpdatedAt, setLastDashboardUpdatedAt] = useState<
-    number | null
-  >(null);
-  const [relativeUpdatedNow, setRelativeUpdatedNow] = useState(() =>
-    Date.now(),
-  );
+  const [lastDashboardUpdatedAt, setLastDashboardUpdatedAt] = useState<number | null>(null);
+  const [relativeUpdatedNow, setRelativeUpdatedNow] = useState(() => Date.now());
 
   const sessions = sessionsQuery.data ?? [];
   const libraries = librariesQuery.data ?? [];
@@ -128,10 +103,7 @@ export default function AdminDashboard() {
     librariesQuery.data !== undefined &&
     usersQuery.data !== undefined;
   const hasStaleDashboardData =
-    statsQuery.isStale ||
-    sessionsQuery.isStale ||
-    librariesQuery.isStale ||
-    usersQuery.isStale;
+    statsQuery.isStale || sessionsQuery.isStale || librariesQuery.isStale || usersQuery.isStale;
   const dashboardDataUpdatedAt = Math.max(
     statsQuery.dataUpdatedAt,
     sessionsQuery.dataUpdatedAt,
@@ -141,13 +113,6 @@ export default function AdminDashboard() {
   const lastUpdatedLabel = lastDashboardUpdatedAt
     ? formatRelativeUpdatedLabel(relativeUpdatedNow, lastDashboardUpdatedAt)
     : null;
-  const adminSearchSections = useMemo(
-    () =>
-      buildAdminCommandNavSections(adminInstallations, {
-        policyEditorAvailable: policyCapability.data?.editor_available === true,
-      }),
-    [adminInstallations, policyCapability.data?.editor_available],
-  );
 
   useEffect(() => {
     if (!lastDashboardUpdatedAt) {
@@ -177,30 +142,14 @@ export default function AdminDashboard() {
       }
       try {
         await Promise.all([
-          queryClient.invalidateQueries({
-            queryKey: adminKeys.stats(),
-            refetchType: "none",
-          }),
-          queryClient.invalidateQueries({
-            queryKey: adminKeys.sessions(),
-            refetchType: "none",
-          }),
-          queryClient.invalidateQueries({
-            queryKey: adminKeys.libraries(),
-            refetchType: "none",
-          }),
-          queryClient.invalidateQueries({
-            queryKey: adminKeys.users(),
-            refetchType: "none",
-          }),
+          queryClient.invalidateQueries({ queryKey: adminKeys.stats(), refetchType: "none" }),
+          queryClient.invalidateQueries({ queryKey: adminKeys.sessions(), refetchType: "none" }),
+          queryClient.invalidateQueries({ queryKey: adminKeys.libraries(), refetchType: "none" }),
+          queryClient.invalidateQueries({ queryKey: adminKeys.users(), refetchType: "none" }),
         ]);
         const nextStats = await fetchAdminStats({ refresh: true });
         queryClient.setQueryData(adminKeys.stats(), nextStats);
-        await Promise.all([
-          refetchSessions(),
-          refetchLibraries(),
-          refetchUsers(),
-        ]);
+        await Promise.all([refetchSessions(), refetchLibraries(), refetchUsers()]);
         const refreshedAt = Date.now();
         setLastDashboardUpdatedAt(refreshedAt);
         setRelativeUpdatedNow(refreshedAt);
@@ -268,14 +217,10 @@ export default function AdminDashboard() {
 
   return (
     <div className="space-y-6 lg:space-y-8">
-      <AdminSectionCommandDialog sections={adminSearchSections} />
-
       {/* Page header */}
       <div className="page-header">
         <div className="space-y-3">
-          <h1 className="page-title text-[clamp(2rem,4vw,3.25rem)]">
-            Dashboard
-          </h1>
+          <h1 className="page-title text-[clamp(2rem,4vw,3.25rem)]">Dashboard</h1>
           <p className="page-subtitle text-sm sm:text-base">
             Live sessions, content health, and server activity in one view.
           </p>
@@ -343,11 +288,7 @@ export default function AdminDashboard() {
           isLoading={librariesQuery.isLoading}
           error={librariesQuery.error}
         />
-        <UsersCard
-          users={users}
-          isLoading={usersQuery.isLoading}
-          error={usersQuery.error}
-        />
+        <UsersCard users={users} isLoading={usersQuery.isLoading} error={usersQuery.error} />
       </div>
 
       <ActivityCard
@@ -388,16 +329,9 @@ function StatsRow({
   const storageGB = stats.total_storage_bytes / (1024 * 1024 * 1024);
   const storageTB = storageGB / 1024;
   const storageDisplay =
-    storageTB >= 1
-      ? `${storageTB.toFixed(1)} TB`
-      : `${storageGB.toFixed(0)} GB`;
+    storageTB >= 1 ? `${storageTB.toFixed(1)} TB` : `${storageGB.toFixed(0)} GB`;
 
-  const statCards: {
-    label: string;
-    value: string;
-    sub: string;
-    icon: ReactNode;
-  }[] = [
+  const statCards: { label: string; value: string; sub: string; icon: ReactNode }[] = [
     {
       label: "Active Streams",
       value: String(sessionCount),
@@ -438,9 +372,7 @@ function StatsRow({
           className="surface-panel rounded-2xl border-0 p-[18px] transition-colors duration-150"
         >
           <div className="mb-2 flex items-center justify-between">
-            <div className="text-muted-foreground text-[11px] font-medium">
-              {card.label}
-            </div>
+            <div className="text-muted-foreground text-[11px] font-medium">{card.label}</div>
             <div className="text-muted-foreground">{card.icon}</div>
           </div>
           <div className="mb-0.5 text-[28px] leading-none font-extrabold tracking-tight">
@@ -522,9 +454,7 @@ function TraktActivityCard({ activity }: { activity: WatchProviderActivity }) {
                   : "text-foreground font-medium"
               }
             >
-              {(
-                activity.sync_errors_24h + activity.failed_exports
-              ).toLocaleString()}
+              {(activity.sync_errors_24h + activity.failed_exports).toLocaleString()}
             </span>
           </div>
         </div>
@@ -533,15 +463,7 @@ function TraktActivityCard({ activity }: { activity: WatchProviderActivity }) {
   );
 }
 
-function TraktMetric({
-  label,
-  value,
-  detail,
-}: {
-  label: string;
-  value: string;
-  detail: string;
-}) {
+function TraktMetric({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
     <div className="border-border/60 rounded-lg border p-3">
       <div className="text-muted-foreground text-xs">{label}</div>
@@ -553,12 +475,9 @@ function TraktMetric({
 
 function StreamCard({ session }: { session: AdminSession }) {
   const isEpisode =
-    session.series_name &&
-    session.season_number != null &&
-    session.episode_number != null;
+    session.series_name && session.season_number != null && session.episode_number != null;
   const title = isEpisode
-    ? session.episode_name ||
-      `S${session.season_number}E${session.episode_number}`
+    ? session.episode_name || `S${session.season_number}E${session.episode_number}`
     : session.media_title || `File #${session.media_file_id}`;
   const username = session.username || `User #${session.user_id}`;
   const elapsed = getTimeAgo(session.started_at);
@@ -580,9 +499,7 @@ function StreamCard({ session }: { session: AdminSession }) {
             className={`h-full w-full object-cover transition-opacity ${session.is_paused ? "opacity-45" : ""}`}
           />
         ) : (
-          <Play
-            className={`text-primary/40 h-5 w-5 ${session.is_paused ? "opacity-45" : ""}`}
-          />
+          <Play className={`text-primary/40 h-5 w-5 ${session.is_paused ? "opacity-45" : ""}`} />
         )}
         {session.is_paused ? (
           <div className="absolute inset-0 flex items-center justify-center bg-black/35">
@@ -655,9 +572,7 @@ function StreamCard({ session }: { session: AdminSession }) {
             </span>
           )}
           {(session.profile_name || session.profile_id) && (
-            <SessionProfilePill
-              label={session.profile_name || session.profile_id}
-            />
+            <SessionProfilePill label={session.profile_name || session.profile_id} />
           )}
         </div>
 
@@ -670,9 +585,7 @@ function StreamCard({ session }: { session: AdminSession }) {
             {username.charAt(0).toUpperCase()}
           </div>
           <span className="text-xs font-medium">{username}</span>
-          <span className="text-muted-foreground ml-auto text-[10px]">
-            {elapsed}
-          </span>
+          <span className="text-muted-foreground ml-auto text-[10px]">{elapsed}</span>
         </div>
       </div>
     </div>
@@ -798,15 +711,10 @@ function LibrariesCard({
             const activeLibraryScans = activeScansByLibraryId.get(lib.id) ?? [];
             const primaryActiveScan = activeLibraryScans[0];
             const hasActiveScan = activeLibraryScans.length > 0;
-            const isScanStarting =
-              scanLibrary.isPending && scanLibrary.variables === lib.id;
-            const isCancellingScan =
-              cancelScans.isPending && cancelScans.variables === lib.id;
+            const isScanStarting = scanLibrary.isPending && scanLibrary.variables === lib.id;
+            const isCancellingScan = cancelScans.isPending && cancelScans.variables === lib.id;
             const scanProgressLabel = primaryActiveScan
-              ? formatDashboardLibraryScanProgress(
-                  primaryActiveScan,
-                  activeLibraryScans.length,
-                )
+              ? formatDashboardLibraryScanProgress(primaryActiveScan, activeLibraryScans.length)
               : isScanStarting
                 ? "Starting scan..."
                 : "";
@@ -831,8 +739,7 @@ function LibrariesCard({
                   <div className="text-sm font-bold">{lib.name}</div>
                   <div className="text-muted-foreground flex flex-wrap items-center gap-x-1.5 gap-y-0.5 text-[11px]">
                     <span>
-                      {lib.type} · {lib.paths.length}{" "}
-                      {lib.paths.length === 1 ? "path" : "paths"}
+                      {lib.type} · {lib.paths.length} {lib.paths.length === 1 ? "path" : "paths"}
                     </span>
                     {scanProgressLabel ? (
                       <>
@@ -858,24 +765,13 @@ function LibrariesCard({
                       scanLibrary.mutate(lib.id);
                     }}
                     disabled={hasActiveScan ? isCancellingScan : isScanStarting}
-                    title={
-                      hasActiveScan ? "Stop Library Scans" : "Scan Library"
-                    }
-                    aria-label={
-                      hasActiveScan
-                        ? `Stop scans for ${lib.name}`
-                        : `Scan ${lib.name}`
-                    }
+                    title={hasActiveScan ? "Stop Library Scans" : "Scan Library"}
+                    aria-label={hasActiveScan ? `Stop scans for ${lib.name}` : `Scan ${lib.name}`}
                   >
                     {hasActiveScan ? (
                       <Square className="h-3 w-3 fill-current" />
                     ) : (
-                      <ScanLine
-                        className={cn(
-                          "h-3 w-3",
-                          isScanStarting && "animate-pulse",
-                        )}
-                      />
+                      <ScanLine className={cn("h-3 w-3", isScanStarting && "animate-pulse")} />
                     )}
                   </Button>
                   <div
@@ -934,9 +830,7 @@ function UsersCard({
         ) : error ? (
           <SectionError message="Failed to load users." />
         ) : users.length === 0 ? (
-          <div className="text-muted-foreground py-4 text-center text-sm">
-            No users.
-          </div>
+          <div className="text-muted-foreground py-4 text-center text-sm">No users.</div>
         ) : (
           <Table>
             <TableHeader>
@@ -962,9 +856,7 @@ function UsersCard({
                         {u.username.charAt(0).toUpperCase()}
                       </div>
                       <div>
-                        <div className="text-[13px] font-semibold">
-                          {u.username}
-                        </div>
+                        <div className="text-[13px] font-semibold">{u.username}</div>
                         <div className="text-muted-foreground hidden text-[10px] sm:block">
                           {u.email}
                         </div>
@@ -972,11 +864,7 @@ function UsersCard({
                     </div>
                   </TableCell>
                   <TableCell className="hidden sm:table-cell">
-                    <Badge
-                      variant={u.role === "admin" ? "default" : "secondary"}
-                    >
-                      {u.role}
-                    </Badge>
+                    <Badge variant={u.role === "admin" ? "default" : "secondary"}>{u.role}</Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant={u.enabled ? "outline" : "destructive"}>
@@ -1023,19 +911,14 @@ function ActivityCard({
         ) : (
           <div className="space-y-0">
             {sessions.slice(0, 10).map((s) => {
-              const isEp =
-                s.series_name &&
-                s.season_number != null &&
-                s.episode_number != null;
+              const isEp = s.series_name && s.season_number != null && s.episode_number != null;
               const title = isEp
                 ? s.episode_name || `S${s.season_number}E${s.episode_number}`
                 : s.media_title || `File #${s.media_file_id}`;
               const username = s.username || `User #${s.user_id}`;
               const profileDisplay = s.profile_name || s.profile_id || "";
               const clientLabel = getSessionClientLabel(s);
-              const meta = [getTimeAgo(s.started_at), clientLabel]
-                .filter(Boolean)
-                .join(" · ");
+              const meta = [getTimeAgo(s.started_at), clientLabel].filter(Boolean).join(" · ");
               return (
                 <div
                   key={s.session_id}
@@ -1046,9 +929,7 @@ function ActivityCard({
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-muted-foreground text-xs leading-relaxed">
-                      <span className="text-foreground font-semibold">
-                        {username}
-                      </span>
+                      <span className="text-foreground font-semibold">{username}</span>
                       {profileDisplay ? (
                         <>
                           {" "}
@@ -1063,9 +944,7 @@ function ActivityCard({
                         {title}
                       </Link>
                     </div>
-                    <div className="text-muted-foreground mt-0.5 text-[10px]">
-                      {meta}
-                    </div>
+                    <div className="text-muted-foreground mt-0.5 text-[10px]">{meta}</div>
                   </div>
                   <div className="flex-shrink-0">
                     <AdminSessionActions session={s} compact />
@@ -1113,9 +992,7 @@ function delay(ms: number) {
 }
 
 function SectionError({ message }: { message: string }) {
-  return (
-    <div className="text-destructive py-4 text-center text-sm">{message}</div>
-  );
+  return <div className="text-destructive py-4 text-center text-sm">{message}</div>;
 }
 
 function LibrarySkeletonRows() {
@@ -1142,10 +1019,7 @@ function ActivitySkeletonRows() {
   return (
     <div className="space-y-0">
       {Array.from({ length: 4 }).map((_, i) => (
-        <div
-          key={i}
-          className="border-border/30 flex items-start gap-3 border-b py-2.5"
-        >
+        <div key={i} className="border-border/30 flex items-start gap-3 border-b py-2.5">
           <Skeleton className="h-[30px] w-[30px] rounded-lg" />
           <div className="min-w-0 flex-1 space-y-1.5">
             <Skeleton className="h-3 w-3/4 rounded" />
