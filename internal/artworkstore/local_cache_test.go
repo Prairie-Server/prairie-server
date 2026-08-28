@@ -44,16 +44,9 @@ func TestImageCacheWritesLocalWebPAVIFPNG(t *testing.T) {
 		t.Fatalf("canonical path should be webp: %s", result.OriginalPath)
 	}
 
-	// AVIF siblings are encoded off the request path, so the assertions below
-	// have to wait for that work. Without this the test was reading the volume
-	// before the encoder had written anything.
-	cacher.WaitAVIFBackfill()
-
 	ctx := context.Background()
-	// The original stays WebP-only and PNG generation was dropped — this test
-	// asserted both siblings for the original until now, which is why it failed
-	// on any machine that ran it. internal/artworkstore is not in CI's gated
-	// package list, so nothing caught the drift.
+	// The original stays WebP-only; AVIF siblings are produced later by the
+	// durable AVIF backfill processor, not inline during CacheImageBytes.
 	exists, err := store.ObjectExists(ctx, store.Bucket(), result.OriginalPath)
 	if err != nil || !exists {
 		t.Fatalf("expected original %s exists=%v err=%v", result.OriginalPath, exists, err)
@@ -66,18 +59,15 @@ func TestImageCacheWritesLocalWebPAVIFPNG(t *testing.T) {
 			t.Fatalf("expected %s to be absent, got exists=%v err=%v", absent, got, existsErr)
 		}
 	}
-	// The display ladder is what carries AVIF. Widths come from the poster ladder.
+	// Widths come from the poster ladder; only WebP variants are written inline.
 	for _, name := range artworkkey.VariantNames(metadata.ImageTypeToString(metadata.ImagePoster)) {
 		if name == artworkkey.OriginalVariant {
 			continue
 		}
 		webpKey := artworkkey.Variant(result.OriginalPath, name)
-		avifKey := artworkkey.WebPAVIFSibling(webpKey)
-		for _, key := range []string{webpKey, avifKey} {
-			got, existsErr := store.ObjectExists(ctx, store.Bucket(), key)
-			if existsErr != nil || !got {
-				t.Fatalf("expected display-ladder object %s exists=%v err=%v", key, got, existsErr)
-			}
+		got, existsErr := store.ObjectExists(ctx, store.Bucket(), webpKey)
+		if existsErr != nil || !got {
+			t.Fatalf("expected display-ladder object %s exists=%v err=%v", webpKey, got, existsErr)
 		}
 	}
 
