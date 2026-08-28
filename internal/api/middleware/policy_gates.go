@@ -6,10 +6,11 @@ import (
 	"slices"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/prairie-server/prairie-server/internal/policy"
-	"github.com/go-chi/chi/v5"
 )
 
 const (

@@ -28,9 +28,9 @@ func main() {
 	checksum := sha256.Sum256(binaryData)
 
 	manifest := &pluginv1.PluginManifest{
-		PluginId:       "silo.binary",
-		Version:        "1.0.0",
-		Checksum:       hex.EncodeToString(checksum[:]),
+		PluginId:          "silo.binary",
+		Version:           "1.0.0",
+		Checksum:          hex.EncodeToString(checksum[:]),
 		PrairieApiVersion: "v1",
 		SupportedPlatforms: []*pluginv1.SupportedPlatform{
 			{Os: runtime.GOOS, Arch: runtime.GOARCH},

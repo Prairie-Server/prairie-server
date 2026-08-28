@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/prairie-server/prairie-server/internal/config"
 	"github.com/redis/go-redis/v9"
+
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 // ---------------------------------------------------------------------------

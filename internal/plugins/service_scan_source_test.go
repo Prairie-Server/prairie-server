@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+
 	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 

@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/jackc/pgx/v5/pgconn"
+
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type fakeSubmitter struct {

@@ -4,8 +4,9 @@ package worker
 import (
 	"context"
 
-	"github.com/prairie-server/prairie-server/internal/metadata"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/metadata"
 )
 
 // RefreshCandidate identifies a metadata target ready for scheduled refresh.

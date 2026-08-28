@@ -6,9 +6,10 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	"github.com/prairie-server/prairie-server/internal/notifications"
-	"github.com/go-chi/chi/v5"
 )
 
 // webPushSubscriptionResponse is the API view of a browser push

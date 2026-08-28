@@ -117,7 +117,15 @@ func (s *Server) SetStreamTelemetry(registry *streamtelemetry.Registry) {
 // bounds requests to a hung node; the longest legitimate server-side wait is
 // the 30s manifest-readiness poll on the transcode node.
 func newStreamTransport() *http.Transport {
-	t := http.DefaultTransport.(*http.Transport).Clone()
+	base, ok := http.DefaultTransport.(*http.Transport)
+	if !ok {
+		return &http.Transport{
+			MaxIdleConns:          128,
+			MaxIdleConnsPerHost:   32,
+			ResponseHeaderTimeout: 60 * time.Second,
+		}
+	}
+	t := base.Clone()
 	t.MaxIdleConns = 128
 	t.MaxIdleConnsPerHost = 32
 	t.ResponseHeaderTimeout = 60 * time.Second
@@ -701,7 +709,7 @@ func (s *Server) proxyToTranscodeNode(w http.ResponseWriter, r *http.Request, cl
 		}
 	}
 	w.WriteHeader(resp.StatusCode)
-	io.Copy(w, resp.Body)
+	_, _ = io.Copy(w, resp.Body)
 }
 
 func (s *Server) handleForceReload(w http.ResponseWriter, r *http.Request) {

@@ -11,6 +11,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/prairie-server/prairie-server/internal/cache"
 	"github.com/prairie-server/prairie-server/internal/events"
 	"github.com/prairie-server/prairie-server/internal/libraryingest"
@@ -18,7 +20,6 @@ import (
 	"github.com/prairie-server/prairie-server/internal/scanbatch"
 	"github.com/prairie-server/prairie-server/internal/scanner"
 	"github.com/prairie-server/prairie-server/internal/scanqueue"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 type itemRefreshTestFolderRepo struct {
@@ -486,21 +487,6 @@ func (r *itemRefreshTestSkippedRootRepo) DeleteMissingInScope(_ context.Context,
 		delete(r.skipped, key)
 	}
 	return nil
-}
-
-type itemRefreshTestSeasonRepo struct {
-	season *models.Season
-}
-
-func (r *itemRefreshTestSeasonRepo) GetByID(_ context.Context, _ string) (*models.Season, error) {
-	return nil, errors.New("not implemented")
-}
-
-func (r *itemRefreshTestSeasonRepo) GetBySeriesAndNumber(_ context.Context, seriesID string, seasonNum int) (*models.Season, error) {
-	if r.season != nil && r.season.SeriesID == seriesID && r.season.SeasonNumber == seasonNum {
-		return r.season, nil
-	}
-	return nil, errors.New("season not found")
 }
 
 type itemRefreshTestEpisodeRepo struct {

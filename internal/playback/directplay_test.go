@@ -15,9 +15,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/httpstream"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
+
+	"github.com/prairie-server/prairie-server/internal/httpstream"
 )
 
 const (

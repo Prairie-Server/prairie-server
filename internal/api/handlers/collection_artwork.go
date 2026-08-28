@@ -133,7 +133,7 @@ func uploadCollectionImageVariants(
 	}
 	var widths []int
 	switch imageType {
-	case "poster":
+	case imageTypePoster:
 		widths = []int{500, 300}
 	case "backdrop":
 		widths = []int{1280, 300}

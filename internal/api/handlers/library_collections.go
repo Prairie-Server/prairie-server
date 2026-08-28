@@ -301,29 +301,6 @@ type libraryCollectionGroupResponse struct {
 	SortOrder       int    `json:"sort_order"`
 }
 
-type libraryCollectionGroupsListResponse struct {
-	Groups             []libraryCollectionGroupResponse `json:"groups"`
-	UngroupedSortOrder int                              `json:"ungrouped_sort_order"`
-}
-
-type createLibraryCollectionGroupRequest struct {
-	LibraryID       int    `json:"library_id"`
-	Name            string `json:"name"`
-	Slug            string `json:"slug"`
-	DefaultSortMode string `json:"default_sort_mode"`
-}
-
-type updateLibraryCollectionGroupRequest struct {
-	Name            *string `json:"name"`
-	Slug            *string `json:"slug"`
-	DefaultSortMode *string `json:"default_sort_mode"`
-}
-
-type reorderLibraryCollectionGroupsRequest struct {
-	LibraryID  int      `json:"library_id"`
-	OrderedIDs []string `json:"ordered_ids"`
-}
-
 type libraryCollectionsListResponse struct {
 	Collections []libraryCollectionResponse      `json:"collections"`
 	Groups      []libraryCollectionGroupResponse `json:"groups,omitempty"`
@@ -728,9 +705,9 @@ func templateEligibleForLibrary(tmpl templates.Template, library *models.MediaFo
 	switch strings.TrimSpace(strings.ToLower(library.Type)) {
 	case "", "mixed":
 		return true
-	case "movie", "movies":
+	case itemTypeMovie, "movies":
 		return tmpl.MediaKind == templates.MediaMovie || tmpl.MediaKind == templates.MediaMixed
-	case "series", "tv", "show", "shows", "tvshows":
+	case itemTypeSeries, "tv", "show", "shows", "tvshows":
 		return tmpl.MediaKind == templates.MediaTV || tmpl.MediaKind == templates.MediaMixed
 	case "audiobook", "audiobooks":
 		// Audiobook libraries only accept audiobook-targeted templates.
@@ -1287,7 +1264,7 @@ func (h *LibraryCollectionHandler) HandleUpdateAdminCollection(w http.ResponseWr
 		ManagementKey:    req.ManagementKey,
 		SyncSchedule:     req.SyncSchedule,
 	}); err != nil {
-		if err == catalog.ErrLibraryCollectionNotFound {
+		if errors.Is(err, catalog.ErrLibraryCollectionNotFound) {
 			writeError(w, http.StatusNotFound, "not_found", "Collection not found")
 			return
 		}
@@ -1362,7 +1339,7 @@ func (h *LibraryCollectionHandler) HandleDeleteCollectionImage(w http.ResponseWr
 
 	imageType := r.URL.Query().Get("type")
 	switch imageType {
-	case "poster", "backdrop":
+	case imageTypePoster, "backdrop":
 	default:
 		writeError(w, http.StatusBadRequest, "bad_request", "type must be \"poster\" or \"backdrop\"")
 		return
@@ -1957,7 +1934,7 @@ func (h *LibraryCollectionHandler) applyTemplateBundle(
 			// in_use_by_section). The adoption flags itself with that reason so
 			// admins can tell "adopted because delete failed" apart from a
 			// straight "already_exists".
-			if !(req.DryRun && req.DeleteExisting) {
+			if !req.DryRun || !req.DeleteExisting {
 				existingBySlug := remainingByLibrarySlug[templateBundleExistingCollectionKey{
 					LibraryID: library.ID,
 					Slug:      slugifyCollectionName(tmpl.Title),
@@ -2912,7 +2889,7 @@ func (h *LibraryCollectionHandler) createTMDBDiscoverCollection(
 // nuance to the catalog sync.
 func validateTMDBDiscoverRequest(req importTMDBDiscoverRequest) error {
 	switch req.MediaType {
-	case "movie", "tv":
+	case itemTypeMovie, "tv":
 	default:
 		return fmt.Errorf("media_type must be \"movie\" or \"tv\"")
 	}
@@ -3537,20 +3514,7 @@ func buildTMDBDiscoverSourceConfig(mediaType string, spec importTMDBDiscoverSpec
 		Mode:      collectionSourceModeTMDBDiscover,
 		MediaType: mediaType,
 		Limit:     limit,
-		Discover: tmdbDiscoverConfigBody{
-			WithGenres:       spec.WithGenres,
-			WithoutGenres:    spec.WithoutGenres,
-			SortBy:           spec.SortBy,
-			VoteCountGte:     spec.VoteCountGte,
-			VoteAverageGte:   spec.VoteAverageGte,
-			ReleaseDateGte:   spec.ReleaseDateGte,
-			ReleaseDateLte:   spec.ReleaseDateLte,
-			Certifications:   spec.Certifications,
-			CertificationLte: spec.CertificationLte,
-			WithRuntimeGte:   spec.WithRuntimeGte,
-			WithRuntimeLte:   spec.WithRuntimeLte,
-			OriginalLanguage: spec.OriginalLanguage,
-		},
+		Discover:  tmdbDiscoverConfigBody(spec),
 	}
 	raw, err := json.Marshal(payload)
 	if err != nil {
@@ -3612,7 +3576,7 @@ func normalizeTMDBPresetRequest(preset, mediaType, timeWindow string) (string, s
 	switch preset {
 	case "trending":
 		switch mediaType {
-		case "movie", "tv", "all":
+		case itemTypeMovie, "tv", "all":
 		default:
 			return "", "", "", fmt.Errorf("media_type must be \"movie\", \"tv\", or \"all\"")
 		}
@@ -3716,7 +3680,7 @@ func (h *LibraryCollectionHandler) processArtworkInputs(r *http.Request, collect
 
 		switch {
 		case err == nil:
-		case err == http.ErrMissingFile:
+		case errors.Is(err, http.ErrMissingFile):
 			if sourceByType[imageType] == "" {
 				continue
 			}

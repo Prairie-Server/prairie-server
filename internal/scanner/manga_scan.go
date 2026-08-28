@@ -12,11 +12,12 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/idgen"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/titleutil"
-	"github.com/jackc/pgx/v5"
 )
 
 // ScanMangaFolder scans a manga library. It is a fork of ScanEbookFolder: the

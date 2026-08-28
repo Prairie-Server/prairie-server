@@ -7,8 +7,9 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/scantrigger"
 	"github.com/google/uuid"
+
+	"github.com/prairie-server/prairie-server/internal/scantrigger"
 )
 
 const (

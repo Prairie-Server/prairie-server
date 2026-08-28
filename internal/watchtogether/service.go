@@ -11,10 +11,11 @@ import (
 	"sync"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/playback"
-	"github.com/google/uuid"
 )
 
 var (
@@ -1812,8 +1813,7 @@ func (s *Service) Vote(
 		return nil, fmt.Errorf("watch together suggestions unavailable")
 	}
 
-	_, live, err := s.getOrLoadLiveRoom(ctx, roomID)
-	if err != nil {
+	if _, _, err := s.getOrLoadLiveRoom(ctx, roomID); err != nil {
 		return nil, err
 	}
 
@@ -1836,7 +1836,7 @@ func (s *Service) Vote(
 	}
 
 	s.mu.Lock()
-	live = s.rooms[roomID]
+	live := s.rooms[roomID]
 	if live != nil {
 		dispatches := s.prepareSuggestionDispatchesLocked(live, suggestions)
 		s.mu.Unlock()
@@ -1859,8 +1859,7 @@ func (s *Service) Unvote(
 		return nil, fmt.Errorf("watch together suggestions unavailable")
 	}
 
-	_, live, err := s.getOrLoadLiveRoom(ctx, roomID)
-	if err != nil {
+	if _, _, err := s.getOrLoadLiveRoom(ctx, roomID); err != nil {
 		return nil, err
 	}
 
@@ -1883,7 +1882,7 @@ func (s *Service) Unvote(
 	}
 
 	s.mu.Lock()
-	live = s.rooms[roomID]
+	live := s.rooms[roomID]
 	if live != nil {
 		dispatches := s.prepareSuggestionDispatchesLocked(live, suggestions)
 		s.mu.Unlock()

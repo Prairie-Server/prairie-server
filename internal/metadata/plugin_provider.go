@@ -11,6 +11,7 @@ import (
 	"google.golang.org/protobuf/types/known/structpb"
 
 	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
@@ -166,7 +167,7 @@ func (p *PluginProvider) Name() string {
 }
 
 func (p *PluginProvider) ForTypes() []string {
-	return []string{"movie", "series"}
+	return []string{anchoredItemTypeMovie, anchoredItemTypeSeries}
 }
 
 func (p *PluginProvider) Search(ctx context.Context, query SearchQuery) ([]SearchResult, error) {

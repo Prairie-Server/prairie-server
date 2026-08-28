@@ -10,6 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/websocket"
+	"github.com/oklog/ulid/v2"
+
 	"github.com/prairie-server/prairie-server/internal/adminjob"
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	"github.com/prairie-server/prairie-server/internal/auth"
@@ -18,8 +21,6 @@ import (
 	"github.com/prairie-server/prairie-server/internal/notifications"
 	"github.com/prairie-server/prairie-server/internal/scanqueue"
 	"github.com/prairie-server/prairie-server/internal/taskmanager"
-	"github.com/gorilla/websocket"
-	"github.com/oklog/ulid/v2"
 )
 
 type historyImportActiveLister interface {

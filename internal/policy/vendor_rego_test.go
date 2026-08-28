@@ -8,9 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/open-policy-agent/opa/v1/storage"
 	"github.com/open-policy-agent/opa/v1/tester"
+
+	"github.com/prairie-server/prairie-server/internal/access"
 )
 
 func TestVendorRego(t *testing.T) {

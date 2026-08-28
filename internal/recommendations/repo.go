@@ -3,18 +3,20 @@ package recommendations
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/pgvector/pgvector-go"
+
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/embeddingvectors"
 	"github.com/prairie-server/prairie-server/internal/userstore"
-	"github.com/jackc/pgx/v5"
-	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/pgvector/pgvector-go"
 )
 
 func ensureCanonicalDimensions(vec []float32) ([]float32, error) {
@@ -195,7 +197,7 @@ func (r *Repo) GetEmbeddingLock(ctx context.Context) (*EmbeddingLock, error) {
 	var raw string
 	err := r.pool.QueryRow(ctx, `SELECT value FROM server_settings WHERE key = $1`, embeddingLockSettingKey).Scan(&raw)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("get embedding lock: %w", err)
@@ -235,7 +237,7 @@ func (r *Repo) GetEmbedding(ctx context.Context, itemID string) ([]float32, erro
 		itemID,
 	).Scan(&v)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("get embedding for item %s: %w", itemID, err)
@@ -700,7 +702,7 @@ func (r *Repo) GetTasteProfileMeta(ctx context.Context, userID int, profileID st
 		userID, profileID,
 	).Scan(&countsJSON, &maxContentRating, &updatedAt)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("get taste profile meta for user %d profile %s: %w", userID, profileID, err)
@@ -726,7 +728,7 @@ func (r *Repo) GetTasteProfile(ctx context.Context, userID int, profileID string
 		userID, profileID,
 	).Scan(&v)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("get taste profile for user %d profile %s: %w", userID, profileID, err)
@@ -828,7 +830,7 @@ func (r *Repo) GetRecommendationCache(ctx context.Context, userID int, profileID
 		  AND  expires_at     > NOW()
 	`, userID, profileID, recType, sourceItemID).Scan(&itemsJSON)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("get recommendation cache: %w", err)

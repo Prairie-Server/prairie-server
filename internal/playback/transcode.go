@@ -116,9 +116,9 @@ type TranscodeOpts struct {
 	// defaults; live sessions ask for a low-latency preset because falling
 	// below realtime starves the player no matter how good the picture is.
 	EncoderPreset string
-	NodeType               string
-	ExecutionMode          string
-	FFmpegLogSink          FFmpegLogSink
+	NodeType      string
+	ExecutionMode string
+	FFmpegLogSink FFmpegLogSink
 }
 
 // DV7ToHDR10BitstreamFilter strips Dolby Vision RPU metadata during a
@@ -962,7 +962,7 @@ func appendHWAccelArgs(args []string, opts TranscodeOpts) []string {
 			args = append(args, "-hwaccel", "vaapi", "-hwaccel_output_format", "vaapi")
 		}
 		args = append(args, "-noautorotate")
-	case "vaapi":
+	case hwAccelVAAPI:
 		vaapiDevice := PickRenderDevice(opts.HWDevice)
 		if vaapiDevice == "" {
 			vaapiDevice = "/dev/dri/renderD128" // last-resort fallback
@@ -1638,9 +1638,9 @@ func appendSubtitleBurnInArgs(args []string, opts TranscodeOpts) []string {
 // resolutionToScale returns an ffmpeg scale filter string for the target resolution.
 func resolutionToScale(res string) string {
 	switch res {
-	case "2160p":
+	case resolution2160p:
 		return "scale=-2:2160"
-	case "1080p":
+	case resolution1080p:
 		return "scale=-2:1080"
 	case "720p":
 		return "scale=-2:720"
@@ -1847,9 +1847,9 @@ func (s *TranscodeSession) GetManifest() ([]byte, error) {
 				if s.waitErr != nil {
 					stderr := truncateStderr(s.stderr.String())
 					if stderr != "" {
-						return nil, fmt.Errorf("%w: %v (stderr: %s)", ErrTranscodeFailed, s.waitErr, stderr)
+						return nil, fmt.Errorf("%w: %w (stderr: %s)", ErrTranscodeFailed, s.waitErr, stderr)
 					}
-					return nil, fmt.Errorf("%w: %v", ErrTranscodeFailed, s.waitErr)
+					return nil, fmt.Errorf("%w: %w", ErrTranscodeFailed, s.waitErr)
 				}
 				return nil, ErrTranscodeFailed
 			}
@@ -1888,7 +1888,7 @@ func (s *TranscodeSession) WaitForManifest(timeout time.Duration) ([]byte, error
 		if err == nil {
 			return manifest, nil
 		}
-		if err != nil && err != ErrManifestNotReady {
+		if !errors.Is(err, ErrManifestNotReady) {
 			return nil, err
 		}
 
@@ -2504,14 +2504,14 @@ func (s *TranscodeSession) GenerateFullManifest(segPrefix, rawQuery string) []by
 
 	var buf bytes.Buffer
 	buf.WriteString("#EXTM3U\n")
-	buf.WriteString(fmt.Sprintf("#EXT-X-VERSION:%d\n", hlsVersion))
+	_, _ = fmt.Fprintf(&buf, "#EXT-X-VERSION:%d\n", hlsVersion)
 	buf.WriteString(queryDefinition)
-	buf.WriteString(fmt.Sprintf("#EXT-X-TARGETDURATION:%d\n", segDur))
+	_, _ = fmt.Fprintf(&buf, "#EXT-X-TARGETDURATION:%d\n", segDur)
 	buf.WriteString("#EXT-X-MEDIA-SEQUENCE:0\n")
 	buf.WriteString("#EXT-X-PLAYLIST-TYPE:VOD\n")
 
 	if segExt == ".m4s" {
-		buf.WriteString(fmt.Sprintf("#EXT-X-MAP:URI=\"%sinit.mp4%s\"\n", segPrefix, suffix))
+		_, _ = fmt.Fprintf(&buf, "#EXT-X-MAP:URI=\"%sinit.mp4%s\"\n", segPrefix, suffix)
 	}
 
 	for i := range segCount {
@@ -2523,8 +2523,8 @@ func (s *TranscodeSession) GenerateFullManifest(segPrefix, rawQuery string) []by
 				dur = float64(segDur)
 			}
 		}
-		buf.WriteString(fmt.Sprintf("#EXTINF:%.6f,\n", dur))
-		buf.WriteString(fmt.Sprintf("%sseg_%05d%s%s\n", segPrefix, i, segExt, suffix))
+		_, _ = fmt.Fprintf(&buf, "#EXTINF:%.6f,\n", dur)
+		_, _ = fmt.Fprintf(&buf, "%sseg_%05d%s%s\n", segPrefix, i, segExt, suffix)
 	}
 
 	buf.WriteString("#EXT-X-ENDLIST\n")
@@ -2960,7 +2960,7 @@ func (s *TranscodeSession) WaitForSegment(name string, timeout time.Duration) (s
 		}
 
 		if !running && waitErr != nil {
-			return "", fmt.Errorf("%w: %v", ErrTranscodeFailed, waitErr)
+			return "", fmt.Errorf("%w: %w", ErrTranscodeFailed, waitErr)
 		}
 		// If ffmpeg finished cleanly but the segment doesn't exist,
 		// it won't appear later — fail fast.
@@ -3129,9 +3129,9 @@ func (s *TranscodeSession) manifestTimeoutError(timeout time.Duration) error {
 
 	switch {
 	case waitErr != nil && stderr != "":
-		return fmt.Errorf("%w after %s: ffmpeg exited: %v (stderr: %s)", ErrManifestNotReady, timeout, waitErr, stderr)
+		return fmt.Errorf("%w after %s: ffmpeg exited: %w (stderr: %s)", ErrManifestNotReady, timeout, waitErr, stderr)
 	case waitErr != nil:
-		return fmt.Errorf("%w after %s: ffmpeg exited: %v", ErrManifestNotReady, timeout, waitErr)
+		return fmt.Errorf("%w after %s: ffmpeg exited: %w", ErrManifestNotReady, timeout, waitErr)
 	case running:
 		return fmt.Errorf("%w after %s: ffmpeg still running", ErrManifestNotReady, timeout)
 	default:
@@ -3388,7 +3388,8 @@ func formatWaitError(err error) string {
 	if err == nil {
 		return ""
 	}
-	if exitErr, ok := err.(*exec.ExitError); ok {
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
 		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
 			return fmt.Sprintf("exit_code=%d: %v", status.ExitStatus(), err)
 		}

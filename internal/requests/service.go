@@ -8,10 +8,11 @@ import (
 	"strings"
 	"time"
 
+	"golang.org/x/sync/errgroup"
+
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/idgen"
 	"github.com/prairie-server/prairie-server/internal/metadata/tmdb"
-	"golang.org/x/sync/errgroup"
 )
 
 type TMDBClient interface {
@@ -1858,7 +1859,7 @@ func boolConfig(config map[string]any, key string) bool {
 func (s *Service) markSubmissionFailed(ctx context.Context, requestID string, actor Viewer, submitErr error) (*Request, error) {
 	failed, err := s.store.SetOutcome(ctx, requestID, OutcomeFailed, actor, submitErr.Error())
 	if err != nil {
-		return nil, fmt.Errorf("submit request failed: %w; mark failed: %v", submitErr, err)
+		return nil, fmt.Errorf("submit request failed: %w; mark failed: %w", submitErr, err)
 	}
 	return failed, nil
 }

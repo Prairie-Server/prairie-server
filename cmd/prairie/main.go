@@ -327,9 +327,11 @@ func configureOperationalLogging(
 	return operationalWriter, opslog.NewRepo(pool), opsPM
 }
 
+const postgresTuneModeIntegrated = "integrated"
+
 func maybeApplyPostgresTuning(ctx context.Context, pool *pgxpool.Pool, appMaxConnections int, mode string) {
 	switch strings.ToLower(strings.TrimSpace(mode)) {
-	case "", "integrated", "api":
+	case "", postgresTuneModeIntegrated, "api":
 	default:
 		return
 	}
@@ -606,7 +608,7 @@ func main() {
 	// The same gate decides whether this node runs the credential-encryption
 	// backfills: only the primary (migration-running) node sweeps plaintext to
 	// ciphertext; secondary nodes read whatever the primary encrypted.
-	isPrimaryNode := bc.Mode == "integrated" || bc.Mode == "api" || bc.Mode == ""
+	isPrimaryNode := bc.Mode == postgresTuneModeIntegrated || bc.Mode == "api" || bc.Mode == ""
 	if isPrimaryNode {
 		migCtx, migCancel := database.MigrationContext(ctx)
 		if migErr := database.RunMigrations(migCtx, pool, migrations.FS, "sql"); migErr != nil {
@@ -905,10 +907,10 @@ func main() {
 	})
 
 	// Determine which components to initialize based on mode.
-	needsS3 := mode == "integrated" || mode == "api"
-	needsScanner := mode == "integrated" || mode == "api"
-	needsUserDB := mode == "integrated" || mode == "api"
-	needsWorkers := mode == "integrated" || mode == "api"
+	needsS3 := mode == postgresTuneModeIntegrated || mode == "api"
+	needsScanner := mode == postgresTuneModeIntegrated || mode == "api"
+	needsUserDB := mode == postgresTuneModeIntegrated || mode == "api"
+	needsWorkers := mode == postgresTuneModeIntegrated || mode == "api"
 
 	bootstrapSensitiveConfigured := map[string]bool{}
 	bootstrapSensitiveValues := map[string]string{}
@@ -935,7 +937,7 @@ func main() {
 		defer func() { _ = apiRedisClient.Close() }()
 	}
 
-	if mode == "" || mode == "integrated" || mode == "api" {
+	if mode == "" || mode == postgresTuneModeIntegrated || mode == "api" {
 		streamTelemetryRegistry = newStreamTelemetryRegistry(appCtx, nodeID, apiRedisClient)
 		streamTelemetryRegistry.Start(appCtx)
 		streamTelemetryViewCache = newStreamTelemetryViewCache(streamTelemetryRegistry)
@@ -1064,7 +1066,7 @@ func main() {
 	}
 
 	// Initialize node pools for integrated/api modes.
-	if mode == "integrated" || mode == "api" {
+	if mode == postgresTuneModeIntegrated || mode == "api" {
 		nodeRepo := nodepool.NewRepository(pool)
 		deps.NodeRepo = nodeRepo
 
@@ -1793,11 +1795,11 @@ func main() {
 			userStoreProvider = pgstore.NewPostgresProvider(deps.DB)
 			slog.Info("user store initialized", "backend", "postgres")
 		}
-		defer userStoreProvider.Close()
+		defer func() { _ = userStoreProvider.Close() }()
 	}
 
 	var policySystem *policy.System
-	if mode == "integrated" || mode == "api" {
+	if mode == postgresTuneModeIntegrated || mode == "api" {
 		policyDecisionLogger := policy.NewDecisionLogger(
 			deps.DB,
 			nodeID,
@@ -2734,7 +2736,7 @@ func main() {
 	}
 
 	var compatSrv *http.Server
-	if (mode == "integrated" || mode == "api") && cfg.JellyfinCompat.Enabled && cfg.JellyfinCompat.Listen != "" {
+	if (mode == postgresTuneModeIntegrated || mode == "api") && cfg.JellyfinCompat.Enabled && cfg.JellyfinCompat.Listen != "" {
 		compatDeps := jellycompat.Dependencies{
 			Config:           cfg,
 			AppContext:       appCtx,
@@ -2886,7 +2888,7 @@ func main() {
 	// /socket.io, etc. own the URL space at the root — no SPA fallback,
 	// no collision with silo's /api/v1.
 	var absSrv *http.Server
-	if (mode == "integrated" || mode == "api") && deps.ABSHandler != nil && cfg.AudiobookshelfCompat.Listen != "" {
+	if (mode == postgresTuneModeIntegrated || mode == "api") && deps.ABSHandler != nil && cfg.AudiobookshelfCompat.Listen != "" {
 		absRouter := chi.NewRouter()
 		if ipResolver != nil {
 			absRouter.Use(clientip.Middleware(ipResolver))

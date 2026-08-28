@@ -7,9 +7,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/scanbatch"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func TestFileRepositoryPreservesFirstSeenScanProvenance(t *testing.T) {

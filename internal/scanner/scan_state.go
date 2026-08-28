@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/jackc/pgx/v5"
+
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // scanStateFile is the lightweight media_files row shape used by library scans.

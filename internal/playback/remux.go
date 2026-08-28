@@ -303,11 +303,11 @@ func startRemuxWithOptions(ctx context.Context, filePath, outputFormat string, s
 	case RemuxDVStripToHDR10V3:
 		if dvProfile != 7 && dvProfile != 8 {
 			cancel()
-			return nil, fmt.Errorf("Dolby Vision HDR10 strip requires profile 7 or 8")
+			return nil, fmt.Errorf("dolby vision HDR10 strip requires profile 7 or 8")
 		}
 		if !supportsDoviRPUFilter(bin) {
 			cancel()
-			return nil, fmt.Errorf("Dolby Vision HDR10 remux requires the dovi_rpu bitstream filter")
+			return nil, fmt.Errorf("dolby vision HDR10 remux requires the dovi_rpu bitstream filter")
 		}
 		// The planner refuses this recipe for a source that fails the probe,
 		// so reaching here means a session or stream token minted before the
@@ -333,7 +333,7 @@ func startRemuxWithOptions(ctx context.Context, filePath, outputFormat string, s
 			// cannot be preserved: the EL is dropped and its RPUs would
 			// dangle. Callers must strip to HDR10 or transcode instead.
 			cancel()
-			return nil, fmt.Errorf("Dolby Vision profile 7 cannot be preserved in a progressive remux")
+			return nil, fmt.Errorf("dolby vision profile 7 cannot be preserved in a progressive remux")
 		}
 		tagSampleEntry = true
 	case RemuxDVRejectP7V3:
@@ -485,7 +485,7 @@ func ServeRemuxWithOptions(w http.ResponseWriter, r *http.Request, filePath, out
 		http.Error(w, "failed to start remux", http.StatusInternalServerError)
 		return err
 	}
-	defer session.Close()
+	defer func() { _ = session.Close() }()
 
 	if opts.Abort != nil {
 		// Deferred after session.Close, so it runs before it: the watcher is

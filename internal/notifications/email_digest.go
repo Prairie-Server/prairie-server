@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/prairie-server/prairie-server/internal/mail"
 	"github.com/prairie-server/prairie-server/internal/userstore"
-	"github.com/jackc/pgx/v5"
 )
 
 // emailChannel implements accountChannel over the shared SMTP core, keyed by

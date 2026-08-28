@@ -7,9 +7,10 @@ import (
 	"sort"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/userstore"
-	"github.com/google/uuid"
 )
 
 // Sentinel errors for service operations.

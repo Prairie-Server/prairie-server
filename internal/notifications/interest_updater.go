@@ -7,9 +7,10 @@ import (
 	"sync"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/userstore"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 // ScopeResolver computes the effective library visibility for a

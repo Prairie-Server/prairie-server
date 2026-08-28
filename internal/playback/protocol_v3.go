@@ -897,10 +897,10 @@ func NormalizeQualityV3(value string) (string, bool) {
 		return "auto", false
 	case QualityOriginalV3, "source", "max":
 		return QualityOriginalV3, false
-	case "2160p", "4k", "uhd":
-		return "2160p", false
-	case "1080p", "fhd":
-		return "1080p", false
+	case resolution2160p, "4k", "uhd":
+		return resolution2160p, false
+	case resolution1080p, "fhd":
+		return resolution1080p, false
 	case "720p", "hd":
 		return "720p", false
 	case "480p", "sd":

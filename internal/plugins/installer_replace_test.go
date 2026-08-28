@@ -157,9 +157,9 @@ func testPluginManifest(t *testing.T, pluginID, version string) *pluginv1.Plugin
 	t.Helper()
 
 	manifest := &pluginv1.PluginManifest{
-		PluginId:       pluginID,
-		Version:        version,
-		Checksum:       "sha256-placeholder",
+		PluginId:          pluginID,
+		Version:           version,
+		Checksum:          "sha256-placeholder",
 		PrairieApiVersion: DefaultPrairieAPIVersion,
 		SupportedPlatforms: []*pluginv1.SupportedPlatform{
 			{Os: "darwin", Arch: "arm64"},

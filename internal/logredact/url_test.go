@@ -210,7 +210,7 @@ func TestSanitizeURLErrorReturnsOriginalWhenMultiMessageUnchanged(t *testing.T) 
 	err := fmt.Errorf("capability request failed (%w)", urlErr)
 
 	sanitized := SanitizeURLError(err)
-	if sanitized == err {
+	if any(sanitized) == any(err) {
 		t.Fatal("expected sanitized clone, got identical pointer")
 	}
 	if message := sanitized.Error(); strings.Contains(message, "node-password") || strings.Contains(message, "query-secret") {

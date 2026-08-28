@@ -8,8 +8,9 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/go-chi/chi/v5"
+
+	"github.com/prairie-server/prairie-server/internal/clientip"
 )
 
 type Family string

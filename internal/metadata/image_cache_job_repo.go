@@ -235,7 +235,7 @@ func normalizeImageCacheJobInput(in EnqueueImageCacheJobInput) (EnqueueImageCach
 		return EnqueueImageCacheJobInput{}, false
 	}
 	if in.ContentType == "" {
-		in.ContentType = "series"
+		in.ContentType = anchoredItemTypeSeries
 	}
 	if in.ProviderID == "" {
 		in.ProviderID = imageCacheProviderIDFromSource(in.SourcePath, "")
@@ -1391,7 +1391,7 @@ func imageCacheProviderContentID(providerID, tmdbID, tvdbID, imdbID, fallback st
 
 func imageCacheContentType(contentType string) string {
 	switch strings.TrimSpace(contentType) {
-	case "movie":
+	case anchoredItemTypeMovie:
 		return "movies"
 	case "audiobook":
 		return "audiobooks"

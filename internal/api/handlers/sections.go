@@ -1592,13 +1592,6 @@ func (h *SectionHandler) listSectionItemUserStates(r *http.Request, items []*mod
 	return states
 }
 
-func (h *SectionHandler) sectionPresignURL(r *http.Request, path string, variant string) string {
-	if h.DetailSvc != nil {
-		return h.DetailSvc.PresignURL(r.Context(), path, variant)
-	}
-	return ""
-}
-
 // maybeInjectNextUp injects a SectionNextUp entry after SectionContinueWatching
 // if the profile's ui.next_up_mode setting resolves to "separate".
 func (h *SectionHandler) maybeInjectNextUp(ctx context.Context, resolved []sections.ResolvedSection, userID int) []sections.ResolvedSection {

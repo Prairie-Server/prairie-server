@@ -9,9 +9,10 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/sync/singleflight"
+
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/tonemap"
-	"golang.org/x/sync/singleflight"
 )
 
 // NeedsCriticalProbeRepair reports whether playback-critical probe metadata is

@@ -75,7 +75,7 @@ var hwDeviceLoad = struct {
 // selects GPUs by render-device path, which is what the balancer hands out.
 // NVENC addresses GPUs by CUDA index/UUID and is deliberately excluded.
 func hwAccelBalancesRenderDevices(hwAccel string) bool {
-	return hwAccel == "qsv" || hwAccel == "vaapi"
+	return hwAccel == "qsv" || hwAccel == hwAccelVAAPI
 }
 
 // presentHWDevices filters a device list to the entries that exist, falling

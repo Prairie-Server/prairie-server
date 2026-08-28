@@ -11,9 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/httpstream"
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
+
+	"github.com/prairie-server/prairie-server/internal/httpstream"
 )
 
 func testRedisStoreConfig(publisherID string) Config {

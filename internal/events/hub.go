@@ -6,8 +6,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/cache"
 	"github.com/oklog/ulid/v2"
+
+	"github.com/prairie-server/prairie-server/internal/cache"
 )
 
 type subscriber struct {

@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/discord"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/discord"
 )
 
 // discordDMBlockedMessage is the link_failure text surfaced in the settings

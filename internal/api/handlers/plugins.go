@@ -17,6 +17,7 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	"github.com/prairie-server/prairie-server/internal/metadata"
 	"github.com/prairie-server/prairie-server/internal/pluginhost"

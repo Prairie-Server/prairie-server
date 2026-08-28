@@ -8,8 +8,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 func TestFetchTVRecentlyAddedCompatibilityOptOut(t *testing.T) {

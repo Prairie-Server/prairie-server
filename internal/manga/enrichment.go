@@ -10,7 +10,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"reflect"
 	"strconv"
 	"strings"
 	"sync"
@@ -682,84 +681,6 @@ func collectMangaMetadata(ctx context.Context, item enrichmentItemRow, providers
 	return accumulator, accumulator.ProviderIDs, providerErrs, false
 }
 
-// cacheRemoteImages localizes the remote poster and backdrop URLs on a full
-// enrichment result, replacing each with the cached path + thumbhash when
-// caching succeeds (the provider URL is kept as a fallback otherwise).
-func (e *Enricher) cacheRemoteImages(ctx context.Context, contentID string, result *metadata.MetadataResult) {
-	if e == nil || result == nil {
-		return
-	}
-	if path, thumbhash := e.cacheRemoteImage(ctx, contentID, result.PosterPath, metadata.ImagePoster); path != "" {
-		result.PosterPath = path
-		if thumbhash != "" {
-			result.PosterThumbhash = thumbhash
-		}
-	}
-	if path, thumbhash := e.cacheRemoteImage(ctx, contentID, result.BackdropPath, metadata.ImageBackdrop); path != "" {
-		result.BackdropPath = path
-		if thumbhash != "" {
-			result.BackdropThumbhash = thumbhash
-		}
-	}
-}
-
-// cacheRemoteImage downloads and caches one remote image, returning the
-// stored path and thumbhash. On any failure it returns the original URL (a
-// remote URL in the column still renders; the cache is an optimization).
-func (e *Enricher) cacheRemoteImage(ctx context.Context, contentID, url string, imageType metadata.ImageType) (string, string) {
-	if e == nil || url == "" {
-		return url, ""
-	}
-	if !strings.HasPrefix(url, "http://") && !strings.HasPrefix(url, "https://") {
-		return url, ""
-	}
-	if isNilImageCacher(e.imageCacher) {
-		return url, ""
-	}
-
-	cached, err := e.imageCacher.CacheImage(ctx, metadata.CacheImageRequest{
-		SourceURL:   url,
-		ProviderID:  mangaMetadataImageProviderID,
-		ContentType: "manga",
-		ContentID:   contentID,
-		ImageType:   imageType,
-	})
-	if err != nil {
-		slog.WarnContext(ctx, "manga enrichment: image cache failed, keeping provider URL", "component", "manga",
-			"content_id", contentID,
-			"url", url,
-			"error", err,
-		)
-		return url, ""
-	}
-	if cached == nil {
-		slog.WarnContext(ctx, "manga enrichment: image cache returned no result, keeping provider URL", "component", "manga",
-			"content_id", contentID,
-			"url", url,
-		)
-		return url, ""
-	}
-
-	storedPath := metadata.CachedImageOriginalPath(cached)
-	if storedPath == "" {
-		return url, ""
-	}
-	return storedPath, cached.Thumbhash
-}
-
-func isNilImageCacher(cacher metadata.ImageCacher) bool {
-	if cacher == nil {
-		return true
-	}
-	value := reflect.ValueOf(cacher)
-	switch value.Kind() {
-	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
-		return value.IsNil()
-	default:
-		return false
-	}
-}
-
 func (e *Enricher) persist(ctx context.Context, contentID string, providerIDs map[string]string, result *metadata.MetadataResult) error {
 	upd := &catalog.MetadataUpdate{}
 
@@ -994,7 +915,7 @@ func (e *Enricher) persistPeople(ctx context.Context, contentID string, people [
 			continue
 		}
 		ip := people[i]
-		ip.Person.ID = personIDs[i]
+		ip.ID = personIDs[i]
 		linked = append(linked, ip)
 	}
 

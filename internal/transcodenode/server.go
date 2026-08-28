@@ -1587,7 +1587,7 @@ func (s *Server) handleManifest(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/vnd.apple.mpegurl")
 	w.Header().Set("Cache-Control", "no-store, max-age=0")
 	w.Header().Set("Pragma", "no-cache")
-	w.Write(manifest)
+	_, _ = w.Write(manifest)
 }
 
 func (s *Server) handleSegment(w http.ResponseWriter, r *http.Request) {
@@ -1623,7 +1623,7 @@ func (s *Server) handleSegment(w http.ResponseWriter, r *http.Request) {
 	s.attachTelemetrySession(r, sessionID)
 
 	segPath, err := session.GetSegment(name)
-	if err != nil && err == playback.ErrSegmentNotFound {
+	if err != nil && errors.Is(err, playback.ErrSegmentNotFound) {
 		segNum, parseErr := playback.ParseSegmentNumber(name)
 		if parseErr == nil {
 			now := time.Now()
@@ -1658,7 +1658,7 @@ func (s *Server) handleSegment(w http.ResponseWriter, r *http.Request) {
 					"playback_session_id", sessionID,
 				)
 				segPath, err = session.WaitForSegment(name, decision.WaitTimeout)
-				if err != nil && err == playback.ErrSegmentNotFound {
+				if err != nil && errors.Is(err, playback.ErrSegmentNotFound) {
 					slog.InfoContext(r.Context(), "transcode segment wait timeout", "component", "transcodenode",
 						"segment", name,
 						"requested_segment", segNum,
@@ -1674,7 +1674,7 @@ func (s *Server) handleSegment(w http.ResponseWriter, r *http.Request) {
 				}
 			}
 
-			if err != nil && err == playback.ErrSegmentNotFound && decision.RestartOnTimeout {
+			if err != nil && errors.Is(err, playback.ErrSegmentNotFound) && decision.RestartOnTimeout {
 				seekSeconds, ok, seekErr := session.RestartSeekTarget(segNum)
 				if seekErr != nil && !errors.Is(seekErr, playback.ErrManifestNotReady) {
 					slog.ErrorContext(r.Context(), "resolve transcode node seek target", "component", "transcodenode", "error", seekErr, "segment", name, "session", sessionID, "playback_session_id", sessionID)
@@ -1763,7 +1763,7 @@ func (s *Server) handleForceReload(w http.ResponseWriter, r *http.Request) {
 		s.mu.Unlock()
 		s.activeJobs.Add(-1)
 
-		victim.session.Close()
+		_ = victim.session.Close()
 		if err := os.RemoveAll(s.sessionOutputDir(victim.id)); err != nil {
 			slog.WarnContext(r.Context(), "remove transcode session directory during reload", "component", "transcodenode", "session", victim.id, "error", err)
 		}

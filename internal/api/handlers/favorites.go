@@ -83,38 +83,6 @@ func (h *PersonalDataHandler) SetLocalListEventDispatcher(dispatcher LocalListEv
 	h.localListDispatcher = dispatcher
 }
 
-// --- Response types ---
-
-type favoriteResponse struct {
-	MediaItemID string `json:"media_item_id"`
-	AddedAt     string `json:"added_at"`
-}
-
-type favoriteListResponse struct {
-	Favorites []favoriteResponse `json:"favorites"`
-}
-
-type watchlistEntryResponse struct {
-	MediaItemID string `json:"media_item_id"`
-	AddedAt     string `json:"added_at"`
-}
-
-type watchlistListResponse struct {
-	Watchlist []watchlistEntryResponse `json:"watchlist"`
-}
-
-type historyEntryResponse struct {
-	ID              string  `json:"id"`
-	MediaItemID     string  `json:"media_item_id"`
-	WatchedAt       string  `json:"watched_at"`
-	DurationSeconds float64 `json:"duration_seconds"`
-	Completed       bool    `json:"completed"`
-}
-
-type historyListResponse struct {
-	History []historyEntryResponse `json:"history"`
-}
-
 type historyRemovalTargetRequest struct {
 	ContentID string `json:"content_id"`
 	Scope     string `json:"scope"`
@@ -737,13 +705,13 @@ func (h *PersonalDataHandler) resolveHistoryRemovalMediaItemIDs(
 				return nil, err
 			}
 			switch item.Type {
-			case "movie", "ebook":
+			case itemTypeMovie, itemTypeEbook:
 				// Hiding an ebook gates ebook_reader_progress reads via
 				// user_history_hidden_items (updated_at <= hidden_before)
 				// without deleting the progress row, so the reader position
 				// survives: hidden is not the same as unread.
 				return []string{item.ContentID}, nil
-			case "series":
+			case itemTypeSeries:
 				return h.seriesEpisodeIDs(ctx, item.ContentID)
 			}
 		case err != nil && !errors.Is(err, catalog.ErrItemNotFound):

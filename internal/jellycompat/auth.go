@@ -8,9 +8,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5"
+
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/playback"
-	"github.com/go-chi/chi/v5"
 )
 
 type sessionContextKey string

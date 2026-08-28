@@ -16,10 +16,11 @@ import (
 
 	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	publicconfig "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/config"
+	"google.golang.org/protobuf/types/known/timestamppb"
+
 	"github.com/prairie-server/prairie-server/internal/historyimport"
 	hostplugins "github.com/prairie-server/prairie-server/internal/plugins"
 	"github.com/prairie-server/prairie-server/internal/userstore"
-	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type WatchSyncPluginClient interface {

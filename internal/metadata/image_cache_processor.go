@@ -725,7 +725,7 @@ func (p *ImageCacheProcessor) processOne(ctx context.Context, job *models.Metada
 	imageType, err := imageCacheJobImageType(job.ImageType)
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 
 	// Confirm the target still references this job's source before doing the
@@ -734,7 +734,7 @@ func (p *ImageCacheProcessor) processOne(ctx context.Context, job *models.Metada
 	current, err := p.jobs.CurrentTargetSourcePath(ctx, job)
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 	if current != job.SourcePath {
 		p.markSucceeded(ctx, job)
@@ -749,12 +749,12 @@ func (p *ImageCacheProcessor) processOne(ctx context.Context, job *models.Metada
 	if isProviderImagePath(downloadURL) {
 		if p.resolver == nil {
 			p.markFailed(ctx, job, "missing image resolver")
-			return imageCacheProcessResult{outcome: "failed"}
+			return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 		}
 		downloadURL = p.resolver.ResolveImageURL(ctx, job.SourcePath, "original")
 		if downloadURL == "" {
 			p.markFailed(ctx, job, imageCacheEmptyResolvedURLError)
-			return imageCacheProcessResult{outcome: "failed"}
+			return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 		}
 	}
 
@@ -770,12 +770,12 @@ func (p *ImageCacheProcessor) processOne(ctx context.Context, job *models.Metada
 	})
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 
 	if result == nil {
 		p.markFailed(ctx, job, "image cache returned no result")
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 	processResult := imageCacheProcessResult{
 		uploadedVariants: result.UploadedVariants,
@@ -860,11 +860,11 @@ func (p *ImageCacheProcessor) processLocalOne(ctx context.Context, job *models.M
 	byteCacher, ok := p.cacher.(ImageByteCacher)
 	if !ok {
 		p.markFailed(ctx, job, "image cacher does not support local artwork")
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 	if p.libraryRoots == nil {
 		p.markFailed(ctx, job, "missing library root resolver for local artwork")
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 
 	localPath := filepath.Clean(strings.TrimSpace(job.SourcePath)[len("file://"):])
@@ -872,11 +872,11 @@ func (p *ImageCacheProcessor) processLocalOne(ctx context.Context, job *models.M
 	roots, err := p.libraryRoots.LibraryRootsForContent(ctx, rootsContentID)
 	if err != nil {
 		p.markFailed(ctx, job, fmt.Sprintf("resolving library roots: %v", err))
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 	if !localImagePathWithinRoots(localPath, roots) {
 		p.markFailed(ctx, job, "local image path outside library roots: "+localPath)
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 	// The lexical check above cannot see through symlinks. Resolve the path and
 	// roots and re-confine so an intermediate directory symlink planted inside a
@@ -888,13 +888,13 @@ func (p *ImageCacheProcessor) processLocalOne(ctx context.Context, job *models.M
 	// through to the reader, which classifies it as the stable "missing" failure.
 	if _, err := localImagePathResolvedWithinRoots(localPath, roots); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		p.markFailed(ctx, job, "local image path outside library roots: "+localPath)
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 
 	data, err := readLocalImageFile(localPath)
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 
 	// The target's current cached path drives the unchanged-skip (same hash →
@@ -922,11 +922,11 @@ func (p *ImageCacheProcessor) processLocalOne(ctx context.Context, job *models.M
 	})
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 	if result == nil {
 		p.markFailed(ctx, job, "image cache returned no result")
-		return imageCacheProcessResult{outcome: "failed"}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 	processResult := imageCacheProcessResult{
 		uploadedVariants: result.UploadedVariants,

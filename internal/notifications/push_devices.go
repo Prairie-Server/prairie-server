@@ -10,24 +10,25 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/secret"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/oklog/ulid/v2"
+
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 const (
-	PushPlatformApple      = "apple"
-	PushPlatformAndroid    = "android"
-	PushProviderSiloRelay   = "silo_relay"
+	PushPlatformApple        = "apple"
+	PushPlatformAndroid      = "android"
+	PushProviderSiloRelay    = "silo_relay"
 	PushProviderPrairieRelay = "prairie_relay"
-	PushModeOff            = "off"
-	PushModeInAppOnly      = "in_app_only"
-	PushModePrivatePush    = "private_push"
-	APNsEnvironmentProd    = "production"
-	APNsEnvironmentSandbox = "sandbox"
+	PushModeOff              = "off"
+	PushModeInAppOnly        = "in_app_only"
+	PushModePrivatePush      = "private_push"
+	APNsEnvironmentProd      = "production"
+	APNsEnvironmentSandbox   = "sandbox"
 	ApplePushTopicSilo       = "org.siloserver.silo"
-	ApplePushTopicPrairie      = "org.prairieserver.prairie"
+	ApplePushTopicPrairie    = "org.prairieserver.prairie"
 )
 
 var (

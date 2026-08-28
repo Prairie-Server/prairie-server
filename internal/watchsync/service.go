@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"log/slog"
 	"sort"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -712,7 +711,10 @@ func (s *Service) syncConnectionWithRun(ctx context.Context, conn Connection, ru
 
 func (s *Service) tryLock(connectionID string) (func(), bool) {
 	value, _ := s.locks.LoadOrStore(connectionID, &sync.Mutex{})
-	mu := value.(*sync.Mutex)
+	mu, ok := value.(*sync.Mutex)
+	if !ok {
+		return nil, false
+	}
 	if !mu.TryLock() {
 		return nil, false
 	}
@@ -1879,11 +1881,6 @@ func intValue(value *int) int {
 	return *value
 }
 
-func parseInt(value string) int {
-	parsed, _ := strconv.Atoi(value)
-	return parsed
-}
-
 const scrobbleActionStop = "stop"
 
 func (s *Service) ScrobbleStart(ctx context.Context, event ScrobbleEvent) error {
@@ -2105,7 +2102,10 @@ func scrobbleDispatchKey(scrobbler Scrobbler, conn Connection, event ScrobbleEve
 
 func (s *Service) enqueueOrderedScrobble(key string, dispatch func()) {
 	value, _ := s.scrobbleQueues.LoadOrStore(key, &scrobbleQueue{})
-	queue := value.(*scrobbleQueue)
+	queue, ok := value.(*scrobbleQueue)
+	if !ok {
+		return
+	}
 
 	queue.mu.Lock()
 	previous := queue.tail

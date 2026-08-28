@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/prairie-server/prairie-server/internal/secret"
 	"github.com/oklog/ulid/v2"
+
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 // Server channel service errors surfaced to the API layer.

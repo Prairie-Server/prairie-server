@@ -213,7 +213,7 @@ func (t *ReconcileArtworkCacheTask) Execute(ctx context.Context, progress taskma
 		if brandingErr != nil {
 			stats.Errors++
 			brandingNote = fmt.Sprintf("; branding asset check failed: %v (re-run the task to retry)", brandingErr)
-			slog.Warn("artwork reconcile: branding asset check failed", "error", brandingErr)
+			slog.WarnContext(ctx, "artwork reconcile: branding asset check failed", "error", brandingErr)
 		}
 	}
 

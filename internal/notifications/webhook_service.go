@@ -9,8 +9,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/secret"
 	"github.com/oklog/ulid/v2"
+
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 // Webhook service errors surfaced to the API layer.

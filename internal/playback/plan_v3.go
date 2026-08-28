@@ -1393,9 +1393,9 @@ func resolutionHeightV3(v string) int {
 func resolutionLabelV3(h int) string {
 	switch {
 	case h >= 2160:
-		return "2160p"
+		return resolution2160p
 	case h >= 1080:
-		return "1080p"
+		return resolution1080p
 	case h >= 720:
 		return "720p"
 	default:

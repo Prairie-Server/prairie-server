@@ -59,18 +59,18 @@ type ResolvedCatalogInstall struct {
 }
 
 type CatalogServiceOptions struct {
-	HTTPClient     *http.Client
+	HTTPClient        *http.Client
 	PrairieAPIVersion string
-	CurrentOS      string
-	CurrentArch    string
+	CurrentOS         string
+	CurrentArch       string
 }
 
 type CatalogService struct {
-	repositories   *RepositoryStore
-	httpClient     *http.Client
+	repositories      *RepositoryStore
+	httpClient        *http.Client
 	prairieAPIVersion string
-	currentOS      string
-	currentArch    string
+	currentOS         string
+	currentArch       string
 }
 
 func NewCatalogService(repositories *RepositoryStore, opts CatalogServiceOptions) *CatalogService {
@@ -94,11 +94,11 @@ func NewCatalogService(repositories *RepositoryStore, opts CatalogServiceOptions
 	}
 
 	return &CatalogService{
-		repositories:   repositories,
-		httpClient:     httpClient,
+		repositories:      repositories,
+		httpClient:        httpClient,
 		prairieAPIVersion: apiVersion,
-		currentOS:      currentOS,
-		currentArch:    currentArch,
+		currentOS:         currentOS,
+		currentArch:       currentArch,
 	}
 }
 

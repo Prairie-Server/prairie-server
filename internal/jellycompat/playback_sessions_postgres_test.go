@@ -8,9 +8,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5/pgxpool"
+
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/watchsync"
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func TestMarshalPlaybackSessionStripsNestedNUL(t *testing.T) {

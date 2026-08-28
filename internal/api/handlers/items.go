@@ -246,7 +246,7 @@ func (h *ItemsHandler) maybeRequestStaleDetailMetadataRefresh(ctx context.Contex
 		if err == nil {
 			h.maybeRequestStaleSeasonMetadataRefresh(ctx, detail.ContentID, episodes)
 		}
-	case "series":
+	case itemTypeSeries:
 		if h.itemRepo == nil {
 			return
 		}
@@ -507,7 +507,7 @@ func (h *ItemsHandler) HandleGetWatchDetail(w http.ResponseWriter, r *http.Reque
 		}
 	}
 
-	if detail.Type == "movie" || detail.Type == "episode" || detail.Type == "ebook" || detail.Type == "audiobook" {
+	if detail.Type == itemTypeMovie || detail.Type == itemTypeEpisode || detail.Type == itemTypeEbook || detail.Type == "audiobook" {
 		detail.UserData = h.getLeafUserData(r, detail.ContentID, detail.Type)
 		applyEffectiveEditionPreference(detail.UserData, &detail.EffectiveVersionEditionKey)
 	}
@@ -585,7 +585,7 @@ func (h *ItemsHandler) HandleTrailerRefreshCapability(w http.ResponseWriter, _ *
 			metadata.TrailerRefreshStatusCooldown,
 			metadata.TrailerRefreshStatusDisabled,
 		}
-		resp.SupportedTypes = []string{"movie", "series"}
+		resp.SupportedTypes = []string{itemTypeMovie, itemTypeSeries}
 	}
 	writeJSON(w, http.StatusOK, resp)
 }
@@ -717,7 +717,7 @@ func (h *ItemsHandler) resolveTrailerRefreshTarget(ctx context.Context, contentI
 	switch {
 	case err == nil && item != nil:
 		return trailerRefreshTarget{
-			supportsTrailers: item.Type == "movie" || item.Type == "series",
+			supportsTrailers: item.Type == itemTypeMovie || item.Type == itemTypeSeries,
 			accessContentID:  contentID,
 		}, nil
 	case err == nil, errors.Is(err, catalog.ErrItemNotFound):

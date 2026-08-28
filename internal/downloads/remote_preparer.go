@@ -10,6 +10,8 @@ import (
 	"sync"
 	"time"
 
+	"golang.org/x/sync/singleflight"
+
 	"github.com/prairie-server/prairie-server/internal/config"
 	"github.com/prairie-server/prairie-server/internal/downloadprepare"
 	"github.com/prairie-server/prairie-server/internal/logredact"
@@ -17,7 +19,6 @@ import (
 	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/prairie-server/prairie-server/internal/tonemap"
 	"github.com/prairie-server/prairie-server/internal/transcodenode"
-	"golang.org/x/sync/singleflight"
 )
 
 // NodeAwarePreparer keeps artifact queue ownership central while executing the

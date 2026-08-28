@@ -11,9 +11,10 @@ import (
 	"testing"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
+
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 const ebookCoverTestThumbhash = "thumb"
@@ -1319,10 +1320,10 @@ func TestEbookPeopleMergePreservesExistingNonAuthorCreditsExceptNarrators(t *tes
 	if len(got) != 2 {
 		t.Fatalf("merged people len = %d, want 2: %+v", len(got), got)
 	}
-	if got[0].Person.ID != 20 || got[0].Kind != models.PersonKindWriter || got[0].Character != "essay" {
+	if got[0].ID != 20 || got[0].Kind != models.PersonKindWriter || got[0].Character != "essay" {
 		t.Fatalf("first preserved non-author = %+v", got[0])
 	}
-	if got[1].Person.ID != 40 || got[1].Kind != models.PersonKindAuthor || got[1].SortOrder != 1 {
+	if got[1].ID != 40 || got[1].Kind != models.PersonKindAuthor || got[1].SortOrder != 1 {
 		t.Fatalf("new author credit = %+v", got[1])
 	}
 }

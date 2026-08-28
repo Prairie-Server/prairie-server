@@ -182,7 +182,7 @@ func (h *ImagesHandler) HandleItemImage(w http.ResponseWriter, r *http.Request) 
 
 // handlePersonImage serves person photo images.
 func (h *ImagesHandler) handlePersonImage(w http.ResponseWriter, r *http.Request, routeID, imageType string, personID int64) {
-	if imageType != "Primary" {
+	if imageType != imageTypePrimary {
 		writeError(w, http.StatusNotFound, "NotFound", "Image not found")
 		return
 	}
@@ -306,7 +306,7 @@ func (h *ImagesHandler) resolveItemImageURLFromTag(ctx context.Context, routeID,
 	// never reach this generic resolver.
 	contentID, err := decodeContentID(h.codec, routeID)
 	if err != nil {
-		return catalog.ResolvedImageURL{}, false, nil
+		return catalog.ResolvedImageURL{}, false, err
 	}
 	return h.resolveItemImageURLFromReposWithoutSession(ctx, routeID, contentID, imageType, imageSize, tag)
 }
@@ -406,7 +406,7 @@ func (h *ImagesHandler) serveCollectionImage(w http.ResponseWriter, r *http.Requ
 		}
 	}
 
-	if imageType != "Primary" {
+	if imageType != imageTypePrimary {
 		writeError(w, http.StatusNotFound, "NotFound", "Image not found")
 		return
 	}
@@ -437,7 +437,7 @@ func (h *ImagesHandler) collectionVisibleToRequest(r *http.Request, collection *
 // always a generated "Collections" poster, authorized by the signed tag or any
 // authenticated session.
 func (h *ImagesHandler) serveCollectionsViewImage(w http.ResponseWriter, r *http.Request, imageType, tag string) {
-	if imageType != "Primary" {
+	if imageType != imageTypePrimary {
 		writeError(w, http.StatusNotFound, "NotFound", "Image not found")
 		return
 	}
@@ -478,7 +478,7 @@ func (h *ImagesHandler) resolveLibraryImageURLFromTag(ctx context.Context, route
 	}
 	folder, err := h.folderRepo.GetByID(ctx, libraryID)
 	if err != nil {
-		return catalog.ResolvedImageURL{}, false, nil
+		return catalog.ResolvedImageURL{}, false, err
 	}
 	if folder.PosterPath == "" || !h.imageTags.Equal(
 		imageTagSeed(routeID, "Primary", compatCardImageSize, folder.PosterPath, "", time.Time{}),

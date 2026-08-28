@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // ExternalIDs is the resolved identity for a media file at marker-fetch

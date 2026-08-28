@@ -6,8 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/requests"
 	"github.com/oklog/ulid/v2"
+
+	"github.com/prairie-server/prairie-server/internal/requests"
 )
 
 // Request lifecycle delivery types posted to the requesting profile. Their

@@ -946,7 +946,7 @@ func NewPlaybackHandler(
 		if h.sessionMgr != nil && h.tm.CloseTranscodeSessionIf(sessionID, dead, nodeURL) {
 			if h.playbackStore != nil {
 				if playSession, ok := h.playbackStore.FindByUpstreamSessionID(sessionID); ok {
-					h.dispatchCompatScrobble(ctx, compatScrobblePause, playSession, upstreamSession, nil)
+					_ = h.dispatchCompatScrobble(ctx, compatScrobblePause, playSession, upstreamSession, nil)
 				}
 			}
 			_ = h.sessionMgr.StopSession(sessionID)
@@ -2865,13 +2865,4 @@ func (v *compatIntValue) UnmarshalJSON(data []byte) error {
 func compatIntValuePtr(value int) *compatIntValue {
 	v := compatIntValue(value)
 	return &v
-}
-
-func (h *PlaybackHandler) playbackUnavailable(w http.ResponseWriter, err error) {
-	switch {
-	case errors.Is(err, ErrSessionNotFound):
-		writeError(w, http.StatusUnauthorized, "Unauthorized", "Authentication failed")
-	default:
-		writeCompatUpstreamError(w, err)
-	}
 }

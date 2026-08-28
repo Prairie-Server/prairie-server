@@ -13,8 +13,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/tonemap"
 	"golang.org/x/sync/singleflight"
+
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 const darwinGOOS = "darwin"
@@ -256,7 +257,7 @@ func ResolveHWAccelWithFFmpegContext(ctx context.Context, hwAccel string, ffmpeg
 
 	if vaapiDevice != "" {
 		slog.Info("hw_accel=auto: non-Intel GPU detected, using VAAPI", "device", vaapiDevice)
-		return "vaapi"
+		return hwAccelVAAPI
 	}
 
 	slog.Info("hw_accel=auto: no compatible GPU devices found, using software encoding")
@@ -753,7 +754,7 @@ type RenderDeviceInfo struct {
 func describeRenderDevice(renderDevPath string) string {
 	name := filepath.Base(renderDevPath)
 	vendor := readSysfsID(filepath.Join(sysClassDRMDir, name, "device", "vendor"))
-	label := ""
+	var label string
 	switch vendor {
 	case "0x8086":
 		label = "Intel GPU"

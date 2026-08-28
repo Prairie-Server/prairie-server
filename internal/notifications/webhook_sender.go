@@ -9,8 +9,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/secret"
 	"github.com/oklog/ulid/v2"
+
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 // webhookRetrySchedule holds the cumulative delay since the first attempt

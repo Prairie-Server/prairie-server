@@ -1019,7 +1019,7 @@ func categorizeUpcomingCandidates(
 
 func buildUpcomingCandidate(event catalog.CalendarEvent) (upcomingDiscoverCandidate, bool) {
 	displayID := event.ContentID
-	if event.Type != "movie" {
+	if event.Type != itemTypeMovie {
 		if event.SeriesID == nil || *event.SeriesID == "" {
 			return upcomingDiscoverCandidate{}, false
 		}
@@ -1206,7 +1206,7 @@ func collectUpcomingDisplayIDsFromCandidates(candidates []upcomingDiscoverCandid
 }
 
 func isUpcomingPremiere(event catalog.CalendarEvent, badges []string) bool {
-	if event.Type == "movie" {
+	if event.Type == itemTypeMovie {
 		return true
 	}
 	return hasUpcomingBadge(badges, "series_premiere") || hasUpcomingBadge(badges, "season_premiere")
