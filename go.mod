@@ -14,8 +14,8 @@ require (
 	github.com/prometheus/client_golang v1.23.2
 	github.com/prometheus/client_model v0.6.2
 	github.com/redis/go-redis/v9 v9.18.0
-	golang.org/x/crypto v0.52.0
-	golang.org/x/sys v0.45.0
+	golang.org/x/crypto v0.54.0
+	golang.org/x/sys v0.47.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
@@ -38,15 +38,9 @@ require (
 	github.com/wneessen/go-mail v0.7.3
 	github.com/zishang520/socket.io/v2 v2.5.0
 	go.n16f.net/thumbhash v1.1.0
-<<<<<<< HEAD
-	golang.org/x/image v0.41.0
-	golang.org/x/net v0.55.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260526163538-3dc84a4a5aaa
-=======
 	golang.org/x/image v0.45.0
 	golang.org/x/net v0.57.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260803160001-6ac0973c030d
->>>>>>> 84db8499 (fix(ci): restore green main CI checks)
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 )
 
@@ -148,13 +142,8 @@ require (
 	go.opentelemetry.io/otel/sdk/log v0.20.0
 	go.uber.org/atomic v1.11.0 // indirect
 	go.yaml.in/yaml/v2 v2.4.4 // indirect
-<<<<<<< HEAD
-	golang.org/x/sync v0.21.0
-	golang.org/x/text v0.38.0
-=======
 	golang.org/x/sync v0.22.0
 	golang.org/x/text v0.41.0
->>>>>>> 84db8499 (fix(ci): restore green main CI checks)
 	golang.org/x/time v0.15.0
 	google.golang.org/grpc v1.82.1
 	google.golang.org/protobuf v1.36.11
