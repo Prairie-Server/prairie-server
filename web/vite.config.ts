@@ -101,6 +101,49 @@ export default defineConfig(({ mode }) => {
       environment: "jsdom",
       globals: true,
       setupFiles: ["./src/test-setup.ts"],
+      pool: "forks",
+      fileParallelism: true,
+      maxWorkers: "50%",
+      // Enforce 95% on pure helpers under src/lib/. Prefer modules that already
+      // have *.test.ts coverage; write tests before adding a file here.
+      // Thin React Query / mutation wrappers are left out until they are
+      // meaningfully unit-tested.
+      coverage: {
+        provider: "v8",
+        include: [
+          "src/lib/artworkUrl.ts",
+          "src/lib/liveTVGuide.ts",
+          "src/lib/datetime.ts",
+          "src/lib/filterEasyMode.ts",
+          "src/lib/jellyfinCompat.ts",
+          "src/lib/impersonationSession.ts",
+          "src/lib/chunkedUpload.ts",
+          "src/lib/calendarWeek.ts",
+          "src/lib/autoscanLabels.ts",
+          "src/lib/documentTitle.ts",
+          "src/lib/mangaChapters.ts",
+          "src/lib/collectionDisplayFilters.ts",
+          "src/lib/carouselEmbla.ts",
+          "src/lib/mediaFormat.ts",
+          "src/lib/pluginRouteHref.ts",
+          "src/lib/recipes.ts",
+          "src/lib/recommendation-provider-presets.ts",
+          "src/lib/videoRange.ts",
+          "src/lib/webhookSync.ts",
+          "src/lib/queryInvalidation.ts",
+          "src/utils/storage.ts",
+        ],
+        // Per-shard runs only see a slice of tests; enforce thresholds on the
+        // merged report (CI sets VITEST_SHARD=1). Local/full runs keep the gate.
+        thresholds: process.env.VITEST_SHARD
+          ? undefined
+          : {
+              statements: 95,
+              lines: 95,
+              functions: 95,
+              branches: 95,
+            },
+      },
     },
   };
 });
