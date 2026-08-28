@@ -98,7 +98,7 @@ export default defineConfig(({ mode }) => {
       },
     },
     test: {
-      environment: "happy-dom",
+      environment: "jsdom",
       globals: true,
       setupFiles: ["./src/test-setup.ts"],
       pool: "forks",
