@@ -8,9 +8,53 @@ import {
 
 const KEYS = storage.KEYS;
 
+function installMemoryLocalStorage() {
+  const state = new Map<string, string>();
+  Object.defineProperty(globalThis, "localStorage", {
+    value: {
+      get length() {
+        return state.size;
+      },
+      getItem: (key: string) => state.get(key) ?? null,
+      key: (index: number) => Array.from(state.keys())[index] ?? null,
+      setItem: (key: string, value: string) => {
+        state.set(key, value);
+      },
+      removeItem: (key: string) => {
+        state.delete(key);
+      },
+      clear: () => {
+        state.clear();
+      },
+    } satisfies Storage,
+    configurable: true,
+  });
+  return state;
+}
+
+function installBlockedLocalStorage() {
+  Object.defineProperty(globalThis, "localStorage", {
+    value: {
+      getItem: () => {
+        throw new Error("blocked");
+      },
+      setItem: () => {
+        throw new Error("blocked");
+      },
+      removeItem: () => {
+        throw new Error("blocked");
+      },
+      clear: () => {},
+      key: () => null,
+      length: 0,
+    } satisfies Storage,
+    configurable: true,
+  });
+}
+
 describe("appearance cache namespacing", () => {
   beforeEach(() => {
-    localStorage.clear();
+    installMemoryLocalStorage();
   });
 
   it("reads back what the same account wrote", () => {
@@ -101,7 +145,7 @@ describe("appearance cache namespacing", () => {
 
 describe("ensureStorageSchema", () => {
   beforeEach(() => {
-    localStorage.clear();
+    installMemoryLocalStorage();
   });
 
   it("writes the schema version when missing", () => {
@@ -129,23 +173,7 @@ describe("ensureStorageSchema", () => {
   });
 
   it("returns the schema version when localStorage is unavailable", () => {
-    Object.defineProperty(globalThis, "localStorage", {
-      value: {
-        getItem: () => {
-          throw new Error("blocked");
-        },
-        setItem: () => {
-          throw new Error("blocked");
-        },
-        removeItem: () => {
-          throw new Error("blocked");
-        },
-        clear: () => {},
-        key: () => null,
-        length: 0,
-      } satisfies Storage,
-      configurable: true,
-    });
+    installBlockedLocalStorage();
 
     expect(ensureStorageSchema()).toBe(STORAGE_SCHEMA_VERSION);
   });
@@ -153,7 +181,7 @@ describe("ensureStorageSchema", () => {
 
 describe("storage get/set/remove", () => {
   beforeEach(() => {
-    localStorage.clear();
+    installMemoryLocalStorage();
   });
 
   it("round-trips values", () => {
@@ -165,23 +193,7 @@ describe("storage get/set/remove", () => {
   });
 
   it("swallows localStorage failures", () => {
-    Object.defineProperty(globalThis, "localStorage", {
-      value: {
-        getItem: () => {
-          throw new Error("blocked");
-        },
-        setItem: () => {
-          throw new Error("blocked");
-        },
-        removeItem: () => {
-          throw new Error("blocked");
-        },
-        clear: () => {},
-        key: () => null,
-        length: 0,
-      } satisfies Storage,
-      configurable: true,
-    });
+    installBlockedLocalStorage();
 
     expect(storage.get(KEYS.THEME)).toBeNull();
     expect(() => storage.set(KEYS.THEME, "dark")).not.toThrow();
