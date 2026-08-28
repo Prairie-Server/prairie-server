@@ -126,7 +126,7 @@ require (
 	github.com/jackc/pgservicefile v0.0.0-20240606120523-5a60cdf6a761 // indirect
 	github.com/jackc/puddle/v2 v2.2.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
-	github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20260727030716-97c09e8758ec
+	github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20260828011825-be0bca896c68
 	github.com/prometheus/common v0.67.5 // indirect
 	github.com/prometheus/procfs v0.20.1 // indirect
 	github.com/robfig/cron/v3 v3.0.1
@@ -150,5 +150,3 @@ require (
 )
 
 replace github.com/zishang520/webtransport-go => ./internal/compat/zishang520-webtransport-go
-
-replace github.com/prairie-server/prairie-plugin-sdk => ../prairie-plugin-sdk
