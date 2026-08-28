@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"sync/atomic"
 	"time"
 
 	"github.com/google/uuid"
@@ -58,6 +59,10 @@ type CacheMetadataImagesTask struct {
 	runner       MetadataImageCacheRunner
 	ladderState  MetadataImageLadderBackfillState
 	ladderTarget int
+	// playbackActive reports live playback/transcode sessions. Unlike the AVIF
+	// backfill this task still runs while streaming — posters users are waiting
+	// on come from here — but it drops to a single encode slot.
+	playbackActive atomic.Pointer[func() bool]
 }
 
 // SetLadderBackfill arms the one-shot artwork ladder backfill. Without it the
@@ -65,6 +70,30 @@ type CacheMetadataImagesTask struct {
 func (t *CacheMetadataImagesTask) SetLadderBackfill(state MetadataImageLadderBackfillState, targetVersion int) {
 	t.ladderState = state
 	t.ladderTarget = targetVersion
+}
+
+// SetPlaybackActivityCheck wires the live-playback predicate used to throttle
+// encode concurrency. A nil predicate restores the unthrottled budget.
+func (t *CacheMetadataImagesTask) SetPlaybackActivityCheck(fn func() bool) {
+	if t == nil {
+		return
+	}
+	if fn == nil {
+		t.playbackActive.Store(nil)
+		return
+	}
+	t.playbackActive.Store(&fn)
+}
+
+// concurrency returns the encode slots for this run: the configured worker
+// budget, or a single slot while playback is active.
+func (t *CacheMetadataImagesTask) concurrency() int {
+	if t != nil {
+		if fn := t.playbackActive.Load(); fn != nil && *fn != nil && (*fn)() {
+			return 1
+		}
+	}
+	return cacheMetadataImagesWorkers
 }
 
 type BackfillMetadataImagesTask struct {
@@ -139,7 +168,7 @@ func (t *CacheMetadataImagesTask) Execute(ctx context.Context, progress taskmana
 	if backfiller != nil {
 		drainProgress = phaseProgress{inner: progress, start: 0, end: drainPhaseCeiling}
 	}
-	if err := executeMetadataImages(ctx, drainProgress, false, t.runner.DrainUntilIdle); err != nil {
+	if err := executeMetadataImages(ctx, drainProgress, false, t.concurrency(), t.runner.DrainUntilIdle); err != nil {
 		return err
 	}
 	if backfiller != nil {
@@ -217,7 +246,7 @@ func (t *CacheMetadataImagesTask) runLadderBackfill(
 		ctx,
 		workerID,
 		cacheMetadataImagesClaimLimit,
-		cacheMetadataImagesWorkers,
+		t.concurrency(),
 		cacheMetadataImagesMaxRuntime,
 		func(update metadata.ImageCacheRunStats) {
 			percent := cacheMetadataImagesPercent(update)
@@ -253,12 +282,12 @@ func (t *BackfillMetadataImagesTask) Execute(ctx context.Context, progress taskm
 		progress.Report(100, "Metadata image backfill is not configured")
 		return nil
 	}
-	return executeMetadataImages(ctx, progress, true, t.runner.RunUntilIdle)
+	return executeMetadataImages(ctx, progress, true, cacheMetadataImagesWorkers, t.runner.RunUntilIdle)
 }
 
 type metadataImageRunFunc func(context.Context, string, int, int, time.Duration, metadata.ImageCacheRunProgressReporter) (metadata.ImageCacheRunStats, error)
 
-func executeMetadataImages(ctx context.Context, progress taskmanager.ProgressReporter, backfill bool, run metadataImageRunFunc) error {
+func executeMetadataImages(ctx context.Context, progress taskmanager.ProgressReporter, backfill bool, concurrency int, run metadataImageRunFunc) error {
 	hostname, _ := os.Hostname()
 	if hostname == "" {
 		hostname = "silo"
@@ -289,7 +318,7 @@ func executeMetadataImages(ctx context.Context, progress taskmanager.ProgressRep
 		ctx,
 		workerID,
 		cacheMetadataImagesClaimLimit,
-		cacheMetadataImagesWorkers,
+		concurrency,
 		maxRuntime,
 		func(update metadata.ImageCacheRunStats) {
 			percent := cacheMetadataImagesPercent(update)

@@ -339,6 +339,23 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 	}
 	cfg.Metadata.AVIFNVENCSessions = avifNVENCSessions
 
+	// Artwork (local filesystem cache when public S3 is unconfigured)
+	cfg.Artwork.LocalDir = stringOr(m, "artwork.local_dir", "/var/lib/prairie/artwork")
+
+	// Live TV
+	cfg.LiveTV.DVRPath = stringOr(m, "livetv.dvr_path", DefaultLiveTVDVRPath)
+	liveTVMaxTranscodes, err := intOr(m, "livetv.max_transcodes", DefaultLiveTVMaxTranscodes)
+	if err != nil {
+		return nil, err
+	}
+	cfg.LiveTV.MaxTranscodes = liveTVMaxTranscodes
+	cfg.LiveTV.HWAccel = stringOr(m, "livetv.hw_accel", DefaultLiveTVHWAccel)
+	cfg.LiveTV.HWDecode = stringOr(m, "livetv.hw_decode", DefaultLiveTVHWDecode)
+	cfg.LiveTV.EncoderPreset = stringOr(m, "livetv.encoder_preset", DefaultLiveTVEncoderPreset)
+	cfg.LiveTV.FrameRateCap = stringOr(m, "livetv.framerate_cap", DefaultLiveTVFrameRateCap)
+	cfg.LiveTV.MaxResolution = stringOr(m, "livetv.max_resolution", DefaultLiveTVMaxResolution)
+	cfg.LiveTV.PlayMethod = stringOr(m, "livetv.play_method", DefaultLiveTVPlayMethod)
+
 	// Playback
 	cfg.Playback.FFmpegPath = stringOr(m, "playback.ffmpeg_path", "")
 	cfg.Playback.TranscodeDir = stringOr(m, playbackTranscodeDirSettingKey, DefaultTranscodeDir)

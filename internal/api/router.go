@@ -24,6 +24,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/ai/llm"
 	"github.com/prairie-server/prairie-server/internal/api/handlers"
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/artworkstore"
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/autoscan"
 	"github.com/prairie-server/prairie-server/internal/branding"
@@ -32,6 +33,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/catalogseed"
 	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/deviceclass"
 	"github.com/prairie-server/prairie-server/internal/diagnostics"
 	"github.com/prairie-server/prairie-server/internal/downloads"
 	evt "github.com/prairie-server/prairie-server/internal/events"
@@ -41,6 +43,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/invitations"
 	"github.com/prairie-server/prairie-server/internal/libraryingest"
 	"github.com/prairie-server/prairie-server/internal/literaryworks"
+	"github.com/prairie-server/prairie-server/internal/livetv"
 	"github.com/prairie-server/prairie-server/internal/logstream"
 	"github.com/prairie-server/prairie-server/internal/mail"
 	"github.com/prairie-server/prairie-server/internal/markers"
@@ -98,19 +101,27 @@ type Dependencies struct {
 	AppContext                   context.Context
 	DB                           *pgxpool.Pool
 	SecretCipher                 *secret.Cipher // at-rest credential cipher (required when DB is set)
+	APIKeyHashKey                []byte         // deterministic key hash key (required when DB is set)
 	FrontendFS                   fs.FS
-	S3Public                     *s3client.Client              // public assets bucket client (may be nil)
-	S3Private                    *s3client.Client              // private internal bucket client (may be nil)
-	S3UserDB                     *s3client.Client              // user-db bucket client (may be nil)
-	BrandingService              *branding.Service             // white-label branding (nil when DB unavailable)
-	FolderRepo                   *catalog.FolderRepository     // media folder repository (may be nil)
-	FileRepo                     *scanner.FileRepository       // media file repository (may be nil)
-	Scanner                      *scanner.Scanner              // scanner instance (may be nil)
-	LibraryIngester              *libraryingest.Executor       // shared library ingest executor (may be nil)
-	ProbeEnsurer                 handlers.PlaybackProbeEnsurer // on-demand probe repair for playback/detail (may be nil)
-	UserStoreProvider            userstore.UserStoreProvider   // user store provider (may be nil)
-	SessionMgr                   *playback.SessionManager      // playback session manager (may be nil)
-	StreamTelemetry              *streamtelemetry.Registry     // local observation-only stream telemetry (may be nil)
+	S3Public                     *s3client.Client         // public assets bucket client (may be nil)
+	S3Private                    *s3client.Client         // private internal bucket client (may be nil)
+	S3UserDB                     *s3client.Client         // user-db bucket client (may be nil)
+	ArtworkLocal                 *artworkstore.LocalStore // filesystem artwork backend when S3Public is nil
+	// ChapterThumbnailStoreReady reports whether a store was selected to hold
+	// chapter thumbnails. Decided once at startup where the store is chosen, so
+	// the capability this API advertises cannot drift from whether the extraction
+	// service was actually constructed.
+	ChapterThumbnailStoreReady bool
+	TrickplayStoreReady        bool
+	BrandingService            *branding.Service             // white-label branding (nil when DB unavailable)
+	FolderRepo                 *catalog.FolderRepository     // media folder repository (may be nil)
+	FileRepo                   *scanner.FileRepository       // media file repository (may be nil)
+	Scanner                    *scanner.Scanner              // scanner instance (may be nil)
+	LibraryIngester            *libraryingest.Executor       // shared library ingest executor (may be nil)
+	ProbeEnsurer               handlers.PlaybackProbeEnsurer // on-demand probe repair for playback/detail (may be nil)
+	UserStoreProvider          userstore.UserStoreProvider   // user store provider (may be nil)
+	SessionMgr                 *playback.SessionManager      // playback session manager (may be nil)
+	StreamTelemetry            *streamtelemetry.Registry     // local observation-only stream telemetry (may be nil)
 	// StreamTelemetryViewCache serves the merged global view with bounded
 	// staleness so the admin parity endpoint never rebuilds it per request.
 	StreamTelemetryViewCache  *streamtelemetry.ViewCache
@@ -173,6 +184,7 @@ type Dependencies struct {
 	MetadataService        handlers.MatchMetadataService     // metadata search+process (may be nil)
 	CollectionService      *catalog.LibraryCollectionService // collection service (may be nil)
 	ChapterThumbnailQueuer catalog.ChapterThumbnailQueuer
+	TrickplayQueuer        handlers.TrickplayQueuer
 	PlaybackRealtimeHub    *playback.RealtimeHub
 	OnUserSessionsRevoked  func(ctx context.Context, userID int)
 	OnServerSettingUpdated func(ctx context.Context, key, value string)
@@ -188,6 +200,9 @@ type Dependencies struct {
 	// Built in main.go with TMDB wired; its Trakt fetcher is propagated here in
 	// router.go once the Trakt adapter exists (mirrors UserCollectionSync).
 	TrendingRefresher *sections.TrendingRefresher
+
+	// LiveTV is the shared Live TV / OTA / DVR service (nil when DB unavailable).
+	LiveTV *livetv.Service
 
 	// MDBListClient is used by user-facing list discovery endpoints
 	// (search/top). May be nil; the handlers report "not configured" in
@@ -364,7 +379,7 @@ func NewRouter(deps Dependencies) chi.Router {
 		userRepo = auth.NewUserRepository(deps.DB)
 		sessionRepo = auth.NewSessionRepository(deps.DB)
 		inviteCodeRepo = auth.NewInviteCodeRepository(deps.DB)
-		apiKeyRepo = auth.NewAPIKeyRepository(deps.DB)
+		apiKeyRepo = auth.NewAPIKeyRepository(deps.DB, deps.APIKeyHashKey)
 		jwtService = auth.NewJWTService(
 			deps.Config.Auth.JWTSecret,
 			deps.Config.Auth.AccessTokenExpiry,
@@ -492,6 +507,11 @@ func NewRouter(deps Dependencies) chi.Router {
 	var libraryHandler *handlers.LibraryHandler
 	if deps.FolderRepo != nil {
 		libraryHandler = handlers.NewLibraryHandler(deps.FolderRepo, deps.LibraryIngester, userRepo, deps.DB, deps.Refresher, deps.AppContext)
+		libraryHandler.ChapterThumbnailStoreReady = deps.ChapterThumbnailStoreReady
+		libraryHandler.TrickplayStoreReady = deps.TrickplayStoreReady
+		if !libraryHandler.TrickplayStoreReady {
+			libraryHandler.TrickplayStoreReady = deps.ChapterThumbnailStoreReady
+		}
 		if accessGroupStore != nil {
 			libraryHandler.AccessGroups = accessGroupStore
 		}
@@ -567,6 +587,7 @@ func NewRouter(deps Dependencies) chi.Router {
 	// gates closure can reference it before that block runs.
 	var watchTogetherHandler *handlers.WatchTogetherHandler
 	var autoscanHandler *handlers.AutoscanHandler
+	var liveTVHandler *handlers.LiveTVHandler
 	var ebookReaderHandler *handlers.EbookReaderHandler
 	var ebookProgressStore *handlers.PGEbookReaderProgressStore
 	var ebookConfigStore *handlers.PGEbookReaderConfigStore
@@ -759,6 +780,23 @@ func NewRouter(deps Dependencies) chi.Router {
 				},
 			}
 			onboardingHandler = handlers.NewOnboardingHandler(deps.UserStoreProvider, onboardingGates)
+		}
+
+		liveTVHandler = handlers.NewLiveTVHandler(deps.LiveTV)
+		if liveTVHandler == nil && deps.DB != nil {
+			// Tests / alternate entrypoints may omit deps.LiveTV.
+			liveTVHandler = handlers.NewLiveTVHandler(livetv.NewService(deps.DB))
+		}
+		if liveTVHandler != nil && deps.Config != nil {
+			// Signs the stream token on the returned live HLS URL, the same secret
+			// StreamTokenAuth verifies it with.
+			liveTVHandler.JWTSecret = deps.Config.Auth.JWTSecret
+		}
+		if deps.LiveTV != nil && deps.DB != nil {
+			// Finished live views land in the same admin playback history as VOD.
+			deps.LiveTV.SetHistoryRecorder(handlers.NewLiveTVHistoryRecorder(
+				handlers.NewPGPlaybackAdminStore(deps.DB, deps.EventsHub),
+			))
 		}
 
 		autoscanRepo := autoscan.NewRepository(deps.DB, deps.SecretCipher)
@@ -1018,6 +1056,7 @@ func NewRouter(deps Dependencies) chi.Router {
 		}
 		playbackHandler.ProbeEnsurer = deps.ProbeEnsurer
 		playbackHandler.ChapterThumbnailQueuer = deps.ChapterThumbnailQueuer
+		playbackHandler.TrickplayQueuer = deps.TrickplayQueuer
 		if settingsRepo != nil {
 			playbackHandler.SettingsRepo = settingsRepo
 		}
@@ -2433,6 +2472,47 @@ func NewRouter(deps Dependencies) chi.Router {
 					})
 				}
 
+				if liveTVHandler != nil {
+					r.Route("/livetv", func(r chi.Router) {
+						r.Get("/channels", liveTVHandler.HandleListChannels)
+						r.Get("/guide", liveTVHandler.HandleListGuide)
+						r.Get("/programs/{programId}", liveTVHandler.HandleGetProgram)
+						r.Get("/recordings", liveTVHandler.HandleListRecordings)
+						r.Get("/series-rules", liveTVHandler.HandleListSeriesRules)
+
+						r.Group(func(r chi.Router) {
+							r.Use(apimw.RequireProfile)
+							r.Post("/channels/{channelId}/session", liveTVHandler.HandleStartChannelSession)
+							r.Get("/sessions/{sessionId}/stream", liveTVHandler.HandleSessionStream)
+							r.Method(http.MethodHead, "/sessions/{sessionId}/stream", http.HandlerFunc(liveTVHandler.HandleSessionStream))
+							r.Get("/live-hls/{playbackId}/{name}", liveTVHandler.HandleLiveHLS)
+							r.Post("/sessions/{sessionId}/heartbeat", liveTVHandler.HandleSessionHeartbeat)
+							r.Delete("/sessions/{sessionId}", liveTVHandler.HandleReleaseSession)
+							r.Post("/recordings", liveTVHandler.HandleScheduleRecording)
+							r.Delete("/recordings/{recordingId}", liveTVHandler.HandleCancelRecording)
+							r.Post("/series-rules", liveTVHandler.HandleCreateSeriesRule)
+							r.Delete("/series-rules/{ruleId}", liveTVHandler.HandleDeleteSeriesRule)
+						})
+
+						r.Group(func(r chi.Router) {
+							r.Use(apimw.RequireAdmin)
+							r.Get("/tuners", liveTVHandler.HandleListTuners)
+							r.Post("/tuners/discover", liveTVHandler.HandleDiscoverTuners)
+							r.Post("/tuners", liveTVHandler.HandleAddTuner)
+							r.Delete("/tuners/{tunerId}", liveTVHandler.HandleDeleteTuner)
+							r.Post("/tuners/{tunerId}/scan", liveTVHandler.HandleScanTuner)
+							r.Patch("/channels/{channelId}", liveTVHandler.HandlePatchChannel)
+							r.Get("/guide-sources", liveTVHandler.HandleListGuideSources)
+							r.Post("/guide-sources/schedules-direct/lineups", liveTVHandler.HandleLookupSchedulesDirectLineups)
+							r.Post("/guide-sources/xml-sync/lineups", liveTVHandler.HandleLookupXMLSyncLineups)
+							r.Post("/guide-sources", liveTVHandler.HandleCreateGuideSource)
+							r.Patch("/guide-sources/{sourceId}", liveTVHandler.HandleUpdateGuideSource)
+							r.Delete("/guide-sources/{sourceId}", liveTVHandler.HandleDeleteGuideSource)
+							r.Post("/guide-sources/{sourceId}/sync", liveTVHandler.HandleSyncGuideSource)
+						})
+					})
+				}
+
 				// Onboarding tour routes (profile-scoped).
 				if onboardingHandler != nil {
 					r.Route("/onboarding", func(r chi.Router) {
@@ -2689,10 +2769,17 @@ func NewRouter(deps Dependencies) chi.Router {
 
 					r.Route("/playback", func(r chi.Router) {
 						r.Get("/capability", playbackHandler.HandlePlaybackCapabilityV3)
+						// The transcode ladder, so clients render the same rungs
+						// the server advises against instead of each keeping its
+						// own copy that drifts.
+						r.Get("/quality-ladder", playbackHandler.HandleGetQualityLadder)
 						// HLS transcode delivery. Legacy sessions treat the UUID
 						// as a bearer capability; negotiated V3 sessions require
 						// the authenticated owner inside the handler.
 						r.Get("/transcode/{session_id}/master.m3u8", observeNative(deps.StreamTelemetry, http.MethodGet, "/api/v1/playback/transcode/{session_id}/master.m3u8", playbackHandler.HandleGetTranscodeManifest))
+						// The media playlist the master points at. Same handler:
+						// it serves whichever of the two the path names.
+						r.Get("/transcode/{session_id}/media.m3u8", observeNative(deps.StreamTelemetry, http.MethodGet, "/api/v1/playback/transcode/{session_id}/media.m3u8", playbackHandler.HandleGetTranscodeManifest))
 						r.Get("/transcode/{session_id}/segment/{name}", observeNative(deps.StreamTelemetry, http.MethodGet, "/api/v1/playback/transcode/{session_id}/segment/{name}", playbackHandler.HandleGetTranscodeSegment))
 
 						// Playback realtime control socket — needs auth but not profile.
@@ -3359,6 +3446,10 @@ func useBaseMiddleware(r chi.Router, deps Dependencies) {
 	r.Use(apimw.RequestLogger(deps.NodeID))
 	r.Use(middleware.Recoverer)
 	r.Use(apimw.Metrics)
+
+	// Device class drives artwork variant selection, so it must be on the
+	// context before any handler mints an artwork URL.
+	r.Use(deviceclass.Middleware)
 
 	// Compress text-like responses (JSON, SVG, …), while leaving exact bulk
 	// media routes unwrapped so their io.ReaderFrom/sendfile path survives.

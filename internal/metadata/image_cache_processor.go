@@ -159,6 +159,9 @@ type ImageCacheProcessor struct {
 	// a background worker. Zero means immediateImageCacheIdleTimeout.
 	idleWaitTimeout time.Duration
 
+	discoveryMu   sync.Mutex
+	forceDiscover bool
+
 	// runGate serializes the scheduled queue drain and explicit full backfill.
 	// They are separate TaskManager tasks, so TaskManager's per-key guard cannot
 	// prevent them from racing each other through the shared durable queue. A
@@ -468,7 +471,8 @@ loop:
 // an idle server stays idle instead of turning every scheduler tick into a
 // library-wide backfill.
 func (p *ImageCacheProcessor) DrainUntilIdle(ctx context.Context, workerID string, claimLimit int, concurrency int, maxRuntime time.Duration, reportProgress ImageCacheRunProgressReporter) (ImageCacheRunStats, error) {
-	return p.runUntilIdle(ctx, workerID, claimLimit, concurrency, maxRuntime, false, reportProgress)
+	discover := p.consumeForceDiscover()
+	return p.runUntilIdle(ctx, workerID, claimLimit, concurrency, maxRuntime, discover, reportProgress)
 }
 
 // RunUntilIdle drains the queue and explicitly discovers uncached provider
@@ -476,6 +480,26 @@ func (p *ImageCacheProcessor) DrainUntilIdle(ctx context.Context, workerID strin
 // cache processing must use DrainUntilIdle.
 func (p *ImageCacheProcessor) RunUntilIdle(ctx context.Context, workerID string, claimLimit int, concurrency int, maxRuntime time.Duration, reportProgress ImageCacheRunProgressReporter) (ImageCacheRunStats, error) {
 	return p.runUntilIdle(ctx, workerID, claimLimit, concurrency, maxRuntime, true, reportProgress)
+}
+
+// ForceDiscovery clears the discovery throttle so the next DrainUntilIdle enqueues
+// existing provider artwork immediately — used when cache_images flips on and
+// when an admin manually runs Cache Metadata Images.
+func (p *ImageCacheProcessor) ForceDiscovery() {
+	if p == nil {
+		return
+	}
+	p.discoveryMu.Lock()
+	p.forceDiscover = true
+	p.discoveryMu.Unlock()
+}
+
+func (p *ImageCacheProcessor) consumeForceDiscover() bool {
+	p.discoveryMu.Lock()
+	defer p.discoveryMu.Unlock()
+	force := p.forceDiscover
+	p.forceDiscover = false
+	return force
 }
 
 // imageCacheLadderBackfillBatchSize bounds one enqueue step of the ladder

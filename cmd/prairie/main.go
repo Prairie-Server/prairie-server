@@ -41,6 +41,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/api"
 	"github.com/prairie-server/prairie-server/internal/api/handlers"
 	"github.com/prairie-server/prairie-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/artworkstore"
 	"github.com/prairie-server/prairie-server/internal/audiobooks"
 	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
 	"github.com/prairie-server/prairie-server/internal/audiobooks/podcastfeed"
@@ -57,6 +58,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/diagnostics"
 	"github.com/prairie-server/prairie-server/internal/downloads"
 	"github.com/prairie-server/prairie-server/internal/ebooks"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	evt "github.com/prairie-server/prairie-server/internal/events"
 	"github.com/prairie-server/prairie-server/internal/historyimport"
 	"github.com/prairie-server/prairie-server/internal/httpstream"
@@ -66,6 +68,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/jellycompat"
 	"github.com/prairie-server/prairie-server/internal/libraryingest"
 	"github.com/prairie-server/prairie-server/internal/literaryworks"
+	"github.com/prairie-server/prairie-server/internal/livetv"
 	"github.com/prairie-server/prairie-server/internal/logfilter"
 	"github.com/prairie-server/prairie-server/internal/logredact"
 	"github.com/prairie-server/prairie-server/internal/logstream"
@@ -110,6 +113,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/taskmanager/triggers"
 	"github.com/prairie-server/prairie-server/internal/telemetry"
 	"github.com/prairie-server/prairie-server/internal/transcodenode"
+	"github.com/prairie-server/prairie-server/internal/trickplay"
 	"github.com/prairie-server/prairie-server/internal/usercollections"
 	"github.com/prairie-server/prairie-server/internal/userdb"
 	"github.com/prairie-server/prairie-server/internal/userstore"
@@ -127,9 +131,9 @@ import (
 
 // resolveNodeIdentity returns a stable node identifier used by the
 // heartbeat writer, reconciler, and shutdown cleanup. Resolution order:
-// SILO_NODE_NAME > NODE_NAME > os.Hostname().
+// PRAIRIE_NODE_NAME > SILO_NODE_NAME > NODE_NAME > os.Hostname().
 func resolveNodeIdentity() string {
-	if v := os.Getenv("SILO_NODE_NAME"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_NODE_NAME", "SILO_NODE_NAME"); v != "" {
 		return v
 	}
 	if v := os.Getenv("NODE_NAME"); v != "" {
@@ -222,10 +226,10 @@ func newStreamTelemetryViewCache(registry *streamtelemetry.Registry) *streamtele
 }
 
 func resolvePluginCacheDir() string {
-	if v := strings.TrimSpace(os.Getenv("SILO_PLUGIN_CACHE_DIR")); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_PLUGIN_CACHE_DIR", "SILO_PLUGIN_CACHE_DIR"); v != "" {
 		return v
 	}
-	return filepath.Join(os.TempDir(), "silo-plugins")
+	return filepath.Join(os.TempDir(), "prairie-plugins")
 }
 
 func buildBaseHandler(format string, level slog.Leveler, otelHandler slog.Handler) slog.Handler {
@@ -542,6 +546,11 @@ func main() {
 		log.Fatalf("secret cipher: %v", err)
 	}
 
+	apiKeyHashKey, err := secret.DeriveAPIKeyHashKey(bc.SecretKey)
+	if err != nil {
+		log.Fatalf("api key hash derivation: %v", err)
+	}
+
 	// Step 2: Connect to PostgreSQL (bootstrap pool with default max connections)
 	bootstrapDBCfg := config.DatabaseConfig{URL: bc.DatabaseURL, MaxConnections: 20}
 	pool, err := database.NewPool(ctx, bootstrapDBCfg)
@@ -626,6 +635,16 @@ func main() {
 	settingsRepo := catalog.NewEncryptedSettingsRepo(catalog.NewServerSettingsRepo(pool), dataCipher)
 	if isPrimaryNode {
 		runCredentialBackfills(ctx, pool, dataCipher, settingsRepo)
+
+		// Best-effort backfill of API key hashes so plaintext api_key values
+		// can be cleared from DB after upgrade.
+		apiKeyRepo := auth.NewAPIKeyRepository(pool, apiKeyHashKey)
+		backfillN, backfillErr := apiKeyRepo.BackfillPlaintextToHash(ctx, 500)
+		if backfillErr != nil {
+			slog.ErrorContext(ctx, "api key backfill failed", "component", "auth", "error", backfillErr)
+		} else if backfillN > 0 {
+			slog.InfoContext(ctx, "api key backfill applied", "component", "auth", "converted", backfillN)
+		}
 	}
 	settings, err := settingsRepo.GetAll(ctx)
 	if err != nil {
@@ -633,8 +652,14 @@ func main() {
 	}
 
 	// Step 4: YAML import (one-time)
-	yamlPath := "silo.yaml"
-	if _, yamlErr := os.Stat(yamlPath); yamlErr == nil {
+	yamlPath := ""
+	for _, candidate := range []string{"prairie.yaml", "silo.yaml"} {
+		if _, yamlErr := os.Stat(candidate); yamlErr == nil {
+			yamlPath = candidate
+			break
+		}
+	}
+	if yamlPath != "" {
 		if settings["_yaml_imported"] == "" {
 			yamlSettings, importErr := config.YAMLToSettingsMap(yamlPath)
 			if importErr != nil {
@@ -971,7 +996,8 @@ func main() {
 		ScanRegistry:                 scanRegistry,
 		OpsLogRepo:                   opsRepo,
 		FFmpegLogSink:                playback.NewSlogFFmpegLogSink(slog.Default(), nodeID),
-		PublicURL:                    os.Getenv("SILO_PUBLIC_URL"),
+		PublicURL:                    envutil.FirstNonEmpty("PRAIRIE_PUBLIC_URL", "SILO_PUBLIC_URL"),
+		APIKeyHashKey:                apiKeyHashKey,
 		RequestServerRestart: func(context.Context) error {
 			if !restartRequested.CompareAndSwap(false, true) {
 				return handlers.ErrServerRestartAlreadyRequested
@@ -1113,6 +1139,25 @@ func main() {
 	if needsS3 {
 		configureS3Clients(cfg, &deps)
 	}
+	// When public S3 is unconfigured, cache artwork on the local data volume
+	// so WebP/AVIF/PNG conversion still runs without an object store.
+	if needsS3 && deps.S3Public == nil {
+		presignTTL := cfg.S3.MetadataPresignExpiry
+		if presignTTL <= 0 {
+			presignTTL = 4 * time.Hour
+		}
+		localStore, err := artworkstore.NewLocalStore(artworkstore.LocalConfig{
+			Root:          cfg.Artwork.LocalDir,
+			URLSecret:     cfg.Auth.JWTSecret,
+			URLTTL:        presignTTL,
+			PublicBaseURL: deps.PublicURL,
+		})
+		if err != nil {
+			log.Fatalf("local artwork store: %v", err)
+		}
+		deps.ArtworkLocal = localStore
+		slog.Info("local artwork store configured", "root", localStore.Root())
+	}
 
 	var literaryWorkService *literaryworks.Service
 	if deps.DB != nil {
@@ -1139,14 +1184,24 @@ func main() {
 		slog.Info("scanner initialized")
 	}
 
+	// Chapter thumbnails write through the same object store as the rest of the
+	// artwork, which is public S3 when configured and the local data volume
+	// otherwise. Requiring S3 here made the feature unavailable on installs that
+	// already generate WebP/AVIF locally, even though LocalStore satisfies the
+	// PutObject/Bucket contract the service asks for.
+	chapterThumbStore := chapterThumbnailStore(deps.S3Public, deps.ArtworkLocal)
+	// Published to the API from here rather than recomputed there: one decision,
+	// so the admin toggle cannot offer a capability the service does not have.
+	deps.ChapterThumbnailStoreReady = chapterThumbStore != nil
+	deps.TrickplayStoreReady = chapterThumbStore != nil
 	var chapterThumbService *chapterthumbs.Service
-	if deps.FileRepo != nil && deps.FolderRepo != nil && deps.S3Public != nil {
+	if deps.FileRepo != nil && deps.FolderRepo != nil && chapterThumbStore != nil {
 		chapterThumbService = chapterthumbs.NewService(
 			deps.FileRepo,
 			deps.FolderRepo,
 			deps.ProbeEnsurer,
 			settingsRepo,
-			deps.S3Public,
+			chapterThumbStore,
 			nil,
 			deps.TranscodePool,
 			cfg.Playback.FFmpegPath,
@@ -1157,6 +1212,22 @@ func main() {
 		if chapterThumbService != nil {
 			chapterThumbService.Start(appCtx)
 			deps.ChapterThumbnailQueuer = chapterThumbService
+		}
+	}
+	var trickplayService *trickplay.Service
+	trickplayObjStore := trickplayObjectStore(deps.S3Public, deps.ArtworkLocal)
+	if deps.FileRepo != nil && deps.FolderRepo != nil && trickplayObjStore != nil {
+		trickplayService = trickplay.NewService(
+			deps.FileRepo,
+			deps.FolderRepo,
+			settingsRepo,
+			trickplayObjStore,
+			cfg.Playback.FFmpegPath,
+			cfg.Playback.ChapterThumbnailWorkers,
+		)
+		if trickplayService != nil {
+			trickplayService.Start(appCtx)
+			deps.TrickplayQueuer = trickplayService
 		}
 	}
 
@@ -1434,6 +1505,12 @@ func main() {
 				presignTTL = 4 * time.Hour
 			}
 			imageResolver.SetS3Presigner(deps.S3Public, deps.S3Public.EffectivePresignTTL(presignTTL))
+		} else if deps.ArtworkLocal != nil {
+			presignTTL := cfg.S3.MetadataPresignExpiry
+			if presignTTL <= 0 {
+				presignTTL = 4 * time.Hour
+			}
+			imageResolver.SetS3Presigner(deps.ArtworkLocal, deps.ArtworkLocal.EffectivePresignTTL(presignTTL))
 		}
 		deps.ImageResolver = imageResolver
 		deps.PluginImageResolver = imageResolver
@@ -1540,10 +1617,12 @@ func main() {
 		// metadb://) can be resolved to presigned HTTP URLs in API responses.
 		metadataService.SetImageResolver(imageResolver)
 
-		// Wire the image cacher whenever object storage is available so explicit
-		// admin image applies can succeed even if automatic metadata caching is off.
-		if deps.S3Public != nil {
-			imageCacher = imagecache.New(deps.S3Public)
+		// Wire the image cacher whenever an artwork backend is available so
+		// explicit admin image applies and automatic caching work with either
+		// public S3 or the local filesystem offload.
+		artworkPut := artworkObjectPutter(deps)
+		if artworkPut != nil {
+			imageCacher = imagecache.New(artworkPut)
 			imageCacher.SetArtworkRevisionTracker(catalog.NewArtworkRevisionTracker(deps.DB))
 			avifBackfillJobs := metadata.NewAVIFBackfillJobRepository(deps.DB)
 			imageCacher.SetAVIFBackfillStore(avifBackfillJobs)
@@ -1567,7 +1646,11 @@ func main() {
 			// library's roots and sweep stale hashed local/ prefixes on re-cache.
 			// The processor host must mount the libraries, like the metadata worker.
 			metadataImageCacheProcessor.SetLibraryRootResolver(deps.FolderRepo)
-			metadataImageCacheProcessor.SetImagePrefixDeleter(deps.S3Public)
+			if deps.S3Public != nil {
+				metadataImageCacheProcessor.SetImagePrefixDeleter(deps.S3Public)
+			} else if deps.ArtworkLocal != nil {
+				metadataImageCacheProcessor.SetImagePrefixDeleter(deps.ArtworkLocal)
+			}
 			avifBackfillProcessor = metadata.NewAVIFBackfillProcessor(avifBackfillJobs, imageCacher)
 			configureAVIFEncoder(cfg)
 			configureWebPEncoder(cfg)
@@ -1575,9 +1658,16 @@ func main() {
 			avifBackfillProcessor.SetWorkers(avifWorkers)
 			imageCacher.SetAVIFBackfillConcurrency(avifWorkers)
 			applyArtworkEncodeBudget(cfg, avifWorkers)
-			avifBackfillProcessor.SetDiscoverer(metadata.NewAVIFSiblingReconciler(deps.DB, deps.S3Public))
-			avifBackfillProcessor.SetPNGCleaner(metadata.NewLegacyPNGSiblingCleaner(deps.DB, deps.S3Public))
-			avifBackfillProcessor.SetRetiredVariantSweeper(metadata.NewRetiredVariantCleaner(deps.DB, deps.S3Public))
+			if artworkChecker := artworkObjectChecker(deps); artworkChecker != nil {
+				avifBackfillProcessor.SetDiscoverer(metadata.NewAVIFSiblingReconciler(deps.DB, artworkChecker))
+			}
+			if pngCleaner := artworkObjectDeleter(deps); pngCleaner != nil {
+				avifBackfillProcessor.SetPNGCleaner(metadata.NewLegacyPNGSiblingCleaner(deps.DB, pngCleaner))
+				// Reclaims rungs that have left an image type's ladder (the w200
+				// still). Nothing else deletes them: re-caching an item only
+				// overwrites the rungs the ladder still names.
+				avifBackfillProcessor.SetRetiredVariantSweeper(metadata.NewRetiredVariantCleaner(deps.DB, pngCleaner))
+			}
 			metadataService.SetAutoCacheImages(cfg.Metadata.CacheImages)
 			metadataImageCacheProcessor.SetEnabled(cfg.Metadata.CacheImages)
 			avifBackfillProcessor.SetEnabled(cfg.Metadata.CacheImages)
@@ -1593,10 +1683,13 @@ func main() {
 				imageCacher.SetAVIFBackfillConcurrency(avifWorkers)
 				applyArtworkEncodeBudget(updated, avifWorkers)
 				if updated.Metadata.CacheImages && !wasEnabled {
+					// Enabling caching must backfill existing item posters, not
+					// wait for the next match/refresh of each title.
 					if personRefreshService != nil {
 						personRefreshService.SetImageCacher(imageCacher)
 						personRefreshService.SetImageCacheJobEnqueuer(imageCacheJobs)
 					}
+					metadataImageCacheProcessor.ForceDiscovery()
 				}
 			})
 			if deps.Scanner != nil {
@@ -1605,7 +1698,7 @@ func main() {
 			if cfg.Metadata.CacheImages {
 				personRefreshService.SetImageCacher(imageCacher)
 				personRefreshService.SetImageCacheJobEnqueuer(imageCacheJobs)
-				slog.Info("metadata image caching enabled")
+				slog.Info("metadata image caching enabled", "backend", artworkBackendName(deps))
 			}
 			if audiobookEnricher != nil {
 				audiobookEnricher.SetImageCacher(imageCacher)
@@ -1917,9 +2010,9 @@ func main() {
 	}
 	deps.SessionMgr = sessionMgr
 	deps.PlaybackRealtimeHub = playback.NewRealtimeHub()
-	if chapterThumbService != nil && deps.S3Public != nil {
+	if presigner := chapterThumbnailPresigner(deps.S3Public, deps.ArtworkLocal); chapterThumbService != nil && presigner != nil {
 		chapterThumbService.SetNotifier(
-			playback.NewChapterThumbnailNotifier(sessionMgr, deps.PlaybackRealtimeHub, deps.S3Public, 0),
+			playback.NewChapterThumbnailNotifier(sessionMgr, deps.PlaybackRealtimeHub, presigner, 0),
 		)
 	}
 
@@ -2194,6 +2287,61 @@ func main() {
 	}
 	brandingSvc := branding.NewService(settingsRepo, brandingStore)
 
+	// Shared Live TV service (HDHomeRun / guide / DVR / HLS bridge). Created
+	// whenever a DB is available so the API, jellycompat, and task manager share
+	// one instance with the same playback bridge and recorder.
+	var liveTVSvc *livetv.Service
+	if deps.DB != nil {
+		liveTVSvc = livetv.NewService(deps.DB)
+		ffmpegPath := cfg.Playback.FFmpegPath
+		// Read Live TV transcode policy per tune off the hot-reloaded config so
+		// an admin change lands on the next channel start, not the next restart.
+		liveTVSettings := func(context.Context) livetv.TranscodeSettings {
+			current := cfg
+			if deps.LiveConfig != nil {
+				if live := deps.LiveConfig(); live != nil {
+					current = live
+				}
+			}
+			return livetv.TranscodeSettings{
+				HWAccel:       current.LiveTV.HWAccel,
+				HWDecode:      current.LiveTV.HWDecode,
+				EncoderPreset: current.LiveTV.EncoderPreset,
+				FrameRateCap:  current.LiveTV.FrameRateCap,
+				MaxResolution: current.LiveTV.MaxResolution,
+				PlayMethod:    current.LiveTV.PlayMethod,
+				MaxTranscodes: current.LiveTV.MaxTranscodes,
+			}
+		}
+		bridge := livetv.NewHLSBridge(livetv.HLSBridgeOptions{
+			Root:       cfg.Playback.TranscodeDir,
+			FFmpegPath: ffmpegPath,
+			Settings:   liveTVSettings,
+		})
+		liveTVSvc.SetPlaybackBridge(bridge)
+		dvrPath := cfg.LiveTV.DVRPath
+		if dvrPath == "" {
+			dvrPath = config.DefaultLiveTVDVRPath
+		}
+		liveTVSvc.SetRecorder(livetv.NewRecorder(liveTVSvc, dvrPath, ffmpegPath))
+		// Lazy Live TV artwork (channel logos + visible programme images) shares
+		// the WebP/AVIF pipeline; fall through to provider URLs until cached.
+		if imageCacher != nil && deps.ImageResolver != nil {
+			livetvArt := livetv.NewArtworkCache(deps.DB, imageCacher, deps.ImageResolver)
+			if deleter := artworkRevisionDeleter(deps); deleter != nil {
+				livetvArt.SetObjectDeleter(deleter)
+			}
+			livetvArt.SetEnabled(cfg.Metadata.CacheImages)
+			liveTVSvc.SetArtworkCache(livetvArt)
+			configWatcher.OnChange(func(_, updated *config.Config) {
+				if updated != nil {
+					livetvArt.SetEnabled(updated.Metadata.CacheImages)
+				}
+			})
+		}
+		deps.LiveTV = liveTVSvc
+	}
+
 	// Wire up task manager for admin task API.
 	if needsWorkers && deps.DB != nil {
 		triggerRepo := taskrepository.NewPgTriggerRepository(deps.DB)
@@ -2208,9 +2356,9 @@ func main() {
 		}
 		taskMgr.Register(tasks.NewCleanupOrphanedMediaItemsTask(catalog.NewOrphanedProvisionalCleaner(deps.DB)))
 		taskMgr.Register(tasks.NewBackfillMediaItemAliasesTask(catalog.NewItemAliasRepository(deps.DB)))
-		if deps.S3Public != nil {
+		if artworkDeleter := artworkRevisionDeleter(deps); artworkDeleter != nil {
 			taskMgr.Register(tasks.NewCleanupArtworkRevisionsTask(
-				metadata.NewArtworkRevisionGarbageCollector(deps.DB, deps.S3Public),
+				metadata.NewArtworkRevisionGarbageCollector(deps.DB, artworkDeleter),
 			))
 		}
 		catalogSearchIndexer := catalog.NewCatalogSearchIndexer(deps.DB, settingsRepo)
@@ -2227,6 +2375,9 @@ func main() {
 		}
 		if chapterBackfiller, ok := deps.ChapterThumbnailQueuer.(*chapterthumbs.Service); ok {
 			taskMgr.Register(tasks.NewChapterThumbnailBackfillTask(chapterBackfiller, 25))
+		}
+		if trickplayBackfiller, ok := deps.TrickplayQueuer.(*trickplay.Service); ok {
+			taskMgr.Register(tasks.NewTrickplayBackfillTask(trickplayBackfiller, 25))
 		}
 		taskMgr.Register(tasks.NewActivityLogCleanupTask(deps.DB, settingsRepo, activityPM))
 		taskMgr.Register(tasks.NewOperationalLogCleanupTask(deps.DB, settingsRepo, opsPM))
@@ -2302,8 +2453,16 @@ func main() {
 		if refreshWorker != nil && metadataService != nil {
 			taskMgr.Register(tasks.NewRefreshMetadataTask(refreshWorker, metadataService))
 		}
+		// Artwork encoding competes with playback ffmpeg for the same cores, so
+		// both artwork tasks consult live session state: the AVIF backfill stands
+		// down entirely (durable queue, resumes on the next tick) and the WebP
+		// cache drops to a single encode slot.
+		playbackActive := func() bool { return sessionMgr.HasActiveSessions() }
+		artworkPauseEnabled := func() bool { return configWatcher.Config().Metadata.PauseArtworkDuringPlayback }
+		artworkShouldYield := func() bool { return artworkPauseEnabled() && playbackActive() }
 		if metadataImageCacheProcessor != nil {
 			cacheImagesTask := tasks.NewCacheMetadataImagesTask(metadataImageCacheProcessor)
+			cacheImagesTask.SetPlaybackActivityCheck(artworkShouldYield)
 			// Artwork cached under an older variant ladder is missing the rungs
 			// a client can now ask for. Arm the one-shot regeneration pass; it
 			// records the version it finished and then costs nothing.
@@ -2315,18 +2474,15 @@ func main() {
 			taskMgr.Register(tasks.NewBackfillMetadataImagesTask(metadataImageCacheProcessor))
 		}
 		if avifBackfillProcessor != nil {
-			playbackActive := func() bool { return sessionMgr.HasActiveSessions() }
-			artworkPauseEnabled := func() bool { return configWatcher.Config().Metadata.PauseArtworkDuringPlayback }
-			artworkShouldYield := func() bool { return artworkPauseEnabled() && playbackActive() }
 			avifBackfillProcessor.SetPlaybackActivityCheck(artworkShouldYield)
 			taskMgr.Register(tasks.NewBackfillAVIFSiblingsTask(avifBackfillProcessor))
 		}
-		if deps.S3Public != nil {
-			identity := tasks.ArtworkStorageIdentity(cfg.S3.Public.Endpoint, cfg.S3.Public.Bucket, cfg.S3.Public.KeyPrefix)
-			// Seed the fingerprint on first boot. After a provider change the
-			// stored (old) identity survives this call, so the startup preflight
-			// can warn without mutating artwork; an administrator must migrate
-			// objects and run the reconcile task explicitly.
+		if artworkChecker := artworkObjectChecker(deps); artworkChecker != nil {
+			identity := artworkStorageIdentity(cfg, deps)
+			// Seed the fingerprint on first boot so an unchanged storage
+			// identity never triggers a sweep. On the boot after a provider
+			// change the stored (old) identity survives this call and the
+			// startup trigger runs the reconcile.
 			if _, err := settingsRepo.SetIfAbsent(appCtx, tasks.ArtworkStorageIdentityKey, identity); err != nil {
 				slog.Warn("artwork reconcile: seeding storage identity failed", "error", err)
 			}
@@ -2335,7 +2491,7 @@ func main() {
 				brandingReconciler = brandingSvc
 			}
 			taskMgr.Register(tasks.NewReconcileArtworkCacheTask(
-				metadata.NewArtworkCacheReconciler(deps.DB, deps.S3Public),
+				metadata.NewArtworkCacheReconciler(deps.DB, artworkChecker),
 				settingsRepo,
 				brandingReconciler,
 				identity,
@@ -2417,6 +2573,10 @@ func main() {
 		taskMgr.Register(tasks.NewRepairProviderIDIntegrityTask(metadata.NewProviderIDIntegrityRepairer(deps.DB), historyReconciler))
 		taskMgr.Register(tasks.NewReconcileWatchHistoryTask(historyReconciler))
 		taskMgr.Register(tasks.NewSyncPodcastFeedsTask(podcastfeed.New(), podcastfeed.NewDBStore(deps.DB)))
+		if liveTVSvc != nil {
+			taskMgr.Register(tasks.NewSyncLiveTVGuideTask(liveTVSvc))
+			taskMgr.Register(tasks.NewLiveTVDVRTickTask(liveTVSvc))
+		}
 		if audiobookEnricher != nil {
 			taskMgr.Register(tasks.NewSyncAudiobookMetadataTask(audiobookEnricher))
 		}
@@ -2634,6 +2794,11 @@ func main() {
 	metricsMux := http.NewServeMux()
 	metricsMux.Handle("/metrics", promhttp.Handler())
 	metricsMux.Handle("/api/", router)
+	if deps.ArtworkLocal != nil {
+		// Signed /artwork/... URLs for the local filesystem cache. Must be
+		// registered before the SPA fallback.
+		metricsMux.Handle("/artwork/", deps.ArtworkLocal.Handler())
+	}
 	// ABS-compat is NOT mounted on the main listener — see the "ABS compat
 	// listener" block below. It binds its own port so the discovery probes
 	// (/ping, /healthcheck, /status, /init, /login, /socket.io) own the URL
@@ -2702,7 +2867,7 @@ func main() {
 			libraryRefreshExecutor,
 			adminjob.NewLibraryDeleteExecutor(deps.FolderRepo, sectionRepo,
 				librarySettingsCleaner(deps.DB, userStoreProvider)),
-			adminjob.NewImageCacheCleanupExecutor(deps.S3Public),
+			adminjob.NewImageCacheCleanupExecutor(artworkPrefixDeleter(deps)),
 			templateBundleApplyExecutor,
 			deps.RealtimeHub,
 		)
@@ -2826,10 +2991,11 @@ func main() {
 			}
 
 			compatDeps.SubtitleRepo = subtitles.NewPgRepository(deps.DB, deps.SecretCipher)
+			compatDeps.LiveTV = liveTVSvc
 
 			// Construct auth service for jellycompat login.
 			userRepo := auth.NewUserRepository(deps.DB)
-			compatDeps.APIKeyValidator = auth.NewAPIKeyRepository(deps.DB)
+			compatDeps.APIKeyValidator = auth.NewAPIKeyRepository(deps.DB, apiKeyHashKey)
 			compatDeps.APIKeyUserLoader = userRepo
 			compatDeps.ScanQueue = deps.LibraryScanQueue
 			sessionRepo := auth.NewSessionRepository(deps.DB)
@@ -3724,4 +3890,112 @@ func applyArtworkEncodeBudget(cfg *config.Config, avifWorkers int) {
 		return
 	}
 	imageutil.SetEncodeBudgetSize(0)
+}
+
+func artworkObjectPutter(deps api.Dependencies) imagecache.ObjectPutter {
+	if deps.S3Public != nil {
+		return deps.S3Public
+	}
+	if deps.ArtworkLocal != nil {
+		return deps.ArtworkLocal
+	}
+	return nil
+}
+
+func artworkPrefixDeleter(deps api.Dependencies) adminjob.S3PrefixDeleter {
+	if deps.S3Public != nil {
+		return deps.S3Public
+	}
+	if deps.ArtworkLocal != nil {
+		return deps.ArtworkLocal
+	}
+	return nil
+}
+
+func artworkRevisionDeleter(deps api.Dependencies) metadata.ArtworkRevisionDeleter {
+	if deps.S3Public != nil {
+		return deps.S3Public
+	}
+	if deps.ArtworkLocal != nil {
+		return deps.ArtworkLocal
+	}
+	return nil
+}
+
+func artworkObjectChecker(deps api.Dependencies) metadata.ArtworkObjectChecker {
+	if deps.S3Public != nil {
+		return deps.S3Public
+	}
+	if deps.ArtworkLocal != nil {
+		return deps.ArtworkLocal
+	}
+	return nil
+}
+
+func artworkObjectDeleter(deps api.Dependencies) metadata.ArtworkObjectDeleter {
+	if deps.S3Public != nil {
+		return deps.S3Public
+	}
+	if deps.ArtworkLocal != nil {
+		return deps.ArtworkLocal
+	}
+	return nil
+}
+
+func artworkBackendName(deps api.Dependencies) string {
+	if deps.S3Public != nil {
+		return "s3"
+	}
+	if deps.ArtworkLocal != nil {
+		return "local"
+	}
+	return "none"
+}
+
+func artworkStorageIdentity(cfg *config.Config, deps api.Dependencies) string {
+	if deps.S3Public != nil {
+		return tasks.ArtworkStorageIdentity(cfg.S3.Public.Endpoint, cfg.S3.Public.Bucket, cfg.S3.Public.KeyPrefix)
+	}
+	if deps.ArtworkLocal != nil {
+		return artworkstore.StorageIdentity(deps.ArtworkLocal.Root())
+	}
+	return artworkstore.StorageIdentity(cfg.Artwork.LocalDir)
+}
+
+func chapterThumbnailStore(s3 *s3client.Client, local *artworkstore.LocalStore) chapterthumbs.ObjectStore {
+	return selectArtworkObjectStore(s3, local)
+}
+
+func trickplayObjectStore(s3 *s3client.Client, local *artworkstore.LocalStore) trickplay.ObjectStore {
+	return selectArtworkObjectStore(s3, local)
+}
+
+type artworkObjectStore interface {
+	PutObject(ctx context.Context, bucket, key string, data []byte) error
+	Bucket() string
+}
+
+func selectArtworkObjectStore(s3 *s3client.Client, local *artworkstore.LocalStore) artworkObjectStore {
+	if s3 != nil {
+		return s3
+	}
+	if local != nil {
+		return local
+	}
+	return nil
+}
+
+type chapterThumbnailReadURLSigner interface {
+	PresignGetURL(ctx context.Context, bucket, key string, expiry time.Duration) (string, error)
+	Bucket() string
+}
+
+func chapterThumbnailPresigner(s3 *s3client.Client, local *artworkstore.LocalStore) chapterThumbnailReadURLSigner {
+	if s3 != nil {
+		return s3
+	}
+	if local != nil {
+		return local
+	}
+	return nil
 }

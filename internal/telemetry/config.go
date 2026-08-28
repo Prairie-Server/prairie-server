@@ -55,8 +55,8 @@ const defaultSamplerRatio = 1.0
 // environment. It is cheap to construct and safe to build even when telemetry
 // is disabled.
 type Config struct {
-	// Enabled gates the entire feature. True when SILO_OTEL_ENABLED is truthy
-	// OR OTEL_EXPORTER_OTLP_ENDPOINT is set.
+	// Enabled gates the entire feature. True when PRAIRIE_OTEL_ENABLED or
+	// SILO_OTEL_ENABLED is truthy OR OTEL_EXPORTER_OTLP_ENDPOINT is set.
 	Enabled bool
 
 	// Endpoint is the OTLP collector endpoint (OTEL_EXPORTER_OTLP_ENDPOINT). It
@@ -95,7 +95,7 @@ type Config struct {
 // attribute.
 func LoadConfig(nodeID string) Config {
 	endpoint := strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"))
-	enabled := envutil.Bool("SILO_OTEL_ENABLED") || endpoint != ""
+	enabled := envutil.Truthy(envutil.FirstNonEmpty("PRAIRIE_OTEL_ENABLED", "SILO_OTEL_ENABLED")) || endpoint != ""
 
 	serviceName := strings.TrimSpace(os.Getenv("OTEL_SERVICE_NAME"))
 	if serviceName == "" {

@@ -13,6 +13,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/livetv"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
 	"github.com/prairie-server/prairie-server/internal/recommendations"
 	"github.com/prairie-server/prairie-server/internal/scantrigger"
@@ -107,6 +108,10 @@ type Dependencies struct {
 	JWTSecret              string
 	Recommender            recommendations.Recommender
 	RecWorker              *recommendations.Worker
+
+	// LiveTV is the native Prairie Live TV / OTA / DVR service. When set,
+	// LiveTv/* jellyfin routes are registered and UserViews includes Live TV.
+	LiveTV *livetv.Service
 
 	// Settings (optional; reads server_settings for watched threshold, etc.)
 	SettingsRepo SettingsReader
