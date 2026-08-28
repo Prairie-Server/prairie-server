@@ -32,6 +32,11 @@ type channelCompatWatchScrobbler struct {
 	failStops  int
 }
 
+type terminalReleaseObservingStore struct {
+	CompatPlaybackStore
+	releases chan struct{}
+}
+
 type failingCompatWatchScrobbler struct {
 	stopCalls atomic.Int32
 }
@@ -197,6 +202,17 @@ func (s *channelCompatWatchScrobbler) ScrobbleStop(_ context.Context, event watc
 
 func (s *channelCompatWatchScrobbler) ScrobbleStopConfirmed(ctx context.Context, event watchsync.ScrobbleEvent) error {
 	return s.ScrobbleStop(ctx, event)
+}
+
+func (s *terminalReleaseObservingStore) ReleaseTerminalClaim(
+	id string,
+	compatToken string,
+	claimUntil time.Time,
+	claimVersion int64,
+	fallbackSent bool,
+) {
+	s.CompatPlaybackStore.ReleaseTerminalClaim(id, compatToken, claimUntil, claimVersion, fallbackSent)
+	s.releases <- struct{}{}
 }
 
 func (s *recordingCompatWatchScrobbler) ScrobbleStart(_ context.Context, event watchsync.ScrobbleEvent) error {
@@ -601,6 +617,11 @@ func TestActiveEncodingsFallbackAllowsLaterAuthoritativeStop(t *testing.T) {
 		},
 	}}
 	h, store := newActiveEncodingsHandler(mgr)
+	releases := make(chan struct{}, 2)
+	h.playbackStore = &terminalReleaseObservingStore{
+		CompatPlaybackStore: store,
+		releases:            releases,
+	}
 	scrobbler := &channelCompatWatchScrobbler{stopEvents: make(chan watchsync.ScrobbleEvent, 2)}
 	h.WatchScrobbler = scrobbler
 	h.terminalFallbackDelay = 10 * time.Millisecond
@@ -630,6 +651,11 @@ func TestActiveEncodingsFallbackAllowsLaterAuthoritativeStop(t *testing.T) {
 		}
 	case <-time.After(time.Second):
 		t.Fatal("timed out waiting for ActiveEncodings terminal fallback")
+	}
+	select {
+	case <-releases:
+	case <-time.After(time.Second):
+		t.Fatal("timed out waiting for fallback delivery lease release")
 	}
 	terminal, ok := store.GetFinalizable("play-1", "token-1")
 	if !ok || !terminal.TerminalFallbackSent || terminal.TerminalAuthoritative {

@@ -4,10 +4,7 @@ import SectionItemCard from "@/components/SectionItemCard";
 import { useViewTransitionNavigate } from "@/hooks/useViewTransition";
 import { useToggleSidebarPin } from "@/hooks/queries/sidebarPins";
 import { useOverlayPrefs } from "@/hooks/useOverlayPrefs";
-import {
-  buildSectionCatalogHref,
-  isSectionBrowseSupported,
-} from "@/pages/catalogSearchParams";
+import { buildSectionCatalogHref, isSectionBrowseSupported } from "@/pages/catalogSearchParams";
 import type { ResolvedSection } from "@/api/types";
 import { Pin, PinOff } from "lucide-react";
 import { useUICustomization } from "@/hooks/useUICustomization";
@@ -35,13 +32,7 @@ function SectionPinButton({
 
   return (
     <button
-      onClick={() =>
-        togglePin(libraryId, {
-          type: "section",
-          id: sectionId,
-          label: sectionTitle,
-        })
-      }
+      onClick={() => togglePin(libraryId, { type: "section", id: sectionId, label: sectionTitle })}
       className={`rounded-full p-1.5 transition-colors ${
         pinned
           ? "text-primary hover:text-primary/80"
@@ -57,11 +48,9 @@ function SectionPinButton({
 export default function SectionRow({ section, libraryId }: SectionRowProps) {
   const navigate = useViewTransitionNavigate();
   const browseSupported = isSectionBrowseSupported(section.section_type);
-  const { prefs: overlayPrefs } = useOverlayPrefs();
+  const { prefs: overlayPrefs, quickActionMode } = useOverlayPrefs();
   const { cardPresentation } = useUICustomization();
-  const posterWidthClasses = carouselCardWidthClasses(
-    cardPresentation.poster_size,
-  );
+  const posterWidthClasses = carouselCardWidthClasses(cardPresentation.poster_size);
 
   const handleViewAll = () => {
     if (!browseSupported) {
@@ -88,25 +77,18 @@ export default function SectionRow({ section, libraryId }: SectionRowProps) {
 
   const headerActions =
     libraryId && browseSupported ? (
-      <SectionPinButton
-        sectionId={section.id}
-        sectionTitle={section.title}
-        libraryId={libraryId}
-      />
+      <SectionPinButton sectionId={section.id} sectionTitle={section.title} libraryId={libraryId} />
     ) : undefined;
 
   return (
     <MediaCarousel
       title={section.title}
       onViewAll={
-        browseSupported && section.total_count > section.item_limit
-          ? handleViewAll
-          : undefined
+        browseSupported && section.total_count > section.item_limit ? handleViewAll : undefined
       }
       headerActions={headerActions}
     >
-      {section.section_type === "continue_watching" ||
-      section.section_type === "next_up"
+      {section.section_type === "continue_watching" || section.section_type === "next_up"
         ? (() => {
             // Continue Watching with only movies, audiobooks, and/or ebooks
             // looks better as upright covers (audiobook covers render square
@@ -117,10 +99,7 @@ export default function SectionRow({ section, libraryId }: SectionRowProps) {
               section.section_type === "continue_watching" &&
               section.items.length > 0 &&
               section.items.every(
-                (it) =>
-                  it.type === "movie" ||
-                  it.type === "audiobook" ||
-                  it.type === "ebook",
+                (it) => it.type === "movie" || it.type === "audiobook" || it.type === "ebook",
               )
                 ? "poster"
                 : "wide";
@@ -130,17 +109,19 @@ export default function SectionRow({ section, libraryId }: SectionRowProps) {
                 sectionItem={item}
                 libraryId={libraryId}
                 overlayPrefs={overlayPrefs}
+                quickActionMode={quickActionMode}
                 variant={cardVariant}
               />
             ));
           })()
         : section.items.map((item, index) => (
-            <div
-              key={`${item.content_id}-${index}`}
-              className={posterWidthClasses}
-              role="listitem"
-            >
-              <SectionItemCard item={item} libraryId={libraryId} />
+            <div key={`${item.content_id}-${index}`} className={posterWidthClasses} role="listitem">
+              <SectionItemCard
+                item={item}
+                libraryId={libraryId}
+                overlayPrefs={overlayPrefs}
+                quickActionMode={quickActionMode}
+              />
             </div>
           ))}
     </MediaCarousel>

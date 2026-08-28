@@ -12,6 +12,10 @@ vi.mock("@/hooks/queries/catalogRead", () => ({
   usePrefetchCatalogItemDetail: () => prefetchEpisodeDetail,
 }));
 
+vi.mock("@/hooks/useOverlayPrefs", () => ({
+  useOverlayPrefs: () => ({ quickActionMode: "watched" }),
+}));
+
 vi.mock("@/components/MediaItemMenu", () => ({
   default: (props: Record<string, unknown>) => {
     capturedMenuProps.push(props);
@@ -211,6 +215,7 @@ describe("EpisodeCarousel", () => {
       showCollectionActions: false,
       showWatchedShortcut: true,
       hasPartialProgress: false,
+      quickActionMode: "watched",
     });
     expect(capturedMenuProps[1]).toMatchObject({
       contentId: "ep-2",
@@ -221,6 +226,7 @@ describe("EpisodeCarousel", () => {
       },
       showWatchedShortcut: true,
       hasPartialProgress: true,
+      quickActionMode: "watched",
     });
   });
 });

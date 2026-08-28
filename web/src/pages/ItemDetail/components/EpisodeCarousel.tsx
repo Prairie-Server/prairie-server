@@ -10,6 +10,8 @@ import MediaItemMenu from "@/components/MediaItemMenu";
 import type { EpisodeNavigationState } from "../itemDetailLayout";
 import { useCarouselEmbla } from "@/hooks/useCarouselEmbla";
 import { usePrefetchCatalogItemDetail } from "@/hooks/queries/catalogRead";
+import { useOverlayPrefs } from "@/hooks/useOverlayPrefs";
+import type { CardQuickActionMode } from "@/lib/cardQuickActions";
 
 interface EpisodeCarouselProps {
   episodes: EpisodeListItem[];
@@ -26,18 +28,13 @@ export default function EpisodeCarousel({
     (episode) => episode.episode_number === currentEpisodeNumber,
   );
   const prefetchEpisodeDetail = usePrefetchCatalogItemDetail();
-  const {
-    emblaApi,
-    emblaRef,
-    canScrollPrev,
-    canScrollNext,
-    scrollPrev,
-    scrollNext,
-  } = useCarouselEmbla({
-    options: {
-      slidesToScroll: 1,
-    },
-  });
+  const { quickActionMode } = useOverlayPrefs();
+  const { emblaApi, emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
+    useCarouselEmbla({
+      options: {
+        slidesToScroll: 1,
+      },
+    });
 
   // Auto-center the current episode on mount / episode change
   useEffect(() => {
@@ -59,20 +56,15 @@ export default function EpisodeCarousel({
           </button>
         )}
 
-        <div
-          ref={emblaRef}
-          className="embla__viewport overflow-hidden py-4 pl-4"
-        >
-          <ul
-            role="list"
-            className="embla__container flex cursor-grab list-none gap-3"
-          >
+        <div ref={emblaRef} className="embla__viewport overflow-hidden py-4 pl-4">
+          <ul role="list" className="embla__container flex cursor-grab list-none gap-3">
             {episodes.map((ep) => (
               <EpisodeCarouselCard
                 key={ep.content_id}
                 ep={ep}
                 isCurrent={ep.episode_number === currentEpisodeNumber}
                 episodeLinkState={episodeLinkState}
+                quickActionMode={quickActionMode}
                 onPrefetch={() => prefetchEpisodeDetail(ep.content_id)}
               />
             ))}
@@ -98,17 +90,17 @@ function EpisodeCarouselCard({
   ep,
   isCurrent,
   episodeLinkState,
+  quickActionMode,
   onPrefetch,
 }: {
   ep: EpisodeListItem;
   isCurrent: boolean;
   episodeLinkState?: EpisodeNavigationState;
+  quickActionMode: CardQuickActionMode;
   onPrefetch: () => void;
 }) {
   const cardRef = useRef<HTMLDivElement>(null);
-  const thumbhashUrl = ep.still_thumbhash
-    ? decodeThumbhash(ep.still_thumbhash)
-    : "";
+  const thumbhashUrl = ep.still_thumbhash ? decodeThumbhash(ep.still_thumbhash) : "";
   const episodeTitle = ep.title || `Episode ${ep.episode_number}`;
   const progress =
     !ep.user_data?.played &&
@@ -118,9 +110,7 @@ function EpisodeCarouselCard({
           0,
           Math.min(
             100,
-            ((ep.user_data?.position_seconds ?? 0) /
-              (ep.user_data?.duration_seconds ?? 1)) *
-              100,
+            ((ep.user_data?.position_seconds ?? 0) / (ep.user_data?.duration_seconds ?? 1)) * 100,
           ),
         )
       : null;
@@ -150,10 +140,7 @@ function EpisodeCarouselCard({
               )}
               style={
                 thumbhashUrl
-                  ? {
-                      backgroundImage: `url(${thumbhashUrl})`,
-                      backgroundSize: "cover",
-                    }
+                  ? { backgroundImage: `url(${thumbhashUrl})`, backgroundSize: "cover" }
                   : undefined
               }
             >
@@ -182,10 +169,7 @@ function EpisodeCarouselCard({
                 <div className="absolute inset-x-2 bottom-1.5 h-[3px] overflow-hidden rounded-full bg-black/40">
                   <div
                     className="h-full rounded-full"
-                    style={{
-                      width: `${progress}%`,
-                      background: "var(--primary)",
-                    }}
+                    style={{ width: `${progress}%`, background: "var(--primary)" }}
                   />
                 </div>
               )}
@@ -199,6 +183,7 @@ function EpisodeCarouselCard({
             showCollectionActions={false}
             showWatchedShortcut
             hasPartialProgress={progress != null}
+            quickActionMode={quickActionMode}
             longPressRef={cardRef}
             itemTitle={episodeTitle}
           />
@@ -211,9 +196,7 @@ function EpisodeCarouselCard({
         >
           <div className="text-muted-foreground/70 mt-2 flex items-center gap-2 text-xs">
             <span>Episode {ep.episode_number}</span>
-            {ep.user_data?.played && (
-              <WatchedCheckIndicator className="ml-auto" />
-            )}
+            {ep.user_data?.played && <WatchedCheckIndicator className="ml-auto" />}
           </div>
           <p
             className="truncate text-sm font-semibold"
@@ -221,9 +204,7 @@ function EpisodeCarouselCard({
           >
             {episodeTitle}
           </p>
-          {ep.runtime > 0 && (
-            <p className="text-muted-foreground/70 text-xs">{ep.runtime}m</p>
-          )}
+          {ep.runtime > 0 && <p className="text-muted-foreground/70 text-xs">{ep.runtime}m</p>}
         </Link>
       </div>
     </li>

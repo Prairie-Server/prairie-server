@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router";
-import { useQueryClient } from "@tanstack/react-query";
+import { useQueryClient, type QueryClient } from "@tanstack/react-query";
 import { Menu, Search } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
@@ -64,6 +64,7 @@ export default function Layout({ children }: LayoutProps) {
   const isHomePath = location.pathname === "/";
   const isLibraryRoute = location.pathname.startsWith("/library/");
   const isItemRoute = location.pathname.startsWith("/item/");
+  const itemRouteLocation = `${location.pathname}${location.search}`;
   // Breakpoint changes naturally cause other layout renders; navigation only
   // needs the viewport value at the moment it is attempted.
   const hasDesktopSidebar = window.matchMedia("(min-width: 64rem)").matches;
@@ -136,6 +137,15 @@ export default function Layout({ children }: LayoutProps) {
   // can never leave the item route on its lightweight shell indefinitely.
   useEffect(() => {
     if (!isItemRoute || !pendingLocationKey) return;
+
+    // The gate stages the collapse so the detail skeleton is not what animates
+    // into view. A prefetched detail has no skeleton to hide, so waiting for
+    // the sidebar would only delay a page that is already ready to paint.
+    if (hasCachedItemDetail(queryClient, itemRouteLocation)) {
+      revealItemDetails(pendingLocationKey);
+      return;
+    }
+
     const startedAt = Date.now();
     let timer: number;
     let cancelled = false;
@@ -168,7 +178,7 @@ export default function Layout({ children }: LayoutProps) {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, [isItemRoute, pendingLocationKey, revealItemDetails]);
+  }, [isItemRoute, itemRouteLocation, pendingLocationKey, queryClient, revealItemDetails]);
 
   const handleSidebarTransitionEnd = useCallback(
     (event: ReactTransitionEvent<HTMLDivElement>) => {
@@ -363,5 +373,19 @@ export default function Layout({ children }: LayoutProps) {
         </main>
       </div>
     </SidebarItemNavigationProvider>
+  );
+}
+
+/**
+ * Reports whether the detail for the item route currently being entered is
+ * already in the query cache — either prefetched by `beginItemNavigation` or
+ * left behind by an earlier visit.
+ */
+function hasCachedItemDetail(queryClient: QueryClient, itemRouteLocation: string): boolean {
+  const target = parseItemNavigationHref(itemRouteLocation, window.location.origin);
+  if (!target) return false;
+  return (
+    queryClient.getQueryData(catalogKeys.itemDetail(target.contentId, target.libraryId)) !==
+    undefined
   );
 }

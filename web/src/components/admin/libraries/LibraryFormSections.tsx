@@ -51,9 +51,7 @@ function SettingCard({
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-1">
           <Label htmlFor={htmlFor}>{title}</Label>
-          <p className="text-muted-foreground text-xs leading-relaxed">
-            {description}
-          </p>
+          <p className="text-muted-foreground text-xs leading-relaxed">{description}</p>
           {footer}
         </div>
         {children}
@@ -80,9 +78,7 @@ export function GeneralFields({
           placeholder="e.g. Movies"
           aria-invalid={form.errors.name ? true : undefined}
         />
-        {form.errors.name ? (
-          <p className="text-destructive text-xs">{form.errors.name}</p>
-        ) : null}
+        {form.errors.name ? <p className="text-destructive text-xs">{form.errors.name}</p> : null}
       </div>
       <div className="space-y-1.5">
         <Label>Type</Label>
@@ -108,10 +104,7 @@ export function GeneralFields({
                 )}
               >
                 <Icon
-                  className={cn(
-                    "size-5",
-                    selected ? "text-primary" : "text-muted-foreground",
-                  )}
+                  className={cn("size-5", selected ? "text-primary" : "text-muted-foreground")}
                 />
                 <span className="text-[11px] font-medium">{label}</span>
               </button>
@@ -120,8 +113,7 @@ export function GeneralFields({
         </div>
         {form.library && form.type !== form.library.type ? (
           <p className="text-warning text-xs">
-            Changing the type of an existing library may require a full rescan
-            to rematch items.
+            Changing the type of an existing library may require a full rescan to rematch items.
           </p>
         ) : null}
       </div>
@@ -171,24 +163,12 @@ export function FolderFields({ form }: { form: LibraryFormController }) {
           </div>
         ))}
       </div>
-      {form.errors.paths ? (
-        <p className="text-destructive text-xs">{form.errors.paths}</p>
-      ) : null}
+      {form.errors.paths ? <p className="text-destructive text-xs">{form.errors.paths}</p> : null}
       <div className="flex gap-1.5">
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={() => setBrowserOpen(true)}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={() => setBrowserOpen(true)}>
           <FolderSearch className="mr-1 size-3.5" /> Browse
         </Button>
-        <Button
-          type="button"
-          variant="outline"
-          size="sm"
-          onClick={form.addPath}
-        >
+        <Button type="button" variant="outline" size="sm" onClick={form.addPath}>
           <Plus className="mr-1 size-3.5" /> Add Path
         </Button>
       </div>
@@ -233,11 +213,7 @@ function ProviderLevelSection({
         onClick={() => setCollapsed(!collapsed)}
         className="text-primary hover:text-primary/80 mb-1.5 flex items-center gap-1.5 text-xs font-semibold tracking-wider uppercase"
       >
-        {collapsed ? (
-          <ChevronRight className="h-3 w-3" />
-        ) : (
-          <ChevronDown className="h-3 w-3" />
-        )}
+        {collapsed ? <ChevronRight className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
         {contentLevelLabel(level)}
       </button>
       {!collapsed && (
@@ -259,9 +235,7 @@ function ProviderLevelSection({
                 className="h-3.5 w-3.5"
                 style={{ accentColor: "var(--primary)" }}
               />
-              <span className="flex-1 font-mono text-xs">
-                {item.provider_slug}
-              </span>
+              <span className="flex-1 font-mono text-xs">{item.provider_slug}</span>
               <div className="flex gap-0.5">
                 <Button
                   type="button"
@@ -284,9 +258,7 @@ function ProviderLevelSection({
                   <ArrowDown className="h-2.5 w-2.5" />
                 </Button>
               </div>
-              <span className="text-muted-foreground/70 font-mono text-[10px]">
-                {i + 1}
-              </span>
+              <span className="text-muted-foreground/70 font-mono text-[10px]">{i + 1}</span>
             </div>
           ))}
         </div>
@@ -300,10 +272,7 @@ export function MetadataFields({ form }: { form: LibraryFormController }) {
     <div className="space-y-5">
       <div className="space-y-1.5">
         <Label>Metadata Language</Label>
-        <Select
-          value={form.metadataLanguage}
-          onValueChange={form.setMetadataLanguage}
-        >
+        <Select value={form.metadataLanguage} onValueChange={form.setMetadataLanguage}>
           <SelectTrigger className="w-full sm:w-64">
             <SelectValue />
           </SelectTrigger>
@@ -316,19 +285,16 @@ export function MetadataFields({ form }: { form: LibraryFormController }) {
           </SelectContent>
         </Select>
         <p className="text-muted-foreground text-xs">
-          Preferred language for titles, summaries, and artwork fetched from
-          providers.
+          Preferred language for titles, summaries, and artwork fetched from providers.
         </p>
       </div>
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-0.5">
-          <Label htmlFor="auto-translate-metadata">
-            Auto-translate descriptions
-          </Label>
+          <Label htmlFor="auto-translate-metadata">Auto-translate descriptions</Label>
           <p className="text-muted-foreground text-xs">
-            When providers have no translation for this library&apos;s language,
-            translate descriptions with AI after each refresh. Requires AI
-            description translation in Admin Settings → AI Services.
+            When providers have no translation for this library&apos;s language, translate
+            descriptions with AI after each refresh. Requires AI description translation in Admin
+            Settings → AI.
           </p>
         </div>
         <Switch
@@ -340,8 +306,8 @@ export function MetadataFields({ form }: { form: LibraryFormController }) {
       <div className="space-y-1.5">
         <Label>Trailer &amp; extras types</Label>
         <p className="text-muted-foreground text-xs">
-          Video types fetched from metadata providers during refresh. Uncheck
-          everything to disable remote trailers for this library.
+          Video types fetched from metadata providers during refresh. Uncheck everything to disable
+          remote trailers for this library.
         </p>
         <div
           className="grid grid-cols-1 gap-1.5 sm:grid-cols-2"
@@ -377,8 +343,8 @@ export function MetadataFields({ form }: { form: LibraryFormController }) {
         <div className="space-y-1.5">
           <Label>Provider Priority</Label>
           <p className="text-muted-foreground mb-3 text-xs">
-            Providers are asked in order from top to bottom. Uncheck a provider
-            to skip it for that level.
+            Providers are asked in order from top to bottom. Uncheck a provider to skip it for that
+            level.
           </p>
           {form.chainLoading ? (
             <div className="border-border bg-surface text-muted-foreground flex items-center justify-center gap-2 rounded-xl border border-dashed p-4 text-xs">
@@ -392,15 +358,13 @@ export function MetadataFields({ form }: { form: LibraryFormController }) {
                 level={level}
                 items={form.activeLevelChains[level] ?? []}
                 onReorder={(newItems) => form.reorderLevel(level, newItems)}
-                onToggleEnabled={(index) =>
-                  form.toggleLevelProvider(level, index)
-                }
+                onToggleEnabled={(index) => form.toggleLevelProvider(level, index)}
               />
             ))
           ) : (
             <p className="border-border bg-surface text-muted-foreground rounded-xl border border-dashed p-4 text-center text-xs">
-              No metadata provider plugins are installed. Install one under
-              Admin → Plugins to fetch artwork and descriptions.
+              No metadata provider plugins are installed. Install one under Admin → Plugins to fetch
+              artwork and descriptions.
             </p>
           )}
         </div>
@@ -412,23 +376,20 @@ export function MetadataFields({ form }: { form: LibraryFormController }) {
 export function AdvancedFields({
   form,
   chapterThumbnailsSupported,
-  trickplaySupported,
 }: {
   form: LibraryFormController;
   chapterThumbnailsSupported: boolean;
-  trickplaySupported: boolean;
 }) {
   return (
     <div className="space-y-3">
       <SettingCard
         htmlFor="chapter-thumbnails-switch"
         title="Generate chapter thumbnails"
-        description="Stores chapter preview images alongside the rest of your artwork — the public asset S3 bucket when one is configured, otherwise the local data volume. Chapter markers and chapter menus still work without thumbnails."
+        description="Stores chapter preview images in the configured public asset S3 bucket. Chapter markers and chapter menus still work without thumbnails."
         footer={
           !chapterThumbnailsSupported ? (
             <p className="text-warning text-xs">
-              Artwork storage is not configured, so there is nowhere to put the
-              generated images.
+              Public asset S3 storage is required before this can be enabled.
             </p>
           ) : null
         }
@@ -438,26 +399,6 @@ export function AdvancedFields({
           checked={form.chapterThumbnailsEnabled}
           disabled={!chapterThumbnailsSupported}
           onCheckedChange={form.setChapterThumbnailsEnabled}
-        />
-      </SettingCard>
-      <SettingCard
-        htmlFor="trickplay-switch"
-        title="Generate seek previews"
-        description="Builds sprite-sheet previews for the scrubber so hovering or dragging the seek bar shows a frame from that moment. Stored with the rest of your artwork."
-        footer={
-          !trickplaySupported ? (
-            <p className="text-warning text-xs">
-              Artwork storage is not configured, so there is nowhere to put the
-              generated images.
-            </p>
-          ) : null
-        }
-      >
-        <Switch
-          id="trickplay-switch"
-          checked={form.trickplayEnabled}
-          disabled={!trickplaySupported}
-          onCheckedChange={form.setTrickplayEnabled}
         />
       </SettingCard>
       <SettingCard

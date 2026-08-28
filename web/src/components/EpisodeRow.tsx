@@ -74,6 +74,7 @@ export default function EpisodeRow({
             data={overlayDataFromEpisodeListItem(episode)}
             prefs={overlayPrefs}
             variant="wide"
+            hasProgressBar={hasProgress}
           />
         )}
         {hasProgress && (

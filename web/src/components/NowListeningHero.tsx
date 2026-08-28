@@ -50,7 +50,7 @@ export default function NowListeningHero({
 }: NowListeningHeroProps) {
   const deck = section.items[0];
   const rest = section.items.slice(1);
-  const { prefs: overlayPrefs } = useOverlayPrefs();
+  const { prefs: overlayPrefs, quickActionMode } = useOverlayPrefs();
   const audiobookPlayback = useAudiobookPlaybackController();
   // The section payload has no chapters or credits; the item detail fills in
   // author/narrator, chapter marks, and the files needed for one-click resume.
@@ -284,6 +284,7 @@ export default function NowListeningHero({
               sectionItem={item}
               libraryId={libraryId}
               overlayPrefs={overlayPrefs}
+              quickActionMode={quickActionMode}
               variant="poster"
             />
           ))}

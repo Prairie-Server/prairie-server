@@ -38,7 +38,7 @@ low):
 | `email.from_address`  | —          | required                                           |
 | `email.from_name`     | `Prairie`  |                                                    |
 
-Admin UI: Admin Settings → Connections → Email, including a synchronous test
+Admin UI: Admin Settings → Notifications → Email, including a synchronous test
 send (`POST /api/v1/admin/email/test`).
 
 ## Adding a consumer

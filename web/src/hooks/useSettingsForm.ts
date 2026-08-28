@@ -5,6 +5,7 @@ import {
   useUpdateServerSettings,
   useAdminSensitiveStatus,
 } from "@/hooks/queries/admin/settings";
+import { useReportUnsavedChanges } from "@/hooks/useUnsavedChanges";
 
 interface UseSettingsFormOptions {
   /** Setting keys this section manages */
@@ -85,7 +86,38 @@ export function useSettingsForm({ keys }: UseSettingsFormOptions) {
   const dirtyCount = dirty.size;
   const dirtyKeys = useMemo(() => Array.from(dirty), [dirty]);
 
+  // In-app navigation is guarded by `UnsavedChangesGuard`, which blocks the
+  // router for as long as this registration is live. Reporting through a module
+  // store rather than owning the prompt keeps the hook usable where no guard is
+  // mounted (the setup wizard) and outside a router entirely.
+  useReportUnsavedChanges(dirtyCount > 0);
+
+  // Every admin settings tab stages edits and only writes them through the
+  // SaveBar, so closing or reloading the tab would silently drop them. One
+  // guard here covers all tabs, and it is the only thing the browser lets us
+  // intercept: a tab close or reload never reaches the router.
+  useEffect(() => {
+    if (dirtyCount === 0) return;
+    function warnOnUnload(event: BeforeUnloadEvent) {
+      event.preventDefault();
+      // Older browsers only show the prompt for a truthy returnValue; the text
+      // itself is ignored everywhere.
+      event.returnValue = "";
+    }
+    window.addEventListener("beforeunload", warnOnUnload);
+    return () => window.removeEventListener("beforeunload", warnOnUnload);
+  }, [dirtyCount]);
+
   const isDirty = useCallback((key: string) => dirty.has(key), [dirty]);
+
+  // A staged clear is a dirty empty value: the save batch writes "" and the
+  // server drops the stored value. This is what `SecretField`'s own clear
+  // affordance stages, and the one thing that distinguishes it from the
+  // "leave blank to keep the saved secret" default.
+  const isClearStaged = useCallback(
+    (key: string) => dirty.has(key) && getValue(key) === "",
+    [dirty, getValue],
+  );
 
   const buildConnectionCheckRequest = useCallback(
     (selectedKeys: string[] = keys): AdminSettingsConnectionCheckRequest => ({
@@ -160,6 +192,7 @@ export function useSettingsForm({ keys }: UseSettingsFormOptions) {
     dirtyCount,
     dirtyKeys,
     isDirty,
+    isClearStaged,
     save,
     discard,
     isSaving: updateSettings.isPending,

@@ -1,9 +1,11 @@
 import { Children } from "react";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Link } from "react-router";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useCarouselEmbla } from "@/hooks/useCarouselEmbla";
+import { useUICustomization } from "@/hooks/useUICustomization";
+import { carouselIntrinsicHeight } from "@/lib/uiCustomization";
 
 interface MediaCarouselProps {
   title: string;
@@ -36,8 +38,8 @@ export default function MediaCarousel({
   headerActions,
   edgePadding = true,
 }: MediaCarouselProps) {
-  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
-    useCarouselEmbla();
+  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } = useCarouselEmbla();
+  const { cardPresentation } = useUICustomization();
   // Page-edge padding is opt-out so the carousel can also be embedded in an
   // already-padded container without double-padding the header and cards.
   const headerPadX = edgePadding ? " px-4 sm:px-6 lg:px-10 xl:px-12" : "";
@@ -54,14 +56,18 @@ export default function MediaCarousel({
     : Children.toArray(children);
 
   return (
-    <section className="section-row group/carousel relative isolate">
+    <section
+      className="section-row media-carousel group/carousel relative isolate"
+      style={
+        {
+          "--carousel-intrinsic-h": carouselIntrinsicHeight(cardPresentation.poster_size),
+        } as CSSProperties
+      }
+    >
       <div className={`mb-5 flex items-end justify-between gap-4${headerPadX}`}>
         <div className="flex items-center gap-2">
           {titleHref ? (
-            <Link
-              to={titleHref}
-              className="group/title hover:text-primary transition-colors"
-            >
+            <Link to={titleHref} className="group/title hover:text-primary transition-colors">
               <h2 className="text-foreground text-xl font-semibold tracking-tight">
                 {title}
                 <span className="text-muted-foreground group-hover/title:text-primary ml-2 text-sm transition-colors">
@@ -70,9 +76,7 @@ export default function MediaCarousel({
               </h2>
             </Link>
           ) : (
-            <h2 className="text-foreground text-xl font-semibold tracking-tight">
-              {title}
-            </h2>
+            <h2 className="text-foreground text-xl font-semibold tracking-tight">{title}</h2>
           )}
           {headerActions}
         </div>

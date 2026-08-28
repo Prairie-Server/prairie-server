@@ -1,11 +1,4 @@
-import {
-  Fragment,
-  useState,
-  useEffect,
-  useCallback,
-  useMemo,
-  useRef,
-} from "react";
+import { Fragment, useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useEventChannel } from "@/components/realtimeEventsContext";
 import type {
@@ -63,11 +56,7 @@ import {
   DialogDescription,
   DialogTitle,
 } from "@/components/ui/dialog";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
   Select,
   SelectContent,
@@ -75,7 +64,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import {
   Plus,
   Pencil,
@@ -99,6 +88,8 @@ import {
   Search,
   FolderOpen,
 } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AdminAutoscan from "@/pages/AdminAutoscan";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -145,8 +136,31 @@ const EMPTY_ROOT_WARNING_TEXT =
 const EMPTY_ROOT_WARNING_HINT =
   "Run another scan after storage returns, or confirm deletion before the next empty-root scan.";
 
+const LIBRARY_TABS = ["libraries", "autoscan"] as const;
+type LibraryTab = (typeof LIBRARY_TABS)[number];
+
 export default function AdminLibraries() {
   useEventChannel("scans");
+  // Autoscan used to be its own sidebar page even though it only ever
+  // configured how these libraries get scanned; it is a tab here now, and
+  // /admin/autoscan redirects to it.
+  const [searchParams, setSearchParams] = useSearchParams();
+  const requestedTab = searchParams.get("tab");
+  const activeTab: LibraryTab = LIBRARY_TABS.includes(requestedTab as LibraryTab)
+    ? (requestedTab as LibraryTab)
+    : "libraries";
+
+  function setActiveTab(value: string) {
+    const next = new URLSearchParams(searchParams);
+    if (value === "libraries") {
+      next.delete("tab");
+      next.delete("view");
+    } else {
+      next.set("tab", value);
+    }
+    setSearchParams(next, { replace: true });
+  }
+
   const { data: libraries = [], isLoading } = useAdminLibraries();
   const { data: activeScans = [] } = useActiveScans();
   const { data: libraryRefreshJobs = [] } = useLibraryRefreshJobs();
@@ -154,11 +168,8 @@ export default function AdminLibraries() {
   const { data: staleIDs = [] } = useStaleMediaIDs();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingLib, setEditingLib] = useState<Library | null>(null);
-  const [confirmDeleteLib, setConfirmDeleteLib] = useState<Library | null>(
-    null,
-  );
-  const [confirmEmptyRootLib, setConfirmEmptyRootLib] =
-    useState<Library | null>(null);
+  const [confirmDeleteLib, setConfirmDeleteLib] = useState<Library | null>(null);
+  const [confirmEmptyRootLib, setConfirmEmptyRootLib] = useState<Library | null>(null);
   const [lastMountCheckByLibraryId, setLastMountCheckByLibraryId] = useState<
     Record<number, LibraryMountCheckResponse>
   >({});
@@ -172,14 +183,11 @@ export default function AdminLibraries() {
 
   // DnD reorder state
   const reorderMutation = useReorderLibraries();
-  const [orderedLibraries, setOrderedLibraries] =
-    useState<Library[]>(libraries);
+  const [orderedLibraries, setOrderedLibraries] = useState<Library[]>(libraries);
   const [activeId, setActiveId] = useState<number | null>(null);
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
   useEffect(() => {
@@ -190,9 +198,7 @@ export default function AdminLibraries() {
     return () => {
       // Cancel pending mount-check cleanup timers so unmount cannot clear state
       // after the page leaves.
-      for (const timeoutID of Object.values(
-        mountCheckClearTimeoutsRef.current,
-      )) {
+      for (const timeoutID of Object.values(mountCheckClearTimeoutsRef.current)) {
         window.clearTimeout(timeoutID);
       }
     };
@@ -221,8 +227,7 @@ export default function AdminLibraries() {
     setActiveId(null);
   }
 
-  const activeLibrary =
-    activeId != null ? orderedLibraries.find((l) => l.id === activeId) : null;
+  const activeLibrary = activeId != null ? orderedLibraries.find((l) => l.id === activeId) : null;
   const refreshMutation = useRefreshLibraryMetadata();
   const confirmEmptyRootCleanupMutation = useConfirmEmptyRootCleanup();
   const activeRefreshJobsByLibraryId = useMemo(() => {
@@ -254,11 +259,8 @@ export default function AdminLibraries() {
   const activeScanGroups = useMemo(() => {
     return Array.from(activeScansByLibraryId.entries())
       .map(([libraryID, scans]) => {
-        const library =
-          libraries.find((entry) => entry.id === libraryID) ?? null;
-        const runningCount = scans.filter(
-          (scan) => scan.status === "running",
-        ).length;
+        const library = libraries.find((entry) => entry.id === libraryID) ?? null;
+        const runningCount = scans.filter((scan) => scan.status === "running").length;
         return {
           libraryID,
           library,
@@ -271,10 +273,7 @@ export default function AdminLibraries() {
         if (left.runningCount !== right.runningCount) {
           return right.runningCount - left.runningCount;
         }
-        return getLibraryScanGroupName(
-          left.library,
-          left.libraryID,
-        ).localeCompare(
+        return getLibraryScanGroupName(left.library, left.libraryID).localeCompare(
           getLibraryScanGroupName(right.library, right.libraryID),
         );
       });
@@ -296,13 +295,9 @@ export default function AdminLibraries() {
           [libraryId]: result,
         }));
         if (result.healthy) {
-          toast.success(formatMountCheckMessage(result), {
-            duration: MOUNT_CHECK_FEEDBACK_MS,
-          });
+          toast.success(formatMountCheckMessage(result), { duration: MOUNT_CHECK_FEEDBACK_MS });
         } else {
-          toast.error(formatMountCheckMessage(result), {
-            duration: MOUNT_CHECK_FEEDBACK_MS,
-          });
+          toast.error(formatMountCheckMessage(result), { duration: MOUNT_CHECK_FEEDBACK_MS });
         }
         const existingTimeout = mountCheckClearTimeoutsRef.current[libraryId];
         if (existingTimeout) {
@@ -310,22 +305,20 @@ export default function AdminLibraries() {
         }
         // Match the toast duration so the inline mount-check result stays visible
         // for the same window.
-        mountCheckClearTimeoutsRef.current[libraryId] = window.setTimeout(
-          () => {
-            setLastMountCheckByLibraryId((current) => {
-              const next = { ...current };
-              delete next[libraryId];
-              return next;
-            });
-            delete mountCheckClearTimeoutsRef.current[libraryId];
-          },
-          MOUNT_CHECK_FEEDBACK_MS,
-        );
+        mountCheckClearTimeoutsRef.current[libraryId] = window.setTimeout(() => {
+          setLastMountCheckByLibraryId((current) => {
+            const next = { ...current };
+            delete next[libraryId];
+            return next;
+          });
+          delete mountCheckClearTimeoutsRef.current[libraryId];
+        }, MOUNT_CHECK_FEEDBACK_MS);
       },
     });
   }
 
-  if (isLoading) return <div className="p-8">Loading libraries...</div>;
+  if (isLoading && activeTab === "libraries")
+    return <div className="p-8">Loading libraries...</div>;
 
   return (
     <div className="space-y-6">
@@ -353,8 +346,7 @@ export default function AdminLibraries() {
         confirmLabel="Confirm"
         variant="destructive"
         onConfirm={() => {
-          if (confirmEmptyRootLib)
-            confirmEmptyRootCleanupMutation.mutate(confirmEmptyRootLib.id);
+          if (confirmEmptyRootLib) confirmEmptyRootCleanupMutation.mutate(confirmEmptyRootLib.id);
           setConfirmEmptyRootLib(null);
         }}
       />
@@ -362,18 +354,15 @@ export default function AdminLibraries() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Libraries</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Manage library roots and scans. Catalog import/export now lives
-            under Maintenance.
+            Manage library roots and scans. Catalog import/export now lives under Maintenance.
           </p>
         </div>
-        <div className="flex gap-2">
+        <div className={cn("flex gap-2", activeTab !== "libraries" && "hidden")}>
           {activeScanGroups.length > 0 && (
             <ScanQueuePopover
               groups={activeScanGroups}
               cancellingLibraryID={
-                cancelScansMutation.isPending
-                  ? (cancelScansMutation.variables ?? null)
-                  : null
+                cancelScansMutation.isPending ? (cancelScansMutation.variables ?? null) : null
               }
               onCancel={(libraryID) => cancelScansMutation.mutate(libraryID)}
             />
@@ -414,422 +403,378 @@ export default function AdminLibraries() {
               libraries[0]?.chapter_thumbnails_supported ??
               true
             }
-            trickplaySupported={
-              editingLib?.trickplay_supported ??
-              libraries[0]?.trickplay_supported ??
-              true
-            }
           />
         </div>
       </div>
 
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragStart={handleDragStart}
-        onDragEnd={handleDragEnd}
-        onDragCancel={handleDragCancel}
-      >
-        <div className="surface-panel overflow-x-auto rounded-2xl border-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead className="w-10" />
-                <TableHead>Name</TableHead>
-                <TableHead>Paths</TableHead>
-                <TableHead>Type</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Last Scanned</TableHead>
-                <TableHead className="w-[15rem]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <SortableContext
-              items={orderedLibraries.map((l) => l.id)}
-              strategy={verticalListSortingStrategy}
-            >
-              <TableBody>
-                {orderedLibraries.map((lib) => {
-                  const isScanning =
-                    scanMutation.isPending && scanMutation.variables === lib.id;
-                  const activeRefreshJob = activeRefreshJobsByLibraryId.get(
-                    lib.id,
-                  );
-                  const activeLibraryScans =
-                    activeScansByLibraryId.get(lib.id) ?? [];
-                  const runningLibraryScans = activeLibraryScans.filter(
-                    (scan) => scan.status === "running",
-                  ).length;
-                  const queuedLibraryScans =
-                    activeLibraryScans.length - runningLibraryScans;
-                  const isRefreshStarting =
-                    refreshMutation.isPending &&
-                    refreshMutation.variables === lib.id;
-                  const isCheckingMount =
-                    mountCheckMutation.isPending &&
-                    mountCheckMutation.variables === lib.id;
-                  const mountCheck = lastMountCheckByLibraryId[lib.id];
-                  const hasActiveWork =
-                    activeRefreshJob !== undefined ||
-                    activeLibraryScans.length > 0;
-                  const isCancellingLibraryScans =
-                    cancelScansMutation.isPending &&
-                    cancelScansMutation.variables === lib.id;
-                  const isCancellingRefreshJob =
-                    activeRefreshJob !== undefined &&
-                    cancelAdminJobMutation.isPending &&
-                    cancelAdminJobMutation.variables === activeRefreshJob.id;
-                  return (
-                    <Fragment key={lib.id}>
-                      <SortableLibraryRow id={lib.id}>
-                        <TableCell className="font-medium">
-                          {lib.name}
-                        </TableCell>
-                        <TableCell className="font-mono text-xs">
-                          {lib.paths.length === 1 ? (
-                            <span className="text-muted-foreground">
-                              {lib.paths[0]}
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              className="text-muted-foreground hover:text-foreground text-left transition-colors"
-                              onClick={() => {
-                                setEditingLib(lib);
-                                setDialogOpen(true);
-                              }}
-                            >
-                              {lib.paths.length} folders
-                            </button>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary">{lib.type}</Badge>
-                        </TableCell>
-                        <TableCell>
-                          <div className="flex flex-col gap-1">
-                            <Badge
-                              variant={lib.enabled ? "outline" : "destructive"}
-                            >
-                              {lib.enabled ? "Enabled" : "Disabled"}
-                            </Badge>
-                            {runningLibraryScans > 0 ? (
-                              <Badge variant="secondary">
-                                {runningLibraryScans} running
-                              </Badge>
-                            ) : null}
-                            {queuedLibraryScans > 0 ? (
-                              <Badge variant="secondary">
-                                {queuedLibraryScans} queued
-                              </Badge>
-                            ) : null}
-                            {lib.scan_warning_code === "empty_root" ? (
-                              <Badge variant="destructive">
-                                Empty root guarded
-                              </Badge>
-                            ) : null}
-                            {lib.scan_warning_code === "dead_root" ? (
-                              <Badge variant="destructive">
-                                Root unreachable
-                              </Badge>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-muted-foreground text-xs">
-                          <div className="space-y-1">
-                            <div>
-                              {lib.last_scanned_at
-                                ? formatDateTime(lib.last_scanned_at)
-                                : "Never"}
-                            </div>
-                            {lib.scan_warning_at ? (
-                              <div className="text-destructive text-[11px]">
-                                Warning: {formatDateTime(lib.scan_warning_at)}
-                              </div>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                        <TableCell className="w-[15rem] align-middle">
-                          <div className="flex flex-nowrap items-center justify-end gap-1">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={cn(
-                                "h-7 w-7",
-                                activeLibraryScans.length > 0 &&
-                                  "text-destructive",
-                              )}
-                              title={
-                                activeLibraryScans.length > 0
-                                  ? "Stop Library Scans"
-                                  : "Scan Library"
-                              }
-                              aria-label={
-                                activeLibraryScans.length > 0
-                                  ? "Stop Library Scans"
-                                  : "Scan Library"
-                              }
-                              disabled={
-                                activeLibraryScans.length > 0
-                                  ? isCancellingLibraryScans
-                                  : isScanning
-                              }
-                              onClick={() => {
-                                if (activeLibraryScans.length > 0) {
-                                  cancelScansMutation.mutate(lib.id);
-                                  return;
-                                }
-                                scanMutation.mutate(lib.id);
-                              }}
-                            >
-                              {activeLibraryScans.length > 0 ? (
-                                <Square className="h-3 w-3 fill-current" />
-                              ) : (
-                                <RefreshCw
-                                  className={`h-3 w-3 ${isScanning ? "animate-spin" : ""}`}
-                                />
-                              )}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className={cn(
-                                "h-7 w-7",
-                                activeRefreshJob && "text-destructive",
-                              )}
-                              title={
-                                activeRefreshJob
-                                  ? "Stop Metadata Refresh"
-                                  : "Rescan Metadata"
-                              }
-                              aria-label={
-                                activeRefreshJob
-                                  ? "Stop Metadata Refresh"
-                                  : "Rescan Metadata"
-                              }
-                              disabled={
-                                activeRefreshJob
-                                  ? isCancellingRefreshJob
-                                  : isRefreshStarting
-                              }
-                              onClick={() => {
-                                if (activeRefreshJob) {
-                                  cancelAdminJobMutation.mutate(
-                                    activeRefreshJob.id,
-                                  );
-                                  return;
-                                }
-                                refreshMutation.mutate(lib.id);
-                              }}
-                            >
-                              {activeRefreshJob ? (
-                                <Square className="h-3 w-3 fill-current" />
-                              ) : (
-                                <DatabaseBackup className="h-3 w-3" />
-                              )}
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              title={
-                                mountCheck
-                                  ? formatMountCheckMessage(mountCheck)
-                                  : "Verify Mounts"
-                              }
-                              aria-label={
-                                mountCheck
-                                  ? formatMountCheckMessage(mountCheck)
-                                  : "Verify Mounts"
-                              }
-                              disabled={isCheckingMount}
-                              onClick={() => handleMountCheck(lib.id)}
-                            >
-                              <MountCheckButtonIcon
-                                pending={isCheckingMount}
-                                result={mountCheck}
-                              />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              aria-label={`Edit ${lib.name}`}
-                              onClick={() => {
-                                setEditingLib(lib);
-                                setDialogOpen(true);
-                              }}
-                            >
-                              <Pencil className="h-3 w-3" aria-hidden="true" />
-                            </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="h-7 w-7"
-                              aria-label={`Delete ${lib.name}`}
-                              onClick={() => handleDelete(lib)}
-                            >
-                              <Trash2 className="h-3 w-3" aria-hidden="true" />
-                            </Button>
-                            {lib.scan_warning_code === "empty_root" ||
-                            lib.scan_warning_code === "dead_root" ? (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive h-7 w-7"
-                                title="Confirm cleanup for missing or empty roots"
-                                disabled={
-                                  confirmEmptyRootCleanupMutation.isPending &&
-                                  confirmEmptyRootCleanupMutation.variables ===
-                                    lib.id
-                                }
-                                onClick={() =>
-                                  handleConfirmEmptyRootCleanup(lib)
-                                }
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            ) : null}
-                          </div>
-                        </TableCell>
-                      </SortableLibraryRow>
-                      {hasActiveWork ? (
-                        <LibraryActiveWorkRow
-                          activeLibraryScans={activeLibraryScans}
-                          activeRefreshJob={activeRefreshJob}
-                          cancellingJobID={
-                            cancelAdminJobMutation.isPending
-                              ? cancelAdminJobMutation.variables
-                              : undefined
-                          }
-                          cancellingLibraryID={
-                            cancelScansMutation.isPending
-                              ? cancelScansMutation.variables
-                              : undefined
-                          }
-                          libraryID={lib.id}
-                          onCancelJob={(jobID) =>
-                            cancelAdminJobMutation.mutate(jobID)
-                          }
-                          onCancelScans={(libraryID) =>
-                            cancelScansMutation.mutate(libraryID)
-                          }
-                        />
-                      ) : null}
-                    </Fragment>
-                  );
-                })}
-                {orderedLibraries
-                  .filter(
-                    (lib) =>
-                      lib.scan_warning_code === "empty_root" ||
-                      lib.scan_warning_code === "dead_root",
-                  )
-                  .map((lib) => {
-                    const mountCheck = lastMountCheckByLibraryId[lib.id];
-                    const isCheckingMount =
-                      mountCheckMutation.isPending &&
-                      mountCheckMutation.variables === lib.id;
-                    return (
-                      <TableRow key={`${lib.id}-warning`}>
-                        <TableCell
-                          colSpan={7}
-                          className="bg-destructive/5 text-sm"
-                        >
-                          <div className="flex flex-col gap-2 py-1">
-                            <div className="text-destructive font-medium">
-                              {lib.scan_warning_code === "dead_root"
-                                ? DEAD_ROOT_WARNING_TEXT
-                                : EMPTY_ROOT_WARNING_TEXT}
-                            </div>
-                            <div className="text-muted-foreground">
-                              {lib.scan_warning_message ??
-                                (lib.scan_warning_code === "dead_root"
-                                  ? DEAD_ROOT_WARNING_HINT
-                                  : EMPTY_ROOT_WARNING_HINT)}
-                            </div>
-                            <div className="flex gap-2">
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                title={
-                                  mountCheck
-                                    ? formatMountCheckMessage(mountCheck)
-                                    : "Check mount"
-                                }
-                                disabled={isCheckingMount}
-                                onClick={() => handleMountCheck(lib.id)}
-                              >
-                                <MountCheckButtonIcon
-                                  className="mr-1 h-3.5 w-3.5"
-                                  pending={isCheckingMount}
-                                  result={mountCheck}
-                                />
-                                Check Mount
-                              </Button>
-                              {lib.scan_warning_code === "dead_root" ? (
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  title="Confirm cleanup for missing or empty roots"
-                                  disabled={
-                                    confirmEmptyRootCleanupMutation.isPending &&
-                                    confirmEmptyRootCleanupMutation.variables ===
-                                      lib.id
-                                  }
-                                  onClick={() =>
-                                    handleConfirmEmptyRootCleanup(lib)
-                                  }
-                                >
-                                  <Trash2 className="mr-1 h-3.5 w-3.5" />
-                                  Confirm Cleanup
-                                </Button>
-                              ) : null}
-                            </div>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-              </TableBody>
-            </SortableContext>
-          </Table>
-        </div>
-        <DragOverlay>
-          {activeLibrary ? (
-            <Table>
-              <TableBody>
-                <TableRow className="bg-background shadow-lg">
-                  <TableCell className="w-10">
-                    <GripVertical className="text-muted-foreground h-4 w-4" />
-                  </TableCell>
-                  <TableCell className="font-medium">
-                    {activeLibrary.name}
-                  </TableCell>
-                  <TableCell className="text-muted-foreground font-mono text-xs">
-                    {activeLibrary.paths.length === 1
-                      ? activeLibrary.paths[0]
-                      : `${activeLibrary.paths.length} folders`}
-                  </TableCell>
-                  <TableCell>
-                    <Badge variant="secondary">{activeLibrary.type}</Badge>
-                  </TableCell>
-                  <TableCell />
-                  <TableCell />
-                  <TableCell />
-                </TableRow>
-              </TableBody>
-            </Table>
-          ) : null}
-        </DragOverlay>
-      </DndContext>
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-6">
+        <TabsList variant="line" className="border-border w-full justify-start border-b">
+          <TabsTrigger value="libraries">Libraries</TabsTrigger>
+          <TabsTrigger value="autoscan">Autoscan</TabsTrigger>
+        </TabsList>
 
-      <UnmatchedItemsSection />
-      <MetadataMatcherQueuesSection libraries={libraries} />
-      <AmbiguousRootsSection libraries={libraries} />
-      {skippedRoots.length > 0 ? (
-        <SkippedRootsSection skippedRoots={skippedRoots} />
-      ) : null}
-      {staleIDs.length > 0 && <StaleIDsSection staleIDs={staleIDs} />}
+        <TabsContent value="libraries" className="space-y-6">
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragStart={handleDragStart}
+            onDragEnd={handleDragEnd}
+            onDragCancel={handleDragCancel}
+          >
+            <div className="surface-panel overflow-x-auto rounded-2xl border-0">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-10" />
+                    <TableHead>Name</TableHead>
+                    <TableHead>Paths</TableHead>
+                    <TableHead>Type</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Last Scanned</TableHead>
+                    <TableHead className="w-[15rem]">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <SortableContext
+                  items={orderedLibraries.map((l) => l.id)}
+                  strategy={verticalListSortingStrategy}
+                >
+                  <TableBody>
+                    {orderedLibraries.map((lib) => {
+                      const isScanning =
+                        scanMutation.isPending && scanMutation.variables === lib.id;
+                      const activeRefreshJob = activeRefreshJobsByLibraryId.get(lib.id);
+                      const activeLibraryScans = activeScansByLibraryId.get(lib.id) ?? [];
+                      const runningLibraryScans = activeLibraryScans.filter(
+                        (scan) => scan.status === "running",
+                      ).length;
+                      const queuedLibraryScans = activeLibraryScans.length - runningLibraryScans;
+                      const isRefreshStarting =
+                        refreshMutation.isPending && refreshMutation.variables === lib.id;
+                      const isCheckingMount =
+                        mountCheckMutation.isPending && mountCheckMutation.variables === lib.id;
+                      const mountCheck = lastMountCheckByLibraryId[lib.id];
+                      const hasActiveWork =
+                        activeRefreshJob !== undefined || activeLibraryScans.length > 0;
+                      const isCancellingLibraryScans =
+                        cancelScansMutation.isPending && cancelScansMutation.variables === lib.id;
+                      const isCancellingRefreshJob =
+                        activeRefreshJob !== undefined &&
+                        cancelAdminJobMutation.isPending &&
+                        cancelAdminJobMutation.variables === activeRefreshJob.id;
+                      return (
+                        <Fragment key={lib.id}>
+                          <SortableLibraryRow id={lib.id}>
+                            <TableCell className="font-medium">{lib.name}</TableCell>
+                            <TableCell className="font-mono text-xs">
+                              {lib.paths.length === 1 ? (
+                                <span className="text-muted-foreground">{lib.paths[0]}</span>
+                              ) : (
+                                <button
+                                  type="button"
+                                  className="text-muted-foreground hover:text-foreground text-left transition-colors"
+                                  onClick={() => {
+                                    setEditingLib(lib);
+                                    setDialogOpen(true);
+                                  }}
+                                >
+                                  {lib.paths.length} folders
+                                </button>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="secondary">{lib.type}</Badge>
+                            </TableCell>
+                            <TableCell>
+                              <div className="flex flex-col gap-1">
+                                <Badge variant={lib.enabled ? "outline" : "destructive"}>
+                                  {lib.enabled ? "Enabled" : "Disabled"}
+                                </Badge>
+                                {runningLibraryScans > 0 ? (
+                                  <Badge variant="secondary">{runningLibraryScans} running</Badge>
+                                ) : null}
+                                {queuedLibraryScans > 0 ? (
+                                  <Badge variant="secondary">{queuedLibraryScans} queued</Badge>
+                                ) : null}
+                                {lib.scan_warning_code === "empty_root" ? (
+                                  <Badge variant="destructive">Empty root guarded</Badge>
+                                ) : null}
+                                {lib.scan_warning_code === "dead_root" ? (
+                                  <Badge variant="destructive">Root unreachable</Badge>
+                                ) : null}
+                              </div>
+                            </TableCell>
+                            <TableCell className="text-muted-foreground text-xs">
+                              <div className="space-y-1">
+                                <div>
+                                  {lib.last_scanned_at
+                                    ? formatDateTime(lib.last_scanned_at)
+                                    : "Never"}
+                                </div>
+                                {lib.scan_warning_at ? (
+                                  <div className="text-destructive text-[11px]">
+                                    Warning: {formatDateTime(lib.scan_warning_at)}
+                                  </div>
+                                ) : null}
+                              </div>
+                            </TableCell>
+                            <TableCell className="w-[15rem] align-middle">
+                              <div className="flex flex-nowrap items-center justify-end gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn(
+                                    "h-7 w-7",
+                                    activeLibraryScans.length > 0 && "text-destructive",
+                                  )}
+                                  title={
+                                    activeLibraryScans.length > 0
+                                      ? "Stop Library Scans"
+                                      : "Scan Library"
+                                  }
+                                  aria-label={
+                                    activeLibraryScans.length > 0
+                                      ? "Stop Library Scans"
+                                      : "Scan Library"
+                                  }
+                                  disabled={
+                                    activeLibraryScans.length > 0
+                                      ? isCancellingLibraryScans
+                                      : isScanning
+                                  }
+                                  onClick={() => {
+                                    if (activeLibraryScans.length > 0) {
+                                      cancelScansMutation.mutate(lib.id);
+                                      return;
+                                    }
+                                    scanMutation.mutate(lib.id);
+                                  }}
+                                >
+                                  {activeLibraryScans.length > 0 ? (
+                                    <Square className="h-3 w-3 fill-current" />
+                                  ) : (
+                                    <RefreshCw
+                                      className={`h-3 w-3 ${isScanning ? "animate-spin" : ""}`}
+                                    />
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className={cn("h-7 w-7", activeRefreshJob && "text-destructive")}
+                                  title={
+                                    activeRefreshJob ? "Stop Metadata Refresh" : "Rescan Metadata"
+                                  }
+                                  aria-label={
+                                    activeRefreshJob ? "Stop Metadata Refresh" : "Rescan Metadata"
+                                  }
+                                  disabled={
+                                    activeRefreshJob ? isCancellingRefreshJob : isRefreshStarting
+                                  }
+                                  onClick={() => {
+                                    if (activeRefreshJob) {
+                                      cancelAdminJobMutation.mutate(activeRefreshJob.id);
+                                      return;
+                                    }
+                                    refreshMutation.mutate(lib.id);
+                                  }}
+                                >
+                                  {activeRefreshJob ? (
+                                    <Square className="h-3 w-3 fill-current" />
+                                  ) : (
+                                    <DatabaseBackup className="h-3 w-3" />
+                                  )}
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  title={
+                                    mountCheck
+                                      ? formatMountCheckMessage(mountCheck)
+                                      : "Verify Mounts"
+                                  }
+                                  aria-label={
+                                    mountCheck
+                                      ? formatMountCheckMessage(mountCheck)
+                                      : "Verify Mounts"
+                                  }
+                                  disabled={isCheckingMount}
+                                  onClick={() => handleMountCheck(lib.id)}
+                                >
+                                  <MountCheckButtonIcon
+                                    pending={isCheckingMount}
+                                    result={mountCheck}
+                                  />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  aria-label={`Edit ${lib.name}`}
+                                  onClick={() => {
+                                    setEditingLib(lib);
+                                    setDialogOpen(true);
+                                  }}
+                                >
+                                  <Pencil className="h-3 w-3" aria-hidden="true" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  className="h-7 w-7"
+                                  aria-label={`Delete ${lib.name}`}
+                                  onClick={() => handleDelete(lib)}
+                                >
+                                  <Trash2 className="h-3 w-3" aria-hidden="true" />
+                                </Button>
+                                {lib.scan_warning_code === "empty_root" ||
+                                lib.scan_warning_code === "dead_root" ? (
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="text-destructive h-7 w-7"
+                                    title="Confirm cleanup for missing or empty roots"
+                                    disabled={
+                                      confirmEmptyRootCleanupMutation.isPending &&
+                                      confirmEmptyRootCleanupMutation.variables === lib.id
+                                    }
+                                    onClick={() => handleConfirmEmptyRootCleanup(lib)}
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                  </Button>
+                                ) : null}
+                              </div>
+                            </TableCell>
+                          </SortableLibraryRow>
+                          {hasActiveWork ? (
+                            <LibraryActiveWorkRow
+                              activeLibraryScans={activeLibraryScans}
+                              activeRefreshJob={activeRefreshJob}
+                              cancellingJobID={
+                                cancelAdminJobMutation.isPending
+                                  ? cancelAdminJobMutation.variables
+                                  : undefined
+                              }
+                              cancellingLibraryID={
+                                cancelScansMutation.isPending
+                                  ? cancelScansMutation.variables
+                                  : undefined
+                              }
+                              libraryID={lib.id}
+                              onCancelJob={(jobID) => cancelAdminJobMutation.mutate(jobID)}
+                              onCancelScans={(libraryID) => cancelScansMutation.mutate(libraryID)}
+                            />
+                          ) : null}
+                        </Fragment>
+                      );
+                    })}
+                    {orderedLibraries
+                      .filter(
+                        (lib) =>
+                          lib.scan_warning_code === "empty_root" ||
+                          lib.scan_warning_code === "dead_root",
+                      )
+                      .map((lib) => {
+                        const mountCheck = lastMountCheckByLibraryId[lib.id];
+                        const isCheckingMount =
+                          mountCheckMutation.isPending && mountCheckMutation.variables === lib.id;
+                        return (
+                          <TableRow key={`${lib.id}-warning`}>
+                            <TableCell colSpan={7} className="bg-destructive/5 text-sm">
+                              <div className="flex flex-col gap-2 py-1">
+                                <div className="text-destructive font-medium">
+                                  {lib.scan_warning_code === "dead_root"
+                                    ? DEAD_ROOT_WARNING_TEXT
+                                    : EMPTY_ROOT_WARNING_TEXT}
+                                </div>
+                                <div className="text-muted-foreground">
+                                  {lib.scan_warning_message ??
+                                    (lib.scan_warning_code === "dead_root"
+                                      ? DEAD_ROOT_WARNING_HINT
+                                      : EMPTY_ROOT_WARNING_HINT)}
+                                </div>
+                                <div className="flex gap-2">
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    title={
+                                      mountCheck
+                                        ? formatMountCheckMessage(mountCheck)
+                                        : "Check mount"
+                                    }
+                                    disabled={isCheckingMount}
+                                    onClick={() => handleMountCheck(lib.id)}
+                                  >
+                                    <MountCheckButtonIcon
+                                      className="mr-1 h-3.5 w-3.5"
+                                      pending={isCheckingMount}
+                                      result={mountCheck}
+                                    />
+                                    Check Mount
+                                  </Button>
+                                  {lib.scan_warning_code === "dead_root" ? (
+                                    <Button
+                                      variant="outline"
+                                      size="sm"
+                                      title="Confirm cleanup for missing or empty roots"
+                                      disabled={
+                                        confirmEmptyRootCleanupMutation.isPending &&
+                                        confirmEmptyRootCleanupMutation.variables === lib.id
+                                      }
+                                      onClick={() => handleConfirmEmptyRootCleanup(lib)}
+                                    >
+                                      <Trash2 className="mr-1 h-3.5 w-3.5" />
+                                      Confirm Cleanup
+                                    </Button>
+                                  ) : null}
+                                </div>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                  </TableBody>
+                </SortableContext>
+              </Table>
+            </div>
+            <DragOverlay>
+              {activeLibrary ? (
+                <Table>
+                  <TableBody>
+                    <TableRow className="bg-background shadow-lg">
+                      <TableCell className="w-10">
+                        <GripVertical className="text-muted-foreground h-4 w-4" />
+                      </TableCell>
+                      <TableCell className="font-medium">{activeLibrary.name}</TableCell>
+                      <TableCell className="text-muted-foreground font-mono text-xs">
+                        {activeLibrary.paths.length === 1
+                          ? activeLibrary.paths[0]
+                          : `${activeLibrary.paths.length} folders`}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="secondary">{activeLibrary.type}</Badge>
+                      </TableCell>
+                      <TableCell />
+                      <TableCell />
+                      <TableCell />
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+
+          <UnmatchedItemsSection />
+          <MetadataMatcherQueuesSection libraries={libraries} />
+          <AmbiguousRootsSection libraries={libraries} />
+          {skippedRoots.length > 0 ? <SkippedRootsSection skippedRoots={skippedRoots} /> : null}
+          {staleIDs.length > 0 && <StaleIDsSection staleIDs={staleIDs} />}
+        </TabsContent>
+
+        <TabsContent value="autoscan">
+          <AdminAutoscan embedded />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
@@ -849,10 +794,7 @@ function ScanQueuePopover({
   cancellingLibraryID: number | null;
   onCancel: (libraryID: number) => void;
 }) {
-  const totalRunning = groups.reduce(
-    (sum, group) => sum + group.runningCount,
-    0,
-  );
+  const totalRunning = groups.reduce((sum, group) => sum + group.runningCount, 0);
   const totalQueued = groups.reduce((sum, group) => sum + group.queuedCount, 0);
   const totalScans = totalRunning + totalQueued;
 
@@ -870,10 +812,7 @@ function ScanQueuePopover({
         </Button>
       </PopoverTrigger>
 
-      <PopoverContent
-        align="end"
-        className="w-[400px] max-w-[calc(100vw-1rem)] p-0"
-      >
+      <PopoverContent align="end" className="w-[400px] max-w-[calc(100vw-1rem)] p-0">
         {/* Accent bar */}
         <div className="scan-queue-accent absolute inset-x-0 top-0 h-px rounded-t-xl" />
 
@@ -893,9 +832,7 @@ function ScanQueuePopover({
                 <span className="tabular-nums">{totalRunning} running</span>
               </>
             )}
-            {totalRunning > 0 && totalQueued > 0 && (
-              <span className="text-border">·</span>
-            )}
+            {totalRunning > 0 && totalQueued > 0 && <span className="text-border">·</span>}
             {totalQueued > 0 && (
               <>
                 <span className="bg-muted-foreground/40 inline-block h-1.5 w-1.5 rounded-full" />
@@ -928,9 +865,7 @@ const COLLAPSED_SCAN_ROW_LIMIT = 4;
 
 function useCollapsedScans(scans: ScanRun[]) {
   const [expanded, setExpanded] = useState(false);
-  const visibleScans = expanded
-    ? scans
-    : scans.slice(0, COLLAPSED_SCAN_ROW_LIMIT);
+  const visibleScans = expanded ? scans : scans.slice(0, COLLAPSED_SCAN_ROW_LIMIT);
   return {
     expanded,
     setExpanded,
@@ -959,8 +894,9 @@ function ScanQueueGroup({
   cancelling: boolean;
   onCancel: (libraryID: number) => void;
 }) {
-  const { expanded, setExpanded, visibleScans, hiddenCount, collapsible } =
-    useCollapsedScans(group.scans);
+  const { expanded, setExpanded, visibleScans, hiddenCount, collapsible } = useCollapsedScans(
+    group.scans,
+  );
 
   return (
     <div>
@@ -1010,9 +946,7 @@ function ScanQueueGroup({
           {/* Details */}
           <div className="min-w-0 flex-1">
             <div className="flex items-baseline gap-1.5">
-              <span className="text-xs leading-snug font-medium">
-                {formatActiveScanMode(scan)}
-              </span>
+              <span className="text-xs leading-snug font-medium">{formatActiveScanMode(scan)}</span>
               {scan.trigger && (
                 <span className="bg-muted/50 text-muted-foreground rounded px-1 py-px text-[9px] font-medium">
                   {formatActiveScanTrigger(scan.trigger)}
@@ -1053,8 +987,7 @@ function ScanQueueGroup({
             </>
           ) : (
             <>
-              + {hiddenCount} more
-              {hiddenCount <= group.queuedCount ? " queued" : ""}{" "}
+              + {hiddenCount} more{hiddenCount <= group.queuedCount ? " queued" : ""}{" "}
               <ChevronDown className="h-3 w-3" />
             </>
           )}
@@ -1071,21 +1004,8 @@ function getLibraryScanGroupName(library: Library | null, libraryID: number) {
   return library?.name ?? `Library #${libraryID}`;
 }
 
-function SortableLibraryRow({
-  id,
-  children,
-}: {
-  id: number;
-  children: React.ReactNode;
-}) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
+function SortableLibraryRow({ id, children }: { id: number; children: React.ReactNode }) {
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id,
   });
 
@@ -1144,9 +1064,7 @@ function LibraryActiveWorkRow({
               <DatabaseBackup className="mt-0.5 h-3 w-3 shrink-0" />
               <div className="min-w-0 flex-1 space-y-0.5">
                 <div className="flex min-w-0 items-center gap-1.5">
-                  <span className="text-foreground/80 font-medium">
-                    Metadata
-                  </span>
+                  <span className="text-foreground/80 font-medium">Metadata</span>
                   <span className="truncate">
                     {activeRefreshJob.message || "Metadata refresh queued"}
                   </span>
@@ -1182,8 +1100,7 @@ function LibraryScanTasks({
   libraryID: number;
   onCancelScans: (libraryID: number) => void;
 }) {
-  const { expanded, setExpanded, visibleScans, collapsible } =
-    useCollapsedScans(scans);
+  const { expanded, setExpanded, visibleScans, collapsible } = useCollapsedScans(scans);
   const runningCount = scans.filter((scan) => scan.status === "running").length;
   const queuedCount = scans.length - runningCount;
 
@@ -1238,8 +1155,7 @@ function LibraryScanTasks({
 }
 
 function CompactScanRow({ scan }: { scan: ScanRun }) {
-  const progress =
-    scan.status === "running" ? formatActiveScanProgress(scan) : "";
+  const progress = scan.status === "running" ? formatActiveScanProgress(scan) : "";
 
   return (
     <div className="flex min-w-0 items-center gap-1.5" title={scan.path}>
@@ -1250,9 +1166,7 @@ function CompactScanRow({ scan }: { scan: ScanRun }) {
         )}
       />
       {scan.mode !== "file" ? (
-        <span className="shrink-0 text-[10px]">
-          {formatActiveScanMode(scan)}
-        </span>
+        <span className="shrink-0 text-[10px]">{formatActiveScanMode(scan)}</span>
       ) : null}
       {scan.path ? (
         <code className="text-muted-foreground/80 truncate font-mono text-[10px]">
@@ -1264,9 +1178,7 @@ function CompactScanRow({ scan }: { scan: ScanRun }) {
         </span>
       )}
       {progress ? (
-        <span className="text-muted-foreground/60 truncate text-[10px]">
-          · {progress}
-        </span>
+        <span className="text-muted-foreground/60 truncate text-[10px]">· {progress}</span>
       ) : null}
     </div>
   );
@@ -1320,9 +1232,7 @@ function formatMountCheckMessage(result: LibraryMountCheckResponse) {
   const failingRoots = result.roots.filter((root) => !root.reachable);
   const firstFailure = failingRoots[0];
   if (!result.healthy && firstFailure) {
-    const detail = firstFailure.error_message
-      ? ` (${firstFailure.error_message})`
-      : "";
+    const detail = firstFailure.error_message ? ` (${firstFailure.error_message})` : "";
     return `${result.summary}: ${firstFailure.path}${detail}`;
   }
   return result.summary;
@@ -1475,10 +1385,7 @@ function SortableHead<K extends string>({
   );
 }
 
-function useSort<K extends string>(
-  defaultField: K,
-  defaultDir: SortDir = "desc",
-) {
+function useSort<K extends string>(defaultField: K, defaultDir: SortDir = "desc") {
   const [sortField, setSortField] = useState<K>(defaultField);
   const [sortDir, setSortDir] = useState<SortDir>(defaultDir);
 
@@ -1501,16 +1408,11 @@ function useSort<K extends string>(
 
 function AmbiguousRootsSection({ libraries }: { libraries: Library[] }) {
   const [open, setOpen] = useState(false);
-  const [selectedLibraryId, setSelectedLibraryId] = useState<
-    number | undefined
-  >(libraries[0]?.id);
+  const [selectedLibraryId, setSelectedLibraryId] = useState<number | undefined>(libraries[0]?.id);
   const [search, setSearch] = useState("");
   const [editingRoot, setEditingRoot] = useState<LibraryRoot | null>(null);
   const effectiveSelectedLibraryId = selectedLibraryId ?? libraries[0]?.id;
-  const { data: roots = [] } = useLibraryRoots(
-    effectiveSelectedLibraryId,
-    "ambiguous",
-  );
+  const { data: roots = [] } = useLibraryRoots(effectiveSelectedLibraryId, "ambiguous");
 
   const filteredRoots = useMemo(() => {
     if (!search) return roots;
@@ -1541,9 +1443,7 @@ function AmbiguousRootsSection({ libraries }: { libraries: Library[] }) {
       <div className="mb-2 flex flex-col gap-2 sm:flex-row">
         <Select
           value={
-            effectiveSelectedLibraryId != null
-              ? String(effectiveSelectedLibraryId)
-              : undefined
+            effectiveSelectedLibraryId != null ? String(effectiveSelectedLibraryId) : undefined
           }
           onValueChange={(value) => {
             setSelectedLibraryId(Number.parseInt(value, 10));
@@ -1589,10 +1489,7 @@ function AmbiguousRootsSection({ libraries }: { libraries: Library[] }) {
           <TableBody>
             {filteredRoots.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-muted-foreground text-center text-sm"
-                >
+                <TableCell colSpan={5} className="text-muted-foreground text-center text-sm">
                   No ambiguous roots for this library.
                 </TableCell>
               </TableRow>
@@ -1602,8 +1499,7 @@ function AmbiguousRootsSection({ libraries }: { libraries: Library[] }) {
                   <TableCell className="max-w-[28rem]">
                     <div className="space-y-1">
                       <div className="truncate text-sm font-medium">
-                        {root.title ||
-                          root.root_path.split("/").filter(Boolean).pop()}
+                        {root.title || root.root_path.split("/").filter(Boolean).pop()}
                       </div>
                       <code className="text-muted-foreground block truncate text-[11px]">
                         {root.root_path}
@@ -1616,9 +1512,7 @@ function AmbiguousRootsSection({ libraries }: { libraries: Library[] }) {
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Badge variant="outline">
-                      {root.inferred_type || "unknown"}
-                    </Badge>
+                    <Badge variant="outline">{root.inferred_type || "unknown"}</Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary">{root.type_confidence}</Badge>
@@ -1644,11 +1538,7 @@ function AmbiguousRootsSection({ libraries }: { libraries: Library[] }) {
                           asChild
                           title="Open the matched item; use its Split Versions action to separate wrongly merged files"
                         >
-                          <Link
-                            to={`/item/${encodeURIComponent(root.content_id)}`}
-                          >
-                            Resolve
-                          </Link>
+                          <Link to={`/item/${encodeURIComponent(root.content_id)}`}>Resolve</Link>
                         </Button>
                       ) : null}
                     </div>
@@ -1681,28 +1571,16 @@ function buildRootEvidenceSummary(root: LibraryRoot): string {
   if (typeof evidence.has_folder_ids === "boolean") {
     parts.push(evidence.has_folder_ids ? "folder IDs" : "no folder IDs");
   }
-  if (
-    typeof evidence.season_structure_files === "number" &&
-    evidence.season_structure_files > 0
-  ) {
+  if (typeof evidence.season_structure_files === "number" && evidence.season_structure_files > 0) {
     parts.push(`${evidence.season_structure_files} season-structured files`);
   }
-  if (
-    typeof evidence.movie_evidence_files === "number" &&
-    evidence.movie_evidence_files > 0
-  ) {
+  if (typeof evidence.movie_evidence_files === "number" && evidence.movie_evidence_files > 0) {
     parts.push(`${evidence.movie_evidence_files} movie-shaped files`);
   }
-  if (
-    typeof evidence.wrapper_collapses === "number" &&
-    evidence.wrapper_collapses > 0
-  ) {
+  if (typeof evidence.wrapper_collapses === "number" && evidence.wrapper_collapses > 0) {
     parts.push(`${evidence.wrapper_collapses} wrapper collapses`);
   }
-  if (
-    typeof evidence.ancestor_promotions === "number" &&
-    evidence.ancestor_promotions > 0
-  ) {
+  if (typeof evidence.ancestor_promotions === "number" && evidence.ancestor_promotions > 0) {
     parts.push(`${evidence.ancestor_promotions} ancestor promotions`);
   }
 
@@ -1758,9 +1636,7 @@ function RootOverrideDialog({
               <Label>Type</Label>
               <Select
                 value={forcedType || "auto"}
-                onValueChange={(value) =>
-                  setForcedType(value === "auto" ? "" : value)
-                }
+                onValueChange={(value) => setForcedType(value === "auto" ? "" : value)}
               >
                 <SelectTrigger>
                   <SelectValue placeholder="Auto" />
@@ -1794,24 +1670,15 @@ function RootOverrideDialog({
           <div className="grid gap-3 sm:grid-cols-3">
             <div className="space-y-1.5">
               <Label>TMDB ID</Label>
-              <Input
-                value={forcedTmdbID}
-                onChange={(e) => setForcedTmdbID(e.target.value)}
-              />
+              <Input value={forcedTmdbID} onChange={(e) => setForcedTmdbID(e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label>IMDb ID</Label>
-              <Input
-                value={forcedImdbID}
-                onChange={(e) => setForcedImdbID(e.target.value)}
-              />
+              <Input value={forcedImdbID} onChange={(e) => setForcedImdbID(e.target.value)} />
             </div>
             <div className="space-y-1.5">
               <Label>TVDB ID</Label>
-              <Input
-                value={forcedTvdbID}
-                onChange={(e) => setForcedTvdbID(e.target.value)}
-              />
+              <Input value={forcedTvdbID} onChange={(e) => setForcedTvdbID(e.target.value)} />
             </div>
           </div>
 
@@ -1846,9 +1713,7 @@ function RootOverrideDialog({
                     root_path: root.root_path,
                     forced_type: forcedType || undefined,
                     forced_title: forcedTitle || undefined,
-                    forced_year: Number.isFinite(parsedYear)
-                      ? parsedYear
-                      : undefined,
+                    forced_year: Number.isFinite(parsedYear) ? parsedYear : undefined,
                     forced_tmdb_id: forcedTmdbID || undefined,
                     forced_imdb_id: forcedImdbID || undefined,
                     forced_tvdb_id: forcedTvdbID || undefined,
@@ -1868,21 +1733,13 @@ function RootOverrideDialog({
   );
 }
 
-type SkippedSortField =
-  "root_path" | "library" | "reason" | "first_seen" | "last_seen";
+type SkippedSortField = "root_path" | "library" | "reason" | "first_seen" | "last_seen";
 
-function SkippedRootsSection({
-  skippedRoots,
-}: {
-  skippedRoots: LibrarySkippedRoot[];
-}) {
+function SkippedRootsSection({ skippedRoots }: { skippedRoots: LibrarySkippedRoot[] }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [expandedKey, setExpandedKey] = useState<string | null>(null);
-  const { sortField, sortDir, toggle } = useSort<SkippedSortField>(
-    "last_seen",
-    "desc",
-  );
+  const { sortField, sortDir, toggle } = useSort<SkippedSortField>("last_seen", "desc");
 
   const filtered = useMemo(() => {
     if (!search) return skippedRoots;
@@ -2008,9 +1865,7 @@ function SkippedRootsSection({
                         </span>
                       </div>
                     </TableCell>
-                    <TableCell className="text-sm">
-                      {root.library_name}
-                    </TableCell>
+                    <TableCell className="text-sm">{root.library_name}</TableCell>
                     <TableCell>
                       <Badge
                         variant="outline"
@@ -2031,30 +1886,19 @@ function SkippedRootsSection({
                   </TableRow>
                   {isExpanded && (
                     <TableRow className="hover:bg-transparent">
-                      <TableCell
-                        colSpan={6}
-                        className="bg-muted/30 border-b px-4 py-3"
-                      >
+                      <TableCell colSpan={6} className="bg-muted/30 border-b px-4 py-3">
                         <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-xs">
-                          <span className="text-muted-foreground font-medium">
-                            Root path
-                          </span>
-                          <code className="font-mono break-all select-all">
-                            {root.root_path}
-                          </code>
+                          <span className="text-muted-foreground font-medium">Root path</span>
+                          <code className="font-mono break-all select-all">{root.root_path}</code>
                           {root.sample_file_path && (
                             <>
-                              <span className="text-muted-foreground font-medium">
-                                Sample file
-                              </span>
+                              <span className="text-muted-foreground font-medium">Sample file</span>
                               <code className="font-mono break-all select-all">
                                 {root.sample_file_path}
                               </code>
                             </>
                           )}
-                          <span className="text-muted-foreground font-medium">
-                            Files affected
-                          </span>
+                          <span className="text-muted-foreground font-medium">Files affected</span>
                           <span>{root.file_count}</span>
                         </div>
                       </TableCell>
@@ -2129,10 +1973,7 @@ function UnmatchedItemsSection() {
           <TableBody>
             {items.length === 0 ? (
               <TableRow>
-                <TableCell
-                  colSpan={5}
-                  className="text-muted-foreground text-center text-sm"
-                >
+                <TableCell colSpan={5} className="text-muted-foreground text-center text-sm">
                   No unmatched items match your search.
                 </TableCell>
               </TableRow>
@@ -2147,9 +1988,7 @@ function UnmatchedItemsSection() {
                       {u.title}
                     </Link>
                     {u.year ? (
-                      <span className="text-muted-foreground ml-1 text-xs">
-                        ({u.year})
-                      </span>
+                      <span className="text-muted-foreground ml-1 text-xs">({u.year})</span>
                     ) : null}
                   </TableCell>
                   <TableCell className="text-sm">{u.library_name}</TableCell>
@@ -2210,17 +2049,13 @@ function UnmatchedItemsSection() {
 
 /* ─── Stale External IDs ────────────────────────────────────────── */
 
-type StaleSortField =
-  "title" | "year" | "library" | "provider" | "first_seen" | "last_seen";
+type StaleSortField = "title" | "year" | "library" | "provider" | "first_seen" | "last_seen";
 
 function StaleIDsSection({ staleIDs }: { staleIDs: StaleMediaID[] }) {
   const [open, setOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [matchItem, setMatchItem] = useState<StaleMediaID | null>(null);
-  const { sortField, sortDir, toggle } = useSort<StaleSortField>(
-    "last_seen",
-    "desc",
-  );
+  const { sortField, sortDir, toggle } = useSort<StaleSortField>("last_seen", "desc");
 
   const filtered = useMemo(() => {
     if (!search) return staleIDs;
@@ -2345,9 +2180,7 @@ function StaleIDsSection({ staleIDs }: { staleIDs: StaleMediaID[] }) {
                 <TableCell>
                   <Badge variant="outline">{s.provider}</Badge>
                 </TableCell>
-                <TableCell className="font-mono text-xs">
-                  {s.provider_id}
-                </TableCell>
+                <TableCell className="font-mono text-xs">{s.provider_id}</TableCell>
                 <TableCell className="text-muted-foreground text-xs tabular-nums">
                   {formatDateTime(s.first_seen_at)}
                 </TableCell>

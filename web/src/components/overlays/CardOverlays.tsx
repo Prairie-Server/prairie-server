@@ -1,11 +1,7 @@
 import { useLayoutEffect, useRef, type CSSProperties } from "react";
 
-import {
-  OverlayIcon,
-  WORDMARK_TEXT,
-  getPreset,
-  orderedOverlaysForPosition,
-} from "@/lib/overlays";
+import { OverlayIcon, WORDMARK_TEXT, getPreset, orderedOverlaysForPosition } from "@/lib/overlays";
+import { cn } from "@/lib/utils";
 import type {
   CardOverlayPrefs,
   OverlayData,
@@ -49,11 +45,7 @@ const POSTER_VARS = {
 
 type ScalingMode = "container" | "legacy" | "fixed";
 
-function overlayLength(
-  pixels: number,
-  mode: ScalingMode,
-  legacyVariable: string,
-): string {
+function overlayLength(pixels: number, mode: ScalingMode, legacyVariable: string): string {
   if (mode === "fixed") return `${pixels}px`;
   if (mode === "legacy") return `var(${legacyVariable}, ${pixels}px)`;
   return `${Number(((pixels / POSTER_REFERENCE_WIDTH) * 100).toFixed(6))}cqi`;
@@ -67,16 +59,8 @@ function supportsContainerQueryUnits(): boolean {
   );
 }
 
-function setLegacyLength(
-  element: HTMLElement,
-  variable: string,
-  pixels: number,
-  scale: number,
-) {
-  element.style.setProperty(
-    variable,
-    `${Number((pixels * scale).toFixed(4))}px`,
-  );
+function setLegacyLength(element: HTMLElement, variable: string, pixels: number, scale: number) {
+  element.style.setProperty(variable, `${Number((pixels * scale).toFixed(4))}px`);
 }
 
 function shadowValue(
@@ -108,74 +92,29 @@ function applyLegacyPosterScale(
   setLegacyLength(element, POSTER_VARS.edgeGap, EDGE_GAP, scale);
   setLegacyLength(element, POSTER_VARS.stackGap, preset.stackGap, scale);
   setLegacyLength(element, POSTER_VARS.fontSize, preset.fontSize, scale);
-  setLegacyLength(
-    element,
-    POSTER_VARS.paddingInline,
-    preset.paddingInline,
-    scale,
-  );
-  setLegacyLength(
-    element,
-    POSTER_VARS.paddingBlock,
-    preset.paddingBlock,
-    scale,
-  );
+  setLegacyLength(element, POSTER_VARS.paddingInline, preset.paddingInline, scale);
+  setLegacyLength(element, POSTER_VARS.paddingBlock, preset.paddingBlock, scale);
   setLegacyLength(element, POSTER_VARS.iconSize, preset.iconSize, scale);
   setLegacyLength(element, POSTER_VARS.iconGap, preset.iconGap, scale);
   if (preset.borderRadius !== "full") {
     setLegacyLength(element, POSTER_VARS.borderRadius, borderRadius, scale);
   }
   if (preset.borderWidth !== undefined) {
-    setLegacyLength(
-      element,
-      POSTER_VARS.borderWidth,
-      preset.borderWidth,
-      scale,
-    );
+    setLegacyLength(element, POSTER_VARS.borderWidth, preset.borderWidth, scale);
   }
   if (preset.borderLeftWidth !== undefined) {
-    setLegacyLength(
-      element,
-      POSTER_VARS.borderLeftWidth,
-      preset.borderLeftWidth,
-      scale,
-    );
+    setLegacyLength(element, POSTER_VARS.borderLeftWidth, preset.borderLeftWidth, scale);
   }
   if (preset.textShadow) {
-    setLegacyLength(
-      element,
-      POSTER_VARS.textShadowX,
-      preset.textShadow.x,
-      scale,
-    );
-    setLegacyLength(
-      element,
-      POSTER_VARS.textShadowY,
-      preset.textShadow.y,
-      scale,
-    );
-    setLegacyLength(
-      element,
-      POSTER_VARS.textShadowBlur,
-      preset.textShadow.blur,
-      scale,
-    );
+    setLegacyLength(element, POSTER_VARS.textShadowX, preset.textShadow.x, scale);
+    setLegacyLength(element, POSTER_VARS.textShadowY, preset.textShadow.y, scale);
+    setLegacyLength(element, POSTER_VARS.textShadowBlur, preset.textShadow.blur, scale);
   }
   if (preset.boxShadow) {
     setLegacyLength(element, POSTER_VARS.boxShadowX, preset.boxShadow.x, scale);
     setLegacyLength(element, POSTER_VARS.boxShadowY, preset.boxShadow.y, scale);
-    setLegacyLength(
-      element,
-      POSTER_VARS.boxShadowBlur,
-      preset.boxShadow.blur,
-      scale,
-    );
-    setLegacyLength(
-      element,
-      POSTER_VARS.boxShadowSpread,
-      preset.boxShadow.spread ?? 0,
-      scale,
-    );
+    setLegacyLength(element, POSTER_VARS.boxShadowBlur, preset.boxShadow.blur, scale);
+    setLegacyLength(element, POSTER_VARS.boxShadowSpread, preset.boxShadow.spread ?? 0, scale);
   }
 }
 
@@ -183,6 +122,13 @@ interface CardOverlaysProps {
   data: OverlayData;
   prefs: CardOverlayPrefs;
   variant?: "poster" | "wide";
+  /**
+   * Set by hosts that draw a watch-progress bar along the bottom of the
+   * artwork (ContinueWatchingCard, EpisodeRow, SeasonEpisodeGrid). The bar
+   * occupies the same edge strip as the bottom badge row, so the row rises
+   * just clear of it; with no bar the badges stay flush in the corners.
+   */
+  hasProgressBar?: boolean;
 }
 
 interface ResolvedBadge {
@@ -203,10 +149,7 @@ function resolveBadge(
   if (!label) return null;
   const dynamicIcon = def.getIcon ? def.getIcon(data) : null;
   const candidateIcon = dynamicIcon ?? def.iconId ?? null;
-  const showIcon =
-    def.iconCapable &&
-    candidateIcon !== null &&
-    (itemShowIcon ?? preset.preferIcon);
+  const showIcon = def.iconCapable && candidateIcon !== null && (itemShowIcon ?? preset.preferIcon);
   return {
     def,
     label,
@@ -220,10 +163,7 @@ function resolveBadge(
 function labelRedundantWithIcon(badge: ResolvedBadge): boolean {
   if (!badge.iconId) return false;
   const mark = WORDMARK_TEXT[badge.iconId];
-  return (
-    mark !== undefined &&
-    mark.toLowerCase() === badge.label.trim().toLowerCase()
-  );
+  return mark !== undefined && mark.toLowerCase() === badge.label.trim().toLowerCase();
 }
 
 function BadgeStack({
@@ -231,13 +171,11 @@ function BadgeStack({
   align,
   preset,
   scalingMode,
-  extraClass = "",
 }: {
   badges: ResolvedBadge[];
   align: "start" | "end";
   preset: OverlayPreset;
   scalingMode: ScalingMode;
-  extraClass?: string;
 }) {
   const length = (pixels: number, legacyVariable: string) =>
     overlayLength(pixels, scalingMode, legacyVariable);
@@ -245,16 +183,13 @@ function BadgeStack({
 
   return (
     <div
-      className={`flex min-w-0 flex-col ${align === "start" ? "items-start" : "items-end"} ${preset.gapClass} ${extraClass}`}
+      className={`flex min-w-0 flex-col ${align === "start" ? "items-start" : "items-end"} ${preset.gapClass}`}
       style={{ gap: length(preset.stackGap, POSTER_VARS.stackGap) }}
     >
       {badges.map((badge) => {
         const geometry: CSSProperties = {
           columnGap: length(preset.iconGap, POSTER_VARS.iconGap),
-          paddingInline: length(
-            preset.paddingInline,
-            POSTER_VARS.paddingInline,
-          ),
+          paddingInline: length(preset.paddingInline, POSTER_VARS.paddingInline),
           paddingBlock: length(preset.paddingBlock, POSTER_VARS.paddingBlock),
           fontSize: length(preset.fontSize, POSTER_VARS.fontSize),
           borderRadius:
@@ -265,19 +200,10 @@ function BadgeStack({
                 : `var(${POSTER_VARS.borderRadius}, var(${borderRadiusVariable}, ${preset.borderRadius}px))`,
         };
         if (preset.borderWidth !== undefined) {
-          geometry.borderWidth = length(
-            preset.borderWidth,
-            POSTER_VARS.borderWidth,
-          );
+          geometry.borderWidth = length(preset.borderWidth, POSTER_VARS.borderWidth);
         }
-        if (
-          preset.borderLeftWidth !== undefined &&
-          badge.accentColor !== undefined
-        ) {
-          geometry.borderLeftWidth = length(
-            preset.borderLeftWidth,
-            POSTER_VARS.borderLeftWidth,
-          );
+        if (preset.borderLeftWidth !== undefined && badge.accentColor !== undefined) {
+          geometry.borderLeftWidth = length(preset.borderLeftWidth, POSTER_VARS.borderLeftWidth);
         }
         if (preset.textShadow) {
           geometry.textShadow = shadowValue(preset.textShadow, scalingMode, {
@@ -310,9 +236,7 @@ function BadgeStack({
                 className="shrink-0"
               />
             )}
-            {!labelRedundantWithIcon(badge) && (
-              <span className="truncate">{badge.label}</span>
-            )}
+            {!labelRedundantWithIcon(badge) && <span className="truncate">{badge.label}</span>}
           </span>
         );
       })}
@@ -323,23 +247,28 @@ function BadgeStack({
 // Each card edge renders as ONE flex row holding the left and right corner
 // stacks. Sharing a row lets flexbox divide the card width between opposing
 // corners (min-w-0 + truncate), so wide badges shrink instead of overlapping.
+//
+// Stacking contract with the card quick actions (watched/favorite bottom-left,
+// more-menu bottom-right; web/src/components/MediaItemMenu.tsx): this whole
+// layer paints at z-10 inside the artwork box, the action wrappers paint at
+// z-20 as siblings of the artwork link in the same stacking context, so the
+// actions always cover overlay badges. That is by design — badges sit flush in
+// all four corners and the actions (hover-revealed on fine pointers,
+// persistent on coarse ones) render on top of them. The layer is
+// pointer-events-none end to end, so a badge can never swallow a click aimed
+// at an action underneath it.
 export default function CardOverlays({
   data,
   prefs,
   variant = "poster",
+  hasProgressBar = false,
 }: CardOverlaysProps) {
   const preset = getPreset(prefs.preset);
   const resolve = (pos: OverlayPosition): ResolvedBadge[] =>
     orderedOverlaysForPosition(prefs, pos)
       .map((def) => {
         const config = prefs.items[def.id];
-        return resolveBadge(
-          def,
-          data,
-          preset,
-          config?.accentColor,
-          config?.showIcon,
-        );
+        return resolveBadge(def, data, preset, config?.accentColor, config?.showIcon);
       })
       .filter((badge): badge is ResolvedBadge => badge !== null)
       .slice(0, MAX_BADGES_PER_CORNER);
@@ -355,32 +284,23 @@ export default function CardOverlays({
       ? "container"
       : "legacy";
   const layerRef = useRef<HTMLDivElement>(null);
-  const edgeInset = overlayLength(
-    EDGE_INSET,
-    scalingMode,
-    POSTER_VARS.edgeInset,
-  );
+  const edgeInset = overlayLength(EDGE_INSET, scalingMode, POSTER_VARS.edgeInset);
   const edgeGap = overlayLength(EDGE_GAP, scalingMode, POSTER_VARS.edgeGap);
 
   useLayoutEffect(() => {
     const layer = layerRef.current;
-    const roundedPoster =
-      scalingMode !== "fixed" && preset.borderRadius !== "full";
+    const roundedPoster = scalingMode !== "fixed" && preset.borderRadius !== "full";
     if (!layer || (scalingMode !== "legacy" && !roundedPoster)) {
       return;
     }
 
-    let baseBorderRadius =
-      preset.borderRadius === "full" ? 0 : preset.borderRadius;
+    let baseBorderRadius = preset.borderRadius === "full" ? 0 : preset.borderRadius;
     if (roundedPoster) {
       layer.style.removeProperty(POSTER_VARS.borderRadius);
       const badge = layer.querySelector<HTMLElement>("[data-overlay-badge]");
       if (badge) {
-        const measured = Number.parseFloat(
-          getComputedStyle(badge).borderTopLeftRadius,
-        );
-        if (Number.isFinite(measured) && measured > 0)
-          baseBorderRadius = measured;
+        const measured = Number.parseFloat(getComputedStyle(badge).borderTopLeftRadius);
+        if (Number.isFinite(measured)) baseBorderRadius = measured;
       }
     }
 
@@ -416,54 +336,28 @@ export default function CardOverlays({
         <div
           data-overlay-edge="top"
           className="pointer-events-none absolute inset-x-2 top-2 z-10 flex items-start justify-between gap-2"
-          style={{
-            top: edgeInset,
-            right: edgeInset,
-            left: edgeInset,
-            gap: edgeGap,
-          }}
+          style={{ top: edgeInset, right: edgeInset, left: edgeInset, gap: edgeGap }}
         >
-          <BadgeStack
-            badges={topLeft}
-            align="start"
-            preset={preset}
-            scalingMode={scalingMode}
-          />
-          <BadgeStack
-            badges={topRight}
-            align="end"
-            preset={preset}
-            scalingMode={scalingMode}
-          />
+          <BadgeStack badges={topLeft} align="start" preset={preset} scalingMode={scalingMode} />
+          <BadgeStack badges={topRight} align="end" preset={preset} scalingMode={scalingMode} />
         </div>
       )}
       {(bottomLeft.length > 0 || bottomRight.length > 0) && (
+        /* Bottom badges anchor flush in the corners with the same inset as the
+           top row; card actions cover them by design (see above). The single
+           exception is a watch-progress bar, which lives in this same edge
+           strip and would be cut in half by a flush badge, so hosts that draw
+           one lift the row by one edge step. */
         <div
           data-overlay-edge="bottom"
-          className="pointer-events-none absolute inset-x-2 bottom-2 z-10 flex items-end justify-between gap-2"
-          style={{
-            right: edgeInset,
-            bottom: edgeInset,
-            left: edgeInset,
-            gap: edgeGap,
-          }}
+          className={cn(
+            "pointer-events-none absolute inset-x-2 bottom-2 z-10 flex items-end justify-between gap-2",
+            hasProgressBar && "mb-2",
+          )}
+          style={{ right: edgeInset, bottom: edgeInset, left: edgeInset, gap: edgeGap }}
         >
-          {/* Bottom badges reserve corner clearance because card actions stay
-              visible on touch and other devices without a fine hover pointer. */}
-          <BadgeStack
-            badges={bottomLeft}
-            align="start"
-            preset={preset}
-            scalingMode={scalingMode}
-            extraClass={wide ? "mb-12" : "mb-10"}
-          />
-          <BadgeStack
-            badges={bottomRight}
-            align="end"
-            preset={preset}
-            scalingMode={scalingMode}
-            extraClass={wide ? "mb-12" : "mb-10"}
-          />
+          <BadgeStack badges={bottomLeft} align="start" preset={preset} scalingMode={scalingMode} />
+          <BadgeStack badges={bottomRight} align="end" preset={preset} scalingMode={scalingMode} />
         </div>
       )}
     </div>

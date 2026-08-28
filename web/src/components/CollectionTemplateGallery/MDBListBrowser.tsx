@@ -5,12 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDebounce } from "@/hooks/useDebounce";
-import {
-  useMDBListSearch,
-  useMDBListTop,
-} from "@/hooks/queries/userCollectionImports";
+import { useMDBListSearch, useMDBListTop } from "@/hooks/queries/userCollectionImports";
 
-import { Search } from "lucide-react";
 interface Props {
   onPick: (list: MDBListListSummary, jsonURL: string) => void;
 }
@@ -31,10 +27,9 @@ export function MDBListBrowser({ onPick }: Props) {
     return (
       <div className="border-border bg-muted/30 rounded-md border border-dashed px-3 py-2 text-xs">
         <p className="text-muted-foreground">
-          MDBList list search isn&rsquo;t available — an admin needs to add an
-          MDBList API key under{" "}
-          <span className="font-medium">Settings → Integrations</span>. You can
-          still paste a list URL below.
+          MDBList list search isn&rsquo;t available — an admin needs to add an MDBList API key under{" "}
+          <span className="font-medium">Settings → Subtitles &amp; Metadata</span>. You can still
+          paste a list URL below.
         </p>
       </div>
     );
@@ -42,9 +37,7 @@ export function MDBListBrowser({ onPick }: Props) {
 
   const showingResults = debouncedQuery.length > 0;
   const lists = showingResults ? search.data?.lists : top.data?.lists;
-  const isLoading = showingResults
-    ? search.isLoading
-    : showTop && top.isLoading;
+  const isLoading = showingResults ? search.isLoading : showTop && top.isLoading;
   const error = showingResults ? search.error : top.error;
 
   return (
@@ -66,7 +59,6 @@ export function MDBListBrowser({ onPick }: Props) {
             setShowTop(true);
           }}
         >
-          <Search />
           Top lists
         </Button>
       </div>
@@ -93,13 +85,9 @@ export function MDBListBrowser({ onPick }: Props) {
                   <div className="min-w-0 space-y-0.5">
                     <p className="truncate text-sm font-medium">{list.name}</p>
                     <p className="text-muted-foreground truncate text-xs">
-                      by {list.user_name} ·{" "}
-                      {list.mediatype === "show" ? "TV" : list.mediatype} ·{" "}
-                      {list.items.toLocaleString()} item
-                      {list.items === 1 ? "" : "s"}
-                      {list.likes > 0
-                        ? ` · ♥ ${list.likes.toLocaleString()}`
-                        : ""}
+                      by {list.user_name} · {list.mediatype === "show" ? "TV" : list.mediatype} ·{" "}
+                      {list.items.toLocaleString()} item{list.items === 1 ? "" : "s"}
+                      {list.likes > 0 ? ` · ♥ ${list.likes.toLocaleString()}` : ""}
                     </p>
                     {list.description ? (
                       <p className="text-muted-foreground line-clamp-2 text-xs">

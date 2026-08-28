@@ -5,9 +5,12 @@ import {
   type CardOverlayPrefs,
 } from "@/lib/overlays";
 
+/** Which sample item the preview stands in for. Picked by <OverlayPreviewVariantToggle />. */
+export type OverlayPreviewVariant = "movie" | "show";
+
 interface OverlayPreviewCardProps {
   prefs: CardOverlayPrefs;
-  variant?: "movie" | "show";
+  variant?: OverlayPreviewVariant;
   size?: "sm" | "md";
   showPosterOverlays?: boolean;
 }

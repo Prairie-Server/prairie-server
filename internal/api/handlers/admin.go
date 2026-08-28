@@ -140,6 +140,13 @@ type AdminHandler struct {
 	OnServerSettingUpdated       func(ctx context.Context, key, value string)
 	RestartStatus                *ServerRestartStatusTracker
 	CatalogSearchStatus          catalog.CatalogSearchStatusProvider
+	// PublicStorageConfigured reports whether the public object-storage client
+	// is active in this process — the same condition that gates branding asset
+	// uploads (branding.Service.HasStorage) and the metadata image cacher, both
+	// of which are only wired when the public S3 client exists. A nil func
+	// means "not configured". See publicBucketConfigured for the full rule,
+	// which also accepts a bucket that is saved but not live yet.
+	PublicStorageConfigured func() bool
 }
 
 // NewAdminHandler creates a new AdminHandler backed by the given
@@ -1619,6 +1626,22 @@ func (h *AdminHandler) HandleGetEffectiveSettings(w http.ResponseWriter, r *http
 	writeJSON(w, http.StatusOK, effective)
 }
 
+type restartKeysResponse struct {
+	Keys     []string `json:"keys"`
+	Prefixes []string `json:"prefixes"`
+}
+
+// HandleGetRestartKeys handles GET /admin/settings/restart-keys. The registry
+// is compiled into the binary (internal/config), so the response only changes
+// across deploys; the admin UI caches it and uses it to badge the fields whose
+// saved value waits on a restart.
+func (h *AdminHandler) HandleGetRestartKeys(w http.ResponseWriter, _ *http.Request) {
+	writeJSON(w, http.StatusOK, restartKeysResponse{
+		Keys:     config.RestartRequiredKeys(),
+		Prefixes: config.RestartRequiredPrefixes(),
+	})
+}
+
 type sensitiveStatusResponse struct {
 	Configured   []string `json:"configured"`
 	ManagedByEnv []string `json:"managed_by_env,omitempty"`
@@ -1675,8 +1698,10 @@ func (h *AdminHandler) HandleGetSensitiveStatus(w http.ResponseWriter, r *http.R
 type adminSettingResponse struct {
 	Key   string `json:"key"`
 	Value string `json:"value"`
-	// RestartRequired reports whether the saved value only takes effect
-	// after a server restart (set on update responses only).
+	// RestartRequired reports whether the value only takes effect after a
+	// server restart. It is populated from the compiled restart-key registry
+	// on read responses as well as on updates, so the admin UI never has to
+	// hand-copy the list into hint text.
 	RestartRequired bool `json:"restart_required,omitempty"`
 }
 
@@ -2196,7 +2221,11 @@ func (h *AdminHandler) HandleGetSetting(w http.ResponseWriter, r *http.Request) 
 	}
 
 	if value, ok := h.BootstrapSensitiveValues[key]; ok && value != "" {
-		writeJSON(w, http.StatusOK, adminSettingResponse{Key: key, Value: value})
+		writeJSON(w, http.StatusOK, adminSettingResponse{
+			Key:             key,
+			Value:           value,
+			RestartRequired: config.RestartRequired(key),
+		})
 		return
 	}
 
@@ -2210,7 +2239,11 @@ func (h *AdminHandler) HandleGetSetting(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	writeJSON(w, http.StatusOK, adminSettingResponse{Key: key, Value: value})
+	writeJSON(w, http.StatusOK, adminSettingResponse{
+		Key:             key,
+		Value:           value,
+		RestartRequired: config.RestartRequired(key),
+	})
 }
 
 type updateSettingRequest struct {
@@ -2227,7 +2260,107 @@ type updateSettingsResponse struct {
 	RestartRequiredKeys []string          `json:"restart_required_keys,omitempty"`
 }
 
-func (h *AdminHandler) normalizeBatchSetting(ctx context.Context, key, value string) (string, string, error) {
+// settingMetadataCacheImages copies provider artwork into the public bucket, so
+// it cannot be turned on without one. settingPublicBucketLegacy is the
+// pre-rename alias config.db_loader still falls back to.
+const (
+	settingMetadataCacheImages = "metadata.cache_images"
+	settingPublicBucket        = "s3.public_bucket"
+	settingPublicBucketLegacy  = "s3.operational_bucket"
+)
+
+// errCodeStorageUnavailable is the API error code for a setting that needs
+// object storage this deployment has not configured.
+const errCodeStorageUnavailable = "storage_unavailable"
+
+// errPublicStorageUnavailable is returned when a write would leave
+// metadata.cache_images enabled with no public bucket anywhere: the image cacher
+// is wired off the public S3 client, so caching could never start.
+var errPublicStorageUnavailable = errors.New(
+	"S3 image caching requires a configured public storage bucket: metadata.cache_images cannot be " +
+		"enabled while s3.public_bucket is empty (Infrastructure \u2192 Public storage)")
+
+// publicBucketConfigured reports whether a public object-storage bucket exists
+// from the server's point of view. A bucket that is only saved counts: an admin
+// editing an inactive-but-saved deployment is one restart away. Only the live
+// client proves caching starts immediately, so the UI still badges the pending
+// restart — but the API must not block a legitimate save.
+//
+// This is the single-key endpoint's view: it writes one setting against
+// whatever is already stored. The batch endpoint uses
+// prospectivePublicBucketConfigured instead, because a bucket written or
+// cleared by the same request has not reached the store yet.
+func (h *AdminHandler) publicBucketConfigured(ctx context.Context) bool {
+	if h == nil {
+		return false
+	}
+	if h.PublicStorageConfigured != nil && h.PublicStorageConfigured() {
+		return true
+	}
+	for _, key := range []string{settingPublicBucket, settingPublicBucketLegacy} {
+		if h.BootstrapSensitiveConfigured[key] &&
+			strings.TrimSpace(h.BootstrapSensitiveValues[key]) != "" {
+			return true
+		}
+		if h.SettingsRepo == nil {
+			continue
+		}
+		if stored, err := h.SettingsRepo.Get(ctx, key); err == nil && strings.TrimSpace(stored) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// prospectivePublicBucketConfigured reports whether the settings a batch is
+// about to persist still describe a public bucket. effective is the stored
+// state overlaid with the batch and the environment and run through
+// config.EffectiveAdminSettings, so the legacy s3.operational_bucket fallback
+// LoadFromDB applies is already folded into settingPublicBucket; changed is the
+// batch itself.
+//
+// A bucket key the batch does not mention leaves the live public client as
+// evidence, because the bucket may come from a source the settings store cannot
+// see. An explicitly empty bucket in the batch is a clear, not an absence: the
+// live client only reflects what this process booted with, so it cannot vouch
+// for storage the saved settings no longer describe.
+func (h *AdminHandler) prospectivePublicBucketConfigured(effective, changed map[string]string) bool {
+	if h == nil {
+		return false
+	}
+	if strings.TrimSpace(effective[settingPublicBucket]) != "" {
+		return true
+	}
+	for _, key := range []string{settingPublicBucket, settingPublicBucketLegacy} {
+		if _, cleared := changed[key]; cleared {
+			return false
+		}
+	}
+	return h.PublicStorageConfigured != nil && h.PublicStorageConfigured()
+}
+
+// validateProspectiveImageCaching rejects a batch whose final state leaves image
+// caching enabled with nowhere to write. Both directions matter: enabling
+// caching while clearing the bucket in the same request, and clearing the bucket
+// while stored settings already have caching on. Either way the image cacher
+// cannot start after the next restart.
+func (h *AdminHandler) validateProspectiveImageCaching(effective, changed map[string]string) error {
+	// ParseBool matches config.LoadFromDB, which reads the stored value the same
+	// way; anything it rejects is not a deployment running with caching on.
+	enabled, _ := strconv.ParseBool(strings.TrimSpace(effective[settingMetadataCacheImages]))
+	if !enabled {
+		return nil
+	}
+	if h.prospectivePublicBucketConfigured(effective, changed) {
+		return nil
+	}
+	return errPublicStorageUnavailable
+}
+
+func (h *AdminHandler) normalizeBatchSetting(
+	ctx context.Context,
+	key, value string,
+) (string, string, error) {
 	if strings.HasPrefix(key, "ratelimit.") {
 		return "", "bad_request", fmt.Errorf("%s is managed by /admin/rate-limits/config", key)
 	}
@@ -2251,7 +2384,7 @@ func (h *AdminHandler) normalizeBatchSetting(ctx context.Context, key, value str
 	case diagnostics.KeyUploadsEnabled:
 		if normalized == "true" {
 			if err = h.validateDiagnosticsUploadsEnabled(ctx); err != nil {
-				return "", "storage_unavailable", err
+				return "", errCodeStorageUnavailable, err
 			}
 		}
 	case diagnostics.KeyMaxBundleBytes,
@@ -2494,6 +2627,7 @@ func (h *AdminHandler) HandleUpdateSettings(w http.ResponseWriter, r *http.Reque
 		after            map[string]string
 		effectiveChanges map[string]bool
 		validationErr    error
+		validationCode   string
 	)
 	err := updateServerSettingsAtomically(r.Context(), h.SettingsRepo,
 		func(stored map[string]string) (map[string]string, error) {
@@ -2502,13 +2636,22 @@ func (h *AdminHandler) HandleUpdateSettings(w http.ResponseWriter, r *http.Reque
 				prospective[key] = value
 			}
 			activeProspective := h.activeAdminSettings(prospective)
+			before := h.effectiveAdminSettings(stored)
+			after = h.effectiveAdminSettings(prospective)
+			// Cross-field checks run against the complete prospective state, so a
+			// value the batch clears is gone even when the store still has it and
+			// the current process is still running on it.
+			if err := h.validateProspectiveImageCaching(after, normalized); err != nil {
+				validationErr = err
+				validationCode = errCodeStorageUnavailable
+				return nil, err
+			}
 			validationSnapshot := adminSettingsValidationSnapshot(activeProspective, normalized)
 			if err := validateProspectiveAdminSettings(validationSnapshot, h.RedisBootstrapAvailable); err != nil {
 				validationErr = err
+				validationCode = "invalid_settings"
 				return nil, err
 			}
-			before := h.effectiveAdminSettings(stored)
-			after = h.effectiveAdminSettings(prospective)
 			writes := make(map[string]string, len(normalized))
 			effectiveChanges = make(map[string]bool, len(normalized))
 			for key, value := range normalized {
@@ -2523,7 +2666,7 @@ func (h *AdminHandler) HandleUpdateSettings(w http.ResponseWriter, r *http.Reque
 			return writes, nil
 		})
 	if validationErr != nil {
-		writeError(w, http.StatusBadRequest, "invalid_settings", validationErr.Error())
+		writeError(w, http.StatusBadRequest, validationCode, validationErr.Error())
 		return
 	}
 	if err != nil {
@@ -2551,8 +2694,11 @@ func (h *AdminHandler) HandleUpdateSettings(w http.ResponseWriter, r *http.Reque
 			restartKeys = append(restartKeys, key)
 		}
 	}
-	if len(restartKeys) > 0 {
-		h.markServerRestartRequired("server_settings")
+	// Per-key reasons ("setting:<key>") so the admin UI can scope a pending
+	// restart to the subsystem the key belongs to instead of warning on every
+	// tile for any settings save.
+	for _, restartKey := range restartKeys {
+		h.markServerRestartRequired("setting:" + restartKey)
 	}
 	writeJSON(w, http.StatusOK, updateSettingsResponse{
 		Values:              responseValues,
@@ -2648,6 +2794,11 @@ func (h *AdminHandler) HandleUpdateSetting(w http.ResponseWriter, r *http.Reques
 			return
 		}
 		req.Value = strconv.FormatBool(enabled)
+	case settingMetadataCacheImages:
+		if req.Value == "true" && !h.publicBucketConfigured(r.Context()) {
+			writeError(w, http.StatusBadRequest, errCodeStorageUnavailable, errPublicStorageUnavailable.Error())
+			return
+		}
 	case diagnostics.KeyUploadsEnabled:
 		enabled, err := strconv.ParseBool(strings.TrimSpace(req.Value))
 		if err != nil {
@@ -2657,7 +2808,7 @@ func (h *AdminHandler) HandleUpdateSetting(w http.ResponseWriter, r *http.Reques
 		req.Value = strconv.FormatBool(enabled)
 		if enabled {
 			if err := h.validateDiagnosticsUploadsEnabled(r.Context()); err != nil {
-				writeError(w, http.StatusBadRequest, "storage_unavailable", err.Error())
+				writeError(w, http.StatusBadRequest, errCodeStorageUnavailable, err.Error())
 				return
 			}
 		}
@@ -2830,6 +2981,7 @@ func (h *AdminHandler) HandleUpdateSetting(w http.ResponseWriter, r *http.Reques
 		after            map[string]string
 		effectiveChanged bool
 		validationErr    error
+		validationCode   string
 	)
 	err := updateServerSettingsAtomically(r.Context(), h.SettingsRepo,
 		func(stored map[string]string) (map[string]string, error) {
@@ -2838,14 +2990,28 @@ func (h *AdminHandler) HandleUpdateSetting(w http.ResponseWriter, r *http.Reques
 			// This legacy route can only change one key, so enforcing every
 			// cross-field invariant would make paired settings impossible to
 			// establish or clear one write at a time. Per-key validation above
-			// remains strict; Redis transport is the one durable prerequisite
-			// that may not be broken by a single-key write.
+			// remains strict; the durable prerequisites are the exception — a
+			// single-key write may not break them.
 			if key == "redis.url" {
 				if err := config.ValidateRedisRateLimitTransport(
 					h.activeAdminSettings(prospective),
 					h.RedisBootstrapAvailable,
 				); err != nil {
 					validationErr = err
+					validationCode = "invalid_settings"
+					return nil, err
+				}
+			}
+			// Image caching's bucket is the other durable prerequisite: clearing
+			// it here while metadata.cache_images is stored on would leave the
+			// cacher unable to start after restart. Disable caching first.
+			if key == settingPublicBucket || key == settingPublicBucketLegacy {
+				if err := h.validateProspectiveImageCaching(
+					h.effectiveAdminSettings(prospective),
+					map[string]string{key: req.Value},
+				); err != nil {
+					validationErr = err
+					validationCode = errCodeStorageUnavailable
 					return nil, err
 				}
 			}
@@ -2859,7 +3025,7 @@ func (h *AdminHandler) HandleUpdateSetting(w http.ResponseWriter, r *http.Reques
 			return nil, nil
 		})
 	if validationErr != nil {
-		writeError(w, http.StatusBadRequest, "invalid_settings", validationErr.Error())
+		writeError(w, http.StatusBadRequest, validationCode, validationErr.Error())
 		return
 	}
 	if err != nil {
@@ -2877,7 +3043,7 @@ func (h *AdminHandler) HandleUpdateSetting(w http.ResponseWriter, r *http.Reques
 	}
 	restartRequired := effectiveChanged && config.RestartRequired(key)
 	if restartRequired {
-		h.markServerRestartRequired("server_settings")
+		h.markServerRestartRequired("setting:" + key)
 	}
 	if sensitiveSettingKeys[key] {
 		writeJSON(w, http.StatusOK, adminSettingResponse{Key: key, RestartRequired: restartRequired})

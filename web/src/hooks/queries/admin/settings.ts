@@ -20,8 +20,20 @@ interface SensitiveStatusResponse {
   managed_by_env?: string[];
 }
 
+/**
+ * server_settings keys surfaced by GET /settings/overlay-config, in the order
+ * the admin overlay page presents them. The page edits exactly these, and
+ * saving any of them must refresh every profile's cached overlay config.
+ */
+export const OVERLAY_CONFIG_SERVER_KEYS = [
+  "defaults.card_quick_actions_enabled",
+  "defaults.card_quick_actions",
+  "overlays.enabled",
+  "defaults.card_overlays",
+] as const;
+
 function affectsOverlayConfig(key: string) {
-  return key === "overlays.enabled" || key === "defaults.card_overlays";
+  return (OVERLAY_CONFIG_SERVER_KEYS as readonly string[]).includes(key);
 }
 
 export interface CatalogSearchStatus {
@@ -86,6 +98,27 @@ export function useAdminServerSettings() {
     queryFn: () =>
       api<ServerSettings>("/admin/settings/effective").then((d) => d ?? {}),
     staleTime: 30_000,
+  });
+}
+
+/** Shape of `GET /admin/settings/restart-keys`. */
+export interface RestartKeysResponse {
+  keys: string[];
+  prefixes: string[];
+}
+
+/**
+ * The compiled restart-required registry (`internal/config/restart_keys.go`).
+ * It only changes across deploys, so it is cached aggressively and never
+ * retried: an older server without the endpoint degrades to "nothing needs a
+ * restart" rather than to a broken settings page.
+ */
+export function useAdminRestartKeys() {
+  return useQuery({
+    queryKey: adminKeys.restartKeys(),
+    queryFn: () => api<RestartKeysResponse>("/admin/settings/restart-keys"),
+    staleTime: 5 * 60_000,
+    retry: false,
   });
 }
 
@@ -249,10 +282,11 @@ export function useCheckAdminSettingsConnection() {
   });
 }
 
-export function useCatalogSearchStatus() {
+export function useCatalogSearchStatus(enabled = true) {
   return useQuery({
     queryKey: adminKeys.catalogSearchStatus(),
     queryFn: () => api<CatalogSearchStatus>("/admin/catalog/search/status"),
+    enabled,
     staleTime: 15_000,
   });
 }
