@@ -1,5 +1,6 @@
 // Package imagecache downloads images from URLs, generates sized variants,
-// computes thumbhashes, and uploads all variants to S3.
+// computes thumbhashes, and uploads all variants to an ObjectPutter backend
+// (public S3 or the local artwork filesystem store).
 package imagecache
 
 import (
@@ -9,6 +10,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	"io"
+	"log/slog"
 	"net"
 	"net/http"
 	"net/netip"
@@ -16,6 +18,7 @@ import (
 	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/prairie-server/prairie-server/internal/artworkkey"
@@ -28,7 +31,8 @@ const (
 	downloadTimeout  = 30 * time.Second
 )
 
-// ObjectPutter is the S3 interface required by Cacher.
+// ObjectPutter is the object-storage interface required by Cacher.
+// Satisfied by *s3client.Client and *artworkstore.LocalStore.
 type ObjectPutter interface {
 	PutObject(ctx context.Context, bucket, key string, data []byte) error
 	Bucket() string
@@ -38,12 +42,24 @@ type objectMatcher interface {
 	ObjectMatches(ctx context.Context, bucket, key string, data []byte) (bool, error)
 }
 
-// ArtworkRevisionTracker persists the object manifest for an immutable
-// revision. The cacher first records an empty, image-type-backed manifest so
-// partial uploads remain collectible, then replaces it with the exact keys
-// only after every upload succeeds.
+type objectGetter interface {
+	GetObject(ctx context.Context, bucket, key string) ([]byte, error)
+}
+
+// ArtworkRevisionTracker persists the exact object manifest for an immutable
+// revision before any object is uploaded.
 type ArtworkRevisionTracker interface {
 	TrackArtworkRevision(ctx context.Context, originalPath, imageType string, objectKeys []string) error
+}
+
+// AVIFBackfillStore persists deferred AVIF sibling work so it survives process
+// restarts. When unset, scheduleAVIFBackfill falls back to in-memory only
+// (unit tests without a DB).
+type AVIFBackfillStore interface {
+	Enqueue(ctx context.Context, originalPath, imageType string) (jobID int64, err error)
+	TryClaim(ctx context.Context, jobID int64, workerID string) (bool, error)
+	MarkSucceeded(ctx context.Context, jobID int64, workerID string) error
+	MarkFailed(ctx context.Context, jobID int64, attemptCount int, workerID, errText string) error
 }
 
 // ImageURLResolver resolves plugin:// paths to HTTP URLs.
@@ -83,17 +99,32 @@ type CacheResult struct {
 	ExistingVariants int
 }
 
-// Cacher downloads and stores image variants to S3.
+// Cacher downloads and stores image variants via an ObjectPutter backend.
 type Cacher struct {
 	s3                ObjectPutter
 	revisionTracker   ArtworkRevisionTracker
+	avifJobs          AVIFBackfillStore
 	httpClient        *http.Client
 	enforcePublicURLs bool
+
+	// AVIF backfill: WebP publishes first so the library is browsable; AVIF
+	// siblings land asynchronously. When avifJobs is set the work is also
+	// persisted so restarts can reclaim it. avifWorkers caps in-flight eager
+	// encodes (0 = runtime.NumCPU).
+	avifWorkers atomic.Int32
+	avifCur     atomic.Int32
+	avifWG      sync.WaitGroup
 }
 
 // New creates a new Cacher backed by the given ObjectPutter.
 func New(s3 ObjectPutter) *Cacher {
-	return &Cacher{s3: s3, httpClient: newSecureHTTPClient(), enforcePublicURLs: true}
+	c := &Cacher{
+		s3:                s3,
+		httpClient:        newSecureHTTPClient(),
+		enforcePublicURLs: true,
+	}
+	c.avifWorkers.Store(int32(avifBackfillConcurrency()))
+	return c
 }
 
 // SetArtworkRevisionTracker wires durable revision lifecycle tracking. The
@@ -104,11 +135,100 @@ func (c *Cacher) SetArtworkRevisionTracker(tracker ArtworkRevisionTracker) {
 	}
 }
 
+// SetAVIFBackfillStore wires durable deferred AVIF sibling jobs. Without it,
+// AVIF backfill is in-memory only and is dropped on process exit.
+func (c *Cacher) SetAVIFBackfillStore(store AVIFBackfillStore) {
+	if c != nil {
+		c.avifJobs = store
+	}
+}
+
+// SetAVIFBackfillConcurrency sets the eager in-process AVIF encode concurrency.
+// Values <= 0 mean runtime.NumCPU(). Hot-reloads without dropping in-flight work.
+func (c *Cacher) SetAVIFBackfillConcurrency(n int) {
+	if c == nil {
+		return
+	}
+	if n <= 0 {
+		n = avifBackfillConcurrency()
+	}
+	c.avifWorkers.Store(int32(n))
+}
+
 func newWithHTTPClient(s3 ObjectPutter, client *http.Client) *Cacher {
 	if client == nil {
 		client = http.DefaultClient
 	}
-	return &Cacher{s3: s3, httpClient: client}
+	c := &Cacher{
+		s3:         s3,
+		httpClient: client,
+	}
+	c.avifWorkers.Store(int32(avifBackfillConcurrency()))
+	return c
+}
+
+// WaitAVIFBackfill blocks until deferred AVIF sibling uploads finish. Tests
+// call this after Cache/CacheBytes so assertions see the full object set.
+// Production shutdown also waits so in-flight encodes drain during the
+// termination grace period.
+func (c *Cacher) WaitAVIFBackfill() {
+	if c == nil {
+		return
+	}
+	c.avifWG.Wait()
+}
+
+// WaitAVIFBackfillContext waits for deferred AVIF work or ctx cancellation,
+// whichever comes first. Returns ctx.Err() when cancelled before drain completes.
+func (c *Cacher) WaitAVIFBackfillContext(ctx context.Context) error {
+	if c == nil {
+		return nil
+	}
+	done := make(chan struct{})
+	go func() {
+		c.avifWG.Wait()
+		close(done)
+	}()
+	select {
+	case <-done:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
+}
+
+// avifBackfillConcurrency is the default eager AVIF worker count. It tracks the
+// shared artwork encode budget (well below the core count) so deferred encodes
+// never crowd out playback ffmpeg.
+func avifBackfillConcurrency() int {
+	n := imageutil.DefaultEncodeBudgetSize()
+	if n < 1 {
+		return 1
+	}
+	return n
+}
+
+func (c *Cacher) acquireAVIFSlot() {
+	for {
+		max := c.avifWorkers.Load()
+		if max < 1 {
+			max = 1
+		}
+		for {
+			cur := c.avifCur.Load()
+			if cur >= max {
+				break
+			}
+			if c.avifCur.CompareAndSwap(cur, cur+1) {
+				return
+			}
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
+func (c *Cacher) releaseAVIFSlot() {
+	c.avifCur.Add(-1)
 }
 
 // CacheImage implements metadata.ImageCacher using the internal Cache method.
@@ -220,6 +340,10 @@ func validateCacheRequest(req CacheRequest) error {
 // Cache but starts from raw image bytes already in hand. Used by the
 // audiobook scanner to push embedded M4B cover art into S3 without round-
 // tripping through HTTP.
+//
+// Publish is two-phase: WebP (+ thumbhash) uploads complete before return so
+// the metadata job can mark the library browsable immediately; AVIF siblings
+// are encoded and uploaded on a deferred low-priority pass.
 func (c *Cacher) CacheBytes(ctx context.Context, data []byte, req CacheRequest) (*CacheResult, error) {
 	if err := validateCacheRequest(req); err != nil {
 		return nil, err
@@ -232,7 +356,7 @@ func (c *Cacher) CacheBytes(ctx context.Context, data []byte, req CacheRequest) 
 		return nil, fmt.Errorf("imagecache: thumbhash: %w", err)
 	}
 	widths := variantWidths(req.ImageType)
-	result, err := imageutil.GenerateVariants(data, widths)
+	result, err := imageutil.GenerateWebPVariants(data, widths)
 	if err != nil {
 		return nil, fmt.Errorf("imagecache: generate variants: %w", err)
 	}
@@ -240,8 +364,7 @@ func (c *Cacher) CacheBytes(ctx context.Context, data []byte, req CacheRequest) 
 	bucket := c.s3.Bucket()
 	revision := variantRevision(result)
 	variantPaths := buildVariantPaths(basePath, revision, result)
-	originalPath := variantPaths[artworkkey.OriginalVariant]
-	if err := c.trackRevision(ctx, req.ImageType, originalPath, nil); err != nil {
+	if err := c.trackRevision(ctx, req.ImageType, variantPaths); err != nil {
 		return nil, err
 	}
 
@@ -249,9 +372,7 @@ func (c *Cacher) CacheBytes(ctx context.Context, data []byte, req CacheRequest) 
 	if err != nil {
 		return nil, err
 	}
-	if err := c.trackRevision(ctx, req.ImageType, originalPath, variantPaths); err != nil {
-		return nil, err
-	}
+	c.scheduleAVIFBackfill(ctx, data, widths, bucket, variantPaths, metadata.ImageTypeToString(req.ImageType))
 	return &CacheResult{
 		BasePath:         basePath,
 		OriginalPath:     variantPaths[artworkkey.OriginalVariant],
@@ -262,6 +383,121 @@ func (c *Cacher) CacheBytes(ctx context.Context, data []byte, req CacheRequest) 
 		UploadedVariants: uploadStats.uploaded,
 		ExistingVariants: uploadStats.existing,
 	}, nil
+}
+
+func (c *Cacher) scheduleAVIFBackfill(ctx context.Context, data []byte, widths []int, bucket string, variantPaths map[string]string, imageType string) {
+	if c == nil || len(variantPaths) == 0 {
+		return
+	}
+	originalPath := variantPaths[artworkkey.OriginalVariant]
+	if originalPath == "" {
+		return
+	}
+	if imageType == "" {
+		imageType = artworkkey.ImageTypeFromPath(originalPath)
+	}
+
+	// Persist first so a crash after WebP publish cannot orphan the AVIF work.
+	if c.avifJobs != nil {
+		if _, err := c.avifJobs.Enqueue(ctx, originalPath, imageType); err != nil {
+			slog.WarnContext(ctx, "imagecache: enqueue AVIF backfill failed", "component", "imagecache", "path", originalPath, "error", err)
+		}
+		// Durable queue is authoritative: skip eager encode so CacheBytes
+		// workers and the backfill task do not double-consume the encode budget
+		// (observed ~2× in-flight on 4-core nodes). The task drains the queue.
+		return
+	}
+
+	// No durable store (tests / degraded mode): encode AVIF in-process.
+	paths := make(map[string]string, len(variantPaths))
+	for k, v := range variantPaths {
+		paths[k] = v
+	}
+	src := append([]byte(nil), data...)
+	widthCopy := append([]int(nil), widths...)
+
+	c.avifWG.Add(1)
+	go func() {
+		defer c.avifWG.Done()
+		c.acquireAVIFSlot()
+		defer c.releaseAVIFSlot()
+
+		bg := context.Background()
+		avifResult, err := imageutil.GenerateAVIFSiblings(src, widthCopy)
+		if err != nil {
+			slog.WarnContext(bg, "imagecache: deferred AVIF encode failed", "component", "imagecache", "error", err)
+			return
+		}
+		uploadCtx, cancel := context.WithTimeout(bg, 3*time.Minute)
+		defer cancel()
+		if _, err := c.uploadAVIFSiblings(uploadCtx, bucket, avifResult, paths); err != nil {
+			slog.WarnContext(bg, "imagecache: deferred AVIF upload failed", "component", "imagecache", "error", err)
+		}
+	}()
+}
+
+// EnsureAVIFSiblings ensures every cached width variant of an already-cached
+// WebP original exists — both the WebP rung and its AVIF sibling — regenerating
+// from the stored original and uploading only what is missing. Used by the
+// durable backfill processor when source bytes are no longer in memory (restart
+// recovery / reconcile). It ensures the full ladder rather than AVIF alone so
+// that adding a rung to artworkkey.VariantWidths (e.g. the w200 TV rung)
+// backfills the missing WebP variant too; the AVIF-centric name is retained
+// because it satisfies the durable queue's existing AVIFSiblingEnsuer interface.
+// The original itself is never re-uploaded (it is immutable and already stored).
+func (c *Cacher) EnsureAVIFSiblings(ctx context.Context, originalPath, imageType string) error {
+	if c == nil || c.s3 == nil {
+		return fmt.Errorf("imagecache: cacher not configured")
+	}
+	originalPath = strings.TrimSpace(originalPath)
+	if originalPath == "" || artworkkey.WebPAVIFSibling(originalPath) == "" {
+		return fmt.Errorf("imagecache: original path is not a cached WebP key")
+	}
+	if imageType == "" {
+		imageType = artworkkey.ImageTypeFromPath(originalPath)
+	}
+	getter, ok := c.s3.(objectGetter)
+	if !ok {
+		return fmt.Errorf("imagecache: object store does not support GetObject")
+	}
+	data, err := getter.GetObject(ctx, c.s3.Bucket(), originalPath)
+	if err != nil {
+		return fmt.Errorf("imagecache: get WebP original: %w", err)
+	}
+	widths := artworkkey.VariantWidths(imageType)
+	// GenerateAVIFSiblings yields WebP + AVIF for each display width (skipping the
+	// costly full-size original AVIF); uploadVariants then writes both formats.
+	result, err := imageutil.GenerateAVIFSiblings(data, widths)
+	if err != nil {
+		return fmt.Errorf("imagecache: generate variant ladder: %w", err)
+	}
+	// Width variants only: the original stays as stored, and uploadVariants skips
+	// any rung that already matches, so only newly-added rungs are written.
+	paths := make(map[string]string, len(artworkkey.VariantNames(imageType)))
+	for _, name := range artworkkey.VariantNames(imageType) {
+		if name == artworkkey.OriginalVariant {
+			continue
+		}
+		paths[name] = artworkkey.Variant(originalPath, name)
+	}
+	if _, err := c.uploadVariants(ctx, c.s3.Bucket(), result, paths); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (c *Cacher) uploadAVIFSiblings(ctx context.Context, bucket string, result *imageutil.VariantResult, variantPaths map[string]string) (uploadVariantStats, error) {
+	jobs := make([]uploadJob, 0, len(result.Variants))
+	for _, variant := range result.Variants {
+		key := variantPaths[variant.Key]
+		if key == "" || len(variant.AVIF) == 0 {
+			continue
+		}
+		if avifKey := artworkkey.WebPAVIFSibling(key); avifKey != "" {
+			jobs = append(jobs, uploadJob{key: avifKey, data: variant.AVIF})
+		}
+	}
+	return c.runUploadJobs(ctx, bucket, jobs)
 }
 
 // Cache downloads the image at req.SourceURL and stores it through the same
@@ -304,28 +540,54 @@ type uploadVariantStats struct {
 	existing int
 }
 
+type uploadJob struct {
+	key  string
+	data []byte
+}
+
 func (c *Cacher) uploadVariants(ctx context.Context, bucket string, result *imageutil.VariantResult, variantPaths map[string]string) (uploadVariantStats, error) {
+	jobs := make([]uploadJob, 0, len(result.Variants)*3)
+	for _, variant := range result.Variants {
+		key := variantPaths[variant.Key]
+		if key == "" {
+			continue
+		}
+		jobs = append(jobs, uploadJob{key: key, data: variant.Data})
+		if len(variant.AVIF) > 0 {
+			if avifKey := artworkkey.WebPAVIFSibling(key); avifKey != "" {
+				jobs = append(jobs, uploadJob{key: avifKey, data: variant.AVIF})
+			}
+		}
+		if len(variant.PNG) > 0 {
+			if pngKey := artworkkey.WebPPNGSibling(key); pngKey != "" {
+				jobs = append(jobs, uploadJob{key: pngKey, data: variant.PNG})
+			}
+		}
+	}
+	return c.runUploadJobs(ctx, bucket, jobs)
+}
+
+func (c *Cacher) runUploadJobs(ctx context.Context, bucket string, jobs []uploadJob) (uploadVariantStats, error) {
 	var wg sync.WaitGroup
-	uploadErrs := make([]error, len(result.Variants))
-	stats := make([]uploadVariantStats, len(result.Variants))
-	for i, v := range result.Variants {
+	uploadErrs := make([]error, len(jobs))
+	stats := make([]uploadVariantStats, len(jobs))
+	for i, j := range jobs {
 		wg.Add(1)
-		go func(idx int, variant imageutil.Variant) {
+		go func(idx int, item uploadJob) {
 			defer wg.Done()
-			key := variantPaths[variant.Key]
-			if exists, err := objectMatches(ctx, c.s3, bucket, key, variant.Data); err != nil {
-				uploadErrs[idx] = fmt.Errorf("imagecache: check existing %s: %w", key, err)
+			if exists, err := objectMatches(ctx, c.s3, bucket, item.key, item.data); err != nil {
+				uploadErrs[idx] = fmt.Errorf("imagecache: check existing %s: %w", item.key, err)
 				return
 			} else if exists {
 				stats[idx].existing = 1
 				return
 			}
-			if err := putObjectWithRetry(ctx, c.s3, bucket, key, variant.Data); err != nil {
-				uploadErrs[idx] = fmt.Errorf("imagecache: upload %s: %w", key, err)
+			if err := putObjectWithRetry(ctx, c.s3, bucket, item.key, item.data); err != nil {
+				uploadErrs[idx] = fmt.Errorf("imagecache: upload %s: %w", item.key, err)
 				return
 			}
 			stats[idx].uploaded = 1
-		}(i, v)
+		}(i, j)
 	}
 	wg.Wait()
 	var total uploadVariantStats
@@ -367,13 +629,24 @@ func buildVariantPaths(basePath, revision string, result *imageutil.VariantResul
 	return paths
 }
 
-func (c *Cacher) trackRevision(ctx context.Context, imageType metadata.ImageType, originalPath string, variantPaths map[string]string) error {
+func (c *Cacher) trackRevision(ctx context.Context, imageType metadata.ImageType, variantPaths map[string]string) error {
 	if c == nil || c.revisionTracker == nil {
 		return nil
 	}
-	keys := make([]string, 0, len(variantPaths))
-	for _, key := range variantPaths {
+	originalPath := variantPaths[artworkkey.OriginalVariant]
+	// Track WebP + AVIF keys for the display ladder. PNG siblings are no longer
+	// generated; ObjectKeys still lists legacy PNG for GC of older revisions.
+	// original.avif is intentionally omitted: GenerateAVIFSiblings skips AVIF
+	// for the original key (clients fall through to WebP).
+	keys := make([]string, 0, len(variantPaths)*2)
+	for name, key := range variantPaths {
 		keys = append(keys, key)
+		if name == artworkkey.OriginalVariant {
+			continue
+		}
+		if avifKey := artworkkey.WebPAVIFSibling(key); avifKey != "" {
+			keys = append(keys, avifKey)
+		}
 	}
 	sort.Strings(keys)
 	if err := c.revisionTracker.TrackArtworkRevision(ctx, originalPath, metadata.ImageTypeToString(imageType), keys); err != nil {

@@ -61,6 +61,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/historyimport"
 	"github.com/prairie-server/prairie-server/internal/httpstream"
 	"github.com/prairie-server/prairie-server/internal/imagecache"
+	"github.com/prairie-server/prairie-server/internal/imageutil"
 	"github.com/prairie-server/prairie-server/internal/intromarkers"
 	"github.com/prairie-server/prairie-server/internal/jellycompat"
 	"github.com/prairie-server/prairie-server/internal/libraryingest"
@@ -1372,6 +1373,8 @@ func main() {
 	// Step 4b: Create metadata service and match worker (if needed).
 	var metadataService *metadata.MetadataService
 	var metadataImageCacheProcessor *metadata.ImageCacheProcessor
+	var avifBackfillProcessor *metadata.AVIFBackfillProcessor
+	var imageCacher *imagecache.Cacher
 	var personRefreshService *metadata.PersonRefreshService
 	var matchWorker *metadata.MatchWorker
 	var libraryIngestExecutor *libraryingest.Executor
@@ -1538,8 +1541,10 @@ func main() {
 		// Wire the image cacher whenever object storage is available so explicit
 		// admin image applies can succeed even if automatic metadata caching is off.
 		if deps.S3Public != nil {
-			imageCacher := imagecache.New(deps.S3Public)
+			imageCacher = imagecache.New(deps.S3Public)
 			imageCacher.SetArtworkRevisionTracker(catalog.NewArtworkRevisionTracker(deps.DB))
+			avifBackfillJobs := metadata.NewAVIFBackfillJobRepository(deps.DB)
+			imageCacher.SetAVIFBackfillStore(avifBackfillJobs)
 			metadataService.SetImageCacher(imageCacher)
 			imageCacheJobs := metadata.NewImageCacheJobRepository(deps.DB)
 			metadataService.SetImageCacheJobEnqueuer(imageCacheJobs)
@@ -1561,11 +1566,36 @@ func main() {
 			// The processor host must mount the libraries, like the metadata worker.
 			metadataImageCacheProcessor.SetLibraryRootResolver(deps.FolderRepo)
 			metadataImageCacheProcessor.SetImagePrefixDeleter(deps.S3Public)
+			avifBackfillProcessor = metadata.NewAVIFBackfillProcessor(avifBackfillJobs, imageCacher)
+			configureAVIFEncoder(cfg)
+			configureWebPEncoder(cfg)
+			avifWorkers := resolveArtworkAVIFWorkers(cfg)
+			avifBackfillProcessor.SetWorkers(avifWorkers)
+			imageCacher.SetAVIFBackfillConcurrency(avifWorkers)
+			applyArtworkEncodeBudget(cfg, avifWorkers)
+			avifBackfillProcessor.SetDiscoverer(metadata.NewAVIFSiblingReconciler(deps.DB, deps.S3Public))
+			avifBackfillProcessor.SetPNGCleaner(metadata.NewLegacyPNGSiblingCleaner(deps.DB, deps.S3Public))
+			avifBackfillProcessor.SetRetiredVariantSweeper(metadata.NewRetiredVariantCleaner(deps.DB, deps.S3Public))
 			metadataService.SetAutoCacheImages(cfg.Metadata.CacheImages)
 			metadataImageCacheProcessor.SetEnabled(cfg.Metadata.CacheImages)
-			configWatcher.OnChange(func(_, updated *config.Config) {
+			avifBackfillProcessor.SetEnabled(cfg.Metadata.CacheImages)
+			configWatcher.OnChange(func(oldCfg, updated *config.Config) {
+				wasEnabled := oldCfg != nil && oldCfg.Metadata.CacheImages
 				metadataService.SetAutoCacheImages(updated.Metadata.CacheImages)
 				metadataImageCacheProcessor.SetEnabled(updated.Metadata.CacheImages)
+				avifBackfillProcessor.SetEnabled(updated.Metadata.CacheImages)
+				configureAVIFEncoder(updated)
+				configureWebPEncoder(updated)
+				avifWorkers := resolveArtworkAVIFWorkers(updated)
+				avifBackfillProcessor.SetWorkers(avifWorkers)
+				imageCacher.SetAVIFBackfillConcurrency(avifWorkers)
+				applyArtworkEncodeBudget(updated, avifWorkers)
+				if updated.Metadata.CacheImages && !wasEnabled {
+					if personRefreshService != nil {
+						personRefreshService.SetImageCacher(imageCacher)
+						personRefreshService.SetImageCacheJobEnqueuer(imageCacheJobs)
+					}
+				}
 			})
 			if deps.Scanner != nil {
 				deps.Scanner.SetImageCacher(imageCacher)
@@ -2282,6 +2312,13 @@ func main() {
 			taskMgr.Register(cacheImagesTask)
 			taskMgr.Register(tasks.NewBackfillMetadataImagesTask(metadataImageCacheProcessor))
 		}
+		if avifBackfillProcessor != nil {
+			playbackActive := func() bool { return sessionMgr.HasActiveSessions() }
+			artworkPauseEnabled := func() bool { return configWatcher.Config().Metadata.PauseArtworkDuringPlayback }
+			artworkShouldYield := func() bool { return artworkPauseEnabled() && playbackActive() }
+			avifBackfillProcessor.SetPlaybackActivityCheck(artworkShouldYield)
+			taskMgr.Register(tasks.NewBackfillAVIFSiblingsTask(avifBackfillProcessor))
+		}
 		if deps.S3Public != nil {
 			identity := tasks.ArtworkStorageIdentity(cfg.S3.Public.Endpoint, cfg.S3.Public.Bucket, cfg.S3.Public.KeyPrefix)
 			// Seed the fingerprint on first boot. After a provider change the
@@ -2972,6 +3009,14 @@ func main() {
 		}
 	}
 
+	// 2c. Drain in-flight deferred AVIF encodes so deploy/SIGTERM does not
+	// drop siblings that were queued only in memory for the eager path.
+	if imageCacher != nil {
+		if err := imageCacher.WaitAVIFBackfillContext(shutdownCtx); err != nil {
+			slog.Warn("AVIF backfill drain interrupted", "error", err)
+		}
+	}
+
 	// 3. Close user store provider.
 	if userStoreProvider != nil {
 		if closeErr := userStoreProvider.Close(); closeErr != nil {
@@ -3622,4 +3667,59 @@ type audiobooksSettingsAdapter struct {
 
 func (a *audiobooksSettingsAdapter) GetString(ctx context.Context, key string) (string, error) {
 	return a.repo.Get(ctx, key)
+}
+
+func configureAVIFEncoder(cfg *config.Config) {
+	if cfg == nil {
+		return
+	}
+	if _, err := imageutil.ConfigureAVIFEncoder(imageutil.EncoderConfig{
+		Backend:       cfg.Metadata.AVIFEncoder,
+		FFmpegPath:    cfg.Metadata.AVIFFFmpegPath,
+		NVENCSessions: cfg.Metadata.AVIFNVENCSessions,
+		EnableNVENC:   true,
+	}); err != nil {
+		slog.Warn("imageutil: AVIF encoder configure failed; keeping previous backend",
+			"component", "imageutil", "error", err)
+	}
+}
+
+func configureWebPEncoder(cfg *config.Config) {
+	if cfg == nil {
+		return
+	}
+	if _, err := imageutil.ConfigureWebPEncoder(imageutil.WebPEncoderConfig{
+		Backend:    cfg.Metadata.WebPEncoder,
+		FFmpegPath: cfg.Metadata.AVIFFFmpegPath,
+	}); err != nil {
+		slog.Warn("imageutil: WebP encoder configure failed; keeping previous backend",
+			"component", "imageutil", "error", err)
+	}
+}
+
+func resolveArtworkAVIFWorkers(cfg *config.Config) int {
+	if cfg == nil {
+		return metadata.ResolveAVIFBackfillWorkers(0)
+	}
+	configured := cfg.Metadata.AVIFBackfillWorkers
+	if configured <= 0 {
+		configured = cfg.Metadata.ArtworkEncodeWorkers
+	}
+	return metadata.ResolveAVIFBackfillWorkersFor(
+		configured,
+		imageutil.ActiveAVIFBackend(),
+		cfg.Metadata.AVIFNVENCSessions,
+	)
+}
+
+func applyArtworkEncodeBudget(cfg *config.Config, avifWorkers int) {
+	if cfg != nil && cfg.Metadata.ArtworkEncodeWorkers > 0 {
+		imageutil.SetEncodeBudgetSize(cfg.Metadata.ArtworkEncodeWorkers)
+		return
+	}
+	if imageutil.ActiveAVIFBackend() == imageutil.BackendNVENC {
+		imageutil.SetEncodeBudgetSize(avifWorkers)
+		return
+	}
+	imageutil.SetEncodeBudgetSize(0)
 }

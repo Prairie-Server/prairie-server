@@ -4,6 +4,7 @@ package imageutil
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"fmt"
 	"image"
@@ -18,8 +19,11 @@ import (
 
 const (
 	webpQuality              = 90
+	avifSpeed                = 10
 	thumbhashSourceDimension = 100
 )
+
+const maxCachedOriginalDimension = MaxCachedOriginalDimension
 
 // MaxCachedOriginalDimension caps the longest edge of a cached "original"
 // variant. Provider artwork wider than this is downscaled on ingest, so a
@@ -27,9 +31,12 @@ const (
 const MaxCachedOriginalDimension = 1920
 
 // Variant holds a named image variant (e.g. "original", "w500").
+// Data is the canonical WebP payload; AVIF and PNG are optional siblings.
 type Variant struct {
 	Key  string
 	Data []byte
+	AVIF []byte
+	PNG  []byte
 }
 
 // VariantResult contains generated variants and their output format.
@@ -91,6 +98,20 @@ func GenerateVariants(data []byte, widths []int) (*VariantResult, error) {
 	}
 
 	return &VariantResult{Variants: variants, Ext: ".webp"}, nil
+}
+
+// GenerateWebPVariants is the fast phase of artwork caching: WebP only, no AVIF.
+// Silo uses libvips (bimg) for WebP; AVIF siblings are produced afterward via
+// GenerateAVIFSiblings and the durable backfill processor.
+func GenerateWebPVariants(data []byte, widths []int) (*VariantResult, error) {
+	return GenerateVariants(data, widths)
+}
+
+// GenerateAVIFSiblings resizes the display-width ladder via GenerateWebPVariants
+// then encodes AVIF siblings with the configured AVIF backend. The original
+// key keeps WebP only; full-size AVIF is skipped by default.
+func GenerateAVIFSiblings(data []byte, widths []int) (*VariantResult, error) {
+	return encodeAVIFLadder(context.Background(), data, widths, []string{"original"})
 }
 
 // GenerateSquareVariants center-crops the source image to a square and returns

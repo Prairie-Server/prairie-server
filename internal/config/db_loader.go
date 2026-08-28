@@ -315,6 +315,29 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 		return nil, err
 	}
 	cfg.Metadata.CacheImages = cacheImages
+	artworkEncodeWorkers, err := intOr(m, "metadata.artwork_encode_workers", 0)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Metadata.ArtworkEncodeWorkers = artworkEncodeWorkers
+	pauseArtworkDuringPlayback, err := boolOr(m, "metadata.pause_artwork_during_playback", true)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Metadata.PauseArtworkDuringPlayback = pauseArtworkDuringPlayback
+	avifWorkers, err := intOr(m, "metadata.avif_backfill_workers", 0)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Metadata.AVIFBackfillWorkers = avifWorkers
+	cfg.Metadata.AVIFEncoder = stringOr(m, "metadata.avif_encoder", "auto")
+	cfg.Metadata.AVIFFFmpegPath = stringOr(m, "metadata.avif_ffmpeg_path", "ffmpeg")
+	cfg.Metadata.WebPEncoder = stringOr(m, "metadata.webp_encoder", "auto")
+	avifNVENCSessions, err := intOr(m, "metadata.avif_nvenc_sessions", 0)
+	if err != nil {
+		return nil, err
+	}
+	cfg.Metadata.AVIFNVENCSessions = avifNVENCSessions
 
 	// Playback
 	cfg.Playback.FFmpegPath = stringOr(m, "playback.ffmpeg_path", "")

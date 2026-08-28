@@ -1534,6 +1534,22 @@ func (m *SessionManager) transcodeCountExcludingLocked(userID int, excludeSessio
 	return count
 }
 
+// HasActiveSessions reports whether any user currently holds a live session.
+// Background work that competes with playback for CPU (artwork encoding) uses
+// this to stand down while someone is watching.
+func (m *SessionManager) HasActiveSessions() bool {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+
+	now := time.Now()
+	for _, s := range m.sessions {
+		if m.countsTowardLimitsLocked(s, now) {
+			return true
+		}
+	}
+	return false
+}
+
 // AllSessions returns a snapshot of all active sessions. Each session is
 // copied to avoid data races with concurrent updates.
 func (m *SessionManager) AllSessions() []*Session {
