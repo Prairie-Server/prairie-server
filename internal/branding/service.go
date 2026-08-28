@@ -81,7 +81,7 @@ func (s *Service) UploadAsset(ctx context.Context, kind AssetKind, data []byte, 
 		return "", ErrStorageUnavailable
 	}
 
-	out, _, ext, err := spec.process(data, declaredType)
+	out, _, _, _, ext, err := spec.process(data, declaredType)
 	if err != nil {
 		return "", err
 	}
@@ -116,7 +116,7 @@ func (s *Service) DeleteAsset(ctx context.Context, kind AssetKind) error {
 // GetAsset fetches the bytes of the current custom asset of the given kind.
 // Returns ErrAssetNotConfigured when none is set, ErrStorageUnavailable when S3
 // is absent, and ErrAssetNotConfigured when the object is missing in S3.
-func (s *Service) GetAsset(ctx context.Context, kind AssetKind) (data []byte, contentType, ref string, err error) {
+func (s *Service) GetAsset(ctx context.Context, kind AssetKind, accept string) (data []byte, contentType, ref string, err error) {
 	spec, ok := assetSpecs[kind]
 	if !ok {
 		return nil, "", "", ErrInvalidKind

@@ -124,16 +124,16 @@ func processFaviconPassthrough(data []byte, declaredType string) ([]byte, []byte
 // variant, falling back to "original" for all three so Accept negotiation
 // never pairs mismatched dimensions.
 func pickVariantTriple(res *imageutil.VariantResult, key string) (webp, avif, png []byte) {
-	var origWebP, origAVIF, origPNG []byte
+	var origWebP []byte
 	for _, v := range res.Variants {
 		if v.Key == key {
-			return v.Data, v.AVIF, v.PNG
+			return v.Data, nil, nil
 		}
 		if v.Key == "original" {
-			origWebP, origAVIF, origPNG = v.Data, v.AVIF, v.PNG
+			origWebP = v.Data
 		}
 	}
-	return origWebP, origAVIF, origPNG
+	return origWebP, nil, nil
 }
 
 // MaxUploadBytes returns the maximum accepted upload size for a kind, or 0 when

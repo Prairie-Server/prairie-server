@@ -128,7 +128,7 @@ func (b *probeBackfiller) run(ctx context.Context, file *models.MediaFile) {
 	probeCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), probeBackfillTimeout)
 	defer cancel()
 
-	if _, err := b.ensurer.Ensure(probeCtx, file); err != nil {
+	if _, err := b.ensurer.EnsureProbeOnly(probeCtx, file); err != nil {
 		slog.WarnContext(probeCtx, "background probe repair failed",
 			"component", "catalog",
 			"file_id", file.ID,

@@ -7,6 +7,10 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
+// QueryParam is the query parameter that carries a signed stream token on the
+// native integrated serve path.
+const QueryParam = "st"
+
 const (
 	// PlayMethodDownload identifies a token minted only after the API has
 	// authorized a file download. Proxy download routes reject playback tokens.

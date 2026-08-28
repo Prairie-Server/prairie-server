@@ -2451,7 +2451,7 @@ func main() {
 			Items:    absItemRepo,
 			Files:    deps.FileRepo,
 			Settings: settingsRepo,
-			Auth: &audiobooks.SiloCredValidator{
+			Auth: &audiobooks.PrairieCredValidator{
 				Auth: absAuthSvc,
 				Pool: deps.DB,
 			},

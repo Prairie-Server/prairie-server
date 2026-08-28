@@ -686,6 +686,8 @@ type DetailService struct {
 	probeEnsurer      PlaybackProbeEnsurer
 	copySafetyRacer   CopySafetyRacer
 	chapterThumbs     ChapterThumbnailQueuer
+	probeBackfillOnce sync.Once
+	probeBackfill     *probeBackfiller
 
 	// resolver is built once on first use; see settingsResolver.
 	resolverOnce sync.Once

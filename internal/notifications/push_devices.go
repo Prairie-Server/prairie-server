@@ -19,7 +19,8 @@ import (
 const (
 	PushPlatformApple      = "apple"
 	PushPlatformAndroid    = "android"
-	PushProviderSiloRelay  = "silo_relay"
+	PushProviderSiloRelay   = "silo_relay"
+	PushProviderPrairieRelay = "prairie_relay"
 	PushModeOff            = "off"
 	PushModeInAppOnly      = "in_app_only"
 	PushModePrivatePush    = "private_push"
