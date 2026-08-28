@@ -405,7 +405,7 @@ var dayRegexp = regexp.MustCompile(`^(\d+)d$`)
 
 var defaultJellyfinCompatServerID = uuid.NewSHA1(
 	uuid.NameSpaceURL,
-	[]byte("https://silo.local/jellycompat"),
+	[]byte("https://prairie.local/jellycompat"),
 ).String()
 
 const playbackTranscodeDirSettingKey = "playback.transcode_dir"
