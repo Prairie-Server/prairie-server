@@ -514,17 +514,6 @@ func buildMarkPlayedBatchSQL() (string, []any) {
            OR user_watch_progress.updated_at < EXCLUDED.updated_at`, nil
 }
 
-func (s *Service) addImportedHistoryIfMissing(
-	ctx context.Context,
-	store userstore.UserStore,
-	profileID, targetID string,
-	duration float64,
-	completed bool,
-	watchedAt *time.Time,
-) (bool, error) {
-	return s.addImportedHistoryIfMissingWithSource(ctx, store, profileID, targetID, duration, completed, watchedAt, userstore.WatchHistorySourceImport)
-}
-
 func (s *Service) addImportedHistoryIfMissingWithSource(
 	ctx context.Context,
 	store userstore.UserStore,

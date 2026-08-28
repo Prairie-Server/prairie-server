@@ -22,7 +22,7 @@ import { isHouseholdSetupDone, setHouseholdSetupDone } from "@/lib/onboarding";
  */
 export default function HouseholdSetup() {
   const { user, loading, selectProfile } = useAuth();
-  const { data: profiles = [], isLoading: profilesLoading, avatarUploadEnabled } = useProfiles();
+  const { data: profiles, isLoading: profilesLoading, avatarUploadEnabled } = useProfiles();
   const { data: libraries = [] } = useAvailableUserLibraries();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<Profile | null>(null);
@@ -54,10 +54,10 @@ export default function HouseholdSetup() {
     const sole = getBootstrapProfile(profiles);
     if (sole) {
       selectProfile(sole);
-      navigate("/", { replace: true });
+      void navigate("/", { replace: true });
       return;
     }
-    navigate("/profiles", { replace: true });
+    void navigate("/profiles", { replace: true });
   }
 
   function openEditor(profile: Profile | null) {

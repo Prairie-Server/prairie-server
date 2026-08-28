@@ -58,7 +58,7 @@ const TRANSCRIPTION_PRESETS = [
     id: "self-hosted",
     label: "Self-hosted",
     description:
-      "Speaches or faster-whisper on your network. Replace the hostname with one reachable from the Silo container.",
+      "Speaches or faster-whisper on your network. Replace the hostname with one reachable from the Prairie container.",
     baseUrl: "http://speaches:8000",
     model: "deepdml/faster-whisper-large-v3-turbo-ct2",
   },
@@ -356,7 +356,7 @@ export default function AIServicesSettings() {
           <SectionHeading
             icon={AudioLines}
             title="Speech-to-text"
-            description="A Whisper-compatible transcription endpoint that returns segment timestamps. Only required when Silo generates subtitles from audio."
+            description="A Whisper-compatible transcription endpoint that returns segment timestamps. Only required when Prairie generates subtitles from audio."
             status={
               !speechCompatible
                 ? "Incompatible endpoint"
@@ -425,9 +425,9 @@ export default function AIServicesSettings() {
               hint="Optional. A saved or inherited key is reused for tests only when the endpoint host is unchanged."
             />
             <p className="text-muted-foreground max-w-2xl text-xs leading-relaxed">
-              For self-hosted services, use a hostname or IP reachable from the Silo container.
+              For self-hosted services, use a hostname or IP reachable from the Prairie container.
               <code className="mx-1">localhost</code>
-              points back to Silo itself.
+              points back to Prairie itself.
             </p>
             <ConnectionCheckAction
               onClick={checkSpeechConnection}
@@ -445,7 +445,7 @@ export default function AIServicesSettings() {
             <h3 className="text-sm font-semibold">Features</h3>
             <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
               Generated subtitles and translated metadata are saved once and served to every client
-              through Silo&apos;s normal pipelines.
+              through Prairie&apos;s normal pipelines.
             </p>
           </div>
 

@@ -10,9 +10,9 @@ import (
 )
 
 func TestDispatchOperationalEnqueuesApplePushAttempts(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("set SILO_TEST_DATABASE_URL to run DB-backed operational push dispatch test")
+		t.Skip("set PRAIRIE_TEST_DATABASE_URL to run DB-backed operational push dispatch test")
 	}
 
 	ctx := context.Background()
@@ -94,14 +94,14 @@ func TestDispatchOperationalEnqueuesApplePushAttempts(t *testing.T) {
 			(id, user_id, profile_id, device_id, platform, provider, apns_environment, apns_topic,
 			 apns_token_ciphertext, apns_token_hash, server_device_id, push_mode, enabled)
 		VALUES
-			('device-private', 42, 'profile-1', 'local-private', 'apple', 'silo_relay', 'sandbox',
-			 'org.siloserver.silo', 'ciphertext', 'hash-1', 'server-private', 'private_push', true),
-			('device-in-app', 42, 'profile-1', 'local-in-app', 'apple', 'silo_relay', 'sandbox',
-			 'org.siloserver.silo', 'ciphertext', 'hash-2', 'server-in-app', 'in_app_only', true),
-			('device-disabled', 42, 'profile-1', 'local-disabled', 'apple', 'silo_relay', 'sandbox',
-			 'org.siloserver.silo', 'ciphertext', 'hash-3', 'server-disabled', 'private_push', false),
-			('device-other-profile', 42, 'profile-2', 'local-other', 'apple', 'silo_relay', 'sandbox',
-			 'org.siloserver.silo', 'ciphertext', 'hash-4', 'server-other', 'private_push', true)
+			('device-private', 42, 'profile-1', 'local-private', 'apple', 'prairie_relay', 'sandbox',
+			 'org.prairieserver.prairie', 'ciphertext', 'hash-1', 'server-private', 'private_push', true),
+			('device-in-app', 42, 'profile-1', 'local-in-app', 'apple', 'prairie_relay', 'sandbox',
+			 'org.prairieserver.prairie', 'ciphertext', 'hash-2', 'server-in-app', 'in_app_only', true),
+			('device-disabled', 42, 'profile-1', 'local-disabled', 'apple', 'prairie_relay', 'sandbox',
+			 'org.prairieserver.prairie', 'ciphertext', 'hash-3', 'server-disabled', 'private_push', false),
+			('device-other-profile', 42, 'profile-2', 'local-other', 'apple', 'prairie_relay', 'sandbox',
+			 'org.prairieserver.prairie', 'ciphertext', 'hash-4', 'server-other', 'private_push', true)
 	`); err != nil {
 		t.Fatalf("seed push devices: %v", err)
 	}
@@ -139,7 +139,7 @@ func TestDispatchOperationalEnqueuesApplePushAttempts(t *testing.T) {
 	if deliveryID != inserted.ID ||
 		pushDeviceID != "device-private" ||
 		triggerType != PushTriggerDelivery ||
-		provider != PushProviderSiloRelay ||
+		provider != PushProviderPrairieRelay ||
 		platform != PushPlatformApple ||
 		outcome != PushOutcomePending {
 		t.Fatalf("unexpected push attempt: delivery=%q device=%q trigger=%q provider=%q platform=%q outcome=%q",

@@ -5,7 +5,7 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-// Domain-specific Prometheus metrics for Silo.
+// Domain-specific Prometheus metrics for Prairie.
 var (
 	// UserDBPoolOpen tracks the number of currently open user database connections.
 	UserDBPoolOpen = promauto.NewGauge(prometheus.GaugeOpts{

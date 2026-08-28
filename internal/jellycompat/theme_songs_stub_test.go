@@ -13,6 +13,7 @@ import (
 // carries OwnerId: jellyfin-sdk-kotlin models it as non-nullable, so a plain
 // query-result envelope would fail client deserialization.
 func TestHandleThemeSongsStub_IncludesOwnerID(t *testing.T) {
+	t.Parallel()
 	h := &ItemsHandler{}
 
 	itemID := "f27caa37e5142225cceded48f6553502"

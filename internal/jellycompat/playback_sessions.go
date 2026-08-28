@@ -17,7 +17,7 @@ import (
 var ErrTerminalClaimUnavailable = errors.New("compat terminal event claim unavailable")
 
 // PlaybackSession stores compat-owned playback negotiation state before the
-// native Silo playback session starts.
+// native Prairie playback session starts.
 type PlaybackSession struct {
 	ID          string
 	CompatToken string

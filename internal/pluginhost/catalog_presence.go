@@ -6,12 +6,12 @@ import (
 )
 
 // PresenceLookupFunc is the minimal slice of catalog functionality
-// CatalogPresence needs from silo. It returns the same record type the
+// CatalogPresence needs from Prairie. It returns the same record type the
 // adapter exports.
 type PresenceLookupFunc func(ctx context.Context, mediaType string, tmdbIDs []string) ([]LibraryPresenceRecord, error)
 
 // CatalogPresence implements CatalogPresenceLookup by delegating to a
-// caller-supplied function. Production wiring (in cmd/silo/main.go)
+// caller-supplied function. Production wiring (in cmd/prairie/main.go)
 // passes a closure over *catalog.MetadataRepository's TMDB-id lookup.
 type CatalogPresence struct {
 	lookup PresenceLookupFunc
@@ -30,8 +30,8 @@ func (c *CatalogPresence) LookupByExternalIDs(ctx context.Context, provider, med
 	if c.lookup == nil {
 		return nil, nil
 	}
-	// Silo's media types differ from the SDK's: SDK uses "tv",
-	// silo uses "series". Map at the boundary.
+	// Prairie's media types differ from the SDK's: SDK uses "tv",
+	// Prairie uses "series". Map at the boundary.
 	internalType := mediaType
 	if mediaType == "tv" {
 		internalType = "series"

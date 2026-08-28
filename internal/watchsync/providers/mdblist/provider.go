@@ -77,7 +77,7 @@ func (p *Provider) DisplayName() string {
 }
 
 func (p *Provider) Capabilities() watchsync.Capabilities {
-	// MDBList exposes a single list — its watchlist — so it binds to Silo's
+	// MDBList exposes a single list — its watchlist — so it binds to Prairie's
 	// watchlist rather than favorites.
 	return watchsync.Capabilities{
 		ImportWatched:          true,

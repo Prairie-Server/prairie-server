@@ -25,15 +25,15 @@ type planstoreFixture struct {
 	altFileID   int
 }
 
-// newPlanstoreFixture connects to SILO_TEST_DATABASE_URL (skipping when
+// newPlanstoreFixture connects to PRAIRIE_TEST_DATABASE_URL (skipping when
 // unset), verifies the v3 migrations are applied, and inserts the fixture
 // rows every attempt/event insert depends on. Cleanup deletes everything the
 // tests wrote so reruns against the same database stay green.
 func newPlanstoreFixture(t *testing.T) *planstoreFixture {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)

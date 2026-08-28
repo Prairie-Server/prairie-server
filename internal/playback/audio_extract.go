@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/csv"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"math"
@@ -200,7 +201,7 @@ func audioExtractionFFmpegBinary(ffmpegPath string) string {
 	if ffmpegPath != "" {
 		return ffmpegPath
 	}
-	return "ffmpeg"
+	return ffmpegComponent
 }
 
 // parseSegmentList reads ffmpeg's CSV segment list (filename,start,end per
@@ -317,7 +318,7 @@ func parseSegmentListEntries(r io.Reader) []segmentListEntry {
 	var out []segmentListEntry
 	for {
 		row, err := reader.Read()
-		if err == io.EOF {
+		if errors.Is(err, io.EOF) {
 			break
 		}
 		if err != nil {
@@ -356,7 +357,7 @@ func ProbeAudioStartOffset(ctx context.Context, filePath string, audioTrackIndex
 	}
 	ffprobe := "ffprobe"
 	if ffmpegPath != "" {
-		// ffprobe ships next to ffmpeg in every distribution Silo supports.
+		// ffprobe ships next to ffmpeg in every distribution Prairie supports.
 		ffprobe = filepath.Join(filepath.Dir(ffmpegPath), "ffprobe")
 	}
 

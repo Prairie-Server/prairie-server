@@ -8,7 +8,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
-func TestSiloItemToMetadata_AuthorsHaveIDs(t *testing.T) {
+func TestPrairieItemToMetadata_AuthorsHaveIDs(t *testing.T) {
 	item := &models.MediaItem{
 		Title: "Test Book",
 		People: []models.ItemPerson{
@@ -28,7 +28,7 @@ func TestSiloItemToMetadata_AuthorsHaveIDs(t *testing.T) {
 	}
 }
 
-func TestSiloItemToMetadata_SeriesComeFromAudiobookSeries(t *testing.T) {
+func TestPrairieItemToMetadata_SeriesComeFromAudiobookSeries(t *testing.T) {
 	seq := 3.5
 	item := &models.MediaItem{
 		Title:           "Test Book",
@@ -53,7 +53,7 @@ func TestSiloItemToMetadata_SeriesComeFromAudiobookSeries(t *testing.T) {
 	}
 }
 
-func TestSiloItemToMetadata_GenresEmptyArrayNotNil(t *testing.T) {
+func TestPrairieItemToMetadata_GenresEmptyArrayNotNil(t *testing.T) {
 	item := &models.MediaItem{Title: "Test Book"} // Genres nil
 	m := siloItemToMetadata(item)
 	if m.Genres == nil {
@@ -64,7 +64,7 @@ func TestSiloItemToMetadata_GenresEmptyArrayNotNil(t *testing.T) {
 	}
 }
 
-func TestSiloItemToMetadata_TagsEmptyArrayNotNil(t *testing.T) {
+func TestPrairieItemToMetadata_TagsEmptyArrayNotNil(t *testing.T) {
 	item := &models.MediaItem{Title: "Test Book"}
 	m := siloItemToMetadata(item)
 	if m.Tags == nil {
@@ -72,7 +72,7 @@ func TestSiloItemToMetadata_TagsEmptyArrayNotNil(t *testing.T) {
 	}
 }
 
-func TestSiloItemToMetadata_NarratorsListed(t *testing.T) {
+func TestPrairieItemToMetadata_NarratorsListed(t *testing.T) {
 	item := &models.MediaItem{
 		Title: "Test Book",
 		People: []models.ItemPerson{
@@ -89,11 +89,11 @@ func TestSiloItemToMetadata_NarratorsListed(t *testing.T) {
 	}
 }
 
-// TestSiloItemToMetadata_JSONKeysAlwaysPresent guards the omitempty fix:
+// TestPrairieItemToMetadata_JSONKeysAlwaysPresent guards the omitempty fix:
 // 3rd-party clients branch on the presence of "genres" and "tags" keys
 // even when the values are empty arrays. Removing omitempty from those
 // fields means the keys serialize even when the slice is empty.
-func TestSiloItemToMetadata_JSONKeysAlwaysPresent(t *testing.T) {
+func TestPrairieItemToMetadata_JSONKeysAlwaysPresent(t *testing.T) {
 	item := &models.MediaItem{Title: "Test Book"} // no genres, no tags, no people
 	m := siloItemToMetadata(item)
 	out, err := json.Marshal(m)

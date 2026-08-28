@@ -2,15 +2,15 @@
 
 Status: Draft (spec + cross-repo plan)
 Date: 2026-07-19
-Repos affected: `silo-server`, `silo-android`, `silo-apple`
+Repos affected: `prairie-server`, `prairie-android`, `prairie-apple`
 
 ## Summary
 
-Add an opt-in, self-hosted diagnostics pipeline: Silo clients detect crashes
+Add an opt-in, self-hosted diagnostics pipeline: Prairie clients detect crashes
 and abnormal exits, collect structured debug logs (playback, TV focus,
 network, lifecycle) plus a hardware snapshot (device model, display/HDMI,
 audio path, codec capabilities), and — only with explicit user consent —
-upload a compressed diagnostics bundle to the user's own Silo server. Admins
+upload a compressed diagnostics bundle to the user's own Prairie server. Admins
 review bundles through new acting-admin API endpoints alongside the existing
 server logs tooling.
 
@@ -21,8 +21,8 @@ Everything ships **disabled by default**:
   object storage is configured and validated.
 - Client: verbose "debug logging" is a per-device setting (default off).
   Crash reporting defaults to **Ask** — after an abnormal exit the app shows
-  an incident-specific prompt (e.g. *"Silo closed unexpectedly during
-  playback. Send a diagnostic report to your server?"*) with
+  an incident-specific prompt (e.g. _"Prairie closed unexpectedly during
+  playback. Send a diagnostic report to your server?"_) with
   **Send / Don't send / Always send**. Nothing uploads without one of: an
   explicit prompt confirmation, a prior "Always send" election bound to this
   server and account, or the user explicitly sending a manual capture.
@@ -74,7 +74,7 @@ Today we are blind to client-side failures:
 
 - Live/continuous log streaming from clients to the server.
 - Screenshots or screen recordings in bundles.
-- Native/tvOS crash *stack* capture via an in-process crash reporter
+- Native/tvOS crash _stack_ capture via an in-process crash reporter
   (PLCrashReporter/KSCrash-style). tvOS v1 detects abnormal exits and
   attaches breadcrumbs, not stacks (see Apple design). Adopting an in-process
   crash reporter is a separate decision with its own signal-safety and review
@@ -92,11 +92,11 @@ Today we are blind to client-side failures:
 
 ## Why this route
 
-**Upload to the user's own Silo server, not a third-party crash service.**
+**Upload to the user's own Prairie server, not a third-party crash service.**
 Crashlytics/Sentry SaaS would send user data to a third party, require vendor
-accounts/keys we'd have to ship, and put the reports in front of *us* rather
+accounts/keys we'd have to ship, and put the reports in front of _us_ rather
 than the person who can actually act — the self-hosting admin. Requiring
-every admin to also run self-hosted Sentry is far too heavy. The Silo server
+every admin to also run self-hosted Sentry is far too heavy. The Prairie server
 is the natural, privacy-aligned destination, and it already has auth, admin
 tooling, object storage, and retention patterns to build on.
 
@@ -106,7 +106,7 @@ needed: recent structured logs, the playback stats timeline, and the hardware
 snapshot. Continuous streaming would cost bandwidth and privacy while mostly
 capturing noise, and would still miss pre-crash buffers.
 
-**Hybrid storage: Postgres row + object-store blob.** Report *metadata* (a
+**Hybrid storage: Postgres row + object-store blob.** Report _metadata_ (a
 small manifest: device summary, truncated crash summary, type, timestamps)
 goes in a queryable table; the payload itself (potentially megabytes of logs
 and crash artifacts) goes to the S3-compatible private bucket as a single
@@ -114,7 +114,7 @@ archive. Ingesting client log lines into the partitioned `operational_logs`
 table was considered and rejected: bundles are consumed as whole documents by
 a human, not queried row-wise; client lines are untrusted input with
 different retention needs; and multi-MB uploads would bloat a table tuned for
-the server's own high-churn logs. The server *does* emit normalized
+the server's own high-churn logs. The server _does_ emit normalized
 operational events about diagnostics activity (report accepted / rejected /
 downloaded / deleted, with report id, account, sizes, result) so ingest and
 admin actions are auditable and correlate with existing logs — raw client
@@ -135,7 +135,7 @@ MetricKit natively (iOS; not tvOS — see Apple design).
 ## Architecture overview
 
 ```text
- Android / Apple client                          silo-server
+ Android / Apple client                          prairie-server
 ┌────────────────────────────────┐   ┌──────────────────────────────────────┐
 │ Safe-logging facade → ring     │   │ GET  /api/v1/diagnostics/status      │
 │  └ debug mode: rotating        │   │   └ available|disabled|              │
@@ -165,7 +165,7 @@ server B after a switch. Rules:
   `(server_instance_id, account_user_id, consent_notice_version)`, where
   `server_instance_id` is a stable opaque ID returned by the status
   endpoint. The capturing `profile_id` is recorded on reports for
-  *attribution*, not as a consent scope — quotas and elections follow the
+  _attribution_, not as a consent scope — quotas and elections follow the
   account.
 - A pending report is only ever uploaded to the server+account it was
   captured under. Reports are never retargeted. Switching server or account
@@ -234,37 +234,68 @@ additive fields.
 {
   "schema_version": 1,
   "report": {
-    "type": "crash",              // crash | anr | native_crash | hang | abnormal_exit | manual
+    "type": "crash", // crash | anr | native_crash | hang | abnormal_exit | manual
     "captured_at": "2026-07-19T18:22:31Z",
-    "capture_session_id": "run_c7d…",   // UUID per app run, also stamped on log lines
+    "capture_session_id": "run_c7d…", // UUID per app run, also stamped on log lines
     "app_version": "1.4.2",
     "app_build": "20841",
-    "platform": "android-tv",     // android | android-tv | ios | tvos  (macos reserved)
+    "platform": "android-tv", // android | android-tv | ios | tvos  (macos reserved)
     "os_version": "11 (API 30)",
-    "profile_id": "prof_…"        // capturing profile, attribution only
+    "profile_id": "prof_…" // capturing profile, attribution only
   },
-  "destination": { "server_instance_id": "srv_…" },   // consent binding; server rejects mismatches
-  "consent": { "mode": "prompt", "notice_version": 1 },  // prompt | always | manual
-  "crash": {                      // absent for manual
+  "destination": { "server_instance_id": "srv_…" }, // consent binding; server rejects mismatches
+  "consent": { "mode": "prompt", "notice_version": 1 }, // prompt | always | manual
+  "crash": {
+    // absent for manual
     "summary": "NullPointerException in PlaybackSessionManager.start",
     "stack_excerpt": "…truncated ≤ 8 KiB; full artifact in archive…",
     "thread": "main",
     "foreground": true,
-    "source": "ueh",              // ueh | exit_info | metrickit | exit_sentinel
-    "provenance": "pre_failure",  // pre_failure | post_restart | metric_reporting_period
-    "occurred_at": "2026-07-19T18:22:31Z"   // best known; MetricKit reports carry period bounds
+    "source": "ueh", // ueh | exit_info | metrickit | exit_sentinel
+    "provenance": "pre_failure", // pre_failure | post_restart | metric_reporting_period
+    "occurred_at": "2026-07-19T18:22:31Z" // best known; MetricKit reports carry period bounds
   },
-  "device_summary": { "manufacturer":"NVIDIA", "model":"SHIELD Android TV", "os":"11", "form_factor":"tv" },
+  "device_summary": {
+    "manufacturer": "NVIDIA",
+    "model": "SHIELD Android TV",
+    "os": "11",
+    "form_factor": "tv"
+  },
   "playback_session_ids": ["ps_9f2…"],
-  "log_summary": { "lines": 3841, "bytes_gz": 412034, "dropped_lines": 12, "categories": ["playback","focus","network"], "debug_logging": true },
-  "archive": { "entries": ["manifest.json","device.json","logs.jsonl","crash/summary.json","crash/stack.txt"], "bytes": 498112, "uncompressed_bytes": 3110400, "sha256": "…" }
+  "log_summary": {
+    "lines": 3841,
+    "bytes_gz": 412034,
+    "dropped_lines": 12,
+    "categories": ["playback", "focus", "network"],
+    "debug_logging": true
+  },
+  "archive": {
+    "entries": [
+      "manifest.json",
+      "device.json",
+      "logs.jsonl",
+      "crash/summary.json",
+      "crash/stack.txt"
+    ],
+    "bytes": 498112,
+    "uncompressed_bytes": 3110400,
+    "sha256": "…"
+  }
 }
 ```
 
 ### Log line schema (`logs.jsonl`)
 
 ```json
-{"ts":"2026-07-19T18:22:29.412Z","run":"run_c7d…","lvl":"W","cat":"playback","tag":"AudioCapabilityMgr","msg":"passthrough suppressed: HDMI sink lost TrueHD","attrs":{"sink":"HDMI","fmt":"truehd"}}
+{
+  "ts": "2026-07-19T18:22:29.412Z",
+  "run": "run_c7d…",
+  "lvl": "W",
+  "cat": "playback",
+  "tag": "AudioCapabilityMgr",
+  "msg": "passthrough suppressed: HDMI sink lost TrueHD",
+  "attrs": { "sink": "HDMI", "fmt": "truehd" }
+}
 ```
 
 - `lvl`: `V|D|I|W|E`. `cat`: `playback`, `focus`, `network`, `lifecycle`,
@@ -347,17 +378,17 @@ inclusion.
 
 Clients include recent server playback session IDs so admins can pivot into
 the existing server-side logs (`operational_logs.playback_session_id` +
-the admin logs filter). Both clients currently retain only the *active*
+the admin logs filter). Both clients currently retain only the _active_
 session ID (Android `PlaybackSessionManager`, Apple `PlaybackSessionBridge`),
 so each client adds a small **bounded, persisted recent-session tracker**
 (last ~10 session IDs with timestamps) that survives restarts — required for
 next-launch crash reports.
 
-## Server design (`silo-server`)
+## Server design (`prairie-server`)
 
 ### Feature gate
 
-Borrows the *behavior* of the requests gate (status endpoint + per-call
+Borrows the _behavior_ of the requests gate (status endpoint + per-call
 guard that rereads settings) but stores keys in the general `server_settings`
 store — requests uses its own dedicated table, which diagnostics doesn't
 need. Key naming follows existing namespaces (`opslog.*`,
@@ -385,8 +416,8 @@ optional profile attribution.
 
 ```json
 {
-  "status": "available",            // available | disabled | storage_unavailable
-  "server_instance_id": "srv_…",    // stable; binds consent + pending reports
+  "status": "available", // available | disabled | storage_unavailable
+  "server_instance_id": "srv_…", // stable; binds consent + pending reports
   "accepted_schema_versions": [1],
   "max_bundle_bytes": 10485760,
   "max_manifest_bytes": 65536,
@@ -402,7 +433,7 @@ Clients cache this alongside existing server-driven config refresh.
 `POST /api/v1/diagnostics/reports` — `RequireAuth`; access-token
 `Authorization` header only (no query credentials; `sa_` API keys rejected
 for diagnostics). Optional validated profile attribution. Hardened parsing —
-the avatar handler is the *precedent* (multipart + `PutObject`), but its
+the avatar handler is the _precedent_ (multipart + `PutObject`), but its
 buffer-everything approach (`ParseMultipartForm` + `io.ReadAll`) is not
 reused:
 
@@ -504,7 +535,7 @@ add no admin screens in v1 (product policy).
 ### Retention + reconciliation
 
 A taskmanager task `internal/taskmanager/tasks/cleanup_client_diagnostics.go`
-mirroring `cleanup_operational_log.go`, registered in `cmd/silo/main.go`
+mirroring `cleanup_operational_log.go`, registered in `cmd/prairie/main.go`
 with the other cleanup tasks:
 
 - Delete reports older than `diagnostics.retention_days` (by `received_at`),
@@ -518,7 +549,7 @@ with the other cleanup tasks:
 - Account deletion cascades rows (FK) ; the reconciler then removes orphaned
   blobs.
 
-## Android design (`silo-android`)
+## Android design (`prairie-android`)
 
 New package
 `android-shared/src/androidMain/kotlin/org/siloserver/silo/common/diagnostics/`.
@@ -545,7 +576,7 @@ New package
   `PlayerStatsSnapshot` line while debug logging is on (reuses the existing
   reducer). TV focus logging hooks the TV app's focus observers under
   `cat=focus`. Network: a Ktor hook logging `method, templated path, status,
-  duration_ms` only.
+duration_ms` only.
 
 ### Crash and abnormal-exit capture
 
@@ -631,7 +662,7 @@ state can differ from crash-time state.
   `unsupported_schema` it surfaces "server needs an update" rather than
   silently retrying until expiry.
 
-## Apple design (`silo-apple`)
+## Apple design (`prairie-apple`)
 
 Mirrors Android with platform-native mechanisms, and with tvOS scoped
 honestly — **MetricKit diagnostic payloads (crash/hang) are iOS-only; the
@@ -647,7 +678,7 @@ daily, while the app runs), not "next launch".
   `OSLogStore(scope: .currentProcessIdentifier)` (deployment targets are
   iOS/tvOS 26, far above the OSLogStore 15+ floor), merged into
   `logs.jsonl` with provenance.
-- **Breadcrumb journal**: because MetricKit reports arrive in a *later*
+- **Breadcrumb journal**: because MetricKit reports arrive in a _later_
   process, the in-memory ring is gone by delivery time. While crash
   reporting is enabled, a small append-only breadcrumb journal (bounded,
   rotating, crash-safe appends: lifecycle transitions, playback start/stop,
@@ -667,7 +698,7 @@ daily, while the app runs), not "next launch".
 - **tvOS abnormal-exit detection**: no crash stacks in v1. A dirty-exit
   sentinel (marker written at launch, cleared on clean
   background/termination) plus the breadcrumb journal yields
-  `type: abnormal_exit` reports — "Silo did not shut down cleanly last
+  `type: abnormal_exit` reports — "Prairie did not shut down cleanly last
   time" — with breadcrumbs and device snapshot but no stack. An in-process
   crash reporter for tvOS is explicitly deferred (see Non-goals).
 - **Device snapshot**: `AppleDeviceIdentity.current` +
@@ -681,7 +712,7 @@ daily, while the app runs), not "next launch".
 - **Upload**: a small multipart body writer added to `HTTPClient` (verified:
   JSON-only today, no multipart/uploadTask), same status/error handling as
   Android.
-- Housekeeping note: product bundle IDs are already `org.siloserver.silo`;
+- Housekeeping note: product bundle IDs are already `org.prairieserver.prairie`;
   only legacy keychain/logging identifiers (`com.continuum.*`) remain, so
   nothing here blocks on rebranding.
 

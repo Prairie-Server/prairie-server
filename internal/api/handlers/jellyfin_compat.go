@@ -87,7 +87,7 @@ func (h *AdminHandler) HandleUpdateJellyfinCompatSettings(w http.ResponseWriter,
 		}
 		managedPath := jellycompat.ManagedWebInstallPath(root)
 		if raw := strings.TrimSpace(*req.WebDir); raw != "" && filepath.Clean(raw) != filepath.Clean(managedPath) {
-			writeError(w, http.StatusBadRequest, "bad_request", "Jellyfin Web active directory is managed by Silo and cannot point at an arbitrary path")
+			writeError(w, http.StatusBadRequest, "bad_request", "Jellyfin Web active directory is managed by Prairie and cannot point at an arbitrary path")
 			return
 		}
 		updates["jellyfin_compat.web_dir"] = managedPath

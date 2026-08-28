@@ -105,7 +105,7 @@ export function useUpdatePluginCatalogSettings() {
       }),
     onSuccess: () => {
       toast.success("Plugin catalog settings updated");
-      invalidatePluginQueries(queryClient);
+      void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
       toast.error(
@@ -125,7 +125,7 @@ export function useCreatePluginRepository() {
       }),
     onSuccess: () => {
       toast.success("Repository added");
-      invalidatePluginQueries(queryClient);
+      void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Failed to add repository");
@@ -143,7 +143,7 @@ export function useUpdatePluginRepository() {
       }),
     onSuccess: () => {
       toast.success("Repository updated");
-      invalidatePluginQueries(queryClient);
+      void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Failed to update repository");
@@ -157,7 +157,7 @@ export function useDeletePluginRepository() {
     mutationFn: (id: number) => api(`/admin/plugins/repositories/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Repository removed");
-      invalidatePluginQueries(queryClient);
+      void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Failed to remove repository");
@@ -175,7 +175,7 @@ export function useInstallPlugin() {
       }),
     onSuccess: () => {
       toast.success("Plugin installed");
-      invalidatePluginQueries(queryClient);
+      void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Failed to install plugin");
@@ -215,7 +215,7 @@ export function useUploadPlugin() {
     },
     onSuccess: () => {
       toast.success("Plugin uploaded");
-      invalidatePluginQueries(queryClient);
+      void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Failed to upload plugin");
@@ -261,7 +261,7 @@ export function useUpdatePluginInstallation() {
       }),
     onSuccess: () => {
       toast.success("Plugin updated");
-      invalidatePluginQueries(queryClient);
+      void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Failed to update plugin");
@@ -278,7 +278,7 @@ export function useApplyPluginUpdate() {
       }),
     onSuccess: () => {
       toast.success("Plugin updated");
-      invalidatePluginQueries(queryClient);
+      void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Failed to update plugin");
@@ -292,7 +292,7 @@ export function useDeletePluginInstallation() {
     mutationFn: (id: number) => api(`/admin/plugins/installations/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Plugin removed");
-      invalidatePluginQueries(queryClient);
+      void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Failed to remove plugin");
@@ -311,9 +311,11 @@ export function useCheckPluginUpdates() {
         },
       ),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.tasks() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.task(CHECK_PLUGIN_UPDATES_TASK_KEY) });
-      invalidatePluginQueries(queryClient);
+      void queryClient.invalidateQueries({ queryKey: adminKeys.tasks() });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.task(CHECK_PLUGIN_UPDATES_TASK_KEY),
+      });
+      void invalidatePluginQueries(queryClient);
       toast.success("Plugin update check started");
     },
     onError: (error) => {
@@ -360,7 +362,7 @@ export function useSavePluginAuthBinding() {
       }),
     onSuccess: () => {
       toast.success("Auth binding saved — restart the server to apply it");
-      invalidatePluginQueries(queryClient);
+      void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Failed to save auth binding");
@@ -393,7 +395,7 @@ export function useSavePluginTaskBinding() {
           ? "Task binding saved — restart the server to apply it"
           : "Task binding saved",
       );
-      invalidatePluginQueries(queryClient);
+      void invalidatePluginQueries(queryClient);
     },
     onError: (error) => {
       toast.error(error instanceof Error ? error.message : "Failed to save task binding");

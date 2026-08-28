@@ -83,10 +83,10 @@ export function SourceConfigForm({
               variant="outline"
               size="sm"
               onClick={() => applyFill(field.key, value)}
-              title={`Replace ${field.label} with the paths of your enabled libraries`}
+              title={`Replace ${field.label || field.key} with the paths of your enabled libraries`}
             >
               <LibraryIcon className="size-3.5" />
-              Use library paths for {field.label}
+              Use library paths for {field.label || field.key}
             </Button>
           ))}
         </div>

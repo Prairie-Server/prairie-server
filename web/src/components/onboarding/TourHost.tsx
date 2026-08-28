@@ -74,7 +74,7 @@ export function TourHost({ flow, onDone }: TourHostProps) {
       });
       onDone();
       if (opts.route) {
-        navigate(opts.route);
+        void navigate(opts.route);
       }
     },
     [progress, flow.tour_id, step, onDone, navigate],

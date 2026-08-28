@@ -12,6 +12,7 @@ import (
 // content_id must still decode, because it is packed into the UUID reversibly
 // rather than hashed into a side table.
 func TestContentIDDecodesWithoutSharedState(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		kind EncodedIDType
 		id   string
@@ -41,6 +42,7 @@ func TestContentIDDecodesWithoutSharedState(t *testing.T) {
 // items (audiobooks, collisions, unmatched) keep their numeric Sonyflake
 // content_id, which was already encoded statelessly and must stay that way.
 func TestLegacyNumericContentIDRoundTrips(t *testing.T) {
+	t.Parallel()
 	const legacy = "1234567890123456"
 	u := NewResourceIDCodec().EncodeStringID(EncodedIDItem, legacy)
 	got, err := NewResourceIDCodec().DecodeStringID(EncodedIDItem, u)
@@ -53,6 +55,7 @@ func TestLegacyNumericContentIDRoundTrips(t *testing.T) {
 // names, etc.) are untouched by the content_id packing and still round-trip
 // within a single codec instance via the reverse map.
 func TestGenreNameStillUsesReverseMap(t *testing.T) {
+	t.Parallel()
 	c := NewResourceIDCodec()
 	const genre = "Science Fiction"
 	u := c.EncodeStringID(EncodedIDGenre, genre)

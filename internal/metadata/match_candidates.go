@@ -247,7 +247,7 @@ func candidateTypeMatchesHint(hintType, candidateType string) bool {
 
 func isMovieTypeAlias(value string) bool {
 	switch value {
-	case "movie", "movies":
+	case matchContentTypeMovie, libraryTypeMovies:
 		return true
 	default:
 		return false
@@ -277,7 +277,7 @@ func normalizedKey(ids map[string]string) string {
 	}
 	if len(parts) == 0 {
 		// Fall back to metadb if present.
-		if v, ok := ids["metadb"]; ok && v != "" {
+		if v, ok := ids[providerSlugMetaDB]; ok && v != "" {
 			return "metadb=" + v
 		}
 		return ""
@@ -1213,7 +1213,7 @@ func trustedIDValue(hints *MatchHints, key string) string {
 		return ""
 	}
 	switch key {
-	case "metadb":
+	case providerSlugMetaDB:
 		return hints.ContentID
 	case "tmdb":
 		return hints.TmdbID

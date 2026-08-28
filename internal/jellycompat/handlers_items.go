@@ -62,6 +62,9 @@ type ItemsHandler struct {
 	// unbounded progress scan. It is the section subsystem's read-time fetcher and
 	// is independent of any virtual-library/hub-section exposure.
 	sectionsFetcher *sections.Fetcher
+	// liveTVEnabled appends the Live TV CollectionFolder to UserViews when true.
+	liveTVEnabled bool
+	liveTV        *LiveTVHandler
 }
 
 // NewItemsHandler creates a new items handler.
@@ -122,13 +125,14 @@ func (h *ItemsHandler) handleViewsResponse(w http.ResponseWriter, r *http.Reques
 // userViews builds the session's library views as CollectionFolder items. The
 // synthetic "Collections" view is prepended (first library) when the session
 // can see at least one collection; see collectionsView/collectionsViewVisible.
+// When Live TV is configured, a livetv CollectionFolder is appended.
 func (h *ItemsHandler) userViews(ctx context.Context, session *Session) ([]baseItemDTO, error) {
 	libraries, err := h.content.ListUserLibraries(ctx, session)
 	if err != nil {
 		return nil, err
 	}
 
-	items := make([]baseItemDTO, 0, len(libraries)+1)
+	items := make([]baseItemDTO, 0, len(libraries)+2)
 	if h.collectionsViewVisible(ctx, libraries) {
 		items = append(items, h.collectionsView())
 	}
@@ -137,7 +141,16 @@ func (h *ItemsHandler) userViews(ctx context.Context, session *Session) ([]baseI
 		h.rememberLibraryImages(library, dto.ID)
 		items = append(items, dto)
 	}
+	if h.liveTVEnabled && h.liveTV != nil {
+		items = append(items, h.liveTV.liveTVView())
+	}
 	return items, nil
+}
+
+// SetLiveTV wires the Live TV CollectionFolder into UserViews.
+func (h *ItemsHandler) SetLiveTV(handler *LiveTVHandler) {
+	h.liveTV = handler
+	h.liveTVEnabled = handler != nil
 }
 
 // HandleItems serves GET /Items.
@@ -170,6 +183,10 @@ func (h *ItemsHandler) HandleItems(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		h.handleBoxSetsList(w, r, session, query)
+		return
+	}
+	if isLiveTVViewID(newCaseInsensitiveQuery(r.URL.Query()).Get("ParentId")) && h.liveTV != nil {
+		h.liveTV.HandleChannels(w, r)
 		return
 	}
 
@@ -240,7 +257,7 @@ func emptyQueryResult(startIndex int) queryResultDTO {
 // default path's ListSeasons yields an empty set and writes an empty page.
 func (h *ItemsHandler) handleItemParentChildren(w http.ResponseWriter, r *http.Request, session *Session, query itemsQuery) {
 	switch {
-	case itemTypesContain(query.itemTypes, "episode"):
+	case itemTypesContain(query.itemTypes, itemTypeEpisode):
 		h.writeSeriesEpisodesResponse(w, r, session, query, query.parentItemID, "", true)
 	case !query.hasItemTypeFilter || itemTypesContain(query.itemTypes, "season"):
 		h.handleSeasonChildItems(w, r, session, query)
@@ -256,7 +273,7 @@ func (h *ItemsHandler) handleSeasonEpisodeChildren(w http.ResponseWriter, r *htt
 	// A season's only children are its episodes; a type filter that excludes
 	// Episode (e.g. IncludeItemTypes=Movie) yields nothing, mirroring the
 	// series-parent path's handling of unsatisfiable type filters.
-	if query.hasItemTypeFilter && !itemTypesContain(query.itemTypes, "episode") {
+	if query.hasItemTypeFilter && !itemTypesContain(query.itemTypes, itemTypeEpisode) {
 		writeJSON(w, http.StatusOK, emptyQueryResult(query.startIndex))
 		return
 	}
@@ -313,6 +330,16 @@ func (h *ItemsHandler) HandleItem(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, h.collectionsView())
 		return
 	}
+	if isLiveTVViewID(rawID) && h.liveTV != nil {
+		writeJSON(w, http.StatusOK, h.liveTV.liveTVView())
+		return
+	}
+	if h.liveTV != nil {
+		if _, ok := h.liveTV.DecodeLiveTVChannelID(rawID); ok {
+			h.liveTV.HandleChannel(w, r)
+			return
+		}
+	}
 
 	// Handle library IDs — clients like Infuse request /Items/{id} for
 	// CollectionFolder items using the library UUID from /UserViews.
@@ -360,7 +387,7 @@ func (h *ItemsHandler) HandleItem(w http.ResponseWriter, r *http.Request) {
 	}
 	dto := h.mapper.itemFromDetail(*detail, favorites[detail.ContentID], progress[detail.ContentID])
 	h.appendDownloadedSubtitlesToDetailDTO(r.Context(), detail.ContentID, detail.Versions, &dto)
-	if strings.EqualFold(detail.Type, "series") {
+	if strings.EqualFold(detail.Type, itemTypeSeries) {
 		if seasons, seasonErr := h.content.ListSeasons(r.Context(), session, detail.ContentID, nil); seasonErr == nil {
 			browsableSeasons := filterBrowsableSeasons(seasons)
 			dto.ChildCount = len(browsableSeasons)
@@ -368,7 +395,7 @@ func (h *ItemsHandler) HandleItem(w http.ResponseWriter, r *http.Request) {
 			dto.SeasonCount = len(browsableSeasons)
 		}
 	}
-	if strings.EqualFold(detail.Type, "episode") && detail.SeriesID != "" {
+	if strings.EqualFold(detail.Type, itemTypeEpisode) && detail.SeriesID != "" {
 		seriesImgCache := make(map[string]seriesImageSet)
 		h.enrichEpisodeSeriesImages(r.Context(), session, &dto, detail.SeriesID, seriesImgCache)
 		if detail.SeasonNumber != nil {
@@ -458,7 +485,7 @@ func (h *ItemsHandler) handlePersonItem(w http.ResponseWriter, r *http.Request, 
 	}
 
 	if photoURL != "" {
-		h.images.RememberSized(routeID, "Primary", photoURL, compatCardImageSize)
+		h.images.RememberSized(routeID, imageTypePrimary, photoURL, compatCardImageSize)
 	}
 
 	dto := baseItemDTO{
@@ -509,7 +536,7 @@ func (h *ItemsHandler) handlePersonItem(w http.ResponseWriter, r *http.Request, 
 
 	if photoURL != "" {
 		tag := tagValue(photoURL)
-		dto.ImageTags = map[string]string{"Primary": tag}
+		dto.ImageTags = map[string]string{imageTypePrimary: tag}
 		ratio := 2.0 / 3.0
 		dto.PrimaryImageAspectRatio = &ratio
 	}
@@ -527,9 +554,9 @@ func (h *ItemsHandler) handlePersonItem(w http.ResponseWriter, r *http.Request, 
 	if counts, err := h.personRepo.CountItemsByType(r.Context(), personID); err != nil {
 		slog.WarnContext(r.Context(), "failed to load filmography counts", "component", "jellycompat", "person_id", personID, "error", err)
 	} else {
-		dto.MovieCount = counts["movie"]
-		dto.SeriesCount = counts["series"]
-		dto.EpisodeCount = counts["episode"]
+		dto.MovieCount = counts[itemTypeMovie]
+		dto.SeriesCount = counts[itemTypeSeries]
+		dto.EpisodeCount = counts[itemTypeEpisode]
 	}
 
 	writeJSON(w, http.StatusOK, dto)
@@ -846,7 +873,7 @@ func deriveSegmentID(itemUUID, kind string) string {
 }
 
 // HandleGroupingOptionsStub serves GET /UserViews/GroupingOptions with an empty array.
-// Jellyfin returns []SpecialViewOptionDto; Silo doesn't support library grouping.
+// Jellyfin returns []SpecialViewOptionDto; Prairie doesn't support library grouping.
 func (h *ItemsHandler) HandleGroupingOptionsStub(w http.ResponseWriter, r *http.Request) {
 	session := SessionFromContext(r.Context())
 	if session == nil {
@@ -978,7 +1005,7 @@ func (h *ItemsHandler) extraToBaseItem(extra catalog.ItemExtraInfo, parentEncode
 	if name == "" {
 		name = extraKindDisplayName(extra.Kind)
 	}
-	itemType := "Video"
+	itemType := streamTypeVideo
 	if isLocalTrailerKind(extra.Kind) {
 		itemType = "Trailer"
 	}
@@ -988,7 +1015,7 @@ func (h *ItemsHandler) extraToBaseItem(extra catalog.ItemExtraInfo, parentEncode
 		IsFolder:  false,
 		Name:      name,
 		ServerID:  h.mapper.serverID,
-		MediaType: "Video",
+		MediaType: streamTypeVideo,
 		ParentID:  parentEncodedID,
 		ImageTags: map[string]string{},
 	}
@@ -1185,7 +1212,7 @@ var latestFastPathReproducibleParams = map[string]struct{}{
 // rating cap must be a known rating (an unknown string matches nothing in
 // BrowseItems and must not mint arbitrary cache keys).
 func latestFastPathEligible(params url.Values, libraryItemType string) bool {
-	if libraryItemType != "movie" && libraryItemType != "series" {
+	if libraryItemType != itemTypeMovie && libraryItemType != itemTypeSeries {
 		return false
 	}
 	for key := range params {
@@ -1294,7 +1321,7 @@ func latestRecentlyAddedConfig(itemTypes []string) json.RawMessage {
 	scoped := compatScopedTypes(strings.Join(itemTypes, ","))
 	var filterType string
 	switch scoped {
-	case "movie", "series":
+	case itemTypeMovie, itemTypeSeries:
 		filterType = scoped
 	default:
 		return nil
@@ -2531,7 +2558,7 @@ func (h *ItemsHandler) handleResumeResponse(w http.ResponseWriter, r *http.Reque
 	// narrower requests are still honored. Requests scoped only to types the
 	// watching scope cannot serve (e.g. Series/Season-only) fall through to
 	// loadProgressPage below.
-	if h.sectionsFetcher != nil && (len(typeSet) == 0 || typeSet["episode"] || typeSet["movie"]) {
+	if h.sectionsFetcher != nil && (len(typeSet) == 0 || typeSet[itemTypeEpisode] || typeSet[itemTypeMovie]) {
 		items, total, err := h.loadResumeViaSections(r.Context(), session, query, typeSet)
 		if err == nil {
 			applyImageTypeLimit(items, query.imageTypeLimit)
@@ -2945,7 +2972,7 @@ func (h *ItemsHandler) hydrateProgressItems(ctx context.Context, session *Sessio
 			h.applyCompatEpisodeTarget(&dto, target)
 			stubDetailListFields(&dto, fields)
 			result = append(result, progressHydratedItem{
-				itemType:   "episode",
+				itemType:   itemTypeEpisode,
 				contentID:  entry.MediaItemID,
 				isFavorite: favorites[entry.MediaItemID],
 				entry:      entry,
@@ -2969,10 +2996,10 @@ func (h *ItemsHandler) rememberCompatEpisodeImages(dto baseItemDTO, stillURL str
 	if h.images == nil {
 		return
 	}
-	h.images.RememberSized(dto.ID, "Primary", stillURL, compatCardImageSize)
+	h.images.RememberSized(dto.ID, imageTypePrimary, stillURL, compatCardImageSize)
 	h.images.RememberSized(dto.ID, "Backdrop", series.BackdropURL, compatCardImageSize)
 	if dto.SeriesID != "" {
-		h.images.RememberSized(dto.SeriesID, "Primary", series.PosterURL, compatCardImageSize)
+		h.images.RememberSized(dto.SeriesID, imageTypePrimary, series.PosterURL, compatCardImageSize)
 		h.images.RememberSized(dto.SeriesID, "Backdrop", series.BackdropURL, compatCardImageSize)
 		h.images.RememberSized(dto.SeriesID, "Thumb", series.BackdropURL, compatCardImageSize)
 	}
@@ -3081,7 +3108,7 @@ func contentIDsFromListItems(items []upstreamListItem) []string {
 func episodeContentIDsFromListItems(items []upstreamListItem) []string {
 	contentIDs := make([]string, 0, len(items))
 	for _, item := range items {
-		if strings.EqualFold(item.Type, "episode") {
+		if strings.EqualFold(item.Type, itemTypeEpisode) {
 			contentIDs = append(contentIDs, item.ContentID)
 		}
 	}
@@ -3133,15 +3160,6 @@ func urlValuesFromItemsQuery(query itemsQuery) url.Values {
 	return buildBrowseParams(query)
 }
 
-func progressMap(entries []upstreamProgress) map[string]*upstreamProgress {
-	result := make(map[string]*upstreamProgress, len(entries))
-	for i := range entries {
-		entry := entries[i]
-		result[entry.MediaItemID] = &entry
-	}
-	return result
-}
-
 func decodeContentID(codec *ResourceIDCodec, raw string) (string, error) {
 	if id, err := decodeItemID(codec, raw); err == nil {
 		return id, nil
@@ -3183,7 +3201,7 @@ func (h *ItemsHandler) rememberLibraryImages(library upstreamUserLibrary, routeI
 	if h.images == nil || library.PosterURL == "" {
 		return
 	}
-	h.images.RememberSized(routeID, "Primary", library.PosterURL, compatCardImageSize)
+	h.images.RememberSized(routeID, imageTypePrimary, library.PosterURL, compatCardImageSize)
 }
 
 func (h *ItemsHandler) rememberListImages(items []upstreamListItem) {
@@ -3192,7 +3210,7 @@ func (h *ItemsHandler) rememberListImages(items []upstreamListItem) {
 	}
 	for _, item := range items {
 		routeID := h.codec.EncodeStringID(EncodedIDItem, item.ContentID)
-		h.images.RememberSized(routeID, "Primary", firstNonEmpty(item.StillURL, item.PosterURL), compatCardImageSize)
+		h.images.RememberSized(routeID, imageTypePrimary, firstNonEmpty(item.StillURL, item.PosterURL), compatCardImageSize)
 		h.images.RememberSized(routeID, "Backdrop", item.BackdropURL, compatCardImageSize)
 		h.images.RememberSized(routeID, "Logo", item.LogoURL, compatCardImageSize)
 	}
@@ -3216,7 +3234,7 @@ func (h *ItemsHandler) rememberDetailImages(detail upstreamItemDetail) {
 	primaryURL := firstNonEmpty(detail.PosterURL, detail.BackdropURL)
 	for _, routeID := range routeIDs {
 		if primaryURL != "" {
-			h.images.RememberSized(routeID, "Primary", primaryURL, detailImageSize)
+			h.images.RememberSized(routeID, imageTypePrimary, primaryURL, detailImageSize)
 		}
 		if detail.BackdropURL != "" {
 			h.images.RememberSized(routeID, "Backdrop", detail.BackdropURL, detailImageSize)
@@ -3228,14 +3246,14 @@ func (h *ItemsHandler) rememberDetailImages(detail upstreamItemDetail) {
 	for _, cast := range detail.Cast {
 		if cast.PhotoURL != "" {
 			if pid, _ := strconv.ParseInt(cast.PersonID, 10, 64); pid > 0 {
-				h.images.RememberSized(h.codec.EncodeIntID(EncodedIDPerson, pid), "Primary", cast.PhotoURL, compatCardImageSize)
+				h.images.RememberSized(h.codec.EncodeIntID(EncodedIDPerson, pid), imageTypePrimary, cast.PhotoURL, compatCardImageSize)
 			}
 		}
 	}
 	for _, crew := range detail.Crew {
 		if crew.PhotoURL != "" {
 			if pid, _ := strconv.ParseInt(crew.PersonID, 10, 64); pid > 0 {
-				h.images.RememberSized(h.codec.EncodeIntID(EncodedIDPerson, pid), "Primary", crew.PhotoURL, compatCardImageSize)
+				h.images.RememberSized(h.codec.EncodeIntID(EncodedIDPerson, pid), imageTypePrimary, crew.PhotoURL, compatCardImageSize)
 			}
 		}
 	}
@@ -3246,20 +3264,11 @@ func (h *ItemsHandler) rememberSeasonImages(seasons []upstreamSeason, seriesID s
 		return
 	}
 	for _, season := range seasons {
-		h.images.RememberSized(h.codec.EncodeStringID(EncodedIDSeason, season.ContentID), "Primary", season.PosterURL, compatCardImageSize)
-		h.images.RememberSized(h.codec.EncodeStringID(EncodedIDItem, season.ContentID), "Primary", season.PosterURL, compatCardImageSize)
+		h.images.RememberSized(h.codec.EncodeStringID(EncodedIDSeason, season.ContentID), imageTypePrimary, season.PosterURL, compatCardImageSize)
+		h.images.RememberSized(h.codec.EncodeStringID(EncodedIDItem, season.ContentID), imageTypePrimary, season.PosterURL, compatCardImageSize)
 		if seriesID != "" {
-			h.images.RememberSized(h.codec.EncodeStringID(EncodedIDItem, seriesID), "Primary", season.PosterURL, compatCardImageSize)
+			h.images.RememberSized(h.codec.EncodeStringID(EncodedIDItem, seriesID), imageTypePrimary, season.PosterURL, compatCardImageSize)
 		}
-	}
-}
-
-func (h *ItemsHandler) rememberEpisodeImages(episodes []upstreamEpisode) {
-	if h.images == nil {
-		return
-	}
-	for _, episode := range episodes {
-		h.images.RememberSized(h.codec.EncodeStringID(EncodedIDItem, episode.ContentID), "Primary", episode.StillURL, compatCardImageSize)
 	}
 }
 
@@ -3354,9 +3363,9 @@ func (h *ItemsHandler) inferLibraryItemType(ctx context.Context, session *Sessio
 		if lib.ID == libraryID {
 			switch lib.Type {
 			case "movies":
-				return "movie"
-			case "series":
-				return "series"
+				return itemTypeMovie
+			case itemTypeSeries:
+				return itemTypeSeries
 			default:
 				return ""
 			}

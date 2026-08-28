@@ -92,7 +92,7 @@ export default function InvitationsTab() {
   const [resendResult, setResendResult] = useState<SendInvitationResponse | null>(null);
 
   function handleCopy(text: string) {
-    navigator.clipboard.writeText(text);
+    void navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
   }
 

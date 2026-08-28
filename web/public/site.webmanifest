@@ -1,6 +1,6 @@
 {
-  "name": "Silo",
-  "short_name": "Silo",
+  "name": "Prairie",
+  "short_name": "Prairie",
   "icons": [
     {
       "src": "/web-app-icon-192.png",
@@ -19,7 +19,7 @@
       "purpose": "maskable"
     }
   ],
-  "theme_color": "#1718c9",
-  "background_color": "#1718c9",
+  "theme_color": "#0b0b0f",
+  "background_color": "#0b0b0f",
   "display": "standalone"
 }

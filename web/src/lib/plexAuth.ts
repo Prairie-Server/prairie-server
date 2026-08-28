@@ -2,9 +2,9 @@ import { randomUUID } from "./uuid";
 
 const PLEX_TV_BASE_URL = "https://plex.tv";
 const PLEX_AUTH_BASE_URL = "https://app.plex.tv/auth#?";
-const PLEX_PRODUCT = "Silo";
+const PLEX_PRODUCT = "Prairie";
 const PLEX_VERSION = "1.0.0";
-const PLEX_CLIENT_ID_STORAGE_KEY = "silo-plex-history-import-client-id";
+const PLEX_CLIENT_ID_STORAGE_KEY = "prairie-plex-history-import-client-id";
 
 interface PlexPinResponse {
   id: number;
@@ -70,7 +70,7 @@ export function getPlexClientIdentifier(): string {
   return generated;
 }
 
-function buildPlexHeaders(token?: string): HeadersInit {
+function buildPlexHeaders(token?: string): Record<string, string> {
   const headers: Record<string, string> = {
     Accept: "application/json",
     "X-Plex-Client-Identifier": getPlexClientIdentifier(),
@@ -78,7 +78,7 @@ function buildPlexHeaders(token?: string): HeadersInit {
     "X-Plex-Version": PLEX_VERSION,
     "X-Plex-Platform": navigator.platform || "Web",
     "X-Plex-Device": "Browser",
-    "X-Plex-Device-Name": "Silo Web",
+    "X-Plex-Device-Name": "Prairie Web",
   };
   if (token) {
     headers["X-Plex-Token"] = token;

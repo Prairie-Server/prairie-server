@@ -1,5 +1,8 @@
 .git
+.github
 .claude
+.agents
+.githooks
 .superpowers
 .env
 .env.*
@@ -7,7 +10,18 @@ docs/
 node_modules
 web/node_modules
 web/dist
+web/docs
+# Authoring-only plates (~231MB). Vite already omits them from dist; excluding
+# them from the build context avoids shipping them into every Docker build.
+web/public/images/collection-templates/raw
 silo
 streamapp
 *.md
 .playwright-cli/
+tools/
+assets/
+**/*_test.go
+**/*.test.ts
+**/*.test.tsx
+coverage/
+tmp/

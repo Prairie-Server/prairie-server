@@ -32,7 +32,7 @@ Set these values before migrating:
 ```dotenv
 MEDIA_ROOT=/host/path/to/media
 MEDIA_CONTAINER_ROOT=/old/container/path/to/media
-SILO_DATA_ROOT=/opt/silo
+PRAIRIE_DATA_ROOT=/opt/prairie
 POSTGRES_USER=continuum
 POSTGRES_PASSWORD=continuum
 POSTGRES_DB=continuum
@@ -57,7 +57,7 @@ Common overrides:
 
 ```sh
 CONTINUUM_DATA_ROOT=/srv/continuum \
-SILO_DATA_ROOT=/srv/silo \
+PRAIRIE_DATA_ROOT=/srv/silo \
 scripts/migrate-continuum-docker.sh check
 ```
 
@@ -82,12 +82,12 @@ The migration mode:
 
 - creates a `pg_dump` backup unless `--skip-db-dump` is provided
 - stops the old Continuum compose stack or detected `continuum-*` containers
-- moves `CONTINUUM_DATA_ROOT` to `SILO_DATA_ROOT`
+- moves `CONTINUUM_DATA_ROOT` to `PRAIRIE_DATA_ROOT`
 - leaves a compatibility symlink from the old data root to the new one unless
   `--no-compat-symlink` is provided
 - starts the Silo compose stack
 - updates plugin cache paths from `/var/lib/continuum/plugins` to
-  `/var/lib/silo/plugins`
+  `/var/lib/prairie/plugins`
 - disables old `continuum.*` plugin installations and the old plugin catalog
 
 Old Continuum plugin binaries are disabled because they may not be compatible

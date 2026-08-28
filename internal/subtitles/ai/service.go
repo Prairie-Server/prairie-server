@@ -59,7 +59,7 @@ type SubtitleLister interface {
 // Service owns the AI subtitle job semantics: enqueue validation, source
 // resolution, translation, and result storage. Lifecycle mechanics (bounded
 // dispatch, heartbeat, stale-job reaping, cancellation) are delegated to the
-// shared jobrunner so they stay identical across Silo's AI job services.
+// shared jobrunner so they stay identical across Prairie's AI job services.
 type Service struct {
 	// cfg is behind an atomic pointer so admin settings changes apply to
 	// subsequent enqueues/quota checks without rebuilding the service.

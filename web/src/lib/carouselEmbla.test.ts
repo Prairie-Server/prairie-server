@@ -11,11 +11,27 @@ describe("carouselEmbla", () => {
   });
 
   it("forces wheel gestures onto the horizontal axis", () => {
-    const target = { nodeName: "DIV" } as unknown as HTMLElement;
+    const target = document.createElement("div");
 
     expect(getCarouselWheelGestureOptions(target)).toMatchObject({
       forceWheelAxis: "x",
       target,
+    });
+  });
+
+  it("omits target when none is provided and merges Embla overrides", () => {
+    expect(getCarouselWheelGestureOptions()).toEqual({
+      forceWheelAxis: "x",
+      target: undefined,
+    });
+    expect(getCarouselWheelGestureOptions(null)).toEqual({
+      forceWheelAxis: "x",
+      target: undefined,
+    });
+    expect(getCarouselEmblaOptions({ loop: true, dragFree: false })).toMatchObject({
+      align: "start",
+      loop: true,
+      dragFree: false,
     });
   });
 });

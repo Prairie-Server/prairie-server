@@ -26,7 +26,7 @@ type Config struct {
 	HealthFailureLimit  int
 
 	// EventPublisher receives events that plugins publish via RuntimeHost.
-	// Typically silo's *events.Hub. When nil, plugins that try to
+	// Typically Prairie's *events.Hub. When nil, plugins that try to
 	// PublishEvent will receive an error.
 	EventPublisher EventPublisher
 	// LibraryLister answers ListLibraries calls from plugins. When nil,

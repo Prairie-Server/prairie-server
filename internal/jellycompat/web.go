@@ -8,6 +8,8 @@ import (
 	"path"
 	"strconv"
 	"strings"
+
+	"github.com/prairie-server/prairie-server/internal/httpheaders"
 )
 
 func newCompatWebFSFromDirectory(root string) (fs.FS, error) {
@@ -39,7 +41,7 @@ func newCompatWebHandler(webFS fs.FS, version string) http.Handler {
 		}
 
 		if version != "" {
-			w.Header().Set("X-Silo-Jellyfin-Web-Version", version)
+			httpheaders.Set(w.Header(), httpheaders.HeaderJellyfinWebVersion, version)
 		}
 		// Block content sniffing on everything we serve here. A CSP is
 		// intentionally NOT set: the vendored jellyfin-web bundle relies on
@@ -161,7 +163,7 @@ func compatWebDisabledMessage(ctx context.Context, deps Dependencies) string {
 	case !proxyEnabled:
 		return "Jellyfin Web UI is disabled because the Jellyfin compatibility proxy is disabled"
 	case !webEnabled:
-		return "Jellyfin Web UI is disabled in Silo settings"
+		return "Jellyfin Web UI is disabled in Prairie settings"
 	default:
 		return "Jellyfin Web UI is disabled"
 	}

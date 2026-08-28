@@ -118,6 +118,7 @@ type AuthHandler struct {
 	cfg           func() *config.Config
 	loginResolver loginResolver
 	authenticator *Authenticator
+	liveTVEnabled bool
 }
 
 // NewAuthHandler creates a new auth handler. The config provider is invoked
@@ -128,6 +129,12 @@ func NewAuthHandler(cfg func() *config.Config, loginResolver loginResolver, auth
 		loginResolver: loginResolver,
 		authenticator: authenticator,
 	}
+}
+
+// SetLiveTVEnabled toggles EnableLiveTvAccess / EnableAllChannels on user policy
+// when Prairie Live TV is configured for this compat server.
+func (h *AuthHandler) SetLiveTVEnabled(enabled bool) {
+	h.liveTVEnabled = enabled
 }
 
 // HandlePublicUsers serves GET /Users/Public.
@@ -181,7 +188,7 @@ func (h *AuthHandler) HandleCurrentUser(w http.ResponseWriter, r *http.Request) 
 //
 // Jellyfin's user-list endpoint accepts any authenticated caller (including an
 // API key) and is what Tunarr probes to verify an API-key connection (the key
-// has no "me"). Silo separates login accounts from household profiles and is
+// has no "me"). Prairie separates login accounts from household profiles and is
 // multi-account, so we return only the caller's own user as a single-element
 // list rather than enumerating every account's profiles — listing all users
 // would leak identities across households.
@@ -242,7 +249,7 @@ func (h *AuthHandler) userDTO(session *Session) userDTOResponse {
 			EnableSharedDeviceControl:       false,
 			EnableRemoteAccess:              true,
 			EnableLiveTVManagement:          false,
-			EnableLiveTVAccess:              false,
+			EnableLiveTVAccess:              h.liveTVEnabled,
 			EnableMediaPlayback:             true,
 			EnableAudioPlaybackTranscoding:  true,
 			EnableVideoPlaybackTranscoding:  true,
@@ -253,15 +260,15 @@ func (h *AuthHandler) userDTO(session *Session) userDTOResponse {
 			EnableSyncTranscoding:           false,
 			EnableMediaConversion:           false,
 			EnableAllDevices:                true,
-			EnableAllChannels:               false,
+			EnableAllChannels:               h.liveTVEnabled,
 			EnableAllFolders:                true,
 			InvalidLoginAttemptCount:        0,
 			LoginAttemptsBeforeLockout:      0,
 			MaxActiveSessions:               0,
 			EnablePublicSharing:             false,
 			RemoteClientBitrateLimit:        0,
-			AuthenticationProviderID:        "silo-local",
-			PasswordResetProviderID:         "silo-local",
+			AuthenticationProviderID:        "prairie-local",
+			PasswordResetProviderID:         "prairie-local",
 			SyncPlayAccess:                  "None",
 		},
 		Configuration: userConfigurationResponse{

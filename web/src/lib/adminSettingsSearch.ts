@@ -6,6 +6,7 @@ import {
   Download,
   Gauge,
   HardDrive,
+  Info,
   Layers,
   Mail,
   Image,
@@ -43,6 +44,14 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
   {
     label: "Server",
     items: [
+      {
+        id: "about",
+        label: "About",
+        description: "Server version, update status, and changelog.",
+        keywords: ["version", "build", "update", "changelog", "release notes", "revision", "git"],
+        settings: settingIndex("Version", "Update status", "Latest version", "Changelog"),
+        icon: Info,
+      },
       {
         id: "general",
         label: "General",
@@ -343,11 +352,11 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
         id: "notifications",
         label: "Notifications",
         description:
-          "Server notification channels, release events, Silo Push Relay, Discord, web push, and webhooks.",
+          "Server notification channels, release events, Prairie Push Relay, Discord, web push, and webhooks.",
         keywords: [
           "release events",
           "new episode",
-          "silo push relay",
+          "prairie push relay",
           "mobile push",
           "apple push",
           "android push",
@@ -368,7 +377,7 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
           "Delivery Channels",
           "In-App",
           "Web Push",
-          "Silo Push Relay",
+          "Prairie Push Relay",
           "Relay URL",
           "Deployment ID",
           "Register Relay",

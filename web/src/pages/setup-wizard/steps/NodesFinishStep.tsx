@@ -12,8 +12,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Check, ChevronRight, Plus } from "lucide-react";
+import { ArrowRight, Check, ChevronRight, Loader2, Plus } from "lucide-react";
 import { useWizardContext } from "../WizardContext";
+import { WizardActions } from "../WizardActions";
 
 interface AddedNode {
   name: string;
@@ -55,6 +56,7 @@ function AddNodeForm({ onAdded }: { onAdded: (node: AddedNode) => void }) {
             onChange={(e) => setName(e.target.value)}
             placeholder="proxy-us-east"
             className="h-8 text-sm"
+            autoComplete="off"
             required
           />
         </div>
@@ -82,6 +84,7 @@ function AddNodeForm({ onAdded }: { onAdded: (node: AddedNode) => void }) {
             onChange={(e) => setUrl(e.target.value)}
             placeholder="https://proxy.example.com"
             className="h-8 text-sm"
+            autoComplete="url"
             required
           />
         </div>
@@ -93,6 +96,7 @@ function AddNodeForm({ onAdded }: { onAdded: (node: AddedNode) => void }) {
         className="h-7 text-xs"
         disabled={createNode.isPending}
       >
+        {createNode.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
         {createNode.isPending ? "Adding..." : "Add node"}
       </Button>
     </form>
@@ -116,7 +120,7 @@ export function NodesFinishStep() {
       selectProfile(chosenProfile);
     }
     clearProgress();
-    navigate(destination);
+    void navigate(destination);
   }
 
   function handleFinish() {
@@ -160,20 +164,24 @@ export function NodesFinishStep() {
       )}
 
       {/* Finish CTAs */}
-      <div className="border-foreground/[0.06] flex flex-col gap-3 border-t pt-6 sm:flex-row">
-        <Button onClick={handleFinish} disabled={finishing} className="sm:flex-1">
-          {finishing ? "Starting..." : "Start using Silo"}
-          <ChevronRight className="ml-1.5 h-4 w-4" />
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          onClick={handleGoToAdmin}
-          disabled={finishing}
-          className="sm:flex-1"
-        >
-          Go to admin
-        </Button>
+      <div className="border-foreground/[0.06] space-y-3 border-t pt-6">
+        <WizardActions />
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <Button onClick={handleFinish} disabled={finishing} className="sm:flex-1">
+            {finishing ? "Starting..." : "Start using Prairie"}
+            <ChevronRight className="ml-1.5 h-4 w-4" />
+          </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={handleGoToAdmin}
+            disabled={finishing}
+            className="sm:flex-1"
+          >
+            <ArrowRight />
+            Go to admin
+          </Button>
+        </div>
       </div>
     </div>
   );

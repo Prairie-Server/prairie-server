@@ -136,6 +136,28 @@ describe("SettingsLayout", () => {
     expect(markup).toContain(">Profiles<");
   });
 
+  it("places Quick Connect early in the settings nav", () => {
+    const markup = renderToStaticMarkup(
+      <MemoryRouter initialEntries={["/settings/playback"]}>
+        <SettingsLayout />
+      </MemoryRouter>,
+    );
+
+    const accountHeading = markup.indexOf('id="settings-nav-account"');
+    const appearanceHeading = markup.indexOf('id="settings-nav-appearance"');
+    const libraryHeading = markup.indexOf("settings-nav-library-");
+    const quickConnectHref = markup.indexOf("/settings/quick-connect");
+    const notificationsHref = markup.indexOf("/settings/notifications");
+    const appearanceHref = markup.indexOf("/settings/appearance");
+
+    expect(accountHeading).toBeGreaterThan(-1);
+    expect(appearanceHeading).toBeGreaterThan(accountHeading);
+    expect(libraryHeading).toBeGreaterThan(appearanceHeading);
+    expect(quickConnectHref).toBeGreaterThan(-1);
+    expect(quickConnectHref).toBeLessThan(notificationsHref);
+    expect(quickConnectHref).toBeLessThan(appearanceHref);
+  });
+
   it("includes the Webhook Sync section in personal settings", () => {
     const markup = renderToStaticMarkup(
       <MemoryRouter initialEntries={["/settings/webhook-sync"]}>

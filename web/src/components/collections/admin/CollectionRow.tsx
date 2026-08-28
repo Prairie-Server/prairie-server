@@ -2,6 +2,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { GripVertical, Pencil, RefreshCw, Trash2 } from "lucide-react";
 import type { LibraryCollection } from "@/api/types";
+import { ArtworkImage } from "@/components/ArtworkImage";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -82,7 +83,11 @@ export function CollectionRow({
         <GripVertical className="h-4 w-4" />
       </button>
       {collection.poster_url && (
-        <img src={collection.poster_url} alt="" className="h-10 w-7 rounded object-cover" />
+        <ArtworkImage
+          src={collection.poster_url}
+          alt=""
+          className="h-10 w-7 rounded object-cover"
+        />
       )}
       <div className="min-w-0 flex-1">
         <div className="flex min-w-0 items-center gap-2">

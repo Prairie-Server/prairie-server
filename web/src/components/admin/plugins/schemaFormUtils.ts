@@ -1,11 +1,10 @@
 import type { PluginAdminForm, PluginAdminFormCondition, PluginAdminFormField } from "@/api/types";
+import { stringifyUnknown } from "@/lib/stringifyUnknown";
 
 export type SchemaOption = { value: string; label: string };
 
 function stringify(value: unknown): string {
-  if (typeof value === "boolean") return value ? "true" : "false";
-  if (value === null || value === undefined) return "";
-  return String(value);
+  return stringifyUnknown(value);
 }
 
 export function evaluateShowWhen(

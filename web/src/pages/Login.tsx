@@ -21,9 +21,11 @@ import {
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useServerBranding } from "@/hooks/useServerBranding";
 import { AuthBackground } from "@/components/auth/AuthBackground";
+import { AuthBrandHero } from "@/components/auth/AuthBrandHero";
 import { sanitizeAuthRedirect } from "@/lib/authRedirect";
 import { toast } from "sonner";
 
+import { Loader2, LogIn, QrCode, RotateCcw } from "lucide-react";
 function detectPlatform() {
   const ua = navigator.userAgent;
   if (/AppleTV|tvOS/i.test(ua)) return "tvOS";
@@ -83,7 +85,7 @@ export default function Login() {
     loading,
     setupLoading,
     setupRequired,
-    providers = [],
+    providers,
   } = useAuth();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -113,7 +115,7 @@ export default function Login() {
 
   const navigateAfterLogin = useCallback(async () => {
     if (redirectTarget) {
-      navigate(redirectTarget, { replace: true });
+      void navigate(redirectTarget, { replace: true });
       return;
     }
 
@@ -122,14 +124,14 @@ export default function Login() {
       const soleProfile = getBootstrapProfile(profileList.profiles ?? []);
       if (soleProfile) {
         selectProfile(soleProfile);
-        navigate("/");
+        void navigate("/");
         return;
       }
     } catch {
-      navigate("/profiles");
+      void navigate("/profiles");
       return;
     }
-    navigate("/profiles");
+    void navigate("/profiles");
   }, [navigate, redirectTarget, selectProfile]);
 
   useEffect(() => {
@@ -269,168 +271,175 @@ export default function Login() {
     <main className="auth-shell">
       <AuthBackground />
       <h1 className="sr-only">Sign in to {serverName}</h1>
-      <Card className="auth-card glass panel-border w-full max-w-md border-0">
-        <CardHeader>
-          <CardTitle className="text-3xl font-extrabold tracking-[-0.04em]">{serverName}</CardTitle>
-          <CardDescription className="mt-2 text-sm leading-6">{loginSubtitle}</CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          {oauthError && (
-            <div className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
-              Sign-in failed: {decodeURIComponent(oauthError)}
-            </div>
-          )}
-          {oauthProviders.length > 0 && (
-            <div className="space-y-2">
-              {oauthProviders.map((entry) => (
-                <form
-                  key={entry.id}
-                  method="post"
-                  action={`/api/v1/auth/oauth/${entry.installation_id}/init${nextParam}`}
-                >
-                  <Button type="submit" variant="outline" className="w-full justify-start gap-3">
-                    {entry.icon_url && <img src={entry.icon_url} alt="" className="h-5 w-5" />}
-                    <span>{entry.display_name}</span>
-                  </Button>
-                </form>
-              ))}
-              <div className="text-muted-foreground flex items-center gap-2 pt-2 text-xs">
-                <div className="bg-border h-px flex-1" />
-                <span>or</span>
-                <div className="bg-border h-px flex-1" />
-              </div>
-            </div>
-          )}
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="username">Username</Label>
-              <Input
-                id="username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                autoFocus
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <PasswordInput
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                required
-              />
-            </div>
-            {credentialProviders.length > 1 && (
-              <div className="space-y-2">
-                <Label>Sign in with</Label>
-                <Select value={selectedProvider} onValueChange={setProvider}>
-                  <SelectTrigger className="w-full">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {credentialProviders.map((entry) => (
-                      <SelectItem key={entry.id} value={entry.id}>
-                        {entry.display_name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+      <div className="auth-viewport">
+        <AuthBrandHero subtitle={loginSubtitle} />
+        <Card className="auth-card border-0 bg-transparent shadow-none">
+          <CardHeader className="sr-only">
+            <CardTitle>Sign in</CardTitle>
+            <CardDescription>{loginSubtitle}</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5 p-0">
+            {oauthError && (
+              <div className="border-destructive/30 bg-destructive/10 text-destructive rounded-md border p-3 text-sm">
+                Sign-in failed: {decodeURIComponent(oauthError)}
               </div>
             )}
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "Signing in..." : "Sign in"}
-            </Button>
-          </form>
-
-          <div className="space-y-4">
-            <Separator />
-            <div className="space-y-3">
-              <div>
-                <h2 className="text-sm font-semibold">Use your phone instead</h2>
-                <p className="text-muted-foreground mt-1 text-sm">
-                  Scan a code, sign in there, and approve this device.
-                </p>
-              </div>
-              {!deviceSession ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  disabled={startingDeviceLogin}
-                  onClick={() => void handleStartDeviceLogin()}
-                >
-                  {startingDeviceLogin ? "Generating code..." : "Show QR code"}
-                </Button>
-              ) : (
-                <div className="border-border/60 bg-background/50 space-y-4 rounded-md border p-4">
-                  <div className="flex justify-center rounded-md bg-white p-3">
-                    <QRCode value={deviceSession.verification_uri_complete} size={176} />
-                  </div>
-                  <div className="space-y-2 text-center">
-                    <div>
-                      <div className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
-                        Match code
-                      </div>
-                      <div className="text-lg font-semibold">{deviceSession.match_code}</div>
-                    </div>
-                    {showDeviceFallback ? (
-                      <div className="space-y-2">
-                        <div>
-                          <div className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
-                            Enter this code if needed
-                          </div>
-                          <div className="font-mono text-lg font-semibold">
-                            {deviceSession.user_code}
-                          </div>
-                        </div>
-                        <p className="text-muted-foreground text-xs break-all">
-                          {deviceSession.verification_uri}
-                        </p>
-                      </div>
-                    ) : (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="text-muted-foreground hover:text-foreground mx-auto h-auto px-0 py-1 text-xs"
-                        onClick={() => setShowDeviceFallback(true)}
-                      >
-                        Can&apos;t scan the QR code?
-                      </Button>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="w-full"
-                      onClick={() => {
-                        setDeviceSession(null);
-                        setDeviceStatusMessage("");
-                        setShowDeviceFallback(false);
-                      }}
-                    >
-                      Start over
+            {oauthProviders.length > 0 && (
+              <div className="space-y-2">
+                {oauthProviders.map((entry) => (
+                  <form
+                    key={entry.id}
+                    method="post"
+                    action={`/api/v1/auth/oauth/${entry.installation_id}/init${nextParam}`}
+                  >
+                    <Button type="submit" variant="outline" className="w-full justify-start gap-3">
+                      {entry.icon_url && <img src={entry.icon_url} alt="" className="h-5 w-5" />}
+                      <span>{entry.display_name}</span>
                     </Button>
-                    <p className="text-muted-foreground text-center text-sm">
-                      {devicePolling ? "Checking for approval..." : deviceStatusMessage}
-                    </p>
-                  </div>
+                  </form>
+                ))}
+                <div className="text-muted-foreground flex items-center gap-2 pt-2 text-xs">
+                  <div className="bg-border h-px flex-1" />
+                  <span>or</span>
+                  <div className="bg-border h-px flex-1" />
+                </div>
+              </div>
+            )}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                  autoFocus
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <PasswordInput
+                  id="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+              </div>
+              {credentialProviders.length > 1 && (
+                <div className="space-y-2">
+                  <Label>Sign in with</Label>
+                  <Select value={selectedProvider} onValueChange={setProvider}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {credentialProviders.map((entry) => (
+                        <SelectItem key={entry.id} value={entry.id}>
+                          {entry.display_name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               )}
-            </div>
-          </div>
+              <Button type="submit" className="w-full" disabled={submitting}>
+                {submitting ? <Loader2 className="animate-spin" /> : <LogIn />}
+                {submitting ? "Signing in..." : "Sign in"}
+              </Button>
+            </form>
 
-          <p className="text-muted-foreground text-center text-sm">
-            Don&apos;t have an account?{" "}
-            <Link to={signupHref} className="text-foreground underline hover:no-underline">
-              Sign up
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+            <div className="space-y-4">
+              <Separator />
+              <div className="space-y-3">
+                <div>
+                  <h2 className="text-sm font-semibold">Quick Connect</h2>
+                  <p className="text-muted-foreground mt-1 text-sm">
+                    Show a code, then approve from Settings → Quick Connect on a signed-in device.
+                  </p>
+                </div>
+                {!deviceSession ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    disabled={startingDeviceLogin}
+                    onClick={() => void handleStartDeviceLogin()}
+                  >
+                    {startingDeviceLogin ? <Loader2 className="animate-spin" /> : <QrCode />}
+                    {startingDeviceLogin ? "Generating code..." : "Show Quick Connect code"}
+                  </Button>
+                ) : (
+                  <div className="border-border/60 bg-background/50 space-y-4 rounded-md border p-4">
+                    <div className="flex justify-center rounded-md bg-white p-3">
+                      <QRCode value={deviceSession.verification_uri_complete} size={176} />
+                    </div>
+                    <div className="space-y-2 text-center">
+                      <div>
+                        <div className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
+                          Quick Connect code
+                        </div>
+                        <div className="font-mono text-2xl font-semibold tracking-wider">
+                          {deviceSession.user_code}
+                        </div>
+                        <p className="text-muted-foreground mt-1 text-xs">
+                          Enter this in Settings → Quick Connect on a signed-in device.
+                        </p>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
+                          Match code
+                        </div>
+                        <div className="text-lg font-semibold">{deviceSession.match_code}</div>
+                      </div>
+                      {showDeviceFallback ? (
+                        <p className="text-muted-foreground text-xs break-all">
+                          Or open {deviceSession.verification_uri}
+                        </p>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          className="text-muted-foreground hover:text-foreground mx-auto h-auto px-0 py-1 text-xs"
+                          onClick={() => setShowDeviceFallback(true)}
+                        >
+                          Prefer a link instead?
+                        </Button>
+                      )}
+                    </div>
+                    <div className="space-y-2">
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => {
+                          setDeviceSession(null);
+                          setDeviceStatusMessage("");
+                          setShowDeviceFallback(false);
+                        }}
+                      >
+                        <RotateCcw />
+                        Start over
+                      </Button>
+                      <p className="text-muted-foreground text-center text-sm">
+                        {devicePolling ? "Checking for approval..." : deviceStatusMessage}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <p className="text-muted-foreground text-center text-sm">
+              Don&apos;t have an account?{" "}
+              <Link to={signupHref} className="text-foreground underline hover:no-underline">
+                Sign up
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </main>
   );
 }

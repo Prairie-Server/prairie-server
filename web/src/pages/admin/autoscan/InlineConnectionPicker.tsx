@@ -46,7 +46,7 @@ function integrationKind(integration: RequestIntegration): string {
  * read at poll time, so creating one mid-flow is safe and needs no new API.
  *
  * When Requests already holds a matching Sonarr/Radarr, that is offered first —
- * Silo has the credentials, so asking for them again is pure duplication.
+ * Prairie has the credentials, so asking for them again is pure duplication.
  */
 export function InlineConnectionPicker({
   value,
@@ -80,6 +80,8 @@ export function InlineConnectionPicker({
   // it because it probes only the URL and key.
   const [manualKind, setManualKind] = useState("");
   const [testResult, setTestResult] = useState<AutoscanConnectionTestResult | null>(null);
+  // Previous connection value to restore on cancel.
+  const [previousValue, setPreviousValue] = useState("");
 
   // Requests integrations this source could bind, minus any already linked by a
   // saved connection — re-offering those would create a second connection to
@@ -113,6 +115,10 @@ export function InlineConnectionPicker({
 
   function handleSelect(next: string) {
     if (next === ADD_NEW) {
+      // Save the current value so cancel can restore it.
+      setPreviousValue(value);
+      // Clear the selected connection before entering draft mode.
+      onChange("");
       setAdding(true);
       // Pre-select a reusable Requests server so the common path is one click.
       setReuseId(reusable[0]?.id ?? "");
@@ -161,6 +167,11 @@ export function InlineConnectionPicker({
         setAdding(false);
         resetDraft();
       },
+      onError: (err) =>
+        setTestResult({
+          ok: false,
+          error: err instanceof Error ? err.message : "Failed to create connection",
+        }),
     });
   }
 
@@ -221,7 +232,7 @@ export function InlineConnectionPicker({
                 </SelectContent>
               </Select>
               <p className="text-muted-foreground text-xs">
-                Silo already has these credentials — no need to enter them again.
+                Prairie already has these credentials — no need to enter them again.
               </p>
             </div>
           )}
@@ -323,6 +334,8 @@ export function InlineConnectionPicker({
                 onClick={() => {
                   setAdding(false);
                   resetDraft();
+                  // Restore the previous connection value.
+                  onChange(previousValue);
                 }}
                 disabled={createConnection.isPending}
               >

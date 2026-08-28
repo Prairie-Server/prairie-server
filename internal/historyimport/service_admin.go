@@ -52,19 +52,19 @@ func (s *Service) DiscoverExternalUsers(ctx context.Context, sourceID int) ([]Ex
 	}
 }
 
-// CreateMapping persists a new (source user → Silo user + profile) mapping.
+// CreateMapping persists a new (source user → Prairie user + profile) mapping.
 func (s *Service) CreateMapping(ctx context.Context, input CreateMappingInput) (*UserMapping, error) {
 	if input.ExternalUserID == "" {
 		return nil, fmt.Errorf("external_user_id is required")
 	}
-	if input.SiloUserID == 0 {
+	if input.PrairieUserID == 0 {
 		return nil, fmt.Errorf("silo_user_id is required")
 	}
-	if input.SiloProfileID == "" {
+	if input.PrairieProfileID == "" {
 		return nil, fmt.Errorf("silo_profile_id is required")
 	}
 
-	exists, err := s.repo.ProfileExistsForUser(ctx, input.SiloUserID, input.SiloProfileID)
+	exists, err := s.repo.ProfileExistsForUser(ctx, input.PrairieUserID, input.PrairieProfileID)
 	if err != nil {
 		return nil, err
 	}
@@ -75,15 +75,15 @@ func (s *Service) CreateMapping(ctx context.Context, input CreateMappingInput) (
 	return s.repo.CreateMapping(ctx, input)
 }
 
-// ListMappings returns all mappings for a source, enriched with Silo user/profile names.
+// ListMappings returns all mappings for a source, enriched with Prairie user/profile names.
 func (s *Service) ListMappings(ctx context.Context, sourceID int) ([]UserMapping, error) {
 	return s.repo.ListMappingsForSource(ctx, sourceID)
 }
 
-// UpdateMapping changes the Silo target of an existing mapping.
+// UpdateMapping changes the Prairie target of an existing mapping.
 func (s *Service) UpdateMapping(ctx context.Context, id int, input UpdateMappingInput) (*UserMapping, error) {
-	if input.SiloUserID != nil && input.SiloProfileID != nil {
-		exists, err := s.repo.ProfileExistsForUser(ctx, *input.SiloUserID, *input.SiloProfileID)
+	if input.PrairieUserID != nil && input.PrairieProfileID != nil {
+		exists, err := s.repo.ProfileExistsForUser(ctx, *input.PrairieUserID, *input.PrairieProfileID)
 		if err != nil {
 			return nil, err
 		}
@@ -138,8 +138,8 @@ func (s *Service) CreateAdminRun(ctx context.Context, mappingID int) (*Run, erro
 
 	run := Run{
 		ID:               uuid.NewString(),
-		UserID:           mapping.SiloUserID,
-		ProfileID:        mapping.SiloProfileID,
+		UserID:           mapping.PrairieUserID,
+		ProfileID:        mapping.PrairieProfileID,
 		SourceType:       source.SourceType,
 		ConnectionMode:   ConnectionModeAdminToken,
 		Status:           RunStatusQueued,
@@ -189,8 +189,8 @@ func (s *Service) BulkCreateAdminRuns(ctx context.Context, sourceID int) (*BulkR
 
 		run := Run{
 			ID:               uuid.NewString(),
-			UserID:           mapping.SiloUserID,
-			ProfileID:        mapping.SiloProfileID,
+			UserID:           mapping.PrairieUserID,
+			ProfileID:        mapping.PrairieProfileID,
 			SourceType:       source.SourceType,
 			ConnectionMode:   ConnectionModeAdminToken,
 			Status:           RunStatusQueued,

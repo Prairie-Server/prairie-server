@@ -97,7 +97,7 @@ func writeWebSocketJSON(conn *websocket.Conn, value any) error {
 	if err := conn.SetWriteDeadline(time.Now().Add(wsWriteTimeout)); err != nil {
 		return err
 	}
-	defer conn.SetWriteDeadline(time.Time{})
+	defer func() { _ = conn.SetWriteDeadline(time.Time{}) }()
 	return conn.WriteJSON(value)
 }
 

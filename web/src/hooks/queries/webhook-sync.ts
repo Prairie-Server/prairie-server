@@ -31,8 +31,8 @@ export function useCreateWebhookSyncConnection() {
       }),
     onSuccess: (result) => {
       toast.success("Webhook connection created");
-      queryClient.invalidateQueries({ queryKey: webhookSyncKeys.connections() });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({ queryKey: webhookSyncKeys.connections() });
+      void queryClient.invalidateQueries({
         queryKey: webhookSyncKeys.profileMappings(result.connection.id),
       });
     },
@@ -58,8 +58,8 @@ export function useUpdateWebhookSyncConnection() {
       }),
     onSuccess: (_, variables) => {
       toast.success("Webhook connection updated");
-      queryClient.invalidateQueries({ queryKey: webhookSyncKeys.connections() });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({ queryKey: webhookSyncKeys.connections() });
+      void queryClient.invalidateQueries({
         queryKey: webhookSyncKeys.connection(variables.connectionId),
       });
     },
@@ -78,7 +78,7 @@ export function useDeleteWebhookSyncConnection() {
       }),
     onSuccess: () => {
       toast.success("Webhook connection deleted");
-      queryClient.invalidateQueries({ queryKey: webhookSyncKeys.connections() });
+      void queryClient.invalidateQueries({ queryKey: webhookSyncKeys.connections() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to delete webhook connection");
@@ -98,8 +98,8 @@ export function useRotateWebhookSyncWebhook() {
       ),
     onSuccess: (_, connectionId) => {
       toast.success("Webhook URL rotated");
-      queryClient.invalidateQueries({ queryKey: webhookSyncKeys.connections() });
-      queryClient.invalidateQueries({ queryKey: webhookSyncKeys.connection(connectionId) });
+      void queryClient.invalidateQueries({ queryKey: webhookSyncKeys.connections() });
+      void queryClient.invalidateQueries({ queryKey: webhookSyncKeys.connection(connectionId) });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to rotate webhook URL");
@@ -152,10 +152,10 @@ export function useUpdateWebhookSyncProfileMappings() {
       }),
     onSuccess: (_, variables) => {
       toast.success("Profile mappings saved");
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: webhookSyncKeys.profileMappings(variables.connectionId),
       });
-      queryClient.invalidateQueries({ queryKey: webhookSyncKeys.connections() });
+      void queryClient.invalidateQueries({ queryKey: webhookSyncKeys.connections() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to save profile mappings");

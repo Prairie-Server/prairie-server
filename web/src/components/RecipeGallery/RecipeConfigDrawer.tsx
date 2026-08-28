@@ -83,7 +83,7 @@ export default function RecipeConfigDrawer({
   };
 
   return (
-    <div className="max-w-[540px] rounded-xl border border-white/10 bg-zinc-900 p-6">
+    <div className="w-full max-w-[540px] rounded-xl border border-white/10 bg-zinc-900 p-4 sm:p-6">
       <div className="flex items-center justify-between border-b border-white/10 pb-3">
         <h3 className="text-base font-semibold">
           {preset.icon} {preset.display_name}

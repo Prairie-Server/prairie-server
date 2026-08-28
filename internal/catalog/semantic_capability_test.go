@@ -14,7 +14,7 @@ import (
 // each. This is the seam that lets capability validation be tested without
 // faking the concrete *meilisearchClient.
 func TestEvaluateEmbedderSettingsCapability(t *testing.T) {
-	const embedder = "silo_recommendations"
+	const embedder = "prairie_recommendations"
 	wantDims := embeddingvectors.CanonicalDimensions
 
 	t.Run("missing embedder", func(t *testing.T) {

@@ -18,7 +18,7 @@ type SyncPodcastFeedsTask struct {
 }
 
 // NewSyncPodcastFeedsTask constructs the task. refresher and store come
-// from the audiobooks subsystem wired in cmd/silo/main.go.
+// from the audiobooks subsystem wired in cmd/prairie/main.go.
 func NewSyncPodcastFeedsTask(refresher *podcastfeed.Refresher, store podcastfeed.Store) *SyncPodcastFeedsTask {
 	return &SyncPodcastFeedsTask{refresher: refresher, store: store}
 }

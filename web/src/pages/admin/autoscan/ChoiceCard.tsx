@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 /**
  * A selectable card used by the Add-source flow. Cards rather than a dropdown
  * because each option needs a sentence explaining what it does — the choice
- * between "Sonarr pushes to Silo" and "Silo polls Sonarr" is meaningless
+ * between "Sonarr pushes to Prairie" and "Prairie polls Sonarr" is meaningless
  * without it, and a <select> has nowhere to put that.
  */
 export function ChoiceCard({

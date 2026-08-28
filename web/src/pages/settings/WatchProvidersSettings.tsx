@@ -742,7 +742,7 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
               <ToggleRow
                 id={`watch-provider-${providerKey}-watchlist-order`}
                 label="Mirror watchlist order"
-                description={`Order your Silo watchlist to match its ${displayName} sort order. Items not on ${displayName} stay at the bottom.`}
+                description={`Order your Prairie watchlist to match its ${displayName} sort order. Items not on ${displayName} stay at the bottom.`}
                 checked={connection.sync_watchlist_order_enabled}
                 disabled={isBusy || !connection.import_watchlist_enabled}
                 onChange={(checked) =>

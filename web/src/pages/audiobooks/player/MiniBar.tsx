@@ -4,6 +4,7 @@ import { ChaptersMenu } from "@/player/components/ChaptersMenu";
 import { CircleButton } from "@/player/components/CircleButton";
 import { SleepTimerMenu } from "@/player/components/SleepTimerMenu";
 import { VolumeControl } from "@/player/components/VolumeControl";
+import { useVisualViewportOffset } from "@/hooks/useVisualViewportOffset";
 import { CoverExpandTile } from "./CoverExpandTile";
 import { PlayerSettingsMenu } from "./PlayerSettingsMenu";
 import { SkipIcon } from "./SkipIcon";
@@ -33,11 +34,15 @@ export function MiniBar({
   const hasChapters = playback.chapters.length > 0;
   const hasNextChapter =
     playback.currentChapter != null && playback.currentChapter.index + 1 < playback.chapters.length;
+  const { bottomOffset } = useVisualViewportOffset();
 
   return (
     <div
-      className="bg-background fixed right-0 bottom-0 z-40 border-t px-3 pt-2 pb-2 shadow-lg sm:px-6"
-      style={{ left: "var(--app-sidebar-offset, 0px)" }}
+      className="bg-background fixed right-0 bottom-0 z-40 border-t px-3 pt-2 pb-[max(0.5rem,env(safe-area-inset-bottom,0px))] shadow-lg sm:px-6"
+      style={{
+        left: "var(--app-sidebar-offset, 0px)",
+        transform: bottomOffset > 0 ? `translateY(-${bottomOffset}px)` : undefined,
+      }}
     >
       <SeekBar
         currentTime={playback.currentTime}
@@ -156,6 +161,16 @@ export function MiniBar({
         </div>
 
         <div className="flex items-center justify-end gap-2">
+          <div className="md:hidden">
+            <VolumeControl
+              tone="surface"
+              volume={playback.volume}
+              muted={playback.muted}
+              onVolumeChange={playback.setVolume}
+              onMutedChange={playback.setMuted}
+              showSlider={false}
+            />
+          </div>
           <div className="hidden md:block">
             <VolumeControl
               tone="surface"

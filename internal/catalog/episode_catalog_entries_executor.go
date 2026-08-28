@@ -430,8 +430,8 @@ func extractEpisodeCatalogUserStatePlan(def QueryDefinition) (episodeCatalogUser
 		plan.positiveSource = true
 		plan.sortOnly = true
 		plan.requiresFullPageGate = true
-	case "progress":
-		plan.source = "progress"
+	case filterFieldProgress:
+		plan.source = filterFieldProgress
 		plan.alias = "up"
 		plan.positiveSource = true
 		plan.sortOnly = true
@@ -442,7 +442,7 @@ func extractEpisodeCatalogUserStatePlan(def QueryDefinition) (episodeCatalogUser
 		if plan.source == "" {
 			return episodeCatalogUserStatePlan{}, false, nil
 		}
-		plan.requireProgressRatio = plan.source == "progress" && plan.sortOnly
+		plan.requireProgressRatio = plan.source == filterFieldProgress && plan.sortOnly
 		return plan, true, nil
 	}
 	if def.Match != "all" {
@@ -491,13 +491,13 @@ func extractEpisodeCatalogUserStatePlan(def QueryDefinition) (episodeCatalogUser
 		return episodeCatalogUserStatePlan{}, false, nil
 	}
 	plan.entryDef.Groups = filteredGroups
-	plan.requireProgressRatio = plan.source == "progress" && plan.sortOnly
+	plan.requireProgressRatio = plan.source == filterFieldProgress && plan.sortOnly
 	return plan, true, nil
 }
 
 func episodeCatalogUserStateRule(rule QueryRule) bool {
 	switch rule.Field {
-	case "watched", "in_progress", "last_watched":
+	case displayFilterFieldWatched, filterFieldInProgress, filterFieldLastWatched:
 		return true
 	default:
 		return false
@@ -506,7 +506,7 @@ func episodeCatalogUserStateRule(rule QueryRule) bool {
 
 func buildEpisodeCatalogUserStateRule(rule QueryRule) (string, string, bool, string, []any, bool, error) {
 	switch rule.Field {
-	case "watched":
+	case displayFilterFieldWatched:
 		value, ok := rule.Value.(bool)
 		if !ok {
 			return "", "", false, "", nil, true, fmt.Errorf("watched requires a boolean value")
@@ -515,18 +515,18 @@ func buildEpisodeCatalogUserStateRule(rule QueryRule) (string, string, bool, str
 			return "viewed", "uv", true, "uv.episode_id IS NOT NULL", nil, true, nil
 		}
 		return "viewed", "uv", false, "uv.episode_id IS NULL", nil, true, nil
-	case "in_progress":
+	case filterFieldInProgress:
 		value, ok := rule.Value.(bool)
 		if !ok {
 			return "", "", false, "", nil, true, fmt.Errorf("in_progress requires a boolean value")
 		}
 		if value {
-			return "progress", "up", true, "up.episode_id IS NOT NULL", nil, true, nil
+			return filterFieldProgress, "up", true, "up.episode_id IS NOT NULL", nil, true, nil
 		}
-		return "progress", "up", false, "up.episode_id IS NULL", nil, true, nil
-	case "last_watched":
+		return filterFieldProgress, "up", false, "up.episode_id IS NULL", nil, true, nil
+	case filterFieldLastWatched:
 		switch rule.Op {
-		case "gt", "gte", "between", "in_last":
+		case "gt", "gte", "between", filterOpInLast:
 		default:
 			return "", "", false, "", nil, false, nil
 		}
@@ -551,7 +551,7 @@ func buildEpisodeCatalogLastWatchedClause(rule QueryRule) (string, []any, error)
 			return "", nil, fmt.Errorf("between requires [min, max] array: %w", err)
 		}
 		return "uv.last_watched >= $%d::timestamptz AND uv.last_watched <= $%d::timestamptz", []any{values[0], values[1]}, nil
-	case "in_last":
+	case filterOpInLast:
 		duration, ok := rule.Value.(string)
 		if !ok {
 			return "", nil, fmt.Errorf("in_last requires a duration string like '30d'")
@@ -584,7 +584,7 @@ func rebindUserStateClauses(clauses []string, argIdx int) []string {
 
 func episodeCatalogUserStateCTE(plan episodeCatalogUserStatePlan) string {
 	switch plan.source {
-	case "progress":
+	case filterFieldProgress:
 		progressRatioGate := ""
 		if plan.requireProgressRatio {
 			progressRatioGate = `
@@ -648,7 +648,7 @@ func episodeCatalogUserStateCTE(plan episodeCatalogUserStatePlan) string {
 
 func episodeCatalogUserStateFromClause(plan episodeCatalogUserStatePlan) string {
 	tableName := "user_viewed"
-	if plan.source == "progress" {
+	if plan.source == filterFieldProgress {
 		tableName = "user_progress"
 	}
 	if plan.positiveSource {
@@ -677,7 +677,7 @@ func episodeCatalogUserStateOrderBy(plan episodeCatalogUserStatePlan) (string, b
 		return fmt.Sprintf("ORDER BY uv.last_watched %s NULLS LAST, ece.sort_key ASC, ece.episode_id ASC", dir), true
 	case "plays":
 		return fmt.Sprintf("ORDER BY uv.play_count %s NULLS LAST, ece.sort_key ASC, ece.episode_id ASC", dir), true
-	case "progress":
+	case filterFieldProgress:
 		return fmt.Sprintf("ORDER BY up.progress_ratio %s NULLS LAST, ece.sort_key ASC, ece.episode_id ASC", dir), true
 	default:
 		return episodeCatalogEntryOrderBy(QuerySort{Field: plan.sortField, Order: plan.sortOrder})
@@ -870,7 +870,7 @@ func buildEpisodeCatalogEntryRuleWhere(rule QueryRule, argIdx int) (string, []an
 	switch rule.Field {
 	case "type":
 		return buildEpisodeCatalogTypeClause(rule, argIdx)
-	case "genre":
+	case filterFieldGenre:
 		return buildEpisodeCatalogArrayClause("ece.genres", rule, argIdx)
 	case "studio":
 		return buildEpisodeCatalogArrayClause("ece.studios", rule, argIdx)
@@ -882,7 +882,7 @@ func buildEpisodeCatalogEntryRuleWhere(rule QueryRule, argIdx int) (string, []an
 		return buildEpisodeCatalogComparisonClause("ece.year", rule, argIdx, "")
 	case "rating_imdb":
 		return buildEpisodeCatalogComparisonClause("ece.rating_imdb", rule, argIdx, "")
-	case "original_language":
+	case filterFieldOriginalLanguage:
 		return buildEpisodeCatalogEqualityClause("ece.original_language", rule, argIdx)
 	case "content_rating":
 		return buildEpisodeCatalogEqualityClause("ece.content_rating", rule, argIdx)
@@ -892,19 +892,19 @@ func buildEpisodeCatalogEntryRuleWhere(rule QueryRule, argIdx int) (string, []an
 		return buildEpisodeCatalogComparisonClause("ece.episode_air_date", rule, argIdx, "date")
 	case "status":
 		return buildEpisodeCatalogEqualityClause("ece.status", rule, argIdx)
-	case "resolution":
+	case filterFieldResolution:
 		return buildEpisodeCatalogResolutionClause(rule, argIdx)
 	case "hdr":
 		return buildEpisodeCatalogBoolPresenceClause("ece.has_hdr", "ece.has_non_hdr", rule, argIdx)
-	case "dolby_vision":
+	case filterFieldDolbyVision:
 		return buildEpisodeCatalogBoolPresenceClause("ece.has_dolby_vision", "ece.has_non_dolby_vision", rule, argIdx)
-	case "bitrate":
+	case filterFieldBitrate:
 		return buildEpisodeCatalogBitrateClause(rule, argIdx)
-	case "audio_language":
+	case filterFieldAudioLanguage:
 		return buildEpisodeCatalogLanguageArrayClause("ece.audio_language_codes", rule, argIdx)
 	case "subtitle_language":
 		return buildEpisodeCatalogLanguageArrayClause("ece.subtitle_language_codes", rule, argIdx)
-	case "actor", "director", "writer", "producer", "watched", "favorited", "in_watchlist", "in_progress", "last_watched":
+	case "actor", "director", "writer", "producer", displayFilterFieldWatched, "favorited", "in_watchlist", filterFieldInProgress, filterFieldLastWatched:
 		return "", nil, argIdx, false, nil
 	default:
 		return "", nil, argIdx, false, nil
@@ -916,7 +916,7 @@ func buildEpisodeCatalogTypeClause(rule QueryRule, argIdx int) (string, []any, i
 	if !ok {
 		return "", nil, argIdx, true, fmt.Errorf("type requires a string value")
 	}
-	isEpisode := strings.EqualFold(strings.TrimSpace(value), "episode")
+	isEpisode := strings.EqualFold(strings.TrimSpace(value), itemTypeEpisode)
 	switch rule.Op {
 	case "is":
 		if isEpisode {
@@ -996,7 +996,7 @@ func buildEpisodeCatalogComparisonClause(column string, rule QueryRule, argIdx i
 		return fmt.Sprintf("%s = %s", column, placeholder(argIdx)), []any{rule.Value}, argIdx + 1, true, nil
 	case "is_not":
 		return fmt.Sprintf("NOT (%s = %s)", column, placeholder(argIdx)), []any{rule.Value}, argIdx + 1, true, nil
-	case "in_last":
+	case filterOpInLast:
 		duration, ok := rule.Value.(string)
 		if !ok {
 			return "", nil, argIdx, true, fmt.Errorf("in_last requires a duration string like '30d'")
@@ -1070,9 +1070,9 @@ func episodeCatalogEntryOrderBy(sortConfig QuerySort) (string, bool) {
 		return fmt.Sprintf("ORDER BY ece.rating_tmdb %s NULLS LAST, ece.sort_key ASC, ece.episode_id ASC", dir), true
 	case "rating_rt_critic", "rating_rt_audience":
 		return "ORDER BY ece.sort_key ASC, ece.episode_id ASC", true
-	case "resolution":
+	case filterFieldResolution:
 		return fmt.Sprintf("ORDER BY ece.max_resolution_rank %s NULLS LAST, ece.sort_key ASC, ece.episode_id ASC", dir), true
-	case "bitrate":
+	case filterFieldBitrate:
 		return fmt.Sprintf("ORDER BY ece.max_bitrate %s NULLS LAST, ece.sort_key ASC, ece.episode_id ASC", dir), true
 	default:
 		return "", false

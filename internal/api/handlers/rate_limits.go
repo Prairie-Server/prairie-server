@@ -123,7 +123,7 @@ func (h *RateLimitHandler) HandleGetConfig(w http.ResponseWriter, r *http.Reques
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(resp)
+	_ = json.NewEncoder(w).Encode(resp)
 }
 
 // HandleUpdateConfig handles PUT /admin/rate-limits/config.
@@ -237,7 +237,7 @@ func (h *RateLimitHandler) HandleUpdateConfig(w http.ResponseWriter, r *http.Req
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(map[string]any{"status": "ok", "restart_required": restartRequired})
+	_ = json.NewEncoder(w).Encode(map[string]any{"status": "ok", "restart_required": restartRequired})
 }
 
 func mergeRateLimitConfig(existing ratelimit.Config, req rateLimitConfigRequest) (ratelimit.Config, error) {

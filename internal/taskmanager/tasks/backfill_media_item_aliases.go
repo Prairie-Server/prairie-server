@@ -18,7 +18,7 @@ type MediaItemAliasBackfiller interface {
 	ResetCompletedBackfill(ctx context.Context) error
 }
 
-// BackfillMediaItemAliasesTask seeds the alias table from metadata Silo
+// BackfillMediaItemAliasesTask seeds the alias table from metadata Prairie
 // already owns. It is manual and idempotent; provider refreshes subsequently
 // replace only their own authoritative aliases.
 type BackfillMediaItemAliasesTask struct {

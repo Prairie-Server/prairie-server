@@ -266,7 +266,7 @@ func groupEventsByDate(events []catalog.CalendarEvent, r *http.Request, detailSv
 			seenPosterPaths[ev.PosterPath] = struct{}{}
 			posterPaths = append(posterPaths, ev.PosterPath)
 		}
-		posterURLs = detailSvc.PresignImageURLs(r.Context(), posterPaths, "poster", "small")
+		posterURLs = detailSvc.PresignImageURLs(r.Context(), posterPaths, imageTypePoster, "small")
 	}
 
 	type preparedCalendarEvent struct {

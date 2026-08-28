@@ -43,7 +43,7 @@ const (
 )
 
 // compatVideoTypes is the media_items type scope the Jellyfin compat surface
-// exposes when a request carries no explicit type filter. Silo serves
+// exposes when a request carries no explicit type filter. Prairie serves
 // audiobooks and podcasts through the audiobookshelf-compat API instead, so
 // those rows must never leak into jellycompat responses.
 const compatVideoTypes = "movie,series,episode"
@@ -124,10 +124,10 @@ const compatNoMatchType = "__compat_none__"
 // type filter may pass through ("season" matches no media_items row but is
 // kept so season-typed filters keep their empty-result semantics).
 var compatAllowedTypeSet = map[string]struct{}{
-	"movie":   {},
-	"series":  {},
-	"episode": {},
-	"season":  {},
+	itemTypeMovie:   {},
+	itemTypeSeries:  {},
+	itemTypeEpisode: {},
+	"season":        {},
 }
 
 // compatScopedSearchTypes clamps an item-type filter to the types the compat
@@ -644,7 +644,7 @@ func (s *directContentService) enrichDetailUserData(ctx context.Context, store u
 	// its episodes (mirrors applySeasonUserData) to give clients Played/
 	// UnplayedItemCount at the series level. Postgres-backed stores aggregate
 	// the rollup in SQL; the chunked per-episode path remains as fallback.
-	if result.UserData == nil && strings.EqualFold(result.Type, "series") && s.episodeRepo != nil {
+	if result.UserData == nil && strings.EqualFold(result.Type, itemTypeSeries) && s.episodeRepo != nil {
 		if rollupStore, ok := store.(userstore.SeriesEpisodeRollupStore); ok {
 			counts, err := rollupStore.SeriesEpisodeWatchCounts(ctx, profileID, []string{contentID})
 			if err == nil {
@@ -654,7 +654,7 @@ func (s *directContentService) enrichDetailUserData(ctx context.Context, store u
 				result.UserData = catalog.SeasonUserDataFromCounts(counts[contentID])
 				return
 			}
-			slog.Warn("series watch rollup query failed, falling back to per-episode rollup", "error", err)
+			slog.WarnContext(ctx, "series watch rollup query failed, falling back to per-episode rollup", "error", err)
 		}
 		if episodesBySeries, epErr := s.episodeRepo.ListBySeriesIDs(ctx, []string{contentID}); epErr == nil {
 			episodes := episodesBySeries[contentID]
@@ -741,7 +741,7 @@ func (s *directContentService) GetItemDetailsByIDs(ctx context.Context, session 
 	if store != nil {
 		leafIDs := make([]string, 0, len(details))
 		for id, detail := range details {
-			if isCompatExcludedMediaType(detail.Type) || strings.EqualFold(detail.Type, "series") {
+			if isCompatExcludedMediaType(detail.Type) || strings.EqualFold(detail.Type, itemTypeSeries) {
 				continue
 			}
 			leafIDs = append(leafIDs, id)
@@ -768,7 +768,7 @@ func (s *directContentService) GetItemDetailsByIDs(ctx context.Context, session 
 		upstream := itemDetailToUpstream(detail)
 		if store != nil {
 			switch {
-			case strings.EqualFold(detail.Type, "series"), leafBatchFailed:
+			case strings.EqualFold(detail.Type, itemTypeSeries), leafBatchFailed:
 				s.enrichDetailUserData(ctx, store, session.ProfileID, id, &upstream)
 			default:
 				var wp *userstore.WatchProgress
@@ -1026,7 +1026,7 @@ func (s *directContentService) enrichSeriesListUserData(ctx context.Context, ses
 	}
 	seriesIDs := make([]string, 0, len(items))
 	for i := range items {
-		if items[i].UserData == nil && items[i].ContentID != "" && strings.EqualFold(items[i].Type, "series") {
+		if items[i].UserData == nil && items[i].ContentID != "" && strings.EqualFold(items[i].Type, itemTypeSeries) {
 			seriesIDs = append(seriesIDs, items[i].ContentID)
 		}
 	}
@@ -1052,7 +1052,7 @@ func (s *directContentService) enrichSeriesListUserData(ctx context.Context, ses
 		counts, err := rollupStore.SeriesEpisodeWatchCounts(ctx, session.ProfileID, seriesIDs)
 		if err == nil {
 			for i := range items {
-				if items[i].UserData != nil || !strings.EqualFold(items[i].Type, "series") {
+				if items[i].UserData != nil || !strings.EqualFold(items[i].Type, itemTypeSeries) {
 					continue
 				}
 				if c, ok := counts[items[i].ContentID]; ok {
@@ -1061,7 +1061,7 @@ func (s *directContentService) enrichSeriesListUserData(ctx context.Context, ses
 			}
 			return
 		}
-		slog.Warn("series watch rollup query failed, falling back to per-episode rollup", "error", err)
+		slog.WarnContext(ctx, "series watch rollup query failed, falling back to per-episode rollup", "error", err)
 	}
 
 	episodesBySeries, err := s.episodeRepo.ListBySeriesIDs(ctx, seriesIDs)
@@ -1074,7 +1074,7 @@ func (s *directContentService) enrichSeriesListUserData(ctx context.Context, ses
 	}
 	progressMap := chunkedProgressByMediaItems(ctx, store, session.ProfileID, episodeIDs)
 	for i := range items {
-		if items[i].UserData != nil || !strings.EqualFold(items[i].Type, "series") {
+		if items[i].UserData != nil || !strings.EqualFold(items[i].Type, itemTypeSeries) {
 			continue
 		}
 		if episodes, ok := episodesBySeries[items[i].ContentID]; ok {
@@ -1168,32 +1168,12 @@ func (s *directContentService) batchProgressForEpisodes(ctx context.Context, ses
 }
 
 // enrichEpisodeUserData adds user data for a single episode.
-func (s *directContentService) enrichEpisodeUserData(ctx context.Context, session *Session, ep *upstreamEpisode) {
-	if progressMap, err := s.progressForContentIDs(ctx, session, []string{ep.ContentID}); err == nil {
-		if progress, ok := progressMap[ep.ContentID]; ok {
-			progressCopy := progress
-			ep.UserData = seasonUserDataFromProgress(&progressCopy)
-		}
-	}
-}
 
 func (s *directContentService) userStore(ctx context.Context, session *Session) (userstore.UserStore, error) {
 	if s.storeProvider == nil {
 		return nil, fmt.Errorf("user store is not configured")
 	}
 	return s.storeProvider.ForUser(ctx, session.StreamAppUserID)
-}
-
-func (s *directContentService) progressForContentIDs(ctx context.Context, session *Session, contentIDs []string) (map[string]userstore.WatchProgress, error) {
-	store, err := s.userStore(ctx, session)
-	if err != nil {
-		return nil, err
-	}
-	progressMap, err := userstore.ListProgressWithCompletedHistory(ctx, store, session.ProfileID, contentIDs)
-	if err != nil {
-		return nil, err
-	}
-	return progressMap, nil
 }
 
 func seasonUserDataFromProgress(progress *userstore.WatchProgress) *catalog.SeasonUserData {

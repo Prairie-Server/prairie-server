@@ -8,7 +8,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { useSettingsForm } from "@/hooks/useSettingsForm";
 import { useWizardContext } from "../WizardContext";
+import { WizardActions } from "../WizardActions";
 
+import { Loader2, Save, SkipForward } from "lucide-react";
 const KEYS = [
   "download.enabled",
   "download.server_bandwidth_mbps",
@@ -93,6 +95,7 @@ export function DownloadsStep() {
                   value={form.getValue("download.server_bandwidth_mbps")}
                   onChange={(e) => form.setValue("download.server_bandwidth_mbps", e.target.value)}
                   className="w-24"
+                  autoComplete="off"
                 />
                 <span className="text-muted-foreground text-xs">Mbps</span>
               </div>
@@ -111,6 +114,7 @@ export function DownloadsStep() {
                   value={form.getValue("download.user_bandwidth_mbps")}
                   onChange={(e) => form.setValue("download.user_bandwidth_mbps", e.target.value)}
                   className="w-24"
+                  autoComplete="off"
                 />
                 <span className="text-muted-foreground text-xs">Mbps</span>
               </div>
@@ -127,14 +131,16 @@ export function DownloadsStep() {
               value={form.getValue("download.max_concurrent_per_user")}
               onChange={(e) => form.setValue("download.max_concurrent_per_user", e.target.value)}
               className="w-24"
+              autoComplete="off"
             />
             <p className="text-muted-foreground/60 text-[11px]">0 = unlimited</p>
           </div>
         </div>
       )}
 
-      <div className="flex gap-3 pt-2">
+      <WizardActions>
         <Button type="submit" disabled={submitting || form.isSaving}>
+          {submitting || form.isSaving ? <Loader2 className="animate-spin" /> : <Save />}
           {submitting || form.isSaving ? "Saving..." : "Save & continue"}
         </Button>
         <Button
@@ -143,9 +149,10 @@ export function DownloadsStep() {
           onClick={handleSkip}
           disabled={submitting || form.isSaving}
         >
+          <SkipForward />
           Skip
         </Button>
-      </div>
+      </WizardActions>
     </form>
   );
 }

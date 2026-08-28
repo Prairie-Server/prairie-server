@@ -16,6 +16,7 @@ import (
 )
 
 func TestHandleItemImageAcceptsSignedTagWithoutSessionOrCache(t *testing.T) {
+	t.Parallel()
 	upstreamCalled := false
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		upstreamCalled = true
@@ -66,6 +67,7 @@ func TestHandleItemImageAcceptsSignedTagWithoutSessionOrCache(t *testing.T) {
 }
 
 func TestHandleItemImageProxiesInfuseSignedTagWithoutSessionOrCache(t *testing.T) {
+	t.Parallel()
 	upstreamCalled := false
 	var gotIfNoneMatch string
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -145,6 +147,7 @@ func TestHandleItemImageProxiesInfuseSignedTagWithoutSessionOrCache(t *testing.T
 }
 
 func TestHandleItemImageProxyRouteIDUsesCanonicalItemAndProxy(t *testing.T) {
+	t.Parallel()
 	upstreamCalled := false
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		upstreamCalled = true
@@ -207,6 +210,7 @@ func TestHandleItemImageProxyRouteIDUsesCanonicalItemAndProxy(t *testing.T) {
 }
 
 func TestHandleItemImageRejectsUnsignedTagWhenSecretBlank(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	contentID := "movie-1"
 	routeID := codec.EncodeStringID(EncodedIDItem, contentID)
@@ -247,6 +251,7 @@ func TestHandleItemImageRejectsUnsignedTagWhenSecretBlank(t *testing.T) {
 }
 
 func TestHandleItemImageAcceptsSignedCanonicalBackdropTagWithoutSessionOrCache(t *testing.T) {
+	t.Parallel()
 	upstreamCalled := false
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		upstreamCalled = true
@@ -285,6 +290,7 @@ func TestHandleItemImageAcceptsSignedCanonicalBackdropTagWithoutSessionOrCache(t
 }
 
 func TestHandleItemImageAcceptsLibraryPosterTagWithoutSessionOrCache(t *testing.T) {
+	t.Parallel()
 	upstreamCalled := false
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		upstreamCalled = true
@@ -322,6 +328,7 @@ func TestHandleItemImageAcceptsLibraryPosterTagWithoutSessionOrCache(t *testing.
 }
 
 func TestHandleItemImageAcceptsLegacyCachedURLTagWithoutRouteFallback(t *testing.T) {
+	t.Parallel()
 	upstreamCalled := false
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		upstreamCalled = true
@@ -352,6 +359,7 @@ func TestHandleItemImageAcceptsLegacyCachedURLTagWithoutRouteFallback(t *testing
 }
 
 func TestHandleItemImageRevalidatesTagBeforeRouteCacheHit(t *testing.T) {
+	t.Parallel()
 	called := false
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		called = true
@@ -406,6 +414,7 @@ func TestHandleItemImageRevalidatesTagBeforeRouteCacheHit(t *testing.T) {
 }
 
 func TestRedirectImageURLRejectsNonHTTPURL(t *testing.T) {
+	t.Parallel()
 	h := &ImagesHandler{}
 	req := httptest.NewRequest(http.MethodGet, "/Items/1/Images/Primary", nil)
 	rec := httptest.NewRecorder()
@@ -422,9 +431,10 @@ func TestRedirectImageURLRejectsNonHTTPURL(t *testing.T) {
 
 // TestHandleItemImageChapterReturns404WithoutSession verifies an anonymous
 // chapter-image request (no auth, cold cache, no tag) degrades to a 404, not a
-// 401: Silo never stores "Chapter" route art, so the cache misses and the
+// 401: Prairie never stores "Chapter" route art, so the cache misses and the
 // session-fallback now returns NotFound per the Jellyfin contract.
 func TestHandleItemImageChapterReturns404WithoutSession(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	contentID := "movie-1"
 	routeID := codec.EncodeStringID(EncodedIDItem, contentID)
@@ -457,6 +467,7 @@ func TestHandleItemImageChapterReturns404WithoutSession(t *testing.T) {
 // Primary cache entry serves an anonymous <img> request via redirect, never
 // consulting auth.
 func TestHandleItemImagePrimaryCacheHitRedirectsWithoutSession(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	contentID := "movie-1"
 	routeID := codec.EncodeStringID(EncodedIDItem, contentID)
@@ -495,6 +506,7 @@ func serveUserImage(h *ImagesHandler, method, pathID string) *httptest.ResponseR
 // the palette varies across ids (the avatar is now drawn from a bounded fixed
 // palette, so two distinct ids may collide — variety is asserted over a sample).
 func TestHandleUserImageServesPlaceholderWithoutSession(t *testing.T) {
+	t.Parallel()
 	h := &ImagesHandler{codec: NewResourceIDCodec()}
 	id := PseudoUserID(1, "profile-1").String()
 
@@ -530,6 +542,7 @@ func TestHandleUserImageServesPlaceholderWithoutSession(t *testing.T) {
 // TestHandleUserImageHeadRequest verifies the HEAD variant of the anonymous
 // avatar route returns 200 + image/png (the body may be empty for HEAD).
 func TestHandleUserImageHeadRequest(t *testing.T) {
+	t.Parallel()
 	h := &ImagesHandler{codec: NewResourceIDCodec()}
 	id := PseudoUserID(1, "profile-1").String()
 

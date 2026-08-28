@@ -22,11 +22,11 @@ type DecisionName string
 
 const (
 	// DecisionScope resolves the effective viewer access scope.
-	DecisionScope DecisionName = "silo.scope.decision"
+	DecisionScope DecisionName = "prairie.scope.decision"
 	// DecisionPermission evaluates route-level permission gates.
-	DecisionPermission DecisionName = "silo.permission.decision"
+	DecisionPermission DecisionName = "prairie.permission.decision"
 	// DecisionAction evaluates download and playback action gates.
-	DecisionAction DecisionName = "silo.action.decision"
+	DecisionAction DecisionName = "prairie.action.decision"
 )
 
 // Meta describes one policy evaluation.
@@ -271,9 +271,9 @@ func (e *Engine) swap(ctx context.Context, modules []ModuleSource, decisions map
 
 func decisionQueries() map[DecisionName]string {
 	return map[DecisionName]string{
-		DecisionScope:      "data.silo.scope.decision",
-		DecisionPermission: "data.silo.permission.decision",
-		DecisionAction:     "data.silo.action.decision",
+		DecisionScope:      "data.prairie.scope.decision",
+		DecisionPermission: "data.prairie.permission.decision",
+		DecisionAction:     "data.prairie.action.decision",
 	}
 }
 

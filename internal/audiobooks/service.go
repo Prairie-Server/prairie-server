@@ -65,7 +65,7 @@ type ABSHandlerDeps struct {
 // absAuthAdapter is the narrow slice of internal/auth that BuildABSHandler
 // needs. Defined as an interface to avoid an import cycle between the
 // audiobooks package and internal/auth. main.go satisfies it with the
-// concrete *auth.Service + *pgxpool.Pool pair via SiloCredValidator.
+// concrete *auth.Service + *pgxpool.Pool pair via PrairieCredValidator.
 type absAuthAdapter = abs.ProfileCredentialValidator
 
 // BuildABSHandler wires all production adapters and returns a ready-to-mount
@@ -148,10 +148,10 @@ func (s *Service) BuildABSHandler(deps ABSHandlerDeps) *abs.Handler {
 	}
 
 	// GET /me only has the token's userID; source a resolver from the concrete
-	// SiloCredValidator (which holds the pgx pool) so /me can show the real
+	// PrairieCredValidator (which holds the pgx pool) so /me can show the real
 	// display username instead of the numeric id.
 	var usernameResolver func(ctx context.Context, userID, profileID string) string
-	if scv, ok := deps.Auth.(*SiloCredValidator); ok {
+	if scv, ok := deps.Auth.(*PrairieCredValidator); ok {
 		usernameResolver = scv.ResolveUsername
 	}
 

@@ -2,6 +2,7 @@ package autoscan
 
 import (
 	"context"
+	"errors"
 	"time"
 
 	"github.com/redis/go-redis/v9"
@@ -28,11 +29,15 @@ func (s *redisSuppressor) ShouldScan(ctx context.Context, key string, ttl time.D
 		return true, nil // no suppression configured -> always scan
 	}
 	redisKey := "autoscan:scanned:" + key
-	ok, err := s.client.SetNX(ctx, redisKey, "1", ttl).Result()
-	if err != nil {
-		return true, nil // fail open: a Redis hiccup should not block scanning
+	err := s.client.SetArgs(ctx, redisKey, "1", redis.SetArgs{Mode: "NX", TTL: ttl}).Err()
+	if err == nil {
+		return true, nil
 	}
-	return ok, nil
+	if errors.Is(err, redis.Nil) {
+		return false, nil
+	}
+	// Fail open: a Redis hiccup should not block scanning.
+	return true, nil
 }
 
 func (s *redisSuppressor) Release(ctx context.Context, key string) error {

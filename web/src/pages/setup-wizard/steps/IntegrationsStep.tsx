@@ -9,8 +9,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CircleCheck, Eye, EyeOff, Loader2 } from "lucide-react";
+import { ArrowRight, CircleCheck, Eye, EyeOff, Loader2, Save, SkipForward } from "lucide-react";
 import { useWizardContext } from "../WizardContext";
+import { WizardActions } from "../WizardActions";
 
 // --- Provider metadata ---
 
@@ -106,32 +107,44 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
 
       {/* Credentials — shown when enabled */}
       {enabled && (
-        <div className="border-foreground/[0.06] border-t px-4 py-3.5">
+        <form
+          className="border-foreground/[0.06] border-t px-4 py-3.5"
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSave();
+          }}
+        >
           {isOpenSubtitles ? (
-            <div className="grid gap-2.5 sm:grid-cols-2">
+            <div className="grid gap-2.5">
               <Input
                 type="text"
+                name={`${providerName}-username`}
                 placeholder={config.has_credentials ? "Leave blank to keep" : "Username"}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="h-8 text-sm"
+                autoComplete="off"
               />
               <Input
                 type="password"
+                name={`${providerName}-password`}
                 placeholder={config.has_credentials ? "Leave blank to keep" : "Password"}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-8 text-sm"
+                autoComplete="off"
               />
             </div>
           ) : (
             <div className="flex items-center gap-2">
               <Input
                 type={showApiKey ? "text" : "password"}
+                name={`${providerName}-api-key`}
                 placeholder={config.has_api_key ? "Leave blank to keep" : "API key"}
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 className="h-8 flex-1 text-sm"
+                autoComplete="off"
               />
               <button
                 type="button"
@@ -146,6 +159,7 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
           {/* Actions */}
           <div className="mt-3 flex items-center gap-2">
             <Button
+              type="button"
               variant="secondary"
               size="sm"
               className="h-7 px-3 text-xs"
@@ -162,12 +176,13 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
               )}
             </Button>
             <Button
+              type="submit"
               variant="ghost"
               size="sm"
               className="h-7 px-3 text-xs"
-              onClick={handleSave}
               disabled={updateProvider.isPending}
             >
+              {updateProvider.isPending ? <Loader2 className="animate-spin" /> : <Save />}
               {updateProvider.isPending ? "Saving..." : "Save"}
             </Button>
             {testResult !== null && (
@@ -176,7 +191,7 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
               </span>
             )}
           </div>
-        </div>
+        </form>
       )}
     </fieldset>
   );
@@ -223,12 +238,15 @@ export function IntegrationsStep() {
         </p>
       )}
 
-      <div className="flex gap-3 pt-2">
-        <Button onClick={() => markDone("integrations")}>Continue</Button>
+      <WizardActions>
+        <Button onClick={() => markDone("integrations")}>
+          <ArrowRight /> Continue
+        </Button>
         <Button variant="ghost" onClick={() => markDone("integrations")}>
+          <SkipForward />
           Skip
         </Button>
-      </div>
+      </WizardActions>
     </div>
   );
 }

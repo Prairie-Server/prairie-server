@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# One-time setup for the rsync+air dev workflow on the Silo LXC.
+# One-time setup for the rsync+air dev workflow on the Prairie LXC.
 # Installs Go, Node, pnpm, libvips, jellyfin-ffmpeg7, air, and tmux.
-# Usage: DEV_HOST=root@silo-dev.example.invalid ./scripts/dev-remote-setup.sh
+# Usage: DEV_HOST=root@prairie-dev.example.invalid ./scripts/dev-remote-setup.sh
 set -euo pipefail
 
-DEV_HOST="${DEV_HOST:-root@silo-dev.example.invalid}"
-DEV_DIR="${DEV_DIR:-/opt/git/silo-dev}"
+DEV_HOST="${DEV_HOST:-root@prairie-dev.example.invalid}"
+DEV_DIR="${DEV_DIR:-/opt/git/prairie-dev}"
 
 echo "==> Setting up dev environment on ${DEV_HOST}..."
 
@@ -74,13 +74,13 @@ else
 fi
 
 # --- Create directories ---
-mkdir -p "${DEV_DIR}/Silo/web/dist"
-mkdir -p "${DEV_DIR}/silo-plugin-sdk"
-mkdir -p /tmp/silo-transcode
-mkdir -p /opt/silo/plugins /opt/silo/transcode /opt/silo/postgres /opt/silo/redis
+mkdir -p "${DEV_DIR}/Prairie/web/dist"
+mkdir -p "${DEV_DIR}/prairie-plugin-sdk"
+mkdir -p /tmp/prairie-transcode
+mkdir -p /opt/prairie/plugins /opt/prairie/transcode /opt/prairie/postgres /opt/prairie/redis
 
 # Jellycompat debug logging bind-mounts a file, not a directory.
-DEBUG_LOG_PATH="/opt/silo/jellycompat-debug.log"
+DEBUG_LOG_PATH="/opt/prairie/jellycompat-debug.log"
 if [ -d "${DEBUG_LOG_PATH}" ]; then
     if ! rmdir "${DEBUG_LOG_PATH}" 2>/dev/null; then
         mv "${DEBUG_LOG_PATH}" "${DEBUG_LOG_PATH}.dir.$(date +%s)"
@@ -88,24 +88,24 @@ if [ -d "${DEBUG_LOG_PATH}" ]; then
 fi
 touch "${DEBUG_LOG_PATH}"
 
-# Symlink plugin cache so DB paths (using Docker's /var/lib/silo/plugins)
+# Symlink plugin cache so DB paths (using Docker's /var/lib/prairie/plugins)
 # resolve correctly when running natively.
-mkdir -p /var/lib/silo
-if [ ! -L /var/lib/silo/plugins ] && [ -d /opt/silo/plugins ]; then
-    ln -sf /opt/silo/plugins /var/lib/silo/plugins
+mkdir -p /var/lib/prairie
+if [ ! -L /var/lib/prairie/plugins ] && [ -d /opt/prairie/plugins ]; then
+    ln -sf /opt/prairie/plugins /var/lib/prairie/plugins
 fi
 
 # --- Create .env for native execution ---
-ENV_FILE="${DEV_DIR}/Silo/.env"
+ENV_FILE="${DEV_DIR}/Prairie/.env"
 if [ ! -f "${ENV_FILE}" ]; then
     echo "==> Creating ${ENV_FILE}..."
     cat > "${ENV_FILE}" <<'EOF'
-DATABASE_URL=postgres://silo:silo@localhost:5432/silo?sslmode=disable
+DATABASE_URL=postgres://prairie:prairie@localhost:5432/prairie?sslmode=disable
 REDIS_URL=redis://localhost:6379
 PORT=8090
 JF_PORT=8096
 MODE=integrated
-SILO_PLUGIN_CACHE_DIR=/var/lib/silo/plugins
+PRAIRIE_PLUGIN_CACHE_DIR=/var/lib/prairie/plugins
 EOF
 else
     echo "==> ${ENV_FILE} already exists, skipping"

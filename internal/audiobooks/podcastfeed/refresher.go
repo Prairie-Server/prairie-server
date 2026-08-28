@@ -185,7 +185,7 @@ func (r *Refresher) fetchAndParse(ctx context.Context, feedURL string) (*gofeed.
 	if err != nil {
 		return nil, fmt.Errorf("new request: %w", err)
 	}
-	// Some feed hosts gate on a recognisable User-Agent.
+	// Some feed hosts gate on a recognizable User-Agent.
 	req.Header.Set("User-Agent", "silo/podcast-refresher (+https://siloapp.com)")
 	req.Header.Set("Accept", "application/rss+xml, application/atom+xml, application/xml;q=0.9, */*;q=0.5")
 	resp, err := r.hc.Do(req)

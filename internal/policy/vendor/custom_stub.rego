@@ -1,4 +1,4 @@
-package silo_custom.scope
+package prairie_custom.scope
 
 import rego.v1
 

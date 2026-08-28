@@ -97,7 +97,7 @@ type redisTicketStore struct {
 	client *redis.Client
 }
 
-const redisTicketPrefix = "silo:events:ws-ticket:"
+const redisTicketPrefix = "prairie:events:ws-ticket:"
 
 func (s *redisTicketStore) Mint(ctx context.Context, userID int, profileID string) (string, time.Duration, error) {
 	ticket, err := newTicketValue()

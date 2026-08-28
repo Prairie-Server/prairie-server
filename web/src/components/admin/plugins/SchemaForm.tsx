@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 
-import { Loader2 } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 import type { PluginAdminForm, PluginAdminFormField, PluginAdminFormSection } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { stringifyUnknown } from "@/lib/stringifyUnknown";
 import {
   Select,
   SelectContent,
@@ -127,6 +128,7 @@ function SchemaFormSection({
         </div>
         {section.collapsible ? (
           <Button type="button" size="xs" variant="ghost" onClick={() => setUserOpen(!open)}>
+            {open ? <EyeOff /> : <Eye />}
             {open ? "Hide" : "Show"}
           </Button>
         ) : null}
@@ -195,7 +197,7 @@ export function SchemaForm({
       }
       return (
         <Select
-          value={String(effectiveValue(field, values) ?? "")}
+          value={stringifyUnknown(effectiveValue(field, values) ?? "")}
           onValueChange={(nextValue) => setField(field.key, nextValue)}
         >
           <SelectTrigger id={id} className="w-full">
@@ -257,7 +259,7 @@ export function SchemaForm({
           id={id}
           className="border-border bg-background min-h-24 w-full rounded-md border px-3 py-2 text-sm"
           rows={field.rows && field.rows > 0 ? field.rows : 4}
-          value={String(effectiveValue(field, values) ?? "")}
+          value={stringifyUnknown(effectiveValue(field, values) ?? "")}
           placeholder={field.placeholder}
           onChange={(event) => setField(field.key, event.target.value)}
         />
@@ -274,7 +276,7 @@ export function SchemaForm({
               ? "number"
               : "text"
         }
-        value={String(effectiveValue(field, values) ?? "")}
+        value={stringifyUnknown(effectiveValue(field, values) ?? "")}
         placeholder={field.placeholder}
         onChange={(event) => setField(field.key, event.target.value)}
       />

@@ -37,8 +37,8 @@ import (
 	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
-// KeyPrefix namespaces per-session recipe keys: silo:noderecipe:<upstreamSessionID>.
-const KeyPrefix = "silo:noderecipe:"
+// KeyPrefix namespaces per-session recipe keys: prairie:noderecipe:<upstreamSessionID>.
+const KeyPrefix = "prairie:noderecipe:"
 
 // ProxyGrantKeyPrefix namespaces per-session proxy grants:
 // silo:proxygrant:<playbackSessionID>. It is deliberately a separate key space

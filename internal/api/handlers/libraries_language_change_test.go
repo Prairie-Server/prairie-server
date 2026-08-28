@@ -45,9 +45,9 @@ func (f *fakeAdminJobCreator) libraryRefreshes() []adminjob.LibraryRefreshReques
 // library metadata refresh so existing items re-fetch in the new language,
 // while an update that does not change the language must not enqueue one.
 func TestHandleUpdateLibraryLanguageChangeQueuesRefresh(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)

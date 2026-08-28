@@ -19,7 +19,7 @@
   },
   "crash": {
     "summary": "NullPointerException in PlaybackSessionManager.start",
-    "stack_excerpt": "java.lang.NullPointerException: player was null\n\tat org.siloserver.silo.PlaybackSessionManager.start(PlaybackSessionManager.kt:42)",
+    "stack_excerpt": "java.lang.NullPointerException: player was null\n\tat org.prairieserver.prairie.PlaybackSessionManager.start(PlaybackSessionManager.kt:42)",
     "thread": "main",
     "foreground": true,
     "source": "ueh",

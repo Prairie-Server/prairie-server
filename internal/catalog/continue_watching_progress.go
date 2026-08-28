@@ -71,7 +71,7 @@ func (f *ContinueWatchingProgressFilter) SupersededEpisodeProgressIDs(ctx contex
 	// done_progress.updated_at > ip_progress.updated_at). So the only completed
 	// rows that can matter are those updated after the oldest in-progress entry;
 	// anything older can supersede nothing. Bounding the completed walk at that
-	// timestamp keeps import-heavy profiles — whose entire back-catalogue is
+	// timestamp keeps import-heavy profiles — whose entire back-catalog is
 	// completed=TRUE with old timestamps — from re-paging hundreds of thousands
 	// of irrelevant rows on every Resume/Continue Watching load (the 60–116s
 	// tail in the 2026-07-06 slow-query comparison).
@@ -154,7 +154,7 @@ func CompletedProgressSnapshots(ctx context.Context, store ProgressLister, profi
 	// before the cutoff, so completed rows past the scanned window were skipped.
 	// Log it so a real profile that trips this backstop is visible rather than
 	// silently under-filtered.
-	slog.Warn("continue-watching: superseded-episode walk hit page cap; completed-history tail left unscanned",
+	slog.WarnContext(ctx, "continue-watching: superseded-episode walk hit page cap; completed-history tail left unscanned",
 		"profile_id", profileID,
 		"pages_scanned", supersededProgressMaxPages,
 		"rows_scanned", len(snapshots))

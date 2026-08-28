@@ -93,7 +93,7 @@ func anchoredGroupKey(version int, contentType, tmdbID, imdbID, tvdbID string) s
 	tmdb := strings.TrimSpace(tmdbID)
 	imdb := strings.TrimSpace(imdbID)
 	tvdb := strings.TrimSpace(tvdbID)
-	if contentType == "series" {
+	if contentType == itemTypeSeries {
 		switch {
 		case tvdb != "":
 			provider, id = providerTvdb, tvdb

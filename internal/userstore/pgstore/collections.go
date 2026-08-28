@@ -2,6 +2,7 @@ package pgstore
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -144,7 +145,7 @@ func (s *PostgresUserStore) GetCollection(ctx context.Context, id string) (*user
 		s.userID, id,
 	)
 	c, err := scanCollection(row)
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, fmt.Errorf("collection %s not found", id)
 	}
 	if err != nil {
@@ -325,7 +326,7 @@ func (s *PostgresUserStore) UpdateCollection(ctx context.Context, input userstor
 				return err
 			}
 		}
-		allowed := []string{}
+		var allowed []string
 		if input.AllowedProfileIDs != nil {
 			allowed = *input.AllowedProfileIDs
 		} else {
@@ -529,7 +530,7 @@ func (s *PostgresUserStore) getCollectionGroup(ctx context.Context, id string) (
 		WHERE user_id = $1 AND id = $2
 	`, s.userID, id).Scan(&g.ID, &g.Name, &g.Slug, &g.DefaultSortMode, &g.SortOrder, &createdAt, &updatedAt)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("user collection group not found")
 		}
 		return nil, fmt.Errorf("getting user collection group: %w", err)
@@ -618,7 +619,7 @@ func (s *PostgresUserStore) UpdateCollectionGroup(ctx context.Context, id string
 	var createdAt, updatedAt time.Time
 	err := s.pool.QueryRow(ctx, query, args...).Scan(&g.ID, &g.Name, &g.Slug, &g.DefaultSortMode, &g.SortOrder, &createdAt, &updatedAt)
 	if err != nil {
-		if err == pgx.ErrNoRows {
+		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, fmt.Errorf("user collection group not found")
 		}
 		return nil, fmt.Errorf("updating user collection group: %w", err)

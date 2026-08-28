@@ -1,6 +1,7 @@
 import { useCallback, useId, useMemo, useState } from "react";
 import {
   AlertTriangle,
+  Check,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -8,6 +9,7 @@ import {
   Copy,
   Plus,
   RefreshCw,
+  Save,
   Trash2,
   Webhook,
   X,
@@ -212,7 +214,7 @@ const LEGACY_CONFIG_KEY_ALIASES: Record<string, string> = {
  * would silently rename an unrelated plugin's identically-named key on the
  * first full-state save, losing its configuration.
  */
-const CEPHFS_PLUGIN_ID = "silo.autoscan.cephfs";
+const CEPHFS_PLUGIN_ID = "prairie.autoscan.cephfs";
 const CEPHFS_CAPABILITY_ID = "cephfs";
 
 function ownsLegacyAliases(source: AutoscanSource): boolean {
@@ -444,6 +446,7 @@ function RewriteEditor({
               {suggest.isPending ? "Syncing…" : "Sync from server"}
             </Button>
             <Button type="button" size="sm" disabled={isSaving} onClick={handleSave}>
+              <Save />
               Save rewrites
             </Button>
           </div>
@@ -486,7 +489,7 @@ function RewriteEditor({
 
               {preview.unmatched.length > 0 && (
                 <CollapsibleList
-                  title={`No Silo match (${preview.unmatched.length})`}
+                  title={`No Prairie match (${preview.unmatched.length})`}
                   items={preview.unmatched}
                 />
               )}
@@ -507,9 +510,11 @@ function RewriteEditor({
 
               <div className="flex flex-wrap items-center gap-2">
                 <Button type="button" size="sm" disabled={isSaving} onClick={applySelected}>
+                  <Check />
                   Apply selected
                 </Button>
                 <Button type="button" variant="outline" size="sm" onClick={() => setPreview(null)}>
+                  <X />
                   Cancel
                 </Button>
               </div>
@@ -654,7 +659,7 @@ function WebhookEndpointSection({
           onValueChange={(v) => onProviderChange(v as AutoscanWebhookProvider)}
           disabled={isSaving}
         >
-          <SelectTrigger className="w-[140px]" aria-label="Webhook payload provider">
+          <SelectTrigger className="w-full sm:w-[140px]" aria-label="Webhook payload provider">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -753,7 +758,15 @@ function SourceRow({
   const [parsedWith, setParsedWith] = useState(descriptor);
   if (parsedWith !== descriptor) {
     setParsedWith(descriptor);
-    if (!edit.dirty) setEdit(sourceToRowEdit(source, descriptor));
+    if (!edit.dirty) {
+      setEdit(sourceToRowEdit(source, descriptor));
+    } else {
+      // Re-parse only the sourceConfig portion, preserving user-edited fields.
+      setEdit((prev) => ({
+        ...prev,
+        sourceConfig: parseConfigValues(descriptor, sourceConfigForEdit(source)),
+      }));
+    }
   }
   const [intervalError, setIntervalError] = useState(false);
 
@@ -1263,7 +1276,7 @@ interface AddSourceForm {
   sourceConfig: Record<string, unknown>;
   /** False while a required or validated config field is unsatisfied. */
   configValid: boolean;
-  /** Webhook-only: arr path -> Silo path rows, seeded from library paths. */
+  /** Webhook-only: arr path -> Prairie path rows, seeded from library paths. */
   mappings: MappingDraft[];
 }
 
@@ -1284,13 +1297,13 @@ function pluginKey(pluginId: string, capabilityId: string): string {
 /** Human wording for a delivery mode, used on the choice cards. */
 const DELIVERY_MODE_COPY: Record<AutoscanDeliveryMode, { title: string; description: string }> = {
   webhook: {
-    title: "The service tells Silo",
+    title: "The service tells Prairie",
     description:
       "Instant. Paste one URL into the service's webhook settings. No credentials stored here.",
   },
   poll: {
-    title: "Silo checks the service",
-    description: "Silo asks on a schedule. Works without changing anything upstream.",
+    title: "Prairie checks the service",
+    description: "Prairie asks on a schedule. Works without changing anything upstream.",
   },
 };
 
@@ -1326,7 +1339,7 @@ function AddSourceDialog({
   const showDeliveryChoice = Boolean(selectedPlugin) && needsDeliveryChoice(descriptor);
   const showConnection = Boolean(selectedPlugin) && needsConnectionStep(descriptor, deliveryMode);
   const connectionRequired = connectionIsMandatory(descriptor, deliveryMode);
-  // Poll interval only means something when Silo is the one asking.
+  // Poll interval only means something when Prairie is the one asking.
   const showInterval = Boolean(selectedPlugin) && deliveryMode === "poll";
 
   // Only offer connections this source can actually talk to.
@@ -1474,7 +1487,7 @@ function AddSourceDialog({
           <DialogDescription>
             {createdWebhookSource
               ? "The source is created and listening. Paste this into your download manager to finish."
-              : "Pick what you want Silo to watch. Each source only asks for what it actually needs."}
+              : "Pick what you want Prairie to watch. Each source only asks for what it actually needs."}
           </DialogDescription>
         </DialogHeader>
 
@@ -1528,7 +1541,7 @@ function AddSourceDialog({
             <StepTrail steps={stepLabels} currentIndex={currentStepIndex} />
 
             <div className="space-y-2">
-              <Label>What should Silo watch?</Label>
+              <Label>What should Prairie watch?</Label>
               <div className="grid gap-2 sm:grid-cols-2">
                 {plugins.map((p) => {
                   const key = pluginKey(p.plugin_id, p.capability_id);
@@ -1556,7 +1569,7 @@ function AddSourceDialog({
 
             {showDeliveryChoice && (
               <div className="space-y-2">
-                <Label>How should Silo hear about changes?</Label>
+                <Label>How should Prairie hear about changes?</Label>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {descriptor.delivery_modes.map((mode) => {
                     const copy = DELIVERY_MODE_COPY[mode];

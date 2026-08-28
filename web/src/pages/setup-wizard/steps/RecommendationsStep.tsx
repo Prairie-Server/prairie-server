@@ -15,7 +15,9 @@ import {
   type RecommendationProviderPreset,
 } from "@/lib/recommendation-provider-presets";
 import { useWizardContext } from "../WizardContext";
+import { WizardActions } from "../WizardActions";
 
+import { Loader2, Save, SkipForward } from "lucide-react";
 const KEYS = [
   "recommendations.enabled",
   "recommendations.embedding_base_url",
@@ -156,7 +158,12 @@ export function RecommendationsStep() {
                 onChange={(e) =>
                   form.setValue("recommendations.embedding_base_url", e.target.value)
                 }
-                placeholder="https://generativelanguage.googleapis.com"
+                placeholder={
+                  activePreset?.urlPlaceholder ??
+                  activePreset?.baseUrl ??
+                  "https://generativelanguage.googleapis.com"
+                }
+                autoComplete="off"
               />
             </div>
             <div className="space-y-1.5">
@@ -167,7 +174,10 @@ export function RecommendationsStep() {
                 id="recs-model"
                 value={form.getValue("recommendations.embedding_model")}
                 onChange={(e) => form.setValue("recommendations.embedding_model", e.target.value)}
-                placeholder="gemini-embedding-001"
+                placeholder={
+                  activePreset?.modelPlaceholder ?? activePreset?.model ?? "gemini-embedding-001"
+                }
+                autoComplete="off"
               />
             </div>
             {showToken && (
@@ -187,6 +197,7 @@ export function RecommendationsStep() {
                       ? "Configured"
                       : "Enter API key"
                   }
+                  autoComplete="off"
                 />
               </div>
             )}
@@ -200,8 +211,9 @@ export function RecommendationsStep() {
         </div>
       )}
 
-      <div className="flex gap-3 pt-2">
+      <WizardActions>
         <Button type="submit" disabled={submitting || form.isSaving}>
+          {submitting || form.isSaving ? <Loader2 className="animate-spin" /> : <Save />}
           {submitting || form.isSaving ? "Saving..." : "Save & continue"}
         </Button>
         <Button
@@ -210,9 +222,10 @@ export function RecommendationsStep() {
           onClick={handleSkip}
           disabled={submitting || form.isSaving}
         >
+          <SkipForward />
           Skip
         </Button>
-      </div>
+      </WizardActions>
     </form>
   );
 }

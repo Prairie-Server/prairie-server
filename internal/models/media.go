@@ -23,6 +23,7 @@ type MediaFolder struct {
 	MetadataLanguage         string // ISO 639-1 code (e.g. "en", "ja")
 	AutoTranslateMetadata    bool   // AI-translate descriptions when providers lack this language
 	ChapterThumbnailsEnabled bool
+	TrickplayEnabled         bool
 	IntroDetectionEnabled    bool
 	// TrailerKinds is the allow-list of remote video kinds (ExtraKind values)
 	// fetched during metadata refresh for this library. Empty disables remote
@@ -75,6 +76,7 @@ type MediaFile struct {
 	ChapterThumbnailRetryAfter   *time.Time
 	ChapterThumbnailFailureCount int
 	ChapterThumbnailLastError    string
+	Trickplay                    *MediaTrickplay // JSONB; nil means not yet generated
 	IntroStart                   *float64
 	IntroEnd                     *float64
 	CreditsStart                 *float64
@@ -147,6 +149,27 @@ type MediaChapter struct {
 	ThumbnailRetryAfter *time.Time `json:"thumbnail_retry_after,omitempty"`
 	ThumbnailFailedAt   *time.Time `json:"thumbnail_failed_at,omitempty"`
 	ThumbnailLastError  string     `json:"thumbnail_last_error,omitempty"`
+}
+
+// MediaTrickplay stores interval sprite-sheet metadata for seek scrubbing previews.
+type MediaTrickplay struct {
+	IntervalSeconds float64               `json:"interval_seconds"`
+	Width           int                   `json:"width"`
+	Height          int                   `json:"height"`
+	TileColumns     int                   `json:"tile_columns"`
+	TileRows        int                   `json:"tile_rows"`
+	ThumbnailCount  int                   `json:"thumbnail_count"`
+	DurationSeconds int                   `json:"duration_seconds"`
+	Sheets          []MediaTrickplaySheet `json:"sheets,omitempty"`
+	RetryAfter      *time.Time            `json:"retry_after,omitempty"`
+	FailureCount    int                   `json:"failure_count,omitempty"`
+	LastError       string                `json:"last_error,omitempty"`
+}
+
+// MediaTrickplaySheet is one sprite sheet covering a contiguous tile range.
+type MediaTrickplaySheet struct {
+	Index int    `json:"index"`
+	Path  string `json:"path"`
 }
 
 // OverlaySummary is the compact media badge payload shared across API surfaces.

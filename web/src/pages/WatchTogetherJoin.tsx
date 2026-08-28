@@ -4,6 +4,7 @@ import { ApiClientError } from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { Loader2, Plus, RefreshCw, Users } from "lucide-react";
 import {
   createWatchTogetherRoom,
   joinWatchTogetherRoom,
@@ -89,7 +90,7 @@ export default function WatchTogetherJoin() {
         if (!response.room_access_token) {
           throw new Error("Room access token was missing from the join response.");
         }
-        navigate(`/rooms/${response.room.room_id}?room_token=${response.room_access_token}`, {
+        void navigate(`/rooms/${response.room.room_id}?room_token=${response.room_access_token}`, {
           replace: true,
           viewTransition: true,
         });
@@ -110,7 +111,7 @@ export default function WatchTogetherJoin() {
       if (!response.room_access_token) {
         throw new Error("Room access token was missing from the create response.");
       }
-      navigate(`/rooms/${response.room.room_id}?room_token=${response.room_access_token}`, {
+      void navigate(`/rooms/${response.room.room_id}?room_token=${response.room_access_token}`, {
         replace: true,
         viewTransition: true,
       });
@@ -259,6 +260,7 @@ export default function WatchTogetherJoin() {
               disabled={creating || joining}
               className="h-11 rounded-lg px-5"
             >
+              {creating ? <Loader2 className="animate-spin" /> : <Plus />}
               {creating ? "Creating..." : "Create Watch Party"}
             </Button>
           </div>
@@ -302,6 +304,7 @@ export default function WatchTogetherJoin() {
               disabled={joining || creating || code.trim() === ""}
               className="h-11 rounded-lg px-5"
             >
+              {joining ? <Loader2 className="animate-spin" /> : <Users />}
               {joining ? "Joining..." : "Join Watch Party"}
             </Button>
 
@@ -313,6 +316,7 @@ export default function WatchTogetherJoin() {
                 disabled={joining || creating}
                 className="h-11 rounded-lg px-5"
               >
+                <RefreshCw />
                 Retry Invite Link
               </Button>
             ) : null}

@@ -7,11 +7,11 @@ import (
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
-// TestSiloItemToLibraryItemDetail_ExpandedShape guards that GET /items/{id}
+// TestPrairieItemToLibraryItemDetail_ExpandedShape guards that GET /items/{id}
 // matches real ABS LibraryItem.toOldJSONExpanded + Book.toOldJSONExpanded +
 // oldMetadataToJSONExpanded: expanded outer keys, media.size + tracks, and the
 // expanded metadata keys (authorName, descriptionPlain, ...).
-func TestSiloItemToLibraryItemDetail_ExpandedShape(t *testing.T) {
+func TestPrairieItemToLibraryItemDetail_ExpandedShape(t *testing.T) {
 	item := &models.MediaItem{
 		ContentID: "book-7",
 		Title:     "The Test",

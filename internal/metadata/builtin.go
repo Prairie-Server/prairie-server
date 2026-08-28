@@ -7,7 +7,7 @@ import (
 )
 
 // Built-in host metadata providers are registered as data: one reserved
-// plugin_installations row (kind='builtin', plugin_id='silo.builtin') carries
+// plugin_installations row (kind='builtin', plugin_id='prairie.builtin') carries
 // ordinary plugin_capabilities rows, so the chain store, seeding, defaults
 // endpoint, and admin UI all work unchanged. This file is the single
 // in-process registration point mapping those capability ids to provider
@@ -16,7 +16,7 @@ import (
 //
 // Providers self-register from their package's init (e.g. internal/metadata/nfo)
 // to avoid an import cycle — this package defines the Provider interfaces the
-// builtin packages implement. cmd/silo blank-imports each builtin package.
+// builtin packages implement. cmd/prairie blank-imports each builtin package.
 // Activating a future builtin (e.g. xattr) is a registration call plus a
 // capability row in a migration.
 

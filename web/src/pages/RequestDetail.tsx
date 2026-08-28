@@ -1,4 +1,4 @@
-import { useParams } from "react-router";
+import { Link, useParams } from "react-router";
 import { Check, Clock, Library, Loader2, Plus, Star } from "lucide-react";
 import CastCarousel from "@/components/CastCarousel";
 import MediaCarousel from "@/components/MediaCarousel";
@@ -22,7 +22,6 @@ import {
   requestInputFromMediaResult,
   tmdbImageURL,
 } from "@/lib/mediaRequests";
-import ViewTransitionLink from "@/components/ViewTransitionLink";
 
 export default function RequestDetail() {
   const params = useParams<{ mediaType: string; tmdbId: string }>();
@@ -240,10 +239,10 @@ function RequestActions({
               variant="outline"
               className="border-border/60 h-11 rounded-full px-5 text-sm font-semibold"
             >
-              <ViewTransitionLink to={`/item/${encodeURIComponent(item.library_content_id)}`}>
+              <Link to={`/item/${encodeURIComponent(item.library_content_id)}`}>
                 <Library className="h-4 w-4" />
                 Open in library
-              </ViewTransitionLink>
+              </Link>
             </Button>
           ) : null}
         </>

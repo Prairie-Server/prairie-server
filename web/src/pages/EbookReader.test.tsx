@@ -714,7 +714,7 @@ describe("EbookReader", () => {
     expect(mocks.captureReaderSettings).toHaveBeenLastCalledWith(
       expect.objectContaining({ theme: "dark" }),
     );
-    expect(localStorage.getItem("silo.ebook.reader.settings")).toContain('"theme":"dark"');
+    expect(localStorage.getItem("prairie.ebook.reader.settings")).toContain('"theme":"dark"');
     expect(mocks.saveEbookReaderConfig).toHaveBeenCalledWith(
       "ebook-1",
       expect.objectContaining({
@@ -865,7 +865,7 @@ describe("EbookReader", () => {
         settings: expect.objectContaining({ theme: "light", fontSize: 112, flow: "paginated" }),
       }),
     );
-    expect(localStorage.getItem("silo.ebook.reader.settings")).toContain('"theme":"light"');
+    expect(localStorage.getItem("prairie.ebook.reader.settings")).toContain('"theme":"light"');
 
     vi.useRealTimers();
   });

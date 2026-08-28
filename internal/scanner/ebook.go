@@ -6,6 +6,7 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"encoding/xml"
+	"errors"
 	"fmt"
 	"html"
 	"io"
@@ -415,7 +416,7 @@ func validISBN10(candidate string) bool {
 	}
 	sum := 0
 	for i, r := range candidate {
-		value := 0
+		var value int
 		switch {
 		case r >= '0' && r <= '9':
 			value = int(r - '0')
@@ -557,7 +558,7 @@ const maxMOBIHeaderScanSize = 256 * 1024
 // MOBI/AZW/AZW3 share the Palm Database (PDB) container: a PDB header, a record
 // offset list, then record 0 holding the PalmDOC header (16 bytes), the MOBI
 // header, and the optional EXTH metadata block. parseEbookMOBI extracts the
-// title, authors, and ISBN that Calibre and most tools write into EXTH, so these
+// title, authors, and ISBN that Caliber and most tools write into EXTH, so these
 // formats no longer fall back to the filename with no author or identifier.
 func parseEbookMOBI(path string) (parsedEbook, error) {
 	book := parsedEbook{Format: strings.TrimPrefix(strings.ToLower(filepath.Ext(path)), ".")}
@@ -569,7 +570,7 @@ func parseEbookMOBI(path string) (parsedEbook, error) {
 
 	header := make([]byte, maxMOBIHeaderScanSize)
 	n, err := io.ReadFull(file, header)
-	if err != nil && err != io.ErrUnexpectedEOF && err != io.EOF {
+	if err != nil && !errors.Is(err, io.ErrUnexpectedEOF) && !errors.Is(err, io.EOF) {
 		return book, err
 	}
 	header = header[:n]
@@ -1103,10 +1104,7 @@ func splitPDFKeywords(value string) []string {
 }
 
 func parsePDFDate(value string) (time.Time, bool) {
-	value = strings.TrimSpace(value)
-	if strings.HasPrefix(value, "D:") {
-		value = strings.TrimPrefix(value, "D:")
-	}
+	value = strings.TrimPrefix(strings.TrimSpace(value), "D:")
 	value = strings.TrimSuffix(value, "Z")
 	if len(value) >= 14 {
 		if t, err := time.Parse("20060102150405", value[:14]); err == nil && t.Year() > 0 {
@@ -1211,11 +1209,11 @@ func parseEPUBOPFMetadata(opf []byte, book *parsedEbook) error {
 		name := strings.ToLower(strings.TrimSpace(firstNonEmpty(meta.Name, meta.Property)))
 		value := strings.TrimSpace(firstNonEmpty(meta.Content, meta.Value))
 		switch name {
-		case "calibre:series", "belongs-to-collection":
+		case "caliber:series", "belongs-to-collection":
 			book.Series = value
-		case "calibre:series_index", "group-position":
+		case "caliber:series_index", "group-position":
 			book.SeriesIndex = value
-		case "calibre:isbn", "isbn", "schema:isbn":
+		case "caliber:isbn", "isbn", "schema:isbn":
 			if book.ISBN == "" {
 				book.ISBN = normalizeEbookISBN(value)
 			}

@@ -105,7 +105,7 @@ const episodeCatalogActiveLibraryExists = `EXISTS (
 var episodeCatalogBaseRelation = fmt.Sprintf(episodeCatalogSelectBody, episodeCatalogActiveLibraryExists)
 
 func isEpisodeCatalogScope(scope string) bool {
-	return scope == "episode"
+	return scope == itemTypeEpisode
 }
 
 func catalogBaseRelationForScope(scope string) string {
@@ -148,7 +148,6 @@ func episodeCatalogBaseRelationForLibraries(
 		  AND el_scope_out.media_folder_id = ANY($%d)
 	)`, argIdx))
 		args = append(args, disabledLibraryIDs)
-		argIdx++
 	}
 
 	parentAccess := AccessFilter{DisabledLibraryIDs: disabledLibraryIDs}

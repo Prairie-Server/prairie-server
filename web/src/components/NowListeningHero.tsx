@@ -3,7 +3,6 @@ import { Link } from "react-router";
 import { Info, Pause, Play } from "lucide-react";
 import type { ResolvedSection } from "@/api/types";
 import ContinueWatchingCard from "@/components/ContinueWatchingCard";
-import ViewTransitionLink from "@/components/ViewTransitionLink";
 import MediaCarousel from "@/components/MediaCarousel";
 import { useCatalogItemDetail } from "@/hooks/queries/catalogRead";
 import { useAmbientColor } from "@/hooks/useAmbientColor";
@@ -151,7 +150,7 @@ export default function NowListeningHero({ section, libraryId }: NowListeningHer
 
         <div className="relative z-10 px-4 pt-28 pb-10 sm:px-6 sm:pt-32 sm:pb-12 lg:px-10 xl:px-12">
           <div className="flex max-w-[1380px] flex-col gap-6 sm:flex-row sm:items-center sm:gap-10">
-            <ViewTransitionLink
+            <Link
               to={itemHref}
               className="block w-36 shrink-0 self-start sm:w-48 sm:self-center lg:w-56"
             >
@@ -171,7 +170,7 @@ export default function NowListeningHero({ section, libraryId }: NowListeningHer
                   />
                 )}
               </div>
-            </ViewTransitionLink>
+            </Link>
 
             <div className="min-w-0 flex-1">
               <p className="hero-eyebrow mb-3">
@@ -217,13 +216,13 @@ export default function NowListeningHero({ section, libraryId }: NowListeningHer
                   )}
                   {resumeLabel}
                 </Link>
-                <ViewTransitionLink
+                <Link
                   to={itemHref}
                   className="pill pill-glass transition-colors duration-[--duration-fast]"
                 >
                   <Info className="h-4 w-4" />
                   More Info
-                </ViewTransitionLink>
+                </Link>
               </div>
             </div>
           </div>

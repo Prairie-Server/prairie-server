@@ -222,7 +222,7 @@ export default function LibraryBrowse({
             value={browseType}
             onValueChange={(value) => onBrowseTypeChange(value as LibraryBrowseType)}
           >
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>

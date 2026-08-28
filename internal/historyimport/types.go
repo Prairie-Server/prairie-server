@@ -30,7 +30,7 @@ const (
 	maxStoredWarnings      = 20
 	maxUnmatchedSamples    = 10
 	maxUnmatchedLogSamples = 40
-	connectApplicationName = "Silo/1.0.0"
+	connectApplicationName = "Prairie/1.0.0"
 )
 
 // Source is an admin-configured external media server used as an import source.
@@ -289,32 +289,32 @@ type ExternalUser struct {
 	Restricted bool   `json:"restricted,omitempty"`
 }
 
-// UserMapping persists the link from one external server user to a Silo user + profile.
+// UserMapping persists the link from one external server user to a Prairie user + profile.
 type UserMapping struct {
-	ID               int        `json:"id"`
-	SourceID         int        `json:"source_id"`
-	ExternalUserID   string     `json:"external_user_id"`
-	ExternalUserName string     `json:"external_user_name"`
-	SiloUserID       int        `json:"silo_user_id"`
-	SiloProfileID    string     `json:"silo_profile_id"`
-	SiloUsername     string     `json:"silo_username,omitempty"`
-	SiloProfileName  string     `json:"silo_profile_name,omitempty"`
-	LastImportedAt   *time.Time `json:"last_imported_at,omitempty"`
-	CreatedAt        time.Time  `json:"created_at"`
-	UpdatedAt        time.Time  `json:"updated_at"`
+	ID                 int        `json:"id"`
+	SourceID           int        `json:"source_id"`
+	ExternalUserID     string     `json:"external_user_id"`
+	ExternalUserName   string     `json:"external_user_name"`
+	PrairieUserID      int        `json:"silo_user_id"`
+	PrairieProfileID   string     `json:"silo_profile_id"`
+	PrairieUsername    string     `json:"silo_username,omitempty"`
+	PrairieProfileName string     `json:"silo_profile_name,omitempty"`
+	LastImportedAt     *time.Time `json:"last_imported_at,omitempty"`
+	CreatedAt          time.Time  `json:"created_at"`
+	UpdatedAt          time.Time  `json:"updated_at"`
 }
 
 type CreateMappingInput struct {
 	SourceID         int    `json:"source_id"`
 	ExternalUserID   string `json:"external_user_id"`
 	ExternalUserName string `json:"external_user_name"`
-	SiloUserID       int    `json:"silo_user_id"`
-	SiloProfileID    string `json:"silo_profile_id"`
+	PrairieUserID    int    `json:"silo_user_id"`
+	PrairieProfileID string `json:"silo_profile_id"`
 }
 
 type UpdateMappingInput struct {
-	SiloUserID    *int    `json:"silo_user_id,omitempty"`
-	SiloProfileID *string `json:"silo_profile_id,omitempty"`
+	PrairieUserID    *int    `json:"silo_user_id,omitempty"`
+	PrairieProfileID *string `json:"silo_profile_id,omitempty"`
 }
 
 type SetAdminTokenInput struct {

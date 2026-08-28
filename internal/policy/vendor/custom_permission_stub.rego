@@ -1,4 +1,4 @@
-package silo_custom.permission
+package prairie_custom.permission
 
 import rego.v1
 

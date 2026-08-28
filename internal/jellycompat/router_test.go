@@ -14,6 +14,7 @@ import (
 )
 
 func TestRouterCompressesJSONResponses(t *testing.T) {
+	t.Parallel()
 	cfg, err := config.LoadFromDB(map[string]string{})
 	if err != nil {
 		t.Fatalf("LoadFromDB: %v", err)
@@ -48,6 +49,7 @@ func TestRouterCompressesJSONResponses(t *testing.T) {
 }
 
 func TestRouterServesCompatWebAssetsCreatedAfterStartup(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	cfg, err := config.LoadFromDB(map[string]string{
 		"jellyfin_compat.enabled":         "true",
@@ -87,6 +89,7 @@ func TestRouterServesCompatWebAssetsCreatedAfterStartup(t *testing.T) {
 }
 
 func TestRouterReportsDisabledCompatWebAssets(t *testing.T) {
+	t.Parallel()
 	for _, tt := range []struct {
 		name     string
 		settings map[string]string
@@ -106,7 +109,7 @@ func TestRouterReportsDisabledCompatWebAssets(t *testing.T) {
 				"jellyfin_compat.enabled":     "true",
 				"jellyfin_compat.web_enabled": "false",
 			},
-			wantBody: "Jellyfin Web UI is disabled in Silo settings",
+			wantBody: "Jellyfin Web UI is disabled in Prairie settings",
 		},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
@@ -149,6 +152,7 @@ func TestRouterReportsDisabledCompatWebAssets(t *testing.T) {
 }
 
 func TestRouterRejectsArbitraryCompatWebDirectory(t *testing.T) {
+	t.Parallel()
 	root := t.TempDir()
 	arbitrary := t.TempDir()
 	if err := os.WriteFile(filepath.Join(arbitrary, "index.html"), []byte("<!doctype html>secret"), 0o644); err != nil {

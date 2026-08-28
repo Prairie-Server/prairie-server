@@ -2,6 +2,7 @@ package pgstore
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -16,7 +17,7 @@ func (s *PostgresUserStore) GetSetting(ctx context.Context, key string) (string,
 		"SELECT value FROM user_settings WHERE user_id = $1 AND key = $2",
 		s.userID, key,
 	).Scan(&value)
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return "", nil
 	}
 	if err != nil {
@@ -77,7 +78,7 @@ func (s *PostgresUserStore) GetDeviceSetting(ctx context.Context, profileID, dev
 		 WHERE user_id = $1 AND profile_id = $2 AND device_id = $3 AND key = $4`,
 		s.userID, profileID, deviceID, key,
 	).Scan(&entry.ProfileID, &entry.DeviceID, &entry.DeviceName, &entry.DevicePlatform, &entry.Key, &entry.Value, &entry.UpdatedAt)
-	if err == pgx.ErrNoRows {
+	if errors.Is(err, pgx.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {

@@ -24,6 +24,7 @@ func (p compatTestUserStoreProvider) Close() error {
 }
 
 func TestDirectUserDataServiceProgressUsesCompletedHistory(t *testing.T) {
+	t.Parallel()
 	store := newJellycompatUserStore(t)
 	addCompletedHistoryForJellycompatTest(t, store, "movie-history-only")
 	service := &directUserDataService{storeProvider: compatTestUserStoreProvider{store: store}}
@@ -47,6 +48,7 @@ func TestDirectUserDataServiceProgressUsesCompletedHistory(t *testing.T) {
 }
 
 func TestBrowseItemsPlayedFilterUsesCompletedHistory(t *testing.T) {
+	t.Parallel()
 	store := newJellycompatUserStore(t)
 	addCompletedHistoryForJellycompatTest(t, store, "movie-history-only")
 	browse := &stubBrowseSource{

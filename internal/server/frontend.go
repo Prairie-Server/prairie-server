@@ -40,22 +40,22 @@ var Branding *branding.Service
 //   - script-src 'wasm-unsafe-eval': JASSUB (libass) subtitle rendering and
 //     node-unrar-js CBR extraction compile WebAssembly.
 //   - style-src blob: and 'unsafe-inline': foliate-js loads EPUB stylesheets
-//     via blob: URLs; the app uses inline style attributes. Google Fonts CSS
-//     is linked from index.html.
+//     via blob: URLs; the app uses inline style attributes. UI fonts are
+//     self-hosted WOFF2 (see web/src/styles/fonts-*.css).
 //   - img-src/media-src http(s): artwork can come from TMDB/TVDB/S3 public
 //     URLs, and stream URLs may point at standalone proxy/transcode workers
 //     on another origin (proxy public_url, plain http on LANs).
 //   - connect-src http(s)/ws(s): realtime session hub WebSockets, browser-side
 //     Plex auth (plex.tv), and HLS fetches against standalone worker origins.
-//   - font-src blob: data: plus fonts.gstatic.com for Google Fonts; reader
-//     book fonts load from blob: URLs.
+//   - font-src blob: data: for reader book fonts (blob:/data:); UI fonts are
+//     same-origin WOFF2 under /assets/.
 //   - frame-src youtube-nocookie.com: the item-detail trailer modal embeds
 //     remote trailers via YouTube's privacy-enhanced iframe host.
 const frontendContentSecurityPolicy = "default-src 'self'; " +
 	"script-src 'self' 'wasm-unsafe-eval'; " +
-	"style-src 'self' 'unsafe-inline' blob: https://fonts.googleapis.com; " +
+	"style-src 'self' 'unsafe-inline' blob:; " +
 	"img-src 'self' blob: data: http: https:; " +
-	"font-src 'self' blob: data: https://fonts.gstatic.com; " +
+	"font-src 'self' blob: data:; " +
 	"media-src 'self' blob: http: https:; " +
 	"connect-src 'self' ws: wss: http: https:; " +
 	"worker-src 'self' blob:; " +
@@ -410,7 +410,7 @@ func serveDynamicManifest(w http.ResponseWriter, r *http.Request) {
 // Returns false when there is no custom favicon, letting the caller fall through
 // to the bundled static file.
 func serveCustomFavicon(w http.ResponseWriter, r *http.Request) bool {
-	data, contentType, ref, err := Branding.GetAsset(r.Context(), branding.KindFavicon)
+	data, contentType, ref, err := Branding.GetAsset(r.Context(), branding.KindFavicon, r.Header.Get("Accept"))
 	if err != nil {
 		return false
 	}
@@ -419,7 +419,12 @@ func serveCustomFavicon(w http.ResponseWriter, r *http.Request) bool {
 	// on direct navigation (stored-XSS defense), matching the API asset route.
 	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Content-Security-Policy", branding.AssetContentSecurityPolicy)
-	w.Header().Set("ETag", `"`+ref+`"`)
+	etag := `"` + ref + `"`
+	if contentType == "image/avif" {
+		etag = `"` + ref + `;avif"`
+	}
+	w.Header().Set("ETag", etag)
+	w.Header().Set("Vary", "Accept")
 	// Stable path (no content hash in the URL), so revalidate rather than cache
 	// long-lived; the ETag lets browsers skip the body when unchanged.
 	// ServeContent handles If-None-Match with RFC 9110 semantics (weak

@@ -194,7 +194,7 @@ export function useSubtitleTracks(
     // and fires `cuechange` synchronously with the media clock, but
     // suppresses the browser's built-in cue renderer so the appearance
     // panel stays in charge of styling.
-    const track = videoEl.addTextTrack("subtitles", "Silo", activeLang || undefined);
+    const track = videoEl.addTextTrack("subtitles", "Prairie", activeLang || undefined);
     track.mode = "hidden";
     trackRef.current = track;
     seenCueKeysRef.current = new Set();
@@ -393,22 +393,22 @@ export function useSubtitleTracks(
           ? toMediaTime(videoEl.currentTime, streamOriginRef.current ?? 0)
           : (fetchAnchorRef.current ?? 0);
       if (!hasFetched) {
-        fetchWindow(Math.max(0, mediaTime - SEEK_BACKOFF), true);
+        void fetchWindow(Math.max(0, mediaTime - SEEK_BACKOFF), true);
         return;
       }
       if (mediaTime < coverageStart - 1) {
         atEOF = false;
-        fetchWindow(Math.max(0, mediaTime - SEEK_BACKOFF), true);
+        void fetchWindow(Math.max(0, mediaTime - SEEK_BACKOFF), true);
         return;
       }
       if (mediaTime > windowEnd + 1) {
         atEOF = false;
-        fetchWindow(Math.max(0, mediaTime - SEEK_BACKOFF), true);
+        void fetchWindow(Math.max(0, mediaTime - SEEK_BACKOFF), true);
         return;
       }
       if (!atEOF && mediaTime > windowEnd - PREFETCH_LEAD) {
         const nextStart = Math.max(windowEnd - WINDOW_OVERLAP, mediaTime);
-        fetchWindow(nextStart, false);
+        void fetchWindow(nextStart, false);
       }
     }
 

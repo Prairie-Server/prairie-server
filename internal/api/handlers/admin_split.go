@@ -183,7 +183,7 @@ func (h *AdminSplitHandler) HandleSplitItem(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusNotFound, "not_found", "Item not found")
 		return
 	}
-	if sourceItem.Type != "movie" && sourceItem.Type != "series" {
+	if sourceItem.Type != itemTypeMovie && sourceItem.Type != itemTypeSeries {
 		writeError(w, http.StatusBadRequest, "bad_request", "Split is only supported for movie and series items")
 		return
 	}
@@ -399,7 +399,7 @@ func (h *AdminSplitHandler) resolveSplitTarget(
 		}
 		var derived string
 		var ok bool
-		if sourceItem.Type == "series" {
+		if sourceItem.Type == itemTypeSeries {
 			derived, ok = contentid.ForSeries(ids)
 		} else {
 			derived, ok = contentid.ForMovie(ids)

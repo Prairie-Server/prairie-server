@@ -154,7 +154,7 @@ func TestSetGlobalConfigWithClearsValidatesTheClearedResult(t *testing.T) {
 		{name: "optional field is removed", required: false, wantError: false},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			manifest := connectionTestManifest(t, "silo.metadb", "0.0.36")
+			manifest := connectionTestManifest(t, "prairie.metadb", "0.0.36")
 			if tc.required {
 				manifest.GlobalConfigSchema[0].JsonSchema = `{"type":"object","properties":{"api_key":{"type":"string","format":"password"}},"required":["api_key"],"additionalProperties":false}`
 			} else {
@@ -216,7 +216,7 @@ func TestSetGlobalConfigWithClearsValidatesTheClearedResult(t *testing.T) {
 }
 
 func TestSetGlobalConfigWithClearsPreservesAndExplicitlyClearsNestedSecretObject(t *testing.T) {
-	manifest := connectionTestManifest(t, "silo.metadb", "0.0.36")
+	manifest := connectionTestManifest(t, "prairie.metadb", "0.0.36")
 	manifest.GlobalConfigSchema[0].JsonSchema = `{
 		"type":"object",
 		"properties":{
@@ -302,7 +302,7 @@ func TestSetGlobalConfigWithClearsPreservesAndExplicitlyClearsNestedSecretObject
 }
 
 func TestSetGlobalConfigPreservesOmittedPluginOwnedFields(t *testing.T) {
-	manifest := connectionTestManifest(t, "silo.metadb", "0.0.36")
+	manifest := connectionTestManifest(t, "prairie.metadb", "0.0.36")
 	manifest.GlobalConfigSchema[0].JsonSchema = `{
 		"type":"object",
 		"properties":{
@@ -396,7 +396,7 @@ func TestSetGlobalConfigPreservesOmittedPluginOwnedFields(t *testing.T) {
 }
 
 func TestSetGlobalConfigRetriesConcurrentMerge(t *testing.T) {
-	manifest := connectionTestManifest(t, "silo.metadb", "0.0.36")
+	manifest := connectionTestManifest(t, "prairie.metadb", "0.0.36")
 	manifest.GlobalConfigSchema[0].JsonSchema = `{
 		"type":"object",
 		"properties":{"display_name":{"type":"string"}}
@@ -558,13 +558,13 @@ func TestServiceTestGlobalConfigUsesMergedDraftAndStopsTemporaryInstance(t *test
 		if client == nil {
 			t.Fatal("probe client = nil, want started client")
 		}
-		if manifest.GetPluginId() != "silo.metadb" {
-			t.Fatalf("manifest plugin id = %q, want silo.metadb", manifest.GetPluginId())
+		if manifest.GetPluginId() != "prairie.metadb" {
+			t.Fatalf("manifest plugin id = %q, want prairie.metadb", manifest.GetPluginId())
 		}
 		return nil
 	}
 
-	manifest := connectionTestManifest(t, "silo.metadb", "0.0.36")
+	manifest := connectionTestManifest(t, "prairie.metadb", "0.0.36")
 	manifest.GlobalConfigSchema[0].JsonSchema = `{"type":"object","properties":{"api_key":{"type":"string","format":"password"}},"required":["api_key"],"additionalProperties":false}`
 	installPath := writeInstalledPluginManifest(t, manifest)
 	host := &fakeServiceHost{
@@ -665,7 +665,7 @@ func TestRunPluginConnectionCheckSkipsMovieProbeForAudiobookOnlyProvider(t *test
 		t.Fatalf("NewStruct() error = %v", err)
 	}
 
-	manifest := connectionTestManifest(t, "silo.audiobook-metadata", "0.1.2")
+	manifest := connectionTestManifest(t, "prairie.audiobook-metadata", "0.1.2")
 	manifest.Capabilities = []*pluginv1.CapabilityDescriptor{
 		{
 			Type:        "metadata_provider.v1",
@@ -685,7 +685,7 @@ func TestRunPluginConnectionCheckSkipsMovieProbeForAudiobookOnlyProvider(t *test
 }
 
 func TestServiceTestGlobalConfigReturnsUnsupportedWithoutStartingPlugin(t *testing.T) {
-	manifest := connectionTestManifest(t, "silo.simple", "0.0.1")
+	manifest := connectionTestManifest(t, "prairie.simple", "0.0.1")
 	manifest.Capabilities = []*pluginv1.CapabilityDescriptor{
 		{
 			Type:        "scheduled_task.v1",
@@ -742,7 +742,7 @@ func TestServiceTestGlobalConfigStopsTemporaryInstanceOnProbeFailure(t *testing.
 		return &ConnectionTestError{Message: "probe failed"}
 	}
 
-	manifest := connectionTestManifest(t, "silo.metadb", "0.0.36")
+	manifest := connectionTestManifest(t, "prairie.metadb", "0.0.36")
 	installPath := writeInstalledPluginManifest(t, manifest)
 	host := &fakeServiceHost{
 		startResult: &fakePluginClient{manifest: manifest},
@@ -789,7 +789,7 @@ func TestServiceTestGlobalConfigUsesUniqueTemporaryInstallationIDs(t *testing.T)
 		return nil
 	}
 
-	manifest := connectionTestManifest(t, "silo.metadb", "0.0.36")
+	manifest := connectionTestManifest(t, "prairie.metadb", "0.0.36")
 	installPath := writeInstalledPluginManifest(t, manifest)
 	host := &fakeServiceHost{
 		startResult: &fakePluginClient{manifest: manifest},

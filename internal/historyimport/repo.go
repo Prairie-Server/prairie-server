@@ -1142,19 +1142,6 @@ func (r *Repository) scanConnectSession(scanner interface{ Scan(dest ...any) err
 // scanRun is the legacy scanner for queries that do NOT include mapping_id.
 // Kept for backward compatibility with UpdateRunProgress/CompleteRun/FailRun paths
 // that use Exec and do not scan rows.
-func scanRun(scanner interface{ Scan(dest ...any) error }) (*Run, error) {
-	var run Run
-	var warningsJSON []byte
-	var unmatchedJSON []byte
-	if err := scanner.Scan(
-		&run.ID, &run.UserID, &run.ProfileID, &run.SourceType, &run.ConnectionMode, &run.Status,
-		&run.Fetched, &run.Matched, &run.Unmatched, &run.ProgressUpdated, &run.HistoryCreated, &run.WatchlistAdded, &run.FavoritesImported, &run.Skipped,
-		&warningsJSON, &unmatchedJSON, &run.ErrorMessage, &run.CreatedAt, &run.StartedAt, &run.CompletedAt,
-	); err != nil {
-		return nil, err
-	}
-	return finalizeRunScan(&run, warningsJSON, unmatchedJSON)
-}
 
 // scanRunWithMappingID scans a run row that includes the mapping_id column.
 func scanRunWithMappingID(scanner interface{ Scan(dest ...any) error }) (*Run, error) {
@@ -1190,18 +1177,6 @@ func finalizeRunScan(run *Run, warningsJSON, unmatchedJSON []byte) (*Run, error)
 		run.UnmatchedSamples = []UnmatchedSample{}
 	}
 	return run, nil
-}
-
-func scanRuns(rows pgx.Rows) ([]Run, error) {
-	var runs []Run
-	for rows.Next() {
-		run, err := scanRun(rows)
-		if err != nil {
-			return nil, err
-		}
-		runs = append(runs, *run)
-	}
-	return runs, rows.Err()
 }
 
 func scanRunsWithMappingID(rows pgx.Rows) ([]Run, error) {

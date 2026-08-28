@@ -363,7 +363,7 @@ func TestAutoscanHandleListSourcesListsOnly(t *testing.T) {
 	store := &fakeAutoscanStore{
 		listSourcesFn: func() ([]autoscan.Source, error) {
 			listed = true
-			return []autoscan.Source{{ID: "src-1", PluginID: "silo.autoscan.arr", CapabilityID: "arr"}}, nil
+			return []autoscan.Source{{ID: "src-1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr"}}, nil
 		},
 	}
 	h := NewAutoscanHandler(store, &fakeAutoscanTriggerer{})
@@ -421,19 +421,19 @@ func TestAutoscanHandleCreateSourceSucceeds(t *testing.T) {
 		},
 	}
 	trig := &fakeAutoscanTriggerer{available: []autoscan.AvailableScanSource{
-		{PluginID: "silo.autoscan.arr", CapabilityID: "arr"},
+		{PluginID: "prairie.autoscan.arr", CapabilityID: "arr"},
 	}}
 	h := NewAutoscanHandler(store, trig)
 
 	req := newAutoscanRequest("POST", "/api/v1/admin/autoscan/sources",
-		`{"plugin_id":"silo.autoscan.arr","capability_id":"arr","connection_id":"conn-1","enabled":true}`, "")
+		`{"plugin_id":"prairie.autoscan.arr","capability_id":"arr","connection_id":"conn-1","enabled":true}`, "")
 	rec := httptest.NewRecorder()
 	h.HandleCreateSource(rec, req)
 
 	if rec.Code != http.StatusCreated {
 		t.Fatalf("status = %d, want 201; body=%s", rec.Code, rec.Body.String())
 	}
-	if got.PluginID != "silo.autoscan.arr" || got.CapabilityID != "arr" || got.ConnectionID == nil || *got.ConnectionID != "conn-1" {
+	if got.PluginID != "prairie.autoscan.arr" || got.CapabilityID != "arr" || got.ConnectionID == nil || *got.ConnectionID != "conn-1" {
 		t.Fatalf("unexpected created source: %+v", got)
 	}
 	var body autoscanSourceResponse
@@ -453,14 +453,14 @@ func TestAutoscanHandleCreateSourceRejectsUnknownCapability(t *testing.T) {
 			return s, nil
 		},
 	}
-	// Installed set does NOT include ("silo.autoscan.arr", "arr").
+	// Installed set does NOT include ("prairie.autoscan.arr", "arr").
 	trig := &fakeAutoscanTriggerer{available: []autoscan.AvailableScanSource{
-		{PluginID: "silo.autoscan.other", CapabilityID: "other"},
+		{PluginID: "prairie.autoscan.other", CapabilityID: "other"},
 	}}
 	h := NewAutoscanHandler(store, trig)
 
 	req := newAutoscanRequest("POST", "/api/v1/admin/autoscan/sources",
-		`{"plugin_id":"silo.autoscan.arr","capability_id":"arr","enabled":false}`, "")
+		`{"plugin_id":"prairie.autoscan.arr","capability_id":"arr","enabled":false}`, "")
 	rec := httptest.NewRecorder()
 	h.HandleCreateSource(rec, req)
 
@@ -484,12 +484,12 @@ func TestAutoscanHandleCreateSourceEnableWithoutConnectionSucceeds(t *testing.T)
 		},
 	}
 	trig := &fakeAutoscanTriggerer{available: []autoscan.AvailableScanSource{
-		{PluginID: "silo.autoscan.arr", CapabilityID: "arr"},
+		{PluginID: "prairie.autoscan.arr", CapabilityID: "arr"},
 	}}
 	h := NewAutoscanHandler(store, trig)
 
 	req := newAutoscanRequest("POST", "/api/v1/admin/autoscan/sources",
-		`{"plugin_id":"silo.autoscan.arr","capability_id":"arr","enabled":true}`, "")
+		`{"plugin_id":"prairie.autoscan.arr","capability_id":"arr","enabled":true}`, "")
 	rec := httptest.NewRecorder()
 	h.HandleCreateSource(rec, req)
 
@@ -705,7 +705,7 @@ func TestAutoscanHandleUpdateSourceEnableWithoutConnectionSucceeds(t *testing.T)
 	var got autoscan.Source
 	store := &fakeAutoscanStore{
 		getSourceFn: func(id string) (autoscan.Source, error) {
-			return autoscan.Source{ID: id, PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: nil}, nil
+			return autoscan.Source{ID: id, PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: nil}, nil
 		},
 		updateSourceFn: func(s autoscan.Source) (autoscan.Source, error) {
 			got = s
@@ -731,7 +731,7 @@ func TestAutoscanHandleUpdateSourceEnableWithConnectionSucceeds(t *testing.T) {
 	var got autoscan.Source
 	store := &fakeAutoscanStore{
 		getSourceFn: func(id string) (autoscan.Source, error) {
-			return autoscan.Source{ID: id, PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: ptr("conn-1")}, nil
+			return autoscan.Source{ID: id, PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: ptr("conn-1")}, nil
 		},
 		updateSourceFn: func(s autoscan.Source) (autoscan.Source, error) {
 			got = s
@@ -759,7 +759,7 @@ func TestAutoscanHandleUpdateSourceBindConnectionSucceeds(t *testing.T) {
 	store := &fakeAutoscanStore{
 		getSourceFn: func(id string) (autoscan.Source, error) {
 			// Source starts with no connection.
-			return autoscan.Source{ID: id, PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: nil}, nil
+			return autoscan.Source{ID: id, PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: nil}, nil
 		},
 		updateSourceFn: func(s autoscan.Source) (autoscan.Source, error) {
 			got = s
@@ -787,7 +787,7 @@ func TestAutoscanHandleUpdateSourceUnbindConnectionSucceeds(t *testing.T) {
 	store := &fakeAutoscanStore{
 		getSourceFn: func(id string) (autoscan.Source, error) {
 			// Source starts with a connection already bound.
-			return autoscan.Source{ID: id, PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: ptr("conn-1")}, nil
+			return autoscan.Source{ID: id, PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: ptr("conn-1")}, nil
 		},
 		updateSourceFn: func(s autoscan.Source) (autoscan.Source, error) {
 			got = s
@@ -817,7 +817,7 @@ func TestAutoscanHandleUpdateSourceUnbindWhileEnabledSucceeds(t *testing.T) {
 	var got autoscan.Source
 	store := &fakeAutoscanStore{
 		getSourceFn: func(id string) (autoscan.Source, error) {
-			return autoscan.Source{ID: id, PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: ptr("conn-1")}, nil
+			return autoscan.Source{ID: id, PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: ptr("conn-1")}, nil
 		},
 		updateSourceFn: func(s autoscan.Source) (autoscan.Source, error) {
 			got = s
@@ -1015,7 +1015,7 @@ func TestAutoscanHandleUpdateSourceRoundTripsPathRewrites(t *testing.T) {
 	var got autoscan.Source
 	store := &fakeAutoscanStore{
 		getSourceFn: func(id string) (autoscan.Source, error) {
-			return autoscan.Source{ID: id, PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: ptr("conn-1")}, nil
+			return autoscan.Source{ID: id, PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: ptr("conn-1")}, nil
 		},
 		updateSourceFn: func(s autoscan.Source) (autoscan.Source, error) {
 			got = s
@@ -1080,7 +1080,7 @@ func TestAutoscanHandleUpdateSourceRejectsBlankRewrite(t *testing.T) {
 	upserted := false
 	store := &fakeAutoscanStore{
 		getSourceFn: func(id string) (autoscan.Source, error) {
-			return autoscan.Source{ID: id, PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: ptr("conn-1")}, nil
+			return autoscan.Source{ID: id, PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: ptr("conn-1")}, nil
 		},
 		updateSourceFn: func(s autoscan.Source) (autoscan.Source, error) {
 			upserted = true
@@ -1110,7 +1110,7 @@ func TestAutoscanHandleListScansSerializesFiltersAndEventContext(t *testing.T) {
 	eventCompleted := completed.Add(-1 * time.Second)
 	eventID := int64(42)
 	sourceID := "src-1"
-	pluginID := "silo.autoscan.cephfs"
+	pluginID := "prairie.autoscan.cephfs"
 	var gotFilter autoscan.ScanListFilter
 	var gotCountFilter autoscan.ScanListFilter
 	store := &fakeAutoscanStore{
@@ -1218,7 +1218,7 @@ func TestAutoscanHandleListEventsSerializesFiltersAndRuns(t *testing.T) {
 				Event: autoscan.Event{
 					ID:              42,
 					SourceID:        &sourceID,
-					PluginID:        "silo.autoscan.cephfs",
+					PluginID:        "prairie.autoscan.cephfs",
 					CapabilityID:    "cephfs",
 					StartedAt:       started,
 					CompletedAt:     completed,
@@ -1356,7 +1356,7 @@ func TestAutoscanHandleStatusReturnsTrimmedSources(t *testing.T) {
 		},
 		listSourcesFn: func() ([]autoscan.Source, error) {
 			return []autoscan.Source{
-				{ID: "src-1", PluginID: "silo.autoscan.cephfs", CapabilityID: "scan_source", ConnectionID: ptr("conn-1"), Enabled: true},
+				{ID: "src-1", PluginID: "prairie.autoscan.cephfs", CapabilityID: "scan_source", ConnectionID: ptr("conn-1"), Enabled: true},
 			}, nil
 		},
 		queueSummaryFn: func() (autoscan.QueueSummary, error) {
@@ -1366,7 +1366,7 @@ func TestAutoscanHandleStatusReturnsTrimmedSources(t *testing.T) {
 			return []autoscan.Event{{
 				ID:           44,
 				SourceID:     &sourceID,
-				PluginID:     "silo.autoscan.cephfs",
+				PluginID:     "prairie.autoscan.cephfs",
 				CapabilityID: "cephfs",
 				StartedAt:    runningStartedAt,
 				Status:       autoscan.EventStatusRunning,
@@ -1402,7 +1402,7 @@ func TestAutoscanHandleStatusReturnsTrimmedSources(t *testing.T) {
 		t.Fatalf("running_polls = %+v", body.RunningPolls)
 	}
 	poll := body.RunningPolls[0]
-	if poll.ID != 44 || poll.SourceID == nil || *poll.SourceID != sourceID || poll.PluginID != "silo.autoscan.cephfs" || poll.CapabilityID != "cephfs" {
+	if poll.ID != 44 || poll.SourceID == nil || *poll.SourceID != sourceID || poll.PluginID != "prairie.autoscan.cephfs" || poll.CapabilityID != "cephfs" {
 		t.Fatalf("running poll identity = %+v", poll)
 	}
 	if poll.ElapsedMS <= 0 {

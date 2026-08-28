@@ -283,19 +283,163 @@ func TestBuildPlaybackManifest_EncodedTranscodeUsesSyntheticVODManifest(t *testi
 
 	text := string(got)
 	for _, want := range []string{
-		"#EXT-X-PLAYLIST-TYPE:VOD",
 		"#EXT-X-MEDIA-SEQUENCE:0",
 		"#EXTINF:2.000000,",
 		"#EXTINF:1.100000,",
 		"segment/seg_00000.ts?token=test",
 		"segment/seg_00002.ts?token=test",
+		// ENDLIST is the supported way to say "this playlist is complete", and
+		// it has to stay now that PLAYLIST-TYPE is gone.
+		"#EXT-X-ENDLIST",
 	} {
 		if !strings.Contains(text, want) {
 			t.Fatalf("manifest missing %q:\n%s", want, text)
 		}
 	}
+	// Tizen lists EXT-X-PLAYLIST-TYPE as unsupported and abandons a playlist
+	// carrying it, silently, so the synthetic VOD manifest must not emit it.
+	if strings.Contains(text, "#EXT-X-PLAYLIST-TYPE") {
+		t.Fatalf("synthetic VOD manifest must not emit EXT-X-PLAYLIST-TYPE:\n%s", text)
+	}
 	if strings.Contains(text, "#EXT-X-MAP:") {
 		t.Fatalf("encoded manifest should not use fMP4 init map:\n%s", text)
+	}
+	if strings.Contains(text, "#EXT-X-START:") {
+		t.Fatalf("from-start manifest should not emit EXT-X-START:\n%s", text)
+	}
+}
+
+func TestGenerateFullManifest_ResumeWindowsAtStartSegment(t *testing.T) {
+	const (
+		resumeSeconds = 100.0
+		segDur        = 2
+	)
+	startSeg := int(resumeSeconds) / segDur // ⌊N/segDur⌋
+
+	session := &TranscodeSession{
+		opts: TranscodeOpts{
+			TargetCodecVideo:   "h264",
+			TargetCodecAudio:   "aac",
+			SegmentDuration:    segDur,
+			TotalDuration:      600,
+			SeekSeconds:        resumeSeconds,
+			StartSegmentNumber: startSeg,
+		},
+	}
+
+	text := string(session.GenerateFullManifest("segment/", "token=test"))
+	// AVPlay ignores EXT-X-START and plays the first entry — the window head
+	// must BE the resume segment.
+	if strings.Contains(text, "#EXT-X-START:") {
+		t.Fatalf("windowed resume playlist must not rely on EXT-X-START:\n%s", text)
+	}
+	wantSeq := "#EXT-X-MEDIA-SEQUENCE:" + strconv.Itoa(startSeg)
+	if !strings.Contains(text, wantSeq) {
+		t.Fatalf("missing %q; manifest:\n%s", wantSeq, text)
+	}
+	wantSeg := fmt.Sprintf("segment/seg_%05d.ts?token=test", startSeg)
+	if !strings.Contains(text, wantSeg) {
+		t.Fatalf("resume playlist missing start segment %q:\n%s", wantSeg, text)
+	}
+	if strings.Contains(text, "segment/seg_00000.ts?token=test") {
+		t.Fatalf("windowed resume playlist must not list seg_00000:\n%s", text)
+	}
+	// First media URI after the header tags must be the start segment.
+	var firstURI string
+	for _, line := range strings.Split(text, "\n") {
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" || strings.HasPrefix(trimmed, "#") {
+			continue
+		}
+		firstURI = trimmed
+		break
+	}
+	if firstURI != wantSeg {
+		t.Fatalf("first playlist URI = %q, want %q", firstURI, wantSeg)
+	}
+}
+
+func TestSegmentRecoveryDecision_StartupProbeBeforeResumeDoesNotRestart(t *testing.T) {
+	// Resume window starts at seg 50. A player probing seg 0 during initial
+	// buffering must not trigger a seek-restart that discards the resume offset.
+	session := &TranscodeSession{
+		outputDir: t.TempDir(),
+		running:   true,
+		opts: TranscodeOpts{
+			TargetCodecVideo:   "h264",
+			SegmentDuration:    2,
+			SeekSeconds:        100,
+			StartSegmentNumber: 50,
+		},
+	}
+
+	decision := session.SegmentRecoveryDecision(0, time.Now())
+	if decision.Reason != "before_start_segment_startup" {
+		t.Fatalf("Reason = %q, want before_start_segment_startup", decision.Reason)
+	}
+	if decision.RestartOnTimeout {
+		t.Fatal("RestartOnTimeout = true, want false (startup probe must preserve resume offset)")
+	}
+	if decision.Wait {
+		t.Fatal("Wait = true, want false (seg 0 will never be produced for this resume window)")
+	}
+}
+
+func TestSegmentRecoveryDecision_BeforeStartNeverRestartsAtZero(t *testing.T) {
+	// After the resume window has produced media, a request before
+	// StartSegmentNumber must still not auto-restart — RestartSeekTarget(0)
+	// would discard the resume window. Clients re-plan via /transcode/start.
+	tempDir := t.TempDir()
+	now := time.Now()
+	writeManifestRange(t, tempDir, 50, 52, ".ts")
+	writeSegmentFile(t, tempDir, "seg_00050.ts", []byte("x"), now.Add(-2*time.Second))
+	writeSegmentFile(t, tempDir, "seg_00051.ts", []byte("x"), now.Add(-time.Second))
+
+	session := &TranscodeSession{
+		outputDir:            tempDir,
+		running:              true,
+		lastRequestedSegment: 51,
+		opts: TranscodeOpts{
+			TargetCodecVideo:   "h264",
+			SegmentDuration:    2,
+			SeekSeconds:        100,
+			StartSegmentNumber: 50,
+		},
+	}
+
+	decision := session.SegmentRecoveryDecision(0, now)
+	if decision.Reason != "before_start_segment" {
+		t.Fatalf("Reason = %q, want before_start_segment", decision.Reason)
+	}
+	if decision.RestartOnTimeout {
+		t.Fatal("RestartOnTimeout = true, want false (must not discard resume at seek_seconds=0)")
+	}
+}
+
+func TestRestartSeekTarget_MidStreamSeekUsesSegmentIndexNotZero(t *testing.T) {
+	const segDur = 2
+	session := &TranscodeSession{
+		opts: TranscodeOpts{
+			TargetCodecVideo:   "h264",
+			SegmentDuration:    segDur,
+			SeekSeconds:        100,
+			StartSegmentNumber: 50,
+		},
+	}
+
+	// Seeking to segment 80 must land at 160s, not restart to 0.
+	got, ok, err := session.RestartSeekTarget(80)
+	if err != nil {
+		t.Fatalf("RestartSeekTarget: %v", err)
+	}
+	if !ok {
+		t.Fatal("RestartSeekTarget returned ok=false")
+	}
+	if got != float64(80*segDur) {
+		t.Fatalf("RestartSeekTarget(80) = %v, want %v", got, float64(80*segDur))
+	}
+	if got == 0 {
+		t.Fatal("mid-stream seek must not collapse to a restart-to-0")
 	}
 }
 
@@ -1210,5 +1354,78 @@ func TestAppendManifestQueryParam_NonManifestUnchanged(t *testing.T) {
 	}
 	if got := AppendManifestQueryParam([]byte("#EXTM3U\nseg.ts\n"), "", "TOKEN"); !strings.Contains(string(got), "seg.ts\n") || strings.Contains(string(got), "seg.ts?") {
 		t.Fatalf("empty key should be a no-op, got:\n%s", got)
+	}
+}
+
+// Samsung documents #EXT-X-INDEPENDENT-SEGMENTS as unsupported on every Tizen
+// version, and their parser abandons the whole playlist instead of skipping the
+// line -- without surfacing an error, which the AVPlay plugin then swallows in
+// OnPrepareDone. Every media playlist reaches a client through this function,
+// so it is the backstop for manifests ffmpeg wrote under an older flag set.
+func TestRewriteManifestPathsStripsUnsupportedTizenTags(t *testing.T) {
+	manifest := strings.Join([]string{
+		"#EXTM3U",
+		"#EXT-X-VERSION:7",
+		"#EXT-X-TARGETDURATION:10",
+		"#EXT-X-MEDIA-SEQUENCE:0",
+		"#EXT-X-INDEPENDENT-SEGMENTS",
+		"#EXT-X-PLAYLIST-TYPE:VOD",
+		"#EXT-X-MAP:URI=\"init.mp4\"",
+		"#EXTINF:10.427000,",
+		"seg_00000.m4s",
+		"#EXT-X-ENDLIST",
+		"",
+	}, "\n")
+
+	got, err := RewriteManifestPaths([]byte(manifest), "segment/", "st=tok")
+	if err != nil {
+		t.Fatalf("RewriteManifestPaths: %v", err)
+	}
+	text := string(got)
+
+	for _, banned := range []string{"#EXT-X-INDEPENDENT-SEGMENTS", "#EXT-X-PLAYLIST-TYPE"} {
+		if strings.Contains(text, banned) {
+			t.Errorf("unsupported tag %q survived:\n%s", banned, text)
+		}
+	}
+	// Stripping must not disturb anything else: supported tags, the init map and
+	// the segment line all keep their rewritten prefix and query.
+	for _, want := range []string{
+		"#EXTM3U",
+		"#EXT-X-VERSION:7",
+		"#EXT-X-TARGETDURATION:10",
+		"#EXT-X-MAP:URI=\"segment/init.mp4?st=tok\"",
+		"#EXTINF:10.427000,",
+		"segment/seg_00000.m4s?st=tok",
+		"#EXT-X-ENDLIST",
+	} {
+		if !strings.Contains(text, want) {
+			t.Errorf("rewrite dropped %q:\n%s", want, text)
+		}
+	}
+	// #EXTM3U must remain the first line for the playlist to parse at all.
+	if !strings.HasPrefix(text, "#EXTM3U\n") {
+		t.Errorf("playlist no longer starts with #EXTM3U:\n%s", text)
+	}
+}
+
+// A tag that merely starts with the same characters must survive.
+func TestRewriteManifestPathsKeepsSimilarlyNamedTags(t *testing.T) {
+	manifest := strings.Join([]string{
+		"#EXTM3U",
+		"#EXT-X-VERSION:3",
+		"#EXT-X-TARGETDURATION:2",
+		"#EXT-X-INDEPENDENT-SEGMENTS-FUTURE:1",
+		"#EXTINF:2.000000,",
+		"seg_00000.ts",
+		"",
+	}, "\n")
+
+	got, err := RewriteManifestPaths([]byte(manifest), "segment/", "")
+	if err != nil {
+		t.Fatalf("RewriteManifestPaths: %v", err)
+	}
+	if !strings.Contains(string(got), "#EXT-X-INDEPENDENT-SEGMENTS-FUTURE:1") {
+		t.Errorf("prefix-only match was stripped:\n%s", got)
 	}
 }

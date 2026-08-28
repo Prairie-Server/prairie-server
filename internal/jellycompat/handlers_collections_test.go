@@ -163,6 +163,7 @@ func performItemsRequest(t *testing.T, h *ItemsHandler, target string) queryResu
 }
 
 func TestHandleItems_BoxSetListingFiltersHiddenLibraries(t *testing.T) {
+	t.Parallel()
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
 			{ID: "101", LibraryID: 1, Title: "Marvel", Visibility: "visible", ItemCount: 3},
@@ -184,6 +185,7 @@ func TestHandleItems_BoxSetListingFiltersHiddenLibraries(t *testing.T) {
 }
 
 func TestHandleItems_BoxSetListingScopedToParentLibrary(t *testing.T) {
+	t.Parallel()
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
 			{ID: "101", LibraryID: 1, Title: "Marvel", Visibility: "visible"},
@@ -206,6 +208,7 @@ func TestHandleItems_BoxSetListingScopedToParentLibrary(t *testing.T) {
 }
 
 func TestHandleItems_BoxSetChildrenPreservePositionOrder(t *testing.T) {
+	t.Parallel()
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
 			{ID: "101", LibraryID: 1, Title: "Marvel", Visibility: "visible"},
@@ -243,6 +246,7 @@ func TestHandleItems_BoxSetChildrenPreservePositionOrder(t *testing.T) {
 }
 
 func TestHandleItems_BoxSetChildrenPagination(t *testing.T) {
+	t.Parallel()
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
 			{ID: "101", LibraryID: 1, Title: "Marvel", Visibility: "visible"},
@@ -273,6 +277,7 @@ func TestHandleItems_BoxSetChildrenPagination(t *testing.T) {
 }
 
 func TestHandleItem_BoxSetDetailAndHiddenCollection(t *testing.T) {
+	t.Parallel()
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
 			{ID: "101", LibraryID: 1, Title: "Marvel", Visibility: "visible", ItemCount: 4, Description: "Heroes"},
@@ -311,6 +316,7 @@ func TestHandleItem_BoxSetDetailAndHiddenCollection(t *testing.T) {
 }
 
 func TestHandleItems_UnmappedTypeFilterReturnsEmpty(t *testing.T) {
+	t.Parallel()
 	h := newCollectionsTestHandler(&fakeCollectionSource{}, []upstreamUserLibrary{{ID: 1, Name: "Movies", Type: "movies"}}, nil)
 
 	result := performItemsRequest(t, h, "/Items?IncludeItemTypes=Playlist")
@@ -320,6 +326,7 @@ func TestHandleItems_UnmappedTypeFilterReturnsEmpty(t *testing.T) {
 }
 
 func TestHandleItems_BoxSetWithUserStateFilterReturnsEmpty(t *testing.T) {
+	t.Parallel()
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
 			{ID: "101", LibraryID: 1, Title: "Marvel", Visibility: "visible"},
@@ -342,6 +349,7 @@ func TestHandleItems_BoxSetWithUserStateFilterReturnsEmpty(t *testing.T) {
 }
 
 func TestHandleItems_CollectionFolderTypeReturnsViews(t *testing.T) {
+	t.Parallel()
 	h := newCollectionsTestHandler(&fakeCollectionSource{}, []upstreamUserLibrary{
 		{ID: 1, Name: "Movies", Type: "movies"},
 		{ID: 3, Name: "Shows", Type: "series"},
@@ -359,6 +367,7 @@ func TestHandleItems_CollectionFolderTypeReturnsViews(t *testing.T) {
 }
 
 func TestHandleItems_SpecificIdsIncludeBoxSets(t *testing.T) {
+	t.Parallel()
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
 			{ID: "101", LibraryID: 1, Title: "Marvel", Visibility: "visible", ItemCount: 2},
@@ -374,6 +383,7 @@ func TestHandleItems_SpecificIdsIncludeBoxSets(t *testing.T) {
 }
 
 func TestParseItemsQuery_BoxSetFlags(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 
 	req := httptest.NewRequest("GET", "/Items?IncludeItemTypes=BoxSet", nil)
@@ -400,6 +410,7 @@ func TestParseItemsQuery_BoxSetFlags(t *testing.T) {
 }
 
 func TestUserViews_PrependsCollectionsViewWhenVisible(t *testing.T) {
+	t.Parallel()
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
 			{ID: "101", LibraryID: 1, Title: "Marvel", Visibility: "visible", ItemCount: 3},
@@ -429,6 +440,7 @@ func TestUserViews_PrependsCollectionsViewWhenVisible(t *testing.T) {
 }
 
 func TestUserViews_OmitsCollectionsViewWhenNoVisibleCollections(t *testing.T) {
+	t.Parallel()
 	// Only collection lives in a library the session cannot see (library 2).
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
@@ -447,6 +459,7 @@ func TestUserViews_OmitsCollectionsViewWhenNoVisibleCollections(t *testing.T) {
 }
 
 func TestUserViews_OmitsCollectionsViewWhenSourceNil(t *testing.T) {
+	t.Parallel()
 	h := newCollectionsTestHandler(&fakeCollectionSource{}, []upstreamUserLibrary{{ID: 1, Name: "Movies", Type: "movies"}}, nil)
 	h.collections = nil // exercise the no-collection-source path (e.g. a DB-less deployment)
 
@@ -459,6 +472,7 @@ func TestUserViews_OmitsCollectionsViewWhenSourceNil(t *testing.T) {
 }
 
 func TestHandleItems_CollectionsViewParentHonorsTypeFilter(t *testing.T) {
+	t.Parallel()
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
 			{ID: "101", LibraryID: 1, Title: "Marvel", Visibility: "visible", ItemCount: 3},
@@ -480,6 +494,7 @@ func TestHandleItems_CollectionsViewParentHonorsTypeFilter(t *testing.T) {
 }
 
 func TestHandleItems_CollectionsViewRehydratedByIds(t *testing.T) {
+	t.Parallel()
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
 			{ID: "101", LibraryID: 1, Title: "Marvel", Visibility: "visible"},
@@ -497,6 +512,7 @@ func TestHandleItems_CollectionsViewRehydratedByIds(t *testing.T) {
 }
 
 func TestHandleItems_CollectionsViewParentListsBoxSets(t *testing.T) {
+	t.Parallel()
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
 			{ID: "101", LibraryID: 1, Title: "Marvel", Visibility: "visible", ItemCount: 3},
@@ -527,6 +543,7 @@ func TestHandleItems_CollectionsViewParentListsBoxSets(t *testing.T) {
 }
 
 func TestHandleItem_CollectionsViewReturnsCollectionFolder(t *testing.T) {
+	t.Parallel()
 	h := newCollectionsTestHandler(&fakeCollectionSource{}, nil, nil)
 
 	req := httptest.NewRequest("GET", "/Items/"+collectionsViewID, nil)

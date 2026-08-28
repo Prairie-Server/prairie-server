@@ -29,7 +29,7 @@ export function useCreateInviteCode() {
       }),
     onSuccess: () => {
       toast.success("Invite code created");
-      queryClient.invalidateQueries({ queryKey: adminKeys.inviteCodes() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.inviteCodes() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to create invite code");
@@ -46,7 +46,7 @@ export function useUpdateInviteCode() {
         body: JSON.stringify(body),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.inviteCodes() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.inviteCodes() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to update invite code");
@@ -64,7 +64,7 @@ export function useTopUpInviteCode() {
       }),
     onSuccess: () => {
       toast.success("Invite code topped up");
-      queryClient.invalidateQueries({ queryKey: adminKeys.inviteCodes() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.inviteCodes() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to top up invite code");
@@ -78,7 +78,7 @@ export function useDeleteInviteCode() {
     mutationFn: (id: number) => api(`/admin/invite-codes/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Invite code deleted");
-      queryClient.invalidateQueries({ queryKey: adminKeys.inviteCodes() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.inviteCodes() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to delete invite code");

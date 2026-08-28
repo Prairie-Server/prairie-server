@@ -1,7 +1,7 @@
 import type { AutoscanPathRewrite, AutoscanWebhookProvider, Library } from "@/api/types";
 
 /**
- * The arr notification triggers Silo actually consumes.
+ * The arr notification triggers Prairie actually consumes.
  *
  * Kept in sync with internal/autoscan/arrwebhook/parse.go: importEventTypes
  * ("Download"/"Import"/"Upgrade"/"DownloadComplete"), the "Rename" event, and
@@ -15,7 +15,7 @@ import type { AutoscanPathRewrite, AutoscanWebhookProvider, Library } from "@/ap
 export interface WebhookTrigger {
   /** Caption in the arr UI. */
   label: string;
-  /** Why Silo wants it, shown as helper text. */
+  /** Why Prairie wants it, shown as helper text. */
   reason: string;
   /** False for triggers that are useful but not needed for the basic case. */
   required: boolean;
@@ -34,7 +34,7 @@ const SHARED_TRIGGERS: WebhookTrigger[] = [
   },
   {
     label: "On Rename",
-    reason: "Fires when files are renamed, so Silo does not lose track of them.",
+    reason: "Fires when files are renamed, so Prairie does not lose track of them.",
     required: false,
   },
 ];
@@ -43,7 +43,7 @@ const SONARR_TRIGGERS: WebhookTrigger[] = [
   ...SHARED_TRIGGERS,
   {
     label: "On Episode File Delete",
-    reason: "Lets Silo drop episodes you removed, instead of leaving dead entries.",
+    reason: "Lets Prairie drop episodes you removed, instead of leaving dead entries.",
     required: false,
   },
 ];
@@ -52,7 +52,7 @@ const RADARR_TRIGGERS: WebhookTrigger[] = [
   ...SHARED_TRIGGERS,
   {
     label: "On Movie File Delete",
-    reason: "Lets Silo drop movies you removed, instead of leaving dead entries.",
+    reason: "Lets Prairie drop movies you removed, instead of leaving dead entries.",
     required: false,
   },
 ];
@@ -68,7 +68,7 @@ export function triggersFor(provider: AutoscanWebhookProvider | "auto"): Webhook
     ...SHARED_TRIGGERS,
     {
       label: "On Episode File Delete / On Movie File Delete",
-      reason: "Whichever your service offers — lets Silo drop files you removed.",
+      reason: "Whichever your service offers — lets Prairie drop files you removed.",
       required: false,
     },
   ];
@@ -85,7 +85,7 @@ export function settingsPathFor(provider: AutoscanWebhookProvider | "auto"): str
 
 /**
  * One row of the mapping the operator fills in: the path the arr reports
- * (`from`) and the Silo path it corresponds to (`to`).
+ * (`from`) and the Prairie path it corresponds to (`to`).
  *
  * Webhook sources cannot use the /suggest endpoint — it resolves an arr's root
  * folders over the API and requires a bound connection, which a webhook source
@@ -135,7 +135,7 @@ function libraryKind(type: string): "movie" | "tv" | "mixed" | null {
  * A rewrite replaces a matched prefix and keeps the remaining suffix verbatim
  * (see applyRewrites in internal/autoscan/rewrite.go), so one rule for
  * `/mnt/media` covers `/mnt/media/movies/80s` and everything else beneath it —
- * but only when the arr-side tree mirrors the Silo-side tree below that point.
+ * but only when the arr-side tree mirrors the Prairie-side tree below that point.
  *
  * That holds when a single mount is involved, which is the common case: a real
  * install here has 96 library paths across 2 mounts, so per-path rows would be
@@ -187,7 +187,7 @@ export function collapseToRoots(paths: readonly string[]): string[] {
  * only correct while the arr sees the same tree below that point. When it does
  * not — `/downloads/films` for movies but `/downloads/series` for TV — the
  * operator needs a row per branch. Offering these lets the editor expand a
- * collapsed row instead of asking them to retype the Silo side.
+ * collapsed row instead of asking them to retype the Prairie side.
  *
  * Returns [] when there is nothing more specific to offer.
  */
@@ -231,7 +231,7 @@ function commonAncestor(paths: readonly string[]): string {
 /**
  * Seed mapping rows from the libraries a provider could plausibly feed: Sonarr
  * fills TV (and mixed) libraries, Radarr fills movie (and mixed) ones. Each row
- * starts with a real Silo path on the `to` side and a blank `from` for the
+ * starts with a real Prairie path on the `to` side and a blank `from` for the
  * operator to complete.
  *
  * Rows are the collapsed roots rather than every library path, so an operator

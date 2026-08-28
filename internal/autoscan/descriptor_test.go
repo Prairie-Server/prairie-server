@@ -36,7 +36,7 @@ func TestDescriptorFromMetadataReadsDeclaredContract(t *testing.T) {
 			"connection":         "none",
 			"connection_kinds":   []any{"sonarr", "radarr"},
 			"emits_native_paths": true,
-			"summary":            "  Pushes to Silo.  ",
+			"summary":            "  Pushes to Prairie.  ",
 			"icon_url":           "/assets/icon.svg",
 		},
 	})
@@ -50,7 +50,7 @@ func TestDescriptorFromMetadataReadsDeclaredContract(t *testing.T) {
 	if !got.EmitsNativePaths {
 		t.Error("emits_native_paths not read")
 	}
-	if got.Summary != "Pushes to Silo." {
+	if got.Summary != "Pushes to Prairie." {
 		t.Errorf("summary = %q, want trimmed", got.Summary)
 	}
 	if len(got.ConnectionKinds) != 2 {
@@ -59,7 +59,7 @@ func TestDescriptorFromMetadataReadsDeclaredContract(t *testing.T) {
 }
 
 // Webhook delivery is accepted only for the host's built-in ARR identity (see
-// resolveDeliveryMode). Honouring a plugin's claim would offer a setup option
+// resolveDeliveryMode). Honoring a plugin's claim would offer a setup option
 // whose every submission is rejected with HTTP 400.
 func TestDescriptorFromMetadataIgnoresPluginDeclaredWebhook(t *testing.T) {
 	got := DescriptorFromMetadata(map[string]any{
@@ -271,7 +271,7 @@ func TestBuiltinArrWebhookDescriptor(t *testing.T) {
 	d := BuiltinArrWebhookSource().Descriptor
 
 	if d.Connection != ConnectionNone {
-		t.Errorf("connection = %q, want none (the arr pushes to Silo)", d.Connection)
+		t.Errorf("connection = %q, want none (the arr pushes to Prairie)", d.Connection)
 	}
 	if d.SupportsDeliveryMode(DeliveryModePoll) {
 		t.Errorf("delivery modes = %v, want webhook only", d.DeliveryModes)

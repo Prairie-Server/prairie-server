@@ -8,6 +8,7 @@ import (
 )
 
 func TestCompatImageProxyTagVariantMiddlewareSuffixesInfuseImageTags(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	handler := compatImageProxyTagVariantMiddleware(codec)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, queryResultDTO{
@@ -68,6 +69,7 @@ func TestCompatImageProxyTagVariantMiddlewareSuffixesInfuseImageTags(t *testing.
 }
 
 func TestCompatImageProxyTagVariantMiddlewareLeavesOtherClientsUnchanged(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	handler := compatImageProxyTagVariantMiddleware(codec)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, queryResultDTO{
@@ -101,6 +103,7 @@ func TestCompatImageProxyTagVariantMiddlewareLeavesOtherClientsUnchanged(t *test
 }
 
 func TestCompatImageProxyTagVariantMiddlewareForwardsPreBodyFlushForStreamingResponse(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	handler := compatImageProxyTagVariantMiddleware(codec)(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/event-stream")
@@ -127,6 +130,7 @@ func TestCompatImageProxyTagVariantMiddlewareForwardsPreBodyFlushForStreamingRes
 }
 
 func TestCompatImageProxyRouteIDCanonicalizesNumericRouteWithoutRegistration(t *testing.T) {
+	t.Parallel()
 	routeID := EncodeNumericID(EncodedIDItem, 12345).String()
 	proxyRouteID := compatImageProxyRouteID(NewResourceIDCodec(), routeID)
 

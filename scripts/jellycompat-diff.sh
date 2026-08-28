@@ -4,10 +4,10 @@ set -euo pipefail
 usage() {
 	printf 'usage: %s --path PATH [--json]\n' "${0##*/}" >&2
 	printf '\n' >&2
-	printf 'Compare a Silo jellycompat response with a reference Jellyfin response.\n' >&2
+	printf 'Compare a Prairie jellycompat response with a reference Jellyfin response.\n' >&2
 	printf '\n' >&2
 	printf 'Required environment variables:\n' >&2
-	printf '  SILO_BASE_URL  SILO_TOKEN  SILO_USER_ID\n' >&2
+	printf '  PRAIRIE_BASE_URL  PRAIRIE_TOKEN  PRAIRIE_USER_ID\n' >&2
 	printf '  JF_BASE_URL    JF_TOKEN    JF_USER_ID\n' >&2
 }
 
@@ -65,9 +65,9 @@ require_env() {
 	fi
 }
 
-require_env SILO_BASE_URL
-require_env SILO_TOKEN
-require_env SILO_USER_ID
+require_env PRAIRIE_BASE_URL
+require_env PRAIRIE_TOKEN
+require_env PRAIRIE_USER_ID
 require_env JF_BASE_URL
 require_env JF_TOKEN
 require_env JF_USER_ID
@@ -105,10 +105,10 @@ fetch_side() {
 	IFS=$'\t' read -r FETCH_HTTP_STATUS FETCH_TIME_SECONDS <<<"$metrics" || true
 }
 
-silo_path=${endpoint_path//\{userId\}/$SILO_USER_ID}
+silo_path=${endpoint_path//\{userId\}/$PRAIRIE_USER_ID}
 jf_path=${endpoint_path//\{userId\}/$JF_USER_ID}
 
-fetch_side "$SILO_BASE_URL" "$SILO_TOKEN" "$silo_path" "$temp_dir/silo.body" "$temp_dir/silo.error"
+fetch_side "$PRAIRIE_BASE_URL" "$PRAIRIE_TOKEN" "$silo_path" "$temp_dir/silo.body" "$temp_dir/silo.error"
 silo_curl_exit=$FETCH_CURL_EXIT
 silo_http_status=$FETCH_HTTP_STATUS
 silo_time_seconds=$FETCH_TIME_SECONDS
@@ -322,18 +322,18 @@ comparison = {
 if json_output:
     print(json.dumps(comparison, separators=(",", ":"), sort_keys=True))
 else:
-    print_side("Silo", silo)
+    print_side("Prairie", silo)
     print()
     print_side("Jellyfin", jellyfin)
     print()
     print("Diff:")
     print(
-        "  Jellyfin keys missing from Silo "
+        "  Jellyfin keys missing from Prairie "
         f"({len(comparison['diff']['missingFromSilo'])}): "
         f"{display_keys(comparison['diff']['missingFromSilo'])}"
     )
     print(
-        f"  Silo-only keys ({len(comparison['diff']['siloOnly'])}): "
+        f"  Prairie-only keys ({len(comparison['diff']['siloOnly'])}): "
         f"{display_keys(comparison['diff']['siloOnly'])}"
     )
     print(
@@ -342,12 +342,12 @@ else:
     )
     if shape_mismatch:
         print(
-            f"  WARNING: response shape differs — Silo returned "
+            f"  WARNING: response shape differs — Prairie returned "
             f"{silo['responseShape']}, Jellyfin returned {jellyfin['responseShape']}."
         )
     if bytes_warning:
         print(
-            "  WARNING: Silo's approximate bytes per item exceeds "
+            "  WARNING: Prairie's approximate bytes per item exceeds "
             "Jellyfin's by more than 2x."
         )
 

@@ -1,5 +1,5 @@
 services:
-  silo:
+  prairie:
     deploy:
       resources:
         reservations:
@@ -10,7 +10,7 @@ services:
 
   # Optional distributed-mode example. Most single-host installs should
   # just use the integrated service above.
-  #  silo-transcode:
+  #  prairie-transcode:
   #  deploy:
   #    resources:
   #      reservations:

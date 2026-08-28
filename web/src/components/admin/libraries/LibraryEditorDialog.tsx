@@ -1,6 +1,15 @@
 import { useState } from "react";
 import type { FormEvent } from "react";
-import { Database, FolderOpen, Settings2, SlidersHorizontal } from "lucide-react";
+import {
+  Database,
+  FolderOpen,
+  Loader2,
+  Plus,
+  Save,
+  Settings2,
+  SlidersHorizontal,
+  X,
+} from "lucide-react";
 
 import type { Library } from "@/api/types";
 import { Button } from "@/components/ui/button";
@@ -42,7 +51,7 @@ const SECTIONS: Array<{
     label: "Folders",
     icon: FolderOpen,
     title: "Folders",
-    description: "Silo scans these folders for media and watches them for changes.",
+    description: "Prairie scans these folders for media and watches them for changes.",
   },
   {
     id: "metadata",
@@ -71,6 +80,7 @@ export interface LibraryEditorDialogProps {
   onOpenChange: (open: boolean) => void;
   library: Library | null;
   chapterThumbnailsSupported: boolean;
+  trickplaySupported: boolean;
 }
 
 export function LibraryEditorDialog({
@@ -78,6 +88,7 @@ export function LibraryEditorDialog({
   onOpenChange,
   library,
   chapterThumbnailsSupported,
+  trickplaySupported,
 }: LibraryEditorDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -86,6 +97,7 @@ export function LibraryEditorDialog({
           key={library?.id ?? "new"}
           library={library}
           chapterThumbnailsSupported={chapterThumbnailsSupported}
+          trickplaySupported={trickplaySupported}
           onClose={() => onOpenChange(false)}
         />
       </DialogContent>
@@ -96,10 +108,12 @@ export function LibraryEditorDialog({
 function LibraryEditorBody({
   library,
   chapterThumbnailsSupported,
+  trickplaySupported,
   onClose,
 }: {
   library: Library | null;
   chapterThumbnailsSupported: boolean;
+  trickplaySupported: boolean;
   onClose: () => void;
 }) {
   const [section, setSection] = useState<SectionId>("general");
@@ -193,6 +207,7 @@ function LibraryEditorBody({
                 <AdvancedFields
                   form={form}
                   chapterThumbnailsSupported={chapterThumbnailsSupported}
+                  trickplaySupported={trickplaySupported}
                 />
               )}
             </TabsContent>
@@ -208,10 +223,12 @@ function LibraryEditorBody({
         ) : null}
         <DialogClose asChild>
           <Button type="button" variant="ghost">
+            <X />
             Cancel
           </Button>
         </DialogClose>
         <Button type="submit" disabled={form.isPending}>
+          {form.isPending ? <Loader2 className="animate-spin" /> : library ? <Save /> : <Plus />}
           {form.isPending
             ? library
               ? "Saving…"

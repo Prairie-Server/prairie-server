@@ -37,8 +37,8 @@ export function useUpdatePluginSettings() {
         body: JSON.stringify(body),
       }),
     onSuccess: (_, { id }) => {
-      queryClient.invalidateQueries({ queryKey: settingsKeys.plugins() });
-      queryClient.invalidateQueries({ queryKey: settingsKeys.pluginDetail(id) });
+      void queryClient.invalidateQueries({ queryKey: settingsKeys.plugins() });
+      void queryClient.invalidateQueries({ queryKey: settingsKeys.pluginDetail(id) });
     },
   });
 }

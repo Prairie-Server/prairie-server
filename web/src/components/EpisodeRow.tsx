@@ -3,6 +3,7 @@ import { Play, Star } from "lucide-react";
 import type { EpisodeListItem } from "@/api/types";
 import CardOverlays from "@/components/overlays/CardOverlays";
 import { useOverlayPrefs } from "@/hooks/useOverlayPrefs";
+import { artworkSrcSet, STILL_WIDTHS } from "@/lib/artworkUrl";
 import { overlayDataFromEpisodeListItem } from "@/lib/overlays";
 
 interface EpisodeRowProps {
@@ -30,6 +31,10 @@ export default function EpisodeRow({ episode, rating, watched, progress }: Episo
 
   const hasProgress = derivedProgress != null && derivedProgress > 0 && derivedProgress < 100;
 
+  // No srcSet means the URL has no variant segment to rewrite (third-party art),
+  // and `sizes` without a srcSet is meaningless — same guard ArtworkImage uses.
+  const stillSrcSet = artworkSrcSet(episode.still_url, STILL_WIDTHS);
+
   return (
     <ViewTransitionLink
       to={`/item/${episode.content_id}`}
@@ -47,6 +52,8 @@ export default function EpisodeRow({ episode, rating, watched, progress }: Episo
         {episode.still_url ? (
           <img
             src={episode.still_url}
+            srcSet={stillSrcSet || undefined}
+            sizes={stillSrcSet ? "140px" : undefined}
             alt={episode.title || `Episode ${episode.episode_number}`}
             className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
             loading="lazy"

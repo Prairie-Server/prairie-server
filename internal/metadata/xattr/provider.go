@@ -2,7 +2,6 @@ package xattr
 
 import (
 	"context"
-	"errors"
 
 	"golang.org/x/sys/unix"
 
@@ -88,8 +87,4 @@ func getxattr(path, attr string) (string, error) {
 		return "", err
 	}
 	return string(buf[:n]), nil
-}
-
-func isNoData(err error) bool {
-	return errors.Is(err, unix.ENODATA) || errors.Is(err, unix.ENOTSUP)
 }

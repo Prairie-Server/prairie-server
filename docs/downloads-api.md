@@ -1,7 +1,7 @@
 # Downloads & Offline Sync API (client integration guide)
 
 This is the client-facing integration guide for downloads v2 / offline sync. It is
-the contract the Apple (`silo-apple`) and Android (`silo-android`) apps should use
+the contract the Apple (`prairie-apple`) and Android (`prairie-android`) apps should use
 to download movies and episodes for fully offline playback and reconcile watch
 state after reconnect.
 
@@ -29,18 +29,18 @@ Downloads v2 has three pillars:
 ### Two download row lifecycles
 
 The `/downloads` family serves two lifecycles. The presence of
-`X-Silo-Device-Id` selects the managed path.
+`X-Prairie-Device-Id` selects the managed path.
 
-|                                 | Ephemeral / web row          | Managed device entry               |
-| ------------------------------- | ---------------------------- | ---------------------------------- |
-| Selected by                     | No `X-Silo-Device-Id` header | `X-Silo-Device-Id` header present  |
-| Scope                           | Account (`user_id`)          | `(user_id, profile_id, device_id)` |
-| Durable "device has this file"? | No                           | Yes                                |
-| Manifest / artwork / subtitles  | Not applicable               | Yes                                |
-| Progress reconciliation target  | No                           | Yes                                |
-| Intended clients                | Web convenience download     | Mobile / TV offline library        |
+|                                 | Ephemeral / web row             | Managed device entry                 |
+| ------------------------------- | ------------------------------- | ------------------------------------ |
+| Selected by                     | No `X-Prairie-Device-Id` header | `X-Prairie-Device-Id` header present |
+| Scope                           | Account (`user_id`)             | `(user_id, profile_id, device_id)`   |
+| Durable "device has this file"? | No                              | Yes                                  |
+| Manifest / artwork / subtitles  | Not applicable                  | Yes                                  |
+| Progress reconciliation target  | No                              | Yes                                  |
+| Intended clients                | Web convenience download        | Mobile / TV offline library          |
 
-Mobile clients should always send `X-Silo-Device-Id` and operate on managed entries.
+Mobile clients should always send `X-Prairie-Device-Id` and operate on managed entries.
 
 Ephemeral rows are one-shot convenience records: the server prunes them
 automatically about 7 days after their last update. Managed device entries are
@@ -115,18 +115,18 @@ them locally beside the media file and manifest.
 All endpoints require authentication. Managed operations require a profile and a
 device id.
 
-| Header                               | Required when              | Notes                                                       |
-| ------------------------------------ | -------------------------- | ----------------------------------------------------------- |
-| `Authorization: Bearer <token>`      | Always                     | JWT access token or API key (`sa_...`).                     |
-| `X-Profile-Id: <profile_id>`         | Managed ops, progress sync | Active household profile.                                   |
-| `X-Silo-Device-Id: <device_id>`      | Managed downloads          | Stable per-install UUID; its presence selects managed mode. |
-| `X-Silo-Device-Name: <name>`         | Optional                   | Display name, clamped server-side.                          |
-| `X-Silo-Device-Platform: <platform>` | Optional                   | Example: `android`, `ios`, `tvos`.                          |
+| Header                                  | Required when              | Notes                                                       |
+| --------------------------------------- | -------------------------- | ----------------------------------------------------------- |
+| `Authorization: Bearer <token>`         | Always                     | JWT access token or API key (`sa_...`).                     |
+| `X-Profile-Id: <profile_id>`            | Managed ops, progress sync | Active household profile.                                   |
+| `X-Prairie-Device-Id: <device_id>`      | Managed downloads          | Stable per-install UUID; its presence selects managed mode. |
+| `X-Prairie-Device-Name: <name>`         | Optional                   | Display name, clamped server-side.                          |
+| `X-Prairie-Device-Platform: <platform>` | Optional                   | Example: `android`, `ios`, `tvos`.                          |
 
-A managed call without `X-Silo-Device-Id` returns `400 device_id_required`; one
+A managed call without `X-Prairie-Device-Id` returns `400 device_id_required`; one
 without profile scope returns `400 profile_required`.
 
-> **Warning:** any client that sends `X-Silo-Device-Id` on download routes MUST
+> **Warning:** any client that sends `X-Prairie-Device-Id` on download routes MUST
 > also send `X-Profile-Id`. A device header without a profile is rejected with
 > `400 profile_required`. The first-party web client sends both headers globally.
 
@@ -191,19 +191,19 @@ If `enabled` or `download_allowed` is false, hide download actions.
 POST /api/v1/downloads
 ```
 
-Send `X-Silo-Device-Id` and `X-Profile-Id` for a managed entry.
+Send `X-Prairie-Device-Id` and `X-Profile-Id` for a managed entry.
 
 Request body:
 
-| Field           | Type   | Notes                                                                        |
-| --------------- | ------ | ---------------------------------------------------------------------------- |
-| `content_id`    | string | Required. Movie or series content id.                                        |
-| `episode_id`    | string | Episode content id for an episode download.                                  |
-| `file_id`       | int    | Optional explicit media-file/version id.                                     |
-| `quality`       | string | `original` by default, or one of `quality_presets`.                          |
-| `series`        | bool   | `true` means download every episode of `content_id` at original quality.     |
+| Field           | Type   | Notes                                                                                                                                                                                                 |
+| --------------- | ------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `content_id`    | string | Required. Movie or series content id.                                                                                                                                                                 |
+| `episode_id`    | string | Episode content id for an episode download.                                                                                                                                                           |
+| `file_id`       | int    | Optional explicit media-file/version id.                                                                                                                                                              |
+| `quality`       | string | `original` by default, or one of `quality_presets`.                                                                                                                                                   |
+| `series`        | bool   | `true` means download every episode of `content_id` at original quality.                                                                                                                              |
 | `season_number` | int    | With `series: true`, restrict to one season. `0` is the Specials season; negative values are rejected with `400`. Dispatch is on field presence: omit the field entirely for a whole-series download. |
-| `caps`          | object | Device decode capabilities. Important for `original` compatibility fallback. |
+| `caps`          | object | Device decode capabilities. Important for `original` compatibility fallback.                                                                                                                          |
 
 Capabilities mirror streaming playback caps:
 
@@ -317,7 +317,7 @@ local media + manifest for that row.
 GET /api/v1/downloads
 ```
 
-With `X-Silo-Device-Id`, returns that device's managed entries. Without it, returns
+With `X-Prairie-Device-Id`, returns that device's managed entries. Without it, returns
 the user's ephemeral web rows.
 
 Response:
@@ -411,11 +411,11 @@ One unbuildable episode (deleted from the catalog, access-filtered, revoked)
 does not fail the whole batch: it lands in `skipped` and the remaining
 manifests are still delivered. `skipped` is omitted when empty.
 
-| Reason      | Meaning                                                             |
-| ----------- | -------------------------------------------------------------------- |
-| `revoked`   | The row is revoked and no longer servable.                            |
-| `not_found` | The row or its content is missing or outside profile access.          |
-| `error`     | The server failed to build this manifest; safe to retry later.        |
+| Reason      | Meaning                                                        |
+| ----------- | -------------------------------------------------------------- |
+| `revoked`   | The row is revoked and no longer servable.                     |
+| `not_found` | The row or its content is missing or outside profile access.   |
+| `error`     | The server failed to build this manifest; safe to retry later. |
 
 Clients should drop or refresh local entries whose manifests come back
 `not_found`.
@@ -489,25 +489,25 @@ server version.
 
 ## 5. Download row shape
 
-| Field                 | Type   | Notes                                                                  |
-| --------------------- | ------ | ---------------------------------------------------------------------- |
-| `id`                  | string | Opaque download id.                                                    |
-| `content_id`          | string | Movie or series id.                                                    |
-| `episode_id`          | string | Present for episode rows.                                              |
-| `batch_id`            | string | Present for series/season batch members.                               |
-| `device_id`           | string | Present on managed entries.                                            |
-| `media_file_id`       | int    | Selected media file/version.                                           |
-| `file_size`           | int64  | Bytes; may be an estimate while preparing.                             |
+| Field                 | Type   | Notes                                                                                                   |
+| --------------------- | ------ | ------------------------------------------------------------------------------------------------------- |
+| `id`                  | string | Opaque download id.                                                                                     |
+| `content_id`          | string | Movie or series id.                                                                                     |
+| `episode_id`          | string | Present for episode rows.                                                                               |
+| `batch_id`            | string | Present for series/season batch members.                                                                |
+| `device_id`           | string | Present on managed entries.                                                                             |
+| `media_file_id`       | int    | Selected media file/version.                                                                            |
+| `file_size`           | int64  | Bytes; may be an estimate while preparing.                                                              |
 | `bytes_sent`          | int64  | Set to `file_size` when an ephemeral row completes; not a live transfer counter. Managed rows report 0. |
-| `kind`                | string | `direct` or `queued`.                                                  |
-| `status`              | string | Lifecycle state.                                                       |
-| `quality`             | string | Requested public quality.                                              |
-| `effective_quality`   | string | Actual quality delivered after compatibility fallback.                 |
-| `delivery_format`     | string | `original`, `remux`, or `transcode`.                                   |
-| `target_bitrate_kbps` | int    | `0` for original/remux; bitrate cap for transcode.                     |
-| `revision`            | int    | Increments when an existing managed row is replaced with a new target. |
-| `created_at`          | string | RFC3339.                                                               |
-| `completed_at`        | string | Present once completed.                                                |
+| `kind`                | string | `direct` or `queued`.                                                                                   |
+| `status`              | string | Lifecycle state.                                                                                        |
+| `quality`             | string | Requested public quality.                                                                               |
+| `effective_quality`   | string | Actual quality delivered after compatibility fallback.                                                  |
+| `delivery_format`     | string | `original`, `remux`, or `transcode`.                                                                    |
+| `target_bitrate_kbps` | int    | `0` for original/remux; bitrate cap for transcode.                                                      |
+| `revision`            | int    | Increments when an existing managed row is replaced with a new target.                                  |
+| `created_at`          | string | RFC3339.                                                                                                |
+| `completed_at`        | string | Present once completed.                                                                                 |
 
 Managed lifecycle:
 
@@ -849,12 +849,12 @@ the owning `(user, profile)`. The event type is `download` and the payload is:
 }
 ```
 
-| Field           | Meaning                                                      |
-| --------------- | ------------------------------------------------------------- |
-| `download_id`   | The download row id.                                          |
-| `status`        | `ready` or `failed`.                                          |
-| `media_item_id` | The row's content id.                                         |
-| `format`        | Delivery format: `original`, `remux`, or `transcode`.         |
+| Field           | Meaning                                               |
+| --------------- | ----------------------------------------------------- |
+| `download_id`   | The download row id.                                  |
+| `status`        | `ready` or `failed`.                                  |
+| `media_item_id` | The row's content id.                                 |
+| `format`        | Delivery format: `original`, `remux`, or `transcode`. |
 
 Clients that hold an events connection can use this instead of polling
 `GET /downloads` for `preparing` rows; polling remains the fallback.
@@ -863,7 +863,7 @@ Clients that hold an events connection can use this instead of polling
 
 ## 10. Apple client implementation notes
 
-This section is the handoff checklist for `silo-apple` across iOS, iPadOS, tvOS,
+This section is the handoff checklist for `prairie-apple` across iOS, iPadOS, tvOS,
 and macOS. Use the same HTTP contract above; these notes only pin the Apple-side
 storage, background transfer, and playback choices.
 
@@ -889,9 +889,9 @@ Every managed request must include:
 ```http
 Authorization: Bearer <access_token>
 X-Profile-Id: <active_profile_id>
-X-Silo-Device-Id: <stable_install_id>
-X-Silo-Device-Name: <user_visible_device_name>
-X-Silo-Device-Platform: ios
+X-Prairie-Device-Id: <stable_install_id>
+X-Prairie-Device-Name: <user_visible_device_name>
+X-Prairie-Device-Platform: ios
 ```
 
 Recommended device id behavior:
@@ -1099,7 +1099,7 @@ files playable but stop retrying server fetches for that row.
 
 ## 11. Android client implementation notes
 
-This section is the handoff checklist for `silo-android` across phone, tablet,
+This section is the handoff checklist for `prairie-android` across phone, tablet,
 and Android TV. Use the same HTTP contract above; these notes only pin the
 Android-side identity, storage, transfer, and playback choices. The required
 local state mirrors the Apple table in 10.1.
@@ -1111,16 +1111,16 @@ Every managed request must include:
 ```http
 Authorization: Bearer <access_token>
 X-Profile-Id: <active_profile_id>
-X-Silo-Device-Id: <stable_install_id>
-X-Silo-Device-Name: <user_visible_device_name>
-X-Silo-Device-Platform: android
+X-Prairie-Device-Id: <stable_install_id>
+X-Prairie-Device-Name: <user_visible_device_name>
+X-Prairie-Device-Platform: android
 ```
 
 Recommended device id behavior:
 
 - Generate a UUID once on first launch and persist it in app-private storage
   (DataStore or equivalent); do not derive it from hardware identifiers.
-- Remember the pairing rule from section 2: `X-Silo-Device-Id` without
+- Remember the pairing rule from section 2: `X-Prairie-Device-Id` without
   `X-Profile-Id` is rejected with `400 profile_required`. Attach both headers to
   every downloads call.
 - Do not send device id in JSON bodies or query strings; the server ignores it.
@@ -1233,7 +1233,7 @@ Errors use a flat envelope:
 | HTTP | `error`                    | When                                                                      |
 | ---- | -------------------------- | ------------------------------------------------------------------------- |
 | 400  | `bad_request`              | Malformed body or missing required input.                                 |
-| 400  | `device_id_required`       | Managed endpoint called without `X-Silo-Device-Id`.                       |
+| 400  | `device_id_required`       | Managed endpoint called without `X-Prairie-Device-Id`.                    |
 | 400  | `profile_required`         | Managed endpoint called without profile scope.                            |
 | 400  | `invalid_status`           | Patch status is not `downloading` or `completed`.                         |
 | 400  | `invalid_quality`          | Unknown public `quality`.                                                 |

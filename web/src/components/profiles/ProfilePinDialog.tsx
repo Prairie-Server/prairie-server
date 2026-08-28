@@ -7,6 +7,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
+import { Check, Loader2, X } from "lucide-react";
 interface ProfilePinDialogProps {
   profile: Profile | null;
   onClose: () => void;
@@ -92,9 +93,11 @@ export function ProfilePinDialog({
 
           <div className="flex justify-end gap-2">
             <Button type="button" variant="outline" onClick={handleClose}>
+              <X />
               Cancel
             </Button>
             <Button type="submit" disabled={verifying || pin.length === 0}>
+              {verifying ? <Loader2 className="animate-spin" /> : <Check />}
               {verifying ? "Verifying..." : "Confirm"}
             </Button>
           </div>

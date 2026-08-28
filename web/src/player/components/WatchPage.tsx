@@ -168,7 +168,7 @@ export function WatchPage({
   );
 
   const handleEnded = useCallback(() => {
-    onEnded?.({
+    void onEnded?.({
       positionSeconds: session.durationSeconds ?? 0,
       durationSeconds: session.durationSeconds ?? undefined,
       lastFileId: session.mediaFileId,
@@ -414,7 +414,7 @@ export function WatchPage({
               {session.errorTitle ?? "Playback unavailable"}
             </p>
             <p className="text-sm text-white/60">
-              {session.error ?? "Silo could not start playback."}
+              {session.error ?? "Prairie could not start playback."}
             </p>
           </div>
           <button
@@ -442,6 +442,9 @@ export function WatchPage({
   const activeChapters =
     (playbackVersions.find((v) => v.file_id === session.mediaFileId) ?? selectedVersion)
       ?.chapters ?? [];
+  const activeTrickplay =
+    (playbackVersions.find((v) => v.file_id === session.mediaFileId) ?? selectedVersion)
+      ?.trickplay ?? null;
   const activeMarkers = resolveActiveVersionMarkers(selectedVersion);
 
   return (
@@ -460,6 +463,7 @@ export function WatchPage({
       versions={playbackVersions}
       activeFileId={session.mediaFileId}
       chapters={activeChapters}
+      trickplay={activeTrickplay}
       onSwitchVersion={handleSwitchVersion}
       subtitleUrls={playableSubtitles}
       initialPosition={session.initialPosition}

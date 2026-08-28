@@ -3,6 +3,7 @@ package activitylog
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
@@ -85,7 +86,7 @@ func (c *Consumer) drainRedis(ctx context.Context) {
 func (c *Consumer) popRedisBatch(ctx context.Context) ([]LogEntry, error) {
 	result, err := popBatchScript.Run(ctx, c.redis, []string{redisKey}, c.batchSize).StringSlice()
 	if err != nil {
-		if err == redis.Nil {
+		if errors.Is(err, redis.Nil) {
 			return nil, nil
 		}
 		return nil, fmt.Errorf("pop batch script: %w", err)

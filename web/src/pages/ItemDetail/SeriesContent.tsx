@@ -133,8 +133,12 @@ export default function SeriesContent({ item }: { item: ItemDetail & { type: "se
         context="Series"
         studioLabel={firstNetwork}
         backdropUrl={item.backdrop_url}
+        backdropAvifUrl={item.backdrop_avif_url}
+        backdropPngUrl={item.backdrop_png_url}
         backdropThumbhash={item.backdrop_thumbhash}
         posterUrl={item.poster_url}
+        posterAvifUrl={item.poster_avif_url}
+        posterPngUrl={item.poster_png_url}
         posterThumbhash={item.poster_thumbhash}
         logoUrl={item.logo_url}
         tagline={item.tagline || undefined}

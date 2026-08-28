@@ -125,7 +125,7 @@ func (t *WhisperTranscriber) Transcribe(ctx context.Context, req TranscribeJobRe
 	if err != nil {
 		return nil, "", fmt.Errorf("create ASR temp dir: %w", err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
 	// Snapshot once so the whole job extracts and times chunks consistently
 	// even if the config reloads mid-job.

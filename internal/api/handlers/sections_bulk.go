@@ -52,14 +52,14 @@ func (h *SectionBulkHandler) HandleBulkCreate(w http.ResponseWriter, r *http.Req
 
 	// Validate scope.
 	switch scope {
-	case "home", "library":
+	case "home", sectionTypeLibrary:
 	default:
 		writeError(w, http.StatusBadRequest, "bad_request", "scope must be 'home' or 'library'")
 		return
 	}
 
 	// Library scope requires at least one library_id.
-	if scope == "library" && len(req.LibraryIDs) == 0 {
+	if scope == sectionTypeLibrary && len(req.LibraryIDs) == 0 {
 		writeError(w, http.StatusBadRequest, "bad_request", "library_ids must not be empty for library scope")
 		return
 	}
@@ -99,11 +99,11 @@ func (h *SectionBulkHandler) HandleBulkCreate(w http.ResponseWriter, r *http.Req
 			Config:      req.Config,
 			Enabled:     req.Enabled,
 		})
-	case "library":
+	case sectionTypeLibrary:
 		for _, libID := range req.LibraryIDs {
 			id := libID // capture loop variable
 			rows = append(rows, &sections.PageSection{
-				Scope:       "library",
+				Scope:       sectionTypeLibrary,
 				LibraryID:   &id,
 				SectionType: sections.SectionType(req.SectionType),
 				Title:       req.Title,

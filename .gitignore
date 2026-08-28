@@ -1,6 +1,10 @@
 # Binary
-/silo
+/prairie
 *.exe
+
+# Rust tool build outputs (committed artifacts live under internal/)
+tools/imageutil-wasm/target/
+tools/fingerprint-compare-wasm/target/
 
 # IDE
 .idea/
@@ -16,6 +20,7 @@ Thumbs.db
 *.test
 coverage.out
 coverage.html
+web/coverage/
 
 # Temp
 /tmp/
@@ -26,12 +31,13 @@ coverage.html
 .worktrees/
 
 # Config with secrets
+prairie.yaml
 silo.yaml
 .env
 .env.*
 !.env.example
 # Per-developer settings for the agent skills (hosts, credentials, tokens).
-.silo-dev.env
+.prairie-dev.env
 
 # Developer-specific make targets
 Makefile.local

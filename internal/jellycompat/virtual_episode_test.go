@@ -12,6 +12,7 @@ import (
 // LocationType=Virtual with no MediaSources, while a real episode with a
 // version reports LocationType=FileSystem and gets MediaSources.
 func TestVirtualEpisodeLocationType(t *testing.T) {
+	t.Parallel()
 	m := newMapper(NewResourceIDCodec(), &config.Config{})
 	fields := map[string]bool{"mediasources": true}
 
@@ -58,6 +59,7 @@ func TestVirtualEpisodeLocationType(t *testing.T) {
 // (unknown, producing query did not check) preserves the historical
 // FileSystem default.
 func TestVirtualEpisodeListPaths(t *testing.T) {
+	t.Parallel()
 	m := newMapper(NewResourceIDCodec(), &config.Config{})
 	boolp := func(v bool) *bool { return &v }
 

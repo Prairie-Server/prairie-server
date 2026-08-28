@@ -18,6 +18,7 @@ import (
 // avatar; and an authenticated Filters2/Sessions request must reach the right
 // handler with the right shape.
 func TestRouter_MissingEndpointsRegistered(t *testing.T) {
+	t.Parallel()
 	cfg, err := config.LoadFromDB(map[string]string{})
 	if err != nil {
 		t.Fatalf("LoadFromDB: %v", err)

@@ -92,7 +92,9 @@ export function detectMaxResolutionFromScreen(screenWidth: number, screenHeight:
  * accept either. Browsers treat unknown media features as non-matching, so
  * querying both is safe everywhere.
  */
-export function detectHDRFromMatchMedia(matchMediaFn: typeof matchMedia | undefined): boolean {
+export type MatchMediaLike = (query: string) => Pick<MediaQueryList, "matches">;
+
+export function detectHDRFromMatchMedia(matchMediaFn: MatchMediaLike | undefined): boolean {
   if (!matchMediaFn) return false;
   return (
     matchMediaFn("(dynamic-range: high)").matches ||

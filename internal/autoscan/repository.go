@@ -470,7 +470,7 @@ func (r *Repository) DeleteSource(ctx context.Context, id string) error {
 // AdvanceMarker stores the opaque next marker for a source, stamps last_run_at,
 // and clears any prior error. Called once a poll window's work is consumed —
 // after a successful enqueue, or when the window's paths all resolved outside
-// Silo's libraries and were advanced past.
+// Prairie's libraries and were advanced past.
 func (r *Repository) AdvanceMarker(ctx context.Context, sourceID, marker string) error {
 	tag, err := r.pool.Exec(ctx, `
 		UPDATE autoscan_sources

@@ -10,11 +10,12 @@ import { PasswordInput } from "@/components/PasswordInput";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useServerBranding } from "@/hooks/useServerBranding";
 import { AuthBackground } from "@/components/auth/AuthBackground";
+import { AuthBrandHero } from "@/components/auth/AuthBrandHero";
 import { sanitizeAuthRedirect } from "@/lib/authRedirect";
 import { toast } from "sonner";
 
+import { Loader2, UserPlus } from "lucide-react";
 export default function Signup() {
   const [searchParams] = useSearchParams();
   const [username, setUsername] = useState("");
@@ -25,7 +26,6 @@ export default function Signup() {
   const [submitting, setSubmitting] = useState(false);
   const { signup, profile, selectProfile, user, loading } = useAuth();
   const navigate = useNavigate();
-  const { serverName } = useServerBranding();
   const redirectTarget = sanitizeAuthRedirect(searchParams.get("redirect"));
 
   const statusQuery = useQuery({
@@ -48,16 +48,11 @@ export default function Signup() {
   if (statusQuery.data && !statusQuery.data.enabled) {
     return (
       <div className="auth-shell">
-        <Card className="auth-card glass panel-border w-full max-w-sm border-0">
-          <CardHeader>
-            <CardTitle className="text-3xl font-extrabold tracking-[-0.04em]">
-              {serverName}
-            </CardTitle>
-            <CardDescription className="mt-2 text-sm leading-6">
-              Public signups are currently closed.
-            </CardDescription>
-          </CardHeader>
-        </Card>
+        <AuthBackground />
+        <h1 className="sr-only">Public signups are currently closed</h1>
+        <div className="auth-viewport">
+          <AuthBrandHero subtitle="Public signups are currently closed." />
+        </div>
       </div>
     );
   }
@@ -72,7 +67,7 @@ export default function Signup() {
     try {
       await signup(username, email, password, inviteCode);
       if (redirectTarget) {
-        navigate(redirectTarget, { replace: true });
+        void navigate(redirectTarget, { replace: true });
         return;
       }
       try {
@@ -80,14 +75,14 @@ export default function Signup() {
         const soleProfile = getBootstrapProfile(profileList.profiles ?? []);
         if (soleProfile) {
           selectProfile(soleProfile);
-          navigate("/");
+          void navigate("/");
           return;
         }
       } catch {
-        navigate("/profiles");
+        void navigate("/profiles");
         return;
       }
-      navigate("/profiles");
+      void navigate("/profiles");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Signup failed");
     } finally {
@@ -98,88 +93,93 @@ export default function Signup() {
   return (
     <div className="auth-shell">
       <AuthBackground />
-      <Card className="auth-card glass panel-border w-full max-w-sm border-0">
-        <CardHeader>
-          <CardTitle className="text-3xl font-extrabold tracking-[-0.04em]">{serverName}</CardTitle>
-          <CardDescription className="mt-2 text-sm leading-6">
-            Create a new account to get started.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="signup-username">Username</Label>
-              <Input
-                id="signup-username"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                autoFocus
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="signup-email">Email</Label>
-              <Input
-                id="signup-email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                autoComplete="email"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="signup-password">Password</Label>
-              <p className="text-muted-foreground text-xs">At least 8 characters</p>
-              <PasswordInput
-                id="signup-password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="new-password"
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="signup-confirm-password">Confirm password</Label>
-              <PasswordInput
-                id="signup-confirm-password"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                autoComplete="new-password"
-                required
-              />
-              {confirmPassword && password !== confirmPassword && (
-                <p className="text-destructive text-xs">Passwords do not match</p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="signup-invite-code">Invite code</Label>
-              <Input
-                id="signup-invite-code"
-                value={inviteCode}
-                onChange={(e) => setInviteCode(e.target.value)}
-                placeholder="Enter your invite code"
-                required
-              />
-            </div>
-            <Button type="submit" className="w-full" disabled={submitting}>
-              {submitting ? "Creating account..." : "Create account"}
-            </Button>
-          </form>
-          <p className="text-muted-foreground mt-4 text-center text-sm">
-            Already have an account?{" "}
-            <Link
-              to={
-                redirectTarget ? `/login?redirect=${encodeURIComponent(redirectTarget)}` : "/login"
-              }
-              className="text-foreground underline hover:no-underline"
-            >
-              Sign in
-            </Link>
-          </p>
-        </CardContent>
-      </Card>
+      <h1 className="sr-only">Create account</h1>
+      <div className="auth-viewport">
+        <AuthBrandHero subtitle="Create a new account to get started." />
+        <Card className="auth-card border-0 bg-transparent shadow-none">
+          <CardHeader className="sr-only">
+            <CardTitle>Create account</CardTitle>
+            <CardDescription>Create a new account to get started.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5 p-0">
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="signup-username">Username</Label>
+                <Input
+                  id="signup-username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                  autoFocus
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signup-email">Email</Label>
+                <Input
+                  id="signup-email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  autoComplete="email"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signup-password">Password</Label>
+                <p className="text-muted-foreground text-xs">At least 8 characters</p>
+                <PasswordInput
+                  id="signup-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signup-confirm-password">Confirm password</Label>
+                <PasswordInput
+                  id="signup-confirm-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  required
+                />
+                {confirmPassword && password !== confirmPassword && (
+                  <p className="text-destructive text-xs">Passwords do not match</p>
+                )}
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="signup-invite-code">Invite code</Label>
+                <Input
+                  id="signup-invite-code"
+                  value={inviteCode}
+                  onChange={(e) => setInviteCode(e.target.value)}
+                  placeholder="Enter your invite code"
+                  required
+                />
+              </div>
+              <Button type="submit" className="w-full" disabled={submitting}>
+                {submitting ? <Loader2 className="animate-spin" /> : <UserPlus />}
+                {submitting ? "Creating account..." : "Create account"}
+              </Button>
+            </form>
+            <p className="text-muted-foreground mt-4 text-center text-sm">
+              Already have an account?{" "}
+              <Link
+                to={
+                  redirectTarget
+                    ? `/login?redirect=${encodeURIComponent(redirectTarget)}`
+                    : "/login"
+                }
+                className="text-foreground underline hover:no-underline"
+              >
+                Sign in
+              </Link>
+            </p>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }

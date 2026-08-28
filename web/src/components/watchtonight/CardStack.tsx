@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { AnimatePresence, motion } from "motion/react";
 import { useLocation, useNavigate } from "react-router";
 import { RefreshCw, Tv } from "lucide-react";
 import type { SwipeCard as SwipeCardType } from "@/hooks/queries/recommendations";
@@ -73,7 +73,7 @@ export default function CardStack({
     onClose();
     const target = playTargetForSwipeCard(card);
     if (!target.isVideo) {
-      navigate(target.href);
+      void navigate(target.href);
       return;
     }
     playbackController.startPlayback({

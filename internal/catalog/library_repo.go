@@ -32,18 +32,6 @@ func NewLibraryItemRepository(pool *pgxpool.Pool) *LibraryItemRepository {
 const libraryItemColumns = `content_id, media_folder_id, first_seen_at`
 
 // scanLibraryItem scans a single row into a *models.MediaItemLibrary.
-func scanLibraryItem(row pgx.Row) (*models.MediaItemLibrary, error) {
-	var lib models.MediaItemLibrary
-	err := row.Scan(
-		&lib.ContentID,
-		&lib.MediaFolderID,
-		&lib.FirstSeenAt,
-	)
-	if err != nil {
-		return nil, fmt.Errorf("scanning media item library: %w", err)
-	}
-	return &lib, nil
-}
 
 // scanLibraryItems scans multiple rows into a []*models.MediaItemLibrary slice.
 func scanLibraryItems(rows pgx.Rows) ([]*models.MediaItemLibrary, error) {

@@ -8,6 +8,7 @@ import (
 )
 
 func TestCompatAudioSpatialFormat(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		profile string
 		want    string
@@ -29,6 +30,7 @@ func TestCompatAudioSpatialFormat(t *testing.T) {
 }
 
 func TestBuildMediaStreamsCarriesAudioProfile(t *testing.T) {
+	t.Parallel()
 	version := catalog.FileVersion{
 		VideoTracks: []models.VideoTrack{{Codec: "hevc"}},
 		AudioTracks: []models.AudioTrack{
@@ -94,6 +96,7 @@ func TestBuildMediaStreamsCarriesAudioProfile(t *testing.T) {
 }
 
 func TestAudioTrackDisplayTitleWithoutProfileKeepsCodecName(t *testing.T) {
+	t.Parallel()
 	title := audioTrackDisplayTitle(models.AudioTrack{Codec: "eac3", Language: "eng", Channels: 6})
 	if title != "English - EAC3 5.1" {
 		t.Fatalf("DisplayTitle = %q", title)

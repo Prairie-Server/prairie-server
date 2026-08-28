@@ -19,7 +19,7 @@ const (
 	// cephFSPluginID and cephFSCapabilityID identify the first-party CephFS
 	// watcher. It reads a mounted filesystem directly, so it needs no upstream
 	// credentials.
-	cephFSPluginID     = "silo.autoscan.cephfs"
+	cephFSPluginID     = "prairie.autoscan.cephfs"
 	cephFSCapabilityID = "cephfs"
 
 	// CephFSMoviePathsKey and CephFSTVPathsKey are the source_config keys the

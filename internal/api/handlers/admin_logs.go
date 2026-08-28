@@ -211,14 +211,14 @@ func (h *AdminLogsHandler) HandleLogStreamWebSocket(w http.ResponseWriter, r *ht
 	if err != nil {
 		return
 	}
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	events, unsubscribe := h.streamHub.Subscribe(func(msg logstream.Message) bool {
 		return msg.Type == logstream.MessageTypeAppend && msg.Stream == stream
 	})
 	defer unsubscribe()
 
-	conn.SetReadDeadline(time.Now().Add(wsPingInterval + wsPongTimeout))
+	_ = conn.SetReadDeadline(time.Now().Add(wsPingInterval + wsPongTimeout))
 	conn.SetPongHandler(func(string) error {
 		return conn.SetReadDeadline(time.Now().Add(wsPingInterval + wsPongTimeout))
 	})

@@ -67,7 +67,7 @@ func NewUserDBPool(config PoolConfig) *UserDBPool {
 }
 
 // Get returns the cached UserDB for the given userID, or creates a new
-// SQLite database at {DataDir}/{userID}.db, initialises its schema, and
+// SQLite database at {DataDir}/{userID}.db, initializes its schema, and
 // adds it to the pool. The context is checked for cancellation before
 // potentially expensive I/O.
 func (p *UserDBPool) Get(ctx context.Context, userID int) (*UserDB, error) {
@@ -213,7 +213,7 @@ func (p *UserDBPool) evict() {
 			break
 		}
 		entry := p.dbs[c.userID]
-		entry.db.Close()
+		_ = entry.db.Close()
 		delete(p.dbs, c.userID)
 		evicted++
 	}

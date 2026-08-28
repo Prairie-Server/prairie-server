@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { Link, useSearchParams } from "react-router";
 import {
   AlertTriangle,
+  Ban,
   Check,
   Library,
   Plug,
@@ -125,9 +126,7 @@ export default function AdminRequests() {
     <div className="space-y-6">
       <div className="page-header">
         <div className="space-y-2">
-          <h1 className="text-3xl font-semibold tracking-normal text-balance sm:text-4xl">
-            Requests
-          </h1>
+          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Requests</h1>
           <p className="text-muted-foreground max-w-2xl text-sm leading-6">
             Review media requests, set limits, and manage Radarr or Sonarr routing.
           </p>
@@ -194,7 +193,7 @@ function RequestQueueTab() {
     <div className="space-y-4">
       <div className="border-border bg-card flex flex-wrap items-center gap-3 rounded-lg border p-3">
         <Select value={status} onValueChange={(value) => setStatus(value as StatusFilter)}>
-          <SelectTrigger className="w-[170px]">
+          <SelectTrigger className="w-full sm:w-[170px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -206,7 +205,7 @@ function RequestQueueTab() {
           </SelectContent>
         </Select>
         <Select value={outcome} onValueChange={(value) => setOutcome(value as OutcomeFilter)}>
-          <SelectTrigger className="w-[170px]">
+          <SelectTrigger className="w-full sm:w-[170px]">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -233,46 +232,76 @@ function RequestQueueTab() {
       ) : requests.isError ? (
         <EmptyPanel title="Requests failed" detail="The request queue could not be loaded." />
       ) : (
-        <div className="border-border bg-card overflow-x-auto rounded-lg border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Title</TableHead>
-                <TableHead>Requested</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Outcome</TableHead>
-                <TableHead>Integration</TableHead>
-                <TableHead className="w-[240px]">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {(requests.data ?? []).length === 0 ? (
+        <div className="border-border bg-card overflow-hidden rounded-lg border">
+          {/* Desktop table */}
+          <div className="hidden overflow-x-auto sm:block">
+            <Table>
+              <TableHeader>
                 <TableRow>
-                  <TableCell colSpan={6} className="text-muted-foreground py-8 text-center">
-                    No requests match the current filters.
-                  </TableCell>
+                  <TableHead>Title</TableHead>
+                  <TableHead>Requested</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Outcome</TableHead>
+                  <TableHead>Integration</TableHead>
+                  <TableHead className="w-[240px]">Actions</TableHead>
                 </TableRow>
-              ) : (
-                requests.data?.map((request) => (
-                  <RequestQueueRow
-                    key={request.id}
-                    request={request}
-                    requesterUsername={
-                      request.requested_by_user_id
-                        ? usernamesByID.get(request.requested_by_user_id)
-                        : undefined
-                    }
-                    approving={approve.isPending && approve.variables === request.id}
-                    declining={decline.isPending && decline.variables?.id === request.id}
-                    retrying={retry.isPending && retry.variables === request.id}
-                    onApprove={() => approve.mutate(request.id)}
-                    onDecline={() => handleDecline(request)}
-                    onRetry={() => retry.mutate(request.id)}
-                  />
-                ))
-              )}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {(requests.data ?? []).length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-muted-foreground py-8 text-center">
+                      No requests match the current filters.
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  requests.data?.map((request) => (
+                    <RequestQueueRow
+                      key={request.id}
+                      request={request}
+                      requesterUsername={
+                        request.requested_by_user_id
+                          ? usernamesByID.get(request.requested_by_user_id)
+                          : undefined
+                      }
+                      approving={approve.isPending && approve.variables === request.id}
+                      declining={decline.isPending && decline.variables?.id === request.id}
+                      retrying={retry.isPending && retry.variables === request.id}
+                      onApprove={() => approve.mutate(request.id)}
+                      onDecline={() => handleDecline(request)}
+                      onRetry={() => retry.mutate(request.id)}
+                    />
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          {/* Mobile cards */}
+          <div className="divide-border divide-y sm:hidden">
+            {(requests.data ?? []).length === 0 ? (
+              <div className="text-muted-foreground px-4 py-8 text-center text-sm">
+                No requests match the current filters.
+              </div>
+            ) : (
+              requests.data?.map((request) => (
+                <RequestQueueCard
+                  key={request.id}
+                  request={request}
+                  requesterUsername={
+                    request.requested_by_user_id
+                      ? usernamesByID.get(request.requested_by_user_id)
+                      : undefined
+                  }
+                  approving={approve.isPending && approve.variables === request.id}
+                  declining={decline.isPending && decline.variables?.id === request.id}
+                  retrying={retry.isPending && retry.variables === request.id}
+                  onApprove={() => approve.mutate(request.id)}
+                  onDecline={() => handleDecline(request)}
+                  onRetry={() => retry.mutate(request.id)}
+                />
+              ))
+            )}
+          </div>
         </div>
       )}
       <Dialog
@@ -311,9 +340,11 @@ function RequestQueueTab() {
                 setDeclineReason("");
               }}
             >
+              <X />
               Cancel
             </Button>
             <Button onClick={confirmDecline} disabled={decline.isPending}>
+              <Ban />
               Decline
             </Button>
           </DialogFooter>
@@ -412,32 +443,162 @@ function RequestQueueRow({
         )}
       </TableCell>
       <TableCell>
-        <div className="flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onApprove}
-            disabled={!canApprove || approving}
-          >
-            <Check className="h-4 w-4" />
-            Approve
-          </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={onDecline}
-            disabled={!canDecline || declining}
-          >
-            <X className="h-4 w-4" />
-            Decline
-          </Button>
-          <Button size="sm" variant="outline" onClick={onRetry} disabled={!canRetry || retrying}>
-            <RefreshCw className="h-4 w-4" />
-            Retry
-          </Button>
-        </div>
+        <RequestQueueActions
+          canApprove={canApprove}
+          canDecline={canDecline}
+          canRetry={canRetry}
+          approving={approving}
+          declining={declining}
+          retrying={retrying}
+          onApprove={onApprove}
+          onDecline={onDecline}
+          onRetry={onRetry}
+        />
       </TableCell>
     </TableRow>
+  );
+}
+
+function RequestQueueCard({
+  request,
+  requesterUsername,
+  approving,
+  declining,
+  retrying,
+  onApprove,
+  onDecline,
+  onRetry,
+}: {
+  request: MediaRequest;
+  requesterUsername?: string;
+  approving: boolean;
+  declining: boolean;
+  retrying: boolean;
+  onApprove: () => void;
+  onDecline: () => void;
+  onRetry: () => void;
+}) {
+  const canApprove = request.status === "pending" && request.outcome === "active";
+  const canDecline = request.status !== "completed" && request.outcome === "active";
+  const canRetry = request.outcome === "failed";
+  const requesterLabel = requesterUsername ?? `User ${request.requested_by_user_id}`;
+  const requestDetailHref = `/requests/${request.media_type}/${request.tmdb_id}`;
+
+  return (
+    <div className="flex flex-col gap-3 px-4 py-3">
+      <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-2">
+          <Link to={requestDetailHref} className="text-sm font-semibold hover:underline">
+            {request.title}
+          </Link>
+          <Badge variant="secondary">{formatMediaType(request.media_type)}</Badge>
+        </div>
+        <div className="text-muted-foreground mt-1 flex flex-wrap gap-x-3 text-xs">
+          {request.year ? <span>{request.year}</span> : null}
+          <span>{formatRequestDate(request)}</span>
+          {request.requested_by_user_id ? (
+            <Link
+              to={`/admin/users/${request.requested_by_user_id}`}
+              className="hover:text-foreground hover:underline"
+            >
+              {requesterLabel}
+            </Link>
+          ) : null}
+        </div>
+        <div className="mt-2 flex flex-wrap items-center gap-1.5">
+          <Badge variant={requestStatusBadgeVariant(request.status)}>
+            {formatRequestStatus(request.status)}
+          </Badge>
+          <Badge variant={requestOutcomeBadgeVariant(request.outcome)}>
+            {formatRequestOutcome(request.outcome)}
+          </Badge>
+          {request.is_anime ? <Badge variant="secondary">Anime</Badge> : null}
+        </div>
+        {request.targets?.length ? (
+          <div className="mt-2 flex flex-col gap-1.5">
+            {request.targets.map((target) => (
+              <RequestTargetBadge key={target.id} target={target} />
+            ))}
+          </div>
+        ) : (
+          <p className="text-muted-foreground mt-2 text-xs">Not submitted</p>
+        )}
+        {request.last_error ? (
+          <p className="text-destructive mt-2 text-xs">{request.last_error}</p>
+        ) : null}
+      </div>
+      <RequestQueueActions
+        canApprove={canApprove}
+        canDecline={canDecline}
+        canRetry={canRetry}
+        approving={approving}
+        declining={declining}
+        retrying={retrying}
+        onApprove={onApprove}
+        onDecline={onDecline}
+        onRetry={onRetry}
+        stacked
+      />
+    </div>
+  );
+}
+
+function RequestQueueActions({
+  canApprove,
+  canDecline,
+  canRetry,
+  approving,
+  declining,
+  retrying,
+  onApprove,
+  onDecline,
+  onRetry,
+  stacked = false,
+}: {
+  canApprove: boolean;
+  canDecline: boolean;
+  canRetry: boolean;
+  approving: boolean;
+  declining: boolean;
+  retrying: boolean;
+  onApprove: () => void;
+  onDecline: () => void;
+  onRetry: () => void;
+  stacked?: boolean;
+}) {
+  return (
+    <div className={stacked ? "grid grid-cols-3 gap-2" : "flex flex-wrap gap-2"}>
+      <Button
+        size="sm"
+        variant="outline"
+        className={stacked ? "w-full" : undefined}
+        onClick={onApprove}
+        disabled={!canApprove || approving}
+      >
+        <Check className="h-4 w-4" />
+        Approve
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className={stacked ? "w-full" : undefined}
+        onClick={onDecline}
+        disabled={!canDecline || declining}
+      >
+        <X className="h-4 w-4" />
+        Decline
+      </Button>
+      <Button
+        size="sm"
+        variant="outline"
+        className={stacked ? "w-full" : undefined}
+        onClick={onRetry}
+        disabled={!canRetry || retrying}
+      >
+        <RefreshCw className="h-4 w-4" />
+        Retry
+      </Button>
+    </div>
   );
 }
 
@@ -572,7 +733,7 @@ function RequestSettingsForm({ settings }: { settings: RequestSettings }) {
   );
 }
 
-// Host chrome owned by Silo; everything arr-specific now lives in pluginConfig
+// Host chrome owned by Prairie; everything arr-specific now lives in pluginConfig
 // and is rendered by the plugin's connection descriptor via <SchemaForm>.
 type IntegrationFormState = {
   id: string;
@@ -1218,6 +1379,7 @@ function IntegrationEditor({
           </DialogHeader>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setConfirmDelete(false)}>
+              <X />
               Cancel
             </Button>
             <Button

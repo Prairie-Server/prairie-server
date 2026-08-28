@@ -1,0 +1,24 @@
+# Packages that must meet COVER_MIN (default 95%) in CI.
+# Patterns match exact package-path suffixes of the Go coverprofile.
+# CI also sets COVER_EXCLUDE_FILE_REGEX='(^|/)(store|artwork_index_pg)\.go$' so
+# PgStore / pg artwork-index DB code under internal/livetv is omitted.
+#
+# Prefer packages with solid unit tests over artificially narrow includes.
+# When adding a package here, also add it to the go-test-coverage job in
+# .github/workflows/ci.yml so coverage.out contains its profile data.
+# jellycompat / imageutil run in parallel sibling CI jobs (no 95% gate).
+internal/livetv
+internal/livetv/hdhomerun
+internal/contentid
+internal/librarykind
+internal/logredact
+internal/logfilter
+internal/titleutil
+internal/lang
+internal/rootcheck
+internal/secret
+internal/providerid
+internal/buildinfo
+internal/artworkkey
+# internal/imageutil is exercised in go-test-coverage (embedded WASI smoke) but
+# stays off the 95% gate until processor error paths have dedicated unit tests.

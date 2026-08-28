@@ -147,7 +147,7 @@ func (h *NotificationsHandler) HandleClearEmailAddress(w http.ResponseWriter, r 
 
 // EmailLinkHandler serves the public tokenized email endpoints: address
 // verification and unsubscribe. Both are clicked from email clients on
-// devices that may have no Silo session, so they render minimal standalone
+// devices that may have no Prairie session, so they render minimal standalone
 // HTML instead of redirecting into the authenticated app.
 type EmailLinkHandler struct {
 	system *notifications.System
@@ -167,13 +167,13 @@ func (h *EmailLinkHandler) HandleVerify(w http.ResponseWriter, r *http.Request) 
 			"The address could not be verified. Try the link again in a moment.")
 	case outcome == notifications.EmailVerifyConflict:
 		writeEmailLinkPage(w, http.StatusConflict, "Address already in use",
-			"This address now belongs to another profile or account. Choose a different address in Silo's notification settings.")
+			"This address now belongs to another profile or account. Choose a different address in Prairie's notification settings.")
 	case outcome == notifications.EmailVerifyInvalid:
 		writeEmailLinkPage(w, http.StatusBadRequest, "Link expired or already used",
-			"Request a new verification email from Silo's notification settings.")
+			"Request a new verification email from Prairie's notification settings.")
 	default:
 		writeEmailLinkPage(w, http.StatusOK, "Address verified",
-			"Silo notifications for this profile will now be delivered here. You can close this page.")
+			"Prairie notifications for this profile will now be delivered here. You can close this page.")
 	}
 }
 
@@ -187,10 +187,10 @@ func (h *EmailLinkHandler) HandleUnsubscribe(w http.ResponseWriter, r *http.Requ
 			"Could not unsubscribe. Try the link again in a moment.")
 	case !ok:
 		writeEmailLinkPage(w, http.StatusBadRequest, "Link invalid",
-			"This unsubscribe link is no longer valid. Manage notifications in Silo's settings.")
+			"This unsubscribe link is no longer valid. Manage notifications in Prairie's settings.")
 	default:
 		writeEmailLinkPage(w, http.StatusOK, "Unsubscribed",
-			"This profile will no longer receive notification emails. Re-enable them any time in Silo's settings.")
+			"This profile will no longer receive notification emails. Re-enable them any time in Prairie's settings.")
 	}
 }
 
@@ -199,7 +199,7 @@ func (h *EmailLinkHandler) HandleUnsubscribe(w http.ResponseWriter, r *http.Requ
 func writeEmailLinkPage(w http.ResponseWriter, status int, title, detail string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
-	fmt.Fprintf(w, `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s — Silo</title></head>
+	_, _ = fmt.Fprintf(w, `<!doctype html><html><head><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s — Prairie</title></head>
 <body style="font-family:-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;background:#101014;color:#e8e8ec;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;">
 <div style="max-width:420px;padding:32px;text-align:center;">
 <h1 style="font-size:20px;margin:0 0 12px;">%s</h1>

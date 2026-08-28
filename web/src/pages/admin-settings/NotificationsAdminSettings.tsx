@@ -16,6 +16,7 @@ import {
   Megaphone,
   MonitorSmartphone,
   RadioTower,
+  RotateCcw,
   Rss,
   Send,
   TriangleAlert,
@@ -104,7 +105,7 @@ interface AppleRelayRegisterResult {
   expires_at: string;
 }
 
-const DEFAULT_PUSH_RELAY_URL = "https://push.siloserver.org";
+const DEFAULT_PUSH_RELAY_URL = "https://push.prairie-server.org";
 
 /**
  * Invite link for adding the bot to a Discord server. Membership alone is
@@ -322,12 +323,12 @@ function DiscordSetupGuide() {
               <code className="bg-muted mx-1 rounded px-1">
                 {"<public URL>"}/api/v1/notifications/discord/link/callback
               </code>
-              using this server&apos;s public URL (SILO_PUBLIC_URL) — it must match exactly.
+              using this server&apos;s public URL (PRAIRIE_PUBLIC_URL) — it must match exactly.
             </li>
             <li>
               Bot page: reset and copy the <strong>Token</strong>. Leave all Privileged Gateway
-              Intents (Presence, Server Members, Message Content) <strong>off</strong> — Silo never
-              connects to the gateway; it only sends DMs.
+              Intents (Presence, Server Members, Message Content) <strong>off</strong> — Prairie
+              never connects to the gateway; it only sends DMs.
             </li>
             <li>
               Keep <strong>Requires OAuth2 Code Grant</strong> off, or the invite link below
@@ -455,6 +456,7 @@ function ClearDiscordCredentialsRow({
   return (
     <div className="py-2">
       <Button type="button" variant="ghost" size="sm" onClick={() => setOpen(true)}>
+        <RotateCcw />
         Clear Discord credentials
       </Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
@@ -517,8 +519,8 @@ function RegisterRelayRow({
   const expirationValid = expiration != null && !Number.isNaN(expiration.getTime());
   const renewalStatus = expirationValid
     ? expiration.getTime() <= Date.now()
-      ? "Expired; Silo will renew before the next delivery when the relay grace period permits."
-      : `Expires ${expiration.toLocaleString()}; Silo renews automatically during the final week with per-server jitter.`
+      ? "Expired; Prairie will renew before the next delivery when the relay grace period permits."
+      : `Expires ${expiration.toLocaleString()}; Prairie renews automatically during the final week with per-server jitter.`
     : configured
       ? "Expiration is unknown; the credential will be refreshed on its next lifecycle operation."
       : "No relay credential is registered.";
@@ -578,7 +580,7 @@ function RegisterRelayRow({
     <div className="space-y-3 py-3">
       <SettingField
         label="Deployment ID"
-        hint="Opaque relay account for this Silo server; created during registration"
+        hint="Opaque relay account for this Prairie server; created during registration"
         type="text"
         value={deploymentID}
         onChange={() => {}}
@@ -600,6 +602,7 @@ function RegisterRelayRow({
             disabled={pending}
             onClick={() => setConfirmClear(true)}
           >
+            <RotateCcw />
             Clear credential
           </Button>
         )}
@@ -657,20 +660,20 @@ function MobilePushPrivacyDisclosure() {
       <div className="text-sm font-medium">Privacy disclosure</div>
       <div className="text-muted-foreground space-y-2 text-xs leading-relaxed">
         <p>
-          If you enable push notifications, your Silo Server sends a content-free request to Silo's
-          push relay so Silo can deliver notifications through Apple Push Notification service or
-          Firebase Cloud Messaging.
+          If you enable push notifications, your Prairie Server sends a content-free request to
+          Prairie's push relay so Prairie can deliver notifications through Apple Push Notification
+          service or Firebase Cloud Messaging.
         </p>
         <p>
           The relay does not receive notification titles, message bodies, media names, user names,
           profile names, or your server URL. It does process technical metadata needed to deliver
           and operate the service, including an opaque deployment identifier, push delivery timing,
-          request status, app topic, the IP address your self-hosted Silo Server uses to contact the
-          relay, and a hashed device push token. Apple or Google may also process standard push
+          request status, app topic, the IP address your self-hosted Prairie Server uses to contact
+          the relay, and a hashed device push token. Apple or Google may also process standard push
           delivery metadata for their platform.
         </p>
         <p>
-          Push notifications are generic; the app fetches private content directly from your Silo
+          Push notifications are generic; the app fetches private content directly from your Prairie
           Server after receiving the push.
         </p>
       </div>
@@ -864,8 +867,8 @@ export default function NotificationsAdminSettings() {
 
           <ChannelCard
             icon={RadioTower}
-            title="Silo Push Relay"
-            description="Content-free mobile wakeups through Silo's relay, delivered by APNs or FCM."
+            title="Prairie Push Relay"
+            description="Content-free mobile wakeups through Prairie's relay, delivered by APNs or FCM."
             enabled={mobilePushOn}
             onEnabledChange={(enabled) => {
               form.setValue("notifications.apple_push_delivery_enabled", String(enabled));
@@ -903,7 +906,7 @@ export default function NotificationsAdminSettings() {
               />
               <SettingField
                 label="Relay URL"
-                hint="Public relay endpoint used by this Silo server; stored when you register"
+                hint="Public relay endpoint used by this Prairie server; stored when you register"
                 type="text"
                 value={pushRelayURL}
                 onChange={(v) => setPushRelayURLDraft(v)}
@@ -964,7 +967,7 @@ export default function NotificationsAdminSettings() {
               />
               <SettingField
                 label="External URL"
-                hint="Public base URL of this server (e.g. https://silo.example.com) used for links inside emails. Empty sends emails without links."
+                hint="Public base URL of this server (e.g. https://prairie.example.com) used for links inside emails. Empty sends emails without links."
                 type="text"
                 value={form.getValue("notifications.email.external_url")}
                 onChange={(v) => form.setValue("notifications.email.external_url", v)}
@@ -1141,7 +1144,7 @@ export default function NotificationsAdminSettings() {
               />
               <SettingField
                 label="Mention Requesters on Discord"
-                hint="Request posts to Discord destinations @mention the requesting user when their account has linked Discord (in user notification settings). Unlinked accounts show their Silo username without a mention."
+                hint="Request posts to Discord destinations @mention the requesting user when their account has linked Discord (in user notification settings). Unlinked accounts show their Prairie username without a mention."
                 type="toggle"
                 value={form.getValue("notifications.server_channels.mention_requesters")}
                 onChange={(v) =>

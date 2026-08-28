@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft, ArrowRight, Check } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Loader2, Save } from "lucide-react";
 
 import type {
   Collection,
@@ -349,7 +349,7 @@ function Step1FiltersAndPreview({
         />
       )}
 
-      <div className="bg-background/95 supports-[backdrop-filter]:bg-background/70 fixed right-4 bottom-4 z-40 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-xl backdrop-blur sm:right-6 lg:right-10 xl:right-12">
+      <div className="bg-background/95 supports-[backdrop-filter]:bg-background/70 bottom-safe-3 fixed right-4 z-40 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-xl backdrop-blur sm:right-6 lg:right-10 xl:right-12">
         <span className="text-muted-foreground hidden text-xs sm:inline">
           {adminMissingLibrary
             ? "Pick at least one library to continue"
@@ -391,7 +391,7 @@ function Step2UserMetadata({
   onBack,
 }: Step2BaseProps & { wizard: UserModeProps }) {
   const { profile } = useCurrentProfile();
-  const { data: profiles = [] } = useProfiles();
+  const { data: profiles } = useProfiles();
   const createMutation = useCreateCollection();
   const updateMutation = useUpdateCollection();
   const deletePosterMutation = useDeleteUserCollectionImage();
@@ -681,12 +681,13 @@ function SaveBar({
   saveLabel: string;
 }) {
   return (
-    <div className="bg-background/95 supports-[backdrop-filter]:bg-background/70 fixed right-4 bottom-4 z-40 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-xl backdrop-blur sm:right-6 lg:right-10 xl:right-12">
+    <div className="bg-background/95 supports-[backdrop-filter]:bg-background/70 bottom-safe-3 fixed right-4 z-40 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-xl backdrop-blur sm:right-6 lg:right-10 xl:right-12">
       <Button type="button" variant="outline" size="sm" onClick={onBack} disabled={isPending}>
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back
       </Button>
       <Button type="submit" disabled={!canSave || isPending}>
+        {isPending ? <Loader2 className="animate-spin" /> : <Save />}
         {isPending ? "Saving…" : saveLabel}
       </Button>
     </div>

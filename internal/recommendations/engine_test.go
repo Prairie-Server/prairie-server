@@ -20,13 +20,13 @@ var (
 )
 
 // newEngineTestPool mirrors internal/catalog/display_query_filter_test.go: it
-// skips when SILO_TEST_DATABASE_URL is unset and verifies the base schema is
+// skips when PRAIRIE_TEST_DATABASE_URL is unset and verifies the base schema is
 // present before returning a usable pool.
 func newEngineTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	pool, err := pgxpool.New(ctx, dsn)

@@ -278,9 +278,9 @@ func TestPolicyStoreDeleteDocumentGuard(t *testing.T) {
 
 func newPolicyStoreTest(t *testing.T, ctx context.Context) (*pgxpool.Pool, *PolicyStore) {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
@@ -318,7 +318,7 @@ func resetPolicyTables(t *testing.T, ctx context.Context, pool *pgxpool.Pool) {
 }
 
 func validStorePolicySource() string {
-	return `package silo_custom.scope
+	return `package prairie_custom.scope
 
 import rego.v1
 

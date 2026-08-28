@@ -61,7 +61,11 @@ func (q *RefreshQueue) Dequeue() (RefreshEntry, bool) {
 		return RefreshEntry{}, false
 	}
 
-	entry := heap.Pop(&q.entries).(*RefreshEntry)
+	popped := heap.Pop(&q.entries)
+	entry, ok := popped.(*RefreshEntry)
+	if !ok {
+		panic("metadata refresh queue: unexpected entry type")
+	}
 	delete(q.byID, entry.ContentID)
 	return *entry, true
 }
@@ -84,7 +88,10 @@ func (h refHeap) Swap(i, j int) {
 	h[j].index = j
 }
 func (h *refHeap) Push(x any) {
-	entry := x.(*RefreshEntry)
+	entry, ok := x.(*RefreshEntry)
+	if !ok {
+		panic("metadata refresh queue: unexpected entry type")
+	}
 	entry.index = len(*h)
 	*h = append(*h, entry)
 }

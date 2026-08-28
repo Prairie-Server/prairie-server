@@ -14,6 +14,7 @@ import { adminFormForConfigSchema, humanizeConfigKey } from "./configSchemaAdmin
 import { SchemaForm } from "./SchemaForm";
 import { buildSchemaValues } from "./schemaFormUtils";
 
+import { Loader2, RotateCcw, Save } from "lucide-react";
 type PluginConfigValue = Record<string, unknown>;
 
 const EMPTY_FIELDS: PluginAdminFormField[] = [];
@@ -189,6 +190,7 @@ export function PluginConfigForm({
                       })
                     }
                   >
+                    {clearing ? <Loader2 className="animate-spin" /> : <RotateCcw />}
                     {clearing ? "Keep saved secret" : "Clear saved secret"}
                   </Button>
                 ) : null}
@@ -215,6 +217,7 @@ export function PluginConfigForm({
             onSave(schema.key, buildSchemaValues(descriptor, values), Array.from(clearSecrets))
           }
         >
+          <Save />
           {schema.admin_form?.submit_label || "Save config"}
         </Button>
       </div>

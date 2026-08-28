@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Benchmark embedding models for Silo recommendations.
+Benchmark embedding models for Prairie recommendations.
 
 Extracts media items from the dev database, embeds them with multiple models,
 and compares similarity quality using metadata as proxy ground truth.
@@ -72,7 +72,7 @@ SELECT json_agg(t)::text FROM (
 
 def run_psql(db_host: str, sql: str) -> str:
     """Execute SQL via SSH + docker exec, piping via stdin to avoid escaping."""
-    ssh_cmd = "docker exec -i silo-postgres psql -U silo -d silo_fresh -At"
+    ssh_cmd = "docker exec -i postgres psql -U prairie -d prairie -At"
     cmd = ["ssh", f"root@{db_host}", ssh_cmd]
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=120, input=sql)
     if result.returncode != 0:
@@ -446,7 +446,7 @@ def parse_model_spec(spec: str) -> dict:
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Benchmark embedding models for Silo")
+    parser = argparse.ArgumentParser(description="Benchmark embedding models for Prairie")
     parser.add_argument("--db-host", default="localhost", help="Dev server SSH host")
     parser.add_argument("--models", nargs="+", required=True,
                         help="Model specs: provider:model[=base_url]. "
@@ -457,7 +457,7 @@ def main():
     parser.add_argument("--top-k", type=int, default=10, help="Number of neighbors to evaluate")
     parser.add_argument("--examples", type=int, default=5, help="Number of example items to show")
     parser.add_argument("--batch-size", type=int, default=20)
-    parser.add_argument("--cache-dir", default="/tmp/silo-embed-bench",
+    parser.add_argument("--cache-dir", default="/tmp/prairie-embed-bench",
                         help="Cache embeddings to avoid re-computing")
     parser.add_argument("--no-cache", action="store_true", help="Ignore cached data")
     args = parser.parse_args()

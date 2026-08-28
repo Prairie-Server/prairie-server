@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { ChevronLeft, Layers3, Search } from "lucide-react";
+import { Check, ChevronLeft, Eye, Layers3, Loader2, Search } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -41,6 +41,7 @@ import { useUserCollectionTemplates } from "@/hooks/queries/userCollectionImport
 import { CollectionTemplateCard } from "./CollectionTemplateCard";
 import { CollectionTemplateConfigForm } from "./CollectionTemplateConfigForm";
 import { UserCollectionTemplateConfigForm } from "./UserCollectionTemplateConfigForm";
+import { stringifyUnknown } from "@/lib/stringifyUnknown";
 
 type ActiveCategory = CollectionTemplateCategory | "all";
 
@@ -229,7 +230,7 @@ function GalleryView({
   if (error) {
     return (
       <div className="text-destructive rounded-md border border-red-500/40 bg-red-500/10 p-3 text-sm">
-        Failed to load templates: {error instanceof Error ? error.message : String(error)}
+        Failed to load templates: {error instanceof Error ? error.message : stringifyUnknown(error)}
       </div>
     );
   }
@@ -515,9 +516,11 @@ function TemplateBundleApplyView({
 
       <div className="flex justify-end gap-2">
         <Button type="button" variant="outline" disabled={disabled} onClick={preview}>
+          <Eye />
           Preview
         </Button>
         <Button type="button" disabled={disabled} onClick={apply}>
+          {queueBundleApply.isPending ? <Loader2 className="animate-spin" /> : <Check />}
           {queueBundleApply.isPending ? "Queueing..." : "Apply Defaults"}
         </Button>
       </div>

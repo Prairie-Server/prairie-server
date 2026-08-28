@@ -92,6 +92,14 @@ export const ADMIN_NAV_SECTIONS: AdminNavGroup[] = [
         href: "/admin/libraries",
       },
       {
+        label: "Live TV",
+        description:
+          "HDHomeRun tuners, channel lineup, Schedules Direct, and XML sync guide sources.",
+        keywords: ["ota", "hdhomerun", "epg", "dvr", "guide", "schedules direct"],
+        icon: Radio,
+        href: "/admin/livetv",
+      },
+      {
         label: "Collections",
         description: "Curated and smart collection management.",
         keywords: ["collection groups", "templates", "smart collections"],

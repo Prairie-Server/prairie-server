@@ -122,7 +122,7 @@ type playbackSessionsCapabilitiesResponse struct {
 func (h *AdminHandler) HandleGetSessionsCapabilities(w http.ResponseWriter, _ *http.Request) {
 	writeJSON(w, http.StatusOK, playbackSessionsCapabilitiesResponse{
 		EffectivePlayMethod:       true,
-		EffectivePlayMethodValues: []string{"direct", "remux", "transcode", "audio"},
+		EffectivePlayMethodValues: []string{"direct", playbackModeRemux, playbackModeTranscode, "audio"},
 		IsJellyfinClient:          true,
 		TranscodeHWAccel:          true,
 		ToneMapMode:               true,
@@ -354,13 +354,13 @@ func enrichPlaybackSessionRow(row *playbackSessionRow, audioTracksJSON []byte) {
 		}
 	}
 
-	if row.AudioDecision == "transcode" && strings.TrimSpace(row.TargetAudioCodec) == "" {
+	if row.AudioDecision == playbackModeTranscode && strings.TrimSpace(row.TargetAudioCodec) == "" {
 		row.TargetAudioCodec = "aac"
 	}
-	if row.VideoDecision == "transcode" && strings.TrimSpace(row.TargetVideoCodec) == "" {
+	if row.VideoDecision == playbackModeTranscode && strings.TrimSpace(row.TargetVideoCodec) == "" {
 		row.TargetVideoCodec = "h264"
 	}
-	if row.VideoDecision == "transcode" && strings.TrimSpace(row.TargetResolution) == "" {
+	if row.VideoDecision == playbackModeTranscode && strings.TrimSpace(row.TargetResolution) == "" {
 		row.TargetResolution = row.SourceVideoResolution
 	}
 	if strings.TrimSpace(row.NodeDisplayName) == "" {
@@ -394,19 +394,19 @@ func sessionComponentDecision(playMethod string, transcodeAudio bool, targetVide
 	switch strings.TrimSpace(playMethod) {
 	case "direct":
 		return "direct", "direct"
-	case "remux":
+	case playbackModeRemux:
 		if transcodeAudio {
-			return "remux", "transcode"
+			return playbackModeRemux, playbackModeTranscode
 		}
-		return "remux", "remux"
-	case "transcode":
-		videoDec := "transcode"
+		return playbackModeRemux, playbackModeRemux
+	case playbackModeTranscode:
+		videoDec := playbackModeTranscode
 		if strings.EqualFold(strings.TrimSpace(targetVideoCodec), "copy") {
-			videoDec = "remux"
+			videoDec = playbackModeRemux
 		}
-		audioDec := "transcode"
+		audioDec := playbackModeTranscode
 		if !transcodeAudio {
-			audioDec = "remux"
+			audioDec = playbackModeRemux
 		}
 		return videoDec, audioDec
 	default:
@@ -431,14 +431,14 @@ func effectivePlayMethod(videoDecision, audioDecision string) string {
 	switch {
 	case videoDecision == "" && audioDecision == "":
 		return ""
-	case videoDecision == "transcode":
-		return "transcode"
-	case audioDecision == "transcode":
+	case videoDecision == playbackModeTranscode:
+		return playbackModeTranscode
+	case audioDecision == playbackModeTranscode:
 		return "audio"
 	case videoDecision == "direct" && audioDecision == "direct":
 		return "direct"
 	default:
-		return "remux"
+		return playbackModeRemux
 	}
 }
 
@@ -448,7 +448,7 @@ func effectivePlayMethod(videoDecision, audioDecision string) string {
 // behind is_jellyfin_client, which the admin UIs surface as the "JF" pill;
 // keep it in step with the display-labeling rules in
 // playbackClientDisplayName so a client that gets a label also gets the flag.
-// Kodi and mpv reach Silo only through the Jellyfin compat surface today
+// Kodi and mpv reach Prairie only through the Jellyfin compat surface today
 // (jellyfin-kodi/JellyCon, jellyfin-mpv-shim). Generic browser tokens are
 // deliberately excluded: the native web player shares those user agents.
 var jellyfinClientTokens = []string{

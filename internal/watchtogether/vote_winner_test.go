@@ -1,6 +1,9 @@
 package watchtogether
 
-import "testing"
+import (
+	"errors"
+	"testing"
+)
 
 // The winner is the head of the repository's ordering (vote_count DESC,
 // created_at ASC). These pin the rule the ordering encodes, so a change to the
@@ -25,11 +28,11 @@ func TestVoteWinnerIsTheHeadOfTheOrdering(t *testing.T) {
 // let a host "start the winner" of a vote that never happened — precisely the
 // confusion this mode exists to remove.
 func TestVoteWinnerRefusesWhenNobodyHasVoted(t *testing.T) {
-	if _, err := winnerFrom(nil); err != ErrNoVotesCast {
+	if _, err := winnerFrom(nil); !errors.Is(err, ErrNoVotesCast) {
 		t.Fatalf("empty room: err = %v, want ErrNoVotesCast", err)
 	}
 	unvoted := []Suggestion{{ID: "a", VoteCount: 0}, {ID: "b", VoteCount: 0}}
-	if _, err := winnerFrom(unvoted); err != ErrNoVotesCast {
+	if _, err := winnerFrom(unvoted); !errors.Is(err, ErrNoVotesCast) {
 		t.Fatalf("no votes: err = %v, want ErrNoVotesCast", err)
 	}
 }

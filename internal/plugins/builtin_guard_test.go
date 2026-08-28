@@ -25,10 +25,10 @@ func TestInstallationIsBuiltin(t *testing.T) {
 // The reserved builtin plugin id must be rejected at install time so a
 // malicious or accidental catalog entry cannot hijack the reserved row.
 func TestReservedPluginIDRejected(t *testing.T) {
-	if !isReservedPluginID("silo.builtin") {
-		t.Error("silo.builtin must be reserved")
+	if !isReservedPluginID("prairie.builtin") {
+		t.Error("prairie.builtin must be reserved")
 	}
-	if isReservedPluginID("silo.tmdb") || isReservedPluginID("silo.tvdb") {
+	if isReservedPluginID("prairie.tmdb") || isReservedPluginID("prairie.tvdb") {
 		t.Error("first-party plugin ids must stay installable")
 	}
 	if isReservedPluginID("community.example") {
@@ -42,7 +42,7 @@ func TestReservedPluginIDRejected(t *testing.T) {
 func TestPreloadEnabledSkipsBuiltinInstallation(t *testing.T) {
 	store := newFakeServiceInstallationStore(&Installation{
 		ID:          1,
-		PluginID:    "silo.builtin",
+		PluginID:    "prairie.builtin",
 		Kind:        KindBuiltin,
 		Enabled:     true,
 		InstallPath: "/nonexistent/silo-builtin",
@@ -82,9 +82,9 @@ func TestInstallationStoreDeleteRejectsBuiltin(t *testing.T) {
 
 func builtinGuardTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
@@ -99,7 +99,7 @@ func seedBuiltinTestInstallation(t *testing.T, pool *pgxpool.Pool, pluginID stri
 	var id int
 	err := pool.QueryRow(context.Background(),
 		`INSERT INTO plugin_installations (plugin_id, version, install_path, enabled, update_policy, kind)
-		 VALUES ($1, '0', '/nonexistent/silo-builtin-test', true, 'manual', 'builtin')
+		 VALUES ($1, '0', '/nonexistent/prairie-builtin-test', true, 'manual', 'builtin')
 		 RETURNING id`, pluginID+time.Now().UTC().Format("-20060102150405.000000000")).Scan(&id)
 	if err != nil {
 		t.Fatalf("seed builtin installation: %v", err)

@@ -249,7 +249,7 @@ func splitSearchItemTypes(itemTypes []string) (mediaTypes []string, includeEpiso
 		if itemType == "" {
 			continue
 		}
-		if itemType == "episode" {
+		if itemType == itemTypeEpisode {
 			includeEpisodes = true
 			continue
 		}

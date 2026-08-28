@@ -178,7 +178,7 @@ var itemColumnNames = []string{
 	"imdb_id", "tmdb_id", "tvdb_id",
 	"poster_path", "poster_source_path", "poster_thumbhash", "backdrop_path", "backdrop_source_path", "backdrop_thumbhash", "logo_path", "logo_source_path",
 	"metadata_s3_path", "metadata_etag", "season_count",
-	"studios", "networks", "countries", "keywords", "original_language", "release_date::text", "first_air_date", "last_air_date", "air_time", "air_timezone",
+	"studios", "networks", "countries", "keywords", filterFieldOriginalLanguage, "release_date::text", "first_air_date", "last_air_date", "air_time", "air_timezone",
 	"show_status",
 	"matched_at", "last_refreshed", "refresh_failures",
 	"episode_metadata_incomplete", "episode_metadata_last_checked_at", "locked_fields", "status", "created_at", "updated_at",
@@ -1623,7 +1623,7 @@ func (r *ItemRepository) ReplacePeople(ctx context.Context, contentID string, pe
 	seen := make(map[dedupKey]struct{}, len(people))
 	deduped := make([]models.ItemPerson, 0, len(people))
 	for _, p := range people {
-		key := dedupKey{p.Person.ID, p.Kind, p.Character}
+		key := dedupKey{p.ID, p.Kind, p.Character}
 		if _, exists := seen[key]; exists {
 			continue
 		}
@@ -1646,7 +1646,7 @@ func (r *ItemRepository) ReplacePeople(ctx context.Context, contentID string, pe
 			return fmt.Errorf("generate content-person id: %w", err)
 		}
 		rowID, _ := strconv.ParseInt(rowIDStr, 10, 64)
-		args = append(args, rowID, contentID, p.Person.ID, p.Kind, p.Character, p.SortOrder)
+		args = append(args, rowID, contentID, p.ID, p.Kind, p.Character, p.SortOrder)
 	}
 	sb.WriteString(" ON CONFLICT (content_id, person_id, kind, character) DO UPDATE SET sort_order = EXCLUDED.sort_order")
 

@@ -28,9 +28,9 @@ export function SigningSecretDialog({
         <DialogHeader>
           <DialogTitle>Save your signing secret</DialogTitle>
           <DialogDescription>
-            Silo signs every delivery with this secret so your receiver can verify it. It is shown
-            only once — store it on the receiving service now. You can rotate it later if it is
-            lost.
+            Prairie signs every delivery with this secret so your receiver can verify it. It is
+            shown only once — store it on the receiving service now. You can rotate it later if it
+            is lost.
           </DialogDescription>
         </DialogHeader>
         <div className="bg-muted flex items-center gap-2 rounded-lg p-3 font-mono text-xs break-all">
@@ -50,7 +50,9 @@ export function SigningSecretDialog({
           </Button>
         </div>
         <DialogFooter>
-          <Button onClick={onClose}>I've saved it</Button>
+          <Button onClick={onClose}>
+            <Check /> I've saved it
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

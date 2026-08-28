@@ -40,7 +40,7 @@ func TestPluginProviderPopulatesConnection(t *testing.T) {
 
 	conn := ResolvedConnection{BaseURL: "https://arr.example", APIKey: "secret-key"}
 	sourceConfig := map[string]string{"exclusions": ".downloads"}
-	changes, next, err := prov.PollChanges(context.Background(), "silo.autoscan.arr", "cap", "m1", conn, sourceConfig)
+	changes, next, err := prov.PollChanges(context.Background(), "prairie.autoscan.arr", "cap", "m1", conn, sourceConfig)
 	if err != nil {
 		t.Fatalf("PollChanges: %v", err)
 	}
@@ -53,7 +53,7 @@ func TestPluginProviderPopulatesConnection(t *testing.T) {
 	if client.last.GetCapabilityId() != "cap" || client.last.GetMarker() != "m1" {
 		t.Fatalf("unexpected request fields: cap=%q marker=%q", client.last.GetCapabilityId(), client.last.GetMarker())
 	}
-	if resolver.lastPluginID != "silo.autoscan.arr" || resolver.lastCapID != "cap" {
+	if resolver.lastPluginID != "prairie.autoscan.arr" || resolver.lastCapID != "cap" {
 		t.Fatalf("resolver identity = %q/%q", resolver.lastPluginID, resolver.lastCapID)
 	}
 	rc := client.last.GetConnection()
@@ -72,7 +72,7 @@ func TestPluginProviderPrefersStructuredChanges(t *testing.T) {
 	client := &capturingStructuredClient{}
 	prov := NewPluginProvider(&capturingResolver{client: client})
 
-	changes, next, err := prov.PollChanges(context.Background(), "silo.autoscan.arr", "cap", "m1", ResolvedConnection{}, nil)
+	changes, next, err := prov.PollChanges(context.Background(), "prairie.autoscan.arr", "cap", "m1", ResolvedConnection{}, nil)
 	if err != nil {
 		t.Fatalf("PollChanges: %v", err)
 	}

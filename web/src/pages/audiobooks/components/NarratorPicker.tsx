@@ -58,7 +58,7 @@ export function NarratorPicker({ currentNarrator, currentContentId, others }: Na
                 type="button"
                 onClick={() => {
                   setOpen(false);
-                  if (!isCurrent) navigate(`/item/${it.content_id}`);
+                  if (!isCurrent) void navigate(`/item/${it.content_id}`);
                 }}
                 className={`hover:bg-muted/60 flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm ${
                   isCurrent ? "bg-muted/40 font-medium" : ""

@@ -7,9 +7,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { useWizardContext } from "../WizardContext";
+import { WizardActions } from "../WizardActions";
 
+import { ArrowRight, Loader2, Plus } from "lucide-react";
 export function ProfileStep() {
-  const { selectProfile, refetchProfiles } = useWizardContext();
+  const { selectProfile, refetchProfiles, profiles, goForward } = useWizardContext();
   const [profileName, setProfileName] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -32,6 +34,26 @@ export function ProfileStep() {
     }
   }
 
+  // Reviewing a completed profile step when navigating back.
+  if (profiles.length > 0) {
+    const names = profiles.map((p) => p.name).join(", ");
+    return (
+      <div className="space-y-4">
+        <p className="text-muted-foreground text-sm leading-relaxed">
+          Profile{profiles.length === 1 ? "" : "s"}{" "}
+          <span className="text-foreground font-medium">{names}</span>{" "}
+          {profiles.length === 1 ? "is" : "are"} ready. Continue to review the next step.
+        </p>
+        <WizardActions>
+          <Button type="button" onClick={goForward}>
+            <ArrowRight />
+            Continue
+          </Button>
+        </WizardActions>
+      </div>
+    );
+  }
+
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <div className="space-y-1.5">
@@ -43,14 +65,16 @@ export function ProfileStep() {
           value={profileName}
           onChange={(e) => setProfileName(e.target.value)}
           placeholder="Alex"
+          autoComplete="nickname"
           required
         />
       </div>
-      <div className="pt-3">
+      <WizardActions className="flex flex-wrap gap-3 pt-3">
         <Button type="submit" disabled={submitting}>
+          {submitting ? <Loader2 className="animate-spin" /> : <Plus />}
           {submitting ? "Creating..." : "Create profile"}
         </Button>
-      </div>
+      </WizardActions>
     </form>
   );
 }

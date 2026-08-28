@@ -89,13 +89,13 @@ export function WebhookInstructions({
           ))}
         </ul>
         <p className="text-muted-foreground text-xs">
-          Leave every other trigger unchecked — Silo ignores them.
+          Leave every other trigger unchecked — Prairie ignores them.
         </p>
       </div>
 
       <p className="text-muted-foreground text-xs">
         Save the connection in your download manager. You can use its
-        <span className="font-medium"> Test </span> button — Silo accepts test payloads and will
+        <span className="font-medium"> Test </span> button — Prairie accepts test payloads and will
         show the delivery on this source.
       </p>
     </div>
@@ -107,7 +107,7 @@ export function WebhookInstructions({
  *
  * A webhook source has no connection, so the host's /suggest endpoint (which
  * reads an arr's root folders over its API) cannot run. The `to` side is
- * therefore pre-filled from real Silo library paths and the operator supplies
+ * therefore pre-filled from real Prairie library paths and the operator supplies
  * what their arr reports. Without at least one row, deliveries arrive and
  * resolve to nothing.
  */
@@ -146,8 +146,8 @@ export function WebhookMappingEditor({
         <Label>Match its paths to yours</Label>
         <p className="text-muted-foreground text-xs">
           Sonarr/Radarr report the path of the <em>imported library file</em> — their root folder,
-          not the download client&apos;s working directory. If that root differs from the path Silo
-          sees, map it here. Same path on both sides? Enter it twice.
+          not the download client&apos;s working directory. If that root differs from the path
+          Prairie sees, map it here. Same path on both sides? Enter it twice.
         </p>
       </div>
 
@@ -177,7 +177,7 @@ export function WebhookMappingEditor({
                   <span className="text-muted-foreground hidden pb-2 text-xs sm:block">→</span>
                   <div className="min-w-0 flex-1 space-y-1">
                     <Label htmlFor={`map-to-${index}`} className="text-muted-foreground text-xs">
-                      Path Silo uses
+                      Path Prairie uses
                     </Label>
                     <Input
                       id={`map-to-${index}`}

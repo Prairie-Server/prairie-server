@@ -1,5 +1,15 @@
 import { useState } from "react";
-import { CheckCircle2, Pencil, Plus, Trash2, XCircle } from "lucide-react";
+import {
+  CheckCircle2,
+  Loader2,
+  Pencil,
+  Plus,
+  Save,
+  ScanSearch,
+  Trash2,
+  X,
+  XCircle,
+} from "lucide-react";
 import type {
   AutoscanConnection,
   AutoscanConnectionInput,
@@ -123,6 +133,7 @@ export default function ConnectionsPanel() {
   const [testResult, setTestResult] = useState<AutoscanConnectionTestResult | null>(null);
 
   const arrIntegrations = (requestIntegrations.data ?? []).filter(isArrKind);
+  const enabledArrIntegrations = arrIntegrations.filter((integration) => integration.enabled);
 
   // -------------------------------------------------------------------------
   // Dialog helpers
@@ -131,10 +142,10 @@ export default function ConnectionsPanel() {
   function openAddDialog() {
     setTestResult(null);
     // Default to reusing a server already configured under Requests when one
-    // exists. Silo already holds those credentials, so making "enter your own"
+    // exists. Prairie already holds those credentials, so making "enter your own"
     // the default was asking operators to type the same API key twice — the
     // single most common piece of duplicated setup.
-    const firstIntegration = arrIntegrations[0];
+    const firstIntegration = enabledArrIntegrations[0];
     setDialog({
       ...BLANK_DIALOG,
       open: true,
@@ -379,9 +390,9 @@ export default function ConnectionsPanel() {
                 <Label>Requests integration</Label>
                 {requestIntegrations.isLoading ? (
                   <p className="text-muted-foreground text-sm">Loading integrations…</p>
-                ) : arrIntegrations.length === 0 ? (
+                ) : enabledArrIntegrations.length === 0 ? (
                   <p className="text-muted-foreground text-sm">
-                    No Sonarr/Radarr integrations found. Add one in the Requests page first.
+                    No enabled Sonarr/Radarr integrations found. Add one in the Requests page first.
                   </p>
                 ) : (
                   <Select
@@ -395,7 +406,7 @@ export default function ConnectionsPanel() {
                       <SelectValue placeholder="Select an integration…" />
                     </SelectTrigger>
                     <SelectContent>
-                      {arrIntegrations.map((integration) => (
+                      {enabledArrIntegrations.map((integration) => (
                         <SelectItem key={integration.id} value={integration.id}>
                           {integration.name} ({connectionKindLabel(integrationKind(integration))})
                         </SelectItem>
@@ -504,13 +515,22 @@ export default function ConnectionsPanel() {
               onClick={handleTest}
               disabled={!canTest || testConnection.isPending}
             >
+              {testConnection.isPending ? <Loader2 className="animate-spin" /> : <ScanSearch />}
               {testConnection.isPending ? "Testing…" : "Test connection"}
             </Button>
             <div className="flex gap-2">
               <Button variant="outline" onClick={closeDialog} disabled={isSaving}>
+                <X />
                 Cancel
               </Button>
               <Button onClick={handleSave} disabled={!canSave || isSaving}>
+                {isSaving ? (
+                  <Loader2 className="animate-spin" />
+                ) : dialog.editing ? (
+                  <Save />
+                ) : (
+                  <Plus />
+                )}
                 {isSaving ? "Saving…" : dialog.editing ? "Save changes" : "Add connection"}
               </Button>
             </div>

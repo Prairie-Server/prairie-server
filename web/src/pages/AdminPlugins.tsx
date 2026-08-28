@@ -100,8 +100,9 @@ function capabilityLabel(type: string): string {
 
 function sourceLabel(sourceKind: string): string {
   switch (sourceKind) {
+    case "prairie":
     case "silo":
-      return "Silo maintained";
+      return "Prairie maintained";
     case "approved_community":
       return "Approved community";
     default:
@@ -114,7 +115,7 @@ function pluginDisplayName(pluginID: string, presentation?: PluginPresentation):
   if (displayName) return displayName;
 
   return pluginID
-    .replace(/^silo[._-]?/, "")
+    .replace(/^(?:prairie|silo)[._-]?/, "")
     .split(/[._-]+/)
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -463,8 +464,8 @@ function InstalledPluginCard({
               Uninstall {pluginDisplayName(installation.plugin_id, presentation)}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Silo will stop the plugin, then remove its installation, configuration, and installed
-              files. This cannot be undone.
+              Prairie will stop the plugin, then remove its installation, configuration, and
+              installed files. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -820,8 +821,8 @@ function CommunityCatalogControl({ settings }: { settings: PluginCatalogSettings
             </label>
           </div>
           <p className="text-muted-foreground text-xs leading-relaxed">
-            Reviewed by Silo maintainers to work as described and be safe for their documented use.
-            These plugins remain maintained and supported by community contributors.
+            Reviewed by Prairie maintainers to work as described and be safe for their documented
+            use. These plugins remain maintained and supported by community contributors.
           </p>
           {settings.migrated_plugin_count > 0 ? (
             <p className="text-muted-foreground text-xs">
@@ -923,6 +924,7 @@ function RepositorySection() {
             className="sm:flex-[2]"
           />
           <Button type="submit" size="sm">
+            <Plus />
             Add
           </Button>
         </form>
@@ -946,7 +948,9 @@ function RepositorySection() {
               </div>
               <div className="flex shrink-0 gap-2">
                 {repo.managed ? (
-                  <span className="text-muted-foreground self-center text-xs">Managed by Silo</span>
+                  <span className="text-muted-foreground self-center text-xs">
+                    Managed by Prairie
+                  </span>
                 ) : (
                   <>
                     <Button
@@ -1127,9 +1131,9 @@ export default function AdminPlugins() {
       (previousState === "running" || previousState === "cancelling") &&
       currentState === "idle"
     ) {
-      queryClient.invalidateQueries({ queryKey: adminKeys.pluginRepositories() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.pluginCatalog() });
-      queryClient.invalidateQueries({ queryKey: adminKeys.pluginInstallations() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.pluginRepositories() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.pluginCatalog() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.pluginInstallations() });
     }
 
     previousTaskState.current = currentState;
@@ -1141,7 +1145,7 @@ export default function AdminPlugins() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Plugins</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Extend Silo with community and first-party plugins.
+            Extend Prairie with community and first-party plugins.
           </p>
         </div>
         <div className="text-muted-foreground py-12 text-center text-sm">Loading plugins...</div>
@@ -1155,7 +1159,7 @@ export default function AdminPlugins() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Plugins</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Extend Silo with community and first-party plugins.
+            Extend Prairie with community and first-party plugins.
           </p>
         </div>
         <Button

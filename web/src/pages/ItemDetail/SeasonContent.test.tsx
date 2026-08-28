@@ -112,6 +112,17 @@ vi.mock("./components/ActionBar", () => ({
   },
 }));
 
+vi.mock("@/hooks/useOverlayPrefs", async () => {
+  const { buildDefaultPrefs } = await import("@/lib/overlays/schema");
+  return {
+    useOverlayPrefs: () => ({
+      prefs: buildDefaultPrefs(),
+      enabled: true,
+      setPrefs: () => undefined,
+    }),
+  };
+});
+
 function makeSeasonItem(
   overrides: Partial<ItemDetail & { type: "season" }> = {},
 ): ItemDetail & { type: "season" } {

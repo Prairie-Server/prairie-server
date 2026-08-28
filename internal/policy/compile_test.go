@@ -13,7 +13,7 @@ import (
 )
 
 func TestLockedCapabilitiesRejectHTTP(t *testing.T) {
-	source := `package silo_custom.scope
+	source := `package prairie_custom.scope
 
 import rego.v1
 
@@ -21,7 +21,7 @@ override(base, _) := base if {
 	http.send({"method": "get", "url": "https://example.test"})
 }`
 	_, err := rego.New(
-		rego.Query("data.silo_custom.scope.override({}, {})"),
+		rego.Query("data.prairie_custom.scope.override({}, {})"),
 		rego.Module("bad.rego", source),
 		rego.Capabilities(LockedCapabilities()),
 	).PrepareForEval(context.Background())
@@ -37,7 +37,7 @@ func TestCompileCheckRejectsForbiddenBuiltins(t *testing.T) {
 	}{
 		{
 			name: "http_send",
-			source: `package silo_custom.scope
+			source: `package prairie_custom.scope
 
 import rego.v1
 
@@ -48,7 +48,7 @@ override(base, _) := base if {
 		},
 		{
 			name: "net_lookup",
-			source: `package silo_custom.scope
+			source: `package prairie_custom.scope
 
 import rego.v1
 
@@ -59,7 +59,7 @@ override(base, _) := base if {
 		},
 		{
 			name: "opa_runtime",
-			source: `package silo_custom.scope
+			source: `package prairie_custom.scope
 
 import rego.v1
 
@@ -70,7 +70,7 @@ override(base, _) := base if {
 		},
 		{
 			name: "time_now",
-			source: `package silo_custom.scope
+			source: `package prairie_custom.scope
 
 import rego.v1
 
@@ -91,7 +91,7 @@ override(base, _) := base if {
 }
 
 func TestCompileCheckRejectsWrongPackagePath(t *testing.T) {
-	err := CompileCheck(context.Background(), "scope", `package silo_custom.permission
+	err := CompileCheck(context.Background(), "scope", `package prairie_custom.permission
 
 import rego.v1
 
@@ -99,14 +99,14 @@ override(base, _) := base`)
 	if !errors.Is(err, ErrCompileFailed) {
 		t.Fatalf("CompileCheck() error = %v, want ErrCompileFailed", err)
 	}
-	if !strings.Contains(err.Error(), "policy package must be silo_custom.scope") {
+	if !strings.Contains(err.Error(), "policy package must be prairie_custom.scope") {
 		t.Fatalf("CompileCheck() error = %v, want package mismatch", err)
 	}
 }
 
 func TestCompileCheckAllowsPureNetHelpers(t *testing.T) {
 	// net.cidr_contains is deterministic; only impure builtins are locked.
-	err := CompileCheck(context.Background(), "scope", `package silo_custom.scope
+	err := CompileCheck(context.Background(), "scope", `package prairie_custom.scope
 
 import rego.v1
 
@@ -119,7 +119,7 @@ override(base, i) := base if {
 }
 
 func TestCompileCheckRejectsOversizedSource(t *testing.T) {
-	source := "package silo_custom.scope\n\nimport rego.v1\n\n# " +
+	source := "package prairie_custom.scope\n\nimport rego.v1\n\n# " +
 		strings.Repeat("x", maxPolicySourceBytes)
 	err := CompileCheck(context.Background(), "scope", source)
 	if !errors.Is(err, ErrCompileFailed) {
@@ -175,7 +175,7 @@ func TestNewEngineWithCustomSkipsInvalidSource(t *testing.T) {
 			"scope": {
 				DocumentID: 123,
 				VersionID:  456,
-				Source: `package silo_custom.scope
+				Source: `package prairie_custom.scope
 
 import rego.v1
 
@@ -230,7 +230,7 @@ func TestEngineReloadRejectsInvalidCustomSource(t *testing.T) {
 		"scope": {
 			DocumentID: 1,
 			VersionID:  2,
-			Source: `package silo_custom.scope
+			Source: `package prairie_custom.scope
 
 import rego.v1
 
@@ -270,7 +270,7 @@ override(base, _) := base if {`,
 func TestEvaluateTimeoutFailsClosed(t *testing.T) {
 	engine, err := newEngineFromModules(context.Background(), time.Nanosecond, []ModuleSource{{
 		Path: "slow.rego",
-		Source: `package silo.slow
+		Source: `package prairie.slow
 
 import rego.v1
 
@@ -280,7 +280,7 @@ decision := count([x |
 	x := i + j
 ])`,
 	}}, map[DecisionName]string{
-		"slow.decision": "data.silo.slow.decision",
+		"slow.decision": "data.prairie.slow.decision",
 	})
 	if err != nil {
 		t.Fatalf("compile slow policy: %v", err)
@@ -302,7 +302,7 @@ decision := count([x |
 }
 
 func tighteningScopeOverrideSource() string {
-	return `package silo_custom.scope
+	return `package prairie_custom.scope
 
 import rego.v1
 

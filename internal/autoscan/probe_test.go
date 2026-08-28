@@ -66,10 +66,10 @@ func TestTestConnectionNoProbeConfigured(t *testing.T) {
 	}
 }
 
-func TestSuggestRewritesMatchesArrRootsToSiloFolders(t *testing.T) {
+func TestSuggestRewritesMatchesArrRootsToPrairieFolders(t *testing.T) {
 	store := &fakeStore{
 		sources: []Source{
-			{ID: "src-1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1")},
+			{ID: "src-1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: strptr("c1")},
 		},
 	}
 	arr := &fakeArrClient{roots: []string{"/data/tv"}}
@@ -87,7 +87,7 @@ func TestSuggestRewritesMatchesArrRootsToSiloFolders(t *testing.T) {
 
 func TestSuggestRewritesNoConnection(t *testing.T) {
 	store := &fakeStore{
-		sources: []Source{{ID: "src-1", PluginID: "silo.autoscan.arr", CapabilityID: "arr", ConnectionID: nil}},
+		sources: []Source{{ID: "src-1", PluginID: "prairie.autoscan.arr", CapabilityID: "arr", ConnectionID: nil}},
 	}
 	svc := &Service{store: store, connres: passthroughConnRes{}, rootFolders: &fakeArrClient{}, folders: fakeFolderLister{}}
 

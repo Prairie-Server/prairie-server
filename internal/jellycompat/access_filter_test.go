@@ -22,6 +22,7 @@ func (s *stubScopeResolver) Resolve(_ context.Context, input access.ResolveInput
 }
 
 func TestScopeAccessFilterMapsScope(t *testing.T) {
+	t.Parallel()
 	resolver := &stubScopeResolver{
 		scope: access.Scope{
 			UserID:                    7,
@@ -66,6 +67,7 @@ func TestScopeAccessFilterMapsScope(t *testing.T) {
 }
 
 func TestScopeAccessFilterUnrestrictedScope(t *testing.T) {
+	t.Parallel()
 	resolver := &stubScopeResolver{
 		scope: access.Scope{
 			UserID:             1,
@@ -84,6 +86,7 @@ func TestScopeAccessFilterUnrestrictedScope(t *testing.T) {
 }
 
 func TestScopeAccessFilterFailsClosed(t *testing.T) {
+	t.Parallel()
 	resolver := &stubScopeResolver{err: errors.New("boom")}
 
 	filter := NewScopeAccessFilter(resolver)(context.Background(), 7, "profile-1")
@@ -109,6 +112,7 @@ func (s *stubFolderSource) ListByIDs(_ context.Context, ids []int) ([]*models.Me
 }
 
 func TestListUserLibrariesRestrictedAllowlist(t *testing.T) {
+	t.Parallel()
 	folders := &stubFolderSource{
 		byIDs: []*models.MediaFolder{
 			{ID: 2, Name: "TV Shows", Type: "series"},
@@ -138,6 +142,7 @@ func TestListUserLibrariesRestrictedAllowlist(t *testing.T) {
 }
 
 func TestListUserLibrariesFiltersDisabled(t *testing.T) {
+	t.Parallel()
 	svc := &directContentService{
 		folderRepo: &stubFolderSource{
 			enabled: []*models.MediaFolder{
@@ -168,6 +173,7 @@ func TestListUserLibrariesFiltersDisabled(t *testing.T) {
 }
 
 func TestListUserLibrariesEmptyAllowlistDeniesAll(t *testing.T) {
+	t.Parallel()
 	svc := &directContentService{
 		accessFilter: NewScopeAccessFilter(&stubScopeResolver{
 			scope: access.Scope{

@@ -106,9 +106,9 @@ func ParseCatalogRequest(values url.Values) (CatalogRequest, error) {
 	case CatalogSourceSection:
 		scope := strings.ToLower(strings.TrimSpace(values.Get("scope")))
 		if scope == "" {
-			scope = "library"
+			scope = filterFieldLibrary
 		}
-		if scope != "home" && scope != "library" {
+		if scope != "home" && scope != filterFieldLibrary {
 			return CatalogRequest{}, fmt.Errorf("scope must be 'home' or 'library'")
 		}
 		req.Scope = scope
@@ -116,14 +116,14 @@ func ParseCatalogRequest(values url.Values) (CatalogRequest, error) {
 		if req.SectionID == "" {
 			return CatalogRequest{}, fmt.Errorf("section_id is required")
 		}
-		if scope == "library" {
+		if scope == filterFieldLibrary {
 			libraryID := ParseIntParam(values.Get("library_id"))
 			if libraryID <= 0 {
 				return CatalogRequest{}, fmt.Errorf("library_id is required for library sections")
 			}
 			req.LibraryID = libraryID
 		}
-		if hasCatalogOverlayParams(values, scope == "library") {
+		if hasCatalogOverlayParams(values, scope == filterFieldLibrary) {
 			return CatalogRequest{}, fmt.Errorf("source %q does not allow overlay params", req.Source)
 		}
 		req.UseSourceOrder = true
@@ -177,8 +177,8 @@ func parseCatalogOverlay(values url.Values) (catalogOverlay, error) {
 	}
 
 	implicitRules := make([]QueryRule, 0, 4)
-	if genre := strings.TrimSpace(values.Get("genre")); genre != "" {
-		implicitRules = append(implicitRules, QueryRule{Field: "genre", Op: "contains", Value: genre})
+	if genre := strings.TrimSpace(values.Get(filterFieldGenre)); genre != "" {
+		implicitRules = append(implicitRules, QueryRule{Field: filterFieldGenre, Op: "contains", Value: genre})
 	}
 	if status := strings.TrimSpace(values.Get("status")); status != "" {
 		implicitRules = append(implicitRules, QueryRule{Field: "status", Op: "is", Value: status})
@@ -383,7 +383,7 @@ func hasCatalogOverlayParams(values url.Values, ignoreLibraryID bool) bool {
 				continue
 			}
 			return true
-		case "q", "name_prefix", "match", "type", "genre", "year_min", "year_max", "content_rating", "status", "sort", "order", "query_limit":
+		case "q", "name_prefix", "match", "type", filterFieldGenre, "year_min", "year_max", "content_rating", "status", "sort", "order", "query_limit":
 			return true
 		}
 	}

@@ -404,7 +404,7 @@ func (r *PostgresRepository) ListConnectionsDueForSync(
 
 // DeferConnectionsForAccount stamps rate_limited_until on every connection
 // bound to the same provider account. Provider rate limits apply to the API
-// key/account, not the Silo profile, so all sibling connections must sit out
+// key/account, not the Prairie profile, so all sibling connections must sit out
 // the same window.
 func (r *PostgresRepository) DeferConnectionsForAccount(
 	ctx context.Context,

@@ -20,6 +20,7 @@ import {
 } from "@/hooks/queries/admin/subtitles";
 import { useAdminUsers } from "@/hooks/queries/admin/users";
 
+import { ChevronLeft, ChevronRight } from "lucide-react";
 const PAGE_SIZE_OPTIONS = ["25", "50", "100"] as const;
 
 export default function AdminSubtitles() {
@@ -151,7 +152,7 @@ export default function AdminSubtitles() {
                 setPage(0);
               }}
             >
-              <SelectTrigger className="w-[110px]">
+              <SelectTrigger className="w-full sm:w-[110px]">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -168,6 +169,7 @@ export default function AdminSubtitles() {
               disabled={!canPrev}
               onClick={() => setPage((p) => p - 1)}
             >
+              <ChevronLeft />
               Previous
             </Button>
             <span className="text-muted-foreground px-1 text-sm">
@@ -179,6 +181,7 @@ export default function AdminSubtitles() {
               disabled={!canNext}
               onClick={() => setPage((p) => p + 1)}
             >
+              <ChevronRight />
               Next
             </Button>
           </div>

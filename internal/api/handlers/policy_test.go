@@ -52,7 +52,7 @@ func TestPolicyValidateReturnsIssuesWithOK(t *testing.T) {
 	rec := httptest.NewRecorder()
 	req := newPolicyHandlerRequest(http.MethodPost, "/admin/policy/validate", map[string]any{
 		"domain": policy.DomainScope,
-		"source": "package silo_custom.scope\n\nbroken := if {",
+		"source": "package prairie_custom.scope\n\nbroken := if {",
 	}, nil)
 
 	handler.HandleValidate(rec, req)
@@ -99,7 +99,7 @@ func TestPolicySimulateTighteningOverride(t *testing.T) {
 		ProfileVerified:      true,
 		RequestTime:          "2026-07-02T12:00:00Z",
 	}
-	source := `package silo_custom.scope
+	source := `package prairie_custom.scope
 
 import rego.v1
 
@@ -245,7 +245,7 @@ func TestPolicyVersionCompileFailurePersistsAndCannotActivateDB(t *testing.T) {
 	handler.HandleCreateVersion(createRec, newPolicyHandlerRequest(
 		http.MethodPost,
 		"/admin/policy/documents/"+strconv.FormatInt(document.ID, 10)+"/versions",
-		map[string]any{"source": "package silo_custom.scope\n\nbroken := if {"},
+		map[string]any{"source": "package prairie_custom.scope\n\nbroken := if {"},
 		map[string]string{"id": strconv.FormatInt(document.ID, 10)},
 	))
 	if createRec.Code != http.StatusUnprocessableEntity {
@@ -405,9 +405,9 @@ func policyEditorEnabled() bool {
 
 func newPolicyHandlerStoreTest(t *testing.T, ctx context.Context) (*pgxpool.Pool, *policy.PolicyStore) {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	pool, err := pgxpool.New(ctx, dsn)
 	if err != nil {
@@ -559,7 +559,7 @@ func policyTestIntPtr(value int) *int {
 }
 
 func validHandlerPolicySource() string {
-	return `package silo_custom.scope
+	return `package prairie_custom.scope
 
 import rego.v1
 
@@ -603,7 +603,7 @@ func TestPolicyActivateReportsLocalReloadFailureDB(t *testing.T) {
 
 	// The system reloads from an unreachable store, so persistence (through
 	// the good store) succeeds while the live apply fails.
-	badPool, err := pgxpool.New(ctx, "postgres://silo:silo@127.0.0.1:1/silo?connect_timeout=1")
+	badPool, err := pgxpool.New(ctx, "postgres://prairie:prairie@127.0.0.1:1/prairie?connect_timeout=1")
 	if err != nil {
 		t.Fatalf("create unreachable pool: %v", err)
 	}

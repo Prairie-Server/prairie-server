@@ -109,7 +109,7 @@ var SensitiveSettingKeys = map[string]bool{
 	// the capability endpoint, never from the settings store).
 	"notifications.web_push.vapid_keypair": true,
 
-	// Silo push relay bearer credential for APNs/FCM delivery.
+	// Prairie push relay bearer credential for APNs/FCM delivery.
 	"notifications.push_relay_api_key": true,
 }
 

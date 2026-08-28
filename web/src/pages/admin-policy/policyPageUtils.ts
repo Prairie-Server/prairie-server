@@ -33,7 +33,7 @@ export function prettyPolicyJson(value: unknown) {
 }
 
 export function defaultPolicySource(domain: string) {
-  return `package silo_custom.${domain}
+  return `package prairie_custom.${domain}
 
 import rego.v1
 

@@ -186,7 +186,7 @@ func BuildAutoscanService(
 		),
 	)
 	// Wire the connection-test + rewrite-suggester deps: a (long-timeout)
-	// arr root-folder/status client and a Silo media-folder lister.
+	// arr root-folder/status client and a Prairie media-folder lister.
 	svc.SetSuggesterDeps(
 		autoscan.NewArrRootFolderClient(nil),
 		autoscan.NewCatalogFolderLister(folderRepo),

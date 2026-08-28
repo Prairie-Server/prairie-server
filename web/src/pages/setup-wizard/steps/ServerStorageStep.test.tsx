@@ -23,11 +23,6 @@ const useWizardContextMock = vi.fn();
 const useCheckAdminSettingsConnectionMock = vi.fn();
 const useJellyfinCompatStatusMock = vi.fn();
 const useInstallJellyfinCompatWebMock = vi.fn();
-const useQueryMock = vi.fn();
-
-vi.mock("@tanstack/react-query", () => ({
-  useQuery: (...args: unknown[]) => useQueryMock(...args),
-}));
 
 vi.mock("@/hooks/useSettingsForm", () => ({
   useSettingsForm: (...args: unknown[]) => useSettingsFormMock(...args),
@@ -58,6 +53,7 @@ interface MockStepOptions {
   markDone?: ReturnType<typeof vi.fn>;
   save?: ReturnType<typeof vi.fn>;
   values?: Record<string, string>;
+  sensitiveManagedByEnv?: string[];
 }
 
 function mockStep({
@@ -72,11 +68,11 @@ function mockStep({
   markDone = vi.fn(),
   save = vi.fn().mockResolvedValue(undefined),
   values = {},
+  sensitiveManagedByEnv = [],
 }: MockStepOptions = {}) {
   const formValues = { ...defaultValues, ...values };
 
-  useWizardContextMock.mockReturnValue({ markDone });
-  useQueryMock.mockReturnValue({ data: null });
+  useWizardContextMock.mockReturnValue({ markDone, canGoBack: false, goBack: vi.fn() });
   useCheckAdminSettingsConnectionMock.mockReturnValue({
     isPending: false,
     mutateAsync: vi.fn(),
@@ -94,6 +90,7 @@ function mockStep({
     setValue: vi.fn((key: string, value: string) => {
       formValues[key] = value;
     }),
+    isDirty: (key: string) => dirtyKeys.includes(key),
     dirtyCount,
     dirtyKeys,
     save,
@@ -101,6 +98,7 @@ function mockStep({
     isSaving: false,
     restartRequired: false,
     sensitiveConfigured: [],
+    sensitiveManagedByEnv,
     buildConnectionCheckRequest: vi.fn(),
   });
 
@@ -132,7 +130,7 @@ describe("ServerStorageStep", () => {
     expect(markup).toContain("Web UI layer");
     expect(markup).toContain("Pinned Web version");
     expect(markup).toContain("Web install directory");
-    expect(markup).toContain("/var/lib/silo/compat/jellyfin-web");
+    expect(markup).toContain("/var/lib/prairie/compat/jellyfin-web");
   });
 
   it("offers VideoToolbox hardware acceleration during setup", async () => {
@@ -184,6 +182,30 @@ describe("ServerStorageStep", () => {
 
     acceptInstall();
     await waitFor(() => expect(markDone).toHaveBeenCalledWith("server"));
+  });
+
+  it("shows REDIS_URL management notice when Redis is env-managed", () => {
+    mockStep({ sensitiveManagedByEnv: ["redis.url"] });
+
+    const markup = renderToStaticMarkup(<ServerStorageStep />);
+
+    expect(markup).toContain("Managed by environment");
+    expect(markup).toContain("REDIS_URL");
+    expect(markup).not.toContain('id="setup-redis-url"');
+  });
+
+  it("blocks save when a dirty Redis URL has not passed a connection check", async () => {
+    const { markDone, save } = mockStep({
+      dirtyCount: 1,
+      dirtyKeys: ["redis.url"],
+      values: { "redis.url": "redis://bad:6379" },
+    });
+
+    render(<ServerStorageStep />);
+    await userEvent.click(screen.getByRole("button", { name: "Save & continue" }));
+
+    expect(save).not.toHaveBeenCalled();
+    expect(markDone).not.toHaveBeenCalled();
   });
 
   it("does not continue when the queued Jellyfin Web install request is rejected", async () => {

@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import type { FormEvent } from "react";
 import { useSearchParams } from "react-router";
-import { Search, Sparkles, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Search, Sparkles, X } from "lucide-react";
 import BrandCarousel from "@/components/BrandCarousel";
 import MediaCarousel from "@/components/MediaCarousel";
 import RequestPosterCard from "@/components/RequestPosterCard";
@@ -88,7 +88,7 @@ const REQUEST_PROGRESS_GUIDE: Array<StatusGuideItem & { status: MediaRequestStat
   },
   {
     status: "completed",
-    description: "In your Silo library and ready to watch.",
+    description: "In your Prairie library and ready to watch.",
     tone: "bg-emerald-500/20 text-emerald-100 ring-emerald-400/40",
   },
 ];
@@ -115,7 +115,7 @@ const REQUEST_ISSUE_GUIDE: Array<
     outcome: "failed",
     label: "Failed",
     description:
-      "Silo or the external request automation hit an error. If details are available, they appear on the request card.",
+      "Prairie or the external request automation hit an error. If details are available, they appear on the request card.",
     tone: "bg-red-500/15 text-red-100 ring-red-400/40",
   },
 ];
@@ -373,7 +373,7 @@ function RequestStatusGuide() {
               Status guide
             </h2>
             <p className="text-muted-foreground text-[13px] leading-5">
-              Statuses update automatically as Silo checks the library and connected request
+              Statuses update automatically as Prairie checks the library and connected request
               integrations.
             </p>
           </div>
@@ -520,6 +520,7 @@ function SearchBar({
         disabled={searchInput.trim().length < 2}
         className="h-10 rounded-xl px-5"
       >
+        <Search />
         Search
       </Button>
     </form>
@@ -698,6 +699,7 @@ function SearchResultsView({
                 onClick={() => onPageChange(Math.max(1, page - 1))}
                 disabled={page <= 1 || isLoading}
               >
+                <ChevronLeft />
                 Previous
               </Button>
               <span className="text-muted-foreground text-xs tabular-nums">
@@ -709,6 +711,7 @@ function SearchResultsView({
                 onClick={() => onPageChange(page + 1)}
                 disabled={page >= totalPages || isLoading}
               >
+                <ChevronRight />
                 Next
               </Button>
             </div>

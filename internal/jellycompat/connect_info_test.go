@@ -10,7 +10,7 @@ func TestConnectInfoForConfigUsesBootstrapConfig(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.JellyfinCompat.Enabled = true
 	cfg.JellyfinCompat.PublicURL = "http://127.0.0.1:8096"
-	cfg.JellyfinCompat.ServerName = "Silo"
+	cfg.JellyfinCompat.ServerName = "Prairie"
 
 	info := ConnectInfoForConfig(cfg, nil)
 
@@ -20,8 +20,8 @@ func TestConnectInfoForConfigUsesBootstrapConfig(t *testing.T) {
 	if info.PublicURL != "http://127.0.0.1:8096" {
 		t.Fatalf("PublicURL = %q, want the configured URL", info.PublicURL)
 	}
-	if info.ServerName != "Silo" {
-		t.Fatalf("ServerName = %q, want Silo", info.ServerName)
+	if info.ServerName != "Prairie" {
+		t.Fatalf("ServerName = %q, want Prairie", info.ServerName)
 	}
 }
 
@@ -30,7 +30,7 @@ func TestConnectInfoForConfigAddressSettingsOverrideConfig(t *testing.T) {
 	cfg := &config.Config{}
 	cfg.JellyfinCompat.Enabled = true
 	cfg.JellyfinCompat.PublicURL = "http://127.0.0.1:8096"
-	cfg.JellyfinCompat.ServerName = "Silo"
+	cfg.JellyfinCompat.ServerName = "Prairie"
 
 	info := ConnectInfoForConfig(cfg, map[string]string{
 		"jellyfin_compat.public_url":  "https://compat.example.test",

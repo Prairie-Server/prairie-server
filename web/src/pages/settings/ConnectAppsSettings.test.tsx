@@ -142,12 +142,12 @@ describe("ConnectAppsSettings", () => {
     expect(container.textContent).toContain("https://compat.example.test");
   });
 
-  it("shows the plain account name and the Silo origin on the Silo tab", async () => {
+  it("shows the plain account name and the Prairie origin on the Prairie tab", async () => {
     render();
 
-    await click(findButton(container, "Silo app or website"));
+    await click(findButton(container, "Prairie app or website"));
 
-    expect(container.textContent).toContain("For Silo's own apps");
+    expect(container.textContent).toContain("For Prairie's own apps");
     expect(container.textContent).toContain("Don't add a # to either field here.");
     expect(container.textContent).not.toContain("johndoe#");
     // jsdom's default origin stands in for the deployed server address.

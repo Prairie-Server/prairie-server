@@ -34,7 +34,7 @@ const (
 	SearchSettingMeilisearchEmbedder         = "catalog.search.meilisearch.embedder"
 	SearchSettingMeilisearchBinaryQuantized  = "catalog.search.meilisearch.binary_quantized"
 
-	DefaultMeilisearchIndex            = "silo_media_items"
+	DefaultMeilisearchIndex            = "prairie_media_items"
 	DefaultMeilisearchTimeoutMS        = 800
 	DefaultMeilisearchMatchingStrategy = "last"
 	SearchMeilisearchSchemaVersion     = 3
@@ -44,7 +44,7 @@ const (
 	DefaultMeilisearchRebuildQueueDepth = 4
 	DefaultMeilisearchSemanticEnabled   = false
 	DefaultMeilisearchSemanticRatio     = 0.50
-	DefaultMeilisearchEmbedder          = "silo_recommendations"
+	DefaultMeilisearchEmbedder          = "prairie_recommendations"
 	DefaultMeilisearchBinaryQuantized   = false
 
 	MaxMeilisearchSyncBatchSize     = 10000
@@ -389,7 +389,7 @@ type CatalogSearchTypeCoverage struct {
 }
 
 // CatalogSearchSemanticCapability reports whether the active Meilisearch index is
-// configured to accept Silo's user-provided embedding vectors. A failure here
+// configured to accept Prairie's user-provided embedding vectors. A failure here
 // means hybrid search would be rejected, but it must not trip the circuit or
 // flip Healthy — keyword search stays up regardless.
 type CatalogSearchSemanticCapability struct {

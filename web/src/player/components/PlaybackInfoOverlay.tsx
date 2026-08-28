@@ -65,14 +65,14 @@ export function PlaybackInfoOverlay({
   );
 
   return (
-    <div className="absolute top-12 left-4 z-50 max-h-[calc(100%-6rem)] w-80 overflow-y-auto rounded-lg bg-black/85 text-sm text-white shadow-lg backdrop-blur-sm">
+    <div className="absolute top-12 right-3 left-3 z-50 max-h-[calc(100%-6rem)] w-auto overflow-y-auto rounded-lg bg-black/85 text-sm text-white shadow-lg backdrop-blur-sm sm:right-auto sm:left-4 sm:w-80">
       <div className="flex items-center justify-between px-4 pt-3 pb-2">
-        <span className="font-medium text-white/90">Playback Info</span>
+        <span className="font-medium text-white/90">Stats for nerds</span>
         <button
           type="button"
           onClick={onClose}
           className="flex h-6 w-6 items-center justify-center rounded hover:bg-white/10"
-          aria-label="Close playback info"
+          aria-label="Close stats for nerds"
         >
           <X className="h-4 w-4" />
         </button>

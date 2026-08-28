@@ -236,7 +236,6 @@ func buildListNextUpQuery(q NextUpQuery, limit int, cursor *nextUpWalkCursor) (s
 	if q.DateCutoff != nil {
 		dateCutoffFilter = fmt.Sprintf(" AND uwp.updated_at >= $%d", argIdx)
 		args = append(args, *q.DateCutoff)
-		argIdx++
 	}
 
 	// seedSeen is projected alongside the seed's picked series, which the global
@@ -600,7 +599,7 @@ func (r *NextUpRepository) listResumableFirstEpisodes(ctx context.Context, q Nex
 		return nil, fmt.Errorf("getting user store: %w", err)
 	}
 
-	inProgressEntries, err := store.ListProgress(ctx, q.ProfileID, "in_progress", 100, 0)
+	inProgressEntries, err := store.ListProgress(ctx, q.ProfileID, filterFieldInProgress, 100, 0)
 	if err != nil {
 		return nil, fmt.Errorf("listing in-progress: %w", err)
 	}

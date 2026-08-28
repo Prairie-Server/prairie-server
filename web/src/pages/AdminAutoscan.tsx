@@ -160,9 +160,7 @@ export default function AdminAutoscan() {
       <div className="page-header">
         <div className="space-y-2">
           <div className="flex items-center gap-2.5">
-            <h1 className="text-3xl font-semibold tracking-normal text-balance sm:text-4xl">
-              Autoscan
-            </h1>
+            <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Autoscan</h1>
             {settings.data &&
               (enabled ? (
                 <Badge variant="secondary">Enabled</Badge>
@@ -173,7 +171,7 @@ export default function AdminAutoscan() {
               ))}
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-            Silo re-scans a library as soon as something changes, instead of waiting for the next
+            Prairie re-scans a library as soon as something changes, instead of waiting for the next
             scheduled scan. Add a source for each thing you want watched.
           </p>
         </div>

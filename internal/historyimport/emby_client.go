@@ -76,10 +76,6 @@ type embyItem struct {
 	} `json:"UserData"`
 }
 
-type embyUser struct {
-	ID string `json:"Id"`
-}
-
 type embyLocalAuth struct {
 	BaseURL     string
 	UserID      string
@@ -303,7 +299,8 @@ func UpstreamHTTPStatus(err error) int {
 }
 
 func shouldTryAnotherBase(err error) bool {
-	httpErr, ok := err.(*embyHTTPError)
+	httpErr := &embyHTTPError{}
+	ok := errors.As(err, &httpErr)
 	if !ok {
 		return true
 	}
@@ -312,9 +309,9 @@ func shouldTryAnotherBase(err error) bool {
 
 func embyAuthorizationHeader(userID, token string) string {
 	parts := []string{
-		`Client="Silo"`,
-		`Device="Silo"`,
-		`DeviceId="silo-history-import"`,
+		`Client="Prairie"`,
+		`Device="Prairie"`,
+		`DeviceId="prairie-history-import"`,
 		`Version="1.0.0"`,
 	}
 	if userID != "" {

@@ -117,7 +117,7 @@ describe("collapseToRoots", () => {
 });
 
 describe("expandedRootsFor", () => {
-  // A collapsed row assumes the arr mirrors Silo's tree below the root. When it
+  // A collapsed row assumes the arr mirrors Prairie's tree below the root. When it
   // does not (/downloads/films vs /downloads/series), the operator needs a row
   // per branch — these are the branches the editor offers.
   it("offers the distinct child directories under a collapsed root", () => {

@@ -39,7 +39,8 @@ export default function TasteSeedBanner() {
   };
 
   return (
-    <div className="px-4 sm:px-6 lg:px-10 xl:px-12">
+    <div className="px-4 sm:px-6 lg:pr-24 lg:pl-10 xl:pr-24 xl:pl-12">
+      {/* Outer right inset (not panel padding) clears the fixed admin ServerActivity FAB. */}
       <div className="surface-panel relative flex flex-col items-start gap-3 rounded-[1.4rem] border-0 px-5 py-4 sm:flex-row sm:items-center sm:gap-4 sm:px-6">
         <div className="bg-primary/10 text-primary flex h-10 w-10 shrink-0 items-center justify-center rounded-full">
           <Sparkles className="h-5 w-5" aria-hidden="true" />

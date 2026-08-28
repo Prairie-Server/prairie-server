@@ -1,4 +1,4 @@
-import { ChevronDown, ChevronUp } from "lucide-react";
+import { Check, ChevronDown, ChevronLeft, ChevronRight, ChevronUp, RotateCcw } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 
 import { Badge } from "@/components/ui/badge";
@@ -39,11 +39,11 @@ interface PolicyDecisionLogTableProps {
 }
 
 function decisionNameForDomain(domain: string) {
-  return domain.includes(".") ? domain : `silo.${domain}.decision`;
+  return domain.includes(".") ? domain : `prairie.${domain}.decision`;
 }
 
 function decisionLabel(value: string) {
-  const match = /^silo\.(.+)\.decision$/.exec(value);
+  const match = /^prairie\.(.+)\.decision$/.exec(value);
   return match ? formatPolicyDomain(match[1] ?? value) : value;
 }
 
@@ -180,9 +180,11 @@ export function PolicyDecisionLogTable({ domains }: PolicyDecisionLogTableProps)
 
         <div className="flex gap-2">
           <Button type="button" variant="outline" onClick={resetFilters}>
+            <RotateCcw />
             Reset
           </Button>
           <Button type="button" onClick={applyFilters}>
+            <Check />
             Apply
           </Button>
         </div>
@@ -284,6 +286,7 @@ export function PolicyDecisionLogTable({ domains }: PolicyDecisionLogTableProps)
           disabled={cursorStack.length === 0 || decisions.isFetching}
           onClick={goPrevious}
         >
+          <ChevronLeft />
           Previous
         </Button>
         <div className="text-muted-foreground text-xs">
@@ -295,6 +298,7 @@ export function PolicyDecisionLogTable({ domains }: PolicyDecisionLogTableProps)
           disabled={!decisions.data?.next_cursor || decisions.isFetching}
           onClick={goNext}
         >
+          <ChevronRight />
           Next
         </Button>
       </div>

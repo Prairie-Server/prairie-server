@@ -61,7 +61,7 @@ func TestFetchWatchlistPaginatesDiscoverAPI(t *testing.T) {
 		}
 		gotToken = r.Header.Get("X-Plex-Token")
 		start := r.URL.Query().Get("X-Plex-Container-Start")
-		page := map[string]any{}
+		var page map[string]any
 		if start == "0" {
 			page = map[string]any{"MediaContainer": map[string]any{
 				"totalSize": 2,
@@ -295,9 +295,9 @@ func (p staticWatchlistProvider) Fetch(context.Context) ([]Record, []string, err
 
 func newPlexWatchlistImportTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	ctx := context.Background()
 	config, err := pgxpool.ParseConfig(dsn)

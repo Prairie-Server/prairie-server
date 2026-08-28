@@ -70,7 +70,7 @@ func (h *BrandingHandler) HandleServeAsset(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	data, contentType, ref, err := h.svc.GetAsset(r.Context(), branding.AssetKind(kind))
+	data, contentType, ref, err := h.svc.GetAsset(r.Context(), branding.AssetKind(kind), r.Header.Get("Accept"))
 	switch {
 	case errors.Is(err, branding.ErrAssetNotConfigured):
 		writeError(w, http.StatusNotFound, "not_found", "No custom asset configured")
@@ -84,11 +84,15 @@ func (h *BrandingHandler) HandleServeAsset(w http.ResponseWriter, r *http.Reques
 	}
 
 	etag := `"` + ref + `"`
+	if contentType == "image/avif" {
+		etag = `"` + ref + `;avif"`
+	}
 	// Uploaded assets (e.g. SVG favicons) are admin-controlled but served from
 	// the app origin. Prevent content-type sniffing and neutralize scripts in a
 	// directly-navigated SVG (stored-XSS defense).
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Content-Security-Policy", branding.AssetContentSecurityPolicy)
+	w.Header().Set("Vary", "Accept")
 	if r.Header.Get("If-None-Match") == etag {
 		w.WriteHeader(http.StatusNotModified)
 		return

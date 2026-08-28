@@ -6,9 +6,11 @@ import { Button } from "@/components/ui/button";
 import { AdvancedFields, FolderFields, GeneralFields, MetadataFields } from "./LibraryFormSections";
 import { useLibraryForm } from "./useLibraryForm";
 
+import { Loader2, Save } from "lucide-react";
 export interface LibraryFormProps {
   library: Library | null;
   chapterThumbnailsSupported: boolean;
+  trickplaySupported: boolean;
   onClose?: () => void;
   onSaved?: (library: Library) => void;
   resetAfterCreate?: boolean;
@@ -35,6 +37,7 @@ function FormSection({ title, children }: { title: string; children: ReactNode }
 export function LibraryForm({
   library,
   chapterThumbnailsSupported,
+  trickplaySupported,
   onClose,
   onSaved,
   resetAfterCreate = false,
@@ -60,9 +63,14 @@ export function LibraryForm({
         <MetadataFields form={form} />
       </FormSection>
       <FormSection title="Advanced">
-        <AdvancedFields form={form} chapterThumbnailsSupported={chapterThumbnailsSupported} />
+        <AdvancedFields
+          form={form}
+          chapterThumbnailsSupported={chapterThumbnailsSupported}
+          trickplaySupported={trickplaySupported}
+        />
       </FormSection>
       <Button type="submit" className="w-full" disabled={form.isPending}>
+        {form.isPending ? <Loader2 className="animate-spin" /> : <Save />}
         {form.isPending ? savingLabel : submitLabel}
       </Button>
     </form>

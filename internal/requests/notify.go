@@ -55,7 +55,7 @@ const notifyFulfilledLimit = 100
 // in the catalog. Requests completed by an integration before the library
 // scan imports the files stay pending (fulfilled_notified_at IS NULL) and are
 // re-checked every run until presence confirms — the notification means
-// "watchable in Silo", not "download finished". The delivery insert is
+// "watchable in Prairie", not "download finished". The delivery insert is
 // idempotent (partial unique index per request), so the notify-then-stamp
 // ordering can never double-send: a crash between the two retries into a
 // dedupe no-op.

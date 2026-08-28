@@ -6,9 +6,13 @@ import {
   ExternalLink,
   Hash,
   Link2,
+  Loader2,
   Lock,
   RefreshCw,
+  Save,
   Trash2,
+  Undo2,
+  X,
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
@@ -110,7 +114,7 @@ export function ImportedCollectionEditor({ collection, onClose }: ImportedCollec
   const deleteMutation = useDeleteCollection();
   const deletePosterMutation = useDeleteUserCollectionImage();
   const syncMutation = useSyncUserCollection();
-  const { data: profiles = [] } = useProfiles();
+  const { data: profiles } = useProfiles();
   const { data: libraries = [] } = useUserLibraries();
   const { data: collectionCapabilities } = useCollectionCapabilities();
   const { profile } = useCurrentProfile();
@@ -978,7 +982,7 @@ function SaveDock({
   return (
     <div
       aria-hidden={!visible}
-      className={`pointer-events-none fixed inset-x-0 bottom-5 z-40 flex justify-center px-4 transition-all duration-300 ${
+      className={`bottom-safe-3 pointer-events-none fixed inset-x-0 z-40 flex justify-center px-4 transition-all duration-300 ${
         visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-6 opacity-0"
       }`}
     >
@@ -1000,6 +1004,7 @@ function SaveDock({
           onClick={onCancel}
           disabled={isSaving}
         >
+          <X />
           Cancel
         </Button>
         <Button
@@ -1010,6 +1015,7 @@ function SaveDock({
           onClick={onDiscard}
           disabled={isSaving}
         >
+          <Undo2 />
           Discard
         </Button>
         <Button
@@ -1018,6 +1024,7 @@ function SaveDock({
           className="h-8 px-4 text-xs font-semibold"
           disabled={isSaving || saveBlocked}
         >
+          {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
           {isSaving ? "Saving..." : "Save changes"}
         </Button>
       </div>
@@ -1027,8 +1034,9 @@ function SaveDock({
 
 function arraysEqual<T>(a: T[], b: T[]): boolean {
   if (a.length !== b.length) return false;
-  const sa = [...a].sort();
-  const sb = [...b].sort();
+  const compare = (x: T, y: T) => (x < y ? -1 : x > y ? 1 : 0);
+  const sa = [...a].sort(compare);
+  const sb = [...b].sort(compare);
   for (let i = 0; i < sa.length; i++) {
     if (sa[i] !== sb[i]) return false;
   }

@@ -37,7 +37,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus, RotateCcw } from "lucide-react";
+import { Plus, RotateCcw, X } from "lucide-react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { toast } from "sonner";
 import { buildSectionReorderEntries } from "./adminSectionOrder";
@@ -83,7 +83,7 @@ function LibraryPicker({
       value={value ? String(value) : undefined}
       onValueChange={(next) => onChange(Number(next))}
     >
-      <SelectTrigger className="w-[220px]">
+      <SelectTrigger className="w-full sm:w-[220px]">
         <SelectValue placeholder="Choose library" />
       </SelectTrigger>
       <SelectContent>
@@ -431,6 +431,7 @@ export default function AdminSections() {
                   setResetProfiles(false);
                 }}
               >
+                <X />
                 Cancel
               </Button>
               <Button
@@ -456,6 +457,7 @@ export default function AdminSections() {
                   );
                 }}
               >
+                <RotateCcw />
                 Restore Defaults
               </Button>
             </div>

@@ -28,8 +28,8 @@ func TestLoadConfig(t *testing.T) {
 			wantRatio:   1.0,
 		},
 		{
-			name:        "enabled via SILO_OTEL_ENABLED",
-			env:         map[string]string{"SILO_OTEL_ENABLED": "true"},
+			name:        "enabled via PRAIRIE_OTEL_ENABLED",
+			env:         map[string]string{"PRAIRIE_OTEL_ENABLED": "true"},
 			wantEnabled: true,
 			wantService: "prairie-server",
 			wantProto:   ProtocolGRPC,
@@ -37,7 +37,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			name:        "service name override",
-			env:         map[string]string{"SILO_OTEL_ENABLED": "1", "OTEL_SERVICE_NAME": "custom"},
+			env:         map[string]string{"PRAIRIE_OTEL_ENABLED": "1", "OTEL_SERVICE_NAME": "custom"},
 			wantEnabled: true,
 			wantService: "custom",
 			wantProto:   ProtocolGRPC,
@@ -45,7 +45,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			name:        "http protocol",
-			env:         map[string]string{"SILO_OTEL_ENABLED": "yes", "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf"},
+			env:         map[string]string{"PRAIRIE_OTEL_ENABLED": "yes", "OTEL_EXPORTER_OTLP_PROTOCOL": "http/protobuf"},
 			wantEnabled: true,
 			wantService: "prairie-server",
 			wantProto:   ProtocolHTTP,
@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			name:        "sampler ratio override",
-			env:         map[string]string{"SILO_OTEL_ENABLED": "on", "OTEL_TRACES_SAMPLER_ARG": "0.25"},
+			env:         map[string]string{"PRAIRIE_OTEL_ENABLED": "on", "OTEL_TRACES_SAMPLER_ARG": "0.25"},
 			wantEnabled: true,
 			wantService: "prairie-server",
 			wantProto:   ProtocolGRPC,
@@ -61,7 +61,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			name:        "invalid sampler arg falls back",
-			env:         map[string]string{"SILO_OTEL_ENABLED": "true", "OTEL_TRACES_SAMPLER_ARG": "not-a-number"},
+			env:         map[string]string{"PRAIRIE_OTEL_ENABLED": "true", "OTEL_TRACES_SAMPLER_ARG": "not-a-number"},
 			wantEnabled: true,
 			wantService: "prairie-server",
 			wantProto:   ProtocolGRPC,
@@ -69,7 +69,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			name:        "sampler arg above 1 clamps to 1.0",
-			env:         map[string]string{"SILO_OTEL_ENABLED": "true", "OTEL_TRACES_SAMPLER_ARG": "5"},
+			env:         map[string]string{"PRAIRIE_OTEL_ENABLED": "true", "OTEL_TRACES_SAMPLER_ARG": "5"},
 			wantEnabled: true,
 			wantService: "prairie-server",
 			wantProto:   ProtocolGRPC,
@@ -77,7 +77,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			name:        "sampler arg +Inf falls back",
-			env:         map[string]string{"SILO_OTEL_ENABLED": "true", "OTEL_TRACES_SAMPLER_ARG": "+Inf"},
+			env:         map[string]string{"PRAIRIE_OTEL_ENABLED": "true", "OTEL_TRACES_SAMPLER_ARG": "+Inf"},
 			wantEnabled: true,
 			wantService: "prairie-server",
 			wantProto:   ProtocolGRPC,
@@ -85,7 +85,7 @@ func TestLoadConfig(t *testing.T) {
 		},
 		{
 			name:        "sampler arg negative falls back",
-			env:         map[string]string{"SILO_OTEL_ENABLED": "true", "OTEL_TRACES_SAMPLER_ARG": "-0.5"},
+			env:         map[string]string{"PRAIRIE_OTEL_ENABLED": "true", "OTEL_TRACES_SAMPLER_ARG": "-0.5"},
 			wantEnabled: true,
 			wantService: "prairie-server",
 			wantProto:   ProtocolGRPC,
@@ -97,7 +97,7 @@ func TestLoadConfig(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			// Clear all relevant env, then set the case's values.
 			for _, k := range []string{
-				"SILO_OTEL_ENABLED", "OTEL_EXPORTER_OTLP_ENDPOINT",
+				"PRAIRIE_OTEL_ENABLED", "SILO_OTEL_ENABLED", "OTEL_EXPORTER_OTLP_ENDPOINT",
 				"OTEL_EXPORTER_OTLP_PROTOCOL", "OTEL_SERVICE_NAME",
 				"OTEL_SERVICE_VERSION", "OTEL_TRACES_SAMPLER",
 				"OTEL_TRACES_SAMPLER_ARG",

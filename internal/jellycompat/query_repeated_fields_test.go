@@ -14,6 +14,7 @@ import (
 // MediaSources) later never triggered the detail path and came back without
 // MediaSources. parseItemsQuery must join all repeated values before splitting.
 func TestRepeatedFieldsParamTriggersDetail(t *testing.T) {
+	t.Parallel()
 	url := "/Shows/abc/Episodes?Fields=PrimaryImageAspectRatio&Fields=SeasonUserData" +
 		"&Fields=ChildCount&Fields=Overview&Fields=Trickplay&Fields=SortName" +
 		"&Fields=Chapters&Fields=MediaSources&Fields=MediaSourceCount" +
@@ -41,6 +42,7 @@ func TestRepeatedFieldsParamTriggersDetail(t *testing.T) {
 // TestCommaSeparatedFieldsStillParsed guards the original single-param,
 // comma-separated form (e.g. VidHub: Fields=A,B,C) which must keep working.
 func TestCommaSeparatedFieldsStillParsed(t *testing.T) {
+	t.Parallel()
 	req := httptest.NewRequest("GET", "/Items?Fields=Overview,MediaSources,People", nil)
 	query := parseItemsQuery(req, NewResourceIDCodec())
 

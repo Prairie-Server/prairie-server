@@ -12,6 +12,7 @@ import (
 )
 
 func TestPlaybackSessionStorePutNegotiatedReplacesUnstartedSameDevice(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(0, nil)
 	store.PutNegotiated(PlaybackSession{
 		ID:             "first",
@@ -35,6 +36,7 @@ func TestPlaybackSessionStorePutNegotiatedReplacesUnstartedSameDevice(t *testing
 }
 
 func TestPlaybackSessionStorePutNegotiatedPreservesDistinctOrStartedPlays(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name  string
 		first PlaybackSession
@@ -92,6 +94,7 @@ func TestPlaybackSessionStorePutNegotiatedPreservesDistinctOrStartedPlays(t *tes
 }
 
 func TestHandlePlaybackInfoReplacesDuplicateJellyfinWebNegotiation(t *testing.T) {
+	t.Parallel()
 	handler, routeID := newSubtitleSelectionHandler(t)
 	first := postPlaybackInfoForDevice(t, handler, routeID, "web-device")
 	second := postPlaybackInfoForDevice(t, handler, routeID, "web-device")

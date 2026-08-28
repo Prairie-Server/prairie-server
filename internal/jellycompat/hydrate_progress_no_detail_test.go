@@ -31,6 +31,7 @@ func (s *panicOnGetItemDetailContent) GetItemDetail(_ context.Context, _ *Sessio
 // SenPlayer Continue Watching rows) is served by upgradeProgressPageToDetail,
 // which runs only on the returned page, bounded by the request limit.
 func TestHydrateProgressItems_DoesNotCallGetItemDetail(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 
 	movieID := "movie-1"
@@ -113,6 +114,7 @@ func TestHydrateProgressItems_DoesNotCallGetItemDetail(t *testing.T) {
 // Without those fields, the four arrays remain nil — same as the list path
 // behavior for any other endpoint.
 func TestHydrateProgressItems_NoFieldsLeavesDetailFieldsNil(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	movieID := "movie-1"
 
@@ -154,6 +156,7 @@ func TestHydrateProgressItems_NoFieldsLeavesDetailFieldsNil(t *testing.T) {
 }
 
 func TestHydrateProgressItems_EpisodeIncludesSeasonParentMetadata(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	episodeID := "episode-1"
 	seasonID := "season-1"

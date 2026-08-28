@@ -9,7 +9,7 @@ export function CastSkeleton({ count = 8 }: { count?: number }) {
       <Skeleton className="mb-5 h-6 w-16" />
       <div className="flex gap-3 overflow-hidden">
         {Array.from({ length: count }, (_, i) => (
-          <div key={i} className="w-[110px] shrink-0">
+          <div key={i} className="w-[160px] shrink-0">
             <Skeleton className="mb-2.5 aspect-[2/3] w-full rounded-lg" />
             <Skeleton className="h-3.5 w-[80%]" />
             <Skeleton className="mt-1 h-3 w-[60%]" />
@@ -20,16 +20,17 @@ export function CastSkeleton({ count = 8 }: { count?: number }) {
   );
 }
 
-/** Skeleton for the crew definition list (glass panel with label/value rows) */
-export function CrewSkeleton({ rows = 3 }: { rows?: number }) {
+/** Skeleton for the crew portrait rail (same metrics as cast) */
+export function CrewSkeleton({ count = 6 }: { count?: number }) {
   return (
     <div>
-      <Skeleton className="mb-4 h-6 w-16" />
-      <div className="glass-subtle grid grid-cols-[auto_1fr] gap-x-6 gap-y-3 rounded-xl px-5 py-4">
-        {Array.from({ length: rows }, (_, i) => (
-          <div key={i} className="contents">
-            <Skeleton className="h-4 w-20" />
-            <Skeleton className="h-4 w-48" />
+      <Skeleton className="mb-5 h-6 w-16" />
+      <div className="flex gap-3 overflow-hidden">
+        {Array.from({ length: count }, (_, i) => (
+          <div key={i} className="w-[160px] shrink-0">
+            <Skeleton className="mb-2.5 aspect-[2/3] w-full rounded-lg" />
+            <Skeleton className="h-3.5 w-[80%]" />
+            <Skeleton className="mt-1 h-3 w-[55%]" />
           </div>
         ))}
       </div>

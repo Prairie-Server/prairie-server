@@ -39,7 +39,7 @@ func newCachedInstallationService(installations ...*Installation) (*Service, *co
 
 func TestLoadInstallationCachesAndInvalidatesOnLifecycleChange(t *testing.T) {
 	ctx := context.Background()
-	svc, store := newCachedInstallationService(&Installation{ID: 7, PluginID: "silo.metadb", Enabled: true})
+	svc, store := newCachedInstallationService(&Installation{ID: 7, PluginID: "prairie.metadb", Enabled: true})
 
 	// First read hits the store.
 	if _, err := svc.loadInstallation(ctx, 7, false); err != nil {
@@ -71,7 +71,7 @@ func TestLoadInstallationCachesAndInvalidatesOnLifecycleChange(t *testing.T) {
 
 func TestIsInstallationEnabledReflectsCacheAndInvalidation(t *testing.T) {
 	ctx := context.Background()
-	svc, store := newCachedInstallationService(&Installation{ID: 7, PluginID: "silo.metadb", Enabled: true})
+	svc, store := newCachedInstallationService(&Installation{ID: 7, PluginID: "prairie.metadb", Enabled: true})
 
 	enabled, err := svc.IsInstallationEnabled(ctx, 7)
 	if err != nil {
@@ -122,7 +122,7 @@ func TestIsInstallationEnabledReflectsCacheAndInvalidation(t *testing.T) {
 // instead of serving a resurrected stale row.
 func TestCachedInstallationSkipsWriteOnRacingInvalidation(t *testing.T) {
 	ctx := context.Background()
-	svc, store := newCachedInstallationService(&Installation{ID: 7, PluginID: "silo.metadb", Enabled: true})
+	svc, store := newCachedInstallationService(&Installation{ID: 7, PluginID: "prairie.metadb", Enabled: true})
 
 	// Simulate the race by invalidating the cache from inside the store read,
 	// i.e. between the generation capture and the write-back.
@@ -155,7 +155,7 @@ func TestCachedInstallationSkipsWriteOnRacingInvalidation(t *testing.T) {
 
 func TestLoadInstallationRequireEnabledGateAppliesAfterCache(t *testing.T) {
 	ctx := context.Background()
-	svc, store := newCachedInstallationService(&Installation{ID: 7, PluginID: "silo.metadb", Enabled: false})
+	svc, store := newCachedInstallationService(&Installation{ID: 7, PluginID: "prairie.metadb", Enabled: false})
 
 	// requireEnabled=false caches the disabled row.
 	if _, err := svc.loadInstallation(ctx, 7, false); err != nil {

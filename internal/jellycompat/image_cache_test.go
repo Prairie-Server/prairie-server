@@ -6,6 +6,7 @@ import (
 )
 
 func TestImageCacheLookupSizedUsesSizeBucket(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	cache := NewImageCache(time.Hour, func() time.Time { return now })
 
@@ -22,6 +23,7 @@ func TestImageCacheLookupSizedUsesSizeBucket(t *testing.T) {
 }
 
 func TestImageCacheLookupSizedUsesTagWithinMatchingSizeBucket(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	cache := NewImageCache(time.Hour, func() time.Time { return now })
 
@@ -43,6 +45,7 @@ func TestImageCacheLookupSizedUsesTagWithinMatchingSizeBucket(t *testing.T) {
 // compatCardImageSize, but Jellyfin-web requests them at "medium" / "original"
 // using the same tag — the lookup must succeed.
 func TestImageCacheLookupSizedReturnsHTTPPassthroughAcrossSizes(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	cache := NewImageCache(time.Hour, func() time.Time { return now })
 
@@ -58,6 +61,7 @@ func TestImageCacheLookupSizedReturnsHTTPPassthroughAcrossSizes(t *testing.T) {
 }
 
 func TestImageCacheRememberSizedUntilCapsRouteExpiry(t *testing.T) {
+	t.Parallel()
 	now := fixedNow()
 	cache := NewImageCache(time.Hour, func() time.Time { return now })
 	urlExpiresAt := now.Add(10 * time.Minute)

@@ -1,85 +1,27 @@
-# Silo Trademark & Brand Policy
+# Prairie Trademark & Fork Notice
 
-Silo's source code is free and open source under the **GNU Affero General Public
-License v3.0 or later** (`AGPL-3.0-or-later`). You are welcome to use, study,
-modify, and redistribute it under those terms.
+Prairie's source code is free software under the **GNU Affero General Public License v3.0 or later** (`AGPL-3.0-or-later`). You may use, study, modify, and redistribute the code under those terms.
 
-**That freedom applies to the code — not to the Silo name and brand.** The Silo
-trademarks identify the official project and its official builds. This policy
-explains how they may and may not be used. It exists for a simple reason:
-anyone should be free to fork the software, while users can still trust that
-something called "Silo" actually comes from us.
+Prairie is a fork of Silo. The Silo name, logo, wordmark, and related product marks remain trademarks of their owners and are not used as Prairie's identity. References such as "fork of Silo" or "compatible with Silo" are factual attribution only.
 
-## Marks covered
+## Prairie marks
 
-The following are trademarks of **Silo Media L.L.C.** ("Silo Media"), whether or
-not registered:
+The Prairie name, logo, wordmark, and other Prairie brand assets identify this fork and its builds. The AGPL license over the source code does not grant trademark rights to use Prairie branding for unrelated or modified distributions in a way that implies official endorsement.
 
-- the names **Silo** and **Silo Server**
-- the **Silo logo** and **wordmark**
-- Silo **product and component names**, including **SiloRemote**, **SiloMac**,
-  and other "Silo…" names
-- confusingly similar variations of the above
+## Forks and redistributions
 
-The AGPL license over the source code **does not grant any license to these
-marks.** This reservation is expressly permitted by AGPL-3.0 §7(e).
+If you distribute a modified version of Prairie, choose your own name and branding unless you have written permission to use Prairie marks. You may state factually that your project is based on Prairie, and because Prairie is itself a fork, you may also preserve factual attribution to Silo where relevant.
 
-## Uses that are always fine — no permission needed
+## Brand assets
 
-- **Referring to Silo truthfully** — "compatible with Silo," "a plugin for
-  Silo," "built on Silo," "a fork of Silo." Use the word to refer to *our*
-  project, not to brand *yours*.
-- **Redistributing official, unmodified builds** under the Silo name, with all
-  notices kept intact.
-- **Running, modifying, and self-hosting** Silo for yourself or your
-  organization.
-- **Editorial and educational** use — articles, tutorials, talks, reviews.
+Prairie brand assets replace the Silo brand assets in this repository. Do not restore Silo logos or wordmarks as Prairie's product identity.
 
-## Uses that require our written permission
+## Official source
 
-- Distributing a **modified version under the Silo name** (see *Forks* below).
-- **Publishing an app to any app store** — Apple App Store, Google Play,
-  F-Droid, or similar — under the Silo name, logo, or a confusingly similar
-  identity.
-- Using the marks in a **company, product, domain, or app name**, or in any way
-  that implies Silo Media operates or endorses your offering.
-- **Merchandise** or other commercial use of the logo or wordmark.
+The canonical Prairie Server source for this rebrand is:
 
-## Forks must rebrand
+- <https://github.com/prairie-server/prairie-server>
 
-You may fork Silo — that is your right under the AGPL. But a **distributed** fork
-must not use the Silo name or logo as its identity. Pick your own name and logo,
-remove the Silo brand assets (below), and you may state factually that your
-project "is based on Silo" or "is a fork of Silo." This is the same model used by
-Mozilla, Rust, and many other open-source projects: **open code, protected
-identity.**
+## License reminder
 
-## Brand assets are not under the AGPL
-
-The Silo logo, wordmark, and icon files are **© 2026 Silo Media L.L.C., all
-rights reserved**, and are **not** licensed under the AGPL or any other
-open-source license. Any redistribution or fork must **remove or replace** them.
-See the `NOTICE` file in the brand-asset directories.
-
-## Official sources
-
-The only official Silo software comes from:
-
-- the **Silo-Server** organization on GitHub — <https://github.com/Silo-Server>
-- the official website — <https://siloserver.org>
-- official app-store listings published by **Silo Media L.L.C.**
-
-Any app-store listing, download, or "Silo" app that does not originate from the
-above is **not** official and is **not** authorized to use the Silo marks.
-
-## Requesting permission / reporting misuse
-
-Email **trademark@siloserver.org** with the details. We're generally glad to
-grant reasonable requests — the goal of this policy is only to prevent user
-confusion and unauthorized "official-looking" releases.
-
----
-
-*Silo and the Silo logo are trademarks of Silo Media L.L.C. The **™** symbol is
-used with the Silo wordmark until federal registration issues, after which **®**
-applies.*
+This policy does not change the AGPL license for the code. It only describes project identity and trademark expectations.

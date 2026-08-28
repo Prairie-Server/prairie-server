@@ -15,7 +15,7 @@ import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { downloadAdminSubtitle } from "@/hooks/queries/admin/subtitles";
 import { getLanguageName } from "@/player/utils/languageNames";
 import { cn } from "@/lib/utils";
-import { Download, Ear, Loader2, Pencil, Trash2 } from "lucide-react";
+import { Download, Ear, Loader2, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import AdminSubtitleEditSheet from "./AdminSubtitleEditSheet";
 import {
@@ -81,6 +81,7 @@ export default function AdminSubtitlesTable({
         </p>
         {hasActiveFilters && (
           <Button type="button" variant="outline" className="mt-5" onClick={onResetFilters}>
+            <RotateCcw />
             Reset filters
           </Button>
         )}

@@ -21,9 +21,9 @@ import (
 
 func pluginBuiltinTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
@@ -47,7 +47,7 @@ func seedHandlerBuiltinInstallation(t *testing.T, pool *pgxpool.Pool) int {
 	pluginID := fmt.Sprintf("test.builtin.handler-%d", time.Now().UnixNano())
 	err := pool.QueryRow(context.Background(),
 		`INSERT INTO plugin_installations (plugin_id, version, install_path, enabled, update_policy, kind)
-		 VALUES ($1, '0', '/nonexistent/silo-builtin-test', true, 'manual', 'builtin')
+		 VALUES ($1, '0', '/nonexistent/prairie-builtin-test', true, 'manual', 'builtin')
 		 RETURNING id`, pluginID).Scan(&id)
 	if err != nil {
 		t.Fatalf("seed builtin installation: %v", err)

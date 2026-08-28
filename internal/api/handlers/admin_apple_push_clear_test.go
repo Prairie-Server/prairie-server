@@ -11,7 +11,7 @@ import (
 func TestAdminApplePushHandlerClearsRelayCredentialAtomically(t *testing.T) {
 	fixture := "clawrouter-e2e-secret"
 	settings := &fakeServerSettingsStore{values: map[string]string{
-		notifications.SettingPushRelayURL:          "https://push.siloserver.org",
+		notifications.SettingPushRelayURL:          "https://push.prairie-server.org",
 		notifications.SettingPushRelayDeploymentID: "deployment-existing",
 		notifications.SettingPushRelayAPIKey:       fixture,
 		notifications.SettingPushRelayKeyPrefix:    "cap_v1_existing",

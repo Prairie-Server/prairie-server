@@ -60,7 +60,7 @@ func (r *collectionArtworkS3Recorder) putPaths() []string {
 }
 
 func TestStoreBundledCollectionPosterIfS3Configured_NoS3KeepsPath(t *testing.T) {
-	path := "/images/collection-templates/template.jpg"
+	path := "/images/collection-templates/template.webp"
 	gotPath, gotThumbhash, stored, err := storeBundledCollectionPosterIfS3Configured(
 		context.Background(),
 		nil,
@@ -115,7 +115,7 @@ func TestStoreBundledCollectionPosterIfS3Configured_IgnoresNonTemplatePath(t *te
 func TestStoreBundledCollectionPosterIfS3Configured_UploadsTemplatePoster(t *testing.T) {
 	recorder := newCollectionArtworkS3Recorder(t)
 	frontendFS := fstest.MapFS{
-		"images/collection-templates/template.jpg": {
+		"images/collection-templates/template.webp": {
 			Data: testCollectionPosterJPEG(t),
 		},
 	}
@@ -126,7 +126,7 @@ func TestStoreBundledCollectionPosterIfS3Configured_UploadsTemplatePoster(t *tes
 		frontendFS,
 		"collection-1",
 		adminCollectionImagePrefix,
-		"/images/collection-templates/template.jpg",
+		"/images/collection-templates/template.webp",
 	)
 	if err != nil {
 		t.Fatalf("storeBundledCollectionPosterIfS3Configured: %v", err)
@@ -145,6 +145,7 @@ func TestStoreBundledCollectionPosterIfS3Configured_UploadsTemplatePoster(t *tes
 		"/public-assets/collection-images/collection-1/poster/original.webp": true,
 		"/public-assets/collection-images/collection-1/poster/w500.webp":     true,
 		"/public-assets/collection-images/collection-1/poster/w300.webp":     true,
+		"/public-assets/collection-images/collection-1/poster/w200.webp":     true,
 	}
 	puts := recorder.putPaths()
 	if len(puts) != len(want) {

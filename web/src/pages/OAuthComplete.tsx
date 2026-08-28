@@ -39,7 +39,7 @@ export default function OAuthComplete() {
     window.history.replaceState(null, "", window.location.pathname);
 
     let cancelled = false;
-    (async () => {
+    void (async () => {
       try {
         const tokens = await completeOAuthCode(code);
         if (cancelled) return;
@@ -54,7 +54,7 @@ export default function OAuthComplete() {
           expires_in: tokens.expires_in,
           user,
         });
-        navigate(next, { replace: true });
+        void navigate(next, { replace: true });
       } catch (err) {
         if (!cancelled) {
           setAccessToken(null);

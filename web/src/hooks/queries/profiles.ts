@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
 import type { AdminSession, Profile, CreateProfileRequest, ProfileListResponse } from "@/api/types";
+import { useOptionalAuth } from "@/hooks/useAuth";
 import { profileKeys } from "./keys";
 import { toast } from "sonner";
 
@@ -36,9 +37,13 @@ export function useHouseholdSessions(enabled = true) {
 }
 
 export function useProfiles() {
+  // Global chrome (realtime/admin hooks) mounts on /setup and /login too.
+  // Skip until there is a signed-in user so first-launch does not 401.
+  const user = useOptionalAuth()?.user;
   const query = useQuery({
     queryKey: profileKeys.list(),
     queryFn: () => api<ProfileListResponse>("/profiles"),
+    enabled: Boolean(user),
   });
 
   return {
@@ -58,7 +63,7 @@ export function useCreateProfile() {
       }),
     onSuccess: () => {
       toast.success("Profile created");
-      queryClient.invalidateQueries({ queryKey: profileKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: profileKeys.list() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to save profile");
@@ -83,7 +88,7 @@ export function useUpdateProfile() {
         };
       });
       toast.success("Profile updated");
-      queryClient.invalidateQueries({ queryKey: profileKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: profileKeys.list() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to save profile");
@@ -108,7 +113,7 @@ export function useUploadProfileAvatar() {
         avatar_upload_enabled: current?.avatar_upload_enabled ?? false,
       }));
       toast.success("Avatar updated");
-      queryClient.invalidateQueries({ queryKey: profileKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: profileKeys.list() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to upload avatar");
@@ -129,7 +134,7 @@ export function useDeleteProfileAvatar() {
         avatar_upload_enabled: current?.avatar_upload_enabled ?? false,
       }));
       toast.success("Avatar removed");
-      queryClient.invalidateQueries({ queryKey: profileKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: profileKeys.list() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to remove avatar");
@@ -143,7 +148,7 @@ export function useDeleteProfile() {
     mutationFn: (id: string) => api(`/profiles/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Profile deleted");
-      queryClient.invalidateQueries({ queryKey: profileKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: profileKeys.list() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to delete");

@@ -17,14 +17,14 @@ func TestServiceInstallLocalReplacesExistingInstallation(t *testing.T) {
 		t.Fatalf("WriteFile(%q) returned error: %v", oldPath, err)
 	}
 
-	archivePath := filepath.Join(t.TempDir(), "silo-metadb.zip")
-	manifest := testPluginManifest(t, "silo.metadb", "0.0.36")
+	archivePath := filepath.Join(t.TempDir(), "prairie-metadb.zip")
+	manifest := testPluginManifest(t, "prairie.metadb", "0.0.36")
 	writePluginArchive(t, archivePath, manifest)
 
 	events := []string{}
 	store := newFakeServiceInstallationStore(&Installation{
 		ID:          7,
-		PluginID:    "silo.metadb",
+		PluginID:    "prairie.metadb",
 		Version:     "0.0.34",
 		InstallPath: oldPath,
 		Enabled:     true,

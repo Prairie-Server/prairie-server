@@ -3,7 +3,6 @@ package taskmanager_test
 import (
 	"context"
 	"errors"
-	"io"
 	"log/slog"
 	"reflect"
 	"sync"
@@ -78,9 +77,12 @@ func (r *recordingExecutionRepository) insertCount() int {
 	return len(r.inserts)
 }
 
+// next is written by the manager's trigger loop (re-arming) while the test body
+// reads it, so it is mutex-guarded like the real triggers are.
 type fakeTrigger struct {
 	cfg    taskmanager.TriggerConfig
 	ch     chan struct{}
+	mu     sync.Mutex
 	next   time.Time
 	stopCh chan struct{}
 }
@@ -94,7 +96,9 @@ func (t *fakeTrigger) Start(lastResult *taskmanager.ExecutionResult) {
 	if lastResult != nil && !lastResult.CompletedAt.IsZero() {
 		base = lastResult.CompletedAt
 	}
+	t.mu.Lock()
 	t.next = base.Add(interval)
+	t.mu.Unlock()
 }
 
 func (t *fakeTrigger) Stop() {
@@ -107,7 +111,12 @@ func (t *fakeTrigger) Stop() {
 	}
 }
 
-func (t *fakeTrigger) NextRunTime() time.Time            { return t.next }
+func (t *fakeTrigger) NextRunTime() time.Time {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	return t.next
+}
+
 func (t *fakeTrigger) Config() taskmanager.TriggerConfig { return t.cfg }
 func (t *fakeTrigger) C() <-chan struct{}                { return t.ch }
 
@@ -416,9 +425,9 @@ func TestTaskManagerTriggerSkipsConditionalTaskWithoutHistory(t *testing.T) {
 	if got := historyRepo.insertCount(); got != 0 {
 		t.Fatalf("history inserts = %d, want 0", got)
 	}
-	if !triggers[0].next.After(beforeTrigger) {
+	if !triggers[0].NextRunTime().After(beforeTrigger) {
 		t.Fatalf("next run = %s, want rearmed after skip time %s",
-			triggers[0].next.Format(time.RFC3339Nano),
+			triggers[0].NextRunTime().Format(time.RFC3339Nano),
 			beforeTrigger.Format(time.RFC3339Nano))
 	}
 }
@@ -449,7 +458,7 @@ func TestTaskManagerTriggerSkipsConditionalTaskOnPreflightError(t *testing.T) {
 		triggerRepo,
 		historyRepo,
 		factory,
-		slog.New(slog.NewTextHandler(io.Discard, nil)),
+		slog.New(slog.DiscardHandler),
 	)
 	task := &conditionalStubTask{
 		stubTask:        stubTask{key: "conditional"},
@@ -479,8 +488,8 @@ func TestTaskManagerTriggerSkipsConditionalTaskOnPreflightError(t *testing.T) {
 	if got := task.executeCount(); got != 0 {
 		t.Fatalf("Execute calls = %d, want 0 (preflight errors must fail closed)", got)
 	}
-	if !triggers[0].next.After(beforeTrigger) {
+	if !triggers[0].NextRunTime().After(beforeTrigger) {
 		t.Fatalf("next run = %s, want rearmed after skipped preflight error",
-			triggers[0].next.Format(time.RFC3339Nano))
+			triggers[0].NextRunTime().Format(time.RFC3339Nano))
 	}
 }

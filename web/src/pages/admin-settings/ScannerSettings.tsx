@@ -5,7 +5,18 @@ import { SaveBar } from "./SaveBar";
 import { FieldGroup } from "./FieldGroup";
 import { Skeleton } from "@/components/ui/skeleton";
 
-const KEYS = ["scanner.workers", "matcher.workers", "matcher.batch_size", "metadata.cache_images"];
+const KEYS = [
+  "scanner.workers",
+  "matcher.workers",
+  "matcher.batch_size",
+  "metadata.cache_images",
+  "metadata.artwork_encode_workers",
+  "metadata.pause_artwork_during_playback",
+  "metadata.avif_backfill_workers",
+  "metadata.avif_encoder",
+  "metadata.avif_ffmpeg_path",
+  "metadata.avif_nvenc_sessions",
+];
 
 export default function ScannerSettings() {
   const form = useSettingsForm({ keys: useMemo(() => KEYS, []) });
@@ -66,11 +77,59 @@ export default function ScannerSettings() {
 
         <FieldGroup label="Metadata">
           <SettingField
-            label="Cache Images to S3"
+            label="Cache Artwork"
             type="toggle"
-            hint="Download artwork from metadata providers and store resized variants in public asset S3 storage. Private bucket + presigned URLs is fully supported."
+            hint="Download artwork from metadata providers and store resized WebP/AVIF/PNG variants. Uses public S3 when configured; otherwise stores on the local artwork volume."
             value={form.getValue("metadata.cache_images")}
             onChange={(v) => form.setValue("metadata.cache_images", v)}
+          />
+          <SettingField
+            label="Artwork Encode Workers"
+            type="number"
+            hint="Total in-flight artwork encodes (WebP cache + AVIF backfill share this budget). 0 = auto: a quarter of the CPU cores, at most 4, so playback transcodes keep headroom."
+            value={form.getValue("metadata.artwork_encode_workers")}
+            onChange={(v) => form.setValue("metadata.artwork_encode_workers", v)}
+          />
+          <SettingField
+            label="Pause Artwork During Playback"
+            type="toggle"
+            hint="Stop the AVIF backfill and throttle artwork caching to one encode while any playback or transcode session is active. Queued work resumes when streaming ends."
+            value={form.getValue("metadata.pause_artwork_during_playback")}
+            onChange={(v) => form.setValue("metadata.pause_artwork_during_playback", v)}
+          />
+          <SettingField
+            label="AVIF Backfill Workers"
+            type="number"
+            hint="Concurrent AVIF encodes for deferred sibling backfill. 0 = auto (the shared artwork encode budget, or the NVENC session cap for nvenc)."
+            value={form.getValue("metadata.avif_backfill_workers")}
+            onChange={(v) => form.setValue("metadata.avif_backfill_workers", v)}
+          />
+          <SettingField
+            label="AVIF Encoder"
+            type="select"
+            hint="Still-image AVIF backend. auto picks NVENC (Ada+ AV1) when available, else native SVT-AV1 via ffmpeg, else legacy WASM rav1e. Native SVT requires the debian ffmpeg package (libsvtav1)."
+            value={form.getValue("metadata.avif_encoder")}
+            onChange={(v) => form.setValue("metadata.avif_encoder", v)}
+            options={[
+              { value: "auto", label: "Auto (recommended)" },
+              { value: "svt", label: "SVT-AV1 (CPU)" },
+              { value: "nvenc", label: "NVENC AV1 (GPU, fallback to SVT)" },
+              { value: "wasm", label: "WASM rav1e (legacy)" },
+            ]}
+          />
+          <SettingField
+            label="AVIF FFmpeg Path"
+            type="text"
+            hint="ffmpeg binary for SVT/NVENC still encodes (must include libsvtav1 + avif muxer). Defaults to ffmpeg on PATH — not jellyfin-ffmpeg."
+            value={form.getValue("metadata.avif_ffmpeg_path")}
+            onChange={(v) => form.setValue("metadata.avif_ffmpeg_path", v)}
+          />
+          <SettingField
+            label="AVIF NVENC Sessions"
+            type="number"
+            hint="Max concurrent NVENC still encodes when the nvenc backend is active. 0 = 3. Tiny display widths still fall back to SVT."
+            value={form.getValue("metadata.avif_nvenc_sessions")}
+            onChange={(v) => form.setValue("metadata.avif_nvenc_sessions", v)}
           />
         </FieldGroup>
       </div>

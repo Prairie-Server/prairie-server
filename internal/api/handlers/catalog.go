@@ -17,28 +17,10 @@ import (
 	"github.com/prairie-server/prairie-server/internal/sections"
 )
 
-// audiobookGroupsCacheTTL matches the client's React Query staleTime: the
-// grouped author/narrator browse is cached server-side for the same window so
-// the sequential page fetches and a quick refresh reuse one aggregation.
-const audiobookGroupsCacheTTL = 60 * time.Second
-
 type CatalogHandler struct {
 	resolver    *catalog.CatalogResolver
 	itemsH      *ItemsHandler
 	workSummary catalog.WorkSummaryProvider
-
-	groupsCacheOnce sync.Once
-	groupsCache     *catalog.AudiobookGroupsCache
-}
-
-// audiobookGroups returns the lazily-initialized grouped-browse cache. Built on
-// first use (only the route-mounted singleton handler serves audiobook-groups)
-// so the per-request CatalogHandler instances never spawn a cache sweeper.
-func (h *CatalogHandler) audiobookGroups() *catalog.AudiobookGroupsCache {
-	h.groupsCacheOnce.Do(func() {
-		h.groupsCache = catalog.NewAudiobookGroupsCache(h.itemsH.browseRepo.Pool(), audiobookGroupsCacheTTL)
-	})
-	return h.groupsCache
 }
 
 func NewCatalogHandler(resolver *catalog.CatalogResolver, itemsH *ItemsHandler) *CatalogHandler {
@@ -248,8 +230,12 @@ func (h *CatalogHandler) catalogItemResponses(r *http.Request, resultItems []*mo
 		if meta, ok := episodeMetadata[item.ContentID]; ok {
 			applyEpisodeBrowseMetadata(&resp, meta)
 		}
-		resp.PosterURL = imageURLs[item.ContentID].posterURL
-		resp.BackdropURL = imageURLs[item.ContentID].backdropURL
+		resp.PosterURL = imageURLs[item.ContentID].poster.URL
+		resp.PosterAVIFURL = imageURLs[item.ContentID].poster.AVIFURL
+		resp.PosterPNGURL = imageURLs[item.ContentID].poster.PNGURL
+		resp.BackdropURL = imageURLs[item.ContentID].backdrop.URL
+		resp.BackdropAVIFURL = imageURLs[item.ContentID].backdrop.AVIFURL
+		resp.BackdropPNGURL = imageURLs[item.ContentID].backdrop.PNGURL
 		resp.SortMetrics = sortMetrics[item.ContentID]
 		items = append(items, resp)
 	}
@@ -451,7 +437,7 @@ func groupedCatalogEntryKey(item *models.MediaItem, summary *catalog.WorkSummary
 }
 
 func catalogItemCanGroupByWork(item *models.MediaItem) bool {
-	return item != nil && (item.Type == "ebook" || item.Type == "audiobook")
+	return item != nil && (item.Type == itemTypeEbook || item.Type == "audiobook")
 }
 
 func applyWorkSummaryToCatalogItem(item *itemListResponse, summary *catalog.WorkSummary) {

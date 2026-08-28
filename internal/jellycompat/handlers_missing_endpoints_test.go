@@ -13,6 +13,7 @@ import (
 // TestHandleFilters2Stub verifies /Items/Filters2 returns 200 with Jellyfin's
 // v2 QueryFilters shape (every field an array, never null).
 func TestHandleFilters2Stub(t *testing.T) {
+	t.Parallel()
 	h := &ItemsHandler{}
 	req := httptest.NewRequest(http.MethodGet, "/Items/Filters2?IncludeItemTypes=Movie&Recursive=true", nil)
 	rec := httptest.NewRecorder()
@@ -42,6 +43,7 @@ func TestHandleFilters2Stub(t *testing.T) {
 // the {Items,...} envelope) for an authenticated request, and 401 without a
 // session.
 func TestHandleLocalTrailers(t *testing.T) {
+	t.Parallel()
 	h := &ItemsHandler{}
 
 	t.Run("authenticated returns empty array", func(t *testing.T) {
@@ -75,6 +77,7 @@ func TestHandleLocalTrailers(t *testing.T) {
 // answers 200 with a FileName (Jellyfin's contract), and rejects oversized
 // uploads with 413.
 func TestHandleClientLogDocument(t *testing.T) {
+	t.Parallel()
 	t.Run("accepts and returns FileName", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/ClientLog/Document",
 			bytes.NewBufferString("type: crash_report\nclient: test\n"))
@@ -110,6 +113,7 @@ func TestHandleClientLogDocument(t *testing.T) {
 // TestHandleSessions verifies GET /Sessions returns a 200 JSON array (not the
 // chi 404 that broke client session polling).
 func TestHandleSessions(t *testing.T) {
+	t.Parallel()
 	req := httptest.NewRequest(http.MethodGet, "/Sessions?deviceId=abc123", nil)
 	rec := httptest.NewRecorder()
 
@@ -132,6 +136,7 @@ func TestHandleSessions(t *testing.T) {
 // same deterministic palette avatar as the legacy path form — not the empty-id
 // avatar every caller would otherwise share.
 func TestHandleUserImageQueryFallback(t *testing.T) {
+	t.Parallel()
 	h := &ImagesHandler{}
 	const userID = "45def085-5dd8-5ad7-b972-9c7a499fa846"
 

@@ -155,7 +155,7 @@ func listeningSessionsEnvelope(sessions []map[string]any, total, itemsPerPage, p
 		numPages = (total + itemsPerPage - 1) / itemsPerPage
 	}
 	return map[string]any{
-		"total":        total,
+		jsonKeyTotal:   total,
 		"numPages":     numPages,
 		"page":         page,
 		"itemsPerPage": itemsPerPage,
@@ -167,13 +167,13 @@ func listeningSessionsEnvelope(sessions []map[string]any, total, itemsPerPage, p
 // of PlaybackSession.toJSON() upstream (server/objects/PlaybackSession.js).
 // item may be nil (deleted item, access revoked, lookup error) — in that
 // case a stub MediaItem is fed through the same mediaMetadata builder the
-// /play endpoint uses (buildSiloPlayMediaMetadata), so every key is still
+// /play endpoint uses (buildPrairiePlayMediaMetadata), so every key is still
 // present with empty/zero values rather than being omitted.
 func sessionToABS(s ABSPlaybackSession, item *models.MediaItem, baseURL string) map[string]any {
 	if item == nil {
 		item = &models.MediaItem{ContentID: s.ContentID}
 	}
-	mediaMetadata := buildSiloPlayMediaMetadata(item)
+	mediaMetadata := buildPrairiePlayMediaMetadata(item)
 
 	displayAuthor := ""
 	if v, ok := mediaMetadata["authorName"].(string); ok {

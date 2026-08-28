@@ -2,6 +2,7 @@ package collage
 
 import (
 	"bytes"
+	"errors"
 	"image"
 	"image/color"
 	"image/jpeg"
@@ -27,14 +28,14 @@ func makeTestImage(t *testing.T, w, h int, c color.NRGBA) []byte {
 
 func TestComposePoster_NoImages(t *testing.T) {
 	_, err := ComposePoster(nil)
-	if err != ErrNotEnoughImages {
+	if !errors.Is(err, ErrNotEnoughImages) {
 		t.Fatalf("expected ErrNotEnoughImages, got %v", err)
 	}
 }
 
 func TestComposePoster_AllInvalid(t *testing.T) {
 	_, err := ComposePoster([][]byte{{0, 1, 2}, {3, 4, 5}})
-	if err != ErrNotEnoughImages {
+	if !errors.Is(err, ErrNotEnoughImages) {
 		t.Fatalf("expected ErrNotEnoughImages, got %v", err)
 	}
 }

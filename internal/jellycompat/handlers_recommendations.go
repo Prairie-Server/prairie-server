@@ -20,7 +20,7 @@ type recommendationDTO struct {
 }
 
 // RecommendationsHandler serves the Jellyfin Movies/Recommendations endpoint
-// using the Silo recommendation engine.
+// using the Prairie recommendation engine.
 type RecommendationsHandler struct {
 	recommender  recommendations.Recommender
 	itemRepo     *catalog.ItemRepository

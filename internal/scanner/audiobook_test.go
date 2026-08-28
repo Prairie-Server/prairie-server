@@ -329,8 +329,8 @@ func TestParseAudiobookFolderMultiFile(t *testing.T) {
 func TestApplyAudiobookFilesystemFallbacksUsesFolderNameWhenTagsAreBlank(t *testing.T) {
 	book := &parsedAudiobook{}
 	book.applyFilesystemFallbacks(
-		"/library/Calibre_Audio_Library/Dean Koontz/Devoted (2799)",
-		[]string{"/library/Calibre_Audio_Library/Dean Koontz/Devoted (2799)/Devoted - Dean Koontz.mp3"},
+		"/library/Caliber_Audio_Library/Dean Koontz/Devoted (2799)",
+		[]string{"/library/Caliber_Audio_Library/Dean Koontz/Devoted (2799)/Devoted - Dean Koontz.mp3"},
 	)
 	if book.Title != "Devoted" {
 		t.Fatalf("Title = %q, want Devoted", book.Title)

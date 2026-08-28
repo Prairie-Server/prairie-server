@@ -121,6 +121,10 @@ export default function DatabaseSettings() {
                 isPending={checkConnection.isPending}
                 disabled={form.isSaving || redisManagedByEnv}
               />
+              <p className="text-muted-foreground text-xs leading-relaxed">
+                Saving a Redis URL requires a reachable server. Unreachable URLs are rejected so a
+                failed check cannot brick startup after restart.
+              </p>
             </>
           )}
         </FieldGroup>

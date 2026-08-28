@@ -488,8 +488,8 @@ func checkS3ObjectPermissions(
 	client s3SettingsCheckClient,
 	bucket string,
 ) (resultErr error) {
-	key := fmt.Sprintf(".silo-admin-connection-check/%d", time.Now().UnixNano())
-	payload := []byte("silo-storage-check")
+	key := fmt.Sprintf(".prairie-admin-connection-check/%d", time.Now().UnixNano())
+	payload := []byte("prairie-storage-check")
 	deleted := false
 	defer func() {
 		if deleted {
@@ -529,32 +529,36 @@ func checkRedisConnection(ctx context.Context, cfg *config.Config) connectionChe
 	if strings.TrimSpace(cfg.Redis.URL) == "" {
 		return connectionCheckResponse{Success: false, Message: "Redis URL is required."}
 	}
-
-	client, err := newAdminRedisSettingsCheckClient(cfg.Redis)
-	if err != nil {
+	if err := probeRedisConfig(ctx, cfg.Redis); err != nil {
 		return connectionCheckResponse{
 			Success: false,
 			Message: fmt.Sprintf("Redis connection check failed: %v", err),
 		}
 	}
-	if client == nil {
-		return connectionCheckResponse{Success: false, Message: "Redis URL is required."}
-	}
-	defer client.Close()
-
-	checkCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
-	defer cancel()
-	if err := client.Ping(checkCtx); err != nil {
-		return connectionCheckResponse{
-			Success: false,
-			Message: fmt.Sprintf("Redis connection check failed: %v", err),
-		}
-	}
-
 	return connectionCheckResponse{
 		Success: true,
 		Message: "Redis connection successful.",
 	}
+}
+
+// probeRedisConfig pings Redis so unreachable URLs cannot be persisted and later
+// brick startup under a process supervisor.
+func probeRedisConfig(ctx context.Context, redisCfg config.RedisConfig) error {
+	if strings.TrimSpace(redisCfg.URL) == "" && redisCfg.SentinelMaster == "" {
+		return errors.New("redis URL is required")
+	}
+	client, err := newAdminRedisSettingsCheckClient(redisCfg)
+	if err != nil {
+		return err
+	}
+	if client == nil {
+		return errors.New("redis URL is required")
+	}
+	defer func() { _ = client.Close() }()
+
+	checkCtx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	return client.Ping(checkCtx)
 }
 
 func checkRecommendationsEmbeddingConnection(
@@ -582,7 +586,7 @@ func checkRecommendationsEmbeddingConnection(
 
 	checkCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
 	defer cancel()
-	if _, err := client.Embed(checkCtx, []string{"silo connection test"}); err != nil {
+	if _, err := client.Embed(checkCtx, []string{"prairie connection test"}); err != nil {
 		return connectionCheckResponse{
 			Success: false,
 			Message: fmt.Sprintf("Embedding connection check failed: %v", err),

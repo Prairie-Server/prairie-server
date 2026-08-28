@@ -96,9 +96,9 @@ func TestProbeUnreachableRoots(t *testing.T) {
 
 func newDeadRootTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("SILO_TEST_DATABASE_URL is not set")
+		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
 	pool, err := pgxpool.New(context.Background(), dsn)
 	if err != nil {
@@ -1111,7 +1111,7 @@ func TestScanFolderFlappingRootNeverHidesPresentFiles(t *testing.T) {
 
 // TestScanFolderFirstScanAfterMountDropsProtectsLiveRows covers Codex review
 // finding #2 on PR #472: suspect-empty detection used to require a root whose
-// rows were ALL already missing, which meant it could only recognise a lost
+// rows were ALL already missing, which meant it could only recognize a lost
 // mount one scan too late.
 //
 // Here the mount drops leaving a reachable but empty mountpoint, and the rows
@@ -1398,7 +1398,7 @@ func TestReprobeNestedRootsCatchesMidScanChildDrop(t *testing.T) {
 // walk, which is not reachable from a test without hooks. The fix for that
 // path (carrying reprobedRoots into protectedScanRoots) is therefore covered
 // by inspection, not by this test; what this test does pin is that the sweep
-// honours the protected set it is given.
+// honors the protected set it is given.
 //
 // Trash emptying is on with a zero grace, so any row left unprotected is
 // deleted immediately rather than merely hidden.

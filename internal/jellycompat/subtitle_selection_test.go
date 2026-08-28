@@ -49,6 +49,7 @@ func subtitleSelectionVersion() catalog.FileVersion {
 }
 
 func TestPlaybackInfoRequest_AcceptsStringSubtitleStreamIndex(t *testing.T) {
+	t.Parallel()
 	var req playbackInfoRequest
 	if err := json.Unmarshal([]byte(`{"SubtitleStreamIndex":"3"}`), &req); err != nil {
 		t.Fatalf("unmarshal playback request: %v", err)
@@ -62,6 +63,7 @@ func TestPlaybackInfoRequest_AcceptsStringSubtitleStreamIndex(t *testing.T) {
 }
 
 func TestIsValidCompatSubtitleStreamIndex(t *testing.T) {
+	t.Parallel()
 	version := subtitleSelectionVersion()
 	const downloadedCount = 1 // downloaded subtitle occupies stream index 5 (after the bitmap track at 4)
 
@@ -89,6 +91,7 @@ func TestIsValidCompatSubtitleStreamIndex(t *testing.T) {
 }
 
 func TestIsValidCompatSubtitleStreamIndex_ExcludesBitmapSubtitle(t *testing.T) {
+	t.Parallel()
 	// A version whose only subtitle is bitmap (needs burn-in). Its computed
 	// stream index must not be selectable, because it is filtered out of the
 	// delivered streams.
@@ -133,6 +136,7 @@ func TestExternalSubtitleRouteIndexSkipsEmbeddedStreamIndexGaps(t *testing.T) {
 }
 
 func TestResolveSelectedSubtitleStreamIndex(t *testing.T) {
+	t.Parallel()
 	version := subtitleSelectionVersion()
 	const downloadedCount = 1
 	mediaDefault := intPtr(2)
@@ -175,6 +179,7 @@ func TestResolveSelectedSubtitleStreamIndex(t *testing.T) {
 }
 
 func TestEffectiveCompatSubtitleStreamIndex(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name   string
 		source PlaybackMediaSource
@@ -276,6 +281,7 @@ func defaultSubtitleStreamFromResponse(t *testing.T, resp playbackInfoResponseDT
 }
 
 func TestHandlePlaybackInfo_DefaultsToEmbeddedDefaultSubtitle(t *testing.T) {
+	t.Parallel()
 	handler, routeID := newSubtitleSelectionHandler(t)
 	resp := postPlaybackInfo(t, handler, routeID, `{}`)
 
@@ -292,6 +298,7 @@ func TestHandlePlaybackInfo_DefaultsToEmbeddedDefaultSubtitle(t *testing.T) {
 }
 
 func TestHandlePlaybackInfo_HonorsSelectedExternalSubtitle(t *testing.T) {
+	t.Parallel()
 	handler, routeID := newSubtitleSelectionHandler(t)
 	resp := postPlaybackInfo(t, handler, routeID, `{"SubtitleStreamIndex":3}`)
 
@@ -308,6 +315,7 @@ func TestHandlePlaybackInfo_HonorsSelectedExternalSubtitle(t *testing.T) {
 }
 
 func TestHandlePlaybackInfo_HonorsSelectedDownloadedSubtitle(t *testing.T) {
+	t.Parallel()
 	handler, routeID := newSubtitleSelectionHandler(t)
 	// The downloaded subtitle lands at stream index 5 (after the bitmap track at 4).
 	resp := postPlaybackInfo(t, handler, routeID, `{"SubtitleStreamIndex":5}`)
@@ -335,6 +343,7 @@ func (erroringSubtitleRepository) ListDownloadedSubtitles(context.Context, int) 
 }
 
 func TestHandlePlaybackInfo_HonorsExternalSelectionWhenDownloadedLookupFails(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	contentID := "movie-1"
 	routeID := codec.EncodeStringID(EncodedIDItem, contentID)
@@ -365,6 +374,7 @@ func TestHandlePlaybackInfo_HonorsExternalSelectionWhenDownloadedLookupFails(t *
 }
 
 func TestHandlePlaybackInfo_SubtitlesOff(t *testing.T) {
+	t.Parallel()
 	handler, routeID := newSubtitleSelectionHandler(t)
 	resp := postPlaybackInfo(t, handler, routeID, `{"SubtitleStreamIndex":-1}`)
 

@@ -95,7 +95,7 @@ func (r *Repository) CreateMapping(ctx context.Context, input CreateMappingInput
 		          silo_user_id, silo_profile_id, last_imported_at,
 		          created_at, updated_at`,
 		input.SourceID, input.ExternalUserID, input.ExternalUserName,
-		input.SiloUserID, input.SiloProfileID,
+		input.PrairieUserID, input.PrairieProfileID,
 	)
 	m, err := scanMapping(row)
 	if err != nil {
@@ -199,7 +199,7 @@ func (r *Repository) UpdateMapping(ctx context.Context, id int, input UpdateMapp
 		    silo_profile_id = COALESCE($3, silo_profile_id),
 		    updated_at           = NOW()
 		WHERE id = $1`,
-		id, input.SiloUserID, input.SiloProfileID,
+		id, input.PrairieUserID, input.PrairieProfileID,
 	)
 	if err != nil {
 		return nil, fmt.Errorf("updating mapping %d: %w", id, err)
@@ -366,7 +366,7 @@ func (r *Repository) CancelRunIfActive(ctx context.Context, runID string) error 
 		    completed_at  = NOW()
 		WHERE id = $1 AND status IN ('queued', 'running')`, runID)
 	if err != nil {
-		return fmt.Errorf("cancelling run %s: %w", runID, err)
+		return fmt.Errorf("canceling run %s: %w", runID, err)
 	}
 	if result.RowsAffected() == 0 {
 		return ErrRunNotFound
@@ -385,7 +385,7 @@ func scanMapping(s mappingScanner) (*UserMapping, error) {
 	var lastImportedAt *time.Time
 	err := s.Scan(
 		&m.ID, &m.SourceID, &m.ExternalUserID, &m.ExternalUserName,
-		&m.SiloUserID, &m.SiloProfileID, &lastImportedAt,
+		&m.PrairieUserID, &m.PrairieProfileID, &lastImportedAt,
 		&m.CreatedAt, &m.UpdatedAt,
 	)
 	if err != nil {
@@ -403,14 +403,14 @@ func scanMappingRow(s mappingRowScanner) (*UserMapping, error) {
 	return scanMapping(s)
 }
 
-// enrichMapping looks up the Silo username and profile name for display purposes.
+// enrichMapping looks up the Prairie username and profile name for display purposes.
 func enrichMapping(ctx context.Context, r *Repository, m *UserMapping) (*UserMapping, error) {
 	_ = r.pool.QueryRow(ctx, `
 		SELECT u.username, COALESCE(p.name, '')
 		FROM users u
 		LEFT JOIN user_profiles p ON p.user_id = u.id AND p.id = $2
-		WHERE u.id = $1`, m.SiloUserID, m.SiloProfileID,
-	).Scan(&m.SiloUsername, &m.SiloProfileName)
+		WHERE u.id = $1`, m.PrairieUserID, m.PrairieProfileID,
+	).Scan(&m.PrairieUsername, &m.PrairieProfileName)
 	// Non-fatal — enrichment is best-effort for display purposes.
 	return m, nil
 }

@@ -49,13 +49,17 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   ChevronUp,
   History,
-  Plus,
+  Loader2,
   Pencil,
-  Trash2,
-  Settings2,
+  Plus,
+  Save,
   Search,
+  Settings2,
+  Trash2,
   X,
 } from "lucide-react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -146,7 +150,7 @@ export default function AdminUsers() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Users</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Manage access, defaults, and invite flow for the people using Silo.
+            Manage access, defaults, and invite flow for the people using Prairie.
           </p>
         </div>
         <div className="flex gap-2">
@@ -363,6 +367,7 @@ export default function AdminUsers() {
                     onClick={() => setPage((p) => p - 1)}
                     disabled={page === 0}
                   >
+                    <ChevronLeft />
                     Previous
                   </Button>
                   <Button
@@ -371,6 +376,7 @@ export default function AdminUsers() {
                     onClick={() => setPage((p) => p + 1)}
                     disabled={(page + 1) * pageSize >= total}
                   >
+                    <ChevronRight />
                     Next
                   </Button>
                 </div>
@@ -722,6 +728,7 @@ function UserForm({ user, onClose }: { user: AdminUser | null; onClose: () => vo
 
       <div className="border-border mt-4 border-t pt-4">
         <Button type="submit" className="w-full" disabled={isPending}>
+          {isPending ? <Loader2 className="animate-spin" /> : <Save />}
           {isPending ? "Saving..." : "Save"}
         </Button>
       </div>

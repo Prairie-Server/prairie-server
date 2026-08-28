@@ -55,7 +55,7 @@ func compareVersions(a, b string) int {
 	return 0
 }
 
-var defaultPluginIDs = []string{"silo.tmdb", "silo.tvdb"}
+var defaultPluginIDs = []string{"prairie.tmdb", "prairie.tvdb"}
 
 type autoUpdateRepositoryStore interface {
 	List(ctx context.Context) ([]*Repository, error)
@@ -217,7 +217,7 @@ func (s *AutoUpdateService) Check(ctx context.Context, opts AutoUpdateOptions) (
 	}
 
 	if opts.AutoInstallDefaults {
-		latestOfficial := latestCatalogEntriesForSource(entries, RepositorySourceSilo)
+		latestOfficial := latestCatalogEntriesForSource(entries, RepositorySourcePrairie)
 		for _, pluginID := range defaultPluginIDs {
 			if _, installed := installedPluginIDs[pluginID]; installed {
 				continue

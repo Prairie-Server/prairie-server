@@ -35,6 +35,17 @@ var (
 	nvencProbeNegativeTTL      = 15 * time.Second
 )
 
+// Ada Lovelace is the consumer floor for AV1 NVENC encode (SM 8.9+).
+// Ampere (e.g. RTX 3050, SM 8.6) can decode AV1 but not encode it.
+const av1NVENCMinComputeCapability = 8.9
+
+var av1NVENCProbeCache = struct {
+	sync.Mutex
+	byPath map[string]nvencProbeResult
+}{
+	byPath: make(map[string]nvencProbeResult),
+}
+
 type hardwareProbeResult struct {
 	available     bool
 	reason        string
@@ -561,6 +572,72 @@ func probeFFmpegNVENCContext(ctx context.Context, ffmpegPath string, commandTime
 	}
 
 	return nvencProbeResult{available: true}
+}
+
+// ffmpegSupportsAV1NVENC reports whether this host can realtime-encode AV1 via
+// NVENC. FFmpeg often lists av1_nvenc even on Ampere GPUs that only decode AV1;
+// we require Ada+ compute capability when nvidia-smi is available, and always
+// confirm with a one-frame smoke encode.
+func ffmpegSupportsAV1NVENC(ffmpegPath string) (bool, string) {
+	ctx := context.Background()
+	ffmpegPath = normalizeFFmpegPath(ffmpegPath)
+	av1NVENCProbeCache.Lock()
+	if result, ok := av1NVENCProbeCache.byPath[ffmpegPath]; ok {
+		av1NVENCProbeCache.Unlock()
+		return result.available, result.reason
+	}
+	av1NVENCProbeCache.Unlock()
+
+	result := probeFFmpegAV1NVENC(ctx, ffmpegPath)
+	av1NVENCProbeCache.Lock()
+	av1NVENCProbeCache.byPath[ffmpegPath] = result
+	av1NVENCProbeCache.Unlock()
+	return result.available, result.reason
+}
+
+func probeFFmpegAV1NVENC(ctx context.Context, ffmpegPath string) nvencProbeResult {
+	if output, err := runFFmpegProbe(ctx, nvencProbeCommandTimeout, ffmpegPath, "-hide_banner", "-encoders"); err != nil {
+		return nvencProbeResult{reason: "encoders probe failed: " + FormatFFmpegProbeFailure(err, output)}
+	} else if !ffmpegOutputHasToken(output, "av1_nvenc") {
+		return nvencProbeResult{reason: "av1_nvenc encoder unavailable"}
+	}
+
+	if cap, ok := nvidiaComputeCapability(); ok && cap < av1NVENCMinComputeCapability {
+		return nvencProbeResult{
+			reason: "GPU compute capability below Ada AV1 NVENC (need >= 8.9)",
+		}
+	}
+
+	if output, err := runFFmpegProbe(ctx, nvencProbeCommandTimeout, ffmpegPath,
+		"-hide_banner",
+		"-loglevel", "error",
+		"-f", "lavfi",
+		"-i", "testsrc2=size=640x360:rate=1",
+		"-frames:v", "1",
+		"-an",
+		"-c:v", "av1_nvenc",
+		"-f", "null",
+		"-",
+	); err != nil {
+		return nvencProbeResult{reason: "av1_nvenc smoke encode failed: " + FormatFFmpegProbeFailure(err, output)}
+	}
+
+	return nvencProbeResult{available: true}
+}
+
+func nvidiaComputeCapability() (float64, bool) {
+	ctx, cancel := context.WithTimeout(context.Background(), nvencProbeCommandTimeout)
+	defer cancel()
+	out, err := exec.CommandContext(ctx, "nvidia-smi", "--query-gpu=compute_cap", "--format=csv,noheader").CombinedOutput()
+	if err != nil {
+		return 0, false
+	}
+	line := strings.TrimSpace(strings.Split(string(out), "\n")[0])
+	var major, minor int
+	if _, err := fmt.Sscanf(line, "%d.%d", &major, &minor); err != nil {
+		return 0, false
+	}
+	return float64(major) + float64(minor)/10.0, true
 }
 
 func runFFmpegProbe(ctx context.Context, timeout time.Duration, ffmpegPath string, args ...string) ([]byte, error) {

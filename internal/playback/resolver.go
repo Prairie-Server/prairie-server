@@ -264,3 +264,19 @@ func videoCopyUnsafeFile(file *models.MediaFile) bool {
 	multi, known := file.PersistedVideoCopyVerdict()
 	return known && multi
 }
+
+// remuxAudioCopySafe reports whether an audio codec can be stream-copied into an
+// MP4 remux for the given client capabilities.
+func remuxAudioCopySafe(codec string, caps ClientCapabilities) bool {
+	switch normalizeAudioCodecForRemux(codec) {
+	case "aac":
+		return true
+	case "ac3", "eac3":
+		return audioCodecClaimed(caps.CodecsAudio, codec) ||
+			audioCodecClaimed(caps.AudioPassthroughCodecs, codec)
+	case "dts", "truehd":
+		return audioCodecClaimed(caps.AudioPassthroughCodecs, codec)
+	default:
+		return false
+	}
+}

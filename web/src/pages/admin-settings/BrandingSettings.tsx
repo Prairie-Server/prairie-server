@@ -95,7 +95,7 @@ export default function BrandingSettings() {
                 value={form.getValue("branding.server_name")}
                 onChange={(e) => form.setValue("branding.server_name", e.target.value)}
                 className="border-border bg-background text-foreground focus:ring-ring w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
-                placeholder="Silo"
+                placeholder="Prairie"
               />
             </div>
             <div>
@@ -118,8 +118,8 @@ export default function BrandingSettings() {
           <div>
             <h4 className="text-sm font-medium">Logos &amp; Icons</h4>
             <p className="text-muted-foreground mt-1 text-[13px]">
-              Upload custom images to replace the Silo logo, browser favicon, and login background.
-              Each falls back to the Silo default when not set.
+              Upload custom images to replace the Prairie logo, browser favicon, and login
+              background. Each falls back to the Prairie default when not set.
             </p>
           </div>
 

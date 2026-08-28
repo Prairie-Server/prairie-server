@@ -31,7 +31,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Copy, Plus, PlusCircle, Trash2 } from "lucide-react";
+import { Copy, Loader2, Plus, PlusCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { formatDate } from "@/lib/datetime";
@@ -67,7 +67,7 @@ export default function InviteCodesTab() {
   }
 
   function handleCopy(text: string) {
-    navigator.clipboard.writeText(text);
+    void navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
   }
 
@@ -276,6 +276,7 @@ function CreateInviteCodeForm({ onClose }: { onClose: () => void }) {
         />
       </div>
       <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+        {createMutation.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
         {createMutation.isPending ? "Creating..." : "Create"}
       </Button>
     </form>
@@ -313,6 +314,7 @@ function TopUpInviteCodeForm({ code, onClose }: { code: InviteCode; onClose: () 
         />
       </div>
       <Button type="submit" className="w-full" disabled={topUpMutation.isPending}>
+        {topUpMutation.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
         {topUpMutation.isPending ? "Adding..." : "Add Uses"}
       </Button>
     </form>

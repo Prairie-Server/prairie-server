@@ -63,10 +63,10 @@ func capabilityKey(kind, id string) string {
 
 // isReservedPluginID reports whether a plugin id is reserved for the host and
 // must never be installable. Only the exact builtin registration id is
-// reserved: first-party plugins legitimately use the "silo." prefix
-// (silo.tmdb, silo.tvdb).
+// reserved: first-party plugins legitimately use the "prairie." prefix
+// (prairie.tmdb, prairie.tvdb).
 func isReservedPluginID(pluginID string) bool {
-	return pluginID == "silo.builtin"
+	return pluginID == "prairie.builtin"
 }
 
 func validateManifestShared(manifest *pluginv1.PluginManifest) error {

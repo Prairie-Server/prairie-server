@@ -29,7 +29,7 @@ func TestCleanupReportsDeletesRowBeforeBlobAndToleratesMissingObject(t *testing.
 		MaxBytesPerUser: DefaultMaxBytesPerUser,
 	}, CleanupOptions{
 		Now:    func() time.Time { return time.Date(2026, 7, 20, 12, 0, 0, 0, time.UTC) },
-		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Logger: slog.New(slog.DiscardHandler),
 	})
 	if err != nil {
 		t.Fatalf("CleanupReports: %v", err)
@@ -66,7 +66,7 @@ func TestCleanupReportsTreatsBlobFailureAsNonFatal(t *testing.T) {
 		MaxBytesPerUser: DefaultMaxBytesPerUser,
 	}, CleanupOptions{
 		Now:    func() time.Time { return time.Date(2026, 7, 20, 12, 0, 0, 0, time.UTC) },
-		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Logger: slog.New(slog.DiscardHandler),
 	})
 	// r1's row is deleted first, so its blob delete failing does not abort the
 	// run or roll back the row: it is logged for orphan cleanup to reap, both
@@ -98,7 +98,7 @@ func TestCleanupReportsCleansStaleReceiving(t *testing.T) {
 	result, err := CleanupReports(context.Background(), repo, store, Settings{
 		RetentionDays:   30,
 		MaxBytesPerUser: DefaultMaxBytesPerUser,
-	}, CleanupOptions{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	}, CleanupOptions{Logger: slog.New(slog.DiscardHandler)})
 	if err != nil {
 		t.Fatalf("CleanupReports: %v", err)
 	}
@@ -129,7 +129,7 @@ func TestCleanupReportsDeletesRowsWhenStorageUnavailable(t *testing.T) {
 		MaxBytesPerUser: DefaultMaxBytesPerUser,
 	}, CleanupOptions{
 		Now:    func() time.Time { return time.Date(2026, 7, 20, 12, 0, 0, 0, time.UTC) },
-		Logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+		Logger: slog.New(slog.DiscardHandler),
 	})
 	if err != nil {
 		t.Fatalf("CleanupReports: %v", err)
@@ -167,7 +167,7 @@ func TestCleanupReportsDeletesUnmatchedObjects(t *testing.T) {
 	result, err := CleanupReports(context.Background(), repo, store, Settings{
 		RetentionDays:   30,
 		MaxBytesPerUser: DefaultMaxBytesPerUser,
-	}, CleanupOptions{Logger: slog.New(slog.NewTextHandler(io.Discard, nil))})
+	}, CleanupOptions{Logger: slog.New(slog.DiscardHandler)})
 	if err != nil {
 		t.Fatalf("CleanupReports: %v", err)
 	}

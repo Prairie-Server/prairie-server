@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { getWeekDays, formatShortDay, formatWeekRangeLabel, isToday } from "@/lib/calendarWeek";
 import type { CalendarDay } from "@/hooks/queries/calendar";
@@ -64,6 +64,7 @@ export default function WeekNavigator({
           className="h-8 shrink-0 rounded-full px-3 text-[11px] font-semibold sm:text-[12px]"
           onClick={onToday}
         >
+          <RotateCcw />
           Today
         </Button>
       </div>

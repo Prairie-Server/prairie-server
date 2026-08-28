@@ -160,7 +160,7 @@ func (d *DurableCompatPlaybackStore) Put(session PlaybackSession) {
 
 // PutNegotiated persists a new PlaybackInfo session while removing older,
 // unstarted negotiations for the same compat token, client device, and item.
-// The advisory transaction lock makes the replacement atomic across Silo
+// The advisory transaction lock makes the replacement atomic across Prairie
 // processes; the in-memory mutation is likewise atomic for the local process.
 func (d *DurableCompatPlaybackStore) PutNegotiated(session PlaybackSession) {
 	if d.pool == nil {

@@ -11,7 +11,9 @@ import {
   Plus,
   Send,
   Trash2,
+  Unplug,
   Webhook as WebhookIcon,
+  X,
 } from "lucide-react";
 import { toast } from "sonner";
 import type {
@@ -159,8 +161,8 @@ function ChannelFrequencyRow({
 }) {
   const digestText = `One summary per day, around ${digestHour}:00 server time`;
   return (
-    <div className="flex items-center justify-between gap-3">
-      <div>
+    <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-center">
+      <div className="min-w-0">
         <div className="text-sm">Frequency</div>
         <div className="text-muted-foreground text-xs">
           {mode === "per_episode"
@@ -175,7 +177,7 @@ function ChannelFrequencyRow({
         disabled={isPending}
         onValueChange={(value) => onChange(value as NotificationChannelMode)}
       >
-        <SelectTrigger className="w-[220px]">
+        <SelectTrigger className="w-full sm:w-[220px]">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -242,10 +244,12 @@ function EmailDestinationRow({ prefs }: { prefs: NotificationEmailPreferences })
                 disabled={clearAddress.isPending}
                 onClick={() => clearAddress.mutate()}
               >
+                <Trash2 />
                 Remove
               </Button>
             )}
             <Button variant="outline" size="sm" onClick={() => setEditing((value) => !value)}>
+              {editing ? <X /> : hasAddress ? <Pencil /> : <Plus />}
               {editing ? "Cancel" : hasAddress ? "Change" : "Add address"}
             </Button>
           </div>
@@ -421,7 +425,7 @@ function DiscordSection() {
   return (
     <SettingsGroup
       title="Discord Notifications"
-      description="Account-wide: the Silo bot sends direct messages covering every profile on this account. You must share a Discord server with the bot."
+      description="Account-wide: the Prairie bot sends direct messages covering every profile on this account. You must share a Discord server with the bot."
     >
       {!linked ? (
         <div className="flex items-center justify-between gap-3">
@@ -462,6 +466,7 @@ function DiscordSection() {
                 disabled={unlink.isPending}
                 onClick={() => unlink.mutate()}
               >
+                <Unplug />
                 Unlink
               </Button>
             </div>
@@ -588,7 +593,7 @@ function WebPushSection() {
   return (
     <SettingsGroup
       title="Browser Notifications"
-      description="Get notified even when Silo is closed. Notifications are encrypted end-to-end — the browser vendor's push service never sees their content."
+      description="Get notified even when Prairie is closed. Notifications are encrypted end-to-end — the browser vendor's push service never sees their content."
     >
       {support === "unsupported" ? (
         <div className="text-muted-foreground text-sm">
@@ -802,6 +807,7 @@ function WebhookFormDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <X />
             Cancel
           </Button>
           <Button onClick={submit} disabled={pending || !name.trim()}>

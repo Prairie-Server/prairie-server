@@ -221,7 +221,7 @@ func (r *ScannedRootRepository) UpsertMany(ctx context.Context, roots []models.S
 	}
 
 	results := r.pool.SendBatch(ctx, batch)
-	defer results.Close()
+	defer func() { _ = results.Close() }()
 	for range roots {
 		if _, err := results.Exec(); err != nil {
 			return fmt.Errorf("upserting scanned media roots: %w", err)

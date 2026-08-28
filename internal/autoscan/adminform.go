@@ -42,7 +42,7 @@ type AdminFormField struct {
 	Validation     *AdminFormValidation `json:"validation,omitempty"`
 	// FillFrom names a host-known value the admin UI can offer to populate this
 	// field from, as a one-click action beside it. It exists so a path-shaped
-	// field can be filled from Silo's own library paths without the UI needing
+	// field can be filled from Prairie's own library paths without the UI needing
 	// to know which plugin it belongs to. Unknown values are ignored by the UI.
 	FillFrom string `json:"fill_from,omitempty"`
 }
@@ -119,10 +119,11 @@ func adminFormFromMetadata(value any) *AdminForm {
 	if len(form.Fields) == 0 {
 		return nil
 	}
+	form.Sections = reconcileSections(form.Sections, form.Fields)
 	return &form
 }
 
-// withoutUnsupportedFields drops fields the source-config surface cannot honour.
+// withoutUnsupportedFields drops fields the source-config surface cannot honor.
 //
 // Secret fields: a source's values land in autoscan_sources.source_config,
 // which is plain JSONB and is returned verbatim by the source API — unlike
@@ -137,7 +138,8 @@ func adminFormFromMetadata(value any) *AdminForm {
 // satisfied — permanently blocking creation. Dropping them fails visibly at the
 // contract rather than invisibly at the operator.
 func withoutUnsupportedFields(fields []AdminFormField) []AdminFormField {
-	kept := make([]AdminFormField, 0, len(fields))
+	// First pass: determine which fields will be retained.
+	retainedKeys := make(map[string]bool)
 	for _, field := range fields {
 		if field.Secret || strings.EqualFold(field.Control, ControlPassword) {
 			continue
@@ -145,7 +147,66 @@ func withoutUnsupportedFields(fields []AdminFormField) []AdminFormField {
 		if field.DynamicOptions {
 			continue
 		}
+		retainedKeys[field.Key] = true
+	}
+
+	// Second pass: build the kept list and filter conditions.
+	kept := make([]AdminFormField, 0, len(fields))
+	for _, field := range fields {
+		if !retainedKeys[field.Key] {
+			continue
+		}
+		// Filter out conditions that reference filtered-out fields.
+		validConditions := make([]AdminFormCondition, 0, len(field.ShowWhen))
+		for _, cond := range field.ShowWhen {
+			if retainedKeys[cond.Field] {
+				validConditions = append(validConditions, cond)
+			}
+		}
+		field.ShowWhen = validConditions
 		kept = append(kept, field)
+	}
+	return kept
+}
+
+// reconcileSections removes or prunes sections based on retained field keys.
+// Sections whose FieldKeys no longer reference any retained fields are dropped,
+// and conditions pointing to filtered-out fields are removed.
+func reconcileSections(sections []AdminFormSection, fields []AdminFormField) []AdminFormSection {
+	if len(sections) == 0 {
+		return sections
+	}
+
+	retainedKeys := make(map[string]bool)
+	for _, field := range fields {
+		retainedKeys[field.Key] = true
+	}
+
+	kept := make([]AdminFormSection, 0, len(sections))
+	for _, section := range sections {
+		// Keep only field keys that reference retained fields.
+		validFieldKeys := make([]string, 0, len(section.FieldKeys))
+		for _, key := range section.FieldKeys {
+			if retainedKeys[key] {
+				validFieldKeys = append(validFieldKeys, key)
+			}
+		}
+		// Drop sections with no valid fields.
+		if len(validFieldKeys) == 0 {
+			continue
+		}
+		section.FieldKeys = validFieldKeys
+
+		// Filter out conditions that reference filtered-out fields.
+		validConditions := make([]AdminFormCondition, 0, len(section.ShowWhen))
+		for _, cond := range section.ShowWhen {
+			if retainedKeys[cond.Field] {
+				validConditions = append(validConditions, cond)
+			}
+		}
+		section.ShowWhen = validConditions
+
+		kept = append(kept, section)
 	}
 	return kept
 }

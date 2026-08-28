@@ -121,7 +121,7 @@ var validBrowseSorts = map[string]string{
 const defaultBrowseSort = "popularity"
 
 // BrowseStudio returns a page of movies from a bundled studio, enriched with
-// Silo availability and request state.
+// Prairie availability and request state.
 func (s *Service) BrowseStudio(ctx context.Context, viewer Viewer, slug, sort string, page int) (*DiscoverBrowseResponse, error) {
 	if s == nil || s.store == nil || s.tmdb == nil {
 		return nil, fmt.Errorf("request service is not configured")

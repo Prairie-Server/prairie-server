@@ -174,12 +174,12 @@ func (w *taskWorker) run(ctx context.Context) (*ExecutionResult, error) {
 	w.mu.Lock()
 	switch {
 	case w.state == TaskStateCancelling:
-		result.Status = "cancelled"
+		result.Status = executionStatusCancelled
 	case err != nil:
-		result.Status = "failed"
+		result.Status = executionStatusFailed
 		result.ErrorMessage = err.Error()
 	default:
-		result.Status = "completed"
+		result.Status = executionStatusCompleted
 	}
 
 	w.state = TaskStateIdle
@@ -193,7 +193,7 @@ func (w *taskWorker) run(ctx context.Context) (*ExecutionResult, error) {
 	return result, nil
 }
 
-// requestCancel sets state to Cancelling and calls the cancel func.
+// requestCancel sets state to Canceling and calls the cancel func.
 func (w *taskWorker) requestCancel() error {
 	w.mu.Lock()
 	if w.state != TaskStateRunning {

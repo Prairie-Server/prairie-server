@@ -293,7 +293,7 @@ export function useDeleteWatchProviderConnection(provider: string) {
     mutationFn: () => deleteWatchProviderConnection(provider),
     onSuccess: () => {
       const profileId = getActiveProfileId();
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
         queryKey: watchProviderKeys.connection(profileId, provider),
       });
       toast.success("Watch provider disconnected");
@@ -312,12 +312,14 @@ export function useTriggerWatchProviderSync(provider: string) {
       queryClient.setQueryData(watchProviderKeys.syncRuns(profileId, provider), {
         runs: [response.run],
       });
-      queryClient.invalidateQueries({ queryKey: watchProviderKeys.syncRuns(profileId, provider) });
-      queryClient.invalidateQueries({
+      void queryClient.invalidateQueries({
+        queryKey: watchProviderKeys.syncRuns(profileId, provider),
+      });
+      void queryClient.invalidateQueries({
         queryKey: watchProviderKeys.connection(profileId, provider),
       });
-      queryClient.invalidateQueries({ queryKey: favoriteKeys.list() });
-      queryClient.invalidateQueries({ queryKey: watchlistKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: favoriteKeys.list() });
+      void queryClient.invalidateQueries({ queryKey: watchlistKeys.list() });
       toast.success("Watch provider sync started");
     },
     onError: (err) => {

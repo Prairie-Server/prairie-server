@@ -30,7 +30,7 @@ func TestToLegacyPlexActorsResponse(t *testing.T) {
 				ConnectionID:     "conn-1",
 				ExternalUserID:   "42",
 				ExternalUserName: "Alice",
-				SiloProfileID:    &profileID,
+				PrairieProfileID: &profileID,
 				CreatedAt:        now,
 				UpdatedAt:        now,
 			},
@@ -45,7 +45,7 @@ func TestToLegacyPlexActorsResponse(t *testing.T) {
 	if !resp.AccountDiscoveryAvailable {
 		t.Fatalf("expected discovery to be available")
 	}
-	if len(resp.Mappings) != 1 || resp.Mappings[0].PlexAccountID != 42 || resp.Mappings[0].SiloProfileID != "profile-1" {
+	if len(resp.Mappings) != 1 || resp.Mappings[0].PlexAccountID != 42 || resp.Mappings[0].PrairieProfileID != "profile-1" {
 		t.Fatalf("unexpected legacy mappings: %#v", resp.Mappings)
 	}
 	if len(resp.DiscoveredActors) != 2 || resp.DiscoveredActors[1].PlexAccountID != 77 {

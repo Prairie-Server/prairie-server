@@ -7,10 +7,10 @@ import (
 
 // Built-in source identities are host-discovered scan-source entries that need
 // no plugin installation. The ARR webhook identity backs webhook-mode sources:
-// Sonarr/Radarr POST directly to Silo, the host parses the payload, and the
+// Sonarr/Radarr POST directly to Prairie, the host parses the payload, and the
 // plugin provider is never invoked for it.
 const (
-	BuiltinArrWebhookPluginID     = "silo.autoscan.arr-webhook"
+	BuiltinArrWebhookPluginID     = "prairie.autoscan.arr-webhook"
 	BuiltinArrWebhookCapabilityID = "arr-webhook"
 	builtinArrWebhookDisplayName  = "Sonarr/Radarr Webhook"
 
@@ -28,8 +28,8 @@ func BuiltinArrWebhookSource() DiscoveredSource {
 		PluginID:     BuiltinArrWebhookPluginID,
 		CapabilityID: BuiltinArrWebhookCapabilityID,
 		DisplayName:  builtinArrWebhookDisplayName,
-		Description:  "Sonarr or Radarr posts to Silo the moment an import finishes.",
-		// Webhook-only and credential-free: the provider pushes to a Silo
+		Description:  "Sonarr or Radarr posts to Prairie the moment an import finishes.",
+		// Webhook-only and credential-free: the provider pushes to a Prairie
 		// endpoint, so the flow skips both the delivery-mode question and the
 		// connection step. This descriptor is what the admin UI used to infer
 		// from a hardcoded plugin-id comparison.

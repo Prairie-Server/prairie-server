@@ -169,6 +169,8 @@ export default function AudiobookContent({
         context="Audiobook"
         studioLabel={item.audiobook?.publisher || item.studios?.[0] || undefined}
         posterUrl={item.poster_url}
+        posterAvifUrl={item.poster_avif_url}
+        posterPngUrl={item.poster_png_url}
         posterThumbhash={item.poster_thumbhash}
         posterOrientation="square"
         subtitle={
@@ -243,6 +245,7 @@ export default function AudiobookContent({
                 </Button>
                 {hasProgress && (
                   <Button variant="outline" size="lg" onClick={() => openPlayer(0)}>
+                    <Play />
                     Listen from Start
                   </Button>
                 )}

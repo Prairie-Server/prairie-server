@@ -530,18 +530,18 @@ func TestEnrichmentRetryPolicy(t *testing.T) {
 	})
 
 	t.Run("cooldown floor is env tunable with a tolerant fallback", func(t *testing.T) {
-		t.Setenv("SILO_EBOOK_RATE_LIMIT_COOLDOWN", "30m")
+		t.Setenv("PRAIRIE_EBOOK_RATE_LIMIT_COOLDOWN", "30m")
 		if got := enrichmentRetryDelay(EnrichmentErrorRateLimited, 1, time.Second); got != 30*time.Minute {
 			t.Fatalf("tuned floor retry = %s, want 30m", got)
 		}
 		if got := enrichmentRetryDelay(EnrichmentErrorRateLimited, 1, 45*time.Minute); got != 45*time.Minute {
 			t.Fatalf("hint above tuned floor = %s, want 45m", got)
 		}
-		t.Setenv("SILO_EBOOK_RATE_LIMIT_COOLDOWN", "banana")
+		t.Setenv("PRAIRIE_EBOOK_RATE_LIMIT_COOLDOWN", "banana")
 		if got := enrichmentRetryDelay(EnrichmentErrorRateLimited, 1, time.Second); got != 15*time.Minute {
 			t.Fatalf("invalid floor retry = %s, want 15m default", got)
 		}
-		t.Setenv("SILO_EBOOK_RATE_LIMIT_COOLDOWN", "-5m")
+		t.Setenv("PRAIRIE_EBOOK_RATE_LIMIT_COOLDOWN", "-5m")
 		if got := enrichmentRetryDelay(EnrichmentErrorRateLimited, 1, time.Second); got != 15*time.Minute {
 			t.Fatalf("non-positive floor retry = %s, want 15m default", got)
 		}

@@ -38,6 +38,7 @@ import { SyncScheduleField } from "@/components/collections/SyncScheduleField";
 import { MDBListBrowser } from "./MDBListBrowser";
 import { TemplatePosterField, type TemplatePosterMode } from "./TemplatePosterField";
 
+import { Loader2, Plus, X } from "lucide-react";
 interface Props {
   template: CollectionTemplate;
   libraries: Library[];
@@ -86,7 +87,7 @@ export function CollectionTemplateConfigForm({
   const tmdbMutation = useImportTMDBCollection();
   const traktMutation = useImportTraktCollection();
   const mdblistMutation = useImportMDBListCollection();
-  const { data: profiles = [] } = useProfiles();
+  const { data: profiles } = useProfiles();
   const eligibility = libraryEligibilityForMediaKind(template.media_kind);
 
   const [libraryIds, setLibraryIds] = useState<number[]>(() =>
@@ -343,9 +344,11 @@ export function CollectionTemplateConfigForm({
 
       <div className="border-border flex justify-end gap-2 border-t pt-4">
         <Button type="button" variant="ghost" onClick={onCancel} disabled={isPending}>
+          <X />
           Cancel
         </Button>
         <Button type="submit" disabled={submitDisabled}>
+          {isPending ? <Loader2 className="animate-spin" /> : <Plus />}
           {isPending ? "Importing..." : "Create Collection"}
         </Button>
       </div>
@@ -422,6 +425,7 @@ function TMDBCollectionTemplateSummary({ template, onCancel }: TMDBCollectionTem
 
       <div className="border-border flex justify-end gap-2 border-t pt-4">
         <Button type="button" variant="ghost" onClick={onCancel}>
+          <X />
           Close
         </Button>
         <Button type="button" disabled>
@@ -521,6 +525,7 @@ function TMDBDiscoverTemplateSummary({ template, onCancel }: TMDBDiscoverTemplat
 
       <div className="border-border flex justify-end gap-2 border-t pt-4">
         <Button type="button" variant="ghost" onClick={onCancel}>
+          <X />
           Close
         </Button>
         <Button type="button" disabled>

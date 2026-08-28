@@ -449,6 +449,7 @@ function AddGroupRow({ onAddGroup }: { onAddGroup: (title: string) => void }) {
           setOpen(false);
         }}
       >
+        <X />
         Cancel
       </Button>
     </div>

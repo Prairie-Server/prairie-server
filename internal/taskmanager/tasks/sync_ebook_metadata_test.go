@@ -155,8 +155,8 @@ func TestEbookMetadataTaskDoesNotReportCompleteWhileBoundedCheckFindsMoreWork(t 
 }
 
 func TestEbookMetadataTaskStopsAfterOneAllFailedBatch(t *testing.T) {
-	t.Setenv("SILO_EBOOK_BACKFILL_MAX_CLAIMS", "1")
-	t.Setenv("SILO_EBOOK_BACKFILL_BATCH_DELAY", "1h")
+	t.Setenv("PRAIRIE_EBOOK_BACKFILL_MAX_CLAIMS", "1")
+	t.Setenv("PRAIRIE_EBOOK_BACKFILL_BATCH_DELAY", "1h")
 	enricher := &fakeEbookMetadataEnricher{results: []ebooks.EnrichmentRunResult{
 		{Claimed: 4, Failed: 4, Remaining: 100},
 		{Claimed: 4, Enriched: 4, Remaining: 96},
@@ -207,7 +207,7 @@ func TestEbookMetadataTaskContinuesAfterMixedBatchWithProgress(t *testing.T) {
 }
 
 func TestEbookMetadataBackfillStopsAtClaimCap(t *testing.T) {
-	t.Setenv("SILO_EBOOK_BACKFILL_MAX_CLAIMS", "4")
+	t.Setenv("PRAIRIE_EBOOK_BACKFILL_MAX_CLAIMS", "4")
 	enricher := &fakeEbookMetadataEnricher{results: []ebooks.EnrichmentRunResult{
 		{Claimed: 2, Enriched: 2, Remaining: 10},
 		{Claimed: 2, Enriched: 2, Remaining: 8},
@@ -239,7 +239,7 @@ func TestEbookMetadataBackfillStopsAtClaimCap(t *testing.T) {
 }
 
 func TestEbookMetadataBackfillPassesRemainingClaimAllowanceToEnricher(t *testing.T) {
-	t.Setenv("SILO_EBOOK_BACKFILL_MAX_CLAIMS", "3")
+	t.Setenv("PRAIRIE_EBOOK_BACKFILL_MAX_CLAIMS", "3")
 	enricher := &fakeEbookMetadataEnricher{results: []ebooks.EnrichmentRunResult{
 		{Claimed: 2, Enriched: 2, Remaining: 8},
 		{Claimed: 1, Enriched: 1, Remaining: 7},
@@ -344,8 +344,8 @@ func TestEbookMetadataBackfillInvalidNonemptyEnvironmentFailsClosed(t *testing.T
 		{name: "invalid delay only", max: "20", delay: "later"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			t.Setenv("SILO_EBOOK_BACKFILL_MAX_CLAIMS", tc.max)
-			t.Setenv("SILO_EBOOK_BACKFILL_BATCH_DELAY", tc.delay)
+			t.Setenv("PRAIRIE_EBOOK_BACKFILL_MAX_CLAIMS", tc.max)
+			t.Setenv("PRAIRIE_EBOOK_BACKFILL_BATCH_DELAY", tc.delay)
 			enricher := &fakeEbookMetadataEnricher{}
 			err := NewBackfillEbookMetadataTask(enricher).Execute(context.Background(), &ebookMetadataProgressReporter{})
 			if err == nil || !strings.Contains(err.Error(), "invalid ebook backfill configuration") {
@@ -360,16 +360,16 @@ func TestEbookMetadataBackfillInvalidNonemptyEnvironmentFailsClosed(t *testing.T
 
 func TestEbookMetadataBackfillUnsetAndValidEnvironment(t *testing.T) {
 	t.Run("unset", func(t *testing.T) {
-		t.Setenv("SILO_EBOOK_BACKFILL_MAX_CLAIMS", "")
-		t.Setenv("SILO_EBOOK_BACKFILL_BATCH_DELAY", "")
+		t.Setenv("PRAIRIE_EBOOK_BACKFILL_MAX_CLAIMS", "")
+		t.Setenv("PRAIRIE_EBOOK_BACKFILL_BATCH_DELAY", "")
 		task := NewBackfillEbookMetadataTask(&fakeEbookMetadataEnricher{})
 		if task.configErr != nil || task.maxClaims != 0 || task.batchDelay != 0 {
 			t.Fatalf("unset controls = (%d, %s, %v)", task.maxClaims, task.batchDelay, task.configErr)
 		}
 	})
 	t.Run("valid", func(t *testing.T) {
-		t.Setenv("SILO_EBOOK_BACKFILL_MAX_CLAIMS", " 20 ")
-		t.Setenv("SILO_EBOOK_BACKFILL_BATCH_DELAY", " 1s ")
+		t.Setenv("PRAIRIE_EBOOK_BACKFILL_MAX_CLAIMS", " 20 ")
+		t.Setenv("PRAIRIE_EBOOK_BACKFILL_BATCH_DELAY", " 1s ")
 		task := NewBackfillEbookMetadataTask(&fakeEbookMetadataEnricher{})
 		if task.configErr != nil || task.maxClaims != 20 || task.batchDelay != time.Second {
 			t.Fatalf("valid controls = (%d, %s, %v)", task.maxClaims, task.batchDelay, task.configErr)
@@ -378,8 +378,8 @@ func TestEbookMetadataBackfillUnsetAndValidEnvironment(t *testing.T) {
 }
 
 func TestEbookMetadataSyncIgnoresBackfillCanaryEnvironment(t *testing.T) {
-	t.Setenv("SILO_EBOOK_BACKFILL_MAX_CLAIMS", "1")
-	t.Setenv("SILO_EBOOK_BACKFILL_BATCH_DELAY", "1h")
+	t.Setenv("PRAIRIE_EBOOK_BACKFILL_MAX_CLAIMS", "1")
+	t.Setenv("PRAIRIE_EBOOK_BACKFILL_BATCH_DELAY", "1h")
 	task := NewSyncEbookMetadataTask(&fakeEbookMetadataEnricher{})
 	if task.maxClaims != 0 || task.batchDelay != 0 {
 		t.Fatalf("sync controls = (%d, %s), want disabled", task.maxClaims, task.batchDelay)

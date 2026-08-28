@@ -54,7 +54,7 @@ func NewDiagnosticsHandler(service DiagnosticsService) *DiagnosticsHandler {
 	handler := &DiagnosticsHandler{
 		service:       service,
 		inflight:      newDiagnosticsInFlightLimiter(4),
-		chunkSessions: newDiagnosticsChunkSessions(filepath.Join(os.TempDir(), "silo-diagnostics-uploads")),
+		chunkSessions: newDiagnosticsChunkSessions(filepath.Join(os.TempDir(), "prairie-diagnostics-uploads")),
 		logger:        slog.Default(),
 	}
 	// Reclaim abandoned chunk spool bytes on a timer, not only from later API
@@ -98,6 +98,11 @@ func (h *DiagnosticsHandler) extendDiagnosticsUploadDeadlines(w http.ResponseWri
 	if !includeWrite {
 		return
 	}
+	// Extend the write deadline the same way. cmd/prairie's integrated server sets
+	// WriteTimeout 120s, but a slow upload can take longer than that within the
+	// read window above; Ingest may store and mark the report ready and then the
+	// final writeJSON would miss the 120s write deadline, so the client sees a
+	// timeout and retries a report that already succeeded.
 	if err := rc.SetWriteDeadline(time.Now().Add(diagnosticsUploadReadTimeout)); err != nil {
 		h.diagnosticsLogger().WarnContext(r.Context(), "diagnostics upload write deadline not extended",
 			"component", "diagnostics",

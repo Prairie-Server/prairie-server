@@ -12,6 +12,7 @@ import (
 )
 
 func TestDefaultDisplayPreferencesIncludesRequiredImageDimensions(t *testing.T) {
+	t.Parallel()
 	dto := defaultDisplayPreferences("default", "Wholphin")
 
 	body, err := json.Marshal(dto)

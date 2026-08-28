@@ -387,7 +387,7 @@ func TestAdminUpdateSettingsCommitsOneValidatedBatch(t *testing.T) {
 }
 
 func TestAdminUpdateSettingsRejectsWholeBatchBeforeWrite(t *testing.T) {
-	settings := &fakeServerSettingsStore{values: map[string]string{"branding.server_name": "Silo"}}
+	settings := &fakeServerSettingsStore{values: map[string]string{"branding.server_name": "Prairie"}}
 	handler := &AdminHandler{SettingsRepo: settings}
 	req := httptest.NewRequest(
 		http.MethodPut,
@@ -404,7 +404,7 @@ func TestAdminUpdateSettingsRejectsWholeBatchBeforeWrite(t *testing.T) {
 	if settings.setManyCalls != 0 {
 		t.Fatalf("SetMany calls = %d, want 0", settings.setManyCalls)
 	}
-	if settings.values["branding.server_name"] != "Silo" {
+	if settings.values["branding.server_name"] != "Prairie" {
 		t.Fatalf("valid sibling value was partially persisted: %#v", settings.values)
 	}
 }
@@ -654,7 +654,7 @@ func TestAdminUpdateSettingsSkipsFunctionalNoOp(t *testing.T) {
 }
 
 func TestAdminUpdateSettingsPersistsClearWhenOverrideEqualsDefault(t *testing.T) {
-	settings := &fakeServerSettingsStore{values: map[string]string{"branding.server_name": "Silo"}}
+	settings := &fakeServerSettingsStore{values: map[string]string{"branding.server_name": "Prairie"}}
 	handler := &AdminHandler{SettingsRepo: settings, RestartStatus: NewServerRestartStatusTracker()}
 	req := httptest.NewRequest(
 		http.MethodPut,
@@ -678,7 +678,7 @@ func TestAdminUpdateSettingsPersistsClearWhenOverrideEqualsDefault(t *testing.T)
 	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if response.Values["branding.server_name"] != "Silo" || response.RestartRequired {
+	if response.Values["branding.server_name"] != "Prairie" || response.RestartRequired {
 		t.Fatalf("response = %#v, want unchanged effective default without restart", response)
 	}
 }
@@ -708,14 +708,14 @@ func TestAdminUpdateSettingsReturnsEffectiveDefaultAfterClear(t *testing.T) {
 	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
 		t.Fatal(err)
 	}
-	if response.Values["branding.server_name"] != "Silo" {
+	if response.Values["branding.server_name"] != "Prairie" {
 		t.Fatalf("response values = %#v, want effective default", response.Values)
 	}
 	if settings.values["branding.server_name"] != "" {
 		t.Fatalf("stored value = %q, want cleared override", settings.values["branding.server_name"])
 	}
-	if callbackValue != "Silo" {
-		t.Fatalf("callback value = %q, want effective default Silo", callbackValue)
+	if callbackValue != "Prairie" {
+		t.Fatalf("callback value = %q, want effective default Prairie", callbackValue)
 	}
 }
 
@@ -745,16 +745,16 @@ func TestAdminUpdateSettingReturnsEffectiveDefaultAfterClear(t *testing.T) {
 	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
 		t.Fatal(err)
 	}
-	if response.Value != "Silo" {
+	if response.Value != "Prairie" {
 		t.Fatalf("response value = %q, want effective default", response.Value)
 	}
-	if callbackValue != "Silo" {
-		t.Fatalf("callback value = %q, want effective default Silo", callbackValue)
+	if callbackValue != "Prairie" {
+		t.Fatalf("callback value = %q, want effective default Prairie", callbackValue)
 	}
 }
 
 func TestAdminUpdateSettingPersistsClearWhenOverrideEqualsDefault(t *testing.T) {
-	settings := &fakeServerSettingsStore{values: map[string]string{"branding.server_name": "Silo"}}
+	settings := &fakeServerSettingsStore{values: map[string]string{"branding.server_name": "Prairie"}}
 	handler := &AdminHandler{SettingsRepo: settings}
 	req := httptest.NewRequest(
 		http.MethodPut,
@@ -779,7 +779,7 @@ func TestAdminUpdateSettingPersistsClearWhenOverrideEqualsDefault(t *testing.T) 
 	if err := json.NewDecoder(rec.Body).Decode(&response); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if response.Value != "Silo" || response.RestartRequired {
+	if response.Value != "Prairie" || response.RestartRequired {
 		t.Fatalf("response = %#v, want unchanged effective default without restart", response)
 	}
 }
@@ -977,10 +977,6 @@ func (f *fakeRedisSettingsCheckClient) Close() error {
 	return nil
 }
 
-type fakeEmbeddingsSettingsCheckClient struct {
-	embed func(ctx context.Context, texts []string) ([][]float32, error)
-}
-
 type fakeMDBListSettingsCheckClient struct {
 	check func(context.Context) error
 }
@@ -990,16 +986,6 @@ func (f *fakeMDBListSettingsCheckClient) Check(ctx context.Context) error {
 		return f.check(ctx)
 	}
 	return nil
-}
-
-func (f *fakeEmbeddingsSettingsCheckClient) Embed(
-	ctx context.Context,
-	texts []string,
-) ([][]float32, error) {
-	if f.embed != nil {
-		return f.embed(ctx, texts)
-	}
-	return [][]float32{{0.1, 0.2}}, nil
 }
 
 type fakeAISettingsCheckClient struct {
@@ -1413,6 +1399,92 @@ func TestHandleCheckSettingsConnectionRejectsInvalidDraftValues(t *testing.T) {
 	}
 	if !strings.Contains(response["message"], "invalid int for") {
 		t.Fatalf("message = %q, want parse failure", response["message"])
+	}
+}
+
+func TestAdminSettingsRejectUnreachableRedisURL(t *testing.T) {
+	originalFactory := newAdminRedisSettingsCheckClient
+	t.Cleanup(func() {
+		newAdminRedisSettingsCheckClient = originalFactory
+	})
+	newAdminRedisSettingsCheckClient = func(cfg config.RedisConfig) (redisSettingsCheckClient, error) {
+		return &fakeRedisSettingsCheckClient{
+			ping: func(context.Context) error {
+				return errors.New("dial tcp: connection refused")
+			},
+		}, nil
+	}
+
+	for _, tc := range []struct {
+		name   string
+		target string
+		body   string
+		single bool
+	}{
+		{
+			name:   "batch",
+			target: "/admin/settings",
+			body:   `{"values":{"redis.url":"redis://unreachable.example.invalid:6379"}}`,
+		},
+		{
+			name:   "single",
+			target: "/admin/settings/redis.url",
+			body:   `{"value":"redis://unreachable.example.invalid:6379"}`,
+			single: true,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			settings := &fakeServerSettingsStore{values: map[string]string{}}
+			handler := &AdminHandler{SettingsRepo: settings}
+			req := httptest.NewRequest(http.MethodPut, tc.target, strings.NewReader(tc.body))
+			if tc.single {
+				req = withChiParam(req, "key", "redis.url")
+			}
+			rec := httptest.NewRecorder()
+
+			if tc.single {
+				handler.HandleUpdateSetting(rec, req)
+			} else {
+				handler.HandleUpdateSettings(rec, req)
+			}
+
+			if rec.Code != http.StatusBadRequest {
+				t.Fatalf("status = %d, want 400; body=%s", rec.Code, rec.Body.String())
+			}
+			if settings.setManyCalls != 0 || settings.setCalls != 0 {
+				t.Fatalf("unreachable redis.url was persisted: SetMany=%d Set=%d", settings.setManyCalls, settings.setCalls)
+			}
+			if !strings.Contains(rec.Body.String(), "unreachable") {
+				t.Fatalf("body = %q, want unreachable message", rec.Body.String())
+			}
+		})
+	}
+}
+
+func TestAdminSettingsAcceptReachableRedisURL(t *testing.T) {
+	originalFactory := newAdminRedisSettingsCheckClient
+	t.Cleanup(func() {
+		newAdminRedisSettingsCheckClient = originalFactory
+	})
+	newAdminRedisSettingsCheckClient = func(cfg config.RedisConfig) (redisSettingsCheckClient, error) {
+		return &fakeRedisSettingsCheckClient{}, nil
+	}
+
+	settings := &fakeServerSettingsStore{values: map[string]string{}}
+	handler := &AdminHandler{SettingsRepo: settings}
+	req := httptest.NewRequest(
+		http.MethodPut,
+		"/admin/settings",
+		strings.NewReader(`{"values":{"redis.url":"redis://cache.example:6379"}}`),
+	)
+	rec := httptest.NewRecorder()
+	handler.HandleUpdateSettings(rec, req)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status = %d, want 200; body=%s", rec.Code, rec.Body.String())
+	}
+	if settings.values["redis.url"] != "redis://cache.example:6379" {
+		t.Fatalf("values=%#v, want redis.url persisted", settings.values)
 	}
 }
 

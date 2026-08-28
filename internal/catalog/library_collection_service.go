@@ -273,29 +273,29 @@ func (s *LibraryCollectionService) syncMDBListCollection(ctx context.Context, co
 		itemType := mdbListEntryItemType(entry)
 		if entry.ID > 0 {
 			idStr := fmt.Sprintf("%d", entry.ID)
-			if itemType == "movie" {
+			if itemType == itemTypeMovie {
 				movieBatch.TMDBIDs = append(movieBatch.TMDBIDs, idStr)
 			} else {
 				seriesBatch.TMDBIDs = append(seriesBatch.TMDBIDs, idStr)
 			}
 		}
 		if entry.IMDbID != "" {
-			if itemType == "movie" {
+			if itemType == itemTypeMovie {
 				movieBatch.IMDbIDs = append(movieBatch.IMDbIDs, entry.IMDbID)
 			} else {
 				seriesBatch.IMDbIDs = append(seriesBatch.IMDbIDs, entry.IMDbID)
 			}
 		}
-		if entry.TVDBID != nil && *entry.TVDBID > 0 && itemType != "movie" {
+		if entry.TVDBID != nil && *entry.TVDBID > 0 && itemType != itemTypeMovie {
 			seriesBatch.TVDBIDs = append(seriesBatch.TVDBIDs, fmt.Sprintf("%d", *entry.TVDBID))
 		}
 	}
 
-	movieLookup, err := s.items.GetByExternalIDs(ctx, movieBatch, "movie")
+	movieLookup, err := s.items.GetByExternalIDs(ctx, movieBatch, itemTypeMovie)
 	if err != nil {
 		return nil, err
 	}
-	seriesLookup, err := s.items.GetByExternalIDs(ctx, seriesBatch, "series")
+	seriesLookup, err := s.items.GetByExternalIDs(ctx, seriesBatch, itemTypeSeries)
 	if err != nil {
 		return nil, err
 	}
@@ -319,7 +319,7 @@ func (s *LibraryCollectionService) syncMDBListCollection(ctx context.Context, co
 	for index, entry := range entries {
 		itemType := mdbListEntryItemType(entry)
 		var lookup *ExternalIDLookup
-		if itemType == "movie" {
+		if itemType == itemTypeMovie {
 			lookup = movieLookup
 		} else {
 			lookup = seriesLookup
@@ -449,7 +449,7 @@ func (s *LibraryCollectionService) syncTMDBPresetCollection(ctx context.Context,
 		case "trending":
 			mediaType = "all"
 		case "popular", "top_rated", "now_playing", "upcoming":
-			mediaType = "movie"
+			mediaType = itemTypeMovie
 		case "airing_today", "on_the_air":
 			mediaType = "tv"
 		}
@@ -758,9 +758,9 @@ func validateTMDBDiscoverConfig(cfg libraryCollectionSourceConfig) (string, stri
 		// Default to "movie" if unset so older configs without an explicit
 		// media_type still run; discover collections must pick one or the
 		// other on the TMDB side.
-		mediaType = "movie"
+		mediaType = itemTypeMovie
 	}
-	if mediaType != "movie" && mediaType != "tv" {
+	if mediaType != itemTypeMovie && mediaType != "tv" {
 		return fmt.Sprintf("TMDB discover sync: unsupported media_type %q", mediaType), ""
 	}
 	if strings.TrimSpace(cfg.Discover.SortBy) == "" {
@@ -917,18 +917,18 @@ func (s *LibraryCollectionService) syncTraktPresetCollection(ctx context.Context
 	startedAt := syncTimestamp()
 
 	if s.TraktCollections == nil {
-		return nil, fmt.Errorf("Trakt preset sync requires configured Trakt access")
+		return nil, fmt.Errorf("trakt preset sync requires configured Trakt access")
 	}
 
 	preset := strings.TrimSpace(cfg.Preset)
 	mediaType := strings.TrimSpace(cfg.MediaType)
 	if mediaType == "" {
-		mediaType = "movie"
+		mediaType = itemTypeMovie
 	}
 	if preset != "trending" && preset != "popular" && preset != "recommended" {
 		return nil, fmt.Errorf("unsupported Trakt preset: %s", preset)
 	}
-	if mediaType != "movie" && mediaType != "tv" {
+	if mediaType != itemTypeMovie && mediaType != "tv" {
 		return nil, fmt.Errorf("unsupported Trakt media type: %s", mediaType)
 	}
 
@@ -981,7 +981,7 @@ func (s *LibraryCollectionService) syncTraktListCollection(ctx context.Context, 
 	startedAt := syncTimestamp()
 
 	if s.TraktCollections == nil {
-		return nil, fmt.Errorf("Trakt list sync requires configured Trakt access")
+		return nil, fmt.Errorf("trakt list sync requires configured Trakt access")
 	}
 	listURL := strings.TrimSpace(cfg.ListURL)
 	if listURL == "" {
@@ -1017,10 +1017,10 @@ func (s *LibraryCollectionService) syncTraktListCollection(ctx context.Context, 
 func ParseTraktListURL(raw string) (user, list string, err error) {
 	trimmed := strings.TrimSpace(raw)
 	if trimmed == "" {
-		return "", "", fmt.Errorf("Trakt list sync: url is required")
+		return "", "", fmt.Errorf("trakt list sync: url is required")
 	}
 	badFormat := func() (string, string, error) {
-		return "", "", fmt.Errorf("Trakt list sync: expected a URL like https://trakt.tv/users/{user}/lists/{list}, got %q", raw)
+		return "", "", fmt.Errorf("trakt list sync: expected a URL like https://trakt.tv/users/{user}/lists/{list}, got %q", raw)
 	}
 	isURL := strings.Contains(trimmed, "://") || strings.Contains(strings.ToLower(trimmed), "trakt.tv")
 	if isURL {
@@ -1030,7 +1030,7 @@ func ParseTraktListURL(raw string) (user, list string, err error) {
 		}
 		parsed, parseErr := url.Parse(normalized)
 		if parseErr != nil {
-			return "", "", fmt.Errorf("Trakt list sync: invalid url %q", raw)
+			return "", "", fmt.Errorf("trakt list sync: invalid url %q", raw)
 		}
 		host := strings.ToLower(parsed.Hostname())
 		if host != "trakt.tv" && host != "www.trakt.tv" {
@@ -1166,9 +1166,9 @@ func (s *LibraryCollectionService) recordFailedCollectionSync(ctx context.Contex
 // resolveTMDBEntry finds a media item in the library matching a TMDB preset entry.
 // It tries TMDB ID, IMDb ID, and TVDB ID (for TV shows) to maximize match rate.
 func (s *LibraryCollectionService) resolveTMDBEntry(ctx context.Context, libraryIDs []int, entry TMDBCollectionEntry) (*models.MediaItem, error) {
-	itemType := "movie"
+	itemType := itemTypeMovie
 	if entry.MediaType == "tv" {
-		itemType = "series"
+		itemType = itemTypeSeries
 	}
 
 	tmdbID := ""
@@ -1201,9 +1201,9 @@ func (s *LibraryCollectionService) resolveTMDBEntry(ctx context.Context, library
 
 // resolveTraktEntry finds a local item matching a Trakt discovery entry.
 func (s *LibraryCollectionService) resolveTraktEntry(ctx context.Context, libraryIDs []int, entry TraktCollectionEntry) (*models.MediaItem, error) {
-	itemType := "movie"
+	itemType := itemTypeMovie
 	if entry.MediaType == "tv" {
-		itemType = "series"
+		itemType = itemTypeSeries
 	}
 	batch := ExternalIDBatch{}
 	if entry.TMDBID > 0 {
@@ -1212,7 +1212,7 @@ func (s *LibraryCollectionService) resolveTraktEntry(ctx context.Context, librar
 	if entry.IMDbID != "" {
 		batch.IMDbIDs = []string{entry.IMDbID}
 	}
-	if entry.TVDBID > 0 && itemType == "series" {
+	if entry.TVDBID > 0 && itemType == itemTypeSeries {
 		batch.TVDBIDs = []string{fmt.Sprintf("%d", entry.TVDBID)}
 	}
 	lookup, err := s.items.GetByExternalIDs(ctx, batch, itemType)
@@ -1253,7 +1253,7 @@ func traktCandidatesByPriority(lookup *ExternalIDLookup, entry TraktCollectionEn
 		seen[id] = struct{}{}
 		candidates = append(candidates, id)
 	}
-	if itemType == "series" && entry.TVDBID > 0 {
+	if itemType == itemTypeSeries && entry.TVDBID > 0 {
 		add(lookup.ByTVDB[fmt.Sprintf("%d", entry.TVDBID)])
 	}
 	if entry.TMDBID > 0 {
@@ -1301,10 +1301,10 @@ func (s *LibraryCollectionService) fetchMDBListEntries(ctx context.Context, list
 // internal "movie"/"series" item type taxonomy.
 func mdbListEntryItemType(entry mdblistEntry) string {
 	switch strings.ToLower(entry.MediaType) {
-	case "show", "tv", "series":
-		return "series"
+	case "show", "tv", itemTypeSeries:
+		return itemTypeSeries
 	default:
-		return "movie"
+		return itemTypeMovie
 	}
 }
 
@@ -1328,7 +1328,7 @@ func pickCandidatesByPriority(lookup *ExternalIDLookup, entry mdblistEntry, item
 		seen[id] = true
 		candidates = append(candidates, id)
 	}
-	if itemType == "series" && entry.TVDBID != nil && *entry.TVDBID > 0 {
+	if itemType == itemTypeSeries && entry.TVDBID != nil && *entry.TVDBID > 0 {
 		add(lookup.ByTVDB[fmt.Sprintf("%d", *entry.TVDBID)])
 	}
 	if entry.ID > 0 {
@@ -1338,25 +1338,6 @@ func pickCandidatesByPriority(lookup *ExternalIDLookup, entry mdblistEntry, item
 		add(lookup.ByIMDb[entry.IMDbID])
 	}
 	return candidates
-}
-
-func slugifyCollectionTitle(title string) string {
-	title = strings.ToLower(strings.TrimSpace(title))
-	title = strings.ReplaceAll(title, "'", "")
-	var builder strings.Builder
-	lastHyphen := false
-	for _, r := range title {
-		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') {
-			builder.WriteRune(r)
-			lastHyphen = false
-			continue
-		}
-		if !lastHyphen {
-			builder.WriteByte('-')
-			lastHyphen = true
-		}
-	}
-	return strings.Trim(builder.String(), "-")
 }
 
 // maybeGenerateCollage triggers poster collage generation for a collection

@@ -80,7 +80,7 @@ func ExtractSubtitle(ctx context.Context, filePath string, trackIndex int, ffmpe
 		"pipe:1",
 	}
 
-	ffmpeg := "ffmpeg"
+	ffmpeg := ffmpegComponent
 	if len(ffmpegPath) > 0 && ffmpegPath[0] != "" {
 		ffmpeg = ffmpegPath[0]
 	}
@@ -120,7 +120,7 @@ func ExtractSubtitleWithFormat(ctx context.Context, filePath string, trackIndex 
 		"pipe:1",
 	}
 
-	ffmpeg := "ffmpeg"
+	ffmpeg := ffmpegComponent
 	if len(ffmpegPath) > 0 && ffmpegPath[0] != "" {
 		ffmpeg = ffmpegPath[0]
 	}
@@ -195,7 +195,7 @@ func ServeSubtitle(w http.ResponseWriter, data []byte, format string) {
 // WebVTT for player consumption.
 func LoadExternalSubtitleAsVTT(ctx context.Context, subtitlePath, format string, ffmpegPath ...string) ([]byte, error) {
 	switch strings.ToLower(format) {
-	case "srt", "vtt", "webvtt":
+	case "srt", "vtt", subtitleFormatWebVTT:
 		data, err := os.ReadFile(subtitlePath)
 		if err != nil {
 			return nil, fmt.Errorf("read external subtitle: %w", err)
@@ -204,11 +204,11 @@ func LoadExternalSubtitleAsVTT(ctx context.Context, subtitlePath, format string,
 	default:
 		args := []string{
 			"-i", subtitlePath,
-			"-f", "webvtt",
+			"-f", subtitleFormatWebVTT,
 			"pipe:1",
 		}
 
-		ffmpeg := "ffmpeg"
+		ffmpeg := ffmpegComponent
 		if len(ffmpegPath) > 0 && ffmpegPath[0] != "" {
 			ffmpeg = ffmpegPath[0]
 		}
@@ -239,7 +239,7 @@ func ConvertToVTT(input []byte, fromFormat string) ([]byte, error) {
 	switch strings.ToLower(fromFormat) {
 	case "srt":
 		return srtToVTT(input), nil
-	case "vtt", "webvtt":
+	case "vtt", subtitleFormatWebVTT:
 		// Already VTT, return as-is.
 		return input, nil
 	default:
@@ -262,12 +262,12 @@ func ConvertToVTTWithFFmpeg(ctx context.Context, input []byte, fromFormat, ffmpe
 		return nil, errors.New("subtitle format is required")
 	}
 	if strings.TrimSpace(ffmpegPath) == "" {
-		ffmpegPath = "ffmpeg"
+		ffmpegPath = ffmpegComponent
 	}
 	cmd := exec.CommandContext(ctx, ffmpegPath,
 		"-hide_banner", "-loglevel", "error",
 		"-f", inputFormat, "-i", "pipe:0",
-		"-f", "webvtt", "pipe:1",
+		"-f", subtitleFormatWebVTT, "pipe:1",
 	)
 	cmd.Stdin = bytes.NewReader(input)
 	var stdout, stderr bytes.Buffer

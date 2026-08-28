@@ -25,7 +25,7 @@ var (
 	ErrInvalidPIN = errors.New("invalid profile PIN")
 )
 
-// LoginResolver performs username#profile login resolution against Silo.
+// LoginResolver performs username#profile login resolution against Prairie.
 type LoginResolver struct {
 	authService    *auth.Service
 	storeProvider  userstore.UserStoreProvider
@@ -228,7 +228,8 @@ func selectNamedProfile(profileName string, profiles []upstreamProfile) (upstrea
 }
 
 func mapLoginError(err error) (int, string, string) {
-	if httpErr, ok := err.(*HTTPError); ok {
+	httpErr := &HTTPError{}
+	if errors.As(err, &httpErr) {
 		if httpErr.StatusCode == http.StatusUnauthorized {
 			return http.StatusUnauthorized, "InvalidUsernameOrPassword", "Invalid username or password"
 		}

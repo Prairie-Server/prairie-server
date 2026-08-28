@@ -66,7 +66,7 @@ func ExtractAttachedSubtitleFonts(ctx context.Context, inputPath string, ffmpegP
 
 	bin := ffmpegPath
 	if strings.TrimSpace(bin) == "" {
-		bin = "ffmpeg"
+		bin = ffmpegComponent
 	}
 
 	return dumpFontAttachments(ctx, inputPath, bin, streams, maxSubtitleFontBytes)
@@ -97,7 +97,7 @@ func dumpFontAttachments(ctx context.Context, inputPath string, ffmpegPath strin
 	if err != nil {
 		return nil, fmt.Errorf("subtitle fonts: create temp dir: %w", err)
 	}
-	defer os.RemoveAll(dir)
+	defer func() { _ = os.RemoveAll(dir) }()
 
 	// A fresh temp dir guarantees the dump targets don't pre-exist, so ffmpeg
 	// never prompts to overwrite (which would hang the process).
@@ -320,8 +320,8 @@ func ffprobePathFromFFmpeg(ffmpegPath string) string {
 		return "ffprobe"
 	}
 	base := filepath.Base(ffmpegPath)
-	if i := strings.LastIndex(base, "ffmpeg"); i >= 0 {
-		return filepath.Join(filepath.Dir(ffmpegPath), base[:i]+"ffprobe"+base[i+len("ffmpeg"):])
+	if i := strings.LastIndex(base, ffmpegComponent); i >= 0 {
+		return filepath.Join(filepath.Dir(ffmpegPath), base[:i]+"ffprobe"+base[i+len(ffmpegComponent):])
 	}
 	return "ffprobe"
 }

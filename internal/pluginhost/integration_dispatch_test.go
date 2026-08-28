@@ -25,7 +25,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/plugins"
 )
 
-const sdkExamplesDir = "/opt/worktrees/silo-plugin-sdk-rh/examples"
+const sdkExamplesDir = "/opt/worktrees/prairie-plugin-sdk-rh/examples"
 
 // fakePlugin captures the host-side state we need per started plugin to wire
 // the dispatcher.

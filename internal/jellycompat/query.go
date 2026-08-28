@@ -332,12 +332,12 @@ func mapIncludeItemTypes(rawValues []string) []string {
 		for part := range strings.SplitSeq(raw, ",") {
 			var mapped string
 			switch strings.ToLower(strings.TrimSpace(part)) {
-			case "movie", "movies":
-				mapped = "movie"
-			case "series", "tvshows", "show":
-				mapped = "series"
-			case "episode", "episodes":
-				mapped = "episode"
+			case itemTypeMovie, "movies":
+				mapped = itemTypeMovie
+			case itemTypeSeries, "tvshows", "show":
+				mapped = itemTypeSeries
+			case itemTypeEpisode, "episodes":
+				mapped = itemTypeEpisode
 			case "season", "seasons":
 				mapped = "season"
 			}
@@ -390,7 +390,7 @@ func hasNonEmptyValues(values []string) bool {
 }
 
 func itemTypesOnlySeries(itemTypes []string) bool {
-	return len(itemTypes) == 1 && itemTypes[0] == "series"
+	return len(itemTypes) == 1 && itemTypes[0] == itemTypeSeries
 }
 
 // includeItemTypesContain reports whether a raw IncludeItemTypes value list

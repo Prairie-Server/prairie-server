@@ -351,7 +351,7 @@ type ClientIPConfig struct {
 	TrustedProxies string `yaml:"-"`
 }
 
-// Config is the top-level configuration for Silo.
+// Config is the top-level configuration for Prairie.
 type Config struct {
 	Server               ServerConfig               `yaml:"server"`
 	Database             DatabaseConfig             `yaml:"database"`

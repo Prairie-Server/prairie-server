@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
+import { motion } from "motion/react";
 import { ChevronLeft, ChevronRight, Play, X } from "lucide-react";
 import type { EpisodeRef } from "../types";
 import type { ContinueWatchingItem } from "@/hooks/queries/progress";

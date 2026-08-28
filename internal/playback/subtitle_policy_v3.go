@@ -152,7 +152,7 @@ func subtitleEntryAtCombinedIndexV3(file *models.MediaFile, index int, additiona
 
 func isTextSubtitleV3(codec string) bool {
 	switch normalizeCodecV3(codec) {
-	case "srt", "subrip", "vtt", "webvtt", "ass", "ssa", "mov_text", "tx3g",
+	case "srt", "subrip", "vtt", subtitleFormatWebVTT, "ass", "ssa", "mov_text", "tx3g",
 		"eia_608", "eia608", "cea_608", "cea608":
 		return true
 	default:

@@ -203,7 +203,7 @@ func TestYAMLToSettingsMapJellyfinCompatEnabledDefaultsToLegacyListener(t *testi
 
 func yamlSettingsMapFromString(t *testing.T, body string) map[string]string {
 	t.Helper()
-	path := t.TempDir() + "/silo.yaml"
+	path := t.TempDir() + "/prairie.yaml"
 	if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 		t.Fatalf("WriteFile() returned error: %v", err)
 	}

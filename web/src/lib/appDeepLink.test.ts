@@ -23,27 +23,27 @@ describe("detectMobilePlatform", () => {
 });
 
 describe("buildInviteDeepLink", () => {
-  it("emits the silo://invite contract the Android app registers", () => {
-    expect(buildInviteDeepLink("https://silo.arkyncdn.net", "wIAUTS99-abc")).toBe(
-      "silo://invite?server=https%3A%2F%2Fsilo.arkyncdn.net&token=wIAUTS99-abc",
+  it("emits the prairie://invite contract the Android app registers", () => {
+    expect(buildInviteDeepLink("https://prairie.arkyncdn.net", "wIAUTS99-abc")).toBe(
+      "prairie://invite?server=https%3A%2F%2Fprairie.arkyncdn.net&token=wIAUTS99-abc",
     );
   });
 
   it("keeps a non-default port inside the server origin", () => {
-    expect(buildInviteDeepLink("https://silo.example.net:8443", "t")).toBe(
-      "silo://invite?server=https%3A%2F%2Fsilo.example.net%3A8443&token=t",
+    expect(buildInviteDeepLink("https://prairie.example.net:8443", "t")).toBe(
+      "prairie://invite?server=https%3A%2F%2Fprairie.example.net%3A8443&token=t",
     );
   });
 
   it("carries plain-http LAN origins verbatim", () => {
     expect(buildInviteDeepLink("http://192.168.1.10:8090", "t")).toBe(
-      "silo://invite?server=http%3A%2F%2F192.168.1.10%3A8090&token=t",
+      "prairie://invite?server=http%3A%2F%2F192.168.1.10%3A8090&token=t",
     );
   });
 
   it("rejects unrepresentable origins", () => {
     expect(buildInviteDeepLink("not a url", "t")).toBeNull();
-    expect(buildInviteDeepLink("ftp://silo.example.net", "t")).toBeNull();
-    expect(buildInviteDeepLink("https://user:pw@silo.example.net", "t")).toBeNull();
+    expect(buildInviteDeepLink("ftp://prairie.example.net", "t")).toBeNull();
+    expect(buildInviteDeepLink("https://user:pw@prairie.example.net", "t")).toBeNull();
   });
 });

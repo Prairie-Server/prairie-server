@@ -19,7 +19,7 @@ type sessionPersistence interface {
 	DeleteByToken(ctx context.Context, token string) error
 }
 
-// Session stores a compat login plus upstream Silo credentials.
+// Session stores a compat login plus upstream Prairie credentials.
 type Session struct {
 	Token                 string
 	Username              string
@@ -160,7 +160,7 @@ func (s *SessionStore) Delete(token string) {
 	}
 }
 
-// DeleteByUserID removes all compat sessions for a given Silo user ID.
+// DeleteByUserID removes all compat sessions for a given Prairie user ID.
 func (s *SessionStore) DeleteByUserID(userID int) {
 	s.mu.Lock()
 	for token, session := range s.sessions {

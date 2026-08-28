@@ -504,7 +504,6 @@ func buildLibraryScopeJoin(
 			tableName, keyColumn, itemContentExpr, argIdx,
 		))
 		args = append(args, disabledLibraryIDs)
-		argIdx++
 	}
 
 	if isEpisodeCatalogScope(mediaScope) {

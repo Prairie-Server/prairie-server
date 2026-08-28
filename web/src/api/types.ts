@@ -829,8 +829,12 @@ export interface BrowseItem {
   original_language?: string;
   overview: string;
   poster_url: string;
+  poster_avif_url?: string;
+  poster_png_url?: string;
   poster_thumbhash: string;
   backdrop_url: string;
+  backdrop_avif_url?: string;
+  backdrop_png_url?: string;
   backdrop_thumbhash: string;
   added_at?: string;
   release_date?: string | null;
@@ -942,6 +946,7 @@ export interface FileVersion {
   audio_tracks?: VersionAudioTrack[];
   subtitle_tracks?: VersionSubtitleTrack[];
   chapters?: VersionChapter[];
+  trickplay?: VersionTrickplay | null;
   intro?: TimeRange | null;
   credits?: TimeRange | null;
   recap?: TimeRange | null;
@@ -975,6 +980,21 @@ export interface VersionChapter {
   source: string;
   thumbnail_url?: string;
   thumbnail_thumbhash?: string;
+}
+
+export interface VersionTrickplaySheet {
+  index: number;
+  url: string;
+}
+
+export interface VersionTrickplay {
+  interval_seconds: number;
+  width: number;
+  height: number;
+  tile_columns: number;
+  tile_rows: number;
+  thumbnail_count: number;
+  sheets: VersionTrickplaySheet[];
 }
 
 export interface VersionVideoTrack {
@@ -1182,8 +1202,13 @@ export interface ItemDetail {
 
   // Presigned image URLs.
   poster_url: string;
+  /** Signed AVIF sibling when the poster is a cached WebP object. */
+  poster_avif_url?: string;
+  poster_png_url?: string;
   poster_thumbhash: string;
   backdrop_url: string;
+  backdrop_avif_url?: string;
+  backdrop_png_url?: string;
   backdrop_thumbhash: string;
   logo_url: string;
 
@@ -1460,8 +1485,8 @@ export interface QueryDefinition {
 
 export interface QueryDefinitionInput {
   library_ids?: number[];
-  media_scope?: QueryDefinition["media_scope"] | string;
-  match?: QueryDefinition["match"] | string;
+  media_scope?: QueryDefinition["media_scope"];
+  match?: QueryDefinition["match"];
   groups?: QueryGroup[];
   sort?: {
     field?: string;
@@ -2161,7 +2186,7 @@ export interface AutoscanScanSourceDescriptor {
   delivery_modes: AutoscanDeliveryMode[];
   connection: AutoscanConnectionRequirement;
   connection_kinds?: string[];
-  /** Plugin already emits Silo-native paths, so path rewrites can be skipped. */
+  /** Plugin already emits Prairie-native paths, so path rewrites can be skipped. */
   emits_native_paths?: boolean;
   summary?: string;
   icon_url?: string;
@@ -2324,6 +2349,172 @@ export interface AutoscanScansResponse {
   total: number;
   limit: number;
   offset: number;
+}
+
+export interface LiveTVTuner {
+  id: string;
+  type: string;
+  device_id: string;
+  discover_url: string;
+  base_url: string;
+  model: string;
+  firmware: string;
+  tuner_count: number;
+  status: string;
+  channel_count: number;
+  last_error: string;
+  last_scan_at?: string;
+  /** Device-side transcode profiles the tuner advertises; empty on current models. */
+  transcode_codecs?: string[];
+}
+
+export interface LiveTVTunersResponse {
+  tuners: LiveTVTuner[];
+}
+
+export interface LiveTVDiscoveredTuner {
+  kind: "hdhomerun" | "dispatcharr";
+  device_id: string;
+  friendly_name: string;
+  model: string;
+  firmware: string;
+  tuner_count: number;
+  discover_url: string;
+  base_url: string;
+  source: "udp" | "probe";
+  already_added: boolean;
+}
+
+export interface LiveTVDiscoverTunersResponse {
+  candidates: LiveTVDiscoveredTuner[];
+  notes?: string[];
+}
+
+export interface LiveTVChannel {
+  id: string;
+  tuner_id: string;
+  number: string;
+  number_override?: string | null;
+  callsign: string;
+  name: string;
+  logo_url: string;
+  hd: boolean;
+  enabled: boolean;
+  stream_url: string;
+  guide_station_id: string;
+}
+
+export interface LiveTVChannelsResponse {
+  channels: LiveTVChannel[];
+}
+
+export interface LiveTVGuideSource {
+  id: string;
+  type: "schedules_direct" | "xml_sync";
+  priority: number;
+  enabled: boolean;
+  display_name: string;
+  config: Record<string, string>;
+  status: string;
+  last_error: string;
+  last_sync_at?: string;
+  next_sync_at?: string;
+}
+
+export interface LiveTVGuideSourcesResponse {
+  guide_sources: LiveTVGuideSource[];
+}
+
+export interface SchedulesDirectLineupOption {
+  lineup: string;
+  name: string;
+  transport: string;
+  location: string;
+  headend: string;
+}
+
+export interface SchedulesDirectLineupsResponse {
+  lineups: SchedulesDirectLineupOption[];
+}
+
+export interface XMLSyncLineupOption {
+  lineup: string;
+  name: string;
+  transport: string;
+  location: string;
+  headend: string;
+  device: string;
+}
+
+export interface XMLSyncLineupsResponse {
+  lineups: XMLSyncLineupOption[];
+}
+
+export interface LiveTVProgram {
+  id: string;
+  channel_id: string;
+  source_id?: string;
+  series_id: string;
+  external_id?: string;
+  start: string;
+  stop: string;
+  title: string;
+  subtitle: string;
+  description: string;
+  season?: number | null;
+  episode?: number | null;
+  genres: string[];
+  image_url: string;
+  is_new: boolean;
+  is_live: boolean;
+}
+
+export interface LiveTVGuideResponse {
+  programs: LiveTVProgram[];
+  start: string;
+  end: string;
+}
+
+export interface LiveTVSessionStartResponse {
+  session_id: string;
+  playback_ticket: string;
+  hls_url: string;
+  stream_url?: string;
+  /** "mpegts" for the session proxy; "hls" when a playback bridge remuxes. */
+  transport?: "mpegts" | "hls";
+  note?: string;
+}
+
+export interface LiveTVRecording {
+  id: string;
+  program_id?: string;
+  channel_id: string;
+  series_rule_id?: string;
+  status: string;
+  path?: string;
+  library_item_id?: string;
+  start: string;
+  stop: string;
+  title: string;
+  last_error?: string;
+}
+
+export interface LiveTVRecordingsResponse {
+  recordings: LiveTVRecording[];
+}
+
+export interface LiveTVSeriesRule {
+  id: string;
+  series_id: string;
+  channel_id?: string | null;
+  title_match: string;
+  new_only: boolean;
+  keep_last: number;
+  enabled: boolean;
+}
+
+export interface LiveTVSeriesRulesResponse {
+  series_rules: LiveTVSeriesRule[];
 }
 
 export interface RequestListParams {
@@ -3142,6 +3333,8 @@ export interface Library {
   auto_translate_metadata: boolean;
   chapter_thumbnails_enabled: boolean;
   chapter_thumbnails_supported: boolean;
+  trickplay_enabled: boolean;
+  trickplay_supported: boolean;
   intro_detection_enabled: boolean;
   /** Allow-list of video kinds fetched during metadata refresh; empty disables. */
   trailer_kinds: string[];
@@ -3299,8 +3492,8 @@ export interface LibraryRoot {
   library_name: string;
   root_path: string;
   state: "resolved" | "ambiguous";
-  inferred_type: "movie" | "series" | string;
-  type_confidence: "low" | "medium" | "high" | string;
+  inferred_type: "movie" | "series";
+  type_confidence: "low" | "medium" | "high";
   title: string;
   year: number;
   tmdb_id?: string;
@@ -3353,6 +3546,7 @@ export interface CreateLibraryRequest {
   metadata_language?: string;
   auto_translate_metadata?: boolean;
   chapter_thumbnails_enabled?: boolean;
+  trickplay_enabled?: boolean;
   intro_detection_enabled?: boolean;
   trailer_kinds?: string[];
 }
@@ -3574,7 +3768,7 @@ export interface PluginAdminFormField {
   exclusive_group_field?: string;
   /**
    * Names a host-known value this field can be populated from in one click.
-   * Used by autoscan source config so a path field can be filled from Silo's
+   * Used by autoscan source config so a path field can be filled from Prairie's
    * own library paths without the UI knowing which plugin owns it. Unknown
    * values render no action.
    */
@@ -3638,7 +3832,7 @@ export interface PluginRepository {
   url: string;
   display_name: string;
   enabled: boolean;
-  source_kind: "silo" | "approved_community" | "external";
+  source_kind: "prairie" | "silo" | "approved_community" | "external";
   managed: boolean;
   last_fetched_at?: string | null;
   created_at?: string;
@@ -3664,7 +3858,7 @@ export interface PluginCatalogEntry {
   plugin_id: string;
   version: string;
   archive_url: string;
-  source_kind: "silo" | "approved_community" | "external";
+  source_kind: "prairie" | "silo" | "approved_community" | "external";
   repository_name: string;
   repo_url?: string;
   presentation?: PluginPresentation;
@@ -3694,7 +3888,7 @@ export interface PluginInstallation {
   task_bindings: PluginTaskBinding[];
   update_policy: string;
   available_version?: string | null;
-  source_kind: "silo" | "approved_community" | "external";
+  source_kind: "prairie" | "silo" | "approved_community" | "external";
   repository_name?: string;
   repo_url?: string;
   presentation?: PluginPresentation;
@@ -3898,8 +4092,12 @@ export interface SectionItem {
   duration_seconds?: number;
   progress_updated_at?: string;
   poster_url: string;
+  poster_avif_url?: string;
+  poster_png_url?: string;
   poster_thumbhash: string;
   backdrop_url: string;
+  backdrop_avif_url?: string;
+  backdrop_png_url?: string;
   backdrop_thumbhash: string;
   logo_url: string;
   overlay_summary?: OverlaySummary | null;
@@ -4322,7 +4520,10 @@ export interface AdminAPIKey {
   user_id: number;
   username: string;
   label: string;
-  key: string;
+  /** Full credential is only returned on key creation. */
+  key?: string;
+  /** Non-secret prefix for listing existing keys. */
+  key_prefix?: string;
   rate_tier: string;
   created_at: string;
   last_used_at?: string;

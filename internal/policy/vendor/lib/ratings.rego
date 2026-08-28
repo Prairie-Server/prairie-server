@@ -1,4 +1,4 @@
-package silo.lib.ratings
+package prairie.lib.ratings
 
 import rego.v1
 

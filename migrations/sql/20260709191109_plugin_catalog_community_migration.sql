@@ -6,7 +6,7 @@ ALTER TABLE public.plugin_repositories
 
 ALTER TABLE public.plugin_repositories
     ADD CONSTRAINT plugin_repositories_source_kind_check
-    CHECK (source_kind IN ('silo', 'approved_community', 'external'));
+    CHECK (source_kind IN ('prairie', 'silo', 'approved_community', 'external'));
 
 CREATE UNIQUE INDEX plugin_repositories_managed_key_unique
     ON public.plugin_repositories (managed_key)
@@ -23,7 +23,7 @@ DECLARE
     community_repository_id BIGINT;
     migrated_plugin_count INTEGER := 0;
 BEGIN
-    -- Any persisted account or plugin state is durable evidence that Silo has
+    -- Any persisted account or plugin state is durable evidence that Prairie has
     -- run before. Existing servers are opted into the new channel, while a
     -- truly fresh database remains default-off.
     INSERT INTO public.server_settings (key, value)
@@ -47,11 +47,11 @@ BEGIN
         managed_key,
         source_kind
     ) VALUES (
-        'https://raw.githubusercontent.com/Silo-Server/silo-plugins/main/manifest.json',
+        'https://raw.githubusercontent.com/prairie-server/prairie-plugins/main/manifest.json',
         true,
-        'Silo maintained',
+        'Prairie maintained',
         'official',
-        'silo'
+        'prairie'
     )
     ON CONFLICT (url) DO UPDATE SET
         enabled = true,
@@ -68,7 +68,7 @@ BEGIN
         managed_key,
         source_kind
     ) VALUES (
-        'https://raw.githubusercontent.com/Silo-Community/silo-plugins/main/manifest.json',
+        'https://raw.githubusercontent.com/Prairie-Community/prairie-plugins/main/manifest.json',
         include_community,
         'Approved community',
         'approved-community',
@@ -83,7 +83,7 @@ BEGIN
     RETURNING id INTO community_repository_id;
 
     -- Preserve the installation row and every dependent configuration/binding
-    -- row. Only installations that came from Silo's managed catalog move;
+    -- row. Only installations that came from Prairie's managed catalog move;
     -- uploads and custom repositories with the same plugin IDs are untouched.
     UPDATE public.plugin_installations
     SET repository_id = community_repository_id,

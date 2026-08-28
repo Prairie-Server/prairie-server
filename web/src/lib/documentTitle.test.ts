@@ -1,10 +1,12 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it } from "vitest";
 
 import {
   APP_DOCUMENT_TITLE,
   formatDocumentTitle,
   resolveAdminDocumentTitle,
   resolveSettingsDocumentTitle,
+  setActiveDocumentTitleLabel,
+  setAppDocumentTitle,
 } from "./documentTitle";
 
 describe("formatDocumentTitle", () => {
@@ -15,7 +17,27 @@ describe("formatDocumentTitle", () => {
   });
 
   it("prefixes the current page label", () => {
-    expect(formatDocumentTitle("Inception")).toBe("Inception · Silo");
+    expect(formatDocumentTitle("Inception")).toBe("Inception · Prairie");
+  });
+});
+
+describe("setAppDocumentTitle / setActiveDocumentTitleLabel", () => {
+  afterEach(() => {
+    setActiveDocumentTitleLabel(null);
+    setAppDocumentTitle("Prairie");
+  });
+
+  it("updates the app name and recomputes document.title from the active label", () => {
+    setActiveDocumentTitleLabel("Library");
+    setAppDocumentTitle("My Silo");
+    expect(document.title).toBe("Library · My Silo");
+    expect(formatDocumentTitle("Library")).toBe("Library · My Silo");
+  });
+
+  it("falls back to Prairie when given an empty branding name", () => {
+    setActiveDocumentTitleLabel(undefined);
+    setAppDocumentTitle("");
+    expect(document.title).toBe("Prairie");
   });
 });
 
@@ -23,6 +45,9 @@ describe("resolveSettingsDocumentTitle", () => {
   it("resolves nested settings route labels", () => {
     expect(resolveSettingsDocumentTitle("/settings/playback")).toBe("Playback Settings");
     expect(resolveSettingsDocumentTitle("/settings/home-screen")).toBe("Home Screen Settings");
+    expect(resolveSettingsDocumentTitle("/settings/appearance")).toBe("Appearance Settings");
+    expect(resolveSettingsDocumentTitle("/settings/webhook-sync")).toBe("Webhook Sync Settings");
+    expect(resolveSettingsDocumentTitle("/settings/quick-connect")).toBe("Quick Connect Settings");
   });
 
   it("falls back to the base settings title", () => {
@@ -40,6 +65,8 @@ describe("resolveAdminDocumentTitle", () => {
     expect(resolveAdminDocumentTitle("/admin/diagnostics")).toBe("Admin Client Diagnostics");
     expect(resolveAdminDocumentTitle("/admin/policy")).toBe("Admin Policy");
     expect(resolveAdminDocumentTitle("/admin/tasks/refresh-metadata")).toBe("Admin Task");
+    expect(resolveAdminDocumentTitle("/admin/users/42")).toBe("Admin User");
+    expect(resolveAdminDocumentTitle("/admin/unknown")).toBe("Admin");
   });
 
   it("handles editor routes with clearer labels", () => {

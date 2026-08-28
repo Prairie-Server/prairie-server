@@ -114,7 +114,7 @@ func (r *PushDeviceRepository) ListEnabledPushByProfiles(ctx context.Context, tx
 		  AND provider = $3
 		  AND push_mode = $4
 		  AND enabled`,
-		profileIDs, platforms, PushProviderSiloRelay, PushModePrivatePush)
+		profileIDs, platforms, PushProviderPrairieRelay, PushModePrivatePush)
 	if err != nil {
 		return nil, fmt.Errorf("list enabled push devices: %w", err)
 	}
@@ -145,14 +145,14 @@ func (r *PushDeviceRepository) EnqueuePushAttempts(ctx context.Context, tx pgx.T
 			sb.WriteString(", ")
 		}
 		base := len(args)
-		sb.WriteString(fmt.Sprintf("($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d)",
-			base+1, base+2, base+3, base+4, base+5, base+6, base+7, base+8))
+		fmt.Fprintf(&sb, "($%d,$%d,$%d,$%d,$%d,$%d,$%d,$%d)",
+			base+1, base+2, base+3, base+4, base+5, base+6, base+7, base+8)
 		args = append(args,
 			attempt.ID,
 			attempt.NotificationDeliveryID,
 			attempt.PushDeviceID,
 			defaultString(attempt.TriggerType, PushTriggerDelivery),
-			defaultString(attempt.Provider, PushProviderSiloRelay),
+			defaultString(attempt.Provider, PushProviderPrairieRelay),
 			defaultString(attempt.Platform, PushPlatformApple),
 			0,
 			PushOutcomePending,
@@ -189,7 +189,7 @@ func (r *PushDeviceRepository) EnqueueTestAttempt(ctx context.Context, platform,
 		  AND provider = $3
 		  AND push_mode = $4
 		  AND enabled`
-	args := []any{profileID, platform, PushProviderSiloRelay, PushModePrivatePush}
+	args := []any{profileID, platform, PushProviderPrairieRelay, PushModePrivatePush}
 	if serverDeviceID != "" {
 		args = append(args, serverDeviceID)
 		query += fmt.Sprintf(" AND server_device_id = $%d", len(args))
@@ -209,7 +209,7 @@ func (r *PushDeviceRepository) EnqueueTestAttempt(ctx context.Context, platform,
 		INSERT INTO push_delivery_attempts
 			(id, notification_delivery_id, push_device_id, trigger_type, provider, platform, attempt_number, outcome)
 		VALUES ($1, NULL, $2, $3, $4, $5, 0, $6)`+pushAttemptReturning,
-		attemptID, device.ID, PushTriggerTest, PushProviderSiloRelay, platform, PushOutcomePending)
+		attemptID, device.ID, PushTriggerTest, PushProviderPrairieRelay, platform, PushOutcomePending)
 	if err != nil {
 		return nil, nil, fmt.Errorf("insert push test attempt: %w", err)
 	}

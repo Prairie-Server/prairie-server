@@ -503,7 +503,7 @@ func (h *CatalogResourceHandler) syntheticSeasonDetail(r *http.Request, seasonID
 	)
 	return &catalog.ItemDetail{
 		ContentID:         seasonID,
-		Type:              "season",
+		Type:              itemTypeSeason,
 		Title:             seasonResp.Title,
 		Overview:          seasonResp.Overview,
 		SeriesID:          seriesID,
@@ -554,21 +554,21 @@ func (h *CatalogResourceHandler) enrichItemDetail(r *http.Request, detail *catal
 	}
 
 	switch detail.Type {
-	case "season":
+	case itemTypeSeason:
 		if h.items.episodeRepo != nil {
 			episodes, err := h.items.episodeRepo.ListBySeasonID(r.Context(), detail.ContentID)
 			if err == nil {
 				detail.SeasonUserData = h.items.getAggregateUserData(r, episodes)
 			}
 		}
-	case "series":
+	case itemTypeSeries:
 		if h.items.episodeRepo != nil {
 			episodes, err := h.items.episodeRepo.ListBySeries(r.Context(), detail.ContentID)
 			if err == nil {
 				detail.SeasonUserData = h.items.getAggregateUserData(r, episodes)
 			}
 		}
-	case "movie", "episode", "audiobook", "ebook":
+	case itemTypeMovie, itemTypeEpisode, "audiobook", itemTypeEbook:
 		detail.SeasonUserData = h.items.getLeafUserData(r, detail.ContentID, detail.Type)
 		applyEffectiveEditionPreference(detail.SeasonUserData, &detail.EffectiveVersionEditionKey)
 	}

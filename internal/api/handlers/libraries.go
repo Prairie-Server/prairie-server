@@ -62,12 +62,22 @@ type LibraryHandler struct {
 	SectionRepo           *sections.Repository
 	StoreProvider         userstore.UserStoreProvider
 	S3Meta                LibraryImageStore
-	PresignTTL            time.Duration
-	appCtx                context.Context
-	EventBus              cache.EventBus
-	EventsHub             *evt.Hub
-	ScanRegistry          *evt.ScanRegistry
-	ScanQueue             libraryScanQueuer
+	// ChapterThumbnailStoreReady reports whether a store exists to hold chapter
+	// thumbnails. It is deliberately separate from S3Meta: that is the metadata
+	// bucket, while thumbnails are written to the public asset store, which may be
+	// public S3 or the local artwork volume. Gating on S3Meta made the toggle
+	// unavailable on installs that store artwork locally and also checked the
+	// wrong bucket. Trickplay sheets use the same store.
+	ChapterThumbnailStoreReady bool
+	// TrickplayStoreReady mirrors ChapterThumbnailStoreReady; both features share
+	// the artwork object store.
+	TrickplayStoreReady bool
+	PresignTTL          time.Duration
+	appCtx              context.Context
+	EventBus            cache.EventBus
+	EventsHub           *evt.Hub
+	ScanRegistry        *evt.ScanRegistry
+	ScanQueue           libraryScanQueuer
 }
 
 // LibraryImageStore provides S3 operations for library poster images.
@@ -188,6 +198,7 @@ type createLibraryRequest struct {
 	Name                     string   `json:"name"`
 	MetadataLanguage         string   `json:"metadata_language,omitempty"`
 	ChapterThumbnailsEnabled bool     `json:"chapter_thumbnails_enabled,omitempty"`
+	TrickplayEnabled         bool     `json:"trickplay_enabled,omitempty"`
 	IntroDetectionEnabled    bool     `json:"intro_detection_enabled,omitempty"`
 	// TrailerKinds is the allow-list of remote video kinds fetched during
 	// metadata refresh; omitted = default (all provider kinds).
@@ -203,6 +214,7 @@ type updateLibraryRequest struct {
 	MetadataLanguage         *string   `json:"metadata_language,omitempty"`
 	AutoTranslateMetadata    *bool     `json:"auto_translate_metadata,omitempty"`
 	ChapterThumbnailsEnabled *bool     `json:"chapter_thumbnails_enabled,omitempty"`
+	TrickplayEnabled         *bool     `json:"trickplay_enabled,omitempty"`
 	IntroDetectionEnabled    *bool     `json:"intro_detection_enabled,omitempty"`
 	// TrailerKinds is the allow-list of remote video kinds fetched during
 	// metadata refresh (ExtraKind values); empty array disables remote videos.
@@ -242,6 +254,8 @@ type libraryResponse struct {
 	AutoTranslateMetadata      bool       `json:"auto_translate_metadata"`
 	ChapterThumbnailsEnabled   bool       `json:"chapter_thumbnails_enabled"`
 	ChapterThumbnailsSupported bool       `json:"chapter_thumbnails_supported"`
+	TrickplayEnabled           bool       `json:"trickplay_enabled"`
+	TrickplaySupported         bool       `json:"trickplay_supported"`
 	IntroDetectionEnabled      bool       `json:"intro_detection_enabled"`
 	TrailerKinds               []string   `json:"trailer_kinds"`
 	SortOrder                  int        `json:"sort_order"`
@@ -378,6 +392,8 @@ func toLibraryResponse(f *models.MediaFolder) libraryResponse {
 		AutoTranslateMetadata:      f.AutoTranslateMetadata,
 		ChapterThumbnailsEnabled:   f.ChapterThumbnailsEnabled,
 		ChapterThumbnailsSupported: false,
+		TrickplayEnabled:           f.TrickplayEnabled,
+		TrickplaySupported:         false,
 		IntroDetectionEnabled:      f.IntroDetectionEnabled,
 		TrailerKinds:               trailerKinds,
 		SortOrder:                  f.SortOrder,
@@ -392,7 +408,8 @@ func toLibraryResponse(f *models.MediaFolder) libraryResponse {
 // and presigns the poster URL if a poster path is set.
 func (h *LibraryHandler) toLibraryResponseWithPoster(ctx context.Context, f *models.MediaFolder) libraryResponse {
 	resp := toLibraryResponse(f)
-	resp.ChapterThumbnailsSupported = h.S3Meta != nil
+	resp.ChapterThumbnailsSupported = h.ChapterThumbnailStoreReady
+	resp.TrickplaySupported = h.TrickplayStoreReady || h.ChapterThumbnailStoreReady
 	if f.PosterPath != "" && h.S3Meta != nil {
 		ttl := h.PresignTTL
 		if ttl <= 0 {
@@ -581,8 +598,12 @@ func (h *LibraryHandler) HandleCreateLibrary(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "bad_request", "Invalid metadata_language; must be a valid ISO 639-1 code")
 		return
 	}
-	if req.ChapterThumbnailsEnabled && h.S3Meta == nil {
-		writeError(w, http.StatusBadRequest, "bad_request", "Chapter thumbnails require configured public asset S3 storage")
+	if req.ChapterThumbnailsEnabled && !h.ChapterThumbnailStoreReady {
+		writeError(w, http.StatusBadRequest, "bad_request", "Chapter thumbnails require configured artwork storage")
+		return
+	}
+	if req.TrickplayEnabled && !h.TrickplayStoreReady && !h.ChapterThumbnailStoreReady {
+		writeError(w, http.StatusBadRequest, "bad_request", "Seek previews require configured artwork storage")
 		return
 	}
 
@@ -592,6 +613,7 @@ func (h *LibraryHandler) HandleCreateLibrary(w http.ResponseWriter, r *http.Requ
 		Name:                     req.Name,
 		MetadataLanguage:         req.MetadataLanguage,
 		ChapterThumbnailsEnabled: req.ChapterThumbnailsEnabled,
+		TrickplayEnabled:         req.TrickplayEnabled,
 		IntroDetectionEnabled:    req.IntroDetectionEnabled,
 		TrailerKinds:             req.TrailerKinds,
 	})
@@ -607,7 +629,7 @@ func (h *LibraryHandler) HandleCreateLibrary(w http.ResponseWriter, r *http.Requ
 
 	// Seed default sections for the new library.
 	if h.SectionRepo != nil {
-		if seedErr := h.SectionRepo.SeedDefaults(r.Context(), "library", &folder.ID, sections.DefaultLibrarySectionsForType(&folder.ID, folder.Type)); seedErr != nil {
+		if seedErr := h.SectionRepo.SeedDefaults(r.Context(), sectionTypeLibrary, &folder.ID, sections.DefaultLibrarySectionsForType(&folder.ID, folder.Type)); seedErr != nil {
 			slog.WarnContext(r.Context(), "seed default sections for new library", "component", "api", "library_id", folder.ID, "error", seedErr)
 		}
 		if sections.IsAudiobookLibraryType(folder.Type) {
@@ -665,8 +687,12 @@ func (h *LibraryHandler) HandleUpdateLibrary(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusBadRequest, "bad_request", "Invalid metadata_language; must be a valid ISO 639-1 code")
 		return
 	}
-	if req.ChapterThumbnailsEnabled != nil && *req.ChapterThumbnailsEnabled && h.S3Meta == nil {
-		writeError(w, http.StatusBadRequest, "bad_request", "Chapter thumbnails require configured public asset S3 storage")
+	if req.ChapterThumbnailsEnabled != nil && *req.ChapterThumbnailsEnabled && !h.ChapterThumbnailStoreReady {
+		writeError(w, http.StatusBadRequest, "bad_request", "Chapter thumbnails require configured artwork storage")
+		return
+	}
+	if req.TrickplayEnabled != nil && *req.TrickplayEnabled && !h.TrickplayStoreReady && !h.ChapterThumbnailStoreReady {
+		writeError(w, http.StatusBadRequest, "bad_request", "Seek previews require configured artwork storage")
 		return
 	}
 
@@ -690,6 +716,7 @@ func (h *LibraryHandler) HandleUpdateLibrary(w http.ResponseWriter, r *http.Requ
 		MetadataLanguage:         req.MetadataLanguage,
 		AutoTranslateMetadata:    req.AutoTranslateMetadata,
 		ChapterThumbnailsEnabled: req.ChapterThumbnailsEnabled,
+		TrickplayEnabled:         req.TrickplayEnabled,
 		IntroDetectionEnabled:    req.IntroDetectionEnabled,
 		TrailerKinds:             req.TrailerKinds,
 	})
@@ -1364,19 +1391,6 @@ func boolPtr(v bool) *bool {
 	return &v
 }
 
-func (h *LibraryHandler) publishCatalogStatsInvalidation(eventType, payload string) {
-	if h.EventBus == nil {
-		return
-	}
-	if err := h.EventBus.Publish(h.appCtx, cache.ChannelCatalog, cache.Event{Type: eventType, Payload: payload}); err != nil {
-		slog.Warn("scan: failed to publish catalog invalidation event",
-			"type", eventType,
-			"payload", payload,
-			"error", err,
-		)
-	}
-}
-
 type refreshLibraryMetadataRequest struct {
 	Mode string `json:"mode"`
 }
@@ -1944,7 +1958,7 @@ func (h *LibraryHandler) HandleUploadPoster(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	file, header, err := r.FormFile("poster")
+	file, header, err := r.FormFile(imageTypePoster)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "bad_request", "Missing poster file")
 		return

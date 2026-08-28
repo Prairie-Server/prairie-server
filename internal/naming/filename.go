@@ -73,35 +73,35 @@ func ResolvePathContext(filePath string, libraryType string) *PathContext {
 		parsedAirDate = airDate
 	}
 
-	allowNumericSeasonDirs := ctx.HasEpisodePattern || normalizedLibraryType == "series"
+	allowNumericSeasonDirs := ctx.HasEpisodePattern || normalizedLibraryType == itemTypeSeries
 	ctx.HasSeasonStructure, _ = detectSeasonStructure(parts[:max(len(parts)-1, 0)], allowNumericSeasonDirs)
 	ctx.HasMovieFolderEvidence = detectMovieFolderEvidence(parentBase, nameNoExt, ctx.HasSeasonStructure)
 
 	switch normalizedLibraryType {
-	case "movie":
-		ctx.Type = "movie"
-	case "series":
-		ctx.Type = "series"
+	case itemTypeMovie:
+		ctx.Type = itemTypeMovie
+	case itemTypeSeries:
+		ctx.Type = itemTypeSeries
 	default:
 		switch {
 		case ctx.HasSeasonStructure:
-			ctx.Type = "series"
+			ctx.Type = itemTypeSeries
 		case ctx.HasMovieFolderEvidence:
-			ctx.Type = "movie"
+			ctx.Type = itemTypeMovie
 		case ctx.HasEpisodePattern:
-			ctx.Type = "series"
+			ctx.Type = itemTypeSeries
 		default:
-			ctx.Type = "movie"
+			ctx.Type = itemTypeMovie
 		}
 	}
 
-	if ctx.Type == "series" {
+	if ctx.Type == itemTypeSeries {
 		if parsedAirDate != "" {
 			ctx.AirDate = parsedAirDate
 			ctx.HasAirDatePattern = true
 		}
 
-		if root, ok := deriveSeriesRoot(normalized, ctx.HasEpisodePattern, normalizedLibraryType == "series"); ok {
+		if root, ok := deriveSeriesRoot(normalized, ctx.HasEpisodePattern, normalizedLibraryType == itemTypeSeries); ok {
 			ctx.RootPath = root.RootPath
 			ctx.Title, ctx.Year = parseTitleYearCandidate(root.FolderName)
 		} else if parentDir != "." && parentDir != "/" && parentDir != "" {
@@ -156,7 +156,7 @@ type SeriesRoot struct {
 // clearly looks like episodic TV content in the given library context.
 func DetectSeriesRoot(filePath string, libraryType string) (*SeriesRoot, bool) {
 	ctx := ResolvePathContext(filePath, libraryType)
-	if ctx == nil || ctx.Type != "series" || ctx.RootPath == "" {
+	if ctx == nil || ctx.Type != itemTypeSeries || ctx.RootPath == "" {
 		return nil, false
 	}
 
@@ -195,10 +195,10 @@ func DetectCanonicalRoot(filePath string, libraryType string) (*CanonicalRoot, b
 
 func normalizeLibraryType(value string) string {
 	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "movie", "movies":
-		return "movie"
-	case "series", "tv", "show", "tvshows":
-		return "series"
+	case itemTypeMovie, "movies":
+		return itemTypeMovie
+	case itemTypeSeries, "tv", "show", "tvshows":
+		return itemTypeSeries
 	default:
 		return ""
 	}
@@ -383,13 +383,13 @@ func deriveMovieRoot(filePath string) (*CanonicalRoot, bool) {
 	if hasExplicitFolderIDs(parentBase) || parentYear > 0 || comparableTitlesOverlap(fileComparable, parentComparable) {
 		return &CanonicalRoot{
 			RootPath: parentDir,
-			Type:     "movie",
+			Type:     itemTypeMovie,
 		}, true
 	}
 
 	return &CanonicalRoot{
 		RootPath: path.Join(parentDir, nameNoExt),
-		Type:     "movie",
+		Type:     itemTypeMovie,
 	}, true
 }
 

@@ -1,6 +1,7 @@
 import type { Profile } from "@/api/types";
 
-export const SILO_APP_EXAMPLES = "Silo for iPhone, Apple TV, Android, Android TV, and this website";
+export const PRAIRIE_APP_EXAMPLES =
+  "Prairie for iPhone, Apple TV, Android, Android TV, and this website";
 
 export const JELLYFIN_APP_EXAMPLES = "Infuse, Swiftfin, JellyCon, Findroid, Jellyfin Media Player";
 
@@ -57,7 +58,7 @@ export function isLoopbackURL(rawURL: string): boolean {
     host === "::1" ||
     host === "0.0.0.0" ||
     host.endsWith(".localhost") ||
-    /^127\./.test(host)
+    host.startsWith("127.")
   );
 }
 

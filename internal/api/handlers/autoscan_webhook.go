@@ -83,9 +83,9 @@ type webhookAccepted struct {
 // in the path authenticates the delivery. Responses are deliberately coarse:
 // 404 for any unknown token (no existence hints), 202 for anything accepted —
 // including test events, unsupported event types, and disabled sources — so
-// arr never marks a configured webhook unhealthy for a Silo-side state it
+// arr never marks a configured webhook unhealthy for a Prairie-side state it
 // cannot act on. Actionable deliveries are durably queued before the 202, so
-// transient ingest failures are retried inside Silo rather than delegated to
+// transient ingest failures are retried inside Prairie rather than delegated to
 // arr (which does not replay failed notification events).
 //
 // The token, request URL, and body are never logged.

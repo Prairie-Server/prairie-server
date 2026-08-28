@@ -1,11 +1,15 @@
 package server
 
 import (
+	"compress/gzip"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
 	"testing"
 	"testing/fstest"
+
+	chimiddleware "github.com/go-chi/chi/v5/middleware"
 )
 
 func TestFrontendHandlerSetsSecurityHeadersOnSPAHTML(t *testing.T) {
@@ -456,6 +460,47 @@ func TestFrontendShellCacheHeadersAndConditionalGet(t *testing.T) {
 	// A stale validator gets the full document.
 	if rec := conditional(`"stale-etag"`); rec.Code != http.StatusOK || rec.Body.Len() == 0 {
 		t.Fatalf("If-None-Match stale: status = %d body = %d bytes, want 200 with body", rec.Code, rec.Body.Len())
+	}
+}
+
+func TestFrontendHandlerGzipCompressesTextAssets(t *testing.T) {
+	prev := WebDistFS
+	// Compressible JS payload larger than chi's default threshold.
+	payload := strings.Repeat("console.log('prairie');\n", 200)
+	WebDistFS = fstest.MapFS{
+		"index.html":    &fstest.MapFile{Data: []byte("<!doctype html><div id=\"root\"></div>")},
+		"assets/app.js": &fstest.MapFile{Data: []byte(payload)},
+	}
+	t.Cleanup(func() { WebDistFS = prev })
+
+	// Same wrapping used on the main listener for SPA assets.
+	handler := chimiddleware.Compress(5)(FrontendHandler())
+
+	req := httptest.NewRequest(http.MethodGet, "/assets/app.js", nil)
+	req.Header.Set("Accept-Encoding", "gzip")
+	rr := httptest.NewRecorder()
+	handler.ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("status = %d", rr.Code)
+	}
+	if got := rr.Header().Get("Content-Encoding"); got != "gzip" {
+		t.Fatalf("content-encoding = %q, want gzip (SPA was served uncompressed on LAN)", got)
+	}
+	zr, err := gzip.NewReader(rr.Body)
+	if err != nil {
+		t.Fatalf("gzip reader: %v", err)
+	}
+	defer func() { _ = zr.Close() }()
+	body, err := io.ReadAll(zr)
+	if err != nil {
+		t.Fatalf("read gzip body: %v", err)
+	}
+	if string(body) != payload {
+		t.Fatalf("decompressed body length = %d, want %d", len(body), len(payload))
+	}
+	if rr.Body.Len() >= len(payload) {
+		t.Fatalf("gzipped body (%d) should be smaller than raw (%d)", rr.Body.Len(), len(payload))
 	}
 }
 

@@ -671,9 +671,9 @@ func TestBuildItemLocalizationRecord_PreservesExistingWhenRefreshIsBlank(t *test
 	existing := &models.MediaItemLocalization{
 		ContentID:         "series-1",
 		Language:          "fr",
-		Title:             "Titre existant",
+		Title:             "Titre existent",
 		SortTitle:         "Titre",
-		Overview:          "Apercu existant",
+		Overview:          "Apercu existent",
 		Tagline:           "Phrase existante",
 		PosterPath:        "s3://poster.jpg",
 		PosterThumbhash:   "poster-thumb",

@@ -41,8 +41,8 @@ func TestDiagnosticsUploadHappyPath(t *testing.T) {
 	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
 		t.Fatalf("decode response: %v", err)
 	}
-	if resp.ShortID != "SILO-ABCDEF123456" {
-		t.Fatalf("short_id = %q, want SILO-ABCDEF123456", resp.ShortID)
+	if resp.ShortID != "PRAIRIE-ABCDEF123456" {
+		t.Fatalf("short_id = %q, want PRAIRIE-ABCDEF123456", resp.ShortID)
 	}
 	if service.ingestCalls != 1 {
 		t.Fatalf("ingest calls = %d, want 1", service.ingestCalls)
@@ -300,7 +300,7 @@ func TestDiagnosticsAdminListReportsParsesFilters(t *testing.T) {
 	if filters.To == nil || !filters.To.Equal(time.Date(2026, 7, 20, 10, 0, 0, 0, time.UTC)) {
 		t.Fatalf("To = %v, want expected timestamp", filters.To)
 	}
-	if filters.ShortID != "SILO-ABCDEF123456" || filters.Limit != 25 || filters.Cursor != "next" {
+	if filters.ShortID != "PRAIRIE-ABCDEF123456" || filters.Limit != 25 || filters.Cursor != "next" {
 		t.Fatalf("filters = %#v, want normalized short id, limit, cursor", filters)
 	}
 }
@@ -378,7 +378,7 @@ func TestDiagnosticsAdminDownloadStreamsWhenPresignUnavailable(t *testing.T) {
 	if got := rec.Header().Get("Content-Type"); got != diagnostics.ReportDownloadContentType {
 		t.Fatalf("Content-Type = %q, want %q", got, diagnostics.ReportDownloadContentType)
 	}
-	if !strings.Contains(rec.Header().Get("Content-Disposition"), "silo-diagnostics-SILO-ABCDEF123456.tar.gz") {
+	if !strings.Contains(rec.Header().Get("Content-Disposition"), "prairie-diagnostics-PRAIRIE-ABCDEF123456.tar.gz") {
 		t.Fatalf("Content-Disposition = %q, want diagnostic filename", rec.Header().Get("Content-Disposition"))
 	}
 	if rec.Body.String() != "gzipped report" {
@@ -670,7 +670,7 @@ func readyDiagnosticsReport() *diagnostics.Report {
 	blobBytes := int64(13)
 	return &diagnostics.Report{
 		ID:         "report-1",
-		ShortID:    "SILO-ABCDEF123456",
+		ShortID:    "PRAIRIE-ABCDEF123456",
 		UserID:     7,
 		State:      diagnostics.StateReady,
 		ReportType: "crash",
@@ -789,7 +789,7 @@ func (f *fakeDiagnosticsService) Ingest(_ context.Context, _ int, _ *string, man
 	f.mu.Unlock()
 	return diagnostics.IngestResult{
 		ReportID: "11111111-1111-1111-1111-111111111111",
-		ShortID:  "SILO-ABCDEF123456",
+		ShortID:  "PRAIRIE-ABCDEF123456",
 	}, nil
 }
 

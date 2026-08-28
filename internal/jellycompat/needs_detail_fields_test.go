@@ -3,6 +3,7 @@ package jellycompat
 import "testing"
 
 func TestRequestedFieldsNeedDetail_AllowsBrowseDerivableFields(t *testing.T) {
+	t.Parallel()
 	browseDerivable := []string{
 		"mediasourcecount",
 		"primaryimageaspectratio",
@@ -40,6 +41,7 @@ func TestRequestedFieldsNeedDetail_AllowsBrowseDerivableFields(t *testing.T) {
 }
 
 func TestRequestedFieldsNeedDetail_RequiresDetailForRichFields(t *testing.T) {
+	t.Parallel()
 	requireDetail := []string{
 		"people",
 		"chapters",
@@ -56,6 +58,7 @@ func TestRequestedFieldsNeedDetail_RequiresDetailForRichFields(t *testing.T) {
 
 // Empty / nil field maps must never trigger detail.
 func TestRequestedFieldsNeedDetail_EmptyDoesNotTriggerDetail(t *testing.T) {
+	t.Parallel()
 	if requestedFieldsNeedDetail(nil) {
 		t.Errorf("nil fields map must not trigger needsDetailFields")
 	}
@@ -67,6 +70,7 @@ func TestRequestedFieldsNeedDetail_EmptyDoesNotTriggerDetail(t *testing.T) {
 // Unknown fields (not previously enumerated) must not trigger detail; the
 // allowlist must be explicit on what requires detail, not the inverse.
 func TestRequestedFieldsNeedDetail_UnknownFieldDoesNotTriggerDetail(t *testing.T) {
+	t.Parallel()
 	fields := map[string]bool{"someunknownjellyfinfield": true}
 	if requestedFieldsNeedDetail(fields) {
 		t.Errorf("unknown field must not trigger needsDetailFields; only fields in fieldsRequiringDetail should")
@@ -76,6 +80,7 @@ func TestRequestedFieldsNeedDetail_UnknownFieldDoesNotTriggerDetail(t *testing.T
 // Mixed input: a single detail-required field in a larger map must still
 // trigger detail mode for the whole request.
 func TestRequestedFieldsNeedDetail_MixedTriggersOnDetailField(t *testing.T) {
+	t.Parallel()
 	fields := map[string]bool{
 		"genres":   true,
 		"studios":  true,
@@ -91,6 +96,7 @@ func TestRequestedFieldsNeedDetail_MixedTriggersOnDetailField(t *testing.T) {
 // itemFromList does not populate AND that don't trigger a detail fetch are
 // "unsatisfied" — the response will simply omit them.
 func TestUnsatisfiedListFields_FlagsBrowseDroppedFields(t *testing.T) {
+	t.Parallel()
 	cases := []struct {
 		name   string
 		fields map[string]bool

@@ -376,20 +376,22 @@ export function MetadataFields({ form }: { form: LibraryFormController }) {
 export function AdvancedFields({
   form,
   chapterThumbnailsSupported,
+  trickplaySupported,
 }: {
   form: LibraryFormController;
   chapterThumbnailsSupported: boolean;
+  trickplaySupported: boolean;
 }) {
   return (
     <div className="space-y-3">
       <SettingCard
         htmlFor="chapter-thumbnails-switch"
         title="Generate chapter thumbnails"
-        description="Stores chapter preview images in the configured public asset S3 bucket. Chapter markers and chapter menus still work without thumbnails."
+        description="Stores chapter preview images alongside the rest of your artwork — the public asset S3 bucket when one is configured, otherwise the local data volume. Chapter markers and chapter menus still work without thumbnails."
         footer={
           !chapterThumbnailsSupported ? (
             <p className="text-warning text-xs">
-              Public asset S3 storage is required before this can be enabled.
+              Artwork storage is not configured, so there is nowhere to put the generated images.
             </p>
           ) : null
         }
@@ -399,6 +401,25 @@ export function AdvancedFields({
           checked={form.chapterThumbnailsEnabled}
           disabled={!chapterThumbnailsSupported}
           onCheckedChange={form.setChapterThumbnailsEnabled}
+        />
+      </SettingCard>
+      <SettingCard
+        htmlFor="trickplay-switch"
+        title="Generate seek previews"
+        description="Builds sprite-sheet previews for the scrubber so hovering or dragging the seek bar shows a frame from that moment. Stored with the rest of your artwork."
+        footer={
+          !trickplaySupported ? (
+            <p className="text-warning text-xs">
+              Artwork storage is not configured, so there is nowhere to put the generated images.
+            </p>
+          ) : null
+        }
+      >
+        <Switch
+          id="trickplay-switch"
+          checked={form.trickplayEnabled}
+          disabled={!trickplaySupported}
+          onCheckedChange={form.setTrickplayEnabled}
         />
       </SettingCard>
       <SettingCard

@@ -23,7 +23,7 @@ export function useCreateInvitation() {
         body: JSON.stringify(body),
       }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: adminKeys.invitations() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.invitations() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to send invitation");
@@ -40,7 +40,7 @@ export function useResendInvitation() {
       if (data.email_sent) {
         toast.success("Invitation resent — the old link no longer works");
       }
-      queryClient.invalidateQueries({ queryKey: adminKeys.invitations() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.invitations() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to resend invitation");
@@ -54,7 +54,7 @@ export function useRevokeInvitation() {
     mutationFn: (id: number) => api(`/admin/invitations/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Invitation revoked");
-      queryClient.invalidateQueries({ queryKey: adminKeys.invitations() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.invitations() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to revoke invitation");

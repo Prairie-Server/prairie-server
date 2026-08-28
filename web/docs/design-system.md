@@ -1,16 +1,27 @@
-# Silo Design System
+# Prairie Design System
 
-Human-facing reference for the Silo web app's design language.
+Human-facing reference for the Prairie web app's design language. Native apps should mirror these foundations when shipping Phase 3 UI.
 
-Code-backed tokens and utility constants live in [../src/lib/design-system.ts](../src/lib/design-system.ts). CSS tokens and reusable utility classes live in [../src/app.css](../src/app.css).
+Code-backed tokens and utility constants live in [../src/lib/design-system.ts](../src/lib/design-system.ts). CSS tokens and reusable utility classes live in [../src/app.css](../src/app.css). Theme catalog: [../src/lib/themes.ts](../src/lib/themes.ts).
 
 ## Philosophy
 
-Silo uses a cinema-first design language for media streaming interfaces. Media consumption and discovery are the primary concerns — every design decision should be evaluated against them.
+Prairie should feel **simple, pretty, and usable** — not like a generic dark SaaS / AI template (the trap Silo fell into). Cinema-first media discovery still leads, but branded surfaces are warm and human: dusk over open land, amber wheat, clear hierarchy, little chrome.
 
-The UI should feel like a dark theater, not a dashboard. Media artwork, backdrops, and thumbnails carry most of the visual weight. Interface chrome stays restrained so content stays primary. When a user lands on the app, the first thing they should feel is the content — a sweeping backdrop, a cinematic title, artwork that fills the viewport.
+**Do:** clear Prairie brand (mark + name, or a single wordmark — never both stacked), one quiet atmospheric plane, readable forms, content-forward browse.
+**Don't:** stacked glow orbs, glassmorphism cards, purple gradients, pill clusters, dashboard-dense first viewports, Inter/Roboto defaults.
 
-Themes should let content imagery be the primary source of color. Theme accent colors should complement, not compete with, poster and backdrop artwork. The default theme (Midnight Cinema) uses a monochromatic palette specifically so the media provides all the color.
+### Default theme: Prairie Dusk
+
+| Token role      | Direction                                                               |
+| --------------- | ----------------------------------------------------------------------- |
+| Surfaces        | Deep slate / charcoal (`#141820` background, darker sidebar)            |
+| Accent          | Amber wheat (`#e0a84a`) — CTAs, focus, brand glow                       |
+| UI type         | **Sora** (`--font-body`)                                                |
+| Display / brand | **Fraunces** (`--font-display`)                                         |
+| Motion          | `.brand-reveal`, `.section-fade-in` (respects `prefers-reduced-motion`) |
+
+Avoid purple-on-white AI clichés, cream+terracotta editorial looks, and broadsheet newspaper chrome. Theme accents should complement poster art, not compete with it. Alternate curated themes (Cinema Dark, Cobalt, …) remain available in settings.
 
 ## How To Use It
 
@@ -20,16 +31,30 @@ Themes should let content imagery be the primary source of color. Theme accent c
    Avoid: `bg-[#1a1a1f]`
 2. Spacing: use the existing Tailwind spacing scale and shared layout constants.
 3. Typography: use the defined type scale. Hero and display text should use `--font-display`; everything else should default to `--font-body`.
-4. Motion: use duration and easing variables for transitions instead of one-off timings.
+4. Motion: use duration and easing variables for transitions instead of one-off timings. Prefer `.brand-reveal` and `.section-fade-in` for Phase 3 brand/section entrances.
 5. Patterns: prefer the existing utility classes in `app.css` before inventing new presentation patterns.
+6. First viewport: one composition — brand (when branded), one headline, one supporting sentence, one CTA group, one dominant visual plane. Discovery rows belong below the fold. No cards in heroes.
 
 ## Design Principles
+
+### 0. Prairie Brand First
+
+On branded surfaces, the Prairie wordmark or mark is a hero-level signal. Product headlines must not overpower the brand there.
+
+Examples:
+
+- Login uses `AuthBrandHero` above the form.
+- Setup wizard, Profiles, and Activate Device use the same auth brand composition (`AuthBackground` + `AuthBrandHero`).
+- App shell and Admin mobile header use `PrairieBrand` (wordmark / mark), not glyph placeholders.
+- Empty home uses the same mark + server-name welcome as auth (not a second wordmark beside the sidebar).
+- Admin page titles use `.page-title` consistently with user settings.
 
 ### 1. Content Is King
 
 Media artwork and imagery are the primary visual elements. UI chrome recedes to let content shine.
 
 Examples:
+
 - Hero sections use full-bleed backdrop images.
 - Card grids let poster art dominate; text labels are secondary.
 - Navigation and controls use low-contrast, minimal styling.
@@ -39,7 +64,8 @@ Examples:
 Deep, dark surfaces create a theater-like atmosphere. Multiple darkness layers establish depth without harsh contrast.
 
 Examples:
-- Page backgrounds sit in the near-black range.
+
+- Page backgrounds sit in the near-black / deep slate range.
 - Sidebars are darker than the main background.
 - Cards use subtle surface lift rather than dramatic contrast.
 
@@ -48,6 +74,7 @@ Examples:
 Borders, dividers, and backgrounds should stay low-contrast. Interactivity should come from opacity and surface shifts more than outlines or heavy shadows.
 
 Examples:
+
 - Borders are thin and close in value to the surrounding surface.
 - Hover states shift background before they add stronger effects.
 - Active states use a soft background highlight and text-color change.
@@ -57,6 +84,7 @@ Examples:
 Importance should come from size, weight, and opacity before color. Reserve accent color for actions and cues.
 
 Examples:
+
 - Hero titles are the largest and heaviest text on the page.
 - Section headers are clearly smaller than page and hero titles.
 - Metadata stays small and muted.
@@ -67,6 +95,7 @@ Examples:
 The UI should feel alive with the content it displays. Featured artwork should influence the surrounding atmosphere through subtle color bleed and ambient glow. The page should feel like it belongs to the content currently on screen.
 
 Examples:
+
 - Hero backdrops emit a soft ambient glow that tints the area around them via `--ambient` color.
 - Detail pages feel like they belong to the featured title — the atmosphere shifts.
 - Hero images use subtle Ken Burns motion (slow zoom/pan) to feel alive rather than static.
@@ -77,6 +106,7 @@ Examples:
 Horizontal scroll rows are the primary discovery pattern. Users browse by scanning rows of artwork, not by reading lists or navigating grids. Grids are reserved for search results, "view all" pages, and library management.
 
 Examples:
+
 - Home and discover pages use carousel rows as the primary content structure.
 - Each row shows partially visible items at the edges to signal scrollability.
 - Row items are large enough for artwork to read clearly at a glance.
@@ -87,6 +117,7 @@ Examples:
 Motion should guide attention without calling attention to itself. Prefer CSS transitions over JavaScript animation where possible. Ambient cinematic motion (Ken Burns, parallax, color shifts) uses longer durations and gentler easing than interaction motion.
 
 Examples:
+
 - Page transitions use fade plus slight slide.
 - Card hover uses subtle scale and brightness lift.
 - Sidebar collapse expands and contracts smoothly.
@@ -98,18 +129,19 @@ Examples:
 
 The UI adapts its density and chrome based on how deeply a user is engaged with content. Deeper engagement means less UI and more content.
 
-| Level | Context | Behavior |
-|-------|---------|----------|
-| Browse | Home, discover, library | Sidebar visible, multiple rows, standard hero |
-| Focus | Hovering or previewing a title | Surrounding content dims, focused item expands |
-| Detail | Movie or show page | Full-bleed hero, sidebar recedes, page is about this content |
-| Watch | Active playback | UI fully hidden, minimal transport controls on interaction |
+| Level  | Context                        | Behavior                                                     |
+| ------ | ------------------------------ | ------------------------------------------------------------ |
+| Browse | Home, discover, library        | Sidebar visible, multiple rows, standard hero                |
+| Focus  | Hovering or previewing a title | Surrounding content dims, focused item expands               |
+| Detail | Movie or show page             | Full-bleed hero, sidebar recedes, page is about this content |
+| Watch  | Active playback                | UI fully hidden, minimal transport controls on interaction   |
 
 ### 9. Responsive Density
 
 Information density should adapt to viewport size instead of shrinking the desktop layout unchanged.
 
 Examples:
+
 - Desktop uses persistent sidebar navigation and wider grids.
 - Tablet reduces column count and can collapse secondary navigation.
 - Mobile stacks content and uses drawers or sheets where needed.
@@ -201,9 +233,10 @@ Colors are organized as semantic layers. Theme files provide the actual values; 
 
 The hero should feel cinematic, not like a banner. On first load the hero should dominate the viewport, with content rows discoverable via scroll.
 
-- Mobile: `h-[60vh]`, `min-h-[400px]`
-- Desktop: `h-[75vh]`, `min-h-[500px]`, `max-h-[900px]`
+- Mobile: `h-[60dvh]`, `min-h-[400px]` (prefer `dvh` over `vh` so mobile browser chrome does not leave dead space)
+- Desktop: `h-[75dvh]`, `min-h-[500px]`, `max-h-[900px]`
 - Detail page heroes can be taller since they are the entire context for the page
+- Fixed/sticky top and bottom chrome should clear notches and home indicators via `env(safe-area-inset-*)` (see `.pt-safe` / `.pb-safe-offset` utilities in `app.css`)
 
 ## Motion
 
@@ -252,6 +285,7 @@ The hero should feel cinematic, not like a banner. On first load the hero should
 ### Radius
 
 Use a small shared radius scale rather than arbitrary values:
+
 - small radii for badges and tags
 - medium radii for buttons and inputs
 - large radii for cards and panels
@@ -265,6 +299,7 @@ On dark surfaces, depth should come mostly from surface color, not heavy shadow.
 ### Z-Index
 
 Use a consistent layering model:
+
 - base content
 - dropdowns
 - sticky regions
@@ -282,6 +317,7 @@ Use a consistent layering model:
 Full-bleed backdrop image that commands the viewport. Gradient overlays dissolve the image into the page. Large display title, compact metadata, and a pill-shaped primary action. The hero is the cinematic first impression.
 
 Implementation cues:
+
 - Use `.hero-gradient` for the bottom-to-top fade, `.hero-gradient-radial` for vignette, `.hero-gradient-left` for sidebar-edge fade.
 - Use display typography (`--font-display`) at `text-5xl` to `text-7xl` for the title.
 - Keep metadata compact and secondary (badges, small text).
@@ -294,6 +330,7 @@ Implementation cues:
 Horizontal scroll rows are the primary discovery pattern. Each row presents a scrollable strip of poster or backdrop cards with a section header above.
 
 Implementation cues:
+
 - Items at the left and right edges should be partially visible to signal scrollability (peek).
 - Scroll buttons appear on hover at the row edges with a gradient mask.
 - Use `scroll-smooth` with `snap-x snap-mandatory` on the container; `snap-start` on items.
@@ -307,6 +344,7 @@ Implementation cues:
 Poster or backdrop artwork should dominate. Supporting text sits below and stays visually secondary.
 
 Implementation cues:
+
 - Use `.media-card` for hover effect (scale + brightness lift).
 - Use `.media-card-image` for consistent rounded corners and surface background placeholder.
 - Hover should slightly scale and brighten, not dramatically lift.
@@ -318,6 +356,7 @@ Implementation cues:
 The most important single page in the app. When a user selects a title, the page should feel like opening a collector's edition — fully immersive, cinematic, and dedicated to that content.
 
 Implementation cues:
+
 - Full-bleed backdrop hero, taller than home heroes (`75-85vh`).
 - Set `--ambient` from the backdrop artwork to tint the page atmosphere.
 - Sidebar should auto-collapse or recede to maximize immersion.
@@ -330,6 +369,7 @@ Implementation cues:
 Semi-transparent surfaces with blur should be used selectively for floating controls and overlay panels, not as the default card style.
 
 Implementation cues:
+
 - Use `.glass` for strong glass (floating controls, overlay panels).
 - Use `.glass-subtle` for lighter glass (pills on hero, metadata overlays).
 - Use `.glass-dark` for dark glass (navigation overlays, backdrop panels).
@@ -339,16 +379,64 @@ Implementation cues:
 Primary playback and filter controls should feel tactile and simple.
 
 Implementation cues:
+
 - Use `.pill-primary` for main CTAs (Play, Watch).
 - Use `.pill-secondary` for secondary actions.
 - Use `.pill-glass` for buttons floating over imagery.
 - Reserve pill shape for primary actions, tabs, and chips.
+
+### Action Buttons
+
+Primary and secondary action buttons should pair a Lucide icon with their label. Place the icon before the label as a sibling inside `<Button>` (composition — do not change the Button API). The Button already styles child SVGs via `[&_svg]` rules.
+
+Icon-only buttons (`size="icon"`) remain icon-only. Loading states may swap the action icon for `Loader2` with `className="animate-spin"`.
+
+Use this semantic action → icon map:
+
+| Action                                           | Icon                                |
+| ------------------------------------------------ | ----------------------------------- |
+| Sign in / Signing in                             | `LogIn` (`Loader2` when submitting) |
+| Sign up / Create account                         | `UserPlus`                          |
+| Sign out                                         | `LogOut`                            |
+| Continue / Next / Go                             | `ArrowRight` or `ChevronRight`      |
+| Back / Previous                                  | `ArrowLeft` or `ChevronLeft`        |
+| Skip                                             | `SkipForward`                       |
+| Save / Save Changes / Saving                     | `Save` (`Loader2` when saving)      |
+| Discard                                          | `Undo2`                             |
+| Cancel / Close                                   | `X`                                 |
+| Done / Confirm / Apply / Approve / I've saved it | `Check`                             |
+| Deny / Reject                                    | `Ban` or `X`                        |
+| Delete / Remove                                  | `Trash2`                            |
+| Create / New / Add                               | `Plus`                              |
+| Edit / Configure                                 | `Pencil` or `Settings2`             |
+| Search                                           | `Search`                            |
+| Refresh / Retry / Reload                         | `RefreshCw`                         |
+| Reset / Clear / Clear selection                  | `RotateCcw` or `X`                  |
+| Download                                         | `Download`                          |
+| Upload                                           | `Upload`                            |
+| Play / Watch / Listen                            | `Play`                              |
+| Pause                                            | `Pause`                             |
+| Select / Selection mode                          | `CheckSquare`                       |
+| Gallery / Artwork                                | `Images`                            |
+| Browse folder                                    | `FolderOpen`                        |
+| Restart                                          | `RotateCcw`                         |
+| Send / Message                                   | `Send`                              |
+| Copy                                             | `Copy`                              |
+| Connect / Quick Connect code                     | `QrCode` or `Smartphone`            |
+| Disconnect                                       | `Unplug`                            |
+| Scan                                             | `ScanSearch` or `Radar`             |
+| Show / Reveal                                    | `Eye`                               |
+| Hide                                             | `EyeOff`                            |
+| Join room                                        | `Users`                             |
+| Leave                                            | `LogOut`                            |
+| More                                             | `MoreVertical` (already used)       |
 
 ### Episode Row
 
 Episode rows should read quickly in a scan: thumbnail, number, title, description, runtime.
 
 Implementation cues:
+
 - Use `.episode-row` for consistent styling and hover behavior.
 - Keep separators subtle (single `border-b`).
 - Hover should highlight the row background without adding visual clutter.
@@ -359,6 +447,7 @@ Implementation cues:
 Desktop uses a persistent left rail; mobile uses a drawer. Active items should be clear without becoming loud. At the Detail immersion level, the sidebar should recede to give content full stage.
 
 Implementation cues:
+
 - Group sections with small labels.
 - Use icon plus label layout.
 - Active state should rely on background and text treatment, not thick borders.

@@ -2,7 +2,9 @@ import { LibraryForm } from "@/components/admin/libraries/LibraryForm";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useWizardContext } from "../WizardContext";
+import { WizardActions } from "../WizardActions";
 
+import { ArrowRight, SkipForward } from "lucide-react";
 export function LibraryStep() {
   const { libraries, markDone, refetchLibraries } = useWizardContext();
 
@@ -39,20 +41,23 @@ export function LibraryStep() {
       <LibraryForm
         library={null}
         chapterThumbnailsSupported={libraries[0]?.chapter_thumbnails_supported ?? true}
+        trickplaySupported={libraries[0]?.trickplay_supported ?? true}
         onSaved={handleLibrarySaved}
         resetAfterCreate
         submitLabel="Add library"
         savingLabel="Adding..."
       />
 
-      <div className="flex gap-3 pt-3">
+      <WizardActions className="flex flex-wrap gap-3 pt-3">
         <Button type="button" onClick={() => markDone("library")} disabled={libraries.length === 0}>
+          <ArrowRight />
           Continue
         </Button>
         <Button type="button" variant="ghost" onClick={handleSkip}>
+          <SkipForward />
           Skip
         </Button>
-      </div>
+      </WizardActions>
     </div>
   );
 }

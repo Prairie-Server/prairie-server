@@ -58,6 +58,7 @@ func (r fakeSubtitleRepository) UpsertProviderConfig(context.Context, *subtitles
 }
 
 func TestHandlePlaybackInfo_AuthenticatesSubtitleDeliveryURLs(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	contentID := "movie-1"
 	routeID := codec.EncodeStringID(EncodedIDItem, contentID)

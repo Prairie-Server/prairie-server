@@ -17,7 +17,7 @@ import (
 const (
 	webhookRequestTimeout = 10 * time.Second
 	webhookMaxRedirects   = 3
-	webhookUserAgent      = "Silo-Webhook/1.0"
+	webhookUserAgent      = "Prairie-Webhook/1.0"
 )
 
 // webhookSendResult is the structured outcome of one webhook POST.
@@ -43,7 +43,7 @@ func newWebhookHTTPClient(allowPrivate func() bool) *http.Client {
 // every resolved address at connect time (DNS rebinding mitigation — the guard
 // runs on the address actually being connected to, each redirect hop included).
 // Callers may use a longer total timeout when an upstream service has its own
-// request deadline that must expire before Silo gives up waiting for a response.
+// request deadline that must expire before Prairie gives up waiting for a response.
 func newNotificationHTTPClient(allowPrivate func() bool, requestTimeout time.Duration) *http.Client {
 	dialer := &net.Dialer{
 		Timeout: 5 * time.Second,
@@ -89,7 +89,7 @@ var errPrivateDestination = errors.New("destination resolves to a private or spe
 
 // sendWebhook POSTs body to url with the given extra headers and classifies
 // the outcome. Success is any 2xx. The response body is drained (bounded) and
-// discarded — Silo never consumes webhook responses for state.
+// discarded — Prairie never consumes webhook responses for state.
 func sendWebhook(ctx context.Context, client *http.Client, url string, body []byte, headers map[string]string) webhookSendResult {
 	started := time.Now()
 	result := func(ok bool, status int, message string) webhookSendResult {

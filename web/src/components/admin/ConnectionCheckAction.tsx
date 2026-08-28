@@ -1,6 +1,7 @@
 import type { ConnectionCheckResponse } from "@/api/types";
 import { Button } from "@/components/ui/button";
 
+import { Loader2 } from "lucide-react";
 type Props = {
   onClick: () => void | Promise<void>;
   result: ConnectionCheckResponse | null;
@@ -27,6 +28,7 @@ export function ConnectionCheckAction({
         onClick={() => void onClick()}
         disabled={disabled || isPending}
       >
+        {isPending ? <Loader2 className="animate-spin" /> : null}
         {isPending ? pendingLabel : label}
       </Button>
       {result ? (

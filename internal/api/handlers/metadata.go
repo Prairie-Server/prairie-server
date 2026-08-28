@@ -33,7 +33,7 @@ func (h *MetadataHandler) RefreshItem(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(map[string]string{
+	_ = json.NewEncoder(w).Encode(map[string]string{
 		"status":     "queued",
 		"content_id": contentID,
 	})
@@ -45,7 +45,7 @@ func (h *MetadataHandler) RefreshLibrary(w http.ResponseWriter, r *http.Request)
 	// For now, return accepted.
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(map[string]string{"status": "queued"})
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "queued"})
 }
 
 // identifyRequest is the body for POST /api/v1/items/{id}/identify.
@@ -78,7 +78,7 @@ func (h *MetadataHandler) IdentifyItem(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(result)
+	_ = json.NewEncoder(w).Encode(result)
 }
 
 // SearchProviders handles GET /api/v1/items/{id}/search.
@@ -103,5 +103,5 @@ func (h *MetadataHandler) SearchProviders(w http.ResponseWriter, r *http.Request
 	}
 
 	w.Header().Set("Content-Type", "application/json")
-	json.NewEncoder(w).Encode(results)
+	_ = json.NewEncoder(w).Encode(results)
 }

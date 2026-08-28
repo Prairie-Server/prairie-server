@@ -47,7 +47,7 @@ export function useUpdateAutoscanSettings() {
       }),
     onSuccess: () => {
       toast.success("Autoscan settings saved");
-      queryClient.invalidateQueries({ queryKey: adminKeys.autoscanSettings() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.autoscanSettings() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to save autoscan settings");
@@ -78,7 +78,7 @@ export function useCreateAutoscanConnection() {
       }),
     onSuccess: () => {
       toast.success("Autoscan connection created");
-      queryClient.invalidateQueries({ queryKey: adminKeys.autoscanConnections() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.autoscanConnections() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to create autoscan connection");
@@ -96,7 +96,7 @@ export function useUpdateAutoscanConnection() {
       }),
     onSuccess: () => {
       toast.success("Autoscan connection updated");
-      queryClient.invalidateQueries({ queryKey: adminKeys.autoscanConnections() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.autoscanConnections() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to update autoscan connection");
@@ -113,9 +113,9 @@ export function useDeleteAutoscanConnection() {
       }),
     onSuccess: () => {
       toast.success("Autoscan connection deleted");
-      queryClient.invalidateQueries({ queryKey: adminKeys.autoscanConnections() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.autoscanConnections() });
       // Sources may have lost their connection binding; invalidate them too.
-      queryClient.invalidateQueries({ queryKey: adminKeys.autoscanSources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.autoscanSources() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to delete autoscan connection");
@@ -155,7 +155,7 @@ export function useCreateAutoscanSource() {
       }),
     onSuccess: () => {
       toast.success("Autoscan source created");
-      queryClient.invalidateQueries({ queryKey: adminKeys.autoscanSources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.autoscanSources() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to create autoscan source");
@@ -173,7 +173,7 @@ export function useUpdateAutoscanSource() {
       }),
     onSuccess: () => {
       toast.success("Autoscan source saved");
-      queryClient.invalidateQueries({ queryKey: adminKeys.autoscanSources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.autoscanSources() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to save autoscan source");
@@ -190,7 +190,7 @@ export function useDeleteAutoscanSource() {
       }),
     onSuccess: () => {
       toast.success("Autoscan source deleted");
-      queryClient.invalidateQueries({ queryKey: adminKeys.autoscanSources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.autoscanSources() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to delete autoscan source");
@@ -209,7 +209,7 @@ export function useCreateAutoscanWebhook() {
       }),
     onSuccess: () => {
       toast.success("Webhook URL created");
-      queryClient.invalidateQueries({ queryKey: adminKeys.autoscanSources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.autoscanSources() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to create webhook URL");
@@ -226,7 +226,7 @@ export function useRotateAutoscanWebhook() {
       }),
     onSuccess: () => {
       toast.success("Webhook URL rotated — update Sonarr/Radarr with the new URL");
-      queryClient.invalidateQueries({ queryKey: adminKeys.autoscanSources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.autoscanSources() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to rotate webhook URL");
@@ -243,7 +243,7 @@ export function useDeleteAutoscanWebhook() {
       }),
     onSuccess: () => {
       toast.success("Webhook URL deleted");
-      queryClient.invalidateQueries({ queryKey: adminKeys.autoscanSources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.autoscanSources() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to delete webhook URL");
@@ -373,8 +373,8 @@ export function useTriggerAutoscan() {
       }),
     onSuccess: () => {
       toast.success("Autoscan triggered");
-      queryClient.invalidateQueries({ queryKey: adminKeys.autoscanStatus() });
-      queryClient.invalidateQueries({ queryKey: ["admin", "autoscan", "events"] });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.autoscanStatus() });
+      void queryClient.invalidateQueries({ queryKey: ["admin", "autoscan", "events"] });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to trigger autoscan");

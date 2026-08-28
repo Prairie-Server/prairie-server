@@ -132,7 +132,7 @@ func (h *DiscordNotificationsHandler) HandleLinkInit(w http.ResponseWriter, r *h
 		return
 	}
 	if h.publicURL == "" {
-		writeError(w, http.StatusConflict, "no_public_url", "Linking requires SILO_PUBLIC_URL to be configured")
+		writeError(w, http.StatusConflict, "no_public_url", "Linking requires PRAIRIE_PUBLIC_URL to be configured")
 		return
 	}
 

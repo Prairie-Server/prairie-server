@@ -53,7 +53,7 @@ func (s *PostgresUserStore) SaveSectionOverrides(ctx context.Context, profileID,
 	}
 	merged = append(merged, overrides...)
 
-	// JSON marshalling preserves the full override payload, including removed.
+	// JSON marshaling preserves the full override payload, including removed.
 	data, err := json.Marshal(merged)
 	if err != nil {
 		return fmt.Errorf("marshaling section overrides: %w", err)

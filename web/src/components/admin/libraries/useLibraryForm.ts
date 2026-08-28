@@ -138,6 +138,7 @@ export function useLibraryForm({
   const [chapterThumbnailsEnabled, setChapterThumbnailsEnabled] = useState(
     library?.chapter_thumbnails_enabled ?? false,
   );
+  const [trickplayEnabled, setTrickplayEnabled] = useState(library?.trickplay_enabled ?? false);
   const [introDetectionEnabled, setIntroDetectionEnabled] = useState(
     library?.intro_detection_enabled ?? false,
   );
@@ -202,7 +203,7 @@ export function useLibraryForm({
   }
 
   function mergeBrowsedPaths(selectedPaths: string[]) {
-    const merged = [...paths.filter((path) => path.trim())];
+    const merged = paths.filter((path) => path.trim());
     for (const selectedPath of selectedPaths) {
       if (!merged.includes(selectedPath)) {
         merged.push(selectedPath);
@@ -266,6 +267,7 @@ export function useLibraryForm({
       metadata_language: metadataLanguage,
       auto_translate_metadata: autoTranslateMetadata,
       chapter_thumbnails_enabled: chapterThumbnailsEnabled,
+      trickplay_enabled: trickplayEnabled,
       intro_detection_enabled: introDetectionEnabled,
       trailer_kinds: trailerKinds,
     };
@@ -329,6 +331,8 @@ export function useLibraryForm({
     setAutoTranslateMetadata,
     chapterThumbnailsEnabled,
     setChapterThumbnailsEnabled,
+    trickplayEnabled,
+    setTrickplayEnabled,
     introDetectionEnabled,
     setIntroDetectionEnabled,
     trailerKinds,

@@ -27,8 +27,8 @@ export function useCreateAdminHistoryImportSource() {
       }),
     onSuccess: () => {
       toast.success("Saved server created");
-      queryClient.invalidateQueries({ queryKey: adminKeys.historyImportSources() });
-      queryClient.invalidateQueries({ queryKey: historyImportKeys.sources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.historyImportSources() });
+      void queryClient.invalidateQueries({ queryKey: historyImportKeys.sources() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to create saved server");
@@ -46,8 +46,8 @@ export function useUpdateAdminHistoryImportSource() {
       }),
     onSuccess: () => {
       toast.success("Saved server updated");
-      queryClient.invalidateQueries({ queryKey: adminKeys.historyImportSources() });
-      queryClient.invalidateQueries({ queryKey: historyImportKeys.sources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.historyImportSources() });
+      void queryClient.invalidateQueries({ queryKey: historyImportKeys.sources() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to update saved server");
@@ -61,8 +61,8 @@ export function useDeleteAdminHistoryImportSource() {
     mutationFn: (id: number) => api(`/admin/history-import-sources/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Saved server deleted");
-      queryClient.invalidateQueries({ queryKey: adminKeys.historyImportSources() });
-      queryClient.invalidateQueries({ queryKey: historyImportKeys.sources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.historyImportSources() });
+      void queryClient.invalidateQueries({ queryKey: historyImportKeys.sources() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to delete saved server");
@@ -80,7 +80,7 @@ export function useSetAdminSourceToken() {
       }),
     onSuccess: () => {
       toast.success("Admin token saved");
-      queryClient.invalidateQueries({ queryKey: adminKeys.historyImportSources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.historyImportSources() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to save admin token");
@@ -95,7 +95,7 @@ export function useClearAdminSourceToken() {
       api(`/admin/history-imports/sources/${id}/token`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Admin token removed");
-      queryClient.invalidateQueries({ queryKey: adminKeys.historyImportSources() });
+      void queryClient.invalidateQueries({ queryKey: adminKeys.historyImportSources() });
     },
     onError: (err) => {
       toast.error(err instanceof Error ? err.message : "Failed to remove admin token");

@@ -30,7 +30,7 @@ export default function ThemeSettings() {
       setRawCss(settings["ui.admin_custom_css"] ?? "");
       setCatalogUrl(
         settings["theme.catalog_url"] ??
-          "https://raw.githubusercontent.com/Silo-Server/silo-themes/main/catalog.json",
+          "https://raw.githubusercontent.com/prairie-server/prairie-themes/main/catalog.json",
       );
     }
   }, [settings]);
@@ -190,7 +190,7 @@ export default function ThemeSettings() {
           onChange={(e) => setCatalogUrl(e.target.value)}
           onBlur={handleCatalogUrlBlur}
           className="border-border bg-background text-foreground focus:ring-ring w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
-          placeholder="https://raw.githubusercontent.com/Silo-Server/silo-themes/main/catalog.json"
+          placeholder="https://raw.githubusercontent.com/prairie-server/prairie-themes/main/catalog.json"
         />
       </div>
     </div>

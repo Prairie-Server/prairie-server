@@ -5,8 +5,16 @@ import (
 	"fmt"
 	"sync"
 
-	_ "github.com/mattn/go-sqlite3" // SQLite driver
+	"modernc.org/sqlite"
 )
+
+func init() {
+	// Register modernc under the legacy "sqlite3" name so existing
+	// sql.Open("sqlite3", ...) call sites (and tests) keep working while
+	// the server builds with CGO_ENABLED=0. mattn/go-sqlite3 is a stub
+	// under !cgo and cannot open databases.
+	sql.Register("sqlite3", &sqlite.Driver{})
+}
 
 // UserDB wraps a per-user SQLite database connection with WAL mode and
 // appropriate PRAGMAs for concurrent access and Litestream compatibility.
@@ -21,8 +29,11 @@ type UserDB struct {
 // NewUserDB opens (or creates) a SQLite database at the given path with
 // WAL mode and recommended PRAGMAs.
 func NewUserDB(path string, userID int) (*UserDB, error) {
-	// Open with WAL mode and busy timeout via DSN parameters.
-	dsn := fmt.Sprintf("file:%s?_journal_mode=WAL&_busy_timeout=5000&_synchronous=NORMAL&_foreign_keys=ON", path)
+	// modernc.org/sqlite uses `_pragma=` query params (not mattn's `_journal_mode=`).
+	dsn := fmt.Sprintf(
+		"file:%s?_pragma=busy_timeout(5000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)&_pragma=foreign_keys(1)",
+		path,
+	)
 	db, err := sql.Open("sqlite3", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("opening sqlite %s: %w", path, err)
@@ -30,17 +41,17 @@ func NewUserDB(path string, userID int) (*UserDB, error) {
 
 	// Verify connection and PRAGMAs.
 	if err := db.Ping(); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("pinging sqlite %s: %w", path, err)
 	}
 
 	// Initialize schema.
 	if err := InitSchema(db); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("initializing schema %s: %w", path, err)
 	}
 	if err := runMigrations(db); err != nil {
-		db.Close()
+		_ = db.Close()
 		return nil, fmt.Errorf("migrating schema %s: %w", path, err)
 	}
 

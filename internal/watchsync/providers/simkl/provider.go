@@ -239,7 +239,7 @@ func (p *Provider) FetchProgressBatch(ctx context.Context, cfg watchsync.ServerC
 	animeChanged := !shouldSkipSimklBucket(animePrevious, activities.Anime.Playback)
 	if showsChanged || animeChanged {
 		dateFrom := ""
-		if !(showsChanged && showsPrevious == "") && !(animeChanged && animePrevious == "") {
+		if (!showsChanged || showsPrevious != "") && (!animeChanged || animePrevious != "") {
 			dateFrom = oldestCursor(showsPrevious, animePrevious)
 		}
 		payload, err := p.fetchPlayback(ctx, cfg, conn, "/sync/playback/episodes", dateFrom)
@@ -970,10 +970,6 @@ func buildHistoryRequest(plays []watchsync.LocalPlay, includeWatchedAt bool) sim
 		}
 	}
 	return request
-}
-
-func buildHistoryPayload(plays []watchsync.LocalPlay, includeWatchedAt bool) simklHistoryPayload {
-	return buildHistoryRequest(plays, includeWatchedAt).Payload
 }
 
 func (r simklHistoryRequest) addHistoryID(historyID string, keys []string) {

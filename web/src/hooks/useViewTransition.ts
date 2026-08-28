@@ -14,7 +14,7 @@ export function useViewTransitionNavigate() {
 
   return useCallback(
     (to: To, options?: NavigateOptions) => {
-      navigate(to, { ...options, viewTransition: true });
+      void navigate(to, { ...options, viewTransition: true });
     },
     [navigate],
   );

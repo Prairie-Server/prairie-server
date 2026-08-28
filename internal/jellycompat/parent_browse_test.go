@@ -105,6 +105,7 @@ func (f *fakeSeasonEpisodeRepo) ListAdjacentInSeries(ctx context.Context, series
 // ListUserLibraries, so a regression that routes to handleViewsResponse would
 // panic this test rather than silently pass.
 func TestHandleItems_SeriesParentWithoutTypeReturnsSeasons(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	seriesContentID := "series-1"
 	encodedSeriesID := codec.EncodeStringID(EncodedIDItem, seriesContentID)
@@ -140,6 +141,7 @@ func TestHandleItems_SeriesParentWithoutTypeReturnsSeasons(t *testing.T) {
 // series parent cannot satisfy (e.g. Movie) returns an empty page rather than a
 // wrong-typed seasons listing, and does not even hit ListSeasons.
 func TestHandleItems_SeriesParentNonEpisodeTypeIsEmpty(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	encodedSeriesID := codec.EncodeStringID(EncodedIDItem, "series-1")
 	contentSvc := &countingContentService{
@@ -165,6 +167,7 @@ func TestHandleItems_SeriesParentNonEpisodeTypeIsEmpty(t *testing.T) {
 // TestHandleItems_SeasonParentReturnsEpisodes pins the second half of the Void
 // fix: a season ParentId (no IncludeItemTypes) must list that season's episodes.
 func TestHandleItems_SeasonParentReturnsEpisodes(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	seriesContentID := "series-1"
 	seasonContentID := "season-1"
@@ -211,6 +214,7 @@ func TestHandleItems_SeasonParentReturnsEpisodes(t *testing.T) {
 // with a type filter that excludes Episode (e.g. Movie) returns an empty page and
 // short-circuits before listing episodes, even though episodes exist.
 func TestHandleItems_SeasonParentNonEpisodeTypeIsEmpty(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	seriesContentID := "series-1"
 	seasonContentID := "season-1"
@@ -249,6 +253,7 @@ func TestHandleItems_SeasonParentNonEpisodeTypeIsEmpty(t *testing.T) {
 // wired. countingContentService panics in ListUserLibraries to catch a views
 // fall-through regression.
 func TestHandleItems_SeasonParentWithoutRepoIsEmptyNotViews(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	encodedSeasonID := codec.EncodeStringID(EncodedIDSeason, "season-1")
 	h := &ItemsHandler{
@@ -269,6 +274,7 @@ func TestHandleItems_SeasonParentWithoutRepoIsEmptyNotViews(t *testing.T) {
 // browse path honors StartIndex/Limit (unlike /Shows/{id}/Episodes, which stays
 // whole-season) and reports the full count.
 func TestHandleItems_SeasonParentEpisodesPaged(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 	seriesContentID := "series-1"
 	seasonContentID := "season-1"
@@ -308,6 +314,7 @@ func TestHandleItems_SeasonParentEpisodesPaged(t *testing.T) {
 // season ParentId to parentSeasonID while a series (item) ParentId stays in
 // parentItemID — the distinction the new routing relies on.
 func TestParseItemsQuery_SeasonParentSetsParentSeasonID(t *testing.T) {
+	t.Parallel()
 	codec := NewResourceIDCodec()
 
 	seasonID := codec.EncodeStringID(EncodedIDSeason, "season-9")

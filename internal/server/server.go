@@ -1,5 +1,5 @@
 // Package server provides HTTP server lifecycle management with graceful
-// shutdown support for Silo.
+// shutdown support for Prairie.
 package server
 
 import (

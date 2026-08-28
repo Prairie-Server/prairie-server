@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo, useRef } from "react";
-import { Copy, Folder, Plus, Search, X } from "lucide-react";
+import { Check, Copy, Folder, Loader2, Plus, Search, X } from "lucide-react";
 import { toast } from "sonner";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -427,6 +427,7 @@ export default function MatchItemDialog({ item, open, onOpenChange }: MatchItemD
               className="w-full"
               data-testid="apply-match"
             >
+              {applyMutation.isPending ? <Loader2 className="animate-spin" /> : <Check />}
               {applyMutation.isPending ? "Applying..." : "Apply Match"}
             </Button>
           </div>

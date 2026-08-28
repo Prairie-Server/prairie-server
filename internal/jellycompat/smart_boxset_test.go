@@ -53,6 +53,7 @@ func (f *fakeSmartExecutor) PreviewPage(_ context.Context, def catalog.QueryDefi
 // executor in the collection's own order, instead of returning empty because
 // nothing is materialized in library_collection_items.
 func TestHandleItems_SmartBoxSetChildrenResolveViaQuery(t *testing.T) {
+	t.Parallel()
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
 			{ID: "201", LibraryID: 1, Title: "Directed by X", Visibility: "visible", CollectionType: "smart", ItemCount: 2, QueryDefinition: json.RawMessage(`{}`)},
@@ -89,6 +90,7 @@ func TestHandleItems_SmartBoxSetChildrenResolveViaQuery(t *testing.T) {
 // TestHandleItems_SmartBoxSetChildrenWithoutExecutorEmpty ensures a smart
 // collection degrades to an empty page (never a 500) when no executor is wired.
 func TestHandleItems_SmartBoxSetChildrenWithoutExecutorEmpty(t *testing.T) {
+	t.Parallel()
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
 			{ID: "201", LibraryID: 1, Title: "Directed by X", Visibility: "visible", CollectionType: "smart", ItemCount: 5, QueryDefinition: json.RawMessage(`{}`)},
@@ -108,6 +110,7 @@ func TestHandleItems_SmartBoxSetChildrenWithoutExecutorEmpty(t *testing.T) {
 // own library_ids are intersected with the collection's bound libraries before
 // the executor runs, so a restricted collection cannot widen its scope.
 func TestHandleItems_SmartBoxSetChildrenIntersectLibraryScope(t *testing.T) {
+	t.Parallel()
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
 			{ID: "202", LibraryIDs: []int{1, 2}, Title: "Scoped", Visibility: "visible", CollectionType: "smart", ItemCount: 1, QueryDefinition: json.RawMessage(`{"library_ids":[2,3]}`)},
@@ -136,6 +139,7 @@ func TestHandleItems_SmartBoxSetChildrenIntersectLibraryScope(t *testing.T) {
 // definition degrades to an empty page and never consults the executor (so it
 // can never 500 a browse).
 func TestHandleItems_SmartBoxSetMalformedQueryEmpty(t *testing.T) {
+	t.Parallel()
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
 			{ID: "203", LibraryID: 1, Title: "Broken", Visibility: "visible", CollectionType: "smart", ItemCount: 9, QueryDefinition: json.RawMessage(`{bad`)},
@@ -162,6 +166,7 @@ func TestHandleItems_SmartBoxSetMalformedQueryEmpty(t *testing.T) {
 // reporting the full membership as TotalRecordCount — instead of materializing
 // the entire (uncapped) membership and slicing one page locally.
 func TestHandleItems_SmartBoxSetChildrenPageInSQL(t *testing.T) {
+	t.Parallel()
 	collections := &fakeCollectionSource{
 		collections: []*models.LibraryCollection{
 			{ID: "210", LibraryID: 1, Title: "Big Smart", Visibility: "visible", CollectionType: "smart", ItemCount: 5, QueryDefinition: json.RawMessage(`{}`)},

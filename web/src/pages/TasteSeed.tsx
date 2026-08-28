@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { Check, Loader2, Sparkles } from "lucide-react";
+import { ArrowRight, Check, Loader2, SkipForward, Sparkles, X } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
@@ -82,7 +82,7 @@ export default function TasteSeed() {
     if (profile) {
       setTasteSeedDismissed(profile.id);
     }
-    navigate(isReturning ? "/settings/playback" : "/", { replace: true });
+    void navigate(isReturning ? "/settings/playback" : "/", { replace: true });
   }, [navigate, profile, isReturning]);
 
   const handleSubmit = useCallback(async () => {
@@ -103,7 +103,7 @@ export default function TasteSeed() {
       if (profile) {
         setTasteSeedDismissed(profile.id);
       }
-      navigate(isReturning ? "/settings/playback" : "/", { replace: true });
+      void navigate(isReturning ? "/settings/playback" : "/", { replace: true });
       return;
     }
 
@@ -117,7 +117,7 @@ export default function TasteSeed() {
           ? "Added 1 favorite — personalizing your home"
           : `Added ${result.added} favorites — personalizing your home`,
       );
-      navigate(isReturning ? "/settings/playback" : "/", { replace: true });
+      void navigate(isReturning ? "/settings/playback" : "/", { replace: true });
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save your picks");
     }
@@ -143,6 +143,7 @@ export default function TasteSeed() {
           </div>
           <div className="flex shrink-0 items-center gap-2">
             <Button variant="ghost" onClick={handleSkip} disabled={submit.isPending}>
+              {isReturning ? <X /> : <SkipForward />}
               {isReturning ? "Cancel" : "Skip"}
             </Button>
             <Button onClick={handleSubmit} disabled={submitDisabled}>
@@ -169,6 +170,7 @@ export default function TasteSeed() {
               Once your library has matched content, you'll see popular titles here.
             </p>
             <Button variant="ghost" className="mt-4" onClick={handleSkip}>
+              <ArrowRight />
               Continue
             </Button>
           </div>

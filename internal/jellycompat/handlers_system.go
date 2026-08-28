@@ -50,7 +50,7 @@ func (h *SystemHandler) HandleInfo(w http.ResponseWriter, r *http.Request) {
 // HandleBrandingConfiguration serves GET /Branding/Configuration.
 func (h *SystemHandler) HandleBrandingConfiguration(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, brandingConfigurationResponse{
-		LoginDisclaimer: "Silo provides Jellyfin-compatible app support. Silo is not affiliated with or endorsed by the Jellyfin project.",
+		LoginDisclaimer: "Prairie provides Jellyfin-compatible app support. Prairie is not affiliated with or endorsed by the Jellyfin project.",
 	})
 }
 

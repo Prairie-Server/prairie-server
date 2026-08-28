@@ -1,4 +1,4 @@
-// Package jobrunner owns the lifecycle mechanics shared by Silo's AI job
+// Package jobrunner owns the lifecycle mechanics shared by Prairie's AI job
 // services (subtitle translation/ASR, metadata translation): bounded dispatch
 // off a semaphore shared across services, a heartbeat loop that keeps a row
 // alive even while the job is queued, a stale-job reaper for rows orphaned by

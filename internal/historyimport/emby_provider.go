@@ -76,7 +76,7 @@ func (p *EmbyProvider) fetchSeriesMetadata(ctx context.Context, items []embyItem
 	seriesIDs := make([]string, 0)
 	seen := make(map[string]struct{})
 	for _, item := range items {
-		if strings.ToLower(item.Type) != "episode" || strings.TrimSpace(item.SeriesID) == "" {
+		if strings.ToLower(item.Type) != KindEpisode || strings.TrimSpace(item.SeriesID) == "" {
 			continue
 		}
 		if _, ok := seen[item.SeriesID]; ok {
@@ -121,7 +121,7 @@ func normalizeEmbyItem(item embyItem, series embyItem) Record {
 	switch strings.ToLower(item.Type) {
 	case "movie":
 		record.Kind = KindMovie
-	case "episode":
+	case KindEpisode:
 		record.Kind = KindEpisode
 		record.SeriesTitle = item.SeriesName
 		if record.SeriesTitle == "" {

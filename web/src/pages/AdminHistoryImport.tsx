@@ -4,6 +4,7 @@ import { useEventChannel } from "@/components/realtimeEventsContext";
 import {
   AlertTriangle,
   ArrowRight,
+  Check,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
@@ -13,12 +14,16 @@ import {
   EyeOff,
   KeyRound,
   Loader2,
+  LogIn,
   Pencil,
   Play,
   Plus,
+  RefreshCw,
+  Save,
   Search,
   Server,
   Trash2,
+  X,
   XCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -384,9 +389,11 @@ function SourceDialog({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
+            <X />
             Cancel
           </Button>
           <Button onClick={handleSave} disabled={!name.trim() || !baseURL.trim() || isPending}>
+            {isPending ? <Loader2 className="animate-spin" /> : isEdit ? <Save /> : <Plus />}
             {isPending ? "Saving…" : isEdit ? "Save" : "Add server"}
           </Button>
         </DialogFooter>
@@ -504,7 +511,7 @@ function TokenDialog({
               <p className="text-muted-foreground text-sm">
                 {isPlex
                   ? "Paste your Plex auth token directly."
-                  : "This key is used to discover users on the server and import their watch history into Silo."}
+                  : "This key is used to discover users on the server and import their watch history into Prairie."}
               </p>
               <div className="space-y-1.5">
                 <Label htmlFor="admin-token">API key / Token</Label>
@@ -542,18 +549,22 @@ function TokenDialog({
               onClick={() => clearToken.mutate(source.id, { onSuccess: onClose })}
               disabled={clearToken.isPending}
             >
+              <Trash2 />
               Remove
             </Button>
           )}
           <Button variant="outline" onClick={onClose}>
+            <X />
             Cancel
           </Button>
           {mode === "login" && isPlex ? (
             <Button onClick={handlePlexLogin} disabled={!plexUser.trim() || !plexPass || isSaving}>
+              {isSaving ? <Loader2 className="animate-spin" /> : <LogIn />}
               {isSaving ? "Signing in…" : "Sign in & save"}
             </Button>
           ) : (
             <Button onClick={handleSaveToken} disabled={!token.trim() || isSaving}>
+              {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
               {isSaving ? "Saving…" : "Save"}
             </Button>
           )}
@@ -645,6 +656,7 @@ function DiscoverDialog({
                 Query the server to find user accounts available for import.
               </p>
               <Button onClick={() => refetch()} size="sm">
+                <Search />
                 Discover users
               </Button>
             </div>
@@ -664,6 +676,7 @@ function DiscoverDialog({
                 <span>{discoverErrorMessage}</span>
               </div>
               <Button variant="outline" size="sm" onClick={() => refetch()}>
+                <RefreshCw />
                 Retry
               </Button>
             </div>
@@ -679,6 +692,7 @@ function DiscoverDialog({
                     : `${unmappedUsers.length} unmapped user${unmappedUsers.length !== 1 ? "s" : ""} found`}
                 </p>
                 <Button variant="ghost" size="sm" onClick={() => refetch()}>
+                  <RefreshCw />
                   Refresh
                 </Button>
               </div>
@@ -736,12 +750,12 @@ function DiscoverDialog({
               {mappingTarget && (
                 <div className="surface-panel-subtle space-y-4 rounded-xl border-0 p-4">
                   <p className="text-sm font-medium">
-                    Map <span className="text-primary">{mappingTarget.name}</span> to a Silo user
+                    Map <span className="text-primary">{mappingTarget.name}</span> to a Prairie user
                     and profile:
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
-                      <Label className="text-xs">Silo user</Label>
+                      <Label className="text-xs">Prairie user</Label>
                       <Select
                         value={userId}
                         onValueChange={(v) => {
@@ -793,6 +807,7 @@ function DiscoverDialog({
                       )}
                     </Button>
                     <Button size="sm" variant="ghost" onClick={() => setMappingTarget(null)}>
+                      <X />
                       Cancel
                     </Button>
                   </div>
@@ -804,6 +819,7 @@ function DiscoverDialog({
 
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
+            <Check />
             Done
           </Button>
         </DialogFooter>
@@ -1008,7 +1024,7 @@ function MappingsSection({
                 <TableHead className="hidden sm:table-cell">
                   <ArrowRight className="h-3.5 w-3.5" />
                 </TableHead>
-                <TableHead>Silo user</TableHead>
+                <TableHead>Prairie user</TableHead>
                 <TableHead>Last imported</TableHead>
                 <TableHead className="w-24 text-right">Actions</TableHead>
               </TableRow>
@@ -1197,6 +1213,7 @@ function RunsSection({ sourceId }: { sourceId: number }) {
                         disabled={cancelRun.isPending}
                         className="text-destructive hover:text-destructive"
                       >
+                        <X />
                         Cancel
                       </Button>
                     )}
@@ -1330,7 +1347,7 @@ export default function AdminHistoryImport() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">History Import</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Import watch history from external servers into Silo user profiles.
+            Import watch history from external servers into Prairie user profiles.
           </p>
         </div>
       </div>

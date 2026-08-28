@@ -10,6 +10,7 @@ import (
 )
 
 func TestDecodeDeviceProfileKeepsCodecProfiles(t *testing.T) {
+	t.Parallel()
 	profile, err := decodeDeviceProfile(strings.NewReader(`{
 		"DeviceProfile": {
 			"CodecProfiles": [{
@@ -45,6 +46,7 @@ func TestDecodeDeviceProfileKeepsCodecProfiles(t *testing.T) {
 }
 
 func TestBuildPlaybackSourceCodecProfiles(t *testing.T) {
+	t.Parallel()
 	h := &PlaybackHandler{codec: NewResourceIDCodec()}
 	baseVersion := catalog.FileVersion{
 		FileID:      1,
@@ -211,6 +213,7 @@ func TestBuildPlaybackSourceCodecProfiles(t *testing.T) {
 }
 
 func TestBuildPlaybackSourceCodecProfiles_UnsupportedDOVIWithELRespects4KGate(t *testing.T) {
+	t.Parallel()
 	h := &PlaybackHandler{codec: NewResourceIDCodec()}
 	version := catalog.FileVersion{
 		FileID:     1,
@@ -253,6 +256,7 @@ func TestBuildPlaybackSourceCodecProfiles_UnsupportedDOVIWithELRespects4KGate(t 
 }
 
 func TestBuildMediaStreamsUsesJellyfinVideoRangeType(t *testing.T) {
+	t.Parallel()
 	version := catalog.FileVersion{
 		HDR: true,
 		VideoTracks: []models.VideoTrack{{
@@ -275,6 +279,7 @@ func TestBuildMediaStreamsUsesJellyfinVideoRangeType(t *testing.T) {
 }
 
 func TestBuildMediaStreamsPreservesColorRange(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name           string
 		colorRange     string
@@ -324,6 +329,7 @@ func TestBuildMediaStreamsPreservesColorRange(t *testing.T) {
 }
 
 func TestCodecProfileAVCRefFramesConstraint(t *testing.T) {
+	t.Parallel()
 	version := catalog.FileVersion{
 		FileID:     1,
 		Resolution: "1080p",

@@ -19,6 +19,7 @@ import { useAdminServerStatus } from "@/hooks/queries/admin/settings";
 
 import EmailSettings from "./EmailSettings";
 import NotificationsAdminSettings from "./NotificationsAdminSettings";
+import AboutSettings from "./AboutSettings";
 import GeneralSettings from "./GeneralSettings";
 import PlaybackSettings from "./PlaybackSettings";
 import ScannerSettings from "./ScannerSettings";
@@ -49,6 +50,7 @@ interface SettingsNavGroup {
 }
 
 const SETTINGS_COMPONENTS: Record<string, ComponentType> = {
+  about: AboutSettings,
   general: GeneralSettings,
   branding: BrandingSettings,
   theming: ThemeSettings,

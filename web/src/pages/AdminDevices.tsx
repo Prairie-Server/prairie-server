@@ -6,6 +6,8 @@ import {
   ArrowUpRight,
   ChevronRight,
   Clock,
+  RotateCcw,
+  Save,
   Search,
   Sparkles,
   Subtitles,
@@ -467,7 +469,7 @@ export default function AdminDevices() {
             )}
           </div>
 
-          <div className="overlay-scroll max-h-[calc(100vh-22rem)] flex-1 overflow-y-auto lg:max-h-[calc(100vh-18rem)]">
+          <div className="overlay-scroll max-h-[calc(100dvh-22rem)] flex-1 overflow-y-auto lg:max-h-[calc(100dvh-18rem)]">
             {isLoading ? (
               <div className="space-y-1.5 p-2.5">
                 {Array.from({ length: 5 }).map((_, i) => (
@@ -1350,6 +1352,7 @@ function EmptyFleet({ hasDevices, onClear }: { hasDevices: boolean; onClear: () 
       </p>
       {hasDevices && (
         <Button variant="outline" size="sm" onClick={onClear}>
+          <RotateCcw />
           Clear filters
         </Button>
       )}
@@ -1604,6 +1607,7 @@ function DeviceDetailPanel({
             />
             <div className="flex justify-end gap-2">
               <Button variant="outline" size="sm" onClick={closeJsonEditor}>
+                <X />
                 Cancel
               </Button>
               <Button
@@ -1625,6 +1629,7 @@ function DeviceDetailPanel({
                   );
                 }}
               >
+                <Save />
                 Save override
               </Button>
             </div>

@@ -88,7 +88,7 @@ func StreamExtractSubtitle(ctx context.Context, opts StreamExtractOpts) error {
 
 	bin := opts.FFmpegPath
 	if bin == "" {
-		bin = "ffmpeg"
+		bin = ffmpegComponent
 	}
 
 	cmd := exec.CommandContext(ctx, bin, streamExtractArgs(opts)...)
@@ -259,7 +259,7 @@ func streamExtractOutput(codec string, targetFormat ...string) (outCodec, outFor
 	// the source-driven mapping instead (handlers reject bitmap-to-vtt
 	// requests before headers are written).
 	if len(targetFormat) > 0 && strings.EqualFold(targetFormat[0], "vtt") && !NeedsBurnIn(codec) {
-		return "webvtt", "webvtt"
+		return subtitleFormatWebVTT, subtitleFormatWebVTT
 	}
 	switch {
 	case IsASS(codec):
@@ -267,7 +267,7 @@ func streamExtractOutput(codec string, targetFormat ...string) (outCodec, outFor
 	case IsPGS(codec):
 		return "copy", "sup"
 	}
-	return "webvtt", "webvtt"
+	return subtitleFormatWebVTT, subtitleFormatWebVTT
 }
 
 // LogSubtitleStreamError writes a non-fatal warning for subtitle stream

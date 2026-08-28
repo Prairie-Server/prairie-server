@@ -39,7 +39,7 @@ func withBranding(t *testing.T, settings fakeSettings) {
 	prevFS, prevBranding := WebDistFS, Branding
 	WebDistFS = fstest.MapFS{
 		"index.html": &fstest.MapFile{Data: []byte(
-			`<!doctype html><head><title>Silo</title>` +
+			`<!doctype html><head><title>Prairie</title>` +
 				`<link rel="icon" href="/favicon.ico" sizes="any" /></head><body></body>`)},
 		"favicon.ico": &fstest.MapFile{Data: []byte("STATIC_ICO")},
 	}
@@ -128,7 +128,7 @@ func TestFrontendCustomSvgFaviconIsHardened(t *testing.T) {
 	store := &fakeAssetStore{data: map[string][]byte{"branding/favicon/abc.svg": []byte("<svg/>")}}
 	prevFS, prevBranding := WebDistFS, Branding
 	WebDistFS = fstest.MapFS{
-		"index.html":  &fstest.MapFile{Data: []byte("<title>Silo</title>")},
+		"index.html":  &fstest.MapFile{Data: []byte("<title>Prairie</title>")},
 		"favicon.ico": &fstest.MapFile{Data: []byte("STATIC_ICO")},
 	}
 	Branding = branding.NewService(fakeSettings{"branding.favicon_ref": "abc.svg"}, store)

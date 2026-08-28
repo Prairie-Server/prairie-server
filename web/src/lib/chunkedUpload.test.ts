@@ -109,6 +109,153 @@ describe("uploadFileInChunks", () => {
     expect(createChunkSizes).toEqual([256 * 1024, 128 * 1024]);
     expect(apiMock).toHaveBeenCalledWith("/uploads/session-1", { method: "DELETE" });
   });
+
+  it("does not retry request-too-large errors once the minimum chunk size is reached", async () => {
+    const tooLarge = new ApiClientError(413, "unknown", "Request Entity Too Large");
+
+    apiMock.mockImplementation(async (path: string) => {
+      if (path === "/uploads") {
+        return session({ chunk_size: 128 * 1024, total_chunks: 1 });
+      }
+      if (path === "/uploads/session-1/chunks/0") {
+        throw tooLarge;
+      }
+      if (path === "/uploads/session-1") {
+        return undefined;
+      }
+      throw new Error(`unexpected path ${path}`);
+    });
+
+    await expect(
+      uploadFileInChunks({
+        file: new File([new Uint8Array(129 * 1024)], "plugin.bin"),
+        createPath: "/uploads",
+        chunkPath: (uploadId, index) => `/uploads/${uploadId}/chunks/${index}`,
+        completePath: (uploadId) => `/uploads/${uploadId}/complete`,
+        cancelPath: (uploadId) => `/uploads/${uploadId}`,
+        chunkSize: 128 * 1024,
+      }),
+    ).rejects.toBe(tooLarge);
+
+    expect(apiMock).toHaveBeenCalledTimes(3);
+  });
+
+  it("preserves the upload failure when best-effort cancellation also fails", async () => {
+    const uploadError = new Error("chunk failed");
+
+    apiMock.mockImplementation(async (path: string) => {
+      if (path === "/uploads") {
+        return session({ received_chunks: 0, received_bytes: 0 });
+      }
+      if (path === "/uploads/session-1/chunks/0") {
+        throw uploadError;
+      }
+      if (path === "/uploads/session-1/cancel") {
+        throw new Error("cleanup failed");
+      }
+      throw new Error(`unexpected path ${path}`);
+    });
+
+    await expect(
+      uploadFileInChunks({
+        file: new File(["abcdefghij"], "plugin.bin"),
+        createPath: "/uploads",
+        chunkPath: (uploadId, index) => `/uploads/${uploadId}/chunks/${index}`,
+        completePath: (uploadId) => `/uploads/${uploadId}/complete`,
+        cancelPath: (uploadId) => `/uploads/${uploadId}/cancel`,
+        chunkSize: 4,
+      }),
+    ).rejects.toBe(uploadError);
+
+    expect(apiMock).toHaveBeenCalledWith("/uploads/session-1/cancel", { method: "DELETE" });
+  });
+
+  it("uses the file size fallback and clamps reported progress", async () => {
+    apiMock.mockImplementation(async (path: string) => {
+      if (path === "/uploads") {
+        return session({
+          size_bytes: 0,
+          total_chunks: 0,
+          received_chunks: 0,
+          received_bytes: 30,
+        });
+      }
+      if (path === "/uploads/session-1/complete") {
+        return { installed: true };
+      }
+      throw new Error(`unexpected path ${path}`);
+    });
+
+    const progress: number[] = [];
+    await uploadFileInChunks({
+      file: new File(["abcdefghij"], "plugin.bin"),
+      createPath: "/uploads",
+      chunkPath: (uploadId, index) => `/uploads/${uploadId}/chunks/${index}`,
+      completePath: (uploadId) => `/uploads/${uploadId}/complete`,
+      onProgress: (next) => progress.push(next.percent),
+    });
+
+    expect(progress).toEqual([100]);
+  });
+
+  it("best-effort cancels the session when a chunk upload fails", async () => {
+    const cancel = vi.fn(async () => undefined);
+    apiMock.mockImplementation(async (path: string) => {
+      if (path === "/uploads") {
+        return session({ upload_id: "session-cancel", chunk_size: 4, total_chunks: 3 });
+      }
+      if (path === "/uploads/session-cancel/chunks/0") {
+        throw new Error("chunk failed");
+      }
+      if (path === "/uploads/session-cancel") {
+        return cancel();
+      }
+      throw new Error(`unexpected path ${path}`);
+    });
+
+    await expect(
+      uploadFileInChunks({
+        file: new File(["abcdefghij"], "plugin.bin"),
+        createPath: "/uploads",
+        chunkPath: (uploadId, index) => `/uploads/${uploadId}/chunks/${index}`,
+        completePath: (uploadId) => `/uploads/${uploadId}/complete`,
+        cancelPath: (uploadId) => `/uploads/${uploadId}`,
+      }),
+    ).rejects.toThrow("chunk failed");
+    expect(cancel).toHaveBeenCalledOnce();
+  });
+
+  it("reports 0% progress when session size is unknown", async () => {
+    apiMock.mockImplementation(async (path: string) => {
+      if (path === "/uploads") {
+        return session({ size_bytes: 0, chunk_size: 10, total_chunks: 1 });
+      }
+      if (path === "/uploads/session-1/chunks/0") {
+        return session({
+          size_bytes: 0,
+          chunk_size: 10,
+          total_chunks: 1,
+          received_chunks: 1,
+          received_bytes: 0,
+        });
+      }
+      if (path === "/uploads/session-1/complete") {
+        return { installed: true };
+      }
+      throw new Error(`unexpected path ${path}`);
+    });
+
+    const progress: number[] = [];
+    await uploadFileInChunks({
+      file: new File([""], "empty.bin"),
+      createPath: "/uploads",
+      chunkPath: (uploadId, index) => `/uploads/${uploadId}/chunks/${index}`,
+      completePath: (uploadId) => `/uploads/${uploadId}/complete`,
+      onProgress: (next) => progress.push(next.percent),
+    });
+    expect(progress.every((p) => p === 0)).toBe(true);
+    expect(progress.length).toBeGreaterThan(0);
+  });
 });
 
 function session(overrides: Partial<ChunkedUploadSession>): ChunkedUploadSession {

@@ -224,8 +224,8 @@ func (a *AdminAPIKeyAuthenticator) resolveSession(ctx context.Context, token str
 		}, true
 	}
 
-	// Upstream Silo token fields are left empty and the expiry zero: an API key
-	// has no refreshable Silo token, and a zero expiry makes RequireSession's
+	// Upstream Prairie token fields are left empty and the expiry zero: an API key
+	// has no refreshable Prairie token, and a zero expiry makes RequireSession's
 	// refresh path a no-op. Downstream services scope by StreamAppUserID/ProfileID.
 	return &Session{
 		Token:           token,

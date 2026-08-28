@@ -112,7 +112,7 @@ type postgresTuneMemoryBudget struct {
 
 // LoadPostgresTuneOptionsFromEnv reads the opt-in PostgreSQL tuning environment.
 func LoadPostgresTuneOptionsFromEnv(appMaxConnections int) (PostgresTuneOptions, error) {
-	rawEnabled := firstNonEmptyEnv("POSTGRES_TUNE", "SILO_POSTGRES_TUNE")
+	rawEnabled := firstNonEmptyEnv("POSTGRES_TUNE", "PRAIRIE_POSTGRES_TUNE", "SILO_POSTGRES_TUNE")
 	if rawEnabled == "" {
 		return PostgresTuneOptions{}, nil
 	}
@@ -125,7 +125,7 @@ func LoadPostgresTuneOptionsFromEnv(appMaxConnections int) (PostgresTuneOptions,
 		return PostgresTuneOptions{}, nil
 	}
 
-	profile := firstNonEmptyEnv("POSTGRES_TUNE_PROFILE", "SILO_POSTGRES_TUNE_PROFILE")
+	profile := firstNonEmptyEnv("POSTGRES_TUNE_PROFILE", "PRAIRIE_POSTGRES_TUNE_PROFILE", "SILO_POSTGRES_TUNE_PROFILE")
 	if profile == "" {
 		profile = profileFromMode
 	}
@@ -152,22 +152,22 @@ func LoadPostgresTuneOptionsFromEnv(appMaxConnections int) (PostgresTuneOptions,
 		return PostgresTuneOptions{}, err
 	}
 
-	storage, err := normalizePostgresTuneStorage(firstNonEmptyEnv("POSTGRES_TUNE_STORAGE", "SILO_POSTGRES_TUNE_STORAGE"))
+	storage, err := normalizePostgresTuneStorage(firstNonEmptyEnv("POSTGRES_TUNE_STORAGE", "PRAIRIE_POSTGRES_TUNE_STORAGE", "SILO_POSTGRES_TUNE_STORAGE"))
 	if err != nil {
 		return PostgresTuneOptions{}, err
 	}
 
-	dbSize, err := normalizePostgresTuneDBSize(firstNonEmptyEnv("POSTGRES_TUNE_DB_SIZE", "SILO_POSTGRES_TUNE_DB_SIZE"))
+	dbSize, err := normalizePostgresTuneDBSize(firstNonEmptyEnv("POSTGRES_TUNE_DB_SIZE", "PRAIRIE_POSTGRES_TUNE_DB_SIZE", "SILO_POSTGRES_TUNE_DB_SIZE"))
 	if err != nil {
 		return PostgresTuneOptions{}, err
 	}
 
-	osType := strings.ToLower(firstNonEmptyEnv("POSTGRES_TUNE_OS", "SILO_POSTGRES_TUNE_OS"))
+	osType := strings.ToLower(firstNonEmptyEnv("POSTGRES_TUNE_OS", "PRAIRIE_POSTGRES_TUNE_OS", "SILO_POSTGRES_TUNE_OS"))
 	if osType == "" {
 		osType = "linux"
 	}
 
-	ioMethod := strings.ToLower(firstNonEmptyEnv("POSTGRES_TUNE_IO_METHOD", "SILO_POSTGRES_TUNE_IO_METHOD"))
+	ioMethod := strings.ToLower(firstNonEmptyEnv("POSTGRES_TUNE_IO_METHOD", "PRAIRIE_POSTGRES_TUNE_IO_METHOD", "SILO_POSTGRES_TUNE_IO_METHOD"))
 
 	return PostgresTuneOptions{
 		Enabled:             true,
@@ -352,7 +352,7 @@ func parsePostgresTuneMode(raw string) (bool, string, error) {
 }
 
 func loadPostgresTuneMemory() (postgresTuneMemoryBudget, error) {
-	raw := firstNonEmptyEnv("POSTGRES_TUNE_MEMORY", "SILO_POSTGRES_TUNE_MEMORY")
+	raw := firstNonEmptyEnv("POSTGRES_TUNE_MEMORY", "PRAIRIE_POSTGRES_TUNE_MEMORY", "SILO_POSTGRES_TUNE_MEMORY")
 	if raw == "" || strings.EqualFold(raw, "auto") {
 		mem, source, err := detectTotalMemoryBytes()
 		if err != nil {
@@ -384,7 +384,7 @@ func loadPostgresTuneMemory() (postgresTuneMemoryBudget, error) {
 }
 
 func loadPostgresTuneMemoryBudgetPercent() (int, error) {
-	raw := firstNonEmptyEnv("POSTGRES_TUNE_MEMORY_BUDGET_PERCENT", "SILO_POSTGRES_TUNE_MEMORY_BUDGET_PERCENT")
+	raw := firstNonEmptyEnv("POSTGRES_TUNE_MEMORY_BUDGET_PERCENT", "PRAIRIE_POSTGRES_TUNE_MEMORY_BUDGET_PERCENT", "SILO_POSTGRES_TUNE_MEMORY_BUDGET_PERCENT")
 	if raw == "" {
 		return defaultPostgresTuneMemoryBudgetPercent, nil
 	}
@@ -396,7 +396,7 @@ func loadPostgresTuneMemoryBudgetPercent() (int, error) {
 }
 
 func loadPostgresTuneCPUs() (int, error) {
-	raw := firstNonEmptyEnv("POSTGRES_TUNE_CPUS", "SILO_POSTGRES_TUNE_CPUS")
+	raw := firstNonEmptyEnv("POSTGRES_TUNE_CPUS", "PRAIRIE_POSTGRES_TUNE_CPUS", "SILO_POSTGRES_TUNE_CPUS")
 	if raw == "" || strings.EqualFold(raw, "auto") {
 		cpus := runtime.NumCPU()
 		if cpus < 1 {
@@ -418,7 +418,7 @@ func loadPostgresTuneConnections(appMaxConnections int) (int, error) {
 		minConnections = appMaxConnections + 20
 	}
 
-	raw := firstNonEmptyEnv("POSTGRES_TUNE_CONNECTIONS", "SILO_POSTGRES_TUNE_CONNECTIONS")
+	raw := firstNonEmptyEnv("POSTGRES_TUNE_CONNECTIONS", "PRAIRIE_POSTGRES_TUNE_CONNECTIONS", "SILO_POSTGRES_TUNE_CONNECTIONS")
 	if raw != "" {
 		connections, err := strconv.Atoi(raw)
 		if err != nil || connections < 1 {

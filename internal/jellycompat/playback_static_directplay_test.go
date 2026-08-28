@@ -63,6 +63,7 @@ func newStaticDirectPlayHandler(t *testing.T) (*PlaybackHandler, string, string)
 // is served end-to-end. Without the fix this returns 404 "Playback session not
 // found".
 func TestHandleVideoStream_LowercaseStaticServesFile(t *testing.T) {
+	t.Parallel()
 	handler, encodedID, body := newStaticDirectPlayHandler(t)
 	rec := serveStaticStream(handler, encodedID, "static=true")
 
@@ -79,6 +80,7 @@ func TestHandleVideoStream_LowercaseStaticServesFile(t *testing.T) {
 // query param matching the source. The handler must still serve the file
 // end-to-end (200 + body).
 func TestHandleVideoStream_LowercaseStaticWithMediaSourceId(t *testing.T) {
+	t.Parallel()
 	handler, encodedID, body := newStaticDirectPlayHandler(t)
 	// FileID 42 (see newStaticDirectPlayHandler) -> the deterministic media
 	// source id the static play session builds for this version.
@@ -98,6 +100,7 @@ func TestHandleVideoStream_LowercaseStaticWithMediaSourceId(t *testing.T) {
 // original Infuse path (Static=true, uppercase key): it must keep serving so a
 // future over-narrow change to the guard is caught.
 func TestHandleVideoStream_UppercaseStaticServesFile(t *testing.T) {
+	t.Parallel()
 	handler, encodedID, body := newStaticDirectPlayHandler(t)
 	rec := serveStaticStream(handler, encodedID, "Static=true")
 
@@ -115,6 +118,7 @@ func TestHandleVideoStream_UppercaseStaticServesFile(t *testing.T) {
 // codec negotiation. Static=true is a direct-file request, so it must not be
 // rejected with "Media source requires transcoding".
 func TestHandleVideoStream_StaticBypassesNegotiatedCapabilityRejection(t *testing.T) {
+	t.Parallel()
 	handler, encodedID, body := newStaticDirectPlayHandler(t)
 	sourceID := NewResourceIDCodec().EncodeIntID(EncodedIDMediaSource, 42)
 	handler.playbackStore.Put(PlaybackSession{
@@ -157,6 +161,7 @@ func TestHandleVideoStream_StaticBypassesNegotiatedCapabilityRejection(t *testin
 // session's primary source — as FindByRoute and createStaticPlaySession already
 // do — rather than returning a nil source and 400ing "Media source is required".
 func TestHandleVideoStream_KnownPlaySessionItemIDMediaSourceServesFile(t *testing.T) {
+	t.Parallel()
 	handler, encodedID, body := newStaticDirectPlayHandler(t)
 	sourceID := NewResourceIDCodec().EncodeIntID(EncodedIDMediaSource, 42)
 	handler.playbackStore.Put(PlaybackSession{
@@ -195,6 +200,7 @@ func TestHandleVideoStream_KnownPlaySessionItemIDMediaSourceServesFile(t *testin
 // item-id convention (routeID) falls back; everything else is an error, matching
 // Jellyfin's StreamingHelpers.
 func TestHandleVideoStream_KnownPlaySessionUnknownMediaSourceRejected(t *testing.T) {
+	t.Parallel()
 	handler, encodedID, _ := newStaticDirectPlayHandler(t)
 	sourceID := NewResourceIDCodec().EncodeIntID(EncodedIDMediaSource, 42)
 	handler.playbackStore.Put(PlaybackSession{
@@ -226,6 +232,7 @@ func TestHandleVideoStream_KnownPlaySessionUnknownMediaSourceRejected(t *testing
 // does not fire unconditionally: with no Static param and an empty playback
 // store, resolvePlaybackRoute correctly 404s.
 func TestHandleVideoStream_NoStaticNoSessionReturns404(t *testing.T) {
+	t.Parallel()
 	handler, encodedID, _ := newStaticDirectPlayHandler(t)
 	rec := serveStaticStream(handler, encodedID, "")
 
@@ -242,6 +249,7 @@ func TestHandleVideoStream_NoStaticNoSessionReturns404(t *testing.T) {
 // and tripped the per-user stream limit (429). StartSession must run exactly
 // once across the repeated requests.
 func TestHandleVideoStream_StaticDirectPlayReusesSessionAcrossRequests(t *testing.T) {
+	t.Parallel()
 	handler, encodedID, body := newStaticDirectPlayHandler(t)
 	mgr := handler.sessionMgr.(*testCompatSessionManager)
 

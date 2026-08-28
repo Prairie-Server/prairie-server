@@ -161,6 +161,23 @@ func (s *flakyTerminalPlaybackStore) calls() int {
 	return s.stageCalls
 }
 
+// waitForFinalizableGone waits until CompleteTerminal removes a staged stop.
+// channelCompatWatchScrobbler signals during ScrobbleStop, which runs before
+// the store deletion, so immediate GetFinalizable checks race under load.
+func waitForFinalizableGone(t *testing.T, store CompatPlaybackStore, id, token, message string) {
+	t.Helper()
+	deadline := time.Now().Add(2 * time.Second)
+	for {
+		if _, ok := store.GetFinalizable(id, token); !ok {
+			return
+		}
+		if time.Now().After(deadline) {
+			t.Fatal(message)
+		}
+		time.Sleep(5 * time.Millisecond)
+	}
+}
+
 func (s *channelCompatWatchScrobbler) ScrobbleStart(context.Context, watchsync.ScrobbleEvent) error {
 	return nil
 }
@@ -202,6 +219,7 @@ func (s *recordingCompatWatchScrobbler) ScrobbleStopConfirmed(ctx context.Contex
 }
 
 func TestEnsureUpstreamPlaybackStartsWatchProviderScrobble(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{}
 	h, store := newActiveEncodingsHandler(mgr)
 	scrobbler := &recordingCompatWatchScrobbler{}
@@ -242,6 +260,7 @@ func TestEnsureUpstreamPlaybackStartsWatchProviderScrobble(t *testing.T) {
 }
 
 func TestFailedTranscodeStartupClosesWatchProviderScrobble(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{}
 	h, store := newActiveEncodingsHandler(mgr)
 	scrobbler := &recordingCompatWatchScrobbler{}
@@ -274,6 +293,7 @@ func TestFailedTranscodeStartupClosesWatchProviderScrobble(t *testing.T) {
 }
 
 func TestCanceledTranscodeStartupKeepsWatchProviderSessionRetryable(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{}
 	h, store := newActiveEncodingsHandler(mgr)
 	scrobbler := &recordingCompatWatchScrobbler{}
@@ -305,6 +325,7 @@ func TestCanceledTranscodeStartupKeepsWatchProviderSessionRetryable(t *testing.T
 }
 
 func TestFailedTranscodeStartupStillClosesWhenRequestCancelsAfterFailure(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{}
 	h, store := newActiveEncodingsHandler(mgr)
 	scrobbler := &recordingCompatWatchScrobbler{}
@@ -334,6 +355,7 @@ func TestFailedTranscodeStartupStillClosesWhenRequestCancelsAfterFailure(t *test
 }
 
 func TestEnsureUpstreamPlaybackStopsDiscardedMethodScrobble(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{
 		"upstream-old": {
 			ID:          "upstream-old",
@@ -371,6 +393,7 @@ func TestEnsureUpstreamPlaybackStopsDiscardedMethodScrobble(t *testing.T) {
 }
 
 func TestHandlePlaybackReportScrobblesPauseAndResumeTransitions(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, sourceID := newReportLivenessHandler("upstream-1", true)
 	scrobbler := &recordingCompatWatchScrobbler{}
 	handler.WatchScrobbler = scrobbler
@@ -407,6 +430,7 @@ func TestHandlePlaybackReportScrobblesPauseAndResumeTransitions(t *testing.T) {
 }
 
 func TestHandlePlaybackReportPreservesExplicitZeroOnPause(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, sourceID := newReportLivenessHandler("upstream-1", true)
 	scrobbler := &recordingCompatWatchScrobbler{}
 	handler.WatchScrobbler = scrobbler
@@ -437,6 +461,7 @@ func TestHandlePlaybackReportPreservesExplicitZeroOnPause(t *testing.T) {
 }
 
 func TestCompatTeardownScrobblesAuthoritativeStopExactlyOnce(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name          string
 		stoppedFirst  bool
@@ -513,6 +538,7 @@ func TestCompatTeardownScrobblesAuthoritativeStopExactlyOnce(t *testing.T) {
 }
 
 func TestActiveEncodingsOnNonOwnerDefersScrobbleToStoppedReport(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{}}
 	h, store := newActiveEncodingsHandler(mgr)
 	scrobbler := &recordingCompatWatchScrobbler{}
@@ -564,6 +590,7 @@ func TestActiveEncodingsOnNonOwnerDefersScrobbleToStoppedReport(t *testing.T) {
 }
 
 func TestActiveEncodingsFallbackAllowsLaterAuthoritativeStop(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{
 		"upstream-1": {
 			ID:          "upstream-1",
@@ -626,12 +653,14 @@ func TestActiveEncodingsFallbackAllowsLaterAuthoritativeStop(t *testing.T) {
 	case <-time.After(time.Second):
 		t.Fatal("timed out waiting for authoritative stop after fallback")
 	}
-	if _, ok := store.GetFinalizable("play-1", "token-1"); ok {
-		t.Fatal("authoritative terminal event remained after delivery")
-	}
+	waitForFinalizableGone(
+		t, store, "play-1", "token-1",
+		"authoritative terminal event remained after delivery",
+	)
 }
 
 func TestPositionlessLateStopPreservesAndDeliversPendingFallback(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{
 		"upstream-1": {
 			ID:          "upstream-1",
@@ -692,6 +721,7 @@ func TestPositionlessLateStopPreservesAndDeliversPendingFallback(t *testing.T) {
 }
 
 func TestStoppedScrobbleQueueFailureRetainsAndRetriesTerminalEvent(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, sourceID := newReportLivenessHandler("upstream-1", true)
 	scrobbler := &channelCompatWatchScrobbler{
 		stopEvents: make(chan watchsync.ScrobbleEvent, 1),
@@ -723,12 +753,14 @@ func TestStoppedScrobbleQueueFailureRetainsAndRetriesTerminalEvent(t *testing.T)
 	case <-time.After(2 * time.Second):
 		t.Fatal("timed out waiting for terminal queue retry")
 	}
-	if _, ok := handler.playbackStore.GetFinalizable("play-1", "token-1"); ok {
-		t.Fatal("authoritative terminal event remained after successful retry")
-	}
+	waitForFinalizableGone(
+		t, handler.playbackStore, "play-1", "token-1",
+		"authoritative terminal event remained after successful retry",
+	)
 }
 
 func TestStoppedScrobbleRestagesAfterTerminalPersistenceFailure(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, sourceID := newReportLivenessHandler("upstream-1", true)
 	baseStore := handler.playbackStore.(*PlaybackSessionStore)
 	flakyStore := &flakyTerminalPlaybackStore{PlaybackSessionStore: baseStore, failStages: 1}
@@ -769,12 +801,14 @@ func TestStoppedScrobbleRestagesAfterTerminalPersistenceFailure(t *testing.T) {
 	if calls := flakyStore.calls(); calls < 2 {
 		t.Fatalf("stage calls = %d, want persistence retry", calls)
 	}
-	if _, ok := flakyStore.GetFinalizable("play-1", "token-1"); ok {
-		t.Fatal("restaged authoritative event remained after delivery")
-	}
+	waitForFinalizableGone(
+		t, flakyStore, "play-1", "token-1",
+		"restaged authoritative event remained after delivery",
+	)
 }
 
 func TestStoppedScrobblePreservesExplicitZeroPosition(t *testing.T) {
+	t.Parallel()
 	handler, mgr, _, sourceID := newReportLivenessHandler("upstream-1", true)
 	scrobbler := &channelCompatWatchScrobbler{stopEvents: make(chan watchsync.ScrobbleEvent, 1)}
 	handler.WatchScrobbler = scrobbler
@@ -801,6 +835,7 @@ func TestStoppedScrobblePreservesExplicitZeroPosition(t *testing.T) {
 }
 
 func TestTerminalScrobbleRecoveryDeliversPersistedEventAfterRestart(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "token-1"})
 	event := watchsync.ScrobbleEvent{
@@ -827,12 +862,14 @@ func TestTerminalScrobbleRecoveryDeliversPersistedEventAfterRestart(t *testing.T
 	case <-time.After(time.Second):
 		t.Fatal("timed out waiting for recovered terminal event")
 	}
-	if _, ok := store.GetFinalizable("play-1", "token-1"); ok {
-		t.Fatal("recovered authoritative event remained pending")
-	}
+	waitForFinalizableGone(
+		t, store, "play-1", "token-1",
+		"recovered authoritative event remained pending",
+	)
 }
 
 func TestTerminalScrobbleRecoveryWaitsForConfirmedProviderStop(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "token-1"})
 	event := watchsync.ScrobbleEvent{PlaybackSessionID: "upstream-1"}
@@ -862,6 +899,7 @@ func TestTerminalScrobbleRecoveryWaitsForConfirmedProviderStop(t *testing.T) {
 }
 
 func TestTerminalScrobbleRecoveryRetainsEventWithoutConfirmationSupport(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "token-1"})
 	event := watchsync.ScrobbleEvent{PlaybackSessionID: "upstream-1"}
@@ -882,6 +920,7 @@ func TestTerminalScrobbleRecoveryRetainsEventWithoutConfirmationSupport(t *testi
 }
 
 func TestTerminalScrobbleRecoveryKeepsFallbackReplaceable(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "token-1"})
 	event := watchsync.ScrobbleEvent{
@@ -914,6 +953,7 @@ func TestTerminalScrobbleRecoveryKeepsFallbackReplaceable(t *testing.T) {
 }
 
 func TestStartTerminalScrobbleRecoverySignalsInitialScanCompletion(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "token-1"})
 	event := watchsync.ScrobbleEvent{PlaybackSessionID: "upstream-1"}
@@ -937,6 +977,7 @@ func TestStartTerminalScrobbleRecoverySignalsInitialScanCompletion(t *testing.T)
 }
 
 func TestInitialTerminalScrobbleRecoveryDrainsMultipleBatches(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	for i := 0; i <= compatTerminalRecoveryBatchSize; i++ {
 		id := fmt.Sprintf("play-%03d", i)
@@ -961,6 +1002,7 @@ func TestInitialTerminalScrobbleRecoveryDrainsMultipleBatches(t *testing.T) {
 }
 
 func TestTerminalScrobbleRecoveryHonorsFallbackGracePeriod(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "token-1"})
 	event := watchsync.ScrobbleEvent{
@@ -972,9 +1014,11 @@ func TestTerminalScrobbleRecoveryHonorsFallbackGracePeriod(t *testing.T) {
 	}
 	scrobbler := &channelCompatWatchScrobbler{stopEvents: make(chan watchsync.ScrobbleEvent, 1)}
 	handler := &PlaybackHandler{
-		playbackStore:         store,
-		WatchScrobbler:        scrobbler,
-		terminalFallbackDelay: time.Second,
+		playbackStore:  store,
+		WatchScrobbler: scrobbler,
+		// Keep short so CI wall clock stays small; grace still exceeds the
+		// "must not deliver yet" probe below.
+		terminalFallbackDelay: 40 * time.Millisecond,
 	}
 
 	if err := recoverPendingTerminalScrobbles(context.Background(), handler); err != nil {
@@ -983,16 +1027,17 @@ func TestTerminalScrobbleRecoveryHonorsFallbackGracePeriod(t *testing.T) {
 	select {
 	case got := <-scrobbler.stopEvents:
 		t.Fatalf("fallback delivered during grace period: %+v", got)
-	case <-time.After(25 * time.Millisecond):
+	case <-time.After(15 * time.Millisecond):
 	}
 	select {
 	case <-scrobbler.stopEvents:
-	case <-time.After(2 * time.Second):
+	case <-time.After(500 * time.Millisecond):
 		t.Fatal("fallback was not delivered after grace period")
 	}
 }
 
 func TestTerminalScrobbleRecoveryLeavesRetryToNextScan(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	store.Put(PlaybackSession{ID: "play-1", CompatToken: "token-1"})
 	event := watchsync.ScrobbleEvent{PlaybackSessionID: "upstream-1"}
@@ -1005,7 +1050,9 @@ func TestTerminalScrobbleRecoveryLeavesRetryToNextScan(t *testing.T) {
 	if err := recoverPendingTerminalScrobbles(context.Background(), handler); err != nil {
 		t.Fatalf("recover terminal events: %v", err)
 	}
-	time.Sleep(compatTerminalInitialRetryDelay + 100*time.Millisecond)
+	// Stay just past the initial retry delay so a second attempt would have
+	// fired if recoverPendingTerminalScrobbles retried in-loop.
+	time.Sleep(compatTerminalInitialRetryDelay + 20*time.Millisecond)
 	if calls := scrobbler.stopCalls.Load(); calls != 1 {
 		t.Fatalf("recovery stop attempts = %d, want one attempt per scan", calls)
 	}
@@ -1015,6 +1062,7 @@ func TestTerminalScrobbleRecoveryLeavesRetryToNextScan(t *testing.T) {
 }
 
 func TestTerminalScrobbleRecoveryRotatesPastPoisonBatch(t *testing.T) {
+	t.Parallel()
 	store := NewPlaybackSessionStore(time.Hour, nil)
 	for i := 0; i <= compatTerminalRecoveryBatchSize; i++ {
 		id := fmt.Sprintf("play-%03d", i)
@@ -1049,6 +1097,7 @@ func TestTerminalScrobbleRecoveryRotatesPastPoisonBatch(t *testing.T) {
 }
 
 func TestReapedSessionFallbackHonorsProgressPersistencePolicy(t *testing.T) {
+	t.Parallel()
 	tests := []struct {
 		name     string
 		known    bool
@@ -1088,6 +1137,7 @@ func TestReapedSessionFallbackHonorsProgressPersistencePolicy(t *testing.T) {
 }
 
 func TestHandleSessionStoppedScrobblesAfterUpstreamSessionWasReaped(t *testing.T) {
+	t.Parallel()
 	handler, _, _, sourceID := newReportLivenessHandler("upstream-reaped", false)
 	scrobbler := &recordingCompatWatchScrobbler{}
 	handler.WatchScrobbler = scrobbler
@@ -1118,6 +1168,7 @@ func TestHandleSessionStoppedScrobblesAfterUpstreamSessionWasReaped(t *testing.T
 }
 
 func TestTeardownStillCleansLocalPlaybackAfterAnotherCallerClaimsStop(t *testing.T) {
+	t.Parallel()
 	mgr := &testCompatSessionManager{sessions: map[string]*playback.Session{
 		"upstream-1": {ID: "upstream-1", UserID: 7, ProfileID: "profile-1", MediaFileID: 42},
 	}}

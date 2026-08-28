@@ -28,11 +28,13 @@ import (
 const (
 	DefaultWebSourceURL = "https://github.com/jellyfin/jellyfin-web.git"
 
-	webMetadataFile = "SILO-JELLYFIN-WEB.json"
-	webSourceFile   = "SILO-JELLYFIN-WEB-SOURCE.txt"
-	webInstallLock  = ".installing"
-	webLastError    = ".last-error"
-	webTempMarker   = ".silo-jellyfin-web-temp"
+	webMetadataFile       = "PRAIRIE-JELLYFIN-WEB.json"
+	webSourceFile         = "PRAIRIE-JELLYFIN-WEB-SOURCE.txt"
+	legacyWebMetadataFile = "SILO-JELLYFIN-WEB.json"
+	legacyWebSourceFile   = "SILO-JELLYFIN-WEB-SOURCE.txt"
+	webInstallLock        = ".installing"
+	webLastError          = ".last-error"
+	webTempMarker         = ".prairie-jellyfin-web-temp"
 
 	webMalformedLockGrace = 2 * time.Minute
 	webOperationStaleAge  = 90 * time.Minute
@@ -261,7 +263,7 @@ func listRemoteWebVersions(ctx context.Context, sourceURL string) ([]string, err
 		return nil, err
 	}
 	req.Header.Set("Accept", "application/vnd.github+json")
-	req.Header.Set("User-Agent", "silo-jellyfin-web-installer")
+	req.Header.Set("User-Agent", "prairie-jellyfin-web-installer")
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
@@ -532,7 +534,7 @@ func installWebComponentLocked(ctx context.Context, opts WebComponentInstallOpti
 		return webComponentStatus(root, ManagedWebInstallPath(root), version, sourceURL), err
 	}
 	defer os.RemoveAll(tmpRoot)
-	if err := os.WriteFile(filepath.Join(tmpRoot, webTempMarker), []byte("silo jellyfin web install workspace\n"), 0o644); err != nil {
+	if err := os.WriteFile(filepath.Join(tmpRoot, webTempMarker), []byte("prairie jellyfin web install workspace\n"), 0o644); err != nil {
 		writeWebInstallError(root, err)
 		return webComponentStatus(root, ManagedWebInstallPath(root), version, sourceURL), err
 	}
@@ -811,7 +813,7 @@ func validateWebComponentDirectory(path string) (WebComponentMetadata, error) {
 	if !filePresent(filepath.Join(path, "LICENSE")) {
 		return WebComponentMetadata{}, errors.New("LICENSE is missing")
 	}
-	if !filePresent(filepath.Join(path, webSourceFile)) {
+	if !webSourceFilePresent(path) {
 		return WebComponentMetadata{}, fmt.Errorf("%s is missing", webSourceFile)
 	}
 	metadata, err := readWebMetadata(path)
@@ -919,7 +921,7 @@ func ensureWebInstallerPrerequisites() error {
 		}
 	}
 	if len(missing) > 0 {
-		return fmt.Errorf("%w: install %s on the Silo host or container", ErrWebInstallerUnavailable, strings.Join(missing, ", "))
+		return fmt.Errorf("%w: install %s on the Prairie host or container", ErrWebInstallerUnavailable, strings.Join(missing, ", "))
 	}
 	return nil
 }
@@ -1320,8 +1322,7 @@ func webComponentStatus(root, webDir, pinnedVersion, sourceURL string) WebCompon
 		return status
 	}
 	status.LicensePresent = filePresent(filepath.Join(webDir, "LICENSE"))
-	status.ProvenancePresent = filePresent(filepath.Join(webDir, webMetadataFile)) &&
-		filePresent(filepath.Join(webDir, webSourceFile))
+	status.ProvenancePresent = webMetadataFilePresent(webDir) && webSourceFilePresent(webDir)
 	metadata, err := validateWebComponentDirectory(webDir)
 	if err == nil {
 		if !operationRunning {
@@ -1502,7 +1503,10 @@ func readWebMetadata(dir string) (WebComponentMetadata, error) {
 	var metadata WebComponentMetadata
 	data, err := os.ReadFile(filepath.Join(dir, webMetadataFile))
 	if err != nil {
-		return metadata, err
+		data, err = os.ReadFile(filepath.Join(dir, legacyWebMetadataFile))
+		if err != nil {
+			return metadata, err
+		}
 	}
 	if err := json.Unmarshal(data, &metadata); err != nil {
 		return metadata, err
@@ -1521,7 +1525,7 @@ Build: %s
 Modified: %t
 Checksum: %s
 
-This component is separate from Silo's AGPL-licensed server code. It is installed only
+This component is separate from Prairie's AGPL-licensed server code. It is installed only
 when an administrator explicitly requests Jellyfin-compatible web UI assets.
 `, metadata.SourceURL, metadata.Tag, metadata.CommitSHA, metadata.License, metadata.BuildCommand, metadata.Modified, metadata.Checksum)
 	return os.WriteFile(filepath.Join(dir, webSourceFile), []byte(body), 0o644)
@@ -1640,4 +1644,12 @@ func readWebLastError(root string) string {
 func filePresent(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && !info.IsDir()
+}
+
+func webMetadataFilePresent(dir string) bool {
+	return filePresent(filepath.Join(dir, webMetadataFile)) || filePresent(filepath.Join(dir, legacyWebMetadataFile))
+}
+
+func webSourceFilePresent(dir string) bool {
+	return filePresent(filepath.Join(dir, webSourceFile)) || filePresent(filepath.Join(dir, legacyWebSourceFile))
 }

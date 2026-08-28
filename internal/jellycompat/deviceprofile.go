@@ -196,10 +196,10 @@ func DefaultDeviceProfile() DeviceProfile {
 	return DeviceProfile{
 		Name: "generic",
 		DirectPlayProfiles: []DirectPlayProfile{
-			{Type: "Video"},
+			{Type: streamTypeVideo},
 		},
 		TranscodingProfiles: []TranscodingProfile{
-			{Type: "Video", Protocol: "hls", Container: "ts", VideoCodec: "h264", AudioCodec: "aac"},
+			{Type: streamTypeVideo, Protocol: "hls", Container: "ts", VideoCodec: "h264", AudioCodec: "aac"},
 		},
 	}
 }

@@ -19,7 +19,7 @@ import (
 )
 
 const (
-	examplePluginDir  = "/opt/worktrees/silo-plugin-sdk-rh/examples/hello-runtime-host"
+	examplePluginDir  = "/opt/worktrees/prairie-plugin-sdk-rh/examples/hello-runtime-host"
 	expectedEventName = "plugin.example.hello-runtime-host.ping"
 )
 

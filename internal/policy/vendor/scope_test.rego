@@ -1,4 +1,4 @@
-package silo.scope
+package prairie.scope
 
 import rego.v1
 
@@ -125,7 +125,7 @@ test_tightening_override_applies if {
 		with input as object.union(base_input, {
 			"disabled_library_ids": [3],
 		})
-		with data.silo_custom.scope.override as tightening_override
+		with data.prairie_custom.scope.override as tightening_override
 	not got.unrestricted
 	got.allowed_library_ids == [2]
 	got.disabled_library_ids == []
@@ -156,6 +156,6 @@ test_widening_override_has_no_effect if {
 	base := decision with input as restricted_input
 	got := decision
 		with input as restricted_input
-		with data.silo_custom.scope.override as widening_override
+		with data.prairie_custom.scope.override as widening_override
 	got == base
 }

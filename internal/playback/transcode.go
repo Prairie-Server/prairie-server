@@ -94,6 +94,11 @@ type TranscodeOpts struct {
 	// Empty preserves the legacy text path for callers minted before the field.
 	SubtitleCodec   string
 	AudioTrackIndex int // -1 = default (first track), >= 0 = specific track
+	// SourceAudioCodec is the probed codec of the mapped audio track (e.g.
+	// "truehd", "eac3"). When set to a fragile lossless family (TrueHD/MLP),
+	// the AAC path forces a stereo downmix — multichannel TrueHD decode is a
+	// known stall source (quant_step_size / huff_lsbs warnings).
+	SourceAudioCodec string
 	// SourceAudioChannels is the selected source stream's channel count. Zero
 	// means unknown and deliberately disables stereo downmix gain: boosting an
 	// already-stereo stream would change its authored level.
@@ -107,6 +112,10 @@ type TranscodeOpts struct {
 	TargetBitrateKbps      int     // max video bitrate in kbps; 0 = CRF-only (no cap)
 	TotalDuration          float64 // total media duration in seconds (for VOD manifest)
 	FastStart              bool    // use superfast preset for faster first-segment production
+	// EncoderPreset trades compression for encode speed. Empty keeps the VOD
+	// defaults; live sessions ask for a low-latency preset because falling
+	// below realtime starves the player no matter how good the picture is.
+	EncoderPreset string
 	NodeType               string
 	ExecutionMode          string
 	FFmpegLogSink          FFmpegLogSink
@@ -115,6 +124,17 @@ type TranscodeOpts struct {
 // DV7ToHDR10BitstreamFilter strips Dolby Vision RPU metadata during a
 // copy-mode HLS remux; the enhancement layer is dropped by stream mapping.
 const DV7ToHDR10BitstreamFilter = "dovi_rpu=strip=1"
+
+// Encoder presets shared by the live and on-demand paths. Empty keeps the
+// historical VOD behavior.
+const (
+	// EncoderPresetLowLatency favors keeping up with a live source.
+	EncoderPresetLowLatency = "low_latency"
+	// EncoderPresetBalanced trades a little speed for compression.
+	EncoderPresetBalanced = "balanced"
+	// EncoderPresetQuality is the VOD-style quality-first preset.
+	EncoderPresetQuality = "quality"
+)
 
 const (
 	VideoSampleEntryDVH1 = "dvh1"
@@ -993,10 +1013,38 @@ func videoPreset(opts TranscodeOpts, hwAccel string) string {
 	if hwAccel == "qsv" {
 		return "veryfast"
 	}
+	switch opts.EncoderPreset {
+	case EncoderPresetLowLatency:
+		// x264 below "ultrafast" cannot hold 59.94fps on a busy host.
+		return "ultrafast"
+	case EncoderPresetBalanced:
+		return "veryfast"
+	}
 	if opts.FastStart {
 		return "superfast"
 	}
 	return "veryfast"
+}
+
+// nvencPresetArgs maps a preset onto NVENC's p1–p7 scale and latency tunes.
+func nvencPresetArgs(preset string) []string {
+	switch preset {
+	case EncoderPresetLowLatency:
+		return []string{"-preset", "p2", "-tune", "ll"}
+	case EncoderPresetBalanced:
+		return []string{"-preset", "p4"}
+	default:
+		return nil
+	}
+}
+
+// x264LatencyArgs disables the lookahead and B-frame buffering that otherwise
+// hold frames back from a live segment.
+func x264LatencyArgs(preset string) []string {
+	if preset == EncoderPresetLowLatency {
+		return []string{"-tune", "zerolatency"}
+	}
+	return nil
 }
 
 // appendVideoArgs adds video codec arguments.
@@ -1049,6 +1097,7 @@ func appendVideoArgs(args []string, opts TranscodeOpts) []string {
 		}
 	case opts.HWAccel == transcodeHWNVENC && codec == transcodeCodecH264:
 		args = append(args, "-c:v", "h264_nvenc", "-rc:v", "vbr")
+		args = append(args, nvencPresetArgs(opts.EncoderPreset)...)
 		if hasBitrateCap {
 			args = append(args,
 				"-b:v", fmt.Sprintf("%dk", opts.TargetBitrateKbps),
@@ -1059,6 +1108,7 @@ func appendVideoArgs(args []string, opts TranscodeOpts) []string {
 		}
 	case opts.HWAccel == transcodeHWNVENC && codec == transcodeCodecHEVC:
 		args = append(args, "-c:v", "hevc_nvenc", "-rc:v", "vbr")
+		args = append(args, nvencPresetArgs(opts.EncoderPreset)...)
 		if hasBitrateCap {
 			args = append(args,
 				"-b:v", fmt.Sprintf("%dk", opts.TargetBitrateKbps),
@@ -1089,9 +1139,11 @@ func appendVideoArgs(args []string, opts TranscodeOpts) []string {
 		// Profile which browsers cannot decode via MSE).
 		if codec == transcodeCodecHEVC {
 			args = append(args, "-c:v", "libx265", "-preset", preset, "-crf", "28", "-pix_fmt", "yuv420p")
+			args = append(args, x264LatencyArgs(opts.EncoderPreset)...)
 		} else {
 			args = append(args, "-c:v", "libx264", "-preset", preset, "-crf", "23",
 				"-pix_fmt", "yuv420p", "-profile:v", "high", "-level", "4.1")
+			args = append(args, x264LatencyArgs(opts.EncoderPreset)...)
 		}
 		if hasBitrateCap {
 			args = append(args,

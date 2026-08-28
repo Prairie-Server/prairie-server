@@ -18,7 +18,7 @@ import (
 )
 
 // Chunked diagnostics upload: a fallback path for bundles that a reverse proxy
-// in front of Silo refuses as a single request (nginx's default
+// in front of Prairie refuses as a single request (nginx's default
 // client_max_body_size is 1 MiB; /diagnostics/status advertises bundles up to
 // 10 MiB). The client:
 //

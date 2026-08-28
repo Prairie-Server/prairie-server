@@ -1,7 +1,7 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "https://silo-server.dev/schemas/client-diagnostics/v1/device.schema.json",
-  "title": "Silo Client Diagnostics Device Snapshot v1",
+  "$id": "https://prairie-server.dev/schemas/client-diagnostics/v1/device.schema.json",
+  "title": "Prairie Client Diagnostics Device Snapshot v1",
   "type": "object",
   "required": [
     "captured_at",
@@ -20,10 +20,7 @@
     },
     "provenance": {
       "type": "string",
-      "enum": [
-        "pre_failure",
-        "post_restart"
-      ],
+      "enum": ["pre_failure", "post_restart"],
       "maxLength": 32
     },
     "identity": {
@@ -56,10 +53,7 @@
   "$defs": {
     "sentinel": {
       "type": "string",
-      "enum": [
-        "unknown",
-        "not_collected"
-      ]
+      "enum": ["unknown", "not_collected"]
     },
     "tri_state_object": {
       "anyOf": [

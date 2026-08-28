@@ -1,11 +1,11 @@
 # Scan API
 
-Silo exposes a scan API that lets external tools trigger media library scans on demand. This is useful for integrating with download managers like Sonarr, Radarr, or relay tools like Autoscan that notify your server when new media arrives.
+Prairie exposes a scan API that lets external tools trigger media library scans on demand. This is useful for integrating with download managers like Sonarr, Radarr, or relay tools like Autoscan that notify your server when new media arrives.
 
 ## Prerequisites
 
-- Silo must be running in **integrated** or **api** mode. In `proxy` and `transcode` modes, the scan endpoints are not registered and will return 404.
-- You need an **admin API key**. Create one in the Silo web UI under **Settings > API Keys**. Keys start with the `sa_` prefix.
+- Prairie must be running in **integrated** or **api** mode. In `proxy` and `transcode` modes, the scan endpoints are not registered and will return 404.
+- You need an **admin API key**. Create one in the Prairie web UI under **Settings > API Keys**. Keys start with the `sa_` prefix.
 
 ## Authentication
 
@@ -24,7 +24,7 @@ curl -s http://your-server:8090/api/v1/libraries \
   -H "Authorization: Bearer sa_your_api_key" | jq
 ```
 
-You can also find library IDs in the Silo web UI under **Settings > Libraries**.
+You can also find library IDs in the Prairie web UI under **Settings > Libraries**.
 
 ## Endpoints
 
@@ -42,10 +42,10 @@ Accepts a library ID, a filesystem path, or both. The server determines the appr
 
 #### Request Body
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `library_id` | integer | no* | ID of the library to scan. |
-| `path` | string | no* | Filesystem path to scan. Can be a library root, subdirectory, or single file. |
+| Field        | Type    | Required | Description                                                                   |
+| ------------ | ------- | -------- | ----------------------------------------------------------------------------- |
+| `library_id` | integer | no\*     | ID of the library to scan.                                                    |
+| `path`       | string  | no\*     | Filesystem path to scan. Can be a library root, subdirectory, or single file. |
 
 \* At least one of `library_id` or `path` must be provided.
 
@@ -53,12 +53,12 @@ Accepts a library ID, a filesystem path, or both. The server determines the appr
 
 The server automatically selects the scan mode based on the input:
 
-| Input | Path Target | Mode | Behavior |
-|-------|-------------|------|----------|
-| `library_id` only | — | `library` | Full scan of all paths in the library. |
-| `path` equals a library root | directory | `library` | Full scan of that library. |
-| `path` is a subdirectory within a library | directory | `subtree` | Scans only that directory and its descendants. |
-| `path` is a media file | file | `file` | Scans only that single file. |
+| Input                                     | Path Target | Mode      | Behavior                                       |
+| ----------------------------------------- | ----------- | --------- | ---------------------------------------------- |
+| `library_id` only                         | —           | `library` | Full scan of all paths in the library.         |
+| `path` equals a library root              | directory   | `library` | Full scan of that library.                     |
+| `path` is a subdirectory within a library | directory   | `subtree` | Scans only that directory and its descendants. |
+| `path` is a media file                    | file        | `file`    | Scans only that single file.                   |
 
 When only `path` is provided, the server automatically resolves which library owns that path. When both are provided, the server verifies the path belongs to the specified library.
 
@@ -86,20 +86,20 @@ The `mode` field will be one of `library`, `subtree`, or `file`.
 
 #### Error Responses
 
-| Status | Code | Message | Cause |
-|--------|------|---------|-------|
-| 400 | `bad_request` | Either library_id or path is required | Missing both fields. |
-| 400 | `bad_request` | Path does not belong to the specified library | Path is outside the library's configured roots. |
-| 400 | `bad_request` | Path does not exist | Filesystem path not found. |
-| 400 | `bad_request` | Permission denied for path | Server lacks read permission. |
-| 400 | `bad_request` | Path could not be inspected | Stat failed for another reason. |
-| 400 | `bad_request` | Path must be a file or directory | Path is a socket, FIFO, or other special file. |
-| 400 | `bad_request` | Path matches multiple libraries | Ambiguous path — provide `library_id` to disambiguate. |
-| 400 | `bad_request` | No library matches the given path | Path is not within any configured library. |
-| 400 | `bad_request` | Unsupported media file extension | File mode only — extension not recognized. |
-| 401 | `unauthorized` | (varies) | Missing, invalid, or expired credentials. |
-| 403 | `forbidden` | (varies) | Authenticated user is not an admin. |
-| 404 | `not_found` | Library not found | Library ID does not exist. |
+| Status | Code           | Message                                       | Cause                                                  |
+| ------ | -------------- | --------------------------------------------- | ------------------------------------------------------ |
+| 400    | `bad_request`  | Either library_id or path is required         | Missing both fields.                                   |
+| 400    | `bad_request`  | Path does not belong to the specified library | Path is outside the library's configured roots.        |
+| 400    | `bad_request`  | Path does not exist                           | Filesystem path not found.                             |
+| 400    | `bad_request`  | Permission denied for path                    | Server lacks read permission.                          |
+| 400    | `bad_request`  | Path could not be inspected                   | Stat failed for another reason.                        |
+| 400    | `bad_request`  | Path must be a file or directory              | Path is a socket, FIFO, or other special file.         |
+| 400    | `bad_request`  | Path matches multiple libraries               | Ambiguous path — provide `library_id` to disambiguate. |
+| 400    | `bad_request`  | No library matches the given path             | Path is not within any configured library.             |
+| 400    | `bad_request`  | Unsupported media file extension              | File mode only — extension not recognized.             |
+| 401    | `unauthorized` | (varies)                                      | Missing, invalid, or expired credentials.              |
+| 403    | `forbidden`    | (varies)                                      | Authenticated user is not an admin.                    |
+| 404    | `not_found`    | Library not found                             | Library ID does not exist.                             |
 
 ---
 
@@ -113,9 +113,9 @@ Cancels all running scans for a given library.
 
 #### Request Body
 
-| Field | Type | Required | Description |
-|-------|------|----------|-------------|
-| `library_id` | integer | yes | ID of the library whose scans should be cancelled. Must be > 0. |
+| Field        | Type    | Required | Description                                                     |
+| ------------ | ------- | -------- | --------------------------------------------------------------- |
+| `library_id` | integer | yes      | ID of the library whose scans should be cancelled. Must be > 0. |
 
 #### Response
 
@@ -132,10 +132,10 @@ The `cancelled` field indicates how many in-progress scans were stopped.
 
 #### Error Responses
 
-| Status | Code | Message | Cause |
-|--------|------|---------|-------|
-| 400 | `bad_request` | library_id is required | Missing or zero/negative `library_id`. |
-| 503 | `unavailable` | Scanner not available | Scanner is not initialized on this server instance. |
+| Status | Code          | Message                | Cause                                               |
+| ------ | ------------- | ---------------------- | --------------------------------------------------- |
+| 400    | `bad_request` | library_id is required | Missing or zero/negative `library_id`.              |
+| 503    | `unavailable` | Scanner not available  | Scanner is not initialized on this server instance. |
 
 ---
 
@@ -187,42 +187,42 @@ curl -X POST http://your-server:8090/api/v1/scan \
 
 [Autoscan](https://github.com/Cloudbox/autoscan) monitors Sonarr, Radarr, and
 other sources for new downloads, then relays scan requests to media servers.
-Silo supports Autoscan's stock Jellyfin target through the Jellyfin compatibility
+Prairie supports Autoscan's stock Jellyfin target through the Jellyfin compatibility
 server.
 
 Use:
 
-- URL: Silo's Jellyfin compatibility URL, usually `http://your-server:8096`
-- Token: a Silo admin API key beginning with `sa_`
+- URL: Prairie's Jellyfin compatibility URL, usually `http://your-server:8096`
+- Token: a Prairie admin API key beginning with `sa_`
 - Target type: Autoscan `jellyfin`
 
 Autoscan discovers library roots from `GET /Library/VirtualFolders` and sends
 changed paths to `POST /Library/Media/Updated`. The paths must be server-side
-paths as Silo sees them.
+paths as Prairie sees them.
 
 ### Alternative: Autoscan Custom Script Target
 
-Create a script (e.g., `silo-scan.sh`) that Autoscan calls with the changed path:
+Create a script (e.g., `prairie-scan.sh`) that Autoscan calls with the changed path:
 
 ```bash
 #!/bin/bash
-# silo-scan.sh — called by Autoscan with the path as $1
-SILO_URL="http://your-server:8090"
+# prairie-scan.sh — called by Autoscan with the path as $1
+PRAIRIE_URL="http://your-server:8090"
 API_KEY="sa_your_api_key"
 
 BODY=$(jq -n --arg path "$1" '{"path": $path}')
 
-curl -s -S --fail -X POST "${SILO_URL}/api/v1/scan" \
+curl -s -S --fail -X POST "${PRAIRIE_URL}/api/v1/scan" \
   -H "Authorization: Bearer ${API_KEY}" \
   -H "Content-Type: application/json" \
-  -d "$BODY" || echo "Silo scan request failed for: $1" >&2
+  -d "$BODY" || echo "Prairie scan request failed for: $1" >&2
 ```
 
 ---
 
 ## Integration with Sonarr / Radarr
 
-Sonarr and Radarr can trigger external scripts or webhooks when a download completes. The simplest approach is to use a **Connect > Custom Script** in Sonarr/Radarr that calls the Silo scan API.
+Sonarr and Radarr can trigger external scripts or webhooks when a download completes. The simplest approach is to use a **Connect > Custom Script** in Sonarr/Radarr that calls the Prairie scan API.
 
 ### Sonarr Custom Script
 
@@ -230,8 +230,8 @@ Create a script that Sonarr calls on import. Sonarr sets environment variables w
 
 ```bash
 #!/bin/bash
-# silo-sonarr.sh — Sonarr Connect > Custom Script
-SILO_URL="http://your-server:8090"
+# prairie-sonarr.sh — Sonarr Connect > Custom Script
+PRAIRIE_URL="http://your-server:8090"
 API_KEY="sa_your_api_key"
 
 # Sonarr sets these environment variables on import:
@@ -266,18 +266,18 @@ case "$sonarr_eventtype" in
     ;;
 esac
 
-# If Sonarr and Silo see files at different mount points, remap here:
+# If Sonarr and Prairie see files at different mount points, remap here:
 # SCAN_PATH="${SCAN_PATH/#\/tv//mnt/media/tv}"
 
 BODY=$(jq -n --arg path "$SCAN_PATH" '{"path": $path}')
 
-curl -s -S --fail -X POST "${SILO_URL}/api/v1/scan" \
+curl -s -S --fail -X POST "${PRAIRIE_URL}/api/v1/scan" \
   -H "Authorization: Bearer ${API_KEY}" \
   -H "Content-Type: application/json" \
-  -d "$BODY" || echo "Silo scan failed for: $SCAN_PATH" >&2
+  -d "$BODY" || echo "Prairie scan failed for: $SCAN_PATH" >&2
 ```
 
-Place this script somewhere accessible (e.g., `/opt/scripts/silo-sonarr.sh`), make it executable (`chmod +x`), then in Sonarr go to **Settings > Connect > + > Custom Script** and set the path. Use the **Test** button to verify connectivity.
+Place this script somewhere accessible (e.g., `/opt/scripts/prairie-sonarr.sh`), make it executable (`chmod +x`), then in Sonarr go to **Settings > Connect > + > Custom Script** and set the path. Use the **Test** button to verify connectivity.
 
 ### Radarr Custom Script
 
@@ -285,8 +285,8 @@ Radarr works the same way with different environment variables:
 
 ```bash
 #!/bin/bash
-# silo-radarr.sh — Radarr Connect > Custom Script
-SILO_URL="http://your-server:8090"
+# prairie-radarr.sh — Radarr Connect > Custom Script
+PRAIRIE_URL="http://your-server:8090"
 API_KEY="sa_your_api_key"
 
 # Radarr sets these environment variables on import:
@@ -319,15 +319,15 @@ case "$radarr_eventtype" in
     ;;
 esac
 
-# If Radarr and Silo see files at different mount points, remap here:
+# If Radarr and Prairie see files at different mount points, remap here:
 # SCAN_PATH="${SCAN_PATH/#\/movies//mnt/media/movies}"
 
 BODY=$(jq -n --arg path "$SCAN_PATH" '{"path": $path}')
 
-curl -s -S --fail -X POST "${SILO_URL}/api/v1/scan" \
+curl -s -S --fail -X POST "${PRAIRIE_URL}/api/v1/scan" \
   -H "Authorization: Bearer ${API_KEY}" \
   -H "Content-Type: application/json" \
-  -d "$BODY" || echo "Silo scan failed for: $SCAN_PATH" >&2
+  -d "$BODY" || echo "Prairie scan failed for: $SCAN_PATH" >&2
 ```
 
 ---
@@ -359,6 +359,6 @@ In practice this means: if a full library scan is running and Sonarr fires a sub
 
 - **Prefer subtree scans** for automation. Scanning a show or movie folder is fast and precise — it picks up new files and marks removed ones without touching the rest of the library.
 - **Use file scans sparingly.** They're useful when you know the exact file, but a subtree scan of the parent folder is usually just as fast and also catches renames, deletions, and new subtitle files.
-- **Full library scans are expensive.** Reserve these for periodic maintenance (Silo runs one daily at 02:00 server-local time by default). Don't trigger full scans from download automation.
-- **Paths must be server-side paths.** The path you send must match the filesystem as the Silo server sees it. If Sonarr and Silo see files at different mount points (common with Docker), uncomment and adjust the path remapping line in the scripts above.
+- **Full library scans are expensive.** Reserve these for periodic maintenance (Prairie runs one daily at 02:00 server-local time by default). Don't trigger full scans from download automation.
+- **Paths must be server-side paths.** The path you send must match the filesystem as the Prairie server sees it. If Sonarr and Prairie see files at different mount points (common with Docker), uncomment and adjust the path remapping line in the scripts above.
 - **Scripts require `jq`.** The integration scripts use `jq` to safely construct JSON, which correctly handles paths containing special characters like quotes or backslashes. Install it via your package manager (`apt install jq`, `brew install jq`, etc.).

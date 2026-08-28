@@ -92,7 +92,10 @@ func ResolveCopySeekAnchor(
 		if result.Err != nil {
 			return 0, 0, result.Err
 		}
-		anchor := result.Val.(copySeekAnchor)
+		anchor, ok := result.Val.(copySeekAnchor)
+		if !ok {
+			return 0, 0, fmt.Errorf("copy seek anchor: unexpected value type %T", result.Val)
+		}
 		return anchor.seconds, anchor.segment, nil
 	}
 }

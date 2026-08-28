@@ -760,6 +760,11 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
     });
   }, [authenticatedUserID, pageActivity.canApplyRealtimeUpdates, queryClient]);
 
+  const handleSnapshotRef = useRef(handleSnapshot);
+  handleSnapshotRef.current = handleSnapshot;
+  const handleEventRef = useRef(handleEvent);
+  handleEventRef.current = handleEvent;
+
   useEffect(() => {
     if (!authenticatedUserID || !pageActivity.canApplyRealtimeUpdates) {
       setConnectionState("disconnected");
@@ -768,6 +773,8 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
 
     let closedByEffect = false;
     let activeSocket: WebSocket | null = null;
+    // Capture once; waiters are mutated in place for the lifetime of this provider.
+    const waiters = waitersRef.current;
 
     const clearReconnect = () => {
       if (reconnectTimerRef.current !== undefined) {
@@ -878,10 +885,10 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
             return;
           }
           case "snapshot":
-            handleSnapshot(message);
+            handleSnapshotRef.current(message);
             return;
           case "event":
-            handleEvent(message);
+            handleEventRef.current(message);
             return;
           case "error":
             return;
@@ -914,11 +921,11 @@ export function RealtimeEventsProvider({ children }: { children: ReactNode }) {
     return () => {
       closedByEffect = true;
       clearReconnect();
-      for (const [jobId, waiter] of waitersRef.current) {
+      for (const [jobId, waiter] of waiters) {
         window.clearTimeout(waiter.timeoutId);
         waiter.reject(new Error(`Realtime events provider closed before job ${jobId} finished`));
       }
-      waitersRef.current.clear();
+      waiters.clear();
       const socket = activeSocket;
       if (socket && socketRef.current === socket) {
         socketRef.current = null;

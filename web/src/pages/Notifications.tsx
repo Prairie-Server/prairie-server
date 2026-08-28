@@ -1,5 +1,6 @@
 import { Fragment, useState } from "react";
-import { Bell, BellOff, Check, CheckCheck, Loader2, Settings2 } from "lucide-react";
+import { Link } from "react-router";
+import { Bell, BellOff, Check, CheckCheck, Loader2, RefreshCw, Settings2 } from "lucide-react";
 import type { AppNotification } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -18,7 +19,6 @@ import {
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { decodeThumbhash } from "@/lib/thumbhash";
 import { preferredDateLocale } from "@/lib/datetime";
-import ViewTransitionLink from "@/components/ViewTransitionLink";
 
 function formatNotificationTime(value: string): string {
   const date = new Date(value);
@@ -180,7 +180,7 @@ function NotificationRow({
   return (
     <li className="group relative">
       {detailHref ? (
-        <ViewTransitionLink
+        <Link
           to={detailHref}
           onClick={() => unread && onMarkRead(notification.id)}
           className={`hover:bg-muted/60 flex items-start gap-3 rounded-xl px-3 py-3 transition-colors ${
@@ -188,7 +188,7 @@ function NotificationRow({
           }`}
         >
           {body}
-        </ViewTransitionLink>
+        </Link>
       ) : (
         <div
           className={`flex items-start gap-3 rounded-xl px-3 py-3 ${unread ? "bg-muted/30" : ""}`}
@@ -274,6 +274,7 @@ function NotificationPreferencesPopover() {
           <div className="space-y-3">
             <p className="text-muted-foreground text-sm">Couldn’t load preferences.</p>
             <Button size="sm" variant="outline" onClick={() => void refetch()}>
+              <RefreshCw />
               Retry
             </Button>
           </div>

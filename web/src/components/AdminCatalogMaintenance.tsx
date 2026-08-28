@@ -41,7 +41,7 @@ import {
   updatePathRewrite,
 } from "./adminCatalogMaintenancePathRewrites";
 import { formatExportProgressLabel, formatJobProgress } from "./adminCatalogMaintenanceFormatters";
-import { Download, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
+import { Copy, Download, Loader2, Plus, RefreshCw, Trash2, Upload } from "lucide-react";
 import { formatDateTime } from "@/lib/datetime";
 
 export default function AdminCatalogMaintenance() {
@@ -263,8 +263,8 @@ export default function AdminCatalogMaintenance() {
                       </SelectContent>
                     </Select>
                     <p className="text-muted-foreground text-xs">
-                      Silo will load the selected seed directly from the configured operational S3
-                      bucket.
+                      Prairie will load the selected seed directly from the configured operational
+                      S3 bucket.
                     </p>
                   </div>
                 ) : importSource === "bucket_artifact" ? (
@@ -317,7 +317,7 @@ export default function AdminCatalogMaintenance() {
                     />
                     <p className="text-muted-foreground text-xs">
                       Paste a public <span className="font-mono">.json.gz</span> catalog seed URL.
-                      Silo will download it server-side before importing.
+                      Prairie will download it server-side before importing.
                     </p>
                   </div>
                 )}
@@ -381,6 +381,7 @@ export default function AdminCatalogMaintenance() {
                   or incomplete rewrites will fail fast instead of seeding broken paths.
                 </div>
                 <Button type="submit" className="w-full" disabled={isImportSubmitDisabled}>
+                  {importMutation.isPending ? <Loader2 className="animate-spin" /> : <Download />}
                   {importMutation.isPending ? "Importing..." : "Import Catalog"}
                 </Button>
               </form>
@@ -575,6 +576,7 @@ export default function AdminCatalogMaintenance() {
                         onClick={() => publishMutation.mutate(job.id)}
                         disabled={publishMutation.isPending}
                       >
+                        <Upload />
                         Publish
                       </Button>
                     ) : null}
@@ -586,6 +588,7 @@ export default function AdminCatalogMaintenance() {
                           await navigator.clipboard.writeText(job.public_url ?? "");
                         }}
                       >
+                        <Copy />
                         Copy URL
                       </Button>
                     ) : null}

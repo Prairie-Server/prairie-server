@@ -1,4 +1,4 @@
-import { ArrowLeft, Plus } from "lucide-react";
+import { ArrowLeft, Plus, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 
@@ -158,6 +158,7 @@ function PolicyDomainCard({ domain, documents, onSelect }: PolicyDomainCardProps
             autoFocus
           />
           <Button type="button" size="sm" onClick={create} disabled={createDocument.isPending}>
+            <Plus />
             Create
           </Button>
           <Button
@@ -170,6 +171,7 @@ function PolicyDomainCard({ domain, documents, onSelect }: PolicyDomainCardProps
               setError("");
             }}
           >
+            <X />
             Cancel
           </Button>
         </div>
@@ -215,7 +217,7 @@ function PolicyDomainCard({ domain, documents, onSelect }: PolicyDomainCardProps
       ) : (
         !creating && (
           <p className="text-muted-foreground border-border mt-4 border-t pt-4 text-sm">
-            The Silo baseline applies unchanged.
+            The Prairie baseline applies unchanged.
             {meta.example && (
               <span className="text-muted-foreground/80">
                 {" "}

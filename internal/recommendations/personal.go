@@ -100,7 +100,7 @@ func (e *Engine) buildClusterRows(ctx context.Context, userID int, profileID str
 
 	var rows []ForYouRow
 	for _, c := range clusters {
-		if c.Embedding == nil || len(c.Embedding) == 0 {
+		if len(c.Embedding) == 0 {
 			continue
 		}
 

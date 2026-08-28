@@ -23,13 +23,13 @@ func TestNewShortIDIsParseable(t *testing.T) {
 }
 
 func TestParseShortIDNormalizesCaseAndOptionalPrefix(t *testing.T) {
-	for _, raw := range []string{"abcdef123456", "silo-abcdef123456", " SILO-ABCDEF123456 "} {
+	for _, raw := range []string{"abcdef123456", "prairie-abcdef123456", " PRAIRIE-ABCDEF123456 "} {
 		got, err := ParseShortID(raw)
 		if err != nil {
 			t.Fatalf("ParseShortID(%q): %v", raw, err)
 		}
-		if got != "SILO-ABCDEF123456" {
-			t.Fatalf("ParseShortID(%q) = %q, want SILO-ABCDEF123456", raw, got)
+		if got != "PRAIRIE-ABCDEF123456" {
+			t.Fatalf("ParseShortID(%q) = %q, want PRAIRIE-ABCDEF123456", raw, got)
 		}
 	}
 }
@@ -39,5 +39,15 @@ func TestParseShortIDRejectsAmbiguousCharacters(t *testing.T) {
 		if _, err := ParseShortID(raw); !errors.Is(err, ErrInvalidShortID) {
 			t.Fatalf("ParseShortID(%q) error = %v, want ErrInvalidShortID", raw, err)
 		}
+	}
+}
+
+func TestParseShortIDAcceptsLegacySiloPrefix(t *testing.T) {
+	got, err := ParseShortID("silo-abcdef123456")
+	if err != nil {
+		t.Fatalf("ParseShortID legacy: %v", err)
+	}
+	if got != "SILO-ABCDEF123456" {
+		t.Fatalf("ParseShortID legacy = %q, want SILO-ABCDEF123456", got)
 	}
 }

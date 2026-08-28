@@ -1,6 +1,8 @@
 import { Navigate } from "react-router";
 import { useAuth } from "@/hooks/useAuth";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { AuthBackground } from "@/components/auth/AuthBackground";
+import { AuthBrandHero } from "@/components/auth/AuthBrandHero";
 import { WizardProvider, useWizardContext } from "./setup-wizard/WizardContext";
 import { useWizardSteps } from "./setup-wizard/useWizardSteps";
 import { StepIndicator } from "./setup-wizard/StepIndicator";
@@ -31,9 +33,9 @@ const STEP_DESCRIPTIONS: Record<WizardStepId, string> = {
   server: "Configure core infrastructure. All fields are optional and can be changed later.",
   integrations: "Configure subtitle providers for automatic subtitle downloading.",
   downloads: "Allow users to download media files for offline viewing.",
-  recommendations: "AI-powered recommendations using embeddings. Requires pgvector.",
-  library: "Point Silo at your media files. You can add more libraries later.",
-  nodes: "Silo is ready. Start exploring or fine-tune in admin settings.",
+  recommendations: "AI-powered recommendations using embeddings.",
+  library: "Point Prairie at your media files. You can add more libraries later.",
+  nodes: "Prairie is ready. Start exploring or fine-tune in admin settings.",
 };
 
 function WizardContent() {
@@ -45,7 +47,12 @@ function WizardContent() {
   if (profilesLoading || (user && profileComplete && isAdmin && librariesLoading)) {
     return (
       <div className="auth-shell items-start py-10 sm:py-14">
-        <div className="glass panel-border relative z-1 w-full max-w-2xl rounded-2xl p-7 sm:p-10">
+        <AuthBackground />
+        <div className="auth-setup-panel relative z-1 w-full max-w-2xl p-1 pb-8 sm:p-2 sm:pb-10">
+          <AuthBrandHero
+            className="mb-8"
+            subtitle="Getting your server ready — hang tight while we load setup."
+          />
           <div className="space-y-3">
             <div className="flex gap-1">
               {Array.from({ length: 8 }).map((_, i) => (
@@ -63,11 +70,12 @@ function WizardContent() {
 
   return (
     <div className="auth-shell items-start py-10 sm:py-14">
-      <div className="glass panel-border relative z-1 w-full max-w-2xl rounded-2xl p-7 sm:p-10">
-        {/* Header */}
+      <AuthBackground />
+      <div className="auth-setup-panel relative z-1 w-full max-w-2xl p-1 pb-8 sm:p-2 sm:pb-10">
+        <AuthBrandHero className="mb-8" subtitle="First-run setup for your Prairie server." />
         <div className="mb-10">
           <StepIndicator steps={steps} />
-          <h1 className="text-foreground mt-6 text-[1.7rem] leading-tight font-bold tracking-[-0.03em] sm:text-3xl">
+          <h1 className="font-display text-foreground mt-6 text-[1.7rem] leading-tight font-semibold tracking-[-0.03em] sm:text-3xl">
             {STEP_TITLES[currentStep]}
           </h1>
           <p className="text-muted-foreground mt-2 text-sm leading-relaxed">
@@ -75,7 +83,6 @@ function WizardContent() {
           </p>
         </div>
 
-        {/* Step content — keyed to trigger entrance animation on step change */}
         <div key={currentStep} className="animate-[fade-in_0.25s_ease-out]">
           {currentStep === "account" && <AccountStep />}
           {currentStep === "profile" && <ProfileStep />}
@@ -96,7 +103,12 @@ export default function SetupWizard() {
   useDocumentTitle("Setup");
 
   if (loading || setupLoading) {
-    return <div className="text-muted-foreground p-8 text-sm">Loading...</div>;
+    return (
+      <main className="auth-shell">
+        <AuthBackground />
+        <div className="text-muted-foreground relative z-1 text-sm">Loading setup…</div>
+      </main>
+    );
   }
 
   if (!setupRequired && !user) {

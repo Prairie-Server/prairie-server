@@ -1,4 +1,6 @@
 import ViewTransitionLink from "@/components/ViewTransitionLink";
+import { ArtworkImage } from "@/components/ArtworkImage";
+import { BACKDROP_WIDTHS, POSTER_WIDTHS, STILL_WIDTHS } from "@/lib/artworkUrl";
 import { BookOpen, Play } from "lucide-react";
 import { useCallback, useRef } from "react";
 import { useLocation } from "react-router";
@@ -57,7 +59,11 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
           seasonNumber: props.sectionItem.season_number,
           episodeNumber: props.sectionItem.episode_number,
           backdropUrl: props.sectionItem.backdrop_url,
+          backdropAvifUrl: props.sectionItem.backdrop_avif_url,
+          backdropPngUrl: props.sectionItem.backdrop_png_url,
           posterUrl: props.sectionItem.poster_url,
+          posterAvifUrl: props.sectionItem.poster_avif_url,
+          posterPngUrl: props.sectionItem.poster_png_url,
           positionSeconds: props.sectionItem.position_seconds ?? 0,
           durationSeconds: props.sectionItem.duration_seconds ?? 0,
           type: props.sectionItem.type,
@@ -79,7 +85,11 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
           seasonNumber: props.detail.season_number,
           episodeNumber: props.detail.episode_number,
           backdropUrl: props.detail.backdrop_url,
+          backdropAvifUrl: props.detail.backdrop_avif_url,
+          backdropPngUrl: props.detail.backdrop_png_url,
           posterUrl: props.detail.poster_url,
+          posterAvifUrl: props.detail.poster_avif_url,
+          posterPngUrl: props.detail.poster_png_url,
           positionSeconds: props.progress.position_seconds,
           durationSeconds: props.progress.duration_seconds,
           type: props.detail.type,
@@ -226,6 +236,18 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
         ? card.backdropUrl
         : card.posterUrl;
   const imageSrc = imagePrimary || imageFallback;
+  const usingPoster = Boolean(imageSrc && imageSrc === card.posterUrl);
+  const imageAvif = usingPoster ? card.posterAvifUrl : card.backdropAvifUrl;
+  const imagePng = usingPoster ? card.posterPngUrl : card.backdropPngUrl;
+  // The ladder has to match the kind of image that was actually chosen above,
+  // not the card's shape. An episode still is stored under a `still` key, whose
+  // only rungs are w300/w500 (artworkkey.VariantWidths), so offering it the
+  // backdrop ladder made the browser pick w1280 and 404 -- the card fell back to
+  // its placeholder while movie posters, whose ladder did match, rendered fine.
+  // Clients that request the canonical URL without a srcSet were unaffected,
+  // which is why the same episode looked correct on the TV app.
+  const usingStill = isSectionEpisode ? !usingPoster : card.type === "episode" && usingPoster;
+  const imageWidths = usingStill ? STILL_WIDTHS : isPoster ? POSTER_WIDTHS : BACKDROP_WIDTHS;
 
   return (
     <div ref={cardRef} className={`media-card-longpress group/card ${containerWidth}`}>
@@ -233,9 +255,17 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
         <ViewTransitionLink to={detailHref} className="block">
           <div className={`media-card-image relative ${imageAspect} overflow-hidden rounded-xl`}>
             {imageSrc ? (
-              <img
+              <ArtworkImage
                 src={imageSrc}
+                avifSrc={imageAvif}
+                pngSrc={imagePng}
                 alt={heading}
+                widths={imageWidths}
+                sizes={
+                  isPoster
+                    ? "(max-width: 640px) 42vw, (max-width: 1024px) 18vw, 160px"
+                    : "(max-width: 640px) 85vw, (max-width: 1024px) 40vw, 320px"
+                }
                 className="h-full w-full object-cover transition-transform duration-300 group-hover/media:scale-105"
                 loading="lazy"
               />

@@ -10,7 +10,7 @@ type ConnectionRequirement string
 const (
 	// ConnectionNone means the source reaches its provider without host-held
 	// credentials — a local filesystem watcher, or a provider that pushes to a
-	// Silo webhook endpoint.
+	// Prairie webhook endpoint.
 	ConnectionNone ConnectionRequirement = "none"
 	// ConnectionOptional means the source can bind a connection but works
 	// without one. This is the default for a capability that declares nothing,
@@ -53,7 +53,7 @@ type ScanSourceDescriptor struct {
 	// ConnectionKinds restricts which stored connections may be bound (e.g.
 	// "sonarr", "radarr"). Empty means any connection is offerable.
 	ConnectionKinds []string `json:"connection_kinds"`
-	// EmitsNativePaths reports that the plugin already returns Silo-native
+	// EmitsNativePaths reports that the plugin already returns Prairie-native
 	// paths, so the host can skip prompting for path rewrites.
 	EmitsNativePaths bool `json:"emits_native_paths"`
 	// Summary is a short operator-facing sentence for the picker card.
@@ -170,7 +170,7 @@ func DescriptorFromMetadata(metadata map[string]any) ScanSourceDescriptor {
 				// is only accepted for the host's built-in ARR identity (see
 				// resolveDeliveryMode in the autoscan handler), which supplies
 				// its descriptor directly rather than through this parser.
-				// Honouring a plugin's claim here would surface a setup option
+				// Honoring a plugin's claim here would surface a setup option
 				// whose every submission ends in HTTP 400.
 			}
 		}
@@ -183,8 +183,15 @@ func DescriptorFromMetadata(metadata map[string]any) ScanSourceDescriptor {
 	}
 
 	if connection, ok := raw["connection"].(string); ok {
-		out.Connection = normalizeConnectionRequirement(connection)
-		out.markDeclared(fieldConnection)
+		normalized := normalizeConnectionRequirement(connection)
+		out.Connection = normalized
+		// Only mark declared when the manifest stated a recognized value.
+		// Unrecognized strings normalize to ConnectionOptional but should not
+		// prevent ApplyCompatibilityDescriptor from supplying its value.
+		trimmed := strings.ToLower(strings.TrimSpace(connection))
+		if trimmed == string(ConnectionNone) || trimmed == string(ConnectionRequired) || trimmed == string(ConnectionOptional) {
+			out.markDeclared(fieldConnection)
+		}
 	}
 	if kinds := stringSlice(raw["connection_kinds"]); len(kinds) > 0 {
 		out.ConnectionKinds = kinds

@@ -587,9 +587,6 @@ func (r *BrowseRepository) buildBrowsePlan(filters BrowseFilters) (browseQueryPl
 // ListXxx distinct-value methods.  If the returned earlyEmpty flag is true the
 // caller should return an empty result immediately (e.g. when LibraryIDs is an
 // empty slice).
-func filterWhereClause(filters BrowseFilters) (fromClause, whereClause string, args []any, earlyEmpty bool) {
-	return filterWhereClauseForSource(filters, "media_items mi", "")
-}
 
 func filterWhereClauseForSource(filters BrowseFilters, baseRelation string, mediaScope string) (fromClause, whereClause string, args []any, earlyEmpty bool) {
 	var conditions []string
@@ -852,7 +849,7 @@ func (r *BrowseRepository) ListContentRatings(ctx context.Context, filters Brows
 }
 
 func (r *BrowseRepository) ListOriginalLanguages(ctx context.Context, filters BrowseFilters) ([]string, error) {
-	return r.listDistinctScalarColumn(ctx, "original_language", filters)
+	return r.listDistinctScalarColumn(ctx, filterFieldOriginalLanguage, filters)
 }
 
 func (r *BrowseRepository) ListResolutions(ctx context.Context, filters BrowseFilters) ([]string, error) {
@@ -1180,7 +1177,7 @@ func searchDistinctAudiobookSeriesWithSource(
 }
 
 func bookSeriesTableForMediaScope(mediaScope string) string {
-	if mediaScope == "ebook" {
+	if mediaScope == itemTypeEbook {
 		return "ebook_series"
 	}
 	return "audiobook_series"
@@ -1321,7 +1318,7 @@ func browseItemColumns(alias string) string {
 		"imdb_id", "tmdb_id", "tvdb_id",
 		"poster_path", "poster_thumbhash", "backdrop_path", "backdrop_thumbhash", "logo_path",
 		"metadata_s3_path", "metadata_etag", "season_count",
-		"studios", "networks", "countries", "keywords", "original_language", "release_date::text", "first_air_date", "last_air_date",
+		"studios", "networks", "countries", "keywords", filterFieldOriginalLanguage, "release_date::text", "first_air_date", "last_air_date",
 		"show_status",
 		"matched_at", "episode_metadata_incomplete", "episode_metadata_last_checked_at", "status", "created_at", "updated_at",
 	}
@@ -1403,7 +1400,7 @@ func browseGroupByColumns(alias string) string {
 		"imdb_id", "tmdb_id", "tvdb_id",
 		"poster_path", "poster_thumbhash", "backdrop_path", "backdrop_thumbhash", "logo_path",
 		"metadata_s3_path", "metadata_etag", "season_count",
-		"studios", "networks", "countries", "keywords", "original_language", "release_date::text", "first_air_date", "last_air_date",
+		"studios", "networks", "countries", "keywords", filterFieldOriginalLanguage, "release_date::text", "first_air_date", "last_air_date",
 		"show_status",
 		"matched_at", "episode_metadata_incomplete", "episode_metadata_last_checked_at", "status", "created_at", "updated_at",
 	}
@@ -1570,7 +1567,7 @@ func buildOrderByPlan(sort, order string, snapshot *time.Time, argIdx int, singl
 
 func browseFiltersAreMovieOnly(filters BrowseFilters) bool {
 	types := splitTypes(filters.Type)
-	return len(types) == 1 && types[0] == "movie"
+	return len(types) == 1 && types[0] == itemTypeMovie
 }
 
 // ParseContentRatings splits a comma-separated content rating string into

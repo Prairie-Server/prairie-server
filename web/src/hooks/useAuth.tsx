@@ -423,7 +423,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     }
 
-    initialize();
+    void initialize();
 
     return () => {
       cancelled = true;

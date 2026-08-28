@@ -34,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Copy } from "lucide-react";
+import { ChevronLeft, ChevronRight, Copy, Loader2, Plus, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
@@ -63,7 +63,7 @@ export default function AdminApiKeys() {
   }
 
   function handleCopy(text: string) {
-    navigator.clipboard.writeText(text);
+    void navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
   }
 
@@ -143,17 +143,19 @@ export default function AdminApiKeys() {
                 <TableCell>
                   <div className="flex items-center gap-1.5">
                     <code className="bg-muted rounded px-1.5 py-0.5 font-mono text-xs">
-                      {maskKey(key.key)}
+                      {key.key ? maskKey(key.key) : key.key_prefix ? key.key_prefix : "Hidden"}
                     </code>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-6 w-6"
-                      aria-label={`Copy API key ${key.label}`}
-                      onClick={() => handleCopy(key.key)}
-                    >
-                      <Copy className="h-3 w-3" aria-hidden="true" />
-                    </Button>
+                    {key.key ? (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        aria-label={`Copy API key ${key.label}`}
+                        onClick={() => handleCopy(key.key ?? "")}
+                      >
+                        <Copy className="h-3 w-3" aria-hidden="true" />
+                      </Button>
+                    ) : null}
                   </div>
                 </TableCell>
                 <TableCell>
@@ -223,6 +225,7 @@ export default function AdminApiKeys() {
                 onClick={() => setPage((p) => p - 1)}
                 disabled={page === 0}
               >
+                <ChevronLeft />
                 Previous
               </Button>
               <Button
@@ -231,6 +234,7 @@ export default function AdminApiKeys() {
                 onClick={() => setPage((p) => p + 1)}
                 disabled={(page + 1) * pageSize >= total}
               >
+                <ChevronRight />
                 Next
               </Button>
             </div>
@@ -259,14 +263,14 @@ function CreateApiKeyForm({ onClose }: { onClose: () => void }) {
     createMutation.mutate(body, {
       onSuccess: (data) => {
         toast.success("API key created");
-        setCreatedKey(data.key);
+        setCreatedKey(data.key ?? null);
       },
     });
   }
 
   function handleCopyAndClose() {
     if (createdKey) {
-      navigator.clipboard.writeText(createdKey);
+      void navigator.clipboard.writeText(createdKey);
       toast.success("Copied to clipboard");
     }
     onClose();
@@ -313,6 +317,7 @@ function CreateApiKeyForm({ onClose }: { onClose: () => void }) {
         </Select>
       </div>
       <Button type="submit" className="w-full" disabled={createMutation.isPending}>
+        {createMutation.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
         {createMutation.isPending ? "Creating..." : "Create"}
       </Button>
     </form>

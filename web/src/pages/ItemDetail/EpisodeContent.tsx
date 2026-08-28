@@ -90,13 +90,15 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
     ],
   );
   const [manualSelectedFileId, setManualSelectedFileId] = useState<number | null>(null);
-  const selectedVersion = useMemo(
-    () =>
-      (manualSelectedFileId != null
-        ? (sortedVersions.find((version) => version.file_id === manualSelectedFileId) ?? null)
-        : null) ?? defaultSelectedVersion,
-    [defaultSelectedVersion, manualSelectedFileId, sortedVersions],
-  );
+  const selectedVersion = useMemo(() => {
+    if (manualSelectedFileId == null) {
+      return defaultSelectedVersion;
+    }
+    return (
+      sortedVersions.find((version) => version.file_id === manualSelectedFileId) ??
+      defaultSelectedVersion
+    );
+  }, [defaultSelectedVersion, manualSelectedFileId, sortedVersions]);
   const selectedMediaSummary = useMemo(
     () => resolveSelectedMediaSummary(selectedVersion, item.playback_variants, item.runtime ?? 0),
     [item.playback_variants, item.runtime, selectedVersion],
@@ -276,6 +278,8 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
           </div>
         }
         backdropUrl={item.backdrop_url}
+        backdropAvifUrl={item.backdrop_avif_url}
+        backdropPngUrl={item.backdrop_png_url}
         backdropThumbhash={item.backdrop_thumbhash}
         hidePoster
         logoUrl={item.logo_url}

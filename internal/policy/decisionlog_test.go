@@ -192,7 +192,7 @@ func waitForDecisionLogBatch(t *testing.T, db *fakeDecisionLogDB) int {
 
 func testDecisionEntry() Entry {
 	return Entry{
-		DecisionName:     DecisionName("silo.permission.decision"),
+		DecisionName:     DecisionName("prairie.permission.decision"),
 		PolicyGeneration: 1,
 		EvalTimeNS:       100,
 		InputDigest:      "digest",

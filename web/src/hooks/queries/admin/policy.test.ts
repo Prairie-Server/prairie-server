@@ -53,7 +53,7 @@ describe("policy admin hooks", () => {
     await act(async () => {
       response = await result.current.mutateAsync({
         domain: "scope",
-        source: "package silo_custom.scope",
+        source: "package prairie_custom.scope",
         input: { schema_version: 1 },
       });
     });

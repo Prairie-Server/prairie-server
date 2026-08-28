@@ -96,6 +96,7 @@ type CreateFolderInput struct {
 	Name                     string
 	MetadataLanguage         string // ISO 639-1 code; defaults to "en" if empty
 	ChapterThumbnailsEnabled bool
+	TrickplayEnabled         bool
 	IntroDetectionEnabled    bool
 	// TrailerKinds is the allow-list of remote video kinds fetched during
 	// metadata refresh; nil applies the default (all provider kinds), an
@@ -119,6 +120,7 @@ type UpdateFolderInput struct {
 	MetadataLanguage         *string
 	AutoTranslateMetadata    *bool
 	ChapterThumbnailsEnabled *bool
+	TrickplayEnabled         *bool
 	IntroDetectionEnabled    *bool
 	TrailerKinds             *[]string // nil = no change; empty slice disables remote videos
 }
@@ -185,7 +187,7 @@ func normalizeTrailerKindsInput(kinds []string) []string {
 
 // folderColumns is the list of columns returned by all SELECT queries.
 // Kept in one place so scanFolder stays in sync.
-const folderColumns = `id, type, name, enabled, metadata_language, auto_translate_metadata, chapter_thumbnails_enabled, intro_detection_enabled, trailer_kinds, poster_path, last_scanned_at,
+const folderColumns = `id, type, name, enabled, metadata_language, auto_translate_metadata, chapter_thumbnails_enabled, trickplay_enabled, intro_detection_enabled, trailer_kinds, poster_path, last_scanned_at,
 	scan_warning_code, scan_warning_message, scan_warning_at, allow_empty_cleanup_once, sort_order`
 
 // scanFolder scans a single row into a *models.MediaFolder.
@@ -200,6 +202,7 @@ func scanFolder(row pgx.Row) (*models.MediaFolder, error) {
 		&f.MetadataLanguage,
 		&f.AutoTranslateMetadata,
 		&f.ChapterThumbnailsEnabled,
+		&f.TrickplayEnabled,
 		&f.IntroDetectionEnabled,
 		&f.TrailerKinds,
 		&f.PosterPath,
@@ -234,6 +237,7 @@ func scanFolders(rows pgx.Rows) ([]*models.MediaFolder, error) {
 			&f.MetadataLanguage,
 			&f.AutoTranslateMetadata,
 			&f.ChapterThumbnailsEnabled,
+			&f.TrickplayEnabled,
 			&f.IntroDetectionEnabled,
 			&f.TrailerKinds,
 			&f.PosterPath,
@@ -312,8 +316,8 @@ func (r *FolderRepository) Create(ctx context.Context, input CreateFolderInput) 
 		trailerKinds = normalizeTrailerKindsInput(trailerKinds)
 	}
 
-	query := `INSERT INTO media_folders (type, name, metadata_language, chapter_thumbnails_enabled, intro_detection_enabled, trailer_kinds, sort_order)
-		VALUES ($1, $2, $3, $4, $5, $6, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM media_folders))
+	query := `INSERT INTO media_folders (type, name, metadata_language, chapter_thumbnails_enabled, trickplay_enabled, intro_detection_enabled, trailer_kinds, sort_order)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, (SELECT COALESCE(MAX(sort_order), 0) + 1 FROM media_folders))
 		RETURNING ` + folderColumns
 
 	row := tx.QueryRow(ctx, query,
@@ -321,6 +325,7 @@ func (r *FolderRepository) Create(ctx context.Context, input CreateFolderInput) 
 		input.Name,
 		metaLang,
 		input.ChapterThumbnailsEnabled,
+		input.TrickplayEnabled,
 		input.IntroDetectionEnabled,
 		trailerKinds,
 	)
@@ -462,6 +467,11 @@ func (r *FolderRepository) Update(ctx context.Context, id int, input UpdateFolde
 	if input.ChapterThumbnailsEnabled != nil {
 		setClauses = append(setClauses, fmt.Sprintf("chapter_thumbnails_enabled = $%d", argIndex))
 		args = append(args, *input.ChapterThumbnailsEnabled)
+		argIndex++
+	}
+	if input.TrickplayEnabled != nil {
+		setClauses = append(setClauses, fmt.Sprintf("trickplay_enabled = $%d", argIndex))
+		args = append(args, *input.TrickplayEnabled)
 		argIndex++
 	}
 	if input.IntroDetectionEnabled != nil {

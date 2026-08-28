@@ -129,9 +129,33 @@ export function serializeConfigValues(
   const out: Record<string, string> = {};
   for (const [key, value] of Object.entries(resolved)) {
     if (value === undefined || value === null) continue;
-    out[key] = Array.isArray(value) ? value.map(String).join(",") : String(value);
+    out[key] = Array.isArray(value)
+      ? value.map(configValueToString).join(",")
+      : configValueToString(value);
   }
   return out;
+}
+
+/**
+ * Stringify one draft value for the string map `source_config` stores.
+ *
+ * The controls only ever produce strings, numbers and booleans, but the draft is
+ * typed `unknown`, so a bare String() would turn an object into the useless
+ * "[object Object]". JSON keeps a malformed descriptor debuggable instead of
+ * silently storing junk, and stringify returns undefined for functions and
+ * symbols, which cannot appear here but must still yield a string.
+ */
+function configValueToString(value: unknown): string {
+  switch (typeof value) {
+    case "string":
+      return value;
+    case "number":
+    case "boolean":
+    case "bigint":
+      return String(value);
+    default:
+      return JSON.stringify(value) ?? "";
+  }
 }
 
 /** Values as the renderer wants them, from the string map the API returns. */

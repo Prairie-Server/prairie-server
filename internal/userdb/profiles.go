@@ -2,6 +2,7 @@ package userdb
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -97,7 +98,7 @@ func GetProfile(db *sql.DB, id string) (*Profile, error) {
 		&p.AutoSkipIntro, &p.AutoSkipCredits, &p.AutoSkipRecap, &p.AutoPlayNextPreview, &p.ShowForcedSubtitles,
 		&p.LibraryRestrictionsEnabled, &p.MaxPlaybackQuality, &p.CreatedAt, &p.UpdatedAt,
 	)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return nil, nil
 	}
 	if err != nil {
@@ -362,7 +363,7 @@ func DeleteProfile(db *sql.DB, id string) error {
 func VerifyPIN(db *sql.DB, profileID string, pin string) (bool, error) {
 	var pinHash string
 	err := db.QueryRow("SELECT pin_hash FROM profiles WHERE id = ?", profileID).Scan(&pinHash)
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		return false, fmt.Errorf("profile %s not found", profileID)
 	}
 	if err != nil {
@@ -373,7 +374,7 @@ func VerifyPIN(db *sql.DB, profileID string, pin string) (bool, error) {
 	}
 
 	err = bcrypt.CompareHashAndPassword([]byte(pinHash), []byte(pin))
-	if err == bcrypt.ErrMismatchedHashAndPassword {
+	if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
 		return false, nil
 	}
 	if err != nil {
