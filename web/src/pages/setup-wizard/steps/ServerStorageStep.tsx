@@ -163,8 +163,8 @@ function KeyPrefixField({
         placeholder="prairie/dev"
       />
       <p className="text-muted-foreground/70 text-xs">
-        Optional. Stores all Prairie objects under this folder inside the bucket.
-        Leave blank to use the bucket root.
+        Optional. Stores all Prairie objects under this folder inside the
+        bucket. Leave blank to use the bucket root.
       </p>
     </div>
   );
@@ -351,8 +351,9 @@ export function ServerStorageStep() {
           <div className="space-y-2">
             <Badge variant="outline">Managed by environment</Badge>
             <p className="text-muted-foreground text-xs leading-relaxed">
-              Redis is configured by the <code>REDIS_URL</code> environment variable. Change your
-              deployment configuration and restart the server to update or disable Redis.
+              Redis is configured by the <code>REDIS_URL</code> environment
+              variable. Change your deployment configuration and restart the
+              server to update or disable Redis.
             </p>
           </div>
         ) : (
@@ -377,8 +378,9 @@ export function ServerStorageStep() {
             />
             {redisNeedsLiveCheck && redisConnectionResult?.success !== true ? (
               <p className="text-muted-foreground text-xs leading-relaxed">
-                Run a successful connection check before saving a Redis URL. A failed check used to
-                leave an unreachable URL that could restart-loop the server after save.
+                Run a successful connection check before saving a Redis URL. A
+                failed check used to leave an unreachable URL that could
+                restart-loop the server after save.
               </p>
             ) : null}
           </>
@@ -759,8 +761,8 @@ export function ServerStorageStep() {
         onToggle={() => setPrivateExpanded((value) => !value)}
       >
         <p className="text-muted-foreground/80 text-xs leading-relaxed">
-          Stores non-public Prairie objects such as imports, exports, and internal
-          artifacts.
+          Stores non-public Prairie objects such as imports, exports, and
+          internal artifacts.
         </p>
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1.5">
