@@ -30,6 +30,7 @@ const config: PlayerConfig = {
   apiBaseUrl: "/api/v1",
   getAccessToken: () => null,
   getProfileId: () => null,
+  getDeviceId: () => "test-device",
 };
 
 describe("SubtitleMenu", () => {

@@ -10,8 +10,12 @@ interface DetailHeroProps {
   subtitle?: ReactNode;
   context?: ReactNode;
   backdropUrl?: string;
+  backdropAvifUrl?: string;
+  backdropPngUrl?: string;
   backdropThumbhash?: string;
   posterUrl?: string;
+  posterAvifUrl?: string;
+  posterPngUrl?: string;
   posterThumbhash?: string;
   posterOrientation?: "portrait" | "landscape" | "square";
   hidePoster?: boolean;

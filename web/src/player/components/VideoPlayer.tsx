@@ -56,6 +56,7 @@ import type {
   PlayerAudioTrack,
   PlayerChapter,
   PlayerFileVersion,
+  PlayerTrickplay,
   PlayerSubtitleInfo,
   PlayerSubtitleTrackSignature,
   PlayerTimeRange,
@@ -134,6 +135,7 @@ interface VideoPlayerProps {
   versions?: PlayerFileVersion[];
   activeFileId?: number | null;
   chapters?: PlayerChapter[];
+  trickplay?: PlayerTrickplay | null;
   onSwitchVersion?: (fileId: number, currentPosition: number) => void;
   subtitleUrls: PlayerSubtitleInfo[];
   initialPosition: number;
@@ -273,6 +275,7 @@ export function VideoPlayer({
   versions = [],
   activeFileId,
   chapters = [],
+  trickplay: _trickplay = null,
   onSwitchVersion,
   subtitleUrls,
   initialPosition,

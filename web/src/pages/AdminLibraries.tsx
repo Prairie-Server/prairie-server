@@ -414,6 +414,11 @@ export default function AdminLibraries() {
               libraries[0]?.chapter_thumbnails_supported ??
               true
             }
+            trickplaySupported={
+              editingLib?.trickplay_supported ??
+              libraries[0]?.trickplay_supported ??
+              true
+            }
           />
         </div>
       </div>

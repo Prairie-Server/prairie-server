@@ -61,7 +61,7 @@ export default function LiveWatchRoute() {
 
   const startSession = useStartLiveTVSession();
   const releaseSession = useReleaseLiveTVSession();
-  const { capabilities } = useCodecDetection();
+  const capabilities = useCodecDetection();
   const sessionIdRef = useRef<string | null>(null);
   const releasedRef = useRef(false);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
@@ -111,7 +111,13 @@ export default function LiveWatchRoute() {
           channelId,
           // Browsers cannot decode the MPEG-2 / AC-3 an OTA tuner emits; the
           // server re-encodes whatever is missing from this list.
-          capabilities: buildLiveTVCapabilities(capabilities),
+          capabilities: buildLiveTVCapabilities({
+            codecs_video: capabilities.progressiveCodecsVideo,
+            codecs_audio: capabilities.progressiveCodecsAudio,
+            containers: capabilities.containers,
+            max_resolution: capabilities.maxResolution,
+            hdr: capabilities.hdr,
+          }),
         });
         if (cancelled) {
           await releaseSession

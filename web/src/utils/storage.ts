@@ -69,6 +69,28 @@ function remove(key: StorageKey): void {
 
 export const storage = { KEYS: STORAGE_KEYS, get, set, remove };
 
+export const STORAGE_SCHEMA_VERSION = 1;
+const STORAGE_SCHEMA_VERSION_KEY = "prairie-storage-schema-version";
+
+/** Record the current storage schema version without touching session keys. */
+export function ensureStorageSchema(): number {
+  try {
+    const raw = localStorage.getItem(STORAGE_SCHEMA_VERSION_KEY);
+    const current = raw == null || raw === "" ? 0 : Number(raw);
+    const isValidInteger =
+      Number.isFinite(current) && Number.isInteger(current) && current >= 0;
+    if (!isValidInteger || current < STORAGE_SCHEMA_VERSION) {
+      localStorage.setItem(
+        STORAGE_SCHEMA_VERSION_KEY,
+        String(STORAGE_SCHEMA_VERSION),
+      );
+    }
+    return STORAGE_SCHEMA_VERSION;
+  } catch {
+    return STORAGE_SCHEMA_VERSION;
+  }
+}
+
 /**
  * Namespace used before anyone has ever signed in on this browser. Values
  * written here are the device's own defaults, not any account's.

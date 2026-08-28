@@ -31,6 +31,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     id: "prairie-dusk",
     label: "Prairie Dusk",
     fontFamily: "Sora",
+    appearance: "dark",
     previewAccent: "#e0a84a",
     previewBg: "#141820",
     description: "Warm dusk over open land — simple, amber wheat, brand-first",
