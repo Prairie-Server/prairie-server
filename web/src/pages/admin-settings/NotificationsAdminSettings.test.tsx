@@ -36,7 +36,7 @@ function makeForm() {
         case "notifications.push_relay_key_prefix":
           return "cap_v1_test";
         case "notifications.push_relay_expires_at":
-          return "2026-08-10T00:00:00Z";
+          return "2026-12-31T00:00:00Z";
         default:
           return "";
       }
