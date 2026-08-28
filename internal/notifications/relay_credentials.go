@@ -76,7 +76,7 @@ func NormalizePushRelayURL(raw, developmentOrigin string) (string, error) {
 		allowed[override] = true
 	}
 	if !allowed[value] {
-		return "", errors.New("relay_url is not an allowed Prairie relay origin")
+		return "", errors.New("relay_url is not an allowed Silo relay origin")
 	}
 	return value, nil
 }
@@ -107,8 +107,8 @@ func RelayCredentialNeedsRenewal(now, expiresAt time.Time, deploymentID string) 
 }
 
 func RelayRotationIdempotencyKey(deploymentID, capability string) string {
-	digest := sha256.Sum256([]byte("prairie-relay-rotation\x00" + deploymentID + "\x00" + capability))
-	return "prairie-rotate-" + hex.EncodeToString(digest[:])
+	digest := sha256.Sum256([]byte("silo-relay-rotation\x00" + deploymentID + "\x00" + capability))
+	return "silo-rotate-" + hex.EncodeToString(digest[:])
 }
 
 func RequestRelayCredential(ctx context.Context, client RelayHTTPDoer, relayURL, path, capability, idempotencyKey string) (RelayCredentialResult, error) {
@@ -117,7 +117,7 @@ func RequestRelayCredential(ctx context.Context, client RelayHTTPDoer, relayURL,
 		return RelayCredentialResult{}, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "prairie-server/PushRelayCredential")
+	req.Header.Set("User-Agent", "Prairie-Server/PushRelayCredential")
 	if capability != "" {
 		req.Header.Set("Authorization", "Bearer "+capability)
 	}

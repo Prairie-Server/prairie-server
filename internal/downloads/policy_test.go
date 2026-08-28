@@ -5,6 +5,7 @@ import (
 	"errors"
 	"testing"
 
+	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/config"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/playback"
@@ -32,10 +33,43 @@ func TestDownloadQualityResolverResolve(t *testing.T) {
 		Container:  "mp4",
 		Resolution: "1080p",
 	}
+	// Sparse probe metadata: no video track, so bit depth, dimensions, frame
+	// rate and bitrate are unknown and the detailed decoder bounds cannot be
+	// evaluated against the source.
+	sparseFile := &models.MediaFile{
+		ID:         4,
+		CodecVideo: "hevc",
+		CodecAudio: "aac",
+		Container:  "mp4",
+		Resolution: "1080p",
+	}
+	boundedFile := &models.MediaFile{
+		ID:         5,
+		CodecVideo: "hevc",
+		CodecAudio: "aac",
+		Container:  "mp4",
+		Resolution: "2160p",
+		Bitrate:    55_000,
+		VideoTracks: []models.VideoTrack{{
+			Codec: "hevc", Profile: "Main 10", Width: 3840, Height: 2160,
+			FrameRate: "60/1", Bitrate: 55_000, BitDepth: 10,
+		}},
+	}
 	caps := playback.ClientCapabilities{
 		CodecsVideo: []string{"h264"},
 		CodecsAudio: []string{"aac"},
 		Containers:  []string{"mp4"},
+	}
+	detailedCaps := playback.ClientCapabilities{
+		VideoEvidence: playback.EvidencePlatformAttestedV3,
+		CodecsVideo:   []string{"hevc"},
+		CodecsAudio:   []string{"aac"},
+		Containers:    []string{"mp4"},
+		VideoDecode: []playback.VideoDecodeCapabilityV3{{
+			Codec: "hevc", BitDepths: []int{8, 10}, MaxWidth: 1920,
+			MaxHeight: 1080, MaxFrameRate: 60, MaxBitrateKbps: 40_000,
+			Hardware: true,
+		}},
 	}
 
 	cases := []struct {
@@ -97,6 +131,34 @@ func TestDownloadQualityResolverResolve(t *testing.T) {
 			wantBitrate:        20000,
 		},
 		{
+			// "Can't tell" must not cost the user an original download: with
+			// probe metadata too sparse to check the decoder bounds, the flat
+			// codec lists decide, exactly as they do without detailed caps.
+			name:               "original with detailed caps stays direct when probe metadata is sparse",
+			requested:          QualityOriginal,
+			file:               sparseFile,
+			caps:               detailedCaps,
+			transcodeEnabled:   true,
+			userTranscode:      true,
+			artifactsAvailable: true,
+			wantFormat:         FormatOriginal,
+			wantQuality:        QualityOriginal,
+			wantEffective:      QualityOriginal,
+		},
+		{
+			name:               "original with detailed caps transcodes a source beyond the decoder bounds",
+			requested:          QualityOriginal,
+			file:               boundedFile,
+			caps:               detailedCaps,
+			transcodeEnabled:   true,
+			userTranscode:      true,
+			artifactsAvailable: true,
+			wantFormat:         FormatTranscode,
+			wantQuality:        QualityOriginal,
+			wantEffective:      Quality20Mbps,
+			wantBitrate:        20000,
+		},
+		{
 			name:      "remux is not a public quality",
 			requested: FormatRemux,
 			file:      file,
@@ -132,7 +194,7 @@ func TestDownloadQualityResolverResolve(t *testing.T) {
 	ctx := context.Background()
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			user := &models.User{DownloadAllowed: true, DownloadTranscodeAllowed: tc.userTranscode}
+			user := &PolicyUser{Policy: access.EffectiveUserPolicy{DownloadAllowed: true, DownloadTranscodeAllowed: tc.userTranscode}}
 			cfg := config.DownloadConfig{Enabled: true, TranscodeEnabled: tc.transcodeEnabled}
 
 			got, err := resolver.Resolve(ctx, tc.requested, user, cfg, tc.file, tc.caps, tc.artifactsAvailable, "")

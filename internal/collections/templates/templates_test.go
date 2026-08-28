@@ -252,6 +252,18 @@ func TestRegisterValidatesTemplate(t *testing.T) {
 			tmpl: Template{ID: "x", Title: "x", Category: CategoryCustom, Source: SourceMDBList, MediaKind: MediaMixed, MDBList: &MDBListSpec{URL: "ftp://example.com/list.json"}},
 		},
 		{
+			name: "mdblist off-host URL",
+			tmpl: Template{ID: "x", Title: "x", Category: CategoryCustom, Source: SourceMDBList, MediaKind: MediaMixed, MDBList: &MDBListSpec{URL: "https://example.com/lists/x/y"}},
+		},
+		{
+			name: "mdblist userinfo URL",
+			tmpl: Template{ID: "x", Title: "x", Category: CategoryCustom, Source: SourceMDBList, MediaKind: MediaMixed, MDBList: &MDBListSpec{URL: "https://mdblist.com@127.0.0.1/lists/x/y"}},
+		},
+		{
+			name: "mdblist disallowed port",
+			tmpl: Template{ID: "x", Title: "x", Category: CategoryCustom, Source: SourceMDBList, MediaKind: MediaMixed, MDBList: &MDBListSpec{URL: "https://mdblist.com:8080/lists/x/y"}},
+		},
+		{
 			name: "tmdb_collection missing spec",
 			tmpl: Template{
 				ID: "x", Title: "x", Category: CategoryEditorial,
@@ -679,8 +691,8 @@ func TestPhase3FranchiseTemplatesUseExpectedBands(t *testing.T) {
 }
 
 // TestPhase1MDBListTemplatesHaveSortOrderInExpectedBands verifies that the
-// Phase-1 MDBList-backed templates land in the sort-order bands documented in
-// docs/superpowers/plans/2026-05-22-collection-templates-expansion.md. The
+// Phase-1 MDBList-backed templates land in their assigned sort-order bands
+// (the band table below is the authoritative record of the scheme). The
 // banding scheme drives apply-time ordering for the resulting collections, so
 // regressing a band (e.g. assigning a streaming template into the 9000s) would
 // silently reorder a user's library — make that loud.

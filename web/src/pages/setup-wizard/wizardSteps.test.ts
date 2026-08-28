@@ -32,12 +32,18 @@ describe("wizardSteps", () => {
 
   describe("deriveFrontierStep", () => {
     it("starts at account until an admin user exists", () => {
-      expect(deriveFrontierStep(false, false, createEmptySetupWizardFlags())).toBe("account");
+      expect(
+        deriveFrontierStep(false, false, createEmptySetupWizardFlags()),
+      ).toBe("account");
     });
 
     it("moves to profile after account, then server after profile", () => {
-      expect(deriveFrontierStep(true, false, createEmptySetupWizardFlags())).toBe("profile");
-      expect(deriveFrontierStep(true, true, createEmptySetupWizardFlags())).toBe("server");
+      expect(
+        deriveFrontierStep(true, false, createEmptySetupWizardFlags()),
+      ).toBe("profile");
+      expect(
+        deriveFrontierStep(true, true, createEmptySetupWizardFlags()),
+      ).toBe("server");
     });
 
     it("walks skippable steps in order until finish", () => {
@@ -98,9 +104,9 @@ describe("wizardSteps", () => {
       done.downloads = true;
       done.recommendations = true;
       // Frontier is library (step 7 of 8). Reviewing downloads (step 5) should go to recommendations.
-      expect(reviewStepAfterMarkDone("downloads", "downloads", true, true, done)).toBe(
-        "recommendations",
-      );
+      expect(
+        reviewStepAfterMarkDone("downloads", "downloads", true, true, done),
+      ).toBe("recommendations");
     });
 
     it("returns to the frontier when continuing from the step immediately before it", () => {
@@ -110,7 +116,13 @@ describe("wizardSteps", () => {
       done.downloads = true;
       done.recommendations = true;
       expect(
-        reviewStepAfterMarkDone("recommendations", "recommendations", true, true, done),
+        reviewStepAfterMarkDone(
+          "recommendations",
+          "recommendations",
+          true,
+          true,
+          done,
+        ),
       ).toBeNull();
     });
 
@@ -118,8 +130,12 @@ describe("wizardSteps", () => {
       const done = createEmptySetupWizardFlags();
       done.server = true;
       done.integrations = true;
-      expect(reviewStepAfterMarkDone("downloads", "downloads", true, true, done)).toBeNull();
-      expect(deriveFrontierStep(true, true, { ...done, downloads: true })).toBe("recommendations");
+      expect(
+        reviewStepAfterMarkDone("downloads", "downloads", true, true, done),
+      ).toBeNull();
+      expect(deriveFrontierStep(true, true, { ...done, downloads: true })).toBe(
+        "recommendations",
+      );
     });
   });
 });

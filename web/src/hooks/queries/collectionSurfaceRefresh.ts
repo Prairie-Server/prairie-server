@@ -9,19 +9,27 @@ export async function invalidateUserCollectionQueries(
     queryClient.invalidateQueries({ queryKey: collectionKeys.all }),
     queryClient.invalidateQueries({ queryKey: catalogKeys.all }),
     ...(collectionId
-      ? [queryClient.invalidateQueries({ queryKey: collectionKeys.items(collectionId) })]
+      ? [
+          queryClient.invalidateQueries({
+            queryKey: collectionKeys.items(collectionId),
+          }),
+        ]
       : []),
   ]);
 }
 
-export async function invalidateLibraryCollectionQueries(queryClient: QueryClient) {
+export async function invalidateLibraryCollectionQueries(
+  queryClient: QueryClient,
+) {
   await Promise.all([
     queryClient.invalidateQueries({ queryKey: libraryCollectionKeys.all }),
     queryClient.invalidateQueries({ queryKey: catalogKeys.all }),
   ]);
 }
 
-export async function invalidateAdminCollectionQueries(queryClient: QueryClient) {
+export async function invalidateAdminCollectionQueries(
+  queryClient: QueryClient,
+) {
   await Promise.all([
     invalidateLibraryCollectionQueries(queryClient),
     queryClient.invalidateQueries({ queryKey: ["admin", "collections"] }),

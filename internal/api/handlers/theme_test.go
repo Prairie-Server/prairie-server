@@ -43,7 +43,7 @@ func TestThemeAdminCSSIsNotBrowserCached(t *testing.T) {
 
 func TestThemeRemoteURLsRequireHTTPSApprovedHost(t *testing.T) {
 	h := NewThemeHandler(&themeSettingsStub{values: map[string]string{
-		"theme.catalog_url": "http://raw.githubusercontent.com/prairie-server/prairie-themes/main/catalog.json",
+		"theme.catalog_url": "http://raw.githubusercontent.com/Prairie-Server/silo-themes/main/catalog.json",
 	}})
 
 	catalog := httptest.NewRecorder()

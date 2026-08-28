@@ -1813,8 +1813,7 @@ func (s *Service) Vote(
 		return nil, fmt.Errorf("watch together suggestions unavailable")
 	}
 
-	_, _, err := s.getOrLoadLiveRoom(ctx, roomID)
-	if err != nil {
+	if _, _, err := s.getOrLoadLiveRoom(ctx, roomID); err != nil {
 		return nil, err
 	}
 
@@ -1860,8 +1859,7 @@ func (s *Service) Unvote(
 		return nil, fmt.Errorf("watch together suggestions unavailable")
 	}
 
-	_, _, err := s.getOrLoadLiveRoom(ctx, roomID)
-	if err != nil {
+	if _, _, err := s.getOrLoadLiveRoom(ctx, roomID); err != nil {
 		return nil, err
 	}
 

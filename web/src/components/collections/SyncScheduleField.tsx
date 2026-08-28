@@ -34,11 +34,21 @@ interface SyncScheduleFieldProps {
   disabled?: boolean;
 }
 
-export function SyncScheduleField({ value, onChange, disabled }: SyncScheduleFieldProps) {
-  const [mode, setMode] = useState<"none" | "preset" | "custom">(() => deriveMode(value));
+export function SyncScheduleField({
+  value,
+  onChange,
+  disabled,
+}: SyncScheduleFieldProps) {
+  const [mode, setMode] = useState<"none" | "preset" | "custom">(() =>
+    deriveMode(value),
+  );
 
   const selectValue =
-    mode === "none" ? "__none__" : mode === "custom" ? "custom" : (findPreset(value) ?? "custom");
+    mode === "none"
+      ? "__none__"
+      : mode === "custom"
+        ? "custom"
+        : (findPreset(value) ?? "custom");
 
   return (
     <div className="space-y-2">

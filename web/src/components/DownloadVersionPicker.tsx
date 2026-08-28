@@ -11,7 +11,10 @@ import {
 } from "@/components/ui/dialog";
 import { formatFileSize } from "@/lib/mediaFormat";
 import { buildDirectDownloadUrl } from "@/hooks/queries/downloads";
-import { buildQualitySummary, sortByResolution } from "@/pages/ItemDetail/components/VersionFlyout";
+import {
+  buildQualitySummary,
+  sortByResolution,
+} from "@/pages/ItemDetail/components/VersionFlyout";
 
 interface DownloadVersionPickerProps {
   open: boolean;
@@ -37,8 +40,10 @@ export default function DownloadVersionPicker({
     try {
       const res = await fetch(url, { method: "HEAD" });
       if (!res.ok) {
-        if (res.status === 403) toast.error("You are not allowed to download this file");
-        else if (res.status === 429) toast.error("Download limit reached. Try again later");
+        if (res.status === 403)
+          toast.error("You are not allowed to download this file");
+        else if (res.status === 429)
+          toast.error("Download limit reached. Try again later");
         else toast.error("Download failed. Try again later");
         return;
       }
@@ -68,8 +73,11 @@ export default function DownloadVersionPicker({
 
         <div className="space-y-2">
           {sorted.map((version) => {
-            const quality = summaryBuilder?.(version) || buildQualitySummary(version);
-            const size = summaryBuilder ? "" : formatFileSize(version.file_size);
+            const quality =
+              summaryBuilder?.(version) || buildQualitySummary(version);
+            const size = summaryBuilder
+              ? ""
+              : formatFileSize(version.file_size);
 
             return (
               <button
@@ -87,8 +95,14 @@ export default function DownloadVersionPicker({
                   )}
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="text-foreground block text-sm font-medium">{quality}</span>
-                  {size && <span className="text-muted-foreground block text-xs">{size}</span>}
+                  <span className="text-foreground block text-sm font-medium">
+                    {quality}
+                  </span>
+                  {size && (
+                    <span className="text-muted-foreground block text-xs">
+                      {size}
+                    </span>
+                  )}
                 </span>
               </button>
             );
@@ -96,7 +110,9 @@ export default function DownloadVersionPicker({
         </div>
 
         {sorted.length > 1 && (
-          <p className="text-muted-foreground text-xs">Larger files require more storage space.</p>
+          <p className="text-muted-foreground text-xs">
+            Larger files require more storage space.
+          </p>
         )}
       </DialogContent>
     </Dialog>

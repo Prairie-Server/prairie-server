@@ -1,13 +1,17 @@
-import { useMemo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { Check, ChevronDown, Disc3, Layers3 } from "lucide-react";
 
 import type { FileVersion, PlaybackVariant } from "@/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { videoRangeLabel } from "@/lib/videoRange";
+import DetailPopover from "./DetailPopover";
 import { sortPlaybackVariantsByEditionPreference } from "./versionRankingUtils";
-import { buildDetailLine, buildQualitySummary, sortByResolution } from "./VersionFlyout";
+import {
+  buildDetailLine,
+  buildQualitySummary,
+  sortByResolution,
+} from "./VersionFlyout";
 
 interface VersionDropdownProps {
   versions: FileVersion[];
@@ -24,7 +28,7 @@ interface EditionOption {
   versions: FileVersion[];
 }
 
-export default function VersionDropdown({
+function VersionDropdown({
   versions,
   playbackVariants,
   selectedVersion,
@@ -39,10 +43,13 @@ export default function VersionDropdown({
     [playbackVariants, versions],
   );
 
-  const hasNamedEditions = editionOptions.some((option) => option.variant.edition_key);
+  const hasNamedEditions = editionOptions.some(
+    (option) => option.variant.edition_key,
+  );
   const showEditionDropdown =
     editionOptions.length > 1 &&
-    new Set(editionOptions.map((option) => option.label.toLowerCase())).size > 1 &&
+    new Set(editionOptions.map((option) => option.label.toLowerCase())).size >
+      1 &&
     hasNamedEditions;
 
   const selectedEdition = showEditionDropdown
@@ -50,7 +57,10 @@ export default function VersionDropdown({
     : null;
   const activeVersions = selectedEdition?.versions ?? sorted;
   const activeVersion =
-    selectedVersion ?? selectedEdition?.defaultVersion ?? activeVersions[0] ?? null;
+    selectedVersion ??
+    selectedEdition?.defaultVersion ??
+    activeVersions[0] ??
+    null;
   const showVersionDropdown = activeVersions.length > 1;
 
   if (!showEditionDropdown && !showVersionDropdown) {
@@ -60,8 +70,11 @@ export default function VersionDropdown({
   return (
     <>
       {showEditionDropdown && selectedEdition ? (
-        <Popover open={editionOpen} onOpenChange={setEditionOpen}>
-          <PopoverTrigger asChild>
+        <DetailPopover
+          open={editionOpen}
+          onOpenChange={setEditionOpen}
+          contentClassName="w-72 p-1.5"
+          trigger={
             <Button
               variant="glass"
               className="h-8 max-w-full min-w-0 shrink gap-1.5 rounded-full px-3 text-xs font-medium"
@@ -73,44 +86,54 @@ export default function VersionDropdown({
               </span>
               <ChevronDown className="text-muted-foreground size-3" />
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-72 p-1.5">
-            <div className="space-y-0.5">
-              {editionOptions.map((option) => {
-                const isSelected = option.id === selectedEdition.id;
-                const detail = buildEditionDetail(option);
+          }
+        >
+          <div className="space-y-0.5">
+            {editionOptions.map((option) => {
+              const isSelected = option.id === selectedEdition.id;
+              const detail = buildEditionDetail(option);
 
-                return (
-                  <button
-                    key={option.id}
-                    type="button"
-                    onClick={() => {
-                      onSelectVersion(option.defaultVersion);
-                      setEditionOpen(false);
-                      setVersionOpen(false);
-                    }}
-                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
-                      isSelected ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
-                    }`}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm font-medium">{option.label}</div>
-                      {detail && (
-                        <div className="text-muted-foreground truncate text-xs">{detail}</div>
-                      )}
+              return (
+                <button
+                  key={option.id}
+                  type="button"
+                  onClick={() => {
+                    onSelectVersion(option.defaultVersion);
+                    setEditionOpen(false);
+                    setVersionOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+                    isSelected
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-accent/50"
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm font-medium">
+                      {option.label}
                     </div>
-                    {isSelected && <Check className="text-primary size-4 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </PopoverContent>
-        </Popover>
+                    {detail && (
+                      <div className="text-muted-foreground truncate text-xs">
+                        {detail}
+                      </div>
+                    )}
+                  </div>
+                  {isSelected && (
+                    <Check className="text-primary size-4 shrink-0" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </DetailPopover>
       ) : null}
 
       {showVersionDropdown ? (
-        <Popover open={versionOpen} onOpenChange={setVersionOpen}>
-          <PopoverTrigger asChild>
+        <DetailPopover
+          open={versionOpen}
+          onOpenChange={setVersionOpen}
+          contentClassName="w-80 p-1.5"
+          trigger={
             <Button
               variant="glass"
               className="h-8 max-w-full min-w-0 shrink gap-1.5 rounded-full px-3 text-xs font-medium"
@@ -122,58 +145,70 @@ export default function VersionDropdown({
               </span>
               <ChevronDown className="text-muted-foreground size-3" />
             </Button>
-          </PopoverTrigger>
-          <PopoverContent className="w-80 p-1.5">
-            <div className="space-y-0.5">
-              {activeVersions.map((version) => {
-                const isSelected = version.file_id === activeVersion?.file_id;
-                const summary = buildQualitySummary(version);
-                const detail = buildDetailLine(version);
-                const rangeLabel = videoRangeLabel(version);
+          }
+        >
+          <div className="space-y-0.5">
+            {activeVersions.map((version) => {
+              const isSelected = version.file_id === activeVersion?.file_id;
+              const summary = buildQualitySummary(version);
+              const detail = buildDetailLine(version);
+              const rangeLabel = videoRangeLabel(version);
 
-                return (
-                  <button
-                    key={version.file_id}
-                    type="button"
-                    onClick={() => {
-                      onSelectVersion(version);
-                      setVersionOpen(false);
-                    }}
-                    className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
-                      isSelected ? "bg-accent text-accent-foreground" : "hover:bg-accent/50"
-                    }`}
-                  >
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="truncate text-sm font-medium">
-                          {summary || `Version ${version.file_id}`}
-                        </span>
-                        {rangeLabel ? (
-                          <Badge variant="secondary" className="px-1.5 py-0 text-[10px] uppercase">
-                            {rangeLabel}
-                          </Badge>
-                        ) : null}
-                      </div>
-                      {detail && (
-                        <span className="text-muted-foreground block truncate text-xs">
-                          {detail}
-                        </span>
-                      )}
+              return (
+                <button
+                  key={version.file_id}
+                  type="button"
+                  onClick={() => {
+                    onSelectVersion(version);
+                    setVersionOpen(false);
+                  }}
+                  className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors ${
+                    isSelected
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-accent/50"
+                  }`}
+                >
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2">
+                      <span className="truncate text-sm font-medium">
+                        {summary || `Version ${version.file_id}`}
+                      </span>
+                      {rangeLabel ? (
+                        <Badge
+                          variant="secondary"
+                          className="px-1.5 py-0 text-[10px] uppercase"
+                        >
+                          {rangeLabel}
+                        </Badge>
+                      ) : null}
                     </div>
-                    {isSelected && <Check className="text-primary size-4 shrink-0" />}
-                  </button>
-                );
-              })}
-            </div>
-          </PopoverContent>
-        </Popover>
+                    {detail && (
+                      <span className="text-muted-foreground block truncate text-xs">
+                        {detail}
+                      </span>
+                    )}
+                  </div>
+                  {isSelected && (
+                    <Check className="text-primary size-4 shrink-0" />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </DetailPopover>
       ) : null}
     </>
   );
 }
 
+export default memo(VersionDropdown);
+
 function buildVersionTriggerSummary(version: FileVersion): string {
-  return buildQualitySummary(version) || buildDetailLine(version) || `Version ${version.file_id}`;
+  return (
+    buildQualitySummary(version) ||
+    buildDetailLine(version) ||
+    `Version ${version.file_id}`
+  );
 }
 
 function buildEditionOptions(
@@ -184,12 +219,17 @@ function buildEditionOptions(
     return [];
   }
 
-  const orderedVariants = sortPlaybackVariantsByEditionPreference(playbackVariants);
-  const hasNamedEditions = orderedVariants.some((variant) => variant.edition_key);
+  const orderedVariants =
+    sortPlaybackVariantsByEditionPreference(playbackVariants);
+  const hasNamedEditions = orderedVariants.some(
+    (variant) => variant.edition_key,
+  );
 
   return orderedVariants
     .map((variant) => {
-      const firstPart = [...(variant.parts ?? [])].sort((a, b) => a.part_index - b.part_index)[0];
+      const firstPart = [...(variant.parts ?? [])].sort(
+        (a, b) => a.part_index - b.part_index,
+      )[0];
       if (!firstPart) {
         return null;
       }
@@ -197,7 +237,9 @@ function buildEditionOptions(
       const partVersions = sortByResolution([...(firstPart.versions ?? [])]);
       const defaultVersion =
         (firstPart.default_file_id != null
-          ? versions.find((version) => version.file_id === firstPart.default_file_id)
+          ? versions.find(
+              (version) => version.file_id === firstPart.default_file_id,
+            )
           : undefined) ?? partVersions[0];
       if (!defaultVersion) {
         return null;
@@ -225,7 +267,9 @@ function resolveSelectedEditionOption(
   if (selectedVersion) {
     const matching = editionOptions.find((option) =>
       option.variant.parts.some((part) =>
-        part.versions.some((candidate) => candidate.file_id === selectedVersion.file_id),
+        part.versions.some(
+          (candidate) => candidate.file_id === selectedVersion.file_id,
+        ),
       ),
     );
     if (matching) {
@@ -236,7 +280,10 @@ function resolveSelectedEditionOption(
   return editionOptions[0] ?? null;
 }
 
-function buildEditionLabel(variant: PlaybackVariant, hasNamedEditions: boolean): string {
+function buildEditionLabel(
+  variant: PlaybackVariant,
+  hasNamedEditions: boolean,
+): string {
   if (variant.edition_raw?.trim()) {
     return variant.edition_raw.trim();
   }

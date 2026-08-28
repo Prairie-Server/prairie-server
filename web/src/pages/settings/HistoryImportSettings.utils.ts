@@ -1,4 +1,8 @@
-import type { EmbyConnectLoginResponse, HistoryImportSource, PlexCheckResponse } from "@/api/types";
+import type {
+  EmbyConnectLoginResponse,
+  HistoryImportSource,
+  PlexCheckResponse,
+} from "@/api/types";
 
 export function resolveSavedSourceSelection(
   currentSavedSourceId: string,
@@ -38,7 +42,8 @@ export function canStartEmbyImport(
   selectedSavedSource: HistoryImportSource | undefined,
 ): boolean {
   if (!profileId) return false;
-  if (mode === "connect") return !!connectSession?.connect_session_id && !!connectServerId;
+  if (mode === "connect")
+    return !!connectSession?.connect_session_id && !!connectServerId;
   return !!selectedSavedSource;
 }
 

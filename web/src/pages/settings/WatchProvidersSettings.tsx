@@ -32,18 +32,23 @@ import {
   type WatchProviderSyncRun,
 } from "@/hooks/queries/watchProviders";
 import { Input } from "@/components/ui/input";
+import { formatRelativeTime as formatRelativeTimeBase } from "@/lib/date";
+import { SchemaForm } from "@/components/admin/plugins/SchemaForm";
+import type { PluginConfigSchema } from "@/api/types";
+import type { WatchProviderConnectionConfig } from "@/hooks/queries/watchProviders";
+import {
+  buildConnectionConfig,
+  connectionSchemasAreValid,
+  renderableConnectionSchemas,
+} from "./watchProviderConnectionConfig";
 
 function formatRelativeTime(value?: string) {
-  if (!value) return "Never";
-  const timestamp = new Date(value).getTime();
-  if (Number.isNaN(timestamp)) return "Never";
-  const seconds = Math.max(0, Math.floor((Date.now() - timestamp) / 1000));
-  if (seconds < 60) return "Just now";
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return `${Math.floor(hours / 24)}d ago`;
+  return (
+    formatRelativeTimeBase(value, {
+      rounding: "floor",
+      justNowLabel: "Just now",
+    }) ?? "Never"
+  );
 }
 
 function formatRetryAfter(seconds?: number) {
@@ -65,7 +70,13 @@ const STATUS_PILL_STYLES: Record<StatusVariant, string> = {
   error: "bg-rose-500/15 text-rose-300 ring-rose-500/25",
 };
 
-function StatusPill({ variant, children }: { variant: StatusVariant; children: React.ReactNode }) {
+function StatusPill({
+  variant,
+  children,
+}: {
+  variant: StatusVariant;
+  children: React.ReactNode;
+}) {
   return (
     <span
       className={cn(
@@ -109,7 +120,9 @@ function ToggleRow({
         <Label htmlFor={id} className="text-sm font-medium">
           {label}
         </Label>
-        <p className="text-muted-foreground mt-0.5 text-xs leading-snug">{description}</p>
+        <p className="text-muted-foreground mt-0.5 text-xs leading-snug">
+          {description}
+        </p>
       </div>
       <Switch
         id={id}
@@ -186,12 +199,22 @@ function AuthCodeBlock({
           {session.user_code}
         </div>
         <Button type="button" variant="outline" size="sm" onClick={onCopy}>
-          {codeCopied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+          {codeCopied ? (
+            <Check className="h-4 w-4" />
+          ) : (
+            <Copy className="h-4 w-4" />
+          )}
           {codeCopied ? "Copied" : "Copy code"}
         </Button>
       </div>
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
-        <Button type="button" variant="outline" size="sm" asChild className="sm:flex-1">
+        <Button
+          type="button"
+          variant="outline"
+          size="sm"
+          asChild
+          className="sm:flex-1"
+        >
           <a href={session.verification_url} target="_blank" rel="noreferrer">
             <ExternalLink className="h-4 w-4" />
             Open {displayName} activation
@@ -214,23 +237,43 @@ function AuthCodeBlock({
 
 function APIKeyBlock({
   displayName,
+  providerKey,
+  configSchemas,
   pending,
   onSubmit,
   onCancel,
 }: {
   displayName: string;
+  providerKey: string;
+  configSchemas: PluginConfigSchema[];
   pending: boolean;
-  onSubmit: (apiKey: string) => void;
+  onSubmit: (
+    apiKey: string,
+    connectionConfig: WatchProviderConnectionConfig,
+  ) => void;
   onCancel: () => void;
 }) {
   const [value, setValue] = useState("");
+  const [connectionConfig, setConnectionConfig] =
+    useState<WatchProviderConnectionConfig>({});
+  const [configValidity, setConfigValidity] = useState<Record<string, boolean>>(
+    {},
+  );
   const trimmed = value.trim();
+  const renderableSchemas = renderableConnectionSchemas(configSchemas);
+  const configValid = connectionSchemasAreValid(
+    renderableSchemas,
+    connectionConfig,
+    configValidity,
+  );
 
   return (
     <div className="border-primary/30 bg-primary/5 rounded-xl border border-dashed p-4">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <div className="text-sm font-medium">Paste your {displayName} API key</div>
+          <div className="text-sm font-medium">
+            Paste your {displayName} API key
+          </div>
           <div className="text-muted-foreground mt-0.5 text-xs leading-snug">
             Find it under your account settings on the {displayName} site.
           </div>
@@ -245,6 +288,37 @@ function APIKeyBlock({
           <X className="h-4 w-4" />
         </Button>
       </div>
+      {renderableSchemas.map((schema) => (
+        <div key={schema.key} className="mt-4 space-y-2">
+          <div>
+            <div className="text-sm font-medium">
+              {schema.title || schema.key}
+            </div>
+            {schema.description ? (
+              <div className="text-muted-foreground mt-0.5 text-xs leading-snug">
+                {schema.description}
+              </div>
+            ) : null}
+          </div>
+          <SchemaForm
+            descriptor={schema.admin_form}
+            values={connectionConfig[schema.key] ?? {}}
+            onChange={(next) =>
+              setConnectionConfig((current) => ({
+                ...current,
+                [schema.key]: next,
+              }))
+            }
+            idPrefix={`watch-provider-${providerKey}-${schema.key}`}
+            onValidityChange={(valid) =>
+              setConfigValidity((current) => ({
+                ...current,
+                [schema.key]: valid,
+              }))
+            }
+          />
+        </div>
+      ))}
       <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-stretch">
         <Input
           type="password"
@@ -258,11 +332,20 @@ function APIKeyBlock({
         <Button
           type="button"
           size="sm"
-          disabled={pending || trimmed.length === 0}
-          onClick={() => onSubmit(trimmed)}
+          disabled={pending || trimmed.length === 0 || !configValid}
+          onClick={() =>
+            onSubmit(
+              trimmed,
+              buildConnectionConfig(renderableSchemas, connectionConfig),
+            )
+          }
           className="sm:flex-none"
         >
-          {pending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+          {pending ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <Check className="h-4 w-4" />
+          )}
           Connect
         </Button>
       </div>
@@ -271,7 +354,12 @@ function APIKeyBlock({
 }
 
 interface ConnectedRunInfo {
-  imported: { watched: number; progress: number; favorites: number; watchlist: number };
+  imported: {
+    watched: number;
+    progress: number;
+    favorites: number;
+    watchlist: number;
+  };
   exported: {
     watched: number;
     favorites: number;
@@ -314,7 +402,10 @@ function deriveRunInfo(
   return { imported, exported, errorMessage, errorHint };
 }
 
-function formatLastSync(connection: WatchProviderConnection, latestRun?: WatchProviderSyncRun) {
+function formatLastSync(
+  connection: WatchProviderConnection,
+  latestRun?: WatchProviderSyncRun,
+) {
   const candidates = [
     latestRun?.completed_at,
     connection.last_inbound_sync_at,
@@ -332,7 +423,8 @@ function formatLastSync(connection: WatchProviderConnection, latestRun?: WatchPr
 }
 
 function WatchProviderCard({ providerKey }: { providerKey: string }) {
-  const { data: connection, isLoading } = useWatchProviderConnection(providerKey);
+  const { data: connection, isLoading } =
+    useWatchProviderConnection(providerKey);
   const updateConnection = useUpdateWatchProviderConnection(providerKey);
   const startAuth = useStartWatchProviderDeviceAuth(providerKey);
   const pollAuth = usePollWatchProviderDeviceAuth(providerKey);
@@ -343,7 +435,9 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
     providerKey,
     Boolean(connection?.connected),
   );
-  const [authSession, setAuthSession] = useState<DeviceAuthSession | null>(null);
+  const [authSession, setAuthSession] = useState<DeviceAuthSession | null>(
+    null,
+  );
   const [codeCopied, setCodeCopied] = useState(false);
   const [apiKeyPrompt, setApiKeyPrompt] = useState(false);
 
@@ -357,12 +451,14 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
   }
 
   const latestRun = syncRunsData?.runs?.[0];
-  const syncRunning = latestRun?.status === "queued" || latestRun?.status === "running";
+  const syncRunning =
+    latestRun?.status === "queued" || latestRun?.status === "running";
   const cooldownSeconds =
     syncNow.error instanceof ApiClientError && syncNow.error.status === 429
       ? syncNow.error.details?.retry_after_seconds
       : undefined;
-  const syncDisabled = syncNow.isPending || syncRunning || Boolean(cooldownSeconds);
+  const syncDisabled =
+    syncNow.isPending || syncRunning || Boolean(cooldownSeconds);
   const syncButtonLabel = syncRunning
     ? "Syncing..."
     : cooldownSeconds
@@ -379,7 +475,9 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
   const usesAPIKey = connection.auth_method === WatchProviderAuthMethod.APIKey;
   const showAuth = Boolean(authSession) && !connection.connected;
   const showAPIKey = usesAPIKey && apiKeyPrompt && !connection.connected;
-  const runInfo = connection.connected ? deriveRunInfo(connection, latestRun) : null;
+  const runInfo = connection.connected
+    ? deriveRunInfo(connection, latestRun)
+    : null;
   const hasError = Boolean(runInfo?.errorMessage);
   const favoritesSyncEnabled =
     connection.import_favorites_enabled || connection.export_favorites_enabled;
@@ -404,12 +502,14 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
 
   const subtitleText = (() => {
     if (showAuth) return "Waiting for you to enter the code below.";
-    if (showAPIKey) return `Paste your ${displayName} API key to finish connecting.`;
+    if (showAPIKey)
+      return `Paste your ${displayName} API key to finish connecting.`;
     if (connection.connected) {
       const username = connection.provider_username || displayName;
       return `${username} · ${formatLastSync(connection, latestRun)}`;
     }
-    if (!connection.credentials_configured) return "Server credentials required.";
+    if (!connection.credentials_configured)
+      return "Server credentials required.";
     if (usesAPIKey)
       return `Connect with your ${displayName} API key to import watch history and scrobble playback.`;
     return "Connect to start importing watch history and scrobbling playback.";
@@ -454,12 +554,18 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
     });
   };
 
-  const handleSubmitAPIKey = (apiKey: string) => {
-    connectAPIKey.mutate(apiKey, {
-      onSuccess: () => {
-        setApiKeyPrompt(false);
+  const handleSubmitAPIKey = (
+    apiKey: string,
+    connectionConfig: WatchProviderConnectionConfig,
+  ) => {
+    connectAPIKey.mutate(
+      { apiKey, connectionConfig },
+      {
+        onSuccess: () => {
+          setApiKeyPrompt(false);
+        },
       },
-    });
+    );
   };
 
   const handleCancelAPIKey = () => {
@@ -476,7 +582,9 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
             </h3>
             <StatusPill variant={statusVariant}>{statusLabel}</StatusPill>
           </div>
-          <p className="text-muted-foreground mt-1 text-[13px] leading-snug">{subtitleText}</p>
+          <p className="text-muted-foreground mt-1 text-[13px] leading-snug">
+            {subtitleText}
+          </p>
         </div>
         <div className="flex shrink-0 gap-2 sm:justify-end">
           {showAuth || showAPIKey ? null : connection.connected ? (
@@ -549,6 +657,8 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
         <div className="mt-4">
           <APIKeyBlock
             displayName={displayName}
+            providerKey={providerKey}
+            configSchemas={connection.connection_config_schema ?? []}
             pending={connectAPIKey.isPending}
             onSubmit={handleSubmitAPIKey}
             onCancel={handleCancelAPIKey}
@@ -559,7 +669,10 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
       {connection.connected && runInfo ? (
         <div className="mt-4 space-y-4">
           {runInfo.errorMessage ? (
-            <ErrorBanner message={runInfo.errorMessage} hint={runInfo.errorHint} />
+            <ErrorBanner
+              message={runInfo.errorMessage}
+              hint={runInfo.errorHint}
+            />
           ) : null}
 
           <div className="bg-background/40 rounded-xl px-3 py-3 ring-1 ring-white/5 ring-inset">
@@ -604,7 +717,9 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
               description={`Bring completed ${displayName} plays into this profile.`}
               checked={connection.import_watched_enabled}
               disabled={isBusy}
-              onChange={(checked) => updateConnection.mutate({ import_watched_enabled: checked })}
+              onChange={(checked) =>
+                updateConnection.mutate({ import_watched_enabled: checked })
+              }
             />
             <ToggleRow
               id={`watch-provider-${providerKey}-import-progress`}
@@ -612,7 +727,9 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
               description={`Use newer ${displayName} resume points when local progress is older.`}
               checked={connection.import_progress_enabled}
               disabled={isBusy}
-              onChange={(checked) => updateConnection.mutate({ import_progress_enabled: checked })}
+              onChange={(checked) =>
+                updateConnection.mutate({ import_progress_enabled: checked })
+              }
             />
             <ToggleRow
               id={`watch-provider-${providerKey}-export-watched`}
@@ -620,16 +737,22 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
               description="Send local watched marks and completed plays to this provider."
               checked={connection.export_watched_enabled}
               disabled={isBusy}
-              onChange={(checked) => updateConnection.mutate({ export_watched_enabled: checked })}
+              onChange={(checked) =>
+                updateConnection.mutate({ export_watched_enabled: checked })
+              }
             />
-            <ToggleRow
-              id={`watch-provider-${providerKey}-export-unwatched`}
-              label="Send unwatched changes"
-              description="When you mark something unwatched, remove matching history from this provider."
-              checked={connection.export_unwatched_enabled}
-              disabled={isBusy}
-              onChange={(checked) => updateConnection.mutate({ export_unwatched_enabled: checked })}
-            />
+            {connection.capabilities.export_unwatched ? (
+              <ToggleRow
+                id={`watch-provider-${providerKey}-export-unwatched`}
+                label="Send unwatched changes"
+                description="When you mark something unwatched, remove matching history from this provider."
+                checked={connection.export_unwatched_enabled}
+                disabled={isBusy}
+                onChange={(checked) =>
+                  updateConnection.mutate({ export_unwatched_enabled: checked })
+                }
+              />
+            ) : null}
             {connection.capabilities.import_favorites ||
             connection.capabilities.export_favorites ? (
               <ToggleRow
@@ -657,7 +780,9 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
                 checked={connection.sync_favorite_removals_enabled}
                 disabled={isBusy || !favoritesSyncEnabled}
                 onChange={(checked) =>
-                  updateConnection.mutate({ sync_favorite_removals_enabled: checked })
+                  updateConnection.mutate({
+                    sync_favorite_removals_enabled: checked,
+                  })
                 }
               />
             ) : null}
@@ -688,7 +813,9 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
                 checked={connection.sync_watchlist_removals_enabled}
                 disabled={isBusy || !watchlistSyncEnabled}
                 onChange={(checked) =>
-                  updateConnection.mutate({ sync_watchlist_removals_enabled: checked })
+                  updateConnection.mutate({
+                    sync_watchlist_removals_enabled: checked,
+                  })
                 }
               />
             ) : null}
@@ -700,7 +827,9 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
                 checked={connection.sync_watchlist_order_enabled}
                 disabled={isBusy || !connection.import_watchlist_enabled}
                 onChange={(checked) =>
-                  updateConnection.mutate({ sync_watchlist_order_enabled: checked })
+                  updateConnection.mutate({
+                    sync_watchlist_order_enabled: checked,
+                  })
                 }
               />
             ) : null}
@@ -710,7 +839,9 @@ function WatchProviderCard({ providerKey }: { providerKey: string }) {
               description="Report starts, pauses, resumes, and stops live during playback."
               checked={connection.scrobble_enabled}
               disabled={isBusy}
-              onChange={(checked) => updateConnection.mutate({ scrobble_enabled: checked })}
+              onChange={(checked) =>
+                updateConnection.mutate({ scrobble_enabled: checked })
+              }
             />
           </div>
         </div>
@@ -738,10 +869,12 @@ export default function WatchProvidersSettings() {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Watch Providers</h2>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Watch Providers
+        </h2>
         <p className="text-muted-foreground text-[13px] leading-relaxed sm:text-sm">
-          Connect external trackers to import watch history, sync paused progress, and scrobble
-          playback in real time.
+          Connect external trackers to import watch history, sync paused
+          progress, and scrobble playback in real time.
         </p>
       </div>
 

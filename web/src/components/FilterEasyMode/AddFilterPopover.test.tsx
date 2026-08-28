@@ -8,10 +8,17 @@ describe("AddFilterPopover", () => {
     const onAdd = vi.fn();
     render(<AddFilterPopover open onAdd={onAdd} onCancel={() => {}} />);
     await userEvent.selectOptions(screen.getByLabelText(/field/i), "genre");
-    await userEvent.selectOptions(screen.getByLabelText(/operator/i), "contains");
+    await userEvent.selectOptions(
+      screen.getByLabelText(/operator/i),
+      "contains",
+    );
     await userEvent.type(screen.getByLabelText(/value/i), "Drama");
     await userEvent.click(screen.getByRole("button", { name: /add/i }));
-    expect(onAdd).toHaveBeenCalledWith({ field: "genre", op: "contains", value: "Drama" });
+    expect(onAdd).toHaveBeenCalledWith({
+      field: "genre",
+      op: "contains",
+      value: "Drama",
+    });
   });
 
   it("does not submit when field is blank", async () => {

@@ -4,7 +4,11 @@ import { CalendarIcon, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { formatDateTime } from "@/lib/datetime";
 import { cn } from "@/lib/utils";
 
@@ -58,7 +62,9 @@ export function DateTimePicker({
         >
           <CalendarIcon className="size-4 opacity-60" aria-hidden="true" />
           <span className="truncate">
-            {selected ? formatDateTime(selected, { seconds: false }) : placeholder}
+            {selected
+              ? formatDateTime(selected, { seconds: false })
+              : placeholder}
           </span>
         </Button>
       </PopoverTrigger>

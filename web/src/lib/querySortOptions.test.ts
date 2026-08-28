@@ -4,7 +4,9 @@ import { getQuerySortOptions } from "./querySortOptions";
 
 describe("getQuerySortOptions", () => {
   it("allows ebook book-native sorts without enabling narrator", () => {
-    const fields = getQuerySortOptions({ relevanceScope: "ebook" }).map((option) => option.value);
+    const fields = getQuerySortOptions({ relevanceScope: "ebook" }).map(
+      (option) => option.value,
+    );
 
     expect(fields).toContain("author");
     expect(fields).toContain("series");
@@ -13,10 +15,10 @@ describe("getQuerySortOptions", () => {
 
   it("uses reading labels for ebook personalized sorts", () => {
     const labelsByField = new Map(
-      getQuerySortOptions({ includePersonalized: true, relevanceScope: "ebook" }).map((option) => [
-        option.value,
-        option.label,
-      ]),
+      getQuerySortOptions({
+        includePersonalized: true,
+        relevanceScope: "ebook",
+      }).map((option) => [option.value, option.label]),
     );
 
     expect(labelsByField.get("date_viewed")).toBe("Date Read");
@@ -25,10 +27,10 @@ describe("getQuerySortOptions", () => {
 
   it("keeps video labels for movie personalized sorts", () => {
     const labelsByField = new Map(
-      getQuerySortOptions({ includePersonalized: true, relevanceScope: "movie" }).map((option) => [
-        option.value,
-        option.label,
-      ]),
+      getQuerySortOptions({
+        includePersonalized: true,
+        relevanceScope: "movie",
+      }).map((option) => [option.value, option.label]),
     );
 
     expect(labelsByField.get("date_viewed")).toBe("Date Viewed");

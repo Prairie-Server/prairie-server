@@ -5,25 +5,44 @@ import (
 	"strings"
 
 	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/imagesize"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
+
+const LibraryCollectionVisibilityVisible = "visible"
 
 // AccessFilter captures effective viewer access constraints for catalog reads.
 type AccessFilter struct {
 	AllowedLibraryIDs     []int
 	AllowedContentIDs     []string
-	DisabledLibraryIDs    []int // user-disabled libraries (only set when AllowedLibraryIDs is nil)
+	DisabledLibraryIDs    []int // libraries whose membership globally hides an item
 	PresentationLibraryID *int
 	PresentationLanguage  string
 	// ProfilePreferredLanguage is the viewer profile's preferred metadata
 	// language. Presentation language resolves: explicit PresentationLanguage
 	// → ProfilePreferredLanguage → the library's metadata_language.
 	ProfilePreferredLanguage string
-	MaxContentRating         string
-	MaxPlaybackQuality       string
-	SelectedFileID           int
-	UserID                   int
-	ProfileID                string
+	// MetadataLanguageOverrides maps an item's original language to a target
+	// language before ProfilePreferredLanguage is used as the fallback.
+	MetadataLanguageOverrides map[string]string
+	// PresentationOriginalLanguage supplies a parent series' original language
+	// while localizing season and episode rows, which do not duplicate it.
+	PresentationOriginalLanguage string
+	MaxContentRating             string
+	MaxPlaybackQuality           string
+	SelectedFileID               int
+	UserID                       int
+	ProfileID                    string
+	// DeviceID identifies the requesting client for device-scoped setting
+	// resolution. It does not participate in catalog access control.
+	DeviceID string
+	// ImageSize is the artwork size the client asked for on this request, and
+	// like DeviceID it does not participate in access control. It rides here
+	// because detail building fans out through a dozen helpers that already
+	// carry the filter, and every artwork URL in one response has to agree on a
+	// size. Unset means the caller expressed no preference, and the per-context
+	// defaults apply. See internal/imagesize.
+	ImageSize imagesize.Size
 	// NamePrefix, when non-empty, restricts results to items whose
 	// LOWER(COALESCE(NULLIF(BTRIM(sort_title),''), title)) starts with the
 	// given (case-insensitive) prefix. Pushed into the SQL WHERE clause so
@@ -34,6 +53,29 @@ type AccessFilter struct {
 	// "podcast" — they're served by the ABS-compat API instead). Applied by
 	// every query builder that consumes an AccessFilter.
 	ExcludedMediaTypes []string
+}
+
+// CanAccessLibraryCollection reports whether a visible server collection is
+// reachable through at least one library in the viewer's effective scope.
+// Collections without explicit library scope retain their legacy unrestricted
+// visibility, but restricted viewers cannot address them by ID.
+func CanAccessLibraryCollection(collection *models.LibraryCollection, filter AccessFilter) bool {
+	if collection == nil || collection.Visibility != LibraryCollectionVisibilityVisible {
+		return false
+	}
+	if len(collection.LibraryIDs) == 0 {
+		return filter.AllowedLibraryIDs == nil && len(filter.DisabledLibraryIDs) == 0
+	}
+	for _, libraryID := range collection.LibraryIDs {
+		if filter.AllowedLibraryIDs != nil && !intInSlice(libraryID, filter.AllowedLibraryIDs) {
+			continue
+		}
+		if intInSlice(libraryID, filter.DisabledLibraryIDs) {
+			continue
+		}
+		return true
+	}
+	return false
 }
 
 func applyAccessFilter(alias string, filter AccessFilter, conditions *[]string, args *[]any, argIdx *int) {
@@ -106,6 +148,35 @@ func appendLibraryAccessConditions(keyColumn string, filter AccessFilter, condit
 		*argIdx = *argIdx + 1
 	}
 	*conditions = append(*conditions, libraryAccessConditions(keyColumn, allowedIdx, disabledIdx)...)
+}
+
+// ApplyLibraryAccessFilter appends the canonical item-level library allow/deny
+// predicates for keyColumn. It is exported for query builders outside the
+// catalog package that must enforce the same dual-membership invariant.
+func ApplyLibraryAccessFilter(keyColumn string, filter AccessFilter, conditions *[]string, args *[]any, argIdx *int) {
+	appendLibraryAccessConditions(keyColumn, filter, conditions, args, argIdx)
+}
+
+// episodeParentSeriesIDExpr resolves an episode row to its parent series for
+// listing queries that do not already project series_id. The subquery is a PK
+// lookup on episodes.content_id.
+func episodeParentSeriesIDExpr(episodeIDExpr string) string {
+	return fmt.Sprintf("(SELECT e_parent.series_id FROM episodes e_parent WHERE e_parent.content_id = %s)", episodeIDExpr)
+}
+
+// appendEpisodeParentLibraryAccess applies the series-level dual-membership
+// predicates that detail and playback already enforce via
+// EnsureAccessible(series_id). Episode file membership (episode_libraries) can
+// diverge from series membership for multi-folder shows; listing without this
+// check surfaces episodes of a globally hidden series as unopenable tiles.
+// Callers that already join episodes or a read model should pass the projected
+// series ID directly to avoid a redundant correlated lookup.
+func appendEpisodeParentLibraryAccess(seriesIDExpr string, filter AccessFilter, conditions *[]string, args *[]any, argIdx *int) {
+	appendLibraryAccessConditions(seriesIDExpr, filter, conditions, args, argIdx)
+}
+
+func appendEpisodeParentLibraryAccessByEpisodeID(episodeIDExpr string, filter AccessFilter, conditions *[]string, args *[]any, argIdx *int) {
+	appendEpisodeParentLibraryAccess(episodeParentSeriesIDExpr(episodeIDExpr), filter, conditions, args, argIdx)
 }
 
 // ApplySectionAccessFilter applies non-library access constraints to section queries.

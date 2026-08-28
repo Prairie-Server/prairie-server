@@ -116,7 +116,10 @@ export async function fetchCatalogFacetSearch(
   params.set("facet", facet);
   params.set("q", prefix);
   params.set("limit", String(limit));
-  return api<CatalogFacetSearchResponse>(`/catalog/filters/search?${params.toString()}`, options);
+  return api<CatalogFacetSearchResponse>(
+    `/catalog/filters/search?${params.toString()}`,
+    options,
+  );
 }
 
 export function createCatalogSearchState(
@@ -237,7 +240,10 @@ export function useCatalogWindow(
     let highestPageHasMore = false;
     pageResults.forEach((page, pageIndex) => {
       if (page.items.length > 0) {
-        maxLoadedEnd = Math.max(maxLoadedEnd, pageIndex * limit + page.items.length);
+        maxLoadedEnd = Math.max(
+          maxLoadedEnd,
+          pageIndex * limit + page.items.length,
+        );
       }
       if (pageIndex >= highestPageIndex) {
         highestPageIndex = pageIndex;
@@ -254,7 +260,10 @@ export function useCatalogWindow(
     if (nonExactPageStats.maxLoadedEnd === 0) {
       return 0;
     }
-    return nonExactPageStats.maxLoadedEnd + (nonExactPageStats.highestPageHasMore ? limit * 5 : 0);
+    return (
+      nonExactPageStats.maxLoadedEnd +
+      (nonExactPageStats.highestPageHasMore ? limit * 5 : 0)
+    );
   }, [
     limit,
     nonExactPageStats.highestPageHasMore,
@@ -286,9 +295,12 @@ export function useCatalogWindow(
         return nonExactPageStats.maxLoadedEnd;
       }
 
-      const seededEstimate = current > 0 ? current : nonExactPageStats.maxLoadedEnd + estimateStep;
+      const seededEstimate =
+        current > 0 ? current : nonExactPageStats.maxLoadedEnd + estimateStep;
       const needsMoreRunway = visibleEnd >= seededEstimate - limit * 2;
-      const expandedEstimate = needsMoreRunway ? seededEstimate + estimateStep : seededEstimate;
+      const expandedEstimate = needsMoreRunway
+        ? seededEstimate + estimateStep
+        : seededEstimate;
 
       return Math.max(expandedEstimate, nonExactPageStats.maxLoadedEnd);
     });
@@ -311,6 +323,10 @@ export function useCatalogWindow(
       title,
       totalItems,
       pages,
+      // Collection sources report the order they actually resolved in, after
+      // the viewer's saved override and the collection's configured default.
+      // Absent means the collection kept its own source order.
+      effectiveSort: page0Result.data?.effective_sort,
     },
     isLoading,
   };
@@ -337,12 +353,15 @@ export function useCatalogFilters(
       query_fingerprint: params.query_fingerprint,
       include_technical: includeTechnical,
     }),
-    queryFn: ({ signal }) => fetchCatalogFilters(state, { signal }, { includeTechnical }),
+    queryFn: ({ signal }) =>
+      fetchCatalogFilters(state, { signal }, { includeTechnical }),
     enabled: enabled && catalogSourceAllowsOverlay(state.source),
     staleTime: 5 * 60 * 1000,
   });
 }
 
 export function useCatalogMetadataFilters() {
-  return useCatalogFilters(createCatalogSearchState("query"), { includeTechnical: false });
+  return useCatalogFilters(createCatalogSearchState("query"), {
+    includeTechnical: false,
+  });
 }

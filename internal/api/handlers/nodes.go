@@ -310,7 +310,7 @@ func (h *NodeHandler) HandleListSessions(w http.ResponseWriter, r *http.Request)
 	}
 
 	ctx := r.Context()
-	pattern := "prairie:sessions:*"
+	pattern := "silo:sessions:*"
 
 	if nodeIDStr := r.URL.Query().Get("node_id"); nodeIDStr != "" {
 		nodeID, err := strconv.Atoi(nodeIDStr)
@@ -319,7 +319,7 @@ func (h *NodeHandler) HandleListSessions(w http.ResponseWriter, r *http.Request)
 			if err == nil {
 				hashBytes := sha256.Sum256([]byte(node.URL))
 				nodeHash := hex.EncodeToString(hashBytes[:4])
-				pattern = "prairie:sessions:" + nodeHash + ":*"
+				pattern = "silo:sessions:" + nodeHash + ":*"
 			}
 		}
 	}

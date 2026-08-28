@@ -2,21 +2,45 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ListVideo } from "lucide-react";
 import type { PlayerChapter } from "../types";
 import { formatTime } from "./SeekBar";
+import { PlayerMenuSurface } from "./PlayerMenuSurface";
 
 interface ChaptersMenuProps {
   chapters: PlayerChapter[];
   currentTime: number;
   onSeek: (seconds: number) => void;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }
 
-function findActiveChapterIndex(chapters: PlayerChapter[], currentTime: number): number {
+function findActiveChapterIndex(
+  chapters: PlayerChapter[],
+  currentTime: number,
+): number {
   return chapters.findIndex(
-    (chapter) => currentTime >= chapter.start_seconds && currentTime < chapter.end_seconds,
+    (chapter) =>
+      currentTime >= chapter.start_seconds && currentTime < chapter.end_seconds,
   );
 }
 
-export function ChaptersMenu({ chapters, currentTime, onSeek }: ChaptersMenuProps) {
-  const [open, setOpen] = useState(false);
+export function ChaptersMenu({
+  chapters,
+  currentTime,
+  onSeek,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
+}: ChaptersMenuProps) {
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = useCallback(
+    (value: boolean | ((previous: boolean) => boolean)) => {
+      const next = typeof value === "function" ? value(open) : value;
+      if (controlledOpen === undefined) setUncontrolledOpen(next);
+      onOpenChange?.(next);
+    },
+    [controlledOpen, onOpenChange, open],
+  );
   const menuRef = useRef<HTMLDivElement>(null);
   const menuItemsRef = useRef<(HTMLButtonElement | null)[]>([]);
   const activeIndex = useMemo(
@@ -44,7 +68,9 @@ export function ChaptersMenu({ chapters, currentTime, onSeek }: ChaptersMenuProp
   const handleMenuKeyDown = useCallback((e: React.KeyboardEvent) => {
     const items = menuItemsRef.current.filter(Boolean) as HTMLButtonElement[];
     if (items.length === 0) return;
-    const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
+    const currentIndex = items.indexOf(
+      document.activeElement as HTMLButtonElement,
+    );
     let nextIndex: number | null = null;
 
     switch (e.key) {
@@ -75,21 +101,23 @@ export function ChaptersMenu({ chapters, currentTime, onSeek }: ChaptersMenuProp
 
   return (
     <div ref={menuRef} className="relative" onBlur={handleBlur}>
-      <button
-        type="button"
-        className="player-utility-btn"
-        onClick={() => setOpen((value) => !value)}
-        aria-label="Chapters"
-        aria-expanded={open}
-        aria-haspopup="menu"
-      >
-        <ListVideo className="h-[18px] w-[18px]" />
-      </button>
+      {!hideTrigger && (
+        <button
+          type="button"
+          className="player-utility-btn"
+          onClick={() => setOpen((value) => !value)}
+          aria-label="Chapters"
+          aria-expanded={open}
+          aria-haspopup="menu"
+        >
+          <ListVideo className="h-[18px] w-[18px]" />
+        </button>
+      )}
 
       {open && (
-        <div
-          role="menu"
-          className="absolute right-0 bottom-full mb-2 flex max-h-[min(60dvh,24rem)] w-[min(280px,calc(100vw-1rem))] flex-col overflow-y-auto rounded-lg bg-black/90 py-1.5 shadow-xl backdrop-blur-sm"
+        <PlayerMenuSurface
+          className="absolute right-0 bottom-full z-30 mb-2 flex max-h-[60vh] min-w-[280px] flex-col overflow-y-auto rounded-lg bg-black/90 py-1.5 shadow-xl backdrop-blur-sm"
+          onClose={() => setOpen(false)}
           onKeyDown={handleMenuKeyDown}
         >
           <div className="px-3 py-1.5 text-xs font-medium tracking-wide text-white/50 uppercase">
@@ -104,7 +132,9 @@ export function ChaptersMenu({ chapters, currentTime, onSeek }: ChaptersMenuProp
               role="menuitem"
               type="button"
               className={`flex w-full items-center gap-3 px-3 py-2 text-left transition-colors hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/70 focus-visible:outline-none ${
-                index === activeIndex ? "bg-white/5 text-white" : "text-white/75"
+                index === activeIndex
+                  ? "bg-white/5 text-white"
+                  : "text-white/75"
               }`}
               onClick={() => {
                 onSeek(chapter.start_seconds);
@@ -128,18 +158,27 @@ export function ChaptersMenu({ chapters, currentTime, onSeek }: ChaptersMenuProp
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   >
-                    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
+                    <rect
+                      x="2"
+                      y="2"
+                      width="20"
+                      height="20"
+                      rx="2.18"
+                      ry="2.18"
+                    />
                     <path d="m7 2 0 20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5" />
                   </svg>
                 </div>
               )}
               <span className="flex min-w-0 flex-1 flex-col">
                 <span className="truncate text-sm">{chapter.title}</span>
-                <span className="text-xs text-white/45">{formatTime(chapter.start_seconds)}</span>
+                <span className="text-xs text-white/45">
+                  {formatTime(chapter.start_seconds)}
+                </span>
               </span>
             </button>
           ))}
-        </div>
+        </PlayerMenuSurface>
       )}
     </div>
   );

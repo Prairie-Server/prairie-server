@@ -3,9 +3,9 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
 
 vi.mock("@/hooks/queries/collectionPreviews", async () => {
-  const actual = await vi.importActual<typeof import("@/hooks/queries/collectionPreviews")>(
-    "@/hooks/queries/collectionPreviews",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/hooks/queries/collectionPreviews")
+  >("@/hooks/queries/collectionPreviews");
 
   return {
     ...actual,
@@ -110,7 +110,9 @@ describe("CollectionBuilder", () => {
         query_definition: {
           library_ids: [],
           match: "all",
-          groups: [{ match: "all", rules: [{ field: "rating", op: "gte", value: 8 }] }],
+          groups: [
+            { match: "all", rules: [{ field: "rating", op: "gte", value: 8 }] },
+          ],
           sort: { field: "rating", order: "desc" },
         },
       }),
@@ -126,17 +128,28 @@ describe("CollectionBuilder", () => {
 
   it("includes the expanded collection builder field and sort lists", () => {
     expect(COLLECTION_FIELD_OPTIONS.map((field) => field.value)).toEqual(
-      expect.arrayContaining(["rating_imdb", "watched", "favorited", "in_watchlist"]),
+      expect.arrayContaining([
+        "rating_imdb",
+        "watched",
+        "favorited",
+        "in_watchlist",
+      ]),
     );
-    expect(COLLECTION_SORT_OPTIONS.map((sort) => sort.value)).toContain("rating_imdb");
+    expect(COLLECTION_SORT_OPTIONS.map((sort) => sort.value)).toContain(
+      "rating_imdb",
+    );
   });
 
   it("includes last_air_date in the sort options", () => {
-    expect(COLLECTION_SORT_OPTIONS.map((sort) => sort.value)).toContain("last_air_date");
+    expect(COLLECTION_SORT_OPTIONS.map((sort) => sort.value)).toContain(
+      "last_air_date",
+    );
   });
 
   it("shows personalized sort options only on user collection surfaces", () => {
-    expect(getCollectionSortOptions(false).map((sort) => sort.value)).not.toContain("progress");
+    expect(
+      getCollectionSortOptions(false).map((sort) => sort.value),
+    ).not.toContain("progress");
     expect(getCollectionSortOptions(true).map((sort) => sort.value)).toEqual(
       expect.arrayContaining(["progress", "date_viewed", "plays"]),
     );

@@ -4,7 +4,7 @@
 // root-level paths real ABS clients build against (e.g. /login, /api/items).
 //
 // Stage 1 lands the package skeleton: Handler struct, interface stubs for
-// Prairie-side dependencies, and an empty Mount() method. Real route handlers
+// silo-side dependencies, and an empty Mount() method. Real route handlers
 // are added in subsequent stages (auth, file serving, progress, browse).
 package abs
 
@@ -20,8 +20,8 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	"github.com/prairie-server/prairie-server/internal/catalog"
-	"github.com/prairie-server/prairie-server/internal/httpheaders"
 	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
 )
 
 // ---------------------------------------------------------------------------
@@ -243,7 +243,7 @@ type Dependencies struct {
 	Recommender      Recommender    // may be nil
 	LoginLimiter     *LoginLimiter  // may be nil — one is created if absent
 	// InstallID returns the current plugin install ID for building
-	// host-proxy-routable URLs. Defaults to "prairie.audiobooks" when nil.
+	// host-proxy-routable URLs. Defaults to "silo.audiobooks" when nil.
 	InstallID func() string
 	// ProgressStore provides access to user_watch_progress for ABS
 	// progress endpoints. May be nil; handlers degrade gracefully.
@@ -273,7 +273,7 @@ type Dependencies struct {
 	// SocketIO is the Socket.io server mounted at /abs/socket.io/. May be nil;
 	// the route is only registered when a non-nil value is supplied.
 	SocketIO SocketIOServer
-	// NativeSessions mirrors ABS playback into Prairie's native playback session
+	// NativeSessions mirrors ABS playback into Silo's native playback session
 	// manager so shared live-session views, limits, and stale-session cleanup
 	// see Audiobookshelf-compatible clients. May be nil; ABS playback still
 	// functions, but admin live-session visibility is unavailable.
@@ -291,6 +291,52 @@ type Dependencies struct {
 // Handler wires the /abs/api/* and canonical ABS-client paths.
 type Handler struct {
 	deps Dependencies
+	// telemetry is the local observation-only stream registry, shared with the
+	// native API process. Must be set before Mount: Mount is what registers the
+	// wrapped handlers, so a later call would have no effect.
+	telemetry *streamtelemetry.Registry
+}
+
+// SetStreamTelemetry wires local stream observation. A nil registry is a
+// complete no-op. Call before Mount.
+func (h *Handler) SetStreamTelemetry(registry *streamtelemetry.Registry) {
+	h.telemetry = registry
+}
+
+// SkipMediaCompression reports whether an ABS media route must retain the
+// server's original ResponseWriter for sendfile and optional interface support.
+func SkipMediaCompression(r *http.Request) bool {
+	const (
+		apiSegment      = "api"
+		absSegment      = "abs"
+		downloadSegment = "download"
+		fileSegment     = "file"
+		itemsSegment    = "items"
+		publicSegment   = "public"
+		sessionSegment  = "session"
+	)
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		return false
+	}
+	p := strings.Split(strings.TrimPrefix(r.URL.Path, "/"), "/")
+	switch {
+	case len(p) == 5 && p[0] == apiSegment && p[1] == itemsSegment && p[2] != "" && p[3] == fileSegment && p[4] != "":
+		return true
+	case len(p) == 6 && p[0] == apiSegment && p[1] == itemsSegment && p[2] != "" && p[3] == fileSegment && p[4] != "" && p[5] == downloadSegment:
+		return true
+	case len(p) == 6 && p[0] == absSegment && p[1] == apiSegment && p[2] == itemsSegment && p[3] != "" && p[4] == fileSegment && p[5] != "":
+		return true
+	case len(p) == 7 && p[0] == absSegment && p[1] == apiSegment && p[2] == itemsSegment && p[3] != "" && p[4] == fileSegment && p[5] != "" && p[6] == downloadSegment:
+		return true
+	case len(p) == 5 && p[0] == publicSegment && p[1] == sessionSegment && p[2] != "" && p[3] == "track" && p[4] != "":
+		return true
+	case len(p) == 6 && p[0] == absSegment && p[1] == publicSegment && p[2] == sessionSegment && p[3] != "" && p[4] == "track" && p[5] != "":
+		return true
+	case len(p) == 4 && p[0] == "feed" && p[1] != "" && p[2] == fileSegment && p[3] != "":
+		return true
+	default:
+		return false
+	}
 }
 
 // New constructs an ABS Handler. Sensible defaults are applied for optional
@@ -309,7 +355,7 @@ func New(deps Dependencies) *Handler {
 		deps.LoginLimiter = NewLoginLimiter()
 	}
 	if deps.InstallID == nil {
-		deps.InstallID = func() string { return "prairie.audiobooks" }
+		deps.InstallID = func() string { return "silo.audiobooks" }
 	}
 	return &Handler{deps: deps}
 }
@@ -326,6 +372,7 @@ func New(deps Dependencies) *Handler {
 // here so stage-by-stage handlers land in the right places without needing to
 // revisit Mount later.
 func (h *Handler) Mount(parent chi.Router) {
+	declareABSMediaRoutes()
 	parent.Group(func(r chi.Router) {
 		r.Use(h.accessLog)
 		h.mountRoutes(r)
@@ -377,14 +424,14 @@ func (h *Handler) mountRoutes(r chi.Router) {
 	// the capability. Mounted at both /public/session and /abs/public/session
 	// for compatibility with clients that pin either prefix.
 	for _, prefix := range []string{"", "/abs"} {
-		r.Get(prefix+"/public/session/{sid}/track/{idx}", h.handlePublicTrack)
-		r.Head(prefix+"/public/session/{sid}/track/{idx}", h.handlePublicTrack)
+		r.Get(prefix+"/public/session/{sid}/track/{idx}", observeABS(h.telemetry, http.MethodGet, prefix+"/public/session/{sid}/track/{idx}", h.handlePublicTrack))
+		r.Head(prefix+"/public/session/{sid}/track/{idx}", observeABS(h.telemetry, http.MethodHead, prefix+"/public/session/{sid}/track/{idx}", h.handlePublicTrack))
 	}
 
 	// Public RSS feed routes — slug is the capability token, no auth.
 	r.Get("/feed/{slug}.xml", h.handlePublicFeed)
 	r.Get("/feed/{slug}", h.handlePublicFeed)
-	r.Get("/feed/{slug}/file/{ino}", h.handlePublicFeedFile)
+	r.Get("/feed/{slug}/file/{ino}", observeABS(h.telemetry, http.MethodGet, "/feed/{slug}/file/{ino}", h.handlePublicFeedFile))
 
 	// Server discovery — unauthenticated. Mounted at both /api and the
 	// canonical root so curl-style network probes, the official ABS app's
@@ -410,8 +457,8 @@ func (h *Handler) mountRoutes(r chi.Router) {
 			// GET /api/items/{libraryItemId}/file/{ino} — stream a specific audio file.
 			// /download variant is the same handler; Content-Disposition is set when
 			// the path ends in /download.
-			r.Get(prefix+"/items/{libraryItemId}/file/{ino}", h.handleFileStream)
-			r.Get(prefix+"/items/{libraryItemId}/file/{ino}/download", h.handleFileStream)
+			r.Get(prefix+"/items/{libraryItemId}/file/{ino}", observeABS(h.telemetry, http.MethodGet, prefix+"/items/{libraryItemId}/file/{ino}", h.handleFileStream))
+			r.Get(prefix+"/items/{libraryItemId}/file/{ino}/download", observeABS(h.telemetry, http.MethodGet, prefix+"/items/{libraryItemId}/file/{ino}/download", h.handleFileStream))
 		}
 	})
 
@@ -440,7 +487,7 @@ func (h *Handler) mountRoutes(r chi.Router) {
 			// PATCH /session/{sid}           — silo-native heartbeat alias
 			// (kept additive for silo's own clients).
 			r.Patch(prefix+"/session/{sid}", h.handleSessionSync)
-			// POST  /session/{sid}/close     — finalize the play session
+			// POST  /session/{sid}/close     — finalise the play session
 			r.Post(prefix+"/session/{sid}/close", h.handleSessionClose)
 			// POST  /session/local          — sync one offline-recorded session
 			r.Post(prefix+"/session/local", h.handleSyncLocalSession)
@@ -501,7 +548,7 @@ func (h *Handler) mountRoutes(r chi.Router) {
 			r.Get(prefix+"/me/stats/year/{year}", h.handleYearStats)
 			// Ebook surface — stubs until the ebook scanner lands.
 			// Mobile clients call these but degrade cleanly on empty/404.
-			r.Get(prefix+"/items/{id}/ebook/{fileid}", h.handleEbookFile)
+			r.Get(prefix+"/items/{id}/ebook/{fileid}", observeABS(h.telemetry, http.MethodGet, prefix+"/items/{id}/ebook/{fileid}", h.handleEbookFile))
 			r.Patch(prefix+"/items/{id}/ebook/{fileid}/status", h.handleEbookStatus)
 			// E-reader devices + ebook email delivery — empty list / 503
 			// until SMTP integration is wired.
@@ -711,7 +758,7 @@ func (h *Handler) publish(userID, event string, payload any) {
 // absBaseURL returns the server address prefix ABS clients should use to
 // resolve response-embedded URLs.
 //
-//   - Host-proxied (X-Prairie-User-Id header present): returns the plugin-proxy
+//   - Host-proxied (X-Silo-User-Id header present): returns the plugin-proxy
 //     path "<scheme>://<host>/api/v1/plugins/<installID>".
 //   - Standalone listener: returns "<scheme>://<host>" — origin only.
 //
@@ -729,7 +776,7 @@ func (h *Handler) absBaseURL(r *http.Request) string {
 	if host == "" {
 		host = r.Host
 	}
-	if httpheaders.RequestValue(r, httpheaders.HeaderUserID) != "" {
+	if r.Header.Get("X-Silo-User-Id") != "" {
 		return scheme + "://" + host + "/api/v1/plugins/" + h.deps.InstallID()
 	}
 	return scheme + "://" + host
@@ -739,7 +786,7 @@ func (h *Handler) absBaseURL(r *http.Request) string {
 // Shared response helpers (used by handlers across multiple stages)
 // ---------------------------------------------------------------------------
 
-// writeJSON serializes v as JSON and writes it with the given HTTP status.
+// writeJSON serialises v as JSON and writes it with the given HTTP status.
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -769,14 +816,14 @@ func readPagedQuery(r *http.Request, defaultLimit int) (limit, page int) {
 // their presence (sortBy, filterBy, minified).
 func pagedEnvelope(results any, total, limit, page int, sortBy string, sortDesc bool, filterBy string, minified bool, include string) map[string]any {
 	return map[string]any{
-		"results":    results,
-		jsonKeyTotal: total,
-		"limit":      limit,
-		"page":       page,
-		"sortBy":     sortBy,
-		"sortDesc":   sortDesc,
-		"filterBy":   filterBy,
-		"minified":   minified,
-		"include":    include,
+		"results":  results,
+		"total":    total,
+		"limit":    limit,
+		"page":     page,
+		"sortBy":   sortBy,
+		"sortDesc": sortDesc,
+		"filterBy": filterBy,
+		"minified": minified,
+		"include":  include,
 	}
 }

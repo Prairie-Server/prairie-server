@@ -1,8 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
-import { adminRefreshPerson, adminUpdatePerson, refreshPerson, searchPeople } from "@/api/client";
-import type { Person, PersonRefreshQueuedResponse, UpdatePersonRequest } from "@/api/types";
+import {
+  adminRefreshPerson,
+  adminUpdatePerson,
+  refreshPerson,
+  searchPeople,
+} from "@/api/client";
+import type {
+  Person,
+  PersonRefreshQueuedResponse,
+  UpdatePersonRequest,
+} from "@/api/types";
 
 import { personKeys } from "./keys";
 
@@ -51,7 +60,9 @@ export function useRefreshPerson(id: string | undefined, isAdmin: boolean) {
     onSuccess: async (result) => {
       if (result.mode === "admin" && id) {
         queryClient.setQueryData(personKeys.detail(id), result.person);
-        await queryClient.invalidateQueries({ queryKey: personKeys.detail(id) });
+        await queryClient.invalidateQueries({
+          queryKey: personKeys.detail(id),
+        });
         toast.success("Person metadata refreshed");
         return;
       }
@@ -85,7 +96,9 @@ export function useUpdatePersonMetadata(id: string | undefined) {
       toast.success("Person metadata saved");
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to save metadata");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save metadata",
+      );
     },
   });
 }

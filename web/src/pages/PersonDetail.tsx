@@ -31,7 +31,10 @@ export default function PersonDetail() {
   // that failed so a re-signed URL or a different person recovers instead of
   // inheriting the previous failure.
   const [failedPhotoUrl, setFailedPhotoUrl] = useState<string | null>(null);
-  const autoRefreshWindowRef = useRef<{ personId: number; until: number } | null>(null);
+  const autoRefreshWindowRef = useRef<{
+    personId: number;
+    until: number;
+  } | null>(null);
   const autoRefreshRequestedPersonIdRef = useRef<number | null>(null);
   const { user } = useAuth();
   const isAdmin = useIsActingAdmin();
@@ -50,7 +53,10 @@ export default function PersonDetail() {
 
       const current = autoRefreshWindowRef.current;
       if (!current || current.personId !== data.id) {
-        autoRefreshWindowRef.current = { personId: data.id, until: Date.now() + 30_000 };
+        autoRefreshWindowRef.current = {
+          personId: data.id,
+          until: Date.now() + 30_000,
+        };
         return 3_000;
       }
 
@@ -64,7 +70,10 @@ export default function PersonDetail() {
     if (!person || !user || !isPersonMetadataIncomplete(person)) {
       return;
     }
-    if (autoRefreshRequestedPersonIdRef.current === person.id || refreshMutation.isPending) {
+    if (
+      autoRefreshRequestedPersonIdRef.current === person.id ||
+      refreshMutation.isPending
+    ) {
       return;
     }
     autoRefreshRequestedPersonIdRef.current = person.id;
@@ -85,7 +94,10 @@ export default function PersonDetail() {
   );
 
   const limit = 60;
-  const [visibleRange, setVisibleRange] = useState<[number, number]>([0, limit - 1]);
+  const [visibleRange, setVisibleRange] = useState<[number, number]>([
+    0,
+    limit - 1,
+  ]);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const handleVisibleRangeChange = useCallback((start: number, end: number) => {
     clearTimeout(debounceRef.current);
@@ -125,7 +137,9 @@ export default function PersonDetail() {
                 <img
                   src={person.photo_url}
                   srcSet={photoSrcSet || undefined}
-                  sizes={photoSrcSet ? "(min-width: 640px) 180px, 140px" : undefined}
+                  sizes={
+                    photoSrcSet ? "(min-width: 640px) 180px, 140px" : undefined
+                  }
                   alt={person.name}
                   className="h-full w-full object-cover"
                   onError={() => setFailedPhotoUrl(person.photo_url ?? null)}
@@ -141,7 +155,9 @@ export default function PersonDetail() {
           {/* Info */}
           <div className="min-w-0 flex-1 pt-1">
             <div className="mb-3 flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{person.name}</h1>
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+                {person.name}
+              </h1>
               {id && user && (
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -180,10 +196,14 @@ export default function PersonDetail() {
             {/* Metadata badges */}
             <div className="mb-4 flex flex-wrap items-center gap-2">
               {person.birth_date && (
-                <span className="metadata-badge">Born {formatBirthDate(person.birth_date)}</span>
+                <span className="metadata-badge">
+                  Born {formatBirthDate(person.birth_date)}
+                </span>
               )}
               {person.birth_date && !person.death_date && (
-                <span className="metadata-badge">{computeAge(person.birth_date)} years old</span>
+                <span className="metadata-badge">
+                  {computeAge(person.birth_date)} years old
+                </span>
               )}
               {person.death_date && person.birth_date && (
                 <span className="metadata-badge">
@@ -191,7 +211,9 @@ export default function PersonDetail() {
                   {computeAge(person.birth_date, person.death_date)})
                 </span>
               )}
-              {person.birthplace && <span className="metadata-badge">{person.birthplace}</span>}
+              {person.birthplace && (
+                <span className="metadata-badge">{person.birthplace}</span>
+              )}
             </div>
 
             {/* Bio */}

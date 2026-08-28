@@ -3,7 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { createEmptyQueryDefinition } from "@/api/types";
 
-import CatalogFiltersPanel, { CatalogFilterSheetContainer } from "./CatalogFiltersPanel";
+import CatalogFiltersPanel, {
+  CatalogFilterSheetContainer,
+} from "./CatalogFiltersPanel";
 
 const mockUseCatalogFilters = vi.fn();
 
@@ -39,7 +41,8 @@ vi.mock("@/components/collections/CollectionGuidedRulesEditor", () => ({
     sortField: "added_at",
     sortOrder: "desc",
   }),
-  guidedStateToQueryDefinition: (_state: unknown, existing: unknown) => existing,
+  guidedStateToQueryDefinition: (_state: unknown, existing: unknown) =>
+    existing,
 }));
 
 vi.mock("@/components/collections/CollectionRulesEditor", () => ({

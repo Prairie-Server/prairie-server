@@ -52,7 +52,8 @@ export function resolveLeafPrimaryAction(
       : undefined;
   // Watched items store position 0, so any nonzero position is a live resume
   // point — including a rewatch in flight (played stays true).
-  const isInProgress = (userData.is_in_progress ?? false) || positionSeconds > 0;
+  const isInProgress =
+    (userData.is_in_progress ?? false) || positionSeconds > 0;
 
   if (isInProgress) {
     return {
@@ -101,7 +102,9 @@ export function resolveSeriesPrimaryAction({
   seasons,
   continueWatching,
 }: ResolveSeriesPrimaryActionInput): SeriesPrimaryAction {
-  const resumeItem = continueWatching.find((entry) => entry.seriesId === seriesId);
+  const resumeItem = continueWatching.find(
+    (entry) => entry.seriesId === seriesId,
+  );
   if (resumeItem) {
     return {
       label: "Resume",
@@ -110,7 +113,9 @@ export function resolveSeriesPrimaryAction({
     };
   }
 
-  const sortedSeasons = seasons.slice().sort((a, b) => a.season_number - b.season_number);
+  const sortedSeasons = seasons
+    .slice()
+    .sort((a, b) => a.season_number - b.season_number);
 
   const latestStartedSeason = sortedSeasons
     .slice()
@@ -131,8 +136,10 @@ export function resolveSeriesPrimaryAction({
     const nextSeason = sortedSeasons.find(
       (season) => season.season_number > latestStartedSeason.season_number,
     );
-    const latestSeasonIsComplete = latestStartedSeason.user_data?.played === true;
-    const targetSeason = latestSeasonIsComplete && nextSeason ? nextSeason : latestStartedSeason;
+    const latestSeasonIsComplete =
+      latestStartedSeason.user_data?.played === true;
+    const targetSeason =
+      latestSeasonIsComplete && nextSeason ? nextSeason : latestStartedSeason;
     const watchedCount = targetSeason.user_data?.watched_count ?? 0;
     const targetEpisodeNumber =
       targetSeason.content_id === latestStartedSeason.content_id

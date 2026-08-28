@@ -19,7 +19,10 @@ function Progress({ value, className, ...props }: ProgressProps) {
       className={cn("bg-muted h-1.5 overflow-hidden rounded-sm", className)}
       {...props}
     >
-      <div className="bg-primary h-full transition-[width]" style={{ width: `${clamped}%` }} />
+      <div
+        className="bg-primary h-full transition-[width]"
+        style={{ width: `${clamped}%` }}
+      />
     </div>
   );
 }

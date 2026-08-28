@@ -32,13 +32,22 @@ describe("parse helpers", () => {
 
 describe("formatDate", () => {
   it("honors explicit numeric patterns", () => {
-    setDateTimeFormatPreferences({ dateFormat: "DD/MM/YYYY", timeFormat: "auto" });
+    setDateTimeFormatPreferences({
+      dateFormat: "DD/MM/YYYY",
+      timeFormat: "auto",
+    });
     expect(formatDate(sample)).toBe("05/06/2026");
 
-    setDateTimeFormatPreferences({ dateFormat: "MM/DD/YYYY", timeFormat: "auto" });
+    setDateTimeFormatPreferences({
+      dateFormat: "MM/DD/YYYY",
+      timeFormat: "auto",
+    });
     expect(formatDate(sample)).toBe("06/05/2026");
 
-    setDateTimeFormatPreferences({ dateFormat: "YYYY-MM-DD", timeFormat: "auto" });
+    setDateTimeFormatPreferences({
+      dateFormat: "YYYY-MM-DD",
+      timeFormat: "auto",
+    });
     expect(formatDate(sample)).toBe("2026-06-05");
   });
 
@@ -47,18 +56,30 @@ describe("formatDate", () => {
   });
 
   it("orders medium (month-name) dates to match the preference", () => {
-    setDateTimeFormatPreferences({ dateFormat: "MM/DD/YYYY", timeFormat: "auto" });
+    setDateTimeFormatPreferences({
+      dateFormat: "MM/DD/YYYY",
+      timeFormat: "auto",
+    });
     expect(formatDate(sample, "medium")).toBe("Jun 5, 2026");
 
-    setDateTimeFormatPreferences({ dateFormat: "DD/MM/YYYY", timeFormat: "auto" });
+    setDateTimeFormatPreferences({
+      dateFormat: "DD/MM/YYYY",
+      timeFormat: "auto",
+    });
     expect(formatDate(sample, "medium")).toBe("5 Jun 2026");
 
-    setDateTimeFormatPreferences({ dateFormat: "YYYY-MM-DD", timeFormat: "auto" });
+    setDateTimeFormatPreferences({
+      dateFormat: "YYYY-MM-DD",
+      timeFormat: "auto",
+    });
     expect(formatDate(sample, "medium")).toBe("2026-06-05");
   });
 
   it("accepts ISO strings and returns empty for invalid input", () => {
-    setDateTimeFormatPreferences({ dateFormat: "YYYY-MM-DD", timeFormat: "auto" });
+    setDateTimeFormatPreferences({
+      dateFormat: "YYYY-MM-DD",
+      timeFormat: "auto",
+    });
     expect(formatDate(sample.toISOString())).toBe("2026-06-05");
     expect(formatDate("not-a-date")).toBe("");
   });
@@ -91,26 +112,41 @@ describe("formatTime", () => {
 
 describe("formatDateTime", () => {
   it("combines the preferred date and time with seconds by default", () => {
-    setDateTimeFormatPreferences({ dateFormat: "DD/MM/YYYY", timeFormat: "24h" });
+    setDateTimeFormatPreferences({
+      dateFormat: "DD/MM/YYYY",
+      timeFormat: "24h",
+    });
     expect(formatDateTime(sample)).toBe("05/06/2026, 15:04:05");
   });
 
   it("supports medium dates without seconds", () => {
-    setDateTimeFormatPreferences({ dateFormat: "MM/DD/YYYY", timeFormat: "24h" });
-    expect(formatDateTime(sample, { dateStyle: "medium", seconds: false })).toBe(
-      "Jun 5, 2026, 15:04",
-    );
+    setDateTimeFormatPreferences({
+      dateFormat: "MM/DD/YYYY",
+      timeFormat: "24h",
+    });
+    expect(
+      formatDateTime(sample, { dateStyle: "medium", seconds: false }),
+    ).toBe("Jun 5, 2026, 15:04");
   });
 });
 
 describe("preference store", () => {
   it("exposes the preferred locale for composed fragments", () => {
     expect(preferredDateLocale()).toBeUndefined();
-    setDateTimeFormatPreferences({ dateFormat: "DD/MM/YYYY", timeFormat: "auto" });
+    setDateTimeFormatPreferences({
+      dateFormat: "DD/MM/YYYY",
+      timeFormat: "auto",
+    });
     expect(preferredDateLocale()).toBe("en-GB");
-    setDateTimeFormatPreferences({ dateFormat: "MM/DD/YYYY", timeFormat: "auto" });
+    setDateTimeFormatPreferences({
+      dateFormat: "MM/DD/YYYY",
+      timeFormat: "auto",
+    });
     expect(preferredDateLocale()).toBe("en-US");
-    setDateTimeFormatPreferences({ dateFormat: "YYYY-MM-DD", timeFormat: "auto" });
+    setDateTimeFormatPreferences({
+      dateFormat: "YYYY-MM-DD",
+      timeFormat: "auto",
+    });
     expect(preferredDateLocale()).toBeUndefined();
   });
 
@@ -123,7 +159,10 @@ describe("preference store", () => {
     expect(calls).toBe(0);
     setDateTimeFormatPreferences({ dateFormat: "auto", timeFormat: "24h" });
     expect(calls).toBe(1);
-    expect(getDateTimeFormatPreferences()).toEqual({ dateFormat: "auto", timeFormat: "24h" });
+    expect(getDateTimeFormatPreferences()).toEqual({
+      dateFormat: "auto",
+      timeFormat: "24h",
+    });
     unsubscribe();
     setDateTimeFormatPreferences({ dateFormat: "auto", timeFormat: "12h" });
     expect(calls).toBe(1);

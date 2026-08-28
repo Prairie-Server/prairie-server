@@ -33,7 +33,12 @@ describe("PersonCard portrait failure", () => {
     await act(async () => {
       root.render(
         <MemoryRouter>
-          <PersonCard name="Winona Ryder" subtitle="Joyce Byers" photoUrl={photoUrl} href={null} />
+          <PersonCard
+            name="Winona Ryder"
+            subtitle="Joyce Byers"
+            photoUrl={photoUrl}
+            href={null}
+          />
         </MemoryRouter>,
       );
     });

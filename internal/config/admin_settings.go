@@ -11,11 +11,32 @@ import (
 
 	redisv9 "github.com/redis/go-redis/v9"
 	"github.com/robfig/cron/v3"
-
-	"github.com/prairie-server/prairie-server/internal/csssanitize"
 )
 
 const cloudflareURLMode = "cloudflare_token"
+const chapterThumbnailSoftwareToneMapKey = "playback.chapter_thumbnail_software_tone_map_enabled"
+
+// PlaybackTranscodeHardwareToneMapSettingKey and
+// PlaybackTranscodeSoftwareToneMapSettingKey are server-wide execution policy
+// knobs. They live in the admin settings registry (not the generated
+// per-profile settings contract) because they govern which FFmpeg recipes the
+// deployment may execute.
+const (
+	PlaybackTranscodeHardwareToneMapSettingKey = "playback.transcode_hardware_tone_map_enabled"
+	PlaybackTranscodeSoftwareToneMapSettingKey = "playback.transcode_software_tone_map_enabled"
+)
+
+// Shared server-setting keys used by playback and prepared-download policy
+// readers. Keep them here with the effective admin-setting defaults.
+const (
+	PlaybackLocalTranscodeFallbackSettingKey = "playback.local_transcode_fallback"
+	Allow4KTranscodeSettingKey               = "allow_4k_transcode"
+)
+
+// ArtworkStorageReconcileCheckpointKey is machine-managed task state. It is
+// stored alongside server settings for durability but must not be exposed or
+// edited through the administrator settings API.
+const ArtworkStorageReconcileCheckpointKey = "s3.public_storage_reconcile_checkpoint"
 
 // adminSettingDefaults is the effective value shown by the Admin UI when no
 // row exists in server_settings. Keep these values aligned with the runtime
@@ -27,7 +48,7 @@ var adminSettingDefaults = map[string]string{
 	"auth.refresh_token_expiry": "30d",
 	"server.log_level":          "info",
 	"server.log_quiet":          "",
-	"branding.server_name":      "Prairie",
+	"branding.server_name":      "Silo",
 	"branding.login_subtitle":   "Sign in with an existing account.",
 	"clientip.trusted_proxies":  "10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16, 127.0.0.0/8, ::1/128",
 	"theme.catalog_url":         DefaultThemeCatalogURL,
@@ -43,50 +64,36 @@ var adminSettingDefaults = map[string]string{
 	"userdb.pool_max_open":     "500",
 	"userdb.idle_timeout":      "12h",
 
-	"scanner.workers":                        "8",
-	"matcher.workers":                        "8",
-	"matcher.batch_size":                     "500",
-	"metadata.cache_images":                  "true",
-	"metadata.artwork_encode_workers":        "0",
-	"metadata.pause_artwork_during_playback": "true",
-	"metadata.avif_backfill_workers":         "0",
-	"metadata.avif_encoder":                  "auto",
-	"metadata.avif_ffmpeg_path":              "ffmpeg",
-	"metadata.avif_nvenc_sessions":           "0",
-	"metadata.webp_encoder":                  "auto",
-	"artwork.local_dir":                      "/var/lib/prairie/artwork",
-	"markers.mode":                           "local",
-	"markers.lazy_playback":                  "false",
+	"scanner.workers":       "8",
+	"matcher.workers":       "8",
+	"matcher.batch_size":    "500",
+	"metadata.cache_images": "false",
+	"markers.mode":          "local",
+	"markers.lazy_playback": "false",
 
-	"playback.ffmpeg_path":                     "/usr/lib/jellyfin-ffmpeg/ffmpeg",
-	"playback.transcode_dir":                   DefaultTranscodeDir,
+	"playback.ffmpeg_path":                     "",
+	playbackTranscodeDirSettingKey:             DefaultTranscodeDir,
 	"playback.hw_accel":                        "auto",
 	"playback.transcode_enabled":               "true",
-	"playback.local_transcode_fallback":        "true",
+	PlaybackLocalTranscodeFallbackSettingKey:   "true",
 	"playback.chapter_thumbnail_workers":       "1",
 	"playback.chapter_thumbnail_execution":     "local",
 	"playback.chapter_thumbnail_node_capacity": "1",
 	"playback.chapter_thumbnail_hdr_policy":    "best_effort",
+	chapterThumbnailSoftwareToneMapKey:         "false",
+	PlaybackTranscodeHardwareToneMapSettingKey: "false",
+	PlaybackTranscodeSoftwareToneMapSettingKey: "false",
 	"playback.watched_threshold":               "90",
 	"playback.min_resume_threshold":            "5",
-	"allow_4k_transcode":                       "false",
+	Allow4KTranscodeSettingKey:                 "false",
 	"enable_transcode_throttle":                "false",
 	"transcode_throttle_seconds":               "300",
-
-	"livetv.dvr_path":       DefaultLiveTVDVRPath,
-	"livetv.max_transcodes": "3",
-	"livetv.hw_accel":       DefaultLiveTVHWAccel,
-	"livetv.hw_decode":      DefaultLiveTVHWDecode,
-	"livetv.encoder_preset": DefaultLiveTVEncoderPreset,
-	"livetv.framerate_cap":  DefaultLiveTVFrameRateCap,
-	"livetv.max_resolution": DefaultLiveTVMaxResolution,
-	"livetv.play_method":    DefaultLiveTVPlayMethod,
 
 	"audiobookshelf_compat.enabled":           "true",
 	"jellyfin_compat.enabled":                 "true",
 	"jellyfin_compat.public_url":              "http://127.0.0.1:8096",
 	"jellyfin_compat.emulated_server_version": DefaultJellyfinCompatEmulatedServerVersion,
-	"jellyfin_compat.server_name":             "Prairie",
+	"jellyfin_compat.server_name":             "Silo",
 	"jellyfin_compat.web_enabled":             "true",
 	"jellyfin_compat.web_version":             DefaultJellyfinWebVersion,
 	"jellyfin_compat.web_install_dir":         DefaultJellyfinWebInstallDir,
@@ -95,7 +102,7 @@ var adminSettingDefaults = map[string]string{
 
 	"recommendations.enabled":                    "false",
 	"recommendations.embedding_base_url":         "http://ollama:11434",
-	"recommendations.embedding_model":            "qwen3-embedding:0.6b",
+	"recommendations.embedding_model":            "all-minilm",
 	"recommendations.embeddings_cron":            "0 3 * * *",
 	"recommendations.taste_profiles_cron":        "0 4 * * *",
 	"recommendations.cowatch_cron":               "30 4 * * *",
@@ -134,7 +141,7 @@ var adminSettingDefaults = map[string]string{
 	"email.enabled":       "false",
 	"email.smtp_port":     "587",
 	"email.smtp_security": "starttls",
-	"email.from_name":     "Prairie",
+	"email.from_name":     "Silo",
 
 	"notifications.release_events_enabled":                     "true",
 	"notifications.fanout_enabled":                             "true",
@@ -163,6 +170,9 @@ var adminSettingDefaults = map[string]string{
 	"notifications.apple_push_delivery_enabled":                "false",
 	"notifications.android_push_delivery_enabled":              "false",
 
+	"taskmanager.history_retention_days": "30",
+	"taskmanager.history_keep_per_task":  "1000",
+
 	"opslog.retention_days":           "7",
 	"opslog.cleanup_interval_minutes": "15",
 	"opslog.max_rows":                 "1000000",
@@ -171,7 +181,7 @@ var adminSettingDefaults = map[string]string{
 	"signup.enabled":                  "false",
 
 	"catalog.search.provider":                             "postgres",
-	"catalog.search.meilisearch.index":                    "prairie_media_items",
+	"catalog.search.meilisearch.index":                    "silo_media_items",
 	"catalog.search.meilisearch.timeout_ms":               "800",
 	"catalog.search.meilisearch.matching_strategy":        "last",
 	"catalog.search.meilisearch.sync_batch_size":          "500",
@@ -179,7 +189,7 @@ var adminSettingDefaults = map[string]string{
 	"catalog.search.meilisearch.rebuild_task_queue_depth": "4",
 	"catalog.search.meilisearch.semantic_enabled":         "false",
 	"catalog.search.meilisearch.semantic_ratio":           "0.5",
-	"catalog.search.meilisearch.embedder":                 "prairie_recommendations",
+	"catalog.search.meilisearch.embedder":                 "silo_recommendations",
 	"catalog.search.meilisearch.binary_quantized":         "false",
 }
 
@@ -285,8 +295,10 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 	value := strings.TrimSpace(raw)
 
 	switch key {
-	case "metadata.cache_images", "playback.transcode_enabled", "playback.local_transcode_fallback",
-		"allow_4k_transcode", "enable_transcode_throttle", "audiobookshelf_compat.enabled",
+	case "metadata.cache_images", "playback.transcode_enabled", PlaybackLocalTranscodeFallbackSettingKey,
+		chapterThumbnailSoftwareToneMapKey, PlaybackTranscodeHardwareToneMapSettingKey,
+		PlaybackTranscodeSoftwareToneMapSettingKey,
+		Allow4KTranscodeSettingKey, "enable_transcode_throttle", "audiobookshelf_compat.enabled",
 		"jellyfin_compat.enabled", "jellyfin_compat.web_enabled", "recommendations.enabled",
 		"subtitle_ai.enabled", "subtitle_ai.transcribe_enabled", "metadata_ai.enabled",
 		"download.enabled", "download.transcode_enabled", "email.enabled", "signup.enabled",
@@ -307,30 +319,6 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 		return normalizeAdminInt(key, value, 1, 100000)
 	case "scanner.workers", "matcher.workers":
 		return normalizeAdminInt(key, value, 1, 1024)
-	case "metadata.avif_backfill_workers":
-		return normalizeAdminInt(key, value, 0, 1024)
-	case "metadata.artwork_encode_workers":
-		return normalizeAdminInt(key, value, 0, 1024)
-	case "metadata.avif_nvenc_sessions":
-		return normalizeAdminInt(key, value, 0, 64)
-	case "metadata.avif_encoder":
-		v := strings.ToLower(strings.TrimSpace(value))
-		switch v {
-		case "auto", "svt", "nvenc", "wasm":
-			return v, nil
-		default:
-			return "", fmt.Errorf("%s must be one of auto, svt, nvenc, wasm", key)
-		}
-	case "metadata.webp_encoder":
-		v := strings.ToLower(strings.TrimSpace(value))
-		switch v {
-		case "auto", "ffmpeg", "wasm":
-			return v, nil
-		default:
-			return "", fmt.Errorf("%s must be one of auto, ffmpeg, wasm", key)
-		}
-	case "metadata.avif_ffmpeg_path":
-		return strings.TrimSpace(value), nil
 	case "matcher.batch_size":
 		return normalizeAdminInt(key, value, 1, 100000)
 	case "playback.chapter_thumbnail_workers", "playback.chapter_thumbnail_node_capacity":
@@ -385,6 +373,10 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 		return normalizeAdminInt(key, value, 1, 25000)
 	case "catalog.search.meilisearch.rebuild_task_queue_depth":
 		return normalizeAdminInt(key, value, 1, 16)
+	case "taskmanager.history_retention_days":
+		return normalizeAdminInt(key, value, 1, 3650)
+	case "taskmanager.history_keep_per_task":
+		return normalizeAdminInt(key, value, 1, math.MaxInt32)
 	case "opslog.retention_days", "opslog.cleanup_interval_minutes":
 		return normalizeAdminInt(key, value, 1, math.MaxInt32)
 	case "opslog.max_rows", "opslog.max_size_mb":
@@ -406,18 +398,8 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 		return normalizeAdminEnum(key, value, "debug", "info", "warn", "error")
 	case "userdb.backend":
 		return normalizeAdminEnum(key, value, "postgres", "sqlite")
-	case "playback.hw_accel", "livetv.hw_accel":
-		return normalizeAdminEnum(key, value, "auto", "qsv", "vaapi", "nvenc", "none")
-	case "livetv.hw_decode":
-		return normalizeAdminEnum(key, value, "auto", "on", "off")
-	case "livetv.encoder_preset":
-		return normalizeAdminEnum(key, value, "low_latency", "balanced", "quality")
-	case "livetv.framerate_cap":
-		return normalizeAdminEnum(key, value, "source", "60", "30")
-	case "livetv.max_resolution":
-		return normalizeAdminEnum(key, value, "source", "1080p", "720p")
-	case "livetv.play_method":
-		return normalizeAdminEnum(key, value, "auto", "copy", "transcode")
+	case "playback.hw_accel":
+		return normalizeAdminEnum(key, value, "auto", "qsv", "vaapi", "nvenc", "videotoolbox", "none")
 	case "playback.chapter_thumbnail_execution":
 		return normalizeAdminEnum(key, value, "local", "prefer_transcode_nodes", "transcode_nodes_only")
 	case "playback.chapter_thumbnail_hdr_policy":
@@ -473,13 +455,6 @@ func NormalizeAdminSetting(key, raw string) (string, error) {
 		var decoded any
 		if err := json.Unmarshal([]byte(value), &decoded); err != nil {
 			return "", fmt.Errorf("%s must be valid JSON: %w", key, err)
-		}
-		return value, nil
-	case "ui.admin_custom_css":
-		return csssanitize.Sanitize(value), nil
-	case "artwork.local_dir":
-		if value == "" {
-			return "", fmt.Errorf("%s must not be empty", key)
 		}
 		return value, nil
 	}

@@ -9,7 +9,12 @@ interface SettingsGroupProps {
   className?: string;
 }
 
-export function SettingsGroup({ title, description, children, className }: SettingsGroupProps) {
+export function SettingsGroup({
+  title,
+  description,
+  children,
+  className,
+}: SettingsGroupProps) {
   return (
     <section
       className={cn(
@@ -18,9 +23,13 @@ export function SettingsGroup({ title, description, children, className }: Setti
       )}
     >
       <div className="space-y-1">
-        <h3 className="text-foreground text-sm font-semibold tracking-tight">{title}</h3>
+        <h3 className="text-foreground text-sm font-semibold tracking-tight">
+          {title}
+        </h3>
         {description ? (
-          <p className="text-muted-foreground text-[13px] leading-relaxed">{description}</p>
+          <p className="text-muted-foreground text-[13px] leading-relaxed">
+            {description}
+          </p>
         ) : null}
       </div>
       <div className="mt-5 space-y-4">{children}</div>

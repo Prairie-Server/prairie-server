@@ -31,11 +31,19 @@ interface CalendarResponse {
   events: CalendarDay[];
 }
 
-export function useCalendarWeek(weekStart: string, params: { filter: string; libraryId?: number }) {
+export function useCalendarWeek(
+  weekStart: string,
+  params: { filter: string; libraryId?: number },
+) {
   const timezone = getViewerTimezone();
 
   return useQuery({
-    queryKey: calendarKeys.week(weekStart, params.filter, params.libraryId, timezone),
+    queryKey: calendarKeys.week(
+      weekStart,
+      params.filter,
+      params.libraryId,
+      timezone,
+    ),
     queryFn: () => {
       const sp = new URLSearchParams({
         start: weekStart,
@@ -44,7 +52,9 @@ export function useCalendarWeek(weekStart: string, params: { filter: string; lib
         timezone,
       });
       if (params.libraryId) sp.set("library_id", String(params.libraryId));
-      return api<CalendarResponse>(`/calendar?${sp}`).then((d) => d.events ?? []);
+      return api<CalendarResponse>(`/calendar?${sp}`).then(
+        (d) => d.events ?? [],
+      );
     },
     staleTime: 10 * 60 * 1000,
   });

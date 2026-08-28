@@ -270,3 +270,36 @@ func SelectClientPlayableAudioTrack(
 	}
 	return best, true
 }
+
+// audioCodecClaimed reports whether a capability list names a codec, comparing
+// both sides through normalizeAudioCodecForRemux.
+func audioCodecClaimed(list []string, codec string) bool {
+	normalized := normalizeAudioCodecForRemux(codec)
+	if normalized == "" {
+		return false
+	}
+	for _, candidate := range list {
+		if normalizeAudioCodecForRemux(candidate) == normalized {
+			return true
+		}
+	}
+	return false
+}
+
+func normalizeAudioCodecForRemux(codec string) string {
+	normalized := strings.NewReplacer(" ", "", "-", "", "_", "", ".", "").Replace(strings.ToLower(strings.TrimSpace(codec)))
+	switch normalized {
+	case "aac", "mp4a", "aaclc", "heaac":
+		return "aac"
+	case "ac3", "dolbydigital":
+		return "ac3"
+	case "eac3", "ec3", "dolbydigitalplus", "ddp":
+		return "eac3"
+	case "dts", "dtshd", "dtshdma", "dtsx":
+		return "dts"
+	case "truehd", "mlp":
+		return "truehd"
+	default:
+		return normalized
+	}
+}

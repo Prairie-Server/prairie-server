@@ -42,7 +42,9 @@ export function useOnboardingProgress() {
       }),
     onSuccess: (_data, variables) => {
       if (variables.completed || variables.skipped) {
-        void queryClient.invalidateQueries({ queryKey: onboardingKeys.state() });
+        void queryClient.invalidateQueries({
+          queryKey: onboardingKeys.state(),
+        });
       }
     },
   });

@@ -1,15 +1,33 @@
 import { useState, useCallback, useMemo, useRef } from "react";
 import { Check, Copy, Folder, Loader2, Plus, Search, X } from "lucide-react";
 import { toast } from "sonner";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import type { FileVersion, ItemDetail, ItemMatchSearchRequest, MatchCandidate } from "@/api/types";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import type {
+  FileVersion,
+  ItemDetail,
+  ItemMatchSearchRequest,
+  MatchCandidate,
+} from "@/api/types";
 import MediaLocations from "@/components/MediaLocations";
-import { useSearchItemMatchCandidates, useApplyItemMatch } from "@/hooks/queries/items";
+import {
+  useSearchItemMatchCandidates,
+  useApplyItemMatch,
+} from "@/hooks/queries/items";
 import { useCatalogItemDetail } from "@/hooks/queries/catalogRead";
 import { cn } from "@/lib/utils";
 
@@ -53,7 +71,11 @@ function isVideoMatchType(type: string): boolean {
   }
 }
 
-export default function MatchItemDialog({ item, open, onOpenChange }: MatchItemDialogProps) {
+export default function MatchItemDialog({
+  item,
+  open,
+  onOpenChange,
+}: MatchItemDialogProps) {
   const [title, setTitle] = useState(item.title);
   const [year, setYear] = useState(item.year ? String(item.year) : "");
   const [imdbId, setImdbId] = useState("");
@@ -63,14 +85,16 @@ export default function MatchItemDialog({ item, open, onOpenChange }: MatchItemD
     { id: 0, provider: "", value: "" },
   ]);
   const nextProviderIdInputId = useRef(1);
-  const [selectedCandidate, setSelectedCandidate] = useState<MatchCandidate | null>(null);
+  const [selectedCandidate, setSelectedCandidate] =
+    useState<MatchCandidate | null>(null);
   const isSeries = item.type === "series";
   const showVideoExternalIds = isVideoMatchType(item.type);
   const needsItemDetail = open && item.versions === undefined;
-  const { data: enrichedItem, isLoading: enrichedItemLoading } = useCatalogItemDetail(
-    needsItemDetail ? item.content_id : undefined,
-    needsItemDetail ? item.library_id : undefined,
-  );
+  const { data: enrichedItem, isLoading: enrichedItemLoading } =
+    useCatalogItemDetail(
+      needsItemDetail ? item.content_id : undefined,
+      needsItemDetail ? item.library_id : undefined,
+    );
 
   const searchMutation = useSearchItemMatchCandidates(item.content_id);
   const applyMutation = useApplyItemMatch();
@@ -93,10 +117,14 @@ export default function MatchItemDialog({ item, open, onOpenChange }: MatchItemD
   const handleSearch = useCallback(() => {
     setSelectedCandidate(null);
     const normalizedYear = year.trim();
-    const parsedYear = normalizedYear === "" ? undefined : Number.parseInt(normalizedYear, 10);
+    const parsedYear =
+      normalizedYear === "" ? undefined : Number.parseInt(normalizedYear, 10);
     const request: ItemMatchSearchRequest = {
       title: title || undefined,
-      year: parsedYear !== undefined && Number.isFinite(parsedYear) ? parsedYear : undefined,
+      year:
+        parsedYear !== undefined && Number.isFinite(parsedYear)
+          ? parsedYear
+          : undefined,
       library_id: item.library_id,
     };
 
@@ -135,7 +163,10 @@ export default function MatchItemDialog({ item, open, onOpenChange }: MatchItemD
   const addProviderIdInput = useCallback(() => {
     const id = nextProviderIdInputId.current;
     nextProviderIdInputId.current += 1;
-    setProviderIdInputs((current) => [...current, { id, provider: "", value: "" }]);
+    setProviderIdInputs((current) => [
+      ...current,
+      { id, provider: "", value: "" },
+    ]);
   }, []);
 
   const removeProviderIdInput = useCallback((index: number) => {
@@ -168,7 +199,9 @@ export default function MatchItemDialog({ item, open, onOpenChange }: MatchItemD
           {/* Current item summary */}
           <div className="bg-muted/50 shrink-0 rounded-lg px-3 py-2 text-sm">
             <span className="font-medium">{item.title}</span>
-            {item.year ? <span className="text-muted-foreground ml-2">({item.year})</span> : null}
+            {item.year ? (
+              <span className="text-muted-foreground ml-2">({item.year})</span>
+            ) : null}
             <Badge variant="secondary" className="ml-2 text-[10px]">
               {item.type}
             </Badge>
@@ -255,13 +288,17 @@ export default function MatchItemDialog({ item, open, onOpenChange }: MatchItemD
                   >
                     <Input
                       value={entry.provider}
-                      onChange={(e) => updateProviderIdInput(index, "provider", e.target.value)}
+                      onChange={(e) =>
+                        updateProviderIdInput(index, "provider", e.target.value)
+                      }
                       placeholder="isbn"
                       aria-label="Provider"
                     />
                     <Input
                       value={entry.value}
-                      onChange={(e) => updateProviderIdInput(index, "value", e.target.value)}
+                      onChange={(e) =>
+                        updateProviderIdInput(index, "value", e.target.value)
+                      }
                       placeholder="978..."
                       aria-label="Provider ID"
                     />
@@ -271,7 +308,11 @@ export default function MatchItemDialog({ item, open, onOpenChange }: MatchItemD
                       size="icon"
                       className="h-9 w-9"
                       onClick={() => removeProviderIdInput(index)}
-                      disabled={providerIdInputs.length === 1 && !entry.provider && !entry.value}
+                      disabled={
+                        providerIdInputs.length === 1 &&
+                        !entry.provider &&
+                        !entry.value
+                      }
                       aria-label="Remove provider ID"
                       title="Remove provider ID"
                     >
@@ -299,7 +340,12 @@ export default function MatchItemDialog({ item, open, onOpenChange }: MatchItemD
             disabled={searchMutation.isPending}
             className="w-full shrink-0 gap-2"
           >
-            <Search className={cn("h-4 w-4", searchMutation.isPending && "animate-spin")} />
+            <Search
+              className={cn(
+                "h-4 w-4",
+                searchMutation.isPending && "animate-spin",
+              )}
+            />
             Search
           </Button>
 
@@ -319,7 +365,8 @@ export default function MatchItemDialog({ item, open, onOpenChange }: MatchItemD
                       candidate.matched_title !== candidate.title
                         ? candidate.matched_title
                         : undefined;
-                    const displayTitle = matchedFallbackTitle ?? candidate.title;
+                    const displayTitle =
+                      matchedFallbackTitle ?? candidate.title;
                     return (
                       <button
                         key={`${candidateKey}-${index}`}
@@ -357,7 +404,9 @@ export default function MatchItemDialog({ item, open, onOpenChange }: MatchItemD
                           <div className="bg-muted h-24 w-16 shrink-0 rounded" />
                         )}
                         <div className="min-w-0 flex-1">
-                          <div className="truncate text-sm font-medium">{displayTitle}</div>
+                          <div className="truncate text-sm font-medium">
+                            {displayTitle}
+                          </div>
                           {matchedFallbackTitle ? (
                             <div className="text-muted-foreground truncate text-xs">
                               Native title: {candidate.title}
@@ -371,7 +420,8 @@ export default function MatchItemDialog({ item, open, onOpenChange }: MatchItemD
                           {!matchedFallbackTitle &&
                           candidate.matched_title &&
                           candidate.matched_title !== candidate.title &&
-                          candidate.matched_title !== candidate.original_title ? (
+                          candidate.matched_title !==
+                            candidate.original_title ? (
                             <div className="text-muted-foreground truncate text-xs">
                               Matched alias: {candidate.matched_title}
                             </div>
@@ -381,17 +431,27 @@ export default function MatchItemDialog({ item, open, onOpenChange }: MatchItemD
                           </div>
                           <div className="mt-1 flex min-w-0 flex-wrap gap-1">
                             {candidate.match_score !== undefined ? (
-                              <Badge variant="secondary" className="text-[10px] tabular-nums">
+                              <Badge
+                                variant="secondary"
+                                className="text-[10px] tabular-nums"
+                              >
                                 Score {candidate.match_score.toFixed(1)}
                               </Badge>
                             ) : null}
                             {candidate.sources.map((source) => (
-                              <Badge key={source} variant="outline" className="text-[10px]">
+                              <Badge
+                                key={source}
+                                variant="outline"
+                                className="text-[10px]"
+                              >
                                 {source}
                               </Badge>
                             ))}
                             {candidate.sources.length > 1 && (
-                              <Badge variant="secondary" className="text-[10px]">
+                              <Badge
+                                variant="secondary"
+                                className="text-[10px]"
+                              >
                                 {candidate.sources.length} sources agree
                               </Badge>
                             )}
@@ -414,7 +474,9 @@ export default function MatchItemDialog({ item, open, onOpenChange }: MatchItemD
           )}
 
           {searchMutation.isSuccess && candidates.length === 0 && (
-            <p className="text-muted-foreground text-center text-sm">No candidates found.</p>
+            <p className="text-muted-foreground text-center text-sm">
+              No candidates found.
+            </p>
           )}
         </div>
 
@@ -427,7 +489,11 @@ export default function MatchItemDialog({ item, open, onOpenChange }: MatchItemD
               className="w-full"
               data-testid="apply-match"
             >
-              {applyMutation.isPending ? <Loader2 className="animate-spin" /> : <Check />}
+              {applyMutation.isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Check />
+              )}
               {applyMutation.isPending ? "Applying..." : "Apply Match"}
             </Button>
           </div>
@@ -529,7 +595,10 @@ function FolderPathsList({ paths }: { paths: string[] }) {
         ) : null}
         <div className="divide-border/50 divide-y">
           {folderData.folders.map(({ fullPath, displayName }) => (
-            <div key={fullPath} className="group flex items-center gap-2 px-3 py-2">
+            <div
+              key={fullPath}
+              className="group flex items-center gap-2 px-3 py-2"
+            >
               <Folder className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
               <span
                 className="min-w-0 flex-1 truncate font-mono text-xs font-medium"

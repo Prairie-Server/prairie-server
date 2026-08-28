@@ -28,7 +28,10 @@ function buildRows(files: AudiobookFile[]): Row[] {
         rows.push({
           chapter: ch,
           absoluteStart: offset + ch.start_seconds,
-          durationSeconds: Math.max(0, (ch.end_seconds ?? ch.start_seconds) - ch.start_seconds),
+          durationSeconds: Math.max(
+            0,
+            (ch.end_seconds ?? ch.start_seconds) - ch.start_seconds,
+          ),
           label: ch.title || `Chapter ${ch.index + 1}`,
           positionIndex: positionIndex++,
         });
@@ -53,7 +56,11 @@ function formatChapterStart(totalSeconds: number): string {
   return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-export function ChaptersSection({ files, currentPositionSeconds, onSelect }: ChaptersSectionProps) {
+export function ChaptersSection({
+  files,
+  currentPositionSeconds,
+  onSelect,
+}: ChaptersSectionProps) {
   const rows = useMemo(() => buildRows(files), [files]);
   const [sort, setSort] = useState<SortMode>("position");
   const [sortOpen, setSortOpen] = useState(false);
@@ -86,9 +93,13 @@ export function ChaptersSection({ files, currentPositionSeconds, onSelect }: Cha
           aria-expanded={expanded}
           className="hover:text-primary flex items-center gap-2 text-xl font-semibold tracking-tight transition-colors"
         >
-          <ChevronDown className={`h-5 w-5 transition-transform ${expanded ? "" : "-rotate-90"}`} />
+          <ChevronDown
+            className={`h-5 w-5 transition-transform ${expanded ? "" : "-rotate-90"}`}
+          />
           Chapters
-          <span className="text-muted-foreground text-sm font-normal">({rows.length})</span>
+          <span className="text-muted-foreground text-sm font-normal">
+            ({rows.length})
+          </span>
         </button>
         {expanded && (
           <div className="relative">
@@ -146,7 +157,9 @@ export function ChaptersSection({ files, currentPositionSeconds, onSelect }: Cha
                   <span className="text-muted-foreground w-8 shrink-0 text-right text-xs tabular-nums">
                     {row.positionIndex}
                   </span>
-                  <span className="min-w-0 flex-1 truncate text-sm font-medium">{row.label}</span>
+                  <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                    {row.label}
+                  </span>
                   <span className="text-muted-foreground hidden shrink-0 font-mono text-xs sm:inline">
                     {formatChapterStart(row.absoluteStart)}
                   </span>

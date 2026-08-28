@@ -45,7 +45,10 @@ function makeVideoRef(readyState = 1): RefObject<HTMLVideoElement | null> {
       return track;
     },
   });
-  Object.defineProperty(video, "readyState", { value: readyState, configurable: true });
+  Object.defineProperty(video, "readyState", {
+    value: readyState,
+    configurable: true,
+  });
   return { current: video };
 }
 
@@ -115,7 +118,9 @@ function renderTracks(initial: {
 
 describe("useSubtitleTracks", () => {
   it("adds cues rebased by the stream origin", async () => {
-    fetchMock.mockResolvedValue(vttResponse("WEBVTT\n\n00:01:40.000 --> 00:01:44.000\nhello\n\n"));
+    fetchMock.mockResolvedValue(
+      vttResponse("WEBVTT\n\n00:01:40.000 --> 00:01:44.000\nhello\n\n"),
+    );
 
     renderTracks({ origin: 60, durationRef: { current: 7200 } });
 
@@ -127,9 +132,14 @@ describe("useSubtitleTracks", () => {
   });
 
   it("shifts existing cues in place when the stream origin changes, without refetching", async () => {
-    fetchMock.mockResolvedValue(vttResponse("WEBVTT\n\n00:01:40.000 --> 00:01:44.000\nhello\n\n"));
+    fetchMock.mockResolvedValue(
+      vttResponse("WEBVTT\n\n00:01:40.000 --> 00:01:44.000\nhello\n\n"),
+    );
 
-    const { rerender } = renderTracks({ origin: 0, durationRef: { current: 7200 } });
+    const { rerender } = renderTracks({
+      origin: 0,
+      durationRef: { current: 7200 },
+    });
 
     await waitFor(() => expect(createdTracks[0]?.cues).toHaveLength(1));
     expect(createdTracks[0]!.cues[0]!.startTime).toBe(100);
@@ -148,9 +158,14 @@ describe("useSubtitleTracks", () => {
   it("keeps prefetching past a window whose cues stop before the window end", async () => {
     // First window's only cue ends at 12s — far short of the 600s window.
     // That must NOT be treated as end-of-input (the file is 2h long).
-    fetchMock.mockResolvedValue(vttResponse("WEBVTT\n\n00:00:10.000 --> 00:00:12.000\nearly\n\n"));
+    fetchMock.mockResolvedValue(
+      vttResponse("WEBVTT\n\n00:00:10.000 --> 00:00:12.000\nearly\n\n"),
+    );
 
-    const { videoRef } = renderTracks({ origin: 0, durationRef: { current: 7200 } });
+    const { videoRef } = renderTracks({
+      origin: 0,
+      durationRef: { current: 7200 },
+    });
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(createdTracks[0]?.cues).toHaveLength(1));
@@ -164,10 +179,15 @@ describe("useSubtitleTracks", () => {
   });
 
   it("stops prefetching once the window reaches the media duration", async () => {
-    fetchMock.mockResolvedValue(vttResponse("WEBVTT\n\n00:00:10.000 --> 00:00:12.000\nearly\n\n"));
+    fetchMock.mockResolvedValue(
+      vttResponse("WEBVTT\n\n00:00:10.000 --> 00:00:12.000\nearly\n\n"),
+    );
 
     // Whole file fits inside the first 600s window.
-    const { videoRef } = renderTracks({ origin: 0, durationRef: { current: 500 } });
+    const { videoRef } = renderTracks({
+      origin: 0,
+      durationRef: { current: 500 },
+    });
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(createdTracks[0]?.cues).toHaveLength(1));
@@ -181,7 +201,9 @@ describe("useSubtitleTracks", () => {
   });
 
   it("anchors the initial fetch to the intended start position while no media is loaded", async () => {
-    fetchMock.mockResolvedValue(vttResponse("WEBVTT\n\n23:20.000 --> 23:22.000\nresumed\n\n"));
+    fetchMock.mockResolvedValue(
+      vttResponse("WEBVTT\n\n23:20.000 --> 23:22.000\nresumed\n\n"),
+    );
 
     // Resume at 1400s: the element hasn't loaded media yet (readyState 0,
     // currentTime 0), so the fetch must target the resume position, not 0.
@@ -198,10 +220,17 @@ describe("useSubtitleTracks", () => {
 
   it("resets and refetches on a forward seek past the covered window", async () => {
     fetchMock
-      .mockResolvedValueOnce(vttResponse("WEBVTT\n\n00:00:10.000 --> 00:00:12.000\nearly\n\n"))
-      .mockResolvedValueOnce(vttResponse("WEBVTT\n\n23:20.000 --> 23:22.000\nlate\n\n"));
+      .mockResolvedValueOnce(
+        vttResponse("WEBVTT\n\n00:00:10.000 --> 00:00:12.000\nearly\n\n"),
+      )
+      .mockResolvedValueOnce(
+        vttResponse("WEBVTT\n\n23:20.000 --> 23:22.000\nlate\n\n"),
+      );
 
-    const { videoRef } = renderTracks({ origin: 0, durationRef: { current: 7200 } });
+    const { videoRef } = renderTracks({
+      origin: 0,
+      durationRef: { current: 7200 },
+    });
 
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
     await waitFor(() => expect(createdTracks[0]?.cues).toHaveLength(1));
@@ -214,12 +243,16 @@ describe("useSubtitleTracks", () => {
     await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
     expect(String(fetchMock.mock.calls[1]![0])).toContain("position=1398");
     // Reset dropped the old window's cues and loaded the new window's.
-    await waitFor(() => expect(createdTracks[0]!.cues.map((c) => c.text)).toEqual(["late"]));
+    await waitFor(() =>
+      expect(createdTracks[0]!.cues.map((c) => c.text)).toEqual(["late"]),
+    );
   });
 
   it("rebuilds the track when the stream restarts (generation bump)", async () => {
     fetchMock.mockImplementation(() =>
-      Promise.resolve(vttResponse("WEBVTT\n\n00:00:10.000 --> 00:00:12.000\nhi\n\n")),
+      Promise.resolve(
+        vttResponse("WEBVTT\n\n00:00:10.000 --> 00:00:12.000\nhi\n\n"),
+      ),
     );
 
     const videoRef = makeVideoRef(1);
@@ -269,7 +302,10 @@ describe("useSubtitleTracks", () => {
           vttResponse("WEBVTT\n\n00:00:10.000 --> 00:00:12.000\nrecovered\n\n"),
         );
 
-      const { videoRef } = renderTracks({ origin: 0, durationRef: { current: 7200 } });
+      const { videoRef } = renderTracks({
+        origin: 0,
+        durationRef: { current: 7200 },
+      });
 
       await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
 
@@ -283,7 +319,11 @@ describe("useSubtitleTracks", () => {
       now += 6_000;
       videoRef.current!.dispatchEvent(new Event("timeupdate"));
       await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(2));
-      await waitFor(() => expect(createdTracks[0]!.cues.map((c) => c.text)).toEqual(["recovered"]));
+      await waitFor(() =>
+        expect(createdTracks[0]!.cues.map((c) => c.text)).toEqual([
+          "recovered",
+        ]),
+      );
     } finally {
       nowSpy.mockRestore();
       errorSpy.mockRestore();
@@ -296,11 +336,18 @@ describe("useSubtitleTracks", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     try {
       fetchMock
-        .mockResolvedValueOnce(vttResponse("WEBVTT\n\n00:00:10.000 --> 00:00:12.000\nfirst\n\n"))
+        .mockResolvedValueOnce(
+          vttResponse("WEBVTT\n\n00:00:10.000 --> 00:00:12.000\nfirst\n\n"),
+        )
         .mockRejectedValueOnce(new Error("prefetch died"))
-        .mockResolvedValueOnce(vttResponse("WEBVTT\n\n10:05.000 --> 10:07.000\nsecond\n\n"));
+        .mockResolvedValueOnce(
+          vttResponse("WEBVTT\n\n10:05.000 --> 10:07.000\nsecond\n\n"),
+        );
 
-      const { videoRef } = renderTracks({ origin: 0, durationRef: { current: 7200 } });
+      const { videoRef } = renderTracks({
+        origin: 0,
+        durationRef: { current: 7200 },
+      });
       await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(1));
       await waitFor(() => expect(createdTracks[0]?.cues).toHaveLength(1));
 
@@ -317,7 +364,10 @@ describe("useSubtitleTracks", () => {
       await waitFor(() => expect(fetchMock).toHaveBeenCalledTimes(3));
       expect(String(fetchMock.mock.calls[2]![0])).toContain("position=595");
       await waitFor(() =>
-        expect(createdTracks[0]!.cues.map((c) => c.text)).toEqual(["first", "second"]),
+        expect(createdTracks[0]!.cues.map((c) => c.text)).toEqual([
+          "first",
+          "second",
+        ]),
       );
     } finally {
       nowSpy.mockRestore();

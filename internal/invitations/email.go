@@ -6,7 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/branding"
 	"github.com/prairie-server/prairie-server/internal/mail"
 )
 
@@ -26,7 +25,7 @@ func composeInvitationEmail(inviterName, serverName, email, claimURL, note strin
 	}
 	product := strings.TrimSpace(serverName)
 	if product == "" {
-		product = branding.DefaultServerName
+		product = "Silo"
 	}
 	expiry := expiryPhrase(expiresAt, now)
 

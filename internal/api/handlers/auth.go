@@ -4,12 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"log/slog"
 	"net/http"
 	"strings"
 	"time"
 
 	"github.com/go-chi/chi/v5"
 
+	"github.com/prairie-server/prairie-server/internal/access"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/prairie-server/prairie-server/internal/models"
@@ -21,6 +24,7 @@ type AuthHandler struct {
 	jwt                  *auth.JWTService
 	device               *auth.DeviceLoginService
 	oauthRoutesAvailable bool
+	accessGroups         access.GroupPolicyProvider
 }
 
 // NewAuthHandler creates a new AuthHandler backed by the given auth, JWT,
@@ -31,6 +35,12 @@ func NewAuthHandler(service *auth.Service, jwt *auth.JWTService, device *auth.De
 		jwt:     jwt,
 		device:  device,
 	}
+}
+
+// SetAccessGroupProvider wires the access-group policy source used to resolve
+// the effective (inherit/override) policy reported on login and /auth/me.
+func (h *AuthHandler) SetAccessGroupProvider(provider access.GroupPolicyProvider) {
+	h.accessGroups = provider
 }
 
 // SetOAuthRoutesAvailable controls whether OAuth login providers are
@@ -182,7 +192,7 @@ func (h *AuthHandler) HandleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, buildLoginResponse(pair, user, nil))
+	writeJSON(w, http.StatusOK, buildLoginResponse(pair, user, effectiveDownloadAllowed(r.Context(), user, h.accessGroups), nil))
 }
 
 func (h *AuthHandler) HandleProviders(w http.ResponseWriter, r *http.Request) {
@@ -255,7 +265,7 @@ func (h *AuthHandler) HandleSetup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, buildLoginResponse(pair, user, nil))
+	writeJSON(w, http.StatusCreated, buildLoginResponse(pair, user, effectiveDownloadAllowed(r.Context(), user, h.accessGroups), nil))
 }
 
 // HandleLogout handles POST /auth/logout. Requires authentication.
@@ -344,7 +354,8 @@ func (h *AuthHandler) HandlePluginLaunch(w http.ResponseWriter, r *http.Request)
 	}
 
 	const ttl = 5 * time.Minute
-	token, err := h.jwt.GeneratePluginAccessToken(claims.UserID, claims.Role, claims.SessionID, ttl)
+	profileID := strings.TrimSpace(apimw.GetProfileID(r.Context()))
+	token, err := h.jwt.GeneratePluginAccessToken(claims.UserID, claims.Role, claims.SessionID, profileID, ttl)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "Failed to prepare plugin access")
 		return
@@ -382,7 +393,7 @@ func (h *AuthHandler) HandleMe(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusOK, buildUserResponse(user, claims.ImpersonatorUserID, impersonator))
+	writeJSON(w, http.StatusOK, buildUserResponse(user, effectiveDownloadAllowed(r.Context(), user, h.accessGroups), claims.ImpersonatorUserID, impersonator))
 }
 
 // HandleListSessions handles GET /auth/sessions. Requires authentication.
@@ -508,28 +519,44 @@ func (h *AuthHandler) HandleSignup(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	writeJSON(w, http.StatusCreated, buildLoginResponse(pair, user, nil))
+	writeJSON(w, http.StatusCreated, buildLoginResponse(pair, user, effectiveDownloadAllowed(r.Context(), user, h.accessGroups), nil))
 }
 
 // --- Helper functions ---
 
-func buildLoginResponse(pair *auth.TokenPair, user *models.User, impersonator *models.User) loginResponse {
+func buildLoginResponse(pair *auth.TokenPair, user *models.User, downloadAllowed bool, impersonator *models.User) loginResponse {
 	return loginResponse{
 		AccessToken:  pair.AccessToken,
 		RefreshToken: pair.RefreshToken,
 		ExpiresIn:    pair.ExpiresIn,
-		User:         buildUserResponse(user, impersonatorUserID(impersonator), impersonator),
+		User:         buildUserResponse(user, downloadAllowed, impersonatorUserID(impersonator), impersonator),
 	}
 }
 
-func buildUserResponse(user *models.User, impersonatorUserID *int, impersonator *models.User) userResponse {
+// effectiveDownloadAllowed resolves the account's download gate through the
+// inherit/override policy (user override, else access group, else permissive
+// default). A failed group lookup reports downloads as unavailable rather than
+// falling back to the raw account value, which is not meaningful on its own.
+func effectiveDownloadAllowed(ctx context.Context, user *models.User, groups access.GroupPolicyProvider) bool {
+	if user == nil {
+		return false
+	}
+	effective, err := access.EffectivePolicyForUser(ctx, user, groups)
+	if err != nil {
+		slog.WarnContext(ctx, "failed to resolve effective download policy", "component", "api", "user_id", user.ID, "error", err)
+		return false
+	}
+	return effective.DownloadAllowed
+}
+
+func buildUserResponse(user *models.User, downloadAllowed bool, impersonatorUserID *int, impersonator *models.User) userResponse {
 	resp := userResponse{
 		ID:              user.ID,
 		Username:        user.Username,
 		Email:           user.Email,
 		Role:            user.Role,
 		Permissions:     auth.EffectivePermissions(user),
-		DownloadAllowed: user.DownloadAllowed,
+		DownloadAllowed: downloadAllowed,
 	}
 	if impersonatorUserID != nil {
 		resp.Impersonation = &impersonationResponse{

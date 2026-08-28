@@ -189,7 +189,7 @@ func (r *ItemAliasRepository) BackfillBatch(ctx context.Context, afterContentID 
 			INSERT INTO media_item_aliases (content_id, title, language, kind, provider, snapshot_language)
 			SELECT content_id, original_title,
 				public.canonical_language_code(split_part(replace(original_language, '_', '-'), '-', 1)),
-				'original', 'prairie.backfill', ''
+				'original', 'silo.backfill', ''
 			FROM batch
 			WHERE btrim(COALESCE(original_title, '')) <> ''
 			ON CONFLICT (content_id, normalized_title, language, kind, provider, snapshot_language) DO NOTHING
@@ -197,7 +197,7 @@ func (r *ItemAliasRepository) BackfillBatch(ctx context.Context, afterContentID 
 			INSERT INTO media_item_aliases (content_id, title, language, kind, provider, snapshot_language)
 			SELECT loc.content_id, loc.title,
 				public.canonical_language_code(split_part(replace(loc.language, '_', '-'), '-', 1)),
-				'localized', 'prairie.backfill', ''
+				'localized', 'silo.backfill', ''
 			FROM media_item_localizations loc
 			JOIN batch USING (content_id)
 			WHERE btrim(COALESCE(loc.title, '')) <> ''

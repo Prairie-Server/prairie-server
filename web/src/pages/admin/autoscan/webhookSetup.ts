@@ -1,4 +1,8 @@
-import type { AutoscanPathRewrite, AutoscanWebhookProvider, Library } from "@/api/types";
+import type {
+  AutoscanPathRewrite,
+  AutoscanWebhookProvider,
+  Library,
+} from "@/api/types";
 
 /**
  * The arr notification triggers Prairie actually consumes.
@@ -24,17 +28,20 @@ export interface WebhookTrigger {
 const SHARED_TRIGGERS: WebhookTrigger[] = [
   {
     label: "On Import",
-    reason: "The main one — fires when a download finishes and is moved into your library.",
+    reason:
+      "The main one — fires when a download finishes and is moved into your library.",
     required: true,
   },
   {
     label: "On Upgrade",
-    reason: "Fires when an existing file is replaced by a better quality version.",
+    reason:
+      "Fires when an existing file is replaced by a better quality version.",
     required: true,
   },
   {
     label: "On Rename",
-    reason: "Fires when files are renamed, so Prairie does not lose track of them.",
+    reason:
+      "Fires when files are renamed, so Prairie does not lose track of them.",
     required: false,
   },
 ];
@@ -43,7 +50,8 @@ const SONARR_TRIGGERS: WebhookTrigger[] = [
   ...SHARED_TRIGGERS,
   {
     label: "On Episode File Delete",
-    reason: "Lets Prairie drop episodes you removed, instead of leaving dead entries.",
+    reason:
+      "Lets Prairie drop episodes you removed, instead of leaving dead entries.",
     required: false,
   },
 ];
@@ -52,7 +60,8 @@ const RADARR_TRIGGERS: WebhookTrigger[] = [
   ...SHARED_TRIGGERS,
   {
     label: "On Movie File Delete",
-    reason: "Lets Prairie drop movies you removed, instead of leaving dead entries.",
+    reason:
+      "Lets Prairie drop movies you removed, instead of leaving dead entries.",
     required: false,
   },
 ];
@@ -61,23 +70,32 @@ const RADARR_TRIGGERS: WebhookTrigger[] = [
  * Triggers to tick for a provider. "auto" shows the union, since the operator
  * has not told us which service will post and either set is plausible.
  */
-export function triggersFor(provider: AutoscanWebhookProvider | "auto"): WebhookTrigger[] {
+export function triggersFor(
+  provider: AutoscanWebhookProvider | "auto",
+): WebhookTrigger[] {
   if (provider === "sonarr") return SONARR_TRIGGERS;
   if (provider === "radarr") return RADARR_TRIGGERS;
   return [
     ...SHARED_TRIGGERS,
     {
       label: "On Episode File Delete / On Movie File Delete",
-      reason: "Whichever your service offers — lets Prairie drop files you removed.",
+      reason:
+        "Whichever your service offers — lets Prairie drop files you removed.",
       required: false,
     },
   ];
 }
 
 /** Where the webhook is configured, for the on-screen instructions. */
-export function settingsPathFor(provider: AutoscanWebhookProvider | "auto"): string {
+export function settingsPathFor(
+  provider: AutoscanWebhookProvider | "auto",
+): string {
   const service =
-    provider === "sonarr" ? "Sonarr" : provider === "radarr" ? "Radarr" : "Sonarr/Radarr";
+    provider === "sonarr"
+      ? "Sonarr"
+      : provider === "radarr"
+        ? "Radarr"
+        : "Sonarr/Radarr";
   return `${service} → Settings → Connect → + → Webhook`;
 }
 
@@ -174,7 +192,9 @@ export function collapseToRoots(paths: readonly string[]): string[] {
   for (const [mount, members] of groups) {
     // A lone member is left exactly as supplied — widening it would claim more
     // of the filesystem than the operator actually configured.
-    roots.push(members.length === 1 ? members[0]! : commonAncestor(members) || mount);
+    roots.push(
+      members.length === 1 ? members[0]! : commonAncestor(members) || mount,
+    );
   }
   return roots;
 }
@@ -191,7 +211,10 @@ export function collapseToRoots(paths: readonly string[]): string[] {
  *
  * Returns [] when there is nothing more specific to offer.
  */
-export function expandedRootsFor(root: string, paths: readonly string[]): string[] {
+export function expandedRootsFor(
+  root: string,
+  paths: readonly string[],
+): string[] {
   const prefix = root.replace(/\/+$/, "");
   const children = new Set<string>();
 
@@ -241,7 +264,8 @@ export function seedMappings(
   provider: AutoscanWebhookProvider | "auto",
   libraries: readonly Library[],
 ): MappingDraft[] {
-  const want = provider === "sonarr" ? "tv" : provider === "radarr" ? "movie" : null;
+  const want =
+    provider === "sonarr" ? "tv" : provider === "radarr" ? "movie" : null;
 
   const paths: string[] = [];
   for (const library of libraries) {
@@ -263,7 +287,9 @@ export function seedMappings(
  * configured" rather than an error, so an operator can leave one blank and
  * still save the rest.
  */
-export function usableMappings(drafts: readonly MappingDraft[]): AutoscanPathRewrite[] {
+export function usableMappings(
+  drafts: readonly MappingDraft[],
+): AutoscanPathRewrite[] {
   return drafts
     .map((draft) => ({ from: draft.from.trim(), to: draft.to.trim() }))
     .filter((draft) => draft.from.length > 0 && draft.to.length > 0);

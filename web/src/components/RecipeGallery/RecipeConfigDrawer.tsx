@@ -39,23 +39,31 @@ export default function RecipeConfigDrawer({
   showEnabled = true,
 }: Props) {
   const [title, setTitle] = useState(preset.display_name);
-  const [params, setParams] = useState<Record<string, unknown>>({ ...preset.default_params });
+  const [params, setParams] = useState<Record<string, unknown>>({
+    ...preset.default_params,
+  });
   const [limit, setLimit] = useState<number>(20);
   const [featured, setFeatured] = useState(false);
   const [enabled, setEnabled] = useState(true);
   const [applyAll, setApplyAll] = useState(false);
   const [bulkOpen, setBulkOpen] = useState(false);
   const libraryCollectionID =
-    typeof params.library_collection_id === "string" ? params.library_collection_id : "";
+    typeof params.library_collection_id === "string"
+      ? params.library_collection_id
+      : "";
   const userCollectionID =
-    typeof params.user_collection_id === "string" ? params.user_collection_id : "";
+    typeof params.user_collection_id === "string"
+      ? params.user_collection_id
+      : "";
   const collectionID = libraryCollectionID || userCollectionID;
   const isAutoBackedTraktPreset =
     def.type === "collection" &&
     params.source_provider === "trakt" &&
     (params.source_preset === "trending" || params.source_preset === "popular");
   const collectionMissing =
-    def.type === "collection" && collectionID.trim() === "" && !isAutoBackedTraktPreset;
+    def.type === "collection" &&
+    collectionID.trim() === "" &&
+    !isAutoBackedTraktPreset;
   const curatedListEmpty =
     def.type === "admin_curated_list" &&
     (!Array.isArray(params.item_ids) || params.item_ids.length === 0);
@@ -124,7 +132,9 @@ export default function RecipeConfigDrawer({
       ) : null}
 
       {curatedListEmpty ? (
-        <p className="mt-2 text-xs text-amber-300">Add at least one title to the curated list.</p>
+        <p className="mt-2 text-xs text-amber-300">
+          Add at least one title to the curated list.
+        </p>
       ) : null}
 
       <div className="mt-4">
@@ -141,7 +151,11 @@ export default function RecipeConfigDrawer({
 
       <label className="mt-3 flex items-center justify-between text-sm">
         <span>Show as featured hero</span>
-        <input type="checkbox" checked={featured} onChange={(e) => setFeatured(e.target.checked)} />
+        <input
+          type="checkbox"
+          checked={featured}
+          onChange={(e) => setFeatured(e.target.checked)}
+        />
       </label>
 
       {showBulkApply ? (
@@ -158,7 +172,11 @@ export default function RecipeConfigDrawer({
       {showEnabled ? (
         <label className="mt-2 flex items-center justify-between text-sm">
           <span>Enabled</span>
-          <input type="checkbox" checked={enabled} onChange={(e) => setEnabled(e.target.checked)} />
+          <input
+            type="checkbox"
+            checked={enabled}
+            onChange={(e) => setEnabled(e.target.checked)}
+          />
         </label>
       ) : null}
 

@@ -5,6 +5,7 @@ import {
   buildPlaybackRealtimeHello,
   buildPlaybackRealtimeResult,
   parsePlaybackRealtimeMessage,
+  type PlaybackCommandName,
   type PlaybackRealtimeCommandEnvelope,
   type PlaybackRealtimeEventEnvelope,
 } from "../realtime-protocol";
@@ -15,6 +16,12 @@ interface UsePlaybackRealtimeOptions {
   sessionId: string | null;
   onCommand: (command: PlaybackRealtimeCommandEnvelope) => Promise<void> | void;
   onEvent?: (event: PlaybackRealtimeEventEnvelope) => void;
+  /**
+   * The commands this surface can execute, announced in the hello. Defaults to
+   * the shared set; a surface that handles more names them so it does not
+   * announce a command it would only reject.
+   */
+  supportedCommands?: PlaybackCommandName[];
 }
 
 interface UsePlaybackRealtimeResult {
@@ -39,16 +46,23 @@ export function usePlaybackRealtime({
   sessionId,
   onCommand,
   onEvent,
+  supportedCommands,
 }: UsePlaybackRealtimeOptions): UsePlaybackRealtimeResult {
   const config = usePlayerConfig();
-  const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
+  const [connectionState, setConnectionState] =
+    useState<ConnectionState>("disconnected");
   const onCommandRef = useRef(onCommand);
   const onEventRef = useRef(onEvent);
+  const supportedCommandsRef = useRef(supportedCommands);
   const seenCommandsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     onCommandRef.current = onCommand;
   }, [onCommand]);
+
+  useEffect(() => {
+    supportedCommandsRef.current = supportedCommands;
+  }, [supportedCommands]);
 
   useEffect(() => {
     onEventRef.current = onEvent;
@@ -73,7 +87,8 @@ export function usePlaybackRealtime({
 
     const scheduleReconnect = () => {
       if (disposed) return;
-      const delay = reconnectDelays[Math.min(attempt, reconnectDelays.length - 1)];
+      const delay =
+        reconnectDelays[Math.min(attempt, reconnectDelays.length - 1)];
       attempt += 1;
       reconnectTimer = window.setTimeout(connect, delay);
     };
@@ -94,7 +109,11 @@ export function usePlaybackRealtime({
         attempt = 0;
         setConnectionState("connected");
         seenCommandsRef.current.clear();
-        socket.send(JSON.stringify(buildPlaybackRealtimeHello(sessionId)));
+        socket.send(
+          JSON.stringify(
+            buildPlaybackRealtimeHello(sessionId, supportedCommandsRef.current),
+          ),
+        );
       });
 
       socket.addEventListener("message", (event) => {
@@ -114,7 +133,11 @@ export function usePlaybackRealtime({
         seenCommandsRef.current.add(command.command_id);
 
         if (socket.readyState === WebSocket.OPEN) {
-          socket.send(JSON.stringify(buildPlaybackRealtimeAck(sessionId, command.command_id)));
+          socket.send(
+            JSON.stringify(
+              buildPlaybackRealtimeAck(sessionId, command.command_id),
+            ),
+          );
         }
 
         void Promise.resolve(onCommandRef.current(command))
@@ -122,16 +145,26 @@ export function usePlaybackRealtime({
             if (!socket || socket.readyState !== WebSocket.OPEN) return;
             socket.send(
               JSON.stringify(
-                buildPlaybackRealtimeResult(sessionId, command.command_id, "completed"),
+                buildPlaybackRealtimeResult(
+                  sessionId,
+                  command.command_id,
+                  "completed",
+                ),
               ),
             );
           })
           .catch((error: unknown) => {
             if (!socket || socket.readyState !== WebSocket.OPEN) return;
-            const message = error instanceof Error ? error.message : "command_failed";
+            const message =
+              error instanceof Error ? error.message : "command_failed";
             socket.send(
               JSON.stringify(
-                buildPlaybackRealtimeResult(sessionId, command.command_id, "rejected", message),
+                buildPlaybackRealtimeResult(
+                  sessionId,
+                  command.command_id,
+                  "rejected",
+                  message,
+                ),
               ),
             );
           });
@@ -158,7 +191,8 @@ export function usePlaybackRealtime({
       }
       if (
         socket &&
-        (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)
+        (socket.readyState === WebSocket.OPEN ||
+          socket.readyState === WebSocket.CONNECTING)
       ) {
         socket.close();
       }

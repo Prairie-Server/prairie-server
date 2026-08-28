@@ -24,7 +24,12 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
-import { AdvancedFields, FolderFields, GeneralFields, MetadataFields } from "./LibraryFormSections";
+import {
+  AdvancedFields,
+  FolderFields,
+  GeneralFields,
+  MetadataFields,
+} from "./LibraryFormSections";
 import { libraryTypeMeta } from "./libraryTypes";
 import { LibraryPosterSection } from "./LibraryPosterSection";
 import { useLibraryForm } from "./useLibraryForm";
@@ -51,14 +56,16 @@ const SECTIONS: Array<{
     label: "Folders",
     icon: FolderOpen,
     title: "Folders",
-    description: "Prairie scans these folders for media and watches them for changes.",
+    description:
+      "Prairie scans these folders for media and watches them for changes.",
   },
   {
     id: "metadata",
     label: "Metadata",
     icon: Database,
     title: "Metadata",
-    description: "Control where artwork and descriptions come from, and in which language.",
+    description:
+      "Control where artwork and descriptions come from, and in which language.",
   },
   {
     id: "advanced",
@@ -142,7 +149,9 @@ function LibraryEditorBody({
             <typeMeta.icon className="size-5" />
           </div>
           <div className="min-w-0 space-y-0.5 text-left">
-            <DialogTitle>{library ? "Edit Library" : "Add Library"}</DialogTitle>
+            <DialogTitle>
+              {library ? "Edit Library" : "Add Library"}
+            </DialogTitle>
             <DialogDescription className="truncate text-xs">
               {library
                 ? `Configure how “${library.name}” is scanned and matched.`
@@ -198,7 +207,9 @@ function LibraryEditorBody({
               {id === "general" && (
                 <GeneralFields
                   form={form}
-                  posterSlot={library ? <LibraryPosterSection library={library} /> : null}
+                  posterSlot={
+                    library ? <LibraryPosterSection library={library} /> : null
+                  }
                 />
               )}
               {id === "folders" && <FolderFields form={form} />}
@@ -228,7 +239,13 @@ function LibraryEditorBody({
           </Button>
         </DialogClose>
         <Button type="submit" disabled={form.isPending}>
-          {form.isPending ? <Loader2 className="animate-spin" /> : library ? <Save /> : <Plus />}
+          {form.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : library ? (
+            <Save />
+          ) : (
+            <Plus />
+          )}
           {form.isPending
             ? library
               ? "Saving…"

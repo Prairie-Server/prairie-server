@@ -16,7 +16,9 @@ interface BrandingApiResponse {
   accent_color?: string;
   default_theme?: string;
   wordmark_url?: string;
+  wordmark_light_url?: string;
   mark_url?: string;
+  mark_light_url?: string;
   favicon_url?: string;
   login_bg_url?: string;
   storage_available?: boolean;
@@ -31,7 +33,9 @@ export interface BrandingContextValue {
   defaultTheme: string | null;
   /** Custom asset URLs (stable, cache-busted) or null to use bundled defaults. */
   wordmarkUrl: string | null;
+  wordmarkLightUrl: string | null;
   markUrl: string | null;
+  markLightUrl: string | null;
   faviconUrl: string | null;
   loginBgUrl: string | null;
   /** Whether the running server has an active object-store client for assets. */
@@ -44,7 +48,9 @@ const DEFAULT_BRANDING: BrandingContextValue = {
   accentColor: null,
   defaultTheme: null,
   wordmarkUrl: null,
+  wordmarkLightUrl: null,
   markUrl: null,
+  markLightUrl: null,
   faviconUrl: null,
   loginBgUrl: null,
   storageAvailable: false,
@@ -52,16 +58,21 @@ const DEFAULT_BRANDING: BrandingContextValue = {
 
 // A non-null default means useBranding() is safe to call anywhere (e.g. in
 // PrairieBrand rendered outside the provider in tests) and simply yields defaults.
-export const BrandingContext = createContext<BrandingContextValue>(DEFAULT_BRANDING);
+export const BrandingContext =
+  createContext<BrandingContextValue>(DEFAULT_BRANDING);
 
-function mapResponse(data: BrandingApiResponse | undefined): BrandingContextValue {
+function mapResponse(
+  data: BrandingApiResponse | undefined,
+): BrandingContextValue {
   return {
     serverName: data?.server_name || DEFAULT_SERVER_NAME,
     loginSubtitle: data?.login_subtitle || DEFAULT_LOGIN_SUBTITLE,
     accentColor: data?.accent_color || null,
     defaultTheme: data?.default_theme || null,
     wordmarkUrl: data?.wordmark_url || null,
+    wordmarkLightUrl: data?.wordmark_light_url || null,
     markUrl: data?.mark_url || null,
+    markLightUrl: data?.mark_light_url || null,
     faviconUrl: data?.favicon_url || null,
     loginBgUrl: data?.login_bg_url || null,
     storageAvailable: data?.storage_available ?? false,

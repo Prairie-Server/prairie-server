@@ -115,8 +115,8 @@ export function ImageUploadField({
             placeholder={sourceUrlPlaceholder}
           />
           <p className="text-muted-foreground text-xs">
-            Paste an image URL instead of uploading a file. If both are provided, the uploaded file
-            wins.
+            Paste an image URL instead of uploading a file. If both are
+            provided, the uploaded file wins.
           </p>
         </div>
       ) : null}

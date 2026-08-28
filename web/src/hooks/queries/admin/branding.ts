@@ -4,7 +4,13 @@ import { toast } from "sonner";
 import { api } from "@/api/client";
 import { adminKeys, themeKeys } from "../keys";
 
-export type BrandingAssetKind = "wordmark" | "mark" | "favicon" | "login_bg";
+export type BrandingAssetKind =
+  | "wordmark"
+  | "mark"
+  | "wordmark_light"
+  | "mark_light"
+  | "favicon"
+  | "login_bg";
 
 interface BrandingAssetUploadResponse {
   kind: string;
@@ -27,14 +33,19 @@ export function useUploadBrandingAsset() {
     mutationFn: ({ kind, file }: { kind: BrandingAssetKind; file: File }) => {
       const form = new FormData();
       form.append("file", file);
-      return api<BrandingAssetUploadResponse>(`/admin/branding/assets/${kind}`, {
-        method: "POST",
-        body: form,
-      });
+      return api<BrandingAssetUploadResponse>(
+        `/admin/branding/assets/${kind}`,
+        {
+          method: "POST",
+          body: form,
+        },
+      );
     },
     onSuccess: () => invalidateBranding(queryClient),
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to upload image");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to upload image",
+      );
     },
   });
 }
@@ -47,7 +58,9 @@ export function useDeleteBrandingAsset() {
       api<void>(`/admin/branding/assets/${kind}`, { method: "DELETE" }),
     onSuccess: () => invalidateBranding(queryClient),
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to remove image");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to remove image",
+      );
     },
   });
 }

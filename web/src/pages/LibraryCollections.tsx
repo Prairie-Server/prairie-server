@@ -1,23 +1,30 @@
-import type { LibraryTabCollection, LibraryTabGroup, LibraryTabUngrouped } from "@/api/types";
+import type {
+  LibraryTabCollection,
+  LibraryTabGroup,
+  LibraryTabUngrouped,
+} from "@/api/types";
 import { useLibraryCollections } from "@/hooks/queries/libraryCollections";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  COLLECTION_POSTER_GRID_CLASSES as GRID_CLASSES,
-  CollectionPosterCard,
-} from "@/components/collections/CollectionPosterCard";
+import { CollectionPosterCard } from "@/components/collections/CollectionPosterCard";
+import { useUICustomization } from "@/hooks/useUICustomization";
+import { cardGridClasses } from "@/lib/uiCustomization";
 
 interface LibraryCollectionsProps {
   libraryId: number;
 }
 
-export default function LibraryCollections({ libraryId }: LibraryCollectionsProps) {
+export default function LibraryCollections({
+  libraryId,
+}: LibraryCollectionsProps) {
   const { data, isLoading } = useLibraryCollections(libraryId);
+  const { cardPresentation } = useUICustomization();
+  const gridClasses = cardGridClasses(cardPresentation.poster_size);
 
   if (isLoading) {
     return (
       <div className="page-shell py-6 sm:py-8">
-        <div className={GRID_CLASSES}>
+        <div className={gridClasses}>
           {Array.from({ length: 24 }, (_, i) => (
             <div key={i}>
               <Skeleton className="aspect-[2/3] rounded-lg" />
@@ -40,7 +47,8 @@ export default function LibraryCollections({ libraryId }: LibraryCollectionsProp
           <CardContent className="py-10 text-center">
             <p className="text-lg font-semibold">No collections yet</p>
             <p className="text-muted-foreground mt-2 text-sm">
-              Create library collections from the admin area to feature curated shelves here.
+              Create library collections from the admin area to feature curated
+              shelves here.
             </p>
           </CardContent>
         </Card>
@@ -52,7 +60,9 @@ export default function LibraryCollections({ libraryId }: LibraryCollectionsProp
     <div className="page-shell space-y-6 py-6 sm:py-8">
       <div className="page-header gap-5">
         <div className="space-y-3">
-          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Collections</h1>
+          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
+            Collections
+          </h1>
           <p className="page-subtitle text-sm sm:text-base">
             Browse hand-picked shelves and smart lists created for this library.
           </p>
@@ -65,9 +75,15 @@ export default function LibraryCollections({ libraryId }: LibraryCollectionsProp
               key="ungrouped"
               collections={item.collections}
               libraryId={libraryId}
+              gridClasses={gridClasses}
             />
           ) : (
-            <GroupSection key={item.group.id} group={item.group} libraryId={libraryId} />
+            <GroupSection
+              key={item.group.id}
+              group={item.group}
+              libraryId={libraryId}
+              gridClasses={gridClasses}
+            />
           ),
         )}
       </div>
@@ -93,7 +109,10 @@ function buildRenderOrder(
   if (ungroupedData && ungroupedData.collections.length > 0) {
     slots.push({
       order: ungroupedData.sort_order,
-      item: { kind: "ungrouped" as const, collections: ungroupedData.collections },
+      item: {
+        kind: "ungrouped" as const,
+        collections: ungroupedData.collections,
+      },
     });
   }
   slots.sort((a, b) => a.order - b.order);
@@ -103,28 +122,48 @@ function buildRenderOrder(
 function UngroupedGroupSection({
   collections,
   libraryId,
+  gridClasses,
 }: {
   collections: LibraryTabCollection[];
   libraryId: number;
+  gridClasses: string;
 }) {
   return (
     <section>
-      <div className={GRID_CLASSES}>
+      <div className={gridClasses}>
         {collections.map((c) => (
-          <CollectionPosterCard key={c.id} collection={c} kind="regular" libraryId={libraryId} />
+          <CollectionPosterCard
+            key={c.id}
+            collection={c}
+            kind="regular"
+            libraryId={libraryId}
+          />
         ))}
       </div>
     </section>
   );
 }
 
-function GroupSection({ group, libraryId }: { group: LibraryTabGroup; libraryId: number }) {
+function GroupSection({
+  group,
+  libraryId,
+  gridClasses,
+}: {
+  group: LibraryTabGroup;
+  libraryId: number;
+  gridClasses: string;
+}) {
   return (
     <section>
       <h2 className="mb-3 text-lg font-semibold">{group.name}</h2>
-      <div className={GRID_CLASSES}>
+      <div className={gridClasses}>
         {group.collections.map((c) => (
-          <CollectionPosterCard key={c.id} collection={c} kind={group.kind} libraryId={libraryId} />
+          <CollectionPosterCard
+            key={c.id}
+            collection={c}
+            kind={group.kind}
+            libraryId={libraryId}
+          />
         ))}
       </div>
     </section>

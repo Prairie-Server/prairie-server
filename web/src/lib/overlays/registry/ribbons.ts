@@ -36,7 +36,8 @@ export const RIBBON_OVERLAYS: readonly OverlayDef[] = [
     defaultEnabled: false,
     iconId: "tv",
     iconCapable: true,
-    availabilityNote: "Populated by metadata plugins (TMDB/TVDB updates pending)",
+    availabilityNote:
+      "Populated by metadata plugins (TMDB/TVDB updates pending)",
     getValue: (d) => formatShowStatus(d.show_status),
   },
 ];

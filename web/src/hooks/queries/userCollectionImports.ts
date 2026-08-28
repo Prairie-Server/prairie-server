@@ -10,7 +10,10 @@ import type {
   MDBListDiscoveryResponse,
   UserCollectionSyncResult,
 } from "@/api/types";
-import { TEMPLATE_STALE_TIME, type CollectionTemplateCatalog } from "@/lib/collectionTemplates";
+import {
+  TEMPLATE_STALE_TIME,
+  type CollectionTemplateCatalog,
+} from "@/lib/collectionTemplates";
 import { invalidateUserCollectionQueries } from "./collectionSurfaceRefresh";
 import { collectionKeys } from "./keys";
 
@@ -39,7 +42,8 @@ export function useMDBListSearch(query: string, enabled = true) {
 export function useMDBListTop(enabled = true) {
   return useQuery({
     queryKey: collectionKeys.mdblistTop(),
-    queryFn: () => api<MDBListDiscoveryResponse>("/collections/import/mdblist/top"),
+    queryFn: () =>
+      api<MDBListDiscoveryResponse>("/collections/import/mdblist/top"),
     enabled,
     staleTime: 5 * 60_000,
   });
@@ -96,7 +100,9 @@ export function useImportUserTraktCollection() {
         body: JSON.stringify(body),
       }),
     onSuccess: (result) => {
-      toast.success(importToastMessage("Trakt collection", result.sync?.status));
+      toast.success(
+        importToastMessage("Trakt collection", result.sync?.status),
+      );
       void invalidateUserCollectionQueries(queryClient);
     },
     onError: (error) => {

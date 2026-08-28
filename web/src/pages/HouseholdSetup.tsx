@@ -22,7 +22,11 @@ import { isHouseholdSetupDone, setHouseholdSetupDone } from "@/lib/onboarding";
  */
 export default function HouseholdSetup() {
   const { user, loading, selectProfile } = useAuth();
-  const { data: profiles, isLoading: profilesLoading, avatarUploadEnabled } = useProfiles();
+  const {
+    data: profiles,
+    isLoading: profilesLoading,
+    avatarUploadEnabled,
+  } = useProfiles();
   const { data: libraries = [] } = useAvailableUserLibraries();
   const [editorOpen, setEditorOpen] = useState(false);
   const [editing, setEditing] = useState<Profile | null>(null);
@@ -74,8 +78,8 @@ export default function HouseholdSetup() {
             Who&apos;s watching?
           </h1>
           <p className="text-muted-foreground mx-auto mt-3 max-w-md text-sm leading-6">
-            Everyone gets their own history, watchlist, and recommendations. Add the whole household
-            now or later — this is your account either way.
+            Everyone gets their own history, watchlist, and recommendations. Add
+            the whole household now or later — this is your account either way.
           </p>
         </div>
 
@@ -95,7 +99,9 @@ export default function HouseholdSetup() {
               >
                 <div className="relative">
                   <Avatar className="border-border group-hover:border-primary size-20 rounded-2xl border transition-colors">
-                    {p.avatar_url ? <AvatarImage src={p.avatar_url} alt="" /> : null}
+                    {p.avatar_url ? (
+                      <AvatarImage src={p.avatar_url} alt="" />
+                    ) : null}
                     <AvatarFallback className="rounded-2xl text-2xl font-bold">
                       {p.name.slice(0, 1).toUpperCase()}
                     </AvatarFallback>
@@ -120,7 +126,9 @@ export default function HouseholdSetup() {
               <div className="border-border group-hover:border-primary text-muted-foreground grid size-20 place-items-center rounded-2xl border border-dashed transition-colors">
                 <Plus className="size-7" />
               </div>
-              <span className="text-muted-foreground mt-1 text-sm font-medium">Add profile</span>
+              <span className="text-muted-foreground mt-1 text-sm font-medium">
+                Add profile
+              </span>
             </button>
           </div>
         )}

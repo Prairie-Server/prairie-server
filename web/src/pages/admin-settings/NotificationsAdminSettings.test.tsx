@@ -30,13 +30,16 @@ function makeForm() {
         case "notifications.android_push_delivery_enabled":
           return "true";
         case "notifications.push_relay_url":
-          return "https://push.prairie-server.org";
+          return "https://push.siloserver.org";
         case "notifications.push_relay_deployment_id":
           return "01DEPLOYMENT";
         case "notifications.push_relay_key_prefix":
           return "cap_v1_test";
         case "notifications.push_relay_expires_at":
-          return "2026-12-31T00:00:00Z";
+          // Relative so the "renews automatically" (not-yet-expired) branch
+          // stays stable — a hardcoded date turned into a time bomb once the
+          // calendar passed it.
+          return new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
         default:
           return "";
       }
@@ -56,7 +59,9 @@ function makeForm() {
 }
 
 function renderPage() {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
 
   return (
     <QueryClientProvider client={client}>
@@ -105,18 +110,28 @@ describe("NotificationsAdminSettings", () => {
     expect(screen.getByText(/delivered by APNs or FCM/)).toBeInTheDocument();
     expect(screen.getByText("Relay configured")).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole("button", { name: /Prairie Push Relay/ }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /Prairie Push Relay/ }),
+    );
 
     expect(screen.getByText("Privacy disclosure")).toBeInTheDocument();
     expect(screen.getByText("Apple Push (APNs)")).toBeInTheDocument();
     expect(screen.getByText("Android Push (FCM)")).toBeInTheDocument();
-    expect(screen.getByText(/content-free request to Prairie's push relay/)).toBeInTheDocument();
-    expect(screen.getByText(/does not receive notification titles/)).toBeInTheDocument();
-    expect(screen.getByText(/fetches private content directly/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/content-free request to Prairie's push relay/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/does not receive notification titles/),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/fetches private content directly/),
+    ).toBeInTheDocument();
     expect(screen.getByText("Deployment ID")).toBeInTheDocument();
     expect(screen.getByText("Rotate credential")).toBeInTheDocument();
     expect(screen.getByText("Credential: cap_v1_test")).toBeInTheDocument();
-    expect(screen.getByText(/Prairie renews automatically/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Prairie renews automatically/),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Relay API Key")).not.toBeInTheDocument();
     expect(screen.queryByText("Smoke Test Profile ID")).not.toBeInTheDocument();
     expect(screen.queryByText("Server Device ID")).not.toBeInTheDocument();

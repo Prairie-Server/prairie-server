@@ -10,12 +10,11 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/clientip"
-	"github.com/prairie-server/prairie-server/internal/httpheaders"
 	"github.com/prairie-server/prairie-server/internal/policy"
 )
 
 const (
-	prairieDeviceIDHeader              = httpheaders.HeaderDeviceID
+	siloDeviceIDHeader                 = "X-Silo-Device-Id"
 	policyInternalErrorCode            = "internal_error"
 	activeProfileVerificationFailedMsg = "Failed to verify active profile"
 	metadataCurationRequiredMsg        = "Metadata curation permission required"
@@ -325,5 +324,5 @@ func policyRequestTime() string {
 }
 
 func policyDeviceID(r *http.Request) string {
-	return httpheaders.Get(r.Header, prairieDeviceIDHeader)
+	return r.Header.Get(siloDeviceIDHeader)
 }

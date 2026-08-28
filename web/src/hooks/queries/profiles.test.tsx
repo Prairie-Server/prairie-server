@@ -10,8 +10,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
+    "@tanstack/react-query",
+  );
   return {
     ...actual,
     useQuery: (...args: unknown[]) => mocks.useQuery(...args),
@@ -30,8 +31,12 @@ import { useProfiles } from "./profiles";
 import { profileKeys } from "./keys";
 
 function render(node: ReactNode) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return renderToStaticMarkup(<QueryClientProvider client={client}>{node}</QueryClientProvider>);
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return renderToStaticMarkup(
+    <QueryClientProvider client={client}>{node}</QueryClientProvider>,
+  );
 }
 
 function CallUseProfiles() {

@@ -1,6 +1,18 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
+import {
+  useLocation,
+  useNavigate,
+  useParams,
+  useSearchParams,
+} from "react-router";
 import {
   ChevronLeft,
   ChevronRight,
@@ -22,7 +34,10 @@ import {
   ConnectionStatusDot,
 } from "@/components/watchtogether/ConnectionStatusDot";
 import { EndWatchPartyDialog } from "@/components/watchtogether/EndWatchPartyDialog";
-import { fetchCatalogPage, createCatalogSearchState } from "@/hooks/queries/catalog";
+import {
+  fetchCatalogPage,
+  createCatalogSearchState,
+} from "@/hooks/queries/catalog";
 import { useCatalogItemDetail } from "@/hooks/queries/catalogRead";
 import { useSeasons, useSeasonEpisodes } from "@/hooks/queries/episodes";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -65,8 +80,10 @@ function describeRoomError(error: unknown) {
 }
 
 function resultLabel(item: BrowseItem) {
-  if (item.type === "episode") return `Episode${item.year > 0 ? ` · ${item.year}` : ""}`;
-  if (item.type === "series") return `Series${item.year > 0 ? ` · ${item.year}` : ""}`;
+  if (item.type === "episode")
+    return `Episode${item.year > 0 ? ` · ${item.year}` : ""}`;
+  if (item.type === "series")
+    return `Series${item.year > 0 ? ` · ${item.year}` : ""}`;
   return `Movie${item.year > 0 ? ` · ${item.year}` : ""}`;
 }
 
@@ -97,7 +114,9 @@ function SearchPosterCard({
   index: number;
 }) {
   const [loaded, setLoaded] = useState(false);
-  const thumbhashUrl = item.poster_thumbhash ? decodeThumbhash(item.poster_thumbhash) : "";
+  const thumbhashUrl = item.poster_thumbhash
+    ? decodeThumbhash(item.poster_thumbhash)
+    : "";
 
   return (
     <button
@@ -108,7 +127,9 @@ function SearchPosterCard({
     >
       <div
         className={`media-card-image relative aspect-[2/3] transition-all duration-200 ${
-          selected ? "ring-primary ring-offset-background ring-2 ring-offset-2" : ""
+          selected
+            ? "ring-primary ring-offset-background ring-2 ring-offset-2"
+            : ""
         }`}
         style={
           thumbhashUrl
@@ -145,7 +166,9 @@ function SearchPosterCard({
         )}
       </div>
       <div className="px-0.5 pt-2.5">
-        <div className="truncate text-[13px] font-semibold tracking-tight">{item.title}</div>
+        <div className="truncate text-[13px] font-semibold tracking-tight">
+          {item.title}
+        </div>
         <div className="text-muted-foreground mt-0.5 text-[11px] font-medium tracking-[0.12em] uppercase">
           {resultLabel(item)}
         </div>
@@ -237,7 +260,9 @@ function CandidateSpotlight({
         <div className="flex min-w-0 flex-1 flex-col justify-center gap-3">
           <div>
             <div className="text-muted-foreground text-[10px] font-semibold tracking-[0.18em] uppercase">
-              {pendingAction === "suggest" ? "Your Suggestion" : "Ready to Play"}
+              {pendingAction === "suggest"
+                ? "Your Suggestion"
+                : "Ready to Play"}
             </div>
             <h3 className="mt-1.5 text-xl font-semibold tracking-tight sm:text-2xl">
               {candidate.title}
@@ -254,7 +279,12 @@ function CandidateSpotlight({
           )}
 
           <div className="mt-1 flex items-center gap-3">
-            <Button type="button" onClick={onConfirm} disabled={submitting} className="gap-2">
+            <Button
+              type="button"
+              onClick={onConfirm}
+              disabled={submitting}
+              className="gap-2"
+            >
               {pendingAction === "suggest" ? (
                 <Zap className="size-3.5" />
               ) : (
@@ -310,8 +340,12 @@ function NowPlayingHero({
             Now Playing
           </span>
         </div>
-        <h3 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">{title}</h3>
-        <div className="text-muted-foreground mt-1 text-sm capitalize">{type}</div>
+        <h3 className="mt-2 text-2xl font-semibold tracking-tight sm:text-3xl">
+          {title}
+        </h3>
+        <div className="text-muted-foreground mt-1 text-sm capitalize">
+          {type}
+        </div>
       </div>
     </div>
   );
@@ -365,21 +399,29 @@ export default function WatchTogetherRoomPage() {
   const [submitting, setSubmitting] = useState(false);
   const [endConfirmOpen, setEndConfirmOpen] = useState(false);
   const [ending, setEnding] = useState(false);
-  const [searchStep, setSearchStep] = useState<SearchStep>({ stage: "results" });
+  const [searchStep, setSearchStep] = useState<SearchStep>({
+    stage: "results",
+  });
   const lastAutoStartRevisionRef = useRef<number | null>(null);
   const suppressAutoStartSelectionRef = useRef(
-    (location.state as WatchTogetherRoomLocationState | null)?.suppressAutoStartSelection ?? null,
+    (location.state as WatchTogetherRoomLocationState | null)
+      ?.suppressAutoStartSelection ?? null,
   );
   const searchInputRef = useRef<HTMLInputElement>(null);
   const debouncedQuery = useDebounce(query.trim(), 200);
 
   useEffect(() => {
     suppressAutoStartSelectionRef.current =
-      (location.state as WatchTogetherRoomLocationState | null)?.suppressAutoStartSelection ?? null;
+      (location.state as WatchTogetherRoomLocationState | null)
+        ?.suppressAutoStartSelection ?? null;
   }, [location.state]);
 
   const searchState = useMemo(
-    () => createCatalogSearchState("query", debouncedQuery ? { q: debouncedQuery } : {}),
+    () =>
+      createCatalogSearchState(
+        "query",
+        debouncedQuery ? { q: debouncedQuery } : {},
+      ),
     [debouncedQuery],
   );
 
@@ -408,7 +450,10 @@ export default function WatchTogetherRoomPage() {
 
   const selectedContentId = roomConnection.room?.selected_content_id;
   const selectedLibraryId = roomConnection.room?.selected_library_id;
-  const selectedItemQuery = useCatalogItemDetail(selectedContentId, selectedLibraryId);
+  const selectedItemQuery = useCatalogItemDetail(
+    selectedContentId,
+    selectedLibraryId,
+  );
 
   useEffect(() => {
     const room = roomConnection.room;
@@ -421,8 +466,10 @@ export default function WatchTogetherRoomPage() {
       suppressAutoStartSelectionRef.current = null;
       const sameSelection =
         room.selected_content_id === suppressedSelection.contentId &&
-        (room.selected_file_id ?? null) === (suppressedSelection.fileId ?? null) &&
-        (room.selected_library_id ?? null) === (suppressedSelection.libraryId ?? null);
+        (room.selected_file_id ?? null) ===
+          (suppressedSelection.fileId ?? null) &&
+        (room.selected_library_id ?? null) ===
+          (suppressedSelection.libraryId ?? null);
       if (sameSelection) {
         lastAutoStartRevisionRef.current = room.selection_revision;
         return;
@@ -452,7 +499,10 @@ export default function WatchTogetherRoomPage() {
   const pendingAction: PendingAction = isVoteMode ? "suggest" : "select";
 
   const handleCopyInvite = useCallback(async () => {
-    await copyWatchTogetherInvite(roomConnection.room?.invite_path, roomConnection.room?.code);
+    await copyWatchTogetherInvite(
+      roomConnection.room?.invite_path,
+      roomConnection.room?.code,
+    );
   }, [roomConnection.room?.code, roomConnection.room?.invite_path]);
 
   const handleTogglePolicy = useCallback(async () => {
@@ -462,7 +512,9 @@ export default function WatchTogetherRoomPage() {
     }
     await setWatchTogetherGuestControl(
       roomConnection.updatePolicy,
-      room.guest_control_policy === "guest_play_pause" ? "host_only" : "guest_play_pause",
+      room.guest_control_policy === "guest_play_pause"
+        ? "host_only"
+        : "guest_play_pause",
     );
   }, [roomConnection]);
 
@@ -501,7 +553,9 @@ export default function WatchTogetherRoomPage() {
         setCandidateContext(null);
       }
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to update room");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update room",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -519,14 +573,22 @@ export default function WatchTogetherRoomPage() {
   const handleSelectSeason = useCallback(
     (seasonNumber: number) => {
       if (searchStep.stage === "seasons") {
-        setSearchStep({ stage: "episodes", series: searchStep.series, seasonNumber });
+        setSearchStep({
+          stage: "episodes",
+          series: searchStep.series,
+          seasonNumber,
+        });
       }
     },
     [searchStep],
   );
 
   const handleSelectEpisode = useCallback(
-    (episode: { content_id: string; title: string; episode_number: number }) => {
+    (episode: {
+      content_id: string;
+      title: string;
+      episode_number: number;
+    }) => {
       if (searchStep.stage === "episodes") {
         const seriesTitle = searchStep.series.title;
         const context = `${seriesTitle} · S${searchStep.seasonNumber} E${episode.episode_number}`;
@@ -654,7 +716,8 @@ export default function WatchTogetherRoomPage() {
               >
                 <ShieldCheck className="size-3.5" />
                 <span className="hidden sm:inline">
-                  {roomConnection.room?.guest_control_policy === "guest_play_pause"
+                  {roomConnection.room?.guest_control_policy ===
+                  "guest_play_pause"
                     ? "Host Only"
                     : "Allow Pause"}
                 </span>
@@ -703,7 +766,9 @@ export default function WatchTogetherRoomPage() {
                 {member.display_name}
                 {member.is_self ? " (you)" : ""}
               </span>
-              <span className="sr-only">{member.connected ? "Connected" : "Disconnected"}</span>
+              <span className="sr-only">
+                {member.connected ? "Connected" : "Disconnected"}
+              </span>
               {member.is_host ? (
                 <span className="text-muted-foreground rounded-full border border-white/10 px-1.5 py-0.5 text-[10px] font-semibold tracking-wide uppercase">
                   Host
@@ -718,7 +783,9 @@ export default function WatchTogetherRoomPage() {
       {isPlaying && roomConnection.room?.selected_content_id ? (
         <NowPlayingHero
           title={selectedItemQuery.data?.title ?? "Loading..."}
-          type={selectedItemQuery.data?.type === "episode" ? "Episode" : "Movie"}
+          type={
+            selectedItemQuery.data?.type === "episode" ? "Episode" : "Movie"
+          }
           backdropUrl={selectedItemQuery.data?.backdrop_url}
         />
       ) : null}
@@ -750,7 +817,9 @@ export default function WatchTogetherRoomPage() {
                 setSearchStep({ stage: "results" });
               }}
               placeholder={
-                isVoteMode ? "Search to suggest something..." : "Search movies and series..."
+                isVoteMode
+                  ? "Search to suggest something..."
+                  : "Search movies and series..."
               }
               aria-label="Search movies and series"
               className="border-border bg-surface placeholder:text-muted-foreground h-12 w-full rounded-xl border py-3 pr-4 pl-11 text-sm shadow-sm transition-all duration-200 outline-none focus:border-white/30 focus:ring-1 focus:ring-white/10"
@@ -779,7 +848,9 @@ export default function WatchTogetherRoomPage() {
                 className="text-muted-foreground hover:text-foreground mb-4 flex items-center gap-1.5 text-sm font-medium transition-colors"
               >
                 <ChevronLeft className="size-3.5" />
-                {searchStep.stage === "episodes" ? searchStep.series.title : "Back to results"}
+                {searchStep.stage === "episodes"
+                  ? searchStep.series.title
+                  : "Back to results"}
               </button>
 
               {searchStep.stage === "seasons" ? (
@@ -796,7 +867,9 @@ export default function WatchTogetherRoomPage() {
                       <h3 className="text-lg font-semibold tracking-tight">
                         {searchStep.series.title}
                       </h3>
-                      <div className="text-muted-foreground text-sm">Pick a season</div>
+                      <div className="text-muted-foreground text-sm">
+                        Pick a season
+                      </div>
                     </div>
                   </div>
 
@@ -815,12 +888,16 @@ export default function WatchTogetherRoomPage() {
                           <button
                             key={season.season_number}
                             type="button"
-                            onClick={() => handleSelectSeason(season.season_number)}
+                            onClick={() =>
+                              handleSelectSeason(season.season_number)
+                            }
                             className="group bg-surface hover:bg-surface-hover flex items-center justify-between rounded-xl border border-white/5 px-4 py-4 text-left transition-all duration-200 hover:border-white/15"
                           >
                             <div>
                               <div className="text-sm font-semibold">
-                                {season.is_specials ? "Specials" : `Season ${season.season_number}`}
+                                {season.is_specials
+                                  ? "Specials"
+                                  : `Season ${season.season_number}`}
                               </div>
                               <div className="text-muted-foreground mt-0.5 text-xs">
                                 {season.episode_count} episode
@@ -893,8 +970,9 @@ export default function WatchTogetherRoomPage() {
                             </button>
                           ))}
                     {!episodesQuery.isLoading &&
-                    (episodesQuery.data?.episodes ?? []).filter((ep) => ep.files.length > 0)
-                      .length === 0 ? (
+                    (episodesQuery.data?.episodes ?? []).filter(
+                      (ep) => ep.files.length > 0,
+                    ).length === 0 ? (
                       <div className="text-muted-foreground rounded-lg border border-white/5 px-4 py-8 text-center text-sm">
                         No playable episodes in this season.
                       </div>

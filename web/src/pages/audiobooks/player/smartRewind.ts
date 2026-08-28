@@ -17,7 +17,11 @@ export function smartRewindSeconds(pauseMs: number): number {
  */
 export const COLD_RESUME_REWIND_SECONDS = 10;
 
-export function coldResumePosition(resumeSeconds: number, smartRewindEnabled: boolean): number {
-  if (!smartRewindEnabled || resumeSeconds <= 0) return Math.max(0, resumeSeconds);
+export function coldResumePosition(
+  resumeSeconds: number,
+  smartRewindEnabled: boolean,
+): number {
+  if (!smartRewindEnabled || resumeSeconds <= 0)
+    return Math.max(0, resumeSeconds);
   return Math.max(0, resumeSeconds - COLD_RESUME_REWIND_SECONDS);
 }

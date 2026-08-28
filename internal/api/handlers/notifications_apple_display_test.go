@@ -17,9 +17,9 @@ import (
 )
 
 func TestHandleApplePushDisplayDB(t *testing.T) {
-	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
+	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
-		t.Skip("set PRAIRIE_TEST_DATABASE_URL to run DB-backed notification display handler test")
+		t.Skip("set SILO_TEST_DATABASE_URL to run DB-backed notification display handler test")
 	}
 
 	ctx := context.Background()

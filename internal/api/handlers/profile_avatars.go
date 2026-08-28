@@ -12,7 +12,6 @@ import (
 	"github.com/go-chi/chi/v5"
 
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
-	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/imageutil"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 )
@@ -269,18 +268,6 @@ func (h *ProfileHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Reque
 			writeError(w, http.StatusInternalServerError, "internal_error", "Failed to store avatar")
 			return
 		}
-		if avifKey := artworkkey.WebPAVIFSibling(key); len(variant.AVIF) > 0 && avifKey != "" {
-			if err := h.AvatarStore.PutObject(r.Context(), bucket, avifKey, variant.AVIF); err != nil {
-				writeError(w, http.StatusInternalServerError, "internal_error", "Failed to store avatar")
-				return
-			}
-		}
-		if pngKey := artworkkey.WebPPNGSibling(key); len(variant.PNG) > 0 && pngKey != "" {
-			if err := h.AvatarStore.PutObject(r.Context(), bucket, pngKey, variant.PNG); err != nil {
-				writeError(w, http.StatusInternalServerError, "internal_error", "Failed to store avatar")
-				return
-			}
-		}
 	}
 
 	avatarRef := profileAvatarUploadPrefix + originalKey
@@ -297,7 +284,7 @@ func (h *ProfileHandler) HandleUploadAvatar(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	writeJSON(w, http.StatusOK, h.toProfileResponse(r.Context(), *updatedProfile))
+	writeJSON(w, http.StatusOK, h.toProfileResponse(r.Context(), store, *updatedProfile))
 }
 
 func (h *ProfileHandler) HandleDeleteAvatar(w http.ResponseWriter, r *http.Request) {
@@ -339,5 +326,5 @@ func (h *ProfileHandler) HandleDeleteAvatar(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	writeJSON(w, http.StatusOK, h.toProfileResponse(r.Context(), *updatedProfile))
+	writeJSON(w, http.StatusOK, h.toProfileResponse(r.Context(), store, *updatedProfile))
 }

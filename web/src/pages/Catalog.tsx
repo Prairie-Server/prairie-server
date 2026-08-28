@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
 import { CheckSquare, RotateCcw, Search, Trash2, X } from "lucide-react";
 
+import { captureProfileRequestContext } from "@/api/client";
 import type { BrowseItem } from "@/api/types";
 import ItemGrid from "@/components/ItemGrid";
 import { RequestToAddSection } from "@/components/RequestToAddSection";
@@ -9,7 +10,12 @@ import { Button } from "@/components/ui/button";
 import CatalogFiltersPanel from "@/components/catalog/CatalogFiltersPanel";
 import SearchScopeChips from "@/components/catalog/SearchScopeChips";
 import { useCatalogWindow } from "@/hooks/queries/catalog";
-import { useSearchMediaScope, type SearchMediaScope } from "@/hooks/useSearchMediaScope";
+import { useSetCollectionSortPreference } from "@/hooks/queries/collections";
+import { querySortToSelectValue } from "@/lib/collectionSortConfig";
+import {
+  useSearchMediaScope,
+  type SearchMediaScope,
+} from "@/hooks/useSearchMediaScope";
 import { useRemoveHistory } from "@/hooks/queries/history";
 import { useRequestSearch } from "@/hooks/queries/useRequests";
 import { useCanRequest } from "@/hooks/useCanRequest";
@@ -29,6 +35,7 @@ import {
   catalogSourceAllowsOverlay,
   parseCatalogSearchParams,
 } from "./catalogSearchParams";
+import type { CatalogSearchState } from "./catalogSearchParams";
 
 const REQUEST_SEARCH_DEBOUNCE_MS = 100;
 
@@ -41,7 +48,8 @@ function defaultCatalogTitle(source: string, searchQuery?: string) {
 }
 
 function defaultCatalogSubtitle(source: string): string {
-  if (source === "favorites") return "Movies and shows you've marked as favorites.";
+  if (source === "favorites")
+    return "Movies and shows you've marked as favorites.";
   if (source === "watchlist") return "Things you've saved to watch later.";
   if (source === "history") return "Everything you've recently watched.";
   return "Refine the archive by type, era, rating, or genre.";
@@ -49,9 +57,14 @@ function defaultCatalogSubtitle(source: string): string {
 
 export default function Catalog() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const state = useMemo(() => parseCatalogSearchParams(searchParams), [searchParams]);
+  const state = useMemo(
+    () => parseCatalogSearchParams(searchParams),
+    [searchParams],
+  );
   const emptySearchTitle =
-    state.source === "query" && !state.q ? "Search" : defaultCatalogTitle(state.source, state.q);
+    state.source === "query" && !state.q
+      ? "Search"
+      : defaultCatalogTitle(state.source, state.q);
 
   useDocumentTitle(emptySearchTitle);
 
@@ -63,7 +76,8 @@ export default function Catalog() {
         </div>
         <h1 className="page-title mb-4">Search</h1>
         <p className="page-subtitle mb-8 max-w-xl text-sm sm:text-base">
-          Find films, series, performances, and rediscover things you forgot you saved.
+          Find films, series, performances, and rediscover things you forgot you
+          saved.
         </p>
         <SearchBar autoFocus prominent />
       </section>
@@ -71,7 +85,11 @@ export default function Catalog() {
   }
 
   return (
-    <CatalogResults searchParams={searchParams} setSearchParams={setSearchParams} state={state} />
+    <CatalogResults
+      searchParams={searchParams}
+      setSearchParams={setSearchParams}
+      state={state}
+    />
   );
 }
 
@@ -101,7 +119,13 @@ function CatalogResults({
   const isHistorySource = state.source === "history";
   const isCollectionSource =
     state.source === "library_collection" || state.source === "user_collection";
-  const allowPersonalizedOverlayControls = catalogSourceAllowsOverlay(state.source);
+  const hasSavedSortPreference =
+    isCollectionSource ||
+    state.source === "watchlist" ||
+    state.source === "favorites";
+  const allowPersonalizedOverlayControls = catalogSourceAllowsOverlay(
+    state.source,
+  );
   const removeHistory = useRemoveHistory();
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -119,7 +143,8 @@ function CatalogResults({
   useEffect(() => () => clearTimeout(debounceRef.current), []);
 
   const isQuerySource = state.source === "query" && Boolean(state.q);
-  const { scope: preferredScope, setScope: setPreferredScope } = useSearchMediaScope();
+  const { scope: preferredScope, setScope: setPreferredScope } =
+    useSearchMediaScope();
   // The URL `type` param is the explicit search scope ("all" included as a
   // sentinel). When it's absent — fresh navigation, bookmark, global search —
   // the user's preferred scope applies as the default.
@@ -130,7 +155,10 @@ function CatalogResults({
     }
     return {
       ...state,
-      query_definition: { ...state.query_definition, media_scope: preferredScope },
+      query_definition: {
+        ...state.query_definition,
+        media_scope: preferredScope,
+      },
     };
   }, [hasExplicitScope, preferredScope, state]);
   const buildSearchHref = useCallback(
@@ -157,6 +185,74 @@ function CatalogResults({
     visibleRange,
     includeTotal: showExactResultCount,
   });
+  // The server resolves a collection or personal list's effective order when
+  // the URL carries no sort.
+  // Reflect that back into the filter bar so the menu shows what is actually
+  // applied, without writing it into the URL — leaving it out of the URL is what
+  // lets a later change to the saved preference take effect on the next visit.
+  const effectiveSort = catalogQuery.data?.effectiveSort;
+  const sortedState = useMemo(() => {
+    if (
+      !hasSavedSortPreference ||
+      !effectiveState.uses_source_order ||
+      !effectiveSort?.field
+    ) {
+      return effectiveState;
+    }
+    return {
+      ...effectiveState,
+      uses_source_order: false,
+      sort_from_server: true,
+      query_definition: {
+        ...effectiveState.query_definition,
+        sort: { field: effectiveSort.field, order: effectiveSort.order },
+      },
+    };
+  }, [effectiveSort, effectiveState, hasSavedSortPreference]);
+
+  const saveCollectionSortPreference = useSetCollectionSortPreference();
+  const rememberCollectionSort = useCallback(
+    (nextState: CatalogSearchState) => {
+      const collectionId = nextState.collection_id?.trim();
+      let collectionKind: "library" | "user" | "watchlist" | "favorites";
+      if (nextState.source === "library_collection") {
+        if (!collectionId) return;
+        collectionKind = "library";
+      } else if (nextState.source === "user_collection") {
+        if (!collectionId) return;
+        collectionKind = "user";
+      } else if (
+        nextState.source === "watchlist" ||
+        nextState.source === "favorites"
+      ) {
+        collectionKind = nextState.source;
+      } else {
+        return;
+      }
+      const nextValue = nextState.uses_source_order
+        ? ""
+        : querySortToSelectValue(nextState.query_definition.sort);
+      const currentValue = sortedState.uses_source_order
+        ? ""
+        : querySortToSelectValue(sortedState.query_definition.sort);
+      if (nextValue === currentValue) return;
+      // Captured here, at the moment of the pick, rather than inside the
+      // mutation: these writes are serialized, so one that runs later must
+      // still land on the profile that actually chose the sort.
+      const profileAuth = captureProfileRequestContext();
+      if (!profileAuth) return;
+      const [field, order] = nextValue ? nextValue.split(":") : ["", ""];
+      void saveCollectionSortPreference({
+        collection_kind: collectionKind,
+        collection_id: collectionId,
+        field: field ?? "",
+        order: order === "asc" || order === "desc" ? order : "",
+        profileAuth,
+      });
+    },
+    [saveCollectionSortPreference, sortedState],
+  );
+
   const canRequest = useCanRequest();
   // Add a short TMDB debounce on top of SearchBar's input debounce so the
   // TMDB plugin isn't hit at the same cadence as the local library query.
@@ -167,7 +263,9 @@ function CatalogResults({
     staleTime: 5 * 60 * 1000,
   });
   const tmdbMissingCount =
-    tmdbQuery.data?.results?.filter((result) => result.availability !== "available").length ?? 0;
+    tmdbQuery.data?.results?.filter(
+      (result) => result.availability !== "available",
+    ).length ?? 0;
   const libraryHasResults = (catalogQuery.data?.totalItems ?? 0) > 0;
   const libraryEmpty = !catalogQuery.isLoading && !libraryHasResults;
   // When the library is empty and the request section will (or might) render,
@@ -177,22 +275,25 @@ function CatalogResults({
     isQuerySource &&
     libraryEmpty &&
     (canRequest.isResolving ||
-      (canRequest.discoveryEnabled && (tmdbQuery.isLoading || tmdbMissingCount > 0)));
+      (canRequest.discoveryEnabled &&
+        (tmdbQuery.isLoading || tmdbMissingCount > 0)));
   const loadedHistoryItems = useMemo(() => {
     if (!isHistorySource) {
       return [] as BrowseItem[];
     }
     const seen = new Set<string>();
     const items: BrowseItem[] = [];
-    (catalogQuery.data?.pages ?? new Map<number, BrowseItem[]>()).forEach((page) => {
-      page.forEach((item) => {
-        if (seen.has(item.content_id)) {
-          return;
-        }
-        seen.add(item.content_id);
-        items.push(item);
-      });
-    });
+    (catalogQuery.data?.pages ?? new Map<number, BrowseItem[]>()).forEach(
+      (page) => {
+        page.forEach((item) => {
+          if (seen.has(item.content_id)) {
+            return;
+          }
+          seen.add(item.content_id);
+          items.push(item);
+        });
+      },
+    );
     return items;
   }, [catalogQuery.data?.pages, isHistorySource]);
   const selectedHistoryItems = useMemo(
@@ -200,11 +301,16 @@ function CatalogResults({
     [loadedHistoryItems, selectedIds],
   );
   const selectedHistoryTargets = useMemo(
-    () => selectedHistoryItems.map((item) => buildHistoryRemovalTarget(item.content_id, item.type)),
+    () =>
+      selectedHistoryItems.map((item) =>
+        buildHistoryRemovalTarget(item.content_id, item.type),
+      ),
     [selectedHistoryItems],
   );
   const title =
-    catalogQuery.data?.title ?? state.title ?? defaultCatalogTitle(state.source, state.q);
+    catalogQuery.data?.title ??
+    state.title ??
+    defaultCatalogTitle(state.source, state.q);
 
   useDocumentTitle(title);
 
@@ -231,7 +337,9 @@ function CatalogResults({
   // matches live in a separate section, so scope the label to avoid a "0 results"
   // reading while an outside-library result is visible.
   const resultNoun =
-    state.source === "query" ? "in library" : `result${totalItems === 1 ? "" : "s"}`;
+    state.source === "query"
+      ? "in library"
+      : `result${totalItems === 1 ? "" : "s"}`;
 
   return (
     <div className="page-shell space-y-6 py-4 sm:py-6">
@@ -245,7 +353,11 @@ function CatalogResults({
         <div className="items-baseline gap-3 sm:flex">
           <div className="hidden h-8 w-px bg-current opacity-15 sm:block" />
           {showExactResultCount ? (
-            <div className="text-right tabular-nums" role="status" aria-live="polite">
+            <div
+              className="text-right tabular-nums"
+              role="status"
+              aria-live="polite"
+            >
               <span className="hidden text-3xl font-extralight tracking-tight sm:inline">
                 {totalItems}
               </span>
@@ -268,14 +380,26 @@ function CatalogResults({
             autoFocus
             buildSearchHref={buildSearchHref}
           />
-          <SearchScopeChips activeScope={activeChipScope} onScopeChange={handleChipScopeChange} />
+          <SearchScopeChips
+            activeScope={activeChipScope}
+            onScopeChange={handleChipScopeChange}
+          />
         </div>
       ) : null}
 
       <CatalogFiltersPanel
-        state={effectiveState}
+        state={sortedState}
         onStateChange={(nextState) => {
-          const nextSearchParams = buildCatalogFilterSearchParams(nextState);
+          const sortChanged =
+            nextState.uses_source_order !== sortedState.uses_source_order ||
+            querySortToSelectValue(nextState.query_definition.sort) !==
+              querySortToSelectValue(sortedState.query_definition.sort);
+          const stateForNavigation = sortChanged
+            ? { ...nextState, sort_from_server: false }
+            : nextState;
+          rememberCollectionSort(stateForNavigation);
+          const nextSearchParams =
+            buildCatalogFilterSearchParams(stateForNavigation);
           if (nextSearchParams.toString() !== searchParams.toString()) {
             setSearchParams(nextSearchParams);
           }
@@ -290,30 +414,44 @@ function CatalogResults({
           <div className="space-y-1">
             <p className="text-sm font-semibold">Watch History</p>
             <p className="text-muted-foreground text-xs sm:text-sm">
-              Removing items clears watch history, watched status, and resume progress for this
-              profile.
+              Removing items clears watch history, watched status, and resume
+              progress for this profile.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {!selectionMode ? (
-              <Button variant="outline" size="sm" onClick={() => setSelectionMode(true)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setSelectionMode(true)}
+              >
                 <CheckSquare className="size-4" />
                 Select
               </Button>
             ) : (
               <>
-                <span className="text-muted-foreground text-sm">{selectedIds.size} selected</span>
+                <span className="text-muted-foreground text-sm">
+                  {selectedIds.size} selected
+                </span>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() =>
-                    setSelectedIds(new Set(loadedHistoryItems.map((item) => item.content_id)))
+                    setSelectedIds(
+                      new Set(
+                        loadedHistoryItems.map((item) => item.content_id),
+                      ),
+                    )
                   }
                 >
                   <CheckSquare />
                   Select Loaded
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSelectedIds(new Set())}
+                >
                   <RotateCcw />
                   Clear
                 </Button>
@@ -350,6 +488,9 @@ function CatalogResults({
           pageSize={limit}
           loading={catalogQuery.isLoading}
           onVisibleRangeChange={handleVisibleRangeChange}
+          narrowPosterActions={
+            state.source === "favorites" || state.source === "watchlist"
+          }
           selectionMode={isHistorySource && selectionMode}
           selectedIds={selectedIds}
           onToggleSelect={toggleHistorySelection}

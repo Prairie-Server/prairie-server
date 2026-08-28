@@ -68,7 +68,9 @@ describe("uploadFileInChunks", () => {
 
     apiMock.mockImplementation(async (path: string, options?: RequestInit) => {
       if (path === "/uploads") {
-        const body = JSON.parse(String(options?.body)) as { chunk_size: number };
+        const body = JSON.parse(String(options?.body)) as {
+          chunk_size: number;
+        };
         createChunkSizes.push(body.chunk_size);
         const uploadID = `session-${createChunkSizes.length}`;
         return sessionForFile(file, uploadID, body.chunk_size, 0);
@@ -85,7 +87,8 @@ describe("uploadFileInChunks", () => {
       if (path.startsWith("/uploads/session-2/chunks/")) {
         const parts = path.split("/");
         const chunkIndex = Number(parts[parts.length - 1]);
-        const chunkSize = createChunkSizes[createChunkSizes.length - 1] ?? 128 * 1024;
+        const chunkSize =
+          createChunkSizes[createChunkSizes.length - 1] ?? 128 * 1024;
         return sessionForFile(file, "session-2", chunkSize, chunkIndex + 1);
       }
 
@@ -107,11 +110,17 @@ describe("uploadFileInChunks", () => {
 
     expect(result).toEqual({ installed: true });
     expect(createChunkSizes).toEqual([256 * 1024, 128 * 1024]);
-    expect(apiMock).toHaveBeenCalledWith("/uploads/session-1", { method: "DELETE" });
+    expect(apiMock).toHaveBeenCalledWith("/uploads/session-1", {
+      method: "DELETE",
+    });
   });
 
   it("does not retry request-too-large errors once the minimum chunk size is reached", async () => {
-    const tooLarge = new ApiClientError(413, "unknown", "Request Entity Too Large");
+    const tooLarge = new ApiClientError(
+      413,
+      "unknown",
+      "Request Entity Too Large",
+    );
 
     apiMock.mockImplementation(async (path: string) => {
       if (path === "/uploads") {
@@ -167,7 +176,9 @@ describe("uploadFileInChunks", () => {
       }),
     ).rejects.toBe(uploadError);
 
-    expect(apiMock).toHaveBeenCalledWith("/uploads/session-1/cancel", { method: "DELETE" });
+    expect(apiMock).toHaveBeenCalledWith("/uploads/session-1/cancel", {
+      method: "DELETE",
+    });
   });
 
   it("uses the file size fallback and clamps reported progress", async () => {
@@ -202,7 +213,11 @@ describe("uploadFileInChunks", () => {
     const cancel = vi.fn(async () => undefined);
     apiMock.mockImplementation(async (path: string) => {
       if (path === "/uploads") {
-        return session({ upload_id: "session-cancel", chunk_size: 4, total_chunks: 3 });
+        return session({
+          upload_id: "session-cancel",
+          chunk_size: 4,
+          total_chunks: 3,
+        });
       }
       if (path === "/uploads/session-cancel/chunks/0") {
         throw new Error("chunk failed");
@@ -258,7 +273,9 @@ describe("uploadFileInChunks", () => {
   });
 });
 
-function session(overrides: Partial<ChunkedUploadSession>): ChunkedUploadSession {
+function session(
+  overrides: Partial<ChunkedUploadSession>,
+): ChunkedUploadSession {
   return {
     upload_id: "session-1",
     filename: "plugin.bin",

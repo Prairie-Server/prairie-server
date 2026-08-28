@@ -22,9 +22,9 @@ var (
 
 const (
 	// apiKeySelectColumns includes only non-secret fields persisted in DB.
-	apiKeySelectColumns = `id, user_id, label, api_key_prefix, rate_tier, created_at, last_used_at`
+	apiKeySelectColumns = `id, user_id, label, api_key_prefix, rate_tier, scopes, created_at, last_used_at`
 	// apiKeyAuthSelectColumns includes the minimum needed for auth middleware.
-	apiKeyAuthSelectColumns = `id, user_id, rate_tier`
+	apiKeyAuthSelectColumns = `id, user_id, rate_tier, scopes`
 
 	apiKeyPrefixDisplayLen = 10 // includes "sa_" prefix
 )
@@ -49,6 +49,7 @@ func scanAPIKey(row pgx.Row) (*models.APIKey, error) {
 		&k.Label,
 		&k.KeyPrefix,
 		&k.RateTier,
+		&k.Scopes,
 		&k.CreatedAt,
 		&k.LastUsedAt,
 	)
@@ -72,6 +73,7 @@ func scanAPIKeys(rows pgx.Rows) ([]*models.APIKey, error) {
 			&k.Label,
 			&k.KeyPrefix,
 			&k.RateTier,
+			&k.Scopes,
 			&k.CreatedAt,
 			&k.LastUsedAt,
 		)
@@ -111,11 +113,17 @@ func generateAPIKey() (string, error) {
 	return "sa_" + hex.EncodeToString(b), nil
 }
 
-// Create generates a new API key for the given user and returns the full record.
-func (r *APIKeyRepository) Create(ctx context.Context, userID int, label string) (*models.APIKey, error) {
+// Create generates a new API key for the given user and returns the full
+// record. scopes may be nil or empty for an unscoped key (full access as the
+// owning user); callers should validate scopes with NormalizeAPIKeyScopes
+// first.
+func (r *APIKeyRepository) Create(ctx context.Context, userID int, label string, scopes []string) (*models.APIKey, error) {
 	key, err := generateAPIKey()
 	if err != nil {
 		return nil, err
+	}
+	if scopes == nil {
+		scopes = []string{}
 	}
 
 	prefix := apiKeyPrefix(key)
@@ -134,11 +142,11 @@ func (r *APIKeyRepository) Create(ctx context.Context, userID int, label string)
 		}
 	}
 
-	query := `INSERT INTO api_keys (user_id, label, api_key, api_key_hash, api_key_prefix)
-		VALUES ($1, $2, $3, $4, $5)
+	query := `INSERT INTO api_keys (user_id, label, api_key, api_key_hash, api_key_prefix, scopes)
+		VALUES ($1, $2, $3, $4, $5, $6)
 		RETURNING ` + apiKeySelectColumns
 
-	row := r.pool.QueryRow(ctx, query, userID, label, apiKeyValue, hashValue, prefix)
+	row := r.pool.QueryRow(ctx, query, userID, label, apiKeyValue, hashValue, prefix, scopes)
 	out, scanErr := scanAPIKey(row)
 	if scanErr != nil {
 		return nil, scanErr
@@ -168,7 +176,7 @@ func (r *APIKeyRepository) GetByKey(ctx context.Context, key string) (*models.AP
 		if err == nil {
 			query := `SELECT ` + apiKeyAuthSelectColumns + ` FROM api_keys WHERE api_key_hash = $1`
 			var k models.APIKey
-			err := r.pool.QueryRow(ctx, query, hash).Scan(&k.ID, &k.UserID, &k.RateTier)
+			err := r.pool.QueryRow(ctx, query, hash).Scan(&k.ID, &k.UserID, &k.RateTier, &k.Scopes)
 			if err == nil {
 				return &k, nil
 			}
@@ -180,7 +188,7 @@ func (r *APIKeyRepository) GetByKey(ctx context.Context, key string) (*models.AP
 
 	query := `SELECT ` + apiKeyAuthSelectColumns + ` FROM api_keys WHERE api_key = $1`
 	var k models.APIKey
-	err := r.pool.QueryRow(ctx, query, key).Scan(&k.ID, &k.UserID, &k.RateTier)
+	err := r.pool.QueryRow(ctx, query, key).Scan(&k.ID, &k.UserID, &k.RateTier, &k.Scopes)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
 			return nil, ErrAPIKeyNotFound
@@ -222,7 +230,7 @@ func (r *APIKeyRepository) ListByUserAdmin(ctx context.Context, userID int) ([]*
 // ListAll returns all API keys across all users, ordered by creation time descending.
 // Each entry includes the owning user's username.
 func (r *APIKeyRepository) ListAll(ctx context.Context) ([]*models.APIKeyWithUser, error) {
-	query := `SELECT ak.id, ak.user_id, u.username, ak.label, ak.api_key_prefix, ak.rate_tier, ak.created_at, ak.last_used_at
+	query := `SELECT ak.id, ak.user_id, u.username, ak.label, ak.api_key_prefix, ak.rate_tier, ak.scopes, ak.created_at, ak.last_used_at
 		FROM api_keys ak
 		JOIN users u ON u.id = ak.user_id
 		ORDER BY ak.created_at DESC`
@@ -242,6 +250,7 @@ func (r *APIKeyRepository) ListAll(ctx context.Context) ([]*models.APIKeyWithUse
 			&k.Label,
 			&k.KeyPrefix,
 			&k.RateTier,
+			&k.Scopes,
 			&k.CreatedAt,
 			&k.LastUsedAt,
 		)

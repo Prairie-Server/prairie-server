@@ -40,7 +40,9 @@ export default function WatchRoute() {
     return createWatchRouteRequest({
       contentId: id,
       fileId: fileIdParam ? Number.parseInt(fileIdParam, 10) : undefined,
-      libraryId: libraryIdParam ? Number.parseInt(libraryIdParam, 10) : undefined,
+      libraryId: libraryIdParam
+        ? Number.parseInt(libraryIdParam, 10)
+        : undefined,
       roomId: searchParams.get("room_id") ?? undefined,
       roomToken: searchParams.get("room_token") ?? undefined,
       restart: searchParams.get("restart") === "1",

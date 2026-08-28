@@ -49,7 +49,11 @@ function jobDescription(job: AdminJob) {
   switch (job.job_type) {
     case "delete_library":
     case "image_cache_cleanup":
-      return libraryName ? `"${libraryName}"` : libraryId ? `Library #${libraryId}` : "Library";
+      return libraryName
+        ? `"${libraryName}"`
+        : libraryId
+          ? `Library #${libraryId}`
+          : "Library";
     case "item_refresh":
     case "library_refresh":
       return libraryName
@@ -59,7 +63,8 @@ function jobDescription(job: AdminJob) {
           : "All libraries";
     case "catalog_export": {
       const ids = payload.library_ids as number[] | undefined;
-      if (ids && ids.length > 0) return `${ids.length} librar${ids.length === 1 ? "y" : "ies"}`;
+      if (ids && ids.length > 0)
+        return `${ids.length} librar${ids.length === 1 ? "y" : "ies"}`;
       return "All libraries";
     }
     case "catalog_import":
@@ -91,12 +96,19 @@ function jobResult(job: AdminJob) {
       return `Total ${total}, ${withIDs} direct, ${withoutIDs} unmatched, direct ${refreshedOK} ok/${refreshedFailed} failed, pipeline ${pipelineOK} ok/${pipelineFailed} failed`;
     }
     case "delete_library": {
-      const files = typeof result.deleted_media_files === "number" ? result.deleted_media_files : 0;
+      const files =
+        typeof result.deleted_media_files === "number"
+          ? result.deleted_media_files
+          : 0;
       const items =
-        typeof result.deleted_orphaned_items === "number" ? result.deleted_orphaned_items : 0;
+        typeof result.deleted_orphaned_items === "number"
+          ? result.deleted_orphaned_items
+          : 0;
       const cleanupQueued = result.image_cleanup_queued === true;
       const cleanupDirs =
-        typeof result.image_cleanup_dirs === "number" ? result.image_cleanup_dirs : 0;
+        typeof result.image_cleanup_dirs === "number"
+          ? result.image_cleanup_dirs
+          : 0;
       const parts = [];
       if (files > 0) parts.push(`${files} files`);
       if (items > 0) parts.push(`${items} items`);
@@ -105,13 +117,19 @@ function jobResult(job: AdminJob) {
           `queued cache cleanup for ${cleanupDirs} director${cleanupDirs === 1 ? "y" : "ies"}`,
         );
       }
-      return parts.length > 0 ? `Deleted ${parts.join(", ")}` : "Deleted (empty)";
+      return parts.length > 0
+        ? `Deleted ${parts.join(", ")}`
+        : "Deleted (empty)";
     }
     case "image_cache_cleanup": {
       const deletedPrefixes =
-        typeof result.deleted_prefixes === "number" ? result.deleted_prefixes : 0;
+        typeof result.deleted_prefixes === "number"
+          ? result.deleted_prefixes
+          : 0;
       const deletedObjects =
-        typeof result.deleted_s3_objects === "number" ? result.deleted_s3_objects : 0;
+        typeof result.deleted_s3_objects === "number"
+          ? result.deleted_s3_objects
+          : 0;
       return `Deleted ${deletedObjects} cached object${deletedObjects === 1 ? "" : "s"} across ${deletedPrefixes} prefix${deletedPrefixes === 1 ? "" : "es"}`;
     }
     case "catalog_export":
@@ -136,7 +154,9 @@ export default function AdminJobHistory() {
       <div className="border-border/70 flex items-center justify-between border-b px-4 py-3">
         <div>
           <h3 className="text-sm font-semibold">Job History</h3>
-          <p className="text-muted-foreground text-xs">Recent background jobs across all types.</p>
+          <p className="text-muted-foreground text-xs">
+            Recent background jobs across all types.
+          </p>
         </div>
         <div className="flex items-center gap-2">
           {jobsQuery.isFetching ? (
@@ -159,7 +179,9 @@ export default function AdminJobHistory() {
       </div>
       <div className="divide-border/60 divide-y">
         {jobs.length === 0 ? (
-          <div className="text-muted-foreground px-4 py-5 text-sm">No jobs yet.</div>
+          <div className="text-muted-foreground px-4 py-5 text-sm">
+            No jobs yet.
+          </div>
         ) : (
           jobs.map((job) => {
             const desc = jobDescription(job);
@@ -169,7 +191,9 @@ export default function AdminJobHistory() {
             return (
               <div key={job.id} className="flex flex-col gap-1 px-4 py-3">
                 <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={statusVariant(job.status)}>{job.status}</Badge>
+                  <Badge variant={statusVariant(job.status)}>
+                    {job.status}
+                  </Badge>
                   <Badge variant="outline">{jobTypeLabel(job.job_type)}</Badge>
                   {desc && <span className="text-sm font-medium">{desc}</span>}
                   <span className="text-muted-foreground text-xs">
@@ -182,10 +206,14 @@ export default function AdminJobHistory() {
                     <span>Progress: {progress}</span>
                   )}
                   {result && <span>{result}</span>}
-                  {job.completed_at && <span>Finished: {formatDateTime(job.completed_at)}</span>}
+                  {job.completed_at && (
+                    <span>Finished: {formatDateTime(job.completed_at)}</span>
+                  )}
                 </div>
                 {job.error_message && (
-                  <div className="text-destructive text-xs">{job.error_message}</div>
+                  <div className="text-destructive text-xs">
+                    {job.error_message}
+                  </div>
                 )}
               </div>
             );

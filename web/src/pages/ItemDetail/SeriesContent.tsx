@@ -3,7 +3,10 @@ import { useNavigate } from "react-router";
 import type { ItemDetail } from "@/api/types";
 import { useToggleFavorite } from "@/hooks/queries/favorites";
 import { useToggleWatchlist } from "@/hooks/queries/watchlist";
-import { useRefreshItemMetadata, useWatchedStateMutation } from "@/hooks/queries/items";
+import {
+  useRefreshItemMetadata,
+  useWatchedStateMutation,
+} from "@/hooks/queries/items";
 import { useSimilarItems } from "@/hooks/queries/recommendations";
 import { useItemEpisodes, useSeasons } from "@/hooks/queries/episodes";
 import { useContinueWatching } from "@/hooks/queries/progress";
@@ -29,12 +32,22 @@ import ExtrasSection from "./components/ExtrasSection";
 import ScoreRow from "./components/ScoreRow";
 import HeroCrewLine from "./components/HeroCrewLine";
 import ActionBar from "./components/ActionBar";
-import { SeasonCarouselSkeleton, RecommendationGridSkeleton } from "./components/SectionSkeletons";
-import { getSeasonDisplayTitle, resolveSeriesPrimaryAction } from "./itemDetailLayout";
+import {
+  SeasonCarouselSkeleton,
+  RecommendationGridSkeleton,
+} from "./components/SectionSkeletons";
+import {
+  getSeasonDisplayTitle,
+  resolveSeriesPrimaryAction,
+} from "./itemDetailLayout";
 import { getWatchedActionLabel } from "./watchedState";
 import { canCurateMetadata as canCurateMetadataForUser } from "@/lib/permissions";
 
-export default function SeriesContent({ item }: { item: ItemDetail & { type: "series" } }) {
+export default function SeriesContent({
+  item,
+}: {
+  item: ItemDetail & { type: "series" };
+}) {
   const { translating: overviewTranslating, onTranslate: onTranslateOverview } =
     useOnViewTranslation(item);
   const navigate = useNavigate();
@@ -56,9 +69,16 @@ export default function SeriesContent({ item }: { item: ItemDetail & { type: "se
   const [editOpen, setEditOpen] = useState(false);
   const [matchOpen, setMatchOpen] = useState(false);
   const [splitOpen, setSplitOpen] = useState(false);
-  const { data: seasonsData, isLoading: seasonsLoading } = useSeasons(item.content_id);
-  const { data: similarData, isLoading: similarLoading } = useSimilarItems(item.content_id);
-  const seasons = useMemo(() => seasonsData?.seasons ?? [], [seasonsData?.seasons]);
+  const { data: seasonsData, isLoading: seasonsLoading } = useSeasons(
+    item.content_id,
+  );
+  const { data: similarData, isLoading: similarLoading } = useSimilarItems(
+    item.content_id,
+  );
+  const seasons = useMemo(
+    () => seasonsData?.seasons ?? [],
+    [seasonsData?.seasons],
+  );
   const { items: continueWatchingItems } = useContinueWatching();
 
   const handleRatingChange = (rating: number | null) => {
@@ -97,7 +117,9 @@ export default function SeriesContent({ item }: { item: ItemDetail & { type: "se
       }),
     [continueWatchingItems, item.content_id, seasons],
   );
-  const primaryActionEpisodesQuery = useItemEpisodes(primaryAction.targetSeasonId);
+  const primaryActionEpisodesQuery = useItemEpisodes(
+    primaryAction.targetSeasonId,
+  );
   const primaryActionEpisodes = primaryActionEpisodesQuery.data;
   const primaryActionLoading =
     !!primaryAction.targetSeasonId && primaryActionEpisodesQuery.isLoading;
@@ -123,7 +145,11 @@ export default function SeriesContent({ item }: { item: ItemDetail & { type: "se
     );
     const targetEpisode = episodes[targetIndex];
     return targetEpisode ? `/watch/${targetEpisode.content_id}` : undefined;
-  }, [primaryAction.directHref, primaryAction.targetEpisodeNumber, primaryActionEpisodes]);
+  }, [
+    primaryAction.directHref,
+    primaryAction.targetEpisodeNumber,
+    primaryActionEpisodes,
+  ]);
 
   return (
     <div>
@@ -161,7 +187,11 @@ export default function SeriesContent({ item }: { item: ItemDetail & { type: "se
         overviewTranslating={overviewTranslating}
         onTranslateOverview={onTranslateOverview}
         crewLine={
-          <HeroCrewLine crew={item.crew ?? []} genres={item.genres} jobLabel="Created by" />
+          <HeroCrewLine
+            crew={item.crew ?? []}
+            genres={item.genres}
+            jobLabel="Created by"
+          />
         }
         actions={
           <ActionBar
@@ -170,11 +200,15 @@ export default function SeriesContent({ item }: { item: ItemDetail & { type: "se
             playLabel={primaryAction.label}
             playLoading={primaryActionLoading}
             watchedLabel={getWatchedActionLabel(item)}
-            onToggleWatched={() => watchedMutation.mutate(!(item.user_data?.played ?? false))}
+            onToggleWatched={() =>
+              watchedMutation.mutate(!(item.user_data?.played ?? false))
+            }
             isUpdatingWatched={watchedMutation.isPending}
             onToggleFavorite={() => toggleFavoriteMutation.mutate(isFavorite)}
             isFavorite={isFavorite}
-            onToggleWatchlist={() => toggleWatchlistMutation.mutate(inWatchlist)}
+            onToggleWatchlist={() =>
+              toggleWatchlistMutation.mutate(inWatchlist)
+            }
             inWatchlist={inWatchlist}
             onRefresh={
               canCurateMetadata
@@ -182,16 +216,23 @@ export default function SeriesContent({ item }: { item: ItemDetail & { type: "se
                     refreshMetadataMutation.mutate({
                       item,
                       mode,
-                      onReplaced: (contentID) => navigate(`/item/${contentID}`, { replace: true }),
+                      onReplaced: (contentID) =>
+                        navigate(`/item/${contentID}`, { replace: true }),
                     })
                 : undefined
             }
             isRefreshing={refreshMetadataMutation.isPending}
             isAdmin={isAdmin}
             canCurateMetadata={canCurateMetadata}
-            onEditMetadata={canCurateMetadata ? () => setEditOpen(true) : undefined}
-            onMatchItem={canCurateMetadata ? () => setMatchOpen(true) : undefined}
-            onSplitItem={canCurateMetadata ? () => setSplitOpen(true) : undefined}
+            onEditMetadata={
+              canCurateMetadata ? () => setEditOpen(true) : undefined
+            }
+            onMatchItem={
+              canCurateMetadata ? () => setMatchOpen(true) : undefined
+            }
+            onSplitItem={
+              canCurateMetadata ? () => setSplitOpen(true) : undefined
+            }
             rating={item.user_rating ?? null}
             onRatingChange={handleRatingChange}
           />
@@ -218,9 +259,13 @@ export default function SeriesContent({ item }: { item: ItemDetail & { type: "se
         ) : (
           seasons.length > 0 && <SeasonCarousel seasons={seasons} />
         )}
-        {item.videos && item.videos.length > 0 && <TrailersSection videos={item.videos} />}
+        {item.videos && item.videos.length > 0 && (
+          <TrailersSection videos={item.videos} />
+        )}
 
-        {item.extras && item.extras.length > 0 && <ExtrasSection extras={item.extras} />}
+        {item.extras && item.extras.length > 0 && (
+          <ExtrasSection extras={item.extras} />
+        )}
 
         {item.cast && item.cast.length > 0 && (
           <div>
@@ -236,14 +281,20 @@ export default function SeriesContent({ item }: { item: ItemDetail & { type: "se
           similarData?.items &&
           similarData.items.length > 0 && (
             <div>
-              <h2 className="mb-5 text-xl font-semibold tracking-tight">More Like This</h2>
+              <h2 className="mb-5 text-xl font-semibold tracking-tight">
+                More Like This
+              </h2>
               <RecommendationGrid items={similarData.items} />
             </div>
           )
         )}
       </div>
       {canCurateMetadata && (
-        <EditMetadataDialog item={item} open={editOpen} onOpenChange={setEditOpen} />
+        <EditMetadataDialog
+          item={item}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
       )}
       {canCurateMetadata && (
         <MatchItemDialog

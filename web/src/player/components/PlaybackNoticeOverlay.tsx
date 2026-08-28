@@ -22,7 +22,9 @@ export function PlaybackNoticeOverlay({
   if (!visible) return null;
 
   const accentClass =
-    tone === "warning" ? "border-amber-400/50 bg-amber-500/15" : "border-sky-400/50 bg-sky-500/15";
+    tone === "warning"
+      ? "border-amber-400/50 bg-amber-500/15"
+      : "border-sky-400/50 bg-sky-500/15";
 
   return (
     <div className="pointer-events-none absolute inset-x-0 top-20 z-40 flex justify-center px-4">
@@ -30,7 +32,9 @@ export function PlaybackNoticeOverlay({
         className={`max-w-xl rounded-2xl border px-5 py-4 text-white shadow-2xl backdrop-blur ${accentClass}`}
       >
         {title ? (
-          <div className="text-sm font-semibold tracking-wide text-white">{title}</div>
+          <div className="text-sm font-semibold tracking-wide text-white">
+            {title}
+          </div>
         ) : null}
         <div className="mt-1 text-sm leading-6 text-white/85">{message}</div>
       </div>

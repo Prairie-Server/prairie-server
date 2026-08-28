@@ -59,14 +59,21 @@ export function formatDolbyVisionLabel(track: VersionVideoTrack): string {
   const raw = track.dolby_vision?.trim() ?? "";
   if (!raw && !track.dv_profile) return "";
 
-  const base = raw ? dolbyVisionLabel(raw) : `Dolby Vision Profile ${track.dv_profile}`;
+  const base = raw
+    ? dolbyVisionLabel(raw)
+    : `Dolby Vision Profile ${track.dv_profile}`;
 
-  const compat = track.dv_bl_compat_id != null ? DV_BL_COMPAT_LABELS[track.dv_bl_compat_id] : "";
-  const details = [compat ? `${compat} compatible` : "", track.dv_el_present ? "EL" : ""].filter(
-    Boolean,
-  );
+  const compat =
+    track.dv_bl_compat_id != null
+      ? DV_BL_COMPAT_LABELS[track.dv_bl_compat_id]
+      : "";
+  const details = [
+    compat ? `${compat} compatible` : "",
+    track.dv_el_present ? "EL" : "",
+  ].filter(Boolean);
   if (details.length === 0) {
-    const rangeDetail = DV_RANGE_TYPE_DETAILS[track.video_range_type?.trim() ?? ""];
+    const rangeDetail =
+      DV_RANGE_TYPE_DETAILS[track.video_range_type?.trim() ?? ""];
     if (rangeDetail) details.push(rangeDetail);
   }
 
@@ -97,7 +104,9 @@ export function formatVideoRangeLabel(track: VersionVideoTrack): string {
   const rangeType = track.video_range_type?.trim();
   if (rangeType) {
     const label = VIDEO_RANGE_TYPE_LABELS[rangeType] ?? rangeType;
-    return track.hdr10_plus && !label.includes("HDR10+") ? `${label} · HDR10+` : label;
+    return track.hdr10_plus && !label.includes("HDR10+")
+      ? `${label} · HDR10+`
+      : label;
   }
 
   return track.hdr10_plus ? "HDR10+" : (track.video_range?.trim() ?? "");
@@ -106,10 +115,18 @@ export function formatVideoRangeLabel(track: VersionVideoTrack): string {
 export function formatVideoLevel(codec?: string, level?: number): string {
   if (!level || level <= 0) return "";
   const normalized = codec?.toLowerCase() ?? "";
-  if (normalized.includes("hevc") || normalized.includes("h265") || normalized.includes("265")) {
+  if (
+    normalized.includes("hevc") ||
+    normalized.includes("h265") ||
+    normalized.includes("265")
+  ) {
     return trimLevel(level / 30);
   }
-  if (normalized.includes("avc") || normalized.includes("h264") || normalized.includes("264")) {
+  if (
+    normalized.includes("avc") ||
+    normalized.includes("h264") ||
+    normalized.includes("264")
+  ) {
     return trimLevel(level / 10);
   }
   if (normalized.includes("av1")) {
@@ -146,13 +163,20 @@ function sectionTitle(kind: string, index: number, total: number): string {
   return total > 1 ? `${kind} ${index + 1}` : kind;
 }
 
-function trackTitle(track: { title?: string; embedded_title?: string }): string {
+function trackTitle(track: {
+  title?: string;
+  embedded_title?: string;
+}): string {
   return track.title ?? track.embedded_title ?? "";
 }
 
 export function buildGeneralSection(version: FileVersion): MediaSpecSection {
   const rows: MediaSpecRow[] = [];
-  pushRow(rows, "Container", version.container ? version.container.toUpperCase() : "");
+  pushRow(
+    rows,
+    "Container",
+    version.container ? version.container.toUpperCase() : "",
+  );
   pushRow(rows, "File Size", formatFileSize(version.file_size));
   pushRow(rows, "Duration", formatDurationSeconds(version.duration));
   pushRow(rows, "Overall Bitrate", formatBitrate(version.bitrate));
@@ -175,16 +199,28 @@ export function buildVideoSections(version: FileVersion): MediaSpecSection[] {
       track.width && track.height ? `${track.width}x${track.height}` : "",
     );
     pushRow(rows, "Aspect Ratio", track.aspect_ratio);
-    pushRow(rows, "Frame Rate", track.frame_rate ? `${track.frame_rate} fps` : "");
+    pushRow(
+      rows,
+      "Frame Rate",
+      track.frame_rate ? `${track.frame_rate} fps` : "",
+    );
     pushRow(rows, "Bitrate", formatBitrate(track.bitrate));
     pushRow(rows, "Bit Depth", track.bit_depth ? `${track.bit_depth}-bit` : "");
     pushRow(rows, "Pixel Format", track.pixel_format);
-    pushRow(rows, "Chroma Subsampling", formatChromaSubsampling(track.pixel_format));
+    pushRow(
+      rows,
+      "Chroma Subsampling",
+      formatChromaSubsampling(track.pixel_format),
+    );
     pushRow(rows, "Dynamic Range", formatVideoRangeLabel(track));
     pushRow(rows, "Color Primaries", track.color_primaries);
     pushRow(rows, "Color Transfer", track.color_transfer);
     pushRow(rows, "Color Space", track.color_space);
-    pushRow(rows, "Reference Frames", track.reference_frames ? String(track.reference_frames) : "");
+    pushRow(
+      rows,
+      "Reference Frames",
+      track.reference_frames ? String(track.reference_frames) : "",
+    );
     pushRow(rows, "Scan", track.interlaced ? "Interlaced" : "Progressive");
     return { title: sectionTitle("Video", index, tracks.length), rows };
   });
@@ -208,7 +244,9 @@ export function buildAudioSections(version: FileVersion): MediaSpecSection[] {
   });
 }
 
-export function buildSubtitleSections(version: FileVersion): MediaSpecSection[] {
+export function buildSubtitleSections(
+  version: FileVersion,
+): MediaSpecSection[] {
   const tracks = version.subtitle_tracks ?? [];
   return tracks.map((track, index) => {
     const rows: MediaSpecRow[] = [];
@@ -225,7 +263,9 @@ export function buildSubtitleSections(version: FileVersion): MediaSpecSection[] 
   });
 }
 
-export function buildMediaSpecSections(version: FileVersion): MediaSpecSection[] {
+export function buildMediaSpecSections(
+  version: FileVersion,
+): MediaSpecSection[] {
   return [
     buildGeneralSection(version),
     ...buildVideoSections(version),

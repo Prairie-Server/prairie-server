@@ -84,17 +84,20 @@ import type {
   UpdateHistoryImportSourceRequest,
 } from "@/api/types";
 import { cn } from "@/lib/utils";
-import {
-  formatDate as formatPreferredDate,
-  formatDateTime as formatPreferredDateTime,
-} from "@/lib/datetime";
+import { formatRelativeTime } from "@/lib/date";
+import { formatDateTime as formatPreferredDateTime } from "@/lib/datetime";
 
 // ---------------------------------------------------------------------------
 // Shared helpers
 // ---------------------------------------------------------------------------
 
 const STATUS_CONFIG = {
-  queued: { icon: Clock, color: "text-info", bg: "bg-info/10 border-info/20", label: "Queued" },
+  queued: {
+    icon: Clock,
+    color: "text-info",
+    bg: "bg-info/10 border-info/20",
+    label: "Queued",
+  },
   running: {
     icon: Loader2,
     color: "text-warning",
@@ -133,21 +136,19 @@ function StatusBadge({ status }: { status: HistoryImportRun["status"] }) {
         c.color,
       )}
     >
-      <Icon className={cn("h-3 w-3", "spin" in c && c.spin && "animate-spin")} />
+      <Icon
+        className={cn("h-3 w-3", "spin" in c && c.spin && "animate-spin")}
+      />
       {c.label}
     </span>
   );
 }
 
 function timeAgo(dateStr: string | undefined) {
-  if (!dateStr) return "Never";
-  const d = new Date(dateStr);
-  const now = Date.now();
-  const diff = now - d.getTime();
-  if (diff < 60_000) return "just now";
-  if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m ago`;
-  if (diff < 86_400_000) return `${Math.floor(diff / 3_600_000)}h ago`;
-  return formatPreferredDate(d);
+  return (
+    formatRelativeTime(dateStr, { rounding: "floor", absoluteAfterDays: 1 }) ??
+    "Never"
+  );
 }
 
 function formatDate(dateStr: string | undefined) {
@@ -159,7 +160,8 @@ function formatDate(dateStr: string | undefined) {
 // Source dialogs (create/edit + set token) — infrequent operations, keep as dialogs
 // ---------------------------------------------------------------------------
 
-type SourceMode = { kind: "create" } | { kind: "edit"; source: HistoryImportSource };
+type SourceMode =
+  { kind: "create" } | { kind: "edit"; source: HistoryImportSource };
 
 const SOURCE_HINTS = {
   jellyfin: { name: "My Jellyfin Server", url: "https://jellyfin.example.com" },
@@ -259,7 +261,9 @@ function SourceDialog({
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
-          <DialogTitle>{isEdit ? "Edit server" : "Add source server"}</DialogTitle>
+          <DialogTitle>
+            {isEdit ? "Edit server" : "Add source server"}
+          </DialogTitle>
         </DialogHeader>
         <div className="space-y-4 py-2">
           <div className="grid grid-cols-2 gap-4">
@@ -296,7 +300,11 @@ function SourceDialog({
             ) : (
               <div className="space-y-1.5">
                 <Label>Type</Label>
-                <Input value={existing?.source_type ?? ""} disabled className="capitalize" />
+                <Input
+                  value={existing?.source_type ?? ""}
+                  disabled
+                  className="capitalize"
+                />
               </div>
             )}
           </div>
@@ -345,7 +353,9 @@ function SourceDialog({
               {isPlex && tokenMode === "login" ? (
                 <div className="space-y-3">
                   <div className="space-y-1.5">
-                    <Label htmlFor="plex-user-create">Plex email or username</Label>
+                    <Label htmlFor="plex-user-create">
+                      Plex email or username
+                    </Label>
                     <Input
                       id="plex-user-create"
                       placeholder="you@example.com"
@@ -367,13 +377,19 @@ function SourceDialog({
                 <div className="space-y-1.5">
                   <Label htmlFor="src-token">
                     {isPlex ? "Plex auth token" : "Admin API key"}{" "}
-                    <span className="text-muted-foreground font-normal">(optional)</span>
+                    <span className="text-muted-foreground font-normal">
+                      (optional)
+                    </span>
                   </Label>
                   <div className="relative">
                     <Input
                       id="src-token"
                       type={showToken ? "text" : "password"}
-                      placeholder={isPlex ? "Paste Plex token here…" : "Paste API key here…"}
+                      placeholder={
+                        isPlex
+                          ? "Paste Plex token here…"
+                          : "Paste API key here…"
+                      }
                       value={adminToken}
                       onChange={(e) => setAdminToken(e.target.value)}
                       className="pr-10"
@@ -383,7 +399,11 @@ function SourceDialog({
                       onClick={() => setShowToken((v) => !v)}
                       className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
                     >
-                      {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      {showToken ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -392,7 +412,11 @@ function SourceDialog({
           )}
 
           <div className="flex items-center gap-3">
-            <Switch id="src-enabled" checked={enabled} onCheckedChange={setEnabled} />
+            <Switch
+              id="src-enabled"
+              checked={enabled}
+              onCheckedChange={setEnabled}
+            />
             <Label htmlFor="src-enabled">Enabled</Label>
           </div>
         </div>
@@ -401,8 +425,17 @@ function SourceDialog({
             <X />
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={!name.trim() || !baseURL.trim() || isPending}>
-            {isPending ? <Loader2 className="animate-spin" /> : isEdit ? <Save /> : <Plus />}
+          <Button
+            onClick={handleSave}
+            disabled={!name.trim() || !baseURL.trim() || isPending}
+          >
+            {isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : isEdit ? (
+              <Save />
+            ) : (
+              <Plus />
+            )}
             {isPending ? "Saving…" : isEdit ? "Save" : "Add server"}
           </Button>
         </DialogFooter>
@@ -421,7 +454,9 @@ function TokenDialog({
   onClose: () => void;
 }) {
   const isPlex = source.source_type === "plex";
-  const [mode, setMode] = useState<"token" | "login">(isPlex ? "login" : "token");
+  const [mode, setMode] = useState<"token" | "login">(
+    isPlex ? "login" : "token",
+  );
   const [token, setToken] = useState("");
   const [showToken, setShowToken] = useState(false);
   const [plexUser, setPlexUser] = useState("");
@@ -432,7 +467,10 @@ function TokenDialog({
 
   function handleSaveToken() {
     if (!token.trim()) return;
-    setToken_.mutate({ id: source.id, body: { token: token.trim() } }, { onSuccess: onClose });
+    setToken_.mutate(
+      { id: source.id, body: { token: token.trim() } },
+      { onSuccess: onClose },
+    );
   }
 
   function handlePlexLogin() {
@@ -494,7 +532,8 @@ function TokenDialog({
           {mode === "login" && isPlex ? (
             <div className="space-y-3">
               <p className="text-muted-foreground text-sm">
-                Sign in with your Plex account to generate an admin token automatically.
+                Sign in with your Plex account to generate an admin token
+                automatically.
               </p>
               <div className="space-y-1.5">
                 <Label htmlFor="plex-user">Email or username</Label>
@@ -538,7 +577,11 @@ function TokenDialog({
                     onClick={() => setShowToken((v) => !v)}
                     className="text-muted-foreground hover:text-foreground absolute top-1/2 right-3 -translate-y-1/2"
                   >
-                    {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    {showToken ? (
+                      <EyeOff className="h-4 w-4" />
+                    ) : (
+                      <Eye className="h-4 w-4" />
+                    )}
                   </button>
                 </div>
               </div>
@@ -555,7 +598,9 @@ function TokenDialog({
           {source.has_admin_token && (
             <Button
               variant="destructive"
-              onClick={() => clearToken.mutate(source.id, { onSuccess: onClose })}
+              onClick={() =>
+                clearToken.mutate(source.id, { onSuccess: onClose })
+              }
               disabled={clearToken.isPending}
             >
               <Trash2 />
@@ -567,12 +612,18 @@ function TokenDialog({
             Cancel
           </Button>
           {mode === "login" && isPlex ? (
-            <Button onClick={handlePlexLogin} disabled={!plexUser.trim() || !plexPass || isSaving}>
+            <Button
+              onClick={handlePlexLogin}
+              disabled={!plexUser.trim() || !plexPass || isSaving}
+            >
               {isSaving ? <Loader2 className="animate-spin" /> : <LogIn />}
               {isSaving ? "Signing in…" : "Sign in & save"}
             </Button>
           ) : (
-            <Button onClick={handleSaveToken} disabled={!token.trim() || isSaving}>
+            <Button
+              onClick={handleSaveToken}
+              disabled={!token.trim() || isSaving}
+            >
               {isSaving ? <Loader2 className="animate-spin" /> : <Save />}
               {isSaving ? "Saving…" : "Save"}
             </Button>
@@ -598,14 +649,22 @@ function DiscoverDialog({
   open: boolean;
   onClose: () => void;
 }) {
-  const { data: externalUsers, isFetching, refetch, error } = useDiscoverExternalUsers(source.id);
+  const {
+    data: externalUsers,
+    isFetching,
+    refetch,
+    error,
+  } = useDiscoverExternalUsers(source.id);
   const { data: users = [] } = useAdminUsers();
   const createMapping = useCreateAdminMapping();
-  const [mappingTarget, setMappingTarget] = useState<HistoryImportExternalUser | null>(null);
+  const [mappingTarget, setMappingTarget] =
+    useState<HistoryImportExternalUser | null>(null);
   const [search, setSearch] = useState("");
   const [userId, setUserId] = useState("");
   const [profileId, setProfileId] = useState("");
-  const { data: profiles = [] } = useAdminUserProfiles(userId ? Number(userId) : undefined);
+  const { data: profiles = [] } = useAdminUserProfiles(
+    userId ? Number(userId) : undefined,
+  );
 
   const mappedIds = useMemo(
     () => new Set(existingMappings.map((m) => m.external_user_id)),
@@ -674,7 +733,9 @@ function DiscoverDialog({
           {isFetching && (
             <div className="flex items-center justify-center gap-2 py-8 text-sm">
               <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
-              <span className="text-muted-foreground">Connecting to server…</span>
+              <span className="text-muted-foreground">
+                Connecting to server…
+              </span>
             </div>
           )}
 
@@ -734,15 +795,22 @@ function DiscoverDialog({
                           }}
                           className={cn(
                             "flex w-full items-center justify-between px-4 py-2.5 text-left transition-colors",
-                            mappingTarget?.id === u.id ? "bg-accent" : "hover:bg-accent/50",
+                            mappingTarget?.id === u.id
+                              ? "bg-accent"
+                              : "hover:bg-accent/50",
                           )}
                         >
                           <div className="min-w-0">
                             <p className="text-sm font-medium">{u.name}</p>
-                            <p className="text-muted-foreground truncate text-xs">{u.id}</p>
+                            <p className="text-muted-foreground truncate text-xs">
+                              {u.id}
+                            </p>
                           </div>
                           {mappingTarget?.id === u.id ? (
-                            <Badge variant="outline" className="shrink-0 text-xs">
+                            <Badge
+                              variant="outline"
+                              className="shrink-0 text-xs"
+                            >
                               Selected
                             </Badge>
                           ) : (
@@ -759,8 +827,9 @@ function DiscoverDialog({
               {mappingTarget && (
                 <div className="surface-panel-subtle space-y-4 rounded-xl border-0 p-4">
                   <p className="text-sm font-medium">
-                    Map <span className="text-primary">{mappingTarget.name}</span> to a Prairie user
-                    and profile:
+                    Map{" "}
+                    <span className="text-primary">{mappingTarget.name}</span>{" "}
+                    to a Prairie user and profile:
                   </p>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1.5">
@@ -786,7 +855,11 @@ function DiscoverDialog({
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-xs">Profile</Label>
-                      <Select value={profileId} onValueChange={setProfileId} disabled={!userId}>
+                      <Select
+                        value={profileId}
+                        onValueChange={setProfileId}
+                        disabled={!userId}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select profile…" />
                         </SelectTrigger>
@@ -804,7 +877,9 @@ function DiscoverDialog({
                     <Button
                       size="sm"
                       onClick={handleSave}
-                      disabled={!userId || !profileId || createMapping.isPending}
+                      disabled={
+                        !userId || !profileId || createMapping.isPending
+                      }
                     >
                       {createMapping.isPending ? (
                         <>
@@ -815,7 +890,11 @@ function DiscoverDialog({
                         "Save mapping"
                       )}
                     </Button>
-                    <Button size="sm" variant="ghost" onClick={() => setMappingTarget(null)}>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setMappingTarget(null)}
+                    >
                       <X />
                       Cancel
                     </Button>
@@ -867,7 +946,8 @@ function SourceBar({
         <div className="space-y-1">
           <p className="text-sm font-medium">No source servers</p>
           <p className="text-muted-foreground max-w-sm text-sm">
-            Add the Jellyfin, Emby, or Plex server you want to import watch history from.
+            Add the Jellyfin, Emby, or Plex server you want to import watch
+            history from.
           </p>
         </div>
         <Button size="sm" onClick={onAdd}>
@@ -949,9 +1029,14 @@ function SourceBar({
         <div className="bg-warning/5 flex items-center gap-3 border-b px-4 py-3">
           <AlertTriangle className="text-warning h-4 w-4 shrink-0" />
           <p className="text-muted-foreground flex-1 text-sm">
-            No admin API key configured. Add one to discover users and run imports.
+            No admin API key configured. Add one to discover users and run
+            imports.
           </p>
-          <Button size="sm" variant="outline" onClick={() => onSetToken(selected)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => onSetToken(selected)}
+          >
             <KeyRound className="mr-1.5 h-3.5 w-3.5" />
             Set API key
           </Button>
@@ -961,7 +1046,9 @@ function SourceBar({
       {selected && selected.has_admin_token && (
         <div className="flex items-center gap-2 px-4 py-2">
           <span className="bg-success/20 inline-flex h-2 w-2 rounded-full" />
-          <span className="text-muted-foreground text-xs">API key configured</span>
+          <span className="text-muted-foreground text-xs">
+            API key configured
+          </span>
         </div>
       )}
     </div>
@@ -983,7 +1070,8 @@ function MappingsSection({
   const deleteMapping = useDeleteAdminMapping();
   const createRun = useCreateAdminRunForMapping();
   const bulkRun = useAdminBulkRun();
-  const [deleteTarget, setDeleteTarget] = useState<HistoryImportUserMapping | null>(null);
+  const [deleteTarget, setDeleteTarget] =
+    useState<HistoryImportUserMapping | null>(null);
 
   if (!source.has_admin_token) return null;
 
@@ -1017,9 +1105,14 @@ function MappingsSection({
       {mappings.length === 0 ? (
         <div className="surface-panel-subtle flex flex-col items-center gap-3 rounded-xl border-0 py-10 text-center">
           <p className="text-muted-foreground text-sm">
-            No user mappings yet. Discover users on the server to create mappings.
+            No user mappings yet. Discover users on the server to create
+            mappings.
           </p>
-          <Button size="sm" variant="outline" onClick={() => setDiscoverOpen(true)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setDiscoverOpen(true)}
+          >
             <Search className="mr-1.5 h-3.5 w-3.5" />
             Discover users
           </Button>
@@ -1050,9 +1143,13 @@ function MappingsSection({
                     <ArrowRight className="h-3.5 w-3.5" />
                   </TableCell>
                   <TableCell>
-                    <p className="text-sm">{m.silo_username || `User ${m.silo_user_id}`}</p>
+                    <p className="text-sm">
+                      {m.silo_username || `User ${m.silo_user_id}`}
+                    </p>
                     {m.silo_profile_name && (
-                      <p className="text-muted-foreground text-xs">{m.silo_profile_name}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {m.silo_profile_name}
+                      </p>
                     )}
                   </TableCell>
                   <TableCell className="text-muted-foreground text-sm">
@@ -1134,7 +1231,8 @@ function RunsSection({ sourceId }: { sourceId: number }) {
 
   const runs = useMemo(() => {
     if (filter === "all") return allRuns;
-    if (filter === "admin") return allRuns.filter((r) => r.connection_mode === "admin_token");
+    if (filter === "admin")
+      return allRuns.filter((r) => r.connection_mode === "admin_token");
     return allRuns.filter((r) => r.connection_mode !== "admin_token");
   }, [allRuns, filter]);
 
@@ -1170,7 +1268,8 @@ function RunsSection({ sourceId }: { sourceId: number }) {
         ) : (
           <div className="divide-y">
             {runs.map((run) => {
-              const isActive = run.status === "queued" || run.status === "running";
+              const isActive =
+                run.status === "queued" || run.status === "running";
               const expanded = expandedId === run.id;
               return (
                 <div key={run.id}>
@@ -1188,7 +1287,9 @@ function RunsSection({ sourceId }: { sourceId: number }) {
                     <StatusBadge status={run.status} />
                     <div className="flex-1 space-y-0.5">
                       <div className="flex items-center gap-2">
-                        <p className="text-sm font-medium capitalize">{run.source_type} import</p>
+                        <p className="text-sm font-medium capitalize">
+                          {run.source_type} import
+                        </p>
                         {run.connection_mode === "admin_token" ? (
                           <Badge variant="outline" className="text-[10px]">
                             Admin
@@ -1208,10 +1309,14 @@ function RunsSection({ sourceId }: { sourceId: number }) {
                     <div className="text-muted-foreground hidden items-center gap-4 text-xs sm:flex">
                       {run.fetched > 0 && <span>{run.fetched} fetched</span>}
                       {run.matched > 0 && (
-                        <span className="text-success">{run.matched} matched</span>
+                        <span className="text-success">
+                          {run.matched} matched
+                        </span>
                       )}
                       {run.unmatched > 0 && (
-                        <span className="text-warning">{run.unmatched} unmatched</span>
+                        <span className="text-warning">
+                          {run.unmatched} unmatched
+                        </span>
                       )}
                     </div>
                     {isActive && (
@@ -1279,7 +1384,9 @@ function RunsSection({ sourceId }: { sourceId: number }) {
                               <li key={i}>{w}</li>
                             ))}
                             {run.warnings.length > 5 && (
-                              <li className="italic">and {run.warnings.length - 5} more…</li>
+                              <li className="italic">
+                                and {run.warnings.length - 5} more…
+                              </li>
                             )}
                           </ul>
                         </div>
@@ -1302,7 +1409,9 @@ function RunsSection({ sourceId }: { sourceId: number }) {
                       {!run.error_message &&
                         run.warnings.length === 0 &&
                         run.unmatched_samples.length === 0 && (
-                          <p className="text-muted-foreground text-xs">No issues.</p>
+                          <p className="text-muted-foreground text-xs">
+                            No issues.
+                          </p>
                         )}
                     </div>
                   )}
@@ -1325,12 +1434,18 @@ export default function AdminHistoryImport() {
   const { data: sources = [] } = useAdminHistoryImportSources();
   const [searchParams, setSearchParams] = useSearchParams();
   const [sourceMode, setSourceMode] = useState<SourceMode | null>(null);
-  const [tokenSource, setTokenSource] = useState<HistoryImportSource | null>(null);
-  const [deleteSource, setDeleteSource] = useState<HistoryImportSource | null>(null);
+  const [tokenSource, setTokenSource] = useState<HistoryImportSource | null>(
+    null,
+  );
+  const [deleteSource, setDeleteSource] = useState<HistoryImportSource | null>(
+    null,
+  );
   const deleteMutation = useDeleteAdminHistoryImportSource();
 
   // Persist selected source in URL so it survives page refresh.
-  const selectedId = searchParams.get("source") ? Number(searchParams.get("source")) : null;
+  const selectedId = searchParams.get("source")
+    ? Number(searchParams.get("source"))
+    : null;
   const setSelectedId = useCallback(
     (id: number) => setSearchParams({ source: String(id) }, { replace: true }),
     [setSearchParams],
@@ -1338,12 +1453,18 @@ export default function AdminHistoryImport() {
 
   // Auto-select first source if none selected or selected source no longer exists.
   const effectiveId =
-    selectedId && sources.some((s) => s.id === selectedId) ? selectedId : (sources[0]?.id ?? null);
+    selectedId && sources.some((s) => s.id === selectedId)
+      ? selectedId
+      : (sources[0]?.id ?? null);
   const selected = sources.find((s) => s.id === effectiveId);
 
   // Query runs at page level so we can pass hasActiveRuns to mappings for auto-refresh.
-  const { data: runs = [] } = useAdminHistoryImportRuns(effectiveId ?? undefined);
-  const hasActiveRuns = runs.some((r) => r.status === "queued" || r.status === "running");
+  const { data: runs = [] } = useAdminHistoryImportRuns(
+    effectiveId ?? undefined,
+  );
+  const hasActiveRuns = runs.some(
+    (r) => r.status === "queued" || r.status === "running",
+  );
 
   const { data: mappings = [] } = useAdminHistoryImportMappings(
     selected?.has_admin_token ? (effectiveId ?? undefined) : undefined,
@@ -1354,9 +1475,12 @@ export default function AdminHistoryImport() {
     <div className="page-shell space-y-8 py-4 sm:py-6">
       <div className="page-header">
         <div className="space-y-3">
-          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">History Import</h1>
+          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
+            History Import
+          </h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Import watch history from external servers into Prairie user profiles.
+            Import watch history from external servers into Prairie user
+            profiles.
           </p>
         </div>
       </div>
@@ -1379,9 +1503,19 @@ export default function AdminHistoryImport() {
       {selected && effectiveId && <RunsSection sourceId={effectiveId} />}
 
       {/* Dialogs */}
-      {sourceMode && <SourceDialog mode={sourceMode} open onClose={() => setSourceMode(null)} />}
+      {sourceMode && (
+        <SourceDialog
+          mode={sourceMode}
+          open
+          onClose={() => setSourceMode(null)}
+        />
+      )}
       {tokenSource && (
-        <TokenDialog source={tokenSource} open onClose={() => setTokenSource(null)} />
+        <TokenDialog
+          source={tokenSource}
+          open
+          onClose={() => setTokenSource(null)}
+        />
       )}
       <ConfirmDialog
         open={deleteSource !== null}

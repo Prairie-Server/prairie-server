@@ -21,13 +21,20 @@ function dismissalPath({ itemId, surface }: DismissHomeItemVariables) {
   return `/home/dismissals/${surface}/${encodeURIComponent(itemId)}`;
 }
 
-function dismissalBody({ progressUpdatedAt, seriesId, surface }: DismissHomeItemVariables) {
+function dismissalBody({
+  progressUpdatedAt,
+  seriesId,
+  surface,
+}: DismissHomeItemVariables) {
   return surface === "continue_watching"
     ? { progress_updated_at: progressUpdatedAt }
     : { series_id: seriesId };
 }
 
-function dismissalSuccessLabel({ mediaType, surface }: DismissHomeItemVariables) {
+function dismissalSuccessLabel({
+  mediaType,
+  surface,
+}: DismissHomeItemVariables) {
   if (surface === "next_up") return "Removed from Next Up";
   if (mediaType === "audiobook") return "Removed from Continue Listening";
   if (mediaType === "ebook") return "Removed from Continue Reading";
@@ -43,10 +50,14 @@ export function useDismissHomeItem() {
         method: "DELETE",
       }),
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to undo removal");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to undo removal",
+      );
     },
     onSuccess: async (_data, variables) => {
-      await invalidateMediaSurfaceQueries(queryClient, { itemId: variables.itemId });
+      await invalidateMediaSurfaceQueries(queryClient, {
+        itemId: variables.itemId,
+      });
       bumpHomeRefreshSignal(queryClient);
     },
   });
@@ -58,11 +69,19 @@ export function useDismissHomeItem() {
         body: JSON.stringify(dismissalBody(variables)),
       }),
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to remove item");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to remove item",
+      );
     },
     onSuccess: async (_data, variables) => {
-      removeItemFromHomeSectionCaches(queryClient, variables.itemId, variables.surface);
-      await invalidateMediaSurfaceQueries(queryClient, { itemId: variables.itemId });
+      removeItemFromHomeSectionCaches(
+        queryClient,
+        variables.itemId,
+        variables.surface,
+      );
+      await invalidateMediaSurfaceQueries(queryClient, {
+        itemId: variables.itemId,
+      });
       bumpHomeRefreshSignal(queryClient);
       toast.success(dismissalSuccessLabel(variables), {
         action: {

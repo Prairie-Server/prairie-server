@@ -53,15 +53,23 @@ function SimulateVerdict({ decision }: { decision: unknown }) {
     ) : (
       <span className="bg-destructive/10 text-destructive inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium">
         <span aria-hidden className="bg-destructive size-1.5 rounded-full" />
-        Denied{typeof record.reason === "string" && record.reason ? ` — ${record.reason}` : ""}
+        Denied
+        {typeof record.reason === "string" && record.reason
+          ? ` — ${record.reason}`
+          : ""}
       </span>
     );
   }
 
   if (typeof record.unrestricted === "boolean") {
-    const rating = typeof record.max_content_rating === "string" ? record.max_content_rating : "";
+    const rating =
+      typeof record.max_content_rating === "string"
+        ? record.max_content_rating
+        : "";
     const quality =
-      typeof record.max_playback_quality === "string" ? record.max_playback_quality : "";
+      typeof record.max_playback_quality === "string"
+        ? record.max_playback_quality
+        : "";
     const parts = [
       record.unrestricted ? "All libraries" : "Restricted libraries",
       rating ? `rating ≤ ${rating}` : "any rating",
@@ -77,10 +85,16 @@ function SimulateVerdict({ decision }: { decision: unknown }) {
   return null;
 }
 
-export function PolicySimulatePanel({ domains, domain, source }: PolicySimulatePanelProps) {
+export function PolicySimulatePanel({
+  domains,
+  domain,
+  source,
+}: PolicySimulatePanelProps) {
   const fallbackDomain = domain || domains[0] || "scope";
   const [selectedDomain, setSelectedDomain] = useState(fallbackDomain);
-  const [input, setInput] = useState(() => exampleInputForDomain(fallbackDomain));
+  const [input, setInput] = useState(() =>
+    exampleInputForDomain(fallbackDomain),
+  );
   const [error, setError] = useState("");
   const [issues, setIssues] = useState(compileIssuesFromError(null));
   const simulate = useSimulatePolicy();
@@ -130,10 +144,16 @@ export function PolicySimulatePanel({ domains, domain, source }: PolicySimulateP
         <div>
           <h3 className="text-sm font-semibold">Test before going live</h3>
           <p className="text-muted-foreground mt-1 text-xs">
-            Runs the current draft against a sample request. Nothing is saved or enforced.
+            Runs the current draft against a sample request. Nothing is saved or
+            enforced.
           </p>
         </div>
-        <Button type="button" size="sm" onClick={runSimulation} disabled={simulate.isPending}>
+        <Button
+          type="button"
+          size="sm"
+          onClick={runSimulation}
+          disabled={simulate.isPending}
+        >
           <Play className="size-4" />
           {simulate.isPending ? "Running..." : "Run"}
         </Button>

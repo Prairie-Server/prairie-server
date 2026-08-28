@@ -28,7 +28,10 @@ import {
 import { useAuth } from "@/hooks/useAuth";
 import { useAmbientColor } from "@/hooks/useAmbientColor";
 import { fetchCatalogItemVersions } from "@/hooks/queries/catalogRead";
-import { useRefreshItemMetadata, useWatchedStateMutation } from "@/hooks/queries/items";
+import {
+  useRefreshItemMetadata,
+  useWatchedStateMutation,
+} from "@/hooks/queries/items";
 import { buildItemHref, buildMediaPlayHref } from "@/lib/mediaNavigation";
 import {
   buildMangaList,
@@ -99,7 +102,11 @@ function MangaRow({
   libraryId?: number;
 }) {
   const { user } = useAuth();
-  const readerHref = chapterReaderHref(chapter.content_id, seriesContentId, libraryId);
+  const readerHref = chapterReaderHref(
+    chapter.content_id,
+    seriesContentId,
+    libraryId,
+  );
 
   // The mutation carries series_id so the series detail (this page's payload,
   // including every chapter's read flag) is invalidated and refetched after a
@@ -117,7 +124,9 @@ function MangaRow({
   const markedRead = readOverride ?? chapter.read ?? false;
 
   const [downloadOpen, setDownloadOpen] = useState(false);
-  const [downloadVersions, setDownloadVersions] = useState<FileVersion[] | null>(null);
+  const [downloadVersions, setDownloadVersions] = useState<
+    FileVersion[] | null
+  >(null);
   const [loadingVersions, setLoadingVersions] = useState(false);
   const canDownload = Boolean(user?.download_allowed);
 
@@ -179,14 +188,19 @@ function MangaRow({
           </span>
         )}
         {progressPct != null && (
-          <span className="flex flex-shrink-0 items-center gap-1.5" title={`${progressPct}% read`}>
+          <span
+            className="flex flex-shrink-0 items-center gap-1.5"
+            title={`${progressPct}% read`}
+          >
             <span className="bg-muted block h-1 w-16 overflow-hidden rounded-full">
               <span
                 className="bg-primary block h-full rounded-full"
                 style={{ width: `${progressPct}%` }}
               />
             </span>
-            <span className="text-muted-foreground text-[11px] tabular-nums">{progressPct}%</span>
+            <span className="text-muted-foreground text-[11px] tabular-nums">
+              {progressPct}%
+            </span>
           </span>
         )}
       </Link>
@@ -250,7 +264,10 @@ export default function MangaContent({
   useAmbientColor(item.poster_thumbhash);
   const { user } = useAuth();
   const isAdmin = user?.role === "admin";
-  const entries = useMemo(() => buildMangaList(item.manga?.chapters ?? []), [item.manga?.chapters]);
+  const entries = useMemo(
+    () => buildMangaList(item.manga?.chapters ?? []),
+    [item.manga?.chapters],
+  );
   const year = item.year ? String(item.year) : "";
   const publisher = item.studios?.[0];
   const chapterRows = item.manga?.chapters ?? [];
@@ -258,7 +275,8 @@ export default function MangaContent({
   // rows on screen: a volume/section entry is one volume (buildMangaList
   // already canonicalizes v01 ≡ 1), a loose chapter entry is one chapter.
   const volumeCount = useMemo(
-    () => entries.filter((e) => e.kind === "volume" || e.kind === "section").length,
+    () =>
+      entries.filter((e) => e.kind === "volume" || e.kind === "section").length,
     [entries],
   );
   const looseChapterCount = useMemo(
@@ -276,7 +294,11 @@ export default function MangaContent({
   const cta = resume
     ? {
         ...resume,
-        verb: resumeInProgress ? "Resume Reading" : anyRead ? "Continue" : "Start Reading",
+        verb: resumeInProgress
+          ? "Resume Reading"
+          : anyRead
+            ? "Continue"
+            : "Start Reading",
       }
     : fallbackStart
       ? { ...fallbackStart, verb: "Read Again" }
@@ -328,7 +350,13 @@ export default function MangaContent({
                 asChild
                 className="h-11 gap-2.5 rounded-full px-6 text-[15px] font-bold tracking-wide shadow-md"
               >
-                <Link to={chapterReaderHref(cta.chapter.content_id, item.content_id, libraryId)}>
+                <Link
+                  to={chapterReaderHref(
+                    cta.chapter.content_id,
+                    item.content_id,
+                    libraryId,
+                  )}
+                >
                   <BookOpen className="size-[18px]" />
                   {cta.verb}
                   <span className="text-primary-foreground/75 text-xs font-semibold">
@@ -395,7 +423,8 @@ export default function MangaContent({
         )}
         {entries.length === 0 ? (
           <p className="text-muted-foreground text-sm">
-            No chapters found. Chapters appear here once the library scan completes.
+            No chapters found. Chapters appear here once the library scan
+            completes.
           </p>
         ) : (
           <ul className="divide-border/40 border-border/40 divide-y overflow-hidden rounded-lg border">
@@ -469,13 +498,19 @@ function MangaSection({
         </span>
         <span className="text-muted-foreground flex items-center gap-2 text-xs">
           {allRead && (
-            <span className="text-success flex items-center" title="All chapters read">
+            <span
+              className="text-success flex items-center"
+              title="All chapters read"
+            >
               <Check className="size-3.5" />
               <span className="sr-only">All chapters read</span>
             </span>
           )}
-          {entry.chapters.length} {entry.chapters.length === 1 ? "chapter" : "chapters"}
-          <ChevronDown className={cn("size-4 transition-transform", !open && "-rotate-90")} />
+          {entry.chapters.length}{" "}
+          {entry.chapters.length === 1 ? "chapter" : "chapters"}
+          <ChevronDown
+            className={cn("size-4 transition-transform", !open && "-rotate-90")}
+          />
         </span>
       </button>
       {open && (
@@ -503,7 +538,9 @@ function flattenFirst(entries: ReturnType<typeof buildMangaList>) {
   if (!first) return null;
   if (first.kind === "section") {
     const [chapter] = first.chapters;
-    return chapter ? { chapter, label: `${first.label} · ${chapterLabel(chapter)}` } : null;
+    return chapter
+      ? { chapter, label: `${first.label} · ${chapterLabel(chapter)}` }
+      : null;
   }
   return { chapter: first.chapter, label: first.label };
 }

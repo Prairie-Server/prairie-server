@@ -48,14 +48,17 @@ export function SpeedControl({ value, onChange }: SpeedControlProps) {
 
   const step = useCallback(
     (direction: 1 | -1) => {
-      onChange(clampAudiobookRate(valueRef.current + direction * AUDIOBOOK_RATE_STEP));
+      onChange(
+        clampAudiobookRate(valueRef.current + direction * AUDIOBOOK_RATE_STEP),
+      );
     },
     [onChange],
   );
 
   const stopHold = useCallback(() => {
     if (holdTimerRef.current != null) window.clearTimeout(holdTimerRef.current);
-    if (holdIntervalRef.current != null) window.clearInterval(holdIntervalRef.current);
+    if (holdIntervalRef.current != null)
+      window.clearInterval(holdIntervalRef.current);
     holdTimerRef.current = null;
     holdIntervalRef.current = null;
   }, []);
@@ -65,7 +68,10 @@ export function SpeedControl({ value, onChange }: SpeedControlProps) {
       step(direction);
       stopHold();
       holdTimerRef.current = window.setTimeout(() => {
-        holdIntervalRef.current = window.setInterval(() => step(direction), HOLD_REPEAT_MS);
+        holdIntervalRef.current = window.setInterval(
+          () => step(direction),
+          HOLD_REPEAT_MS,
+        );
       }, HOLD_DELAY_MS);
     },
     [step, stopHold],
@@ -141,7 +147,9 @@ export function SpeedControl({ value, onChange }: SpeedControlProps) {
             ))}
           </div>
 
-          <p className="text-center text-[11px] text-white/40">Remembered for this book</p>
+          <p className="text-center text-[11px] text-white/40">
+            Remembered for this book
+          </p>
         </div>
       )}
     </div>

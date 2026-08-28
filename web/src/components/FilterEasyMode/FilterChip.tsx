@@ -16,7 +16,9 @@ function formatValue(v: FilterChipModel["value"]): string {
 export default function FilterChip({ chip, onRemove }: Props) {
   return (
     <span className="inline-flex items-center gap-2 rounded-full border border-indigo-500/30 bg-indigo-500/10 py-1 pr-1 pl-3 text-xs text-indigo-200">
-      <span className="text-[10px] tracking-wider uppercase opacity-65">{chip.field}</span>
+      <span className="text-[10px] tracking-wider uppercase opacity-65">
+        {chip.field}
+      </span>
       <span className="font-semibold">{formatValue(chip.value)}</span>
       <button
         type="button"

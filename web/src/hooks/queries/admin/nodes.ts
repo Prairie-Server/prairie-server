@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import type { StreamNode, CreateNodeRequest, CheckNodeResponse } from "@/api/types";
+import type {
+  StreamNode,
+  CreateNodeRequest,
+  CheckNodeResponse,
+} from "@/api/types";
 import { adminKeys } from "../keys";
 import { toast } from "sonner";
 
@@ -71,7 +75,11 @@ export function useCheckNodeHealth() {
         method: "POST",
       }).then((result) => ({ node, result })),
     onSuccess: ({ node, result }) => {
-      toast.success(result.healthy ? `${node.name} is healthy` : `${node.name} is unhealthy`);
+      toast.success(
+        result.healthy
+          ? `${node.name} is healthy`
+          : `${node.name} is unhealthy`,
+      );
       void queryClient.invalidateQueries({ queryKey: adminKeys.nodes() });
     },
     onError: (err) => {
@@ -89,7 +97,9 @@ export function useToggleNode() {
         body: JSON.stringify({ enabled: !node.enabled }),
       }),
     onSuccess: (updated) => {
-      toast.success(`${updated.name} ${updated.enabled ? "enabled" : "disabled"}`);
+      toast.success(
+        `${updated.name} ${updated.enabled ? "enabled" : "disabled"}`,
+      );
       void queryClient.invalidateQueries({ queryKey: adminKeys.nodes() });
     },
     onError: (err) => {

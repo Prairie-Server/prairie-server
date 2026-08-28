@@ -43,10 +43,14 @@ function listParamsKey(params: RequestListParams) {
 
 function buildListQuery(params: RequestListParams = {}) {
   const query = new URLSearchParams();
-  if (params.status && params.status !== "all") query.set("status", params.status);
-  if (params.outcome && params.outcome !== "all") query.set("outcome", params.outcome);
-  if (params.limit != null && params.limit > 0) query.set("limit", String(params.limit));
-  if (params.offset != null && params.offset > 0) query.set("offset", String(params.offset));
+  if (params.status && params.status !== "all")
+    query.set("status", params.status);
+  if (params.outcome && params.outcome !== "all")
+    query.set("outcome", params.outcome);
+  if (params.limit != null && params.limit > 0)
+    query.set("limit", String(params.limit));
+  if (params.offset != null && params.offset > 0)
+    query.set("offset", String(params.offset));
   const encoded = query.toString();
   return encoded ? `?${encoded}` : "";
 }
@@ -61,7 +65,9 @@ function isValidationFailure(err: unknown): boolean {
   );
 }
 
-function invalidateRequestSurfaces(queryClient: ReturnType<typeof useQueryClient>) {
+function invalidateRequestSurfaces(
+  queryClient: ReturnType<typeof useQueryClient>,
+) {
   // requestKeys.all = ["requests"], so invalidating it cascades to nested keys,
   // including requestKeys.search(...). Policy mutations rely on this to refresh
   // viewer-scoped search results when request eligibility changes.
@@ -73,7 +79,9 @@ export function useRequestDiscovery() {
   return useQuery({
     queryKey: requestKeys.discovery(),
     queryFn: () =>
-      api<RequestDiscoveryResponse>("/requests/discover").then((data) => data.sections ?? []),
+      api<RequestDiscoveryResponse>("/requests/discover").then(
+        (data) => data.sections ?? [],
+      ),
     staleTime: REQUESTS_STALE_TIME,
   });
 }
@@ -102,7 +110,9 @@ export function useDiscoverStudios() {
   return useQuery({
     queryKey: requestKeys.discoverStudios(),
     queryFn: () =>
-      api<DiscoverStudiosResponse>("/requests/discover/studios").then((data) => data.studios ?? []),
+      api<DiscoverStudiosResponse>("/requests/discover/studios").then(
+        (data) => data.studios ?? [],
+      ),
     staleTime: DISCOVER_BRAND_STALE_TIME,
   });
 }
@@ -122,7 +132,9 @@ export function useDiscoverGenres() {
   return useQuery({
     queryKey: requestKeys.discoverGenres(),
     queryFn: () =>
-      api<DiscoverGenresResponse>("/requests/discover/genres").then((data) => data.genres ?? []),
+      api<DiscoverGenresResponse>("/requests/discover/genres").then(
+        (data) => data.genres ?? [],
+      ),
     staleTime: DISCOVER_BRAND_STALE_TIME,
   });
 }
@@ -135,7 +147,13 @@ export interface UseRequestBrowseArgs {
   page: number;
 }
 
-export function useRequestBrowse({ kind, slug, mediaType, sort, page }: UseRequestBrowseArgs) {
+export function useRequestBrowse({
+  kind,
+  slug,
+  mediaType,
+  sort,
+  page,
+}: UseRequestBrowseArgs) {
   return useQuery({
     queryKey: requestKeys.discoverBrowse(kind, slug, mediaType, sort, page),
     queryFn: () => {
@@ -150,7 +168,10 @@ export function useRequestBrowse({ kind, slug, mediaType, sort, page }: UseReque
   });
 }
 
-export function useRequestMediaDetail(mediaType: RequestMediaType, tmdbID: number) {
+export function useRequestMediaDetail(
+  mediaType: RequestMediaType,
+  tmdbID: number,
+) {
   return useQuery({
     queryKey: requestKeys.detail(mediaType, tmdbID),
     queryFn: () =>
@@ -198,7 +219,9 @@ export function useRequestSearch(
       return api<RequestMediaPage>(`/requests/search?${params}`, { signal });
     },
     enabled:
-      enabledOverride && normalizedQuery.length > 1 && (!requireProfile || Boolean(profile?.id)),
+      enabledOverride &&
+      normalizedQuery.length > 1 &&
+      (!requireProfile || Boolean(profile?.id)),
     staleTime: options.staleTime ?? REQUESTS_STALE_TIME,
   });
 }
@@ -216,7 +239,9 @@ export function useCreateMediaRequest() {
       invalidateRequestSurfaces(queryClient);
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to submit request");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to submit request",
+      );
     },
   });
 }
@@ -226,9 +251,9 @@ export function useMyMediaRequests(params: RequestListParams = {}) {
   return useQuery({
     queryKey: requestKeys.mine(key),
     queryFn: () =>
-      api<MediaRequestsListResponse>(`/requests/mine${buildListQuery(params)}`).then(
-        (data) => data.requests ?? [],
-      ),
+      api<MediaRequestsListResponse>(
+        `/requests/mine${buildListQuery(params)}`,
+      ).then((data) => data.requests ?? []),
     staleTime: REQUESTS_STALE_TIME,
   });
 }
@@ -238,9 +263,9 @@ export function useAdminMediaRequests(params: RequestListParams = {}) {
   return useQuery({
     queryKey: adminKeys.requests(key),
     queryFn: () =>
-      api<MediaRequestsListResponse>(`/admin/requests${buildListQuery(params)}`).then(
-        (data) => data.requests ?? [],
-      ),
+      api<MediaRequestsListResponse>(
+        `/admin/requests${buildListQuery(params)}`,
+      ).then((data) => data.requests ?? []),
     staleTime: 10_000,
   });
 }
@@ -257,7 +282,9 @@ export function useApproveMediaRequest() {
       invalidateRequestSurfaces(queryClient);
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to approve request");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to approve request",
+      );
     },
   });
 }
@@ -275,7 +302,9 @@ export function useDeclineMediaRequest() {
       invalidateRequestSurfaces(queryClient);
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to decline request");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to decline request",
+      );
     },
   });
 }
@@ -292,7 +321,9 @@ export function useRetryMediaRequest() {
       invalidateRequestSurfaces(queryClient);
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to retry request");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to retry request",
+      );
     },
   });
 }
@@ -315,12 +346,16 @@ export function useUpdateRequestSettings() {
       }),
     onSuccess: () => {
       toast.success("Request settings saved");
-      void queryClient.invalidateQueries({ queryKey: adminKeys.requestSettings() });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.requestSettings(),
+      });
       void queryClient.invalidateQueries({ queryKey: requestKeys.status() });
       invalidateRequestSurfaces(queryClient);
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to save request settings");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save request settings",
+      );
     },
   });
 }
@@ -346,12 +381,16 @@ export function useCreateRequestIntegration() {
       }),
     onSuccess: () => {
       toast.success("Integration created");
-      void queryClient.invalidateQueries({ queryKey: adminKeys.requestIntegrations() });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.requestIntegrations(),
+      });
       invalidateRequestSurfaces(queryClient);
     },
     onError: (err) => {
       if (isValidationFailure(err)) return;
-      toast.error(err instanceof Error ? err.message : "Failed to create integration");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to create integration",
+      );
     },
   });
 }
@@ -360,18 +399,25 @@ export function useUpdateRequestIntegration() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ id, ...integration }: RequestIntegration) =>
-      api<RequestIntegration>(`/admin/request-integrations/${encodeURIComponent(id)}`, {
-        method: "PUT",
-        body: JSON.stringify({ id, ...integration }),
-      }),
+      api<RequestIntegration>(
+        `/admin/request-integrations/${encodeURIComponent(id)}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({ id, ...integration }),
+        },
+      ),
     onSuccess: () => {
       toast.success("Integration saved");
-      void queryClient.invalidateQueries({ queryKey: adminKeys.requestIntegrations() });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.requestIntegrations(),
+      });
       invalidateRequestSurfaces(queryClient);
     },
     onError: (err) => {
       if (isValidationFailure(err)) return;
-      toast.error(err instanceof Error ? err.message : "Failed to save integration");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save integration",
+      );
     },
   });
 }
@@ -385,18 +431,28 @@ export function useDeleteRequestIntegration() {
       }),
     onSuccess: () => {
       toast.success("Integration deleted");
-      void queryClient.invalidateQueries({ queryKey: adminKeys.requestIntegrations() });
+      void queryClient.invalidateQueries({
+        queryKey: adminKeys.requestIntegrations(),
+      });
       invalidateRequestSurfaces(queryClient);
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to delete integration");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete integration",
+      );
     },
   });
 }
 
 export function useLoadRequestIntegrationOptions() {
   return useMutation({
-    mutationFn: ({ id, body }: { id: string; body: LoadRequestIntegrationOptionsRequest }) =>
+    mutationFn: ({
+      id,
+      body,
+    }: {
+      id: string;
+      body: LoadRequestIntegrationOptionsRequest;
+    }) =>
       api<RequestIntegrationOptions>(
         `/admin/request-integrations/${encodeURIComponent(id)}/options`,
         {
@@ -411,7 +467,8 @@ export function useLoadRequestIntegrationOptions() {
 export function useRequestUserLimit(userId?: number) {
   return useQuery({
     queryKey: adminKeys.requestUserLimit(userId ?? 0),
-    queryFn: () => api<RequestUserLimit>(`/admin/request-users/${userId}/limit`),
+    queryFn: () =>
+      api<RequestUserLimit>(`/admin/request-users/${userId}/limit`),
     enabled: Boolean(userId && userId > 0),
     staleTime: REQUESTS_STALE_TIME,
   });
@@ -420,7 +477,13 @@ export function useRequestUserLimit(userId?: number) {
 export function useUpdateRequestUserLimit() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ userId, body }: { userId: number; body: RequestUserLimit }) =>
+    mutationFn: ({
+      userId,
+      body,
+    }: {
+      userId: number;
+      body: RequestUserLimit;
+    }) =>
       api<RequestUserLimit>(`/admin/request-users/${userId}/limit`, {
         method: "PUT",
         body: JSON.stringify(body),
@@ -433,7 +496,9 @@ export function useUpdateRequestUserLimit() {
       invalidateRequestSurfaces(queryClient);
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to save user limit");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save user limit",
+      );
     },
   });
 }

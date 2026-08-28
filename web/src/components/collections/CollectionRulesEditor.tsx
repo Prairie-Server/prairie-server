@@ -2,7 +2,10 @@ import type { QueryDefinition } from "@/api/types";
 import type { FilterConfig } from "@/api/types";
 import FilterRuleEditor from "@/components/FilterRuleEditor";
 import LibraryMultiSelect from "@/components/LibraryMultiSelect";
-import { normalizeQuerySortForScope, type QuerySortRelevanceScope } from "@/lib/querySortOptions";
+import {
+  normalizeQuerySortForScope,
+  type QuerySortRelevanceScope,
+} from "@/lib/querySortOptions";
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -70,7 +73,12 @@ export default function CollectionRulesEditor({
                     media_scope:
                       next === "all"
                         ? undefined
-                        : (next as "movie" | "series" | "episode" | "audiobook" | "ebook"),
+                        : (next as
+                            | "movie"
+                            | "series"
+                            | "episode"
+                            | "audiobook"
+                            | "ebook"),
                     sort: nextSort,
                   });
                 }}
@@ -97,7 +105,9 @@ export default function CollectionRulesEditor({
               <LibraryMultiSelect
                 libraries={libraries}
                 value={value.library_ids}
-                onChange={(libraryIds) => onChange({ ...value, library_ids: libraryIds })}
+                onChange={(libraryIds) =>
+                  onChange({ ...value, library_ids: libraryIds })
+                }
               />
             </div>
           ) : null}
@@ -118,8 +128,10 @@ export default function CollectionRulesEditor({
               match: next.match,
               groups: next.groups,
               sort: {
-                field: (next.sort ?? value.sort.field) as QueryDefinition["sort"]["field"],
-                order: (next.order ?? value.sort.order) as QueryDefinition["sort"]["order"],
+                field: (next.sort ??
+                  value.sort.field) as QueryDefinition["sort"]["field"],
+                order: (next.order ??
+                  value.sort.order) as QueryDefinition["sort"]["order"],
               },
             })
           }

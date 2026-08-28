@@ -1,6 +1,12 @@
 import { QueryClient } from "@tanstack/react-query";
 import { describe, expect, it } from "vitest";
-import { catalogKeys, ebookKeys, episodeKeys, itemKeys, progressKeys } from "@/hooks/queries/keys";
+import {
+  catalogKeys,
+  ebookKeys,
+  episodeKeys,
+  itemKeys,
+  progressKeys,
+} from "@/hooks/queries/keys";
 import type { ItemDetail } from "@/api/types";
 import {
   getCachedWatchedInvalidationKeys,
@@ -93,36 +99,52 @@ describe("getWatchedActionLabel", () => {
 
   it("returns listening labels for audiobooks", () => {
     expect(
-      getWatchedActionLabel(makeItem({ type: "audiobook", user_data: { played: false } })),
+      getWatchedActionLabel(
+        makeItem({ type: "audiobook", user_data: { played: false } }),
+      ),
     ).toBe("Mark Listened");
     expect(
-      getWatchedActionLabel(makeItem({ type: "audiobook", user_data: { played: true } })),
+      getWatchedActionLabel(
+        makeItem({ type: "audiobook", user_data: { played: true } }),
+      ),
     ).toBe("Mark Unlistened");
   });
 
   it("returns reading labels for ebooks", () => {
-    expect(getWatchedActionLabel(makeItem({ type: "ebook", user_data: { played: false } }))).toBe(
-      "Mark Read",
-    );
-    expect(getWatchedActionLabel(makeItem({ type: "ebook", user_data: { played: true } }))).toBe(
-      "Mark Unread",
-    );
+    expect(
+      getWatchedActionLabel(
+        makeItem({ type: "ebook", user_data: { played: false } }),
+      ),
+    ).toBe("Mark Read");
+    expect(
+      getWatchedActionLabel(
+        makeItem({ type: "ebook", user_data: { played: true } }),
+      ),
+    ).toBe("Mark Unread");
   });
 
   it("returns reading labels for manga series", () => {
-    expect(getWatchedActionLabel(makeItem({ type: "manga", user_data: { played: false } }))).toBe(
-      "Mark Read",
-    );
-    expect(getWatchedActionLabel(makeItem({ type: "manga", user_data: { played: true } }))).toBe(
-      "Mark Unread",
-    );
+    expect(
+      getWatchedActionLabel(
+        makeItem({ type: "manga", user_data: { played: false } }),
+      ),
+    ).toBe("Mark Read");
+    expect(
+      getWatchedActionLabel(
+        makeItem({ type: "manga", user_data: { played: true } }),
+      ),
+    ).toBe("Mark Unread");
   });
 });
 
 describe("getWatchedToastMessage", () => {
   it("uses watched copy for video items", () => {
-    expect(getWatchedToastMessage(makeItem({ type: "movie" }), true)).toBe("Marked as watched");
-    expect(getWatchedToastMessage(makeItem({ type: "movie" }), false)).toBe("Marked as unwatched");
+    expect(getWatchedToastMessage(makeItem({ type: "movie" }), true)).toBe(
+      "Marked as watched",
+    );
+    expect(getWatchedToastMessage(makeItem({ type: "movie" }), false)).toBe(
+      "Marked as unwatched",
+    );
   });
 
   it("uses listened copy for audiobooks", () => {
@@ -135,13 +157,21 @@ describe("getWatchedToastMessage", () => {
   });
 
   it("uses read copy for ebooks", () => {
-    expect(getWatchedToastMessage(makeItem({ type: "ebook" }), true)).toBe("Marked as read");
-    expect(getWatchedToastMessage(makeItem({ type: "ebook" }), false)).toBe("Marked as unread");
+    expect(getWatchedToastMessage(makeItem({ type: "ebook" }), true)).toBe(
+      "Marked as read",
+    );
+    expect(getWatchedToastMessage(makeItem({ type: "ebook" }), false)).toBe(
+      "Marked as unread",
+    );
   });
 
   it("uses read copy for manga", () => {
-    expect(getWatchedToastMessage(makeItem({ type: "manga" }), true)).toBe("Marked as read");
-    expect(getWatchedToastMessage(makeItem({ type: "manga" }), false)).toBe("Marked as unread");
+    expect(getWatchedToastMessage(makeItem({ type: "manga" }), true)).toBe(
+      "Marked as read",
+    );
+    expect(getWatchedToastMessage(makeItem({ type: "manga" }), false)).toBe(
+      "Marked as unread",
+    );
   });
 });
 

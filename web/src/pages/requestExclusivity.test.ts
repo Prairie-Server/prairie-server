@@ -16,8 +16,16 @@ const fieldsFor = () => [isDefault];
 describe("applyExclusivity", () => {
   it("clears the default on a same-group sibling when a card turns it on", () => {
     const cards: ExclusivityCard[] = [
-      { key: "a", installationId: "5", config: { service_kind: "radarr", is_default: true } },
-      { key: "b", installationId: "5", config: { service_kind: "radarr", is_default: false } },
+      {
+        key: "a",
+        installationId: "5",
+        config: { service_kind: "radarr", is_default: true },
+      },
+      {
+        key: "b",
+        installationId: "5",
+        config: { service_kind: "radarr", is_default: false },
+      },
     ];
     const out = applyExclusivity(
       cards,
@@ -31,8 +39,16 @@ describe("applyExclusivity", () => {
 
   it("leaves a different-group sibling untouched", () => {
     const cards: ExclusivityCard[] = [
-      { key: "a", installationId: "5", config: { service_kind: "sonarr", is_default: true } },
-      { key: "b", installationId: "5", config: { service_kind: "radarr", is_default: false } },
+      {
+        key: "a",
+        installationId: "5",
+        config: { service_kind: "sonarr", is_default: true },
+      },
+      {
+        key: "b",
+        installationId: "5",
+        config: { service_kind: "radarr", is_default: false },
+      },
     ];
     const out = applyExclusivity(
       cards,
@@ -45,8 +61,16 @@ describe("applyExclusivity", () => {
 
   it("no-ops when the changed field is turned off", () => {
     const cards: ExclusivityCard[] = [
-      { key: "a", installationId: "5", config: { service_kind: "radarr", is_default: true } },
-      { key: "b", installationId: "5", config: { service_kind: "radarr", is_default: false } },
+      {
+        key: "a",
+        installationId: "5",
+        config: { service_kind: "radarr", is_default: true },
+      },
+      {
+        key: "b",
+        installationId: "5",
+        config: { service_kind: "radarr", is_default: false },
+      },
     ];
     const out = applyExclusivity(
       cards,

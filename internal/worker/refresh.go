@@ -1,4 +1,4 @@
-// Package worker provides background processing workers for Prairie.
+// Package worker provides background processing workers for Silo.
 package worker
 
 import (

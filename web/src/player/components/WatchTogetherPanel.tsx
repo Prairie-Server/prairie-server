@@ -5,7 +5,10 @@ import {
   type WatchTogetherConnectionState,
 } from "@/components/watchtogether/ConnectionStatusDot";
 import { EndWatchPartyDialog } from "@/components/watchtogether/EndWatchPartyDialog";
-import type { GuestControlPolicy, WatchTogetherRoomSnapshot } from "@/lib/watchTogether";
+import type {
+  GuestControlPolicy,
+  WatchTogetherRoomSnapshot,
+} from "@/lib/watchTogether";
 
 interface WatchTogetherPanelProps {
   room: WatchTogetherRoomSnapshot | null;
@@ -67,9 +70,13 @@ export function WatchTogetherPanel({
 
       {/* Policy */}
       {room ? (
-        <div className="mt-1.5 text-[11px] leading-snug text-white/50">{policyLabel}</div>
+        <div className="mt-1.5 text-[11px] leading-snug text-white/50">
+          {policyLabel}
+        </div>
       ) : (
-        <div className="mt-1.5 text-[11px] leading-snug text-white/50">Syncing room state</div>
+        <div className="mt-1.5 text-[11px] leading-snug text-white/50">
+          Syncing room state
+        </div>
       )}
 
       {/* Actions */}
@@ -86,7 +93,11 @@ export function WatchTogetherPanel({
           <button
             type="button"
             onClick={() =>
-              onToggleGuestControl(policy === "guest_play_pause" ? "host_only" : "guest_play_pause")
+              onToggleGuestControl(
+                policy === "guest_play_pause"
+                  ? "host_only"
+                  : "guest_play_pause",
+              )
             }
             className="rounded-md bg-white/12 px-2.5 py-1 text-[11px] font-medium text-white/90 transition-colors hover:bg-white/20"
           >

@@ -46,10 +46,15 @@ interface FormatFileSizeOptions {
   iecUnits?: boolean;
 }
 
-export function formatFileSize(bytes?: number, options: FormatFileSizeOptions = {}): string {
+export function formatFileSize(
+  bytes?: number,
+  options: FormatFileSizeOptions = {},
+): string {
   const { fallback = "", iecUnits = false } = options;
   if (!isPositive(bytes)) return fallback;
-  const [giga, mega, kilo] = iecUnits ? ["GiB", "MiB", "KiB"] : ["GB", "MB", "KB"];
+  const [giga, mega, kilo] = iecUnits
+    ? ["GiB", "MiB", "KiB"]
+    : ["GB", "MB", "KB"];
   if (bytes >= 1024 ** 3) return `${(bytes / 1024 ** 3).toFixed(1)} ${giga}`;
   if (bytes >= 1024 ** 2) return `${(bytes / 1024 ** 2).toFixed(1)} ${mega}`;
   if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} ${kilo}`;
@@ -81,7 +86,9 @@ export function formatChannels(channels?: number): string {
 
 /** Ensures a raw Dolby Vision label ("Profile 8.1") carries the "Dolby Vision" prefix. */
 export function dolbyVisionLabel(raw: string): string {
-  return raw.toLowerCase().startsWith("dolby vision") ? raw : `Dolby Vision ${raw}`;
+  return raw.toLowerCase().startsWith("dolby vision")
+    ? raw
+    : `Dolby Vision ${raw}`;
 }
 
 // Kometa-style pretty resolution label: "2160p" → "4K", others keep their

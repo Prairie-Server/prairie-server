@@ -15,7 +15,10 @@ import type { AddPayload } from "@/components/RecipeGallery/RecipeConfigDrawer";
 import type { RecipeDefinition, GalleryPreset } from "@/lib/recipes";
 import { fetchRecipeCatalog } from "@/lib/recipes";
 import { useQuery } from "@tanstack/react-query";
-import { useAdminCollections, useImportTraktCollection } from "@/hooks/queries/admin/collections";
+import {
+  useAdminCollections,
+  useImportTraktCollection,
+} from "@/hooks/queries/admin/collections";
 import { useAdminLibraries } from "@/hooks/queries/admin/libraries";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
@@ -28,7 +31,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -57,7 +65,11 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  arrayMove,
+} from "@dnd-kit/sortable";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import type { LibraryCollection } from "@/api/types";
 
@@ -97,7 +109,9 @@ function LibraryPicker({
   );
 }
 
-function toEditableSection(section: PageSectionConfig): EditableSectionViewModel {
+function toEditableSection(
+  section: PageSectionConfig,
+): EditableSectionViewModel {
   return {
     id: section.id,
     title: section.title,
@@ -115,7 +129,9 @@ interface TraktPublicRecipeConfig {
   mediaType: "movie" | "tv";
 }
 
-function getTraktRecipeConfig(config: Record<string, unknown>): TraktPublicRecipeConfig | null {
+function getTraktRecipeConfig(
+  config: Record<string, unknown>,
+): TraktPublicRecipeConfig | null {
   if (config.source_provider !== "trakt") return null;
   const preset = config.source_preset;
   const mediaType = config.media_type;
@@ -153,18 +169,30 @@ function buildTraktSectionManagedCollectionKey(
   return `trakt:${preset}:${mediaType}:library:${libraryID}`;
 }
 
-function findDefaultTraktLibrary(libraries: Library[], mediaType: string): number | null {
+function findDefaultTraktLibrary(
+  libraries: Library[],
+  mediaType: string,
+): number | null {
   const wantedType = mediaType === "tv" ? "series" : "movies";
-  return libraries.find((library) => library.type === wantedType)?.id ?? libraries[0]?.id ?? null;
+  return (
+    libraries.find((library) => library.type === wantedType)?.id ??
+    libraries[0]?.id ??
+    null
+  );
 }
 
 export default function AdminSections() {
   const [scope, setScope] = useState("home");
   const { data: librariesData } = useAdminLibraries();
   const librariesList = useMemo(() => librariesData ?? [], [librariesData]);
-  const [selectedLibraryId, setSelectedLibraryId] = useState<number | null>(null);
+  const [selectedLibraryId, setSelectedLibraryId] = useState<number | null>(
+    null,
+  );
   const activeLibraryId = scope === "library" ? selectedLibraryId : null;
-  const { data, isLoading } = useAdminSections(scope, activeLibraryId ?? undefined);
+  const { data, isLoading } = useAdminSections(
+    scope,
+    activeLibraryId ?? undefined,
+  );
   const { data: collectionsData = [] } = useAdminCollections();
   const { data: recipeCatalog } = useQuery({
     queryKey: ["recipe-catalog"],
@@ -178,10 +206,14 @@ export default function AdminSections() {
     ]),
   );
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingSection, setEditingSection] = useState<PageSectionConfig | null>(null);
-  const [orderedSections, setOrderedSections] = useState<PageSectionConfig[]>([]);
+  const [editingSection, setEditingSection] =
+    useState<PageSectionConfig | null>(null);
+  const [orderedSections, setOrderedSections] = useState<PageSectionConfig[]>(
+    [],
+  );
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [confirmDeleteSection, setConfirmDeleteSection] = useState<PageSectionConfig | null>(null);
+  const [confirmDeleteSection, setConfirmDeleteSection] =
+    useState<PageSectionConfig | null>(null);
   const deleteMutation = useDeleteSection();
   const reorderMutation = useReorderSections();
   const restoreDefaultsMutation = useRestoreDefaultSections();
@@ -200,8 +232,10 @@ export default function AdminSections() {
 
   const sections = useMemo(() => data?.sections ?? [], [data?.sections]);
   const isHomeScope = scope === "home";
-  const canManageLibrarySections = librariesList.length > 0 && selectedLibraryId !== null;
-  const canDrag = !reorderMutation.isPending && (isHomeScope || canManageLibrarySections);
+  const canManageLibrarySections =
+    librariesList.length > 0 && selectedLibraryId !== null;
+  const canDrag =
+    !reorderMutation.isPending && (isHomeScope || canManageLibrarySections);
 
   useEffect(() => {
     if (librariesList.length === 0) {
@@ -219,7 +253,9 @@ export default function AdminSections() {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   useEffect(() => {
@@ -262,11 +298,15 @@ export default function AdminSections() {
     setActiveId(null);
   }
 
-  const activeSection = activeId ? (orderedSections.find((s) => s.id === activeId) ?? null) : null;
+  const activeSection = activeId
+    ? (orderedSections.find((s) => s.id === activeId) ?? null)
+    : null;
 
   function normalizeLibraryIDs(ids: number[] | undefined): number[] {
     if (!ids || ids.length === 0) return [];
-    return Array.from(new Set(ids.filter((id) => Number.isInteger(id) && id > 0)));
+    return Array.from(
+      new Set(ids.filter((id) => Number.isInteger(id) && id > 0)),
+    );
   }
 
   async function ensureTraktSectionCollection(
@@ -275,7 +315,12 @@ export default function AdminSections() {
     libraryID: number,
   ): Promise<LibraryCollection> {
     const existing = collectionsData.find((collection) =>
-      isMatchingTraktCollection(collection, traktRecipe.preset, traktRecipe.mediaType, libraryID),
+      isMatchingTraktCollection(
+        collection,
+        traktRecipe.preset,
+        traktRecipe.mediaType,
+        libraryID,
+      ),
     );
     if (existing) return existing;
 
@@ -306,16 +351,24 @@ export default function AdminSections() {
     libraryIDs: number[],
   ): Promise<void> {
     if (libraryIDs.length === 0) {
-      throw new Error("Choose at least one library before applying this section");
+      throw new Error(
+        "Choose at least one library before applying this section",
+      );
     }
 
     const config = payload.config;
     const traktRecipe = getTraktRecipeConfig(config);
     const selectedCollectionID =
-      typeof config.library_collection_id === "string" ? config.library_collection_id.trim() : "";
+      typeof config.library_collection_id === "string"
+        ? config.library_collection_id.trim()
+        : "";
     if (traktRecipe && selectedCollectionID === "") {
       for (const libraryID of libraryIDs) {
-        const collection = await ensureTraktSectionCollection(payload, traktRecipe, libraryID);
+        const collection = await ensureTraktSectionCollection(
+          payload,
+          traktRecipe,
+          libraryID,
+        );
         await createMutation.mutateAsync({
           scope: "library",
           library_id: libraryID,
@@ -327,7 +380,9 @@ export default function AdminSections() {
           config: { ...config, library_collection_id: collection.id },
         });
       }
-      toast.success(`Created ${libraryIDs.length} section${libraryIDs.length === 1 ? "" : "s"}`);
+      toast.success(
+        `Created ${libraryIDs.length} section${libraryIDs.length === 1 ? "" : "s"}`,
+      );
       return;
     }
 
@@ -341,7 +396,9 @@ export default function AdminSections() {
       enabled: payload.enabled,
       config,
     });
-    toast.success(`Created ${result.created} section${result.created === 1 ? "" : "s"}`);
+    toast.success(
+      `Created ${result.created} section${result.created === 1 ? "" : "s"}`,
+    );
   }
 
   async function createSectionFromGallery(payload: AddPayload) {
@@ -354,20 +411,29 @@ export default function AdminSections() {
     let config = payload.config;
     const traktRecipe = getTraktRecipeConfig(config);
     const selectedCollectionID =
-      typeof config.library_collection_id === "string" ? config.library_collection_id.trim() : "";
+      typeof config.library_collection_id === "string"
+        ? config.library_collection_id.trim()
+        : "";
     if (traktRecipe && selectedCollectionID === "") {
       const targetLibraryID =
-        activeLibraryId ?? findDefaultTraktLibrary(librariesList, traktRecipe.mediaType);
+        activeLibraryId ??
+        findDefaultTraktLibrary(librariesList, traktRecipe.mediaType);
       if (!targetLibraryID) {
         throw new Error("Choose a library before adding this Trakt section");
       }
-      const collection = await ensureTraktSectionCollection(payload, traktRecipe, targetLibraryID);
+      const collection = await ensureTraktSectionCollection(
+        payload,
+        traktRecipe,
+        targetLibraryID,
+      );
       config = { ...config, library_collection_id: collection.id };
     }
 
     const data: Partial<PageSectionConfig> = {
       scope,
-      ...(scope === "library" && activeLibraryId != null ? { library_id: activeLibraryId } : {}),
+      ...(scope === "library" && activeLibraryId != null
+        ? { library_id: activeLibraryId }
+        : {}),
       section_type: payload.section_type,
       title: payload.title,
       item_limit: payload.item_limit,
@@ -392,7 +458,8 @@ export default function AdminSections() {
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={() => {
-          if (confirmDeleteSection) deleteMutation.mutate(confirmDeleteSection.id);
+          if (confirmDeleteSection)
+            deleteMutation.mutate(confirmDeleteSection.id);
           setConfirmDeleteSection(null);
         }}
       />
@@ -409,15 +476,17 @@ export default function AdminSections() {
           </DialogHeader>
           <div className="space-y-4">
             <p className="text-muted-foreground text-sm">
-              This will replace all {scope === "home" ? "home" : "library"} sections with the
-              defaults. Any custom sections will be removed.
+              This will replace all {scope === "home" ? "home" : "library"}{" "}
+              sections with the defaults. Any custom sections will be removed.
             </p>
             <div className="flex items-center gap-2">
               <Switch
                 id="resetProfiles"
                 size="sm"
                 checked={resetProfiles}
-                onCheckedChange={(checked) => setResetProfiles(checked === true)}
+                onCheckedChange={(checked) =>
+                  setResetProfiles(checked === true)
+                }
               />
               <Label htmlFor="resetProfiles" className="text-sm font-normal">
                 Also reset all user customizations for this scope
@@ -441,7 +510,9 @@ export default function AdminSections() {
                   restoreDefaultsMutation.mutate(
                     {
                       scope,
-                      ...(activeLibraryId != null ? { library_id: activeLibraryId } : {}),
+                      ...(activeLibraryId != null
+                        ? { library_id: activeLibraryId }
+                        : {}),
                       reset_profiles: resetProfiles,
                     },
                     {
@@ -473,7 +544,8 @@ export default function AdminSections() {
             size="sm"
             variant="outline"
             disabled={
-              (!isHomeScope && !canManageLibrarySections) || restoreDefaultsMutation.isPending
+              (!isHomeScope && !canManageLibrarySections) ||
+              restoreDefaultsMutation.isPending
             }
             onClick={() => setConfirmRestoreOpen(true)}
           >
@@ -569,7 +641,10 @@ export default function AdminSections() {
                 ))}
                 {orderedSections.length === 0 && (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-muted-foreground py-8 text-center">
+                    <TableCell
+                      colSpan={7}
+                      className="text-muted-foreground py-8 text-center"
+                    >
                       No sections configured for {scope} scope.
                     </TableCell>
                   </TableRow>
@@ -601,7 +676,9 @@ export default function AdminSections() {
         libraries={librariesList}
         recipeCatalog={recipeCatalog}
         isSubmitting={
-          createMutation.isPending || updateMutation.isPending || bulkCreateMutation.isPending
+          createMutation.isPending ||
+          updateMutation.isPending ||
+          bulkCreateMutation.isPending
         }
         onSave={(section) => {
           if (section.id) {
@@ -613,7 +690,11 @@ export default function AdminSections() {
                   setEditingSection(null);
                 },
                 onError: (error) => {
-                  toast.error(error instanceof Error ? error.message : "Failed to update section");
+                  toast.error(
+                    error instanceof Error
+                      ? error.message
+                      : "Failed to update section",
+                  );
                 },
               },
             );
@@ -624,7 +705,11 @@ export default function AdminSections() {
                 setEditingSection(null);
               },
               onError: (error) => {
-                toast.error(error instanceof Error ? error.message : "Failed to create section");
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to create section",
+                );
               },
             });
           }
@@ -655,7 +740,11 @@ export default function AdminSections() {
                 await createSectionFromGallery(payload);
                 setPickedRecipe(null);
               } catch (error) {
-                toast.error(error instanceof Error ? error.message : "Failed to create section");
+                toast.error(
+                  error instanceof Error
+                    ? error.message
+                    : "Failed to create section",
+                );
                 throw error;
               }
             }}

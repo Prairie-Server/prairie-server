@@ -6,19 +6,25 @@ import { useItemEpisodes } from "@/hooks/queries/episodes";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import EpisodeRow from "@/components/EpisodeRow";
+import CardPlayOverlay from "@/components/CardPlayOverlay";
 
 interface SeasonAccordionProps {
   seasons: Season[];
 }
 
 export default function SeasonAccordion({ seasons }: SeasonAccordionProps) {
-  const sorted = seasons.slice().sort((a, b) => a.season_number - b.season_number);
+  const sorted = seasons
+    .slice()
+    .sort((a, b) => a.season_number - b.season_number);
 
-  const [activeSeason, setActiveSeason] = useState(sorted[sorted.length - 1]?.content_id ?? "");
+  const [activeSeason, setActiveSeason] = useState(
+    sorted[sorted.length - 1]?.content_id ?? "",
+  );
 
   if (seasons.length === 0) return null;
 
-  const current = sorted.find((s) => s.content_id === activeSeason) ?? sorted[0]!;
+  const current =
+    sorted.find((s) => s.content_id === activeSeason) ?? sorted[0]!;
   const currentTitle =
     current.is_specials || current.season_number === 0
       ? "Specials"
@@ -29,7 +35,9 @@ export default function SeasonAccordion({ seasons }: SeasonAccordionProps) {
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="flex items-center gap-3">
           <h2 className="text-[20px] font-bold">Episodes</h2>
-          <span className="text-muted-foreground text-base">{current.episode_count} Episodes</span>
+          <span className="text-muted-foreground text-base">
+            {current.episode_count} Episodes
+          </span>
         </div>
         <Button asChild variant="outline" size="sm">
           <ViewTransitionLink to={`/item/${current.content_id}`}>
@@ -41,21 +49,35 @@ export default function SeasonAccordion({ seasons }: SeasonAccordionProps) {
 
       {/* Season metadata (poster + title) */}
       <div className="flex items-start justify-between gap-4">
-        <ViewTransitionLink
-          to={`/item/${current.content_id}`}
-          className="flex min-w-0 items-center gap-3"
-        >
+        <div className="flex min-w-0 items-center gap-3">
           {current.poster_url && (
-            <img
-              src={current.poster_url}
-              alt={currentTitle}
-              className="h-14 w-10 rounded-md object-cover"
-            />
+            <div className="group/media relative h-14 w-10 shrink-0">
+              <ViewTransitionLink to={`/item/${current.content_id}`}>
+                <img
+                  src={current.poster_url}
+                  alt={currentTitle}
+                  className="h-14 w-10 rounded-md object-cover"
+                />
+              </ViewTransitionLink>
+              {current.play_content_id ? (
+                <CardPlayOverlay
+                  contentId={current.play_content_id}
+                  title={currentTitle}
+                  type="episode"
+                  size="compact"
+                />
+              ) : null}
+            </div>
           )}
-          <div className="min-w-0">
+          <ViewTransitionLink
+            to={`/item/${current.content_id}`}
+            className="min-w-0"
+          >
             <div className="text-sm font-medium">{currentTitle}</div>
             {current.air_date && (
-              <div className="text-muted-foreground text-xs">{current.air_date}</div>
+              <div className="text-muted-foreground text-xs">
+                {current.air_date}
+              </div>
             )}
             {current.overview && (
               <div className="text-muted-foreground mt-1 line-clamp-2 text-xs">
@@ -71,8 +93,8 @@ export default function SeasonAccordion({ seasons }: SeasonAccordionProps) {
                 )}
               </div>
             )}
-          </div>
-        </ViewTransitionLink>
+          </ViewTransitionLink>
+        </div>
       </div>
 
       {/* Season pill tabs */}
@@ -90,12 +112,15 @@ export default function SeasonAccordion({ seasons }: SeasonAccordionProps) {
               aria-selected={isActive}
               onClick={() => setActiveSeason(season.content_id)}
               className={`cursor-pointer rounded-md px-5 py-2 text-[13px] font-medium transition-colors duration-150 ${
-                isActive ? "text-primary bg-accent" : "text-muted-foreground hover:text-foreground"
+                isActive
+                  ? "text-primary bg-accent"
+                  : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {season.is_specials || season.season_number === 0
                 ? "Specials"
-                : season.title && season.title !== `Season ${season.season_number}`
+                : season.title &&
+                    season.title !== `Season ${season.season_number}`
                   ? season.title
                   : `Season ${season.season_number}`}
             </button>

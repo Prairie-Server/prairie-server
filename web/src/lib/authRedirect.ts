@@ -1,4 +1,6 @@
-export function sanitizeAuthRedirect(value: string | null | undefined): string | null {
+export function sanitizeAuthRedirect(
+  value: string | null | undefined,
+): string | null {
   if (!value) {
     return null;
   }

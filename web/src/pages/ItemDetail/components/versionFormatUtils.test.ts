@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { formatPageCount, formatLanguageName, extractSourceHint } from "./versionFormatUtils";
+import {
+  formatPageCount,
+  formatLanguageName,
+  extractSourceHint,
+} from "./versionFormatUtils";
 
 describe("formatPageCount", () => {
   it("formats singular and plural ebook page counts", () => {
@@ -24,6 +28,10 @@ describe("formatLanguageName", () => {
 
   it("title-cases long names", () => {
     expect(formatLanguageName("english subtitles")).toBe("English Subtitles");
+  });
+
+  it("preserves an already readable language name", () => {
+    expect(formatLanguageName("English")).toBe("English");
   });
 
   it("returns empty string for undefined", () => {

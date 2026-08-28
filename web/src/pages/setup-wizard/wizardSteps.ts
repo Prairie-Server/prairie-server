@@ -50,12 +50,15 @@ export function resolveCurrentStep(
   reviewStep: WizardStepId | null,
 ): WizardStepId {
   if (!reviewStep) return frontierStep;
-  if (wizardStepIndex(reviewStep) <= wizardStepIndex(frontierStep)) return reviewStep;
+  if (wizardStepIndex(reviewStep) <= wizardStepIndex(frontierStep))
+    return reviewStep;
   return frontierStep;
 }
 
 /** Previous step id when going back, or null at the first step. */
-export function previousWizardStep(currentStep: WizardStepId): WizardStepId | null {
+export function previousWizardStep(
+  currentStep: WizardStepId,
+): WizardStepId | null {
   const idx = wizardStepIndex(currentStep);
   if (idx <= 0) return null;
   return WIZARD_STEP_ORDER[idx - 1] ?? null;
@@ -90,6 +93,10 @@ export function reviewStepAfterMarkDone(
   stepDone: Record<SkippableStep, boolean>,
 ): WizardStepId | null {
   const nextDone = { ...stepDone, [markedStep]: true };
-  const nextFrontier = deriveFrontierStep(accountComplete, profileComplete, nextDone);
+  const nextFrontier = deriveFrontierStep(
+    accountComplete,
+    profileComplete,
+    nextDone,
+  );
   return nextReviewStep(visibleStep, nextFrontier);
 }

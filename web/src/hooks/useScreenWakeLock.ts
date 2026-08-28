@@ -16,7 +16,9 @@ export function useScreenWakeLock(active: boolean) {
       try {
         const sentinel = await (
           navigator as Navigator & {
-            wakeLock: { request: (type: "screen") => Promise<WakeLockSentinel> };
+            wakeLock: {
+              request: (type: "screen") => Promise<WakeLockSentinel>;
+            };
           }
         ).wakeLock.request("screen");
         if (cancelled) {

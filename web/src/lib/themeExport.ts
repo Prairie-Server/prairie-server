@@ -18,7 +18,9 @@ export interface PrairieThemeFile {
 export const MAX_CSS_SIZE = 64 * 1024; // 64 KB
 
 /** Parse a JSON string into a ThemeVarOverrides map. Returns empty object on failure. */
-export function parseVarsJson(raw: string | null | undefined): Partial<Record<ThemeToken, string>> {
+export function parseVarsJson(
+  raw: string | null | undefined,
+): Partial<Record<ThemeToken, string>> {
   if (!raw) return {};
   try {
     const parsed = JSON.parse(raw);
@@ -58,7 +60,9 @@ export function parseThemeFile(json: unknown): PrairieThemeFile {
   const obj = json as Record<string, unknown>;
 
   if (obj.version !== 1) {
-    throw new Error(`Unsupported theme file version: ${stringifyUnknown(obj.version)}`);
+    throw new Error(
+      `Unsupported theme file version: ${stringifyUnknown(obj.version)}`,
+    );
   }
   if (typeof obj.name !== "string" || !obj.name.trim()) {
     throw new Error("Theme file must have a name");
@@ -75,18 +79,24 @@ export function parseThemeFile(json: unknown): PrairieThemeFile {
 
   const customCss = typeof obj.customCss === "string" ? obj.customCss : "";
   if (customCss.length > MAX_CSS_SIZE) {
-    throw new Error(`Custom CSS exceeds maximum size of ${MAX_CSS_SIZE / 1024} KB`);
+    throw new Error(
+      `Custom CSS exceeds maximum size of ${MAX_CSS_SIZE / 1024} KB`,
+    );
   }
 
   return {
     version: 1,
     name: obj.name.trim(),
-    description: typeof obj.description === "string" ? obj.description : undefined,
+    description:
+      typeof obj.description === "string" ? obj.description : undefined,
     author: typeof obj.author === "string" ? obj.author : undefined,
     baseTheme: obj.baseTheme as ThemeId,
     vars: (obj.vars ?? {}) as Partial<Record<ThemeToken, string>>,
     customCss,
-    createdAt: typeof obj.createdAt === "string" ? obj.createdAt : new Date().toISOString(),
+    createdAt:
+      typeof obj.createdAt === "string"
+        ? obj.createdAt
+        : new Date().toISOString(),
   };
 }
 

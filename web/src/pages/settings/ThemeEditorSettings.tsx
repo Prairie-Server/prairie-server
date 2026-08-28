@@ -14,13 +14,24 @@ import type { ThemeId } from "@/lib/themes";
 
 export default function ThemeEditorSettings() {
   const { theme, setTheme } = useTheme();
-  const { vars, customCss, setVar, resetVar, setCustomCss, resetAll, importOverrides } =
-    useCustomTheme();
+  const {
+    vars,
+    customCss,
+    setVar,
+    resetVar,
+    setCustomCss,
+    resetAll,
+    importOverrides,
+  } = useCustomTheme();
 
   const hasOverrides = Object.keys(vars).length > 0 || customCss.length > 0;
 
   const handleCatalogInstall = useCallback(
-    (entry: { baseTheme: string; vars: Record<string, string>; customCss: string }) => {
+    (entry: {
+      baseTheme: string;
+      vars: Record<string, string>;
+      customCss: string;
+    }) => {
       setTheme(entry.baseTheme as ThemeId);
       importOverrides(entry.vars, entry.customCss);
     },
@@ -39,9 +50,12 @@ export default function ThemeEditorSettings() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div>
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Theme Editor</h2>
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Theme Editor
+          </h2>
           <p className="text-muted-foreground mt-1 text-sm">
-            Customize colors, fonts, and styles. Changes are layered on top of your active theme.
+            Customize colors, fonts, and styles. Changes are layered on top of
+            your active theme.
           </p>
         </div>
         <ImportExportBar
@@ -53,7 +67,10 @@ export default function ThemeEditorSettings() {
       </div>
 
       {/* Live preview */}
-      <SettingsGroup title="Preview" description="Live preview of your customizations.">
+      <SettingsGroup
+        title="Preview"
+        description="Live preview of your customizations."
+      >
         <ThemePreviewCard vars={vars} />
         {hasOverrides && (
           <div className="flex justify-end">

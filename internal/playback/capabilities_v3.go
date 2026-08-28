@@ -3,8 +3,10 @@ package playback
 import (
 	"strconv"
 	"strings"
+	"unicode"
 
 	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 // SourceDurationSecondsV3 reports a media file's runtime, or nil when it is
@@ -23,6 +25,7 @@ func SourceDescriptorFromFileV3(file *models.MediaFile, audioIndex int) SourceDe
 	if file == nil {
 		return SourceDescriptorV3{DVEnhancementLayer: EnhancementUnknownV3}
 	}
+	audioOnly := file.IsAudioOnly()
 	source := SourceDescriptorV3{
 		MediaFileID:        file.ID,
 		DurationSeconds:    SourceDurationSecondsV3(file),
@@ -33,7 +36,10 @@ func SourceDescriptorFromFileV3(file *models.MediaFile, audioIndex int) SourceDe
 		BitrateKbps:        normalizeBitrateKbpsV3(file.Bitrate),
 		DVEnhancementLayer: EnhancementNoneV3,
 	}
-	if len(file.VideoTracks) > 0 {
+	if audioOnly {
+		source.VideoCodec = ""
+	}
+	if !audioOnly && len(file.VideoTracks) > 0 {
 		track := file.VideoTracks[0]
 		source.VideoCodec = firstNonEmptyV3(normalizeCodecV3(track.Codec), source.VideoCodec)
 		source.VideoProfile = strings.ToLower(strings.TrimSpace(track.Profile))
@@ -49,6 +55,9 @@ func SourceDescriptorFromFileV3(file *models.MediaFile, audioIndex int) SourceDe
 		source.DynamicRange = normalizeDynamicRangeV3(track)
 		source.HDR10Plus = track.HDR10Plus || strings.Contains(strings.ToLower(track.VideoRangeType), "hdr10+")
 		source.DVProfile = track.DVProfile
+		if track.DVLevel >= 1 && track.DVLevel <= 13 {
+			source.DVLevel = track.DVLevel
+		}
 		source.DVBLCompatID = track.DVBLCompatID
 		source.VideoCopyUnsafe = videoCopyUnsafeFile(file)
 		switch EnhancementLayerV3(strings.ToLower(track.DVEnhancementLayer)) {
@@ -69,7 +78,7 @@ func SourceDescriptorFromFileV3(file *models.MediaFile, audioIndex int) SourceDe
 			source.DVEnhancementLayer = EnhancementUnknownV3
 		}
 	}
-	if source.Width == 0 || source.Height == 0 {
+	if !audioOnly && (source.Width == 0 || source.Height == 0) {
 		source.Width, source.Height = dimensionsFromResolutionV3(file.Resolution)
 	}
 	if audioIndex >= 0 && audioIndex < len(file.AudioTracks) {
@@ -80,9 +89,9 @@ func SourceDescriptorFromFileV3(file *models.MediaFile, audioIndex int) SourceDe
 	}
 	if source.DynamicRange == "" {
 		if file.HDR {
-			source.DynamicRange = "hdr_unknown"
+			source.DynamicRange = DynamicRangeHDRUnknownV3
 		} else {
-			source.DynamicRange = "sdr"
+			source.DynamicRange = DynamicRangeSDRV3
 		}
 	}
 	return source
@@ -97,38 +106,113 @@ func normalizeColorRangeV3(value string) string {
 	}
 }
 
-func detailedVideoEligibleV3(source SourceDescriptorV3, request StartRequestV3) bool {
-	if !HasFeatureV3(request.ClientFeatures, FeatureDetailedDecodeV3) && !HasFeatureV3(request.ClientPlaybackContext.Features, FeatureDetailedDecodeV3) {
+// EvidenceInsufficientForDirectV3 marks a direct/copy route that was blocked
+// by the client's capability-evidence tier rather than by a negative device
+// fact, so lower-tier clients get an actionable reason instead of a mystery
+// transcode.
+const EvidenceInsufficientForDirectV3 = "evidence_insufficient_for_direct"
+
+const h264BaselineProfileV3 = "baseline"
+
+// videoEligibleV3 reports whether the source's video stream is validated for
+// a copy/direct route under the request's video evidence tier. The second
+// result reports that the route was blocked by insufficient evidence for the
+// tier — the client claims the codec in its flat lists but the tier's
+// validation could not confirm the stream — rather than by device facts.
+func videoEligibleV3(source SourceDescriptorV3, request StartRequestV3) (bool, bool) {
+	if !routeVideoMetadataCompleteV3(source) {
+		return false, false
+	}
+	flatClaims := containsFoldV3(request.Capabilities.CodecsVideo, source.VideoCodec) ||
+		containsFoldV3(request.Capabilities.CodecsVideoHardware, source.VideoCodec)
+	switch request.Capabilities.VideoEvidence {
+	case EvidenceDeclaredV3:
+		// Boolean support statements: copy routes are granted on a flat codec
+		// match (container and dynamic range are gated separately by the
+		// planner); there is no stricter validation to run.
+		return flatClaims, false
+	case EvidenceExactV3, EvidencePlatformAttestedV3:
+		softwareDecodeOptIn := HasFeatureV3(request.ClientFeatures, FeatureSoftwareVideoDecodeV3)
+		matchedCodec := false
+		for _, capability := range request.Capabilities.VideoDecode {
+			if !strings.EqualFold(capability.Codec, source.VideoCodec) ||
+				(!capability.Hardware && !softwareDecodeOptIn) {
+				continue
+			}
+			matchedCodec = true
+			skipProfileLevel := request.Capabilities.VideoEvidence == EvidencePlatformAttestedV3 && capability.Hardware
+			if !skipProfileLevel {
+				if len(capability.Profiles) > 0 && !videoProfileSupportedV3(source.VideoCodec, source.VideoProfile, capability.Profiles) {
+					continue
+				}
+				if len(capability.Levels) > 0 && (source.VideoLevel <= 0 || !containsAtLeastV3(capability.Levels, source.VideoLevel)) {
+					continue
+				}
+			}
+			if len(capability.BitDepths) > 0 && !containsIntV3(capability.BitDepths, source.BitDepth) {
+				continue
+			}
+			if capability.MaxWidth > 0 && source.Width > capability.MaxWidth || capability.MaxHeight > 0 && source.Height > capability.MaxHeight || capability.MaxFrameRate > 0 && source.FrameRate > capability.MaxFrameRate || capability.MaxBitrateKbps > 0 && source.BitrateKbps > capability.MaxBitrateKbps {
+				continue
+			}
+			return true, false
+		}
+		// A flat-list claim with no validating decode entry means the tier's
+		// evidence could not confirm the stream, not that the device refused
+		// it: report the insufficiency so the degradation is explainable.
+		return false, flatClaims && !matchedCodec
+	default:
+		return false, false
+	}
+}
+
+// videoProfileSupportedV3 compares a source profile with the profiles an exact
+// decoder capability reports. Most codecs retain strict case-insensitive
+// equality. H.264 additionally treats Constrained Baseline as a restricted
+// subset of Baseline, so a Baseline decoder validates a Constrained Baseline
+// source; the reverse direction intentionally remains unsupported.
+func videoProfileSupportedV3(codec string, sourceProfile string, decoderProfiles []string) bool {
+	if strings.TrimSpace(sourceProfile) == "" {
 		return false
 	}
-	if !detailedVideoEvidenceCompleteV3(source) {
+	if !strings.EqualFold(strings.TrimSpace(codec), "h264") {
+		return containsFoldV3(decoderProfiles, sourceProfile)
+	}
+
+	source := canonicalH264ProfileV3(sourceProfile)
+	if source == "" {
 		return false
 	}
-	for _, capability := range request.Capabilities.VideoDecode {
-		if !strings.EqualFold(capability.Codec, source.VideoCodec) || !capability.Hardware {
-			continue
+	for _, decoderProfile := range decoderProfiles {
+		decoder := canonicalH264ProfileV3(decoderProfile)
+		if decoder == source || source == "constrainedbaseline" && decoder == h264BaselineProfileV3 {
+			return true
 		}
-		if len(capability.Profiles) > 0 && !containsFoldV3(capability.Profiles, source.VideoProfile) {
-			continue
-		}
-		if len(capability.Levels) > 0 && !containsAtLeastV3(capability.Levels, source.VideoLevel) {
-			continue
-		}
-		if len(capability.BitDepths) > 0 && !containsIntV3(capability.BitDepths, source.BitDepth) {
-			continue
-		}
-		if capability.MaxWidth > 0 && source.Width > capability.MaxWidth || capability.MaxHeight > 0 && source.Height > capability.MaxHeight || capability.MaxFrameRate > 0 && source.FrameRate > capability.MaxFrameRate || capability.MaxBitrateKbps > 0 && source.BitrateKbps > capability.MaxBitrateKbps {
-			continue
-		}
-		return true
 	}
 	return false
 }
 
-func detailedVideoEvidenceCompleteV3(source SourceDescriptorV3) bool {
+// canonicalH264ProfileV3 removes presentation-only separators while retaining
+// the profile identity. It is deliberately local to H.264 exact-evidence
+// comparison; source descriptors keep the original normalized probe value.
+func canonicalH264ProfileV3(profile string) string {
+	return strings.Map(func(r rune) rune {
+		switch {
+		case unicode.IsSpace(r), r == '-', r == '_', r == '.', r == ':':
+			return -1
+		default:
+			return unicode.ToLower(r)
+		}
+	}, profile)
+}
+
+// routeVideoMetadataCompleteV3 covers the fields every validated route needs.
+// Profile and level are direct-decode constraints, not prerequisites for a
+// server transcode: ffprobe legitimately reports an unknown level for codecs
+// such as VP9. Exact evidence still rejects a direct route when the client's
+// capability entry constrains a profile or level the source does not expose.
+func routeVideoMetadataCompleteV3(source SourceDescriptorV3) bool {
 	return source.VideoCodec != "" &&
-		source.VideoProfile != "" &&
-		source.VideoLevel > 0 &&
 		source.BitDepth > 0 &&
 		source.Width > 0 &&
 		source.Height > 0 &&
@@ -148,7 +232,7 @@ func outputRangeEligibleV3(source SourceDescriptorV3, request StartRequestV3) (b
 	case "hdr10":
 		claims.HDR10 = hdr != nil && hdr.HDR10
 		return claims.HDR10, claims
-	case "hdr_unknown":
+	case DynamicRangeHDRUnknownV3:
 		// Legacy rows only recorded a file-level HDR flag without per-track
 		// range metadata. HDR10 is by far the most common static-HDR range, so
 		// an HDR10-capable output treats the source as HDR10 instead of
@@ -156,10 +240,10 @@ func outputRangeEligibleV3(source SourceDescriptorV3, request StartRequestV3) (b
 		// warning for these assumed-range plans.
 		claims.HDR10 = hdr != nil && hdr.HDR10
 		return claims.HDR10, claims
-	case "hdr10_plus":
+	case DynamicRangeHDR10PlusV3:
 		claims.HDR10Plus = hdr != nil && hdr.HDR10Plus
 		return claims.HDR10Plus, claims
-	case "hlg":
+	case DynamicRangeHLGV3:
 		claims.HLG = hdr != nil && hdr.HLG
 		return claims.HLG, claims
 	case "dolby_vision":
@@ -167,7 +251,7 @@ func outputRangeEligibleV3(source SourceDescriptorV3, request StartRequestV3) (b
 			claims.DolbyVisionReason = "profile_7_enhancement_layer_unknown"
 			return false, claims
 		}
-		if hdr != nil && containsIntV3(hdr.DolbyVisionProfiles, source.DVProfile) {
+		if hdr != nil && hdrSupportsDolbyVisionSourceV3(*hdr, source) {
 			claims.DolbyVision = true
 			claims.DolbyVisionReason = "native_profile_supported"
 			return true, claims
@@ -177,6 +261,29 @@ func outputRangeEligibleV3(source SourceDescriptorV3, request StartRequestV3) (b
 	default:
 		return false, claims
 	}
+}
+
+// clientManagesOriginalDynamicRangeV3 is intentionally delivery-scoped. It
+// says the original-file executor can inspect the source and choose its own
+// display presentation after delivery; it does not make the same HDR source
+// safe for a server-produced progressive or HLS stream.
+func clientManagesOriginalDynamicRangeV3(source SourceDescriptorV3, request StartRequestV3) bool {
+	if source.DynamicRange == "" || source.DynamicRange == DynamicRangeSDRV3 {
+		return false
+	}
+	delivery, ok := request.ClientPlaybackContext.Deliveries[DeliveryClassOriginalHTTPV3]
+	return ok && delivery.Enabled && delivery.SupportedOnDevice &&
+		containsFoldV3(delivery.ValidatedClaims, ClaimClientManagedDynamicRangeV3)
+}
+
+// clientSelectsOriginalAudioTrackV3 is delivery-scoped because original HTTP
+// carries every source stream unchanged. A client that makes this claim maps
+// selected_tracks.audio.index onto its probed source inventory; clients that
+// do not keep the historical server-remux requirement for non-default audio.
+func clientSelectsOriginalAudioTrackV3(request StartRequestV3) bool {
+	delivery, ok := request.ClientPlaybackContext.Deliveries[DeliveryClassOriginalHTTPV3]
+	return ok && delivery.Enabled && delivery.SupportedOnDevice &&
+		containsFoldV3(delivery.ValidatedClaims, ClaimClientSelectedAudioTrackV3)
 }
 
 func clientSupportsHDR10V3(request StartRequestV3) bool {
@@ -193,8 +300,13 @@ func audioEligibilityV3(source SourceDescriptorV3, request StartRequestV3) (copy
 	if passthroughCaps == nil {
 		passthroughCaps = request.Capabilities.AudioPassthrough
 	}
-	if passthroughCaps != nil && containsFoldV3(passthroughCaps.PassthroughCodecs, source.AudioCodec) &&
-		(HasFeatureV3(request.ClientFeatures, FeatureLayoutPassthrough) || HasFeatureV3(request.ClientPlaybackContext.Features, FeatureLayoutPassthrough)) {
+	// Passthrough claims require exact audio evidence: only a client that can
+	// attest real sink layouts (Android audio HAL enumeration) may earn a
+	// validated passthrough claim. platform_attested and declared decode
+	// evidence still qualifies for copy routes below.
+	if request.Capabilities.AudioEvidence == EvidenceExactV3 &&
+		passthroughCaps != nil && containsFoldV3(passthroughCaps.PassthroughCodecs, source.AudioCodec) &&
+		HasFeatureV3(request.ClientFeatures, FeatureLayoutPassthrough) {
 		for _, entry := range passthroughCaps.Entries {
 			if !strings.EqualFold(entry.Codec, source.AudioCodec) || len(entry.ChannelCounts) == 0 || len(entry.Layouts) == 0 ||
 				!containsIntV3(entry.ChannelCounts, source.AudioChannels) || !containsFoldV3(entry.Layouts, source.AudioLayout) {
@@ -218,24 +330,9 @@ func audioEligibilityV3(source SourceDescriptorV3, request StartRequestV3) (copy
 	return false, false, claim
 }
 
+// normalizeDynamicRangeV3 returns the protocol dynamic-range label for a track.
 func normalizeDynamicRangeV3(track models.VideoTrack) string {
-	if track.DVProfile > 0 || strings.Contains(strings.ToLower(track.VideoRangeType), "dovi") || strings.Contains(strings.ToLower(track.DolbyVision), "dolby") {
-		return "dolby_vision"
-	}
-	if track.HDR10Plus || strings.Contains(strings.ToLower(track.VideoRangeType), "hdr10+") {
-		return "hdr10_plus"
-	}
-	joined := strings.ToLower(strings.Join([]string{track.VideoRange, track.VideoRangeType, track.ColorTransfer}, " "))
-	if strings.Contains(joined, "hlg") || strings.Contains(joined, "arib-std-b67") {
-		return "hlg"
-	}
-	if strings.Contains(joined, "hdr") || strings.Contains(joined, "smpte2084") || strings.Contains(joined, "pq") {
-		return "hdr10"
-	}
-	if joined == "  " || strings.TrimSpace(joined) == "" {
-		return ""
-	}
-	return "sdr"
+	return tonemap.DynamicRangeForVideoTrack(track)
 }
 
 func parseFrameRateV3(value string) float64 {
@@ -289,6 +386,12 @@ func normalizeCodecV3(value string) string {
 		return "eac3"
 	case "truehd", "mlp fba":
 		return "truehd"
+	case subtitleCodecPGSShort:
+		return subtitleCodecPGSFFmpeg
+	case subtitleCodecDVDShort, subtitleCodecVOBShort:
+		return subtitleCodecDVDFFmpeg
+	case subtitleCodecDVBShort:
+		return subtitleCodecDVBFFmpeg
 	default:
 		return v
 	}

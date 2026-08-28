@@ -1,5 +1,8 @@
 import type { CreateProfileRequest, Profile } from "@/api/types";
-import { avatarPresetRef, parseProfileAvatarPresetRef } from "@/lib/profile-avatars";
+import {
+  avatarPresetRef,
+  parseProfileAvatarPresetRef,
+} from "@/lib/profile-avatars";
 import {
   formatPlaybackQualityPreset,
   playbackQualityPresetFromValue,
@@ -45,7 +48,9 @@ function sortUniqueLibraryIDs(ids: number[] | null | undefined): number[] {
     return [];
   }
 
-  return [...new Set(ids.filter((id) => Number.isInteger(id) && id > 0))].sort((a, b) => a - b);
+  return [...new Set(ids.filter((id) => Number.isInteger(id) && id > 0))].sort(
+    (a, b) => a - b,
+  );
 }
 
 export function createProfileDraft(profile?: Profile | null): ProfileDraft {
@@ -56,19 +61,25 @@ export function createProfileDraft(profile?: Profile | null): ProfileDraft {
     clearPin: false,
     isChild: profile?.is_child ?? false,
     maxContentRating: profile?.max_content_rating ?? "",
-    maxPlaybackQuality: playbackQualityPresetFromValue(profile?.max_playback_quality),
+    maxPlaybackQuality: playbackQualityPresetFromValue(
+      profile?.max_playback_quality,
+    ),
     libraryRestrictionsEnabled: profile?.library_restrictions_enabled ?? false,
     allowedLibraryIDs: sortUniqueLibraryIDs(profile?.allowed_library_ids),
   };
 }
 
-export function buildProfileRequestFromDraft(draft: ProfileDraft): CreateProfileRequest {
+export function buildProfileRequestFromDraft(
+  draft: ProfileDraft,
+): CreateProfileRequest {
   const body: CreateProfileRequest = {
     name: draft.name.trim(),
     avatar: draft.avatarPreset ? avatarPresetRef(draft.avatarPreset) : "",
     is_child: draft.isChild,
     max_content_rating: draft.maxContentRating,
-    max_playback_quality: playbackQualityValueFromPreset(draft.maxPlaybackQuality),
+    max_playback_quality: playbackQualityValueFromPreset(
+      draft.maxPlaybackQuality,
+    ),
     library_restrictions_enabled: draft.libraryRestrictionsEnabled,
     allowed_library_ids: draft.libraryRestrictionsEnabled
       ? sortUniqueLibraryIDs(draft.allowedLibraryIDs)
@@ -94,13 +105,16 @@ export function buildProfileAccessSummary(
   >,
 ): ProfileAccessSummary {
   const contentRating =
-    CONTENT_RATING_OPTIONS.find((option) => option.value === profile.max_content_rating)?.summary ??
-    "Any content";
+    CONTENT_RATING_OPTIONS.find(
+      (option) => option.value === profile.max_content_rating,
+    )?.summary ?? "Any content";
   const libraryCount = sortUniqueLibraryIDs(profile.allowed_library_ids).length;
   const libraries = profile.library_restrictions_enabled
     ? `${libraryCount} ${libraryCount === 1 ? "library" : "libraries"}`
     : "All libraries";
-  const qualityLabel = formatPlaybackQualityPreset(profile.max_playback_quality);
+  const qualityLabel = formatPlaybackQualityPreset(
+    profile.max_playback_quality,
+  );
   const playbackQuality = `${qualityLabel} quality`;
 
   return {

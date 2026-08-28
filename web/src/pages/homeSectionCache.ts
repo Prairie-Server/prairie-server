@@ -1,8 +1,14 @@
-import type { HomeSectionItemsResponse, ResolvedSection, ResolvedSectionLayout } from "@/api/types";
+import type {
+  HomeSectionItemsResponse,
+  ResolvedSection,
+  ResolvedSectionLayout,
+} from "@/api/types";
 
 export function collectCachedHomeSections(
   layout: ResolvedSectionLayout[],
-  readCachedSection: (sectionId: string) => HomeSectionItemsResponse | undefined,
+  readCachedSection: (
+    sectionId: string,
+  ) => HomeSectionItemsResponse | undefined,
 ): Map<string, ResolvedSection> {
   const cachedSections = new Map<string, ResolvedSection>();
 

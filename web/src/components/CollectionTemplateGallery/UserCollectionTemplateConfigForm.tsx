@@ -21,6 +21,11 @@ import {
   displayFiltersToQueryDefinition,
 } from "@/lib/collectionDisplayFilters";
 import {
+  COLLECTION_SOURCE_ORDER,
+  selectValueToSortConfig,
+} from "@/lib/collectionSortConfig";
+import { CollectionDefaultSortField } from "@/components/collections/CollectionDefaultSortField";
+import {
   COLLECTION_MAX_ITEMS,
   libraryEligibilityForMediaKind,
   mediaKindLabel,
@@ -45,7 +50,10 @@ import {
 import { Switch } from "@/components/ui/switch";
 
 import { MDBListBrowser } from "./MDBListBrowser";
-import { TemplatePosterField, type TemplatePosterMode } from "./TemplatePosterField";
+import {
+  TemplatePosterField,
+  type TemplatePosterMode,
+} from "./TemplatePosterField";
 
 import { Loader2, Plus, X } from "lucide-react";
 interface Props {
@@ -58,7 +66,8 @@ interface Props {
 // Select disallows empty-string SelectItem values, so we map this to "" only
 // at submit time when populating the request body.
 const MANUAL_SCHEDULE = "none" as const;
-type ScheduleChoice = typeof MANUAL_SCHEDULE | Exclude<UserCollectionSyncSchedule, "">;
+type ScheduleChoice =
+  typeof MANUAL_SCHEDULE | Exclude<UserCollectionSyncSchedule, "">;
 
 // SCHEDULE_OPTIONS is the user-allowed cadence set. It mirrors the
 // usercollections.AllowedSyncSchedules map on the backend, which caps user
@@ -70,7 +79,9 @@ const SCHEDULE_OPTIONS: Array<{ value: ScheduleChoice; label: string }> = [
   { value: "monthly", label: "Monthly" },
 ];
 
-function scheduleChoiceToRequest(choice: ScheduleChoice): UserCollectionSyncSchedule {
+function scheduleChoiceToRequest(
+  choice: ScheduleChoice,
+): UserCollectionSyncSchedule {
   return choice === MANUAL_SCHEDULE ? "" : choice;
 }
 
@@ -87,7 +98,11 @@ function templateDefaultSchedule(cron: string | undefined): ScheduleChoice {
   return "daily";
 }
 
-export function UserCollectionTemplateConfigForm({ template, onCancel, onCreated }: Props) {
+export function UserCollectionTemplateConfigForm({
+  template,
+  onCancel,
+  onCreated,
+}: Props) {
   const tmdbMutation = useImportUserTMDBCollection();
   const traktMutation = useImportUserTraktCollection();
   const mdblistMutation = useImportUserMDBListCollection();
@@ -95,19 +110,26 @@ export function UserCollectionTemplateConfigForm({ template, onCancel, onCreated
 
   const [title, setTitle] = useState(template.title);
   const [description, setDescription] = useState(template.description);
-  const [limit, setLimit] = useState(template.default_limit ? String(template.default_limit) : "");
+  const [limit, setLimit] = useState(
+    template.default_limit ? String(template.default_limit) : "",
+  );
   const [schedule, setSchedule] = useState<ScheduleChoice>(
     templateDefaultSchedule(template.default_sync_schedule),
   );
   const [isShared, setIsShared] = useState(false);
   const [mdblistUrl, setMdblistUrl] = useState(template.mdblist?.url ?? "");
   const [libraryIds, setLibraryIds] = useState<number[]>([]);
-  const [watchFilter, setWatchFilter] = useState<UserCollectionWatchFilter>("all");
-  const [mediaFilter, setMediaFilter] = useState<UserCollectionMediaFilter>("all");
+  const [watchFilter, setWatchFilter] =
+    useState<UserCollectionWatchFilter>("all");
+  const [mediaFilter, setMediaFilter] =
+    useState<UserCollectionMediaFilter>("all");
   const [posterMode, setPosterMode] = useState<TemplatePosterMode>(() =>
     template.poster_path ? "default" : "custom",
   );
   const [customPosterUrl, setCustomPosterUrl] = useState("");
+  const [defaultSort, setDefaultSort] = useState<string>(
+    COLLECTION_SOURCE_ORDER,
+  );
 
   const eligibility = libraryEligibilityForMediaKind(template.media_kind);
   const pickerLibraries = libraries.map((lib) => ({
@@ -118,8 +140,12 @@ export function UserCollectionTemplateConfigForm({ template, onCancel, onCreated
 
   const parsedLimit = parseOptionalPositiveInteger(limit);
   const limitInvalid = limit.trim().length > 0 && parsedLimit === undefined;
-  const isPending = tmdbMutation.isPending || traktMutation.isPending || mdblistMutation.isPending;
-  const missingMDBListURL = template.source === "mdblist" && mdblistUrl.trim().length === 0;
+  const isPending =
+    tmdbMutation.isPending ||
+    traktMutation.isPending ||
+    mdblistMutation.isPending;
+  const missingMDBListURL =
+    template.source === "mdblist" && mdblistUrl.trim().length === 0;
   const submitDisabled = isPending || limitInvalid || missingMDBListURL;
 
   function handleSubmit(event: FormEvent) {
@@ -137,7 +163,11 @@ export function UserCollectionTemplateConfigForm({ template, onCancel, onCreated
           ? customPosterUrl.trim() || undefined
           : template.poster_path || undefined,
       library_ids: libraryIds.length > 0 ? libraryIds : undefined,
-      display_query_definition: displayFiltersToQueryDefinition(watchFilter, mediaFilter),
+      display_query_definition: displayFiltersToQueryDefinition(
+        watchFilter,
+        mediaFilter,
+      ),
+      sort_config: selectValueToSortConfig(defaultSort),
     };
 
     if (template.source === "tmdb" && template.tmdb) {
@@ -190,7 +220,9 @@ export function UserCollectionTemplateConfigForm({ template, onCancel, onCreated
               {mediaKindLabel(template.media_kind)}
             </Badge>
           </div>
-          <p className="text-muted-foreground text-xs">{template.description}</p>
+          <p className="text-muted-foreground text-xs">
+            {template.description}
+          </p>
         </div>
       </div>
 
@@ -234,8 +266,8 @@ export function UserCollectionTemplateConfigForm({ template, onCancel, onCreated
               required
             />
             <p className="text-muted-foreground text-xs">
-              Pick a list above or paste any public MDBList list URL (with or without{" "}
-              <code>/json</code>). Items resolve via TMDB/IMDb/TVDB IDs.
+              Pick a list above or paste any public MDBList list URL (with or
+              without <code>/json</code>). Items resolve via TMDB/IMDb/TVDB IDs.
             </p>
           </div>
         </div>
@@ -259,7 +291,9 @@ export function UserCollectionTemplateConfigForm({ template, onCancel, onCreated
           <Label htmlFor="user-template-watch-filter">Watch state</Label>
           <Select
             value={watchFilter}
-            onValueChange={(next) => setWatchFilter(next as UserCollectionWatchFilter)}
+            onValueChange={(next) =>
+              setWatchFilter(next as UserCollectionWatchFilter)
+            }
           >
             <SelectTrigger id="user-template-watch-filter">
               <SelectValue />
@@ -277,7 +311,9 @@ export function UserCollectionTemplateConfigForm({ template, onCancel, onCreated
           <Label htmlFor="user-template-media-filter">Content</Label>
           <Select
             value={mediaFilter}
-            onValueChange={(next) => setMediaFilter(next as UserCollectionMediaFilter)}
+            onValueChange={(next) =>
+              setMediaFilter(next as UserCollectionMediaFilter)
+            }
           >
             <SelectTrigger id="user-template-media-filter">
               <SelectValue />
@@ -293,12 +329,14 @@ export function UserCollectionTemplateConfigForm({ template, onCancel, onCreated
         </div>
       </div>
       <p className="text-muted-foreground text-xs">
-        Uses the active profile&rsquo;s watched state. Shared profiles may see different results.
+        Uses the active profile&rsquo;s watched state. Shared profiles may see
+        different results.
       </p>
 
       {template.requires_profile ? (
         <p className="text-muted-foreground text-xs">
-          This template uses your active profile&rsquo;s connected Trakt account.
+          This template uses your active profile&rsquo;s connected Trakt
+          account.
         </p>
       ) : null}
 
@@ -323,12 +361,19 @@ export function UserCollectionTemplateConfigForm({ template, onCancel, onCreated
             inputMode="numeric"
             value={limit}
             onChange={(event) => setLimit(event.target.value)}
-            placeholder={template.default_limit ? String(template.default_limit) : "No limit"}
+            placeholder={
+              template.default_limit
+                ? String(template.default_limit)
+                : "No limit"
+            }
           />
         </div>
         <div className="space-y-2">
           <Label htmlFor="user-template-schedule">Auto Refresh</Label>
-          <Select value={schedule} onValueChange={(next) => setSchedule(next as ScheduleChoice)}>
+          <Select
+            value={schedule}
+            onValueChange={(next) => setSchedule(next as ScheduleChoice)}
+          >
             <SelectTrigger id="user-template-schedule">
               <SelectValue />
             </SelectTrigger>
@@ -343,6 +388,13 @@ export function UserCollectionTemplateConfigForm({ template, onCancel, onCreated
         </div>
       </div>
 
+      <CollectionDefaultSortField
+        value={defaultSort}
+        onChange={setDefaultSort}
+        allowPersonalized
+        inputId="user-template-default-sort"
+      />
+
       <div className="border-border flex items-center justify-between rounded-md border px-3 py-2">
         <div className="space-y-0.5">
           <p className="text-sm font-medium">Share with other profiles</p>
@@ -354,7 +406,12 @@ export function UserCollectionTemplateConfigForm({ template, onCancel, onCreated
       </div>
 
       <div className="border-border flex justify-end gap-2 border-t pt-4">
-        <Button type="button" variant="ghost" onClick={onCancel} disabled={isPending}>
+        <Button
+          type="button"
+          variant="ghost"
+          onClick={onCancel}
+          disabled={isPending}
+        >
           <X />
           Cancel
         </Button>

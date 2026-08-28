@@ -3,13 +3,23 @@ import type { FormEvent } from "react";
 import QRCode from "react-qr-code";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { api } from "@/api/client";
-import type { DeviceLoginPollResponse, DeviceLoginStartResponse, Profile } from "@/api/types";
+import type {
+  DeviceLoginPollResponse,
+  DeviceLoginStartResponse,
+  Profile,
+} from "@/api/types";
 import { getBootstrapProfile, useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/PasswordInput";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import {
   Select,
@@ -72,7 +82,8 @@ export default function Login() {
   const [provider, setProvider] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [startingDeviceLogin, setStartingDeviceLogin] = useState(false);
-  const [deviceSession, setDeviceSession] = useState<DeviceLoginStartResponse | null>(null);
+  const [deviceSession, setDeviceSession] =
+    useState<DeviceLoginStartResponse | null>(null);
   const [deviceStatusMessage, setDeviceStatusMessage] = useState("");
   const [devicePolling, setDevicePolling] = useState(false);
   const [showDeviceFallback, setShowDeviceFallback] = useState(false);
@@ -100,13 +111,20 @@ export default function Login() {
     [providers],
   );
   const oauthProviders = useMemo(
-    () => providers.filter((entry) => entry.mode === "oauth" && entry.installation_id),
+    () =>
+      providers.filter(
+        (entry) => entry.mode === "oauth" && entry.installation_id,
+      ),
     [providers],
   );
 
   const oauthError =
-    searchParams.get("error") === "oauth_failed" ? searchParams.get("reason") : null;
-  const nextParam = redirectTarget ? `?next=${encodeURIComponent(redirectTarget)}` : "";
+    searchParams.get("error") === "oauth_failed"
+      ? searchParams.get("reason")
+      : null;
+  const nextParam = redirectTarget
+    ? `?next=${encodeURIComponent(redirectTarget)}`
+    : "";
   const selectedProvider =
     provider ||
     credentialProviders.find((entry) => entry.default)?.id ||
@@ -176,14 +194,18 @@ export default function Login() {
 
         if (result.status === "denied") {
           shouldPollAgain = false;
-          setDeviceStatusMessage("Approval was denied. Start a new code to try again.");
+          setDeviceStatusMessage(
+            "Approval was denied. Start a new code to try again.",
+          );
           setDeviceSession(null);
           return;
         }
 
         if (result.status === "expired" || result.status === "consumed") {
           shouldPollAgain = false;
-          setDeviceStatusMessage("This code is no longer valid. Start a new one.");
+          setDeviceStatusMessage(
+            "This code is no longer valid. Start a new one.",
+          );
           setDeviceSession(null);
           return;
         }
@@ -191,7 +213,9 @@ export default function Login() {
         setDeviceStatusMessage("Waiting for approval on your phone...");
       } catch (error) {
         if (!cancelled) {
-          setDeviceStatusMessage(error instanceof Error ? error.message : "Device sign-in failed");
+          setDeviceStatusMessage(
+            error instanceof Error ? error.message : "Device sign-in failed",
+          );
         }
       } finally {
         if (!cancelled) {
@@ -230,7 +254,9 @@ export default function Login() {
   }
 
   if (user) {
-    return <Navigate to={redirectTarget || (profile ? "/" : "/profiles")} replace />;
+    return (
+      <Navigate to={redirectTarget || (profile ? "/" : "/profiles")} replace />
+    );
   }
 
   async function handleSubmit(e: FormEvent) {
@@ -257,7 +283,9 @@ export default function Login() {
       setDeviceStatusMessage("Waiting for approval on your phone...");
       setShowDeviceFallback(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to start device login");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to start device login",
+      );
     } finally {
       setStartingDeviceLogin(false);
     }
@@ -292,8 +320,14 @@ export default function Login() {
                     method="post"
                     action={`/api/v1/auth/oauth/${entry.installation_id}/init${nextParam}`}
                   >
-                    <Button type="submit" variant="outline" className="w-full justify-start gap-3">
-                      {entry.icon_url && <img src={entry.icon_url} alt="" className="h-5 w-5" />}
+                    <Button
+                      type="submit"
+                      variant="outline"
+                      className="w-full justify-start gap-3"
+                    >
+                      {entry.icon_url && (
+                        <img src={entry.icon_url} alt="" className="h-5 w-5" />
+                      )}
                       <span>{entry.display_name}</span>
                     </Button>
                   </form>
@@ -356,7 +390,8 @@ export default function Login() {
                 <div>
                   <h2 className="text-sm font-semibold">Quick Connect</h2>
                   <p className="text-muted-foreground mt-1 text-sm">
-                    Show a code, then approve from Settings → Quick Connect on a signed-in device.
+                    Show a code, then approve from Settings → Quick Connect on a
+                    signed-in device.
                   </p>
                 </div>
                 {!deviceSession ? (
@@ -367,13 +402,22 @@ export default function Login() {
                     disabled={startingDeviceLogin}
                     onClick={() => void handleStartDeviceLogin()}
                   >
-                    {startingDeviceLogin ? <Loader2 className="animate-spin" /> : <QrCode />}
-                    {startingDeviceLogin ? "Generating code..." : "Show Quick Connect code"}
+                    {startingDeviceLogin ? (
+                      <Loader2 className="animate-spin" />
+                    ) : (
+                      <QrCode />
+                    )}
+                    {startingDeviceLogin
+                      ? "Generating code..."
+                      : "Show Quick Connect code"}
                   </Button>
                 ) : (
                   <div className="border-border/60 bg-background/50 space-y-4 rounded-md border p-4">
                     <div className="flex justify-center rounded-md bg-white p-3">
-                      <QRCode value={deviceSession.verification_uri_complete} size={176} />
+                      <QRCode
+                        value={deviceSession.verification_uri_complete}
+                        size={176}
+                      />
                     </div>
                     <div className="space-y-2 text-center">
                       <div>
@@ -384,14 +428,17 @@ export default function Login() {
                           {deviceSession.user_code}
                         </div>
                         <p className="text-muted-foreground mt-1 text-xs">
-                          Enter this in Settings → Quick Connect on a signed-in device.
+                          Enter this in Settings → Quick Connect on a signed-in
+                          device.
                         </p>
                       </div>
                       <div>
                         <div className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
                           Match code
                         </div>
-                        <div className="text-lg font-semibold">{deviceSession.match_code}</div>
+                        <div className="text-lg font-semibold">
+                          {deviceSession.match_code}
+                        </div>
                       </div>
                       {showDeviceFallback ? (
                         <p className="text-muted-foreground text-xs break-all">
@@ -423,7 +470,9 @@ export default function Login() {
                         Start over
                       </Button>
                       <p className="text-muted-foreground text-center text-sm">
-                        {devicePolling ? "Checking for approval..." : deviceStatusMessage}
+                        {devicePolling
+                          ? "Checking for approval..."
+                          : deviceStatusMessage}
                       </p>
                     </div>
                   </div>
@@ -433,7 +482,10 @@ export default function Login() {
 
             <p className="text-muted-foreground text-center text-sm">
               Don&apos;t have an account?{" "}
-              <Link to={signupHref} className="text-foreground underline hover:no-underline">
+              <Link
+                to={signupHref}
+                className="text-foreground underline hover:no-underline"
+              >
                 Sign up
               </Link>
             </p>

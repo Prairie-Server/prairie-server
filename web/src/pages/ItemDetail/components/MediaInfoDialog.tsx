@@ -13,8 +13,15 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { buildDetailLine, buildQualitySummary, sortByResolution } from "./VersionFlyout";
-import { buildMediaSpecSections, type MediaSpecSection } from "./mediaSpecSections";
+import {
+  buildDetailLine,
+  buildQualitySummary,
+  sortByResolution,
+} from "./VersionFlyout";
+import {
+  buildMediaSpecSections,
+  type MediaSpecSection,
+} from "./mediaSpecSections";
 
 interface MediaInfoDialogProps {
   open: boolean;
@@ -39,8 +46,12 @@ function VersionSpecSheet({ sections }: { sections: MediaSpecSection[] }) {
                 key={row.label}
                 className="flex items-baseline justify-between gap-4 px-3 py-1.5 text-sm"
               >
-                <span className="text-muted-foreground shrink-0">{row.label}</span>
-                <span className="text-foreground min-w-0 text-right break-all">{row.value}</span>
+                <span className="text-muted-foreground shrink-0">
+                  {row.label}
+                </span>
+                <span className="text-foreground min-w-0 text-right break-all">
+                  {row.value}
+                </span>
               </div>
             ))}
           </div>
@@ -59,7 +70,8 @@ export default function MediaInfoDialog({
 }: MediaInfoDialogProps) {
   const sorted = useMemo(() => sortByResolution(versions), [versions]);
   const initialValue = useMemo(() => {
-    const target = sorted.find((version) => version.file_id === initialFileId) ?? sorted[0];
+    const target =
+      sorted.find((version) => version.file_id === initialFileId) ?? sorted[0];
     return target ? String(target.file_id) : undefined;
   }, [initialFileId, sorted]);
   const onlyVersion = sorted.length === 1 ? sorted[0] : undefined;
@@ -77,14 +89,22 @@ export default function MediaInfoDialog({
             <VersionSpecSheet sections={buildMediaSpecSections(onlyVersion)} />
           ) : (
             // DialogContent unmounts when closed, so defaultValue re-targets on each open.
-            <Accordion type="multiple" defaultValue={initialValue ? [initialValue] : []}>
+            <Accordion
+              type="multiple"
+              defaultValue={initialValue ? [initialValue] : []}
+            >
               {sorted.map((version, index) => {
                 const summary =
-                  buildQualitySummary(version) || version.file_name || `Version ${index + 1}`;
+                  buildQualitySummary(version) ||
+                  version.file_name ||
+                  `Version ${index + 1}`;
                 const detail = buildDetailLine(version);
 
                 return (
-                  <AccordionItem key={version.file_id} value={String(version.file_id)}>
+                  <AccordionItem
+                    key={version.file_id}
+                    value={String(version.file_id)}
+                  >
                     <AccordionTrigger className="py-3 hover:no-underline">
                       <span className="min-w-0 flex-1">
                         <span className="text-foreground block truncate text-sm font-medium">
@@ -98,7 +118,9 @@ export default function MediaInfoDialog({
                       </span>
                     </AccordionTrigger>
                     <AccordionContent>
-                      <VersionSpecSheet sections={buildMediaSpecSections(version)} />
+                      <VersionSpecSheet
+                        sections={buildMediaSpecSections(version)}
+                      />
                     </AccordionContent>
                   </AccordionItem>
                 );

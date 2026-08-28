@@ -29,7 +29,10 @@ function splitMediaPath(
   filePath: string,
   fallbackName?: string,
 ): Omit<MediaLocationEntry, "fileId" | "versionLabel"> | null {
-  const lastSlash = Math.max(filePath.lastIndexOf("/"), filePath.lastIndexOf("\\"));
+  const lastSlash = Math.max(
+    filePath.lastIndexOf("/"),
+    filePath.lastIndexOf("\\"),
+  );
   if (lastSlash < 0) {
     const fileName = fallbackName?.trim() || filePath.trim();
     if (!fileName) return null;
@@ -42,9 +45,11 @@ function splitMediaPath(
   }
 
   const folderPath = filePath.slice(0, lastSlash);
-  const fileName = filePath.slice(lastSlash + 1) || fallbackName?.trim() || "Unknown file";
+  const fileName =
+    filePath.slice(lastSlash + 1) || fallbackName?.trim() || "Unknown file";
   const folderSegments = folderPath.split(/[\\/]/).filter(Boolean);
-  const folderName = folderSegments[folderSegments.length - 1] || folderPath || "/";
+  const folderName =
+    folderSegments[folderSegments.length - 1] || folderPath || "/";
 
   return {
     folderName,
@@ -59,7 +64,8 @@ function deriveMediaLocationsWithSummary(
 ): MediaLocationEntry[] {
   return [...versions]
     .sort((a, b) => {
-      const resolutionDelta = resolutionScore(b.resolution) - resolutionScore(a.resolution);
+      const resolutionDelta =
+        resolutionScore(b.resolution) - resolutionScore(a.resolution);
       if (resolutionDelta !== 0) return resolutionDelta;
       if (a.hdr !== b.hdr) return a.hdr ? -1 : 1;
       return a.file_id - b.file_id;
@@ -131,7 +137,9 @@ export default function MediaLocations({
           >
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0 flex-1 space-y-1.5">
-                <div className="text-sm font-medium">{location.versionLabel}</div>
+                <div className="text-sm font-medium">
+                  {location.versionLabel}
+                </div>
                 <div className="min-w-0 font-mono text-xs leading-relaxed sm:text-[12px]">
                   {location.folderName ? (
                     <span
@@ -142,7 +150,9 @@ export default function MediaLocations({
                       {location.folderName}/
                     </span>
                   ) : null}
-                  <span className="text-foreground ml-1 break-all">{location.fileName}</span>
+                  <span className="text-foreground ml-1 break-all">
+                    {location.fileName}
+                  </span>
                 </div>
               </div>
 
@@ -166,7 +176,9 @@ export default function MediaLocations({
                     variant="ghost"
                     size="icon"
                     className="text-muted-foreground hover:text-foreground h-7 w-7"
-                    onClick={() => copyText(location.folderPath, "Copied folder path")}
+                    onClick={() =>
+                      copyText(location.folderPath, "Copied folder path")
+                    }
                     title="Copy full folder path"
                     aria-label={`Copy full folder path for ${location.fileName}`}
                   >

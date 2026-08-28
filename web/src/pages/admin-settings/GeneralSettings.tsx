@@ -15,7 +15,9 @@ const KEYS = [
 
 export default function GeneralSettings() {
   const form = useSettingsForm({ keys: useMemo(() => KEYS, []) });
-  const trustedProxiesManaged = form.sensitiveManagedByEnv.includes("clientip.trusted_proxies");
+  const trustedProxiesManaged = form.sensitiveManagedByEnv.includes(
+    "clientip.trusted_proxies",
+  );
 
   if (form.isLoading)
     return (
@@ -38,7 +40,8 @@ export default function GeneralSettings() {
       <div className="mb-6 space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">General</h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Authentication, token lifetimes, networking, and server logging behavior.
+          Authentication, token lifetimes, networking, and server logging
+          behavior.
         </p>
       </div>
 
@@ -99,20 +102,24 @@ export default function GeneralSettings() {
             <p className="text-sm font-medium">Choosing trusted proxy ranges</p>
             <ul className="text-muted-foreground mt-1 list-disc space-y-1 pl-4 text-xs leading-relaxed">
               <li>
-                Setting this replaces the defaults (private ranges 10.0.0.0/8, 172.16.0.0/12,
-                192.168.0.0/16 and loopback). Leave it empty to keep them.
+                Setting this replaces the defaults (private ranges 10.0.0.0/8,
+                172.16.0.0/12, 192.168.0.0/16 and loopback). Leave it empty to
+                keep them.
               </li>
               <li>
-                Recommended: keep the defaults, and only add your proxy&apos;s public address as a
-                /32 (e.g. 203.0.113.7/32) if it reaches Prairie from outside those ranges.
+                Recommended: keep the defaults, and only add your proxy&apos;s
+                public address as a /32 (e.g. 203.0.113.7/32) if it reaches
+                Prairie from outside those ranges.
               </li>
               <li>
-                CDNs such as Cloudflare connect from many published IP ranges — you must list all of
-                their CIDRs and keep the list up to date as they change.
+                CDNs such as Cloudflare connect from many published IP ranges —
+                you must list all of their CIDRs and keep the list up to date as
+                they change.
               </li>
               <li>
-                Avoid 0.0.0.0/0 (trust everything): any client could then spoof its IP with a forged
-                X-Forwarded-For header, affecting rate limits and audit logs.
+                Avoid 0.0.0.0/0 (trust everything): any client could then spoof
+                its IP with a forged X-Forwarded-For header, affecting rate
+                limits and audit logs.
               </li>
             </ul>
           </div>

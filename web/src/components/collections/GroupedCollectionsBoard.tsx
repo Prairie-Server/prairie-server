@@ -81,7 +81,8 @@ export function GroupedCollectionsBoard<T extends GroupedItem>({
 
   const itemIdToGroup = useMemo(() => {
     const map = new Map<string, string>();
-    for (const item of items) map.set(getItemId(item), item.group_id ?? UNGROUPED_LABEL);
+    for (const item of items)
+      map.set(getItemId(item), item.group_id ?? UNGROUPED_LABEL);
     return map;
   }, [items, getItemId]);
 
@@ -89,13 +90,17 @@ export function GroupedCollectionsBoard<T extends GroupedItem>({
     () =>
       sections
         .map((s) => s.id)
-        .filter((id): id is string => id !== null && groups.some((g) => g.id === id)),
+        .filter(
+          (id): id is string => id !== null && groups.some((g) => g.id === id),
+        ),
     [sections, groups],
   );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
-    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    }),
   );
 
   const handleDragEnd = useCallback(
@@ -132,7 +137,8 @@ export function GroupedCollectionsBoard<T extends GroupedItem>({
       if (fromGroup === toGroup) {
         if (!onReorderInGroup) return;
         const groupItems =
-          sections.find((s) => (s.id ?? UNGROUPED_LABEL) === fromGroup)?.items ?? [];
+          sections.find((s) => (s.id ?? UNGROUPED_LABEL) === fromGroup)
+            ?.items ?? [];
         const ids = groupItems.map(getItemId);
         const oldIndex = ids.indexOf(activeId);
         const newIndex = ids.indexOf(overId);
@@ -144,7 +150,10 @@ export function GroupedCollectionsBoard<T extends GroupedItem>({
         return;
       }
 
-      onMoveItemAcross?.(activeId, toGroup === UNGROUPED_LABEL ? null : toGroup);
+      onMoveItemAcross?.(
+        activeId,
+        toGroup === UNGROUPED_LABEL ? null : toGroup,
+      );
     },
     [
       sections,
@@ -158,7 +167,11 @@ export function GroupedCollectionsBoard<T extends GroupedItem>({
   );
 
   return (
-    <DndContext sensors={sensors} collisionDetection={closestCorners} onDragEnd={handleDragEnd}>
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCorners}
+      onDragEnd={handleDragEnd}
+    >
       <SortableContext
         items={explicitIdsInOrder.map((id) => `${GROUP_DROPPABLE_PREFIX}${id}`)}
         strategy={verticalListSortingStrategy}
@@ -167,7 +180,8 @@ export function GroupedCollectionsBoard<T extends GroupedItem>({
           {sections.map((section) => {
             const sectionKey = section.id ?? UNGROUPED_LABEL;
             const isUngrouped = section.id === null;
-            const isExplicit = section.id !== null && groups.some((g) => g.id === section.id);
+            const isExplicit =
+              section.id !== null && groups.some((g) => g.id === section.id);
             return (
               <SectionBlock
                 key={sectionKey || "__ungrouped__"}
@@ -213,7 +227,9 @@ function SectionBlock<T extends GroupedItem>({
   const sectionKey = section.id ?? UNGROUPED_LABEL;
   const droppableId = `${GROUP_DROPPABLE_PREFIX}${sectionKey}`;
   const bodyDroppableId = `${GROUP_BODY_DROPPABLE_PREFIX}${sectionKey}`;
-  const { setNodeRef: setDroppableRef, isOver } = useDroppable({ id: bodyDroppableId });
+  const { setNodeRef: setDroppableRef, isOver } = useDroppable({
+    id: bodyDroppableId,
+  });
 
   const sortableGroup = useSortable({
     id: droppableId,
@@ -227,7 +243,11 @@ function SectionBlock<T extends GroupedItem>({
   };
 
   return (
-    <section ref={sortableGroup.setNodeRef} style={headerStyle} className="space-y-4">
+    <section
+      ref={sortableGroup.setNodeRef}
+      style={headerStyle}
+      className="space-y-4"
+    >
       <CollectionGroupHeader
         title={section.name}
         count={section.items.length}
@@ -242,7 +262,9 @@ function SectionBlock<T extends GroupedItem>({
             : undefined
         }
         onDelete={
-          isExplicit && onDeleteGroup && section.id ? () => onDeleteGroup(section.id!) : undefined
+          isExplicit && onDeleteGroup && section.id
+            ? () => onDeleteGroup(section.id!)
+            : undefined
         }
       />
       <div
@@ -253,7 +275,10 @@ function SectionBlock<T extends GroupedItem>({
             : ""
         }`}
       >
-        <SortableContext items={section.items.map(getItemId)} strategy={rectSortingStrategy}>
+        <SortableContext
+          items={section.items.map(getItemId)}
+          strategy={rectSortingStrategy}
+        >
           {section.items.length === 0 ? (
             <EmptyGroupPlaceholder />
           ) : (
@@ -335,7 +360,9 @@ function CollectionGroupHeader({
           {title}
         </h2>
       )}
-      <span className="text-muted-foreground text-xs tabular-nums">{count}</span>
+      <span className="text-muted-foreground text-xs tabular-nums">
+        {count}
+      </span>
       <div className="ml-auto flex items-center gap-1">
         {editing ? (
           <>

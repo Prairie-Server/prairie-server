@@ -19,6 +19,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -29,6 +30,7 @@ import (
 	"github.com/hashicorp/go-hclog"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"github.com/redis/go-redis/v9"
 
 	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	sdkcapability "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/capability"
@@ -38,8 +40,10 @@ import (
 	"github.com/prairie-server/prairie-server/internal/adminjob"
 	"github.com/prairie-server/prairie-server/internal/api"
 	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/artworkstore"
 	"github.com/prairie-server/prairie-server/internal/audiobooks"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
 	"github.com/prairie-server/prairie-server/internal/audiobooks/podcastfeed"
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/autoscan"
@@ -57,6 +61,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/envutil"
 	evt "github.com/prairie-server/prairie-server/internal/events"
 	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
 	"github.com/prairie-server/prairie-server/internal/imagecache"
 	"github.com/prairie-server/prairie-server/internal/imageutil"
 	"github.com/prairie-server/prairie-server/internal/intromarkers"
@@ -72,7 +77,6 @@ import (
 	"github.com/prairie-server/prairie-server/internal/markers"
 	"github.com/prairie-server/prairie-server/internal/mdblist"
 	"github.com/prairie-server/prairie-server/internal/metadata"
-	"github.com/prairie-server/prairie-server/internal/trickplay"
 
 	// Built-in metadata providers self-register into the metadata package's
 	// builtin registry on import; buildProviders resolves their seeded chain
@@ -100,6 +104,8 @@ import (
 	"github.com/prairie-server/prairie-server/internal/secret"
 	"github.com/prairie-server/prairie-server/internal/sections"
 	"github.com/prairie-server/prairie-server/internal/server"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
 	"github.com/prairie-server/prairie-server/internal/subtitles"
 	"github.com/prairie-server/prairie-server/internal/taskmanager"
 	taskrepository "github.com/prairie-server/prairie-server/internal/taskmanager/repository"
@@ -107,6 +113,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/taskmanager/triggers"
 	"github.com/prairie-server/prairie-server/internal/telemetry"
 	"github.com/prairie-server/prairie-server/internal/transcodenode"
+	"github.com/prairie-server/prairie-server/internal/trickplay"
 	"github.com/prairie-server/prairie-server/internal/usercollections"
 	"github.com/prairie-server/prairie-server/internal/userdb"
 	"github.com/prairie-server/prairie-server/internal/userstore"
@@ -122,10 +129,6 @@ import (
 	siloweb "github.com/prairie-server/prairie-server/web"
 )
 
-const (
-	authModeIntegrated = "integrated"
-)
-
 // resolveNodeIdentity returns a stable node identifier used by the
 // heartbeat writer, reconciler, and shutdown cleanup. Resolution order:
 // PRAIRIE_NODE_NAME > SILO_NODE_NAME > NODE_NAME > os.Hostname().
@@ -138,6 +141,88 @@ func resolveNodeIdentity() string {
 	}
 	h, _ := os.Hostname()
 	return h
+}
+
+func clientIPResolverFromConfig(cfg *config.Config) (*clientip.Resolver, error) {
+	if cfg == nil {
+		return nil, fmt.Errorf("config is not loaded")
+	}
+	raw := cfg.ClientIP.TrustedProxies
+	if raw == "" {
+		raw = clientip.DefaultTrustedProxies
+	}
+	cidrs, err := clientip.ParseCIDRs(raw)
+	if err != nil {
+		return nil, err
+	}
+	return clientip.NewResolver(cidrs), nil
+}
+
+func registerClientIPConfigReload(watcher *nodeconfig.Watcher, resolver *clientip.Resolver) {
+	watcher.OnChange(func(old, updated *config.Config) {
+		if old != nil && old.ClientIP.TrustedProxies == updated.ClientIP.TrustedProxies {
+			return
+		}
+		raw := updated.ClientIP.TrustedProxies
+		if raw == "" {
+			raw = clientip.DefaultTrustedProxies
+		}
+		cidrs, err := clientip.ParseCIDRs(raw)
+		if err != nil {
+			slog.WarnContext(context.Background(), "clientip config reload failed", "component", "app", "error", err)
+			return
+		}
+		resolver.UpdateTrustedCIDRs(cidrs)
+	})
+}
+
+// newStreamTelemetryRegistry builds the telemetry registry for this process,
+// preferring the Redis-backed store in distributed mode. Distributed mode is
+// derived from whether Redis is configured unless the operator pinned
+// SILO_STREAM_TELEMETRY_DISTRIBUTED: a single-process deployment then stays on
+// the local store and a clustered one merges, without either being asked to set
+// a variable that only restates its own topology. Every process builds its
+// registry here, so the derivation belongs in this function rather than at the
+// call sites. It never falls back to LocalStore on a failed ping:
+// cache.NewRedisClient builds a lazy client that never dials, and a Redis
+// restart mid-deploy must not strand a publisher local-only for the life of the
+// process.
+func newStreamTelemetryRegistry(ctx context.Context, nodeID string, redisClient *redis.Client) *streamtelemetry.Registry {
+	streamTelemetryConfig := streamtelemetry.ConfigFromEnv(nodeID)
+	if !streamTelemetryConfig.DistributedExplicit {
+		streamTelemetryConfig.Distributed = redisClient != nil
+	}
+	store := streamtelemetry.GlobalSnapshotStore(streamtelemetry.NewLocalStore())
+	if streamTelemetryConfig.Enabled && streamTelemetryConfig.Distributed {
+		if redisClient != nil {
+			store = streamtelemetry.NewRedisStore(redisClient, streamTelemetryConfig, slog.Default())
+			pingCtx, pingCancel := context.WithTimeout(ctx, 2*time.Second)
+			if pingErr := redisClient.Ping(pingCtx).Err(); pingErr != nil {
+				slog.ErrorContext(ctx, "stream telemetry distributed mode cannot reach redis; publisher will retry each sweep", "address", redisClient.Options().Addr, "error", pingErr)
+			}
+			pingCancel()
+		} else {
+			slog.ErrorContext(ctx, "stream telemetry distributed mode requested but redis is not configured; using local store")
+		}
+	}
+	if streamTelemetryConfig.Enabled {
+		slog.InfoContext(ctx, "stream telemetry observing families",
+			"families", strings.Join(streamTelemetryConfig.ObservedFamilies(), ","))
+	}
+	return streamtelemetry.NewRegistry(streamTelemetryConfig, store, slog.Default())
+}
+
+// newStreamTelemetryViewCache builds the bounded-staleness cache the admin
+// parity endpoint reads. It shares one cached view across every reader so the
+// merged rebuild is paid at most once per TTL, not once per request.
+func newStreamTelemetryViewCache(registry *streamtelemetry.Registry) *streamtelemetry.ViewCache {
+	if registry == nil {
+		return nil
+	}
+	// Reads the TTL off the registry rather than calling ConfigFromEnv again:
+	// a second parse logs every invalid variable twice and the two calls could
+	// disagree if the environment changed between them.
+	return streamtelemetry.NewViewCache(registry, registry.ViewTTL(), slog.Default())
 }
 
 func resolvePluginCacheDir() string {
@@ -246,9 +331,11 @@ func configureOperationalLogging(
 	return operationalWriter, opslog.NewRepo(pool), opsPM
 }
 
+const postgresTuneModeIntegrated = "integrated"
+
 func maybeApplyPostgresTuning(ctx context.Context, pool *pgxpool.Pool, appMaxConnections int, mode string) {
 	switch strings.ToLower(strings.TrimSpace(mode)) {
-	case "", authModeIntegrated, "api":
+	case "", postgresTuneModeIntegrated, "api":
 	default:
 		return
 	}
@@ -316,6 +403,16 @@ func maybeApplyPostgresTuning(ctx context.Context, pool *pgxpool.Pool, appMaxCon
 // still reads via the read-path pass-through, so a backfill error must never
 // block boot. The sensitive-settings pass runs first so the arr
 // resolve-then-encrypt pass sees consistent referenced settings.
+// librarySettingsCleaner wires the per-user canonical settings cleanup the
+// library delete job runs, or nil when the user store is unavailable — the
+// executor treats a nil cleaner as "skip".
+func librarySettingsCleaner(pool *pgxpool.Pool, stores userstore.UserStoreProvider) adminjob.LibrarySettingsCleaner {
+	if pool == nil || stores == nil {
+		return nil
+	}
+	return userstore.NewSettingValuesCleaner(auth.NewUserRepository(pool), stores)
+}
+
 func runCredentialBackfills(ctx context.Context, pool *pgxpool.Pool, cipher *secret.Cipher, settings *catalog.EncryptedSettingsRepo) {
 	settingsN, err := settings.BackfillSensitiveSettings(ctx)
 	if err != nil {
@@ -349,7 +446,7 @@ func runCredentialBackfills(ctx context.Context, pool *pgxpool.Pool, cipher *sec
 
 func runCompatWebCommand(ctx context.Context, args []string) error {
 	if len(args) == 0 {
-		return fmt.Errorf("usage: prairie compat-web {status|install|update|remove}")
+		return fmt.Errorf("usage: silo compat-web {status|install|update|remove}")
 	}
 	command := args[0]
 	flags := flag.NewFlagSet("compat-web "+command, flag.ContinueOnError)
@@ -389,6 +486,16 @@ func runCompatWebCommand(ctx context.Context, args []string) error {
 	}
 }
 
+// normalizeLoadedConfig repairs derived config values after every load: the
+// DB-seeded default is Jellyfin's Linux-only ffmpeg path, so resolve it
+// through the same discovery the playback pipeline uses. Registered as an
+// OnLoad hook on both config watchers so hot reloads cannot restore the
+// seeded value, and applied to the startup snapshot before the watchers run.
+func normalizeLoadedConfig(cfg *config.Config) {
+	cfg.Playback.FFmpegPath = playback.ResolveFFmpegPath(cfg.Playback.FFmpegPath)
+}
+
+// main starts the Silo server or a requested maintenance command.
 func main() {
 	if len(os.Args) > 1 && os.Args[1] == "compat-web" {
 		if err := runCompatWebCommand(context.Background(), os.Args[2:]); err != nil {
@@ -400,9 +507,29 @@ func main() {
 	envFile := flag.String("env", ".env", "path to .env bootstrap file")
 	migrateOnly := flag.Bool("migrate-only", false, "apply database migrations and exit")
 	migrateStatus := flag.Bool("migrate-status", false, "show database migration status and exit")
+	migrateDownTo := flag.Int64("migrate-down-to", -1,
+		"roll back every migration newer than this version and exit (the version to KEEP)")
 	flag.Parse()
 
 	ctx := context.Background()
+
+	// Step 0: Validate the embedded settings contract before anything can
+	// depend on it. A malformed or self-inconsistent manifest is a build defect,
+	// not a runtime condition, so failing here — loudly, before the first
+	// request — is the whole point: the alternative is shipping an image whose
+	// contract disagrees with the clients that vendored it.
+	contract, err := settingscontract.Load()
+	if err != nil {
+		log.Fatalf("settings contract: %v", err)
+	}
+	contractETag, err := settingscontract.ETag()
+	if err != nil {
+		log.Fatalf("settings contract: %v", err)
+	}
+	slog.Info("settings contract loaded",
+		"revision", contract.Revision,
+		"definitions", len(contract.Definitions),
+		"etag", contractETag)
 
 	// Step 1: Bootstrap from .env
 	bc, err := config.LoadBootstrap(*envFile)
@@ -458,6 +585,21 @@ func main() {
 		return
 	}
 
+	if *migrateDownTo >= 0 {
+		// Deliberately its own flag rather than a mode of --migrate-only: this
+		// discards data, and several of the migrations it reverses are Go ones
+		// the goose CLI cannot reach, so it is the only way to undo them
+		// short of restoring a backup.
+		migCtx, migCancel := database.MigrationContext(ctx)
+		migErr := database.MigrateDownTo(migCtx, pool, migrations.FS, "sql", *migrateDownTo)
+		migCancel()
+		if migErr != nil {
+			log.Fatalf("failed to roll back migrations: %v", migErr)
+		}
+		slog.Info("database migrations rolled back", "kept_through_version", *migrateDownTo)
+		return
+	}
+
 	if *migrateOnly {
 		migCtx, migCancel := database.MigrationContext(ctx)
 		migErr := database.RunMigrations(migCtx, pool, migrations.FS, "sql")
@@ -475,7 +617,7 @@ func main() {
 	// The same gate decides whether this node runs the credential-encryption
 	// backfills: only the primary (migration-running) node sweeps plaintext to
 	// ciphertext; secondary nodes read whatever the primary encrypted.
-	isPrimaryNode := bc.Mode == authModeIntegrated || bc.Mode == "api" || bc.Mode == ""
+	isPrimaryNode := bc.Mode == postgresTuneModeIntegrated || bc.Mode == "api" || bc.Mode == ""
 	if isPrimaryNode {
 		migCtx, migCancel := database.MigrationContext(ctx)
 		if migErr := database.RunMigrations(migCtx, pool, migrations.FS, "sql"); migErr != nil {
@@ -531,7 +673,7 @@ func main() {
 				if err := settingsRepo.Set(ctx, "_yaml_imported", "true"); err != nil {
 					slog.Warn("failed to set yaml import flag", "error", err)
 				}
-				log.Printf("Imported config from %s — this file is no longer used", yamlPath)
+				log.Println("Imported config from silo.yaml — this file is no longer used")
 				settings, _ = settingsRepo.GetAll(ctx)
 			}
 		}
@@ -550,7 +692,7 @@ func main() {
 		settings["auth.jwt_secret"] = encoded
 	}
 	if settings["jellyfin_compat.server_id"] == "" {
-		serverID := uuid.NewSHA1(uuid.NameSpaceURL, []byte("https://prairie.local/jellycompat")).String()
+		serverID := uuid.NewSHA1(uuid.NameSpaceURL, []byte("https://silo.local/jellycompat")).String()
 		if err := settingsRepo.Set(ctx, "jellyfin_compat.server_id", serverID); err != nil {
 			slog.Warn("failed to persist generated server ID", "error", err)
 		}
@@ -562,6 +704,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("building config: %v", err)
 	}
+	normalizeLoadedConfig(cfg)
 
 	// Step 7: Apply bootstrap overrides
 	cfg.Server.Listen = bc.Listen
@@ -603,7 +746,7 @@ func main() {
 	logLevelVar.Set(parseLogLevel(cfg.Server.LogLevel))
 
 	// Bootstrap OpenTelemetry (logs + traces) before installing the log handler
-	// chain. Setup depends only on OTEL_* / PRAIRIE_OTEL_ENABLED env (not the DB),
+	// chain. Setup depends only on OTEL_* / SILO_OTEL_ENABLED env (not the DB),
 	// so it is safe to call here. When disabled, this is fully dormant: no
 	// providers are installed and telemetryShutdown is a no-op.
 	telemetryCfg := telemetry.LoadConfig(nodeID)
@@ -634,26 +777,30 @@ func main() {
 
 	mode := cfg.Server.Mode
 	maybeApplyPostgresTuning(ctx, pool, cfg.Database.MaxConnections, mode)
-	slog.Info("prairie starting", "mode", mode, "listen", cfg.Server.Listen, "log_level", cfg.Server.LogLevel, "node_id", nodeID)
+	slog.Info("silo starting", "mode", mode, "listen", cfg.Server.Listen, "log_level", cfg.Server.LogLevel, "node_id", nodeID)
 
 	appCtx, appCancel := context.WithCancel(ctx)
 	defer appCancel()
+	var streamTelemetryRegistry *streamtelemetry.Registry
+	var streamTelemetryViewCache *streamtelemetry.ViewCache
 	restartReqCh := make(chan struct{}, 1)
 	var restartRequested atomic.Bool
 
 	eventBus := cache.NewEventBus(cfg.Redis.URL)
+	if err := eventBus.Subscribe(appCtx, cache.ChannelCatalog, func(event cache.Event) {
+		if event.Type == cache.EventScanComplete {
+			sections.InvalidateResolvedListCache()
+		}
+	}); err != nil {
+		slog.Warn("subscribe section cache invalidation failed", "error", err)
+	}
 	logStreamHub := logstream.NewHub(nodeID, eventBus)
-	// Redis pub/sub is optional for single-node operation. A bad or unreachable
-	// redis.url used to Fatal here and restart-loop under Docker; match the
-	// config watcher / policy system and degrade to local-only fanout.
 	if err := logStreamHub.Start(appCtx); err != nil {
-		slog.Warn("log stream hub start failed; continuing with local-only log fanout",
-			"error", err)
+		log.Fatalf("log stream hub start: %v", err)
 	}
 	realtimeHub := notifications.NewHub(nodeID, eventBus)
 	if err := realtimeHub.Start(appCtx); err != nil {
-		slog.Warn("realtime hub start failed; continuing with local-only event fanout",
-			"error", err)
+		log.Fatalf("realtime hub start: %v", err)
 	}
 	eventsHub := realtimeHub.EventsHub()
 	scanRegistry := evt.NewScanRegistry()
@@ -671,6 +818,8 @@ func main() {
 			slog.Error("redis is required for this mode", "mode", mode, "error", err)
 			os.Exit(1)
 		}
+		streamTelemetryRegistry = newStreamTelemetryRegistry(appCtx, nodeID, redisClient)
+		streamTelemetryRegistry.Start(appCtx)
 
 		bootstrap := nodeconfig.BootstrapOverrides{
 			Listen:      cfg.Server.Listen,
@@ -680,6 +829,7 @@ func main() {
 			RedisURL:    bc.RedisURL,
 		}
 		watcher := nodeconfig.NewWatcher(pool, dataCipher, eventBus, bootstrap)
+		watcher.OnLoad(normalizeLoadedConfig)
 		if err := watcher.Start(appCtx); err != nil {
 			slog.Error("config watcher start failed", "error", err)
 			os.Exit(1)
@@ -702,18 +852,49 @@ func main() {
 			defer cleanupCancel()
 			tracker.Cleanup(cleanupCtx)
 		}()
+		defer func() {
+			telemetryCtx, telemetryCancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer telemetryCancel()
+			if stopErr := streamTelemetryRegistry.Stop(telemetryCtx); stopErr != nil {
+				slog.Error("stream telemetry shutdown error", "error", stopErr)
+			}
+		}()
 
 		var handler http.Handler
 		if mode == "proxy" {
 			srv := proxy.NewServer(watcher, tracker)
+			proxyIPResolver, resolverErr := clientIPResolverFromConfig(watcher.Config())
+			if resolverErr != nil {
+				log.Fatalf("load trusted CIDRs: %v", resolverErr)
+			}
+			registerClientIPConfigReload(watcher, proxyIPResolver)
+			srv.SetClientIPResolver(proxyIPResolver)
+			srv.SetStreamTelemetry(streamTelemetryRegistry)
+			// Serve header-authenticated sessions: the recipe comes from the
+			// shared grant store central wrote at plan time, and the caller's
+			// own access token is re-checked against the live login session in
+			// Postgres, so a revoked login stops streaming here immediately.
+			srv.SetMediaGrantAuthority(noderecipe.NewProxyGrantStore(redisClient, 0), auth.NewSessionRepository(pool))
+			srv.SetRemoteArtifactMissReporter(downloads.NewArtifactManager(
+				downloads.NewArtifactRepository(pool),
+				downloads.NewRepository(pool),
+				nil,
+				downloads.NewPlaybackPreparer(),
+				nodeID,
+				watcher.Config,
+				nil,
+			))
 			handler = srv.Handler()
 		} else {
 			srv := transcodenode.NewServer(watcher, tracker)
+			srv.SetInputPathAuthorizer(transcodenode.NewCatalogPathAuthorizer(scanner.NewFileRepository(pool)))
 			srv.SetFFmpegLogSink(playback.NewSlogFFmpegLogSink(slog.Default(), nodeID))
 			// Read jellycompat reconstruction recipes central wrote at transcode
 			// start, so this node can rebuild a Jellyfin transcode after its own
 			// restart (the node hop token is recipe-less). Shares the offload Redis.
 			srv.SetRecipeStore(noderecipe.NewStore(redisClient, 0))
+			srv.SetStreamTelemetry(streamTelemetryRegistry)
+			srv.StartHardwareEncoderWarmup(appCtx)
 			// Reclaim orphaned transcode dirs at boot and hourly thereafter, bound
 			// to appCtx so it stops on shutdown.
 			srv.StartOrphanSweeper(appCtx)
@@ -737,6 +918,7 @@ func main() {
 		JFListen:    bc.JFListen,
 		RedisURL:    bc.RedisURL,
 	})
+	configWatcher.OnLoad(normalizeLoadedConfig)
 	if err := configWatcher.Start(appCtx); err != nil {
 		log.Fatalf("config watcher start: %v", err)
 	}
@@ -750,10 +932,10 @@ func main() {
 	})
 
 	// Determine which components to initialize based on mode.
-	needsS3 := mode == authModeIntegrated || mode == "api"
-	needsScanner := mode == authModeIntegrated || mode == "api"
-	needsUserDB := mode == authModeIntegrated || mode == "api"
-	needsWorkers := mode == authModeIntegrated || mode == "api"
+	needsS3 := mode == postgresTuneModeIntegrated || mode == "api"
+	needsScanner := mode == postgresTuneModeIntegrated || mode == "api"
+	needsUserDB := mode == postgresTuneModeIntegrated || mode == "api"
+	needsWorkers := mode == postgresTuneModeIntegrated || mode == "api"
 
 	bootstrapSensitiveConfigured := map[string]bool{}
 	bootstrapSensitiveValues := map[string]string{}
@@ -780,6 +962,12 @@ func main() {
 		defer func() { _ = apiRedisClient.Close() }()
 	}
 
+	if mode == "" || mode == postgresTuneModeIntegrated || mode == "api" {
+		streamTelemetryRegistry = newStreamTelemetryRegistry(appCtx, nodeID, apiRedisClient)
+		streamTelemetryRegistry.Start(appCtx)
+		streamTelemetryViewCache = newStreamTelemetryViewCache(streamTelemetryRegistry)
+	}
+
 	// Assigned below once the trusted-proxy config is seeded; captured by the
 	// OnServerSettingUpdated closure, which only runs on admin requests after
 	// startup completes.
@@ -796,9 +984,10 @@ func main() {
 		BootstrapSensitiveValues:     bootstrapSensitiveValues,
 		RedisBootstrapAvailable:      redisBootstrapAvailable,
 		AppContext:                   appCtx,
+		StreamTelemetry:              streamTelemetryRegistry,
+		StreamTelemetryViewCache:     streamTelemetryViewCache,
 		DB:                           pool,
 		SecretCipher:                 dataCipher,
-		APIKeyHashKey:                apiKeyHashKey,
 		EventBus:                     eventBus,
 		RedisClient:                  apiRedisClient,
 		LogStreamHub:                 logStreamHub,
@@ -808,6 +997,7 @@ func main() {
 		OpsLogRepo:                   opsRepo,
 		FFmpegLogSink:                playback.NewSlogFFmpegLogSink(slog.Default(), nodeID),
 		PublicURL:                    envutil.FirstNonEmpty("PRAIRIE_PUBLIC_URL", "SILO_PUBLIC_URL"),
+		APIKeyHashKey:                apiKeyHashKey,
 		RequestServerRestart: func(context.Context) error {
 			if !restartRequested.CompareAndSwap(false, true) {
 				return handlers.ErrServerRestartAlreadyRequested
@@ -883,8 +1073,10 @@ func main() {
 		)
 	}
 	var watchProviderService *watchsync.Service
+	var watchProviderRegistry *watchsync.Registry
+	var watchProviderRepo *watchsync.PostgresRepository
 	if deps.DB != nil {
-		watchProviderRegistry := watchsync.NewRegistry()
+		watchProviderRegistry = watchsync.NewRegistry()
 		if err := watchProviderRegistry.Register(trakt.NewProvider(nil, "")); err != nil {
 			log.Fatalf("register watch provider: %v", err)
 		}
@@ -894,23 +1086,27 @@ func main() {
 		if err := watchProviderRegistry.Register(watchmdblist.NewProvider(nil, "")); err != nil {
 			log.Fatalf("register watch provider: %v", err)
 		}
-		watchProviderService = watchsync.NewService(
-			watchsync.NewPostgresRepository(deps.DB, deps.SecretCipher),
-			watchProviderRegistry,
-		)
+		watchProviderRepo = watchsync.NewPostgresRepository(deps.DB, deps.SecretCipher)
+		watchProviderService = watchsync.NewService(watchProviderRepo, watchProviderRegistry)
 		deps.WatchProviderService = watchProviderService
 	}
 
 	// Initialize node pools for integrated/api modes.
-	if mode == authModeIntegrated || mode == "api" {
+	if mode == postgresTuneModeIntegrated || mode == "api" {
 		nodeRepo := nodepool.NewRepository(pool)
 		deps.NodeRepo = nodeRepo
 
 		proxyPool := nodepool.NewProxyPool()
 		transcodePool := nodepool.NewTranscodePool()
 
-		proxyNodes, _ := nodeRepo.ListEnabled(context.Background(), nodepool.NodeTypeProxy)
-		transcodeNodes, _ := nodeRepo.ListEnabled(context.Background(), nodepool.NodeTypeTranscode)
+		proxyNodes, err := nodeRepo.ListEnabled(appCtx, nodepool.NodeTypeProxy)
+		if err != nil {
+			log.Fatalf("load enabled proxy nodes: %v", err)
+		}
+		transcodeNodes, err := nodeRepo.ListEnabled(appCtx, nodepool.NodeTypeTranscode)
+		if err != nil {
+			log.Fatalf("load enabled transcode nodes: %v", err)
+		}
 		proxyPool.SetNodes(proxyNodes)
 		transcodePool.SetNodes(transcodeNodes)
 
@@ -1154,6 +1350,15 @@ func main() {
 			installer,
 			plugins.NewHostAdapter(pluginHost),
 		)
+		if watchProviderRegistry != nil {
+			reloadWatchProviders := func(ctx context.Context) {
+				if err := reloadWatchSyncPluginProviders(ctx, watchProviderRegistry, installationStore, pluginService, watchProviderRepo); err != nil {
+					slog.WarnContext(ctx, "failed to reload watch sync plugin providers", "component", "app", "error", err)
+				}
+			}
+			pluginService.AddLifecycleHook(reloadWatchProviders)
+			reloadWatchProviders(appCtx)
+		}
 		if deps.MarkerRegistry != nil && deps.MarkerProviderConfig != nil {
 			markerPluginResolver := markers.NewPluginResolverAdapter(pluginService)
 			pluginService.AddLifecycleHook(func(ctx context.Context) {
@@ -1220,11 +1425,8 @@ func main() {
 	if pluginService != nil && pluginInstallationStore != nil {
 		dispatcher := plugins.NewEventDispatcherWithTypedResolver(deps.EventBus, deps.EventsHub, pluginInstallationStore, pluginService, 4)
 		pluginService.SetEventDispatcher(dispatcher)
-		// Same Redis degrade path as log/realtime hubs: unreachable redis.url
-		// must not Fatal and restart-loop under Docker.
 		if err := dispatcher.Start(appCtx); err != nil {
-			slog.Warn("plugin event dispatcher start failed; continuing without cross-node plugin events",
-				"error", err)
+			log.Fatalf("plugin event dispatcher: %v", err)
 		}
 		defer dispatcher.Stop()
 		// Backfill the capability-subscriber index from the already-preloaded
@@ -1637,6 +1839,7 @@ func main() {
 				deps.FolderRepo,
 				itemRefreshResolver,
 				libraryIngestExecutor,
+				scanqueue.NewRepository(deps.DB),
 				metadataService,
 				deps.EventBus,
 				deps.RealtimeHub,
@@ -1652,10 +1855,14 @@ func main() {
 				seasonRepo,
 				episodeRepo,
 				libraryIngestExecutor,
+				scanqueue.NewRepository(deps.DB),
 				metadataService,
 				deps.EventBus,
 				deps.RealtimeHub,
 			)
+			if metadataImageCacheProcessor != nil {
+				itemRefreshExecutor.SetArtworkCacher(metadataImageCacheProcessor)
+			}
 		}
 	}
 
@@ -1672,7 +1879,7 @@ func main() {
 			poolConfig := userdb.PoolConfig{
 				MaxOpen:     cfg.UserDB.PoolMaxOpen,
 				IdleTimeout: cfg.UserDB.IdleTimeout,
-				DataDir:     "/var/lib/prairie/userdb",
+				DataDir:     "/var/lib/silo/userdb",
 			}
 			pool := userdb.NewUserDBPool(poolConfig)
 			userStoreProvider = userdb.NewSQLiteProvider(pool)
@@ -1685,7 +1892,7 @@ func main() {
 	}
 
 	var policySystem *policy.System
-	if mode == authModeIntegrated || mode == "api" {
+	if mode == postgresTuneModeIntegrated || mode == "api" {
 		policyDecisionLogger := policy.NewDecisionLogger(
 			deps.DB,
 			nodeID,
@@ -1803,8 +2010,6 @@ func main() {
 	}
 	deps.SessionMgr = sessionMgr
 	deps.PlaybackRealtimeHub = playback.NewRealtimeHub()
-	// The notifier presigns the URL it pushes to active players, so it has to read
-	// from whichever store the thumbnails were written to.
 	if presigner := chapterThumbnailPresigner(deps.S3Public, deps.ArtworkLocal); chapterThumbService != nil && presigner != nil {
 		chapterThumbService.SetNotifier(
 			playback.NewChapterThumbnailNotifier(sessionMgr, deps.PlaybackRealtimeHub, presigner, 0),
@@ -1911,21 +2116,7 @@ func main() {
 	})
 	// The config watcher covers the Redis-less poll/RequestReload path, so
 	// admin UI edits apply without a restart on single-node deployments too.
-	configWatcher.OnChange(func(old, updated *config.Config) {
-		if old != nil && old.ClientIP.TrustedProxies == updated.ClientIP.TrustedProxies {
-			return
-		}
-		raw := updated.ClientIP.TrustedProxies
-		if raw == "" {
-			raw = clientip.DefaultTrustedProxies
-		}
-		cidrs, parseErr := clientip.ParseCIDRs(raw)
-		if parseErr != nil {
-			slog.WarnContext(context.Background(), "clientip config reload failed", "component", "app", "error", parseErr)
-			return
-		}
-		ipResolver.UpdateTrustedCIDRs(cidrs)
-	})
+	registerClientIPConfigReload(configWatcher, ipResolver)
 
 	// Step 6b: Create rate limiter.
 	if cfg.RateLimit.Enabled && deps.DB != nil {
@@ -1941,7 +2132,7 @@ func main() {
 				perKeyLimiter = ratelimit.NewRedisLimiter(redisClient)
 				globalLimiter = ratelimit.NewRedisLimiter(redisClient)
 				isMemory = false
-				defer func() { _ = redisClient.Close() }()
+				defer redisClient.Close()
 			}
 		}
 
@@ -1972,6 +2163,10 @@ func main() {
 	// Activity log writer + consumer.
 	if err := activitylog.SeedDefaults(ctx, settingsRepo); err != nil {
 		log.Fatalf("seed activitylog defaults: %v", err)
+	}
+
+	if err := taskmanager.SeedHistoryRetentionDefaults(ctx, settingsRepo); err != nil {
+		log.Fatalf("seed task history retention defaults: %v", err)
 	}
 
 	// Seed default page sections for home and existing libraries.
@@ -2016,7 +2211,7 @@ func main() {
 			activityWriter = activitylog.NewRedisWriter(actRedisClient)
 			activityConsumer = activitylog.NewConsumer(pool, actRedisClient, logStreamHub)
 			go activityConsumer.RunRedis(appCtx)
-			defer func() { _ = actRedisClient.Close() }()
+			defer actRedisClient.Close()
 		}
 	}
 
@@ -2155,9 +2350,6 @@ func main() {
 		if deps.EventsHub != nil {
 			taskMgr.AddObserver(evt.NewTaskObserver(deps.EventsHub))
 		}
-		// Exposes last-run / next-run / trigger-count on /metrics so a stalled
-		// background queue can be diagnosed without a database session.
-		taskMgr.AddObserver(taskmanager.NewMetricsObserver())
 
 		if deps.FolderRepo != nil && deps.LibraryScanQueue != nil {
 			taskMgr.Register(tasks.NewScanLibrariesTask(deps.FolderRepo, deps.LibraryScanQueue, deps.EventBus))
@@ -2172,6 +2364,7 @@ func main() {
 		catalogSearchIndexer := catalog.NewCatalogSearchIndexer(deps.DB, settingsRepo)
 		taskMgr.Register(tasks.NewSyncCatalogSearchIndexTask(catalogSearchIndexer))
 		taskMgr.Register(tasks.NewRebuildCatalogSearchIndexTask(catalogSearchIndexer))
+		taskMgr.Register(tasks.NewCatalogSearchEventRetentionTask(catalog.NewSearchIndexEventRepository(deps.DB)))
 		if deps.IntroAnalyzer != nil {
 			taskMgr.Register(tasks.NewDetectIntroMarkersTask(deps.IntroAnalyzer, settingsRepo))
 		}
@@ -2188,6 +2381,7 @@ func main() {
 		}
 		taskMgr.Register(tasks.NewActivityLogCleanupTask(deps.DB, settingsRepo, activityPM))
 		taskMgr.Register(tasks.NewOperationalLogCleanupTask(deps.DB, settingsRepo, opsPM))
+		taskMgr.Register(tasks.NewTaskHistoryCleanupTask(historyRepo, settingsRepo))
 		var diagnosticsStore diagnostics.ObjectStore
 		if deps.S3Private != nil {
 			diagnosticsStore = diagnostics.NewS3ObjectStore(deps.S3Private)
@@ -2202,20 +2396,29 @@ func main() {
 			// Download prepare-to-file pipeline (Phase 3): a durable, leased encode
 			// queue hosted on the task manager. Built here (before Start) and shared
 			// with the API via deps so the download service can enqueue jobs.
+			liveDownloadConfig := func() *config.Config {
+				if deps.LiveConfig != nil {
+					if c := deps.LiveConfig(); c != nil {
+						return c
+					}
+				}
+				return deps.Config
+			}
+			var downloadWorkPlanner nodepool.TranscodeWorkPlanner
+			if deps.NodePlanner != nil {
+				downloadWorkPlanner = deps.NodePlanner
+			}
+			preparer := downloads.NewNodeAwarePreparer(downloads.NewPlaybackPreparer(), downloadWorkPlanner, liveDownloadConfig)
+			if deps.NodeRepo != nil {
+				preparer.SetOriginLookup(deps.NodeRepo)
+			}
 			artifactMgr := downloads.NewArtifactManager(
 				downloads.NewArtifactRepository(deps.DB),
 				downloads.NewRepository(deps.DB),
 				deps.FileRepo,
-				downloads.NewPlaybackPreparer(),
+				preparer,
 				deps.NodeID,
-				func() *config.Config {
-					if deps.LiveConfig != nil {
-						if c := deps.LiveConfig(); c != nil {
-							return c
-						}
-					}
-					return deps.Config
-				},
+				liveDownloadConfig,
 				func(ctx context.Context, d *downloads.Download) {
 					if deps.EventsHub == nil {
 						return
@@ -2228,6 +2431,7 @@ func main() {
 					}, evt.PublishOptions{UserID: d.UserID, ProfileID: d.ProfileID})
 				},
 			)
+			artifactMgr.SetSettingsReader(settingsRepo)
 			encodeTask := tasks.NewEncodeDownloadArtifactsTask(artifactMgr)
 			artifactMgr.SetKick(func() { _ = taskMgr.RunTask(appCtx, encodeTask.Key()) })
 			taskMgr.Register(encodeTask)
@@ -2237,6 +2441,11 @@ func main() {
 			taskMgr.Register(tasks.NewSeedContentAvailabilityTask(notificationSystem))
 			taskMgr.Register(tasks.NewRebuildReleaseInterestTask(notificationSystem))
 			taskMgr.Register(tasks.NewNotificationsRetentionTask(notificationSystem))
+		}
+		if userStoreProvider != nil {
+			taskMgr.Register(tasks.NewSettingMutationsRetentionTask(userstore.NewSettingMutationSweeper(
+				auth.NewUserRepository(deps.DB), userStoreProvider,
+			)))
 		}
 		if matchWorker != nil {
 			taskMgr.Register(tasks.NewMatchMediaTask(matchWorker))
@@ -2254,7 +2463,15 @@ func main() {
 		if metadataImageCacheProcessor != nil {
 			cacheImagesTask := tasks.NewCacheMetadataImagesTask(metadataImageCacheProcessor)
 			cacheImagesTask.SetPlaybackActivityCheck(artworkShouldYield)
+			// Artwork cached under an older variant ladder is missing the rungs
+			// a client can now ask for. Arm the one-shot regeneration pass; it
+			// records the version it finished and then costs nothing.
+			cacheImagesTask.SetLadderBackfill(
+				metadata.NewImageLadderBackfillStateRepository(pool),
+				artworkkey.LadderVersion,
+			)
 			taskMgr.Register(cacheImagesTask)
+			taskMgr.Register(tasks.NewBackfillMetadataImagesTask(metadataImageCacheProcessor))
 		}
 		if avifBackfillProcessor != nil {
 			avifBackfillProcessor.SetPlaybackActivityCheck(artworkShouldYield)
@@ -2444,6 +2661,8 @@ func main() {
 			SessionSyncer:  deps.SessionSyncer,
 		}
 		absH := audiobooksService.BuildABSHandler(absHDeps)
+		// Must precede Mount: Mount is what registers the observed handlers.
+		absH.SetStreamTelemetry(streamTelemetryRegistry)
 		deps.ABSHandler = absH
 	}
 	_ = audiobooksService
@@ -2583,12 +2802,9 @@ func main() {
 	// ABS-compat is NOT mounted on the main listener — see the "ABS compat
 	// listener" block below. It binds its own port so the discovery probes
 	// (/ping, /healthcheck, /status, /init, /login, /socket.io) own the URL
-	// space without collision with Prairie's SPA fallback. Mirrors how the
+	// space without collision with silo's SPA fallback. Mirrors how the
 	// Jellyfin compat server is set up at :8096.
-	// Compress text assets (JS/CSS/HTML/SVG/JSON). Images/wasm/woff2 are skipped
-	// by content-type. Without this, LAN clients download the SPA uncompressed
-	// (~1MB+ JS) even though the API router already gzip-compresses JSON.
-	metricsMux.Handle("/", chimiddleware.Compress(5)(server.FrontendHandler()))
+	metricsMux.Handle("/", server.FrontendHandler())
 
 	// Step 9: Start background workers (if needed).
 	var sessionCleaner *worker.SessionCleaner
@@ -2649,7 +2865,8 @@ func main() {
 			deps.S3Private,
 			itemRefreshExecutor,
 			libraryRefreshExecutor,
-			adminjob.NewLibraryDeleteExecutor(deps.FolderRepo, sectionRepo),
+			adminjob.NewLibraryDeleteExecutor(deps.FolderRepo, sectionRepo,
+				librarySettingsCleaner(deps.DB, userStoreProvider)),
 			adminjob.NewImageCacheCleanupExecutor(artworkPrefixDeleter(deps)),
 			templateBundleApplyExecutor,
 			deps.RealtimeHub,
@@ -2684,7 +2901,7 @@ func main() {
 	}
 
 	var compatSrv *http.Server
-	if (mode == authModeIntegrated || mode == "api") && cfg.JellyfinCompat.Enabled && cfg.JellyfinCompat.Listen != "" {
+	if (mode == postgresTuneModeIntegrated || mode == "api") && cfg.JellyfinCompat.Enabled && cfg.JellyfinCompat.Listen != "" {
 		compatDeps := jellycompat.Dependencies{
 			Config:           cfg,
 			AppContext:       appCtx,
@@ -2692,6 +2909,7 @@ func main() {
 			DB:               deps.DB,
 			SecretCipher:     dataCipher,
 			ClientIPResolver: ipResolver,
+			StreamTelemetry:  streamTelemetryRegistry,
 			NodePlanner:      deps.NodePlanner,
 			JWTSecret:        cfg.Auth.JWTSecret,
 			RecWorker:        recWorker,
@@ -2834,12 +3052,15 @@ func main() {
 	// Mirrors the Jellyfin compat layout above. The ABS handler mounts
 	// onto a fresh chi router here so /ping, /healthcheck, /status, /login,
 	// /socket.io, etc. own the URL space at the root — no SPA fallback,
-	// no collision with Prairie's /api/v1.
+	// no collision with silo's /api/v1.
 	var absSrv *http.Server
-	if (mode == authModeIntegrated || mode == "api") && deps.ABSHandler != nil && cfg.AudiobookshelfCompat.Listen != "" {
+	if (mode == postgresTuneModeIntegrated || mode == "api") && deps.ABSHandler != nil && cfg.AudiobookshelfCompat.Listen != "" {
 		absRouter := chi.NewRouter()
+		if ipResolver != nil {
+			absRouter.Use(clientip.Middleware(ipResolver))
+		}
 		absRouter.Use(chimiddleware.Recoverer)
-		absRouter.Use(chimiddleware.Compress(5))
+		absRouter.Use(httpstream.CompressExcept(5, abs.SkipMediaCompression))
 		deps.ABSHandler.Mount(absRouter)
 		absSrv = &http.Server{
 			Addr:              cfg.AudiobookshelfCompat.Listen,
@@ -2935,6 +3156,9 @@ func main() {
 			slog.Error("abs compat shutdown error", "error", shutdownErr)
 		}
 	}
+	if stopErr := streamTelemetryRegistry.Stop(shutdownCtx); stopErr != nil {
+		slog.Error("stream telemetry shutdown error", "error", stopErr)
+	}
 
 	// 2. Clean up stale sessions.
 	if sessionCleaner != nil {
@@ -2953,7 +3177,7 @@ func main() {
 		}
 	}
 
-	// 2c. Drain in-flight deferred AVIF encodes so a deploy/SIGTERM does not
+	// 2c. Drain in-flight deferred AVIF encodes so deploy/SIGTERM does not
 	// drop siblings that were queued only in memory for the eager path.
 	if imageCacher != nil {
 		if err := imageCacher.WaitAVIFBackfillContext(shutdownCtx); err != nil {
@@ -3023,138 +3247,6 @@ func newS3ClientIfConfigured(cfg s3client.BucketConfig) *s3client.Client {
 		return nil
 	}
 	return s3client.NewClient(cfg)
-}
-
-func artworkObjectPutter(deps api.Dependencies) imagecache.ObjectPutter {
-	if deps.S3Public != nil {
-		return deps.S3Public
-	}
-	if deps.ArtworkLocal != nil {
-		return deps.ArtworkLocal
-	}
-	return nil
-}
-
-func artworkPrefixDeleter(deps api.Dependencies) adminjob.S3PrefixDeleter {
-	if deps.S3Public != nil {
-		return deps.S3Public
-	}
-	if deps.ArtworkLocal != nil {
-		return deps.ArtworkLocal
-	}
-	return nil
-}
-
-func artworkRevisionDeleter(deps api.Dependencies) metadata.ArtworkRevisionDeleter {
-	if deps.S3Public != nil {
-		return deps.S3Public
-	}
-	if deps.ArtworkLocal != nil {
-		return deps.ArtworkLocal
-	}
-	return nil
-}
-
-func artworkObjectChecker(deps api.Dependencies) metadata.ArtworkObjectChecker {
-	if deps.S3Public != nil {
-		return deps.S3Public
-	}
-	if deps.ArtworkLocal != nil {
-		return deps.ArtworkLocal
-	}
-	return nil
-}
-
-func artworkObjectDeleter(deps api.Dependencies) metadata.ArtworkObjectDeleter {
-	if deps.S3Public != nil {
-		return deps.S3Public
-	}
-	if deps.ArtworkLocal != nil {
-		return deps.ArtworkLocal
-	}
-	return nil
-}
-
-func configureAVIFEncoder(cfg *config.Config) {
-	if cfg == nil {
-		return
-	}
-	if _, err := imageutil.ConfigureAVIFEncoder(imageutil.EncoderConfig{
-		Backend:       cfg.Metadata.AVIFEncoder,
-		FFmpegPath:    cfg.Metadata.AVIFFFmpegPath,
-		NVENCSessions: cfg.Metadata.AVIFNVENCSessions,
-		EnableNVENC:   true,
-	}); err != nil {
-		slog.Warn("imageutil: AVIF encoder configure failed; keeping previous backend",
-			"component", "imageutil", "error", err)
-	}
-}
-
-func configureWebPEncoder(cfg *config.Config) {
-	if cfg == nil {
-		return
-	}
-	if _, err := imageutil.ConfigureWebPEncoder(imageutil.WebPEncoderConfig{
-		Backend:    cfg.Metadata.WebPEncoder,
-		FFmpegPath: cfg.Metadata.AVIFFFmpegPath,
-	}); err != nil {
-		slog.Warn("imageutil: WebP encoder configure failed; keeping previous backend",
-			"component", "imageutil", "error", err)
-	}
-}
-
-// resolveArtworkAVIFWorkers picks the AVIF backfill concurrency. The dedicated
-// avif_backfill_workers setting wins; otherwise the shared artwork encode
-// budget governs, so one knob caps total artwork encode work.
-func resolveArtworkAVIFWorkers(cfg *config.Config) int {
-	if cfg == nil {
-		return metadata.ResolveAVIFBackfillWorkers(0)
-	}
-	configured := cfg.Metadata.AVIFBackfillWorkers
-	if configured <= 0 {
-		configured = cfg.Metadata.ArtworkEncodeWorkers
-	}
-	return metadata.ResolveAVIFBackfillWorkersFor(
-		configured,
-		imageutil.ActiveAVIFBackend(),
-		cfg.Metadata.AVIFNVENCSessions,
-	)
-}
-
-// applyArtworkEncodeBudget sets the shared WebP+AVIF in-flight cap. An explicit
-// admin budget always wins; otherwise NVENC follows its session cap and CPU
-// backends take the automatic budget, which stays well below the core count so
-// playback ffmpeg is never crowded out by artwork encoding.
-func applyArtworkEncodeBudget(cfg *config.Config, avifWorkers int) {
-	if cfg != nil && cfg.Metadata.ArtworkEncodeWorkers > 0 {
-		imageutil.SetEncodeBudgetSize(cfg.Metadata.ArtworkEncodeWorkers)
-		return
-	}
-	if imageutil.ActiveAVIFBackend() == imageutil.BackendNVENC {
-		imageutil.SetEncodeBudgetSize(avifWorkers)
-		return
-	}
-	imageutil.SetEncodeBudgetSize(0)
-}
-
-func artworkBackendName(deps api.Dependencies) string {
-	if deps.S3Public != nil {
-		return "s3"
-	}
-	if deps.ArtworkLocal != nil {
-		return "local"
-	}
-	return "none"
-}
-
-func artworkStorageIdentity(cfg *config.Config, deps api.Dependencies) string {
-	if deps.S3Public != nil {
-		return tasks.ArtworkStorageIdentity(cfg.S3.Public.Endpoint, cfg.S3.Public.Bucket, cfg.S3.Public.KeyPrefix)
-	}
-	if deps.ArtworkLocal != nil {
-		return artworkstore.StorageIdentity(deps.ArtworkLocal.Root())
-	}
-	return artworkstore.StorageIdentity(cfg.Artwork.LocalDir)
 }
 
 func configureS3Clients(cfg *config.Config, deps *api.Dependencies) {
@@ -3400,9 +3492,98 @@ func metadataInt(value any) int {
 	}
 }
 
+var watchSyncPluginReloadMu sync.Mutex
+
 type markerPluginCapabilityStore interface {
 	ListEnabled(ctx context.Context) ([]*plugins.Installation, error)
 	ListCapabilities(ctx context.Context, installationID int) ([]*plugins.Capability, error)
+}
+
+func reloadWatchSyncPluginProviders(
+	ctx context.Context,
+	registry *watchsync.Registry,
+	store markerPluginCapabilityStore,
+	service *plugins.Service,
+	repository watchsync.PluginCredentialRepository,
+) error {
+	if registry == nil {
+		return nil
+	}
+	watchSyncPluginReloadMu.Lock()
+	defer watchSyncPluginReloadMu.Unlock()
+
+	var providers []watchsync.Provider
+	if store == nil || service == nil {
+		return registry.ReplacePluginProviders(providers)
+	}
+	installations, err := store.ListEnabled(ctx)
+	if err != nil {
+		return fmt.Errorf("list enabled watch sync plugin installations: %w", err)
+	}
+	sort.Slice(installations, func(i, j int) bool {
+		if installations[i] == nil {
+			return false
+		}
+		if installations[j] == nil {
+			return true
+		}
+		return installations[i].ID < installations[j].ID
+	})
+	for _, installation := range installations {
+		if installation == nil || installation.IsBuiltin() {
+			continue
+		}
+		capabilities, err := store.ListCapabilities(ctx, installation.ID)
+		if err != nil {
+			slog.WarnContext(ctx, "skip watch sync plugin with unreadable capabilities",
+				"component", "app",
+				"installation_id", installation.ID,
+				"error", err,
+			)
+			continue
+		}
+		for _, capability := range capabilities {
+			if capability == nil || capability.Type != sdkcapability.WatchSyncProvider {
+				continue
+			}
+			descriptor, err := plugins.DecodeCapability(capability)
+			if err != nil {
+				slog.WarnContext(ctx, "skip invalid watch sync plugin capability",
+					"component", "app",
+					"installation_id", installation.ID,
+					"capability_id", capability.ID,
+					"error", err,
+				)
+				continue
+			}
+			provider, err := watchsync.NewPluginProvider(watchsync.PluginProviderOptions{
+				InstallationID:         installation.ID,
+				ProviderKey:            fmt.Sprintf("plugin:%d:%s", installation.ID, capability.ID),
+				CapabilityID:           capability.ID,
+				DisplayName:            descriptor.GetDisplayName(),
+				Descriptor:             descriptor.GetWatchSyncProvider(),
+				ConnectionConfigSchema: descriptor.GetConfigSchema(),
+				ResolveClient: func(callCtx context.Context, installationID int, capabilityID string) (watchsync.WatchSyncPluginClient, error) {
+					return service.WatchSyncProviderClient(callCtx, installationID, capabilityID)
+				},
+				ResolveConfig: func(callCtx context.Context, installationID int) (*pluginv1.WatchSyncProviderConfig, error) {
+					return service.WatchSyncProviderConfig(callCtx, installationID)
+				},
+				Repository: repository,
+			})
+			if err != nil {
+				slog.WarnContext(ctx, "skip unsupported watch sync plugin capability",
+					"component", "app",
+					"installation_id", installation.ID,
+					"capability_id", capability.ID,
+					"error", err,
+				)
+				continue
+			}
+			providers = append(providers, provider)
+		}
+	}
+	return registry.ReplacePluginProviders(providers)
 }
 
 type markerPluginRuntimeConfigStore interface {
@@ -3527,7 +3708,7 @@ func legacyIntroDBProviderConfig(
 	if configStore == nil ||
 		installation == nil ||
 		capability == nil ||
-		installation.PluginID != "prairie.theintrodb" ||
+		installation.PluginID != "silo.theintrodb" ||
 		capability.ID != "introdb" {
 		return markers.ProviderConfig{}, false
 	}
@@ -3553,7 +3734,7 @@ func copyLegacyIntroDBPluginConfig(
 		legacySettings == nil ||
 		installation == nil ||
 		capability == nil ||
-		installation.PluginID != "prairie.theintrodb" ||
+		installation.PluginID != "silo.theintrodb" ||
 		capability.ID != "introdb" {
 		return nil
 	}
@@ -3597,7 +3778,7 @@ func firstNonEmptyMarkerText(values ...string) string {
 	return ""
 }
 
-// mapFolderTypeToMediaType maps Prairie's MediaFolder.Type values
+// mapFolderTypeToMediaType maps silo's MediaFolder.Type values
 // ("movies", "series", "mixed") to the SDK's MediaType values
 // ("movie", "tv", "mixed"). Unknown values map to "mixed".
 func mapFolderTypeToMediaType(t string) string {
@@ -3656,12 +3837,131 @@ func (a *audiobooksSettingsAdapter) GetString(ctx context.Context, key string) (
 	return a.repo.Get(ctx, key)
 }
 
-// chapterThumbnailStore picks the object store chapter thumbnails are written to:
-// public S3 when configured, otherwise the local artwork volume.
-//
-// Both branches check for a nil pointer before returning, because a typed nil
-// assigned to an interface is not nil -- returning one would leave the caller's
-// `!= nil` guard satisfied by a store that panics on first use.
+func configureAVIFEncoder(cfg *config.Config) {
+	if cfg == nil {
+		return
+	}
+	if _, err := imageutil.ConfigureAVIFEncoder(imageutil.EncoderConfig{
+		Backend:       cfg.Metadata.AVIFEncoder,
+		FFmpegPath:    cfg.Metadata.AVIFFFmpegPath,
+		NVENCSessions: cfg.Metadata.AVIFNVENCSessions,
+		EnableNVENC:   true,
+	}); err != nil {
+		slog.Warn("imageutil: AVIF encoder configure failed; keeping previous backend",
+			"component", "imageutil", "error", err)
+	}
+}
+
+func configureWebPEncoder(cfg *config.Config) {
+	if cfg == nil {
+		return
+	}
+	if _, err := imageutil.ConfigureWebPEncoder(imageutil.WebPEncoderConfig{
+		Backend:    cfg.Metadata.WebPEncoder,
+		FFmpegPath: cfg.Metadata.AVIFFFmpegPath,
+	}); err != nil {
+		slog.Warn("imageutil: WebP encoder configure failed; keeping previous backend",
+			"component", "imageutil", "error", err)
+	}
+}
+
+func resolveArtworkAVIFWorkers(cfg *config.Config) int {
+	if cfg == nil {
+		return metadata.ResolveAVIFBackfillWorkers(0)
+	}
+	configured := cfg.Metadata.AVIFBackfillWorkers
+	if configured <= 0 {
+		configured = cfg.Metadata.ArtworkEncodeWorkers
+	}
+	return metadata.ResolveAVIFBackfillWorkersFor(
+		configured,
+		imageutil.ActiveAVIFBackend(),
+		cfg.Metadata.AVIFNVENCSessions,
+	)
+}
+
+func applyArtworkEncodeBudget(cfg *config.Config, avifWorkers int) {
+	if cfg != nil && cfg.Metadata.ArtworkEncodeWorkers > 0 {
+		imageutil.SetEncodeBudgetSize(cfg.Metadata.ArtworkEncodeWorkers)
+		return
+	}
+	if imageutil.ActiveAVIFBackend() == imageutil.BackendNVENC {
+		imageutil.SetEncodeBudgetSize(avifWorkers)
+		return
+	}
+	imageutil.SetEncodeBudgetSize(0)
+}
+
+func artworkObjectPutter(deps api.Dependencies) imagecache.ObjectPutter {
+	if deps.S3Public != nil {
+		return deps.S3Public
+	}
+	if deps.ArtworkLocal != nil {
+		return deps.ArtworkLocal
+	}
+	return nil
+}
+
+func artworkPrefixDeleter(deps api.Dependencies) adminjob.S3PrefixDeleter {
+	if deps.S3Public != nil {
+		return deps.S3Public
+	}
+	if deps.ArtworkLocal != nil {
+		return deps.ArtworkLocal
+	}
+	return nil
+}
+
+func artworkRevisionDeleter(deps api.Dependencies) metadata.ArtworkRevisionDeleter {
+	if deps.S3Public != nil {
+		return deps.S3Public
+	}
+	if deps.ArtworkLocal != nil {
+		return deps.ArtworkLocal
+	}
+	return nil
+}
+
+func artworkObjectChecker(deps api.Dependencies) metadata.ArtworkObjectChecker {
+	if deps.S3Public != nil {
+		return deps.S3Public
+	}
+	if deps.ArtworkLocal != nil {
+		return deps.ArtworkLocal
+	}
+	return nil
+}
+
+func artworkObjectDeleter(deps api.Dependencies) metadata.ArtworkObjectDeleter {
+	if deps.S3Public != nil {
+		return deps.S3Public
+	}
+	if deps.ArtworkLocal != nil {
+		return deps.ArtworkLocal
+	}
+	return nil
+}
+
+func artworkBackendName(deps api.Dependencies) string {
+	if deps.S3Public != nil {
+		return "s3"
+	}
+	if deps.ArtworkLocal != nil {
+		return "local"
+	}
+	return "none"
+}
+
+func artworkStorageIdentity(cfg *config.Config, deps api.Dependencies) string {
+	if deps.S3Public != nil {
+		return tasks.ArtworkStorageIdentity(cfg.S3.Public.Endpoint, cfg.S3.Public.Bucket, cfg.S3.Public.KeyPrefix)
+	}
+	if deps.ArtworkLocal != nil {
+		return artworkstore.StorageIdentity(deps.ArtworkLocal.Root())
+	}
+	return artworkstore.StorageIdentity(cfg.Artwork.LocalDir)
+}
+
 func chapterThumbnailStore(s3 *s3client.Client, local *artworkstore.LocalStore) chapterthumbs.ObjectStore {
 	return selectArtworkObjectStore(s3, local)
 }
@@ -3685,17 +3985,11 @@ func selectArtworkObjectStore(s3 *s3client.Client, local *artworkstore.LocalStor
 	return nil
 }
 
-// chapterThumbnailReadURLSigner is the read-URL contract the thumbnail notifier
-// needs. Declared here rather than exported from playback: this is the wiring
-// layer that has to choose between two concrete stores, and Go interfaces are
-// structural, so a value satisfying this also satisfies the notifier's own.
 type chapterThumbnailReadURLSigner interface {
 	PresignGetURL(ctx context.Context, bucket, key string, expiry time.Duration) (string, error)
 	Bucket() string
 }
 
-// chapterThumbnailPresigner mirrors chapterThumbnailStore for read URLs, so the
-// notifier presigns against whichever store holds the bytes.
 func chapterThumbnailPresigner(s3 *s3client.Client, local *artworkstore.LocalStore) chapterThumbnailReadURLSigner {
 	if s3 != nil {
 		return s3

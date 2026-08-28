@@ -95,14 +95,21 @@ type forYouMainResponse struct {
 	Row *recommendations.ForYouRow `json:"row"`
 }
 
+func (h *RecommendationsHandler) engineUnavailable() bool {
+	return !h.enabled || h.engine == nil
+}
+
+func emptyTasteProfileSummary() recommendations.TasteProfileSummary {
+	return recommendations.TasteProfileSummary{
+		TopGenres:         []string{},
+		FavoriteDirectors: []string{},
+		SignalCounts:      map[string]int{},
+	}
+}
+
 // HandleSimilar handles GET /recommendations/similar/{item_id}.
-//
-// `items` carries the scored ids for compatibility; `cards` carries the same
-// items already hydrated into the section-item shape. Without `cards` a client
-// has to issue one item-detail request per recommendation just to draw a poster,
-// which on TV clients dominated the time to a usable detail page.
 func (h *RecommendationsHandler) HandleSimilar(w http.ResponseWriter, r *http.Request) {
-	if !h.enabled {
+	if h.engineUnavailable() {
 		writeJSON(w, http.StatusOK, similarItemsResponse{Items: []recommendations.ScoredItem{}})
 		return
 	}
@@ -166,7 +173,6 @@ func (h *RecommendationsHandler) hydrateScoredCards(
 		ids,
 	)
 	if err != nil {
-		// Scored ids are still useful on their own; log and degrade.
 		slog.WarnContext(r.Context(), "Recommendations: card hydration failed",
 			"component", "api", "error", err)
 		return nil
@@ -233,6 +239,11 @@ func (h *RecommendationsHandler) HandleForYouRows(w http.ResponseWriter, r *http
 
 // HandleBecauseWatched handles GET /recommendations/because-watched/{item_id}.
 func (h *RecommendationsHandler) HandleBecauseWatched(w http.ResponseWriter, r *http.Request) {
+	if h.engineUnavailable() {
+		writeJSON(w, http.StatusOK, scoredItemsResponse{Items: []recommendations.ScoredItem{}})
+		return
+	}
+
 	userID := apimw.GetUserID(r.Context())
 	profileID := apimw.GetProfileID(r.Context())
 
@@ -295,16 +306,17 @@ func (h *RecommendationsHandler) HandleSimilarUsers(w http.ResponseWriter, r *ht
 
 // HandleTasteProfile handles GET /recommendations/taste-profile.
 func (h *RecommendationsHandler) HandleTasteProfile(w http.ResponseWriter, r *http.Request) {
+	if h.engineUnavailable() {
+		writeJSON(w, http.StatusOK, emptyTasteProfileSummary())
+		return
+	}
+
 	userID := apimw.GetUserID(r.Context())
 	profileID := apimw.GetProfileID(r.Context())
 
 	summary, err := h.engine.GetTasteProfileSummary(r.Context(), userID, profileID)
 	if err != nil || summary == nil {
-		writeJSON(w, http.StatusOK, recommendations.TasteProfileSummary{
-			TopGenres:         []string{},
-			FavoriteDirectors: []string{},
-			SignalCounts:      map[string]int{},
-		})
+		writeJSON(w, http.StatusOK, emptyTasteProfileSummary())
 		return
 	}
 

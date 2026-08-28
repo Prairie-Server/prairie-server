@@ -19,7 +19,11 @@ export function mapPolicyIssuesToDiagnostics(
     const col = Number.isFinite(issue.col) && issue.col > 0 ? issue.col : 1;
     const line = doc.line(clamp(row, 1, doc.lines));
     const from = clamp(line.from + col - 1, line.from, line.to);
-    const to = clamp(Math.max(from + 1, line.to === line.from ? from : from + 1), from, docLength);
+    const to = clamp(
+      Math.max(from + 1, line.to === line.from ? from : from + 1),
+      from,
+      docLength,
+    );
 
     return {
       from,

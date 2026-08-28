@@ -5,7 +5,7 @@ import (
 	"fmt"
 )
 
-const schemaVersion = 14
+const schemaVersion = 20
 
 func runMigrations(db *sql.DB) error {
 	version, err := userVersion(db)
@@ -142,7 +142,136 @@ func runMigrations(db *sql.DB) error {
 		}
 	}
 
+	if version < 15 {
+		if err := migrateToV15(tx); err != nil {
+			return err
+		}
+		if _, err := tx.Exec("PRAGMA user_version = 15"); err != nil {
+			return fmt.Errorf("setting sqlite user_version 15: %w", err)
+		}
+	}
+
+	if version < 16 {
+		if err := migrateToV16(tx); err != nil {
+			return err
+		}
+		if _, err := tx.Exec("PRAGMA user_version = 16"); err != nil {
+			return fmt.Errorf("setting sqlite user_version 16: %w", err)
+		}
+	}
+
+	if version < 17 {
+		if err := migrateToV17(tx); err != nil {
+			return err
+		}
+		if _, err := tx.Exec("PRAGMA user_version = 17"); err != nil {
+			return fmt.Errorf("setting sqlite user_version 17: %w", err)
+		}
+	}
+
+	if version < 18 {
+		if err := migrateToV18(tx); err != nil {
+			return err
+		}
+		if _, err := tx.Exec("PRAGMA user_version = 18"); err != nil {
+			return fmt.Errorf("setting sqlite user_version 18: %w", err)
+		}
+	}
+
+	if version < 19 {
+		if err := migrateToV19(tx); err != nil {
+			return err
+		}
+		if _, err := tx.Exec("PRAGMA user_version = 19"); err != nil {
+			return fmt.Errorf("setting sqlite user_version 19: %w", err)
+		}
+	}
+
+	if version < 20 {
+		if err := migrateToV20(tx); err != nil {
+			return err
+		}
+		if _, err := tx.Exec("PRAGMA user_version = 20"); err != nil {
+			return fmt.Errorf("setting sqlite user_version 20: %w", err)
+		}
+	}
+
 	return tx.Commit()
+}
+
+// migrateToV20 widens collection sort preferences to include the two personal
+// catalog list sources while preserving every existing preference row.
+func migrateToV20(tx *sql.Tx) error {
+	if _, err := tx.Exec(`
+ALTER TABLE collection_sort_preferences RENAME TO collection_sort_preferences_v19;
+` + collectionSortPreferencesSchema + `
+INSERT INTO collection_sort_preferences (
+    profile_id, collection_kind, collection_id, sort_field, sort_order, updated_at
+)
+SELECT profile_id, collection_kind, collection_id, sort_field, sort_order, updated_at
+FROM collection_sort_preferences_v19;
+DROP TABLE collection_sort_preferences_v19;
+`); err != nil {
+		return fmt.Errorf("widening collection sort preference kinds: %w", err)
+	}
+	return nil
+}
+
+// migrateToV19 adds the per-profile collection sort override table. An empty
+// sort_field is a real choice ("keep this collection's own source order") and
+// is distinct from having no row.
+func migrateToV19(tx *sql.Tx) error {
+	if _, err := tx.Exec(collectionSortPreferencesSchema); err != nil {
+		return fmt.Errorf("creating collection_sort_preferences: %w", err)
+	}
+	return nil
+}
+
+// migrateToV18 seeds the family-neutral navigation shortcut catalog from the
+// existing web sidebar pins. InitSchema has already rebuilt
+// user_setting_values with the profile_client identity before this versioned
+// migration runs; keeping the data conversion here makes it one-time and
+// transactional with the schema-version bump.
+func migrateToV18(tx *sql.Tx) error {
+	return migrateSidebarPinsToNavigationShortcuts(tx)
+}
+
+// migrateToV17 rehomes the Jellyfin DisplayPreferences blobs from
+// user_settings (jellycompat:* keys) into the dedicated
+// jellycompat_displayprefs table, removing the last non-settings tenant of the
+// legacy key/value table. The table itself comes from InitSchema on this open;
+// executing the DDL again here records it for the version gate, the same shape
+// migrateToV15 used for the settings contract tables.
+func migrateToV17(tx *sql.Tx) error {
+	if _, err := tx.Exec(jellycompatDisplayPrefsSchema); err != nil {
+		return fmt.Errorf("creating jellycompat_displayprefs: %w", err)
+	}
+	return moveJellycompatDisplayPrefs(tx)
+}
+
+// migrateToV16 backfills canonical setting values from the legacy tables.
+//
+// V15 created the tables; this fills them. It is the cutover's data half, and
+// it runs in the same transaction as every other step, so a database either
+// comes out fully migrated or untouched.
+func migrateToV16(tx *sql.Tx) error {
+	return migrateSettingsToCanonical(tx)
+}
+
+// migrateToV15 adds the canonical settings contract tables. InitSchema already
+// creates them with IF NOT EXISTS on every open, so this step is what records
+// that an existing database has them — the same shape migrateToV6 used for
+// series_playback_preferences.
+//
+// The settings-contract steps were numbered V14-V16 while this branch was in
+// review; main's profile_onboarding migration took V14 first, so they shifted
+// to V15-V17. Only unreleased dev databases carried the old numbers, and every
+// step is idempotent, so a re-run under the new numbering is harmless.
+func migrateToV15(tx *sql.Tx) error {
+	if _, err := tx.Exec(settingContractSchema); err != nil {
+		return fmt.Errorf("creating settings contract tables: %w", err)
+	}
+	return nil
 }
 
 // migrateToV14 adds the per-profile onboarding-tour state table. Keyed by

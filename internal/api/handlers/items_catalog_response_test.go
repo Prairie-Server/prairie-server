@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/imagesize"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
@@ -79,7 +80,7 @@ func TestItemListCardImageURLsUsesBatchResolver(t *testing.T) {
 		},
 	}
 
-	urls := handler.itemListCardImageURLs(context.Background(), items)
+	urls := handler.itemListCardImageURLs(context.Background(), items, imagesize.Unset)
 
 	if resolver.singleCalls != 0 {
 		t.Fatalf("single resolver calls = %d, want 0", resolver.singleCalls)
@@ -87,13 +88,13 @@ func TestItemListCardImageURLsUsesBatchResolver(t *testing.T) {
 	if resolver.batchCalls != 1 {
 		t.Fatalf("batch resolver calls = %d, want 1", resolver.batchCalls)
 	}
-	if got := urls["movie-1"].poster.URL; got != "batch:card:plugin://poster-1/original.jpg" {
+	if got := urls["movie-1"].posterURL; got != "batch:card:plugin://poster-1/original.jpg" {
 		t.Fatalf("movie-1 poster URL = %q", got)
 	}
-	if got := urls["movie-1"].backdrop.URL; got != "batch:card:plugin://backdrop-1/original.jpg" {
+	if got := urls["movie-1"].backdropURL; got != "batch:card:plugin://backdrop-1/original.jpg" {
 		t.Fatalf("movie-1 backdrop URL = %q", got)
 	}
-	if got := urls["movie-2"].poster.URL; got != "https://cdn.example/poster-2.jpg" {
+	if got := urls["movie-2"].posterURL; got != "https://cdn.example/poster-2.jpg" {
 		t.Fatalf("movie-2 poster URL = %q", got)
 	}
 	if got := len(resolver.batchPaths); got != 2 {

@@ -2,12 +2,16 @@ package audiobooks
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/jackc/pgx/v5"
+
 	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // TestEnricherRunFansOut verifies that runBatch processes a claimed batch with
@@ -64,8 +68,8 @@ func TestEnricherRunFansOut(t *testing.T) {
 }
 
 func TestNewEnricherUsesConfiguredBatchSize(t *testing.T) {
-	t.Setenv("PRAIRIE_AUDIOBOOK_ENRICH_BATCH_SIZE", "123")
-	t.Setenv("PRAIRIE_AUDIOBOOK_ENRICH_WORKERS", "8")
+	t.Setenv("SILO_AUDIOBOOK_ENRICH_BATCH_SIZE", "123")
+	t.Setenv("SILO_AUDIOBOOK_ENRICH_WORKERS", "8")
 
 	e := NewEnricher(nil, nil, nil, nil, nil, nil)
 
@@ -78,8 +82,8 @@ func TestNewEnricherUsesConfiguredBatchSize(t *testing.T) {
 }
 
 func TestNewEnricherCapsWorkersToConfiguredBatchSize(t *testing.T) {
-	t.Setenv("PRAIRIE_AUDIOBOOK_ENRICH_BATCH_SIZE", "50")
-	t.Setenv("PRAIRIE_AUDIOBOOK_ENRICH_WORKERS", "100")
+	t.Setenv("SILO_AUDIOBOOK_ENRICH_BATCH_SIZE", "50")
+	t.Setenv("SILO_AUDIOBOOK_ENRICH_WORKERS", "100")
 
 	e := NewEnricher(nil, nil, nil, nil, nil, nil)
 
@@ -92,7 +96,7 @@ func TestNewEnricherCapsWorkersToConfiguredBatchSize(t *testing.T) {
 }
 
 func TestAudiobookEnrichWorkersCapsAtBatchSize(t *testing.T) {
-	t.Setenv("PRAIRIE_AUDIOBOOK_ENRICH_WORKERS", "8")
+	t.Setenv("SILO_AUDIOBOOK_ENRICH_WORKERS", "8")
 
 	if got := audiobookEnrichWorkers(3); got != 3 {
 		t.Fatalf("audiobookEnrichWorkers(3) = %d, want 3", got)
@@ -100,7 +104,7 @@ func TestAudiobookEnrichWorkersCapsAtBatchSize(t *testing.T) {
 }
 
 func TestAudiobookEnrichBatchSizeIgnoresInvalidEnv(t *testing.T) {
-	t.Setenv("PRAIRIE_AUDIOBOOK_ENRICH_BATCH_SIZE", "nope")
+	t.Setenv("SILO_AUDIOBOOK_ENRICH_BATCH_SIZE", "nope")
 
 	if got := audiobookEnrichBatchSize(); got != defaultEnrichBatchSize {
 		t.Fatalf("audiobookEnrichBatchSize() = %d, want %d", got, defaultEnrichBatchSize)
@@ -168,4 +172,85 @@ func (f *fakeAudiobookImageCacher) CacheImage(_ context.Context, req metadata.Ca
 		Thumbhash:    "thumb",
 		Ext:          ".webp",
 	}, nil
+}
+
+type fakeAudiobookMetadataProvider struct {
+	slug      string
+	results   []metadata.SearchResult
+	searchErr error
+	result    *metadata.MetadataResult
+	getErr    error
+}
+
+func (f *fakeAudiobookMetadataProvider) Slug() string       { return f.slug }
+func (f *fakeAudiobookMetadataProvider) Name() string       { return f.slug }
+func (f *fakeAudiobookMetadataProvider) ForTypes() []string { return []string{"audiobook"} }
+func (f *fakeAudiobookMetadataProvider) Search(context.Context, metadata.SearchQuery) ([]metadata.SearchResult, error) {
+	return f.results, f.searchErr
+}
+func (f *fakeAudiobookMetadataProvider) GetMetadata(context.Context, metadata.MetadataRequest) (*metadata.MetadataResult, error) {
+	return f.result, f.getErr
+}
+
+func TestEnrichItemRetriesProviderErrorBeforeAuthorMismatch(t *testing.T) {
+	providerErr := errors.New("provider unavailable")
+	providers := []metadata.Provider{
+		&fakeAudiobookMetadataProvider{slug: "broken", searchErr: providerErr, getErr: providerErr},
+		&fakeAudiobookMetadataProvider{
+			slug:    "wrong-author",
+			results: []metadata.SearchResult{{Name: "Shared Title", ProviderIDs: map[string]string{"wrong": "1"}}},
+			result: &metadata.MetadataResult{
+				HasMetadata: true,
+				People: []models.ItemPerson{{
+					Person: models.Person{Name: "Wrong Author"}, Kind: models.PersonKindAuthor,
+				}},
+			},
+		},
+	}
+	e := &Enricher{
+		resolveProviders: func(context.Context, int, string) ([]metadata.Provider, error) {
+			return providers, nil
+		},
+	}
+
+	err := e.enrichItem(context.Background(), enrichmentItemRow{
+		ContentID: "shared", FolderID: 7, Title: "Shared Title", Author: "Right Author",
+	})
+	if !errors.Is(err, providerErr) {
+		t.Fatalf("enrichment error = %v, want provider failure to remain retryable", err)
+	}
+}
+
+type failingAudiobookProviderIDRepository struct {
+	err error
+}
+
+func (f *failingAudiobookProviderIDRepository) GetByContentID(context.Context, string) ([]*models.MediaItemProviderID, error) {
+	return nil, nil
+}
+
+func (f *failingAudiobookProviderIDRepository) ReplaceByContentID(context.Context, string, map[string]string) error {
+	return f.err
+}
+
+func (f *failingAudiobookProviderIDRepository) ReplaceByContentIDTx(context.Context, pgx.Tx, string, string, map[string]string) error {
+	return f.err
+}
+
+func (f *failingAudiobookProviderIDRepository) FindContentIDByProviderIDs(context.Context, map[string]string, string, string) (string, error) {
+	return "", nil
+}
+
+func TestPersistReturnsProviderIDFailure(t *testing.T) {
+	replaceErr := errors.New("provider identity already belongs to another item")
+	e := &Enricher{providerIDs: &failingAudiobookProviderIDRepository{err: replaceErr}}
+
+	err := e.persist(context.Background(), enrichmentItemRow{ContentID: "audiobook-1"}, map[string]string{"asin": "B001"}, &metadata.MetadataResult{
+		HasMetadata: true,
+		Overview:    "remote overview",
+	})
+
+	if !errors.Is(err, replaceErr) {
+		t.Fatalf("persist error = %v, want provider-ID failure %v", err, replaceErr)
+	}
 }

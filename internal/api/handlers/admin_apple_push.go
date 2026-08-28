@@ -6,10 +6,10 @@ import (
 	"errors"
 	"math"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 
-	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/notifications"
 )
 
@@ -29,7 +29,7 @@ func NewAdminApplePushHandler(system *notifications.System, settings ServerSetti
 		system:              system,
 		settings:            settings,
 		client:              &http.Client{Timeout: 10 * time.Second},
-		developmentRelayURL: envutil.FirstNonEmpty("PRAIRIE_PUSH_RELAY_DEVELOPMENT_URL", "SILO_PUSH_RELAY_DEVELOPMENT_URL"),
+		developmentRelayURL: os.Getenv("SILO_PUSH_RELAY_DEVELOPMENT_URL"),
 	}
 }
 

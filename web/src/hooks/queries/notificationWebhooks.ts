@@ -38,7 +38,9 @@ export function useCreateNotificationWebhook() {
         body: JSON.stringify(input),
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: notificationKeys.webhooks() });
+      void queryClient.invalidateQueries({
+        queryKey: notificationKeys.webhooks(),
+      });
     },
   });
 }
@@ -52,10 +54,14 @@ export function useUpdateNotificationWebhook() {
         body: JSON.stringify(input),
       }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: notificationKeys.webhooks() });
+      void queryClient.invalidateQueries({
+        queryKey: notificationKeys.webhooks(),
+      });
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to update webhook");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to update webhook",
+      );
     },
   });
 }
@@ -63,10 +69,13 @@ export function useUpdateNotificationWebhook() {
 export function useDeleteNotificationWebhook() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api(`/notifications/webhooks/${id}`, { method: "DELETE" }),
+    mutationFn: (id: string) =>
+      api(`/notifications/webhooks/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Webhook deleted");
-      void queryClient.invalidateQueries({ queryKey: notificationKeys.webhooks() });
+      void queryClient.invalidateQueries({
+        queryKey: notificationKeys.webhooks(),
+      });
     },
     onError: () => {
       toast.error("Failed to delete webhook");
@@ -86,11 +95,18 @@ export function useTestNotificationWebhook() {
 export function useRotateNotificationWebhookSecret() {
   return useMutation({
     mutationFn: (id: string) =>
-      api<{ signing_secret: string }>(`/notifications/webhooks/${id}/rotate-secret`, {
-        method: "POST",
-      }),
+      api<{ signing_secret: string }>(
+        `/notifications/webhooks/${id}/rotate-secret`,
+        {
+          method: "POST",
+        },
+      ),
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to rotate signing secret");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to rotate signing secret",
+      );
     },
   });
 }
@@ -112,7 +128,9 @@ export function useDeleteWebPushSubscription() {
     mutationFn: (id: string) =>
       api(`/notifications/web-push/subscriptions/${id}`, { method: "DELETE" }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: notificationKeys.webPushSubscriptions() });
+      void queryClient.invalidateQueries({
+        queryKey: notificationKeys.webPushSubscriptions(),
+      });
     },
     onError: () => {
       toast.error("Failed to remove push subscription");

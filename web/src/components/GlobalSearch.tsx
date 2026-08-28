@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import { useImageLoaded } from "@/hooks/useImageLoaded";
 import { useQuery } from "@tanstack/react-query";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
@@ -7,7 +7,10 @@ import { useViewTransitionNavigate } from "@/hooks/useViewTransition";
 import { useDebounce } from "@/hooks/useDebounce";
 import { buildQueryCatalogHref } from "@/pages/catalogSearchParams";
 import { createEmptyQueryDefinition, type BrowseItem } from "@/api/types";
-import { createCatalogSearchState, fetchCatalogPage } from "@/hooks/queries/catalog";
+import {
+  createCatalogSearchState,
+  fetchCatalogPage,
+} from "@/hooks/queries/catalog";
 import { useSearchMediaScope } from "@/hooks/useSearchMediaScope";
 import { useRequestSearch } from "@/hooks/queries/useRequests";
 import { useCanRequest } from "@/hooks/useCanRequest";
@@ -16,6 +19,7 @@ import { decodeThumbhash } from "@/lib/thumbhash";
 import { cn } from "@/lib/utils";
 import { Search } from "lucide-react";
 import { RequestToAddSection } from "./RequestToAddSection";
+import CardPlayOverlay from "./CardPlayOverlay";
 
 const PREVIEW_LIMIT = 8;
 const DEBOUNCE_MS = 200;
@@ -42,64 +46,106 @@ function typeLabel(type: BrowseItem["type"]): string {
   }
 }
 
+// Shared by the option row and the play-overlay layer stacked on top of it, so
+// the overlay always lands on the poster even if the row's spacing changes.
+const ROW_LAYOUT_CLASSES =
+  "flex w-full cursor-pointer items-center gap-3 px-3 py-2 text-left";
+const ROW_POSTER_CLASSES = "relative h-14 w-10 shrink-0";
+
 function GlobalSearchResultRow({
   item,
   index,
   isSelected,
   onPick,
+  onPlay,
 }: {
   item: BrowseItem;
   index: number;
   isSelected: boolean;
   onPick: (contentId: string) => void;
+  onPlay: () => void;
 }) {
   const { loaded, onLoad } = useImageLoaded(item.poster_url);
-  const thumbhashUrl = item.poster_thumbhash ? decodeThumbhash(item.poster_thumbhash) : "";
+  const thumbhashUrl = item.poster_thumbhash
+    ? decodeThumbhash(item.poster_thumbhash)
+    : "";
 
+  // Virtual focus: keyboard focus stays in the search input and the option is
+  // pointed at by aria-activedescendant, so the row is not a tab stop.
+  //
+  // The play link is a SIBLING of the option, not a child. role="option" is
+  // "Children Presentational: True", so a link inside it would be stripped of
+  // its role and name in the accessibility tree and become undiscoverable to
+  // screen-reader users. The overlay layer instead repeats the row's own flex
+  // layout (same gap/padding/poster box) so it tracks the poster without
+  // hard-coded offsets, and is pointer-events-none so row clicks pass through.
   return (
-    <button
-      type="button"
-      id={`search-result-${index}`}
-      role="option"
-      aria-selected={isSelected}
-      data-selected={isSelected || undefined}
-      onClick={() => onPick(item.content_id)}
-      className="hover:bg-muted/80 data-[selected]:bg-accent flex w-full items-center gap-3 rounded-md px-3 py-2 text-left transition-colors"
-    >
+    <div className="group/media hover:bg-muted/80 data-[selected]:bg-accent relative rounded-md transition-colors">
       <div
-        className="bg-muted relative h-14 w-10 shrink-0 overflow-hidden rounded-md"
-        style={
-          thumbhashUrl
-            ? {
-                backgroundImage: `url(${thumbhashUrl})`,
-                backgroundSize: "cover",
-                backgroundPosition: "center",
-              }
-            : undefined
-        }
+        id={`search-result-${index}`}
+        role="option"
+        aria-selected={isSelected}
+        aria-label={[
+          item.title,
+          item.year > 0 ? String(item.year) : null,
+          typeLabel(item.type),
+        ]
+          .filter(Boolean)
+          .join(", ")}
+        data-selected={isSelected || undefined}
+        onClick={() => onPick(item.content_id)}
+        className={ROW_LAYOUT_CLASSES}
       >
-        {item.poster_url ? (
-          <img
-            src={item.poster_url}
-            alt=""
-            className={`h-full w-full object-cover ${loaded ? "opacity-100" : "opacity-0"}`}
-            loading="lazy"
-            onLoad={onLoad}
-          />
-        ) : (
-          <div className="text-muted-foreground flex h-full items-center justify-center px-1 text-center text-[10px] leading-tight">
-            {item.title.slice(0, 24)}
+        <div
+          className={`bg-muted overflow-hidden rounded-md ${ROW_POSTER_CLASSES}`}
+          style={
+            thumbhashUrl
+              ? {
+                  backgroundImage: `url(${thumbhashUrl})`,
+                  backgroundSize: "cover",
+                  backgroundPosition: "center",
+                }
+              : undefined
+          }
+        >
+          {item.poster_url ? (
+            <img
+              src={item.poster_url}
+              alt=""
+              className={`h-full w-full object-cover ${loaded ? "opacity-100" : "opacity-0"}`}
+              loading="lazy"
+              onLoad={onLoad}
+            />
+          ) : (
+            <div className="text-muted-foreground flex h-full items-center justify-center px-1 text-center text-[10px] leading-tight">
+              {item.title.slice(0, 24)}
+            </div>
+          )}
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="truncate text-sm font-medium">{item.title}</div>
+          <div className="text-muted-foreground text-xs">
+            {item.year > 0 ? `${item.year} · ` : ""}
+            {typeLabel(item.type)}
           </div>
-        )}
-      </div>
-      <div className="min-w-0 flex-1">
-        <div className="truncate text-sm font-medium">{item.title}</div>
-        <div className="text-muted-foreground text-xs">
-          {item.year > 0 ? `${item.year} · ` : ""}
-          {typeLabel(item.type)}
         </div>
       </div>
-    </button>
+      {item.play_content_id ? (
+        <div
+          className={`pointer-events-none absolute inset-0 ${ROW_LAYOUT_CLASSES}`}
+        >
+          <div className={ROW_POSTER_CLASSES}>
+            <CardPlayOverlay
+              contentId={item.play_content_id}
+              title={item.title}
+              type={item.type === "movie" ? "movie" : "episode"}
+              size="compact"
+              onPlaybackStart={onPlay}
+            />
+          </div>
+        </div>
+      ) : null}
+    </div>
   );
 }
 
@@ -110,6 +156,7 @@ export function GlobalSearch({
   const [open, setOpen] = useState(defaultOpen);
   const [query, setQuery] = useState(initialQuery);
   const [selectedIndex, setSelectedIndex] = useState(-1);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const navigate = useViewTransitionNavigate();
   const debouncedQuery = useDebounce(query.trim(), DEBOUNCE_MS);
   const tmdbDebouncedQuery = useDebounce(query.trim(), TMDB_DEBOUNCE_MS);
@@ -120,11 +167,15 @@ export function GlobalSearch({
     staleTime: 5 * 60 * 1000,
   });
   const tmdbMissingCount =
-    tmdbQuery.data?.results?.filter((result) => result.availability !== "available").length ?? 0;
+    tmdbQuery.data?.results?.filter(
+      (result) => result.availability !== "available",
+    ).length ?? 0;
   // Cap at DIALOG_LIMIT (4) — RequestToAddSection slices results to that many rows.
   const tmdbVisibleCount = Math.min(tmdbMissingCount, 4);
   const tmdbStillLoading =
-    canRequest.discoveryEnabled && tmdbDebouncedQuery.length > 1 && tmdbQuery.isLoading;
+    canRequest.discoveryEnabled &&
+    tmdbDebouncedQuery.length > 1 &&
+    tmdbQuery.isLoading;
   const tmdbWillRender = canRequest.discoveryEnabled && tmdbMissingCount > 0;
   // Hide empty state while the TMDB debounce trails the library debounce; otherwise
   // the user sees "No matches" flash between t=200ms and t=400ms after typing.
@@ -161,7 +212,8 @@ export function GlobalSearch({
       limit: PREVIEW_LIMIT,
       offset: 0,
     }),
-    queryFn: ({ signal }) => fetchCatalogPage(searchState, PREVIEW_LIMIT, 0, { signal }, false),
+    queryFn: ({ signal }) =>
+      fetchCatalogPage(searchState, PREVIEW_LIMIT, 0, { signal }, false),
     enabled: open && debouncedQuery.length > 0,
     staleTime: 60 * 1000,
   });
@@ -203,12 +255,15 @@ export function GlobalSearch({
     setSelectedIndex(-1);
   }, [query]);
 
-  // Auto-scroll the selected result into view
+  // Auto-scroll the selected result into view. DOM focus deliberately stays in
+  // the input; aria-activedescendant carries the selection.
   useEffect(() => {
     if (selectedIndex >= 0) {
       document
         .getElementById(`search-result-${selectedIndex}`)
-        ?.scrollIntoView({ block: "nearest" });
+        ?.scrollIntoView?.({
+          block: "nearest",
+        });
     }
   }, [selectedIndex]);
 
@@ -226,6 +281,19 @@ export function GlobalSearch({
     !canRequest.isResolving &&
     !tmdbDebounceCatchingUp;
   const showError = previewQuery.isError;
+  const moveResultFocus = useCallback(
+    (nextIndex: number) => {
+      if (items.length === 0) {
+        setSelectedIndex(-1);
+        searchInputRef.current?.focus();
+        return;
+      }
+      setSelectedIndex(
+        ((nextIndex % items.length) + items.length) % items.length,
+      );
+    },
+    [items.length],
+  );
 
   return (
     <Dialog
@@ -243,30 +311,44 @@ export function GlobalSearch({
           <DialogTitle>Search</DialogTitle>
         </VisuallyHidden.Root>
         <form onSubmit={handleSubmit}>
-          <div className={cn("flex items-center px-5 sm:px-6", showResultsPanel && "border-b")}>
+          <div
+            className={cn(
+              "flex items-center px-5 sm:px-6",
+              showResultsPanel && "border-b",
+            )}
+          >
             <Search className="text-muted-foreground mr-2 h-4 w-4 shrink-0" />
             <input
+              ref={searchInputRef}
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search library..."
               className="placeholder:text-muted-foreground flex h-12 w-full bg-transparent text-sm outline-none"
               autoFocus
               aria-label="Search"
+              role="combobox"
+              aria-expanded={showResultsPanel}
+              aria-autocomplete="list"
+              aria-controls="global-search-library-results"
               aria-activedescendant={
-                selectedIndex >= 0 ? `search-result-${selectedIndex}` : undefined
+                selectedIndex >= 0
+                  ? `search-result-${selectedIndex}`
+                  : undefined
               }
               onKeyDown={(e) => {
                 if (e.key === "ArrowDown") {
                   e.preventDefault();
-                  setSelectedIndex((prev) =>
-                    items.length === 0 ? -1 : prev < items.length - 1 ? prev + 1 : 0,
-                  );
+                  moveResultFocus(selectedIndex + 1);
                 } else if (e.key === "ArrowUp") {
                   e.preventDefault();
-                  setSelectedIndex((prev) =>
-                    items.length === 0 ? -1 : prev <= 0 ? items.length - 1 : prev - 1,
+                  moveResultFocus(
+                    selectedIndex < 0 ? items.length - 1 : selectedIndex - 1,
                   );
-                } else if (e.key === "Enter" && selectedIndex >= 0 && items[selectedIndex]) {
+                } else if (
+                  e.key === "Enter" &&
+                  selectedIndex >= 0 &&
+                  items[selectedIndex]
+                ) {
                   e.preventDefault();
                   handlePickItem(items[selectedIndex].content_id);
                 } else if (e.key === "Escape") {
@@ -282,7 +364,11 @@ export function GlobalSearch({
         {showResultsPanel && (
           <div className="flex min-h-0 flex-1 flex-col">
             <div className="max-h-[min(22rem,55vh)] overflow-y-auto overscroll-contain px-2 py-2">
-              <div role="listbox">
+              <div
+                id="global-search-library-results"
+                role="listbox"
+                aria-label="Library search results"
+              >
                 {showLoading && (
                   <div className="text-muted-foreground px-3 py-6 text-center text-sm">
                     Searching...
@@ -305,6 +391,7 @@ export function GlobalSearch({
                     index={i}
                     isSelected={i === selectedIndex}
                     onPick={handlePickItem}
+                    onPlay={() => setOpen(false)}
                   />
                 ))}
               </div>

@@ -1866,6 +1866,7 @@ func toVideoTrackRecords(tracks []models.VideoTrack) []VideoTrackRecord {
 			Codec:           track.Codec,
 			DolbyVision:     track.DolbyVision,
 			DVProfile:       track.DVProfile,
+			DVLevel:         track.DVLevel,
 			DVBLCompatID:    track.DVBLCompatID,
 			DVELPresent:     track.DVELPresent,
 			HDR10Plus:       track.HDR10Plus,

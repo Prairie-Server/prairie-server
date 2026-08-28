@@ -1,15 +1,18 @@
-import { useEffect, useCallback, useMemo, useRef, useState } from "react";
+import { useEffect, useCallback, useState } from "react";
 import { useWindowVirtualizer } from "@tanstack/react-virtual";
 import type { BrowseItem } from "@/api/types";
 import ItemCard from "./ItemCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useGridLayout } from "@/hooks/useGridLayout";
 import { useOverlayPrefs } from "@/hooks/useOverlayPrefs";
+import { useUICustomization } from "@/hooks/useUICustomization";
+import { cardGridClasses, cardTextAreaHeight } from "@/lib/uiCustomization";
 
 interface SharedItemGridProps {
   loading?: boolean;
   sortField?: string;
   libraryId?: number;
+  narrowPosterActions?: boolean;
   selectionMode?: boolean;
   selectedIds?: ReadonlySet<string>;
   onToggleSelect?: (item: BrowseItem) => void;
@@ -37,41 +40,42 @@ function hasStaticItems(props: ItemGridProps): props is StaticItemGridProps {
   return Array.isArray((props as StaticItemGridProps).items);
 }
 
-const GRID_GAP = 12;
-const TEXT_AREA_HEIGHT = 44;
-const GRID_CLASSES =
-  "grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3";
-
 export default function ItemGrid(props: ItemGridProps) {
   const {
     loading,
     sortField,
     libraryId,
+    narrowPosterActions = false,
     selectionMode = false,
     selectedIds,
     onToggleSelect,
   } = props;
   const { prefs: overlayPrefs } = useOverlayPrefs();
-  const totalItems = hasStaticItems(props) ? props.items.length : props.totalItems;
-  const staticItems = hasStaticItems(props) ? props.items : null;
-  const pagedPages = hasStaticItems(props) ? null : props.pages;
-  const pages = useMemo(() => {
-    if (staticItems) {
-      return new Map<number, BrowseItem[]>([[0, staticItems]]);
-    }
-    return pagedPages ?? new Map<number, BrowseItem[]>();
-  }, [staticItems, pagedPages]);
-  const pageSize = hasStaticItems(props) ? Math.max(props.items.length, 1) : props.pageSize;
-  const onVisibleRangeChange = hasStaticItems(props) ? undefined : props.onVisibleRangeChange;
-  const onVisibleRangeChangeRef = useRef(onVisibleRangeChange);
-  onVisibleRangeChangeRef.current = onVisibleRangeChange;
+  const { cardPresentation } = useUICustomization();
+  const gridGap = cardPresentation.poster_size === "large" ? 16 : 12;
+  const gridClasses = cardGridClasses(cardPresentation.poster_size);
+  const totalItems = hasStaticItems(props)
+    ? props.items.length
+    : props.totalItems;
+  const pages = hasStaticItems(props)
+    ? new Map<number, BrowseItem[]>([[0, props.items]])
+    : props.pages;
+  const pageSize = hasStaticItems(props)
+    ? Math.max(props.items.length, 1)
+    : props.pageSize;
+  const onVisibleRangeChange = hasStaticItems(props)
+    ? () => undefined
+    : props.onVisibleRangeChange;
   const { containerRef, layout } = useGridLayout({
-    gap: GRID_GAP,
-    textAreaHeight: TEXT_AREA_HEIGHT,
+    gap: gridGap,
+    textAreaHeight: cardTextAreaHeight(cardPresentation.caption),
+    layoutKey: cardPresentation.poster_size,
   });
   const [anchorEl, setAnchorEl] = useState<HTMLDivElement | null>(null);
   const { columnCount, rowHeight } = layout;
-  const scrollMargin = anchorEl ? anchorEl.getBoundingClientRect().top + window.scrollY : 0;
+  const scrollMargin = anchorEl
+    ? anchorEl.getBoundingClientRect().top + window.scrollY
+    : 0;
 
   // Use the full totalItems for virtualizer height so the scrollbar reflects
   // the true list size from the first render. Unloaded positions render as
@@ -86,6 +90,12 @@ export default function ItemGrid(props: ItemGridProps) {
     scrollMargin,
   });
 
+  // The estimate function closes over rowHeight. Explicitly invalidate the
+  // cached measurements when a poster/caption preset changes that height.
+  useEffect(() => {
+    virtualizer.measure();
+  }, [rowHeight, virtualizer]);
+
   const virtualRows = virtualizer.getVirtualItems();
 
   // Report visible item range to parent for page fetching
@@ -95,8 +105,8 @@ export default function ItemGrid(props: ItemGridProps) {
   useEffect(() => {
     const start = firstRow * columnCount;
     const end = Math.min((lastRow + 1) * columnCount - 1, totalItems - 1);
-    onVisibleRangeChangeRef.current?.(start, Math.max(end, 0));
-  }, [firstRow, lastRow, columnCount, totalItems]);
+    onVisibleRangeChange(start, Math.max(end, 0));
+  }, [firstRow, lastRow, columnCount, totalItems, onVisibleRangeChange]);
 
   const getItem = useCallback(
     (globalIndex: number): BrowseItem | undefined => {
@@ -110,7 +120,7 @@ export default function ItemGrid(props: ItemGridProps) {
   return (
     <div ref={setAnchorEl}>
       {loading ? (
-        <div ref={containerRef} role="list" className={GRID_CLASSES}>
+        <div ref={containerRef} role="list" className={gridClasses}>
           {Array.from({ length: 24 }).map((_, i) => (
             <div key={i} role="listitem">
               <Skeleton className="aspect-[2/3] rounded-lg" />
@@ -119,7 +129,9 @@ export default function ItemGrid(props: ItemGridProps) {
           ))}
         </div>
       ) : totalItems === 0 ? (
-        <div className="text-muted-foreground py-12 text-center">No items found.</div>
+        <div className="text-muted-foreground py-12 text-center">
+          No items found.
+        </div>
       ) : (
         <div
           style={{
@@ -131,7 +143,7 @@ export default function ItemGrid(props: ItemGridProps) {
           <div
             ref={containerRef}
             role="list"
-            className={GRID_CLASSES}
+            className={gridClasses}
             style={{
               position: "absolute",
               top: 0,
@@ -159,12 +171,16 @@ export default function ItemGrid(props: ItemGridProps) {
                   );
                 } else {
                   cells.push(
-                    <div key={item.content_id} role="listitem">
+                    <div
+                      key={`${item.content_id}-${globalIndex}`}
+                      role="listitem"
+                    >
                       <ItemCard
                         item={item}
                         libraryId={libraryId}
                         sortField={sortField}
                         overlayPrefs={overlayPrefs}
+                        narrowPosterActions={narrowPosterActions}
                         selectionMode={selectionMode}
                         selected={selectedIds?.has(item.content_id) ?? false}
                         onToggleSelect={onToggleSelect}

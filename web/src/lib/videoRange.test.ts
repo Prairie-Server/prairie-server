@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { bestVideoRangeLabel, videoRangeLabel, type VideoRangeSource } from "./videoRange";
+import {
+  bestVideoRangeLabel,
+  videoRangeLabel,
+  type VideoRangeSource,
+} from "./videoRange";
 
 describe("videoRangeLabel", () => {
   it("returns empty for SDR / unprobed", () => {
@@ -14,18 +18,26 @@ describe("videoRangeLabel", () => {
   });
 
   it("detects Dolby Vision from the dolby_vision string", () => {
-    expect(videoRangeLabel({ hdr: true, video_tracks: [{ dolby_vision: "Profile 5" }] })).toBe(
-      "DV",
-    );
+    expect(
+      videoRangeLabel({
+        hdr: true,
+        video_tracks: [{ dolby_vision: "Profile 5" }],
+      }),
+    ).toBe("DV");
   });
 
   it("detects Dolby Vision from dv_profile alone", () => {
-    expect(videoRangeLabel({ hdr: true, video_tracks: [{ dv_profile: 8 }] })).toBe("DV");
+    expect(
+      videoRangeLabel({ hdr: true, video_tracks: [{ dv_profile: 8 }] }),
+    ).toBe("DV");
   });
 
   it("detects Dolby Vision from a DOVI video_range_type", () => {
     expect(
-      videoRangeLabel({ hdr: true, video_tracks: [{ video_range_type: "DOVIWithSDR" }] }),
+      videoRangeLabel({
+        hdr: true,
+        video_tracks: [{ video_range_type: "DOVIWithSDR" }],
+      }),
     ).toBe("DV");
   });
 
@@ -33,28 +45,40 @@ describe("videoRangeLabel", () => {
     expect(
       videoRangeLabel({
         hdr: true,
-        video_tracks: [{ dolby_vision: "Profile 8", video_range_type: "DOVIWithHDR10" }],
+        video_tracks: [
+          { dolby_vision: "Profile 8", video_range_type: "DOVIWithHDR10" },
+        ],
       }),
     ).toBe("DV HDR10");
     expect(
       videoRangeLabel({
         hdr: true,
-        video_tracks: [{ dolby_vision: "Profile 7", color_transfer: "smpte2084" }],
+        video_tracks: [
+          { dolby_vision: "Profile 7", color_transfer: "smpte2084" },
+        ],
       }),
     ).toBe("DV HDR10");
   });
 
   it("combines DV with HLG compatibility", () => {
     expect(
-      videoRangeLabel({ hdr: true, video_tracks: [{ video_range_type: "DOVIWithHLG" }] }),
+      videoRangeLabel({
+        hdr: true,
+        video_tracks: [{ video_range_type: "DOVIWithHLG" }],
+      }),
     ).toBe("DV HLG");
   });
 
   it("labels HDR10+ from the flag or range type", () => {
-    expect(videoRangeLabel({ hdr: true, video_tracks: [{ hdr10_plus: true }] })).toBe("HDR10+");
-    expect(videoRangeLabel({ hdr: true, video_tracks: [{ video_range_type: "HDR10Plus" }] })).toBe(
-      "HDR10+",
-    );
+    expect(
+      videoRangeLabel({ hdr: true, video_tracks: [{ hdr10_plus: true }] }),
+    ).toBe("HDR10+");
+    expect(
+      videoRangeLabel({
+        hdr: true,
+        video_tracks: [{ video_range_type: "HDR10Plus" }],
+      }),
+    ).toBe("HDR10+");
     expect(
       videoRangeLabel({
         hdr: true,
@@ -64,16 +88,30 @@ describe("videoRangeLabel", () => {
   });
 
   it("labels HDR10 and HLG from video_range_type or color_transfer", () => {
-    expect(videoRangeLabel({ hdr: true, video_tracks: [{ video_range_type: "HDR10" }] })).toBe(
-      "HDR10",
-    );
-    expect(videoRangeLabel({ hdr: true, video_tracks: [{ color_transfer: "smpte2084" }] })).toBe(
-      "HDR10",
-    );
-    expect(videoRangeLabel({ hdr: true, video_tracks: [{ video_range_type: "HLG" }] })).toBe("HLG");
-    expect(videoRangeLabel({ hdr: true, video_tracks: [{ color_transfer: "arib-std-b67" }] })).toBe(
-      "HLG",
-    );
+    expect(
+      videoRangeLabel({
+        hdr: true,
+        video_tracks: [{ video_range_type: "HDR10" }],
+      }),
+    ).toBe("HDR10");
+    expect(
+      videoRangeLabel({
+        hdr: true,
+        video_tracks: [{ color_transfer: "smpte2084" }],
+      }),
+    ).toBe("HDR10");
+    expect(
+      videoRangeLabel({
+        hdr: true,
+        video_tracks: [{ video_range_type: "HLG" }],
+      }),
+    ).toBe("HLG");
+    expect(
+      videoRangeLabel({
+        hdr: true,
+        video_tracks: [{ color_transfer: "arib-std-b67" }],
+      }),
+    ).toBe("HLG");
   });
 });
 
@@ -83,7 +121,9 @@ describe("bestVideoRangeLabel", () => {
       { hdr: true },
       {
         hdr: true,
-        video_tracks: [{ dolby_vision: "Profile 8", video_range_type: "DOVIWithHDR10" }],
+        video_tracks: [
+          { dolby_vision: "Profile 8", video_range_type: "DOVIWithHDR10" },
+        ],
       },
     ];
     expect(bestVideoRangeLabel(versions)).toBe("DV HDR10");

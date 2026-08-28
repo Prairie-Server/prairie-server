@@ -20,12 +20,14 @@ import (
 const (
 	PushPlatformApple        = "apple"
 	PushPlatformAndroid      = "android"
+	PushProviderSiloRelay    = "silo_relay"
 	PushProviderPrairieRelay = "prairie_relay"
 	PushModeOff              = "off"
 	PushModeInAppOnly        = "in_app_only"
 	PushModePrivatePush      = "private_push"
 	APNsEnvironmentProd      = "production"
 	APNsEnvironmentSandbox   = "sandbox"
+	ApplePushTopicSilo       = "org.siloserver.silo"
 	ApplePushTopicPrairie    = "org.prairieserver.prairie"
 )
 
@@ -203,7 +205,7 @@ func normalizeApplePushRegistration(input ApplePushRegistrationInput) (ApplePush
 	if topic == "" {
 		return ApplePushDeviceRegistration{}, fmt.Errorf("%w: apns_topic is required", ErrPushDeviceInvalid)
 	}
-	if topic != ApplePushTopicPrairie {
+	if topic != ApplePushTopicPrairie && topic != ApplePushTopicSilo {
 		return ApplePushDeviceRegistration{}, fmt.Errorf("%w: apns_topic is not supported", ErrPushDeviceUnsupported)
 	}
 
@@ -481,7 +483,7 @@ func (r *PushDeviceRepository) insertApple(ctx context.Context, tx pgx.Tx, regis
 		registration.ProfileID,
 		registration.DeviceID,
 		PushPlatformApple,
-		PushProviderPrairieRelay,
+		PushProviderSiloRelay,
 		registration.APNsEnvironment,
 		registration.APNsTopic,
 		ciphertext,
@@ -519,7 +521,7 @@ func (r *PushDeviceRepository) updateApple(ctx context.Context, tx pgx.Tx, regis
 		WHERE id = $8
 		RETURNING `+pushDeviceColumns,
 		registration.UserID,
-		PushProviderPrairieRelay,
+		PushProviderSiloRelay,
 		registration.APNsEnvironment,
 		registration.APNsTopic,
 		ciphertext,
@@ -565,7 +567,7 @@ func (r *PushDeviceRepository) insertFCM(ctx context.Context, tx pgx.Tx, registr
 		registration.ProfileID,
 		registration.DeviceID,
 		PushPlatformAndroid,
-		PushProviderPrairieRelay,
+		PushProviderSiloRelay,
 		ciphertext,
 		fcmTokenHash(registration.FCMToken),
 		serverDeviceID,
@@ -599,7 +601,7 @@ func (r *PushDeviceRepository) updateFCM(ctx context.Context, tx pgx.Tx, registr
 		WHERE id = $6
 		RETURNING `+pushDeviceColumns,
 		registration.UserID,
-		PushProviderPrairieRelay,
+		PushProviderSiloRelay,
 		ciphertext,
 		fcmTokenHash(registration.FCMToken),
 		registration.PushMode,

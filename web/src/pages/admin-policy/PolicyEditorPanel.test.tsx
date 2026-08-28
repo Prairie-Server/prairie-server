@@ -1,6 +1,12 @@
 // @vitest-environment jsdom
 
-import { act, cleanup, fireEvent, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 interface MockCodeMirrorProps {
@@ -10,7 +16,11 @@ interface MockCodeMirrorProps {
 }
 
 vi.mock("@uiw/react-codemirror", () => ({
-  default: ({ value, onChange, "aria-label": ariaLabel }: MockCodeMirrorProps) => (
+  default: ({
+    value,
+    onChange,
+    "aria-label": ariaLabel,
+  }: MockCodeMirrorProps) => (
     <textarea
       aria-label={ariaLabel ?? "Rego policy source"}
       value={value}
@@ -31,7 +41,8 @@ import {
 } from "./policyTestUtils";
 
 const LIVE_V2_SOURCE = "package prairie_custom.scope\n\nbad if {\n  x\n}\n";
-const LIVE_V3_SOURCE = "package prairie_custom.scope\n\nlive_three if {\n  input\n}\n";
+const LIVE_V3_SOURCE =
+  "package prairie_custom.scope\n\nlive_three if {\n  input\n}\n";
 
 function documentWithLiveV3(): PolicyDocument {
   return {
@@ -107,18 +118,23 @@ describe("PolicyEditorPanel", () => {
   });
 
   it("renders compile issues from a validate error response", async () => {
-    renderWithPolicyProviders(<PolicyEditorPanel documentId={1} domains={["scope"]} />);
+    renderWithPolicyProviders(
+      <PolicyEditorPanel documentId={1} domains={["scope"]} />,
+    );
 
     expect(await screen.findByText("Scope limits")).toBeInTheDocument();
     await waitFor(() => {
-      expect((screen.getByLabelText("Rego policy source") as HTMLTextAreaElement).value).toContain(
-        "bad if",
-      );
+      expect(
+        (screen.getByLabelText("Rego policy source") as HTMLTextAreaElement)
+          .value,
+      ).toContain("bad if");
     });
 
     // The unedited live source shows no actions; editing starts a new draft
     // and surfaces the Validate step.
-    expect(screen.queryByRole("button", { name: /validate/i })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: /validate/i }),
+    ).not.toBeInTheDocument();
     fireEvent.change(screen.getByLabelText("Rego policy source"), {
       target: { value: "package prairie_custom.scope\n\nbad if {\n  y\n}\n" },
     });
@@ -129,7 +145,10 @@ describe("PolicyEditorPanel", () => {
     });
 
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith("/api/v1/admin/policy/validate", expect.any(Object));
+      expect(fetchMock).toHaveBeenCalledWith(
+        "/api/v1/admin/policy/validate",
+        expect.any(Object),
+      );
     });
     expect(await screen.findByText(/var x is unsafe/)).toBeInTheDocument();
     expect(screen.getByText(/3:3/)).toBeInTheDocument();
@@ -143,7 +162,8 @@ describe("PolicyEditorPanel", () => {
     expect(await screen.findByText("Scope limits")).toBeInTheDocument();
     await waitFor(() => expect(regoTextarea().value).toContain("bad if"));
 
-    const myDraft = "package prairie_custom.scope\n\nmy_edit if {\n  input\n}\n";
+    const myDraft =
+      "package prairie_custom.scope\n\nmy_edit if {\n  input\n}\n";
     fireEvent.change(regoTextarea(), { target: { value: myDraft } });
 
     // Another admin activates v3 — surfaced here as a background query update.
@@ -153,7 +173,9 @@ describe("PolicyEditorPanel", () => {
 
     // The dirty draft is preserved rather than silently reseeded.
     expect(regoTextarea().value).toBe(myDraft);
-    expect(await screen.findByText(/Version 3 is now live elsewhere/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Version 3 is now live elsewhere/),
+    ).toBeInTheDocument();
   });
 
   it("adopts the newer live version when the load button is clicked", async () => {
@@ -164,13 +186,16 @@ describe("PolicyEditorPanel", () => {
     expect(await screen.findByText("Scope limits")).toBeInTheDocument();
     await waitFor(() => expect(regoTextarea().value).toContain("bad if"));
 
-    const myDraft = "package prairie_custom.scope\n\nmy_edit if {\n  input\n}\n";
+    const myDraft =
+      "package prairie_custom.scope\n\nmy_edit if {\n  input\n}\n";
     fireEvent.change(regoTextarea(), { target: { value: myDraft } });
     act(() => {
       client.setQueryData(adminKeys.policyDocument(1), documentWithLiveV3());
     });
 
-    fireEvent.click(await screen.findByRole("button", { name: /load live version/i }));
+    fireEvent.click(
+      await screen.findByRole("button", { name: /load live version/i }),
+    );
 
     await waitFor(() => expect(regoTextarea().value).toContain("live_three"));
     expect(screen.queryByText(/now live elsewhere/)).not.toBeInTheDocument();
@@ -193,10 +218,13 @@ describe("PolicyEditorPanel", () => {
   });
 
   it("maps compile issues to clamped CodeMirror diagnostics", () => {
-    const diagnostics = mapPolicyIssuesToDiagnostics("package x\nallow if {\n  true\n}", [
-      { row: 2, col: 1, message: "expected expression" },
-      { row: 200, col: 200, message: "out of range" },
-    ]);
+    const diagnostics = mapPolicyIssuesToDiagnostics(
+      "package x\nallow if {\n  true\n}",
+      [
+        { row: 2, col: 1, message: "expected expression" },
+        { row: 200, col: 200, message: "out of range" },
+      ],
+    );
 
     expect(diagnostics).toHaveLength(2);
     expect(diagnostics[0]).toMatchObject({
@@ -204,6 +232,8 @@ describe("PolicyEditorPanel", () => {
       message: "expected expression",
     });
     expect(diagnostics[0]!.from).toBeGreaterThan(0);
-    expect(diagnostics[1]!.from).toBeLessThanOrEqual("package x\nallow if {\n  true\n}".length);
+    expect(diagnostics[1]!.from).toBeLessThanOrEqual(
+      "package x\nallow if {\n  true\n}".length,
+    );
   });
 });

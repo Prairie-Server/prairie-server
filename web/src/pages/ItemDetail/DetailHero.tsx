@@ -1,7 +1,7 @@
 import { type ReactNode } from "react";
 import { Languages } from "lucide-react";
 import { ArtworkImage } from "@/components/ArtworkImage";
-import { BACKDROP_WIDTHS, POSTER_WIDTHS } from "@/lib/artworkUrl";
+import { POSTER_WIDTHS } from "@/lib/artworkUrl";
 import { decodeThumbhash } from "@/lib/thumbhash";
 import { useImageLoaded } from "@/hooks/useImageLoaded";
 
@@ -48,12 +48,8 @@ export default function DetailHero({
   subtitle,
   context,
   backdropUrl,
-  backdropAvifUrl,
-  backdropPngUrl,
   backdropThumbhash,
   posterUrl,
-  posterAvifUrl,
-  posterPngUrl,
   posterThumbhash,
   posterOrientation = "portrait",
   hidePoster = false,
@@ -73,24 +69,30 @@ export default function DetailHero({
   variant = "full",
   topNav,
 }: DetailHeroProps) {
-  const { loaded: backdropLoaded, onLoad: onBackdropLoad } = useImageLoaded(backdropUrl);
-  const { loaded: posterLoaded, onLoad: onPosterLoad } = useImageLoaded(posterUrl);
-  const backdropPlaceholder = backdropThumbhash ? decodeThumbhash(backdropThumbhash) : "";
-  const posterPlaceholder = posterThumbhash ? decodeThumbhash(posterThumbhash) : "";
+  const { loaded: backdropLoaded, onLoad: onBackdropLoad } =
+    useImageLoaded(backdropUrl);
+  const { loaded: posterLoaded, onLoad: onPosterLoad } =
+    useImageLoaded(posterUrl);
+  const backdropPlaceholder = backdropThumbhash
+    ? decodeThumbhash(backdropThumbhash)
+    : "";
+  const posterPlaceholder = posterThumbhash
+    ? decodeThumbhash(posterThumbhash)
+    : "";
   const isCompact = variant === "compact";
 
   const posterSizeClass = (() => {
     switch (posterOrientation) {
       case "portrait":
-        return isCompact ? "w-[120px] sm:w-[160px]" : "w-[140px] sm:w-[220px]";
+        return isCompact ? "w-[140px] sm:w-[160px]" : "w-[170px] sm:w-[220px]";
       case "square":
         // Bigger than portrait — square posters are visually smaller per
         // pixel than 2:3 ones at the same width, so bump dimensions to
         // keep them feeling like a comparable hero focal element.
-        return isCompact ? "w-[160px] sm:w-[200px]" : "w-[180px] sm:w-[260px]";
+        return isCompact ? "w-[180px] sm:w-[200px]" : "w-[200px] sm:w-[260px]";
       case "landscape":
       default:
-        return isCompact ? "w-[180px] sm:w-[260px]" : "w-[200px] sm:w-[320px]";
+        return isCompact ? "w-[200px] sm:w-[260px]" : "w-[240px] sm:w-[320px]";
     }
   })();
 
@@ -124,16 +126,11 @@ export default function DetailHero({
           }}
         >
           {backdropUrl && (
-            <ArtworkImage
+            <img
               key={backdropUrl}
               src={backdropUrl}
-              avifSrc={backdropAvifUrl}
-              pngSrc={backdropPngUrl}
               alt=""
-              widths={BACKDROP_WIDTHS}
-              sizes="100vw"
-              className={`h-full w-full object-cover object-[center_20%] transition-opacity duration-300 will-change-transform ${backdropLoaded ? "opacity-100" : "opacity-0"}`}
-              style={{ animation: "var(--animate-ken-burns-a)" }}
+              className={`h-full w-full object-cover object-[center_20%] transition-opacity duration-300 ${backdropLoaded ? "opacity-100" : "opacity-0"}`}
               onLoad={onBackdropLoad}
             />
           )}
@@ -153,42 +150,53 @@ export default function DetailHero({
       <div
         className={`page-shell-wide relative flex flex-col justify-end pb-8 ${
           isCompact
-            ? "h-[35dvh] min-h-[300px] pt-20 lg:h-[42dvh]"
+            ? // min-height (not fixed height) below lg: bottom-justified content
+              // taller than the hero would otherwise overflow out the top, under
+              // the floating back button.
+              "min-h-[max(35vh,300px)] pt-20 lg:h-[42vh]"
             : "min-h-[60dvh] pt-28 lg:min-h-[72dvh]"
         }`}
       >
         <div
           className={`grid gap-8 ${
-            !isCompact && aside ? "lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end" : ""
+            !isCompact && aside
+              ? "lg:grid-cols-[minmax(0,1fr)_280px] lg:items-end"
+              : ""
           }`}
         >
-          <div className={`flex flex-col gap-6 ${!hidePoster ? "lg:flex-row lg:items-end" : ""}`}>
+          <div
+            className={`flex flex-col gap-6 ${!hidePoster ? "lg:flex-row lg:items-end" : ""}`}
+          >
             {/* Poster */}
             {!hidePoster && (
               <div
-                className={`media-card-image border-border/20 border shadow-[var(--shadow-md)] ${posterSizeClass}`}
-                style={
-                  posterPlaceholder && !posterLoaded
-                    ? {
-                        backgroundImage: `url(${posterPlaceholder})`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                      }
-                    : undefined
-                }
+                className={`media-card-image border-border/20 relative border shadow-[var(--shadow-md)] ${posterSizeClass}`}
               >
                 {posterUrl ? (
-                  <ArtworkImage
-                    key={posterUrl}
-                    src={posterUrl}
-                    avifSrc={posterAvifUrl}
-                    pngSrc={posterPngUrl}
-                    alt={title}
-                    widths={POSTER_WIDTHS}
-                    sizes="(max-width: 1024px) 40vw, 220px"
-                    className={`w-full object-cover ${posterAspect} transition-opacity duration-300 ${posterLoaded ? "opacity-100" : "opacity-0"}`}
-                    onLoad={onPosterLoad}
-                  />
+                  <>
+                    <ArtworkImage
+                      key={posterUrl}
+                      src={posterUrl}
+                      alt={title}
+                      widths={POSTER_WIDTHS}
+                      sizes="(max-width: 1024px) 40vw, 220px"
+                      className={`w-full object-cover ${posterAspect} transition-opacity duration-300 ${posterLoaded ? "opacity-100" : "opacity-0"}`}
+                      onLoad={onPosterLoad}
+                    />
+                    <span
+                      key={`placeholder-${posterUrl}`}
+                      aria-hidden="true"
+                      data-testid="detail-hero-poster-placeholder"
+                      className={`bg-surface pointer-events-none absolute inset-0 bg-cover bg-center transition-opacity duration-300 ${
+                        posterLoaded ? "opacity-0" : "opacity-100"
+                      }`}
+                      style={
+                        posterPlaceholder
+                          ? { backgroundImage: `url(${posterPlaceholder})` }
+                          : undefined
+                      }
+                    />
+                  </>
                 ) : (
                   <div
                     className={`text-muted-foreground bg-surface flex items-center justify-center p-6 text-center text-sm ${posterAspect}`}
@@ -202,10 +210,15 @@ export default function DetailHero({
             {/* Info column */}
             <div
               className="max-w-3xl"
-              style={{ textShadow: "var(--hero-text-shadow, 0 1px 3px rgb(0 0 0 / 40%))" }}
+              style={{
+                textShadow:
+                  "var(--hero-text-shadow, 0 1px 3px rgb(0 0 0 / 40%))",
+              }}
             >
               {context && (
-                <div className="text-muted-foreground mb-4 text-sm font-medium">{context}</div>
+                <div className="text-muted-foreground mb-4 text-sm font-medium">
+                  {context}
+                </div>
               )}
 
               {studioLabel && (
@@ -256,7 +269,9 @@ export default function DetailHero({
                 <div className="max-w-2xl">
                   <p
                     className={`text-muted-foreground leading-7 ${
-                      isCompact ? "text-sm" : "text-foreground/72 text-sm sm:text-[15px]"
+                      isCompact
+                        ? "text-sm"
+                        : "text-foreground/72 text-sm sm:text-[15px]"
                     } ${overviewTranslating ? "animate-pulse opacity-50" : ""}`}
                   >
                     {overview}
@@ -311,7 +326,9 @@ export default function DetailHero({
             </div>
           </div>
 
-          {!isCompact && aside && <div className="lg:justify-self-end">{aside}</div>}
+          {!isCompact && aside && (
+            <div className="lg:justify-self-end">{aside}</div>
+          )}
         </div>
       </div>
     </section>

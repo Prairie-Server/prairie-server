@@ -111,7 +111,9 @@ export function PersonSearchSelect({
               aria-label="Search people"
               aria-controls={listboxId}
               aria-activedescendant={
-                focusedIndex >= 0 ? `${listboxId}-opt-${focusedIndex}` : undefined
+                focusedIndex >= 0
+                  ? `${listboxId}-opt-${focusedIndex}`
+                  : undefined
               }
               className="border-input bg-background placeholder:text-muted-foreground flex h-8 w-full rounded-md border px-2 text-sm outline-none"
               autoFocus
@@ -124,7 +126,9 @@ export function PersonSearchSelect({
             className="max-h-60 overflow-y-auto overscroll-contain p-1"
           >
             {resultsQuery.isLoading ? (
-              <p className="text-muted-foreground py-4 text-center text-sm">Loading...</p>
+              <p className="text-muted-foreground py-4 text-center text-sm">
+                Loading...
+              </p>
             ) : options.length === 0 ? (
               <p className="text-muted-foreground py-4 text-center text-sm">
                 {debouncedQuery ? "No people found" : "Start typing to search"}
@@ -147,7 +151,10 @@ export function PersonSearchSelect({
                   }}
                 >
                   <Check
-                    className={cn("mr-2 h-4 w-4 shrink-0", value ? "opacity-0" : "opacity-100")}
+                    className={cn(
+                      "mr-2 h-4 w-4 shrink-0",
+                      value ? "opacity-0" : "opacity-100",
+                    )}
                   />
                   <span className="text-muted-foreground italic">Any</span>
                 </button>
@@ -162,7 +169,8 @@ export function PersonSearchSelect({
                     className={cn(
                       "hover:bg-accent hover:text-accent-foreground relative flex w-full cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm select-none",
                       value === option && "font-medium",
-                      focusedIndex === index + 1 && "bg-accent text-accent-foreground",
+                      focusedIndex === index + 1 &&
+                        "bg-accent text-accent-foreground",
                     )}
                     onClick={() => {
                       onChange(option);

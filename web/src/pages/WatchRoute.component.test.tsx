@@ -53,7 +53,9 @@ describe("WatchRoute", () => {
     await act(async () => {
       root.render(
         <WatchPlaybackControllerContext.Provider value={controller}>
-          <MemoryRouter initialEntries={["/watch/movie-1?libraryId=7&restart=1"]}>
+          <MemoryRouter
+            initialEntries={["/watch/movie-1?libraryId=7&restart=1"]}
+          >
             <Routes>
               <Route path="/watch/:id" element={<WatchRoute />} />
             </Routes>
@@ -71,8 +73,8 @@ describe("WatchRoute", () => {
       }),
     );
 
-    const requestKey = (controller.syncRouteRequest as ReturnType<typeof vi.fn>).mock.calls[0]?.[0]
-      ?.requestKey;
+    const requestKey = (controller.syncRouteRequest as ReturnType<typeof vi.fn>)
+      .mock.calls[0]?.[0]?.requestKey;
     expect(requestKey).toEqual(expect.any(String));
 
     await act(async () => {

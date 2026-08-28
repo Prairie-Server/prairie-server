@@ -29,11 +29,17 @@ function makeVersion(overrides: Partial<FileVersion> = {}): FileVersion {
   };
 }
 
-function rowValue(rows: Array<{ label: string; value: string }>, label: string): string | null {
+function rowValue(
+  rows: Array<{ label: string; value: string }>,
+  label: string,
+): string | null {
   return rows.find((row) => row.label === label)?.value ?? null;
 }
 
-function sectionAt(sections: MediaSpecSection[], index: number): MediaSpecSection {
+function sectionAt(
+  sections: MediaSpecSection[],
+  index: number,
+): MediaSpecSection {
   const section = sections[index];
   if (!section) throw new Error(`expected a section at index ${index}`);
   return section;
@@ -72,19 +78,24 @@ describe("formatDolbyVisionLabel", () => {
   });
 
   it("keeps labels that already start with Dolby Vision", () => {
-    expect(formatDolbyVisionLabel({ dolby_vision: "Dolby Vision Profile 5" })).toBe(
-      "Dolby Vision Profile 5",
-    );
+    expect(
+      formatDolbyVisionLabel({ dolby_vision: "Dolby Vision Profile 5" }),
+    ).toBe("Dolby Vision Profile 5");
   });
 
   it("falls back to the numeric profile", () => {
-    expect(formatDolbyVisionLabel({ dv_profile: 8 })).toBe("Dolby Vision Profile 8");
+    expect(formatDolbyVisionLabel({ dv_profile: 8 })).toBe(
+      "Dolby Vision Profile 8",
+    );
   });
 
   it("appends base-layer compatibility and enhancement layer details", () => {
-    expect(formatDolbyVisionLabel({ dolby_vision: "Profile 8.1", dv_bl_compat_id: 1 })).toBe(
-      "Dolby Vision Profile 8.1 (HDR10 compatible)",
-    );
+    expect(
+      formatDolbyVisionLabel({
+        dolby_vision: "Profile 8.1",
+        dv_bl_compat_id: 1,
+      }),
+    ).toBe("Dolby Vision Profile 8.1 (HDR10 compatible)");
     expect(
       formatDolbyVisionLabel({
         dolby_vision: "Profile 7.6",
@@ -92,21 +103,33 @@ describe("formatDolbyVisionLabel", () => {
         dv_el_present: true,
       }),
     ).toBe("Dolby Vision Profile 7.6 (HDR10 compatible, EL)");
-    expect(formatDolbyVisionLabel({ dolby_vision: "Profile 8.2", dv_bl_compat_id: 2 })).toBe(
-      "Dolby Vision Profile 8.2 (SDR compatible)",
-    );
+    expect(
+      formatDolbyVisionLabel({
+        dolby_vision: "Profile 8.2",
+        dv_bl_compat_id: 2,
+      }),
+    ).toBe("Dolby Vision Profile 8.2 (SDR compatible)");
   });
 
   it("falls back to video_range_type for compatibility when DV side-data fields are missing", () => {
     expect(
-      formatDolbyVisionLabel({ dolby_vision: "Profile 8", video_range_type: "DOVIWithHDR10" }),
+      formatDolbyVisionLabel({
+        dolby_vision: "Profile 8",
+        video_range_type: "DOVIWithHDR10",
+      }),
     ).toBe("Dolby Vision Profile 8 (HDR10 compatible)");
     expect(
-      formatDolbyVisionLabel({ dolby_vision: "Profile 8", video_range_type: "DOVIWithHLG" }),
+      formatDolbyVisionLabel({
+        dolby_vision: "Profile 8",
+        video_range_type: "DOVIWithHLG",
+      }),
     ).toBe("Dolby Vision Profile 8 (HLG compatible)");
-    expect(formatDolbyVisionLabel({ dolby_vision: "Profile 5", video_range_type: "DOVI" })).toBe(
-      "Dolby Vision Profile 5",
-    );
+    expect(
+      formatDolbyVisionLabel({
+        dolby_vision: "Profile 5",
+        video_range_type: "DOVI",
+      }),
+    ).toBe("Dolby Vision Profile 5");
   });
 
   it("prefers explicit DV side-data fields over the video_range_type fallback", () => {
@@ -134,18 +157,24 @@ describe("formatVideoRangeLabel", () => {
 
   it("reports plain HDR10+ without Dolby Vision", () => {
     expect(formatVideoRangeLabel({ hdr10_plus: true })).toBe("HDR10+");
-    expect(formatVideoRangeLabel({ hdr10_plus: true, video_range_type: "HDR10Plus" })).toBe(
-      "HDR10+",
-    );
+    expect(
+      formatVideoRangeLabel({
+        hdr10_plus: true,
+        video_range_type: "HDR10Plus",
+      }),
+    ).toBe("HDR10+");
   });
 
   it("keeps the DV hint from video_range_type when hdr10_plus is set without raw DV fields", () => {
-    expect(formatVideoRangeLabel({ hdr10_plus: true, video_range_type: "DOVIWithHDR10Plus" })).toBe(
-      "Dolby Vision · HDR10+",
-    );
-    expect(formatVideoRangeLabel({ hdr10_plus: true, video_range_type: "HDR10" })).toBe(
-      "HDR10 · HDR10+",
-    );
+    expect(
+      formatVideoRangeLabel({
+        hdr10_plus: true,
+        video_range_type: "DOVIWithHDR10Plus",
+      }),
+    ).toBe("Dolby Vision · HDR10+");
+    expect(
+      formatVideoRangeLabel({ hdr10_plus: true, video_range_type: "HDR10" }),
+    ).toBe("HDR10 · HDR10+");
   });
 
   it("maps video_range_type enum values to friendly labels", () => {
@@ -157,7 +186,9 @@ describe("formatVideoRangeLabel", () => {
   });
 
   it("passes through unknown range types and falls back to video_range", () => {
-    expect(formatVideoRangeLabel({ video_range_type: "FancyNewRange" })).toBe("FancyNewRange");
+    expect(formatVideoRangeLabel({ video_range_type: "FancyNewRange" })).toBe(
+      "FancyNewRange",
+    );
     expect(formatVideoRangeLabel({ video_range: "SDR" })).toBe("SDR");
     expect(formatVideoRangeLabel({})).toBe("");
   });
@@ -215,7 +246,9 @@ describe("buildGeneralSection", () => {
     expect(rowValue(section.rows, "File Size")).toBe("2.0 GB");
     expect(rowValue(section.rows, "Duration")).toBe("1h 0m 0s");
     expect(rowValue(section.rows, "Overall Bitrate")).toBe("24,500 kbps");
-    expect(rowValue(section.rows, "File Path")).toBe("/media/movies/Example (2024)/Example.mkv");
+    expect(rowValue(section.rows, "File Path")).toBe(
+      "/media/movies/Example (2024)/Example.mkv",
+    );
   });
 
   it("omits the file path row when the server strips it", () => {
@@ -370,6 +403,10 @@ describe("buildMediaSpecSections", () => {
         audio_tracks: [{ codec: "aac", channels: 2 }],
       }),
     );
-    expect(sections.map((section) => section.title)).toEqual(["General", "Video", "Audio"]);
+    expect(sections.map((section) => section.title)).toEqual([
+      "General",
+      "Video",
+      "Audio",
+    ]);
   });
 });

@@ -21,7 +21,7 @@ export const DEFAULT_SUBTITLE_APPEARANCE: SubtitleAppearance = {
   fontFamily: "sans-serif",
   fontColor: "#ffffff",
   backgroundColor: "#000000",
-  backgroundStyle: "shadow",
+  backgroundStyle: "box",
   backgroundOpacity: 75,
   textOutline: false,
   textOutlineColor: "#000000",
@@ -85,15 +85,41 @@ export const BG_COLOR_PALETTE: ColorSwatch[] = [
 
 // ─── Parser ─────────────────────────────────────────────────────────────────
 
-const VALID_FONT_SIZES: Set<string> = new Set(FONT_SIZE_OPTIONS.map((o) => o.value));
-const VALID_FONT_FAMILIES: Set<string> = new Set(FONT_FAMILY_OPTIONS.map((o) => o.value));
-const VALID_BG_STYLES: Set<string> = new Set(BACKGROUND_STYLE_OPTIONS.map((o) => o.value));
-const VALID_POSITIONS: Set<string> = new Set(POSITION_OPTIONS.map((o) => o.value));
+const VALID_FONT_SIZES: Set<string> = new Set(
+  FONT_SIZE_OPTIONS.map((o) => o.value),
+);
+const VALID_FONT_FAMILIES: Set<string> = new Set(
+  FONT_FAMILY_OPTIONS.map((o) => o.value),
+);
+const VALID_BG_STYLES: Set<string> = new Set(
+  BACKGROUND_STYLE_OPTIONS.map((o) => o.value),
+);
+const VALID_POSITIONS: Set<string> = new Set(
+  POSITION_OPTIONS.map((o) => o.value),
+);
 
-export function parseSubtitleAppearance(json: string | null): SubtitleAppearance {
-  if (!json) return { ...DEFAULT_SUBTITLE_APPEARANCE };
+/**
+ * Coerces a stored subtitle appearance into a complete, valid one.
+ *
+ * Accepts both shapes the value has had: the canonical settings API stores it
+ * as a typed JSON object, while the legacy string-only endpoint stored the same
+ * object JSON-encoded into a string. Taking `unknown` means a caller never has
+ * to know which surface it read from, and every field still falls back to the
+ * default individually, so a partial or corrupt value degrades one field at a
+ * time rather than resetting the whole appearance.
+ */
+export function parseSubtitleAppearance(value: unknown): SubtitleAppearance {
+  if (value === null || value === undefined || value === "") {
+    return { ...DEFAULT_SUBTITLE_APPEARANCE };
+  }
   try {
-    const p = JSON.parse(json) as Record<string, unknown>;
+    const p = (typeof value === "string" ? JSON.parse(value) : value) as Record<
+      string,
+      unknown
+    >;
+    if (typeof p !== "object" || p === null || Array.isArray(p)) {
+      return { ...DEFAULT_SUBTITLE_APPEARANCE };
+    }
     return {
       fontSize: VALID_FONT_SIZES.has(p.fontSize as string)
         ? (p.fontSize as SubtitleAppearance["fontSize"])
@@ -106,7 +132,8 @@ export function parseSubtitleAppearance(json: string | null): SubtitleAppearance
           ? p.fontColor
           : DEFAULT_SUBTITLE_APPEARANCE.fontColor,
       backgroundColor:
-        typeof p.backgroundColor === "string" && /^#[0-9a-fA-F]{6}$/.test(p.backgroundColor)
+        typeof p.backgroundColor === "string" &&
+        /^#[0-9a-fA-F]{6}$/.test(p.backgroundColor)
           ? p.backgroundColor
           : DEFAULT_SUBTITLE_APPEARANCE.backgroundColor,
       backgroundStyle: VALID_BG_STYLES.has(p.backgroundStyle as string)
@@ -123,7 +150,8 @@ export function parseSubtitleAppearance(json: string | null): SubtitleAppearance
           ? p.textOutline
           : DEFAULT_SUBTITLE_APPEARANCE.textOutline,
       textOutlineColor:
-        typeof p.textOutlineColor === "string" && /^#[0-9a-fA-F]{6}$/.test(p.textOutlineColor)
+        typeof p.textOutlineColor === "string" &&
+        /^#[0-9a-fA-F]{6}$/.test(p.textOutlineColor)
           ? p.textOutlineColor
           : DEFAULT_SUBTITLE_APPEARANCE.textOutlineColor,
       position: VALID_POSITIONS.has(p.position as string)
@@ -158,7 +186,10 @@ export function computeSubtitleFontSize(
   fontSize: SubtitleAppearance["fontSize"],
   fontScale = 1,
 ): string {
-  const px = Math.max(MIN_SUBTITLE_FONT_PX, Math.round(FONT_SIZE_MAP[fontSize] * fontScale));
+  const px = Math.max(
+    MIN_SUBTITLE_FONT_PX,
+    Math.round(FONT_SIZE_MAP[fontSize] * fontScale),
+  );
   return `${px}px`;
 }
 
@@ -208,7 +239,10 @@ export interface SubtitleStyles {
   cueStyle: CSSProperties;
 }
 
-export function computeSubtitleStyles(settings: SubtitleAppearance, fontScale = 1): SubtitleStyles {
+export function computeSubtitleStyles(
+  settings: SubtitleAppearance,
+  fontScale = 1,
+): SubtitleStyles {
   const containerStyle: CSSProperties = computePositionStyle(settings.position);
   const cueStyle: CSSProperties = {};
 
@@ -246,7 +280,9 @@ const POSITION_OFFSETS: Record<SubtitleAppearance["position"], number> = {
  * Percentage-of-container fallback used before the video's intrinsic aspect
  * ratio is known (or in the preview pane where there's no real video).
  */
-function computePositionStyle(position: SubtitleAppearance["position"]): CSSProperties {
+function computePositionStyle(
+  position: SubtitleAppearance["position"],
+): CSSProperties {
   if (position === "top") return { top: "8%", bottom: "auto" };
   if (position === "lower-third") return { bottom: "12%" };
   return { bottom: "7%" };
@@ -263,14 +299,21 @@ function resolveSubtitleReferenceHeight(
   playerHeight: number,
   videoAspect: number,
 ): number | null {
-  if (!Number.isFinite(videoAspect) || videoAspect <= 0 || playerWidth <= 0 || playerHeight <= 0) {
+  if (
+    !Number.isFinite(videoAspect) ||
+    videoAspect <= 0 ||
+    playerWidth <= 0 ||
+    playerHeight <= 0
+  ) {
     return null;
   }
 
   // Rendered video dimensions inside the player (object-fit: contain).
   const playerAspect = playerWidth / playerHeight;
-  const videoHeight = playerAspect > videoAspect ? playerHeight : playerWidth / videoAspect;
-  const videoWidth = playerAspect > videoAspect ? playerHeight * videoAspect : playerWidth;
+  const videoHeight =
+    playerAspect > videoAspect ? playerHeight : playerWidth / videoAspect;
+  const videoWidth =
+    playerAspect > videoAspect ? playerHeight * videoAspect : playerWidth;
 
   return videoAspect >= 16 / 9 ? videoWidth * (9 / 16) : videoHeight;
 }
@@ -285,7 +328,11 @@ export function computeSubtitleFontScale(
   playerHeight: number,
   videoAspect: number,
 ): number {
-  const refHeight = resolveSubtitleReferenceHeight(playerWidth, playerHeight, videoAspect);
+  const refHeight = resolveSubtitleReferenceHeight(
+    playerWidth,
+    playerHeight,
+    videoAspect,
+  );
   return refHeight === null ? 1 : refHeight / SUBTITLE_REFERENCE_HEIGHT;
 }
 
@@ -307,7 +354,11 @@ export function computeSubtitlePositionStyle(
     return { bottom: `${POSITION_OFFSETS.bottom * playerHeight}px` };
   }
 
-  const refHeight = resolveSubtitleReferenceHeight(playerWidth, playerHeight, videoAspect);
+  const refHeight = resolveSubtitleReferenceHeight(
+    playerWidth,
+    playerHeight,
+    videoAspect,
+  );
   if (refHeight === null) {
     return computePositionStyle(position);
   }

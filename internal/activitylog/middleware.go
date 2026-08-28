@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"context"
 	"fmt"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -14,6 +15,7 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 
 	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
 )
 
 // excludedPrefixes are paths that should not be logged.
@@ -173,8 +175,6 @@ func RedactSecretPathParams(r *http.Request, path string) string {
 
 // RedactSecretQuery strips token/api_key/access_token query values from a
 // request path (or full URL path+query) before it reaches log sinks.
-// Keys are matched after URL-decoding so percent-encoded names (e.g. %61pi_key)
-// cannot bypass redaction; the raw key spelling is preserved in the output.
 func RedactSecretQuery(path string) string {
 	qIdx := strings.IndexByte(path, '?')
 	if qIdx < 0 {
@@ -225,6 +225,13 @@ func (w *statusWriter) Write(b []byte) (int, error) {
 		w.wroteHeader = true
 	}
 	return w.ResponseWriter.Write(b)
+}
+
+func (w *statusWriter) ReadFrom(src io.Reader) (int64, error) {
+	if !w.wroteHeader {
+		w.status, w.wroteHeader = http.StatusOK, true
+	}
+	return httpstream.ForwardReadFrom(w.ResponseWriter, w, src, 0, nil)
 }
 
 // Hijack implements http.Hijacker, required for WebSocket upgrades.

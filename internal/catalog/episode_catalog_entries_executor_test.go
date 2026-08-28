@@ -5,6 +5,36 @@ import (
 	"testing"
 )
 
+func TestApplyEpisodeCatalogAccessFilterRejectsAnyDisabledMembership(t *testing.T) {
+	var whereParts []string
+	var args []any
+	argIdx := 2
+	applyEpisodeCatalogAccessFilter(
+		AccessFilter{DisabledLibraryIDs: []int{9}},
+		&whereParts,
+		&args,
+		&argIdx,
+	)
+
+	where := strings.Join(whereParts, " AND ")
+	if !strings.Contains(where, "EXISTS (SELECT 1 FROM episode_libraries el_scope_any") {
+		t.Fatalf("optimized episode catalog path must require current episode membership, got %s", where)
+	}
+	if !strings.Contains(where, "NOT EXISTS (SELECT 1 FROM episode_libraries el_scope_out") {
+		t.Fatalf("optimized episode catalog path must reject any disabled membership, got %s", where)
+	}
+	if !strings.Contains(where, "el_scope_out.media_folder_id = ANY($2)") {
+		t.Fatalf("disabled libraries must bind at $2, got %s", where)
+	}
+	assertEpisodeParentDisabledAccess(t, where, "ece.series_id")
+	if strings.Contains(where, "SELECT e_parent.series_id") {
+		t.Fatalf("read-model path must use ece.series_id without an episode lookup, got %s", where)
+	}
+	if len(args) != 2 || argIdx != 4 {
+		t.Fatalf("args = %v, argIdx = %d; want episode and series disabled-list args and 4", args, argIdx)
+	}
+}
+
 func TestEpisodeCatalogEntryOrderByUsesReadModelColumns(t *testing.T) {
 	tests := []struct {
 		name string
@@ -228,5 +258,39 @@ func TestExtractEpisodeCatalogUserStatePlanForLastWatched(t *testing.T) {
 	}
 	if len(plan.entryDef.Groups) != 1 || len(plan.entryDef.Groups[0].Rules) != 1 {
 		t.Fatalf("expected genre rule to remain in entry def, got %+v", plan.entryDef.Groups)
+	}
+}
+
+func TestBuildEpisodeCatalogEntryQueryWhereParenthesizesMatchAnyGroup(t *testing.T) {
+	// Both episode preview paths append this expression to an AND-joined
+	// whereParts list that already carries the library, content-rating, and
+	// series-parent-guard constraints. A match-any group emits a top-level OR,
+	// so the result must come back parenthesized — otherwise SQL precedence
+	// detaches an OR arm from every one of those constraints.
+	def := QueryDefinition{
+		MediaScope: "episode",
+		Match:      "all",
+		Groups: []QueryGroup{{
+			Match: "any",
+			Rules: []QueryRule{
+				{Field: "genre", Op: "contains", Value: "Action"},
+				{Field: "genre", Op: "contains", Value: "Adventure"},
+			},
+		}},
+	}.Normalize()
+
+	where, args, nextArgIdx, ok, err := buildEpisodeCatalogEntryQueryWhere(def, 5)
+	if err != nil {
+		t.Fatalf("buildEpisodeCatalogEntryQueryWhere returned error: %v", err)
+	}
+	if !ok {
+		t.Fatal("buildEpisodeCatalogEntryQueryWhere unexpectedly fell back")
+	}
+	want := "(ece.genres @> ARRAY[$5]::text[] OR ece.genres @> ARRAY[$6]::text[])"
+	if where != want {
+		t.Fatalf("WHERE = %q, want %q", where, want)
+	}
+	if nextArgIdx != 7 || len(args) != 2 {
+		t.Fatalf("nextArgIdx = %d, len(args) = %d; want 7, 2", nextArgIdx, len(args))
 	}
 }

@@ -1,10 +1,15 @@
 import { describe, expect, it } from "vitest";
 import { formatExportProgressLabel } from "./adminCatalogMaintenanceFormatters";
-import { createEmptyPathRewrite, updatePathRewrite } from "./adminCatalogMaintenancePathRewrites";
+import {
+  createEmptyPathRewrite,
+  updatePathRewrite,
+} from "./adminCatalogMaintenancePathRewrites";
 
 describe("formatExportProgressLabel", () => {
   it("adds grouping separators to export progress counts", () => {
-    expect(formatExportProgressLabel(4841500, 4853125, "running")).toBe("4,841,500 / 4,853,125");
+    expect(formatExportProgressLabel(4841500, 4853125, "running")).toBe(
+      "4,841,500 / 4,853,125",
+    );
   });
 
   it("keeps queued exports readable when totals are not available", () => {

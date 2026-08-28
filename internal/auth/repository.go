@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 
+	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
@@ -52,7 +53,7 @@ func NewUserRepository(pool *pgxpool.Pool) *UserRepository {
 const allColumns = `id, email, username, password_hash, local_password_login_enabled, role, permissions, enabled,
 	library_ids, max_playback_quality, access_policy_revision,
 	max_streams, max_transcodes, transcode_allowed, audio_transcode_allowed, max_profiles, download_allowed,
-	download_transcode_allowed, access_group_id, created_at, updated_at`
+	download_transcode_allowed, requests_allowed, access_group_id, created_at, updated_at`
 
 // scanUser scans a single row into a *models.User.
 func scanUser(row pgx.Row) (*models.User, error) {
@@ -76,6 +77,7 @@ func scanUser(row pgx.Row) (*models.User, error) {
 		&u.MaxProfiles,
 		&u.DownloadAllowed,
 		&u.DownloadTranscodeAllowed,
+		&u.RequestsAllowed,
 		&u.AccessGroupID,
 		&u.CreatedAt,
 		&u.UpdatedAt,
@@ -113,6 +115,7 @@ func scanUsers(rows pgx.Rows) ([]*models.User, error) {
 			&u.MaxProfiles,
 			&u.DownloadAllowed,
 			&u.DownloadTranscodeAllowed,
+			&u.RequestsAllowed,
 			&u.AccessGroupID,
 			&u.CreatedAt,
 			&u.UpdatedAt,
@@ -150,7 +153,14 @@ func (r *UserRepository) Create(ctx context.Context, input models.CreateUserInpu
 		return nil, err
 	}
 
-	cols := []string{"email", "username", "password_hash", "local_password_login_enabled", "role", "permissions", "library_ids", "max_playback_quality"}
+	// Policy columns are written explicitly: a nil pointer stores NULL, which
+	// means "inherit from the access group" (the columns carry no defaults).
+	cols := []string{
+		"email", "username", "password_hash", "local_password_login_enabled", "role", "permissions",
+		"library_ids", "max_playback_quality", "max_streams", "max_transcodes",
+		"transcode_allowed", "audio_transcode_allowed", "download_allowed", "download_transcode_allowed",
+		"requests_allowed",
+	}
 	args := []any{
 		NormalizeEmail(input.Email),
 		NormalizeUsername(input.Username),
@@ -159,41 +169,28 @@ func (r *UserRepository) Create(ctx context.Context, input models.CreateUserInpu
 		input.Role,
 		permissions,
 		input.LibraryIDs,
-		input.MaxPlaybackQuality,
+		normalizeQualityOverride(input.MaxPlaybackQuality),
+		input.MaxStreams,
+		input.MaxTranscodes,
+		input.TranscodeAllowed,
+		input.AudioTranscodeAllowed,
+		input.DownloadAllowed,
+		input.DownloadTranscodeAllowed,
+		input.RequestsAllowed,
 	}
 
 	// Optional columns: nil means use DB default.
-	if input.MaxStreams != nil {
-		cols = append(cols, "max_streams")
-		args = append(args, *input.MaxStreams)
-	}
-	if input.MaxTranscodes != nil {
-		cols = append(cols, "max_transcodes")
-		args = append(args, *input.MaxTranscodes)
-	}
-	if input.TranscodeAllowed != nil {
-		cols = append(cols, "transcode_allowed")
-		args = append(args, *input.TranscodeAllowed)
-	}
-	if input.AudioTranscodeAllowed != nil {
-		cols = append(cols, "audio_transcode_allowed")
-		args = append(args, *input.AudioTranscodeAllowed)
-	}
 	if input.MaxProfiles != nil {
 		cols = append(cols, "max_profiles")
 		args = append(args, *input.MaxProfiles)
 	}
-	if input.DownloadAllowed != nil {
-		cols = append(cols, "download_allowed")
-		args = append(args, *input.DownloadAllowed)
+	accessGroupID := input.AccessGroupID
+	if input.Role == models.RoleAdmin {
+		accessGroupID = nil
 	}
-	if input.DownloadTranscodeAllowed != nil {
-		cols = append(cols, "download_transcode_allowed")
-		args = append(args, *input.DownloadTranscodeAllowed)
-	}
-	if input.AccessGroupID != nil {
+	if accessGroupID != nil {
 		cols = append(cols, "access_group_id")
-		args = append(args, *input.AccessGroupID)
+		args = append(args, *accessGroupID)
 	}
 
 	// Build placeholders: $1, $2, ..., $N
@@ -204,7 +201,7 @@ func (r *UserRepository) Create(ctx context.Context, input models.CreateUserInpu
 	// Admins stay ungrouped: scope/action decisions are role-blind, so the
 	// default group's ceilings would cap the server owner (mirrors the
 	// exclusion in the assign_default_group_to_existing_users migration).
-	if input.AccessGroupID == nil && input.Role != "admin" {
+	if accessGroupID == nil && input.Role != models.RoleAdmin {
 		cols = append(cols, "access_group_id")
 		placeholders = append(placeholders, "(SELECT id FROM access_groups WHERE is_default)")
 	}
@@ -246,113 +243,163 @@ func (r *UserRepository) GetByEmail(ctx context.Context, email string) (*models.
 	return scanUser(r.pool.QueryRow(ctx, query, NormalizeEmail(email)))
 }
 
+// userUpdateColumn is one candidate column of a user update: it is written
+// only when set, and bumpsAccessPolicy marks the columns whose change has to
+// invalidate durable session/profile tokens by bumping
+// access_policy_revision. Values are pre-computed, so every entry is safe to
+// build even when set is false.
+type userUpdateColumn struct {
+	column            string
+	set               bool
+	value             any
+	bumpsAccessPolicy bool
+}
+
+// accessGroupSetClause builds the SET clause and access-policy predicate for
+// access_group_id given the next free placeholder index. access_group_id is
+// handled outside the generic userUpdateColumn machinery because, unlike
+// every other column, what gets written depends on the row's current role:
+//
+//   - Granting admin (input.Role == "admin") clears the group unconditionally.
+//   - Changing role to anything else without naming a group lands the row on
+//     the default group, but only if it was an admin (accounts are never
+//     un-grouped by an unrelated role change).
+//   - Setting a group on its own (input.Role == nil) is guarded by a CASE so
+//     a write that races an admin promotion cannot leave the admin grouped.
+//   - Otherwise (explicit NULL, or a group set alongside a non-admin role
+//     change) the value is bound directly.
+//
+// Admin accounts are never grouped (see Create). Returns an empty setClause
+// if access_group_id is not touched by this update.
+//
+// The default-group branch reads from a CTE (aliased in defaultGroupCTE)
+// instead of inlining the subselect, because the same expression is spliced
+// into both the SET clause and the access_policy_revision predicate — as a
+// literal subselect it would run twice per UPDATE, but a CTE referenced more
+// than once is materialized once by Postgres.
+func accessGroupSetClause(input models.UpdateUserInput, argIndex int) (setClause, predicate, defaultGroupCTE string, args []any, nextArgIndex int) {
+	const isAdmin = "role = '" + models.RoleAdmin + "'"
+	nextArgIndex = argIndex
+	switch {
+	case input.Role != nil && *input.Role == models.RoleAdmin:
+		placeholder := fmt.Sprintf("$%d", argIndex)
+		setClause = "access_group_id = " + placeholder
+		args = []any{(*int64)(nil)}
+		nextArgIndex++
+	case input.Role != nil && !input.AccessGroupID.Set:
+		defaultGroupCTE = "default_group AS (SELECT id FROM access_groups WHERE is_default)"
+		expr := "(CASE WHEN " + isAdmin + " THEN (SELECT id FROM default_group) ELSE access_group_id END)"
+		setClause = "access_group_id = " + expr
+	case input.Role == nil && input.AccessGroupID.Set && input.AccessGroupID.Value != nil:
+		placeholder := fmt.Sprintf("$%d", argIndex)
+		// The cast pins the parameter type; inside a CASE the driver would
+		// otherwise send it as text.
+		expr := "(CASE WHEN " + isAdmin + " THEN NULL ELSE " + placeholder + "::bigint END)"
+		setClause = "access_group_id = " + expr
+		args = []any{input.AccessGroupID.Value}
+		nextArgIndex++
+	default:
+		if !input.AccessGroupID.Set {
+			return "", "", "", nil, argIndex
+		}
+		placeholder := fmt.Sprintf("$%d", argIndex)
+		setClause = "access_group_id = " + placeholder
+		args = []any{input.AccessGroupID.Value}
+		nextArgIndex++
+	}
+	predicate = "access_group_id IS DISTINCT FROM " + strings.TrimPrefix(setClause, "access_group_id = ")
+	return setClause, predicate, defaultGroupCTE, args, nextArgIndex
+}
+
 // Update modifies a user's fields. Only non-nil fields in the input are updated.
 // If the input contains a Password, it is bcrypt-hashed before storage.
 func (r *UserRepository) Update(ctx context.Context, id int, input models.UpdateUserInput) error {
-	setClauses := []string{}
-	accessPolicyPredicates := []string{}
-	args := []any{}
-	argIndex := 1
-
+	var email *string
 	if input.Email != nil {
-		setClauses = append(setClauses, fmt.Sprintf("email = $%d", argIndex))
-		args = append(args, NormalizeEmail(*input.Email))
-		argIndex++
+		normalized := NormalizeEmail(*input.Email)
+		email = &normalized
 	}
+	var username *string
 	if input.Username != nil {
-		setClauses = append(setClauses, fmt.Sprintf("username = $%d", argIndex))
-		args = append(args, NormalizeUsername(*input.Username))
-		argIndex++
+		normalized := NormalizeUsername(*input.Username)
+		username = &normalized
 	}
+	var passwordHash *string
 	if input.Password != nil {
 		hash, err := bcrypt.GenerateFromPassword([]byte(*input.Password), bcrypt.DefaultCost)
 		if err != nil {
 			return fmt.Errorf("hashing password: %w", err)
 		}
-		setClauses = append(setClauses, fmt.Sprintf("password_hash = $%d", argIndex))
-		args = append(args, string(hash))
-		argIndex++
+		hashed := string(hash)
+		passwordHash = &hashed
 	}
-	if input.LocalPasswordLoginEnabled != nil {
-		setClauses = append(setClauses, fmt.Sprintf("local_password_login_enabled = $%d", argIndex))
-		args = append(args, *input.LocalPasswordLoginEnabled)
-		argIndex++
-	}
-	if input.Role != nil {
-		setClauses = append(setClauses, fmt.Sprintf("role = $%d", argIndex))
-		accessPolicyPredicates = append(accessPolicyPredicates, fmt.Sprintf("role IS DISTINCT FROM $%d", argIndex))
-		args = append(args, *input.Role)
-		argIndex++
-	}
+	var permissions []string
 	if input.Permissions != nil {
-		permissions, err := NormalizePermissions(*input.Permissions)
+		normalized, err := NormalizePermissions(*input.Permissions)
 		if err != nil {
 			return err
 		}
-		setClauses = append(setClauses, fmt.Sprintf("permissions = $%d", argIndex))
-		accessPolicyPredicates = append(accessPolicyPredicates, fmt.Sprintf("permissions IS DISTINCT FROM $%d", argIndex))
-		args = append(args, permissions)
+		permissions = normalized
+	}
+
+	// Library scope is resolved from users.library_ids on each request, so
+	// changing it must not invalidate durable profile/session tokens — hence
+	// no access-policy bump on that column.
+	columns := []userUpdateColumn{
+		{column: "email", set: email != nil, value: email},
+		{column: "username", set: username != nil, value: username},
+		{column: "password_hash", set: passwordHash != nil, value: passwordHash},
+		{column: "local_password_login_enabled", set: input.LocalPasswordLoginEnabled != nil, value: input.LocalPasswordLoginEnabled},
+		{column: "role", set: input.Role != nil, value: input.Role, bumpsAccessPolicy: true},
+		{column: "permissions", set: input.Permissions != nil, value: permissions, bumpsAccessPolicy: true},
+		{column: "enabled", set: input.Enabled != nil, value: input.Enabled, bumpsAccessPolicy: true},
+		{column: "library_ids", set: input.LibraryIDs.Set, value: derefSlice(input.LibraryIDs.Value)},
+		{
+			column:            "max_playback_quality",
+			set:               input.MaxPlaybackQuality.Set,
+			value:             normalizeQualityOverride(input.MaxPlaybackQuality.Value),
+			bumpsAccessPolicy: true,
+		},
+		{column: "max_streams", set: input.MaxStreams.Set, value: input.MaxStreams.Value},
+		{column: "max_transcodes", set: input.MaxTranscodes.Set, value: input.MaxTranscodes.Value},
+		{column: "transcode_allowed", set: input.TranscodeAllowed.Set, value: input.TranscodeAllowed.Value},
+		{column: "audio_transcode_allowed", set: input.AudioTranscodeAllowed.Set, value: input.AudioTranscodeAllowed.Value},
+		{column: "max_profiles", set: input.MaxProfiles != nil, value: input.MaxProfiles},
+		{column: "download_allowed", set: input.DownloadAllowed.Set, value: input.DownloadAllowed.Value},
+		{column: "download_transcode_allowed", set: input.DownloadTranscodeAllowed.Set, value: input.DownloadTranscodeAllowed.Value},
+		{column: "requests_allowed", set: input.RequestsAllowed.Set, value: input.RequestsAllowed.Value},
+	}
+
+	setClauses := []string{}
+	accessPolicyPredicates := []string{}
+	args := []any{}
+	argIndex := 1
+	for _, col := range columns {
+		if !col.set {
+			continue
+		}
+		placeholder := fmt.Sprintf("$%d", argIndex)
+		setClauses = append(setClauses, fmt.Sprintf("%s = %s", col.column, placeholder))
+		if col.bumpsAccessPolicy {
+			accessPolicyPredicates = append(
+				accessPolicyPredicates,
+				fmt.Sprintf("%s IS DISTINCT FROM %s", col.column, placeholder),
+			)
+		}
+		args = append(args, col.value)
 		argIndex++
 	}
-	if input.Enabled != nil {
-		setClauses = append(setClauses, fmt.Sprintf("enabled = $%d", argIndex))
-		accessPolicyPredicates = append(accessPolicyPredicates, fmt.Sprintf("enabled IS DISTINCT FROM $%d", argIndex))
-		args = append(args, *input.Enabled)
-		argIndex++
-	}
-	if input.LibraryIDs != nil {
-		setClauses = append(setClauses, fmt.Sprintf("library_ids = $%d", argIndex))
-		// Library scope is resolved from users.library_ids on each request, so
-		// changing it must not invalidate durable profile/session tokens.
-		args = append(args, *input.LibraryIDs)
-		argIndex++
-	}
-	if input.MaxPlaybackQuality != nil {
-		setClauses = append(setClauses, fmt.Sprintf("max_playback_quality = $%d", argIndex))
-		accessPolicyPredicates = append(accessPolicyPredicates, fmt.Sprintf("max_playback_quality IS DISTINCT FROM $%d", argIndex))
-		args = append(args, *input.MaxPlaybackQuality)
-		argIndex++
-	}
-	if input.MaxStreams != nil {
-		setClauses = append(setClauses, fmt.Sprintf("max_streams = $%d", argIndex))
-		args = append(args, *input.MaxStreams)
-		argIndex++
-	}
-	if input.MaxTranscodes != nil {
-		setClauses = append(setClauses, fmt.Sprintf("max_transcodes = $%d", argIndex))
-		args = append(args, *input.MaxTranscodes)
-		argIndex++
-	}
-	if input.TranscodeAllowed != nil {
-		setClauses = append(setClauses, fmt.Sprintf("transcode_allowed = $%d", argIndex))
-		args = append(args, *input.TranscodeAllowed)
-		argIndex++
-	}
-	if input.AudioTranscodeAllowed != nil {
-		setClauses = append(setClauses, fmt.Sprintf("audio_transcode_allowed = $%d", argIndex))
-		args = append(args, *input.AudioTranscodeAllowed)
-		argIndex++
-	}
-	if input.MaxProfiles != nil {
-		setClauses = append(setClauses, fmt.Sprintf("max_profiles = $%d", argIndex))
-		args = append(args, *input.MaxProfiles)
-		argIndex++
-	}
-	if input.DownloadAllowed != nil {
-		setClauses = append(setClauses, fmt.Sprintf("download_allowed = $%d", argIndex))
-		args = append(args, *input.DownloadAllowed)
-		argIndex++
-	}
-	if input.DownloadTranscodeAllowed != nil {
-		setClauses = append(setClauses, fmt.Sprintf("download_transcode_allowed = $%d", argIndex))
-		args = append(args, *input.DownloadTranscodeAllowed)
-		argIndex++
-	}
-	if input.AccessGroupIDSet {
-		setClauses = append(setClauses, fmt.Sprintf("access_group_id = $%d", argIndex))
-		accessPolicyPredicates = append(accessPolicyPredicates, fmt.Sprintf("access_group_id IS DISTINCT FROM $%d", argIndex))
-		args = append(args, input.AccessGroupID)
-		argIndex++
+
+	// access_group_id is not a plain userUpdateColumn: what gets written
+	// depends on the row's current role, so it is assembled directly rather
+	// than through the generic column loop above.
+	var defaultGroupCTE string
+	if setClause, predicate, cte, groupArgs, nextArgIndex := accessGroupSetClause(input, argIndex); setClause != "" {
+		setClauses = append(setClauses, setClause)
+		accessPolicyPredicates = append(accessPolicyPredicates, predicate)
+		defaultGroupCTE = cte
+		args = append(args, groupArgs...)
+		argIndex = nextArgIndex
 	}
 
 	if len(setClauses) == 0 {
@@ -371,8 +418,14 @@ func (r *UserRepository) Update(ctx context.Context, id int, input models.Update
 	// Always bump updated_at.
 	setClauses = append(setClauses, "updated_at = NOW()")
 
-	query := fmt.Sprintf("UPDATE users SET %s WHERE id = $%d",
-		strings.Join(setClauses, ", "), argIndex)
+	var query string
+	if defaultGroupCTE != "" {
+		query = fmt.Sprintf("WITH %s UPDATE users SET %s WHERE id = $%d",
+			defaultGroupCTE, strings.Join(setClauses, ", "), argIndex)
+	} else {
+		query = fmt.Sprintf("UPDATE users SET %s WHERE id = $%d",
+			strings.Join(setClauses, ", "), argIndex)
+	}
 	args = append(args, id)
 
 	tag, err := r.pool.Exec(ctx, query, args...)
@@ -441,4 +494,26 @@ func extractConstraint(err error) string {
 		return pgErr.ConstraintName
 	}
 	return "unknown"
+}
+
+// normalizeQualityOverride keeps the stored quality preset canonical while
+// preserving nil (inherit).
+func normalizeQualityOverride(value *string) *string {
+	if value == nil {
+		return nil
+	}
+	normalized := access.NormalizePlaybackQuality(*value)
+	return &normalized
+}
+
+// derefSlice maps a nil pointer to a NULL array and a non-nil pointer to its
+// (possibly empty) slice, so Postgres distinguishes "inherit" from "none".
+func derefSlice(value *[]int) []int {
+	if value == nil {
+		return nil
+	}
+	if *value == nil {
+		return []int{}
+	}
+	return *value
 }

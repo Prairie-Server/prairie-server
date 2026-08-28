@@ -15,7 +15,10 @@ import {
   X,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
-import type { AdminSettingsConnectionCheckRequest, ConnectionCheckResponse } from "@/api/types";
+import type {
+  AdminSettingsConnectionCheckRequest,
+  ConnectionCheckResponse,
+} from "@/api/types";
 import { ConnectionCheckAction } from "@/components/admin/ConnectionCheckAction";
 import {
   useAdminServerSettings,
@@ -109,7 +112,9 @@ function RecSettingField({
   if (type === "password") {
     const isConfigured = sensitiveConfigured.includes(key);
     const localVal = localValues[key] ?? "";
-    const placeholder = isConfigured ? "configured" : (hint ?? "Not configured");
+    const placeholder = isConfigured
+      ? "configured"
+      : (hint ?? "Not configured");
     return (
       <div className="space-y-1 py-2">
         <Label htmlFor={key} className="text-sm font-medium">
@@ -222,7 +227,9 @@ function RecSettingField({
         className="max-w-md"
         placeholder={hint}
       />
-      {hint && type === "duration" && <p className="text-muted-foreground text-xs">{hint}</p>}
+      {hint && type === "duration" && (
+        <p className="text-muted-foreground text-xs">{hint}</p>
+      )}
     </div>
   );
 }
@@ -286,7 +293,9 @@ function RecJobStatusCard({
               style={{ width: `${pct}%` }}
             />
           </div>
-          <p className="text-muted-foreground mt-1 text-right text-xs">{pct}%</p>
+          <p className="text-muted-foreground mt-1 text-right text-xs">
+            {pct}%
+          </p>
         </div>
       )}
     </div>
@@ -308,8 +317,8 @@ function RecEmbeddingLockCard({
         <div className="space-y-1">
           <h2 className="text-sm font-semibold">Embedding Lock</h2>
           <p className="text-muted-foreground text-sm">
-            This installation is locked to a specific embedding space after the first successful
-            embed.
+            This installation is locked to a specific embedding space after the
+            first successful embed.
           </p>
         </div>
         <Badge variant="outline" className="shrink-0">
@@ -319,7 +328,9 @@ function RecEmbeddingLockCard({
 
       <dl className="mt-4 grid gap-4 sm:grid-cols-3">
         <div className="space-y-1">
-          <dt className="text-muted-foreground text-xs tracking-wide uppercase">Model</dt>
+          <dt className="text-muted-foreground text-xs tracking-wide uppercase">
+            Model
+          </dt>
           <dd className="text-sm font-medium">{lock.model}</dd>
         </div>
         <div className="space-y-1">
@@ -357,7 +368,8 @@ export default function AdminRecommendations() {
   const [dirtyKeys, setDirtyKeys] = useState<Set<string>>(new Set());
   const [collapsed, setCollapsed] = useState<RecCollapsedState>({});
   const [restartRequired, setRestartRequired] = useState(false);
-  const [connectionResult, setConnectionResult] = useState<ConnectionCheckResponse | null>(null);
+  const [connectionResult, setConnectionResult] =
+    useState<ConnectionCheckResponse | null>(null);
 
   useEffect(() => {
     if (!settings) return;
@@ -391,7 +403,9 @@ export default function AdminRecommendations() {
     setLocalValues((prev) => ({ ...prev, [key]: value }));
     try {
       const result = await updateSettings.mutateAsync({ [key]: value });
-      const field = getAllRecommendationFields().find((candidate) => candidate.key === key);
+      const field = getAllRecommendationFields().find(
+        (candidate) => candidate.key === key,
+      );
       setLocalValues((prev) => ({
         ...prev,
         [key]: field?.type === "password" ? "" : (result.values[key] ?? value),
@@ -428,8 +442,10 @@ export default function AdminRecommendations() {
       });
       setLocalValues((prev) => ({
         ...prev,
-        [EMBEDDING_BASE_URL_KEY]: result.values[EMBEDDING_BASE_URL_KEY] ?? preset.baseUrl,
-        [EMBEDDING_MODEL_KEY]: result.values[EMBEDDING_MODEL_KEY] ?? preset.model,
+        [EMBEDDING_BASE_URL_KEY]:
+          result.values[EMBEDDING_BASE_URL_KEY] ?? preset.baseUrl,
+        [EMBEDDING_MODEL_KEY]:
+          result.values[EMBEDDING_MODEL_KEY] ?? preset.model,
       }));
       setDirtyKeys((prev) => {
         const next = new Set(prev);
@@ -454,7 +470,10 @@ export default function AdminRecommendations() {
   ): AdminSettingsConnectionCheckRequest {
     return {
       values: Object.fromEntries(
-        EMBEDDING_CHECK_KEYS.map((key) => [key, localValues[key] ?? serverSettings[key] ?? ""]),
+        EMBEDDING_CHECK_KEYS.map((key) => [
+          key,
+          localValues[key] ?? serverSettings[key] ?? "",
+        ]),
       ),
       dirty_keys: EMBEDDING_CHECK_KEYS.filter((key) => dirtyKeys.has(key)),
     };
@@ -471,7 +490,8 @@ export default function AdminRecommendations() {
     } catch (error) {
       setConnectionResult({
         success: false,
-        message: error instanceof Error ? error.message : "Connection check failed.",
+        message:
+          error instanceof Error ? error.message : "Connection check failed.",
       });
     }
   }
@@ -496,7 +516,8 @@ export default function AdminRecommendations() {
     serverSettings["recommendations.embedding_lock"],
   );
   const selectedEmbeddingPreset = matchRecommendationProviderPreset(
-    localValues[EMBEDDING_BASE_URL_KEY] ?? serverSettings[EMBEDDING_BASE_URL_KEY],
+    localValues[EMBEDDING_BASE_URL_KEY] ??
+      serverSettings[EMBEDDING_BASE_URL_KEY],
     localValues[EMBEDDING_MODEL_KEY] ?? serverSettings[EMBEDDING_MODEL_KEY],
   );
 
@@ -504,10 +525,12 @@ export default function AdminRecommendations() {
     <div className="page-shell space-y-6 py-4 sm:py-6">
       <div className="page-header gap-5">
         <div className="space-y-3">
-          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Recommendations</h1>
+          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
+            Recommendations
+          </h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Configure the AI-powered recommendation engine. Requires an OpenAI-compatible embedding
-            endpoint.
+            Configure the AI-powered recommendation engine. Requires an
+            OpenAI-compatible embedding endpoint.
           </p>
         </div>
       </div>
@@ -516,8 +539,8 @@ export default function AdminRecommendations() {
         <div className="border-warning/30 bg-warning/10 text-warning flex max-w-3xl items-center gap-3 rounded-xl border px-4 py-3 text-sm">
           <AlertTriangle className="h-4 w-4 flex-shrink-0" />
           <span>
-            One or more settings were changed. A server restart is required for changes to take
-            effect.
+            One or more settings were changed. A server restart is required for
+            changes to take effect.
           </span>
         </div>
       )}
@@ -565,7 +588,10 @@ export default function AdminRecommendations() {
         {buildRecommendationSections().map((section) => {
           const isOpen = !collapsed[section.title];
           return (
-            <div key={section.title} className="surface-panel max-w-3xl rounded-2xl border-0">
+            <div
+              key={section.title}
+              className="surface-panel max-w-3xl rounded-2xl border-0"
+            >
               <button
                 type="button"
                 onClick={() => toggleSection(section.title)}
@@ -584,14 +610,17 @@ export default function AdminRecommendations() {
                   {section.title === EMBEDDING_SECTION_TITLE && (
                     <div className="space-y-3 py-3">
                       <div className="space-y-0.5">
-                        <Label className="text-sm font-medium">Provider Presets</Label>
+                        <Label className="text-sm font-medium">
+                          Provider Presets
+                        </Label>
                         <p className="text-muted-foreground text-xs">
                           Choose a provider to fill the base URL and model.
                         </p>
                       </div>
                       <div className="flex flex-wrap gap-2">
                         {RECOMMENDATION_PROVIDER_PRESETS.map((preset) => {
-                          const selected = selectedEmbeddingPreset?.id === preset.id;
+                          const selected =
+                            selectedEmbeddingPreset?.id === preset.id;
                           return (
                             <button
                               key={preset.id}
@@ -605,7 +634,9 @@ export default function AdminRecommendations() {
                                   : "border-border bg-background hover:bg-accent/30 text-foreground"
                               }`}
                             >
-                              <div className="text-sm font-medium">{preset.label}</div>
+                              <div className="text-sm font-medium">
+                                {preset.label}
+                              </div>
                               {preset.tag && (
                                 <div className="text-muted-foreground mt-0.5 text-xs">
                                   {preset.tag}

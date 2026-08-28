@@ -11,7 +11,7 @@ interface MockBuildInfoResult {
 }
 
 const mockUseServerBranding = vi.fn(() => ({
-  serverName: "Prairie",
+  serverName: "Silo",
   loginSubtitle: "Sign in with an existing account.",
 }));
 const defaultBuildInfo: BuildInfo = {
@@ -19,6 +19,8 @@ const defaultBuildInfo: BuildInfo = {
   revision: "b4c5aae18aa653725ac697b29a05eac797576008",
   dirty: true,
   vcs_time: "2026-04-05T22:24:40Z",
+  build_number: 411,
+  built_at: "2026-08-19T19:45:00Z",
   available: true,
 };
 const mockUseBuildInfo = vi.fn<() => MockBuildInfoResult>(() => ({
@@ -57,10 +59,10 @@ vi.mock("@/hooks/queries/admin/policy", () => ({
   usePolicyCapability: () => mockUsePolicyCapability(),
 }));
 
-function renderSidebar() {
+function renderSidebar(embedded = false) {
   return renderToStaticMarkup(
     <MemoryRouter initialEntries={["/admin"]}>
-      <AdminSidebar />
+      <AdminSidebar embedded={embedded} />
     </MemoryRouter>,
   );
 }
@@ -80,9 +82,23 @@ describe("AdminSidebar", () => {
   it("renders the grouped navigation sections", () => {
     const markup = renderSidebar();
 
-    for (const section of ["Overview", "Content", "Automation", "Users", "System"]) {
+    for (const section of [
+      "Overview",
+      "Content",
+      "Automation",
+      "Users",
+      "System",
+    ]) {
       expect(markup).toContain(`>${section}<`);
     }
+  });
+
+  it("renders as an embedded rail inside the mobile drawer", () => {
+    const markup = renderSidebar(true);
+
+    expect(markup).toContain('data-layout="drawer"');
+    expect(markup).toContain("relative h-full w-full");
+    expect(markup).not.toContain("fixed top-0 bottom-0 left-0");
   });
 
   it("includes a Sections link in the content navigation", () => {
@@ -140,27 +156,8 @@ describe("AdminSidebar", () => {
     const markup = renderSidebar();
 
     expect(markup).toContain(">Build<");
-    expect(markup).toContain(">b4c5aae1+dirty<");
-    expect(markup).toContain('href="/admin/settings?tab=about"');
-  });
-
-  it("surfaces update available in the build footer", () => {
-    mockUseBuildInfo.mockReturnValueOnce({
-      data: {
-        ...defaultBuildInfo,
-        version: "1.0.0",
-        latest_version: "1.4.0",
-        update_status: "update_available",
-        changelog_url: "https://github.com/Prairie-Server/prairie-server/releases/tag/v1.4.0",
-      },
-      isPending: false,
-      isError: false,
-    });
-
-    const markup = renderSidebar();
-
-    expect(markup).toContain(">Update available<");
-    expect(markup).toContain(">Latest 1.4.0<");
+    expect(markup).toContain(">411 · b4c5aae1+dirty<");
+    expect(markup).toContain('title="Built 2026-08-19T19:45:00Z"');
   });
 
   it("renders dev build when build metadata is missing", () => {
@@ -171,6 +168,8 @@ describe("AdminSidebar", () => {
         revision: "",
         dirty: false,
         vcs_time: "",
+        build_number: 0,
+        built_at: "",
         available: false,
       },
       isPending: false,
@@ -180,6 +179,21 @@ describe("AdminSidebar", () => {
     const markup = renderSidebar();
 
     expect(markup).toContain(">dev build<");
+  });
+
+  it("falls back to the revision for builds without an ordered number", () => {
+    const legacyBuildInfo = { ...defaultBuildInfo };
+    delete legacyBuildInfo.build_number;
+    delete legacyBuildInfo.built_at;
+    mockUseBuildInfo.mockReturnValueOnce({
+      data: legacyBuildInfo,
+      isPending: false,
+      isError: false,
+    });
+
+    const markup = renderSidebar();
+
+    expect(markup).toContain(">b4c5aae1+dirty<");
   });
 
   it("renders load failed when the build info query errors", () => {

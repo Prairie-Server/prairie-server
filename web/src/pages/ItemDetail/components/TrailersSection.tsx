@@ -17,15 +17,20 @@ interface TrailersSectionProps {
  * (trailers first, official first).
  */
 export default function TrailersSection({ videos }: TrailersSectionProps) {
-  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } = useCarouselEmbla();
+  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
+    useCarouselEmbla();
   const [activeVideo, setActiveVideo] = useState<ItemVideo | null>(null);
 
-  const playable = videos.filter((video) => video.site.toLowerCase() === "youtube");
+  const playable = videos.filter(
+    (video) => video.site.toLowerCase() === "youtube",
+  );
   if (playable.length === 0) return null;
 
   return (
     <div>
-      <h2 className="mb-5 text-xl font-semibold tracking-tight">Trailers &amp; More</h2>
+      <h2 className="mb-5 text-xl font-semibold tracking-tight">
+        Trailers &amp; More
+      </h2>
       <div className="group/carousel relative">
         {canScrollPrev && (
           <button
@@ -38,11 +43,23 @@ export default function TrailersSection({ videos }: TrailersSectionProps) {
           </button>
         )}
 
-        <div ref={emblaRef} className="embla__viewport overflow-hidden">
-          <ul role="list" className="embla__container flex cursor-grab list-none gap-3">
+        <div
+          ref={emblaRef}
+          className="embla__viewport -mt-1 overflow-hidden pt-1"
+        >
+          <ul
+            role="list"
+            className="embla__container flex cursor-grab list-none gap-3"
+          >
             {playable.map((video) => (
-              <li key={`${video.site}-${video.site_key}`} className="embla__slide shrink-0">
-                <TrailerCard video={video} onPlay={() => setActiveVideo(video)} />
+              <li
+                key={`${video.site}-${video.site_key}`}
+                className="embla__slide shrink-0"
+              >
+                <TrailerCard
+                  video={video}
+                  onPlay={() => setActiveVideo(video)}
+                />
               </li>
             ))}
           </ul>
@@ -60,12 +77,21 @@ export default function TrailersSection({ videos }: TrailersSectionProps) {
         )}
       </div>
 
-      <TrailerModal video={activeVideo} onOpenChange={(open) => !open && setActiveVideo(null)} />
+      <TrailerModal
+        video={activeVideo}
+        onOpenChange={(open) => !open && setActiveVideo(null)}
+      />
     </div>
   );
 }
 
-function TrailerCard({ video, onPlay }: { video: ItemVideo; onPlay: () => void }) {
+function TrailerCard({
+  video,
+  onPlay,
+}: {
+  video: ItemVideo;
+  onPlay: () => void;
+}) {
   const label = video.name || extraKindLabel(video.kind);
 
   return (
@@ -88,7 +114,9 @@ function TrailerCard({ video, onPlay }: { video: ItemVideo; onPlay: () => void }
         </div>
       </div>
       <div className="px-0.5">
-        <div className="text-foreground truncate text-[13px] font-medium">{label}</div>
+        <div className="text-foreground truncate text-[13px] font-medium">
+          {label}
+        </div>
         <div className="text-muted-foreground mt-0.5 flex items-center gap-1.5 text-[11px]">
           <span>{extraKindLabel(video.kind)}</span>
           {video.is_official && (

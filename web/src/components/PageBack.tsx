@@ -1,6 +1,8 @@
 import { ChevronLeft } from "lucide-react";
 import { type To, useNavigate } from "react-router";
 
+import { hasRouterHistory } from "@/lib/backNavigation";
+
 interface PageBackProps {
   label?: string;
   to?: To;
@@ -25,14 +27,12 @@ export default function PageBack({
     : "absolute top-4 left-2 sm:top-6";
 
   function goBack() {
-    const historyIndex = window.history.state?.idx;
-
-    if (preferHistory && typeof historyIndex === "number" && historyIndex > 0) {
-      void navigate(-1);
+    if (preferHistory && hasRouterHistory()) {
+      navigate(-1);
       return;
     }
 
-    void navigate(to);
+    navigate(to);
   }
 
   return (
@@ -40,7 +40,7 @@ export default function PageBack({
       type="button"
       aria-label={label}
       onClick={goBack}
-      className={`glass text-foreground hover:bg-accent ${position} z-20 flex items-center justify-center rounded-full p-1.5 shadow-md transition-colors`}
+      className={`glass glass-hover glass-hover-accent text-foreground ${position} z-20 flex items-center justify-center rounded-full p-1.5 shadow-md`}
     >
       <ChevronLeft className="size-5" />
     </button>

@@ -9,11 +9,19 @@ import (
 	"net/http"
 	"os"
 	"os/exec"
+	"runtime"
 	"strconv"
 	"strings"
 	"sync"
 
 	"github.com/prairie-server/prairie-server/internal/httpstream"
+)
+
+const (
+	jellyfinFFmpegPath             = "/usr/lib/jellyfin-ffmpeg/ffmpeg"
+	homebrewFFmpegFullAppleSilicon = "/opt/homebrew/opt/ffmpeg-full/bin/ffmpeg"
+	homebrewFFmpegFullIntel        = "/usr/local/opt/ffmpeg-full/bin/ffmpeg"
+	ffmpegExecutable               = ffmpegComponent
 )
 
 var (
@@ -28,14 +36,29 @@ var (
 // Resolved once at first call, then cached for the process lifetime.
 func ffmpegBinary() string {
 	ffmpegOnce.Do(func() {
-		const jellyfinPath = "/usr/lib/jellyfin-ffmpeg/ffmpeg"
-		if _, err := exec.LookPath(jellyfinPath); err == nil {
-			resolvedFFmpegPath = jellyfinPath
-			return
-		}
-		resolvedFFmpegPath = ffmpegComponent
+		resolvedFFmpegPath = discoverFFmpegPath(runtime.GOOS, exec.LookPath)
 	})
 	return resolvedFFmpegPath
+}
+
+func discoverFFmpegPath(goos string, lookPath func(string) (string, error)) string {
+	candidates := []string{jellyfinFFmpegPath}
+	if goos == darwinGOOS {
+		// Homebrew's regular FFmpeg omits libass and other filters Silo uses.
+		// Prefer the keg-only full build on both Apple Silicon and Intel Macs
+		// when it is installed; PATH remains the final portable fallback.
+		candidates = []string{
+			homebrewFFmpegFullAppleSilicon,
+			homebrewFFmpegFullIntel,
+			jellyfinFFmpegPath,
+		}
+	}
+	for _, candidate := range candidates {
+		if _, err := lookPath(candidate); err == nil {
+			return candidate
+		}
+	}
+	return ffmpegExecutable
 }
 
 // ResolveFFmpegPath returns the ffmpeg binary the playback pipeline executes
@@ -44,10 +67,27 @@ func ffmpegBinary() string {
 // probes must resolve through this same function so a feature advertised at
 // planning time is guaranteed present in the binary that later runs.
 func ResolveFFmpegPath(configured string) string {
-	if strings.TrimSpace(configured) != "" {
-		return configured
+	return resolveFFmpegPath(configured, exec.LookPath, ffmpegBinary)
+}
+
+func resolveFFmpegPath(
+	configured string,
+	lookPath func(string) (string, error),
+	discover func() string,
+) string {
+	configured = strings.TrimSpace(configured)
+	if configured == "" {
+		return discover()
 	}
-	return ffmpegBinary()
+	// Older and container-oriented settings use Jellyfin's Linux-only path as
+	// the default. Treat that conventional default as discovery only when it is
+	// absent; genuinely custom invalid paths must still fail loudly.
+	if configured == jellyfinFFmpegPath {
+		if _, err := lookPath(configured); err != nil {
+			return discover()
+		}
+	}
+	return configured
 }
 
 // supportsDoviRPUFilter reports whether the given FFmpeg binary can strip
@@ -63,7 +103,7 @@ func supportsDoviRPUFilter(bin string) bool {
 	out, err := exec.Command(bin, "-hide_banner", "-bsfs").Output()
 	available := err == nil && bytes.Contains(out, []byte("dovi_rpu"))
 	if !available {
-		slog.Warn("ffmpeg lacks the dovi_rpu bitstream filter (needs FFmpeg 7.1+); validated Profile 7 HDR10 remux is disabled", ffmpegComponent, bin)
+		slog.Warn("ffmpeg lacks the dovi_rpu bitstream filter (needs FFmpeg 7.1+); validated Profile 7 HDR10 remux is disabled", "ffmpeg", bin)
 	}
 	if doviRPUCache == nil {
 		doviRPUCache = make(map[string]bool)
@@ -118,7 +158,11 @@ const (
 // the RPUs would dangle — stripping yields a clean HDR10 base layer (the
 // Apple-parity fallback for devices without a P7 decoder). Profile 8 RPUs
 // stay: the base layer is self-contained and DV clients can render it.
-func buildRemuxArgs(filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, tagDVSampleEntry bool, audioChannels int, totalDuration float64, timelineOriginSeconds float64) []string {
+func buildRemuxArgs(filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, tagSampleEntry, audioOnly bool) []string {
+	return buildRemuxArgsWithAudioV3(filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, tagSampleEntry, audioOnly, 0, 0, 0)
+}
+
+func buildRemuxArgsWithAudioV3(filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, tagSampleEntry, audioOnly bool, sourceAudioChannels, targetAudioChannels, targetAudioBitrateKbps int) []string {
 	args := []string{
 		"-nostdin",
 		"-hide_banner",
@@ -153,8 +197,14 @@ func buildRemuxArgs(filePath, outputFormat string, seekSeconds float64, transcod
 		"-map_chapters", "-1",
 	)
 
-	// Select specific video and audio streams.
-	args = append(args, "-map", "0:v:0")
+	// A planned video remux must fail if the promised video stream disappeared
+	// or became unreadable. Only positively identified audio-only media may
+	// make the video map optional.
+	videoMap := "0:V:0"
+	if audioOnly {
+		videoMap += "?"
+	}
+	args = append(args, "-map", videoMap)
 	if audioTrackIndex >= 0 {
 		args = append(args, "-map", fmt.Sprintf("0:a:%d?", audioTrackIndex))
 	} else {
@@ -164,18 +214,32 @@ func buildRemuxArgs(filePath, outputFormat string, seekSeconds float64, transcod
 
 	if dvProfile == 7 {
 		args = append(args, "-bsf:v", "dovi_rpu=strip=1")
-	} else if (dvProfile == 5 || dvProfile == 8) && tagDVSampleEntry {
+		if tagSampleEntry {
+			// The explicit v3 strip recipe promised the client plain HDR10.
+			// Safari's media element only answers "probably" for hvc1 — the
+			// sample entry Apple's HLS authoring spec requires — so relabel
+			// FFmpeg's default hev1 to match the evidence the web probe
+			// collects. Stripped output carries no DOVI record, so no -strict
+			// relaxation is needed. Legacy/auto strips keep hev1.
+			args = append(args, "-tag:v", "hvc1")
+		}
+	} else if (dvProfile == 5 || dvProfile == 8) && tagSampleEntry {
 		// FFmpeg carries the DOVI configuration record into MP4 but otherwise
 		// labels copied HEVC as hev1. Media3 keys decoder selection from the
-		// sample entry, so retain an explicit Dolby Vision tag as well.
-		// dvhe keeps FFmpeg's dvvC box; forcing dvh1 makes FFmpeg 7.1 omit it.
-		// Only the explicit v3 preserve recipe opts in: legacy web/jellycompat
-		// consumers keep the pre-v3 hev1 labeling their demuxers accept.
-		args = append(args, "-tag:v", "dvhe")
+		// sample entry, and Safari's media element only answers "probably" for
+		// dvh1 — the sample entry Apple's HLS authoring spec calls for — so tag
+		// dvh1. FFmpeg refuses to write the dvvC configuration record box under
+		// either tag without -strict unofficial; dvh1 plus -strict unofficial is
+		// verified (7.1.4) to retain the full record. Media3 accepts both sample
+		// entries, so Android preserve consumers are unaffected. Only the
+		// explicit v3 preserve recipe opts in: legacy web/jellycompat consumers
+		// keep the pre-v3 hev1 labeling their demuxers accept.
+		args = append(args, "-tag:v", "dvh1", "-strict", "unofficial")
 	}
 
 	if transcodeAudio {
-		// Video copy + stereo AAC encode is effectively single-threaded work.
+		channels, bitrateKbps := resolvedAACOutputV3(targetAudioChannels, targetAudioBitrateKbps)
+		// Video copy + AAC encode is effectively single-threaded work.
 		// ffmpeg's default auto-threading spawns one filter thread per CPU
 		// core for the implicit downmix/resampler, all idle. Pin to one.
 		args = append(args,
@@ -184,9 +248,12 @@ func buildRemuxArgs(filePath, outputFormat string, seekSeconds float64, transcod
 			"-filter_complex_threads", "1",
 			"-c:v", "copy",
 			"-c:a", "aac",
-			"-ac", strconv.Itoa(audioChannels),
-			"-b:a", AudioBitrateForChannels(audioChannels),
+			"-ac", strconv.Itoa(channels),
+			"-b:a", strconv.Itoa(bitrateKbps)+"k",
 		)
+		if IsAudioToAACStereoDownmixV3(sourceAudioChannels, "aac", targetAudioChannels) {
+			args = appendStereoDownmixBoostArgs(args, sourceAudioChannels, channels)
+		}
 	} else {
 		args = append(args, "-c", "copy")
 	}
@@ -194,69 +261,15 @@ func buildRemuxArgs(filePath, outputFormat string, seekSeconds float64, transcod
 	args = append(args,
 		"-avoid_negative_ts", "make_zero",
 		"-f", outputFormat,
+		// delay_moov lets the MP4 muxer inspect the first audio packet before
+		// writing codec configuration. empty_moov fails immediately for copied
+		// E-AC-3/Atmos tracks because their frame size is not known at header time.
+		"-movflags", "frag_keyframe+delay_moov+default_base_moof",
+		"pipe:1",
 	)
-
-	// Fragmentation is an MP4 requirement, not a general one. MP4 keeps its
-	// index in a moov box that a normal write patches at the end, which a
-	// non-seekable pipe cannot do -- so streaming MP4 means fragmenting it.
-	// Matroska is streamable as written and needs none of these flags; passing
-	// movflags to its muxer would just be ignored, but stating the distinction
-	// keeps the reason visible.
-	//
-	// delay_moov lets the MP4 muxer inspect the first audio packet before
-	// writing codec configuration. empty_moov fails immediately for copied
-	// E-AC-3/Atmos tracks because their frame size is not known at header time.
-	if outputFormat == "mp4" {
-		args = append(args, "-movflags", "frag_keyframe+delay_moov+default_base_moof")
-	}
-
-	// Declare how long the output runs so the player gets a real timeline.
-	//
-	// A remux written to a pipe cannot go back and patch a duration in, so
-	// normally the client is told nothing useful: Matroska omits the SegmentInfo
-	// Duration entirely (players report 0) and a fragmented MP4's moov declares
-	// only the span it happened to buffer before writing -- measured at 10.4s for
-	// a 104-minute film. A zero or wrong duration is not cosmetic: it makes every
-	// seek fail, because there is no timeline to seek within.
-	//
-	// Giving the muxer an explicit output length fixes that for Matroska, which
-	// then writes the true duration into the header where a client reading the
-	// first few hundred KB can see it. It does not help MP4 -- measured: the
-	// fragmented moov still declares only the buffered span -- so MP4 keeps
-	// whatever it would have said, and clients on that path still need the
-	// duration from media metadata instead.
-	//
-	// The length is measured from timelineOriginSeconds, not from seekSeconds.
-	// Those differ on a seeked stream copy: -ss sits before -i, so FFmpeg starts
-	// at the keyframe at or before the request and cannot discard the pre-roll
-	// while keeping -c:v copy. The output therefore begins at that keyframe, and
-	// it is the keyframe -- not the requested position -- that is the stream's
-	// real timeline origin. Measuring from the request instead understates the
-	// output by the pre-roll, which on a long-GOP 4K remux is several seconds of
-	// timeline the player would never be able to reach.
-	//
-	// This does not risk cutting the tail. -t is applied relative to the -ss
-	// request, so the pre-roll passes through on top of it either way; measured
-	// with a 9s keyframe gap, capped and uncapped output carried an identical
-	// packet count. Anchoring is about declaring the right number, not about
-	// avoiding truncation.
-	//
-	// The margin guards the one way this can go wrong. Durations are stored as
-	// whole seconds, so the stored value can sit just below the true length, and
-	// an output capped a fraction short would drop the end of the film. Erring
-	// long costs a slightly overlong progress bar; erring short loses content.
-	if remainder := totalDuration - timelineOriginSeconds; totalDuration > 0 && remainder > 0 {
-		args = append(args, "-t", strconv.FormatFloat(remainder+remuxDurationMargin, 'f', 3, 64))
-	}
-
-	args = append(args, "pipe:1")
 
 	return args
 }
-
-// remuxDurationMargin is added to the declared output length so a duration
-// stored as whole seconds can never truncate the end of the stream.
-const remuxDurationMargin = 2.0
 
 // StartRemux starts an ffmpeg process that copies codecs to a new container.
 // When transcodeAudio is false the command is:
@@ -266,19 +279,23 @@ const remuxDurationMargin = 2.0
 // When transcodeAudio is true video is copied but audio is transcoded to AAC.
 // The caller must call Close() when done to clean up resources.
 func StartRemux(ctx context.Context, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int) (*RemuxSession, error) {
-	return StartRemuxWithDVMode(ctx, filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, RemuxDVLegacyAutoV3, "", audioChannelsStereo, 0, 0)
+	return StartRemuxWithDVMode(ctx, filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, RemuxDVLegacyAutoV3, "")
 }
 
 // StartRemuxWithDVMode starts a remux with explicit Dolby Vision behavior.
 // ffmpegPath selects the binary to execute (empty = process-global discovery);
 // v3 callers must pass the configured playback path so the strip capability
 // promised by the planner's probe holds for the binary that actually runs.
-func StartRemuxWithDVMode(ctx context.Context, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, mode RemuxDVMode, ffmpegPath string, audioChannels int, totalDuration float64, timelineOriginSeconds float64) (*RemuxSession, error) {
+func StartRemuxWithDVMode(ctx context.Context, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, mode RemuxDVMode, ffmpegPath string) (*RemuxSession, error) {
+	return startRemuxWithOptions(ctx, filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, mode, ffmpegPath, false, 0, 0, 0)
+}
+
+func startRemuxWithOptions(ctx context.Context, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, mode RemuxDVMode, ffmpegPath string, audioOnly bool, sourceAudioChannels, targetAudioChannels, targetAudioBitrateKbps int) (*RemuxSession, error) {
 	ctx, cancel := context.WithCancel(ctx)
 
 	bin := ResolveFFmpegPath(ffmpegPath)
 	effectiveProfile := dvProfile
-	tagDVSampleEntry := false
+	tagSampleEntry := false
 	switch mode {
 	case "", RemuxDVLegacyAutoV3:
 		effectiveProfile = remuxDVProfile(dvProfile, supportsDoviRPUFilter(bin) &&
@@ -286,22 +303,11 @@ func StartRemuxWithDVMode(ctx context.Context, filePath, outputFormat string, se
 	case RemuxDVStripToHDR10V3:
 		if dvProfile != 7 && dvProfile != 8 {
 			cancel()
-			return nil, fmt.Errorf("dolby Vision HDR10 strip requires profile 7 or 8")
+			return nil, fmt.Errorf("dolby vision HDR10 strip requires profile 7 or 8")
 		}
 		if !supportsDoviRPUFilter(bin) {
 			cancel()
-			return nil, fmt.Errorf("dolby Vision HDR10 remux requires the dovi_rpu bitstream filter")
-		}
-		// The planner refuses this recipe for a source that fails the probe,
-		// so reaching here means a session or stream token minted before the
-		// verdict was known. Fail definitively: copying the base layer without
-		// the strip would leave dangling RPUs (the decoder stall this recipe
-		// exists to prevent) while still claiming HDR10, and attempting the
-		// strip anyway is the per-packet rejection that hangs the session. The
-		// next start re-plans against the now-cached verdict.
-		if !sharedDVRPUProbe.CanStrip(ctx, bin, filePath) {
-			cancel()
-			return nil, fmt.Errorf("this source's Dolby Vision RPU cannot be stripped to HDR10")
+			return nil, fmt.Errorf("dolby vision HDR10 remux requires the dovi_rpu bitstream filter")
 		}
 		// The planner refuses this recipe for a source that fails the probe,
 		// so reaching here means a session or stream token minted before the
@@ -316,16 +322,20 @@ func StartRemuxWithDVMode(ctx context.Context, filePath, outputFormat string, se
 		}
 		// buildRemuxArgs uses profile 7 as the explicit strip sentinel; the
 		// filter is equally required for a compatible profile 8 base layer.
+		// The explicit recipe also labels the output hvc1: the web HDR10
+		// probe collects evidence for that sample entry, and the plan must
+		// deliver the shape it validated. Legacy/auto strips keep hev1.
 		effectiveProfile = 7
+		tagSampleEntry = true
 	case RemuxDVPreserveV3:
 		if dvProfile == 7 {
 			// The remux maps only the base-layer stream, so dual-layer P7
 			// cannot be preserved: the EL is dropped and its RPUs would
 			// dangle. Callers must strip to HDR10 or transcode instead.
 			cancel()
-			return nil, fmt.Errorf("dolby Vision profile 7 cannot be preserved in a progressive remux")
+			return nil, fmt.Errorf("dolby vision profile 7 cannot be preserved in a progressive remux")
 		}
-		tagDVSampleEntry = true
+		tagSampleEntry = true
 	case RemuxDVRejectP7V3:
 		if dvProfile == 7 {
 			cancel()
@@ -335,7 +345,7 @@ func StartRemuxWithDVMode(ctx context.Context, filePath, outputFormat string, se
 		cancel()
 		return nil, fmt.Errorf("unknown remux Dolby Vision mode %q", mode)
 	}
-	args := buildRemuxArgs(filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, effectiveProfile, tagDVSampleEntry, audioChannels, totalDuration, timelineOriginSeconds)
+	args := buildRemuxArgsWithAudioV3(filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, effectiveProfile, tagSampleEntry, audioOnly, sourceAudioChannels, targetAudioChannels, targetAudioBitrateKbps)
 	cmd := exec.CommandContext(ctx, bin, args...)
 
 	stdout, err := cmd.StdoutPipe()
@@ -361,6 +371,20 @@ func (s *RemuxSession) Read(p []byte) (int, error) {
 	return s.outputPipe.Read(p)
 }
 
+// Abort kills the ffmpeg process without draining or reaping it.
+//
+// It exists for callers that are not the owner of the session: killing ffmpeg
+// closes the output pipe, which is what unblocks a copy loop parked in Read, and
+// the owner's deferred Close then does the draining and the wait. Close itself
+// cannot be used for that — it reads the pipe and calls cmd.Wait, neither of
+// which may run concurrently with the owner's Read.
+func (s *RemuxSession) Abort() {
+	if s == nil || s.cancel == nil {
+		return
+	}
+	s.cancel()
+}
+
 // Close stops the ffmpeg process and cleans up all resources.
 // It is safe to call Close multiple times.
 func (s *RemuxSession) Close() error {
@@ -377,7 +401,7 @@ func containerMIME(format string) string {
 		return "video/mp4"
 	case "webm":
 		return "video/webm"
-	case "matroska", "mkv":
+	case "matroska":
 		return "video/x-matroska"
 	case "mpegts":
 		return "video/mp2t"
@@ -386,18 +410,61 @@ func containerMIME(format string) string {
 	}
 }
 
+// RemuxServeOptions carries the optional serving concerns that not every
+// caller sets, keeping the positional argument list from growing further.
+type RemuxServeOptions struct {
+	// DVMode is the explicitly declared Dolby Vision recipe. The zero value
+	// decodes as the legacy auto behavior, matching old stream tokens.
+	DVMode RemuxDVMode
+	// FFmpegPath selects the binary to execute (empty = global discovery).
+	FFmpegPath string
+	// ContentType overrides the container-derived response type. Audio-only
+	// sources mux an audio-only fMP4, which must not be announced as video.
+	ContentType string
+	// AudioOnly permits the otherwise-mandatory video map to be absent.
+	AudioOnly bool
+	// SourceAudioChannels identifies a real surround-to-stereo conversion so an
+	// already-stereo source keeps its authored level. TargetAudioChannels and
+	// TargetAudioBitrateKbps freeze the planned AAC output. Zero target values
+	// retain the historical stereo 192 kbps behavior.
+	SourceAudioChannels    int
+	TargetAudioChannels    int
+	TargetAudioBitrateKbps int
+	// Abort ends the response early when it is closed. A progressive remux is
+	// one long response, so without it the only thing that can stop the stream
+	// is the client itself — a server-initiated session stop cannot withdraw a
+	// route the client is still being fed. Callers that serve a session pass
+	// SessionManager.WatchTransportStop's channel.
+	Abort <-chan struct{}
+}
+
+// RemuxContentType returns the override required for an audio-only fMP4.
+func RemuxContentType(audioOnly bool) string {
+	if audioOnly {
+		return AudioOnlyRemuxMIMEV3
+	}
+	return ""
+}
+
 // ServeRemux streams a remuxed file to the HTTP response.
 // It starts an ffmpeg remux session and copies the output directly to the
 // response writer. The response is streamed (chunked transfer) since the
 // total size is not known in advance.
 // When transcodeAudio is true, audio is transcoded to AAC while video is copied.
 func ServeRemux(w http.ResponseWriter, r *http.Request, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int) error {
-	return ServeRemuxWithDVMode(w, r, filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, RemuxDVLegacyAutoV3, "", audioChannelsStereo, 0, 0)
+	return ServeRemuxWithOptions(w, r, filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, RemuxServeOptions{})
 }
 
 // ServeRemuxWithDVMode streams an explicitly declared Dolby Vision recipe.
 // ffmpegPath selects the binary to execute (empty = process-global discovery).
-func ServeRemuxWithDVMode(w http.ResponseWriter, r *http.Request, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, mode RemuxDVMode, ffmpegPath string, audioChannels int, totalDuration float64, timelineOriginSeconds float64) error {
+func ServeRemuxWithDVMode(w http.ResponseWriter, r *http.Request, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, mode RemuxDVMode, ffmpegPath string) error {
+	return ServeRemuxWithOptions(w, r, filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, RemuxServeOptions{DVMode: mode, FFmpegPath: ffmpegPath})
+}
+
+// ServeRemuxWithOptions is the full remux transport, taking its optional
+// serving concerns as a struct.
+func ServeRemuxWithOptions(w http.ResponseWriter, r *http.Request, filePath, outputFormat string, seekSeconds float64, transcodeAudio bool, audioTrackIndex int, dvProfile int, opts RemuxServeOptions) error {
+	mode, ffmpegPath := opts.DVMode, opts.FFmpegPath
 	// Remux output streams for the length of the title; roll the write
 	// deadline with progress instead of the server's absolute WriteTimeout.
 	w = httpstream.NewRollingDeadlineWriter(w)
@@ -413,14 +480,32 @@ func ServeRemuxWithDVMode(w http.ResponseWriter, r *http.Request, filePath, outp
 		return err
 	}
 
-	session, err := StartRemuxWithDVMode(r.Context(), filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, mode, ffmpegPath, audioChannels, totalDuration, timelineOriginSeconds)
+	session, err := startRemuxWithOptions(r.Context(), filePath, outputFormat, seekSeconds, transcodeAudio, audioTrackIndex, dvProfile, mode, ffmpegPath, opts.AudioOnly, opts.SourceAudioChannels, opts.TargetAudioChannels, opts.TargetAudioBitrateKbps)
 	if err != nil {
 		http.Error(w, "failed to start remux", http.StatusInternalServerError)
 		return err
 	}
 	defer func() { _ = session.Close() }()
 
-	w.Header().Set("Content-Type", containerMIME(outputFormat))
+	if opts.Abort != nil {
+		// Deferred after session.Close, so it runs before it: the watcher is
+		// gone by the time the owner drains and reaps the process.
+		served := make(chan struct{})
+		defer close(served)
+		go func() {
+			select {
+			case <-opts.Abort:
+				session.Abort()
+			case <-served:
+			}
+		}()
+	}
+
+	contentType := opts.ContentType
+	if contentType == "" {
+		contentType = containerMIME(outputFormat)
+	}
+	w.Header().Set("Content-Type", contentType)
 	w.Header().Set("Transfer-Encoding", "chunked")
 	w.WriteHeader(http.StatusOK)
 

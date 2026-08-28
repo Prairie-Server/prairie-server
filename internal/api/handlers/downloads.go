@@ -4,9 +4,15 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"log/slog"
 	"net/http"
+	"net/url"
+	"path/filepath"
 	"strconv"
+	"strings"
+	"sync"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 
@@ -14,11 +20,13 @@ import (
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/downloads"
 	"github.com/prairie-server/prairie-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
 	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 // DownloadService is the interface that the download handler depends on. A
-// non-empty deviceID (from the X-Prairie-Device-Id header) selects the managed
+// non-empty deviceID (from the X-Silo-Device-Id header) selects the managed
 // device-library lifecycle; empty is the ephemeral/account-level path.
 type DownloadService interface {
 	Capability(ctx context.Context, userID int) (downloads.Capability, error)
@@ -44,33 +52,63 @@ type DownloadService interface {
 
 // DownloadHandler handles download endpoints.
 type DownloadHandler struct {
-	svc DownloadService
+	svc             DownloadService
+	nodePlanner     nodepool.DownloadPlanner
+	jwtSecret       func() string
+	proxyHTTPClient *http.Client
+	preflightMu     sync.Mutex
+	preflightCache  map[string]proxyPreflightResult
+}
+
+type proxyPreflightResult struct {
+	reachable bool
+	expiresAt time.Time
 }
 
 // NewDownloadHandler creates a new DownloadHandler.
 func NewDownloadHandler(svc DownloadService) *DownloadHandler {
-	return &DownloadHandler{svc: svc}
+	return &DownloadHandler{
+		svc:            svc,
+		preflightCache: make(map[string]proxyPreflightResult),
+		proxyHTTPClient: &http.Client{
+			Timeout: 3 * time.Second,
+			CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+				return http.ErrUseLastResponse
+			},
+		},
+	}
 }
+
+// SetProxyDelivery enables stateless proxy-node egress after the API service
+// has authorized and resolved a download target. It is optional; integrated
+// deployments continue to serve bytes locally.
+func (h *DownloadHandler) SetProxyDelivery(planner nodepool.DownloadPlanner, jwtSecret func() string) {
+	h.nodePlanner = planner
+	h.jwtSecret = jwtSecret
+}
+
+type downloadFileResolver interface {
+	ResolveDirectFile(ctx context.Context, userID, fileID int, format string, filter catalog.AccessFilter) (*downloads.FileTarget, error)
+	ResolveManagedFile(ctx context.Context, userID int, profileID, deviceID, downloadID string, filter catalog.AccessFilter) (*downloads.FileTarget, error)
+}
+
+const (
+	proxyDownloadTokenTTL  = 15 * time.Minute
+	proxyPreflightCacheTTL = 5 * time.Second
+)
 
 // downloadRequest represents the JSON body for POST /downloads.
 type downloadRequest struct {
-	ContentID string        `json:"content_id"`
-	EpisodeID string        `json:"episode_id,omitempty"`
-	FileID    int           `json:"file_id,omitempty"`
-	Quality   string        `json:"quality,omitempty"`       // original (default) | 20mbps | 10mbps | 5mbps | 2mbps | 1mbps
-	Series    bool          `json:"series,omitempty"`        // if true, downloads all episodes
-	Season    *int          `json:"season_number,omitempty"` // with series=true, downloads only this season (0 = Specials)
-	Caps      *downloadCaps `json:"caps,omitempty"`          // device decode capability (original fallback / transcode target)
-}
-
-// downloadCaps mirrors playback.ClientCapabilities for the request body.
-type downloadCaps struct {
-	CodecsVideo            []string `json:"codecs_video,omitempty"`
-	CodecsAudio            []string `json:"codecs_audio,omitempty"`
-	AudioPassthroughCodecs []string `json:"audio_passthrough_codecs,omitempty"`
-	Containers             []string `json:"containers,omitempty"`
-	MaxResolution          string   `json:"max_resolution,omitempty"`
-	HDR                    bool     `json:"hdr,omitempty"`
+	ContentID string `json:"content_id"`
+	EpisodeID string `json:"episode_id,omitempty"`
+	FileID    int    `json:"file_id,omitempty"`
+	Quality   string `json:"quality,omitempty"`       // original (default) | 20mbps | 10mbps | 5mbps | 2mbps | 1mbps
+	Series    bool   `json:"series,omitempty"`        // if true, downloads all episodes
+	Season    *int   `json:"season_number,omitempty"` // with series=true, downloads only this season (0 = Specials)
+	// Caps is the device decode capability (original fallback / transcode
+	// target). The playback type is decoded directly: its JSON contract is the
+	// download `caps` contract, and a mirror struct here could only drift.
+	Caps *playback.ClientCapabilities `json:"caps,omitempty"`
 }
 
 // patchDownloadRequest is the JSON body for PATCH /downloads/{id}.
@@ -124,6 +162,7 @@ type downloadCapabilityResponse struct {
 	SeasonDownload       bool     `json:"season_download"`
 	SeriesMonitoring     bool     `json:"series_monitoring"`
 	MonitoringModes      []string `json:"monitoring_modes,omitempty"`
+	ProxyDelivery        bool     `json:"proxy_delivery"`
 }
 
 func toDownloadResponse(d *downloads.Download) downloadResponse {
@@ -153,7 +192,7 @@ func toDownloadResponse(d *downloads.Download) downloadResponse {
 }
 
 // managedIdentity returns the (profileID, deviceID) the request is acting as.
-// deviceID comes ONLY from the X-Prairie-Device-Id header (never the body/query);
+// deviceID comes ONLY from the X-Silo-Device-Id header (never the body/query);
 // profileID is resolved by the viewer-access middleware from X-Profile-Id.
 func managedIdentity(r *http.Request) (profileID, deviceID, deviceName, devicePlatform string) {
 	device := deviceMetadataFromRequest(r)
@@ -179,6 +218,7 @@ func (h *DownloadHandler) HandleCapability(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	_, _, proxyDelivery := h.proxyTarget()
 	writeJSON(w, http.StatusOK, downloadCapabilityResponse{
 		Enabled:              capInfo.Enabled,
 		DownloadAllowed:      capInfo.DownloadAllowed,
@@ -188,10 +228,11 @@ func (h *DownloadHandler) HandleCapability(w http.ResponseWriter, r *http.Reques
 		SeasonDownload:       capInfo.SeasonDownload,
 		SeriesMonitoring:     capInfo.SeriesMonitoring,
 		MonitoringModes:      capInfo.MonitoringModes,
+		ProxyDelivery:        proxyDelivery,
 	})
 }
 
-// HandleCreateDownload handles POST /downloads. The X-Prairie-Device-Id header
+// HandleCreateDownload handles POST /downloads. The X-Silo-Device-Id header
 // (if present) makes this a managed device entry; otherwise it is ephemeral.
 func (h *DownloadHandler) HandleCreateDownload(w http.ResponseWriter, r *http.Request) {
 	userID := apimw.GetUserID(r.Context())
@@ -227,13 +268,10 @@ func (h *DownloadHandler) HandleCreateDownload(w http.ResponseWriter, r *http.Re
 		DevicePlatform: devicePlatform,
 	}
 	if req.Caps != nil {
-		createReq.Caps = playback.ClientCapabilities{
-			CodecsVideo:            req.Caps.CodecsVideo,
-			CodecsAudio:            req.Caps.CodecsAudio,
-			AudioPassthroughCodecs: req.Caps.AudioPassthroughCodecs,
-			Containers:             req.Caps.Containers,
-			MaxResolution:          req.Caps.MaxResolution,
-			HDR:                    req.Caps.HDR,
+		createReq.Caps = *req.Caps
+		if err := createReq.Caps.NormalizeAndValidateVideoDecode(); err != nil {
+			writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+			return
 		}
 	}
 
@@ -382,6 +420,17 @@ func (h *DownloadHandler) HandlePatchDownload(w http.ResponseWriter, r *http.Req
 
 // HandleDownloadFile handles GET /downloads/{id}/file.
 func (h *DownloadHandler) HandleDownloadFile(w http.ResponseWriter, r *http.Request) {
+	h.handleDownloadFile(w, r, false)
+}
+
+// HandleDownloadFileViaProxy serves the additive proxy-aware download route.
+// Clients opt into its 307 response only after discovering proxy_delivery in
+// the download capability; the established file route retains 200/206.
+func (h *DownloadHandler) HandleDownloadFileViaProxy(w http.ResponseWriter, r *http.Request) {
+	h.handleDownloadFile(w, r, true)
+}
+
+func (h *DownloadHandler) handleDownloadFile(w http.ResponseWriter, r *http.Request, delegate bool) {
 	userID := apimw.GetUserID(r.Context())
 	if userID == 0 {
 		writeError(w, http.StatusUnauthorized, "unauthorized", "Authentication required")
@@ -399,35 +448,59 @@ func (h *DownloadHandler) HandleDownloadFile(w http.ResponseWriter, r *http.Requ
 
 	profileID, deviceID, _, _ := managedIdentity(r)
 	filter := requestAccessFilter(r)
+	serveCtx := downloads.WithServeAuthorized(r.Context(), func(target downloads.FileTarget) {
+		attachTransfer(r.Context(), userID, profileID, target.MediaFileID)
+	})
+	if delegate && deviceID != "" {
+		handled, err := h.redirectManagedDownload(r.Context(), w, r, userID, profileID, deviceID, id, filter)
+		if err != nil {
+			h.writeDownloadFileError(w, r, id, err)
+			return
+		}
+		if handled {
+			return
+		}
+	}
 	// Full media downloads outlive the server's absolute WriteTimeout; roll
 	// the write deadline with progress instead.
 	sw := httpstream.NewRollingDeadlineWriter(w)
-	if err := h.svc.ServeFile(r.Context(), sw, r, userID, profileID, deviceID, id, filter); err != nil {
-		if errors.Is(err, downloads.ErrNotFound) || errors.Is(err, catalog.ErrItemNotFound) {
-			writeError(w, http.StatusNotFound, "not_found", "Download not found")
+	if err := h.svc.ServeFile(serveCtx, sw, r, userID, profileID, deviceID, id, filter); err != nil {
+		if errors.Is(err, downloads.ErrResponseCommitted) {
 			return
 		}
-		if errors.Is(err, downloads.ErrDownloadNotActive) {
-			writeError(w, http.StatusConflict, "download_inactive", "This download is no longer active")
-			return
-		}
-		if errors.Is(err, downloads.ErrProfileRequired) {
-			writeError(w, http.StatusBadRequest, "profile_required", "A profile is required for managed downloads")
-			return
-		}
-		if errors.Is(err, downloads.ErrFeatureDisabled) || errors.Is(err, downloads.ErrDownloadNotAllowed) {
-			writeError(w, http.StatusForbidden, "forbidden", "You are not allowed to download")
-			return
-		}
+		h.writeDownloadFileError(w, r, id, err)
+	}
+}
+
+func (h *DownloadHandler) writeDownloadFileError(w http.ResponseWriter, r *http.Request, id string, err error) {
+	switch {
+	case errors.Is(err, downloads.ErrNotFound), errors.Is(err, catalog.ErrItemNotFound):
+		writeError(w, http.StatusNotFound, "not_found", "Download not found")
+	case errors.Is(err, downloads.ErrDownloadNotActive):
+		writeError(w, http.StatusConflict, "download_inactive", "This download is no longer active")
+	case errors.Is(err, downloads.ErrProfileRequired):
+		writeError(w, http.StatusBadRequest, "profile_required", "A profile is required for managed downloads")
+	case errors.Is(err, downloads.ErrFeatureDisabled), errors.Is(err, downloads.ErrDownloadNotAllowed):
+		writeError(w, http.StatusForbidden, "forbidden", "You are not allowed to download")
+	default:
 		slog.ErrorContext(r.Context(), "failed to serve download file", "component", "api", "download_id", id, "error", err)
 		writeError(w, http.StatusInternalServerError, "internal_error", "Failed to serve download")
-		return
 	}
 }
 
 // HandleDirectDownload handles GET /direct-download?file_id=N. A legacy
 // format=original query is accepted, but direct downloads remain original-only.
 func (h *DownloadHandler) HandleDirectDownload(w http.ResponseWriter, r *http.Request) {
+	h.handleDirectDownload(w, r, false)
+}
+
+// HandleDirectDownloadViaProxy serves the additive proxy-aware direct-download
+// route while the established endpoint retains its 200/206 response contract.
+func (h *DownloadHandler) HandleDirectDownloadViaProxy(w http.ResponseWriter, r *http.Request) {
+	h.handleDirectDownload(w, r, true)
+}
+
+func (h *DownloadHandler) handleDirectDownload(w http.ResponseWriter, r *http.Request, delegate bool) {
 	userID := apimw.GetUserID(r.Context())
 	if userID == 0 {
 		writeError(w, http.StatusUnauthorized, "unauthorized", "Authentication required")
@@ -446,15 +519,197 @@ func (h *DownloadHandler) HandleDirectDownload(w http.ResponseWriter, r *http.Re
 	}
 
 	filter := requestAccessFilter(r)
-	if err := h.svc.ServeDirect(r.Context(), w, r, userID, fileID, r.URL.Query().Get("format"), filter); err != nil {
+	if delegate {
+		if handled, redirectErr := h.redirectDirectDownload(r.Context(), w, r, userID, fileID, r.URL.Query().Get("format"), filter); redirectErr != nil {
+			h.writeDownloadError(w, redirectErr)
+			return
+		} else if handled {
+			return
+		}
+	}
+	serveCtx := downloads.WithServeAuthorized(r.Context(), func(target downloads.FileTarget) {
+		attachTransfer(r.Context(), userID, apimw.GetProfileID(r.Context()), target.MediaFileID)
+	})
+	// A multi-gigabyte original outlives the API server's absolute WriteTimeout,
+	// exactly as on /downloads/{id}/file above; roll the deadline with progress
+	// instead of truncating the body at 120 s.
+	sw := httpstream.NewRollingDeadlineWriter(w)
+	if err := h.svc.ServeDirect(serveCtx, sw, r, userID, fileID, r.URL.Query().Get("format"), filter); err != nil {
 		h.writeDownloadError(w, err)
 		return
 	}
 }
 
+func (h *DownloadHandler) redirectDirectDownload(ctx context.Context, w http.ResponseWriter, r *http.Request, userID, fileID int, format string, filter catalog.AccessFilter) (bool, error) {
+	resolver, secret, ok := h.proxyTarget()
+	if !ok {
+		return false, nil
+	}
+	target, err := resolver.ResolveDirectFile(ctx, userID, fileID, format, filter)
+	if err != nil {
+		return false, err
+	}
+	// The profile has to travel with the redirect. Hardcoding "" here recorded
+	// the telemetry transfer, the proxy's own attach (from the token claim) and
+	// the node session against no profile at all, so proxy-served traffic went
+	// missing from per-profile attribution while the same file served locally
+	// was attributed correctly.
+	profileID := apimw.GetProfileID(ctx)
+	handled, err := h.redirectToProxy(w, r, secret, target, userID, profileID)
+	if handled {
+		attachTransfer(ctx, userID, profileID, target.MediaFileID)
+	}
+	return handled, err
+}
+
+func (h *DownloadHandler) redirectManagedDownload(ctx context.Context, w http.ResponseWriter, r *http.Request, userID int, profileID, deviceID, downloadID string, filter catalog.AccessFilter) (bool, error) {
+	resolver, secret, ok := h.proxyTarget()
+	if !ok {
+		return false, nil
+	}
+	target, err := resolver.ResolveManagedFile(ctx, userID, profileID, deviceID, downloadID, filter)
+	if err != nil {
+		return false, err
+	}
+	handled, err := h.redirectToProxy(w, r, secret, target, userID, profileID)
+	if handled {
+		attachTransfer(ctx, userID, profileID, target.MediaFileID)
+	}
+	return handled, err
+}
+
+func (h *DownloadHandler) proxyTarget() (downloadFileResolver, string, bool) {
+	resolver, ok := h.svc.(downloadFileResolver)
+	if !ok || h.nodePlanner == nil || h.jwtSecret == nil {
+		return nil, "", false
+	}
+	secret := strings.TrimSpace(h.jwtSecret())
+	if secret == "" {
+		return nil, "", false
+	}
+	return resolver, secret, true
+}
+
+func (h *DownloadHandler) redirectToProxy(w http.ResponseWriter, r *http.Request, secret string, target *downloads.FileTarget, userID int, profileID string) (bool, error) {
+	if target == nil || (strings.TrimSpace(target.Path) == "" && target.OriginArtifactID == "") {
+		return false, fmt.Errorf("download target is empty")
+	}
+	if target.OriginArtifactID != "" && strings.TrimSpace(target.OriginNodeURL) == "" {
+		return false, nil
+	}
+	if !target.ProxyEligible {
+		return false, nil
+	}
+	reservationKey := target.DownloadID
+	if reservationKey == "" {
+		reservationKey = fmt.Sprintf("direct-%d-%d", userID, target.MediaFileID)
+	}
+	sessionID := fmt.Sprintf("download-%s-%d", reservationKey, time.Now().UnixNano())
+	plan := h.nodePlanner.PlanDownload(sessionID, target.OriginNodeGroup)
+	if plan.ProxyNode == nil {
+		return false, nil
+	}
+	releaseReservation := func() { h.nodePlanner.ReleaseSession(sessionID) }
+	mediaPath := target.Path
+	downloadFilename := ""
+	if target.OriginArtifactID != "" {
+		mediaPath = ""
+		if strings.TrimSpace(target.Path) != "" {
+			downloadFilename = filepath.Base(target.Path)
+		}
+	}
+	playMethod := streamtoken.PlayMethodDownload
+	if target.ExpectedExecutionFingerprint != "" {
+		if target.ExpectedArtifactSize <= 0 {
+			releaseReservation()
+			return false, nil
+		}
+		playMethod = streamtoken.PlayMethodToneMapDownload
+	}
+	token, err := streamtoken.Sign(streamtoken.Claims{
+		SessionID:                    sessionID,
+		MediaPath:                    mediaPath,
+		PlayMethod:                   playMethod,
+		TranscodeNode:                target.OriginNodeURL,
+		DownloadArtifactID:           target.OriginArtifactID,
+		DownloadArtifactRowID:        target.ArtifactID,
+		DownloadArtifactSize:         target.ExpectedArtifactSize,
+		DownloadExecutionFingerprint: target.ExpectedExecutionFingerprint,
+		DownloadFilename:             downloadFilename,
+		UserID:                       userID,
+		ProfileID:                    profileID,
+		MediaFileID:                  target.MediaFileID,
+	}, secret, proxyDownloadTokenTTL)
+	if err != nil {
+		releaseReservation()
+		return false, fmt.Errorf("sign proxy download token: %w", err)
+	}
+	location := strings.TrimRight(plan.ProxyNode.URL, "/") + "/downloads/file/" + url.PathEscape(token)
+	targetKey := target.Path
+	if target.OriginArtifactID != "" {
+		targetKey = target.OriginNodeURL + "\x00" + target.OriginArtifactID
+	}
+	cacheKey := strings.TrimRight(plan.ProxyNode.URL, "/") + "\x00" + targetKey
+	if !h.proxyCanServe(r.Context(), cacheKey, location) {
+		releaseReservation()
+		return false, nil
+	}
+	// A HEAD request only proves that the proxy can read the selected path; the
+	// proxy deliberately does not count it as an active transfer. Release the
+	// provisional slot before redirecting so a probe cannot hold max_jobs
+	// capacity until the planner's reservation bridge expires.
+	if r.Method == http.MethodHead {
+		releaseReservation()
+	}
+	http.Redirect(w, r, location, http.StatusTemporaryRedirect)
+	return true, nil
+}
+
+func (h *DownloadHandler) proxyCanServe(ctx context.Context, cacheKey, location string) bool {
+	now := time.Now()
+	h.preflightMu.Lock()
+	for key, cached := range h.preflightCache {
+		if !now.Before(cached.expiresAt) {
+			delete(h.preflightCache, key)
+		}
+	}
+	if cached, ok := h.preflightCache[cacheKey]; ok && now.Before(cached.expiresAt) {
+		h.preflightMu.Unlock()
+		return cached.reachable
+	}
+	h.preflightMu.Unlock()
+
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, location, nil)
+	if err != nil {
+		return false
+	}
+	client := h.proxyHTTPClient
+	if client == nil {
+		client = http.DefaultClient
+	}
+	resp, err := client.Do(req)
+	reachable := false
+	if err != nil {
+		slog.DebugContext(ctx, "download proxy preflight failed; serving locally", "component", "api", "error", err)
+	} else {
+		_ = resp.Body.Close()
+		reachable = resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices
+	}
+	if err == nil && !reachable {
+		slog.DebugContext(ctx, "download proxy preflight unavailable; serving locally", "component", "api", "status", resp.StatusCode)
+	}
+	h.preflightMu.Lock()
+	if h.preflightCache == nil {
+		h.preflightCache = make(map[string]proxyPreflightResult)
+	}
+	h.preflightCache[cacheKey] = proxyPreflightResult{reachable: reachable, expiresAt: now.Add(proxyPreflightCacheTTL)}
+	h.preflightMu.Unlock()
+	return reachable
+}
+
 // requireManaged validates a managed (device-scoped) request: authentication, a
 // configured service, and the device + profile identity (device_id from the
-// X-Prairie-Device-Id header only, never the body). On failure it writes the error
+// X-Silo-Device-Id header only, never the body). On failure it writes the error
 // response and returns ok=false. Shared by every managed-only endpoint — the
 // offline assets and the series-monitoring subscriptions.
 func (h *DownloadHandler) requireManaged(w http.ResponseWriter, r *http.Request) (userID int, profileID, deviceID, deviceName, devicePlatform string, ok bool) {
@@ -469,7 +724,7 @@ func (h *DownloadHandler) requireManaged(w http.ResponseWriter, r *http.Request)
 	}
 	profileID, deviceID, deviceName, devicePlatform = managedIdentity(r)
 	if deviceID == "" {
-		writeError(w, http.StatusBadRequest, "device_id_required", "X-Prairie-Device-Id header is required")
+		writeError(w, http.StatusBadRequest, "device_id_required", "X-Silo-Device-Id header is required")
 		return
 	}
 	if profileID == "" {
@@ -548,7 +803,10 @@ func (h *DownloadHandler) HandleSubtitle(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	ref := chi.URLParam(r, "ref")
-	if err := h.svc.ServeSubtitle(r.Context(), w, r, userID, profileID, deviceID, id, ref, requestAccessFilter(r)); err != nil {
+	serveCtx := downloads.WithServeAuthorized(r.Context(), func(target downloads.FileTarget) {
+		attachTransfer(r.Context(), userID, profileID, target.MediaFileID)
+	})
+	if err := h.svc.ServeSubtitle(serveCtx, w, r, userID, profileID, deviceID, id, ref, requestAccessFilter(r)); err != nil {
 		h.writeAssetError(w, "subtitle", id, err)
 		return
 	}
@@ -593,6 +851,10 @@ func (h *DownloadHandler) writeDownloadError(w http.ResponseWriter, err error) {
 		writeError(w, http.StatusBadRequest, "profile_required", "A profile is required for managed downloads")
 	case errors.Is(err, downloads.ErrBulkQualityUnavailable):
 		writeError(w, http.StatusNotImplemented, "bulk_quality_unavailable", "Bitrate quality is not available for bulk downloads yet")
+	case errors.Is(err, downloads.ErrCapacityUnavailable):
+		writeError(w, http.StatusServiceUnavailable, "capacity_unavailable", "Download preparation capacity is currently unavailable")
+	case errors.Is(err, downloads.ErrCapabilityUnavailable):
+		writeError(w, http.StatusServiceUnavailable, "capability_unavailable", "Download preparation capabilities are temporarily unavailable")
 	case errors.Is(err, downloads.ErrQualityUnavailable):
 		writeError(w, http.StatusNotImplemented, "quality_unavailable", "This download quality is not available")
 	case errors.Is(err, downloads.ErrFormatUnavailable):

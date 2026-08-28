@@ -5,9 +5,7 @@ import {
   AlertTriangle,
   Monitor,
   MonitorSmartphone,
-  Pencil,
   RotateCcw,
-  Settings2,
   Smartphone,
   Tablet,
   Tv,
@@ -16,12 +14,16 @@ import { Button } from "@/components/ui/button";
 import { RegistrySettingControl } from "@/components/settings/RegistrySettingControl";
 import {
   ALL_DEVICE_SETTING_KEYS,
+  controlKindFor,
+  defaultValueToString,
   formatSettingValue,
   getSettingDefinition,
-} from "@/lib/settingsManifest";
+  isStructuredSetting,
+} from "@/lib/settingsDisplay";
+import { SETTING_KEYS } from "@/lib/settingsContract";
 import { cn } from "@/lib/utils";
 import type { AdminDeviceSetting } from "@/hooks/queries/admin/users";
-import { formatDate } from "@/lib/datetime";
+import { formatRelativeTime } from "@/lib/date";
 
 export const UNKNOWN_PROFILE_ID = "unknown-profile";
 
@@ -88,18 +90,7 @@ export function platformLabel(raw: string | undefined): string {
 }
 
 export function formatRelative(iso: string | undefined): string {
-  if (!iso) return "—";
-  const then = new Date(iso).getTime();
-  if (Number.isNaN(then)) return "—";
-  const diff = Date.now() - then;
-  const m = Math.round(diff / 60000);
-  if (m < 1) return "just now";
-  if (m < 60) return `${m}m ago`;
-  const h = Math.round(m / 60);
-  if (h < 24) return `${h}h ago`;
-  const d = Math.round(h / 24);
-  if (d < 30) return `${d}d ago`;
-  return formatDate(iso);
+  return formatRelativeTime(iso, { absoluteAfterDays: 30 }) ?? "—";
 }
 
 export function shortenId(id: string, visible = 8): string {
@@ -107,7 +98,13 @@ export function shortenId(id: string, visible = 8): string {
   return `${id.slice(0, visible)}…${id.slice(-visible)}`;
 }
 
-export function PlatformIcon({ kind, className }: { kind: PlatformKind; className?: string }) {
+export function PlatformIcon({
+  kind,
+  className,
+}: {
+  kind: PlatformKind;
+  className?: string;
+}) {
   switch (kind) {
     case "tv":
       return <Tv className={className} strokeWidth={1.6} />;
@@ -129,8 +126,14 @@ export function PlatformTile({
   kind: PlatformKind;
   size?: "sm" | "md" | "lg";
 }) {
-  const dims = size === "lg" ? "h-11 w-11" : size === "sm" ? "h-8 w-8" : "h-9 w-9";
-  const icon = size === "lg" ? "h-[18px] w-[18px]" : size === "sm" ? "h-3.5 w-3.5" : "h-4 w-4";
+  const dims =
+    size === "lg" ? "h-11 w-11" : size === "sm" ? "h-8 w-8" : "h-9 w-9";
+  const icon =
+    size === "lg"
+      ? "h-[18px] w-[18px]"
+      : size === "sm"
+        ? "h-3.5 w-3.5"
+        : "h-4 w-4";
   return (
     <div
       className={cn(
@@ -199,7 +202,8 @@ export function detectSettingConflicts(
   ) {
     out.set("player.dv_profile7_hdr10_fallback", {
       kind: "conflict",
-      reason: "Conflicts with HDR disabled — the fallback only applies when HDR is on.",
+      reason:
+        "Conflicts with HDR disabled — the fallback only applies when HDR is on.",
     });
     out.set("player.hdr_enabled", {
       kind: "conflict",
@@ -215,7 +219,8 @@ export function detectSettingConflicts(
   ) {
     out.set("playback.auto_skip_credits", {
       kind: "conflict",
-      reason: "Skipping credits with auto-play next disabled lands the player on a blank screen.",
+      reason:
+        "Skipping credits with auto-play next disabled lands the player on a blank screen.",
     });
   }
 
@@ -252,14 +257,15 @@ export function getSettingAnomaly(
   // the [min,max] range so each slider's threshold scales with its own
   // sensitivity rather than picking arbitrary unit thresholds per key.
   if (
-    definition?.control === "slider" &&
-    definition.min !== undefined &&
-    definition.max !== undefined
+    definition &&
+    controlKindFor(definition) === "slider" &&
+    definition.minimum !== undefined &&
+    definition.maximum !== undefined
   ) {
     const v = Number(setting.value);
     const def = Number(definition.defaultValue ?? 0);
     if (Number.isFinite(v) && Number.isFinite(def)) {
-      const range = Math.abs(definition.max - definition.min);
+      const range = Math.abs(definition.maximum - definition.minimum);
       const distance = Math.abs(v - def);
       if (range > 0 && distance / range >= 0.4) {
         const unit = definition.unit ? ` ${definition.unit}` : "";
@@ -317,7 +323,9 @@ export function DeviceOverrideRow({
   onReset,
 }: DeviceOverrideRowProps) {
   const definition = getSettingDefinition(setting.key);
-  const isJsonOnly = !definition || definition.control === "json";
+  // Object-valued settings have no inline widget: they open a bespoke panel
+  // (subtitle appearance) or the raw JSON editor.
+  const isJsonOnly = isStructuredSetting(definition);
 
   const anomalyBadgeLabel: Record<SettingAnomalyKind, string> = {
     extreme: "extreme",
@@ -376,10 +384,14 @@ export function DeviceOverrideRow({
           <span className="text-foreground/80">
             {formatSettingValue(setting.key, setting.value)}
           </span>
-          {!isJsonOnly && definition?.defaultValue !== undefined && (
+          {!isJsonOnly && definition && (
             <span className="text-muted-foreground/60">
               {" "}
-              · default {formatSettingValue(setting.key, definition.defaultValue)}
+              · default{" "}
+              {formatSettingValue(
+                setting.key,
+                defaultValueToString(definition),
+              )}
             </span>
           )}
         </div>
@@ -392,10 +404,15 @@ export function DeviceOverrideRow({
       </div>
 
       <div className="flex flex-col items-stretch gap-2 md:min-w-[220px] md:items-end">
-        {isJsonOnly ? (
-          <Button variant="outline" size="sm" onClick={() => onEditJson(setting, isOverride)}>
-            {setting.key === "subtitle_appearance" ? <Settings2 /> : <Pencil />}
-            {setting.key === "subtitle_appearance" ? "Customize" : "Edit JSON"}
+        {isJsonOnly || !definition ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => onEditJson(setting, isOverride)}
+          >
+            {setting.key === SETTING_KEYS.PLAYBACK_SUBTITLE_APPEARANCE
+              ? "Customize"
+              : "Edit JSON"}
           </Button>
         ) : (
           <RegistrySettingControl
@@ -491,30 +508,32 @@ function buildRenderedRows(
   if (!showAllSettings || !device) return overridden;
 
   const seen = new Set(overridden.map((r) => r.setting.key));
-  const synthetics: RenderedRow[] = ALL_DEVICE_SETTING_KEYS.filter((key) => !seen.has(key)).map(
-    (key) => {
-      const definition = getSettingDefinition(key);
-      return {
-        isOverride: false,
-        setting: {
-          user_id: device.userId,
-          profile_id: profile.profileId,
-          profile_name: profile.profileName,
-          device_id: device.deviceId,
-          device_name: device.deviceName,
-          device_platform: device.devicePlatform,
-          key,
-          value: definition?.defaultValue ?? "",
-          updated_at: "",
-        },
-      };
-    },
-  );
+  const synthetics: RenderedRow[] = ALL_DEVICE_SETTING_KEYS.filter(
+    (key) => !seen.has(key),
+  ).map((key) => {
+    const definition = getSettingDefinition(key);
+    return {
+      isOverride: false,
+      setting: {
+        user_id: device.userId,
+        profile_id: profile.profileId,
+        profile_name: profile.profileName,
+        device_id: device.deviceId,
+        device_name: device.deviceName,
+        device_platform: device.devicePlatform,
+        key: key as string,
+        value: definition ? defaultValueToString(definition) : "",
+        updated_at: "",
+      },
+    };
+  });
 
   // Render in canonical manifest order so the layout is stable as overrides
   // are added or removed (rather than "overrides bubble to top, defaults
   // sink").  Stable order > recency for an admin browsing fields.
-  const order = new Map(ALL_DEVICE_SETTING_KEYS.map((key, idx) => [key, idx]));
+  const order = new Map<string, number>(
+    ALL_DEVICE_SETTING_KEYS.map((key, idx) => [key, idx]),
+  );
   const all = [...overridden, ...synthetics];
   all.sort(
     (a, b) =>
@@ -537,7 +556,9 @@ export function DeviceProfileTabs({
   updatePending,
   resetPending = false,
 }: DeviceProfileTabsProps) {
-  const [activeId, setActiveId] = useState<string | null>(initialProfileId ?? null);
+  const [activeId, setActiveId] = useState<string | null>(
+    initialProfileId ?? null,
+  );
 
   const active = useMemo(
     () => profiles.find((p) => p.profileId === activeId) ?? profiles[0] ?? null,
@@ -550,7 +571,10 @@ export function DeviceProfileTabs({
   // Conflicts depend on the active profile's settings as a whole. Memoize
   // by the active profile's reference + a content hash via the rendered
   // row keys/values — recomputes on profile switch and on save.
-  const conflictMap = useMemo(() => detectSettingConflicts(active?.settings ?? []), [active]);
+  const conflictMap = useMemo(
+    () => detectSettingConflicts(active?.settings ?? []),
+    [active],
+  );
   const anomaliesByKey = useMemo(() => {
     const out = new Map<string, SettingAnomaly>();
     for (const { setting, isOverride } of rows) {
@@ -578,13 +602,16 @@ export function DeviceProfileTabs({
       <div
         role="tablist"
         aria-label="Profiles on this device"
-        className="border-border/60 flex shrink-0 scrollbar-thin gap-0.5 overflow-x-auto border-b px-2 pt-2"
+        className="border-border/60 scrollbar-thin flex shrink-0 gap-0.5 overflow-x-auto border-b px-2 pt-2"
       >
         {profiles.map((profile) => {
           const isActive = profile.profileId === active.profileId;
           const tabAccent = profileAccent(profile.profileId);
           const initial =
-            (profile.profileName || profile.profileId).trim().charAt(0).toUpperCase() || "?";
+            (profile.profileName || profile.profileId)
+              .trim()
+              .charAt(0)
+              .toUpperCase() || "?";
           return (
             <button
               key={profile.profileId}
@@ -654,7 +681,9 @@ export function DeviceProfileTabs({
           <span className="truncate font-mono">{active.profileId}</span>
           <span className="text-muted-foreground/40">·</span>
           <span className="tabular-nums">
-            <span className="text-foreground/80 font-medium">{overrideCount}</span>{" "}
+            <span className="text-foreground/80 font-medium">
+              {overrideCount}
+            </span>{" "}
             {overrideCount === 1 ? "override" : "overrides"}
             {showAllSettings && rows.length > overrideCount && (
               <span className="text-muted-foreground/60">
@@ -678,7 +707,9 @@ export function DeviceProfileTabs({
         </div>
         <button
           type="button"
-          onClick={() => onResetProfile(active.settings[0]?.profile_id ?? "", active.profileName)}
+          // The tab's own id, not the first row's: a profile registered on the
+          // device with no override yet has no row to read it from.
+          onClick={() => onResetProfile(active.profileId, active.profileName)}
           disabled={resetPending || overrideCount === 0}
           className="text-muted-foreground hover:text-foreground disabled:hover:text-muted-foreground inline-flex items-center gap-1 text-[11.5px] transition-colors disabled:opacity-40"
         >

@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
@@ -157,9 +158,21 @@ func (c MatcherConfig) TVSeriesRootQueueEnabled() bool {
 
 // PlaybackConfig holds transcoding and playback settings.
 type PlaybackConfig struct {
-	FFmpegPath                   string `yaml:"ffmpeg_path"`
-	TranscodeDir                 string `yaml:"transcode_dir"`
-	HWAccel                      string `yaml:"hw_accel"`
+	FFmpegPath   string `yaml:"ffmpeg_path"`
+	TranscodeDir string `yaml:"transcode_dir"`
+	HWAccel      string `yaml:"hw_accel"`
+	// HWDevice is the GPU render device for hardware transcodes. A single
+	// path pins every GPU workload to that device; a comma-separated list
+	// (e.g. "/dev/dri/renderD128,/dev/dri/renderD129") balances workloads
+	// least-loaded across the listed devices. Empty auto-detects.
+	//
+	// Supported topology: balancing applies to QSV/VAAPI render devices
+	// only (NVENC identifies GPUs by CUDA index/UUID and always uses the
+	// first entry). The value is cluster-wide — every transcode node reads
+	// it — so multi-node deployments must expose the listed devices at
+	// identical paths on every node; devices absent on a node fall out of
+	// that node's rotation. The admin hw-accel endpoint reports each node's
+	// inventory so the UI can flag divergence.
 	HWDevice                     string `yaml:"hw_device"`
 	ChapterThumbnailWorkers      int    `yaml:"chapter_thumbnail_workers"`
 	ChapterThumbnailExecution    string `yaml:"chapter_thumbnail_execution"`
@@ -212,6 +225,13 @@ const (
 	DefaultLiveTVPlayMethod    = "auto"
 )
 
+// ArtworkConfig holds local artwork cache settings used when public S3 is off.
+type ArtworkConfig struct {
+	// LocalDir is the filesystem root for cached WebP/AVIF/PNG variants.
+	// Default: /var/lib/prairie/artwork
+	LocalDir string `yaml:"-"`
+}
+
 // RedisConfig holds Redis connection settings.
 type RedisConfig struct {
 	URL               string   `yaml:"url"`
@@ -243,7 +263,7 @@ type authConfigRaw struct {
 // AudiobookshelfCompatConfig holds the dedicated ABS-compat listener setting.
 // The listener binds its own port (:13378, ABS's
 // conventional port) and serves the full ABS protocol — login, libraries,
-// items, sessions — without colliding with Prairie's SPA on the main listener.
+// items, sessions — without colliding with silo's SPA on the main listener.
 type AudiobookshelfCompatConfig struct {
 	Listen string `yaml:"-"`
 }
@@ -298,7 +318,7 @@ type RecommendationsConfig struct {
 	EmbeddingsJobTimeout time.Duration `yaml:"-"`
 }
 
-// AIConfig holds the shared connection settings for Prairie's AI features
+// AIConfig holds the shared connection settings for Silo's AI features
 // (subtitle translation, metadata translation, Whisper ASR): one
 // OpenAI-compatible endpoint the operator can point at OpenAI, Groq, a local
 // Ollama/llama.cpp server, etc., with an optional separate endpoint for audio
@@ -375,34 +395,21 @@ type PolicyConfig struct {
 type MetadataConfig struct {
 	CacheImages bool `yaml:"-"`
 	// ArtworkEncodeWorkers caps total in-flight artwork encode work (WebP cache
-	// workers + AVIF backfill workers share it). 0 means auto: a quarter of the
-	// cores, at most 4, so playback ffmpeg keeps the rest.
+	// workers + AVIF backfill workers share it). 0 means auto.
 	ArtworkEncodeWorkers int `yaml:"-"`
 	// PauseArtworkDuringPlayback stops the AVIF backfill and throttles the WebP
 	// image cache to one encode slot while any playback session is live.
 	PauseArtworkDuringPlayback bool `yaml:"-"`
-	// AVIFBackfillWorkers is the durable AVIF encode concurrency. 0 means auto:
-	// the shared artwork encode budget, or the NVENC session cap for nvenc.
+	// AVIFBackfillWorkers is the durable AVIF encode concurrency. 0 means auto.
 	AVIFBackfillWorkers int `yaml:"-"`
 	// AVIFEncoder selects the still-image AVIF backend: auto|svt|nvenc|wasm.
-	// auto prefers NVENC (Ada+) when available, else SVT-AV1 via ffmpeg, else WASM.
 	AVIFEncoder string `yaml:"-"`
-	// AVIFFFmpegPath is the ffmpeg binary for svt/nvenc/webp (needs libsvtav1 +
-	// avif muxer for AVIF; libwebp for WebP). Empty → "ffmpeg". Distinct from
-	// playback.ffmpeg_path (jellyfin-ffmpeg).
+	// AVIFFFmpegPath is the ffmpeg binary for svt/nvenc AVIF backends.
 	AVIFFFmpegPath string `yaml:"-"`
 	// AVIFNVENCSessions caps concurrent NVENC still encodes. 0 → 3.
 	AVIFNVENCSessions int `yaml:"-"`
-	// WebPEncoder selects the still-image WebP backend: auto|ffmpeg|wasm.
-	// auto prefers ffmpeg/libwebp when available, else WASM.
+	// WebPEncoder is retained for admin settings compatibility; WebP encode uses libvips/bimg.
 	WebPEncoder string `yaml:"-"`
-}
-
-// ArtworkConfig holds local artwork cache settings used when public S3 is off.
-type ArtworkConfig struct {
-	// LocalDir is the filesystem root for cached WebP/AVIF/PNG variants.
-	// Default: /var/lib/prairie/artwork
-	LocalDir string `yaml:"-"`
 }
 
 // ClientIPConfig holds client IP resolution settings.
@@ -449,7 +456,6 @@ type configRaw struct {
 	Scanner        scannerConfigRaw        `yaml:"scanner"`
 	Matcher        MatcherConfig           `yaml:"matcher"`
 	Playback       PlaybackConfig          `yaml:"playback"`
-	LiveTV         LiveTVConfig            `yaml:"livetv"`
 	Redis          RedisConfig             `yaml:"redis"`
 	RateLimit      RateLimitConfig         `yaml:"rate_limiting"`
 	Auth           authConfigRaw           `yaml:"auth"`
@@ -472,13 +478,29 @@ var defaultJellyfinCompatServerID = uuid.NewSHA1(
 	[]byte("https://prairie.local/jellycompat"),
 ).String()
 
+const playbackTranscodeDirSettingKey = "playback.transcode_dir"
+const downloadArtifactDirSettingKey = "download.artifact_dir"
+
 // DefaultTranscodeDir is the fallback playback.transcode_dir; download
-// artifacts default to a sibling directory (see downloads.effectiveArtifactDir).
-const DefaultTranscodeDir = "/tmp/prairie-transcode"
+// artifacts default to a sibling directory (see EffectiveDownloadArtifactDir).
+const DefaultTranscodeDir = "/tmp/silo-transcode"
+
+// EffectiveDownloadArtifactDir resolves the shared prepared-download artifact
+// root. Keeping this path rule in config lets API and transcode-node processes
+// independently derive the same destination from the same live settings.
+func EffectiveDownloadArtifactDir(artifactDir, transcodeDir string) string {
+	if artifactDir != "" {
+		return artifactDir
+	}
+	if transcodeDir == "" {
+		transcodeDir = DefaultTranscodeDir
+	}
+	return filepath.Join(filepath.Dir(transcodeDir), "silo-download-artifacts")
+}
 
 const DefaultJellyfinCompatEmulatedServerVersion = "10.12.0"
 const DefaultJellyfinWebVersion = "10.11.6"
-const DefaultJellyfinWebInstallDir = "/var/lib/prairie/compat/jellyfin-web"
+const DefaultJellyfinWebInstallDir = "/var/lib/silo/compat/jellyfin-web"
 const DefaultJellyfinWebDir = DefaultJellyfinWebInstallDir + "/current"
 
 // parseDuration parses a duration string that supports Go's time.ParseDuration
@@ -542,23 +564,13 @@ func setDefaults() *configRaw {
 			EnableTVSeriesRootQueue: true,
 		},
 		Playback: PlaybackConfig{
-			FFmpegPath:                   "/usr/lib/jellyfin-ffmpeg/ffmpeg",
+			FFmpegPath:                   "",
 			TranscodeDir:                 DefaultTranscodeDir,
 			HWAccel:                      "auto",
 			ChapterThumbnailWorkers:      1,
 			ChapterThumbnailExecution:    "local",
 			ChapterThumbnailNodeCapacity: 1,
 			TranscodeEnabled:             true,
-		},
-		LiveTV: LiveTVConfig{
-			DVRPath:       DefaultLiveTVDVRPath,
-			MaxTranscodes: DefaultLiveTVMaxTranscodes,
-			HWAccel:       DefaultLiveTVHWAccel,
-			HWDecode:      DefaultLiveTVHWDecode,
-			EncoderPreset: DefaultLiveTVEncoderPreset,
-			FrameRateCap:  DefaultLiveTVFrameRateCap,
-			MaxResolution: DefaultLiveTVMaxResolution,
-			PlayMethod:    DefaultLiveTVPlayMethod,
 		},
 		RateLimit: RateLimitConfig{
 			Enabled: true,
@@ -574,7 +586,7 @@ func setDefaults() *configRaw {
 			PublicURL:             "http://127.0.0.1:8097",
 			EmulatedServerVersion: DefaultJellyfinCompatEmulatedServerVersion,
 			ServerID:              defaultJellyfinCompatServerID,
-			ServerName:            "Prairie",
+			ServerName:            "Silo",
 			WebEnabled:            true,
 			WebVersion:            DefaultJellyfinWebVersion,
 			WebDir:                DefaultJellyfinWebDir,

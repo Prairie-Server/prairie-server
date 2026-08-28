@@ -1,9 +1,17 @@
 import { useState } from "react";
 import { useDroppable } from "@dnd-kit/core";
-import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  useSortable,
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Users } from "lucide-react";
-import type { GroupSortMode, LibraryCollection, LibraryCollectionGroup } from "@/api/types";
+import type {
+  GroupSortMode,
+  LibraryCollection,
+  LibraryCollectionGroup,
+} from "@/api/types";
 import { CollectionRow } from "./CollectionRow";
 
 export interface GroupCardProps {
@@ -27,12 +35,21 @@ export function GroupCard({
   syncingCollectionID = null,
   collapsed = false,
 }: GroupCardProps) {
-  const [viewMode, setViewMode] = useState<GroupSortMode>(group.default_sort_mode);
+  const [viewMode, setViewMode] = useState<GroupSortMode>(
+    group.default_sort_mode,
+  );
   const dragDisabled = viewMode !== "manual";
   const isUserCollections = group.kind === "user_collections";
 
   const sortableId = `group:${group.id}`;
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: sortableId,
     data: { kind: "group", id: group.id },
   });
@@ -51,7 +68,11 @@ export function GroupCard({
   const sortableIds = sorted.map((c) => `col:${c.id}`);
 
   return (
-    <div ref={setNodeRef} style={style} className="bg-background rounded-lg border">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="bg-background rounded-lg border"
+    >
       <div className="flex items-center gap-2 border-b p-3">
         <button
           {...attributes}
@@ -95,7 +116,10 @@ export function GroupCard({
       </div>
 
       {!collapsed && (
-        <div ref={setDroppableRef} className={`p-3 ${isOver ? "bg-muted/40" : ""}`}>
+        <div
+          ref={setDroppableRef}
+          className={`p-3 ${isOver ? "bg-muted/40" : ""}`}
+        >
           {sorted.length === 0 ? (
             <div className="text-muted-foreground rounded border border-dashed p-4 text-center text-sm">
               {isUserCollections
@@ -103,7 +127,10 @@ export function GroupCard({
                 : "Drag a collection here, or add one with + New collection."}
             </div>
           ) : (
-            <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+            <SortableContext
+              items={sortableIds}
+              strategy={verticalListSortingStrategy}
+            >
               <div className="space-y-2">
                 {sorted.map((c) => (
                   <CollectionRow
@@ -128,7 +155,10 @@ export function GroupCard({
   );
 }
 
-function applySort(cs: LibraryCollection[], mode: GroupSortMode): LibraryCollection[] {
+function applySort(
+  cs: LibraryCollection[],
+  mode: GroupSortMode,
+): LibraryCollection[] {
   const cp = [...cs];
   switch (mode) {
     case "name_asc":

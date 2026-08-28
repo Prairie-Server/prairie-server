@@ -5,11 +5,19 @@ import { describe, expect, it, vi } from "vitest";
 import SectionItemCard from "./SectionItemCard";
 
 vi.mock("@/components/ViewTransitionLink", () => ({
-  default: ({ children, to }: { children: ReactNode; to: string }) => <a href={to}>{children}</a>,
+  default: ({ children, to }: { children: ReactNode; to: string }) => (
+    <a href={to}>{children}</a>
+  ),
 }));
 
 vi.mock("@/components/MediaItemMenu", () => ({
   default: () => null,
+}));
+
+vi.mock("@/components/CardPlayOverlay", () => ({
+  default: ({ contentId, title }: { contentId: string; title: string }) => (
+    <a href={`/watch/${contentId}`} aria-label={`Play ${title}`} />
+  ),
 }));
 
 vi.mock("@/components/overlays/CardOverlays", () => ({
@@ -43,7 +51,9 @@ describe("SectionItemCard", () => {
       />,
     );
 
-    expect(markup).toContain('href="/item/ebook%201%2Fisbn%3A978?libraryId=12"');
+    expect(markup).toContain(
+      'href="/item/ebook%201%2Fisbn%3A978?libraryId=12"',
+    );
   });
 
   it("renders episode cards with series title, episode title, and episode code", () => {
@@ -51,8 +61,10 @@ describe("SectionItemCard", () => {
       <SectionItemCard
         item={{
           content_id: "episode-1",
+          play_content_id: "episode-1",
           type: "episode",
           title: "Dumbston Checks In",
+          series_id: "series-1",
           series_title: "American Dad!",
           season_number: 22,
           episode_number: 10,
@@ -73,6 +85,36 @@ describe("SectionItemCard", () => {
     expect(markup).toContain("American Dad!");
     expect(markup).toContain("Dumbston Checks In");
     expect(markup).toContain("S22E10");
+    expect(markup).toContain('href="/item/episode-1"');
+    expect(markup).toContain('href="/item/series-1"');
+    expect(markup).toContain('href="/watch/episode-1"');
+    expect(markup).toContain('aria-label="Play American Dad!"');
+  });
+
+  it("keeps series cards linked to the series destination", () => {
+    const markup = renderToStaticMarkup(
+      <SectionItemCard
+        item={{
+          content_id: "series-1",
+          type: "series",
+          title: "American Dad!",
+          year: 2005,
+          genres: ["Animation"],
+          status: "matched",
+          rating_imdb: 7.4,
+          overview: "Overview",
+          poster_url: "",
+          poster_thumbhash: "",
+          backdrop_url: "",
+          backdrop_thumbhash: "",
+          logo_url: "",
+        }}
+      />,
+    );
+
+    expect(markup).toContain("American Dad!");
+    expect(markup).toContain('href="/item/series-1"');
+    expect(markup).not.toContain("S22E10");
   });
 
   it("renders premiere metadata when an upcoming event is present", () => {
@@ -109,5 +151,6 @@ describe("SectionItemCard", () => {
     expect(markup).toContain("Season 2 · Back Again");
     expect(markup).toContain("Wed, Apr 8");
     expect(markup).toContain("8:00 PM");
+    expect(markup).not.toContain('data-watched-indicator="icon-only"');
   });
 });

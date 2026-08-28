@@ -52,7 +52,10 @@ export default function ExtrasSection({ extras }: ExtrasSectionProps) {
             <h3 className="text-muted-foreground mb-2.5 text-xs font-semibold tracking-wider uppercase">
               {extraKindGroupLabel(kind)}
             </h3>
-            <ul role="list" className="grid list-none gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
+            <ul
+              role="list"
+              className="grid list-none gap-2.5 sm:grid-cols-2 lg:grid-cols-3"
+            >
               {groupExtras.map((extra) => (
                 <li key={extra.content_id}>
                   <ExtraCard extra={extra} onPlay={() => playExtra(extra)} />
@@ -66,7 +69,13 @@ export default function ExtrasSection({ extras }: ExtrasSectionProps) {
   );
 }
 
-function ExtraCard({ extra, onPlay }: { extra: ItemExtra; onPlay: () => void }) {
+function ExtraCard({
+  extra,
+  onPlay,
+}: {
+  extra: ItemExtra;
+  onPlay: () => void;
+}) {
   const title = extra.title || extraKindGroupLabel(extra.kind);
 
   return (
@@ -79,7 +88,9 @@ function ExtraCard({ extra, onPlay }: { extra: ItemExtra; onPlay: () => void }) 
         <Play className="ml-0.5 h-4 w-4 fill-current" />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="text-foreground block truncate text-[13px] font-medium">{title}</span>
+        <span className="text-foreground block truncate text-[13px] font-medium">
+          {title}
+        </span>
         {extra.duration_seconds != null && extra.duration_seconds > 0 && (
           <span className="text-muted-foreground block text-[11px] tabular-nums">
             {formatClock(extra.duration_seconds)}

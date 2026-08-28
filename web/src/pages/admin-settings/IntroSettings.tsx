@@ -76,15 +76,23 @@ function ProviderSettingsCard() {
   );
 }
 
-function ProviderSettingsForm({ provider }: { provider: MarkerProviderConfig }) {
+function ProviderSettingsForm({
+  provider,
+}: {
+  provider: MarkerProviderConfig;
+}) {
   const updateProvider = useUpdateMarkerProvider();
   const validateProvider = useValidateMarkerProvider();
   const displayName = provider.display_name || provider.provider;
   const minConfidenceID = `marker-min-confidence-${provider.provider.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
   const priorityID = `marker-priority-${provider.provider.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
   const [fetchEnabled, setFetchEnabled] = useState(provider.fetch_enabled);
-  const [fetchPriority, setFetchPriority] = useState(String(provider.fetch_priority));
-  const [contributeEnabled, setContributeEnabled] = useState(provider.contribute_enabled);
+  const [fetchPriority, setFetchPriority] = useState(
+    String(provider.fetch_priority),
+  );
+  const [contributeEnabled, setContributeEnabled] = useState(
+    provider.contribute_enabled,
+  );
   const [autoLocal, setAutoLocal] = useState(provider.contribute_auto_local);
   const [minConfidence, setMinConfidence] = useState(
     String(provider.contribute_min_confidence ?? 0.95),
@@ -92,11 +100,14 @@ function ProviderSettingsForm({ provider }: { provider: MarkerProviderConfig }) 
 
   const parsedMinConfidence = Number.parseFloat(minConfidence);
   const confidenceValid =
-    Number.isFinite(parsedMinConfidence) && parsedMinConfidence >= 0 && parsedMinConfidence <= 1;
+    Number.isFinite(parsedMinConfidence) &&
+    parsedMinConfidence >= 0 &&
+    parsedMinConfidence <= 1;
   const fetchPriorityInput = fetchPriority.trim();
   const parsedFetchPriority = Number(fetchPriorityInput);
   const priorityValid =
-    INTEGER_INPUT_PATTERN.test(fetchPriorityInput) && Number.isInteger(parsedFetchPriority);
+    INTEGER_INPUT_PATTERN.test(fetchPriorityInput) &&
+    Number.isInteger(parsedFetchPriority);
   const dirty =
     provider.fetch_enabled !== fetchEnabled ||
     provider.fetch_priority !== parsedFetchPriority ||
@@ -140,7 +151,8 @@ function ProviderSettingsForm({ provider }: { provider: MarkerProviderConfig }) 
       <div className="mb-3 flex flex-col gap-1">
         <h3 className="text-sm font-semibold">{displayName}</h3>
         <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
-          Controls online marker lookup and whether locally generated markers can be submitted.
+          Controls online marker lookup and whether locally generated markers
+          can be submitted.
         </p>
         <p className="text-muted-foreground text-xs">
           {provider.source_type === "plugin" && provider.plugin_id
@@ -167,7 +179,9 @@ function ProviderSettingsForm({ provider }: { provider: MarkerProviderConfig }) 
             className="w-full sm:w-40"
             aria-invalid={!priorityValid}
           />
-          <p className="text-muted-foreground text-xs">Lower numbers win when providers overlap.</p>
+          <p className="text-muted-foreground text-xs">
+            Lower numbers win when providers overlap.
+          </p>
         </div>
         <SettingField
           label="Allow Contributions"
@@ -230,7 +244,9 @@ function ProviderSettingsForm({ provider }: { provider: MarkerProviderConfig }) 
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">Acceptance rate</dt>
-                <dd className="font-medium">{formatRate(validation.stats.acceptance_rate)}</dd>
+                <dd className="font-medium">
+                  {formatRate(validation.stats.acceptance_rate)}
+                </dd>
               </div>
               <div className="flex justify-between gap-3">
                 <dt className="text-muted-foreground">Best streak</dt>
@@ -238,7 +254,9 @@ function ProviderSettingsForm({ provider }: { provider: MarkerProviderConfig }) 
               </div>
             </dl>
           ) : (
-            <p className="text-destructive text-xs">{validation.error || "Validation failed."}</p>
+            <p className="text-destructive text-xs">
+              {validation.error || "Validation failed."}
+            </p>
           )}
         </div>
       )}
@@ -264,9 +282,18 @@ function ProviderSettingsForm({ provider }: { provider: MarkerProviderConfig }) 
           type="button"
           size="sm"
           onClick={save}
-          disabled={!dirty || !priorityValid || !confidenceValid || updateProvider.isPending}
+          disabled={
+            !dirty ||
+            !priorityValid ||
+            !confidenceValid ||
+            updateProvider.isPending
+          }
         >
-          {updateProvider.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+          {updateProvider.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
           {updateProvider.isPending ? "Saving..." : "Save Provider Settings"}
         </Button>
       </div>
@@ -274,7 +301,10 @@ function ProviderSettingsForm({ provider }: { provider: MarkerProviderConfig }) 
   );
 }
 
-function numberFromResultData(data: Record<string, unknown> | undefined, key: string) {
+function numberFromResultData(
+  data: Record<string, unknown> | undefined,
+  key: string,
+) {
   const value = data?.[key];
   return typeof value === "number" && Number.isFinite(value) ? value : null;
 }
@@ -321,13 +351,19 @@ function TaskActionRow({
     <div className="border-border flex flex-col gap-3 border-b py-4 last:border-b-0 sm:flex-row sm:items-center">
       <div className="min-w-0 flex-1">
         <div className="flex flex-wrap items-center gap-2">
-          <h3 className="text-sm font-semibold">{task?.name ?? fallbackName}</h3>
-          {task?.last_execution && <TaskStatusBadge result={task.last_execution} />}
+          <h3 className="text-sm font-semibold">
+            {task?.name ?? fallbackName}
+          </h3>
+          {task?.last_execution && (
+            <TaskStatusBadge result={task.last_execution} />
+          )}
         </div>
         <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
           {task?.description ?? fallbackDescription}
         </p>
-        <p className="text-muted-foreground mt-1 text-xs">Last result: {formatTaskResult(task)}</p>
+        <p className="text-muted-foreground mt-1 text-xs">
+          Last result: {formatTaskResult(task)}
+        </p>
       </div>
 
       <div className="flex flex-col gap-2 sm:flex-row">
@@ -336,7 +372,12 @@ function TaskActionRow({
             <Link to={`/admin/tasks/${key}`}>History</Link>
           </Button>
         )}
-        <Button type="button" size="sm" onClick={onRun} disabled={!task || running || pending}>
+        <Button
+          type="button"
+          size="sm"
+          onClick={onRun}
+          disabled={!task || running || pending}
+        >
           {pending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />
           ) : (
@@ -356,7 +397,9 @@ function IntroTasksCard() {
   const [pendingTask, setPendingTask] = useState<string | null>(null);
 
   const detectTask = tasks?.find((task) => task.key === "detect_intro_markers");
-  const contributeTask = tasks?.find((task) => task.key === "contribute_markers");
+  const contributeTask = tasks?.find(
+    (task) => task.key === "contribute_markers",
+  );
 
   async function run(key: string) {
     setPendingTask(key);
@@ -392,7 +435,11 @@ export default function IntroSettings() {
 
   if (form.isLoading) {
     return (
-      <div className="space-y-6" role="status" aria-label="Loading intro settings">
+      <div
+        className="space-y-6"
+        role="status"
+        aria-label="Loading intro settings"
+      >
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-24 w-full max-w-2xl" />
         <Skeleton className="h-40 w-full max-w-2xl" />
@@ -406,7 +453,8 @@ export default function IntroSettings() {
       <div className="mb-6 space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Intro Markers</h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Configure marker lookup, local marker generation, and provider contribution.
+          Configure marker lookup, local marker generation, and provider
+          contribution.
         </p>
       </div>
 

@@ -28,13 +28,55 @@ interface QualityLadderResponse {
  * the menu cannot select.
  */
 const FALLBACK_LADDER: QualityLadderRung[] = [
-  { id: "2160p", label: "4K", resolution: "2160p", height: 2160, bitrate_kbps: 20000 },
-  { id: "1080p-high", label: "1080p High", resolution: "1080p", height: 1080, bitrate_kbps: 10000 },
-  { id: "1080p", label: "1080p", resolution: "1080p", height: 1080, bitrate_kbps: 6000 },
-  { id: "720p-high", label: "720p High", resolution: "720p", height: 720, bitrate_kbps: 4000 },
-  { id: "720p", label: "720p", resolution: "720p", height: 720, bitrate_kbps: 2000 },
-  { id: "480p", label: "480p", resolution: "480p", height: 480, bitrate_kbps: 1500 },
-  { id: "420p", label: "420p", resolution: "420p", height: 420, bitrate_kbps: 720 },
+  {
+    id: "2160p",
+    label: "4K",
+    resolution: "2160p",
+    height: 2160,
+    bitrate_kbps: 20000,
+  },
+  {
+    id: "1080p-high",
+    label: "1080p High",
+    resolution: "1080p",
+    height: 1080,
+    bitrate_kbps: 10000,
+  },
+  {
+    id: "1080p",
+    label: "1080p",
+    resolution: "1080p",
+    height: 1080,
+    bitrate_kbps: 6000,
+  },
+  {
+    id: "720p-high",
+    label: "720p High",
+    resolution: "720p",
+    height: 720,
+    bitrate_kbps: 4000,
+  },
+  {
+    id: "720p",
+    label: "720p",
+    resolution: "720p",
+    height: 720,
+    bitrate_kbps: 2000,
+  },
+  {
+    id: "480p",
+    label: "480p",
+    resolution: "480p",
+    height: 480,
+    bitrate_kbps: 1500,
+  },
+  {
+    id: "420p",
+    label: "420p",
+    resolution: "420p",
+    height: 420,
+    bitrate_kbps: 720,
+  },
 ];
 
 /** Module-level cache: the ladder is server configuration, not per-session. */
@@ -45,9 +87,13 @@ async function loadLadder(
   config: ReturnType<typeof usePlayerConfig>,
 ): Promise<QualityLadderRung[]> {
   if (cachedLadder) return cachedLadder;
-  inFlight ??= playerFetch<QualityLadderResponse>(config, "/playback/quality-ladder", {
-    method: "GET",
-  })
+  inFlight ??= playerFetch<QualityLadderResponse>(
+    config,
+    "/playback/quality-ladder",
+    {
+      method: "GET",
+    },
+  )
     .then((resp) => {
       // An empty or malformed ladder is a failure, and failures are not cached:
       // caching the fallback here would make every later mount skip the server
@@ -96,7 +142,9 @@ async function loadLadder(
  */
 export function useQualityLadder(): QualityLadderRung[] {
   const config = usePlayerConfig();
-  const [ladder, setLadder] = useState<QualityLadderRung[]>(cachedLadder ?? FALLBACK_LADDER);
+  const [ladder, setLadder] = useState<QualityLadderRung[]>(
+    cachedLadder ?? FALLBACK_LADDER,
+  );
 
   useEffect(() => {
     if (cachedLadder) {

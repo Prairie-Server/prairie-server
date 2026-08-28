@@ -1,5 +1,10 @@
 import type { QueryClient } from "@tanstack/react-query";
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from "@tanstack/react-query";
 import { api } from "@/api/client";
 import type {
   AppNotification,
@@ -23,14 +28,18 @@ export function useNotifications(status: "all" | "unread" = "all") {
     queryKey: notificationKeys.list(status),
     initialPageParam: "",
     queryFn: ({ pageParam }) => {
-      const search = new URLSearchParams({ limit: String(NOTIFICATIONS_PAGE_SIZE) });
+      const search = new URLSearchParams({
+        limit: String(NOTIFICATIONS_PAGE_SIZE),
+      });
       if (status === "unread") {
         search.set("status", "unread");
       }
       if (pageParam) {
         search.set("before", pageParam);
       }
-      return api<NotificationListResponse>(`/notifications?${search.toString()}`);
+      return api<NotificationListResponse>(
+        `/notifications?${search.toString()}`,
+      );
     },
     getNextPageParam: (lastPage) => lastPage.next_cursor || undefined,
   });
@@ -40,7 +49,9 @@ export function useUnreadNotificationCount(enabled = true) {
   return useQuery({
     queryKey: notificationKeys.unreadCount(),
     queryFn: () =>
-      api<NotificationUnreadCountResponse>("/notifications/unread-count").then((d) => d.count),
+      api<NotificationUnreadCountResponse>("/notifications/unread-count").then(
+        (d) => d.count,
+      ),
     enabled,
     staleTime: 30_000,
   });
@@ -49,7 +60,8 @@ export function useUnreadNotificationCount(enabled = true) {
 export function useMarkNotificationRead() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: string) => api(`/notifications/${id}/read`, { method: "POST" }),
+    mutationFn: (id: string) =>
+      api(`/notifications/${id}/read`, { method: "POST" }),
     onMutate: (id: string) => {
       applyNotificationRead(queryClient, { profile_id: "", id });
     },
@@ -101,7 +113,8 @@ export function useUpdateNotificationPreferences() {
 export function useEmailNotificationPreferences(enabled = true) {
   return useQuery({
     queryKey: notificationKeys.emailPreferences(),
-    queryFn: () => api<NotificationEmailPreferences>("/notifications/email-preferences"),
+    queryFn: () =>
+      api<NotificationEmailPreferences>("/notifications/email-preferences"),
     enabled,
   });
 }
@@ -118,7 +131,11 @@ export function useUpdateEmailNotificationPreferences() {
       queryClient.setQueryData(notificationKeys.emailPreferences(), prefs);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to save email preferences");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to save email preferences",
+      );
     },
   });
 }
@@ -127,16 +144,23 @@ export function useRequestEmailNotificationAddress() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (email: string) =>
-      api<NotificationEmailPreferences>("/notifications/email-preferences/address", {
-        method: "PUT",
-        body: JSON.stringify({ email }),
-      }),
+      api<NotificationEmailPreferences>(
+        "/notifications/email-preferences/address",
+        {
+          method: "PUT",
+          body: JSON.stringify({ email }),
+        },
+      ),
     onSuccess: (prefs) => {
       queryClient.setQueryData(notificationKeys.emailPreferences(), prefs);
       toast.success(`Verification email sent to ${prefs.pending_email}`);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to send the verification email");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to send the verification email",
+      );
     },
   });
 }
@@ -145,14 +169,21 @@ export function useClearEmailNotificationAddress() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: () =>
-      api<NotificationEmailPreferences>("/notifications/email-preferences/address", {
-        method: "DELETE",
-      }),
+      api<NotificationEmailPreferences>(
+        "/notifications/email-preferences/address",
+        {
+          method: "DELETE",
+        },
+      ),
     onSuccess: (prefs) => {
       queryClient.setQueryData(notificationKeys.emailPreferences(), prefs);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to remove the custom address");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to remove the custom address",
+      );
     },
   });
 }
@@ -160,7 +191,8 @@ export function useClearEmailNotificationAddress() {
 export function useDiscordNotificationPreferences(enabled = true) {
   return useQuery({
     queryKey: notificationKeys.discordPreferences(),
-    queryFn: () => api<NotificationDiscordPreferences>("/notifications/discord-preferences"),
+    queryFn: () =>
+      api<NotificationDiscordPreferences>("/notifications/discord-preferences"),
     enabled,
   });
 }
@@ -169,15 +201,22 @@ export function useUpdateDiscordNotificationPreferences() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (update: { mode: NotificationDiscordMode }) =>
-      api<NotificationDiscordPreferences>("/notifications/discord-preferences", {
-        method: "PUT",
-        body: JSON.stringify(update),
-      }),
+      api<NotificationDiscordPreferences>(
+        "/notifications/discord-preferences",
+        {
+          method: "PUT",
+          body: JSON.stringify(update),
+        },
+      ),
     onSuccess: (prefs) => {
       queryClient.setQueryData(notificationKeys.discordPreferences(), prefs);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to save Discord preferences");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to save Discord preferences",
+      );
     },
   });
 }
@@ -186,9 +225,13 @@ export function useUpdateDiscordNotificationPreferences() {
 export function useDiscordLinkInit() {
   return useMutation({
     mutationFn: () =>
-      api<NotificationDiscordLinkInit>("/notifications/discord/link/init", { method: "POST" }),
+      api<NotificationDiscordLinkInit>("/notifications/discord/link/init", {
+        method: "POST",
+      }),
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Failed to start Discord link");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to start Discord link",
+      );
     },
   });
 }
@@ -198,7 +241,9 @@ export function useUnlinkDiscord() {
   return useMutation({
     mutationFn: () => api("/notifications/discord-link", { method: "DELETE" }),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: notificationKeys.discordPreferences() });
+      void queryClient.invalidateQueries({
+        queryKey: notificationKeys.discordPreferences(),
+      });
       toast.success("Discord account unlinked");
     },
     onError: () => {
@@ -219,41 +264,54 @@ function updateCachedLists(
   update: (notification: AppNotification) => AppNotification,
 ) {
   for (const status of ["all", "unread"] as const) {
-    queryClient.setQueryData<NotificationsInfiniteData>(notificationKeys.list(status), (data) =>
-      data
-        ? {
-            ...data,
-            pages: data.pages.map((page) => ({
-              ...page,
-              notifications: page.notifications.map(update),
-            })),
-          }
-        : data,
+    queryClient.setQueryData<NotificationsInfiniteData>(
+      notificationKeys.list(status),
+      (data) =>
+        data
+          ? {
+              ...data,
+              pages: data.pages.map((page) => ({
+                ...page,
+                notifications: page.notifications.map(update),
+              })),
+            }
+          : data,
     );
   }
 }
 
 /** Prepends a freshly created notification and bumps the unread badge. */
-export function applyNotificationCreated(queryClient: QueryClient, notification: AppNotification) {
-  queryClient.setQueryData<NotificationsInfiniteData>(notificationKeys.list("all"), (data) => {
-    const first = data?.pages[0];
-    if (!data || !first) {
-      return data;
-    }
-    if (first.notifications.some((entry) => entry.id === notification.id)) {
-      return data;
-    }
-    return {
-      ...data,
-      pages: [
-        { ...first, notifications: [notification, ...first.notifications] },
-        ...data.pages.slice(1),
-      ],
-    };
+export function applyNotificationCreated(
+  queryClient: QueryClient,
+  notification: AppNotification,
+) {
+  queryClient.setQueryData<NotificationsInfiniteData>(
+    notificationKeys.list("all"),
+    (data) => {
+      const first = data?.pages[0];
+      if (!data || !first) {
+        return data;
+      }
+      if (first.notifications.some((entry) => entry.id === notification.id)) {
+        return data;
+      }
+      return {
+        ...data,
+        pages: [
+          { ...first, notifications: [notification, ...first.notifications] },
+          ...data.pages.slice(1),
+        ],
+      };
+    },
+  );
+  void queryClient.invalidateQueries({
+    queryKey: notificationKeys.list("unread"),
   });
-  void queryClient.invalidateQueries({ queryKey: notificationKeys.list("unread") });
   if (!notification.read_at) {
-    queryClient.setQueryData<number>(notificationKeys.unreadCount(), (count) => (count ?? 0) + 1);
+    queryClient.setQueryData<number>(
+      notificationKeys.unreadCount(),
+      (count) => (count ?? 0) + 1,
+    );
   }
 }
 
@@ -297,14 +355,19 @@ export function applyNotificationRead(
 }
 
 /** Hydrates the unread badge from the websocket snapshot (recent unread rows). */
-export function applyNotificationsSnapshot(queryClient: QueryClient, rows: AppNotification[]) {
+export function applyNotificationsSnapshot(
+  queryClient: QueryClient,
+  rows: AppNotification[],
+) {
   // The snapshot is capped (25 rows); use it as a lower bound and refresh the
   // exact count only when the cap means the lower bound may be incomplete.
   queryClient.setQueryData<number>(notificationKeys.unreadCount(), (count) =>
     Math.max(count ?? 0, rows.length),
   );
   if (rows.length >= NOTIFICATIONS_PAGE_SIZE) {
-    void queryClient.invalidateQueries({ queryKey: notificationKeys.unreadCount() });
+    void queryClient.invalidateQueries({
+      queryKey: notificationKeys.unreadCount(),
+    });
   }
   void queryClient.invalidateQueries({
     queryKey: notificationKeys.list("all"),
@@ -317,8 +380,13 @@ export function applyNotificationsSnapshot(queryClient: QueryClient, rows: AppNo
 }
 
 /** Formats the "S2E5" style episode code for a notification row. */
-export function formatEpisodeCode(notification: AppNotification): string | null {
-  if (notification.season_number == null || notification.episode_number == null) {
+export function formatEpisodeCode(
+  notification: AppNotification,
+): string | null {
+  if (
+    notification.season_number == null ||
+    notification.episode_number == null
+  ) {
     return null;
   }
   return `S${notification.season_number}E${notification.episode_number}`;

@@ -15,7 +15,6 @@ import (
 
 	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 
-	"github.com/prairie-server/prairie-server/internal/httpheaders"
 	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
@@ -29,13 +28,15 @@ type httpProxyService interface {
 	HTTPRoutesClient(ctx context.Context, installationID int, capabilityID string) (httpRouteClient, error)
 }
 
-// UserThemeLookup resolves the active UI theme for a Prairie user. The
-// proxy uses it to inject X-Prairie-Theme on every plugin request so
+// UserThemeLookup resolves the active UI theme for a silo user. The
+// proxy uses it to inject X-Silo-Theme on every plugin request so
 // plugin SPAs can paint in the user's theme on first byte without relying
 // on the URL ?theme= parameter (which is fragile under refresh, direct
-// links, and cross-tab sharing).
+// links, and cross-tab sharing). Theme is a profile-scoped setting under the
+// settings contract, so the lookup takes the active profile; an empty
+// profileID falls back to whatever account-level value exists.
 type UserThemeLookup interface {
-	LookupUITheme(ctx context.Context, userID int) (string, error)
+	LookupUITheme(ctx context.Context, userID int, profileID string) (string, error)
 }
 
 type HTTPProxy struct {
@@ -53,7 +54,7 @@ func NewHTTPProxy(service httpProxyService, installations taskInstallationStore)
 }
 
 // WithUserThemeLookup attaches a theme resolver. When set, ServeRoute injects
-// X-Prairie-Theme on the upstream plugin request for authenticated users.
+// X-Silo-Theme on the upstream plugin request for authenticated users.
 // Pass nil to disable.
 func (p *HTTPProxy) WithUserThemeLookup(t UserThemeLookup) *HTTPProxy {
 	p.themes = t
@@ -61,8 +62,8 @@ func (p *HTTPProxy) WithUserThemeLookup(t UserThemeLookup) *HTTPProxy {
 }
 
 // WithUserIdentityLookup attaches a username/profile-name resolver. When set,
-// ServeRoute injects X-Prairie-User-Name, X-Prairie-Profile-Name, and
-// X-Prairie-Profile-Primary headers so plugins can render "user#profile"
+// ServeRoute injects X-Silo-User-Name, X-Silo-Profile-Name, and
+// X-Silo-Profile-Primary headers so plugins can render "user#profile"
 // strings without reaching back into browser localStorage.
 func (p *HTTPProxy) WithUserIdentityLookup(l UserIdentityLookup) *HTTPProxy {
 	p.identity = l
@@ -127,33 +128,35 @@ func (p *HTTPProxy) ServeRoute(w http.ResponseWriter, r *http.Request, installat
 
 	body, _ := io.ReadAll(r.Body)
 	headers := forwardedRequestHeaders(r.Header)
-	if _, _, userID := pluginAccessUserFromContext(r.Context()); userID > 0 {
-		httpheaders.SetMap(headers, httpheaders.HeaderUserID, strconv.Itoa(userID))
+	if _, _, userID, contextProfileID := pluginAccessUserFromContext(r.Context()); userID > 0 {
+		headers["X-Silo-User-Id"] = strconv.Itoa(userID)
 		if admin {
-			httpheaders.SetMap(headers, httpheaders.HeaderUserRole, "admin")
+			headers["X-Silo-User-Role"] = "admin"
 		} else {
-			httpheaders.SetMap(headers, httpheaders.HeaderUserRole, "user")
+			headers["X-Silo-User-Role"] = "user"
+		}
+		// Full-page plugin navigation cannot attach X-Profile-Id. The launch
+		// cookie carries the validated active profile in that case; direct
+		// bearer/API-key calls may still provide the header.
+		profileID := strings.TrimSpace(contextProfileID)
+		if profileID == "" {
+			profileID = strings.TrimSpace(r.Header.Get("X-Profile-Id"))
 		}
 		if p.themes != nil {
-			if theme, err := p.themes.LookupUITheme(r.Context(), userID); err == nil && theme != "" {
-				httpheaders.SetMap(headers, httpheaders.HeaderTheme, theme)
+			if theme, err := p.themes.LookupUITheme(r.Context(), userID, profileID); err == nil && theme != "" {
+				headers["X-Silo-Theme"] = theme
 			}
 		}
 		if p.identity != nil {
-			// The browser already sends X-Profile-Id for its own Prairie
-			// API calls; reuse that as the active profile. Empty value just
-			// means "no profile selected" — the lookup returns username
-			// only, primary-profile path.
-			profileID := r.Header.Get("X-Profile-Id")
 			if ident, err := p.identity.LookupIdentity(r.Context(), userID, profileID); err == nil {
 				if ident.Username != "" {
-					httpheaders.SetMap(headers, httpheaders.HeaderUserName, ident.Username)
+					headers["X-Silo-User-Name"] = ident.Username
 				}
 				if ident.ProfileName != "" {
-					httpheaders.SetMap(headers, httpheaders.HeaderProfileName, ident.ProfileName)
+					headers["X-Silo-Profile-Name"] = ident.ProfileName
 				}
 				if ident.ProfileIsPrimary {
-					httpheaders.SetMap(headers, httpheaders.HeaderProfilePrimary, "true")
+					headers["X-Silo-Profile-Primary"] = "true"
 				}
 			}
 		}
@@ -347,6 +350,7 @@ type pluginAccess struct {
 	authenticated bool
 	admin         bool
 	userID        int
+	profileID     string
 }
 
 func WithPluginAccess(ctx context.Context, authenticated bool, admin bool) context.Context {
@@ -359,11 +363,14 @@ func WithPluginAccess(ctx context.Context, authenticated bool, admin bool) conte
 // WithPluginAccessUser is the same as WithPluginAccess but also stores the
 // authenticated user's ID so the proxy can stamp identity headers on
 // outgoing plugin requests.
-func WithPluginAccessUser(ctx context.Context, authenticated bool, admin bool, userID int) context.Context {
+func WithPluginAccessUser(
+	ctx context.Context, authenticated bool, admin bool, userID int, profileID string,
+) context.Context {
 	return context.WithValue(ctx, pluginAccessKey, pluginAccess{
 		authenticated: authenticated,
 		admin:         admin,
 		userID:        userID,
+		profileID:     profileID,
 	})
 }
 
@@ -375,14 +382,14 @@ func pluginAccessFromContext(ctx context.Context) (bool, bool) {
 	return access.authenticated, access.admin
 }
 
-// pluginAccessUserFromContext returns (authenticated, admin, userID) for the
-// plugin call. userID is 0 when the request is unauthenticated.
-func pluginAccessUserFromContext(ctx context.Context) (bool, bool, int) {
+// pluginAccessUserFromContext returns the authenticated identity for the
+// plugin call. userID is 0 and profileID empty when unauthenticated.
+func pluginAccessUserFromContext(ctx context.Context) (bool, bool, int, string) {
 	access, ok := ctx.Value(pluginAccessKey).(pluginAccess)
 	if !ok {
-		return false, false, 0
+		return false, false, 0, ""
 	}
-	return access.authenticated, access.admin, access.userID
+	return access.authenticated, access.admin, access.userID, access.profileID
 }
 
 func queryToStruct(values url.Values) *structpb.Struct {

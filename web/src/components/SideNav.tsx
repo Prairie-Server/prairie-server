@@ -15,7 +15,11 @@ interface SideNavSectionProps {
   children: ReactNode;
 }
 
-export function SideNavSection({ label, idPrefix, children }: SideNavSectionProps) {
+export function SideNavSection({
+  label,
+  idPrefix,
+  children,
+}: SideNavSectionProps) {
   const headingId = `${idPrefix}-${label.toLowerCase().replace(/\s+/g, "-")}`;
   return (
     <div role="group" aria-labelledby={headingId}>
@@ -82,16 +86,31 @@ export function SideNavItem({
     <li>
       {href ? (
         external ? (
-          <a href={href} onClick={onClick} aria-current={ariaCurrent} className={className}>
+          <a
+            href={href}
+            onClick={onClick}
+            aria-current={ariaCurrent}
+            className={className}
+          >
             {inner}
           </a>
         ) : (
-          <Link to={href} onClick={onClick} aria-current={ariaCurrent} className={className}>
+          <Link
+            to={href}
+            onClick={onClick}
+            aria-current={ariaCurrent}
+            className={className}
+          >
             {inner}
           </Link>
         )
       ) : (
-        <button type="button" onClick={onClick} aria-current={ariaCurrent} className={className}>
+        <button
+          type="button"
+          onClick={onClick}
+          aria-current={ariaCurrent}
+          className={className}
+        >
           {inner}
         </button>
       )}

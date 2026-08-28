@@ -72,7 +72,10 @@ describe("levelChainsFromResponse", () => {
 });
 
 describe("mergeChainWithDefaults", () => {
-  const item = (slug: string, over: Partial<LevelChainItem> = {}): LevelChainItem => ({
+  const item = (
+    slug: string,
+    over: Partial<LevelChainItem> = {},
+  ): LevelChainItem => ({
     plugin_installation_id: 1,
     capability_id: slug,
     provider_slug: slug,
@@ -83,7 +86,11 @@ describe("mergeChainWithDefaults", () => {
   it("fills only the levels the saved chain does not cover", () => {
     const merged = mergeChainWithDefaults(
       { series: [item("tvdb")], season: [] },
-      { series: [item("tmdb")], season: [item("tmdb")], episode: [item("tmdb")] },
+      {
+        series: [item("tmdb")],
+        season: [item("tmdb")],
+        episode: [item("tmdb")],
+      },
       "series",
     );
 

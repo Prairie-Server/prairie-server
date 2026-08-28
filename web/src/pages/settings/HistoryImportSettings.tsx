@@ -42,14 +42,10 @@ import {
   CheckCircle2,
   CircleSlash2,
   Clock,
-  Download,
   Loader2,
-  LogIn,
-  RefreshCw,
-  Search,
   XCircle,
 } from "lucide-react";
-import { formatDate } from "@/lib/datetime";
+import { formatRelativeTime as formatRelativeTimeBase } from "@/lib/date";
 
 const STATUS_CONFIG = {
   queued: {
@@ -90,8 +86,9 @@ export default function HistoryImportSettings() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { profile } = useCurrentProfile();
-  const { data: profiles } = useProfiles();
-  const { data: sources = [], isLoading: sourcesLoading } = useHistoryImportSources();
+  const { data: profiles = [] } = useProfiles();
+  const { data: sources = [], isLoading: sourcesLoading } =
+    useHistoryImportSources();
   const { data: recentRuns = [] } = useHistoryImportRuns();
 
   const [sourceType, setSourceType] = useState<SourceType>("emby");
@@ -103,7 +100,8 @@ export default function HistoryImportSettings() {
   // Emby state
   const [connectUsername, setConnectUsername] = useState("");
   const [connectPassword, setConnectPassword] = useState("");
-  const [connectSession, setConnectSession] = useState<EmbyConnectLoginResponse | null>(null);
+  const [connectSession, setConnectSession] =
+    useState<EmbyConnectLoginResponse | null>(null);
   const [connectServerId, setConnectServerId] = useState("");
   const [savedSourceId, setSavedSourceId] = useState("");
   const [savedUsername, setSavedUsername] = useState("");
@@ -126,28 +124,44 @@ export default function HistoryImportSettings() {
   const { data: activeRun } = useHistoryImportRun(activeRunId);
 
   const displayRun = activeRun ?? recentRuns[0] ?? null;
-  const pending = loginMutation.isPending || createRunMutation.isPending || plexAuthPending;
+  const pending =
+    loginMutation.isPending || createRunMutation.isPending || plexAuthPending;
   const effectiveProfileId = profileId || profile?.id || "";
   const returnedPlexAuth = searchParams.get("plex_auth");
   const returnedPlexPinId = searchParams.get("plex_pin_id");
   const returnedPlexPinCode = searchParams.get("plex_pin_code");
 
-  const embySources = useMemo(() => sources.filter((s) => s.source_type === "emby"), [sources]);
-  const plexSources = useMemo(() => sources.filter((s) => s.source_type === "plex"), [sources]);
+  const embySources = useMemo(
+    () => sources.filter((s) => s.source_type === "emby"),
+    [sources],
+  );
+  const plexSources = useMemo(
+    () => sources.filter((s) => s.source_type === "plex"),
+    [sources],
+  );
 
-  const effectiveSavedSourceId = savedSourceId || String(embySources[0]?.id ?? "");
-  const effectivePlexSavedSourceId = plexSavedSourceId || String(plexSources[0]?.id ?? "");
+  const effectiveSavedSourceId =
+    savedSourceId || String(embySources[0]?.id ?? "");
+  const effectivePlexSavedSourceId =
+    plexSavedSourceId || String(plexSources[0]?.id ?? "");
 
   const selectedSavedSource = useMemo(
-    () => embySources.find((source) => String(source.id) === effectiveSavedSourceId),
+    () =>
+      embySources.find(
+        (source) => String(source.id) === effectiveSavedSourceId,
+      ),
     [effectiveSavedSourceId, embySources],
   );
   const selectedPlexSavedSource = useMemo(
-    () => plexSources.find((source) => String(source.id) === effectivePlexSavedSourceId),
+    () =>
+      plexSources.find(
+        (source) => String(source.id) === effectivePlexSavedSourceId,
+      ),
     [effectivePlexSavedSourceId, plexSources],
   );
   const selectedPlexOAuthServer = useMemo(
-    () => plexServers.find((server) => server.clientIdentifier === plexServerId),
+    () =>
+      plexServers.find((server) => server.clientIdentifier === plexServerId),
     [plexServerId, plexServers],
   );
   const selectedPlexOAuthServerURL = selectedPlexOAuthServer
@@ -169,7 +183,9 @@ export default function HistoryImportSettings() {
 
     const pinID = Number(returnedPlexPinId);
     if (!Number.isFinite(pinID) || pinID <= 0) {
-      setPlexAuthError("Plex sign-in returned an invalid PIN. Please try again.");
+      setPlexAuthError(
+        "Plex sign-in returned an invalid PIN. Please try again.",
+      );
       void navigate("/settings/history-import", { replace: true });
       return;
     }
@@ -199,7 +215,11 @@ export default function HistoryImportSettings() {
         setPlexAccountToken("");
         setPlexServers([]);
         setPlexServerId("");
-        setPlexAuthError(error instanceof Error ? error.message : "Failed to finish Plex sign-in");
+        setPlexAuthError(
+          error instanceof Error
+            ? error.message
+            : "Failed to finish Plex sign-in",
+        );
       } finally {
         if (!cancelled) {
           setPlexAuthPending(false);
@@ -230,14 +250,19 @@ export default function HistoryImportSettings() {
 
     try {
       const pin = await createPlexPin();
-      const forwardURL = new URL("/settings/history-import", window.location.origin);
+      const forwardURL = new URL(
+        "/settings/history-import",
+        window.location.origin,
+      );
       forwardURL.searchParams.set("plex_auth", "1");
       forwardURL.searchParams.set("plex_pin_id", String(pin.id));
       forwardURL.searchParams.set("plex_pin_code", pin.code);
       window.location.assign(buildPlexAuthURL(pin.code, forwardURL.toString()));
     } catch (error) {
       setPlexAuthPending(false);
-      setPlexAuthError(error instanceof Error ? error.message : "Failed to start Plex sign-in");
+      setPlexAuthError(
+        error instanceof Error ? error.message : "Failed to start Plex sign-in",
+      );
     }
   }
 
@@ -267,7 +292,11 @@ export default function HistoryImportSettings() {
     }
 
     if (sourceType === "plex") {
-      if (plexMode === "oauth" && selectedPlexOAuthServerURL && selectedPlexOAuthServer) {
+      if (
+        plexMode === "oauth" &&
+        selectedPlexOAuthServerURL &&
+        selectedPlexOAuthServer
+      ) {
         const run = await createRunMutation.mutateAsync({
           profile_id: effectiveProfileId,
           source: "plex",
@@ -312,7 +341,9 @@ export default function HistoryImportSettings() {
         )
       : sourceType === "plex"
         ? plexMode === "oauth"
-          ? !!effectiveProfileId && !!selectedPlexOAuthServer && !!selectedPlexOAuthServerURL
+          ? !!effectiveProfileId &&
+            !!selectedPlexOAuthServer &&
+            !!selectedPlexOAuthServerURL
           : !!effectiveProfileId && !!selectedPlexSavedSource && !!plexToken
         : canStartJellyfinImport(
             effectiveProfileId,
@@ -324,9 +355,12 @@ export default function HistoryImportSettings() {
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">History import</h2>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          History import
+        </h2>
         <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
-          Import watch history from an external media server into a Prairie profile.
+          Import watch history from an external media server into a Silo
+          profile.
         </p>
       </div>
 
@@ -385,9 +419,13 @@ export default function HistoryImportSettings() {
                     />
                   </div>
                 </div>
-                <Button onClick={handleConnectLogin} disabled={loginMutation.isPending}>
-                  {loginMutation.isPending ? <Loader2 className="animate-spin" /> : <Search />}
-                  {loginMutation.isPending ? "Connecting\u2026" : "Find Servers"}
+                <Button
+                  onClick={handleConnectLogin}
+                  disabled={loginMutation.isPending}
+                >
+                  {loginMutation.isPending
+                    ? "Connecting\u2026"
+                    : "Find Servers"}
                 </Button>
 
                 {connectSession && (
@@ -398,13 +436,19 @@ export default function HistoryImportSettings() {
                     </div>
                     <div className="space-y-2">
                       <Label>Server</Label>
-                      <Select value={connectServerId} onValueChange={setConnectServerId}>
+                      <Select
+                        value={connectServerId}
+                        onValueChange={setConnectServerId}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Choose a server" />
                         </SelectTrigger>
                         <SelectContent>
                           {connectSession.servers.map((server) => (
-                            <SelectItem key={server.server_id} value={server.server_id}>
+                            <SelectItem
+                              key={server.server_id}
+                              value={server.server_id}
+                            >
                               {server.name}
                             </SelectItem>
                           ))}
@@ -417,20 +461,30 @@ export default function HistoryImportSettings() {
             ) : (
               <div className="space-y-4">
                 {sourcesLoading ? (
-                  <div className="text-muted-foreground text-sm">Loading saved servers\u2026</div>
+                  <div className="text-muted-foreground text-sm">
+                    Loading saved servers\u2026
+                  </div>
                 ) : embySources.length === 0 ? (
-                  <EmptyNotice>No admin-defined Emby servers are available yet.</EmptyNotice>
+                  <EmptyNotice>
+                    No admin-defined Emby servers are available yet.
+                  </EmptyNotice>
                 ) : (
                   <>
                     <div className="space-y-2">
                       <Label>Saved Server</Label>
-                      <Select value={effectiveSavedSourceId} onValueChange={setSavedSourceId}>
+                      <Select
+                        value={effectiveSavedSourceId}
+                        onValueChange={setSavedSourceId}
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
                           {embySources.map((source) => (
-                            <SelectItem key={source.id} value={String(source.id)}>
+                            <SelectItem
+                              key={source.id}
+                              value={String(source.id)}
+                            >
                               {source.name}
                             </SelectItem>
                           ))}
@@ -482,8 +536,11 @@ export default function HistoryImportSettings() {
                       Plex sign-in failed
                     </div>
                     <p className="text-red-100/80">{plexAuthError}</p>
-                    <Button onClick={handlePlexLogin} disabled={plexAuthPending} variant="outline">
-                      {plexAuthPending ? <Loader2 className="animate-spin" /> : <RefreshCw />}
+                    <Button
+                      onClick={handlePlexLogin}
+                      disabled={plexAuthPending}
+                      variant="outline"
+                    >
                       {plexAuthPending ? "Starting\u2026" : "Try Again"}
                     </Button>
                   </div>
@@ -491,15 +548,17 @@ export default function HistoryImportSettings() {
                   <div className="surface-panel-subtle flex items-center gap-3 rounded-[1.2rem] p-4">
                     <Loader2 className="text-muted-foreground h-4 w-4 animate-spin" />
                     <div>
-                      <div className="text-sm font-medium">Finishing Plex sign-in\u2026</div>
+                      <div className="text-sm font-medium">
+                        Finishing Plex sign-in\u2026
+                      </div>
                       <p className="text-muted-foreground text-[13px]">
-                        Continue in Plex, then you'll be returned here automatically.
+                        Continue in Plex, then you'll be returned here
+                        automatically.
                       </p>
                     </div>
                   </div>
                 ) : plexServers.length === 0 ? (
                   <Button onClick={handlePlexLogin} disabled={plexAuthPending}>
-                    {plexAuthPending ? <Loader2 className="animate-spin" /> : <LogIn />}
                     {plexAuthPending ? "Starting\u2026" : "Sign in with Plex"}
                   </Button>
                 ) : (
@@ -510,7 +569,10 @@ export default function HistoryImportSettings() {
                     </div>
                     <div className="space-y-2">
                       <Label>Server</Label>
-                      <Select value={plexServerId} onValueChange={setPlexServerId}>
+                      <Select
+                        value={plexServerId}
+                        onValueChange={setPlexServerId}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Choose a server" />
                         </SelectTrigger>
@@ -527,8 +589,11 @@ export default function HistoryImportSettings() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <Button onClick={handlePlexLogin} disabled={plexAuthPending} variant="outline">
-                      <RefreshCw />
+                    <Button
+                      onClick={handlePlexLogin}
+                      disabled={plexAuthPending}
+                      variant="outline"
+                    >
                       Reconnect Plex Account
                     </Button>
                   </div>
@@ -537,9 +602,13 @@ export default function HistoryImportSettings() {
             ) : (
               <div className="space-y-4">
                 {sourcesLoading ? (
-                  <div className="text-muted-foreground text-sm">Loading saved servers\u2026</div>
+                  <div className="text-muted-foreground text-sm">
+                    Loading saved servers\u2026
+                  </div>
                 ) : plexSources.length === 0 ? (
-                  <EmptyNotice>No admin-defined Plex servers are available yet.</EmptyNotice>
+                  <EmptyNotice>
+                    No admin-defined Plex servers are available yet.
+                  </EmptyNotice>
                 ) : (
                   <>
                     <div className="space-y-2">
@@ -553,7 +622,10 @@ export default function HistoryImportSettings() {
                         </SelectTrigger>
                         <SelectContent>
                           {plexSources.map((source) => (
-                            <SelectItem key={source.id} value={String(source.id)}>
+                            <SelectItem
+                              key={source.id}
+                              value={String(source.id)}
+                            >
                               {source.name}
                             </SelectItem>
                           ))}
@@ -606,7 +678,8 @@ export default function HistoryImportSettings() {
                 </div>
               </div>
               <p className="text-muted-foreground text-xs leading-relaxed">
-                Enter the base URL for the Jellyfin server you want to import from.
+                Enter the base URL for the Jellyfin server you want to import
+                from.
               </p>
             </div>
           </div>
@@ -629,8 +702,11 @@ export default function HistoryImportSettings() {
               </SelectContent>
             </Select>
           </div>
-          <Button onClick={handleStartImport} disabled={!canStart || pending} className="sm:px-8">
-            {createRunMutation.isPending ? <Loader2 className="animate-spin" /> : <Download />}
+          <Button
+            onClick={handleStartImport}
+            disabled={!canStart || pending}
+            className="sm:px-8"
+          >
             {createRunMutation.isPending ? "Starting\u2026" : "Start Import"}
           </Button>
         </div>
@@ -735,7 +811,11 @@ function SourceCard({
           <div
             className={cn(
               "h-2 w-2 rounded-full",
-              isEmby ? "bg-emerald-400" : isJellyfin ? "bg-cyan-400" : "bg-amber-400",
+              isEmby
+                ? "bg-emerald-400"
+                : isJellyfin
+                  ? "bg-cyan-400"
+                  : "bg-amber-400",
             )}
           />
         </div>
@@ -782,7 +862,11 @@ function EmptyNotice({ children }: { children: React.ReactNode }) {
   );
 }
 
-function RunStatusIndicator({ status }: { status: HistoryImportRun["status"] }) {
+function RunStatusIndicator({
+  status,
+}: {
+  status: HistoryImportRun["status"];
+}) {
   const config = STATUS_CONFIG[status];
   const Icon = config.icon;
   const shouldSpin = "spin" in config && config.spin;
@@ -814,7 +898,8 @@ function RunSummary({ run }: { run: HistoryImportRun | null }) {
   }
 
   const processed = run.matched + run.unmatched + run.skipped;
-  const progressPct = run.fetched > 0 ? Math.min(100, (processed / run.fetched) * 100) : 0;
+  const progressPct =
+    run.fetched > 0 ? Math.min(100, (processed / run.fetched) * 100) : 0;
   const isActive = run.status === "running" || run.status === "queued";
 
   return (
@@ -836,7 +921,10 @@ function RunSummary({ run }: { run: HistoryImportRun | null }) {
           <div className="text-muted-foreground text-xs">
             {formatRelativeTime(run.created_at)}
             {run.completed_at && (
-              <span> &middot; took {formatDuration(run.created_at, run.completed_at)}</span>
+              <span>
+                {" "}
+                &middot; took {formatDuration(run.created_at, run.completed_at)}
+              </span>
             )}
           </div>
         </div>
@@ -862,10 +950,26 @@ function RunSummary({ run }: { run: HistoryImportRun | null }) {
         <MetricCard label="Fetched" value={run.fetched} />
         <MetricCard label="Matched" value={run.matched} accent="positive" />
         <MetricCard label="Unmatched" value={run.unmatched} accent="warning" />
-        <MetricCard label="Progress" value={run.progress_updated} accent="positive" />
-        <MetricCard label="History" value={run.history_created} accent="positive" />
-        <MetricCard label="Watchlist" value={run.watchlist_added} accent="positive" />
-        <MetricCard label="Favorites" value={run.favorites_imported} accent="positive" />
+        <MetricCard
+          label="Progress"
+          value={run.progress_updated}
+          accent="positive"
+        />
+        <MetricCard
+          label="History"
+          value={run.history_created}
+          accent="positive"
+        />
+        <MetricCard
+          label="Watchlist"
+          value={run.watchlist_added}
+          accent="positive"
+        />
+        <MetricCard
+          label="Favorites"
+          value={run.favorites_imported}
+          accent="positive"
+        />
         <MetricCard label="Skipped" value={run.skipped} />
       </div>
 
@@ -967,7 +1071,9 @@ function HistoryRunCard({
       onClick={onClick}
       className={cn(
         "flex w-full items-center justify-between rounded-[1.2rem] px-4 py-3 text-left transition-all duration-200",
-        active ? "surface-panel-subtle ring-1 ring-white/[0.08]" : "hover:surface-panel-subtle",
+        active
+          ? "surface-panel-subtle ring-1 ring-white/[0.08]"
+          : "hover:surface-panel-subtle",
       )}
     >
       <div className="flex items-center gap-3">
@@ -1003,20 +1109,19 @@ function HistoryRunCard({
    ──────────────────────────────────────────────────────────── */
 
 function formatRelativeTime(dateStr: string): string {
-  const diffMs = Date.now() - new Date(dateStr).getTime();
-  const minutes = Math.floor(diffMs / 60_000);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes}m ago`;
-  if (hours < 24) return `${hours}h ago`;
-  if (days < 7) return `${days}d ago`;
-  return formatDate(dateStr);
+  return (
+    formatRelativeTimeBase(dateStr, {
+      rounding: "floor",
+      justNowLabel: "Just now",
+      absoluteAfterDays: 7,
+    }) ?? ""
+  );
 }
 
 function formatDuration(startStr: string, endStr: string): string {
-  const seconds = Math.floor((new Date(endStr).getTime() - new Date(startStr).getTime()) / 1000);
+  const seconds = Math.floor(
+    (new Date(endStr).getTime() - new Date(startStr).getTime()) / 1000,
+  );
   if (seconds < 60) return `${seconds}s`;
   const m = Math.floor(seconds / 60);
   const s = seconds % 60;

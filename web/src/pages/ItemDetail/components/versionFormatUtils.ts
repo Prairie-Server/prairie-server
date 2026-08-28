@@ -1,18 +1,14 @@
-import type { VersionAudioTrack, VersionSubtitleTrack, VersionVideoTrack } from "@/api/types";
-import { formatBitrate, formatChannels, formatSampleRate } from "@/lib/mediaFormat";
-
-export const LANGUAGE_NAMES: Record<string, string> = {
-  cze: "Czech",
-  ces: "Czech",
-  deu: "German",
-  eng: "English",
-  fra: "French",
-  fre: "French",
-  ita: "Italian",
-  jpn: "Japanese",
-  por: "Portuguese",
-  spa: "Spanish",
-};
+import type {
+  VersionAudioTrack,
+  VersionSubtitleTrack,
+  VersionVideoTrack,
+} from "@/api/types";
+import { englishLanguageName, getLanguageName } from "@/lib/languageNames";
+import {
+  formatBitrate,
+  formatChannels,
+  formatSampleRate,
+} from "@/lib/mediaFormat";
 
 export function formatPageCount(pages?: number): string {
   if (!pages || pages <= 0) return "";
@@ -35,7 +31,9 @@ export function formatLanguageName(language?: string): string {
   const trimmed = language.trim();
   const normalized = trimmed.toLowerCase();
   if (!normalized) return "";
-  if (LANGUAGE_NAMES[normalized]) return LANGUAGE_NAMES[normalized];
+
+  const standardizedName = englishLanguageName(trimmed);
+  if (standardizedName) return standardizedName;
 
   if (normalized.length > 3) {
     return trimmed
@@ -44,18 +42,7 @@ export function formatLanguageName(language?: string): string {
       .map((part) => part[0]?.toUpperCase() + part.slice(1).toLowerCase())
       .join(" ");
   }
-
-  if (typeof Intl !== "undefined" && "DisplayNames" in Intl) {
-    try {
-      const displayNames = new Intl.DisplayNames(undefined, { type: "language" });
-      const match = displayNames.of(normalized);
-      if (match) return match;
-    } catch {
-      // Fall back to the raw code below.
-    }
-  }
-
-  return normalized.toUpperCase();
+  return getLanguageName(trimmed);
 }
 
 const SOURCE_HINT_PATTERNS: Array<{ pattern: RegExp; canonical: string }> = [
@@ -82,7 +69,10 @@ export function metadataLine(parts: Array<string | undefined | false>): string {
 export function videoTitle(track: VersionVideoTrack): string {
   return (
     track.title ||
-    [track.width && track.height ? `${track.width}x${track.height}` : "", track.codec]
+    [
+      track.width && track.height ? `${track.width}x${track.height}` : "",
+      track.codec,
+    ]
       .filter(Boolean)
       .join(" ") ||
     "Video"
@@ -93,14 +83,17 @@ export function audioTitle(track: VersionAudioTrack): string {
   return (
     track.title ||
     track.embedded_title ||
-    [track.language, track.codec, formatChannels(track.channels)].filter(Boolean).join(" ") ||
+    [track.language, track.codec, formatChannels(track.channels)]
+      .filter(Boolean)
+      .join(" ") ||
     "Audio"
   );
 }
 
 export function subtitleTitle(track: VersionSubtitleTrack): string {
   const language = formatLanguageName(track.language);
-  const title = track.title || track.embedded_title || track.codec || "Subtitle";
+  const title =
+    track.title || track.embedded_title || track.codec || "Subtitle";
 
   const languageLower = language.toLowerCase();
   const titleLower = title.toLowerCase();

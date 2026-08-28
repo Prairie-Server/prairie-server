@@ -1,7 +1,10 @@
 import { useState } from "react";
 import { CheckCircle2, Plus, XCircle } from "lucide-react";
 
-import type { AutoscanConnectionTestInput, AutoscanConnectionTestResult } from "@/api/types";
+import type {
+  AutoscanConnectionTestInput,
+  AutoscanConnectionTestResult,
+} from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -79,7 +82,8 @@ export function InlineConnectionPicker({
   // would label a Radarr server "sonarr", and the connection test cannot catch
   // it because it probes only the URL and key.
   const [manualKind, setManualKind] = useState("");
-  const [testResult, setTestResult] = useState<AutoscanConnectionTestResult | null>(null);
+  const [testResult, setTestResult] =
+    useState<AutoscanConnectionTestResult | null>(null);
   // Previous connection value to restore on cancel.
   const [previousValue, setPreviousValue] = useState("");
 
@@ -96,7 +100,8 @@ export function InlineConnectionPicker({
     if (!integration.enabled) return false;
     const kind = integrationKind(integration);
     if (!kind) return false;
-    if (connectionKinds.length > 0 && !connectionKinds.includes(kind)) return false;
+    if (connectionKinds.length > 0 && !connectionKinds.includes(kind))
+      return false;
     return !linkedIntegrationIds.has(integration.id);
   });
 
@@ -133,7 +138,10 @@ export function InlineConnectionPicker({
     setTestResult(null);
     const body: AutoscanConnectionTestInput = reuseId
       ? { request_integration_id: reuseId }
-      : { base_url: baseUrl.trim(), ...(apiKey.trim() ? { api_key_ref: apiKey.trim() } : {}) };
+      : {
+          base_url: baseUrl.trim(),
+          ...(apiKey.trim() ? { api_key_ref: apiKey.trim() } : {}),
+        };
 
     testConnection.mutate(body, {
       onSuccess: setTestResult,
@@ -170,7 +178,8 @@ export function InlineConnectionPicker({
       onError: (err) =>
         setTestResult({
           ok: false,
-          error: err instanceof Error ? err.message : "Failed to create connection",
+          error:
+            err instanceof Error ? err.message : "Failed to create connection",
         }),
     });
   }
@@ -178,18 +187,27 @@ export function InlineConnectionPicker({
   const canTest = reuseId ? true : baseUrl.trim().length > 0;
   const canCreate = reuseId
     ? true
-    : name.trim().length > 0 && baseUrl.trim().length > 0 && apiKey.trim().length > 0;
+    : name.trim().length > 0 &&
+      baseUrl.trim().length > 0 &&
+      apiKey.trim().length > 0;
 
   return (
     <div className="space-y-2">
-      <Label htmlFor={`${idPrefix}-select`}>Which server?{required && " (required)"}</Label>
+      <Label htmlFor={`${idPrefix}-select`}>
+        Which server?{required && " (required)"}
+      </Label>
 
-      <Select value={adding ? ADD_NEW : value || NONE} onValueChange={handleSelect}>
+      <Select
+        value={adding ? ADD_NEW : value || NONE}
+        onValueChange={handleSelect}
+      >
         <SelectTrigger id={`${idPrefix}-select`} className="w-full">
           <SelectValue placeholder="No connection" />
         </SelectTrigger>
         <SelectContent>
-          {!required && <SelectItem value={NONE}>— No server needed —</SelectItem>}
+          {!required && (
+            <SelectItem value={NONE}>— No server needed —</SelectItem>
+          )}
           {options.map((option) => (
             <SelectItem key={option.id} value={option.id}>
               {option.name}
@@ -228,11 +246,14 @@ export function InlineConnectionPicker({
                       {integration.name} — already set up in Requests
                     </SelectItem>
                   ))}
-                  <SelectItem value="__manual__">Use different credentials…</SelectItem>
+                  <SelectItem value="__manual__">
+                    Use different credentials…
+                  </SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-muted-foreground text-xs">
-                Prairie already has these credentials — no need to enter them again.
+                Prairie already has these credentials — no need to enter them
+                again.
               </p>
             </div>
           )}
@@ -242,14 +263,21 @@ export function InlineConnectionPicker({
               {kindChoices.length > 0 && (
                 <div className="space-y-1.5">
                   <Label htmlFor={`${idPrefix}-kind`}>Service</Label>
-                  <Select value={effectiveManualKind} onValueChange={setManualKind}>
+                  <Select
+                    value={effectiveManualKind}
+                    onValueChange={setManualKind}
+                  >
                     <SelectTrigger id={`${idPrefix}-kind`} className="w-full">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       {kindChoices.map((kind) => (
                         <SelectItem key={kind} value={kind}>
-                          {kind === "sonarr" ? "Sonarr" : kind === "radarr" ? "Radarr" : kind}
+                          {kind === "sonarr"
+                            ? "Sonarr"
+                            : kind === "radarr"
+                              ? "Radarr"
+                              : kind}
                         </SelectItem>
                       ))}
                     </SelectContent>

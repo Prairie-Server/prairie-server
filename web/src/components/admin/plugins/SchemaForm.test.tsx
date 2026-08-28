@@ -52,7 +52,14 @@ function renderForm(
   extra: Partial<React.ComponentProps<typeof SchemaForm>> = {},
 ) {
   const onChange = vi.fn();
-  render(<SchemaForm descriptor={descriptor} values={values} onChange={onChange} {...extra} />);
+  render(
+    <SchemaForm
+      descriptor={descriptor}
+      values={values}
+      onChange={onChange}
+      {...extra}
+    />,
+  );
   return { onChange };
 }
 
@@ -66,15 +73,28 @@ describe("SchemaForm", () => {
     expect(screen.getByText("Season folder")).toBeTruthy();
   });
   it("renders dynamic options for a dynamic_options select", () => {
-    renderForm({}, { dynamicOptions: { root_folder: [{ value: "/movies", label: "/movies" }] } });
+    renderForm(
+      {},
+      {
+        dynamicOptions: {
+          root_folder: [{ value: "/movies", label: "/movies" }],
+        },
+      },
+    );
     expect(screen.getByText("Root folder")).toBeTruthy();
   });
   it("renders a server field error", () => {
-    renderForm({ service_kind: "radarr" }, { errors: { service_kind: "bad service" } });
+    renderForm(
+      { service_kind: "radarr" },
+      { errors: { service_kind: "bad service" } },
+    );
     expect(screen.getByText("bad service")).toBeTruthy();
   });
   it("emits onChange when a switch toggles", () => {
-    const { onChange } = renderForm({ service_kind: "sonarr", season_folder: false });
+    const { onChange } = renderForm({
+      service_kind: "sonarr",
+      season_folder: false,
+    });
     fireEvent.click(screen.getByRole("switch"));
     expect(onChange).toHaveBeenCalled();
   });
@@ -94,9 +114,37 @@ describe("SchemaForm", () => {
     };
     const onChange = vi.fn();
     render(<SchemaForm descriptor={d} values={{}} onChange={onChange} />);
-    expect((screen.getByRole("switch") as HTMLButtonElement).getAttribute("aria-checked")).toBe(
-      "true",
-    );
+    expect(
+      (screen.getByRole("switch") as HTMLButtonElement).getAttribute(
+        "aria-checked",
+      ),
+    ).toBe("true");
+  });
+  it("uses a controlling field default when rendering a conditional field", () => {
+    const d: PluginAdminForm = {
+      fields: [
+        {
+          key: "advanced_enabled",
+          label: "Advanced",
+          control: "SWITCH",
+          required: false,
+          secret: false,
+          multiline: false,
+          default_value: true,
+        },
+        {
+          key: "endpoint",
+          label: "Endpoint",
+          control: "TEXT",
+          required: false,
+          secret: false,
+          multiline: false,
+          show_when: [{ field: "advanced_enabled", equals: ["true"] }],
+        },
+      ],
+    };
+    render(<SchemaForm descriptor={d} values={{}} onChange={vi.fn()} />);
+    expect(screen.getByText("Endpoint")).toBeTruthy();
   });
   it("reports validity through onValidityChange (#14)", () => {
     const onValidityChange = vi.fn();
@@ -177,7 +225,13 @@ describe("SchemaForm collapsible sections", () => {
   });
 
   it("auto-expands a collapsed section that has a validation error (empty required field)", () => {
-    render(<SchemaForm descriptor={collapsibleDescriptor} values={{}} onChange={vi.fn()} />);
+    render(
+      <SchemaForm
+        descriptor={collapsibleDescriptor}
+        values={{}}
+        onChange={vi.fn()}
+      />,
+    );
     // api_path is required + empty -> validateSchemaValues flags it -> section force-expands
     expect(screen.getByText("Verbose")).toBeTruthy();
   });
@@ -192,6 +246,43 @@ describe("SchemaForm collapsible sections", () => {
     );
     fireEvent.click(screen.getByText("Show"));
     expect(screen.getByText("Verbose")).toBeTruthy();
+  });
+
+  it("uses a controlling field default when rendering a conditional section", () => {
+    const d: PluginAdminForm = {
+      fields: [
+        {
+          key: "advanced_enabled",
+          label: "Advanced",
+          control: "SWITCH",
+          required: false,
+          secret: false,
+          multiline: false,
+          default_value: true,
+        },
+        {
+          key: "endpoint",
+          label: "Endpoint",
+          control: "TEXT",
+          required: false,
+          secret: false,
+          multiline: false,
+        },
+      ],
+      sections: [
+        {
+          key: "advanced",
+          title: "Advanced options",
+          collapsible: false,
+          collapsed_default: false,
+          field_keys: ["endpoint"],
+          show_when: [{ field: "advanced_enabled", equals: ["true"] }],
+        },
+      ],
+    };
+    render(<SchemaForm descriptor={d} values={{}} onChange={vi.fn()} />);
+    expect(screen.getByText("Advanced options")).toBeTruthy();
+    expect(screen.getByText("Endpoint")).toBeTruthy();
   });
 });
 
@@ -220,7 +311,11 @@ it("marks a show_when-gated field as nested when it is revealed", () => {
     ],
   };
   const { container } = render(
-    <SchemaForm descriptor={d} values={{ service_kind: "sonarr" }} onChange={vi.fn()} />,
+    <SchemaForm
+      descriptor={d}
+      values={{ service_kind: "sonarr" }}
+      onChange={vi.fn()}
+    />,
   );
   expect(container.querySelector('[data-nested="true"]')).not.toBeNull();
 });

@@ -28,9 +28,9 @@ export function SigningSecretDialog({
         <DialogHeader>
           <DialogTitle>Save your signing secret</DialogTitle>
           <DialogDescription>
-            Prairie signs every delivery with this secret so your receiver can verify it. It is
-            shown only once — store it on the receiving service now. You can rotate it later if it
-            is lost.
+            Prairie signs every delivery with this secret so your receiver can
+            verify it. It is shown only once — store it on the receiving service
+            now. You can rotate it later if it is lost.
           </DialogDescription>
         </DialogHeader>
         <div className="bg-muted flex items-center gap-2 rounded-lg p-3 font-mono text-xs break-all">
@@ -46,7 +46,11 @@ export function SigningSecretDialog({
               }
             }}
           >
-            {copied ? <Check className="h-4 w-4" /> : <Copy className="h-4 w-4" />}
+            {copied ? (
+              <Check className="h-4 w-4" />
+            ) : (
+              <Copy className="h-4 w-4" />
+            )}
           </Button>
         </div>
         <DialogFooter>

@@ -43,13 +43,20 @@ export default function CollectionPreviewPane({
       </div>
 
       {items.length === 0 ? (
-        <div className="text-muted-foreground text-sm">No titles match the current query.</div>
+        <div className="text-muted-foreground text-sm">
+          No titles match the current query.
+        </div>
       ) : (
         <div className="space-y-2">
           {items.map((item) => (
-            <div key={item.content_id} className="flex items-center justify-between gap-3 text-sm">
+            <div
+              key={item.content_id}
+              className="flex items-center justify-between gap-3 text-sm"
+            >
               <span className="truncate">{item.title}</span>
-              <span className="text-muted-foreground uppercase">{item.type}</span>
+              <span className="text-muted-foreground uppercase">
+                {item.type}
+              </span>
             </div>
           ))}
         </div>

@@ -17,7 +17,8 @@ const mockFetchHomeSectionItems = vi.fn();
 
 vi.mock("@/hooks/queries/sections", () => ({
   useHomeLayout: (...args: unknown[]) => mockUseHomeLayout(...args),
-  fetchHomeSectionItems: (...args: unknown[]) => mockFetchHomeSectionItems(...args),
+  fetchHomeSectionItems: (...args: unknown[]) =>
+    mockFetchHomeSectionItems(...args),
 }));
 
 vi.mock("@/hooks/useDocumentTitle", () => ({
@@ -108,7 +109,10 @@ describe("Home", () => {
   }
 
   it("does not invalidate cached home sections on mount", async () => {
-    const invalidateQueries = vi.spyOn(QueryClient.prototype, "invalidateQueries");
+    const invalidateQueries = vi.spyOn(
+      QueryClient.prototype,
+      "invalidateQueries",
+    );
     await renderHome();
     expect(invalidateQueries).not.toHaveBeenCalled();
     invalidateQueries.mockRestore();
@@ -132,7 +136,9 @@ describe("Home", () => {
       },
     });
     mockUseHomeLayout.mockReturnValue({
-      data: { sections: [layoutSection({ id: "recent", title: "Recently Added" })] },
+      data: {
+        sections: [layoutSection({ id: "recent", title: "Recently Added" })],
+      },
       isLoading: false,
       isError: false,
       refetch: vi.fn(),

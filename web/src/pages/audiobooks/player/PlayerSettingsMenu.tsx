@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { SlidersHorizontal } from "lucide-react";
-import { SKIP_INTERVAL_CHOICES, type AudiobookPrefs } from "./useAudiobookPrefs";
+import {
+  SKIP_INTERVAL_CHOICES,
+  type AudiobookPrefs,
+} from "./useAudiobookPrefs";
 
 interface PlayerSettingsMenuProps {
   prefs: AudiobookPrefs;
@@ -44,7 +47,11 @@ export function PlayerSettingsMenu({ prefs }: PlayerSettingsMenuProps) {
           aria-label="Player settings"
           className="absolute right-0 bottom-full mb-2 flex w-[min(260px,calc(100vw-1rem))] flex-col gap-4 rounded-lg bg-black/90 px-4 py-3.5 shadow-xl backdrop-blur-sm"
         >
-          <SkipIntervalRow label="Skip back" value={prefs.skipBack} onChange={prefs.setSkipBack} />
+          <SkipIntervalRow
+            label="Skip back"
+            value={prefs.skipBack}
+            onChange={prefs.setSkipBack}
+          />
           <SkipIntervalRow
             label="Skip forward"
             value={prefs.skipForward}
@@ -94,7 +101,9 @@ function SkipIntervalRow({
 }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="text-[11px] tracking-[0.14em] text-white/40 uppercase">{label}</span>
+      <span className="text-[11px] tracking-[0.14em] text-white/40 uppercase">
+        {label}
+      </span>
       <div className="flex flex-wrap gap-1">
         {SKIP_INTERVAL_CHOICES.map((seconds) => (
           <button

@@ -7,58 +7,23 @@ import (
 	"time"
 )
 
-func TestImageCacheJobPriorityRanksItemPostersAboveEpisodes(t *testing.T) {
-	if got := imageCacheJobPriority(ImageCacheTargetItem, ImageCacheImagePoster); got != 100 {
-		t.Fatalf("item poster priority = %d, want 100", got)
-	}
-	if got := imageCacheJobPriority(ImageCacheTargetEpisode, ImageCacheImageStill); got != 20 {
-		t.Fatalf("episode still priority = %d, want 20", got)
-	}
-	if got := imageCacheJobPriority(ImageCacheTargetPerson, ImageCacheImageProfile); got != 10 {
-		t.Fatalf("person profile priority = %d, want 10", got)
-	}
-	if imageCacheJobPriority(ImageCacheTargetItem, ImageCacheImagePoster) <=
-		imageCacheJobPriority(ImageCacheTargetEpisode, ImageCacheImageStill) {
-		t.Fatal("item posters must outrank episode stills in ClaimDue")
-	}
-}
-
-func TestNormalizeImageCacheJobInputSetsPriority(t *testing.T) {
-	got, ok := normalizeImageCacheJobInput(EnqueueImageCacheJobInput{
-		TargetType:      ImageCacheTargetItem,
-		TargetContentID: "movie-1",
-		SourcePath:      "https://image.tmdb.org/t/p/original/x.jpg",
-		ImageType:       ImageCacheImagePoster,
-		ContentType:     "movie",
-	})
-	if !ok {
-		t.Fatal("expected remote poster to normalize")
-	}
-	if got.Priority != 100 {
-		t.Fatalf("priority = %d, want 100", got.Priority)
-	}
-}
-
 func TestImageCacheLeaseDurationIsBounded(t *testing.T) {
-	if imageCacheLeaseDuration != 2*time.Minute {
-		t.Fatalf("imageCacheLeaseDuration = %s, want 2m for fast restart reclaim", imageCacheLeaseDuration)
+	if imageCacheLeaseDuration != 15*time.Minute {
+		t.Fatalf("imageCacheLeaseDuration = %s, want 15m", imageCacheLeaseDuration)
 	}
 	body, err := os.ReadFile("image_cache_job_repo.go")
 	if err != nil {
 		t.Fatalf("read image_cache_job_repo.go: %v", err)
 	}
 	sql := string(body)
-	if strings.Contains(sql, "worker lease expired too many times") {
-		t.Fatal("stale running reclaim must soft-requeue without burning attempts")
+	if !strings.Contains(sql, "worker lease expired too many times") {
+		t.Fatal("expired running reclaim must park jobs that exhaust lease-expiry attempts")
 	}
 	if !strings.Contains(sql, "AND locked_at < NOW() - $1::interval") {
 		t.Fatal("stale running reclaim must key off locked_at lease expiry")
 	}
-	if !strings.Contains(sql, "ORDER BY priority DESC, next_attempt_at ASC, id ASC") {
-		t.Fatal("ClaimDue must order by priority so item posters outrank episode stills")
-	}
-	if !strings.Contains(sql, "WHEN 'item' THEN 0") {
-		t.Fatal("EnqueueExistingProviderArtwork must prioritize item targets over episodes")
+	if !strings.Contains(sql, "ORDER BY next_attempt_at ASC, id ASC") {
+		t.Fatal("ClaimDue must order by next_attempt_at so deferred jobs wait their turn")
 	}
 }
 
@@ -88,22 +53,61 @@ func TestImageCacheFailureRetryDelayDefersStableProviderFailures(t *testing.T) {
 	}
 }
 
-func TestImageCacheJobRediscoveryUsesNextAttemptAt(t *testing.T) {
-	body, err := os.ReadFile("image_cache_job_repo.go")
-	if err != nil {
-		t.Fatalf("read image_cache_job_repo.go: %v", err)
+func TestClassifyImageCacheFailureRetriesEmptyResolverURL(t *testing.T) {
+	// The resolver also returns an empty URL while a plugin is disabled,
+	// upgrading, or still loading, so this must never tombstone artwork on the
+	// first attempt.
+	got := classifyImageCacheFailure(0, imageCacheEmptyResolvedURLError)
+	if got.status != ImageCacheStatusQueued {
+		t.Fatalf("status = %q, want %q", got.status, ImageCacheStatusQueued)
 	}
-	sql := string(body)
-	if strings.Contains(sql, "metadata_image_cache_jobs.updated_at < NOW()") || strings.Contains(sql, "j.updated_at < NOW()") {
-		t.Fatal("failed image cache job rediscovery must use next_attempt_at, not updated_at age")
+	if got.attempt != 1 {
+		t.Fatalf("attempt = %d, want 1", got.attempt)
 	}
-	for _, want := range []string{
-		"metadata_image_cache_jobs.next_attempt_at <= NOW()",
-		"j.next_attempt_at <= NOW()",
-	} {
-		if !strings.Contains(sql, want) {
-			t.Fatalf("image cache job rediscovery missing %q", want)
-		}
+	if got.retryDelay != time.Minute {
+		t.Fatalf("retry delay = %s, want 1m", got.retryDelay)
+	}
+}
+
+func TestClassifyImageCacheFailureRetriesTransientError(t *testing.T) {
+	got := classifyImageCacheFailure(0, "temporary network error")
+	if got.status != ImageCacheStatusQueued {
+		t.Fatalf("status = %q, want %q", got.status, ImageCacheStatusQueued)
+	}
+	if got.attempt != 1 {
+		t.Fatalf("attempt = %d, want 1", got.attempt)
+	}
+	if got.retryDelay != time.Minute {
+		t.Fatalf("retry delay = %s, want 1m", got.retryDelay)
+	}
+}
+
+func TestClassifyImageCacheFailureParksExhaustedTransientErrorRecoverably(t *testing.T) {
+	got := classifyImageCacheFailure(imageCacheMaxAttempts-1, "temporary network error")
+	if got.status != ImageCacheStatusFailed {
+		t.Fatalf("status = %q, want %q", got.status, ImageCacheStatusFailed)
+	}
+	if got.attempt != imageCacheMaxAttempts {
+		t.Fatalf("attempt = %d, want %d", got.attempt, imageCacheMaxAttempts)
+	}
+	if got.retryDelay != imageCacheFailedCooldown {
+		t.Fatalf("retry delay = %s, want the recoverable cooldown %s", got.retryDelay, imageCacheFailedCooldown)
+	}
+	if got.retryDelay >= imageCachePermanentPark {
+		t.Fatal("an outage must not park a job past the recovery window")
+	}
+}
+
+func TestClassifyImageCacheFailureTombstonesExhaustedStableFailure(t *testing.T) {
+	got := classifyImageCacheFailure(
+		imageCacheMaxAttempts-1,
+		"imagecache: download https://example.invalid/missing.jpg: unexpected status 404",
+	)
+	if got.status != ImageCacheStatusFailed {
+		t.Fatalf("status = %q, want %q", got.status, ImageCacheStatusFailed)
+	}
+	if got.retryDelay != imageCachePermanentPark {
+		t.Fatalf("retry delay = %s, want the permanent park %s", got.retryDelay, imageCachePermanentPark)
 	}
 }
 

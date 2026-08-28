@@ -15,12 +15,15 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/access"
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/imagesize"
 	"github.com/prairie-server/prairie-server/internal/metadata"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/overlays"
+	"github.com/prairie-server/prairie-server/internal/ratelimit"
 	"github.com/prairie-server/prairie-server/internal/sections"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 	"github.com/prairie-server/prairie-server/internal/watchstate"
@@ -47,6 +50,33 @@ type MetadataRefreshRequester interface {
 	RequestStaleMetadataRefresh(ctx context.Context, targetType, contentID string) error
 }
 
+// TrailerRefreshRequester starts a viewer-triggered trailer fetch for one item
+// and reports whether it was queued, in cooldown, or disabled by every
+// containing library. Implemented by *metadata.MetadataService.
+type TrailerRefreshRequester interface {
+	RequestTrailersRefresh(ctx context.Context, contentID string) (metadata.TrailerRefreshOutcome, error)
+}
+
+// trailerItemAccess resolves and authorizes the item behind the trailer
+// refresh route. The concrete *catalog.ItemRepository satisfies it; the
+// interface keeps the handler testable without a database.
+type trailerItemAccess interface {
+	GetByID(ctx context.Context, contentID string) (*models.MediaItem, error)
+	EnsureAccessible(ctx context.Context, contentID string, filter catalog.AccessFilter) error
+}
+
+// trailerSeasonLookup and trailerEpisodeLookup resolve the content IDs that are
+// not media_items rows. Season and episode detail pages carry their own IDs, so
+// without these a client that asks for their trailers would get a 404 that
+// looks like a missing item instead of the contracted "wrong type" answer.
+type trailerSeasonLookup interface {
+	GetByID(ctx context.Context, contentID string) (*models.Season, error)
+}
+
+type trailerEpisodeLookup interface {
+	GetByID(ctx context.Context, contentID string) (*models.Episode, error)
+}
+
 type LocalWatchEventDispatcher interface {
 	HandleLocalWatchEvent(ctx context.Context, event watchsync.LocalWatchEvent) error
 }
@@ -63,6 +93,7 @@ type ItemsHandler struct {
 	seasonRepo               *catalog.SeasonRepository
 	ratingsRepo              ratingsRepository
 	catalogResolver          *catalog.CatalogResolver
+	playableTargets          *catalog.PlayableTargetResolver
 	fileRepo                 EpisodeFileProvider
 	detailSvc                *catalog.DetailService
 	storeProvider            userstore.UserStoreProvider
@@ -70,11 +101,17 @@ type ItemsHandler struct {
 	profileStaler            ProfileStaler
 	profileRefreshRequester  ProfileRefreshRequester
 	metadataRefreshRequester MetadataRefreshRequester
+	trailerRefreshRequester  TrailerRefreshRequester
+	trailerItemAccess        trailerItemAccess
+	trailerSeasonLookup      trailerSeasonLookup
+	trailerEpisodeLookup     trailerEpisodeLookup
+	trailerRefreshLimiter    ratelimit.RateLimiter
 	localWatchDispatcher     LocalWatchEventDispatcher
 	ebookProgressStore       EbookReaderProgressLister
 	ebookReadStateStore      EbookReadStateStore
 	EventsHub                *evt.Hub
 	UserRepo                 *auth.UserRepository
+	AccessGroups             access.GroupPolicyProvider // optional; resolves inherited library access when no scope is in context
 }
 
 // NewItemsHandler creates a new ItemsHandler.
@@ -98,8 +135,9 @@ func NewItemsHandler(
 		catalogResolver: catalog.NewCatalogResolver(browseRepo, itemRepo).
 			WithEpisodeRepository(episodeRepo).
 			WithUserStoreProvider(storeProvider),
-		fileRepo:      fileRepo,
-		storeProvider: storeProvider,
+		playableTargets: catalog.NewPlayableTargetResolverForItems(itemRepo),
+		fileRepo:        fileRepo,
+		storeProvider:   storeProvider,
 		watchState: watchstate.NewService(storeProvider).WithStableIdentityResolver(
 			watchstate.NewStableIdentityResolver(itemRepo, episodeRepo, providerIDRepo),
 		),
@@ -130,6 +168,47 @@ func (h *ItemsHandler) SetMetadataRefreshRequester(requester MetadataRefreshRequ
 	h.metadataRefreshRequester = requester
 }
 
+// SetTrailerRefreshLimiter wires the process's configured rate limiter into the
+// trailer fetch action, so the per-user budget is shared across instances when
+// the deployment runs the Redis backend. A private in-memory limiter would give
+// each instance its own allowance for the same user, and the per-item database
+// cooldown cannot make up the difference — it bounds one item, while this
+// budget bounds how many distinct items a user can start refreshes for.
+//
+// Call before SetTrailerRefreshRequester, which falls back to a private
+// in-memory limiter when none is set (single-instance deployments, and any
+// deployment with rate limiting turned off entirely).
+func (h *ItemsHandler) SetTrailerRefreshLimiter(limiter ratelimit.RateLimiter) {
+	if h == nil || limiter == nil {
+		return
+	}
+	h.trailerRefreshLimiter = limiter
+}
+
+// SetTrailerRefreshRequester wires the viewer-facing trailer fetch action.
+// Leaving it unset disables the route's behavior (503), so the router only
+// registers it when the metadata service is available.
+func (h *ItemsHandler) SetTrailerRefreshRequester(requester TrailerRefreshRequester) {
+	if h == nil {
+		return
+	}
+	h.trailerRefreshRequester = requester
+	if h.trailerRefreshLimiter == nil {
+		h.trailerRefreshLimiter = ratelimit.NewMemoryLimiter()
+	}
+	if h.trailerItemAccess == nil && h.itemRepo != nil {
+		h.trailerItemAccess = h.itemRepo
+	}
+	// Seasons and episodes are not media_items rows, so the route needs these
+	// to tell "this ID is an episode" from "no such content".
+	if h.trailerSeasonLookup == nil && h.seasonRepo != nil {
+		h.trailerSeasonLookup = h.seasonRepo
+	}
+	if h.trailerEpisodeLookup == nil && h.episodeRepo != nil {
+		h.trailerEpisodeLookup = h.episodeRepo
+	}
+}
+
 func (h *ItemsHandler) SetCatalogSearchProvider(provider catalog.CatalogSearchProvider) {
 	if h == nil || h.catalogResolver == nil || provider == nil {
 		return
@@ -151,7 +230,7 @@ func (h *ItemsHandler) maybeRequestStaleDetailMetadataRefresh(ctx context.Contex
 		return
 	}
 	switch detail.Type {
-	case itemTypeEpisode:
+	case "episode":
 		if h.episodeRepo == nil {
 			return
 		}
@@ -159,7 +238,7 @@ func (h *ItemsHandler) maybeRequestStaleDetailMetadataRefresh(ctx context.Contex
 		if err == nil {
 			h.maybeRequestStaleEpisodeMetadataRefresh(ctx, episode)
 		}
-	case itemTypeSeason:
+	case "season":
 		if h.episodeRepo == nil {
 			return
 		}
@@ -183,7 +262,7 @@ func (h *ItemsHandler) maybeRequestStaleEpisodeMetadataRefresh(ctx context.Conte
 		return
 	}
 	if metadata.EpisodeHasActionableMetadataDebt(episode, time.Now()) {
-		h.requestStaleMetadataRefresh(ctx, itemTypeEpisode, episode.ContentID)
+		h.requestStaleMetadataRefresh(ctx, "episode", episode.ContentID)
 	}
 }
 
@@ -194,7 +273,7 @@ func (h *ItemsHandler) maybeRequestStaleSeasonMetadataRefresh(ctx context.Contex
 	now := time.Now()
 	for _, episode := range episodes {
 		if metadata.EpisodeHasActionableMetadataDebt(episode, now) {
-			h.requestStaleMetadataRefresh(ctx, itemTypeSeason, seasonID)
+			h.requestStaleMetadataRefresh(ctx, "season", seasonID)
 			return
 		}
 	}
@@ -217,8 +296,10 @@ func (h *ItemsHandler) requestStaleMetadataRefresh(ctx context.Context, targetTy
 // itemListResponse is the shape of a single item in browse/search list responses.
 type itemListResponse struct {
 	ContentID         string                      `json:"content_id"`
+	PlayContentID     string                      `json:"play_content_id,omitempty"`
 	Type              string                      `json:"type"`
 	Title             string                      `json:"title"`
+	SeriesID          string                      `json:"series_id,omitempty"`
 	SeriesTitle       string                      `json:"series_title,omitempty"`
 	SeasonNumber      *int                        `json:"season_number,omitempty"`
 	EpisodeNumber     *int                        `json:"episode_number,omitempty"`
@@ -238,12 +319,8 @@ type itemListResponse struct {
 	OriginalLanguage  string                      `json:"original_language,omitempty"`
 	Overview          string                      `json:"overview,omitempty"`
 	PosterURL         string                      `json:"poster_url,omitempty"`
-	PosterAVIFURL     string                      `json:"poster_avif_url,omitempty"`
-	PosterPNGURL      string                      `json:"poster_png_url,omitempty"`
 	PosterThumbhash   string                      `json:"poster_thumbhash,omitempty"`
 	BackdropURL       string                      `json:"backdrop_url,omitempty"`
-	BackdropAVIFURL   string                      `json:"backdrop_avif_url,omitempty"`
-	BackdropPNGURL    string                      `json:"backdrop_png_url,omitempty"`
 	BackdropThumbhash string                      `json:"backdrop_thumbhash,omitempty"`
 	ReleaseDate       *string                     `json:"release_date,omitempty"`
 	LastAirDate       *string                     `json:"last_air_date,omitempty"`
@@ -272,8 +349,8 @@ type sortMetricsResponse struct {
 }
 
 type itemListImageURLs struct {
-	poster   artworkFormats
-	backdrop artworkFormats
+	posterURL   string
+	backdropURL string
 }
 
 // browseResponse is the paginated response for the /items endpoint.
@@ -295,6 +372,7 @@ type itemFiltersResponse struct {
 // seasonResponse is the shape of a season in API responses.
 type seasonResponse struct {
 	ContentID       string                  `json:"content_id"`
+	PlayContentID   string                  `json:"play_content_id,omitempty"`
 	SeasonNumber    int                     `json:"season_number"`
 	IsSpecials      bool                    `json:"is_specials,omitempty"`
 	Title           string                  `json:"title"`
@@ -409,7 +487,12 @@ func (h *ItemsHandler) HandleGetWatchDetail(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	detail, err := h.detailSvc.GetWatchDetail(r.Context(), id, h.accessFilter(r))
+	filter, ok := h.accessFilterOrError(w, r)
+	if !ok {
+		return
+	}
+
+	detail, err := h.detailSvc.GetWatchDetail(r.Context(), id, filter)
 	if err != nil {
 		switch {
 		case catalog.IsWatchTargetNotPlayable(err):
@@ -430,6 +513,242 @@ func (h *ItemsHandler) HandleGetWatchDetail(w http.ResponseWriter, r *http.Reque
 	}
 
 	writeJSON(w, http.StatusOK, detail)
+}
+
+// trailerRefreshRate bounds how often one user may trigger trailer fetches
+// across all items. The per-item cooldown enforced by the metadata service is
+// the real budget; this only keeps a misbehaving client from hammering the
+// endpoint (same shape as personRefreshRate).
+var trailerRefreshRate = ratelimit.Rate{
+	RequestsPerSecond: 10,
+	RequestsPerMinute: 10,
+	Burst:             10,
+}
+
+// trailerRefreshLimiterKey namespaces this action's per-user counter. The
+// limiter behind it is normally the process-wide one shared with the rate-limit
+// middleware, whose keys are namespaced the same way ("ip:", "key:").
+func trailerRefreshLimiterKey(userID int) string {
+	return "trailers:" + strconv.Itoa(userID)
+}
+
+// trailerRefreshResponse is the body of the trailer refresh endpoint.
+// NextAllowedAt is present only for the cooldown status.
+type trailerRefreshResponse struct {
+	Status        string `json:"status"`
+	NextAllowedAt string `json:"next_allowed_at,omitempty"`
+}
+
+// trailerRefreshCapabilityResponse tells a client whether this server offers
+// the viewer-facing trailer fetch, following the per-subsystem convention
+// (/events/capability, /playback/capability, /ebooks/capability).
+//
+// Without it the only signal is a 404 from the POST, which a client cannot
+// tell apart from a missing item — and the route is registered conditionally
+// (it needs the metadata service to implement the optional interface), so
+// "this build has the feature" is not the same question as "this deployment
+// serves it". A client that finds refresh false should hide the action rather
+// than offer a button that cannot work.
+type trailerRefreshCapabilityResponse struct {
+	SchemaVersion int `json:"schema_version"`
+	// Refresh reports that POST /items/{id}/trailers/refresh is served here.
+	Refresh bool `json:"refresh"`
+	// CooldownSeconds is the per-item window between viewer-triggered
+	// refreshes, so a client can explain the wait without having received a
+	// cooldown response first.
+	CooldownSeconds int `json:"cooldown_seconds"`
+	// Statuses is every value the refresh endpoint's status field may take.
+	Statuses []string `json:"statuses"`
+	// SupportedTypes is the item types the action applies to; nothing else
+	// carries remote videos, so clients should not show the action elsewhere.
+	SupportedTypes []string `json:"supported_types"`
+}
+
+// HandleTrailerRefreshCapability reports whether the trailer refresh action is
+// available. GET /api/v1/items/trailers/capability.
+//
+// It answers even when the feature is unwired, because "refresh": false is the
+// answer in that case; the router registers it unconditionally so a client
+// never has to interpret a 404 on the probe itself.
+func (h *ItemsHandler) HandleTrailerRefreshCapability(w http.ResponseWriter, _ *http.Request) {
+	enabled := h != nil && h.trailerRefreshRequester != nil && h.trailerItemAccess != nil
+	resp := trailerRefreshCapabilityResponse{
+		SchemaVersion:  1,
+		Refresh:        enabled,
+		Statuses:       []string{},
+		SupportedTypes: []string{},
+	}
+	if enabled {
+		resp.CooldownSeconds = int(metadata.TrailerRefreshCooldown / time.Second)
+		resp.Statuses = []string{
+			metadata.TrailerRefreshStatusQueued,
+			metadata.TrailerRefreshStatusCooldown,
+			metadata.TrailerRefreshStatusDisabled,
+		}
+		resp.SupportedTypes = []string{itemTypeMovie, itemTypeSeries}
+	}
+	writeJSON(w, http.StatusOK, resp)
+}
+
+// HandleRequestTrailersRefresh handles POST /api/v1/items/{id}/trailers/refresh:
+// any authenticated viewer with access to a movie or series may ask the server
+// to fetch its remote trailers, at most once per item per cooldown window.
+//
+// "cooldown" and "disabled" are expected client-rendered states, not errors,
+// so they answer 200; 429 stays reserved for the per-user limiter. The access
+// check runs before the metadata service is called so a caller who cannot see
+// the item can never consume its cooldown slot. A season or episode ID resolves
+// through its own table to 400 unsupported-type; only genuinely unknown content
+// answers 404.
+func (h *ItemsHandler) HandleRequestTrailersRefresh(w http.ResponseWriter, r *http.Request) {
+	if h == nil || h.trailerRefreshRequester == nil || h.trailerItemAccess == nil {
+		writeError(w, http.StatusServiceUnavailable, "unavailable", "Trailer refresh is not configured")
+		return
+	}
+
+	contentID := strings.TrimSpace(chi.URLParam(r, "id"))
+	if contentID == "" {
+		writeError(w, http.StatusBadRequest, "bad_request", "Item ID is required")
+		return
+	}
+
+	userID := apimw.GetUserID(r.Context())
+	if userID == 0 {
+		writeError(w, http.StatusUnauthorized, "unauthorized", "Authentication required")
+		return
+	}
+
+	if h.trailerRefreshLimiter != nil {
+		// The limiter may be the process-wide one the middleware uses, so the
+		// key is namespaced: an unprefixed user id would share a counter with
+		// whatever else keys on the same string.
+		result := h.trailerRefreshLimiter.Allow(r.Context(), trailerRefreshLimiterKey(userID), trailerRefreshRate)
+		if !result.Allowed {
+			if result.RetryAfter > 0 {
+				w.Header().Set("Retry-After", strconv.Itoa(max(1, int(result.RetryAfter.Seconds()))))
+			}
+			writeError(w, http.StatusTooManyRequests, "rate_limited", "Too many trailer refresh requests")
+			return
+		}
+	}
+
+	target, err := h.resolveTrailerRefreshTarget(r.Context(), contentID)
+	if err != nil {
+		if errors.Is(err, catalog.ErrItemNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "Item not found")
+			return
+		}
+		slog.ErrorContext(r.Context(), "trailers: failed to look up item", "component", "api",
+			"content_id", contentID, "error", err)
+		writeError(w, http.StatusInternalServerError, "internal_error", "Failed to authorize item")
+		return
+	}
+	// Authorize against the series for a season or episode ID, exactly as the
+	// on-view translation route does, so an unsupported-type answer never
+	// leaks the existence of content the caller cannot see.
+	filter, ok := h.accessFilterOrError(w, r)
+	if !ok {
+		return
+	}
+	if err := h.trailerItemAccess.EnsureAccessible(r.Context(), target.accessContentID, filter); err != nil {
+		if errors.Is(err, catalog.ErrItemNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "Item not found")
+			return
+		}
+		slog.ErrorContext(r.Context(), "trailers: failed to authorize item", "component", "api",
+			"content_id", contentID, "error", err)
+		writeError(w, http.StatusInternalServerError, "internal_error", "Failed to authorize item")
+		return
+	}
+
+	// Only movie and series detail responses carry videos/extras, so anything
+	// else — another media_items type, or a season/episode ID, which is not a
+	// media_items row at all — is a client bug rather than an empty result.
+	if !target.supportsTrailers {
+		writeError(w, http.StatusBadRequest, "unsupported_type", "Trailers are only available for movies and series")
+		return
+	}
+
+	outcome, err := h.trailerRefreshRequester.RequestTrailersRefresh(r.Context(), contentID)
+	if err != nil {
+		if errors.Is(err, catalog.ErrItemNotFound) {
+			writeError(w, http.StatusNotFound, "not_found", "Item not found")
+			return
+		}
+		slog.ErrorContext(r.Context(), "trailers: failed to request refresh", "component", "api",
+			"content_id", contentID, "error", err)
+		writeError(w, http.StatusInternalServerError, "internal_error", "Failed to request trailers")
+		return
+	}
+
+	switch outcome.Status {
+	case metadata.TrailerRefreshStatusQueued:
+		writeJSON(w, http.StatusAccepted, trailerRefreshResponse{Status: outcome.Status})
+	case metadata.TrailerRefreshStatusCooldown:
+		resp := trailerRefreshResponse{Status: outcome.Status}
+		if outcome.NextAllowedAt != nil {
+			resp.NextAllowedAt = outcome.NextAllowedAt.UTC().Format(time.RFC3339)
+		}
+		writeJSON(w, http.StatusOK, resp)
+	case metadata.TrailerRefreshStatusDisabled:
+		writeJSON(w, http.StatusOK, trailerRefreshResponse{Status: outcome.Status})
+	default:
+		slog.ErrorContext(r.Context(), "trailers: unexpected refresh outcome", "component", "api",
+			"content_id", contentID, "status", outcome.Status)
+		writeError(w, http.StatusInternalServerError, "internal_error", "Failed to request trailers")
+	}
+}
+
+// trailerRefreshTarget is what a content ID on the trailer refresh route turned
+// out to be: whether trailers apply to it at all, and which item ID authorizes
+// it (a season or episode is authorized through its series).
+type trailerRefreshTarget struct {
+	supportsTrailers bool
+	accessContentID  string
+}
+
+// resolveTrailerRefreshTarget identifies the content behind an ID the same way
+// the on-view translation route does. Seasons and episodes live in their own
+// tables, so a media_items miss is not proof the content is absent — falling
+// through to those lookups is what lets a real episode ID answer 400
+// unsupported-type instead of a misleading 404.
+func (h *ItemsHandler) resolveTrailerRefreshTarget(ctx context.Context, contentID string) (trailerRefreshTarget, error) {
+	item, err := h.trailerItemAccess.GetByID(ctx, contentID)
+	switch {
+	case err == nil && item != nil:
+		return trailerRefreshTarget{
+			supportsTrailers: item.Type == itemTypeMovie || item.Type == itemTypeSeries,
+			accessContentID:  contentID,
+		}, nil
+	case err == nil, errors.Is(err, catalog.ErrItemNotFound):
+		// Fall through to the season and episode lookups.
+	default:
+		return trailerRefreshTarget{}, err
+	}
+
+	if h.trailerSeasonLookup != nil {
+		season, err := h.trailerSeasonLookup.GetByID(ctx, contentID)
+		switch {
+		case err == nil && season != nil:
+			return trailerRefreshTarget{accessContentID: season.SeriesID}, nil
+		case err == nil, errors.Is(err, catalog.ErrSeasonNotFound):
+		default:
+			return trailerRefreshTarget{}, err
+		}
+	}
+
+	if h.trailerEpisodeLookup != nil {
+		episode, err := h.trailerEpisodeLookup.GetByID(ctx, contentID)
+		switch {
+		case err == nil && episode != nil:
+			return trailerRefreshTarget{accessContentID: episode.SeriesID}, nil
+		case err == nil, errors.Is(err, catalog.ErrEpisodeNotFound):
+		default:
+			return trailerRefreshTarget{}, err
+		}
+	}
+
+	return trailerRefreshTarget{}, catalog.ErrItemNotFound
 }
 
 // HandleMarkWatched handles POST /watched/{id}.
@@ -480,7 +799,10 @@ func (h *ItemsHandler) handleSetWatchedState(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	filter := h.accessFilter(r)
+	filter, ok := h.accessFilterOrError(w, r)
+	if !ok {
+		return
+	}
 	targetType, targets, err := h.resolveWatchedTargets(r.Context(), id, filter)
 	if err != nil {
 		switch {
@@ -493,7 +815,7 @@ func (h *ItemsHandler) handleSetWatchedState(w http.ResponseWriter, r *http.Requ
 	}
 
 	switch {
-	case targetType == itemTypeEbook:
+	case targetType == "ebook":
 		// Ebook read state lives in ebook_reader_progress, not in
 		// user_watch_progress/user_watch_history; watch providers do not sync
 		// books, so no local watch event is dispatched.
@@ -593,7 +915,12 @@ func (h *ItemsHandler) writeCatalogBrowseResponse(w http.ResponseWriter, r *http
 		return true
 	}
 
-	result, err := h.catalogResolver.Resolve(r.Context(), req, h.accessFilter(r))
+	filter, ok := h.accessFilterOrError(w, r)
+	if !ok {
+		return true
+	}
+
+	result, err := h.catalogResolver.Resolve(r.Context(), req, filter)
 	if err != nil {
 		if errors.Is(err, catalog.ErrInvalidCatalogRequest) {
 			writeError(w, http.StatusBadRequest, "bad_request", err.Error())
@@ -607,11 +934,20 @@ func (h *ItemsHandler) writeCatalogBrowseResponse(w http.ResponseWriter, r *http
 		return true
 	}
 
-	overlaySummaries := h.listOverlaySummaries(r.Context(), result.Items, h.accessFilter(r))
+	overlaySummaries := h.listOverlaySummaries(r.Context(), result.Items, filter)
 	userStates := h.listItemUserStates(r, result.Items)
+	playTargets := h.listPlayableTargets(r, result.Items, req.Query.LibraryIDs, filter)
+	episodeMetadata := h.listEpisodeBrowseMetadata(r.Context(), result.Items)
 	items := make([]itemListResponse, 0, len(result.Items))
 	for _, item := range result.Items {
-		items = append(items, h.toItemListResponseWithOverlay(r, item, overlaySummaries[item.ContentID], userStates[item.ContentID]))
+		resp := h.toItemListResponseWithOverlay(r, item, overlaySummaries[item.ContentID], userStates[item.ContentID], filter.ImageSize)
+		// The resolver validated the item's own hint against this profile, so
+		// its answer replaces the unvalidated one carried by the item.
+		resp.PlayContentID = playTargets[playableTargetKeyForItem(item)]
+		if meta, ok := episodeMetadata[item.ContentID]; ok {
+			applyEpisodeBrowseMetadata(&resp, meta)
+		}
+		items = append(items, resp)
 	}
 
 	writeJSON(w, http.StatusOK, browseResponse{
@@ -623,6 +959,97 @@ func (h *ItemsHandler) writeCatalogBrowseResponse(w http.ResponseWriter, r *http
 	return true
 }
 
+func (h *ItemsHandler) listPlayableTargets(r *http.Request, items []*models.MediaItem, libraryIDs []int, filter catalog.AccessFilter) map[string]string {
+	inputs := make([]catalog.PlayableTargetInput, 0, len(items))
+	for _, item := range items {
+		if item == nil || item.ContentID == "" {
+			continue
+		}
+		inputs = append(inputs, playableTargetInputForItem(item))
+	}
+	return h.resolvePlayableTargetInputs(r, inputs, libraryIDs, filter)
+}
+
+// playableTargetInputForItem builds the resolver input for one displayed card.
+// Response rows find their own target with playableTargetKeyForItem, which
+// keys off the same fields — including the anchor hint, so a series that
+// appears on two recently-added scan-run event cards resolves each card
+// separately instead of both taking the first card's answer.
+func playableTargetInputForItem(item *models.MediaItem) catalog.PlayableTargetInput {
+	return catalog.PlayableTargetInput{
+		ContentID: item.ContentID,
+		Type:      item.Type,
+		// The item's own hint is profile-independent and cached across
+		// profiles, so it is routed through the resolver for validation
+		// instead of being emitted directly.
+		PreferredContentID: item.PlayContentID,
+	}
+}
+
+func playableTargetKeyForItem(item *models.MediaItem) string {
+	return playableTargetInputForItem(item).Key()
+}
+
+func (h *ItemsHandler) resolvePlayableTargetInputs(r *http.Request, inputs []catalog.PlayableTargetInput, libraryIDs []int, filter catalog.AccessFilter) map[string]string {
+	if h == nil || h.playableTargets == nil || len(inputs) == 0 {
+		return map[string]string{}
+	}
+	store, _, _ := h.userStoreForRequest(r)
+	targets, err := h.playableTargets.Resolve(r.Context(), catalog.PlayableTargetQuery{
+		UserID:        apimw.GetUserID(r.Context()),
+		ProfileID:     requestProfileID(r),
+		LibraryIDs:    libraryIDs,
+		Access:        filter,
+		Items:         inputs,
+		ProgressStore: store,
+	})
+	if err != nil {
+		slog.WarnContext(r.Context(), "resolving playable poster targets", "component", "api", "error", err)
+		return map[string]string{}
+	}
+	return targets
+}
+
+func (h *ItemsHandler) enrichSeasonPlayTargets(r *http.Request, seriesID string, seasons []seasonResponse) {
+	inputs := make([]catalog.PlayableTargetInput, 0, len(seasons))
+	for i := range seasons {
+		inputs = append(inputs, seasonPlayableTargetInput(seriesID, &seasons[i]))
+	}
+	filter, err := h.accessFilter(r)
+	if err != nil {
+		return
+	}
+	targets := h.resolvePlayableTargetInputs(r, inputs, nil, filter)
+	for i := range inputs {
+		seasons[i].PlayContentID = targets[inputs[i].Key()]
+	}
+}
+
+// resolveSeasonPlayTarget is the single-season counterpart of
+// enrichSeasonPlayTargets, for the endpoints that return one season.
+func (h *ItemsHandler) resolveSeasonPlayTarget(r *http.Request, seriesID string, season *seasonResponse) {
+	if season == nil {
+		return
+	}
+	filter, err := h.accessFilter(r)
+	if err != nil {
+		return
+	}
+	inputs := []catalog.PlayableTargetInput{seasonPlayableTargetInput(seriesID, season)}
+	targets := h.resolvePlayableTargetInputs(r, inputs, nil, filter)
+	season.PlayContentID = targets[inputs[0].Key()]
+}
+
+func seasonPlayableTargetInput(seriesID string, season *seasonResponse) catalog.PlayableTargetInput {
+	seasonNumber := season.SeasonNumber
+	return catalog.PlayableTargetInput{
+		ContentID:    season.ContentID,
+		Type:         "season",
+		SeriesID:     seriesID,
+		SeasonNumber: &seasonNumber,
+	}
+}
+
 func (h *ItemsHandler) writeCatalogFiltersResponse(w http.ResponseWriter, r *http.Request, values map[string][]string) bool {
 	req, err := catalog.ParseCatalogRequest(values)
 	if err != nil {
@@ -630,10 +1057,15 @@ func (h *ItemsHandler) writeCatalogFiltersResponse(w http.ResponseWriter, r *htt
 		return true
 	}
 
+	filter, ok := h.accessFilterOrError(w, r)
+	if !ok {
+		return true
+	}
+
 	filters, err := h.catalogResolver.ListFiltersWithOptions(
 		r.Context(),
 		req,
-		h.accessFilter(r),
+		filter,
 		catalog.CatalogFilterOptions{IncludeTechnical: false},
 	)
 	if err != nil {
@@ -655,44 +1087,29 @@ func (h *ItemsHandler) writeCatalogFiltersResponse(w http.ResponseWriter, r *htt
 	return true
 }
 
-// toItemListResponse converts a MediaItem to an itemListResponse with presigned URLs.
-func (h *ItemsHandler) toItemListResponse(r *http.Request, item *models.MediaItem) itemListResponse {
-	return h.toItemListResponseWithOverlay(r, item, nil, nil)
+// toItemListResponse converts a MediaItem to an itemListResponse with presigned
+// URLs at the size the caller's request asked for.
+func (h *ItemsHandler) toItemListResponse(r *http.Request, item *models.MediaItem, size imagesize.Size) itemListResponse {
+	return h.toItemListResponseWithOverlay(r, item, nil, nil, size)
 }
 
-func (h *ItemsHandler) toItemListResponseWithOverlay(r *http.Request, item *models.MediaItem, overlaySummary *models.OverlaySummary, userState *itemUserStateResponse) itemListResponse {
+func (h *ItemsHandler) toItemListResponseWithOverlay(r *http.Request, item *models.MediaItem, overlaySummary *models.OverlaySummary, userState *itemUserStateResponse, size imagesize.Size) itemListResponse {
 	if h.detailSvc != nil {
-		if localized, err := h.detailSvc.LocalizeItemModel(r.Context(), item, h.accessFilter(r)); err == nil && localized != nil {
+		if localized, err := h.detailSvc.LocalizeItemModel(r.Context(), item, h.accessFilterOrDeny(r)); err == nil && localized != nil {
 			item = localized
 		}
 	}
 	resp := itemListResponseShell(item, overlaySummary, userState)
-	if h.detailSvc != nil {
-		posterPath := cardThumbnailPath(item.PosterPath)
-		backdropPath := cardThumbnailPath(item.BackdropPath)
-		paths := make([]string, 0, 6)
-		seen := make(map[string]struct{})
-		paths = appendArtworkFormatPaths(paths, seen, posterPath)
-		paths = appendArtworkFormatPaths(paths, seen, backdropPath)
-		resolved := h.detailSvc.PresignURLsWithExpiry(r.Context(), paths, "card")
-		poster := artworkFormatsFromResolved(resolved, posterPath)
-		backdrop := artworkFormatsFromResolved(resolved, backdropPath)
-		resp.PosterURL = poster.URL
-		resp.PosterAVIFURL = poster.AVIFURL
-		resp.PosterPNGURL = poster.PNGURL
-		resp.BackdropURL = backdrop.URL
-		resp.BackdropAVIFURL = backdrop.AVIFURL
-		resp.BackdropPNGURL = backdrop.PNGURL
-		return resp
-	}
-	resp.PosterURL = h.presignURL(r, cardThumbnailPath(item.PosterPath), "card")
-	resp.BackdropURL = h.presignURL(r, cardThumbnailPath(item.BackdropPath), "card")
+	hint := requestVariantHint("card", size)
+	resp.PosterURL = h.presignURL(r, sizedCardPath(item.PosterPath, artworkkey.ImagePoster, size), hint)
+	resp.BackdropURL = h.presignURL(r, sizedCardBackdropPath(item.BackdropPath, size), hint)
 	return resp
 }
 
 func itemListResponseShell(item *models.MediaItem, overlaySummary *models.OverlaySummary, userState *itemUserStateResponse) itemListResponse {
 	resp := itemListResponse{
 		ContentID:         item.ContentID,
+		PlayContentID:     item.PlayContentID,
 		Type:              item.Type,
 		Title:             item.Title,
 		Year:              item.Year,
@@ -742,7 +1159,7 @@ func (h *ItemsHandler) localizeItemListModels(ctx context.Context, items []*mode
 	return localized
 }
 
-func (h *ItemsHandler) itemListCardImageURLs(ctx context.Context, items []*models.MediaItem) map[string]itemListImageURLs {
+func (h *ItemsHandler) itemListCardImageURLs(ctx context.Context, items []*models.MediaItem, size imagesize.Size) map[string]itemListImageURLs {
 	urls := make(map[string]itemListImageURLs, len(items))
 	if h == nil || h.detailSvc == nil || len(items) == 0 {
 		return urls
@@ -757,6 +1174,16 @@ func (h *ItemsHandler) itemListCardImageURLs(ctx context.Context, items []*model
 	pending := make([]pendingImages, 0, len(items))
 	paths := make([]string, 0, len(items)*2)
 	seenPaths := make(map[string]struct{}, len(items)*2)
+	addPath := func(path string) {
+		if path == "" || path == "-" {
+			return
+		}
+		if _, ok := seenPaths[path]; ok {
+			return
+		}
+		seenPaths[path] = struct{}{}
+		paths = append(paths, path)
+	}
 
 	for _, item := range items {
 		if item == nil || item.ContentID == "" {
@@ -764,62 +1191,53 @@ func (h *ItemsHandler) itemListCardImageURLs(ctx context.Context, items []*model
 		}
 		images := pendingImages{
 			contentID:    item.ContentID,
-			posterPath:   cardThumbnailPath(item.PosterPath),
-			backdropPath: cardThumbnailPath(item.BackdropPath),
+			posterPath:   sizedCardPath(item.PosterPath, artworkkey.ImagePoster, size),
+			backdropPath: sizedCardBackdropPath(item.BackdropPath, size),
 		}
 		pending = append(pending, images)
-		paths = appendArtworkFormatPaths(paths, seenPaths, images.posterPath)
-		paths = appendArtworkFormatPaths(paths, seenPaths, images.backdropPath)
+		addPath(images.posterPath)
+		addPath(images.backdropPath)
 	}
 
-	resolved := h.detailSvc.PresignURLsWithExpiry(ctx, paths, "card")
+	resolved := h.detailSvc.PresignURLsWithExpiry(ctx, paths, requestVariantHint("card", size))
 	for _, images := range pending {
 		urls[images.contentID] = itemListImageURLs{
-			poster:   artworkFormatsFromResolved(resolved, images.posterPath),
-			backdrop: artworkFormatsFromResolved(resolved, images.backdropPath),
+			posterURL:   resolved[images.posterPath].URL,
+			backdropURL: resolved[images.backdropPath].URL,
 		}
 	}
 	return urls
 }
 
-func (h *ItemsHandler) listEpisodeBrowseMetadata(
-	ctx context.Context,
-	items []*models.MediaItem,
-) map[string]struct {
+type episodeBrowseMetadata struct {
+	SeriesID      string
 	SeriesTitle   string
 	SeasonNumber  *int
 	EpisodeNumber *int
-} {
+}
+
+func (h *ItemsHandler) listEpisodeBrowseMetadata(
+	ctx context.Context,
+	items []*models.MediaItem,
+) map[string]episodeBrowseMetadata {
 	if h == nil || h.episodeRepo == nil {
-		return map[string]struct {
-			SeriesTitle   string
-			SeasonNumber  *int
-			EpisodeNumber *int
-		}{}
+		return map[string]episodeBrowseMetadata{}
 	}
 
 	episodeIDs := make([]string, 0)
 	for _, item := range items {
-		if item == nil || item.Type != itemTypeEpisode || strings.TrimSpace(item.ContentID) == "" {
+		if item == nil || item.Type != "episode" || strings.TrimSpace(item.ContentID) == "" {
 			continue
 		}
 		episodeIDs = append(episodeIDs, item.ContentID)
 	}
 	if len(episodeIDs) == 0 {
-		return map[string]struct {
-			SeriesTitle   string
-			SeasonNumber  *int
-			EpisodeNumber *int
-		}{}
+		return map[string]episodeBrowseMetadata{}
 	}
 
 	episodes, err := h.episodeRepo.GetByIDs(ctx, episodeIDs)
 	if err != nil || len(episodes) == 0 {
-		return map[string]struct {
-			SeriesTitle   string
-			SeasonNumber  *int
-			EpisodeNumber *int
-		}{}
+		return map[string]episodeBrowseMetadata{}
 	}
 
 	seriesIDs := make([]string, 0, len(episodes))
@@ -847,22 +1265,15 @@ func (h *ItemsHandler) listEpisodeBrowseMetadata(
 		}
 	}
 
-	result := make(map[string]struct {
-		SeriesTitle   string
-		SeasonNumber  *int
-		EpisodeNumber *int
-	}, len(episodes))
+	result := make(map[string]episodeBrowseMetadata, len(episodes))
 	for _, episode := range episodes {
 		if episode == nil {
 			continue
 		}
 		seasonNumber := episode.SeasonNumber
 		episodeNumber := episode.EpisodeNumber
-		result[episode.ContentID] = struct {
-			SeriesTitle   string
-			SeasonNumber  *int
-			EpisodeNumber *int
-		}{
+		result[episode.ContentID] = episodeBrowseMetadata{
+			SeriesID:      episode.SeriesID,
 			SeriesTitle:   seriesTitles[episode.SeriesID],
 			SeasonNumber:  &seasonNumber,
 			EpisodeNumber: &episodeNumber,
@@ -886,11 +1297,9 @@ func (h *ItemsHandler) listItemUserStates(r *http.Request, items []*models.Media
 	return states
 }
 
-// toEpisodeResponse converts an Episode model to an API response.
-
 // episodeResponseShell maps an already-localized episode onto the response
 // shape, returning the card-variant still path for the caller to presign.
-func episodeResponseShell(ep *models.Episode, fallback episodeImageFallback) (episodeResponse, string) {
+func episodeResponseShell(ep *models.Episode, fallback episodeImageFallback, size imagesize.Size) (episodeResponse, string) {
 	stillPath := ep.StillPath
 	stillThumbhash := ep.StillThumbhash
 	if strings.TrimSpace(stillPath) == "" && strings.TrimSpace(fallback.Path) != "" {
@@ -914,7 +1323,7 @@ func episodeResponseShell(ep *models.Episode, fallback episodeImageFallback) (ep
 		resp.AirDate = ep.AirDate.Format("2006-01-02")
 	}
 
-	return resp, cardThumbnailPath(stillPath)
+	return resp, sizedCardPath(stillPath, artworkkey.ImageStill, size)
 }
 
 // buildEpisodeResponses converts episodes to API responses using batched
@@ -922,7 +1331,8 @@ func episodeResponseShell(ep *models.Episode, fallback episodeImageFallback) (ep
 // each resolve in one round-trip for the whole list instead of per episode.
 func (h *ItemsHandler) buildEpisodeResponses(r *http.Request, episodes []*models.Episode) []episodeResponse {
 	ctx := r.Context()
-	filter := h.accessFilter(r)
+	filter := h.accessFilterOrDeny(r)
+	size := filter.ImageSize
 
 	if h.detailSvc != nil {
 		if localized, err := h.detailSvc.LocalizeEpisodeModels(ctx, episodes, filter); err == nil && len(localized) == len(episodes) {
@@ -947,14 +1357,14 @@ func (h *ItemsHandler) buildEpisodeResponses(r *http.Request, episodes []*models
 		if ep == nil {
 			continue
 		}
-		shell, stillPath := episodeResponseShell(ep, fallbacks[ep.SeriesID])
+		shell, stillPath := episodeResponseShell(ep, fallbacks[ep.SeriesID], size)
 		resp = append(resp, shell)
 		stillPaths = append(stillPaths, stillPath)
 	}
 
 	stillURLs := map[string]catalog.ResolvedImageURL{}
 	if h.detailSvc != nil {
-		stillURLs = h.detailSvc.PresignURLsWithExpiry(ctx, stillPaths, "card")
+		stillURLs = h.detailSvc.PresignURLsWithExpiry(ctx, stillPaths, requestVariantHint("card", size))
 	}
 	for i := range resp {
 		resp[i].StillURL = stillURLs[stillPaths[i]].URL
@@ -1114,7 +1524,7 @@ func (h *ItemsHandler) listSortMetrics(
 		}
 	case "progress", "date_viewed", "plays":
 		h.listUserSortMetrics(ctx, items, sortField, store, userID, profileID, metrics)
-	case "author", "narrator", itemTypeSeries:
+	case "author", "narrator", "series":
 		h.listAudiobookSortMetrics(ctx, items, sortField, metrics)
 	}
 	return metrics
@@ -1140,7 +1550,7 @@ func (h *ItemsHandler) listAudiobookSortMetrics(
 		query = audiobookPersonSortMetricQuery(int(models.PersonKindAuthor))
 	case "narrator":
 		query = audiobookPersonSortMetricQuery(int(models.PersonKindNarrator))
-	case itemTypeSeries:
+	case "series":
 		query = `
 			SELECT target.content_id, BTRIM(s.series_name) AS value
 			FROM unnest($1::text[]) WITH ORDINALITY AS target(content_id, ord)
@@ -1175,7 +1585,7 @@ func (h *ItemsHandler) listAudiobookSortMetrics(
 			resp.Author = value
 		case "narrator":
 			resp.Narrator = value
-		case itemTypeSeries:
+		case "series":
 			resp.SeriesName = value
 		}
 	}
@@ -1429,7 +1839,7 @@ func collectBrowseFileIDs(items []*models.MediaItem, contentIDs *[]string, episo
 			continue
 		}
 		seen[item.ContentID] = struct{}{}
-		if item.Type == itemTypeEpisode {
+		if item.Type == "episode" {
 			*episodeIDs = append(*episodeIDs, item.ContentID)
 		} else {
 			*contentIDs = append(*contentIDs, item.ContentID)
@@ -1458,21 +1868,32 @@ func maxFileBitrate(files []*models.MediaFile) int {
 	return maxBitrate
 }
 
-// toSeasonResponse converts a Season model to an API response.
-
 func (h *ItemsHandler) toSeasonResponseFromEpisodes(
 	r *http.Request,
 	seriesID string,
 	s *models.Season,
 	episodes []*models.Episode,
 	userData *catalog.SeasonUserData,
+	size imagesize.Size,
 ) seasonResponse {
 	if h.detailSvc != nil {
-		if localized, err := h.detailSvc.LocalizeSeasonModel(r.Context(), s, h.accessFilter(r)); err == nil && localized != nil {
+		if localized, err := h.detailSvc.LocalizeSeasonModel(r.Context(), s, h.accessFilterOrDeny(r)); err == nil && localized != nil {
 			s = localized
 		}
 	}
+	return h.seasonResponseFromEpisodes(r, s, episodes, userData, size)
+}
 
+// seasonResponseFromEpisodes maps a season that has already been localized.
+// List endpoints use this after LocalizeSeasonModels so they do not repeat the
+// localization query for every row.
+func (h *ItemsHandler) seasonResponseFromEpisodes(
+	r *http.Request,
+	s *models.Season,
+	episodes []*models.Episode,
+	userData *catalog.SeasonUserData,
+	size imagesize.Size,
+) seasonResponse {
 	resp := seasonResponse{
 		ContentID:       s.ContentID,
 		SeasonNumber:    s.SeasonNumber,
@@ -1485,14 +1906,14 @@ func (h *ItemsHandler) toSeasonResponseFromEpisodes(
 	if s.AirDate != nil {
 		resp.AirDate = s.AirDate.Format("2006-01-02")
 	}
-	resp.PosterURL = h.presignURL(r, featuredPosterPath(s.PosterPath), "featured")
+	resp.PosterURL = h.presignURL(r, sizedPosterPath(s.PosterPath, size), requestVariantHint("featured", size))
 	resp.UserData = userData
 
 	return resp
 }
 
 func (h *ItemsHandler) getLeafUserData(r *http.Request, contentID string, itemType ...string) *catalog.SeasonUserData {
-	if len(itemType) > 0 && itemType[0] == itemTypeEbook {
+	if len(itemType) > 0 && itemType[0] == "ebook" {
 		return h.getEbookLeafUserData(r, contentID)
 	}
 
@@ -1791,7 +2212,12 @@ func filterSortClause(sort, order string) string {
 	}
 }
 
-func (h *ItemsHandler) accessFilter(r *http.Request) catalog.AccessFilter {
+// accessFilter resolves the viewer's catalog access filter. It returns an
+// error when the account's policy cannot be resolved; callers must fail closed
+// rather than fall back to an unrestricted filter (see accessFilterOrError and
+// accessFilterOrDeny).
+func (h *ItemsHandler) accessFilter(r *http.Request) (catalog.AccessFilter, error) {
+	deviceID := deviceMetadataFromRequest(r).DeviceID
 	selectedFileID := 0
 	if fileIDRaw := strings.TrimSpace(r.URL.Query().Get("fileId")); fileIDRaw != "" {
 		if fileID, err := strconv.Atoi(fileIDRaw); err == nil && fileID > 0 {
@@ -1808,16 +2234,18 @@ func (h *ItemsHandler) accessFilter(r *http.Request) catalog.AccessFilter {
 
 	if scope, ok := access.GetScope(r.Context()); ok {
 		return catalog.AccessFilter{
-			AllowedLibraryIDs:        scope.AllowedLibraryIDs,
-			DisabledLibraryIDs:       scope.DisabledLibraryIDs,
-			MaxContentRating:         scope.MaxContentRating,
-			MaxPlaybackQuality:       scope.MaxPlaybackQuality,
-			PresentationLibraryID:    presentationLibraryID,
-			ProfilePreferredLanguage: scope.PreferredMetadataLanguage,
-			SelectedFileID:           selectedFileID,
-			UserID:                   apimw.GetUserID(r.Context()),
-			ProfileID:                apimw.GetProfileID(r.Context()),
-		}
+			AllowedLibraryIDs:         scope.AllowedLibraryIDs,
+			DisabledLibraryIDs:        scope.DisabledLibraryIDs,
+			MaxContentRating:          scope.MaxContentRating,
+			MaxPlaybackQuality:        scope.MaxPlaybackQuality,
+			PresentationLibraryID:     presentationLibraryID,
+			ProfilePreferredLanguage:  scope.PreferredMetadataLanguage,
+			MetadataLanguageOverrides: scope.MetadataLanguageOverrides,
+			SelectedFileID:            selectedFileID,
+			UserID:                    apimw.GetUserID(r.Context()),
+			ProfileID:                 apimw.GetProfileID(r.Context()),
+			DeviceID:                  deviceID,
+		}, nil
 	}
 
 	var libraryIDs []int
@@ -1828,12 +2256,17 @@ func (h *ItemsHandler) accessFilter(r *http.Request) catalog.AccessFilter {
 			user, userErr := h.UserRepo.GetByID(r.Context(), userID)
 			if userErr != nil {
 				slog.ErrorContext(r.Context(), "looking up user for library access", "component", "api", "error", userErr)
-			} else {
-				if user.LibraryIDs != nil {
-					libraryIDs = user.LibraryIDs
-				}
-				maxPlaybackQuality = access.NormalizePlaybackQuality(user.MaxPlaybackQuality)
+				return catalog.AccessFilter{}, userErr
 			}
+			effective, policyErr := access.EffectivePolicyForUser(r.Context(), user, h.AccessGroups)
+			if policyErr != nil {
+				slog.ErrorContext(r.Context(), "resolving user policy for library access", "component", "api", "error", policyErr)
+				return catalog.AccessFilter{}, policyErr
+			}
+			if effective.LibraryIDs != nil {
+				libraryIDs = effective.LibraryIDs
+			}
+			maxPlaybackQuality = access.NormalizePlaybackQuality(effective.MaxPlaybackQuality)
 		}
 	}
 
@@ -1844,7 +2277,49 @@ func (h *ItemsHandler) accessFilter(r *http.Request) catalog.AccessFilter {
 		SelectedFileID:        selectedFileID,
 		UserID:                apimw.GetUserID(r.Context()),
 		ProfileID:             apimw.GetProfileID(r.Context()),
+		DeviceID:              deviceID,
+	}, nil
+}
+
+// accessFilterOrError resolves the viewer's access filter for a handler that
+// owns the response. An unresolvable policy is answered with 500 rather than
+// an unrestricted listing.
+//
+// It is also where the request's image_size preference is read, because it is
+// the single choke point every catalog read handler already goes through, and
+// the size applies to the whole response. An unrecognized size is a 400: a
+// client that sends one has a bug, and silently serving the default size would
+// hide it.
+func (h *ItemsHandler) accessFilterOrError(w http.ResponseWriter, r *http.Request) (catalog.AccessFilter, bool) {
+	filter, err := h.accessFilter(r)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "internal_error", "Failed to resolve user access")
+		return catalog.AccessFilter{}, false
 	}
+	size, err := imagesize.FromRequest(r)
+	if err != nil {
+		writeInvalidImageSize(w)
+		return catalog.AccessFilter{}, false
+	}
+	filter.ImageSize = size
+	return filter, true
+}
+
+// accessFilterOrDeny is the variant for enrichment paths with no error
+// channel (localization, per-item file listings). An unresolvable policy
+// yields a filter that allows nothing, so the enrichment degrades instead of
+// widening access; the request's primary query has already failed closed.
+//
+// The image size is carried too, so a helper holding a filter never has to
+// re-read the query string. An unparseable value reads as no preference here;
+// the entrypoint that owns the response has already answered 400.
+func (h *ItemsHandler) accessFilterOrDeny(r *http.Request) catalog.AccessFilter {
+	filter, err := h.accessFilter(r)
+	if err != nil {
+		return catalog.AccessFilter{AllowedLibraryIDs: []int{}, ImageSize: requestImageSize(r)}
+	}
+	filter.ImageSize = requestImageSize(r)
+	return filter
 }
 
 func (h *ItemsHandler) ensurePresentationLibraryAccess(ctx context.Context, contentID string, filter catalog.AccessFilter) error {
@@ -1874,16 +2349,16 @@ func (h *ItemsHandler) resolveWatchedTargets(ctx context.Context, contentID stri
 			return "", nil, err
 		}
 		switch item.Type {
-		case itemTypeMovie:
-			return itemTypeMovie, []watchedLeafTarget{{
+		case "movie":
+			return "movie", []watchedLeafTarget{{
 				ContentID:       item.ContentID,
 				DurationSeconds: h.contentDurationSeconds(ctx, item.ContentID, "", item.Runtime),
 			}}, nil
-		case itemTypeEbook:
+		case "ebook":
 			// Ebooks have no playback duration; read state is keyed off
 			// ebook_reader_progress, so the leaf target only carries the ID.
-			return itemTypeEbook, []watchedLeafTarget{{ContentID: item.ContentID}}, nil
-		case itemTypeSeries:
+			return "ebook", []watchedLeafTarget{{ContentID: item.ContentID}}, nil
+		case "series":
 			if h.episodeRepo == nil {
 				return "", nil, catalog.ErrItemNotFound
 			}
@@ -1891,7 +2366,7 @@ func (h *ItemsHandler) resolveWatchedTargets(ctx context.Context, contentID stri
 			if err != nil {
 				return "", nil, err
 			}
-			return itemTypeSeries, h.episodeTargets(ctx, episodes), nil
+			return "series", h.episodeTargets(ctx, episodes), nil
 		default:
 			return "", nil, catalog.ErrItemNotFound
 		}
@@ -1913,7 +2388,7 @@ func (h *ItemsHandler) resolveWatchedTargets(ctx context.Context, contentID stri
 			if err != nil {
 				return "", nil, err
 			}
-			return itemTypeSeason, h.episodeTargets(ctx, episodes), nil
+			return "season", h.episodeTargets(ctx, episodes), nil
 		case !errors.Is(err, catalog.ErrSeasonNotFound):
 			return "", nil, err
 		}
@@ -1931,21 +2406,46 @@ func (h *ItemsHandler) resolveWatchedTargets(ctx context.Context, contentID stri
 		return "", nil, err
 	}
 
-	return itemTypeEpisode, []watchedLeafTarget{{
+	return "episode", []watchedLeafTarget{{
 		ContentID:       episode.ContentID,
 		DurationSeconds: h.contentDurationSeconds(ctx, "", episode.ContentID, episode.Runtime),
 	}}, nil
 }
 
+// episodeTargets resolves the watched leaf targets for a season or series.
+// Durations come from one batched file lookup rather than a query per episode:
+// marking a long series used to issue one GetByEpisodeID per episode before it
+// wrote anything.
 func (h *ItemsHandler) episodeTargets(ctx context.Context, episodes []*models.Episode) []watchedLeafTarget {
+	episodeIDs := make([]string, 0, len(episodes))
+	for _, episode := range episodes {
+		episodeIDs = append(episodeIDs, episode.ContentID)
+	}
+	filesByEpisode := h.listEpisodeFiles(ctx, episodeIDs)
+
 	targets := make([]watchedLeafTarget, 0, len(episodes))
 	for _, episode := range episodes {
 		targets = append(targets, watchedLeafTarget{
 			ContentID:       episode.ContentID,
-			DurationSeconds: h.contentDurationSeconds(ctx, "", episode.ContentID, episode.Runtime),
+			DurationSeconds: mediaFileDurationSeconds(filesByEpisode[episode.ContentID], episode.Runtime),
 		})
 	}
 	return targets
+}
+
+// mediaFileDurationSeconds picks a playable duration from an item's files,
+// falling back to the catalog runtime. Mirrors contentDurationSeconds's
+// preference order so the batched and single-item paths agree.
+func mediaFileDurationSeconds(files []*models.MediaFile, fallbackRuntimeMinutes int) float64 {
+	for _, file := range files {
+		if file != nil && file.Duration > 0 {
+			return float64(file.Duration)
+		}
+	}
+	if fallbackRuntimeMinutes > 0 {
+		return float64(fallbackRuntimeMinutes * 60)
+	}
+	return 0
 }
 
 func (h *ItemsHandler) contentDurationSeconds(ctx context.Context, contentID, episodeID string, fallbackRuntimeMinutes int) float64 {
@@ -1967,18 +2467,10 @@ func (h *ItemsHandler) contentDurationSeconds(ctx context.Context, contentID, ep
 	case contentID != "":
 		files, err = h.fileRepo.GetByContentID(ctx, contentID)
 	}
-	if err == nil {
-		for _, file := range files {
-			if file != nil && file.Duration > 0 {
-				return float64(file.Duration)
-			}
-		}
+	if err != nil {
+		files = nil
 	}
-
-	if fallbackRuntimeMinutes > 0 {
-		return float64(fallbackRuntimeMinutes * 60)
-	}
-	return 0
+	return mediaFileDurationSeconds(files, fallbackRuntimeMinutes)
 }
 
 // isNotFound checks if an error is a "not found" sentinel.

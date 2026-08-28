@@ -21,7 +21,9 @@ describe("webPAVIFSibling", () => {
 
   it("preserves query strings on absolute URLs", () => {
     expect(
-      webPAVIFSibling("https://cdn.example.com/art/original.rev.webp?X-Amz-Signature=abc"),
+      webPAVIFSibling(
+        "https://cdn.example.com/art/original.rev.webp?X-Amz-Signature=abc",
+      ),
     ).toBe("https://cdn.example.com/art/original.rev.avif?X-Amz-Signature=abc");
   });
 
@@ -57,7 +59,9 @@ describe("webPPNGSibling", () => {
 
   it("preserves query strings on absolute URLs", () => {
     expect(
-      webPPNGSibling("https://cdn.example.com/art/original.rev.webp?X-Amz-Signature=abc"),
+      webPPNGSibling(
+        "https://cdn.example.com/art/original.rev.webp?X-Amz-Signature=abc",
+      ),
     ).toBe("https://cdn.example.com/art/original.rev.png?X-Amz-Signature=abc");
   });
 
@@ -86,7 +90,9 @@ describe("artworkCandidates", () => {
   });
 
   it("orders AVIF → WebP → PNG for template webp paths", () => {
-    expect(artworkCandidates("/images/collection-templates/trending.webp")).toEqual([
+    expect(
+      artworkCandidates("/images/collection-templates/trending.webp"),
+    ).toEqual([
       "/images/collection-templates/trending.avif",
       "/images/collection-templates/trending.webp",
       "/images/collection-templates/trending.png",
@@ -122,18 +128,26 @@ describe("artworkWidthVariant", () => {
     expect(artworkWidthVariant("/art/poster/original.rev.webp", 500)).toBe(
       "/art/poster/w500.rev.webp",
     );
-    expect(artworkWidthVariant("/art/poster/w300.webp", 500)).toBe("/art/poster/w500.webp");
+    expect(artworkWidthVariant("/art/poster/w300.webp", 500)).toBe(
+      "/art/poster/w500.webp",
+    );
   });
 
   it("preserves query strings on absolute public URLs", () => {
-    expect(artworkWidthVariant("https://cdn.example.com/art/w300.rev.webp?v=1", 1920)).toBe(
-      "https://cdn.example.com/art/w1920.rev.webp?v=1",
-    );
+    expect(
+      artworkWidthVariant(
+        "https://cdn.example.com/art/w300.rev.webp?v=1",
+        1920,
+      ),
+    ).toBe("https://cdn.example.com/art/w1920.rev.webp?v=1");
   });
 
   it("skips signed URLs", () => {
     expect(
-      artworkWidthVariant("https://cdn.example.com/art/w300.webp?X-Amz-Signature=abc", 500),
+      artworkWidthVariant(
+        "https://cdn.example.com/art/w300.webp?X-Amz-Signature=abc",
+        500,
+      ),
     ).toBe("");
   });
 
@@ -148,7 +162,8 @@ describe("Prairie's own artwork signature", () => {
   // of the same image still validates. Treating it as unrewritable disabled both
   // srcSet and the sizes attribute, leaving 140-160px cards fetching w500.
   it("is rewritable, unlike a third-party signature", () => {
-    const signed = "/artwork/tmdb/movies/550/poster/w500.rev.webp?expires=123&sig=abc";
+    const signed =
+      "/artwork/tmdb/movies/550/poster/w500.rev.webp?expires=123&sig=abc";
     expect(isPrairieSignedArtworkURL(signed)).toBe(true);
     expect(isSignedArtworkURL(signed)).toBe(false);
   });
@@ -158,13 +173,18 @@ describe("Prairie's own artwork signature", () => {
     const foreign = "https://cdn.example.com/art/w500.webp?sig=abc";
     expect(isPrairieSignedArtworkURL(foreign)).toBe(false);
     expect(isSignedArtworkURL(foreign)).toBe(true);
-    expect(isPrairieSignedArtworkURL("/artwork/x/w500.rev.webp?expires=1")).toBe(false);
-    expect(isPrairieSignedArtworkURL("https://x/?X-Amz-Signature=1&expires=1&sig=a")).toBe(false);
+    expect(
+      isPrairieSignedArtworkURL("/artwork/x/w500.rev.webp?expires=1"),
+    ).toBe(false);
+    expect(
+      isPrairieSignedArtworkURL("https://x/?X-Amz-Signature=1&expires=1&sig=a"),
+    ).toBe(false);
   });
 
   // The signature must travel with every candidate or each one 403s.
   it("yields a srcSet whose entries all keep the query", () => {
-    const signed = "/artwork/tmdb/movies/550/poster/w500.rev.webp?expires=123&sig=abc";
+    const signed =
+      "/artwork/tmdb/movies/550/poster/w500.rev.webp?expires=123&sig=abc";
     expect(artworkSrcSet(signed, [200, 300, 500])).toBe(
       "/artwork/tmdb/movies/550/poster/w200.rev.webp?expires=123&sig=abc 200w, " +
         "/artwork/tmdb/movies/550/poster/w300.rev.webp?expires=123&sig=abc 300w, " +
@@ -181,15 +201,19 @@ describe("artworkSrcSet", () => {
   });
 
   it("returns empty for signed URLs or single candidates", () => {
-    expect(artworkSrcSet("/art/poster/w300.webp?X-Amz-Signature=x", [300, 500])).toBe("");
+    expect(
+      artworkSrcSet("/art/poster/w300.webp?X-Amz-Signature=x", [300, 500]),
+    ).toBe("");
     expect(artworkSrcSet("/art/poster/w300.webp", [300])).toBe("");
     expect(isSignedArtworkURL("https://x/?Signature=1")).toBe(true);
   });
 });
 
 describe("signed original artwork URLs", () => {
-  const signedOriginal = "/artwork/people/p1/profile/original.7.webp?sig=abc&expires=99";
-  const signedRung = "/artwork/people/p1/profile/w500.7.webp?sig=abc&expires=99";
+  const signedOriginal =
+    "/artwork/people/p1/profile/original.7.webp?sig=abc&expires=99";
+  const signedRung =
+    "/artwork/people/p1/profile/w500.7.webp?sig=abc&expires=99";
 
   // The store signs `original` against exactly itself, so any width rewrite is
   // a 403. Cast portraits hit this: catalog.detail presigned the raw original.
@@ -214,7 +238,8 @@ describe("signed original artwork URLs", () => {
   });
 
   it("does not mistake a third-party URL containing 'original' for ours", () => {
-    const external = "https://images.example.test/original.jpg?sig=abc&expires=99";
+    const external =
+      "https://images.example.test/original.jpg?sig=abc&expires=99";
     expect(isSignedOriginalArtworkURL(external)).toBe(false);
   });
 });

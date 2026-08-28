@@ -64,22 +64,44 @@ const EVENT_SECTIONS: { label: string; fields: ChannelNotifyField[] }[] = [
     fields: [
       { key: "notify_new_movies", label: "New movies", defaultValue: true },
       { key: "notify_new_episodes", label: "New episodes", defaultValue: true },
-      { key: "notify_new_audiobooks", label: "New audiobooks", defaultValue: true },
+      {
+        key: "notify_new_audiobooks",
+        label: "New audiobooks",
+        defaultValue: true,
+      },
       { key: "notify_new_ebooks", label: "New ebooks", defaultValue: true },
     ],
   },
   {
     label: "Media requests",
     fields: [
-      { key: "notify_request_submitted", label: "Request submitted", defaultValue: false },
-      { key: "notify_request_approved", label: "Request approved", defaultValue: false },
-      { key: "notify_request_declined", label: "Request declined", defaultValue: false },
-      { key: "notify_request_fulfilled", label: "Request fulfilled", defaultValue: false },
+      {
+        key: "notify_request_submitted",
+        label: "Request submitted",
+        defaultValue: false,
+      },
+      {
+        key: "notify_request_approved",
+        label: "Request approved",
+        defaultValue: false,
+      },
+      {
+        key: "notify_request_declined",
+        label: "Request declined",
+        defaultValue: false,
+      },
+      {
+        key: "notify_request_fulfilled",
+        label: "Request fulfilled",
+        defaultValue: false,
+      },
     ],
   },
 ];
 
-const CHANNEL_NOTIFY_FIELDS = EVENT_SECTIONS.flatMap((section) => section.fields);
+const CHANNEL_NOTIFY_FIELDS = EVENT_SECTIONS.flatMap(
+  (section) => section.fields,
+);
 
 function ChannelFormDialog({
   open,
@@ -109,7 +131,10 @@ function ChannelFormDialog({
   const editing = channel != null;
 
   const submit = () => {
-    const input: ServerNotificationChannelInput = { name: name.trim(), ...events };
+    const input: ServerNotificationChannelInput = {
+      name: name.trim(),
+      ...events,
+    };
     if (url.trim()) {
       input.url = url.trim();
     }
@@ -135,7 +160,9 @@ function ChannelFormDialog({
         }
       },
       onError: (error) => {
-        toast.error(error instanceof Error ? error.message : "Failed to create channel");
+        toast.error(
+          error instanceof Error ? error.message : "Failed to create channel",
+        );
       },
     });
   };
@@ -144,11 +171,13 @@ function ChannelFormDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>{editing ? `Edit "${channel.name}"` : "Add server channel"}</DialogTitle>
+          <DialogTitle>
+            {editing ? `Edit "${channel.name}"` : "Add server channel"}
+          </DialogTitle>
           <DialogDescription>
-            Server channels broadcast server-wide events — every profile sees the same posts.
-            Discord webhook URLs render as native embeds; any other HTTPS endpoint receives signed
-            JSON.
+            Server channels broadcast server-wide events — every profile sees
+            the same posts. Discord webhook URLs render as native embeds; any
+            other HTTPS endpoint receives signed JSON.
           </DialogDescription>
         </DialogHeader>
         <fieldset disabled={pending} className="space-y-4">
@@ -163,7 +192,9 @@ function ChannelFormDialog({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="server-channel-url">{editing ? "Replace URL (optional)" : "URL"}</Label>
+            <Label htmlFor="server-channel-url">
+              {editing ? "Replace URL (optional)" : "URL"}
+            </Label>
             <Input
               id="server-channel-url"
               value={url}
@@ -179,12 +210,18 @@ function ChannelFormDialog({
             <div key={section.label} className="space-y-2">
               <Label>{section.label}</Label>
               {section.fields.map((field) => (
-                <div key={field.key} className="flex items-center justify-between gap-3">
+                <div
+                  key={field.key}
+                  className="flex items-center justify-between gap-3"
+                >
                   <div className="text-sm">{field.label}</div>
                   <Switch
                     checked={events[field.key]}
                     onCheckedChange={(checked) =>
-                      setEvents((current) => ({ ...current, [field.key]: checked }))
+                      setEvents((current) => ({
+                        ...current,
+                        [field.key]: checked,
+                      }))
                     }
                   />
                 </div>
@@ -221,40 +258,50 @@ function ChannelCard({
   const test = useTestServerNotificationChannel();
   const rotate = useRotateServerNotificationChannelSecret();
   const [confirmDelete, setConfirmDelete] = useState(false);
-  const [testResult, setTestResult] = useState<NotificationWebhookTestResult | null>(null);
+  const [testResult, setTestResult] =
+    useState<NotificationWebhookTestResult | null>(null);
 
   const lastSuccess = formatRelativeTime(channel.last_success_at);
   const lastFailure = formatRelativeTime(channel.last_failure_at);
   const failing =
     channel.last_failure_at != null &&
-    (channel.last_success_at == null || channel.last_failure_at > channel.last_success_at);
-  const enabledEvents = CHANNEL_NOTIFY_FIELDS.filter((field) => channel[field.key]).map(
-    (field) => field.label,
-  );
+    (channel.last_success_at == null ||
+      channel.last_failure_at > channel.last_success_at);
+  const enabledEvents = CHANNEL_NOTIFY_FIELDS.filter(
+    (field) => channel[field.key],
+  ).map((field) => field.label);
 
   return (
     <div className="border-border/60 space-y-2 rounded-xl border p-4">
       <div className="flex flex-wrap items-center gap-2">
         <span className="text-sm font-medium">{channel.name}</span>
         <Badge variant="secondary">{channel.type}</Badge>
-        <span className="text-muted-foreground text-xs">{channel.url_host}</span>
+        <span className="text-muted-foreground text-xs">
+          {channel.url_host}
+        </span>
         <div className="ml-auto flex items-center gap-1.5">
           <span className="text-muted-foreground text-xs">
             {channel.enabled ? "Enabled" : "Disabled"}
           </span>
           <Switch
             checked={channel.enabled}
-            onCheckedChange={(checked) => update.mutate({ id: channel.id, enabled: checked })}
+            onCheckedChange={(checked) =>
+              update.mutate({ id: channel.id, enabled: checked })
+            }
           />
         </div>
       </div>
 
       <div className="text-muted-foreground text-xs">
-        {enabledEvents.length > 0 ? enabledEvents.join(" · ") : "No events selected"}
+        {enabledEvents.length > 0
+          ? enabledEvents.join(" · ")
+          : "No events selected"}
       </div>
 
       {lastSuccess && !failing && (
-        <div className="text-muted-foreground text-xs">Last post: {lastSuccess}</div>
+        <div className="text-muted-foreground text-xs">
+          Last post: {lastSuccess}
+        </div>
       )}
       {failing && (
         <div className="flex items-start gap-1.5 text-xs text-amber-500">
@@ -263,13 +310,16 @@ function ChannelCard({
             {channel.disabled_reason
               ? `Disabled: ${channel.disabled_reason} Re-enable the channel to resume from now.`
               : `Last failure${lastFailure ? ` ${lastFailure}` : ""}: ${
-                  channel.last_failure_message || `HTTP ${channel.last_failure_status ?? "error"}`
+                  channel.last_failure_message ||
+                  `HTTP ${channel.last_failure_status ?? "error"}`
                 }. Check the destination URL.`}
           </span>
         </div>
       )}
       {testResult && (
-        <div className={`text-xs ${testResult.ok ? "text-emerald-500" : "text-amber-500"}`}>
+        <div
+          className={`text-xs ${testResult.ok ? "text-emerald-500" : "text-amber-500"}`}
+        >
           Test {testResult.ok ? "succeeded" : "failed"}
           {testResult.http_status ? ` (HTTP ${testResult.http_status}` : " ("}
           {`${testResult.duration_ms}ms)`}
@@ -334,7 +384,11 @@ function ChannelCard({
         confirmLabel="Delete"
         variant="destructive"
         isPending={remove.isPending}
-        onConfirm={() => remove.mutate(channel.id, { onSettled: () => setConfirmDelete(false) })}
+        onConfirm={() =>
+          remove.mutate(channel.id, {
+            onSettled: () => setConfirmDelete(false),
+          })
+        }
       />
       {update.isPending && <span className="sr-only">Saving…</span>}
     </div>
@@ -349,7 +403,9 @@ function ChannelCard({
 export default function ServerNotificationChannels() {
   const { data: channels, isLoading } = useServerNotificationChannels();
   const [formOpen, setFormOpen] = useState(false);
-  const [editing, setEditing] = useState<ServerNotificationChannel | null>(null);
+  const [editing, setEditing] = useState<ServerNotificationChannel | null>(
+    null,
+  );
   const [secret, setSecret] = useState<string | null>(null);
 
   return (
@@ -372,7 +428,8 @@ export default function ServerNotificationChannels() {
           {(channels ?? []).length === 0 && (
             <div className="text-muted-foreground flex items-center gap-2 py-1 text-sm">
               <Megaphone className="h-4 w-4" />
-              No server channels yet. Create one to broadcast new content and request activity.
+              No server channels yet. Create one to broadcast new content and
+              request activity.
             </div>
           )}
           <div>

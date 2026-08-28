@@ -54,3 +54,28 @@ body:
         - L
     validations:
       required: true
+  - type: input
+    id: ai-tools
+    attributes:
+      label: AI tool(s)
+      description: Enter the exact tool name(s), or "none".
+    validations:
+      required: true
+  - type: input
+    id: ai-models
+    attributes:
+      label: AI model(s)
+      description: Enter the exact model identifier(s) reported by each tool, or "n/a".
+    validations:
+      required: true
+  - type: dropdown
+    id: ai-involvement
+    attributes:
+      label: AI involvement
+      options:
+        - No AI used
+        - Human-written, AI-reviewed
+        - AI-assisted
+        - Fully AI-generated, human verified
+    validations:
+      required: true

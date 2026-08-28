@@ -1,6 +1,7 @@
 package nodepool
 
 import (
+	"strconv"
 	"testing"
 	"time"
 )
@@ -36,6 +37,25 @@ func proxyNode(id int, url string, group *string) *Node {
 
 func transcodeNode(id int, url string, group *string, activeJobs int) *Node {
 	return &Node{ID: id, Name: url, Type: NodeTypeTranscode, URL: url, Enabled: true, Healthy: true, Group: group, ActiveJobs: activeJobs}
+}
+
+func TestTranscodeNodeHealthyNormalizesTrailingSlash(t *testing.T) {
+	f := newFixture(nil, []*Node{
+		{URL: "http://tc-node:8080/", Enabled: true, Healthy: true},
+	})
+
+	if !f.planner.TranscodeNodeHealthy("http://tc-node:8080") {
+		t.Fatal("stored trailing-slash URL did not match a lookup without the slash")
+	}
+	if !f.planner.TranscodeNodeHealthy("http://tc-node:8080/") {
+		t.Fatal("stored trailing-slash URL did not match a lookup with the slash")
+	}
+	if f.planner.TranscodeNodeHealthy("http://other-node:8080") {
+		t.Fatal("unknown node URL reported healthy")
+	}
+	if f.planner.TranscodeNodeHealthy("") {
+		t.Fatal("empty node URL reported healthy")
+	}
 }
 
 func TestPlanTranscodePairsProxyFromSameGroup(t *testing.T) {
@@ -83,6 +103,35 @@ func TestPlanSessionWithRestrictsEligibleTranscodeNodes(t *testing.T) {
 	}
 }
 
+func TestPlanTranscodeSessionWithLocalEgressDoesNotUseProxyCapacity(t *testing.T) {
+	group := strPtr("rack-a")
+	proxy := proxyNode(1, "http://proxy-a", group)
+	proxy.Healthy = false
+	transcode := transcodeNode(2, "http://tc-a", group, 0)
+	f := newFixture([]*Node{proxy}, []*Node{transcode})
+
+	plan := f.planner.PlanTranscodeSessionWithLocalEgress("s-local-egress", "", func(node *Node) bool {
+		return node != nil && node.URL == transcode.URL
+	})
+	if plan.TranscodeNode == nil || plan.TranscodeNode.URL != transcode.URL {
+		t.Fatalf("local-egress plan = %#v, want healthy transcode despite unrelated proxy health", plan)
+	}
+	if plan.ProxyNode != nil {
+		t.Fatalf("local-egress plan exposed proxy %#v", plan.ProxyNode)
+	}
+	reservation := f.planner.reserved["s-local-egress"]
+	if reservation == nil || reservation.transcodeURL != transcode.URL || reservation.proxyURL != "" || reservation.kbps != 0 {
+		t.Fatalf("local-egress reservation = %#v, want transcode-only accounting", reservation)
+	}
+
+	if none := f.planner.PlanTranscodeSessionWithLocalEgress("s-ineligible", "", func(*Node) bool { return false }); none.TranscodeNode != nil {
+		t.Fatalf("ineligible local-egress plan selected %#v", none.TranscodeNode)
+	}
+	if _, reserved := f.planner.reserved["s-ineligible"]; reserved {
+		t.Fatal("ineligible local-egress plan left a reservation")
+	}
+}
+
 func TestReleaseSessionDropsProvisionalReservation(t *testing.T) {
 	node := transcodeNode(1, "http://tc-1", nil, 0)
 	node.MaxJobs = intPtr(1)
@@ -96,6 +145,48 @@ func TestReleaseSessionDropsProvisionalReservation(t *testing.T) {
 	f.planner.ReleaseSession("s1")
 	if got := f.planner.PlanSession("s2", "", true, 0).TranscodeNode; got == nil {
 		t.Fatal("released reservation still blocked the node")
+	}
+}
+
+// A start that selected both nodes but publishes a URL the proxy does not serve
+// must give the proxy's job slot and estimated bandwidth back while the
+// transcode node keeps running the job. Asserted through selection, which is
+// what the accounting exists to drive.
+func TestReleaseSessionProxyFreesTheProxyHalfAndKeepsTheTranscode(t *testing.T) {
+	proxy := proxyNode(1, "http://proxy-1", nil)
+	proxy.MaxJobs = intPtr(1)
+	proxy.MaxBandwidthKbps = intPtr(10_000)
+	transcode := transcodeNode(2, "http://tc-1", nil, 0)
+	transcode.MaxJobs = intPtr(1)
+	f := newFixture([]*Node{proxy}, []*Node{transcode})
+
+	plan := f.planner.PlanSession("s1", "", true, 8_000)
+	if plan.TranscodeNode == nil || plan.ProxyNode == nil {
+		t.Fatalf("plan = %+v, want both halves reserved", plan)
+	}
+	// Both halves are charged, so nothing else fits on the proxy.
+	if got := f.planner.PlanSession("s2", "", false, 2_000).ProxyNode; got != nil {
+		t.Fatalf("proxy admitted %+v while its reservation stands", got)
+	}
+
+	f.planner.ReleaseSessionProxy("s1")
+
+	// 8 Mbps only fits if BOTH the job slot and the bandwidth charge were
+	// released; the estimate alone would leave 2 Mbps of headroom.
+	if got := f.planner.PlanSession("s2", "", false, 8_000).ProxyNode; got == nil {
+		t.Fatal("released proxy half still blocked the proxy")
+	}
+	// The transcode node is still running s1, so its slot is still charged.
+	if got := f.planner.PlanSession("s3", "", true, 0).TranscodeNode; got != nil {
+		t.Fatalf("transcode node admitted %+v; only the proxy half was released", got)
+	}
+
+	// Nil-safe, and an unknown session is a no-op rather than a phantom entry.
+	var absent *Planner
+	absent.ReleaseSessionProxy("s1")
+	f.planner.ReleaseSessionProxy("never-planned")
+	if _, ok := f.planner.reserved["never-planned"]; ok {
+		t.Fatal("releasing an unknown session created a reservation")
 	}
 }
 
@@ -353,6 +444,29 @@ func TestReservationsExpire(t *testing.T) {
 	}
 }
 
+func TestTranscodeWorkAvailableIgnoresExpiredReservations(t *testing.T) {
+	capped := transcodeNode(2, "http://tc-1", nil, 0)
+	capped.MaxJobs = intPtr(1)
+	f := newFixture(
+		[]*Node{proxyNode(1, "http://proxy-1", nil)},
+		[]*Node{capped},
+	)
+
+	if f.planner.PlanSession("s1", "", true, 0).TranscodeNode == nil {
+		t.Fatal("first session should be admitted")
+	}
+	if f.planner.TranscodeWorkAvailableWith(nil) {
+		t.Fatal("fresh reservation should consume the only transcode slot")
+	}
+
+	// Availability checks are intentionally read-only, but expired reservations
+	// must not consume capacity while waiting for a later placement to prune them.
+	f.now = f.now.Add(maxReservationAge + time.Second)
+	if !f.planner.TranscodeWorkAvailableWith(nil) {
+		t.Fatal("expired reservation should not consume transcode capacity")
+	}
+}
+
 func TestDirectPlayIgnoresGroups(t *testing.T) {
 	f := newFixture(
 		[]*Node{proxyNode(1, "http://proxy-a", strPtr("rack-a"))},
@@ -507,5 +621,166 @@ func TestUnknownBitrateAdmittedBelowCap(t *testing.T) {
 	f.proxies.ApplyHealth(1, true, 0, 10_000, f.now)
 	if got := f.planner.PlanSession("s2", "", false, 0).ProxyNode; got != nil {
 		t.Fatalf("unknown-bitrate stream should be rejected at cap, got %+v", got)
+	}
+}
+
+func TestReserveTranscodeWorkSharesCapacityReservations(t *testing.T) {
+	capOne := 1
+	transcodes := NewTranscodePool()
+	transcodes.SetNodes([]*Node{
+		{URL: "http://transcode-a", Enabled: true, Healthy: true, MaxJobs: &capOne},
+		{URL: "http://transcode-b", Enabled: true, Healthy: true, MaxJobs: &capOne},
+	})
+	planner := NewPlanner(NewProxyPool(), transcodes)
+
+	first, releaseFirst := planner.ReserveTranscodeWork("download-1")
+	if first == nil || first.URL != "http://transcode-a" {
+		t.Fatalf("first node = %+v", first)
+	}
+	second, releaseSecond := planner.ReserveTranscodeWork("download-2")
+	if second == nil || second.URL != "http://transcode-b" {
+		t.Fatalf("second node = %+v", second)
+	}
+	if third, _ := planner.ReserveTranscodeWork("download-3"); third != nil {
+		t.Fatalf("third node = %+v, want no capacity", third)
+	}
+
+	releaseFirst()
+	third, releaseThird := planner.ReserveTranscodeWork("download-3")
+	if third == nil || third.URL != "http://transcode-a" {
+		t.Fatalf("third node after release = %+v", third)
+	}
+	releaseSecond()
+	releaseThird()
+}
+
+func TestReserveTranscodeWorkOverlappingAttemptsReleaseOnlyTheirOwnReservation(t *testing.T) {
+	capTwo := 2
+	transcodes := NewTranscodePool()
+	transcodes.SetNodes([]*Node{{URL: "http://transcode-a", Enabled: true, Healthy: true, MaxJobs: &capTwo}})
+	planner := NewPlanner(NewProxyPool(), transcodes)
+
+	first, releaseFirst := planner.ReserveTranscodeWork("same-artifact")
+	second, releaseSecond := planner.ReserveTranscodeWork("same-artifact")
+	if first == nil || second == nil {
+		t.Fatalf("overlapping reservations = first %+v second %+v", first, second)
+	}
+	if third, _ := planner.ReserveTranscodeWork("third-attempt"); third != nil {
+		t.Fatalf("third reservation = %+v, want full node", third)
+	}
+
+	releaseFirst()
+	third, releaseThird := planner.ReserveTranscodeWork("third-attempt")
+	if third == nil {
+		t.Fatal("first release did not free its own reservation")
+	}
+	if fourth, _ := planner.ReserveTranscodeWork("fourth-attempt"); fourth != nil {
+		t.Fatalf("second overlapping reservation was lost: fourth = %+v", fourth)
+	}
+
+	releaseSecond()
+	releaseThird()
+}
+
+func TestPlanDownloadSkipsBandwidthCappedProxiesAndReservesJobCapacity(t *testing.T) {
+	bandwidthCap := 100_000
+	jobCap := 1
+	proxies := NewProxyPool()
+	proxies.SetNodes([]*Node{
+		{URL: "http://bandwidth-capped", Enabled: true, Healthy: true, MaxBandwidthKbps: &bandwidthCap},
+		{URL: "http://uncapped", Enabled: true, Healthy: true, MaxJobs: &jobCap},
+	})
+	planner := NewPlanner(proxies, NewTranscodePool())
+
+	first := planner.PlanDownload("download-1")
+	if first.ProxyNode == nil || first.ProxyNode.URL != "http://uncapped" {
+		t.Fatalf("first plan = %+v", first)
+	}
+	if second := planner.PlanDownload("download-2"); second.ProxyNode != nil {
+		t.Fatalf("second plan = %+v, want job-cap rejection", second)
+	}
+	planner.ReleaseSession("download-1")
+	if second := planner.PlanDownload("download-2"); second.ProxyNode == nil {
+		t.Fatal("download was not admitted after reservation release")
+	}
+}
+
+func TestPlanDownloadPrefersArtifactOriginGroup(t *testing.T) {
+	groupA, groupB := "host-a", "host-b"
+	proxies := NewProxyPool()
+	proxies.SetNodes([]*Node{
+		{URL: "http://proxy-a", Group: &groupA, Enabled: true, Healthy: true},
+		{URL: "http://proxy-b", Group: &groupB, Enabled: true, Healthy: true},
+	})
+	planner := NewPlanner(proxies, NewTranscodePool())
+	plan := planner.PlanDownload("download-grouped", groupB)
+	if plan.ProxyNode == nil || plan.ProxyNode.URL != "http://proxy-b" {
+		t.Fatalf("plan = %+v, want proxy-b", plan)
+	}
+}
+
+func TestPlanDownloadFallsBackWhenOriginGroupHasNoProxy(t *testing.T) {
+	group := "host-a"
+	proxies := NewProxyPool()
+	proxies.SetNodes([]*Node{{URL: "http://proxy-a", Group: &group, Enabled: true, Healthy: true}})
+	planner := NewPlanner(proxies, NewTranscodePool())
+	plan := planner.PlanDownload("download-fallback", "host-missing")
+	if plan.ProxyNode == nil || plan.ProxyNode.URL != "http://proxy-a" {
+		t.Fatalf("plan = %+v, want proxy-a fallback", plan)
+	}
+}
+
+// A proxy-only plan applies the eligibility predicate to the proxy: it is the
+// node that executes the recipe. Without this, one incapable round-robin pick
+// would abandon a pool that still holds a capable sibling.
+func TestPlanSessionWithFiltersProxiesForProxyOnlyPlans(t *testing.T) {
+	proxies := NewProxyPool()
+	proxies.SetNodes([]*Node{
+		{ID: 1, URL: "http://proxy-old", Enabled: true, Healthy: true},
+		{ID: 2, URL: "http://proxy-new", Enabled: true, Healthy: true},
+	})
+	planner := NewPlanner(proxies, NewTranscodePool())
+
+	// Only the upgraded proxy can run the recipe; every selection must land
+	// there regardless of where the round-robin cursor happens to be.
+	for i := 0; i < 4; i++ {
+		plan := planner.PlanSessionWith("session-"+strconv.Itoa(i), "", false, 0, func(n *Node) bool {
+			return n.URL == "http://proxy-new"
+		})
+		if plan.ProxyNode == nil || plan.ProxyNode.URL != "http://proxy-new" {
+			t.Fatalf("selection %d = %#v, want the capable proxy", i, plan.ProxyNode)
+		}
+	}
+}
+
+func TestPlanSessionWithReturnsNoProxyWhenNoneAreCapable(t *testing.T) {
+	proxies := NewProxyPool()
+	proxies.SetNodes([]*Node{{ID: 1, URL: "http://proxy-old", Enabled: true, Healthy: true}})
+	planner := NewPlanner(proxies, NewTranscodePool())
+
+	plan := planner.PlanSessionWith("session-none", "", false, 0, func(*Node) bool { return false })
+	if plan.ProxyNode != nil {
+		t.Fatalf("proxy = %#v, want none when the pool cannot execute the recipe", plan.ProxyNode)
+	}
+	// An empty plan must not leave a reservation pinning capacity.
+	if _, reserved := planner.reserved["session-none"]; reserved {
+		t.Fatal("an unsatisfiable plan left a reservation behind")
+	}
+}
+
+func TestProxyNodeURLsListsEnabledProxies(t *testing.T) {
+	proxies := NewProxyPool()
+	proxies.SetNodes([]*Node{
+		{ID: 1, URL: "http://proxy-1", Enabled: true, Healthy: true},
+		{ID: 2, URL: "http://proxy-2", Enabled: true, Healthy: false},
+	})
+	planner := NewPlanner(proxies, NewTranscodePool())
+
+	// Unhealthy nodes are still listed: capability planning wants the
+	// deployment's toolchain, and an unreachable node excludes itself when its
+	// capability fetch fails.
+	urls := planner.ProxyNodeURLs()
+	if len(urls) != 2 {
+		t.Fatalf("proxy urls = %v, want both pooled proxies", urls)
 	}
 }

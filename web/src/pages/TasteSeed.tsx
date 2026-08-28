@@ -1,13 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router";
-import { ArrowRight, Check, Loader2, SkipForward, Sparkles, X } from "lucide-react";
+import {
+  ArrowRight,
+  Check,
+  Loader2,
+  SkipForward,
+  Sparkles,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { decodeThumbhash } from "@/lib/thumbhash";
 import type { SectionItem } from "@/api/types";
-import { useTasteSeedItems, useSubmitTasteSeed } from "@/hooks/queries/tasteSeed";
+import {
+  useTasteSeedItems,
+  useSubmitTasteSeed,
+} from "@/hooks/queries/tasteSeed";
 import { setTasteSeedDismissed } from "@/lib/tasteSeed";
 
 const MIN_PICKS = 3;
@@ -23,14 +33,25 @@ export default function TasteSeed() {
   // Track only the user's explicit toggles. Final `selected` set is derived
   // from items + toggles each render, so already-favorited items are
   // automatically pre-selected without needing setState-in-effect.
-  const [userToggles, setUserToggles] = useState<Map<string, boolean>>(new Map());
+  const [userToggles, setUserToggles] = useState<Map<string, boolean>>(
+    new Map(),
+  );
 
-  const { data, fetchNextPage, hasNextPage, isFetching, isFetchingNextPage, isPending } =
-    useTasteSeedItems(true);
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetching,
+    isFetchingNextPage,
+    isPending,
+  } = useTasteSeedItems(true);
   const submit = useSubmitTasteSeed();
 
   // Flatten paginated pages into a single item list.
-  const items = useMemo(() => data?.pages.flatMap((p) => p.items) ?? [], [data]);
+  const items = useMemo(
+    () => data?.pages.flatMap((p) => p.items) ?? [],
+    [data],
+  );
 
   // Derive the selected set: items already favorited are selected unless the
   // user explicitly deselected them; user-added picks are also selected.
@@ -95,7 +116,9 @@ export default function TasteSeed() {
     const alreadyFavorited = new Set(
       items.filter((i) => i.user_state?.is_favorite).map((i) => i.content_id),
     );
-    const newPicks = Array.from(selected).filter((id) => !alreadyFavorited.has(id));
+    const newPicks = Array.from(selected).filter(
+      (id) => !alreadyFavorited.has(id),
+    );
 
     if (newPicks.length === 0) {
       // All selected items are already favorited — no work to do, but still
@@ -103,7 +126,9 @@ export default function TasteSeed() {
       if (profile) {
         setTasteSeedDismissed(profile.id);
       }
-      void navigate(isReturning ? "/settings/playback" : "/", { replace: true });
+      void navigate(isReturning ? "/settings/playback" : "/", {
+        replace: true,
+      });
       return;
     }
 
@@ -117,9 +142,13 @@ export default function TasteSeed() {
           ? "Added 1 favorite — personalizing your home"
           : `Added ${result.added} favorites — personalizing your home`,
       );
-      void navigate(isReturning ? "/settings/playback" : "/", { replace: true });
+      void navigate(isReturning ? "/settings/playback" : "/", {
+        replace: true,
+      });
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to save your picks");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to save your picks",
+      );
     }
   }, [selected, items, submit, navigate, profile, isReturning]);
 
@@ -142,7 +171,11 @@ export default function TasteSeed() {
             </p>
           </div>
           <div className="flex shrink-0 items-center gap-2">
-            <Button variant="ghost" onClick={handleSkip} disabled={submit.isPending}>
+            <Button
+              variant="ghost"
+              onClick={handleSkip}
+              disabled={submit.isPending}
+            >
               {isReturning ? <X /> : <SkipForward />}
               {isReturning ? "Cancel" : "Skip"}
             </Button>
@@ -167,7 +200,8 @@ export default function TasteSeed() {
           <div className="text-muted-foreground flex flex-col items-center gap-3 py-24 text-center">
             <p className="text-base font-medium">No items to show yet</p>
             <p className="text-sm">
-              Once your library has matched content, you'll see popular titles here.
+              Once your library has matched content, you'll see popular titles
+              here.
             </p>
             <Button variant="ghost" className="mt-4" onClick={handleSkip}>
               <ArrowRight />
@@ -221,7 +255,9 @@ function TasteSeedCard({
   onToggle: (contentId: string) => void;
 }) {
   const [loaded, setLoaded] = useState(false);
-  const thumbhashUrl = item.poster_thumbhash ? decodeThumbhash(item.poster_thumbhash) : "";
+  const thumbhashUrl = item.poster_thumbhash
+    ? decodeThumbhash(item.poster_thumbhash)
+    : "";
 
   return (
     <button
@@ -254,14 +290,18 @@ function TasteSeedCard({
           />
         ) : (
           <div className="text-muted-foreground flex h-full w-full flex-col items-center justify-center gap-1 p-3 text-center text-xs">
-            <span className="line-clamp-3 font-medium">{item.title || "No Poster"}</span>
+            <span className="line-clamp-3 font-medium">
+              {item.title || "No Poster"}
+            </span>
           </div>
         )}
 
         {/* Dim overlay when unselected to make selected posters pop */}
         <div
           className={`pointer-events-none absolute inset-0 transition-opacity ${
-            selected ? "bg-primary/20 opacity-100" : "bg-black/0 group-hover:bg-black/15"
+            selected
+              ? "bg-primary/20 opacity-100"
+              : "bg-black/0 group-hover:bg-black/15"
           }`}
         />
 
@@ -284,7 +324,10 @@ function TasteSeedGridSkeleton() {
   return (
     <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 xl:grid-cols-7">
       {Array.from({ length: 24 }).map((_, i) => (
-        <div key={i} className="bg-muted/40 aspect-[2/3] animate-pulse rounded-xl" />
+        <div
+          key={i}
+          className="bg-muted/40 aspect-[2/3] animate-pulse rounded-xl"
+        />
       ))}
     </div>
   );

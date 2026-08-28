@@ -15,14 +15,21 @@ export function updatePathRewrite(
   field: keyof CatalogPathRewrite,
   value: string,
 ): PathRewriteRow[] {
-  return rewrites.map((rewrite, i) => (i === index ? { ...rewrite, [field]: value } : rewrite));
+  return rewrites.map((rewrite, i) =>
+    i === index ? { ...rewrite, [field]: value } : rewrite,
+  );
 }
 
-export function addEmptyPathRewrite(rewrites: PathRewriteRow[]): PathRewriteRow[] {
+export function addEmptyPathRewrite(
+  rewrites: PathRewriteRow[],
+): PathRewriteRow[] {
   return [...rewrites, createEmptyPathRewrite()];
 }
 
-export function removePathRewrite(rewrites: PathRewriteRow[], index: number): PathRewriteRow[] {
+export function removePathRewrite(
+  rewrites: PathRewriteRow[],
+  index: number,
+): PathRewriteRow[] {
   return rewrites.length === 1
     ? [createEmptyPathRewrite()]
     : rewrites.filter((_, i) => i !== index);

@@ -1,5 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { buildAdminSectionPayload, buildProfileSectionSaveEntry } from "./SectionEditorDrawer";
+import {
+  buildAdminSectionPayload,
+  buildProfileSectionSaveEntry,
+} from "./SectionEditorDrawer";
 import { queryDefinitionFromSectionConfig } from "@/api/types";
 
 describe("SectionEditorDrawer payload builders", () => {

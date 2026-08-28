@@ -5,7 +5,9 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/imagesize"
 )
 
 type audiobookGroupResponse struct {
@@ -80,6 +82,11 @@ func (h *CatalogHandler) HandleGetAudiobookGroups(w http.ResponseWriter, r *http
 		includeTotal = parsed
 	}
 
+	filter, ok := h.itemsH.accessFilterOrError(w, r)
+	if !ok {
+		return
+	}
+
 	result, err := catalog.ListAudiobookGroups(
 		r.Context(),
 		h.itemsH.browseRepo.Pool(),
@@ -92,14 +99,14 @@ func (h *CatalogHandler) HandleGetAudiobookGroups(w http.ResponseWriter, r *http
 			Limit:        limit,
 			Offset:       offset,
 		},
-		h.itemsH.accessFilter(r),
+		filter,
 	)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, "internal_error", "Failed to list audiobook groups")
 		return
 	}
 
-	resolvedPosters := h.resolveAudiobookGroupPosterURLs(r, result.Groups)
+	resolvedPosters := h.resolveAudiobookGroupPosterURLs(r, result.Groups, filter.ImageSize)
 	resp := audiobookGroupsResponse{
 		Total:      result.Total,
 		TotalExact: result.TotalExact,
@@ -109,7 +116,7 @@ func (h *CatalogHandler) HandleGetAudiobookGroups(w http.ResponseWriter, r *http
 	for _, g := range result.Groups {
 		posterURLs := make([]string, 0, len(g.PosterPaths))
 		for _, path := range g.PosterPaths {
-			if resolved := resolvedPosters[cardThumbnailPath(path)]; resolved.URL != "" {
+			if resolved := resolvedPosters[sizedCardPath(path, artworkkey.ImagePoster, filter.ImageSize)]; resolved.URL != "" {
 				posterURLs = append(posterURLs, resolved.URL)
 			}
 		}
@@ -126,7 +133,11 @@ func (h *CatalogHandler) HandleGetAudiobookGroups(w http.ResponseWriter, r *http
 	writeJSON(w, http.StatusOK, resp)
 }
 
-func (h *CatalogHandler) resolveAudiobookGroupPosterURLs(r *http.Request, groups []catalog.AudiobookGroup) map[string]catalog.ResolvedImageURL {
+// resolveAudiobookGroupPosterURLs presigns the cover-stack posters for a page of
+// groups. size is the already-validated size off the request's access filter, so
+// the ladder rung and the plugin hint match the rest of the response instead of
+// being re-derived per item.
+func (h *CatalogHandler) resolveAudiobookGroupPosterURLs(r *http.Request, groups []catalog.AudiobookGroup, size imagesize.Size) map[string]catalog.ResolvedImageURL {
 	if h == nil || h.itemsH == nil || h.itemsH.detailSvc == nil || len(groups) == 0 {
 		return map[string]catalog.ResolvedImageURL{}
 	}
@@ -135,7 +146,7 @@ func (h *CatalogHandler) resolveAudiobookGroupPosterURLs(r *http.Request, groups
 	seen := make(map[string]struct{}, len(groups)*4)
 	for _, group := range groups {
 		for _, path := range group.PosterPaths {
-			normalized := cardThumbnailPath(path)
+			normalized := sizedCardPath(path, artworkkey.ImagePoster, size)
 			if normalized == "" {
 				continue
 			}
@@ -146,5 +157,5 @@ func (h *CatalogHandler) resolveAudiobookGroupPosterURLs(r *http.Request, groups
 			paths = append(paths, normalized)
 		}
 	}
-	return h.itemsH.detailSvc.PresignURLsWithExpiry(r.Context(), paths, "card")
+	return h.itemsH.detailSvc.PresignURLsWithExpiry(r.Context(), paths, requestVariantHint("card", size))
 }

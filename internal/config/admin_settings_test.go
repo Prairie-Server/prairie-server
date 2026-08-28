@@ -179,6 +179,26 @@ func TestAdminSettingDefaultsAlignWithConfigRuntimeDefaults(t *testing.T) {
 	}
 }
 
+func TestChapterThumbnailSoftwareToneMapDefaultsDisabled(t *testing.T) {
+	effective := EffectiveAdminSettings(nil)
+	if got := effective[chapterThumbnailSoftwareToneMapKey]; got != "false" {
+		t.Fatalf("software tone-map default = %q, want false", got)
+	}
+}
+
+// TestTranscodeToneMapPoliciesDefaultDisabled verifies tone mapping remains opt-in.
+func TestTranscodeToneMapPoliciesDefaultDisabled(t *testing.T) {
+	effective := EffectiveAdminSettings(nil)
+	for _, key := range []string{
+		PlaybackTranscodeHardwareToneMapSettingKey,
+		PlaybackTranscodeSoftwareToneMapSettingKey,
+	} {
+		if got := effective[key]; got != "false" {
+			t.Fatalf("%s default = %q, want false", key, got)
+		}
+	}
+}
+
 func normalizeEffectiveRuntimeDefaults(cfg *Config) {
 	if cfg.S3.Public.URLAuth == "" {
 		cfg.S3.Public.URLAuth = "presigned"
@@ -202,6 +222,7 @@ func normalizeEffectiveRuntimeDefaults(cfg *Config) {
 	)
 }
 
+// TestNormalizeAdminSettingRejectsInvalidValues verifies invalid admin settings are rejected.
 func TestNormalizeAdminSettingRejectsInvalidValues(t *testing.T) {
 	tests := []struct {
 		key   string
@@ -209,12 +230,15 @@ func TestNormalizeAdminSettingRejectsInvalidValues(t *testing.T) {
 	}{
 		{key: "database.max_connections", value: "0"},
 		{key: "metadata.cache_images", value: "maybe"},
+		{key: chapterThumbnailSoftwareToneMapKey, value: "maybe"},
+		{key: PlaybackTranscodeHardwareToneMapSettingKey, value: "maybe"},
+		{key: PlaybackTranscodeSoftwareToneMapSettingKey, value: "maybe"},
 		{key: "auth.access_token_expiry", value: "forever"},
 		{key: "recommendations.embeddings_cron", value: "not a cron"},
 		{key: "notifications.server_channels.batch_seconds", value: "119"},
 		{key: "catalog.search.meilisearch.semantic_ratio", value: "1.2"},
 		{key: "email.smtp_port", value: "70000"},
-		{key: "theme.catalog_url", value: "http://raw.githubusercontent.com/prairie-server/prairie-themes/main/catalog.json"},
+		{key: "theme.catalog_url", value: "http://raw.githubusercontent.com/Prairie-Server/silo-themes/main/catalog.json"},
 		{key: "theme.catalog_url", value: "https://example.com/catalog.json"},
 		{key: "redis.url", value: "not-a-url"},
 	}
@@ -230,13 +254,23 @@ func TestNormalizeAdminSettingRejectsInvalidValues(t *testing.T) {
 func TestNormalizeAdminSettingAcceptsApprovedThemeCatalogURL(t *testing.T) {
 	got, err := NormalizeAdminSetting(
 		"theme.catalog_url",
-		"https://raw.githubusercontent.com/prairie-server/prairie-themes/main/catalog.json/",
+		"https://raw.githubusercontent.com/Prairie-Server/silo-themes/main/catalog.json/",
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != "https://raw.githubusercontent.com/prairie-server/prairie-themes/main/catalog.json" {
+	if got != "https://raw.githubusercontent.com/Prairie-Server/silo-themes/main/catalog.json" {
 		t.Fatalf("normalized URL = %q", got)
+	}
+}
+
+func TestNormalizeAdminSettingAcceptsVideoToolbox(t *testing.T) {
+	got, err := NormalizeAdminSetting("playback.hw_accel", " VideoToolbox ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != "videotoolbox" {
+		t.Fatalf("normalized hardware acceleration = %q, want videotoolbox", got)
 	}
 }
 

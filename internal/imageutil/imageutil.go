@@ -1,11 +1,5 @@
 // Package imageutil provides image resizing and thumbhash generation
 // for collection poster and backdrop uploads.
-//
-// WebP and AVIF still-image work prefer native ffmpeg backends (libwebp /
-// libsvtav1, optional AV1 NVENC) with the embedded Rust WASI module as
-// fallback. Trading hermetic vendored-WASM encode for native libs in the
-// Docker image is intentional: WASM cannot match native SIMD/threads on
-// small nodes. Hostile-byte decode stays in ffmpeg/WASI — not CGO libvips.
 package imageutil
 
 import (
@@ -17,145 +11,189 @@ import (
 	"image/color"
 	_ "image/jpeg"
 	_ "image/png"
-	"strconv"
-	"strings"
+	"sort"
 
+	"github.com/h2non/bimg"
 	"go.n16f.net/thumbhash"
 )
 
 const (
-	webpQuality = 90
-	// avifSpeed is the rav1e speed preset passed to imageutil-wasm (1..=10).
-	// 10 = fastest; photographic posters/backdrops stay visually identical to
-	// slower presets while cutting WASM encode time multi-fold.
-	avifSpeed = 10
-	// defaultFormats keeps WebP canonical + AVIF sibling. PNG is omitted:
-	// clients fall through AVIF→WebP on missing PNG (ArtworkImage onError /
-	// native caches), and PNG was the largest encode of the trio.
-	defaultFormats             = "webp,avif"
-	maxCachedOriginalDimension = 1920
-	thumbhashSourceDimension   = 100
+	webpQuality              = 90
+	avifSpeed                = 10
+	thumbhashSourceDimension = 100
 )
 
+const maxCachedOriginalDimension = MaxCachedOriginalDimension
+
+// MaxCachedOriginalDimension caps the longest edge of a cached "original"
+// variant. Provider artwork wider than this is downscaled on ingest, so a
+// client asking for the original size never receives more pixels than this.
+const MaxCachedOriginalDimension = 1920
+
 // Variant holds a named image variant (e.g. "original", "w500").
-// Data is the canonical WebP payload; AVIF and PNG are optional sibling
-// upgrades for clients that prefer them (AVIF) or cannot decode WebP (PNG).
+// Data is the canonical WebP payload; AVIF and PNG are optional siblings.
 type Variant struct {
 	Key  string
 	Data []byte
-	AVIF []byte // optional; empty when AVIF encode was skipped
-	PNG  []byte // optional; empty when PNG encode was skipped
+	AVIF []byte
+	PNG  []byte
 }
 
-// VariantResult contains generated variants and their canonical output format.
+// VariantResult contains generated variants and their output format.
 type VariantResult struct {
 	Variants []Variant
-	Ext      string // canonical extension including dot: ".webp"
+	Ext      string // file extension including dot: ".webp"
 }
 
-// GenerateVariants produces WebP (+ AVIF) variants of the source image at the
-// requested widths, plus an "original" re-encoded in those formats. WebP
-// remains the canonical cache key; AVIF is a dual-written sibling for clients
-// that prefer it. Images narrower than a target width are re-encoded without
-// upscaling. All resizes operate on the original bytes to avoid compounding
-// quality loss. AVIF uses the configured native/WASM backend.
+// GenerateVariants produces WebP variants of the source image at the requested
+// widths, plus an "original" re-encoded as WebP. WebP provides better quality
+// per byte than JPEG and supports transparency (unlike JPEG). Images narrower
+// than a target width are re-encoded without upscaling. All resizes operate on
+// the original bytes to avoid compounding quality loss.
 func GenerateVariants(data []byte, widths []int) (*VariantResult, error) {
-	if ActiveAVIFBackend() == BackendWASM || forceWASMForTest.Load() {
-		return generateVariants(data, widths, defaultFormats)
+	img := bimg.NewImage(data)
+
+	// Validate input by reading size.
+	size, err := img.Size()
+	if err != nil {
+		return nil, fmt.Errorf("imageutil: invalid image: %w", err)
 	}
-	return encodeAVIFLadder(context.Background(), data, widths, nil)
+
+	variants := make([]Variant, 0, len(widths)+1)
+
+	// Original — re-encode as WebP, strip metadata, and cap very large provider
+	// artwork so cached originals do not preserve oversized source dimensions.
+	originalOptions := bimg.Options{
+		Type:          bimg.WEBP,
+		Quality:       webpQuality,
+		StripMetadata: true,
+	}
+	fitWithin(&originalOptions, size, MaxCachedOriginalDimension)
+	original, err := bimg.NewImage(data).Process(originalOptions)
+	if err != nil {
+		return nil, fmt.Errorf("imageutil: encode original: %w", err)
+	}
+	variants = append(variants, Variant{Key: "original", Data: original})
+
+	// Sort widths descending (largest first).
+	sorted := make([]int, len(widths))
+	copy(sorted, widths)
+	sort.Sort(sort.Reverse(sort.IntSlice(sorted)))
+
+	for _, w := range sorted {
+		size, _ := bimg.NewImage(data).Size()
+		opts := bimg.Options{
+			Type:          bimg.WEBP,
+			Quality:       webpQuality,
+			StripMetadata: true,
+		}
+		if size.Width > w {
+			opts.Width = w
+		}
+		out, err := bimg.NewImage(data).Process(opts)
+		if err != nil {
+			return nil, fmt.Errorf("imageutil: resize to w%d: %w", w, err)
+		}
+		variants = append(variants, Variant{Key: fmt.Sprintf("w%d", w), Data: out})
+	}
+
+	return &VariantResult{Variants: variants, Ext: ".webp"}, nil
 }
 
-// GenerateWebPVariants is the fast phase of artwork caching: WebP only, no
-// AVIF. Callers that need AVIF coverage schedule GenerateAVIFSiblings afterward.
-// Uses the configured native ffmpeg/libwebp backend when available, else WASM.
+// GenerateWebPVariants is the fast phase of artwork caching: WebP only, no AVIF.
+// Silo uses libvips (bimg) for WebP; AVIF siblings are produced afterward via
+// GenerateAVIFSiblings and the durable backfill processor.
 func GenerateWebPVariants(data []byte, widths []int) (*VariantResult, error) {
-	if forceWebPWASMForTest.Load() {
-		return generateVariants(data, widths, "webp")
-	}
-	return currentWebPEncoder().GenerateVariants(context.Background(), data, widths)
+	return GenerateVariants(data, widths)
 }
 
-// GenerateAVIFSiblings resizes the display-width ladder (WebP via the configured
-// backend) then encodes AVIF siblings with the configured AVIF backend.
-// The "original" key keeps WebP only: full-size AVIF dominates encode cost and
-// clients already fall through to WebP for it. Callers discard regenerated
-// WebP and upload only the AVIF payloads.
+// GenerateAVIFSiblings resizes the display-width ladder via GenerateWebPVariants
+// then encodes AVIF siblings with the configured AVIF backend. The original
+// key keeps WebP only; full-size AVIF is skipped by default.
 func GenerateAVIFSiblings(data []byte, widths []int) (*VariantResult, error) {
 	return encodeAVIFLadder(context.Background(), data, widths, []string{"original"})
 }
 
-func generateVariants(data []byte, widths []int, formats string, noAVIFKeys ...string) (*VariantResult, error) {
-	p, err := getProcessor()
+// GenerateSquareVariants center-crops the source image to a square and returns
+// a square original plus resized square variants, all encoded as WebP.
+func GenerateSquareVariants(data []byte, sizes []int) (*VariantResult, error) {
+	img := bimg.NewImage(data)
+	size, err := img.Size()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("imageutil: invalid image: %w", err)
 	}
-	args := []string{
-		"--quality", strconv.Itoa(webpQuality),
-		"--avif-speed", strconv.Itoa(avifSpeed),
-		"--max-original", strconv.Itoa(maxCachedOriginalDimension),
-		"--formats", formats,
+
+	squareSize := size.Width
+	if size.Height < squareSize {
+		squareSize = size.Height
 	}
-	if csv := joinUintCSV(widths); csv != "" {
-		args = append(args, "--widths", csv)
+	if squareSize <= 0 {
+		return nil, fmt.Errorf("imageutil: invalid image size")
 	}
-	if len(noAVIFKeys) > 0 {
-		args = append(args, "--no-avif-keys", strings.Join(noAVIFKeys, ","))
+
+	top := (size.Height - squareSize) / 2
+	left := (size.Width - squareSize) / 2
+	cropped, err := img.Extract(top, left, squareSize, squareSize)
+	if err != nil {
+		return nil, fmt.Errorf("imageutil: crop square: %w", err)
 	}
-	return p.run(context.Background(), "variants", data, args)
+
+	variants := make([]Variant, 0, len(sizes)+1)
+	original, err := bimg.NewImage(cropped).Process(bimg.Options{
+		Type:          bimg.WEBP,
+		Quality:       webpQuality,
+		StripMetadata: true,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("imageutil: encode square original: %w", err)
+	}
+	variants = append(variants, Variant{Key: "original", Data: original})
+
+	sorted := make([]int, len(sizes))
+	copy(sorted, sizes)
+	sort.Sort(sort.Reverse(sort.IntSlice(sorted)))
+
+	for _, square := range sorted {
+		if square <= 0 {
+			continue
+		}
+		opts := bimg.Options{
+			Type:          bimg.WEBP,
+			Quality:       webpQuality,
+			StripMetadata: true,
+			Width:         square,
+			Height:        square,
+			Force:         true,
+			Enlarge:       squareSize < square,
+		}
+		out, err := bimg.NewImage(cropped).Process(opts)
+		if err != nil {
+			return nil, fmt.Errorf("imageutil: resize square to %d: %w", square, err)
+		}
+		variants = append(variants, Variant{Key: fmt.Sprintf("w%d", square), Data: out})
+	}
+
+	return encodeAVIFForVariants(context.Background(), &VariantResult{Variants: variants, Ext: ".webp"})
 }
 
-// GenerateSquareVariants center-crops the source image to a square and returns
-// a square original plus resized square variants, encoded as WebP with AVIF
-// siblings.
-func GenerateSquareVariants(data []byte, sizes []int) (*VariantResult, error) {
-	if ActiveAVIFBackend() == BackendWASM || forceWASMForTest.Load() {
-		p, err := getProcessor()
-		if err != nil {
-			return nil, err
-		}
-		args := []string{
-			"--quality", strconv.Itoa(webpQuality),
-			"--avif-speed", strconv.Itoa(avifSpeed),
-			"--formats", defaultFormats,
-		}
-		if csv := joinUintCSV(sizes); csv != "" {
-			args = append(args, "--sizes", csv)
-		}
-		return p.run(context.Background(), "square-variants", data, args)
-	}
-
-	var webp *VariantResult
-	var err error
-	if forceWebPWASMForTest.Load() || ActiveWebPBackend() == WebPBackendWASM {
-		p, perr := getProcessor()
-		if perr != nil {
-			return nil, perr
-		}
-		args := []string{
-			"--quality", strconv.Itoa(webpQuality),
-			"--avif-speed", strconv.Itoa(avifSpeed),
-			"--formats", "webp",
-		}
-		if csv := joinUintCSV(sizes); csv != "" {
-			args = append(args, "--sizes", csv)
-		}
-		webp, err = p.run(context.Background(), "square-variants", data, args)
-	} else {
-		webp, err = currentWebPEncoder().GenerateSquareVariants(context.Background(), data, sizes)
-	}
-	if err != nil {
-		return nil, err
+func encodeAVIFForVariants(ctx context.Context, result *VariantResult) (*VariantResult, error) {
+	if result == nil {
+		return nil, fmt.Errorf("imageutil: nil variant result")
 	}
 	enc := currentAVIFEncoder()
-	for i := range webp.Variants {
-		avif, encErr := enc.Encode(context.Background(), webp.Variants[i].Data, widthFromKey(webp.Variants[i].Key))
-		if encErr != nil {
-			return nil, fmt.Errorf("imageutil: square AVIF %s: %w", webp.Variants[i].Key, encErr)
+	out := &VariantResult{Ext: result.Ext, Variants: make([]Variant, len(result.Variants))}
+	for i, v := range result.Variants {
+		out.Variants[i] = v
+		if len(v.Data) == 0 {
+			continue
 		}
-		webp.Variants[i].AVIF = avif
+		avif, err := enc.Encode(ctx, v.Data, widthFromKey(v.Key))
+		if err != nil {
+			return nil, fmt.Errorf("imageutil: AVIF encode %s (%s): %w", v.Key, enc.Name(), err)
+		}
+		out.Variants[i].AVIF = avif
 	}
-	return webp, nil
+	return out, nil
 }
 
 // Thumbhash computes a base64-encoded thumbhash from raw image bytes.
@@ -179,29 +217,39 @@ func Thumbhash(data []byte) (string, error) {
 }
 
 func normalizeThumbhashSource(data []byte) ([]byte, error) {
-	p, err := getProcessor()
+	img := bimg.NewImage(data)
+	size, err := img.Size()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("imageutil: invalid image: %w", err)
 	}
-	result, err := p.run(context.Background(), "normalize-png", data, []string{
-		"--max-dim", strconv.Itoa(thumbhashSourceDimension),
-	})
+	opts := bimg.Options{
+		Type:          bimg.PNG,
+		StripMetadata: true,
+	}
+	fitWithin(&opts, size, thumbhashSourceDimension)
+	out, err := img.Process(opts)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("imageutil: normalize thumbhash source: %w", err)
 	}
-	for _, v := range result.Variants {
-		if v.Key == "normalized" {
-			return v.Data, nil
-		}
+	return out, nil
+}
+
+func fitWithin(opts *bimg.Options, size bimg.ImageSize, maxDim int) {
+	if opts == nil || maxDim <= 0 {
+		return
 	}
-	if len(result.Variants) > 0 {
-		return result.Variants[0].Data, nil
+	if size.Width <= maxDim && size.Height <= maxDim {
+		return
 	}
-	return nil, fmt.Errorf("imageutil: normalize thumbhash source: empty output")
+	if size.Width >= size.Height {
+		opts.Width = maxDim
+		return
+	}
+	opts.Height = maxDim
 }
 
 // scaleImage scales src so its longest dimension does not exceed maxDim,
-// preserving aspect ratio. Uses nearest-neighbor interpolation.
+// preserving aspect ratio. Uses nearest-neighbour interpolation.
 func scaleImage(src image.Image, maxDim int) *image.NRGBA {
 	bounds := src.Bounds()
 	srcW := bounds.Dx()

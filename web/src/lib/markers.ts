@@ -8,7 +8,12 @@ import type { MarkerKind } from "@/api/types";
  */
 
 /** The four editable marker kinds, in display order. */
-export const MARKER_KINDS: MarkerKind[] = ["intro", "recap", "credits", "preview"];
+export const MARKER_KINDS: MarkerKind[] = [
+  "intro",
+  "recap",
+  "credits",
+  "preview",
+];
 
 /** Human labels. "credits" doubles as the outro, so we say so. */
 export const MARKER_LABELS: Record<MarkerKind, string> = {

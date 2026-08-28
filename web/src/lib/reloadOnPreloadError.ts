@@ -15,11 +15,14 @@ interface PreloadErrorReloadDeps {
   setItem: (key: string, value: string) => void;
 }
 
-export function installPreloadErrorReload(deps?: Partial<PreloadErrorReloadDeps>): () => void {
+export function installPreloadErrorReload(
+  deps?: Partial<PreloadErrorReloadDeps>,
+): () => void {
   const reload = deps?.reload ?? (() => window.location.reload());
   const now = deps?.now ?? Date.now;
   const getItem = deps?.getItem ?? ((k: string) => sessionStorage.getItem(k));
-  const setItem = deps?.setItem ?? ((k: string, v: string) => sessionStorage.setItem(k, v));
+  const setItem =
+    deps?.setItem ?? ((k: string, v: string) => sessionStorage.setItem(k, v));
 
   const handler = (event: Event) => {
     const lastReloadAt = Number(getItem(GUARD_KEY) ?? 0);

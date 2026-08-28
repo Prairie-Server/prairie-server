@@ -19,7 +19,9 @@ export function isActiveAdminJob(job: Pick<AdminJob, "status">) {
  * String inputs use `Number.parseInt(value, 10)`, so parseInt's leading numeric token
  * rules apply. `NaN`, `Infinity`, and `-Infinity` return `null`.
  */
-export function getLibraryRefreshLibraryID(job: Pick<AdminJob, "request_payload">) {
+export function getLibraryRefreshLibraryID(
+  job: Pick<AdminJob, "request_payload">,
+) {
   const value = (job.request_payload as { library_id?: unknown }).library_id;
   if (typeof value === "number" && Number.isFinite(value)) {
     return value;
@@ -31,7 +33,10 @@ export function getLibraryRefreshLibraryID(job: Pick<AdminJob, "request_payload"
   return null;
 }
 
-export function getLibraryRefreshLibraryName(job: Pick<AdminJob, "request_payload">) {
-  const value = (job.request_payload as { library_name?: unknown }).library_name;
+export function getLibraryRefreshLibraryName(
+  job: Pick<AdminJob, "request_payload">,
+) {
+  const value = (job.request_payload as { library_name?: unknown })
+    .library_name;
   return typeof value === "string" && value.trim() ? value : null;
 }

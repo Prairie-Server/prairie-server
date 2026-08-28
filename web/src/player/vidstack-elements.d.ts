@@ -67,9 +67,18 @@ type VidstackIntrinsicElements = {
   "media-captions": VidstackElementProps;
   "media-spinner": VidstackElementProps;
   "media-gesture": VidstackElementProps;
-  track: React.DetailedHTMLProps<React.TrackHTMLAttributes<HTMLTrackElement>, HTMLTrackElement>;
-  template: React.DetailedHTMLProps<React.HTMLAttributes<HTMLTemplateElement>, HTMLTemplateElement>;
-  source: React.DetailedHTMLProps<React.SourceHTMLAttributes<HTMLSourceElement>, HTMLSourceElement>;
+  track: React.DetailedHTMLProps<
+    React.TrackHTMLAttributes<HTMLTrackElement>,
+    HTMLTrackElement
+  >;
+  template: React.DetailedHTMLProps<
+    React.HTMLAttributes<HTMLTemplateElement>,
+    HTMLTemplateElement
+  >;
+  source: React.DetailedHTMLProps<
+    React.SourceHTMLAttributes<HTMLSourceElement>,
+    HTMLSourceElement
+  >;
 };
 
 declare global {

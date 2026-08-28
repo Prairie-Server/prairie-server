@@ -3,6 +3,7 @@
 .claude
 .agents
 .githooks
+.superpowers
 .env
 .env.*
 docs/

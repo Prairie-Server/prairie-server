@@ -66,7 +66,10 @@ export function useAudiobookKeyboardShortcuts({
         return;
       }
       // Space activates a focused button/link; never steal it.
-      if (e.key === " " && target.closest("button, a, [role='button'], [role='slider']")) {
+      if (
+        e.key === " " &&
+        target.closest("button, a, [role='button'], [role='slider']")
+      ) {
         return;
       }
 
@@ -125,7 +128,10 @@ export function useAudiobookKeyboardShortcuts({
         case "Escape":
           // Open popovers close themselves on Escape; only collapse the
           // full-screen view when nothing else is consuming the key.
-          if (expanded && !document.querySelector("[role='menu'], [role='dialog']")) {
+          if (
+            expanded &&
+            !document.querySelector("[role='menu'], [role='dialog']")
+          ) {
             onCollapse();
           }
           break;

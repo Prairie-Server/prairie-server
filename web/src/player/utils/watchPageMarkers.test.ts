@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 
 import type { PlayerFileVersion } from "../types";
-import { patchVersionMarkers, resolveActiveVersionMarkers } from "./watchPageMarkers";
+import {
+  patchVersionMarkers,
+  resolveActiveVersionMarkers,
+} from "./watchPageMarkers";
 
-function makeVersion(overrides: Partial<PlayerFileVersion> = {}): PlayerFileVersion {
+function makeVersion(
+  overrides: Partial<PlayerFileVersion> = {},
+): PlayerFileVersion {
   return {
     file_id: overrides.file_id ?? 1,
     resolution: overrides.resolution ?? "1080p",
@@ -37,7 +42,9 @@ describe("resolveActiveVersionMarkers", () => {
   });
 
   it("returns null markers when the selected version has none", () => {
-    expect(resolveActiveVersionMarkers(makeVersion({ intro: null, credits: null }))).toEqual({
+    expect(
+      resolveActiveVersionMarkers(makeVersion({ intro: null, credits: null })),
+    ).toEqual({
       intro: null,
       credits: null,
       recap: null,

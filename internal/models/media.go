@@ -1,8 +1,16 @@
 package models
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
+)
+
+const (
+	mediaBaseTypeAudiobook = "audiobook"
+	mediaBaseTypePodcast   = "podcast"
+	mediaCodecMJPEG        = "mjpeg"
+	mediaCodecH264         = "h264"
 )
 
 // MediaFolder represents a row in the media_folders table.
@@ -109,12 +117,24 @@ type MediaFile struct {
 	PresentationPartTotal        int
 	MultiEpisodeStart            int
 	MultiEpisodeEnd              int
-	ProbeSource                  string // arrs, local
-	ProbeUpdatedAt               *time.Time
-	MatchAttemptedAt             *time.Time
-	MissingSince                 *time.Time
-	CreatedAt                    time.Time
-	UpdatedAt                    time.Time
+	// MultiplePPS is the persisted H.264 multi-PPS copy-safety verdict; nil
+	// means the file has never been successfully analyzed. It is trusted only
+	// when MultiplePPSScanSize and MultiplePPSScanMtime still match the file's
+	// current size and mtime, so a rewritten file self-invalidates without any
+	// coordination from the writers that touch media_files.
+	//
+	// json:"-" on all three: MediaFile is not a client-facing shape, and the
+	// runtime copy-safety signal clients do act on lives on VideoTrack.
+	MultiplePPS          *bool      `json:"-"`
+	MultiplePPSScanSize  *int64     `json:"-"`
+	MultiplePPSScanMtime *time.Time `json:"-"`
+	ProbeSource          string     // arrs, local
+	ProbeUpdatedAt       *time.Time
+	MatchAttemptedAt     *time.Time
+	MissingSince         *time.Time
+	FirstSeenScanRunID   string
+	CreatedAt            time.Time
+	UpdatedAt            time.Time
 }
 
 // MediaChapter represents a single media chapter derived from embedded file metadata.
@@ -176,6 +196,149 @@ func (f *MediaFile) PrimaryDVProfile() int {
 	return f.VideoTracks[0].DVProfile
 }
 
+// VideoCopySafetyUnknown reports whether this file is an H.264 video whose
+// multi-PPS copy-safety verdict is not stamped on the in-memory track. Only
+// H.264 can carry the conflicting in-band parameter sets that make a video
+// stream-copy unsafe, so every other codec is trivially known-safe.
+//
+// This is the single definition of "the verdict is still open", shared by the
+// scanner that resolves it, the catalog surfaces that trigger the resolution,
+// and playback.
+func (f *MediaFile) VideoCopySafetyUnknown() bool {
+	if f == nil || len(f.VideoTracks) == 0 {
+		return false
+	}
+	if f.VideoTracks[0].MultiplePPS != nil {
+		return false
+	}
+	codec := strings.ToLower(strings.TrimSpace(f.VideoTracks[0].Codec))
+	if codec == "" {
+		codec = strings.ToLower(strings.TrimSpace(f.CodecVideo))
+	}
+	return codec == mediaCodecH264 || codec == "avc" || codec == "avc1"
+}
+
+// PersistedVideoCopyVerdict returns the H.264 multi-PPS verdict recorded on the
+// media_files row and whether it still describes the file as it stands.
+//
+// The verdict is self-validating: it is only honored while the size and mtime
+// it was computed from still match the row, so a rewrite in place falls through
+// to a rescan without any writer having to clear it. A verdict recorded for a
+// row that carries no mtime is trusted on size alone — that is the only signal
+// such a row has, and it is the same rule the scanner's in-process memo
+// applies.
+//
+// This lives on the model because the row columns are loaded by every media
+// file read, while the VideoTrack copy-safety flags are runtime-only and are
+// stamped by the probe ensurer, which not every path that loads a file runs.
+func (f *MediaFile) PersistedVideoCopyVerdict() (bool, bool) {
+	if f == nil || f.MultiplePPS == nil || f.MultiplePPSScanSize == nil {
+		return false, false
+	}
+	if *f.MultiplePPSScanSize != f.FileSize {
+		return false, false
+	}
+	if f.MultiplePPSScanMtime == nil || f.FileModifiedAt == nil {
+		if f.MultiplePPSScanMtime != nil || f.FileModifiedAt != nil {
+			return false, false
+		}
+		return *f.MultiplePPS, true
+	}
+	if !NormalizeFileModifiedAt(*f.MultiplePPSScanMtime).Equal(NormalizeFileModifiedAt(*f.FileModifiedAt)) {
+		return false, false
+	}
+	return *f.MultiplePPS, true
+}
+
+// NormalizeFileModifiedAt puts a filesystem mtime in the one shape every
+// comparison uses. Postgres stores microseconds and local filesystems report
+// nanoseconds, so a round trip through the database is only equal to the value
+// that was written after truncation.
+func NormalizeFileModifiedAt(ts time.Time) time.Time {
+	return ts.UTC().Truncate(time.Microsecond)
+}
+
+// AudioOnlyProbeFacts is the compact probe shape needed to distinguish known
+// audio media from incomplete video probes and legacy attached cover art.
+type AudioOnlyProbeFacts struct {
+	BaseType               string
+	CodecVideo             string
+	CodecAudio             string
+	HasVideoTracks         bool
+	HasAudioTracks         bool
+	HasNonImageVideoTracks bool
+}
+
+func isImageVideoCodec(codec string) bool {
+	switch strings.ToLower(strings.TrimSpace(codec)) {
+	case mediaCodecMJPEG, "jpeg", "png", "webp", "gif", "bmp":
+		return true
+	default:
+		return false
+	}
+}
+
+// HasLegacyAttachedPictureVideo reports the stale shape in which every video
+// track on known audio media is embedded cover art.
+func (f AudioOnlyProbeFacts) HasLegacyAttachedPictureVideo() bool {
+	knownAudioType := f.BaseType == mediaBaseTypeAudiobook || f.BaseType == mediaBaseTypePodcast
+	hasAudio := f.HasAudioTracks || strings.TrimSpace(f.CodecAudio) != ""
+	if !knownAudioType || !hasAudio {
+		return false
+	}
+	if !f.HasVideoTracks {
+		return isImageVideoCodec(f.CodecVideo)
+	}
+	if f.HasNonImageVideoTracks {
+		return false
+	}
+	return strings.TrimSpace(f.CodecVideo) == "" || isImageVideoCodec(f.CodecVideo)
+}
+
+// IsAudioOnly reports whether these facts contain positive evidence for known
+// audio media with no playable video stream.
+func (f AudioOnlyProbeFacts) IsAudioOnly() bool {
+	knownAudioType := f.BaseType == mediaBaseTypeAudiobook || f.BaseType == mediaBaseTypePodcast
+	hasAudio := f.HasAudioTracks || strings.TrimSpace(f.CodecAudio) != ""
+	return (knownAudioType && hasAudio && !f.HasVideoTracks && strings.TrimSpace(f.CodecVideo) == "") || f.HasLegacyAttachedPictureVideo()
+}
+
+// AudioOnlyProbeFacts returns the compact stream evidence for this media file.
+func (f *MediaFile) AudioOnlyProbeFacts() AudioOnlyProbeFacts {
+	if f == nil {
+		return AudioOnlyProbeFacts{}
+	}
+	facts := AudioOnlyProbeFacts{
+		BaseType:       f.BaseType,
+		CodecVideo:     f.CodecVideo,
+		CodecAudio:     f.CodecAudio,
+		HasVideoTracks: len(f.VideoTracks) > 0,
+		HasAudioTracks: len(f.AudioTracks) > 0,
+	}
+	for _, track := range f.VideoTracks {
+		if !isImageVideoCodec(track.Codec) {
+			facts.HasNonImageVideoTracks = true
+			break
+		}
+	}
+	return facts
+}
+
+// HasLegacyAttachedPictureVideo reports the stale catalog shape produced when
+// older probes recorded embedded cover art as a video track. BaseType and
+// audio evidence keep genuine MJPEG video from being normalized away.
+func (f *MediaFile) HasLegacyAttachedPictureVideo() bool {
+	return f.AudioOnlyProbeFacts().HasLegacyAttachedPictureVideo()
+}
+
+// IsAudioOnly reports whether a probed file carries no playable video stream —
+// audiobooks and podcasts, as opposed to a video file whose probe is incomplete.
+// It also normalizes legacy audiobook/podcast cover-art rows until a repair
+// probe removes their stale image-only video metadata.
+func (f *MediaFile) IsAudioOnly() bool {
+	return f.AudioOnlyProbeFacts().IsAudioOnly()
+}
+
 // NormalizeVideoBitDepth returns an explicit probe value when available and
 // otherwise derives the bit depth from stable ffprobe fields. FFprobe commonly
 // omits bits_per_raw_sample for HEVC even though the pixel format and profile
@@ -224,31 +387,40 @@ func NormalizeVideoBitDepth(explicit int, pixelFormat, profile string) int {
 
 // VideoTrack represents a probed video stream stored as JSONB.
 type VideoTrack struct {
-	Title              string `json:"title,omitempty"`
-	Codec              string `json:"codec,omitempty"`
-	DolbyVision        string `json:"dolby_vision,omitempty"`
-	DVProfile          int    `json:"dv_profile,omitempty"`
-	DVBLCompatID       int    `json:"dv_bl_compat_id,omitempty"`
-	DVELPresent        bool   `json:"dv_el_present,omitempty"`
-	DVEnhancementLayer string `json:"dv_enhancement_layer,omitempty"` // none, mel, fel, unknown
-	HDR10Plus          bool   `json:"hdr10_plus,omitempty"`
-	Profile            string `json:"profile,omitempty"`
-	Level              int    `json:"level,omitempty"`
-	Width              int    `json:"width,omitempty"`
-	Height             int    `json:"height,omitempty"`
-	AspectRatio        string `json:"aspect_ratio,omitempty"`
-	Interlaced         bool   `json:"interlaced"`
-	FrameRate          string `json:"frame_rate,omitempty"`
-	Bitrate            int    `json:"bitrate,omitempty"`
-	VideoRange         string `json:"video_range,omitempty"`
-	VideoRangeType     string `json:"video_range_type,omitempty"`
-	ColorRange         string `json:"color_range,omitempty"`
-	ColorPrimaries     string `json:"color_primaries,omitempty"`
-	ColorSpace         string `json:"color_space,omitempty"`
-	ColorTransfer      string `json:"color_transfer,omitempty"`
-	BitDepth           int    `json:"bit_depth,omitempty"`
-	PixelFormat        string `json:"pixel_format,omitempty"`
-	ReferenceFrames    int    `json:"reference_frames,omitempty"`
+	Title               string `json:"title,omitempty"`
+	Codec               string `json:"codec,omitempty"`
+	DolbyVision         string `json:"dolby_vision,omitempty"`
+	DVProfile           int    `json:"dv_profile,omitempty"`
+	DVLevel             int    `json:"dv_level,omitempty"`
+	DVBLCompatID        int    `json:"dv_bl_compat_id,omitempty"`
+	DVConfigPresent     bool   `json:"dv_config_present"`
+	DVBLCompatIDPresent bool   `json:"dv_bl_compat_id_present"`
+	// DVProvenanceCurrent records whether stored JSON explicitly carried both
+	// provenance booleans. Nil denotes an in-memory track that has not crossed
+	// the storage boundary; false identifies legacy rows written by old nodes.
+	DVProvenanceCurrent *bool  `json:"-"`
+	DVBLPresent         bool   `json:"dv_bl_present,omitempty"`
+	DVRPUPresent        bool   `json:"dv_rpu_present,omitempty"`
+	DVELPresent         bool   `json:"dv_el_present,omitempty"`
+	DVEnhancementLayer  string `json:"dv_enhancement_layer,omitempty"` // none, mel, fel, unknown
+	HDR10Plus           bool   `json:"hdr10_plus,omitempty"`
+	Profile             string `json:"profile,omitempty"`
+	Level               int    `json:"level,omitempty"`
+	Width               int    `json:"width,omitempty"`
+	Height              int    `json:"height,omitempty"`
+	AspectRatio         string `json:"aspect_ratio,omitempty"`
+	Interlaced          bool   `json:"interlaced"`
+	FrameRate           string `json:"frame_rate,omitempty"`
+	Bitrate             int    `json:"bitrate,omitempty"`
+	VideoRange          string `json:"video_range,omitempty"`
+	VideoRangeType      string `json:"video_range_type,omitempty"`
+	ColorRange          string `json:"color_range,omitempty"`
+	ColorPrimaries      string `json:"color_primaries,omitempty"`
+	ColorSpace          string `json:"color_space,omitempty"`
+	ColorTransfer       string `json:"color_transfer,omitempty"`
+	BitDepth            int    `json:"bit_depth,omitempty"`
+	PixelFormat         string `json:"pixel_format,omitempty"`
+	ReferenceFrames     int    `json:"reference_frames,omitempty"`
 	// MultiplePPS records whether an H.264 stream redefines the same
 	// pic_parameter_set_id in-band with more than one distinct content. Such
 	// streams cannot be safely stream-copied into an avc1/fMP4 HLS segment:
@@ -263,6 +435,25 @@ type VideoTrack struct {
 	// safety scan cannot establish that video stream-copy is safe. It is
 	// runtime-only so transient scan failures are retried on a later request.
 	VideoCopyUnsafe bool `json:"-"`
+}
+
+// UnmarshalJSON preserves raw-key presence so rolling older scanners cannot
+// make a legacy Dolby Vision probe look current merely by retaining a non-NULL
+// probe timestamp.
+func (v *VideoTrack) UnmarshalJSON(data []byte) error {
+	type videoTrackAlias VideoTrack
+	var decoded videoTrackAlias
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(data, &raw); err != nil {
+		return err
+	}
+	current := raw["dv_config_present"] != nil && raw["dv_bl_compat_id_present"] != nil
+	*v = VideoTrack(decoded)
+	v.DVProvenanceCurrent = &current
+	return nil
 }
 
 // AudioTrack represents a probed audio stream stored as JSONB.
@@ -379,6 +570,11 @@ type Person struct {
 	PlexGUID        string
 	CreatedAt       time.Time
 	UpdatedAt       time.Time
+	// MetadataRefreshAttemptedAt is when a provider lookup was last attempted
+	// for this person, whether or not it returned anything. nil means never
+	// attempted. Only the whole-row people loaders in catalog populate it;
+	// credit listings (ItemPerson) leave it nil.
+	MetadataRefreshAttemptedAt *time.Time
 }
 
 // ItemPerson represents a person's credit on a specific media item.
@@ -453,6 +649,9 @@ type MediaItem struct {
 	CreatedAt                    time.Time
 	UpdatedAt                    time.Time
 	AddedAt                      *time.Time // populated by browse queries (MIN(mil.first_seen_at))
+	// PlayContentID is transient presentation metadata populated by resolvers
+	// whose displayed item differs from the leaf item that should play.
+	PlayContentID string
 }
 
 // MediaItemAlias is a provider-confirmed searchable title for a media item.

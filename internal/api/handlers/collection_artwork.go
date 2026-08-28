@@ -9,7 +9,6 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/imageutil"
 	"github.com/prairie-server/prairie-server/internal/s3client"
 )
@@ -48,7 +47,7 @@ func storeBundledCollectionPosterIfS3Configured(
 		return "", "", false, fmt.Errorf("reading bundled poster %q: %w", posterPath, err)
 	}
 
-	storedPath, thumbhashStr, err = uploadCollectionImageVariants(ctx, s3GP, prefix, collectionID, imageTypePoster, data)
+	storedPath, thumbhashStr, err = uploadCollectionImageVariants(ctx, s3GP, prefix, collectionID, "poster", data)
 	if err != nil {
 		return "", "", false, err
 	}
@@ -135,11 +134,8 @@ func uploadCollectionImageVariants(
 	var widths []int
 	switch imageType {
 	case imageTypePoster:
-		// Reuse the shared ladder so collection posters never drift from item
-		// artwork (includes the w200 TV rung).
-		widths = artworkkey.VariantWidths(imageTypePoster)
+		widths = []int{500, 300}
 	case "backdrop":
-		// Collages cap at 1280 (no 1920 rung), so this stays bespoke.
 		widths = []int{1280, 300}
 	default:
 		return "", "", fmt.Errorf("invalid image type: %s", imageType)

@@ -18,22 +18,22 @@ import (
 const (
 	// ChannelCatalog is the pub/sub channel for catalog events (scan_complete,
 	// metadata_updated).
-	ChannelCatalog = "prairie:catalog"
+	ChannelCatalog = "silo:catalog"
 
 	// ChannelAdmin is the pub/sub channel for admin events (user_disabled,
 	// user_deleted, settings_changed).
-	ChannelAdmin = "prairie:admin"
+	ChannelAdmin = "silo:admin"
 
 	// ChannelPlayback is the pub/sub channel reserved for future playback
 	// events.
-	ChannelPlayback = "prairie:playback"
+	ChannelPlayback = "silo:playback"
 
 	// ChannelLogs is the pub/sub channel for persisted operational/audit log
 	// entries that should be fanned out to admin WebSocket subscribers.
-	ChannelLogs = "prairie:logs"
+	ChannelLogs = "silo:logs"
 
 	// ChannelEvents is the pub/sub channel for passive websocket events.
-	ChannelEvents = "prairie:events"
+	ChannelEvents = "silo:events"
 )
 
 // ---------------------------------------------------------------------------

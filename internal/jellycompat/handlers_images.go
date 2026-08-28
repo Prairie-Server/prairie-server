@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
@@ -21,7 +22,7 @@ type ImagesHandler struct {
 	codec        *ResourceIDCodec
 	sessions     *SessionStore
 	images       *ImageCache
-	personRepo   *catalog.PersonRepository
+	personRepo   imagePersonRepository
 	detailSvc    *catalog.DetailService
 	itemRepo     imageItemRepository
 	folderRepo   imageFolderRepository
@@ -36,7 +37,7 @@ type ImagesHandler struct {
 	// resolves durably instead of depending on the in-memory image cache.
 	collections collectionSource
 	// frontendFS is optional; when set, app-relative artwork references (bundled
-	// collection-template posters like "/images/collection-templates/x.webp") are
+	// collection-template posters like "/images/collection-templates/x.jpg") are
 	// served straight from the embedded frontend assets. Without it those paths
 	// have no fetchable origin on the compat surface.
 	frontendFS fs.FS
@@ -45,6 +46,10 @@ type ImagesHandler struct {
 type imageItemRepository interface {
 	GetByID(ctx context.Context, contentID string) (*models.MediaItem, error)
 	EnsureAccessible(ctx context.Context, contentID string, filter catalog.AccessFilter) error
+}
+
+type imagePersonRepository interface {
+	Get(ctx context.Context, id int64) (*models.Person, error)
 }
 
 type imageSeasonRepository interface {
@@ -64,12 +69,19 @@ func NewImagesHandler(content ContentService, codec *ResourceIDCodec, sessions *
 	if httpClient == nil {
 		httpClient = http.DefaultClient
 	}
+	// A nil concrete repository has to stay nil in the interface field, or the
+	// nil checks guarding the person route would see a non-nil interface holding
+	// a nil pointer and dereference it.
+	var persons imagePersonRepository
+	if personRepo != nil {
+		persons = personRepo
+	}
 	return &ImagesHandler{
 		content:      content,
 		codec:        codec,
 		sessions:     sessions,
 		images:       images,
-		personRepo:   personRepo,
+		personRepo:   persons,
 		detailSvc:    detailSvc,
 		itemRepo:     itemRepo,
 		folderRepo:   folderRepo,
@@ -184,7 +196,11 @@ func (h *ImagesHandler) handlePersonImage(w http.ResponseWriter, r *http.Request
 		return
 	}
 	imageSize := compatRequestImageSize(r, imageType)
-	resolvedImage := compatPresignImageWithExpiry(h.detailSvc, r.Context(), person.PhotoPath, "poster", imageSize)
+	// Headshots ride the profile ladder ({500, 300}), not the poster ladder,
+	// which now carries a w780 rung. Resolving them as posters would name a
+	// profile/w780 key that is never generated — and the server-side ladder
+	// fallback deliberately skips profile, so nothing would rescue it.
+	resolvedImage := compatPresignImageWithExpiry(h.detailSvc, r.Context(), person.PhotoPath, artworkkey.ImageProfile, imageSize)
 	imageURL := resolvedImage.URL
 	if imageURL == "" {
 		writeError(w, http.StatusNotFound, "NotFound", "Image not found")
@@ -204,7 +220,7 @@ func (h *ImagesHandler) resolveItemImageURL(ctx context.Context, session *Sessio
 		return catalog.ResolvedImageURL{}, err
 	}
 	switch imageType {
-	case imageTypePrimary:
+	case "Primary":
 		return catalog.ResolvedImageURL{URL: firstNonEmpty(detail.PosterURL, detail.BackdropURL)}, nil
 	case "Backdrop", "Thumb":
 		return catalog.ResolvedImageURL{URL: firstNonEmpty(detail.BackdropURL, detail.PosterURL)}, nil
@@ -289,17 +305,17 @@ func (h *ImagesHandler) resolveItemImageURLFromTag(ctx context.Context, routeID,
 	// HandleItemImage by serveCollectionImage / serveCollectionsViewImage, so they
 	// never reach this generic resolver.
 	contentID, err := decodeContentID(h.codec, routeID)
-	if err == nil {
-		return h.resolveItemImageURLFromReposWithoutSession(ctx, routeID, contentID, imageType, imageSize, tag)
+	if err != nil {
+		return catalog.ResolvedImageURL{}, false, err
 	}
-	return catalog.ResolvedImageURL{}, false, nil
+	return h.resolveItemImageURLFromReposWithoutSession(ctx, routeID, contentID, imageType, imageSize, tag)
 }
 
 // collectionArtworkKey returns the stored artwork reference for the requested
 // compat image type ("" when the collection has none of that type).
 func collectionArtworkKey(c *models.LibraryCollection, imageType string) string {
 	switch imageType {
-	case imageTypePrimary:
+	case "Primary":
 		return c.PosterURL
 	case "Backdrop":
 		return c.BackdropURL
@@ -327,11 +343,11 @@ func (h *ImagesHandler) presignCollectionArtwork(ctx context.Context, path strin
 // stored art); Backdrop only when a stored backdrop exists.
 func collectionImageTagSeed(routeID, imageType string, c *models.LibraryCollection) (string, bool) {
 	switch imageType {
-	case imageTypePrimary:
+	case "Primary":
 		if key := strings.TrimSpace(c.PosterURL); key != "" {
-			return imageTagSeed(routeID, imageTypePrimary, compatCardImageSize, key, "", time.Time{}), true
+			return imageTagSeed(routeID, "Primary", compatCardImageSize, key, "", time.Time{}), true
 		}
-		return imageTagSeed(routeID, imageTypePrimary, compatCardImageSize, generatedPosterSeed(c.Title), "", time.Time{}), true
+		return imageTagSeed(routeID, "Primary", compatCardImageSize, generatedPosterSeed(c.Title), "", time.Time{}), true
 	case "Backdrop":
 		if key := strings.TrimSpace(c.BackdropURL); key != "" {
 			return imageTagSeed(routeID, "Backdrop", compatCardImageSize, key, "", time.Time{}), true
@@ -425,7 +441,7 @@ func (h *ImagesHandler) serveCollectionsViewImage(w http.ResponseWriter, r *http
 		writeError(w, http.StatusNotFound, "NotFound", "Image not found")
 		return
 	}
-	seed := imageTagSeed(collectionsViewID, imageTypePrimary, compatCardImageSize, generatedPosterSeed(collectionsViewCaption), "", time.Time{})
+	seed := imageTagSeed(collectionsViewID, "Primary", compatCardImageSize, generatedPosterSeed(collectionsViewCaption), "", time.Time{})
 	authorized := tag != "" && h.imageTags != nil && h.imageTags.Equal(seed, "", tag)
 	if !authorized {
 		session := SessionFromContext(r.Context())
@@ -457,7 +473,7 @@ func (h *ImagesHandler) serveGeneratedPoster(w http.ResponseWriter, caption stri
 }
 
 func (h *ImagesHandler) resolveLibraryImageURLFromTag(ctx context.Context, routeID string, libraryID int, imageType, _ string, tag string) (catalog.ResolvedImageURL, bool, error) {
-	if imageType != imageTypePrimary || h.folderRepo == nil || h.posterSigner == nil {
+	if imageType != "Primary" || h.folderRepo == nil || h.posterSigner == nil {
 		return catalog.ResolvedImageURL{}, false, nil
 	}
 	folder, err := h.folderRepo.GetByID(ctx, libraryID)
@@ -465,7 +481,7 @@ func (h *ImagesHandler) resolveLibraryImageURLFromTag(ctx context.Context, route
 		return catalog.ResolvedImageURL{}, false, err
 	}
 	if folder.PosterPath == "" || !h.imageTags.Equal(
-		imageTagSeed(routeID, imageTypePrimary, compatCardImageSize, folder.PosterPath, "", time.Time{}),
+		imageTagSeed(routeID, "Primary", compatCardImageSize, folder.PosterPath, "", time.Time{}),
 		"",
 		tag,
 	) {
@@ -553,10 +569,10 @@ func (h *ImagesHandler) resolveItemImageURLFromReposWithoutSession(ctx context.C
 func (h *ImagesHandler) signedImageTagMatches(routeID, contentID, imageType, tag, primaryPath, primaryThumbhash, backdropPath, backdropThumbhash, logoPath string, updatedAt time.Time, resolvedURL string) bool {
 	var path, thumbhash, tagImageType string
 	switch imageType {
-	case imageTypePrimary:
+	case "Primary":
 		path = primaryPath
 		thumbhash = primaryThumbhash
-		tagImageType = imageTypePrimary
+		tagImageType = "Primary"
 	case "Backdrop", "Thumb":
 		path = backdropPath
 		thumbhash = backdropThumbhash
@@ -590,7 +606,7 @@ func (h *ImagesHandler) imageURLForItem(ctx context.Context, primaryPath, primar
 	logoURL := compatPresignImageWithExpiry(h.detailSvc, ctx, logoPath, "logo", size)
 
 	switch imageType {
-	case imageTypePrimary:
+	case "Primary":
 		return firstResolvedImageURL(primaryURL, backdropURL)
 	case "Backdrop", "Thumb":
 		return firstResolvedImageURL(backdropURL, primaryURL)
@@ -626,7 +642,7 @@ func (h *ImagesHandler) serveImageURL(w http.ResponseWriter, r *http.Request, im
 }
 
 // serveBundledAsset serves an app-relative asset (e.g.
-// "/images/collection-templates/x.webp") straight from the embedded frontend
+// "/images/collection-templates/x.jpg") straight from the embedded frontend
 // filesystem. A missing FS or file degrades to a clean 404.
 func (h *ImagesHandler) serveBundledAsset(w http.ResponseWriter, assetPath string) {
 	if h.frontendFS == nil {

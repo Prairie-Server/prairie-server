@@ -9,7 +9,11 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import type { DragEndEvent, DragStartEvent } from "@dnd-kit/core";
-import { SortableContext, arrayMove, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  arrayMove,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import type { LibraryCollection, LibraryCollectionGroup } from "@/api/types";
 import {
   useReorderCollectionGroups,
@@ -44,11 +48,16 @@ export interface SelectionContextValue {
   clear: () => void;
 }
 
-export const SelectionContext = createContext<SelectionContextValue | null>(null);
+export const SelectionContext = createContext<SelectionContextValue | null>(
+  null,
+);
 
 export function useSelection(): SelectionContextValue {
   const ctx = useContext(SelectionContext);
-  if (!ctx) throw new Error("useSelection must be used inside SelectionContext.Provider");
+  if (!ctx)
+    throw new Error(
+      "useSelection must be used inside SelectionContext.Provider",
+    );
   return ctx;
 }
 
@@ -91,7 +100,9 @@ export function GroupsBoard({
 }: GroupsBoardProps) {
   // --- selection state ---
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [selectionKind, setSelectionKind] = useState<SelectionKind | null>(null);
+  const [selectionKind, setSelectionKind] = useState<SelectionKind | null>(
+    null,
+  );
   const anchorRef = useRef<AnchorRef | null>(null);
 
   const isSelected = (id: string) => selectedIds.has(id);
@@ -194,7 +205,10 @@ export function GroupsBoard({
 
   // Build a unified ordering of groups + the ungrouped sentinel, sorted by
   // each item's effective sort_order position.
-  const unifiedItems: UnifiedItem[] = buildUnifiedItems(groups, ungroupedSortOrder);
+  const unifiedItems: UnifiedItem[] = buildUnifiedItems(
+    groups,
+    ungroupedSortOrder,
+  );
   const sortableIds = unifiedItems.map((item) =>
     item.kind === "ungrouped" ? "ungrouped" : `group:${item.group.id}`,
   );
@@ -203,11 +217,14 @@ export function GroupsBoard({
     const id = String(e.active.id);
     setActiveId(id);
 
-    const aData = e.active.data.current as { kind?: string; id?: string } | undefined;
+    const aData = e.active.data.current as
+      { kind?: string; id?: string } | undefined;
     if (aData?.kind === "collection" && aData.id) {
       if (selectedIds.has(aData.id)) {
         // Drag the whole selection in visual order
-        setDraggedIds(flattenedSelectionInVisualOrder(groups, ungrouped, selectedIds));
+        setDraggedIds(
+          flattenedSelectionInVisualOrder(groups, ungrouped, selectedIds),
+        );
       } else {
         // Dragging an unselected row — clear selection, drag just this one
         clear();
@@ -228,7 +245,8 @@ export function GroupsBoard({
   // scroll past dozens of rows to reorder. Collection drags don't trigger
   // collapse (admin needs to see destination bodies as drop targets).
   const isSectionDrag =
-    activeId !== null && (activeId === "ungrouped" || activeId.startsWith("group:"));
+    activeId !== null &&
+    (activeId === "ungrouped" || activeId.startsWith("group:"));
 
   const onDragEnd = (e: DragEndEvent) => {
     setActiveId(null);
@@ -238,8 +256,10 @@ export function GroupsBoard({
       return;
     }
 
-    const aData = active.data.current as { kind?: string; id?: string } | undefined;
-    const oData = over.data.current as { kind?: string; id?: string; groupID?: string } | undefined;
+    const aData = active.data.current as
+      { kind?: string; id?: string } | undefined;
+    const oData = over.data.current as
+      { kind?: string; id?: string; groupID?: string } | undefined;
     if (!aData || !oData) {
       setDraggedIds([]);
       return;
@@ -262,7 +282,9 @@ export function GroupsBoard({
         sid === "ungrouped" ? "ungrouped" : sid.replace(/^group:/, ""),
       );
       const activeItemId =
-        active.id === "ungrouped" ? "ungrouped" : String(active.id).replace(/^group:/, "");
+        active.id === "ungrouped"
+          ? "ungrouped"
+          : String(active.id).replace(/^group:/, "");
 
       const oldIdx = currentIds.indexOf(activeItemId);
       const newIdx = currentIds.indexOf(overSectionId);
@@ -278,7 +300,11 @@ export function GroupsBoard({
       const sourceCollId = aData.id ?? "";
       let targetGroupId: string | null = null;
       if (oData.kind === "collection") {
-        targetGroupId = findGroupOfCollection(groups, ungrouped, oData.id ?? "");
+        targetGroupId = findGroupOfCollection(
+          groups,
+          ungrouped,
+          oData.id ?? "",
+        );
       } else if (overSectionId !== null) {
         // Group-body drops AND drops on a group's outer sortable both resolve
         // to the section's ID — admin who drops on a group header still gets
@@ -290,13 +316,18 @@ export function GroupsBoard({
         return;
       }
 
-      const sourceGroupId = findGroupOfCollection(groups, ungrouped, sourceCollId);
+      const sourceGroupId = findGroupOfCollection(
+        groups,
+        ungrouped,
+        sourceCollId,
+      );
       if (isCrossKind(groups, sourceGroupId, targetGroupId)) {
         setDraggedIds([]);
         return;
       }
 
-      const effectiveDraggedIds = draggedIds.length > 0 ? draggedIds : [sourceCollId];
+      const effectiveDraggedIds =
+        draggedIds.length > 0 ? draggedIds : [sourceCollId];
       const newOrder = computeNewOrder(
         groups,
         ungrouped,
@@ -326,7 +357,10 @@ export function GroupsBoard({
         onDragCancel={onDragCancel}
         onDragEnd={onDragEnd}
       >
-        <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+        <SortableContext
+          items={sortableIds}
+          strategy={verticalListSortingStrategy}
+        >
           <div className="space-y-4">
             {unifiedItems.map((item) =>
               item.kind === "ungrouped" ? (
@@ -378,13 +412,19 @@ export function GroupsBoard({
  * ungroupedSortOrder. Ties are broken by name for groups (ungrouped always
  * sorts last within ties since it has no name).
  */
-function buildUnifiedItems(groups: BoardGroup[], ungroupedSortOrder: number): UnifiedItem[] {
+function buildUnifiedItems(
+  groups: BoardGroup[],
+  ungroupedSortOrder: number,
+): UnifiedItem[] {
   type Slot = { order: number; item: UnifiedItem };
   const slots: Slot[] = groups.map((g) => ({
     order: g.sort_order,
     item: { kind: "group" as const, group: g },
   }));
-  slots.push({ order: ungroupedSortOrder, item: { kind: "ungrouped" as const } });
+  slots.push({
+    order: ungroupedSortOrder,
+    item: { kind: "ungrouped" as const },
+  });
   slots.sort((a, b) => {
     if (a.order !== b.order) return a.order - b.order;
     // Equal sort_order: put named groups before ungrouped; stable between groups by name
@@ -400,7 +440,8 @@ function findGroupOfCollection(
   ungrouped: LibraryCollection[],
   collectionId: string,
 ): string | null {
-  for (const g of groups) if (g.collections.some((c) => c.id === collectionId)) return g.id;
+  for (const g of groups)
+    if (g.collections.some((c) => c.id === collectionId)) return g.id;
   if (ungrouped.some((c) => c.id === collectionId)) return "ungrouped";
   return null;
 }
@@ -410,7 +451,11 @@ function isCrossKind(
   sourceGroupId: string | null,
   targetGroupId: string,
 ): boolean {
-  if (!sourceGroupId || sourceGroupId === "ungrouped" || targetGroupId === "ungrouped")
+  if (
+    !sourceGroupId ||
+    sourceGroupId === "ungrouped" ||
+    targetGroupId === "ungrouped"
+  )
     return false;
   const src = groups.find((g) => g.id === sourceGroupId);
   const tgt = groups.find((g) => g.id === targetGroupId);
@@ -427,7 +472,9 @@ function computeNewOrder(
   const targetList =
     targetGroupId === "ungrouped"
       ? ungrouped.map((c) => c.id)
-      : (groups.find((g) => g.id === targetGroupId)?.collections.map((c) => c.id) ?? []);
+      : (groups
+          .find((g) => g.id === targetGroupId)
+          ?.collections.map((c) => c.id) ?? []);
   const movedSet = new Set(movedIds);
   const filtered = targetList.filter((id) => !movedSet.has(id));
   if (over.kind === "collection" && over.id) {

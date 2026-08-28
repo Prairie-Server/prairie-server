@@ -14,6 +14,7 @@ import { useAdminPluginInstallations } from "@/hooks/queries/admin/plugins";
 import { usePolicyCapability } from "@/hooks/queries/admin/policy";
 import { useAdminSessions } from "@/hooks/queries/admin/stats";
 import { useBuildInfo } from "@/hooks/queries/admin/system";
+import { cn } from "@/lib/utils";
 
 interface SidebarItem extends AdminNavItem {
   badge?: ReactNode;
@@ -26,6 +27,7 @@ interface SidebarSection extends Omit<AdminNavGroup, "items"> {
 
 interface AdminSidebarProps {
   onNavigate?: () => void;
+  embedded?: boolean;
 }
 
 function useSessionCount() {
@@ -33,7 +35,10 @@ function useSessionCount() {
   return sessions.length;
 }
 
-export default function AdminSidebar({ onNavigate }: AdminSidebarProps) {
+export default function AdminSidebar({
+  onNavigate,
+  embedded = false,
+}: AdminSidebarProps) {
   const location = useLocation();
   const sessionCount = useSessionCount();
   const buildInfo = useBuildInfo();
@@ -47,17 +52,25 @@ export default function AdminSidebar({ onNavigate }: AdminSidebarProps) {
   } else if (buildInfo.isError) {
     buildDisplay = "load failed";
   } else if (buildInfo.data?.available) {
-    buildDisplay = buildInfo.data.display;
+    const buildNumber = buildInfo.data.build_number ?? 0;
+    buildDisplay =
+      buildNumber > 0
+        ? `${buildNumber} · ${buildInfo.data.display}`
+        : buildInfo.data.display;
   }
 
   const activityBadge =
-    sessionCount > 0 ? <span className="live-badge">{sessionCount} live</span> : undefined;
+    sessionCount > 0 ? (
+      <span className="live-badge">{sessionCount} live</span>
+    ) : undefined;
   const sections: SidebarSection[] = buildAdminNavSections({
     policyEditorAvailable: policyCapability.data?.editor_available === true,
   }).map((section) => ({
     ...section,
     items: section.items.map((item) =>
-      item.href === "/admin/activity" ? { ...item, badge: activityBadge } : item,
+      item.href === "/admin/activity"
+        ? { ...item, badge: activityBadge }
+        : item,
     ),
   }));
 
@@ -74,11 +87,22 @@ export default function AdminSidebar({ onNavigate }: AdminSidebarProps) {
 
   function isActive(item: SidebarItem) {
     if (item.exact) return location.pathname === item.href;
-    return location.pathname === item.href || location.pathname.startsWith(`${item.href}/`);
+    return (
+      location.pathname === item.href ||
+      location.pathname.startsWith(`${item.href}/`)
+    );
   }
 
   return (
-    <aside className="border-sidebar-border/70 bg-sidebar/92 fixed top-0 bottom-0 left-0 z-40 flex w-[240px] flex-col border-r backdrop-blur-2xl">
+    <aside
+      data-layout={embedded ? "drawer" : "desktop"}
+      className={cn(
+        "border-sidebar-border/70 bg-sidebar/92 flex w-[240px] flex-col border-r backdrop-blur-2xl",
+        embedded
+          ? "relative h-full w-full border-r-0 [&_nav_a]:min-h-11 [&_nav_button]:min-h-11"
+          : "fixed top-0 bottom-0 left-0 z-40",
+      )}
+    >
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 pt-6 pb-4">
         <Link
@@ -87,7 +111,7 @@ export default function AdminSidebar({ onNavigate }: AdminSidebarProps) {
           aria-label="Go to app home"
           className="focus-visible:ring-ring/50 inline-flex rounded-md transition-opacity hover:opacity-85 focus-visible:ring-[3px] focus-visible:outline-none"
         >
-          <PrairieBrand className="brand-reveal aspect-[274/90] h-8" />
+          <PrairieBrand className="h-12 w-[112px]" />
         </Link>
       </div>
       {/* Nav sections */}
@@ -96,7 +120,11 @@ export default function AdminSidebar({ onNavigate }: AdminSidebarProps) {
         className="sidebar-scroll flex-1 space-y-5 overflow-y-auto px-3"
       >
         {sections.map((section) => (
-          <SideNavSection key={section.label} label={section.label} idPrefix="admin-nav">
+          <SideNavSection
+            key={section.label}
+            label={section.label}
+            idPrefix="admin-nav"
+          >
             {section.items.map((item) =>
               item.external ? (
                 <SideNavItem
@@ -131,26 +159,21 @@ export default function AdminSidebar({ onNavigate }: AdminSidebarProps) {
 
       {/* Footer */}
       <div className="space-y-3 px-3 pb-4">
-        <Link
-          to="/admin/settings?tab=about"
-          onClick={onNavigate}
-          className="border-sidebar-border/70 bg-sidebar-accent/40 hover:bg-sidebar-accent/70 block rounded-xl border px-3 py-2 transition-colors"
-        >
+        <div className="border-sidebar-border/70 bg-sidebar-accent/40 rounded-xl border px-3 py-2">
           <div className="text-muted-foreground text-[10px] font-semibold tracking-[0.18em] uppercase">
             Build
           </div>
-          <div className="text-sidebar-foreground mt-1 font-mono text-[12px] leading-5">
+          <div
+            className="text-sidebar-foreground mt-1 font-mono text-[12px] leading-5"
+            title={
+              buildInfo.data?.built_at
+                ? `Built ${buildInfo.data.built_at}`
+                : undefined
+            }
+          >
             {buildDisplay}
           </div>
-          {buildInfo.data?.update_status === "update_available" ? (
-            <div className="mt-1 text-[11px] font-medium text-amber-500">Update available</div>
-          ) : null}
-          {buildInfo.data?.latest_version && buildInfo.data.update_status === "update_available" ? (
-            <div className="text-muted-foreground mt-0.5 font-mono text-[11px]">
-              Latest {buildInfo.data.latest_version}
-            </div>
-          ) : null}
-        </Link>
+        </div>
         {/* Back to app */}
         <Link
           to="/"

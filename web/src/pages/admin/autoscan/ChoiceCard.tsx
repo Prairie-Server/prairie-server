@@ -31,7 +31,9 @@ export function ChoiceCard({
       onClick={onSelect}
       className={cn(
         "rounded-lg border p-3 text-left transition-colors",
-        selected ? "border-primary bg-accent" : "border-border hover:bg-accent/50",
+        selected
+          ? "border-primary bg-accent"
+          : "border-border hover:bg-accent/50",
       )}
     >
       <span className="flex flex-wrap items-center gap-1.5 text-sm font-medium">
@@ -57,7 +59,13 @@ export function ChoiceCard({
  * the caller because their number varies per source: a webhook-only watcher
  * needing no credentials genuinely has fewer questions than a pollable arr.
  */
-export function StepTrail({ steps, currentIndex }: { steps: string[]; currentIndex: number }) {
+export function StepTrail({
+  steps,
+  currentIndex,
+}: {
+  steps: string[];
+  currentIndex: number;
+}) {
   if (steps.length < 2) return null;
 
   return (
@@ -67,11 +75,18 @@ export function StepTrail({ steps, currentIndex }: { steps: string[]; currentInd
         const active = index === currentIndex;
         return (
           <li key={step} className="flex items-center gap-2">
-            {index > 0 && <span className="bg-border hidden h-px w-6 sm:block" aria-hidden />}
+            {index > 0 && (
+              <span
+                className="bg-border hidden h-px w-6 sm:block"
+                aria-hidden
+              />
+            )}
             <span
               className={cn(
                 "flex items-center gap-1.5 text-xs",
-                active ? "text-foreground font-medium" : "text-muted-foreground",
+                active
+                  ? "text-foreground font-medium"
+                  : "text-muted-foreground",
               )}
               aria-current={active ? "step" : undefined}
             >

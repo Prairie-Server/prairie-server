@@ -10,7 +10,7 @@ import (
 func TestAutoUpdateServiceCheckReplacesInstalledPluginsInPlace(t *testing.T) {
 	installations := &fakeAutoUpdateInstallations{
 		list: []*Installation{
-			{ID: 41, RepositoryID: pluginRepositoryID(7), PluginID: "prairie.tmdb", Version: "1.0.0", UpdatePolicy: "auto", Enabled: true},
+			{ID: 41, RepositoryID: pluginRepositoryID(7), PluginID: "silo.tmdb", Version: "1.0.0", UpdatePolicy: "auto", Enabled: true},
 		},
 	}
 	host := &fakeAutoUpdateHost{}
@@ -20,7 +20,7 @@ func TestAutoUpdateServiceCheckReplacesInstalledPluginsInPlace(t *testing.T) {
 			{
 				RepositoryID: 7,
 				Manifest: &pluginv1.PluginManifest{
-					PluginId: "prairie.tmdb",
+					PluginId: "silo.tmdb",
 					Version:  "1.1.0",
 				},
 			},
@@ -68,7 +68,7 @@ func TestAutoUpdateServiceCheckReplacesInstalledPluginsInPlace(t *testing.T) {
 func TestAutoUpdateServiceCheckMatchesRenamedRepositoryByStablePluginIdentity(t *testing.T) {
 	installations := &fakeAutoUpdateInstallations{
 		list: []*Installation{
-			{ID: 41, RepositoryID: pluginRepositoryID(7), PluginID: "prairie.tmdb", Version: "1.0.0", UpdatePolicy: "auto", Enabled: true},
+			{ID: 41, RepositoryID: pluginRepositoryID(7), PluginID: "silo.tmdb", Version: "1.0.0", UpdatePolicy: "auto", Enabled: true},
 		},
 	}
 	installer := &fakeAutoUpdateInstaller{}
@@ -76,16 +76,16 @@ func TestAutoUpdateServiceCheckMatchesRenamedRepositoryByStablePluginIdentity(t 
 		entries: []CatalogEntry{
 			{
 				RepositoryID: 7,
-				RepoURL:      "https://github.com/prairie-server/prairie-plugin-metadata-tmdb",
+				RepoURL:      "https://github.com/Prairie-Server/silo-plugin-metadata-tmdb",
 				Manifest: &pluginv1.PluginManifest{
-					PluginId: "prairie.tmdb",
+					PluginId: "silo.tmdb",
 					Version:  "1.1.0",
 				},
 			},
 		},
 		resolved: &ResolvedCatalogInstall{
 			RepositoryID: 7,
-			ArchiveURL:   "https://github.com/prairie-server/prairie-plugin-metadata-tmdb/releases/download/v1.1.0/plugin-linux-amd64",
+			ArchiveURL:   "https://github.com/Prairie-Server/silo-plugin-metadata-tmdb/releases/download/v1.1.0/plugin-linux-amd64",
 			Checksum:     "deadbeef",
 		},
 	}
@@ -124,7 +124,7 @@ func TestAutoUpdateServiceCheckFiresOnChangeAfterMutation(t *testing.T) {
 			entries: []CatalogEntry{{
 				RepositoryID: 7,
 				Manifest: &pluginv1.PluginManifest{
-					PluginId: "prairie.tmdb",
+					PluginId: "silo.tmdb",
 					Version:  "1.1.0",
 				},
 			}},
@@ -149,7 +149,7 @@ func TestAutoUpdateServiceCheckFiresOnChangeAfterMutation(t *testing.T) {
 	t.Run("applied auto-update fires onChange", func(t *testing.T) {
 		var calls int
 		installations := &fakeAutoUpdateInstallations{
-			list: []*Installation{{ID: 41, RepositoryID: pluginRepositoryID(7), PluginID: "prairie.tmdb", Version: "1.0.0", UpdatePolicy: "auto", Enabled: true}},
+			list: []*Installation{{ID: 41, RepositoryID: pluginRepositoryID(7), PluginID: "silo.tmdb", Version: "1.0.0", UpdatePolicy: "auto", Enabled: true}},
 		}
 		summary, err := newOnChangeService(installations, AutoUpdateOptions{}, &calls)
 		if err != nil {
@@ -166,7 +166,7 @@ func TestAutoUpdateServiceCheckFiresOnChangeAfterMutation(t *testing.T) {
 	t.Run("notify update fires onChange", func(t *testing.T) {
 		var calls int
 		installations := &fakeAutoUpdateInstallations{
-			list: []*Installation{{ID: 42, RepositoryID: pluginRepositoryID(7), PluginID: "prairie.tmdb", Version: "1.0.0", UpdatePolicy: "notify", Enabled: true}},
+			list: []*Installation{{ID: 42, RepositoryID: pluginRepositoryID(7), PluginID: "silo.tmdb", Version: "1.0.0", UpdatePolicy: "notify", Enabled: true}},
 		}
 		summary, err := newOnChangeService(installations, AutoUpdateOptions{}, &calls)
 		if err != nil {
@@ -183,7 +183,7 @@ func TestAutoUpdateServiceCheckFiresOnChangeAfterMutation(t *testing.T) {
 	t.Run("no mutation does not fire onChange", func(t *testing.T) {
 		var calls int
 		installations := &fakeAutoUpdateInstallations{
-			list: []*Installation{{ID: 43, RepositoryID: pluginRepositoryID(7), PluginID: "prairie.tmdb", Version: "1.1.0", UpdatePolicy: "auto", Enabled: true}},
+			list: []*Installation{{ID: 43, RepositoryID: pluginRepositoryID(7), PluginID: "silo.tmdb", Version: "1.1.0", UpdatePolicy: "auto", Enabled: true}},
 		}
 		summary, err := newOnChangeService(installations, AutoUpdateOptions{}, &calls)
 		if err != nil {
@@ -199,7 +199,7 @@ func TestAutoUpdateServiceCheckFiresOnChangeAfterMutation(t *testing.T) {
 
 	t.Run("nil onChange is safe after mutation", func(t *testing.T) {
 		installations := &fakeAutoUpdateInstallations{
-			list: []*Installation{{ID: 44, RepositoryID: pluginRepositoryID(7), PluginID: "prairie.tmdb", Version: "1.0.0", UpdatePolicy: "auto", Enabled: true}},
+			list: []*Installation{{ID: 44, RepositoryID: pluginRepositoryID(7), PluginID: "silo.tmdb", Version: "1.0.0", UpdatePolicy: "auto", Enabled: true}},
 		}
 		service := NewAutoUpdateService(
 			&fakeAutoUpdateRepositories{list: []*Repository{{ID: 7, Enabled: true}}},
@@ -207,7 +207,7 @@ func TestAutoUpdateServiceCheckFiresOnChangeAfterMutation(t *testing.T) {
 			&fakeAutoUpdateCatalog{
 				entries: []CatalogEntry{{
 					RepositoryID: 7,
-					Manifest:     &pluginv1.PluginManifest{PluginId: "prairie.tmdb", Version: "1.1.0"},
+					Manifest:     &pluginv1.PluginManifest{PluginId: "silo.tmdb", Version: "1.1.0"},
 				}},
 				resolved: &ResolvedCatalogInstall{RepositoryID: 7, ArchiveURL: "https://plugins.example.test/tmdb", Checksum: "deadbeef"},
 			},
@@ -250,7 +250,7 @@ func TestCompareVersions(t *testing.T) {
 
 func TestAutoUpdateMultiDigitVersion(t *testing.T) {
 	installations := &fakeAutoUpdateInstallations{
-		list: []*Installation{{ID: 50, RepositoryID: pluginRepositoryID(7), PluginID: "prairie.tmdb", Version: "1.2.9", UpdatePolicy: "auto", Enabled: true}},
+		list: []*Installation{{ID: 50, RepositoryID: pluginRepositoryID(7), PluginID: "silo.tmdb", Version: "1.2.9", UpdatePolicy: "auto", Enabled: true}},
 	}
 	host := &fakeAutoUpdateHost{}
 	installer := &fakeAutoUpdateInstaller{}
@@ -258,7 +258,7 @@ func TestAutoUpdateMultiDigitVersion(t *testing.T) {
 		entries: []CatalogEntry{{
 			RepositoryID: 7,
 			Manifest: &pluginv1.PluginManifest{
-				PluginId: "prairie.tmdb",
+				PluginId: "silo.tmdb",
 				Version:  "1.2.10",
 			},
 		}},
@@ -295,7 +295,7 @@ func TestAutoUpdateServiceKeepsUpdatesPinnedToInstallationRepository(t *testing.
 		list: []*Installation{{
 			ID:           60,
 			RepositoryID: pluginRepositoryID(7),
-			PluginID:     "prairie.requests.arr",
+			PluginID:     "silo.requests.arr",
 			Version:      "1.0.0",
 			UpdatePolicy: "auto",
 			Enabled:      true,
@@ -303,8 +303,8 @@ func TestAutoUpdateServiceKeepsUpdatesPinnedToInstallationRepository(t *testing.
 	}
 	catalog := &fakeAutoUpdateCatalog{
 		entries: []CatalogEntry{
-			{RepositoryID: 7, Manifest: &pluginv1.PluginManifest{PluginId: "prairie.requests.arr", Version: "1.1.0"}},
-			{RepositoryID: 8, Manifest: &pluginv1.PluginManifest{PluginId: "prairie.requests.arr", Version: "9.0.0"}},
+			{RepositoryID: 7, Manifest: &pluginv1.PluginManifest{PluginId: "silo.requests.arr", Version: "1.1.0"}},
+			{RepositoryID: 8, Manifest: &pluginv1.PluginManifest{PluginId: "silo.requests.arr", Version: "9.0.0"}},
 		},
 		resolved: &ResolvedCatalogInstall{RepositoryID: 7, ArchiveURL: "https://plugins.example.test/arr", Checksum: "deadbeef"},
 	}
@@ -339,14 +339,14 @@ func TestAutoUpdateServiceDoesNotAttachUploadsToCatalogRepositories(t *testing.T
 		&fakeAutoUpdateRepositories{list: []*Repository{{ID: 7, Enabled: true}}},
 		&fakeAutoUpdateInstallations{list: []*Installation{{
 			ID:           61,
-			PluginID:     "prairie.requests.arr",
+			PluginID:     "silo.requests.arr",
 			Version:      "1.0.0",
 			UpdatePolicy: "auto",
 			Enabled:      true,
 		}}},
 		&fakeAutoUpdateCatalog{entries: []CatalogEntry{{
 			RepositoryID: 7,
-			Manifest:     &pluginv1.PluginManifest{PluginId: "prairie.requests.arr", Version: "2.0.0"},
+			Manifest:     &pluginv1.PluginManifest{PluginId: "silo.requests.arr", Version: "2.0.0"},
 		}}},
 		&fakeAutoUpdateInstaller{},
 		&fakeAutoUpdateHost{},

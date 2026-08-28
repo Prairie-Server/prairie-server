@@ -17,7 +17,6 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/idgen"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/titleutil"
@@ -90,6 +89,9 @@ func audiobookFolderUnchanged(existing []*models.MediaFile, onDisk []audiobookDi
 	}
 	byPath := make(map[string]*models.MediaFile, len(existing))
 	for _, mf := range existing {
+		if mf == nil || mf.HasLegacyAttachedPictureVideo() {
+			return false
+		}
 		byPath[mf.FilePath] = mf
 	}
 	for _, d := range onDisk {
@@ -180,9 +182,9 @@ func (s *Scanner) audiobookFolderShouldSkip(ctx context.Context, folder *models.
 // audiobookScanWorkers returns the configured number of parallel workers
 // for audiobook reconciliation. Defaults to 8 — high enough to keep all
 // cores busy on the ffprobe step (which dominates per-book wall time)
-// without overwhelming a small server. Override with PRAIRIE_AUDIOBOOK_SCAN_WORKERS.
+// without overwhelming a small server. Override with SILO_AUDIOBOOK_SCAN_WORKERS.
 func audiobookScanWorkers() int {
-	if v := envutil.FirstNonEmpty("PRAIRIE_AUDIOBOOK_SCAN_WORKERS", "SILO_AUDIOBOOK_SCAN_WORKERS"); v != "" {
+	if v := os.Getenv("SILO_AUDIOBOOK_SCAN_WORKERS"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			return n
 		}

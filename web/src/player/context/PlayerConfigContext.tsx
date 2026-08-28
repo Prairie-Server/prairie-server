@@ -14,6 +14,8 @@ export interface PlayerConfig {
   getProfileId: () => string | null;
   /** Sync getter for the current verified profile token, when one exists. */
   getProfileToken?: () => string | null;
+  /** Stable device identity used for device-scoped playback settings. */
+  getDeviceId: () => string;
 }
 
 const PlayerConfigCtx = createContext<PlayerConfig | null>(null);
@@ -25,11 +27,16 @@ export function PlayerConfigProvider({
   config: PlayerConfig;
   children: ReactNode;
 }) {
-  return <PlayerConfigCtx.Provider value={config}>{children}</PlayerConfigCtx.Provider>;
+  return (
+    <PlayerConfigCtx.Provider value={config}>
+      {children}
+    </PlayerConfigCtx.Provider>
+  );
 }
 
 export function usePlayerConfig(): PlayerConfig {
   const ctx = useContext(PlayerConfigCtx);
-  if (!ctx) throw new Error("usePlayerConfig must be used within PlayerConfigProvider");
+  if (!ctx)
+    throw new Error("usePlayerConfig must be used within PlayerConfigProvider");
   return ctx;
 }

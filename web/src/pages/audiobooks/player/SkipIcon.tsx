@@ -18,7 +18,9 @@ export function SkipIcon({
   const box = size === "lg" ? "h-7 w-7" : "h-6 w-6";
   const label = size === "lg" ? "text-[8.5px]" : "text-[8px]";
   const flick =
-    direction === "back" ? "group-active:-rotate-[18deg]" : "group-active:rotate-[18deg]";
+    direction === "back"
+      ? "group-active:-rotate-[18deg]"
+      : "group-active:rotate-[18deg]";
   return (
     <span className={`relative flex items-center justify-center ${box}`}>
       <Arrow

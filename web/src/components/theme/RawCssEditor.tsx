@@ -16,10 +16,10 @@ export function RawCssEditor({ value, onChange }: RawCssEditorProps) {
     <div className="space-y-3">
       <div className="space-y-1">
         <p className="text-muted-foreground text-[13px] leading-relaxed">
-          Write custom CSS that is injected after all theme variables. Target any selector — your
-          overrides apply on top of the active theme. Use{" "}
-          <code className="bg-muted rounded px-1 py-0.5 text-xs">:root</code> to override CSS custom
-          properties directly.
+          Write custom CSS that is injected after all theme variables. Target
+          any selector — your overrides apply on top of the active theme. Use{" "}
+          <code className="bg-muted rounded px-1 py-0.5 text-xs">:root</code> to
+          override CSS custom properties directly.
         </p>
       </div>
 

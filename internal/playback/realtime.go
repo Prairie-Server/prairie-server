@@ -57,6 +57,13 @@ const (
 	CommandPlayMedia          CommandName = "play_media"
 	CommandSetAudioTrack      CommandName = "set_audio_track"
 	CommandSetSubtitleTrack   CommandName = "set_subtitle_track"
+	// CommandPlanInvalidated tells a playing client that the plan it is running
+	// can no longer serve this source, so it must replan off that plan. It is
+	// the first server-initiated control push in the v3 protocol, and it is only
+	// sent to a session whose attempt negotiated FeaturePlanInvalidatedV3 and
+	// which has a live realtime connection; every other session is stopped
+	// instead. See CopySafetyNotifier.
+	CommandPlanInvalidated CommandName = "plan_invalidated"
 )
 
 var supportedCommandNames = []CommandName{
@@ -73,6 +80,7 @@ var supportedCommandNames = []CommandName{
 	CommandPlayMedia,
 	CommandSetAudioTrack,
 	CommandSetSubtitleTrack,
+	CommandPlanInvalidated,
 }
 
 var supportedCommandNameSet = func() map[CommandName]struct{} {
@@ -144,6 +152,11 @@ type SubtitleReadyPayload struct {
 	SubtitleID int    `json:"subtitle_id"`
 	Language   string `json:"language"`
 	Label      string `json:"label,omitempty"`
+	// Track carries the new track's frozen combined ordinal, identity, and
+	// stream URL so the client can select it directly. Clients must not derive
+	// the ordinal themselves. Absent only when the server could not resolve the
+	// file's track inventory, in which case the client refetches the plan.
+	Track *SubtitleInventoryItemV3 `json:"track,omitempty"`
 }
 
 // StreamCue is one translated subtitle cue pushed to the player during a live
@@ -191,6 +204,10 @@ type SubtitleTranslationCompletedPayload struct {
 	SubtitleID int    `json:"subtitle_id"`
 	Language   string `json:"language"`
 	Label      string `json:"label,omitempty"`
+	// Track carries the persisted track's frozen combined ordinal, identity,
+	// and stream URL, replacing the placeholder the client created at
+	// translation start. See SubtitleReadyPayload.Track.
+	Track *SubtitleInventoryItemV3 `json:"track,omitempty"`
 }
 
 // SubtitleTranslationFailedPayload signals a live translation failed, so the
@@ -271,6 +288,7 @@ func NewSubtitleReadyEvent(
 	subtitleID int,
 	language string,
 	label string,
+	track *SubtitleInventoryItemV3,
 ) (EventEnvelope, error) {
 	payload, err := json.Marshal(SubtitleReadyPayload{
 		SessionID:  sessionID,
@@ -278,6 +296,7 @@ func NewSubtitleReadyEvent(
 		SubtitleID: subtitleID,
 		Language:   language,
 		Label:      label,
+		Track:      track,
 	})
 	if err != nil {
 		return EventEnvelope{}, err
@@ -310,10 +329,10 @@ func NewSubtitleTranslationCuesEvent(sessionID string, fileID int, jobID int64, 
 }
 
 // NewSubtitleTranslationCompletedEvent creates a validated translation-completed event.
-func NewSubtitleTranslationCompletedEvent(sessionID string, fileID int, jobID int64, trackKey string, subtitleID int, language, label string) (EventEnvelope, error) {
+func NewSubtitleTranslationCompletedEvent(sessionID string, fileID int, jobID int64, trackKey string, subtitleID int, language, label string, track *SubtitleInventoryItemV3) (EventEnvelope, error) {
 	payload, err := json.Marshal(SubtitleTranslationCompletedPayload{
 		SessionID: sessionID, FileID: fileID, JobID: jobID,
-		TrackKey: trackKey, SubtitleID: subtitleID, Language: language, Label: label,
+		TrackKey: trackKey, SubtitleID: subtitleID, Language: language, Label: label, Track: track,
 	})
 	if err != nil {
 		return EventEnvelope{}, err
@@ -386,6 +405,36 @@ type CommandEnvelope struct {
 // CommandIssuedBy identifies the source of a command.
 type CommandIssuedBy struct {
 	Kind string `json:"kind"`
+}
+
+// PlanInvalidationReason values a plan_invalidated command can carry.
+const (
+	// PlanInvalidatedVideoCopyUnsafe means the asynchronous H.264 copy-safety
+	// scan came back multi-PPS after the plan was already playing, so the video
+	// stream-copy route it named cannot serve this source.
+	PlanInvalidatedVideoCopyUnsafe = "video_copy_unsafe"
+)
+
+// PlanInvalidatedPayload names the plan the server withdrew and why.
+//
+// PlanID is required: the client compares it against the plan it is running and
+// does nothing when it has already replanned past it, so a late command can
+// never evict a route the server never complained about.
+type PlanInvalidatedPayload struct {
+	Reason string `json:"reason"`
+	PlanID string `json:"plan_id"`
+}
+
+// NewPlanInvalidatedCommand builds a validated plan_invalidated command.
+func NewPlanInvalidatedCommand(sessionID, commandID, planID, reason string) (CommandEnvelope, error) {
+	if planID == "" || reason == "" {
+		return CommandEnvelope{}, ErrInvalidRealtimePayload
+	}
+	payload, err := json.Marshal(PlanInvalidatedPayload{Reason: reason, PlanID: planID})
+	if err != nil {
+		return CommandEnvelope{}, err
+	}
+	return NewCommandEnvelope(sessionID, commandID, CommandPlanInvalidated, payload)
 }
 
 // NewCommandEnvelope creates a validated command envelope.

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { AlertTriangle } from "lucide-react";
 import type { ConnectionCheckResponse } from "@/api/types";
 import { ConnectionCheckAction } from "@/components/admin/ConnectionCheckAction";
@@ -10,6 +10,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 
 const PUBLIC_S3_KEYS = [
   "s3.public_endpoint",
@@ -26,8 +27,9 @@ const PUBLIC_S3_KEYS = [
   "s3.public_token_ttl",
 ] as const;
 
-// Changing any of these moves where cached artwork objects live; the server
-// reconciles the artwork cache after a restart (see reconcile_artwork_cache).
+// Changing any of these moves where cached artwork objects live. Silo detects
+// that change after restart but requires an explicit manual reconcile so an
+// incomplete bucket migration cannot rewrite the artwork catalog.
 const PUBLIC_S3_IDENTITY_KEYS = [
   "s3.public_endpoint",
   "s3.public_bucket",
@@ -75,12 +77,78 @@ function KeyPrefixField({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="max-w-md"
-        placeholder="prairie/dev"
+        placeholder="silo/dev"
       />
       <p className="text-muted-foreground text-xs">
-        Optional. Stores all Prairie objects under this folder inside the bucket. Leave blank to use
-        the bucket root.
+        Optional. Stores all Silo objects under this folder inside the bucket.
+        Leave blank to use the bucket root.
       </p>
+    </div>
+  );
+}
+
+function S3CredentialField({
+  label,
+  value,
+  configured,
+  editing,
+  onChange,
+  onReplace,
+  onKeep,
+  disabled,
+}: {
+  label: string;
+  value: string;
+  configured: boolean;
+  editing: boolean;
+  onChange: (value: string) => void;
+  onReplace: () => void;
+  onKeep: () => void;
+  disabled: boolean;
+}) {
+  if (configured && !editing) {
+    return (
+      <div className="space-y-1 py-2">
+        <Label className="text-sm font-medium">{label}</Label>
+        <div className="flex max-w-md items-center justify-between gap-3 rounded-md border px-3 py-1.5">
+          <span className="text-muted-foreground text-sm">configured</span>
+          <Button
+            type="button"
+            size="xs"
+            variant="outline"
+            aria-label={`Replace ${label}`}
+            onClick={onReplace}
+            disabled={disabled}
+          >
+            Replace
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-1">
+      <SettingField
+        label={label}
+        type="password"
+        value={value}
+        onChange={onChange}
+        hint={configured ? "Enter a replacement value." : undefined}
+        disabled={disabled}
+      />
+      {configured && (
+        <Button
+          type="button"
+          size="xs"
+          variant="ghost"
+          aria-label={`Keep saved ${label}`}
+          onClick={onKeep}
+          disabled={disabled}
+        >
+          Keep saved value
+        </Button>
+      )}
     </div>
   );
 }
@@ -93,6 +161,53 @@ export default function StorageSettings() {
     useState<ConnectionCheckResponse | null>(null);
   const [privateConnectionResult, setPrivateConnectionResult] =
     useState<ConnectionCheckResponse | null>(null);
+  const [editingSensitiveKeys, setEditingSensitiveKeys] = useState<Set<string>>(
+    new Set(),
+  );
+  const [credentialSaveInProgress, setCredentialSaveInProgress] =
+    useState(false);
+  const credentialSaveInProgressRef = useRef(false);
+
+  function beginCredentialReplacement(key: string) {
+    if (credentialSaveInProgressRef.current) return;
+    setEditingSensitiveKeys((current) => new Set(current).add(key));
+  }
+
+  function keepSavedCredential(key: string) {
+    if (credentialSaveInProgressRef.current) return;
+    form.resetValue(key);
+    setEditingSensitiveKeys((current) => {
+      const next = new Set(current);
+      next.delete(key);
+      return next;
+    });
+  }
+
+  function setCredentialValue(key: string, value: string) {
+    if (credentialSaveInProgressRef.current) return;
+    form.setValue(key, value);
+  }
+
+  async function handleSave() {
+    if (credentialSaveInProgressRef.current) return;
+    credentialSaveInProgressRef.current = true;
+    setCredentialSaveInProgress(true);
+    try {
+      await form.save();
+      setEditingSensitiveKeys(new Set());
+    } catch {
+      // The mutation reports the error; keep credential editors open for retry.
+    } finally {
+      credentialSaveInProgressRef.current = false;
+      setCredentialSaveInProgress(false);
+    }
+  }
+
+  function handleDiscard() {
+    if (credentialSaveInProgressRef.current) return;
+    form.discard();
+    setEditingSensitiveKeys(new Set());
+  }
 
   async function handleCheckPublicConnection() {
     try {
@@ -105,7 +220,8 @@ export default function StorageSettings() {
     } catch (error) {
       setPublicConnectionResult({
         success: false,
-        message: error instanceof Error ? error.message : "Connection check failed.",
+        message:
+          error instanceof Error ? error.message : "Connection check failed.",
       });
     }
   }
@@ -121,12 +237,32 @@ export default function StorageSettings() {
     } catch (error) {
       setPrivateConnectionResult({
         success: false,
-        message: error instanceof Error ? error.message : "Connection check failed.",
+        message:
+          error instanceof Error ? error.message : "Connection check failed.",
       });
     }
   }
 
-  if (form.isLoading)
+  if (form.sensitiveStatusError) {
+    return (
+      <div
+        className="flex items-start gap-3 rounded-xl border border-red-500/20 bg-red-500/5 p-4"
+        role="alert"
+      >
+        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+        <div>
+          <p className="text-sm font-medium">
+            Protected credential status is unavailable
+          </p>
+          <p className="text-muted-foreground mt-1 text-xs">
+            Reload this page before editing storage settings.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  if (form.isLoading || !form.sensitiveStatusReady)
     return (
       <div className="space-y-6" role="status" aria-label="Loading settings">
         <Skeleton className="h-8 w-48" />
@@ -149,8 +285,8 @@ export default function StorageSettings() {
       <div className="mb-6 space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Storage</h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Configure separate S3-compatible storage for client-facing assets and private internal
-          Prairie artifacts.
+          Configure separate S3-compatible storage for client-facing assets and
+          private internal Silo artifacts.
         </p>
       </div>
 
@@ -159,19 +295,24 @@ export default function StorageSettings() {
           <TabsList className="surface-panel-subtle h-auto gap-1 rounded-[1.1rem] border-0 bg-transparent p-1">
             <TabsTrigger value="public">Public Assets</TabsTrigger>
             <TabsTrigger value="private">Private Internal</TabsTrigger>
-            <TabsTrigger value="userdb" disabled title="Reserved for future Litestream replication">
+            <TabsTrigger
+              value="userdb"
+              disabled
+              title="Reserved for future Litestream replication"
+            >
               User DB
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="public" className="space-y-1 pt-4">
             <p className="text-muted-foreground mb-2 text-sm">
-              Stores client-facing assets such as artwork, chapter thumbnails, and subtitle files.
+              Stores client-facing assets such as artwork, chapter thumbnails,
+              and subtitle files.
             </p>
             <p className="text-muted-foreground mb-4 text-xs leading-relaxed">
-              This bucket does not need to be public. Most installs should keep it private and use
-              presigned URLs. Only use Public or Cloudflare Token modes if you want direct
-              CDN/object access.
+              This bucket does not need to be public. Most installs should keep
+              it private and use presigned URLs. Only use Public or Cloudflare
+              Token modes if you want direct CDN/object access.
             </p>
             <SettingField
               label="Endpoint"
@@ -203,29 +344,51 @@ export default function StorageSettings() {
               <div className="my-3 flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
                 <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
                 <div className="text-[13px] leading-relaxed">
-                  <p className="font-medium text-amber-500">Storage location change</p>
+                  <p className="font-medium text-amber-500">
+                    Storage location change
+                  </p>
                   <p className="text-muted-foreground mt-1">
-                    Artwork is cached in this bucket. After the server restarts, Prairie verifies
-                    the cache against the new storage and automatically re-caches anything missing.
-                    Uploaded images (custom posters, collection artwork, branding) cannot be
-                    re-downloaded — migrate your bucket contents if you want to keep them.
+                    Artwork is cached in this bucket. Silo will not change
+                    artwork cache records automatically after restart. Copy or
+                    migrate the existing bucket objects first, then manually run
+                    Reconcile Artwork Cache only if you intend every missing
+                    record to be reset or cleared. Re-downloading those reset
+                    provider images is a separate, manual Backfill Metadata
+                    Images action; normal scheduled caching only processes
+                    artwork queued by new or changed metadata. Uploaded images
+                    (custom posters, collection artwork, branding) cannot be
+                    re-downloaded.
                   </p>
                 </div>
               </div>
             )}
-            <SettingField
+            <S3CredentialField
               label="Access Key"
-              type="password"
               value={form.getValue("s3.public_access_key")}
-              onChange={(v) => form.setValue("s3.public_access_key", v)}
-              sensitiveConfigured={form.sensitiveConfigured.includes("s3.public_access_key")}
+              onChange={(v) => setCredentialValue("s3.public_access_key", v)}
+              configured={form.sensitiveConfigured.includes(
+                "s3.public_access_key",
+              )}
+              editing={editingSensitiveKeys.has("s3.public_access_key")}
+              onReplace={() =>
+                beginCredentialReplacement("s3.public_access_key")
+              }
+              onKeep={() => keepSavedCredential("s3.public_access_key")}
+              disabled={form.isSaving || credentialSaveInProgress}
             />
-            <SettingField
+            <S3CredentialField
               label="Secret Key"
-              type="password"
               value={form.getValue("s3.public_secret_key")}
-              onChange={(v) => form.setValue("s3.public_secret_key", v)}
-              sensitiveConfigured={form.sensitiveConfigured.includes("s3.public_secret_key")}
+              onChange={(v) => setCredentialValue("s3.public_secret_key", v)}
+              configured={form.sensitiveConfigured.includes(
+                "s3.public_secret_key",
+              )}
+              editing={editingSensitiveKeys.has("s3.public_secret_key")}
+              onReplace={() =>
+                beginCredentialReplacement("s3.public_secret_key")
+              }
+              onKeep={() => keepSavedCredential("s3.public_secret_key")}
+              disabled={form.isSaving || credentialSaveInProgress}
             />
 
             <ConnectionCheckAction
@@ -236,10 +399,12 @@ export default function StorageSettings() {
             />
 
             <div className="border-border mt-6 border-t pt-6">
-              <h3 className="mb-1 text-sm font-medium">Asset URL Authentication</h3>
+              <h3 className="mb-1 text-sm font-medium">
+                Asset URL Authentication
+              </h3>
               <p className="text-muted-foreground mb-4 text-xs leading-relaxed">
-                Controls how client-facing asset URLs are generated. Presigned URLs are recommended
-                and work with private buckets.
+                Controls how client-facing asset URLs are generated. Presigned
+                URLs are recommended and work with private buckets.
               </p>
               <SettingField
                 label="URL Auth Method"
@@ -247,7 +412,10 @@ export default function StorageSettings() {
                 value={publicURLAuth}
                 onChange={(v) => form.setValue("s3.public_url_auth", v)}
                 options={[
-                  { value: "presigned", label: "S3 Presigned URLs (Recommended)" },
+                  {
+                    value: "presigned",
+                    label: "S3 Presigned URLs (Recommended)",
+                  },
                   { value: "public", label: "Public (no auth)" },
                   { value: "cloudflare_token", label: "Cloudflare Token Auth" },
                 ]}
@@ -290,7 +458,8 @@ export default function StorageSettings() {
 
           <TabsContent value="private" className="space-y-1 pt-4">
             <p className="text-muted-foreground mb-4 text-sm">
-              Stores non-public Prairie objects such as imports, exports, and internal artifacts.
+              Stores non-public Silo objects such as imports, exports, and
+              internal artifacts.
             </p>
             <SettingField
               label="Endpoint"
@@ -318,19 +487,33 @@ export default function StorageSettings() {
               value={form.getValue("s3.private_key_prefix")}
               onChange={(v) => form.setValue("s3.private_key_prefix", v)}
             />
-            <SettingField
+            <S3CredentialField
               label="Access Key"
-              type="password"
               value={form.getValue("s3.private_access_key")}
-              onChange={(v) => form.setValue("s3.private_access_key", v)}
-              sensitiveConfigured={form.sensitiveConfigured.includes("s3.private_access_key")}
+              onChange={(v) => setCredentialValue("s3.private_access_key", v)}
+              configured={form.sensitiveConfigured.includes(
+                "s3.private_access_key",
+              )}
+              editing={editingSensitiveKeys.has("s3.private_access_key")}
+              onReplace={() =>
+                beginCredentialReplacement("s3.private_access_key")
+              }
+              onKeep={() => keepSavedCredential("s3.private_access_key")}
+              disabled={form.isSaving || credentialSaveInProgress}
             />
-            <SettingField
+            <S3CredentialField
               label="Secret Key"
-              type="password"
               value={form.getValue("s3.private_secret_key")}
-              onChange={(v) => form.setValue("s3.private_secret_key", v)}
-              sensitiveConfigured={form.sensitiveConfigured.includes("s3.private_secret_key")}
+              onChange={(v) => setCredentialValue("s3.private_secret_key", v)}
+              configured={form.sensitiveConfigured.includes(
+                "s3.private_secret_key",
+              )}
+              editing={editingSensitiveKeys.has("s3.private_secret_key")}
+              onReplace={() =>
+                beginCredentialReplacement("s3.private_secret_key")
+              }
+              onKeep={() => keepSavedCredential("s3.private_secret_key")}
+              disabled={form.isSaving || credentialSaveInProgress}
             />
 
             <ConnectionCheckAction
@@ -343,7 +526,8 @@ export default function StorageSettings() {
 
           <TabsContent value="userdb" className="space-y-1 pt-4 opacity-50">
             <p className="text-muted-foreground mb-4 text-sm">
-              Reserved for Litestream user database replication. Not currently in use.
+              Reserved for Litestream user database replication. Not currently
+              in use.
             </p>
             <SettingField
               label="Endpoint"
@@ -375,7 +559,9 @@ export default function StorageSettings() {
               type="password"
               value={form.getValue("s3.user_db_access_key")}
               onChange={(v) => form.setValue("s3.user_db_access_key", v)}
-              sensitiveConfigured={form.sensitiveConfigured.includes("s3.user_db_access_key")}
+              sensitiveConfigured={form.sensitiveConfigured.includes(
+                "s3.user_db_access_key",
+              )}
               disabled
             />
             <SettingField
@@ -383,7 +569,9 @@ export default function StorageSettings() {
               type="password"
               value={form.getValue("s3.user_db_secret_key")}
               onChange={(v) => form.setValue("s3.user_db_secret_key", v)}
-              sensitiveConfigured={form.sensitiveConfigured.includes("s3.user_db_secret_key")}
+              sensitiveConfigured={form.sensitiveConfigured.includes(
+                "s3.user_db_secret_key",
+              )}
               disabled
             />
           </TabsContent>
@@ -392,9 +580,9 @@ export default function StorageSettings() {
 
       <SaveBar
         dirtyCount={form.dirtyCount}
-        onSave={form.save}
-        onDiscard={form.discard}
-        isSaving={form.isSaving}
+        onSave={handleSave}
+        onDiscard={handleDiscard}
+        isSaving={form.isSaving || credentialSaveInProgress}
         restartRequired={form.restartRequired}
       />
     </div>

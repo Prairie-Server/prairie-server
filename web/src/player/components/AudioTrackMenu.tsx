@@ -7,12 +7,16 @@ import {
   compactAudioMeta,
   formatLanguageName,
 } from "@/pages/ItemDetail/components/versionFormatUtils";
+import { PlayerMenuSurface } from "./PlayerMenuSurface";
 
 interface AudioTrackMenuProps {
   tracks: PlayerAudioTrack[];
   activeIndex: number;
   onSelect: (index: number, currentPosition: number) => void;
   currentPosition: number;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+  hideTrigger?: boolean;
 }
 
 /**
@@ -33,7 +37,10 @@ interface TrackDescriptor {
   isDefault: boolean;
 }
 
-function describeTrack(track: PlayerAudioTrack, index: number): TrackDescriptor {
+function describeTrack(
+  track: PlayerAudioTrack,
+  index: number,
+): TrackDescriptor {
   const title = audioTitle(track) || `Track ${index + 1}`;
   const language = formatLanguageName(track.language ?? "");
   const metaParts = [
@@ -54,8 +61,20 @@ export function AudioTrackMenu({
   activeIndex,
   onSelect,
   currentPosition,
+  open: controlledOpen,
+  onOpenChange,
+  hideTrigger = false,
 }: AudioTrackMenuProps) {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = useCallback(
+    (value: boolean | ((previous: boolean) => boolean)) => {
+      const next = typeof value === "function" ? value(open) : value;
+      if (controlledOpen === undefined) setUncontrolledOpen(next);
+      onOpenChange?.(next);
+    },
+    [controlledOpen, onOpenChange, open],
+  );
   const menuRef = useRef<HTMLDivElement>(null);
 
   const handleSelect = useCallback(
@@ -89,7 +108,9 @@ export function AudioTrackMenu({
   const handleMenuKeyDown = useCallback((e: React.KeyboardEvent) => {
     const items = menuItemsRef.current.filter(Boolean) as HTMLButtonElement[];
     if (items.length === 0) return;
-    const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
+    const currentIndex = items.indexOf(
+      document.activeElement as HTMLButtonElement,
+    );
     let nextIndex: number | null = null;
 
     switch (e.key) {
@@ -121,22 +142,24 @@ export function AudioTrackMenu({
 
   return (
     <div ref={menuRef} className="relative" onBlur={handleBlur}>
-      <button
-        type="button"
-        className={`player-utility-btn ${disabled ? "cursor-default opacity-40" : ""}`}
-        onClick={disabled ? undefined : () => setOpen((v) => !v)}
-        aria-label="Audio tracks"
-        aria-expanded={open}
-        aria-disabled={disabled}
-        aria-haspopup="menu"
-      >
-        <AudioLines className="h-[18px] w-[18px]" />
-      </button>
+      {!hideTrigger && (
+        <button
+          type="button"
+          className={`player-utility-btn ${disabled ? "cursor-default opacity-40" : ""}`}
+          onClick={disabled ? undefined : () => setOpen((v) => !v)}
+          aria-label="Audio tracks"
+          aria-expanded={open}
+          aria-disabled={disabled}
+          aria-haspopup="menu"
+        >
+          <AudioLines className="h-[18px] w-[18px]" />
+        </button>
+      )}
 
       {open && (
-        <div
-          role="menu"
-          className="absolute right-0 bottom-full mb-2 w-[min(360px,calc(100vw-1rem))] rounded-lg bg-black/90 py-1.5 shadow-xl backdrop-blur-sm"
+        <PlayerMenuSurface
+          className="absolute right-0 bottom-full z-30 mb-2 max-w-[min(360px,calc(100vw-1rem))] min-w-[280px] rounded-lg bg-black/90 py-1.5 shadow-xl backdrop-blur-sm"
+          onClose={() => setOpen(false)}
           onKeyDown={handleMenuKeyDown}
         >
           <div className="px-3 py-1.5 text-xs font-medium tracking-wide text-white/50 uppercase">
@@ -163,12 +186,18 @@ export function AudioTrackMenu({
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-1">
                   <span className="flex flex-wrap items-center gap-1.5">
-                    <span className="truncate text-sm font-medium">{descriptor.title}</span>
-                    {descriptor.codecLabel && <TrackBadge>{descriptor.codecLabel}</TrackBadge>}
+                    <span className="truncate text-sm font-medium">
+                      {descriptor.title}
+                    </span>
+                    {descriptor.codecLabel && (
+                      <TrackBadge>{descriptor.codecLabel}</TrackBadge>
+                    )}
                     {descriptor.channelsLabel && (
                       <TrackBadge>{descriptor.channelsLabel}</TrackBadge>
                     )}
-                    {descriptor.isDefault && <TrackBadge variant="outline">Default</TrackBadge>}
+                    {descriptor.isDefault && (
+                      <TrackBadge variant="outline">Default</TrackBadge>
+                    )}
                   </span>
                   {descriptor.meta && (
                     <span className="truncate text-[11px] leading-snug text-white/55">
@@ -179,7 +208,7 @@ export function AudioTrackMenu({
               </button>
             );
           })}
-        </div>
+        </PlayerMenuSurface>
       )}
     </div>
   );
@@ -198,6 +227,8 @@ function TrackBadge({
   const base =
     "inline-flex items-center rounded px-1.5 py-[1px] text-[9.5px] font-semibold tracking-wide whitespace-nowrap uppercase leading-4";
   const skin =
-    variant === "outline" ? "border border-white/25 text-white/70" : "bg-white/10 text-white/75";
+    variant === "outline"
+      ? "border border-white/25 text-white/70"
+      : "bg-white/10 text-white/75";
   return <span className={`${base} ${skin}`}>{children}</span>;
 }

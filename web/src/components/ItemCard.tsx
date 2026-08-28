@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import { useImageLoaded } from "@/hooks/useImageLoaded";
 import { Check, Layers } from "lucide-react";
 import { ArtworkImage } from "@/components/ArtworkImage";
@@ -8,10 +9,16 @@ import { decodeThumbhash } from "@/lib/thumbhash";
 import { timeAgo } from "@/lib/timeAgo";
 import MediaItemMenu from "@/components/MediaItemMenu";
 import CardOverlays from "@/components/overlays/CardOverlays";
-import { overlayDataFromBrowseItem, type CardOverlayPrefs } from "@/lib/overlays";
+import {
+  overlayDataFromBrowseItem,
+  type CardOverlayPrefs,
+} from "@/lib/overlays";
 import { buildEpisodeCardLabels } from "@/lib/episodeCardLabels";
 import { formatDate as formatPreferredDate } from "@/lib/datetime";
 import { formatBitrate } from "@/lib/mediaFormat";
+import { useUICustomization } from "@/hooks/useUICustomization";
+import { buildItemHref } from "@/lib/mediaNavigation";
+import CardPlayOverlay from "@/components/CardPlayOverlay";
 
 const DATE_ONLY_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -19,7 +26,9 @@ function formatDate(value?: string | null) {
   if (!value) {
     return null;
   }
-  const date = new Date(DATE_ONLY_PATTERN.test(value) ? `${value}T00:00:00` : value);
+  const date = new Date(
+    DATE_ONLY_PATTERN.test(value) ? `${value}T00:00:00` : value,
+  );
   return formatPreferredDate(date, "medium") || null;
 }
 
@@ -32,7 +41,9 @@ function formatRuntime(minutes?: number | null) {
   if (hours === 0) {
     return `${remainingMinutes}m`;
   }
-  return remainingMinutes === 0 ? `${hours}h` : `${hours}h ${remainingMinutes}m`;
+  return remainingMinutes === 0
+    ? `${hours}h`
+    : `${hours}h ${remainingMinutes}m`;
 }
 
 function formatRating(value?: number | null, max = 10) {
@@ -76,7 +87,9 @@ function mangaCountChipLabel(item: BrowseItem): string | null {
 // mangaStatusChip returns the top-left publication-status pill for a manga
 // browse card (color-coded), or null when the item is not manga or has no
 // status. Strictly manga-gated so no other card type renders it.
-function mangaStatusChip(item: BrowseItem): { label: string; tone: string } | null {
+function mangaStatusChip(
+  item: BrowseItem,
+): { label: string; tone: string } | null {
   if (item.type !== "manga") {
     return null;
   }
@@ -95,7 +108,13 @@ function mangaStatusChip(item: BrowseItem): { label: string; tone: string } | nu
   return { label: status, tone };
 }
 
-function SortMeta({ item, sortField }: { item: BrowseItem; sortField?: string }) {
+function SortMeta({
+  item,
+  sortField,
+}: {
+  item: BrowseItem;
+  sortField?: string;
+}) {
   const episodeLabels = buildEpisodeCardLabels(item);
   const defaultLabel = [item.year || "", item.type === "series" ? "Series" : ""]
     .filter(Boolean)
@@ -118,12 +137,16 @@ function SortMeta({ item, sortField }: { item: BrowseItem; sortField?: string })
       return <>{item.content_rating || defaultLabel}</>;
     case "runtime":
       return (
-        <>{formatRuntime(item.sort_metrics?.runtime_minutes ?? item.runtime) ?? defaultLabel}</>
+        <>
+          {formatRuntime(item.sort_metrics?.runtime_minutes ?? item.runtime) ??
+            defaultLabel}
+        </>
       );
     case "rating_imdb":
       return item.rating_imdb != null ? (
         <>
-          <span className="not-uppercase">★</span> {item.rating_imdb.toFixed(1)} / 10
+          <span className="not-uppercase">★</span> {item.rating_imdb.toFixed(1)}{" "}
+          / 10
         </>
       ) : (
         <>{defaultLabel}</>
@@ -136,18 +159,32 @@ function SortMeta({ item, sortField }: { item: BrowseItem; sortField?: string })
       return <>{formatPercent(item.rating_rt_audience) ?? defaultLabel}</>;
     case "release_date":
       return (
-        <>{formatDate(item.sort_metrics?.release_date ?? item.release_date) ?? defaultLabel}</>
+        <>
+          {formatDate(item.sort_metrics?.release_date ?? item.release_date) ??
+            defaultLabel}
+        </>
       );
     case "last_air_date":
       return <>{formatDate(item.last_air_date) ?? defaultLabel}</>;
     case "resolution":
       return (
-        <>{item.sort_metrics?.resolution || item.overlay_summary?.resolution || defaultLabel}</>
+        <>
+          {item.sort_metrics?.resolution ||
+            item.overlay_summary?.resolution ||
+            defaultLabel}
+        </>
       );
     case "bitrate":
-      return <>{formatBitrate(item.sort_metrics?.bitrate_kbps ?? undefined) || defaultLabel}</>;
+      return (
+        <>
+          {formatBitrate(item.sort_metrics?.bitrate_kbps ?? undefined) ||
+            defaultLabel}
+        </>
+      );
     case "progress":
-      return <>{formatProgress(item.sort_metrics?.progress_ratio) ?? defaultLabel}</>;
+      return (
+        <>{formatProgress(item.sort_metrics?.progress_ratio) ?? defaultLabel}</>
+      );
     case "date_viewed":
       return <>{formatDate(item.sort_metrics?.viewed_at) ?? defaultLabel}</>;
     case "plays":
@@ -171,6 +208,7 @@ export default function ItemCard({
   libraryId,
   sortField,
   overlayPrefs,
+  narrowPosterActions = false,
   selectionMode = false,
   selected = false,
   onToggleSelect,
@@ -179,23 +217,32 @@ export default function ItemCard({
   libraryId?: number;
   sortField?: string;
   overlayPrefs?: CardOverlayPrefs | null;
+  narrowPosterActions?: boolean;
   selectionMode?: boolean;
   selected?: boolean;
   onToggleSelect?: (item: BrowseItem) => void;
 }) {
   const { loaded, onLoad } = useImageLoaded(item.poster_url);
-  const thumbhashUrl = item.poster_thumbhash ? decodeThumbhash(item.poster_thumbhash) : "";
-  const itemHref = `/item/${encodeURIComponent(item.content_id)}${
-    libraryId ? `?libraryId=${libraryId}` : ""
-  }`;
+  const thumbhashUrl = item.poster_thumbhash
+    ? decodeThumbhash(item.poster_thumbhash)
+    : "";
+  const itemHref = buildItemHref({ contentId: item.content_id, libraryId });
   const episodeLabels = buildEpisodeCardLabels(item);
   const displayTitle = episodeLabels ? episodeLabels.seriesTitle : item.title;
+  const headingHref =
+    item.type === "episode" && item.series_id
+      ? buildItemHref({ contentId: item.series_id, libraryId })
+      : itemHref;
   const mangaCountLabel = mangaCountChipLabel(item);
   const mangaStatus = mangaStatusChip(item);
+  const { cardPresentation } = useUICustomization();
+  const showCaption = cardPresentation.caption !== "artwork";
+  const showMetadata = cardPresentation.caption === "title_metadata";
+  const cardRef = useRef<HTMLDivElement>(null);
 
   return (
-    <div className="media-card group/card">
-      <div className="relative">
+    <div ref={cardRef} className="media-card media-card-longpress group/card">
+      <div className="group/media relative">
         <ViewTransitionLink
           to={itemHref}
           aria-label={displayTitle}
@@ -228,7 +275,9 @@ export default function ItemCard({
               />
             ) : (
               <div className="text-muted-foreground flex h-full w-full flex-col items-center justify-center gap-1 p-3 text-center text-sm">
-                <span className="line-clamp-3 font-medium">{displayTitle || "No Poster"}</span>
+                <span className="line-clamp-3 font-medium">
+                  {displayTitle || "No Poster"}
+                </span>
               </div>
             )}
             <div className="from-background/70 pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t to-transparent opacity-90" />
@@ -249,9 +298,14 @@ export default function ItemCard({
             )}
             {/* Manga cards carry purpose-built status/count chips in both top
                 corners; generic overlays would render underneath them. */}
-            {item.status === "matched" && item.type !== "manga" && overlayPrefs && (
-              <CardOverlays data={overlayDataFromBrowseItem(item)} prefs={overlayPrefs} />
-            )}
+            {item.status === "matched" &&
+              item.type !== "manga" &&
+              overlayPrefs && (
+                <CardOverlays
+                  data={overlayDataFromBrowseItem(item)}
+                  prefs={overlayPrefs}
+                />
+              )}
             {(mangaStatus || mangaCountLabel) && (
               /* One shared row so the two chips split the card width and
                  truncate instead of overlapping on narrow cards. */
@@ -275,10 +329,20 @@ export default function ItemCard({
             )}
           </div>
         </ViewTransitionLink>
+        {!selectionMode && item.play_content_id ? (
+          <CardPlayOverlay
+            contentId={item.play_content_id}
+            title={displayTitle}
+            type={item.type === "movie" ? "movie" : "episode"}
+            libraryId={libraryId}
+          />
+        ) : null}
         {selectionMode && onToggleSelect && (
           <button
             type="button"
-            aria-label={selected ? `Deselect ${item.title}` : `Select ${item.title}`}
+            aria-label={
+              selected ? `Deselect ${item.title}` : `Select ${item.title}`
+            }
             aria-pressed={selected}
             onClick={(event) => {
               event.preventDefault();
@@ -293,7 +357,9 @@ export default function ItemCard({
           >
             <span
               className={`flex size-4 items-center justify-center rounded-full border ${
-                selected ? "border-primary bg-primary text-primary-foreground" : "border-white/70"
+                selected
+                  ? "border-primary bg-primary text-primary-foreground"
+                  : "border-white/70"
               }`}
             >
               {selected && <Check className="size-3" />}
@@ -306,19 +372,37 @@ export default function ItemCard({
           libraryId={libraryId}
           userState={item.user_state}
           variant="poster"
+          narrowPosterActions={narrowPosterActions}
+          longPressRef={cardRef}
+          itemTitle={displayTitle}
         />
       </div>
-      <ViewTransitionLink to={itemHref} className="block px-1 pt-3">
-        <div className="truncate text-[14px] font-semibold tracking-tight">{displayTitle}</div>
-        {episodeLabels?.episodeTitle ? (
-          <div className="text-muted-foreground mt-1 truncate text-[12px] font-medium">
-            {episodeLabels.episodeTitle}
-          </div>
-        ) : null}
-        <div className="text-muted-foreground mt-1 text-[11px] font-medium tracking-[0.14em] uppercase">
-          <SortMeta item={item} sortField={sortField} />
+      {showCaption ? (
+        <div className="px-1 pt-3">
+          <ViewTransitionLink
+            to={headingHref}
+            className="block truncate text-[14px] font-semibold tracking-tight hover:underline"
+          >
+            {displayTitle}
+          </ViewTransitionLink>
+          {showMetadata && episodeLabels?.episodeTitle ? (
+            <ViewTransitionLink
+              to={itemHref}
+              className="text-muted-foreground mt-1 block truncate text-[12px] font-medium hover:underline"
+            >
+              {episodeLabels.episodeTitle}
+            </ViewTransitionLink>
+          ) : null}
+          {showMetadata ? (
+            <ViewTransitionLink
+              to={itemHref}
+              className="text-muted-foreground mt-1 block truncate text-[11px] font-medium tracking-[0.14em] uppercase hover:underline"
+            >
+              <SortMeta item={item} sortField={sortField} />
+            </ViewTransitionLink>
+          ) : null}
         </div>
-      </ViewTransitionLink>
+      ) : null}
     </div>
   );
 }

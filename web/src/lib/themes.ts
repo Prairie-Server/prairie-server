@@ -13,6 +13,9 @@ export interface ThemeDefinition {
   id: ThemeId;
   label: string;
   fontFamily: string;
+  /** Whether the theme paints a light or a dark surface. Drives theme-aware
+   * assets (logos) and third-party widget themes (toasts). */
+  appearance: "light" | "dark";
   /** Accent/primary color shown in the theme picker preview */
   previewAccent: string;
   /** Background color shown in the theme picker preview */
@@ -28,6 +31,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     id: "prairie-dusk",
     label: "Prairie Dusk",
     fontFamily: "Sora",
+    appearance: "dark",
     previewAccent: "#e0a84a",
     previewBg: "#141820",
     description: "Warm dusk over open land — simple, amber wheat, brand-first",
@@ -37,6 +41,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     id: "midnight-cinema",
     label: "Cinema Dark",
     fontFamily: "Outfit",
+    appearance: "dark",
     previewAccent: "#e8e8ec",
     previewBg: "#141417",
     description: "Monochromatic cinema — content is the color",
@@ -46,6 +51,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     id: "cinema-light",
     label: "Cinema Light",
     fontFamily: "Outfit",
+    appearance: "light",
     previewAccent: "#1a1a1e",
     previewBg: "#f4f4f6",
     description: "Light monochromatic cinema — content is the color",
@@ -55,6 +61,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     id: "cobalt-studio",
     label: "Cobalt",
     fontFamily: "Outfit",
+    appearance: "dark",
     previewAccent: "#78aefc",
     previewBg: "#101722",
     description: "Cool blue graphite with crisp contrast",
@@ -64,6 +71,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     id: "oxblood-noir",
     label: "Oxblood",
     fontFamily: "Outfit",
+    appearance: "dark",
     previewAccent: "#d16a78",
     previewBg: "#171113",
     description: "Deep red-black with restrained luxury warmth",
@@ -73,6 +81,7 @@ export const THEMES: Record<ThemeId, ThemeDefinition> = {
     id: "evergreen-studio",
     label: "Evergreen",
     fontFamily: "Outfit",
+    appearance: "dark",
     previewAccent: "#5bc39d",
     previewBg: "#101715",
     description: "Refined evergreen accents on dense graphite",

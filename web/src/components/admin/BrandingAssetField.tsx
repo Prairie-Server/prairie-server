@@ -20,6 +20,11 @@ interface BrandingAssetFieldProps {
   enabled: boolean;
   /** Square preview suits the icon/favicon; wide suits the wordmark/background. */
   preview?: "square" | "wide";
+  /**
+   * Forces the preview tile's backdrop. Light-theme assets are dark-on-transparent,
+   * so they would be invisible on the default muted tile in a dark admin theme.
+   */
+  previewBg?: "light";
 }
 
 export function BrandingAssetField({
@@ -30,6 +35,7 @@ export function BrandingAssetField({
   accept,
   enabled,
   preview = "wide",
+  previewBg,
 }: BrandingAssetFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const upload = useUploadBrandingAsset();
@@ -48,12 +54,17 @@ export function BrandingAssetField({
     <div className="border-border bg-background flex items-center gap-4 rounded-xl border p-3">
       <div
         className={cn(
-          "bg-muted/40 border-border flex shrink-0 items-center justify-center overflow-hidden rounded-lg border",
+          "border-border flex shrink-0 items-center justify-center overflow-hidden rounded-lg border",
+          previewBg === "light" ? "bg-white" : "bg-muted/40",
           preview === "square" ? "h-14 w-14" : "h-14 w-28",
         )}
       >
         {currentUrl ? (
-          <img src={currentUrl} alt={`${label} preview`} className="h-full w-full object-contain" />
+          <img
+            src={currentUrl}
+            alt={`${label} preview`}
+            className="h-full w-full object-contain"
+          />
         ) : (
           <ImageOff className="text-muted-foreground h-5 w-5" />
         )}
@@ -61,7 +72,9 @@ export function BrandingAssetField({
 
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium">{label}</p>
-        {description && <p className="text-muted-foreground mt-0.5 text-xs">{description}</p>}
+        {description && (
+          <p className="text-muted-foreground mt-0.5 text-xs">{description}</p>
+        )}
       </div>
 
       <input

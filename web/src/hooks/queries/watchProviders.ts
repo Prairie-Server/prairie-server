@@ -3,11 +3,18 @@ import { api, ApiClientError } from "@/api/client";
 import { favoriteKeys, watchlistKeys, watchProviderKeys } from "./keys";
 import { toast } from "sonner";
 import { storage } from "@/utils/storage";
+import type { PluginConfigSchema } from "@/api/types";
+
+export type WatchProviderConnectionConfig = Record<
+  string,
+  Record<string, unknown>
+>;
 
 export interface WatchProviderSummary {
   key: string;
   display_name: string;
   capabilities: WatchProviderCapabilities;
+  connection_config_schema?: PluginConfigSchema[];
 }
 
 export const WatchProviderAuthMethod = {
@@ -52,6 +59,7 @@ export interface WatchProviderConnection {
   sync_watchlist_order_enabled: boolean;
   scrobble_enabled: boolean;
   credentials_configured: boolean;
+  connection_config_schema?: PluginConfigSchema[];
   last_inbound_sync_at?: string;
   last_progress_sync_at?: string;
   last_outbound_sync_at?: string;
@@ -136,13 +144,18 @@ export function fetchWatchProviders() {
 }
 
 export function fetchWatchProviderConnection(provider: string) {
-  return api<WatchProviderConnection>(`/watch-providers/${provider}/connection`);
+  return api<WatchProviderConnection>(
+    `/watch-providers/${provider}/connection`,
+  );
 }
 
 export function startWatchProviderDeviceAuth(provider: string) {
-  return api<DeviceAuthResponse>(`/watch-providers/${provider}/auth/device-code`, {
-    method: "POST",
-  }).then((session) => ({
+  return api<DeviceAuthResponse>(
+    `/watch-providers/${provider}/auth/device-code`,
+    {
+      method: "POST",
+    },
+  ).then((session) => ({
     id: session.id ?? session.ID ?? "",
     provider: session.provider ?? session.Provider ?? provider,
     user_code: session.user_code ?? session.UserCode ?? "",
@@ -152,28 +165,47 @@ export function startWatchProviderDeviceAuth(provider: string) {
   }));
 }
 
-export function pollWatchProviderDeviceAuth(provider: string, authSessionId: string) {
-  return api<WatchProviderConnection>(`/watch-providers/${provider}/auth/poll`, {
-    method: "POST",
-    body: JSON.stringify({ auth_session_id: authSessionId }),
-  });
+export function pollWatchProviderDeviceAuth(
+  provider: string,
+  authSessionId: string,
+) {
+  return api<WatchProviderConnection>(
+    `/watch-providers/${provider}/auth/poll`,
+    {
+      method: "POST",
+      body: JSON.stringify({ auth_session_id: authSessionId }),
+    },
+  );
 }
 
-export function connectWatchProviderAPIKey(provider: string, apiKey: string) {
-  return api<WatchProviderConnection>(`/watch-providers/${provider}/auth/api-key`, {
-    method: "POST",
-    body: JSON.stringify({ api_key: apiKey }),
-  });
+export function connectWatchProviderAPIKey(
+  provider: string,
+  apiKey: string,
+  connectionConfig: WatchProviderConnectionConfig = {},
+) {
+  return api<WatchProviderConnection>(
+    `/watch-providers/${provider}/auth/api-key`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        api_key: apiKey,
+        connection_config: connectionConfig,
+      }),
+    },
+  );
 }
 
 export function updateWatchProviderConnection(
   provider: string,
   body: UpdateWatchProviderConnection,
 ) {
-  return api<WatchProviderConnection>(`/watch-providers/${provider}/connection`, {
-    method: "PATCH",
-    body: JSON.stringify(body),
-  });
+  return api<WatchProviderConnection>(
+    `/watch-providers/${provider}/connection`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    },
+  );
 }
 
 export function deleteWatchProviderConnection(provider: string) {
@@ -181,13 +213,18 @@ export function deleteWatchProviderConnection(provider: string) {
 }
 
 export function triggerWatchProviderSync(provider: string) {
-  return api<WatchProviderManualSyncResponse>(`/watch-providers/${provider}/sync`, {
-    method: "POST",
-  });
+  return api<WatchProviderManualSyncResponse>(
+    `/watch-providers/${provider}/sync`,
+    {
+      method: "POST",
+    },
+  );
 }
 
 export function fetchWatchProviderSyncRuns(provider: string) {
-  return api<{ runs: WatchProviderSyncRun[] }>(`/watch-providers/${provider}/sync-runs`);
+  return api<{ runs: WatchProviderSyncRun[] }>(
+    `/watch-providers/${provider}/sync-runs`,
+  );
 }
 
 function getActiveProfileId() {
@@ -220,7 +257,9 @@ export function useWatchProviderSyncRuns(provider: string, enabled = true) {
     enabled: enabled && Boolean(profileId),
     refetchInterval: (query) => {
       const latest = query.state.data?.runs?.[0];
-      return latest?.status === "queued" || latest?.status === "running" ? 4_000 : false;
+      return latest?.status === "queued" || latest?.status === "running"
+        ? 4_000
+        : false;
     },
   });
 }
@@ -228,34 +267,51 @@ export function useWatchProviderSyncRuns(provider: string, enabled = true) {
 export function useStartWatchProviderDeviceAuth(provider: string) {
   return useMutation({
     mutationFn: () => startWatchProviderDeviceAuth(provider),
-    onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to start auth"),
+    onError: (err) =>
+      toast.error(err instanceof Error ? err.message : "Failed to start auth"),
   });
 }
 
 export function usePollWatchProviderDeviceAuth(provider: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (authSessionId: string) => pollWatchProviderDeviceAuth(provider, authSessionId),
+    mutationFn: (authSessionId: string) =>
+      pollWatchProviderDeviceAuth(provider, authSessionId),
     onSuccess: (connection) => {
       const profileId = getActiveProfileId();
-      queryClient.setQueryData(watchProviderKeys.connection(profileId, provider), connection);
+      queryClient.setQueryData(
+        watchProviderKeys.connection(profileId, provider),
+        connection,
+      );
       toast.success("Watch provider connected");
     },
-    onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to finish auth"),
+    onError: (err) =>
+      toast.error(err instanceof Error ? err.message : "Failed to finish auth"),
   });
 }
 
 export function useConnectWatchProviderAPIKey(provider: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (apiKey: string) => connectWatchProviderAPIKey(provider, apiKey),
+    mutationFn: ({
+      apiKey,
+      connectionConfig,
+    }: {
+      apiKey: string;
+      connectionConfig?: WatchProviderConnectionConfig;
+    }) => connectWatchProviderAPIKey(provider, apiKey, connectionConfig),
     onSuccess: (connection) => {
       const profileId = getActiveProfileId();
-      queryClient.setQueryData(watchProviderKeys.connection(profileId, provider), connection);
+      queryClient.setQueryData(
+        watchProviderKeys.connection(profileId, provider),
+        connection,
+      );
       toast.success("Watch provider connected");
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Failed to connect provider"),
+      toast.error(
+        err instanceof Error ? err.message : "Failed to connect provider",
+      ),
   });
 }
 
@@ -266,9 +322,15 @@ export function useUpdateWatchProviderConnection(provider: string) {
       updateWatchProviderConnection(provider, body),
     onSuccess: (connection) => {
       const profileId = getActiveProfileId();
-      queryClient.setQueryData(watchProviderKeys.connection(profileId, provider), connection);
+      queryClient.setQueryData(
+        watchProviderKeys.connection(profileId, provider),
+        connection,
+      );
     },
-    onError: (err) => toast.error(err instanceof Error ? err.message : "Failed to update provider"),
+    onError: (err) =>
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update provider",
+      ),
   });
 }
 
@@ -284,7 +346,9 @@ export function useDeleteWatchProviderConnection(provider: string) {
       toast.success("Watch provider disconnected");
     },
     onError: (err) =>
-      toast.error(err instanceof Error ? err.message : "Failed to disconnect provider"),
+      toast.error(
+        err instanceof Error ? err.message : "Failed to disconnect provider",
+      ),
   });
 }
 
@@ -294,9 +358,12 @@ export function useTriggerWatchProviderSync(provider: string) {
     mutationFn: () => triggerWatchProviderSync(provider),
     onSuccess: (response) => {
       const profileId = getActiveProfileId();
-      queryClient.setQueryData(watchProviderKeys.syncRuns(profileId, provider), {
-        runs: [response.run],
-      });
+      queryClient.setQueryData(
+        watchProviderKeys.syncRuns(profileId, provider),
+        {
+          runs: [response.run],
+        },
+      );
       void queryClient.invalidateQueries({
         queryKey: watchProviderKeys.syncRuns(profileId, provider),
       });
@@ -311,7 +378,9 @@ export function useTriggerWatchProviderSync(provider: string) {
       if (err instanceof ApiClientError && err.status === 429) {
         const retryAfter = err.details?.retry_after_seconds;
         toast.error(
-          retryAfter ? `Sync available in ${formatRetryAfter(retryAfter)}` : "Sync is cooling down",
+          retryAfter
+            ? `Sync available in ${formatRetryAfter(retryAfter)}`
+            : "Sync is cooling down",
         );
         return;
       }

@@ -18,7 +18,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import {
   searchSubtitles,
   detectSubtitleLanguage,
@@ -39,10 +44,22 @@ interface SubtitleSearchDialogProps {
 }
 
 const providerInfo: Record<string, { abbr: string; className: string }> = {
-  opensubtitles: { abbr: "OS", className: "bg-amber-500/15 text-amber-700 dark:text-amber-300" },
-  subdl: { abbr: "SDL", className: "bg-sky-500/15 text-sky-700 dark:text-sky-300" },
-  subsource: { abbr: "SS", className: "bg-rose-500/15 text-rose-700 dark:text-rose-300" },
-  upload: { abbr: "UP", className: "bg-violet-500/15 text-violet-700 dark:text-violet-300" },
+  opensubtitles: {
+    abbr: "OS",
+    className: "bg-amber-500/15 text-amber-700 dark:text-amber-300",
+  },
+  subdl: {
+    abbr: "SDL",
+    className: "bg-sky-500/15 text-sky-700 dark:text-sky-300",
+  },
+  subsource: {
+    abbr: "SS",
+    className: "bg-rose-500/15 text-rose-700 dark:text-rose-300",
+  },
+  upload: {
+    abbr: "UP",
+    className: "bg-violet-500/15 text-violet-700 dark:text-violet-300",
+  },
 };
 
 function scoreTone(score: number): { text: string; ring: string; bg: string } {
@@ -82,7 +99,9 @@ export default function SubtitleSearchDialog({
 }: SubtitleSearchDialogProps) {
   const downloadSubtitleMutation = useDownloadSubtitle();
   const uploadSubtitleMutation = useUploadSubtitle();
-  const downloadedQuery = useDownloadedSubtitles(open ? version?.file_id : undefined);
+  const downloadedQuery = useDownloadedSubtitles(
+    open ? version?.file_id : undefined,
+  );
   const searchAbortRef = useRef<AbortController | null>(null);
 
   const [selectedLanguage, setSelectedLanguage] = useState("en");
@@ -92,7 +111,9 @@ export default function SubtitleSearchDialog({
   const [searching, setSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
   const [downloadingKey, setDownloadingKey] = useState<string | null>(null);
-  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(() => new Set());
+  const [expandedKeys, setExpandedKeys] = useState<Set<string>>(
+    () => new Set(),
+  );
 
   // Reset state when dialog opens/closes or version changes.
   useEffect(() => {
@@ -215,7 +236,8 @@ export default function SubtitleSearchDialog({
   );
 
   const handleDetectLanguage = useCallback(
-    (file: File, fallbackLanguage?: string) => detectSubtitleLanguage(file, fallbackLanguage),
+    (file: File, fallbackLanguage?: string) =>
+      detectSubtitleLanguage(file, fallbackLanguage),
     [],
   );
 
@@ -252,7 +274,10 @@ export default function SubtitleSearchDialog({
             <div className="space-y-2">
               <p className="text-sm font-medium">Search online</p>
               <div className="flex flex-col gap-2 sm:flex-row">
-                <Select value={selectedLanguage} onValueChange={setSelectedLanguage}>
+                <Select
+                  value={selectedLanguage}
+                  onValueChange={setSelectedLanguage}
+                >
                   <SelectTrigger className="w-full sm:w-[220px]">
                     <SelectValue placeholder="Language" />
                   </SelectTrigger>
@@ -343,24 +368,40 @@ export default function SubtitleSearchDialog({
 
                       <div className="flex min-w-0 flex-1 flex-col gap-1.5">
                         <div className="flex flex-wrap items-center gap-1.5">
-                          <Badge className={cn("h-5 px-1.5 text-[10px]", provider.className)}>
+                          <Badge
+                            className={cn(
+                              "h-5 px-1.5 text-[10px]",
+                              provider.className,
+                            )}
+                          >
                             {provider.abbr}
                           </Badge>
-                          <Badge variant="outline" className="h-5 px-1.5 text-[10px] uppercase">
+                          <Badge
+                            variant="outline"
+                            className="h-5 px-1.5 text-[10px] uppercase"
+                          >
                             {result.format}
                           </Badge>
-                          <Badge variant="outline" className="h-5 px-1.5 text-[10px]">
+                          <Badge
+                            variant="outline"
+                            className="h-5 px-1.5 text-[10px]"
+                          >
                             {getLanguageName(result.language)}
                           </Badge>
                           {result.hearing_impaired && (
-                            <Badge variant="outline" className="h-5 gap-1 px-1.5 text-[10px]">
+                            <Badge
+                              variant="outline"
+                              className="h-5 gap-1 px-1.5 text-[10px]"
+                            >
                               <Ear className="size-2.5" /> HI
                             </Badge>
                           )}
                           {result.downloads > 0 && (
                             <span className="text-muted-foreground ml-0.5 text-[11px] tabular-nums">
                               {result.downloads.toLocaleString()}{" "}
-                              {result.downloads === 1 ? "download" : "downloads"}
+                              {result.downloads === 1
+                                ? "download"
+                                : "downloads"}
                             </span>
                           )}
                         </div>
@@ -383,7 +424,8 @@ export default function SubtitleSearchDialog({
                               {hasExtras ? (
                                 <div className="space-y-1.5">
                                   <p className="text-muted-foreground font-sans text-[10px] tracking-[0.12em] uppercase">
-                                    {names.length} release name{names.length === 1 ? "" : "s"}
+                                    {names.length} release name
+                                    {names.length === 1 ? "" : "s"}
                                   </p>
                                   <ul className="space-y-1 leading-snug">
                                     {names.map((name, i) => (

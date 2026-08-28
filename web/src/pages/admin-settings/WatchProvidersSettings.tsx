@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { AlertTriangle, Check, Loader2, RotateCcw, Save, X } from "lucide-react";
+import {
+  AlertTriangle,
+  Check,
+  Loader2,
+  RotateCcw,
+  Save,
+  X,
+} from "lucide-react";
 import { toast } from "sonner";
 import {
   useAdminSensitiveStatus,
@@ -21,7 +28,11 @@ const WATCH_PROVIDER_CREDENTIALS: WatchProviderCredentials[] = [
   { key: "simkl", displayName: "Simkl" },
 ];
 
-function WatchProviderCredentialCard({ provider }: { provider: WatchProviderCredentials }) {
+function WatchProviderCredentialCard({
+  provider,
+}: {
+  provider: WatchProviderCredentials;
+}) {
   const { data: sensitive } = useAdminSensitiveStatus();
   const updateSetting = useUpdateServerSetting();
   const [clientId, setClientId] = useState("");
@@ -84,7 +95,9 @@ function WatchProviderCredentialCard({ provider }: { provider: WatchProviderCred
           </p>
         </div>
         <CredentialStatus
-          configured={configured.has(clientIdKey) && configured.has(clientSecretKey)}
+          configured={
+            configured.has(clientIdKey) && configured.has(clientSecretKey)
+          }
         />
       </div>
       <SettingField
@@ -104,16 +117,31 @@ function WatchProviderCredentialCard({ provider }: { provider: WatchProviderCred
         hint="Leave blank to keep the current value."
       />
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" onClick={() => void save()} disabled={updateSetting.isPending}>
-          {updateSetting.isPending ? <Loader2 className="animate-spin" /> : <Save />}
-          {updateSetting.isPending ? "Saving..." : `Save ${provider.displayName} Credentials`}
+        <Button
+          type="button"
+          onClick={() => void save()}
+          disabled={updateSetting.isPending}
+        >
+          {updateSetting.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
+          {updateSetting.isPending
+            ? "Saving..."
+            : `Save ${provider.displayName} Credentials`}
         </Button>
-        {(configured.has(clientIdKey) || configured.has(clientSecretKey)) && !confirmClear && (
-          <Button type="button" variant="outline" onClick={() => setConfirmClear(true)}>
-            <RotateCcw />
-            Clear credentials
-          </Button>
-        )}
+        {(configured.has(clientIdKey) || configured.has(clientSecretKey)) &&
+          !confirmClear && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setConfirmClear(true)}
+            >
+              <RotateCcw />
+              Clear credentials
+            </Button>
+          )}
         {confirmClear && (
           <>
             <span className="text-muted-foreground text-xs">
@@ -128,7 +156,11 @@ function WatchProviderCredentialCard({ provider }: { provider: WatchProviderCred
               <Check />
               Confirm clear
             </Button>
-            <Button type="button" variant="ghost" onClick={() => setConfirmClear(false)}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setConfirmClear(false)}
+            >
               <X />
               Cancel
             </Button>
@@ -139,8 +171,8 @@ function WatchProviderCredentialCard({ provider }: { provider: WatchProviderCred
         <div className="border-warning/30 bg-warning/10 text-warning mt-3 flex items-center justify-between gap-3 rounded-xl border px-3 py-2 text-xs">
           <span className="flex items-center gap-2">
             <AlertTriangle className="h-3.5 w-3.5" />
-            Restart required for {provider.displayName} collection browsing to use this credential
-            change.
+            Restart required for {provider.displayName} collection browsing to
+            use this credential change.
           </span>
           <RestartServerButton />
         </div>
@@ -153,10 +185,13 @@ export default function WatchProvidersSettings() {
   return (
     <div className="flex h-full flex-col">
       <div className="mb-6 space-y-2">
-        <h2 className="text-xl font-semibold tracking-tight">Watch Providers</h2>
+        <h2 className="text-xl font-semibold tracking-tight">
+          Watch Providers
+        </h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          OAuth credentials for watch history and scrobbling services. Users connect their own
-          accounts from their profile settings once a provider is configured here.
+          OAuth credentials for watch history and scrobbling services. Users
+          connect their own accounts from their profile settings once a provider
+          is configured here.
         </p>
       </div>
 

@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import type { AutoscanAvailableSource, AutoscanScanSourceDescriptor, Library } from "@/api/types";
+import type {
+  AutoscanAvailableSource,
+  AutoscanScanSourceDescriptor,
+  Library,
+} from "@/api/types";
 
 import {
   connectionIsMandatory,
@@ -18,7 +22,9 @@ import {
   serializeConfigValues,
 } from "./sourceDescriptor";
 
-function available(descriptor?: Partial<AutoscanScanSourceDescriptor>): AutoscanAvailableSource {
+function available(
+  descriptor?: Partial<AutoscanScanSourceDescriptor>,
+): AutoscanAvailableSource {
   return {
     plugin_id: "p",
     capability_id: "c",
@@ -30,38 +36,56 @@ function available(descriptor?: Partial<AutoscanScanSourceDescriptor>): Autoscan
 describe("descriptorFor", () => {
   it("falls back to host defaults when a server sends no descriptor", () => {
     // Guards against an older server: the flow must still work, not blank out.
-    const source = { ...available(), descriptor: undefined } as unknown as AutoscanAvailableSource;
+    const source = {
+      ...available(),
+      descriptor: undefined,
+    } as unknown as AutoscanAvailableSource;
     expect(descriptorFor(source)).toEqual(DEFAULT_DESCRIPTOR);
   });
 
   it("falls back when delivery_modes is empty", () => {
-    expect(descriptorFor(available({ delivery_modes: [] }))).toEqual(DEFAULT_DESCRIPTOR);
+    expect(descriptorFor(available({ delivery_modes: [] }))).toEqual(
+      DEFAULT_DESCRIPTOR,
+    );
   });
 
   it("returns the declared descriptor when present", () => {
-    const got = descriptorFor(available({ delivery_modes: ["webhook"], connection: "none" }));
+    const got = descriptorFor(
+      available({ delivery_modes: ["webhook"], connection: "none" }),
+    );
     expect(got.connection).toBe("none");
   });
 });
 
 describe("step visibility", () => {
   it("skips the delivery question for a single-mode source", () => {
-    expect(needsDeliveryChoice({ delivery_modes: ["poll"], connection: "optional" })).toBe(false);
-    expect(needsDeliveryChoice({ delivery_modes: ["webhook"], connection: "optional" })).toBe(
-      false,
-    );
+    expect(
+      needsDeliveryChoice({ delivery_modes: ["poll"], connection: "optional" }),
+    ).toBe(false);
+    expect(
+      needsDeliveryChoice({
+        delivery_modes: ["webhook"],
+        connection: "optional",
+      }),
+    ).toBe(false);
   });
 
   it("asks when a source supports both modes", () => {
     expect(
-      needsDeliveryChoice({ delivery_modes: ["poll", "webhook"], connection: "optional" }),
+      needsDeliveryChoice({
+        delivery_modes: ["poll", "webhook"],
+        connection: "optional",
+      }),
     ).toBe(true);
   });
 
   it("hides the connection step for a credential-free source", () => {
-    expect(needsConnectionStep({ delivery_modes: ["poll"], connection: "none" }, "poll")).toBe(
-      false,
-    );
+    expect(
+      needsConnectionStep(
+        { delivery_modes: ["poll"], connection: "none" },
+        "poll",
+      ),
+    ).toBe(false);
   });
 
   it("hides the connection step for webhook delivery even when a connection is allowed", () => {
@@ -80,26 +104,35 @@ describe("step visibility", () => {
 
   it("treats connection as mandatory only when required and applicable", () => {
     expect(
-      connectionIsMandatory({ delivery_modes: ["poll"], connection: "required" }, "poll"),
+      connectionIsMandatory(
+        { delivery_modes: ["poll"], connection: "required" },
+        "poll",
+      ),
     ).toBe(true);
     expect(connectionIsMandatory(DEFAULT_DESCRIPTOR, "poll")).toBe(false);
     expect(
-      connectionIsMandatory({ delivery_modes: ["webhook"], connection: "required" }, "webhook"),
+      connectionIsMandatory(
+        { delivery_modes: ["webhook"], connection: "required" },
+        "webhook",
+      ),
     ).toBe(false);
   });
 });
 
 describe("defaultDeliveryMode", () => {
   it("prefers poll when both are offered", () => {
-    expect(defaultDeliveryMode({ delivery_modes: ["webhook", "poll"], connection: "none" })).toBe(
-      "poll",
-    );
+    expect(
+      defaultDeliveryMode({
+        delivery_modes: ["webhook", "poll"],
+        connection: "none",
+      }),
+    ).toBe("poll");
   });
 
   it("uses the only mode for a single-mode source", () => {
-    expect(defaultDeliveryMode({ delivery_modes: ["webhook"], connection: "none" })).toBe(
-      "webhook",
-    );
+    expect(
+      defaultDeliveryMode({ delivery_modes: ["webhook"], connection: "none" }),
+    ).toBe("webhook");
   });
 });
 
@@ -218,26 +251,48 @@ describe("serializeConfigValues / parseConfigValues", () => {
   });
 
   it("round-trips a number", () => {
-    expect(parseConfigValues(descriptor, serializeConfigValues({ count: 4 })).count).toBe(4);
+    expect(
+      parseConfigValues(descriptor, serializeConfigValues({ count: 4 })).count,
+    ).toBe(4);
   });
 
   it("drops null and undefined rather than writing them as text", () => {
-    expect(serializeConfigValues({ a: null, b: undefined, c: "keep" })).toEqual({ c: "keep" });
+    expect(serializeConfigValues({ a: null, b: undefined, c: "keep" })).toEqual(
+      { c: "keep" },
+    );
   });
 });
 
 describe("fillValueFromLibraries", () => {
   const libraries = [
-    { id: 1, name: "Movies", type: "movie", enabled: true, paths: ["/mnt/movies"] },
+    {
+      id: 1,
+      name: "Movies",
+      type: "movie",
+      enabled: true,
+      paths: ["/mnt/movies"],
+    },
     { id: 2, name: "TV", type: "series", enabled: true, paths: ["/mnt/tv"] },
-    { id: 3, name: "Everything", type: "mixed", enabled: true, paths: ["/mnt/mixed"] },
-    { id: 4, name: "Off", type: "movie", enabled: false, paths: ["/mnt/disabled"] },
+    {
+      id: 3,
+      name: "Everything",
+      type: "mixed",
+      enabled: true,
+      paths: ["/mnt/mixed"],
+    },
+    {
+      id: 4,
+      name: "Off",
+      type: "movie",
+      enabled: false,
+      paths: ["/mnt/disabled"],
+    },
   ] as unknown as Library[];
 
   it("collects movie and mixed paths for a movie fill", () => {
-    expect(fillValueFromLibraries(FILL_FROM_MOVIE_LIBRARY_PATHS, libraries)).toBe(
-      "/mnt/movies\n/mnt/mixed",
-    );
+    expect(
+      fillValueFromLibraries(FILL_FROM_MOVIE_LIBRARY_PATHS, libraries),
+    ).toBe("/mnt/movies\n/mnt/mixed");
   });
 
   it("collects series and mixed paths for a TV fill", () => {
@@ -247,9 +302,9 @@ describe("fillValueFromLibraries", () => {
   });
 
   it("skips disabled libraries", () => {
-    expect(fillValueFromLibraries(FILL_FROM_MOVIE_LIBRARY_PATHS, libraries)).not.toContain(
-      "/mnt/disabled",
-    );
+    expect(
+      fillValueFromLibraries(FILL_FROM_MOVIE_LIBRARY_PATHS, libraries),
+    ).not.toContain("/mnt/disabled");
   });
 
   it("returns null for an unknown or absent fill source", () => {

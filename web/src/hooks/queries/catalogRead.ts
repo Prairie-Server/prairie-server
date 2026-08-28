@@ -22,14 +22,20 @@ export async function fetchCatalogItemDetail(
   options?: RequestInit,
 ): Promise<ItemDetail> {
   const query = libraryId ? `?library_id=${libraryId}` : "";
-  return api<ItemDetail>(`/catalog/items/${catalogPathID(id)}${query}`, options);
+  return api<ItemDetail>(
+    `/catalog/items/${catalogPathID(id)}${query}`,
+    options,
+  );
 }
 
 export async function fetchCatalogItemVersions(
   id: string,
   options?: RequestInit,
 ): Promise<FileVersion[]> {
-  return api<FileVersion[]>(`/catalog/items/${catalogPathID(id)}/versions`, options);
+  return api<FileVersion[]>(
+    `/catalog/items/${catalogPathID(id)}/versions`,
+    options,
+  );
 }
 
 export async function fetchCatalogItemEpisodes(
@@ -38,7 +44,10 @@ export async function fetchCatalogItemEpisodes(
   options?: RequestInit,
 ): Promise<EpisodesResponse> {
   const query = libraryId ? `?library_id=${libraryId}` : "";
-  return api<EpisodesResponse>(`/catalog/items/${catalogPathID(id)}/episodes${query}`, options);
+  return api<EpisodesResponse>(
+    `/catalog/items/${catalogPathID(id)}/episodes${query}`,
+    options,
+  );
 }
 
 export async function fetchCatalogSeriesSeasons(
@@ -79,7 +88,10 @@ export async function fetchCatalogSeasonEpisodes(
   );
 }
 
-export function useCatalogItemDetail(id: string | undefined, libraryId?: number) {
+export function useCatalogItemDetail(
+  id: string | undefined,
+  libraryId?: number,
+) {
   return useQuery({
     queryKey: catalogKeys.itemDetail(id!, libraryId),
     queryFn: () => fetchCatalogItemDetail(id!, libraryId),
@@ -99,7 +111,10 @@ export async function fetchMangaSeriesFiles(
   id: string,
   options?: RequestInit,
 ): Promise<MangaSeriesFiles> {
-  return api<MangaSeriesFiles>(`/catalog/items/${catalogPathID(id)}/manga-files`, options);
+  return api<MangaSeriesFiles>(
+    `/catalog/items/${catalogPathID(id)}/manga-files`,
+    options,
+  );
 }
 
 // useMangaSeriesFiles backs the series "View Details" dialog; enabled defers
@@ -112,7 +127,10 @@ export function useMangaSeriesFiles(id: string | undefined, enabled: boolean) {
   });
 }
 
-export function useCatalogItemEpisodes(id: string | undefined, libraryId?: number) {
+export function useCatalogItemEpisodes(
+  id: string | undefined,
+  libraryId?: number,
+) {
   return useQuery({
     queryKey: catalogKeys.itemEpisodes(id!, libraryId),
     queryFn: () => fetchCatalogItemEpisodes(id!, libraryId),
@@ -142,7 +160,24 @@ export function usePrefetchCatalogSeason(libraryId?: number) {
   );
 }
 
-export function useCatalogSeriesSeasons(seriesId: string | undefined, libraryId?: number) {
+/** Warms an episode's detail query when the user shows intent to open it. */
+export function usePrefetchCatalogItemDetail(libraryId?: number) {
+  const queryClient = useQueryClient();
+  return useCallback(
+    (itemId: string) => {
+      void queryClient.prefetchQuery({
+        queryKey: catalogKeys.itemDetail(itemId, libraryId),
+        queryFn: () => fetchCatalogItemDetail(itemId, libraryId),
+      });
+    },
+    [queryClient, libraryId],
+  );
+}
+
+export function useCatalogSeriesSeasons(
+  seriesId: string | undefined,
+  libraryId?: number,
+) {
   return useQuery({
     queryKey: catalogKeys.seriesSeasons(seriesId!, libraryId),
     queryFn: () => fetchCatalogSeriesSeasons(seriesId!, libraryId),

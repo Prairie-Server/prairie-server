@@ -15,8 +15,12 @@ export function moveSectionBeforeTarget(
   }
 
   const nextSections = [...sections];
-  const draggedIndex = nextSections.findIndex((section) => section.id === draggedId);
-  const targetIndex = nextSections.findIndex((section) => section.id === targetId);
+  const draggedIndex = nextSections.findIndex(
+    (section) => section.id === draggedId,
+  );
+  const targetIndex = nextSections.findIndex(
+    (section) => section.id === targetId,
+  );
 
   if (draggedIndex === -1 || targetIndex === -1) {
     return sections;
@@ -26,13 +30,16 @@ export function moveSectionBeforeTarget(
   if (!draggedSection) {
     return sections;
   }
-  const insertIndex = draggedIndex < targetIndex ? targetIndex - 1 : targetIndex;
+  const insertIndex =
+    draggedIndex < targetIndex ? targetIndex - 1 : targetIndex;
   nextSections.splice(insertIndex, 0, draggedSection);
 
   return nextSections;
 }
 
-export function buildSectionReorderEntries(sections: PageSectionConfig[]): SectionReorderEntry[] {
+export function buildSectionReorderEntries(
+  sections: PageSectionConfig[],
+): SectionReorderEntry[] {
   return sections.map((section, index) => ({
     id: section.id,
     position: index,

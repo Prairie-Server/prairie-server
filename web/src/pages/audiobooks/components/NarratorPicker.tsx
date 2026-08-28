@@ -9,7 +9,11 @@ interface NarratorPickerProps {
   others: AudiobookNarration[];
 }
 
-export function NarratorPicker({ currentNarrator, currentContentId, others }: NarratorPickerProps) {
+export function NarratorPicker({
+  currentNarrator,
+  currentContentId,
+  others,
+}: NarratorPickerProps) {
   const [open, setOpen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement | null>(null);
   const navigate = useNavigate();
@@ -65,10 +69,14 @@ export function NarratorPicker({ currentNarrator, currentContentId, others }: Na
                 }`}
               >
                 <span className="truncate">
-                  {it.narrators.length > 0 ? it.narrators.join(", ") : "Unknown narrator"}
+                  {it.narrators.length > 0
+                    ? it.narrators.join(", ")
+                    : "Unknown narrator"}
                 </span>
                 {it.year ? (
-                  <span className="text-muted-foreground shrink-0 text-xs">{it.year}</span>
+                  <span className="text-muted-foreground shrink-0 text-xs">
+                    {it.year}
+                  </span>
                 ) : null}
               </button>
             );

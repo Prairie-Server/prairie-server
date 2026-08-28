@@ -29,18 +29,26 @@ vi.mock("@/components/calendar/WeekNavigator", () => ({
 }));
 
 vi.mock("@/components/calendar/DayGroup", () => ({
-  default: ({ day }: { day: { date: string } }) => <div data-kind="day-group">{day.date}</div>,
+  default: ({ day }: { day: { date: string } }) => (
+    <div data-kind="day-group">{day.date}</div>
+  ),
 }));
 
 vi.mock("@/components/ui/button", () => ({
-  Button: ({ children }: { children: ReactNode }) => <button>{children}</button>,
+  Button: ({ children }: { children: ReactNode }) => (
+    <button>{children}</button>
+  ),
 }));
 
 vi.mock("@/components/ui/select", () => ({
   Select: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SelectContent: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
   SelectItem: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  SelectTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  SelectTrigger: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
   SelectValue: () => null,
 }));
 

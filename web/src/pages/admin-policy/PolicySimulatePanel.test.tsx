@@ -52,7 +52,9 @@ describe("PolicySimulatePanel", () => {
     fireEvent.click(screen.getByRole("button", { name: /run/i }));
 
     expect(await screen.findByText(/14.2 µs/)).toBeInTheDocument();
-    expect(screen.getAllByText(/allowed_library_ids/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/allowed_library_ids/).length).toBeGreaterThan(
+      0,
+    );
     expect(screen.getByText(/rating ≤ PG/)).toBeInTheDocument();
   });
 });

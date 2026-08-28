@@ -16,11 +16,18 @@ import (
 	"github.com/prairie-server/prairie-server/internal/markers"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/pathscope"
+	"github.com/prairie-server/prairie-server/internal/scanbatch"
 )
 
 // Sentinel errors for file repository operations.
 var (
 	ErrFileNotFound = errors.New("media file not found")
+	// ErrStaleCopySafetyScan reports that a multi-PPS verdict was computed from
+	// a generation of the file the row no longer holds — it was rewritten (or
+	// removed) while the scan ran. The verdict is not wrong, it just describes
+	// bytes nobody is serving any more, so it must not overwrite the row and
+	// must not be pushed at live sessions.
+	ErrStaleCopySafetyScan = errors.New("copy-safety verdict superseded by a newer generation of the file")
 )
 
 // FileRepository provides CRUD operations for the media_files table.
@@ -61,7 +68,9 @@ const fileColumns = `id, content_id, episode_id, extra_id, season_number, episod
 	edition_raw, edition_key, edition_confidence, edition_source,
 	presentation_kind, presentation_group_key, presentation_part_index, presentation_part_total,
 	multi_episode_start, multi_episode_end,
-	probe_source, probe_updated_at, match_attempted_at, missing_since, created_at, updated_at`
+	multiple_pps, multiple_pps_scan_size, multiple_pps_scan_mtime,
+	probe_source, probe_updated_at, match_attempted_at, missing_since,
+	first_seen_scan_run_id, created_at, updated_at`
 
 const overlayFileColumns = `content_id, episode_id, media_folder_id, file_path,
 	codec_video, codec_audio, resolution, audio_channels, hdr, container,
@@ -85,7 +94,9 @@ const mfFileColumns = `mf.id, mf.content_id, mf.episode_id, mf.extra_id, mf.seas
 	mf.edition_raw, mf.edition_key, mf.edition_confidence, mf.edition_source,
 	mf.presentation_kind, mf.presentation_group_key, mf.presentation_part_index, mf.presentation_part_total,
 	mf.multi_episode_start, mf.multi_episode_end,
-	mf.probe_source, mf.probe_updated_at, mf.match_attempted_at, mf.missing_since, mf.created_at, mf.updated_at`
+	mf.multiple_pps, mf.multiple_pps_scan_size, mf.multiple_pps_scan_mtime,
+	mf.probe_source, mf.probe_updated_at, mf.match_attempted_at, mf.missing_since,
+	mf.first_seen_scan_run_id, mf.created_at, mf.updated_at`
 
 // scanMediaFile scans a single row into a *models.MediaFile.
 func scanMediaFile(row pgx.Row) (*models.MediaFile, error) {
@@ -119,6 +130,7 @@ func scanMediaFile(row pgx.Row) (*models.MediaFile, error) {
 	var presentationPartIndex, presentationPartTotal *int
 	var multiEpisodeStart, multiEpisodeEnd *int
 	var presentationKind, presentationGroupKey *string
+	var firstSeenScanRunID *string
 	var chapterThumbnailRetryAfter *time.Time
 	var videoTracksJSON, audioTracksJSON, subtitleTracksJSON, externalSubtitlesJSON, chaptersJSON, trickplayJSON []byte
 
@@ -200,10 +212,14 @@ func scanMediaFile(row pgx.Row) (*models.MediaFile, error) {
 		&presentationPartTotal,
 		&multiEpisodeStart,
 		&multiEpisodeEnd,
+		&f.MultiplePPS,
+		&f.MultiplePPSScanSize,
+		&f.MultiplePPSScanMtime,
 		&probeSource,
 		&f.ProbeUpdatedAt,
 		&f.MatchAttemptedAt,
 		&f.MissingSince,
+		&firstSeenScanRunID,
 		&f.CreatedAt,
 		&f.UpdatedAt,
 	)
@@ -314,6 +330,9 @@ func scanMediaFile(row pgx.Row) (*models.MediaFile, error) {
 	}
 	if presentationGroupKey != nil {
 		f.PresentationGroupKey = *presentationGroupKey
+	}
+	if firstSeenScanRunID != nil {
+		f.FirstSeenScanRunID = *firstSeenScanRunID
 	}
 	if presentationPartIndex != nil {
 		f.PresentationPartIndex = *presentationPartIndex
@@ -438,6 +457,7 @@ func scanMediaFiles(rows pgx.Rows) ([]*models.MediaFile, error) {
 		var presentationPartIndex, presentationPartTotal *int
 		var multiEpisodeStart, multiEpisodeEnd *int
 		var presentationKind, presentationGroupKey *string
+		var firstSeenScanRunID *string
 		var chapterThumbnailRetryAfter *time.Time
 		var videoTracksJSON, audioTracksJSON, subtitleTracksJSON, externalSubtitlesJSON, chaptersJSON, trickplayJSON []byte
 
@@ -519,10 +539,14 @@ func scanMediaFiles(rows pgx.Rows) ([]*models.MediaFile, error) {
 			&presentationPartTotal,
 			&multiEpisodeStart,
 			&multiEpisodeEnd,
+			&f.MultiplePPS,
+			&f.MultiplePPSScanSize,
+			&f.MultiplePPSScanMtime,
 			&probeSource,
 			&f.ProbeUpdatedAt,
 			&f.MatchAttemptedAt,
 			&f.MissingSince,
+			&firstSeenScanRunID,
 			&f.CreatedAt,
 			&f.UpdatedAt,
 		)
@@ -629,6 +653,9 @@ func scanMediaFiles(rows pgx.Rows) ([]*models.MediaFile, error) {
 		}
 		if presentationGroupKey != nil {
 			f.PresentationGroupKey = *presentationGroupKey
+		}
+		if firstSeenScanRunID != nil {
+			f.FirstSeenScanRunID = *firstSeenScanRunID
 		}
 		if presentationPartIndex != nil {
 			f.PresentationPartIndex = *presentationPartIndex
@@ -876,7 +903,7 @@ func (r *FileRepository) Upsert(ctx context.Context, mf models.MediaFile) (*mode
 		edition_raw, edition_key, edition_confidence, edition_source,
 		presentation_kind, presentation_group_key, presentation_part_index, presentation_part_total,
 		multi_episode_start, multi_episode_end,
-		probe_source, probe_updated_at, missing_since
+		probe_source, probe_updated_at, missing_since, first_seen_scan_run_id
 	) VALUES (
 		$1, $2, $3, $4, $5,
 		$6, $7, $8, $9, $10,
@@ -888,7 +915,7 @@ func (r *FileRepository) Upsert(ctx context.Context, mf models.MediaFile) (*mode
 		$39, $40, $41, $42,
 		$43, $44, $45, $46,
 		$47, $48,
-		$49, $50, $51
+		$49, $50, $51, $52
 	)
 	ON CONFLICT (file_path) DO UPDATE SET
 		content_id = CASE
@@ -1003,6 +1030,7 @@ func (r *FileRepository) Upsert(ctx context.Context, mf models.MediaFile) (*mode
 		probeSource,
 		mf.ProbeUpdatedAt,
 		mf.MissingSince,
+		nilIfEmpty(scanbatch.RunID(ctx)),
 	)
 
 	return scanMediaFile(row)
@@ -1042,6 +1070,20 @@ func identityColumnDefaults(mf models.MediaFile) (groupKeyVersion int, identityC
 // track/chapter JSONB payloads along for millions of rows. Returns
 // ErrFileNotFound when the row no longer exists.
 func (r *FileRepository) UpdateIdentity(ctx context.Context, mf models.MediaFile) (int, error) {
+	return r.updateIdentity(ctx, mf, nil)
+}
+
+// UpdateIdentityAndExternalSubtitles applies sidecar and identity changes
+// without replacing probe-derived columns after a failed repair attempt.
+func (r *FileRepository) UpdateIdentityAndExternalSubtitles(ctx context.Context, mf models.MediaFile) (int, error) {
+	externalSubtitlesJSON, err := serializeJSONB(mf.ExternalSubtitles)
+	if err != nil {
+		return 0, fmt.Errorf("marshaling external_subtitles: %w", err)
+	}
+	return r.updateIdentity(ctx, mf, externalSubtitlesJSON)
+}
+
+func (r *FileRepository) updateIdentity(ctx context.Context, mf models.MediaFile, externalSubtitlesJSON []byte) (int, error) {
 	groupKeyVersion, identityConfidence, identityJSON := identityColumnDefaults(mf)
 
 	query := `UPDATE media_files SET
@@ -1067,6 +1109,7 @@ func (r *FileRepository) UpdateIdentity(ctx context.Context, mf models.MediaFile
 		presentation_part_total = $21,
 		multi_episode_start = $22,
 		multi_episode_end = $23,
+		external_subtitles = COALESCE($24, external_subtitles),
 		match_suppressed_at = NULL,
 		updated_at = NOW()
 	WHERE file_path = $1
@@ -1097,6 +1140,7 @@ func (r *FileRepository) UpdateIdentity(ctx context.Context, mf models.MediaFile
 		nilIfZero(mf.PresentationPartTotal),
 		nilIfZero(mf.MultiEpisodeStart),
 		nilIfZero(mf.MultiEpisodeEnd),
+		externalSubtitlesJSON,
 	).Scan(&id)
 	if err != nil {
 		if errors.Is(err, pgx.ErrNoRows) {
@@ -1189,6 +1233,61 @@ func (r *FileRepository) SetChapterThumbnailFailure(
 	}
 	if tag.RowsAffected() == 0 {
 		return ErrFileNotFound
+	}
+	return nil
+}
+
+// UpdateMultiplePPS records the H.264 multi-PPS copy-safety verdict together
+// with the size and mtime it was computed from, so a later read can tell
+// whether the file has been rewritten since. A nil scanMtime records a verdict
+// for a row that has no file mtime; reading it back validates on size alone.
+//
+// It deliberately does not go through Upsert: that path also clears
+// match_suppressed_at and missing_since, which a copy-safety scan has no
+// business touching.
+//
+// The write is conditional on the row still holding the generation that was
+// scanned. A scan reads the opening seconds of a file over storage that can be
+// slow, so an old-generation scan finishing late would otherwise stamp its
+// verdict — and its stale size and mtime — over the replacement generation's,
+// re-validating a verdict for bytes that are gone and condemning (or clearing
+// the condemnation of) a file nobody scanned. A superseded write reports
+// ErrStaleCopySafetyScan rather than succeeding silently, because the caller
+// must also refrain from notifying live sessions on the strength of it.
+//
+// Both sides of the mtime predicate are normalized to microseconds, exactly as
+// MediaFile.PersistedVideoCopyVerdict normalizes them when it reads the verdict
+// back: Postgres stores timestamptz at microsecond resolution while a
+// filesystem mtime carries nanoseconds, so comparing the raw values would make
+// every write for a row whose mtime came from a stat call fail.
+func (r *FileRepository) UpdateMultiplePPS(ctx context.Context, fileID int, multiplePPS bool, scanSize int64, scanMtime *time.Time) error {
+	var normalizedMtime *time.Time
+	if scanMtime != nil {
+		normalized := models.NormalizeFileModifiedAt(*scanMtime)
+		normalizedMtime = &normalized
+	}
+	tag, err := r.pool.Exec(ctx, `
+		UPDATE media_files
+		SET multiple_pps = $2,
+		    multiple_pps_scan_size = $3,
+		    multiple_pps_scan_mtime = $4,
+		    updated_at = NOW()
+		WHERE id = $1
+		  AND file_size = $3
+		  AND date_trunc('microseconds', file_modified_at) IS NOT DISTINCT FROM $4::timestamptz`,
+		fileID,
+		multiplePPS,
+		scanSize,
+		normalizedMtime,
+	)
+	if err != nil {
+		return fmt.Errorf("updating multiple pps verdict: %w", err)
+	}
+	if tag.RowsAffected() == 0 {
+		// The row is gone, or it no longer carries the size and mtime that were
+		// scanned. Both mean the same thing to every caller: this verdict does
+		// not describe the file as it stands.
+		return ErrStaleCopySafetyScan
 	}
 	return nil
 }
@@ -1964,6 +2063,26 @@ func (r *FileRepository) GetByPath(ctx context.Context, path string) (*models.Me
 	return scanMediaFile(r.pool.QueryRow(ctx, query, path))
 }
 
+// IsActivePath reports whether path is the exact logical path of a media file
+// that is still active in the catalog. Scanner paths are authoritative here:
+// they deliberately preserve readable symlinks instead of replacing them with
+// their physical targets.
+func (r *FileRepository) IsActivePath(ctx context.Context, path string) (bool, error) {
+	var active bool
+	err := r.pool.QueryRow(ctx, `
+		SELECT EXISTS (
+			SELECT 1
+			FROM media_files
+			WHERE file_path = $1
+			  AND missing_since IS NULL
+		)
+	`, path).Scan(&active)
+	if err != nil {
+		return false, fmt.Errorf("checking active media file path: %w", err)
+	}
+	return active, nil
+}
+
 // GetByHash retrieves a media file by its file hash.
 func (r *FileRepository) GetByHash(ctx context.Context, hash string) (*models.MediaFile, error) {
 	query := `SELECT ` + fileColumns + ` FROM media_files WHERE file_hash = $1 LIMIT 1`
@@ -2709,7 +2828,7 @@ func (r *FileRepository) DeleteMissingByFolder(ctx context.Context, folderID int
 //
 // This is the proactive counterpart to ListRootsWithOnlyMissingFiles. That
 // query requires a root to have NO live rows left, which means it can only
-// recognize a lost mount after a scan has already marked its files missing —
+// recognise a lost mount after a scan has already marked its files missing —
 // i.e. after the damage is done. For deciding whether to mark in the first
 // place, the question is simply "does the catalog believe anything lives
 // here", because an empty-but-reachable directory that still owns cataloged
@@ -3365,10 +3484,12 @@ func (r *FileRepository) UpdateEpisodeLink(ctx context.Context, fileID int, epis
 				episode_number = $3,
 				updated_at = NOW()
 			WHERE id = $4
-			RETURNING episode_id, media_folder_id, created_at, missing_since
+			RETURNING episode_id, media_folder_id, created_at, missing_since, first_seen_scan_run_id
 		)
-		INSERT INTO episode_libraries (episode_id, media_folder_id, first_seen_at)
-		SELECT episode_id, media_folder_id, created_at
+		INSERT INTO episode_libraries (
+			episode_id, media_folder_id, first_seen_at, first_seen_scan_run_id
+		)
+		SELECT episode_id, media_folder_id, created_at, first_seen_scan_run_id
 		FROM updated
 		WHERE episode_id IS NOT NULL
 		  AND missing_since IS NULL
@@ -3434,11 +3555,16 @@ func (r *FileRepository) BulkLinkEpisodesBySeries(ctx context.Context, seriesCon
 			  AND e.series_id = $1
 			  AND mf.season_number = e.season_number
 			  AND mf.episode_number = e.episode_number
-			RETURNING mf.episode_id, mf.media_folder_id, mf.created_at
+			RETURNING mf.id, mf.episode_id, mf.media_folder_id, mf.created_at, mf.first_seen_scan_run_id
 		),
 		inserted AS (
-			INSERT INTO episode_libraries (episode_id, media_folder_id, first_seen_at)
-			SELECT episode_id, media_folder_id, MIN(created_at)
+			INSERT INTO episode_libraries (
+				episode_id, media_folder_id, first_seen_at, first_seen_scan_run_id
+			)
+			SELECT episode_id,
+			       media_folder_id,
+			       MIN(created_at),
+			       (array_agg(first_seen_scan_run_id ORDER BY created_at ASC, id ASC))[1]
 			FROM updated
 			GROUP BY episode_id, media_folder_id
 			ON CONFLICT (episode_id, media_folder_id) DO NOTHING

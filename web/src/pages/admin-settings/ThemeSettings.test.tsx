@@ -21,7 +21,11 @@ vi.mock("@/hooks/queries/admin/settings", () => ({
 }));
 
 vi.mock("@/components/theme/TokenEditor", () => ({
-  TokenEditor: ({ onSetVar }: { onSetVar: (token: "primary", value: string) => void }) => (
+  TokenEditor: ({
+    onSetVar,
+  }: {
+    onSetVar: (token: "primary", value: string) => void;
+  }) => (
     <>
       <button type="button" onClick={() => onSetVar("primary", "#112233")}>
         Set primary
@@ -34,7 +38,13 @@ vi.mock("@/components/theme/TokenEditor", () => ({
 }));
 
 vi.mock("@/components/theme/RawCssEditor", () => ({
-  RawCssEditor: ({ value, onChange }: { value: string; onChange: (value: string) => void }) => (
+  RawCssEditor: ({
+    value,
+    onChange,
+  }: {
+    value: string;
+    onChange: (value: string) => void;
+  }) => (
     <textarea
       aria-label="Custom CSS editor"
       value={value}
@@ -64,9 +74,15 @@ describe("ThemeSettings autosave", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Set primary" }));
     fireEvent.click(screen.getByRole("button", { name: "Set latest primary" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "Custom CSS editor" }), {
-      target: { value: '@import "https://example.invalid/theme.css"; .card { color: red; }' },
-    });
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Custom CSS editor" }),
+      {
+        target: {
+          value:
+            '@import "https://example.invalid/theme.css"; .card { color: red; }',
+        },
+      },
+    );
 
     expect(mocks.updateMutate).not.toHaveBeenCalled();
 
@@ -87,9 +103,12 @@ describe("ThemeSettings autosave", () => {
     const { unmount } = render(<ThemeSettings />);
 
     fireEvent.click(screen.getByRole("button", { name: "Set primary" }));
-    fireEvent.change(screen.getByRole("textbox", { name: "Custom CSS editor" }), {
-      target: { value: ".card { color: red; }" },
-    });
+    fireEvent.change(
+      screen.getByRole("textbox", { name: "Custom CSS editor" }),
+      {
+        target: { value: ".card { color: red; }" },
+      },
+    );
 
     act(() => {
       vi.advanceTimersByTime(1_000);

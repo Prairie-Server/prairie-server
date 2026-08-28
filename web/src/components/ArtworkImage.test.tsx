@@ -39,19 +39,30 @@ describe("ArtworkImage", () => {
 
   it("uses the original src when it is not WebP", () => {
     render(<ArtworkImage src="/art/cover.jpg" alt="Cover" />);
-    expect(screen.getByRole("img", { name: "Cover" })).toHaveAttribute("src", "/art/cover.jpg");
+    expect(screen.getByRole("img", { name: "Cover" })).toHaveAttribute(
+      "src",
+      "/art/cover.jpg",
+    );
   });
 
   it("forwards onLoad", () => {
     const onLoad = vi.fn();
-    render(<ArtworkImage src="/art/original.webp" alt="Poster" onLoad={onLoad} />);
+    render(
+      <ArtworkImage src="/art/original.webp" alt="Poster" onLoad={onLoad} />,
+    );
     fireEvent.load(screen.getByRole("img", { name: "Poster" }));
     expect(onLoad).toHaveBeenCalledOnce();
   });
 
   it("forwards onError only after all candidates fail", () => {
     const onError = vi.fn();
-    render(<ArtworkImage src="/art/original.rev.webp" alt="Poster" onError={onError} />);
+    render(
+      <ArtworkImage
+        src="/art/original.rev.webp"
+        alt="Poster"
+        onError={onError}
+      />,
+    );
     const img = screen.getByRole("img", { name: "Poster" });
     fireEvent.error(img);
     fireEvent.error(img);
@@ -62,7 +73,12 @@ describe("ArtworkImage", () => {
 
   it("emits srcSet from width variants when widths are provided", () => {
     render(
-      <ArtworkImage src="/art/poster/w300.webp" alt="Poster" widths={[300, 500]} sizes="160px" />,
+      <ArtworkImage
+        src="/art/poster/w300.webp"
+        alt="Poster"
+        widths={[300, 500]}
+        sizes="160px"
+      />,
     );
     const img = screen.getByRole("img", { name: "Poster" });
     // Format preference starts at the best detected format (AVIF here).
@@ -74,7 +90,14 @@ describe("ArtworkImage", () => {
 
   it("omits srcSet and format siblings for signed artwork URLs", () => {
     const signed = "https://cdn.example.com/art/w300.webp?X-Amz-Signature=abc";
-    render(<ArtworkImage src={signed} alt="Poster" widths={[300, 500]} sizes="160px" />);
+    render(
+      <ArtworkImage
+        src={signed}
+        alt="Poster"
+        widths={[300, 500]}
+        sizes="160px"
+      />,
+    );
     const img = screen.getByRole("img", { name: "Poster" });
     expect(img).toHaveAttribute("src", signed);
     expect(img.getAttribute("srcset")).toBeNull();
@@ -85,7 +108,10 @@ describe("ArtworkImage", () => {
     const webp = "https://cdn.example.com/art/w300.webp?X-Amz-Signature=webp";
     const avif = "https://cdn.example.com/art/w300.avif?X-Amz-Signature=avif";
     render(<ArtworkImage src={webp} avifSrc={avif} alt="Poster" />);
-    expect(screen.getByRole("img", { name: "Poster" })).toHaveAttribute("src", avif);
+    expect(screen.getByRole("img", { name: "Poster" })).toHaveAttribute(
+      "src",
+      avif,
+    );
   });
 
   it("skips AVIF when the client does not advertise AVIF support", () => {

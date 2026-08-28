@@ -6,7 +6,9 @@ import {
   type WatchPlaybackHostState,
 } from "./watchPlaybackReducer";
 
-function makeRequest(overrides: Partial<ReturnType<typeof createWatchRouteRequest>> = {}) {
+function makeRequest(
+  overrides: Partial<ReturnType<typeof createWatchRouteRequest>> = {},
+) {
   return {
     ...createWatchRouteRequest({
       contentId: "movie-1",
@@ -17,7 +19,9 @@ function makeRequest(overrides: Partial<ReturnType<typeof createWatchRouteReques
   };
 }
 
-function makeState(overrides: Partial<WatchPlaybackHostState> = {}): WatchPlaybackHostState {
+function makeState(
+  overrides: Partial<WatchPlaybackHostState> = {},
+): WatchPlaybackHostState {
   return {
     ...createEmptyPlaybackState(),
     request: makeRequest(),

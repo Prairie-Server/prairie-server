@@ -554,7 +554,7 @@ func (s *Service) uploadSheet(ctx context.Context, fileID, sheetIndex int, frame
 		return s.uploadSheetFunc(ctx, fileID, sheetIndex, frame)
 	}
 
-	result, err := imageutil.GenerateWebPVariants(frame, nil)
+	result, err := imageutil.GenerateVariants(frame, nil)
 	if err != nil {
 		return "", fmt.Errorf("generate webp: %w", err)
 	}

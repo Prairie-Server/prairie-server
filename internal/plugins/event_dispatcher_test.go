@@ -164,7 +164,7 @@ func TestDispatcher_BusEvent_DecodesJSONPayloadIntoFields(t *testing.T) {
 }
 
 func TestDispatcher_HubPluginEvent_ReachesConsumer(t *testing.T) {
-	const eventName = "plugin.prairie.arrproxy.submitted"
+	const eventName = "plugin.silo.arrproxy.submitted"
 	_, hub, client := newFixture(t, []string{eventName}, 1)
 
 	body, _ := json.Marshal(map[string]any{"requestId": "01J", "error": ""})

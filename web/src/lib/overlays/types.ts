@@ -1,11 +1,21 @@
 import type { CSSProperties } from "react";
 
 // Position on the poster card where a badge group is anchored.
-export const OVERLAY_POSITIONS = ["top-left", "top-right", "bottom-left", "bottom-right"] as const;
+export const OVERLAY_POSITIONS = [
+  "top-left",
+  "top-right",
+  "bottom-left",
+  "bottom-right",
+] as const;
 export type OverlayPosition = (typeof OVERLAY_POSITIONS)[number];
 
 // Logical groupings used by the settings UI to organize controls.
-export const OVERLAY_CATEGORIES = ["tech", "ratings", "metadata", "ribbons"] as const;
+export const OVERLAY_CATEGORIES = [
+  "tech",
+  "ratings",
+  "metadata",
+  "ribbons",
+] as const;
 export type OverlayCategory = (typeof OVERLAY_CATEGORIES)[number];
 
 // Stable identifiers for every overlay the system knows about.
@@ -94,15 +104,34 @@ export interface CardOverlayPrefs {
 // How a preset paints the accent color when one is set.
 export type AccentStrategy = "bg" | "border" | "text" | "dot";
 
+export interface OverlayShadow {
+  x: number;
+  y: number;
+  blur: number;
+  spread?: number;
+  color: string;
+}
+
 export interface OverlayPreset {
   id: PresetId;
   label: string;
   description: string;
-  badgeClass: string; // Tailwind class fragment for the badge container
+  badgeClass: string; // Tailwind classes also provide a fixed-size legacy-browser fallback
   badgeStyle: (accentColor: string | undefined) => CSSProperties;
+  fontSize: number;
+  paddingInline: number;
+  paddingBlock: number;
+  borderRadius: number | "full";
+  borderRadiusVariable?: string;
+  borderWidth?: number;
+  borderLeftWidth?: number;
+  textShadow?: OverlayShadow;
+  boxShadow?: OverlayShadow;
   iconSize: number;
+  iconGap: number;
   preferIcon: boolean; // true when icon-prefixed renderings are preferred
-  gapClass: string; // gap between stacked badges in a corner
+  gapClass: string; // fixed-size fallback for the gap between stacked badges
+  stackGap: number;
   accentStrategy: AccentStrategy;
 }
 

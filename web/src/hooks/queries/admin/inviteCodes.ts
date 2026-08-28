@@ -14,7 +14,8 @@ const ADMIN_STALE_TIME = 30_000;
 export function useAdminInviteCodes() {
   return useQuery({
     queryKey: adminKeys.inviteCodes(),
-    queryFn: () => api<InviteCode[]>("/admin/invite-codes").then((d) => d ?? []),
+    queryFn: () =>
+      api<InviteCode[]>("/admin/invite-codes").then((d) => d ?? []),
     staleTime: ADMIN_STALE_TIME,
   });
 }
@@ -32,7 +33,9 @@ export function useCreateInviteCode() {
       void queryClient.invalidateQueries({ queryKey: adminKeys.inviteCodes() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to create invite code");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to create invite code",
+      );
     },
   });
 }
@@ -49,7 +52,9 @@ export function useUpdateInviteCode() {
       void queryClient.invalidateQueries({ queryKey: adminKeys.inviteCodes() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to update invite code");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update invite code",
+      );
     },
   });
 }
@@ -67,7 +72,9 @@ export function useTopUpInviteCode() {
       void queryClient.invalidateQueries({ queryKey: adminKeys.inviteCodes() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to top up invite code");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to top up invite code",
+      );
     },
   });
 }
@@ -75,13 +82,16 @@ export function useTopUpInviteCode() {
 export function useDeleteInviteCode() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => api(`/admin/invite-codes/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) =>
+      api(`/admin/invite-codes/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Invite code deleted");
       void queryClient.invalidateQueries({ queryKey: adminKeys.inviteCodes() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to delete invite code");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete invite code",
+      );
     },
   });
 }

@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Folder, Search, Scissors } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,7 +25,11 @@ import type {
   MatchCandidate,
   SplitHistoryMode,
 } from "@/api/types";
-import { useItemFiles, useSearchItemMatchCandidates, useSplitItem } from "@/hooks/queries/items";
+import {
+  useItemFiles,
+  useSearchItemMatchCandidates,
+  useSplitItem,
+} from "@/hooks/queries/items";
 import { cn } from "@/lib/utils";
 
 interface SplittableItem {
@@ -49,7 +58,11 @@ const HISTORY_MODE_LABELS: Record<SplitHistoryMode, string> = {
  * reattribution via a dry run, and persists identity overrides so rescans
  * keep the corrected assignment.
  */
-export default function SplitItemDialog({ item, open, onOpenChange }: SplitItemDialogProps) {
+export default function SplitItemDialog({
+  item,
+  open,
+  onOpenChange,
+}: SplitItemDialogProps) {
   const { data: filesData, isLoading: filesLoading } = useItemFiles(
     open ? item.content_id : undefined,
   );
@@ -61,7 +74,8 @@ export default function SplitItemDialog({ item, open, onOpenChange }: SplitItemD
   const [imdbId, setImdbId] = useState("");
   const [tmdbId, setTmdbId] = useState("");
   const [tvdbId, setTvdbId] = useState("");
-  const [selectedCandidate, setSelectedCandidate] = useState<MatchCandidate | null>(null);
+  const [selectedCandidate, setSelectedCandidate] =
+    useState<MatchCandidate | null>(null);
   const [detachUnmatched, setDetachUnmatched] = useState(false);
   const [historyMode, setHistoryMode] = useState<SplitHistoryMode>("evidence");
   const [preview, setPreview] = useState<ItemSplitResponse | null>(null);
@@ -127,7 +141,8 @@ export default function SplitItemDialog({ item, open, onOpenChange }: SplitItemD
   }, [title, year, imdbId, tmdbId, tvdbId, item.library_id, searchMutation]);
 
   const targetChosen = detachUnmatched || selectedCandidate !== null;
-  const selectionValid = selectedIds.size > 0 && selectedIds.size < files.length;
+  const selectionValid =
+    selectedIds.size > 0 && selectedIds.size < files.length;
   const planValid = selectionValid && targetChosen;
 
   const buildRequest = useCallback(
@@ -187,7 +202,9 @@ export default function SplitItemDialog({ item, open, onOpenChange }: SplitItemD
         <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto pr-1">
           <div className="bg-muted/50 shrink-0 rounded-lg px-3 py-2 text-sm">
             <span className="font-medium">{item.title}</span>
-            {item.year ? <span className="text-muted-foreground ml-2">({item.year})</span> : null}
+            {item.year ? (
+              <span className="text-muted-foreground ml-2">({item.year})</span>
+            ) : null}
             <Badge variant="secondary" className="ml-2 text-[10px]">
               {item.type}
             </Badge>
@@ -207,7 +224,9 @@ export default function SplitItemDialog({ item, open, onOpenChange }: SplitItemD
             ) : (
               <div className="bg-background/70 divide-border/50 divide-y rounded-lg border">
                 {filesByRoot.map(([root, rootFiles]) => {
-                  const allSelected = rootFiles.every((file) => selectedIds.has(file.id));
+                  const allSelected = rootFiles.every((file) =>
+                    selectedIds.has(file.id),
+                  );
                   return (
                     <div key={root} className="px-3 py-2">
                       <label className="flex cursor-pointer items-center gap-2">
@@ -218,7 +237,10 @@ export default function SplitItemDialog({ item, open, onOpenChange }: SplitItemD
                           aria-label={`Select all files in ${root}`}
                         />
                         <Folder className="text-muted-foreground h-3.5 w-3.5 shrink-0" />
-                        <span className="min-w-0 flex-1 truncate font-mono text-xs" title={root}>
+                        <span
+                          className="min-w-0 flex-1 truncate font-mono text-xs"
+                          title={root}
+                        >
                           {root}
                         </span>
                       </label>
@@ -255,8 +277,8 @@ export default function SplitItemDialog({ item, open, onOpenChange }: SplitItemD
             )}
             {selectedIds.size > 0 && selectedIds.size === files.length && (
               <p className="text-destructive text-xs">
-                All files are selected — that is a re-match, not a split. Use “Match Item” instead,
-                or deselect the files that are correct.
+                All files are selected — that is a re-match, not a split. Use
+                “Match Item” instead, or deselect the files that are correct.
               </p>
             )}
           </section>
@@ -305,7 +327,12 @@ export default function SplitItemDialog({ item, open, onOpenChange }: SplitItemD
               variant="secondary"
               className="w-full gap-2"
             >
-              <Search className={cn("h-4 w-4", searchMutation.isPending && "animate-spin")} />
+              <Search
+                className={cn(
+                  "h-4 w-4",
+                  searchMutation.isPending && "animate-spin",
+                )}
+              />
               Search
             </Button>
 
@@ -341,8 +368,12 @@ export default function SplitItemDialog({ item, open, onOpenChange }: SplitItemD
                         <div className="bg-muted h-14 w-10 shrink-0 rounded" />
                       )}
                       <div className="min-w-0 flex-1">
-                        <div className="truncate text-sm font-medium">{candidate.title}</div>
-                        <div className="text-muted-foreground text-xs">{candidate.year || ""}</div>
+                        <div className="truncate text-sm font-medium">
+                          {candidate.title}
+                        </div>
+                        <div className="text-muted-foreground text-xs">
+                          {candidate.year || ""}
+                        </div>
                       </div>
                     </button>
                   );
@@ -350,7 +381,9 @@ export default function SplitItemDialog({ item, open, onOpenChange }: SplitItemD
               </div>
             )}
             {searchMutation.isSuccess && candidates.length === 0 && (
-              <p className="text-muted-foreground text-center text-sm">No candidates found.</p>
+              <p className="text-muted-foreground text-center text-sm">
+                No candidates found.
+              </p>
             )}
 
             <label className="flex cursor-pointer items-center gap-2 text-sm">
@@ -371,22 +404,26 @@ export default function SplitItemDialog({ item, open, onOpenChange }: SplitItemD
             <Label>Watch history handling</Label>
             <Select
               value={historyMode}
-              onValueChange={(value) => setHistoryMode(value as SplitHistoryMode)}
+              onValueChange={(value) =>
+                setHistoryMode(value as SplitHistoryMode)
+              }
             >
               <SelectTrigger aria-label="Watch history handling">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {(Object.keys(HISTORY_MODE_LABELS) as SplitHistoryMode[]).map((mode) => (
-                  <SelectItem key={mode} value={mode}>
-                    {HISTORY_MODE_LABELS[mode]}
-                  </SelectItem>
-                ))}
+                {(Object.keys(HISTORY_MODE_LABELS) as SplitHistoryMode[]).map(
+                  (mode) => (
+                    <SelectItem key={mode} value={mode}>
+                      {HISTORY_MODE_LABELS[mode]}
+                    </SelectItem>
+                  ),
+                )}
               </SelectContent>
             </Select>
             <p className="text-muted-foreground text-xs">
-              Resume points and downloads tied to the moved files always follow them. This controls
-              history rows without per-file evidence.
+              Resume points and downloads tied to the moved files always follow
+              them. This controls history rows without per-file evidence.
             </p>
           </section>
 
@@ -398,8 +435,11 @@ export default function SplitItemDialog({ item, open, onOpenChange }: SplitItemD
           {preview && (
             <section className="bg-muted/30 space-y-1 rounded-lg border px-3 py-2 text-sm">
               <div className="font-medium">
-                Preview — {preview.files_moved} file{preview.files_moved === 1 ? "" : "s"} →{" "}
-                <span className="font-mono text-xs">{preview.target_content_id}</span>
+                Preview — {preview.files_moved} file
+                {preview.files_moved === 1 ? "" : "s"} →{" "}
+                <span className="font-mono text-xs">
+                  {preview.target_content_id}
+                </span>
                 {preview.target_created ? (
                   <Badge variant="secondary" className="ml-2 text-[10px]">
                     new item
@@ -407,19 +447,25 @@ export default function SplitItemDialog({ item, open, onOpenChange }: SplitItemD
                 ) : null}
               </div>
               <ul className="text-muted-foreground list-inside list-disc text-xs">
-                <li>{preview.reattribution.progress_moved} resume points move</li>
+                <li>
+                  {preview.reattribution.progress_moved} resume points move
+                </li>
                 <li>
                   {preview.reattribution.history_moved} history entries move,{" "}
-                  {preview.reattribution.history_ambiguous} stay for lack of evidence
+                  {preview.reattribution.history_ambiguous} stay for lack of
+                  evidence
                 </li>
                 <li>{preview.reattribution.downloads} downloads move</li>
-                {preview.episode_pairs > 0 && <li>{preview.episode_pairs} episodes re-anchored</li>}
-                {(preview.root_overrides?.length ?? 0) + (preview.file_overrides?.length ?? 0) >
+                {preview.episode_pairs > 0 && (
+                  <li>{preview.episode_pairs} episodes re-anchored</li>
+                )}
+                {(preview.root_overrides?.length ?? 0) +
+                  (preview.file_overrides?.length ?? 0) >
                   0 && (
                   <li>
                     {preview.root_overrides?.length ?? 0} folder /{" "}
-                    {preview.file_overrides?.length ?? 0} file identity override{"(s)"} pinned for
-                    future scans
+                    {preview.file_overrides?.length ?? 0} file identity override
+                    {"(s)"} pinned for future scans
                   </li>
                 )}
               </ul>

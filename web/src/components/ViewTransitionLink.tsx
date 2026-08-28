@@ -9,7 +9,10 @@ import type { LinkProps } from "react-router";
 const ViewTransitionLink = forwardRef<
   HTMLAnchorElement,
   LinkProps & React.AnchorHTMLAttributes<HTMLAnchorElement>
->(function ViewTransitionLink({ to, replace, state, onClick, children, ...rest }, ref) {
+>(function ViewTransitionLink(
+  { to, replace, state, onClick, children, ...rest },
+  ref,
+) {
   return (
     <Link
       ref={ref}

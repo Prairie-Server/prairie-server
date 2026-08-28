@@ -131,6 +131,39 @@ func ListDevices(db *sql.DB) ([]userstore.DeviceEntry, error) {
 	return entries, rows.Err()
 }
 
+// DeviceExists carries no user_id predicate: this backend keeps one database
+// per user, so the table is already scoped to the account.
+func DeviceExists(db *sql.DB, profileID, deviceID string) (bool, error) {
+	if strings.TrimSpace(profileID) == "" || strings.TrimSpace(deviceID) == "" {
+		return false, nil
+	}
+	var exists bool
+	err := db.QueryRow(
+		`SELECT EXISTS(
+			SELECT 1 FROM user_devices
+			WHERE profile_id = ? AND device_id = ?)`,
+		profileID, deviceID,
+	).Scan(&exists)
+	if err != nil {
+		return false, fmt.Errorf("checking device %q: %w", deviceID, err)
+	}
+	return exists, nil
+}
+
+func ForgetDevice(db *sql.DB, profileID, deviceID string) error {
+	if strings.TrimSpace(profileID) == "" || strings.TrimSpace(deviceID) == "" {
+		return nil
+	}
+	_, err := db.Exec(
+		`DELETE FROM user_devices WHERE profile_id = ? AND device_id = ?`,
+		profileID, deviceID,
+	)
+	if err != nil {
+		return fmt.Errorf("forgetting device %q: %w", deviceID, err)
+	}
+	return nil
+}
+
 func SetDeviceSetting(db *sql.DB, entry userstore.DeviceSettingEntry) error {
 	if err := RegisterDevice(db, userstore.DeviceEntry{
 		ProfileID:      entry.ProfileID,
@@ -166,12 +199,30 @@ func DeleteDeviceSetting(db *sql.DB, profileID, deviceID, key string) error {
 	return nil
 }
 
+// DeleteAllDeviceSettings clears everything one device holds for one profile.
+// It is the forget-device path, so it drops the canonical profile_device values
+// alongside the legacy string overrides: this database declares no foreign keys,
+// so nothing else would.
 func DeleteAllDeviceSettings(db *sql.DB, profileID, deviceID string) error {
-	_, err := db.Exec("DELETE FROM user_device_settings WHERE profile_id = ? AND device_id = ?", profileID, deviceID)
+	tx, err := db.Begin()
 	if err != nil {
+		return fmt.Errorf("beginning transaction to forget device %q: %w", deviceID, err)
+	}
+	defer tx.Rollback() //nolint:errcheck
+
+	if _, err := tx.Exec(
+		"DELETE FROM user_device_settings WHERE profile_id = ? AND device_id = ?",
+		profileID, deviceID,
+	); err != nil {
 		return fmt.Errorf("deleting all device settings for device %q: %w", deviceID, err)
 	}
-	return nil
+	if _, err := tx.Exec(
+		"DELETE FROM user_setting_values WHERE scope = 'profile_device' AND profile_id = ? AND device_id = ?",
+		profileID, deviceID,
+	); err != nil {
+		return fmt.Errorf("deleting setting values for device %q: %w", deviceID, err)
+	}
+	return tx.Commit()
 }
 
 func DeleteDeviceSettingsByKey(db *sql.DB, key string) error {

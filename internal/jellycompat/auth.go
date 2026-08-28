@@ -104,7 +104,7 @@ func (a *Authenticator) RequireSession(next http.Handler) http.Handler {
 			return
 		}
 
-		// Refresh underlying Prairie tokens if they're about to expire.
+		// Refresh underlying Silo tokens if they're about to expire.
 		// Use a detached context so a client aborting the request mid-refresh
 		// (common on flaky mobile networks) doesn't revoke the compat session.
 		if a.authService != nil && !session.StreamAppTokenExpiry.IsZero() &&

@@ -106,7 +106,8 @@ export default function AdminSubtitles() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Subtitles</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Manage stored subtitle files across the library — user uploads and provider downloads.
+            Manage stored subtitle files across the library — user uploads and
+            provider downloads.
           </p>
         </div>
       </div>
@@ -142,7 +143,8 @@ export default function AdminSubtitles() {
       {total > 0 && (
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-muted-foreground text-sm">
-            Showing {page * pageSize + 1}–{Math.min((page + 1) * pageSize, total)} of {total}
+            Showing {page * pageSize + 1}–
+            {Math.min((page + 1) * pageSize, total)} of {total}
           </p>
           <div className="flex flex-wrap items-center gap-2">
             <Select
@@ -197,7 +199,9 @@ function StatBlock({ label, value }: { label: string; value: number }) {
       <div className="text-muted-foreground text-xs font-medium tracking-[0.18em] uppercase">
         {label}
       </div>
-      <div className="text-2xl font-semibold tracking-tight">{value.toLocaleString()}</div>
+      <div className="text-2xl font-semibold tracking-tight">
+        {value.toLocaleString()}
+      </div>
     </div>
   );
 }

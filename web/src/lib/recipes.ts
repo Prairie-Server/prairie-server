@@ -56,14 +56,18 @@ export async function fetchRecipeCatalog(): Promise<RecipeCatalogResponse> {
   return api<RecipeCatalogResponse>("/sections/recipes");
 }
 
-export async function fetchCandidates(recipeType: string): Promise<Candidate[]> {
+export async function fetchCandidates(
+  recipeType: string,
+): Promise<Candidate[]> {
   const body = await api<{ candidates: Candidate[] }>(
     `/sections/recipes/${encodeURIComponent(recipeType)}/candidates`,
   );
   return body.candidates;
 }
 
-export async function previewSection(req: PreviewRequest): Promise<PreviewResponse> {
+export async function previewSection(
+  req: PreviewRequest,
+): Promise<PreviewResponse> {
   return api<PreviewResponse>("/admin/sections/preview", {
     method: "POST",
     body: JSON.stringify(req),

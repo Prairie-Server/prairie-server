@@ -26,7 +26,8 @@ export const RECOMMENDATION_PROVIDER_PRESETS: RecommendationProviderPreset[] = [
     id: "ollama",
     label: "Ollama",
     tag: "Local",
-    description: "Free, self-hosted. Needs Ollama running. Uses Qwen3 Embedding 0.6B (~640MB).",
+    description:
+      "Free, self-hosted. Needs Ollama running. Uses Qwen3 Embedding 0.6B (~640MB).",
     baseUrl: "http://ollama:11434",
     // Prefer the 0.6B tag: :latest is the 8B (~4.7GB) model and emits 4096-d
     // vectors, which exceed Prairie's 3072 canonical storage width.
@@ -43,16 +44,18 @@ export const RECOMMENDATION_PROVIDER_PRESETS: RecommendationProviderPreset[] = [
   },
 ];
 
-export const RECOMMENDATION_CUSTOM_PROVIDER_PRESET: RecommendationProviderPreset = {
-  id: "custom",
-  label: "Custom",
-  description: "Any OpenAI-compatible endpoint (LM Studio, vLLM, etc.). Example model uses ~640MB.",
-  baseUrl: "",
-  model: "",
-  needsToken: false,
-  urlPlaceholder: "http://host.docker.internal:1234",
-  modelPlaceholder: "text-embedding-qwen3-embedding-0.6b",
-};
+export const RECOMMENDATION_CUSTOM_PROVIDER_PRESET: RecommendationProviderPreset =
+  {
+    id: "custom",
+    label: "Custom",
+    description:
+      "Any OpenAI-compatible endpoint (LM Studio, vLLM, etc.). Example model uses ~640MB.",
+    baseUrl: "",
+    model: "",
+    needsToken: false,
+    urlPlaceholder: "http://host.docker.internal:1234",
+    modelPlaceholder: "text-embedding-qwen3-embedding-0.6b",
+  };
 
 export const RECOMMENDATION_PROVIDER_OPTIONS: RecommendationProviderPreset[] = [
   ...RECOMMENDATION_PROVIDER_PRESETS,
@@ -73,7 +76,8 @@ export function matchRecommendationProviderPreset(
   return (
     RECOMMENDATION_PROVIDER_PRESETS.find(
       (preset) =>
-        normalizeBaseUrl(preset.baseUrl) === normalizedBaseUrl && preset.model === normalizedModel,
+        normalizeBaseUrl(preset.baseUrl) === normalizedBaseUrl &&
+        preset.model === normalizedModel,
     ) ?? null
   );
 }

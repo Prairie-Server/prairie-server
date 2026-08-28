@@ -15,6 +15,7 @@ type APIKey struct {
 	// as a credential).
 	KeyPrefix  string
 	RateTier   string
+	Scopes     []string // empty = unscoped (full access as the owning user)
 	CreatedAt  time.Time
 	LastUsedAt *time.Time // nil if never used
 }

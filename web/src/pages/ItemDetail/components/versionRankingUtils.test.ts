@@ -169,8 +169,14 @@ describe("pickBestAttributes", () => {
   });
 
   it("works with a single version", () => {
-    const versions = [makeVersion({ resolution: "1080p", codec_audio: "dts", hdr: true })];
+    const versions = [
+      makeVersion({ resolution: "1080p", codec_audio: "dts", hdr: true }),
+    ];
     const result = pickBestAttributes(versions);
-    expect(result).toEqual({ resolution: "1080p", hdr: true, audioLabel: "DTS" });
+    expect(result).toEqual({
+      resolution: "1080p",
+      hdr: true,
+      audioLabel: "DTS",
+    });
   });
 });

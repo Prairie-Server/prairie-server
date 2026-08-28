@@ -16,7 +16,11 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { CSS } from "@dnd-kit/utilities";
 
-import type { Collection, ServerCollectionsLibrary, UserCollectionType } from "@/api/types";
+import type {
+  Collection,
+  ServerCollectionsLibrary,
+  UserCollectionType,
+} from "@/api/types";
 import {
   useCollectionGroups,
   useCollections,
@@ -43,14 +47,23 @@ import {
   useGroupedCollectionCard,
 } from "@/components/collections/GroupedCollectionsBoard";
 import { slugifyGroupSlug } from "@/lib/collectionGroups";
+import { useUICustomization } from "@/hooks/useUICustomization";
+import { carouselCardWidthClasses } from "@/lib/uiCustomization";
 
 import {
   buildUserCollectionCatalogHref,
   buildUserCollectionEditorPath,
 } from "./userCollectionsShared";
 
-type ImportedCollectionType = Extract<UserCollectionType, "mdblist" | "tmdb" | "trakt">;
-const SYNCABLE_TYPES = new Set<ImportedCollectionType>(["mdblist", "tmdb", "trakt"]);
+type ImportedCollectionType = Extract<
+  UserCollectionType,
+  "mdblist" | "tmdb" | "trakt"
+>;
+const SYNCABLE_TYPES = new Set<ImportedCollectionType>([
+  "mdblist",
+  "tmdb",
+  "trakt",
+]);
 
 function isImportedType(t: UserCollectionType): t is ImportedCollectionType {
   return SYNCABLE_TYPES.has(t as ImportedCollectionType);
@@ -65,7 +78,8 @@ function CollectionList() {
   const { data: groupsData } = useCollectionGroups();
   const collections = useMemo(() => data ?? [], [data]);
   const groups = useMemo(() => groupsData ?? [], [groupsData]);
-  const [confirmDeleteCollection, setConfirmDeleteCollection] = useState<Collection | null>(null);
+  const [confirmDeleteCollection, setConfirmDeleteCollection] =
+    useState<Collection | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const navigate = useNavigate();
   const deleteMutation = useDeleteCollection();
@@ -102,45 +116,65 @@ function CollectionList() {
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={() => {
-          if (confirmDeleteCollection) deleteMutation.mutate(confirmDeleteCollection.id);
+          if (confirmDeleteCollection)
+            deleteMutation.mutate(confirmDeleteCollection.id);
           setConfirmDeleteCollection(null);
         }}
       />
 
-      <CollectionTemplateGallery mode="user" open={galleryOpen} onOpenChange={setGalleryOpen} />
+      <CollectionTemplateGallery
+        mode="user"
+        open={galleryOpen}
+        onOpenChange={setGalleryOpen}
+      />
 
       <div className="page-header">
         <div className="space-y-3">
-          <h1 className="page-title text-[clamp(2rem,5vw,3.25rem)]">Collections</h1>
+          <h1 className="page-title text-[clamp(2rem,5vw,3.25rem)]">
+            Collections
+          </h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Build personal or shared shelves around moods, series arcs, or anything else worth
-            grouping.
+            Build personal or shared shelves around moods, series arcs, or
+            anything else worth grouping.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button size="sm" variant="outline" onClick={() => setGalleryOpen(true)}>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setGalleryOpen(true)}
+          >
             <Sparkles className="mr-1 h-4 w-4" /> Browse Templates
           </Button>
-          <Button size="sm" onClick={() => navigate(buildUserCollectionEditorPath("new"))}>
+          <Button
+            size="sm"
+            onClick={() => navigate(buildUserCollectionEditorPath("new"))}
+          >
             <Plus className="mr-1 h-4 w-4" /> New Collection
           </Button>
         </div>
       </div>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Your collections</h2>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Your collections
+        </h2>
         {collections.length === 0 ? (
           <div className="surface-panel flex flex-col items-center justify-center gap-3 rounded-[2rem] py-16 text-center">
             <Library className="text-muted-foreground/50 h-10 w-10" />
             <div className="space-y-1">
               <p className="text-sm font-medium">No collections yet</p>
               <p className="text-muted-foreground max-w-sm text-xs">
-                Start from a curated TMDB, Trakt, or MDBList template — or build your own from
-                scratch.
+                Start from a curated TMDB, Trakt, or MDBList template — or build
+                your own from scratch.
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => setGalleryOpen(true)}>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setGalleryOpen(true)}
+              >
                 <Sparkles className="mr-1 h-4 w-4" /> Start from a template
               </Button>
               <Button
@@ -158,14 +192,18 @@ function CollectionList() {
             groups={groups}
             renderItem={(collection) => {
               const syncable = isImportedType(collection.collection_type);
-              const isSyncing = syncMutation.isPending && syncMutation.variables === collection.id;
+              const isSyncing =
+                syncMutation.isPending &&
+                syncMutation.variables === collection.id;
               return (
                 <SortableCollectionCard
                   collection={collection}
                   syncable={syncable}
                   isSyncing={isSyncing}
                   onSync={() => syncMutation.mutate(collection.id)}
-                  onEdit={() => navigate(buildUserCollectionEditorPath(collection.id))}
+                  onEdit={() =>
+                    navigate(buildUserCollectionEditorPath(collection.id))
+                  }
                   onDelete={() => setConfirmDeleteCollection(collection)}
                 />
               );
@@ -174,13 +212,23 @@ function CollectionList() {
               reorderMutation.mutate({ orderedIds, groupId })
             }
             onMoveItemAcross={(itemId, toGroupId) =>
-              updateMutation.mutate({ id: itemId, body: { group_id: toGroupId } })
+              updateMutation.mutate({
+                id: itemId,
+                body: { group_id: toGroupId },
+              })
             }
-            onReorderGroups={(orderedIds) => reorderGroupsMutation.mutate(orderedIds)}
+            onReorderGroups={(orderedIds) =>
+              reorderGroupsMutation.mutate(orderedIds)
+            }
             onAddGroup={(title) =>
-              createGroupMutation.mutate({ slug: slugifyGroupSlug(title), name: title })
+              createGroupMutation.mutate({
+                slug: slugifyGroupSlug(title),
+                name: title,
+              })
             }
-            onRenameGroup={(id, title) => renameGroupMutation.mutate({ id, name: title })}
+            onRenameGroup={(id, title) =>
+              renameGroupMutation.mutate({ id, name: title })
+            }
             onDeleteGroup={(id) => deleteGroupMutation.mutate(id)}
           />
         )}
@@ -197,6 +245,10 @@ function CollectionList() {
 // that library's full Collections tab.
 function ServerCollectionsSection() {
   const { data, isLoading } = useServerCollections();
+  const { cardPresentation } = useUICustomization();
+  const posterWidthClasses = carouselCardWidthClasses(
+    cardPresentation.poster_size,
+  );
   const libraries = data ?? [];
 
   if (isLoading) {
@@ -205,7 +257,9 @@ function ServerCollectionsSection() {
     return (
       <section className="space-y-6">
         <div className="space-y-1">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Server collections</h2>
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Server collections
+          </h2>
           <p className="text-muted-foreground text-sm">
             Curated shelves from across every library on this server.
           </p>
@@ -216,7 +270,7 @@ function ServerCollectionsSection() {
               <Skeleton className="h-7 w-40" />
               <div className="flex gap-4 overflow-hidden lg:gap-5">
                 {Array.from({ length: 7 }).map((_, i) => (
-                  <div key={i} className="w-[130px] shrink-0 sm:w-[150px] lg:w-[178px]">
+                  <div key={i} className={posterWidthClasses}>
                     <Skeleton className="aspect-[2/3] rounded-xl" />
                     <Skeleton className="mt-2.5 h-4 w-3/4" />
                   </div>
@@ -234,7 +288,9 @@ function ServerCollectionsSection() {
   return (
     <section className="space-y-6">
       <div className="space-y-1">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Server collections</h2>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          Server collections
+        </h2>
         <p className="text-muted-foreground text-sm">
           Curated shelves from across every library on this server.
         </p>
@@ -255,6 +311,10 @@ function ServerCollectionsSection() {
 // supplies horizontal padding — the row title and cards align to that column.
 function ServerLibraryRow({ library }: { library: ServerCollectionsLibrary }) {
   const navigate = useNavigate();
+  const { cardPresentation } = useUICustomization();
+  const posterWidthClasses = carouselCardWidthClasses(
+    cardPresentation.poster_size,
+  );
   const collectionsHref = `/library/${library.library_id}?tab=collections`;
   const hasMore = library.total_count > library.collections.length;
   return (
@@ -265,7 +325,7 @@ function ServerLibraryRow({ library }: { library: ServerCollectionsLibrary }) {
       edgePadding={false}
     >
       {library.collections.map((collection) => (
-        <div key={collection.id} className="w-[130px] sm:w-[150px] lg:w-[178px]">
+        <div key={collection.id} className={posterWidthClasses}>
           <CollectionPosterCard
             collection={collection}
             kind="regular"
@@ -292,8 +352,14 @@ function SortableCollectionCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
-    useGroupedCollectionCard(collection.id);
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useGroupedCollectionCard(collection.id);
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -320,7 +386,10 @@ function SortableCollectionCard({
           <div className="min-w-0 space-y-2">
             <CardTitle className="text-base">
               <Link
-                to={buildUserCollectionCatalogHref(collection.id, collection.name)}
+                to={buildUserCollectionCatalogHref(
+                  collection.id,
+                  collection.name,
+                )}
                 className="cursor-pointer after:absolute after:inset-0"
               >
                 {collection.name}
@@ -342,7 +411,9 @@ function SortableCollectionCard({
                 onSync();
               }}
             >
-              <RefreshCw className={`h-3 w-3 ${isSyncing ? "animate-spin" : ""}`} />
+              <RefreshCw
+                className={`h-3 w-3 ${isSyncing ? "animate-spin" : ""}`}
+              />
             </Button>
           ) : null}
           <Button
@@ -403,7 +474,8 @@ const SYNC_STATUS_BADGES: Partial<
 
 function CollectionBadges({ collection }: { collection: Collection }) {
   const TypeIcon = TYPE_ICONS[collection.collection_type] ?? Film;
-  const typeLabel = TYPE_LABELS[collection.collection_type] ?? collection.collection_type;
+  const typeLabel =
+    TYPE_LABELS[collection.collection_type] ?? collection.collection_type;
   const statusBadge = collection.last_sync_status
     ? SYNC_STATUS_BADGES[collection.last_sync_status]
     : undefined;
@@ -421,7 +493,9 @@ function CollectionBadges({ collection }: { collection: Collection }) {
           {collection.sync_schedule}
         </Badge>
       ) : null}
-      {statusBadge ? <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge> : null}
+      {statusBadge ? (
+        <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
+      ) : null}
     </div>
   );
 }

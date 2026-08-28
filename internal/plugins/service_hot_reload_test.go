@@ -19,7 +19,7 @@ import (
 
 func TestServiceEnsureClientRestartsOnManifestDrift(t *testing.T) {
 	ctx := context.Background()
-	manifest := testPluginManifest(t, "prairie.metadb", "0.0.36")
+	manifest := testPluginManifest(t, "silo.metadb", "0.0.36")
 	installPath := writeInstalledPluginManifest(t, manifest)
 
 	store := newFakeServiceInstallationStore(&Installation{
@@ -30,7 +30,7 @@ func TestServiceEnsureClientRestartsOnManifestDrift(t *testing.T) {
 		Enabled:     true,
 	})
 	host := &fakeServiceHost{
-		clientResult: &fakePluginClient{manifest: testPluginManifest(t, "prairie.metadb", "0.0.34")},
+		clientResult: &fakePluginClient{manifest: testPluginManifest(t, "silo.metadb", "0.0.34")},
 		startResult:  &fakePluginClient{manifest: manifest},
 	}
 	service := &Service{
@@ -72,10 +72,10 @@ func TestServiceEnsureClientKeepsHealthyClientWhenInstalledManifestUnavailable(t
 		t.Fatalf("WriteFile(%q) returned error: %v", installPath, err)
 	}
 
-	runningClient := &fakePluginClient{manifest: testPluginManifest(t, "prairie.metadb", "0.0.36")}
+	runningClient := &fakePluginClient{manifest: testPluginManifest(t, "silo.metadb", "0.0.36")}
 	store := newFakeServiceInstallationStore(&Installation{
 		ID:          3,
-		PluginID:    "prairie.metadb",
+		PluginID:    "silo.metadb",
 		Version:     "0.0.36",
 		InstallPath: installPath,
 		Enabled:     true,
@@ -103,10 +103,10 @@ func TestServiceEnsureClientKeepsHealthyClientWhenInstalledManifestUnavailable(t
 
 func TestServiceEnsureClientRestartsWhenInstalledManifestDiffers(t *testing.T) {
 	ctx := context.Background()
-	installedManifest := testPluginManifest(t, "prairie.metadb", "0.0.36")
+	installedManifest := testPluginManifest(t, "silo.metadb", "0.0.36")
 	installPath := writeInstalledPluginManifest(t, installedManifest)
 
-	runningClient := &fakePluginClient{manifest: testPluginManifest(t, "prairie.metadb", "0.0.34")}
+	runningClient := &fakePluginClient{manifest: testPluginManifest(t, "silo.metadb", "0.0.34")}
 	restartedClient := &fakePluginClient{manifest: installedManifest}
 	store := newFakeServiceInstallationStore(&Installation{
 		ID:          3,
@@ -235,6 +235,10 @@ func (f *fakePluginClient) AuthProvider(string) (*pluginhost.AuthProviderClient,
 }
 
 func (f *fakePluginClient) HTTPRoutes(string) (*pluginhost.HTTPRoutesClient, error) {
+	return nil, nil
+}
+
+func (f *fakePluginClient) WatchSyncProvider(string) (*pluginhost.WatchSyncProviderClient, error) {
 	return nil, nil
 }
 

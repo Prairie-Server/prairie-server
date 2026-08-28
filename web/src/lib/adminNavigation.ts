@@ -28,7 +28,10 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import type { PluginInstallation } from "@/api/types";
-import type { SettingsSearchGroup, SettingsSearchItem } from "@/components/settings/settingsSearch";
+import type {
+  SettingsSearchGroup,
+  SettingsSearchItem,
+} from "@/components/settings/settingsSearch";
 import { ADMIN_SETTINGS_GROUPS } from "@/lib/adminSettingsSearch";
 import { pluginRouteHref } from "@/lib/pluginRouteHref";
 
@@ -74,8 +77,14 @@ export const ADMIN_NAV_SECTIONS: AdminNavGroup[] = [
       },
       {
         label: "Diagnostics",
-        description: "Uploaded client crash reports, device context, and debug bundles.",
-        keywords: ["client diagnostics", "crash reports", "debug bundles", "support"],
+        description:
+          "Uploaded client crash reports, device context, and debug bundles.",
+        keywords: [
+          "client diagnostics",
+          "crash reports",
+          "debug bundles",
+          "support",
+        ],
         icon: FileWarning,
         href: "/admin/diagnostics",
       },
@@ -86,7 +95,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavGroup[] = [
     items: [
       {
         label: "Libraries",
-        description: "Media libraries, paths, scanning, and catalog import/export.",
+        description:
+          "Media libraries, paths, scanning, and catalog import/export.",
         keywords: ["library", "paths", "scan", "catalog", "seed"],
         icon: Library,
         href: "/admin/libraries",
@@ -95,7 +105,14 @@ export const ADMIN_NAV_SECTIONS: AdminNavGroup[] = [
         label: "Live TV",
         description:
           "HDHomeRun tuners, channel lineup, Schedules Direct, and XML sync guide sources.",
-        keywords: ["ota", "hdhomerun", "epg", "dvr", "guide", "schedules direct"],
+        keywords: [
+          "ota",
+          "hdhomerun",
+          "epg",
+          "dvr",
+          "guide",
+          "schedules direct",
+        ],
         icon: Radio,
         href: "/admin/livetv",
       },
@@ -155,7 +172,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavGroup[] = [
       },
       {
         label: "Recommendations",
-        description: "Recommendation diagnostics, seed data, and ranking controls.",
+        description:
+          "Recommendation diagnostics, seed data, and ranking controls.",
         keywords: ["taste", "ranking", "recommendation seeds"],
         icon: Bot,
         href: "/admin/recommendations",
@@ -174,8 +192,16 @@ export const ADMIN_NAV_SECTIONS: AdminNavGroup[] = [
       },
       {
         label: "Access Groups",
-        description: "Shared access defaults: libraries, downloads, streams, permissions.",
-        keywords: ["groups", "roles", "permissions", "library access", "downloads", "limits"],
+        description:
+          "Shared access defaults: libraries, downloads, streams, permissions.",
+        keywords: [
+          "groups",
+          "roles",
+          "permissions",
+          "library access",
+          "downloads",
+          "limits",
+        ],
         icon: UsersRound,
         href: "/admin/access-groups",
       },
@@ -207,22 +233,31 @@ export const ADMIN_NAV_SECTIONS: AdminNavGroup[] = [
     items: [
       {
         label: "Settings",
-        description: "Server-wide settings, integrations, storage, and compatibility proxies.",
+        description:
+          "Server-wide settings, integrations, storage, and compatibility proxies.",
         keywords: ["configuration", "server settings", "admin settings"],
         icon: SlidersHorizontal,
         href: "/admin/settings",
       },
       {
         label: "Plugins",
-        description: "Plugin catalog, repositories, installs, and plugin configuration.",
+        description:
+          "Plugin catalog, repositories, installs, and plugin configuration.",
         keywords: ["extensions", "plugin catalog", "repositories"],
         icon: Blocks,
         href: "/admin/plugins",
       },
       {
         label: "Policy",
-        description: "OPA policy documents, vendor modules, simulations, and decision logs.",
-        keywords: ["opa", "rego", "authorization", "decision log", "access policy"],
+        description:
+          "OPA policy documents, vendor modules, simulations, and decision logs.",
+        keywords: [
+          "opa",
+          "rego",
+          "authorization",
+          "decision log",
+          "access policy",
+        ],
         icon: ShieldCheck,
         href: "/admin/policy",
       },
@@ -251,11 +286,15 @@ export const ADMIN_NAV_SECTIONS: AdminNavGroup[] = [
   },
 ];
 
-export function buildAdminNavSections(visibility: AdminNavVisibility = {}): AdminNavGroup[] {
+export function buildAdminNavSections(
+  visibility: AdminNavVisibility = {},
+): AdminNavGroup[] {
   return ADMIN_NAV_SECTIONS.map((section) => ({
     ...section,
     items: section.items.filter(
-      (item) => item.href !== "/admin/policy" || visibility.policyEditorAvailable === true,
+      (item) =>
+        item.href !== "/admin/policy" ||
+        visibility.policyEditorAvailable === true,
     ),
   }));
 }
@@ -293,7 +332,10 @@ export function appendAdminPluginNavSection(
   const pluginItems = buildAdminPluginNavItems(installations);
 
   if (!pluginItems.length) {
-    return sections.map((section) => ({ ...section, items: [...section.items] }));
+    return sections.map((section) => ({
+      ...section,
+      items: [...section.items],
+    }));
   }
 
   return [
@@ -302,7 +344,9 @@ export function appendAdminPluginNavSection(
   ];
 }
 
-export function appendAdminSettingsNavSection(sections: readonly AdminNavGroup[]): AdminNavGroup[] {
+export function appendAdminSettingsNavSection(
+  sections: readonly AdminNavGroup[],
+): AdminNavGroup[] {
   return [
     ...sections.map((section) => ({ ...section, items: [...section.items] })),
     {

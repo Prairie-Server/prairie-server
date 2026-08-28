@@ -36,8 +36,8 @@ describe("getLanguageName", () => {
     expect(getLanguageName("ENG")).toBe("English");
   });
 
-  it("falls back to capitalized code for unknown", () => {
-    expect(getLanguageName("xx")).toBe("Xx");
+  it("labels an unassigned code explicitly", () => {
+    expect(getLanguageName("xx")).toBe("Unknown language (xx)");
   });
 
   it("returns 'Unknown' for empty string", () => {
@@ -53,7 +53,11 @@ describe("sortSubtitlesBySource", () => {
       makeSub({ index: 2, source: "external" }),
     ];
     const sorted = sortSubtitlesBySource(tracks);
-    expect(sorted.map((t) => t.source)).toEqual(["external", "downloaded", "embedded"]);
+    expect(sorted.map((t) => t.source)).toEqual([
+      "external",
+      "downloaded",
+      "embedded",
+    ]);
   });
 
   it("preserves relative order within same source", () => {
@@ -473,8 +477,18 @@ describe("resolveSubtitleAutoSelect", () => {
 describe("bitmap (PGS) codec deprioritization", () => {
   it("prefers a text track over a PGS track of the same language and source", () => {
     const tracks = [
-      makeSub({ index: 0, source: "embedded", language: "en", codec: "hdmv_pgs_subtitle" }),
-      makeSub({ index: 1, source: "embedded", language: "en", codec: "subrip" }),
+      makeSub({
+        index: 0,
+        source: "embedded",
+        language: "en",
+        codec: "hdmv_pgs_subtitle",
+      }),
+      makeSub({
+        index: 1,
+        source: "embedded",
+        language: "en",
+        codec: "subrip",
+      }),
     ];
     expect(findPreferredSubtitleIndex(tracks, "en")).toBe(1);
   });
@@ -484,7 +498,12 @@ describe("bitmap (PGS) codec deprioritization", () => {
     // but an external PGS-like entry would still beat embedded text — source
     // remains the primary key.
     const tracks = [
-      makeSub({ index: 0, source: "embedded", language: "en", codec: "subrip" }),
+      makeSub({
+        index: 0,
+        source: "embedded",
+        language: "en",
+        codec: "subrip",
+      }),
       makeSub({ index: 1, source: "external", language: "en", codec: "srt" }),
     ];
     expect(findPreferredSubtitleIndex(tracks, "en")).toBe(1);
@@ -492,7 +511,12 @@ describe("bitmap (PGS) codec deprioritization", () => {
 
   it("selects a PGS track when it is the only language match", () => {
     const tracks = [
-      makeSub({ index: 0, source: "embedded", language: "fr", codec: "subrip" }),
+      makeSub({
+        index: 0,
+        source: "embedded",
+        language: "fr",
+        codec: "subrip",
+      }),
       makeSub({ index: 1, source: "embedded", language: "en", codec: "pgs" }),
     ];
     expect(findPreferredSubtitleIndex(tracks, "en")).toBe(1);
@@ -500,7 +524,12 @@ describe("bitmap (PGS) codec deprioritization", () => {
 
   it("auto-selects a forced PGS track when forced display is enabled", () => {
     const tracks = [
-      makeSub({ index: 0, source: "embedded", language: "en", codec: "subrip" }),
+      makeSub({
+        index: 0,
+        source: "embedded",
+        language: "en",
+        codec: "subrip",
+      }),
       makeSub({
         index: 1,
         source: "embedded",

@@ -1,4 +1,4 @@
-// @vitest-environment node
+// @vitest-environment jsdom
 
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -12,12 +12,31 @@ import {
   getProfileMenuSide,
   groupAppNavLinks,
   isSidebarExpanded,
+  isSidebarRailCollapsed,
+  libraryRowShift,
+  sidebarSurfaceStyle,
   type AppNavLink,
 } from "./AppSidebar.logic";
 
 const mockLogout = vi.fn();
 const mockClearProfile = vi.fn();
 const mockTogglePin = vi.fn();
+let mockPrimaryMenu: {
+  items: Array<
+    | {
+        type: "builtin";
+        destination: "home" | "movies" | "series" | "music" | "audiobooks";
+      }
+    | { type: "section"; library_id: number; section_id: string; label: string }
+    | {
+        type: "collection";
+        library_id?: number;
+        collection_id: string;
+        label: string;
+      }
+  >;
+} | null = null;
+let mockLibraries = [{ id: 7, name: "Movies", type: "movies" }];
 
 vi.mock("@/hooks/useAuth", () => {
   const useAuth = () => ({
@@ -36,7 +55,7 @@ vi.mock("@/hooks/useCurrentProfile", () => ({
 
 vi.mock("@/hooks/queries/libraries", () => ({
   useUserLibraries: () => ({
-    data: [{ id: 7, name: "Movies", type: "movies" }],
+    data: mockLibraries,
   }),
 }));
 
@@ -48,6 +67,16 @@ vi.mock("@/hooks/queries/sidebarPins", () => ({
   }),
   useToggleSidebarPin: () => ({
     togglePin: mockTogglePin,
+    canToggle: true,
+  }),
+}));
+
+vi.mock("@/hooks/useUICustomization", () => ({
+  useUICustomization: () => ({
+    primaryMenu: mockPrimaryMenu,
+    shortcuts: { items: [] },
+    cardPresentation: { poster_size: "standard", caption: "title_metadata" },
+    isLoading: false,
   }),
 }));
 
@@ -93,18 +122,15 @@ vi.mock("@/hooks/queries/useRequests", () => ({
   }),
 }));
 
-vi.mock("@/hooks/queries/useLiveTV", () => ({
-  useLiveTVChannels: () => ({
-    data: [],
-  }),
-}));
-
 vi.mock("@/hooks/queries/notifications", () => ({
   useUnreadNotificationCount: () => ({ data: 0 }),
 }));
 
 vi.mock("@/hooks/queries/notificationWebhooks", () => ({
-  useNotificationCapability: () => ({ data: { in_app: { enabled: true } }, isError: false }),
+  useNotificationCapability: () => ({
+    data: { in_app: { enabled: true } },
+    isError: false,
+  }),
 }));
 
 vi.mock("@/hooks/useViewTransition", () => ({
@@ -120,10 +146,14 @@ vi.mock("@/hooks/useServerBranding", () => ({
 vi.mock("@/hooks/useTheme", () => ({
   useTheme: () => ({
     theme: "dark",
+    activeTheme: "dark",
     setTheme: vi.fn(),
     previewTheme: vi.fn(),
     resetPreviewTheme: vi.fn(),
   }),
+  // PrairieBrand reads the appearance through the optional hook; null keeps it on
+  // the dark built-in assets, matching the sidebar's own surface.
+  useOptionalTheme: () => null,
 }));
 
 vi.mock("@/components/ThemeSwitcher", () => ({
@@ -132,41 +162,45 @@ vi.mock("@/components/ThemeSwitcher", () => ({
 
 vi.mock("@/components/ui/avatar", () => ({
   Avatar: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  AvatarFallback: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  AvatarFallback: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
 }));
 
 vi.mock("@/components/ui/dropdown-menu", () => ({
-  DropdownMenu: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  DropdownMenuTrigger: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  DropdownMenuContent: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  DropdownMenuItem: ({ children }: { children: ReactNode }) => <div>{children}</div>,
-  DropdownMenuLabel: ({ children }: { children: ReactNode }) => <div>{children}</div>,
+  DropdownMenu: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DropdownMenuTrigger: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DropdownMenuContent: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DropdownMenuItem: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
+  DropdownMenuLabel: ({ children }: { children: ReactNode }) => (
+    <div>{children}</div>
+  ),
   DropdownMenuSeparator: () => <hr />,
 }));
 
 function renderSidebar(
   entry: string,
-  {
-    collapsed = false,
-    showCollapseControl = false,
-  }: { collapsed?: boolean; showCollapseControl?: boolean } = {},
+  { collapsed = false }: { collapsed?: boolean } = {},
 ) {
   return renderToStaticMarkup(
     <MemoryRouter initialEntries={[entry]}>
       <Routes>
-        <Route
-          path="*"
-          element={
-            <AppSidebar
-              collapsed={collapsed}
-              showCollapseControl={showCollapseControl}
-              onToggleCollapse={showCollapseControl ? () => undefined : undefined}
-            />
-          }
-        />
+        <Route path="*" element={<AppSidebar collapsed={collapsed} />} />
       </Routes>
     </MemoryRouter>,
   );
+}
+
+function parseMarkup(markup: string): Document {
+  return new DOMParser().parseFromString(markup, "text/html");
 }
 
 describe("AppSidebar", () => {
@@ -175,43 +209,68 @@ describe("AppSidebar", () => {
     mockClearProfile.mockReset();
     mockTogglePin.mockReset();
     mockPluginInstallations = [];
+    mockPrimaryMenu = null;
+    mockLibraries = [{ id: 7, name: "Movies", type: "movies" }];
   });
 
   it("uses the cinema highlight text color for active catalog source links", () => {
     const markup = renderSidebar("/catalog?source=query&q=heat");
 
-    expect(markup).toContain("text-sidebar-accent-foreground bg-sidebar-accent");
-    expect(markup).not.toContain("text-sidebar-primary-foreground bg-sidebar-accent");
+    expect(markup).toContain(
+      "text-sidebar-accent-foreground bg-sidebar-accent",
+    );
+    expect(markup).not.toContain(
+      "text-sidebar-primary-foreground bg-sidebar-accent",
+    );
   });
 
   it("renders the Prairie brand mark instead of the old play glyph", () => {
     const markup = renderSidebar("/");
 
-    expect(markup).toContain('srcSet="/prairie-wordmark-sidebar.avif"');
-    expect(markup).toContain('srcSet="/prairie-wordmark-sidebar.webp"');
     expect(markup).toContain('src="/prairie-wordmark-sidebar.png"');
     expect(markup).toContain('alt="Prairie"');
     expect(markup).not.toContain("▶");
   });
 
-  it("uses the icon-only mark when the sidebar is collapsed", () => {
-    const markup = renderSidebar("/", { collapsed: true });
+  it("cross-fades the wordmark and the mark instead of swapping them", () => {
+    // Both are always rendered and only their opacity differs; swapping the
+    // variant outright popped at the start of the paired transform transition.
+    const collapsed = renderSidebar("/", { collapsed: true });
+    const expanded = renderSidebar("/");
 
-    expect(markup).toContain('srcSet="/prairie-icon-1024.avif"');
-    expect(markup).toContain('srcSet="/prairie-icon-1024.webp"');
-    expect(markup).toContain('src="/prairie-icon-1024.png"');
-    expect(markup).not.toContain('src="/prairie-wordmark-sidebar.png"');
-    expect(markup).toContain("sidebar-logo flex items-center py-5 justify-center px-2");
-  });
+    for (const markup of [collapsed, expanded]) {
+      expect(markup).toContain('src="/prairie-icon-1024.png"');
+      expect(markup).toContain('src="/prairie-wordmark-sidebar.png"');
+    }
+    // Collapsed: the mark is the one showing, and the wordmark is out of the
+    // accessibility tree so the two images never both name the sidebar.
+    const collapsedDocument = parseMarkup(collapsed);
+    const expandedDocument = parseMarkup(expanded);
+    const collapsedWordmark = collapsedDocument
+      .querySelector('img[src="/prairie-wordmark-sidebar.png"]')
+      ?.closest(".sidebar-fade");
+    const collapsedMark = collapsedDocument
+      .querySelector('img[src="/prairie-icon-1024.png"]')
+      ?.closest(".sidebar-fade");
+    const expandedWordmark = expandedDocument
+      .querySelector('img[src="/prairie-wordmark-sidebar.png"]')
+      ?.closest(".sidebar-fade");
+    const expandedMark = expandedDocument
+      .querySelector('img[src="/prairie-icon-1024.png"]')
+      ?.closest(".sidebar-fade");
 
-  it("renders a collapse control when the parent enables it", () => {
-    const markup = renderSidebar("/", { showCollapseControl: true });
-    expect(markup).toContain('aria-label="Collapse sidebar"');
-  });
-
-  it("renders an expand control when collapsed with the control enabled", () => {
-    const markup = renderSidebar("/", { collapsed: true, showCollapseControl: true });
-    expect(markup).toContain('aria-label="Expand sidebar"');
+    expect(collapsedWordmark?.getAttribute("aria-hidden")).toBe("true");
+    expect(collapsedWordmark?.classList.contains("left-5")).toBe(true);
+    expect(collapsedWordmark?.classList.contains("opacity-0")).toBe(true);
+    expect(collapsedMark?.getAttribute("aria-hidden")).toBe("false");
+    expect(collapsedMark?.classList.contains("left-3.5")).toBe(true);
+    expect(collapsedMark?.classList.contains("opacity-100")).toBe(true);
+    expect(expandedWordmark?.getAttribute("aria-hidden")).toBe("false");
+    expect(expandedWordmark?.classList.contains("left-5")).toBe(true);
+    expect(expandedWordmark?.classList.contains("opacity-100")).toBe(true);
+    expect(expandedMark?.getAttribute("aria-hidden")).toBe("true");
+    expect(expandedMark?.classList.contains("left-3.5")).toBe(true);
+    expect(expandedMark?.classList.contains("opacity-0")).toBe(true);
   });
 
   it("uses the cinema highlight text color for active pinned catalog destinations", () => {
@@ -219,21 +278,151 @@ describe("AppSidebar", () => {
       "/catalog?source=section&scope=library&library_id=7&section_id=featured&title=Featured",
     );
 
-    expect(markup).toContain("text-sidebar-accent-foreground bg-sidebar-accent");
-    expect(markup).not.toContain("text-sidebar-primary-foreground bg-sidebar-accent");
+    expect(markup).toContain(
+      "text-sidebar-accent-foreground bg-sidebar-accent",
+    );
+    expect(markup).not.toContain(
+      "text-sidebar-primary-foreground bg-sidebar-accent",
+    );
+  });
+
+  it("drops library-scoped menu targets when their library is not visible", () => {
+    mockPrimaryMenu = {
+      items: [
+        { type: "builtin", destination: "home" },
+        {
+          type: "section",
+          library_id: 99,
+          section_id: "hidden-section",
+          label: "Hidden section",
+        },
+        {
+          type: "collection",
+          library_id: 99,
+          collection_id: "hidden-collection",
+          label: "Hidden collection",
+        },
+        {
+          type: "collection",
+          collection_id: "global-collection",
+          label: "Global collection",
+        },
+      ],
+    };
+
+    const markup = renderSidebar("/");
+
+    expect(markup).not.toContain("Hidden section");
+    expect(markup).not.toContain("Hidden collection");
+    expect(markup).toContain("Global collection");
+  });
+
+  it("does not reinterpret global media built-ins as the first matching library", () => {
+    mockLibraries = [
+      { id: 7, name: "Movies A", type: "movies" },
+      { id: 8, name: "Movies B", type: "movie" },
+      { id: 9, name: "TV A", type: "series" },
+      { id: 10, name: "TV B", type: "shows" },
+      { id: 11, name: "Books A", type: "audiobooks" },
+      { id: 12, name: "Books B", type: "audiobook" },
+      { id: 13, name: "Music A", type: "music" },
+      { id: 14, name: "Music B", type: "music" },
+    ];
+    mockPrimaryMenu = {
+      items: [
+        { type: "builtin", destination: "home" },
+        { type: "builtin", destination: "movies" },
+        { type: "builtin", destination: "series" },
+        { type: "builtin", destination: "audiobooks" },
+        { type: "builtin", destination: "music" },
+      ],
+    };
+
+    const document = parseMarkup(renderSidebar("/"));
+    const primaryMenu = document.querySelector(
+      'nav[aria-label="Main navigation"] > ul',
+    );
+    const primaryHrefs = [...(primaryMenu?.querySelectorAll("a") ?? [])].map(
+      (link) => link.getAttribute("href"),
+    );
+
+    expect(primaryHrefs).toEqual(["/"]);
+    expect(document.querySelector('a[href="/library/7"]')).not.toBeNull();
+    expect(document.querySelector('a[href="/library/14"]')).not.toBeNull();
+  });
+
+  it("keeps a custom section active while sort and filter params change", () => {
+    mockPrimaryMenu = {
+      items: [
+        {
+          type: "section",
+          library_id: 7,
+          section_id: "recent",
+          label: "Custom Recently Added",
+        },
+      ],
+    };
+
+    const document = parseMarkup(
+      renderSidebar(
+        "/catalog?source=section&scope=library&library_id=7&section_id=recent&sort=title&order=asc&genre=Drama",
+      ),
+    );
+    const link = [...document.querySelectorAll("a")].find((candidate) =>
+      candidate.textContent?.includes("Custom Recently Added"),
+    );
+
+    expect(link?.getAttribute("aria-current")).toBe("page");
+  });
+
+  it("matches custom collections by source, library, and collection id", () => {
+    mockPrimaryMenu = {
+      items: [
+        {
+          type: "collection",
+          library_id: 7,
+          collection_id: "favorites",
+          label: "Custom Favorites",
+        },
+      ],
+    };
+
+    const filtered = parseMarkup(
+      renderSidebar(
+        "/catalog?source=library_collection&library_id=7&collection_id=favorites&type=movie&sort=year&order=desc",
+      ),
+    );
+    const otherLibrary = parseMarkup(
+      renderSidebar(
+        "/catalog?source=library_collection&library_id=8&collection_id=favorites&sort=year",
+      ),
+    );
+    const findCustomLink = (document: Document) =>
+      [...document.querySelectorAll("a")].find((candidate) =>
+        candidate.textContent?.includes("Custom Favorites"),
+      );
+
+    expect(findCustomLink(filtered)?.getAttribute("aria-current")).toBe("page");
+    expect(findCustomLink(otherLibrary)?.hasAttribute("aria-current")).toBe(
+      false,
+    );
   });
 
   it("preserves the current library query when linking to the active library", () => {
     const markup = renderSidebar("/library/7?tab=library&sort=year&order=desc");
 
-    expect(markup).toContain('href="/library/7?tab=library&amp;sort=year&amp;order=desc"');
+    expect(markup).toContain(
+      'href="/library/7?tab=library&amp;sort=year&amp;order=desc"',
+    );
   });
 
   it("keeps collapsed navigation rows left-anchored instead of centering icons", () => {
     const markup = renderSidebar("/item/42", { collapsed: true });
 
     expect(markup).toContain('href="/"');
-    expect(markup).toContain('class="relative flex items-center gap-2.5 rounded-xl px-3 py-3');
+    expect(markup).toContain(
+      'class="relative flex items-center gap-2.5 rounded-xl px-3 py-3',
+    );
   });
 
   it("preserves section header slots when collapsed so nav groups do not shift upward", () => {
@@ -249,10 +438,18 @@ describe("AppSidebar", () => {
     expect(getProfileMenuSide(true)).toBe("right");
   });
 
-  it("centers the profile trigger when the sidebar is collapsed", () => {
-    const markup = renderSidebar("/item/42", { collapsed: true });
+  it("keeps the profile trigger left-anchored and the same size in both states", () => {
+    // `mx-auto` would centre the avatar in the 260px surface — far outside the
+    // 64px rail — and any width swap would pop when the surface starts moving.
+    const collapsed = renderSidebar("/item/42", { collapsed: true });
+    const expanded = renderSidebar("/", { collapsed: false });
 
-    expect(markup).toContain("mx-auto h-10 w-10 justify-center px-0");
+    for (const markup of [collapsed, expanded]) {
+      expect(markup).toContain(
+        "flex w-full items-center gap-2.5 rounded-xl px-3 py-3",
+      );
+      expect(markup).not.toContain("mx-auto h-10 w-10 justify-center px-0");
+    }
   });
 
   it("keeps a flat Apps list when fewer than 2 distinct categories exist", () => {
@@ -306,9 +503,116 @@ describe("AppSidebar", () => {
     // the layout (preventing shifts) but is visually hidden when collapsed.
     expect(markup).toContain(">Tools<");
     expect(markup).toContain(">Extras<");
-    const hiddenHeaderCount = (markup.match(/aria-hidden="true" class="[^"]*opacity-0/g) ?? [])
-      .length;
+    const hiddenHeaderCount = (
+      markup.match(/aria-hidden="true" class="[^"]*opacity-0/g) ?? []
+    ).length;
     expect(hiddenHeaderCount).toBeGreaterThan(0);
+  });
+});
+
+describe("sidebar collapse surface", () => {
+  it("keeps the surface 260px wide on a detail route and everywhere else", () => {
+    // Nothing about the sidebar's box changes between states — the frame just
+    // slides, so there is never a width to interpolate.
+    for (const markup of [
+      renderSidebar("/"),
+      renderSidebar("/item/42", { collapsed: true }),
+    ]) {
+      const aside = markup.match(/<aside[^>]*class="([^"]*)"/)?.[1] ?? "";
+      expect(aside).toContain("w-[260px]");
+      expect(aside).toContain("overflow-hidden");
+      expect(aside).not.toContain("w-16");
+    }
+  });
+
+  it("puts the blur on the counter-translated layer, not the sliding frame", () => {
+    // The inner layer is screen-static, so its 40px backdrop is sampled from a
+    // region that never moves; on the frame it would be re-blurred per frame.
+    const markup = renderSidebar("/item/42", { collapsed: true });
+    const aside = markup.match(/<aside[^>]*class="([^"]*)"/)?.[1] ?? "";
+
+    expect(aside).not.toContain("backdrop-blur");
+    expect(markup).toContain("bg-sidebar/88 sidebar-inner");
+    expect(markup).toContain("backdrop-blur-2xl");
+  });
+
+  it("keeps the rail border on the frame so it rides along to x=64", () => {
+    const aside =
+      renderSidebar("/item/42", { collapsed: true }).match(
+        /<aside[^>]*class="([^"]*)"/,
+      )?.[1] ?? "";
+    expect(aside).toContain("border-sidebar-border/70");
+    expect(aside).toContain("border-r");
+  });
+
+  it("marks the surface collapsed only on a detail route", () => {
+    expect(renderSidebar("/item/42", { collapsed: true })).toContain(
+      'data-collapsed="true"',
+    );
+    expect(renderSidebar("/")).not.toContain("data-collapsed");
+  });
+
+  it("keeps labels at their full layout box so the nav never reflows", () => {
+    const collapsed = renderSidebar("/item/42", { collapsed: true });
+
+    expect(collapsed).toContain(
+      "sidebar-fade max-w-[180px] truncate opacity-0",
+    );
+    // The old max-width animation relaid out the whole nav subtree per frame.
+    expect(collapsed).not.toContain("max-w-0");
+    expect(collapsed).not.toContain("transition-[opacity,max-width]");
+  });
+
+  it("reserves the library chevron slot in both states and shifts the row instead", () => {
+    const collapsed = renderSidebar("/item/42", { collapsed: true });
+    const expanded = renderSidebar("/");
+
+    for (const markup of [collapsed, expanded]) {
+      expect(markup).toContain("sidebar-row-shift flex flex-1 items-center");
+      // Mocked library 7 has a pin, so its slot is the wider chevron button.
+      expect(markup).toContain("--sidebar-row-shift:-18px");
+    }
+  });
+});
+
+describe("libraryRowShift", () => {
+  it("only shifts rows whose chevron slot pushes the icon out of the column", () => {
+    // A pinned library reserves a 30px chevron button; every other nav row
+    // starts its icon 12px in, so the row has to come back 18px.
+    expect(libraryRowShift(true)).toBe("-18px");
+    // The unpinned spacer is `w-3` with `pl-3` — border-box, so 12px total.
+    // It already lines up, and shifting it would overshoot to the left.
+    expect(libraryRowShift(false)).toBe("0px");
+  });
+});
+
+describe("isSidebarRailCollapsed", () => {
+  it("clips to the rail only when the route collapsed it and nothing holds it open", () => {
+    expect(isSidebarRailCollapsed(true, false)).toBe(true);
+    expect(isSidebarRailCollapsed(false, true)).toBe(false);
+    // Hover-to-expand and the profile menu both re-open the clip.
+    expect(isSidebarRailCollapsed(true, true)).toBe(false);
+  });
+});
+
+describe("sidebarSurfaceStyle", () => {
+  it("floats hover expansion above the page instead of resizing it", () => {
+    const style = sidebarSurfaceStyle({
+      collapsed: true,
+      sidebarExpanded: true,
+    });
+
+    expect(style?.zIndex).toBe(45);
+    expect(style?.boxShadow).toContain("0 25px 50px -12px");
+  });
+
+  it("does not raise or shadow the surface in either resting state", () => {
+    expect(
+      sidebarSurfaceStyle({ collapsed: true, sidebarExpanded: false }),
+    ).toBeUndefined();
+    expect(
+      sidebarSurfaceStyle({ collapsed: false, sidebarExpanded: true }),
+    ).toBeUndefined();
   });
 });
 
@@ -330,7 +634,12 @@ describe("groupAppNavLinks", () => {
   });
 
   it("returns null when all links share the same first category segment", () => {
-    expect(groupAppNavLinks([link("a", "Tools/Utilities"), link("b", "Tools/Extras")])).toBeNull();
+    expect(
+      groupAppNavLinks([
+        link("a", "Tools/Utilities"),
+        link("b", "Tools/Extras"),
+      ]),
+    ).toBeNull();
   });
 
   it("groups by first segment, sorts alphabetically, and puts Other last", () => {
@@ -342,14 +651,22 @@ describe("groupAppNavLinks", () => {
     ]);
 
     expect(groups).not.toBeNull();
-    expect(groups?.map((g) => g.category)).toEqual(["Extras", "Tools", "Other"]);
+    expect(groups?.map((g) => g.category)).toEqual([
+      "Extras",
+      "Tools",
+      "Other",
+    ]);
     // Input order preserved within a group.
     expect(groups?.[1]?.links.map((l) => l.id)).toEqual(["a", "b"]);
     expect(groups?.[2]?.links.map((l) => l.id)).toEqual(["m"]);
   });
 
   it("treats blank or slash-only categories as uncategorized", () => {
-    const groups = groupAppNavLinks([link("a", "  "), link("b", "/Tools"), link("c", "Extras")]);
+    const groups = groupAppNavLinks([
+      link("a", "  "),
+      link("b", "/Tools"),
+      link("c", "Extras"),
+    ]);
 
     expect(groups?.map((g) => g.category)).toEqual(["Extras", "Other"]);
     expect(groups?.[1]?.links.map((l) => l.id)).toEqual(["a", "b"]);

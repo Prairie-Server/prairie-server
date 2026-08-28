@@ -66,7 +66,11 @@ describe("Recommendations", () => {
       },
       isLoading: false,
     });
-    mockUseDiscover.mockReturnValue({ data: undefined, isLoading: true, isError: false });
+    mockUseDiscover.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+    });
   });
 
   it("renders loading skeletons while discover data is loading", () => {
@@ -111,7 +115,13 @@ describe("Recommendations", () => {
             label: "For You",
             section_kind: "for-you-main",
             items: [
-              { content_id: "item-1", title: "Movie A", type: "movie", year: 2024, genres: [] },
+              {
+                content_id: "item-1",
+                title: "Movie A",
+                type: "movie",
+                year: 2024,
+                genres: [],
+              },
             ],
           },
           {
@@ -120,7 +130,13 @@ describe("Recommendations", () => {
             section_kind: "genre",
             section_key: "Action",
             items: [
-              { content_id: "item-2", title: "Movie B", type: "movie", year: 2023, genres: [] },
+              {
+                content_id: "item-2",
+                title: "Movie B",
+                type: "movie",
+                year: 2023,
+                genres: [],
+              },
             ],
           },
         ],
@@ -135,8 +151,12 @@ describe("Recommendations", () => {
     expect(markup).toContain("Popular in Action");
     expect(markup).toContain("Movie A");
     expect(markup).toContain("Movie B");
-    expect(markup).toContain('data-href="/recommendations/section/for-you-main"');
-    expect(markup).toContain('data-href="/recommendations/section/genre/Action"');
+    expect(markup).toContain(
+      'data-href="/recommendations/section/for-you-main"',
+    );
+    expect(markup).toContain(
+      'data-href="/recommendations/section/genre/Action"',
+    );
   });
 
   it("omits section href when row has no section_kind", () => {
@@ -147,7 +167,13 @@ describe("Recommendations", () => {
             type: "unknown",
             label: "Custom row",
             items: [
-              { content_id: "item-3", title: "Movie C", type: "movie", year: 2023, genres: [] },
+              {
+                content_id: "item-3",
+                title: "Movie C",
+                type: "movie",
+                year: 2023,
+                genres: [],
+              },
             ],
           },
         ],
@@ -184,7 +210,13 @@ describe("Recommendations", () => {
                   badges: ["season_premiere"],
                 },
               },
-              { content_id: "item-2", title: "Movie B", type: "movie", year: 2023, genres: [] },
+              {
+                content_id: "item-2",
+                title: "Movie B",
+                type: "movie",
+                year: 2023,
+                genres: [],
+              },
             ],
           },
         ],

@@ -1,6 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import type { AuditLogListResponse, OperationalLogListResponse } from "@/api/types";
+import type {
+  AuditLogListResponse,
+  OperationalLogListResponse,
+} from "@/api/types";
 import { adminKeys } from "../keys";
 
 export interface AdminLogQuery {
@@ -33,7 +36,8 @@ export function useOperationalLogs(params: AdminLogQuery, enabled = true) {
   const qs = toQueryString(params);
   return useQuery({
     queryKey: adminKeys.operationalLogs({ ...params }),
-    queryFn: () => api<OperationalLogListResponse>(`/admin/logs/app${qs ? `?${qs}` : ""}`),
+    queryFn: () =>
+      api<OperationalLogListResponse>(`/admin/logs/app${qs ? `?${qs}` : ""}`),
     staleTime: 5_000,
     enabled,
   });
@@ -43,7 +47,8 @@ export function useAuditLogs(params: AdminLogQuery, enabled = true) {
   const qs = toQueryString(params);
   return useQuery({
     queryKey: adminKeys.auditLogs({ ...params }),
-    queryFn: () => api<AuditLogListResponse>(`/admin/logs/audit${qs ? `?${qs}` : ""}`),
+    queryFn: () =>
+      api<AuditLogListResponse>(`/admin/logs/audit${qs ? `?${qs}` : ""}`),
     staleTime: 5_000,
     enabled,
   });

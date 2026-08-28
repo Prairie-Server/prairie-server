@@ -43,7 +43,10 @@ export function formatDayHeading(dateStr: string): string {
 }
 
 /** Returns a short day label like "Mon" and day number like "7". */
-export function formatShortDay(dateStr: string): { label: string; day: number } {
+export function formatShortDay(dateStr: string): {
+  label: string;
+  day: number;
+} {
   const d = parseDate(dateStr);
   return {
     label: d.toLocaleDateString(undefined, { weekday: "short" }),
@@ -63,7 +66,8 @@ export function formatWeekRangeLabel(weekStart: string): string {
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
   const sameMonth =
-    start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
+    start.getMonth() === end.getMonth() &&
+    start.getFullYear() === end.getFullYear();
   if (sameMonth) {
     const month = start.toLocaleDateString(undefined, { month: "short" });
     return `${month} ${start.getDate()} – ${end.getDate()}, ${start.getFullYear()}`;

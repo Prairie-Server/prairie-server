@@ -69,12 +69,21 @@ export default function FilterRuleEditor({
   mediaScope = "all",
 }: FilterRuleEditorProps) {
   const config = value || { match: "all", groups: [] };
-  const sortOptions = getCollectionSortOptions(allowPersonalizedSorts, sortRelevanceScope);
+  const sortOptions = getCollectionSortOptions(
+    allowPersonalizedSorts,
+    sortRelevanceScope,
+  );
   const selectedSort = normalizeQuerySortForScope(
     { field: config.sort, order: config.order },
-    { includePersonalized: allowPersonalizedSorts, relevanceScope: sortRelevanceScope },
+    {
+      includePersonalized: allowPersonalizedSorts,
+      relevanceScope: sortRelevanceScope,
+    },
   );
-  const fieldOptions = getFilterRuleFieldOptions(allowPersonalizedFilters, mediaScope);
+  const fieldOptions = getFilterRuleFieldOptions(
+    allowPersonalizedFilters,
+    mediaScope,
+  );
 
   function getDefaultRuleValue(field: string, op: string): FilterRule["value"] {
     const fieldDef = getCollectionFieldOption(field);
@@ -124,7 +133,13 @@ export default function FilterRuleEditor({
         ...config.groups,
         {
           match: "all",
-          rules: [{ field: "genre", op: "is", value: getDefaultRuleValue("genre", "is") }],
+          rules: [
+            {
+              field: "genre",
+              op: "is",
+              value: getDefaultRuleValue("genre", "is"),
+            },
+          ],
         },
       ],
     });
@@ -137,7 +152,9 @@ export default function FilterRuleEditor({
   }
 
   function updateGroup(groupIdx: number, updates: Partial<FilterGroup>) {
-    const newGroups = config.groups.map((g, i) => (i === groupIdx ? { ...g, ...updates } : g));
+    const newGroups = config.groups.map((g, i) =>
+      i === groupIdx ? { ...g, ...updates } : g,
+    );
     updateConfig({ groups: newGroups });
   }
 
@@ -163,10 +180,16 @@ export default function FilterRuleEditor({
     }
   }
 
-  function updateRule(groupIdx: number, ruleIdx: number, updates: Partial<FilterRule>) {
+  function updateRule(
+    groupIdx: number,
+    ruleIdx: number,
+    updates: Partial<FilterRule>,
+  ) {
     const group = config.groups[groupIdx];
     if (!group) return;
-    const newRules = group.rules.map((r, i) => (i === ruleIdx ? { ...r, ...updates } : r));
+    const newRules = group.rules.map((r, i) =>
+      i === ruleIdx ? { ...r, ...updates } : r,
+    );
     updateGroup(groupIdx, { rules: newRules });
   }
 
@@ -190,13 +213,18 @@ export default function FilterRuleEditor({
       </div>
 
       {config.groups.map((group, groupIdx) => (
-        <div key={groupIdx} className="border-border space-y-2 rounded-lg border p-3">
+        <div
+          key={groupIdx}
+          className="border-border space-y-2 rounded-lg border p-3"
+        >
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-sm">
               <span className="text-muted-foreground">Match</span>
               <Select
                 value={group.match}
-                onValueChange={(v) => updateGroup(groupIdx, { match: v as "all" | "any" })}
+                onValueChange={(v) =>
+                  updateGroup(groupIdx, { match: v as "all" | "any" })
+                }
               >
                 <SelectTrigger className="h-7 w-20 text-xs">
                   <SelectValue />
@@ -280,15 +308,18 @@ export default function FilterRuleEditor({
                       return (
                         <Input
                           key={index}
-                          type={fieldDef.inputType === "number" ? "number" : "text"}
+                          type={
+                            fieldDef.inputType === "number" ? "number" : "text"
+                          }
                           value={String(rangeValue[index] ?? "")}
                           onChange={(e) => {
-                            const nextValue: [string | number, string | number] = [
-                              rangeValue[0] ?? "",
-                              rangeValue[1] ?? "",
-                            ];
+                            const nextValue: [
+                              string | number,
+                              string | number,
+                            ] = [rangeValue[0] ?? "", rangeValue[1] ?? ""];
                             nextValue[index] =
-                              fieldDef.inputType === "number" && e.target.value !== ""
+                              fieldDef.inputType === "number" &&
+                              e.target.value !== ""
                                 ? Number(e.target.value)
                                 : e.target.value;
                             updateRule(groupIdx, ruleIdx, { value: nextValue });
@@ -302,7 +333,9 @@ export default function FilterRuleEditor({
                 ) : fieldDef?.inputType === "boolean" ? (
                   <Select
                     value={String(Boolean(rule.value))}
-                    onValueChange={(v) => updateRule(groupIdx, ruleIdx, { value: v === "true" })}
+                    onValueChange={(v) =>
+                      updateRule(groupIdx, ruleIdx, { value: v === "true" })
+                    }
                   >
                     <SelectTrigger className="h-8 flex-1 text-xs">
                       <SelectValue />
@@ -315,7 +348,9 @@ export default function FilterRuleEditor({
                 ) : fieldDef?.inputType === "select" ? (
                   <Select
                     value={String(rule.value)}
-                    onValueChange={(v) => updateRule(groupIdx, ruleIdx, { value: v })}
+                    onValueChange={(v) =>
+                      updateRule(groupIdx, ruleIdx, { value: v })
+                    }
                   >
                     <SelectTrigger className="h-8 flex-1 text-xs">
                       <SelectValue placeholder="Select..." />
@@ -331,7 +366,9 @@ export default function FilterRuleEditor({
                 ) : fieldDef?.inputType === "person_search" ? (
                   <PersonSearchSelect
                     value={String(rule.value ?? "")}
-                    onChange={(v) => updateRule(groupIdx, ruleIdx, { value: v })}
+                    onChange={(v) =>
+                      updateRule(groupIdx, ruleIdx, { value: v })
+                    }
                   />
                 ) : (
                   <Input
@@ -346,7 +383,9 @@ export default function FilterRuleEditor({
                       })
                     }
                     className="h-8 flex-1 text-xs"
-                    placeholder={rule.field === "added_at" ? "e.g. 30d, 2w" : "Value..."}
+                    placeholder={
+                      rule.field === "added_at" ? "e.g. 30d, 2w" : "Value..."
+                    }
                   />
                 )}
 
@@ -384,7 +423,9 @@ export default function FilterRuleEditor({
         <span className="text-muted-foreground text-sm">Sort by</span>
         <Select
           value={selectedSort.field}
-          onValueChange={(v) => updateConfig({ sort: v, order: getDefaultQuerySortOrder(v) })}
+          onValueChange={(v) =>
+            updateConfig({ sort: v, order: getDefaultQuerySortOrder(v) })
+          }
         >
           <SelectTrigger className="h-8 w-32 text-xs">
             <SelectValue />
@@ -397,7 +438,10 @@ export default function FilterRuleEditor({
             ))}
           </SelectContent>
         </Select>
-        <Select value={config.order || "desc"} onValueChange={(v) => updateConfig({ order: v })}>
+        <Select
+          value={config.order || "desc"}
+          onValueChange={(v) => updateConfig({ order: v })}
+        >
           <SelectTrigger className="h-8 w-28 text-xs">
             <SelectValue />
           </SelectTrigger>

@@ -29,7 +29,7 @@ func newFakeEnsurer() *fakeEnsurer {
 	}
 }
 
-func (f *fakeEnsurer) Ensure(ctx context.Context, file *models.MediaFile) (*models.MediaFile, error) {
+func (f *fakeEnsurer) EnsureProbeOnly(ctx context.Context, file *models.MediaFile) (*models.MediaFile, error) {
 	f.calls.Add(1)
 	select {
 	case f.started <- file.ID:
@@ -39,6 +39,10 @@ func (f *fakeEnsurer) Ensure(ctx context.Context, file *models.MediaFile) (*mode
 	case <-f.release:
 	case <-ctx.Done():
 	}
+	return file, nil
+}
+
+func (f *fakeEnsurer) EnsureCopySafetyCached(_ context.Context, file *models.MediaFile) (*models.MediaFile, error) {
 	return file, nil
 }
 
@@ -59,8 +63,12 @@ func (f *fakeEnsurer) setNeedsRepair(ids ...int) {
 // fakeEnsurerNoCheck omits the optional NeedsRepair extension.
 type fakeEnsurerNoCheck struct{ calls atomic.Int32 }
 
-func (f *fakeEnsurerNoCheck) Ensure(_ context.Context, file *models.MediaFile) (*models.MediaFile, error) {
+func (f *fakeEnsurerNoCheck) EnsureProbeOnly(_ context.Context, file *models.MediaFile) (*models.MediaFile, error) {
 	f.calls.Add(1)
+	return file, nil
+}
+
+func (f *fakeEnsurerNoCheck) EnsureCopySafetyCached(_ context.Context, file *models.MediaFile) (*models.MediaFile, error) {
 	return file, nil
 }
 

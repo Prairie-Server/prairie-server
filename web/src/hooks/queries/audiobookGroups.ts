@@ -31,7 +31,10 @@ export async function fetchAudiobookGroupsPage(
     params.set("q", trimmedSearch);
   }
 
-  return api<AudiobookGroupsResponse>(`/catalog/audiobook-groups?${params.toString()}`, options);
+  return api<AudiobookGroupsResponse>(
+    `/catalog/audiobook-groups?${params.toString()}`,
+    options,
+  );
 }
 
 export function useAudiobookGroups(
@@ -43,10 +46,24 @@ export function useAudiobookGroups(
   const search = searchPrefix.trim();
   return useInfiniteQuery({
     queryKey: catalogKeys.audiobookGroups(libraryId, groupBy, sort, search),
-    queryFn: ({ pageParam, signal }: { pageParam: number; signal: AbortSignal }) =>
-      fetchAudiobookGroupsPage(libraryId, groupBy, sort, pageParam, pageParam === 0, search, {
-        signal,
-      }),
+    queryFn: ({
+      pageParam,
+      signal,
+    }: {
+      pageParam: number;
+      signal: AbortSignal;
+    }) =>
+      fetchAudiobookGroupsPage(
+        libraryId,
+        groupBy,
+        sort,
+        pageParam,
+        pageParam === 0,
+        search,
+        {
+          signal,
+        },
+      ),
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
       if (!lastPage.has_more) {

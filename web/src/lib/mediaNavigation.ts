@@ -19,7 +19,10 @@ interface MediaHrefInput {
   backTo?: string;
 }
 
-function appendQuery(base: string, params: Record<string, string | number | boolean | undefined>) {
+function appendQuery(
+  base: string,
+  params: Record<string, string | number | boolean | undefined>,
+) {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value == null || value === false) {
@@ -46,7 +49,10 @@ export function buildMediaPlayHref({
   backTo,
 }: MediaHrefInput) {
   if (type === "movie" || type === "episode") {
-    return appendQuery(`/watch/${encodeURIComponent(contentId)}`, { libraryId, restart });
+    return appendQuery(`/watch/${encodeURIComponent(contentId)}`, {
+      libraryId,
+      restart,
+    });
   }
   if (type === "audiobook") {
     return appendQuery(`/item/${encodeURIComponent(contentId)}`, {
@@ -56,7 +62,10 @@ export function buildMediaPlayHref({
     });
   }
   if (type === "ebook") {
-    return appendQuery(`/reader/ebook/${encodeURIComponent(contentId)}`, { libraryId, backTo });
+    return appendQuery(`/reader/ebook/${encodeURIComponent(contentId)}`, {
+      libraryId,
+      backTo,
+    });
   }
   // Manga series (and series/season) are not directly playable: you open the
   // detail page and read an individual chapter (itself an ebook item) from

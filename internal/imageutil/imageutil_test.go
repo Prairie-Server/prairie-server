@@ -66,19 +66,22 @@ func TestGenerateVariants(t *testing.T) {
 
 func TestPublicVariantAPIs(t *testing.T) {
 	t.Parallel()
-	// Exercises GenerateVariants / GenerateSquareVariants wrappers (default
-	// webp,avif) on a small canvas so CI time stays modest.
+	// Exercises the public WebP and AVIF entry points on a small canvas so CI
+	// time stays modest. WebP uses libvips/bimg; AVIF uses the configured backend.
 	src := makeTestJPEG(t, 160, 120)
 
-	result, err := GenerateVariants(src, []int{80})
+	result, err := GenerateWebPVariants(src, []int{80})
 	if err != nil {
-		t.Fatalf("GenerateVariants: %v", err)
+		t.Fatalf("GenerateWebPVariants: %v", err)
 	}
 	keys := map[string]bool{}
 	for _, v := range result.Variants {
 		keys[v.Key] = true
-		if len(v.AVIF) < 12 || string(v.AVIF[4:8]) != "ftyp" {
-			t.Fatalf("variant %s missing AVIF payload", v.Key)
+		if len(v.Data) == 0 {
+			t.Fatalf("variant %s missing WebP payload", v.Key)
+		}
+		if len(v.AVIF) != 0 {
+			t.Fatalf("variant %s unexpectedly included AVIF inline", v.Key)
 		}
 		if len(v.PNG) != 0 {
 			t.Fatalf("variant %s unexpectedly included PNG", v.Key)

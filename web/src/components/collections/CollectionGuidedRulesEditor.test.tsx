@@ -182,19 +182,55 @@ describe("guidedStateToQueryDefinition", () => {
     expect(rules).toContainEqual({ field: "genre", op: "is", value: "Sci-Fi" });
     expect(rules).toContainEqual({ field: "year", op: "gte", value: 2015 });
     expect(rules).toContainEqual({ field: "rating_imdb", op: "gte", value: 8 });
-    expect(rules).toContainEqual({ field: "actor", op: "is", value: "Carrie-Anne Moss" });
-    expect(rules).toContainEqual({ field: "director", op: "is", value: "Denis Villeneuve" });
-    expect(rules).toContainEqual({ field: "writer", op: "is", value: "Tony Gilroy" });
-    expect(rules).toContainEqual({ field: "producer", op: "is", value: "Emma Thomas" });
+    expect(rules).toContainEqual({
+      field: "actor",
+      op: "is",
+      value: "Carrie-Anne Moss",
+    });
+    expect(rules).toContainEqual({
+      field: "director",
+      op: "is",
+      value: "Denis Villeneuve",
+    });
+    expect(rules).toContainEqual({
+      field: "writer",
+      op: "is",
+      value: "Tony Gilroy",
+    });
+    expect(rules).toContainEqual({
+      field: "producer",
+      op: "is",
+      value: "Emma Thomas",
+    });
     expect(rules).toContainEqual({ field: "network", op: "is", value: "HBO" });
     expect(rules).toContainEqual({ field: "country", op: "is", value: "US" });
-    expect(rules).toContainEqual({ field: "original_language", op: "is", value: "Japanese" });
-    expect(rules).toContainEqual({ field: "status", op: "is", value: "matched" });
+    expect(rules).toContainEqual({
+      field: "original_language",
+      op: "is",
+      value: "Japanese",
+    });
+    expect(rules).toContainEqual({
+      field: "status",
+      op: "is",
+      value: "matched",
+    });
     expect(rules).toContainEqual({ field: "watched", op: "is", value: false });
-    expect(rules).toContainEqual({ field: "in_progress", op: "is", value: false });
-    expect(rules).toContainEqual({ field: "resolution", op: "is", value: "2160p" });
+    expect(rules).toContainEqual({
+      field: "in_progress",
+      op: "is",
+      value: false,
+    });
+    expect(rules).toContainEqual({
+      field: "resolution",
+      op: "is",
+      value: "2160p",
+    });
     expect(rules).toContainEqual({ field: "hdr", op: "is", value: true });
-    expect(rules).toContainEqual({ field: "release_date", op: "in_last", value: "1y" });
+    expect(rules).toContainEqual({
+      field: "release_date",
+      op: "in_last",
+      value: "1y",
+    });
   });
 
   it("round-trips through parse and serialize", () => {
@@ -229,7 +265,11 @@ describe("guidedStateToQueryDefinition", () => {
     expect(rules).toContainEqual({ field: "year", op: "gte", value: 2000 });
     expect(rules).toContainEqual({ field: "year", op: "lte", value: 2020 });
     expect(rules).toContainEqual({ field: "rating_imdb", op: "gte", value: 6 });
-    expect(rules).toContainEqual({ field: "original_language", op: "is", value: "French" });
+    expect(rules).toContainEqual({
+      field: "original_language",
+      op: "is",
+      value: "French",
+    });
   });
 
   it("collects multiple original_language rules and emits them as an OR group", () => {
@@ -257,7 +297,11 @@ describe("guidedStateToQueryDefinition", () => {
     expect(rebuilt.groups).toHaveLength(2);
     const [first, second] = rebuilt.groups;
     expect(first!.match).toBe("all");
-    expect(first!.rules).toContainEqual({ field: "genre", op: "is", value: "Drama" });
+    expect(first!.rules).toContainEqual({
+      field: "genre",
+      op: "is",
+      value: "Drama",
+    });
     expect(second!.match).toBe("any");
     expect(second!.rules).toEqual([
       { field: "original_language", op: "is", value: "en" },
@@ -290,9 +334,21 @@ describe("guidedStateToQueryDefinition", () => {
 
     const rebuilt = guidedStateToQueryDefinition(state, original);
     const rules = rebuilt.groups[0]!.rules;
-    expect(rules).toContainEqual({ field: "author", op: "is", value: "Brandon Sanderson" });
-    expect(rules).toContainEqual({ field: "narrator", op: "is", value: "Michael Kramer" });
-    expect(rules).toContainEqual({ field: "series", op: "is", value: "Mistborn" });
+    expect(rules).toContainEqual({
+      field: "author",
+      op: "is",
+      value: "Brandon Sanderson",
+    });
+    expect(rules).toContainEqual({
+      field: "narrator",
+      op: "is",
+      value: "Michael Kramer",
+    });
+    expect(rules).toContainEqual({
+      field: "series",
+      op: "is",
+      value: "Mistborn",
+    });
   });
 
   it("round-trips ebook-native fields without narrator", () => {
@@ -326,8 +382,16 @@ describe("guidedStateToQueryDefinition", () => {
       original,
     );
     const rules = rebuilt.groups[0]!.rules;
-    expect(rules).toContainEqual({ field: "author", op: "is", value: "Ursula K. Le Guin" });
-    expect(rules).toContainEqual({ field: "series", op: "is", value: "Earthsea" });
+    expect(rules).toContainEqual({
+      field: "author",
+      op: "is",
+      value: "Ursula K. Le Guin",
+    });
+    expect(rules).toContainEqual({
+      field: "series",
+      op: "is",
+      value: "Earthsea",
+    });
     expect(rules).not.toContainEqual({
       field: "narrator",
       op: "is",
@@ -387,7 +451,9 @@ describe("CollectionGuidedRulesEditor original language field", () => {
           groups: [
             {
               match: "all",
-              rules: [{ field: "original_language", op: "is", value: "English" }],
+              rules: [
+                { field: "original_language", op: "is", value: "English" },
+              ],
             },
           ],
         }}
@@ -401,7 +467,10 @@ describe("CollectionGuidedRulesEditor original language field", () => {
 
   it("renders the media type control", () => {
     const markup = renderToStaticMarkup(
-      <CollectionGuidedRulesEditor value={createEmptyQueryDefinition()} onChange={() => {}} />,
+      <CollectionGuidedRulesEditor
+        value={createEmptyQueryDefinition()}
+        onChange={() => {}}
+      />,
     );
 
     expect(markup).toContain("Media Type");

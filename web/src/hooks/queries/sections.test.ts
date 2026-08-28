@@ -22,7 +22,10 @@ describe("sections query helpers", () => {
 
     await fetchHomeSectionItems("section-1", options);
 
-    expect(mocks.api).toHaveBeenCalledWith("/home/sections/section-1/items", options);
+    expect(mocks.api).toHaveBeenCalledWith(
+      "/home/sections/section-1/items",
+      options,
+    );
   });
 
   it("fetches library section items from the library section items endpoint", async () => {
@@ -31,7 +34,10 @@ describe("sections query helpers", () => {
 
     await fetchLibrarySectionItems(1, "section-1", options);
 
-    expect(mocks.api).toHaveBeenCalledWith("/library/1/sections/section-1/items", options);
+    expect(mocks.api).toHaveBeenCalledWith(
+      "/library/1/sections/section-1/items",
+      options,
+    );
   });
 
   it("exports the library layout hook", () => {

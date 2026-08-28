@@ -1,6 +1,11 @@
 import { ChevronLeft, ChevronRight, RotateCcw } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { getWeekDays, formatShortDay, formatWeekRangeLabel, isToday } from "@/lib/calendarWeek";
+import {
+  getWeekDays,
+  formatShortDay,
+  formatWeekRangeLabel,
+  isToday,
+} from "@/lib/calendarWeek";
 import type { CalendarDay } from "@/hooks/queries/calendar";
 
 interface WeekNavigatorProps {

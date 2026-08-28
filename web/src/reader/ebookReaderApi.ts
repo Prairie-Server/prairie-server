@@ -24,7 +24,14 @@ export type EbookReaderAnnotation = {
 export type EbookReaderAnnotationInput = Partial<
   Pick<
     EbookReaderAnnotation,
-    "kind" | "cfi_range" | "location" | "selected_text" | "note" | "style" | "color" | "metadata"
+    | "kind"
+    | "cfi_range"
+    | "location"
+    | "selected_text"
+    | "note"
+    | "style"
+    | "color"
+    | "metadata"
   >
 >;
 
@@ -36,13 +43,22 @@ export function ebookReaderAnnotationsPath(contentID: string): string {
   return `/ebooks/${encodeURIComponent(contentID)}/annotations`;
 }
 
-export function ebookReaderAnnotationPath(contentID: string, annotationID: string): string {
+export function ebookReaderAnnotationPath(
+  contentID: string,
+  annotationID: string,
+): string {
   return `${ebookReaderAnnotationsPath(contentID)}/${encodeURIComponent(annotationID)}`;
 }
 
-export async function fetchEbookReaderConfig(contentID: string): Promise<Record<string, unknown>> {
-  const envelope = await api<EbookReaderConfigEnvelope>(ebookReaderConfigPath(contentID));
-  return envelope.config && typeof envelope.config === "object" && !Array.isArray(envelope.config)
+export async function fetchEbookReaderConfig(
+  contentID: string,
+): Promise<Record<string, unknown>> {
+  const envelope = await api<EbookReaderConfigEnvelope>(
+    ebookReaderConfigPath(contentID),
+  );
+  return envelope.config &&
+    typeof envelope.config === "object" &&
+    !Array.isArray(envelope.config)
     ? envelope.config
     : {};
 }
@@ -51,11 +67,16 @@ export async function saveEbookReaderConfig(
   contentID: string,
   config: Record<string, unknown>,
 ): Promise<Record<string, unknown>> {
-  const envelope = await api<EbookReaderConfigEnvelope>(ebookReaderConfigPath(contentID), {
-    method: "PUT",
-    body: JSON.stringify({ config }),
-  });
-  return envelope.config && typeof envelope.config === "object" && !Array.isArray(envelope.config)
+  const envelope = await api<EbookReaderConfigEnvelope>(
+    ebookReaderConfigPath(contentID),
+    {
+      method: "PUT",
+      body: JSON.stringify({ config }),
+    },
+  );
+  return envelope.config &&
+    typeof envelope.config === "object" &&
+    !Array.isArray(envelope.config)
     ? envelope.config
     : {};
 }
@@ -98,10 +119,13 @@ export async function updateEbookReaderAnnotation(
   annotationID: string,
   annotation: EbookReaderAnnotationInput,
 ): Promise<EbookReaderAnnotation> {
-  return api<EbookReaderAnnotation>(ebookReaderAnnotationPath(contentID, annotationID), {
-    method: "PATCH",
-    body: JSON.stringify(annotation),
-  });
+  return api<EbookReaderAnnotation>(
+    ebookReaderAnnotationPath(contentID, annotationID),
+    {
+      method: "PATCH",
+      body: JSON.stringify(annotation),
+    },
+  );
 }
 
 export async function deleteEbookReaderAnnotation(

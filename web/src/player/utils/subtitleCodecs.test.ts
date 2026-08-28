@@ -1,9 +1,15 @@
 import { describe, expect, it } from "vitest";
-import { isASSCodec, isBitmapCodec, isPGSCodec, isSubtitleFormatLabel } from "./subtitleCodecs";
+import {
+  isASSCodec,
+  isBitmapCodec,
+  isPGSCodec,
+  isSubtitleFormatLabel,
+} from "./subtitleCodecs";
 
 describe("isPGSCodec", () => {
   it("matches PGS codec names case-insensitively", () => {
     expect(isPGSCodec("pgs")).toBe(true);
+    expect(isPGSCodec("pgssub")).toBe(true);
     expect(isPGSCodec("hdmv_pgs_subtitle")).toBe(true);
     expect(isPGSCodec("HDMV_PGS_SUBTITLE")).toBe(true);
   });
@@ -19,9 +25,14 @@ describe("isPGSCodec", () => {
 describe("isBitmapCodec", () => {
   it("covers all image-based codecs", () => {
     expect(isBitmapCodec("pgs")).toBe(true);
+    expect(isBitmapCodec("pgssub")).toBe(true);
     expect(isBitmapCodec("hdmv_pgs_subtitle")).toBe(true);
     expect(isBitmapCodec("dvd_subtitle")).toBe(true);
+    expect(isBitmapCodec("dvdsub")).toBe(true);
+    expect(isBitmapCodec("vobsub")).toBe(true);
     expect(isBitmapCodec("dvb_subtitle")).toBe(true);
+    expect(isBitmapCodec("dvbsub")).toBe(true);
+    expect(isBitmapCodec("dvb_teletext")).toBe(true);
   });
 
   it("rejects text codecs", () => {

@@ -30,9 +30,14 @@ linters:
     - wastedassign
 
   exclusions:
+    # Anchored regexes, not directory names: `paths` matches anywhere in the
+    # path, so a bare `web` also excluded internal/jellycompat/web_component.go,
+    # internal/webhooksync/, internal/notifications/webhook*.go and every other
+    # non-test file with "web" in its name — 14 files that were being linted
+    # before.
     paths:
-      - web
-      - migrations
+      - ^web/
+      - ^migrations/
     rules:
       # Tests may freely repeat fixture strings / leave cleanup errors unchecked.
       - path: _test\.go
@@ -42,23 +47,13 @@ linters:
 
   settings:
     sloglint:
-      # Require the context-carrying slog variants (InfoContext, …) wherever a
-      # context.Context is in scope, so log records correlate with the active
-      # OpenTelemetry trace. "scope" (not "all") allows the plain Info/… form in
-      # background/init code where no ctx exists. Enforced repo-wide after the
-      # phase-3 sweep converted the ~1,159 legacy call sites.
       context: "scope"
-      # Message must be a constant, not a built string; move dynamic parts to attrs.
       static-msg: true
-      # Attribute keys are snake_case (component, request_id, trace_id, …).
       key-naming-case: snake
-      # Don't mix key-value pairs and slog.Attr in one call.
       no-mixed-args: true
 
     errcheck:
       check-type-assertions: true
-      # Best-effort closes/rollbacks/cleanup can't usefully propagate; ignore.
-      # pgx documents defer tx.Rollback(ctx) as safe after Commit.
       exclude-functions:
         - io.Closer.Close
         - (io.ReadCloser).Close
@@ -82,7 +77,6 @@ linters:
         - (mime/multipart.File).Close
         - (*mime/multipart.Part).Close
         - (*github.com/fsnotify/fsnotify.Watcher).Close
-        # HTTP response writes / temp cleanup are best-effort once committed.
         - (*encoding/json.Encoder).Encode
         - os.Remove
         - os.RemoveAll
@@ -94,9 +88,7 @@ linters:
 
     goconst:
       min-len: 5
-      # Require clearer repetition before forcing package-level constants.
       min-occurrences: 8
-      # Tests inflate occurrence counts across the package; ignore them.
       ignore-tests: true
       ignore-string-values:
         - "true"
@@ -128,7 +120,6 @@ linters:
         - "content_rating"
         - "rating_imdb"
         - "media_items mi"
-        # Cron / SQL cast / TZ map / fixture IDs (regex; quote metacharacters).
         - '\A0 4 \* \* \*\z'
         - '\A0 5 \* \* 0\z'
         - '\A0 6 \* \* \*\z'
@@ -150,9 +141,19 @@ linters:
 
     misspell:
       locale: US
-      # Domain enum / API / DB values intentionally use British "cancelled".
-      # XMLTV's element name is British "programme".
       ignore-rules:
         - cancelled
         - programme
         - programmes
+        - analogue
+        - behaviour
+        - calibre
+        - finalise
+        - honour
+        - honouring
+        - marshalling
+        - materialised
+        - neighbour
+        - recognise
+        - serialises
+        - unrecognised

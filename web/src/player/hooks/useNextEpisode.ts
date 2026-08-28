@@ -80,12 +80,20 @@ export function useNextEpisode(
     setShowCountdown(false);
   }, []);
 
-  return { showCountdown, secondsRemaining, nextEpisode, skipToNext, cancelAutoPlay };
+  return {
+    showCountdown,
+    secondsRemaining,
+    nextEpisode,
+    skipToNext,
+    cancelAutoPlay,
+  };
 }
 
 function findNextEpisode(ctx: SeriesContext): EpisodeRef | null {
   const idx = ctx.episodes.findIndex(
-    (ep) => ep.seasonNumber === ctx.currentSeason && ep.episodeNumber === ctx.currentEpisode,
+    (ep) =>
+      ep.seasonNumber === ctx.currentSeason &&
+      ep.episodeNumber === ctx.currentEpisode,
   );
   if (idx < 0 || idx >= ctx.episodes.length - 1) return null;
   return ctx.episodes[idx + 1] ?? null;

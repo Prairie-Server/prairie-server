@@ -1,9 +1,9 @@
-// Package telemetry provides the OpenTelemetry SDK bootstrap for Prairie: shared
+// Package telemetry provides the OpenTelemetry SDK bootstrap for Silo: shared
 // resource, tracer provider, logger provider, and W3C propagation. It
 // deliberately does NOT build or register a MeterProvider — metrics stay on the
 // existing Prometheus rail. Leaving the global MeterProvider as the built-in
 // no-op is what prevents the trace instrumentation libraries from double-emitting
-// metrics. See docs/superpowers/plans/2026-07-02-opentelemetry-observability.md.
+// metrics. See docs/architecture/observability.md.
 package telemetry
 
 import (
@@ -55,8 +55,8 @@ const defaultSamplerRatio = 1.0
 // environment. It is cheap to construct and safe to build even when telemetry
 // is disabled.
 type Config struct {
-	// Enabled gates the entire feature. True when PRAIRIE_OTEL_ENABLED is truthy
-	// OR OTEL_EXPORTER_OTLP_ENDPOINT is set.
+	// Enabled gates the entire feature. True when PRAIRIE_OTEL_ENABLED or
+	// SILO_OTEL_ENABLED is truthy OR OTEL_EXPORTER_OTLP_ENDPOINT is set.
 	Enabled bool
 
 	// Endpoint is the OTLP collector endpoint (OTEL_EXPORTER_OTLP_ENDPOINT). It
@@ -95,7 +95,7 @@ type Config struct {
 // attribute.
 func LoadConfig(nodeID string) Config {
 	endpoint := strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"))
-	enabled := truthy(envutil.FirstNonEmpty("PRAIRIE_OTEL_ENABLED", "SILO_OTEL_ENABLED")) || endpoint != ""
+	enabled := envutil.Truthy(envutil.FirstNonEmpty("PRAIRIE_OTEL_ENABLED", "SILO_OTEL_ENABLED")) || endpoint != ""
 
 	serviceName := strings.TrimSpace(os.Getenv("OTEL_SERVICE_NAME"))
 	if serviceName == "" {
@@ -156,15 +156,5 @@ func parseProtocol(raw string, fallback Protocol) Protocol {
 		return ProtocolGRPC
 	default:
 		return fallback
-	}
-}
-
-// truthy reports whether an env value should be treated as a boolean true.
-func truthy(v string) bool {
-	switch strings.ToLower(strings.TrimSpace(v)) {
-	case "1", "true", "yes", "on":
-		return true
-	default:
-		return false
 	}
 }

@@ -9,7 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { useCollections, useAddItemToCollection } from "@/hooks/queries/collections";
+import {
+  useCollections,
+  useAddItemToCollection,
+} from "@/hooks/queries/collections";
 import { useUserLibraries } from "@/hooks/queries/libraries";
 import { useQueries } from "@tanstack/react-query";
 import {
@@ -66,7 +69,12 @@ export default function AddToCollectionDialog({
     const out: CollectionPick[] = [];
     for (const c of userCollections ?? []) {
       if (c.collection_type === "manual") {
-        out.push({ id: c.id, title: c.name, source: "user", group: "My Collections" });
+        out.push({
+          id: c.id,
+          title: c.name,
+          source: "user",
+          group: "My Collections",
+        });
       }
     }
     if (isAdmin && libraries) {
@@ -76,7 +84,12 @@ export default function AddToCollectionDialog({
         const collections = Array.isArray(res?.data) ? res.data : [];
         for (const c of collections) {
           if (c.collection_type === "manual") {
-            out.push({ id: c.id, title: c.title, source: "library", group: lib.name });
+            out.push({
+              id: c.id,
+              title: c.title,
+              source: "library",
+              group: lib.name,
+            });
           }
         }
       }
@@ -169,7 +182,11 @@ export default function AddToCollectionDialog({
         </div>
 
         <DialogFooter>
-          <Button variant="ghost" onClick={() => onOpenChange(false)} disabled={addItem.isPending}>
+          <Button
+            variant="ghost"
+            onClick={() => onOpenChange(false)}
+            disabled={addItem.isPending}
+          >
             <X />
             Cancel
           </Button>
@@ -178,7 +195,11 @@ export default function AddToCollectionDialog({
             disabled={!selectedId || addItem.isPending}
             className="gap-2"
           >
-            {addItem.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus />}
+            {addItem.isPending ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Plus />
+            )}
             Add
           </Button>
         </DialogFooter>

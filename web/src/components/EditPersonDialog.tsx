@@ -34,12 +34,19 @@ function createFormState(person: Person) {
   };
 }
 
-export default function EditPersonDialog({ person, open, onOpenChange }: EditPersonDialogProps) {
+export default function EditPersonDialog({
+  person,
+  open,
+  onOpenChange,
+}: EditPersonDialogProps) {
   const [form, setForm] = useState(() => createFormState(person));
   const mutation = useUpdatePersonMetadata(String(person.id));
   const originalForm = useMemo(() => createFormState(person), [person]);
 
-  function setField<K extends keyof typeof form>(field: K, value: (typeof form)[K]) {
+  function setField<K extends keyof typeof form>(
+    field: K,
+    value: (typeof form)[K],
+  ) {
     setForm((current) => ({ ...current, [field]: value }));
   }
 
@@ -48,9 +55,12 @@ export default function EditPersonDialog({ person, open, onOpenChange }: EditPer
 
     if (form.name !== originalForm.name) data.name = form.name;
     if (form.bio !== originalForm.bio) data.bio = form.bio;
-    if (form.birth_date !== originalForm.birth_date) data.birth_date = form.birth_date || null;
-    if (form.death_date !== originalForm.death_date) data.death_date = form.death_date || null;
-    if (form.birthplace !== originalForm.birthplace) data.birthplace = form.birthplace;
+    if (form.birth_date !== originalForm.birth_date)
+      data.birth_date = form.birth_date || null;
+    if (form.death_date !== originalForm.death_date)
+      data.death_date = form.death_date || null;
+    if (form.birthplace !== originalForm.birthplace)
+      data.birthplace = form.birthplace;
     if (form.homepage !== originalForm.homepage) data.homepage = form.homepage;
     if (form.tmdb_id !== originalForm.tmdb_id) data.tmdb_id = form.tmdb_id;
     if (form.imdb_id !== originalForm.imdb_id) data.imdb_id = form.imdb_id;
@@ -160,12 +170,24 @@ export default function EditPersonDialog({ person, open, onOpenChange }: EditPer
         </div>
 
         <DialogFooter>
-          <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+          >
             <X />
             Cancel
           </Button>
-          <Button type="button" onClick={handleSave} disabled={mutation.isPending}>
-            {mutation.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+          <Button
+            type="button"
+            onClick={handleSave}
+            disabled={mutation.isPending}
+          >
+            {mutation.isPending ? (
+              <Loader2 className="animate-spin" />
+            ) : (
+              <Save />
+            )}
             {mutation.isPending ? "Saving..." : "Save"}
           </Button>
         </DialogFooter>

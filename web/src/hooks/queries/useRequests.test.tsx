@@ -11,8 +11,9 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
+    "@tanstack/react-query",
+  );
   return {
     ...actual,
     useQuery: (...args: unknown[]) => mocks.useQuery(...args),
@@ -30,11 +31,19 @@ vi.mock("@/api/client", () => ({
 import { useRequestSearch } from "./useRequests";
 
 function render(node: ReactNode) {
-  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return renderToStaticMarkup(<QueryClientProvider client={client}>{node}</QueryClientProvider>);
+  const client = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+  return renderToStaticMarkup(
+    <QueryClientProvider client={client}>{node}</QueryClientProvider>,
+  );
 }
 
-function CallHook(props: { mediaType: "movie" | "series" | "all"; q: string; page?: number }) {
+function CallHook(props: {
+  mediaType: "movie" | "series" | "all";
+  q: string;
+  page?: number;
+}) {
   useRequestSearch(props.mediaType, props.q, props.page ?? 1);
   return null;
 }
@@ -50,20 +59,43 @@ describe("useRequestSearch", () => {
     mocks.useCurrentProfile.mockReturnValue({ profile: { id: "profile-1" } });
     render(<CallHook mediaType="all" q="dune" />);
 
-    const options = mocks.useQuery.mock.calls[0]![0] as { queryKey: readonly unknown[] };
-    expect(options.queryKey).toEqual(["requests", "search", "profile-1", "all", "dune", 1]);
+    const options = mocks.useQuery.mock.calls[0]![0] as {
+      queryKey: readonly unknown[];
+    };
+    expect(options.queryKey).toEqual([
+      "requests",
+      "search",
+      "profile-1",
+      "all",
+      "dune",
+      1,
+    ]);
   });
 
   it("uses 'anon' as the viewer key when there is no profile", () => {
     mocks.useCurrentProfile.mockReturnValue({ profile: null });
     render(<CallHook mediaType="movie" q="dune" />);
 
-    const options = mocks.useQuery.mock.calls[0]![0] as { queryKey: readonly unknown[] };
-    expect(options.queryKey).toEqual(["requests", "search", "anon", "movie", "dune", 1]);
+    const options = mocks.useQuery.mock.calls[0]![0] as {
+      queryKey: readonly unknown[];
+    };
+    expect(options.queryKey).toEqual([
+      "requests",
+      "search",
+      "anon",
+      "movie",
+      "dune",
+      1,
+    ]);
   });
 
   it("forwards the react-query signal to api()", async () => {
-    mocks.api.mockResolvedValue({ page: 1, total_pages: 0, total_results: 0, results: [] });
+    mocks.api.mockResolvedValue({
+      page: 1,
+      total_pages: 0,
+      total_results: 0,
+      results: [],
+    });
     mocks.useCurrentProfile.mockReturnValue({ profile: { id: "profile-1" } });
     render(<CallHook mediaType="all" q="dune" />);
 
@@ -147,15 +179,21 @@ describe("useRequestSearch", () => {
 describe("requestKeys.all invalidation", () => {
   it("invalidates entries under requestKeys.search() when invalidating requestKeys.all", async () => {
     const client = new QueryClient();
-    client.setQueryData(requestKeys.search("all", "dune", 1, "profile-1"), { sentinel: true });
+    client.setQueryData(requestKeys.search("all", "dune", 1, "profile-1"), {
+      sentinel: true,
+    });
 
-    expect(client.getQueryData(requestKeys.search("all", "dune", 1, "profile-1"))).toEqual({
+    expect(
+      client.getQueryData(requestKeys.search("all", "dune", 1, "profile-1")),
+    ).toEqual({
       sentinel: true,
     });
 
     await client.invalidateQueries({ queryKey: requestKeys.all });
 
-    const state = client.getQueryState(requestKeys.search("all", "dune", 1, "profile-1"));
+    const state = client.getQueryState(
+      requestKeys.search("all", "dune", 1, "profile-1"),
+    );
     expect(state?.isInvalidated).toBe(true);
   });
 });
@@ -167,6 +205,8 @@ describe("viewer-scoped cache isolation", () => {
       results: [{ tmdb_id: 1 }],
     });
 
-    expect(client.getQueryData(requestKeys.search("all", "dune", 1, "profile-2"))).toBeUndefined();
+    expect(
+      client.getQueryData(requestKeys.search("all", "dune", 1, "profile-2")),
+    ).toBeUndefined();
   });
 });

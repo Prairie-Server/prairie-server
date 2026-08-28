@@ -27,7 +27,9 @@ describe("MiniBar", () => {
         prefs={makePrefs()}
       />,
     );
-    await userEvent.click(screen.getByRole("button", { name: /^(Play|Pause)$/ }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /^(Play|Pause)$/ }),
+    );
     expect(togglePlay).toHaveBeenCalled();
   });
 
@@ -42,7 +44,9 @@ describe("MiniBar", () => {
         onClose={onClose}
       />,
     );
-    await userEvent.click(screen.getByRole("button", { name: /close player/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /close player/i }),
+    );
     expect(onClose).toHaveBeenCalled();
   });
 
@@ -75,7 +79,9 @@ describe("MiniBar", () => {
         prefs={makePrefs()}
       />,
     );
-    expect(screen.queryByTestId("minibar-chapter-title")).not.toBeInTheDocument();
+    expect(
+      screen.queryByTestId("minibar-chapter-title"),
+    ).not.toBeInTheDocument();
   });
 
   it("invokes onExpand when the cover tile is clicked", async () => {
@@ -90,7 +96,9 @@ describe("MiniBar", () => {
         onExpand={onExpand}
       />,
     );
-    await userEvent.click(screen.getByRole("button", { name: /open now listening/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /open now listening/i }),
+    );
     expect(onExpand).toHaveBeenCalled();
   });
 
@@ -104,9 +112,13 @@ describe("MiniBar", () => {
         prefs={makePrefs({ skipBack: 15, skipForward: 60 })}
       />,
     );
-    await userEvent.click(screen.getByRole("button", { name: "Back 15 seconds" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Back 15 seconds" }),
+    );
     expect(skip).toHaveBeenCalledWith(-15);
-    await userEvent.click(screen.getByRole("button", { name: "Forward 60 seconds" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Forward 60 seconds" }),
+    );
     expect(skip).toHaveBeenCalledWith(60);
   });
 
@@ -118,19 +130,33 @@ describe("MiniBar", () => {
       <MiniBar
         contentId="book-1"
         title="X"
-        playback={makePlayback({ chapters, currentChapter: chapters[0], prevChapter, nextChapter })}
+        playback={makePlayback({
+          chapters,
+          currentChapter: chapters[0],
+          prevChapter,
+          nextChapter,
+        })}
         prefs={makePrefs()}
       />,
     );
-    await userEvent.click(screen.getByRole("button", { name: "Previous chapter" }));
+    await userEvent.click(
+      screen.getByRole("button", { name: "Previous chapter" }),
+    );
     expect(prevChapter).toHaveBeenCalled();
     await userEvent.click(screen.getByRole("button", { name: "Next chapter" }));
     expect(nextChapter).toHaveBeenCalled();
 
     rerender(
-      <MiniBar contentId="book-1" title="X" playback={makePlayback()} prefs={makePrefs()} />,
+      <MiniBar
+        contentId="book-1"
+        title="X"
+        playback={makePlayback()}
+        prefs={makePrefs()}
+      />,
     );
-    expect(screen.queryByRole("button", { name: "Previous chapter" })).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Previous chapter" }),
+    ).not.toBeInTheDocument();
   });
 
   it("disables next chapter at the last chapter", () => {
@@ -144,6 +170,8 @@ describe("MiniBar", () => {
       />,
     );
     expect(screen.getByRole("button", { name: "Next chapter" })).toBeDisabled();
-    expect(screen.getByRole("button", { name: "Previous chapter" })).toBeEnabled();
+    expect(
+      screen.getByRole("button", { name: "Previous chapter" }),
+    ).toBeEnabled();
   });
 });

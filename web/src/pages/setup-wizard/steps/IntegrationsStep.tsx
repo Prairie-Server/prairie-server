@@ -9,7 +9,15 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ArrowRight, CircleCheck, Eye, EyeOff, Loader2, Save, SkipForward } from "lucide-react";
+import {
+  ArrowRight,
+  CircleCheck,
+  Eye,
+  EyeOff,
+  Loader2,
+  Save,
+  SkipForward,
+} from "lucide-react";
 import { useWizardContext } from "../WizardContext";
 import { WizardActions } from "../WizardActions";
 
@@ -43,12 +51,20 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
 
   const updateProvider = useUpdateSubtitleProvider();
   const testProvider = useTestSubtitleProvider();
-  const [testResult, setTestResult] = useState<{ success: boolean; error?: string } | null>(null);
+  const [testResult, setTestResult] = useState<{
+    success: boolean;
+    error?: string;
+  } | null>(null);
 
   const providerName = config.provider_name;
-  const meta = PROVIDER_META[providerName] ?? { name: providerName, description: "" };
+  const meta = PROVIDER_META[providerName] ?? {
+    name: providerName,
+    description: "",
+  };
   const isOpenSubtitles = providerName === "opensubtitles";
-  const hasCredentials = isOpenSubtitles ? config.has_credentials : config.has_api_key;
+  const hasCredentials = isOpenSubtitles
+    ? config.has_credentials
+    : config.has_api_key;
 
   function handleSave() {
     updateProvider.mutate({
@@ -73,7 +89,8 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
         },
       },
       {
-        onSuccess: (result) => setTestResult({ success: result.success, error: result.error }),
+        onSuccess: (result) =>
+          setTestResult({ success: result.success, error: result.error }),
         onError: (err) =>
           setTestResult({
             success: false,
@@ -93,9 +110,13 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
             <span className="text-sm font-medium">{meta.name}</span>
-            {hasCredentials && <CircleCheck className="h-3.5 w-3.5 shrink-0 text-green-500" />}
+            {hasCredentials && (
+              <CircleCheck className="h-3.5 w-3.5 shrink-0 text-green-500" />
+            )}
           </div>
-          <p className="text-muted-foreground mt-0.5 text-xs">{meta.description}</p>
+          <p className="text-muted-foreground mt-0.5 text-xs">
+            {meta.description}
+          </p>
         </div>
         <Switch
           id={`${providerName}-enabled`}
@@ -119,7 +140,9 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
               <Input
                 type="text"
                 name={`${providerName}-username`}
-                placeholder={config.has_credentials ? "Leave blank to keep" : "Username"}
+                placeholder={
+                  config.has_credentials ? "Leave blank to keep" : "Username"
+                }
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 className="h-8 text-sm"
@@ -128,7 +151,9 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
               <Input
                 type="password"
                 name={`${providerName}-password`}
-                placeholder={config.has_credentials ? "Leave blank to keep" : "Password"}
+                placeholder={
+                  config.has_credentials ? "Leave blank to keep" : "Password"
+                }
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 className="h-8 text-sm"
@@ -140,7 +165,9 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
               <Input
                 type={showApiKey ? "text" : "password"}
                 name={`${providerName}-api-key`}
-                placeholder={config.has_api_key ? "Leave blank to keep" : "API key"}
+                placeholder={
+                  config.has_api_key ? "Leave blank to keep" : "API key"
+                }
                 value={apiKey}
                 onChange={(e) => setApiKey(e.target.value)}
                 className="h-8 flex-1 text-sm"
@@ -151,7 +178,11 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
                 className="text-muted-foreground hover:text-foreground flex h-8 w-8 shrink-0 items-center justify-center rounded-md transition-colors"
                 onClick={() => setShowApiKey(!showApiKey)}
               >
-                {showApiKey ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                {showApiKey ? (
+                  <EyeOff className="h-3.5 w-3.5" />
+                ) : (
+                  <Eye className="h-3.5 w-3.5" />
+                )}
               </button>
             </div>
           )}
@@ -182,12 +213,20 @@ function ProviderCard({ config }: { config: SubtitleProviderConfig }) {
               className="h-7 px-3 text-xs"
               disabled={updateProvider.isPending}
             >
-              {updateProvider.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+              {updateProvider.isPending ? (
+                <Loader2 className="animate-spin" />
+              ) : (
+                <Save />
+              )}
               {updateProvider.isPending ? "Saving..." : "Save"}
             </Button>
             {testResult !== null && (
-              <span className={`text-xs ${testResult.success ? "text-green-500" : "text-red-400"}`}>
-                {testResult.success ? "Connected" : (testResult.error ?? "Failed")}
+              <span
+                className={`text-xs ${testResult.success ? "text-green-500" : "text-red-400"}`}
+              >
+                {testResult.success
+                  ? "Connected"
+                  : (testResult.error ?? "Failed")}
               </span>
             )}
           </div>

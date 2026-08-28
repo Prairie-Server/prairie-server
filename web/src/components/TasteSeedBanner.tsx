@@ -46,7 +46,9 @@ export default function TasteSeedBanner() {
           <Sparkles className="h-5 w-5" aria-hidden="true" />
         </div>
         <div className="min-w-0 flex-1">
-          <p className="text-sm font-semibold sm:text-base">Personalize your home</p>
+          <p className="text-sm font-semibold sm:text-base">
+            Personalize your home
+          </p>
           <p className="text-muted-foreground text-xs sm:text-sm">
             Pick a few titles you love and we'll tailor your recommendations.
           </p>

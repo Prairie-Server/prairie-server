@@ -1,13 +1,26 @@
 import type { QueryClient } from "@tanstack/react-query";
-import type { EpisodesResponse, ItemDetail, SeasonsResponse } from "@/api/types";
-import { catalogKeys, ebookKeys, episodeKeys, itemKeys, progressKeys } from "@/hooks/queries/keys";
+import type {
+  EpisodesResponse,
+  ItemDetail,
+  SeasonsResponse,
+} from "@/api/types";
+import {
+  catalogKeys,
+  ebookKeys,
+  episodeKeys,
+  itemKeys,
+  progressKeys,
+} from "@/hooks/queries/keys";
 
 type WatchedStateItem = Pick<
   ItemDetail,
   "content_id" | "type" | "series_id" | "season_number" | "user_data"
 >;
 
-function appendUniqueKey(keys: Array<readonly unknown[]>, nextKey: readonly unknown[]) {
+function appendUniqueKey(
+  keys: Array<readonly unknown[]>,
+  nextKey: readonly unknown[],
+) {
   if (
     keys.some(
       (existingKey) =>
@@ -20,7 +33,9 @@ function appendUniqueKey(keys: Array<readonly unknown[]>, nextKey: readonly unkn
   keys.push(nextKey);
 }
 
-export function getWatchedActionLabel(item: Pick<ItemDetail, "type" | "user_data">): string {
+export function getWatchedActionLabel(
+  item: Pick<ItemDetail, "type" | "user_data">,
+): string {
   const played = item.user_data?.played === true;
 
   switch (item.type) {
@@ -40,7 +55,10 @@ export function getWatchedActionLabel(item: Pick<ItemDetail, "type" | "user_data
   }
 }
 
-export function getWatchedToastMessage(item: Pick<ItemDetail, "type">, played: boolean): string {
+export function getWatchedToastMessage(
+  item: Pick<ItemDetail, "type">,
+  played: boolean,
+): string {
   switch (item.type) {
     case "audiobook":
       return played ? "Marked as listened" : "Marked as unlistened";
@@ -81,7 +99,11 @@ export function getWatchedInvalidationKeys(item: WatchedStateItem) {
     keys.push(episodeKeys.bySeason(item.series_id, item.season_number));
   }
 
-  if (item.type === "episode" || item.type === "season" || item.type === "series") {
+  if (
+    item.type === "episode" ||
+    item.type === "season" ||
+    item.type === "series"
+  ) {
     keys.push(itemKeys.details());
     keys.push(episodeKeys.all);
   }
@@ -98,7 +120,10 @@ export function getWatchedInvalidationKeys(item: WatchedStateItem) {
   return keys;
 }
 
-export function getCachedWatchedInvalidationKeys(queryClient: QueryClient, item: WatchedStateItem) {
+export function getCachedWatchedInvalidationKeys(
+  queryClient: QueryClient,
+  item: WatchedStateItem,
+) {
   const keys = [...getWatchedInvalidationKeys(item)];
 
   if (item.type !== "series") {
@@ -114,13 +139,27 @@ export function getCachedWatchedInvalidationKeys(queryClient: QueryClient, item:
     appendUniqueKey(keys, itemKeys.detail(season.content_id));
     appendUniqueKey(keys, catalogKeys.itemEpisodes(season.content_id));
     appendUniqueKey(keys, episodeKeys.byItem(season.content_id));
-    appendUniqueKey(keys, catalogKeys.seasonDetail(item.content_id, season.season_number));
-    appendUniqueKey(keys, catalogKeys.seasonEpisodes(item.content_id, season.season_number));
-    appendUniqueKey(keys, episodeKeys.seasonDetail(item.content_id, season.season_number));
-    appendUniqueKey(keys, episodeKeys.bySeason(item.content_id, season.season_number));
+    appendUniqueKey(
+      keys,
+      catalogKeys.seasonDetail(item.content_id, season.season_number),
+    );
+    appendUniqueKey(
+      keys,
+      catalogKeys.seasonEpisodes(item.content_id, season.season_number),
+    );
+    appendUniqueKey(
+      keys,
+      episodeKeys.seasonDetail(item.content_id, season.season_number),
+    );
+    appendUniqueKey(
+      keys,
+      episodeKeys.bySeason(item.content_id, season.season_number),
+    );
 
     const episodesData =
-      queryClient.getQueryData<EpisodesResponse>(catalogKeys.itemEpisodes(season.content_id)) ??
+      queryClient.getQueryData<EpisodesResponse>(
+        catalogKeys.itemEpisodes(season.content_id),
+      ) ??
       queryClient.getQueryData<EpisodesResponse>(
         catalogKeys.seasonEpisodes(item.content_id, season.season_number),
       );

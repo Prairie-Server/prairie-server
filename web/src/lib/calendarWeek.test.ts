@@ -48,7 +48,10 @@ describe("calendarWeek", () => {
   });
 
   it("formats short day labels", () => {
-    expect(formatShortDay("2026-04-07")).toEqual({ label: expect.any(String), day: 7 });
+    expect(formatShortDay("2026-04-07")).toEqual({
+      label: expect.any(String),
+      day: 7,
+    });
     expect(formatShortDay("2026-04-07").label.length).toBeGreaterThan(0);
   });
 

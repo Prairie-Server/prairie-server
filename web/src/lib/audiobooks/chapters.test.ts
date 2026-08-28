@@ -1,8 +1,16 @@
 import { describe, expect, it } from "vitest";
 import type { AudiobookFile } from "@/lib/audiobooks/types";
-import { buildPlayerChapters, nextChapterStart, prevChapterStart } from "./chapters";
+import {
+  buildPlayerChapters,
+  nextChapterStart,
+  prevChapterStart,
+} from "./chapters";
 
-function file(id: number, durationSeconds: number, chapterStarts: number[]): AudiobookFile {
+function file(
+  id: number,
+  durationSeconds: number,
+  chapterStarts: number[],
+): AudiobookFile {
   return {
     id,
     duration_seconds: durationSeconds,

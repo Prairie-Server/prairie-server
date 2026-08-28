@@ -16,7 +16,11 @@ Second subtitle line.
     const cues = parseVTT(vtt);
     expect(cues).toHaveLength(2);
     expect(cues[0]!).toEqual({ start: 1, end: 4, text: "Hello, world!" });
-    expect(cues[1]!).toEqual({ start: 5, end: 8, text: "Second subtitle line." });
+    expect(cues[1]!).toEqual({
+      start: 5,
+      end: 8,
+      text: "Second subtitle line.",
+    });
   });
 
   it("parses MM:SS.mmm timestamps", () => {

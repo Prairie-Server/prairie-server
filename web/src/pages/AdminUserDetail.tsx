@@ -3,6 +3,8 @@ import type { FormEvent } from "react";
 import { useParams, Link } from "react-router";
 import {
   type AdminDeviceSetting,
+  type AdminSettingIdentity,
+  type AdminUserSettingEntry,
   useAdminUser,
   useUpdateUser,
   useDeleteUser,
@@ -21,7 +23,6 @@ import { useAdminPlaybackHistory } from "@/hooks/queries/admin/history";
 import { useAdminLibraries } from "@/hooks/queries/admin/libraries";
 import { useUserIPs } from "@/hooks/queries/admin/ips";
 import type {
-  AdminSettingEntry,
   AdminUser,
   AdminUserProfile,
   UpdateUserRequest,
@@ -29,8 +30,14 @@ import type {
 } from "@/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { LibraryAccessSelector } from "@/components/LibraryAccessSelector";
-import { UserTranscodeLimitField } from "@/components/UserTranscodeLimitField";
+import {
+  PolicyAccessFields,
+  PolicyLimitFields,
+  effectiveAccessGroupID,
+  policyInheritHints,
+  policyStateFromUser,
+  policyUpdateFields,
+} from "@/components/UserPolicyFields";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
@@ -72,13 +79,7 @@ import {
 import { useNavigate } from "react-router";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { useAuth } from "@/hooks/useAuth";
-import {
-  PLAYBACK_QUALITY_OPTIONS,
-  formatPlaybackQualityPreset,
-  playbackQualityPresetFromValue,
-  playbackQualityValueFromPreset,
-  type PlaybackQualityPreset,
-} from "@/lib/playback-quality";
+import { formatPlaybackQualityPreset } from "@/lib/playback-quality";
 import {
   PERMISSION_MARKER_EDIT,
   PERMISSION_METADATA_CURATION,
@@ -86,7 +87,11 @@ import {
   setAssignedPermission,
 } from "@/lib/permissions";
 import { RegistrySettingControl } from "@/components/settings/RegistrySettingControl";
-import { formatSettingValue, getSettingDefinition } from "@/lib/settingsManifest";
+import {
+  formatSettingValue,
+  getSettingDefinition,
+  isStructuredSetting,
+} from "@/lib/settingsDisplay";
 import {
   DeviceProfileTabs,
   PlatformTile,
@@ -117,7 +122,9 @@ export default function AdminUserDetail() {
 
   if (isLoading) return <div className="page-shell py-8">Loading user...</div>;
   if (error || !user)
-    return <div className="page-shell text-destructive py-8">User not found.</div>;
+    return (
+      <div className="page-shell text-destructive py-8">User not found.</div>
+    );
 
   const impersonationDisabled = user.role === "admin" || !user.enabled;
 
@@ -135,7 +142,10 @@ export default function AdminUserDetail() {
           Admin
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
-        <Link to="/admin/users" className="hover:text-foreground transition-colors">
+        <Link
+          to="/admin/users"
+          className="hover:text-foreground transition-colors"
+        >
           Users
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
@@ -145,8 +155,12 @@ export default function AdminUserDetail() {
       <div className="page-header gap-5">
         <div className="min-w-0 flex-1 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">{user.username}</h1>
-            <Badge variant={user.role === "admin" ? "default" : "secondary"}>{user.role}</Badge>
+            <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
+              {user.username}
+            </h1>
+            <Badge variant={user.role === "admin" ? "default" : "secondary"}>
+              {user.role}
+            </Badge>
             <Badge variant={user.enabled ? "outline" : "destructive"}>
               {user.enabled ? "Active" : "Disabled"}
             </Badge>
@@ -165,7 +179,11 @@ export default function AdminUserDetail() {
           </Button>
           <Dialog open={editOpen} onOpenChange={setEditOpen}>
             <DialogTrigger asChild>
-              <Button variant="outline" size="sm" className="flex-1 sm:flex-none">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1 sm:flex-none"
+              >
                 <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
               </Button>
             </DialogTrigger>
@@ -238,7 +256,11 @@ export default function AdminUserDetail() {
               void navigate("/profiles");
             })
             .catch((error: unknown) => {
-              toast.error(error instanceof Error ? error.message : "Failed to start impersonation");
+              toast.error(
+                error instanceof Error
+                  ? error.message
+                  : "Failed to start impersonation",
+              );
             });
         }}
       />
@@ -266,12 +288,13 @@ function OverviewTab({ user }: { user: AdminUser }) {
   const { data: libraries = [] } = useAdminLibraries();
   const { data: accessGroups = [] } = useAccessGroups();
 
+  const effective = user.effective_policy;
   const libraryNames =
-    user.library_ids === null
+    effective.library_ids === null
       ? "All libraries"
-      : user.library_ids.length === 0
+      : effective.library_ids.length === 0
         ? "None"
-        : user.library_ids
+        : effective.library_ids
             .map((id) => {
               const lib = libraries.find((l) => l.id === id);
               return lib ? lib.name : `#${id}`;
@@ -280,8 +303,12 @@ function OverviewTab({ user }: { user: AdminUser }) {
   const groupName =
     user.access_group_id === null
       ? "None"
-      : (accessGroups.find((group) => group.id === user.access_group_id)?.name ??
-        `#${user.access_group_id}`);
+      : (accessGroups.find((group) => group.id === user.access_group_id)
+          ?.name ?? `#${user.access_group_id}`);
+
+  // Effective values, annotated when the account overrides its group.
+  const overridden = (isOverride: boolean) => (isOverride ? " (override)" : "");
+  const allowed = (value: boolean) => (value ? "Allowed" : "Not allowed");
 
   return (
     <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
@@ -293,7 +320,10 @@ function OverviewTab({ user }: { user: AdminUser }) {
           <DetailRow label="Username" value={user.username} />
           <DetailRow label="Email" value={user.email} />
           <DetailRow label="Role" value={user.role} />
-          <DetailRow label="Status" value={user.enabled ? "Active" : "Disabled"} />
+          <DetailRow
+            label="Status"
+            value={user.enabled ? "Active" : "Disabled"}
+          />
           <DetailRow label="Created" value={formatDate(user.created_at)} />
           <DetailRow label="Updated" value={formatDate(user.updated_at)} />
         </div>
@@ -302,55 +332,90 @@ function OverviewTab({ user }: { user: AdminUser }) {
       <div className="surface-panel overflow-hidden rounded-2xl border-0">
         <div className="border-border border-b px-4 py-3">
           <h3 className="text-sm font-medium">Permissions & Limits</h3>
+          <p className="text-muted-foreground text-xs">
+            Effective values. Fields marked (override) are set on this account;
+            everything else follows the group.
+          </p>
         </div>
         <div className="divide-border divide-y">
           <DetailRow label="Group" value={groupName} />
-          <DetailRow label="Library Access" value={libraryNames} />
+          <DetailRow
+            label="Library Access"
+            value={libraryNames + overridden(user.library_ids !== null)}
+          />
           <DetailRow
             label="Marker Editing"
-            value={
-              hasAssignedPermission(user.permissions, PERMISSION_MARKER_EDIT)
-                ? "Allowed"
-                : "Not allowed"
-            }
+            value={allowed(
+              hasAssignedPermission(
+                effective.permissions,
+                PERMISSION_MARKER_EDIT,
+              ),
+            )}
           />
           <DetailRow
             label="Metadata Curation"
-            value={
-              hasAssignedPermission(user.permissions, PERMISSION_METADATA_CURATION)
-                ? "Allowed"
-                : "Not allowed"
-            }
+            value={allowed(
+              hasAssignedPermission(
+                effective.permissions,
+                PERMISSION_METADATA_CURATION,
+              ),
+            )}
           />
           <DetailRow
             label="Max Playback Quality"
-            value={formatPlaybackQualityPreset(user.max_playback_quality)}
+            value={
+              formatPlaybackQualityPreset(effective.max_playback_quality) +
+              overridden(user.max_playback_quality !== null)
+            }
           />
           <DetailRow
             label="Max Streams"
-            value={user.max_streams === 0 ? "Unlimited" : String(user.max_streams)}
+            value={
+              (effective.max_streams === 0
+                ? "Unlimited"
+                : String(effective.max_streams)) +
+              overridden(user.max_streams !== null)
+            }
           />
           <DetailRow
             label="Max Transcodes"
             value={
-              !user.transcode_allowed
+              (!effective.transcode_allowed
                 ? "Disabled"
-                : user.max_transcodes === 0
+                : effective.max_transcodes === 0
                   ? "Unlimited"
-                  : String(user.max_transcodes)
+                  : String(effective.max_transcodes)) +
+              overridden(user.max_transcodes !== null)
             }
           />
-          {!user.transcode_allowed && (
-            <DetailRow
-              label="Audio Transcodes"
-              value={user.audio_transcode_allowed ? "Allowed" : "Not allowed"}
-            />
-          )}
+          <DetailRow
+            label="Audio Transcodes"
+            value={
+              allowed(effective.audio_transcode_allowed) +
+              overridden(user.audio_transcode_allowed !== null)
+            }
+          />
           <DetailRow label="Max Profiles" value={String(user.max_profiles)} />
-          <DetailRow label="Downloads" value={user.download_allowed ? "Allowed" : "Not allowed"} />
+          <DetailRow
+            label="Downloads"
+            value={
+              allowed(effective.download_allowed) +
+              overridden(user.download_allowed !== null)
+            }
+          />
           <DetailRow
             label="Download Transcode"
-            value={user.download_transcode_allowed ? "Allowed" : "Not allowed"}
+            value={
+              allowed(effective.download_transcode_allowed) +
+              overridden(user.download_transcode_allowed !== null)
+            }
+          />
+          <DetailRow
+            label="Media Requests"
+            value={
+              allowed(effective.requests_allowed) +
+              overridden(user.requests_allowed !== null)
+            }
           />
         </div>
       </div>
@@ -372,7 +437,9 @@ function ProfilesTab({ userId }: { userId: number }) {
 
   if (isLoading)
     return (
-      <div className="text-muted-foreground py-8 text-center text-sm">Loading profiles...</div>
+      <div className="text-muted-foreground py-8 text-center text-sm">
+        Loading profiles...
+      </div>
     );
 
   if (!profiles || profiles.length === 0)
@@ -415,12 +482,16 @@ function WatchHistoryTab({ userId }: { userId: number }) {
 
   if (isLoading)
     return (
-      <div className="text-muted-foreground py-8 text-center text-sm">Loading watch history...</div>
+      <div className="text-muted-foreground py-8 text-center text-sm">
+        Loading watch history...
+      </div>
     );
 
   if (error)
     return (
-      <div className="text-destructive py-8 text-center text-sm">Failed to load watch history.</div>
+      <div className="text-destructive py-8 text-center text-sm">
+        Failed to load watch history.
+      </div>
     );
 
   if (rows.length === 0)
@@ -445,7 +516,10 @@ function WatchHistoryTab({ userId }: { userId: number }) {
         </TableHeader>
         <TableBody>
           {rows.map((row) => {
-            const title = row.media_title || row.media_item_id || `File #${row.media_file_id}`;
+            const title =
+              row.media_title ||
+              row.media_item_id ||
+              `File #${row.media_file_id}`;
             return (
               <TableRow key={row.session_id}>
                 <TableCell>
@@ -459,7 +533,9 @@ function WatchHistoryTab({ userId }: { userId: number }) {
                   ) : (
                     <div className="font-medium">{title}</div>
                   )}
-                  <div className="text-muted-foreground text-xs">{row.media_type || "unknown"}</div>
+                  <div className="text-muted-foreground text-xs">
+                    {row.media_type || "unknown"}
+                  </div>
                 </TableCell>
                 <TableCell>
                   <Link
@@ -503,7 +579,9 @@ function IPHistoryTab({ userId }: { userId: number }) {
 
   if (isLoading)
     return (
-      <div className="text-muted-foreground py-8 text-center text-sm">Loading IP history...</div>
+      <div className="text-muted-foreground py-8 text-center text-sm">
+        Loading IP history...
+      </div>
     );
 
   if (ips.length === 0)
@@ -527,10 +605,14 @@ function IPHistoryTab({ userId }: { userId: number }) {
         <TableBody>
           {ips.map((entry: UserIPEntry) => (
             <TableRow key={entry.client_ip}>
-              <TableCell className="font-mono text-sm">{entry.client_ip}</TableCell>
+              <TableCell className="font-mono text-sm">
+                {entry.client_ip}
+              </TableCell>
               <TableCell>{formatDateTime(entry.first_seen)}</TableCell>
               <TableCell>{formatDateTime(entry.last_seen)}</TableCell>
-              <TableCell className="text-right">{entry.request_count.toLocaleString()}</TableCell>
+              <TableCell className="text-right">
+                {entry.request_count.toLocaleString()}
+              </TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -543,37 +625,86 @@ function UserSettingsTab({ userId }: { userId: number }) {
   const { data: settings = [], isLoading } = useAdminUserSettings(userId);
   const updateSetting = useUpdateAdminUserSetting();
   const deleteSetting = useDeleteAdminUserSetting();
+  // Object-valued settings (pinned sidebar items, per-library overlays, the
+  // custom theme) have no inline widget, so they open the raw JSON editor —
+  // the same treatment the device tab gives them.
+  const [jsonEditor, setJsonEditor] = useState<{
+    entry: AdminUserSettingEntry;
+    identity: AdminSettingIdentity;
+  } | null>(null);
+  const [jsonValue, setJsonValue] = useState("");
+  const closeJsonEditor = () => {
+    setJsonEditor(null);
+    setJsonValue("");
+  };
 
   if (isLoading) {
     return (
-      <div className="text-muted-foreground py-8 text-center text-sm">Loading settings...</div>
+      <div className="text-muted-foreground py-8 text-center text-sm">
+        Loading settings...
+      </div>
     );
   }
 
-  const renderSettingRow = (entry: AdminSettingEntry) => {
+  const renderSettingRow = (entry: AdminUserSettingEntry) => {
     const definition = getSettingDefinition(entry.key);
     const label = definition?.label ?? entry.key;
-    const description = definition?.description ?? "Stored account preference.";
+    const description = definition?.description ?? "Stored preference.";
+    // A definition this build does not know, an object-valued one, or one the
+    // manifest marks as panel-edited has no inline control that could render
+    // its value truthfully. Without this the select branch would render a
+    // structured value as a one-entry "Unset" dropdown whose only option
+    // destroys it.
+    const isJsonOnly = isStructuredSetting(definition);
+    // A key can be stored at several scopes (or for several profiles,
+    // libraries or series) at once, so a row is identified by its full
+    // identity, and every mutation addresses exactly that row.
+    const identity = {
+      scope: entry.scope,
+      profileId: entry.profile_id,
+      clientFamily: entry.client_family,
+      libraryId: entry.library_id,
+      seriesId: entry.series_id,
+    };
+    const rowKey = [
+      entry.key,
+      entry.scope,
+      entry.profile_id ?? "",
+      entry.client_family ?? "",
+      entry.library_id ?? "",
+      entry.series_id ?? "",
+    ].join(":");
+    const scopeDetail = [
+      entry.profile_id ? `profile ${entry.profile_id}` : null,
+      entry.client_family ? `family ${entry.client_family}` : null,
+      entry.library_id ? `library ${entry.library_id}` : null,
+      entry.series_id ? `series ${entry.series_id}` : null,
+    ]
+      .filter(Boolean)
+      .join(" · ");
 
     return (
       <div
-        key={entry.key}
+        key={rowKey}
         className="border-border/50 grid gap-3 border-t py-4 first:border-t-0 first:pt-0 md:grid-cols-[minmax(0,1fr)_auto]"
       >
         <div className="space-y-1">
           <div className="flex flex-wrap items-center gap-2">
             <div className="text-sm font-medium">{label}</div>
             <span className="rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[11px] font-medium text-slate-200">
-              Explicit
+              {entry.scope}
             </span>
           </div>
-          <p className="text-muted-foreground text-[13px] leading-relaxed">{description}</p>
+          <p className="text-muted-foreground text-[13px] leading-relaxed">
+            {description}
+          </p>
           <p className="text-muted-foreground text-xs">
             Current: {formatSettingValue(entry.key, entry.value)}
+            {scopeDetail ? ` · ${scopeDetail}` : ""}
           </p>
         </div>
         <div className="flex flex-col items-stretch gap-2 md:items-end">
-          {definition ? (
+          {definition && !isJsonOnly ? (
             <RegistrySettingControl
               definition={definition}
               value={entry.value}
@@ -582,31 +713,31 @@ function UserSettingsTab({ userId }: { userId: number }) {
                 updateSetting.mutate({
                   userId,
                   key: entry.key,
+                  identity,
                   value,
                 })
               }
             />
           ) : (
-            <Input
-              key={`${entry.key}:${entry.value}`}
-              defaultValue={entry.value}
+            <Button
+              variant="outline"
+              size="sm"
               disabled={updateSetting.isPending || deleteSetting.isPending}
-              className="w-full min-w-[180px] sm:w-[220px]"
-              onBlur={(event) => {
-                if (event.currentTarget.value === entry.value) return;
-                updateSetting.mutate({
-                  userId,
-                  key: entry.key,
-                  value: event.currentTarget.value,
-                });
+              onClick={() => {
+                setJsonEditor({ entry, identity });
+                setJsonValue(entry.value);
               }}
-            />
+            >
+              Edit JSON
+            </Button>
           )}
           <Button
             variant="ghost"
             size="sm"
             className="h-7 rounded-full px-2 text-xs"
-            onClick={() => deleteSetting.mutate({ userId, key: entry.key })}
+            onClick={() =>
+              deleteSetting.mutate({ userId, key: entry.key, identity })
+            }
             disabled={updateSetting.isPending || deleteSetting.isPending}
           >
             <RotateCcw className="mr-1 h-3 w-3" />
@@ -619,15 +750,66 @@ function UserSettingsTab({ userId }: { userId: number }) {
 
   return (
     <div className="space-y-4">
+      <Dialog
+        open={jsonEditor !== null}
+        onOpenChange={(open) => {
+          if (!open) closeJsonEditor();
+        }}
+      >
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="font-mono text-sm">
+              {jsonEditor?.entry.key ?? "JSON"}
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3">
+            <p className="text-muted-foreground text-[12.5px]">
+              Edit the raw value. This setting has no inline control, so saving
+              replaces the stored value wholesale — clearing it entirely is what
+              the Reset button does.
+            </p>
+            <textarea
+              spellCheck={false}
+              aria-label="Raw value"
+              className="border-border bg-background focus:border-foreground/40 min-h-[260px] w-full rounded-md border px-3 py-2 font-mono text-[13px] leading-relaxed transition-colors outline-none"
+              value={jsonValue}
+              onChange={(event) => setJsonValue(event.target.value)}
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="outline" size="sm" onClick={closeJsonEditor}>
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  if (!jsonEditor) return;
+                  updateSetting.mutate(
+                    {
+                      userId,
+                      key: jsonEditor.entry.key,
+                      identity: jsonEditor.identity,
+                      value: jsonValue,
+                    },
+                    { onSuccess: () => closeJsonEditor() },
+                  );
+                }}
+              >
+                Save value
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
       <div className="surface-panel overflow-hidden rounded-[1.8rem] border-0">
         <div className="border-border/60 flex items-center gap-3 border-b px-5 py-4">
           <div className="rounded-full border border-emerald-500/25 bg-emerald-500/10 p-2">
             <Settings2 className="h-4 w-4 text-emerald-100" />
           </div>
           <div>
-            <h3 className="text-sm font-semibold">User Playback Settings</h3>
+            <h3 className="text-sm font-semibold">User Settings</h3>
             <p className="text-muted-foreground text-sm">
-              Account-wide playback preferences that follow this user across devices.
+              Explicit values this user has stored, across account, profile,
+              library and series scopes. Device overrides live in the next tab.
             </p>
           </div>
         </div>
@@ -654,8 +836,10 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
     deviceId: string;
     profileId: string;
     profileName?: string;
+    keys: string[];
   } | null>(null);
-  const [settingToReset, setSettingToReset] = useState<AdminDeviceSetting | null>(null);
+  const [settingToReset, setSettingToReset] =
+    useState<AdminDeviceSetting | null>(null);
   const [jsonEditor, setJsonEditor] = useState<AdminDeviceSetting | null>(null);
   const [jsonValue, setJsonValue] = useState("");
 
@@ -677,7 +861,10 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
     }
     return Array.from(grouped, ([deviceId, profileMap]) => ({
       deviceId,
-      profiles: Array.from(profileMap, ([profileId, entries]) => ({ profileId, entries })),
+      profiles: Array.from(profileMap, ([profileId, entries]) => ({
+        profileId,
+        entries,
+      })),
     }));
   }, [settings]);
 
@@ -690,7 +877,9 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
   }
 
   const totalOverrides = settings.length;
-  const totalProfiles = new Set(settings.map((s) => s.profile_id || UNKNOWN_PROFILE_ID)).size;
+  const totalProfiles = new Set(
+    settings.map((s) => s.profile_id || UNKNOWN_PROFILE_ID),
+  ).size;
 
   return (
     <div className="space-y-4">
@@ -713,6 +902,7 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
               userId,
               profileId: deviceToReset.profileId,
               deviceId: deviceToReset.deviceId,
+              keys: deviceToReset.keys,
             });
           }
           setDeviceToReset(null);
@@ -750,12 +940,14 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
       >
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="font-mono text-sm">{jsonEditor?.key ?? "JSON"}</DialogTitle>
+            <DialogTitle className="font-mono text-sm">
+              {jsonEditor?.key ?? "JSON"}
+            </DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-muted-foreground text-[12.5px]">
-              Edit the raw value. Invalid JSON is saved as-is and may cause clients to fall back to
-              defaults.
+              Edit the raw value. Invalid JSON is saved as-is and may cause
+              clients to fall back to defaults.
             </p>
             <textarea
               spellCheck={false}
@@ -807,12 +999,16 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
       {deviceEntries.length > 0 && (
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] tabular-nums">
           <span>
-            <span className="text-foreground font-medium">{deviceEntries.length}</span>{" "}
+            <span className="text-foreground font-medium">
+              {deviceEntries.length}
+            </span>{" "}
             {deviceEntries.length === 1 ? "device" : "devices"}
           </span>
           <span className="text-muted-foreground/40">·</span>
           <span>
-            <span className="text-foreground font-medium">{totalOverrides}</span>{" "}
+            <span className="text-foreground font-medium">
+              {totalOverrides}
+            </span>{" "}
             {totalOverrides === 1 ? "override" : "overrides"}
           </span>
           <span className="text-muted-foreground/40">·</span>
@@ -825,9 +1021,12 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
 
       {deviceEntries.length === 0 ? (
         <div className="surface-panel rounded-xl border-0 px-6 py-12 text-center">
-          <p className="text-foreground text-sm font-medium">No device overrides</p>
+          <p className="text-foreground text-sm font-medium">
+            No device overrides
+          </p>
           <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-[12.5px] leading-relaxed">
-            Overrides appear here as soon as this user tunes a per-device playback setting.
+            Overrides appear here as soon as this user tunes a per-device
+            playback setting.
           </p>
         </div>
       ) : (
@@ -844,7 +1043,10 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
             const overrideCount = allEntries.length;
 
             return (
-              <section key={deviceId} className="surface-panel overflow-hidden rounded-xl border-0">
+              <section
+                key={deviceId}
+                className="surface-panel overflow-hidden rounded-xl border-0"
+              >
                 <header className="border-border/60 flex flex-wrap items-start justify-between gap-3 border-b px-4 py-3 sm:px-5">
                   <div className="flex min-w-0 items-start gap-3">
                     <PlatformTile kind={kind} />
@@ -870,7 +1072,9 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
                           variant="outline"
                           className="border-border/60 bg-background/60 rounded-full px-2 py-0.5 text-[10.5px] font-normal tabular-nums"
                         >
-                          <span className="text-foreground font-medium">{profileCount}</span>
+                          <span className="text-foreground font-medium">
+                            {profileCount}
+                          </span>
                           <span className="text-muted-foreground">
                             {profileCount === 1 ? "profile" : "profiles"}
                           </span>
@@ -879,7 +1083,9 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
                           variant="outline"
                           className="border-border/60 bg-background/60 rounded-full px-2 py-0.5 text-[10.5px] font-normal tabular-nums"
                         >
-                          <span className="text-foreground font-medium">{overrideCount}</span>
+                          <span className="text-foreground font-medium">
+                            {overrideCount}
+                          </span>
                           <span className="text-muted-foreground">
                             {overrideCount === 1 ? "override" : "overrides"}
                           </span>
@@ -888,7 +1094,9 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
                     </div>
                   </div>
                   <Button variant="outline" size="sm" asChild>
-                    <Link to={`/admin/devices/${userId}/${encodeURIComponent(deviceId)}`}>
+                    <Link
+                      to={`/admin/devices/${userId}/${encodeURIComponent(deviceId)}`}
+                    >
                       Open device
                       <ArrowUpRight className="h-3 w-3" />
                     </Link>
@@ -904,7 +1112,15 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
                     }),
                   )}
                   onResetProfile={(profileId, profileName) =>
-                    setDeviceToReset({ deviceId, profileId, profileName })
+                    setDeviceToReset({
+                      deviceId,
+                      profileId,
+                      profileName,
+                      keys:
+                        profiles
+                          .find((profile) => profile.profileId === profileId)
+                          ?.entries.map((entry) => entry.key) ?? [],
+                    })
                   }
                   onEditJson={(setting) => {
                     setJsonEditor(setting);
@@ -932,7 +1148,13 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
   );
 }
 
-function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void }) {
+function EditUserForm({
+  user,
+  onClose,
+}: {
+  user: AdminUser;
+  onClose: () => void;
+}) {
   const { data: libraries = [] } = useAdminLibraries();
   const { data: accessGroups = [] } = useAccessGroups();
   const [username, setUsername] = useState(user.username);
@@ -940,29 +1162,34 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
   const [password, setPassword] = useState("");
   const [role, setRole] = useState(user.role);
   const [enabled, setEnabled] = useState(user.enabled);
-  const [permissions, setPermissions] = useState<string[]>(user.permissions ?? []);
-  const [libraryIDs, setLibraryIDs] = useState<number[] | null>(user.library_ids);
-  const [accessGroupID, setAccessGroupID] = useState<number | null>(user.access_group_id);
-  const [maxStreams, setMaxStreams] = useState(user.max_streams);
-  const [maxTranscodes, setMaxTranscodes] = useState(user.max_transcodes);
-  const [transcodeAllowed, setTranscodeAllowed] = useState(user.transcode_allowed);
-  const [audioTranscodeAllowed, setAudioTranscodeAllowed] = useState(user.audio_transcode_allowed);
+  const [permissions, setPermissions] = useState<string[]>(
+    user.permissions ?? [],
+  );
+  const [accessGroupID, setAccessGroupID] = useState<number | null>(
+    user.access_group_id,
+  );
+  const [policy, setPolicy] = useState(() => policyStateFromUser(user));
   const [maxProfiles, setMaxProfiles] = useState(user.max_profiles);
-  const [maxPlaybackQualityPreset, setMaxPlaybackQualityPreset] = useState<PlaybackQualityPreset>(
-    playbackQualityPresetFromValue(user.max_playback_quality),
-  );
-  const [downloadAllowed, setDownloadAllowed] = useState(user.download_allowed);
-  const [downloadTranscodeAllowed, setDownloadTranscodeAllowed] = useState(
-    user.download_transcode_allowed,
-  );
   const accessGroupSelectId = useId();
-  const maxTranscodesId = useId();
+  const roleSelectId = useId();
   const markerEditId = useId();
   const metadataCurationId = useId();
   const updateMutation = useUpdateUser();
-  const accessGroupValue = accessGroupID === null ? "none" : String(accessGroupID);
+  const accessGroupValue =
+    accessGroupID === null ? "none" : String(accessGroupID);
+  // Hints come from the group selected right now, so they follow the picker
+  // instead of describing the group the account was last saved with. When that
+  // group is not in the loaded list, fall back to the resolved policy the
+  // server sent — but only while the saved group is still the selected one.
+  // An admin inherits from no group, so preview the no-group policy while the
+  // picked group is kept for toggling the role back.
+  const hintGroupID = effectiveAccessGroupID(role, accessGroupID);
+  const inheritHints =
+    policyInheritHints(hintGroupID, accessGroups) ??
+    (hintGroupID === user.access_group_id ? user.effective_policy : undefined);
   const selectedGroupMissing =
-    accessGroupID !== null && !accessGroups.some((group) => group.id === accessGroupID);
+    accessGroupID !== null &&
+    !accessGroups.some((group) => group.id === accessGroupID);
 
   function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -972,16 +1199,11 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
       role,
       permissions,
       enabled,
-      library_ids: libraryIDs,
-      access_group_id: accessGroupID,
-      max_streams: maxStreams,
-      max_transcodes: maxTranscodes,
-      transcode_allowed: transcodeAllowed,
-      audio_transcode_allowed: audioTranscodeAllowed,
+      // Admins are never grouped; derive it here so flipping the role back
+      // before saving keeps the picked group.
+      access_group_id: effectiveAccessGroupID(role, accessGroupID),
       max_profiles: maxProfiles,
-      max_playback_quality: playbackQualityValueFromPreset(maxPlaybackQualityPreset),
-      download_allowed: downloadAllowed,
-      download_transcode_allowed: downloadTranscodeAllowed,
+      ...policyUpdateFields(policy),
     };
     if (password) body.password = password;
     updateMutation.mutate({ id: user.id, body }, { onSuccess: onClose });
@@ -990,7 +1212,10 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
   return (
     <form onSubmit={handleSubmit} className="flex max-h-[70vh] flex-col">
       <Tabs defaultValue="account" className="min-h-0 flex-1">
-        <TabsList variant="line" className="border-border mb-4 w-full justify-start border-b pb-1">
+        <TabsList
+          variant="line"
+          className="border-border mb-4 w-full justify-start border-b pb-1"
+        >
           <TabsTrigger value="account" className="flex-none px-1">
             Account
           </TabsTrigger>
@@ -1007,7 +1232,11 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Username</Label>
-                <Input value={username} onChange={(e) => setUsername(e.target.value)} required />
+                <Input
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>
@@ -1027,9 +1256,9 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
                 />
               </div>
               <div className="space-y-2">
-                <Label>Role</Label>
+                <Label htmlFor={roleSelectId}>Role</Label>
                 <Select value={role} onValueChange={setRole}>
-                  <SelectTrigger>
+                  <SelectTrigger id={roleSelectId}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
@@ -1061,6 +1290,7 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
                 onValueChange={(value) => {
                   setAccessGroupID(value === "none" ? null : Number(value));
                 }}
+                disabled={role === "admin"}
               >
                 <SelectTrigger id={accessGroupSelectId} className="w-full">
                   <SelectValue />
@@ -1068,7 +1298,9 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
                 <SelectContent>
                   <SelectItem value="none">No group</SelectItem>
                   {selectedGroupMissing && (
-                    <SelectItem value={String(accessGroupID)}>#{accessGroupID}</SelectItem>
+                    <SelectItem value={String(accessGroupID)}>
+                      #{accessGroupID}
+                    </SelectItem>
                   )}
                   {accessGroups.map((group) => (
                     <SelectItem key={group.id} value={String(group.id)}>
@@ -1078,24 +1310,27 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
                 </SelectContent>
               </Select>
             </div>
-            <LibraryAccessSelector
-              libraries={libraries}
-              value={libraryIDs}
-              onChange={setLibraryIDs}
-            />
             <div className="border-border flex items-center justify-between rounded-md border px-3 py-2">
               <div>
                 <Label htmlFor={markerEditId}>Marker Editing</Label>
                 <p className="text-muted-foreground text-xs">
-                  Edit intro, recap, credits, and preview markers within assigned libraries.
+                  Edit intro, recap, credits, and preview markers within
+                  assigned libraries.
                 </p>
               </div>
               <Switch
                 id={markerEditId}
-                checked={hasAssignedPermission(permissions, PERMISSION_MARKER_EDIT)}
+                checked={hasAssignedPermission(
+                  permissions,
+                  PERMISSION_MARKER_EDIT,
+                )}
                 onCheckedChange={(checked) =>
                   setPermissions((current) =>
-                    setAssignedPermission(current, PERMISSION_MARKER_EDIT, checked),
+                    setAssignedPermission(
+                      current,
+                      PERMISSION_MARKER_EDIT,
+                      checked,
+                    ),
                   )
                 }
               />
@@ -1109,94 +1344,59 @@ function EditUserForm({ user, onClose }: { user: AdminUser; onClose: () => void 
               </div>
               <Switch
                 id={metadataCurationId}
-                checked={hasAssignedPermission(permissions, PERMISSION_METADATA_CURATION)}
+                checked={hasAssignedPermission(
+                  permissions,
+                  PERMISSION_METADATA_CURATION,
+                )}
                 onCheckedChange={(checked) =>
                   setPermissions((current) =>
-                    setAssignedPermission(current, PERMISSION_METADATA_CURATION, checked),
+                    setAssignedPermission(
+                      current,
+                      PERMISSION_METADATA_CURATION,
+                      checked,
+                    ),
                   )
                 }
               />
             </div>
-            <div className="grid gap-2 sm:grid-cols-2">
-              <div className="border-border flex items-center justify-between rounded-md border px-3 py-2">
-                <Label>Downloads Allowed</Label>
-                <Switch checked={downloadAllowed} onCheckedChange={setDownloadAllowed} />
-              </div>
-              <div className="border-border flex items-center justify-between rounded-md border px-3 py-2">
-                <Label>Download Transcode Allowed</Label>
-                <Switch
-                  checked={downloadTranscodeAllowed}
-                  onCheckedChange={setDownloadTranscodeAllowed}
-                />
-              </div>
-            </div>
+            <PolicyAccessFields
+              state={policy}
+              onChange={setPolicy}
+              effective={inheritHints}
+              libraries={libraries}
+            />
           </TabsContent>
 
           <TabsContent value="limits" className="mt-0 space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <div className="space-y-1">
-                <Label>Max Streams</Label>
-                <Input
-                  type="number"
-                  min={0}
-                  value={maxStreams}
-                  onChange={(e) => setMaxStreams(Number(e.target.value))}
-                />
-                <p className="text-muted-foreground text-xs">0 = unlimited</p>
-              </div>
-              <UserTranscodeLimitField
-                id={maxTranscodesId}
-                maxTranscodes={maxTranscodes}
-                onMaxTranscodesChange={setMaxTranscodes}
-                transcodeAllowed={transcodeAllowed}
-                onTranscodeAllowedChange={setTranscodeAllowed}
-                audioTranscodeAllowed={audioTranscodeAllowed}
-                onAudioTranscodeAllowedChange={setAudioTranscodeAllowed}
+            <PolicyLimitFields
+              state={policy}
+              onChange={setPolicy}
+              effective={inheritHints}
+            />
+            <div className="space-y-1">
+              <Label>Max Profiles</Label>
+              <Input
+                type="number"
+                min={1}
+                value={maxProfiles}
+                onChange={(e) => setMaxProfiles(Number(e.target.value))}
               />
-              <div className="space-y-1">
-                <Label>Max Profiles</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={maxProfiles}
-                  onChange={(e) => setMaxProfiles(Number(e.target.value))}
-                />
-              </div>
-              <div className="space-y-1 sm:col-span-2">
-                <Label>Max Playback Quality</Label>
-                <Select
-                  value={maxPlaybackQualityPreset}
-                  onValueChange={(value) =>
-                    setMaxPlaybackQualityPreset(value as PlaybackQualityPreset)
-                  }
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {PLAYBACK_QUALITY_OPTIONS.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <p className="text-muted-foreground text-xs">
-                  {
-                    PLAYBACK_QUALITY_OPTIONS.find(
-                      (option) => option.value === maxPlaybackQualityPreset,
-                    )?.description
-                  }
-                </p>
-              </div>
             </div>
           </TabsContent>
         </div>
       </Tabs>
 
       <div className="border-border mt-4 border-t pt-4">
-        <Button type="submit" className="w-full" disabled={updateMutation.isPending}>
-          {updateMutation.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+        <Button
+          type="submit"
+          className="w-full"
+          disabled={updateMutation.isPending}
+        >
+          {updateMutation.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
           {updateMutation.isPending ? "Saving..." : "Save"}
         </Button>
       </div>

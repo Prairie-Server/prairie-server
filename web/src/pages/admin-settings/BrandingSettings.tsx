@@ -71,7 +71,8 @@ export default function BrandingSettings() {
     form.setValue("branding.accent_color", "");
   };
 
-  const selectDefaultTheme = (id: string) => form.setValue("branding.default_theme", id);
+  const selectDefaultTheme = (id: string) =>
+    form.setValue("branding.default_theme", id);
 
   return (
     <div className="flex h-full flex-col">
@@ -81,8 +82,8 @@ export default function BrandingSettings() {
           <div>
             <h4 className="text-sm font-medium">Identity</h4>
             <p className="text-muted-foreground mt-1 text-[13px]">
-              Your server name appears in the browser tab, on the login page, in the sidebar, and in
-              the installed app. Leave blank for defaults.
+              Your server name appears in the browser tab, on the login page, in
+              the sidebar, and in the installed app. Leave blank for defaults.
             </p>
           </div>
           <div className="space-y-3">
@@ -93,7 +94,9 @@ export default function BrandingSettings() {
               <input
                 type="text"
                 value={form.getValue("branding.server_name")}
-                onChange={(e) => form.setValue("branding.server_name", e.target.value)}
+                onChange={(e) =>
+                  form.setValue("branding.server_name", e.target.value)
+                }
                 className="border-border bg-background text-foreground focus:ring-ring w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                 placeholder="Prairie"
               />
@@ -105,7 +108,9 @@ export default function BrandingSettings() {
               <input
                 type="text"
                 value={form.getValue("branding.login_subtitle")}
-                onChange={(e) => form.setValue("branding.login_subtitle", e.target.value)}
+                onChange={(e) =>
+                  form.setValue("branding.login_subtitle", e.target.value)
+                }
                 className="border-border bg-background text-foreground focus:ring-ring w-full rounded-xl border px-3 py-2 text-sm focus:ring-2 focus:outline-none"
                 placeholder="Sign in with an existing account."
               />
@@ -118,8 +123,9 @@ export default function BrandingSettings() {
           <div>
             <h4 className="text-sm font-medium">Logos &amp; Icons</h4>
             <p className="text-muted-foreground mt-1 text-[13px]">
-              Upload custom images to replace the Prairie logo, browser favicon, and login
-              background. Each falls back to the Prairie default when not set.
+              Upload custom images to replace the Prairie logo, browser favicon,
+              and login background. Each falls back to the Prairie default when
+              not set.
             </p>
           </div>
 
@@ -129,14 +135,16 @@ export default function BrandingSettings() {
               <p className="text-muted-foreground text-[13px] leading-relaxed">
                 {s3Configured ? (
                   <>
-                    The public bucket is saved, but object storage is not active in this process
-                    yet. Restart the server to enable image uploads.
+                    The public bucket is saved, but object storage is not active
+                    in this process yet. Restart the server to enable image
+                    uploads.
                   </>
                 ) : (
                   <>
-                    Image uploads require S3 object storage. Configure a public bucket in{" "}
-                    <span className="text-foreground font-medium">Storage</span> settings, then
-                    restart the server.
+                    Image uploads require S3 object storage. Configure a public
+                    bucket in{" "}
+                    <span className="text-foreground font-medium">Storage</span>{" "}
+                    settings, then restart the server.
                   </>
                 )}
               </p>
@@ -154,6 +162,16 @@ export default function BrandingSettings() {
               preview="wide"
             />
             <BrandingAssetField
+              label="Logo (wordmark, light themes)"
+              description="Optional. Shown on light themes; falls back to the main logo."
+              kind="wordmark_light"
+              currentUrl={branding.wordmarkLightUrl}
+              accept={IMAGE_ACCEPT}
+              enabled={assetStorageAvailable}
+              preview="wide"
+              previewBg="light"
+            />
+            <BrandingAssetField
               label="Logo (icon)"
               description="Square mark shown in the collapsed sidebar and installed app."
               kind="mark"
@@ -161,6 +179,16 @@ export default function BrandingSettings() {
               accept={IMAGE_ACCEPT}
               enabled={assetStorageAvailable}
               preview="square"
+            />
+            <BrandingAssetField
+              label="Logo (icon, light themes)"
+              description="Optional. Shown on light themes; falls back to the main icon."
+              kind="mark_light"
+              currentUrl={branding.markLightUrl}
+              accept={IMAGE_ACCEPT}
+              enabled={assetStorageAvailable}
+              preview="square"
+              previewBg="light"
             />
             <BrandingAssetField
               label="Favicon"
@@ -188,8 +216,9 @@ export default function BrandingSettings() {
           <div>
             <h4 className="text-sm font-medium">Brand Accent Color</h4>
             <p className="text-muted-foreground mt-1 text-[13px]">
-              A quick way to recolor the primary buttons, focus rings, and sidebar accent. For full
-              control, use the Theming tab. Also used as the installed app theme color.
+              A quick way to recolor the primary buttons, focus rings, and
+              sidebar accent. For full control, use the Theming tab. Also used
+              as the installed app theme color.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -239,8 +268,8 @@ export default function BrandingSettings() {
           <div>
             <h4 className="text-sm font-medium">Default Theme</h4>
             <p className="text-muted-foreground mt-1 text-[13px]">
-              The base theme new users see until they choose their own. Users can always pick a
-              different theme for themselves.
+              The base theme new users see until they choose their own. Users
+              can always pick a different theme for themselves.
             </p>
           </div>
           <div className="flex flex-wrap gap-2">

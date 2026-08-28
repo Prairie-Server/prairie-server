@@ -25,7 +25,8 @@ export function useTTS() {
     const update = () => setVoices(window.speechSynthesis.getVoices());
     update();
     window.speechSynthesis.addEventListener("voiceschanged", update);
-    return () => window.speechSynthesis.removeEventListener("voiceschanged", update);
+    return () =>
+      window.speechSynthesis.removeEventListener("voiceschanged", update);
   }, []);
 
   // Invalidates any in-flight queue and cancels the current utterance without
@@ -129,7 +130,8 @@ function installMediaSession(
   meta: { title?: string },
   handlers: { pause: () => void; resume: () => void; stop: () => void },
 ) {
-  if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+  if (typeof navigator === "undefined" || !("mediaSession" in navigator))
+    return;
   navigator.mediaSession.metadata = new window.MediaMetadata({
     title: meta.title ?? "Read aloud",
   });
@@ -140,7 +142,8 @@ function installMediaSession(
 }
 
 function uninstallMediaSession() {
-  if (typeof navigator === "undefined" || !("mediaSession" in navigator)) return;
+  if (typeof navigator === "undefined" || !("mediaSession" in navigator))
+    return;
   navigator.mediaSession.metadata = null;
   navigator.mediaSession.playbackState = "none";
   navigator.mediaSession.setActionHandler("play", null);

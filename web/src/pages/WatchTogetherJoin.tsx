@@ -48,7 +48,8 @@ export default function WatchTogetherJoin() {
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token")?.trim() ?? "";
   const [code, setCode] = useState("");
-  const [selectionMode, setSelectionMode] = useState<WatchTogetherSelectionMode>("host_pick");
+  const [selectionMode, setSelectionMode] =
+    useState<WatchTogetherSelectionMode>("host_pick");
   const [creating, setCreating] = useState(false);
   const [joining, setJoining] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -61,7 +62,9 @@ export default function WatchTogetherJoin() {
       if (event.key === "ArrowRight" || event.key === "ArrowDown") {
         nextIndex = (index + 1) % selectionModeOptions.length;
       } else if (event.key === "ArrowLeft" || event.key === "ArrowUp") {
-        nextIndex = (index - 1 + selectionModeOptions.length) % selectionModeOptions.length;
+        nextIndex =
+          (index - 1 + selectionModeOptions.length) %
+          selectionModeOptions.length;
       } else if (event.key === "Home") {
         nextIndex = 0;
       } else if (event.key === "End") {
@@ -88,12 +91,17 @@ export default function WatchTogetherJoin() {
       try {
         const response = await joinWatchTogetherRoom(input);
         if (!response.room_access_token) {
-          throw new Error("Room access token was missing from the join response.");
+          throw new Error(
+            "Room access token was missing from the join response.",
+          );
         }
-        void navigate(`/rooms/${response.room.room_id}?room_token=${response.room_access_token}`, {
-          replace: true,
-          viewTransition: true,
-        });
+        void navigate(
+          `/rooms/${response.room.room_id}?room_token=${response.room_access_token}`,
+          {
+            replace: true,
+            viewTransition: true,
+          },
+        );
       } catch (joinError) {
         setError(describeJoinError(joinError));
       } finally {
@@ -107,16 +115,27 @@ export default function WatchTogetherJoin() {
     setCreating(true);
     setError(null);
     try {
-      const response = await createWatchTogetherRoom({ selection_mode: selectionMode });
-      if (!response.room_access_token) {
-        throw new Error("Room access token was missing from the create response.");
-      }
-      void navigate(`/rooms/${response.room.room_id}?room_token=${response.room_access_token}`, {
-        replace: true,
-        viewTransition: true,
+      const response = await createWatchTogetherRoom({
+        selection_mode: selectionMode,
       });
+      if (!response.room_access_token) {
+        throw new Error(
+          "Room access token was missing from the create response.",
+        );
+      }
+      void navigate(
+        `/rooms/${response.room.room_id}?room_token=${response.room_access_token}`,
+        {
+          replace: true,
+          viewTransition: true,
+        },
+      );
     } catch (createError) {
-      setError(createError instanceof Error ? createError.message : "Failed to create room.");
+      setError(
+        createError instanceof Error
+          ? createError.message
+          : "Failed to create room.",
+      );
     } finally {
       setCreating(false);
     }
@@ -131,7 +150,8 @@ export default function WatchTogetherJoin() {
   }, [hasInviteToken, joinRoom, token]);
 
   const headline = useMemo(
-    () => (hasInviteToken ? "Joining Watch Party" : "Create or Join a Watch Party"),
+    () =>
+      hasInviteToken ? "Joining Watch Party" : "Create or Join a Watch Party",
     [hasInviteToken],
   );
 
@@ -146,7 +166,9 @@ export default function WatchTogetherJoin() {
           aria-hidden="true"
           className="border-foreground/20 border-t-foreground h-8 w-8 animate-spin rounded-full border-2"
         />
-        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{headline}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+          {headline}
+        </h1>
         <p className="text-muted-foreground max-w-sm text-sm" role="status">
           Hang tight — we're taking you into the room.
         </p>
@@ -160,10 +182,13 @@ export default function WatchTogetherJoin() {
         <p className="text-muted-foreground text-[11px] font-semibold tracking-[0.18em] uppercase">
           Watch Party
         </p>
-        <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">{headline}</h1>
+        <h1 className="mt-3 text-3xl font-semibold tracking-tight sm:text-4xl">
+          {headline}
+        </h1>
         <p className="text-muted-foreground mt-3 max-w-2xl text-sm leading-6">
-          Start an empty room, invite people in, then choose what everyone watches from the lobby.
-          Got an invite link? Just open it — you'll join automatically.
+          Start an empty room, invite people in, then choose what everyone
+          watches from the lobby. Got an invite link? Just open it — you'll join
+          automatically.
         </p>
       </div>
 
@@ -174,8 +199,9 @@ export default function WatchTogetherJoin() {
             Synced Playback
           </div>
           <p className="text-foreground/65 text-sm leading-relaxed">
-            Everyone watches in sync. When someone seeks or the host picks new content, playback
-            pauses while all participants buffer, then resumes together.
+            Everyone watches in sync. When someone seeks or the host picks new
+            content, playback pauses while all participants buffer, then resumes
+            together.
           </p>
         </div>
         <div className="surface-panel-subtle rounded-xl p-4">
@@ -183,8 +209,9 @@ export default function WatchTogetherJoin() {
             Playback Controls
           </div>
           <p className="text-foreground/65 text-sm leading-relaxed">
-            By default only the host can play, pause, and seek. The host can enable "Allow Pause" to
-            let guests pause and resume, but seeking stays host-only.
+            By default only the host can play, pause, and seek. The host can
+            enable "Allow Pause" to let guests pause and resume, but seeking
+            stays host-only.
           </p>
         </div>
         <div className="surface-panel-subtle rounded-xl p-4">
@@ -192,8 +219,9 @@ export default function WatchTogetherJoin() {
             Room & Invites
           </div>
           <p className="text-foreground/65 text-sm leading-relaxed">
-            Share the room code or invite link to let others join. If the host disconnects the room
-            stays open for 15 seconds — if they don't reconnect, the party ends automatically.
+            Share the room code or invite link to let others join. If the host
+            disconnects the room stays open for 15 seconds — if they don't
+            reconnect, the party ends automatically.
           </p>
         </div>
       </div>
@@ -213,12 +241,16 @@ export default function WatchTogetherJoin() {
             <div>
               <h2 className="text-lg font-semibold">Create a room</h2>
               <p className="text-foreground/55 mt-1 text-sm leading-6">
-                Open a lobby, copy the invite, and pick the movie or episode once everyone is in.
+                Open a lobby, copy the invite, and pick the movie or episode
+                once everyone is in.
               </p>
             </div>
 
             <div>
-              <label id="watch-selection-mode-label" className="text-sm font-medium">
+              <label
+                id="watch-selection-mode-label"
+                className="text-sm font-medium"
+              >
                 Selection mode
               </label>
               <div
@@ -247,7 +279,9 @@ export default function WatchTogetherJoin() {
                       }`}
                     >
                       <div className="font-medium">{option.title}</div>
-                      <div className="text-muted-foreground mt-0.5 text-xs">{option.caption}</div>
+                      <div className="text-muted-foreground mt-0.5 text-xs">
+                        {option.caption}
+                      </div>
                     </button>
                   );
                 })}
@@ -271,7 +305,8 @@ export default function WatchTogetherJoin() {
             <div>
               <h2 className="text-lg font-semibold">Join a room</h2>
               <p className="text-foreground/55 mt-1 text-sm leading-6">
-                Have a room code from the host? Enter it here to join their party.
+                Have a room code from the host? Enter it here to join their
+                party.
               </p>
             </div>
 

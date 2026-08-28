@@ -69,10 +69,13 @@ function mockFetchResponse(text: string): Response {
 }
 
 function mockFontBundleResponse(bytes: string): Response {
-  return new Response(JSON.stringify([{ name: "Attached.ttf", data: btoa(bytes) }]), {
-    status: 200,
-    headers: { "Content-Type": "application/json" },
-  });
+  return new Response(
+    JSON.stringify([{ name: "Attached.ttf", data: btoa(bytes) }]),
+    {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    },
+  );
 }
 
 function mockBinaryResponse(byteLength = 8): Response {
@@ -101,7 +104,9 @@ afterEach(() => {
 
 describe("useASSSubtitles font fallback", () => {
   it("uses an Arabic-capable defaultFont for an Arabic ASS track", async () => {
-    renderHook(() => useASSSubtitles(makeVideoRef(), [arabicTrack], 5, false, 0, 0));
+    renderHook(() =>
+      useASSSubtitles(makeVideoRef(), [arabicTrack], 5, false, 0, 0),
+    );
 
     await waitFor(() => expect(constructorOpts).toHaveLength(1));
 
@@ -109,7 +114,9 @@ describe("useASSSubtitles font fallback", () => {
     // libass only renders missing glyphs with the default font, so Arabic
     // coverage depends on defaultFont pointing at an Arabic font.
     expect(opts.defaultFont).toBe("noto sans arabic");
-    expect(opts.fonts).toEqual(expect.arrayContaining([expect.any(Uint8Array)]));
+    expect(opts.fonts).toEqual(
+      expect.arrayContaining([expect.any(Uint8Array)]),
+    );
   });
 
   it("uses a Thai-capable defaultFont for a Thai ASS track", async () => {
@@ -125,20 +132,26 @@ describe("useASSSubtitles font fallback", () => {
       ),
     );
 
-    renderHook(() => useASSSubtitles(makeVideoRef(), [thaiTrack], 7, false, 0, 0));
+    renderHook(() =>
+      useASSSubtitles(makeVideoRef(), [thaiTrack], 7, false, 0, 0),
+    );
 
     await waitFor(() => expect(constructorOpts).toHaveLength(1));
 
     const opts = constructorOpts[0]!;
     expect(opts.defaultFont).toBe("noto sans thai");
-    expect(opts.fonts).toEqual(expect.arrayContaining([expect.any(Uint8Array)]));
+    expect(opts.fonts).toEqual(
+      expect.arrayContaining([expect.any(Uint8Array)]),
+    );
     expect(opts.subContent).toContain("Style: Default,noto sans thai,48");
     expect(opts.subContent).toContain("{\\fnnoto sans thai}สวัสดี!");
     expect(opts.subContent).not.toContain("Trebuchet MS");
   });
 
   it("keeps the Liberation Sans default for a Latin (German) ASS track", async () => {
-    renderHook(() => useASSSubtitles(makeVideoRef(), [germanTrack], 6, false, 0, 0));
+    renderHook(() =>
+      useASSSubtitles(makeVideoRef(), [germanTrack], 6, false, 0, 0),
+    );
 
     await waitFor(() => expect(constructorOpts).toHaveLength(1));
 
@@ -148,15 +161,21 @@ describe("useASSSubtitles font fallback", () => {
     // jassub >= 2.5.4 no longer ships its built-in default font file, so the
     // hook must always supply Liberation Sans itself or Latin tracks render
     // nothing (queryFonts is disabled).
-    expect(opts.availableFonts).toEqual({ "liberation sans": expect.any(String) });
+    expect(opts.availableFonts).toEqual({
+      "liberation sans": expect.any(String),
+    });
   });
 
   it("passes fetched ASS content into JASSUB", async () => {
     vi.mocked(fetch).mockResolvedValueOnce(
-      mockFetchResponse("[Events]\nDialogue: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,Hello"),
+      mockFetchResponse(
+        "[Events]\nDialogue: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,Hello",
+      ),
     );
 
-    renderHook(() => useASSSubtitles(makeVideoRef(), [germanTrack], 6, false, 0, 0));
+    renderHook(() =>
+      useASSSubtitles(makeVideoRef(), [germanTrack], 6, false, 0, 0),
+    );
 
     await waitFor(() => expect(constructorOpts).toHaveLength(1));
 
@@ -171,11 +190,15 @@ describe("useASSSubtitles font fallback", () => {
         return Promise.resolve(mockFontBundleResponse("font-data"));
       }
       return Promise.resolve(
-        mockFetchResponse("[Events]\nDialogue: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,Hello"),
+        mockFetchResponse(
+          "[Events]\nDialogue: 0,0:00:01.00,0:00:02.00,Default,,0,0,0,,Hello",
+        ),
       );
     });
 
-    renderHook(() => useASSSubtitles(makeVideoRef(), [attachedFontTrack], 8, false, 0, 0));
+    renderHook(() =>
+      useASSSubtitles(makeVideoRef(), [attachedFontTrack], 8, false, 0, 0),
+    );
 
     await waitFor(() => expect(constructorOpts).toHaveLength(1));
 
@@ -185,7 +208,9 @@ describe("useASSSubtitles font fallback", () => {
   });
 
   it("disables local font probing to avoid permission-related console noise", async () => {
-    renderHook(() => useASSSubtitles(makeVideoRef(), [arabicTrack], 5, false, 0, 0));
+    renderHook(() =>
+      useASSSubtitles(makeVideoRef(), [arabicTrack], 5, false, 0, 0),
+    );
 
     await waitFor(() => expect(constructorOpts).toHaveLength(1));
 
@@ -201,7 +226,9 @@ describe("useASSSubtitles time offset", () => {
   // JASSUB requires SUBTRACTING the delay from the stream origin.
 
   it("subtracts a positive user delay from the constructed timeOffset", async () => {
-    renderHook(() => useASSSubtitles(makeVideoRef(), [germanTrack], 6, false, 30, 2000));
+    renderHook(() =>
+      useASSSubtitles(makeVideoRef(), [germanTrack], 6, false, 30, 2000),
+    );
 
     await waitFor(() => expect(constructorOpts).toHaveLength(1));
 
@@ -211,7 +238,9 @@ describe("useASSSubtitles time offset", () => {
   });
 
   it("adds a negative user delay to the constructed timeOffset", async () => {
-    renderHook(() => useASSSubtitles(makeVideoRef(), [germanTrack], 6, false, 30, -2000));
+    renderHook(() =>
+      useASSSubtitles(makeVideoRef(), [germanTrack], 6, false, 30, -2000),
+    );
 
     await waitFor(() => expect(constructorOpts).toHaveLength(1));
 
@@ -221,7 +250,8 @@ describe("useASSSubtitles time offset", () => {
   it("updates the live instance's timeOffset when the delay changes", async () => {
     const videoRef = makeVideoRef();
     const { rerender } = renderHook(
-      ({ delay }) => useASSSubtitles(videoRef, [germanTrack], 6, false, 30, delay),
+      ({ delay }) =>
+        useASSSubtitles(videoRef, [germanTrack], 6, false, 30, delay),
       { initialProps: { delay: 0 } },
     );
 

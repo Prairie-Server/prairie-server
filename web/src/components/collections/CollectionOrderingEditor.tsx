@@ -28,7 +28,8 @@ export default function CollectionOrderingEditor({
   allowPersonalizedSorts = false,
   readOnly = false,
 }: CollectionOrderingEditorProps) {
-  const orderingMode = sortConfig.mode === "manual_pins" ? "manual_pins" : "query_sort";
+  const orderingMode =
+    sortConfig.mode === "manual_pins" ? "manual_pins" : "query_sort";
   const sortOptions = getCollectionSortOptions(allowPersonalizedSorts);
 
   return (
@@ -112,8 +113,9 @@ export default function CollectionOrderingEditor({
       </div>
 
       <p className="text-muted-foreground text-xs">
-        Smart collections always preview using the query sort. Manual pins are stored for the saved
-        collection so curated items can stay near the top later.
+        Smart collections always preview using the query sort. Manual pins are
+        stored for the saved collection so curated items can stay near the top
+        later.
       </p>
     </div>
   );

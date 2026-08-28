@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { Info, MoreHorizontal, PictureInPicture2, Tags } from "lucide-react";
 
@@ -27,11 +33,16 @@ export function PlayerMoreMenu({
   onTogglePiP,
 }: PlayerMoreMenuProps) {
   const [open, setOpen] = useState(false);
-  const [menuPos, setMenuPos] = useState<{ bottom: number; right: number } | null>(null);
+  const [menuPos, setMenuPos] = useState<{
+    bottom: number;
+    right: number;
+  } | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const pipEnabled =
-    typeof document !== "undefined" && Boolean(onTogglePiP) && document.pictureInPictureEnabled;
+    typeof document !== "undefined" &&
+    Boolean(onTogglePiP) &&
+    document.pictureInPictureEnabled;
 
   const updateMenuPos = useCallback(() => {
     const trigger = triggerRef.current;
@@ -63,7 +74,10 @@ export function PlayerMoreMenu({
 
     const handlePointerDown = (e: PointerEvent) => {
       const target = e.target as Node;
-      if (triggerRef.current?.contains(target) || menuRef.current?.contains(target)) {
+      if (
+        triggerRef.current?.contains(target) ||
+        menuRef.current?.contains(target)
+      ) {
         return;
       }
       setOpen(false);
@@ -95,7 +109,9 @@ export function PlayerMoreMenu({
         aria-label="More"
         aria-expanded={open}
         aria-haspopup="menu"
-        data-active={open || markerEditActive || showPlaybackInfo ? "true" : "false"}
+        data-active={
+          open || markerEditActive || showPlaybackInfo ? "true" : "false"
+        }
       >
         <MoreHorizontal className="h-[18px] w-[18px]" />
       </button>

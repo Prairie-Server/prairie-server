@@ -40,7 +40,9 @@ function version(overrides: Partial<FileVersion>): FileVersion {
 
 describe("FoliateBookReader helpers", () => {
   it("builds the protected ebook read endpoint", () => {
-    expect(ebookReadPath("ebook 1", 42)).toBe("/ebooks/ebook%201/files/42/read");
+    expect(ebookReadPath("ebook 1", 42)).toBe(
+      "/ebooks/ebook%201/files/42/read",
+    );
   });
 
   it("builds the protected ebook progress endpoint", () => {
@@ -58,33 +60,55 @@ describe("FoliateBookReader helpers", () => {
 
     cacheEbookReaderProgress(client, "ebook 1", saved);
 
-    expect(client.getQueryData(ebookReaderProgressQueryKey("ebook 1"))).toEqual(saved);
+    expect(client.getQueryData(ebookReaderProgressQueryKey("ebook 1"))).toEqual(
+      saved,
+    );
   });
 
   it("detects reader file formats from container or filename", () => {
-    expect(readerFileFormat(version({ container: ".AZW3", file_name: "ignored.epub" }))).toBe(
-      "azw3",
+    expect(
+      readerFileFormat(
+        version({ container: ".AZW3", file_name: "ignored.epub" }),
+      ),
+    ).toBe("azw3");
+    expect(readerFileFormat(version({ file_name: "book.fb2.zip" }))).toBe(
+      "fbz",
     );
-    expect(readerFileFormat(version({ file_name: "book.fb2.zip" }))).toBe("fbz");
-    expect(readerFileFormat(version({ container: "zip", file_name: "book.fb2.zip" }))).toBe("fbz");
-    expect(readerFileFormat(version({ container: "zip", file_name: "comic.cbz" }))).toBe("cbz");
-    expect(readerFileFormat(version({ container: "rar", file_name: "comic.cbr" }))).toBe("cbr");
-    expect(readerFileFormat(version({ file_path: "/library/book.cbz" }))).toBe("cbz");
+    expect(
+      readerFileFormat(
+        version({ container: "zip", file_name: "book.fb2.zip" }),
+      ),
+    ).toBe("fbz");
+    expect(
+      readerFileFormat(version({ container: "zip", file_name: "comic.cbz" })),
+    ).toBe("cbz");
+    expect(
+      readerFileFormat(version({ container: "rar", file_name: "comic.cbr" })),
+    ).toBe("cbr");
+    expect(readerFileFormat(version({ file_path: "/library/book.cbz" }))).toBe(
+      "cbz",
+    );
   });
 
   it("does not support plain text files in the reader", () => {
-    expect(isReaderSupportedFile(version({ file_name: "notes.txt" }))).toBe(false);
+    expect(isReaderSupportedFile(version({ file_name: "notes.txt" }))).toBe(
+      false,
+    );
   });
 
   it("does not advertise markdown as a supported ebook format", () => {
-    expect(isReaderSupportedFile(version({ file_name: "notes.md" }))).toBe(false);
+    expect(isReaderSupportedFile(version({ file_name: "notes.md" }))).toBe(
+      false,
+    );
     expect(readerMimeType("md")).toBe("application/octet-stream");
   });
 
   it("rejects plain text when the document loader is called directly", async () => {
     const file = new File(["notes"], "notes.txt", { type: "text/plain" });
 
-    await expect(new DocumentLoader(file).open()).rejects.toThrow("Unsupported book format");
+    await expect(new DocumentLoader(file).open()).rejects.toThrow(
+      "Unsupported book format",
+    );
   });
 
   it("maps readest formats to MIME types", () => {
@@ -142,8 +166,14 @@ describe("FoliateBookReader helpers", () => {
   });
 
   it("parses stored reader locations into navigation targets", () => {
-    expect(parseReaderLocation("fraction:0.500000")).toEqual({ type: "fraction", fraction: 0.5 });
-    expect(parseReaderLocation("fraction:1.5")).toEqual({ type: "fraction", fraction: 1 });
+    expect(parseReaderLocation("fraction:0.500000")).toEqual({
+      type: "fraction",
+      fraction: 0.5,
+    });
+    expect(parseReaderLocation("fraction:1.5")).toEqual({
+      type: "fraction",
+      fraction: 1,
+    });
     expect(parseReaderLocation(" epubcfi(/6/4) ")).toEqual({
       type: "location",
       location: "epubcfi(/6/4)",
@@ -163,7 +193,12 @@ describe("FoliateBookReader helpers", () => {
   });
 
   it("ignores relocate events without a usable location", () => {
-    expect(progressFromRelocate({ cfi: "epubcfi(/6/4)", location: { total: 0 } }, 42)).toBeNull();
+    expect(
+      progressFromRelocate(
+        { cfi: "epubcfi(/6/4)", location: { total: 0 } },
+        42,
+      ),
+    ).toBeNull();
   });
 
   it("normalizes reader settings into bounded values", () => {
@@ -190,22 +225,28 @@ describe("FoliateBookReader helpers", () => {
 
   it("defaults to the ebook publisher font instead of an unloaded named font", () => {
     expect(DEFAULT_READER_SETTINGS.fontFamily).toBe("inherit");
-    expect(normalizeReaderSettings({ fontFamily: "" }).fontFamily).toBe("inherit");
+    expect(normalizeReaderSettings({ fontFamily: "" }).fontFamily).toBe(
+      "inherit",
+    );
   });
 
   it("migrates font choices persisted before the generic stacks existed", () => {
     expect(
-      normalizeReaderSettings({ fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif" })
-        .fontFamily,
+      normalizeReaderSettings({
+        fontFamily: "Inter, ui-sans-serif, system-ui, sans-serif",
+      }).fontFamily,
     ).toBe(READER_FONT_STACKS.sans);
-    expect(normalizeReaderSettings({ fontFamily: "Georgia, serif" }).fontFamily).toBe(
-      READER_FONT_STACKS.serif,
-    );
-    expect(normalizeReaderSettings({ fontFamily: "Merriweather, Georgia, serif" }).fontFamily).toBe(
-      READER_FONT_STACKS.serif,
-    );
     expect(
-      normalizeReaderSettings({ fontFamily: "ui-serif, Georgia, Cambria, serif" }).fontFamily,
+      normalizeReaderSettings({ fontFamily: "Georgia, serif" }).fontFamily,
+    ).toBe(READER_FONT_STACKS.serif);
+    expect(
+      normalizeReaderSettings({ fontFamily: "Merriweather, Georgia, serif" })
+        .fontFamily,
+    ).toBe(READER_FONT_STACKS.serif);
+    expect(
+      normalizeReaderSettings({
+        fontFamily: "ui-serif, Georgia, Cambria, serif",
+      }).fontFamily,
     ).toBe(READER_FONT_STACKS.serif);
   });
 
@@ -242,7 +283,9 @@ describe("FoliateBookReader helpers", () => {
 
     expect(styles).toContain("color-scheme: dark");
     expect(styles).toContain("background: #111827 !important");
-    expect(styles).toContain(`font-family: ${READER_FONT_STACKS.serif} !important`);
+    expect(styles).toContain(
+      `font-family: ${READER_FONT_STACKS.serif} !important`,
+    );
     expect(styles).toContain("font-size: 128% !important");
     expect(styles).toContain("font-weight: 500 !important");
     expect(styles).toContain("hyphens: none !important");

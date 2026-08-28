@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { renderToStaticMarkup } from "react-dom/server";
+import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import RequestPosterCard from "./RequestPosterCard";
 import type { RequestMediaResult } from "@/api/types";
@@ -27,6 +28,24 @@ describe("RequestPosterCard (discover variant)", () => {
     // Must render an actual <button> with the "Request" label, not just any "Request"
     // substring (the /requests/... URL would match a naive includes check).
     expect(markup).toMatch(/<button[^>]*>[\s\S]*?Request[\s\S]*?<\/button>/);
+  });
+
+  it("contains the hover overlay inside the poster frame", () => {
+    render(
+      <MemoryRouter>
+        <RequestPosterCard
+          variant="discover"
+          item={requestable}
+          isSubmitting={false}
+          onRequest={() => {}}
+        />
+      </MemoryRouter>,
+    );
+
+    const overlay = screen.getByTestId("request-poster-hover-overlay");
+    const posterFrame = overlay.closest(".media-card-image");
+
+    expect(posterFrame).not.toBeNull();
   });
 
   it("does not render the hover Request button when onRequest is omitted", () => {

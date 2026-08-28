@@ -19,7 +19,6 @@ import (
 	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
-	"github.com/prairie-server/prairie-server/internal/httpheaders"
 	"github.com/prairie-server/prairie-server/internal/metadata"
 	"github.com/prairie-server/prairie-server/internal/pluginhost"
 	"github.com/prairie-server/prairie-server/internal/plugins"
@@ -203,69 +202,10 @@ type pluginPresentationJSON struct {
 	LicenseSPDX         string `json:"license_spdx"`
 }
 
-type pluginConfigSchemaJSON struct {
-	Key         string               `json:"key"`
-	Title       string               `json:"title"`
-	Description string               `json:"description"`
-	JSONSchema  string               `json:"json_schema"`
-	Required    bool                 `json:"required"`
-	AdminForm   *pluginAdminFormJSON `json:"admin_form,omitempty"`
-}
-
-type pluginAdminFormJSON struct {
-	Fields      []pluginAdminFormFieldJSON   `json:"fields"`
-	SubmitLabel string                       `json:"submit_label,omitempty"`
-	Sections    []pluginAdminFormSectionJSON `json:"sections,omitempty"`
-}
-
-type pluginAdminFormFieldJSON struct {
-	Key                 string                         `json:"key"`
-	Label               string                         `json:"label"`
-	Description         string                         `json:"description,omitempty"`
-	Control             string                         `json:"control"`
-	Placeholder         string                         `json:"placeholder,omitempty"`
-	Required            bool                           `json:"required"`
-	Secret              bool                           `json:"secret"`
-	Multiline           bool                           `json:"multiline"`
-	DefaultValue        any                            `json:"default_value,omitempty"`
-	Options             []pluginAdminFormOptionJSON    `json:"options,omitempty"`
-	Rows                int32                          `json:"rows,omitempty"`
-	DynamicOptions      bool                           `json:"dynamic_options,omitempty"`
-	ShowWhen            []pluginAdminFormConditionJSON `json:"show_when,omitempty"`
-	Validation          *pluginAdminFormValidationJSON `json:"validation,omitempty"`
-	ExclusiveGroupField string                         `json:"exclusive_group_field,omitempty"`
-}
-
-type pluginAdminFormOptionJSON struct {
-	Value       string `json:"value"`
-	Label       string `json:"label"`
-	Description string `json:"description,omitempty"`
-}
-
-type pluginAdminFormConditionJSON struct {
-	Field  string   `json:"field"`
-	Equals []string `json:"equals"`
-}
-
-type pluginAdminFormValidationJSON struct {
-	HasMin    bool    `json:"has_min,omitempty"`
-	Min       float64 `json:"min,omitempty"`
-	HasMax    bool    `json:"has_max,omitempty"`
-	Max       float64 `json:"max,omitempty"`
-	Pattern   string  `json:"pattern,omitempty"`
-	MinLength int32   `json:"min_length,omitempty"`
-	MaxLength int32   `json:"max_length,omitempty"`
-}
-
-type pluginAdminFormSectionJSON struct {
-	Key              string                         `json:"key"`
-	Title            string                         `json:"title"`
-	Description      string                         `json:"description,omitempty"`
-	Collapsible      bool                           `json:"collapsible"`
-	CollapsedDefault bool                           `json:"collapsed_default"`
-	FieldKeys        []string                       `json:"field_keys"`
-	ShowWhen         []pluginAdminFormConditionJSON `json:"show_when,omitempty"`
-}
+type pluginConfigSchemaJSON = plugins.ConfigSchemaView
+type pluginAdminFormJSON = plugins.AdminFormView
+type pluginAdminFormFieldJSON = plugins.AdminFormFieldView
+type pluginAdminFormSectionJSON = plugins.AdminFormSectionView
 
 type pluginCapabilityJSON struct {
 	Type          string                   `json:"type"`
@@ -632,7 +572,7 @@ func (h *PluginHandler) HandleUploadInstallation(w http.ResponseWriter, r *http.
 	}
 	defer file.Close()
 
-	tempFile, err := os.CreateTemp("", "prairie-plugin-*.zip")
+	tempFile, err := os.CreateTemp("", "silo-plugin-*.zip")
 	if err != nil {
 		slog.ErrorContext(r.Context(), "creating temp plugin upload file", "component", "api", "error", err)
 		writeError(w, http.StatusInternalServerError, "internal_error", "Failed to process plugin upload")
@@ -1098,7 +1038,7 @@ func (h *PluginHandler) HandlePutAuthBinding(w http.ResponseWriter, r *http.Requ
 	}
 
 	h.restartStatus.MarkRequired("plugin_auth_binding")
-	httpheaders.Set(w.Header(), httpheaders.HeaderRestartRequired, "true")
+	w.Header().Set("X-Silo-Restart-Required", "true")
 	w.WriteHeader(http.StatusNoContent)
 }
 
@@ -1569,117 +1509,11 @@ func toUserPluginSettingsSummary(
 }
 
 func configSchemasToJSON(schemas []*pluginv1.ConfigSchema) []pluginConfigSchemaJSON {
-	response := make([]pluginConfigSchemaJSON, 0, len(schemas))
-	for _, schema := range schemas {
-		if schema == nil {
-			continue
-		}
-		response = append(response, pluginConfigSchemaJSON{
-			Key:         schema.GetKey(),
-			Title:       schema.GetTitle(),
-			Description: schema.GetDescription(),
-			JSONSchema:  schema.GetJsonSchema(),
-			Required:    schema.GetRequired(),
-			AdminForm:   adminFormToJSON(schema.GetAdminForm()),
-		})
-	}
-	return response
+	return plugins.ConfigSchemaViews(schemas)
 }
 
 func adminFormToJSON(form *pluginv1.AdminFormDescriptor) *pluginAdminFormJSON {
-	if form == nil {
-		return nil
-	}
-	fields := make([]pluginAdminFormFieldJSON, 0, len(form.GetFields()))
-	for _, field := range form.GetFields() {
-		if field == nil {
-			continue
-		}
-		options := make([]pluginAdminFormOptionJSON, 0, len(field.GetOptions()))
-		for _, option := range field.GetOptions() {
-			if option == nil {
-				continue
-			}
-			options = append(options, pluginAdminFormOptionJSON{
-				Value:       option.GetValue(),
-				Label:       option.GetLabel(),
-				Description: option.GetDescription(),
-			})
-		}
-		var defaultValue any
-		if field.GetDefaultValue() != nil {
-			defaultValue = field.GetDefaultValue().AsInterface()
-		}
-		var validation *pluginAdminFormValidationJSON
-		if v := field.GetValidation(); v != nil {
-			validation = &pluginAdminFormValidationJSON{
-				HasMin:    v.GetHasMin(),
-				Min:       v.GetMin(),
-				HasMax:    v.GetHasMax(),
-				Max:       v.GetMax(),
-				Pattern:   v.GetPattern(),
-				MinLength: v.GetMinLength(),
-				MaxLength: v.GetMaxLength(),
-			}
-		}
-		fields = append(fields, pluginAdminFormFieldJSON{
-			Key:                 field.GetKey(),
-			Label:               field.GetLabel(),
-			Description:         field.GetDescription(),
-			Control:             strings.TrimPrefix(field.GetControl().String(), "ADMIN_FORM_CONTROL_"),
-			Placeholder:         field.GetPlaceholder(),
-			Required:            field.GetRequired(),
-			Secret:              field.GetSecret(),
-			Multiline:           field.GetMultiline(),
-			DefaultValue:        defaultValue,
-			Options:             options,
-			Rows:                field.GetRows(),
-			DynamicOptions:      field.GetDynamicOptions(),
-			ShowWhen:            adminFormConditionsToJSON(field.GetShowWhen()),
-			Validation:          validation,
-			ExclusiveGroupField: field.GetExclusiveGroupField(),
-		})
-	}
-	sections := make([]pluginAdminFormSectionJSON, 0, len(form.GetSections()))
-	for _, section := range form.GetSections() {
-		if section == nil {
-			continue
-		}
-		sections = append(sections, pluginAdminFormSectionJSON{
-			Key:              section.GetKey(),
-			Title:            section.GetTitle(),
-			Description:      section.GetDescription(),
-			Collapsible:      section.GetCollapsible(),
-			CollapsedDefault: section.GetCollapsedDefault(),
-			FieldKeys:        append([]string(nil), section.GetFieldKeys()...),
-			ShowWhen:         adminFormConditionsToJSON(section.GetShowWhen()),
-		})
-	}
-	return &pluginAdminFormJSON{
-		Fields:      fields,
-		SubmitLabel: form.GetSubmitLabel(),
-		Sections:    sections,
-	}
-}
-
-func adminFormConditionsToJSON(conditions []*pluginv1.AdminFormCondition) []pluginAdminFormConditionJSON {
-	if len(conditions) == 0 {
-		return nil
-	}
-	out := make([]pluginAdminFormConditionJSON, 0, len(conditions))
-	for _, condition := range conditions {
-		if condition == nil {
-			continue
-		}
-		out = append(out, pluginAdminFormConditionJSON{
-			Field:  condition.GetField(),
-			Equals: append([]string(nil), condition.GetEquals()...),
-		})
-	}
-	if len(out) == 0 {
-		return nil
-	}
-	return out
+	return plugins.AdminFormViewFromProto(form)
 }
 
 func capabilitiesToJSON(descriptors []*pluginv1.CapabilityDescriptor) []pluginCapabilityJSON {

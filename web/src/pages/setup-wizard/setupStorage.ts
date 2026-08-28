@@ -16,7 +16,10 @@ export const SETUP_WIZARD_STORAGE_KEYS: Record<SkippableStep, string> = {
   recommendations: "setup_wizard_recommendations_done",
 };
 
-function withLocalStorage<T>(callback: (storage: Storage) => T, fallback: T): T {
+function withLocalStorage<T>(
+  callback: (storage: Storage) => T,
+  fallback: T,
+): T {
   if (typeof window === "undefined") return fallback;
 
   try {

@@ -34,7 +34,9 @@ export function CatalogBrowser({ onInstall }: CatalogBrowserProps) {
     setInstalling(entry.id);
     try {
       // Proxy the download through the backend to prevent browser SSRF
-      const json = await api(`/theme/download?url=${encodeURIComponent(entry.downloadUrl)}`);
+      const json = await api(
+        `/theme/download?url=${encodeURIComponent(entry.downloadUrl)}`,
+      );
       const themeFile = parseThemeFile(json);
       onInstall({
         baseTheme: themeFile.baseTheme,
@@ -66,8 +68,8 @@ export function CatalogBrowser({ onInstall }: CatalogBrowserProps) {
       <div className="flex flex-col items-center gap-3 py-8 text-center">
         <AlertCircle className="text-muted-foreground h-8 w-8" />
         <p className="text-muted-foreground text-sm">
-          Could not load the theme catalog. The catalog may be unavailable or the server is
-          unreachable.
+          Could not load the theme catalog. The catalog may be unavailable or
+          the server is unreachable.
         </p>
         <button
           type="button"
@@ -99,7 +101,12 @@ export function CatalogBrowser({ onInstall }: CatalogBrowserProps) {
             disabled={refreshCatalog.isPending}
             className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 text-xs font-medium transition-colors"
           >
-            <RefreshCw className={cn("h-3.5 w-3.5", refreshCatalog.isPending && "animate-spin")} />
+            <RefreshCw
+              className={cn(
+                "h-3.5 w-3.5",
+                refreshCatalog.isPending && "animate-spin",
+              )}
+            />
             Refresh catalog
           </button>
         </div>
@@ -113,9 +120,13 @@ export function CatalogBrowser({ onInstall }: CatalogBrowserProps) {
             <div className="flex items-start justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="text-sm font-semibold tracking-tight">{entry.name}</span>
+                  <span className="text-sm font-semibold tracking-tight">
+                    {entry.name}
+                  </span>
                 </div>
-                <p className="text-muted-foreground mt-0.5 text-[11px]">by {entry.author}</p>
+                <p className="text-muted-foreground mt-0.5 text-[11px]">
+                  by {entry.author}
+                </p>
                 {entry.description && (
                   <p className="text-muted-foreground mt-1 text-xs leading-relaxed">
                     {entry.description}

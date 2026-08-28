@@ -3,6 +3,7 @@ package middleware
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"log/slog"
 	"net"
 	"net/http"
@@ -14,6 +15,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/activitylog"
 	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
 )
 
 func RequestLogger(nodeID string) func(http.Handler) http.Handler {
@@ -48,15 +50,11 @@ func RequestLogger(nodeID string) func(http.Handler) http.Handler {
 				}
 			}
 
-			loggedPath := r.URL.Path
-			if r.URL.RawQuery != "" {
-				loggedPath = loggedPath + "?" + r.URL.RawQuery
-			}
 			attrs := []any{
 				"component", "api",
 				"request_id", chimw.GetReqID(r.Context()),
 				"method", r.Method,
-				"path", activitylog.RedactSecretPathParams(r, loggedPath),
+				"path", activitylog.RedactSecretPathParams(r, r.URL.Path),
 				"path_pattern", pathPattern,
 				"status", wrapped.status,
 				"duration_ms", time.Since(start).Milliseconds(),
@@ -97,6 +95,13 @@ func (w *requestStatusWriter) Write(b []byte) (int, error) {
 		w.wroteHeader = true
 	}
 	return w.ResponseWriter.Write(b)
+}
+
+func (w *requestStatusWriter) ReadFrom(src io.Reader) (int64, error) {
+	if !w.wroteHeader {
+		w.status, w.wroteHeader = http.StatusOK, true
+	}
+	return httpstream.ForwardReadFrom(w.ResponseWriter, w, src, 0, nil)
 }
 
 func (w *requestStatusWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {

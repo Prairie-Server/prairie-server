@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { canEditMarkers, isActingAdmin, PERMISSION_MARKER_EDIT } from "./permissions";
+import {
+  canEditMarkers,
+  isActingAdmin,
+  PERMISSION_MARKER_EDIT,
+} from "./permissions";
 
 describe("permissions", () => {
   it("allows admins with no profile selected to edit markers", () => {
@@ -7,11 +11,15 @@ describe("permissions", () => {
   });
 
   it("allows admins on the primary profile to edit markers", () => {
-    expect(canEditMarkers({ role: "admin", permissions: [] }, { is_primary: true })).toBe(true);
+    expect(
+      canEditMarkers({ role: "admin", permissions: [] }, { is_primary: true }),
+    ).toBe(true);
   });
 
   it("rejects admins on a non-primary profile without the assigned permission", () => {
-    expect(canEditMarkers({ role: "admin", permissions: [] }, { is_primary: false })).toBe(false);
+    expect(
+      canEditMarkers({ role: "admin", permissions: [] }, { is_primary: false }),
+    ).toBe(false);
   });
 
   it("allows admins on a non-primary profile with the assigned permission", () => {
@@ -24,9 +32,12 @@ describe("permissions", () => {
   });
 
   it("allows assigned users to edit markers", () => {
-    expect(canEditMarkers({ role: "user", permissions: [PERMISSION_MARKER_EDIT] }, null)).toBe(
-      true,
-    );
+    expect(
+      canEditMarkers(
+        { role: "user", permissions: [PERMISSION_MARKER_EDIT] },
+        null,
+      ),
+    ).toBe(true);
   });
 
   it("rejects users without marker edit permission", () => {

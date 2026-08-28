@@ -38,6 +38,7 @@ type pluginClient interface {
 	EventConsumer(capabilityID string) (*pluginhost.EventConsumerClient, error)
 	AuthProvider(capabilityID string) (*pluginhost.AuthProviderClient, error)
 	HTTPRoutes(capabilityID string) (*pluginhost.HTTPRoutesClient, error)
+	WatchSyncProvider(capabilityID string) (*pluginhost.WatchSyncProviderClient, error)
 }
 
 type Host interface {
@@ -472,7 +473,8 @@ func (s *Service) PreloadEnabled(ctx context.Context) error {
 			continue
 		}
 		// Builtin installations have no archive or binary; skip them explicitly
-		// rather than relying on the load-error handling below.
+		// instead of leaning on the tolerated ErrArchiveNotFound branch below
+		// (any other load error here is fatal to startup).
 		if installation.IsBuiltin() {
 			continue
 		}
@@ -486,21 +488,7 @@ func (s *Service) PreloadEnabled(ctx context.Context) error {
 				)
 				continue
 			}
-			// A single malformed or incompatible stored plugin must not take
-			// down the whole server at startup (previously this returned an
-			// error that reached log.Fatalf in main). Log and skip so the rest
-			// of the app still boots; the installation stays enabled in the
-			// store but unloaded, and its feature surfaces the error on demand.
-			// Mirrors the tolerated ErrArchiveNotFound branch above and the
-			// pre-existing "skipped broken plugin repository" resilience.
-			slog.ErrorContext(ctx,
-				"plugin preload skipped: failed to load enabled installation", "component", "plugins",
-				"installation_id", installation.ID,
-				"plugin_id", installation.PluginID,
-				"version", installation.Version,
-				"error", err,
-			)
-			continue
+			return fmt.Errorf("preload plugin installation %d: %w", installation.ID, err)
 		}
 	}
 	s.OnLifecycleChange(ctx)
@@ -662,6 +650,18 @@ func (s *Service) ScanSourceClientByPluginID(
 	return s.ScanSourceClient(ctx, matches[0].ID, capabilityID)
 }
 
+func (s *Service) WatchSyncProviderClient(
+	ctx context.Context,
+	installationID int,
+	capabilityID string,
+) (*pluginhost.WatchSyncProviderClient, error) {
+	client, err := s.ensureClient(ctx, installationID)
+	if err != nil {
+		return nil, err
+	}
+	return client.WatchSyncProvider(capabilityID)
+}
+
 func (s *Service) EventConsumerClient(
 	ctx context.Context,
 	installationID int,
@@ -755,7 +755,7 @@ func (s *Service) ensureClient(ctx context.Context, installationID int) (pluginC
 	}
 	client, ok := v.(pluginClient)
 	if !ok {
-		return nil, fmt.Errorf("plugins: unexpected client type %T", v)
+		return nil, fmt.Errorf("plugin client type assertion failed for installation %d", installationID)
 	}
 	return client, nil
 }

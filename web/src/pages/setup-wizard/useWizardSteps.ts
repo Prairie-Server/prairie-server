@@ -10,7 +10,8 @@ export interface StepDef {
 }
 
 export function useWizardSteps() {
-  const { user, profiles, stepDone, currentStep, frontierStep } = useWizardContext();
+  const { user, profiles, stepDone, currentStep, frontierStep } =
+    useWizardContext();
 
   const accountComplete = !!user;
   const profileComplete = profiles.length > 0;
@@ -29,7 +30,12 @@ export function useWizardSteps() {
       complete: profileComplete,
       active: currentStep === "profile",
     },
-    { id: "server", label: "Server", complete: stepDone.server, active: currentStep === "server" },
+    {
+      id: "server",
+      label: "Server",
+      complete: stepDone.server,
+      active: currentStep === "server",
+    },
     {
       id: "integrations",
       label: "Integrations",
@@ -48,8 +54,18 @@ export function useWizardSteps() {
       complete: stepDone.recommendations,
       active: currentStep === "recommendations",
     },
-    { id: "library", label: "Library", complete: libraryDone, active: currentStep === "library" },
-    { id: "nodes", label: "Finish", complete: false, active: currentStep === "nodes" },
+    {
+      id: "library",
+      label: "Library",
+      complete: libraryDone,
+      active: currentStep === "library",
+    },
+    {
+      id: "nodes",
+      label: "Finish",
+      complete: false,
+      active: currentStep === "nodes",
+    },
   ];
 
   return { steps, currentStep, frontierStep };

@@ -25,7 +25,9 @@ export function AuthBrandHero({ subtitle, className }: AuthBrandHeroProps) {
       />
       <div className="auth-brand-copy space-y-2.5">
         <p className="auth-brand-title">{serverName}</p>
-        {supporting ? <p className="auth-brand-subtitle">{supporting}</p> : null}
+        {supporting ? (
+          <p className="auth-brand-subtitle">{supporting}</p>
+        ) : null}
       </div>
     </header>
   );

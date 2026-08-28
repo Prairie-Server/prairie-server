@@ -31,7 +31,8 @@ export function RecommendationsStep() {
   const checkConnection = useCheckAdminSettingsConnection();
   const [selectedPreset, setSelectedPreset] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [connectionResult, setConnectionResult] = useState<ConnectionCheckResponse | null>(null);
+  const [connectionResult, setConnectionResult] =
+    useState<ConnectionCheckResponse | null>(null);
 
   function applyPreset(preset: RecommendationProviderPreset) {
     setSelectedPreset(preset.id);
@@ -72,7 +73,8 @@ export function RecommendationsStep() {
     } catch (error) {
       setConnectionResult({
         success: false,
-        message: error instanceof Error ? error.message : "Connection check failed.",
+        message:
+          error instanceof Error ? error.message : "Connection check failed.",
       });
     }
   }
@@ -90,7 +92,8 @@ export function RecommendationsStep() {
     (preset) => preset.id === selectedPreset,
   );
   const showToken =
-    activePreset?.needsToken ?? form.getValue("recommendations.embedding_auth_token") !== "";
+    activePreset?.needsToken ??
+    form.getValue("recommendations.embedding_auth_token") !== "";
   const enabled = form.getValue("recommendations.enabled") === "true";
 
   return (
@@ -103,7 +106,9 @@ export function RecommendationsStep() {
         <Switch
           id="recs-enabled"
           checked={enabled}
-          onCheckedChange={(v) => form.setValue("recommendations.enabled", v ? "true" : "false")}
+          onCheckedChange={(v) =>
+            form.setValue("recommendations.enabled", v ? "true" : "false")
+          }
         />
       </div>
 
@@ -142,7 +147,9 @@ export function RecommendationsStep() {
               ))}
             </div>
             {activePreset && (
-              <p className="text-muted-foreground text-xs">{activePreset.description}</p>
+              <p className="text-muted-foreground text-xs">
+                {activePreset.description}
+              </p>
             )}
           </div>
 
@@ -156,7 +163,10 @@ export function RecommendationsStep() {
                 id="recs-url"
                 value={form.getValue("recommendations.embedding_base_url")}
                 onChange={(e) =>
-                  form.setValue("recommendations.embedding_base_url", e.target.value)
+                  form.setValue(
+                    "recommendations.embedding_base_url",
+                    e.target.value,
+                  )
                 }
                 placeholder={
                   activePreset?.urlPlaceholder ??
@@ -173,9 +183,16 @@ export function RecommendationsStep() {
               <Input
                 id="recs-model"
                 value={form.getValue("recommendations.embedding_model")}
-                onChange={(e) => form.setValue("recommendations.embedding_model", e.target.value)}
+                onChange={(e) =>
+                  form.setValue(
+                    "recommendations.embedding_model",
+                    e.target.value,
+                  )
+                }
                 placeholder={
-                  activePreset?.modelPlaceholder ?? activePreset?.model ?? "gemini-embedding-001"
+                  activePreset?.modelPlaceholder ??
+                  activePreset?.model ??
+                  "gemini-embedding-001"
                 }
                 autoComplete="off"
               />
@@ -190,10 +207,15 @@ export function RecommendationsStep() {
                   type="password"
                   value={form.getValue("recommendations.embedding_auth_token")}
                   onChange={(e) =>
-                    form.setValue("recommendations.embedding_auth_token", e.target.value)
+                    form.setValue(
+                      "recommendations.embedding_auth_token",
+                      e.target.value,
+                    )
                   }
                   placeholder={
-                    form.sensitiveConfigured.includes("recommendations.embedding_auth_token")
+                    form.sensitiveConfigured.includes(
+                      "recommendations.embedding_auth_token",
+                    )
                       ? "Configured"
                       : "Enter API key"
                   }
@@ -213,7 +235,11 @@ export function RecommendationsStep() {
 
       <WizardActions>
         <Button type="submit" disabled={submitting || form.isSaving}>
-          {submitting || form.isSaving ? <Loader2 className="animate-spin" /> : <Save />}
+          {submitting || form.isSaving ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
           {submitting || form.isSaving ? "Saving..." : "Save & continue"}
         </Button>
         <Button

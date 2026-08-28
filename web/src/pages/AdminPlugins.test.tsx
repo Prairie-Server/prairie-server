@@ -47,7 +47,10 @@ function makeCatalogEntry(
   };
 }
 
-function makeInstallation(index: number, displayName: string): PluginInstallation {
+function makeInstallation(
+  index: number,
+  displayName: string,
+): PluginInstallation {
   const suffix = String(index).padStart(2, "0");
   return {
     id: index,
@@ -106,8 +109,9 @@ vi.mock("@/components/ui/switch", () => ({
 }));
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual =
-    await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
+  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
+    "@tanstack/react-query",
+  );
   return {
     ...actual,
     useQueryClient: () => ({ invalidateQueries: vi.fn() }),
@@ -117,7 +121,10 @@ vi.mock("@tanstack/react-query", async () => {
 vi.mock("@/hooks/queries/admin/plugins", () => ({
   CHECK_PLUGIN_UPDATES_TASK_KEY: "check_plugin_updates",
   useAdminPlugins: () => useAdminPluginsMock(),
-  useCheckPluginUpdates: () => ({ mutate: checkPluginUpdatesMutateMock, isPending: false }),
+  useCheckPluginUpdates: () => ({
+    mutate: checkPluginUpdatesMutateMock,
+    isPending: false,
+  }),
   useUpdatePluginCatalogSettings: () => ({
     mutate: updatePluginCatalogSettingsMutateMock,
     isPending: false,
@@ -127,7 +134,11 @@ vi.mock("@/hooks/queries/admin/plugins", () => ({
   useDeletePluginRepository: () => ({ mutate: vi.fn(), isPending: false }),
   useInstallPlugin: () => ({ mutate: vi.fn(), isPending: false }),
   useUploadPlugin: () => ({ mutate: vi.fn(), isPending: false }),
-  usePluginUpload: () => ({ upload: vi.fn(), progress: null, isPending: false }),
+  usePluginUpload: () => ({
+    upload: vi.fn(),
+    progress: null,
+    isPending: false,
+  }),
   useUpdatePluginInstallation: () => ({ mutate: vi.fn(), isPending: false }),
   useApplyPluginUpdate: () => ({ mutate: vi.fn(), isPending: false }),
   useDeletePluginInstallation: () => ({ mutate: vi.fn(), isPending: false }),
@@ -167,7 +178,10 @@ describe("AdminPlugins", () => {
       if (typeof children === "string") {
         return children === "Check for updates";
       }
-      return Array.isArray(children) && children.some((child) => child === "Check for updates");
+      return (
+        Array.isArray(children) &&
+        children.some((child) => child === "Check for updates")
+      );
     });
 
     expect(button).toBeTruthy();
@@ -239,7 +253,9 @@ describe("AdminPlugins", () => {
       </MemoryRouter>,
     );
 
-    const onCheckedChange = capturedSwitchProps[0]?.onCheckedChange as (checked: boolean) => void;
+    const onCheckedChange = capturedSwitchProps[0]?.onCheckedChange as (
+      checked: boolean,
+    ) => void;
     onCheckedChange(true);
 
     expect(updatePluginCatalogSettingsMutateMock).toHaveBeenCalledWith({
@@ -268,7 +284,9 @@ describe("AdminPlugins", () => {
       </MemoryRouter>,
     );
 
-    const onCheckedChange = capturedSwitchProps[0]?.onCheckedChange as (checked: boolean) => void;
+    const onCheckedChange = capturedSwitchProps[0]?.onCheckedChange as (
+      checked: boolean,
+    ) => void;
     onCheckedChange(false);
 
     expect(updatePluginCatalogSettingsMutateMock).not.toHaveBeenCalled();
@@ -296,8 +314,10 @@ describe("AdminPlugins", () => {
             setup_markdown: "Configure the example.",
             homepage_url: "https://example.com",
             source_url: "https://github.com/prairie-server/example-plugin",
-            support_url: "https://github.com/prairie-server/example-plugin/issues",
-            changelog_url: "https://github.com/prairie-server/example-plugin/releases",
+            support_url:
+              "https://github.com/prairie-server/example-plugin/issues",
+            changelog_url:
+              "https://github.com/prairie-server/example-plugin/releases",
             publisher_name: "Prairie",
             publisher_url: "https://github.com/prairie-server",
             license_spdx: "AGPL-3.0-or-later",
@@ -318,9 +338,15 @@ describe("AdminPlugins", () => {
     );
 
     expect(markup).toContain("Example Plugin");
-    expect(markup).toContain("Explains the example for a homelab administrator.");
-    expect(markup).toContain('href="https://github.com/prairie-server/example-plugin"');
-    expect(markup).toContain('href="https://github.com/prairie-server/example-plugin/releases"');
+    expect(markup).toContain(
+      "Explains the example for a homelab administrator.",
+    );
+    expect(markup).toContain(
+      'href="https://github.com/prairie-server/example-plugin"',
+    );
+    expect(markup).toContain(
+      'href="https://github.com/prairie-server/example-plugin/releases"',
+    );
   });
 
   it("uses catalog presentation metadata for an older installed manifest", () => {
@@ -366,8 +392,10 @@ describe("AdminPlugins", () => {
             setup_markdown: "Configure the example.",
             homepage_url: "https://example.com",
             source_url: "https://github.com/prairie-server/example-plugin",
-            support_url: "https://github.com/prairie-server/example-plugin/issues",
-            changelog_url: "https://github.com/prairie-server/example-plugin/releases",
+            support_url:
+              "https://github.com/prairie-server/example-plugin/issues",
+            changelog_url:
+              "https://github.com/prairie-server/example-plugin/releases",
             publisher_name: "Prairie",
             publisher_url: "https://github.com/prairie-server",
             license_spdx: "AGPL-3.0-or-later",
@@ -388,7 +416,9 @@ describe("AdminPlugins", () => {
     );
 
     expect(markup).toContain("Catalog fallback description.");
-    expect(markup).toContain('href="https://github.com/prairie-server/example-plugin"');
+    expect(markup).toContain(
+      'href="https://github.com/prairie-server/example-plugin"',
+    );
   });
 
   it("searches catalog presentation metadata from the URL", () => {
@@ -410,7 +440,9 @@ describe("AdminPlugins", () => {
     });
 
     const markup = renderToStaticMarkup(
-      <MemoryRouter initialEntries={["/admin/plugins?tab=catalog&catalog_q=needle"]}>
+      <MemoryRouter
+        initialEntries={["/admin/plugins?tab=catalog&catalog_q=needle"]}
+      >
         <AdminPlugins />
       </MemoryRouter>,
     );
@@ -449,11 +481,15 @@ describe("AdminPlugins", () => {
       installations: [],
       catalogSettings: undefined,
       isLoading: false,
-      catalog: Array.from({ length: 13 }, (_, index) => makeCatalogEntry(index + 1)),
+      catalog: Array.from({ length: 13 }, (_, index) =>
+        makeCatalogEntry(index + 1),
+      ),
     });
 
     const markup = renderToStaticMarkup(
-      <MemoryRouter initialEntries={["/admin/plugins?tab=catalog&catalog_page=2"]}>
+      <MemoryRouter
+        initialEntries={["/admin/plugins?tab=catalog&catalog_page=2"]}
+      >
         <AdminPlugins />
       </MemoryRouter>,
     );

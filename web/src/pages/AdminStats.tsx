@@ -13,7 +13,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Film, FileVideo, Users, Play } from "lucide-react";
 import type { AdminSession, AdminStats } from "@/api/types";
 import { JellyfinSessionPill } from "@/components/JellyfinSessionPill";
-import { classifyActivityMethod, getSessionClientLabel } from "@/pages/adminActivityPresentation";
+import {
+  classifyActivityMethod,
+  getSessionClientLabel,
+} from "@/pages/adminActivityPresentation";
 import { formatDateTime } from "@/lib/datetime";
 
 export default function AdminStats() {
@@ -25,10 +28,12 @@ export default function AdminStats() {
     <div className="page-shell space-y-6 py-4 sm:py-6">
       <div className="page-header gap-5">
         <div className="space-y-3">
-          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">System stats</h1>
+          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
+            System stats
+          </h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Track the size of the library and inspect the sessions currently playing through the
-            system.
+            Track the size of the library and inspect the sessions currently
+            playing through the system.
           </p>
         </div>
       </div>
@@ -74,10 +79,26 @@ function StatsCards({
   }
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
-      <StatCard title="Media Items" value={stats.total_items} icon={<Film className="h-4 w-4" />} />
-      <StatCard title="Files" value={stats.total_files} icon={<FileVideo className="h-4 w-4" />} />
-      <StatCard title="Users" value={stats.total_users} icon={<Users className="h-4 w-4" />} />
-      <StatCard title="Active Sessions" value={sessionCount} icon={<Play className="h-4 w-4" />} />
+      <StatCard
+        title="Media Items"
+        value={stats.total_items}
+        icon={<Film className="h-4 w-4" />}
+      />
+      <StatCard
+        title="Files"
+        value={stats.total_files}
+        icon={<FileVideo className="h-4 w-4" />}
+      />
+      <StatCard
+        title="Users"
+        value={stats.total_users}
+        icon={<Users className="h-4 w-4" />}
+      />
+      <StatCard
+        title="Active Sessions"
+        value={sessionCount}
+        icon={<Play className="h-4 w-4" />}
+      />
     </div>
   );
 }
@@ -93,7 +114,9 @@ function SessionsSection({
 }) {
   return (
     <div className="space-y-3">
-      <h2 className="text-lg font-medium tracking-tight">Active playback sessions</h2>
+      <h2 className="text-lg font-medium tracking-tight">
+        Active playback sessions
+      </h2>
       {isLoading ? (
         <div className="surface-panel space-y-2 rounded-2xl p-4">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -122,17 +145,23 @@ function SessionsSection({
             <TableBody>
               {sessions.map((s) => (
                 <TableRow key={s.session_id}>
-                  <TableCell className="font-mono text-xs">{s.session_id.slice(0, 8)}...</TableCell>
+                  <TableCell className="font-mono text-xs">
+                    {s.session_id.slice(0, 8)}...
+                  </TableCell>
                   <TableCell>{s.user_id}</TableCell>
                   <TableCell>{s.media_file_id}</TableCell>
-                  <TableCell className="capitalize">{classifyActivityMethod(s)}</TableCell>
+                  <TableCell className="capitalize">
+                    {classifyActivityMethod(s)}
+                  </TableCell>
                   <TableCell>
                     <span className="inline-flex items-center gap-1.5">
                       {getSessionClientLabel(s) || "—"}
                       <JellyfinSessionPill session={s} />
                     </span>
                   </TableCell>
-                  <TableCell className="text-xs">{formatDateTime(s.started_at)}</TableCell>
+                  <TableCell className="text-xs">
+                    {formatDateTime(s.started_at)}
+                  </TableCell>
                 </TableRow>
               ))}
             </TableBody>
@@ -143,15 +172,27 @@ function SessionsSection({
   );
 }
 
-function StatCard({ title, value, icon }: { title: string; value: number; icon: ReactNode }) {
+function StatCard({
+  title,
+  value,
+  icon,
+}: {
+  title: string;
+  value: number;
+  icon: ReactNode;
+}) {
   return (
     <Card className="surface-panel rounded-2xl border-0 shadow-none">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-muted-foreground text-sm font-medium">{title}</CardTitle>
+        <CardTitle className="text-muted-foreground text-sm font-medium">
+          {title}
+        </CardTitle>
         <div className="text-muted-foreground">{icon}</div>
       </CardHeader>
       <CardContent>
-        <div className="text-3xl font-semibold tracking-tight">{value.toLocaleString()}</div>
+        <div className="text-3xl font-semibold tracking-tight">
+          {value.toLocaleString()}
+        </div>
       </CardContent>
     </Card>
   );

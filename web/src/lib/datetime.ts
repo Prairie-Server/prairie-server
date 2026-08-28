@@ -10,7 +10,12 @@
  * persisted settings, and `useDateTimeFormat` lets components subscribe.
  */
 
-export const DATE_FORMAT_PREFERENCES = ["auto", "DD/MM/YYYY", "MM/DD/YYYY", "YYYY-MM-DD"] as const;
+export const DATE_FORMAT_PREFERENCES = [
+  "auto",
+  "DD/MM/YYYY",
+  "MM/DD/YYYY",
+  "YYYY-MM-DD",
+] as const;
 export const TIME_FORMAT_PREFERENCES = ["auto", "12h", "24h"] as const;
 
 export type DateFormatPreference = (typeof DATE_FORMAT_PREFERENCES)[number];
@@ -26,13 +31,17 @@ const DEFAULT_PREFERENCES: DateTimeFormatPreferences = {
   timeFormat: "auto",
 };
 
-export function parseDateFormatPreference(value: string | null | undefined): DateFormatPreference {
+export function parseDateFormatPreference(
+  value: string | null | undefined,
+): DateFormatPreference {
   return DATE_FORMAT_PREFERENCES.includes(value as DateFormatPreference)
     ? (value as DateFormatPreference)
     : "auto";
 }
 
-export function parseTimeFormatPreference(value: string | null | undefined): TimeFormatPreference {
+export function parseTimeFormatPreference(
+  value: string | null | undefined,
+): TimeFormatPreference {
   return TIME_FORMAT_PREFERENCES.includes(value as TimeFormatPreference)
     ? (value as TimeFormatPreference)
     : "auto";
@@ -45,8 +54,13 @@ export function getDateTimeFormatPreferences(): DateTimeFormatPreferences {
   return preferences;
 }
 
-export function setDateTimeFormatPreferences(next: DateTimeFormatPreferences): void {
-  if (next.dateFormat === preferences.dateFormat && next.timeFormat === preferences.timeFormat) {
+export function setDateTimeFormatPreferences(
+  next: DateTimeFormatPreferences,
+): void {
+  if (
+    next.dateFormat === preferences.dateFormat &&
+    next.timeFormat === preferences.timeFormat
+  ) {
     return;
   }
   preferences = { dateFormat: next.dateFormat, timeFormat: next.timeFormat };
@@ -55,7 +69,9 @@ export function setDateTimeFormatPreferences(next: DateTimeFormatPreferences): v
   }
 }
 
-export function subscribeDateTimeFormatPreferences(listener: () => void): () => void {
+export function subscribeDateTimeFormatPreferences(
+  listener: () => void,
+): () => void {
   listeners.add(listener);
   return () => listeners.delete(listener);
 }
@@ -166,6 +182,9 @@ export function formatDateTime(
     return "";
   }
   const datePart = formatDate(date, options?.dateStyle ?? "numeric");
-  const timePart = formatTime(date, (options?.seconds ?? true) ? { second: "2-digit" } : undefined);
+  const timePart = formatTime(
+    date,
+    (options?.seconds ?? true) ? { second: "2-digit" } : undefined,
+  );
   return `${datePart}, ${timePart}`;
 }

@@ -10,7 +10,6 @@ import (
 	"strings"
 
 	"github.com/prairie-server/prairie-server/internal/ebookconvert"
-	"github.com/prairie-server/prairie-server/internal/httpheaders"
 	"github.com/prairie-server/prairie-server/internal/httpstream"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
@@ -19,7 +18,7 @@ import (
 // "converted" => body is EPUB; "failed" => body is the raw original and the
 // client should fall back to opening it externally. Absent => no conversion
 // was attempted (feature off or non-kindle format), serve/behave as before.
-const ConversionHeader = httpheaders.HeaderEbookConversion
+const ConversionHeader = "X-Silo-Ebook-Conversion"
 
 // EbookConverter produces (and caches) a converted EPUB for a source file.
 // Implemented by *ebookconvert.Cache; an interface here for testability.

@@ -33,26 +33,28 @@ import (
 	"github.com/prairie-server/prairie-server/internal/s3client"
 	"github.com/prairie-server/prairie-server/internal/sections"
 	"github.com/prairie-server/prairie-server/internal/usercollections"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 type LibraryCollectionHandler struct {
-	repo                *catalog.LibraryCollectionRepository
-	service             *catalog.LibraryCollectionService
-	itemRepo            *catalog.ItemRepository
-	Executor            *catalog.QueryExecutor
-	detailSvc           *catalog.DetailService
-	presignTTL          time.Duration
-	httpClient          *http.Client
-	s3GP                *s3client.Client
-	FrontendFS          fs.FS
-	SectionRepo         *sections.Repository
-	UserCollectionPool  *pgxpool.Pool
-	GroupRepo           *catalog.LibraryCollectionGroupRepository
-	FolderRepo          *catalog.FolderRepository
-	TemplateRegistry    *templates.Registry
-	SmartCountRefresher *catalog.SmartCountRefresher
-	JobRepo             *adminjob.Repository
-	EventsHub           *evt.Hub
+	repo                  *catalog.LibraryCollectionRepository
+	service               *catalog.LibraryCollectionService
+	itemRepo              *catalog.ItemRepository
+	Executor              *catalog.QueryExecutor
+	detailSvc             *catalog.DetailService
+	presignTTL            time.Duration
+	httpClient            *http.Client
+	s3GP                  *s3client.Client
+	FrontendFS            fs.FS
+	SectionRepo           *sections.Repository
+	UserCollectionPool    *pgxpool.Pool
+	GroupRepo             *catalog.LibraryCollectionGroupRepository
+	FolderRepo            *catalog.FolderRepository
+	TemplateRegistry      *templates.Registry
+	SmartCountRefresher   *catalog.SmartCountRefresher
+	JobRepo               *adminjob.Repository
+	EventsHub             *evt.Hub
+	SortPreferenceCleaner *userstore.CollectionSortPreferenceCleaner
 }
 
 var errLibraryCollectionInUse = errors.New("collection is used by one or more sections")
@@ -178,7 +180,7 @@ func (h *LibraryCollectionHandler) GenerateCollectionPoster(ctx context.Context,
 	slog.InfoContext(ctx, "collage: generating poster", "component", "api", "collection_id", collectionID, "item_poster_count", len(paths))
 
 	// Resolve poster paths to fetchable URLs.
-	resolved := h.detailSvc.PresignImageURLs(ctx, paths, imageTypePoster, "small")
+	resolved := h.detailSvc.PresignImageURLs(ctx, paths, "poster", "small")
 
 	// Fetch each image.
 	imageData := make([][]byte, 0, len(paths))
@@ -209,12 +211,12 @@ func (h *LibraryCollectionHandler) GenerateCollectionPoster(ctx context.Context,
 	}
 
 	// Delete any existing auto-generated images before uploading new ones.
-	if err := h.deleteCollectionImages(ctx, collectionID, imageTypePoster); err != nil {
+	if err := h.deleteCollectionImages(ctx, collectionID, "poster"); err != nil {
 		slog.WarnContext(ctx, "collage: failed to clean up old poster images", "component", "api", "collection_id", collectionID, "error", err)
 	}
 
 	// Process through the standard image pipeline (generates WebP variants + thumbhash).
-	s3Path, thumbhash, err := h.processCollectionImage(ctx, collectionID, imageTypePoster, composited)
+	s3Path, thumbhash, err := h.processCollectionImage(ctx, collectionID, "poster", composited)
 	if err != nil {
 		return fmt.Errorf("processing collage image: %w", err)
 	}
@@ -354,21 +356,22 @@ type updateLibraryCollectionRequest struct {
 }
 
 type importMDBListRequest struct {
-	LibraryID         int    `json:"library_id"`
-	LibraryIDs        []int  `json:"library_ids"`
-	Title             string `json:"title"`
-	Description       string `json:"description"`
-	URL               string `json:"url"`
-	Limit             *int   `json:"limit,omitempty"`
-	Featured          bool   `json:"featured"`
-	SortOrder         int    `json:"sort_order,omitempty"`
-	PosterURL         string `json:"poster_url"`
-	PosterSourceURL   string `json:"poster_source_url"`
-	BackdropSourceURL string `json:"backdrop_source_url"`
-	SyncSchedule      string `json:"sync_schedule"`
-	ManagementMode    string `json:"management_mode,omitempty"`
-	ManagementSource  string `json:"management_source,omitempty"`
-	ManagementKey     string `json:"management_key,omitempty"`
+	SortConfig        json.RawMessage `json:"sort_config,omitempty"`
+	LibraryID         int             `json:"library_id"`
+	LibraryIDs        []int           `json:"library_ids"`
+	Title             string          `json:"title"`
+	Description       string          `json:"description"`
+	URL               string          `json:"url"`
+	Limit             *int            `json:"limit,omitempty"`
+	Featured          bool            `json:"featured"`
+	SortOrder         int             `json:"sort_order,omitempty"`
+	PosterURL         string          `json:"poster_url"`
+	PosterSourceURL   string          `json:"poster_source_url"`
+	BackdropSourceURL string          `json:"backdrop_source_url"`
+	SyncSchedule      string          `json:"sync_schedule"`
+	ManagementMode    string          `json:"management_mode,omitempty"`
+	ManagementSource  string          `json:"management_source,omitempty"`
+	ManagementKey     string          `json:"management_key,omitempty"`
 	// PosterFromTemplate marks the poster as supplied by a template bundle so
 	// future template applies can refresh it. Set programmatically by
 	// createCollectionFromTemplate; not user-settable via JSON.
@@ -376,24 +379,25 @@ type importMDBListRequest struct {
 }
 
 type importTMDBRequest struct {
-	LibraryID          int    `json:"library_id"`
-	LibraryIDs         []int  `json:"library_ids"`
-	Title              string `json:"title"`
-	Description        string `json:"description"`
-	Preset             string `json:"preset"`
-	TimeWindow         string `json:"time_window"`
-	MediaType          string `json:"media_type"`
-	Limit              *int   `json:"limit,omitempty"`
-	Featured           bool   `json:"featured"`
-	SortOrder          int    `json:"sort_order,omitempty"`
-	PosterURL          string `json:"poster_url"`
-	PosterSourceURL    string `json:"poster_source_url"`
-	BackdropSourceURL  string `json:"backdrop_source_url"`
-	SyncSchedule       string `json:"sync_schedule"`
-	ManagementMode     string `json:"management_mode,omitempty"`
-	ManagementSource   string `json:"management_source,omitempty"`
-	ManagementKey      string `json:"management_key,omitempty"`
-	PosterFromTemplate bool   `json:"-"`
+	SortConfig         json.RawMessage `json:"sort_config,omitempty"`
+	LibraryID          int             `json:"library_id"`
+	LibraryIDs         []int           `json:"library_ids"`
+	Title              string          `json:"title"`
+	Description        string          `json:"description"`
+	Preset             string          `json:"preset"`
+	TimeWindow         string          `json:"time_window"`
+	MediaType          string          `json:"media_type"`
+	Limit              *int            `json:"limit,omitempty"`
+	Featured           bool            `json:"featured"`
+	SortOrder          int             `json:"sort_order,omitempty"`
+	PosterURL          string          `json:"poster_url"`
+	PosterSourceURL    string          `json:"poster_source_url"`
+	BackdropSourceURL  string          `json:"backdrop_source_url"`
+	SyncSchedule       string          `json:"sync_schedule"`
+	ManagementMode     string          `json:"management_mode,omitempty"`
+	ManagementSource   string          `json:"management_source,omitempty"`
+	ManagementKey      string          `json:"management_key,omitempty"`
+	PosterFromTemplate bool            `json:"-"`
 }
 
 // importTMDBFranchiseRequest is the request body for creating a collection
@@ -464,13 +468,14 @@ type importTMDBDiscoverSpecBody struct {
 }
 
 type importTraktRequest struct {
-	LibraryID   int    `json:"library_id"`
-	LibraryIDs  []int  `json:"library_ids"`
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Preset      string `json:"preset"`
-	MediaType   string `json:"media_type"`
-	ProfileID   string `json:"profile_id,omitempty"`
+	SortConfig  json.RawMessage `json:"sort_config,omitempty"`
+	LibraryID   int             `json:"library_id"`
+	LibraryIDs  []int           `json:"library_ids"`
+	Title       string          `json:"title"`
+	Description string          `json:"description"`
+	Preset      string          `json:"preset"`
+	MediaType   string          `json:"media_type"`
+	ProfileID   string          `json:"profile_id,omitempty"`
 	// ListURL selects a user-authored Trakt list
 	// (https://trakt.tv/users/{user}/lists/{slug}) instead of a preset.
 	ListURL           string `json:"list_url,omitempty"`
@@ -1114,6 +1119,14 @@ func (h *LibraryCollectionHandler) HandleCreateAdminCollection(w http.ResponseWr
 		}
 	}
 
+	// Library collections resolve with user scope stripped, so per-profile sort
+	// fields are rejected here rather than failing at browse time.
+	sortConfig, err := NormalizeCollectionSortConfig(req.SortConfig, false)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+
 	var syncSchedule *string
 	if s := strings.TrimSpace(req.SyncSchedule); s != "" {
 		if err := catalog.ParseCronExpression(s); err != nil {
@@ -1143,7 +1156,7 @@ func (h *LibraryCollectionHandler) HandleCreateAdminCollection(w http.ResponseWr
 		BackdropURL:      req.BackdropURL,
 		SourceURL:        req.SourceURL,
 		QueryDefinition:  queryDefinition,
-		SortConfig:       defaultJSON(req.SortConfig),
+		SortConfig:       json.RawMessage(sortConfig),
 		SourceConfig:     defaultCollectionSourceConfig(req.SourceConfig),
 		ManagementMode:   managementMode,
 		ManagementSource: managementSource,
@@ -1202,6 +1215,16 @@ func (h *LibraryCollectionHandler) HandleUpdateAdminCollection(w http.ResponseWr
 		}
 	}
 
+	sortConfig := req.SortConfig
+	if len(req.SortConfig) > 0 {
+		normalized, err := NormalizeCollectionSortConfig(req.SortConfig, false)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+			return
+		}
+		sortConfig = json.RawMessage(normalized)
+	}
+
 	// Validate sync_schedule if provided.
 	if req.SyncSchedule != nil && *req.SyncSchedule != "" {
 		if err := catalog.ParseCronExpression(*req.SyncSchedule); err != nil {
@@ -1234,7 +1257,7 @@ func (h *LibraryCollectionHandler) HandleUpdateAdminCollection(w http.ResponseWr
 		BackdropURL:      req.BackdropURL,
 		SourceURL:        req.SourceURL,
 		QueryDefinition:  queryDefinition,
-		SortConfig:       req.SortConfig,
+		SortConfig:       sortConfig,
 		SourceConfig:     req.SourceConfig,
 		ManagementMode:   normalizeOptionalCollectionManagementMode(req.ManagementMode),
 		ManagementSource: req.ManagementSource,
@@ -1331,7 +1354,7 @@ func (h *LibraryCollectionHandler) HandleDeleteCollectionImage(w http.ResponseWr
 	notAutoGen := false
 	notFromTemplate := false
 	input := catalog.UpdateLibraryCollectionInput{ID: collectionID}
-	if imageType == imageTypePoster {
+	if imageType == "poster" {
 		input.PosterURL = &empty
 		input.PosterThumbhash = &empty
 		input.PosterAutoGenerated = &notAutoGen
@@ -1346,7 +1369,7 @@ func (h *LibraryCollectionHandler) HandleDeleteCollectionImage(w http.ResponseWr
 	}
 
 	// After clearing, attempt to auto-generate a poster collage.
-	if imageType == imageTypePoster && h.service.CollageGen != nil {
+	if imageType == "poster" && h.service.CollageGen != nil {
 		if err := h.GenerateCollectionPoster(r.Context(), collectionID); err != nil {
 			if errors.Is(err, collage.ErrNotEnoughImages) {
 				slog.DebugContext(r.Context(), "collage: not enough images to regenerate after delete", "component", "api", "collection_id", collectionID)
@@ -1408,7 +1431,13 @@ func (h *LibraryCollectionHandler) deleteServerCollection(ctx context.Context, c
 		}
 	}
 
-	return h.repo.Delete(ctx, collectionID)
+	if err := h.repo.Delete(ctx, collectionID); err != nil {
+		return err
+	}
+	if h.SortPreferenceCleaner != nil {
+		h.SortPreferenceCleaner.DeleteForCollection(ctx, userstore.CollectionKindLibrary, collectionID)
+	}
+	return nil
 }
 
 type adminReorderCollectionsRequest struct {
@@ -2319,7 +2348,7 @@ func (h *LibraryCollectionHandler) applyTemplateBundleFeaturedSections(
 		if templateID == "" {
 			continue
 		}
-		ok, fail := h.applyTemplateBundleFeaturedSelection(ctx, bundle, sectionTypeLibrary, libraryID, templateID, librariesByID, collectionRefs, dryRun)
+		ok, fail := h.applyTemplateBundleFeaturedSelection(ctx, bundle, "library", libraryID, templateID, librariesByID, collectionRefs, dryRun)
 		if fail != nil {
 			failed = append(failed, *fail)
 			continue
@@ -2413,8 +2442,8 @@ func (h *LibraryCollectionHandler) upsertTemplateBundleFeaturedSection(
 
 	scope := "home"
 	var sectionLibraryID *int
-	if surface == sectionTypeLibrary {
-		scope = sectionTypeLibrary
+	if surface == "library" {
+		scope = "library"
 		libraryID := ref.Library.ID
 		sectionLibraryID = &libraryID
 	}
@@ -2604,12 +2633,19 @@ func (h *LibraryCollectionHandler) createMDBListCollection(
 		syncSchedule = &s
 	}
 
-	normalizedURL := usercollections.NormalizeMDBListURL(req.URL)
+	normalizedURL, err := usercollections.CanonicalMDBListURL(req.URL)
+	if err != nil {
+		return nil, requestValidationError{err: err}
+	}
 	sourceConfig, err := buildMDBListSourceConfig(normalizedURL, req.Limit)
 	if err != nil {
 		return nil, fmt.Errorf("building MDBList source config: %w", err)
 	}
 	managementMode, managementSource, managementKey, err := normalizeCollectionManagementFields(req.ManagementMode, req.ManagementSource, req.ManagementKey)
+	if err != nil {
+		return nil, requestValidationError{err: err}
+	}
+	sortConfig, err := NormalizeCollectionSortConfig(req.SortConfig, false)
 	if err != nil {
 		return nil, requestValidationError{err: err}
 	}
@@ -2620,12 +2656,13 @@ func (h *LibraryCollectionHandler) createMDBListCollection(
 		Title:              req.Title,
 		Description:        req.Description,
 		CollectionType:     "mdblist",
+		SortConfig:         json.RawMessage(sortConfig),
 		Visibility:         "visible",
 		Featured:           req.Featured,
 		SortOrder:          req.SortOrder,
 		PosterURL:          req.PosterURL,
 		PosterFromTemplate: req.PosterFromTemplate,
-		SourceURL:          req.URL,
+		SourceURL:          normalizedURL,
 		SourceConfig:       sourceConfig,
 		ManagementMode:     managementMode,
 		ManagementSource:   managementSource,
@@ -2673,6 +2710,10 @@ func (h *LibraryCollectionHandler) createTMDBCollection(
 	if err != nil {
 		return nil, requestValidationError{err: err}
 	}
+	tmdbSortConfig, err := NormalizeCollectionSortConfig(req.SortConfig, false)
+	if err != nil {
+		return nil, requestValidationError{err: err}
+	}
 	collection, err := h.repo.Create(ctx, catalog.CreateLibraryCollectionInput{
 		LibraryID:          req.LibraryID,
 		LibraryIDs:         req.LibraryIDs,
@@ -2680,6 +2721,7 @@ func (h *LibraryCollectionHandler) createTMDBCollection(
 		Title:              req.Title,
 		Description:        req.Description,
 		CollectionType:     "tmdb",
+		SortConfig:         json.RawMessage(tmdbSortConfig),
 		Visibility:         "visible",
 		Featured:           req.Featured,
 		SortOrder:          req.SortOrder,
@@ -3025,6 +3067,12 @@ func (h *LibraryCollectionHandler) HandleImportTraktCollection(w http.ResponseWr
 		return
 	}
 
+	traktSortConfig, err := NormalizeCollectionSortConfig(req.SortConfig, false)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "bad_request", err.Error())
+		return
+	}
+
 	collection, err := h.repo.Create(r.Context(), catalog.CreateLibraryCollectionInput{
 		LibraryID:        req.LibraryID,
 		LibraryIDs:       req.LibraryIDs,
@@ -3032,6 +3080,7 @@ func (h *LibraryCollectionHandler) HandleImportTraktCollection(w http.ResponseWr
 		Title:            req.Title,
 		Description:      req.Description,
 		CollectionType:   "trakt",
+		SortConfig:       json.RawMessage(traktSortConfig),
 		Visibility:       "visible",
 		Featured:         req.Featured,
 		PosterURL:        req.PosterURL,
@@ -3539,13 +3588,13 @@ func normalizeTMDBPresetRequest(preset, mediaType, timeWindow string) (string, s
 		return preset, mediaType, timeWindow, nil
 	case "popular", "top_rated":
 		switch mediaType {
-		case itemTypeMovie, "tv":
+		case "movie", "tv":
 			return preset, mediaType, "", nil
 		default:
 			return "", "", "", fmt.Errorf("media_type must be \"movie\" or \"tv\" for preset %q", preset)
 		}
 	case "now_playing", "upcoming":
-		if mediaType != itemTypeMovie {
+		if mediaType != "movie" {
 			return "", "", "", fmt.Errorf("media_type must be \"movie\" for preset %q", preset)
 		}
 		return preset, mediaType, "", nil
@@ -3574,7 +3623,7 @@ func normalizeTraktPresetRequest(preset, mediaType, profileID string) (string, s
 		return "", "", "", fmt.Errorf("preset must be one of \"trending\", \"popular\", or \"recommended\"")
 	}
 	switch mediaType {
-	case itemTypeMovie, "tv":
+	case "movie", "tv":
 	default:
 		return "", "", "", fmt.Errorf("media_type must be \"movie\" or \"tv\"")
 	}
@@ -3613,12 +3662,12 @@ func (h *LibraryCollectionHandler) deleteCollectionImages(ctx context.Context, c
 
 func (h *LibraryCollectionHandler) processArtworkInputs(r *http.Request, collectionID, posterSourceURL, backdropSourceURL string) error {
 	sourceByType := map[string]string{
-		imageTypePoster: strings.TrimSpace(posterSourceURL),
-		"backdrop":      strings.TrimSpace(backdropSourceURL),
+		"poster":   strings.TrimSpace(posterSourceURL),
+		"backdrop": strings.TrimSpace(backdropSourceURL),
 	}
 	isMultipart := strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/")
 
-	for _, imageType := range []string{imageTypePoster, "backdrop"} {
+	for _, imageType := range []string{"poster", "backdrop"} {
 		var (
 			fileData []byte
 			err      error
@@ -3654,7 +3703,7 @@ func (h *LibraryCollectionHandler) processArtworkInputs(r *http.Request, collect
 
 		posterURL, backdropURL := (*string)(nil), (*string)(nil)
 		posterThumbhash, backdropThumbhash := (*string)(nil), (*string)(nil)
-		if imageType == imageTypePoster {
+		if imageType == "poster" {
 			posterURL = &s3Path
 			posterThumbhash = &thumbhash
 		} else {
@@ -3669,7 +3718,7 @@ func (h *LibraryCollectionHandler) processArtworkInputs(r *http.Request, collect
 			PosterThumbhash:   posterThumbhash,
 			BackdropThumbhash: backdropThumbhash,
 		}
-		if imageType == imageTypePoster {
+		if imageType == "poster" {
 			adminUpload := false
 			fromTemplate := false
 			update.PosterAutoGenerated = &adminUpload

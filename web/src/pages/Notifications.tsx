@@ -1,11 +1,23 @@
 import { Fragment, useState } from "react";
 import { Link } from "react-router";
-import { Bell, BellOff, Check, CheckCheck, Loader2, RefreshCw, Settings2 } from "lucide-react";
+import {
+  Bell,
+  BellOff,
+  Check,
+  CheckCheck,
+  Loader2,
+  RefreshCw,
+  Settings2,
+} from "lucide-react";
 import type { AppNotification } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { Separator } from "@/components/ui/separator";
 import {
   formatEpisodeCode,
@@ -41,7 +53,10 @@ function formatNotificationTime(value: string): string {
   if (diffDays < 7) {
     return `${diffDays}d ago`;
   }
-  return date.toLocaleDateString(preferredDateLocale(), { month: "short", day: "numeric" });
+  return date.toLocaleDateString(preferredDateLocale(), {
+    month: "short",
+    day: "numeric",
+  });
 }
 
 function notificationTitle(notification: AppNotification): string {
@@ -51,7 +66,10 @@ function notificationTitle(notification: AppNotification): string {
   if (notification.type === "request.fulfilled") {
     return notification.series_title || "Request available";
   }
-  if (notification.type === "request.approved" || notification.type === "request.declined") {
+  if (
+    notification.type === "request.approved" ||
+    notification.type === "request.declined"
+  ) {
     return notification.reason_flags?.title || "Media request";
   }
   // Unknown types render with a generic fallback by design — the type
@@ -63,7 +81,8 @@ function notificationDescription(notification: AppNotification): string {
   if (notification.type === "episode.available") {
     const code = formatEpisodeCode(notification);
     return (
-      [code, notification.episode_title].filter(Boolean).join(" — ") || "New episode available"
+      [code, notification.episode_title].filter(Boolean).join(" — ") ||
+      "New episode available"
     );
   }
   if (notification.type === "request.fulfilled") {
@@ -79,7 +98,9 @@ function notificationDescription(notification: AppNotification): string {
   }
   if (notification.type === "request.declined") {
     const reason = notification.reason_flags?.reason;
-    return reason ? `Your request was declined — ${reason}` : "Your request was declined";
+    return reason
+      ? `Your request was declined — ${reason}`
+      : "Your request was declined";
   }
   return notification.type;
 }
@@ -151,7 +172,9 @@ function NotificationRow({
               aria-label="Unread"
             />
           )}
-          <span className={`truncate text-sm ${unread ? "font-semibold" : "font-medium"}`}>
+          <span
+            className={`truncate text-sm ${unread ? "font-semibold" : "font-medium"}`}
+          >
             {notificationTitle(notification)}
           </span>
           <span className="text-muted-foreground ml-auto shrink-0 text-xs">
@@ -272,7 +295,9 @@ function NotificationPreferencesPopover() {
           </div>
         ) : !prefs ? (
           <div className="space-y-3">
-            <p className="text-muted-foreground text-sm">Couldn’t load preferences.</p>
+            <p className="text-muted-foreground text-sm">
+              Couldn’t load preferences.
+            </p>
             <Button size="sm" variant="outline" onClick={() => void refetch()}>
               <RefreshCw />
               Retry
@@ -290,12 +315,16 @@ function NotificationPreferencesPopover() {
                 >
                   <div className="min-w-0">
                     <div className="text-sm font-medium">{toggle.label}</div>
-                    <div className="text-muted-foreground text-xs">{toggle.description}</div>
+                    <div className="text-muted-foreground text-xs">
+                      {toggle.description}
+                    </div>
                   </div>
                   <Switch
                     checked={prefs[toggle.key]}
                     disabled={index > 0 && !prefs.enabled}
-                    onCheckedChange={(checked) => updatePrefs.mutate({ [toggle.key]: checked })}
+                    onCheckedChange={(checked) =>
+                      updatePrefs.mutate({ [toggle.key]: checked })
+                    }
                   />
                 </div>
               </Fragment>
@@ -315,7 +344,8 @@ export default function Notifications() {
   const markRead = useMarkNotificationRead();
   const markAllRead = useMarkAllNotificationsRead();
 
-  const notifications = list.data?.pages.flatMap((page) => page.notifications) ?? [];
+  const notifications =
+    list.data?.pages.flatMap((page) => page.notifications) ?? [];
 
   return (
     <div className="mx-auto w-full max-w-3xl px-4 py-8">
@@ -348,7 +378,9 @@ export default function Notifications() {
             size="sm"
             onClick={() => setStatusFilter(status)}
           >
-            {status === "all" ? "All" : `Unread${unreadCount ? ` (${unreadCount})` : ""}`}
+            {status === "all"
+              ? "All"
+              : `Unread${unreadCount ? ` (${unreadCount})` : ""}`}
           </Button>
         ))}
       </div>
@@ -363,11 +395,13 @@ export default function Notifications() {
         <div className="text-muted-foreground flex flex-col items-center gap-3 py-20 text-center">
           <BellOff className="h-10 w-10 opacity-50" />
           <div className="text-sm">
-            {statusFilter === "unread" ? "No unread notifications" : "No notifications yet"}
+            {statusFilter === "unread"
+              ? "No unread notifications"
+              : "No notifications yet"}
           </div>
           <div className="max-w-sm text-xs">
-            You will be notified here when new episodes arrive for series you favorite, watchlist,
-            or are watching.
+            You will be notified here when new episodes arrive for series you
+            favorite, watchlist, or are watching.
           </div>
         </div>
       ) : (
@@ -388,7 +422,9 @@ export default function Notifications() {
                 onClick={() => list.fetchNextPage()}
                 disabled={list.isFetchingNextPage}
               >
-                {list.isFetchingNextPage && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {list.isFetchingNextPage && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 Load more
               </Button>
             </div>

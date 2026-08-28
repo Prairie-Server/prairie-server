@@ -1,6 +1,11 @@
 import { useState, useMemo, useCallback } from "react";
 import { Loader2, Lock, RotateCcw, Save, Unlock, X } from "lucide-react";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -43,16 +48,29 @@ const AIR_TIMEZONES = [
 
 type Section = "general" | "dates" | "tags" | "ids" | "images";
 
-const SECTIONS: { key: Section; label: string; types: ItemDetail["type"][] }[] = [
-  { key: "general", label: "General", types: ["movie", "series", "season", "episode"] },
-  { key: "dates", label: "Dates & Ratings", types: ["movie", "series", "season", "episode"] },
-  { key: "tags", label: "Tags & Genres", types: ["movie", "series"] },
-  { key: "ids", label: "External IDs", types: ["movie", "series", "season", "episode"] },
-  // Episodes are excluded: the image search endpoint only returns series-level
-  // posters/backdrops/logos, and episodes store stills — there is nothing an
-  // episode apply could legitimately show or persist from this dialog.
-  { key: "images", label: "Images", types: ["movie", "series", "season"] },
-];
+const SECTIONS: { key: Section; label: string; types: ItemDetail["type"][] }[] =
+  [
+    {
+      key: "general",
+      label: "General",
+      types: ["movie", "series", "season", "episode"],
+    },
+    {
+      key: "dates",
+      label: "Dates & Ratings",
+      types: ["movie", "series", "season", "episode"],
+    },
+    { key: "tags", label: "Tags & Genres", types: ["movie", "series"] },
+    {
+      key: "ids",
+      label: "External IDs",
+      types: ["movie", "series", "season", "episode"],
+    },
+    // Episodes are excluded: the image search endpoint only returns series-level
+    // posters/backdrops/logos, and episodes store stills — there is nothing an
+    // episode apply could legitimately show or persist from this dialog.
+    { key: "images", label: "Images", types: ["movie", "series", "season"] },
+  ];
 
 // Maps form field names to their MetadataField lock value.
 const FIELD_LOCK_MAP: Record<string, number> = {
@@ -118,7 +136,11 @@ function initFormState(item: ItemDetail) {
   };
 }
 
-export default function EditMetadataDialog({ item, open, onOpenChange }: EditMetadataDialogProps) {
+export default function EditMetadataDialog({
+  item,
+  open,
+  onOpenChange,
+}: EditMetadataDialogProps) {
   const [activeSection, setActiveSection] = useState<Section>("general");
   const [form, setForm] = useState(() => initFormState(item));
   const [lockedFields, setLockedFields] = useState<Set<number>>(
@@ -134,7 +156,9 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
   const visibleSections = SECTIONS.filter(
     (s) => s.types.includes(item.type) && (s.key !== "images" || canEditImages),
   );
-  const effectiveActiveSection = visibleSections.some((section) => section.key === activeSection)
+  const effectiveActiveSection = visibleSections.some(
+    (section) => section.key === activeSection,
+  )
     ? activeSection
     : "general";
 
@@ -169,7 +193,8 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
     const data: UpdateItemMetadataRequest = {};
 
     if (form.title !== originalForm.title) data.title = form.title;
-    if (form.sort_title !== originalForm.sort_title) data.sort_title = form.sort_title;
+    if (form.sort_title !== originalForm.sort_title)
+      data.sort_title = form.sort_title;
     if (form.original_title !== originalForm.original_title)
       data.original_title = form.original_title;
     if (form.overview !== originalForm.overview) data.overview = form.overview;
@@ -184,7 +209,9 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
       data.studios = form.studios;
     if (JSON.stringify(form.networks) !== JSON.stringify(originalForm.networks))
       data.networks = form.networks;
-    if (JSON.stringify(form.countries) !== JSON.stringify(originalForm.countries))
+    if (
+      JSON.stringify(form.countries) !== JSON.stringify(originalForm.countries)
+    )
       data.countries = form.countries;
     if (form.release_date !== originalForm.release_date)
       data.release_date = form.release_date || null;
@@ -192,16 +219,20 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
       data.first_air_date = form.first_air_date || null;
     if (form.last_air_date !== originalForm.last_air_date)
       data.last_air_date = form.last_air_date || null;
-    if (form.air_time !== originalForm.air_time) data.air_time = form.air_time || null;
+    if (form.air_time !== originalForm.air_time)
+      data.air_time = form.air_time || null;
     if (form.air_timezone !== originalForm.air_timezone)
       // Send "" (not null) when cleared: the server treats null as "skip", so
       // clearing a previously-set timezone would not persist. "" is accepted by
       // validation and normalized to NULL server-side.
       data.air_timezone = form.air_timezone;
-    if (form.air_date !== originalForm.air_date) data.air_date = form.air_date || null;
+    if (form.air_date !== originalForm.air_date)
+      data.air_date = form.air_date || null;
     if (form.status !== originalForm.status) data.status = form.status;
-    if (form.rating_imdb !== originalForm.rating_imdb) data.rating_imdb = form.rating_imdb;
-    if (form.rating_tmdb !== originalForm.rating_tmdb) data.rating_tmdb = form.rating_tmdb;
+    if (form.rating_imdb !== originalForm.rating_imdb)
+      data.rating_imdb = form.rating_imdb;
+    if (form.rating_tmdb !== originalForm.rating_tmdb)
+      data.rating_tmdb = form.rating_tmdb;
     if (form.rating_rt_critic !== originalForm.rating_rt_critic)
       data.rating_rt_critic = form.rating_rt_critic;
     if (form.rating_rt_audience !== originalForm.rating_rt_audience)
@@ -209,13 +240,16 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
     if (form.imdb_id !== originalForm.imdb_id) data.imdb_id = form.imdb_id;
     if (form.tmdb_id !== originalForm.tmdb_id) data.tmdb_id = form.tmdb_id;
     if (form.tvdb_id !== originalForm.tvdb_id) data.tvdb_id = form.tvdb_id;
-    if (form.season_number !== originalForm.season_number) data.season_number = form.season_number;
+    if (form.season_number !== originalForm.season_number)
+      data.season_number = form.season_number;
     if (form.episode_number !== originalForm.episode_number)
       data.episode_number = form.episode_number;
 
     if (isLockable) {
       const originalLocked = new Set(item.locked_fields ?? []);
-      const currentLocked = Array.from(lockedFields).sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+      const currentLocked = Array.from(lockedFields).sort((a, b) =>
+        a < b ? -1 : a > b ? 1 : 0,
+      );
       const originalSorted = Array.from(originalLocked).sort((a, b) =>
         a < b ? -1 : a > b ? 1 : 0,
       );
@@ -254,7 +288,11 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
             ? "text-amber-500/80 hover:text-amber-500"
             : "text-muted-foreground/30 hover:text-muted-foreground/60",
         )}
-        title={isLocked ? "Locked — click to unlock" : "Unlocked — edits will auto-lock"}
+        title={
+          isLocked
+            ? "Locked — click to unlock"
+            : "Unlocked — edits will auto-lock"
+        }
       >
         {isLocked ? <Lock className="size-3" /> : <Unlock className="size-3" />}
         {isLocked ? "locked" : ""}
@@ -274,11 +312,16 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="max-w-5xl gap-0 overflow-hidden p-0 sm:max-w-5xl" showCloseButton>
+        <DialogContent
+          className="max-w-5xl gap-0 overflow-hidden p-0 sm:max-w-5xl"
+          showCloseButton
+        >
           {/* Header */}
           <DialogHeader className="border-border/10 flex-row items-center justify-between border-b px-5 py-4">
             <div className="flex items-center gap-2.5">
-              <DialogTitle className="text-[15px] font-semibold">Edit Metadata</DialogTitle>
+              <DialogTitle className="text-[15px] font-semibold">
+                Edit Metadata
+              </DialogTitle>
               <span className="bg-muted/50 text-muted-foreground rounded px-2 py-0.5 text-[11px]">
                 {typeLabel}
               </span>
@@ -291,7 +334,10 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
             )}
           </DialogHeader>
 
-          <div className="flex flex-col sm:flex-row" style={{ height: "min(70vh, 580px)" }}>
+          <div
+            className="flex flex-col sm:flex-row"
+            style={{ height: "min(70vh, 580px)" }}
+          >
             {/* Sidebar — horizontal tabs on mobile, vertical on sm+ */}
             <nav className="border-border/10 flex flex-shrink-0 overflow-x-auto border-b bg-black/10 sm:w-[160px] sm:flex-col sm:overflow-x-visible sm:border-r sm:border-b-0 sm:py-2">
               {visibleSections.map((section) => (
@@ -316,25 +362,39 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
               {effectiveActiveSection === "general" && (
                 <div className="space-y-4">
                   <FieldRow label="Title" lockIcon={renderLockIcon("title")}>
-                    <Input value={form.title} onChange={(e) => setField("title", e.target.value)} />
+                    <Input
+                      value={form.title}
+                      onChange={(e) => setField("title", e.target.value)}
+                    />
                   </FieldRow>
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <FieldRow label="Sort Title" lockIcon={renderLockIcon("sort_title")}>
+                    <FieldRow
+                      label="Sort Title"
+                      lockIcon={renderLockIcon("sort_title")}
+                    >
                       <Input
                         value={form.sort_title}
                         onChange={(e) => setField("sort_title", e.target.value)}
                       />
                     </FieldRow>
-                    <FieldRow label="Original Title" lockIcon={renderLockIcon("original_title")}>
+                    <FieldRow
+                      label="Original Title"
+                      lockIcon={renderLockIcon("original_title")}
+                    >
                       <Input
                         value={form.original_title}
-                        onChange={(e) => setField("original_title", e.target.value)}
+                        onChange={(e) =>
+                          setField("original_title", e.target.value)
+                        }
                       />
                     </FieldRow>
                   </div>
 
-                  <FieldRow label="Overview" lockIcon={renderLockIcon("overview")}>
+                  <FieldRow
+                    label="Overview"
+                    lockIcon={renderLockIcon("overview")}
+                  >
                     <textarea
                       value={form.overview}
                       onChange={(e) => setField("overview", e.target.value)}
@@ -343,7 +403,10 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                     />
                   </FieldRow>
 
-                  <FieldRow label="Tagline" lockIcon={renderLockIcon("tagline")}>
+                  <FieldRow
+                    label="Tagline"
+                    lockIcon={renderLockIcon("tagline")}
+                  >
                     <Input
                       value={form.tagline}
                       onChange={(e) => setField("tagline", e.target.value)}
@@ -351,24 +414,34 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                     />
                   </FieldRow>
 
-                  {["movie", "series", "season", "episode"].includes(item.type) && (
-                    <MetadataTranslatePanel item={item} />
-                  )}
+                  {["movie", "series", "season", "episode"].includes(
+                    item.type,
+                  ) && <MetadataTranslatePanel item={item} />}
 
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                    <FieldRow label="Content Rating" lockIcon={renderLockIcon("content_rating")}>
+                    <FieldRow
+                      label="Content Rating"
+                      lockIcon={renderLockIcon("content_rating")}
+                    >
                       <Input
                         value={form.content_rating}
-                        onChange={(e) => setField("content_rating", e.target.value)}
+                        onChange={(e) =>
+                          setField("content_rating", e.target.value)
+                        }
                       />
                     </FieldRow>
 
                     {item.type === "movie" && (
-                      <FieldRow label="Runtime (min)" lockIcon={renderLockIcon("runtime")}>
+                      <FieldRow
+                        label="Runtime (min)"
+                        lockIcon={renderLockIcon("runtime")}
+                      >
                         <Input
                           type="number"
                           value={form.runtime || ""}
-                          onChange={(e) => setField("runtime", parseInt(e.target.value) || 0)}
+                          onChange={(e) =>
+                            setField("runtime", parseInt(e.target.value) || 0)
+                          }
                         />
                       </FieldRow>
                     )}
@@ -392,7 +465,10 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                           type="number"
                           value={form.season_number ?? ""}
                           onChange={(e) =>
-                            setField("season_number", parseInt(e.target.value) || undefined)
+                            setField(
+                              "season_number",
+                              parseInt(e.target.value) || undefined,
+                            )
                           }
                         />
                       </FieldRow>
@@ -417,15 +493,23 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                           type="number"
                           value={form.episode_number ?? ""}
                           onChange={(e) =>
-                            setField("episode_number", parseInt(e.target.value) || undefined)
+                            setField(
+                              "episode_number",
+                              parseInt(e.target.value) || undefined,
+                            )
                           }
                         />
                       </FieldRow>
-                      <FieldRow label="Runtime (min)" lockIcon={renderLockIcon("runtime")}>
+                      <FieldRow
+                        label="Runtime (min)"
+                        lockIcon={renderLockIcon("runtime")}
+                      >
                         <Input
                           type="number"
                           value={form.runtime || ""}
-                          onChange={(e) => setField("runtime", parseInt(e.target.value) || 0)}
+                          onChange={(e) =>
+                            setField("runtime", parseInt(e.target.value) || 0)
+                          }
                         />
                       </FieldRow>
                     </div>
@@ -441,16 +525,23 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                         <Input
                           type="number"
                           value={form.year || ""}
-                          onChange={(e) => setField("year", parseInt(e.target.value) || 0)}
+                          onChange={(e) =>
+                            setField("year", parseInt(e.target.value) || 0)
+                          }
                         />
                       </FieldRow>
 
                       {item.type === "movie" && (
-                        <FieldRow label="Release Date" lockIcon={renderLockIcon("release_date")}>
+                        <FieldRow
+                          label="Release Date"
+                          lockIcon={renderLockIcon("release_date")}
+                        >
                           <Input
                             type="date"
                             value={form.release_date}
-                            onChange={(e) => setField("release_date", e.target.value)}
+                            onChange={(e) =>
+                              setField("release_date", e.target.value)
+                            }
                           />
                         </FieldRow>
                       )}
@@ -463,7 +554,9 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                           <Input
                             type="date"
                             value={form.first_air_date}
-                            onChange={(e) => setField("first_air_date", e.target.value)}
+                            onChange={(e) =>
+                              setField("first_air_date", e.target.value)
+                            }
                           />
                         </FieldRow>
                       )}
@@ -472,26 +565,39 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
 
                   {item.type === "series" && (
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                      <FieldRow label="Last Air Date" lockIcon={renderLockIcon("last_air_date")}>
+                      <FieldRow
+                        label="Last Air Date"
+                        lockIcon={renderLockIcon("last_air_date")}
+                      >
                         <Input
                           type="date"
                           value={form.last_air_date}
-                          onChange={(e) => setField("last_air_date", e.target.value)}
+                          onChange={(e) =>
+                            setField("last_air_date", e.target.value)
+                          }
                         />
                       </FieldRow>
-                      <FieldRow label="Air Time" lockIcon={renderLockIcon("air_time")}>
+                      <FieldRow
+                        label="Air Time"
+                        lockIcon={renderLockIcon("air_time")}
+                      >
                         <Input
                           type="time"
                           value={form.air_time}
                           onChange={(e) => setField("air_time", e.target.value)}
                         />
                       </FieldRow>
-                      <FieldRow label="Air Timezone" lockIcon={renderLockIcon("air_timezone")}>
+                      <FieldRow
+                        label="Air Timezone"
+                        lockIcon={renderLockIcon("air_timezone")}
+                      >
                         <Input
                           list="air-timezone-options"
                           value={form.air_timezone}
                           placeholder="America/New_York"
-                          onChange={(e) => setField("air_timezone", e.target.value)}
+                          onChange={(e) =>
+                            setField("air_timezone", e.target.value)
+                          }
                         />
                         <datalist id="air-timezone-options">
                           {AIR_TIMEZONES.map((timezone) => (
@@ -518,7 +624,10 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                         Ratings
                       </div>
                       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <FieldRow label="IMDb Rating" lockIcon={renderLockIcon("rating_imdb")}>
+                        <FieldRow
+                          label="IMDb Rating"
+                          lockIcon={renderLockIcon("rating_imdb")}
+                        >
                           <Input
                             type="number"
                             step="0.1"
@@ -528,12 +637,17 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                             onChange={(e) =>
                               setField(
                                 "rating_imdb",
-                                e.target.value ? parseFloat(e.target.value) : null,
+                                e.target.value
+                                  ? parseFloat(e.target.value)
+                                  : null,
                               )
                             }
                           />
                         </FieldRow>
-                        <FieldRow label="TMDB Rating" lockIcon={renderLockIcon("rating_tmdb")}>
+                        <FieldRow
+                          label="TMDB Rating"
+                          lockIcon={renderLockIcon("rating_tmdb")}
+                        >
                           <Input
                             type="number"
                             step="0.1"
@@ -543,7 +657,9 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                             onChange={(e) =>
                               setField(
                                 "rating_tmdb",
-                                e.target.value ? parseFloat(e.target.value) : null,
+                                e.target.value
+                                  ? parseFloat(e.target.value)
+                                  : null,
                               )
                             }
                           />
@@ -560,7 +676,9 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                             onChange={(e) =>
                               setField(
                                 "rating_rt_critic",
-                                e.target.value ? parseInt(e.target.value) : null,
+                                e.target.value
+                                  ? parseInt(e.target.value)
+                                  : null,
                               )
                             }
                           />
@@ -577,7 +695,9 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                             onChange={(e) =>
                               setField(
                                 "rating_rt_audience",
-                                e.target.value ? parseInt(e.target.value) : null,
+                                e.target.value
+                                  ? parseInt(e.target.value)
+                                  : null,
                               )
                             }
                           />
@@ -598,7 +718,10 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                     />
                   </FieldRow>
 
-                  <FieldRow label="Studios" lockIcon={renderLockIcon("studios")}>
+                  <FieldRow
+                    label="Studios"
+                    lockIcon={renderLockIcon("studios")}
+                  >
                     <TagInput
                       value={form.studios}
                       onChange={(v) => setField("studios", v)}
@@ -607,7 +730,10 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                   </FieldRow>
 
                   {item.type === "series" && (
-                    <FieldRow label="Networks" lockIcon={renderLockIcon("networks")}>
+                    <FieldRow
+                      label="Networks"
+                      lockIcon={renderLockIcon("networks")}
+                    >
                       <TagInput
                         value={form.networks}
                         onChange={(v) => setField("networks", v)}
@@ -616,7 +742,10 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                     </FieldRow>
                   )}
 
-                  <FieldRow label="Countries" lockIcon={renderLockIcon("countries")}>
+                  <FieldRow
+                    label="Countries"
+                    lockIcon={renderLockIcon("countries")}
+                  >
                     <TagInput
                       value={form.countries}
                       onChange={(v) => setField("countries", v)}
@@ -653,10 +782,15 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
               {canEditImages && (
                 <div
                   className={
-                    effectiveActiveSection === "images" ? "flex h-full flex-col" : "hidden"
+                    effectiveActiveSection === "images"
+                      ? "flex h-full flex-col"
+                      : "hidden"
                   }
                 >
-                  <ImageSelectorTab item={item} enabled={effectiveActiveSection === "images"} />
+                  <ImageSelectorTab
+                    item={item}
+                    enabled={effectiveActiveSection === "images"}
+                  />
                 </div>
               )}
             </div>
@@ -693,7 +827,11 @@ export default function EditMetadataDialog({ item, open, onOpenChange }: EditMet
                 disabled={updateMutation.isPending}
                 className="max-sm:flex-1"
               >
-                {updateMutation.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+                {updateMutation.isPending ? (
+                  <Loader2 className="animate-spin" />
+                ) : (
+                  <Save />
+                )}
                 {updateMutation.isPending ? "Saving..." : "Save Changes"}
               </Button>
             </div>
@@ -726,7 +864,9 @@ function FieldRow({
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between">
-        <Label className="text-muted-foreground text-[12px] font-medium">{label}</Label>
+        <Label className="text-muted-foreground text-[12px] font-medium">
+          {label}
+        </Label>
         {lockIcon}
       </div>
       {children}

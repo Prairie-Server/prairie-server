@@ -1,4 +1,12 @@
-import { BookHeadphones, BookMarked, BookOpen, Film, Layers, Podcast, Tv } from "lucide-react";
+import {
+  BookHeadphones,
+  BookMarked,
+  BookOpen,
+  Film,
+  Layers,
+  Podcast,
+  Tv,
+} from "lucide-react";
 
 export const LIBRARY_TYPES = [
   { value: "movies", label: "Movies", icon: Film },

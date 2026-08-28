@@ -1,4 +1,12 @@
-import { ArrowLeft, Loader2, Plus, Save, Trash2, UsersRound, X } from "lucide-react";
+import {
+  ArrowLeft,
+  Loader2,
+  Plus,
+  Save,
+  Trash2,
+  UsersRound,
+  X,
+} from "lucide-react";
 import { useMemo, useState } from "react";
 
 import type { AccessGroup, AccessGroupInput } from "@/api/types";
@@ -32,7 +40,10 @@ import {
 } from "@/hooks/queries/admin/accessGroups";
 import { useAdminLibraries } from "@/hooks/queries/admin/libraries";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
-import { PERMISSION_MARKER_EDIT, PERMISSION_METADATA_CURATION } from "@/lib/permissions";
+import {
+  PERMISSION_MARKER_EDIT,
+  PERMISSION_METADATA_CURATION,
+} from "@/lib/permissions";
 import {
   PLAYBACK_QUALITY_OPTIONS,
   playbackQualityPresetFromValue,
@@ -42,7 +53,11 @@ import {
 
 // The two assignable permissions (mirrors auth.assignablePermissions). A group
 // mask of `null` means "all assignable"; a list narrows to those named.
-const ASSIGNABLE_PERMISSIONS: Array<{ value: string; label: string; description: string }> = [
+const ASSIGNABLE_PERMISSIONS: Array<{
+  value: string;
+  label: string;
+  description: string;
+}> = [
   {
     value: PERMISSION_METADATA_CURATION,
     label: "Metadata curation",
@@ -107,10 +122,13 @@ export default function AdminAccessGroups() {
     <div className="page-shell space-y-6 py-4 sm:py-6">
       <div className="page-header gap-5">
         <div className="space-y-3">
-          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Access Groups</h1>
+          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
+            Access Groups
+          </h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Shared access defaults for a set of users. A member's own restrictions still apply on
-            top — a group grants the most a member can do, never more.
+            The shared policy layer for a set of users. A group supplies the
+            value for every field its members leave on Inherit; a per-user
+            override replaces the group value in either direction.
           </p>
         </div>
         {!creating && (
@@ -134,7 +152,11 @@ export default function AdminAccessGroups() {
             className="max-w-xs"
             autoFocus
           />
-          <Button type="button" onClick={create} disabled={createGroup.isPending}>
+          <Button
+            type="button"
+            onClick={create}
+            disabled={createGroup.isPending}
+          >
             <Plus />
             Create
           </Button>
@@ -153,7 +175,9 @@ export default function AdminAccessGroups() {
       )}
 
       {groups.isLoading && (
-        <p className="text-muted-foreground text-sm">Loading access groups...</p>
+        <p className="text-muted-foreground text-sm">
+          Loading access groups...
+        </p>
       )}
 
       {!groups.isLoading && groups.data?.length === 0 && !creating && (
@@ -161,8 +185,9 @@ export default function AdminAccessGroups() {
           <UsersRound className="text-muted-foreground mx-auto size-8" />
           <h2 className="mt-3 text-lg font-semibold">No access groups yet</h2>
           <p className="text-muted-foreground mx-auto mt-1 max-w-md text-sm">
-            Create a group to manage libraries, downloads, streams, and permissions for many users
-            at once, then assign users to it from their profile.
+            Create a group to manage libraries, downloads, streams, and
+            permissions for many users at once, then assign users to it from
+            their profile.
           </p>
         </div>
       )}
@@ -170,7 +195,11 @@ export default function AdminAccessGroups() {
       {groups.data && groups.data.length > 0 && (
         <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {groups.data.map((group) => (
-            <AccessGroupCard key={group.id} group={group} onClick={() => setSelectedId(group.id)} />
+            <AccessGroupCard
+              key={group.id}
+              group={group}
+              onClick={() => setSelectedId(group.id)}
+            />
           ))}
         </div>
       )}
@@ -178,7 +207,13 @@ export default function AdminAccessGroups() {
   );
 }
 
-function AccessGroupCard({ group, onClick }: { group: AccessGroup; onClick: () => void }) {
+function AccessGroupCard({
+  group,
+  onClick,
+}: {
+  group: AccessGroup;
+  onClick: () => void;
+}) {
   const facts = [
     group.library_ids === null
       ? "All libraries"
@@ -196,7 +231,9 @@ function AccessGroupCard({ group, onClick }: { group: AccessGroup; onClick: () =
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
-            <h2 className="truncate text-base font-semibold tracking-tight">{group.name}</h2>
+            <h2 className="truncate text-base font-semibold tracking-tight">
+              {group.name}
+            </h2>
             {group.is_default && (
               <span className="border-border text-muted-foreground shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-medium tracking-wide uppercase">
                 Default
@@ -204,7 +241,9 @@ function AccessGroupCard({ group, onClick }: { group: AccessGroup; onClick: () =
             )}
           </div>
           {group.description && (
-            <p className="text-muted-foreground mt-0.5 line-clamp-2 text-sm">{group.description}</p>
+            <p className="text-muted-foreground mt-0.5 line-clamp-2 text-sm">
+              {group.description}
+            </p>
           )}
         </div>
         <span className="bg-secondary text-secondary-foreground shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium">
@@ -240,22 +279,39 @@ function AccessGroupEditor({ group, onDeleted }: AccessGroupEditorProps) {
   // groups remounts this component with fresh initial values.
   const [name, setName] = useState(group.name);
   const [description, setDescription] = useState(group.description);
-  const [libraryIds, setLibraryIds] = useState<number[] | null>(group.library_ids);
+  const [libraryIds, setLibraryIds] = useState<number[] | null>(
+    group.library_ids,
+  );
   const [qualityPreset, setQualityPreset] = useState<PlaybackQualityPreset>(
     playbackQualityPresetFromValue(group.max_playback_quality),
   );
-  const [downloadAllowed, setDownloadAllowed] = useState(group.download_allowed);
-  const [transcodeAllowed, setTranscodeAllowed] = useState(group.download_transcode_allowed);
+  const [downloadAllowed, setDownloadAllowed] = useState(
+    group.download_allowed,
+  );
+  const [transcodeAllowed, setTranscodeAllowed] = useState(
+    group.download_transcode_allowed,
+  );
+  const [videoTranscodeAllowed, setVideoTranscodeAllowed] = useState(
+    group.transcode_allowed,
+  );
+  const [audioTranscodeAllowed, setAudioTranscodeAllowed] = useState(
+    group.audio_transcode_allowed,
+  );
   const [maxStreams, setMaxStreams] = useState(group.max_streams);
   const [maxTranscodes, setMaxTranscodes] = useState(group.max_transcodes);
-  const [permissions, setPermissions] = useState<string[] | null>(group.allowed_permissions);
-  const [requestsAllowed, setRequestsAllowed] = useState(group.requests_allowed);
+  const [permissions, setPermissions] = useState<string[] | null>(
+    group.allowed_permissions,
+  );
+  const [requestsAllowed, setRequestsAllowed] = useState(
+    group.requests_allowed,
+  );
   const [isDefault, setIsDefault] = useState(group.is_default);
 
   const allPermissions = permissions === null;
 
   function setPermissionAllowed(permission: string, allowed: boolean) {
-    const current = permissions ?? ASSIGNABLE_PERMISSIONS.map((entry) => entry.value);
+    const current =
+      permissions ?? ASSIGNABLE_PERMISSIONS.map((entry) => entry.value);
     const next = allowed
       ? Array.from(new Set([...current, permission]))
       : current.filter((value) => value !== permission);
@@ -272,6 +328,8 @@ function AccessGroupEditor({ group, onDeleted }: AccessGroupEditorProps) {
       // The transcode toggle is disabled (not reset) when downloads are off,
       // so clamp it here to avoid saving a contradictory record.
       download_transcode_allowed: downloadAllowed && transcodeAllowed,
+      transcode_allowed: videoTranscodeAllowed,
+      audio_transcode_allowed: audioTranscodeAllowed,
       max_streams: maxStreams,
       max_transcodes: maxTranscodes,
       allowed_permissions: permissions,
@@ -293,7 +351,11 @@ function AccessGroupEditor({ group, onDeleted }: AccessGroupEditorProps) {
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-2">
             <Label htmlFor="group-name">Name</Label>
-            <Input id="group-name" value={name} onChange={(event) => setName(event.target.value)} />
+            <Input
+              id="group-name"
+              value={name}
+              onChange={(event) => setName(event.target.value)}
+            />
           </div>
           <div className="space-y-2">
             <Label htmlFor="group-description">Description</Label>
@@ -329,7 +391,9 @@ function AccessGroupEditor({ group, onDeleted }: AccessGroupEditorProps) {
           <Label htmlFor="group-quality">Maximum playback quality</Label>
           <Select
             value={qualityPreset}
-            onValueChange={(value) => setQualityPreset(value as PlaybackQualityPreset)}
+            onValueChange={(value) =>
+              setQualityPreset(value as PlaybackQualityPreset)
+            }
           >
             <SelectTrigger id="group-quality" className="w-full sm:w-72">
               <SelectValue />
@@ -386,6 +450,18 @@ function AccessGroupEditor({ group, onDeleted }: AccessGroupEditorProps) {
             onChange={setMaxTranscodes}
           />
         </div>
+        <ToggleRow
+          label="Allow video transcoding"
+          description="Members may play items that need server-side video conversion."
+          checked={videoTranscodeAllowed}
+          onCheckedChange={setVideoTranscodeAllowed}
+        />
+        <ToggleRow
+          label="Allow audio transcoding"
+          description="Members may play items that need audio conversion without video encoding."
+          checked={audioTranscodeAllowed}
+          onCheckedChange={setAudioTranscodeAllowed}
+        />
       </section>
 
       <section className="surface-panel space-y-3 rounded-2xl border-0 p-5">
@@ -401,7 +477,11 @@ function AccessGroupEditor({ group, onDeleted }: AccessGroupEditorProps) {
             <Switch
               checked={allPermissions}
               onCheckedChange={(checked) =>
-                setPermissions(checked ? null : ASSIGNABLE_PERMISSIONS.map((entry) => entry.value))
+                setPermissions(
+                  checked
+                    ? null
+                    : ASSIGNABLE_PERMISSIONS.map((entry) => entry.value),
+                )
               }
               aria-label="Allow all permissions"
             />
@@ -415,7 +495,9 @@ function AccessGroupEditor({ group, onDeleted }: AccessGroupEditorProps) {
                 label={permission.label}
                 description={permission.description}
                 checked={permissions?.includes(permission.value) ?? false}
-                onCheckedChange={(checked) => setPermissionAllowed(permission.value, checked)}
+                onCheckedChange={(checked) =>
+                  setPermissionAllowed(permission.value, checked)
+                }
               />
             ))}
           </div>
@@ -436,12 +518,17 @@ function AccessGroupEditor({ group, onDeleted }: AccessGroupEditorProps) {
           </Button>
           {group.is_default && (
             <p className="text-muted-foreground text-xs">
-              The default group can’t be deleted. Make another group the default first.
+              The default group can’t be deleted. Make another group the default
+              first.
             </p>
           )}
         </div>
         <Button type="button" onClick={save} disabled={updateGroup.isPending}>
-          {updateGroup.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+          {updateGroup.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
           {updateGroup.isPending ? "Saving..." : "Save changes"}
         </Button>
       </div>
@@ -482,7 +569,13 @@ interface ToggleRowProps {
   disabled?: boolean;
 }
 
-function ToggleRow({ label, description, checked, onCheckedChange, disabled }: ToggleRowProps) {
+function ToggleRow({
+  label,
+  description,
+  checked,
+  onCheckedChange,
+  disabled,
+}: ToggleRowProps) {
   return (
     <div className="border-border flex items-center justify-between gap-4 rounded-lg border px-3 py-2.5">
       <div className="min-w-0">

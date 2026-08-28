@@ -21,18 +21,26 @@ export default function BrandCarousel({
   isError,
   onRetry,
 }: BrandCarouselProps) {
-  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } = useCarouselEmbla();
+  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
+    useCarouselEmbla();
 
   const slides = isLoading
     ? Array.from({ length: 8 }).map((_, idx) => (
-        <Skeleton key={idx} className="h-28 w-52 flex-none rounded-xl sm:h-32 sm:w-64" />
+        <Skeleton
+          key={idx}
+          className="h-28 w-52 flex-none rounded-xl sm:h-32 sm:w-64"
+        />
       ))
-    : (cards ?? []).map((card) => <BrandCard key={card.slug} kind={kind} card={card} />);
+    : (cards ?? []).map((card) => (
+        <BrandCard key={card.slug} kind={kind} card={card} />
+      ));
 
   return (
     <section className="group/carousel relative isolate space-y-3">
       <div className="flex items-center justify-between px-4 sm:px-6 lg:px-10 xl:px-12">
-        <h2 className="text-muted-foreground text-sm font-semibold tracking-normal">{title}</h2>
+        <h2 className="text-muted-foreground text-sm font-semibold tracking-normal">
+          {title}
+        </h2>
         {isError && onRetry ? (
           <button
             type="button"

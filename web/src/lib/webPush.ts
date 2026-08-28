@@ -45,7 +45,8 @@ export async function currentWebPushSubscription(): Promise<PushSubscription | n
     return null;
   }
   try {
-    const registration = await navigator.serviceWorker.getRegistration("/sw.js");
+    const registration =
+      await navigator.serviceWorker.getRegistration("/sw.js");
     return (await registration?.pushManager.getSubscription()) ?? null;
   } catch {
     return null;

@@ -1,4 +1,7 @@
-import { getDefaultQuerySortOrder, normalizeQuerySortField } from "@/lib/querySortOptions";
+import {
+  getDefaultQuerySortOrder,
+  normalizeQuerySortField,
+} from "@/lib/querySortOptions";
 import type { SchemaOption } from "@/components/admin/plugins/schemaFormUtils";
 
 // Auth
@@ -351,7 +354,8 @@ export interface WebhookSyncEventLog {
   received_at: string;
   request_id?: string;
   http_status: number;
-  outcome: "applied" | "ignored" | "unmatched" | "skipped" | "rejected" | "error";
+  outcome:
+    "applied" | "ignored" | "unmatched" | "skipped" | "rejected" | "error";
   summary: string;
   error_message?: string | null;
   body_excerpt?: string | null;
@@ -747,6 +751,7 @@ export type ItemUserData = LeafItemUserData | SeasonUserData;
 
 export interface Season {
   content_id: string;
+  play_content_id?: string;
   season_number: number;
   is_specials: boolean;
   title: string;
@@ -806,8 +811,11 @@ export interface BrowseItemSortMetrics {
 
 export interface BrowseItem {
   content_id: string;
-  type: "movie" | "series" | "season" | "episode" | "audiobook" | "ebook" | "manga";
+  play_content_id?: string;
+  type:
+    "movie" | "series" | "season" | "episode" | "audiobook" | "ebook" | "manga";
   title: string;
+  series_id?: string;
   series_title?: string;
   season_number?: number | null;
   episode_number?: number | null;
@@ -868,6 +876,12 @@ export interface CatalogResponse extends BrowseResponse {
   source?: CatalogSource;
   title?: string;
   snapshot?: string;
+  /**
+   * The order a collection or personal-list source actually resolved in after
+   * saved/default precedence was applied. Absent for other sources and when
+   * the source kept its own order.
+   */
+  effective_sort?: QuerySort;
 }
 
 export interface ItemFiltersResponse {
@@ -1123,7 +1137,9 @@ export type MarkerSegmentInput = { start?: number | null; end?: number | null };
  * acted on: an object sets the segment, null clears it, an absent key is
  * left unchanged.
  */
-export type SetMarkersRequest = Partial<Record<MarkerKind, MarkerSegmentInput | null>>;
+export type SetMarkersRequest = Partial<
+  Record<MarkerKind, MarkerSegmentInput | null>
+>;
 
 /**
  * Remote provider video (trailer, teaser, featurette, ...) attached to an
@@ -1150,7 +1166,16 @@ export interface ItemExtra {
 
 export interface ItemDetail {
   content_id: string;
-  type: "movie" | "series" | "season" | "episode" | "audiobook" | "ebook" | "manga" | "podcast";
+  play_content_id?: string;
+  type:
+    | "movie"
+    | "series"
+    | "season"
+    | "episode"
+    | "audiobook"
+    | "ebook"
+    | "manga"
+    | "podcast";
   status?: "pending" | "matched" | "unmatched" | "ambiguous";
 
   // Metadata (served inline from Postgres).
@@ -1319,15 +1344,18 @@ export interface EpisodesResponse {
 }
 
 // Collections
-export type UserCollectionType = "manual" | "smart" | "mdblist" | "tmdb" | "trakt";
+export type UserCollectionType =
+  "manual" | "smart" | "mdblist" | "tmdb" | "trakt";
 
-export type UserCollectionSyncStatus = "" | "running" | "success" | "failed" | "warning";
+export type UserCollectionSyncStatus =
+  "" | "running" | "success" | "failed" | "warning";
 // UI-only presets for the two display-filter dropdowns. They no longer map to
 // dedicated API fields — the server stores the equivalent rules in
 // `display_query_definition` (a filter-only QueryDefinition fragment).
 export type UserCollectionWatchFilter = "all" | "unwatched" | "watched";
 export type UserCollectionMediaFilter = "all" | "movie" | "series";
-export type GroupSortMode = "manual" | "name_asc" | "name_desc" | "recent" | "most_items";
+export type GroupSortMode =
+  "manual" | "name_asc" | "name_desc" | "recent" | "most_items";
 export type LibraryCollectionGroupKind = "regular" | "user_collections";
 
 export interface Collection {
@@ -1399,6 +1427,15 @@ export interface CollectionCapabilitiesResponse {
     watched: UserCollectionWatchFilter[];
     media: UserCollectionMediaFilter[];
   };
+  collection_default_sort?: boolean;
+  collection_sort_preferences?: boolean;
+  effective_collection_sort?: boolean;
+  /**
+   * The collection_kind values this server accepts on the sort-preference
+   * endpoints. Absent on servers predating the personal-list kinds, where only
+   * "library" and "user" may be assumed.
+   */
+  sort_preference_kinds?: string[];
 }
 
 export interface QueryRule {
@@ -1415,6 +1452,18 @@ export interface QueryGroup {
 export interface DisplayQueryDefinition {
   match: "all" | "any";
   groups: QueryGroup[];
+}
+
+/**
+ * A collection's default sort. An empty object (or an absent field) means the
+ * collection keeps the order its source supplied.
+ */
+export interface CollectionSortConfig {
+  field?: string;
+  order?: "asc" | "desc";
+  // Index signature keeps this assignable to the `Record<string, unknown>`
+  // sort_config fields on the collection request types, which predate it.
+  [key: string]: unknown;
 }
 
 export interface QuerySort {
@@ -1445,7 +1494,8 @@ export interface QuerySort {
 
 export interface QueryDefinition {
   library_ids: number[];
-  media_scope?: "movie" | "series" | "episode" | "audiobook" | "ebook" | "manga" | "video";
+  media_scope?:
+    "movie" | "series" | "episode" | "audiobook" | "ebook" | "manga" | "video";
   match: "all" | "any";
   groups: QueryGroup[];
   sort: QuerySort;
@@ -1549,7 +1599,8 @@ export interface LibraryCollection {
   updated_at: string;
 }
 
-export type LibraryCollectionManagementMode = "manual" | "section" | "template_bundle";
+export type LibraryCollectionManagementMode =
+  "manual" | "section" | "template_bundle";
 
 export interface LibraryCollectionGroup {
   id: string;
@@ -1668,6 +1719,8 @@ export interface ImportMDBListCollectionRequest {
   management_mode?: LibraryCollectionManagementMode;
   management_source?: string;
   management_key?: string;
+  /** Default order viewers land on; `{}` keeps the source list's own order. */
+  sort_config?: CollectionSortConfig;
 }
 
 export interface ImportMDBListCollectionResponse {
@@ -1699,6 +1752,8 @@ export interface ImportTMDBCollectionRequest {
   management_mode?: LibraryCollectionManagementMode;
   management_source?: string;
   management_key?: string;
+  /** Default order viewers land on; `{}` keeps the source list's own order. */
+  sort_config?: CollectionSortConfig;
 }
 
 export interface ImportTMDBCollectionResponse {
@@ -1726,6 +1781,8 @@ export interface ImportTraktCollectionRequest {
   management_mode?: LibraryCollectionManagementMode;
   management_source?: string;
   management_key?: string;
+  /** Default order viewers land on; `{}` keeps the source list's own order. */
+  sort_config?: CollectionSortConfig;
 }
 
 export interface ImportTraktCollectionResponse {
@@ -1749,6 +1806,8 @@ export interface UserImportSharedFields {
   display_query_definition?: DisplayQueryDefinition;
   /** Restrict resolution to these libraries; omitted/empty = entire catalog the user can see. */
   library_ids?: number[];
+  /** Default order viewers land on; `{}` keeps the source list's own order. */
+  sort_config?: CollectionSortConfig;
 }
 
 export interface ImportUserMDBListCollectionRequest extends UserImportSharedFields {
@@ -1788,7 +1847,10 @@ export interface ImportUserTraktCollectionRequest extends UserImportSharedFields
 
 // A completed sync always has a non-empty status; the empty-string variant in
 // UserCollectionSyncStatus only appears on un-synced rows.
-export type UserCollectionSyncResultStatus = Exclude<UserCollectionSyncStatus, "">;
+export type UserCollectionSyncResultStatus = Exclude<
+  UserCollectionSyncStatus,
+  ""
+>;
 
 export interface UserCollectionSyncResult {
   status: UserCollectionSyncResultStatus;
@@ -1807,8 +1869,10 @@ export interface ImportUserCollectionResponse {
 // Media Requests
 export type RequestMediaType = "movie" | "series";
 export type RequestSearchMediaType = RequestMediaType | "all";
-export type MediaRequestStatus = "pending" | "approved" | "queued" | "downloading" | "completed";
-export type MediaRequestOutcome = "active" | "declined" | "cancelled" | "failed";
+export type MediaRequestStatus =
+  "pending" | "approved" | "queued" | "downloading" | "completed";
+export type MediaRequestOutcome =
+  "active" | "declined" | "cancelled" | "failed";
 export type RequestAvailability = "missing" | "available";
 export type RequestLimitMode = "inherit" | "custom" | "unlimited" | "blocked";
 export type RequestApprovalMode = "inherit" | "manual" | "auto" | "blocked";
@@ -2241,7 +2305,8 @@ export interface AutoscanStatus {
   latest_event_at?: string;
 }
 
-export type AutoscanEventStatus = "running" | "success" | "error" | "unresolved";
+export type AutoscanEventStatus =
+  "running" | "success" | "error" | "unresolved";
 
 export interface AutoscanEventScanRun {
   id: string;
@@ -2284,7 +2349,8 @@ export interface AutoscanEventsResponse {
   offset: number;
 }
 
-export type AutoscanScanStatus = "accepted" | "running" | "completed" | "failed" | "cancelled";
+export type AutoscanScanStatus =
+  "accepted" | "running" | "completed" | "failed" | "cancelled";
 
 export interface AutoscanScan {
   id: string;
@@ -2494,6 +2560,8 @@ export interface AccessGroup {
   max_playback_quality: string;
   download_allowed: boolean;
   download_transcode_allowed: boolean;
+  transcode_allowed: boolean;
+  audio_transcode_allowed: boolean;
   max_streams: number;
   max_transcodes: number;
   allowed_permissions: string[] | null;
@@ -2511,11 +2579,29 @@ export interface AccessGroupInput {
   max_playback_quality?: string;
   download_allowed?: boolean;
   download_transcode_allowed?: boolean;
+  transcode_allowed?: boolean;
+  audio_transcode_allowed?: boolean;
   max_streams?: number;
   max_transcodes?: number;
   allowed_permissions?: string[] | null;
   requests_allowed?: boolean;
   is_default?: boolean;
+}
+
+// Stored per-user policy overrides are nullable: null means the field is
+// inherited from the access group. effective_policy carries the resolved
+// values the server enforces.
+export interface AdminUserEffectivePolicy {
+  library_ids: number[] | null;
+  max_playback_quality: string;
+  max_streams: number;
+  max_transcodes: number;
+  transcode_allowed: boolean;
+  audio_transcode_allowed: boolean;
+  download_allowed: boolean;
+  download_transcode_allowed: boolean;
+  requests_allowed: boolean;
+  permissions: string[];
 }
 
 export interface AdminUser {
@@ -2527,19 +2613,22 @@ export interface AdminUser {
   enabled: boolean;
   library_ids: number[] | null;
   access_group_id: number | null;
-  max_playback_quality: string;
-  max_streams: number;
-  max_transcodes: number;
-  transcode_allowed: boolean;
-  audio_transcode_allowed: boolean;
+  max_playback_quality: string | null;
+  max_streams: number | null;
+  max_transcodes: number | null;
+  transcode_allowed: boolean | null;
+  audio_transcode_allowed: boolean | null;
   max_profiles: number;
-  download_allowed: boolean;
-  download_transcode_allowed: boolean;
+  download_allowed: boolean | null;
+  download_transcode_allowed: boolean | null;
+  requests_allowed: boolean | null;
+  effective_policy: AdminUserEffectivePolicy;
   created_at: string;
   updated_at: string;
   last_active_at?: string;
 }
 
+// Policy fields left undefined at create inherit from the access group.
 export interface CreateUserRequest {
   username: string;
   email: string;
@@ -2557,8 +2646,12 @@ export interface CreateUserRequest {
   max_profiles?: number;
   download_allowed?: boolean;
   download_transcode_allowed?: boolean;
+  requests_allowed?: boolean;
 }
 
+// Policy fields are tri-state on update: absent leaves the stored value
+// alone, an explicit null clears the override back to inherit, and a value
+// stores an explicit override.
 export interface UpdateUserRequest {
   username?: string;
   email?: string;
@@ -2568,14 +2661,15 @@ export interface UpdateUserRequest {
   enabled?: boolean;
   library_ids?: number[] | null;
   access_group_id?: number | null;
-  max_playback_quality?: string;
-  max_streams?: number;
-  max_transcodes?: number;
-  transcode_allowed?: boolean;
-  audio_transcode_allowed?: boolean;
+  max_playback_quality?: string | null;
+  max_streams?: number | null;
+  max_transcodes?: number | null;
+  transcode_allowed?: boolean | null;
+  audio_transcode_allowed?: boolean | null;
   max_profiles?: number;
-  download_allowed?: boolean;
-  download_transcode_allowed?: boolean;
+  download_allowed?: boolean | null;
+  download_transcode_allowed?: boolean | null;
+  requests_allowed?: boolean | null;
 }
 
 export interface AdminStats {
@@ -2636,7 +2730,10 @@ export interface AdminSession {
   client_ip?: string;
   client_name?: string;
   client_version?: string;
+  client_build?: string;
+  client_channel?: string;
   client_label?: string;
+  client_label_full?: string;
   client_user_agent?: string;
   audio_track_index: number;
   transcode_audio: boolean;
@@ -2644,8 +2741,13 @@ export interface AdminSession {
   target_resolution?: string;
   target_video_codec?: string;
   target_audio_codec?: string;
+  /** Channel count the transcode actually encodes. Absent when the reporting
+   * node did not know it — render the target codec with no channel layout
+   * rather than falling back to `source_audio_channels`. */
+  target_audio_channels?: number | null;
   target_bitrate_kbps: number | null;
   transcode_hw_accel?: string;
+  tone_map_mode?: string;
   source_container?: string;
   source_bitrate_kbps: number | null;
   source_video_codec?: string;
@@ -2708,7 +2810,8 @@ export interface AuditLogListResponse {
   next_cursor?: string;
 }
 
-export type DiagnosticAvailabilityStatus = "available" | "disabled" | "storage_unavailable";
+export type DiagnosticAvailabilityStatus =
+  "available" | "disabled" | "storage_unavailable";
 
 export interface DiagnosticStatus {
   status: DiagnosticAvailabilityStatus;
@@ -2722,12 +2825,7 @@ export interface DiagnosticStatus {
 
 export type DiagnosticReportState = "receiving" | "ready" | "failed";
 export type DiagnosticReportType =
-  | "crash"
-  | "anr"
-  | "native_crash"
-  | "hang"
-  | "abnormal_exit"
-  | "manual";
+  "crash" | "anr" | "native_crash" | "hang" | "abnormal_exit" | "manual";
 export type DiagnosticPlatform = "android" | "android-tv" | "ios" | "tvos";
 
 export interface ClientDiagnosticManifest {
@@ -2858,6 +2956,10 @@ export type EventChannel =
   | "scans"
   | "history_import"
   | "user_state"
+  // Per-account settings changed somewhere (another device, or an admin
+  // editing this account). Identity only, never a value — see
+  // useSettingValuesRealtime.
+  | "user_settings"
   | "settings"
   | "notifications";
 
@@ -3018,19 +3120,28 @@ export interface NotificationAccountChannelCapability {
 
 export interface NotificationCapability {
   in_app: { enabled: boolean };
-  apple_push: { available: boolean; provider: string; supported_modes: string[] };
-  android_push: { available: boolean; provider: string; supported_modes: string[] };
+  apple_push: {
+    available: boolean;
+    provider: string;
+    supported_modes: string[];
+  };
+  android_push: {
+    available: boolean;
+    provider: string;
+    supported_modes: string[];
+  };
   web_push: { available: boolean; public_key?: string };
-  webhooks: { available: boolean; max_per_profile: number; supported_types: string[] };
+  webhooks: {
+    available: boolean;
+    max_per_profile: number;
+    supported_types: string[];
+  };
   email: NotificationAccountChannelCapability;
   discord: NotificationAccountChannelCapability;
 }
 
 export type NotificationChannelMode =
-  | "off"
-  | "per_episode"
-  | "daily_digest"
-  | "per_episode_and_digest";
+  "off" | "per_episode" | "daily_digest" | "per_episode_and_digest";
 export type NotificationEmailMode = NotificationChannelMode;
 export type NotificationDiscordMode = NotificationChannelMode;
 
@@ -3082,7 +3193,14 @@ export interface EventsHelloMessage {
   schema_version: number;
   connection_id: string;
   available_channels: EventChannel[];
-  required_action: "subscribe";
+  /**
+   * "none" when the connection already holds at least one subscription,
+   * declared as ?channels= on the URL. "subscribe" when it still owes a
+   * subscribe frame — including when it declared channels but none of them
+   * resolved, since such a connection is subscribed to nothing and is closed
+   * after the grace period like any other silent one.
+   */
+  required_action: "subscribe" | "none";
 }
 
 export interface EventsSubscribeMessage {
@@ -3134,9 +3252,7 @@ export type EventsStreamMessage =
   | EventsErrorMessage;
 
 export type AdminLogStreamMessage =
-  | AdminLogSnapshotMessage
-  | AdminLogAppendMessage
-  | AdminLogErrorMessage;
+  AdminLogSnapshotMessage | AdminLogAppendMessage | AdminLogErrorMessage;
 
 export interface AdminPlaybackHistoryItem {
   session_id: string;
@@ -3171,6 +3287,24 @@ export interface AdminDeviceProfileSummary {
   profile_name: string;
   override_count: number;
   last_updated: string;
+}
+
+/** One device the signed-in viewer watches on. */
+export interface UserDevice {
+  device_id: string;
+  device_name: string;
+  device_platform: string;
+  last_seen_at: string;
+  profile_id: string;
+  profile_name: string;
+  /** True for the device this browser is. */
+  is_current_device: boolean;
+  /** How many settings this (profile, device) pair overrides. */
+  changed_count: number;
+}
+
+export interface UserDeviceListResponse {
+  devices: UserDevice[];
 }
 
 export interface AdminDeviceSummary {
@@ -3519,7 +3653,8 @@ export interface CatalogSeedImportResponse {
   unmatched_roots?: string[];
 }
 
-export type AdminJobStatus = "queued" | "running" | "completed" | "failed" | "cancelled";
+export type AdminJobStatus =
+  "queued" | "running" | "completed" | "failed" | "cancelled";
 
 export interface LibraryRefreshJobRequest {
   library_id: number;
@@ -3543,8 +3678,12 @@ export interface AdminJob {
   job_type: string;
   status: AdminJobStatus;
   created_by_user_id: number;
-  request_payload: CatalogSeedExportRequest | LibraryRefreshJobRequest | Record<string, unknown>;
-  result_payload: CatalogSeedExportResult | LibraryRefreshJobResult | Record<string, unknown>;
+  request_payload:
+    | CatalogSeedExportRequest
+    | LibraryRefreshJobRequest
+    | Record<string, unknown>;
+  result_payload:
+    CatalogSeedExportResult | LibraryRefreshJobResult | Record<string, unknown>;
   message: string;
   error_message?: string;
   progress_current: number;
@@ -3650,7 +3789,14 @@ export interface PluginAdminFormField {
   key: string;
   label: string;
   description?: string;
-  control: "TEXT" | "TEXTAREA" | "PASSWORD" | "NUMBER" | "SWITCH" | "SELECT" | "MULTI_SELECT";
+  control:
+    | "TEXT"
+    | "TEXTAREA"
+    | "PASSWORD"
+    | "NUMBER"
+    | "SWITCH"
+    | "SELECT"
+    | "MULTI_SELECT";
   placeholder?: string;
   required: boolean;
   secret: boolean;
@@ -3933,16 +4079,6 @@ export interface UserLibrary {
   poster_url?: string;
 }
 
-export interface LibraryPlaybackPreference {
-  profile_id: string;
-  library_id: number;
-  audio_language?: string;
-  subtitle_language?: string;
-  subtitle_mode?: string;
-  show_forced_subtitles?: boolean;
-  updated_at?: string;
-}
-
 // Progress entry from GET /progress
 export interface ProgressEntry {
   media_item_id: string;
@@ -3972,6 +4108,7 @@ export interface SectionItemUpcomingEvent {
 
 export interface SectionItem {
   content_id: string;
+  play_content_id?: string;
   type: "movie" | "series" | "season" | "episode" | "audiobook" | "ebook";
   title: string;
   series_id?: string;
@@ -4127,8 +4264,11 @@ export function createEmptyQueryDefinition(): QueryDefinition {
   };
 }
 
-export function normalizeQueryDefinition(value?: QueryDefinitionInput | null): QueryDefinition {
-  const normalizeField = (field?: string) => normalizeQuerySortField(field) ?? field;
+export function normalizeQueryDefinition(
+  value?: QueryDefinitionInput | null,
+): QueryDefinition {
+  const normalizeField = (field?: string) =>
+    normalizeQuerySortField(field) ?? field;
 
   return {
     library_ids: [...(value?.library_ids ?? [])],
@@ -4171,14 +4311,22 @@ export function queryDefinitionFromSectionConfig(
   const libraryIds: number[] = [];
   if (Array.isArray(config.library_ids)) {
     for (const value of config.library_ids) {
-      if (typeof value === "number" && Number.isInteger(value) && !libraryIds.includes(value)) {
+      if (
+        typeof value === "number" &&
+        Number.isInteger(value) &&
+        !libraryIds.includes(value)
+      ) {
         libraryIds.push(value);
       }
     }
   }
   if (Array.isArray(config.filter_library_ids)) {
     for (const value of config.filter_library_ids) {
-      if (typeof value === "number" && Number.isInteger(value) && !libraryIds.includes(value)) {
+      if (
+        typeof value === "number" &&
+        Number.isInteger(value) &&
+        !libraryIds.includes(value)
+      ) {
         libraryIds.push(value);
       }
     }
@@ -4191,7 +4339,9 @@ export function queryDefinitionFromSectionConfig(
     libraryIds.push(config.filter_library_id);
   }
 
-  const maybeGroups = Array.isArray(config.groups) ? (config.groups as QueryGroup[]) : [];
+  const maybeGroups = Array.isArray(config.groups)
+    ? (config.groups as QueryGroup[])
+    : [];
   const mediaScope =
     config.media_scope === "movie" || config.filter_type === "movie"
       ? "movie"
@@ -4199,7 +4349,8 @@ export function queryDefinitionFromSectionConfig(
         ? "series"
         : config.media_scope === "episode" || config.filter_type === "episode"
           ? "episode"
-          : config.media_scope === "audiobook" || config.filter_type === "audiobook"
+          : config.media_scope === "audiobook" ||
+              config.filter_type === "audiobook"
             ? "audiobook"
             : config.media_scope === "ebook" || config.filter_type === "ebook"
               ? "ebook"
@@ -4207,8 +4358,10 @@ export function queryDefinitionFromSectionConfig(
                 ? "manga"
                 : undefined;
 
-  const legacySortField = typeof config.sort === "string" ? config.sort : undefined;
-  const legacySortOrder = typeof config.order === "string" ? config.order : undefined;
+  const legacySortField =
+    typeof config.sort === "string" ? config.sort : undefined;
+  const legacySortOrder =
+    typeof config.order === "string" ? config.order : undefined;
 
   return normalizeQueryDefinition({
     library_ids: libraryIds,
@@ -4219,13 +4372,17 @@ export function queryDefinitionFromSectionConfig(
       config.sort && typeof config.sort === "object"
         ? (config.sort as QuerySort)
         : {
-            field: (legacySortField as QuerySort["field"] | undefined) ?? "added_at",
-            order: (legacySortOrder as QuerySort["order"] | undefined) ?? "desc",
+            field:
+              (legacySortField as QuerySort["field"] | undefined) ?? "added_at",
+            order:
+              (legacySortOrder as QuerySort["order"] | undefined) ?? "desc",
           },
   });
 }
 
-export function queryDefinitionToSectionConfig(query: QueryDefinition): Record<string, unknown> {
+export function queryDefinitionToSectionConfig(
+  query: QueryDefinition,
+): Record<string, unknown> {
   const normalized = normalizeQueryDefinition(query);
   return {
     library_ids: normalized.library_ids,
@@ -4732,6 +4889,7 @@ export interface TaskInfo {
   state: TaskState;
   progress: number;
   progress_message?: string;
+  manual_only?: boolean;
   last_execution?: ExecutionResult;
   triggers: TriggerConfig[];
   next_run_at?: string;
@@ -4741,7 +4899,12 @@ export interface TaskInfo {
 export interface MatchCandidate {
   title: string;
   original_title?: string;
-  aliases?: Array<{ title: string; language?: string; kind: string; provider?: string }>;
+  aliases?: Array<{
+    title: string;
+    language?: string;
+    kind: string;
+    provider?: string;
+  }>;
   title_language?: string;
   title_is_fallback?: boolean;
   matched_title?: string;

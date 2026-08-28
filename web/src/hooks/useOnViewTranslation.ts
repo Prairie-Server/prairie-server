@@ -68,7 +68,9 @@ export function useOnViewTranslation(item: ItemDetail | undefined) {
       }
       // Prefix invalidation covers the per-library detail key variants
       // (["catalog", "items", id, "detail", <libraryId|"default">]).
-      void queryClient.invalidateQueries({ queryKey: ["catalog", "items", contentId] });
+      void queryClient.invalidateQueries({
+        queryKey: ["catalog", "items", contentId],
+      });
       if (seriesId && typeof seasonNumber === "number") {
         void queryClient.invalidateQueries({
           queryKey: ["catalog", "series", seriesId, "seasons", seasonNumber],
@@ -87,6 +89,9 @@ export function useOnViewTranslation(item: ItemDetail | undefined) {
     /** Pulse the description text. */
     translating,
     /** Render the explicit translate chip (button mode only). */
-    onTranslate: mode === "button" && pendingLanguage && !translating ? trigger : undefined,
+    onTranslate:
+      mode === "button" && pendingLanguage && !translating
+        ? trigger
+        : undefined,
   };
 }

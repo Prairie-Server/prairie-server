@@ -74,8 +74,10 @@
   /* ── Shadows (dark-UI optimized) ─────────────────────────── */
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.25);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.3), 0 2px 4px -2px rgb(0 0 0 / 0.3);
-  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
-  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
+  --shadow-lg:
+    0 10px 15px -3px rgb(0 0 0 / 0.4), 0 4px 6px -4px rgb(0 0 0 / 0.4);
+  --shadow-xl:
+    0 20px 25px -5px rgb(0 0 0 / 0.5), 0 8px 10px -6px rgb(0 0 0 / 0.5);
 
   /* ── Animations ──────────────────────────────────────────── */
   --animate-accordion-down: accordion-down 0.2s ease-out;
@@ -94,9 +96,13 @@
   --duration-glacial: 700ms;
   --duration-cinematic: 1200ms;
   --duration-drift: 2000ms;
+  /* Sidebar immersion collapse — see `.sidebar-surface`. */
+  --duration-sidebar-collapse: 300ms;
 
   /* ── Motion: Easing ────────────────────────────────────────── */
   --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  /* Long, flat tail — keeps the moving edge from appearing to step near the end. */
+  --ease-sidebar-collapse: cubic-bezier(0.32, 0.72, 0, 1);
   --ease-in: cubic-bezier(0.4, 0, 1, 1);
   --ease-out: cubic-bezier(0, 0, 0.2, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
@@ -282,15 +288,23 @@
     --duration-drift: 0ms;
     --duration-glacial: 0ms;
     --duration-slow: 150ms;
+    --duration-sidebar-collapse: 0ms;
     --animate-ken-burns-a: none;
     --animate-ken-burns-b: none;
   }
   .ambient-glow {
     transition: none;
   }
-  .sidebar-transition,
-  .main-transition {
-    transition: none;
+  /* Collapsing the sidebar becomes an instant state change: the frame, the
+     content under it, and everything cross-fading inside all stop animating. */
+  .sidebar-surface,
+  .sidebar-inner,
+  .sidebar-fade,
+  .sidebar-row-shift,
+  .sidebar-main-stage,
+  .impersonation-banner {
+    transition: none !important;
+    transform: none !important;
   }
   .player-breathe,
   .player-rise {
@@ -992,15 +1006,6 @@
       opacity var(--duration-cinematic) var(--ease-gentle);
   }
 
-  /* ── Sidebar Immersion Transitions ─────────────────────────── */
-  .sidebar-transition {
-    transition: width var(--duration-normal) var(--ease-default);
-    overflow: hidden;
-  }
-  .main-transition {
-    transition: margin-left var(--duration-normal) var(--ease-default);
-  }
-
   /* ── Sidebar Scrollbar ────────────────────────────────────── */
   /* Thin, auto-hiding scrollbar that blends with the sidebar.  */
   .sidebar-scroll {
@@ -1009,7 +1014,12 @@
     transition: scrollbar-color 0.2s ease;
   }
   .sidebar-scroll:hover {
-    scrollbar-color: color-mix(in srgb, var(--sidebar-foreground) 20%, transparent) transparent;
+    scrollbar-color: color-mix(
+        in srgb,
+        var(--sidebar-foreground) 20%,
+        transparent
+      )
+      transparent;
   }
   /* WebKit (Chrome, Safari, Edge) */
   .sidebar-scroll::-webkit-scrollbar {
@@ -1034,7 +1044,8 @@
   /* Thin, subtle scrollbar for dialogs and overlay panels.   */
   .overlay-scroll {
     scrollbar-width: thin;
-    scrollbar-color: color-mix(in srgb, var(--foreground) 15%, transparent) transparent;
+    scrollbar-color: color-mix(in srgb, var(--foreground) 15%, transparent)
+      transparent;
   }
   .overlay-scroll::-webkit-scrollbar {
     width: 6px;
@@ -1069,6 +1080,118 @@
     -webkit-backdrop-filter: blur(12px) saturate(1.1);
     border: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  }
+
+  /* Preserve glass hover color while fading a composited overlay
+     instead of repainting the backdrop-filtered element on every frame. */
+  .glass-hover {
+    position: relative;
+    isolation: isolate;
+    overflow: hidden;
+  }
+  .glass-hover::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    border-radius: inherit;
+    background: var(--glass-hover-color);
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--duration-fast) var(--ease-default);
+    will-change: opacity;
+  }
+  .glass-hover:hover::before {
+    opacity: 1;
+  }
+  .glass-hover-surface {
+    /* 25% surface over the existing 40% glass equals the previous 55% hover. */
+    --glass-hover-color: color-mix(in srgb, var(--surface) 25%, transparent);
+  }
+  .glass-hover-accent {
+    --glass-hover-color: var(--accent);
+  }
+
+  /* Detail actions sit directly over large hero artwork. Repainting several
+     live backdrop filters after every button or popover state change blocks
+     scroll compositing on this surface, so retain the glass appearance with
+     an opaque color blend instead of sampling and blurring the backdrop. */
+  .detail-action-bar .glass-subtle {
+    background: color-mix(in srgb, var(--surface) 82%, var(--background));
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  /* The detail overflow menu opens without an entrance transition so it is
+     immediately interactive. Pointer hover is CSS-only. */
+  .detail-overflow-menu {
+    animation: none !important;
+    transition: none !important;
+  }
+
+  /* Rating hover stays entirely in CSS so moving across stars does not
+     schedule React renders or recomposite a live backdrop-filter surface. */
+  .star-rating {
+    contain: layout paint;
+    background: color-mix(in srgb, var(--surface) 82%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 30%, transparent);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.05);
+  }
+
+  .star-rating-star {
+    color: color-mix(in srgb, var(--muted-foreground) 50%, transparent);
+  }
+
+  /* The stored rating is the resting state, so it survives a pointer that is
+     inside the pill but not over a star (its padding, the gaps between stars)
+     and it still renders where :has() is unsupported. */
+  .star-rating-star[data-filled="true"] {
+    color: rgb(250 204 21);
+  }
+
+  .star-rating-star[data-filled="true"] svg {
+    fill: currentcolor;
+  }
+
+  /* Hovering a star previews that value instead: clear the stored fill first,
+     then fill up to the hovered position. */
+  .star-rating:has(.star-rating-star:hover) .star-rating-star {
+    color: color-mix(in srgb, var(--muted-foreground) 50%, transparent);
+  }
+
+  .star-rating:has(.star-rating-star:hover) .star-rating-star svg {
+    fill: none;
+  }
+
+  .star-rating:has(.star-rating-star:nth-of-type(1):hover)
+    .star-rating-star:nth-of-type(-n + 1),
+  .star-rating:has(.star-rating-star:nth-of-type(2):hover)
+    .star-rating-star:nth-of-type(-n + 2),
+  .star-rating:has(.star-rating-star:nth-of-type(3):hover)
+    .star-rating-star:nth-of-type(-n + 3),
+  .star-rating:has(.star-rating-star:nth-of-type(4):hover)
+    .star-rating-star:nth-of-type(-n + 4),
+  .star-rating:has(.star-rating-star:nth-of-type(5):hover)
+    .star-rating-star:nth-of-type(-n + 5) {
+    color: rgb(250 204 21);
+  }
+
+  .star-rating:has(.star-rating-star:nth-of-type(1):hover)
+    .star-rating-star:nth-of-type(-n + 1)
+    svg,
+  .star-rating:has(.star-rating-star:nth-of-type(2):hover)
+    .star-rating-star:nth-of-type(-n + 2)
+    svg,
+  .star-rating:has(.star-rating-star:nth-of-type(3):hover)
+    .star-rating-star:nth-of-type(-n + 3)
+    svg,
+  .star-rating:has(.star-rating-star:nth-of-type(4):hover)
+    .star-rating-star:nth-of-type(-n + 4)
+    svg,
+  .star-rating:has(.star-rating-star:nth-of-type(5):hover)
+    .star-rating-star:nth-of-type(-n + 5)
+    svg {
+    fill: currentcolor;
   }
 
   /* Less-transparent glass for small chips that sit over busy cover art
@@ -1171,8 +1294,17 @@
      exit/title chrome and a stronger bottom scrim for the HUD.    */
   .player-scrim {
     background:
-      linear-gradient(to bottom, rgb(0 0 0 / 0.55) 0%, rgb(0 0 0 / 0.18) 14%, rgb(0 0 0 / 0) 28%),
-      radial-gradient(ellipse 70% 50% at 50% 50%, rgb(0 0 0 / 0.18), transparent 70%);
+      linear-gradient(
+        to bottom,
+        rgb(0 0 0 / 0.55) 0%,
+        rgb(0 0 0 / 0.18) 14%,
+        rgb(0 0 0 / 0) 28%
+      ),
+      radial-gradient(
+        ellipse 70% 50% at 50% 50%,
+        rgb(0 0 0 / 0.18),
+        transparent 70%
+      );
   }
 
   /* Floating cluster entrance animation — fades in with a gentle rise
@@ -1191,6 +1323,7 @@
     justify-content: center;
     width: 2.5rem;
     height: 2.5rem;
+    flex-shrink: 0;
     border-radius: 9999px;
     color: rgb(255 255 255 / 0.78);
     background: transparent;
@@ -1292,6 +1425,50 @@
     transform: translateY(-4px);
   }
 
+  /* Card actions stay hidden at rest so touch devices get clean artwork; a
+     long press opens the action sheet instead. Keyboard focus and an open
+     menu reveal them on every device so keyboard and assistive-tech users
+     always have a visible, hittable target. */
+  .media-card-action-trigger,
+  .media-card-play-trigger {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .media-card-action-trigger[data-state="open"],
+  .media-card-action-trigger:focus-visible,
+  .media-card-play-trigger:focus-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  /* Hover reveal is for precise pointers only, so a tap-emulated :hover on a
+     phone cannot uncover the controls. This deliberately uses a direct :hover
+     selector: Tailwind's group-hover variant is limited to the primary
+     pointer's (hover: hover) result, which can exclude Windows hybrid devices
+     even while an attached mouse is actively hovering the card. */
+  @media (any-hover: hover) and (any-pointer: fine) {
+    .group\/media:hover .media-card-hover-dim {
+      background-color: rgb(0 0 0 / 0.3);
+    }
+    .group\/card:hover .media-card-action-trigger,
+    .group\/media:hover .media-card-play-trigger {
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  /* A long press on a card opens the action sheet, so the browser's own image
+     and link callout has to stay out of the way. Text selection is only
+     disabled for coarse primary pointers: a mouse user can still select a
+     card's caption. */
+  .media-card-longpress {
+    -webkit-touch-callout: none;
+  }
+  @media (pointer: coarse) {
+    .media-card-longpress {
+      user-select: none;
+    }
+  }
+
   /* Card image container with consistent rounded corners */
   .media-card-image {
     overflow: hidden;
@@ -1371,7 +1548,8 @@
   .pill-primary {
     background-color: var(--primary);
     color: var(--primary-foreground);
-    box-shadow: 0 16px 36px -20px color-mix(in srgb, var(--primary) 60%, transparent);
+    box-shadow: 0 16px 36px -20px
+      color-mix(in srgb, var(--primary) 60%, transparent);
   }
   .pill-primary:hover {
     filter: brightness(0.96);
@@ -1777,6 +1955,19 @@
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
   }
 
+  /* Panel chrome only once there is a sidebar to enclose. Below this the
+     settings detail view is already a stack of surface-panel groups, and a
+     panel around them would nest a card in a card. */
+  @media (min-width: 1024px) {
+    .surface-panel-lg {
+      background: color-mix(in srgb, var(--surface) 90%, transparent);
+      border-radius: calc(var(--radius-2xl) + 0.35rem);
+      box-shadow:
+        inset 0 1px 0 rgb(255 255 255 / 0.04),
+        0 24px 50px -34px rgb(0 0 0 / 0.65);
+    }
+  }
+
   .caption-empty-state span {
     display: block;
     height: 0.35rem;
@@ -1842,7 +2033,13 @@
     position: fixed;
     inset: 0;
     z-index: 0;
-    background: linear-gradient(180deg, #1a2230 0%, #161c26 42%, #1c1812 78%, #241c12 100%);
+    background: linear-gradient(
+      180deg,
+      #1a2230 0%,
+      #161c26 42%,
+      #1c1812 78%,
+      #241c12 100%
+    );
     pointer-events: none;
   }
 
@@ -1962,8 +2159,43 @@
 
   .admin-shell {
     width: 100%;
+    min-width: 0;
     max-width: 1560px;
     margin-inline: auto;
+  }
+
+  /* AdminLayout owns the outer gutter. Older admin pages still use page-shell
+     for their max-width, so remove its second horizontal gutter when nested. */
+  .admin-shell > .page-shell,
+  .admin-shell > .page-shell-wide {
+    padding-inline: 0;
+  }
+
+  .admin-dashboard-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 10.5rem), 1fr));
+    gap: 0.875rem;
+  }
+
+  @media (max-width: 639px) {
+    .admin-shell .page-header {
+      align-items: stretch;
+    }
+
+    .admin-shell .page-header > * {
+      width: 100%;
+      min-width: 0;
+    }
+
+    .admin-shell .page-header > :not(:first-child) {
+      flex-wrap: wrap;
+      justify-content: flex-start;
+      text-align: left;
+    }
+
+    .admin-shell .page-header [data-slot="button"] {
+      min-height: 2.75rem;
+    }
   }
 
   /* ── Section Header ──────────────────────────────────────── */
@@ -2013,27 +2245,6 @@
     transition: width var(--duration-normal) var(--ease-default);
   }
 
-  /* ── Watched Badge ───────────────────────────────────────── */
-  /* Checkmark badge overlay on fully-watched media cards.
-     Position: absolute top-right of card.
-     Usage: <div class="relative">
-              <img ... />
-              <div class="watched-badge"><Check /></div>
-            </div>                                              */
-  .watched-badge {
-    position: absolute;
-    top: 0.5rem;
-    right: 0.5rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 1.5rem;
-    height: 1.5rem;
-    border-radius: 9999px;
-    background-color: var(--primary);
-    color: var(--primary-foreground);
-  }
-
   /* ── Play Overlay ────────────────────────────────────────── */
   /* Semi-transparent play button centered on thumbnails.
      Usage: <div class="relative group">
@@ -2054,6 +2265,72 @@
   .group:hover .play-overlay,
   .play-overlay:hover {
     opacity: 1;
+  }
+
+  /* ── Sidebar immersion collapse ─────────────────────────────── */
+  /* Two transforms that cancel out. `.sidebar-surface` is a 260px frame with
+     `overflow: hidden` that slides 196px left, so its right edge — and the
+     border drawn on it — sweeps from x=260 down to x=64. `.sidebar-inner`
+     slides the same distance the other way, so its content stays pinned to the
+     viewport and is progressively cut off by the frame's edge.
+
+     Why not animate the clip directly: Chrome runs `clip-path` transitions on
+     the main thread. Entering a detail page blocks that thread for longer than
+     the animation lasts, which swallowed the collapse whole. `transform` is
+     composited and keeps advancing through exactly the same block. */
+  .sidebar-surface {
+    overflow: hidden;
+    transform: translateX(0);
+    transition: transform var(--duration-sidebar-collapse)
+      var(--ease-sidebar-collapse);
+  }
+  .sidebar-surface[data-collapsed="true"] {
+    transform: translateX(-196px);
+  }
+  .sidebar-inner {
+    transform: translateX(0);
+    transition: transform var(--duration-sidebar-collapse)
+      var(--ease-sidebar-collapse);
+  }
+  .sidebar-surface[data-collapsed="true"] .sidebar-inner {
+    transform: translateX(196px);
+  }
+
+  /* Main's margin snaps directly to the destination so the document lays out
+     once. Until the route is ready to animate, an inverse transform places the
+     new layout at the old visual offset. */
+  @media (min-width: 64rem) {
+    .sidebar-main-stage {
+      transform: none;
+      transition: transform var(--duration-sidebar-collapse)
+        var(--ease-sidebar-collapse);
+    }
+    .sidebar-main-stage[data-sidebar-target-collapsed="true"]:not(
+        [data-sidebar-visual-collapsed="true"]
+      ) {
+      transform: translateX(196px);
+      transition: none;
+    }
+    .sidebar-main-stage:not(
+        [data-sidebar-target-collapsed="true"]
+      )[data-sidebar-visual-collapsed="true"] {
+      transform: translateX(-196px);
+      transition: none;
+    }
+  }
+
+  /* Sidebar contents keep their expanded layout in both states — only opacity
+     and transform change, so the nav never reflows mid-animation. */
+  .sidebar-fade {
+    transition: opacity var(--duration-sidebar-collapse)
+      var(--ease-sidebar-collapse);
+  }
+  .sidebar-row-shift {
+    transition: transform var(--duration-sidebar-collapse)
+      var(--ease-sidebar-collapse);
+  }
+  .sidebar-surface[data-collapsed="true"] .sidebar-row-shift {
+    transform: translateX(var(--sidebar-row-shift, 0px));
   }
 
   /* ── Impersonation Banner ────────────────────────────────── */
@@ -2084,8 +2361,9 @@
     --impersonation-accent-soft: oklch(0.82 0.14 78 / 0.12);
     --impersonation-accent-line: oklch(0.82 0.14 78 / 0.32);
 
+    /* Snaps straight to the destination so the document lays out once; the
+       compensation transform below carries the edge across. */
     margin-left: var(--app-sidebar-offset);
-    transition: margin-left var(--duration-normal) var(--ease-default);
     position: sticky;
     background: linear-gradient(
       180deg,
@@ -2094,10 +2372,37 @@
     );
     backdrop-filter: blur(20px) saturate(1.3);
     -webkit-backdrop-filter: blur(20px) saturate(1.3);
-    border-bottom: 1px solid color-mix(in srgb, var(--impersonation-accent) 16%, var(--border));
+    border-bottom: 1px solid
+      color-mix(in srgb, var(--impersonation-accent) 16%, var(--border));
     box-shadow:
-      inset 0 1px 0 color-mix(in srgb, var(--impersonation-accent) 22%, transparent),
+      inset 0 1px 0
+        color-mix(in srgb, var(--impersonation-accent) 22%, transparent),
       0 10px 32px -20px rgb(0 0 0 / 0.65);
+  }
+
+  #root {
+    overflow-x: clip;
+  }
+
+  @media (min-width: 1024px) {
+    .impersonation-banner {
+      transition: transform var(--duration-sidebar-collapse)
+        var(--ease-sidebar-collapse);
+    }
+    :root[data-sidebar-collapsed="true"]:not(
+        [data-sidebar-visual-collapsed="true"]
+      )
+      .impersonation-banner {
+      transform: translateX(196px);
+      transition: none;
+    }
+    :root:not(
+        [data-sidebar-collapsed="true"]
+      )[data-sidebar-visual-collapsed="true"]
+      .impersonation-banner {
+      transform: translateX(-196px);
+      transition: none;
+    }
   }
 
   /* Luminous top accent line — fades in from both edges so the
@@ -2148,29 +2453,49 @@
 
   .impersonation-label {
     letter-spacing: 0.22em;
-    color: color-mix(in srgb, var(--impersonation-accent) 85%, var(--foreground));
+    color: color-mix(
+      in srgb,
+      var(--impersonation-accent) 85%,
+      var(--foreground)
+    );
   }
 
   .impersonation-chip {
     background: var(--impersonation-accent-soft);
-    color: color-mix(in srgb, var(--impersonation-accent) 85%, var(--foreground));
-    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--impersonation-accent) 32%, transparent);
+    color: color-mix(
+      in srgb,
+      var(--impersonation-accent) 85%,
+      var(--foreground)
+    );
+    box-shadow: inset 0 0 0 1px
+      color-mix(in srgb, var(--impersonation-accent) 32%, transparent);
   }
 
   .impersonation-end-btn {
     color: var(--foreground);
     background: color-mix(in srgb, var(--foreground) 5%, transparent);
-    border: 1px solid color-mix(in srgb, var(--impersonation-accent) 24%, var(--border));
+    border: 1px solid
+      color-mix(in srgb, var(--impersonation-accent) 24%, var(--border));
   }
 
   .impersonation-end-btn:hover {
-    background: color-mix(in srgb, var(--impersonation-accent) 14%, transparent);
-    border-color: color-mix(in srgb, var(--impersonation-accent) 55%, var(--border));
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--impersonation-accent) 8%, transparent);
+    background: color-mix(
+      in srgb,
+      var(--impersonation-accent) 14%,
+      transparent
+    );
+    border-color: color-mix(
+      in srgb,
+      var(--impersonation-accent) 55%,
+      var(--border)
+    );
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--impersonation-accent) 8%, transparent);
   }
 
   .impersonation-end-btn:focus-visible {
     border-color: var(--impersonation-accent);
-    box-shadow: 0 0 0 3px color-mix(in srgb, var(--impersonation-accent) 28%, transparent);
+    box-shadow: 0 0 0 3px
+      color-mix(in srgb, var(--impersonation-accent) 28%, transparent);
   }
 }

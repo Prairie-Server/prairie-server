@@ -17,6 +17,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
@@ -24,21 +26,30 @@ import (
 // matching the NFO provider's discovery guard.
 const maxLocalImageSourceBytes = 8 << 20
 
-// imageCacheDiscoveryInterval throttles the full-catalog backfill sweep so an
-// idle installation does not re-scan every entity table on every task tick.
-// Draining of already-queued jobs is unaffected and stays responsive.
-const imageCacheDiscoveryInterval = 15 * time.Minute
+const (
+	immediateImageCacheClaimLimit  = 16
+	immediateImageCacheConcurrency = 3
+	// Discovery is a read/enqueue page, not a processing lease. Keep it large
+	// even though processing now claims only jobs that can start immediately.
+	imageCacheDiscoveryBatchSize = 1000
+	// Waiting for a background worker to release a job polls with backoff and
+	// gives up after immediateImageCacheIdleTimeout without progress. The
+	// worker's own lease runs for imageCacheLeaseDuration, and its pod can die
+	// while holding it, so an interactive refresh must not wait that long.
+	immediateImageCacheMinPoll     = 100 * time.Millisecond
+	immediateImageCacheMaxPoll     = 2 * time.Second
+	immediateImageCacheIdleTimeout = 30 * time.Second
+)
 
-// imageCacheLeaseHeartbeatInterval refreshes locked_at while a job is actively
-// processed so the short reclaim lease does not steal in-flight work.
-const imageCacheLeaseHeartbeatInterval = 30 * time.Second
+// ErrTargetArtworkPending reports that some of a refreshed target's artwork was
+// still held by a background worker when the interactive wait gave up. The
+// metadata refresh itself is complete and the artwork finishes on the normal
+// queue, so callers should surface this as a warning, not a failure.
+var ErrTargetArtworkPending = errors.New("artwork caching is still running in the background")
 
-// imageCacheProgressInterval drives admin UI progress while the rolling pool
-// has no batch boundaries to hang reports on.
-const imageCacheProgressInterval = 2 * time.Second
-
-// ImageCacheProgressFunc reports cache-queue progress to the task manager UI.
-type ImageCacheProgressFunc func(percent float64, message string)
+// ErrImageCachingDisabled prevents an explicit manual backfill from being
+// recorded as successfully complete when metadata image caching is disabled.
+var ErrImageCachingDisabled = errors.New("metadata image caching is disabled")
 
 type ImageCacheJobClaimer interface {
 	ClaimDue(ctx context.Context, workerID string, limit int) ([]*models.MetadataImageCacheJob, error)
@@ -48,8 +59,23 @@ type ImageCacheJobClaimer interface {
 	CurrentTargetSourcePath(ctx context.Context, job *models.MetadataImageCacheJob) (string, error)
 	EnqueueExistingProviderArtwork(ctx context.Context, limit int) (int, error)
 	DeleteSucceededBefore(ctx context.Context, before time.Time, limit int) (int, error)
-	StatusCounts(ctx context.Context) (ImageCacheJobStatusCounts, error)
-	Heartbeat(ctx context.Context, id int64, lockedBy string) (bool, error)
+}
+
+// imageCacheLadderBackfiller is optional so lightweight stores that only serve
+// the normal queue do not have to implement the one-shot ladder sweep. A store
+// that does not implement it simply has no ladder backfill.
+type imageCacheLadderBackfiller interface {
+	EnqueueLadderBackfill(ctx context.Context, limit int) (int, error)
+	// HasLadderBackfillRemaining is the completion signal and is deliberately
+	// independent of the enqueue: it asks whether any artwork still lacks the
+	// new rung, not whether anything is enqueueable right now.
+	HasLadderBackfillRemaining(ctx context.Context) (bool, error)
+}
+
+type targetImageCacheJobStore interface {
+	retryTargetNow(ctx context.Context, targetContentID string) error
+	claimDueForTarget(ctx context.Context, workerID, targetContentID string, limit int) ([]*models.MetadataImageCacheJob, error)
+	targetHasRunningJobs(ctx context.Context, targetContentID string) (bool, error)
 }
 
 // imageCacheTargetCachedPathReader is optionally implemented by the job store
@@ -57,6 +83,12 @@ type ImageCacheJobClaimer interface {
 // cached path for the local-artwork unchanged-skip and stale-prefix cleanup.
 type imageCacheTargetCachedPathReader interface {
 	CurrentTargetCachedPath(ctx context.Context, job *models.MetadataImageCacheJob) (string, error)
+}
+
+// imageCacheBacklogReader is optional so lightweight processor fakes and
+// alternate stores do not need a database-backed count implementation.
+type imageCacheBacklogReader interface {
+	GetBacklog(ctx context.Context) (ImageCacheBacklog, error)
 }
 
 // LibraryRootResolver reports the media folder root paths a piece of content
@@ -123,10 +155,18 @@ type ImageCacheProcessor struct {
 
 	enabled atomic.Bool
 
-	discoveryInterval time.Duration
-	discoveryMu       sync.Mutex
-	lastDiscovery     time.Time
-	forceDiscover     bool
+	// idleWaitTimeout bounds how long CacheTargetArtwork waits on jobs held by
+	// a background worker. Zero means immediateImageCacheIdleTimeout.
+	idleWaitTimeout time.Duration
+
+	discoveryMu   sync.Mutex
+	forceDiscover bool
+
+	// runGate serializes the scheduled queue drain and explicit full backfill.
+	// They are separate TaskManager tasks, so TaskManager's per-key guard cannot
+	// prevent them from racing each other through the shared durable queue. A
+	// channel gate keeps waiting cancellable, unlike a sync.Mutex.
+	runGate chan struct{}
 }
 
 // SetLibraryRootResolver wires the folder repository used to confine local
@@ -149,9 +189,10 @@ func (p *ImageCacheProcessor) SetImagePrefixDeleter(deleter ImagePrefixDeleter) 
 	p.prefixDeleter = deleter
 }
 
-// SetEnabled toggles background caching. When disabled the processor performs
-// no discovery, claiming, or uploading, honoring metadata.cache_images so that
-// merely configuring an artwork backend does not download the whole catalog.
+// SetEnabled toggles background caching. When disabled the processor begins no
+// new discovery, claims, or uploads; a job already in flight may finish. This
+// honors metadata.cache_images so merely configuring object storage does not
+// download the whole catalog.
 func (p *ImageCacheProcessor) SetEnabled(enabled bool) {
 	if p == nil {
 		return
@@ -183,13 +224,15 @@ func NewImageCacheProcessorWithTargets(
 	targets ImageCacheProcessorTargets,
 ) *ImageCacheProcessor {
 	p := &ImageCacheProcessor{
-		jobs:              jobs,
-		cacher:            cacher,
-		resolver:          resolver,
-		targets:           targets,
-		logger:            slog.Default(),
-		discoveryInterval: imageCacheDiscoveryInterval,
+		jobs:            jobs,
+		cacher:          cacher,
+		resolver:        resolver,
+		targets:         targets,
+		logger:          slog.Default(),
+		idleWaitTimeout: immediateImageCacheIdleTimeout,
+		runGate:         make(chan struct{}, 1),
 	}
+	p.runGate <- struct{}{}
 	// Default to enabled; callers gate on metadata.cache_images via SetEnabled.
 	p.enabled.Store(true)
 	return p
@@ -206,10 +249,23 @@ type ImageCacheRunStats struct {
 	UploadedVariants int
 	ExistingVariants int
 	RuntimeLimited   bool
-	// MaxInFlight is the peak claimed-but-unfinished count during a rolling
-	// RunUntilIdle; used to assert the pool never exceeds concurrency.
-	MaxInFlight int
+
+	// Backlog is the outstanding queue sampled once, when this run started, and
+	// never moves during the run. It forms this execution's progress denominator
+	// together with EnqueuedExisting, so retention deleting old rows underneath
+	// the run cannot move reported progress.
+	Backlog ImageCacheBacklog
 }
+
+// Processed reports how many jobs this run has finished with, in any terminal
+// way.
+func (s ImageCacheRunStats) Processed() int {
+	return s.Succeeded + s.Failed + s.Skipped
+}
+
+// ImageCacheRunProgressReporter receives cumulative stats for the current
+// execution after each queue or discovery batch.
+type ImageCacheRunProgressReporter func(ImageCacheRunStats)
 
 func (s *ImageCacheRunStats) add(other ImageCacheRunStats) {
 	s.EnqueuedExisting += other.EnqueuedExisting
@@ -223,34 +279,127 @@ func (s *ImageCacheRunStats) add(other ImageCacheRunStats) {
 }
 
 // RunOnce claims and processes one batch of already-queued jobs. It does not
-// run catalog discovery; callers (RunUntilIdle) drive continuous draining and
-// discovery. Prefer RunUntilIdle in production — RunOnce is a single-batch
-// helper used by tests and the maxRuntime<=0 path.
-//
-// claimLimit is capped to concurrency so DB "running" tracks work that is
-// actually in flight. Over-claiming marked hundreds of idle jobs running and
-// left them orphaned across restarts until the lease expired.
+// run catalog discovery; callers choose between queue-only draining and an
+// explicit full-catalog backfill.
 func (p *ImageCacheProcessor) RunOnce(ctx context.Context, workerID string, claimLimit int, concurrency int) (ImageCacheRunStats, error) {
 	var stats ImageCacheRunStats
 	if p == nil || p.jobs == nil || p.cacher == nil || !p.enabled.Load() {
 		return stats, nil
 	}
+	if claimLimit <= 0 {
+		claimLimit = 100
+	}
 	if concurrency <= 0 {
 		concurrency = 4
-	}
-	if claimLimit <= 0 || claimLimit > concurrency {
-		claimLimit = concurrency
 	}
 
 	jobs, err := p.jobs.ClaimDue(ctx, workerID, claimLimit)
 	if err != nil {
 		return stats, err
 	}
-	stats.Claimed = len(jobs)
-	stats.Batches = 1
 	if len(jobs) == 0 {
 		p.cleanupSucceeded(ctx, &stats)
 		return stats, nil
+	}
+	stats = p.processClaimedJobs(ctx, workerID, jobs, concurrency)
+	p.cleanupSucceeded(ctx, &stats)
+	return stats, nil
+}
+
+// ArtworkCachingEnabled reports whether the processor would actually cache
+// anything right now. Callers use it to decide whether to advertise an artwork
+// step at all: the processor is wired whenever object storage is configured,
+// but metadata.cache_images can still have it turned off.
+func (p *ImageCacheProcessor) ArtworkCachingEnabled() bool {
+	return p != nil && p.jobs != nil && p.cacher != nil && p.enabled.Load()
+}
+
+// CacheTargetArtwork processes only the artwork queued for a manually
+// refreshed item, and for a series also the artwork of its seasons, episodes,
+// and localizations, which are queued under their own content IDs. It waits a
+// bounded while for jobs a background worker already holds so the interactive
+// refresh does not report success before the cached paths have been updated;
+// past that it returns ErrTargetArtworkPending and lets the queue finish.
+func (p *ImageCacheProcessor) CacheTargetArtwork(ctx context.Context, targetContentID string) error {
+	if !p.ArtworkCachingEnabled() {
+		return nil
+	}
+	targetContentID = strings.TrimSpace(targetContentID)
+	if targetContentID == "" {
+		return fmt.Errorf("target content ID is required")
+	}
+	store, ok := p.jobs.(targetImageCacheJobStore)
+	if !ok {
+		return fmt.Errorf("metadata image cache does not support targeted processing")
+	}
+
+	// Once, up front: the user asked for this item, so artwork deferred by an
+	// earlier failure becomes due now. Repeating it on every poll would clear
+	// backoff that background workers set on sibling jobs and would turn the
+	// wait below into a write-heavy hot loop.
+	if err := store.retryTargetNow(ctx, targetContentID); err != nil {
+		return err
+	}
+
+	idleTimeout := p.idleWaitTimeout
+	if idleTimeout <= 0 {
+		idleTimeout = immediateImageCacheIdleTimeout
+	}
+	workerID := uuid.NewString()
+	poll := immediateImageCacheMinPoll
+	deadline := time.Now().Add(idleTimeout)
+	failed := 0
+	for {
+		jobs, err := store.claimDueForTarget(ctx, workerID, targetContentID, immediateImageCacheClaimLimit)
+		if err != nil {
+			return err
+		}
+		if len(jobs) > 0 {
+			stats := p.processClaimedJobs(ctx, workerID, jobs, immediateImageCacheConcurrency)
+			// Failures are collected rather than returned: the remaining
+			// artwork still gets cached, and a failed job carries its own
+			// backoff so it is not reclaimed by the loop below.
+			failed += stats.Failed
+			poll = immediateImageCacheMinPoll
+			deadline = time.Now().Add(idleTimeout)
+			continue
+		}
+
+		running, err := store.targetHasRunningJobs(ctx, targetContentID)
+		if err != nil {
+			return err
+		}
+		if !running {
+			break
+		}
+		if !time.Now().Before(deadline) {
+			if failed > 0 {
+				return fmt.Errorf("%d refreshed artwork image(s) failed to cache, and %w", failed, ErrTargetArtworkPending)
+			}
+			return ErrTargetArtworkPending
+		}
+		timer := time.NewTimer(poll)
+		select {
+		case <-ctx.Done():
+			timer.Stop()
+			return ctx.Err()
+		case <-timer.C:
+		}
+		poll = min(2*poll, immediateImageCacheMaxPoll)
+	}
+	if failed > 0 {
+		return fmt.Errorf("%d refreshed artwork image(s) failed to cache", failed)
+	}
+	return nil
+}
+
+func (p *ImageCacheProcessor) processClaimedJobs(ctx context.Context, workerID string, jobs []*models.MetadataImageCacheJob, concurrency int) ImageCacheRunStats {
+	stats := ImageCacheRunStats{Claimed: len(jobs)}
+	if len(jobs) == 0 {
+		return stats
+	}
+	if concurrency <= 0 {
+		concurrency = 4
 	}
 
 	sem := make(chan struct{}, concurrency)
@@ -259,6 +408,12 @@ func (p *ImageCacheProcessor) RunOnce(ctx context.Context, workerID string, clai
 	var unstarted []int64
 loop:
 	for i, job := range jobs {
+		if !p.enabled.Load() {
+			for _, rem := range jobs[i:] {
+				unstarted = append(unstarted, rem.ID)
+			}
+			break loop
+		}
 		// Acquire the semaphore before spawning so cancellation is observed here
 		// rather than inside a goroutine that already holds a claimed job. Jobs we
 		// never start are requeued below instead of being left locked until the
@@ -271,375 +426,63 @@ loop:
 			}
 			break loop
 		}
+		if !p.enabled.Load() {
+			<-sem
+			for _, rem := range jobs[i:] {
+				unstarted = append(unstarted, rem.ID)
+			}
+			break loop
+		}
 		wg.Add(1)
 		go func(job *models.MetadataImageCacheJob) {
 			defer wg.Done()
 			defer func() { <-sem }()
 			result := p.processOne(ctx, job)
 			mu.Lock()
-			p.addProcessStatsLocked(&stats, result)
+			switch result.outcome {
+			case "succeeded":
+				stats.Succeeded++
+			case "skipped":
+				stats.Skipped++
+			default:
+				stats.Failed++
+			}
+			stats.UploadedVariants += result.uploadedVariants
+			stats.ExistingVariants += result.existingVariants
 			mu.Unlock()
 		}(job)
 	}
 	wg.Wait()
 
 	if len(unstarted) > 0 {
-		p.requeueUnstarted(ctx, unstarted, workerID)
+		requeueCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
+		if err := p.jobs.RequeueClaimed(requeueCtx, unstarted, workerID); err != nil {
+			p.logger.WarnContext(ctx, "metadata image cache: failed to requeue unstarted jobs", "count", len(unstarted), "error", err)
+		}
+		cancel()
 	}
 
-	p.cleanupSucceeded(ctx, &stats)
-	if ctxErr := ctx.Err(); ctxErr != nil && stats.Claimed == 0 {
-		return stats, ctxErr
-	}
-	return stats, nil
+	return stats
 }
 
-func (p *ImageCacheProcessor) addProcessStatsLocked(stats *ImageCacheRunStats, result imageCacheProcessResult) {
-	switch result.outcome {
-	case "succeeded":
-		stats.Succeeded++
-	case "skipped":
-		stats.Skipped++
-	default:
-		stats.Failed++
-	}
-	stats.UploadedVariants += result.uploadedVariants
-	stats.ExistingVariants += result.existingVariants
+// DrainUntilIdle processes only jobs that have already been queued by scans,
+// metadata refreshes, or explicit artwork changes. It never performs the
+// full-catalog discovery sweep, so it is safe for startup and interval tasks:
+// an idle server stays idle instead of turning every scheduler tick into a
+// library-wide backfill.
+func (p *ImageCacheProcessor) DrainUntilIdle(ctx context.Context, workerID string, claimLimit int, concurrency int, maxRuntime time.Duration, reportProgress ImageCacheRunProgressReporter) (ImageCacheRunStats, error) {
+	discover := p.consumeForceDiscover()
+	return p.runUntilIdle(ctx, workerID, claimLimit, concurrency, maxRuntime, discover, reportProgress)
 }
 
-func (p *ImageCacheProcessor) requeueUnstarted(ctx context.Context, ids []int64, workerID string) {
-	if len(ids) == 0 || p.jobs == nil {
-		return
-	}
-	requeueCtx, cancel := context.WithTimeout(context.WithoutCancel(ctx), 10*time.Second)
-	defer cancel()
-	if err := p.jobs.RequeueClaimed(requeueCtx, ids, workerID); err != nil {
-		p.logger.WarnContext(ctx, "metadata image cache: failed to requeue unstarted jobs", "count", len(ids), "error", err)
-	}
+// RunUntilIdle drains the queue and explicitly discovers uncached provider
+// artwork across the catalog. This is the manual backfill path; scheduled
+// cache processing must use DrainUntilIdle.
+func (p *ImageCacheProcessor) RunUntilIdle(ctx context.Context, workerID string, claimLimit int, concurrency int, maxRuntime time.Duration, reportProgress ImageCacheRunProgressReporter) (ImageCacheRunStats, error) {
+	return p.runUntilIdle(ctx, workerID, claimLimit, concurrency, maxRuntime, true, reportProgress)
 }
 
-// RunUntilIdle drains the image-cache queue with a rolling worker pool: a
-// single dispatcher claims only free capacity (concurrency − in-flight) via
-// ClaimDue, and concurrency workers pull continuously. Freed workers are
-// refilled immediately rather than waiting for a batch barrier, so DB
-// "running" stays ≈ concurrency while a backlog exists.
-//
-// On cancel / maxRuntime deadline, claimed-but-not-yet-started jobs are
-// requeued via RequeueClaimed. Discovery sweeps, cleanupSucceeded, and
-// progress reporting are preserved.
-func (p *ImageCacheProcessor) RunUntilIdle(ctx context.Context, workerID string, claimLimit int, concurrency int, maxRuntime time.Duration, onProgress ImageCacheProgressFunc) (ImageCacheRunStats, error) {
-	var total ImageCacheRunStats
-	if p == nil || p.jobs == nil || p.cacher == nil || !p.enabled.Load() {
-		return total, nil
-	}
-
-	reportProgress := func() {
-		p.reportQueueProgress(ctx, onProgress)
-	}
-	reportProgress()
-
-	if concurrency <= 0 {
-		concurrency = 4
-	}
-	discoverLimit := claimLimit
-	if discoverLimit <= 0 {
-		discoverLimit = concurrency
-	}
-
-	if maxRuntime <= 0 {
-		enqueued, derr := p.discoverExisting(ctx, discoverLimit)
-		total.EnqueuedExisting += enqueued
-		if derr != nil {
-			return total, derr
-		}
-		stats, err := p.RunOnce(ctx, workerID, claimLimit, concurrency)
-		total.add(stats)
-		reportProgress()
-		return total, err
-	}
-
-	// Discover before draining only when forced (cache_images enable / manual or
-	// interval Cache Metadata Images run). Waiting until the queue is empty
-	// starves never-enqueued item posters behind a TV episode backlog. The
-	// 15m throttle still gates non-forced idle discovery inside runRolling.
-	force := p.consumeForceDiscover()
-	sweep := force || p.discoveryDue()
-	if force {
-		enqueued, derr := p.discoverExisting(ctx, discoverLimit)
-		total.EnqueuedExisting += enqueued
-		if derr != nil {
-			return total, derr
-		}
-		reportProgress()
-	}
-	deadline := time.Now().Add(maxRuntime)
-	stats, err := p.runRolling(ctx, workerID, discoverLimit, concurrency, deadline, sweep, onProgress)
-	total.add(stats)
-	total.RuntimeLimited = stats.RuntimeLimited
-	total.MaxInFlight = stats.MaxInFlight
-	total.Batches = stats.Batches
-	return total, err
-}
-
-func (p *ImageCacheProcessor) runRolling(
-	ctx context.Context,
-	workerID string,
-	discoverLimit int,
-	concurrency int,
-	deadline time.Time,
-	sweep bool,
-	onProgress ImageCacheProgressFunc,
-) (ImageCacheRunStats, error) {
-	var total ImageCacheRunStats
-	reportProgress := func() {
-		p.reportQueueProgress(ctx, onProgress)
-	}
-
-	jobsCh := make(chan *models.MetadataImageCacheJob) // unbuffered: send success == started
-	completeCh := make(chan struct{}, concurrency)
-	deadlineCh := time.After(time.Until(deadline))
-
-	var (
-		mu          sync.Mutex
-		outstanding atomic.Int32 // claimed and not yet finished
-		maxInFlight atomic.Int32
-		unstarted   []int64
-	)
-
-	recordPeak := func() {
-		for {
-			cur := outstanding.Load()
-			peak := maxInFlight.Load()
-			if cur <= peak || maxInFlight.CompareAndSwap(peak, cur) {
-				return
-			}
-		}
-	}
-
-	workerCtx, workerCancel := context.WithCancel(ctx)
-	defer workerCancel()
-
-	var wg sync.WaitGroup
-	for range concurrency {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for job := range jobsCh {
-				result := p.processOne(workerCtx, job)
-				mu.Lock()
-				p.addProcessStatsLocked(&total, result)
-				mu.Unlock()
-				outstanding.Add(-1)
-				select {
-				case completeCh <- struct{}{}:
-				default:
-				}
-			}
-		}()
-	}
-
-	progressDone := make(chan struct{})
-	go func() {
-		ticker := time.NewTicker(imageCacheProgressInterval)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-progressDone:
-				return
-			case <-ticker.C:
-				reportProgress()
-			}
-		}
-	}()
-
-	var dispatchErr error
-loop:
-	for {
-		if err := ctx.Err(); err != nil {
-			dispatchErr = err
-			break
-		}
-		select {
-		case <-deadlineCh:
-			mu.Lock()
-			total.RuntimeLimited = true
-			mu.Unlock()
-			break loop
-		default:
-		}
-
-		free := concurrency - int(outstanding.Load())
-		if free <= 0 {
-			switch waitForSlot(ctx, completeCh, deadlineCh) {
-			case slotWaitOK:
-				continue
-			case slotWaitDeadline:
-				mu.Lock()
-				total.RuntimeLimited = true
-				mu.Unlock()
-				break loop
-			default:
-				break loop
-			}
-		}
-
-		jobs, err := p.jobs.ClaimDue(ctx, workerID, free)
-		mu.Lock()
-		total.Batches++
-		mu.Unlock()
-		if err != nil {
-			dispatchErr = err
-			break
-		}
-		mu.Lock()
-		total.Claimed += len(jobs)
-		mu.Unlock()
-
-		if len(jobs) == 0 {
-			if outstanding.Load() > 0 {
-				switch waitForSlot(ctx, completeCh, deadlineCh) {
-				case slotWaitOK:
-					continue
-				case slotWaitDeadline:
-					mu.Lock()
-					total.RuntimeLimited = true
-					mu.Unlock()
-					break loop
-				default:
-					break loop
-				}
-			}
-			// Queue drained of due work.
-			if !sweep {
-				break
-			}
-			enqueued, err := p.jobs.EnqueueExistingProviderArtwork(ctx, discoverLimit)
-			if err != nil {
-				dispatchErr = err
-				break
-			}
-			mu.Lock()
-			total.EnqueuedExisting += enqueued
-			mu.Unlock()
-			reportProgress()
-			if enqueued == 0 {
-				p.markDiscovered()
-				break
-			}
-			continue
-		}
-
-		for i, job := range jobs {
-			outstanding.Add(1)
-			recordPeak()
-			select {
-			case jobsCh <- job:
-				// Worker has received the job; it is started.
-			case <-ctx.Done():
-				outstanding.Add(-1)
-				unstarted = append(unstarted, job.ID)
-				for _, rem := range jobs[i+1:] {
-					unstarted = append(unstarted, rem.ID)
-				}
-				dispatchErr = ctx.Err()
-				break loop
-			case <-deadlineCh:
-				outstanding.Add(-1)
-				unstarted = append(unstarted, job.ID)
-				for _, rem := range jobs[i+1:] {
-					unstarted = append(unstarted, rem.ID)
-				}
-				mu.Lock()
-				total.RuntimeLimited = true
-				mu.Unlock()
-				break loop
-			}
-		}
-	}
-
-	close(progressDone)
-	close(jobsCh)
-	wg.Wait()
-
-	mu.Lock()
-	total.MaxInFlight = int(maxInFlight.Load())
-	mu.Unlock()
-	if len(unstarted) > 0 {
-		p.requeueUnstarted(ctx, unstarted, workerID)
-	}
-	p.cleanupSucceeded(ctx, &total)
-	reportProgress()
-
-	if dispatchErr != nil && total.Claimed == 0 {
-		return total, dispatchErr
-	}
-	if dispatchErr != nil && errors.Is(dispatchErr, context.Canceled) {
-		// Partial run with cancel: keep stats, soft-succeed like RunOnce.
-		return total, nil
-	}
-	return total, dispatchErr
-}
-
-type slotWaitResult int
-
-const (
-	slotWaitOK slotWaitResult = iota
-	slotWaitCancel
-	slotWaitDeadline
-)
-
-// waitForSlot blocks until a worker frees capacity, ctx cancels, or deadline hits.
-func waitForSlot(ctx context.Context, completeCh <-chan struct{}, deadlineCh <-chan time.Time) slotWaitResult {
-	select {
-	case <-completeCh:
-		return slotWaitOK
-	case <-ctx.Done():
-		return slotWaitCancel
-	case <-deadlineCh:
-		return slotWaitDeadline
-	}
-}
-
-func (p *ImageCacheProcessor) reportQueueProgress(ctx context.Context, onProgress ImageCacheProgressFunc) {
-	if onProgress == nil || p.jobs == nil {
-		return
-	}
-	counts, err := p.jobs.StatusCounts(ctx)
-	if err != nil {
-		p.logger.WarnContext(ctx, "metadata image cache: failed to read job status counts", "error", err)
-		return
-	}
-	total := counts.Total()
-	var percent float64
-	switch {
-	case total == 0:
-		percent = 100
-	case counts.Queued+counts.Running == 0:
-		percent = 100
-	default:
-		percent = float64(counts.Succeeded) / float64(total) * 100
-		if percent > 99 && counts.Queued+counts.Running > 0 {
-			percent = 99
-		}
-	}
-	onProgress(percent, fmt.Sprintf(
-		"Cached %d/%d (queued %d, running %d, failed %d)",
-		counts.Succeeded, total, counts.Queued, counts.Running, counts.Failed,
-	))
-}
-
-// discoveryDue reports whether enough time has elapsed since the last completed
-// sweep to run another one.
-func (p *ImageCacheProcessor) discoveryDue() bool {
-	if p.discoveryInterval <= 0 {
-		return true
-	}
-	p.discoveryMu.Lock()
-	defer p.discoveryMu.Unlock()
-	return p.lastDiscovery.IsZero() || time.Since(p.lastDiscovery) >= p.discoveryInterval
-}
-
-// ForceDiscovery clears the discovery throttle so the next RunUntilIdle enqueues
+// ForceDiscovery clears the discovery throttle so the next DrainUntilIdle enqueues
 // existing provider artwork immediately — used when cache_images flips on and
 // when an admin manually runs Cache Metadata Images.
 func (p *ImageCacheProcessor) ForceDiscovery() {
@@ -647,7 +490,6 @@ func (p *ImageCacheProcessor) ForceDiscovery() {
 		return
 	}
 	p.discoveryMu.Lock()
-	p.lastDiscovery = time.Time{}
 	p.forceDiscover = true
 	p.discoveryMu.Unlock()
 }
@@ -660,20 +502,207 @@ func (p *ImageCacheProcessor) consumeForceDiscover() bool {
 	return force
 }
 
-func (p *ImageCacheProcessor) markDiscovered() {
-	p.discoveryMu.Lock()
-	p.lastDiscovery = time.Now()
-	p.discoveryMu.Unlock()
+// imageCacheLadderBackfillBatchSize bounds one enqueue step of the ladder
+// backfill. It is smaller than the discovery sweep because each of these jobs
+// re-downloads artwork that is already cached: the queue should stay short
+// enough that ordinary scan-driven work is not stuck behind a whole library.
+const imageCacheLadderBackfillBatchSize = 200
+
+// RunLadderBackfill regenerates already-cached artwork against the current
+// variant ladder, in bounded batches, draining each batch before enqueuing the
+// next. It reports whether the pass ran to completion; only a complete pass may
+// be recorded against artworkkey.LadderVersion.
+//
+// "Complete" means no artwork is missing the new rung any more — a question
+// about storage, asked of the artwork revision manifest, not about this run's
+// job bookkeeping. That distinction is what makes the sweep safe on a cluster.
+// Running out of enqueueable work only means nothing is actionable here and now:
+// another node may hold the rest in flight, a node may have died mid-batch, a
+// node still on an older revision may have "succeeded" a job while writing only
+// the old rungs, and a job that exhausted its retries is parked out of view. In
+// every one of those cases the artwork still lacks the rung, so the sweep must
+// not call itself done — and next time round, those rows simply match again.
+//
+// Interrupting it is safe and re-running it is cheap: the cacher skips uploading
+// variants whose objects already match, so a repeated pass costs the source
+// download and nothing else. An incomplete pass simply resumes on the next
+// scheduled run.
+func (p *ImageCacheProcessor) RunLadderBackfill(
+	ctx context.Context,
+	workerID string,
+	claimLimit int,
+	concurrency int,
+	maxRuntime time.Duration,
+	reportProgress ImageCacheRunProgressReporter,
+) (ImageCacheRunStats, bool, error) {
+	var total ImageCacheRunStats
+	if p == nil || p.jobs == nil || p.cacher == nil {
+		return total, false, nil
+	}
+	backfiller, ok := p.jobs.(imageCacheLadderBackfiller)
+	if !ok {
+		return total, false, nil
+	}
+	// Caching being off is not completion: recording the version would skip the
+	// backfill permanently for a deployment that turns caching back on.
+	if !p.enabled.Load() {
+		return total, false, nil
+	}
+
+	limited := maxRuntime > 0
+	deadline := time.Time{}
+	if limited {
+		deadline = time.Now().Add(maxRuntime)
+	}
+
+	for {
+		if err := ctx.Err(); err != nil {
+			return total, false, err
+		}
+		if !p.enabled.Load() {
+			return total, false, nil
+		}
+		remaining := time.Duration(0)
+		if limited {
+			remaining = time.Until(deadline)
+			if remaining <= 0 {
+				total.RuntimeLimited = true
+				return total, false, nil
+			}
+		}
+
+		enqueued, err := backfiller.EnqueueLadderBackfill(ctx, imageCacheLadderBackfillBatchSize)
+		if err != nil {
+			return total, false, err
+		}
+		total.EnqueuedExisting += enqueued
+		reportImageCacheRunProgress(reportProgress, total)
+		if enqueued == 0 {
+			// Nothing left to queue here. Whether that means "finished" is a
+			// question about the artwork, not about this run.
+			remainingWork, err := backfiller.HasLadderBackfillRemaining(ctx)
+			if err != nil {
+				return total, false, err
+			}
+			return total, !remainingWork, nil
+		}
+
+		stats, err := p.DrainUntilIdle(ctx, workerID, claimLimit, concurrency, remaining, reportProgress)
+		total.add(stats)
+		total.Batches += stats.Batches
+		reportImageCacheRunProgress(reportProgress, total)
+		if err != nil {
+			return total, false, err
+		}
+		if stats.RuntimeLimited {
+			total.RuntimeLimited = true
+			return total, false, nil
+		}
+	}
 }
 
-// discoverExisting runs an unthrottled sweep (single-pass path) and records the
-// time so the throttle applies to subsequent interval-driven runs.
-func (p *ImageCacheProcessor) discoverExisting(ctx context.Context, limit int) (int, error) {
-	enqueued, err := p.jobs.EnqueueExistingProviderArtwork(ctx, limit)
-	if err == nil {
-		p.markDiscovered()
+func (p *ImageCacheProcessor) runUntilIdle(ctx context.Context, workerID string, claimLimit int, concurrency int, maxRuntime time.Duration, discover bool, reportProgress ImageCacheRunProgressReporter) (ImageCacheRunStats, error) {
+	var total ImageCacheRunStats
+	if p == nil {
+		return total, nil
 	}
-	return enqueued, err
+	select {
+	case <-ctx.Done():
+		return total, ctx.Err()
+	case <-p.runGate:
+	}
+	defer func() { p.runGate <- struct{}{} }()
+	if p.jobs == nil || p.cacher == nil {
+		return total, nil
+	}
+	if !p.enabled.Load() {
+		if discover {
+			return total, ErrImageCachingDisabled
+		}
+		return total, nil
+	}
+	total.Backlog = p.sampleBacklog(ctx)
+	reportImageCacheRunProgress(reportProgress, total)
+
+	// A positive runtime bounds scheduled draining; zero or negative means the
+	// explicit manual backfill keeps going until the catalog is exhausted or its
+	// context is canceled.
+	limited := maxRuntime > 0
+	deadline := time.Time{}
+	if limited {
+		deadline = time.Now().Add(maxRuntime)
+	}
+	for {
+		if err := ctx.Err(); err != nil {
+			return total, err
+		}
+		if !p.enabled.Load() {
+			if discover {
+				return total, ErrImageCachingDisabled
+			}
+			return total, nil
+		}
+		if limited && !time.Now().Before(deadline) {
+			total.RuntimeLimited = true
+			return total, nil
+		}
+
+		stats, err := p.RunOnce(ctx, workerID, claimLimit, concurrency)
+		total.Batches++
+		total.add(stats)
+		reportImageCacheRunProgress(reportProgress, total)
+		if err != nil {
+			return total, err
+		}
+		// SetEnabled may change while a claimed batch is in flight. Re-check
+		// before looping or discovering so disabling caching cannot turn an
+		// unbounded manual backfill into a rapid enqueue-only catalog sweep.
+		if !p.enabled.Load() {
+			if discover {
+				return total, ErrImageCachingDisabled
+			}
+			return total, nil
+		}
+		if stats.Claimed > 0 {
+			// Keep draining the queue before spending a full-table sweep.
+			continue
+		}
+		if !discover {
+			return total, nil
+		}
+		enqueued, err := p.jobs.EnqueueExistingProviderArtwork(ctx, imageCacheDiscoveryBatchSize)
+		if err != nil {
+			return total, err
+		}
+		total.EnqueuedExisting += enqueued
+		reportImageCacheRunProgress(reportProgress, total)
+		if enqueued == 0 {
+			return total, nil
+		}
+	}
+}
+
+// sampleBacklog counts the outstanding queue once per run. It is deliberately
+// not called per batch: the count is the run's fixed progress denominator, and
+// repeating it would put an aggregate over the whole queue on the hot path.
+func (p *ImageCacheProcessor) sampleBacklog(ctx context.Context) ImageCacheBacklog {
+	reader, ok := p.jobs.(imageCacheBacklogReader)
+	if !ok {
+		return ImageCacheBacklog{}
+	}
+	backlog, err := reader.GetBacklog(ctx)
+	if err != nil {
+		p.logger.WarnContext(ctx, "metadata image cache: failed to count queue backlog", "error", err)
+		return ImageCacheBacklog{}
+	}
+	return backlog
+}
+
+func reportImageCacheRunProgress(reportProgress ImageCacheRunProgressReporter, stats ImageCacheRunStats) {
+	if reportProgress == nil {
+		return
+	}
+	reportProgress(stats)
 }
 
 func (p *ImageCacheProcessor) cleanupSucceeded(ctx context.Context, stats *ImageCacheRunStats) {
@@ -717,13 +746,10 @@ func (p *ImageCacheProcessor) processOne(ctx context.Context, job *models.Metada
 	if job == nil {
 		return imageCacheProcessResult{outcome: "skipped"}
 	}
-	stopHeartbeat := p.startLeaseHeartbeat(ctx, job)
-	defer stopHeartbeat()
-
 	imageType, err := imageCacheJobImageType(job.ImageType)
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 
 	// Confirm the target still references this job's source before doing the
@@ -732,7 +758,7 @@ func (p *ImageCacheProcessor) processOne(ctx context.Context, job *models.Metada
 	current, err := p.jobs.CurrentTargetSourcePath(ctx, job)
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 	if current != job.SourcePath {
 		p.markSucceeded(ctx, job)
@@ -747,12 +773,12 @@ func (p *ImageCacheProcessor) processOne(ctx context.Context, job *models.Metada
 	if isProviderImagePath(downloadURL) {
 		if p.resolver == nil {
 			p.markFailed(ctx, job, "missing image resolver")
-			return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
+			return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 		}
 		downloadURL = p.resolver.ResolveImageURL(ctx, job.SourcePath, "original")
 		if downloadURL == "" {
-			p.markFailed(ctx, job, "image resolver returned empty URL")
-			return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
+			p.markFailed(ctx, job, imageCacheEmptyResolvedURLError)
+			return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 		}
 	}
 
@@ -768,12 +794,12 @@ func (p *ImageCacheProcessor) processOne(ctx context.Context, job *models.Metada
 	})
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 
 	if result == nil {
 		p.markFailed(ctx, job, "image cache returned no result")
-		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 	processResult := imageCacheProcessResult{
 		uploadedVariants: result.UploadedVariants,
@@ -782,46 +808,11 @@ func (p *ImageCacheProcessor) processOne(ctx context.Context, job *models.Metada
 	cachedPath := CachedImageOriginalPath(result)
 	if cachedPath == "" {
 		p.markFailed(ctx, job, "image cache returned empty stored path")
-		processResult.outcome = ImageCacheStatusFailed
+		processResult.outcome = "failed"
 		return processResult
 	}
 	p.finishJobWithTargetUpdate(ctx, job, cachedPath, result.Thumbhash, &processResult)
 	return processResult
-}
-
-// startLeaseHeartbeat refreshes locked_at while the job is actively processed
-// so the short reclaim window does not soft-requeue in-flight work.
-func (p *ImageCacheProcessor) startLeaseHeartbeat(ctx context.Context, job *models.MetadataImageCacheJob) func() {
-	if p == nil || p.jobs == nil || job == nil || job.LockedBy == "" {
-		return func() {}
-	}
-	done := make(chan struct{})
-	var once sync.Once
-	go func() {
-		ticker := time.NewTicker(imageCacheLeaseHeartbeatInterval)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-done:
-				return
-			case <-ctx.Done():
-				return
-			case <-ticker.C:
-				ok, err := p.jobs.Heartbeat(ctx, job.ID, job.LockedBy)
-				if err != nil {
-					p.logger.WarnContext(ctx, "metadata image cache: lease heartbeat failed", "job_id", job.ID, "error", err)
-					continue
-				}
-				if !ok {
-					p.logger.WarnContext(ctx, "metadata image cache: lease lost during processing", "job_id", job.ID)
-					return
-				}
-			}
-		}
-	}()
-	return func() {
-		once.Do(func() { close(done) })
-	}
 }
 
 // finishJobWithTargetUpdate persists the cached path/thumbhash to the job's
@@ -830,7 +821,7 @@ func (p *ImageCacheProcessor) finishJobWithTargetUpdate(ctx context.Context, job
 	updated, err := p.updateTargetArtwork(ctx, job, cachedPath, thumbhash)
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		processResult.outcome = ImageCacheStatusFailed
+		processResult.outcome = "failed"
 		return
 	}
 	p.markSucceeded(ctx, job)
@@ -887,17 +878,17 @@ func (p *ImageCacheProcessor) updateTargetArtwork(ctx context.Context, job *mode
 // followed by a symlink-resolving re-check (both path and roots are resolved, so
 // scanner-recorded logical paths under symlinked roots stay valid while an
 // intermediate directory symlink escaping a root is rejected), then read through
-// an opened handle with fstat re-checks and pushed to the artwork backend under
-// a content-hashed local/ key.
+// an opened handle with fstat re-checks and pushed to S3 under a content-hashed
+// local/ key.
 func (p *ImageCacheProcessor) processLocalOne(ctx context.Context, job *models.MetadataImageCacheJob, imageType ImageType) imageCacheProcessResult {
 	byteCacher, ok := p.cacher.(ImageByteCacher)
 	if !ok {
 		p.markFailed(ctx, job, "image cacher does not support local artwork")
-		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 	if p.libraryRoots == nil {
 		p.markFailed(ctx, job, "missing library root resolver for local artwork")
-		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 
 	localPath := filepath.Clean(strings.TrimSpace(job.SourcePath)[len("file://"):])
@@ -905,11 +896,11 @@ func (p *ImageCacheProcessor) processLocalOne(ctx context.Context, job *models.M
 	roots, err := p.libraryRoots.LibraryRootsForContent(ctx, rootsContentID)
 	if err != nil {
 		p.markFailed(ctx, job, fmt.Sprintf("resolving library roots: %v", err))
-		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 	if !localImagePathWithinRoots(localPath, roots) {
 		p.markFailed(ctx, job, "local image path outside library roots: "+localPath)
-		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 	// The lexical check above cannot see through symlinks. Resolve the path and
 	// roots and re-confine so an intermediate directory symlink planted inside a
@@ -921,13 +912,13 @@ func (p *ImageCacheProcessor) processLocalOne(ctx context.Context, job *models.M
 	// through to the reader, which classifies it as the stable "missing" failure.
 	if _, err := localImagePathResolvedWithinRoots(localPath, roots); err != nil && !errors.Is(err, fs.ErrNotExist) {
 		p.markFailed(ctx, job, "local image path outside library roots: "+localPath)
-		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 
 	data, err := readLocalImageFile(localPath)
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 
 	// The target's current cached path drives the unchanged-skip (same hash →
@@ -955,11 +946,11 @@ func (p *ImageCacheProcessor) processLocalOne(ctx context.Context, job *models.M
 	})
 	if err != nil {
 		p.markFailed(ctx, job, err.Error())
-		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 	if result == nil {
 		p.markFailed(ctx, job, "image cache returned no result")
-		return imageCacheProcessResult{outcome: ImageCacheStatusFailed}
+		return imageCacheProcessResult{outcome: AVIFBackfillStatusFailed}
 	}
 	processResult := imageCacheProcessResult{
 		uploadedVariants: result.UploadedVariants,
@@ -968,7 +959,7 @@ func (p *ImageCacheProcessor) processLocalOne(ctx context.Context, job *models.M
 	cachedPath := CachedImageOriginalPath(result)
 	if cachedPath == "" {
 		p.markFailed(ctx, job, "image cache returned empty stored path")
-		processResult.outcome = ImageCacheStatusFailed
+		processResult.outcome = "failed"
 		return processResult
 	}
 	p.finishJobWithTargetUpdate(ctx, job, cachedPath, result.Thumbhash, &processResult)

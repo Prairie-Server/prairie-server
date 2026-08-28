@@ -1,5 +1,9 @@
 import { useDroppable } from "@dnd-kit/core";
-import { useSortable, SortableContext, verticalListSortingStrategy } from "@dnd-kit/sortable";
+import {
+  useSortable,
+  SortableContext,
+  verticalListSortingStrategy,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import type { LibraryCollection } from "@/api/types";
 import { CollectionRow } from "./CollectionRow";
@@ -21,7 +25,14 @@ export function UngroupedSection({
   syncingCollectionID = null,
   collapsed = false,
 }: UngroupedSectionProps) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: "ungrouped",
     data: { kind: "group", id: "ungrouped" },
   });
@@ -39,7 +50,11 @@ export function UngroupedSection({
   const sortableIds = collections.map((c) => `col:${c.id}`);
 
   return (
-    <div ref={setNodeRef} style={style} className="bg-background rounded-lg border border-dashed">
+    <div
+      ref={setNodeRef}
+      style={style}
+      className="bg-background rounded-lg border border-dashed"
+    >
       <div className="flex items-center gap-2 border-b border-dashed p-3">
         <button
           {...attributes}
@@ -50,17 +65,25 @@ export function UngroupedSection({
         >
           ⋮⋮
         </button>
-        <h4 className="text-muted-foreground flex-1 text-sm font-medium">Ungrouped</h4>
+        <h4 className="text-muted-foreground flex-1 text-sm font-medium">
+          Ungrouped
+        </h4>
       </div>
       {!collapsed && (
-        <div ref={setDroppableRef} className={`p-3 ${isOver ? "bg-muted/40" : ""}`}>
+        <div
+          ref={setDroppableRef}
+          className={`p-3 ${isOver ? "bg-muted/40" : ""}`}
+        >
           {collections.length === 0 ? (
             <div className="text-muted-foreground rounded border border-dashed p-4 text-center text-sm">
-              Drop collections here to remove them from any group. They'll appear on the library tab
-              at this section's position.
+              Drop collections here to remove them from any group. They'll
+              appear on the library tab at this section's position.
             </div>
           ) : (
-            <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+            <SortableContext
+              items={sortableIds}
+              strategy={verticalListSortingStrategy}
+            >
               <div className="space-y-2">
                 {collections.map((c) => (
                   <CollectionRow

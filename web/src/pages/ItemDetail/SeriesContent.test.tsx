@@ -189,14 +189,23 @@ describe("SeriesContent", () => {
     mocks.useToggleFavorite.mockReturnValue({ mutate: vi.fn() });
     mocks.useIsInWatchlist.mockReturnValue({ data: false });
     mocks.useToggleWatchlist.mockReturnValue({ mutate: vi.fn() });
-    mocks.useRefreshItemMetadata.mockReturnValue({ mutate: vi.fn(), isPending: false });
-    mocks.useWatchedStateMutation.mockReturnValue({ mutate: vi.fn(), isPending: false });
+    mocks.useRefreshItemMetadata.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    });
+    mocks.useWatchedStateMutation.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: false,
+    });
     mocks.useSeasons.mockReturnValue({ data: { seasons: [makeSeason()] } });
     mocks.useItemEpisodes.mockReturnValue({
       data: { episodes: [{ content_id: "episode-1" }] },
     });
     mocks.useContinueWatching.mockReturnValue({ items: [] });
-    mocks.useSimilarItems.mockReturnValue({ data: undefined, isLoading: false });
+    mocks.useSimilarItems.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+    });
     mocks.useSetRating.mockReturnValue({ mutate: mocks.setRatingMutate });
     mocks.useDeleteRating.mockReturnValue({ mutate: mocks.deleteRatingMutate });
   });
@@ -213,7 +222,9 @@ describe("SeriesContent", () => {
     expect(mocks.capturedActionBarProps.value).toMatchObject({
       rating: 4,
     });
-    expect(mocks.capturedActionBarProps.value?.onRatingChange).toBeTypeOf("function");
+    expect(mocks.capturedActionBarProps.value?.onRatingChange).toBeTypeOf(
+      "function",
+    );
   });
 
   it("sets and clears ratings through the existing mutations", () => {
@@ -225,9 +236,8 @@ describe("SeriesContent", () => {
       </QueryClientProvider>,
     );
 
-    const onRatingChange = mocks.capturedActionBarProps.value?.onRatingChange as
-      | ((rating: number | null) => void)
-      | undefined;
+    const onRatingChange = mocks.capturedActionBarProps.value
+      ?.onRatingChange as ((rating: number | null) => void) | undefined;
 
     expect(onRatingChange).toBeTypeOf("function");
 

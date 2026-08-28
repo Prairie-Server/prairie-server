@@ -6,10 +6,13 @@ import SectionItemCard from "@/components/SectionItemCard";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useRecommendationSection } from "@/hooks/queries/recommendations";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { useUICustomization } from "@/hooks/useUICustomization";
+import { cardGridClasses } from "@/lib/uiCustomization";
 
 const KIND_FALLBACK_LABEL: Record<string, (key?: string) => string> = {
   "for-you-main": () => "For You",
-  cluster: (key) => (key ? `Personalized cluster ${key}` : "Personalized cluster"),
+  cluster: (key) =>
+    key ? `Personalized cluster ${key}` : "Personalized cluster",
   "similar-users": () => "Users Like You Also Enjoyed",
   popular: () => "Popular on This Server",
   "recently-added": () => "Recently Added",
@@ -23,8 +26,9 @@ function fallbackTitle(kind: string, key?: string) {
 }
 
 function GridSkeleton() {
+  const { cardPresentation } = useUICustomization();
   return (
-    <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 lg:gap-5 xl:grid-cols-7">
+    <div className={cardGridClasses(cardPresentation.poster_size)}>
       {Array.from({ length: 24 }).map((_, i) => (
         <div key={i}>
           <Skeleton className="aspect-[2/3] w-full rounded-xl" />
@@ -39,7 +43,9 @@ function GridSkeleton() {
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-      <p className="text-muted-foreground text-sm">Failed to load this section.</p>
+      <p className="text-muted-foreground text-sm">
+        Failed to load this section.
+      </p>
       <button
         onClick={onRetry}
         className="text-primary hover:text-primary/80 inline-flex items-center gap-2 text-sm font-medium"
@@ -70,8 +76,12 @@ export default function RecommendationsSection() {
   const kind = params.kind ?? "";
   const key = params.key;
 
-  const { data, isLoading, isError, refetch } = useRecommendationSection(kind, key);
+  const { data, isLoading, isError, refetch } = useRecommendationSection(
+    kind,
+    key,
+  );
   const title = data?.label || fallbackTitle(kind, key);
+  const { cardPresentation } = useUICustomization();
 
   useDocumentTitle(title);
 
@@ -79,7 +89,9 @@ export default function RecommendationsSection() {
     <div className="relative space-y-6 px-4 pt-6 pb-12 sm:px-6 lg:px-10 xl:px-12">
       <PageBack to="/recommendations" preferHistory={false} />
       <div className="mt-10 flex flex-col gap-1.5 sm:mt-12">
-        <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
+        <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">
+          {title}
+        </h1>
         {data && data.items.length > 0 && (
           <p className="text-muted-foreground text-sm">
             {data.items.length} {data.items.length === 1 ? "title" : "titles"}
@@ -94,7 +106,7 @@ export default function RecommendationsSection() {
       ) : !data || data.items.length === 0 ? (
         <EmptyState />
       ) : (
-        <div className="grid grid-cols-3 gap-4 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 lg:gap-5 xl:grid-cols-7">
+        <div className={cardGridClasses(cardPresentation.poster_size)}>
           {data.items.map((item) => (
             <SectionItemCard key={item.content_id} item={item} />
           ))}

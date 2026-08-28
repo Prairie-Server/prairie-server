@@ -15,7 +15,8 @@ export interface CanRequestState {
 export function useCanRequest(): CanRequestState {
   const status = useRequestFeatureStatus();
   const { profile } = useCurrentProfile();
-  const discoveryEnabled = Boolean(status.data?.requests_enabled) && Boolean(profile?.id);
+  const discoveryEnabled =
+    Boolean(status.data?.requests_enabled) && Boolean(profile?.id);
   const isResolving = status.isLoading;
 
   return {

@@ -14,12 +14,15 @@ const mockUseCanRequest = vi.fn();
 const mockUseRequestSearch = vi.fn();
 
 vi.mock("react-router", async () => {
-  const actual = await vi.importActual<typeof import("react-router")>("react-router");
+  const actual =
+    await vi.importActual<typeof import("react-router")>("react-router");
 
   return {
     ...actual,
     BrowserRouter: ({ children }: { children: ReactNode }) => (
-      <actual.MemoryRouter initialEntries={appInitialEntries}>{children}</actual.MemoryRouter>
+      <actual.MemoryRouter initialEntries={appInitialEntries}>
+        {children}
+      </actual.MemoryRouter>
     ),
     Navigate: ({
       to,
@@ -28,7 +31,8 @@ vi.mock("react-router", async () => {
       to: string | { pathname?: string; search?: string };
       replace?: boolean;
     }) => {
-      latestNavigateTo = typeof to === "string" ? to : `${to.pathname ?? ""}${to.search ?? ""}`;
+      latestNavigateTo =
+        typeof to === "string" ? to : `${to.pathname ?? ""}${to.search ?? ""}`;
       return <actual.Navigate to={to} replace={replace} />;
     },
   };
@@ -37,7 +41,8 @@ vi.mock("react-router", async () => {
 vi.mock("@/hooks/queries/catalog", () => ({
   useCatalogWindow: (...args: unknown[]) => mockUseCatalogWindow(...args),
   useCatalogFilters: (...args: unknown[]) => mockUseCatalogFilters(...args),
-  useCatalogMetadataFilters: (...args: unknown[]) => mockUseCatalogFilters(...args),
+  useCatalogMetadataFilters: (...args: unknown[]) =>
+    mockUseCatalogFilters(...args),
 }));
 
 vi.mock("@/hooks/useCanRequest", () => ({
@@ -103,7 +108,9 @@ vi.mock("@/components/ui/sonner", () => ({
 }));
 
 vi.mock("@/components/Layout", () => ({
-  default: ({ children }: { children: ReactNode }) => <div data-kind="app-layout">{children}</div>,
+  default: ({ children }: { children: ReactNode }) => (
+    <div data-kind="app-layout">{children}</div>
+  ),
 }));
 
 vi.mock("@/components/AdminLayout", () => ({
@@ -116,6 +123,7 @@ vi.mock("@/components/ItemGrid", () => ({
     totalItems?: number;
     pageSize?: number;
     loading?: boolean;
+    narrowPosterActions?: boolean;
     onVisibleRangeChange?: (start: number, end: number) => void;
   }) => {
     mockItemGrid(props);
@@ -148,12 +156,18 @@ vi.mock("@/pages/AdminActivity", () => stubPage("Admin activity"));
 vi.mock("@/pages/AdminLogs", () => stubPage("Admin logs"));
 vi.mock("@/pages/AdminUsers", () => stubPage("Admin users"));
 vi.mock("@/pages/AdminLibraries", () => stubPage("Admin libraries"));
-vi.mock("@/pages/admin-settings/AdminSettingsLayout", () => stubPage("Admin settings"));
+vi.mock("@/pages/admin-settings/AdminSettingsLayout", () =>
+  stubPage("Admin settings"),
+);
 vi.mock("@/pages/AdminNodes", () => stubPage("Admin nodes"));
 vi.mock("@/pages/AdminSections", () => stubPage("Admin sections"));
 vi.mock("@/pages/AdminCollections", () => stubPage("Admin collections"));
-vi.mock("@/pages/AdminCollectionEditor", () => stubPage("Admin collection editor"));
-vi.mock("@/pages/AdminPlaybackHistory", () => stubPage("Admin playback history"));
+vi.mock("@/pages/AdminCollectionEditor", () =>
+  stubPage("Admin collection editor"),
+);
+vi.mock("@/pages/AdminPlaybackHistory", () =>
+  stubPage("Admin playback history"),
+);
 vi.mock("@/pages/AdminMaintenance", () => stubPage("Admin maintenance"));
 vi.mock("@/pages/AdminApiKeys", () => stubPage("Admin api keys"));
 vi.mock("@/pages/AdminUserDetail", () => stubPage("Admin user detail"));
@@ -169,12 +183,22 @@ vi.mock("@/pages/SettingsLayout", () => ({
     </div>
   ),
 }));
-vi.mock("@/pages/settings/PlaybackSettings", () => stubPage("Playback settings"));
+vi.mock("@/pages/settings/PlaybackSettings", () =>
+  stubPage("Playback settings"),
+);
 vi.mock("@/pages/settings/LibrarySettings", () => stubPage("Library settings"));
-vi.mock("@/pages/settings/HistoryImportSettings", () => stubPage("History import settings"));
-vi.mock("@/pages/settings/WebhookSyncSettings", () => stubPage("Webhook sync settings"));
-vi.mock("@/pages/settings/SubtitleAppearanceSettings", () => stubPage("Subtitle appearance"));
-vi.mock("@/pages/settings/HomeScreenSettings", () => stubPage("Home screen settings"));
+vi.mock("@/pages/settings/HistoryImportSettings", () =>
+  stubPage("History import settings"),
+);
+vi.mock("@/pages/settings/WebhookSyncSettings", () =>
+  stubPage("Webhook sync settings"),
+);
+vi.mock("@/pages/settings/SubtitleAppearanceSettings", () =>
+  stubPage("Subtitle appearance"),
+);
+vi.mock("@/pages/settings/HomeScreenSettings", () =>
+  stubPage("Home screen settings"),
+);
 vi.mock("@/pages/settings/PluginSettings", () => stubPage("Plugin settings"));
 vi.mock("@/pages/WatchRoute", () => stubPage("Watch"));
 
@@ -194,13 +218,19 @@ describe("Catalog page", () => {
       isResolving: false,
       submitDisabledReason: null,
     });
-    mockUseRequestSearch.mockReturnValue({ data: undefined, isLoading: false, isError: false });
+    mockUseRequestSearch.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: false,
+    });
 
     mockUseCatalogWindow.mockReturnValue({
       data: {
         title: "Heat Search",
         totalItems: 1,
-        pages: new Map([[0, [{ content_id: "movie-1", title: "Heat", type: "movie" }]]]),
+        pages: new Map([
+          [0, [{ content_id: "movie-1", title: "Heat", type: "movie" }]],
+        ]),
       },
       isLoading: false,
     });
@@ -244,10 +274,38 @@ describe("Catalog page", () => {
       expect.objectContaining({
         totalItems: 1,
         pageSize: 60,
+        narrowPosterActions: false,
         onVisibleRangeChange: expect.any(Function),
       }),
     );
   });
+
+  it.each(["favorites", "watchlist"])(
+    "uses narrow poster actions for the %s catalog",
+    (source) => {
+      appInitialEntries = [`/catalog?source=${source}`];
+      mockUseCatalogWindow.mockReturnValue({
+        data: {
+          title: source === "favorites" ? "Favorites" : "Watchlist",
+          totalItems: 1,
+          pages: new Map([
+            [0, [{ content_id: "movie-1", title: "Heat", type: "movie" }]],
+          ]),
+        },
+        isLoading: false,
+      });
+
+      renderToStaticMarkup(
+        <QueryClientProvider client={new QueryClient()}>
+          <App />
+        </QueryClientProvider>,
+      );
+
+      expect(mockItemGrid).toHaveBeenCalledWith(
+        expect.objectContaining({ narrowPosterActions: true }),
+      );
+    },
+  );
 
   it("renders the search-first landing for empty query catalog routes", () => {
     appInitialEntries = ["/catalog?source=query"];
@@ -287,7 +345,9 @@ describe("Catalog page", () => {
       </QueryClientProvider>,
     );
 
-    expect(latestNavigateTo).toBe("/catalog?source=user_collection&collection_id=col-7");
+    expect(latestNavigateTo).toBe(
+      "/catalog?source=user_collection&collection_id=col-7",
+    );
   });
 
   it("routes person detail URLs to the PersonDetail page", () => {
@@ -440,7 +500,10 @@ describe("Catalog page", () => {
       </QueryClientProvider>,
     );
 
-    const call = mockUseRequestSearch.mock.calls[mockUseRequestSearch.mock.calls.length - 1];
+    const call =
+      mockUseRequestSearch.mock.calls[
+        mockUseRequestSearch.mock.calls.length - 1
+      ];
     expect(call?.[3]).toEqual({
       enabled: false,
       requireProfile: true,
@@ -458,7 +521,11 @@ describe("Catalog page", () => {
       data: { title: 'Results for "heat"', totalItems: 0, pages: new Map() },
       isLoading: false,
     });
-    mockUseRequestSearch.mockReturnValue({ data: undefined, isLoading: true, isError: false });
+    mockUseRequestSearch.mockReturnValue({
+      data: undefined,
+      isLoading: true,
+      isError: false,
+    });
 
     const markup = renderToStaticMarkup(
       <QueryClientProvider client={new QueryClient()}>

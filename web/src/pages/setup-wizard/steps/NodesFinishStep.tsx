@@ -31,7 +31,11 @@ function AddNodeForm({ onAdded }: { onAdded: (node: AddedNode) => void }) {
     e.preventDefault();
     if (!name.trim() || !url.trim()) return;
     try {
-      await createNode.mutateAsync({ name: name.trim(), type, url: url.trim() });
+      await createNode.mutateAsync({
+        name: name.trim(),
+        type,
+        url: url.trim(),
+      });
       onAdded({ name: name.trim(), type });
       setName("");
       setUrl("");
@@ -64,7 +68,10 @@ function AddNodeForm({ onAdded }: { onAdded: (node: AddedNode) => void }) {
           <Label htmlFor="node-type" className="text-xs">
             Type
           </Label>
-          <Select value={type} onValueChange={(v) => setType(v as "proxy" | "transcode")}>
+          <Select
+            value={type}
+            onValueChange={(v) => setType(v as "proxy" | "transcode")}
+          >
             <SelectTrigger id="node-type" className="h-8 text-sm">
               <SelectValue />
             </SelectTrigger>
@@ -105,7 +112,8 @@ function AddNodeForm({ onAdded }: { onAdded: (node: AddedNode) => void }) {
 
 export function NodesFinishStep() {
   const navigate = useNavigate();
-  const { clearProgress, profile, profiles, selectProfile } = useWizardContext();
+  const { clearProgress, profile, profiles, selectProfile } =
+    useWizardContext();
   const [finishing, setFinishing] = useState(false);
   const [addedNodes, setAddedNodes] = useState<AddedNode[]>([]);
   const [showNodeForm, setShowNodeForm] = useState(false);
@@ -139,7 +147,10 @@ export function NodesFinishStep() {
       {addedNodes.length > 0 && (
         <div className="border-foreground/[0.07] bg-foreground/[0.03] space-y-1.5 rounded-xl border p-4">
           {addedNodes.map((node, i) => (
-            <div key={node.name + i} className="flex items-center gap-2 text-sm">
+            <div
+              key={node.name + i}
+              className="flex items-center gap-2 text-sm"
+            >
               <Check className="h-3.5 w-3.5 text-green-500" />
               <span className="font-medium">{node.name}</span>
               <span className="bg-foreground/8 text-muted-foreground rounded px-1.5 py-0.5 text-[10px]">
@@ -167,7 +178,11 @@ export function NodesFinishStep() {
       <div className="border-foreground/[0.06] space-y-3 border-t pt-6">
         <WizardActions />
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Button onClick={handleFinish} disabled={finishing} className="sm:flex-1">
+          <Button
+            onClick={handleFinish}
+            disabled={finishing}
+            className="sm:flex-1"
+          >
             {finishing ? "Starting..." : "Start using Prairie"}
             <ChevronRight className="ml-1.5 h-4 w-4" />
           </Button>

@@ -8,7 +8,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("react-router", async () => {
-  const actual = await vi.importActual<typeof import("react-router")>("react-router");
+  const actual =
+    await vi.importActual<typeof import("react-router")>("react-router");
   return {
     ...actual,
     useNavigate: () => mocks.navigate,
@@ -40,7 +41,9 @@ describe("PageBack", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("button", { name: "Return to library" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Return to library" }),
+    ).toBeInTheDocument();
   });
 
   it("falls back to the default route when there is no router history", async () => {
@@ -94,6 +97,8 @@ describe("PageBack", () => {
     const button = screen.getByRole("button", { name: "Go back" });
     expect(button).toHaveClass(
       "glass",
+      "glass-hover",
+      "glass-hover-accent",
       "absolute",
       "top-4",
       "left-2",
@@ -101,6 +106,8 @@ describe("PageBack", () => {
       "rounded-full",
       "p-1.5",
     );
+    expect(button).not.toHaveClass("hover:bg-accent");
+    expect(button).not.toHaveClass("transition-colors");
   });
 
   it("pins to the viewport on lg+ when floating is set", () => {

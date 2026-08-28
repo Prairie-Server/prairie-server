@@ -36,7 +36,8 @@ export default function MediaCarousel({
   headerActions,
   edgePadding = true,
 }: MediaCarouselProps) {
-  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } = useCarouselEmbla();
+  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
+    useCarouselEmbla();
   // Page-edge padding is opt-out so the carousel can also be embedded in an
   // already-padded container without double-padding the header and cards.
   const headerPadX = edgePadding ? " px-4 sm:px-6 lg:px-10 xl:px-12" : "";
@@ -57,7 +58,10 @@ export default function MediaCarousel({
       <div className={`mb-5 flex items-end justify-between gap-4${headerPadX}`}>
         <div className="flex items-center gap-2">
           {titleHref ? (
-            <Link to={titleHref} className="group/title hover:text-primary transition-colors">
+            <Link
+              to={titleHref}
+              className="group/title hover:text-primary transition-colors"
+            >
               <h2 className="text-foreground text-xl font-semibold tracking-tight">
                 {title}
                 <span className="text-muted-foreground group-hover/title:text-primary ml-2 text-sm transition-colors">
@@ -66,7 +70,9 @@ export default function MediaCarousel({
               </h2>
             </Link>
           ) : (
-            <h2 className="text-foreground text-xl font-semibold tracking-tight">{title}</h2>
+            <h2 className="text-foreground text-xl font-semibold tracking-tight">
+              {title}
+            </h2>
           )}
           {headerActions}
         </div>
@@ -100,7 +106,7 @@ export default function MediaCarousel({
 
         <div
           ref={emblaRef}
-          className={`embla__viewport overflow-hidden${viewportPadX}`}
+          className={`embla__viewport -mt-1 overflow-hidden pt-1${viewportPadX}`}
           tabIndex={0}
           aria-label="Media carousel"
           onKeyDown={(e) => {

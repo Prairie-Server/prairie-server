@@ -54,7 +54,10 @@ import {
   toUpdateCollectionBody,
   toUserCollectionBuilderValue,
 } from "./userCollectionsShared";
-import { toAdminCollectionBuilderValue, toAdminCollectionRequest } from "./adminCollectionsShared";
+import {
+  toAdminCollectionBuilderValue,
+  toAdminCollectionRequest,
+} from "./adminCollectionsShared";
 import type { CatalogSearchState } from "./catalogSearchParams";
 
 type WizardStep = 1 | 2;
@@ -77,16 +80,22 @@ export type SmartCollectionWizardProps = UserModeProps | AdminModeProps;
 
 const PAGE_LIMIT = 60;
 
-export default function SmartCollectionWizard(wizard: SmartCollectionWizardProps) {
+export default function SmartCollectionWizard(
+  wizard: SmartCollectionWizardProps,
+) {
   const isEdit = wizard.collection !== null;
-  const adminLibraryId = wizard.mode === "admin" ? wizard.initialLibraryId : null;
+  const adminLibraryId =
+    wizard.mode === "admin" ? wizard.initialLibraryId : null;
 
   const initialDraft = useMemo(
     () => {
       if (wizard.mode === "user") {
         return smartUserDraft(wizard.collection);
       }
-      return toAdminCollectionBuilderValue(wizard.collection, wizard.initialLibraryId);
+      return toAdminCollectionBuilderValue(
+        wizard.collection,
+        wizard.initialLibraryId,
+      );
     },
     // Seed once per mounted collection. For admin's create flow (no
     // collection.id), initialLibraryId is the only seed signal — re-seed when
@@ -113,14 +122,22 @@ export default function SmartCollectionWizard(wizard: SmartCollectionWizardProps
     setStep(1);
   }, [initialDraft]);
 
-  useDocumentTitle(isEdit ? `Edit ${draft.title || "Collection"}` : "New Collection");
+  useDocumentTitle(
+    isEdit ? `Edit ${draft.title || "Collection"}` : "New Collection",
+  );
 
   const handleQueryDefinitionChange = useCallback((next: QueryDefinition) => {
-    setDraft((current) => ({ ...current, query_definition: withSmartCollectionLimit(next) }));
+    setDraft((current) => ({
+      ...current,
+      query_definition: withSmartCollectionLimit(next),
+    }));
   }, []);
 
-  const headerTitle = isEdit ? draft.title || "Edit Collection" : "New Collection";
-  const backTarget = wizard.mode === "user" ? "/collections" : adminBackHref(wizard);
+  const headerTitle = isEdit
+    ? draft.title || "Edit Collection"
+    : "New Collection";
+  const backTarget =
+    wizard.mode === "user" ? "/collections" : adminBackHref(wizard);
   const adminLibraries = wizard.mode === "admin" ? wizard.libraries : [];
 
   return (
@@ -209,7 +226,12 @@ function WizardHeader({
 function StepIndicator({ step }: { step: WizardStep }) {
   return (
     <ol className="text-muted-foreground flex items-center gap-2 text-xs font-medium">
-      <StepBadge index={1} label="Filters" active={step === 1} done={step > 1} />
+      <StepBadge
+        index={1}
+        label="Filters"
+        active={step === 1}
+        done={step > 1}
+      />
       <span aria-hidden="true" className="bg-border h-px w-6" />
       <StepBadge index={2} label="Details" active={step === 2} done={false} />
     </ol>
@@ -262,7 +284,10 @@ function Step1FiltersAndPreview({
     () => normalizeQueryDefinition(draft.query_definition),
     [draft.query_definition],
   );
-  const filtersKey = useMemo(() => JSON.stringify(queryDefinition), [queryDefinition]);
+  const filtersKey = useMemo(
+    () => JSON.stringify(queryDefinition),
+    [queryDefinition],
+  );
 
   const [visibleRangeState, setVisibleRangeState] = useState<{
     key: string;
@@ -304,7 +329,8 @@ function Step1FiltersAndPreview({
   const isLoading = catalogQuery.isLoading;
 
   const itemCountLabel = `${totalItems.toLocaleString()} item${totalItems === 1 ? "" : "s"}`;
-  const adminMissingLibrary = mode === "admin" && draft.query_definition.library_ids.length === 0;
+  const adminMissingLibrary =
+    mode === "admin" && draft.query_definition.library_ids.length === 0;
 
   const { data: userLibraries = [] } = useUserLibraries();
   const filterLibraries = useMemo(
@@ -319,7 +345,9 @@ function Step1FiltersAndPreview({
     <div className="space-y-5 pb-24">
       <CatalogFiltersPanel
         state={catalogState}
-        onStateChange={(nextState) => onQueryDefinitionChange(nextState.query_definition)}
+        onStateChange={(nextState) =>
+          onQueryDefinitionChange(nextState.query_definition)
+        }
         libraries={filterLibraries}
         allowLibrarySelection
         showMediaScopeSelector
@@ -329,11 +357,16 @@ function Step1FiltersAndPreview({
         resultCountLoading={isLoading}
       />
 
-      <SmartCollectionLimitField query={queryDefinition} onQueryChange={onQueryDefinitionChange} />
+      <SmartCollectionLimitField
+        query={queryDefinition}
+        onQueryChange={onQueryDefinitionChange}
+      />
 
       {totalItems === 0 && !isLoading ? (
         <div className="text-muted-foreground flex flex-col items-center justify-center gap-2 rounded-2xl border border-dashed py-16 text-center">
-          <p className="text-sm font-medium">No titles match these filters yet.</p>
+          <p className="text-sm font-medium">
+            No titles match these filters yet.
+          </p>
           <p className="text-xs">
             Loosen the filters above to see what your collection would include.
           </p>
@@ -416,7 +449,10 @@ function Step2UserMetadata({
         ...toCreateCollectionBody(draft),
         poster_source_url: trimmedSource || undefined,
       };
-      createMutation.mutate({ body, poster: posterFile }, { onSuccess: wizard.onClose });
+      createMutation.mutate(
+        { body, poster: posterFile },
+        { onSuccess: wizard.onClose },
+      );
     }
   }
 
@@ -451,7 +487,10 @@ function Step2UserMetadata({
             checked={draft.include_in_server_collections}
             disabled={readOnly}
             onCheckedChange={(checked) =>
-              onDraftChange({ ...draft, include_in_server_collections: checked })
+              onDraftChange({
+                ...draft,
+                include_in_server_collections: checked,
+              })
             }
           />
         </div>
@@ -467,7 +506,11 @@ function Step2UserMetadata({
             onSourceUrlChange={onPosterSourceUrlChange}
             onDelete={
               collection?.poster_url
-                ? () => deletePosterMutation.mutate({ id: collection.id, type: "poster" })
+                ? () =>
+                    deletePosterMutation.mutate({
+                      id: collection.id,
+                      type: "poster",
+                    })
                 : undefined
             }
           />
@@ -553,7 +596,9 @@ function Step2AdminMetadata({
               id="admin-collection-description"
               rows={3}
               value={draft.description}
-              onChange={(event) => onDraftChange({ ...draft, description: event.target.value })}
+              onChange={(event) =>
+                onDraftChange({ ...draft, description: event.target.value })
+              }
               className="border-input placeholder:text-muted-foreground focus-visible:border-ring focus-visible:ring-ring/50 flex min-h-[88px] w-full rounded-md border bg-transparent px-3 py-2 text-sm shadow-xs transition-[color,box-shadow] outline-none focus-visible:ring-[3px]"
               placeholder="Optional context shown alongside the collection."
             />
@@ -565,7 +610,10 @@ function Step2AdminMetadata({
               <Select
                 value={draft.visibility}
                 onValueChange={(value) =>
-                  onDraftChange({ ...draft, visibility: value as "visible" | "hidden" })
+                  onDraftChange({
+                    ...draft,
+                    visibility: value as "visible" | "hidden",
+                  })
                 }
               >
                 <SelectTrigger>
@@ -582,7 +630,9 @@ function Step2AdminMetadata({
               title="Featured"
               description="Surface near the top of the library."
               checked={draft.featured}
-              onCheckedChange={(checked) => onDraftChange({ ...draft, featured: checked })}
+              onCheckedChange={(checked) =>
+                onDraftChange({ ...draft, featured: checked })
+              }
             />
           </div>
 
@@ -660,7 +710,13 @@ function Step2Shell({
         onSubmit();
       }}
     >
-      <Button type="button" variant="ghost" size="sm" className="w-fit px-0" onClick={onBack}>
+      <Button
+        type="button"
+        variant="ghost"
+        size="sm"
+        className="w-fit px-0"
+        onClick={onBack}
+      >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back to Filters
       </Button>
@@ -682,7 +738,13 @@ function SaveBar({
 }) {
   return (
     <div className="bg-background/95 supports-[backdrop-filter]:bg-background/70 bottom-safe-3 fixed right-4 z-40 flex items-center gap-3 rounded-2xl border px-4 py-3 shadow-xl backdrop-blur sm:right-6 lg:right-10 xl:right-12">
-      <Button type="button" variant="outline" size="sm" onClick={onBack} disabled={isPending}>
+      <Button
+        type="button"
+        variant="outline"
+        size="sm"
+        onClick={onBack}
+        disabled={isPending}
+      >
         <ArrowLeft className="mr-2 h-4 w-4" />
         Back
       </Button>
@@ -745,7 +807,11 @@ function ToggleRow({
         <p className="text-sm font-medium">{title}</p>
         <p className="text-muted-foreground mt-0.5 text-xs">{description}</p>
       </div>
-      <Switch checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
+      <Switch
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        disabled={disabled}
+      />
     </div>
   );
 }

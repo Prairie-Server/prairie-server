@@ -15,6 +15,7 @@ const (
 	ChannelScans         EventChannel = "scans"
 	ChannelHistoryImport EventChannel = "history_import"
 	ChannelUserState     EventChannel = "user_state"
+	ChannelUserSettings  EventChannel = "user_settings"
 	ChannelSettings      EventChannel = "settings"
 	ChannelPlugins       EventChannel = "plugins"
 	// ChannelNotifications carries profile-scoped user notifications
@@ -31,8 +32,27 @@ var AllChannels = []EventChannel{
 	ChannelScans,
 	ChannelHistoryImport,
 	ChannelUserState,
+	ChannelUserSettings,
 	ChannelSettings,
 	ChannelPlugins,
+	ChannelNotifications,
+}
+
+// ClientChannels is every channel a websocket client may subscribe to: it is
+// AllChannels minus ChannelPlugins, which carries host-to-plugin runtime
+// dispatch and is granted to no role, not even admin. Naming it in a
+// capability response or accepting it as a valid subscription target would
+// point a client at a request that can never succeed.
+var ClientChannels = []EventChannel{
+	ChannelCatalog,
+	ChannelJobs,
+	ChannelSessions,
+	ChannelTasks,
+	ChannelScans,
+	ChannelHistoryImport,
+	ChannelUserState,
+	ChannelUserSettings,
+	ChannelSettings,
 	ChannelNotifications,
 }
 

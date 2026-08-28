@@ -8,13 +8,22 @@ import {
   useTopUpInviteCode,
   useDeleteInviteCode,
 } from "@/hooks/queries/admin/inviteCodes";
-import { useAdminServerSettings, useUpdateServerSetting } from "@/hooks/queries/admin/settings";
+import {
+  useAdminServerSettings,
+  useUpdateServerSetting,
+} from "@/hooks/queries/admin/settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -44,7 +53,9 @@ export default function InviteCodesTab() {
   const deleteCode = useDeleteInviteCode();
   const [createOpen, setCreateOpen] = useState(false);
   const [topUpCode, setTopUpCode] = useState<InviteCode | null>(null);
-  const [confirmDeleteCode, setConfirmDeleteCode] = useState<InviteCode | null>(null);
+  const [confirmDeleteCode, setConfirmDeleteCode] = useState<InviteCode | null>(
+    null,
+  );
 
   const signupEnabled = settings?.["signup.enabled"] === "true";
 
@@ -53,7 +64,9 @@ export default function InviteCodesTab() {
       { key: "signup.enabled", value: enabled ? "true" : "false" },
       {
         onSuccess: () =>
-          toast.success(enabled ? "Public signups enabled" : "Public signups disabled"),
+          toast.success(
+            enabled ? "Public signups enabled" : "Public signups disabled",
+          ),
       },
     );
   }
@@ -100,11 +113,16 @@ export default function InviteCodesTab() {
           <DialogHeader>
             <DialogTitle>Top Up Invite Code</DialogTitle>
             <DialogDescription>
-              Add extra uses to {topUpCode?.code}. Current usage is {topUpCode?.use_count} /{" "}
-              {topUpCode?.max_uses}.
+              Add extra uses to {topUpCode?.code}. Current usage is{" "}
+              {topUpCode?.use_count} / {topUpCode?.max_uses}.
             </DialogDescription>
           </DialogHeader>
-          {topUpCode && <TopUpInviteCodeForm code={topUpCode} onClose={() => setTopUpCode(null)} />}
+          {topUpCode && (
+            <TopUpInviteCodeForm
+              code={topUpCode}
+              onClose={() => setTopUpCode(null)}
+            />
+          )}
         </DialogContent>
       </Dialog>
 
@@ -128,7 +146,8 @@ export default function InviteCodesTab() {
         <CardHeader>
           <CardTitle className="text-base">Public Signups</CardTitle>
           <CardDescription>
-            When enabled, users with a valid invite code can create their own accounts.
+            When enabled, users with a valid invite code can create their own
+            accounts.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -157,7 +176,10 @@ export default function InviteCodesTab() {
         <TableBody>
           {codes.length === 0 && (
             <TableRow>
-              <TableCell colSpan={6} className="text-muted-foreground text-center">
+              <TableCell
+                colSpan={6}
+                className="text-muted-foreground text-center"
+              >
                 No invite codes yet. Create one to get started.
               </TableCell>
             </TableRow>
@@ -183,13 +205,20 @@ export default function InviteCodesTab() {
                 {code.label || <span className="text-muted-foreground">-</span>}
               </TableCell>
               <TableCell>
-                <span className={code.use_count >= code.max_uses ? "text-destructive" : ""}>
+                <span
+                  className={
+                    code.use_count >= code.max_uses ? "text-destructive" : ""
+                  }
+                >
                   {code.use_count} / {code.max_uses}
                 </span>
               </TableCell>
               <TableCell>
                 <div className="flex items-center gap-2">
-                  <Switch checked={code.enabled} onCheckedChange={() => handleToggleCode(code)} />
+                  <Switch
+                    checked={code.enabled}
+                    onCheckedChange={() => handleToggleCode(code)}
+                  />
                   <Badge variant={code.enabled ? "outline" : "secondary"}>
                     {code.enabled ? "Active" : "Disabled"}
                   </Badge>
@@ -275,15 +304,29 @@ function CreateInviteCodeForm({ onClose }: { onClose: () => void }) {
           required
         />
       </div>
-      <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-        {createMutation.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={createMutation.isPending}
+      >
+        {createMutation.isPending ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Plus />
+        )}
         {createMutation.isPending ? "Creating..." : "Create"}
       </Button>
     </form>
   );
 }
 
-function TopUpInviteCodeForm({ code, onClose }: { code: InviteCode; onClose: () => void }) {
+function TopUpInviteCodeForm({
+  code,
+  onClose,
+}: {
+  code: InviteCode;
+  onClose: () => void;
+}) {
   const [additionalUses, setAdditionalUses] = useState("1");
   const topUpMutation = useTopUpInviteCode();
 
@@ -313,8 +356,16 @@ function TopUpInviteCodeForm({ code, onClose }: { code: InviteCode; onClose: () 
           required
         />
       </div>
-      <Button type="submit" className="w-full" disabled={topUpMutation.isPending}>
-        {topUpMutation.isPending ? <Loader2 className="animate-spin" /> : <Plus />}
+      <Button
+        type="submit"
+        className="w-full"
+        disabled={topUpMutation.isPending}
+      >
+        {topUpMutation.isPending ? (
+          <Loader2 className="animate-spin" />
+        ) : (
+          <Plus />
+        )}
         {topUpMutation.isPending ? "Adding..." : "Add Uses"}
       </Button>
     </form>

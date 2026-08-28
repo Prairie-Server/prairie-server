@@ -1,9 +1,18 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { act, cleanup, render } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { adminKeys, catalogKeys, libraryKeys, sectionKeys } from "@/hooks/queries/keys";
+import {
+  adminKeys,
+  catalogKeys,
+  libraryKeys,
+  sectionKeys,
+} from "@/hooks/queries/keys";
+import type { ItemDetail } from "@/api/types";
 import { invalidateCatalogState } from "./realtimeCatalogInvalidation";
-import { buildEventsUrl, RealtimeEventsProvider } from "./RealtimeEventsProvider";
+import {
+  buildEventsUrl,
+  RealtimeEventsProvider,
+} from "./RealtimeEventsProvider";
 
 const mockState = vi.hoisted(() => ({
   user: {
@@ -65,6 +74,10 @@ class FakeWebSocket {
     this.readyState = FakeWebSocket.CLOSED;
     this.onclose?.();
   }
+
+  emitMessage(message: unknown) {
+    this.onmessage?.({ data: JSON.stringify(message) } as MessageEvent);
+  }
 }
 
 describe("buildEventsUrl", () => {
@@ -118,18 +131,34 @@ describe("invalidateCatalogState", () => {
     queryClient.setQueryData(otherSectionKey, { sections: [] });
     queryClient.setQueryData(changedSectionKey, { sections: [] });
 
-    invalidateCatalogState(queryClient, { libraryId: 3, allowDashboardRefetch: false });
+    invalidateCatalogState(queryClient, {
+      libraryId: 3,
+      allowDashboardRefetch: false,
+    });
     await Promise.resolve();
 
-    expect(queryClient.getQueryState(adminKeys.libraries())?.isInvalidated).toBe(true);
-    expect(queryClient.getQueryState(adminKeys.libraryMatchQueueStatuses())?.isInvalidated).toBe(
+    expect(
+      queryClient.getQueryState(adminKeys.libraries())?.isInvalidated,
+    ).toBe(true);
+    expect(
+      queryClient.getQueryState(adminKeys.libraryMatchQueueStatuses())
+        ?.isInvalidated,
+    ).toBe(true);
+    expect(queryClient.getQueryState(userLibrariesKey)?.isInvalidated).toBe(
       true,
     );
-    expect(queryClient.getQueryState(userLibrariesKey)?.isInvalidated).toBe(true);
-    expect(queryClient.getQueryState(otherCatalogKey)?.isInvalidated).toBe(false);
-    expect(queryClient.getQueryState(changedCatalogKey)?.isInvalidated).toBe(true);
-    expect(queryClient.getQueryState(otherSectionKey)?.isInvalidated).toBe(false);
-    expect(queryClient.getQueryState(changedSectionKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(otherCatalogKey)?.isInvalidated).toBe(
+      false,
+    );
+    expect(queryClient.getQueryState(changedCatalogKey)?.isInvalidated).toBe(
+      true,
+    );
+    expect(queryClient.getQueryState(otherSectionKey)?.isInvalidated).toBe(
+      false,
+    );
+    expect(queryClient.getQueryState(changedSectionKey)?.isInvalidated).toBe(
+      true,
+    );
   });
 
   it("can skip library lists for item-scoped catalog changes", async () => {
@@ -156,12 +185,19 @@ describe("invalidateCatalogState", () => {
     });
     await Promise.resolve();
 
-    expect(queryClient.getQueryState(adminKeys.libraries())?.isInvalidated).toBe(false);
-    expect(queryClient.getQueryState(adminKeys.libraryMatchQueueStatuses())?.isInvalidated).toBe(
+    expect(
+      queryClient.getQueryState(adminKeys.libraries())?.isInvalidated,
+    ).toBe(false);
+    expect(
+      queryClient.getQueryState(adminKeys.libraryMatchQueueStatuses())
+        ?.isInvalidated,
+    ).toBe(false);
+    expect(queryClient.getQueryState(libraryKeys.all)?.isInvalidated).toBe(
       false,
     );
-    expect(queryClient.getQueryState(libraryKeys.all)?.isInvalidated).toBe(false);
-    expect(queryClient.getQueryState(changedCatalogKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(changedCatalogKey)?.isInvalidated).toBe(
+      true,
+    );
   });
 });
 
@@ -239,5 +275,42 @@ describe("RealtimeEventsProvider", () => {
     });
 
     expect(FakeWebSocket.instances).toHaveLength(2);
+  });
+
+  it("preserves cached watched state when a favorite-only event arrives", () => {
+    const queryClient = new QueryClient();
+    const detailKey = catalogKeys.itemDetail("movie-1");
+    queryClient.setQueryData<ItemDetail>(detailKey, {
+      content_id: "movie-1",
+      type: "movie",
+      user_data: { played: true },
+    } as ItemDetail);
+
+    render(
+      <QueryClientProvider client={queryClient}>
+        <RealtimeEventsProvider>
+          <div />
+        </RealtimeEventsProvider>
+      </QueryClientProvider>,
+    );
+
+    act(() => {
+      FakeWebSocket.instances[0]?.emitMessage({
+        type: "event",
+        channel: "user_state",
+        event: "favorite.updated",
+        data: {
+          profile_id: "profile-1",
+          content_id: "movie-1",
+          change: "favorite",
+          is_favorite: true,
+        },
+      });
+    });
+
+    expect(queryClient.getQueryData<ItemDetail>(detailKey)).toMatchObject({
+      user_data: { played: true },
+      user_state: { played: true, is_favorite: true },
+    });
   });
 });

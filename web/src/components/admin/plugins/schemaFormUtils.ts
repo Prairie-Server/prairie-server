@@ -1,4 +1,8 @@
-import type { PluginAdminForm, PluginAdminFormCondition, PluginAdminFormField } from "@/api/types";
+import type {
+  PluginAdminForm,
+  PluginAdminFormCondition,
+  PluginAdminFormField,
+} from "@/api/types";
 import { stringifyUnknown } from "@/lib/stringifyUnknown";
 
 export type SchemaOption = { value: string; label: string };
@@ -44,7 +48,7 @@ export function validateSchemaValues(
 ): Record<string, string> {
   const errors: Record<string, string> = {};
   for (const field of descriptor.fields) {
-    if (!evaluateShowWhen(field.show_when, values, descriptor.fields)) continue;
+    if (!fieldIsVisible(descriptor, field, values)) continue;
     const raw = effectiveValue(field, values);
     if (field.required && isEmpty(raw)) {
       errors[field.key] = `${field.label || field.key} is required`;
@@ -74,9 +78,14 @@ export function validateSchemaValues(
           `${field.label || field.key} must be at most ${v.max_length} characters`;
       }
     }
-    if (isNumberControl(field) && typeof raw === "string" && raw.trim() !== "") {
+    if (
+      isNumberControl(field) &&
+      typeof raw === "string" &&
+      raw.trim() !== ""
+    ) {
       const n = Number(raw);
-      if (Number.isNaN(n)) errors[field.key] = `${field.label || field.key} must be a number`;
+      if (Number.isNaN(n))
+        errors[field.key] = `${field.label || field.key} must be a number`;
       else if (v?.has_min && n < (v.min ?? 0))
         errors[field.key] = `${field.label || field.key} must be ≥ ${v.min}`;
       else if (v?.has_max && n > (v.max ?? 0))
@@ -87,7 +96,9 @@ export function validateSchemaValues(
 }
 
 function coerceNumericString(value: unknown): unknown {
-  return typeof value === "string" && /^-?\d+$/.test(value) ? Number(value) : value;
+  return typeof value === "string" && /^-?\d+$/.test(value)
+    ? Number(value)
+    : value;
 }
 
 // coerceNumberString converts integer OR decimal numeric strings to numbers,
@@ -119,6 +130,7 @@ export type FieldType =
   | "number"
   | "boolean"
   | "array"
+  | "array:bool"
   | "array:int"
   | "array:num";
 
@@ -127,7 +139,9 @@ export type FieldType =
  * Tolerant: an invalid/empty/non-object schema yields `{}` so callers fall back
  * to the existing control-based coercion heuristic.
  */
-export function parseFieldTypes(jsonSchema: string | undefined | null): Record<string, FieldType> {
+export function parseFieldTypes(
+  jsonSchema: string | undefined | null,
+): Record<string, FieldType> {
   if (!jsonSchema) return {};
   let parsed: unknown;
   try {
@@ -146,11 +160,19 @@ export function parseFieldTypes(jsonSchema: string | undefined | null): Record<s
     if (type === "array") {
       const items = (value as { items?: unknown }).items;
       const itemType =
-        items && typeof items === "object" ? (items as { type?: unknown }).type : undefined;
+        items && typeof items === "object"
+          ? (items as { type?: unknown }).type
+          : undefined;
       if (itemType === "integer") out[key] = "array:int";
       else if (itemType === "number") out[key] = "array:num";
+      else if (itemType === "boolean") out[key] = "array:bool";
       else out[key] = "array";
-    } else if (type === "string" || type === "integer" || type === "number" || type === "boolean") {
+    } else if (
+      type === "string" ||
+      type === "integer" ||
+      type === "number" ||
+      type === "boolean"
+    ) {
       out[key] = type;
     }
   }
@@ -190,11 +212,14 @@ export function coerceFieldValue(
         return raw;
       }
       case "array":
+      case "array:bool":
       case "array:int":
       case "array:num": {
         const arr = Array.isArray(raw) ? raw : [];
         if (fieldType === "array") return arr;
-        if (fieldType === "array:int") return arr.map((v) => coerceNumericString(v));
+        if (fieldType === "array:bool") return arr.map((v) => coerceBoolean(v));
+        if (fieldType === "array:int")
+          return arr.map((v) => coerceNumericString(v));
         return arr.map((v) => coerceNumberString(v));
       }
     }
@@ -233,7 +258,27 @@ export function effectiveValue(
   field: PluginAdminFormField,
   values: Record<string, unknown>,
 ): unknown {
-  return values[field.key] !== undefined ? values[field.key] : field.default_value;
+  return values[field.key] !== undefined
+    ? values[field.key]
+    : field.default_value;
+}
+
+export function fieldIsVisible(
+  descriptor: PluginAdminForm,
+  field: PluginAdminFormField,
+  values: Record<string, unknown>,
+): boolean {
+  if (!evaluateShowWhen(field.show_when, values, descriptor.fields))
+    return false;
+  const containingSections = (descriptor.sections ?? []).filter((section) =>
+    section.field_keys.includes(field.key),
+  );
+  return (
+    containingSections.length === 0 ||
+    containingSections.some((section) =>
+      evaluateShowWhen(section.show_when, values, descriptor.fields),
+    )
+  );
 }
 
 export function buildSchemaValues(
@@ -243,10 +288,11 @@ export function buildSchemaValues(
 ): Record<string, unknown> {
   const out: Record<string, unknown> = {};
   for (const field of descriptor.fields) {
-    if (!evaluateShowWhen(field.show_when, draft, descriptor.fields)) continue; // don't persist hidden fields' stale values
+    if (!fieldIsVisible(descriptor, field, draft)) continue; // don't persist hidden fields' stale values
     // Fall back to the declared default for untouched fields so an unmodified
     // default persists exactly as it is displayed.
-    const rawSource = draft[field.key] !== undefined ? draft[field.key] : field.default_value;
+    const rawSource =
+      draft[field.key] !== undefined ? draft[field.key] : field.default_value;
     const coerced = coerceFieldValue(field, rawSource, fieldTypes?.[field.key]);
     if (coerced === undefined) continue;
     out[field.key] = coerced;

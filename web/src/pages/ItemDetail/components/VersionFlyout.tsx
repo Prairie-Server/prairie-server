@@ -56,7 +56,10 @@ interface VersionFlyoutItemsProps {
   onPlayVersion: (fileId: number) => void;
 }
 
-export default function VersionFlyoutItems({ versions, onPlayVersion }: VersionFlyoutItemsProps) {
+export default function VersionFlyoutItems({
+  versions,
+  onPlayVersion,
+}: VersionFlyoutItemsProps) {
   const sorted = sortByResolution(versions);
 
   return (
@@ -83,7 +86,9 @@ export default function VersionFlyoutItems({ versions, onPlayVersion }: VersionF
                 {qualitySummary}
               </span>
               {detailLine && (
-                <span className="text-muted-foreground block text-xs">{detailLine}</span>
+                <span className="text-muted-foreground block text-xs">
+                  {detailLine}
+                </span>
               )}
             </span>
           </DropdownMenuItem>

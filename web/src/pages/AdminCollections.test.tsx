@@ -48,14 +48,18 @@ describe("AdminCollections helpers", () => {
   });
 
   it("serializes manual admin drafts into the richer request shape", () => {
-    const body = toAdminCollectionRequest(toAdminCollectionBuilderValue(null, 4));
+    const body = toAdminCollectionRequest(
+      toAdminCollectionBuilderValue(null, 4),
+    );
 
     expect(body.library_ids).toEqual([4]);
     expect(body.collection_type).toBe("smart");
   });
 
   it("builds a create route that preserves the current library selection", () => {
-    expect(buildAdminCollectionEditorPath("new", 7)).toBe("/admin/collections/new?libraryId=7");
+    expect(buildAdminCollectionEditorPath("new", 7)).toBe(
+      "/admin/collections/new?libraryId=7",
+    );
   });
 
   it("builds an edit route for an existing collection", () => {

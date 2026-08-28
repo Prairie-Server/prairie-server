@@ -1,4 +1,7 @@
-export type PlaybackRealtimeMessageType = "command" | "event" | "hello" | "ack" | "result";
+import type { SubtitleInventoryItemV3 } from "./protocol-v3";
+
+export type PlaybackRealtimeMessageType =
+  "command" | "event" | "hello" | "ack" | "result";
 
 export type PlaybackCommandName =
   | "pause"
@@ -13,7 +16,8 @@ export type PlaybackCommandName =
   | "server_shutting_down"
   | "play_media"
   | "set_audio_track"
-  | "set_subtitle_track";
+  | "set_subtitle_track"
+  | "plan_invalidated";
 
 export type PlaybackRealtimeAckStatus = "accepted";
 export type PlaybackRealtimeResultStatus = "completed" | "rejected";
@@ -37,6 +41,18 @@ export interface PlaybackRealtimeCommandEnvelope {
   };
   deadline_ms?: number;
   payload?: Record<string, unknown>;
+}
+
+/**
+ * Payload of the `plan_invalidated` command: the server decided, after the plan
+ * was already playing, that the route it names cannot serve this source.
+ *
+ * `plan_id` is the invalidated plan, not necessarily the one on screen — a
+ * client that has already replanned past it has nothing left to do.
+ */
+export interface PlaybackPlanInvalidatedPayload {
+  reason: string;
+  plan_id: string;
 }
 
 export interface PlaybackRealtimeHelloEnvelope {
@@ -84,6 +100,13 @@ export interface PlaybackSubtitleReadyPayload {
   subtitle_id: number;
   language: string;
   label?: string;
+  /**
+   * The new track's server-assigned combined ordinal, identity and stream URL.
+   * The client folds it in at that ordinal rather than deriving one. Absent
+   * when the server could not resolve the file's inventory, in which case the
+   * client refetches its plan instead.
+   */
+  track?: SubtitleInventoryItemV3;
 }
 
 /** One translated subtitle cue pushed during a live translation (media seconds). */
@@ -121,6 +144,8 @@ export interface PlaybackSubtitleTranslationCompletedPayload {
   subtitle_id: number;
   language: string;
   label?: string;
+  /** See {@link PlaybackSubtitleReadyPayload.track}. */
+  track?: SubtitleInventoryItemV3;
 }
 
 export interface PlaybackSubtitleTranslationFailedPayload {
@@ -195,8 +220,10 @@ export const ALL_PLAYBACK_COMMANDS: PlaybackCommandName[] = [
   "play_media",
   "set_audio_track",
   "set_subtitle_track",
+  "plan_invalidated",
 ];
 
+/** The commands every realtime surface in this app executes. */
 export const SUPPORTED_PLAYBACK_COMMANDS: PlaybackCommandName[] = [
   "pause",
   "unpause",
@@ -210,12 +237,42 @@ export const SUPPORTED_PLAYBACK_COMMANDS: PlaybackCommandName[] = [
   "server_shutting_down",
 ];
 
+/**
+ * What the video player executes on top of the shared set. `plan_invalidated`
+ * needs a replan the audiobook surface has no route ladder for, so the hello is
+ * per-surface rather than one list both over-claim.
+ */
+export const VIDEO_PLAYBACK_COMMANDS: PlaybackCommandName[] = [
+  ...SUPPORTED_PLAYBACK_COMMANDS,
+  "plan_invalidated",
+];
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
 
 function isCommandName(value: unknown): value is PlaybackCommandName {
-  return typeof value === "string" && ALL_PLAYBACK_COMMANDS.includes(value as PlaybackCommandName);
+  return (
+    typeof value === "string" &&
+    ALL_PLAYBACK_COMMANDS.includes(value as PlaybackCommandName)
+  );
+}
+
+/**
+ * Reads a `plan_invalidated` payload, or null when it is not well formed.
+ *
+ * Both fields are required: without `plan_id` the client cannot tell whether
+ * the invalidated plan is still the one playing, and acting anyway would evict
+ * a route the server never complained about.
+ */
+export function readPlanInvalidatedPayload(
+  payload: Record<string, unknown> | undefined,
+): PlaybackPlanInvalidatedPayload | null {
+  if (!isRecord(payload)) return null;
+  const { reason, plan_id: planId } = payload;
+  if (typeof reason !== "string" || reason.trim() === "") return null;
+  if (typeof planId !== "string" || planId.trim() === "") return null;
+  return { reason, plan_id: planId };
 }
 
 function isChapterThumbnailReadyPayload(
@@ -227,15 +284,22 @@ function isChapterThumbnailReadyPayload(
     typeof value.file_id === "number" &&
     typeof value.chapter_index === "number" &&
     typeof value.thumbnail_url === "string" &&
-    (value.thumbnail_thumbhash === undefined || typeof value.thumbnail_thumbhash === "string")
+    (value.thumbnail_thumbhash === undefined ||
+      typeof value.thumbnail_thumbhash === "string")
   );
 }
 
 function isTimeRangePayload(value: unknown): value is PlaybackTimeRangePayload {
-  return isRecord(value) && typeof value.start === "number" && typeof value.end === "number";
+  return (
+    isRecord(value) &&
+    typeof value.start === "number" &&
+    typeof value.end === "number"
+  );
 }
 
-function isMarkersUpdatedPayload(value: unknown): value is PlaybackMarkersUpdatedPayload {
+function isMarkersUpdatedPayload(
+  value: unknown,
+): value is PlaybackMarkersUpdatedPayload {
   const isOptionalRange = (range: unknown) =>
     range === undefined || range === null || isTimeRangePayload(range);
   return (
@@ -254,14 +318,52 @@ function isOptionalString(value: unknown): boolean {
   return value === undefined || typeof value === "string";
 }
 
-function isSubtitleReadyPayload(value: unknown): value is PlaybackSubtitleReadyPayload {
+/**
+ * Validates a pushed inventory entry.
+ *
+ * The combined ordinal is the whole point of the block — it is what lets the
+ * client select the track without counting — so an entry missing it is worse
+ * than no entry at all, and is rejected in favour of refetching the plan.
+ */
+function isSubtitleInventoryItem(
+  value: unknown,
+): value is SubtitleInventoryItemV3 {
+  return (
+    isRecord(value) &&
+    typeof value.track_id === "string" &&
+    typeof value.combined_index === "number" &&
+    Number.isInteger(value.combined_index) &&
+    value.combined_index >= 0 &&
+    typeof value.source === "string" &&
+    typeof value.forced === "boolean" &&
+    typeof value.default === "boolean" &&
+    typeof value.hearing_impaired === "boolean" &&
+    (value.delivery === "sidecar" || value.delivery === "burn_in_only") &&
+    isOptionalString(value.codec) &&
+    isOptionalString(value.language) &&
+    isOptionalString(value.label) &&
+    isOptionalString(value.url) &&
+    isOptionalString(value.font_bundle_url)
+  );
+}
+
+function isOptionalSubtitleInventoryItem(value: unknown): boolean {
+  return (
+    value === undefined || value === null || isSubtitleInventoryItem(value)
+  );
+}
+
+function isSubtitleReadyPayload(
+  value: unknown,
+): value is PlaybackSubtitleReadyPayload {
   return (
     isRecord(value) &&
     typeof value.session_id === "string" &&
     typeof value.file_id === "number" &&
     typeof value.subtitle_id === "number" &&
     typeof value.language === "string" &&
-    isOptionalString(value.label)
+    isOptionalString(value.label) &&
+    isOptionalSubtitleInventoryItem(value.track)
   );
 }
 
@@ -289,7 +391,9 @@ function isTranslationStartedPayload(
   );
 }
 
-function isTranslationCuesPayload(value: unknown): value is PlaybackSubtitleTranslationCuesPayload {
+function isTranslationCuesPayload(
+  value: unknown,
+): value is PlaybackSubtitleTranslationCuesPayload {
   return (
     isRecord(value) &&
     typeof value.session_id === "string" &&
@@ -314,7 +418,8 @@ function isTranslationCompletedPayload(
     typeof value.track_key === "string" &&
     typeof value.subtitle_id === "number" &&
     typeof value.language === "string" &&
-    isOptionalString(value.label)
+    isOptionalString(value.label) &&
+    isOptionalSubtitleInventoryItem(value.track)
   );
 }
 
@@ -357,7 +462,8 @@ export function parsePlaybackRealtimeMessage(
           isRecord(value.issued_by) && typeof value.issued_by.kind === "string"
             ? { kind: value.issued_by.kind }
             : undefined,
-        deadline_ms: typeof value.deadline_ms === "number" ? value.deadline_ms : undefined,
+        deadline_ms:
+          typeof value.deadline_ms === "number" ? value.deadline_ms : undefined,
         payload: isRecord(value.payload) ? value.payload : {},
       };
     }
@@ -373,7 +479,10 @@ export function parsePlaybackRealtimeMessage(
           payload: value.payload,
         };
       }
-      if (value.name === "subtitle_ready" && isSubtitleReadyPayload(value.payload)) {
+      if (
+        value.name === "subtitle_ready" &&
+        isSubtitleReadyPayload(value.payload)
+      ) {
         return {
           type: "event",
           session_id: value.session_id,
@@ -381,7 +490,10 @@ export function parsePlaybackRealtimeMessage(
           payload: value.payload,
         };
       }
-      if (value.name === "markers_updated" && isMarkersUpdatedPayload(value.payload)) {
+      if (
+        value.name === "markers_updated" &&
+        isMarkersUpdatedPayload(value.payload)
+      ) {
         return {
           type: "event",
           session_id: value.session_id,
@@ -400,7 +512,10 @@ export function parsePlaybackRealtimeMessage(
           payload: value.payload,
         };
       }
-      if (value.name === "subtitle_translation_cues" && isTranslationCuesPayload(value.payload)) {
+      if (
+        value.name === "subtitle_translation_cues" &&
+        isTranslationCuesPayload(value.payload)
+      ) {
         return {
           type: "event",
           session_id: value.session_id,
@@ -437,12 +552,17 @@ export function parsePlaybackRealtimeMessage(
   }
 }
 
-export function parsePlaybackRealtimeCommand(data: string): PlaybackRealtimeCommandEnvelope | null {
+export function parsePlaybackRealtimeCommand(
+  data: string,
+): PlaybackRealtimeCommandEnvelope | null {
   const message = parsePlaybackRealtimeMessage(data);
   return message?.type === "command" ? message : null;
 }
 
-export function buildPlaybackRealtimeHello(sessionId: string): PlaybackRealtimeHelloEnvelope {
+export function buildPlaybackRealtimeHello(
+  sessionId: string,
+  commands: PlaybackCommandName[] = SUPPORTED_PLAYBACK_COMMANDS,
+): PlaybackRealtimeHelloEnvelope {
   return {
     type: "hello",
     session_id: sessionId,
@@ -451,7 +571,7 @@ export function buildPlaybackRealtimeHello(sessionId: string): PlaybackRealtimeH
       version: "1",
     },
     capabilities: {
-      commands: [...SUPPORTED_PLAYBACK_COMMANDS],
+      commands: [...commands],
     },
   };
 }

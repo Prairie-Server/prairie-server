@@ -42,6 +42,7 @@ import { Button } from "@/components/ui/button";
 import { useScreenWakeLock } from "@/hooks/useScreenWakeLock";
 import { useTTS } from "@/hooks/useTTS";
 import { useCatalogItemDetail } from "@/hooks/queries/catalogRead";
+import { hasRouterHistory } from "@/lib/backNavigation";
 import { buildItemHref, buildMediaPlayHref } from "@/lib/mediaNavigation";
 import { buildMangaList, flattenMangaList } from "@/lib/mangaChapters";
 import { cn } from "@/lib/utils";
@@ -70,7 +71,8 @@ import {
   type EbookReaderAnnotation,
 } from "@/reader/ebookReaderApi";
 
-export const EBOOK_READER_SETTINGS_STORAGE_KEY = "prairie.ebook.reader.settings";
+export const EBOOK_READER_SETTINGS_STORAGE_KEY =
+  "prairie.ebook.reader.settings";
 
 type ReaderPanel = "toc" | "search" | "notes" | "settings";
 
@@ -121,7 +123,10 @@ const READER_PROFILES = [
   },
 ] as const;
 
-function profileIsActive(profile: (typeof READER_PROFILES)[number], settings: ReaderSettings) {
+function profileIsActive(
+  profile: (typeof READER_PROFILES)[number],
+  settings: ReaderSettings,
+) {
   return Object.entries(profile.settings).every(
     ([key, value]) => settings[key as keyof ReaderSettings] === value,
   );
@@ -143,7 +148,9 @@ function chooseReaderFile(
   files: FileVersion[],
   requestedID: number | null,
 ): FileVersion | undefined {
-  const requested = requestedID ? files.find((file) => file.file_id === requestedID) : undefined;
+  const requested = requestedID
+    ? files.find((file) => file.file_id === requestedID)
+    : undefined;
   if (requested && isReaderSupportedFile(requested)) return requested;
   return (
     files.find((file) => readerFileFormat(file) === "epub") ??
@@ -154,7 +161,10 @@ function chooseReaderFile(
 
 function readerFileLabel(file: FileVersion): string {
   const format = readerFileFormat(file).toUpperCase();
-  const name = file.file_name || file.file_path?.split(/[\\/]/).pop() || `File ${file.file_id}`;
+  const name =
+    file.file_name ||
+    file.file_path?.split(/[\\/]/).pop() ||
+    `File ${file.file_id}`;
   return format ? `${format} · ${name}` : name;
 }
 
@@ -184,7 +194,10 @@ export function loadStoredReaderSettings(): ReaderSettings {
 }
 
 function saveReaderSettings(settings: ReaderSettings) {
-  readerStorage()?.setItem(EBOOK_READER_SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+  readerStorage()?.setItem(
+    EBOOK_READER_SETTINGS_STORAGE_KEY,
+    JSON.stringify(settings),
+  );
 }
 
 function isEditableTarget(target: EventTarget | null): boolean {
@@ -204,19 +217,27 @@ export default function EbookReader() {
   // own junk item detail — which would loop straight back into the reader.
   // Absent for normal ebooks, so their back behavior is unchanged.
   const backToParam = searchParams.get("backTo");
-  const { data: item, isLoading, error } = useCatalogItemDetail(contentId || undefined);
+  const {
+    data: item,
+    isLoading,
+    error,
+  } = useCatalogItemDetail(contentId || undefined);
   // Manga chapters carry their owning series id; fetching the series detail
   // (usually already cached from the series page) gives the ordered chapter
   // list, which powers next-chapter navigation and the default back target.
   const mangaSeriesId = item?.type === "ebook" ? item.series_id : undefined;
-  const { data: mangaSeries } = useCatalogItemDetail(mangaSeriesId || undefined);
+  const { data: mangaSeries } = useCatalogItemDetail(
+    mangaSeriesId || undefined,
+  );
   const nextChapter = useMemo(() => {
     const seriesChapters = mangaSeries?.manga?.chapters;
     if (!seriesChapters || seriesChapters.length === 0) {
       return null;
     }
     const flat = flattenMangaList(buildMangaList(seriesChapters));
-    const index = flat.findIndex((entry) => entry.chapter.content_id === contentId);
+    const index = flat.findIndex(
+      (entry) => entry.chapter.content_id === contentId,
+    );
     if (index < 0 || index + 1 >= flat.length) {
       return null;
     }
@@ -260,7 +281,11 @@ export default function EbookReader() {
   const [wakeLockEnabled, setWakeLockEnabled] = useState(false);
   const [ttsRate, setTtsRate] = useState(1);
   const [ttsVoiceURI, setTtsVoiceURI] = useState("");
-  const rulerDragRef = useRef<{ offsetY: number; surface: DOMRect; top: number } | null>(null);
+  const rulerDragRef = useRef<{
+    offsetY: number;
+    surface: DOMRect;
+    top: number;
+  } | null>(null);
   const [rulerDragTop, setRulerDragTop] = useState<number | null>(null);
   const readingSurfaceRef = useRef<HTMLElement | null>(null);
   const tts = useTTS();
@@ -284,9 +309,12 @@ export default function EbookReader() {
   const handleProgressChange = useCallback((progress: number | null) => {
     setReaderProgress(progress);
   }, []);
-  const handleReaderReady = useCallback(({ toc: readyToc }: { toc: TOCItem[] }) => {
-    setToc(readyToc);
-  }, []);
+  const handleReaderReady = useCallback(
+    ({ toc: readyToc }: { toc: TOCItem[] }) => {
+      setToc(readyToc);
+    },
+    [],
+  );
   const reloadAnnotations = useCallback(async () => {
     if (!contentId) return;
     setAnnotations(await fetchEbookReaderAnnotations(contentId));
@@ -299,15 +327,21 @@ export default function EbookReader() {
       if (libraryIdParam) {
         nextParams.set("libraryId", libraryIdParam);
       }
-      void navigate(`/reader/ebook/${encodeURIComponent(contentId)}?${nextParams.toString()}`, {
-        replace: true,
-      });
+      void navigate(
+        `/reader/ebook/${encodeURIComponent(contentId)}?${nextParams.toString()}`,
+        {
+          replace: true,
+        },
+      );
     },
     [contentId, libraryIdParam, navigate],
   );
   const updateReaderSettings = useCallback(
     (next: Partial<ReaderSettings>) => {
-      const merged = normalizeReaderSettings({ ...readerSettingsRef.current, ...next });
+      const merged = normalizeReaderSettings({
+        ...readerSettingsRef.current,
+        ...next,
+      });
       readerSettingsRef.current = merged;
       settingsDirtyRef.current = true;
       setReaderSettings(merged);
@@ -347,7 +381,9 @@ export default function EbookReader() {
     }
     setSearching(true);
     try {
-      setSearchResults(await (readerRef.current?.search(query) ?? Promise.resolve([])));
+      setSearchResults(
+        await (readerRef.current?.search(query) ?? Promise.resolve([])),
+      );
     } finally {
       setSearching(false);
     }
@@ -373,7 +409,8 @@ export default function EbookReader() {
   }, [contentId, selection]);
   const handleCreateBookmark = useCallback(async () => {
     if (!contentId) return;
-    const location = selection?.cfi || `fraction:${(readerProgress ?? 0).toFixed(6)}`;
+    const location =
+      selection?.cfi || `fraction:${(readerProgress ?? 0).toFixed(6)}`;
     const created = await createEbookReaderAnnotation(contentId, {
       kind: "bookmark",
       location,
@@ -382,22 +419,29 @@ export default function EbookReader() {
     setAnnotations((current) => [created, ...current]);
     setPanel("notes");
   }, [contentId, item?.title, readerProgress, selection]);
-  const handleAnnotationNavigate = useCallback((annotation: EbookReaderAnnotation) => {
-    // Toolbar bookmarks store synthetic "fraction:<n>" locations that foliate's
-    // goTo cannot resolve; route those through goToFraction instead.
-    const target = parseReaderLocation(annotation.cfi_range || annotation.location);
-    if (!target) return;
-    if (target.type === "fraction") {
-      void readerRef.current?.goToFraction(target.fraction);
-    } else {
-      readerRef.current?.goTo(target.location);
-    }
-  }, []);
+  const handleAnnotationNavigate = useCallback(
+    (annotation: EbookReaderAnnotation) => {
+      // Toolbar bookmarks store synthetic "fraction:<n>" locations that foliate's
+      // goTo cannot resolve; route those through goToFraction instead.
+      const target = parseReaderLocation(
+        annotation.cfi_range || annotation.location,
+      );
+      if (!target) return;
+      if (target.type === "fraction") {
+        void readerRef.current?.goToFraction(target.fraction);
+      } else {
+        readerRef.current?.goTo(target.location);
+      }
+    },
+    [],
+  );
   const handleDeleteAnnotation = useCallback(
     async (annotationID: string) => {
       if (!contentId) return;
       await deleteEbookReaderAnnotation(contentId, annotationID);
-      setAnnotations((current) => current.filter((annotation) => annotation.id !== annotationID));
+      setAnnotations((current) =>
+        current.filter((annotation) => annotation.id !== annotationID),
+      );
     },
     [contentId],
   );
@@ -418,20 +462,29 @@ export default function EbookReader() {
       event.preventDefault();
       const top = readerSettings.readingRulerTop;
       const bandCenterY = surface.top + (surface.height * top) / 100;
-      rulerDragRef.current = { offsetY: event.clientY - bandCenterY, surface, top };
+      rulerDragRef.current = {
+        offsetY: event.clientY - bandCenterY,
+        surface,
+        top,
+      };
       event.currentTarget.setPointerCapture(event.pointerId);
     },
     [readerSettings.readingRulerTop],
   );
-  const handleRulerPointerMove = useCallback((event: PointerEvent<HTMLButtonElement>) => {
-    const drag = rulerDragRef.current;
-    if (!drag) return;
-    const next = clampRulerTop(
-      ((event.clientY - drag.surface.top - drag.offsetY) / drag.surface.height) * 100,
-    );
-    drag.top = next;
-    setRulerDragTop(next);
-  }, []);
+  const handleRulerPointerMove = useCallback(
+    (event: PointerEvent<HTMLButtonElement>) => {
+      const drag = rulerDragRef.current;
+      if (!drag) return;
+      const next = clampRulerTop(
+        ((event.clientY - drag.surface.top - drag.offsetY) /
+          drag.surface.height) *
+          100,
+      );
+      drag.top = next;
+      setRulerDragTop(next);
+    },
+    [],
+  );
   const handleRulerPointerUp = useCallback(
     (event: PointerEvent<HTMLButtonElement>) => {
       const drag = rulerDragRef.current;
@@ -451,7 +504,8 @@ export default function EbookReader() {
     (event: ReactKeyboardEvent<HTMLButtonElement>) => {
       if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
       event.preventDefault();
-      const step = (event.shiftKey ? 5 : 1) * (event.key === "ArrowUp" ? -1 : 1);
+      const step =
+        (event.shiftKey ? 5 : 1) * (event.key === "ArrowUp" ? -1 : 1);
       updateReaderSettings({
         readingRulerTop: clampRulerTop(readerSettings.readingRulerTop + step),
       });
@@ -484,12 +538,18 @@ export default function EbookReader() {
         if (settingsDirtyRef.current) {
           // The user already changed settings while the fetch was in flight;
           // persist their choices instead of clobbering them with stale config.
-          void saveEbookReaderConfig(contentId, { settings: readerSettingsRef.current });
+          void saveEbookReaderConfig(contentId, {
+            settings: readerSettingsRef.current,
+          });
           return;
         }
         const settings =
-          config.settings && typeof config.settings === "object" && !Array.isArray(config.settings)
-            ? normalizeReaderSettings(config.settings as Partial<ReaderSettings>)
+          config.settings &&
+          typeof config.settings === "object" &&
+          !Array.isArray(config.settings)
+            ? normalizeReaderSettings(
+                config.settings as Partial<ReaderSettings>,
+              )
             : loadStoredReaderSettings();
         readerSettingsRef.current = settings;
         saveReaderSettings(settings);
@@ -507,14 +567,19 @@ export default function EbookReader() {
       window.clearTimeout(saveConfigTimerRef.current);
       saveConfigTimerRef.current = null;
       if (options?.keepalive) {
-        saveEbookReaderConfigKeepalive(contentId, { settings: readerSettingsRef.current });
+        saveEbookReaderConfigKeepalive(contentId, {
+          settings: readerSettingsRef.current,
+        });
       } else {
-        void saveEbookReaderConfig(contentId, { settings: readerSettingsRef.current });
+        void saveEbookReaderConfig(contentId, {
+          settings: readerSettingsRef.current,
+        });
       }
     };
     // At tab close a normal request can be torn down with the page; keepalive
     // lets the debounced save survive unload.
-    const flushConfigOnPageHide = () => flushPendingConfigSave({ keepalive: true });
+    const flushConfigOnPageHide = () =>
+      flushPendingConfigSave({ keepalive: true });
     window.addEventListener("pagehide", flushConfigOnPageHide);
     return () => {
       cancelled = true;
@@ -542,7 +607,9 @@ export default function EbookReader() {
     return (
       <div className="page-shell py-10">
         <PageBack />
-        <div className="text-muted-foreground mt-10 text-sm">Ebook not found.</div>
+        <div className="text-muted-foreground mt-10 text-sm">
+          Ebook not found.
+        </div>
       </div>
     );
   }
@@ -562,7 +629,9 @@ export default function EbookReader() {
   const mangaSeriesHref = mangaSeriesId
     ? buildItemHref({
         contentId: mangaSeriesId,
-        libraryId: Number.isFinite(libraryIdNumber) ? libraryIdNumber : undefined,
+        libraryId: Number.isFinite(libraryIdNumber)
+          ? libraryIdNumber
+          : undefined,
       })
     : null;
   const backHref =
@@ -576,17 +645,22 @@ export default function EbookReader() {
       ? buildMediaPlayHref({
           contentId: nextChapter.chapter.content_id,
           type: "ebook",
-          libraryId: Number.isFinite(libraryIdNumber) ? libraryIdNumber : undefined,
+          libraryId: Number.isFinite(libraryIdNumber)
+            ? libraryIdNumber
+            : undefined,
           backTo: mangaSeriesHref,
         })
       : null;
-  const showEndOfBookNext = nextChapterHref != null && (readerProgress ?? 0) >= 0.995;
+  const showEndOfBookNext =
+    nextChapterHref != null && (readerProgress ?? 0) >= 0.995;
 
   if (!selectedFile) {
     return (
       <div className="page-shell py-10">
         <PageBack />
-        <div className="text-muted-foreground mt-10 text-sm">No ebook files found.</div>
+        <div className="text-muted-foreground mt-10 text-sm">
+          No ebook files found.
+        </div>
       </div>
     );
   }
@@ -596,13 +670,41 @@ export default function EbookReader() {
       <header className="border-border/70 bg-background/95 sticky top-0 z-20 border-b backdrop-blur">
         <div className="flex h-14 items-center gap-3 px-4">
           <Button asChild variant="ghost" size="icon" aria-label="Back">
-            <Link to={backHref}>
+            <Link
+              to={backHref}
+              onClick={(event) => {
+                // Exiting the reader must consume the reader's history entry,
+                // not push the target on top of it — otherwise pressing back
+                // on the destination re-opens the reader (issue #189). The
+                // href stays for modified clicks (new tab). A directly opened
+                // reader replaces itself with that target so browser Back
+                // cannot reopen the reader.
+                if (
+                  event.defaultPrevented ||
+                  event.button !== 0 ||
+                  event.metaKey ||
+                  event.ctrlKey ||
+                  event.shiftKey ||
+                  event.altKey
+                ) {
+                  return;
+                }
+                event.preventDefault();
+                if (hasRouterHistory()) {
+                  navigate(-1);
+                } else {
+                  navigate(backHref, { replace: true });
+                }
+              }}
+            >
               <ArrowLeft className="size-5" />
             </Link>
           </Button>
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-semibold">{item.title}</div>
-            <div className="text-muted-foreground truncate text-xs">{format.toUpperCase()}</div>
+            <div className="text-muted-foreground truncate text-xs">
+              {format.toUpperCase()}
+            </div>
           </div>
           {nextChapterHref && nextChapter && (
             <Button
@@ -612,7 +714,7 @@ export default function EbookReader() {
               className="hidden gap-1 sm:inline-flex"
               title={`Next: ${nextChapter.label}`}
             >
-              <Link to={nextChapterHref}>
+              <Link to={nextChapterHref} replace>
                 <span className="text-muted-foreground max-w-36 truncate text-xs">
                   {nextChapter.label}
                 </span>
@@ -667,7 +769,11 @@ export default function EbookReader() {
                 size="icon-sm"
                 aria-label="Toggle reading ruler"
                 title="Reading ruler"
-                onClick={() => updateReaderSettings({ readingRuler: !readerSettings.readingRuler })}
+                onClick={() =>
+                  updateReaderSettings({
+                    readingRuler: !readerSettings.readingRuler,
+                  })
+                }
               >
                 <Ruler className="size-4" />
               </Button>
@@ -675,7 +781,9 @@ export default function EbookReader() {
             <Button
               variant="ghost"
               size="icon-sm"
-              aria-label={panelOpen ? "Close reader panel" : "Open reader panel"}
+              aria-label={
+                panelOpen ? "Close reader panel" : "Open reader panel"
+              }
               title={panelOpen ? "Close reader panel" : "Open reader panel"}
               onClick={() => setPanelOpen((open) => !open)}
             >
@@ -734,11 +842,16 @@ export default function EbookReader() {
       <main
         className={cn(
           "grid h-[calc(100dvh-6rem)] min-h-0 w-full overflow-hidden",
-          panelOpen ? "grid-cols-1 lg:grid-cols-[minmax(0,1fr)_20rem]" : "grid-cols-1",
+          panelOpen
+            ? "grid-cols-1 lg:grid-cols-[minmax(0,1fr)_20rem]"
+            : "grid-cols-1",
         )}
       >
         {isReaderSupportedFile(selectedFile) ? (
-          <section ref={readingSurfaceRef} className="relative min-h-0 min-w-0 overflow-hidden">
+          <section
+            ref={readingSurfaceRef}
+            className="relative min-h-0 min-w-0 overflow-hidden"
+          >
             <FoliateBookReader
               ref={readerRef}
               contentID={contentId}
@@ -788,7 +901,9 @@ export default function EbookReader() {
             <div className="max-w-md text-center">
               <Library className="text-muted-foreground mx-auto mb-4 size-10" />
               <h1 className="text-lg font-semibold">{item.title}</h1>
-              <p className="text-muted-foreground mt-2 text-sm">Unsupported ebook format.</p>
+              <p className="text-muted-foreground mt-2 text-sm">
+                Unsupported ebook format.
+              </p>
             </div>
           </div>
         )}
@@ -802,7 +917,12 @@ export default function EbookReader() {
                   icon: ListTree,
                   aria: "Table of contents",
                 },
-                { id: "search" as const, label: "Search", icon: Search, aria: "Search book" },
+                {
+                  id: "search" as const,
+                  label: "Search",
+                  icon: Search,
+                  aria: "Search book",
+                },
                 {
                   id: "notes" as const,
                   label: "Notes",
@@ -906,7 +1026,9 @@ export default function EbookReader() {
                               {result.label}
                             </span>
                           )}
-                          <span className="block text-sm">{result.excerpt || result.cfi}</span>
+                          <span className="block text-sm">
+                            {result.excerpt || result.cfi}
+                          </span>
                         </span>
                       </Button>
                     ))}
@@ -938,7 +1060,9 @@ export default function EbookReader() {
                                 {annotation.kind}
                               </span>
                               <span className="block">
-                                {annotation.selected_text || annotation.note || annotation.location}
+                                {annotation.selected_text ||
+                                  annotation.note ||
+                                  annotation.location}
                               </span>
                             </span>
                           </Button>
@@ -947,7 +1071,9 @@ export default function EbookReader() {
                             size="icon-xs"
                             aria-label="Delete annotation"
                             title="Delete annotation"
-                            onClick={() => void handleDeleteAnnotation(annotation.id)}
+                            onClick={() =>
+                              void handleDeleteAnnotation(annotation.id)
+                            }
                           >
                             <Trash2 className="size-3" />
                           </Button>
@@ -978,7 +1104,10 @@ export default function EbookReader() {
                         </div>
                         <div className="grid gap-2">
                           {READER_PROFILES.map((profile) => {
-                            const active = profileIsActive(profile, readerSettings);
+                            const active = profileIsActive(
+                              profile,
+                              readerSettings,
+                            );
                             return (
                               <Button
                                 key={profile.id}
@@ -986,16 +1115,22 @@ export default function EbookReader() {
                                 variant={active ? "secondary" : "outline"}
                                 size="sm"
                                 aria-pressed={active}
-                                onClick={() => updateReaderSettings(profile.settings)}
+                                onClick={() =>
+                                  updateReaderSettings(profile.settings)
+                                }
                                 className="h-auto min-h-11 w-full justify-between px-3 py-2 text-left"
                               >
                                 <span className="min-w-0">
-                                  <span className="block text-sm font-medium">{profile.label}</span>
+                                  <span className="block text-sm font-medium">
+                                    {profile.label}
+                                  </span>
                                   <span className="text-muted-foreground block text-xs">
                                     {profile.description}
                                   </span>
                                 </span>
-                                {active && <Check className="size-4 shrink-0" />}
+                                {active && (
+                                  <Check className="size-4 shrink-0" />
+                                )}
                               </Button>
                             );
                           })}
@@ -1021,8 +1156,14 @@ export default function EbookReader() {
                           <Button
                             variant="ghost"
                             size="icon-sm"
-                            aria-label={tts.state === "paused" ? "Resume speech" : "Pause speech"}
-                            onClick={tts.state === "paused" ? tts.resume : tts.pause}
+                            aria-label={
+                              tts.state === "paused"
+                                ? "Resume speech"
+                                : "Pause speech"
+                            }
+                            onClick={
+                              tts.state === "paused" ? tts.resume : tts.pause
+                            }
                           >
                             <Pause className="size-4" />
                           </Button>
@@ -1044,16 +1185,23 @@ export default function EbookReader() {
                           onChange={setTtsRate}
                         />
                         <label className="block space-y-1 text-sm">
-                          <span className="text-muted-foreground text-xs font-medium">Voice</span>
+                          <span className="text-muted-foreground text-xs font-medium">
+                            Voice
+                          </span>
                           <select
                             aria-label="Voice"
                             value={ttsVoiceURI}
-                            onChange={(event) => setTtsVoiceURI(event.target.value)}
+                            onChange={(event) =>
+                              setTtsVoiceURI(event.target.value)
+                            }
                             className="border-border bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-2 text-sm outline-none focus-visible:ring-[3px]"
                           >
                             <option value="">Default</option>
                             {tts.voices.map((voice) => (
-                              <option key={voice.voiceURI} value={voice.voiceURI}>
+                              <option
+                                key={voice.voiceURI}
+                                value={voice.voiceURI}
+                              >
                                 {voice.name}
                               </option>
                             ))}
@@ -1069,7 +1217,9 @@ export default function EbookReader() {
                         aria-label="Keep screen awake"
                         type="checkbox"
                         checked={wakeLockEnabled}
-                        onChange={(event) => setWakeLockEnabled(event.target.checked)}
+                        onChange={(event) =>
+                          setWakeLockEnabled(event.target.checked)
+                        }
                       />
                     </label>
                   </div>
@@ -1078,7 +1228,9 @@ export default function EbookReader() {
                     Typography
                   </div>
                   <label className="block space-y-1 text-sm">
-                    <span className="text-muted-foreground text-xs font-medium">Theme</span>
+                    <span className="text-muted-foreground text-xs font-medium">
+                      Theme
+                    </span>
                     <select
                       aria-label="Theme"
                       value={readerSettings.theme}
@@ -1096,12 +1248,16 @@ export default function EbookReader() {
                   </label>
                   {!isComicFormat && (
                     <label className="block space-y-1 text-sm">
-                      <span className="text-muted-foreground text-xs font-medium">Font</span>
+                      <span className="text-muted-foreground text-xs font-medium">
+                        Font
+                      </span>
                       <select
                         aria-label="Font family"
                         value={readerSettings.fontFamily}
                         onChange={(event) =>
-                          updateReaderSettings({ fontFamily: event.target.value })
+                          updateReaderSettings({
+                            fontFamily: event.target.value,
+                          })
                         }
                         className="border-border bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-2 text-sm outline-none focus-visible:ring-[3px]"
                       >
@@ -1111,8 +1267,13 @@ export default function EbookReader() {
                           </option>
                         ))}
                         {!READER_FONT_OPTIONS.some(
-                          (option) => option.value === readerSettings.fontFamily,
-                        ) && <option value={readerSettings.fontFamily}>Custom</option>}
+                          (option) =>
+                            option.value === readerSettings.fontFamily,
+                        ) && (
+                          <option value={readerSettings.fontFamily}>
+                            Custom
+                          </option>
+                        )}
                       </select>
                     </label>
                   )}
@@ -1124,7 +1285,9 @@ export default function EbookReader() {
                       max={180}
                       step={1}
                       suffix="%"
-                      onChange={(fontSize) => updateReaderSettings({ fontSize })}
+                      onChange={(fontSize) =>
+                        updateReaderSettings({ fontSize })
+                      }
                     />
                   )}
                   <ReaderRange
@@ -1134,7 +1297,9 @@ export default function EbookReader() {
                     max={125}
                     step={1}
                     suffix="%"
-                    onChange={(fontBrightness) => updateReaderSettings({ fontBrightness })}
+                    onChange={(fontBrightness) =>
+                      updateReaderSettings({ fontBrightness })
+                    }
                   />
                   {!isComicFormat && (
                     <ReaderRange
@@ -1143,7 +1308,9 @@ export default function EbookReader() {
                       min={1.1}
                       max={2.4}
                       step={0.05}
-                      onChange={(lineHeight) => updateReaderSettings({ lineHeight })}
+                      onChange={(lineHeight) =>
+                        updateReaderSettings({ lineHeight })
+                      }
                     />
                   )}
                   <ReaderRange
@@ -1163,7 +1330,9 @@ export default function EbookReader() {
                       max={96}
                       step={1}
                       suffix="ch"
-                      onChange={(maxWidth) => updateReaderSettings({ maxWidth })}
+                      onChange={(maxWidth) =>
+                        updateReaderSettings({ maxWidth })
+                      }
                     />
                   )}
                   <div className="border-border space-y-2 border-t pt-3">
@@ -1175,7 +1344,9 @@ export default function EbookReader() {
                           type="checkbox"
                           checked={readerSettings.hyphenation}
                           onChange={(event) =>
-                            updateReaderSettings({ hyphenation: event.target.checked })
+                            updateReaderSettings({
+                              hyphenation: event.target.checked,
+                            })
                           }
                         />
                       </label>
@@ -1186,7 +1357,9 @@ export default function EbookReader() {
                         aria-label="Right to left"
                         type="checkbox"
                         checked={readerSettings.rtl}
-                        onChange={(event) => updateReaderSettings({ rtl: event.target.checked })}
+                        onChange={(event) =>
+                          updateReaderSettings({ rtl: event.target.checked })
+                        }
                       />
                     </label>
                     {!isComicFormat && (
@@ -1197,7 +1370,9 @@ export default function EbookReader() {
                           type="checkbox"
                           checked={readerSettings.readingRuler}
                           onChange={(event) =>
-                            updateReaderSettings({ readingRuler: event.target.checked })
+                            updateReaderSettings({
+                              readingRuler: event.target.checked,
+                            })
                           }
                         />
                       </label>
@@ -1210,7 +1385,9 @@ export default function EbookReader() {
                         max={100}
                         step={1}
                         suffix="%"
-                        onChange={(readingRulerTop) => updateReaderSettings({ readingRulerTop })}
+                        onChange={(readingRulerTop) =>
+                          updateReaderSettings({ readingRulerTop })
+                        }
                       />
                     )}
                   </div>
@@ -1224,7 +1401,8 @@ export default function EbookReader() {
                         value={readerSettings.writingMode}
                         onChange={(event) =>
                           updateReaderSettings({
-                            writingMode: event.target.value as ReaderSettings["writingMode"],
+                            writingMode: event.target
+                              .value as ReaderSettings["writingMode"],
                           })
                         }
                         className="border-border bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-2 text-sm outline-none focus-visible:ring-[3px]"
@@ -1237,13 +1415,16 @@ export default function EbookReader() {
                   )}
                   {readerSettings.flow !== "scrolled" && (
                     <label className="block space-y-1 text-sm">
-                      <span className="text-muted-foreground text-xs font-medium">Spread</span>
+                      <span className="text-muted-foreground text-xs font-medium">
+                        Spread
+                      </span>
                       <select
                         aria-label="Spread"
                         value={readerSettings.spread}
                         onChange={(event) =>
                           updateReaderSettings({
-                            spread: event.target.value as ReaderSettings["spread"],
+                            spread: event.target
+                              .value as ReaderSettings["spread"],
                           })
                         }
                         className="border-border bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-2 text-sm outline-none focus-visible:ring-[3px]"
@@ -1254,12 +1435,16 @@ export default function EbookReader() {
                     </label>
                   )}
                   <label className="block space-y-1 text-sm">
-                    <span className="text-muted-foreground text-xs font-medium">Flow</span>
+                    <span className="text-muted-foreground text-xs font-medium">
+                      Flow
+                    </span>
                     <select
                       aria-label="Flow"
                       value={readerSettings.flow}
                       onChange={(event) =>
-                        updateReaderSettings({ flow: event.target.value as ReaderSettings["flow"] })
+                        updateReaderSettings({
+                          flow: event.target.value as ReaderSettings["flow"],
+                        })
                       }
                       className="border-border bg-background focus-visible:border-ring focus-visible:ring-ring/50 h-9 w-full rounded-md border px-2 text-sm outline-none focus-visible:ring-[3px]"
                     >
@@ -1280,7 +1465,7 @@ export default function EbookReader() {
             size="lg"
             className="h-11 gap-2 rounded-full px-6 text-[15px] font-bold shadow-lg"
           >
-            <Link to={nextChapterHref}>
+            <Link to={nextChapterHref} replace>
               Next: {nextChapter.label}
               <ChevronRight className="size-[18px]" />
             </Link>
@@ -1301,7 +1486,15 @@ type ReaderRangeProps = {
   onChange: (value: number) => void;
 };
 
-function ReaderRange({ label, value, min, max, step, suffix = "", onChange }: ReaderRangeProps) {
+function ReaderRange({
+  label,
+  value,
+  min,
+  max,
+  step,
+  suffix = "",
+  onChange,
+}: ReaderRangeProps) {
   return (
     <label className="block space-y-1 text-sm">
       <span
@@ -1311,7 +1504,10 @@ function ReaderRange({ label, value, min, max, step, suffix = "", onChange }: Re
         <span data-reader-range-name className="min-w-0 leading-4 break-words">
           {label}
         </span>
-        <span data-reader-range-value className="justify-self-end leading-4 tabular-nums">
+        <span
+          data-reader-range-value
+          className="justify-self-end leading-4 tabular-nums"
+        >
           {Number.isInteger(step) ? value : value.toFixed(2)}
           {suffix}
         </span>

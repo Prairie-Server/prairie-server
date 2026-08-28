@@ -32,7 +32,10 @@ export function previewFingerprint(
   });
 }
 
-function useCollectionPreview(scope: "user" | "admin", request?: CollectionPreviewRequest | null) {
+function useCollectionPreview(
+  scope: "user" | "admin",
+  request?: CollectionPreviewRequest | null,
+) {
   const normalized = request
     ? buildCollectionPreviewRequest(request.query_definition, request.limit)
     : null;
@@ -43,7 +46,9 @@ function useCollectionPreview(scope: "user" | "admin", request?: CollectionPrevi
       : collectionKeys.preview(scope, "disabled"),
     queryFn: () =>
       api<CollectionPreviewResponse>(
-        scope === "admin" ? "/admin/collections/preview" : "/collections/preview",
+        scope === "admin"
+          ? "/admin/collections/preview"
+          : "/collections/preview",
         {
           method: "POST",
           body: JSON.stringify(normalized),
@@ -54,10 +59,14 @@ function useCollectionPreview(scope: "user" | "admin", request?: CollectionPrevi
   });
 }
 
-export function useAdminCollectionPreview(request?: CollectionPreviewRequest | null) {
+export function useAdminCollectionPreview(
+  request?: CollectionPreviewRequest | null,
+) {
   return useCollectionPreview("admin", request);
 }
 
-export function useUserCollectionPreview(request?: CollectionPreviewRequest | null) {
+export function useUserCollectionPreview(
+  request?: CollectionPreviewRequest | null,
+) {
   return useCollectionPreview("user", request);
 }

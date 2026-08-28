@@ -84,7 +84,9 @@ describe("Collections helpers", () => {
     expect(createBody).not.toHaveProperty("media_filter");
 
     const updateBody = toUpdateCollectionBody(builder);
-    expect(updateBody.display_query_definition).toEqual(createBody.display_query_definition);
+    expect(updateBody.display_query_definition).toEqual(
+      createBody.display_query_definition,
+    );
     expect(updateBody).not.toHaveProperty("watch_filter");
     expect(updateBody).not.toHaveProperty("media_filter");
   });
@@ -104,7 +106,9 @@ describe("Collections helpers", () => {
   });
 
   it("builds the edit route for an existing user collection", () => {
-    expect(buildUserCollectionEditorPath("col-3")).toBe("/collections/col-3/edit");
+    expect(buildUserCollectionEditorPath("col-3")).toBe(
+      "/collections/col-3/edit",
+    );
   });
 
   it("builds the catalog route for viewing a user collection", () => {

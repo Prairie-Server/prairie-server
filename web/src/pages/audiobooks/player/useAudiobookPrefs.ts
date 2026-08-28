@@ -12,25 +12,42 @@ export const AUDIOBOOK_RATE_PRESETS = [1, 1.25, 1.5, 1.75, 2, 2.5, 3] as const;
 
 export function clampAudiobookRate(rate: number): number {
   if (!Number.isFinite(rate)) return 1;
-  const clamped = Math.min(AUDIOBOOK_RATE_MAX, Math.max(AUDIOBOOK_RATE_MIN, rate));
+  const clamped = Math.min(
+    AUDIOBOOK_RATE_MAX,
+    Math.max(AUDIOBOOK_RATE_MIN, rate),
+  );
   // Snap to the step grid so repeated +/- stepping never accumulates float drift.
-  return Number((Math.round(clamped / AUDIOBOOK_RATE_STEP) * AUDIOBOOK_RATE_STEP).toFixed(2));
+  return Number(
+    (Math.round(clamped / AUDIOBOOK_RATE_STEP) * AUDIOBOOK_RATE_STEP).toFixed(
+      2,
+    ),
+  );
 }
 
-type SkipKey = typeof storage.KEYS.AUDIOBOOK_SKIP_BACK | typeof storage.KEYS.AUDIOBOOK_SKIP_FORWARD;
+type SkipKey =
+  | typeof storage.KEYS.AUDIOBOOK_SKIP_BACK
+  | typeof storage.KEYS.AUDIOBOOK_SKIP_FORWARD;
 
 function readSkipSeconds(key: SkipKey, fallback: number): number {
   const raw = storage.get(key);
   const value = raw == null ? NaN : Number(raw);
-  return (SKIP_INTERVAL_CHOICES as readonly number[]).includes(value) ? value : fallback;
+  return (SKIP_INTERVAL_CHOICES as readonly number[]).includes(value)
+    ? value
+    : fallback;
 }
 
 export function getAudiobookSkipBack(): number {
-  return readSkipSeconds(storage.KEYS.AUDIOBOOK_SKIP_BACK, DEFAULT_SKIP_BACK_SECONDS);
+  return readSkipSeconds(
+    storage.KEYS.AUDIOBOOK_SKIP_BACK,
+    DEFAULT_SKIP_BACK_SECONDS,
+  );
 }
 
 export function getAudiobookSkipForward(): number {
-  return readSkipSeconds(storage.KEYS.AUDIOBOOK_SKIP_FORWARD, DEFAULT_SKIP_FORWARD_SECONDS);
+  return readSkipSeconds(
+    storage.KEYS.AUDIOBOOK_SKIP_FORWARD,
+    DEFAULT_SKIP_FORWARD_SECONDS,
+  );
 }
 
 /** Smart rewind defaults to on; only an explicit "false" disables it. */
@@ -72,7 +89,14 @@ export function useAudiobookPrefs(): AudiobookPrefs {
     storage.set(storage.KEYS.AUDIOBOOK_SMART_REWIND, String(enabled));
   }, []);
 
-  return { skipBack, skipForward, smartRewind, setSkipBack, setSkipForward, setSmartRewind };
+  return {
+    skipBack,
+    skipForward,
+    smartRewind,
+    setSkipBack,
+    setSkipForward,
+    setSmartRewind,
+  };
 }
 
 // --- Per-book playback rate memory -----------------------------------------
@@ -89,7 +113,8 @@ function readBookRates(): Record<string, StoredBookRate> {
   if (!raw) return {};
   try {
     const parsed: unknown = JSON.parse(raw);
-    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) return {};
+    if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed))
+      return {};
     const out: Record<string, StoredBookRate> = {};
     for (const [key, value] of Object.entries(parsed)) {
       const entry = value as Partial<StoredBookRate> | null;

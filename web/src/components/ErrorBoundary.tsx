@@ -11,7 +11,10 @@ interface ErrorBoundaryState {
   prevResetKeys: unknown[];
 }
 
-class ErrorBoundaryInner extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+class ErrorBoundaryInner extends Component<
+  ErrorBoundaryProps,
+  ErrorBoundaryState
+> {
   constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false, prevResetKeys: props.resetKeys ?? [] };
@@ -54,7 +57,9 @@ class ErrorBoundaryInner extends Component<ErrorBoundaryProps, ErrorBoundaryStat
       return (
         <div className="bg-background flex min-h-[100dvh] items-center justify-center p-8">
           <div className="max-w-md text-center">
-            <h1 className="text-foreground mb-4 text-2xl font-bold">Something went wrong</h1>
+            <h1 className="text-foreground mb-4 text-2xl font-bold">
+              Something went wrong
+            </h1>
             <p className="text-muted-foreground mb-6">
               An unexpected error occurred. Try refreshing the page.
             </p>
@@ -84,7 +89,11 @@ class ErrorBoundaryInner extends Component<ErrorBoundaryProps, ErrorBoundaryStat
 }
 
 /** Wrapper that passes location.pathname as a resetKey so errors clear on navigation. */
-export function ErrorBoundary({ children, resetKeys = [], ...rest }: ErrorBoundaryProps) {
+export function ErrorBoundary({
+  children,
+  resetKeys = [],
+  ...rest
+}: ErrorBoundaryProps) {
   const location = useLocation();
   return (
     <ErrorBoundaryInner resetKeys={[location.pathname, ...resetKeys]} {...rest}>

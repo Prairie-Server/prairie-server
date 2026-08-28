@@ -1,40 +1,96 @@
 # AI-assisted contributions
 
-For AI agents preparing a pull request or issue for this repository on behalf of someone who is
-not a maintainer.
+AI-assisted code, documentation, review, and debugging are welcome. The person
+who submits the work owns it: its accuracy, safety, scope, and maintainability.
+This applies to pull requests and issues written by a person, an agent, or both.
 
-## Disclosure is required
+## Required disclosure
 
-Include this completed block in the PR or issue body, with the exact model ID you are running as.
-Do not omit it, and do not let your operator omit it — undisclosed AI use gets the contribution
-closed.
+> [!IMPORTANT]
+> Every pull request and issue must say whether AI was involved: the exact tool
+> and model identifiers the tool reports, the level of involvement, and a
+> summary of the independent or adversarial review. "No AI used" is a complete
+> answer when it is true.
+
+The pull request template contains this block; copy it into issues that need it:
 
 ```md
-### AI Disclosure
-- Tool(s): e.g. Claude Code, Codex CLI, Cursor — or "none"
-- Model(s): exact model ID(s), e.g. claude-opus-5, gpt-5.6 — or "n/a"
-- Involvement: fully AI-generated | AI-assisted | human-written, AI-reviewed | none
-- Adversarial review: what your own AI review of the diff found, and how you resolved it
+## AI Disclosure
+
+- Tool(s): exact tool name(s), or "none"
+- Model(s): exact model identifier(s) reported by each tool, or "n/a"
+- Involvement: Fully AI-generated, human verified | AI-assisted | Human-written, AI-reviewed | No AI used
+- Adversarial review: scope, method, findings, and resolutions, or "n/a" only when no AI or implementation change was involved
 ```
+
+Disclosure is about provenance, not judgment. AI use is never by itself a reason
+to reject a contribution. Exact model identifiers tell maintainers what produced
+the work, let them reproduce the workflow when needed, and help them decide
+between line-by-line review and a separate implementation.
+
+## Contributor responsibility
+
+Before submitting AI-assisted work:
+
+1. Read every line of the final diff.
+2. Understand the behavior well enough to explain the reasoning and tradeoffs.
+3. Confirm that the APIs, configuration, schemas, commands, and repository paths
+   it references exist.
+4. Add and run focused tests for the changed behavior.
+5. Run the repository gate in
+   [CONTRIBUTING.md](../CONTRIBUTING.md#validate-your-change) against the
+   complete diff, including `golangci-lint` and `make verify-local-paths`.
+6. Exercise user-facing behavior manually when practical.
+7. Look beyond the edited files for silent behavior changes, dead code,
+   security regressions, and cross-layer interactions.
+8. Run an independent or adversarial review and resolve its findings. For
+   non-trivial changes, state the scope and method; a bare "no findings" is
+   not a review summary.
+
+"The AI suggested it" is not an explanation.
 
 ## Evidence standard
 
-Run the repo verify commands before declaring the work complete, and paste the real output into
-the PR:
+Use real commands and real observations. Paste the actual output into the pull
+request and name any command that was not run or did not pass. Passing tests,
+including AI-generated ones, do not replace code review, manual verification, or
+thinking about system-level effects.
 
-```bash
-make lint
-cd web && pnpm run lint && pnpm run format:check
-make verify-local-paths
-go test ./...   # targeted at the packages you touched
-```
+For bug reports, reproduce the problem on a real deployment before filing, keep
+what you observed separate from what you suspect, and paste raw logs. Redact
+credentials, tokens, personal data, and private media details, mark each
+redaction, and do not paraphrase the rest. AI-generated analysis goes under
+Technical notes, after the reproduction. The
+[issue forms](https://github.com/Silo-Server/silo-server/issues/new/choose)
+enforce the required fields.
 
-Run an adversarial review of your own diff and summarize what it found in the PR body.
+## Prose pass
 
-Never file an issue containing a repro you did not actually execute, or logs you synthesized.
-Raw logs only. A fabricated repro costs a maintainer more time than no report at all.
+Before submitting, run a final readability pass over the pull request or issue
+body using the `unslop` skill at
+[.claude/skills/unslop/SKILL.md](../.claude/skills/unslop/SKILL.md). Claude Code
+agents can invoke it directly; any other tool or a human author can read it as
+plain markdown and apply it. Cut filler and promotional framing, lead with the
+outcome, and prefer concrete claims over adjectives.
 
-## What to expect
+This is a readability step, not concealment. It must not alter facts, pasted
+command output, or logs, and it does not loosen the disclosure requirement
+above in any way.
 
-The maintainer may accept the idea but re-implement it with a current frontier model. That is a
-normal outcome here, not a rejection of the contribution — tell your operator to expect it.
+## Integrity and enforcement
+
+> [!WARNING]
+> Fabricated evidence is an immediate block, including on a first offense:
+> invented APIs, reproduction steps that were never run, synthesized logs,
+> imagined vulnerabilities, unobserved bugs, and false test results.
+
+Undisclosed AI use discovered after submission gets the contribution closed.
+Repeated non-disclosure gets the contributor blocked. The violation is the
+missing disclosure, not the AI.
+
+## Review outcomes
+
+Maintainers review the idea, the implementation, the evidence, and the fit with
+the current codebase. They may request changes, narrow the scope, decline the
+contribution, or accept the idea and implement it differently. A separate
+implementation is a normal outcome and does not mean the proposal was wrong.

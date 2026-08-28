@@ -18,6 +18,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/recommendations"
 	"github.com/prairie-server/prairie-server/internal/scantrigger"
 	"github.com/prairie-server/prairie-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
 	"github.com/prairie-server/prairie-server/internal/subtitles"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 	"github.com/prairie-server/prairie-server/internal/watchstate"
@@ -37,13 +38,16 @@ type Dependencies struct {
 	DB               *pgxpool.Pool
 	SecretCipher     *secret.Cipher // at-rest credential cipher (required when DB is set)
 	ClientIPResolver *clientip.Resolver
-	Now              func() time.Time
-	TokenGenerator   func() string
-	SessionStore     *SessionStore
-	IDCodec          *ResourceIDCodec
-	ImageCache       *ImageCache
-	DeviceProfiles   *DeviceProfileStore
-	PlaybackStore    CompatPlaybackStore
+	// StreamTelemetry is the local observation-only registry shared with the
+	// native API process. May be nil, which makes every media route unobserved.
+	StreamTelemetry *streamtelemetry.Registry
+	Now             func() time.Time
+	TokenGenerator  func() string
+	SessionStore    *SessionStore
+	IDCodec         *ResourceIDCodec
+	ImageCache      *ImageCache
+	DeviceProfiles  *DeviceProfileStore
+	PlaybackStore   CompatPlaybackStore
 	// RecipeNodeStore hands remote-transcode reconstruction recipes to the
 	// control-plane recipe store (Redis) so a restarted transcode node can rebuild
 	// a jellycompat session. Optional; nil disables the handoff.
@@ -51,7 +55,7 @@ type Dependencies struct {
 	LoginResolver   loginResolver
 	Authenticator   *Authenticator
 	WebFS           fs.FS
-	// FrontendFS is the embedded Prairie frontend asset filesystem (web/dist),
+	// FrontendFS is the embedded Silo frontend asset filesystem (web/dist),
 	// used to serve app-relative artwork such as bundled collection-template
 	// posters that have no remote origin. Optional.
 	FrontendFS fs.FS
@@ -105,6 +109,10 @@ type Dependencies struct {
 	Recommender            recommendations.Recommender
 	RecWorker              *recommendations.Worker
 
+	// LiveTV is the native Prairie Live TV / OTA / DVR service. When set,
+	// LiveTv/* jellyfin routes are registered and UserViews includes Live TV.
+	LiveTV *livetv.Service
+
 	// Settings (optional; reads server_settings for watched threshold, etc.)
 	SettingsRepo SettingsReader
 
@@ -112,11 +120,6 @@ type Dependencies struct {
 	SubtitleRepo subtitles.Repository // optional; downloaded subtitle support
 	S3Client     subtitles.S3Client   // optional
 	S3Bucket     string               // optional
-
-	// LiveTV is the native Prairie Live TV / OTA / DVR service. When set,
-	// jellycompat exposes Jellyfin LiveTv routes and enables Live TV in user
-	// policy and UserViews.
-	LiveTV *livetv.Service
 }
 
 // CurrentConfig returns the live config when hot reload is wired, falling

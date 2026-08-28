@@ -30,7 +30,10 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { getPrimaryPlaybackAction, isSessionPaused } from "./adminSessionActionModel";
+import {
+  getPrimaryPlaybackAction,
+  isSessionPaused,
+} from "./adminSessionActionModel";
 
 type SessionActionKind = "pause" | "resume" | "stop" | "terminate" | "message";
 
@@ -55,8 +58,12 @@ const successMessages: Record<Exclude<SessionActionKind, "message">, string> = {
   terminate: "Terminate command sent",
 };
 
-const fallbackMessages: Record<Exclude<SessionActionKind, "message">, string> = {
-  pause: "Pause could not reach the player directly. Prairie will end the session shortly instead.",
+const fallbackMessages: Record<
+  Exclude<SessionActionKind, "message">,
+  string
+> = {
+  pause:
+    "Pause could not reach the player directly. Prairie will end the session shortly instead.",
   resume:
     "Resume could not reach the player directly. Prairie will end the session shortly instead.",
   stop: "Stop could not reach the player directly. Prairie will end the session shortly instead.",
@@ -75,10 +82,14 @@ export function AdminSessionActions({
   inlinePrefixActions,
   showInlineTerminate = false,
 }: AdminSessionActionsProps) {
-  const [pendingAction, setPendingAction] = useState<SessionActionKind | null>(null);
+  const [pendingAction, setPendingAction] = useState<SessionActionKind | null>(
+    null,
+  );
   const [messageOpen, setMessageOpen] = useState(false);
   const [message, setMessage] = useState("");
-  const [optimisticPaused, setOptimisticPaused] = useState<boolean | null>(null);
+  const [optimisticPaused, setOptimisticPaused] = useState<boolean | null>(
+    null,
+  );
   const supportsPlaybackControl = session.has_playback_control !== false;
 
   useEffect(() => {
@@ -116,7 +127,11 @@ export function AdminSessionActions({
           : successMessages[action],
       );
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to send session command");
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Failed to send session command",
+      );
     } finally {
       setPendingAction(null);
     }
@@ -131,15 +146,20 @@ export function AdminSessionActions({
 
     setPendingAction("message");
     try {
-      await api<SessionCommandResponse>(`/admin/sessions/${session.session_id}/message`, {
-        method: "POST",
-        body: JSON.stringify({ message: trimmed }),
-      });
+      await api<SessionCommandResponse>(
+        `/admin/sessions/${session.session_id}/message`,
+        {
+          method: "POST",
+          body: JSON.stringify({ message: trimmed }),
+        },
+      );
       toast.success("Message sent");
       setMessage("");
       setMessageOpen(false);
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Failed to send message");
+      toast.error(
+        error instanceof Error ? error.message : "Failed to send message",
+      );
     } finally {
       setPendingAction(null);
     }
@@ -179,10 +199,14 @@ export function AdminSessionActions({
         {layout === "menu" ? (
           <>
             <DropdownMenuLabel>
-              {supportsPlaybackControl ? "Playback Actions" : "Limited Playback Actions"}
+              {supportsPlaybackControl
+                ? "Playback Actions"
+                : "Limited Playback Actions"}
             </DropdownMenuLabel>
             {supportsPlaybackControl ? (
-              <DropdownMenuItem onSelect={() => void runAction(primaryAction.action)}>
+              <DropdownMenuItem
+                onSelect={() => void runAction(primaryAction.action)}
+              >
                 {primaryAction.action === "pause" ? (
                   <Pause className="h-4 w-4" />
                 ) : (
@@ -228,7 +252,10 @@ export function AdminSessionActions({
         {showInlineTerminate ? null : (
           <>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive" onSelect={() => void runAction("terminate")}>
+            <DropdownMenuItem
+              variant="destructive"
+              onSelect={() => void runAction("terminate")}
+            >
               <OctagonAlert className="h-4 w-4" />
               Terminate
             </DropdownMenuItem>
@@ -252,14 +279,16 @@ export function AdminSessionActions({
 
       <Dialog
         open={supportsPlaybackControl && messageOpen}
-        onOpenChange={(nextOpen) => setMessageOpen(supportsPlaybackControl && nextOpen)}
+        onOpenChange={(nextOpen) =>
+          setMessageOpen(supportsPlaybackControl && nextOpen)
+        }
       >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Send Message</DialogTitle>
             <DialogDescription>
-              Send a custom message to {session.username || `User #${session.user_id}`} during
-              playback.
+              Send a custom message to{" "}
+              {session.username || `User #${session.user_id}`} during playback.
             </DialogDescription>
           </DialogHeader>
           <textarea
@@ -278,7 +307,10 @@ export function AdminSessionActions({
               <X />
               Cancel
             </Button>
-            <Button onClick={() => void sendMessage()} disabled={pendingAction === "message"}>
+            <Button
+              onClick={() => void sendMessage()}
+              disabled={pendingAction === "message"}
+            >
               <Send />
               Send Message
             </Button>

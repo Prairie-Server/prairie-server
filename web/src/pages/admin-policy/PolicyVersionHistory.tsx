@@ -36,10 +36,17 @@ interface PolicyVersionHistoryProps {
   activeVersionId?: number;
 }
 
-export function PolicyVersionHistory({ documentId, activeVersionId }: PolicyVersionHistoryProps) {
+export function PolicyVersionHistory({
+  documentId,
+  activeVersionId,
+}: PolicyVersionHistoryProps) {
   const { data: versions, isLoading } = usePolicyVersions(documentId);
-  const [selectedVersionId, setSelectedVersionId] = useState<number | undefined>(undefined);
-  const [rollbackVersionId, setRollbackVersionId] = useState<number | undefined>(undefined);
+  const [selectedVersionId, setSelectedVersionId] = useState<
+    number | undefined
+  >(undefined);
+  const [rollbackVersionId, setRollbackVersionId] = useState<
+    number | undefined
+  >(undefined);
   const selectedVersion = usePolicyVersion(documentId, selectedVersionId);
   const activate = useActivatePolicyVersion();
 
@@ -49,7 +56,9 @@ export function PolicyVersionHistory({ documentId, activeVersionId }: PolicyVers
     selectedVersionId === undefined ? versions?.[0]?.id : undefined,
   );
   const sourceVersion =
-    selectedVersionId === undefined ? effectiveVersion.data : selectedVersion.data;
+    selectedVersionId === undefined
+      ? effectiveVersion.data
+      : selectedVersion.data;
 
   const rollbackVersion = useMemo(
     () => versions?.find((version) => version.id === rollbackVersionId),
@@ -84,14 +93,20 @@ export function PolicyVersionHistory({ documentId, activeVersionId }: PolicyVers
           <TableBody>
             {isLoading && (
               <TableRow>
-                <TableCell colSpan={6} className="text-muted-foreground py-6 text-center">
+                <TableCell
+                  colSpan={6}
+                  className="text-muted-foreground py-6 text-center"
+                >
                   Loading versions...
                 </TableCell>
               </TableRow>
             )}
             {!isLoading && versions?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={6} className="text-muted-foreground py-6 text-center">
+                <TableCell
+                  colSpan={6}
+                  className="text-muted-foreground py-6 text-center"
+                >
                   No versions have been saved for this document.
                 </TableCell>
               </TableRow>
@@ -123,14 +138,20 @@ export function PolicyVersionHistory({ documentId, activeVersionId }: PolicyVers
                     )}
                   </TableCell>
                   <TableCell>
-                    {version.created_by_user_id ? `User ${version.created_by_user_id}` : "—"}
+                    {version.created_by_user_id
+                      ? `User ${version.created_by_user_id}`
+                      : "—"}
                   </TableCell>
                   <TableCell>{formatPolicyDate(version.created_at)}</TableCell>
                   <TableCell className="max-w-[260px] truncate">
                     {version.comment?.trim() || "—"}
                   </TableCell>
                   <TableCell>
-                    <Badge variant={version.compiled_ok ? "secondary" : "destructive"}>
+                    <Badge
+                      variant={
+                        version.compiled_ok ? "secondary" : "destructive"
+                      }
+                    >
                       {version.compiled_ok ? "Compiled" : "Failed"}
                     </Badge>
                   </TableCell>
@@ -173,13 +194,16 @@ export function PolicyVersionHistory({ documentId, activeVersionId }: PolicyVers
               Make v{rollbackVersion?.version_number} the live policy?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              New requests start using it immediately, on every server node. The version it replaces
-              stays in this history.
+              New requests start using it immediately, on every server node. The
+              version it replaces stays in this history.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmRollback} disabled={activate.isPending}>
+            <AlertDialogAction
+              onClick={confirmRollback}
+              disabled={activate.isPending}
+            >
               Activate
             </AlertDialogAction>
           </AlertDialogFooter>

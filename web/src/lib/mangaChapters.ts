@@ -126,12 +126,17 @@ export interface FlatMangaChapter {
 }
 
 // flattenMangaList unrolls display entries into the flat reading order.
-export function flattenMangaList(entries: MangaListEntry[]): FlatMangaChapter[] {
+export function flattenMangaList(
+  entries: MangaListEntry[],
+): FlatMangaChapter[] {
   const flat: FlatMangaChapter[] = [];
   for (const entry of entries) {
     if (entry.kind === "section") {
       for (const chapter of entry.chapters) {
-        flat.push({ chapter, label: `${entry.label} · ${chapterLabel(chapter)}` });
+        flat.push({
+          chapter,
+          label: `${entry.label} · ${chapterLabel(chapter)}`,
+        });
       }
     } else {
       flat.push({ chapter: entry.chapter, label: entry.label });
@@ -143,7 +148,9 @@ export function flattenMangaList(entries: MangaListEntry[]): FlatMangaChapter[] 
 // firstUnreadChapter returns the resume target: the first chapter in reading
 // order the viewer has not finished, or null when everything is read (or the
 // list is empty).
-export function firstUnreadChapter(entries: MangaListEntry[]): FlatMangaChapter | null {
+export function firstUnreadChapter(
+  entries: MangaListEntry[],
+): FlatMangaChapter | null {
   for (const flat of flattenMangaList(entries)) {
     if (flat.chapter.read !== true) {
       return flat;

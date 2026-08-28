@@ -31,7 +31,10 @@ import type {
   RequestUserLimit,
 } from "@/api/types";
 import { SchemaForm } from "@/components/admin/plugins/SchemaForm";
-import { buildSchemaValues, parseFieldTypes } from "@/components/admin/plugins/schemaFormUtils";
+import {
+  buildSchemaValues,
+  parseFieldTypes,
+} from "@/components/admin/plugins/schemaFormUtils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -96,7 +99,12 @@ import { supportedMediaTypesForConfig } from "./requestIntegrationMediaTypes";
 type StatusFilter = MediaRequestStatus | "all";
 type OutcomeFilter = MediaRequestOutcome | "all";
 
-const ADMIN_REQUEST_TABS = ["queue", "settings", "integrations", "overrides"] as const;
+const ADMIN_REQUEST_TABS = [
+  "queue",
+  "settings",
+  "integrations",
+  "overrides",
+] as const;
 type AdminRequestTab = (typeof ADMIN_REQUEST_TABS)[number];
 
 function normalizeAdminRequestTab(value: string | null): AdminRequestTab {
@@ -128,18 +136,25 @@ export default function AdminRequests() {
         <div className="space-y-2">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Requests</h1>
           <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-            Review media requests, set limits, and manage Radarr or Sonarr routing.
+            Review media requests, set limits, and manage Radarr or Sonarr
+            routing.
           </p>
         </div>
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-5">
-        <TabsList variant="line" className="border-border w-full justify-start border-b">
-          <TabsTrigger value="queue">Queue</TabsTrigger>
-          <TabsTrigger value="settings">Settings</TabsTrigger>
-          <TabsTrigger value="integrations">Integrations</TabsTrigger>
-          <TabsTrigger value="overrides">User Overrides</TabsTrigger>
-        </TabsList>
+        <div className="-mx-4 overflow-x-auto px-4 pb-1 [scrollbar-width:thin] sm:mx-0 sm:px-0">
+          <TabsList
+            variant="line"
+            aria-label="Request administration sections"
+            className="border-border w-max min-w-full justify-start border-b"
+          >
+            <TabsTrigger value="queue">Queue</TabsTrigger>
+            <TabsTrigger value="settings">Settings</TabsTrigger>
+            <TabsTrigger value="integrations">Integrations</TabsTrigger>
+            <TabsTrigger value="overrides">User Overrides</TabsTrigger>
+          </TabsList>
+        </div>
         <TabsContent value="queue">
           <RequestQueueTab />
         </TabsContent>
@@ -186,7 +201,10 @@ function RequestQueueTab() {
   return (
     <div className="space-y-4">
       <div className="border-border bg-card flex flex-wrap items-center gap-3 rounded-lg border p-3">
-        <Select value={status} onValueChange={(value) => setStatus(value as StatusFilter)}>
+        <Select
+          value={status}
+          onValueChange={(value) => setStatus(value as StatusFilter)}
+        >
           <SelectTrigger className="w-full sm:w-[170px]">
             <SelectValue />
           </SelectTrigger>
@@ -198,7 +216,10 @@ function RequestQueueTab() {
             ))}
           </SelectContent>
         </Select>
-        <Select value={outcome} onValueChange={(value) => setOutcome(value as OutcomeFilter)}>
+        <Select
+          value={outcome}
+          onValueChange={(value) => setOutcome(value as OutcomeFilter)}
+        >
           <SelectTrigger className="w-full sm:w-[170px]">
             <SelectValue />
           </SelectTrigger>
@@ -224,7 +245,10 @@ function RequestQueueTab() {
       {requests.isLoading ? (
         <RowsSkeleton />
       ) : requests.isError ? (
-        <EmptyPanel title="Requests failed" detail="The request queue could not be loaded." />
+        <EmptyPanel
+          title="Requests failed"
+          detail="The request queue could not be loaded."
+        />
       ) : (
         <div className="border-border bg-card overflow-hidden rounded-lg border">
           {/* Desktop table */}
@@ -243,7 +267,10 @@ function RequestQueueTab() {
               <TableBody>
                 {(requests.data ?? []).length === 0 ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-muted-foreground py-8 text-center">
+                    <TableCell
+                      colSpan={6}
+                      className="text-muted-foreground py-8 text-center"
+                    >
                       No requests match the current filters.
                     </TableCell>
                   </TableRow>
@@ -257,9 +284,16 @@ function RequestQueueTab() {
                           ? usernamesByID.get(request.requested_by_user_id)
                           : undefined
                       }
-                      approving={approve.isPending && approve.variables === request.id}
-                      declining={decline.isPending && decline.variables?.id === request.id}
-                      retrying={retry.isPending && retry.variables === request.id}
+                      approving={
+                        approve.isPending && approve.variables === request.id
+                      }
+                      declining={
+                        decline.isPending &&
+                        decline.variables?.id === request.id
+                      }
+                      retrying={
+                        retry.isPending && retry.variables === request.id
+                      }
                       onApprove={() => approve.mutate(request.id)}
                       onDecline={() => handleDecline(request)}
                       onRetry={() => retry.mutate(request.id)}
@@ -286,8 +320,12 @@ function RequestQueueTab() {
                       ? usernamesByID.get(request.requested_by_user_id)
                       : undefined
                   }
-                  approving={approve.isPending && approve.variables === request.id}
-                  declining={decline.isPending && decline.variables?.id === request.id}
+                  approving={
+                    approve.isPending && approve.variables === request.id
+                  }
+                  declining={
+                    decline.isPending && decline.variables?.id === request.id
+                  }
                   retrying={retry.isPending && retry.variables === request.id}
                   onApprove={() => approve.mutate(request.id)}
                   onDecline={() => handleDecline(request)}
@@ -367,10 +405,13 @@ function RequestQueueRow({
   onDecline: () => void;
   onRetry: () => void;
 }) {
-  const canApprove = request.status === "pending" && request.outcome === "active";
-  const canDecline = request.status !== "completed" && request.outcome === "active";
+  const canApprove =
+    request.status === "pending" && request.outcome === "active";
+  const canDecline =
+    request.status !== "completed" && request.outcome === "active";
   const canRetry = request.outcome === "failed";
-  const requesterLabel = requesterUsername ?? `User ${request.requested_by_user_id}`;
+  const requesterLabel =
+    requesterUsername ?? `User ${request.requested_by_user_id}`;
   const requestDetailHref = `/requests/${request.media_type}/${request.tmdb_id}`;
 
   return (
@@ -378,10 +419,15 @@ function RequestQueueRow({
       <TableCell>
         <div className="min-w-[220px]">
           <div className="flex flex-wrap items-center gap-2">
-            <Link to={requestDetailHref} className="font-medium hover:underline">
+            <Link
+              to={requestDetailHref}
+              className="font-medium hover:underline"
+            >
               {request.title}
             </Link>
-            <Badge variant="secondary">{formatMediaType(request.media_type)}</Badge>
+            <Badge variant="secondary">
+              {formatMediaType(request.media_type)}
+            </Badge>
           </div>
           <div className="text-muted-foreground mt-1 flex flex-wrap gap-x-3 text-xs">
             {request.year ? <span>{request.year}</span> : null}
@@ -405,11 +451,15 @@ function RequestQueueRow({
             ) : null}
           </div>
           {request.last_error ? (
-            <p className="text-destructive mt-1 max-w-md text-xs">{request.last_error}</p>
+            <p className="text-destructive mt-1 max-w-md text-xs">
+              {request.last_error}
+            </p>
           ) : null}
         </div>
       </TableCell>
-      <TableCell className="text-muted-foreground text-xs">{formatRequestDate(request)}</TableCell>
+      <TableCell className="text-muted-foreground text-xs">
+        {formatRequestDate(request)}
+      </TableCell>
       <TableCell>
         <Badge variant={requestStatusBadgeVariant(request.status)}>
           {formatRequestStatus(request.status)}
@@ -472,20 +522,28 @@ function RequestQueueCard({
   onDecline: () => void;
   onRetry: () => void;
 }) {
-  const canApprove = request.status === "pending" && request.outcome === "active";
-  const canDecline = request.status !== "completed" && request.outcome === "active";
+  const canApprove =
+    request.status === "pending" && request.outcome === "active";
+  const canDecline =
+    request.status !== "completed" && request.outcome === "active";
   const canRetry = request.outcome === "failed";
-  const requesterLabel = requesterUsername ?? `User ${request.requested_by_user_id}`;
+  const requesterLabel =
+    requesterUsername ?? `User ${request.requested_by_user_id}`;
   const requestDetailHref = `/requests/${request.media_type}/${request.tmdb_id}`;
 
   return (
     <div className="flex flex-col gap-3 px-4 py-3">
       <div className="min-w-0">
         <div className="flex flex-wrap items-center gap-2">
-          <Link to={requestDetailHref} className="text-sm font-semibold hover:underline">
+          <Link
+            to={requestDetailHref}
+            className="text-sm font-semibold hover:underline"
+          >
             {request.title}
           </Link>
-          <Badge variant="secondary">{formatMediaType(request.media_type)}</Badge>
+          <Badge variant="secondary">
+            {formatMediaType(request.media_type)}
+          </Badge>
         </div>
         <div className="text-muted-foreground mt-1 flex flex-wrap gap-x-3 text-xs">
           {request.year ? <span>{request.year}</span> : null}
@@ -561,7 +619,9 @@ function RequestQueueActions({
   stacked?: boolean;
 }) {
   return (
-    <div className={stacked ? "grid grid-cols-3 gap-2" : "flex flex-wrap gap-2"}>
+    <div
+      className={stacked ? "grid grid-cols-3 gap-2" : "flex flex-wrap gap-2"}
+    >
       <Button
         size="sm"
         variant="outline"
@@ -598,15 +658,19 @@ function RequestQueueActions({
 
 function RequestTargetBadge({ target }: { target: RequestTarget }) {
   const qualityLabel = target.quality === "2160p" ? "2160p" : "1080p";
-  const instanceLabel = target.instance_name || target.integration_kind || "Unknown";
+  const instanceLabel =
+    target.instance_name || target.integration_kind || "Unknown";
   const failed = target.status === "failed";
-  const statusLabel = target.status === "failed" ? "Failed" : formatRequestStatus(target.status);
+  const statusLabel =
+    target.status === "failed" ? "Failed" : formatRequestStatus(target.status);
   return (
     <div className="flex flex-col gap-1">
       <div className="flex flex-wrap items-center gap-1.5">
         <Badge variant="outline">{qualityLabel}</Badge>
         <span className="text-foreground">{instanceLabel}</span>
-        <Badge variant={failed ? "destructive" : "secondary"}>{statusLabel}</Badge>
+        <Badge variant={failed ? "destructive" : "secondary"}>
+          {statusLabel}
+        </Badge>
         {target.external_status ? <span>{target.external_status}</span> : null}
       </div>
       {failed && target.last_error ? (
@@ -633,13 +697,28 @@ function RequestSettingsTab() {
 
   if (settings.isLoading) return <RowsSkeleton />;
   if (settings.isError) {
-    return <EmptyPanel title="Settings failed" detail="Request settings could not be loaded." />;
+    return (
+      <EmptyPanel
+        title="Settings failed"
+        detail="Request settings could not be loaded."
+      />
+    );
   }
   if (!settings.data) {
-    return <EmptyPanel title="No settings" detail="Request settings are not available." />;
+    return (
+      <EmptyPanel
+        title="No settings"
+        detail="Request settings are not available."
+      />
+    );
   }
 
-  return <RequestSettingsForm key={settings.data.updated_at} settings={settings.data} />;
+  return (
+    <RequestSettingsForm
+      key={settings.data.updated_at}
+      settings={settings.data}
+    />
+  );
 }
 
 function RequestSettingsForm({ settings }: { settings: RequestSettings }) {
@@ -669,7 +748,9 @@ function RequestSettingsForm({ settings }: { settings: RequestSettings }) {
     <div className="border-border bg-card max-w-3xl space-y-5 rounded-lg border p-5">
       <div className="flex items-center gap-2">
         <Settings2 className="text-primary h-4 w-4" />
-        <h2 className="text-lg font-semibold tracking-normal">Global Settings</h2>
+        <h2 className="text-lg font-semibold tracking-normal">
+          Global Settings
+        </h2>
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -684,7 +765,10 @@ function RequestSettingsForm({ settings }: { settings: RequestSettings }) {
           label="Auto approval"
           checked={form.global_auto_approval_enabled}
           onCheckedChange={(checked) =>
-            setForm((current) => ({ ...current, global_auto_approval_enabled: checked }))
+            setForm((current) => ({
+              ...current,
+              global_auto_approval_enabled: checked,
+            }))
           }
         />
         <Field label="Max requests">
@@ -693,7 +777,10 @@ function RequestSettingsForm({ settings }: { settings: RequestSettings }) {
             min={0}
             value={form.global_max_requests}
             onChange={(event) =>
-              setForm((current) => ({ ...current, global_max_requests: event.target.value }))
+              setForm((current) => ({
+                ...current,
+                global_max_requests: event.target.value,
+              }))
             }
           />
         </Field>
@@ -703,7 +790,10 @@ function RequestSettingsForm({ settings }: { settings: RequestSettings }) {
             min={1}
             value={form.global_window_days}
             onChange={(event) =>
-              setForm((current) => ({ ...current, global_window_days: event.target.value }))
+              setForm((current) => ({
+                ...current,
+                global_window_days: event.target.value,
+              }))
             }
           />
         </Field>
@@ -713,7 +803,10 @@ function RequestSettingsForm({ settings }: { settings: RequestSettings }) {
             description="Applies to all requests when both a Default HD and Default 4K instance exist, regardless of user role."
             checked={form.force_dual_quality}
             onCheckedChange={(checked) =>
-              setForm((current) => ({ ...current, force_dual_quality: checked }))
+              setForm((current) => ({
+                ...current,
+                force_dual_quality: checked,
+              }))
             }
           />
         </div>
@@ -795,7 +888,10 @@ function RequestIntegrationsTab() {
   if (integrations.isLoading) return <RowsSkeleton />;
   if (integrations.isError) {
     return (
-      <EmptyPanel title="Integrations failed" detail="Request integrations could not be loaded." />
+      <EmptyPanel
+        title="Integrations failed"
+        detail="Request integrations could not be loaded."
+      />
     );
   }
 
@@ -803,7 +899,12 @@ function RequestIntegrationsTab() {
   const integrationsKey =
     list.length === 0
       ? "empty"
-      : list.map((integration) => `${integration.id}:${integration.updated_at ?? ""}`).join("|");
+      : list
+          .map(
+            (integration) =>
+              `${integration.id}:${integration.updated_at ?? ""}`,
+          )
+          .join("|");
 
   return <RequestIntegrationsForm key={integrationsKey} integrations={list} />;
 }
@@ -822,7 +923,9 @@ function nextCardKey(): string {
   return `card-${integrationCardCounter}`;
 }
 
-function integrationToForm(integration?: RequestIntegration): IntegrationFormState {
+function integrationToForm(
+  integration?: RequestIntegration,
+): IntegrationFormState {
   return {
     id: integration?.id ?? "",
     name: integration?.name ?? "",
@@ -830,7 +933,9 @@ function integrationToForm(integration?: RequestIntegration): IntegrationFormSta
     base_url: integration?.base_url ?? "",
     api_key_ref: "",
     has_api_key: integration?.has_api_key ?? false,
-    installation_id: integration?.installation_id ? String(integration.installation_id) : "",
+    installation_id: integration?.installation_id
+      ? String(integration.installation_id)
+      : "",
     capability_id: integration?.capability_id ?? "",
   };
 }
@@ -925,7 +1030,11 @@ function useConnectionOptions(
   return { options, status };
 }
 
-function RequestIntegrationsForm({ integrations }: { integrations: RequestIntegration[] }) {
+function RequestIntegrationsForm({
+  integrations,
+}: {
+  integrations: RequestIntegration[];
+}) {
   const installationsQuery = useAdminPluginInstallations();
   const routerInstallations = useMemo(
     () => requestRouterInstallations(installationsQuery.data ?? []),
@@ -933,7 +1042,10 @@ function RequestIntegrationsForm({ integrations }: { integrations: RequestIntegr
   );
   // When exactly one request-router plugin is installed, default new/unseeded
   // connections to it so the admin doesn't have to pick.
-  const defaultSelection: Pick<IntegrationFormState, "installation_id" | "capability_id"> =
+  const defaultSelection: Pick<
+    IntegrationFormState,
+    "installation_id" | "capability_id"
+  > =
     routerInstallations.length === 1
       ? {
           installation_id: String(routerInstallations[0]?.installationID ?? ""),
@@ -958,7 +1070,10 @@ function RequestIntegrationsForm({ integrations }: { integrations: RequestIntegr
     );
   }
 
-  function updateCardConfig(key: string, pluginConfig: Record<string, unknown>) {
+  function updateCardConfig(
+    key: string,
+    pluginConfig: Record<string, unknown>,
+  ) {
     setCards((current) => {
       const mapped = current.map((card) => ({
         key: card.key,
@@ -966,8 +1081,9 @@ function RequestIntegrationsForm({ integrations }: { integrations: RequestIntegr
         config: card.key === key ? pluginConfig : card.pluginConfig,
       }));
       const fieldsFor = (installationId: string) =>
-        routerInstallations.find((entry) => String(entry.installationID) === installationId)
-          ?.capability.config_schema?.[0]?.admin_form?.fields ?? [];
+        routerInstallations.find(
+          (entry) => String(entry.installationID) === installationId,
+        )?.capability.config_schema?.[0]?.admin_form?.fields ?? [];
       const next = applyExclusivity(mapped, key, pluginConfig, fieldsFor);
       const byKey = new Map(next.map((entry) => [entry.key, entry.config]));
       return current.map((card) => ({
@@ -993,7 +1109,8 @@ function RequestIntegrationsForm({ integrations }: { integrations: RequestIntegr
     setCards((current) => current.filter((card) => card.key !== key));
   }
 
-  const noRouterPlugin = !installationsQuery.isLoading && routerInstallations.length === 0;
+  const noRouterPlugin =
+    !installationsQuery.isLoading && routerInstallations.length === 0;
 
   return (
     <div className="space-y-4">
@@ -1074,7 +1191,9 @@ function IntegrationEditor({
   // Any edit invalidates a prior failed save's server-side errors, so clear them
   // wholesale on edit. A corrected field's stale "does not exist" then disappears.
   function clearSaveErrors() {
-    setFieldErrors((current) => (Object.keys(current).length === 0 ? current : {}));
+    setFieldErrors((current) =>
+      Object.keys(current).length === 0 ? current : {},
+    );
     setFormError((current) => (current === null ? current : null));
   }
 
@@ -1092,9 +1211,12 @@ function IntegrationEditor({
   // have loaded, when this connection has no installation set yet. Depend on a
   // stable scalar (not the array identity) so a refetch returning the same single
   // plugin does not re-fire and re-select after a deliberate clear.
-  const soleInstallation = installations.length === 1 ? installations[0] : undefined;
+  const soleInstallation =
+    installations.length === 1 ? installations[0] : undefined;
   const soleInstallationID =
-    soleInstallation !== undefined ? String(soleInstallation.installationID) : undefined;
+    soleInstallation !== undefined
+      ? String(soleInstallation.installationID)
+      : undefined;
   useEffect(() => {
     if (form.installation_id || soleInstallation === undefined) return;
     onChange({
@@ -1106,7 +1228,8 @@ function IntegrationEditor({
   }, [form.installation_id, soleInstallationID]);
 
   const selectedInstallationID = Number(form.installation_id);
-  const hasInstallation = Number.isInteger(selectedInstallationID) && selectedInstallationID > 0;
+  const hasInstallation =
+    Number.isInteger(selectedInstallationID) && selectedInstallationID > 0;
   // Match on both installation and capability sub-id so a multi-capability
   // installation resolves the exact backend; fall back to installation-only for
   // connections whose capability_id isn't set yet (adopts that installation's
@@ -1116,13 +1239,18 @@ function IntegrationEditor({
       (entry) =>
         entry.installationID === selectedInstallationID &&
         entry.capability.id === form.capability_id,
-    ) ?? installations.find((entry) => entry.installationID === selectedInstallationID);
+    ) ??
+    installations.find(
+      (entry) => entry.installationID === selectedInstallationID,
+    );
 
   // Switching the selected plugin must drop the previous plugin's config (so its
   // keys never reach the new plugin's schema in the options probe or save) and
   // clear stale save errors (handled by patchForm -> clearSaveErrors).
   function handlePluginChange(value: string) {
-    const entry = installations.find((e) => installationOptionValue(e) === value);
+    const entry = installations.find(
+      (e) => installationOptionValue(e) === value,
+    );
     if (!entry) return;
     if (
       entry.installationID === selectedInstallationID &&
@@ -1138,7 +1266,8 @@ function IntegrationEditor({
   }
   const selectedConfigSchema = selected?.capability.config_schema?.[0];
   const descriptor = selectedConfigSchema?.admin_form;
-  const title = selected?.capability.display_name || selected?.pluginID || "Connection";
+  const title =
+    selected?.capability.display_name || selected?.pluginID || "Connection";
 
   const { options, status: optionsStatus } = useConnectionOptions(form.id, {
     base_url: form.base_url,
@@ -1205,7 +1334,10 @@ function IntegrationEditor({
       api_key_ref: form.api_key_ref.trim() || undefined,
       capability_id: selected?.capability.id ?? "",
       installation_id: hasInstallation ? selectedInstallationID : undefined,
-      supported_media_types: supportedMediaTypesForConfig(nextPluginConfig, source),
+      supported_media_types: supportedMediaTypesForConfig(
+        nextPluginConfig,
+        source,
+      ),
       plugin_config: nextPluginConfig,
     } as RequestIntegration;
 
@@ -1215,8 +1347,7 @@ function IntegrationEditor({
     mut.mutate(payload, {
       onError: (err) => {
         const body = (err as { body?: unknown })?.body as
-          | RequestIntegrationValidationError
-          | undefined;
+          RequestIntegrationValidationError | undefined;
         if (body?.field_errors) setFieldErrors(body.field_errors);
         if (body?.form_error) setFormError(body.form_error);
       },
@@ -1229,12 +1360,19 @@ function IntegrationEditor({
         <div className="flex items-center gap-2">
           <Plug className="text-primary h-4 w-4" />
           <h2 className="text-lg font-semibold tracking-normal">{title}</h2>
-          {form.has_api_key ? <Badge variant="secondary">Key saved</Badge> : null}
+          {form.has_api_key ? (
+            <Badge variant="secondary">Key saved</Badge>
+          ) : null}
           {isNew ? <Badge variant="outline">New</Badge> : null}
         </div>
         <label className="flex cursor-pointer items-center gap-2 text-sm select-none">
-          <span className="text-muted-foreground">{form.enabled ? "Enabled" : "Disabled"}</span>
-          <Switch checked={form.enabled} onCheckedChange={(enabled) => patchForm({ enabled })} />
+          <span className="text-muted-foreground">
+            {form.enabled ? "Enabled" : "Disabled"}
+          </span>
+          <Switch
+            checked={form.enabled}
+            onCheckedChange={(enabled) => patchForm({ enabled })}
+          />
         </label>
       </div>
 
@@ -1256,7 +1394,9 @@ function IntegrationEditor({
           <Input
             value={form.api_key_ref}
             onChange={(event) => patchForm({ api_key_ref: event.target.value })}
-            placeholder={form.has_api_key ? "Leave blank to keep saved key" : "API key"}
+            placeholder={
+              form.has_api_key ? "Leave blank to keep saved key" : "API key"
+            }
           />
         </Field>
       </div>
@@ -1274,8 +1414,9 @@ function IntegrationEditor({
           <Skeleton className="h-9 w-full rounded-md" />
         ) : installations.length === 0 ? (
           <p className="text-destructive text-xs">
-            No installed plugin exposes the {REQUEST_ROUTER_CAPABILITY} capability. Install a
-            request-router plugin before adding connections.
+            No installed plugin exposes the {REQUEST_ROUTER_CAPABILITY}{" "}
+            capability. Install a request-router plugin before adding
+            connections.
           </p>
         ) : (
           <Select
@@ -1297,8 +1438,12 @@ function IntegrationEditor({
             </SelectContent>
           </Select>
         )}
-        {!installationsLoading && installations.length > 0 && !hasInstallation ? (
-          <p className="text-destructive text-xs">Select a plugin to fulfill this connection.</p>
+        {!installationsLoading &&
+        installations.length > 0 &&
+        !hasInstallation ? (
+          <p className="text-destructive text-xs">
+            Select a plugin to fulfill this connection.
+          </p>
         ) : null}
       </Field>
 
@@ -1318,8 +1463,8 @@ function IntegrationEditor({
             <p className="border-destructive/40 bg-destructive/10 text-destructive flex items-start gap-2 rounded-md border px-3 py-2 text-xs">
               <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
               <span>
-                Couldn&apos;t load options from the service — check the base URL and API key, then
-                edit a field to retry.
+                Couldn&apos;t load options from the service — check the base URL
+                and API key, then edit a field to retry.
               </span>
             </p>
           ) : null}
@@ -1335,7 +1480,11 @@ function IntegrationEditor({
       )}
 
       <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" onClick={handleSave} disabled={!canSave || saving}>
+        <Button
+          type="button"
+          onClick={handleSave}
+          disabled={!canSave || saving}
+        >
           <Save className="h-4 w-4" />
           {isNew ? "Create connection" : "Save"}
         </Button>
@@ -1414,14 +1563,18 @@ function UserOverridesTab() {
 
   if (users.isLoading) return <RowsSkeleton />;
   if (users.isError) {
-    return <EmptyPanel title="Users failed" detail="Users could not be loaded." />;
+    return (
+      <EmptyPanel title="Users failed" detail="Users could not be loaded." />
+    );
   }
 
   return (
     <div className="border-border bg-card max-w-3xl space-y-5 rounded-lg border p-5">
       <div className="flex items-center gap-2">
         <SlidersHorizontal className="text-primary h-4 w-4" />
-        <h2 className="text-lg font-semibold tracking-normal">User Overrides</h2>
+        <h2 className="text-lg font-semibold tracking-normal">
+          User Overrides
+        </h2>
       </div>
 
       <Field label="User">
@@ -1445,7 +1598,10 @@ function UserOverridesTab() {
       {limit.isLoading ? (
         <RowsSkeleton />
       ) : limit.isError || !limit.data || !effectiveUserID ? (
-        <EmptyPanel title="Limit failed" detail="The selected user limit could not be loaded." />
+        <EmptyPanel
+          title="Limit failed"
+          detail="The selected user limit could not be loaded."
+        />
       ) : (
         <UserLimitEditor
           key={userLimitFormKey(limit.data)}
@@ -1481,8 +1637,12 @@ function UserLimitEditor({
       user_id: userID,
       limit_mode: form.limit_mode,
       approval_mode: form.approval_mode,
-      max_requests: custom ? Math.max(0, Number(form.max_requests) || 0) : undefined,
-      window_days: custom ? Math.max(1, Number(form.window_days) || 1) : undefined,
+      max_requests: custom
+        ? Math.max(0, Number(form.max_requests) || 0)
+        : undefined,
+      window_days: custom
+        ? Math.max(1, Number(form.window_days) || 1)
+        : undefined,
     };
     updateLimit.mutate({ userId: userID, body: payload });
   }
@@ -1494,7 +1654,10 @@ function UserLimitEditor({
           <Select
             value={form.limit_mode}
             onValueChange={(value) =>
-              setForm((current) => ({ ...current, limit_mode: value as RequestLimitMode }))
+              setForm((current) => ({
+                ...current,
+                limit_mode: value as RequestLimitMode,
+              }))
             }
           >
             <SelectTrigger className="w-full">
@@ -1537,7 +1700,10 @@ function UserLimitEditor({
                 min={0}
                 value={form.max_requests}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, max_requests: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    max_requests: event.target.value,
+                  }))
                 }
               />
             </Field>
@@ -1547,7 +1713,10 @@ function UserLimitEditor({
                 min={1}
                 value={form.window_days}
                 onChange={(event) =>
-                  setForm((current) => ({ ...current, window_days: event.target.value }))
+                  setForm((current) => ({
+                    ...current,
+                    window_days: event.target.value,
+                  }))
                 }
               />
             </Field>
@@ -1555,7 +1724,10 @@ function UserLimitEditor({
         ) : null}
       </div>
 
-      <Button onClick={saveLimit} disabled={!userAvailable || updateLimit.isPending}>
+      <Button
+        onClick={saveLimit}
+        disabled={!userAvailable || updateLimit.isPending}
+      >
         <Save className="h-4 w-4" />
         Save Override
       </Button>
@@ -1593,9 +1765,15 @@ function SwitchField({
     <div className="border-border flex items-center justify-between gap-3 rounded-lg border p-3">
       <div className="space-y-1">
         <Label>{label}</Label>
-        {description ? <p className="text-muted-foreground text-xs">{description}</p> : null}
+        {description ? (
+          <p className="text-muted-foreground text-xs">{description}</p>
+        ) : null}
       </div>
-      <Switch checked={checked} onCheckedChange={onCheckedChange} disabled={disabled} />
+      <Switch
+        checked={checked}
+        onCheckedChange={onCheckedChange}
+        disabled={disabled}
+      />
     </div>
   );
 }

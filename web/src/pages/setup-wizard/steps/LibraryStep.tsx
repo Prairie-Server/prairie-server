@@ -40,7 +40,9 @@ export function LibraryStep() {
 
       <LibraryForm
         library={null}
-        chapterThumbnailsSupported={libraries[0]?.chapter_thumbnails_supported ?? true}
+        chapterThumbnailsSupported={
+          libraries[0]?.chapter_thumbnails_supported ?? true
+        }
         trickplaySupported={libraries[0]?.trickplay_supported ?? true}
         onSaved={handleLibrarySaved}
         resetAfterCreate
@@ -49,7 +51,11 @@ export function LibraryStep() {
       />
 
       <WizardActions className="flex flex-wrap gap-3 pt-3">
-        <Button type="button" onClick={() => markDone("library")} disabled={libraries.length === 0}>
+        <Button
+          type="button"
+          onClick={() => markDone("library")}
+          disabled={libraries.length === 0}
+        >
           <ArrowRight />
           Continue
         </Button>

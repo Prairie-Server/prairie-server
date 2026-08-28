@@ -69,7 +69,8 @@ export function useThemeCatalog(options?: { enabled?: boolean }) {
 export function useRefreshThemeCatalog() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: () => api<ThemeCatalogIndex>("/theme/catalog/refresh", { method: "POST" }),
+    mutationFn: () =>
+      api<ThemeCatalogIndex>("/theme/catalog/refresh", { method: "POST" }),
     onSuccess: (data) => {
       queryClient.setQueryData(themeKeys.catalogIndex(), data.themes ?? []);
     },

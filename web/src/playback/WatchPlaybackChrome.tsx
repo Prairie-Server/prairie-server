@@ -1,4 +1,6 @@
 import {
+  lazy,
+  Suspense,
   useCallback,
   useContext,
   useEffect,
@@ -10,38 +12,63 @@ import {
 } from "react";
 import { flushSync } from "react-dom";
 import { useQueryClient } from "@tanstack/react-query";
-import { Pause, PictureInPicture2, Play, SkipBack, SkipForward, Tv, X } from "lucide-react";
+import {
+  Pause,
+  PictureInPicture2,
+  Play,
+  SkipBack,
+  SkipForward,
+  Tv,
+  X,
+} from "lucide-react";
 import { useLocation, useNavigate } from "react-router";
 import type { WatchDetail } from "@/api/types";
-import { getAccessToken, getProfileToken } from "@/api/client";
+import {
+  getAccessToken,
+  getOrCreateDeviceId,
+  getProfileToken,
+} from "@/api/client";
 import { Button } from "@/components/ui/button";
 import { Slider } from "@/components/ui/slider";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { fetchCatalogItemDetail } from "@/hooks/queries/catalogRead";
 import { useContinueWatching } from "@/hooks/queries/progress";
-import { useEffectiveSettings } from "@/hooks/queries/settings";
+import {
+  settingsCapabilitiesSupportKey,
+  useEffectiveSettings,
+  useSettingsCapabilities,
+} from "@/hooks/queries/settingValues";
+import { SETTING_KEYS, type SettingKey } from "@/lib/settingsContract";
 import { useWatchDetail } from "@/hooks/queries/items";
 import { catalogKeys } from "@/hooks/queries/keys";
 import { applyPlaybackProgressToCache } from "@/hooks/queries/playbackProgressCache";
 import { invalidatePlaybackSurfaceQueries } from "@/hooks/queries/playbackSurfaceRefresh";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
-import { useVisualViewportOffset } from "@/hooks/useVisualViewportOffset";
-import { PlayerConfigProvider, WatchPage } from "@/player";
+import {
+  PlayerConfigProvider,
+  type PlayerConfig,
+} from "@/player/context/PlayerConfigContext";
 import type {
   EpisodeRef,
+  IntroSkipMode,
   PlaybackExitState,
-  PlayerConfig,
   PlayerPictureInPictureChange,
-} from "@/player";
+} from "@/player/types";
 import { useSeriesEpisodes } from "@/player/hooks/useSeriesEpisodes";
 import { PlayingNextScreen } from "@/player/components/PlayingNextScreen";
 import { formatTime } from "@/player/components/SeekBar";
 import { storage } from "@/utils/storage";
 import { WatchPlaybackControllerContext } from "./watchPlaybackContext";
 import type { WatchPlaybackControllerValue } from "./watchPlaybackContext";
-import type { WatchPlaybackSnapshot, WatchPlaybackTransportControls } from "./watchPlaybackReducer";
-import { createEmptyPlaybackState, watchPlaybackReducer } from "./watchPlaybackReducer";
+import type {
+  WatchPlaybackSnapshot,
+  WatchPlaybackTransportControls,
+} from "./watchPlaybackReducer";
+import {
+  createEmptyPlaybackState,
+  watchPlaybackReducer,
+} from "./watchPlaybackReducer";
 import {
   buildWatchHref,
   buildWatchItemHref,
@@ -52,17 +79,11 @@ import {
 } from "@/pages/watchRouteHelpers";
 import { canEditMarkers as canEditMarkersForUser } from "@/lib/permissions";
 
-const AUTO_SKIP_INTRO_KEY = "playback.auto_skip_intro";
-
-function resolveDeviceOverrideBool(
-  setting: { effective_value: string; has_device_override: boolean } | undefined,
-  profileDefault: boolean,
-) {
-  if (setting?.has_device_override) {
-    return setting.effective_value === "true";
-  }
-  return profileDefault;
-}
+const WatchPage = lazy(() =>
+  import("@/player/components/WatchPage").then((module) => ({
+    default: module.WatchPage,
+  })),
+);
 
 function normalizeWatchPlaybackRequest(
   input: WatchPlaybackStartInput | WatchRouteRequest,
@@ -84,7 +105,11 @@ function buildPlaybackSubtitle(
     return undefined;
   }
 
-  if (item.series_title && item.season_number != null && item.episode_number != null) {
+  if (
+    item.series_title &&
+    item.season_number != null &&
+    item.episode_number != null
+  ) {
     return `S${item.season_number}:E${item.episode_number}${item.title ? ` · ${item.title}` : ""}`;
   }
 
@@ -108,9 +133,13 @@ function findNextPlaybackPartFileId(
   }
 
   for (const variant of item.playback_variants) {
-    const parts = [...(variant.parts ?? [])].sort((a, b) => a.part_index - b.part_index);
+    const parts = [...(variant.parts ?? [])].sort(
+      (a, b) => a.part_index - b.part_index,
+    );
     const currentPartIndex = parts.findIndex((part) =>
-      (part.versions ?? []).some((version) => version.file_id === currentFileId),
+      (part.versions ?? []).some(
+        (version) => version.file_id === currentFileId,
+      ),
     );
     if (currentPartIndex === -1) {
       continue;
@@ -151,9 +180,33 @@ function buildWatchLocationState(request: WatchRouteRequest) {
   };
 }
 
+function PlaybackPreparingScreen() {
+  return (
+    <div
+      className="bg-background fixed inset-0 z-50 flex items-center justify-center px-6"
+      role="status"
+      aria-live="polite"
+    >
+      <div className="surface-panel-subtle animate-in fade-in flex min-w-[260px] flex-col items-center gap-4 rounded-[1.8rem] px-8 py-7 text-center duration-300">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+        <div className="space-y-1">
+          <p className="text-sm font-medium text-white">Preparing playback</p>
+          <p className="text-xs text-white/55">
+            Loading stream details, subtitles, and resume state.
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export function WatchPlaybackProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
-  const [state, dispatch] = useReducer(watchPlaybackReducer, undefined, createEmptyPlaybackState);
+  const [state, dispatch] = useReducer(
+    watchPlaybackReducer,
+    undefined,
+    createEmptyPlaybackState,
+  );
   const stateRef = useRef(state);
   const suppressNextPictureInPictureExitRef = useRef<string | null>(null);
 
@@ -213,7 +266,7 @@ export function WatchPlaybackProvider({ children }: { children: ReactNode }) {
           });
         }
 
-        void navigate(buildWatchHref(request), {
+        navigate(buildWatchHref(request), {
           state: buildWatchLocationState(request),
           viewTransition: true,
         });
@@ -238,7 +291,8 @@ export function WatchPlaybackProvider({ children }: { children: ReactNode }) {
             window.setTimeout(() => {
               if (
                 current.mode !== "foreground" &&
-                suppressNextPictureInPictureExitRef.current === currentRequestKey
+                suppressNextPictureInPictureExitRef.current ===
+                  currentRequestKey
               ) {
                 suppressNextPictureInPictureExitRef.current = null;
               }
@@ -261,13 +315,16 @@ export function WatchPlaybackProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "STOP_PLAYBACK" });
   }, []);
 
-  const exitPlayback = useCallback((_options?: { destinationHref?: string }) => {
-    suppressNextPictureInPictureExitRef.current = null;
-    if (typeof document !== "undefined" && document.pictureInPictureElement) {
-      document.exitPictureInPicture().catch(() => {});
-    }
-    dispatch({ type: "EXIT_PLAYBACK" });
-  }, []);
+  const exitPlayback = useCallback(
+    (_options?: { destinationHref?: string }) => {
+      suppressNextPictureInPictureExitRef.current = null;
+      if (typeof document !== "undefined" && document.pictureInPictureElement) {
+        document.exitPictureInPicture().catch(() => {});
+      }
+      dispatch({ type: "EXIT_PLAYBACK" });
+    },
+    [],
+  );
 
   const enterPostRoll = useCallback((requestKey: string) => {
     dispatch({ type: "ENTER_POSTROLL", requestKey });
@@ -283,12 +340,15 @@ export function WatchPlaybackProvider({ children }: { children: ReactNode }) {
       typeof document !== "undefined" &&
       document.pictureInPictureElement
     ) {
-      dispatch({ type: "REQUEST_RETURN_TO_WATCH", requestKey: request.requestKey });
+      dispatch({
+        type: "REQUEST_RETURN_TO_WATCH",
+        requestKey: request.requestKey,
+      });
       document.exitPictureInPicture().catch(() => {});
       return;
     }
 
-    void navigate(buildWatchHref(request), {
+    navigate(buildWatchHref(request), {
       replace: true,
       state: buildWatchLocationState(request),
       viewTransition: true,
@@ -302,7 +362,8 @@ export function WatchPlaybackProvider({ children }: { children: ReactNode }) {
         return;
       }
 
-      const suppressed = suppressNextPictureInPictureExitRef.current === requestKey;
+      const suppressed =
+        suppressNextPictureInPictureExitRef.current === requestKey;
       if (suppressed) {
         suppressNextPictureInPictureExitRef.current = null;
       }
@@ -339,9 +400,13 @@ export function WatchPlaybackProvider({ children }: { children: ReactNode }) {
     () => ({
       state,
       hasDetachedPlayback:
-        !!state.request && state.mode !== "foreground" && state.mode !== "post-roll",
+        !!state.request &&
+        state.mode !== "foreground" &&
+        state.mode !== "post-roll",
       isBackgroundBarVisible:
-        !!state.request && state.mode !== "foreground" && state.mode !== "post-roll",
+        !!state.request &&
+        state.mode !== "foreground" &&
+        state.mode !== "post-roll",
       startPlayback,
       minimizePlayback,
       exitPlayback,
@@ -382,7 +447,9 @@ export function WatchPlaybackProvider({ children }: { children: ReactNode }) {
 export function WatchPlaybackHost() {
   const controller = useContext(WatchPlaybackControllerContext);
   if (!controller) {
-    throw new Error("Watch playback host is unavailable outside WatchPlaybackProvider");
+    throw new Error(
+      "Watch playback host is unavailable outside WatchPlaybackProvider",
+    );
   }
 
   const {
@@ -401,9 +468,41 @@ export function WatchPlaybackHost() {
   const { user } = useAuth();
   const { profile: currentProfile } = useCurrentProfile();
   const canEditMarkers = canEditMarkersForUser(user, currentProfile);
-  const { data: effectivePlaybackSettings = {} } = useEffectiveSettings(currentProfile?.id, [
-    AUTO_SKIP_INTRO_KEY,
-  ]);
+  const settingsCapabilities = useSettingsCapabilities();
+  // Three answers, not two: the connected server defines the enum, it provably
+  // does not, or nobody knows yet. settingsCapabilitiesSupportKey collapses the
+  // last two into false, so the query's own state is what separates them.
+  const capabilitiesKnown = settingsCapabilities.isSuccess;
+  const supportsIntroSkipMode =
+    capabilitiesKnown &&
+    settingsCapabilitiesSupportKey(
+      settingsCapabilities.data,
+      SETTING_KEYS.PLAYBACK_INTRO_SKIP_MODE,
+    );
+  // Resolved through the contract, so a device override winning over the
+  // profile's own choice is the manifest's resolution order rather than a
+  // precedence rule spelled out here.
+  //
+  // All three skip preferences are read, not just intros. The manifest declares
+  // every one of them at profile_device, but only the intro override was ever
+  // consulted, so a recap or preview override an admin (or the user) set on a
+  // device silently did nothing. One batched read costs no more than the single
+  // key did and makes all three behave as the contract says they do.
+  const { data: effectivePlaybackSettings } = useEffectiveSettings({
+    keys: [
+      supportsIntroSkipMode
+        ? SETTING_KEYS.PLAYBACK_INTRO_SKIP_MODE
+        : SETTING_KEYS.PLAYBACK_AUTO_SKIP_INTRO,
+      SETTING_KEYS.PLAYBACK_AUTO_SKIP_RECAP,
+      SETTING_KEYS.PLAYBACK_AUTO_PLAY_NEXT_PREVIEW,
+      // The resolution cap, which the quality picker writes canonically and
+      // no longer mirrors into the profile column playback used to read.
+      SETTING_KEYS.PLAYBACK_PREFERRED_QUALITY,
+      // The bandwidth cap that pairs with it; the player keeps its startup
+      // tier under this so the setting does what its label says.
+      SETTING_KEYS.PLAYBACK_MAX_BITRATE_KBPS,
+    ],
+  });
   const request = state.request;
   const isForegroundMode = request != null && state.mode === "foreground";
   const { data: item, error } = useWatchDetail(
@@ -427,9 +526,12 @@ export function WatchPlaybackHost() {
     }
   }, [item, request]);
 
-  const hasResolvedItemForRequest = !!request && !!item && item.content_id === request.contentId;
+  const hasResolvedItemForRequest =
+    !!request && !!item && item.content_id === request.contentId;
   const activeRequest =
-    hasResolvedItemForRequest || isForegroundMode ? request : (renderedSession?.request ?? null);
+    hasResolvedItemForRequest || isForegroundMode
+      ? request
+      : (renderedSession?.request ?? null);
   const activeItem =
     hasResolvedItemForRequest || isForegroundMode
       ? hasResolvedItemForRequest
@@ -445,6 +547,7 @@ export function WatchPlaybackHost() {
       getAccessToken: () => getAccessToken(),
       getProfileId: () => storage.get(storage.KEYS.PROFILE_ID),
       getProfileToken: () => getProfileToken(),
+      getDeviceId: () => getOrCreateDeviceId(),
     }),
     [],
   );
@@ -475,14 +578,18 @@ export function WatchPlaybackHost() {
     const prefetchAndNavigate = async () => {
       if (request.returnHref) {
         clearPendingReturnNavigation(request.requestKey);
-        void navigate(returnHref, { replace: true });
+        navigate(returnHref, { replace: true });
         return;
       }
 
       try {
         await queryClient.fetchQuery({
-          queryKey: catalogKeys.itemDetail(request.contentId, request.libraryId),
-          queryFn: () => fetchCatalogItemDetail(request.contentId, request.libraryId),
+          queryKey: catalogKeys.itemDetail(
+            request.contentId,
+            request.libraryId,
+          ),
+          queryFn: () =>
+            fetchCatalogItemDetail(request.contentId, request.libraryId),
         });
       } catch {
         // Best effort; still navigate so PiP flow is not blocked by a failed prefetch.
@@ -490,7 +597,7 @@ export function WatchPlaybackHost() {
 
       if (!cancelled) {
         clearPendingReturnNavigation(request.requestKey);
-        void navigate(fallbackItemHref, { replace: true });
+        navigate(fallbackItemHref, { replace: true });
       }
     };
 
@@ -510,11 +617,15 @@ export function WatchPlaybackHost() {
   ]);
 
   useEffect(() => {
-    if (!request || state.mode === "foreground" || !state.shouldReturnToWatchPage) {
+    if (
+      !request ||
+      state.mode === "foreground" ||
+      !state.shouldReturnToWatchPage
+    ) {
       return;
     }
 
-    void navigate(buildWatchHref(request), {
+    navigate(buildWatchHref(request), {
       replace: true,
       state: buildWatchLocationState(request),
     });
@@ -547,7 +658,9 @@ export function WatchPlaybackHost() {
 
       if (state.mode !== "foreground") {
         exitPlayback(
-          exitState?.destinationHref ? { destinationHref: exitState.destinationHref } : undefined,
+          exitState?.destinationHref
+            ? { destinationHref: exitState.destinationHref }
+            : undefined,
         );
         return;
       }
@@ -555,7 +668,7 @@ export function WatchPlaybackHost() {
       if (activeRequest) {
         if (exitState?.destinationHref) {
           exitPlayback({ destinationHref: exitState.destinationHref });
-          void navigate(exitState.destinationHref, {
+          navigate(exitState.destinationHref, {
             replace: true,
             viewTransition: true,
           });
@@ -564,22 +677,25 @@ export function WatchPlaybackHost() {
 
         if (activeRequest.roomId && activeRequest.roomToken) {
           exitPlayback();
-          void navigate(`/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`, {
-            replace: true,
-            viewTransition: true,
-            state: {
-              suppressAutoStartSelection: {
-                contentId: activeRequest.contentId,
-                fileId: activeRequest.fileId,
-                libraryId: activeRequest.libraryId,
+          navigate(
+            `/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`,
+            {
+              replace: true,
+              viewTransition: true,
+              state: {
+                suppressAutoStartSelection: {
+                  contentId: activeRequest.contentId,
+                  fileId: activeRequest.fileId,
+                  libraryId: activeRequest.libraryId,
+                },
               },
             },
-          });
+          );
           return;
         }
 
         exitPlayback();
-        void navigate(buildPlaybackReturnHref(activeRequest), {
+        navigate(buildPlaybackReturnHref(activeRequest), {
           replace: true,
           viewTransition: true,
         });
@@ -587,7 +703,7 @@ export function WatchPlaybackHost() {
       }
 
       exitPlayback();
-      void navigate(-1);
+      navigate(-1);
     },
     [activeRequest, applyExitStateToCache, exitPlayback, navigate, state.mode],
   );
@@ -600,26 +716,37 @@ export function WatchPlaybackHost() {
         return;
       }
 
-      const returnHref = activeRequest ? buildPlaybackReturnHref(activeRequest) : "/";
+      const returnHref = activeRequest
+        ? buildPlaybackReturnHref(activeRequest)
+        : "/";
       flushSync(() => {
         minimizePlayback();
       });
-      void navigate(returnHref, {
+      navigate(returnHref, {
         replace: true,
         viewTransition: true,
       });
     },
-    [activeRequest, applyExitStateToCache, minimizePlayback, navigate, state.mode],
+    [
+      activeRequest,
+      applyExitStateToCache,
+      minimizePlayback,
+      navigate,
+      state.mode,
+    ],
   );
 
   const handleNavigateEpisode = useCallback(
     (nextContentId: string) => {
       if (!activeRequest) return;
       if (activeRequest.roomId && activeRequest.roomToken) {
-        void navigate(`/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`, {
-          replace: true,
-          viewTransition: true,
-        });
+        navigate(
+          `/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`,
+          {
+            replace: true,
+            viewTransition: true,
+          },
+        );
         return;
       }
 
@@ -687,10 +814,13 @@ export function WatchPlaybackHost() {
       if (!requestKeyValue) return;
       if (activeRequest?.roomId && activeRequest.roomToken) {
         stopPlayback();
-        void navigate(`/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`, {
-          replace: true,
-          viewTransition: true,
-        });
+        navigate(
+          `/rooms/${activeRequest.roomId}?room_token=${activeRequest.roomToken}`,
+          {
+            replace: true,
+            viewTransition: true,
+          },
+        );
         return;
       }
 
@@ -723,7 +853,7 @@ export function WatchPlaybackHost() {
       if (!activeItem?.series_id) {
         if (activeRequest) {
           stopPlayback();
-          void navigate(buildWatchItemHref(activeRequest));
+          navigate(buildWatchItemHref(activeRequest));
         }
         return;
       }
@@ -748,7 +878,7 @@ export function WatchPlaybackHost() {
   const handlePostRollClose = useCallback(() => {
     if (activeRequest) {
       stopPlayback();
-      void navigate(buildWatchItemHref(activeRequest));
+      navigate(buildWatchItemHref(activeRequest));
     }
   }, [activeRequest, stopPlayback, navigate]);
 
@@ -807,19 +937,7 @@ export function WatchPlaybackHost() {
       return null;
     }
 
-    return (
-      <div className="bg-background fixed inset-0 z-50 flex items-center justify-center px-6">
-        <div className="surface-panel-subtle animate-in fade-in flex min-w-[260px] flex-col items-center gap-4 rounded-[1.8rem] px-8 py-7 text-center duration-300">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
-          <div className="space-y-1">
-            <p className="text-sm font-medium text-white">Preparing playback</p>
-            <p className="text-xs text-white/55">
-              Loading stream details, subtitles, and resume state.
-            </p>
-          </div>
-        </div>
-      </div>
-    );
+    return <PlaybackPreparingScreen />;
   }
 
   if (error && isForeground) {
@@ -827,7 +945,9 @@ export function WatchPlaybackHost() {
       <div className="bg-background fixed inset-0 z-50 flex items-center justify-center px-6">
         <div className="surface-panel-subtle flex max-w-md flex-col items-center gap-4 rounded-[1.8rem] px-8 py-8 text-center">
           <div className="space-y-2">
-            <p className="text-base font-semibold text-white">Playback unavailable</p>
+            <p className="text-base font-semibold text-white">
+              Playback unavailable
+            </p>
             <div className="text-sm text-white/60">
               {error instanceof Error ? error.message : "Item not found"}
             </div>
@@ -844,39 +964,109 @@ export function WatchPlaybackHost() {
     );
   }
 
+  const canonicalQuality = effectivePlaybackSettings?.[
+    SETTING_KEYS.PLAYBACK_PREFERRED_QUALITY
+  ]?.value as string | undefined;
+  const maxBitrateKbps = effectivePlaybackSettings?.[
+    SETTING_KEYS.PLAYBACK_MAX_BITRATE_KBPS
+  ]?.value as number | null | undefined;
   const watchPageProps = buildWatchPageProps({
     request: activeRequest,
     item: activeItem,
     currentProfile,
     seriesEpisodes,
+    // "original" means no cap, which every consumer already spells "auto".
+    // Undefined until the read resolves, which leaves the profile-column
+    // fallback in place rather than blocking playback on a settings fetch.
+    qualityPreference:
+      canonicalQuality === undefined
+        ? undefined
+        : canonicalQuality === "original"
+          ? "auto"
+          : canonicalQuality,
   });
-  const autoSkipIntro = resolveDeviceOverrideBool(
-    effectivePlaybackSettings[AUTO_SKIP_INTRO_KEY],
-    watchPageProps.autoSkipIntro ?? false,
+  // The resolved answer already folds in the profile layer, so the props built
+  // from the profile record are only the pre-resolution fallback.
+  const resolvedBool = (key: SettingKey, fallback: boolean | undefined) =>
+    (effectivePlaybackSettings?.[key]?.value as boolean | undefined) ??
+    fallback ??
+    false;
+
+  // null means "the connected server's answer is not in yet", which the player
+  // treats as "do not prompt and do not skip".
+  //
+  // Deferring is the deliberate choice over guessing. The profile DTO cannot
+  // express `never`: the server mirrors it as auto_skip_intro=false, which
+  // reads back as `ask`. Prompting on that guess can skip an intro the viewer
+  // explicitly asked to keep, while a prompt that arrives a moment late — or
+  // not at all — costs a manual seek. So the lossy fallback is used only where
+  // it is the whole truth: against a server that provably has no enum to read.
+  const introSkipMode: IntroSkipMode | null = (() => {
+    if (supportsIntroSkipMode) {
+      return (
+        (effectivePlaybackSettings?.[SETTING_KEYS.PLAYBACK_INTRO_SKIP_MODE]
+          ?.value as IntroSkipMode | undefined) ?? null
+      );
+    }
+    if (!capabilitiesKnown) return null;
+    // Legacy server. The resolved boolean is read rather than the profile
+    // record so that a profile_device override — this browser told to skip
+    // intros while the household profile is not — keeps working; the record
+    // only carries the profile layer.
+    const legacy = effectivePlaybackSettings?.[
+      SETTING_KEYS.PLAYBACK_AUTO_SKIP_INTRO
+    ]?.value as boolean | undefined;
+    if (legacy === undefined) return watchPageProps.introSkipMode ?? null;
+    return legacy ? "always" : "ask";
+  })();
+  const autoSkipRecap = resolvedBool(
+    SETTING_KEYS.PLAYBACK_AUTO_SKIP_RECAP,
+    watchPageProps.autoSkipRecap,
+  );
+  const autoPlayNextPreview = resolvedBool(
+    SETTING_KEYS.PLAYBACK_AUTO_PLAY_NEXT_PREVIEW,
+    watchPageProps.autoPlayNextPreview,
   );
 
   const playerDisplayMode =
-    state.mode === "foreground" ? "foreground" : isPostRoll ? "postroll" : "detached";
+    state.mode === "foreground"
+      ? "foreground"
+      : isPostRoll
+        ? "postroll"
+        : "detached";
 
   return (
     <PlayerConfigProvider config={playerConfig}>
-      {(isForeground || isPostRoll) && <WatchPlaybackTitle title={activeItem.title} />}
-      <WatchPage
-        {...watchPageProps}
-        autoSkipIntro={autoSkipIntro}
-        canEditMarkers={canEditMarkers}
-        playbackRequestKey={requestKeyValue}
-        onNavigateEpisode={handleNavigateEpisode}
-        onEnded={handleEnded}
-        onExit={handleExit}
-        onMinimize={handleMinimize}
-        displayMode={playerDisplayMode}
-        autoEnterPictureInPicture={state.autoEnterPictureInPicture}
-        onPictureInPictureChange={handlePictureInPictureChange}
-        onPlaybackStateChange={handlePlaybackStateChange}
-        onPlaybackTransportReady={handlePlaybackTransportReady}
-        onReturnFromPostRoll={isPostRoll ? handleReturnFromPostRoll : undefined}
-      />
+      {(isForeground || isPostRoll) && (
+        <WatchPlaybackTitle title={activeItem.title} />
+      )}
+      <Suspense
+        fallback={
+          isForeground || isPostRoll ? <PlaybackPreparingScreen /> : null
+        }
+      >
+        <WatchPage
+          {...watchPageProps}
+          maxBitrateKbps={maxBitrateKbps ?? null}
+          introSkipMode={introSkipMode}
+          autoSkipRecap={autoSkipRecap}
+          autoPlayNextPreview={autoPlayNextPreview}
+          canEditMarkers={canEditMarkers}
+          playbackRequestKey={requestKeyValue}
+          onNavigateEpisode={handleNavigateEpisode}
+          onEnded={handleEnded}
+          onExit={handleExit}
+          onMinimize={handleMinimize}
+          displayMode={playerDisplayMode}
+          autoEnterPictureInPicture={state.autoEnterPictureInPicture}
+          onPictureInPictureChange={handlePictureInPictureChange}
+          onPlaybackStateChange={handlePlaybackStateChange}
+          onPlaybackTransportReady={handlePlaybackTransportReady}
+          onReturnFromPostRoll={
+            isPostRoll ? handleReturnFromPostRoll : undefined
+          }
+        />
+      </Suspense>
       {isPostRoll && (
         <PlayingNextScreen
           seriesId={activeItem.series_id}
@@ -885,7 +1075,9 @@ export function WatchPlaybackHost() {
           continueWatchingItems={continueWatchingItems}
           videoEnded={postRollVideoEnded}
           onPlayNow={
-            nextEpisodeRef ? () => handleNavigateEpisode(nextEpisodeRef.contentId) : undefined
+            nextEpisodeRef
+              ? () => handleNavigateEpisode(nextEpisodeRef.contentId)
+              : undefined
           }
           onPlayItem={(contentId: string) => handleNavigateEpisode(contentId)}
           onClose={handlePostRollClose}
@@ -898,16 +1090,22 @@ export function WatchPlaybackHost() {
 export function WatchPlaybackBar() {
   const controller = useContext(WatchPlaybackControllerContext);
   if (!controller) {
-    throw new Error("Watch playback bar is unavailable outside WatchPlaybackProvider");
+    throw new Error(
+      "Watch playback bar is unavailable outside WatchPlaybackProvider",
+    );
   }
 
-  const { state, isBackgroundBarVisible, returnToWatch, stopPlayback } = controller;
+  const { state, isBackgroundBarVisible, returnToWatch, stopPlayback } =
+    controller;
   const request = state.request;
   const snapshot = state.snapshot;
   const transport = state.transport;
-  const { data: item } = useWatchDetail(request?.contentId, request?.fileId, request?.libraryId);
+  const { data: item } = useWatchDetail(
+    request?.contentId,
+    request?.fileId,
+    request?.libraryId,
+  );
   const [scrubValue, setScrubValue] = useState<number | null>(null);
-  const { bottomOffset } = useVisualViewportOffset();
 
   if (!isBackgroundBarVisible || !request) {
     return null;
@@ -918,10 +1116,7 @@ export function WatchPlaybackBar() {
   const displayedTime = scrubValue ?? snapshot?.currentTime ?? 0;
 
   return (
-    <div
-      className="bottom-safe-3 pointer-events-none fixed inset-x-3 z-40 flex justify-center"
-      style={bottomOffset > 0 ? { transform: `translateY(-${bottomOffset}px)` } : undefined}
-    >
+    <div className="pointer-events-none fixed inset-x-3 bottom-3 z-40 flex justify-center">
       <div className="glass-dark border-border/70 pointer-events-auto w-full max-w-4xl rounded-2xl border px-4 py-3 shadow-[0_24px_80px_-32px_rgba(0,0,0,0.7)] backdrop-blur-xl">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="min-w-0 flex-1">
@@ -930,9 +1125,12 @@ export function WatchPlaybackBar() {
                 <Play className="ml-0.5 h-4 w-4 fill-current" />
               </div>
               <div className="min-w-0">
-                <div className="truncate text-sm font-semibold text-white">{title}</div>
+                <div className="truncate text-sm font-semibold text-white">
+                  {title}
+                </div>
                 <div className="text-xs text-white/60">
-                  {subtitle ?? (snapshot ? "Background playback" : "Preparing playback")}
+                  {subtitle ??
+                    (snapshot ? "Background playback" : "Preparing playback")}
                 </div>
               </div>
               {state.pictureInPictureActive && (

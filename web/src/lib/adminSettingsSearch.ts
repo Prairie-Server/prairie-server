@@ -23,20 +23,29 @@ import {
 } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 
-import type { SettingsSearchGroup, SettingsSearchItem } from "@/components/settings/settingsSearch";
+import type {
+  SettingsSearchGroup,
+  SettingsSearchItem,
+} from "@/components/settings/settingsSearch";
 
 export interface AdminSettingsSearchItem extends SettingsSearchItem {
   id: string;
   label: string;
   description: string;
   keywords?: readonly string[];
-  settings?: readonly { label: string; description?: string; keywords?: readonly string[] }[];
+  settings?: readonly {
+    label: string;
+    description?: string;
+    keywords?: readonly string[];
+  }[];
   icon: LucideIcon;
 }
 
-export type AdminSettingsSearchGroup = SettingsSearchGroup<AdminSettingsSearchItem>;
+export type AdminSettingsSearchGroup =
+  SettingsSearchGroup<AdminSettingsSearchItem>;
 
-const settingIndex = (...labels: string[]) => labels.map((label) => ({ label }));
+const settingIndex = (...labels: string[]) =>
+  labels.map((label) => ({ label }));
 
 // Tab ids are stable URL state (?tab=...) — regroup or reorder freely, but
 // renaming an id breaks bookmarks and deep links.
@@ -48,15 +57,34 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
         id: "about",
         label: "About",
         description: "Server version, update status, and changelog.",
-        keywords: ["version", "build", "update", "changelog", "release notes", "revision", "git"],
-        settings: settingIndex("Version", "Update status", "Latest version", "Changelog"),
+        keywords: [
+          "version",
+          "build",
+          "update",
+          "changelog",
+          "release notes",
+          "revision",
+          "git",
+        ],
+        settings: settingIndex(
+          "Version",
+          "Update status",
+          "Latest version",
+          "Changelog",
+        ),
         icon: Info,
       },
       {
         id: "general",
         label: "General",
         description: "Authentication, token lifetimes, and server logging.",
-        keywords: ["access token", "refresh token", "expiry", "log level", "quiet subsystems"],
+        keywords: [
+          "access token",
+          "refresh token",
+          "expiry",
+          "log level",
+          "quiet subsystems",
+        ],
         settings: settingIndex(
           "Access Token Expiry",
           "Refresh Token Expiry",
@@ -68,7 +96,8 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "branding",
         label: "Branding",
-        description: "White-label logo, favicon, server name, login background, and accent color.",
+        description:
+          "White-label logo, favicon, server name, login background, and accent color.",
         keywords: [
           "logo",
           "wordmark",
@@ -81,12 +110,17 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
           "default theme",
           "app name",
           "pwa",
+          "light theme logo",
+          "light wordmark",
+          "light icon",
         ],
         settings: settingIndex(
           "Server Name",
           "Login Page Subtitle",
           "Logo (wordmark)",
+          "Logo (wordmark, light themes)",
           "Logo (icon)",
+          "Logo (icon, light themes)",
           "Favicon",
           "Login Background",
           "Brand Accent Color",
@@ -97,16 +131,33 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "theming",
         label: "Theming",
-        description: "Server theme token overrides, custom CSS, and the theme catalog.",
-        keywords: ["theme", "custom css", "community themes", "appearance", "token overrides"],
-        settings: settingIndex("Preview", "Token Overrides", "Custom CSS", "Theme Catalog URL"),
+        description:
+          "Server theme token overrides, custom CSS, and the theme catalog.",
+        keywords: [
+          "theme",
+          "custom css",
+          "community themes",
+          "appearance",
+          "token overrides",
+        ],
+        settings: settingIndex(
+          "Preview",
+          "Token Overrides",
+          "Custom CSS",
+          "Theme Catalog URL",
+        ),
         icon: Paintbrush,
       },
       {
         id: "overlays",
         label: "Card Overlays",
         description: "Server-wide poster badge and overlay defaults.",
-        keywords: ["poster", "badges", "defaults.card_overlays", "overlay preset"],
+        keywords: [
+          "poster",
+          "badges",
+          "defaults.card_overlays",
+          "overlay preset",
+        ],
         settings: settingIndex(
           "Card Overlays Enabled",
           "Default Configuration",
@@ -124,8 +175,14 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "scanner",
         label: "Scanner & Matcher",
-        description: "Scan workers, matcher workers, batch size, and image caching.",
-        keywords: ["scanner workers", "matcher workers", "batch size", "metadata cache images"],
+        description:
+          "Scan workers, matcher workers, batch size, and image caching.",
+        keywords: [
+          "scanner workers",
+          "matcher workers",
+          "batch size",
+          "metadata cache images",
+        ],
         settings: settingIndex(
           "Scanner Workers",
           "Matcher Workers",
@@ -137,7 +194,8 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "search",
         label: "Search",
-        description: "Catalog search provider, Meilisearch connection, and index maintenance.",
+        description:
+          "Catalog search provider, Meilisearch connection, and index maintenance.",
         keywords: [
           "catalog search",
           "meilisearch",
@@ -177,7 +235,8 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "intro",
         label: "Intro Markers",
-        description: "Marker lookup mode, playback fetches, providers, and submissions.",
+        description:
+          "Marker lookup mode, playback fetches, providers, and submissions.",
         keywords: [
           "intro",
           "credits",
@@ -199,8 +258,15 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "subtitles",
         label: "Subtitles",
-        description: "Downloaded subtitles, provider settings, and subtitle appearance.",
-        keywords: ["opensubtitles", "providers", "subtitle language", "caption", "downloaded"],
+        description:
+          "Downloaded subtitles, provider settings, and subtitle appearance.",
+        keywords: [
+          "opensubtitles",
+          "providers",
+          "subtitle language",
+          "caption",
+          "downloaded",
+        ],
         settings: settingIndex(
           "Provider settings",
           "Downloaded subtitles",
@@ -214,7 +280,8 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "ai",
         label: "AI Services",
-        description: "AI provider endpoints, translation, transcription, and quotas.",
+        description:
+          "AI provider endpoints, translation, transcription, and quotas.",
         keywords: [
           "openai",
           "ollama",
@@ -255,7 +322,8 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "playback",
         label: "Playback",
-        description: "FFmpeg, transcoding, hardware acceleration, segments, and resume behavior.",
+        description:
+          "FFmpeg, transcoding, hardware acceleration, segments, and resume behavior.",
         keywords: [
           "ffmpeg",
           "transcode",
@@ -278,6 +346,7 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
           "Chapter Thumbnail Execution",
           "Chapter Thumbnail Node Capacity",
           "HDR Chapter Thumbnail Policy",
+          "Enable CPU Tone Mapping",
           "Watched Threshold (%)",
           "Min Resume Threshold (%)",
         ),
@@ -286,8 +355,14 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "downloads",
         label: "Downloads",
-        description: "Download enablement, bandwidth, concurrency, and period limits.",
-        keywords: ["bandwidth", "concurrent downloads", "download limit", "period duration"],
+        description:
+          "Download enablement, bandwidth, concurrency, and period limits.",
+        keywords: [
+          "bandwidth",
+          "concurrent downloads",
+          "download limit",
+          "period duration",
+        ],
         settings: settingIndex(
           "Downloads Enabled",
           "Server Bandwidth (Mbps)",
@@ -307,7 +382,15 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
         id: "watch-providers",
         label: "Watch Providers",
         description: "Provider integrations for watch history and scrobbling.",
-        keywords: ["trakt", "simkl", "import", "export", "scrobble", "watch history", "favorites"],
+        keywords: [
+          "trakt",
+          "simkl",
+          "import",
+          "export",
+          "scrobble",
+          "watch history",
+          "favorites",
+        ],
         settings: settingIndex(
           "Trakt Client ID",
           "Trakt Client Secret",
@@ -327,8 +410,16 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "email",
         label: "Email",
-        description: "SMTP delivery, sender address, digest schedule, and external URL.",
-        keywords: ["smtp", "mail", "from address", "digest", "external url", "tls"],
+        description:
+          "SMTP delivery, sender address, digest schedule, and external URL.",
+        keywords: [
+          "smtp",
+          "mail",
+          "from address",
+          "digest",
+          "external url",
+          "tls",
+        ],
         settings: settingIndex(
           "Email Enabled",
           "From Address",
@@ -408,8 +499,16 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "compatibility-proxies",
         label: "Compatibility Proxies",
-        description: "Jellyfin and Audiobookshelf compatibility proxy settings.",
-        keywords: ["jellyfin", "audiobookshelf", "abs", "public url", "server id", "session ttl"],
+        description:
+          "Jellyfin and Audiobookshelf compatibility proxy settings.",
+        keywords: [
+          "jellyfin",
+          "audiobookshelf",
+          "abs",
+          "public url",
+          "server id",
+          "session ttl",
+        ],
         settings: settingIndex(
           "Public URL",
           "Server Name",
@@ -424,8 +523,16 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "rate-limiting",
         label: "Rate Limiting",
-        description: "Request limits, API tiers, admin limits, and authentication throttles.",
-        keywords: ["limits", "tiers", "requests", "throttle", "429", "api keys"],
+        description:
+          "Request limits, API tiers, admin limits, and authentication throttles.",
+        keywords: [
+          "limits",
+          "tiers",
+          "requests",
+          "throttle",
+          "429",
+          "api keys",
+        ],
         settings: settingIndex(
           "Enable Rate Limiting",
           "Backend",
@@ -451,7 +558,8 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "database",
         label: "Database",
-        description: "Postgres, Redis, user database pooling, and Litestream settings.",
+        description:
+          "Postgres, Redis, user database pooling, and Litestream settings.",
         keywords: [
           "postgres",
           "redis",
@@ -476,8 +584,17 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
       {
         id: "storage",
         label: "Storage",
-        description: "Public and private S3 storage buckets, endpoints, and credentials.",
-        keywords: ["s3", "bucket", "endpoint", "region", "access key", "secret key", "uploads"],
+        description:
+          "Public and private S3 storage buckets, endpoints, and credentials.",
+        keywords: [
+          "s3",
+          "bucket",
+          "endpoint",
+          "region",
+          "access key",
+          "secret key",
+          "uploads",
+        ],
         settings: settingIndex(
           "Endpoint",
           "Region",
@@ -523,4 +640,6 @@ export const ADMIN_SETTINGS_GROUPS: AdminSettingsSearchGroup[] = [
   },
 ];
 
-export const ADMIN_SETTINGS_NAV = ADMIN_SETTINGS_GROUPS.flatMap((group) => group.items);
+export const ADMIN_SETTINGS_NAV = ADMIN_SETTINGS_GROUPS.flatMap(
+  (group) => group.items,
+);

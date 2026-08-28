@@ -9,7 +9,7 @@ tags:
 audience:
   - end-user
   - operator
-last_reviewed: 2026-04-11
+last_reviewed: 2026-08-20
 related: []
 ---
 
@@ -40,7 +40,8 @@ rewriting.
 
 ## Deployment
 
-- No pages yet.
+- [Deploy Silo with Docker](deployment/docker.md) - Install and operate Silo with Docker Compose,
+  including storage, GPU acceleration, search, distributed roles, tuning, backups, and updates.
 
 ## Troubleshooting
 
@@ -52,8 +53,8 @@ rewriting.
 - Prefer updating existing pages over creating duplicates.
 - Use YAML frontmatter and portable Markdown.
 - Add `## Source References` sections instead of copying code into docs.
-- Reserve `docs/wiki/` for end-user and operator docs. Keep architecture, specs, and plans in
-  `docs/architecture/` or `docs/superpowers/`.
+- Reserve `docs/wiki/` for end-user and operator docs. Keep architecture material in
+  `docs/architecture/`.
 - When a page is added, replace the matching `No pages yet.` line with bullet entries in this form:
   `- [Page Title](section/file.md) - one-line summary`
 - When a section already has pages, append a new bullet instead of adding prose.

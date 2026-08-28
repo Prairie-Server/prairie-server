@@ -22,8 +22,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { AlertTriangle, Info, Loader2, Pencil, Plus, RefreshCw, Save, Trash2 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  AlertTriangle,
+  Info,
+  Loader2,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Save,
+  Trash2,
+} from "lucide-react";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { formatDateTime } from "@/lib/datetime";
 
@@ -84,7 +98,9 @@ function NodeSection({
               <TableHead>Group</TableHead>
               <TableHead>Status</TableHead>
               <TableHead>Health</TableHead>
-              {showJobs && <TableHead>{type === "proxy" ? "Streams" : "Jobs"}</TableHead>}
+              {showJobs && (
+                <TableHead>{type === "proxy" ? "Streams" : "Jobs"}</TableHead>
+              )}
               {type === "proxy" && <TableHead>Egress</TableHead>}
               <TableHead>Last Check</TableHead>
               <TableHead className="w-32">Actions</TableHead>
@@ -93,7 +109,10 @@ function NodeSection({
           <TableBody>
             {nodes.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={colCount} className="text-muted-foreground py-8 text-center">
+                <TableCell
+                  colSpan={colCount}
+                  className="text-muted-foreground py-8 text-center"
+                >
                   <div className="space-y-2">
                     <p>
                       {type === "proxy"
@@ -112,7 +131,9 @@ function NodeSection({
                 return (
                   <TableRow key={node.id}>
                     <TableCell className="font-medium">{node.name}</TableCell>
-                    <TableCell className="font-mono text-sm">{node.url}</TableCell>
+                    <TableCell className="font-mono text-sm">
+                      {node.url}
+                    </TableCell>
                     <TableCell>
                       {node.group ? (
                         <Badge variant="outline">{node.group}</Badge>
@@ -121,7 +142,10 @@ function NodeSection({
                       )}
                     </TableCell>
                     <TableCell>
-                      <Switch checked={node.enabled} onCheckedChange={() => onToggle(node)} />
+                      <Switch
+                        checked={node.enabled}
+                        onCheckedChange={() => onToggle(node)}
+                      />
                     </TableCell>
                     <TableCell>
                       <span className="flex items-center gap-1.5">
@@ -135,7 +159,11 @@ function NodeSection({
                           }`}
                         />
                         <span className="text-muted-foreground text-sm">
-                          {!node.enabled ? "Disabled" : node.healthy ? "Healthy" : "Unhealthy"}
+                          {!node.enabled
+                            ? "Disabled"
+                            : node.healthy
+                              ? "Healthy"
+                              : "Unhealthy"}
                         </span>
                       </span>
                     </TableCell>
@@ -143,7 +171,10 @@ function NodeSection({
                       <TableCell>
                         {node.active_jobs}
                         {node.max_jobs != null && (
-                          <span className="text-muted-foreground"> / {node.max_jobs}</span>
+                          <span className="text-muted-foreground">
+                            {" "}
+                            / {node.max_jobs}
+                          </span>
                         )}
                       </TableCell>
                     )}
@@ -160,7 +191,9 @@ function NodeSection({
                       </TableCell>
                     )}
                     <TableCell className="text-muted-foreground text-xs">
-                      {node.last_health_check ? formatDateTime(node.last_health_check) : "Never"}
+                      {node.last_health_check
+                        ? formatDateTime(node.last_health_check)
+                        : "Never"}
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
@@ -229,7 +262,9 @@ function NodeForm({
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   const urlPlaceholder =
-    nodeType === "proxy" ? "https://proxy1.example.com" : "http://10.0.0.5:8082";
+    nodeType === "proxy"
+      ? "https://proxy1.example.com"
+      : "http://10.0.0.5:8082";
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -247,7 +282,10 @@ function NodeForm({
         : Math.round(parsedMaxBandwidthMbps * 1000),
     };
     if (node) {
-      updateMutation.mutate({ id: node.id, body: fields }, { onSuccess: onClose });
+      updateMutation.mutate(
+        { id: node.id, body: fields },
+        { onSuccess: onClose },
+      );
     } else {
       const body: CreateNodeRequest = { type: nodeType, ...fields };
       createMutation.mutate(body, { onSuccess: onClose });
@@ -261,7 +299,9 @@ function NodeForm({
         <Input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder={nodeType === "proxy" ? "Proxy Node 1" : "Transcode Node 1"}
+          placeholder={
+            nodeType === "proxy" ? "Proxy Node 1" : "Transcode Node 1"
+          }
           required
         />
       </div>
@@ -283,8 +323,8 @@ function NodeForm({
         />
         {nodeType === "transcode" ? (
           <p className="text-muted-foreground text-sm">
-            Must be reachable from proxy nodes and the backend server. A private/internal IP or
-            localhost is fine — no public URL needed.
+            Must be reachable from proxy nodes and the backend server. A
+            private/internal IP or localhost is fine — no public URL needed.
           </p>
         ) : (
           <p className="text-muted-foreground text-sm">
@@ -295,11 +335,16 @@ function NodeForm({
 
       <div className="space-y-2">
         <Label>Group</Label>
-        <Input value={group} onChange={(e) => setGroup(e.target.value)} placeholder="e.g. rack-1" />
+        <Input
+          value={group}
+          onChange={(e) => setGroup(e.target.value)}
+          placeholder="e.g. rack-1"
+        />
         <p className="text-muted-foreground text-sm">
-          Optional. Nodes in the same group are treated as co-located: transcoded streams are served
-          by a proxy from the transcode node's group, keeping traffic on the same LAN. A group is
-          only used while all of its nodes are healthy.
+          Optional. Nodes in the same group are treated as co-located:
+          transcoded streams are served by a proxy from the transcode node's
+          group, keeping traffic on the same LAN. A group is only used while all
+          of its nodes are healthy.
         </p>
       </div>
 
@@ -313,7 +358,8 @@ function NodeForm({
           placeholder="Unlimited"
         />
         <p className="text-muted-foreground text-sm">
-          Optional concurrency cap for this node. Leave empty (or 0) for unlimited.
+          Optional concurrency cap for this node. Leave empty (or 0) for
+          unlimited.
         </p>
       </div>
 
@@ -329,9 +375,10 @@ function NodeForm({
             placeholder="Unlimited"
           />
           <p className="text-muted-foreground text-sm">
-            Optional. New streams are routed elsewhere once this node's measured egress (plus the
-            expected bitrate of the new stream) would exceed the cap. Active streams are never
-            interrupted. Leave empty (or 0) for unlimited.
+            Optional. New streams are routed elsewhere once this node's measured
+            egress (plus the expected bitrate of the new stream) would exceed
+            the cap. Active streams are never interrupted. Leave empty (or 0)
+            for unlimited.
           </p>
         </div>
       )}
@@ -349,7 +396,9 @@ export default function AdminNodes() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingNode, setEditingNode] = useState<StreamNode | null>(null);
   const [addingNodeType, setAddingNodeType] = useState<NodeType | null>(null);
-  const [confirmDeleteNode, setConfirmDeleteNode] = useState<StreamNode | null>(null);
+  const [confirmDeleteNode, setConfirmDeleteNode] = useState<StreamNode | null>(
+    null,
+  );
   const deleteMutation = useDeleteNode();
   const checkHealthMutation = useCheckNodeHealth();
   const toggleMutation = useToggleNode();
@@ -396,10 +445,12 @@ export default function AdminNodes() {
     <div className="page-shell space-y-8 py-4 sm:py-6">
       <div className="page-header gap-5">
         <div className="space-y-3">
-          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Stream Nodes</h1>
+          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
+            Stream Nodes
+          </h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Manage proxy and transcode workers that distribute playback load across your
-            infrastructure.
+            Manage proxy and transcode workers that distribute playback load
+            across your infrastructure.
           </p>
         </div>
       </div>
@@ -432,7 +483,10 @@ export default function AdminNodes() {
         infoBanner={
           <div className="surface-panel-subtle text-info flex items-start gap-2 rounded-xl p-3 text-sm">
             <Info className="mt-0.5 h-4 w-4 shrink-0" />
-            <p>Proxy nodes relay streams to end users. The URL must be publicly accessible.</p>
+            <p>
+              Proxy nodes relay streams to end users. The URL must be publicly
+              accessible.
+            </p>
           </div>
         }
       />
@@ -452,8 +506,10 @@ export default function AdminNodes() {
             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
             <p>
               Transcode nodes handle video transcoding internally.{" "}
-              <strong>Must be on the same network as proxy nodes and the backend.</strong> Does not
-              need a public URL.
+              <strong>
+                Must be on the same network as proxy nodes and the backend.
+              </strong>{" "}
+              Does not need a public URL.
             </p>
           </div>
         }

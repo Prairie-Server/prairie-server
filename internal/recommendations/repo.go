@@ -366,28 +366,8 @@ func (r *Repo) findTasteProfileCandidates(
 		if len(filter.AllowedLibraryIDs) == 0 {
 			return []ScoredItem{}, map[string][]string{}, nil
 		}
-		conditions = append(conditions, fmt.Sprintf(`
-			EXISTS (
-				SELECT 1
-				FROM media_item_libraries mil
-				WHERE mil.content_id = mi.content_id
-				  AND mil.media_folder_id = ANY($%d)
-			)`, argIdx))
-		args = append(args, filter.AllowedLibraryIDs)
-		argIdx++
 	}
-
-	if len(filter.DisabledLibraryIDs) > 0 {
-		conditions = append(conditions, fmt.Sprintf(`
-			EXISTS (
-				SELECT 1
-				FROM media_item_libraries mil
-				WHERE mil.content_id = mi.content_id
-				  AND mil.media_folder_id != ALL($%d)
-			)`, argIdx))
-		args = append(args, filter.DisabledLibraryIDs)
-		argIdx++
-	}
+	catalog.ApplyLibraryAccessFilter("mi.content_id", filter, &conditions, &args, &argIdx)
 
 	if filter.MaxContentRating != "" {
 		allowedRatings := access.AllowedRatingsUpTo(filter.MaxContentRating)
@@ -1602,30 +1582,10 @@ func (r *Repo) FilterAccessibleItemIDs(ctx context.Context, itemIDs []string, fi
 		argIdx++
 	}
 
-	if filter.AllowedLibraryIDs != nil {
-		if len(filter.AllowedLibraryIDs) == 0 {
-			return map[string]struct{}{}, nil
-		}
-		conditions = append(conditions, fmt.Sprintf(`
-			EXISTS (
-				SELECT 1
-				FROM media_item_libraries mil
-				WHERE mil.content_id = mi.content_id
-				  AND mil.media_folder_id = ANY($%d)
-			)`, argIdx))
-		args = append(args, filter.AllowedLibraryIDs)
-		argIdx++
-	} else if len(filter.DisabledLibraryIDs) > 0 {
-		conditions = append(conditions, fmt.Sprintf(`
-			EXISTS (
-				SELECT 1
-				FROM media_item_libraries mil
-				WHERE mil.content_id = mi.content_id
-				  AND mil.media_folder_id != ALL($%d)
-			)`, argIdx))
-		args = append(args, filter.DisabledLibraryIDs)
-		argIdx++
+	if filter.AllowedLibraryIDs != nil && len(filter.AllowedLibraryIDs) == 0 {
+		return map[string]struct{}{}, nil
 	}
+	catalog.ApplyLibraryAccessFilter("mi.content_id", filter, &conditions, &args, &argIdx)
 
 	if filter.MaxContentRating != "" {
 		allowedRatings := access.AllowedRatingsUpTo(filter.MaxContentRating)
@@ -1634,6 +1594,7 @@ func (r *Repo) FilterAccessibleItemIDs(ctx context.Context, itemIDs []string, fi
 		}
 		conditions = append(conditions, fmt.Sprintf("mi.content_rating = ANY($%d)", argIdx))
 		args = append(args, allowedRatings)
+		argIdx++
 	}
 
 	rows, err := r.pool.Query(ctx, fmt.Sprintf(`

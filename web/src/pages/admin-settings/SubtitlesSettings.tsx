@@ -21,7 +21,14 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Eye, EyeOff, Loader2, RotateCcw, Save, ScanSearch } from "lucide-react";
+import {
+  Eye,
+  EyeOff,
+  Loader2,
+  RotateCcw,
+  Save,
+  ScanSearch,
+} from "lucide-react";
 import { CredentialStatus } from "./CredentialStatus";
 
 // ============================================================================
@@ -47,7 +54,9 @@ interface SubtitleTestResult {
   error?: string;
 }
 
-function defaultSubtitleFormState(config: SubtitleProviderConfig): SubtitleProviderFormState {
+function defaultSubtitleFormState(
+  config: SubtitleProviderConfig,
+): SubtitleProviderFormState {
   return {
     enabled: config.enabled,
     api_key: "",
@@ -57,7 +66,10 @@ function defaultSubtitleFormState(config: SubtitleProviderConfig): SubtitleProvi
   };
 }
 
-function subtitleProviderDraft(form: SubtitleProviderFormState, withAccount: boolean) {
+function subtitleProviderDraft(
+  form: SubtitleProviderFormState,
+  withAccount: boolean,
+) {
   const user = form.username;
   const pass = form.password;
   const key = form.api_key;
@@ -88,7 +100,8 @@ function SubtitleProviderCard({ config }: { config: SubtitleProviderConfig }) {
   const displayName = SUBTITLE_PROVIDER_NAMES[providerName] ?? providerName;
   const isOpenSubtitles = providerName === "opensubtitles";
   const credentialsConfigured =
-    (isOpenSubtitles && config.has_credentials) || (!isOpenSubtitles && config.has_api_key);
+    (isOpenSubtitles && config.has_credentials) ||
+    (!isOpenSubtitles && config.has_api_key);
 
   function handleSave() {
     updateProvider.mutate({
@@ -133,17 +146,24 @@ function SubtitleProviderCard({ config }: { config: SubtitleProviderConfig }) {
         <div className="flex items-center gap-3">
           <span className="text-sm font-semibold">{displayName}</span>
           <CredentialStatus
-            configured={isOpenSubtitles ? config.has_credentials : config.has_api_key}
+            configured={
+              isOpenSubtitles ? config.has_credentials : config.has_api_key
+            }
           />
         </div>
         <div className="flex items-center gap-2">
-          <Label htmlFor={`${providerName}-enabled`} className="text-sm font-medium">
+          <Label
+            htmlFor={`${providerName}-enabled`}
+            className="text-sm font-medium"
+          >
             {form.enabled ? "Enabled" : "Disabled"}
           </Label>
           <Switch
             id={`${providerName}-enabled`}
             checked={form.enabled}
-            onCheckedChange={(checked) => setForm((prev) => ({ ...prev, enabled: checked }))}
+            onCheckedChange={(checked) =>
+              setForm((prev) => ({ ...prev, enabled: checked }))
+            }
           />
         </div>
       </div>
@@ -152,55 +172,84 @@ function SubtitleProviderCard({ config }: { config: SubtitleProviderConfig }) {
       {isOpenSubtitles ? (
         <>
           <div className="space-y-1">
-            <Label htmlFor={`${providerName}-username`} className="text-sm font-medium">
+            <Label
+              htmlFor={`${providerName}-username`}
+              className="text-sm font-medium"
+            >
               Username
             </Label>
             <Input
               id={`${providerName}-username`}
               type="text"
               placeholder={
-                config.has_credentials ? "Leave blank to keep current" : "OpenSubtitles username"
+                config.has_credentials
+                  ? "Leave blank to keep current"
+                  : "OpenSubtitles username"
               }
               value={form.username}
-              onChange={(e) => setForm((prev) => ({ ...prev, username: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, username: e.target.value }))
+              }
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor={`${providerName}-password`} className="text-sm font-medium">
+            <Label
+              htmlFor={`${providerName}-password`}
+              className="text-sm font-medium"
+            >
               Password
             </Label>
             <Input
               id={`${providerName}-password`}
               type="password"
               placeholder={
-                config.has_credentials ? "Leave blank to keep current" : "OpenSubtitles password"
+                config.has_credentials
+                  ? "Leave blank to keep current"
+                  : "OpenSubtitles password"
               }
               value={form.password}
-              onChange={(e) => setForm((prev) => ({ ...prev, password: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, password: e.target.value }))
+              }
             />
           </div>
         </>
       ) : (
         <div className="space-y-1">
-          <Label htmlFor={`${providerName}-api-key`} className="text-sm font-medium">
+          <Label
+            htmlFor={`${providerName}-api-key`}
+            className="text-sm font-medium"
+          >
             API Key
           </Label>
           <div className="flex items-center gap-2">
             <Input
               id={`${providerName}-api-key`}
               type={form.showApiKey ? "text" : "password"}
-              placeholder={config.has_api_key ? "Leave blank to keep current" : "Enter API key"}
+              placeholder={
+                config.has_api_key
+                  ? "Leave blank to keep current"
+                  : "Enter API key"
+              }
               value={form.api_key}
-              onChange={(e) => setForm((prev) => ({ ...prev, api_key: e.target.value }))}
+              onChange={(e) =>
+                setForm((prev) => ({ ...prev, api_key: e.target.value }))
+              }
               className="flex-1"
             />
             <Button
               variant="ghost"
               size="icon"
               type="button"
-              onClick={() => setForm((prev) => ({ ...prev, showApiKey: !prev.showApiKey }))}
+              onClick={() =>
+                setForm((prev) => ({ ...prev, showApiKey: !prev.showApiKey }))
+              }
             >
-              {form.showApiKey ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {form.showApiKey ? (
+                <EyeOff className="h-4 w-4" />
+              ) : (
+                <Eye className="h-4 w-4" />
+              )}
             </Button>
           </div>
         </div>
@@ -208,12 +257,24 @@ function SubtitleProviderCard({ config }: { config: SubtitleProviderConfig }) {
 
       {/* Actions */}
       <div className="flex items-center gap-3 pt-1">
-        <Button variant="outline" onClick={handleTest} disabled={testProvider.isPending}>
-          {testProvider.isPending ? <Loader2 className="animate-spin" /> : <ScanSearch />}
+        <Button
+          variant="outline"
+          onClick={handleTest}
+          disabled={testProvider.isPending}
+        >
+          {testProvider.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <ScanSearch />
+          )}
           {testProvider.isPending ? "Testing..." : "Test Connection"}
         </Button>
         <Button onClick={handleSave} disabled={updateProvider.isPending}>
-          {updateProvider.isPending ? <Loader2 className="animate-spin" /> : <Save />}
+          {updateProvider.isPending ? (
+            <Loader2 className="animate-spin" />
+          ) : (
+            <Save />
+          )}
           {updateProvider.isPending ? "Saving..." : "Save"}
         </Button>
         {credentialsConfigured && (
@@ -227,7 +288,9 @@ function SubtitleProviderCard({ config }: { config: SubtitleProviderConfig }) {
           </Button>
         )}
         {testResult !== null && (
-          <span className={`text-sm ${testResult.success ? "text-green-500" : "text-red-500"}`}>
+          <span
+            className={`text-sm ${testResult.success ? "text-green-500" : "text-red-500"}`}
+          >
             {testResult.success
               ? "Connection successful"
               : (testResult.error ?? "Connection failed")}
@@ -235,15 +298,18 @@ function SubtitleProviderCard({ config }: { config: SubtitleProviderConfig }) {
         )}
       </div>
       <p className="text-muted-foreground text-xs">
-        Test Connection uses the values currently entered above. Saving applies provider changes
-        live to new searches.
+        Test Connection uses the values currently entered above. Saving applies
+        provider changes live to new searches.
       </p>
       <AlertDialog open={confirmClear} onOpenChange={setConfirmClear}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Clear {displayName} credentials?</AlertDialogTitle>
+            <AlertDialogTitle>
+              Clear {displayName} credentials?
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              The provider will be disabled and removed from live subtitle searches immediately.
+              The provider will be disabled and removed from live subtitle
+              searches immediately.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -253,10 +319,15 @@ function SubtitleProviderCard({ config }: { config: SubtitleProviderConfig }) {
               disabled={updateProvider.isPending}
               onClick={() =>
                 updateProvider.mutate(
-                  { provider: providerName, config: { enabled: false, clear_credentials: true } },
+                  {
+                    provider: providerName,
+                    config: { enabled: false, clear_credentials: true },
+                  },
                   {
                     onSuccess: () => {
-                      setForm(defaultSubtitleFormState({ ...config, enabled: false }));
+                      setForm(
+                        defaultSubtitleFormState({ ...config, enabled: false }),
+                      );
                       setTestResult(null);
                       setConfirmClear(false);
                     },
@@ -306,17 +377,22 @@ function SearchProvidersContent() {
   return (
     <div className="space-y-4">
       <p className="text-muted-foreground max-w-3xl text-sm">
-        Configure external subtitle search providers. Credentials are stored securely and never
-        returned by the API.
+        Configure external subtitle search providers. Credentials are stored
+        securely and never returned by the API.
       </p>
 
       <div className="max-w-2xl space-y-4">
         {sorted.map((provider) => (
-          <SubtitleProviderCard key={provider.provider_name} config={provider} />
+          <SubtitleProviderCard
+            key={provider.provider_name}
+            config={provider}
+          />
         ))}
         {sorted.length === 0 && (
           <div className="border-border bg-surface rounded-lg border px-5 py-4">
-            <p className="text-muted-foreground text-sm">No subtitle providers configured.</p>
+            <p className="text-muted-foreground text-sm">
+              No subtitle providers configured.
+            </p>
           </div>
         )}
       </div>
@@ -330,8 +406,8 @@ export default function SubtitlesSettings() {
       <div className="mb-6 space-y-2">
         <h2 className="text-xl font-semibold tracking-tight">Subtitles</h2>
         <p className="text-muted-foreground text-sm leading-relaxed">
-          Search providers for downloading subtitles. AI translation and transcription live under AI
-          Services.
+          Search providers for downloading subtitles. AI translation and
+          transcription live under AI Services.
         </p>
       </div>
 

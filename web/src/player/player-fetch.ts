@@ -24,7 +24,8 @@ export class PlayerFetchError extends Error {
 
 /**
  * Performs an authenticated fetch against the configured API.
- * Returns the parsed JSON body for 2xx responses, undefined for 204.
+ * Returns the parsed JSON body for 2xx responses, undefined when the response
+ * carries no body.
  * Throws PlayerFetchError for non-2xx responses.
  */
 export async function playerFetch<T>(
@@ -54,6 +55,8 @@ export async function playerFetch<T>(
     headers["X-Profile-Token"] = profileToken;
   }
 
+  headers["X-Silo-Device-Id"] = config.getDeviceId();
+
   const res = await fetch(`${config.apiBaseUrl}${path}`, {
     ...options,
     headers,
@@ -67,12 +70,18 @@ export async function playerFetch<T>(
     if (text) {
       try {
         const parsed = JSON.parse(text) as PlayerErrorEnvelope;
-        if (typeof parsed.message === "string" && parsed.message.trim().length > 0) {
+        if (
+          typeof parsed.message === "string" &&
+          parsed.message.trim().length > 0
+        ) {
           message = parsed.message.trim();
         } else if (text.trim().length > 0) {
           message = text.trim();
         }
-        if (typeof parsed.error === "string" && parsed.error.trim().length > 0) {
+        if (
+          typeof parsed.error === "string" &&
+          parsed.error.trim().length > 0
+        ) {
           code = parsed.error.trim();
         }
       } catch {
@@ -89,5 +98,10 @@ export async function playerFetch<T>(
     return undefined as T;
   }
 
-  return res.json();
+  // Accepted operations may return either a JSON status object (for example
+  // subtitle translation) or an empty acknowledgement (route diagnostics).
+  // Inspect the payload rather than assigning body semantics to status 202.
+  const text = await res.text();
+  if (text.trim() === "") return undefined as T;
+  return JSON.parse(text) as T;
 }

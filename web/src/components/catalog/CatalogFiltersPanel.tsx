@@ -14,9 +14,14 @@ import {
 } from "@/pages/catalogSearchParams";
 
 import ActiveFilterBadges from "./ActiveFilterBadges";
-import CatalogFilterBar, { CATALOG_SOURCE_ORDER_SORT_FIELD } from "./CatalogFilterBar";
+import CatalogFilterBar, {
+  CATALOG_SOURCE_ORDER_SORT_FIELD,
+} from "./CatalogFilterBar";
 import CatalogFilterSheet from "./CatalogFilterSheet";
-import { countActiveFilters, getActiveFilterBadges } from "./catalogFilterBadges";
+import {
+  countActiveFilters,
+  getActiveFilterBadges,
+} from "./catalogFilterBadges";
 
 export interface CatalogFiltersPanelProps {
   state: CatalogSearchState;
@@ -67,27 +72,40 @@ export default function CatalogFiltersPanel({
     () => getActiveFilterBadges(guidedState, { isAudiobookLibrary }),
     [guidedState, isAudiobookLibrary],
   );
-  const activeCount = useMemo(() => countActiveFilters(guidedState), [guidedState]);
+  const activeCount = useMemo(
+    () => countActiveFilters(guidedState),
+    [guidedState],
+  );
 
   // Section surfaces are generated blocks and do not expose an overlay editor.
   if (isLocked) {
     return (
       <section className="bg-card space-y-2 rounded-lg border p-4">
         <h2 className="text-sm font-medium">Filters</h2>
-        <p className="text-muted-foreground text-sm">Filters are locked to this source.</p>
+        <p className="text-muted-foreground text-sm">
+          Filters are locked to this source.
+        </p>
       </section>
     );
   }
 
   const libraryOptions =
-    libraries ?? state.query_definition.library_ids.map((id) => ({ id, name: `Library ${id}` }));
+    libraries ??
+    state.query_definition.library_ids.map((id) => ({
+      id,
+      name: `Library ${id}`,
+    }));
 
   function update(patch: Partial<GuidedFormState>) {
     const next = { ...toolbarGuidedState, ...patch };
     const nextUsesSourceOrder =
       supportsSourceOrder && next.sortField === CATALOG_SOURCE_ORDER_SORT_FIELD;
     const nextForQuery = nextUsesSourceOrder
-      ? { ...next, sortField: guidedState.sortField, sortOrder: guidedState.sortOrder }
+      ? {
+          ...next,
+          sortField: guidedState.sortField,
+          sortOrder: guidedState.sortOrder,
+        }
       : next;
     const nextQd = guidedStateToQueryDefinition(nextForQuery, qd);
     onStateChange({
@@ -110,7 +128,11 @@ export default function CatalogFiltersPanel({
         resultCountLabel={resultCountLabel}
         resultCountLoading={resultCountLoading}
         sourceOrderLabel={
-          isCollectionSource ? "Collection Order" : supportsSourceOrder ? "List Order" : undefined
+          isCollectionSource
+            ? "Collection Order"
+            : supportsSourceOrder
+              ? "List Order"
+              : undefined
         }
         allowEpisodeMediaScope={!isCollectionSource}
       />

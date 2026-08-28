@@ -1,4 +1,8 @@
-import type { HistoryRemovalScope, HistoryRemovalTargetRequest, ItemDetail } from "@/api/types";
+import type {
+  HistoryRemovalScope,
+  HistoryRemovalTargetRequest,
+  ItemDetail,
+} from "@/api/types";
 
 type HistoryRemovalMediaType = ItemDetail["type"];
 
@@ -18,7 +22,9 @@ export function buildHistoryRemovalTarget(
   };
 }
 
-export function historyRemovalLabelForMediaType(mediaType: HistoryRemovalMediaType): string {
+export function historyRemovalLabelForMediaType(
+  mediaType: HistoryRemovalMediaType,
+): string {
   return historyRemovalScopeForMediaType(mediaType) === "show"
     ? "Remove Show Watch Data"
     : "Remove Watch Data";
@@ -30,7 +36,9 @@ export function historyRemovalDialogTitle(
   if (targets.length > 1) {
     return "Remove selected watch data?";
   }
-  return targets[0]?.scope === "show" ? "Remove show watch data?" : "Remove watch data?";
+  return targets[0]?.scope === "show"
+    ? "Remove show watch data?"
+    : "Remove watch data?";
 }
 
 export function historyRemovalDialogDescription(

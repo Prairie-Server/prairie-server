@@ -3,7 +3,12 @@ import type { FormEvent, ReactNode } from "react";
 import type { Library } from "@/api/types";
 import { Button } from "@/components/ui/button";
 
-import { AdvancedFields, FolderFields, GeneralFields, MetadataFields } from "./LibraryFormSections";
+import {
+  AdvancedFields,
+  FolderFields,
+  GeneralFields,
+  MetadataFields,
+} from "./LibraryFormSections";
 import { useLibraryForm } from "./useLibraryForm";
 
 import { Loader2, Save } from "lucide-react";
@@ -18,7 +23,13 @@ export interface LibraryFormProps {
   savingLabel?: string;
 }
 
-function FormSection({ title, children }: { title: string; children: ReactNode }) {
+function FormSection({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
   return (
     <section className="space-y-3">
       <h3 className="text-muted-foreground text-xs font-semibold tracking-[0.1em] uppercase">

@@ -13,6 +13,24 @@ import (
 
 const OriginalVariant = "original"
 
+// Image types the variant ladder is keyed by. These name the directory segment
+// in a cached artwork key (".../{imageType}/{variant}.{ext}") and the argument
+// every ladder lookup takes, so they are the shared vocabulary for the packages
+// that resolve artwork rather than five copies of the same string literals.
+const (
+	ImagePoster   = "poster"
+	ImageBackdrop = "backdrop"
+	ImageStill    = "still"
+	ImageLogo     = "logo"
+	ImageProfile  = "profile"
+)
+
+// LadderVersion identifies the current shape of the variant ladder returned by
+// VariantWidths. It MUST be bumped whenever VariantWidths changes so the
+// one-shot ladder backfill re-enqueues already-cached artwork and generates the
+// newly-added rungs.
+const LadderVersion = 2
+
 // Build returns an object key for a variant under basePath.
 func Build(basePath, variant, revision, ext string) string {
 	basePath = strings.TrimRight(strings.TrimSpace(basePath), "/")

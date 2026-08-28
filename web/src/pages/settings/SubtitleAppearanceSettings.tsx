@@ -1,7 +1,7 @@
-import { useId, useMemo, useState, type ReactNode } from "react";
-import { RotateCcw, Save, Undo2 } from "lucide-react";
-import { getProfileToken } from "@/api/client";
+import { useId, useState, type ReactNode } from "react";
+import { RotateCcw } from "lucide-react";
 import { SettingsGroup } from "@/components/settings/SettingsGroup";
+import { LanguageSelect } from "@/components/settings/LanguageSelect";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Slider } from "@/components/ui/slider";
@@ -13,15 +13,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  useDeleteDeviceSetting,
-  useEffectiveSettings,
-  useSetDeviceSetting,
-} from "@/hooks/queries/settings";
-import { useUpdateProfile } from "@/hooks/queries/profiles";
-import { useAuth } from "@/hooks/useAuth";
-import { useCurrentProfile } from "@/hooks/useCurrentProfile";
-import { LANGUAGE_OPTIONS } from "@/lib/settingsManifest";
+import { useSubtitleAppearanceSetting } from "@/hooks/queries/subtitleAppearance";
+import { useEffectiveSettings } from "@/hooks/queries/settingValues";
+import { useProfileDefaultWriter } from "@/hooks/queries/profileDefaults";
+import { SETTING_KEYS, type SettingKey } from "@/lib/settingsContract";
+import { optionsFor } from "@/lib/settingsDisplay";
+import { namedLanguageOptionsFor } from "@/lib/languageOptions";
+import { SETTING_DEFINITIONS } from "@/lib/settingsContract";
 import {
   BACKGROUND_STYLE_OPTIONS,
   BG_COLOR_PALETTE,
@@ -29,18 +27,25 @@ import {
   FONT_COLOR_PALETTE,
   FONT_FAMILY_OPTIONS,
   FONT_SIZE_OPTIONS,
-  parseSubtitleAppearance,
   POSITION_OPTIONS,
 } from "@/lib/subtitleAppearance";
 import type { SubtitleAppearance } from "@/lib/subtitleAppearance";
 import { toast } from "sonner";
 
-const SETTINGS_KEY = "subtitle_appearance";
-const SUBTITLE_MODES = [
-  { value: "auto", label: "Auto" },
-  { value: "always", label: "Always" },
-  { value: "off", label: "Off" },
-] as const;
+/* Subtitle behavior is a profile preference; a device tunes only appearance. */
+/**
+ * The behavior modes come from the contract rather than a literal list, so a
+ * member added to the manifest appears here without a matching edit.
+ */
+const SUBTITLE_MODES = optionsFor(
+  SETTING_DEFINITIONS[SETTING_KEYS.PLAYBACK_SUBTITLE_MODE],
+);
+
+const BEHAVIOR_KEYS: SettingKey[] = [
+  SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE,
+  SETTING_KEYS.PLAYBACK_SUBTITLE_MODE,
+  SETTING_KEYS.PLAYBACK_SHOW_FORCED_SUBTITLES,
+];
 
 interface ColorPaletteProps {
   colors: { hex: string; label: string }[];
@@ -77,9 +82,12 @@ function ColorPalette({
           className="h-7 w-7 rounded-full border-2 transition-transform hover:scale-110"
           style={{
             backgroundColor: color.hex,
-            borderColor: selected === color.hex ? "var(--primary)" : "transparent",
+            borderColor:
+              selected === color.hex ? "var(--primary)" : "transparent",
             boxShadow:
-              color.hex === "#000000" ? "inset 0 0 0 1px rgba(255,255,255,0.2)" : undefined,
+              color.hex === "#000000"
+                ? "inset 0 0 0 1px rgba(255,255,255,0.2)"
+                : undefined,
           }}
         />
       ))}
@@ -91,10 +99,19 @@ interface SettingRowProps {
   label: string;
   description?: string;
   labelForControl?: boolean;
-  children: (props: { id: string; labelId: string; descriptionId: string }) => ReactNode;
+  children: (props: {
+    id: string;
+    labelId: string;
+    descriptionId: string;
+  }) => ReactNode;
 }
 
-function SettingRow({ label, description, labelForControl = true, children }: SettingRowProps) {
+function SettingRow({
+  label,
+  description,
+  labelForControl = true,
+  children,
+}: SettingRowProps) {
   const controlId = useId();
   const labelId = useId();
   const descriptionId = useId();
@@ -110,7 +127,10 @@ function SettingRow({ label, description, labelForControl = true, children }: Se
           {label}
         </Label>
         {description ? (
-          <p id={descriptionId} className="text-muted-foreground text-[13px] leading-relaxed">
+          <p
+            id={descriptionId}
+            className="text-muted-foreground text-[13px] leading-relaxed"
+          >
             {description}
           </p>
         ) : null}
@@ -123,17 +143,35 @@ function SettingRow({ label, description, labelForControl = true, children }: Se
 }
 
 export default function SubtitleAppearanceSettings() {
-  const { selectProfile } = useAuth();
-  const { profile } = useCurrentProfile();
-  const { data: effective = {} } = useEffectiveSettings(profile?.id, [SETTINGS_KEY]);
-  const updateMutation = useUpdateProfile();
-  const setDeviceSetting = useSetDeviceSetting();
-  const deleteDeviceSetting = useDeleteDeviceSetting();
-  const currentProfileToken = getProfileToken() ?? undefined;
-  const effectiveEntry = effective[SETTINGS_KEY];
+  const {
+    appearance: effectiveSettings,
+    hasDeviceOverride,
+    save: saveAppearance,
+    reset: resetAppearance,
+    isSaving,
+    isResetting,
+  } = useSubtitleAppearanceSetting();
+  const { data: behavior } = useEffectiveSettings({ keys: BEHAVIOR_KEYS });
+  const { save: saveProfileDefault, isSaving: behaviorSaving } =
+    useProfileDefaultWriter(behavior);
 
-  const effectiveJson = effectiveEntry?.effective_value ?? null;
-  const effectiveSettings = useMemo(() => parseSubtitleAppearance(effectiveJson), [effectiveJson]);
+  // The effective endpoint resolves an unset key to the contract default, so a
+  // control can read its value straight off the answer without a local literal.
+  const subtitleLanguage =
+    (behavior?.[SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE]?.value as
+      string | null | undefined) ?? "";
+  const subtitleLanguageOptions = namedLanguageOptionsFor(
+    SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE,
+    subtitleLanguage,
+    behavior?.[SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE]?.suggested_values,
+  );
+  const subtitleMode =
+    (behavior?.[SETTING_KEYS.PLAYBACK_SUBTITLE_MODE]?.value as
+      string | undefined) ?? "auto";
+  const showForcedSubtitles =
+    (behavior?.[SETTING_KEYS.PLAYBACK_SHOW_FORCED_SUBTITLES]?.value as
+      boolean | undefined) ?? true;
+
   const [draftState, setDraftState] = useState<{
     key: string;
     settings: SubtitleAppearance;
@@ -143,9 +181,13 @@ export default function SubtitleAppearanceSettings() {
   });
 
   const baselineKey = JSON.stringify(effectiveSettings);
-  const settings = draftState.key === baselineKey ? draftState.settings : effectiveSettings;
+  const settings =
+    draftState.key === baselineKey ? draftState.settings : effectiveSettings;
 
-  function update<K extends keyof SubtitleAppearance>(key: K, value: SubtitleAppearance[K]) {
+  function update<K extends keyof SubtitleAppearance>(
+    key: K,
+    value: SubtitleAppearance[K],
+  ) {
     setDraftState((prev) => ({
       key: baselineKey,
       settings: {
@@ -162,44 +204,43 @@ export default function SubtitleAppearanceSettings() {
     });
   }
 
-  function handleSave() {
-    setDeviceSetting.mutate(
-      { key: SETTINGS_KEY, value: JSON.stringify(settings) },
-      {
-        onSuccess: () => toast.success("Subtitle appearance saved"),
-        onError: () => toast.error("Failed to save subtitle appearance"),
-      },
+  async function handleSave() {
+    try {
+      await saveAppearance(settings);
+      toast.success("Subtitle appearance saved");
+    } catch {
+      toast.error("Failed to save subtitle appearance");
+    }
+  }
+
+  async function handleUseFallback() {
+    try {
+      await resetAppearance();
+      toast.success("Subtitle appearance reset");
+    } catch {
+      toast.error("Failed to reset subtitle appearance");
+    }
+  }
+
+  /**
+   * Subtitle behavior writes at profile scope: it is the household member's
+   * choice, not the screen's. A device override would otherwise keep shadowing
+   * the write and snap the control back, so the shared writer clears one when
+   * the resolved value came from this device. A library or series override
+   * still ranks above the profile row, but those are edited where the content
+   * is and stay deliberately untouched here.
+   */
+  function saveBehavior(key: SettingKey, value: unknown) {
+    saveProfileDefault(key, value).catch(() =>
+      toast.error("Failed to save subtitle setting"),
     );
   }
 
-  function handleUseFallback() {
-    deleteDeviceSetting.mutate(
-      { key: SETTINGS_KEY },
-      {
-        onSuccess: () => toast.success("Subtitle appearance reset"),
-        onError: () => toast.error("Failed to reset subtitle appearance"),
-      },
-    );
-  }
-
-  function saveProfileField(body: {
-    subtitle_language?: string;
-    subtitle_mode?: string;
-    show_forced_subtitles?: boolean;
-  }) {
-    if (!profile) return;
-    updateMutation.mutate(
-      { id: profile.id, body },
-      {
-        onSuccess: (updatedProfile) => selectProfile(updatedProfile, currentProfileToken),
-        onError: () => toast.error("Failed to save subtitle setting"),
-      },
-    );
-  }
-
-  const hasUnsavedChanges = JSON.stringify(settings) !== JSON.stringify(effectiveSettings);
-  const hasDeviceOverride = effectiveEntry?.has_device_override ?? false;
-  const usesTextOutline = settings.textOutline || settings.backgroundStyle === "outline";
+  const hasUnsavedChanges =
+    JSON.stringify(settings) !== JSON.stringify(effectiveSettings);
+  const behaviorPending = behaviorSaving;
+  const usesTextOutline =
+    settings.textOutline || settings.backgroundStyle === "outline";
   const isBoxStyle = settings.backgroundStyle === "box";
   const { containerStyle, cueStyle } = computeSubtitleStyles(settings);
 
@@ -207,7 +248,9 @@ export default function SubtitleAppearanceSettings() {
     <div className="space-y-6">
       <div className="space-y-4">
         <div className="space-y-3">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Subtitles</h2>
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
+            Subtitles
+          </h2>
           <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
             Choose when subtitles appear and how they look during playback.
           </p>
@@ -216,50 +259,53 @@ export default function SubtitleAppearanceSettings() {
 
       <SettingsGroup
         title="Behavior"
-        description="These preferences decide which subtitles Prairie chooses by default."
+        description="These preferences decide which subtitles Silo chooses by default."
       >
         <SettingRow
           label="Subtitle language"
           description="Pick a subtitle language or leave subtitles off by default."
         >
           {({ id, descriptionId }) => (
+            <div className="w-full sm:w-[220px]">
+              <LanguageSelect
+                id={id}
+                aria-describedby={descriptionId}
+                value={subtitleLanguage || "none"}
+                options={subtitleLanguageOptions}
+                disabled={behaviorPending}
+                placeholder="None"
+                className="w-full"
+                onValueChange={(value) =>
+                  // The contract spells "no preference" as null, not the empty
+                  // string the legacy profile column used.
+                  saveBehavior(
+                    SETTING_KEYS.PLAYBACK_SUBTITLE_LANGUAGE,
+                    value === "none" ? null : value,
+                  )
+                }
+              >
+                <SelectItem value="none">None</SelectItem>
+              </LanguageSelect>
+            </div>
+          )}
+        </SettingRow>
+
+        <SettingRow
+          label="Subtitle behavior"
+          description="Decide when subtitles should appear."
+        >
+          {({ id, descriptionId }) => (
             <Select
-              value={profile?.subtitle_language || "none"}
+              value={subtitleMode}
               onValueChange={(value) =>
-                saveProfileField({ subtitle_language: value === "none" ? "" : value })
+                saveBehavior(SETTING_KEYS.PLAYBACK_SUBTITLE_MODE, value)
               }
             >
               <SelectTrigger
                 id={id}
                 aria-describedby={descriptionId}
                 className="w-full sm:w-[220px]"
-                disabled={updateMutation.isPending}
-              >
-                <SelectValue placeholder="None" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="none">None</SelectItem>
-                {LANGUAGE_OPTIONS.filter((language) => language.value).map((language) => (
-                  <SelectItem key={language.value} value={language.value}>
-                    {language.label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          )}
-        </SettingRow>
-
-        <SettingRow label="Subtitle behavior" description="Decide when subtitles should appear.">
-          {({ id, descriptionId }) => (
-            <Select
-              value={profile?.subtitle_mode || "auto"}
-              onValueChange={(value) => saveProfileField({ subtitle_mode: value })}
-            >
-              <SelectTrigger
-                id={id}
-                aria-describedby={descriptionId}
-                className="w-full sm:w-[220px]"
-                disabled={updateMutation.isPending}
+                disabled={behaviorPending}
               >
                 <SelectValue />
               </SelectTrigger>
@@ -282,9 +328,14 @@ export default function SubtitleAppearanceSettings() {
             <Switch
               id={id}
               aria-describedby={descriptionId}
-              checked={profile?.show_forced_subtitles ?? true}
-              disabled={updateMutation.isPending}
-              onCheckedChange={(checked) => saveProfileField({ show_forced_subtitles: checked })}
+              checked={showForcedSubtitles}
+              disabled={behaviorPending}
+              onCheckedChange={(checked) =>
+                saveBehavior(
+                  SETTING_KEYS.PLAYBACK_SHOW_FORCED_SUBTITLES,
+                  checked,
+                )
+              }
             />
           )}
         </SettingRow>
@@ -296,7 +347,10 @@ export default function SubtitleAppearanceSettings() {
       >
         <div
           className="surface-panel-subtle relative overflow-hidden rounded-[1.3rem]"
-          style={{ aspectRatio: "16 / 9", background: "linear-gradient(135deg, #0f0f1a, #1a1a3e)" }}
+          style={{
+            aspectRatio: "16 / 9",
+            background: "linear-gradient(135deg, #0f0f1a, #1a1a3e)",
+          }}
         >
           <div
             className="absolute inset-x-0 z-10 flex flex-col items-center gap-1"
@@ -317,23 +371,24 @@ export default function SubtitleAppearanceSettings() {
           </div>
         </div>
         <div className="flex flex-wrap gap-2">
-          <Button onClick={handleSave} disabled={!hasUnsavedChanges || setDeviceSetting.isPending}>
-            <Save />
+          <Button
+            onClick={handleSave}
+            disabled={!hasUnsavedChanges || isSaving}
+          >
             Save Appearance
           </Button>
           <Button
             variant="outline"
             onClick={discardLocalChanges}
-            disabled={!hasUnsavedChanges || setDeviceSetting.isPending}
+            disabled={!hasUnsavedChanges || isSaving}
           >
-            <Undo2 />
             Discard Changes
           </Button>
           {hasDeviceOverride ? (
             <Button
               variant="ghost"
               onClick={handleUseFallback}
-              disabled={deleteDeviceSetting.isPending}
+              disabled={isResetting}
             >
               <RotateCcw className="mr-2 h-4 w-4" />
               Reset Appearance
@@ -342,14 +397,23 @@ export default function SubtitleAppearanceSettings() {
         </div>
       </SettingsGroup>
 
-      <SettingsGroup title="Text" description="Adjust the look and readability of subtitle text.">
+      <SettingsGroup
+        title="Text"
+        description="Adjust the look and readability of subtitle text."
+      >
         <SettingRow label="Font size">
           {({ id, descriptionId }) => (
             <Select
               value={settings.fontSize}
-              onValueChange={(value) => update("fontSize", value as SubtitleAppearance["fontSize"])}
+              onValueChange={(value) =>
+                update("fontSize", value as SubtitleAppearance["fontSize"])
+              }
             >
-              <SelectTrigger id={id} aria-describedby={descriptionId} className="w-full sm:w-48">
+              <SelectTrigger
+                id={id}
+                aria-describedby={descriptionId}
+                className="w-full sm:w-48"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -371,7 +435,11 @@ export default function SubtitleAppearanceSettings() {
                 update("fontFamily", value as SubtitleAppearance["fontFamily"])
               }
             >
-              <SelectTrigger id={id} aria-describedby={descriptionId} className="w-full sm:w-48">
+              <SelectTrigger
+                id={id}
+                aria-describedby={descriptionId}
+                className="w-full sm:w-48"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -435,10 +503,17 @@ export default function SubtitleAppearanceSettings() {
             <Select
               value={settings.backgroundStyle}
               onValueChange={(value) =>
-                update("backgroundStyle", value as SubtitleAppearance["backgroundStyle"])
+                update(
+                  "backgroundStyle",
+                  value as SubtitleAppearance["backgroundStyle"],
+                )
               }
             >
-              <SelectTrigger id={id} aria-describedby={descriptionId} className="w-full sm:w-48">
+              <SelectTrigger
+                id={id}
+                aria-describedby={descriptionId}
+                className="w-full sm:w-48"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -452,7 +527,10 @@ export default function SubtitleAppearanceSettings() {
           )}
         </SettingRow>
 
-        <SettingRow label="Background opacity" description="Only used for boxed subtitles.">
+        <SettingRow
+          label="Background opacity"
+          description="Only used for boxed subtitles."
+        >
           {({ descriptionId }) => (
             <div className="flex w-full max-w-[240px] items-center gap-3">
               <Slider
@@ -463,7 +541,10 @@ export default function SubtitleAppearanceSettings() {
                 step={5}
                 disabled={!isBoxStyle}
                 onValueChange={(values) =>
-                  update("backgroundOpacity", values[0] ?? settings.backgroundOpacity)
+                  update(
+                    "backgroundOpacity",
+                    values[0] ?? settings.backgroundOpacity,
+                  )
                 }
               />
               <span className="text-muted-foreground min-w-10 text-right text-xs font-medium">
@@ -490,9 +571,15 @@ export default function SubtitleAppearanceSettings() {
           {({ id, descriptionId }) => (
             <Select
               value={settings.position}
-              onValueChange={(value) => update("position", value as SubtitleAppearance["position"])}
+              onValueChange={(value) =>
+                update("position", value as SubtitleAppearance["position"])
+              }
             >
-              <SelectTrigger id={id} aria-describedby={descriptionId} className="w-full sm:w-48">
+              <SelectTrigger
+                id={id}
+                aria-describedby={descriptionId}
+                className="w-full sm:w-48"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>

@@ -1,15 +1,28 @@
-import { useState, useEffect, useCallback, useMemo, type MouseEvent } from "react";
+import {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  type MouseEvent,
+} from "react";
 import { Link } from "react-router";
-import { Info, ChevronLeft, ChevronRight, Play, Pause, BookOpen } from "lucide-react";
-import { ArtworkImage } from "@/components/ArtworkImage";
+import {
+  Info,
+  ChevronLeft,
+  ChevronRight,
+  Play,
+  Pause,
+  BookOpen,
+} from "lucide-react";
 import { decodeThumbhash } from "@/lib/thumbhash";
-import { BACKDROP_WIDTHS } from "@/lib/artworkUrl";
 import { HERO_BANNER_SIZE } from "@/lib/design-system";
 import { useAmbientColor } from "@/hooks/useAmbientColor";
 import { cn } from "@/lib/utils";
 import type { SectionItem } from "@/api/types";
 import { buildItemHref, buildMediaPlayHref } from "@/lib/mediaNavigation";
 import { useAudiobookPlaybackController } from "@/pages/audiobooks/player/audiobookPlaybackContext";
+import ViewTransitionLink from "@/components/ViewTransitionLink";
+import { formatHeroMetadata } from "./heroMetadata";
 
 interface HeroBannerProps {
   items: SectionItem[];
@@ -37,16 +50,10 @@ interface HeroBannerProps {
   libraryId?: number;
 }
 
-function formatRuntime(seconds: number | undefined | null): string | null {
-  if (!seconds || seconds <= 0) return null;
-  const minutes = Math.round(seconds / 60);
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  const remaining = minutes % 60;
-  return remaining === 0 ? `${hours}h` : `${hours}h ${remaining}m`;
-}
-
-function heroPlayLabel(item: SectionItem, activeAudiobookPlaying?: boolean | null): string {
+function heroPlayLabel(
+  item: SectionItem,
+  activeAudiobookPlaying?: boolean | null,
+): string {
   if (item.type === "ebook") {
     return "Read";
   }
@@ -121,7 +128,9 @@ export default function HeroBanner({
   // with the progress rail that restarts on slide change.
   useEffect(() => {
     if (slides.length <= 1 || paused) return;
-    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     if (prefersReducedMotion) return;
     const timer = setInterval(next, 8000);
     return () => clearInterval(timer);
@@ -132,17 +141,13 @@ export default function HeroBanner({
   if (slides.length === 0) return null;
   if (!current) return null;
 
-  const metaParts: string[] = [];
-  if (current.year > 0) metaParts.push(String(current.year));
-  if (current.rating_imdb != null) metaParts.push(`IMDb ${current.rating_imdb.toFixed(1)}`);
-  (current.genres ?? []).slice(0, 3).forEach((g) => metaParts.push(g));
-  const runtime = formatRuntime(current.duration_seconds);
-  if (runtime) metaParts.push(runtime);
+  const metadata = formatHeroMetadata(current);
 
   const slideCount = slides.length;
   const padded = (n: number) => String(n).padStart(2, "0");
   const activeAudiobookPlaying =
-    current.type === "audiobook" && audiobookPlayback?.active?.contentId === current.content_id
+    current.type === "audiobook" &&
+    audiobookPlayback?.active?.contentId === current.content_id
       ? audiobookPlayback.active.playing
       : null;
   const playLabel = heroPlayLabel(current, activeAudiobookPlaying);
@@ -165,7 +170,9 @@ export default function HeroBanner({
       className={cn(
         "home-hero group relative w-full overflow-hidden",
         heightClassName,
-        bleed ? "-mt-[96px] mb-0 sm:-mt-[104px]" : "border-border/60 mb-10 border-b",
+        bleed
+          ? "-mt-[96px] mb-0 sm:-mt-[104px]"
+          : "border-border/60 mb-10 border-b",
       )}
       aria-roledescription="carousel"
       aria-label="Featured content"
@@ -178,7 +185,9 @@ export default function HeroBanner({
     >
       {/* Backdrop layers – all stacked, crossfade via opacity */}
       {slides.map((slide, i) => {
-        const thumbhash = slide.backdrop_thumbhash ? decodeThumbhash(slide.backdrop_thumbhash) : "";
+        const thumbhash = slide.backdrop_thumbhash
+          ? decodeThumbhash(slide.backdrop_thumbhash)
+          : "";
         const isActive = i === activeIndex;
         return (
           <div
@@ -196,13 +205,9 @@ export default function HeroBanner({
             }
           >
             {slide.backdrop_url && (
-              <ArtworkImage
+              <img
                 src={slide.backdrop_url}
-                avifSrc={slide.backdrop_avif_url}
-                pngSrc={slide.backdrop_png_url}
                 alt=""
-                widths={BACKDROP_WIDTHS}
-                sizes="100vw"
                 className={`h-full w-full object-cover object-[center_20%] transition-opacity duration-[--duration-slow] will-change-transform ${loaded[i] ? "opacity-100" : "opacity-0"}`}
                 style={{
                   animation: `var(--animate-ken-burns-${i % 2 === 0 ? "a" : "b"})`,
@@ -243,10 +248,10 @@ export default function HeroBanner({
             >
               {current.title}
             </h1>
-            {metaParts.length > 0 && (
+            {metadata.length > 0 && (
               <div className="hero-meta-track mb-5 text-white/85">
-                {metaParts.map((part) => (
-                  <span key={part}>{part}</span>
+                {metadata.map((entry) => (
+                  <span key={entry.key}>{entry.label}</span>
                 ))}
               </div>
             )}
@@ -270,13 +275,13 @@ export default function HeroBanner({
                 )}
                 {playLabel}
               </Link>
-              <Link
+              <ViewTransitionLink
                 to={buildItemHref({ contentId: current.content_id, libraryId })}
                 className="pill pill-glass transition-colors duration-[--duration-fast]"
               >
                 <Info className="h-4 w-4" />
                 More Info
-              </Link>
+              </ViewTransitionLink>
             </div>
           </div>
         </div>
@@ -335,7 +340,11 @@ export default function HeroBanner({
               aria-label={paused ? "Play slideshow" : "Pause slideshow"}
               className="glass-subtle flex h-7 w-7 items-center justify-center rounded-full text-white/80 transition-colors hover:text-white"
             >
-              {paused ? <Play className="size-3" /> : <Pause className="size-3" />}
+              {paused ? (
+                <Play className="size-3" />
+              ) : (
+                <Pause className="size-3" />
+              )}
             </button>
           </div>
           <div className="absolute right-6 bottom-6 z-20 hidden items-center gap-3 sm:flex lg:right-10 lg:bottom-8 xl:right-12">
@@ -361,7 +370,11 @@ export default function HeroBanner({
               aria-label={paused ? "Play slideshow" : "Pause slideshow"}
               className="flex h-7 w-7 items-center justify-center rounded-full text-white/70 transition-colors hover:text-white"
             >
-              {paused ? <Play className="size-3.5" /> : <Pause className="size-3.5" />}
+              {paused ? (
+                <Play className="size-3.5" />
+              ) : (
+                <Pause className="size-3.5" />
+              )}
             </button>
           </div>
         </>

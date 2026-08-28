@@ -21,9 +21,9 @@ vi.mock("@/api/client", () => ({
 }));
 
 vi.mock("@/reader/readest/libs/document", async () => {
-  const actual = await vi.importActual<typeof import("@/reader/readest/libs/document")>(
-    "@/reader/readest/libs/document",
-  );
+  const actual = await vi.importActual<
+    typeof import("@/reader/readest/libs/document")
+  >("@/reader/readest/libs/document");
   return {
     ...actual,
     DocumentLoader: class {
@@ -131,10 +131,18 @@ describe("FoliateBookReader open flow", () => {
   const fileA = makeFile(7, "a.epub");
   const fileB = makeFile(8, "b.epub");
 
-  function ui(file: FileVersion, props: { onReady?: (state: ReaderReadyState) => void } = {}) {
+  function ui(
+    file: FileVersion,
+    props: { onReady?: (state: ReaderReadyState) => void } = {},
+  ) {
     return (
       <QueryClientProvider client={queryClient}>
-        <FoliateBookReader contentID="book-1" file={file} title="Book" {...props} />
+        <FoliateBookReader
+          contentID="book-1"
+          file={file}
+          title="Book"
+          {...props}
+        />
       </QueryClientProvider>
     );
   }
@@ -153,13 +161,17 @@ describe("FoliateBookReader open flow", () => {
     mocks.apiBlob.mockReset();
     mocks.apiKeepalive.mockReset();
     mocks.loaderOpen.mockReset();
-    mocks.api.mockImplementation(async (_path: string, options?: RequestInit) => {
-      if (options?.method === "PUT") {
-        return JSON.parse(String(options.body)) as Record<string, unknown>;
-      }
-      return {};
-    });
-    mocks.apiBlob.mockResolvedValue(new Blob(["epub"], { type: "application/epub+zip" }));
+    mocks.api.mockImplementation(
+      async (_path: string, options?: RequestInit) => {
+        if (options?.method === "PUT") {
+          return JSON.parse(String(options.body)) as Record<string, unknown>;
+        }
+        return {};
+      },
+    );
+    mocks.apiBlob.mockResolvedValue(
+      new Blob(["epub"], { type: "application/epub+zip" }),
+    );
     let urlCounter = 0;
     URL.createObjectURL = vi.fn(() => `blob:mock-${++urlCounter}`);
     URL.revokeObjectURL = vi.fn();
@@ -178,7 +190,9 @@ describe("FoliateBookReader open flow", () => {
     const bookB = makeBook("B");
     const loaderA = deferred<{ book: DestroyableBook }>();
     mocks.loaderOpen.mockImplementation((file: File) =>
-      file.name === "a.epub" ? loaderA.promise : Promise.resolve({ book: bookB }),
+      file.name === "a.epub"
+        ? loaderA.promise
+        : Promise.resolve({ book: bookB }),
     );
     const onReady = vi.fn();
 
@@ -234,7 +248,9 @@ describe("FoliateBookReader open flow", () => {
     expect(bookB.destroy).not.toHaveBeenCalled();
     expect(onReady).toHaveBeenCalledTimes(1);
     expect(onReady).toHaveBeenCalledWith({ toc: bookB.toc });
-    expect(Array.from(container.querySelectorAll("foliate-view"))).toEqual([viewB]);
+    expect(Array.from(container.querySelectorAll("foliate-view"))).toEqual([
+      viewB,
+    ]);
 
     // Relocates from the superseded view must not save progress for its file.
     await act(async () => {
@@ -263,7 +279,11 @@ describe("FoliateBookReader open flow", () => {
     expect(mocks.apiKeepalive).toHaveBeenCalledTimes(1);
     expect(mocks.apiKeepalive).toHaveBeenCalledWith("/ebooks/book-1/progress", {
       method: "PUT",
-      body: JSON.stringify({ file_id: 7, location: "epubcfi(/6/4)", progress: 0.3 }),
+      body: JSON.stringify({
+        file_id: 7,
+        location: "epubcfi(/6/4)",
+        progress: 0.3,
+      }),
     });
 
     // The pending save was consumed; hiding again must not re-send it.
@@ -287,7 +307,9 @@ describe("FoliateBookReader open flow", () => {
     });
 
     const putCalls = () =>
-      mocks.api.mock.calls.filter(([, options]) => (options as RequestInit)?.method === "PUT");
+      mocks.api.mock.calls.filter(
+        ([, options]) => (options as RequestInit)?.method === "PUT",
+      );
     expect(putCalls()).toHaveLength(0);
 
     // The page is alive while hidden; the normal api path can refresh an
@@ -307,7 +329,11 @@ describe("FoliateBookReader open flow", () => {
         "/ebooks/book-1/progress",
         {
           method: "PUT",
-          body: JSON.stringify({ file_id: 7, location: "epubcfi(/6/4)", progress: 0.3 }),
+          body: JSON.stringify({
+            file_id: 7,
+            location: "epubcfi(/6/4)",
+            progress: 0.3,
+          }),
         },
       ]);
 
@@ -342,7 +368,10 @@ describe("FoliateBookReader open flow", () => {
       // 'external-link' event and only runs its own globalThis.open(href,
       // '_blank') when dispatchEvent returns true (no preventDefault).
       const externalLink = (href: string) =>
-        new CustomEvent("external-link", { detail: { href }, cancelable: true });
+        new CustomEvent("external-link", {
+          detail: { href },
+          cancelable: true,
+        });
 
       const httpsEvent = externalLink("https://example.com/page");
       let defaultAllowed = true;
@@ -358,7 +387,11 @@ describe("FoliateBookReader open flow", () => {
         "noopener,noreferrer",
       );
 
-      for (const href of ["javascript:alert(1)", "data:text/html,hi", "not a url"]) {
+      for (const href of [
+        "javascript:alert(1)",
+        "data:text/html,hi",
+        "not a url",
+      ]) {
         let allowed = true;
         await act(async () => {
           allowed = view.dispatchEvent(externalLink(href));
@@ -373,14 +406,18 @@ describe("FoliateBookReader open flow", () => {
 
   it("surfaces a user-facing error when the ebook file fails to load", async () => {
     mocks.apiBlob.mockRejectedValue(
-      new Error("This file is too large to open in the browser (3072 MiB, limit 512 MiB)."),
+      new Error(
+        "This file is too large to open in the browser (3072 MiB, limit 512 MiB).",
+      ),
     );
 
     await act(async () => {
       root.render(ui(fileA));
     });
 
-    expect(container.textContent).toContain("This file is too large to open in the browser");
+    expect(container.textContent).toContain(
+      "This file is too large to open in the browser",
+    );
     expect(container.textContent).not.toContain("Loading reader...");
   });
 
@@ -414,13 +451,23 @@ describe("FoliateBookReader open flow", () => {
 
     // The newer save resolves first; the older response must not overwrite it.
     await act(async () => {
-      secondPut.resolve({ file_id: 7, location: "epubcfi(/6/8)", progress: 0.5 });
+      secondPut.resolve({
+        file_id: 7,
+        location: "epubcfi(/6/8)",
+        progress: 0.5,
+      });
     });
     await act(async () => {
-      firstPut.resolve({ file_id: 7, location: "epubcfi(/6/2)", progress: 0.2 });
+      firstPut.resolve({
+        file_id: 7,
+        location: "epubcfi(/6/2)",
+        progress: 0.2,
+      });
     });
 
-    expect(queryClient.getQueryData(ebookReaderProgressQueryKey("book-1"))).toMatchObject({
+    expect(
+      queryClient.getQueryData(ebookReaderProgressQueryKey("book-1")),
+    ).toMatchObject({
       location: "epubcfi(/6/8)",
       progress: 0.5,
     });

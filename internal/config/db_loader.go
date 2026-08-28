@@ -3,7 +3,9 @@ package config
 import (
 	"fmt"
 	"log/slog"
+	"path/filepath"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -141,7 +143,7 @@ func durationOr(m map[string]string, key string, fallback time.Duration) (time.D
 // no server_id is set in the database settings.
 var defaultJellyfinCompatServerIDFromDB = uuid.NewSHA1(
 	uuid.NameSpaceURL,
-	[]byte("https://prairie.local/jellycompat"),
+	[]byte("https://silo.local/jellycompat"),
 ).String()
 
 // LoadFromDB builds a Config from a map of server_settings key-value pairs.
@@ -308,7 +310,7 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 	cfg.Matcher.EnableTVSeriesRootQueue = enableTVSeriesRootQueue
 
 	// Metadata
-	cacheImages, err := boolOr(m, "metadata.cache_images", true)
+	cacheImages, err := boolOr(m, "metadata.cache_images", false)
 	if err != nil {
 		return nil, err
 	}
@@ -340,9 +342,23 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 	// Artwork (local filesystem cache when public S3 is unconfigured)
 	cfg.Artwork.LocalDir = stringOr(m, "artwork.local_dir", "/var/lib/prairie/artwork")
 
+	// Live TV
+	cfg.LiveTV.DVRPath = stringOr(m, "livetv.dvr_path", DefaultLiveTVDVRPath)
+	liveTVMaxTranscodes, err := intOr(m, "livetv.max_transcodes", DefaultLiveTVMaxTranscodes)
+	if err != nil {
+		return nil, err
+	}
+	cfg.LiveTV.MaxTranscodes = liveTVMaxTranscodes
+	cfg.LiveTV.HWAccel = stringOr(m, "livetv.hw_accel", DefaultLiveTVHWAccel)
+	cfg.LiveTV.HWDecode = stringOr(m, "livetv.hw_decode", DefaultLiveTVHWDecode)
+	cfg.LiveTV.EncoderPreset = stringOr(m, "livetv.encoder_preset", DefaultLiveTVEncoderPreset)
+	cfg.LiveTV.FrameRateCap = stringOr(m, "livetv.framerate_cap", DefaultLiveTVFrameRateCap)
+	cfg.LiveTV.MaxResolution = stringOr(m, "livetv.max_resolution", DefaultLiveTVMaxResolution)
+	cfg.LiveTV.PlayMethod = stringOr(m, "livetv.play_method", DefaultLiveTVPlayMethod)
+
 	// Playback
-	cfg.Playback.FFmpegPath = stringOr(m, "playback.ffmpeg_path", "/usr/lib/jellyfin-ffmpeg/ffmpeg")
-	cfg.Playback.TranscodeDir = stringOr(m, "playback.transcode_dir", DefaultTranscodeDir)
+	cfg.Playback.FFmpegPath = stringOr(m, "playback.ffmpeg_path", "")
+	cfg.Playback.TranscodeDir = stringOr(m, playbackTranscodeDirSettingKey, DefaultTranscodeDir)
 	cfg.Playback.HWAccel = stringOr(m, "playback.hw_accel", "auto")
 	cfg.Playback.HWDevice = stringOr(m, "playback.hw_device", "")
 	chapterThumbnailWorkers, err := intOr(m, "playback.chapter_thumbnail_workers", 1)
@@ -361,19 +377,6 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 		return nil, err
 	}
 	cfg.Playback.TranscodeEnabled = transcodeEnabled
-
-	cfg.LiveTV.DVRPath = stringOr(m, "livetv.dvr_path", DefaultLiveTVDVRPath)
-	liveTVMaxTranscodes, err := intOr(m, "livetv.max_transcodes", DefaultLiveTVMaxTranscodes)
-	if err != nil {
-		return nil, err
-	}
-	cfg.LiveTV.MaxTranscodes = liveTVMaxTranscodes
-	cfg.LiveTV.HWAccel = stringOr(m, "livetv.hw_accel", DefaultLiveTVHWAccel)
-	cfg.LiveTV.HWDecode = stringOr(m, "livetv.hw_decode", DefaultLiveTVHWDecode)
-	cfg.LiveTV.EncoderPreset = stringOr(m, "livetv.encoder_preset", DefaultLiveTVEncoderPreset)
-	cfg.LiveTV.FrameRateCap = stringOr(m, "livetv.framerate_cap", DefaultLiveTVFrameRateCap)
-	cfg.LiveTV.MaxResolution = stringOr(m, "livetv.max_resolution", DefaultLiveTVMaxResolution)
-	cfg.LiveTV.PlayMethod = stringOr(m, "livetv.play_method", DefaultLiveTVPlayMethod)
 
 	// Redis
 	cfg.Redis.URL = stringOr(m, "redis.url", "")
@@ -422,7 +425,7 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 	cfg.JellyfinCompat.PublicURL = stringOr(m, "jellyfin_compat.public_url", "http://127.0.0.1:8096")
 	cfg.JellyfinCompat.EmulatedServerVersion = stringOr(m, "jellyfin_compat.emulated_server_version", DefaultJellyfinCompatEmulatedServerVersion)
 	cfg.JellyfinCompat.ServerID = stringOr(m, "jellyfin_compat.server_id", defaultJellyfinCompatServerIDFromDB)
-	cfg.JellyfinCompat.ServerName = stringOr(m, "jellyfin_compat.server_name", "Prairie")
+	cfg.JellyfinCompat.ServerName = stringOr(m, "jellyfin_compat.server_name", "Silo")
 	webEnabled, err := boolOr(m, "jellyfin_compat.web_enabled", true)
 	if err != nil {
 		return nil, err
@@ -462,7 +465,7 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 		if m["recommendations.embedding_provider"] == "openai" {
 			return "text-embedding-3-small"
 		}
-		return "qwen3-embedding:0.6b"
+		return "all-minilm"
 	}())
 	cfg.Recommendations.EmbeddingAuthToken = stringOr(m, "recommendations.embedding_auth_token", stringOr(m, "recommendations.openai_api_key", ""))
 	cfg.Recommendations.EmbeddingsCron = stringOr(m, "recommendations.embeddings_cron", "0 3 * * *")
@@ -642,8 +645,12 @@ func LoadFromDB(m map[string]string) (*Config, error) {
 	if artifactMaxBytes < 0 {
 		return nil, fmt.Errorf("invalid value for %q: must be non-negative", "download.artifact_max_bytes")
 	}
+	artifactDir := strings.TrimSpace(stringOr(m, downloadArtifactDirSettingKey, ""))
+	if artifactDir != "" && !filepath.IsAbs(artifactDir) {
+		return nil, fmt.Errorf("invalid value for %q: must be an absolute path", downloadArtifactDirSettingKey)
+	}
 	cfg.Download.TranscodeEnabled = downloadTranscodeEnabled
-	cfg.Download.ArtifactDir = stringOr(m, "download.artifact_dir", "")
+	cfg.Download.ArtifactDir = artifactDir
 	cfg.Download.MaxConcurrentPrepares = maxConcurrentPrepares
 	cfg.Download.ArtifactMaxBytes = artifactMaxBytes
 

@@ -281,6 +281,9 @@ func (e *QueryExecutor) buildPreviewPagePlan(
 	argIdx := builder.ArgIdx() + filterArgOffset
 
 	if filterWhere != "" {
+		// QueryBuilder.Build returns a parenthesized expression, so AND-ing
+		// access, library, and other outer constraints onto it cannot let a
+		// match-any OR arm escape them.
 		conditions = append(conditions, filterWhere)
 	}
 	if def.MediaScope != "" && !isEpisodeCatalogScope(def.MediaScope) {
@@ -501,6 +504,16 @@ func buildLibraryScopeJoin(
 			tableName, keyColumn, itemContentExpr, argIdx,
 		))
 		args = append(args, disabledLibraryIDs)
+	}
+
+	if isEpisodeCatalogScope(mediaScope) {
+		parentAccess := AccessFilter{DisabledLibraryIDs: disabledLibraryIDs}
+		if len(allowedLibraryIDs) > 0 {
+			parentAccess.AllowedLibraryIDs = allowedLibraryIDs
+		}
+		var parentClauses []string
+		appendEpisodeParentLibraryAccessByEpisodeID(itemContentExpr, parentAccess, &parentClauses, &args, &argIdx)
+		clauses = append(clauses, parentClauses...)
 	}
 
 	return strings.Join(clauses, " AND "), args, true

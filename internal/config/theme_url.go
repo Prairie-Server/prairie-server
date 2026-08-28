@@ -9,7 +9,7 @@ import (
 // DefaultThemeCatalogURL is the catalog fetched by the runtime when no
 // override is stored. It is also part of the Admin settings effective-value
 // contract, so the UI never has to duplicate or guess the active default.
-const DefaultThemeCatalogURL = "https://raw.githubusercontent.com/prairie-server/prairie-themes/main/catalog.json"
+const DefaultThemeCatalogURL = "https://raw.githubusercontent.com/Prairie-Server/silo-themes/main/catalog.json"
 
 var allowedThemeRemoteHosts = map[string]struct{}{
 	"raw.githubusercontent.com":     {},

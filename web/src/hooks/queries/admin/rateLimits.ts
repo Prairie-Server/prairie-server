@@ -24,17 +24,25 @@ export function useUpdateRateLimitConfig() {
       }),
     onSuccess: async (data) => {
       if (data.restart_required) {
-        toast.success("Rate limit settings saved — restart the server to apply them");
+        toast.success(
+          "Rate limit settings saved — restart the server to apply them",
+        );
       } else {
         toast.success("Rate limit settings saved");
       }
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: adminKeys.rateLimitConfig() }),
+        queryClient.invalidateQueries({
+          queryKey: adminKeys.rateLimitConfig(),
+        }),
         queryClient.invalidateQueries({ queryKey: adminKeys.serverStatus() }),
       ]);
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to save rate limit settings");
+      toast.error(
+        err instanceof Error
+          ? err.message
+          : "Failed to save rate limit settings",
+      );
     },
   });
 }

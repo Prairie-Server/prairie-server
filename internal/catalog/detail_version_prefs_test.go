@@ -3,11 +3,14 @@ package catalog
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"reflect"
 	"testing"
 
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/settingskeys"
 	"github.com/prairie-server/prairie-server/internal/userdb"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 )
@@ -163,11 +166,7 @@ func TestSeriesFolderPathsFromFiles_PrefersObservedRootsAndDedupes(t *testing.T)
 func TestEffectiveAudioTrackIndex_PrefersSeriesAudioPreferenceOverLibraryAndProfile(t *testing.T) {
 	store := newDetailTestStore(t)
 	language := "en"
-	if err := store.UpdateProfile(context.Background(), "profile-1", userstore.UpdateProfileInput{
-		Language: &language,
-	}); err != nil {
-		t.Fatalf("UpdateProfile: %v", err)
-	}
+	setProfileAudioLanguage(t, store, language)
 	if err := store.UpsertLibraryPlaybackPreference(context.Background(), userstore.LibraryPlaybackPreference{
 		ProfileID:     "profile-1",
 		LibraryID:     12,
@@ -175,13 +174,15 @@ func TestEffectiveAudioTrackIndex_PrefersSeriesAudioPreferenceOverLibraryAndProf
 	}); err != nil {
 		t.Fatalf("UpsertLibraryPlaybackPreference: %v", err)
 	}
+	setScopedAudioLanguage(t, store, settingscontract.ScopeProfileLibrary, "", 12, "es")
 	if err := store.SetAudioPreference(context.Background(), userstore.AudioPreference{
 		ProfileID:     "profile-1",
 		SeriesID:      "series-1",
-		AudioLanguage: "fr",
+		AudioLanguage: "es", // stale legacy language must not win
 	}); err != nil {
 		t.Fatalf("SetAudioPreference: %v", err)
 	}
+	setScopedAudioLanguage(t, store, settingscontract.ScopeProfileSeries, "series-1", 0, "fr")
 
 	service := &DetailService{}
 	service.SetUserStoreProvider(testDetailUserStoreProvider{store: store})
@@ -203,14 +204,46 @@ func TestEffectiveAudioTrackIndex_PrefersSeriesAudioPreferenceOverLibraryAndProf
 	}
 }
 
+func TestEffectiveAudioTrackIndex_ResolvesDeviceLanguageWithCanonicalPrecedence(t *testing.T) {
+	store := newDetailTestStore(t)
+	setProfileAudioLanguage(t, store, "en")
+	setScopedAudioLanguageForDevice(t, store, settingscontract.ScopeProfileDevice, "", 0, "apple-tv", "ja")
+	setScopedAudioLanguage(t, store, settingscontract.ScopeProfileLibrary, "", 12, "es")
+	setScopedAudioLanguage(t, store, settingscontract.ScopeProfileSeries, "series-1", 0, "fr")
+
+	service := &DetailService{}
+	service.SetUserStoreProvider(testDetailUserStoreProvider{store: store})
+	file := &models.MediaFile{
+		AudioTracks: []models.AudioTrack{
+			{Language: "en", Default: true},
+			{Language: "ja"},
+			{Language: "es"},
+			{Language: "fr"},
+		},
+	}
+
+	assertIndex := func(name, deviceID, contentID string, libraryID, want int) {
+		t.Helper()
+		file.MediaFolderID = libraryID
+		if got := service.effectiveAudioTrackIndex(context.Background(), AccessFilter{
+			UserID:    1,
+			ProfileID: "profile-1",
+			DeviceID:  deviceID,
+		}, contentID, file); got != want {
+			t.Fatalf("%s: effectiveAudioTrackIndex() = %d, want %d", name, got, want)
+		}
+	}
+
+	assertIndex("device override", "apple-tv", "movie-1", 99, 1)
+	assertIndex("other device isolation", "iphone", "movie-1", 99, 0)
+	assertIndex("library over device", "apple-tv", "movie-1", 12, 2)
+	assertIndex("series over library and device", "apple-tv", "series-1", 12, 3)
+}
+
 func TestBuildPlaybackInfo_SetsEffectiveAudioLanguageFromOriginalWhenTrackLanguageMissing(t *testing.T) {
 	store := newDetailTestStore(t)
 	language := playback.OriginalLanguageSentinel
-	if err := store.UpdateProfile(context.Background(), "profile-1", userstore.UpdateProfileInput{
-		Language: &language,
-	}); err != nil {
-		t.Fatalf("UpdateProfile: %v", err)
-	}
+	setProfileAudioLanguage(t, store, language)
 
 	service := &DetailService{
 		originalLangFn: func(context.Context, string) string {
@@ -426,11 +459,7 @@ func TestSortFileVersions_PrefersLargerFilesWithinQualityTier(t *testing.T) {
 func TestEffectiveAudioTrackIndex_ResolvesProfileOriginalWhenSeriesPreferenceFallsBack(t *testing.T) {
 	store := newDetailTestStore(t)
 	language := playback.OriginalLanguageSentinel
-	if err := store.UpdateProfile(context.Background(), "profile-1", userstore.UpdateProfileInput{
-		Language: &language,
-	}); err != nil {
-		t.Fatalf("UpdateProfile: %v", err)
-	}
+	setProfileAudioLanguage(t, store, language)
 	if err := store.SetAudioPreference(context.Background(), userstore.AudioPreference{
 		ProfileID:       "profile-1",
 		SeriesID:        "series-1",
@@ -466,11 +495,7 @@ func TestEffectiveAudioTrackIndex_ResolvesProfileOriginalWhenSeriesPreferenceFal
 func TestEffectiveAudioTrackIndex_KeepsProfileFallbackWhenLibraryOriginalIsUnresolved(t *testing.T) {
 	store := newDetailTestStore(t)
 	language := "en"
-	if err := store.UpdateProfile(context.Background(), "profile-1", userstore.UpdateProfileInput{
-		Language: &language,
-	}); err != nil {
-		t.Fatalf("UpdateProfile: %v", err)
-	}
+	setProfileAudioLanguage(t, store, language)
 	if err := store.UpsertLibraryPlaybackPreference(context.Background(), userstore.LibraryPlaybackPreference{
 		ProfileID:     "profile-1",
 		LibraryID:     12,
@@ -478,6 +503,8 @@ func TestEffectiveAudioTrackIndex_KeepsProfileFallbackWhenLibraryOriginalIsUnres
 	}); err != nil {
 		t.Fatalf("UpsertLibraryPlaybackPreference: %v", err)
 	}
+	setScopedAudioLanguage(t, store, settingscontract.ScopeProfileLibrary, "", 12,
+		playback.OriginalLanguageSentinel)
 
 	service := &DetailService{
 		originalLangFn: func(context.Context, string) string {
@@ -499,5 +526,54 @@ func TestEffectiveAudioTrackIndex_KeepsProfileFallbackWhenLibraryOriginalIsUnres
 
 	if index != 1 {
 		t.Fatalf("effectiveAudioTrackIndex() = %d, want 1", index)
+	}
+}
+
+// setProfileAudioLanguage stores the profile's preferred audio language as a
+// canonical setting value.
+//
+// The profile column these tests used to write is a migration source, not a
+// read path: playback resolves playback.audio_language through the settings
+// contract, so seeding the column would leave the resolver seeing nothing.
+func setProfileAudioLanguage(t *testing.T, store userstore.UserStore, language string) {
+	t.Helper()
+	setScopedAudioLanguage(t, store, settingscontract.ScopeProfile, "", 0, language)
+}
+
+func setScopedAudioLanguage(
+	t *testing.T,
+	store userstore.UserStore,
+	scope settingscontract.Scope,
+	seriesID string,
+	libraryID int,
+	language string,
+) {
+	t.Helper()
+	setScopedAudioLanguageForDevice(t, store, scope, seriesID, libraryID, "", language)
+}
+
+func setScopedAudioLanguageForDevice(
+	t *testing.T,
+	store userstore.UserStore,
+	scope settingscontract.Scope,
+	seriesID string,
+	libraryID int,
+	deviceID string,
+	language string,
+) {
+	t.Helper()
+	encoded, err := json.Marshal(language)
+	if err != nil {
+		t.Fatalf("encoding language: %v", err)
+	}
+	if _, err := store.UpsertSettingValue(context.Background(), userstore.SettingIdentity{
+		Key:       settingskeys.PlaybackAudioLanguage,
+		Scope:     scope,
+		ProfileID: "profile-1",
+		SeriesID:  seriesID,
+		LibraryID: libraryID,
+		DeviceID:  deviceID,
+	}, encoded); err != nil {
+		t.Fatalf("seeding %s: %v", settingskeys.PlaybackAudioLanguage, err)
 	}
 }

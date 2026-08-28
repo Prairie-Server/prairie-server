@@ -33,12 +33,14 @@ import {
 } from "@/hooks/queries/admin/tasks";
 import type { ExecutionResult, TriggerConfig, TriggerType } from "@/api/types";
 import { formatDateTime as formatPreferredDateTime } from "@/lib/datetime";
+import { clampTaskProgress, formatTaskProgress } from "@/lib/taskProgress";
 
 const REFRESH_REASON_LABELS: Record<string, string> = {
   episode_incomplete: "Episode incomplete",
   stale_provider_id: "Stale provider ID",
   refresh_failure: "Refresh failure",
   core_metadata_incomplete: "Core metadata incomplete",
+  trailers_requested: "Trailers requested",
 };
 
 // --- Trigger display helpers ---
@@ -54,7 +56,15 @@ function describeTrigger(t: TriggerConfig): string {
     case "daily":
       return `Daily at ${t.time_of_day ?? "00:00"}`;
     case "weekly": {
-      const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+      const days = [
+        "Sunday",
+        "Monday",
+        "Tuesday",
+        "Wednesday",
+        "Thursday",
+        "Friday",
+        "Saturday",
+      ];
       return `${days[t.day_of_week ?? 0]} at ${t.time_of_day ?? "00:00"}`;
     }
     case "startup":
@@ -128,18 +138,23 @@ function RefreshMetricsPanel({ metrics }: { metrics: MetadataRefreshMetrics }) {
           <h3 className="text-sm font-medium">Reason breakdown</h3>
           <div className="mt-3 flex flex-wrap gap-2">
             {reasonCounts.length === 0 && (
-              <span className="text-muted-foreground text-sm">No queued debt.</span>
+              <span className="text-muted-foreground text-sm">
+                No queued debt.
+              </span>
             )}
             {reasonCounts.map((entry) => (
               <Badge key={entry.reason} variant="secondary">
-                {REFRESH_REASON_LABELS[entry.reason] ?? entry.reason}: {entry.count}
+                {REFRESH_REASON_LABELS[entry.reason] ?? entry.reason}:{" "}
+                {entry.count}
               </Badge>
             ))}
           </div>
           <div className="mt-4 grid gap-2 sm:grid-cols-5">
             {metrics.attempt_buckets.map((bucket) => (
               <div key={bucket.label} className="bg-muted/30 rounded-xl p-3">
-                <div className="text-muted-foreground text-xs">Attempts {bucket.label}</div>
+                <div className="text-muted-foreground text-xs">
+                  Attempts {bucket.label}
+                </div>
                 <div className="mt-1 text-lg font-semibold">{bucket.count}</div>
               </div>
             ))}
@@ -150,7 +165,9 @@ function RefreshMetricsPanel({ metrics }: { metrics: MetadataRefreshMetrics }) {
           <h3 className="text-sm font-medium">Recent errors</h3>
           <div className="mt-3 space-y-3">
             {metrics.recent_errors.length === 0 && (
-              <p className="text-muted-foreground text-sm">No recent queue errors.</p>
+              <p className="text-muted-foreground text-sm">
+                No recent queue errors.
+              </p>
             )}
             {metrics.recent_errors.map((entry) => (
               <div
@@ -195,20 +212,34 @@ function RefreshMetricsPanel({ metrics }: { metrics: MetadataRefreshMetrics }) {
           <tbody>
             {metrics.due_samples.length === 0 && (
               <tr>
-                <td colSpan={4} className="text-muted-foreground px-4 py-4 text-center">
+                <td
+                  colSpan={4}
+                  className="text-muted-foreground px-4 py-4 text-center"
+                >
                   No due items right now.
                 </td>
               </tr>
             )}
             {metrics.due_samples.map((entry) => (
-              <tr key={entry.content_id} className="border-border border-b last:border-b-0">
+              <tr
+                key={entry.content_id}
+                className="border-border border-b last:border-b-0"
+              >
                 <td className="px-4 py-2">
-                  <div className="font-medium">{entry.title || entry.content_id}</div>
-                  <div className="text-muted-foreground text-xs">{entry.type || "item"}</div>
+                  <div className="font-medium">
+                    {entry.title || entry.content_id}
+                  </div>
+                  <div className="text-muted-foreground text-xs">
+                    {entry.type || "item"}
+                  </div>
                 </td>
-                <td className="px-4 py-2">{formatDateTime(entry.next_refresh_at)}</td>
+                <td className="px-4 py-2">
+                  {formatDateTime(entry.next_refresh_at)}
+                </td>
                 <td className="px-4 py-2">{entry.attempt_count}</td>
-                <td className="px-4 py-2">{formatOptionalDateTime(entry.last_attempt_at)}</td>
+                <td className="px-4 py-2">
+                  {formatOptionalDateTime(entry.last_attempt_at)}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -227,7 +258,15 @@ const TRIGGER_TYPES: { value: TriggerType; label: string }[] = [
   { value: "startup", label: "On Startup" },
 ];
 
-const DAYS_OF_WEEK = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+const DAYS_OF_WEEK = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
 
 interface TriggerFormRowProps {
   trigger: TriggerConfig;
@@ -238,8 +277,10 @@ interface TriggerFormRowProps {
 function TriggerFormRow({ trigger, onChange, onRemove }: TriggerFormRowProps) {
   // Convert interval_ms to a user-friendly value + unit
   const intervalToDisplay = (ms: number): { value: number; unit: string } => {
-    if (ms >= 3_600_000 && ms % 3_600_000 === 0) return { value: ms / 3_600_000, unit: "hours" };
-    if (ms >= 60_000 && ms % 60_000 === 0) return { value: ms / 60_000, unit: "minutes" };
+    if (ms >= 3_600_000 && ms % 3_600_000 === 0)
+      return { value: ms / 3_600_000, unit: "hours" };
+    if (ms >= 60_000 && ms % 60_000 === 0)
+      return { value: ms / 60_000, unit: "minutes" };
     return { value: ms / 1000, unit: "seconds" };
   };
 
@@ -257,7 +298,9 @@ function TriggerFormRow({ trigger, onChange, onRemove }: TriggerFormRowProps) {
       <div className="flex-1 space-y-2">
         <Select
           value={trigger.type}
-          onValueChange={(v) => onChange({ ...trigger, type: v as TriggerType })}
+          onValueChange={(v) =>
+            onChange({ ...trigger, type: v as TriggerType })
+          }
         >
           <SelectTrigger className="w-full sm:w-[160px]">
             <SelectValue />
@@ -280,7 +323,10 @@ function TriggerFormRow({ trigger, onChange, onRemove }: TriggerFormRowProps) {
               value={intervalDisplay.value}
               onChange={(e) => {
                 const val = parseInt(e.target.value, 10) || 1;
-                onChange({ ...trigger, interval_ms: displayToMs(val, intervalUnit) });
+                onChange({
+                  ...trigger,
+                  interval_ms: displayToMs(val, intervalUnit),
+                });
               }}
             />
             <Select
@@ -310,7 +356,9 @@ function TriggerFormRow({ trigger, onChange, onRemove }: TriggerFormRowProps) {
             type="time"
             className="w-full sm:w-[140px]"
             value={trigger.time_of_day ?? "00:00"}
-            onChange={(e) => onChange({ ...trigger, time_of_day: e.target.value })}
+            onChange={(e) =>
+              onChange({ ...trigger, time_of_day: e.target.value })
+            }
           />
         )}
 
@@ -318,7 +366,9 @@ function TriggerFormRow({ trigger, onChange, onRemove }: TriggerFormRowProps) {
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <Select
               value={String(trigger.day_of_week ?? 0)}
-              onValueChange={(v) => onChange({ ...trigger, day_of_week: parseInt(v, 10) })}
+              onValueChange={(v) =>
+                onChange({ ...trigger, day_of_week: parseInt(v, 10) })
+              }
             >
               <SelectTrigger className="w-full sm:w-[140px]">
                 <SelectValue />
@@ -335,19 +385,25 @@ function TriggerFormRow({ trigger, onChange, onRemove }: TriggerFormRowProps) {
               type="time"
               className="w-full sm:w-[140px]"
               value={trigger.time_of_day ?? "00:00"}
-              onChange={(e) => onChange({ ...trigger, time_of_day: e.target.value })}
+              onChange={(e) =>
+                onChange({ ...trigger, time_of_day: e.target.value })
+              }
             />
           </div>
         )}
 
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <label className="text-muted-foreground text-xs whitespace-nowrap">Max runtime:</label>
+          <label className="text-muted-foreground text-xs whitespace-nowrap">
+            Max runtime:
+          </label>
           <Input
             type="number"
             min={0}
             className="w-full sm:w-[100px]"
             placeholder="None"
-            value={trigger.max_runtime_ms ? trigger.max_runtime_ms / 60_000 : ""}
+            value={
+              trigger.max_runtime_ms ? trigger.max_runtime_ms / 60_000 : ""
+            }
             onChange={(e) => {
               const val = parseInt(e.target.value, 10);
               onChange({
@@ -383,7 +439,8 @@ function HistoryRow({
   expanded: boolean;
   onToggle: () => void;
 }) {
-  const hasResultData = result.result_data && Object.keys(result.result_data).length > 0;
+  const hasResultData =
+    result.result_data && Object.keys(result.result_data).length > 0;
 
   return (
     <>
@@ -450,7 +507,11 @@ export default function AdminTaskDetail() {
   };
 
   if (isLoading || !task) {
-    return <p className="page-shell text-muted-foreground py-8 text-sm">Loading...</p>;
+    return (
+      <p className="page-shell text-muted-foreground py-8 text-sm">
+        Loading...
+      </p>
+    );
   }
 
   const isRunning = task.state === "running" || task.state === "cancelling";
@@ -470,7 +531,10 @@ export default function AdminTaskDetail() {
   };
 
   const addTrigger = () => {
-    setEditTriggers([...editTriggers, { type: "interval", interval_ms: 3_600_000 }]);
+    setEditTriggers([
+      ...editTriggers,
+      { type: "interval", interval_ms: 3_600_000 },
+    ]);
   };
 
   const removeTrigger = (index: number) => {
@@ -491,7 +555,10 @@ export default function AdminTaskDetail() {
           Admin
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
-        <Link to="/admin/tasks" className="hover:text-foreground transition-colors">
+        <Link
+          to="/admin/tasks"
+          className="hover:text-foreground transition-colors"
+        >
           Scheduled Tasks
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
@@ -501,10 +568,14 @@ export default function AdminTaskDetail() {
       <div className="page-header gap-5">
         <div className="space-y-3">
           <div className="flex flex-wrap items-center gap-3">
-            <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">{task.name}</h1>
+            <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
+              {task.name}
+            </h1>
             <Badge variant="outline">{task.category}</Badge>
           </div>
-          <p className="page-subtitle text-sm sm:text-base">{task.description}</p>
+          <p className="page-subtitle text-sm sm:text-base">
+            {task.description}
+          </p>
         </div>
 
         {isRunning ? (
@@ -533,10 +604,14 @@ export default function AdminTaskDetail() {
       {task.key === "scan_libraries" && (
         <div className="surface-panel-subtle rounded-xl p-4 text-sm leading-relaxed">
           <span className="text-muted-foreground">
-            This task history records how long it took to queue per-library scan runs. Actual scan
-            work continues in the background and is tracked from{" "}
+            This task history records how long it took to queue per-library scan
+            runs. Actual scan work continues in the background and is tracked
+            from{" "}
           </span>
-          <Link to="/admin/libraries" className="text-foreground hover:text-primary font-medium">
+          <Link
+            to="/admin/libraries"
+            className="text-foreground hover:text-primary font-medium"
+          >
             Admin Libraries
           </Link>
           <span className="text-muted-foreground"> and Server Activity.</span>
@@ -550,14 +625,23 @@ export default function AdminTaskDetail() {
               className={`h-full rounded-full transition-all duration-300 ${
                 task.state === "cancelling" ? "bg-yellow-500" : "bg-primary"
               }`}
-              style={{ width: `${Math.max(task.progress, 2)}%` }}
+              style={{
+                width: `${Math.max(clampTaskProgress(task.progress), 2)}%`,
+              }}
             />
           </div>
-          <p className="text-muted-foreground text-sm">
-            {task.state === "cancelling"
-              ? "Cancelling..."
-              : task.progress_message || `${Math.round(task.progress)}%`}
-          </p>
+          <div className="text-muted-foreground flex items-center justify-between gap-3 text-sm">
+            <p className="min-w-0 truncate">
+              {task.state === "cancelling"
+                ? "Cancelling..."
+                : task.progress_message || "Running"}
+            </p>
+            {task.state !== "cancelling" && task.progress > 0 && (
+              <span className="shrink-0 font-medium tabular-nums">
+                {formatTaskProgress(task.progress)}
+              </span>
+            )}
+          </div>
         </div>
       )}
 
@@ -571,7 +655,7 @@ export default function AdminTaskDetail() {
       <div className="space-y-3">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <h2 className="text-lg font-medium tracking-tight">Schedule</h2>
-          {!editing && (
+          {!task.manual_only && !editing && (
             <Button variant="outline" size="sm" onClick={startEditing}>
               <Pencil />
               Edit Schedule
@@ -579,13 +663,25 @@ export default function AdminTaskDetail() {
           )}
         </div>
 
-        {!editing ? (
+        {task.manual_only ? (
+          <div className="surface-panel-subtle rounded-xl p-4 text-sm">
+            <p className="text-muted-foreground">
+              Manual only. This task runs only when you select Run Now;
+              scheduled triggers cannot be configured.
+            </p>
+          </div>
+        ) : !editing ? (
           <div className="surface-panel overflow-hidden rounded-2xl border-0">
             {task.triggers.length === 0 && (
-              <p className="text-muted-foreground p-4 text-sm">No triggers configured.</p>
+              <p className="text-muted-foreground p-4 text-sm">
+                No triggers configured.
+              </p>
             )}
             {task.triggers.map((trigger, i) => (
-              <div key={i} className="border-border border-b px-4 py-2.5 text-sm last:border-b-0">
+              <div
+                key={i}
+                className="border-border border-b px-4 py-2.5 text-sm last:border-b-0"
+              >
                 {describeTrigger(trigger)}
               </div>
             ))}
@@ -608,11 +704,19 @@ export default function AdminTaskDetail() {
               </Button>
 
               <div className="flex flex-col gap-2 sm:flex-row">
-                <Button size="sm" onClick={saveTriggers} disabled={updateTriggers.isPending}>
+                <Button
+                  size="sm"
+                  onClick={saveTriggers}
+                  disabled={updateTriggers.isPending}
+                >
                   <Save />
                   Save
                 </Button>
-                <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setEditing(false)}
+                >
                   <X />
                   Cancel
                 </Button>
@@ -623,7 +727,9 @@ export default function AdminTaskDetail() {
       </div>
 
       <div className="space-y-3">
-        <h2 className="text-lg font-medium tracking-tight">Execution history</h2>
+        <h2 className="text-lg font-medium tracking-tight">
+          Execution history
+        </h2>
 
         <div className="surface-panel overflow-hidden rounded-2xl border-0">
           <table className="w-full text-sm">
@@ -638,7 +744,10 @@ export default function AdminTaskDetail() {
             <tbody>
               {(!history || history.length === 0) && (
                 <tr>
-                  <td colSpan={4} className="text-muted-foreground px-4 py-4 text-center">
+                  <td
+                    colSpan={4}
+                    className="text-muted-foreground px-4 py-4 text-center"
+                  >
                     No execution history.
                   </td>
                 </tr>

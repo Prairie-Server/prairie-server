@@ -50,7 +50,7 @@ type Client struct {
 }
 
 // NewClient creates a TMDB API client with the given API key and rate limit
-// (requests per second). If apiKey is empty, Prairie's public project API key is
+// (requests per second). If apiKey is empty, Silo's public project API key is
 // used.
 func NewClient(apiKey string, rateLimit int) *Client {
 	apiKey = strings.TrimSpace(apiKey)
@@ -179,7 +179,7 @@ func retryAfterOrDefault(resp *http.Response, attempt int) time.Duration {
 }
 
 // SearchMedia searches TMDB directly for movies, TV series, or both. mediaType
-// accepts Prairie-facing "movie", "series", or "all" values, plus TMDB-facing
+// accepts Silo-facing "movie", "series", or "all" values, plus TMDB-facing
 // "tv" for callers already working at the provider boundary.
 func (c *Client) SearchMedia(ctx context.Context, mediaType, query string, page int) (*MediaPage, error) {
 	query = strings.TrimSpace(query)
@@ -226,7 +226,7 @@ func (c *Client) SearchMedia(ctx context.Context, mediaType, query string, page 
 	}
 }
 
-// DiscoverSection fetches one of Prairie's request-discovery sections directly
+// DiscoverSection fetches one of Silo's request-discovery sections directly
 // from TMDB. It intentionally does not go through collection sync or
 // collection templates.
 func (c *Client) DiscoverSection(ctx context.Context, section string, page int) (*MediaPage, error) {
@@ -447,7 +447,7 @@ func normalizeCollectionPreset(preset, mediaType, timeWindow string) (string, st
 		}
 	case "now_playing", "upcoming":
 		if mediaType != mediaTypeMovie {
-			return "", "", "", "", fmt.Errorf("tmdb: preset %q requires media type %q", preset, mediaTypeMovie)
+			return "", "", "", "", fmt.Errorf("tmdb: preset %q requires media type %q", preset, "movie")
 		}
 		return preset, mediaType, "", fmt.Sprintf("/movie/%s", preset), nil
 	case "airing_today", "on_the_air":
@@ -830,7 +830,7 @@ func (c *Client) GetCollection(ctx context.Context, id int) (*Collection, error)
 
 // GetMediaDetail fetches a single TMDB movie or series with credits, external
 // IDs, recommendations, and the appropriate certification feed, returning a
-// normalized MediaDetail. mediaType accepts Prairie-facing "movie" or "series".
+// normalized MediaDetail. mediaType accepts Silo-facing "movie" or "series".
 //
 // Cast is sorted by TMDB billing order and capped at 24 entries to keep the
 // payload bounded.
@@ -1171,7 +1171,7 @@ func cloneExternalIDs(ids *ExternalIDs) *ExternalIDs {
 func (c *Client) GetCertification(ctx context.Context, mediaType string, id int) (string, error) {
 	var path string
 	switch mediaType {
-	case "movie":
+	case mediaTypeMovie:
 		path = fmt.Sprintf("/movie/%d/release_dates", id)
 	case "series", "tv":
 		path = fmt.Sprintf("/tv/%d/content_ratings", id)
@@ -1226,7 +1226,7 @@ func (c *Client) GetCertification(ctx context.Context, mediaType string, id int)
 }
 
 func (c *Client) fetchCertification(ctx context.Context, mediaType, path string) (string, error) {
-	if mediaType == "movie" {
+	if mediaType == mediaTypeMovie {
 		var resp releaseDatesResponse
 		if err := c.doGet(ctx, path, &resp); err != nil {
 			return "", err

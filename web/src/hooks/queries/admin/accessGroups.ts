@@ -10,7 +10,8 @@ const ADMIN_STALE_TIME = 30_000;
 export function useAccessGroups() {
   return useQuery({
     queryKey: adminKeys.accessGroups(),
-    queryFn: () => api<AccessGroup[]>("/admin/access-groups").then((data) => data ?? []),
+    queryFn: () =>
+      api<AccessGroup[]>("/admin/access-groups").then((data) => data ?? []),
     staleTime: ADMIN_STALE_TIME,
   });
 }
@@ -25,10 +26,12 @@ export function useCreateAccessGroup() {
       }),
     onSuccess: () => {
       toast.success("Access group created");
-      void queryClient.invalidateQueries({ queryKey: adminKeys.accessGroups() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.accessGroups() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to create access group");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to create access group",
+      );
     },
   });
 }
@@ -43,11 +46,18 @@ export function useUpdateAccessGroup() {
       }),
     onSuccess: (_data, variables) => {
       toast.success("Access group updated");
-      void queryClient.invalidateQueries({ queryKey: adminKeys.accessGroups() });
-      void queryClient.invalidateQueries({ queryKey: adminKeys.accessGroup(variables.id) });
+      queryClient.invalidateQueries({ queryKey: adminKeys.accessGroups() });
+      queryClient.invalidateQueries({
+        queryKey: adminKeys.accessGroup(variables.id),
+      });
+      // User views render group-derived data (effective_policy, inherit
+      // hints), so a group change must refresh them too.
+      queryClient.invalidateQueries({ queryKey: adminKeys.users() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to update access group");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to update access group",
+      );
     },
   });
 }
@@ -55,15 +65,18 @@ export function useUpdateAccessGroup() {
 export function useDeleteAccessGroup() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => api(`/admin/access-groups/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) =>
+      api(`/admin/access-groups/${id}`, { method: "DELETE" }),
     onSuccess: (_data, id) => {
       toast.success("Access group deleted");
-      void queryClient.invalidateQueries({ queryKey: adminKeys.accessGroups() });
-      void queryClient.invalidateQueries({ queryKey: adminKeys.accessGroup(id) });
-      void queryClient.invalidateQueries({ queryKey: adminKeys.users() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.accessGroups() });
+      queryClient.invalidateQueries({ queryKey: adminKeys.accessGroup(id) });
+      queryClient.invalidateQueries({ queryKey: adminKeys.users() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to delete access group");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to delete access group",
+      );
     },
   });
 }

@@ -5,7 +5,13 @@ import { api } from "@/api/client";
 import type { DeviceLoginLookupResponse } from "@/api/types";
 import { useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -30,7 +36,9 @@ export default function ActivateDevice() {
   const { user, loading, setupLoading } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const [codeInput, setCodeInput] = useState(searchParams.get("code") ?? "");
-  const [details, setDetails] = useState<DeviceLoginLookupResponse | null>(null);
+  const [details, setDetails] = useState<DeviceLoginLookupResponse | null>(
+    null,
+  );
   const [loadingDetails, setLoadingDetails] = useState(false);
   const [acting, setActing] = useState(false);
   const { serverName } = useServerBranding();
@@ -59,11 +67,15 @@ export default function ActivateDevice() {
       } else {
         params.set("code", code);
       }
-      const result = await api<DeviceLoginLookupResponse>(`/auth/device?${params.toString()}`);
+      const result = await api<DeviceLoginLookupResponse>(
+        `/auth/device?${params.toString()}`,
+      );
       setDetails(result);
     } catch (error) {
       setDetails(null);
-      toast.error(error instanceof Error ? error.message : "Device request not found");
+      toast.error(
+        error instanceof Error ? error.message : "Device request not found",
+      );
     } finally {
       setLoadingDetails(false);
     }
@@ -82,7 +94,9 @@ export default function ActivateDevice() {
       });
       await loadDetails();
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : `Failed to ${action} request`);
+      toast.error(
+        error instanceof Error ? error.message : `Failed to ${action} request`,
+      );
     } finally {
       setActing(false);
     }
@@ -108,17 +122,23 @@ export default function ActivateDevice() {
         <Card className="auth-card w-full max-w-md border-0 bg-transparent shadow-none">
           <CardHeader className="sr-only">
             <CardTitle>Approve device</CardTitle>
-            <CardDescription>Approve sign-in for the device you're trying to use.</CardDescription>
+            <CardDescription>
+              Approve sign-in for the device you're trying to use.
+            </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6 p-0">
             {!token && !code ? (
               <form onSubmit={handleCodeSubmit} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="device-code">Enter the code from your screen</Label>
+                  <Label htmlFor="device-code">
+                    Enter the code from your screen
+                  </Label>
                   <Input
                     id="device-code"
                     value={codeInput}
-                    onChange={(e) => setCodeInput(normalizeCode(e.target.value))}
+                    onChange={(e) =>
+                      setCodeInput(normalizeCode(e.target.value))
+                    }
                     autoCapitalize="characters"
                     autoComplete="off"
                     autoCorrect="off"
@@ -131,10 +151,14 @@ export default function ActivateDevice() {
                 </Button>
               </form>
             ) : loadingDetails || loading || setupLoading ? (
-              <div className="text-muted-foreground text-sm">Loading device request...</div>
+              <div className="text-muted-foreground text-sm">
+                Loading device request...
+              </div>
             ) : !details ? (
               <div className="space-y-4">
-                <p className="text-sm">That sign-in request could not be found.</p>
+                <p className="text-sm">
+                  That sign-in request could not be found.
+                </p>
                 <Button
                   type="button"
                   variant="outline"
@@ -153,10 +177,14 @@ export default function ActivateDevice() {
                       {details.device_name || "This device"}
                     </div>
                     {details.device_platform ? (
-                      <div className="text-muted-foreground text-sm">{details.device_platform}</div>
+                      <div className="text-muted-foreground text-sm">
+                        {details.device_platform}
+                      </div>
                     ) : null}
                     {details.ip_address_hint ? (
-                      <div className="text-muted-foreground text-sm">{details.ip_address_hint}</div>
+                      <div className="text-muted-foreground text-sm">
+                        {details.ip_address_hint}
+                      </div>
                     ) : null}
                   </div>
                   {details.match_code ? (
@@ -164,7 +192,9 @@ export default function ActivateDevice() {
                       <div className="text-muted-foreground text-xs tracking-[0.12em] uppercase">
                         Match code
                       </div>
-                      <div className="text-lg font-semibold">{details.match_code}</div>
+                      <div className="text-lg font-semibold">
+                        {details.match_code}
+                      </div>
                     </div>
                   ) : null}
                 </div>
@@ -178,14 +208,19 @@ export default function ActivateDevice() {
                 ) : details.status === "pending" ? (
                   <div className="space-y-3">
                     <p className="text-sm">
-                      Signed in as <span className="font-medium">{user.username}</span>.
+                      Signed in as{" "}
+                      <span className="font-medium">{user.username}</span>.
                     </p>
                     <Button
                       className="w-full"
                       disabled={acting}
                       onClick={() => void handleDecision("approve")}
                     >
-                      {acting ? <Loader2 className="animate-spin" /> : <Check />}
+                      {acting ? (
+                        <Loader2 className="animate-spin" />
+                      ) : (
+                        <Check />
+                      )}
                       {acting ? "Approving..." : "Approve sign-in"}
                     </Button>
                     <Button
@@ -199,7 +234,9 @@ export default function ActivateDevice() {
                     </Button>
                   </div>
                 ) : details.status === "approved" ? (
-                  <p className="text-sm">Approved. Finish sign-in on the device.</p>
+                  <p className="text-sm">
+                    Approved. Finish sign-in on the device.
+                  </p>
                 ) : details.status === "consumed" ? (
                   <p className="text-sm">This device is already signed in.</p>
                 ) : details.status === "denied" ? (

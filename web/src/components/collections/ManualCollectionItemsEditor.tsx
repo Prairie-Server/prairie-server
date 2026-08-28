@@ -3,7 +3,11 @@ import { useQuery } from "@tanstack/react-query";
 import { GripVertical, Loader2, Plus, Search, Trash2 } from "lucide-react";
 
 import { DndContext } from "@dnd-kit/core";
-import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
+import {
+  SortableContext,
+  verticalListSortingStrategy,
+  useSortable,
+} from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 import type { BrowseItem, CollectionItem } from "@/api/types";
@@ -16,7 +20,10 @@ import {
   useRemoveCollectionItem,
   useReorderCollectionItems,
 } from "@/hooks/queries/collections";
-import { createCatalogSearchState, fetchCatalogPage } from "@/hooks/queries/catalog";
+import {
+  createCatalogSearchState,
+  fetchCatalogPage,
+} from "@/hooks/queries/catalog";
 import { catalogKeys } from "@/hooks/queries/keys";
 import { useSortableList } from "@/hooks/useSortableList";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -64,7 +71,8 @@ function AddItemPanel({
         offset: 0,
       }),
     ],
-    queryFn: ({ signal }) => fetchCatalogPage(searchState, SEARCH_LIMIT, 0, { signal }),
+    queryFn: ({ signal }) =>
+      fetchCatalogPage(searchState, SEARCH_LIMIT, 0, { signal }),
     enabled: debounced.length > 0,
     staleTime: 30 * 1000,
   });
@@ -97,7 +105,10 @@ function AddItemPanel({
           {items.map((item) => {
             const already = existingIds.has(item.content_id);
             return (
-              <li key={item.content_id} className="flex items-center gap-3 px-3 py-2">
+              <li
+                key={item.content_id}
+                className="flex items-center gap-3 px-3 py-2"
+              >
                 {item.poster_url ? (
                   <img
                     src={item.poster_url}
@@ -108,7 +119,9 @@ function AddItemPanel({
                   <div className="bg-muted h-10 w-10 shrink-0 rounded" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">{item.title}</div>
+                  <div className="truncate text-sm font-medium">
+                    {item.title}
+                  </div>
                   <div className="text-muted-foreground text-xs">
                     {item.year ? `${item.year} · ` : ""}
                     {item.type}
@@ -148,7 +161,10 @@ export function ManualCollectionItemsEditor({
   const items = useMemo(() => data ?? [], [data]);
   const reorderMutation = useReorderCollectionItems(collectionId);
   const removeMutation = useRemoveCollectionItem(collectionId);
-  const existingIds = useMemo(() => new Set(items.map((i) => i.media_item_id)), [items]);
+  const existingIds = useMemo(
+    () => new Set(items.map((i) => i.media_item_id)),
+    [items],
+  );
 
   const { sensors, collisionDetection, handleDragEnd } = useSortableList(
     items,
@@ -169,7 +185,11 @@ export function ManualCollectionItemsEditor({
   return (
     <div className="space-y-4">
       {!readOnly && (
-        <AddItemPanel collectionId={collectionId} source={source} existingIds={existingIds} />
+        <AddItemPanel
+          collectionId={collectionId}
+          source={source}
+          existingIds={existingIds}
+        />
       )}
       {items.length === 0 ? (
         <div className="text-muted-foreground rounded-lg border border-dashed px-4 py-5 text-sm">
@@ -214,7 +234,14 @@ function SortableItemRow({
   readOnly: boolean;
   onRemove: () => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const {
+    attributes,
+    listeners,
+    setNodeRef,
+    transform,
+    transition,
+    isDragging,
+  } = useSortable({
     id: item.media_item_id,
     disabled: readOnly,
   });

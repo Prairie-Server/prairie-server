@@ -8,7 +8,6 @@ import (
 	"log/slog"
 	"path"
 
-	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
@@ -41,7 +40,7 @@ type Service struct {
 // configured: text branding keeps working while asset upload/serve returns
 // ErrStorageUnavailable. Callers holding a concrete *s3client.Client must pass
 // a nil AssetStore when that client is nil (rather than the typed-nil pointer)
-// to avoid the typed-nil interface trap — see the construction in cmd/prairie.
+// to avoid the typed-nil interface trap — see the construction in cmd/silo.
 func NewService(settings SettingsStore, store AssetStore) *Service {
 	return &Service{settings: settings, store: store}
 }
@@ -82,7 +81,7 @@ func (s *Service) UploadAsset(ctx context.Context, kind AssetKind, data []byte, 
 		return "", ErrStorageUnavailable
 	}
 
-	out, avif, png, _, ext, err := spec.process(data, declaredType)
+	out, _, _, _, ext, err := spec.process(data, declaredType)
 	if err != nil {
 		return "", err
 	}
@@ -96,24 +95,6 @@ func (s *Service) UploadAsset(ctx context.Context, kind AssetKind, data []byte, 
 
 	if err := s.store.PutObject(ctx, s.store.Bucket(), key, out); err != nil {
 		return "", err
-	}
-	// Dual-write AVIF siblings under the same content-address stem so
-	// Accept negotiation / client cascades can upgrade without changing the
-	// stored settings ref. PNG siblings are no longer generated; clients fall
-	// through AVIF→WebP when PNG is absent.
-	if len(avif) > 0 {
-		if avifKey := artworkkey.WebPAVIFSibling(key); avifKey != "" {
-			if err := s.store.PutObject(ctx, s.store.Bucket(), avifKey, avif); err != nil {
-				return "", err
-			}
-		}
-	}
-	if len(png) > 0 {
-		if pngKey := artworkkey.WebPPNGSibling(key); pngKey != "" {
-			if err := s.store.PutObject(ctx, s.store.Bucket(), pngKey, png); err != nil {
-				return "", err
-			}
-		}
 	}
 	if err := s.settings.Set(ctx, spec.settingKey, ref); err != nil {
 		return "", err
@@ -133,10 +114,8 @@ func (s *Service) DeleteAsset(ctx context.Context, kind AssetKind) error {
 }
 
 // GetAsset fetches the bytes of the current custom asset of the given kind.
-// When accept prefers image/avif and a dual-written AVIF sibling exists for a
-// WebP ref, that sibling is returned instead. Returns ErrAssetNotConfigured
-// when none is set, ErrStorageUnavailable when S3 is absent, and
-// ErrAssetNotConfigured when the object is missing in S3.
+// Returns ErrAssetNotConfigured when none is set, ErrStorageUnavailable when S3
+// is absent, and ErrAssetNotConfigured when the object is missing in S3.
 func (s *Service) GetAsset(ctx context.Context, kind AssetKind, accept string) (data []byte, contentType, ref string, err error) {
 	spec, ok := assetSpecs[kind]
 	if !ok {
@@ -150,16 +129,6 @@ func (s *Service) GetAsset(ctx context.Context, kind AssetKind, accept string) (
 		return nil, "", "", ErrStorageUnavailable
 	}
 	key := spec.s3Prefix + "/" + ref
-	ext := path.Ext(ref)
-	if artworkkey.PrefersAVIF(accept) {
-		if avifKey := artworkkey.WebPAVIFSibling(key); avifKey != "" {
-			if avifData, avifErr := s.store.GetObject(ctx, s.store.Bucket(), avifKey); avifErr == nil {
-				return avifData, "image/avif", ref, nil
-			} else if avifErr != nil && !errors.Is(avifErr, s3client.ErrNotFound) {
-				return nil, "", "", avifErr
-			}
-		}
-	}
 	data, err = s.store.GetObject(ctx, s.store.Bucket(), key)
 	if err != nil {
 		if errors.Is(err, s3client.ErrNotFound) {
@@ -167,7 +136,7 @@ func (s *Service) GetAsset(ctx context.Context, kind AssetKind, accept string) (
 		}
 		return nil, "", "", err
 	}
-	return data, contentTypeForExt(ext), ref, nil
+	return data, contentTypeForExt(path.Ext(ref)), ref, nil
 }
 
 // ReconcileMissingAssets clears the ref of every configured branding asset

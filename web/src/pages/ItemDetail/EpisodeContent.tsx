@@ -1,9 +1,15 @@
 import { useCallback, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router";
 import type { FileVersion, ItemDetail } from "@/api/types";
-import type { PlayerSubtitleTrackSignature, PrePlaySubtitleSelection } from "@/player/types";
+import type {
+  PlayerSubtitleTrackSignature,
+  PrePlaySubtitleSelection,
+} from "@/player/types";
 import { useSeasonDetail, useSeasonEpisodes } from "@/hooks/queries/episodes";
-import { useDeleteSubtitlePreference, useSetSubtitlePreference } from "@/hooks/queries/subtitles";
+import {
+  useDeleteSubtitlePreference,
+  useSetSubtitlePreference,
+} from "@/hooks/queries/subtitles";
 import { useAmbientColor } from "@/hooks/useAmbientColor";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
@@ -12,7 +18,6 @@ import { useOnViewTranslation } from "@/hooks/useOnViewTranslation";
 import {
   useRedetectEpisodeIntro,
   useRefreshItemMetadata,
-  useWatchedStateMutation,
 } from "@/hooks/queries/items";
 import CastCarousel from "@/components/CastCarousel";
 import CrewList from "@/components/CrewList";
@@ -26,7 +31,7 @@ import MetadataBadges from "./components/MetadataBadges";
 import QualityBadges from "./components/QualityBadges";
 import ScoreRow from "./components/ScoreRow";
 import HeroCrewLine from "./components/HeroCrewLine";
-import ActionBar from "./components/ActionBar";
+import WatchedActionBar from "./components/WatchedActionBar";
 import DetailBreadcrumb from "./components/DetailBreadcrumb";
 import MediaInfoDialog from "./components/MediaInfoDialog";
 import SubtitleSearchDialog from "./components/SubtitleSearchDialog";
@@ -40,14 +45,18 @@ import {
   resolveEpisodeSiblingSeason,
   type EpisodeNavigationState,
 } from "./itemDetailLayout";
-import { getWatchedActionLabel } from "./watchedState";
 import {
   canCurateMetadata as canCurateMetadataForUser,
   canEditMarkers as canEditMarkersForUser,
 } from "@/lib/permissions";
 import { formatRuntimeMinutes } from "@/lib/mediaFormat";
+import { useQualityPreference } from "@/hooks/queries/qualityPreference";
 
-export default function EpisodeContent({ item }: { item: ItemDetail & { type: "episode" } }) {
+export default function EpisodeContent({
+  item,
+}: {
+  item: ItemDetail & { type: "episode" };
+}) {
   const { translating: overviewTranslating, onTranslate: onTranslateOverview } =
     useOnViewTranslation(item);
   const navigate = useNavigate();
@@ -56,6 +65,12 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
   const { user } = useAuth();
   const isAdmin = useIsActingAdmin();
   const { profile: currentProfile } = useCurrentProfile();
+  // The resolution cap comes from the settings contract, where the quality
+  // picker writes; the profile column it falls back to is only the pre-cutover
+  // choice, since that picker no longer mirrors into it.
+  const qualityPreference = useQualityPreference(
+    currentProfile?.quality_preference,
+  );
   const canCurateMetadata = canCurateMetadataForUser(user, currentProfile);
   const canEditMarkers = canEditMarkersForUser(user, currentProfile);
   const [editOpen, setEditOpen] = useState(false);
@@ -69,38 +84,51 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
   const setSubtitlePreference = useSetSubtitlePreference();
 
   // Version selection state — drives the Play button and inline stream popovers.
-  const sortedVersions = useMemo(() => sortByResolution(item.versions ?? []), [item.versions]);
+  const sortedVersions = useMemo(
+    () => sortByResolution(item.versions ?? []),
+    [item.versions],
+  );
   const userData =
-    item.user_data && "position_seconds" in item.user_data ? item.user_data : undefined;
+    item.user_data && "position_seconds" in item.user_data
+      ? item.user_data
+      : undefined;
   const defaultSelectedVersion = useMemo(
     () =>
       selectDefaultPlaybackVariantVersion(
         sortedVersions,
         item.playback_variants,
         userData,
-        currentProfile?.quality_preference,
+        qualityPreference,
         item.effective_version_edition_key,
       ),
     [
-      currentProfile?.quality_preference,
+      qualityPreference,
       item.effective_version_edition_key,
       item.playback_variants,
       sortedVersions,
       userData,
     ],
   );
-  const [manualSelectedFileId, setManualSelectedFileId] = useState<number | null>(null);
+  const [manualSelectedFileId, setManualSelectedFileId] = useState<
+    number | null
+  >(null);
   const selectedVersion = useMemo(() => {
     if (manualSelectedFileId == null) {
       return defaultSelectedVersion;
     }
     return (
-      sortedVersions.find((version) => version.file_id === manualSelectedFileId) ??
-      defaultSelectedVersion
+      sortedVersions.find(
+        (version) => version.file_id === manualSelectedFileId,
+      ) ?? defaultSelectedVersion
     );
   }, [defaultSelectedVersion, manualSelectedFileId, sortedVersions]);
   const selectedMediaSummary = useMemo(
-    () => resolveSelectedMediaSummary(selectedVersion, item.playback_variants, item.runtime ?? 0),
+    () =>
+      resolveSelectedMediaSummary(
+        selectedVersion,
+        item.playback_variants,
+        item.runtime ?? 0,
+      ),
     [item.playback_variants, item.runtime, selectedVersion],
   );
   const openMediaInfo = useCallback(
@@ -110,11 +138,15 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
     },
     [selectedVersion?.file_id],
   );
-  const [audioSelectionMode, setAudioSelectionMode] = useState<"auto" | "explicit">("auto");
-  const [explicitAudioTrackIndex, setExplicitAudioTrackIndex] = useState<number | null>(null);
-  const [subtitleSelectionMode, setSubtitleSelectionMode] = useState<"auto" | "off" | "explicit">(
-    "auto",
-  );
+  const [audioSelectionMode, setAudioSelectionMode] = useState<
+    "auto" | "explicit"
+  >("auto");
+  const [explicitAudioTrackIndex, setExplicitAudioTrackIndex] = useState<
+    number | null
+  >(null);
+  const [subtitleSelectionMode, setSubtitleSelectionMode] = useState<
+    "auto" | "off" | "explicit"
+  >("auto");
   const [explicitSubtitleSelection, setExplicitSubtitleSelection] =
     useState<PrePlaySubtitleSelection | null>(null);
 
@@ -129,23 +161,23 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
     setExplicitSubtitleSelection(null);
   }
 
-  const handleSelectVersion = (version: FileVersion) => {
+  const handleSelectVersion = useCallback((version: FileVersion) => {
     setManualSelectedFileId(version.file_id);
     setAudioSelectionMode("auto");
     setExplicitAudioTrackIndex(null);
     setSubtitleSelectionMode("auto");
     setExplicitSubtitleSelection(null);
-  };
+  }, []);
 
-  const handleSelectAudioTrack = (trackIndex: number) => {
+  const handleSelectAudioTrack = useCallback((trackIndex: number) => {
     setAudioSelectionMode("explicit");
     setExplicitAudioTrackIndex(trackIndex);
-  };
+  }, []);
 
-  const handleResetAudioSelection = () => {
+  const handleResetAudioSelection = useCallback(() => {
     setAudioSelectionMode("auto");
     setExplicitAudioTrackIndex(null);
-  };
+  }, []);
 
   const handleSelectSubtitle = (selection: PrePlaySubtitleSelection) => {
     setSubtitleSelectionMode("explicit");
@@ -199,10 +231,10 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
           codec: item.effective_subtitle_track_signature.codec,
           label: item.effective_subtitle_track_signature.label,
           forced: item.effective_subtitle_track_signature.forced,
-          hearing_impaired: item.effective_subtitle_track_signature.hearing_impaired,
+          hearing_impaired:
+            item.effective_subtitle_track_signature.hearing_impaired,
         }
       : null;
-  const watchedMutation = useWatchedStateMutation(item);
   const navigationState = location.state as EpisodeNavigationState | null;
   const primaryAction = resolveLeafPrimaryAction(item, "Play Episode");
   const restartHref =
@@ -263,7 +295,9 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
   }
 
   const contextLabel =
-    seasonNum != null && episodeNum != null ? `S${seasonNum} \u00B7 E${episodeNum}` : undefined;
+    seasonNum != null && episodeNum != null
+      ? `S${seasonNum} \u00B7 E${episodeNum}`
+      : undefined;
 
   return (
     <div>
@@ -274,7 +308,9 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
           <div className="space-y-3">
             <DetailBreadcrumb segments={breadcrumbSegments} />
             {contextLabel && (
-              <div className="text-muted-foreground text-xs font-medium">{contextLabel}</div>
+              <div className="text-muted-foreground text-xs font-medium">
+                {contextLabel}
+              </div>
             )}
           </div>
         }
@@ -287,7 +323,10 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
         metadata={
           <div className="flex flex-wrap items-center gap-2">
             <MetadataBadges
-              duration={formatRuntimeMinutes(selectedMediaSummary.durationMinutes) || undefined}
+              duration={
+                formatRuntimeMinutes(selectedMediaSummary.durationMinutes) ||
+                undefined
+              }
             />
             {item.air_date && (
               <span className="metadata-badge">
@@ -318,10 +357,13 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
         onTranslateOverview={onTranslateOverview}
         crewLine={<HeroCrewLine crew={item.crew ?? []} />}
         actions={
-          <ActionBar
+          <WatchedActionBar
+            item={item}
             contentId={item.content_id}
             playHref={
-              item.versions && item.versions.length > 0 ? `/watch/${item.content_id}` : undefined
+              item.versions && item.versions.length > 0
+                ? `/watch/${item.content_id}`
+                : undefined
             }
             playLabel={primaryAction.label}
             playProgress={primaryAction.progress}
@@ -342,32 +384,36 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
                 : undefined
             }
             resumeHdr={
-              item.user_data && "last_hdr" in item.user_data ? item.user_data.last_hdr : undefined
+              item.user_data && "last_hdr" in item.user_data
+                ? item.user_data.last_hdr
+                : undefined
             }
             effectiveVersionResolution={item.effective_version_resolution}
             effectiveVersionHdr={item.effective_version_hdr}
-            watchedLabel={getWatchedActionLabel(item)}
-            onToggleWatched={() => watchedMutation.mutate(!(item.user_data?.played ?? false))}
-            isUpdatingWatched={watchedMutation.isPending}
             onRefresh={
               canCurateMetadata
                 ? (mode) =>
                     refreshMetadataMutation.mutate({
                       item,
                       mode,
-                      onReplaced: (contentID) => navigate(`/item/${contentID}`, { replace: true }),
+                      onReplaced: (contentID) =>
+                        navigate(`/item/${contentID}`, { replace: true }),
                     })
                 : undefined
             }
             isRefreshing={refreshMetadataMutation.isPending}
             onRedetectIntro={
-              isAdmin ? () => redetectIntroMutation.mutate(item.content_id) : undefined
+              isAdmin
+                ? () => redetectIntroMutation.mutate(item.content_id)
+                : undefined
             }
             isRedetectingIntro={redetectIntroMutation.isPending}
             isAdmin={isAdmin}
             canCurateMetadata={canCurateMetadata}
             canEditMarkers={canEditMarkers}
-            onEditMetadata={canCurateMetadata ? () => setEditOpen(true) : undefined}
+            onEditMetadata={
+              canCurateMetadata ? () => setEditOpen(true) : undefined
+            }
             onShowMediaInfo={
               canCurateMetadata && (item.versions?.length ?? 0) > 0
                 ? () => openMediaInfo()
@@ -383,9 +429,11 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
                 : undefined
             }
             onSearchSubtitles={
-              (item.versions?.length ?? 0) > 0 ? () => setSubtitleSearchOpen(true) : undefined
+              (item.versions?.length ?? 0) > 0
+                ? () => setSubtitleSearchOpen(true)
+                : undefined
             }
-            qualityPreference={currentProfile?.quality_preference}
+            qualityPreference={qualityPreference}
             audioSelectionMode={audioSelectionMode}
             explicitAudioTrackIndex={explicitAudioTrackIndex}
             onSelectAudioTrack={handleSelectAudioTrack}
@@ -397,7 +445,10 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
             onResetSubtitleSelection={handleResetSubtitleSelection}
             preferredSubtitleLanguage={item.effective_subtitle_language}
             preferredSubtitleTrackSignature={preferredSubtitleTrackSignature}
-            subtitleMode={item.effective_subtitle_mode as "off" | "auto" | "always" | undefined}
+            subtitleMode={
+              item.effective_subtitle_mode as
+                "off" | "auto" | "always" | undefined
+            }
             showForcedSubtitles={item.effective_show_forced_subtitles}
             profileLanguage={currentProfile?.language}
           />
@@ -419,7 +470,9 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
         ) : (
           siblingEpisodes.length > 1 && (
             <div>
-              <h2 className="mb-5 text-xl font-semibold tracking-tight">More Episodes</h2>
+              <h2 className="mb-5 text-xl font-semibold tracking-tight">
+                More Episodes
+              </h2>
               <EpisodeCarousel
                 episodes={siblingEpisodes}
                 currentEpisodeNumber={episodeNum ?? -1}
@@ -439,7 +492,11 @@ export default function EpisodeContent({ item }: { item: ItemDetail & { type: "e
         {item.crew && item.crew.length > 0 && <CrewList crew={item.crew} />}
       </div>
       {canCurateMetadata && (
-        <EditMetadataDialog item={item} open={editOpen} onOpenChange={setEditOpen} />
+        <EditMetadataDialog
+          item={item}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
       )}
       <DownloadVersionPicker
         open={downloadOpen}

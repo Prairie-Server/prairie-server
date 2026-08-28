@@ -1,13 +1,16 @@
 import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import type { FileVersion, ItemDetail } from "@/api/types";
-import type { PlayerSubtitleTrackSignature, PrePlaySubtitleSelection } from "@/player/types";
-import { useToggleFavorite } from "@/hooks/queries/favorites";
-import { useToggleWatchlist } from "@/hooks/queries/watchlist";
-import { useRefreshItemMetadata, useWatchedStateMutation } from "@/hooks/queries/items";
-import { useSetRating, useDeleteRating } from "@/hooks/queries/ratings";
+import type {
+  PlayerSubtitleTrackSignature,
+  PrePlaySubtitleSelection,
+} from "@/player/types";
+import { useRefreshItemMetadata } from "@/hooks/queries/items";
 import { useSimilarItems } from "@/hooks/queries/recommendations";
-import { useDeleteSubtitlePreference, useSetSubtitlePreference } from "@/hooks/queries/subtitles";
+import {
+  useDeleteSubtitlePreference,
+  useSetSubtitlePreference,
+} from "@/hooks/queries/subtitles";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
 import { useAmbientColor } from "@/hooks/useAmbientColor";
@@ -29,7 +32,7 @@ import ExtrasSection from "./components/ExtrasSection";
 import QualityBadges from "./components/QualityBadges";
 import ScoreRow from "./components/ScoreRow";
 import HeroCrewLine from "./components/HeroCrewLine";
-import ActionBar from "./components/ActionBar";
+import MediaUserActionBar from "./components/MediaUserActionBar";
 import MediaInfoDialog from "./components/MediaInfoDialog";
 import SubtitleSearchDialog from "./components/SubtitleSearchDialog";
 import { sortByResolution } from "./components/VersionFlyout";
@@ -37,14 +40,18 @@ import { selectDefaultPlaybackVariantVersion } from "./components/versionRanking
 import { resolveSelectedMediaSummary } from "./components/selectedMediaSummary";
 import { RecommendationGridSkeleton } from "./components/SectionSkeletons";
 import { resolveLeafPrimaryAction } from "./itemDetailLayout";
-import { getWatchedActionLabel } from "./watchedState";
 import {
   canCurateMetadata as canCurateMetadataForUser,
   canEditMarkers as canEditMarkersForUser,
 } from "@/lib/permissions";
 import { formatRuntimeMinutes } from "@/lib/mediaFormat";
+import { useQualityPreference } from "@/hooks/queries/qualityPreference";
 
-export default function MovieContent({ item }: { item: ItemDetail & { type: "movie" } }) {
+export default function MovieContent({
+  item,
+}: {
+  item: ItemDetail & { type: "movie" };
+}) {
   const { translating: overviewTranslating, onTranslate: onTranslateOverview } =
     useOnViewTranslation(item);
   const navigate = useNavigate();
@@ -52,17 +59,16 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
   const { user } = useAuth();
   const isAdmin = useIsActingAdmin();
   const { profile: currentProfile } = useCurrentProfile();
+  // The resolution cap comes from the settings contract, where the quality
+  // picker writes; the profile column it falls back to is only the pre-cutover
+  // choice, since that picker no longer mirrors into it.
+  const qualityPreference = useQualityPreference(
+    currentProfile?.quality_preference,
+  );
   const canCurateMetadata = canCurateMetadataForUser(user, currentProfile);
   const canEditMarkers = canEditMarkersForUser(user, currentProfile);
 
-  const isFavorite = item.user_state?.is_favorite ?? false;
-  const inWatchlist = item.user_state?.in_watchlist ?? false;
-  const toggleFavoriteMutation = useToggleFavorite(item.content_id);
-  const toggleWatchlistMutation = useToggleWatchlist(item.content_id);
   const refreshMetadataMutation = useRefreshItemMetadata();
-  const watchedMutation = useWatchedStateMutation(item);
-  const setRatingMutation = useSetRating(item.content_id);
-  const deleteRatingMutation = useDeleteRating(item.content_id);
   const deleteSubtitlePreference = useDeleteSubtitlePreference();
   const setSubtitlePreference = useSetSubtitlePreference();
   const [editOpen, setEditOpen] = useState(false);
@@ -74,38 +80,51 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
   const [mediaInfoFileId, setMediaInfoFileId] = useState<number | null>(null);
 
   // Version selection state — drives the Play button and inline stream popovers.
-  const sortedVersions = useMemo(() => sortByResolution(item.versions), [item.versions]);
+  const sortedVersions = useMemo(
+    () => sortByResolution(item.versions),
+    [item.versions],
+  );
   const userData =
-    item.user_data && "position_seconds" in item.user_data ? item.user_data : undefined;
+    item.user_data && "position_seconds" in item.user_data
+      ? item.user_data
+      : undefined;
   const defaultSelectedVersion = useMemo(
     () =>
       selectDefaultPlaybackVariantVersion(
         sortedVersions,
         item.playback_variants,
         userData,
-        currentProfile?.quality_preference,
+        qualityPreference,
         item.effective_version_edition_key,
       ),
     [
-      currentProfile?.quality_preference,
+      qualityPreference,
       item.effective_version_edition_key,
       item.playback_variants,
       sortedVersions,
       userData,
     ],
   );
-  const [manualSelectedFileId, setManualSelectedFileId] = useState<number | null>(null);
+  const [manualSelectedFileId, setManualSelectedFileId] = useState<
+    number | null
+  >(null);
   const selectedVersion = useMemo(() => {
     if (manualSelectedFileId == null) {
       return defaultSelectedVersion;
     }
     return (
-      sortedVersions.find((version) => version.file_id === manualSelectedFileId) ??
-      defaultSelectedVersion
+      sortedVersions.find(
+        (version) => version.file_id === manualSelectedFileId,
+      ) ?? defaultSelectedVersion
     );
   }, [defaultSelectedVersion, manualSelectedFileId, sortedVersions]);
   const selectedMediaSummary = useMemo(
-    () => resolveSelectedMediaSummary(selectedVersion, item.playback_variants, item.runtime ?? 0),
+    () =>
+      resolveSelectedMediaSummary(
+        selectedVersion,
+        item.playback_variants,
+        item.runtime ?? 0,
+      ),
     [item.playback_variants, item.runtime, selectedVersion],
   );
   const openMediaInfo = useCallback(
@@ -115,11 +134,15 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
     },
     [selectedVersion?.file_id],
   );
-  const [audioSelectionMode, setAudioSelectionMode] = useState<"auto" | "explicit">("auto");
-  const [explicitAudioTrackIndex, setExplicitAudioTrackIndex] = useState<number | null>(null);
-  const [subtitleSelectionMode, setSubtitleSelectionMode] = useState<"auto" | "off" | "explicit">(
-    "auto",
-  );
+  const [audioSelectionMode, setAudioSelectionMode] = useState<
+    "auto" | "explicit"
+  >("auto");
+  const [explicitAudioTrackIndex, setExplicitAudioTrackIndex] = useState<
+    number | null
+  >(null);
+  const [subtitleSelectionMode, setSubtitleSelectionMode] = useState<
+    "auto" | "off" | "explicit"
+  >("auto");
   const [explicitSubtitleSelection, setExplicitSubtitleSelection] =
     useState<PrePlaySubtitleSelection | null>(null);
 
@@ -133,23 +156,23 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
     setSubtitleSelectionMode("auto");
     setExplicitSubtitleSelection(null);
   }
-  const handleSelectVersion = (version: FileVersion) => {
+  const handleSelectVersion = useCallback((version: FileVersion) => {
     setManualSelectedFileId(version.file_id);
     setAudioSelectionMode("auto");
     setExplicitAudioTrackIndex(null);
     setSubtitleSelectionMode("auto");
     setExplicitSubtitleSelection(null);
-  };
+  }, []);
 
-  const handleSelectAudioTrack = (trackIndex: number) => {
+  const handleSelectAudioTrack = useCallback((trackIndex: number) => {
     setAudioSelectionMode("explicit");
     setExplicitAudioTrackIndex(trackIndex);
-  };
+  }, []);
 
-  const handleResetAudioSelection = () => {
+  const handleResetAudioSelection = useCallback(() => {
     setAudioSelectionMode("auto");
     setExplicitAudioTrackIndex(null);
-  };
+  }, []);
 
   const handleSelectSubtitle = (selection: PrePlaySubtitleSelection) => {
     setSubtitleSelectionMode("explicit");
@@ -186,15 +209,9 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
     primaryAction.label === "Resume" && item.versions.length > 0
       ? `/watch/${item.content_id}?restart=1`
       : undefined;
-  const { data: similarData, isLoading: similarLoading } = useSimilarItems(item.content_id);
-
-  const handleRatingChange = (rating: number | null) => {
-    if (rating === null) {
-      deleteRatingMutation.mutate();
-    } else {
-      setRatingMutation.mutate(rating);
-    }
-  };
+  const { data: similarData, isLoading: similarLoading } = useSimilarItems(
+    item.content_id,
+  );
 
   const preferredSubtitleTrackSignature: PlayerSubtitleTrackSignature | null =
     item.effective_subtitle_track_signature
@@ -211,7 +228,8 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
           codec: item.effective_subtitle_track_signature.codec,
           label: item.effective_subtitle_track_signature.label,
           forced: item.effective_subtitle_track_signature.forced,
-          hearing_impaired: item.effective_subtitle_track_signature.hearing_impaired,
+          hearing_impaired:
+            item.effective_subtitle_track_signature.hearing_impaired,
         }
       : null;
 
@@ -241,7 +259,10 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
             <MetadataBadges
               year={year || undefined}
               contentRating={item.content_rating || undefined}
-              duration={formatRuntimeMinutes(selectedMediaSummary.durationMinutes) || undefined}
+              duration={
+                formatRuntimeMinutes(selectedMediaSummary.durationMinutes) ||
+                undefined
+              }
             />
             <QualityBadges summary={selectedMediaSummary} />
           </div>
@@ -258,9 +279,12 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
         onTranslateOverview={onTranslateOverview}
         crewLine={<HeroCrewLine crew={item.crew ?? []} genres={item.genres} />}
         actions={
-          <ActionBar
+          <MediaUserActionBar
+            item={item}
             contentId={item.content_id}
-            playHref={item.versions.length > 0 ? `/watch/${item.content_id}` : undefined}
+            playHref={
+              item.versions.length > 0 ? `/watch/${item.content_id}` : undefined
+            }
             playLabel={primaryAction.label}
             playProgress={primaryAction.progress}
             restartHref={restartHref}
@@ -280,22 +304,18 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
                 : undefined
             }
             resumeHdr={
-              item.user_data && "last_hdr" in item.user_data ? item.user_data.last_hdr : undefined
+              item.user_data && "last_hdr" in item.user_data
+                ? item.user_data.last_hdr
+                : undefined
             }
-            watchedLabel={getWatchedActionLabel(item)}
-            onToggleWatched={() => watchedMutation.mutate(!(item.user_data?.played ?? false))}
-            isUpdatingWatched={watchedMutation.isPending}
-            onToggleFavorite={() => toggleFavoriteMutation.mutate(isFavorite)}
-            isFavorite={isFavorite}
-            onToggleWatchlist={() => toggleWatchlistMutation.mutate(inWatchlist)}
-            inWatchlist={inWatchlist}
             onRefresh={
               canCurateMetadata
                 ? (mode) =>
                     refreshMetadataMutation.mutate({
                       item,
                       mode,
-                      onReplaced: (contentID) => navigate(`/item/${contentID}`, { replace: true }),
+                      onReplaced: (contentID) =>
+                        navigate(`/item/${contentID}`, { replace: true }),
                     })
                 : undefined
             }
@@ -303,13 +323,21 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
             isAdmin={isAdmin}
             canCurateMetadata={canCurateMetadata}
             canEditMarkers={canEditMarkers}
-            onEditMetadata={canCurateMetadata ? () => setEditOpen(true) : undefined}
-            onMatchItem={canCurateMetadata ? () => setMatchOpen(true) : undefined}
+            onEditMetadata={
+              canCurateMetadata ? () => setEditOpen(true) : undefined
+            }
+            onMatchItem={
+              canCurateMetadata ? () => setMatchOpen(true) : undefined
+            }
             onSplitItem={
-              canCurateMetadata && item.versions.length > 1 ? () => setSplitOpen(true) : undefined
+              canCurateMetadata && item.versions.length > 1
+                ? () => setSplitOpen(true)
+                : undefined
             }
             onShowMediaInfo={
-              canCurateMetadata && item.versions.length > 0 ? () => openMediaInfo() : undefined
+              canCurateMetadata && item.versions.length > 0
+                ? () => openMediaInfo()
+                : undefined
             }
             versions={item.versions}
             playbackVariants={item.playback_variants}
@@ -321,11 +349,11 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
                 : undefined
             }
             onSearchSubtitles={
-              item.versions.length > 0 ? () => setSubtitleSearchOpen(true) : undefined
+              item.versions.length > 0
+                ? () => setSubtitleSearchOpen(true)
+                : undefined
             }
-            rating={item.user_rating ?? null}
-            onRatingChange={handleRatingChange}
-            qualityPreference={currentProfile?.quality_preference}
+            qualityPreference={qualityPreference}
             audioSelectionMode={audioSelectionMode}
             explicitAudioTrackIndex={explicitAudioTrackIndex}
             onSelectAudioTrack={handleSelectAudioTrack}
@@ -337,7 +365,10 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
             onResetSubtitleSelection={handleResetSubtitleSelection}
             preferredSubtitleLanguage={item.effective_subtitle_language}
             preferredSubtitleTrackSignature={preferredSubtitleTrackSignature}
-            subtitleMode={item.effective_subtitle_mode as "off" | "auto" | "always" | undefined}
+            subtitleMode={
+              item.effective_subtitle_mode as
+                "off" | "auto" | "always" | undefined
+            }
             showForcedSubtitles={item.effective_show_forced_subtitles}
             profileLanguage={currentProfile?.language}
           />
@@ -353,9 +384,13 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
           />
         )}
 
-        {item.videos && item.videos.length > 0 && <TrailersSection videos={item.videos} />}
+        {item.videos && item.videos.length > 0 && (
+          <TrailersSection videos={item.videos} />
+        )}
 
-        {item.extras && item.extras.length > 0 && <ExtrasSection extras={item.extras} />}
+        {item.extras && item.extras.length > 0 && (
+          <ExtrasSection extras={item.extras} />
+        )}
 
         {item.cast && item.cast.length > 0 && (
           <div>
@@ -373,14 +408,20 @@ export default function MovieContent({ item }: { item: ItemDetail & { type: "mov
           similarData?.items &&
           similarData.items.length > 0 && (
             <div>
-              <h2 className="mb-5 text-xl font-semibold tracking-tight">More Like This</h2>
+              <h2 className="mb-5 text-xl font-semibold tracking-tight">
+                More Like This
+              </h2>
               <RecommendationGrid items={similarData.items} />
             </div>
           )
         )}
       </div>
       {canCurateMetadata && (
-        <EditMetadataDialog item={item} open={editOpen} onOpenChange={setEditOpen} />
+        <EditMetadataDialog
+          item={item}
+          open={editOpen}
+          onOpenChange={setEditOpen}
+        />
       )}
       {canCurateMetadata && (
         <MatchItemDialog

@@ -34,7 +34,13 @@ describe("logRetentionPolicy", () => {
   it("drops invalid policies when parsing", () => {
     const policies = parseBucketPolicies(
       JSON.stringify([
-        { component: "", level: "info", retention_days: 1, max_rows: 10, max_size_mb: 10 },
+        {
+          component: "",
+          level: "info",
+          retention_days: 1,
+          max_rows: 10,
+          max_size_mb: 10,
+        },
         {
           component: "scanner",
           level: "verbose",

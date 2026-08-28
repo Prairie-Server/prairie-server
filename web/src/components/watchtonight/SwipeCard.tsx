@@ -1,5 +1,10 @@
 import { useRef, useState } from "react";
-import { motion, useMotionValue, useTransform, type PanInfo } from "motion/react";
+import {
+  motion,
+  useMotionValue,
+  useTransform,
+  type PanInfo,
+} from "motion/react";
 import { Check, Info, Play, Star, X } from "lucide-react";
 import type { SwipeCard as SwipeCardType } from "@/hooks/queries/recommendations";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +26,12 @@ interface SwipeCardProps {
   onReject: () => void;
 }
 
-export default function SwipeCard({ card, isTop, onAccept, onReject }: SwipeCardProps) {
+export default function SwipeCard({
+  card,
+  isTop,
+  onAccept,
+  onReject,
+}: SwipeCardProps) {
   const [isFlipped, setIsFlipped] = useState(false);
   const didDragRef = useRef(false);
 
@@ -33,8 +43,10 @@ export default function SwipeCard({ card, isTop, onAccept, onReject }: SwipeCard
 
   const source = card.watch_tonight_source ?? "";
   const isInProgress = source === "continue_watching";
-  const hasEpisodeMeta = card.season_number != null && card.episode_number != null;
-  const heading = hasEpisodeMeta && card.series_title ? card.series_title : card.title;
+  const hasEpisodeMeta =
+    card.season_number != null && card.episode_number != null;
+  const heading =
+    hasEpisodeMeta && card.series_title ? card.series_title : card.title;
   const progressPercent =
     isInProgress && (card.duration_seconds ?? 0) > 0
       ? ((card.position_seconds ?? 0) / (card.duration_seconds ?? 1)) * 100
@@ -45,7 +57,10 @@ export default function SwipeCard({ card, isTop, onAccept, onReject }: SwipeCard
 
   function handleDragEnd(_: unknown, info: PanInfo) {
     const { offset, velocity } = info;
-    if (Math.abs(offset.x) > SWIPE_THRESHOLD || Math.abs(velocity.x) > SWIPE_VELOCITY) {
+    if (
+      Math.abs(offset.x) > SWIPE_THRESHOLD ||
+      Math.abs(velocity.x) > SWIPE_VELOCITY
+    ) {
       if (offset.x > 0) onAccept();
       else onReject();
     }
@@ -87,7 +102,10 @@ export default function SwipeCard({ card, isTop, onAccept, onReject }: SwipeCard
         {/* Front face */}
         <div
           className="absolute inset-0 overflow-hidden rounded-2xl"
-          style={{ backfaceVisibility: "hidden", WebkitBackfaceVisibility: "hidden" }}
+          style={{
+            backfaceVisibility: "hidden",
+            WebkitBackfaceVisibility: "hidden",
+          }}
         >
           {/* Backdrop image */}
           {card.backdrop_url ? (
@@ -115,7 +133,10 @@ export default function SwipeCard({ card, isTop, onAccept, onReject }: SwipeCard
 
           {/* Source badge */}
           {badgeLabel && (
-            <Badge variant="secondary" className="absolute top-3 right-3 text-[10px]">
+            <Badge
+              variant="secondary"
+              className="absolute top-3 right-3 text-[10px]"
+            >
               {badgeLabel}
             </Badge>
           )}
@@ -148,7 +169,9 @@ export default function SwipeCard({ card, isTop, onAccept, onReject }: SwipeCard
                 draggable={false}
               />
             ) : (
-              <h3 className="mb-1 text-xl font-bold text-white drop-shadow-md">{heading}</h3>
+              <h3 className="mb-1 text-xl font-bold text-white drop-shadow-md">
+                {heading}
+              </h3>
             )}
 
             {hasEpisodeMeta && (
@@ -160,7 +183,9 @@ export default function SwipeCard({ card, isTop, onAccept, onReject }: SwipeCard
 
             <div className="flex flex-wrap items-center gap-2">
               {card.year > 0 && (
-                <span className="text-sm font-medium text-white/70">{card.year}</span>
+                <span className="text-sm font-medium text-white/70">
+                  {card.year}
+                </span>
               )}
               {rating != null && (
                 <span className="flex items-center gap-0.5 text-sm font-medium text-yellow-400">
@@ -255,7 +280,10 @@ export default function SwipeCard({ card, isTop, onAccept, onReject }: SwipeCard
                     <p key={c.name} className="text-sm">
                       <span className="font-medium">{c.name}</span>
                       {c.character && (
-                        <span className="text-muted-foreground"> as {c.character}</span>
+                        <span className="text-muted-foreground">
+                          {" "}
+                          as {c.character}
+                        </span>
                       )}
                     </p>
                   ))}
@@ -277,7 +305,9 @@ export default function SwipeCard({ card, isTop, onAccept, onReject }: SwipeCard
                     : `${card.runtime}m`}
                 </span>
               )}
-              {card.year > 0 && <span className="text-muted-foreground">{card.year}</span>}
+              {card.year > 0 && (
+                <span className="text-muted-foreground">{card.year}</span>
+              )}
             </div>
 
             {card.genres && card.genres.length > 0 && (

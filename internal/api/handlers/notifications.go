@@ -395,14 +395,14 @@ func (h *NotificationsHandler) HandleCapability(w http.ResponseWriter, r *http.R
 		if h.system.Settings.ApplePushDeliveryEnabled(r.Context()) {
 			applePush = capabilityPush{
 				Available:      true,
-				Provider:       notifications.PushProviderPrairieRelay,
+				Provider:       notifications.PushProviderSiloRelay,
 				SupportedModes: []string{notifications.PushModePrivatePush, notifications.PushModeInAppOnly},
 			}
 		}
 		if h.system.Settings.AndroidPushDeliveryEnabled(r.Context()) {
 			androidPush = capabilityPush{
 				Available:      true,
-				Provider:       notifications.PushProviderPrairieRelay,
+				Provider:       notifications.PushProviderSiloRelay,
 				SupportedModes: []string{notifications.PushModePrivatePush, notifications.PushModeInAppOnly},
 			}
 		}

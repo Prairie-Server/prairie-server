@@ -13,12 +13,24 @@ import {
 
 describe("liveTVGuide helpers", () => {
   it("prefers number_override for display", () => {
-    expect(channelDisplayNumber({ number: "5.1", number_override: "5" })).toBe("5");
-    expect(channelDisplayNumber({ number: "5.1", number_override: "  " })).toBe("5.1");
-    expect(channelDisplayNumber({ number: "5.1", number_override: null })).toBe("5.1");
-    expect(channelLabel({ number: "5.1", callsign: "KING", name: "NBC" })).toBe("5.1 · KING");
-    expect(channelLabel({ number: "7.1", callsign: "", name: "ABC" })).toBe("7.1 · ABC");
-    expect(channelLabel({ number: "9.1", callsign: "", name: "" })).toBe("9.1 · Channel");
+    expect(channelDisplayNumber({ number: "5.1", number_override: "5" })).toBe(
+      "5",
+    );
+    expect(channelDisplayNumber({ number: "5.1", number_override: "  " })).toBe(
+      "5.1",
+    );
+    expect(channelDisplayNumber({ number: "5.1", number_override: null })).toBe(
+      "5.1",
+    );
+    expect(channelLabel({ number: "5.1", callsign: "KING", name: "NBC" })).toBe(
+      "5.1 · KING",
+    );
+    expect(channelLabel({ number: "7.1", callsign: "", name: "ABC" })).toBe(
+      "7.1 · ABC",
+    );
+    expect(channelLabel({ number: "9.1", callsign: "", name: "" })).toBe(
+      "9.1 · Channel",
+    );
   });
 
   it("picks now and next programmes", () => {
@@ -156,7 +168,9 @@ describe("liveTVGuide helpers", () => {
     const window = buildGuideWindow(now, 0.5, 1.5);
     expect(window.pxPerMs).toBeCloseTo(GUIDE_HOUR_WIDTH_PX / (60 * 60 * 1000));
     expect(guideTimeTicks(window).length).toBeGreaterThan(0);
-    expect(guideTimeTicks(window, 60).length).toBeLessThan(guideTimeTicks(window, 30).length);
+    expect(guideTimeTicks(window, 60).length).toBeLessThan(
+      guideTimeTicks(window, 30).length,
+    );
 
     const laid = layoutProgramsForChannel(
       [
@@ -274,15 +288,26 @@ describe("liveTVGuide helpers", () => {
     expect(endingSoon?.leftPx).toBe(0);
     // Full half-hour cell — not a thin sliver of the remaining 12 minutes.
     expect(endingSoon?.widthPx).toBeCloseTo(GUIDE_HOUR_WIDTH_PX / 2, 0);
-    expect(laid.find((p) => p.id === "next")?.leftPx).toBeCloseTo(GUIDE_HOUR_WIDTH_PX / 2, 0);
+    expect(laid.find((p) => p.id === "next")?.leftPx).toBeCloseTo(
+      GUIDE_HOUR_WIDTH_PX / 2,
+      0,
+    );
   });
 
   it("computes progress fraction edges", () => {
     const now = new Date("2026-07-27T15:00:00Z");
-    expect(progressFraction("2026-07-27T14:00:00Z", "2026-07-27T16:00:00Z", now)).toBeCloseTo(0.5);
+    expect(
+      progressFraction("2026-07-27T14:00:00Z", "2026-07-27T16:00:00Z", now),
+    ).toBeCloseTo(0.5);
     expect(progressFraction("bad", "2026-07-27T16:00:00Z", now)).toBe(0);
-    expect(progressFraction("2026-07-27T16:00:00Z", "2026-07-27T14:00:00Z", now)).toBe(0);
-    expect(progressFraction("2026-07-27T14:00:00Z", "2026-07-27T14:30:00Z", now)).toBe(1);
-    expect(progressFraction("2026-07-27T15:30:00Z", "2026-07-27T16:00:00Z", now)).toBe(0);
+    expect(
+      progressFraction("2026-07-27T16:00:00Z", "2026-07-27T14:00:00Z", now),
+    ).toBe(0);
+    expect(
+      progressFraction("2026-07-27T14:00:00Z", "2026-07-27T14:30:00Z", now),
+    ).toBe(1);
+    expect(
+      progressFraction("2026-07-27T15:30:00Z", "2026-07-27T16:00:00Z", now),
+    ).toBe(0);
   });
 });

@@ -55,6 +55,9 @@ plugins/metadb/dist/
 web/*.tsbuildinfo
 
 docs/inspiration
+# Agent-authored plans/specs are ephemeral scratch: written here while working,
+# distilled into docs/architecture/ (or the PR description) before merge.
+docs/superpowers/
 
 
 # `.agents/skills` is a symlink to `.claude/skills` so non-Claude agents find the
@@ -66,8 +69,8 @@ docs/inspiration
 !/.claude/skills/
 # Skills may carry per-developer state next to their instructions (the global
 # *.local.md rule above covers notes; these cover tokens and run state).
-**/.secrets/
-**/.state/
+**/.secrets
+**/.state
 .cursor/
 .superpowers/
 .codex/
@@ -87,3 +90,5 @@ docker-compose.override.yml
 docker-compose.local.yml
 .playwright-cli/
 output/
+/settingsgen
+/playbackfixtures

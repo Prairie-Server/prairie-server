@@ -11,7 +11,7 @@ import (
 )
 
 func TestScanSourceClientByPluginIDResolvesCurrentInstallation(t *testing.T) {
-	manifest := testPluginManifest(t, "prairie.autoscan.cephfs", "0.2.2")
+	manifest := testPluginManifest(t, "silo.autoscan.cephfs", "0.2.2")
 	manifest.Capabilities = []*pluginv1.CapabilityDescriptor{
 		{Type: "scan_source.v1", Id: "cephfs", DisplayName: "CephFS"},
 	}
@@ -25,15 +25,15 @@ func TestScanSourceClientByPluginIDResolvesCurrentInstallation(t *testing.T) {
 			byID: map[int]*Installation{
 				8: {
 					ID:          8,
-					PluginID:    "prairie.autoscan.cephfs",
+					PluginID:    "silo.autoscan.cephfs",
 					Version:     "0.2.2",
 					InstallPath: installPath,
 					Enabled:     true,
 				},
 			},
 			byPluginID: map[string][]*Installation{
-				"prairie.autoscan.cephfs": {
-					{ID: 8, PluginID: "prairie.autoscan.cephfs", Version: "0.2.2", InstallPath: installPath, Enabled: true},
+				"silo.autoscan.cephfs": {
+					{ID: 8, PluginID: "silo.autoscan.cephfs", Version: "0.2.2", InstallPath: installPath, Enabled: true},
 				},
 			},
 			listCapabilities: []*Capability{{InstallationID: 8, Type: "scan_source.v1", ID: "cephfs"}},
@@ -41,7 +41,7 @@ func TestScanSourceClientByPluginIDResolvesCurrentInstallation(t *testing.T) {
 		host: host,
 	}
 
-	if _, err := service.ScanSourceClientByPluginID(context.Background(), "prairie.autoscan.cephfs", "cephfs"); err != nil {
+	if _, err := service.ScanSourceClientByPluginID(context.Background(), "silo.autoscan.cephfs", "cephfs"); err != nil {
 		t.Fatalf("ScanSourceClientByPluginID: %v", err)
 	}
 	if len(host.started) != 1 || host.started[0].InstallationID != 8 {
@@ -50,7 +50,7 @@ func TestScanSourceClientByPluginIDResolvesCurrentInstallation(t *testing.T) {
 }
 
 func TestScanSourceClientByPluginIDRejectsAmbiguousInstallations(t *testing.T) {
-	manifest := testPluginManifest(t, "prairie.autoscan.cephfs", "0.2.2")
+	manifest := testPluginManifest(t, "silo.autoscan.cephfs", "0.2.2")
 	manifest.Capabilities = []*pluginv1.CapabilityDescriptor{
 		{Type: "scan_source.v1", Id: "cephfs", DisplayName: "CephFS"},
 	}
@@ -58,13 +58,13 @@ func TestScanSourceClientByPluginIDRejectsAmbiguousInstallations(t *testing.T) {
 	service := &Service{
 		installations: &fakeServiceInstallationStore{
 			byID: map[int]*Installation{
-				8: {ID: 8, PluginID: "prairie.autoscan.cephfs", Version: "0.2.2", InstallPath: installPath, Enabled: true},
-				9: {ID: 9, PluginID: "prairie.autoscan.cephfs", Version: "0.2.3", InstallPath: installPath, Enabled: true},
+				8: {ID: 8, PluginID: "silo.autoscan.cephfs", Version: "0.2.2", InstallPath: installPath, Enabled: true},
+				9: {ID: 9, PluginID: "silo.autoscan.cephfs", Version: "0.2.3", InstallPath: installPath, Enabled: true},
 			},
 			byPluginID: map[string][]*Installation{
-				"prairie.autoscan.cephfs": {
-					{ID: 8, PluginID: "prairie.autoscan.cephfs", Version: "0.2.2", InstallPath: installPath, Enabled: true},
-					{ID: 9, PluginID: "prairie.autoscan.cephfs", Version: "0.2.3", InstallPath: installPath, Enabled: true},
+				"silo.autoscan.cephfs": {
+					{ID: 8, PluginID: "silo.autoscan.cephfs", Version: "0.2.2", InstallPath: installPath, Enabled: true},
+					{ID: 9, PluginID: "silo.autoscan.cephfs", Version: "0.2.3", InstallPath: installPath, Enabled: true},
 				},
 			},
 			listCapabilities: []*Capability{{Type: "scan_source.v1", ID: "cephfs"}},
@@ -72,7 +72,7 @@ func TestScanSourceClientByPluginIDRejectsAmbiguousInstallations(t *testing.T) {
 		host: &fakeServiceHost{},
 	}
 
-	_, err := service.ScanSourceClientByPluginID(context.Background(), "prairie.autoscan.cephfs", "cephfs")
+	_, err := service.ScanSourceClientByPluginID(context.Background(), "silo.autoscan.cephfs", "cephfs")
 	if err == nil || !strings.Contains(err.Error(), "ambiguous") {
 		t.Fatalf("ScanSourceClientByPluginID error = %v, want ambiguous", err)
 	}

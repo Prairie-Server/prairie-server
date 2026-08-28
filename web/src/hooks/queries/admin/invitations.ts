@@ -1,6 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { api } from "@/api/client";
-import type { Invitation, CreateInvitationRequest, SendInvitationResponse } from "@/api/types";
+import type {
+  Invitation,
+  CreateInvitationRequest,
+  SendInvitationResponse,
+} from "@/api/types";
 import { adminKeys } from "../keys";
 import { toast } from "sonner";
 
@@ -26,7 +30,9 @@ export function useCreateInvitation() {
       void queryClient.invalidateQueries({ queryKey: adminKeys.invitations() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to send invitation");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to send invitation",
+      );
     },
   });
 }
@@ -35,7 +41,9 @@ export function useResendInvitation() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (id: number) =>
-      api<SendInvitationResponse>(`/admin/invitations/${id}/resend`, { method: "POST" }),
+      api<SendInvitationResponse>(`/admin/invitations/${id}/resend`, {
+        method: "POST",
+      }),
     onSuccess: (data) => {
       if (data.email_sent) {
         toast.success("Invitation resent — the old link no longer works");
@@ -43,7 +51,9 @@ export function useResendInvitation() {
       void queryClient.invalidateQueries({ queryKey: adminKeys.invitations() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to resend invitation");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to resend invitation",
+      );
     },
   });
 }
@@ -51,13 +61,16 @@ export function useResendInvitation() {
 export function useRevokeInvitation() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (id: number) => api(`/admin/invitations/${id}`, { method: "DELETE" }),
+    mutationFn: (id: number) =>
+      api(`/admin/invitations/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       toast.success("Invitation revoked");
       void queryClient.invalidateQueries({ queryKey: adminKeys.invitations() });
     },
     onError: (err) => {
-      toast.error(err instanceof Error ? err.message : "Failed to revoke invitation");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to revoke invitation",
+      );
     },
   });
 }

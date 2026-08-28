@@ -80,7 +80,9 @@ describe("PolicyDecisionLogTable", () => {
 
     expect(await screen.findByText("digest-page-1")).toBeInTheDocument();
 
-    fireEvent.change(screen.getByLabelText("User ID"), { target: { value: "42" } });
+    fireEvent.change(screen.getByLabelText("User ID"), {
+      target: { value: "42" },
+    });
     fireEvent.click(screen.getByRole("button", { name: "Apply" }));
 
     await waitFor(() => {

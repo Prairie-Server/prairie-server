@@ -376,6 +376,31 @@ type SeriesPlaybackPreference struct {
 	UpdatedAt  string `json:"updated_at"`
 }
 
+// Collection kinds for CollectionSortPreference. Collection ids are unique
+// within a kind, so the kind is part of the preference's identity. Personal
+// list sources use PersonalSortPreferenceCollectionID because they have no
+// collection resource id of their own.
+const (
+	CollectionKindLibrary   = "library"
+	CollectionKindUser      = "user"
+	CollectionKindWatchlist = "watchlist"
+	CollectionKindFavorites = "favorites"
+
+	PersonalSortPreferenceCollectionID = "personal"
+)
+
+// CollectionSortPreference records that a profile changed the sort order while
+// browsing a collection or personal list. An empty SortField is a real choice
+// to use source order and is distinct from having no preference row at all.
+type CollectionSortPreference struct {
+	ProfileID      string `json:"profile_id"`
+	CollectionKind string `json:"collection_kind"`
+	CollectionID   string `json:"collection_id"`
+	SortField      string `json:"sort_field"`
+	SortOrder      string `json:"sort_order"`
+	UpdatedAt      string `json:"updated_at"`
+}
+
 // LibraryPlaybackPreference stores per-library playback settings.
 type LibraryPlaybackPreference struct {
 	ProfileID              string `json:"profile_id"`

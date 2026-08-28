@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { getAccessToken, restoreUserSession, setAccessToken } from "../api/client";
+import {
+  getAccessToken,
+  restoreUserSession,
+  setAccessToken,
+} from "../api/client";
 import {
   clearStoredImpersonationAdminSession,
   loadStoredImpersonationAdminSession,
@@ -16,7 +20,8 @@ describe("impersonationSession", () => {
           return sessionStorageState.size;
         },
         getItem: (key: string) => sessionStorageState.get(key) ?? null,
-        key: (index: number) => Array.from(sessionStorageState.keys())[index] ?? null,
+        key: (index: number) =>
+          Array.from(sessionStorageState.keys())[index] ?? null,
         setItem: (key: string, value: string) => {
           sessionStorageState.set(key, value);
         },
@@ -36,7 +41,8 @@ describe("impersonationSession", () => {
           return localStorageState.size;
         },
         getItem: (key: string) => localStorageState.get(key) ?? null,
-        key: (index: number) => Array.from(localStorageState.keys())[index] ?? null,
+        key: (index: number) =>
+          Array.from(localStorageState.keys())[index] ?? null,
         setItem: (key: string, value: string) => {
           localStorageState.set(key, value);
         },
@@ -156,10 +162,13 @@ describe("impersonationSession", () => {
         url.endsWith("/auth/me") &&
         headers.get("Authorization") === "Bearer expired-admin-access"
       ) {
-        return new Response(JSON.stringify({ error: "unauthorized", message: "expired" }), {
-          status: 401,
-          headers: { "Content-Type": "application/json" },
-        });
+        return new Response(
+          JSON.stringify({ error: "unauthorized", message: "expired" }),
+          {
+            status: 401,
+            headers: { "Content-Type": "application/json" },
+          },
+        );
       }
 
       if (url.endsWith("/auth/refresh")) {

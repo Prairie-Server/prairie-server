@@ -28,7 +28,10 @@ export default function FilterEasyMode({ initialConfig, onChange }: Props) {
     onChange(chipsToFilterConfig(nextChips, nextMode));
   }
 
-  function setAndEmit(nextChips: FilterChipModel[], nextMode: "all" | "any" = matchMode) {
+  function setAndEmit(
+    nextChips: FilterChipModel[],
+    nextMode: "all" | "any" = matchMode,
+  ) {
     setChips(nextChips);
     setMatchMode(nextMode);
     emit(nextChips, nextMode);

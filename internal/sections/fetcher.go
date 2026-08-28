@@ -111,6 +111,16 @@ func NewFetcher(pool *pgxpool.Pool) *Fetcher {
 	}
 }
 
+// ResolvePlayableTargets resolves profile-aware direct-play targets after
+// section cache lookup. The result stays separate from cached MediaItem
+// pointers so profile-specific playback state cannot enter the shared cache.
+func (f *Fetcher) ResolvePlayableTargets(ctx context.Context, query catalog.PlayableTargetQuery) (map[string]string, error) {
+	if f == nil {
+		return map[string]string{}, nil
+	}
+	return catalog.NewPlayableTargetResolver(f.pool).Resolve(ctx, query)
+}
+
 type editorialCandidateLoader func(context.Context, string, *int, []int, catalog.AccessFilter) ([]string, error)
 
 type editorialCandidateCache struct {
@@ -458,12 +468,9 @@ func (f *Fetcher) fetchContinueWatchingSection(ctx context.Context, resolved Res
 
 	nextUpMode := ""
 	if ContinueTypeAllowsNextUp(continueType) && !resolved.SuppressNextUp {
-		nextUpMode, _ = store.GetSetting(ctx, "next_up_mode")
-		if nextUpMode == "" {
-			nextUpMode = "combined"
-		}
+		nextUpMode = NextUpMode(ctx, store, profileID)
 	}
-	if ContinueTypeAllowsNextUp(continueType) && nextUpMode == "combined" {
+	if ContinueTypeAllowsNextUp(continueType) && nextUpMode == NextUpModeCombined {
 		nextUpItems, nextUpMeta, nextUpErr := f.FetchNextUpItems(ctx, userID, profileID, effectiveLibID, effectiveLibraryIDs, filter, limit)
 		if nextUpErr != nil {
 			slog.ErrorContext(ctx, "fetching next-up items", "component", "sections", "error", nextUpErr)
@@ -473,11 +480,11 @@ func (f *Fetcher) fetchContinueWatchingSection(ctx context.Context, resolved Res
 		}
 	}
 
-	if nextUpMode == "combined" && len(orderedItems) > 1 {
+	if nextUpMode == NextUpModeCombined && len(orderedItems) > 1 {
 		orderedItems = collapseContinueWatchingSeriesCandidates(orderedItems, itemMeta)
 	}
 
-	if nextUpMode == "combined" && len(orderedItems) > 1 {
+	if nextUpMode == NextUpModeCombined && len(orderedItems) > 1 {
 		sort.SliceStable(orderedItems, func(i, j int) bool {
 			left := itemMeta[orderedItems[i].ContentID].SortTimestamp
 			right := itemMeta[orderedItems[j].ContentID].SortTimestamp
@@ -723,9 +730,8 @@ func (f *Fetcher) fetchNextUpSection(ctx context.Context, resolved ResolvedSecti
 		return SectionWithItems{}, fmt.Errorf("getting user store: %w", err)
 	}
 
-	// Only resolve if user preference is "separate"
-	nextUpMode, _ := store.GetSetting(ctx, "next_up_mode")
-	if nextUpMode != "separate" {
+	// Only resolve if the profile's preference is "separate"
+	if NextUpMode(ctx, store, profileID) != NextUpModeSeparate {
 		return emptyResult, nil
 	}
 
@@ -1313,7 +1319,8 @@ func (f *Fetcher) fetchCollection(ctx context.Context, s ResolvedSection, librar
 		return []*models.MediaItem{}, 0, nil
 	}
 
-	if _, err := f.CollectionRepo.GetByID(ctx, cfg.LibraryCollectionID); err != nil {
+	collection, err := f.CollectionRepo.GetByID(ctx, cfg.LibraryCollectionID)
+	if err != nil {
 		return nil, 0, fmt.Errorf("loading library collection: %w", err)
 	}
 
@@ -1325,13 +1332,28 @@ func (f *Fetcher) fetchCollection(ctx context.Context, s ResolvedSection, librar
 		return []*models.MediaItem{}, 0, nil
 	}
 
-	limit := s.ItemLimit
-	if limit <= 0 || limit > len(collectionItems) {
-		limit = len(collectionItems)
+	// Library collection rails are shared across profiles (see
+	// isCacheableSectionType), so only the creator's user-agnostic default
+	// applies here — a viewer's personal override is honored on the collection's
+	// own browse page.
+	defaultSort, hasDefaultSort := catalog.ParseCollectionDefaultSort(collection.SortConfig, false)
+	if hasDefaultSort {
+		contentIDs := make([]string, 0, len(collectionItems))
+		for _, item := range collectionItems {
+			contentIDs = append(contentIDs, item.MediaItemID)
+		}
+		queryAccess := collectionRailQueryAccess(filter, libraryID, libraryIDs)
+		items, total, err := catalog.QueryCollectionItemsBySort(ctx, f.pool, contentIDs, defaultSort, queryAccess, s.ItemLimit, "")
+		if err != nil {
+			return nil, 0, err
+		}
+		return items, total, nil
 	}
 
-	contentIDs := make([]string, 0, limit)
-	for _, item := range collectionItems[:limit] {
+	selectedCollectionItems := collectionRailItemsToFetch(collectionItems, s.ItemLimit)
+
+	contentIDs := make([]string, 0, len(selectedCollectionItems))
+	for _, item := range selectedCollectionItems {
 		contentIDs = append(contentIDs, item.MediaItemID)
 	}
 
@@ -1354,7 +1376,23 @@ func (f *Fetcher) fetchCollection(ctx context.Context, s ResolvedSection, librar
 		orderedItems = append(orderedItems, item)
 	}
 
-	return orderedItems, len(orderedItems), nil
+	// Historically total represented the number of visible rail items, not the
+	// collection membership. Keep that contract for unsorted rails.
+	orderedItems, total := unsortedCollectionRailResult(orderedItems)
+	return orderedItems, total, nil
+}
+
+func collectionRailItemsToFetch(items []*models.LibraryCollectionItem, itemLimit int) []*models.LibraryCollectionItem {
+	if itemLimit > 0 && itemLimit < len(items) {
+		// Preserve the legacy rail path when no default sort is configured:
+		// bound the lookup before expanding content IDs into SQL parameters.
+		return items[:itemLimit]
+	}
+	return items
+}
+
+func unsortedCollectionRailResult(items []*models.MediaItem) ([]*models.MediaItem, int) {
+	return items, len(items)
 }
 
 // fetchUserCollection resolves a personal (profile-scoped) user collection.
@@ -1451,6 +1489,29 @@ func (f *Fetcher) fetchUserCollection(ctx context.Context, s ResolvedSection, li
 		contentIDs = append(contentIDs, item.MediaItemID)
 	}
 
+	displayAccess := collectionRailQueryAccess(filter, libraryID, libraryIDs)
+	displayAccess.UserID = userID
+	displayAccess.ProfileID = profileID
+
+	// A configured default is executed together with the display filter and
+	// rail limit. Querying before hydration avoids loading an entire large
+	// collection merely to render a bounded home rail.
+	if qs, ok := catalog.ParseCollectionDefaultSort([]byte(collection.SortConfig), true); ok {
+		items, total, err := catalog.QueryCollectionItemsBySort(
+			ctx,
+			f.pool,
+			contentIDs,
+			qs,
+			displayAccess,
+			s.ItemLimit,
+			collection.DisplayQueryDefinition,
+		)
+		if err != nil {
+			return nil, 0, err
+		}
+		return items, total, nil
+	}
+
 	items, err := f.fetchItemsByContentIDs(ctx, contentIDs, libraryID, libraryIDs, filter)
 	if err != nil {
 		return nil, 0, err
@@ -1470,9 +1531,6 @@ func (f *Fetcher) fetchUserCollection(ctx context.Context, s ResolvedSection, li
 		orderedItems = append(orderedItems, item)
 	}
 
-	displayAccess := filter
-	displayAccess.UserID = userID
-	displayAccess.ProfileID = profileID
 	orderedItems, err = catalog.FilterCollectionItemsByDisplayQuery(ctx, f.pool, orderedItems, collection.DisplayQueryDefinition, displayAccess)
 	if err != nil {
 		return nil, 0, err
@@ -2276,6 +2334,9 @@ func orderMediaItems(items []*models.MediaItem, orderedIDs []string) []*models.M
 }
 
 func (f *Fetcher) fetchRecentlyAdded(ctx context.Context, s ResolvedSection, libraryID *int, libraryIDs []int, filter catalog.AccessFilter) ([]*models.MediaItem, int, error) {
+	if items, total, handled, err := f.fetchTVRecentlyAdded(ctx, s, libraryID, libraryIDs, filter); handled || err != nil {
+		return items, total, err
+	}
 	query, args := buildRecentlyAddedQuery(s, libraryID, libraryIDs, filter)
 	rows, err := f.pool.Query(ctx, query, args...)
 	if err != nil {
@@ -2287,24 +2348,86 @@ func (f *Fetcher) fetchRecentlyAdded(ctx context.Context, s ResolvedSection, lib
 	return items, len(items), err
 }
 
+func (f *Fetcher) fetchTVRecentlyAdded(
+	ctx context.Context,
+	s ResolvedSection,
+	libraryID *int,
+	libraryIDs []int,
+	filter catalog.AccessFilter,
+) ([]*models.MediaItem, int, bool, error) {
+	if s.DisableTVEventGrouping {
+		return nil, 0, false, nil
+	}
+
+	cfgFilters := recentlyAddedConfigFilters(s.Config)
+	requested := cfgFilters.LibraryIDs()
+	if libraryID != nil {
+		requested = []int{*libraryID}
+	} else if len(requested) == 0 {
+		requested = append([]int(nil), libraryIDs...)
+	}
+	effectiveLibraryIDs, tvScoped, err := catalog.ResolveRecentTVLibraryIDs(
+		ctx,
+		f.pool,
+		requested,
+		cfgFilters.FilterType,
+		filter,
+	)
+	if err != nil || !tvScoped {
+		return nil, 0, tvScoped, err
+	}
+
+	targets, total, _, err := catalog.NewRecentTVRepository(f.pool).List(ctx, catalog.RecentTVQuery{
+		LibraryIDs: effectiveLibraryIDs,
+		Access:     filter,
+		Limit:      s.ItemLimit,
+	})
+	if err != nil {
+		return nil, 0, true, err
+	}
+
+	seriesIDs := make([]string, 0, len(targets))
+	episodeIDs := make([]string, 0, len(targets))
+	for _, target := range targets {
+		if target.Type == "episode" {
+			episodeIDs = append(episodeIDs, target.ContentID)
+		} else {
+			seriesIDs = append(seriesIDs, target.ContentID)
+		}
+	}
+
+	seriesItems, err := f.fetchItemsByContentIDs(ctx, seriesIDs, nil, effectiveLibraryIDs, filter)
+	if err != nil {
+		return nil, 0, true, err
+	}
+	episodeItems, _, err := f.fetchEpisodeTargetsByContentIDs(ctx, episodeIDs, nil, effectiveLibraryIDs, filter)
+	if err != nil {
+		return nil, 0, true, err
+	}
+	itemByKey := make(map[string]*models.MediaItem, len(seriesItems)+len(episodeItems))
+	for _, item := range append(seriesItems, episodeItems...) {
+		itemByKey[item.Type+"\x00"+item.ContentID] = item
+	}
+	ordered := make([]*models.MediaItem, 0, len(targets))
+	for _, target := range targets {
+		if item := itemByKey[target.Type+"\x00"+target.ContentID]; item != nil {
+			itemCopy := *item
+			t := target.AddedAt
+			itemCopy.AddedAt = &t
+			itemCopy.PlayContentID = target.PlayContentID
+			ordered = append(ordered, &itemCopy)
+		}
+	}
+	return ordered, total, true, nil
+}
+
 type sectionQuery struct {
 	sql  string
 	args []any
 }
 
 func buildRecentlyAddedQuery(s ResolvedSection, libraryID *int, libraryIDs []int, filter catalog.AccessFilter) (string, []any) {
-	cfgFilters := ParseConfigFilters(s.Config)
-
-	// Backwards compat: support legacy "types" config field
-	var legacyCfg struct {
-		Types []string `json:"types"`
-	}
-	if len(s.Config) > 0 {
-		_ = json.Unmarshal(s.Config, &legacyCfg)
-	}
-	if cfgFilters.FilterType == "" && len(legacyCfg.Types) > 0 {
-		cfgFilters.FilterType = legacyCfg.Types[0]
-	}
+	cfgFilters := recentlyAddedConfigFilters(s.Config)
 
 	if query, ok := buildRecentlyAddedSingleLibraryQuery(s, cfgFilters, libraryID, libraryIDs, filter); ok {
 		return query.sql, query.args
@@ -2335,6 +2458,20 @@ func buildRecentlyAddedQuery(s ResolvedSection, libraryID *int, libraryIDs []int
 	)
 	args = append(args, s.ItemLimit)
 	return query, args
+}
+
+func recentlyAddedConfigFilters(config json.RawMessage) SectionConfigFilters {
+	cfgFilters := ParseConfigFilters(config)
+	var legacyCfg struct {
+		Types []string `json:"types"`
+	}
+	if len(config) > 0 {
+		_ = json.Unmarshal(config, &legacyCfg)
+	}
+	if cfgFilters.FilterType == "" && len(legacyCfg.Types) > 0 {
+		cfgFilters.FilterType = legacyCfg.Types[0]
+	}
+	return cfgFilters
 }
 
 func buildRecentlyAddedSingleLibraryQuery(s ResolvedSection, cfgFilters SectionConfigFilters, libraryID *int, libraryIDs []int, filter catalog.AccessFilter) (sectionQuery, bool) {
@@ -2375,13 +2512,12 @@ func buildRecentlyAddedSingleLibraryQuery(s ResolvedSection, cfgFilters SectionC
 	}
 
 	if len(filter.DisabledLibraryIDs) > 0 {
-		placeholders := make([]string, len(filter.DisabledLibraryIDs))
-		for i, id := range filter.DisabledLibraryIDs {
-			placeholders[i] = fmt.Sprintf("$%d", argIdx)
-			args = append(args, id)
-			argIdx++
-		}
-		conditions = append(conditions, fmt.Sprintf("mil.media_folder_id NOT IN (%s)", strings.Join(placeholders, ", ")))
+		conditions = append(conditions, fmt.Sprintf(
+			"NOT EXISTS (SELECT 1 FROM media_item_libraries mil_scope_out WHERE mil_scope_out.content_id = mi.content_id AND mil_scope_out.media_folder_id = ANY($%d))",
+			argIdx,
+		))
+		args = append(args, append([]int(nil), filter.DisabledLibraryIDs...))
+		argIdx++
 	}
 
 	applyConfigTypeFilter("mi", cfgFilters.FilterType, &conditions, &args, &argIdx)
@@ -2629,30 +2765,9 @@ func (f *Fetcher) fetchEpisodeTargetsByContentIDs(ctx context.Context, contentID
 	}
 	conditions = append(conditions, fmt.Sprintf("e.content_id IN (%s)", strings.Join(placeholders, ", ")))
 
-	effectiveLibraryIDs := effectiveFetchLibraryIDs(libraryIDs, filter)
-
 	fromClause := "episodes e JOIN media_items si ON e.series_id = si.content_id LEFT JOIN seasons s ON s.content_id = e.season_id"
-	if libraryID != nil || effectiveLibraryIDs != nil {
-		fromClause += " JOIN media_item_libraries mil ON si.content_id = mil.content_id"
-	}
-
-	if libraryID != nil {
-		conditions = append(conditions, fmt.Sprintf("mil.media_folder_id = $%d", argIdx))
-		args = append(args, *libraryID)
-		argIdx++
-	}
-
-	if effectiveLibraryIDs != nil {
-		if len(effectiveLibraryIDs) == 0 {
-			return []*models.MediaItem{}, map[string]SectionItemMeta{}, nil
-		}
-		placeholders = make([]string, len(effectiveLibraryIDs))
-		for i, id := range effectiveLibraryIDs {
-			placeholders[i] = fmt.Sprintf("$%d", argIdx)
-			args = append(args, id)
-			argIdx++
-		}
-		conditions = append(conditions, fmt.Sprintf("mil.media_folder_id IN (%s)", strings.Join(placeholders, ", ")))
+	if !applyEpisodeTargetLibraryAccess(filter, libraryID, libraryIDs, &conditions, &args, &argIdx) {
+		return []*models.MediaItem{}, map[string]SectionItemMeta{}, nil
 	}
 
 	catalog.ApplySectionAccessFilter("si", filter, &conditions, &args, &argIdx)
@@ -2746,6 +2861,50 @@ func effectiveFetchLibraryIDs(libraryIDs []int, filter catalog.AccessFilter) []i
 		return filter.AllowedLibraryIDs
 	}
 	return nil
+}
+
+func applyEpisodeTargetLibraryAccess(
+	filter catalog.AccessFilter,
+	libraryID *int,
+	libraryIDs []int,
+	conditions *[]string,
+	args *[]any,
+	argIdx *int,
+) bool {
+	scoped := collectionRailQueryAccess(filter, libraryID, libraryIDs)
+	if scoped.AllowedLibraryIDs != nil && len(scoped.AllowedLibraryIDs) == 0 {
+		return false
+	}
+	catalog.ApplyLibraryAccessFilter("si.content_id", scoped, conditions, args, argIdx)
+	return true
+}
+
+// collectionRailQueryAccess expresses the section's explicit library scope as
+// an AccessFilter for collection queries routed through QueryExecutor.
+func collectionRailQueryAccess(filter catalog.AccessFilter, libraryID *int, libraryIDs []int) catalog.AccessFilter {
+	result := filter
+	effectiveLibraryIDs := effectiveFetchLibraryIDs(libraryIDs, filter)
+	if libraryID == nil {
+		if effectiveLibraryIDs == nil {
+			result.AllowedLibraryIDs = nil
+		} else {
+			result.AllowedLibraryIDs = append([]int(nil), effectiveLibraryIDs...)
+		}
+		return result
+	}
+
+	if effectiveLibraryIDs == nil {
+		result.AllowedLibraryIDs = []int{*libraryID}
+		return result
+	}
+	for _, id := range effectiveLibraryIDs {
+		if id == *libraryID {
+			result.AllowedLibraryIDs = []int{*libraryID}
+			return result
+		}
+	}
+	result.AllowedLibraryIDs = []int{}
+	return result
 }
 
 func recentSeasonPremiereBadges(seasonNumber, episodeNumber int, airDate *time.Time) []string {

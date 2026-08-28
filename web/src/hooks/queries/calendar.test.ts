@@ -26,7 +26,9 @@ describe("useCalendarWeek", () => {
 
   it("requests an inclusive seven-day calendar window", async () => {
     useCalendarWeek("2026-04-06", { filter: "all" });
-    const queryOptions = mockUseQuery.mock.calls[0]?.[0] as { queryFn: () => Promise<unknown> };
+    const queryOptions = mockUseQuery.mock.calls[0]?.[0] as {
+      queryFn: () => Promise<unknown>;
+    };
 
     await queryOptions.queryFn();
 
@@ -43,7 +45,9 @@ describe("useCalendarWeek", () => {
 
   it("includes the selected library in the request", async () => {
     useCalendarWeek("2026-04-06", { filter: "favorites", libraryId: 7 });
-    const queryOptions = mockUseQuery.mock.calls[0]?.[0] as { queryFn: () => Promise<unknown> };
+    const queryOptions = mockUseQuery.mock.calls[0]?.[0] as {
+      queryFn: () => Promise<unknown>;
+    };
 
     await queryOptions.queryFn();
 

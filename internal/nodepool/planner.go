@@ -4,6 +4,10 @@ import (
 	"context"
 	"sync"
 	"time"
+
+	"github.com/google/uuid"
+
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 // Plan is the result of a node selection for one playback session.
@@ -18,6 +22,22 @@ type Plan struct {
 // without a real pool.
 type SessionPlanner interface {
 	PlanSession(sessionID, currentTranscodeURL string, needsTranscode bool, estBitrateKbps int) Plan
+}
+
+// DownloadPlanner selects proxy nodes for unbounded file delivery. Downloads
+// have no predictable bitrate, so implementations must not admit them onto a
+// proxy with a configured bandwidth cap.
+type DownloadPlanner interface {
+	PlanDownload(sessionID string, preferredGroup ...string) Plan
+	ReleaseSession(sessionID string)
+}
+
+// TranscodeWorkPlanner reserves capacity for non-streaming GPU work such as a
+// prepared download. The returned release function must be called after the
+// remote operation ends or falls back locally.
+type TranscodeWorkPlanner interface {
+	ReserveTranscodeWork(workID string) (*Node, func())
+	TranscodeNode(nodeID int) (*Node, bool)
 }
 
 // reservation bridges the gap between assigning a session to a node and the
@@ -91,6 +111,77 @@ func (p *Planner) PlanSession(sessionID, currentTranscodeURL string, needsTransc
 	return p.PlanSessionWith(sessionID, currentTranscodeURL, needsTranscode, estBitrateKbps, nil)
 }
 
+// TranscodeNode returns the current pool record for a persistent node id. It
+// lets durable artifact locators follow an administrator-edited node URL/group.
+func (p *Planner) TranscodeNode(nodeID int) (*Node, bool) {
+	if p == nil || p.transcodes == nil || nodeID == 0 {
+		return nil, false
+	}
+	for _, node := range p.transcodes.Nodes() {
+		if node != nil && node.ID == nodeID && node.Enabled {
+			return node, true
+		}
+	}
+	return nil, false
+}
+
+// TranscodeNodeHealthy reports whether the pooled transcode node serving a URL
+// is currently healthy and enabled. Remote-start adoption gates its redirect
+// on this: a recipe another API server published is only trustworthy while
+// its node still serves.
+func (p *Planner) TranscodeNodeHealthy(nodeURL string) bool {
+	if p == nil || p.transcodes == nil || nodeURL == "" {
+		return false
+	}
+	node := p.transcodes.FindByURL(normalizeNodeURL(nodeURL))
+	return node != nil && node.Healthy && node.Enabled
+}
+
+// PlanDownload picks a healthy proxy for an unbounded file transfer. A
+// configured proxy bandwidth cap cannot be reserved accurately without a known
+// transfer rate, so capped proxies are excluded instead of being oversubscribed
+// during the egress meter's convergence window.
+func (p *Planner) PlanDownload(sessionID string, preferredGroup ...string) Plan {
+	if p == nil || p.proxies == nil || sessionID == "" {
+		return Plan{}
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	now := p.now()
+	p.pruneReservations(now)
+	delete(p.reserved, sessionID)
+
+	group := ""
+	if len(preferredGroup) > 0 {
+		group = preferredGroup[0]
+	}
+	var candidates, fallback []*Node
+	for _, node := range p.proxies.Nodes() {
+		if node == nil || !node.Enabled || !node.Healthy || !p.underCap(node, now) {
+			continue
+		}
+		if node.MaxBandwidthKbps != nil && *node.MaxBandwidthKbps > 0 {
+			continue
+		}
+		fallback = append(fallback, node)
+		if group != "" && node.Group != nil && *node.Group == group {
+			candidates = append(candidates, node)
+		}
+	}
+	if group == "" || len(candidates) == 0 {
+		candidates = fallback
+	}
+	if len(candidates) == 0 {
+		return Plan{}
+	}
+	rrKey := "download:" + group
+	proxy := candidates[p.rr[rrKey]%len(candidates)]
+	p.rr[rrKey]++
+	p.reserved[sessionID] = &reservation{proxyURL: proxy.URL, createdAt: now}
+	return Plan{ProxyNode: proxy}
+}
+
 // PlanSessionWith behaves like PlanSession but restricts transcode-node
 // selection to nodes accepted by eligible (nil accepts every node). Capability
 // -aware playback planning uses it so a recipe that only some pooled nodes
@@ -116,24 +207,27 @@ func (p *Planner) PlanSessionWith(sessionID, currentTranscodeURL string, needsTr
 	}
 	proxies := p.proxies.Nodes()
 	transcodes := p.transcodes.Nodes()
+	// Group health is computed over the full pool before any narrowing:
+	// eligibility restricts what may be selected, not co-location semantics.
 	groupHealthy := groupHealth(proxies, transcodes)
-	if eligible != nil {
-		filtered := make([]*Node, 0, len(transcodes))
-		for _, node := range transcodes {
-			if eligible(node) {
-				filtered = append(filtered, node)
-			}
-		}
-		transcodes = filtered
-	}
 
 	var plan Plan
 	if needsTranscode {
+		if eligible != nil {
+			transcodes = filterNodes(transcodes, eligible)
+		}
 		plan.TranscodeNode = p.pickTranscode(transcodes, proxies, groupHealthy, currentTranscodeURL, estBitrateKbps, now)
 		if plan.TranscodeNode != nil {
 			plan.ProxyNode = p.pickProxy(proxies, groupHealthy, plan.TranscodeNode.Group, estBitrateKbps, now)
 		}
 	} else {
+		// A proxy-only plan has no transcode node, so the predicate applies to
+		// the proxy: it is the node that will execute the recipe. Filtering
+		// before selection means a capability mismatch skips to a capable
+		// sibling instead of abandoning the pool after one round-robin pick.
+		if eligible != nil {
+			proxies = filterNodes(proxies, eligible)
+		}
 		plan.ProxyNode = p.pickProxy(proxies, groupHealthy, nil, estBitrateKbps, now)
 	}
 
@@ -149,6 +243,66 @@ func (p *Planner) PlanSessionWith(sessionID, currentTranscodeURL string, needsTr
 		p.reserved[sessionID] = res
 	}
 	return plan
+}
+
+// PlanTranscodeSessionWithLocalEgress selects and reserves only a transcode
+// node. The API server remains the client-facing media endpoint and relays the
+// selected node's manifest and segments, so no proxy node is needed or charged
+// against its job/bandwidth budget. This is intentionally separate from
+// PlanSessionWith: its normal grouped-node policy assumes the client talks to a
+// selected proxy directly.
+func (p *Planner) PlanTranscodeSessionWithLocalEgress(sessionID, currentTranscodeURL string, eligible func(*Node) bool) Plan {
+	if p == nil || p.transcodes == nil || sessionID == "" {
+		return Plan{}
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+
+	now := p.now()
+	p.pruneReservations(now)
+	delete(p.reserved, sessionID)
+
+	transcodes := p.transcodes.Nodes()
+	groupHealthy := groupHealth(nil, transcodes)
+	if eligible != nil {
+		transcodes = filterNodes(transcodes, eligible)
+	}
+	node := p.pickLocalEgressTranscode(transcodes, groupHealthy, currentTranscodeURL, now)
+	if node == nil {
+		return Plan{}
+	}
+	p.reserved[sessionID] = &reservation{transcodeURL: node.URL, createdAt: now}
+	return Plan{TranscodeNode: node}
+}
+
+// filterNodes returns the nodes accepted by keep, preserving pool order so
+// round-robin cursors stay meaningful across selections.
+func filterNodes(nodes []*Node, keep func(*Node) bool) []*Node {
+	filtered := make([]*Node, 0, len(nodes))
+	for _, node := range nodes {
+		if keep(node) {
+			filtered = append(filtered, node)
+		}
+	}
+	return filtered
+}
+
+// ProxyNodeURLs lists the URLs of every enabled pooled proxy node, healthy or
+// not, mirroring TranscodeNodeURLs. Capability planning wants the deployment's
+// toolchain; an unreachable node excludes itself when its capability fetch
+// fails.
+func (p *Planner) ProxyNodeURLs() []string {
+	if p == nil || p.proxies == nil {
+		return nil
+	}
+	nodes := p.proxies.Nodes()
+	urls := make([]string, 0, len(nodes))
+	for _, node := range nodes {
+		if node != nil && node.URL != "" {
+			urls = append(urls, node.URL)
+		}
+	}
+	return urls
 }
 
 // TranscodeNodeURLs lists the URLs of every enabled pooled transcode node,
@@ -180,6 +334,97 @@ func (p *Planner) ReleaseSession(sessionID string) {
 	p.mu.Unlock()
 }
 
+// ReleaseSessionProxy drops only the proxy half of a session's reservation,
+// leaving its transcode node charged. A start that selected both nodes but ends
+// up publishing a URL the proxy does not serve (its egress grant could not be
+// written, or the attempt fell back to the API-relayed manifest) would otherwise
+// keep charging that proxy's job slot and estimated bandwidth for a stream no
+// byte will cross it — enough grant-store failures and a healthy proxy looks
+// saturated. The transcode node is still running the job, so its half stands.
+func (p *Planner) ReleaseSessionProxy(sessionID string) {
+	if p == nil {
+		return
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	res, ok := p.reserved[sessionID]
+	if !ok {
+		return
+	}
+	res.proxyURL = ""
+	res.kbps = 0
+	if res.transcodeURL == "" {
+		// Nothing left to bridge; drop the entry rather than wait out its age.
+		delete(p.reserved, sessionID)
+	}
+}
+
+// ReserveTranscodeWork selects the least-loaded healthy transcode node while
+// sharing the same health-bridging reservation accounting as playback. Unlike
+// a playback session it does not require a proxy partner: the completed file
+// is written to the configured shared artifact store and served later.
+func (p *Planner) ReserveTranscodeWork(workID string) (*Node, func()) {
+	return p.ReserveTranscodeWorkWith(workID, nil)
+}
+
+// ReserveTranscodeWorkWith is ReserveTranscodeWork with an optional
+// capability predicate. The predicate runs under the planner lock and must not
+// perform I/O.
+func (p *Planner) ReserveTranscodeWorkWith(workID string, eligible func(*Node) bool) (*Node, func()) {
+	if p == nil || p.transcodes == nil || workID == "" {
+		return nil, func() {}
+	}
+	p.mu.Lock()
+	now := p.now()
+	p.pruneReservations(now)
+	reservationID := workID + "-" + uuid.NewString()
+
+	var best *Node
+	for _, node := range p.transcodes.Nodes() {
+		if node == nil || !node.Enabled || !node.Healthy || !p.underCap(node, now) {
+			continue
+		}
+		if eligible != nil && !eligible(node) {
+			continue
+		}
+		if best == nil || p.effectiveJobs(node, now) < p.effectiveJobs(best, now) {
+			best = node
+		}
+	}
+	if best != nil {
+		p.reserved[reservationID] = &reservation{transcodeURL: best.URL, createdAt: now}
+	}
+	p.mu.Unlock()
+	if best == nil {
+		return nil, func() {}
+	}
+
+	var once sync.Once
+	return best, func() {
+		once.Do(func() { p.ReleaseSession(reservationID) })
+	}
+}
+
+// TranscodeWorkAvailableWith reports whether a healthy, under-cap transcode
+// node satisfies eligible without creating a provisional reservation.
+func (p *Planner) TranscodeWorkAvailableWith(eligible func(*Node) bool) bool {
+	if p == nil || p.transcodes == nil {
+		return false
+	}
+	p.mu.Lock()
+	defer p.mu.Unlock()
+	now := p.now()
+	for _, node := range p.transcodes.Nodes() {
+		if node == nil || !node.Enabled || !node.Healthy || !p.underCap(node, now) {
+			continue
+		}
+		if eligible == nil || eligible(node) {
+			return true
+		}
+	}
+	return false
+}
+
 // groupHealth reports, for every group label present in either pool, whether
 // all of its enabled members are healthy. Pools only hold enabled nodes, so
 // disabled nodes never count against a group.
@@ -200,13 +445,14 @@ func groupHealth(proxies, transcodes []*Node) map[string]bool {
 	return health
 }
 
-// pickTranscode returns the eligible transcode node with the fewest effective
-// jobs, keeping the session on currentURL unless a candidate has at least two
-// fewer jobs (the historical soft-affinity rule).
-func (p *Planner) pickTranscode(transcodes, proxies []*Node, groupHealthy map[string]bool, currentURL string, estKbps int, now time.Time) *Node {
+// pickNode returns the eligible node with the fewest effective jobs, keeping
+// the session on currentURL unless a candidate has at least two fewer jobs
+// (the historical soft-affinity rule). Shared by pickTranscode and
+// pickLocalEgressTranscode, which differ only in their eligibility predicate.
+func (p *Planner) pickNode(nodes []*Node, currentURL string, now time.Time, eligible func(*Node) bool) *Node {
 	var best, current *Node
-	for _, n := range transcodes {
-		if !p.transcodeEligible(n, proxies, groupHealthy, estKbps, now) {
+	for _, n := range nodes {
+		if !eligible(n) {
 			continue
 		}
 		if n.URL == currentURL {
@@ -223,6 +469,27 @@ func (p *Planner) pickTranscode(transcodes, proxies []*Node, groupHealthy map[st
 		return best
 	}
 	return current
+}
+
+// pickTranscode returns the eligible transcode node with the fewest effective
+// jobs, keeping the session on currentURL unless a candidate has at least two
+// fewer jobs (the historical soft-affinity rule).
+func (p *Planner) pickTranscode(transcodes, proxies []*Node, groupHealthy map[string]bool, currentURL string, estKbps int, now time.Time) *Node {
+	return p.pickNode(transcodes, currentURL, now, func(n *Node) bool {
+		return p.transcodeEligible(n, proxies, groupHealthy, estKbps, now)
+	})
+}
+
+// pickLocalEgressTranscode applies the transcode half of normal session
+// admission without requiring a healthy proxy partner. The API server is the
+// egress hop for this route, so unrelated proxy health and capacity must not
+// suppress an otherwise healthy transcode executor. Passing nil proxies to
+// transcodeEligible reduces it to exactly that: healthy, enabled, under cap,
+// and group-healthy, with no proxy partner required.
+func (p *Planner) pickLocalEgressTranscode(transcodes []*Node, groupHealthy map[string]bool, currentURL string, now time.Time) *Node {
+	return p.pickNode(transcodes, currentURL, now, func(n *Node) bool {
+		return p.transcodeEligible(n, nil, groupHealthy, 0, now)
+	})
 }
 
 // transcodeEligible reports whether a transcode node may take a new session:
@@ -343,6 +610,9 @@ func (p *Planner) effectiveEgressKbps(n *Node, now time.Time) int {
 func (p *Planner) effectiveJobs(n *Node, now time.Time) int {
 	jobs := n.ActiveJobs
 	for _, res := range p.reserved {
+		if now.Sub(res.createdAt) > maxReservationAge {
+			continue
+		}
 		if res.transcodeURL != n.URL && res.proxyURL != n.URL {
 			continue
 		}
@@ -372,6 +642,6 @@ func LocalTranscodeFallbackAllowed(ctx context.Context, settings interface {
 	if settings == nil {
 		return true
 	}
-	v, _ := settings.Get(ctx, "playback.local_transcode_fallback")
+	v, _ := settings.Get(ctx, config.PlaybackLocalTranscodeFallbackSettingKey)
 	return v != "false"
 }

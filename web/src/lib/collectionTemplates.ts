@@ -20,11 +20,7 @@ export type CollectionTemplateCategory =
   | "custom";
 
 export type CollectionTemplateSource =
-  | "tmdb"
-  | "trakt"
-  | "mdblist"
-  | "tmdb_discover"
-  | "tmdb_collection";
+  "tmdb" | "trakt" | "mdblist" | "tmdb_discover" | "tmdb_collection";
 
 export type CollectionTemplateMediaKind = "movie" | "tv" | "mixed";
 
@@ -35,9 +31,15 @@ export type CollectionTemplateTMDB = Pick<
   "preset" | "media_type" | "time_window"
 >;
 
-export type CollectionTemplateTrakt = Pick<ImportTraktCollectionRequest, "preset" | "media_type">;
+export type CollectionTemplateTrakt = Pick<
+  ImportTraktCollectionRequest,
+  "preset" | "media_type"
+>;
 
-export type CollectionTemplateMDBList = Pick<ImportMDBListCollectionRequest, "url">;
+export type CollectionTemplateMDBList = Pick<
+  ImportMDBListCollectionRequest,
+  "url"
+>;
 
 // Discover and collection templates ship as backend-driven blueprints that
 // the admin cannot tweak inline; the form surfaces a read-only summary and
@@ -185,7 +187,9 @@ export function fetchCollectionTemplates(): Promise<CollectionTemplateCatalog> {
 }
 
 export function fetchCollectionTemplateBundles(): Promise<CollectionTemplateBundleCatalog> {
-  return api<CollectionTemplateBundleCatalog>("/admin/collections/template-bundles");
+  return api<CollectionTemplateBundleCatalog>(
+    "/admin/collections/template-bundles",
+  );
 }
 
 export function useCollectionTemplates(enabled = true) {

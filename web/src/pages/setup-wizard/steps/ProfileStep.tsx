@@ -11,7 +11,8 @@ import { WizardActions } from "../WizardActions";
 
 import { ArrowRight, Loader2, Plus } from "lucide-react";
 export function ProfileStep() {
-  const { selectProfile, refetchProfiles, profiles, goForward } = useWizardContext();
+  const { selectProfile, refetchProfiles, profiles, goForward } =
+    useWizardContext();
   const [profileName, setProfileName] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
@@ -28,7 +29,9 @@ export function ProfileStep() {
       refetchProfiles();
       toast.success("Profile created");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Failed to create profile");
+      toast.error(
+        err instanceof Error ? err.message : "Failed to create profile",
+      );
     } finally {
       setSubmitting(false);
     }
@@ -42,7 +45,8 @@ export function ProfileStep() {
         <p className="text-muted-foreground text-sm leading-relaxed">
           Profile{profiles.length === 1 ? "" : "s"}{" "}
           <span className="text-foreground font-medium">{names}</span>{" "}
-          {profiles.length === 1 ? "is" : "are"} ready. Continue to review the next step.
+          {profiles.length === 1 ? "is" : "are"} ready. Continue to review the
+          next step.
         </p>
         <WizardActions>
           <Button type="button" onClick={goForward}>

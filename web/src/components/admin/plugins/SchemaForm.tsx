@@ -2,7 +2,11 @@ import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
-import type { PluginAdminForm, PluginAdminFormField, PluginAdminFormSection } from "@/api/types";
+import type {
+  PluginAdminForm,
+  PluginAdminFormField,
+  PluginAdminFormSection,
+} from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -60,7 +64,11 @@ function isPending(
   options: SchemaOption[],
   optionsLoading: boolean | undefined,
 ): boolean {
-  return Boolean(field.dynamic_options) && Boolean(optionsLoading) && options.length === 0;
+  return (
+    Boolean(field.dynamic_options) &&
+    Boolean(optionsLoading) &&
+    options.length === 0
+  );
 }
 
 // Loading placeholder for a single dynamic SELECT: a select-sized row with a
@@ -81,7 +89,9 @@ function SelectSkeleton() {
 // label — shared so the markup can't drift between the field/switch/section
 // renderers.
 function FieldDescription({ text }: { text?: string }) {
-  return text ? <p className="text-muted-foreground text-xs leading-relaxed">{text}</p> : null;
+  return text ? (
+    <p className="text-muted-foreground text-xs leading-relaxed">{text}</p>
+  ) : null;
 }
 
 // Loading placeholder for a dynamic MULTI_SELECT (tags): a few shimmer chips.
@@ -98,11 +108,13 @@ function ChipsSkeleton() {
 function SchemaFormSection({
   section,
   values,
+  fields,
   forceOpen,
   renderFields,
 }: {
   section: PluginAdminFormSection;
   values: Record<string, unknown>;
+  fields: PluginAdminFormField[];
   forceOpen: boolean;
   renderFields: (keys: string[]) => React.ReactNode;
 }) {
@@ -110,7 +122,7 @@ function SchemaFormSection({
   // (the section has unresolved errors) always wins so setup can't be hidden.
   const [userOpen, setUserOpen] = useState<boolean | null>(null);
 
-  if (!evaluateShowWhen(section.show_when, values)) {
+  if (!evaluateShowWhen(section.show_when, values, fields)) {
     return null;
   }
 
@@ -121,11 +133,18 @@ function SchemaFormSection({
     <section className="border-border/70 bg-muted/10 space-y-3 rounded-lg border p-4">
       <div className="flex items-center justify-between gap-2">
         <div className="space-y-0.5">
-          <Label className="text-foreground text-sm font-semibold">{section.title}</Label>
+          <Label className="text-foreground text-sm font-semibold">
+            {section.title}
+          </Label>
           <FieldDescription text={section.description} />
         </div>
         {section.collapsible ? (
-          <Button type="button" size="xs" variant="ghost" onClick={() => setUserOpen(!open)}>
+          <Button
+            type="button"
+            size="xs"
+            variant="ghost"
+            onClick={() => setUserOpen(!open)}
+          >
             {open ? <EyeOff /> : <Eye />}
             {open ? "Hide" : "Show"}
           </Button>
@@ -218,7 +237,9 @@ export function SchemaForm({
         return <ChipsSkeleton />;
       }
       const current = effectiveValue(field, values);
-      const selected = Array.isArray(current) ? current.map((v) => String(v)) : [];
+      const selected = Array.isArray(current)
+        ? current.map((v) => String(v))
+        : [];
       if (options.length === 0) {
         return (
           <p className="text-muted-foreground rounded-md border border-dashed px-3 py-2 text-xs">
@@ -291,10 +312,15 @@ export function SchemaForm({
       <div
         key={field.key}
         data-nested={nested ? "true" : undefined}
-        className={cn("space-y-2", nested && "border-border/60 ml-0.5 border-l pl-3")}
+        className={cn(
+          "space-y-2",
+          nested && "border-border/60 ml-0.5 border-l pl-3",
+        )}
       >
         <div className="space-y-1">
-          <Label htmlFor={`${idPrefix}-${field.key}`}>{field.label || field.key}</Label>
+          <Label htmlFor={`${idPrefix}-${field.key}`}>
+            {field.label || field.key}
+          </Label>
           <FieldDescription text={field.description} />
         </div>
         {renderControl(field)}
@@ -324,7 +350,9 @@ export function SchemaForm({
             <FieldDescription text={field.description} />
           </div>
         </div>
-        {err ? <p className="text-destructive mt-1.5 ml-11 text-xs">{err}</p> : null}
+        {err ? (
+          <p className="text-destructive mt-1.5 ml-11 text-xs">{err}</p>
+        ) : null}
       </div>
     );
   }
@@ -333,7 +361,9 @@ export function SchemaForm({
   // bordered, divided container so toggles read as a cohesive group instead of
   // a column of separate boxes. Honors show_when on each field.
   function renderFieldList(fields: PluginAdminFormField[]): React.ReactNode {
-    const visible = fields.filter((field) => evaluateShowWhen(field.show_when, values));
+    const visible = fields.filter((field) =>
+      evaluateShowWhen(field.show_when, values, descriptor.fields),
+    );
     const nodes: React.ReactNode[] = [];
     let run: PluginAdminFormField[] = [];
     // Key switch groups by their position in the list, not by their first
@@ -376,7 +406,9 @@ export function SchemaForm({
       groupedKeys.add(key);
     }
   }
-  const ungroupedFields = descriptor.fields.filter((field) => !groupedKeys.has(field.key));
+  const ungroupedFields = descriptor.fields.filter(
+    (field) => !groupedKeys.has(field.key),
+  );
 
   const resolveKeys = (keys: string[]): PluginAdminFormField[] =>
     keys
@@ -391,7 +423,10 @@ export function SchemaForm({
           key={section.key}
           section={section}
           values={values}
-          forceOpen={section.field_keys.some((key) => mergedErrors[key] != null)}
+          fields={descriptor.fields}
+          forceOpen={section.field_keys.some(
+            (key) => mergedErrors[key] != null,
+          )}
           renderFields={(keys) => renderFieldList(resolveKeys(keys))}
         />
       ))}

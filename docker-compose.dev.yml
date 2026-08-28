@@ -3,7 +3,7 @@
 #
 # Vite serves the UI at http://localhost:${PORT:-8090} and proxies API
 # requests to the Air-reloaded Go backend on the compose network.
-name: prairie-dev
+name: silo-dev
 
 services:
   postgres:
@@ -11,16 +11,16 @@ services:
     restart: unless-stopped
     shm_size: ${POSTGRES_SHM_SIZE:-2gb}
     environment:
-      POSTGRES_USER: ${POSTGRES_USER:-prairie}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-prairie}
-      POSTGRES_DB: ${POSTGRES_DB:-prairie}
+      POSTGRES_USER: ${POSTGRES_USER:-silo}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-silo}
+      POSTGRES_DB: ${POSTGRES_DB:-silo}
     ports:
       - "${POSTGRES_PORT:-5432}:5432"
     volumes:
-      - prairie-dev-postgres:/var/lib/postgresql
+      - silo-dev-postgres:/var/lib/postgresql
     command: ["postgres", "-c", "listen_addresses=*"]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-prairie}"]
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-silo}"]
       interval: 5s
       timeout: 3s
       retries: 5
@@ -31,14 +31,14 @@ services:
     ports:
       - "${REDIS_PORT:-6379}:6379"
     volumes:
-      - prairie-dev-redis:/data
+      - silo-dev-redis:/data
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 3s
       retries: 5
 
-  prairie:
+  silo:
     build:
       context: .
       dockerfile_inline: |
@@ -48,8 +48,8 @@ services:
 
         ENV CGO_ENABLED=1
         ENV GOPROXY=direct
-        ENV GOPRIVATE=github.com/prairie-server/*,github.com/Silo-Server/*
-        ENV GONOSUMDB=github.com/prairie-server/*,github.com/Silo-Server/*
+        ENV GOPRIVATE=github.com/Silo-Server/*
+        ENV GONOSUMDB=github.com/Silo-Server/*
 
         RUN apt-get update && apt-get install -y --no-install-recommends \
             ca-certificates \
@@ -84,8 +84,8 @@ services:
         tmp_dir = "tmp"
 
         [build]
-          cmd = "go build -o ./tmp/prairie ./cmd/prairie/"
-          bin = "./tmp/prairie"
+          cmd = "go build -o ./tmp/silo ./cmd/silo/"
+          bin = "./tmp/silo"
           args_bin = []
           include_ext = ["go", "sql", "json"]
           include_dir = ["cmd", "internal", "migrations"]
@@ -107,9 +107,9 @@ services:
     environment:
       MODE: integrated
       PORT: "8080"
-      DATABASE_URL: postgres://${POSTGRES_USER:-prairie}:${POSTGRES_PASSWORD:-prairie}@postgres:5432/${POSTGRES_DB:-prairie}?sslmode=disable
+      DATABASE_URL: postgres://${POSTGRES_USER:-silo}:${POSTGRES_PASSWORD:-silo}@postgres:5432/${POSTGRES_DB:-silo}?sslmode=disable
       REDIS_URL: redis://redis:6379
-      PRAIRIE_PLUGIN_CACHE_DIR: /var/lib/prairie/plugins
+      SILO_PLUGIN_CACHE_DIR: /var/lib/silo/plugins
       POSTGRES_TUNE: "off"
     ports:
       - "${BACKEND_PORT:-18080}:8080"
@@ -117,15 +117,13 @@ services:
       - "${ABS_PORT:-13378}:13378"
     volumes:
       - .:/app
-      - prairie-dev-air-tmp:/app/tmp
-      - prairie-dev-go-build:/root/.cache/go-build
-      - prairie-dev-go-mod:/go/pkg/mod
-      - prairie-dev-plugins:/var/lib/prairie/plugins
-      - prairie-dev-compat:/var/lib/prairie/compat
-      - prairie-dev-artwork:/var/lib/prairie/artwork
-      - prairie-dev-transcode:/tmp/prairie-transcode
-      - prairie-dev-audiobook-covers:/var/lib/prairie/audiobook-covers
-      - ${MEDIA_ROOT:-/tmp/prairie-dev-media}:${MEDIA_CONTAINER_ROOT:-/mnt/media}:ro
+      - silo-dev-air-tmp:/app/tmp
+      - silo-dev-go-build:/root/.cache/go-build
+      - silo-dev-go-mod:/go/pkg/mod
+      - silo-dev-plugins:/var/lib/silo/plugins
+      - silo-dev-compat:/var/lib/silo/compat
+      - silo-dev-transcode:/tmp/silo-transcode
+      - ${MEDIA_ROOT:-/tmp/silo-dev-media}:${MEDIA_CONTAINER_ROOT:-/mnt/media}:ro
     depends_on:
       postgres:
         condition: service_healthy
@@ -154,7 +152,7 @@ services:
     working_dir: /app/web
     command: sh -c "pnpm install --frozen-lockfile --store-dir /pnpm/store && pnpm run dev -- --host 0.0.0.0"
     environment:
-      VITE_API_PROXY_TARGET: http://prairie:8080
+      VITE_API_PROXY_TARGET: http://silo:8080
       VITE_HMR_CLIENT_PORT: "${PORT:-8090}"
       PNPM_STORE_DIR: /pnpm/store
       CI: "true"
@@ -162,22 +160,20 @@ services:
       - "${PORT:-8090}:5173"
     volumes:
       - .:/app
-      - prairie-dev-web-node-modules:/app/web/node_modules
-      - prairie-dev-pnpm-store:/pnpm/store
+      - silo-dev-web-node-modules:/app/web/node_modules
+      - silo-dev-pnpm-store:/pnpm/store
     depends_on:
-      prairie:
+      silo:
         condition: service_healthy
 
 volumes:
-  prairie-dev-air-tmp:
-  prairie-dev-artwork:
-  prairie-dev-audiobook-covers:
-  prairie-dev-compat:
-  prairie-dev-go-build:
-  prairie-dev-go-mod:
-  prairie-dev-plugins:
-  prairie-dev-pnpm-store:
-  prairie-dev-postgres:
-  prairie-dev-redis:
-  prairie-dev-transcode:
-  prairie-dev-web-node-modules:
+  silo-dev-air-tmp:
+  silo-dev-compat:
+  silo-dev-go-build:
+  silo-dev-go-mod:
+  silo-dev-plugins:
+  silo-dev-pnpm-store:
+  silo-dev-postgres:
+  silo-dev-redis:
+  silo-dev-transcode:
+  silo-dev-web-node-modules:

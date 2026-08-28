@@ -1,5 +1,10 @@
 import { useCallback, useMemo, useRef, useState } from "react";
-import type { MarkerKind, MarkerRegionView, PlayerChapter, PlayerTrickplay } from "../types";
+import type {
+  MarkerKind,
+  MarkerRegionView,
+  PlayerChapter,
+  PlayerTrickplay,
+} from "../types";
 
 interface SeekBarProps {
   currentTime: number;
@@ -14,7 +19,11 @@ interface SeekBarProps {
   /** Which region's handles are draggable while editing. */
   activeEditKind?: MarkerKind | null;
   /** Fires continuously while a handle is dragged. */
-  onRegionEdgeChange?: (kind: MarkerKind, edge: "start" | "end", seconds: number) => void;
+  onRegionEdgeChange?: (
+    kind: MarkerKind,
+    edge: "start" | "end",
+    seconds: number,
+  ) => void;
   onSeek: (seconds: number) => void;
 }
 
@@ -60,14 +69,20 @@ export function resolveTrickplayTile(
   trickplay: PlayerTrickplay | null | undefined,
   seconds: number,
 ): TrickplayTilePreview | null {
-  if (!trickplay || trickplay.thumbnail_count <= 0 || !trickplay.sheets?.length) {
+  if (
+    !trickplay ||
+    trickplay.thumbnail_count <= 0 ||
+    !trickplay.sheets?.length
+  ) {
     return null;
   }
-  const interval = trickplay.interval_seconds > 0 ? trickplay.interval_seconds : 10;
+  const interval =
+    trickplay.interval_seconds > 0 ? trickplay.interval_seconds : 10;
   const columns = trickplay.tile_columns > 0 ? trickplay.tile_columns : 10;
   const rows = trickplay.tile_rows > 0 ? trickplay.tile_rows : 10;
   const width = trickplay.width > 0 ? trickplay.width : 320;
-  const height = trickplay.height > 0 ? trickplay.height : Math.round((width * 9) / 16);
+  const height =
+    trickplay.height > 0 ? trickplay.height : Math.round((width * 9) / 16);
   const tilesPerSheet = columns * rows;
   const tileIndex = Math.min(
     Math.max(0, Math.floor(seconds / interval)),
@@ -94,7 +109,10 @@ export function resolveTrickplayTile(
   };
 }
 
-function findChapterAtTime(chapters: PlayerChapter[], time: number): PlayerChapter | null {
+function findChapterAtTime(
+  chapters: PlayerChapter[],
+  time: number,
+): PlayerChapter | null {
   for (const chapter of chapters) {
     if (time >= chapter.start_seconds && time < chapter.end_seconds) {
       return chapter;
@@ -103,7 +121,10 @@ function findChapterAtTime(chapters: PlayerChapter[], time: number): PlayerChapt
   return chapters.length > 0 ? (chapters[chapters.length - 1] ?? null) : null;
 }
 
-function findRegionAtTime(regions: MarkerRegionView[], time: number): MarkerRegionView | null {
+function findRegionAtTime(
+  regions: MarkerRegionView[],
+  time: number,
+): MarkerRegionView | null {
   let match: MarkerRegionView | null = null;
   for (const region of regions) {
     if (time < region.start || time > region.end) {
@@ -149,7 +170,10 @@ export function SeekBar({
       const bar = barRef.current;
       if (!bar || duration <= 0) return 0;
       const rect = bar.getBoundingClientRect();
-      const fraction = Math.max(0, Math.min(1, (clientX - rect.left) / rect.width));
+      const fraction = Math.max(
+        0,
+        Math.min(1, (clientX - rect.left) / rect.width),
+      );
       return fraction * duration;
     },
     [duration],
@@ -172,15 +196,20 @@ export function SeekBar({
   const [dragTime, setDragTime] = useState<number | null>(null);
   const previewTime = dragTime ?? hoverTime;
   const previewChapter = useMemo(
-    () => (previewTime === null ? null : findChapterAtTime(chapters, previewTime)),
+    () =>
+      previewTime === null ? null : findChapterAtTime(chapters, previewTime),
     [chapters, previewTime],
   );
   const previewRegion = useMemo(
-    () => (previewTime === null ? null : findRegionAtTime(regions, previewTime)),
+    () =>
+      previewTime === null ? null : findRegionAtTime(regions, previewTime),
     [regions, previewTime],
   );
   const trickplayTile = useMemo(
-    () => (previewTime === null ? null : resolveTrickplayTile(trickplay, previewTime)),
+    () =>
+      previewTime === null
+        ? null
+        : resolveTrickplayTile(trickplay, previewTime),
     [previewTime, trickplay],
   );
   const hoverRegion = useMemo(
@@ -320,17 +349,23 @@ export function SeekBar({
   );
 
   // Calculate all buffered ranges as percentages.
-  const bufferedRanges: Array<{ startPercent: number; widthPercent: number }> = [];
+  const bufferedRanges: Array<{ startPercent: number; widthPercent: number }> =
+    [];
   if (buffered && duration > 0) {
     for (let i = 0; i < buffered.length; i++) {
       const startPercent = (buffered.start(i) / duration) * 100;
       const endPercent = (buffered.end(i) / duration) * 100;
-      bufferedRanges.push({ startPercent, widthPercent: endPercent - startPercent });
+      bufferedRanges.push({
+        startPercent,
+        widthPercent: endPercent - startPercent,
+      });
     }
   }
 
   const activeRegion =
-    editing && activeEditKind ? (regions.find((r) => r.kind === activeEditKind) ?? null) : null;
+    editing && activeEditKind
+      ? (regions.find((r) => r.kind === activeEditKind) ?? null)
+      : null;
   const showPreviewBubble = previewTime !== null && edgeDrag === null;
 
   return (
@@ -382,7 +417,14 @@ export function SeekBar({
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   >
-                    <rect x="2" y="2" width="20" height="20" rx="2.18" ry="2.18" />
+                    <rect
+                      x="2"
+                      y="2"
+                      width="20"
+                      height="20"
+                      rx="2.18"
+                      ry="2.18"
+                    />
                     <path d="m7 2 0 20M17 2v20M2 12h20M2 7h5M2 17h5M17 17h5M17 7h5" />
                   </svg>
                 </div>
@@ -398,9 +440,12 @@ export function SeekBar({
                       REGION_DOT_COLORS[previewRegion.kind],
                     ].join(" ")}
                   />
-                  <span className="truncate">{MARKER_LABELS[previewRegion.kind]}</span>
+                  <span className="truncate">
+                    {MARKER_LABELS[previewRegion.kind]}
+                  </span>
                   <span className="text-white/45 tabular-nums">
-                    {formatTime(previewRegion.start)}-{formatTime(previewRegion.end)}
+                    {formatTime(previewRegion.start)}-
+                    {formatTime(previewRegion.end)}
                   </span>
                 </div>
               )}
@@ -436,7 +481,9 @@ export function SeekBar({
               {activeRegion.kind} {edgeDrag}
             </div>
             <div className="text-xs font-semibold text-white tabular-nums">
-              {formatTime(edgeDrag === "start" ? activeRegion.start : activeRegion.end)}
+              {formatTime(
+                edgeDrag === "start" ? activeRegion.start : activeRegion.end,
+              )}
             </div>
           </div>
           {/* Caret */}
@@ -467,18 +514,23 @@ export function SeekBar({
       >
         <div
           className={[
-            "relative h-[3px] w-full rounded-full bg-white/15 transition-[height] duration-200 ease-out group-hover/seek:h-[5px]",
+            "relative h-[3px] w-full rounded-full bg-white/15 transition-[height] duration-200 ease-out group-hover/seek:h-[5px] pointer-coarse:h-[5px]",
             editing ? "h-[5px]" : "",
           ].join(" ")}
         >
           {duration > 0 &&
             chapters
-              .filter((chapter) => chapter.start_seconds > 0 && chapter.start_seconds < duration)
+              .filter(
+                (chapter) =>
+                  chapter.start_seconds > 0 && chapter.start_seconds < duration,
+              )
               .map((chapter) => (
                 <div
                   key={chapter.index}
                   className="absolute top-1/2 z-[1] h-[10px] w-px -translate-x-1/2 -translate-y-1/2 bg-white/55"
-                  style={{ left: `${(chapter.start_seconds / duration) * 100}%` }}
+                  style={{
+                    left: `${(chapter.start_seconds / duration) * 100}%`,
+                  }}
                 />
               ))}
           {/* Buffered ranges */}
@@ -486,7 +538,10 @@ export function SeekBar({
             <div
               key={i}
               className="absolute inset-y-0 rounded-full bg-white/30"
-              style={{ left: `${range.startPercent}%`, width: `${range.widthPercent}%` }}
+              style={{
+                left: `${range.startPercent}%`,
+                width: `${range.widthPercent}%`,
+              }}
             />
           ))}
           {/* Marker regions. While editing they brighten and grow slightly
@@ -495,16 +550,29 @@ export function SeekBar({
           {duration > 0 &&
             regions.map((region) => {
               const isActive = editing && region.kind === activeEditKind;
-              const isHovered = hoverRegion?.kind === region.kind && !dragging && edgeDrag === null;
+              const isHovered =
+                hoverRegion?.kind === region.kind &&
+                !dragging &&
+                edgeDrag === null;
               return (
                 <div
                   aria-hidden="true"
                   key={region.kind}
                   className={[
                     "absolute top-1/2 -translate-y-1/2 rounded-full transition-[height,box-shadow] duration-150 ease-out",
-                    editing ? (isActive ? "h-2.5" : "h-2") : isHovered ? "h-2" : "h-full",
-                    editing ? REGION_COLORS_EDIT[region.kind] : REGION_COLORS[region.kind],
-                    isActive || isHovered ? "z-[2] ring-1 ring-white/80" : "z-[1]",
+                    editing
+                      ? isActive
+                        ? "h-2.5"
+                        : "h-2"
+                      : isHovered
+                        ? "h-2"
+                        : "h-full",
+                    editing
+                      ? REGION_COLORS_EDIT[region.kind]
+                      : REGION_COLORS[region.kind],
+                    isActive || isHovered
+                      ? "z-[2] ring-1 ring-white/80"
+                      : "z-[1]",
                   ].join(" ")}
                   style={{
                     left: `${(region.start / duration) * 100}%`,
@@ -520,7 +588,7 @@ export function SeekBar({
           />
           {/* Thumb */}
           <div
-            className="absolute top-1/2 z-[3] h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white opacity-0 shadow-[0_4px_14px_rgb(0_0_0/0.45)] ring-1 ring-black/10 transition-all duration-200 group-hover/seek:opacity-100"
+            className="absolute top-1/2 z-[3] h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-white opacity-0 shadow-[0_4px_14px_rgb(0_0_0/0.45)] ring-1 ring-black/10 transition-all duration-200 group-hover/seek:opacity-100 pointer-coarse:opacity-100"
             style={{ left: `${playedPercent}%` }}
           />
           {/* Editable marker handles for the active region */}
@@ -529,7 +597,10 @@ export function SeekBar({
               <MarkerHandle
                 percent={(activeRegion.start / duration) * 100}
                 label="Drag marker start"
-                onPointerDown={handleEdgePointerDown(activeRegion.kind, "start")}
+                onPointerDown={handleEdgePointerDown(
+                  activeRegion.kind,
+                  "start",
+                )}
               />
               <MarkerHandle
                 percent={(activeRegion.end / duration) * 100}

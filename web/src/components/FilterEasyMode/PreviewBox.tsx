@@ -8,7 +8,12 @@ interface Props {
   libraryID?: number;
 }
 
-export default function PreviewBox({ sectionType, config, itemLimit, libraryID }: Props) {
+export default function PreviewBox({
+  sectionType,
+  config,
+  itemLimit,
+  libraryID,
+}: Props) {
   const [data, setData] = useState<PreviewResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -38,7 +43,11 @@ export default function PreviewBox({ sectionType, config, itemLimit, libraryID }
   return (
     <div className="rounded border-l-2 border-indigo-500 bg-indigo-500/10 px-3 py-2 text-xs">
       <div className="mb-1 text-[10px] tracking-wider uppercase opacity-65">
-        {loading ? "Loading…" : error ? "Error" : `Preview · ${data?.total_count ?? 0} items match`}
+        {loading
+          ? "Loading…"
+          : error
+            ? "Error"
+            : `Preview · ${data?.total_count ?? 0} items match`}
       </div>
       {error && <div className="text-red-400">{error}</div>}
       {!error && data && (

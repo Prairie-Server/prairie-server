@@ -1,10 +1,7 @@
 import type { WatchRouteRequest } from "@/pages/watchRouteHelpers";
 
 export type WatchPlaybackMode =
-  | "foreground"
-  | "background-bar"
-  | "picture-in-picture"
-  | "post-roll";
+  "foreground" | "background-bar" | "picture-in-picture" | "post-roll";
 
 export interface WatchPlaybackSnapshot {
   currentTime: number;
@@ -80,7 +77,10 @@ export function createEmptyPlaybackState(): WatchPlaybackHostState {
 
 function createPlaybackState(
   request: WatchRouteRequest,
-  mode: Extract<WatchPlaybackMode, "foreground" | "background-bar"> = "foreground",
+  mode: Extract<
+    WatchPlaybackMode,
+    "foreground" | "background-bar"
+  > = "foreground",
 ): WatchPlaybackHostState {
   return {
     request,
@@ -296,7 +296,10 @@ export function watchPlaybackReducer(
       };
 
     case "SET_TRANSPORT":
-      if (state.request?.requestKey !== action.requestKey || state.transport === action.transport) {
+      if (
+        state.request?.requestKey !== action.requestKey ||
+        state.transport === action.transport
+      ) {
         return state;
       }
 

@@ -31,10 +31,18 @@ vi.mock("@/pages/audiobooks/player/audiobookPlaybackContext", () => ({
 vi.mock("@/components/AddToCollectionDialog", () => ({
   default: () => null,
 }));
-vi.mock("@/pages/audiobooks/components/ChaptersSection", () => ({ ChaptersSection: () => null }));
-vi.mock("@/pages/audiobooks/components/NarratorCard", () => ({ NarratorCard: () => null }));
-vi.mock("@/pages/audiobooks/components/NarratorPicker", () => ({ NarratorPicker: () => null }));
-vi.mock("@/pages/audiobooks/components/RelatedRail", () => ({ RelatedRail: () => null }));
+vi.mock("@/pages/audiobooks/components/ChaptersSection", () => ({
+  ChaptersSection: () => null,
+}));
+vi.mock("@/pages/audiobooks/components/NarratorCard", () => ({
+  NarratorCard: () => null,
+}));
+vi.mock("@/pages/audiobooks/components/NarratorPicker", () => ({
+  NarratorPicker: () => null,
+}));
+vi.mock("@/pages/audiobooks/components/RelatedRail", () => ({
+  RelatedRail: () => null,
+}));
 vi.mock("@/pages/ItemDetail/DetailHero", () => ({
   default: ({ actions }: { actions?: ReactNode }) => <div>{actions}</div>,
 }));
@@ -132,7 +140,9 @@ describe("AudiobookContent playback actions", () => {
 
     expect(mocks.startPlayback).not.toHaveBeenCalled();
 
-    await userEvent.click(screen.getByRole("button", { name: /listen from start/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /listen from start/i }),
+    );
     expect(mocks.startPlayback).toHaveBeenCalledTimes(1);
     expect(mocks.startPlayback.mock.calls[0]?.[0]).toMatchObject({
       contentId: "book-1",
@@ -140,7 +150,9 @@ describe("AudiobookContent playback actions", () => {
       initialPositionSeconds: 0,
     });
 
-    await userEvent.click(screen.getByRole("button", { name: /listen from start/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /listen from start/i }),
+    );
     expect(mocks.startPlayback).toHaveBeenCalledTimes(2);
     expect(mocks.startPlayback.mock.calls[1]?.[0]).toMatchObject({
       contentId: "book-1",
@@ -162,7 +174,9 @@ describe("AudiobookContent playback actions", () => {
       initialPositionSeconds: 4990,
     });
 
-    await userEvent.click(screen.getByRole("button", { name: /listen from start/i }));
+    await userEvent.click(
+      screen.getByRole("button", { name: /listen from start/i }),
+    );
     expect(mocks.startPlayback).toHaveBeenCalledTimes(2);
     expect(mocks.startPlayback.mock.calls[1]?.[0]).toMatchObject({
       initialPositionSeconds: 0,

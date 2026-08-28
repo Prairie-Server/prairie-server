@@ -62,9 +62,12 @@ export function classifyActivityMethod(session: AdminSession): string {
   if (session.effective_play_method) {
     return session.effective_play_method;
   }
-  const videoDecision = normalizeStreamDecision(session.video_decision || session.play_method);
+  const videoDecision = normalizeStreamDecision(
+    session.video_decision || session.play_method,
+  );
   const audioDecision = normalizeStreamDecision(
-    session.audio_decision || (session.transcode_audio ? "transcode" : session.play_method),
+    session.audio_decision ||
+      (session.transcode_audio ? "transcode" : session.play_method),
   );
   if (videoDecision === "transcode") {
     return "transcode";
@@ -87,7 +90,13 @@ export function classifyActivityMethod(session: AdminSession): string {
 // Display order for the activity method buckets. Escalates by cost and keeps the
 // audio-transcode tag AFTER the video-transcode tag in the Play Method line and
 // the Server Activity popover; unknown sorts last.
-const ACTIVITY_METHOD_ORDER = ["direct", "remux", "transcode", "audio", "unknown"];
+const ACTIVITY_METHOD_ORDER = [
+  "direct",
+  "remux",
+  "transcode",
+  "audio",
+  "unknown",
+];
 
 function activityMethodRank(method: string): number {
   const index = ACTIVITY_METHOD_ORDER.indexOf(method);
@@ -174,9 +183,12 @@ export function isJellyfinSession(session: AdminSession): boolean {
 }
 
 export function formatPlaybackDecisionSummary(session: AdminSession): string {
-  const videoDecision = normalizeStreamDecision(session.video_decision || session.play_method);
+  const videoDecision = normalizeStreamDecision(
+    session.video_decision || session.play_method,
+  );
   const audioDecision = normalizeStreamDecision(
-    session.audio_decision || (session.transcode_audio ? "transcode" : session.play_method),
+    session.audio_decision ||
+      (session.transcode_audio ? "transcode" : session.play_method),
   );
 
   if (videoDecision && videoDecision === audioDecision) {
@@ -191,16 +203,25 @@ export function formatPlaybackDecisionSummary(session: AdminSession): string {
   return videoDecision || audioDecision || session.play_method || "";
 }
 
-export function formatTranscodeModeSummary(session: AdminSession): string | null {
-  const videoDecision = normalizeStreamDecision(session.video_decision || session.play_method);
+export function formatTranscodeModeSummary(
+  session: AdminSession,
+): string | null {
+  const videoDecision = normalizeStreamDecision(
+    session.video_decision || session.play_method,
+  );
   const audioDecision = normalizeStreamDecision(
-    session.audio_decision || (session.transcode_audio ? "transcode" : session.play_method),
+    session.audio_decision ||
+      (session.transcode_audio ? "transcode" : session.play_method),
   );
   if (videoDecision !== "transcode" && audioDecision !== "transcode") {
     return null;
   }
+  // Every other label in this function names the video encoder's HW/SW mode,
+  // which does not exist when only audio is re-encoded: "Audio SW" read as a
+  // client-side software capability instead of "the audio stream is being
+  // re-encoded". Name the work, not an acceleration mode.
   if (videoDecision !== "transcode") {
-    return "Audio SW";
+    return "Audio Transcode";
   }
 
   const hwAccel = session.transcode_hw_accel?.trim().toLowerCase();
@@ -209,6 +230,8 @@ export function formatTranscodeModeSummary(session: AdminSession): string | null
       return "HW QSV";
     case "vaapi":
       return "HW VAAPI";
+    case "videotoolbox":
+      return "HW VideoToolbox";
     case "none":
       return "SW";
     case "auto":
@@ -218,6 +241,34 @@ export function formatTranscodeModeSummary(session: AdminSession): string | null
       return "HW/SW unknown";
     default:
       return `HW ${hwAccel.toUpperCase()}`;
+  }
+}
+
+/** Labels for a confirmed HDR-to-SDR executor in compact and detailed views. */
+export interface ToneMapSummary {
+  badge: "HW Tone map" | "SW Tone map";
+  detail: "Hardware" | "Software";
+  mode: "hardware" | "software";
+}
+
+/** Format a confirmed HDR-to-SDR executor without guessing from legacy data. */
+export function formatToneMapSummary(
+  session: AdminSession,
+): ToneMapSummary | null {
+  const videoDecision = normalizeStreamDecision(
+    session.video_decision || session.play_method,
+  );
+  if (videoDecision !== "transcode") {
+    return null;
+  }
+
+  switch (session.tone_map_mode?.trim().toLowerCase()) {
+    case "hardware":
+      return { badge: "HW Tone map", detail: "Hardware", mode: "hardware" };
+    case "software":
+      return { badge: "SW Tone map", detail: "Software", mode: "software" };
+    default:
+      return null;
   }
 }
 
@@ -243,6 +294,18 @@ export function getSessionClientLabel(session: AdminSession): string {
     return `${clientName} ${clientVersion}`;
   }
   return clientName || "";
+}
+
+/**
+ * The exact client identity — version, build, and non-release channel — for
+ * surfaces that can afford the width (expanded session details, tooltips).
+ * `getSessionClientLabel` stays the compact list label; this one must never
+ * replace it in a fixed-width row.
+ */
+export function getSessionClientLabelFull(session: AdminSession): string {
+  // The server omits client_label_full when it would repeat client_label, and
+  // older servers never send it at all — both degrade to the compact label.
+  return session.client_label_full?.trim() || getSessionClientLabel(session);
 }
 
 export function formatSourceContainerSummary(session: AdminSession): string {
@@ -278,7 +341,10 @@ export function formatContainerDetail(session: AdminSession): string {
 
 export function formatVideoSummary(session: AdminSession): string {
   return (
-    [formatCodec(session.source_video_codec), session.source_video_resolution?.trim()]
+    [
+      formatCodec(session.source_video_codec),
+      session.source_video_resolution?.trim(),
+    ]
       .filter(Boolean)
       .join(" · ") || "Unknown source"
   );
@@ -298,9 +364,14 @@ export function formatDeliveredVideoSummary(session: AdminSession): string {
 }
 
 export function formatVideoDetail(session: AdminSession): string {
-  const decision = normalizeStreamDecision(session.video_decision || session.play_method);
+  const decision = normalizeStreamDecision(
+    session.video_decision || session.play_method,
+  );
   const requestedSource = formatRequestedVideoSource(session);
-  const target = [formatCodec(session.target_video_codec), session.target_resolution?.trim()]
+  const target = [
+    formatCodec(session.target_video_codec),
+    session.target_resolution?.trim(),
+  ]
     .filter(Boolean)
     .join(" · ");
 
@@ -327,7 +398,8 @@ export function formatVideoDetail(session: AdminSession): string {
 }
 
 export function formatAudioSummary(session: AdminSession): string {
-  const lead = session.source_audio_title?.trim() || session.source_audio_language?.trim();
+  const lead =
+    session.source_audio_title?.trim() || session.source_audio_language?.trim();
   const format = [
     formatCodec(session.source_audio_codec),
     formatChannelLayout(session.source_audio_channels),
@@ -337,35 +409,41 @@ export function formatAudioSummary(session: AdminSession): string {
   return [lead, format].filter(Boolean).join(" · ") || "Unknown source";
 }
 
+/**
+ * The audio a transcode actually delivers: the target codec, plus the target
+ * channel layout only when the server reported one. The source channel count is
+ * deliberately not a fallback — a TrueHD 7.1 source downmixed to AAC 5.1 read as
+ * "AAC 7.1" while it did. Servers that do not send `target_audio_channels` get
+ * the bare codec instead of an invented layout.
+ */
+function formatTargetAudio(session: AdminSession): string {
+  return [
+    formatCodec(session.target_audio_codec || "aac"),
+    formatChannelLayout(session.target_audio_channels),
+  ]
+    .filter(Boolean)
+    .join(" ");
+}
+
 export function formatDeliveredAudioSummary(session: AdminSession): string {
   const decision =
-    session.audio_decision || (session.transcode_audio ? "transcode" : session.play_method);
+    session.audio_decision ||
+    (session.transcode_audio ? "transcode" : session.play_method);
   if (decision !== "transcode") {
     return formatAudioSummary(session);
   }
 
-  return (
-    [
-      formatCodec(session.target_audio_codec || "aac"),
-      formatChannelLayout(session.source_audio_channels),
-    ]
-      .filter(Boolean)
-      .join(" ") || "Audio transcode"
-  );
+  return formatTargetAudio(session) || "Audio Transcode";
 }
 
 export function formatAudioDetail(session: AdminSession): string {
   const decision = normalizeStreamDecision(
-    session.audio_decision || (session.transcode_audio ? "transcode" : session.play_method),
+    session.audio_decision ||
+      (session.transcode_audio ? "transcode" : session.play_method),
   );
   if (decision === "transcode") {
-    const target = [
-      formatCodec(session.target_audio_codec || "aac"),
-      formatChannelLayout(session.source_audio_channels),
-    ]
-      .filter(Boolean)
-      .join(" ");
-    return target ? `→ ${target}` : "Audio transcode";
+    const target = formatTargetAudio(session);
+    return target ? `→ ${target}` : "Audio Transcode";
   }
   if (decision === "copy") {
     return "Audio stream copied";
@@ -402,16 +480,31 @@ function formatContainer(container?: string): string | null {
 }
 
 export function getPlaybackSessionTitle(session: AdminSession): string {
-  if (session.series_name && session.season_number != null && session.episode_number != null) {
-    return session.episode_name || `S${session.season_number}E${session.episode_number}`;
+  if (
+    session.series_name &&
+    session.season_number != null &&
+    session.episode_number != null
+  ) {
+    return (
+      session.episode_name ||
+      `S${session.season_number}E${session.episode_number}`
+    );
   }
   return session.media_title || `File #${session.media_file_id}`;
 }
 
-export function getPlaybackSessionSubtitle(session: AdminSession): string | null {
-  if (session.series_name && session.season_number != null && session.episode_number != null) {
+export function getPlaybackSessionSubtitle(
+  session: AdminSession,
+): string | null {
+  if (
+    session.series_name &&
+    session.season_number != null &&
+    session.episode_number != null
+  ) {
     const episode = `S${session.season_number}E${session.episode_number}`;
-    return session.series_name ? `${episode} · ${session.series_name}` : episode;
+    return session.series_name
+      ? `${episode} · ${session.series_name}`
+      : episode;
   }
   if (session.media_type === "movie") {
     return "Movie";

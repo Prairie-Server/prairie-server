@@ -244,8 +244,8 @@ func TestParseEbookEPUBMetadata(t *testing.T) {
 	if got.Year != 2024 {
 		t.Fatalf("Year = %d, want 2024", got.Year)
 	}
-	if got.Publisher != "Prairie Press" {
-		t.Fatalf("Publisher = %q, want Prairie Press", got.Publisher)
+	if got.Publisher != "Silo Press" {
+		t.Fatalf("Publisher = %q, want Silo Press", got.Publisher)
 	}
 	wantPublishedAt := time.Date(2024, 3, 10, 0, 0, 0, 0, time.UTC)
 	if !got.PublishedAt.Equal(wantPublishedAt) {
@@ -292,14 +292,14 @@ func TestParseEbookEPUBSkipsUUIDIdentifierBeforeISBN(t *testing.T) {
 }
 
 func TestParseEbookEPUBMetadataReadsISBNFromMetaTags(t *testing.T) {
-	path := writeTestEPUBWithMeta(t, nil, `    <meta name="caliber:isbn" content="978-0-306-40615-7"/>`)
+	path := writeTestEPUBWithMeta(t, nil, `    <meta name="calibre:isbn" content="978-0-306-40615-7"/>`)
 
 	got, err := parseEbookFile(path)
 	if err != nil {
 		t.Fatalf("parseEbookFile: %v", err)
 	}
 	if got.ISBN != "9780306406157" {
-		t.Fatalf("ISBN = %q, want normalized ISBN from caliber meta tag", got.ISBN)
+		t.Fatalf("ISBN = %q, want normalized ISBN from calibre meta tag", got.ISBN)
 	}
 }
 
@@ -1825,14 +1825,14 @@ func writeTestEPUBWithDescriptionAndMeta(t *testing.T, identifiers []string, des
     <dc:creator>Ada Writer</dc:creator>
     <dc:creator>Ben Author</dc:creator>
 `+identifierXML.String()+`
-    <dc:publisher>Prairie Press</dc:publisher>
+    <dc:publisher>Silo Press</dc:publisher>
     <dc:date>2024-03-10</dc:date>
     <dc:language>en</dc:language>
     <dc:subject>Fiction</dc:subject>
     <dc:subject>Adventure</dc:subject>
     <dc:description>`+description+`</dc:description>
-    <meta name="caliber:series" content="Test Series"/>
-    <meta name="caliber:series_index" content="2"/>
+    <meta name="calibre:series" content="Test Series"/>
+    <meta name="calibre:series_index" content="2"/>
 `+extraMetaXML+`
   </metadata>
 </package>`)
