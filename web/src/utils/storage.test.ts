@@ -1,5 +1,10 @@
 import { beforeEach, describe, expect, it } from "vitest";
-import { appearanceCache, storage } from "./storage";
+import {
+  STORAGE_SCHEMA_VERSION,
+  appearanceCache,
+  ensureStorageSchema,
+  storage,
+} from "./storage";
 
 const KEYS = storage.KEYS;
 
@@ -81,5 +86,105 @@ describe("appearance cache namespacing", () => {
     expect(appearanceCache.get(KEYS.UI_CUSTOM_CSS, "2")).toBeNull();
     expect(appearanceCache.get(KEYS.UI_DATE_FORMAT, "2")).toBe("iso");
     expect(appearanceCache.get(KEYS.UI_DATE_FORMAT, "1")).toBeNull();
+  });
+
+  it("drops only the requested owner's cached value", () => {
+    appearanceCache.set(KEYS.THEME, "cobalt-studio", "1");
+    appearanceCache.set(KEYS.THEME, "oxblood-noir", "2");
+
+    appearanceCache.remove(KEYS.THEME, "1");
+
+    expect(appearanceCache.get(KEYS.THEME, "1")).toBeNull();
+    expect(appearanceCache.get(KEYS.THEME, "2")).toBe("oxblood-noir");
+  });
+});
+
+describe("ensureStorageSchema", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("writes the schema version when missing", () => {
+    expect(ensureStorageSchema()).toBe(STORAGE_SCHEMA_VERSION);
+    expect(localStorage.getItem("prairie-storage-schema-version")).toBe(
+      String(STORAGE_SCHEMA_VERSION),
+    );
+  });
+
+  it("survives repeated calls without rewriting session keys", () => {
+    storage.set(KEYS.REFRESH_TOKEN, "keep-me");
+    ensureStorageSchema();
+    ensureStorageSchema();
+    expect(storage.get(KEYS.REFRESH_TOKEN)).toBe("keep-me");
+  });
+
+  it("rewrites malformed schema-version markers", () => {
+    for (const bad of ["1junk", "1.5", "NaN", "-1"]) {
+      localStorage.setItem("prairie-storage-schema-version", bad);
+      expect(ensureStorageSchema()).toBe(STORAGE_SCHEMA_VERSION);
+      expect(localStorage.getItem("prairie-storage-schema-version")).toBe(
+        String(STORAGE_SCHEMA_VERSION),
+      );
+    }
+  });
+
+  it("returns the schema version when localStorage is unavailable", () => {
+    Object.defineProperty(globalThis, "localStorage", {
+      value: {
+        getItem: () => {
+          throw new Error("blocked");
+        },
+        setItem: () => {
+          throw new Error("blocked");
+        },
+        removeItem: () => {
+          throw new Error("blocked");
+        },
+        clear: () => {},
+        key: () => null,
+        length: 0,
+      } satisfies Storage,
+      configurable: true,
+    });
+
+    expect(ensureStorageSchema()).toBe(STORAGE_SCHEMA_VERSION);
+  });
+});
+
+describe("storage get/set/remove", () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it("round-trips values", () => {
+    expect(storage.get(KEYS.VOLUME)).toBeNull();
+    storage.set(KEYS.VOLUME, "0.5");
+    expect(storage.get(KEYS.VOLUME)).toBe("0.5");
+    storage.remove(KEYS.VOLUME);
+    expect(storage.get(KEYS.VOLUME)).toBeNull();
+  });
+
+  it("swallows localStorage failures", () => {
+    Object.defineProperty(globalThis, "localStorage", {
+      value: {
+        getItem: () => {
+          throw new Error("blocked");
+        },
+        setItem: () => {
+          throw new Error("blocked");
+        },
+        removeItem: () => {
+          throw new Error("blocked");
+        },
+        clear: () => {},
+        key: () => null,
+        length: 0,
+      } satisfies Storage,
+      configurable: true,
+    });
+
+    expect(storage.get(KEYS.THEME)).toBeNull();
+    expect(() => storage.set(KEYS.THEME, "dark")).not.toThrow();
+    expect(() => storage.remove(KEYS.THEME)).not.toThrow();
   });
 });
