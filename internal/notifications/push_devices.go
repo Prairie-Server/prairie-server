@@ -26,7 +26,8 @@ const (
 	PushModePrivatePush    = "private_push"
 	APNsEnvironmentProd    = "production"
 	APNsEnvironmentSandbox = "sandbox"
-	ApplePushTopicSilo     = "org.siloserver.silo"
+	ApplePushTopicSilo       = "org.siloserver.silo"
+	ApplePushTopicPrairie      = "org.prairieserver.prairie"
 )
 
 var (
@@ -203,7 +204,7 @@ func normalizeApplePushRegistration(input ApplePushRegistrationInput) (ApplePush
 	if topic == "" {
 		return ApplePushDeviceRegistration{}, fmt.Errorf("%w: apns_topic is required", ErrPushDeviceInvalid)
 	}
-	if topic != ApplePushTopicSilo {
+	if topic != ApplePushTopicPrairie && topic != ApplePushTopicSilo {
 		return ApplePushDeviceRegistration{}, fmt.Errorf("%w: apns_topic is not supported", ErrPushDeviceUnsupported)
 	}
 
