@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // External subtitles must carry collision-free full stream indexes in catalog

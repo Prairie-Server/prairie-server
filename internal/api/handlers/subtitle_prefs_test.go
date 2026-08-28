@@ -8,10 +8,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
-	"github.com/Silo-Server/silo-server/internal/settingskeys"
-	"github.com/Silo-Server/silo-server/internal/settingsresolve"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/settingskeys"
+	"github.com/prairie-server/prairie-server/internal/settingsresolve"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 func TestSetSubtitlePreferencePreservesOmittedForcedOverride(t *testing.T) {

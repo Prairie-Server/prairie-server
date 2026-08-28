@@ -3,7 +3,7 @@ package handlers
 import (
 	"context"
 
-	evt "github.com/Silo-Server/silo-server/internal/events"
+	evt "github.com/prairie-server/prairie-server/internal/events"
 )
 
 // userSettingsEventPayload deliberately carries the identity of what changed

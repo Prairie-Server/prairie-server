@@ -11,9 +11,9 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/watchstate"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/watchstate"
 )
 
 type Service struct {

@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
 )
 
 type routeActivity struct {

@@ -9,7 +9,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
 )
 
 // HandleAdminSetSourceToken stores an admin token for a source.

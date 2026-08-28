@@ -11,7 +11,7 @@ import (
 	"github.com/abadojack/whatlanggo"
 	"golang.org/x/text/language"
 
-	"github.com/Silo-Server/silo-server/internal/lang"
+	"github.com/prairie-server/prairie-server/internal/lang"
 )
 
 // LanguageDetectionSource describes where an upload language was resolved from.

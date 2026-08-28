@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/ebooks"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/ebooks"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 type fakeEbookMetadataEnricher struct {

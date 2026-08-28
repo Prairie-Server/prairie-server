@@ -10,9 +10,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/models"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // scopedKeyUserRepo records the writes an admin-user handler attempts so a

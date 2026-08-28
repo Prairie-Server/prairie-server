@@ -6,8 +6,8 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/diagnostics"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/diagnostics"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 // ClientDiagnosticsCleanupTask prunes expired client diagnostics and reconciles

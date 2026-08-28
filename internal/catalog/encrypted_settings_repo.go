@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 // SettingsStore is the read/write surface over server_settings shared by the

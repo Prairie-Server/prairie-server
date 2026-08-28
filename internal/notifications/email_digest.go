@@ -6,8 +6,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/mail"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/mail"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 	"github.com/jackc/pgx/v5"
 )
 

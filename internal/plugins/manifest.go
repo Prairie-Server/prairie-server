@@ -5,11 +5,11 @@ import (
 	"path/filepath"
 	"strings"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	publicmanifest "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/manifest"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+	publicmanifest "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/manifest"
 )
 
-const DefaultSiloAPIVersion = "v1"
+const DefaultPrairieAPIVersion = "v1"
 
 func ValidateManifest(manifest *pluginv1.PluginManifest) error {
 	if err := validateManifestShared(manifest); err != nil {
@@ -76,8 +76,8 @@ func validateManifestShared(manifest *pluginv1.PluginManifest) error {
 	if isReservedPluginID(manifest.GetPluginId()) {
 		return fmt.Errorf("plugin id %q is reserved for built-in host providers", manifest.GetPluginId())
 	}
-	if manifest.GetSiloApiVersion() == "" {
-		return fmt.Errorf("plugin manifest silo_api_version is required")
+	if manifest.GetPrairieApiVersion() == "" {
+		return fmt.Errorf("plugin manifest prairie_api_version is required")
 	}
 	if len(manifest.GetCapabilities()) == 0 {
 		return fmt.Errorf("plugin manifest capabilities are required")

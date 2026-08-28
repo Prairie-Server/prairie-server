@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/cache"
 	"golang.org/x/sync/singleflight"
 	"golang.org/x/time/rate"
 )

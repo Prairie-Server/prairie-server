@@ -11,10 +11,10 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/logredact"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
-	"github.com/Silo-Server/silo-server/internal/transcodenode"
+	"github.com/prairie-server/prairie-server/internal/logredact"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/transcodenode"
 )
 
 // startLocalPlaybackTransport is the shared local ffmpeg launch primitive for

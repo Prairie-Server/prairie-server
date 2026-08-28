@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // WrapUserStoreProvider decorates the shared user-store provider so every

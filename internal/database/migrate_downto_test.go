@@ -7,7 +7,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/migrations"
+	"github.com/prairie-server/prairie-server/migrations"
 )
 
 // TestMigrateDownToRestoresLegacyDisplayPrefs is the rollback rehearsal.

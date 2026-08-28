@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 // TestToneMapFFmpegGraphsCoverSupportedExecutors verifies each executor emits its required graph.

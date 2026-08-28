@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
-	"github.com/Silo-Server/silo-server/internal/worker"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/worker"
 )
 
 const (

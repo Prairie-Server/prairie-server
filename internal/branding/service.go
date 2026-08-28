@@ -8,7 +8,7 @@ import (
 	"log/slog"
 	"path"
 
-	"github.com/Silo-Server/silo-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
 // SettingsStore is the subset of the server settings repository the branding

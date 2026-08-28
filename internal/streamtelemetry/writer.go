@@ -7,7 +7,7 @@ import (
 	"net"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
 )
 
 const OutcomeUnknown httpstream.StreamOutcome = "unknown"

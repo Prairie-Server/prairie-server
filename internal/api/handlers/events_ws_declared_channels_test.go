@@ -13,11 +13,11 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/cache"
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 // eventsWSTestConn dials the events websocket against a handler authenticated

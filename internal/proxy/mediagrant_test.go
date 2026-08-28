@@ -10,12 +10,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/nodeconfig"
-	"github.com/Silo-Server/silo-server/internal/nodesessions"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/nodeconfig"
+	"github.com/prairie-server/prairie-server/internal/nodesessions"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 const grantTestSecret = "media-grant-proxy-secret"

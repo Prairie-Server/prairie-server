@@ -5,7 +5,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/sections/recipes"
+	"github.com/prairie-server/prairie-server/internal/sections/recipes"
 )
 
 // RecipeHandler exposes recipe-registry metadata over HTTP.

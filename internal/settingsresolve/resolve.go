@@ -21,8 +21,8 @@ import (
 	"fmt"
 	"sort"
 
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // Context is the identity a resolution happens against.

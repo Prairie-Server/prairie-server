@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 func TestGetLeafUserDataUsesEbookReaderProgress(t *testing.T) {

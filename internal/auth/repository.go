@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // Sentinel errors for repository operations.

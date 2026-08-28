@@ -9,11 +9,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
-	"github.com/Silo-Server/silo-server/internal/settingskeys"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/settingskeys"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 func TestViewerResolverParityWithLegacyResolver(t *testing.T) {

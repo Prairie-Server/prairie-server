@@ -9,8 +9,8 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/Silo-Server/silo-server/internal/branding"
-	"github.com/Silo-Server/silo-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/branding"
+	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
 // fakeSettings is an in-memory branding.SettingsStore.

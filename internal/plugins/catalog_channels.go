@@ -1,7 +1,7 @@
 package plugins
 
 const (
-	DefaultRepositoryURL  = "https://raw.githubusercontent.com/Silo-Server/silo-plugins/main/manifest.json"
+	DefaultRepositoryURL  = "https://raw.githubusercontent.com/Prairie-Server/silo-plugins/main/manifest.json"
 	DefaultRepositoryName = "Silo maintained"
 
 	ApprovedCommunityRepositoryURL  = "https://raw.githubusercontent.com/Silo-Community/silo-plugins/main/manifest.json"

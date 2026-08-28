@@ -13,12 +13,12 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/cache"
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
-	"github.com/Silo-Server/silo-server/internal/settingsmigrate"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/settingsmigrate"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // deviceSeenThrottle bounds how often a device's last_seen_at is refreshed from

@@ -18,14 +18,14 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/downloadprepare"
-	"github.com/Silo-Server/silo-server/internal/downloads"
-	"github.com/Silo-Server/silo-server/internal/nodeconfig"
-	"github.com/Silo-Server/silo-server/internal/nodesessions"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/downloadprepare"
+	"github.com/prairie-server/prairie-server/internal/downloads"
+	"github.com/prairie-server/prairie-server/internal/nodeconfig"
+	"github.com/prairie-server/prairie-server/internal/nodesessions"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 // Server is the HTTP handler for proxy mode.

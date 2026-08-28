@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/discord"
-	"github.com/Silo-Server/silo-server/internal/notifications"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/discord"
+	"github.com/prairie-server/prairie-server/internal/notifications"
 )
 
 // discordSettingsPath is the SPA page the OAuth callback redirects back to,

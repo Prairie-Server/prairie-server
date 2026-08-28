@@ -5,7 +5,7 @@ import (
 	"errors"
 	"log/slog"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type subtitleReadySessionLookup interface {

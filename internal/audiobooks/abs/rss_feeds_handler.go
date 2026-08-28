@@ -15,7 +15,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/oklog/ulid/v2"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 var slugRe = regexp.MustCompile(`^[a-z0-9-]{4,64}$`)

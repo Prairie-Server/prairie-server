@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 const artifactColumns = `id, media_file_id, format, params_hash, container, codec_video, codec_audio, audio_recipe_version,

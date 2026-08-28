@@ -7,7 +7,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 // TestSegmentRecoveryDecisionWaitsWhileRestarting covers half of issue #243's

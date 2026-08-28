@@ -3,7 +3,7 @@ package downloads
 import (
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // Subscription monitor modes — which episodes of a series a download

@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/collectionutil"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/collectionutil"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // Service performs sync runs for user-owned imported collections. The result

@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 // The API validates a frozen remux recipe against the proxy that will execute

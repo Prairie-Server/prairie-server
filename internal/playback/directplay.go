@@ -12,7 +12,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
 )
 
 // MimeFromExtension returns a MIME type based on the file extension.

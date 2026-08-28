@@ -14,8 +14,8 @@ import (
 
 	"golang.org/x/sync/singleflight"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // The resolved-list cache stores the *shared*, user-agnostic membership and

@@ -3,7 +3,7 @@ package handlers
 import (
 	"testing"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 )
 
 func TestToPluginPresentationJSONPreservesOperatorMetadata(t *testing.T) {
@@ -15,11 +15,11 @@ func TestToPluginPresentationJSONPreservesOperatorMetadata(t *testing.T) {
 		DescriptionMarkdown: "Longer description.",
 		SetupMarkdown:       "Configure the example.",
 		HomepageUrl:         "https://example.com",
-		SourceUrl:           "https://github.com/Silo-Server/example-plugin",
-		SupportUrl:          "https://github.com/Silo-Server/example-plugin/issues",
-		ChangelogUrl:        "https://github.com/Silo-Server/example-plugin/releases",
+		SourceUrl:           "https://github.com/Prairie-Server/example-plugin",
+		SupportUrl:          "https://github.com/Prairie-Server/example-plugin/issues",
+		ChangelogUrl:        "https://github.com/Prairie-Server/example-plugin/releases",
 		PublisherName:       "Silo",
-		PublisherUrl:        "https://github.com/Silo-Server",
+		PublisherUrl:        "https://github.com/Prairie-Server",
 		LicenseSpdx:         "AGPL-3.0-or-later",
 	})
 
@@ -29,10 +29,10 @@ func TestToPluginPresentationJSONPreservesOperatorMetadata(t *testing.T) {
 	if got.DisplayName != "Example Plugin" || got.Summary != "Explains the example." {
 		t.Fatalf("identity fields = %#v", got)
 	}
-	if got.SourceURL != "https://github.com/Silo-Server/example-plugin" {
+	if got.SourceURL != "https://github.com/Prairie-Server/example-plugin" {
 		t.Fatalf("source_url = %q", got.SourceURL)
 	}
-	if got.ChangelogURL != "https://github.com/Silo-Server/example-plugin/releases" {
+	if got.ChangelogURL != "https://github.com/Prairie-Server/example-plugin/releases" {
 		t.Fatalf("changelog_url = %q", got.ChangelogURL)
 	}
 }

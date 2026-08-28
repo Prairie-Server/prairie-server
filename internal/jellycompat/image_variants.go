@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/imagesize"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/imagesize"
 )
 
 // The Jellyfin surface expresses a requested size with the same vocabulary the

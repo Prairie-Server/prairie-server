@@ -7,7 +7,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/branding"
+	"github.com/prairie-server/prairie-server/internal/branding"
 )
 
 // BrandingHandler exposes the public branding read, the public asset serving

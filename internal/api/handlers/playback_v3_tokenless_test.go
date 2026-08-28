@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 // The negotiated mode's whole promise is that nothing the client can see

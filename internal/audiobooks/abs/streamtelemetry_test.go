@@ -15,9 +15,9 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 
-	"github.com/Silo-Server/silo-server/internal/httpstream"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
 )
 
 func TestABSSubjectNormalization(t *testing.T) {

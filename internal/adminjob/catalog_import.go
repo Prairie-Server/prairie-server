@@ -1,6 +1,6 @@
 package adminjob
 
-import "github.com/Silo-Server/silo-server/internal/catalogseed"
+import "github.com/prairie-server/prairie-server/internal/catalogseed"
 
 type CatalogImportRequest struct {
 	SourceBucket  string                    `json:"source_bucket"`

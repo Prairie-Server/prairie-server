@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
 )
 
 // BenchmarkABSStreamTelemetry pairs the enabled and disabled sub-benchmarks in

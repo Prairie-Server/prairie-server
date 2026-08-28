@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/go-chi/chi/v5"
 )
 

@@ -11,8 +11,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 
-	"github.com/Silo-Server/silo-server/internal/jellycompat/displayprefs"
-	"github.com/Silo-Server/silo-server/migrations"
+	"github.com/prairie-server/prairie-server/internal/jellycompat/displayprefs"
+	"github.com/prairie-server/prairie-server/migrations"
 )
 
 // TestPostgresDisplayPrefsMove runs the real goose provider — which registers

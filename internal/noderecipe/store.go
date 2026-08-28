@@ -34,7 +34,7 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 // KeyPrefix namespaces per-session recipe keys: silo:noderecipe:<upstreamSessionID>.

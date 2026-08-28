@@ -8,9 +8,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/transcodenode"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/transcodenode"
 )
 
 // remoteTranscodeNodeStubV3 is a pooled transcode node that advertises the H.264

@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 type Type string

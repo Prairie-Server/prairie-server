@@ -14,7 +14,7 @@ import (
 
 	"golang.org/x/sync/singleflight"
 
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 // TranscodeRuntimeConfig is the subset of playback configuration the transcode

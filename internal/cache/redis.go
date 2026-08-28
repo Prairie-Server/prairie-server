@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 	"github.com/redis/go-redis/v9"
 )
 

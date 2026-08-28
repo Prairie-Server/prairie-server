@@ -13,7 +13,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 // webhookSecretAAD binds an autoscan_webhook_endpoints secret_ref ciphertext to

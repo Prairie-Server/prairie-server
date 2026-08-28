@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/artworkkey"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/imagesize"
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/imagesize"
 )
 
 type audiobookGroupResponse struct {

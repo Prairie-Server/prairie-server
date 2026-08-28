@@ -11,7 +11,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/autoscan"
+	"github.com/prairie-server/prairie-server/internal/autoscan"
 )
 
 const testWebhookToken = "wh_test_token_abcdef123456"

@@ -6,8 +6,8 @@ import (
 	"errors"
 	"slices"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // PlayMethod represents how a media file will be streamed.

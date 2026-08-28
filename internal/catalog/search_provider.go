@@ -11,8 +11,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/Silo-Server/silo-server/internal/embeddingvectors"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/embeddingvectors"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 const (

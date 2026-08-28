@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
 )
 
 // ErrInvalidSettingIdentity is returned when a setting identity does not match

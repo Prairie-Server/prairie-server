@@ -14,9 +14,9 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 const defaultBaseURL = "https://api.simkl.com"

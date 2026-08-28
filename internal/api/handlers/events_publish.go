@@ -4,8 +4,8 @@ import (
 	"context"
 	"log/slog"
 
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/models"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func publishEventJob(ctx context.Context, hub *evt.Hub, eventName string, job *models.AdminJob) {

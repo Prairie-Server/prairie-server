@@ -9,9 +9,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/ebookconvert"
-	"github.com/Silo-Server/silo-server/internal/httpstream"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/ebookconvert"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // ConversionHeader tells the client how a kindle-family read was served.

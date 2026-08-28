@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/audiobooks"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 // SyncAudiobookMetadataTask runs the periodic audiobook enrichment sweep.

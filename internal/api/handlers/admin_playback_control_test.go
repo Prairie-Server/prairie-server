@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 type adminPlaybackControlTestConn struct {

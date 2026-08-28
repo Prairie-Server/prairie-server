@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/metadata"
 )
 
 // Provider reads metadata from NFO sidecar files.

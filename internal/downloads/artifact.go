@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 // Artifact status constants (download_artifacts.status).

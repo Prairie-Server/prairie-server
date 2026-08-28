@@ -5,7 +5,7 @@ import (
 	"crypto/rand"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 // memSettings is an in-memory raw SettingsStore for DB-free decorator tests.

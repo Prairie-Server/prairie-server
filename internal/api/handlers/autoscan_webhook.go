@@ -10,8 +10,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/autoscan"
-	"github.com/Silo-Server/silo-server/internal/autoscan/arrwebhook"
+	"github.com/prairie-server/prairie-server/internal/autoscan"
+	"github.com/prairie-server/prairie-server/internal/autoscan/arrwebhook"
 )
 
 // maxWebhookBodyBytes caps public webhook request bodies. Real Sonarr/Radarr

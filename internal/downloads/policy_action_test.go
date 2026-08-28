@@ -6,11 +6,11 @@ import (
 	"reflect"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	policyengine "github.com/Silo-Server/silo-server/internal/policy"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	policyengine "github.com/prairie-server/prairie-server/internal/policy"
 )
 
 func TestPolicyActionDeciderMatchesLegacyCapability(t *testing.T) {

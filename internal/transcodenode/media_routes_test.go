@@ -7,9 +7,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/nodeconfig"
-	"github.com/Silo-Server/silo-server/internal/nodesessions"
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/nodeconfig"
+	"github.com/prairie-server/prairie-server/internal/nodesessions"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
 )
 
 var updateRouteManifest = flag.Bool("update-route-manifest", false, "update checked-in route manifest")

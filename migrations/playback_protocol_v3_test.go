@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 func TestPlaybackProtocolV3MigrationAcceptsEveryRouteEvent(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 // TrendingDiscoverRefresher runs a single pass of the trending refresh.

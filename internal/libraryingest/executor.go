@@ -11,11 +11,11 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
-	"github.com/Silo-Server/silo-server/internal/librarykind"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/notifications"
-	"github.com/Silo-Server/silo-server/internal/scanner"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/librarykind"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/notifications"
+	"github.com/prairie-server/prairie-server/internal/scanner"
 )
 
 // Scanner executes the scan phase for a library scope.

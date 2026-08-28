@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/plugins"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/plugins"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 type Capabilities struct {

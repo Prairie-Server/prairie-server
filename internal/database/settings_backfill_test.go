@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 
-	"github.com/Silo-Server/silo-server/migrations"
+	"github.com/prairie-server/prairie-server/migrations"
 )
 
 // TestPostgresSettingsBackfill runs the real goose provider — every SQL

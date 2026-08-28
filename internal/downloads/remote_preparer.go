@@ -10,13 +10,13 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/downloadprepare"
-	"github.com/Silo-Server/silo-server/internal/logredact"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
-	"github.com/Silo-Server/silo-server/internal/transcodenode"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/downloadprepare"
+	"github.com/prairie-server/prairie-server/internal/logredact"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/transcodenode"
 	"golang.org/x/sync/singleflight"
 )
 

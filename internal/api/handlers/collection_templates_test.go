@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/collections/templates"
+	"github.com/prairie-server/prairie-server/internal/collections/templates"
 )
 
 func TestCollectionTemplateHandlerReturnsBuiltinCatalog(t *testing.T) {

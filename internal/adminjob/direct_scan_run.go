@@ -7,11 +7,11 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/libraryingest"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/scanbatch"
-	"github.com/Silo-Server/silo-server/internal/scanqueue"
+	"github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/libraryingest"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/scanbatch"
+	"github.com/prairie-server/prairie-server/internal/scanqueue"
 )
 
 const (

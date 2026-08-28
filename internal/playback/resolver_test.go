@@ -3,8 +3,8 @@ package playback_test
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 func defaultCaps() playback.ClientCapabilities {

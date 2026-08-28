@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 type fakePresenceLookup struct {

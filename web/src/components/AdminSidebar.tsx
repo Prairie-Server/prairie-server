@@ -2,7 +2,7 @@ import { Link, useLocation } from "react-router";
 import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { SideNavItem, SideNavSection } from "@/components/SideNav";
-import { SiloBrand } from "@/components/SiloBrand";
+import { PrairieBrand } from "@/components/PrairieBrand";
 import {
   buildAdminNavSections,
   buildAdminPluginNavItems,
@@ -99,7 +99,7 @@ export default function AdminSidebar({ onNavigate, embedded = false }: AdminSide
           aria-label="Go to app home"
           className="focus-visible:ring-ring/50 inline-flex rounded-md transition-opacity hover:opacity-85 focus-visible:ring-[3px] focus-visible:outline-none"
         >
-          <SiloBrand className="h-12 w-[112px]" />
+          <PrairieBrand className="h-12 w-[112px]" />
         </Link>
       </div>
       {/* Nav sections */}

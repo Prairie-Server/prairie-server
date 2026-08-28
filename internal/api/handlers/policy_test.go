@@ -20,10 +20,10 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/cache"
-	"github.com/Silo-Server/silo-server/internal/policy"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/policy"
 )
 
 func TestPolicyCapabilityShape(t *testing.T) {

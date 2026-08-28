@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
 )
 
 func compatImageProxyTagVariantMiddleware(codec *ResourceIDCodec) func(http.Handler) http.Handler {

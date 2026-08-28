@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 
-	evt "github.com/Silo-Server/silo-server/internal/events"
+	evt "github.com/prairie-server/prairie-server/internal/events"
 )
 
 // eventsCapabilityResponse describes how a client may subscribe to the events

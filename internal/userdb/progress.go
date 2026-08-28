@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // WatchProgress is an alias for the canonical type in userstore.

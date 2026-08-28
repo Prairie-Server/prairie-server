@@ -3,7 +3,7 @@ package webhooksync
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
 )
 
 func TestShouldApplyPlexWebhookEvent(t *testing.T) {

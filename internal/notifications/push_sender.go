@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 var pushRetrySchedule = []time.Duration{

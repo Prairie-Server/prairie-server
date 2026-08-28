@@ -46,7 +46,7 @@ vi.mock("@/pages/audiobooks/player/audiobookPlaybackContext", () => ({
 vi.mock("@/hooks/queries/catalogRead", () => ({ fetchCatalogItemDetail: vi.fn() }));
 vi.mock("@/components/GlobalSearch", () => ({ GlobalSearch: () => null }));
 vi.mock("@/components/ServerActivity", () => ({ default: () => null }));
-vi.mock("@/components/SiloBrand", () => ({ SiloBrand: () => <span>Silo</span> }));
+vi.mock("@/components/PrairieBrand", () => ({ PrairieBrand: () => <span>Prairie</span> }));
 vi.mock("@/components/ui/avatar", () => ({
   Avatar: ({ children }: { children: ReactNode }) => <div>{children}</div>,
   AvatarImage: ({ src, alt }: { src: string; alt: string }) => <img src={src} alt={alt} />,

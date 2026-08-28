@@ -5,8 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // SettingMutationSweeper is the per-user retention sweep the task drives.

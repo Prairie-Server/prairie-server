@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func seedRelanguageItem(t *testing.T, h *testHarness, lockedFields ...MetadataField) {

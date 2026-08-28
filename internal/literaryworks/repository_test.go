@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 func TestRepositoryLinkAndFetchSummary(t *testing.T) {

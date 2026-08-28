@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5"
 	"golang.org/x/crypto/bcrypt"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // scanProfile scans a profile row, converting TIMESTAMPTZ to string.

@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
 )
 
 var transcodeNodeMediaRoutes = []streamtelemetry.MediaRoute{

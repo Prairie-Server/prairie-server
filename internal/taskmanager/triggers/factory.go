@@ -1,6 +1,6 @@
 package triggers
 
-import "github.com/Silo-Server/silo-server/internal/taskmanager"
+import "github.com/prairie-server/prairie-server/internal/taskmanager"
 
 // New creates a live Trigger from a TriggerConfig.
 func New(cfg taskmanager.TriggerConfig) taskmanager.Trigger {

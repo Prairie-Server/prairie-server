@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func TestRefreshDebtReasonsForItem(t *testing.T) {

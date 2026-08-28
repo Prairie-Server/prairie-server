@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/jackc/pgx/v5"
 )
 

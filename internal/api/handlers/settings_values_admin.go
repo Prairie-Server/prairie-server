@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
-	"github.com/Silo-Server/silo-server/internal/settingskeys"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/settingskeys"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 const adminNavigationShortcutRepairMessage = "Use whole-document PUT on this admin resource to clear or replace navigation shortcuts"

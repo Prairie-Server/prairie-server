@@ -5,8 +5,8 @@ import (
 	"slices"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/titleutil"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/titleutil"
 )
 
 // MetadataUpdate contains the fields that can be updated on a media item,

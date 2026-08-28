@@ -8,7 +8,7 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/Silo-Server/silo-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/go-chi/chi/v5"
 )
 

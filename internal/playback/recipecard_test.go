@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 // TestRecipeCardRoundTripOpts verifies recipe cards restore transcode options.

@@ -4,9 +4,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/artworkkey"
-	"github.com/Silo-Server/silo-server/internal/imagesize"
-	"github.com/Silo-Server/silo-server/internal/imageutil"
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/imagesize"
+	"github.com/prairie-server/prairie-server/internal/imageutil"
 )
 
 // imageTypesWithWidths is every artwork type a client can receive a URL for.

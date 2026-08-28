@@ -11,7 +11,7 @@ import {
   sidebarSurfaceStyle,
   type AppNavLink,
 } from "@/components/AppSidebar.logic";
-import { SiloBrand } from "@/components/SiloBrand";
+import { PrairieBrand } from "@/components/PrairieBrand";
 import { useAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
@@ -486,13 +486,13 @@ export default function AppSidebar({ onNavigate, collapsed = false }: AppSidebar
             aria-hidden={!showLabels}
             className={`sidebar-fade absolute left-5 ${showLabels ? "opacity-100" : "opacity-0"}`}
           >
-            <SiloBrand variant="wordmark" className="h-12 w-[112px]" />
+            <PrairieBrand variant="wordmark" className="h-12 w-[112px]" />
           </span>
           <span
             aria-hidden={showLabels}
             className={`sidebar-fade absolute left-3.5 ${showLabels ? "opacity-0" : "opacity-100"}`}
           >
-            <SiloBrand variant="mark" className="h-9 w-9" />
+            <PrairieBrand variant="mark" className="h-9 w-9" />
           </span>
         </ViewTransitionLink>
 

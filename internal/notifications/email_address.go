@@ -13,7 +13,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/mail"
+	"github.com/prairie-server/prairie-server/internal/mail"
 )
 
 // emailVerifyTTL bounds how long a verification link stays usable.

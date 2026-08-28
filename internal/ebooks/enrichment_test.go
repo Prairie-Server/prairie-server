@@ -11,8 +11,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/metadata"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/models"
 	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

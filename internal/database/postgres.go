@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

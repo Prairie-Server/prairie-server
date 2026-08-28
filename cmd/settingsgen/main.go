@@ -22,7 +22,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
 )
 
 func main() {

@@ -12,7 +12,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/envutil"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // Protocol identifies the OTLP exporter wire protocol.
@@ -45,7 +45,7 @@ const (
 )
 
 // defaultServiceName is used when OTEL_SERVICE_NAME is unset.
-const defaultServiceName = "silo-server"
+const defaultServiceName = "prairie-server"
 
 // defaultSamplerRatio is the parent-based trace-id ratio applied when
 // OTEL_TRACES_SAMPLER_ARG is unset or unparseable.

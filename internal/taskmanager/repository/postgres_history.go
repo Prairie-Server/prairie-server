@@ -10,8 +10,8 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/database/pglock"
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/database/pglock"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 const taskHistoryCleanupAdvisoryLock int64 = 0x53494C4F48495354 // "SILOHIST"

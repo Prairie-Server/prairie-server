@@ -14,7 +14,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
 )
 
 // QueryParam is the request parameter a client uses to pick an image size. It

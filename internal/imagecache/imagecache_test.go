@@ -18,7 +18,7 @@ import (
 
 	"github.com/h2non/bimg"
 
-	"github.com/Silo-Server/silo-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/metadata"
 )
 
 const (

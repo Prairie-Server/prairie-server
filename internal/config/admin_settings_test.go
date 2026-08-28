@@ -238,7 +238,7 @@ func TestNormalizeAdminSettingRejectsInvalidValues(t *testing.T) {
 		{key: "notifications.server_channels.batch_seconds", value: "119"},
 		{key: "catalog.search.meilisearch.semantic_ratio", value: "1.2"},
 		{key: "email.smtp_port", value: "70000"},
-		{key: "theme.catalog_url", value: "http://raw.githubusercontent.com/Silo-Server/silo-themes/main/catalog.json"},
+		{key: "theme.catalog_url", value: "http://raw.githubusercontent.com/Prairie-Server/silo-themes/main/catalog.json"},
 		{key: "theme.catalog_url", value: "https://example.com/catalog.json"},
 		{key: "redis.url", value: "not-a-url"},
 	}
@@ -254,12 +254,12 @@ func TestNormalizeAdminSettingRejectsInvalidValues(t *testing.T) {
 func TestNormalizeAdminSettingAcceptsApprovedThemeCatalogURL(t *testing.T) {
 	got, err := NormalizeAdminSetting(
 		"theme.catalog_url",
-		"https://raw.githubusercontent.com/Silo-Server/silo-themes/main/catalog.json/",
+		"https://raw.githubusercontent.com/Prairie-Server/silo-themes/main/catalog.json/",
 	)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got != "https://raw.githubusercontent.com/Silo-Server/silo-themes/main/catalog.json" {
+	if got != "https://raw.githubusercontent.com/Prairie-Server/silo-themes/main/catalog.json" {
 		t.Fatalf("normalized URL = %q", got)
 	}
 }

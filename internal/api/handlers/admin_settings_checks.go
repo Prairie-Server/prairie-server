@@ -15,13 +15,13 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/redis/go-redis/v9"
 
-	"github.com/Silo-Server/silo-server/internal/ai/llm"
-	"github.com/Silo-Server/silo-server/internal/cache"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/mdblist"
-	"github.com/Silo-Server/silo-server/internal/recommendations/embeddings"
-	"github.com/Silo-Server/silo-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/ai/llm"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/mdblist"
+	"github.com/prairie-server/prairie-server/internal/recommendations/embeddings"
+	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
 type adminSettingsConnectionCheckRequest struct {

@@ -3,7 +3,7 @@ package jellycompat
 import (
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 // ConnectInfo is the non-sensitive subset of the compat configuration a signed-in

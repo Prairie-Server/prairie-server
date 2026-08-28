@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 // TestExecutableRecipeV3RoundTripPreservesOperationalFields verifies frozen recipes restore all execution inputs.

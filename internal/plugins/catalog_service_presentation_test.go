@@ -13,15 +13,15 @@ func TestFetchRepositoryIndexPreservesPresentationAndRepositoryURL(t *testing.T)
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write([]byte(`{
           "plugins": [{
-            "repo_url": "https://github.com/Silo-Server/example-plugin",
+            "repo_url": "https://github.com/Prairie-Server/example-plugin",
             "manifest": {
               "plugin_id": "silo.example",
               "version": "1.0.0",
               "presentation": {
                 "display_name": "Example Plugin",
                 "summary": "Explains the example.",
-                "source_url": "https://github.com/Silo-Server/example-plugin",
-                "changelog_url": "https://github.com/Silo-Server/example-plugin/releases"
+                "source_url": "https://github.com/Prairie-Server/example-plugin",
+                "changelog_url": "https://github.com/Prairie-Server/example-plugin/releases"
               }
             }
           }]
@@ -39,7 +39,7 @@ func TestFetchRepositoryIndexPreservesPresentationAndRepositoryURL(t *testing.T)
 	}
 
 	plugin := index.Plugins[0]
-	if plugin.RepoURL != "https://github.com/Silo-Server/example-plugin" {
+	if plugin.RepoURL != "https://github.com/Prairie-Server/example-plugin" {
 		t.Fatalf("repo_url = %q", plugin.RepoURL)
 	}
 	presentation := plugin.Manifest.GetPresentation()
@@ -49,7 +49,7 @@ func TestFetchRepositoryIndexPreservesPresentationAndRepositoryURL(t *testing.T)
 	if presentation.GetSummary() != "Explains the example." {
 		t.Fatalf("summary = %q", presentation.GetSummary())
 	}
-	if presentation.GetChangelogUrl() != "https://github.com/Silo-Server/example-plugin/releases" {
+	if presentation.GetChangelogUrl() != "https://github.com/Prairie-Server/example-plugin/releases" {
 		t.Fatalf("changelog_url = %q", presentation.GetChangelogUrl())
 	}
 }

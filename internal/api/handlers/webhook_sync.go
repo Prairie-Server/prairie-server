@@ -11,9 +11,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	"github.com/Silo-Server/silo-server/internal/webhooksync"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	"github.com/prairie-server/prairie-server/internal/webhooksync"
 )
 
 type WebhookSyncHandler struct {

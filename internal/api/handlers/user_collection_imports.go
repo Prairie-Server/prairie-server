@@ -13,14 +13,14 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/collections/templates"
-	"github.com/Silo-Server/silo-server/internal/collectionutil"
-	"github.com/Silo-Server/silo-server/internal/mdblist"
-	"github.com/Silo-Server/silo-server/internal/s3client"
-	"github.com/Silo-Server/silo-server/internal/usercollections"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/collections/templates"
+	"github.com/prairie-server/prairie-server/internal/collectionutil"
+	"github.com/prairie-server/prairie-server/internal/mdblist"
+	"github.com/prairie-server/prairie-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/usercollections"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // UserCollectionImportHandler exposes the user-side template gallery and

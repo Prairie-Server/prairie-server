@@ -11,9 +11,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/buildinfo"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/buildinfo"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 func TestSystemBuildInfoResponse(t *testing.T) {

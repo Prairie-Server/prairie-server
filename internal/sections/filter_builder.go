@@ -1,6 +1,6 @@
 package sections
 
-import "github.com/Silo-Server/silo-server/internal/catalog"
+import "github.com/prairie-server/prairie-server/internal/catalog"
 
 type FilterBuilder = catalog.QueryBuilder
 

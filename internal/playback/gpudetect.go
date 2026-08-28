@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 	"golang.org/x/sync/singleflight"
 )
 

@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/webhooksync"
+	"github.com/prairie-server/prairie-server/internal/webhooksync"
 )
 
 func TestRequestWebhookURLWithPrefix(t *testing.T) {

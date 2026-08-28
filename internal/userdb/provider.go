@@ -3,7 +3,7 @@ package userdb
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // SQLiteProvider implements userstore.UserStoreProvider using the SQLite pool.

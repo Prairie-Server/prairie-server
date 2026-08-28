@@ -16,13 +16,13 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/downloads"
-	"github.com/Silo-Server/silo-server/internal/httpstream"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/downloads"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 // DownloadService is the interface that the download handler depends on. A

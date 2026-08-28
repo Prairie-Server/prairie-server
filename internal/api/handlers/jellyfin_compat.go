@@ -10,10 +10,10 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
-	"github.com/Silo-Server/silo-server/internal/config"
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/jellycompat"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/config"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/jellycompat"
 )
 
 const jellyfinCompatWebOperationUpdatedEvent = "jellyfin_compat.web_operation.updated"

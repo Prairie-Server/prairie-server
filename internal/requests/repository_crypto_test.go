@@ -3,7 +3,7 @@ package requests
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/secret"
+	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 // TestEncryptAPIKeyRoundTripAndAAD guards the security-critical invariants of the

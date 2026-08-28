@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 // ErrTerminalClaimUnavailable means a staged terminal event still exists but

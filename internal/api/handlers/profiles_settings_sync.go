@@ -8,11 +8,11 @@ import (
 	"strconv"
 	"strings"
 
-	evt "github.com/Silo-Server/silo-server/internal/events"
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
-	"github.com/Silo-Server/silo-server/internal/settingskeys"
-	"github.com/Silo-Server/silo-server/internal/settingsresolve"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	evt "github.com/prairie-server/prairie-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/settingskeys"
+	"github.com/prairie-server/prairie-server/internal/settingsresolve"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // The legacy profile endpoints are still the write path shipped clients use

@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Silo-Server/silo-server/internal/contentid"
+	"github.com/prairie-server/prairie-server/internal/contentid"
 )
 
 // EncodedIDType distinguishes packed compat UUIDs.

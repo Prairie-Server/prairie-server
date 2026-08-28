@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
-	taskdefs "github.com/Silo-Server/silo-server/internal/taskmanager/tasks"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
+	taskdefs "github.com/prairie-server/prairie-server/internal/taskmanager/tasks"
 )
 
 type fakeTriggerRepository struct {

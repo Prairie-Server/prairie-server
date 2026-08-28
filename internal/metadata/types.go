@@ -3,7 +3,7 @@ package metadata
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // RefreshMode determines how the pipeline processes an item.

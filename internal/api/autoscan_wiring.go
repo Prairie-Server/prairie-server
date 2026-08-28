@@ -7,11 +7,11 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
-	"github.com/Silo-Server/silo-server/internal/autoscan"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/plugins"
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
-	"github.com/Silo-Server/silo-server/internal/scantrigger"
+	"github.com/prairie-server/prairie-server/internal/autoscan"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/plugins"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
+	"github.com/prairie-server/prairie-server/internal/scantrigger"
 )
 
 // autoscanQueuer is the scan-enqueue surface BuildAutoscanService needs; it is

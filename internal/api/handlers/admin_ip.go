@@ -6,7 +6,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/activitylog"
+	"github.com/prairie-server/prairie-server/internal/activitylog"
 )
 
 // AdminIPHandler serves admin endpoints for IP/user visibility.

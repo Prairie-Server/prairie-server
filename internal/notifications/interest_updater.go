@@ -7,8 +7,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 

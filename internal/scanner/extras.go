@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/contentid"
-	"github.com/Silo-Server/silo-server/internal/librarykind"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/naming"
+	"github.com/prairie-server/prairie-server/internal/contentid"
+	"github.com/prairie-server/prairie-server/internal/librarykind"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/naming"
 )
 
 // extraCandidate is a walked file classified as a local extra rather than

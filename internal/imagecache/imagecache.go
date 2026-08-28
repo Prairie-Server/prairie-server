@@ -18,9 +18,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/artworkkey"
-	"github.com/Silo-Server/silo-server/internal/imageutil"
-	"github.com/Silo-Server/silo-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/imageutil"
+	"github.com/prairie-server/prairie-server/internal/metadata"
 )
 
 const (

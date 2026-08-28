@@ -1,145 +1,99 @@
-<p align="center">
-  <img src="assets/icon.png" alt="Silo logo" width="112" height="112">
-</p>
+# Prairie
 
-<h1 align="center">Silo</h1>
+Prairie is a self-hosted media streaming server for movies, shows, music, and books. It is an AGPL-licensed fork of Silo, rebranded with its own project identity while preserving the same core goal: point Prairie at your media folders and stream to your devices at home or away with direct play, remuxing, and hardware-accelerated transcoding handled automatically.
 
-<p align="center">
-  A self-hosted media server for films, series, audiobooks, ebooks, podcasts, and manga.
-</p>
+## Highlights
 
-<p align="center">
-  <a href="https://github.com/Silo-Server/silo-server/releases"><img alt="Latest GitHub release" src="https://img.shields.io/github/v/release/Silo-Server/silo-server?include_prereleases&amp;sort=semver&amp;display_name=tag&amp;style=flat-square&amp;label=release"></a>
-  <a href="https://github.com/orgs/Silo-Server/packages/container/package/silo-server"><img alt="Container image on GHCR" src="https://img.shields.io/badge/container-GHCR-2496ED?style=flat-square&amp;logo=docker&amp;logoColor=white"></a>
-  <a href="https://github.com/Silo-Server/silo-server/actions/workflows/ci.yml"><img alt="Continuous integration" src="https://img.shields.io/github/actions/workflow/status/Silo-Server/silo-server/ci.yml?branch=main&amp;style=flat-square&amp;label=CI"></a>
-  <img alt="Go 1.26" src="https://img.shields.io/badge/Go-1.26-00ADD8?style=flat-square&amp;logo=go&amp;logoColor=white">
-  <img alt="React 19" src="https://img.shields.io/badge/React-19-149ECA?style=flat-square&amp;logo=react&amp;logoColor=white">
-  <a href="LICENSE"><img alt="AGPL-3.0-or-later license" src="https://img.shields.io/badge/license-AGPL--3.0--or--later-555555?style=flat-square"></a>
-</p>
+- **Plays your media, your way** — direct play when the device supports it, remux or hardware-accelerated transcode when it does not.
+- **Web app included** — a full-featured web client and admin interface ship with the server.
+- **Jellyfin-compatible surface** — optional compatibility APIs support clients such as VidHub, Findroid, and Infuse.
+- **Household profiles** — multiple profiles per account, with per-profile watch state and parental controls.
+- **Plugin-driven metadata** — match and enrich libraries with providers like TMDB and TVDB through plugins.
+- **Fast setup** — one `docker compose up -d` starts the default stack; most configuration happens in the admin UI.
 
-<p align="center">
-  <a href="#quick-start">Quick start</a>
-  · <a href="docs/wiki/index.md">Documentation</a>
-  · <a href="docs/release-versioning.md">Builds &amp; releases</a>
-  · <a href="https://discord.gg/siloserver">Discord</a>
-  · <a href="#supporting-silo">Support Silo</a>
-  · <a href="CONTRIBUTING.md">Contributing</a>
-</p>
+## Deploy with Docker
 
----
+1. Copy the example environment file:
 
-> [!WARNING]
-> Silo is pre-release. APIs, configuration, and database migrations may change
-> before the first stable release. Back up your deployment before updating.
+   ```sh
+   cp .env.example .env
+   ```
 
-## What Silo does
+2. Edit `.env` and set at least your media path:
 
-<table>
-  <tr>
-    <td width="33%" valign="top">
-      <strong>Play</strong><br><br>
-      Direct play when possible, remux when needed, transcode otherwise, with
-      VA-API, Quick Sync, and NVENC hardware acceleration.
-    </td>
-    <td width="33%" valign="top">
-      <strong>Organize</strong><br><br>
-      One catalog for films, series, audiobooks, ebooks, podcasts, and manga,
-      matched through metadata plugins such as TMDB and TVDB.
-    </td>
-    <td width="33%" valign="top">
-      <strong>Connect</strong><br><br>
-      Use the included web app, or the Jellyfin/Emby-compatible API with clients
-      such as <a href="https://vidhub.okaapps.com/what-does-vidhub-do/">VidHub</a>,
-      <a href="https://github.com/jarnedemeulemeester/findroid">Findroid</a>, and
-      <a href="https://firecore.com/infuse">Infuse</a>. Client coverage varies.
-    </td>
-  </tr>
-  <tr>
-    <td width="33%" valign="top">
-      <strong>Share</strong><br><br>
-      Household profiles with their own watch state, library access, and
-      parental controls.
-    </td>
-    <td width="33%" valign="top">
-      <strong>Manage</strong><br><br>
-      Libraries, users, providers, storage, search, and playback are configured
-      in the admin interface, not in config files.
-    </td>
-    <td width="33%" valign="top">
-      <strong>Scale</strong><br><br>
-      Start with one integrated server; split proxy and transcode roles across
-      shared PostgreSQL and Redis when you need to.
-    </td>
-  </tr>
-</table>
+   ```dotenv
+   MEDIA_ROOT=/path/to/your/media
+   ```
 
-## Quick start
+   New Prairie installs default persistent bind mounts to `/opt/prairie`, with the app's internal paths under `/var/lib/prairie` and transient transcodes under `/tmp/prairie-transcode`. You can override the host root with `PRAIRIE_DATA_ROOT`.
 
-Requires Docker Compose 2.24 or newer. The default stack runs Silo, PostgreSQL
-with pgvector, and Redis.
+3. Start the integrated stack:
+
+   ```sh
+   docker compose up -d
+   ```
+
+   This starts PostgreSQL, Redis, and the integrated Prairie server. The web app is available at `http://localhost:8090`.
+
+The default PostgreSQL user and database are `prairie`. The published image defaults to `ghcr.io/prairie-server/prairie-server:latest`.
+
+### Optional NVIDIA/NVENC
+
+GPU support is kept in a compose override so hosts without NVIDIA drivers work unchanged:
 
 ```sh
-git clone https://github.com/Silo-Server/silo-server.git
-cd silo-server
+docker compose -f docker-compose.yml -f docker-compose.nvidia.yml up -d
+```
+
+Or set `COMPOSE_FILE=docker-compose.yml:docker-compose.nvidia.yml` in `.env` on Linux/macOS (`;` instead of `:` on Windows).
+
+### Optional Live TV LAN discovery (HDHomeRun)
+
+Admin **Live TV → Tuners → Discover on LAN** uses SiliconDust UDP broadcasts (port `65001`). Bridge-mode Docker usually blocks that path; Dispatcharr / HDHR **URL probe** still works without changes.
+
+On **Linux**, enable host networking for the Prairie service:
+
+```sh
+docker compose -f docker-compose.yml -f docker-compose.livetv.yml up -d
+```
+
+Or set `COMPOSE_FILE=docker-compose.yml:docker-compose.livetv.yml` in `.env`.
+
+Details, Docker Desktop limits, and Dispatcharr probing: [docs/livetv-tuner-discovery.md](docs/livetv-tuner-discovery.md).
+
+## Migrating from Silo
+
+See [docs/silo-to-prairie-migration.md](docs/silo-to-prairie-migration.md) for the Phase 1 path, environment variable, PostgreSQL, and Meilisearch cutover checklist. Legacy `SILO_*` runtime environment variables are accepted as fallbacks where the server reads them directly, but new installs should use `PRAIRIE_*`.
+
+Existing Continuum-to-Silo migration notes remain in [docs/continuum-to-silo-docker-migration.md](docs/continuum-to-silo-docker-migration.md) for historical installs that need that earlier hop.
+
+## Build from source
+
+Prerequisites: Go 1.26+, pnpm, PostgreSQL, Redis, and FFmpeg.
+
+```sh
 cp .env.example .env
-chmod 600 .env
-printf '\nPOSTGRES_PASSWORD=%s\nSECRET_KEY=%s\n' \
-  "$(openssl rand -hex 24)" "$(openssl rand -base64 48)" >> .env
+make build
+./prairie
 ```
 
-Set `MEDIA_ROOT` in `.env` to the absolute path of your media, then:
+The server listens on `http://localhost:8080` by default when run from source.
+
+Useful development commands:
 
 ```sh
-docker compose up -d
+make dev-backend
+make dev-frontend
+make lint
+make verify-local-paths
 ```
 
-Open <http://localhost:8090> and complete onboarding.
+## Contributing
 
-The [Docker deployment guide](docs/wiki/deployment/docker.md) covers the
-`SECRET_KEY` backup requirement, storage paths, GPU acceleration, Meilisearch,
-external PostgreSQL and Redis, distributed roles, PostgreSQL tuning, backups,
-and updates. Migrating from Continuum? Use the
-[cutover guide](docs/continuum-to-silo-docker-migration.md).
+Prairie is free software under the GNU Affero General Public License v3.0 or later. Contributions should preserve the AGPL notices and the web UI's Source link. See [DEVELOPMENT.md](DEVELOPMENT.md), [CONTRIBUTING.md](CONTRIBUTING.md), and [docs/ai-contributions.md](docs/ai-contributions.md) for local workflow and contribution expectations.
 
-## Builds and releases
+## Trademark and attribution
 
-Until the first release, default-branch images carry an ordered `build-N` tag
-and a short commit SHA alongside `latest`. Build numbers order published images;
-they are not release versions. [Release versioning](docs/release-versioning.md)
-defines each tag and the SemVer contract.
+Prairie is a fork of Silo. Silo names, logos, and wordmarks remain trademarks of their owners and are used only referentially. Prairie uses its own name and brand assets; see [TRADEMARK.md](TRADEMARK.md).
 
-## Documentation
-
-- [Documentation index](docs/wiki/index.md) — user and operator guides
-- [Development guide](DEVELOPMENT.md) — source setup, builds, tests, migrations
-- [Settings API](docs/settings-api.md) and [Downloads API](docs/downloads-api.md) — client contracts
-
-## Community and contributions
-
-Questions and discussion: [Discord](https://discord.gg/siloserver).
-Bugs, install problems, and performance issues: the
-[GitHub issue forms](https://github.com/Silo-Server/silo-server/issues/new/choose),
-which ask for reproduction steps and raw logs.
-
-Read [CONTRIBUTING.md](CONTRIBUTING.md) before opening a pull request. Features,
-API changes, migrations, and behavior changes should start as an issue.
-
-## Supporting Silo
-
-Silo is developed in spare time and funded out of pocket, and will stay free and
-open source. [GitHub Sponsors](https://github.com/sponsors/quick104) covers AI
-development tooling (Claude, Codex), push-notification relay infrastructure, and
-future project costs. Bug reports, code, and documentation help just as much.
-
-## License and trademarks
-
-Silo's source code is licensed under the
-**GNU Affero General Public License v3.0 or later** (`AGPL-3.0-or-later`). See
-[LICENSE](LICENSE).
-
-The **Silo name, logo, and wordmark are trademarks of Silo Media L.L.C.** and
-are not covered by the AGPL. Forks and redistributions may use the code but must
-not use the Silo brand as their identity and must remove or replace the brand
-assets. Publishing a Silo-branded app to an app store requires written
-permission. See [TRADEMARK.md](TRADEMARK.md) for permitted referential use,
-including phrases such as "compatible with Silo."
+The source code is licensed under **AGPL-3.0-or-later**; see [LICENSE](LICENSE).

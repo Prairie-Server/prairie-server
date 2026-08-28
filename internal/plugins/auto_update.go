@@ -9,7 +9,7 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
 )
 
 // compareVersions compares two dot-separated version strings numerically.

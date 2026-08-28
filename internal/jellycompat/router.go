@@ -13,13 +13,13 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"gopkg.in/natefinch/lumberjack.v2"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/httpstream"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/recommendations"
-	"github.com/Silo-Server/silo-server/internal/sections"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/recommendations"
+	"github.com/prairie-server/prairie-server/internal/sections"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 )
 
 // NewRouter builds the Jellyfin-compatibility router.

@@ -1,7 +1,7 @@
 package nfo
 
 import (
-	"github.com/Silo-Server/silo-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/metadata"
 )
 
 // The NFO provider is a built-in host provider: it is represented in the

@@ -7,7 +7,7 @@ import (
 	"os"
 	"runtime"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"google.golang.org/protobuf/encoding/protojson"
 )
 
@@ -31,7 +31,7 @@ func main() {
 		PluginId:       "silo.binary",
 		Version:        "1.0.0",
 		Checksum:       hex.EncodeToString(checksum[:]),
-		SiloApiVersion: "v1",
+		PrairieApiVersion: "v1",
 		SupportedPlatforms: []*pluginv1.SupportedPlatform{
 			{Os: runtime.GOOS, Arch: runtime.GOARCH},
 		},

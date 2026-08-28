@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/transcodenode"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/transcodenode"
 )
 
 // recordingRecipeCardStoreV3 stands in for either key space of the shared Redis

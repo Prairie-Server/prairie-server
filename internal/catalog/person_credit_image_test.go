@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/imagesize"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/imagesize"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 const testPhotoPath = "tmdb/people/287/profile/original.abc123.webp"

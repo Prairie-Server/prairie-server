@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 // ActionChecker is the subset of PDP used by action adapters.

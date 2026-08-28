@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 
-	"github.com/Silo-Server/silo-server/internal/plugins"
-	mediarequests "github.com/Silo-Server/silo-server/internal/requests"
+	"github.com/prairie-server/prairie-server/internal/plugins"
+	mediarequests "github.com/prairie-server/prairie-server/internal/requests"
 )
 
 // PluginRequestRouterAdapter adapts plugins.Service to

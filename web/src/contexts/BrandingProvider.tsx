@@ -6,7 +6,7 @@ import { api } from "@/api/client";
 import { themeKeys } from "@/hooks/queries/keys";
 import { setAppDocumentTitle } from "@/lib/documentTitle";
 
-const DEFAULT_SERVER_NAME = "Silo";
+const DEFAULT_SERVER_NAME = "Prairie";
 const DEFAULT_LOGIN_SUBTITLE = "Sign in with an existing account.";
 
 /** Raw shape of GET /theme/branding. All fields optional / additive. */
@@ -16,9 +16,7 @@ interface BrandingApiResponse {
   accent_color?: string;
   default_theme?: string;
   wordmark_url?: string;
-  wordmark_light_url?: string;
   mark_url?: string;
-  mark_light_url?: string;
   favicon_url?: string;
   login_bg_url?: string;
   storage_available?: boolean;
@@ -34,10 +32,6 @@ export interface BrandingContextValue {
   /** Custom asset URLs (stable, cache-busted) or null to use bundled defaults. */
   wordmarkUrl: string | null;
   markUrl: string | null;
-  /** Light-theme variants of the logo assets, or null to fall back to the
-   * main asset (and then the bundled default). */
-  wordmarkLightUrl: string | null;
-  markLightUrl: string | null;
   faviconUrl: string | null;
   loginBgUrl: string | null;
   /** Whether the running server has an active object-store client for assets. */
@@ -51,15 +45,13 @@ const DEFAULT_BRANDING: BrandingContextValue = {
   defaultTheme: null,
   wordmarkUrl: null,
   markUrl: null,
-  wordmarkLightUrl: null,
-  markLightUrl: null,
   faviconUrl: null,
   loginBgUrl: null,
   storageAvailable: false,
 };
 
 // A non-null default means useBranding() is safe to call anywhere (e.g. in
-// SiloBrand rendered outside the provider in tests) and simply yields defaults.
+// PrairieBrand rendered outside the provider in tests) and simply yields defaults.
 export const BrandingContext = createContext<BrandingContextValue>(DEFAULT_BRANDING);
 
 function mapResponse(data: BrandingApiResponse | undefined): BrandingContextValue {
@@ -70,8 +62,6 @@ function mapResponse(data: BrandingApiResponse | undefined): BrandingContextValu
     defaultTheme: data?.default_theme || null,
     wordmarkUrl: data?.wordmark_url || null,
     markUrl: data?.mark_url || null,
-    wordmarkLightUrl: data?.wordmark_light_url || null,
-    markLightUrl: data?.mark_light_url || null,
     faviconUrl: data?.favicon_url || null,
     loginBgUrl: data?.login_bg_url || null,
     storageAvailable: data?.storage_available ?? false,

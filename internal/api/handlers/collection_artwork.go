@@ -9,8 +9,8 @@ import (
 	"net/url"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/imageutil"
-	"github.com/Silo-Server/silo-server/internal/s3client"
+	"github.com/prairie-server/prairie-server/internal/imageutil"
+	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
 // Shared artwork helpers used by both the admin library_collections handler

@@ -3,7 +3,7 @@ package handlers
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func TestCapServerCollections(t *testing.T) {

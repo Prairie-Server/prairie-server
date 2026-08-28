@@ -8,8 +8,8 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/redis/go-redis/v9"
 
-	"github.com/Silo-Server/silo-server/internal/nodesessions"
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/nodesessions"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
 )
 
 // parityScanLimit bounds each legacy read. It sits above the merged-session cap

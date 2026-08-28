@@ -5,7 +5,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/notifications"
+	"github.com/prairie-server/prairie-server/internal/notifications"
 )
 
 func TestAdminApplePushHandlerClearsRelayCredentialAtomically(t *testing.T) {

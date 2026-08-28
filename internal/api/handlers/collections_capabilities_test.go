@@ -7,7 +7,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 func TestCollectionCapabilitiesAdvertiseSortSupport(t *testing.T) {

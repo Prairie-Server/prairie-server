@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"sync"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 // Server wraps an http.Server with lifecycle management and graceful shutdown.

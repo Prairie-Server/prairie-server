@@ -8,7 +8,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/cache"
 )
 
 const defaultSystemPollInterval = 60 * time.Second

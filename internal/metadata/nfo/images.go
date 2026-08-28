@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/metadata"
 )
 
 // maxLocalArtworkBytes caps sidecar artwork reads at 8 MiB (mirrors the

@@ -14,11 +14,11 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	publicconfig "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginsdk/config"
-	"github.com/Silo-Server/silo-server/internal/historyimport"
-	hostplugins "github.com/Silo-Server/silo-server/internal/plugins"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+	publicconfig "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginsdk/config"
+	"github.com/prairie-server/prairie-server/internal/historyimport"
+	hostplugins "github.com/prairie-server/prairie-server/internal/plugins"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 

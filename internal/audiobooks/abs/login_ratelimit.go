@@ -8,7 +8,7 @@ import (
 
 	"golang.org/x/time/rate"
 
-	"github.com/Silo-Server/silo-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/clientip"
 )
 
 // loginLimitBurst caps the number of body-creds /login attempts a single

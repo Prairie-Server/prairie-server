@@ -9,7 +9,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 	"golang.org/x/sync/singleflight"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/cache"
 )
 
 type groupsCacheEntry struct {

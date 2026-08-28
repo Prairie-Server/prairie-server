@@ -3,7 +3,7 @@ package jellycompat
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 // presignCompatListItems presigns every list item's poster/backdrop/logo/still

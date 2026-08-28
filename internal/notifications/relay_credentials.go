@@ -117,7 +117,7 @@ func RequestRelayCredential(ctx context.Context, client RelayHTTPDoer, relayURL,
 		return RelayCredentialResult{}, err
 	}
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "Silo-Server/PushRelayCredential")
+	req.Header.Set("User-Agent", "Prairie-Server/PushRelayCredential")
 	if capability != "" {
 		req.Header.Set("Authorization", "Bearer "+capability)
 	}

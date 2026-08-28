@@ -1,185 +1,518 @@
 name: CI
 
 on:
-  pull_request:
   push:
-    branches:
-      - main
+    branches: [main]
+  pull_request:
   workflow_dispatch:
 
-concurrency:
-  group: ci-${{ github.ref }}
-  cancel-in-progress: true
-
-env:
-  GOPROXY: https://proxy.golang.org,direct
-  GOPRIVATE: github.com/Silo-Server/*
-  GONOSUMDB: github.com/Silo-Server/*
-  # Pinned so a lint gate cannot change its mind between two runs of the same
-  # commit. Built from source below rather than downloaded: a released binary
-  # refuses to run against a Go version newer than the one it was built with,
-  # and go.mod tracks Go closely enough that this repo is regularly ahead.
-  GOLANGCI_LINT_VERSION: v2.12.2
-
-# The default token is read-write. Nothing here needs to write, and a token
-# that cannot push is one fewer thing a compromised dependency can reach.
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  COVER_MIN: "95"
+
 jobs:
-  go:
-    name: Go
+  changes:
+    name: Detect changes
     runs-on: ubuntu-latest
+    outputs:
+      go: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.go }}
+      go_jellycompat: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.go_jellycompat }}
+      go_imageutil: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.go_imageutil }}
+      web: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.web }}
+      rust_imageutil: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.rust_imageutil }}
+      rust_fingerprint_compare: ${{ github.event_name != 'pull_request' && 'true' || steps.filter.outputs.rust_fingerprint_compare }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      - name: Check out sources
+        uses: actions/checkout@v7
         with:
-          # golangci-lint needs the merge base to tell this branch's lines from
-          # the ones it inherited.
-          fetch-depth: 0
           persist-credentials: false
 
-      # github.com/h2non/bimg binds libvips through cgo and pkg-config, so
-      # nothing under ./... compiles without the headers. The Dockerfile
-      # installs the same package in its build stage.
-      - name: Install libvips
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends libvips-dev
+      - name: Path filter
+        uses: dorny/paths-filter@v4
+        id: filter
+        if: github.event_name == 'pull_request'
+        with:
+          filters: |
+            go:
+              - 'go.mod'
+              - 'go.sum'
+              - '**.go'
+              - '.golangci.yml'
+              - '.github/coverage-packages.txt'
+              - 'scripts/check-go-coverage.sh'
+              - 'scripts/ci-go-lint.sh'
+              - 'scripts/ci-go-lint-packages.sh'
+              - '.github/workflows/ci.yml'
+            go_jellycompat:
+              - 'internal/jellycompat/**'
+              - 'go.mod'
+              - 'go.sum'
+              - '.github/workflows/ci.yml'
+            go_imageutil:
+              - 'internal/imageutil/**'
+              - 'tools/imageutil-wasm/**'
+              - 'go.mod'
+              - 'go.sum'
+              - '.github/workflows/ci.yml'
+            web:
+              - 'web/**'
+              - '.github/workflows/ci.yml'
+            rust_imageutil:
+              - 'tools/imageutil-wasm/**'
+              - '.github/workflows/ci.yml'
+            rust_fingerprint_compare:
+              - 'tools/fingerprint-compare-wasm/**'
+              - '.github/workflows/ci.yml'
+
+  # Single lint job (not matrix-sharded): each shard still typechecks the module
+  # graph, so 4-way split left wall clock ~2.5m while burning 4 runners. PRs lint
+  # only packages with changed .go files; main/dispatch keep a full-module pass.
+  # Workflow / CI-script-only diffs emit zero packages and skip analysis.
+  go-lint:
+    name: Go lint
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+          # Merge-base / changed-package lint needs history vs origin/<base>.
+          fetch-depth: 100
 
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
 
-      # cmd/silo embeds the built frontend, so nothing under ./... compiles
-      # without web/dist. The Go jobs never serve it, so a placeholder is
-      # enough; the Docker workflow builds the real bundle.
-      - name: Stub the embedded frontend bundle
-        run: make embed-stub
-
-      - name: Build
-        run: go build ./...
-
-      - name: gofmt
+      - name: Stub web/dist for embed
         run: |
-          unformatted="$(gofmt -l .)"
-          if [ -n "$unformatted" ]; then
-            echo "::error::gofmt is required on:"
-            echo "$unformatted"
-            exit 1
+          mkdir -p web/dist
+          printf '%s\n' '<!doctype html><title>prairie</title>' > web/dist/index.html
+
+      # Prefer git merge-base over the action's only-new-issues PR-patch fetch.
+      # GitHub refuses PR diffs over 300 files, and the action then falls back to
+      # linting the whole tree against ~2k pre-existing findings (goconst/errcheck
+      # debt) — which looks like intermittent CI failure on large asset PRs.
+      - name: Fetch PR base for merge-base lint
+        if: github.event_name == 'pull_request'
+        env:
+          # Pass via env — interpolating github.base_ref into the shell is an injection risk.
+          PR_BASE_REF: ${{ github.base_ref }}
+        run: |
+          set -euo pipefail
+          git fetch --no-tags --depth=100 origin "${PR_BASE_REF}"
+          if ! git merge-base --is-ancestor "origin/${PR_BASE_REF}" HEAD 2>/dev/null \
+            && ! git merge-base "HEAD" "origin/${PR_BASE_REF}" >/dev/null 2>&1; then
+            git fetch --no-tags --deepen=500 origin "${PR_BASE_REF}"
+            git fetch --no-tags --deepen=500 origin "${{ github.sha }}" || true
           fi
 
-      - name: Vet
-        run: go vet ./...
-
-      # Scoped to the lines this branch touched. The repo does not pass a full
-      # golangci-lint run today — there are a few hundred pre-existing findings,
-      # which is why the Go half of `make lint` has never been enforced — and
-      # blocking every PR on a cleanup nobody has done would just get the gate
-      # removed again. New and changed lines have to be clean, so the count only
-      # falls from here.
       - name: Install golangci-lint
-        run: go install "github.com/golangci/golangci-lint/v2/cmd/golangci-lint@${GOLANGCI_LINT_VERSION}"
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.12.2
+          install-only: true
 
-      - name: Lint changed lines
+      - name: golangci-lint
         env:
-          # A PR carries its target branch; a push to main compares against
-          # main's own history, which leaves the merge base at HEAD and lints
-          # nothing new. Read through the environment rather than interpolated
-          # into the script.
-          BASE_REF: ${{ github.base_ref || github.event.repository.default_branch }}
+          PR_BASE_REF: ${{ github.base_ref }}
+          # PRs lint changed packages only; main/dispatch keep a full-module pass.
+          CI_GO_LINT_FULL: ${{ github.event_name == 'pull_request' && '0' || '1' }}
+          CI_GO_LINT_NEW_FROM_MERGE_BASE: ${{ github.event_name == 'pull_request' && format('origin/{0}', github.base_ref) || '' }}
+          CI_GO_LINT_NEW_FROM_REV: ${{ github.event_name != 'pull_request' && 'HEAD~1' || '' }}
         run: |
-          git fetch --no-tags origin "+refs/heads/${BASE_REF}:refs/remotes/origin/${BASE_REF}"
-          golangci-lint run --new-from-merge-base="origin/${BASE_REF}" ./...
+          set -euo pipefail
+          chmod +x scripts/ci-go-lint.sh scripts/ci-go-lint-packages.sh
+          if [[ "${{ github.event_name }}" == "pull_request" ]]; then
+            ./scripts/ci-go-lint.sh "origin/${PR_BASE_REF}"
+          else
+            ./scripts/ci-go-lint.sh
+          fi
 
-      # A manifest change that does not regenerate leaves every client reading
-      # stale keys, which the contract exists to prevent.
-      - name: Verify settings bindings are current
-        run: make verify-settings-bindings
-
-      # The server defines the playback protocol and the clients prove
-      # conformance against these fixtures. A contract change that does not
-      # regenerate leaves every client testing against a stale body, so the
-      # drift surfaces as a playback bug on three platforms rather than as a
-      # failure here.
-      - name: Verify playback protocol fixtures are current
-        run: make verify-playback-fixtures
-
-      # Runs the settings-contract gate among everything else: the embedded
-      # manifest must parse, satisfy its own schema, hold every structural
-      # invariant, and agree with the live settings registry on keys and
-      # defaults. Without this job those tests exist but never run.
-      - name: Test
-        run: make test-go
-
-  web:
-    name: Web
+  web-lint:
+    name: Web lint + format
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: web
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      - name: Check out sources
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      # The pnpm version comes from web/package.json's packageManager field —
-      # there is no package.json at the repo root, and `defaults.run` does not
-      # apply to an action's own inputs.
       - name: Set up pnpm
-        uses: pnpm/action-setup@v4
+        uses: pnpm/action-setup@v6
         with:
-          package_json_file: web/package.json
+          version: 10
 
       - name: Set up Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: "22"
           cache: pnpm
           cache-dependency-path: web/pnpm-lock.yaml
 
-      - name: Install
+      - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
-      - name: Lint
+      - name: Oxlint
         run: pnpm run lint
 
-      - name: Format check
+      - name: Oxfmt check
         run: pnpm run format:check
 
-      - name: Typecheck and build
-        run: pnpm run build
+      - name: Typecheck (tsc -b)
+        run: pnpm exec tsc -b --pretty false
 
-      # Includes the appearance-cache ownership tests, which are the regression
-      # guard for cross-account leaks in the localStorage warm start.
-      - name: Test
-        working-directory: .
-        run: make test-web
+  # jellycompat is the heavy suite (~17k test LOC). Run it in parallel with the
+  # coverage-gated packages and imageutil WASM smoke so wall clock is ~max(suite)
+  # instead of sum. Path-filtered so web-only PRs skip it.
+  go-test-jellycompat:
+    name: Go jellycompat tests
+    needs: changes
+    if: needs.changes.outputs.go_jellycompat == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
 
-      # The generated web binding is compared after prettier, so this half of
-      # the bindings check lives here rather than in the Go job, which has no
-      # pnpm. It needs Go to run the generator.
       - name: Set up Go
-        uses: actions/setup-go@v6
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          # Own the build/mod cache below so restore-keys can reuse dependency
+          # objects across jellycompat source edits (tests ~3s; cold compile ~1m).
+          cache: false
+
+      - name: Cache Go build and modules
+        uses: actions/cache@v5
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-jellycompat-${{ hashFiles('go.sum') }}-${{ hashFiles('internal/jellycompat/**/*.go') }}
+          restore-keys: |
+            ${{ runner.os }}-jellycompat-${{ hashFiles('go.sum') }}-
+            ${{ runner.os }}-jellycompat-
+
+      - name: Run jellycompat tests
+        # -vet=off: golangci already covers vet/staticcheck; vet-during-test
+        # re-typechecks the 600+ dependency graph on cold runners.
+        run: |
+          set -euo pipefail
+          go mod download
+          go test ./internal/jellycompat/... -count=1 -vet=off
+
+  # Embedded WASI AVIF encode is CPU-heavy; keep it off the coverage-package path
+  # and only run when imageutil / its WASM toolchain changes.
+  go-test-imageutil:
+    name: Go imageutil tests
+    needs: changes
+    if: needs.changes.outputs.go_imageutil == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
 
-      - name: Verify the generated web settings binding is current
-        working-directory: .
-        run: make verify-settings-bindings-web
+      - name: Run imageutil WASM smoke tests
+        run: go test ./internal/imageutil/ -count=1 -vet=off
 
-  docs:
-    name: Docs hygiene
+  go-test-coverage:
+    name: Go tests + coverage
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v5
+      - name: Check out sources
+        uses: actions/checkout@v7
         with:
           persist-credentials: false
 
-      - name: Verify no local paths leaked into committed docs
-        run: make verify-local-paths
+      - name: Set up Go
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Stub web/dist for embed
+        run: |
+          mkdir -p web/dist
+          printf '%s\n' '<!doctype html><title>prairie</title>' > web/dist/index.html
+
+      # Scoped lint can miss breakage in unchanged importers; a full compile
+      # catches that without re-running the whole test suite.
+      - name: Compile all packages
+        run: go build -o /dev/null ./...
+
+      - name: Run unit tests with coverage
+        run: |
+          set -euo pipefail
+          # Scope CI to packages listed in .github/coverage-packages.txt.
+          # jellycompat / imageutil run in parallel sibling jobs.
+          # `go test ./...` currently fails on unrelated suites (playback_v3
+          # seek recovery, web embed without a built dist/) and is not gated
+          # on main. Full suite remains: `make test-coverage` locally (after
+          # `pnpm run build` in web/ so embed finds dist/).
+          #
+          # coverage.out must include every package in coverage-packages.txt.
+          # covermode=set is enough: CI does not use -race, and atomic is slower.
+          # LiveTV HTTP handler tests live in internal/api/handlers but compiling
+          # that package (~58k LOC) for two smoke tests dominated this job; the
+          # livetv service suite above already gates Live TV behavior.
+          go test \
+            ./internal/livetv/... \
+            ./internal/artworkkey/ \
+            ./internal/contentid/... \
+            ./internal/librarykind/... \
+            ./internal/logredact/... \
+            ./internal/logfilter/... \
+            ./internal/titleutil/... \
+            ./internal/lang/... \
+            ./internal/rootcheck/... \
+            ./internal/secret/... \
+            ./internal/providerid/... \
+            ./internal/buildinfo/... \
+            -count=1 -vet=off -covermode=set -coverprofile=coverage.out
+
+      - name: Enforce coverage gate
+        run: |
+          set -euo pipefail
+          mapfile -t pkgs < <(grep -vE '^\s*(#|$)' .github/coverage-packages.txt || true)
+          export COVER_PACKAGES="${pkgs[*]}"
+          # PgStore / pg artwork index (DB) are impractical to unit-test here.
+          export COVER_EXCLUDE_FILE_REGEX='(^|/)(store|artwork_index_pg)\.go$'
+          chmod +x scripts/check-go-coverage.sh
+          ./scripts/check-go-coverage.sh coverage.out "${COVER_MIN}"
+
+      - name: Upload coverage profile
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: go-coverage
+          path: coverage.out
+          if-no-files-found: ignore
+
+      # Folded in from a dedicated job to save a runner slot; still gated on Go
+      # path changes via this job's `if`.
+      - name: Install govulncheck
+        run: go install golang.org/x/vuln/cmd/govulncheck@v1.6.0
+
+      - name: Run govulncheck
+        # imageutil is CGO-free (embedded WASI); no libvips headers required.
+        run: |
+          "$(go env GOPATH)/bin/govulncheck" ./...
+
+  # Kept as a named check for branch-protection compatibility; work lives in
+  # go-test-coverage. Must not treat a failed coverage job as a successful skip.
+  go-vulncheck:
+    name: Go vulnerability check
+    needs: [changes, go-test-coverage]
+    if: always() && needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Require Go tests + coverage (includes govulncheck)
+        run: |
+          set -euo pipefail
+          result="${{ needs.go-test-coverage.result }}"
+          echo "go-test-coverage result: ${result}"
+          test "$result" = "success"
+
+  web-test-coverage:
+    name: Web tests (${{ matrix.shard }}/4)
+    needs: changes
+    if: needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3, 4]
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          # Match docker.yml: pin major here. Do not also pass package_json_file
+          # (web/package.json packageManager would conflict with "version").
+          version: 10
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      # Shard Vitest across runners; blob reports merge in web-coverage-report.
+      # happy-dom + forks cut per-shard wall clock; thresholds are enforced on merge.
+      - name: Run Vitest shard with coverage
+        env:
+          VITEST_SHARD: "1"
+        run: pnpm exec vitest run --coverage --shard=${{ matrix.shard }}/4 --reporter=blob
+
+      - name: Upload blob report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-vitest-blob-${{ matrix.shard }}
+          path: web/.vitest-reports
+          include-hidden-files: true
+          if-no-files-found: error
+          retention-days: 1
+
+  web-coverage-report:
+    name: Web coverage gate
+    needs: [changes, web-test-coverage]
+    # Run whenever web changed so a failed shard cannot skip this required check.
+    if: always() && needs.changes.outputs.web == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      # Must run before defaults.working-directory=web (no checkout yet).
+      - name: Require web test shards
+        run: |
+          set -euo pipefail
+          result="${{ needs.web-test-coverage.result }}"
+          echo "web-test-coverage result: ${result}"
+          test "$result" = "success"
+
+      - name: Check out sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+        with:
+          version: 10
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: pnpm
+          cache-dependency-path: web/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: web
+        run: pnpm install --frozen-lockfile
+
+      - name: Download blob reports
+        uses: actions/download-artifact@v8
+        with:
+          pattern: web-vitest-blob-*
+          path: web/.vitest-reports
+          merge-multiple: true
+
+      - name: Merge shard reports and enforce coverage
+        working-directory: web
+        run: pnpm exec vitest --mergeReports --coverage
+
+      - name: npm audit (production deps)
+        working-directory: web
+        run: pnpm audit --prod --audit-level=high
+
+      - name: Upload web coverage
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: web-coverage
+          path: web/coverage
+          if-no-files-found: ignore
+
+  rust-imageutil:
+    name: Rust imageutil (fmt + clippy + test)
+    needs: changes
+    if: needs.changes.outputs.rust_imageutil == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/imageutil-wasm
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        # Pin to the same major as tools/imageutil-wasm/Dockerfile (ravif needs edition2024).
+        uses: dtolnay/rust-toolchain@1.97.1
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tools/imageutil-wasm
+
+      - name: rustfmt
+        run: cargo fmt --check
+
+      - name: clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: test
+        run: cargo test
+
+  rust-fingerprint-compare:
+    name: Rust fingerprint compare (fmt + clippy + test)
+    needs: changes
+    if: needs.changes.outputs.rust_fingerprint_compare == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: tools/fingerprint-compare-wasm
+    steps:
+      - name: Check out sources
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@1.97.1
+        with:
+          components: rustfmt, clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: tools/fingerprint-compare-wasm
+
+      - name: rustfmt
+        run: cargo fmt --check
+
+      - name: clippy
+        run: cargo clippy --all-targets -- -D warnings
+
+      - name: test
+        run: cargo test

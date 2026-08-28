@@ -17,12 +17,12 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/nodeconfig"
-	"github.com/Silo-Server/silo-server/internal/nodesessions"
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/nodeconfig"
+	"github.com/prairie-server/prairie-server/internal/nodesessions"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 const socketProxyMedia = "0123456789abcdefghijklmnopqrstuvwxyz"

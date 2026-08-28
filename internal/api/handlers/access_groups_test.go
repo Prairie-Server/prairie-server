@@ -13,7 +13,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/access"
 )
 
 func TestAccessGroupHandlerIsDefaultRoundTrips(t *testing.T) {

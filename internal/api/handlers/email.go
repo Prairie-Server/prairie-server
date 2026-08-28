@@ -7,7 +7,7 @@ import (
 	"net/mail"
 	"time"
 
-	silomail "github.com/Silo-Server/silo-server/internal/mail"
+	silomail "github.com/prairie-server/prairie-server/internal/mail"
 )
 
 // EmailHandler exposes admin operations for the shared outbound email

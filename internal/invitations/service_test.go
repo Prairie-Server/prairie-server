@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/mail"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/mail"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // --- fakes ---

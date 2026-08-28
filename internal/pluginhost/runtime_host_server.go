@@ -6,10 +6,10 @@ import (
 	"fmt"
 	"strings"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
 	"golang.org/x/time/rate"
 
-	"github.com/Silo-Server/silo-server/internal/events"
+	"github.com/prairie-server/prairie-server/internal/events"
 )
 
 // EventPublisher is the subset of *events.Hub required by RuntimeHostServer.

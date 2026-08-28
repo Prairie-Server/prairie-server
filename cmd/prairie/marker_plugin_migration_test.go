@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/plugins"
+	"github.com/prairie-server/prairie-server/internal/plugins"
 )
 
 type fakeMarkerRuntimeConfigs struct {

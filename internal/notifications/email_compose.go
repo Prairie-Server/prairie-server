@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/mail"
+	"github.com/prairie-server/prairie-server/internal/mail"
 )
 
 // emailMaxItemsRendered caps how many lines one email renders; the remainder

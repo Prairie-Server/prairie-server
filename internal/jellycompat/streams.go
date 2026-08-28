@@ -21,12 +21,12 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 // Jellyfin Web is sensitive to startup latency. Use shorter compat segments

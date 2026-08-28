@@ -11,10 +11,10 @@ import (
 
 	"github.com/gorilla/websocket"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/auth"
-	"github.com/Silo-Server/silo-server/internal/cache"
-	evt "github.com/Silo-Server/silo-server/internal/events"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	evt "github.com/prairie-server/prairie-server/internal/events"
 )
 
 // TestEventsWebSocketDeliversUserSettingsToNonAdmins goes through the real

@@ -5,7 +5,7 @@ import (
 	"slices"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/settingskeys"
+	"github.com/prairie-server/prairie-server/internal/settingskeys"
 )
 
 func TestMirrorWriteConvertsBothDirections(t *testing.T) {

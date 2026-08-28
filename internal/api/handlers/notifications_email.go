@@ -7,8 +7,8 @@ import (
 	"html"
 	"net/http"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/notifications"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/notifications"
 )
 
 // emailPreferencesResponse is one profile's email notification state. The

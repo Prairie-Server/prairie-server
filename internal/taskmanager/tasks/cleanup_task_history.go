@@ -7,7 +7,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 // Batch geometry is a compile-time property of the delete strategy, not an

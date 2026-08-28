@@ -14,7 +14,7 @@ import (
 	"github.com/pressly/goose/v3"
 	"github.com/pressly/goose/v3/lock"
 
-	"github.com/Silo-Server/silo-server/migrations"
+	"github.com/prairie-server/prairie-server/migrations"
 )
 
 // TestInvalidateLegacyDolbyVisionProbeMigration verifies that the one-time

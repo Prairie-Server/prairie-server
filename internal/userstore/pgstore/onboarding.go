@@ -9,7 +9,7 @@ import (
 
 	"github.com/jackc/pgx/v5"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 func (s *PostgresUserStore) GetOnboardingState(ctx context.Context, profileID, tourID string) (*userstore.OnboardingState, error) {

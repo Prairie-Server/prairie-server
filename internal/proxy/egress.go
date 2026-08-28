@@ -6,7 +6,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/httpstream"
 )
 
 // meterWindowSeconds is the averaging window for the egress rate. HLS clients

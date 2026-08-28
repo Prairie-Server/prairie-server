@@ -15,7 +15,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/ai/jobrunner"
+	"github.com/prairie-server/prairie-server/internal/ai/jobrunner"
 )
 
 var (

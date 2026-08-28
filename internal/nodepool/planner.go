@@ -7,7 +7,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 // Plan is the result of a node selection for one playback session.

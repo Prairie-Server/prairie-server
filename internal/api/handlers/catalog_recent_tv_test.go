@@ -5,9 +5,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/sections"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/sections"
 )
 
 func TestCatalogRecentTVResponseIncludesPlayAndParentSeriesTargets(t *testing.T) {

@@ -15,12 +15,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
-	"github.com/Silo-Server/silo-server/internal/transcodenode"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/transcodenode"
 )
 
 // stubRecipeNodeStore is an in-memory stand-in for the control-plane recipe

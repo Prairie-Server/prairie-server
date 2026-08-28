@@ -3,7 +3,7 @@ package jellycompat
 import (
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 type publicSystemInfoResponse struct {

@@ -10,10 +10,10 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
-	"github.com/Silo-Server/silo-server/internal/libraryingest"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/notifications"
+	"github.com/prairie-server/prairie-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/libraryingest"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/notifications"
 )
 
 const (

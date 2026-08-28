@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/Silo-Server/silo-server/internal/cache"
+	"github.com/prairie-server/prairie-server/internal/cache"
 )
 
 type Stream string

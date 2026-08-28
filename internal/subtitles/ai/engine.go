@@ -7,7 +7,7 @@ package ai
 import (
 	"context"
 
-	"github.com/Silo-Server/silo-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 )
 
 // SubtitleCue is one timed subtitle entry. Times are absolute media positions.

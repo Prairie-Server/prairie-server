@@ -15,7 +15,7 @@ import (
 // the handler chain (e.g. the console or opslog DB branch must still run).
 func NewOTelHandler(lp logapi.LoggerProvider) slog.Handler {
 	return &bestEffortHandler{
-		inner: otelslog.NewHandler("silo-server", otelslog.WithLoggerProvider(lp)),
+		inner: otelslog.NewHandler("prairie-server", otelslog.WithLoggerProvider(lp)),
 	}
 }
 

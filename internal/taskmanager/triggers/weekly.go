@@ -5,7 +5,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/taskmanager"
+	"github.com/prairie-server/prairie-server/internal/taskmanager"
 )
 
 // WeeklyTrigger fires at a specific time on a specific day of the week.

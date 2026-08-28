@@ -6,12 +6,12 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abs"
-	"github.com/Silo-Server/silo-server/internal/audiobooks/abssocket"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/recommendations"
-	"github.com/Silo-Server/silo-server/internal/scanner"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abs"
+	"github.com/prairie-server/prairie-server/internal/audiobooks/abssocket"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/recommendations"
+	"github.com/prairie-server/prairie-server/internal/scanner"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )

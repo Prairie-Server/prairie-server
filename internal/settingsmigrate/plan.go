@@ -22,9 +22,9 @@ import (
 
 	"github.com/santhosh-tekuri/jsonschema/v6"
 
-	"github.com/Silo-Server/silo-server/internal/jellycompat/displayprefs"
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
-	"github.com/Silo-Server/silo-server/internal/settingskeys"
+	"github.com/prairie-server/prairie-server/internal/jellycompat/displayprefs"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/settingskeys"
 )
 
 // LegacySetting is one row of the account-wide user_settings key/value table.

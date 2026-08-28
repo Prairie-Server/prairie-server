@@ -6,7 +6,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	evt "github.com/Silo-Server/silo-server/internal/events"
+	evt "github.com/prairie-server/prairie-server/internal/events"
 )
 
 func TestEventsCapabilityReportsDeclaredChannelSupport(t *testing.T) {

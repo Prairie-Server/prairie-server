@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/imagesize"
-	"github.com/Silo-Server/silo-server/internal/sections"
+	"github.com/prairie-server/prairie-server/internal/imagesize"
+	"github.com/prairie-server/prairie-server/internal/sections"
 )
 
 var imageSizePaths = []string{

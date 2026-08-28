@@ -7,8 +7,8 @@ import (
 
 	"github.com/jackc/pgx/v5/pgconn"
 
-	"github.com/Silo-Server/silo-server/internal/contentid"
-	"github.com/Silo-Server/silo-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/contentid"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 func TestIsActionableStaleProviderID(t *testing.T) {

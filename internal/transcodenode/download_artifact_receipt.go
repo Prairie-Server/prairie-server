@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/Silo-Server/silo-server/internal/downloadprepare"
+	"github.com/prairie-server/prairie-server/internal/downloadprepare"
 )
 
 const (

@@ -3,9 +3,9 @@ package handlers
 import (
 	"net/http"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/access"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 func requestAccessFilter(r *http.Request) catalog.AccessFilter {

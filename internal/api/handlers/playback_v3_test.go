@@ -20,17 +20,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/markers"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/nodepool"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
-	"github.com/Silo-Server/silo-server/internal/transcodenode"
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/watchsync"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/markers"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/nodepool"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/transcodenode"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/watchsync"
 )
 
 type mutablePlaybackSettingsV3 struct {

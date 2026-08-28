@@ -8,8 +8,8 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	"github.com/Silo-Server/silo-server/internal/clientip"
-	"github.com/Silo-Server/silo-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/config"
 )
 
 type authenticateByNameRequest struct {

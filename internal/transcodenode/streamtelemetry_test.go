@@ -10,9 +10,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/streamtelemetry"
-	"github.com/Silo-Server/silo-server/internal/streamtoken"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/streamtelemetry"
+	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 func telemetryNodeServer(t *testing.T) (*Server, *streamtelemetry.Registry, *httptest.Server) {

@@ -16,12 +16,12 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	pluginv1 "github.com/Silo-Server/silo-plugin-sdk/pkg/pluginproto/silo/plugin/v1"
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/metadata"
-	"github.com/Silo-Server/silo-server/internal/pluginhost"
-	"github.com/Silo-Server/silo-server/internal/plugins"
-	"github.com/Silo-Server/silo-server/internal/uploads"
+	pluginv1 "github.com/prairie-server/prairie-plugin-sdk/pkg/pluginproto/prairie/plugin/v1"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/pluginhost"
+	"github.com/prairie-server/prairie-server/internal/plugins"
+	"github.com/prairie-server/prairie-server/internal/uploads"
 )
 
 const (

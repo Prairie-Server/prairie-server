@@ -3,7 +3,7 @@ package metadata
 import (
 	"strings"
 
-	"github.com/Silo-Server/silo-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/artworkkey"
 )
 
 // CachedImageOriginalPath returns the exact stored original key. The fallback

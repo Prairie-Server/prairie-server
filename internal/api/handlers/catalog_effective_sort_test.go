@@ -3,7 +3,7 @@ package handlers
 import (
 	"testing"
 
-	"github.com/Silo-Server/silo-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog"
 )
 
 // TestCatalogSortMetricField covers which sort field drives sort_metrics. A

@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/collectionutil"
+	"github.com/prairie-server/prairie-server/internal/collectionutil"
 )
 
 // validate sanity-checks a template definition before it joins the registry.

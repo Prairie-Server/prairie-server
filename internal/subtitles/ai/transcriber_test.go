@@ -9,8 +9,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/ai/llm"
-	"github.com/Silo-Server/silo-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/ai/llm"
+	"github.com/prairie-server/prairie-server/internal/playback"
 )
 
 // fakeASRClient transcribes by returning canned segments per chunk filename.

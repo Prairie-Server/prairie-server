@@ -13,8 +13,8 @@ import (
 
 	"github.com/google/uuid"
 
-	"github.com/Silo-Server/silo-server/internal/userstore"
-	"github.com/Silo-Server/silo-server/internal/watchstate"
+	"github.com/prairie-server/prairie-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/watchstate"
 )
 
 // maxConcurrentRuns limits how many import runs execute simultaneously.

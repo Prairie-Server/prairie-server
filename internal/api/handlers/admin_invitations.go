@@ -9,9 +9,9 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
-	apimw "github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/invitations"
-	"github.com/Silo-Server/silo-server/internal/models"
+	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/invitations"
+	"github.com/prairie-server/prairie-server/internal/models"
 )
 
 // AdminInvitationHandler handles admin endpoints for emailed invitations.

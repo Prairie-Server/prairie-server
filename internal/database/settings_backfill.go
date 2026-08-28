@@ -7,8 +7,8 @@ import (
 
 	"github.com/pressly/goose/v3"
 
-	"github.com/Silo-Server/silo-server/internal/settingscontract"
-	"github.com/Silo-Server/silo-server/internal/settingsmigrate"
+	"github.com/prairie-server/prairie-server/internal/settingscontract"
+	"github.com/prairie-server/prairie-server/internal/settingsmigrate"
 )
 
 // settingsBackfillVersion is the timestamp version this backfill occupies. It

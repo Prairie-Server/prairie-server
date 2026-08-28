@@ -11,12 +11,12 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/ai/jobrunner"
-	"github.com/Silo-Server/silo-server/internal/ai/llm"
-	aitranslate "github.com/Silo-Server/silo-server/internal/ai/translate"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/subtitles"
+	"github.com/prairie-server/prairie-server/internal/ai/jobrunner"
+	"github.com/prairie-server/prairie-server/internal/ai/llm"
+	aitranslate "github.com/prairie-server/prairie-server/internal/ai/translate"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/subtitles"
 )
 
 const (

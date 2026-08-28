@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/embeddingvectors"
+	"github.com/prairie-server/prairie-server/internal/embeddingvectors"
 )
 
 // TestEvaluateEmbedderSettingsCapability exercises the pure capability

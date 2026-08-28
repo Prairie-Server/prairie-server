@@ -16,14 +16,14 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/api/middleware"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/catalog/filesplit"
-	"github.com/Silo-Server/silo-server/internal/catalog/reattribute"
-	"github.com/Silo-Server/silo-server/internal/contentid"
-	"github.com/Silo-Server/silo-server/internal/metadata"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/scanner"
+	"github.com/prairie-server/prairie-server/internal/api/middleware"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/catalog/filesplit"
+	"github.com/prairie-server/prairie-server/internal/catalog/reattribute"
+	"github.com/prairie-server/prairie-server/internal/contentid"
+	"github.com/prairie-server/prairie-server/internal/metadata"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/scanner"
 )
 
 // ItemMerger merges one catalog item into another, moving files and user

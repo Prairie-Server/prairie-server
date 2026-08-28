@@ -16,7 +16,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
-	"github.com/Silo-Server/silo-server/internal/plugins"
+	"github.com/prairie-server/prairie-server/internal/plugins"
 )
 
 func pluginBuiltinTestPool(t *testing.T) *pgxpool.Pool {
