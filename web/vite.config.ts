@@ -104,10 +104,6 @@ export default defineConfig(({ mode }) => {
       pool: "forks",
       fileParallelism: true,
       maxWorkers: "50%",
-      // Enforce 95% on pure helpers under src/lib/. Prefer modules that already
-      // have *.test.ts coverage; write tests before adding a file here.
-      // Thin React Query / mutation wrappers are left out until they are
-      // meaningfully unit-tested.
       coverage: {
         provider: "v8",
         include: [
@@ -133,8 +129,6 @@ export default defineConfig(({ mode }) => {
           "src/lib/queryInvalidation.ts",
           "src/utils/storage.ts",
         ],
-        // Per-shard runs only see a slice of tests; enforce thresholds on the
-        // merged report (CI sets VITEST_SHARD=1). Local/full runs keep the gate.
         thresholds: process.env.VITEST_SHARD
           ? undefined
           : {

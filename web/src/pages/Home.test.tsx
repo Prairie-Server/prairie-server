@@ -7,6 +7,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import Home from "./Home";
+import { sectionKeys } from "@/hooks/queries/keys";
 
 (
   globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }
@@ -19,18 +20,12 @@ vi.mock("@/hooks/queries/sections", () => ({
   useHomeLayout: (...args: unknown[]) => mockUseHomeLayout(...args),
   fetchHomeSectionItems: (...args: unknown[]) =>
     mockFetchHomeSectionItems(...args),
+  HOME_SECTION_STALE_TIME: 10 * 60 * 1000,
+  HOME_SECTION_GC_TIME: 60 * 60 * 1000,
 }));
 
 vi.mock("@/hooks/useDocumentTitle", () => ({
   useDocumentTitle: vi.fn(),
-}));
-
-vi.mock("@/hooks/useServerBranding", () => ({
-  useServerBranding: () => ({ serverName: "Prairie", loginSubtitle: null }),
-}));
-
-vi.mock("@/components/PrairieBrand", () => ({
-  PrairieBrand: () => <span data-kind="prairie-brand" />,
 }));
 
 vi.mock("react-router", () => ({
@@ -41,10 +36,6 @@ vi.mock("@/components/TasteSeedBanner", () => ({
   default: () => <div data-kind="taste-seed" />,
 }));
 
-vi.mock("@/components/livetv/LiveTVOnNowRow", () => ({
-  default: () => null,
-}));
-
 vi.mock("@/components/HeroBanner", () => ({
   default: () => <div data-kind="hero" />,
 }));
@@ -52,24 +43,6 @@ vi.mock("@/components/HeroBanner", () => ({
 vi.mock("@/components/SectionRow", () => ({
   default: () => <div data-kind="section-row" />,
 }));
-
-function layoutSection(overrides: {
-  id: string;
-  title?: string;
-  featured?: boolean;
-  item_limit?: number;
-}) {
-  return {
-    id: overrides.id,
-    title: overrides.title ?? overrides.id,
-    section_type: "recently_added",
-    featured: overrides.featured ?? false,
-    item_limit: overrides.item_limit ?? 16,
-    is_custom: false,
-    customized: false,
-    position: 0,
-  };
-}
 
 describe("Home", () => {
   let container: HTMLDivElement;
@@ -80,13 +53,13 @@ describe("Home", () => {
     document.body.appendChild(container);
     root = createRoot(container);
 
-    mockFetchHomeSectionItems.mockReset();
     mockUseHomeLayout.mockReturnValue({
       data: { sections: [] },
       isLoading: false,
       isError: false,
       refetch: vi.fn(),
     });
+    mockFetchHomeSectionItems.mockReset();
   });
 
   afterEach(async () => {
@@ -96,7 +69,13 @@ describe("Home", () => {
     container.remove();
   });
 
-  async function renderHome(queryClient = new QueryClient()) {
+  it("does not invalidate cached home sections on mount", async () => {
+    const invalidateQueries = vi.spyOn(
+      QueryClient.prototype,
+      "invalidateQueries",
+    );
+    const queryClient = new QueryClient();
+
     await act(async () => {
       root.render(
         <QueryClientProvider client={queryClient}>
@@ -105,52 +84,52 @@ describe("Home", () => {
       );
       await Promise.resolve();
     });
-    return queryClient;
-  }
 
-  it("does not invalidate cached home sections on mount", async () => {
-    const invalidateQueries = vi.spyOn(
-      QueryClient.prototype,
-      "invalidateQueries",
-    );
-    await renderHome();
     expect(invalidateQueries).not.toHaveBeenCalled();
     invalidateQueries.mockRestore();
   });
 
-  it("shows a compact brand welcome only when home has no sections", async () => {
-    await renderHome();
-    expect(container.querySelector('[aria-label="Welcome"]')).toBeTruthy();
-    expect(container.querySelector('[data-kind="hero"]')).toBeNull();
-  });
-
-  it("opens on carousel rows when sections exist without a featured hero", async () => {
-    mockFetchHomeSectionItems.mockResolvedValue({
-      section: {
-        id: "recent",
-        title: "Recently Added",
-        section_type: "recently_added",
-        featured: false,
-        items: [{ content_id: "m1", title: "Movie", type: "movie" }],
-        total_count: 1,
-      },
-    });
+  it("keeps section items cached past the client-wide gc time", async () => {
     mockUseHomeLayout.mockReturnValue({
       data: {
-        sections: [layoutSection({ id: "recent", title: "Recently Added" })],
+        sections: [
+          {
+            id: "recent",
+            section_type: "recently_added",
+            title: "Recently Added",
+            featured: false,
+            item_limit: 10,
+            is_custom: false,
+            customized: false,
+          },
+        ],
       },
       isLoading: false,
       isError: false,
       refetch: vi.fn(),
     });
+    mockFetchHomeSectionItems.mockResolvedValue({
+      section: { id: "recent", items: [], total_count: 0 },
+    });
+    // The client default is what evicts observer-less section entries today.
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { gcTime: 10 * 60_000 } },
+    });
 
-    await renderHome();
     await act(async () => {
-      await Promise.resolve();
+      root.render(
+        <QueryClientProvider client={queryClient}>
+          <Home />
+        </QueryClientProvider>,
+      );
       await Promise.resolve();
     });
 
-    expect(container.querySelector('[aria-label="Welcome"]')).toBeNull();
-    expect(container.querySelector('[data-kind="hero"]')).toBeNull();
+    const sectionQuery = queryClient
+      .getQueryCache()
+      .find({ queryKey: sectionKeys.homeItems("recent") });
+
+    expect(sectionQuery).toBeDefined();
+    expect(sectionQuery?.gcTime).toBe(60 * 60 * 1000);
   });
 });

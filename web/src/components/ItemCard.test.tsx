@@ -106,6 +106,17 @@ describe("ItemCard SortMeta", () => {
     );
   });
 
+  it("passes the resolved profile quick-action mode to the menu", () => {
+    renderCard({
+      item: { ...baseItem, content_id: "movie-1", type: "movie" },
+      quickActionMode: "favorites",
+    });
+
+    expect(mocks.mediaItemMenu).toHaveBeenCalledWith(
+      expect.objectContaining({ quickActionMode: "favorites" }),
+    );
+  });
+
   it("renders the series last air date when sorted by last_air_date", () => {
     const markup = renderCard({
       sortField: "last_air_date",

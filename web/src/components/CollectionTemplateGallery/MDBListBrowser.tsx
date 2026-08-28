@@ -10,7 +10,6 @@ import {
   useMDBListTop,
 } from "@/hooks/queries/userCollectionImports";
 
-import { Search } from "lucide-react";
 interface Props {
   onPick: (list: MDBListListSummary, jsonURL: string) => void;
 }
@@ -33,8 +32,10 @@ export function MDBListBrowser({ onPick }: Props) {
         <p className="text-muted-foreground">
           MDBList list search isn&rsquo;t available — an admin needs to add an
           MDBList API key under{" "}
-          <span className="font-medium">Settings → Integrations</span>. You can
-          still paste a list URL below.
+          <span className="font-medium">
+            Settings → Subtitles &amp; Metadata
+          </span>
+          . You can still paste a list URL below.
         </p>
       </div>
     );
@@ -66,7 +67,6 @@ export function MDBListBrowser({ onPick }: Props) {
             setShowTop(true);
           }}
         >
-          <Search />
           Top lists
         </Button>
       </div>

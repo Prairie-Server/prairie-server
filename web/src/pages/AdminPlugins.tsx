@@ -100,9 +100,8 @@ function capabilityLabel(type: string): string {
 
 function sourceLabel(sourceKind: string): string {
   switch (sourceKind) {
-    case "prairie":
     case "silo":
-      return "Prairie maintained";
+      return "Silo maintained";
     case "approved_community":
       return "Approved community";
     default:
@@ -118,7 +117,7 @@ function pluginDisplayName(
   if (displayName) return displayName;
 
   return pluginID
-    .replace(/^(?:prairie|silo)[._-]?/, "")
+    .replace(/^silo[._-]?/, "")
     .split(/[._-]+/)
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
@@ -493,7 +492,7 @@ function InstalledPluginCard({
               {pluginDisplayName(installation.plugin_id, presentation)}?
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Prairie will stop the plugin, then remove its installation,
+              Silo will stop the plugin, then remove its installation,
               configuration, and installed files. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
@@ -903,7 +902,7 @@ function CommunityCatalogControl({
             </label>
           </div>
           <p className="text-muted-foreground text-xs leading-relaxed">
-            Reviewed by Prairie maintainers to work as described and be safe for
+            Reviewed by Silo maintainers to work as described and be safe for
             their documented use. These plugins remain maintained and supported
             by community contributors.
           </p>
@@ -1022,7 +1021,6 @@ function RepositorySection() {
             className="sm:flex-[2]"
           />
           <Button type="submit" size="sm">
-            <Plus />
             Add
           </Button>
         </form>
@@ -1051,7 +1049,7 @@ function RepositorySection() {
               <div className="flex shrink-0 gap-2">
                 {repo.managed ? (
                   <span className="text-muted-foreground self-center text-xs">
-                    Managed by Prairie
+                    Managed by Silo
                   </span>
                 ) : (
                   <>
@@ -1153,9 +1151,6 @@ export default function AdminPlugins() {
   const queryClient = useQueryClient();
   const checkPluginUpdates = useCheckPluginUpdates();
   const { data: pluginUpdateTask } = useTask(CHECK_PLUGIN_UPDATES_TASK_KEY);
-  const [configuring, setConfiguring] = useState<PluginInstallation | null>(
-    null,
-  );
   const previousTaskState = useRef<string | null>(null);
 
   const installedIds = useMemo(
@@ -1247,6 +1242,18 @@ export default function AdminPlugins() {
     setSearchParams(next, { replace: options.replace ?? true });
   }
 
+  // The configure dialog is URL state: ?configure=<plugin_id>. Provider tiles
+  // on the settings pages deep-link straight into a plugin's credential dialog
+  // this way, and closing the dialog (or browser back) just drops the param.
+  // An id that matches no installation renders nothing.
+  const configuring = useMemo(
+    () =>
+      installations.find(
+        (candidate) => candidate.plugin_id === searchParams.get("configure"),
+      ) ?? null,
+    [installations, searchParams],
+  );
+
   useEffect(() => {
     const currentState = pluginUpdateTask?.state ?? null;
     const previousState = previousTaskState.current;
@@ -1256,13 +1263,11 @@ export default function AdminPlugins() {
       (previousState === "running" || previousState === "cancelling") &&
       currentState === "idle"
     ) {
-      void queryClient.invalidateQueries({
+      queryClient.invalidateQueries({
         queryKey: adminKeys.pluginRepositories(),
       });
-      void queryClient.invalidateQueries({
-        queryKey: adminKeys.pluginCatalog(),
-      });
-      void queryClient.invalidateQueries({
+      queryClient.invalidateQueries({ queryKey: adminKeys.pluginCatalog() });
+      queryClient.invalidateQueries({
         queryKey: adminKeys.pluginInstallations(),
       });
     }
@@ -1276,7 +1281,7 @@ export default function AdminPlugins() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Plugins</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Extend Prairie with community and first-party plugins.
+            Extend Silo with community and first-party plugins.
           </p>
         </div>
         <div className="text-muted-foreground py-12 text-center text-sm">
@@ -1292,7 +1297,7 @@ export default function AdminPlugins() {
         <div className="space-y-3">
           <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Plugins</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Extend Prairie with community and first-party plugins.
+            Extend Silo with community and first-party plugins.
           </p>
         </div>
         <Button
@@ -1385,7 +1390,13 @@ export default function AdminPlugins() {
                     key={installation.id}
                     installation={installation}
                     catalogEntry={catalogByPluginID.get(installation.plugin_id)}
-                    onConfigure={setConfiguring}
+                    onConfigure={(target) =>
+                      // Push (not replace) so browser back closes the dialog.
+                      updatePluginView(
+                        { configure: target.plugin_id },
+                        { replace: false },
+                      )
+                    }
                   />
                 ))}
               </div>
@@ -1492,7 +1503,7 @@ export default function AdminPlugins() {
       {configuring && (
         <ConfigureDialog
           installation={configuring}
-          onClose={() => setConfiguring(null)}
+          onClose={() => updatePluginView({ configure: undefined })}
         />
       )}
     </div>

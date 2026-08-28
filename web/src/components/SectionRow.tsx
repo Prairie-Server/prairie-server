@@ -57,7 +57,7 @@ function SectionPinButton({
 export default function SectionRow({ section, libraryId }: SectionRowProps) {
   const navigate = useViewTransitionNavigate();
   const browseSupported = isSectionBrowseSupported(section.section_type);
-  const { prefs: overlayPrefs } = useOverlayPrefs();
+  const { prefs: overlayPrefs, quickActionMode } = useOverlayPrefs();
   const { cardPresentation } = useUICustomization();
   const posterWidthClasses = carouselCardWidthClasses(
     cardPresentation.poster_size,
@@ -130,6 +130,7 @@ export default function SectionRow({ section, libraryId }: SectionRowProps) {
                 sectionItem={item}
                 libraryId={libraryId}
                 overlayPrefs={overlayPrefs}
+                quickActionMode={quickActionMode}
                 variant={cardVariant}
               />
             ));
@@ -140,7 +141,12 @@ export default function SectionRow({ section, libraryId }: SectionRowProps) {
               className={posterWidthClasses}
               role="listitem"
             >
-              <SectionItemCard item={item} libraryId={libraryId} />
+              <SectionItemCard
+                item={item}
+                libraryId={libraryId}
+                overlayPrefs={overlayPrefs}
+                quickActionMode={quickActionMode}
+              />
             </div>
           ))}
     </MediaCarousel>

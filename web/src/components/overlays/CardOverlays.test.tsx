@@ -35,6 +35,11 @@ function badgeTexts(container: HTMLElement): (string | null)[] {
   );
 }
 
+/** Whole-token match so a mangled class ("gap-2mb-2") can never pass as flush. */
+function bottomMarginClasses(node: HTMLElement | null): string[] {
+  return Array.from(node?.classList ?? []).filter((name) => /^mb-/.test(name));
+}
+
 describe("CardOverlays", () => {
   beforeEach(() => vi.stubGlobal("CSS", { supports: () => true }));
   afterEach(() => {
@@ -332,6 +337,9 @@ describe("CardOverlays", () => {
   it("scales legacy browsers from the measured poster width", () => {
     let callback: ResizeObserverCallback | undefined;
     const disconnect = vi.fn();
+    vi.spyOn(window, "getComputedStyle").mockReturnValue({
+      borderTopLeftRadius: "8px",
+    } as CSSStyleDeclaration);
     vi.stubGlobal("CSS", { supports: () => false });
     vi.stubGlobal(
       "ResizeObserver",
@@ -447,48 +455,123 @@ describe("CardOverlays", () => {
     expect(vibrant?.style.boxShadow).toBe("0px 1px 2px 0px rgb(0 0 0 / 0.25)");
   });
 
-  it("lifts bottom-corner badges above persistent card actions", () => {
+  it("anchors bottom-corner badges flush in the corners like the top row", () => {
+    // Card quick actions cover bottom badges by design, so the bottom row
+    // reserves no clearance for them and insets exactly like the top row.
+    const prefs = prefsWithOnly("content_rating");
+    const bottomEdge = (variant?: "wide") => {
+      prefs.items.content_rating = {
+        ...prefs.items.content_rating,
+        position: "bottom-left",
+      };
+      const left = render(
+        <CardOverlays
+          data={SAMPLE_MOVIE_DATA}
+          prefs={prefs}
+          variant={variant}
+        />,
+      ).container;
+      prefs.items.content_rating = {
+        ...prefs.items.content_rating,
+        position: "bottom-right",
+      };
+      const right = render(
+        <CardOverlays
+          data={SAMPLE_MOVIE_DATA}
+          prefs={prefs}
+          variant={variant}
+        />,
+      ).container;
+      return {
+        leftStack: left.querySelector<HTMLElement>(
+          '[data-overlay-edge="bottom"] > div.items-start',
+        ),
+        rightStack: right.querySelector<HTMLElement>(
+          '[data-overlay-edge="bottom"] > div.items-end',
+        ),
+        row: left.querySelector<HTMLElement>('[data-overlay-edge="bottom"]'),
+      };
+    };
+
+    for (const variant of [undefined, "wide" as const]) {
+      const { leftStack, rightStack, row } = bottomEdge(variant);
+      expect(leftStack).toBeTruthy();
+      expect(rightStack).toBeTruthy();
+      for (const node of [leftStack, rightStack, row]) {
+        expect(
+          bottomMarginClasses(node),
+          `${variant ?? "poster"} bottom edge`,
+        ).toEqual([]);
+      }
+    }
+
+    prefs.items.content_rating = {
+      ...prefs.items.content_rating,
+      position: "top-left",
+    };
+    const top = render(
+      <CardOverlays data={SAMPLE_MOVIE_DATA} prefs={prefs} />,
+    ).container.querySelector<HTMLElement>('[data-overlay-edge="top"]');
+    prefs.items.content_rating = {
+      ...prefs.items.content_rating,
+      position: "bottom-left",
+    };
+    const bottom = render(
+      <CardOverlays data={SAMPLE_MOVIE_DATA} prefs={prefs} />,
+    ).container.querySelector<HTMLElement>('[data-overlay-edge="bottom"]');
+    expect(top?.style.top).toBe(posterLength(8));
+    expect(bottom?.style.bottom).toBe(top?.style.top);
+  });
+
+  it("lifts the bottom row only when the host draws a watch-progress bar", () => {
+    // The bar occupies the same edge strip, so a flush badge would cut it.
     const prefs = prefsWithOnly("content_rating");
     prefs.items.content_rating = {
       ...prefs.items.content_rating,
       position: "bottom-left",
     };
-    const left = render(
+    const flush = render(
       <CardOverlays data={SAMPLE_MOVIE_DATA} prefs={prefs} />,
-    ).container;
-    expect(
-      left.querySelector("div.bottom-2 > div.items-start.mb-10"),
-    ).toBeTruthy();
-    expect(left.querySelector("div.bottom-2")?.className).toContain("z-10");
+    ).container.querySelector<HTMLElement>('[data-overlay-edge="bottom"]');
+    expect(bottomMarginClasses(flush)).toEqual([]);
 
-    prefs.items.content_rating = {
-      ...prefs.items.content_rating,
-      position: "bottom-right",
-    };
-    const poster = render(
-      <CardOverlays data={SAMPLE_MOVIE_DATA} prefs={prefs} />,
-    ).container;
-    expect(
-      poster.querySelector("div.bottom-2 > div.items-end.mb-10"),
-    ).toBeTruthy();
+    const lifted = render(
+      <CardOverlays data={SAMPLE_MOVIE_DATA} prefs={prefs} hasProgressBar />,
+    ).container.querySelector<HTMLElement>('[data-overlay-edge="bottom"]');
+    expect(bottomMarginClasses(lifted)).toEqual(["mb-2"]);
+  });
 
-    const wide = render(
-      <CardOverlays data={SAMPLE_MOVIE_DATA} prefs={prefs} variant="wide" />,
-    ).container;
-    expect(
-      wide.querySelector("div.bottom-2 > div.items-end.mb-12"),
-    ).toBeTruthy();
-
+  it("keeps the badge layer beneath card actions and non-interactive", () => {
+    // MediaItemMenu renders its quick actions at z-20 in the card wrapper's
+    // stacking context (see MediaItemMenu.test.tsx), so this z-10 layer paints
+    // beneath them; pointer-events-none keeps a covered badge from swallowing
+    // a click aimed at the action on top of it.
+    const prefs = prefsWithOnly("content_rating");
     prefs.items.content_rating = {
       ...prefs.items.content_rating,
       position: "bottom-left",
     };
-    const wideLeft = render(
-      <CardOverlays data={SAMPLE_MOVIE_DATA} prefs={prefs} variant="wide" />,
-    ).container;
+    const { container } = render(
+      <CardOverlays data={SAMPLE_MOVIE_DATA} prefs={prefs} />,
+    );
+
+    for (const selector of [
+      '[data-card-overlays="poster"]',
+      '[data-overlay-edge="bottom"]',
+    ]) {
+      const node = container.querySelector<HTMLElement>(selector);
+      expect(node, selector).toBeTruthy();
+      expect(node?.classList.contains("z-10"), selector).toBe(true);
+      expect(node?.classList.contains("pointer-events-none"), selector).toBe(
+        true,
+      );
+    }
+    // Nothing inside the layer may re-enable hit testing.
+    expect(container.querySelectorAll(".pointer-events-auto").length).toBe(0);
     expect(
-      wideLeft.querySelector("div.bottom-2 > div.items-start.mb-12"),
-    ).toBeTruthy();
+      container.querySelector<HTMLElement>("span.inline-flex")?.style
+        .pointerEvents,
+    ).toBe("");
   });
 
   it("renders nothing when no enabled overlay has data", () => {

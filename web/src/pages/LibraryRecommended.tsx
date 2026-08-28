@@ -365,7 +365,7 @@ function PinnedCollectionCarousel({
     libraryId,
     collectionId,
   );
-  const { prefs: overlayPrefs } = useOverlayPrefs();
+  const { prefs: overlayPrefs, quickActionMode } = useOverlayPrefs();
   const { cardPresentation } = useUICustomization();
   const posterWidthClasses = carouselCardWidthClasses(
     cardPresentation.poster_size,
@@ -377,7 +377,11 @@ function PinnedCollectionCarousel({
     <MediaCarousel title={name} loading={isLoading}>
       {(items ?? []).map((item) => (
         <div key={item.content_id} className={posterWidthClasses}>
-          <ItemCard item={item} overlayPrefs={overlayPrefs} />
+          <ItemCard
+            item={item}
+            overlayPrefs={overlayPrefs}
+            quickActionMode={quickActionMode}
+          />
         </div>
       ))}
     </MediaCarousel>

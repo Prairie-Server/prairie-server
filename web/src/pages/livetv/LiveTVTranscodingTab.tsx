@@ -198,7 +198,6 @@ export function LiveTVTranscodingTab() {
         onSave={form.save}
         onDiscard={form.discard}
         isSaving={form.isSaving}
-        restartRequired={form.restartRequired}
       />
     </div>
   );

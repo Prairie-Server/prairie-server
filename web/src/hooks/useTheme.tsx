@@ -2,6 +2,7 @@ import {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
   useCallback,
 } from "react";
@@ -43,6 +44,32 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
+
+/**
+ * Hover intent for theme previews. A preview restyles the entire app, so a
+ * cursor merely crossing a row of swatches on its way somewhere else used to
+ * flash the whole UI — most visibly on the light theme. Arming the preview
+ * behind a short delay keeps a deliberate hover instant enough to feel live
+ * while a pass-through never flips anything.
+ */
+export const THEME_PREVIEW_INTENT_MS = 250;
+
+/**
+ * Whether an element was focused by keyboard rather than by the pointer.
+ *
+ * Radix moves DOM focus to the menu item under the cursor, so previewing on
+ * every focus would re-trigger exactly the flash the hover delay suppresses.
+ * Engines that do not know `:focus-visible` (jsdom included) simply never
+ * preview on focus, which is the safe direction to fail.
+ */
+export function isKeyboardFocus(element: Element | null | undefined): boolean {
+  if (!element) return false;
+  try {
+    return element.matches(":focus-visible");
+  } catch {
+    return false;
+  }
+}
 
 /**
  * The four appearance keys this provider needs, fetched in one batched
@@ -312,24 +339,51 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     applyHighContrastToDOM(highContrast);
   }, [highContrast]);
 
+  // Pending hover-intent timer for previewTheme. A ref rather than state: an
+  // armed preview is not something the tree renders, and re-rendering every
+  // swatch on hover is exactly the cost this is trying to avoid.
+  const previewTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const cancelPendingPreview = useCallback(() => {
+    if (previewTimerRef.current !== null) {
+      clearTimeout(previewTimerRef.current);
+      previewTimerRef.current = null;
+    }
+  }, []);
+
+  // A timer that outlives the provider would restyle a document nobody is
+  // looking at any more.
+  useEffect(() => cancelPendingPreview, [cancelPendingPreview]);
+
   const setTheme = useCallback(
     (newTheme: ThemeId) => {
+      cancelPendingPreview();
       setPreviewThemeState(null);
       setThemePreference(newTheme);
       applyThemeToDOM(newTheme);
       appearanceCache.set(storage.KEYS.THEME, newTheme, cacheOwner);
       void saveProfileDefault(SETTING_KEYS.UI_THEME, newTheme);
     },
-    [saveProfileDefault, cacheOwner],
+    [saveProfileDefault, cacheOwner, cancelPendingPreview],
   );
 
-  const previewTheme = useCallback((newTheme: ThemeId) => {
-    setPreviewThemeState(newTheme);
-  }, []);
+  // Arm the preview instead of applying it, so leaving within the intent window
+  // — the pass-through case — never repaints the app at all.
+  const previewTheme = useCallback(
+    (newTheme: ThemeId) => {
+      cancelPendingPreview();
+      previewTimerRef.current = setTimeout(() => {
+        previewTimerRef.current = null;
+        setPreviewThemeState(newTheme);
+      }, THEME_PREVIEW_INTENT_MS);
+    },
+    [cancelPendingPreview],
+  );
 
   const resetPreviewTheme = useCallback(() => {
+    cancelPendingPreview();
     setPreviewThemeState(null);
-  }, []);
+  }, [cancelPendingPreview]);
 
   const setTextScale = useCallback(
     (value: TextScale) => {

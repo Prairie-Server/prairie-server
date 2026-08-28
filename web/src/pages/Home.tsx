@@ -13,7 +13,12 @@ import { HERO_BANNER_SIZE, HOME_BRAND_HERO_SIZE } from "@/lib/design-system";
 import { PrairieBrand } from "@/components/PrairieBrand";
 import { useServerBranding } from "@/hooks/useServerBranding";
 import { sectionKeys } from "@/hooks/queries/keys";
-import { fetchHomeSectionItems, useHomeLayout } from "@/hooks/queries/sections";
+import {
+  fetchHomeSectionItems,
+  HOME_SECTION_GC_TIME,
+  HOME_SECTION_STALE_TIME,
+  useHomeLayout,
+} from "@/hooks/queries/sections";
 import { planNextHomeSectionBatch } from "./homeSectionQueue";
 import {
   buildHomeSectionViewModel,
@@ -22,7 +27,6 @@ import {
 import { collectCachedHomeSections } from "./homeSectionCache";
 import { useSectionRefreshSignal } from "./homeSurfaceRefresh";
 
-const SECTION_STALE_TIME = 5 * 60 * 1000;
 const MAX_CONCURRENT_SECTION_REQUESTS = 5;
 const SKELETON_CARD_COUNT = 7;
 
@@ -95,7 +99,8 @@ export default function Home() {
         .fetchQuery<HomeSectionItemsResponse>({
           queryKey: sectionKeys.homeItems(sectionId),
           queryFn: ({ signal }) => fetchHomeSectionItems(sectionId, { signal }),
-          staleTime: SECTION_STALE_TIME,
+          staleTime: HOME_SECTION_STALE_TIME,
+          gcTime: HOME_SECTION_GC_TIME,
         })
         .then((response) => {
           if (!activeSectionIdsRef.current.has(sectionId)) return;

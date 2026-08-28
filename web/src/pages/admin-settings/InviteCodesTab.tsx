@@ -8,22 +8,12 @@ import {
   useTopUpInviteCode,
   useDeleteInviteCode,
 } from "@/hooks/queries/admin/inviteCodes";
-import {
-  useAdminServerSettings,
-  useUpdateServerSetting,
-} from "@/hooks/queries/admin/settings";
+import { useAdminServerSettings } from "@/hooks/queries/admin/settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -40,15 +30,23 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { Copy, Loader2, Plus, PlusCircle, Trash2 } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowRight,
+  Copy,
+  Plus,
+  PlusCircle,
+  Trash2,
+} from "lucide-react";
 import { toast } from "sonner";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import { formatDate } from "@/lib/datetime";
+import { Link } from "react-router";
 
 export default function InviteCodesTab() {
   const { data: codes = [], isLoading } = useAdminInviteCodes();
-  const { data: settings } = useAdminServerSettings();
-  const updateSetting = useUpdateServerSetting();
+  const { data: serverSettings } = useAdminServerSettings();
+  const signupsEnabled = serverSettings?.["signup.enabled"] === "true";
   const updateCode = useUpdateInviteCode();
   const deleteCode = useDeleteInviteCode();
   const [createOpen, setCreateOpen] = useState(false);
@@ -56,20 +54,6 @@ export default function InviteCodesTab() {
   const [confirmDeleteCode, setConfirmDeleteCode] = useState<InviteCode | null>(
     null,
   );
-
-  const signupEnabled = settings?.["signup.enabled"] === "true";
-
-  function handleToggleSignup(enabled: boolean) {
-    updateSetting.mutate(
-      { key: "signup.enabled", value: enabled ? "true" : "false" },
-      {
-        onSuccess: () =>
-          toast.success(
-            enabled ? "Public signups enabled" : "Public signups disabled",
-          ),
-      },
-    );
-  }
 
   function handleToggleCode(code: InviteCode) {
     updateCode.mutate({ id: code.id, body: { enabled: !code.enabled } });
@@ -80,7 +64,7 @@ export default function InviteCodesTab() {
   }
 
   function handleCopy(text: string) {
-    void navigator.clipboard.writeText(text);
+    navigator.clipboard.writeText(text);
     toast.success("Copied to clipboard");
   }
 
@@ -142,25 +126,36 @@ export default function InviteCodesTab() {
         </Dialog>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Public Signups</CardTitle>
-          <CardDescription>
-            When enabled, users with a valid invite code can create their own
-            accounts.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-3">
-            <Switch
-              checked={signupEnabled}
-              onCheckedChange={handleToggleSignup}
-              disabled={updateSetting.isPending}
-            />
-            <Label>{signupEnabled ? "Enabled" : "Disabled"}</Label>
+      {serverSettings !== undefined &&
+        (signupsEnabled ? (
+          <p className="text-muted-foreground text-sm">
+            Codes only work while public signups are on.{" "}
+            <Link
+              to="/admin/settings/general"
+              className="text-foreground inline-flex items-center gap-1 font-medium hover:underline"
+            >
+              Public signups setting
+              <ArrowRight className="h-3 w-3" aria-hidden="true" />
+            </Link>
+          </p>
+        ) : (
+          <div className="flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/5 p-3">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-amber-500" />
+            <p className="text-[13px] leading-relaxed">
+              <span className="font-medium text-amber-500">
+                Public signups are off
+              </span>{" "}
+              — these codes won't work until you enable them.{" "}
+              <Link
+                to="/admin/settings/general"
+                className="text-foreground inline-flex items-center gap-1 font-medium hover:underline"
+              >
+                Public signups setting
+                <ArrowRight className="h-3 w-3" aria-hidden="true" />
+              </Link>
+            </p>
           </div>
-        </CardContent>
-      </Card>
+        ))}
 
       <Table>
         <TableHeader>
@@ -309,11 +304,6 @@ function CreateInviteCodeForm({ onClose }: { onClose: () => void }) {
         className="w-full"
         disabled={createMutation.isPending}
       >
-        {createMutation.isPending ? (
-          <Loader2 className="animate-spin" />
-        ) : (
-          <Plus />
-        )}
         {createMutation.isPending ? "Creating..." : "Create"}
       </Button>
     </form>
@@ -361,11 +351,6 @@ function TopUpInviteCodeForm({
         className="w-full"
         disabled={topUpMutation.isPending}
       >
-        {topUpMutation.isPending ? (
-          <Loader2 className="animate-spin" />
-        ) : (
-          <Plus />
-        )}
         {topUpMutation.isPending ? "Adding..." : "Add Uses"}
       </Button>
     </form>

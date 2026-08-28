@@ -20,12 +20,26 @@ import { cn } from "@/lib/utils";
 
 interface AdminSectionCommandDialogProps {
   sections: readonly AdminNavGroup[];
+  /** Controlled open state, so a visible search button can open the palette. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 export function AdminSectionCommandDialog({
   sections,
+  open: openProp,
+  onOpenChange,
 }: AdminSectionCommandDialogProps) {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = openProp ?? uncontrolledOpen;
+  const isControlled = openProp !== undefined;
+  const setOpen = useCallback(
+    (next: boolean) => {
+      if (!isControlled) setUncontrolledOpen(next);
+      onOpenChange?.(next);
+    },
+    [isControlled, onOpenChange],
+  );
   const [query, setQuery] = useState("");
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -64,12 +78,12 @@ export function AdminSectionCommandDialog({
     setOpen(false);
     setQuery("");
     setSelectedIndex(0);
-  }, []);
+  }, [setOpen]);
 
   const openDialog = useCallback(() => {
     setOpen(true);
     focusSearch();
-  }, [focusSearch]);
+  }, [focusSearch, setOpen]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -94,7 +108,7 @@ export function AdminSectionCommandDialog({
         void navigateToPluginRoute(item.href);
         return;
       }
-      void navigate(item.href);
+      navigate(item.href);
     },
     [closeDialog, navigate],
   );

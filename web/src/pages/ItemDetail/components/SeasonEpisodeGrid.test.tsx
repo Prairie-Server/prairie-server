@@ -13,7 +13,7 @@ vi.mock("@/components/MediaItemMenu", () => ({
 }));
 
 vi.mock("@/hooks/useOverlayPrefs", () => ({
-  useOverlayPrefs: () => ({ prefs: null }),
+  useOverlayPrefs: () => ({ prefs: null, quickActionMode: "watched" }),
 }));
 
 vi.mock("@/hooks/queries/catalogRead", () => ({
@@ -59,6 +59,7 @@ describe("SeasonEpisodeGrid", () => {
       showCollectionActions: false,
       showWatchedShortcut: true,
       hasPartialProgress: false,
+      quickActionMode: "watched",
     });
   });
 

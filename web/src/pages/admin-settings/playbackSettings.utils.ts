@@ -1,3 +1,4 @@
+import type { StreamNode } from "@/api/types";
 import type { HWAccelInfo } from "@/hooks/queries/admin/system";
 
 // Helpers for the playback.hw_device GPU picker. The setting stores a
@@ -96,6 +97,63 @@ export function nodeInventoriesDiverge(
     .filter((node) => !node.error)
     .map((node) => [...(node.render_devices ?? [])].sort().join(","));
   return inventories.length > 1 && new Set(inventories).size > 1;
+}
+
+// Helpers for the "Generate chapter thumbnails on" select. Two of its three
+// modes need a transcode node to run on: `transcode_nodes_only` fails every
+// extraction without one, and `prefer_transcode_nodes` silently degrades to
+// local — so both are offered only when the node pool can actually serve them.
+
+export const CHAPTER_THUMBNAIL_EXECUTION_DEFAULT = "local";
+
+const NODE_BACKED_CHAPTER_THUMBNAIL_MODES = [
+  "prefer_transcode_nodes",
+  "transcode_nodes_only",
+];
+
+/**
+ * True when at least one transcode node could take an extraction. Mirrors the
+ * server's reservation rule (internal/chapterthumbs reserveRemoteNode): a node
+ * counts only while it is both enabled and healthy.
+ */
+export function hasUsableTranscodeNode(
+  nodes: StreamNode[] | undefined,
+): boolean {
+  return (nodes ?? []).some(
+    (node) => node.type === "transcode" && node.enabled && node.healthy,
+  );
+}
+
+export interface ChapterThumbnailExecutionOption {
+  value: string;
+  label: string;
+  disabled: boolean;
+}
+
+/**
+ * Builds the execution options, disabling the node-backed modes when no
+ * transcode node is available. The saved mode is never disabled: pre-configuring
+ * nodes that have not joined yet is legitimate, and a persisted node-only value
+ * has to stay visible and editable so the admin can switch back off it.
+ */
+export function chapterThumbnailExecutionOptions(
+  current: string,
+  transcodeNodeAvailable: boolean,
+): ChapterThumbnailExecutionOption[] {
+  return [
+    { value: CHAPTER_THUMBNAIL_EXECUTION_DEFAULT, label: "This server" },
+    {
+      value: "prefer_transcode_nodes",
+      label: "Transcode nodes when available",
+    },
+    { value: "transcode_nodes_only", label: "Transcode nodes only" },
+  ].map((option) => ({
+    ...option,
+    disabled:
+      !transcodeNodeAvailable &&
+      option.value !== current &&
+      NODE_BACKED_CHAPTER_THUMBNAIL_MODES.includes(option.value),
+  }));
 }
 
 function detectedDevices(

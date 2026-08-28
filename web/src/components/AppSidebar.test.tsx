@@ -151,13 +151,10 @@ vi.mock("@/hooks/useTheme", () => ({
     previewTheme: vi.fn(),
     resetPreviewTheme: vi.fn(),
   }),
+  isKeyboardFocus: () => false,
   // PrairieBrand reads the appearance through the optional hook; null keeps it on
   // the dark built-in assets, matching the sidebar's own surface.
   useOptionalTheme: () => null,
-}));
-
-vi.mock("@/components/ThemeSwitcher", () => ({
-  default: () => <div>Theme switcher</div>,
 }));
 
 vi.mock("@/components/ui/avatar", () => ({

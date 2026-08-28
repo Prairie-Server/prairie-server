@@ -1180,7 +1180,13 @@ func main() {
 		s.SetLiteraryWorkLinker(literaryWorkService)
 		s.SetEbookEnrichmentQueue(ebooks.NewEnrichmentQueue(deps.DB))
 		deps.Scanner = s
-		deps.ProbeEnsurer = scanner.NewPlaybackProbeEnsurer(fileRepo, ffprobePath, cfg.Playback.FFmpegPath, 10*time.Second)
+		probeEnsurer := scanner.NewPlaybackProbeEnsurer(fileRepo, ffprobePath, cfg.Playback.FFmpegPath, 10*time.Second)
+		// Probe repair and the copy-safety scan follow playback.ffmpeg_path
+		// without a restart; the scanner's own ffprobe path above still does not.
+		configWatcher.OnChange(func(_, updated *config.Config) {
+			probeEnsurer.SetFFmpegPath(updated.Playback.FFmpegPath)
+		})
+		deps.ProbeEnsurer = probeEnsurer
 		slog.Info("scanner initialized")
 	}
 

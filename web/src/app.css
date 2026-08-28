@@ -734,6 +734,7 @@
   }
   html[data-high-contrast="true"] .surface-panel-subtle,
   html[data-high-contrast="true"] .surface-panel,
+  html[data-high-contrast="true"] .surface-panel-raised,
   html[data-high-contrast="true"] .glass,
   html[data-high-contrast="true"] .glass-subtle {
     border-color: color-mix(in srgb, var(--border) 88%, white 12%);
@@ -1425,6 +1426,17 @@
     transform: translateY(-4px);
   }
 
+  /* Home/library pages can contain hundreds of cards across off-screen rows.
+     Let supporting engines skip layout and paint for those rows until they
+     approach the viewport. Browsers without content-visibility ignore this
+     and keep the existing rendering path. MediaCarousel sets the placeholder
+     height from carouselIntrinsicHeight(), which owns the per-card-size
+     values alongside the card widths they derive from. */
+  .media-carousel {
+    content-visibility: auto;
+    contain-intrinsic-size: auto var(--carousel-intrinsic-h, 23rem);
+  }
+
   /* Card actions stay hidden at rest so touch devices get clean artwork; a
      long press opens the action sheet instead. Keyboard focus and an open
      menu reveal them on every device so keyboard and assistive-tech users
@@ -1444,7 +1456,13 @@
      phone cannot uncover the controls. This deliberately uses a direct :hover
      selector: Tailwind's group-hover variant is limited to the primary
      pointer's (hover: hover) result, which can exclude Windows hybrid devices
-     even while an attached mouse is actively hovering the card. */
+     even while an attached mouse is actively hovering the card.
+
+     Card actions sit at z-20 in the card wrapper's stacking context while the
+     overlay-badge layer sits at z-10 inside the artwork box, so a visible
+     action always covers the badges in that corner. Badges anchor flush in the
+     corners and never reserve room for the actions; the overlay layer is
+     pointer-events-none, so covered badges cannot steal an action's clicks. */
   @media (any-hover: hover) and (any-pointer: fine) {
     .group\/media:hover .media-card-hover-dim {
       background-color: rgb(0 0 0 / 0.3);
@@ -1952,6 +1970,17 @@
     background: color-mix(in srgb, var(--surface) 72%, transparent);
     border: 1px solid color-mix(in srgb, var(--border) 62%, transparent);
     border-radius: calc(var(--radius-xl) + 0.25rem);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
+  }
+
+  /* One surface step above a surface-panel shell. Settings groups sit on
+     this so they read as defined panels inside the shell — in light themes
+     the shell and --surface are near-identical, so the raised fill plus the
+     hairline are what keep group boundaries visible. */
+  .surface-panel-raised {
+    background: color-mix(in srgb, var(--surface-raised) 65%, transparent);
+    border: 1px solid color-mix(in srgb, var(--border) 72%, transparent);
+    border-radius: 1.7rem;
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.04);
   }
 

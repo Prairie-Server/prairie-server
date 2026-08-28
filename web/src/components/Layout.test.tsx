@@ -9,6 +9,7 @@ const mocks = vi.hoisted(() => ({
   location: { pathname: "/", search: "", key: "home" },
   navigate: vi.fn(),
   prefetchQuery: vi.fn(),
+  getQueryData: vi.fn(),
   renderSurface: true,
   beginResult: undefined as boolean | undefined,
   profile: {
@@ -33,7 +34,10 @@ vi.mock("@tanstack/react-query", async () => {
   );
   return {
     ...actual,
-    useQueryClient: () => ({ prefetchQuery: mocks.prefetchQuery }),
+    useQueryClient: () => ({
+      prefetchQuery: mocks.prefetchQuery,
+      getQueryData: mocks.getQueryData,
+    }),
   };
 });
 
@@ -145,6 +149,7 @@ beforeEach(() => {
   mocks.location = { pathname: "/", search: "", key: "home" };
   mocks.navigate.mockReset();
   mocks.prefetchQuery.mockReset();
+  mocks.getQueryData.mockReset();
   mocks.renderSurface = true;
   mocks.beginResult = undefined;
   mocks.profile = {
@@ -274,6 +279,32 @@ describe("Layout detail reveal", () => {
     expect(
       screen.getByRole("status", { name: "details-ready" }),
     ).toHaveTextContent("true");
+  });
+
+  it("reveals immediately when the item detail is already cached", () => {
+    mocks.getQueryData.mockImplementation((queryKey: unknown) =>
+      JSON.stringify(queryKey) ===
+      JSON.stringify(catalogKeys.itemDetail("movie-1", undefined))
+        ? { content_id: "movie-1" }
+        : undefined,
+    );
+    const view = renderLayout();
+    setRoute("/item/movie-1", "item");
+
+    act(() =>
+      view.rerender(
+        <MemoryRouter>
+          <Layout>
+            <Harness />
+          </Layout>
+        </MemoryRouter>,
+      ),
+    );
+
+    expect(
+      screen.getByRole("status", { name: "details-ready" }),
+    ).toHaveTextContent("true");
+    expect(vi.getTimerCount()).toBe(0);
   });
 
   it("reveals as soon as the surface settles", () => {

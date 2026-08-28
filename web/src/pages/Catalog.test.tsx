@@ -19,11 +19,14 @@ vi.mock("react-router", async () => {
 
   return {
     ...actual,
-    BrowserRouter: ({ children }: { children: ReactNode }) => (
-      <actual.MemoryRouter initialEntries={appInitialEntries}>
-        {children}
-      </actual.MemoryRouter>
-    ),
+    // App builds a data router from the real history; point it at the entry
+    // under test instead.
+    createBrowserRouter: ((
+      routes: Parameters<typeof actual.createMemoryRouter>[0],
+    ) =>
+      actual.createMemoryRouter(routes, {
+        initialEntries: appInitialEntries,
+      })) as typeof actual.createBrowserRouter,
     Navigate: ({
       to,
       replace,

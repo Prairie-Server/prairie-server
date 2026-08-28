@@ -371,6 +371,28 @@ describe("invalidateMediaSurfaceQueries", () => {
     ).toBe(true);
   });
 
+  it("leaves home section queries alone for a library-scoped change", async () => {
+    const queryClient = new QueryClient();
+    const homeLayoutKey = sectionKeys.homeLayout();
+    const homeItemsKey = sectionKeys.homeItems("recently-added");
+
+    queryClient.setQueryData(homeLayoutKey, { sections: [] });
+    queryClient.setQueryData(homeItemsKey, {
+      section: { id: "recently-added", items: [] },
+    });
+
+    await invalidateMediaSurfaceQueries(queryClient, { libraryId: 3 });
+
+    expect(queryClient.getQueryState(homeLayoutKey)?.isInvalidated).toBe(false);
+    expect(queryClient.getQueryState(homeItemsKey)?.isInvalidated).toBe(false);
+
+    // An unscoped change — a favorite, a watch, a catalog import — still does.
+    await invalidateMediaSurfaceQueries(queryClient);
+
+    expect(queryClient.getQueryState(homeLayoutKey)?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(homeItemsKey)?.isInvalidated).toBe(true);
+  });
+
   it("does not invalidate collection queries for a different library scope", async () => {
     const queryClient = new QueryClient();
     const moviesKey = libraryCollectionKeys.list(1);

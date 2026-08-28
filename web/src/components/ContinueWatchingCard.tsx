@@ -27,6 +27,7 @@ import {
 import { useUICustomization } from "@/hooks/useUICustomization";
 import { carouselCardWidthClasses } from "@/lib/uiCustomization";
 import CardPlayOverlay from "@/components/CardPlayOverlay";
+import type { CardQuickActionMode } from "@/lib/cardQuickActions";
 
 type ContinueWatchingCardProps = (
   | {
@@ -41,6 +42,7 @@ type ContinueWatchingCardProps = (
     }
 ) & {
   overlayPrefs?: CardOverlayPrefs | null;
+  quickActionMode?: CardQuickActionMode;
   libraryId?: number;
   variant?: "wide" | "poster";
 };
@@ -137,6 +139,8 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
       ? (card.positionSeconds / card.durationSeconds) * 100
       : 0;
   const hasPartialProgress = progressPercent > 0 && progressPercent < 100;
+  // Drives both the bar itself and the overlay row's clearance above it.
+  const showProgressBar = !isNextUp && progressPercent > 0;
   const hasEpisodeMeta =
     card.seasonNumber != null && card.episodeNumber != null;
   // A manga chapter is an ebook item that carries its owning series; the card
@@ -310,6 +314,7 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
                   data={overlayDataFromSectionItem(props.sectionItem)}
                   prefs={props.overlayPrefs}
                   variant={variant}
+                  hasProgressBar={showProgressBar}
                 />
               )}
 
@@ -318,7 +323,7 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
 
             {/* Progress bar — inset pill so a full bar doesn't read as a
                 stray edge along the artwork */}
-            {!isNextUp && progressPercent > 0 && (
+            {showProgressBar && (
               <div className="absolute inset-x-2.5 bottom-2 h-[3px] overflow-hidden rounded-full bg-black/40">
                 <div
                   className="h-full rounded-full transition-all duration-300"
@@ -374,6 +379,7 @@ export default function ContinueWatchingCard(props: ContinueWatchingCardProps) {
           showFavoriteShortcut={false}
           dismissAction={dismissAction}
           hasPartialProgress={hasPartialProgress}
+          quickActionMode={props.quickActionMode ?? "none"}
           longPressRef={cardRef}
           itemTitle={heading}
         />

@@ -7,7 +7,7 @@ import {
   useDateTimeFormat,
   useDateTimeFormatSettings,
 } from "@/hooks/useDateTimeFormat";
-import { useTheme } from "@/hooks/useTheme";
+import { isKeyboardFocus, useTheme } from "@/hooks/useTheme";
 import { formatDate, formatTime } from "@/lib/datetime";
 import type {
   DateFormatPreference,
@@ -65,7 +65,12 @@ export default function AppearanceSettings() {
                 key={id}
                 type="button"
                 onClick={() => setTheme(id)}
-                onFocus={() => previewTheme(id)}
+                // Pointer focus already previews through onMouseEnter (behind
+                // the hover-intent delay); previewing on every focus would
+                // short-circuit it. Keyboard focus only.
+                onFocus={(event) => {
+                  if (isKeyboardFocus(event.currentTarget)) previewTheme(id);
+                }}
                 onBlur={resetPreviewTheme}
                 onMouseEnter={() => previewTheme(id)}
                 onMouseLeave={resetPreviewTheme}
@@ -215,10 +220,10 @@ export default function AppearanceSettings() {
           </div>
           <button
             type="button"
-            onClick={() => setTheme("prairie-dusk")}
+            onClick={() => setTheme("midnight-cinema")}
             className="border-border text-foreground hover:bg-accent inline-flex h-8 items-center justify-center rounded-md border px-3 text-sm font-medium transition-colors"
           >
-            Reset to Prairie Dusk
+            Reset to Cinema Dark
           </button>
         </div>
       </SettingsGroup>
