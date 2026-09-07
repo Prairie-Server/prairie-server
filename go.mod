@@ -40,7 +40,7 @@ require (
 	go.n16f.net/thumbhash v1.1.0
 	golang.org/x/image v0.45.0
 	golang.org/x/net v0.58.0
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20260825221802-da73d73af1c5
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20260904194346-d0f1323225a4
 	gopkg.in/natefinch/lumberjack.v2 v2.2.1
 	modernc.org/sqlite v1.57.0
 )
