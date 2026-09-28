@@ -1,12 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { getQuerySortOptions } from "./querySortOptions";
+import { getQuerySortOptions, normalizeQuerySortForScope } from "./querySortOptions";
 
 describe("getQuerySortOptions", () => {
   it("allows ebook book-native sorts without enabling narrator", () => {
-    const fields = getQuerySortOptions({ relevanceScope: "ebook" }).map(
-      (option) => option.value,
-    );
+    const fields = getQuerySortOptions({ relevanceScope: "ebook" }).map((option) => option.value);
 
     expect(fields).toContain("author");
     expect(fields).toContain("series");
@@ -36,4 +34,20 @@ describe("getQuerySortOptions", () => {
     expect(labelsByField.get("date_viewed")).toBe("Date Viewed");
     expect(labelsByField.get("plays")).toBe("Plays");
   });
+});
+
+it("limits History personalized ordering to its snapshot-backed Date Viewed sort", () => {
+  const options = getQuerySortOptions({ includePersonalized: "date_viewed" });
+  expect(options.filter((option) => option.personalized).map((option) => option.value)).toEqual([
+    "date_viewed",
+  ]);
+  expect(
+    normalizeQuerySortForScope(
+      { field: "date_viewed", order: "asc" },
+      { includePersonalized: "date_viewed" },
+    ),
+  ).toEqual({ field: "date_viewed", order: "asc" });
+  expect(
+    normalizeQuerySortForScope({ field: "progress" }, { includePersonalized: "date_viewed" }).field,
+  ).not.toBe("progress");
 });

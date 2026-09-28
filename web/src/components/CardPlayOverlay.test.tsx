@@ -18,11 +18,7 @@ describe("CardPlayOverlay", () => {
   it("starts resumable playback in place and preserves the return location", () => {
     render(
       <MemoryRouter initialEntries={["/home?profile=primary"]}>
-        <CardPlayOverlay
-          contentId="episode 1"
-          title="Running Show"
-          libraryId={12}
-        />
+        <CardPlayOverlay contentId="episode 1" title="Running Show" libraryId={12} />
       </MemoryRouter>,
     );
 
@@ -34,13 +30,16 @@ describe("CardPlayOverlay", () => {
     expect(link.className).toContain("media-card-play-trigger");
 
     fireEvent.click(link);
-    expect(mocks.startPlayback).toHaveBeenCalledWith({
-      contentId: "episode 1",
-      fileId: undefined,
-      libraryId: 12,
-      restart: false,
-      returnHref: "/home?profile=primary",
-    });
+    expect(mocks.startPlayback).toHaveBeenCalledWith(
+      {
+        contentId: "episode 1",
+        fileId: undefined,
+        libraryId: 12,
+        restart: false,
+        returnHref: "/home?profile=primary",
+      },
+      "viewer",
+    );
   });
 
   it("leaves modified clicks to the watch link", () => {
@@ -82,6 +81,7 @@ describe("CardPlayOverlay", () => {
     expect(parentClick).not.toHaveBeenCalled();
     expect(mocks.startPlayback).toHaveBeenCalledWith(
       expect.objectContaining({ contentId: "movie-1", restart: false }),
+      "viewer",
     );
   });
 });

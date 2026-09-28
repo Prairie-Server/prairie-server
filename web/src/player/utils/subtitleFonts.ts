@@ -49,8 +49,7 @@ const FALLBACK_BY_SCRIPT: Array<{
 }> = [
   // Arabic, Arabic Supplement, Arabic Extended-A, Arabic Presentation Forms.
   {
-    pattern:
-      /[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufeff]/,
+    pattern: /[\u0600-\u06ff\u0750-\u077f\u08a0-\u08ff\ufb50-\ufdff\ufe70-\ufeff]/,
     font: NOTO_SANS_ARABIC,
   },
   { pattern: /[\u0e00-\u0e7f]/, font: NOTO_SANS_THAI },
@@ -60,9 +59,7 @@ const FALLBACK_BY_SCRIPT: Array<{
  * Returns the font to use as JASSUB's `defaultFont` for a subtitle track in the
  * given language, or null to keep JASSUB's built-in Latin default.
  */
-export function fallbackFontForLanguage(
-  language: string | undefined,
-): SubtitleFallbackFont | null {
+export function fallbackFontForLanguage(language: string | undefined): SubtitleFallbackFont | null {
   if (!language) return null;
   return FALLBACK_BY_LANGUAGE[language.toLowerCase()] ?? null;
 }
@@ -78,10 +75,7 @@ export function fallbackFontForSubtitle(
   const languageFont = fallbackFontForLanguage(language);
   if (languageFont) return languageFont;
 
-  return (
-    FALLBACK_BY_SCRIPT.find(({ pattern }) => pattern.test(subtitleContent))
-      ?.font ?? null
-  );
+  return FALLBACK_BY_SCRIPT.find(({ pattern }) => pattern.test(subtitleContent))?.font ?? null;
 }
 
 const fontDataCache = new Map<string, Promise<Uint8Array[]>>();
@@ -100,9 +94,7 @@ interface SubtitleFontBundleItem {
   data: string;
 }
 
-export function loadSubtitleFallbackFontData(
-  font: SubtitleFallbackFont,
-): Promise<Uint8Array[]> {
+export function loadSubtitleFallbackFontData(font: SubtitleFallbackFont): Promise<Uint8Array[]> {
   const cached = fontDataCache.get(font.family);
   if (cached) return cached;
 
@@ -122,10 +114,7 @@ export function loadSubtitleFallbackFontData(
   return promise;
 }
 
-export function loadSubtitleFontBundle(
-  url: string,
-  signal?: AbortSignal,
-): Promise<Uint8Array[]> {
+export function loadSubtitleFontBundle(url: string, signal?: AbortSignal): Promise<Uint8Array[]> {
   const cached = fontBundleCache.get(url);
   if (cached) {
     fontBundleCache.delete(url);
@@ -142,9 +131,9 @@ export function loadSubtitleFontBundle(
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}`);
       }
-      return (await response.json()) as SubtitleFontBundleItem[];
+      return (await response.json()) as { items: SubtitleFontBundleItem[] };
     })
-    .then((items) => items.map((item) => base64ToBytes(item.data)))
+    .then(({ items }) => items.map((item) => base64ToBytes(item.data)))
     .then((fonts) => {
       entry.bytes = totalByteLength(fonts);
       if (entry.bytes > MAX_FONT_BUNDLE_CACHE_BYTES) {
@@ -217,8 +206,7 @@ export function forceASSFontFamily(content: string, family: string): string {
       const section = line.match(/^\s*\[([^\]]+)]\s*$/);
       if (section) {
         const sectionName = section[1]!.trim().toLowerCase();
-        inStyleSection =
-          sectionName === "v4+ styles" || sectionName === "v4 styles";
+        inStyleSection = sectionName === "v4+ styles" || sectionName === "v4 styles";
         fontNameIndex = -1;
         return line;
       }
@@ -226,9 +214,7 @@ export function forceASSFontFamily(content: string, family: string): string {
       if (inStyleSection) {
         const format = line.match(/^(\s*Format\s*:\s*)(.*)$/i);
         if (format) {
-          const fields = format[2]!
-            .split(",")
-            .map((field) => field.trim().toLowerCase());
+          const fields = format[2]!.split(",").map((field) => field.trim().toLowerCase());
           fontNameIndex = fields.indexOf("fontname");
           return line;
         }

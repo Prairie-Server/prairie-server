@@ -39,10 +39,7 @@ const DOWNLOAD_ARTIFACT_DIR_NAME = "silo-download-artifacts";
  * transcode path before taking its parent, so a trailing slash still yields
  * the sibling directory rather than nesting inside the transcode root.
  */
-export function effectiveDownloadArtifactDir(
-  artifactDir: string,
-  transcodeDir: string,
-): string {
+export function effectiveDownloadArtifactDir(artifactDir: string, transcodeDir: string): string {
   if (artifactDir !== "") return artifactDir;
   const base = transcodeDir === "" ? DEFAULT_TRANSCODE_DIR : transcodeDir;
   return joinPath(dirName(cleanPath(base)), DOWNLOAD_ARTIFACT_DIR_NAME);
@@ -63,7 +60,7 @@ function joinPath(dir: string, name: string): string {
  * `filepath.Clean` for slash-separated paths: collapses repeated separators and
  * resolves `.` and `..` lexically, leaving `.` for an empty result.
  */
-function cleanPath(path: string): string {
+export function cleanPath(path: string): string {
   const rooted = path.startsWith("/");
   const resolved: string[] = [];
   for (const segment of path.split("/")) {

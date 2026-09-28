@@ -12,8 +12,7 @@ import { cardGridClasses } from "@/lib/uiCustomization";
 
 const KIND_FALLBACK_LABEL: Record<string, (key?: string) => string> = {
   "for-you-main": () => "For You",
-  cluster: (key) =>
-    key ? `Personalized cluster ${key}` : "Personalized cluster",
+  cluster: (key) => (key ? `Personalized cluster ${key}` : "Personalized cluster"),
   "similar-users": () => "Users Like You Also Enjoyed",
   popular: () => "Popular on This Server",
   "recently-added": () => "Recently Added",
@@ -44,9 +43,7 @@ function GridSkeleton() {
 function ErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-      <p className="text-muted-foreground text-sm">
-        Failed to load this section.
-      </p>
+      <p className="text-muted-foreground text-sm">Failed to load this section.</p>
       <button
         onClick={onRetry}
         className="text-primary hover:text-primary/80 inline-flex items-center gap-2 text-sm font-medium"
@@ -77,10 +74,7 @@ export default function RecommendationsSection() {
   const kind = params.kind ?? "";
   const key = params.key;
 
-  const { data, isLoading, isError, refetch } = useRecommendationSection(
-    kind,
-    key,
-  );
+  const { data, isLoading, isError, refetch } = useRecommendationSection(kind, key);
   const title = data?.label || fallbackTitle(kind, key);
   const { prefs: overlayPrefs, quickActionMode } = useOverlayPrefs();
   const { cardPresentation } = useUICustomization();
@@ -89,11 +83,9 @@ export default function RecommendationsSection() {
 
   return (
     <div className="relative space-y-6 px-4 pt-6 pb-12 sm:px-6 lg:px-10 xl:px-12">
-      <PageBack to="/recommendations" preferHistory={false} />
+      <PageBack to="/recommendations" up />
       <div className="mt-10 flex flex-col gap-1.5 sm:mt-12">
-        <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">
-          {title}
-        </h1>
+        <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">{title}</h1>
         {data && data.items.length > 0 && (
           <p className="text-muted-foreground text-sm">
             {data.items.length} {data.items.length === 1 ? "title" : "titles"}

@@ -11,26 +11,11 @@ export function useGroupRestartAll(): boolean {
   return useContext(GroupRestartContext);
 }
 
-/**
- * Marks everything nested under it as restart-all without rendering any
- * group's own "Changes apply after a restart" line. Use it on a whole page
- * where every group is restart-all: say the sentence once near the page
- * title, wrap the page's groups in this provider, and pass `restartAll={false}`
- * (or omit it) on each `FieldGroup` so the per-group line does not repeat —
- * per-field restart chips stay suppressed because the groups still inherit
- * this context.
- */
-export function RestartAllProvider({ children }: { children: ReactNode }) {
-  return (
-    <GroupRestartContext.Provider value={true}>
-      {children}
-    </GroupRestartContext.Provider>
-  );
-}
-
 export interface FieldGroupProps {
   /** Sentence-case heading, e.g. "Transcoding". */
   label: string;
+  /** One sentence on what the group holds, shown under the heading. */
+  description?: string;
   /**
    * Every field in the group only takes effect after a restart. The group says
    * so once and the fields inside drop their own chips.
@@ -52,27 +37,21 @@ export interface FieldGroupProps {
  */
 export function FieldGroup({
   label,
+  description,
   restartAll = false,
   dirty = false,
   actions,
   className,
   children,
 }: FieldGroupProps) {
-  // A page-level `RestartAllProvider` can already say every field in the page
-  // restarts; a group nested under it inherits that without repeating its own
-  // line (see `restartAll` above).
+  // A group nested inside a restart-all group inherits that state without
+  // repeating the line.
   const inheritedRestartAll = useContext(GroupRestartContext);
   const effectiveRestartAll = restartAll || inheritedRestartAll;
 
   const dirtyDot = dirty ? (
-    <span
-      className="inline-flex items-center"
-      title="Unsaved changes in this group"
-    >
-      <span
-        aria-hidden="true"
-        className="size-1.5 rounded-full bg-[var(--settings-accent)]"
-      />
+    <span className="inline-flex items-center" title="Unsaved changes in this group">
+      <span aria-hidden="true" className="size-1.5 rounded-full bg-[var(--settings-accent)]" />
       <span className="sr-only">Unsaved changes in this group</span>
     </span>
   ) : null;
@@ -80,7 +59,13 @@ export function FieldGroup({
   return (
     <SettingsGroup
       title={label}
-      description={restartAll ? "Changes apply after a restart" : undefined}
+      description={
+        restartAll
+          ? description
+            ? `${description} Changes apply after a restart.`
+            : "Changes apply after a restart"
+          : description
+      }
       actions={
         actions || dirtyDot ? (
           <>

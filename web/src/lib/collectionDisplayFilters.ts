@@ -23,22 +23,12 @@ export const COLLECTION_MEDIA_FILTER_OPTIONS: Array<{
   { value: "series", label: "Shows" },
 ];
 
-export function collectionWatchFilterLabel(
-  value: UserCollectionWatchFilter,
-): string {
-  return (
-    COLLECTION_WATCH_FILTER_OPTIONS.find((option) => option.value === value)
-      ?.label ?? "All"
-  );
+export function collectionWatchFilterLabel(value: UserCollectionWatchFilter): string {
+  return COLLECTION_WATCH_FILTER_OPTIONS.find((option) => option.value === value)?.label ?? "All";
 }
 
-export function collectionMediaFilterLabel(
-  value: UserCollectionMediaFilter,
-): string {
-  return (
-    COLLECTION_MEDIA_FILTER_OPTIONS.find((option) => option.value === value)
-      ?.label ?? "All"
-  );
+export function collectionMediaFilterLabel(value: UserCollectionMediaFilter): string {
+  return COLLECTION_MEDIA_FILTER_OPTIONS.find((option) => option.value === value)?.label ?? "All";
 }
 
 export function collectionWatchFilterOptionsFromPresets(
@@ -48,9 +38,7 @@ export function collectionWatchFilterOptionsFromPresets(
     return COLLECTION_WATCH_FILTER_OPTIONS;
   }
   const allowed = new Set<UserCollectionWatchFilter>(presets);
-  return COLLECTION_WATCH_FILTER_OPTIONS.filter((option) =>
-    allowed.has(option.value),
-  );
+  return COLLECTION_WATCH_FILTER_OPTIONS.filter((option) => allowed.has(option.value));
 }
 
 export function collectionMediaFilterOptionsFromPresets(
@@ -60,9 +48,7 @@ export function collectionMediaFilterOptionsFromPresets(
     return COLLECTION_MEDIA_FILTER_OPTIONS;
   }
   const allowed = new Set<UserCollectionMediaFilter>(presets);
-  return COLLECTION_MEDIA_FILTER_OPTIONS.filter((option) =>
-    allowed.has(option.value),
-  );
+  return COLLECTION_MEDIA_FILTER_OPTIONS.filter((option) => allowed.has(option.value));
 }
 
 // The display filters are persisted as a filter-only QueryDefinition fragment:

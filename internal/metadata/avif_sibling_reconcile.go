@@ -64,14 +64,21 @@ type ArtworkObjectDeleter interface {
 // at the end, so every surface gets its turn.
 type AVIFSiblingReconciler struct {
 	pool   *pgxpool.Pool
-	s3     ArtworkObjectChecker
+	s3     AVIFObjectExistenceChecker
 	cursor scanCursor
 	// skippedNoOriginal counts candidates dropped because the WebP original they
 	// name is not in the store. Reported per pass so the gap stays visible.
 	skippedNoOriginal atomic.Int64
 }
 
-func NewAVIFSiblingReconciler(pool *pgxpool.Pool, s3 ArtworkObjectChecker) *AVIFSiblingReconciler {
+// AVIFObjectExistenceChecker is the bucket-oriented existence check the AVIF
+// sibling reconciler needs.
+type AVIFObjectExistenceChecker interface {
+	ObjectExists(ctx context.Context, bucket, key string) (bool, error)
+	Bucket() string
+}
+
+func NewAVIFSiblingReconciler(pool *pgxpool.Pool, s3 AVIFObjectExistenceChecker) *AVIFSiblingReconciler {
 	if pool == nil || s3 == nil {
 		return nil
 	}

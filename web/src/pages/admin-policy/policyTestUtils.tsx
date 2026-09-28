@@ -3,12 +3,7 @@ import { render } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter } from "react-router";
 
-import {
-  setAccessToken,
-  setProfileId,
-  setProfileToken,
-  setRefreshToken,
-} from "@/api/client";
+import { setAccessToken, setProfileId, setProfileToken, setRefreshToken } from "@/api/client";
 
 function memoryStorage() {
   const state = new Map<string, string>();
@@ -45,7 +40,7 @@ export function installPolicyStorageMocks() {
   setProfileToken(null);
 }
 
-export function renderWithPolicyProviders(ui: ReactNode) {
+export function renderWithPolicyProviders(ui: ReactNode, initialEntries = ["/"]) {
   const client = new QueryClient({
     defaultOptions: {
       queries: { retry: false },
@@ -54,15 +49,18 @@ export function renderWithPolicyProviders(ui: ReactNode) {
   });
   const result = render(
     <QueryClientProvider client={client}>
-      <MemoryRouter>{ui}</MemoryRouter>
+      <MemoryRouter initialEntries={initialEntries}>{ui}</MemoryRouter>
     </QueryClientProvider>,
   );
   return { ...result, client };
 }
 
-export function jsonResponse(body: unknown, status = 200) {
+export function jsonResponse(body: unknown, status = 200, etag = '"revision-1"') {
   return new Response(JSON.stringify(body), {
     status,
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": status >= 400 ? "application/problem+json" : "application/json",
+      ETag: etag,
+    },
   });
 }

@@ -41,9 +41,7 @@ describe("deviceRecencyGroup", () => {
   });
 
   it("treats an unparseable timestamp as old rather than throwing", () => {
-    expect(deviceRecencyGroup(device({ last_seen_at: "nonsense" }), NOW)).toBe(
-      "earlier",
-    );
+    expect(deviceRecencyGroup(device({ last_seen_at: "nonsense" }), NOW)).toBe("earlier");
   });
 });
 

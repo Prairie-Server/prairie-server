@@ -31,9 +31,7 @@ describe("PlayerMoreMenu", () => {
     expect(onTogglePlaybackInfo).toHaveBeenCalledOnce();
 
     fireEvent.click(screen.getByRole("button", { name: "More" }));
-    fireEvent.click(
-      screen.getByRole("menuitem", { name: "Picture in Picture" }),
-    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Picture in Picture" }));
     expect(onTogglePiP).toHaveBeenCalledOnce();
   });
 

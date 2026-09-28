@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import type { QueryDefinition } from "@/api/types";
 
 import {
   buildCatalogApiSearchParams,
@@ -20,9 +21,7 @@ function params(search: string) {
 describe("parseCatalogSearchParams", () => {
   it("blocks overlay params for exact section sources", () => {
     const state = parseCatalogSearchParams(
-      params(
-        "source=section&scope=home&section_id=sec-1&genre=Drama&sort=title",
-      ),
+      params("source=section&scope=home&section_id=sec-1&genre=Drama&sort=title"),
     );
 
     expect(state.source).toBe("section");
@@ -54,9 +53,7 @@ describe("parseCatalogSearchParams", () => {
 
   it("keeps overlay params for collection sources", () => {
     const state = parseCatalogSearchParams(
-      params(
-        "source=user_collection&collection_id=col-7&type=movie&genre=Drama&sort=title",
-      ),
+      params("source=user_collection&collection_id=col-7&type=movie&genre=Drama&sort=title"),
     );
 
     expect(state.source).toBe("user_collection");
@@ -73,9 +70,7 @@ describe("parseCatalogSearchParams", () => {
   });
 
   it("keeps ebook media scope from catalog URLs", () => {
-    const state = parseCatalogSearchParams(
-      params("source=query&type=ebook&sort=author"),
-    );
+    const state = parseCatalogSearchParams(params("source=query&type=ebook&sort=author"));
 
     expect(state.query_definition.media_scope).toBe("ebook");
     expect(state.query_definition.sort).toEqual({
@@ -85,14 +80,10 @@ describe("parseCatalogSearchParams", () => {
   });
 
   it("parses the video group scope and treats type=all as unscoped", () => {
-    const video = parseCatalogSearchParams(
-      params("source=query&q=heat&type=video"),
-    );
+    const video = parseCatalogSearchParams(params("source=query&q=heat&type=video"));
     expect(video.query_definition.media_scope).toBe("video");
 
-    const all = parseCatalogSearchParams(
-      params("source=query&q=heat&type=all"),
-    );
+    const all = parseCatalogSearchParams(params("source=query&q=heat&type=all"));
     expect(all.query_definition.media_scope).toBeUndefined();
   });
 
@@ -117,38 +108,30 @@ describe("parseCatalogSearchParams", () => {
   });
 
   it("defaults personal saved lists to source order until a sort is chosen", () => {
+    expect(parseCatalogSearchParams(params("source=watchlist")).uses_source_order).toBe(true);
+    expect(parseCatalogSearchParams(params("source=watchlist&sort=title")).uses_source_order).toBe(
+      false,
+    );
     expect(
-      parseCatalogSearchParams(params("source=watchlist")).uses_source_order,
-    ).toBe(true);
-    expect(
-      parseCatalogSearchParams(params("source=watchlist&sort=title"))
+      parseCatalogSearchParams(params("source=watchlist&sort=added_at&order=desc"))
         .uses_source_order,
     ).toBe(false);
-    expect(
-      parseCatalogSearchParams(
-        params("source=watchlist&sort=added_at&order=desc"),
-      ).uses_source_order,
-    ).toBe(false);
-    expect(
-      parseCatalogSearchParams(params("source=favorites")).uses_source_order,
-    ).toBe(true);
-    expect(
-      parseCatalogSearchParams(params("source=history")).uses_source_order,
-    ).toBe(false);
+    expect(parseCatalogSearchParams(params("source=favorites")).uses_source_order).toBe(true);
+    expect(parseCatalogSearchParams(params("source=history")).uses_source_order).toBe(true);
+    expect(parseCatalogSearchParams(params("source=history&sort=title")).uses_source_order).toBe(
+      false,
+    );
   });
 
   it("normalizes legacy sort aliases in catalog URLs", () => {
     expect(
-      parseCatalogSearchParams(params("source=query&sort=sort_title"))
-        .query_definition.sort,
+      parseCatalogSearchParams(params("source=query&sort=sort_title")).query_definition.sort,
     ).toEqual({ field: "title", order: "asc" });
     expect(
-      parseCatalogSearchParams(params("source=query&sort=recently_added"))
-        .query_definition.sort,
+      parseCatalogSearchParams(params("source=query&sort=recently_added")).query_definition.sort,
     ).toEqual({ field: "added_at", order: "desc" });
     expect(
-      parseCatalogSearchParams(params("source=query&sort=rating"))
-        .query_definition.sort,
+      parseCatalogSearchParams(params("source=query&sort=rating")).query_definition.sort,
     ).toEqual({ field: "rating_imdb", order: "desc" });
   });
 });
@@ -156,9 +139,7 @@ describe("parseCatalogSearchParams", () => {
 describe("sameCatalogDestination", () => {
   it("ignores section presentation params but keeps scope identity", () => {
     const target = parseCatalogSearchParams(
-      params(
-        "source=section&scope=library&library_id=7&section_id=recent&title=Recent",
-      ),
+      params("source=section&scope=library&library_id=7&section_id=recent&title=Recent"),
     );
     const filtered = parseCatalogSearchParams(
       params(
@@ -186,16 +167,12 @@ describe("sameCatalogDestination", () => {
       params("source=user_collection&collection_id=favorites"),
     );
     const filteredUserCollection = parseCatalogSearchParams(
-      params(
-        "source=user_collection&collection_id=favorites&library_id=9&sort=title",
-      ),
+      params("source=user_collection&collection_id=favorites&library_id=9&sort=title"),
     );
 
     expect(sameCatalogDestination(target, filtered)).toBe(true);
     expect(sameCatalogDestination(target, userCollection)).toBe(false);
-    expect(sameCatalogDestination(userCollection, filteredUserCollection)).toBe(
-      true,
-    );
+    expect(sameCatalogDestination(userCollection, filteredUserCollection)).toBe(true);
   });
 });
 
@@ -213,11 +190,7 @@ describe("catalogSourceAllowsOverlay", () => {
 
 describe("buildCatalogHref", () => {
   it("keeps a library-scoped collection shortcut in its library context", () => {
-    const href = buildLibraryCollectionCatalogHref(
-      "collection-7",
-      "Favorites",
-      42,
-    );
+    const href = buildLibraryCollectionCatalogHref("collection-7", "Favorites", 42);
     const built = new URL(`http://example.test${href}`);
 
     expect(built.searchParams.get("source")).toBe("library_collection");
@@ -226,9 +199,7 @@ describe("buildCatalogHref", () => {
   });
 
   it("preserves type=all when the query filter selects All Media", () => {
-    const state = parseCatalogSearchParams(
-      params("source=query&q=heat&type=video"),
-    );
+    const state = parseCatalogSearchParams(params("source=query&q=heat&type=video"));
     state.query_definition = {
       ...state.query_definition,
       media_scope: undefined,
@@ -237,9 +208,7 @@ describe("buildCatalogHref", () => {
     const built = buildCatalogFilterSearchParams(state);
 
     expect(built.get("type")).toBe("all");
-    expect(
-      parseCatalogSearchParams(built).query_definition.media_scope,
-    ).toBeUndefined();
+    expect(parseCatalogSearchParams(built).query_definition.media_scope).toBeUndefined();
   });
 
   it("preserves All Media and other filters when the live query changes", () => {
@@ -254,9 +223,7 @@ describe("buildCatalogHref", () => {
     expect(built.searchParams.get("type")).toBe("all");
     expect(built.searchParams.get("sort")).toBe("title");
     expect(built.searchParams.get("order")).toBe("asc");
-    expect(
-      parseCatalogSearchParams(built.searchParams).query_definition.groups,
-    ).toContainEqual({
+    expect(parseCatalogSearchParams(built.searchParams).query_definition.groups).toContainEqual({
       match: "all",
       rules: [{ field: "genre", op: "contains", value: "Drama" }],
     });
@@ -302,15 +269,11 @@ describe("buildCatalogHref", () => {
           sort: { field: "added_at", order: "desc" },
         },
       });
-      expect(explicitAddedAt.toString()).toBe(
-        `source=${source}&sort=added_at&order=desc`,
-      );
+      expect(explicitAddedAt.toString()).toBe(`source=${source}&sort=added_at&order=desc`);
 
       // The explicit pick must survive a URL round-trip, or the saved browse
       // preference is written back as source order instead.
-      const reparsed = parseCatalogSearchParams(
-        new URLSearchParams(explicitAddedAt.toString()),
-      );
+      const reparsed = parseCatalogSearchParams(new URLSearchParams(explicitAddedAt.toString()));
       expect(reparsed.uses_source_order).toBe(false);
       expect(reparsed.query_definition.sort).toEqual({
         field: "added_at",
@@ -340,12 +303,8 @@ describe("buildCatalogHref", () => {
   });
 
   it("builds source-ordered personal catalog hrefs without a sort param", () => {
-    expect(buildPersonalCatalogHref("watchlist")).toBe(
-      "/catalog?source=watchlist",
-    );
-    expect(buildPersonalCatalogHref("favorites")).toBe(
-      "/catalog?source=favorites",
-    );
+    expect(buildPersonalCatalogHref("watchlist")).toBe("/catalog?source=watchlist");
+    expect(buildPersonalCatalogHref("favorites")).toBe("/catalog?source=favorites");
   });
 
   it("builds collection catalog URLs with overlay params", () => {
@@ -395,8 +354,46 @@ describe("buildCatalogHref", () => {
   });
 
   it("builds canonical person catalog URLs from raw route ids", () => {
-    expect(buildPersonCatalogHref("117290402172239876")).toBe(
-      "/person/117290402172239876",
+    expect(buildPersonCatalogHref("117290402172239876")).toBe("/person/117290402172239876");
+    // Person IDs are opaque strings in the contract.
+    expect(buildPersonCatalogHref("a/b?c")).toBe("/person/a%2Fb%3Fc");
+  });
+});
+
+describe("query-source default sort", () => {
+  const addedAt: QueryDefinition = {
+    library_ids: [],
+    match: "all",
+    groups: [],
+    sort: { field: "added_at", order: "desc" },
+  };
+
+  it("sends the smart collection preview ordering even without a library filter", () => {
+    const built = buildCatalogApiSearchParams({
+      source: "query",
+      query_definition: addedAt,
+      explicit_sort: true,
+    });
+    expect(built.get("sort")).toBe("added_at");
+    expect(built.get("order")).toBe("desc");
+  });
+
+  it("leaves text search ordering to the server when no sort was chosen", () => {
+    const state = parseCatalogSearchParams(params("source=query&q=heat"));
+    expect(state.explicit_sort).toBe(false);
+    expect(buildCatalogApiSearchParams(state).toString()).toBe("source=query&q=heat");
+    expect(
+      buildCatalogApiSearchParams({ source: "query", q: "heat", query_definition: addedAt }).has(
+        "sort",
+      ),
+    ).toBe(false);
+  });
+
+  it("keeps a sort read from the URL", () => {
+    const state = parseCatalogSearchParams(params("source=query&q=heat&sort=added_at&order=desc"));
+    expect(state.explicit_sort).toBe(true);
+    expect(buildCatalogApiSearchParams(state).toString()).toBe(
+      "source=query&q=heat&sort=added_at&order=desc",
     );
   });
 });

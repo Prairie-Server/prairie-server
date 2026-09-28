@@ -14,15 +14,11 @@ class ResizeObserverStub {
   disconnect() {}
 }
 if (typeof globalThis.ResizeObserver === "undefined") {
-  (
-    globalThis as unknown as { ResizeObserver: typeof ResizeObserverStub }
-  ).ResizeObserver = ResizeObserverStub;
+  (globalThis as unknown as { ResizeObserver: typeof ResizeObserverStub }).ResizeObserver =
+    ResizeObserverStub;
 }
 // Radix Select opens through pointer capture, which jsdom also lacks.
-if (
-  typeof window !== "undefined" &&
-  !window.HTMLElement.prototype.hasPointerCapture
-) {
+if (typeof window !== "undefined" && !window.HTMLElement.prototype.hasPointerCapture) {
   window.HTMLElement.prototype.hasPointerCapture = () => false;
   window.HTMLElement.prototype.scrollIntoView = () => {};
 }
@@ -44,9 +40,7 @@ function renderGroups(
   return { onChange, onReset };
 }
 
-function effective(
-  overrides: Partial<EffectiveSetting> = {},
-): EffectiveSetting {
+function effective(overrides: Partial<EffectiveSetting> = {}): EffectiveSetting {
   return {
     key: "player.hdr_enabled",
     value: true,
@@ -60,9 +54,7 @@ describe("DeviceSettingGroups", () => {
     renderGroups({});
 
     // Scoped to headings: "Subtitles" is also a setting label inside the group.
-    const headings = screen
-      .getAllByRole("heading")
-      .map((node) => node.textContent);
+    const headings = screen.getAllByRole("heading").map((node) => node.textContent);
     expect(headings).toEqual(["Picture", "Sound", "Subtitles", "Episodes"]);
   });
 
@@ -71,16 +63,9 @@ describe("DeviceSettingGroups", () => {
   // description may legitimately end a sentence with the word "playback".
   it("never shows a raw setting key", () => {
     const { container } = render(
-      <DeviceSettingGroups
-        settings={{}}
-        ownerLabel="your"
-        onChange={vi.fn()}
-        onReset={vi.fn()}
-      />,
+      <DeviceSettingGroups settings={{}} ownerLabel="your" onChange={vi.fn()} onReset={vi.fn()} />,
     );
-    expect(container.textContent).not.toMatch(
-      /\b(?:player|playback|ui)\.[a-z0-9_]+/,
-    );
+    expect(container.textContent).not.toMatch(/\b(?:player|playback|ui)\.[a-z0-9_]+/);
   });
 
   it("marks a value stored on this device and offers to clear it", async () => {
@@ -93,9 +78,7 @@ describe("DeviceSettingGroups", () => {
     });
 
     expect(screen.getByText("Changed here")).toBeInTheDocument();
-    await userEvent.click(
-      screen.getByRole("button", { name: /Use your setting/ }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: /Use your setting/ }));
     expect(onReset).toHaveBeenCalledWith("player.hdr_enabled");
   });
 
@@ -110,18 +93,14 @@ describe("DeviceSettingGroups", () => {
       { ownerLabel: "Robin's" },
     );
 
-    expect(
-      screen.getByRole("button", { name: /Use Robin's setting/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Use Robin's setting/ })).toBeInTheDocument();
   });
 
   it("does not offer a reset when nothing is stored on this device", () => {
     renderGroups({ "player.hdr_enabled": effective({ source: "profile" }) });
 
     expect(screen.queryByText("Changed here")).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: /Use your setting/ }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /Use your setting/ })).not.toBeInTheDocument();
   });
 
   it("sends typed values rather than strings", async () => {
@@ -146,9 +125,7 @@ describe("DeviceSettingGroups", () => {
       }),
     });
 
-    await userEvent.click(
-      screen.getByRole("combobox", { name: "Skip intros" }),
-    );
+    await userEvent.click(screen.getByRole("combobox", { name: "Skip intros" }));
     await userEvent.click(screen.getByRole("option", { name: "Never" }));
 
     expect(onChange).toHaveBeenCalledWith("playback.intro_skip_mode", "never");
@@ -178,9 +155,7 @@ describe("DeviceSettingGroups", () => {
 
     expect(screen.getByText("Auto-skip intros")).toBeInTheDocument();
     expect(screen.getByText("Changed here")).toBeInTheDocument();
-    expect(
-      screen.queryByRole("combobox", { name: "Skip intros" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("combobox", { name: "Skip intros" })).not.toBeInTheDocument();
   });
 
   it("shows only the three-way control on a revision-7 server", () => {
@@ -194,9 +169,7 @@ describe("DeviceSettingGroups", () => {
       />,
     );
 
-    expect(
-      screen.getByRole("combobox", { name: "Skip intros" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("combobox", { name: "Skip intros" })).toBeInTheDocument();
     expect(screen.queryByText("Auto-skip intros")).not.toBeInTheDocument();
   });
 
@@ -217,9 +190,7 @@ describe("DeviceSettingGroups", () => {
 
     expect(screen.getByText("Household limit")).toBeInTheDocument();
     expect(screen.getByText(/limit this to 1080p/)).toBeInTheDocument();
-    expect(
-      screen.getByText(/your choice of 2160p isn't available/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/your choice of 2160p isn't available/)).toBeInTheDocument();
   });
 
   // The bandwidth cap is declared as an integer range with a select control
@@ -237,9 +208,7 @@ describe("DeviceSettingGroups", () => {
 
     expect(screen.getByText("2 Mbps")).toBeInTheDocument();
 
-    await userEvent.click(
-      screen.getByRole("combobox", { name: /Maximum bitrate/i }),
-    );
+    await userEvent.click(screen.getByRole("combobox", { name: /Maximum bitrate/i }));
     const option = await screen.findByRole("option", { name: "10 Mbps" });
     await userEvent.click(option);
 
@@ -262,22 +231,12 @@ describe("DeviceSettingGroups", () => {
       }),
     });
 
-    await userEvent.click(
-      screen.getByRole("combobox", { name: /Maximum bitrate/i }),
-    );
+    await userEvent.click(screen.getByRole("combobox", { name: /Maximum bitrate/i }));
 
-    expect(
-      await screen.findByRole("option", { name: "200 Mbps" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("option", { name: "100 Mbps" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("option", { name: "1.5 Mbps" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("option", { name: "No limit" }),
-    ).toBeInTheDocument();
+    expect(await screen.findByRole("option", { name: "200 Mbps" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "100 Mbps" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "1.5 Mbps" })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: "No limit" })).toBeInTheDocument();
   });
 
   it("keeps a stored bandwidth value selectable even when it is not a preset", () => {
@@ -310,10 +269,7 @@ describe("DeviceSettingGroups", () => {
     slider.focus();
     await userEvent.keyboard("{ArrowRight}");
 
-    expect(onChange).toHaveBeenCalledWith(
-      "playback.next_up_prompt_seconds",
-      31,
-    );
+    expect(onChange).toHaveBeenCalledWith("playback.next_up_prompt_seconds", 31);
   });
 
   it("hides settings that cannot apply to the device being edited", () => {
@@ -329,9 +285,7 @@ describe("DeviceSettingGroups", () => {
 
     expect(screen.queryByText("Screen orientation")).not.toBeInTheDocument();
     expect(screen.queryByText("Audio sync offset")).not.toBeInTheDocument();
-    expect(
-      screen.getByText("Subtitles", { selector: "h3" }),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Subtitles", { selector: "h3" })).toBeInTheDocument();
   });
 
   it("keeps an inapplicable setting visible while this device stores a value", () => {

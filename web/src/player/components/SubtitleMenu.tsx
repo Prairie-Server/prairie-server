@@ -1,25 +1,15 @@
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
 import { createPortal } from "react-dom";
-import {
-  Captions,
-  CaptionsOff,
-  Languages,
-  Minus,
-  Plus,
-  SlidersHorizontal,
-} from "lucide-react";
+import { Captions, CaptionsOff, Languages, Minus, Plus, SlidersHorizontal } from "lucide-react";
 import type { PlayerAudioTrack, PlayerSubtitleInfo } from "../types";
 import type { PlayerConfig } from "../context/PlayerConfigContext";
 import { SubtitleSearchModal } from "./SubtitleSearchModal";
 import { SubtitleTranslateModal } from "./SubtitleTranslateModal";
 import { SubtitleAppearancePanel } from "./SubtitleAppearancePanel";
-import { playerFetch } from "../player-fetch";
+import { playerV2 } from "../player-v2";
 import { getLanguageName } from "../utils/languageNames";
 import { sortSubtitlesBySource } from "../utils/subtitleSort";
-import {
-  getSubtitleFormatLabel,
-  isSubtitleFormatLabel,
-} from "../utils/subtitleCodecs";
+import { getSubtitleFormatLabel, isSubtitleFormatLabel } from "../utils/subtitleCodecs";
 import { isTranslatableSource } from "./subtitleTranslateRequest";
 import { PlayerMenuSurface } from "./PlayerMenuSurface";
 
@@ -29,9 +19,11 @@ interface SubtitleMenuProps {
   onSelect: (index: number | null) => void;
   delayMs: number;
   onDelayChange: (ms: number) => void;
+  preferredSubtitleLanguage?: string | null;
   mediaFileId?: number;
   playerConfig?: PlayerConfig;
   onRefreshSubtitles?: () => void;
+  onSubtitleJobAccepted?: (jobId: string) => void;
   sessionId?: string;
   getSubtitleStartPosition?: () => number;
   audioTracks?: PlayerAudioTrack[];
@@ -58,9 +50,11 @@ export function SubtitleMenu({
   onSelect,
   delayMs,
   onDelayChange,
+  preferredSubtitleLanguage,
   mediaFileId,
   playerConfig,
   onRefreshSubtitles,
+  onSubtitleJobAccepted,
   sessionId,
   getSubtitleStartPosition,
   audioTracks,
@@ -71,6 +65,7 @@ export function SubtitleMenu({
   const [aiEnabled, setAiEnabled] = useState(false);
   const [aiTranscribeEnabled, setAiTranscribeEnabled] = useState(false);
   const [aiStatusLoaded, setAiStatusLoaded] = useState(false);
+  const [onlineSearchEnabled, setOnlineSearchEnabled] = useState(true);
   const [appearanceOpen, setAppearanceOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
 
@@ -83,10 +78,7 @@ export function SubtitleMenu({
   useEffect(() => {
     if (!open || aiStatusLoaded || !playerConfig) return;
     let cancelled = false;
-    playerFetch<{ enabled: boolean; transcribe_enabled?: boolean }>(
-      playerConfig,
-      "/subtitles/ai/status",
-    )
+    playerV2(playerConfig, "GET /api/v2/subtitles/ai/status", {})
       .then((res) => {
         if (cancelled) return;
         setAiEnabled(Boolean(res?.enabled));
@@ -103,6 +95,28 @@ export function SubtitleMenu({
       cancelled = true;
     };
   }, [aiStatusLoaded, open, playerConfig]);
+
+  // Online subtitle search is likewise a server-wide capability. Unlike AI this
+  // fails open: only an explicit enabled:false hides it, so older servers and
+  // probe failures keep today's behavior. Manual upload never depends on it.
+  useEffect(() => {
+    if (!playerConfig) return;
+    // A previous server's answer must not hide search on this one.
+    setOnlineSearchEnabled(true);
+    let cancelled = false;
+    playerV2(playerConfig, "GET /api/v2/subtitles/providers/status", {})
+      .then((res) => {
+        if (cancelled) return;
+        setOnlineSearchEnabled(res?.enabled !== false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setOnlineSearchEnabled(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [playerConfig]);
 
   const clampedDelay = useCallback(
     (ms: number) => Math.max(-DELAY_MAX_MS, Math.min(DELAY_MAX_MS, ms)),
@@ -147,9 +161,7 @@ export function SubtitleMenu({
   const handleMenuKeyDown = useCallback((e: React.KeyboardEvent) => {
     const items = menuItemsRef.current.filter(Boolean) as HTMLButtonElement[];
     if (items.length === 0) return;
-    const currentIndex = items.indexOf(
-      document.activeElement as HTMLButtonElement,
-    );
+    const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
     let nextIndex: number | null = null;
 
     switch (e.key) {
@@ -186,9 +198,7 @@ export function SubtitleMenu({
         className="player-utility-btn"
         data-active={activeIndex !== null ? "true" : "false"}
         onClick={() => setOpen((v) => !v)}
-        aria-label={
-          activeIndex !== null ? "Disable captions" : "Enable captions"
-        }
+        aria-label={activeIndex !== null ? "Disable captions" : "Enable captions"}
         aria-expanded={open}
         aria-haspopup="menu"
       >
@@ -201,6 +211,7 @@ export function SubtitleMenu({
 
       {open && (
         <PlayerMenuSurface
+          anchorRef={menuRef}
           className="absolute right-0 bottom-full z-30 mb-2 flex w-max max-w-[min(420px,calc(100vw-1rem))] min-w-[220px] flex-col rounded-lg bg-black/90 shadow-lg backdrop-blur"
           onClose={() => setOpen(false)}
           onKeyDown={handleMenuKeyDown}
@@ -227,8 +238,7 @@ export function SubtitleMenu({
             {sortedTracks.map((track) => {
               const isActive = track.index === activeIndex;
               const languageName = getLanguageName(track.language);
-              const sourceLabel =
-                SOURCE_LABELS[track.source ?? "embedded"] ?? "Embedded";
+              const sourceLabel = SOURCE_LABELS[track.source ?? "embedded"] ?? "Embedded";
               const formatLabel = getSubtitleFormatLabel(track.codec);
               const hasDetail =
                 track.label &&
@@ -282,9 +292,7 @@ export function SubtitleMenu({
           </div>
           <div className="shrink-0 border-t border-white/10 px-3 py-2">
             <div className="flex items-center justify-between gap-3">
-              <span className="text-xs tracking-wide text-white/50 uppercase">
-                Delay
-              </span>
+              <span className="text-xs tracking-wide text-white/50 uppercase">Delay</span>
               <div className="flex items-center gap-1">
                 <button
                   type="button"
@@ -333,7 +341,7 @@ export function SubtitleMenu({
                   setOpen(false);
                 }}
               >
-                Search Online…
+                Add Subtitles…
               </button>
             )}
             {mediaFileId &&
@@ -375,10 +383,7 @@ export function SubtitleMenu({
         </PlayerMenuSurface>
       )}
 
-      <SubtitleAppearancePanel
-        open={appearanceOpen}
-        onClose={() => setAppearanceOpen(false)}
-      />
+      <SubtitleAppearancePanel open={appearanceOpen} onClose={() => setAppearanceOpen(false)} />
 
       {searchOpen &&
         mediaFileId &&
@@ -388,6 +393,7 @@ export function SubtitleMenu({
             mediaFileId={mediaFileId}
             playerConfig={playerConfig}
             isOpen={searchOpen}
+            onlineSearchEnabled={onlineSearchEnabled}
             onClose={() => setSearchOpen(false)}
             onSubtitleDownloaded={() => {
               setSearchOpen(false);
@@ -402,12 +408,14 @@ export function SubtitleMenu({
           mediaFileId={mediaFileId}
           playerConfig={playerConfig}
           tracks={tracks}
+          preferredSubtitleLanguage={preferredSubtitleLanguage}
           audioTracks={audioTracks}
           translateEnabled={aiEnabled}
           transcribeEnabled={aiTranscribeEnabled}
           isOpen={translateOpen}
           sessionId={sessionId}
           getStartPosition={getSubtitleStartPosition}
+          onSubtitleJobAccepted={onSubtitleJobAccepted}
           onClose={() => setTranslateOpen(false)}
         />
       )}

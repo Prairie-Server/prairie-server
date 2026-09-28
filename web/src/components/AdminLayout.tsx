@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { Outlet, useLocation } from "react-router";
 import AdminSidebar from "@/components/AdminSidebar";
 import { AdminSectionCommandDialog } from "@/components/AdminSectionCommandDialog";
@@ -18,7 +18,7 @@ import { usePolicyCapability } from "@/hooks/queries/admin/policy";
 import { useAdminServerStatus } from "@/hooks/queries/admin/settings";
 import { buildAdminCommandNavSections } from "@/lib/adminNavigation";
 import { resolveAdminDocumentTitle } from "@/lib/documentTitle";
-import { searchShortcutLabel } from "@/lib/keyboardShortcut";
+import { SEARCH_SHORTCUT_LABEL } from "@/lib/keyboardShortcut";
 import { cn } from "@/lib/utils";
 import { Menu, Search, X } from "lucide-react";
 import { useWatchPlaybackController } from "@/playback/watchPlaybackContext";
@@ -49,15 +49,26 @@ export default function AdminLayout() {
   );
   const { isBackgroundBarVisible } = useWatchPlaybackController();
   const audiobookPlayback = useAudiobookPlaybackController();
-  const hasBackgroundBar =
-    isBackgroundBarVisible || audiobookPlayback?.isBackgroundBarVisible;
+  const hasBackgroundBar = isBackgroundBarVisible || audiobookPlayback?.isBackgroundBarVisible;
   const documentTitle = resolveAdminDocumentTitle(location.pathname);
   const mobileTitle =
-    documentTitle === "Admin"
-      ? "Dashboard"
-      : documentTitle.replace(/^Admin /, "");
+    documentTitle === "Admin" ? "Dashboard" : documentTitle.replace(/^Admin /, "");
 
   useDocumentTitle(documentTitle);
+
+  // Publish this shell on the document root, as Layout does with
+  // `data-app-shell`. Out-of-tree chrome (the audiobook MiniBar, which stays
+  // mounted across admin navigation) sets its left edge from
+  // `--app-sidebar-offset`, and app.css resolves that to this shell's fixed
+  // 240px sidebar only while the attribute is present; otherwise the bar
+  // would start at 0px and paint over the bottom of the admin navigation.
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    root.dataset.adminShell = "true";
+    return () => {
+      delete root.dataset.adminShell;
+    };
+  }, []);
 
   useEffect(() => {
     const desktopMedia = window.matchMedia(ADMIN_DESKTOP_MEDIA_QUERY);
@@ -68,8 +79,7 @@ export default function AdminLayout() {
     };
 
     desktopMedia.addEventListener("change", closeMobileNavigation);
-    return () =>
-      desktopMedia.removeEventListener("change", closeMobileNavigation);
+    return () => desktopMedia.removeEventListener("change", closeMobileNavigation);
   }, []);
 
   return (
@@ -118,10 +128,7 @@ export default function AdminLayout() {
             </div>
           </div>
           <div className="flex items-center gap-1">
-            <AdminSearchButton
-              onClick={() => setCommandOpen(true)}
-              className="h-11 w-11"
-            />
+            <AdminSearchButton onClick={() => setCommandOpen(true)} className="h-11 w-11" />
             <ServerActivity className="h-11 w-11" />
           </div>
         </div>
@@ -133,9 +140,7 @@ export default function AdminLayout() {
           onCloseAutoFocus={(event) => {
             if (window.matchMedia(ADMIN_DESKTOP_MEDIA_QUERY).matches) {
               event.preventDefault();
-              document
-                .getElementById("main-content")
-                ?.focus({ preventScroll: true });
+              document.getElementById("main-content")?.focus({ preventScroll: true });
             }
           }}
           className="w-[320px] max-w-[calc(100vw-3rem)] gap-0 border-r-0 p-0 sm:max-w-[320px]"
@@ -196,16 +201,12 @@ function AdminSearchButton({
   className?: string;
   showShortcut?: boolean;
 }) {
-  // Advertised, not hardcoded: the dialog opens on either modifier, so the hint
-  // has to name the one this keyboard actually has.
-  const shortcut = searchShortcutLabel();
-
   return (
     <button
       type="button"
       onClick={onClick}
       aria-label="Search admin sections"
-      title={`Search admin sections (${shortcut})`}
+      title={`Search admin sections (${SEARCH_SHORTCUT_LABEL})`}
       className={cn(
         "text-muted-foreground hover:text-foreground hover:bg-accent/60 focus-visible:ring-ring/60 border-border/70 bg-surface/70 flex h-9 items-center justify-center gap-2 rounded-xl border px-2.5 transition-colors focus-visible:ring-[3px] focus-visible:outline-none",
         className,
@@ -214,11 +215,9 @@ function AdminSearchButton({
       <Search className="h-4 w-4" aria-hidden="true" />
       {showShortcut ? (
         <>
-          <span className="hidden text-[13px] font-medium xl:inline">
-            Search
-          </span>
+          <span className="hidden text-[13px] font-medium xl:inline">Search</span>
           <kbd className="border-border/70 pointer-events-none rounded border px-1.5 py-0.5 font-mono text-[10px] whitespace-nowrap select-none">
-            {shortcut}
+            {SEARCH_SHORTCUT_LABEL}
           </kbd>
         </>
       ) : null}

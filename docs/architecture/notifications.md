@@ -16,6 +16,14 @@ saw it. Availability is a one-way fact: file churn (quality upgrades,
 re-downloads) does not re-notify, and libraries emit no events until their
 initial availability seeding completes.
 
+Availability is recorded when a file links to an episode or item, which can
+happen long after the file arrived: a file can sit in the library unmatched
+until a parser fix or metadata correction. Content added more than 14 days
+before it became available is therefore recorded without a release event. The added time is the catalog's: `episode_libraries.first_seen_at`
+(taken from the earliest linked file) for episodes, and the earliest present
+file in the library for flat items. The window leaves room for new episodes
+whose metadata lands a few days after the file.
+
 Event kinds:
 
 - `episode` — carries series/episode identity and fans out to interested
@@ -31,6 +39,13 @@ batch), or `stale` when the event aged past the fanout staleness horizon
 (extended downtime, fanout disabled for a stretch) — delivering it long after
 the fact would be noise.
 
+Server channels read the event feed directly, suppressed events included, and
+skip a title that a different, still existing library had made available
+before the event: a second copy (a 4K library beside an HD one) is not news
+for a server-wide post. Profile fanout keeps those events. It already deduplicates per episode
+across libraries, and it must still reach profiles that can see only the
+library that got the copy.
+
 The delivery `type` registry (`episode.available`, `webhook.auto_disabled`,
 `request.*`, …) is extensible by construction; clients must render unknown
 types with a generic fallback.
@@ -45,6 +60,35 @@ release event's episode key:
 - `next_up` notifies only when the episode is at or beyond the profile's
   `next_expected_episode_key`.
 - Suppress when `last_notified_episode_key >= episode_key`.
+- `continue_watching` and `next_up` follow Home. The interest recompute
+  clears them for a series the profile removed from that surface:
+  - An active series drop clears both until the profile watches the series
+    again.
+  - A per-card Continue Watching dismissal clears `continue_watching` while
+    the dismissed episode's progress is unchanged. As on Home, an in-progress
+    episode no longer counts once a later episode of the series was completed
+    more recently.
+  - A per-card Next Up dismissal clears `next_up` while the dismissed episode
+    is still the card Home would show: the first episode after the most
+    recently completed one that has a present file and that the profile has
+    not started (by Home's Postgres progress test, or by the profile's own
+    store).
+
+  Favorites and watchlist are unaffected. The progression cursor is kept, so
+  `next_up` resumes from the right episode once a removal lapses. Every
+  removal or restore queues a recompute, and a second one ten minutes later.
+  Resuming playback can lift a removal without changing any progress state,
+  so a progress write queues one too when it is the row's first write since
+  the profile's last Home change on this node, or when it lands more than
+  ten minutes after the row's stamp, by its own stamp or by the clock (a new
+  watch session, or a late import).
+
+  The Home-change marker and the second recompute live in the memory of the
+  node that handled the removal. A resume handled by another node within ten
+  minutes waits for that second recompute, and if the node restarts first,
+  for the daily interest rebuild. A release fanned out in that window is
+  judged on the stale interest. Evaluating Home removals at fanout time would
+  close the gap.
 - Profile-level notification preferences are a hard gate: a reason disabled
   in preferences can never match, so no delivery row is created and no
   channel — including webhooks — ever sees the event. Per-webhook reason
@@ -56,6 +100,20 @@ Deliveries are deduplicated per `(profile, release event)` and, for
 dual-quality library setups notify at most once. Reprocessing an event is
 idempotent.
 
+## Release-event retention
+
+Release events and inbox deliveries have independent lifetimes. Pruning an old
+release event clears `notification_deliveries.release_event_id` through its
+`ON DELETE SET NULL` foreign key and retains the delivery. An `episode.available`
+delivery still requires its `library_id`, `series_id` and `episode_id` snapshot;
+its event reference is optional. Event pruning must not delete inbox rows or
+relax those snapshot requirements.
+
+The constraint repair preserves existing deliveries. Its rollback restores the
+previous constraint only if every episode delivery still has an event reference;
+otherwise PostgreSQL rejects the rollback atomically. It never deletes detached
+inbox rows to make rollback possible.
+
 ## Request notifications
 
 Request lifecycle deliveries (`request.fulfilled`, `request.approved`,
@@ -66,6 +124,16 @@ the title since no catalog item exists yet) rather than the four reason
 booleans. Partial unique indexes per `(profile_id, request_id, type)` make
 the inserts idempotent, and the per-webhook `notify_requests` flag gates the
 webhook channel for them.
+
+Approval is the one transition whose two destinations disagree. Server
+channels see `request.approved` for every approval; the requester only gets a
+`request.approved` delivery when an administrator approved a pending request.
+Auto-approval is the policy answering the requester's own submission, so a
+notice about it is noise. The approval paths that notify say who approved with
+a `requests.ApprovalOrigin`, and the requester notice requires
+`ApprovalOriginAdmin` explicitly: any other origin is skipped, and an
+unrecognized one is logged, so a new policy-driven path cannot reintroduce the
+notice by omission.
 
 ## Outbound webhooks
 
@@ -84,9 +152,11 @@ network position:
 - The destination host must never resolve to a private or special-purpose
   address. The deny set covers the IPv4 private/special ranges (loopback,
   RFC 1918, link-local, CGNAT, TEST-NETs, benchmarking, multicast, reserved)
-  and the IPv6 equivalents (unspecified, loopback, ULA, link-local,
-  documentation, NAT64). IPv4-mapped IPv6 addresses are unwrapped before
-  checking so `::ffff:127.0.0.1` cannot bypass the IPv4 entries.
+  and the IPv6 equivalents (unspecified, loopback, ULA, site-local, link-local,
+  documentation, NAT64, multicast). IPv4-mapped IPv6 addresses are unwrapped
+  before checking so `::ffff:127.0.0.1` cannot bypass the IPv4 entries. The
+  address classes are shared with every other user-supplied destination; see
+  [Outbound address guard](outbound-address-guard.md).
 - The guard runs at registration *and* at connect time (the dialer
   re-validates the resolved address) to defeat DNS rebinding. Redirects are
   bounded and each hop is re-checked.
@@ -132,11 +202,11 @@ reason flags, and the series/episode (or request) content blocks.
 
 Each request is signed with the webhook's per-destination 32-byte secret:
 
-- Headers: `X-Silo-Event`, `X-Silo-Webhook-Id`, `X-Silo-Delivery-Id`,
-  `X-Silo-Timestamp` (Unix epoch seconds), and
-  `X-Silo-Signature: t=<epoch>,v1=<hex-hmac-sha256>` (Stripe's convention,
+- Headers: `X-Prairie-Event`, `X-Prairie-Webhook-Id`, `X-Prairie-Delivery-Id`,
+  `X-Prairie-Timestamp` (Unix epoch seconds), and
+  `X-Prairie-Signature: t=<epoch>,v1=<hex-hmac-sha256>` (Stripe's convention,
   so existing verification libraries work).
-- The HMAC-SHA256 input is `{X-Silo-Timestamp}.{request body bytes}` — the
+- The HMAC-SHA256 input is `{X-Prairie-Timestamp}.{request body bytes}` — the
   literal bytes Silo sends. Receivers verify against the literal bytes they
   received with a constant-time compare and a replay window (~5 minutes); no
   JSON canonicalization is required on either side.

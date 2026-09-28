@@ -1,9 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  countSettingsSearchItems,
-  filterSettingsSearchGroups,
-} from "./settingsSearch";
+import { countSettingsSearchItems, filterSettingsSearchGroups } from "./settingsSearch";
 
 const groups = [
   {
@@ -40,10 +37,7 @@ describe("settingsSearch", () => {
     const filtered = filterSettingsSearchGroups(groups, "");
 
     expect(countSettingsSearchItems(filtered)).toBe(3);
-    expect(filtered.map((group) => group.label)).toEqual([
-      "Server",
-      "Playback",
-    ]);
+    expect(filtered.map((group) => group.label)).toEqual(["Server", "Playback"]);
   });
 
   it("matches item labels, descriptions, and keywords", () => {

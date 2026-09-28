@@ -55,8 +55,7 @@ const useSettingsFormMock = vi.fn((_options?: { keys: string[] }) => ({
   dirtyCount,
   dirtyKeys,
   isDirty: (key: string) => dirtyKeys.includes(key),
-  isClearStaged: (key: string) =>
-    dirtyKeys.includes(key) && (values[key] ?? "") === "",
+  isClearStaged: (key: string) => dirtyKeys.includes(key) && (values[key] ?? "") === "",
   save: mocks.save,
   discard: mocks.discard,
   isSaving: false,
@@ -69,8 +68,7 @@ const useSettingsFormMock = vi.fn((_options?: { keys: string[] }) => ({
 }));
 
 vi.mock("@/hooks/useSettingsForm", () => ({
-  useSettingsForm: (options: { keys: string[] }) =>
-    useSettingsFormMock(options),
+  useSettingsForm: (options: { keys: string[] }) => useSettingsFormMock(options),
 }));
 
 vi.mock("@/hooks/useRestartKeys", () => ({
@@ -92,14 +90,9 @@ vi.mock("sonner", () => ({
 }));
 
 /** Opens a model tile's connect panel. */
-async function openTile(
-  user: ReturnType<typeof userEvent.setup>,
-  name: string,
-) {
+async function openTile(user: ReturnType<typeof userEvent.setup>, name: string) {
   const tile = screen.getByRole("group", { name });
-  await user.click(
-    within(tile).getByRole("button", { name: /Connect|Manage/ }),
-  );
+  await user.click(within(tile).getByRole("button", { name: /Connect|Manage/ }));
   return screen.getByRole("group", { name });
 }
 
@@ -117,9 +110,7 @@ describe("AISettings", () => {
   it("heads the page and groups models and features", () => {
     render(<AISettings />);
 
-    expect(
-      screen.getByRole("heading", { level: 1, name: "AI Services" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "AI Services" })).toBeInTheDocument();
     expect(
       screen.queryByText(
         "Optional language models for subtitle translation, transcription, and descriptions.",
@@ -127,12 +118,8 @@ describe("AISettings", () => {
     ).not.toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Models" })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: "Features" })).toBeInTheDocument();
-    expect(
-      screen.getByRole("group", { name: "Text model" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("group", { name: "Speech-to-text" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Text model" })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: "Speech-to-text" })).toBeInTheDocument();
   });
 
   it("keeps model credentials behind the tile until it is expanded", async () => {
@@ -158,21 +145,40 @@ describe("AISettings", () => {
     render(<AISettings />);
     await openTile(user, "Text model");
 
-    expect(
-      screen.getByDisplayValue("https://legacy.example.test"),
-    ).toBeInTheDocument();
+    expect(screen.getByDisplayValue("https://legacy.example.test")).toBeInTheDocument();
     expect(screen.getByDisplayValue("legacy-chat-model")).toBeInTheDocument();
   });
 
-  it("flags a chat-only endpoint as unable to transcribe", () => {
-    values["ai.base_url"] = "https://openrouter.ai/api";
+  it.each(["shared", "dedicated"])(
+    "allows an OpenRouter %s speech endpoint to be tested and enabled",
+    async (endpoint) => {
+      const user = userEvent.setup();
+      values[endpoint === "shared" ? "ai.base_url" : "ai.asr_base_url"] =
+        "https://openrouter.ai/api/v1";
+      values["ai.asr_model"] = "openai/whisper-large-v3-turbo";
+      mocks.checkConnection.mockResolvedValue({
+        success: true,
+        message: "Timestamped speech received.",
+      });
 
+      render(<AISettings />);
+      expect(screen.queryByText("Cannot transcribe")).not.toBeInTheDocument();
+      expect(screen.getByRole("switch", { name: "Create subtitles from audio" })).toBeEnabled();
+      const tile = await openTile(user, "Speech-to-text");
+      await user.click(within(tile).getByRole("button", { name: "Test speech-to-text" }));
+      expect(mocks.checkConnection).toHaveBeenCalledWith(
+        expect.objectContaining({ kind: "ai_transcription" }),
+      );
+    },
+  );
+
+  it("applies the OpenRouter transcription preset", async () => {
+    const user = userEvent.setup();
     render(<AISettings />);
-
-    expect(screen.getByText("Cannot transcribe")).toBeInTheDocument();
-    expect(
-      screen.getByRole("group", { name: "Speech-to-text" }),
-    ).toHaveAttribute("data-state", "error");
+    await openTile(user, "Speech-to-text");
+    await user.click(screen.getByRole("button", { name: "OpenRouter" }));
+    expect(mocks.setValue).toHaveBeenCalledWith("ai.asr_base_url", "https://openrouter.ai/api/v1");
+    expect(mocks.setValue).toHaveBeenCalledWith("ai.asr_model", "openai/whisper-large-v3-turbo");
   });
 
   it("applies a speech-to-text preset", async () => {
@@ -182,14 +188,8 @@ describe("AISettings", () => {
 
     await user.click(screen.getByRole("button", { name: "Groq - fast" }));
 
-    expect(mocks.setValue).toHaveBeenCalledWith(
-      "ai.asr_base_url",
-      "https://api.groq.com/openai",
-    );
-    expect(mocks.setValue).toHaveBeenCalledWith(
-      "ai.asr_model",
-      "whisper-large-v3-turbo",
-    );
+    expect(mocks.setValue).toHaveBeenCalledWith("ai.asr_base_url", "https://api.groq.com/openai");
+    expect(mocks.setValue).toHaveBeenCalledWith("ai.asr_model", "whisper-large-v3-turbo");
   });
 
   it("forces a tile open while it holds a staged change", () => {
@@ -217,9 +217,9 @@ describe("AISettings", () => {
       "data-expanded",
       "true",
     );
-    expect(
-      screen.getByRole("group", { name: "Speech-to-text" }),
-    ).not.toHaveAttribute("data-expanded");
+    expect(screen.getByRole("group", { name: "Speech-to-text" })).not.toHaveAttribute(
+      "data-expanded",
+    );
   });
 
   it("gives the model panel actions a resting affordance instead of ghost text", async () => {
@@ -227,9 +227,10 @@ describe("AISettings", () => {
     render(<AISettings />);
 
     const tile = await openTile(user, "Text model");
-    expect(
-      within(tile).getByRole("button", { name: "Test text model" }),
-    ).toHaveAttribute("data-variant", "secondary");
+    expect(within(tile).getByRole("button", { name: "Test text model" })).toHaveAttribute(
+      "data-variant",
+      "secondary",
+    );
     expect(within(tile).getByRole("button", { name: "Close" })).toHaveAttribute(
       "data-variant",
       "outline",
@@ -239,31 +240,25 @@ describe("AISettings", () => {
   it("says the features run on demand rather than on a schedule", () => {
     render(<AISettings />);
 
-    expect(
-      screen.getByText(/Nothing here runs on a schedule/),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/Nothing here runs on a schedule/)).toBeInTheDocument();
   });
 
   it("blocks turning on a feature whose model cannot serve it", () => {
-    // A chat-only endpoint cannot transcribe, so speech-to-text is not ready.
-    values["ai.base_url"] = "https://openrouter.ai/api";
+    // Whitespace leaves the speech model unconfigured.
+    values["ai.asr_model"] = " ";
 
     render(<AISettings />);
 
-    expect(
-      screen.getByRole("switch", { name: "Create subtitles from audio" }),
-    ).toBeDisabled();
+    expect(screen.getByRole("switch", { name: "Create subtitles from audio" })).toBeDisabled();
   });
 
   it("still lets an enabled feature be turned off after its model degrades", () => {
-    values["ai.base_url"] = "https://openrouter.ai/api";
+    values["ai.asr_model"] = " ";
     values["subtitle_ai.transcribe_enabled"] = "true";
 
     render(<AISettings />);
 
-    expect(
-      screen.getByRole("switch", { name: "Create subtitles from audio" }),
-    ).toBeEnabled();
+    expect(screen.getByRole("switch", { name: "Create subtitles from audio" })).toBeEnabled();
   });
 
   it("says nothing under a feature whose model is ready", () => {
@@ -275,11 +270,11 @@ describe("AISettings", () => {
   });
 
   it("names the missing model when a feature cannot run", () => {
-    values["ai.base_url"] = "https://openrouter.ai/api";
+    values["ai.asr_model"] = " ";
 
     render(<AISettings />);
 
-    // A chat-only endpoint cannot transcribe, so the speech feature is unmet.
+    // The speech feature needs a configured model.
     expect(screen.getByText("Needs speech-to-text")).toBeInTheDocument();
   });
 
@@ -291,37 +286,25 @@ describe("AISettings", () => {
       name: /Advanced · 6 settings/,
     });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
-    expect(
-      screen.queryByLabelText("Jobs running at once"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByLabelText("Jobs running at once")).not.toBeInTheDocument();
 
     await user.click(toggle);
 
     expect(screen.getByLabelText("Jobs running at once")).toBeInTheDocument();
     // Restart-only keys carry the badge instead of hint text.
-    expect(
-      screen.getAllByLabelText("Takes effect after a server restart").length,
-    ).toBe(1);
+    expect(screen.getAllByLabelText("Takes effect after a server restart").length).toBe(1);
   });
 
   it("separates server-wide tuning from the per-account limit", async () => {
     const user = userEvent.setup();
     render(<AISettings />);
 
-    await user.click(
-      screen.getByRole("button", { name: /Advanced · 6 settings/ }),
-    );
+    await user.click(screen.getByRole("button", { name: /Advanced · 6 settings/ }));
 
+    expect(screen.getByRole("heading", { name: "Server-wide tuning" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Per-account limits" })).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: "Server-wide tuning" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("heading", { name: "Per-account limits" }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(
-        "Counted per login account, shared by every profile on it.",
-      ),
+      screen.getByText("Counted per login account, shared by every profile on it."),
     ).toBeInTheDocument();
   });
 
@@ -333,36 +316,22 @@ describe("AISettings", () => {
 
     // A staged change auto-expands the section so the save bar cannot block on
     // a hidden field.
-    expect(
-      screen.getByRole("button", { name: /Advanced · 6 settings/ }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByLabelText("Subtitle lines per request"),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Advanced · 6 settings/ })).toBeInTheDocument();
+    expect(screen.getByLabelText("Subtitle lines per request")).toBeInTheDocument();
   });
 
   it("offers Unlimited instead of a zero sentinel for the transcription allowance", async () => {
     const user = userEvent.setup();
     render(<AISettings />);
 
-    await user.click(
-      screen.getByRole("button", { name: /Advanced · 6 settings/ }),
-    );
+    await user.click(screen.getByRole("button", { name: /Advanced · 6 settings/ }));
 
     expect(screen.getByRole("checkbox", { name: "Unlimited" })).toBeChecked();
   });
 
   it.each([
-    [
-      "ai.max_concurrent_jobs",
-      "1.5",
-      "Max concurrent jobs must be a positive whole number.",
-    ],
-    [
-      "subtitle_ai.batch_size",
-      "2abc",
-      "Subtitle batch size must be a positive whole number.",
-    ],
+    ["ai.max_concurrent_jobs", "1.5", "Max concurrent jobs must be a positive whole number."],
+    ["subtitle_ai.batch_size", "2abc", "Subtitle batch size must be a positive whole number."],
     [
       "subtitle_ai.context_neighbors",
       "1.5",
@@ -385,20 +354,17 @@ describe("AISettings", () => {
       "1.5",
       "Transcription limit must be zero or a positive whole number.",
     ],
-  ])(
-    "rejects malformed integer input for %s",
-    async (key, malformedValue, message) => {
-      const user = userEvent.setup();
-      dirtyCount = 1;
-      values[key] = malformedValue;
-      render(<AISettings />);
+  ])("rejects malformed integer input for %s", async (key, malformedValue, message) => {
+    const user = userEvent.setup();
+    dirtyCount = 1;
+    values[key] = malformedValue;
+    render(<AISettings />);
 
-      await user.click(screen.getByRole("button", { name: "Save" }));
+    await user.click(screen.getByRole("button", { name: "Save" }));
 
-      expect(mocks.toastError).toHaveBeenCalledWith(message);
-      expect(mocks.save).not.toHaveBeenCalled();
-    },
-  );
+    expect(mocks.toastError).toHaveBeenCalledWith(message);
+    expect(mocks.save).not.toHaveBeenCalled();
+  });
 
   it("runs the text model check against the staged values", async () => {
     const user = userEvent.setup();
@@ -411,9 +377,7 @@ describe("AISettings", () => {
 
     await user.click(screen.getByRole("button", { name: "Test text model" }));
 
-    expect(
-      await screen.findByText(/Text connection verified\./),
-    ).toBeInTheDocument();
+    expect(await screen.findByText(/Text connection verified\./)).toBeInTheDocument();
     expect(mocks.checkConnection).toHaveBeenCalledWith(
       expect.objectContaining({ kind: "ai_chat" }),
     );
@@ -440,9 +404,7 @@ describe("AISettings", () => {
     render(<AISettings />);
     const tile = await openTile(user, "Text model");
 
-    await user.click(
-      within(tile).getByRole("button", { name: "Clear saved value" }),
-    );
+    await user.click(within(tile).getByRole("button", { name: "Clear saved value" }));
 
     // An empty `ai.api_key` falls back to `subtitle_ai.api_key`, so clearing
     // only the modern key would leave the old secret in force.
@@ -466,13 +428,9 @@ describe("AISettings", () => {
       "Will be cleared on save",
     );
     expect(
-      within(tile).getByText(
-        "Save clears the stored value; type to set a new one instead.",
-      ),
+      within(tile).getByText("Save clears the stored value; type to set a new one instead."),
     ).toBeInTheDocument();
-    await user.click(
-      within(tile).getByRole("button", { name: "Keep saved value" }),
-    );
+    await user.click(within(tile).getByRole("button", { name: "Keep saved value" }));
     expect(mocks.resetValue).toHaveBeenCalledWith("ai.asr_api_key");
   });
 });

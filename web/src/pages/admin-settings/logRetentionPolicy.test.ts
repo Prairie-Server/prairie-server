@@ -191,12 +191,7 @@ describe("logRetentionPolicy bucket rows", () => {
   });
 
   it("serializes rows without their editor ids", () => {
-    const rows = updateBucketRow(
-      appendBucketRow([]),
-      "1",
-      "component",
-      "metadata",
-    );
+    const rows = updateBucketRow(appendBucketRow([]), "1", "component", "metadata");
 
     expect(JSON.parse(serializeBucketRows(rows))).toEqual([
       {

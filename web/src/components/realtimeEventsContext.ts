@@ -11,10 +11,7 @@ export interface EventChannelHandlers {
 export interface RealtimeEventsContextValue {
   connectionState: RealtimeConnectionState;
   awaitAdminJob: (jobId: string) => Promise<AdminJob>;
-  subscribeChannel: (
-    channel: EventChannel,
-    handlers?: EventChannelHandlers,
-  ) => () => void;
+  subscribeChannel: (channel: EventChannel, handlers?: EventChannelHandlers) => () => void;
 }
 
 export const RealtimeEventsContext = createContext<RealtimeEventsContextValue>({
@@ -29,14 +26,8 @@ export function useRealtimeEvents() {
   return useContext(RealtimeEventsContext);
 }
 
-export function useEventChannel(
-  channel: EventChannel,
-  handlers?: EventChannelHandlers,
-) {
+export function useEventChannel(channel: EventChannel, handlers?: EventChannelHandlers) {
   const { subscribeChannel } = useRealtimeEvents();
 
-  useEffect(
-    () => subscribeChannel(channel, handlers),
-    [channel, handlers, subscribeChannel],
-  );
+  useEffect(() => subscribeChannel(channel, handlers), [channel, handlers, subscribeChannel]);
 }

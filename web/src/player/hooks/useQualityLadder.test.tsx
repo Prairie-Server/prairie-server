@@ -2,10 +2,7 @@ import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { PlayerConfigProvider } from "../context/PlayerConfigContext";
-import {
-  __resetQualityLadderCache,
-  useQualityLadder,
-} from "./useQualityLadder";
+import { __resetQualityLadderCache, useQualityLadder } from "./useQualityLadder";
 
 const playerFetch = vi.fn();
 vi.mock("../player-fetch", () => ({
@@ -19,11 +16,7 @@ const config = {
 };
 
 function wrapper({ children }: { children: ReactNode }) {
-  return (
-    <PlayerConfigProvider config={config as never}>
-      {children}
-    </PlayerConfigProvider>
-  );
+  return <PlayerConfigProvider config={config as never}>{children}</PlayerConfigProvider>;
 }
 
 function render() {

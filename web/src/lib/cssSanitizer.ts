@@ -13,7 +13,7 @@ const AT_IMPORT_RE = /@import\s+(?:url\(.*?\)|['"].*?['"])[^;]*;?/gi;
 
 function stripCssComments(css: string): string {
   let out = "";
-  for (let i = 0; i < css.length;) {
+  for (let i = 0; i < css.length; ) {
     if (css[i] === "/" && css[i + 1] === "*") {
       const end = css.indexOf("*/", i + 2);
       if (end < 0) break;
@@ -28,7 +28,7 @@ function stripCssComments(css: string): string {
 
 function unescapeCss(value: string): string {
   let out = "";
-  for (let i = 0; i < value.length;) {
+  for (let i = 0; i < value.length; ) {
     if (value[i] !== "\\" || i + 1 >= value.length) {
       out += value[i];
       i += 1;
@@ -44,8 +44,7 @@ function unescapeCss(value: string): string {
       const code = Number.parseInt(value.slice(i + 1, j), 16);
       if (Number.isFinite(code)) {
         // CSS allows escapes beyond Unicode; fromCodePoint throws above U+10FFFF.
-        out +=
-          code >= 0 && code <= 0x10ffff ? String.fromCodePoint(code) : "\uFFFD";
+        out += code >= 0 && code <= 0x10ffff ? String.fromCodePoint(code) : "\uFFFD";
       }
       if (j < value.length && /[ \t\n\r\f]/.test(value[j]!)) j += 1;
       i = j;
@@ -67,8 +66,7 @@ function isSafeUrl(urlContent: string): boolean {
   if (trimmed.startsWith("/") && !trimmed.startsWith("//")) return true;
   if (trimmed.startsWith("#")) return true;
   // Relative paths (no scheme) are fine — they resolve to the same origin
-  if (!/^[a-z][a-z0-9+.-]*:/i.test(trimmed) && !trimmed.startsWith("//"))
-    return true;
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(trimmed) && !trimmed.startsWith("//")) return true;
   return false;
 }
 

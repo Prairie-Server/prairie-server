@@ -1,13 +1,10 @@
-import { useMemo, useState } from "react";
+import { useAdminCollectionCapabilities } from "@/hooks/queries/admin/collections";
+import { useMemo, useRef, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { GripVertical, Loader2, Plus, Search, Trash2 } from "lucide-react";
 
 import { DndContext } from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  useSortable,
-} from "@dnd-kit/sortable";
+import { SortableContext, verticalListSortingStrategy, useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 
 import type { BrowseItem, CollectionItem } from "@/api/types";
@@ -17,13 +14,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   useAddItemToCollection,
   useCollectionItems,
+  useCollectionCapabilities,
+  useCollectionItemOrderSnapshot,
   useRemoveCollectionItem,
   useReorderCollectionItems,
 } from "@/hooks/queries/collections";
-import {
-  createCatalogSearchState,
-  fetchCatalogPage,
-} from "@/hooks/queries/catalog";
+import { createCatalogSearchState, fetchCatalogPage } from "@/hooks/queries/catalog";
 import { catalogKeys } from "@/hooks/queries/keys";
 import { useSortableList } from "@/hooks/useSortableList";
 import { useDebounce } from "@/hooks/useDebounce";
@@ -71,8 +67,7 @@ function AddItemPanel({
         offset: 0,
       }),
     ],
-    queryFn: ({ signal }) =>
-      fetchCatalogPage(searchState, SEARCH_LIMIT, 0, { signal }),
+    queryFn: ({ signal }) => fetchCatalogPage(searchState, SEARCH_LIMIT, 0, { signal }),
     enabled: debounced.length > 0,
     staleTime: 30 * 1000,
   });
@@ -96,6 +91,13 @@ function AddItemPanel({
           <Loader2 className="h-4 w-4 animate-spin" />
           Searching…
         </div>
+      ) : results.isError ? (
+        <div role="alert" className="space-y-2 text-sm">
+          <p>Could not load search results.</p>
+          <Button variant="outline" onClick={() => void results.refetch()}>
+            Retry search
+          </Button>
+        </div>
       ) : items.length === 0 ? (
         <div className="text-muted-foreground border-border/60 rounded-md border border-dashed px-3 py-3 text-sm">
           No matches.
@@ -105,10 +107,7 @@ function AddItemPanel({
           {items.map((item) => {
             const already = existingIds.has(item.content_id);
             return (
-              <li
-                key={item.content_id}
-                className="flex items-center gap-3 px-3 py-2"
-              >
+              <li key={item.content_id} className="flex items-center gap-3 px-3 py-2">
                 {item.poster_url ? (
                   <img
                     src={item.poster_url}
@@ -119,9 +118,7 @@ function AddItemPanel({
                   <div className="bg-muted h-10 w-10 shrink-0 rounded" />
                 )}
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-medium">
-                    {item.title}
-                  </div>
+                  <div className="truncate text-sm font-medium">{item.title}</div>
                   <div className="text-muted-foreground text-xs">
                     {item.year ? `${item.year} · ` : ""}
                     {item.type}
@@ -157,19 +154,42 @@ export function ManualCollectionItemsEditor({
   readOnly = false,
   source = "user",
 }: ManualCollectionItemsEditorProps) {
-  const { data, isLoading } = useCollectionItems(collectionId);
-  const items = useMemo(() => data ?? [], [data]);
-  const reorderMutation = useReorderCollectionItems(collectionId);
-  const removeMutation = useRemoveCollectionItem(collectionId);
-  const existingIds = useMemo(
-    () => new Set(items.map((i) => i.media_item_id)),
-    [items],
+  const [page, setPage] = useState({ collectionId, cursor: "" });
+  const cursor = page.collectionId === collectionId ? page.cursor : "";
+  const { data, isLoading, error, refetch } = useCollectionItems(collectionId, cursor, source);
+  const items = useMemo(() => data?.items ?? [], [data]);
+  const personalCapabilities = useCollectionCapabilities();
+  const adminCapabilities = useAdminCollectionCapabilities(source === "library");
+  const capabilities = source === "user" ? personalCapabilities.data : adminCapabilities.data;
+  const { data: orderSnapshot } = useCollectionItemOrderSnapshot(
+    collectionId,
+    capabilities?.item_reorder === true,
+    source,
   );
+  const dragOrder = useRef<typeof orderSnapshot>(undefined);
+  const sameOrder =
+    !!orderSnapshot &&
+    orderSnapshot.ordered_ids.length === items.length &&
+    orderSnapshot.ordered_ids.every((id, index) => id === items[index]?.media_item_id);
+  const canReorder =
+    !readOnly &&
+    capabilities?.item_reorder === true &&
+    sameOrder &&
+    !orderSnapshot?.has_more &&
+    !cursor &&
+    data?.page?.has_more === false;
+  const restart = () => setPage({ collectionId, cursor: "" });
+  const reorderMutation = useReorderCollectionItems(collectionId, source);
+  const removeMutation = useRemoveCollectionItem(collectionId, source);
+  const existingIds = useMemo(() => new Set(items.map((i) => i.media_item_id)), [items]);
 
   const { sensors, collisionDetection, handleDragEnd } = useSortableList(
     items,
     (item) => item.media_item_id,
-    (orderedIds) => reorderMutation.mutate(orderedIds),
+    (orderedIds) => {
+      if (canReorder && dragOrder.current)
+        reorderMutation.mutate({ orderedIds, etag: dragOrder.current.etag });
+    },
   );
 
   if (isLoading) {
@@ -185,13 +205,22 @@ export function ManualCollectionItemsEditor({
   return (
     <div className="space-y-4">
       {!readOnly && (
-        <AddItemPanel
-          collectionId={collectionId}
-          source={source}
-          existingIds={existingIds}
-        />
+        <AddItemPanel collectionId={collectionId} source={source} existingIds={existingIds} />
       )}
-      {items.length === 0 ? (
+      {error ? (
+        <div role="alert" className="space-y-2 text-sm">
+          <p>{error instanceof Error ? error.message : "Could not load collection items."}</p>
+          <Button
+            variant="outline"
+            onClick={() => {
+              restart();
+              void refetch();
+            }}
+          >
+            Reload from start
+          </Button>
+        </div>
+      ) : items.length === 0 ? (
         <div className="text-muted-foreground rounded-lg border border-dashed px-4 py-5 text-sm">
           No items yet. Search above to add titles.
         </div>
@@ -199,7 +228,10 @@ export function ManualCollectionItemsEditor({
         <DndContext
           sensors={sensors}
           collisionDetection={collisionDetection}
-          onDragEnd={readOnly ? undefined : handleDragEnd}
+          onDragStart={() => {
+            dragOrder.current = orderSnapshot;
+          }}
+          onDragEnd={canReorder ? handleDragEnd : undefined}
         >
           <SortableContext
             items={items.map((item) => item.media_item_id)}
@@ -212,12 +244,35 @@ export function ManualCollectionItemsEditor({
                   item={item}
                   index={index}
                   readOnly={readOnly}
-                  onRemove={() => removeMutation.mutate(item.media_item_id)}
+                  canReorder={canReorder}
+                  onRemove={() => removeMutation.mutate(item.media_item_id, { onSuccess: restart })}
                 />
               ))}
             </div>
           </SortableContext>
         </DndContext>
+      )}
+      {(cursor || data?.page?.has_more) && (
+        <div className="space-y-2">
+          {!readOnly && (
+            <p className="text-muted-foreground text-sm">
+              Showing up to 200 items. Reordering is available when the complete collection fits on
+              one page.
+            </p>
+          )}
+          <div className="flex gap-2">
+            <Button variant="outline" disabled={!cursor} onClick={restart}>
+              First page
+            </Button>
+            <Button
+              variant="outline"
+              disabled={!data?.page?.has_more || !data.page?.next_cursor}
+              onClick={() => setPage({ collectionId, cursor: data?.page?.next_cursor ?? "" })}
+            >
+              Next page
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );
@@ -227,23 +282,19 @@ function SortableItemRow({
   item,
   index,
   readOnly,
+  canReorder,
   onRemove,
 }: {
-  item: CollectionItem;
+  item: Pick<CollectionItem, "collection_id" | "media_item_id" | "position"> & { title?: string };
   index: number;
   readOnly: boolean;
+  canReorder: boolean;
   onRemove: () => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useSortable({
+  const label = item.title || item.media_item_id;
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: item.media_item_id,
-    disabled: readOnly,
+    disabled: !canReorder,
   });
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
@@ -257,10 +308,10 @@ function SortableItemRow({
       style={style}
       className="surface-panel-subtle flex items-center gap-3 rounded-xl px-3 py-2"
     >
-      {!readOnly ? (
+      {canReorder ? (
         <button
           type="button"
-          aria-label={`Drag item ${item.media_item_id}`}
+          aria-label={`Drag item ${label}`}
           className="hover:bg-surface-hover cursor-grab touch-none rounded-md p-1 transition-colors"
           {...attributes}
           {...listeners}
@@ -271,15 +322,13 @@ function SortableItemRow({
       <span className="text-muted-foreground w-8 shrink-0 text-right text-xs tabular-nums">
         {index + 1}
       </span>
-      <code className="text-muted-foreground min-w-0 flex-1 truncate text-xs">
-        {item.media_item_id}
-      </code>
+      <code className="text-muted-foreground min-w-0 flex-1 truncate text-xs">{label}</code>
       {!readOnly ? (
         <Button
           variant="ghost"
           size="icon"
           className="text-destructive hover:bg-destructive/10 hover:text-destructive h-7 w-7"
-          aria-label={`Remove item ${item.media_item_id}`}
+          aria-label={`Remove item ${label}`}
           onClick={onRemove}
         >
           <Trash2 className="h-3 w-3" />

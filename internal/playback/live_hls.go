@@ -298,7 +298,7 @@ func liveFallbackLadder(opts LiveHLSOpts) []LiveHLSOpts {
 	if !opts.transcodesVideo() {
 		return ladder
 	}
-	hwAccel := ResolveHWAccelWithFFmpeg(opts.HWAccel, opts.FFmpegPath)
+	hwAccel := ResolveHWAccelWithFFmpeg(opts.HWAccel, opts.FFmpegPath, opts.HWDevice)
 	if hwAccel == "" || hwAccel == "none" {
 		return ladder
 	}

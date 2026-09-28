@@ -9,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prairie-server/prairie-server/internal/activitylog"
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/userstore"
@@ -137,6 +138,10 @@ func (a *AdminAPIKeyAuthenticator) authenticate(r *http.Request) adminAPIKeyAuth
 	apiKey, _, res := a.validate(r.Context(), token)
 	if !res.ok {
 		return res
+	}
+	if lc := activitylog.GetLogContext(r.Context()); lc != nil {
+		uid := apiKey.UserID
+		lc.UserID = &uid
 	}
 	a.apiKeyLastUsed.Touch(apiKey.ID)
 	return adminAPIKeyAuthResult{

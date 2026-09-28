@@ -36,6 +36,24 @@ const schema: PluginConfigSchema = {
 };
 
 describe("PluginConfigForm secrets", () => {
+  it("leaves the title and border to the page panel when bare", () => {
+    const schema = {
+      key: "account",
+      title: "Account title",
+      description: "Account description",
+      json_schema: JSON.stringify({ type: "object", properties: { token: { type: "string" } } }),
+      required: false,
+    };
+    const { container, rerender } = render(<PluginConfigForm schema={schema} onSave={vi.fn()} />);
+    expect(screen.getByText("Account title")).toBeInTheDocument();
+    expect(container.querySelector("fieldset")).toHaveClass("border");
+
+    rerender(<PluginConfigForm bare schema={schema} onSave={vi.fn()} />);
+    expect(screen.queryByText("Account title")).not.toBeInTheDocument();
+    expect(screen.queryByText("Account description")).not.toBeInTheDocument();
+    expect(container.querySelector("fieldset")).not.toHaveClass("border");
+  });
+
   it("derives a form when a plugin only supplies JSON Schema", () => {
     render(
       <PluginConfigForm
@@ -57,10 +75,7 @@ describe("PluginConfigForm secrets", () => {
     );
 
     expect(screen.getByLabelText("Base URL")).toBeInTheDocument();
-    expect(screen.getByLabelText("Api Key")).toHaveAttribute(
-      "type",
-      "password",
-    );
+    expect(screen.getByLabelText("Api Key")).toHaveAttribute("type", "password");
   });
 
   it("shows redacted saved state and only clears through an explicit action", async () => {
@@ -87,9 +102,7 @@ describe("PluginConfigForm secrets", () => {
       [],
     );
 
-    await userEvent.click(
-      screen.getByRole("button", { name: "Clear saved secret" }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Clear saved secret" }));
     await userEvent.click(screen.getByRole("button", { name: "Save config" }));
     expect(onSave).toHaveBeenLastCalledWith(
       "account",
@@ -118,9 +131,7 @@ describe("PluginConfigForm secrets", () => {
     );
 
     expect(screen.getByText("API Key: saved (required)")).toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Clear saved secret" }),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: "Clear saved secret" })).not.toBeInTheDocument();
   });
 
   it("keeps the submitted snapshot immutable while a save is pending", () => {
@@ -136,9 +147,7 @@ describe("PluginConfigForm secrets", () => {
 
     expect(screen.getByLabelText("Region")).toBeDisabled();
     expect(screen.getByRole("button", { name: "Save config" })).toBeDisabled();
-    expect(
-      screen.getByRole("button", { name: "Clear saved secret" }),
-    ).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Clear saved secret" })).toBeDisabled();
   });
 
   it("tests the exact draft including staged secret removals", async () => {
@@ -156,17 +165,11 @@ describe("PluginConfigForm secrets", () => {
       />,
     );
 
-    await userEvent.click(
-      screen.getByRole("button", { name: "Clear saved secret" }),
-    );
-    await userEvent.click(
-      screen.getByRole("button", { name: "Check Connection" }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: "Clear saved secret" }));
+    await userEvent.click(screen.getByRole("button", { name: "Check Connection" }));
 
-    expect(onTest).toHaveBeenCalledWith(
-      "account",
-      expect.objectContaining({ region: "us-east" }),
-      ["api_key"],
-    );
+    expect(onTest).toHaveBeenCalledWith("account", expect.objectContaining({ region: "us-east" }), [
+      "api_key",
+    ]);
   });
 });

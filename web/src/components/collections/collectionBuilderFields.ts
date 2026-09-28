@@ -1,8 +1,6 @@
+import type { PersonalizedSorts } from "@/lib/querySortOptions";
 import type { QuerySort } from "@/api/types";
-import {
-  getQuerySortOptions,
-  type QuerySortRelevanceScope,
-} from "@/lib/querySortOptions";
+import { getQuerySortOptions, type QuerySortRelevanceScope } from "@/lib/querySortOptions";
 
 export interface CollectionOperatorOption {
   value: string;
@@ -263,15 +261,13 @@ export const COLLECTION_FIELD_OPTIONS: CollectionFieldOption[] = [
 ];
 
 export function getCollectionSortOptions(
-  includePersonalized = false,
+  includePersonalized: PersonalizedSorts = false,
   relevanceScope?: QuerySortRelevanceScope,
 ): Array<{ value: QuerySort["field"]; label: string }> {
-  return getQuerySortOptions({ includePersonalized, relevanceScope }).map(
-    (option) => ({
-      value: option.value,
-      label: option.label,
-    }),
-  );
+  return getQuerySortOptions({ includePersonalized, relevanceScope }).map((option) => ({
+    value: option.value,
+    label: option.label,
+  }));
 }
 
 export const COLLECTION_SORT_OPTIONS: Array<{
@@ -279,11 +275,7 @@ export const COLLECTION_SORT_OPTIONS: Array<{
   label: string;
 }> = getCollectionSortOptions(false);
 
-export function getCollectionFieldOption(
-  field: string,
-): CollectionFieldOption | undefined {
+export function getCollectionFieldOption(field: string): CollectionFieldOption | undefined {
   const normalizedField = field === "rating" ? "rating_imdb" : field;
-  return COLLECTION_FIELD_OPTIONS.find(
-    (option) => option.value === normalizedField,
-  );
+  return COLLECTION_FIELD_OPTIONS.find((option) => option.value === normalizedField);
 }

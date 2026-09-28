@@ -8,8 +8,8 @@ import (
 )
 
 func TestImageCacheLeaseDurationIsBounded(t *testing.T) {
-	if imageCacheLeaseDuration != 15*time.Minute {
-		t.Fatalf("imageCacheLeaseDuration = %s, want 15m", imageCacheLeaseDuration)
+	if ImageCacheLeaseDuration != 15*time.Minute {
+		t.Fatalf("ImageCacheLeaseDuration = %s, want 15m", ImageCacheLeaseDuration)
 	}
 	body, err := os.ReadFile("image_cache_job_repo.go")
 	if err != nil {

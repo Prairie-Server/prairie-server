@@ -95,7 +95,7 @@ func ffmpegHasDecoder(ffmpegPath, decoder string) bool {
 		return cached
 	}
 
-	output, err := runFFmpegProbe(context.Background(), nvencProbeCommandTimeout, ffmpegPath, "-hide_banner", "-decoders")
+	output, err := runFFmpegProbe(context.Background(), hwProbeCommandTimeout, ffmpegPath, "-hide_banner", "-decoders")
 	available := err == nil && ffmpegOutputHasToken(output, decoder)
 
 	decoderProbeCache.Lock()

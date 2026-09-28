@@ -20,12 +20,9 @@ vi.mock("@/playback/watchPlaybackContext", () => ({
   useWatchPlaybackController: () => ({ startPlayback: () => {} }),
 }));
 
-const STILL_URL =
-  "/artwork/tv/series-1/ep-1/still/w500.4.webp?sig=abc&expires=99";
-const PHOTO_URL =
-  "/artwork/people/person-1/profile/w500.2.webp?sig=abc&expires=99";
-const POSTER_URL =
-  "/artwork/tmdb/movie/856/poster/w500.7.webp?sig=abc&expires=99";
+const STILL_URL = "/artwork/tv/series-1/ep-1/still/w500.4.webp?sig=abc&expires=99";
+const PHOTO_URL = "/artwork/people/person-1/profile/w500.2.webp?sig=abc&expires=99";
+const POSTER_URL = "/artwork/tmdb/movie/856/poster/w500.7.webp?sig=abc&expires=99";
 
 /**
  * These images used to be plain <img src> tags pinned to whatever rung the
@@ -155,8 +152,7 @@ describe("artwork rung wiring", () => {
               content_id: "movie-856",
               type: "movie",
               title: "Arrival",
-              backdrop_url:
-                "/artwork/tmdb/movie/856/backdrop/w1280.7.webp?sig=abc&expires=99",
+              backdrop_url: "/artwork/tmdb/movie/856/backdrop/w1280.7.webp?sig=abc&expires=99",
               poster_url: POSTER_URL,
             } as never
           }

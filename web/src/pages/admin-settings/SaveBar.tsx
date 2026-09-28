@@ -6,6 +6,7 @@ interface SaveBarProps {
   onSave: () => void;
   onDiscard: () => void;
   isSaving: boolean;
+  saveLabel?: string;
 }
 
 function plural(count: number, word: string) {
@@ -24,6 +25,7 @@ export function SaveBar({
   onSave,
   onDiscard,
   isSaving,
+  saveLabel = "Save",
 }: SaveBarProps) {
   if (dirtyCount <= 0) return null;
 
@@ -51,21 +53,16 @@ export function SaveBar({
             {plural(dirtyCount, "unsaved change")}
           </span>
           <span className="flex shrink-0 items-center gap-1.5">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="rounded-full"
-              onClick={onDiscard}
-            >
+            <Button variant="ghost" size="sm" className="rounded-full" onClick={onDiscard}>
               Discard
             </Button>
             <Button
               size="sm"
-              onClick={onSave}
+              onClick={() => onSave()}
               disabled={isSaving}
               className="rounded-full bg-[var(--settings-accent)] text-[#15151a] hover:bg-[var(--settings-accent)] hover:brightness-110"
             >
-              {isSaving ? "Saving..." : "Save"}
+              {isSaving ? "Saving..." : saveLabel}
             </Button>
           </span>
         </div>

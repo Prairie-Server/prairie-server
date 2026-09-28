@@ -37,7 +37,11 @@ export type ThemeToken =
   | "font-body";
 
 export type TokenGroup =
-  "Surfaces" | "Interactive" | "Sidebar" | "Borders & Focus" | "Shape & Font";
+  | "Surfaces"
+  | "Interactive"
+  | "Sidebar"
+  | "Borders & Focus"
+  | "Shape & Font";
 
 export type TokenInputType = "color" | "radius" | "font";
 
@@ -240,14 +244,13 @@ export const THEME_TOKENS: TokenMeta[] = [
 ];
 
 /** Tokens grouped by category for the editor UI. */
-export const TOKEN_GROUPS: Record<TokenGroup, TokenMeta[]> =
-  THEME_TOKENS.reduce(
-    (acc, meta) => {
-      (acc[meta.group] ??= []).push(meta);
-      return acc;
-    },
-    {} as Record<TokenGroup, TokenMeta[]>,
-  );
+export const TOKEN_GROUPS: Record<TokenGroup, TokenMeta[]> = THEME_TOKENS.reduce(
+  (acc, meta) => {
+    (acc[meta.group] ??= []).push(meta);
+    return acc;
+  },
+  {} as Record<TokenGroup, TokenMeta[]>,
+);
 
 /** Token group display order. */
 export const TOKEN_GROUP_ORDER: TokenGroup[] = [
@@ -258,18 +261,27 @@ export const TOKEN_GROUP_ORDER: TokenGroup[] = [
   "Shape & Font",
 ];
 
-/** Available font families from the loaded Google Fonts. */
-export const AVAILABLE_FONTS = [
-  "Sora",
-  "Fraunces",
-  "Outfit",
-  "Urbanist",
-  "Manrope",
-];
+/** Available font families, self-hosted by fonts.css. */
+export const AVAILABLE_FONTS = ["Sora", "Fraunces", "Outfit", "Urbanist", "Manrope"];
 
 /** Read the current computed value of a CSS custom property from the DOM. */
 export function getComputedToken(token: ThemeToken): string {
-  return getComputedStyle(document.documentElement)
-    .getPropertyValue(`--${token}`)
-    .trim();
+  return getComputedStyle(document.documentElement).getPropertyValue(`--${token}`).trim();
+}
+
+/** Per-token overrides layered on the Cinema Dark base, keyed by token name. */
+export type ThemeVarOverrides = Partial<Record<ThemeToken, string>>;
+
+/** Largest custom CSS the admin editor accepts. */
+export const MAX_CSS_SIZE = 64 * 1024; // 64 KB
+
+/** Parse a JSON string into a ThemeVarOverrides map. Returns empty object on failure. */
+export function parseVarsJson(raw: string | null | undefined): ThemeVarOverrides {
+  if (!raw) return {};
+  try {
+    const parsed = JSON.parse(raw);
+    return typeof parsed === "object" && parsed !== null ? parsed : {};
+  } catch {
+    return {};
+  }
 }

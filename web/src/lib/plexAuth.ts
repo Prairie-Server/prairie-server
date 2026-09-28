@@ -89,9 +89,7 @@ function buildPlexHeaders(token?: string): Record<string, string> {
 async function readJSON<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const body = (await response.text()).trim();
-    throw new Error(
-      body || `Plex request failed with status ${response.status}`,
-    );
+    throw new Error(body || `Plex request failed with status ${response.status}`);
   }
   return (await response.json()) as T;
 }
@@ -122,10 +120,7 @@ export function buildPlexAuthURL(pinCode: string, forwardURL: string): string {
   return `${PLEX_AUTH_BASE_URL}${params.toString()}`;
 }
 
-export async function checkPlexPin(
-  pinID: number,
-  pinCode: string,
-): Promise<string | null> {
+export async function checkPlexPin(pinID: number, pinCode: string): Promise<string | null> {
   const url = new URL(`${PLEX_TV_BASE_URL}/api/v2/pins/${pinID}`);
   url.searchParams.set("code", pinCode);
   const response = await fetch(url.toString(), {
@@ -136,9 +131,7 @@ export async function checkPlexPin(
   return result.authToken;
 }
 
-export async function listPlexResources(
-  token: string,
-): Promise<BrowserPlexServer[]> {
+export async function listPlexResources(token: string): Promise<BrowserPlexServer[]> {
   const response = await fetch(
     `${PLEX_TV_BASE_URL}/api/v2/resources?includeHttps=1&includeRelay=1`,
     {

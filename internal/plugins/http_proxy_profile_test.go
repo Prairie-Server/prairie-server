@@ -83,8 +83,8 @@ func TestHTTPProxyUsesLaunchProfileWithoutRequestHeader(t *testing.T) {
 	if themes.profileID != "profile-1" || identities.profileID != "profile-1" {
 		t.Fatalf("lookup profiles = theme %q identity %q", themes.profileID, identities.profileID)
 	}
-	if client.request == nil || client.request.Headers["X-Silo-Theme"] != "dark" ||
-		client.request.Headers["X-Silo-Profile-Name"] != "Living Room" {
+	if client.request == nil || client.request.Headers["X-Prairie-Theme"] != "dark" ||
+		client.request.Headers["X-Prairie-Profile-Name"] != "Living Room" {
 		t.Fatalf("forwarded request = %#v", client.request)
 	}
 }

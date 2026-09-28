@@ -38,7 +38,6 @@ func TestBuiltinCatalog(t *testing.T) {
 
 func TestBuiltinTemplatePosterAssetsExist(t *testing.T) {
 	assetRoot := filepath.Join("..", "..", "..", "web", "public", "images", "collection-templates")
-	rawRoot := filepath.Join(assetRoot, "raw")
 
 	for _, tmpl := range List() {
 		t.Run(tmpl.ID, func(t *testing.T) {
@@ -47,7 +46,22 @@ func TestBuiltinTemplatePosterAssetsExist(t *testing.T) {
 					t.Fatalf("poster sibling %s missing: %v", tmpl.ID+ext, err)
 				}
 			}
-			if _, err := os.Stat(filepath.Join(rawRoot, tmpl.ID+".png")); err != nil {
+		})
+	}
+}
+
+func TestBuiltinTemplateSourcePlatesStayOutOfPublicAssets(t *testing.T) {
+	webRoot := filepath.Join("..", "..", "..", "web")
+	sourceRoot := filepath.Join(webRoot, "assets-source", "collection-templates", "raw")
+	publicRoot := filepath.Join(webRoot, "public", "images", "collection-templates", "raw")
+
+	if _, err := os.Stat(publicRoot); !os.IsNotExist(err) {
+		t.Fatalf("raw poster plates must not be public assets: %v", err)
+	}
+
+	for _, tmpl := range List() {
+		t.Run(tmpl.ID, func(t *testing.T) {
+			if _, err := os.Stat(filepath.Join(sourceRoot, tmpl.ID+".png")); err != nil {
 				t.Fatalf("raw poster plate missing: %v", err)
 			}
 		})

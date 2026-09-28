@@ -1,0 +1,15 @@
+{
+  "revision": "07339030c407772196893586b386fa71e153b3411b0676b3d215496101353060",
+  "state": "available",
+  "allowed": false,
+  "staged_selection": true,
+  "lobby_ready": true,
+  "connection_replaced": true,
+  "selection_mode_switch": true,
+  "member_state": true,
+  "picker": true,
+  "vote_host_override": true,
+  "stop_playback": true,
+  "max_member_state_ids": 200,
+  "socket_protocol": "prairie.room.v2"
+}

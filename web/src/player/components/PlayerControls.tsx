@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useLayoutEffect, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import {
   Info,
   ListVideo,
@@ -10,6 +10,7 @@ import {
   Play,
   RotateCcw,
   RotateCw,
+  Scaling,
   SkipBack,
   SkipForward,
   Tags,
@@ -29,6 +30,7 @@ import type {
   PlayerChapter,
   PlayerSubtitleInfo,
   QualityOption,
+  VideoFitMode,
 } from "../types";
 import type { VersionInfo } from "./QualityMenu";
 import type { PlayerConfig } from "../context/PlayerConfigContext";
@@ -36,6 +38,10 @@ import { useCoarsePointer } from "../hooks/useCoarsePointer";
 import { PlayerMenuSurface } from "./PlayerMenuSurface";
 
 interface PlayerControlsProps {
+  /** The profile's rewind/fast-forward intervals, shown on the transport buttons. */
+  skipSeconds: { back: number; forward: number };
+  /** Directional skips; the player owns the timeline math (offsets, pending seeks). */
+  onSkip: { back: () => void; forward: () => void };
   // Visibility
   visible: boolean;
   // Video state
@@ -49,26 +55,26 @@ interface PlayerControlsProps {
   // Marker editing
   editing?: boolean;
   activeEditKind?: MarkerKind | null;
-  onRegionEdgeChange?: (
-    kind: MarkerKind,
-    edge: "start" | "end",
-    seconds: number,
-  ) => void;
+  onRegionEdgeChange?: (kind: MarkerKind, edge: "start" | "end", seconds: number) => void;
   markerEditAvailable?: boolean;
   markerEditActive?: boolean;
   onToggleMarkerEdit?: () => void;
   volume: number;
   muted: boolean;
   isFullscreen: boolean;
+  videoFit: VideoFitMode;
+  onVideoFitToggle: () => void;
   // Subtitles
   subtitleTracks: PlayerSubtitleInfo[];
   activeSubtitleIndex: number | null;
   onSubtitleSelect: (index: number | null) => void;
   subtitleDelayMs: number;
   onSubtitleDelayChange: (ms: number) => void;
+  preferredSubtitleLanguage?: string | null;
   mediaFileId?: number;
   playerConfig?: PlayerConfig;
   onRefreshSubtitles?: () => void;
+  onSubtitleJobAccepted?: (jobId: string) => void;
   sessionId?: string;
   getSubtitleStartPosition?: () => number;
   // Audio
@@ -83,6 +89,7 @@ interface PlayerControlsProps {
   onQualitySelect: (id: string) => void;
   // Version switching
   versions?: VersionInfo[];
+  versionLocked?: boolean;
   onSwitchVersion?: (fileId: number) => void;
   // PiP
   onTogglePiP?: () => void;
@@ -103,14 +110,13 @@ interface PlayerControlsProps {
   onVolumeChange: (volume: number) => void;
   onMutedChange: (muted: boolean) => void;
   onFullscreenToggle: () => void;
-  onSurfaceTap?: () => void;
+  onSurfaceTap?: (event: MouseEvent<HTMLElement>) => void;
 }
 
 /** Skip amount for the ±seconds buttons, matching keyboard shortcuts. */
-export const SKIP_BACK_SECONDS = 10;
-export const SKIP_FORWARD_SECONDS = 30;
-
 export function PlayerControls({
+  skipSeconds,
+  onSkip,
   visible,
   playing,
   currentTime,
@@ -127,14 +133,18 @@ export function PlayerControls({
   volume,
   muted,
   isFullscreen,
+  videoFit,
+  onVideoFitToggle,
   subtitleTracks,
   activeSubtitleIndex,
   onSubtitleSelect,
   subtitleDelayMs,
   onSubtitleDelayChange,
+  preferredSubtitleLanguage,
   mediaFileId,
   playerConfig,
   onRefreshSubtitles,
+  onSubtitleJobAccepted,
   sessionId,
   getSubtitleStartPosition,
   audioTracks,
@@ -146,6 +156,7 @@ export function PlayerControls({
   qualityError,
   onQualitySelect,
   versions,
+  versionLocked,
   onSwitchVersion,
   onTogglePiP,
   showPlaybackInfo,
@@ -164,16 +175,31 @@ export function PlayerControls({
   onSurfaceTap,
 }: PlayerControlsProps) {
   const isCoarsePointer = useCoarsePointer();
+  const controlsRef = useRef<HTMLDivElement>(null);
+  const [narrowPlayer, setNarrowPlayer] = useState(false);
+  const compactControls = isCoarsePointer || narrowPlayer;
+
+  useLayoutEffect(() => {
+    const element = controlsRef.current;
+    if (!element || typeof ResizeObserver === "undefined") return;
+    const measure = () => setNarrowPlayer(element.clientWidth < 1536);
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, []);
   const [overflowOpen, setOverflowOpen] = useState(false);
   const [audioOpen, setAudioOpen] = useState(false);
   const [chaptersOpen, setChaptersOpen] = useState(false);
-  const safeDuration = duration > 0 ? duration : 0;
-  const handleSkipBack = () =>
-    onSeek(Math.max(0, currentTime - SKIP_BACK_SECONDS));
-  const handleSkipForward = () =>
-    onSeek(
-      Math.min(safeDuration || currentTime, currentTime + SKIP_FORWARD_SECONDS),
-    );
+  // Discard compact menus when switching layouts so they cannot reappear
+  // after a resize or fullscreen round trip.
+  if (!compactControls && (overflowOpen || audioOpen || chaptersOpen)) {
+    setOverflowOpen(false);
+    setAudioOpen(false);
+    setChaptersOpen(false);
+  }
+  const handleSkipBack = onSkip.back;
+  const handleSkipForward = onSkip.forward;
   // When playing any episode in a series (even the first or last), reserve
   // both prev/next slots so the cluster remains symmetric around the play
   // button. Movies (no episode nav at all) skip the slots entirely.
@@ -181,6 +207,9 @@ export function PlayerControls({
 
   return (
     <div
+      ref={controlsRef}
+      data-compact={compactControls}
+      data-touch={isCoarsePointer}
       className={`player-controls absolute inset-0 z-10 transition-opacity duration-300 ${
         visible ? "opacity-100" : "pointer-events-none opacity-0"
       }`}
@@ -193,10 +222,10 @@ export function PlayerControls({
       {/* Touch transport cluster. pointer-events pass through the empty area
           so surface taps still toggle controls / double-tap-seek; only the
           cluster itself is interactive. */}
-      {isCoarsePointer && (
-        <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-[max(0.75rem,env(safe-area-inset-left))]">
+      {compactControls && (
+        <div className="player-compact-transport pointer-events-none absolute inset-0 z-10 flex items-center justify-center px-[max(0.75rem,env(safe-area-inset-left))]">
           <div
-            className="pointer-events-auto flex items-center gap-2"
+            className={`flex items-center gap-2 ${visible ? "pointer-events-auto" : ""}`}
             onClick={(event) => event.stopPropagation()}
           >
             {showEpisodeSlots ? (
@@ -216,10 +245,10 @@ export function PlayerControls({
             <CircleButton
               size="md"
               variant="secondary"
-              ariaLabel={`Back ${SKIP_BACK_SECONDS} seconds`}
+              ariaLabel={`Back ${skipSeconds.back} seconds`}
               onClick={handleSkipBack}
             >
-              <SkipIcon direction="back" seconds={SKIP_BACK_SECONDS} />
+              <SkipIcon direction="back" seconds={skipSeconds.back} />
             </CircleButton>
             <button
               type="button"
@@ -228,26 +257,18 @@ export function PlayerControls({
               onClick={onPlayPause}
             >
               {playing ? (
-                <Pause
-                  className="h-7 w-7"
-                  fill="currentColor"
-                  strokeWidth={0}
-                />
+                <Pause className="h-7 w-7" fill="currentColor" strokeWidth={0} />
               ) : (
-                <Play
-                  className="ml-1 h-7 w-7"
-                  fill="currentColor"
-                  strokeWidth={0}
-                />
+                <Play className="ml-1 h-7 w-7" fill="currentColor" strokeWidth={0} />
               )}
             </button>
             <CircleButton
               size="md"
               variant="secondary"
-              ariaLabel={`Forward ${SKIP_FORWARD_SECONDS} seconds`}
+              ariaLabel={`Forward ${skipSeconds.forward} seconds`}
               onClick={handleSkipForward}
             >
-              <SkipIcon direction="forward" seconds={SKIP_FORWARD_SECONDS} />
+              <SkipIcon direction="forward" seconds={skipSeconds.forward} />
             </CircleButton>
             {showEpisodeSlots ? (
               hasNextEpisode ? (
@@ -267,10 +288,7 @@ export function PlayerControls({
         </div>
       )}
 
-      {/* ───── BOTTOM HUD ─────
-          Three-column grid: metadata left, main playback cluster center,
-          utility rail right. Seek bar spans the full width above the row
-          so the playhead is always anchored to the frame edge.           */}
+      {/* Narrow players use centered transport and a compact bottom utility row. */}
       <div
         className="player-hud player-rise absolute inset-x-0 bottom-0 z-10 px-[max(0.75rem,env(safe-area-inset-left))] pt-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:px-[max(1.5rem,env(safe-area-inset-left))] sm:pr-[max(1.5rem,env(safe-area-inset-right))] sm:pb-[max(1.25rem,env(safe-area-inset-bottom))]"
         onClick={(e) => e.stopPropagation()}
@@ -285,15 +303,12 @@ export function PlayerControls({
           activeEditKind={activeEditKind}
           onRegionEdgeChange={onRegionEdgeChange}
           onSeek={onSeek}
+          onSkip={onSkip}
         />
 
-        {/* Grid keeps the playback cluster visually locked to the centerline
-            of the frame regardless of how long the title or utility rail is.
-            `minmax(0,1fr)` forces the side columns to honor 1fr behaviour
-            rather than growing with their content — the cluster stays put. */}
-        {isCoarsePointer ? (
-          <div className="mt-2 flex min-w-0 items-center gap-2">
-            <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        {compactControls ? (
+          <div className="player-compact-row mt-2 flex min-w-0 items-center gap-2">
+            <div className="player-compact-metadata flex min-w-0 flex-1 flex-col gap-0.5">
               {title ? (
                 <div
                   className="truncate text-[15px] leading-tight font-semibold tracking-tight text-white"
@@ -310,6 +325,7 @@ export function PlayerControls({
             </div>
             <SubtitleMenu
               tracks={subtitleTracks}
+              preferredSubtitleLanguage={preferredSubtitleLanguage}
               activeIndex={activeSubtitleIndex}
               onSelect={onSubtitleSelect}
               delayMs={subtitleDelayMs}
@@ -317,6 +333,7 @@ export function PlayerControls({
               mediaFileId={mediaFileId}
               playerConfig={playerConfig}
               onRefreshSubtitles={onRefreshSubtitles}
+              onSubtitleJobAccepted={onSubtitleJobAccepted}
               sessionId={sessionId}
               getSubtitleStartPosition={getSubtitleStartPosition}
               audioTracks={audioTracks}
@@ -328,6 +345,7 @@ export function PlayerControls({
               error={qualityError}
               onSelect={onQualitySelect}
               versions={versions}
+              versionLocked={versionLocked}
               onSwitchVersion={onSwitchVersion}
             />
             <button
@@ -354,7 +372,7 @@ export function PlayerControls({
             </button>
           </div>
         ) : (
-          <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-3 sm:gap-5">
+          <div className="mt-2 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-5">
             {/* ─── Left: Title / episode / time ─── */}
             <div className="flex min-w-0 flex-col gap-0.5">
               {title ? (
@@ -378,7 +396,7 @@ export function PlayerControls({
                     <span className="text-white/25">·</span>
                   </>
                 ) : null}
-                <span className="font-mono text-[11px] tracking-[0.12em] text-white/75 normal-case tabular-nums">
+                <span className="shrink-0 font-mono text-[11px] tracking-[0.12em] whitespace-nowrap text-white/75 normal-case tabular-nums">
                   {formatTime(currentTime)}
                   <span className="mx-1 text-white/30">/</span>
                   {formatTime(duration)}
@@ -401,10 +419,7 @@ export function PlayerControls({
                     ariaLabel="Previous episode"
                     onClick={onPrevEpisode}
                   >
-                    <SkipBack
-                      className="h-[18px] w-[18px]"
-                      fill="currentColor"
-                    />
+                    <SkipBack className="h-[18px] w-[18px]" fill="currentColor" />
                   </CircleButton>
                 ) : (
                   <ClusterSlotSpacer size="sm" />
@@ -414,10 +429,10 @@ export function PlayerControls({
               <CircleButton
                 size="sm"
                 variant="secondary"
-                ariaLabel={`Back ${SKIP_BACK_SECONDS} seconds`}
+                ariaLabel={`Back ${skipSeconds.back} seconds`}
                 onClick={handleSkipBack}
               >
-                <SkipIcon direction="back" seconds={SKIP_BACK_SECONDS} />
+                <SkipIcon direction="back" seconds={skipSeconds.back} />
               </CircleButton>
 
               <CircleButton
@@ -428,27 +443,19 @@ export function PlayerControls({
                 data-paused={!playing}
               >
                 {playing ? (
-                  <Pause
-                    className="h-6 w-6"
-                    strokeWidth={0}
-                    fill="currentColor"
-                  />
+                  <Pause className="h-6 w-6" strokeWidth={0} fill="currentColor" />
                 ) : (
-                  <Play
-                    className="ml-[2px] h-6 w-6"
-                    strokeWidth={0}
-                    fill="currentColor"
-                  />
+                  <Play className="ml-[2px] h-6 w-6" strokeWidth={0} fill="currentColor" />
                 )}
               </CircleButton>
 
               <CircleButton
                 size="sm"
                 variant="secondary"
-                ariaLabel={`Forward ${SKIP_FORWARD_SECONDS} seconds`}
+                ariaLabel={`Forward ${skipSeconds.forward} seconds`}
                 onClick={handleSkipForward}
               >
-                <SkipIcon direction="forward" seconds={SKIP_FORWARD_SECONDS} />
+                <SkipIcon direction="forward" seconds={skipSeconds.forward} />
               </CircleButton>
 
               {showEpisodeSlots ? (
@@ -459,10 +466,7 @@ export function PlayerControls({
                     ariaLabel="Next episode"
                     onClick={onNextEpisode}
                   >
-                    <SkipForward
-                      className="h-[18px] w-[18px]"
-                      fill="currentColor"
-                    />
+                    <SkipForward className="h-[18px] w-[18px]" fill="currentColor" />
                   </CircleButton>
                 ) : (
                   <ClusterSlotSpacer size="sm" />
@@ -472,7 +476,7 @@ export function PlayerControls({
 
             {/* ─── Right: Utility rail ─── */}
             <div className="flex items-center justify-end gap-0.5">
-              <div className="hidden sm:pointer-fine:block">
+              <div className="shrink-0">
                 <VolumeControl
                   volume={volume}
                   muted={muted}
@@ -481,7 +485,7 @@ export function PlayerControls({
                 />
               </div>
 
-              <div className="player-hud-divider mx-1 hidden sm:block" />
+              <div className="player-hud-divider mx-1" />
 
               {onAudioSelect && (
                 <AudioTrackMenu
@@ -492,14 +496,11 @@ export function PlayerControls({
                 />
               )}
 
-              <ChaptersMenu
-                chapters={chapters ?? []}
-                currentTime={currentTime}
-                onSeek={onSeek}
-              />
+              <ChaptersMenu chapters={chapters ?? []} currentTime={currentTime} onSeek={onSeek} />
 
               <SubtitleMenu
                 tracks={subtitleTracks}
+                preferredSubtitleLanguage={preferredSubtitleLanguage}
                 activeIndex={activeSubtitleIndex}
                 onSelect={onSubtitleSelect}
                 delayMs={subtitleDelayMs}
@@ -507,6 +508,7 @@ export function PlayerControls({
                 mediaFileId={mediaFileId}
                 playerConfig={playerConfig}
                 onRefreshSubtitles={onRefreshSubtitles}
+                onSubtitleJobAccepted={onSubtitleJobAccepted}
                 sessionId={sessionId}
                 getSubtitleStartPosition={getSubtitleStartPosition}
                 audioTracks={audioTracks}
@@ -519,6 +521,7 @@ export function PlayerControls({
                 error={qualityError}
                 onSelect={onQualitySelect}
                 versions={versions}
+                versionLocked={versionLocked}
                 onSwitchVersion={onSwitchVersion}
               />
 
@@ -561,6 +564,18 @@ export function PlayerControls({
               <button
                 type="button"
                 className="player-utility-btn"
+                onClick={onVideoFitToggle}
+                aria-label="Fill screen"
+                aria-pressed={videoFit === "cover"}
+                title="Fill screen"
+                data-active={videoFit === "cover" ? "true" : "false"}
+              >
+                <Scaling className="h-[18px] w-[18px]" />
+              </button>
+
+              <button
+                type="button"
+                className="player-utility-btn"
                 onClick={onFullscreenToggle}
                 aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
               >
@@ -575,9 +590,31 @@ export function PlayerControls({
         )}
       </div>
 
-      {isCoarsePointer && overflowOpen && (
-        <PlayerMenuSurface className="" onClose={() => setOverflowOpen(false)}>
+      {compactControls && overflowOpen && !isCoarsePointer && (
+        <button
+          type="button"
+          className="absolute inset-0 z-40"
+          aria-label="Close menu"
+          onClick={(event) => {
+            event.stopPropagation();
+            setOverflowOpen(false);
+          }}
+        />
+      )}
+      {compactControls && overflowOpen && (
+        <PlayerMenuSurface className="player-overflow-menu" onClose={() => setOverflowOpen(false)}>
           <div className="py-1">
+            {!isCoarsePointer && (
+              <div className="flex items-center justify-between border-b border-white/10 px-5 py-3 text-sm text-white/80">
+                <span>Volume</span>
+                <VolumeControl
+                  volume={volume}
+                  muted={muted}
+                  onVolumeChange={onVolumeChange}
+                  onMutedChange={onMutedChange}
+                />
+              </div>
+            )}
             {onAudioSelect && audioTracks.length > 0 && (
               <OverflowAction
                 icon={<AudioLines className="h-5 w-5" />}
@@ -617,6 +654,15 @@ export function PlayerControls({
                 }}
               />
             )}
+            <OverflowAction
+              icon={<Scaling className="h-5 w-5" />}
+              label="Fill screen"
+              active={videoFit === "cover"}
+              onClick={() => {
+                onVideoFitToggle();
+                setOverflowOpen(false);
+              }}
+            />
             {markerEditAvailable && onToggleMarkerEdit && (
               <OverflowAction
                 icon={<Tags className="h-5 w-5" />}
@@ -631,7 +677,7 @@ export function PlayerControls({
           </div>
         </PlayerMenuSurface>
       )}
-      {isCoarsePointer && onAudioSelect && (
+      {compactControls && onAudioSelect && (
         <AudioTrackMenu
           tracks={audioTracks}
           activeIndex={activeAudioIndex}
@@ -642,7 +688,7 @@ export function PlayerControls({
           hideTrigger
         />
       )}
-      {isCoarsePointer && (
+      {compactControls && (
         <ChaptersMenu
           chapters={chapters ?? []}
           currentTime={currentTime}
@@ -688,19 +734,12 @@ function OverflowAction({
  *  so the playback cluster stays symmetric when a neighboring episode isn't
  *  available (first/last episode in a series). */
 function ClusterSlotSpacer({ size }: { size: "sm" | "md" }) {
-  const sizing =
-    size === "md" ? "h-12 w-12 sm:h-14 sm:w-14" : "h-10 w-10 sm:h-11 sm:w-11";
+  const sizing = size === "md" ? "h-12 w-12 sm:h-14 sm:w-14" : "h-10 w-10 sm:h-11 sm:w-11";
   return <div aria-hidden="true" className={sizing} />;
 }
 
 /** Curved arrow with the skip-seconds number centered in the loop. */
-function SkipIcon({
-  direction,
-  seconds,
-}: {
-  direction: "back" | "forward";
-  seconds: number;
-}) {
+function SkipIcon({ direction, seconds }: { direction: "back" | "forward"; seconds: number }) {
   const Arrow = direction === "back" ? RotateCcw : RotateCw;
   return (
     <span className="relative flex h-7 w-7 items-center justify-center">

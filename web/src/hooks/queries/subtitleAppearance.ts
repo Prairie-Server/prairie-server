@@ -1,16 +1,13 @@
 import { useCallback, useMemo } from "react";
-import { ApiClientError } from "@/api/client";
 import {
+  isSettingValueMissing,
   useClearSettingValue,
   useEffectiveSettings,
   useSetSettingValue,
   type SettingIdentity,
 } from "@/hooks/queries/settingValues";
 import { SETTING_KEYS } from "@/lib/settingsContract";
-import {
-  parseSubtitleAppearance,
-  type SubtitleAppearance,
-} from "@/lib/subtitleAppearance";
+import { parseSubtitleAppearance, type SubtitleAppearance } from "@/lib/subtitleAppearance";
 
 /**
  * The one place subtitle appearance is read and written.
@@ -44,10 +41,7 @@ export function useSubtitleAppearanceSetting() {
   // The manifest default is the same object DEFAULT_SUBTITLE_APPEARANCE spells,
   // and the effective endpoint always answers, so an unset value arrives as the
   // default rather than as nothing to parse.
-  const appearance = useMemo(
-    () => parseSubtitleAppearance(entry?.value),
-    [entry?.value],
-  );
+  const appearance = useMemo(() => parseSubtitleAppearance(entry?.value), [entry?.value]);
 
   /**
    * Whether this device holds its own override, which is what gates the
@@ -76,7 +70,7 @@ export function useSubtitleAppearanceSetting() {
       // Nothing stored at this scope is the state a reset asks for, so the
       // canonical DELETE's 404 is success, matching how the legacy per-device
       // delete behaved.
-      if (error instanceof ApiClientError && error.status === 404) return;
+      if (isSettingValueMissing(error)) return;
       throw error;
     }
   }, [clearValue]);

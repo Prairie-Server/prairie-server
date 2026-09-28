@@ -58,8 +58,7 @@ export function UnsavedChangesGuard() {
         <AlertDialogHeader>
           <AlertDialogTitle>Discard unsaved changes?</AlertDialogTitle>
           <AlertDialogDescription>
-            This page has edits that were never saved. Leaving now throws them
-            away.
+            This page has edits that were never saved. Leaving now throws them away.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

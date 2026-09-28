@@ -1,5 +1,5 @@
 import { useDiscover, useTasteProfile } from "@/hooks/queries/recommendations";
-import type { DiscoverRow } from "@/api/types";
+import type { DiscoverRow } from "@/api/v2/recommendations";
 import MediaCarousel from "@/components/MediaCarousel";
 import SectionItemCard from "@/components/SectionItemCard";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -12,9 +12,7 @@ import { carouselCardWidthClasses } from "@/lib/uiCustomization";
 function buildSectionHref(row: DiscoverRow): string | undefined {
   if (!row.section_kind) return undefined;
   const base = `/recommendations/section/${encodeURIComponent(row.section_kind)}`;
-  return row.section_key
-    ? `${base}/${encodeURIComponent(row.section_key)}`
-    : base;
+  return row.section_key ? `${base}/${encodeURIComponent(row.section_key)}` : base;
 }
 
 function TasteProfileCard({
@@ -39,17 +37,11 @@ function TasteProfileCard({
     );
   }
 
-  if (
-    !profile ||
-    (profile.top_genres.length === 0 && profile.favorite_directors.length === 0)
-  ) {
+  if (!profile || (profile.top_genres.length === 0 && profile.favorite_directors.length === 0)) {
     return null;
   }
 
-  const totalSignals = Object.values(profile.signal_counts).reduce(
-    (a, b) => a + b,
-    0,
-  );
+  const totalSignals = Object.values(profile.signal_counts).reduce((a, b) => a + b, 0);
 
   return (
     <div className="glass-subtle space-y-4 rounded-xl p-5">
@@ -118,9 +110,7 @@ function DiscoverEmptyState() {
 function DiscoverErrorState({ onRetry }: { onRetry: () => void }) {
   return (
     <div className="flex flex-col items-center justify-center gap-4 py-24 text-center">
-      <p className="text-muted-foreground text-sm">
-        Failed to load recommendations.
-      </p>
+      <p className="text-muted-foreground text-sm">Failed to load recommendations.</p>
       <button
         onClick={onRetry}
         className="text-primary hover:text-primary/80 inline-flex items-center gap-2 text-sm font-medium"
@@ -132,11 +122,7 @@ function DiscoverErrorState({ onRetry }: { onRetry: () => void }) {
   );
 }
 
-function DiscoverSkeletons({
-  posterWidthClasses,
-}: {
-  posterWidthClasses: string;
-}) {
+function DiscoverSkeletons({ posterWidthClasses }: { posterWidthClasses: string }) {
   return (
     <div className="space-y-10 pt-2">
       {Array.from({ length: 4 }).map((_, i) => (
@@ -160,15 +146,15 @@ function DiscoverSkeletons({
 }
 
 export default function Recommendations() {
-  useDocumentTitle("Recommendations");
+  // The viewer-facing name, as on the native apps; admin and setup screens
+  // keep "Recommendations" for the server feature.
+  useDocumentTitle("For You");
 
   const tasteProfileQuery = useTasteProfile();
   const { data, isLoading, isError, refetch } = useDiscover();
   const { prefs: overlayPrefs, quickActionMode } = useOverlayPrefs();
   const { cardPresentation } = useUICustomization();
-  const posterWidthClasses = carouselCardWidthClasses(
-    cardPresentation.poster_size,
-  );
+  const posterWidthClasses = carouselCardWidthClasses(cardPresentation.poster_size);
 
   const rows = data?.rows ?? [];
 
@@ -179,7 +165,7 @@ export default function Recommendations() {
         <div className="flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <h1 className="text-foreground text-2xl font-bold tracking-tight sm:text-3xl">
-              Recommendations
+              For You
             </h1>
             <p className="text-muted-foreground mt-1 text-sm">
               Personalized picks based on your viewing history and ratings.
@@ -207,11 +193,7 @@ export default function Recommendations() {
             titleHref={buildSectionHref(row)}
           >
             {row.items.map((item) => (
-              <div
-                key={item.content_id}
-                className={posterWidthClasses}
-                role="listitem"
-              >
+              <div key={item.content_id} className={posterWidthClasses} role="listitem">
                 <SectionItemCard
                   item={item}
                   overlayPrefs={overlayPrefs}

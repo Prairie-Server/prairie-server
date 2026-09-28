@@ -19,12 +19,13 @@ import { sanitizeAuthRedirect } from "@/lib/authRedirect";
 
 export default function Profiles() {
   const {
-    data: profiles,
+    data: profiles = [],
     isLoading: profilesLoading,
     avatarUploadEnabled,
+    maxAdvisoryAgeSupported,
+    requireAdvisoryAgeSupported,
   } = useProfiles();
-  const { data: libraries = [], isLoading: librariesLoading } =
-    useAvailableUserLibraries();
+  const { data: libraries = [], isLoading: librariesLoading } = useAvailableUserLibraries();
   const [editorOpen, setEditorOpen] = useState(false);
   const [pinProfile, setPinProfile] = useState<Profile | null>(null);
   const { selectProfile, verifyProfilePin, logout } = useAuth();
@@ -83,10 +84,7 @@ export default function Profiles() {
         <Skeleton className="relative z-10 h-12 w-64" />
         <div className="relative z-10 flex flex-wrap justify-center gap-5">
           {Array.from({ length: 3 }).map((_, index) => (
-            <div
-              key={index}
-              className="flex w-[148px] flex-col items-center gap-3 p-5"
-            >
+            <div key={index} className="flex w-[148px] flex-col items-center gap-3 p-5">
               <Skeleton className="h-20 w-20 rounded-full" />
               <Skeleton className="h-4 w-16 rounded" />
             </div>
@@ -103,9 +101,7 @@ export default function Profiles() {
         <div className="relative z-10 flex flex-col items-center gap-6">
           <AuthBrandHero subtitle="Create a profile before you enter the app." />
           <div className="w-full max-w-md space-y-3 text-center">
-            <h1 className="page-title text-[clamp(2.1rem,6vw,4rem)]">
-              Create your first profile
-            </h1>
+            <h1 className="page-title text-[clamp(2.1rem,6vw,4rem)]">Create your first profile</h1>
             <p className="text-muted-foreground text-sm">
               You need a profile before you can enter the app.
             </p>
@@ -126,10 +122,10 @@ export default function Profiles() {
           open={editorOpen}
           libraries={libraries}
           avatarUploadEnabled={avatarUploadEnabled}
+          advisoryAgeSupported={maxAdvisoryAgeSupported}
+          requireAdvisoryAgeSupported={requireAdvisoryAgeSupported}
           onOpenChange={setEditorOpen}
-          onSaveSuccess={(profile, context) =>
-            void handleCreateSuccess(profile, context)
-          }
+          onSaveSuccess={(profile, context) => void handleCreateSuccess(profile, context)}
         />
       </div>
     );
@@ -139,13 +135,8 @@ export default function Profiles() {
     <div className="auth-shell flex-col gap-8">
       <AuthBackground />
       <div className="relative z-10 text-center">
-        <AuthBrandHero
-          className="mb-6"
-          subtitle="Choose who is watching on this device."
-        />
-        <h1 className="page-title text-[clamp(2.2rem,7vw,4.5rem)]">
-          Who&apos;s watching?
-        </h1>
+        <AuthBrandHero className="mb-6" subtitle="Choose who is watching on this device." />
+        <h1 className="page-title text-[clamp(2.2rem,7vw,4.5rem)]">Who&apos;s watching?</h1>
       </div>
 
       <div className="relative z-10 flex max-w-5xl flex-wrap justify-center gap-5">
@@ -153,18 +144,12 @@ export default function Profiles() {
           <div key={profile.id} className="group relative">
             <button
               onClick={() => handleSelect(profile)}
-              aria-label={
-                profile.has_pin
-                  ? `${profile.name} (PIN protected)`
-                  : profile.name
-              }
+              aria-label={profile.has_pin ? `${profile.name} (PIN protected)` : profile.name}
               className="surface-panel hover:border-primary flex w-[148px] flex-col items-center gap-3 rounded-[1.75rem] p-5 transition-all duration-150 hover:-translate-y-1"
             >
               <div className="relative">
                 <Avatar className="ring-border group-hover:ring-primary/30 h-20 w-20 ring-2 transition-colors">
-                  {profile.avatar_url ? (
-                    <AvatarImage src={profile.avatar_url} alt="" />
-                  ) : null}
+                  {profile.avatar_url ? <AvatarImage src={profile.avatar_url} alt="" /> : null}
                   <AvatarFallback className="bg-surface text-primary text-2xl font-bold">
                     {profile.name.charAt(0).toUpperCase()}
                   </AvatarFallback>
@@ -181,12 +166,7 @@ export default function Profiles() {
         ))}
       </div>
 
-      <Button
-        variant="outline"
-        size="sm"
-        onClick={logout}
-        className="relative z-10 mt-2"
-      >
+      <Button variant="outline" size="sm" onClick={logout} className="relative z-10 mt-2">
         <LogOut />
         Sign out
       </Button>

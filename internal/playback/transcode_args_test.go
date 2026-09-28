@@ -11,6 +11,29 @@ import (
 	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
+func TestActivityOutputContainerMatchesFFmpeg(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		opts TranscodeOpts
+		want string
+	}{
+		{"hevc-copy", TranscodeOpts{TargetCodecVideo: "copy", SourceVideoCodec: "hevc"}, "fmp4"},
+		{"forced-ts", TranscodeOpts{TargetCodecVideo: "copy", SourceVideoCodec: "hevc", CopyVideoMPEGTS: true}, "mpegts"},
+		{"mpeg2-copy", TranscodeOpts{TargetCodecVideo: "copy", SourceVideoCodec: "mpeg2video"}, "mpegts"},
+		{"video-encode", TranscodeOpts{TargetCodecVideo: "h264", SourceVideoCodec: "hevc"}, "mpegts"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := HLSOutputContainer(tc.opts); got != tc.want {
+				t.Fatalf("output container = %q, want %q", got, tc.want)
+			}
+			args := strings.Join(buildFFmpegArgs(tc.opts), " ")
+			if !strings.Contains(args, "-hls_segment_type "+tc.want) {
+				t.Fatal("activity format does not match the FFmpeg muxer")
+			}
+		})
+	}
+}
+
 // TestToneMapFFmpegGraphsCoverSupportedExecutors verifies each executor emits its required graph.
 func TestToneMapFFmpegGraphsCoverSupportedExecutors(t *testing.T) {
 	tests := []struct {
@@ -428,13 +451,14 @@ func TestBuildFFmpegArgsCopyVideoAppliesSampleEntry(t *testing.T) {
 		want  string
 		not   string
 	}{
-		{name: "Dolby Vision", entry: VideoSampleEntryDVH1, want: "-c:v copy -tag:v dvh1 -strict unofficial"},
-		{name: "HDR10", entry: VideoSampleEntryHVC1, want: "-c:v copy -tag:v hvc1", not: "-strict unofficial"},
+		{name: "Dolby Vision", entry: VideoSampleEntryDVH1, want: "-c:v copy -bsf:v hevc_mp4toannexb -tag:v dvh1 -strict unofficial"},
+		{name: "HDR10", entry: VideoSampleEntryHVC1, want: "-c:v copy -bsf:v hevc_mp4toannexb -tag:v hvc1", not: "-strict unofficial"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			args := strings.Join(buildFFmpegArgs(TranscodeOpts{
 				InputPath: "/media/movie.mkv", OutputDir: t.TempDir(),
+				SourceVideoCodec: "hevc",
 				TargetCodecVideo: "copy", TargetCodecAudio: "copy",
 				VideoSampleEntry: tc.entry, SegmentDuration: 2,
 			}), " ")
@@ -442,6 +466,21 @@ func TestBuildFFmpegArgsCopyVideoAppliesSampleEntry(t *testing.T) {
 				t.Fatalf("args = %s", args)
 			}
 		})
+	}
+}
+
+func TestBuildFFmpegArgsCopyVideoCanUseMPEGTS(t *testing.T) {
+	args := strings.Join(buildFFmpegArgs(TranscodeOpts{
+		InputPath: "/media/dovi.mkv", OutputDir: t.TempDir(),
+		SourceVideoCodec: "hevc", TargetCodecVideo: "copy", TargetCodecAudio: "copy",
+		VideoSampleEntry: VideoSampleEntryDVH1, CopyVideoMPEGTS: true, SegmentDuration: 2,
+	}), " ")
+
+	if !strings.Contains(args, "-hls_segment_type mpegts") || !strings.Contains(args, "seg_%05d.ts") {
+		t.Fatalf("copy-video MPEG-TS recipe was not honored: %s", args)
+	}
+	if strings.Contains(args, "seg_%05d.m4s") {
+		t.Fatalf("copy-video MPEG-TS recipe leaked fMP4 output: %s", args)
 	}
 }
 
@@ -546,7 +585,7 @@ func TestBuildFFmpegArgsBoundsHLSManifestSize(t *testing.T) {
 	}
 }
 
-func TestBuildFFmpegArgs_CopyVideoFromStartUsesZeroBasedTimestamps(t *testing.T) {
+func TestBuildFFmpegArgs_CopyVideoFromStartUsesJellyfinTimestamps(t *testing.T) {
 	args := buildFFmpegArgs(TranscodeOpts{
 		InputPath:        "/media/movie.mkv",
 		OutputDir:        "/tmp/out",
@@ -557,11 +596,38 @@ func TestBuildFFmpegArgs_CopyVideoFromStartUsesZeroBasedTimestamps(t *testing.T)
 	})
 
 	joined := strings.Join(args, " ")
-	if strings.Contains(joined, "-copyts") {
-		t.Fatalf("copy-video from-start should not preserve source timestamps: %s", joined)
+	if !strings.Contains(joined, "-copyts") {
+		t.Fatalf("copy-video from-start should preserve source timestamps: %s", joined)
 	}
-	if !strings.Contains(joined, "-avoid_negative_ts make_zero") {
-		t.Fatalf("copy-video from-start should zero-base timestamps: %s", joined)
+	if !strings.Contains(joined, "-avoid_negative_ts make_non_negative") {
+		t.Fatalf("copy-video from-start must lift the AAC priming delay out of the first tfdt: %s", joined)
+	}
+	if strings.Contains(joined, "-avoid_negative_ts disabled") {
+		t.Fatalf("copy-video from-start must not write negative tfdt values: %s", joined)
+	}
+	if !strings.Contains(joined, "-start_at_zero") {
+		t.Fatalf("copy-video from-start should start its output timeline at zero: %s", joined)
+	}
+	if strings.Contains(joined, "-avoid_negative_ts make_zero") {
+		t.Fatalf("copy-video from-start must not rewrite negative timestamps: %s", joined)
+	}
+}
+
+func TestBuildFFmpegArgs_DolbyVisionHEVCCopyUsesAnnexBFilter(t *testing.T) {
+	args := buildFFmpegArgs(TranscodeOpts{
+		InputPath:        "/media/movie.mkv",
+		OutputDir:        "/tmp/out",
+		SessionID:        "session-dovi-copy",
+		SourceVideoCodec: "hevc",
+		TargetCodecVideo: "copy",
+		TargetCodecAudio: "copy",
+		VideoSampleEntry: VideoSampleEntryDVH1,
+		SegmentDuration:  2,
+	})
+
+	joined := strings.Join(args, " ")
+	if !strings.Contains(joined, "-c:v copy -bsf:v hevc_mp4toannexb -tag:v dvh1 -strict unofficial") {
+		t.Fatalf("Dolby Vision HEVC copy should match Jellyfin's fMP4 bitstream recipe: %s", joined)
 	}
 }
 
@@ -595,18 +661,20 @@ func TestBuildFFmpegArgs_CopyVideoResumePreservesSourceTimestamps(t *testing.T) 
 	})
 
 	joined := strings.Join(args, " ")
-	// Resume must preserve source timestamps so TFDT in seg_K matches
-	// playlist time K*segDur (the EXT-X-START anchor). Without -copyts,
-	// strict players (ATV / ExoPlayer) treat the TFDT/playlist mismatch
-	// as a discontinuity and abort.
+	// Resume keeps source packet timing while start_at_zero subtracts the
+	// input's intrinsic start offset. That is distinct from make_zero, which
+	// rewrites negative timestamps and can distort fragment timing.
 	if !strings.Contains(joined, "-copyts") {
 		t.Fatalf("copy-video resume should preserve source timestamps: %s", joined)
 	}
-	if !strings.Contains(joined, "-avoid_negative_ts disabled") {
-		t.Fatalf("copy-video resume should disable negative-ts adjustment: %s", joined)
+	if !strings.Contains(joined, "-avoid_negative_ts make_non_negative") {
+		t.Fatalf("copy-video resume should only lift genuinely negative timestamps: %s", joined)
+	}
+	if !strings.Contains(joined, "-start_at_zero") {
+		t.Fatalf("copy-video resume should start its output timeline at zero: %s", joined)
 	}
 	if strings.Contains(joined, "-avoid_negative_ts make_zero") {
-		t.Fatalf("copy-video resume must not zero-base timestamps (ATV resume regression): %s", joined)
+		t.Fatalf("copy-video resume must not rewrite negative timestamps: %s", joined)
 	}
 }
 
@@ -655,6 +723,28 @@ func TestBuildFFmpegArgs_CopyVideoSeekPreservesCodecCopy(t *testing.T) {
 	// Should have start_number for seek alignment.
 	if !strings.Contains(joined, "-start_number 120") {
 		t.Fatalf("copy-mode seek should set start_number: %s", joined)
+	}
+}
+
+func TestBuildFFmpegArgs_MPEGTSCopyVideoKeepsSourceTimestamps(t *testing.T) {
+	args := buildFFmpegArgs(TranscodeOpts{
+		InputPath:        "/media/movie.mkv",
+		OutputDir:        "/tmp/out",
+		SessionID:        "session-copy-ts",
+		SourceVideoCodec: "hevc",
+		TargetCodecVideo: "copy",
+		TargetCodecAudio: "aac",
+		CopyVideoMPEGTS:  true,
+		SegmentDuration:  2,
+	})
+
+	joined := strings.Join(args, " ")
+	// MPEG-TS has no tfdt, so the fMP4 negative-timestamp lift does not apply.
+	if !strings.Contains(joined, "-copyts -avoid_negative_ts disabled -start_at_zero") {
+		t.Fatalf("MPEG-TS copy-video should keep source timestamps untouched: %s", joined)
+	}
+	if strings.Contains(joined, "make_non_negative") {
+		t.Fatalf("MPEG-TS copy-video must not apply the fMP4 timestamp lift: %s", joined)
 	}
 }
 
@@ -1106,12 +1196,86 @@ func TestBuildFFmpegArgs_BitmapBurnInNVENCStaysOnCPUOverlay(t *testing.T) {
 	})
 
 	joined := strings.Join(args, " ")
-	want := "-filter_complex [0:v:0]hwdownload,format=yuv420p[vmain];[vmain][0:s:1]overlay=eof_action=pass,scale=-2:720,format=nv12,hwupload_cuda[vout]"
+	want := "-filter_complex [0:v:0]hwdownload,format=nv12,format=yuv420p[vmain];[vmain][0:s:1]overlay=eof_action=pass,scale=-2:720,format=nv12,hwupload_cuda[vout]"
 	if !strings.Contains(joined, want) {
 		t.Fatalf("nvenc bitmap burn-in should keep the CPU roundtrip %q: %s", want, joined)
 	}
 	if strings.Contains(joined, "overlay_vaapi") {
 		t.Fatalf("nvenc bitmap burn-in must not use the VAAPI GPU overlay: %s", joined)
+	}
+}
+
+// A CUDA surface can only be downloaded in the software format its frames
+// context was created with, so a 10-bit source must come off the GPU as p010le
+// and reach yuv420p through a second conversion. Requesting yuv420p from
+// hwdownload itself fails the graph before the encoder opens, which took out
+// every 10-bit HEVC burn-in attempt.
+func TestBuildFFmpegArgs_BitmapBurnInNVENCDownloadsSourceDepth(t *testing.T) {
+	args := buildFFmpegArgs(TranscodeOpts{
+		InputPath:           "/media/movie.mkv",
+		OutputDir:           "/tmp/out",
+		SessionID:           "session-pgs-nvenc-10bit",
+		SourceVideoCodec:    "hevc",
+		SourceVideoProfile:  "main10",
+		SourceVideoBitDepth: 10,
+		TargetCodecVideo:    "h264",
+		TargetCodecAudio:    "aac",
+		SegmentDuration:     2,
+		HWAccel:             "nvenc",
+		TargetResolution:    "720p",
+		SubtitleTrackIndex:  0,
+		SubtitleBurnIn:      true,
+		SubtitleCodec:       "hdmv_pgs_subtitle",
+	})
+
+	joined := strings.Join(args, " ")
+	want := "-filter_complex [0:v:0]hwdownload,format=p010le,format=yuv420p[vmain];[vmain][0:s:0]overlay=eof_action=pass,scale=-2:720,format=nv12,hwupload_cuda[vout]"
+	if !strings.Contains(joined, want) {
+		t.Fatalf("10-bit nvenc bitmap burn-in should download as p010le %q: %s", want, joined)
+	}
+	if strings.Contains(joined, "hwdownload,format=yuv420p") {
+		t.Fatalf("hwdownload must never be asked for yuv420p: %s", joined)
+	}
+}
+
+func TestBuildFFmpegArgs_TextBurnInHardwareDownloadsSourceDepth(t *testing.T) {
+	for _, tc := range []struct {
+		name     string
+		hwAccel  string
+		bitDepth int
+		wantVF   string
+	}{
+		{name: "NVENC8Bit", hwAccel: "nvenc", bitDepth: 8, wantVF: "hwdownload,format=nv12,format=yuv420p,scale=-2:720,subtitles="},
+		{name: "NVENC10Bit", hwAccel: "nvenc", bitDepth: 10, wantVF: "hwdownload,format=p010le,format=yuv420p,scale=-2:720,subtitles="},
+		{name: "VAAPI10Bit", hwAccel: "vaapi", bitDepth: 10, wantVF: "hwdownload,format=p010le,format=yuv420p,scale=-2:720,subtitles="},
+		{name: "QSV10Bit", hwAccel: "qsv", bitDepth: 10, wantVF: "hwdownload,format=p010le,format=yuv420p,scale=-2:720,subtitles="},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			args := buildFFmpegArgs(TranscodeOpts{
+				InputPath:           "/media/movie.mkv",
+				OutputDir:           "/tmp/out",
+				SessionID:           "session-srt-" + tc.name,
+				SourceVideoCodec:    "hevc",
+				SourceVideoProfile:  "main10",
+				SourceVideoBitDepth: tc.bitDepth,
+				TargetCodecVideo:    "h264",
+				TargetCodecAudio:    "aac",
+				SegmentDuration:     2,
+				HWAccel:             tc.hwAccel,
+				TargetResolution:    "720p",
+				SubtitleTrackIndex:  1,
+				SubtitleBurnIn:      true,
+				SubtitleCodec:       "subrip",
+			})
+
+			joined := strings.Join(args, " ")
+			if !strings.Contains(joined, tc.wantVF) {
+				t.Fatalf("%s text burn-in should download as the source depth %q: %s", tc.hwAccel, tc.wantVF, joined)
+			}
+			if strings.Contains(joined, "hwdownload,format=yuv420p") {
+				t.Fatalf("hwdownload must never be asked for yuv420p: %s", joined)
+			}
+		})
 	}
 }
 
@@ -1231,8 +1395,18 @@ func TestResolveEffectiveTranscodeHWAccel(t *testing.T) {
 			want: "qsv",
 		},
 		{
-			name: "unvalidated nvenc upload falls back to software encode",
+			name: "explicit nvenc with software decode falls back to software encode",
 			opts: TranscodeOpts{HWAccel: "nvenc", SourceVideoCodec: "h264", SoftwareVideoDecode: true, TargetCodecVideo: "h264"},
+			want: "none",
+		},
+		{
+			name: "automatic mixed stage keeps nvenc with software decode",
+			opts: TranscodeOpts{HWAccel: "nvenc", SourceVideoCodec: "h264", SoftwareVideoDecode: true, TargetCodecVideo: "h264", nvencSoftwareDecode: true},
+			want: "nvenc",
+		},
+		{
+			name: "mixed permission never splices into a tone-map recipe",
+			opts: TranscodeOpts{HWAccel: "nvenc", SourceVideoCodec: "hevc", SoftwareVideoDecode: true, TargetCodecVideo: "h264", nvencSoftwareDecode: true, ToneMapMode: tonemap.ModeHardware},
 			want: "none",
 		},
 	}
@@ -1472,26 +1646,27 @@ func TestIsAudioToAACStereoDownmixV3RequiresExactRecipeShape(t *testing.T) {
 	}
 }
 
-func TestAppendAudioArgsBoostsOnlyEncodedSurroundToStereo(t *testing.T) {
-	const wantFilter = "aresample=out_chlayout=stereo,alimiter=level_in=2:limit=0.794328235:attack=5:release=50:level=false:latency=true"
+func TestAppendAudioArgsNormalizesEveryAACEncodeAndBoostsOnlySurroundToStereo(t *testing.T) {
+	const boostFilter = "aresample=out_chlayout=stereo:async=1,alimiter=level_in=2:limit=0.794328235:attack=5:release=50:level=false:latency=true"
+	const normalizeFilter = "aresample=async=1"
 	tests := []struct {
 		name           string
 		codec          string
 		sourceChannels int
 		targetChannels int
-		wantBoost      bool
+		wantFilter     string
 	}{
-		{name: "aac 5.1 to stereo", codec: "aac", sourceChannels: 6, targetChannels: 2, wantBoost: true},
-		{name: "default aac 7.1 to stereo", sourceChannels: 8, targetChannels: 2, wantBoost: true},
-		{name: "aac default target is stereo", codec: "aac", sourceChannels: 6, wantBoost: true},
+		{name: "DTS 5.1 to AAC stereo", codec: "aac", sourceChannels: 6, targetChannels: 2, wantFilter: boostFilter},
+		{name: "TrueHD 7.1 to default AAC stereo", sourceChannels: 8, targetChannels: 2, wantFilter: boostFilter},
+		{name: "EAC3 surround to default AAC stereo", codec: "aac", sourceChannels: 6, wantFilter: boostFilter},
 		{name: "opus has no versioned boost recipe", codec: "opus", sourceChannels: 6},
-		{name: "unknown codec fallback has no versioned boost", codec: "unknown", sourceChannels: 6, targetChannels: 2},
-		{name: "stereo aac encode", codec: "aac", sourceChannels: 2, targetChannels: 2},
-		{name: "unknown source channels", codec: "aac", targetChannels: 2},
-		{name: "surround to mono", codec: "aac", sourceChannels: 6, targetChannels: 1},
-		{name: "negative target resolves to ordinary stereo", codec: "aac", sourceChannels: 6, targetChannels: -1},
-		{name: "noncanonical target resolves to ordinary stereo", codec: "aac", sourceChannels: 6, targetChannels: 3},
-		{name: "surround preserved", codec: "aac", sourceChannels: 6, targetChannels: 6},
+		{name: "unknown codec AAC fallback", codec: "unknown", sourceChannels: 6, targetChannels: 2, wantFilter: normalizeFilter},
+		{name: "stereo AAC encode", codec: "aac", sourceChannels: 2, targetChannels: 2, wantFilter: normalizeFilter},
+		{name: "unknown source channels", codec: "aac", targetChannels: 2, wantFilter: normalizeFilter},
+		{name: "surround to AAC mono", codec: "aac", sourceChannels: 6, targetChannels: 1, wantFilter: normalizeFilter},
+		{name: "negative target resolves to ordinary AAC stereo", codec: "aac", sourceChannels: 6, targetChannels: -1, wantFilter: normalizeFilter},
+		{name: "noncanonical target resolves to ordinary AAC stereo", codec: "aac", sourceChannels: 6, targetChannels: 3, wantFilter: normalizeFilter},
+		{name: "surround AAC preserved", codec: "aac", sourceChannels: 6, targetChannels: 6, wantFilter: normalizeFilter},
 		{name: "copy", codec: "copy", sourceChannels: 6, targetChannels: 2},
 		{name: "ac3 preserves source layout", codec: "ac3", sourceChannels: 6, targetChannels: 2},
 		{name: "eac3 preserves source layout", codec: "eac3", sourceChannels: 6, targetChannels: 2},
@@ -1505,9 +1680,15 @@ func TestAppendAudioArgsBoostsOnlyEncodedSurroundToStereo(t *testing.T) {
 				SourceAudioChannels: tt.sourceChannels,
 				TargetAudioChannels: tt.targetChannels,
 			})
-			gotBoost := argsContainPair(args, "-af", wantFilter)
-			if gotBoost != tt.wantBoost {
-				t.Fatalf("downmix boost present=%t, want %t; args=%s", gotBoost, tt.wantBoost, strings.Join(args, " "))
+			var gotFilter string
+			for i := 0; i < len(args)-1; i++ {
+				if args[i] == "-af" {
+					gotFilter = args[i+1]
+					break
+				}
+			}
+			if gotFilter != tt.wantFilter {
+				t.Fatalf("audio filter = %q, want %q; args=%s", gotFilter, tt.wantFilter, strings.Join(args, " "))
 			}
 		})
 	}
@@ -1518,8 +1699,8 @@ func TestAppendAudioArgsBoostsOnlyEncodedSurroundToStereo(t *testing.T) {
 // builder's encoder probe must succeed on Linux CI as well as macOS.
 func videoToolboxTestFFmpeg(t *testing.T) string {
 	t.Helper()
-	resetNVENCProbeCacheForTest()
-	t.Cleanup(resetNVENCProbeCacheForTest)
+	resetHWProbeCacheForTest()
+	t.Cleanup(resetHWProbeCacheForTest)
 	return writeFakeFFmpeg(t, successfulVideoToolboxProbe()).path
 }
 
@@ -1620,29 +1801,50 @@ func TestBuildFFmpegArgs_VideoToolboxHi10PDecodesInSoftware(t *testing.T) {
 	}
 }
 
-func TestBuildFFmpegArgs_VideoToolboxHEVCKeepsSourceBitDepth(t *testing.T) {
+func TestBuildFFmpegArgs_VideoToolboxHEVCForcesMain8Bit(t *testing.T) {
 	args := buildFFmpegArgs(TranscodeOpts{
-		InputPath:        "/media/movie.mkv",
-		OutputDir:        "/tmp/out",
-		SessionID:        "session-vt-hevc",
-		FFmpegPath:       videoToolboxTestFFmpeg(t),
-		SourceVideoCodec: "hevc",
-		TargetCodecVideo: "hevc",
-		TargetCodecAudio: "copy",
-		SegmentDuration:  2,
-		HWAccel:          "videotoolbox",
-		TargetResolution: "1080p",
+		InputPath:           "/media/movie.mkv",
+		OutputDir:           "/tmp/out",
+		SessionID:           "session-vt-hevc",
+		FFmpegPath:          videoToolboxTestFFmpeg(t),
+		SourceVideoCodec:    "hevc",
+		SourceVideoProfile:  "Main 10",
+		SourceVideoBitDepth: 10,
+		TargetCodecVideo:    "hevc",
+		TargetCodecAudio:    "copy",
+		SegmentDuration:     2,
+		HWAccel:             "videotoolbox",
+		TargetResolution:    "1080p",
 	})
 
 	joined := strings.Join(args, " ")
 	if !strings.Contains(joined, "-c:v hevc_videotoolbox") {
 		t.Fatalf("videotoolbox args should use hevc_videotoolbox encoder: %s", joined)
 	}
-	if strings.Contains(joined, "-pix_fmt") {
-		t.Fatalf("videotoolbox hevc must not force a pixel format (HDR10 passthrough): %s", joined)
+	if !strings.Contains(joined, "-pix_fmt yuv420p -profile:v main") {
+		t.Fatalf("videotoolbox HEVC must force Main 8-bit output: %s", joined)
 	}
 	if !strings.Contains(joined, "-b:v 6000k -maxrate 6000k -bufsize 12000k") {
 		t.Fatalf("uncapped videotoolbox hevc should use the portable default bitrate: %s", joined)
+	}
+}
+
+func TestBuildFFmpegArgs_VideoToolboxHEVCHardwareToneMapKeepsNV12(t *testing.T) {
+	args := buildFFmpegArgs(TranscodeOpts{
+		InputPath: "/media/hdr.mkv", OutputDir: t.TempDir(), SessionID: "session-vt-hevc-tonemap",
+		FFmpegPath: videoToolboxTestFFmpeg(t), SourceVideoCodec: "hevc", SourceVideoProfile: "Main 10", SourceVideoBitDepth: 10,
+		TargetCodecVideo: "hevc", TargetCodecAudio: "aac", SegmentDuration: 2, TargetResolution: "1080p",
+		HWAccel: transcodeHWVideoToolbox, ToneMapPolicy: tonemap.PolicyHardwareThenSoftware,
+		ToneMapMode: tonemap.ModeHardware, ToneMapSourceKind: tonemap.SourcePQ, ToneMapFilter: tonemap.HardwareFilterVideoToolbox,
+		ToneMapRecipeVersion: TransformationHDRToSDRToneMapRecipeVersionV3,
+	})
+
+	joined := strings.Join(args, " ")
+	if !strings.Contains(joined, "-c:v hevc_videotoolbox") || !strings.Contains(joined, "hwdownload,format=p010le,format=nv12") {
+		t.Fatalf("hardware tone-map HEVC must encode its NV12 output: %s", joined)
+	}
+	if strings.Contains(joined, "-pix_fmt") || strings.Contains(joined, "-profile:v") {
+		t.Fatalf("hardware tone-map HEVC must not override its NV12 output: %s", joined)
 	}
 }
 
@@ -1669,5 +1871,166 @@ func TestBuildFFmpegArgs_VideoToolboxTextBurnInStaysOnCPUFilters(t *testing.T) {
 	}
 	if strings.Contains(joined, "hwdownload") || strings.Contains(joined, "hwupload") {
 		t.Fatalf("videotoolbox burn-in runs on software frames, no hw round-trip: %s", joined)
+	}
+}
+
+// nvencMixedStageOpts returns the automatic pipeline's CPU-decode + NVENC stage.
+func nvencMixedStageOpts(t *testing.T, opts TranscodeOpts) TranscodeOpts {
+	t.Helper()
+	pipeline := newResolvedAutoTranscodePipeline(opts, newAutoTranscodePipelineCache())
+	if !pipeline.AdvanceAfterFailure("") {
+		t.Fatal("expected mixed stage")
+	}
+	mixed := pipeline.Current()
+	if mixed.HWAccel != transcodeHWNVENC || !mixed.SoftwareVideoDecode {
+		t.Fatalf("mixed stage = hw_accel %q, software_decode %v", mixed.HWAccel, mixed.SoftwareVideoDecode)
+	}
+	return mixed
+}
+
+func nvencMixedBaseOpts() TranscodeOpts {
+	return TranscodeOpts{
+		InputPath:         "/media/movie.mkv",
+		OutputDir:         "/tmp/out",
+		SessionID:         "session-nvenc-mixed",
+		SourceVideoCodec:  "hevc",
+		TargetCodecVideo:  "h264",
+		TargetCodecAudio:  "aac",
+		SegmentDuration:   2,
+		HWAccel:           transcodeHWNVENC,
+		TargetResolution:  "720p",
+		TargetBitrateKbps: 2000,
+	}
+}
+
+func TestBuildFFmpegArgs_NVENCMixedStageUploadsToConfiguredDevice(t *testing.T) {
+	tests := []struct {
+		name       string
+		hwDevice   string
+		wantDevice string
+	}{
+		{name: "default device", hwDevice: "", wantDevice: "-init_hw_device cuda=cu -filter_hw_device cu"},
+		{name: "configured device", hwDevice: "1", wantDevice: "-init_hw_device cuda=cu:1 -filter_hw_device cu"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			opts := nvencMixedBaseOpts()
+			opts.HWDevice = tt.hwDevice
+			joined := strings.Join(buildFFmpegArgs(nvencMixedStageOpts(t, opts)), " ")
+
+			if !strings.Contains(joined, tt.wantDevice) {
+				t.Fatalf("mixed args should bind the upload device %q: %s", tt.wantDevice, joined)
+			}
+			if strings.Contains(joined, "-hwaccel cuda") || strings.Contains(joined, "-hwaccel_device") {
+				t.Fatalf("mixed args must decode on the CPU: %s", joined)
+			}
+			if !strings.Contains(joined, "-vf format=nv12,hwupload,scale_cuda=w=-2:h=720:format=nv12") {
+				t.Fatalf("mixed args should upload NV12 and scale on CUDA: %s", joined)
+			}
+			if strings.Contains(joined, "hwupload_cuda") {
+				t.Fatalf("hwupload_cuda ignores -filter_hw_device and must not be used: %s", joined)
+			}
+			if !strings.Contains(joined, "-c:v h264_nvenc") {
+				t.Fatalf("mixed args should keep the NVENC encoder: %s", joined)
+			}
+			// CPU-decoded frames autorotate before the upload, like libx264.
+			if strings.Contains(joined, "-noautorotate") {
+				t.Fatalf("mixed args must let FFmpeg autorotate CPU-decoded frames: %s", joined)
+			}
+			full := strings.Join(buildFFmpegArgs(opts), " ")
+			if !strings.Contains(full, "-hwaccel cuda -hwaccel_output_format cuda -noautorotate") {
+				t.Fatalf("full-hardware NVENC args changed: %s", full)
+			}
+		})
+	}
+}
+
+func TestBuildFFmpegArgs_NVENCMixedStageTextBurnInUploadsWithoutDownload(t *testing.T) {
+	opts := nvencMixedBaseOpts()
+	opts.HWDevice = "1"
+	opts.SubtitleTrackIndex = 1
+	opts.SubtitleBurnIn = true
+	opts.SubtitleCodec = "subrip"
+	joined := strings.Join(buildFFmpegArgs(nvencMixedStageOpts(t, opts)), " ")
+
+	want := "-vf format=yuv420p,scale=-2:720,subtitles=filename='/media/movie.mkv':si=1,format=nv12,hwupload "
+	if !strings.Contains(joined, want) {
+		t.Fatalf("mixed text burn-in should render on CPU and upload %q: %s", want, joined)
+	}
+	if strings.Contains(joined, "hwdownload") || strings.Contains(joined, "hwupload_cuda") {
+		t.Fatalf("mixed text burn-in must neither download nor use hwupload_cuda: %s", joined)
+	}
+	if !strings.Contains(joined, "-init_hw_device cuda=cu:1 -filter_hw_device cu") || !strings.Contains(joined, "-c:v h264_nvenc") {
+		t.Fatalf("mixed text burn-in should bind the CUDA device and encode on NVENC: %s", joined)
+	}
+}
+
+func TestBuildFFmpegArgs_NVENCMixedStageBitmapBurnInUploadsWithoutDownload(t *testing.T) {
+	opts := nvencMixedBaseOpts()
+	opts.HWDevice = "1"
+	opts.SubtitleTrackIndex = 1
+	opts.SubtitleBurnIn = true
+	opts.SubtitleCodec = "hdmv_pgs_subtitle"
+	joined := strings.Join(buildFFmpegArgs(nvencMixedStageOpts(t, opts)), " ")
+
+	want := "-filter_complex [0:v:0]format=yuv420p[vmain];[vmain][0:s:1]overlay=eof_action=pass,scale=-2:720,format=nv12,hwupload[vout]"
+	if !strings.Contains(joined, want) {
+		t.Fatalf("mixed bitmap burn-in should overlay on CPU and upload %q: %s", want, joined)
+	}
+	if strings.Contains(joined, "hwdownload") || strings.Contains(joined, "hwupload_cuda") {
+		t.Fatalf("mixed bitmap burn-in must neither download nor use hwupload_cuda: %s", joined)
+	}
+	if !strings.Contains(joined, "-init_hw_device cuda=cu:1 -filter_hw_device cu") || !strings.Contains(joined, "-c:v h264_nvenc") {
+		t.Fatalf("mixed bitmap burn-in should bind the CUDA device and encode on NVENC: %s", joined)
+	}
+}
+
+func TestBuildFFmpegArgs_ExplicitNVENCSoftwareDecodeStillUsesLibx264(t *testing.T) {
+	variants := map[string]func(*TranscodeOpts){
+		"plain": func(*TranscodeOpts) {},
+		"text burn-in": func(opts *TranscodeOpts) {
+			opts.SubtitleTrackIndex, opts.SubtitleBurnIn, opts.SubtitleCodec = 1, true, "subrip"
+		},
+		"bitmap burn-in": func(opts *TranscodeOpts) {
+			opts.SubtitleTrackIndex, opts.SubtitleBurnIn, opts.SubtitleCodec = 1, true, "hdmv_pgs_subtitle"
+		},
+	}
+	for name, mutate := range variants {
+		t.Run(name, func(t *testing.T) {
+			opts := nvencMixedBaseOpts()
+			opts.HWDevice = "1"
+			opts.SoftwareVideoDecode = true
+			mutate(&opts)
+			joined := strings.Join(buildFFmpegArgs(opts), " ")
+
+			if !strings.Contains(joined, "-c:v libx264") {
+				t.Fatalf("explicit NVENC with software decode should encode with libx264: %s", joined)
+			}
+			for _, forbidden := range []string{"cuda", "nvenc", "hwupload"} {
+				if strings.Contains(joined, forbidden) {
+					t.Fatalf("explicit NVENC with software decode must not emit %q: %s", forbidden, joined)
+				}
+			}
+		})
+	}
+}
+
+func TestBuildFFmpegArgs_NVENCFullHardwareArgsUnchanged(t *testing.T) {
+	opts := nvencMixedBaseOpts()
+	opts.HWDevice = "1"
+	pipeline := newResolvedAutoTranscodePipeline(opts, newAutoTranscodePipelineCache())
+	for name, candidate := range map[string]TranscodeOpts{"explicit": opts, "automatic full-hardware stage": pipeline.Current()} {
+		t.Run(name, func(t *testing.T) {
+			joined := strings.Join(buildFFmpegArgs(candidate), " ")
+			if !strings.Contains(joined, "-hwaccel cuda -hwaccel_output_format cuda -noautorotate -hwaccel_device 1 ") {
+				t.Fatalf("full-hardware NVENC should decode on CUDA device 1: %s", joined)
+			}
+			if strings.Contains(joined, "-init_hw_device") || strings.Contains(joined, "-filter_hw_device") {
+				t.Fatalf("full-hardware NVENC must not declare a filter device: %s", joined)
+			}
+			if !strings.Contains(joined, "-vf scale_cuda=w=-2:h=720:format=nv12") {
+				t.Fatalf("full-hardware NVENC should scale CUDA frames directly: %s", joined)
+			}
+		})
 	}
 }

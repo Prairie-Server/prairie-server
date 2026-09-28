@@ -12,10 +12,7 @@ import type {
   SubtitleMode,
 } from "@/player/types";
 import { getLanguageName } from "@/player/utils/languageNames";
-import {
-  getSubtitleFormatLabel,
-  isSubtitleFormatLabel,
-} from "@/player/utils/subtitleCodecs";
+import { getSubtitleFormatLabel, isSubtitleFormatLabel } from "@/player/utils/subtitleCodecs";
 import {
   buildPrePlaySubtitleCandidates,
   formatSubtitlePillSummary,
@@ -92,11 +89,7 @@ function SelectionRow({
           <span className="text-sm font-medium">{title}</span>
           {badges}
         </div>
-        {description && (
-          <div className="text-muted-foreground mt-0.5 text-xs">
-            {description}
-          </div>
-        )}
+        {description && <div className="text-muted-foreground mt-0.5 text-xs">{description}</div>}
       </div>
       <div className="flex w-4 shrink-0 justify-end">
         {active && <Check className="text-primary size-4" />}
@@ -105,11 +98,7 @@ function SelectionRow({
   );
 
   if (!onSelect) {
-    return (
-      <div className="flex items-start gap-3 rounded-lg px-3 py-2">
-        {content}
-      </div>
-    );
+    return <div className="flex items-start gap-3 rounded-lg px-3 py-2">{content}</div>;
   }
 
   return (
@@ -140,16 +129,12 @@ function SubtitleSection({
 
   return (
     <div>
-      <div className="text-muted-foreground/60 mb-1 px-3 text-[11px] font-medium">
-        {title}
-      </div>
+      <div className="text-muted-foreground/60 mb-1 px-3 text-[11px] font-medium">{title}</div>
       <div className="space-y-0.5">
         {rows.map((row) => {
           const titleFlags = inferSubtitleFlagsFromTitle(row.title);
           const description =
-            row.title &&
-            !titleFlags.flagOnly &&
-            !isSubtitleFormatLabel(row.title, row.codec)
+            row.title && !titleFlags.flagOnly && !isSubtitleFormatLabel(row.title, row.codec)
               ? row.title
               : row.releaseName;
 
@@ -159,27 +144,17 @@ function SubtitleSection({
               active={subtitleSelectionEquals(activeSelection, row.selection)}
               title={row.summary}
               description={description}
-              onSelect={
-                onSelectSubtitle
-                  ? () => onSelectSubtitle(row.selection)
-                  : undefined
-              }
+              onSelect={onSelectSubtitle ? () => onSelectSubtitle(row.selection) : undefined}
               badges={
                 <>
                   {row.codec && (
-                    <Badge
-                      variant="secondary"
-                      className="px-1.5 py-0 text-[10px] uppercase"
-                    >
-                      {getSubtitleFormatLabel(row.codec) ||
-                        row.codec.toUpperCase()}
+                    <Badge variant="secondary" className="px-1.5 py-0 text-[10px] uppercase">
+                      {getSubtitleFormatLabel(row.codec) || row.codec.toUpperCase()}
                     </Badge>
                   )}
                   <SubtitleFlagBadges
                     forced={row.forced || titleFlags.forced}
-                    hearingImpaired={
-                      row.hearingImpaired || titleFlags.hearingImpaired
-                    }
+                    hearingImpaired={row.hearingImpaired || titleFlags.hearingImpaired}
                     isDefault={row.default}
                   />
                 </>
@@ -198,19 +173,14 @@ function formatExplicitSelectionSummary(
   if (!selection) return "Off";
   return formatSubtitlePillSummary({
     label: selection.label,
-    languageLabel:
-      getLanguageName(selection.language ?? "") ||
-      selection.language ||
-      "Unknown",
+    languageLabel: getLanguageName(selection.language ?? "") || selection.language || "Unknown",
     codec: selection.codec,
     forced: selection.forced,
     hearingImpaired: selection.hearing_impaired,
   });
 }
 
-function formatCandidatePillSummary(
-  candidate: PrePlaySubtitleCandidate,
-): string {
+function formatCandidatePillSummary(candidate: PrePlaySubtitleCandidate): string {
   return formatSubtitlePillSummary({
     label: candidate.selection.label,
     languageLabel: candidate.languageLabel,
@@ -238,21 +208,12 @@ export default function SubtitlesPopover({
   // Downloaded subtitles normally load lazily on open, but when the saved
   // preference points at one, the closed trigger's Auto summary needs them
   // to reflect the override.
-  const needsDownloaded =
-    open || preferredSubtitleTrackSignature?.source === "downloaded";
-  const downloadedQuery = useDownloadedSubtitles(
-    needsDownloaded ? version?.file_id : undefined,
-  );
-  const isInteractive = Boolean(
-    onSelectSubtitle || onSelectSubtitleOff || onResetSelection,
-  );
+  const needsDownloaded = open || preferredSubtitleTrackSignature?.source === "downloaded";
+  const downloadedQuery = useDownloadedSubtitles(needsDownloaded ? version?.file_id : undefined);
+  const isInteractive = Boolean(onSelectSubtitle || onSelectSubtitleOff || onResetSelection);
 
   const candidates = useMemo(
-    () =>
-      buildPrePlaySubtitleCandidates(
-        version?.subtitle_tracks,
-        downloadedQuery.data ?? [],
-      ),
+    () => buildPrePlaySubtitleCandidates(version?.subtitle_tracks, downloadedQuery.data ?? []),
     [downloadedQuery.data, version?.subtitle_tracks],
   );
   const activeAudioLanguage = useMemo(
@@ -286,9 +247,7 @@ export default function SubtitlesPopover({
   // A stored track signature means a manual override is saved for this item;
   // present the resolved track as the selection rather than an "Auto" guess.
   const overrideCandidate =
-    selectionMode === "auto" && preferredSubtitleTrackSignature
-      ? autoCandidate
-      : null;
+    selectionMode === "auto" && preferredSubtitleTrackSignature ? autoCandidate : null;
 
   const activeSummary =
     selectionMode === "auto"
@@ -333,9 +292,7 @@ export default function SubtitlesPopover({
               active={selectionMode === "auto" && !overrideCandidate}
               title="Auto"
               description={
-                overrideCandidate
-                  ? "Reset to profile defaults"
-                  : (autoCandidate?.summary ?? "Off")
+                overrideCandidate ? "Reset to profile defaults" : (autoCandidate?.summary ?? "Off")
               }
               onSelect={onResetSelection}
             />
@@ -372,9 +329,7 @@ export default function SubtitlesPopover({
           />
         )}
         {candidates.all.length === 0 && !downloadedQuery.isLoading && (
-          <div className="text-muted-foreground px-3 py-2 text-sm">
-            No subtitles available.
-          </div>
+          <div className="text-muted-foreground px-3 py-2 text-sm">No subtitles available.</div>
         )}
       </div>
     </DetailPopover>

@@ -1,20 +1,21 @@
 import { describe, expect, it } from "vitest";
 
 import type { SettingsSectionEntry } from "@/api/types";
+import { V2ProblemError } from "@/api/v2/request";
 
 import {
   applySectionDeletion,
   canMutateSectionSettings,
   buildSectionOverrides,
   buildProfileGallerySection,
+  canAddAdminOnlyRecipes,
   hydrateRemovedSystemSections,
+  sectionSaveErrorMessage,
   shouldRestoreLatestSaveFailure,
   shouldRestoreSelectionState,
 } from "./HomeScreenSettings";
 
-function makeSection(
-  overrides: Partial<SettingsSectionEntry> = {},
-): SettingsSectionEntry {
+function makeSection(overrides: Partial<SettingsSectionEntry> = {}): SettingsSectionEntry {
   return {
     id: overrides.id ?? "section-1",
     section_type: overrides.section_type ?? "recently_added",
@@ -115,10 +116,7 @@ describe("HomeScreenSettings helpers", () => {
       "custom-1",
     );
 
-    expect(result.sections.map((section) => section.id)).toEqual([
-      "admin-1",
-      "admin-2",
-    ]);
+    expect(result.sections.map((section) => section.id)).toEqual(["admin-1", "admin-2"]);
     expect(result.removedSystemSections).toEqual([]);
   });
 
@@ -133,10 +131,7 @@ describe("HomeScreenSettings helpers", () => {
       "admin-2",
     );
 
-    expect(result.sections.map((section) => section.id)).toEqual([
-      "admin-1",
-      "custom-1",
-    ]);
+    expect(result.sections.map((section) => section.id)).toEqual(["admin-1", "custom-1"]);
     expect(result.removedSystemSections).toEqual([{ id: "admin-2" }]);
   });
 
@@ -193,14 +188,56 @@ describe("HomeScreenSettings helpers", () => {
   });
 
   it("only restores rollback state for the latest save attempt in the current selection", () => {
-    expect(shouldRestoreLatestSaveFailure("library:1", "library:1", 3, 3)).toBe(
-      true,
+    expect(shouldRestoreLatestSaveFailure("library:1", "library:1", 3, 3)).toBe(true);
+    expect(shouldRestoreLatestSaveFailure("library:1", "library:1", 4, 3)).toBe(false);
+    expect(shouldRestoreLatestSaveFailure("library:2", "library:1", 3, 3)).toBe(false);
+  });
+});
+
+describe("HomeScreenSettings custom section permission", () => {
+  it("offers admin-only recipes to admins and to profiles the server allows", () => {
+    expect(canAddAdminOnlyRecipes("admin", false)).toBe(true);
+    expect(canAddAdminOnlyRecipes("admin", undefined)).toBe(true);
+    expect(canAddAdminOnlyRecipes("user", true)).toBe(true);
+  });
+
+  it("withholds admin-only recipes from other profiles, including before the flag loads", () => {
+    expect(canAddAdminOnlyRecipes("user", false)).toBe(false);
+    expect(canAddAdminOnlyRecipes("user", undefined)).toBe(false);
+    expect(canAddAdminOnlyRecipes(undefined, undefined)).toBe(false);
+  });
+
+  it("explains a permission denial with the server's stated cause", () => {
+    const refused = new V2ProblemError("replaceProfileSectionOverrides", {
+      type: "https://siloserver.org/docs/api/v2/problems/permission_denied",
+      title: "Permission denied",
+      status: 403,
+      detail: "this server does not allow profiles to build custom sections",
+      instance: "test",
+    });
+    const invalid = new V2ProblemError("replaceProfileSectionOverrides", {
+      type: "https://siloserver.org/docs/api/v2/problems/validation_failed",
+      title: "Invalid",
+      status: 422,
+      detail: "library_ids: at least one",
+      instance: "test",
+    });
+
+    const demo = new V2ProblemError("replaceProfileSectionOverrides", {
+      type: "https://siloserver.org/docs/api/v2/problems/permission_denied",
+      title: "Permission denied",
+      status: 403,
+      detail: "This action is not available in demo mode.",
+      instance: "test",
+    });
+
+    expect(sectionSaveErrorMessage(refused)).toBe(
+      "Failed to save section changes: this server does not allow profiles to build custom sections",
     );
-    expect(shouldRestoreLatestSaveFailure("library:1", "library:1", 4, 3)).toBe(
-      false,
+    expect(sectionSaveErrorMessage(demo)).toBe(
+      "Failed to save section changes: This action is not available in demo mode.",
     );
-    expect(shouldRestoreLatestSaveFailure("library:2", "library:1", 3, 3)).toBe(
-      false,
-    );
+    expect(sectionSaveErrorMessage(invalid)).toBe("Failed to save section changes");
+    expect(sectionSaveErrorMessage(new Error("network"))).toBe("Failed to save section changes");
   });
 });

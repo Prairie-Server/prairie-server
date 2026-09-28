@@ -2,6 +2,7 @@ import {
   lazy,
   Suspense,
   useEffect,
+  useLayoutEffect,
   useRef,
   useState,
   type ReactNode,
@@ -25,13 +26,12 @@ import { RouterProvider } from "react-router/dom";
 import { QueryClientProvider, useQueryClient } from "@tanstack/react-query";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
+import { CHANGE_PASSWORD_PATH } from "@/hooks/usePostSignInNavigation";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
+import { useNavigationDirection } from "@/hooks/useNavigationDirection";
 import { ThemeProvider } from "@/hooks/useTheme";
-import {
-  DateTimeFormatProvider,
-  useDateTimeFormat,
-} from "@/hooks/useDateTimeFormat";
+import { DateTimeFormatProvider, useDateTimeFormat } from "@/hooks/useDateTimeFormat";
 import { CustomThemeProvider } from "@/contexts/CustomThemeProvider";
 import { BrandingProvider } from "@/contexts/BrandingProvider";
 import { UICustomizationProvider } from "@/contexts/UICustomizationProvider";
@@ -45,14 +45,10 @@ import { useSettingValuesRealtime } from "@/hooks/queries/settingValues";
 import Layout from "@/components/Layout";
 import Home from "@/pages/Home";
 import Login from "@/pages/Login";
-import Catalog from "@/pages/Catalog";
-import { useFavorites } from "@/hooks/queries/favorites";
 import { useRequestFeatureStatus } from "@/hooks/queries/useRequests";
-import { isTasteSeedDismissed } from "@/lib/tasteSeed";
 import { OnboardingGate } from "@/components/onboarding/OnboardingGate";
-import { useOnboardingState } from "@/hooks/queries/onboarding";
+import TasteSeedGate from "@/components/TasteSeedGate";
 import SettingsLayout from "@/pages/SettingsLayout";
-import PlaybackSettings from "@/pages/settings/PlaybackSettings";
 import {
   WatchPlaybackBar,
   WatchPlaybackHost,
@@ -67,12 +63,11 @@ import {
 } from "@/pages/catalogSearchParams";
 import { buildLegacyAutoscanRedirectTarget } from "@/pages/autoscanSearchParams";
 import { buildLegacyWebhookSyncRedirectTarget } from "@/lib/webhookSync";
+import { guardRedirectTarget } from "@/lib/authRedirect";
 import { toast } from "sonner";
 import { prewarmCodecDetection } from "@/player/hooks/useCodecDetection";
-import {
-  prefetchRouteChunks,
-  type RouteChunkImport,
-} from "@/lib/routeChunkPrefetch";
+import { prefetchRouteChunks, type RouteChunkImport } from "@/lib/routeChunkPrefetch";
+import { importCatalog } from "@/pages/catalogRoute";
 
 // Hot routes keep their import factory in a named binding so the idle warm-up
 // below can pull the chunk before the user navigates. See HOT_ROUTE_CHUNKS.
@@ -87,6 +82,7 @@ const OAuthComplete = lazy(() => import("@/pages/OAuthComplete"));
 const ActivateDevice = lazy(() => import("@/pages/ActivateDevice"));
 const SetupWizard = lazy(() => import("@/pages/SetupWizard"));
 const Profiles = lazy(() => import("@/pages/Profiles"));
+const Catalog = lazy(importCatalog);
 const LibraryPage = lazy(importLibraryPage);
 const ItemDetail = lazy(importItemDetail);
 const EbookReader = lazy(() => import("@/pages/EbookReader"));
@@ -95,9 +91,8 @@ const Collections = lazy(importCollections);
 const CollectionEditor = lazy(() => import("@/pages/CollectionEditor"));
 const Notifications = lazy(() => import("@/pages/Notifications"));
 const DeviceSettings = lazy(() => import("@/pages/settings/DeviceSettings"));
-const NotificationsSettings = lazy(
-  () => import("@/pages/settings/NotificationsSettings"),
-);
+const PlaybackSettings = lazy(() => import("@/pages/settings/PlaybackSettings"));
+const NotificationsSettings = lazy(() => import("@/pages/settings/NotificationsSettings"));
 const Requests = lazy(() => import("@/pages/Requests"));
 const RequestBrowse = lazy(() => import("@/pages/RequestBrowse"));
 const RequestDetail = lazy(() => import("@/pages/RequestDetail"));
@@ -110,15 +105,11 @@ const AdminUsers = lazy(() => import("@/pages/AdminUsers"));
 const AdminRequests = lazy(() => import("@/pages/AdminRequests"));
 const AdminDevices = lazy(() => import("@/pages/AdminDevices"));
 const AdminLibraries = lazy(() => import("@/pages/AdminLibraries"));
-const AdminSettingsLayout = lazy(
-  () => import("@/pages/admin-settings/AdminSettingsLayout"),
-);
+const AdminSettingsLayout = lazy(() => import("@/pages/admin-settings/AdminSettingsLayout"));
 const AdminNodes = lazy(() => import("@/pages/AdminNodes"));
 const AdminSections = lazy(() => import("@/pages/AdminSections"));
 const AdminCollections = lazy(() => import("@/pages/AdminCollections"));
-const AdminCollectionEditor = lazy(
-  () => import("@/pages/AdminCollectionEditor"),
-);
+const AdminCollectionEditor = lazy(() => import("@/pages/AdminCollectionEditor"));
 const AdminPlaybackHistory = lazy(() => import("@/pages/AdminPlaybackHistory"));
 const AdminMarkerHistory = lazy(() => import("@/pages/AdminMarkerHistory"));
 const AdminMaintenance = lazy(() => import("@/pages/AdminMaintenance"));
@@ -128,75 +119,51 @@ const AdminUserDetail = lazy(() => import("@/pages/AdminUserDetail"));
 const AdminTasks = lazy(() => import("@/pages/AdminTasks"));
 const AdminTaskDetail = lazy(() => import("@/pages/AdminTaskDetail"));
 const AdminPlugins = lazy(() => import("@/pages/AdminPlugins"));
+const AdminPluginDetail = lazy(() => import("@/pages/AdminPluginDetail"));
 const AdminHistoryImport = lazy(() => import("@/pages/AdminHistoryImport"));
 const AdminRecommendations = lazy(() => import("@/pages/AdminRecommendations"));
-const AdminPolicyLayout = lazy(
-  () => import("@/pages/admin-policy/AdminPolicyLayout"),
-);
+const AdminPolicyLayout = lazy(() => import("@/pages/admin-policy/AdminPolicyLayout"));
 const Recommendations = lazy(importRecommendations);
-const RecommendationsSection = lazy(
-  () => import("@/pages/RecommendationsSection"),
-);
+const RecommendationsSection = lazy(() => import("@/pages/RecommendationsSection"));
 const Calendar = lazy(() => import("@/pages/Calendar"));
 const Signup = lazy(() => import("@/pages/Signup"));
 const InviteClaim = lazy(() => import("@/pages/InviteClaim"));
+const PasswordReset = lazy(() => import("@/pages/PasswordReset"));
+const ForgotPassword = lazy(() => import("@/pages/ForgotPassword"));
+const ChoosePassword = lazy(() => import("@/pages/ChoosePassword"));
 const HouseholdSetup = lazy(() => import("@/pages/HouseholdSetup"));
 const TasteSeed = lazy(() => import("@/pages/TasteSeed"));
-const AppearanceSettings = lazy(
-  () => import("@/pages/settings/AppearanceSettings"),
-);
-const AccessibilitySettings = lazy(
-  () => import("@/pages/settings/AccessibilitySettings"),
-);
-const ProfilesSettings = lazy(
-  () => import("@/pages/settings/ProfilesSettings"),
-);
+const AccessibilitySettings = lazy(() => import("@/pages/settings/AccessibilitySettings"));
+const ProfilesSettings = lazy(() => import("@/pages/settings/ProfilesSettings"));
 const LibrarySettings = lazy(() => import("@/pages/settings/LibrarySettings"));
-const HistoryImportSettings = lazy(
-  () => import("@/pages/settings/HistoryImportSettings"),
-);
-const WebhookSyncSettings = lazy(
-  () => import("@/pages/settings/WebhookSyncSettings"),
-);
-const WatchProvidersSettings = lazy(
-  () => import("@/pages/settings/WatchProvidersSettings"),
-);
+const HistoryImportSettings = lazy(() => import("@/pages/settings/HistoryImportSettings"));
+const WebhookSyncSettings = lazy(() => import("@/pages/settings/WebhookSyncSettings"));
+const WatchProvidersSettings = lazy(() => import("@/pages/settings/WatchProvidersSettings"));
 const SubtitleAppearanceSettings = lazy(
   () => import("@/pages/settings/SubtitleAppearanceSettings"),
 );
-const HomeScreenSettings = lazy(
-  () => import("@/pages/settings/HomeScreenSettings"),
-);
-const ThemeEditorSettings = lazy(
-  () => import("@/pages/settings/ThemeEditorSettings"),
-);
-const CardOverlaySettings = lazy(
-  () => import("@/pages/settings/CardOverlaySettings"),
-);
-const PersonalizeSettings = lazy(
-  () => import("@/pages/settings/PersonalizeSettings"),
-);
-const ConnectAppsSettings = lazy(
-  () => import("@/pages/settings/ConnectAppsSettings"),
-);
-const InterfaceSettings = lazy(
-  () => import("@/pages/settings/InterfaceSettings"),
-);
-const WatchTogetherJoin = lazy(() => import("@/pages/WatchTogetherJoin"));
-const WatchTogetherRoomPage = lazy(
-  () => import("@/pages/WatchTogetherRoomPage"),
-);
+const HomeScreenSettings = lazy(() => import("@/pages/settings/HomeScreenSettings"));
+const CardOverlaySettings = lazy(() => import("@/pages/settings/CardOverlaySettings"));
+const PersonalizeSettings = lazy(() => import("@/pages/settings/PersonalizeSettings"));
+const ConnectAppsSettings = lazy(() => import("@/pages/settings/ConnectAppsSettings"));
+const InterfaceSettings = lazy(() => import("@/pages/settings/InterfaceSettings"));
+const AccountSettings = lazy(() => import("@/pages/settings/AccountSettings"));
+const WatchPartyHub = lazy(() => import("@/pages/watchtogether/WatchPartyHub"));
+const WatchPartyInvite = lazy(() => import("@/pages/watchtogether/WatchPartyInvite"));
+const WatchTogetherRoomPage = lazy(() => import("@/pages/watchtogether/WatchTogetherRoomPage"));
 const WatchRoute = lazy(() => import("@/pages/WatchRoute"));
 const ProfileCustomizeHome = lazy(() => import("@/pages/ProfileCustomizeHome"));
 
 /**
  * Routes a browsing session reaches within the first few interactions. Home
- * links straight into item details, the sidebar into libraries, and item pages
- * into people and recommendations, so paying their chunk cost while the app is
- * idle is cheaper than paying it inside a navigation.
+ * links straight into item details and, through search and "see all", the
+ * catalog; the sidebar leads into libraries, and item pages into people and
+ * recommendations. Paying their chunk cost while the app is idle is cheaper
+ * than paying it inside a navigation.
  */
 const HOT_ROUTE_CHUNKS: readonly RouteChunkImport[] = [
   importItemDetail,
+  importCatalog,
   importLibraryPage,
   importPersonDetail,
   importRecommendations,
@@ -211,7 +178,10 @@ const HOT_ROUTE_CHUNKS: readonly RouteChunkImport[] = [
  */
 function useScrollRestoration() {
   const { pathname } = useLocation();
-  useEffect(() => {
+  // Layout effect, not effect: after paint the browser has already shown one
+  // frame of the new route at the old route's scroll offset, which reads as
+  // a jump to the top rather than an arrival at it.
+  useLayoutEffect(() => {
     window.scrollTo(0, 0);
   }, [pathname]);
 }
@@ -241,6 +211,17 @@ function ScrollRestorationManager() {
   return null;
 }
 
+/**
+ * Tracks history provenance and the direction the page is moving in. A leaf
+ * rather than a call inside `AppShell`: the hook reads the location, and
+ * subscribing `AppShell` to it would re-render the whole provider stack on
+ * every navigation.
+ */
+function NavigationDirectionManager() {
+  useNavigationDirection();
+  return null;
+}
+
 function RouteLoading() {
   return (
     <div className="p-8" role="status" aria-live="polite">
@@ -250,25 +231,12 @@ function RouteLoading() {
   );
 }
 
-/**
- * Builds a guard redirect target (e.g. "/login") that preserves the current
- * location so the user returns to it after authenticating.
- */
-function guardRedirectTarget(
-  base: string,
-  location: ReturnType<typeof useLocation>,
-): string {
-  const destination = `${location.pathname}${location.search}`;
-  if (destination === "/" || destination === "") {
-    return base;
-  }
-  return `${base}?redirect=${encodeURIComponent(destination)}`;
-}
-
 function RequireAuth({ children }: { children: ReactNode }) {
-  const { user, loading, setupLoading } = useAuth();
+  const { user, pendingPasswordChange, loading, setupLoading } = useAuth();
   const location = useLocation();
-  if (loading || setupLoading) {
+  // Setup status only decides where a signed-out visitor goes; a restored
+  // session does not wait for it.
+  if (loading || (setupLoading && !user)) {
     return (
       <div className="p-8" role="status" aria-live="polite">
         <span className="sr-only">Loading application</span>
@@ -276,14 +244,17 @@ function RequireAuth({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  if (!user)
-    return <Navigate to={guardRedirectTarget("/login", location)} replace />;
+  // A temporary password confines the session to choosing a new one.
+  if (pendingPasswordChange) {
+    return <Navigate to={guardRedirectTarget(CHANGE_PASSWORD_PATH, location)} replace />;
+  }
+  if (!user) return <Navigate to={guardRedirectTarget("/login", location)} replace />;
   return <>{children}</>;
 }
 
 function SetupGate({ children }: { children: ReactNode }) {
   const { user, setupLoading, setupRequired } = useAuth();
-  if (setupLoading) {
+  if (setupLoading && !user) {
     return (
       <div className="p-8" role="status" aria-live="polite">
         <span className="sr-only">Loading application</span>
@@ -298,8 +269,7 @@ function SetupGate({ children }: { children: ReactNode }) {
 function RequireProfile({ children }: { children: ReactNode }) {
   const { profile } = useAuth();
   const location = useLocation();
-  if (!profile)
-    return <Navigate to={guardRedirectTarget("/profiles", location)} replace />;
+  if (!profile) return <Navigate to={guardRedirectTarget("/profiles", location)} replace />;
   return <>{children}</>;
 }
 
@@ -328,52 +298,31 @@ function RequireRequestsEnabled({ children }: { children: ReactNode }) {
       </div>
     );
   }
-  if (status.data?.requests_enabled !== true)
-    return <Navigate to="/" replace />;
+  if (status.data?.requests_enabled !== true) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
 /**
- * Redirects new profiles (no favorites yet, no skip flag) to the taste-seed
- * onboarding screen the first time they land on Home. Only checks on Home so
- * deep-links to other pages aren't blocked. Once the user picks any items
- * (or favorites anything by normal use), or explicitly skips, the gate stops
- * redirecting.
+ * Clears user-scoped query caches on profile switch or sign-out. An account
+ * change clears in AuthProvider, before the new account renders.
  */
-function TasteSeedGate({ children }: { children: ReactNode }) {
-  const { profile } = useAuth();
-  const { data: favorites, isPending, isError } = useFavorites();
-  const onboarding = useOnboardingState({ enabled: profile !== null });
-
-  if (isPending || isError || !profile) return <>{children}</>;
-
-  // While the feature tour is pending (or its state unknown) the tour owns
-  // the first-run moment — it ends by handing off to /taste-seed itself, so
-  // redirecting now would jump the queue.
-  if (onboarding.data === undefined || !onboarding.data.done)
-    return <>{children}</>;
-
-  const hasFavorites = (favorites?.length ?? 0) > 0;
-  const dismissed = isTasteSeedDismissed(profile.id);
-
-  if (!hasFavorites && !dismissed) {
-    return <Navigate to="/taste-seed" replace />;
-  }
-  return <>{children}</>;
-}
-
-/** Clears user-scoped query caches on profile switch or logout. */
-function QueryCacheManager() {
+export function QueryCacheManager() {
   const { user, profile } = useAuth();
   const qc = useQueryClient();
+  const hadUser = useRef(false);
   const prevProfileId = useRef(profile?.id);
 
   useEffect(() => {
     if (!user) {
-      qc.clear();
+      // Only a real sign-out drops the cache. Boot starts with no user while
+      // the session restores, and clearing then would discard the reads the
+      // shell already started and send them again.
+      if (hadUser.current) qc.clear();
+      hadUser.current = false;
       prevProfileId.current = undefined;
       return;
     }
+    hadUser.current = true;
     if (prevProfileId.current && prevProfileId.current !== profile?.id) {
       qc.removeQueries({ queryKey: ["favorites"] });
       qc.removeQueries({ queryKey: ["watchlist"] });
@@ -404,16 +353,13 @@ function AppChrome() {
   }
 
   async function handleEndImpersonation() {
-    const returnPath =
-      loadStoredImpersonationAdminSession()?.returnPath ?? "/admin/users";
+    const returnPath = loadStoredImpersonationAdminSession()?.returnPath ?? "/admin/users";
 
     try {
       await endImpersonation();
       navigate(returnPath, { replace: true });
     } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "Failed to end impersonation",
-      );
+      toast.error(error instanceof Error ? error.message : "Failed to end impersonation");
     }
   }
 
@@ -428,12 +374,7 @@ function AppChrome() {
 
 function LegacySearchRedirect() {
   const [searchParams] = useSearchParams();
-  return (
-    <Navigate
-      to={buildQueryCatalogHref(searchParams.get("q") ?? undefined)}
-      replace
-    />
-  );
+  return <Navigate to={buildQueryCatalogHref(searchParams.get("q") ?? undefined)} replace />;
 }
 
 function LegacyBrowseRedirect() {
@@ -514,6 +455,11 @@ function AppRoutes() {
       <Route path="/setup" element={<SetupWizard />} />
       <Route path="/signup" element={<Signup />} />
       <Route path="/invite/:token" element={<InviteClaim />} />
+      <Route path="/reset-password/:token" element={<PasswordReset />} />
+      <Route path="/forgot-password" element={<ForgotPassword />} />
+      <Route path={CHANGE_PASSWORD_PATH} element={<ChoosePassword />} />
+      {/* Shared Watch Party links: offers the native app on phones, else forwards to /rooms. */}
+      <Route path="/rooms/join" element={<WatchPartyInvite />} />
       <Route path="/household-setup" element={<HouseholdSetup />} />
       <Route
         path="/*"
@@ -562,54 +508,48 @@ function AppRoutes() {
                   <Route path="libraries" element={<AdminLibraries />} />
                   <Route path="maintenance" element={<AdminMaintenance />} />
                   <Route path="collections" element={<AdminCollections />} />
-                  <Route
-                    path="collections/new"
-                    element={<AdminCollectionEditor />}
-                  />
-                  <Route
-                    path="collections/:id/edit"
-                    element={<AdminCollectionEditor />}
-                  />
+                  <Route path="collections/new" element={<AdminCollectionEditor />} />
+                  <Route path="collections/:id/edit" element={<AdminCollectionEditor />} />
                   <Route path="requests" element={<AdminRequests />} />
                   {/* Autoscan is a tab on Libraries now; keep old links working. */}
                   <Route path="autoscan" element={<LegacyAutoscanRedirect />} />
                   <Route path="history" element={<AdminPlaybackHistory />} />
-                  <Route
-                    path="marker-history"
-                    element={<AdminMarkerHistory />}
-                  />
-                  <Route
-                    path="history-import"
-                    element={<AdminHistoryImport />}
-                  />
+                  <Route path="marker-history" element={<AdminMarkerHistory />} />
+                  <Route path="history-import" element={<AdminHistoryImport />} />
                   <Route path="users" element={<AdminUsers />} />
                   <Route path="users/:id" element={<AdminUserDetail />} />
                   <Route path="access-groups" element={<AdminAccessGroups />} />
+                  <Route path="access-groups/:id" element={<AdminAccessGroups />} />
                   <Route path="devices" element={<AdminDevices />} />
-                  <Route
-                    path="devices/:userId/:deviceId"
-                    element={<AdminDevices />}
-                  />
+                  <Route path="devices/:userId/:deviceId" element={<AdminDevices />} />
                   <Route path="nodes" element={<AdminNodes />} />
                   <Route path="sections" element={<AdminSections />} />
                   <Route path="plugins" element={<AdminPlugins />} />
+                  <Route path="plugins/:pluginId" element={<AdminPluginDetail />} />
                   <Route path="settings/*" element={<AdminSettingsLayout />} />
                   <Route path="policy" element={<AdminPolicyLayout />} />
-                  <Route
-                    path="recommendations"
-                    element={<AdminRecommendations />}
-                  />
+                  <Route path="recommendations" element={<AdminRecommendations />} />
                   <Route path="api-keys" element={<AdminApiKeys />} />
                   <Route path="subtitles" element={<AdminSubtitles />} />
                   <Route path="tasks" element={<AdminTasks />} />
                   <Route path="tasks/:key" element={<AdminTaskDetail />} />
-                  <Route
-                    path="stats"
-                    element={<Navigate to="/admin" replace />}
-                  />
+                  <Route path="stats" element={<Navigate to="/admin" replace />} />
                   <Route path="*" element={<Navigate to="/admin" replace />} />
                 </Route>
-                {/* Settings area — own layout, requires profile */}
+                {/* Account credentials are reachable by admins before profile selection. */}
+                <Route
+                  path="/settings/account"
+                  element={
+                    <RequirePrimaryOrAdmin>
+                      <UICustomizedLayout>
+                        <SettingsLayout />
+                      </UICustomizedLayout>
+                    </RequirePrimaryOrAdmin>
+                  }
+                >
+                  <Route index element={<AccountSettings />} />
+                </Route>
+                {/* Remaining settings use profile-scoped values and require a profile. */}
                 <Route
                   path="/settings/*"
                   element={
@@ -621,16 +561,18 @@ function AppRoutes() {
                   }
                 >
                   <Route index element={null} />
-                  <Route path="appearance" element={<AppearanceSettings />} />
-                  <Route path="interface" element={<InterfaceSettings />} />
+                  {/* Theme choice moved to the admin; date and time formats live on
+                      Accessibility. Keep the old paths landing somewhere useful. */}
+                  <Route
+                    path="appearance"
+                    element={<Navigate to="/settings/accessibility" replace />}
+                  />
                   <Route
                     path="theme-editor"
-                    element={<ThemeEditorSettings />}
+                    element={<Navigate to="/settings/accessibility" replace />}
                   />
-                  <Route
-                    path="accessibility"
-                    element={<AccessibilitySettings />}
-                  />
+                  <Route path="interface" element={<InterfaceSettings />} />
+                  <Route path="accessibility" element={<AccessibilitySettings />} />
                   <Route path="playback" element={<PlaybackSettings />} />
                   <Route
                     path="profiles"
@@ -641,45 +583,18 @@ function AppRoutes() {
                     }
                   />
                   <Route path="libraries" element={<LibrarySettings />} />
-                  <Route
-                    path="history-import"
-                    element={<HistoryImportSettings />}
-                  />
-                  <Route
-                    path="plex-webhooks"
-                    element={<LegacyWebhookSyncRedirect />}
-                  />
-                  <Route
-                    path="webhook-sync"
-                    element={<WebhookSyncSettings />}
-                  />
-                  <Route
-                    path="watch-providers"
-                    element={<WatchProvidersSettings />}
-                  />
-                  <Route
-                    path="subtitle-appearance"
-                    element={<SubtitleAppearanceSettings />}
-                  />
+                  <Route path="history-import" element={<HistoryImportSettings />} />
+                  <Route path="plex-webhooks" element={<LegacyWebhookSyncRedirect />} />
+                  <Route path="webhook-sync" element={<WebhookSyncSettings />} />
+                  <Route path="watch-providers" element={<WatchProvidersSettings />} />
+                  <Route path="subtitle-appearance" element={<SubtitleAppearanceSettings />} />
                   <Route path="home-screen" element={<HomeScreenSettings />} />
-                  <Route
-                    path="card-overlays"
-                    element={<CardOverlaySettings />}
-                  />
+                  <Route path="card-overlays" element={<CardOverlaySettings />} />
                   <Route path="personalize" element={<PersonalizeSettings />} />
                   <Route path="devices" element={<DeviceSettings />} />
-                  <Route
-                    path="notifications"
-                    element={<NotificationsSettings />}
-                  />
-                  <Route
-                    path="connect-apps"
-                    element={<ConnectAppsSettings />}
-                  />
-                  <Route
-                    path="*"
-                    element={<Navigate to="/settings/playback" replace />}
-                  />
+                  <Route path="notifications" element={<NotificationsSettings />} />
+                  <Route path="connect-apps" element={<ConnectAppsSettings />} />
+                  <Route path="*" element={<Navigate to="/settings/playback" replace />} />
                 </Route>
                 <Route
                   path="/*"
@@ -698,61 +613,28 @@ function AppRoutes() {
                             }
                           />
                           <Route path="/catalog" element={<Catalog />} />
-                          <Route
-                            path="/library/:libraryId"
-                            element={<LibraryPage />}
-                          />
-                          <Route
-                            path="/search"
-                            element={<LegacySearchRedirect />}
-                          />
-                          <Route
-                            path="/browse"
-                            element={<LegacyBrowseRedirect />}
-                          />
+                          <Route path="/library/:libraryId" element={<LibraryPage />} />
+                          <Route path="/search" element={<LegacySearchRedirect />} />
+                          <Route path="/browse" element={<LegacyBrowseRedirect />} />
                           <Route path="/item/:id" element={<ItemDetail />} />
-                          <Route
-                            path="/person/:id"
-                            element={<PersonDetail />}
-                          />
-                          <Route
-                            path="/rooms/:roomId"
-                            element={<WatchTogetherRoomPage />}
-                          />
-                          <Route
-                            path="/rooms/join"
-                            element={<WatchTogetherJoin />}
-                          />
+                          <Route path="/person/:id" element={<PersonDetail />} />
+                          <Route path="/rooms" element={<WatchPartyHub />} />
+                          <Route path="/rooms/:roomId" element={<WatchTogetherRoomPage />} />
                           <Route
                             path="/favorites"
-                            element={
-                              <LegacyPersonalCatalogRedirect source="favorites" />
-                            }
+                            element={<LegacyPersonalCatalogRedirect source="favorites" />}
                           />
                           <Route
                             path="/watchlist"
-                            element={
-                              <LegacyPersonalCatalogRedirect source="watchlist" />
-                            }
+                            element={<LegacyPersonalCatalogRedirect source="watchlist" />}
                           />
                           <Route
                             path="/history"
-                            element={
-                              <LegacyPersonalCatalogRedirect source="history" />
-                            }
+                            element={<LegacyPersonalCatalogRedirect source="history" />}
                           />
-                          <Route
-                            path="/collections"
-                            element={<Collections />}
-                          />
-                          <Route
-                            path="/collections/new"
-                            element={<CollectionEditor />}
-                          />
-                          <Route
-                            path="/collections/:id/edit"
-                            element={<CollectionEditor />}
-                          />
+                          <Route path="/collections" element={<Collections />} />
+                          <Route path="/collections/new" element={<CollectionEditor />} />
+                          <Route path="/collections/:id/edit" element={<CollectionEditor />} />
                           <Route
                             path="/collections/:id"
                             element={<LegacyUserCollectionRedirect />}
@@ -797,10 +679,7 @@ function AppRoutes() {
                               </RequireRequestsEnabled>
                             }
                           />
-                          <Route
-                            path="/recommendations"
-                            element={<Recommendations />}
-                          />
+                          <Route path="/recommendations" element={<Recommendations />} />
                           <Route
                             path="/recommendations/section/:kind"
                             element={<RecommendationsSection />}
@@ -810,18 +689,12 @@ function AppRoutes() {
                             element={<RecommendationsSection />}
                           />
                           <Route path="/calendar" element={<Calendar />} />
-                          <Route
-                            path="/notifications"
-                            element={<Notifications />}
-                          />
+                          <Route path="/notifications" element={<Notifications />} />
                           <Route
                             path="/profile/customize-home"
                             element={<ProfileCustomizeHome />}
                           />
-                          <Route
-                            path="*"
-                            element={<Navigate to="/" replace />}
-                          />
+                          <Route path="*" element={<Navigate to="/" replace />} />
                         </Routes>
                       </UICustomizedLayout>
                     </RequireProfile>
@@ -909,6 +782,7 @@ function AppShell() {
                         <RouteChunkPrewarmer />
                         <RealtimeEventChannels />
                         <ScrollRestorationManager />
+                        <NavigationDirectionManager />
                         <RouteAnnouncer />
                         <QueryCacheManager />
                         <AppChrome />

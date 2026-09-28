@@ -1,7 +1,8 @@
-import { memo, useState } from "react";
+import { memo, useMemo, useState } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import ViewTransitionLink from "@/components/ViewTransitionLink";
 import type { CastMember } from "@/api/types";
+import { usePrefetchPeople } from "@/hooks/queries/people";
 import { useCarouselEmbla } from "@/hooks/useCarouselEmbla";
 import { buildPersonCatalogHref } from "@/pages/catalogSearchParams";
 import { artworkSrcSet, PROFILE_WIDTHS } from "@/lib/artworkUrl";
@@ -20,15 +21,17 @@ interface CastCarouselProps {
    * full-bleed rows.
    */
   fullBleed?: boolean;
+  /** Warm person detail for the shown cast so opening one renders at once. */
+  prefetchPeople?: boolean;
 }
 
 function CastCarousel({
   cast,
   limit = 20,
   fullBleed = false,
+  prefetchPeople = false,
 }: CastCarouselProps) {
-  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } =
-    useCarouselEmbla();
+  const { emblaRef, canScrollPrev, canScrollNext, scrollPrev, scrollNext } = useCarouselEmbla();
 
   if (cast.length === 0) return null;
 
@@ -39,6 +42,7 @@ function CastCarousel({
 
   return (
     <div className="group/carousel relative">
+      {prefetchPeople && <PrefetchCastPeople cast={visible} />}
       {canScrollPrev && (
         <button
           type="button"
@@ -68,14 +72,9 @@ function CastCarousel({
           )}
         >
           {visible.map((member) => {
-            const href = member.person_id
-              ? buildPersonCatalogHref(member.person_id)
-              : null;
+            const href = member.person_id ? buildPersonCatalogHref(member.person_id) : null;
             return (
-              <li
-                key={`${member.name}-${member.order}`}
-                className="embla__slide shrink-0"
-              >
+              <li key={`${member.name}-${member.order}`} className="embla__slide shrink-0">
                 <PersonCard
                   name={member.name}
                   subtitle={member.character}
@@ -94,9 +93,7 @@ function CastCarousel({
           onClick={scrollNext}
           className={cn(
             "from-background/90 absolute top-0 bottom-0 z-10 flex h-11 w-11 items-center justify-center self-center bg-gradient-to-l to-transparent opacity-0 transition-opacity duration-200 group-hover/carousel:opacity-100 focus-visible:opacity-100",
-            fullBleed
-              ? "right-4 sm:right-6 lg:right-10 xl:right-12"
-              : "right-0",
+            fullBleed ? "right-4 sm:right-6 lg:right-10 xl:right-12" : "right-0",
           )}
           aria-label="Scroll right"
         >
@@ -108,6 +105,15 @@ function CastCarousel({
 }
 
 export default memo(CastCarousel);
+
+function PrefetchCastPeople({ cast }: { cast: CastMember[] }) {
+  const personIds = useMemo(
+    () => cast.flatMap((member) => (member.person_id ? [member.person_id] : [])),
+    [cast],
+  );
+  usePrefetchPeople(personIds);
+  return null;
+}
 
 export function PersonCard({
   name,
@@ -145,6 +151,7 @@ export function PersonCard({
             className="h-full w-full object-cover transition-transform duration-300 group-hover/person:scale-105"
             loading="lazy"
             onError={() => setFailedPhotoUrl(photoUrl ?? null)}
+            decoding="async"
           />
         ) : (
           <div className="bg-surface text-muted-foreground flex h-full w-full items-center justify-center text-lg font-semibold">
@@ -153,29 +160,18 @@ export function PersonCard({
         )}
       </div>
       <div className="px-0.5">
-        <div className="text-foreground truncate text-sm font-medium">
-          {name}
-        </div>
-        {subtitle ? (
-          <div className="text-muted-foreground truncate text-xs">
-            {subtitle}
-          </div>
-        ) : null}
+        <div className="text-foreground truncate text-sm font-medium">{name}</div>
+        {subtitle ? <div className="text-muted-foreground truncate text-xs">{subtitle}</div> : null}
       </div>
     </>
   );
 
   if (href) {
     return (
-      <ViewTransitionLink
-        to={href}
-        className={cn("group/person block", PERSON_CARD_WIDTH_CLASS)}
-      >
+      <ViewTransitionLink to={href} className={cn("group/person block", PERSON_CARD_WIDTH_CLASS)}>
         {inner}
       </ViewTransitionLink>
     );
   }
-  return (
-    <div className={cn("group/person", PERSON_CARD_WIDTH_CLASS)}>{inner}</div>
-  );
+  return <div className={cn("group/person", PERSON_CARD_WIDTH_CLASS)}>{inner}</div>;
 }

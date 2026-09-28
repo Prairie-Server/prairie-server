@@ -19,10 +19,7 @@ interface MediaHrefInput {
   backTo?: string;
 }
 
-function appendQuery(
-  base: string,
-  params: Record<string, string | number | boolean | undefined>,
-) {
+function appendQuery(base: string, params: Record<string, string | number | boolean | undefined>) {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value == null || value === false) {

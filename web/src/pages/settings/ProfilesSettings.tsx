@@ -39,20 +39,20 @@ function getDeleteGuardReason(
 
 export default function ProfilesSettings() {
   const {
-    data: profiles,
+    data: profiles = [],
     isLoading: profilesLoading,
     avatarUploadEnabled,
+    maxAdvisoryAgeSupported,
+    requireAdvisoryAgeSupported,
   } = useProfiles();
-  const { data: libraries = [], isLoading: librariesLoading } =
-    useAvailableUserLibraries();
+  const { data: libraries = [], isLoading: librariesLoading } = useAvailableUserLibraries();
   const { profile: activeProfile, selectProfile, verifyProfilePin } = useAuth();
   const deleteMutation = useDeleteProfile();
 
   const [editorOpen, setEditorOpen] = useState(false);
   const [editingProfile, setEditingProfile] = useState<Profile | null>(null);
   const [pinProfile, setPinProfile] = useState<Profile | null>(null);
-  const [confirmDeleteProfile, setConfirmDeleteProfile] =
-    useState<Profile | null>(null);
+  const [confirmDeleteProfile, setConfirmDeleteProfile] = useState<Profile | null>(null);
 
   const activeProfileID = activeProfile?.id ?? null;
   const isLoading = profilesLoading || librariesLoading;
@@ -85,9 +85,7 @@ export default function ProfilesSettings() {
     <div className="space-y-6">
       <div className="flex items-start justify-between gap-4">
         <div className="space-y-2">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Profiles
-          </h2>
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Profiles</h2>
           <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
             Manage profile names, PINs, and access rules.
           </p>
@@ -130,11 +128,7 @@ export default function ProfilesSettings() {
         ) : (
           profiles.map((profile) => {
             const accessSummary = buildProfileAccessSummary(profile);
-            const deleteGuardReason = getDeleteGuardReason(
-              profile,
-              profiles,
-              activeProfileID,
-            );
+            const deleteGuardReason = getDeleteGuardReason(profile, profiles, activeProfileID);
 
             return (
               <div
@@ -145,10 +139,7 @@ export default function ProfilesSettings() {
                   <div className="flex items-start gap-3">
                     <Avatar className="mt-0.5 h-10 w-10">
                       {profile.avatar_url ? (
-                        <AvatarImage
-                          src={profile.avatar_url}
-                          alt={profile.name}
-                        />
+                        <AvatarImage src={profile.avatar_url} alt={profile.name} />
                       ) : null}
                       <AvatarFallback className="text-sm font-semibold">
                         {profile.name.charAt(0).toUpperCase()}
@@ -157,26 +148,16 @@ export default function ProfilesSettings() {
 
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="truncate text-sm font-semibold">
-                          {profile.name}
-                        </span>
+                        <span className="truncate text-sm font-semibold">{profile.name}</span>
                         {profile.id === activeProfileID ? (
                           <Badge variant="outline">Current</Badge>
                         ) : null}
-                        {profile.is_primary ? (
-                          <Badge variant="outline">Primary</Badge>
-                        ) : null}
-                        {profile.is_child ? (
-                          <Badge variant="outline">Kids</Badge>
-                        ) : null}
-                        {profile.has_pin ? (
-                          <Badge variant="outline">PIN</Badge>
-                        ) : null}
+                        {profile.is_primary ? <Badge variant="outline">Primary</Badge> : null}
+                        {profile.is_child ? <Badge variant="outline">Kids</Badge> : null}
+                        {profile.has_pin ? <Badge variant="outline">PIN</Badge> : null}
                       </div>
 
-                      <p className="text-muted-foreground text-sm">
-                        {accessSummary.text}
-                      </p>
+                      <p className="text-muted-foreground text-sm">{accessSummary.text}</p>
                     </div>
                   </div>
                 </div>
@@ -184,21 +165,13 @@ export default function ProfilesSettings() {
                 <div className="flex flex-col items-start gap-2 sm:items-end">
                   <div className="flex flex-wrap gap-2">
                     {profile.id !== activeProfileID ? (
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleUseProfile(profile)}
-                      >
+                      <Button size="sm" variant="outline" onClick={() => handleUseProfile(profile)}>
                         <UserCheck className="h-4 w-4" />
                         Use
                       </Button>
                     ) : null}
 
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => openEditDialog(profile)}
-                    >
+                    <Button size="sm" variant="outline" onClick={() => openEditDialog(profile)}>
                       <Pencil className="h-4 w-4" />
                       Edit
                     </Button>
@@ -215,9 +188,7 @@ export default function ProfilesSettings() {
                   </div>
 
                   {deleteGuardReason ? (
-                    <p className="text-muted-foreground text-xs">
-                      {deleteGuardReason}
-                    </p>
+                    <p className="text-muted-foreground text-xs">{deleteGuardReason}</p>
                   ) : null}
                 </div>
               </div>
@@ -231,6 +202,8 @@ export default function ProfilesSettings() {
         profile={editingProfile}
         libraries={libraries}
         avatarUploadEnabled={avatarUploadEnabled}
+        advisoryAgeSupported={maxAdvisoryAgeSupported}
+        requireAdvisoryAgeSupported={requireAdvisoryAgeSupported}
         onOpenChange={(open) => {
           setEditorOpen(open);
           if (!open) {
@@ -245,10 +218,7 @@ export default function ProfilesSettings() {
           const currentToken = getProfileToken() ?? undefined;
           if (!currentToken && context.pin !== "" && savedProfile.has_pin) {
             try {
-              const response = await verifyProfilePin(
-                savedProfile.id,
-                context.pin,
-              );
+              const response = await verifyProfilePin(savedProfile.id, context.pin);
               if (response.valid && response.profile_token) {
                 selectProfile(savedProfile, response.profile_token);
                 return;

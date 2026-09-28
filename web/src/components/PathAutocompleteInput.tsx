@@ -24,9 +24,7 @@ function getAutocompleteContext(path: string): AutocompleteContext | null {
 
   const endsWithSlash = trimmed.endsWith(ROOT_PATH);
   const normalized =
-    endsWithSlash && trimmed.length > 1
-      ? trimmed.slice(0, trimmed.length - 1)
-      : trimmed;
+    endsWithSlash && trimmed.length > 1 ? trimmed.slice(0, trimmed.length - 1) : trimmed;
   const lastSlashIndex = normalized.lastIndexOf(ROOT_PATH);
 
   if (lastSlashIndex < 0) {
@@ -38,16 +36,12 @@ function getAutocompleteContext(path: string): AutocompleteContext | null {
   }
 
   return {
-    browsePath:
-      lastSlashIndex === 0 ? ROOT_PATH : normalized.slice(0, lastSlashIndex),
+    browsePath: lastSlashIndex === 0 ? ROOT_PATH : normalized.slice(0, lastSlashIndex),
     fragment: normalized.slice(lastSlashIndex + 1),
   };
 }
 
-type PathAutocompleteInputProps = Omit<
-  React.ComponentProps<"input">,
-  "value" | "onChange"
-> & {
+type PathAutocompleteInputProps = Omit<React.ComponentProps<"input">, "value" | "onChange"> & {
   value: string;
   onValueChange: (value: string) => void;
 };
@@ -68,6 +62,7 @@ export default function PathAutocompleteInput({
   const autocompleteBrowse = useFilesystemBrowseWhen(
     autocompleteContext?.browsePath ?? "",
     !!autocompleteContext,
+    autocompleteContext?.fragment ?? "",
   );
 
   const autocompleteSuggestions = useMemo(() => {
@@ -75,9 +70,7 @@ export default function PathAutocompleteInput({
     const fragment = autocompleteContext?.fragment.trim().toLowerCase() ?? "";
 
     return entries.filter((entry) =>
-      fragment.length === 0
-        ? true
-        : entry.name.toLowerCase().startsWith(fragment),
+      fragment.length === 0 ? true : entry.name.toLowerCase().startsWith(fragment),
     );
   }, [autocompleteBrowse.data?.entries, autocompleteContext?.fragment]);
 

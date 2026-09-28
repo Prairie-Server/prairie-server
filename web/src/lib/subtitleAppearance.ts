@@ -1,4 +1,5 @@
 import type { CSSProperties } from "react";
+import type { VideoFitMode } from "@/player/types";
 
 // ─── Types ──────────────────────────────────────────────────────────────────
 
@@ -85,18 +86,10 @@ export const BG_COLOR_PALETTE: ColorSwatch[] = [
 
 // ─── Parser ─────────────────────────────────────────────────────────────────
 
-const VALID_FONT_SIZES: Set<string> = new Set(
-  FONT_SIZE_OPTIONS.map((o) => o.value),
-);
-const VALID_FONT_FAMILIES: Set<string> = new Set(
-  FONT_FAMILY_OPTIONS.map((o) => o.value),
-);
-const VALID_BG_STYLES: Set<string> = new Set(
-  BACKGROUND_STYLE_OPTIONS.map((o) => o.value),
-);
-const VALID_POSITIONS: Set<string> = new Set(
-  POSITION_OPTIONS.map((o) => o.value),
-);
+const VALID_FONT_SIZES: Set<string> = new Set(FONT_SIZE_OPTIONS.map((o) => o.value));
+const VALID_FONT_FAMILIES: Set<string> = new Set(FONT_FAMILY_OPTIONS.map((o) => o.value));
+const VALID_BG_STYLES: Set<string> = new Set(BACKGROUND_STYLE_OPTIONS.map((o) => o.value));
+const VALID_POSITIONS: Set<string> = new Set(POSITION_OPTIONS.map((o) => o.value));
 
 /**
  * Coerces a stored subtitle appearance into a complete, valid one.
@@ -113,10 +106,7 @@ export function parseSubtitleAppearance(value: unknown): SubtitleAppearance {
     return { ...DEFAULT_SUBTITLE_APPEARANCE };
   }
   try {
-    const p = (typeof value === "string" ? JSON.parse(value) : value) as Record<
-      string,
-      unknown
-    >;
+    const p = (typeof value === "string" ? JSON.parse(value) : value) as Record<string, unknown>;
     if (typeof p !== "object" || p === null || Array.isArray(p)) {
       return { ...DEFAULT_SUBTITLE_APPEARANCE };
     }
@@ -132,8 +122,7 @@ export function parseSubtitleAppearance(value: unknown): SubtitleAppearance {
           ? p.fontColor
           : DEFAULT_SUBTITLE_APPEARANCE.fontColor,
       backgroundColor:
-        typeof p.backgroundColor === "string" &&
-        /^#[0-9a-fA-F]{6}$/.test(p.backgroundColor)
+        typeof p.backgroundColor === "string" && /^#[0-9a-fA-F]{6}$/.test(p.backgroundColor)
           ? p.backgroundColor
           : DEFAULT_SUBTITLE_APPEARANCE.backgroundColor,
       backgroundStyle: VALID_BG_STYLES.has(p.backgroundStyle as string)
@@ -150,8 +139,7 @@ export function parseSubtitleAppearance(value: unknown): SubtitleAppearance {
           ? p.textOutline
           : DEFAULT_SUBTITLE_APPEARANCE.textOutline,
       textOutlineColor:
-        typeof p.textOutlineColor === "string" &&
-        /^#[0-9a-fA-F]{6}$/.test(p.textOutlineColor)
+        typeof p.textOutlineColor === "string" && /^#[0-9a-fA-F]{6}$/.test(p.textOutlineColor)
           ? p.textOutlineColor
           : DEFAULT_SUBTITLE_APPEARANCE.textOutlineColor,
       position: VALID_POSITIONS.has(p.position as string)
@@ -186,10 +174,7 @@ export function computeSubtitleFontSize(
   fontSize: SubtitleAppearance["fontSize"],
   fontScale = 1,
 ): string {
-  const px = Math.max(
-    MIN_SUBTITLE_FONT_PX,
-    Math.round(FONT_SIZE_MAP[fontSize] * fontScale),
-  );
+  const px = Math.max(MIN_SUBTITLE_FONT_PX, Math.round(FONT_SIZE_MAP[fontSize] * fontScale));
   return `${px}px`;
 }
 
@@ -239,10 +224,7 @@ export interface SubtitleStyles {
   cueStyle: CSSProperties;
 }
 
-export function computeSubtitleStyles(
-  settings: SubtitleAppearance,
-  fontScale = 1,
-): SubtitleStyles {
+export function computeSubtitleStyles(settings: SubtitleAppearance, fontScale = 1): SubtitleStyles {
   const containerStyle: CSSProperties = computePositionStyle(settings.position);
   const cueStyle: CSSProperties = {};
 
@@ -280,9 +262,7 @@ const POSITION_OFFSETS: Record<SubtitleAppearance["position"], number> = {
  * Percentage-of-container fallback used before the video's intrinsic aspect
  * ratio is known (or in the preview pane where there's no real video).
  */
-function computePositionStyle(
-  position: SubtitleAppearance["position"],
-): CSSProperties {
+function computePositionStyle(position: SubtitleAppearance["position"]): CSSProperties {
   if (position === "top") return { top: "8%", bottom: "auto" };
   if (position === "lower-third") return { bottom: "12%" };
   return { bottom: "7%" };
@@ -290,7 +270,7 @@ function computePositionStyle(
 
 /**
  * Height (px) of a 16:9 reference frame centered on the actually-rendered
- * video area (object-fit: contain), or null before measurements are known.
+ * video area, or null before measurements are known.
  * The frame matches the shorter dimension of the video so it never contracts
  * inside it; for wider-than-16:9 content it extends into the letterbox.
  */
@@ -298,22 +278,21 @@ function resolveSubtitleReferenceHeight(
   playerWidth: number,
   playerHeight: number,
   videoAspect: number,
+  videoFit: VideoFitMode,
 ): number | null {
-  if (
-    !Number.isFinite(videoAspect) ||
-    videoAspect <= 0 ||
-    playerWidth <= 0 ||
-    playerHeight <= 0
-  ) {
+  if (!Number.isFinite(videoAspect) || videoAspect <= 0 || playerWidth <= 0 || playerHeight <= 0) {
     return null;
   }
 
+  // Cover mode crops the rendered video to the player bounds, so subtitle
+  // sizing and placement should follow the visible viewport rather than the
+  // larger off-screen video frame.
+  if (videoFit === "cover") return playerHeight;
+
   // Rendered video dimensions inside the player (object-fit: contain).
   const playerAspect = playerWidth / playerHeight;
-  const videoHeight =
-    playerAspect > videoAspect ? playerHeight : playerWidth / videoAspect;
-  const videoWidth =
-    playerAspect > videoAspect ? playerHeight * videoAspect : playerWidth;
+  const videoHeight = playerAspect > videoAspect ? playerHeight : playerWidth / videoAspect;
+  const videoWidth = playerAspect > videoAspect ? playerHeight * videoAspect : playerWidth;
 
   return videoAspect >= 16 / 9 ? videoWidth * (9 / 16) : videoHeight;
 }
@@ -327,11 +306,13 @@ export function computeSubtitleFontScale(
   playerWidth: number,
   playerHeight: number,
   videoAspect: number,
+  videoFit: VideoFitMode = "contain",
 ): number {
   const refHeight = resolveSubtitleReferenceHeight(
     playerWidth,
     playerHeight,
     videoAspect,
+    videoFit,
   );
   return refHeight === null ? 1 : refHeight / SUBTITLE_REFERENCE_HEIGHT;
 }
@@ -340,14 +321,16 @@ export function computeSubtitleFontScale(
  * Aspect-aware positioning. "Bottom" is anchored to the player window so it
  * can use the available letterbox space. "Lower Third" and "Top" are anchored
  * to a 16:9 reference frame centered on the actually-rendered video area
- * (object-fit: contain), keeping those positions attached to the video frame
- * regardless of whether content is 16:9, 4:3, or 2.35:1.
+ * while Fit is active, keeping those positions attached to the video frame
+ * regardless of whether content is 16:9, 4:3, or 2.35:1. Fill mode anchors
+ * them to the visible player viewport because the video extends beyond it.
  */
 export function computeSubtitlePositionStyle(
   position: SubtitleAppearance["position"],
   playerWidth: number,
   playerHeight: number,
   videoAspect: number,
+  videoFit: VideoFitMode = "contain",
 ): CSSProperties {
   if (position === "bottom") {
     if (playerHeight <= 0) return computePositionStyle(position);
@@ -358,6 +341,7 @@ export function computeSubtitlePositionStyle(
     playerWidth,
     playerHeight,
     videoAspect,
+    videoFit,
   );
   if (refHeight === null) {
     return computePositionStyle(position);

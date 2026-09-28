@@ -1,6 +1,10 @@
+import {
+  captureAdminSubtitleEditIntent,
+  type AdminSubtitleEditIntent,
+} from "@/api/v2/adminSubtitleMetadata";
 import { useState } from "react";
 import { Link } from "react-router";
-import type { AdminDownloadedSubtitle } from "@/api/types";
+import type { AdminStoredSubtitle as AdminDownloadedSubtitle } from "@/api/v2/adminSubtitles";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,18 +15,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ConfirmDialog } from "@/components/ConfirmDialog";
-import { downloadAdminSubtitle } from "@/hooks/queries/admin/subtitles";
+import AdminSubtitleDeleteDialog, { type SubtitleDeleteTarget } from "./AdminSubtitleDeleteDialog";
+import { downloadAdminSubtitle } from "@/api/v2/adminSubtitleBytes";
+import { adminSubtitleListScope } from "@/api/v2/adminSubtitles";
 import { getLanguageName } from "@/player/utils/languageNames";
 import { cn } from "@/lib/utils";
-import {
-  Download,
-  Ear,
-  Loader2,
-  Pencil,
-  RotateCcw,
-  Trash2,
-} from "lucide-react";
+import { Download, Ear, Loader2, Pencil, RotateCcw, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import AdminSubtitleEditSheet from "./AdminSubtitleEditSheet";
 import {
@@ -37,42 +35,34 @@ import { formatRelativeTime } from "@/lib/date";
 
 interface AdminSubtitlesTableProps {
   subtitles: AdminDownloadedSubtitle[];
+  authorityScope: string;
   hasActiveFilters: boolean;
   onResetFilters: () => void;
-  onDelete: (subtitle: AdminDownloadedSubtitle) => void;
-  isDeleting: boolean;
 }
 
 function formatRelative(value: string): string {
-  return (
-    formatRelativeTime(value, { rounding: "floor", absoluteAfterDays: 30 }) ??
-    value
-  );
+  return formatRelativeTime(value, { rounding: "floor", absoluteAfterDays: 30 }) ?? value;
 }
 
 export default function AdminSubtitlesTable({
   subtitles,
+  authorityScope,
   hasActiveFilters,
   onResetFilters,
-  onDelete,
-  isDeleting,
 }: AdminSubtitlesTableProps) {
-  const [editTarget, setEditTarget] = useState<AdminDownloadedSubtitle | null>(
-    null,
-  );
-  const [deleteTarget, setDeleteTarget] =
-    useState<AdminDownloadedSubtitle | null>(null);
-  const [downloadingId, setDownloadingId] = useState<number | null>(null);
+  const [editTarget, setEditTarget] = useState<AdminSubtitleEditIntent | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<SubtitleDeleteTarget | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   async function handleDownload(subtitle: AdminDownloadedSubtitle) {
     setDownloadingId(subtitle.id);
     try {
-      await downloadAdminSubtitle(subtitle);
+      await downloadAdminSubtitle(subtitle, authorityScope);
+      if (adminSubtitleListScope() !== authorityScope) return;
       toast.success("Subtitle downloaded");
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Failed to download subtitle",
-      );
+      if (adminSubtitleListScope() !== authorityScope) return;
+      toast.error(err instanceof Error ? err.message : "Failed to download subtitle");
     } finally {
       setDownloadingId(null);
     }
@@ -87,22 +77,15 @@ export default function AdminSubtitlesTable({
           <span />
         </div>
         <h2 className="text-lg font-semibold tracking-tight">
-          {hasActiveFilters
-            ? "No subtitles match these filters"
-            : "No stored subtitles yet"}
+          {hasActiveFilters ? "No subtitles match these filters" : "No stored subtitles yet"}
         </h2>
         <p className="text-muted-foreground mx-auto mt-2 max-w-lg text-sm leading-relaxed">
           {hasActiveFilters
             ? "Try widening the provider, language, or uploader filters to see more results."
-            : "User uploads and provider downloads will appear here once subtitles are stored in S3."}
+            : "User uploads and provider downloads will appear here."}
         </p>
         {hasActiveFilters && (
-          <Button
-            type="button"
-            variant="outline"
-            className="mt-5"
-            onClick={onResetFilters}
-          >
+          <Button type="button" variant="outline" className="mt-5" onClick={onResetFilters}>
             <RotateCcw />
             Reset filters
           </Button>
@@ -131,10 +114,7 @@ export default function AdminSubtitlesTable({
           </TableHeader>
           <TableBody>
             {subtitles.map((subtitle, index) => (
-              <TableRow
-                key={subtitle.id}
-                className={cn("group", staggerRowClass(index))}
-              >
+              <TableRow key={subtitle.id} className={cn("group", staggerRowClass(index))}>
                 <TableCell className="max-w-[220px]">
                   <div className="space-y-1">
                     {subtitle.media_content_id ? (
@@ -150,10 +130,7 @@ export default function AdminSubtitlesTable({
                       </div>
                     )}
                     {subtitle.media_type === "episode" && (
-                      <Badge
-                        variant="outline"
-                        className="text-[10px] tracking-[0.12em] uppercase"
-                      >
+                      <Badge variant="outline" className="text-[10px] tracking-[0.12em] uppercase">
                         Episode
                       </Badge>
                     )}
@@ -197,12 +174,7 @@ export default function AdminSubtitlesTable({
                   {subtitle.release_name || "—"}
                 </TableCell>
                 <TableCell>
-                  <span
-                    className={cn(
-                      "inline-flex rounded px-2 py-0.5",
-                      formatChipClass(),
-                    )}
-                  >
+                  <span className={cn("inline-flex rounded px-2 py-0.5", formatChipClass())}>
                     .{subtitle.format}
                   </span>
                 </TableCell>
@@ -214,13 +186,8 @@ export default function AdminSubtitlesTable({
                     </span>
                   ) : null}
                 </TableCell>
-                <TableCell className="text-sm">
-                  {subtitle.uploader_username || "—"}
-                </TableCell>
-                <TableCell
-                  className="text-muted-foreground text-sm"
-                  title={subtitle.created_at}
-                >
+                <TableCell className="text-sm">{subtitle.uploader_username || "—"}</TableCell>
+                <TableCell className="text-muted-foreground text-sm" title={subtitle.created_at}>
                   {formatRelative(subtitle.created_at)}
                 </TableCell>
                 <TableCell className="text-right">
@@ -231,7 +198,17 @@ export default function AdminSubtitlesTable({
                       size="icon"
                       className="h-8 w-8"
                       aria-label={`Edit subtitle ${subtitle.id}`}
-                      onClick={() => setEditTarget(subtitle)}
+                      onClick={() => {
+                        try {
+                          setEditTarget(captureAdminSubtitleEditIntent(subtitle, authorityScope));
+                        } catch (error) {
+                          toast.error(
+                            error instanceof Error
+                              ? error.message
+                              : "Reload subtitles before editing.",
+                          );
+                        }
+                      }}
                     >
                       <Pencil className="h-4 w-4" />
                     </Button>
@@ -256,7 +233,7 @@ export default function AdminSubtitlesTable({
                       size="icon"
                       className="text-destructive hover:text-destructive h-8 w-8"
                       aria-label={`Delete subtitle ${subtitle.id}`}
-                      onClick={() => setDeleteTarget(subtitle)}
+                      onClick={() => setDeleteTarget({ subtitle, scope: authorityScope })}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -269,34 +246,14 @@ export default function AdminSubtitlesTable({
       </div>
 
       <AdminSubtitleEditSheet
-        subtitle={editTarget}
+        intent={editTarget}
         open={editTarget != null}
         onOpenChange={(open) => {
           if (!open) setEditTarget(null);
         }}
       />
 
-      <ConfirmDialog
-        open={deleteTarget != null}
-        onOpenChange={(open) => {
-          if (!open) setDeleteTarget(null);
-        }}
-        title="Delete subtitle?"
-        description={
-          deleteTarget
-            ? `Remove ${providerLabel(deleteTarget.provider)} ${deleteTarget.language.toUpperCase()} subtitles for "${deleteTarget.media_title || "this media"}"? This deletes the stored file from S3.`
-            : ""
-        }
-        confirmLabel="Delete"
-        variant="destructive"
-        isPending={isDeleting}
-        onConfirm={() => {
-          if (deleteTarget) {
-            onDelete(deleteTarget);
-            setDeleteTarget(null);
-          }
-        }}
-      />
+      <AdminSubtitleDeleteDialog target={deleteTarget} onClose={() => setDeleteTarget(null)} />
     </>
   );
 }

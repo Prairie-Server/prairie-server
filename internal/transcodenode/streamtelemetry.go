@@ -16,7 +16,7 @@ func (s *Server) canonicalSessionID(r *http.Request, transportID string) (string
 	if r == nil || s.watcher == nil {
 		return fallback, nil
 	}
-	tokenStr := r.Header.Get("X-Silo-Stream-Token")
+	tokenStr := r.Header.Get("X-Prairie-Stream-Token")
 	cfg := s.watcher.Config()
 	if tokenStr == "" || cfg == nil {
 		return fallback, nil

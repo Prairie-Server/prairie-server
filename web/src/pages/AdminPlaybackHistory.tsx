@@ -1,10 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router";
 import { useAdminUsers } from "@/hooks/queries/admin/users";
-import {
-  useAdminPlaybackHistory,
-  useAdminUserProfiles,
-} from "@/hooks/queries/admin/history";
+import { useAdminPlaybackHistory, useAdminUserProfiles } from "@/hooks/queries/admin/history";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -15,13 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  ChevronLeft,
-  ChevronRight,
-  History,
-  RefreshCw,
-  RotateCcw,
-} from "lucide-react";
+import { ChevronLeft, ChevronRight, History, RefreshCw, RotateCcw } from "lucide-react";
 import {
   Table,
   TableBody,
@@ -33,6 +24,8 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { formatRelativeTime } from "@/lib/date";
 import { formatDateTime as formatPreferredDateTime } from "@/lib/datetime";
+
+import { formatDecisionLabel } from "./adminActivityPresentation";
 
 const ALL_USERS = "all";
 const ALL_PROFILES = "all";
@@ -53,16 +46,13 @@ export default function AdminPlaybackHistory() {
   const selectedCompleted = searchParams.get("completed") ?? ALL_COMPLETION;
   const selectedMediaItemId = searchParams.get("media_item_id")?.trim() ?? "";
 
-  const selectedUserId =
-    selectedUser !== ALL_USERS ? Number(selectedUser) : undefined;
+  const selectedUserId = selectedUser !== ALL_USERS ? Number(selectedUser) : undefined;
   const history = useAdminPlaybackHistory({
     userId: selectedUserId,
     profileId: selectedProfile !== ALL_PROFILES ? selectedProfile : undefined,
     mediaItemId: selectedMediaItemId || undefined,
     completed:
-      selectedCompleted === "true" || selectedCompleted === "false"
-        ? selectedCompleted
-        : "all",
+      selectedCompleted === "true" || selectedCompleted === "false" ? selectedCompleted : "all",
     limit: 100,
   });
   const profiles = useAdminUserProfiles(selectedUserId);
@@ -105,21 +95,11 @@ export default function AdminPlaybackHistory() {
       next.delete("profile_id");
       setSearchParams(next, { replace: true });
     }
-  }, [
-    profiles.data,
-    searchParams,
-    selectedProfile,
-    selectedUser,
-    setSearchParams,
-  ]);
+  }, [profiles.data, searchParams, selectedProfile, selectedUser, setSearchParams]);
 
   function updateFilter(key: string, value: string) {
     const next = new URLSearchParams(searchParams);
-    if (
-      value === ALL_USERS ||
-      value === ALL_PROFILES ||
-      value === ALL_COMPLETION
-    ) {
+    if (value === ALL_USERS || value === ALL_PROFILES || value === ALL_COMPLETION) {
       next.delete(key);
     } else {
       next.set(key, value);
@@ -145,9 +125,7 @@ export default function AdminPlaybackHistory() {
     <div className="page-shell space-y-6 py-4 sm:py-6">
       <div className="page-header gap-5">
         <div className="space-y-3">
-          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
-            Playback History
-          </h1>
+          <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">Playback History</h1>
           <p className="page-subtitle text-sm sm:text-base">
             Finalized playback attempts across all users and profiles.
           </p>
@@ -155,9 +133,7 @@ export default function AdminPlaybackHistory() {
         <div className="flex flex-wrap items-center gap-2">
           {selectedMediaItemId && (
             <div className="border-border bg-muted/40 flex items-center gap-2 rounded-md border px-3 py-2 text-xs">
-              <span className="text-muted-foreground font-medium">
-                Item filter active
-              </span>
+              <span className="text-muted-foreground font-medium">Item filter active</span>
               <Link
                 to={`/item/${encodeURIComponent(selectedMediaItemId)}`}
                 className="hover:text-primary font-semibold transition-colors hover:underline"
@@ -167,10 +143,7 @@ export default function AdminPlaybackHistory() {
             </div>
           )}
 
-          <Select
-            value={selectedUser}
-            onValueChange={(value) => updateFilter("user_id", value)}
-          >
+          <Select value={selectedUser} onValueChange={(value) => updateFilter("user_id", value)}>
             <SelectTrigger className="w-full sm:w-[220px]">
               <SelectValue placeholder="All users" />
             </SelectTrigger>
@@ -191,11 +164,7 @@ export default function AdminPlaybackHistory() {
           >
             <SelectTrigger className="w-full sm:w-[220px]">
               <SelectValue
-                placeholder={
-                  selectedUser === ALL_USERS
-                    ? "Choose a user first"
-                    : "All profiles"
-                }
+                placeholder={selectedUser === ALL_USERS ? "Choose a user first" : "All profiles"}
               />
             </SelectTrigger>
             <SelectContent>
@@ -236,9 +205,7 @@ export default function AdminPlaybackHistory() {
             disabled={isManualRefreshPending}
             aria-busy={isManualRefreshPending}
           >
-            <RefreshCw
-              className={`h-3.5 w-3.5 ${isManualRefreshPending ? "animate-spin" : ""}`}
-            />
+            <RefreshCw className={`h-3.5 w-3.5 ${isManualRefreshPending ? "animate-spin" : ""}`} />
             {isManualRefreshPending ? "Refreshing..." : "Refresh"}
           </Button>
         </div>
@@ -246,14 +213,8 @@ export default function AdminPlaybackHistory() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
         <InfoCard label="Visible Rows" value={String(allRows.length)} />
-        <InfoCard
-          label="Completed"
-          value={String(allRows.filter((row) => row.completed).length)}
-        />
-        <InfoCard
-          label="Partial"
-          value={String(allRows.filter((row) => !row.completed).length)}
-        />
+        <InfoCard label="Completed" value={String(allRows.filter((row) => row.completed).length)} />
+        <InfoCard label="Partial" value={String(allRows.filter((row) => !row.completed).length)} />
       </div>
 
       <Card className="surface-panel rounded-2xl border-0">
@@ -283,8 +244,8 @@ export default function AdminPlaybackHistory() {
               <div className="space-y-1">
                 <p className="text-sm font-medium">No playback history</p>
                 <p className="text-muted-foreground max-w-sm text-xs">
-                  No playback history matches the current filters. Try adjusting
-                  the user, profile, or completion filters.
+                  No playback history matches the current filters. Try adjusting the user, profile,
+                  or completion filters.
                 </p>
               </div>
             </div>
@@ -307,9 +268,7 @@ export default function AdminPlaybackHistory() {
                   <TableBody>
                     {paginatedRows.map((row) => {
                       const title =
-                        row.media_title ||
-                        row.media_item_id ||
-                        `File #${row.media_file_id}`;
+                        row.media_title || row.media_item_id || `File #${row.media_file_id}`;
                       const profileLabel = row.profile_name || row.profile_id;
                       return (
                         <TableRow key={row.session_id}>
@@ -326,8 +285,7 @@ export default function AdminPlaybackHistory() {
                                 <div className="font-medium">{title}</div>
                               )}
                               <div className="text-muted-foreground text-xs">
-                                {row.media_type || "unknown"} · session{" "}
-                                {row.session_id.slice(0, 8)}
+                                {row.media_type || "unknown"} · session {row.session_id.slice(0, 8)}
                               </div>
                             </div>
                           </TableCell>
@@ -347,13 +305,13 @@ export default function AdminPlaybackHistory() {
                               >
                                 {profileLabel}
                               </Link>
-                              <div className="text-muted-foreground text-xs">
-                                {row.profile_id}
-                              </div>
+                              <div className="text-muted-foreground text-xs">{row.profile_id}</div>
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge variant="secondary">{row.play_method}</Badge>
+                            <Badge variant="secondary">
+                              {formatDecisionLabel(row.play_method)}
+                            </Badge>
                           </TableCell>
                           <TableCell>
                             <div className="space-y-1">
@@ -364,9 +322,7 @@ export default function AdminPlaybackHistory() {
                             </div>
                           </TableCell>
                           <TableCell>
-                            <Badge
-                              variant={row.completed ? "default" : "outline"}
-                            >
+                            <Badge variant={row.completed ? "default" : "outline"}>
                               {row.completed ? "Completed" : "Partial"}
                             </Badge>
                           </TableCell>
@@ -404,8 +360,8 @@ export default function AdminPlaybackHistory() {
                 <div className="flex items-center justify-between px-2 py-4">
                   <div className="flex items-center gap-4">
                     <span className="text-muted-foreground text-sm">
-                      Showing {page * pageSize + 1}-
-                      {Math.min((page + 1) * pageSize, total)} of {total}
+                      Showing {page * pageSize + 1}-{Math.min((page + 1) * pageSize, total)} of{" "}
+                      {total}
                     </span>
                     <Select
                       value={String(pageSize)}
@@ -459,9 +415,7 @@ export default function AdminPlaybackHistory() {
 function InfoCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="surface-panel rounded-2xl border-0 p-4">
-      <div className="text-muted-foreground text-[11px] font-medium">
-        {label}
-      </div>
+      <div className="text-muted-foreground text-[11px] font-medium">{label}</div>
       <div className="mt-1 text-2xl font-extrabold tracking-tight">{value}</div>
     </div>
   );

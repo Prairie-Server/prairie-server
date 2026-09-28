@@ -1,4 +1,1 @@
-export {
-  default,
-  buildSectionSaveEntry,
-} from "@/components/sections/SectionEditorDrawer";
+export { default, buildSectionSaveEntry } from "@/components/sections/SectionEditorDrawer";

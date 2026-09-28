@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Loader2, Upload } from "lucide-react";
 
 import type { SubtitleLanguageDetection } from "@/api/types";
@@ -15,14 +15,17 @@ import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
 import { LANGUAGES, getLanguageName } from "@/player/utils/languageNames";
 
+function isCanceledSubtitleRequest(err: unknown): boolean {
+  return (
+    typeof err === "object" &&
+    err !== null &&
+    "name" in err &&
+    (err.name === "AbortError" || err.name === "StaleApiRequestContextError")
+  );
+}
+
 const ACCEPTED_SUBTITLE_EXTENSIONS = ".srt,.vtt,.ass,.ssa,.sub";
-const ACCEPTED_SUBTITLE_EXTENSION_LIST = [
-  "srt",
-  "vtt",
-  "ass",
-  "ssa",
-  "sub",
-] as const;
+const ACCEPTED_SUBTITLE_EXTENSION_LIST = ["srt", "vtt", "ass", "ssa", "sub"] as const;
 
 export interface SubtitleUploadInput {
   mediaFileId: number;
@@ -35,10 +38,7 @@ export interface SubtitleUploadInput {
 interface SubtitleUploadFormProps {
   mediaFileId: number;
   upload: (input: SubtitleUploadInput) => Promise<void>;
-  detectLanguage?: (
-    file: File,
-    fallbackLanguage?: string,
-  ) => Promise<SubtitleLanguageDetection>;
+  detectLanguage?: (file: File, fallbackLanguage?: string) => Promise<SubtitleLanguageDetection>;
   onSuccess: () => void;
   onError?: (message: string) => void;
   variant?: "player" | "default";
@@ -52,9 +52,7 @@ function isAcceptedSubtitleFile(file: File): boolean {
   );
 }
 
-function detectionSourceLabel(
-  source: SubtitleLanguageDetection["source"],
-): string {
+function detectionSourceLabel(source: SubtitleLanguageDetection["source"]): string {
   switch (source) {
     case "filename":
       return "filename";
@@ -81,6 +79,8 @@ export function SubtitleUploadForm({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const dragDepthRef = useRef(0);
   const detectRequestRef = useRef(0);
+  const uploadRequestRef = useRef(0);
+
   const [language, setLanguage] = useState(defaultLanguage);
   const [hearingImpaired, setHearingImpaired] = useState(false);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -92,6 +92,18 @@ export function SubtitleUploadForm({
   >(null);
   const [languageOverride, setLanguageOverride] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    detectRequestRef.current++;
+    uploadRequestRef.current++;
+    setUploading(false);
+    setDetectingLanguage(false);
+    setSelectedFile(null);
+    return () => {
+      detectRequestRef.current++;
+      uploadRequestRef.current++;
+    };
+  }, [mediaFileId]);
 
   const isPlayer = variant === "player";
 
@@ -123,15 +135,11 @@ export function SubtitleUploadForm({
           setLanguageOverride(false);
         }
       } catch (err) {
-        if (requestId !== detectRequestRef.current) {
+        if (requestId !== detectRequestRef.current || isCanceledSubtitleRequest(err)) {
           return;
         }
         setDetectionSource(null);
-        reportError(
-          err instanceof Error
-            ? err.message
-            : "Failed to detect subtitle language",
-        );
+        reportError(err instanceof Error ? err.message : "Failed to detect subtitle language");
       } finally {
         if (requestId === detectRequestRef.current) {
           setDetectingLanguage(false);
@@ -209,6 +217,7 @@ export function SubtitleUploadForm({
       return;
     }
 
+    const requestId = ++uploadRequestRef.current;
     setUploading(true);
     setError(null);
 
@@ -220,6 +229,7 @@ export function SubtitleUploadForm({
         languageOverride,
         hearingImpaired,
       });
+      if (requestId !== uploadRequestRef.current) return;
       setSelectedFile(null);
       setDetectionSource(null);
       setLanguageOverride(false);
@@ -228,9 +238,10 @@ export function SubtitleUploadForm({
       }
       onSuccess();
     } catch (err) {
+      if (requestId !== uploadRequestRef.current || isCanceledSubtitleRequest(err)) return;
       reportError(err instanceof Error ? err.message : "Upload failed");
     } finally {
-      setUploading(false);
+      if (requestId === uploadRequestRef.current) setUploading(false);
     }
   };
 
@@ -238,28 +249,16 @@ export function SubtitleUploadForm({
     <div
       className={cn(
         "space-y-3",
-        isPlayer
-          ? "border-b border-white/10 px-4 py-3"
-          : "rounded-xl border border-dashed p-4",
+        isPlayer ? "border-b border-white/10 px-4 py-3" : "rounded-xl border border-dashed p-4",
       )}
     >
       <div className="space-y-1">
-        <p
-          className={cn(
-            "text-sm font-medium",
-            isPlayer ? "text-white" : "text-foreground",
-          )}
-        >
+        <p className={cn("text-sm font-medium", isPlayer ? "text-white" : "text-foreground")}>
           Upload subtitle
         </p>
-        <p
-          className={cn(
-            "text-xs",
-            isPlayer ? "text-white/50" : "text-muted-foreground",
-          )}
-        >
-          Drag and drop or browse for SRT, VTT, ASS, SSA, or SUB files up to 5
-          MB. Language is detected automatically when possible.
+        <p className={cn("text-xs", isPlayer ? "text-white/50" : "text-muted-foreground")}>
+          Drag and drop or browse for SRT, VTT, ASS, SSA, or SUB files up to 5 MB. Language is
+          detected automatically when possible.
         </p>
       </div>
 
@@ -298,40 +297,20 @@ export function SubtitleUploadForm({
         )}
       >
         <Upload
-          className={cn(
-            "size-5",
-            isPlayer ? "text-white/70" : "text-muted-foreground",
-          )}
+          className={cn("size-5", isPlayer ? "text-white/70" : "text-muted-foreground")}
           aria-hidden="true"
         />
         <div className="space-y-1">
-          <p
-            className={cn(
-              "text-sm font-medium",
-              isPlayer ? "text-white" : "text-foreground",
-            )}
-          >
-            {isDragging
-              ? "Drop subtitle file"
-              : "Drag and drop a subtitle file"}
+          <p className={cn("text-sm font-medium", isPlayer ? "text-white" : "text-foreground")}>
+            {isDragging ? "Drop subtitle file" : "Drag and drop a subtitle file"}
           </p>
-          <p
-            className={cn(
-              "text-xs",
-              isPlayer ? "text-white/50" : "text-muted-foreground",
-            )}
-          >
+          <p className={cn("text-xs", isPlayer ? "text-white/50" : "text-muted-foreground")}>
             or click to browse
           </p>
         </div>
       </div>
 
-      <div
-        className={cn(
-          "flex flex-col gap-2",
-          !isPlayer && "sm:flex-row sm:items-center",
-        )}
-      >
+      <div className={cn("flex flex-col gap-2", !isPlayer && "sm:flex-row sm:items-center")}>
         <div className={cn("space-y-1", !isPlayer && "w-full sm:w-[220px]")}>
           {isPlayer ? (
             <select
@@ -366,23 +345,12 @@ export function SubtitleUploadForm({
             </Select>
           )}
           {detectingLanguage ? (
-            <p
-              className={cn(
-                "text-xs",
-                isPlayer ? "text-white/50" : "text-muted-foreground",
-              )}
-            >
+            <p className={cn("text-xs", isPlayer ? "text-white/50" : "text-muted-foreground")}>
               Detecting language…
             </p>
           ) : detectionSource && detectionSource !== "manual" ? (
-            <p
-              className={cn(
-                "text-xs",
-                isPlayer ? "text-white/50" : "text-muted-foreground",
-              )}
-            >
-              Detected {getLanguageName(language)} from{" "}
-              {detectionSourceLabel(detectionSource)}
+            <p className={cn("text-xs", isPlayer ? "text-white/50" : "text-muted-foreground")}>
+              Detected {getLanguageName(language)} from {detectionSourceLabel(detectionSource)}
             </p>
           ) : null}
         </div>
@@ -404,10 +372,7 @@ export function SubtitleUploadForm({
               checked={hearingImpaired}
               onCheckedChange={setHearingImpaired}
             />
-            <Label
-              htmlFor={`subtitle-upload-hi-${mediaFileId}`}
-              className="text-sm font-normal"
-            >
+            <Label htmlFor={`subtitle-upload-hi-${mediaFileId}`} className="text-sm font-normal">
               Hearing impaired (HI)
             </Label>
           </div>
@@ -444,12 +409,7 @@ export function SubtitleUploadForm({
       </div>
 
       {selectedFile && (
-        <p
-          className={cn(
-            "truncate text-xs",
-            isPlayer ? "text-white/60" : "text-muted-foreground",
-          )}
-        >
+        <p className={cn("truncate text-xs", isPlayer ? "text-white/60" : "text-muted-foreground")}>
           Selected: {selectedFile.name}
         </p>
       )}

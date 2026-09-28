@@ -10,20 +10,13 @@ export type MetadataLanguageOverrides = Record<string, string>;
  * The server validates writes, but this also keeps a stale/broken cached value
  * from making the editor unusable.
  */
-export function normalizeMetadataLanguageOverrides(
-  value: unknown,
-): MetadataLanguageOverrides {
-  if (value === null || typeof value !== "object" || Array.isArray(value))
-    return {};
+export function normalizeMetadataLanguageOverrides(value: unknown): MetadataLanguageOverrides {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return {};
 
   const normalized: MetadataLanguageOverrides = {};
   for (const [source, target] of Object.entries(value)) {
     const sourceCode = normalizeLanguageCode(source);
-    if (
-      !/^[a-z]{2,3}$/.test(sourceCode) ||
-      typeof target !== "string" ||
-      !target.trim()
-    ) {
+    if (!/^[a-z]{2,3}$/.test(sourceCode) || typeof target !== "string" || !target.trim()) {
       continue;
     }
     normalized[sourceCode] = target.trim();

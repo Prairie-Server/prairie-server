@@ -15,12 +15,7 @@ import { useCalendarWeek } from "@/hooks/queries/calendar";
 import { useUserLibraries } from "@/hooks/queries/libraries";
 import WeekNavigator from "@/components/calendar/WeekNavigator";
 import DayGroup from "@/components/calendar/DayGroup";
-import {
-  addWeeks,
-  formatDayHeading,
-  getWeekDays,
-  getWeekStart,
-} from "@/lib/calendarWeek";
+import { addWeeks, formatDayHeading, getWeekDays, getWeekStart } from "@/lib/calendarWeek";
 import { storage } from "@/utils/storage";
 
 type CalendarFilter = "following" | "popular" | "trending" | "everything";
@@ -62,12 +57,9 @@ function writeStoredPreset(value: string) {
 function parseCalendarParams(searchParams: URLSearchParams) {
   const weekRaw = searchParams.get("week");
   const weekStart =
-    weekRaw && /^\d{4}-\d{2}-\d{2}$/.test(weekRaw)
-      ? weekRaw
-      : getWeekStart(new Date());
+    weekRaw && /^\d{4}-\d{2}-\d{2}$/.test(weekRaw) ? weekRaw : getWeekStart(new Date());
   const rawFilter = searchParams.get("filter");
-  const filter =
-    rawFilter && KNOWN_FILTERS.has(rawFilter) ? rawFilter : readStoredPreset();
+  const filter = rawFilter && KNOWN_FILTERS.has(rawFilter) ? rawFilter : readStoredPreset();
   const libraryIdRaw = searchParams.get("library");
   const libraryId = libraryIdRaw ? Number(libraryIdRaw) : undefined;
   return { weekStart, filter, libraryId };
@@ -113,8 +105,7 @@ export default function Calendar() {
     writeStoredPreset(f);
     setParams({ filter: f === DEFAULT_PRESET ? undefined : f });
   };
-  const setLibrary = (id: string) =>
-    setParams({ library: id === "all" ? undefined : id });
+  const setLibrary = (id: string) => setParams({ library: id === "all" ? undefined : id });
 
   const onSelectDay = (date: string) => {
     setSelectedDay(date);
@@ -128,18 +119,14 @@ export default function Calendar() {
   const days = currentQuery.data ?? [];
   const datesWithEvents = new Set(days.map((d) => d.date));
   const showSelectedEmpty =
-    !!activeSelectedDay &&
-    !datesWithEvents.has(activeSelectedDay) &&
-    !currentQuery.isLoading;
+    !!activeSelectedDay && !datesWithEvents.has(activeSelectedDay) && !currentQuery.isLoading;
 
   return (
     <div className="space-y-2 py-4 pb-10 lg:py-8">
       {/* Same horizontal rhythm as Recommendations: one page gutter; MediaCarousel row padding aligns with it */}
       <div className="px-4 pt-4 pb-4 sm:px-6 sm:pt-6 lg:px-10 xl:px-12">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-            Calendar
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Calendar</h1>
           <div className="flex flex-wrap items-center gap-2">
             {/* Preset pills (desktop) */}
             <div
@@ -182,10 +169,7 @@ export default function Calendar() {
 
             {/* Library filter */}
             {libraries.data && libraries.data.length > 1 && (
-              <Select
-                value={libraryId ? String(libraryId) : "all"}
-                onValueChange={setLibrary}
-              >
+              <Select value={libraryId ? String(libraryId) : "all"} onValueChange={setLibrary}>
                 <SelectTrigger className="border-border/50 bg-surface/60 h-9 w-auto min-w-[120px] rounded-full text-[12px] font-semibold backdrop-blur-sm sm:min-w-[140px] sm:text-[13px]">
                   <SelectValue placeholder="All Libraries" />
                 </SelectTrigger>
@@ -240,11 +224,7 @@ export default function Calendar() {
       ) : days.length > 0 ? (
         <div className="space-y-6">
           {days.map((day) => (
-            <DayGroup
-              key={day.date}
-              day={day}
-              isSelected={activeSelectedDay === day.date}
-            />
+            <DayGroup key={day.date} day={day} isSelected={activeSelectedDay === day.date} />
           ))}
         </div>
       ) : (
@@ -273,6 +253,27 @@ function CalendarSkeleton() {
   );
 }
 
+// Links in the empty state always lead to the other preset views, never the
+// one on screen. "all" is the legacy spelling of "everything".
+const EMPTY_STATE_LINKS: { value: CalendarFilter; label: string }[] = [
+  { value: "following", label: "Following" },
+  { value: "trending", label: "Trending" },
+  { value: "everything", label: "Show everything" },
+];
+
+function calendarEmptyMessage(view: string) {
+  switch (view) {
+    case "following":
+      return "Nothing upcoming from shows you follow this week.";
+    case "trending":
+      return "Nothing trending this week.";
+    case "everything":
+      return "Nothing scheduled this week.";
+    default:
+      return "No events this week for this view.";
+  }
+}
+
 function CalendarEmpty({
   filter,
   onSelectPreset,
@@ -280,40 +281,25 @@ function CalendarEmpty({
   filter: string;
   onSelectPreset: (f: string) => void;
 }) {
-  const isEverything = filter === "everything" || filter === "all";
+  const view = filter === "all" ? "everything" : filter;
+  const links = EMPTY_STATE_LINKS.filter((link) => link.value !== view);
   return (
     <div className="surface-panel flex min-h-[300px] flex-col items-center justify-center gap-3 rounded-[1.8rem] border-0 px-6 py-16 text-center">
-      <CalendarDays
-        className="text-muted-foreground h-10 w-10"
-        strokeWidth={1.5}
-      />
-      <p className="text-muted-foreground text-sm">
-        {filter === "following"
-          ? "Nothing upcoming from shows you follow this week."
-          : isEverything
-            ? "Nothing scheduled this week."
-            : "No events this week for this view."}
-      </p>
-      {!isEverything && (
-        <div className="flex flex-wrap items-center justify-center gap-2">
+      <CalendarDays className="text-muted-foreground h-10 w-10" strokeWidth={1.5} />
+      <p className="text-muted-foreground text-sm">{calendarEmptyMessage(view)}</p>
+      <div className="flex flex-wrap items-center justify-center gap-2">
+        {links.map((link) => (
           <Button
+            key={link.value}
             variant="link"
             size="sm"
             className="text-primary text-sm"
-            onClick={() => onSelectPreset("trending")}
+            onClick={() => onSelectPreset(link.value)}
           >
-            Trending
+            {link.label}
           </Button>
-          <Button
-            variant="link"
-            size="sm"
-            className="text-primary text-sm"
-            onClick={() => onSelectPreset("everything")}
-          >
-            Show everything
-          </Button>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 }

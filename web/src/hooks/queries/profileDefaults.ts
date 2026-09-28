@@ -1,6 +1,6 @@
 import { useCallback } from "react";
-import { ApiClientError } from "@/api/client";
 import {
+  isSettingValueMissing,
   useClearSettingValue,
   useSetSettingValue,
   type EffectiveSettingsMap,
@@ -38,9 +38,7 @@ export function isDeviceOverridable(key: SettingKey): boolean {
  * skipped when the resolved value did not come from a device row — the common
  * case, and a DELETE for a row that does not exist is a wasted round trip.
  */
-export function useProfileDefaultWriter(
-  effective: EffectiveSettingsMap | undefined,
-) {
+export function useProfileDefaultWriter(effective: EffectiveSettingsMap | undefined) {
   const setValue = useSetSettingValue();
   const clearValue = useClearSettingValue();
 
@@ -56,7 +54,7 @@ export function useProfileDefaultWriter(
         await clearValue.mutateAsync({ key, identity: DEVICE_SCOPE });
       } catch (error) {
         // Nothing to clear is the state this asks for.
-        if (error instanceof ApiClientError && error.status === 404) return;
+        if (isSettingValueMissing(error)) return;
         throw error;
       }
     },
@@ -70,7 +68,7 @@ export function useProfileDefaultWriter(
         try {
           await clearValue.mutateAsync({ key, identity });
         } catch (error) {
-          if (error instanceof ApiClientError && error.status === 404) return;
+          if (isSettingValueMissing(error)) return;
           throw error;
         }
       };

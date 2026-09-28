@@ -35,18 +35,13 @@ export function SearchableSelect({
   const [focusedIndex, setFocusedIndex] = React.useState(-1);
   const listboxId = React.useId();
   const portalContainer = React.useContext(PortalContainerContext);
-  const labelOf = React.useCallback(
-    (opt: string) => getLabel?.(opt) ?? opt,
-    [getLabel],
-  );
+  const labelOf = React.useCallback((opt: string) => getLabel?.(opt) ?? opt, [getLabel]);
 
   const filtered = React.useMemo(() => {
     if (!search) return options;
     const lower = search.toLowerCase();
     return options.filter(
-      (opt) =>
-        opt.toLowerCase().includes(lower) ||
-        labelOf(opt).toLowerCase().includes(lower),
+      (opt) => opt.toLowerCase().includes(lower) || labelOf(opt).toLowerCase().includes(lower),
     );
   }, [options, search, labelOf]);
 
@@ -87,9 +82,7 @@ export function SearchableSelect({
             !value && "text-muted-foreground",
           )}
         >
-          <span className="truncate">
-            {value ? labelOf(value) : placeholder}
-          </span>
+          <span className="truncate">{value ? labelOf(value) : placeholder}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </button>
       </PopoverPrimitive.Trigger>
@@ -114,9 +107,7 @@ export function SearchableSelect({
               aria-label="Search options"
               aria-controls={listboxId}
               aria-activedescendant={
-                focusedIndex >= 0
-                  ? `${listboxId}-opt-${focusedIndex}`
-                  : undefined
+                focusedIndex >= 0 ? `${listboxId}-opt-${focusedIndex}` : undefined
               }
               className="border-input bg-background placeholder:text-muted-foreground flex h-8 w-full rounded-md border px-2 text-sm outline-none"
               autoFocus
@@ -129,13 +120,9 @@ export function SearchableSelect({
             className="max-h-60 overflow-y-auto overscroll-contain p-1"
           >
             {isLoading ? (
-              <p className="text-muted-foreground py-4 text-center text-sm">
-                Loading...
-              </p>
+              <p className="text-muted-foreground py-4 text-center text-sm">Loading...</p>
             ) : filtered.length === 0 ? (
-              <p className="text-muted-foreground py-4 text-center text-sm">
-                No results found
-              </p>
+              <p className="text-muted-foreground py-4 text-center text-sm">No results found</p>
             ) : (
               <>
                 <button
@@ -155,10 +142,7 @@ export function SearchableSelect({
                   }}
                 >
                   <Check
-                    className={cn(
-                      "mr-2 h-4 w-4 shrink-0",
-                      value ? "opacity-0" : "opacity-100",
-                    )}
+                    className={cn("mr-2 h-4 w-4 shrink-0", value ? "opacity-0" : "opacity-100")}
                   />
                   <span className="text-muted-foreground italic">Any</span>
                 </button>
@@ -173,8 +157,7 @@ export function SearchableSelect({
                     className={cn(
                       "hover:bg-accent hover:text-accent-foreground relative flex w-full cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm select-none",
                       value === opt && "font-medium",
-                      focusedIndex === i + 1 &&
-                        "bg-accent text-accent-foreground",
+                      focusedIndex === i + 1 && "bg-accent text-accent-foreground",
                     )}
                     onClick={() => {
                       onChange(opt);
@@ -230,10 +213,7 @@ export function SearchableMultiSelect({
   const [focusedIndex, setFocusedIndex] = React.useState(-1);
   const listboxId = React.useId();
   const portalContainer = React.useContext(PortalContainerContext);
-  const labelOf = React.useCallback(
-    (opt: string) => getLabel?.(opt) ?? opt,
-    [getLabel],
-  );
+  const labelOf = React.useCallback((opt: string) => getLabel?.(opt) ?? opt, [getLabel]);
 
   const selected = React.useMemo(() => new Set(value), [value]);
 
@@ -241,9 +221,7 @@ export function SearchableMultiSelect({
     if (!search) return options;
     const lower = search.toLowerCase();
     return options.filter(
-      (opt) =>
-        opt.toLowerCase().includes(lower) ||
-        labelOf(opt).toLowerCase().includes(lower),
+      (opt) => opt.toLowerCase().includes(lower) || labelOf(opt).toLowerCase().includes(lower),
     );
   }, [options, search, labelOf]);
 
@@ -330,9 +308,7 @@ export function SearchableMultiSelect({
               aria-label="Search options"
               aria-controls={listboxId}
               aria-activedescendant={
-                focusedIndex >= 0
-                  ? `${listboxId}-opt-${focusedIndex}`
-                  : undefined
+                focusedIndex >= 0 ? `${listboxId}-opt-${focusedIndex}` : undefined
               }
               className="border-input bg-background placeholder:text-muted-foreground flex h-8 w-full rounded-md border px-2 text-sm outline-none"
               autoFocus
@@ -346,13 +322,9 @@ export function SearchableMultiSelect({
             className="max-h-60 overflow-y-auto overscroll-contain p-1"
           >
             {isLoading ? (
-              <p className="text-muted-foreground py-4 text-center text-sm">
-                Loading...
-              </p>
+              <p className="text-muted-foreground py-4 text-center text-sm">Loading...</p>
             ) : filtered.length === 0 ? (
-              <p className="text-muted-foreground py-4 text-center text-sm">
-                No results found
-              </p>
+              <p className="text-muted-foreground py-4 text-center text-sm">No results found</p>
             ) : (
               <>
                 {value.length > 0 ? (
@@ -368,9 +340,7 @@ export function SearchableMultiSelect({
                     onClick={() => onChange([])}
                   >
                     <Check className="mr-2 h-4 w-4 shrink-0 opacity-0" />
-                    <span className="text-muted-foreground italic">
-                      Clear all
-                    </span>
+                    <span className="text-muted-foreground italic">Clear all</span>
                   </button>
                 ) : null}
 
@@ -386,8 +356,7 @@ export function SearchableMultiSelect({
                       className={cn(
                         "hover:bg-accent hover:text-accent-foreground relative flex w-full cursor-pointer items-center rounded-sm px-2 py-1.5 text-sm select-none",
                         selected.has(opt) && "font-medium",
-                        focusedIndex === optIndex &&
-                          "bg-accent text-accent-foreground",
+                        focusedIndex === optIndex && "bg-accent text-accent-foreground",
                       )}
                       onClick={() => toggle(opt)}
                     >

@@ -66,6 +66,7 @@ export interface StartRequestInput {
   profileId: string;
   playbackAttemptId: string;
   qualityPreference: string;
+  allowAlternateVersions?: boolean;
   position: number;
   /** Forces `start_position: 0` to be sent, which means "start over". */
   forceStartPosition: boolean;
@@ -97,6 +98,7 @@ export function buildStartRequestV3(input: StartRequestInput): StartRequestV3 {
     profile_id: input.profileId,
     playback_attempt_id: input.playbackAttemptId,
     quality_preference: input.qualityPreference,
+    ...(input.allowAlternateVersions === false ? { allow_alternate_versions: false } : {}),
     // The web player renders ASS with its own typesetting engine, so it asks
     // the server to keep authored fidelity rather than flatten it.
     subtitle_fidelity_preference: "preserve",
@@ -106,11 +108,8 @@ export function buildStartRequestV3(input: StartRequestInput): StartRequestV3 {
     ...(input.forceStartPosition || input.position > 0
       ? { start_position: clampPosition(input.position) }
       : {}),
-    ...(input.progressPersistence
-      ? { progress_persistence: input.progressPersistence }
-      : {}),
-    ...(input.explicitAudioTrackIndex != null &&
-    input.explicitAudioTrackIndex >= 0
+    ...(input.progressPersistence ? { progress_persistence: input.progressPersistence } : {}),
+    ...(input.explicitAudioTrackIndex != null && input.explicitAudioTrackIndex >= 0
       ? { audio_track_index: input.explicitAudioTrackIndex }
       : {}),
     ...(input.subtitleTrackIndex != null && input.subtitleTrackIndex >= 0
@@ -119,9 +118,7 @@ export function buildStartRequestV3(input: StartRequestInput): StartRequestV3 {
     ...(input.bandwidthEstimateKbps != null
       ? { bandwidth_estimate_kbps: input.bandwidthEstimateKbps }
       : {}),
-    ...(input.bandwidthCapKbps != null
-      ? { bandwidth_cap_kbps: input.bandwidthCapKbps }
-      : {}),
+    ...(input.bandwidthCapKbps != null ? { bandwidth_cap_kbps: input.bandwidthCapKbps } : {}),
   };
 }
 
@@ -151,18 +148,14 @@ export interface ReplanRequestInput extends ReplanOptions {
  * touching; and the seek operations are validated against the current plan's
  * tracks byte-for-byte, so they must never be rewritten into shorthand.
  */
-export function buildReplanRequestV3(
-  input: ReplanRequestInput,
-): ReplanRequestV3 {
+export function buildReplanRequestV3(input: ReplanRequestInput): ReplanRequestV3 {
   const selectedTracks: SelectedTracksV3 = {};
   const nextAudio = input.audio ?? input.plan.selected_tracks.audio;
   if (nextAudio) {
     selectedTracks.audio = nextAudio;
   }
   const nextSubtitle =
-    input.subtitle === undefined
-      ? input.plan.selected_tracks.subtitle
-      : input.subtitle;
+    input.subtitle === undefined ? input.plan.selected_tracks.subtitle : input.subtitle;
   if (nextSubtitle) {
     selectedTracks.subtitle = nextSubtitle;
   }
@@ -188,9 +181,7 @@ export function buildReplanRequestV3(
     ...(input.bandwidthEstimateKbps != null
       ? { bandwidth_estimate_kbps: input.bandwidthEstimateKbps }
       : {}),
-    ...(input.bandwidthCapKbps != null
-      ? { bandwidth_cap_kbps: input.bandwidthCapKbps }
-      : {}),
+    ...(input.bandwidthCapKbps != null ? { bandwidth_cap_kbps: input.bandwidthCapKbps } : {}),
   };
 }
 

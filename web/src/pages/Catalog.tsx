@@ -1,21 +1,23 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "react-router";
-import { CheckSquare, RotateCcw, Search, Trash2, X } from "lucide-react";
+import { CheckSquare, RefreshCw, RotateCcw, Search, Trash2, X } from "lucide-react";
 
 import { captureProfileRequestContext } from "@/api/client";
 import type { BrowseItem } from "@/api/types";
+import { isNotFoundProblem } from "@/api/v2/request";
 import ItemGrid from "@/components/ItemGrid";
+import PageUnavailable from "@/components/PageUnavailable";
+import ViewTransitionLink from "@/components/ViewTransitionLink";
+import CastCarousel from "@/components/CastCarousel";
 import { RequestToAddSection } from "@/components/RequestToAddSection";
 import { Button } from "@/components/ui/button";
 import CatalogFiltersPanel from "@/components/catalog/CatalogFiltersPanel";
 import SearchScopeChips from "@/components/catalog/SearchScopeChips";
 import { useCatalogWindow } from "@/hooks/queries/catalog";
+import { usePersonSearch } from "@/hooks/queries/personSearch";
 import { useSetCollectionSortPreference } from "@/hooks/queries/collections";
 import { querySortToSelectValue } from "@/lib/collectionSortConfig";
-import {
-  useSearchMediaScope,
-  type SearchMediaScope,
-} from "@/hooks/useSearchMediaScope";
+import { useSearchMediaScope, type SearchMediaScope } from "@/hooks/useSearchMediaScope";
 import { useRemoveHistory } from "@/hooks/queries/history";
 import { useRequestSearch } from "@/hooks/queries/useRequests";
 import { useCanRequest } from "@/hooks/useCanRequest";
@@ -38,6 +40,7 @@ import {
 import type { CatalogSearchState } from "./catalogSearchParams";
 
 const REQUEST_SEARCH_DEBOUNCE_MS = 100;
+const INTERACTIVE_SEARCH_GC_TIME_MS = 30_000;
 
 function defaultCatalogTitle(source: string, searchQuery?: string) {
   if (source === "favorites") return "Favorites";
@@ -48,8 +51,7 @@ function defaultCatalogTitle(source: string, searchQuery?: string) {
 }
 
 function defaultCatalogSubtitle(source: string): string {
-  if (source === "favorites")
-    return "Movies and shows you've marked as favorites.";
+  if (source === "favorites") return "Movies and shows you've marked as favorites.";
   if (source === "watchlist") return "Things you've saved to watch later.";
   if (source === "history") return "Everything you've recently watched.";
   return "Refine the archive by type, era, rating, or genre.";
@@ -57,39 +59,34 @@ function defaultCatalogSubtitle(source: string): string {
 
 export default function Catalog() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const state = useMemo(
-    () => parseCatalogSearchParams(searchParams),
-    [searchParams],
-  );
-  const emptySearchTitle =
-    state.source === "query" && !state.q
-      ? "Search"
-      : defaultCatalogTitle(state.source, state.q);
+  const state = useMemo(() => parseCatalogSearchParams(searchParams), [searchParams]);
+  const isEmptySearch = state.source === "query" && !state.q && !state.library_id;
 
-  useDocumentTitle(emptySearchTitle);
-
-  if (state.source === "query" && !state.q) {
-    return (
-      <section className="page-shell flex min-h-[calc(100dvh-10rem)] flex-col items-center justify-center py-16 text-center">
-        <div className="text-muted-foreground mb-6">
-          <Search className="h-10 w-10" strokeWidth={1.5} />
-        </div>
-        <h1 className="page-title mb-4">Search</h1>
-        <p className="page-subtitle mb-8 max-w-xl text-sm sm:text-base">
-          Find films, series, performances, and rediscover things you forgot you
-          saved.
-        </p>
-        <SearchBar autoFocus prominent />
-      </section>
-    );
+  // Each view owns its tab title. A title set here too would run after the
+  // results' own on mount and replace it whenever the results were cached.
+  if (isEmptySearch) {
+    return <EmptySearch />;
   }
 
   return (
-    <CatalogResults
-      searchParams={searchParams}
-      setSearchParams={setSearchParams}
-      state={state}
-    />
+    <CatalogResults searchParams={searchParams} setSearchParams={setSearchParams} state={state} />
+  );
+}
+
+function EmptySearch() {
+  useDocumentTitle("Search");
+
+  return (
+    <section className="page-shell flex min-h-[calc(100dvh-10rem)] flex-col items-center justify-center py-16 text-center">
+      <div className="text-muted-foreground mb-6">
+        <Search className="h-10 w-10" strokeWidth={1.5} />
+      </div>
+      <h1 className="page-title mb-4">Search</h1>
+      <p className="page-subtitle mb-8 max-w-xl text-sm sm:text-base">
+        Find films, series, performances, and rediscover things you forgot you saved.
+      </p>
+      <SearchBar autoFocus prominent />
+    </section>
   );
 }
 
@@ -120,12 +117,8 @@ function CatalogResults({
   const isCollectionSource =
     state.source === "library_collection" || state.source === "user_collection";
   const hasSavedSortPreference =
-    isCollectionSource ||
-    state.source === "watchlist" ||
-    state.source === "favorites";
-  const allowPersonalizedOverlayControls = catalogSourceAllowsOverlay(
-    state.source,
-  );
+    isCollectionSource || state.source === "watchlist" || state.source === "favorites";
+  const allowPersonalizedOverlayControls = catalogSourceAllowsOverlay(state.source);
   const removeHistory = useRemoveHistory();
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -143,8 +136,7 @@ function CatalogResults({
   useEffect(() => () => clearTimeout(debounceRef.current), []);
 
   const isQuerySource = state.source === "query" && Boolean(state.q);
-  const { scope: preferredScope, setScope: setPreferredScope } =
-    useSearchMediaScope();
+  const { scope: preferredScope, setScope: setPreferredScope } = useSearchMediaScope();
   // The URL `type` param is the explicit search scope ("all" included as a
   // sentinel). When it's absent — fresh navigation, bookmark, global search —
   // the user's preferred scope applies as the default.
@@ -167,6 +159,8 @@ function CatalogResults({
   );
 
   const mediaScope = effectiveState.query_definition.media_scope;
+  const peopleQuery = usePersonSearch(state.q ?? "", 20, isQuerySource, mediaScope);
+  const people = peopleQuery.data ?? [];
   const activeChipScope: SearchMediaScope =
     mediaScope === "audiobook" ? "audiobook" : mediaScope ? "video" : "all";
   const handleChipScopeChange = useCallback(
@@ -192,11 +186,7 @@ function CatalogResults({
   // lets a later change to the saved preference take effect on the next visit.
   const effectiveSort = catalogQuery.data?.effectiveSort;
   const sortedState = useMemo(() => {
-    if (
-      !hasSavedSortPreference ||
-      !effectiveState.uses_source_order ||
-      !effectiveSort?.field
-    ) {
+    if (!hasSavedSortPreference || !effectiveState.uses_source_order || !effectiveSort?.field) {
       return effectiveState;
     }
     return {
@@ -221,10 +211,7 @@ function CatalogResults({
       } else if (nextState.source === "user_collection") {
         if (!collectionId) return;
         collectionKind = "user";
-      } else if (
-        nextState.source === "watchlist" ||
-        nextState.source === "favorites"
-      ) {
+      } else if (nextState.source === "watchlist" || nextState.source === "favorites") {
         collectionKind = nextState.source;
       } else {
         return;
@@ -261,13 +248,17 @@ function CatalogResults({
     enabled: canRequest.discoveryEnabled && isQuerySource,
     requireProfile: true,
     staleTime: 5 * 60 * 1000,
+    gcTime: INTERACTIVE_SEARCH_GC_TIME_MS,
+    retry: false,
   });
   const tmdbMissingCount =
-    tmdbQuery.data?.results?.filter(
-      (result) => result.availability !== "available",
-    ).length ?? 0;
-  const libraryHasResults = (catalogQuery.data?.totalItems ?? 0) > 0;
-  const libraryEmpty = !catalogQuery.isLoading && !libraryHasResults;
+    tmdbQuery.data?.results?.filter((result) => result.availability !== "available").length ?? 0;
+  const libraryResultsKnown =
+    !catalogQuery.isLoading && !catalogQuery.isPlaceholderData && !catalogQuery.isError;
+  const libraryHasResults = libraryResultsKnown && (catalogQuery.data?.totalItems ?? 0) > 0;
+  const libraryEmpty = libraryResultsKnown && !libraryHasResults;
+  const showPeopleSection =
+    isQuerySource && (peopleQuery.isLoading || peopleQuery.isError || people.length > 0);
   // When the library is empty and the request section will (or might) render,
   // hide ItemGrid entirely. The previous approach pinned ItemGrid's `loading`
   // prop to true, which renders 24 skeleton tiles forever above the section.
@@ -275,25 +266,22 @@ function CatalogResults({
     isQuerySource &&
     libraryEmpty &&
     (canRequest.isResolving ||
-      (canRequest.discoveryEnabled &&
-        (tmdbQuery.isLoading || tmdbMissingCount > 0)));
+      (canRequest.discoveryEnabled && (tmdbQuery.isLoading || tmdbMissingCount > 0)));
   const loadedHistoryItems = useMemo(() => {
     if (!isHistorySource) {
       return [] as BrowseItem[];
     }
     const seen = new Set<string>();
     const items: BrowseItem[] = [];
-    (catalogQuery.data?.pages ?? new Map<number, BrowseItem[]>()).forEach(
-      (page) => {
-        page.forEach((item) => {
-          if (seen.has(item.content_id)) {
-            return;
-          }
-          seen.add(item.content_id);
-          items.push(item);
-        });
-      },
-    );
+    (catalogQuery.data?.pages ?? new Map<number, BrowseItem[]>()).forEach((page) => {
+      page.forEach((item) => {
+        if (seen.has(item.content_id)) {
+          return;
+        }
+        seen.add(item.content_id);
+        items.push(item);
+      });
+    });
     return items;
   }, [catalogQuery.data?.pages, isHistorySource]);
   const selectedHistoryItems = useMemo(
@@ -301,16 +289,15 @@ function CatalogResults({
     [loadedHistoryItems, selectedIds],
   );
   const selectedHistoryTargets = useMemo(
-    () =>
-      selectedHistoryItems.map((item) =>
-        buildHistoryRemovalTarget(item.content_id, item.type),
-      ),
+    () => selectedHistoryItems.map((item) => buildHistoryRemovalTarget(item.content_id, item.type)),
     [selectedHistoryItems],
   );
-  const title =
-    catalogQuery.data?.title ??
-    state.title ??
-    defaultCatalogTitle(state.source, state.q);
+  // A collection the viewer cannot reach answers 404, the same for a deleted
+  // collection and one they were never shown, so the page says neither.
+  const collectionUnavailable = isCollectionSource && isNotFoundProblem(catalogQuery.sourceError);
+  const title = collectionUnavailable
+    ? "Not found"
+    : (catalogQuery.data?.title ?? state.title ?? defaultCatalogTitle(state.source, state.q));
 
   useDocumentTitle(title);
 
@@ -337,9 +324,22 @@ function CatalogResults({
   // matches live in a separate section, so scope the label to avoid a "0 results"
   // reading while an outside-library result is visible.
   const resultNoun =
-    state.source === "query"
-      ? "in library"
-      : `result${totalItems === 1 ? "" : "s"}`;
+    state.source === "query" ? "in library" : `result${totalItems === 1 ? "" : "s"}`;
+
+  if (collectionUnavailable) {
+    return (
+      <PageUnavailable
+        title="This collection isn't available"
+        description="It may have been deleted, or you may not have access to it."
+      >
+        <Button asChild variant="outline">
+          <ViewTransitionLink to="/collections" up>
+            All collections
+          </ViewTransitionLink>
+        </Button>
+      </PageUnavailable>
+    );
+  }
 
   return (
     <div className="page-shell space-y-6 py-4 sm:py-6">
@@ -353,11 +353,7 @@ function CatalogResults({
         <div className="items-baseline gap-3 sm:flex">
           <div className="hidden h-8 w-px bg-current opacity-15 sm:block" />
           {showExactResultCount ? (
-            <div
-              className="text-right tabular-nums"
-              role="status"
-              aria-live="polite"
-            >
+            <div className="text-right tabular-nums" role="status" aria-live="polite">
               <span className="hidden text-3xl font-extralight tracking-tight sm:inline">
                 {totalItems}
               </span>
@@ -380,10 +376,7 @@ function CatalogResults({
             autoFocus
             buildSearchHref={buildSearchHref}
           />
-          <SearchScopeChips
-            activeScope={activeChipScope}
-            onScopeChange={handleChipScopeChange}
-          />
+          <SearchScopeChips activeScope={activeChipScope} onScopeChange={handleChipScopeChange} />
         </div>
       ) : null}
 
@@ -395,18 +388,23 @@ function CatalogResults({
             querySortToSelectValue(nextState.query_definition.sort) !==
               querySortToSelectValue(sortedState.query_definition.sort);
           const stateForNavigation = sortChanged
-            ? { ...nextState, sort_from_server: false }
+            ? { ...nextState, sort_from_server: false, explicit_sort: true }
             : nextState;
           rememberCollectionSort(stateForNavigation);
-          const nextSearchParams =
-            buildCatalogFilterSearchParams(stateForNavigation);
+          const nextSearchParams = buildCatalogFilterSearchParams(stateForNavigation);
           if (nextSearchParams.toString() !== searchParams.toString()) {
             setSearchParams(nextSearchParams);
           }
         }}
         allowLibrarySelection={!isCollectionSource}
         allowPersonalizedFilters={allowPersonalizedOverlayControls}
-        allowPersonalizedSorts={allowPersonalizedOverlayControls}
+        allowPersonalizedSorts={
+          isHistorySource
+            ? "date_viewed"
+            : state.source === "favorites" || state.source === "watchlist"
+              ? false
+              : allowPersonalizedOverlayControls
+        }
       />
 
       {isHistorySource && (
@@ -414,44 +412,30 @@ function CatalogResults({
           <div className="space-y-1">
             <p className="text-sm font-semibold">Watch History</p>
             <p className="text-muted-foreground text-xs sm:text-sm">
-              Removing items clears watch history, watched status, and resume
-              progress for this profile.
+              Removing items clears watch history, watched status, and resume progress for this
+              profile.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {!selectionMode ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setSelectionMode(true)}
-              >
+              <Button variant="outline" size="sm" onClick={() => setSelectionMode(true)}>
                 <CheckSquare className="size-4" />
                 Select
               </Button>
             ) : (
               <>
-                <span className="text-muted-foreground text-sm">
-                  {selectedIds.size} selected
-                </span>
+                <span className="text-muted-foreground text-sm">{selectedIds.size} selected</span>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() =>
-                    setSelectedIds(
-                      new Set(
-                        loadedHistoryItems.map((item) => item.content_id),
-                      ),
-                    )
+                    setSelectedIds(new Set(loadedHistoryItems.map((item) => item.content_id)))
                   }
                 >
                   <CheckSquare />
                   Select Loaded
                 </Button>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedIds(new Set())}
-                >
+                <Button variant="ghost" size="sm" onClick={() => setSelectedIds(new Set())}>
                   <RotateCcw />
                   Clear
                 </Button>
@@ -481,16 +465,61 @@ function CatalogResults({
         </section>
       )}
 
-      {tmdbMayRescueLibrary ? null : (
+      {showPeopleSection ? (
+        <section aria-label="People" className="space-y-3">
+          <h2 className="text-lg font-semibold">People</h2>
+          {peopleQuery.isError ? (
+            <div role="alert" className="space-y-2">
+              <p className="text-muted-foreground text-sm">Could not load people results.</p>
+              <Button variant="outline" size="sm" onClick={() => void peopleQuery.refetch()}>
+                <RefreshCw className="size-4" />
+                Retry people search
+              </Button>
+            </div>
+          ) : peopleQuery.isLoading ? (
+            <p role="status" className="text-muted-foreground text-sm">
+              Searching people...
+            </p>
+          ) : (
+            <CastCarousel
+              cast={people.map((person, index) => ({
+                person_id: person.id,
+                name: person.name,
+                photo_url: person.photo_url,
+                character: "",
+                order: index,
+              }))}
+            />
+          )}
+        </section>
+      ) : null}
+
+      {catalogQuery.isError ? (
+        <div
+          className="search-paint-surface flex flex-col items-center justify-center gap-3 rounded-2xl border px-4 py-16 text-center"
+          role="alert"
+        >
+          <p className="font-medium">
+            {isQuerySource ? "Could not load search results." : "Could not load catalog results."}
+          </p>
+          <p className="text-muted-foreground max-w-md text-sm">
+            {isQuerySource
+              ? "The search request failed. Please retry."
+              : "The catalog request failed. Please retry."}
+          </p>
+          <Button variant="outline" size="sm" onClick={() => void catalogQuery.refetch()}>
+            <RefreshCw className="size-4" />
+            {isQuerySource ? "Retry search" : "Retry catalog"}
+          </Button>
+        </div>
+      ) : tmdbMayRescueLibrary || (libraryEmpty && showPeopleSection) ? null : (
         <ItemGrid
           totalItems={catalogQuery.data?.totalItems ?? 0}
           pages={catalogQuery.data?.pages ?? new Map()}
           pageSize={limit}
           loading={catalogQuery.isLoading}
           onVisibleRangeChange={handleVisibleRangeChange}
-          narrowPosterActions={
-            state.source === "favorites" || state.source === "watchlist"
-          }
+          narrowPosterActions={state.source === "favorites" || state.source === "watchlist"}
           selectionMode={isHistorySource && selectionMode}
           selectedIds={selectedIds}
           onToggleSelect={toggleHistorySelection}
@@ -502,6 +531,7 @@ function CatalogResults({
           variant="grid"
           query={tmdbDebouncedQ}
           libraryHadHits={libraryHasResults}
+          libraryResultsKnown={libraryResultsKnown}
         />
       ) : null}
 

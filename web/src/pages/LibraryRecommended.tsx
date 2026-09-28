@@ -1,11 +1,9 @@
+import { buildLibraryCollectionCatalogHref } from "./catalogSearchParams";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import type { HomeSectionItemsResponse, ResolvedSection } from "@/api/types";
 import { useLibraryCollectionItems } from "@/hooks/queries/libraryCollections";
-import {
-  fetchLibrarySectionItems,
-  useLibraryLayout,
-} from "@/hooks/queries/sections";
+import { fetchLibrarySectionItems, useLibraryLayout } from "@/hooks/queries/sections";
 import { useSidebarPins } from "@/hooks/queries/sidebarPins";
 import MediaCarousel from "@/components/MediaCarousel";
 import ItemCard from "@/components/ItemCard";
@@ -17,10 +15,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { HERO_BANNER_SIZE_TALL } from "@/lib/design-system";
 import { sectionKeys } from "@/hooks/queries/keys";
 import { planNextHomeSectionBatch } from "./homeSectionQueue";
-import {
-  buildHomeSectionViewModel,
-  type HomeSectionSlot,
-} from "./homeSectionState";
+import { buildHomeSectionViewModel, type HomeSectionSlot } from "./homeSectionState";
 import { collectCachedHomeSections } from "./homeSectionCache";
 import { isAudiobookLibraryType } from "./libraryPageSearchParams";
 import { useUICustomization } from "@/hooks/useUICustomization";
@@ -50,13 +45,13 @@ export default function LibraryRecommended({
   const queryClient = useQueryClient();
   const { data, isLoading } = useLibraryLayout(libraryId);
   const { data: sectionRefreshSignal = 0 } = useSectionRefreshSignal();
-  const [loadedSections, setLoadedSections] = useState<
-    Map<string, ResolvedSection>
-  >(new Map());
+  const [loadedSections, setLoadedSections] = useState<Map<string, ResolvedSection>>(new Map());
   const [failedIds, setFailedIds] = useState<Set<string>>(new Set());
   const [inFlightIds, setInFlightIds] = useState<Set<string>>(new Set());
   const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
-  const activeSectionIdsRef = useRef<Set<string>>(new Set());
+  // Every reset below starts a new load generation. A request only reports
+  // back into the generation that started it.
+  const loadGenerationRef = useRef(0);
 
   const layout = useMemo(() => data?.sections ?? [], [data?.sections]);
   const layoutResetKey = layout
@@ -68,7 +63,6 @@ export default function LibraryRecommended({
 
   useEffect(() => {
     const activeIds = layout.map((section) => section.id);
-    activeSectionIdsRef.current = new Set(activeIds);
     setLoadedSections(
       collectCachedHomeSections(layout, (sectionId) =>
         queryClient.getQueryData<HomeSectionItemsResponse>(
@@ -81,7 +75,10 @@ export default function LibraryRecommended({
     setCompletedIds(new Set());
 
     return () => {
-      activeSectionIdsRef.current = new Set();
+      // Cancelling settles each in-flight request with its pre-fetch data, or
+      // a CancelledError when there was none. Neither answers the next
+      // generation, which re-requests these sections itself.
+      loadGenerationRef.current += 1;
       activeIds.forEach((sectionId) => {
         void queryClient.cancelQueries({
           queryKey: sectionKeys.libraryItems(libraryId, sectionId),
@@ -102,6 +99,7 @@ export default function LibraryRecommended({
 
     if (nextIds.length === 0) return;
 
+    const generation = loadGenerationRef.current;
     setInFlightIds((prev) => {
       const next = new Set(prev);
       nextIds.forEach((id) => next.add(id));
@@ -112,12 +110,11 @@ export default function LibraryRecommended({
       void queryClient
         .fetchQuery<HomeSectionItemsResponse>({
           queryKey: sectionKeys.libraryItems(libraryId, sectionId),
-          queryFn: ({ signal }) =>
-            fetchLibrarySectionItems(libraryId, sectionId, { signal }),
+          queryFn: ({ signal }) => fetchLibrarySectionItems(libraryId, sectionId, { signal }),
           staleTime: SECTION_STALE_TIME,
         })
         .then((response) => {
-          if (!activeSectionIdsRef.current.has(sectionId)) return;
+          if (loadGenerationRef.current !== generation) return;
 
           setLoadedSections((prev) => {
             const next = new Map(prev);
@@ -137,7 +134,7 @@ export default function LibraryRecommended({
           });
         })
         .catch(() => {
-          if (!activeSectionIdsRef.current.has(sectionId)) return;
+          if (loadGenerationRef.current !== generation) return;
 
           setFailedIds((prev) => {
             const next = new Set(prev);
@@ -151,7 +148,7 @@ export default function LibraryRecommended({
           });
         })
         .finally(() => {
-          if (!activeSectionIdsRef.current.has(sectionId)) return;
+          if (loadGenerationRef.current !== generation) return;
 
           setInFlightIds((prev) => {
             if (!prev.has(sectionId)) return prev;
@@ -174,8 +171,7 @@ export default function LibraryRecommended({
   // considered a rendered hero, so the marquee header can drop back to its
   // glass variant (which is legible on any theme).
   const hasRenderedHero =
-    viewModel.hero?.state === "ready" &&
-    (viewModel.hero.section?.items.length ?? 0) > 0;
+    viewModel.hero?.state === "ready" && (viewModel.hero.section?.items.length ?? 0) > 0;
   useEffect(() => {
     onHeroStateChange?.(hasRenderedHero);
   }, [hasRenderedHero, onHeroStateChange]);
@@ -210,13 +206,7 @@ export default function LibraryRecommended({
           return null;
         }
         if (slot.state === "ready" && slot.section) {
-          return (
-            <SectionRow
-              key={slot.layout.id}
-              section={slot.section}
-              libraryId={libraryId}
-            />
-          );
+          return <SectionRow key={slot.layout.id} section={slot.section} libraryId={libraryId} />;
         }
         if (slot.state === "error") {
           return (
@@ -227,9 +217,7 @@ export default function LibraryRecommended({
             />
           );
         }
-        return (
-          <SectionLoadingRow key={slot.layout.id} title={slot.layout.title} />
-        );
+        return <SectionLoadingRow key={slot.layout.id} title={slot.layout.title} />;
       })}
 
       {/* Pinned Collections */}
@@ -250,10 +238,7 @@ function renderHeroSlot(
     // Audiobook libraries feature their continue-listening section, rendered
     // as a resume deck — square covers have no backdrop to feed the cinematic
     // carousel hero.
-    if (
-      isAudiobookLibraryType(libraryType) &&
-      hero.section.section_type === "continue_watching"
-    ) {
+    if (isAudiobookLibraryType(libraryType) && hero.section.section_type === "continue_watching") {
       return <NowListeningHero section={hero.section} libraryId={libraryId} />;
     }
     return (
@@ -291,9 +276,7 @@ function renderHeroSlot(
     return null;
   }
 
-  return (
-    <Skeleton className={`w-full rounded-none ${HERO_BANNER_SIZE_TALL}`} />
-  );
+  return <Skeleton className={`w-full rounded-none ${HERO_BANNER_SIZE_TALL}`} />;
 }
 
 function SectionLoadingRow({ title }: { title: string }) {
@@ -304,22 +287,12 @@ function SectionLoadingRow({ title }: { title: string }) {
   );
 }
 
-function SectionErrorRow({
-  title,
-  onRetry,
-}: {
-  title: string;
-  onRetry: () => void;
-}) {
+function SectionErrorRow({ title, onRetry }: { title: string; onRetry: () => void }) {
   return (
     <section className="space-y-3 px-4 sm:px-6 lg:px-10 xl:px-12">
-      <h2 className="text-foreground text-xl font-semibold tracking-tight">
-        {title}
-      </h2>
+      <h2 className="text-foreground text-xl font-semibold tracking-tight">{title}</h2>
       <div className="surface-panel flex items-center justify-between rounded-[1.4rem] border-0 px-5 py-4">
-        <p className="text-muted-foreground text-sm">
-          This section could not be loaded right now.
-        </p>
+        <p className="text-muted-foreground text-sm">This section could not be loaded right now.</p>
         <button
           type="button"
           onClick={onRetry}
@@ -361,27 +334,23 @@ function PinnedCollectionCarousel({
   collectionId: string;
   name: string;
 }) {
-  const { data: items, isLoading } = useLibraryCollectionItems(
-    libraryId,
-    collectionId,
-  );
+  const { data, isLoading } = useLibraryCollectionItems(libraryId, collectionId);
+  const items = data?.items ?? [];
   const { prefs: overlayPrefs, quickActionMode } = useOverlayPrefs();
   const { cardPresentation } = useUICustomization();
-  const posterWidthClasses = carouselCardWidthClasses(
-    cardPresentation.poster_size,
-  );
+  const posterWidthClasses = carouselCardWidthClasses(cardPresentation.poster_size);
 
-  if (!isLoading && (!items || items.length === 0)) return null;
+  if (items.length === 0 && !isLoading && !data?.has_more) return null;
 
   return (
-    <MediaCarousel title={name} loading={isLoading}>
-      {(items ?? []).map((item) => (
+    <MediaCarousel
+      title={name}
+      titleHref={buildLibraryCollectionCatalogHref(collectionId, name, libraryId)}
+      loading={isLoading}
+    >
+      {items.map((item) => (
         <div key={item.content_id} className={posterWidthClasses}>
-          <ItemCard
-            item={item}
-            overlayPrefs={overlayPrefs}
-            quickActionMode={quickActionMode}
-          />
+          <ItemCard item={item} overlayPrefs={overlayPrefs} quickActionMode={quickActionMode} />
         </div>
       ))}
     </MediaCarousel>

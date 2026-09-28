@@ -89,8 +89,7 @@ function installFakeMediaSession(): FakeMediaSession {
 }
 
 // Long enough to split into multiple queue chunks.
-const MULTI_CHUNK_TEXT =
-  "First sentence here. Second sentence here. Third sentence here.";
+const MULTI_CHUNK_TEXT = "First sentence here. Second sentence here. Third sentence here.";
 
 describe("useTTS", () => {
   let mediaSession: FakeMediaSession;

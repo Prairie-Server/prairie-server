@@ -1,3 +1,8 @@
+import {
+  captureProfileRequestContext,
+  isCapturedProfileAuthorityActive,
+  type ProfileRequestContextSnapshot,
+} from "@/api/client";
 import { useState } from "react";
 import { useSearchParams } from "react-router";
 import { ChevronDown, ChevronRight, Play } from "lucide-react";
@@ -16,10 +21,7 @@ import {
 import ConnectionsPanel from "@/pages/admin/autoscan/ConnectionsPanel";
 import ActivityPanel from "@/pages/admin/autoscan/ActivityPanel";
 import SourcesPanel from "@/pages/admin/autoscan/SourcesPanel";
-import {
-  isLegacyAdvancedTab,
-  normalizeTab,
-} from "@/pages/autoscanSearchParams";
+import { isLegacyAdvancedTab, normalizeTab } from "@/pages/autoscanSearchParams";
 
 // ---------------------------------------------------------------------------
 // Settings tab
@@ -27,48 +29,55 @@ import {
 
 function SettingsTab() {
   const settings = useAutoscanSettings();
+  const readAuthority = captureProfileRequestContext();
   const updateSettings = useUpdateAutoscanSettings();
 
-  // Local form state — initialised from server data; reflected immediately on
-  // every mutation so the UI stays responsive without waiting for refetch.
-  const [form, setForm] = useState<AutoscanSettings | null>(null);
-
-  // Merge server data into local form on first load (and after invalidation).
-  const serverData = settings.data;
-  const effective: AutoscanSettings = form ??
-    serverData ?? {
-      enabled: false,
-      default_poll_interval_seconds: 300,
-      debounce_seconds: 10,
-    };
-
+  const [form, setForm] = useState<{
+    value: AutoscanSettings;
+    authority: ProfileRequestContextSnapshot;
+  } | null>(null);
+  const activeForm = form && isCapturedProfileAuthorityActive(form.authority) ? form : null;
+  const effective = activeForm?.value ?? settings.data;
   function patch(delta: Partial<AutoscanSettings>) {
-    setForm((prev) => ({
-      ...(prev ?? effective),
-      ...delta,
-    }));
+    const authority = captureProfileRequestContext();
+    if (
+      !authority ||
+      !effective ||
+      !readAuthority ||
+      !isCapturedProfileAuthorityActive(readAuthority)
+    )
+      return;
+    setForm({ value: { ...effective, ...delta }, authority });
   }
-
-  function save(override?: Partial<AutoscanSettings>) {
-    const body: AutoscanSettings = { ...effective, ...override };
-    updateSettings.mutate(body, {
-      onSuccess: () => setForm(null), // reset to server truth after save
-    });
+  function save() {
+    if (
+      !effective ||
+      updateSettings.isPending ||
+      !settings.data ||
+      !readAuthority ||
+      !isCapturedProfileAuthorityActive(readAuthority) ||
+      (activeForm && !isCapturedProfileAuthorityActive(activeForm.authority))
+    )
+      return;
+    const captured = activeForm;
+    updateSettings.mutate(
+      { ...effective },
+      { onSuccess: () => setForm((current) => (current === captured ? null : current)) },
+    );
   }
 
   if (settings.isLoading) {
-    return (
-      <p className="text-muted-foreground py-4 text-sm">Loading settings…</p>
-    );
+    return <p className="text-muted-foreground py-4 text-sm">Loading settings…</p>;
   }
+
+  if (!effective || settings.isError)
+    return <p role="alert">Autoscan settings could not be loaded. Reload before editing.</p>;
 
   return (
     <div className="max-w-lg space-y-6">
       {/* Default poll interval */}
       <div className="space-y-1.5">
-        <Label htmlFor="default-poll-interval">
-          Default check interval (seconds)
-        </Label>
+        <Label htmlFor="default-poll-interval">Default check interval (seconds)</Label>
         <div className="flex items-center gap-2">
           <Input
             id="default-poll-interval"
@@ -81,7 +90,6 @@ function SettingsTab() {
                 default_poll_interval_seconds: Number(e.target.value) || 300,
               })
             }
-            onBlur={() => save()}
           />
           <span className="text-muted-foreground text-sm">sec</span>
         </div>
@@ -100,10 +108,7 @@ function SettingsTab() {
             type="number"
             min={0}
             value={effective.debounce_seconds}
-            onChange={(e) =>
-              patch({ debounce_seconds: Number(e.target.value) || 0 })
-            }
-            onBlur={() => save()}
+            onChange={(e) => patch({ debounce_seconds: Number(e.target.value) || 0 })}
           />
           <span className="text-muted-foreground text-sm">sec</span>
         </div>
@@ -111,6 +116,9 @@ function SettingsTab() {
           Coalesces rapid change events before triggering a scan.
         </p>
       </div>
+      <Button onClick={save} disabled={!activeForm || updateSettings.isPending}>
+        Save settings
+      </Button>
     </div>
   );
 }
@@ -128,27 +136,25 @@ interface AdminAutoscanProps {
   embedded?: boolean;
 }
 
-export default function AdminAutoscan({
-  embedded = false,
-}: AdminAutoscanProps = {}) {
+export default function AdminAutoscan({ embedded = false }: AdminAutoscanProps = {}) {
   const [searchParams, setSearchParams] = useSearchParams();
   const tabParam = embedded ? "view" : "tab";
   const requestedTab = searchParams.get(tabParam);
   const activeTab = normalizeTab(requestedTab);
   const trigger = useTriggerAutoscan();
   const settings = useAutoscanSettings();
+  const readAuthority = captureProfileRequestContext();
   const updateSettings = useUpdateAutoscanSettings();
 
   // Open Advanced automatically when arriving from an old connections/settings
   // link, so a bookmark still lands on the thing it pointed at.
-  const [advancedOpen, setAdvancedOpen] = useState(() =>
-    isLegacyAdvancedTab(requestedTab),
-  );
+  const [advancedOpen, setAdvancedOpen] = useState(() => isLegacyAdvancedTab(requestedTab));
 
   const enabled = settings.data?.enabled ?? false;
 
   function toggleEnabled(checked: boolean) {
-    if (!settings.data) return;
+    if (!settings.data || !readAuthority || !isCapturedProfileAuthorityActive(readAuthority))
+      return;
     updateSettings.mutate({ ...settings.data, enabled: checked });
   }
 
@@ -184,17 +190,13 @@ export default function AdminAutoscan({
               ))}
           </div>
           <p className="text-muted-foreground max-w-2xl text-sm leading-6">
-            Silo re-scans a library as soon as something changes, instead of
-            waiting for the next scheduled scan. Add a source for each thing you
-            want watched.
+            Prairie re-scans a library as soon as something changes, instead of waiting for the next
+            scheduled scan. Add a source for each thing you want watched.
           </p>
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
-            <Label
-              htmlFor="autoscan-enabled"
-              className="text-muted-foreground text-sm"
-            >
+            <Label htmlFor="autoscan-enabled" className="text-muted-foreground text-sm">
               Autoscan
             </Label>
             <Switch
@@ -218,10 +220,7 @@ export default function AdminAutoscan({
       </div>
 
       <Tabs value={activeTab} onValueChange={setActiveTab} className="gap-5">
-        <TabsList
-          variant="line"
-          className="border-border w-full justify-start border-b"
-        >
+        <TabsList variant="line" className="border-border w-full justify-start border-b">
           <TabsTrigger value="sources">Sources</TabsTrigger>
           <TabsTrigger value="activity">Activity</TabsTrigger>
         </TabsList>
@@ -252,10 +251,7 @@ export default function AdminAutoscan({
             </button>
 
             {advancedOpen && (
-              <div
-                id="autoscan-advanced"
-                className="space-y-8 border-t px-4 py-5"
-              >
+              <div id="autoscan-advanced" className="space-y-8 border-t px-4 py-5">
                 <ConnectionsPanel />
                 <div className="space-y-4">
                   <div className="space-y-1">

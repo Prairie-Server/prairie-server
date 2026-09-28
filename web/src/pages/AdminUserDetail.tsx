@@ -1,14 +1,27 @@
-import { useId, useMemo, useState } from "react";
+import { AdminUserDeleteDialog } from "@/components/AdminUserDeleteDialog";
+import { AdminUserPasswordResetDialog } from "@/components/AdminUserPasswordResetDialog";
+import {
+  adminUserScope,
+  captureAdminUserAuthority,
+  getAdminUser,
+  type AdminUserEditor,
+} from "@/api/v2/adminUsers";
+import { isNotFoundProblem, V2ProblemError } from "@/api/v2/request";
+import PageUnavailable from "@/components/PageUnavailable";
+import { guardRedirectTarget } from "@/lib/authRedirect";
+import ViewTransitionLink from "@/components/ViewTransitionLink";
+import { useId, useMemo, useState, useRef } from "react";
 import type { FormEvent } from "react";
-import { useParams, Link } from "react-router";
+import { useLocation, useParams, Link } from "react-router";
 import {
   type AdminDeviceSetting,
   type AdminSettingIdentity,
   type AdminUserSettingEntry,
   useAdminUser,
   useUpdateUser,
-  useDeleteUser,
-  useImpersonateUser,
+  useAdminUserCapabilities,
+  useViewerIsOwner,
+  useTransferOwnership,
   useAdminUserDeviceSettings,
   useAdminUserSettings,
   useDeleteAdminUserDeviceSetting,
@@ -22,21 +35,18 @@ import { useAdminUserProfiles } from "@/hooks/queries/admin/history";
 import { useAdminPlaybackHistory } from "@/hooks/queries/admin/history";
 import { useAdminLibraries } from "@/hooks/queries/admin/libraries";
 import { useUserIPs } from "@/hooks/queries/admin/ips";
-import type {
-  AdminUser,
-  AdminUserProfile,
-  UpdateUserRequest,
-  UserIPEntry,
-} from "@/api/types";
+import type { AdminUser, AdminUserProfile, UpdateUserRequest, UserIPEntry } from "@/api/types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   PolicyAccessFields,
   PolicyLimitFields,
   effectiveAccessGroupID,
+  policyDefaultSource,
   policyInheritHints,
   policyStateFromUser,
   policyUpdateFields,
+  savedUserPolicyInheritHints,
 } from "@/components/UserPolicyFields";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -50,13 +60,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Select,
   SelectContent,
@@ -67,6 +71,7 @@ import {
 import {
   ArrowUpRight,
   ChevronRight,
+  KeyRound,
   Loader2,
   Pencil,
   RotateCcw,
@@ -77,9 +82,19 @@ import {
   X,
 } from "lucide-react";
 import { useNavigate } from "react-router";
+import { AdminUserImpersonationDialog } from "@/components/AdminUserImpersonationDialog";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
+import { toast } from "sonner";
 import { useAuth } from "@/hooks/useAuth";
+import {
+  accountRoleLabel,
+  canManageAccount,
+  canTransferOwnership,
+  canViewAsAccount,
+} from "@/lib/accountOwner";
 import { formatPlaybackQualityPreset } from "@/lib/playback-quality";
+import { formatStreamBitrateLimit } from "@/lib/streamBitrateLimit";
+import { INVALID_EMAIL_MESSAGE, isValidEmail } from "@/lib/email";
 import {
   PERMISSION_MARKER_EDIT,
   PERMISSION_METADATA_CURATION,
@@ -102,38 +117,129 @@ import {
   shortenId,
   type DeviceProfileTabEntry,
 } from "@/components/admin/deviceOverrides";
-import { toast } from "sonner";
 import {
   formatDate as formatPreferredDate,
   formatDateTime as formatDateTimePreferred,
 } from "@/lib/datetime";
 
+import { formatDecisionLabel } from "./adminActivityPresentation";
+
 export default function AdminUserDetail() {
+  useAuth();
+  const { id } = useParams<{ id: string }>();
+  return <AdminUserDetailPage key={`${adminUserScope()}:${id}`} />;
+}
+function AdminUserDetailPage() {
   const { id } = useParams<{ id: string }>();
   const userId = Number(id);
   const navigate = useNavigate();
-  const { beginImpersonation } = useAuth();
-  const { data: user, isLoading, error } = useAdminUser(userId);
+  const location = useLocation();
+  const { data: cachedUser, isLoading, isFetching, error, refetch } = useAdminUser(userId);
+  const viewerId = useAuth().user?.id;
+  const viewerIsOwner = useViewerIsOwner(viewerId);
+  // A background read that fails leaves the loaded account up, but a 404 means
+  // it is gone (another admin deleted it) and outranks the cached copy.
+  const user = isNotFoundProblem(error) ? undefined : cachedUser;
   const [editOpen, setEditOpen] = useState(false);
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const [deleteEditor, setDeleteEditor] = useState<AdminUserEditor | null>(null);
+  const [editEditor, setEditEditor] = useState<AdminUserEditor | null>(null);
+  const [authority] = useState(captureAdminUserAuthority);
+  const busy = useRef(false);
+  const formBusy = useRef(false);
+  const [actionError, setActionError] = useState("");
+  const capabilities = useAdminUserCapabilities();
+  const available = capabilities.data?.available === true;
   const [confirmImpersonateOpen, setConfirmImpersonateOpen] = useState(false);
-  const deleteMutation = useDeleteUser();
-  const impersonateMutation = useImpersonateUser();
+  const [resetOpen, setResetOpen] = useState(false);
+  const [transferOpen, setTransferOpen] = useState(false);
+  const transferOwnership = useTransferOwnership();
 
   if (isLoading) return <div className="page-shell py-8">Loading user...</div>;
-  if (error || !user)
+  if (!user) {
+    if (error && !isNotFoundProblem(error)) {
+      return (
+        <PageUnavailable
+          title="Couldn't load this user"
+          description="Something went wrong while loading the account. Try again in a moment."
+          onRetry={() => void refetch()}
+          retrying={isFetching}
+        />
+      );
+    }
+    // With a valid id and no error, the read never ran: account reads act as a
+    // profile, and none is selected. Nothing says the account is gone.
+    if (!error && Number.isSafeInteger(userId) && userId > 0) {
+      return (
+        <PageUnavailable
+          title="Choose a profile first"
+          description="Managing accounts acts as one of your profiles. Choose a profile, then open this account again."
+        >
+          <Button asChild variant="outline">
+            <ViewTransitionLink to={guardRedirectTarget("/profiles", location)}>
+              Choose profile
+            </ViewTransitionLink>
+          </Button>
+        </PageUnavailable>
+      );
+    }
     return (
-      <div className="page-shell text-destructive py-8">User not found.</div>
+      <PageUnavailable
+        title="User not found"
+        description="The account may have been deleted, or the link may be wrong."
+      >
+        <Button asChild variant="outline">
+          <ViewTransitionLink to="/admin/users" up>
+            All users
+          </ViewTransitionLink>
+        </Button>
+      </PageUnavailable>
     );
+  }
 
-  const impersonationDisabled = user.role === "admin" || !user.enabled;
+  const impersonationDisabled = !canViewAsAccount(user, viewerId, viewerIsOwner);
+  const manageable = canManageAccount(user, viewerId, viewerIsOwner);
+  const transferable =
+    capabilities.data?.ownership_transfer === true &&
+    canTransferOwnership(user, viewerId, viewerIsOwner);
 
+  function handleTransfer() {
+    if (!user) return;
+    setActionError("");
+    transferOwnership.mutate(
+      { id: user.id, profileContext: authority },
+      {
+        onSuccess: () => toast.success(`${user.username} is now the server owner`),
+        onError: (err) =>
+          setActionError(err instanceof Error ? err.message : "Could not transfer ownership."),
+      },
+    );
+  }
+
+  async function loadEditor(deleting = false) {
+    if (busy.current || !available) return;
+    busy.current = true;
+    setActionError("");
+    try {
+      const editor = await getAdminUser(userId, authority);
+      if (deleting) setDeleteEditor(editor);
+      else {
+        setEditEditor(editor);
+        setEditOpen(true);
+      }
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Could not load user.");
+    } finally {
+      busy.current = false;
+    }
+  }
   function handleDelete() {
-    setConfirmDeleteOpen(true);
+    void loadEditor(true);
   }
 
   return (
     <div className="page-shell space-y-6 py-4 sm:py-6">
+      {actionError && <p role="alert">{actionError}</p>}
+      {!available && <p role="status">User administration is unavailable.</p>}
       <nav
         aria-label="Breadcrumb"
         className="text-muted-foreground flex items-center gap-1.5 text-sm"
@@ -142,10 +248,7 @@ export default function AdminUserDetail() {
           Admin
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
-        <Link
-          to="/admin/users"
-          className="hover:text-foreground transition-colors"
-        >
+        <Link to="/admin/users" className="hover:text-foreground transition-colors">
           Users
         </Link>
         <ChevronRight className="h-3.5 w-3.5" />
@@ -155,17 +258,23 @@ export default function AdminUserDetail() {
       <div className="page-header gap-5">
         <div className="min-w-0 flex-1 space-y-3">
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">
-              {user.username}
-            </h1>
+            <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">{user.username}</h1>
             <Badge variant={user.role === "admin" ? "default" : "secondary"}>
-              {user.role}
+              {accountRoleLabel(user)}
             </Badge>
             <Badge variant={user.enabled ? "outline" : "destructive"}>
               {user.enabled ? "Active" : "Disabled"}
             </Badge>
+            {user.password_change_required && <Badge variant="outline">Temporary password</Badge>}
           </div>
           <p className="page-subtitle text-sm sm:text-base">{user.email}</p>
+          {!manageable && (
+            <p className="text-muted-foreground text-sm">
+              {user.is_owner
+                ? "This is the server owner. Only the owner can change this account."
+                : "Only the server owner can change another admin account."}
+            </p>
+          )}
         </div>
         <div className="flex w-full flex-wrap gap-2 sm:w-auto">
           <Button
@@ -173,37 +282,75 @@ export default function AdminUserDetail() {
             size="sm"
             className="flex-1 sm:flex-none"
             onClick={() => setConfirmImpersonateOpen(true)}
-            disabled={impersonationDisabled || impersonateMutation.isPending}
+            disabled={!available || impersonationDisabled}
           >
-            Impersonate
+            View as user
           </Button>
-          <Dialog open={editOpen} onOpenChange={setEditOpen}>
-            <DialogTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1 sm:flex-none"
-              >
-                <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
-              </Button>
-            </DialogTrigger>
+          <Dialog
+            open={editOpen}
+            onOpenChange={(open) => {
+              if (!formBusy.current && !open) setEditOpen(false);
+            }}
+          >
+            <Button
+              disabled={!available || !manageable}
+              onClick={() => void loadEditor()}
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none"
+            >
+              <Pencil className="mr-1 h-3.5 w-3.5" /> Edit
+            </Button>
             <DialogContent className="sm:max-w-2xl">
               <DialogHeader>
                 <DialogTitle>Edit User</DialogTitle>
               </DialogHeader>
-              <EditUserForm user={user} onClose={() => setEditOpen(false)} />
+              {editEditor && (
+                <EditUserForm
+                  initialEditor={editEditor}
+                  onBusy={(value) => {
+                    formBusy.current = value;
+                  }}
+                  onClose={() => setEditOpen(false)}
+                />
+              )}
             </DialogContent>
           </Dialog>
-          <Button
-            variant="destructive"
-            size="sm"
-            className="flex-1 sm:flex-none"
-            onClick={handleDelete}
-            disabled={deleteMutation.isPending}
-          >
-            <Trash2 />
-            Delete
-          </Button>
+          {/* An external provider manages this account's sign-in: it has no password to reset. */}
+          {user.password_login && manageable && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none"
+              onClick={() => setResetOpen(true)}
+              disabled={!available || !user.enabled}
+            >
+              <KeyRound className="mr-1 h-3.5 w-3.5" /> Reset password
+            </Button>
+          )}
+          {transferable && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="flex-1 sm:flex-none"
+              onClick={() => setTransferOpen(true)}
+              disabled={!available || transferOwnership.isPending}
+            >
+              Make owner
+            </Button>
+          )}
+          {!user.is_owner && user.id !== viewerId && manageable && (
+            <Button
+              variant="destructive"
+              size="sm"
+              className="flex-1 sm:flex-none"
+              onClick={handleDelete}
+              disabled={!available}
+            >
+              <Trash2 />
+              Delete
+            </Button>
+          )}
         </div>
       </div>
 
@@ -240,46 +387,37 @@ export default function AdminUserDetail() {
         </TabsContent>
       </Tabs>
       <ConfirmDialog
-        open={confirmImpersonateOpen}
-        onOpenChange={(open) => {
-          if (!open) setConfirmImpersonateOpen(false);
-        }}
-        title="Impersonate user"
-        description={`Continue as "${user.username}"? Admin access will be removed until you end impersonation.`}
-        confirmLabel="Impersonate"
-        onConfirm={() => {
-          setConfirmImpersonateOpen(false);
-          void impersonateMutation
-            .mutateAsync(user.id)
-            .then((result) => {
-              beginImpersonation(result, `/admin/users/${user.id}`);
-              void navigate("/profiles");
-            })
-            .catch((error: unknown) => {
-              toast.error(
-                error instanceof Error
-                  ? error.message
-                  : "Failed to start impersonation",
-              );
-            });
-        }}
+        open={transferOpen}
+        onOpenChange={setTransferOpen}
+        title={`Make ${user.username} the server owner?`}
+        description={`${user.username} becomes the only account that can manage admins, and you stay an admin. Only ${user.username} can transfer ownership back.`}
+        confirmLabel="Make owner"
+        onConfirm={handleTransfer}
+        isPending={transferOwnership.isPending}
       />
-      <ConfirmDialog
-        open={confirmDeleteOpen}
-        onOpenChange={(open) => {
-          if (!open) setConfirmDeleteOpen(false);
-        }}
-        title="Delete user"
-        description={`Delete user "${user.username}"? This cannot be undone.`}
-        confirmLabel="Delete"
-        variant="destructive"
-        onConfirm={() => {
-          setConfirmDeleteOpen(false);
-          deleteMutation.mutate(user.id, {
-            onSuccess: () => navigate("/admin/users"),
-          });
-        }}
-      />
+      {confirmImpersonateOpen && (
+        <AdminUserImpersonationDialog
+          user={user}
+          returnPath={`/admin/users/${user.id}`}
+          onClose={() => setConfirmImpersonateOpen(false)}
+          onError={setActionError}
+        />
+      )}
+      {resetOpen && (
+        <AdminUserPasswordResetDialog
+          user={user}
+          emailAvailable={capabilities.data?.password_reset_email === true}
+          linkAvailable={capabilities.data?.password_reset_link === true}
+          onClose={() => setResetOpen(false)}
+        />
+      )}
+      {deleteEditor && (
+        <AdminUserDeleteDialog
+          initialEditor={deleteEditor}
+          onClose={() => setDeleteEditor(null)}
+          onDeleted={() => navigate("/admin/users")}
+        />
+      )}
     </div>
   );
 }
@@ -303,8 +441,8 @@ function OverviewTab({ user }: { user: AdminUser }) {
   const groupName =
     user.access_group_id === null
       ? "None"
-      : (accessGroups.find((group) => group.id === user.access_group_id)
-          ?.name ?? `#${user.access_group_id}`);
+      : (accessGroups.find((group) => group.id === user.access_group_id)?.name ??
+        `#${user.access_group_id}`);
 
   // Effective values, annotated when the account overrides its group.
   const overridden = (isOverride: boolean) => (isOverride ? " (override)" : "");
@@ -319,11 +457,8 @@ function OverviewTab({ user }: { user: AdminUser }) {
         <div className="divide-border divide-y">
           <DetailRow label="Username" value={user.username} />
           <DetailRow label="Email" value={user.email} />
-          <DetailRow label="Role" value={user.role} />
-          <DetailRow
-            label="Status"
-            value={user.enabled ? "Active" : "Disabled"}
-          />
+          <DetailRow label="Role" value={accountRoleLabel(user)} />
+          <DetailRow label="Status" value={user.enabled ? "Active" : "Disabled"} />
           <DetailRow label="Created" value={formatDate(user.created_at)} />
           <DetailRow label="Updated" value={formatDate(user.updated_at)} />
         </div>
@@ -333,8 +468,8 @@ function OverviewTab({ user }: { user: AdminUser }) {
         <div className="border-border border-b px-4 py-3">
           <h3 className="text-sm font-medium">Permissions & Limits</h3>
           <p className="text-muted-foreground text-xs">
-            Effective values. Fields marked (override) are set on this account;
-            everything else follows the group.
+            Effective values. Fields marked (override) are set on this account; everything else
+            follows the group.
           </p>
         </div>
         <div className="divide-border divide-y">
@@ -345,20 +480,12 @@ function OverviewTab({ user }: { user: AdminUser }) {
           />
           <DetailRow
             label="Marker Editing"
-            value={allowed(
-              hasAssignedPermission(
-                effective.permissions,
-                PERMISSION_MARKER_EDIT,
-              ),
-            )}
+            value={allowed(hasAssignedPermission(effective.permissions, PERMISSION_MARKER_EDIT))}
           />
           <DetailRow
             label="Metadata Curation"
             value={allowed(
-              hasAssignedPermission(
-                effective.permissions,
-                PERMISSION_METADATA_CURATION,
-              ),
+              hasAssignedPermission(effective.permissions, PERMISSION_METADATA_CURATION),
             )}
           />
           <DetailRow
@@ -371,9 +498,7 @@ function OverviewTab({ user }: { user: AdminUser }) {
           <DetailRow
             label="Max Streams"
             value={
-              (effective.max_streams === 0
-                ? "Unlimited"
-                : String(effective.max_streams)) +
+              (effective.max_streams === 0 ? "Unlimited" : String(effective.max_streams)) +
               overridden(user.max_streams !== null)
             }
           />
@@ -384,8 +509,21 @@ function OverviewTab({ user }: { user: AdminUser }) {
                 ? "Disabled"
                 : effective.max_transcodes === 0
                   ? "Unlimited"
-                  : String(effective.max_transcodes)) +
-              overridden(user.max_transcodes !== null)
+                  : String(effective.max_transcodes)) + overridden(user.max_transcodes !== null)
+            }
+          />
+          <DetailRow
+            label="Max remote stream bitrate"
+            value={
+              formatStreamBitrateLimit(effective.max_remote_stream_bitrate_kbps) +
+              overridden(user.max_remote_stream_bitrate_kbps !== null)
+            }
+          />
+          <DetailRow
+            label="Max local stream bitrate"
+            value={
+              formatStreamBitrateLimit(effective.max_local_stream_bitrate_kbps) +
+              overridden(user.max_local_stream_bitrate_kbps !== null)
             }
           />
           <DetailRow
@@ -398,10 +536,7 @@ function OverviewTab({ user }: { user: AdminUser }) {
           <DetailRow label="Max Profiles" value={String(user.max_profiles)} />
           <DetailRow
             label="Downloads"
-            value={
-              allowed(effective.download_allowed) +
-              overridden(user.download_allowed !== null)
-            }
+            value={allowed(effective.download_allowed) + overridden(user.download_allowed !== null)}
           />
           <DetailRow
             label="Download Transcode"
@@ -412,10 +547,7 @@ function OverviewTab({ user }: { user: AdminUser }) {
           />
           <DetailRow
             label="Media Requests"
-            value={
-              allowed(effective.requests_allowed) +
-              overridden(user.requests_allowed !== null)
-            }
+            value={allowed(effective.requests_allowed) + overridden(user.requests_allowed !== null)}
           />
         </div>
       </div>
@@ -433,12 +565,19 @@ function DetailRow({ label, value }: { label: string; value: string }) {
 }
 
 function ProfilesTab({ userId }: { userId: number }) {
-  const { data: profiles, isLoading } = useAdminUserProfiles(userId);
+  const query = useAdminUserProfiles(userId);
+  const { data: profiles, isLoading } = query;
 
   if (isLoading)
     return (
-      <div className="text-muted-foreground py-8 text-center text-sm">
-        Loading profiles...
+      <div className="text-muted-foreground py-8 text-center text-sm">Loading profiles...</div>
+    );
+
+  if (query.isError)
+    return (
+      <div role="alert">
+        Could not load profiles.{" "}
+        <Button onClick={() => void query.refetch()}>Reload profiles</Button>
       </div>
     );
 
@@ -482,16 +621,12 @@ function WatchHistoryTab({ userId }: { userId: number }) {
 
   if (isLoading)
     return (
-      <div className="text-muted-foreground py-8 text-center text-sm">
-        Loading watch history...
-      </div>
+      <div className="text-muted-foreground py-8 text-center text-sm">Loading watch history...</div>
     );
 
   if (error)
     return (
-      <div className="text-destructive py-8 text-center text-sm">
-        Failed to load watch history.
-      </div>
+      <div className="text-destructive py-8 text-center text-sm">Failed to load watch history.</div>
     );
 
   if (rows.length === 0)
@@ -516,10 +651,7 @@ function WatchHistoryTab({ userId }: { userId: number }) {
         </TableHeader>
         <TableBody>
           {rows.map((row) => {
-            const title =
-              row.media_title ||
-              row.media_item_id ||
-              `File #${row.media_file_id}`;
+            const title = row.media_title || row.media_item_id || `File #${row.media_file_id}`;
             return (
               <TableRow key={row.session_id}>
                 <TableCell>
@@ -533,9 +665,7 @@ function WatchHistoryTab({ userId }: { userId: number }) {
                   ) : (
                     <div className="font-medium">{title}</div>
                   )}
-                  <div className="text-muted-foreground text-xs">
-                    {row.media_type || "unknown"}
-                  </div>
+                  <div className="text-muted-foreground text-xs">{row.media_type || "unknown"}</div>
                 </TableCell>
                 <TableCell>
                   <Link
@@ -546,7 +676,7 @@ function WatchHistoryTab({ userId }: { userId: number }) {
                   </Link>
                 </TableCell>
                 <TableCell>
-                  <Badge variant="secondary">{row.play_method}</Badge>
+                  <Badge variant="secondary">{formatDecisionLabel(row.play_method)}</Badge>
                 </TableCell>
                 <TableCell>
                   <div>{formatDuration(row.watched_seconds)}</div>
@@ -575,16 +705,15 @@ function WatchHistoryTab({ userId }: { userId: number }) {
 }
 
 function IPHistoryTab({ userId }: { userId: number }) {
-  const { data: ips = [], isLoading } = useUserIPs(userId);
+  const history = useUserIPs(userId);
+  const { data: ips = [], isLoading } = history;
 
   if (isLoading)
     return (
-      <div className="text-muted-foreground py-8 text-center text-sm">
-        Loading IP history...
-      </div>
+      <div className="text-muted-foreground py-8 text-center text-sm">Loading IP history...</div>
     );
 
-  if (ips.length === 0)
+  if (ips.length === 0 && !history.isError)
     return (
       <div className="surface-panel text-muted-foreground rounded-2xl py-10 text-center text-sm">
         No IP history found for this user.
@@ -593,6 +722,17 @@ function IPHistoryTab({ userId }: { userId: number }) {
 
   return (
     <div className="surface-panel overflow-x-auto rounded-2xl border-0">
+      {history.isError && (
+        <div role="alert">
+          Could not load IP history.{" "}
+          <Button onClick={() => void history.restart()}>Reload history</Button>
+        </div>
+      )}
+      {history.hasNextPage && (
+        <Button disabled={history.isFetchingNextPage} onClick={() => void history.fetchNextPage()}>
+          Load more
+        </Button>
+      )}
       <Table>
         <TableHeader>
           <TableRow>
@@ -605,14 +745,10 @@ function IPHistoryTab({ userId }: { userId: number }) {
         <TableBody>
           {ips.map((entry: UserIPEntry) => (
             <TableRow key={entry.client_ip}>
-              <TableCell className="font-mono text-sm">
-                {entry.client_ip}
-              </TableCell>
+              <TableCell className="font-mono text-sm">{entry.client_ip}</TableCell>
               <TableCell>{formatDateTime(entry.first_seen)}</TableCell>
               <TableCell>{formatDateTime(entry.last_seen)}</TableCell>
-              <TableCell className="text-right">
-                {entry.request_count.toLocaleString()}
-              </TableCell>
+              <TableCell className="text-right">{entry.request_count.toLocaleString()}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -640,9 +776,7 @@ function UserSettingsTab({ userId }: { userId: number }) {
 
   if (isLoading) {
     return (
-      <div className="text-muted-foreground py-8 text-center text-sm">
-        Loading settings...
-      </div>
+      <div className="text-muted-foreground py-8 text-center text-sm">Loading settings...</div>
     );
   }
 
@@ -695,9 +829,7 @@ function UserSettingsTab({ userId }: { userId: number }) {
               {entry.scope}
             </span>
           </div>
-          <p className="text-muted-foreground text-[13px] leading-relaxed">
-            {description}
-          </p>
+          <p className="text-muted-foreground text-[13px] leading-relaxed">{description}</p>
           <p className="text-muted-foreground text-xs">
             Current: {formatSettingValue(entry.key, entry.value)}
             {scopeDetail ? ` · ${scopeDetail}` : ""}
@@ -735,9 +867,7 @@ function UserSettingsTab({ userId }: { userId: number }) {
             variant="ghost"
             size="sm"
             className="h-7 rounded-full px-2 text-xs"
-            onClick={() =>
-              deleteSetting.mutate({ userId, key: entry.key, identity })
-            }
+            onClick={() => deleteSetting.mutate({ userId, key: entry.key, identity })}
             disabled={updateSetting.isPending || deleteSetting.isPending}
           >
             <RotateCcw className="mr-1 h-3 w-3" />
@@ -764,9 +894,8 @@ function UserSettingsTab({ userId }: { userId: number }) {
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-muted-foreground text-[12.5px]">
-              Edit the raw value. This setting has no inline control, so saving
-              replaces the stored value wholesale — clearing it entirely is what
-              the Reset button does.
+              Edit the raw value. This setting has no inline control, so saving replaces the stored
+              value wholesale — clearing it entirely is what the Reset button does.
             </p>
             <textarea
               spellCheck={false}
@@ -808,8 +937,8 @@ function UserSettingsTab({ userId }: { userId: number }) {
           <div>
             <h3 className="text-sm font-semibold">User Settings</h3>
             <p className="text-muted-foreground text-sm">
-              Explicit values this user has stored, across account, profile,
-              library and series scopes. Device overrides live in the next tab.
+              Explicit values this user has stored, across account, profile, library and series
+              scopes. Device overrides live in the next tab.
             </p>
           </div>
         </div>
@@ -838,8 +967,7 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
     profileName?: string;
     keys: string[];
   } | null>(null);
-  const [settingToReset, setSettingToReset] =
-    useState<AdminDeviceSetting | null>(null);
+  const [settingToReset, setSettingToReset] = useState<AdminDeviceSetting | null>(null);
   const [jsonEditor, setJsonEditor] = useState<AdminDeviceSetting | null>(null);
   const [jsonValue, setJsonValue] = useState("");
 
@@ -877,9 +1005,7 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
   }
 
   const totalOverrides = settings.length;
-  const totalProfiles = new Set(
-    settings.map((s) => s.profile_id || UNKNOWN_PROFILE_ID),
-  ).size;
+  const totalProfiles = new Set(settings.map((s) => s.profile_id || UNKNOWN_PROFILE_ID)).size;
 
   return (
     <div className="space-y-4">
@@ -940,14 +1066,12 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
       >
         <DialogContent className="sm:max-w-2xl">
           <DialogHeader>
-            <DialogTitle className="font-mono text-sm">
-              {jsonEditor?.key ?? "JSON"}
-            </DialogTitle>
+            <DialogTitle className="font-mono text-sm">{jsonEditor?.key ?? "JSON"}</DialogTitle>
           </DialogHeader>
           <div className="space-y-3">
             <p className="text-muted-foreground text-[12.5px]">
-              Edit the raw value. Invalid JSON is saved as-is and may cause
-              clients to fall back to defaults.
+              Edit the raw value. Invalid JSON is saved as-is and may cause clients to fall back to
+              defaults.
             </p>
             <textarea
               spellCheck={false}
@@ -999,16 +1123,12 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
       {deviceEntries.length > 0 && (
         <div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] tabular-nums">
           <span>
-            <span className="text-foreground font-medium">
-              {deviceEntries.length}
-            </span>{" "}
+            <span className="text-foreground font-medium">{deviceEntries.length}</span>{" "}
             {deviceEntries.length === 1 ? "device" : "devices"}
           </span>
           <span className="text-muted-foreground/40">·</span>
           <span>
-            <span className="text-foreground font-medium">
-              {totalOverrides}
-            </span>{" "}
+            <span className="text-foreground font-medium">{totalOverrides}</span>{" "}
             {totalOverrides === 1 ? "override" : "overrides"}
           </span>
           <span className="text-muted-foreground/40">·</span>
@@ -1021,12 +1141,9 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
 
       {deviceEntries.length === 0 ? (
         <div className="surface-panel rounded-xl border-0 px-6 py-12 text-center">
-          <p className="text-foreground text-sm font-medium">
-            No device overrides
-          </p>
+          <p className="text-foreground text-sm font-medium">No device overrides</p>
           <p className="text-muted-foreground mx-auto mt-1 max-w-sm text-[12.5px] leading-relaxed">
-            Overrides appear here as soon as this user tunes a per-device
-            playback setting.
+            Overrides appear here as soon as this user tunes a per-device playback setting.
           </p>
         </div>
       ) : (
@@ -1043,10 +1160,7 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
             const overrideCount = allEntries.length;
 
             return (
-              <section
-                key={deviceId}
-                className="surface-panel overflow-hidden rounded-xl border-0"
-              >
+              <section key={deviceId} className="surface-panel overflow-hidden rounded-xl border-0">
                 <header className="border-border/60 flex flex-wrap items-start justify-between gap-3 border-b px-4 py-3 sm:px-5">
                   <div className="flex min-w-0 items-start gap-3">
                     <PlatformTile kind={kind} />
@@ -1072,9 +1186,7 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
                           variant="outline"
                           className="border-border/60 bg-background/60 rounded-full px-2 py-0.5 text-[10.5px] font-normal tabular-nums"
                         >
-                          <span className="text-foreground font-medium">
-                            {profileCount}
-                          </span>
+                          <span className="text-foreground font-medium">{profileCount}</span>
                           <span className="text-muted-foreground">
                             {profileCount === 1 ? "profile" : "profiles"}
                           </span>
@@ -1083,9 +1195,7 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
                           variant="outline"
                           className="border-border/60 bg-background/60 rounded-full px-2 py-0.5 text-[10.5px] font-normal tabular-nums"
                         >
-                          <span className="text-foreground font-medium">
-                            {overrideCount}
-                          </span>
+                          <span className="text-foreground font-medium">{overrideCount}</span>
                           <span className="text-muted-foreground">
                             {overrideCount === 1 ? "override" : "overrides"}
                           </span>
@@ -1094,9 +1204,7 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
                     </div>
                   </div>
                   <Button variant="outline" size="sm" asChild>
-                    <Link
-                      to={`/admin/devices/${userId}/${encodeURIComponent(deviceId)}`}
-                    >
+                    <Link to={`/admin/devices/${userId}/${encodeURIComponent(deviceId)}`}>
                       Open device
                       <ArrowUpRight className="h-3 w-3" />
                     </Link>
@@ -1149,50 +1257,93 @@ function DeviceOverridesTab({ userId }: { userId: number }) {
 }
 
 function EditUserForm({
-  user,
+  initialEditor,
   onClose,
+  onBusy,
 }: {
-  user: AdminUser;
+  initialEditor: AdminUserEditor;
   onClose: () => void;
+  onBusy: (value: boolean) => void;
 }) {
+  const [editor, setEditor] = useState(initialEditor);
+  const user = editor.user;
+  // Only the server Owner may grant the admin role; the server refuses anyone else.
+  const viewerId = useAuth().user?.id;
+  const viewerIsOwner = useViewerIsOwner(viewerId);
+  const adminRoleLocked = !viewerIsOwner && user.role !== "admin";
+  // No account changes its own role or disables itself; the server refuses
+  // both. The Owner's standing fixes the same fields.
+  const ownAccount = user.id === viewerId;
+  const busy = useRef(false);
+  const [conflict, setConflict] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [error, setError] = useState("");
+  const [reloading, setReloading] = useState(false);
+  async function reload() {
+    if (busy.current) return;
+    busy.current = true;
+    setReloading(true);
+    onBusy(true);
+    try {
+      setEditor(await getAdminUser(user.id, editor.profileContext));
+      setConflict(false);
+      setError("");
+      if (saved) onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not reload user.");
+    } finally {
+      busy.current = false;
+      setReloading(false);
+      onBusy(false);
+    }
+  }
+
   const { data: libraries = [] } = useAdminLibraries();
   const { data: accessGroups = [] } = useAccessGroups();
   const [username, setUsername] = useState(user.username);
   const [email, setEmail] = useState(user.email);
   const [password, setPassword] = useState("");
+  const [requirePasswordChange, setRequirePasswordChange] = useState(false);
   const [role, setRole] = useState(user.role);
   const [enabled, setEnabled] = useState(user.enabled);
-  const [permissions, setPermissions] = useState<string[]>(
-    user.permissions ?? [],
-  );
-  const [accessGroupID, setAccessGroupID] = useState<number | null>(
-    user.access_group_id,
-  );
+  const [permissions, setPermissions] = useState<string[]>(user.permissions ?? []);
+  const [accessGroupID, setAccessGroupID] = useState<number | null>(user.access_group_id);
   const [policy, setPolicy] = useState(() => policyStateFromUser(user));
   const [maxProfiles, setMaxProfiles] = useState(user.max_profiles);
   const accessGroupSelectId = useId();
   const roleSelectId = useId();
+  const enabledSwitchId = useId();
+  const passwordInputId = useId();
+  const requireChangeId = useId();
   const markerEditId = useId();
   const metadataCurationId = useId();
   const updateMutation = useUpdateUser();
-  const accessGroupValue =
-    accessGroupID === null ? "none" : String(accessGroupID);
-  // Hints come from the group selected right now, so they follow the picker
-  // instead of describing the group the account was last saved with. When that
-  // group is not in the loaded list, fall back to the resolved policy the
-  // server sent — but only while the saved group is still the selected one.
-  // An admin inherits from no group, so preview the no-group policy while the
-  // picked group is kept for toggling the role back.
+  const accessGroupValue = accessGroupID === null ? "none" : String(accessGroupID);
+  // The account response is authoritative for its saved group and cannot be
+  // made stale by an older access-group list. Once the picker changes, preview
+  // that unsaved selection from the group list instead. An admin inherits from
+  // no group, so preview the no-group policy while the picked group is kept for
+  // toggling the role back.
   const hintGroupID = effectiveAccessGroupID(role, accessGroupID);
+  const groupInheritHints = policyInheritHints(hintGroupID, accessGroups);
+  const hintSource = policyDefaultSource(role, hintGroupID);
   const inheritHints =
-    policyInheritHints(hintGroupID, accessGroups) ??
-    (hintGroupID === user.access_group_id ? user.effective_policy : undefined);
+    hintGroupID === user.access_group_id
+      ? savedUserPolicyInheritHints(user, groupInheritHints)
+      : groupInheritHints;
   const selectedGroupMissing =
-    accessGroupID !== null &&
-    !accessGroups.some((group) => group.id === accessGroupID);
+    accessGroupID !== null && !accessGroups.some((group) => group.id === accessGroupID);
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (busy.current || conflict || saved) return;
+    if (!isValidEmail(email)) {
+      setError(INVALID_EMAIL_MESSAGE);
+      return;
+    }
+    busy.current = true;
+    onBusy(true);
+    setError("");
     const body: UpdateUserRequest = {
       username,
       email,
@@ -1205,17 +1356,39 @@ function EditUserForm({
       max_profiles: maxProfiles,
       ...policyUpdateFields(policy),
     };
-    if (password) body.password = password;
-    updateMutation.mutate({ id: user.id, body }, { onSuccess: onClose });
+    if (password) {
+      body.password = password;
+      if (requirePasswordChange) body.require_password_change = true;
+    }
+    try {
+      await updateMutation.mutateAsync({ editor, body });
+      setSaved(true);
+      await getAdminUser(user.id, editor.profileContext);
+      onClose();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not save user.");
+      if (err instanceof V2ProblemError && err.status === 412) setConflict(true);
+    } finally {
+      busy.current = false;
+      onBusy(false);
+    }
   }
 
   return (
     <form onSubmit={handleSubmit} className="flex max-h-[70vh] flex-col">
+      {error && <p role="alert">{error}</p>}
+      {(conflict || saved) && (
+        <div>
+          {saved
+            ? "Saved. Reload to confirm the current state."
+            : "Your draft is preserved. Reload before submitting again."}
+          <Button type="button" disabled={reloading} onClick={() => void reload()}>
+            Reload current user
+          </Button>
+        </div>
+      )}
       <Tabs defaultValue="account" className="min-h-0 flex-1">
-        <TabsList
-          variant="line"
-          className="border-border mb-4 w-full justify-start border-b pb-1"
-        >
+        <TabsList variant="line" className="border-border mb-4 w-full justify-start border-b pb-1">
           <TabsTrigger value="account" className="flex-none px-1">
             Account
           </TabsTrigger>
@@ -1232,11 +1405,7 @@ function EditUserForm({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>Username</Label>
-                <Input
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
-                  required
-                />
+                <Input value={username} onChange={(e) => setUsername(e.target.value)} required />
               </div>
               <div className="space-y-2">
                 <Label>Email</Label>
@@ -1247,37 +1416,86 @@ function EditUserForm({
                   required
                 />
               </div>
-              <div className="space-y-2">
-                <Label>Password (leave blank to keep current)</Label>
-                <Input
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
+              {user.password_login ? (
+                <div className="space-y-2">
+                  <Label htmlFor={passwordInputId}>Password (leave blank to keep current)</Label>
+                  <Input
+                    id={passwordInputId}
+                    type="password"
+                    autoComplete="new-password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                  />
+                  <div className="flex items-center gap-2">
+                    <Switch
+                      id={requireChangeId}
+                      checked={requirePasswordChange && password !== ""}
+                      disabled={password === ""}
+                      onCheckedChange={setRequirePasswordChange}
+                    />
+                    <Label htmlFor={requireChangeId} className="text-xs font-normal">
+                      Require change at next sign-in
+                    </Label>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label>Password</Label>
+                  <p className="text-muted-foreground text-xs">
+                    An external sign-in provider manages this account's password.
+                  </p>
+                </div>
+              )}
               <div className="space-y-2">
                 <Label htmlFor={roleSelectId}>Role</Label>
-                <Select value={role} onValueChange={setRole}>
+                <Select
+                  value={user.is_owner ? "owner" : role}
+                  onValueChange={setRole}
+                  disabled={user.is_owner || ownAccount}
+                >
                   <SelectTrigger id={roleSelectId}>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
+                    {user.is_owner && <SelectItem value="owner">Owner</SelectItem>}
                     <SelectItem value="user">User</SelectItem>
-                    <SelectItem value="admin">Admin</SelectItem>
+                    <SelectItem value="admin" disabled={adminRoleLocked}>
+                      Admin
+                    </SelectItem>
                   </SelectContent>
                 </Select>
+                {ownAccount ? (
+                  <p className="text-muted-foreground text-xs">You can't change your own role.</p>
+                ) : (
+                  adminRoleLocked && (
+                    <p className="text-muted-foreground text-xs">
+                      Only the server owner can grant the admin role.
+                    </p>
+                  )
+                )}
               </div>
             </div>
             <div className="border-border flex items-center justify-between rounded-md border px-3 py-2">
               <div>
                 <div className="text-sm font-medium">Account status</div>
                 <div className="text-muted-foreground text-xs">
-                  Disable access without deleting the user.
+                  {user.is_owner
+                    ? "The server owner stays an enabled admin."
+                    : ownAccount
+                      ? "You can't disable your own account."
+                      : "Disable access without deleting the user."}
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <Label className="text-xs">Enabled</Label>
-                <Switch checked={enabled} onCheckedChange={setEnabled} />
+                <Label htmlFor={enabledSwitchId} className="text-xs">
+                  Enabled
+                </Label>
+                <Switch
+                  id={enabledSwitchId}
+                  checked={enabled}
+                  onCheckedChange={setEnabled}
+                  disabled={user.is_owner || ownAccount}
+                />
               </div>
             </div>
           </TabsContent>
@@ -1298,9 +1516,7 @@ function EditUserForm({
                 <SelectContent>
                   <SelectItem value="none">No group</SelectItem>
                   {selectedGroupMissing && (
-                    <SelectItem value={String(accessGroupID)}>
-                      #{accessGroupID}
-                    </SelectItem>
+                    <SelectItem value={String(accessGroupID)}>#{accessGroupID}</SelectItem>
                   )}
                   {accessGroups.map((group) => (
                     <SelectItem key={group.id} value={String(group.id)}>
@@ -1314,23 +1530,15 @@ function EditUserForm({
               <div>
                 <Label htmlFor={markerEditId}>Marker Editing</Label>
                 <p className="text-muted-foreground text-xs">
-                  Edit intro, recap, credits, and preview markers within
-                  assigned libraries.
+                  Edit intro, recap, credits, and preview markers within assigned libraries.
                 </p>
               </div>
               <Switch
                 id={markerEditId}
-                checked={hasAssignedPermission(
-                  permissions,
-                  PERMISSION_MARKER_EDIT,
-                )}
+                checked={hasAssignedPermission(permissions, PERMISSION_MARKER_EDIT)}
                 onCheckedChange={(checked) =>
                   setPermissions((current) =>
-                    setAssignedPermission(
-                      current,
-                      PERMISSION_MARKER_EDIT,
-                      checked,
-                    ),
+                    setAssignedPermission(current, PERMISSION_MARKER_EDIT, checked),
                   )
                 }
               />
@@ -1344,17 +1552,10 @@ function EditUserForm({
               </div>
               <Switch
                 id={metadataCurationId}
-                checked={hasAssignedPermission(
-                  permissions,
-                  PERMISSION_METADATA_CURATION,
-                )}
+                checked={hasAssignedPermission(permissions, PERMISSION_METADATA_CURATION)}
                 onCheckedChange={(checked) =>
                   setPermissions((current) =>
-                    setAssignedPermission(
-                      current,
-                      PERMISSION_METADATA_CURATION,
-                      checked,
-                    ),
+                    setAssignedPermission(current, PERMISSION_METADATA_CURATION, checked),
                   )
                 }
               />
@@ -1362,6 +1563,7 @@ function EditUserForm({
             <PolicyAccessFields
               state={policy}
               onChange={setPolicy}
+              source={hintSource}
               effective={inheritHints}
               libraries={libraries}
             />
@@ -1371,6 +1573,7 @@ function EditUserForm({
             <PolicyLimitFields
               state={policy}
               onChange={setPolicy}
+              source={hintSource}
               effective={inheritHints}
             />
             <div className="space-y-1">
@@ -1390,13 +1593,9 @@ function EditUserForm({
         <Button
           type="submit"
           className="w-full"
-          disabled={updateMutation.isPending}
+          disabled={updateMutation.isPending || conflict || saved || reloading}
         >
-          {updateMutation.isPending ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            <Save />
-          )}
+          {updateMutation.isPending ? <Loader2 className="animate-spin" /> : <Save />}
           {updateMutation.isPending ? "Saving..." : "Save"}
         </Button>
       </div>

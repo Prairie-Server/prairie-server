@@ -39,10 +39,7 @@ function groupStats(group: AudiobookGroup): string {
   ];
   if (group.in_progress_count > 0) {
     parts.push(`${group.in_progress_count} in progress`);
-  } else if (
-    group.finished_count > 0 &&
-    group.finished_count === group.item_count
-  ) {
+  } else if (group.finished_count > 0 && group.finished_count === group.item_count) {
     parts.push("all finished");
   } else if (group.finished_count > 0) {
     parts.push(`${group.finished_count} finished`);
@@ -60,21 +57,13 @@ function groupInitials(name: string): string {
 }
 
 /** Up to three overlapping square covers; falls back to an initials tile. */
-function CoverStack({
-  group,
-  large,
-}: {
-  group: AudiobookGroup;
-  large?: boolean;
-}) {
+function CoverStack({ group, large }: { group: AudiobookGroup; large?: boolean }) {
   const posters = group.poster_urls.slice(0, 3);
   if (posters.length === 0) {
     return (
       <div
         className={`bg-surface-raised text-muted-foreground flex shrink-0 items-center justify-center font-semibold ${
-          large
-            ? "aspect-square w-full rounded-xl text-2xl"
-            : "h-14 w-14 rounded-lg text-sm"
+          large ? "aspect-square w-full rounded-xl text-2xl" : "h-14 w-14 rounded-lg text-sm"
         }`}
       >
         {groupInitials(group.name)}
@@ -113,12 +102,10 @@ function CoverStack({
               src={url}
               alt=""
               loading="lazy"
-              className="absolute inset-0 h-full w-full rounded-xl object-cover shadow-lg transition-transform duration-[--duration-fast]"
+              className="absolute inset-0 h-full w-full rounded-xl object-cover shadow-lg transition-transform duration-(--duration-fast)"
               style={{
                 transform:
-                  depth === 0
-                    ? undefined
-                    : `rotate(${depth * 3}deg) translateX(${depth * 4}px)`,
+                  depth === 0 ? undefined : `rotate(${depth * 3}deg) translateX(${depth * 4}px)`,
               }}
             />
           );
@@ -139,18 +126,17 @@ export default function AudiobookGroupsView({
 }: AudiobookGroupsViewProps) {
   // Authors/narrators default to most-books-first (collection heavy hitters);
   // series read more naturally alphabetized.
-  const [sort, setSort] = useState<AudiobookGroupSort>(
-    groupBy === "series" ? "name" : "count",
-  );
+  const [sort, setSort] = useState<AudiobookGroupSort>(groupBy === "series" ? "name" : "count");
   const [filter, setFilter] = useState("");
   const debouncedFilter = useDebounce(filter.trim(), 250);
-  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } =
-    useAudiobookGroups(libraryId, groupBy, sort, debouncedFilter);
-
-  const groups = useMemo(
-    () => data?.pages.flatMap((page) => page.groups) ?? [],
-    [data?.pages],
+  const { data, fetchNextPage, hasNextPage, isFetchingNextPage, isLoading } = useAudiobookGroups(
+    libraryId,
+    groupBy,
+    sort,
+    debouncedFilter,
   );
+
+  const groups = useMemo(() => data?.pages.flatMap((page) => page.groups) ?? [], [data?.pages]);
   const firstPage = data?.pages[0];
   const total = firstPage?.total ?? 0;
   const totalExact = firstPage?.total_exact ?? false;
@@ -182,10 +168,7 @@ export default function AudiobookGroupsView({
           placeholder={`Search ${noun}…`}
           className="w-full max-w-xs"
         />
-        <Select
-          value={sort}
-          onValueChange={(value) => setSort(value as AudiobookGroupSort)}
-        >
+        <Select value={sort} onValueChange={(value) => setSort(value as AudiobookGroupSort)}>
           <SelectTrigger className="w-full sm:w-[160px]">
             <SelectValue />
           </SelectTrigger>
@@ -221,9 +204,7 @@ export default function AudiobookGroupsView({
         )
       ) : groups.length === 0 ? (
         <p className="text-muted-foreground py-10 text-center text-sm">
-          {filter
-            ? `No ${noun} match “${filter}”.`
-            : `No ${noun} found in this library.`}
+          {filter ? `No ${noun} match “${filter}”.` : `No ${noun} found in this library.`}
         </p>
       ) : isSeries ? (
         <>
@@ -235,7 +216,7 @@ export default function AudiobookGroupsView({
                 onClick={() => onSelectGroup(group.name)}
                 className="group/series text-left"
               >
-                <div className="transition-transform duration-[--duration-fast] group-hover/series:scale-[1.02]">
+                <div className="transition-transform duration-(--duration-fast) group-hover/series:scale-[1.02]">
                   <CoverStack group={group} large />
                 </div>
                 <div className="mt-2.5 truncate px-0.5 text-[14px] font-semibold tracking-tight">
@@ -248,9 +229,7 @@ export default function AudiobookGroupsView({
             ))}
           </div>
           <div ref={sentinelRef} className="h-8">
-            {isFetchingNextPage ? (
-              <Skeleton className="mx-auto h-3 w-28 rounded" />
-            ) : null}
+            {isFetchingNextPage ? <Skeleton className="mx-auto h-3 w-28 rounded" /> : null}
           </div>
         </>
       ) : (
@@ -261,13 +240,11 @@ export default function AudiobookGroupsView({
                 key={group.name}
                 type="button"
                 onClick={() => onSelectGroup(group.name)}
-                className="surface-panel hover:bg-muted/40 flex items-center gap-4 rounded-xl border-0 px-4 py-3 text-left transition-colors duration-[--duration-fast]"
+                className="surface-panel hover:bg-muted/40 flex items-center gap-4 rounded-xl border-0 px-4 py-3 text-left transition-colors duration-(--duration-fast)"
               >
                 <CoverStack group={group} />
                 <div className="min-w-0 flex-1">
-                  <div className="truncate text-sm font-semibold">
-                    {group.name}
-                  </div>
+                  <div className="truncate text-sm font-semibold">{group.name}</div>
                   <div className="text-muted-foreground mt-0.5 truncate text-xs">
                     {groupStats(group)}
                   </div>
@@ -277,9 +254,7 @@ export default function AudiobookGroupsView({
             ))}
           </div>
           <div ref={sentinelRef} className="h-8">
-            {isFetchingNextPage ? (
-              <Skeleton className="mx-auto h-3 w-28 rounded" />
-            ) : null}
+            {isFetchingNextPage ? <Skeleton className="mx-auto h-3 w-28 rounded" /> : null}
           </div>
         </>
       )}

@@ -58,10 +58,7 @@ function normalizeBuiltInTrack(
 ): VersionSubtitleInventoryRow {
   const source = track.external ? "external" : "embedded";
   const language = track.language?.trim() || "unknown";
-  const title =
-    track.title?.trim() ||
-    track.embedded_title?.trim() ||
-    track.file_name?.trim();
+  const title = track.title?.trim() || track.embedded_title?.trim() || track.file_name?.trim();
 
   return {
     key: `${source}:${track.index ?? index}:${language}:${track.codec ?? ""}:${title ?? ""}`,
@@ -77,9 +74,7 @@ function normalizeBuiltInTrack(
   };
 }
 
-function normalizeDownloadedSubtitle(
-  subtitle: DownloadedSubtitle,
-): VersionSubtitleInventoryRow {
+function normalizeDownloadedSubtitle(subtitle: DownloadedSubtitle): VersionSubtitleInventoryRow {
   const language = subtitle.language?.trim() || "unknown";
 
   return {

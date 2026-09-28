@@ -2,7 +2,10 @@ import { History, Pencil, RefreshCw, Search } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export type SharedMediaActionIconKey =
-  "viewPlayHistory" | "refreshMetadata" | "editMetadata" | "matchItem";
+  | "viewPlayHistory"
+  | "refreshMetadata"
+  | "editMetadata"
+  | "matchItem";
 
 export function MediaActionIcon({
   action,
@@ -15,12 +18,7 @@ export function MediaActionIcon({
     case "viewPlayHistory":
       return <History aria-hidden="true" className="size-4" />;
     case "refreshMetadata":
-      return (
-        <RefreshCw
-          aria-hidden="true"
-          className={cn("size-4", isPending && "animate-spin")}
-        />
-      );
+      return <RefreshCw aria-hidden="true" className={cn("size-4", isPending && "animate-spin")} />;
     case "editMetadata":
       return <Pencil aria-hidden="true" className="size-4" />;
     case "matchItem":

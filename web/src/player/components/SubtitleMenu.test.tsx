@@ -6,13 +6,19 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { SubtitleMenu } from "./SubtitleMenu";
 import type { PlayerConfig } from "../context/PlayerConfigContext";
 
-const { playerFetchMock } = vi.hoisted(() => ({
-  playerFetchMock: vi.fn(),
+const { playerV2Mock } = vi.hoisted(() => ({
+  playerV2Mock: vi.fn(),
 }));
 
-vi.mock("../player-fetch", () => ({
-  playerFetch: playerFetchMock,
+vi.mock("../player-v2", () => ({
+  playerV2: playerV2Mock,
 }));
+
+const AI_STATUS = "GET /api/v2/subtitles/ai/status";
+
+function aiStatusCalls() {
+  return playerV2Mock.mock.calls.filter(([, route]) => route === AI_STATUS);
+}
 
 vi.mock("./SubtitleSearchModal", () => ({
   SubtitleSearchModal: () => null,
@@ -35,11 +41,11 @@ const config: PlayerConfig = {
 
 describe("SubtitleMenu", () => {
   afterEach(() => {
-    playerFetchMock.mockReset();
+    playerV2Mock.mockReset();
   });
 
   it("does not probe AI subtitle status until the menu opens", async () => {
-    playerFetchMock.mockResolvedValue({
+    playerV2Mock.mockResolvedValue({
       enabled: false,
       transcribe_enabled: false,
     });
@@ -57,22 +63,17 @@ describe("SubtitleMenu", () => {
       />,
     );
 
-    expect(playerFetchMock).not.toHaveBeenCalled();
+    expect(aiStatusCalls()).toHaveLength(0);
 
-    await userEvent.click(
-      screen.getByRole("button", { name: /enable captions/i }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: /enable captions/i }));
 
     await waitFor(() => {
-      expect(playerFetchMock).toHaveBeenCalledWith(
-        config,
-        "/subtitles/ai/status",
-      );
+      expect(playerV2Mock).toHaveBeenCalledWith(config, AI_STATUS, {});
     });
   });
 
   it("probes AI subtitle status only once per menu session", async () => {
-    playerFetchMock.mockResolvedValue({
+    playerV2Mock.mockResolvedValue({
       enabled: false,
       transcribe_enabled: false,
     });
@@ -92,11 +93,11 @@ describe("SubtitleMenu", () => {
 
     const trigger = screen.getByRole("button", { name: /enable captions/i });
     await userEvent.click(trigger);
-    await waitFor(() => expect(playerFetchMock).toHaveBeenCalledTimes(1));
+    await waitFor(() => expect(aiStatusCalls()).toHaveLength(1));
 
     await userEvent.click(trigger);
     await userEvent.click(trigger);
 
-    expect(playerFetchMock).toHaveBeenCalledTimes(1);
+    expect(aiStatusCalls()).toHaveLength(1);
   });
 });

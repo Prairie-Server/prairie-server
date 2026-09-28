@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	"github.com/jackc/pgx/v5"
 
@@ -12,10 +13,13 @@ import (
 )
 
 func (s *PostgresUserStore) GetSetting(ctx context.Context, key string) (string, error) {
+	return getSetting(ctx, s.pool, s.userID, key)
+}
+func getSetting(ctx context.Context, db preferenceSettingsExecutor, userID int, key string) (string, error) {
 	var value string
-	err := s.pool.QueryRow(ctx,
+	err := db.QueryRow(ctx,
 		"SELECT value FROM user_settings WHERE user_id = $1 AND key = $2",
-		s.userID, key,
+		userID, key,
 	).Scan(&value)
 	if errors.Is(err, pgx.ErrNoRows) {
 		return "", nil
@@ -115,7 +119,7 @@ func (s *PostgresUserStore) RegisterDevice(ctx context.Context, entry userstore.
 
 func (s *PostgresUserStore) ListDevices(ctx context.Context) ([]userstore.DeviceEntry, error) {
 	rows, err := s.pool.Query(ctx,
-		`SELECT profile_id, device_id, device_name, device_platform, last_seen_at::text
+		`SELECT profile_id, device_id, device_name, device_platform, last_seen_at
 		 FROM user_devices
 		 WHERE user_id = $1
 		 ORDER BY last_seen_at DESC, profile_id ASC, device_name ASC, device_id ASC`,
@@ -129,9 +133,15 @@ func (s *PostgresUserStore) ListDevices(ctx context.Context) ([]userstore.Device
 	var entries []userstore.DeviceEntry
 	for rows.Next() {
 		var entry userstore.DeviceEntry
-		if err := rows.Scan(&entry.ProfileID, &entry.DeviceID, &entry.DeviceName, &entry.DevicePlatform, &entry.LastSeenAt); err != nil {
+		// DeviceEntry.LastSeenAt is RFC3339 across every store, so consumers can
+		// parse it and compare it against the RFC3339 device-setting timestamps
+		// they are merged with. Reading the column as Postgres text would leak a
+		// second, unparseable format.
+		var lastSeen time.Time
+		if err := rows.Scan(&entry.ProfileID, &entry.DeviceID, &entry.DeviceName, &entry.DevicePlatform, &lastSeen); err != nil {
 			return nil, fmt.Errorf("scanning device: %w", err)
 		}
+		entry.LastSeenAt = lastSeen.UTC().Format(time.RFC3339Nano)
 		entries = append(entries, entry)
 	}
 	return entries, rows.Err()

@@ -1,13 +1,8 @@
 import { describe, expect, it } from "vitest";
 import type { PlayerSubtitleInfo } from "../types";
-import {
-  pendingServerSubtitleSelection,
-  resolvePlayableSubtitles,
-} from "./playableSubtitles";
+import { pendingServerSubtitleSelection, resolvePlayableSubtitles } from "./playableSubtitles";
 
-function makeSubtitle(
-  overrides: Partial<PlayerSubtitleInfo> = {},
-): PlayerSubtitleInfo {
+function makeSubtitle(overrides: Partial<PlayerSubtitleInfo> = {}): PlayerSubtitleInfo {
   return {
     index: 0,
     language: "eng",
@@ -30,9 +25,7 @@ describe("resolvePlayableSubtitles", () => {
       url: "",
     });
 
-    expect(resolvePlayableSubtitles([sessionTrack], [detailTrack])).toEqual([
-      sessionTrack,
-    ]);
+    expect(resolvePlayableSubtitles([sessionTrack], [detailTrack])).toEqual([sessionTrack]);
   });
 
   it("drops watch-detail subtitle tracks that have no playable url", () => {
@@ -73,23 +66,17 @@ describe("resolvePlayableSubtitles", () => {
       url: "/stream/fallback/subtitles/1",
     });
 
-    expect(resolvePlayableSubtitles([], [fallbackTrack])).toEqual([
-      fallbackTrack,
-    ]);
+    expect(resolvePlayableSubtitles([], [fallbackTrack])).toEqual([fallbackTrack]);
   });
 });
 
 describe("pendingServerSubtitleSelection", () => {
   it("settles an already-selected burn-in plan without another replan", () => {
-    expect(
-      pendingServerSubtitleSelection("burn_in", 2, 2, true),
-    ).toBeUndefined();
+    expect(pendingServerSubtitleSelection("burn_in", 2, 2, true)).toBeUndefined();
   });
 
   it("does not re-request a sidecar artifact selected by a burn-in plan", () => {
-    expect(
-      pendingServerSubtitleSelection("burn_in", 0, 0, false),
-    ).toBeUndefined();
+    expect(pendingServerSubtitleSelection("burn_in", 0, 0, false)).toBeUndefined();
   });
 
   it("preserves a sidecar selection while replacing burn-in", () => {
@@ -97,9 +84,7 @@ describe("pendingServerSubtitleSelection", () => {
   });
 
   it("turns burn-in off explicitly rather than looping", () => {
-    expect(
-      pendingServerSubtitleSelection("burn_in", 2, null, false),
-    ).toBeNull();
+    expect(pendingServerSubtitleSelection("burn_in", 2, null, false)).toBeNull();
   });
 
   it("requests a burn-in track from a sidecar plan", () => {

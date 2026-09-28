@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 
-import { api } from "@/api/client";
+import { v2 } from "@/api/v2/request";
 import type {
   ImportMDBListCollectionRequest,
   ImportTMDBCollectionRequest,
@@ -20,7 +20,12 @@ export type CollectionTemplateCategory =
   | "custom";
 
 export type CollectionTemplateSource =
-  "tmdb" | "trakt" | "mdblist" | "tmdb_discover" | "tmdb_collection";
+  | "tmdb"
+  | "trakt"
+  | "mdblist"
+  | "tmdb_discover"
+  | "tmdb_collection"
+  | "tmdb_list";
 
 export type CollectionTemplateMediaKind = "movie" | "tv" | "mixed";
 
@@ -31,15 +36,12 @@ export type CollectionTemplateTMDB = Pick<
   "preset" | "media_type" | "time_window"
 >;
 
-export type CollectionTemplateTrakt = Pick<
-  ImportTraktCollectionRequest,
-  "preset" | "media_type"
->;
+export type CollectionTemplateTrakt = Pick<ImportTraktCollectionRequest, "preset" | "media_type">;
 
-export type CollectionTemplateMDBList = Pick<
-  ImportMDBListCollectionRequest,
-  "url"
->;
+export type CollectionTemplateMDBList = Pick<ImportMDBListCollectionRequest, "url">;
+
+// An empty url is a "bring your own list" template that asks for the list URL.
+export type CollectionTemplateTMDBList = Pick<ImportMDBListCollectionRequest, "url">;
 
 // Discover and collection templates ship as backend-driven blueprints that
 // the admin cannot tweak inline; the form surfaces a read-only summary and
@@ -88,6 +90,7 @@ export interface CollectionTemplate {
   mdblist?: CollectionTemplateMDBList;
   tmdb_collection?: CollectionTemplateTMDBCollection;
   tmdb_discover?: CollectionTemplateTMDBDiscover;
+  tmdb_list?: CollectionTemplateTMDBList;
 }
 
 export interface CollectionTemplateGroup {
@@ -150,7 +153,7 @@ export interface CollectionTemplateBundleCollectionEntry {
 }
 
 export interface CollectionTemplateBundleFeaturedEntry {
-  surface: "home" | "library";
+  surface: "home" | "library" | string;
   library_id?: number;
   library_name?: string;
   template_id: string;
@@ -183,13 +186,13 @@ export const TEMPLATE_STALE_TIME = 5 * 60_000;
 export const COLLECTION_MAX_ITEMS = 500;
 
 export function fetchCollectionTemplates(): Promise<CollectionTemplateCatalog> {
-  return api<CollectionTemplateCatalog>("/admin/collections/templates");
+  return v2("GET /api/v2/admin/collections/templates").then(
+    (value) => value as CollectionTemplateCatalog,
+  );
 }
 
 export function fetchCollectionTemplateBundles(): Promise<CollectionTemplateBundleCatalog> {
-  return api<CollectionTemplateBundleCatalog>(
-    "/admin/collections/template-bundles",
-  );
+  return v2("GET /api/v2/admin/collections/template-bundles");
 }
 
 export function useCollectionTemplates(enabled = true) {

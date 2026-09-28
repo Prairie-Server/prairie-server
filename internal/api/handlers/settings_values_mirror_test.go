@@ -219,9 +219,9 @@ func TestMirroredWritesReplayInsteadOfDoubleApplying(t *testing.T) {
 	}
 
 	replay := send("mut-intro", `"always"`)
-	if replay.Code != http.StatusOK || replay.Header().Get("X-Silo-Idempotent-Replay") != "true" {
+	if replay.Code != http.StatusOK || replay.Header().Get("X-Prairie-Idempotent-Replay") != "true" {
 		t.Fatalf("replay = %d header %q: %s",
-			replay.Code, replay.Header().Get("X-Silo-Idempotent-Replay"), replay.Body.String())
+			replay.Code, replay.Header().Get("X-Prairie-Idempotent-Replay"), replay.Body.String())
 	}
 
 	after := storedValueAt(t, store, profileIdentity(settingskeys.PlaybackAutoSkipIntro))

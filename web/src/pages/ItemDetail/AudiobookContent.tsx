@@ -12,11 +12,7 @@ import DetailHero from "@/pages/ItemDetail/DetailHero";
 import PageBack from "@/components/PageBack";
 import MetadataBadges from "@/pages/ItemDetail/components/MetadataBadges";
 import type { AudiobookFile } from "@/lib/audiobooks/types";
-import {
-  buildChapterList,
-  findChapterAt,
-  totalAudiobookDuration,
-} from "@/lib/audiobooks/chapters";
+import { buildChapterList, findChapterAt, totalAudiobookDuration } from "@/lib/audiobooks/chapters";
 import { audiobookFilesFromVersions } from "@/lib/audiobooks/files";
 import { useAudiobookPlaybackController } from "@/pages/audiobooks/player/audiobookPlaybackContext";
 import { coldResumePosition } from "@/pages/audiobooks/player/smartRewind";
@@ -36,9 +32,7 @@ function formatSeconds(totalSeconds: number): string {
   return `${s}s`;
 }
 
-function leafUserData(
-  userData: ItemDetail["user_data"],
-): LeafItemUserData | undefined {
+function leafUserData(userData: ItemDetail["user_data"]): LeafItemUserData | undefined {
   return userData && "position_seconds" in userData ? userData : undefined;
 }
 
@@ -88,13 +82,9 @@ export default function AudiobookContent({
   );
 
   const author =
-    namesFromPeople(item.audiobook?.authors) ||
-    namesFromCrew(item, "author") ||
-    undefined;
+    namesFromPeople(item.audiobook?.authors) || namesFromCrew(item, "author") || undefined;
   const narrator =
-    namesFromPeople(item.audiobook?.narrators) ||
-    namesFromCrew(item, "narrator") ||
-    undefined;
+    namesFromPeople(item.audiobook?.narrators) || namesFromCrew(item, "narrator") || undefined;
   const progress = leafUserData(item.user_data);
   const resumeSeconds = progress?.position_seconds ?? 0;
   const durationTotal =
@@ -108,8 +98,7 @@ export default function AudiobookContent({
     (progress.is_in_progress ?? !progress.played),
   );
   const chapters = useMemo(() => buildChapterList(files), [files]);
-  const isPlayerOpen =
-    audiobookPlayback?.activeRequest?.contentId === item.content_id;
+  const isPlayerOpen = audiobookPlayback?.activeRequest?.contentId === item.content_id;
   const activePlayback = isPlayerOpen ? audiobookPlayback?.active : null;
   const currentPlayerSeconds =
     activePlayback?.currentTime != null ? activePlayback.currentTime : null;
@@ -126,15 +115,7 @@ export default function AudiobookContent({
         initialPositionSeconds: atSeconds,
       });
     },
-    [
-      audiobookPlayback,
-      author,
-      files,
-      item.content_id,
-      item.poster_url,
-      item.title,
-      narrator,
-    ],
+    [audiobookPlayback, author, files, item.content_id, item.poster_url, item.title, narrator],
   );
 
   function handlePlayResume() {
@@ -142,11 +123,7 @@ export default function AudiobookContent({
       audiobookPlayback?.toggleActivePlayback();
       return;
     }
-    openPlayer(
-      hasProgress
-        ? coldResumePosition(resumeSeconds, getAudiobookSmartRewind())
-        : 0,
-    );
+    openPlayer(hasProgress ? coldResumePosition(resumeSeconds, getAudiobookSmartRewind()) : 0);
   }
 
   function primaryPlaybackLabel() {
@@ -164,11 +141,7 @@ export default function AudiobookContent({
   }
 
   useEffect(() => {
-    if (
-      handledPlayParamRef.current ||
-      searchParams.get("play") !== "1" ||
-      files.length === 0
-    ) {
+    if (handledPlayParamRef.current || searchParams.get("play") !== "1" || files.length === 0) {
       return;
     }
     handledPlayParamRef.current = true;
@@ -194,9 +167,7 @@ export default function AudiobookContent({
         title={item.title}
         topNav={<PageBack />}
         context="Audiobook"
-        studioLabel={
-          item.audiobook?.publisher || item.studios?.[0] || undefined
-        }
+        studioLabel={item.audiobook?.publisher || item.studios?.[0] || undefined}
         posterUrl={item.poster_url}
         posterAvifUrl={item.poster_avif_url}
         posterPngUrl={item.poster_png_url}
@@ -230,9 +201,7 @@ export default function AudiobookContent({
         metadata={
           <MetadataBadges
             year={item.year > 0 ? String(item.year) : undefined}
-            duration={
-              durationTotal > 0 ? formatSeconds(durationTotal) : undefined
-            }
+            duration={durationTotal > 0 ? formatSeconds(durationTotal) : undefined}
           />
         }
         overview={item.overview}
@@ -277,11 +246,7 @@ export default function AudiobookContent({
                   Add to Collection
                 </Button>
                 {hasProgress && (
-                  <Button
-                    variant="outline"
-                    size="lg"
-                    onClick={() => openPlayer(0)}
-                  >
+                  <Button variant="outline" size="lg" onClick={() => openPlayer(0)}>
                     <Play />
                     Listen from Start
                   </Button>
@@ -293,7 +258,7 @@ export default function AudiobookContent({
       />
 
       <div
-        className="page-shell space-y-12 py-10 sm:space-y-14"
+        className="page-shell detail-supporting-content space-y-12 py-10 sm:space-y-14"
         style={isPlayerOpen ? { paddingBottom: "8rem" } : undefined}
       >
         {narrator && <NarratorCard narrator={narrator} />}
@@ -301,18 +266,14 @@ export default function AudiobookContent({
         {item.audiobook?.series && item.audiobook.series.entries.length > 0 && (
           <RelatedRail
             heading={
-              item.audiobook.series.name
-                ? `In ${item.audiobook.series.name}`
-                : "In this series"
+              item.audiobook.series.name ? `In ${item.audiobook.series.name}` : "In this series"
             }
             items={item.audiobook.series.entries.map((entry) => ({
               content_id: entry.content_id,
               title: entry.title,
               poster_url: entry.poster_url,
               subtitle:
-                typeof entry.series_index === "number"
-                  ? `Book ${entry.series_index}`
-                  : undefined,
+                typeof entry.series_index === "number" ? `Book ${entry.series_index}` : undefined,
               highlight: entry.content_id === item.content_id,
             }))}
           />
@@ -321,14 +282,12 @@ export default function AudiobookContent({
         {(item.audiobook?.related.also_by_author ?? []).length > 0 && (
           <RelatedRail
             heading={`Also by ${author ?? "this author"}`}
-            items={(item.audiobook?.related.also_by_author ?? []).map(
-              (entry) => ({
-                content_id: entry.content_id,
-                title: entry.title,
-                poster_url: entry.poster_url,
-                subtitle: entry.year ? String(entry.year) : undefined,
-              }),
-            )}
+            items={(item.audiobook?.related.also_by_author ?? []).map((entry) => ({
+              content_id: entry.content_id,
+              title: entry.title,
+              poster_url: entry.poster_url,
+              subtitle: entry.year ? String(entry.year) : undefined,
+            }))}
           />
         )}
 
@@ -346,9 +305,7 @@ export default function AudiobookContent({
 
         <ChaptersSection
           files={files}
-          currentPositionSeconds={
-            currentPlayerSeconds ?? (resumeSeconds || null)
-          }
+          currentPositionSeconds={currentPlayerSeconds ?? (resumeSeconds || null)}
           onSelect={(seconds) => openPlayer(seconds)}
         />
       </div>

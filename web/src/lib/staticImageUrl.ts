@@ -36,9 +36,7 @@ export type StaticRasterFormats = {
  * Derive AVIF / WebP / PNG URLs from a raster path that uses any of those
  * extensions as the canonical file. Returns null for non-raster paths (svg, ico).
  */
-export function staticRasterFormats(
-  src: string | null | undefined,
-): StaticRasterFormats | null {
+export function staticRasterFormats(src: string | null | undefined): StaticRasterFormats | null {
   const trimmed = src?.trim() ?? "";
   if (!trimmed) return null;
 
@@ -75,9 +73,7 @@ export function staticRasterFormats(
 }
 
 /** Ordered load candidates using the client's detected raster preference. */
-export function staticRasterCandidates(
-  src: string | null | undefined,
-): string[] {
+export function staticRasterCandidates(src: string | null | undefined): string[] {
   const formats = staticRasterFormats(src);
   if (!formats) {
     const trimmed = src?.trim() ?? "";

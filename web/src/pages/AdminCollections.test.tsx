@@ -1,14 +1,43 @@
 import { describe, expect, it } from "vitest";
+import type { LibraryCollection } from "@/api/types";
 
 import {
   buildAdminCollectionEditorPath,
   buildTMDBPresetSourceInput,
+  collectionsInAdminScope,
   parseTMDBPresetSourceConfig,
   toAdminCollectionBuilderValue,
   toAdminCollectionRequest,
 } from "./adminCollectionsShared";
 
 describe("AdminCollections helpers", () => {
+  it("uses the rendered board as the destructive scope for one library", () => {
+    const allCollections = [
+      { id: "all-only" },
+      { id: "ungrouped" },
+      { id: "grouped" },
+    ] as LibraryCollection[];
+    const grouped = { id: "grouped" } as LibraryCollection;
+    const ungrouped = { id: "ungrouped" } as LibraryCollection;
+
+    expect(
+      collectionsInAdminScope(
+        allCollections,
+        {
+          groups: [{ collections: [grouped] }, { collections: [grouped] }],
+          ungrouped: [ungrouped],
+        },
+        7,
+      ).map((collection) => collection.id),
+    ).toEqual(["ungrouped", "grouped"]);
+  });
+
+  it("uses the unscoped collection list when all libraries are selected", () => {
+    const allCollections = [{ id: "one" }, { id: "two" }] as LibraryCollection[];
+
+    expect(collectionsInAdminScope(allCollections, undefined, null)).toEqual(allCollections);
+  });
+
   it("seeds builder state with multi-library scope", () => {
     const draft = toAdminCollectionBuilderValue(
       {
@@ -48,18 +77,16 @@ describe("AdminCollections helpers", () => {
   });
 
   it("serializes manual admin drafts into the richer request shape", () => {
-    const body = toAdminCollectionRequest(
-      toAdminCollectionBuilderValue(null, 4),
-    );
+    const body = toAdminCollectionRequest(toAdminCollectionBuilderValue(null, 4));
 
     expect(body.library_ids).toEqual([4]);
-    expect(body.collection_type).toBe("smart");
+    expect(body.collection_type).toBe("manual");
+    expect(body.query_definition).toBeUndefined();
+    expect(body.sort_config).toBeUndefined();
   });
 
   it("builds a create route that preserves the current library selection", () => {
-    expect(buildAdminCollectionEditorPath("new", 7)).toBe(
-      "/admin/collections/new?libraryId=7",
-    );
+    expect(buildAdminCollectionEditorPath("new", 7)).toBe("/admin/collections/new?libraryId=7");
   });
 
   it("builds an edit route for an existing collection", () => {

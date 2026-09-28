@@ -112,15 +112,56 @@ describe("SeasonEpisodeGrid", () => {
     const watchedIndicator = screen.getByLabelText("Watched");
 
     expect(episodeLabel.parentElement).toContainElement(watchedIndicator);
-    expect(watchedIndicator).toHaveAttribute(
-      "data-watched-indicator",
-      "icon-only",
-    );
+    expect(watchedIndicator).toHaveAttribute("data-watched-indicator", "icon-only");
     expect(watchedIndicator.querySelector(".lucide-circle-check")).toBeTruthy();
     expect(watchedIndicator.closest(".media-card-image")).toBeNull();
-    expect(screen.getByText("Episode 2").parentElement).not.toContainElement(
-      watchedIndicator,
-    );
+    expect(screen.getByText("Episode 2").parentElement).not.toContainElement(watchedIndicator);
     expect(screen.getAllByLabelText("Watched")).toHaveLength(1);
+  });
+  it("caps the grid at four rows and scrolls the rest", () => {
+    render(
+      <MemoryRouter>
+        <SeasonEpisodeGrid
+          isLoading={false}
+          episodes={[
+            {
+              content_id: "ep-1",
+              season_number: 1,
+              episode_number: 1,
+              title: "Pilot",
+              overview: "An episode.",
+              air_date: null,
+              runtime: 42,
+              still_url: "",
+              still_thumbhash: "",
+              files: [],
+            },
+            {
+              content_id: "ep-2",
+              season_number: 1,
+              episode_number: 2,
+              title: "Second",
+              overview: "An episode.",
+              air_date: null,
+              runtime: 42,
+              still_url: "",
+              still_thumbhash: "",
+              files: [],
+            },
+          ]}
+        />
+      </MemoryRouter>,
+    );
+
+    const grid = screen.getByText("Pilot").closest(".grid");
+    expect(grid).not.toBeNull();
+    // Two columns is the narrowest layout. A single column made the capped
+    // section over two viewports tall on a phone, so it scrolled inside a
+    // region the reader could not see the extent of.
+    expect(grid).toHaveClass("grid-cols-2", "sm:grid-cols-3", "lg:grid-cols-5");
+    expect(grid).toHaveClass("overflow-y-auto");
+    // Two episodes is under the cap, so nothing is clipped and the section
+    // keeps its natural height rather than showing an inert scrollport.
+    expect((grid as HTMLElement).style.maxHeight).toBe("");
   });
 });

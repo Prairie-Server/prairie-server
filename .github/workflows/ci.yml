@@ -145,6 +145,84 @@ jobs:
             ./scripts/ci-go-lint.sh
           fi
 
+  # Upstream's contract gate (settings bindings, playback fixtures, v2 route
+  # inventory / ledger / scenario catalogs / OpenAPI artifact / fixtures).
+  go-verify:
+    name: Go contract checks
+    needs: changes
+    if: needs.changes.outputs.go == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          # The contract diff compares against the PR's merge base.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Go
+        uses: ./.github/actions/setup-go
+        with:
+          cache-name: verify
+
+      # A manifest change that does not regenerate leaves every client reading
+      # stale keys, which the contract exists to prevent.
+      - name: Verify settings bindings are current
+        run: make verify-settings-bindings
+
+      # The server defines the playback protocol and the clients prove
+      # conformance against these fixtures. A contract change that does not
+      # regenerate leaves every client testing against a stale body, so the
+      # drift surfaces as a playback bug on three platforms rather than as a
+      # failure here.
+      - name: Verify playback protocol fixtures are current
+        run: make verify-playback-fixtures
+
+      # The API v2 migration needs every legacy native route accounted for
+      # before anything is ported. The generator reads registration source, so
+      # a route hidden behind optional dependency wiring still has to appear,
+      # and a registration it cannot follow fails here rather than shrinking
+      # the inventory in silence.
+      - name: Verify the legacy native route inventory is current
+        run: make verify-route-inventory
+
+      # Every inventoried route needs a migration decision before v2 work
+      # ports it. The ledger is schema-checked and reconciled against the
+      # inventory one-to-one, so a new route without a ledger entry, or a
+      # stale entry for a removed route, fails here.
+      - name: Verify the v2 migration ledger covers the route inventory
+        run: make verify-migration-ledger
+
+      # Every tier-1 row in a migration wave needs an executable scenario
+      # catalog before that wave's first section PR. The catalogs are
+      # schema-checked and reconciled against the ledger here; the executor
+      # runs their public subset under make test-go and the rest locally
+      # against an empty database named by SILO_SCENARIO_DATABASE_URL (a
+      # dedicated variable: the executor truncates, so it never shares
+      # SILO_TEST_DATABASE_URL with the other DB-gated packages).
+      - name: Verify the tier-1 scenario catalogs cover their waves
+        run: make verify-scenario-catalogs
+
+      # The executor's offline run-vs-skip decision reads a committed list of
+      # the routes the no-database API router registers, because the sealed
+      # router cannot be walked from outside internal/api. This regenerates
+      # that list from the real router and fails if the committed file drifted.
+      - name: Verify the offline route set matches the API router
+        run: make verify-offline-routes
+
+      # The v2 OpenAPI artifact is rendered from the Go registries and the
+      # binary serves the committed bytes, so a registration change that does
+      # not regenerate leaves clients reading a contract the server no longer
+      # matches. This byte-compares a fresh generation.
+      - name: Verify the v2 OpenAPI artifact is current
+        run: make verify-apiv2-openapi
+
+      # The v2 fixtures are generated through the real router and every body
+      # is validated against the committed OpenAPI schema its index names, so
+      # a client testing against them tests against what the server sends.
+      - name: Verify the v2 contract fixtures are current and valid
+        run: make verify-apiv2-fixtures
+
   web-lint:
     name: Web lint + format
     needs: changes
@@ -400,7 +478,9 @@ jobs:
       - name: Run Vitest shard with coverage
         env:
           VITEST_SHARD: "1"
-        run: pnpm exec vitest run --coverage --shard=${{ matrix.shard }}/4 --reporter=blob
+        # Catalog.test.tsx is upstream's known web failure (WEBTEST_KNOWN_FAILURES in
+        # the Makefile); it stays out of the gate the same way upstream keeps it out.
+        run: pnpm exec vitest run --coverage --shard=${{ matrix.shard }}/4 --reporter=blob --exclude src/pages/Catalog.test.tsx
 
       - name: Upload blob report
         if: always()

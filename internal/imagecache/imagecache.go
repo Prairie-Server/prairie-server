@@ -22,6 +22,7 @@ import (
 	"time"
 
 	"github.com/prairie-server/prairie-server/internal/artworkkey"
+	"github.com/prairie-server/prairie-server/internal/blobstore"
 	"github.com/prairie-server/prairie-server/internal/imageutil"
 	"github.com/prairie-server/prairie-server/internal/metadata"
 )
@@ -31,19 +32,18 @@ const (
 	downloadTimeout  = 30 * time.Second
 )
 
-// ObjectPutter is the object-storage interface required by Cacher.
-// Satisfied by *s3client.Client and *artworkstore.LocalStore.
+// ObjectPutter is the artwork storage interface required by Cacher.
 type ObjectPutter interface {
-	PutObject(ctx context.Context, bucket, key string, data []byte) error
-	Bucket() string
+	Put(context.Context, string, []byte) error
 }
 
-type objectMatcher interface {
-	ObjectMatches(ctx context.Context, bucket, key string, data []byte) (bool, error)
+// ContentMatcher avoids rewriting immutable objects with matching bytes.
+type ContentMatcher interface {
+	Matches(context.Context, string, []byte) (bool, error)
 }
 
 type objectGetter interface {
-	GetObject(ctx context.Context, bucket, key string) ([]byte, error)
+	Get(ctx context.Context, key string) (io.ReadCloser, blobstore.ObjectInfo, error)
 }
 
 // ArtworkRevisionTracker persists the exact object manifest for an immutable
@@ -361,18 +361,17 @@ func (c *Cacher) CacheBytes(ctx context.Context, data []byte, req CacheRequest) 
 		return nil, fmt.Errorf("imagecache: generate variants: %w", err)
 	}
 	basePath := buildBasePath(req)
-	bucket := c.s3.Bucket()
 	revision := variantRevision(result)
 	variantPaths := buildVariantPaths(basePath, revision, result)
 	if err := c.trackRevision(ctx, req.ImageType, variantPaths); err != nil {
 		return nil, err
 	}
 
-	uploadStats, err := c.uploadVariants(ctx, bucket, result, variantPaths)
+	uploadStats, err := c.uploadVariants(ctx, result, variantPaths)
 	if err != nil {
 		return nil, err
 	}
-	c.scheduleAVIFBackfill(ctx, data, widths, bucket, variantPaths, metadata.ImageTypeToString(req.ImageType))
+	c.scheduleAVIFBackfill(ctx, data, widths, variantPaths, metadata.ImageTypeToString(req.ImageType))
 	return &CacheResult{
 		BasePath:         basePath,
 		OriginalPath:     variantPaths[artworkkey.OriginalVariant],
@@ -385,7 +384,7 @@ func (c *Cacher) CacheBytes(ctx context.Context, data []byte, req CacheRequest) 
 	}, nil
 }
 
-func (c *Cacher) scheduleAVIFBackfill(ctx context.Context, data []byte, widths []int, bucket string, variantPaths map[string]string, imageType string) {
+func (c *Cacher) scheduleAVIFBackfill(ctx context.Context, data []byte, widths []int, variantPaths map[string]string, imageType string) {
 	if c == nil || len(variantPaths) == 0 {
 		return
 	}
@@ -430,7 +429,7 @@ func (c *Cacher) scheduleAVIFBackfill(ctx context.Context, data []byte, widths [
 		}
 		uploadCtx, cancel := context.WithTimeout(bg, 3*time.Minute)
 		defer cancel()
-		if _, err := c.uploadAVIFSiblings(uploadCtx, bucket, avifResult, paths); err != nil {
+		if _, err := c.uploadAVIFSiblings(uploadCtx, avifResult, paths); err != nil {
 			slog.WarnContext(bg, "imagecache: deferred AVIF upload failed", "component", "imagecache", "error", err)
 		}
 	}()
@@ -458,11 +457,16 @@ func (c *Cacher) EnsureAVIFSiblings(ctx context.Context, originalPath, imageType
 	}
 	getter, ok := c.s3.(objectGetter)
 	if !ok {
-		return fmt.Errorf("imagecache: object store does not support GetObject")
+		return fmt.Errorf("imagecache: object store does not support Get")
 	}
-	data, err := getter.GetObject(ctx, c.s3.Bucket(), originalPath)
+	rc, _, err := getter.Get(ctx, originalPath)
 	if err != nil {
 		return fmt.Errorf("imagecache: get WebP original: %w", err)
+	}
+	data, err := io.ReadAll(rc)
+	_ = rc.Close()
+	if err != nil {
+		return fmt.Errorf("imagecache: read WebP original: %w", err)
 	}
 	widths := artworkkey.VariantWidths(imageType)
 	// GenerateAVIFSiblings yields WebP + AVIF for each display width (skipping the
@@ -480,13 +484,13 @@ func (c *Cacher) EnsureAVIFSiblings(ctx context.Context, originalPath, imageType
 		}
 		paths[name] = artworkkey.Variant(originalPath, name)
 	}
-	if _, err := c.uploadVariants(ctx, c.s3.Bucket(), result, paths); err != nil {
+	if _, err := c.uploadVariants(ctx, result, paths); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (c *Cacher) uploadAVIFSiblings(ctx context.Context, bucket string, result *imageutil.VariantResult, variantPaths map[string]string) (uploadVariantStats, error) {
+func (c *Cacher) uploadAVIFSiblings(ctx context.Context, result *imageutil.VariantResult, variantPaths map[string]string) (uploadVariantStats, error) {
 	jobs := make([]uploadJob, 0, len(result.Variants))
 	for _, variant := range result.Variants {
 		key := variantPaths[variant.Key]
@@ -497,7 +501,7 @@ func (c *Cacher) uploadAVIFSiblings(ctx context.Context, bucket string, result *
 			jobs = append(jobs, uploadJob{key: avifKey, data: variant.AVIF})
 		}
 	}
-	return c.runUploadJobs(ctx, bucket, jobs)
+	return c.runUploadJobs(ctx, jobs)
 }
 
 // Cache downloads the image at req.SourceURL and stores it through the same
@@ -545,7 +549,7 @@ type uploadJob struct {
 	data []byte
 }
 
-func (c *Cacher) uploadVariants(ctx context.Context, bucket string, result *imageutil.VariantResult, variantPaths map[string]string) (uploadVariantStats, error) {
+func (c *Cacher) uploadVariants(ctx context.Context, result *imageutil.VariantResult, variantPaths map[string]string) (uploadVariantStats, error) {
 	jobs := make([]uploadJob, 0, len(result.Variants)*3)
 	for _, variant := range result.Variants {
 		key := variantPaths[variant.Key]
@@ -564,10 +568,10 @@ func (c *Cacher) uploadVariants(ctx context.Context, bucket string, result *imag
 			}
 		}
 	}
-	return c.runUploadJobs(ctx, bucket, jobs)
+	return c.runUploadJobs(ctx, jobs)
 }
 
-func (c *Cacher) runUploadJobs(ctx context.Context, bucket string, jobs []uploadJob) (uploadVariantStats, error) {
+func (c *Cacher) runUploadJobs(ctx context.Context, jobs []uploadJob) (uploadVariantStats, error) {
 	var wg sync.WaitGroup
 	uploadErrs := make([]error, len(jobs))
 	stats := make([]uploadVariantStats, len(jobs))
@@ -575,15 +579,20 @@ func (c *Cacher) runUploadJobs(ctx context.Context, bucket string, jobs []upload
 		wg.Add(1)
 		go func(idx int, item uploadJob) {
 			defer wg.Done()
-			if exists, err := objectMatches(ctx, c.s3, bucket, item.key, item.data); err != nil {
-				uploadErrs[idx] = fmt.Errorf("imagecache: check existing %s: %w", item.key, err)
-				return
-			} else if exists {
-				stats[idx].existing = 1
-				return
+			key := item.key
+			if matcher, ok := c.s3.(ContentMatcher); ok {
+				matches, err := matcher.Matches(ctx, key, item.data)
+				if err != nil {
+					uploadErrs[idx] = fmt.Errorf("imagecache: compare %s: %w", key, err)
+					return
+				}
+				if matches {
+					stats[idx].existing = 1
+					return
+				}
 			}
-			if err := putObjectWithRetry(ctx, c.s3, bucket, item.key, item.data); err != nil {
-				uploadErrs[idx] = fmt.Errorf("imagecache: upload %s: %w", item.key, err)
+			if err := putObjectWithRetry(ctx, c.s3, key, item.data); err != nil {
+				uploadErrs[idx] = fmt.Errorf("imagecache: upload %s: %w", key, err)
 				return
 			}
 			stats[idx].uploaded = 1
@@ -655,37 +664,26 @@ func (c *Cacher) trackRevision(ctx context.Context, imageType metadata.ImageType
 	return nil
 }
 
-// objectMatches reports whether the object at key already holds exactly data.
-// Backends that cannot verify content report false so the immutable object is
-// rewritten; bare existence must never be accepted as a content match.
-func objectMatches(ctx context.Context, putter ObjectPutter, bucket, key string, data []byte) (bool, error) {
-	matcher, ok := putter.(objectMatcher)
-	if !ok {
-		return false, nil
-	}
-	return matcher.ObjectMatches(ctx, bucket, key, data)
-}
-
-func putObjectWithRetry(ctx context.Context, putter ObjectPutter, bucket, key string, data []byte) error {
+func putObjectWithRetry(ctx context.Context, putter ObjectPutter, key string, data []byte) error {
 	const maxAttempts = 3
 	var lastErr error
 	for attempt := 0; attempt < maxAttempts; attempt++ {
-		if err := putter.PutObject(ctx, bucket, key, data); err != nil {
+		err := putter.Put(ctx, key, data)
+		if err != nil {
 			lastErr = err
 			if attempt == maxAttempts-1 {
-				// Final attempt failed; return immediately without a pointless backoff.
 				break
 			}
 			timer := time.NewTimer(time.Duration(attempt+1) * 500 * time.Millisecond)
 			select {
 			case <-timer.C:
-				continue
 			case <-ctx.Done():
 				timer.Stop()
 				return ctx.Err()
 			}
+		} else {
+			return nil
 		}
-		return nil
 	}
 	return lastErr
 }

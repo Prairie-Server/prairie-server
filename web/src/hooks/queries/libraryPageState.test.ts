@@ -58,9 +58,7 @@ describe("library page state preference helpers", () => {
       version: 1,
       libraries: {},
     });
-    expect(
-      parseLibraryPageStatePreference({ version: 2, libraries: {} }),
-    ).toEqual({
+    expect(parseLibraryPageStatePreference({ version: 2, libraries: {} })).toEqual({
       version: 1,
       libraries: {},
     });

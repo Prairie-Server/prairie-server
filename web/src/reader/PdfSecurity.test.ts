@@ -83,9 +83,7 @@ describe("PDF reader security", () => {
       }),
     });
 
-    await makePDF(
-      new File(["%PDF-1.7"], "safe.pdf", { type: "application/pdf" }),
-    );
+    await makePDF(new File(["%PDF-1.7"], "safe.pdf", { type: "application/pdf" }));
 
     expect(mocks.getDocument).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -110,9 +108,7 @@ describe("PDF reader security", () => {
       }),
     });
 
-    const book = await makePDF(
-      new File(["%PDF-1.7"], "safe.pdf", { type: "application/pdf" }),
-    );
+    const book = await makePDF(new File(["%PDF-1.7"], "safe.pdf", { type: "application/pdf" }));
     await book.destroy();
 
     expect(destroy).toHaveBeenCalledOnce();
@@ -145,9 +141,7 @@ describe("PDF reader security", () => {
       }),
     });
 
-    const book = await makePDF(
-      new File(["%PDF-1.7"], "safe.pdf", { type: "application/pdf" }),
-    );
+    const book = await makePDF(new File(["%PDF-1.7"], "safe.pdf", { type: "application/pdf" }));
     const section = await book.sections[0].load();
     const iframe = document.createElement("iframe");
     document.body.append(iframe);
@@ -158,19 +152,15 @@ describe("PDF reader security", () => {
 
     await section.onZoom({ doc, scale: 1 });
 
-    const annotationOptions =
-      mocks.annotationLayerConstructor.mock.calls[0]?.[0];
+    const annotationOptions = mocks.annotationLayerConstructor.mock.calls[0]?.[0];
     expect(annotationOptions).toBeDefined();
-    if (!annotationOptions)
-      throw new Error("PDF.js did not construct an annotation layer");
+    if (!annotationOptions) throw new Error("PDF.js did not construct an annotation layer");
     const { linkService } = annotationOptions as {
       linkService: {
         getAttachmentContent: (id: string) => Promise<Uint8Array | null>;
       };
     };
-    await expect(
-      linkService.getAttachmentContent("attachment-1"),
-    ).resolves.toBe(attachment);
+    await expect(linkService.getAttachmentContent("attachment-1")).resolves.toBe(attachment);
     expect(getAttachmentContent).toHaveBeenCalledWith("attachment-1");
 
     iframe.remove();

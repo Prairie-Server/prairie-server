@@ -71,16 +71,11 @@ export function parseBucketPolicies(raw: string): LogRetentionBucketPolicy[] {
       if (!entry || typeof entry !== "object") {
         return null;
       }
-      const component = stringifyUnknown(
-        (entry as { component?: unknown }).component,
-      ).trim();
+      const component = stringifyUnknown((entry as { component?: unknown }).component).trim();
       const level = stringifyUnknown((entry as { level?: unknown }).level)
         .trim()
         .toLowerCase();
-      if (
-        !component ||
-        !LOG_LEVEL_OPTIONS.includes(level as (typeof LOG_LEVEL_OPTIONS)[number])
-      ) {
+      if (!component || !LOG_LEVEL_OPTIONS.includes(level as (typeof LOG_LEVEL_OPTIONS)[number])) {
         return null;
       }
       return {
@@ -89,20 +84,14 @@ export function parseBucketPolicies(raw: string): LogRetentionBucketPolicy[] {
         retention_days: normalizeBucketLimit(
           (entry as { retention_days?: unknown }).retention_days,
         ),
-        max_rows: normalizeBucketLimit(
-          (entry as { max_rows?: unknown }).max_rows,
-        ),
-        max_size_mb: normalizeBucketLimit(
-          (entry as { max_size_mb?: unknown }).max_size_mb,
-        ),
+        max_rows: normalizeBucketLimit((entry as { max_rows?: unknown }).max_rows),
+        max_size_mb: normalizeBucketLimit((entry as { max_size_mb?: unknown }).max_size_mb),
       };
     })
     .filter((entry): entry is LogRetentionBucketPolicy => entry !== null);
 }
 
-export function serializeBucketPolicies(
-  policies: LogRetentionBucketPolicy[],
-): string {
+export function serializeBucketPolicies(policies: LogRetentionBucketPolicy[]): string {
   const normalized = policies
     .map((policy) => ({
       component: policy.component.trim(),
@@ -114,9 +103,7 @@ export function serializeBucketPolicies(
     .filter(
       (policy) =>
         policy.component &&
-        LOG_LEVEL_OPTIONS.includes(
-          policy.level as (typeof LOG_LEVEL_OPTIONS)[number],
-        ),
+        LOG_LEVEL_OPTIONS.includes(policy.level as (typeof LOG_LEVEL_OPTIONS)[number]),
     );
 
   return JSON.stringify(normalized);
@@ -140,9 +127,7 @@ export function createBucketRow(
 }
 
 export function recommendedBucketRows(): LogRetentionBucketRow[] {
-  return DEFAULT_BUCKET_POLICIES.map((policy, index) =>
-    createBucketRow(policy, String(index + 1)),
-  );
+  return DEFAULT_BUCKET_POLICIES.map((policy, index) => createBucketRow(policy, String(index + 1)));
 }
 
 export interface LogRetentionBucketRowsState {
@@ -160,31 +145,23 @@ export function bucketRowsFromRaw(raw: string): LogRetentionBucketRowsState {
   try {
     const parsed = parseBucketPolicies(raw);
     return {
-      rows: parsed.map((policy, index) =>
-        createBucketRow(policy, String(index + 1)),
-      ),
+      rows: parsed.map((policy, index) => createBucketRow(policy, String(index + 1))),
       error: "",
     };
   } catch (error) {
     return {
       rows: recommendedBucketRows(),
-      error:
-        error instanceof Error ? error.message : "Failed to parse bucket rules",
+      error: error instanceof Error ? error.message : "Failed to parse bucket rules",
     };
   }
 }
 
 function nextBucketRowID(rows: LogRetentionBucketRow[]): string {
-  const highest = rows.reduce(
-    (max, row) => Math.max(max, Number.parseInt(row.id, 10) || 0),
-    0,
-  );
+  const highest = rows.reduce((max, row) => Math.max(max, Number.parseInt(row.id, 10) || 0), 0);
   return String(highest + 1);
 }
 
-export function appendBucketRow(
-  rows: LogRetentionBucketRow[],
-): LogRetentionBucketRow[] {
+export function appendBucketRow(rows: LogRetentionBucketRow[]): LogRetentionBucketRow[] {
   return [...rows, createBucketRow(undefined, nextBucketRowID(rows))];
 }
 

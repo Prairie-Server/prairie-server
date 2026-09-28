@@ -55,13 +55,7 @@ vi.mock("@/components/MediaLocations", () => ({
 }));
 
 vi.mock("@/components/DownloadVersionPicker", () => ({
-  default: ({
-    versions,
-    title,
-  }: {
-    versions: FileVersion[];
-    title: string;
-  }) => (
+  default: ({ versions, title }: { versions: FileVersion[]; title: string }) => (
     <div>
       <span>download picker</span>
       <span>{title}</span>
@@ -323,9 +317,7 @@ describe("EbookContent", () => {
       </MemoryRouter>,
     );
 
-    expect(markup).toContain(
-      "/reader/ebook/ebook-1?file_id=1&amp;libraryId=12",
-    );
+    expect(markup).toContain("/reader/ebook/ebook-1?file_id=1&amp;libraryId=12");
   });
 
   it("links ebook genres back to the scoped library", () => {
@@ -333,16 +325,11 @@ describe("EbookContent", () => {
 
     const markup = renderToStaticMarkup(
       <MemoryRouter>
-        <EbookContent
-          item={makeEbookItem({ genres: ["Science Fiction"] })}
-          libraryId={12}
-        />
+        <EbookContent item={makeEbookItem({ genres: ["Science Fiction"] })} libraryId={12} />
       </MemoryRouter>,
     );
 
-    expect(markup).toContain(
-      'href="/library/12?tab=library&amp;genre=Science+Fiction"',
-    );
+    expect(markup).toContain('href="/library/12?tab=library&amp;genre=Science+Fiction"');
   });
 
   it("links ebook genres to the ebook catalog outside a library", () => {
@@ -366,9 +353,7 @@ describe("EbookContent", () => {
       <MemoryRouter>
         <EbookContent
           item={makeEbookItem({
-            versions: [
-              makeVersion({ container: "docx", file_name: "Book.docx" }),
-            ],
+            versions: [makeVersion({ container: "docx", file_name: "Book.docx" })],
           })}
         />
       </MemoryRouter>,
@@ -485,9 +470,7 @@ describe("EbookContent", () => {
                 ],
               },
               related: {
-                also_by_author: [
-                  { content_id: "ebook-3", title: "The Long Way", year: 2014 },
-                ],
+                also_by_author: [{ content_id: "ebook-3", title: "The Long Way", year: 2014 }],
                 similar: [
                   {
                     content_id: "ebook-4",

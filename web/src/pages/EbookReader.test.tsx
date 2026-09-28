@@ -34,18 +34,24 @@ vi.mock("@/components/PageBack", () => ({
 }));
 
 vi.mock("@/reader/ebookReaderApi", () => ({
+  createEbookAnnotationSession: () => ({ profileContext: null, creates: new Map() }),
   createEbookReaderAnnotation: mocks.createEbookReaderAnnotation,
   deleteEbookReaderAnnotation: mocks.deleteEbookReaderAnnotation,
   fetchEbookReaderAnnotations: mocks.fetchEbookReaderAnnotations,
+  createEbookReaderConfigSession: () => ({
+    etag: "test",
+    profileContext: null,
+    pending: Promise.resolve(),
+  }),
   fetchEbookReaderConfig: mocks.fetchEbookReaderConfig,
   saveEbookReaderConfig: mocks.saveEbookReaderConfig,
   saveEbookReaderConfigKeepalive: mocks.saveEbookReaderConfigKeepalive,
 }));
 
 vi.mock("@/reader/FoliateBookReader", async () => {
-  const actual = await vi.importActual<
-    typeof import("@/reader/FoliateBookReader")
-  >("@/reader/FoliateBookReader");
+  const actual = await vi.importActual<typeof import("@/reader/FoliateBookReader")>(
+    "@/reader/FoliateBookReader",
+  );
 
   return {
     ...actual,
@@ -71,12 +77,8 @@ vi.mock("@/reader/FoliateBookReader", async () => {
         settings?: unknown;
         annotations?: unknown[];
         onProgressChange?: (progress: number | null) => void;
-        onFileLoaded?: (
-          state: { objectUrl: string; filename: string } | null,
-        ) => void;
-        onSelectionChange?: (
-          selection: { cfi: string; selectedText: string } | null,
-        ) => void;
+        onFileLoaded?: (state: { objectUrl: string; filename: string } | null) => void;
+        onSelectionChange?: (selection: { cfi: string; selectedText: string } | null) => void;
         onReady?: (state: {
           toc: Array<{
             id: number;
@@ -93,14 +95,7 @@ vi.mock("@/reader/FoliateBookReader", async () => {
         }) => void;
       }
     >(function MockFoliateBookReader(
-      {
-        file,
-        settings,
-        onProgressChange,
-        onFileLoaded,
-        onSelectionChange,
-        onReady,
-      },
+      { file, settings, onProgressChange, onFileLoaded, onSelectionChange, onReady },
       ref,
     ) {
       mocks.captureReaderSettings(settings);
@@ -240,10 +235,7 @@ function installStorage() {
 }
 
 function setInputValue(input: HTMLInputElement, value: string) {
-  const setter = Object.getOwnPropertyDescriptor(
-    HTMLInputElement.prototype,
-    "value",
-  )?.set;
+  const setter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")?.set;
   setter?.call(input, value);
   input.dispatchEvent(new Event("input", { bubbles: true }));
 }
@@ -251,11 +243,7 @@ function setInputValue(input: HTMLInputElement, value: string) {
 function HistoryBackProbe() {
   const navigate = useNavigate();
   return (
-    <button
-      type="button"
-      aria-label="Browser back"
-      onClick={() => navigate(-1)}
-    >
+    <button type="button" aria-label="Browser back" onClick={() => navigate(-1)}>
       Browser back
     </button>
   );
@@ -338,9 +326,7 @@ describe("EbookReader", () => {
     const previous = container.querySelector<HTMLButtonElement>(
       'button[aria-label="Previous page"]',
     );
-    const next = container.querySelector<HTMLButtonElement>(
-      'button[aria-label="Next page"]',
-    );
+    const next = container.querySelector<HTMLButtonElement>('button[aria-label="Next page"]');
     expect(previous).not.toBeNull();
     expect(next).not.toBeNull();
 
@@ -371,11 +357,7 @@ describe("EbookReader", () => {
     const backTo = encodeURIComponent("/item/manga-series-1?libraryId=7");
     await act(async () => {
       root.render(
-        <MemoryRouter
-          initialEntries={[
-            `/reader/ebook/ebook-1?libraryId=7&backTo=${backTo}`,
-          ]}
-        >
+        <MemoryRouter initialEntries={[`/reader/ebook/ebook-1?libraryId=7&backTo=${backTo}`]}>
           <Routes>
             <Route path="/reader/ebook/:contentId" element={<EbookReader />} />
           </Routes>
@@ -384,12 +366,8 @@ describe("EbookReader", () => {
     });
 
     // backTo wins over the default chapter-detail target, breaking the loop.
-    expect(container.innerHTML).toContain(
-      'href="/item/manga-series-1?libraryId=7"',
-    );
-    expect(container.innerHTML).not.toContain(
-      'href="/item/ebook-1?libraryId=7"',
-    );
+    expect(container.innerHTML).toContain('href="/item/manga-series-1?libraryId=7"');
+    expect(container.innerHTML).not.toContain('href="/item/ebook-1?libraryId=7"');
   });
 
   // Regression test for issue #189: exiting the reader must consume the
@@ -403,43 +381,26 @@ describe("EbookReader", () => {
     await act(async () => {
       root.render(
         <MemoryRouter
-          initialEntries={[
-            "/came-from-here",
-            `/reader/ebook/ebook-1?libraryId=7&backTo=${backTo}`,
-          ]}
+          initialEntries={["/came-from-here", `/reader/ebook/ebook-1?libraryId=7&backTo=${backTo}`]}
           initialIndex={1}
         >
           <Routes>
-            <Route
-              path="/came-from-here"
-              element={<div data-testid="origin-page" />}
-            />
-            <Route
-              path="/item/:contentId"
-              element={<div data-testid="pushed-series-page" />}
-            />
+            <Route path="/came-from-here" element={<div data-testid="origin-page" />} />
+            <Route path="/item/:contentId" element={<div data-testid="pushed-series-page" />} />
             <Route path="/reader/ebook/:contentId" element={<EbookReader />} />
           </Routes>
         </MemoryRouter>,
       );
     });
 
-    const back = container.querySelector(
-      'a[aria-label="Back"], [aria-label="Back"]',
-    );
+    const back = container.querySelector('a[aria-label="Back"], [aria-label="Back"]');
     expect(back).not.toBeNull();
     await act(async () => {
-      back!.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true }),
-      );
+      back!.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     });
 
-    expect(
-      container.querySelector('[data-testid="origin-page"]'),
-    ).not.toBeNull();
-    expect(
-      container.querySelector('[data-testid="pushed-series-page"]'),
-    ).toBeNull();
+    expect(container.querySelector('[data-testid="origin-page"]')).not.toBeNull();
+    expect(container.querySelector('[data-testid="pushed-series-page"]')).toBeNull();
   });
 
   it("replaces a direct reader entry when falling back to the backTo target", async () => {
@@ -447,11 +408,7 @@ describe("EbookReader", () => {
     const backTo = encodeURIComponent("/item/manga-series-1?libraryId=7");
     await act(async () => {
       root.render(
-        <MemoryRouter
-          initialEntries={[
-            `/reader/ebook/ebook-1?libraryId=7&backTo=${backTo}`,
-          ]}
-        >
+        <MemoryRouter initialEntries={[`/reader/ebook/ebook-1?libraryId=7&backTo=${backTo}`]}>
           <Routes>
             <Route
               path="/item/:contentId"
@@ -467,18 +424,12 @@ describe("EbookReader", () => {
       );
     });
 
-    const back = container.querySelector<HTMLAnchorElement>(
-      'a[aria-label="Back"]',
-    );
+    const back = container.querySelector<HTMLAnchorElement>('a[aria-label="Back"]');
     expect(back).not.toBeNull();
     await act(async () => {
-      back?.dispatchEvent(
-        new MouseEvent("click", { bubbles: true, cancelable: true }),
-      );
+      back?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
     });
-    expect(
-      container.querySelector('[data-testid="series-page"]'),
-    ).not.toBeNull();
+    expect(container.querySelector('[data-testid="series-page"]')).not.toBeNull();
 
     const browserBack = container.querySelector<HTMLButtonElement>(
       'button[aria-label="Browser back"]',
@@ -487,9 +438,7 @@ describe("EbookReader", () => {
       browserBack?.click();
     });
 
-    expect(
-      container.querySelector('[data-testid="series-page"]'),
-    ).not.toBeNull();
+    expect(container.querySelector('[data-testid="series-page"]')).not.toBeNull();
     expect(container.textContent).not.toContain("reader surface");
   });
 
@@ -500,44 +449,42 @@ describe("EbookReader", () => {
     "replaces reader history when advancing with the %s Next control",
     async (_control, progress, linkIndex, expectedLinkCount) => {
       mocks.readerProgress = progress;
-      mocks.useCatalogItemDetail.mockImplementation(
-        (requestedContentID?: string) => {
-          if (requestedContentID === "manga-series-1") {
-            return {
-              data: {
-                ...makeEbookItem(),
-                content_id: "manga-series-1",
-                type: "manga",
-                title: "Manga Series",
-                manga: {
-                  chapters: [
-                    {
-                      content_id: "chapter-1",
-                      title: "Chapter 1",
-                      chapter_index: 1,
-                    },
-                    {
-                      content_id: "chapter-2",
-                      title: "Chapter 2",
-                      chapter_index: 2,
-                    },
-                  ],
-                },
-              } as ItemDetail,
-              isLoading: false,
-              error: null,
-            };
-          }
+      mocks.useCatalogItemDetail.mockImplementation((requestedContentID?: string) => {
+        if (requestedContentID === "manga-series-1") {
           return {
-            data: makeEbookItem({
-              content_id: requestedContentID ?? "chapter-1",
-              series_id: "manga-series-1",
-            }),
+            data: {
+              ...makeEbookItem(),
+              content_id: "manga-series-1",
+              type: "manga",
+              title: "Manga Series",
+              manga: {
+                chapters: [
+                  {
+                    content_id: "chapter-1",
+                    title: "Chapter 1",
+                    chapter_index: 1,
+                  },
+                  {
+                    content_id: "chapter-2",
+                    title: "Chapter 2",
+                    chapter_index: 2,
+                  },
+                ],
+              },
+            } as ItemDetail,
             isLoading: false,
             error: null,
           };
-        },
-      );
+        }
+        return {
+          data: makeEbookItem({
+            content_id: requestedContentID ?? "chapter-1",
+            series_id: "manga-series-1",
+          }),
+          isLoading: false,
+          error: null,
+        };
+      });
       window.history.replaceState({ idx: 1 }, "");
       const backTo = encodeURIComponent("/item/manga-series-1?libraryId=7");
 
@@ -551,14 +498,8 @@ describe("EbookReader", () => {
             initialIndex={1}
           >
             <Routes>
-              <Route
-                path="/item/:contentId"
-                element={<div data-testid="series-page" />}
-              />
-              <Route
-                path="/reader/ebook/:contentId"
-                element={<EbookReader />}
-              />
+              <Route path="/item/:contentId" element={<div data-testid="series-page" />} />
+              <Route path="/reader/ebook/:contentId" element={<EbookReader />} />
             </Routes>
           </MemoryRouter>,
         );
@@ -574,19 +515,13 @@ describe("EbookReader", () => {
         );
       });
 
-      const back = container.querySelector<HTMLAnchorElement>(
-        'a[aria-label="Back"]',
-      );
+      const back = container.querySelector<HTMLAnchorElement>('a[aria-label="Back"]');
       expect(back).not.toBeNull();
       await act(async () => {
-        back?.dispatchEvent(
-          new MouseEvent("click", { bubbles: true, cancelable: true }),
-        );
+        back?.dispatchEvent(new MouseEvent("click", { bubbles: true, cancelable: true }));
       });
 
-      expect(
-        container.querySelector('[data-testid="series-page"]'),
-      ).not.toBeNull();
+      expect(container.querySelector('[data-testid="series-page"]')).not.toBeNull();
       expect(container.textContent).not.toContain("reader surface");
     },
   );
@@ -622,9 +557,7 @@ describe("EbookReader", () => {
     });
 
     expect(container.textContent).toContain("reader surface Reader.epub");
-    const select = container.querySelector<HTMLSelectElement>(
-      'select[aria-label="Reader file"]',
-    );
+    const select = container.querySelector<HTMLSelectElement>('select[aria-label="Reader file"]');
     expect(select).not.toBeNull();
 
     await act(async () => {
@@ -671,9 +604,9 @@ describe("EbookReader", () => {
       );
     });
 
-    const options = Array.from(
-      container.querySelectorAll<HTMLOptionElement>("option"),
-    ).map((option) => option.textContent);
+    const options = Array.from(container.querySelectorAll<HTMLOptionElement>("option")).map(
+      (option) => option.textContent,
+    );
 
     expect(options).toEqual(["EPUB · Reader.epub", "PDF · Reader.pdf"]);
   });
@@ -726,9 +659,9 @@ describe("EbookReader", () => {
     expect(container.textContent).toContain("Opening");
     expect(container.textContent).toContain("Aboard");
 
-    const aboard = Array.from(
-      container.querySelectorAll<HTMLButtonElement>("button"),
-    ).find((button) => button.textContent === "Aboard");
+    const aboard = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(
+      (button) => button.textContent === "Aboard",
+    );
 
     await act(async () => {
       aboard?.click();
@@ -755,17 +688,13 @@ describe("EbookReader", () => {
       searchTab?.click();
     });
 
-    const input = container.querySelector<HTMLInputElement>(
-      'input[aria-label="Search text"]',
-    );
+    const input = container.querySelector<HTMLInputElement>('input[aria-label="Search text"]');
     await act(async () => {
       if (!input) return;
       setInputValue(input, "Shanghai");
     });
 
-    const submit = container.querySelector<HTMLButtonElement>(
-      'button[aria-label="Run search"]',
-    );
+    const submit = container.querySelector<HTMLButtonElement>('button[aria-label="Run search"]');
     await act(async () => {
       submit?.click();
     });
@@ -773,9 +702,9 @@ describe("EbookReader", () => {
     expect(mocks.readerSearch).toHaveBeenCalledWith("Shanghai");
     expect(container.textContent).toContain("Shanghai harbor");
 
-    const result = Array.from(
-      container.querySelectorAll<HTMLButtonElement>("button"),
-    ).find((button) => button.textContent?.includes("Shanghai harbor"));
+    const result = Array.from(container.querySelectorAll<HTMLButtonElement>("button")).find(
+      (button) => button.textContent?.includes("Shanghai harbor"),
+    );
     await act(async () => {
       result?.click();
     });
@@ -802,7 +731,7 @@ describe("EbookReader", () => {
       await Promise.resolve();
     });
 
-    expect(mocks.fetchEbookReaderConfig).toHaveBeenCalledWith("ebook-1");
+    expect(mocks.fetchEbookReaderConfig).toHaveBeenCalledWith("ebook-1", expect.any(Object));
     expect(mocks.captureReaderSettings).toHaveBeenLastCalledWith(
       expect.objectContaining({ theme: "sepia", fontSize: 130 }),
     );
@@ -828,9 +757,7 @@ describe("EbookReader", () => {
       settingsTab?.click();
     });
 
-    const theme = container.querySelector<HTMLSelectElement>(
-      'select[aria-label="Theme"]',
-    );
+    const theme = container.querySelector<HTMLSelectElement>('select[aria-label="Theme"]');
     await act(async () => {
       if (!theme) return;
       theme.value = "dark";
@@ -844,14 +771,13 @@ describe("EbookReader", () => {
     expect(mocks.captureReaderSettings).toHaveBeenLastCalledWith(
       expect.objectContaining({ theme: "dark" }),
     );
-    expect(localStorage.getItem("prairie.ebook.reader.settings")).toContain(
-      '"theme":"dark"',
-    );
+    expect(localStorage.getItem("prairie.ebook.reader.settings")).toContain('"theme":"dark"');
     expect(mocks.saveEbookReaderConfig).toHaveBeenCalledWith(
       "ebook-1",
       expect.objectContaining({
         settings: expect.objectContaining({ theme: "dark" }),
       }),
+      expect.any(Object),
     );
 
     vi.useRealTimers();
@@ -877,9 +803,7 @@ describe("EbookReader", () => {
       settingsTab?.click();
     });
 
-    const theme = container.querySelector<HTMLSelectElement>(
-      'select[aria-label="Theme"]',
-    );
+    const theme = container.querySelector<HTMLSelectElement>('select[aria-label="Theme"]');
     await act(async () => {
       if (!theme) return;
       theme.value = "dark";
@@ -897,6 +821,7 @@ describe("EbookReader", () => {
       expect.objectContaining({
         settings: expect.objectContaining({ theme: "dark" }),
       }),
+      expect.any(Object),
     );
 
     vi.useRealTimers();
@@ -922,9 +847,7 @@ describe("EbookReader", () => {
       settingsTab?.click();
     });
 
-    const theme = container.querySelector<HTMLSelectElement>(
-      'select[aria-label="Theme"]',
-    );
+    const theme = container.querySelector<HTMLSelectElement>('select[aria-label="Theme"]');
     await act(async () => {
       if (!theme) return;
       theme.value = "sepia";
@@ -941,6 +864,7 @@ describe("EbookReader", () => {
       expect.objectContaining({
         settings: expect.objectContaining({ theme: "sepia" }),
       }),
+      expect.any(Object),
     );
 
     // The pending save was consumed: neither the debounce timer firing nor the
@@ -1008,10 +932,9 @@ describe("EbookReader", () => {
           flow: "paginated",
         }),
       }),
+      expect.any(Object),
     );
-    expect(localStorage.getItem("prairie.ebook.reader.settings")).toContain(
-      '"theme":"light"',
-    );
+    expect(localStorage.getItem("prairie.ebook.reader.settings")).toContain('"theme":"light"');
 
     vi.useRealTimers();
   });
@@ -1034,20 +957,16 @@ describe("EbookReader", () => {
       settingsTab?.click();
     });
 
-    const font = container.querySelector<HTMLSelectElement>(
-      'select[aria-label="Font family"]',
-    );
-    const fontOptions = Array.from(font?.options ?? []).map(
-      (option) => option.textContent ?? "",
-    );
+    const font = container.querySelector<HTMLSelectElement>('select[aria-label="Font family"]');
+    const fontOptions = Array.from(font?.options ?? []).map((option) => option.textContent ?? "");
     expect(fontOptions).toContain("Book default");
     expect(fontOptions).toContain("System serif");
     expect(fontOptions).toContain("System sans");
     expect(fontOptions).not.toContain("Inter");
     expect(fontOptions).not.toContain("Merriweather");
 
-    const comfortable = Array.from(container.querySelectorAll("button")).find(
-      (button) => button.textContent?.includes("Comfortable"),
+    const comfortable = Array.from(container.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Comfortable"),
     );
     await act(async () => {
       comfortable?.click();
@@ -1055,8 +974,7 @@ describe("EbookReader", () => {
 
     expect(mocks.captureReaderSettings).toHaveBeenLastCalledWith(
       expect.objectContaining({
-        fontFamily:
-          'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',
+        fontFamily: 'ui-serif, Georgia, Cambria, "Times New Roman", Times, serif',
         fontSize: 112,
         lineHeight: 1.75,
       }),
@@ -1085,9 +1003,7 @@ describe("EbookReader", () => {
     expect(mocks.captureReaderSettings).toHaveBeenLastCalledWith(
       expect.objectContaining({ readingRuler: true }),
     );
-    const handle = container.querySelector(
-      '[role="slider"][aria-label="Reading ruler position"]',
-    );
+    const handle = container.querySelector('[role="slider"][aria-label="Reading ruler position"]');
     expect(handle).not.toBeNull();
     expect(handle?.getAttribute("aria-valuenow")).toBe("50");
   });
@@ -1188,7 +1104,8 @@ describe("EbookReader", () => {
 
     expect(mocks.deleteEbookReaderAnnotation).toHaveBeenCalledWith(
       "ebook-1",
-      "ann-1",
+      expect.objectContaining({ id: "ann-1" }),
+      expect.any(Object),
     );
 
     const highlight = container.querySelector<HTMLButtonElement>(
@@ -1205,6 +1122,7 @@ describe("EbookReader", () => {
         cfi_range: "epubcfi(/6/4,/1:0,/1:12)",
         selected_text: "sample text",
       }),
+      expect.any(Object),
     );
   });
 
@@ -1249,9 +1167,7 @@ describe("EbookReader", () => {
       notesTab?.click();
     });
 
-    const buttons = Array.from(
-      container.querySelectorAll<HTMLButtonElement>("button"),
-    );
+    const buttons = Array.from(container.querySelectorAll<HTMLButtonElement>("button"));
     const fractionBookmark = buttons.find((button) =>
       button.textContent?.includes("Fraction bookmark"),
     );
@@ -1262,9 +1178,7 @@ describe("EbookReader", () => {
     expect(mocks.readerGoToFraction).toHaveBeenCalledWith(0.25);
     expect(mocks.readerGoTo).not.toHaveBeenCalled();
 
-    const cfiHighlight = buttons.find((button) =>
-      button.textContent?.includes("CFI highlight"),
-    );
+    const cfiHighlight = buttons.find((button) => button.textContent?.includes("CFI highlight"));
     await act(async () => {
       cfiHighlight?.click();
     });
@@ -1297,9 +1211,7 @@ describe("EbookReader", () => {
       settingsTab?.click();
     });
 
-    const theme = container.querySelector<HTMLSelectElement>(
-      'select[aria-label="Theme"]',
-    );
+    const theme = container.querySelector<HTMLSelectElement>('select[aria-label="Theme"]');
     await act(async () => {
       if (!theme) return;
       theme.value = "dark";
@@ -1320,6 +1232,7 @@ describe("EbookReader", () => {
       expect.objectContaining({
         settings: expect.objectContaining({ theme: "dark" }),
       }),
+      expect.any(Object),
     );
   });
 
@@ -1328,19 +1241,14 @@ describe("EbookReader", () => {
       { cfi: "epubcfi(/6/8)", excerpt: "first match" },
       { cfi: "epubcfi(/6/8)", excerpt: "second match" },
     ]);
-    const consoleError = vi
-      .spyOn(console, "error")
-      .mockImplementation(() => {});
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
 
     try {
       await act(async () => {
         root.render(
           <MemoryRouter initialEntries={["/reader/ebook/ebook-1"]}>
             <Routes>
-              <Route
-                path="/reader/ebook/:contentId"
-                element={<EbookReader />}
-              />
+              <Route path="/reader/ebook/:contentId" element={<EbookReader />} />
             </Routes>
           </MemoryRouter>,
         );
@@ -1353,17 +1261,13 @@ describe("EbookReader", () => {
         searchTab?.click();
       });
 
-      const input = container.querySelector<HTMLInputElement>(
-        'input[aria-label="Search text"]',
-      );
+      const input = container.querySelector<HTMLInputElement>('input[aria-label="Search text"]');
       await act(async () => {
         if (!input) return;
         setInputValue(input, "match");
       });
 
-      const submit = container.querySelector<HTMLButtonElement>(
-        'button[aria-label="Run search"]',
-      );
+      const submit = container.querySelector<HTMLButtonElement>('button[aria-label="Run search"]');
       await act(async () => {
         submit?.click();
       });
@@ -1397,15 +1301,9 @@ describe("EbookReader", () => {
       settingsTab?.click();
     });
 
-    expect(
-      container.querySelector('button[aria-label="Speak text"]'),
-    ).not.toBeNull();
-    expect(
-      container.querySelector('input[aria-label="Keep screen awake"]'),
-    ).not.toBeNull();
-    expect(
-      container.querySelector('input[aria-label="E-ink mode"]'),
-    ).toBeNull();
+    expect(container.querySelector('button[aria-label="Speak text"]')).not.toBeNull();
+    expect(container.querySelector('input[aria-label="Keep screen awake"]')).not.toBeNull();
+    expect(container.querySelector('input[aria-label="E-ink mode"]')).toBeNull();
   });
 
   it("shows useful advanced reader controls without diagnostics UI or no-op controls", async () => {
@@ -1431,15 +1329,11 @@ describe("EbookReader", () => {
     expect(container.querySelector('[aria-label="Diagnostics"]')).toBeNull();
     expect(container.textContent).not.toContain("Diagnostics");
 
-    const brightness = container.querySelector<HTMLInputElement>(
-      'input[aria-label="Brightness"]',
-    );
+    const brightness = container.querySelector<HTMLInputElement>('input[aria-label="Brightness"]');
     const hyphenation = container.querySelector<HTMLInputElement>(
       'input[aria-label="Hyphenation"]',
     );
-    const rtl = container.querySelector<HTMLInputElement>(
-      'input[aria-label="Right to left"]',
-    );
+    const rtl = container.querySelector<HTMLInputElement>('input[aria-label="Right to left"]');
     const writingMode = container.querySelector<HTMLSelectElement>(
       'select[aria-label="Writing mode"]',
     );
@@ -1511,9 +1405,7 @@ describe("EbookReader", () => {
       settingsTab?.click();
     });
 
-    const brightness = container.querySelector<HTMLInputElement>(
-      'input[aria-label="Brightness"]',
-    );
+    const brightness = container.querySelector<HTMLInputElement>('input[aria-label="Brightness"]');
     const label = brightness?.closest("label");
     const header = label?.querySelector("[data-reader-range-header]");
     const name = label?.querySelector("[data-reader-range-name]");
@@ -1543,13 +1435,9 @@ describe("EbookReader", () => {
     });
 
     expect(container.querySelector('input[aria-label="Width"]')).not.toBeNull();
-    expect(
-      container.querySelector('select[aria-label="Spread"]'),
-    ).not.toBeNull();
+    expect(container.querySelector('select[aria-label="Spread"]')).not.toBeNull();
 
-    const flow = container.querySelector<HTMLSelectElement>(
-      'select[aria-label="Flow"]',
-    );
+    const flow = container.querySelector<HTMLSelectElement>('select[aria-label="Flow"]');
     await act(async () => {
       if (!flow) return;
       flow.value = "scrolled";

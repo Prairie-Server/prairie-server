@@ -141,19 +141,14 @@ describe("resolveEventSourceName", () => {
   it("returns empty string when the reference has no capability", () => {
     expect(resolveEventSourceName({ source_id: null }, lookups)).toBe("");
     expect(
-      resolveEventSourceName(
-        { source_id: null, capability_id: "arr", plugin_id: null },
-        lookups,
-      ),
+      resolveEventSourceName({ source_id: null, capability_id: "arr", plugin_id: null }, lookups),
     ).toBe("");
   });
 
   it("falls back to display name when the bound connection is missing (deleted)", () => {
     const orphaned: SourceLabelLookups = {
       ...lookups,
-      sourceByID: new Map([
-        ["src-1", { ...source, connection_id: "conn-gone" }],
-      ]),
+      sourceByID: new Map([["src-1", { ...source, connection_id: "conn-gone" }]]),
     };
     expect(
       resolveEventSourceName(

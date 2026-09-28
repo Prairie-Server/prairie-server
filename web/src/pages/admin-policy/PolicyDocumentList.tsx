@@ -1,24 +1,16 @@
 import { ArrowLeft, Plus, X } from "lucide-react";
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useSearchParams } from "react-router";
 
-import type { PolicyDocument } from "@/api/types";
+import type { PolicyDocument } from "@/api/adminPolicy";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
-import {
-  useCreatePolicyDocument,
-  usePolicyDocuments,
-  useSetPolicyDocumentEnabled,
-} from "@/hooks/queries/admin/policy";
+import { PolicyEnabledControl } from "./PolicyRevisionReview";
+import { useCreatePolicyDocument, usePolicyDocuments } from "@/hooks/queries/admin/policy";
 
 import { PolicyEditorPanel } from "./PolicyEditorPanel";
 import { formatPolicyDate, messageFromError } from "./policyPageUtils";
-import {
-  PolicyStatusPill,
-  policyDocumentStatus,
-  policyDomainMeta,
-} from "./policyPresentation";
+import { PolicyStatusPill, policyDocumentStatus, policyDomainMeta } from "./policyPresentation";
 
 interface PolicyDocumentListProps {
   domains: readonly string[];
@@ -26,8 +18,7 @@ interface PolicyDocumentListProps {
 
 function parseDocumentID(value: string | null) {
   if (!value) return undefined;
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : undefined;
+  return value;
 }
 
 export function PolicyDocumentList({ domains }: PolicyDocumentListProps) {
@@ -35,14 +26,7 @@ export function PolicyDocumentList({ domains }: PolicyDocumentListProps) {
   const documents = usePolicyDocuments();
   const selectedDocumentId = parseDocumentID(searchParams.get("document"));
 
-  const selectedExists = useMemo(
-    () =>
-      documents.data?.some((document) => document.id === selectedDocumentId) ??
-      false,
-    [documents.data, selectedDocumentId],
-  );
-
-  function selectDocument(id: number | undefined) {
+  function selectDocument(id: string | undefined) {
     const next = new URLSearchParams(searchParams);
     if (id === undefined) {
       next.delete("document");
@@ -52,7 +36,7 @@ export function PolicyDocumentList({ domains }: PolicyDocumentListProps) {
     setSearchParams(next, { replace: true });
   }
 
-  if (selectedExists && selectedDocumentId) {
+  if (selectedDocumentId) {
     return (
       <div className="space-y-5">
         <Button
@@ -72,22 +56,32 @@ export function PolicyDocumentList({ domains }: PolicyDocumentListProps) {
 
   return (
     <div className="space-y-5">
+      {documents.error && (
+        <div role="alert">
+          <p>{messageFromError(documents.error, "Unable to load overrides.")}</p>
+          <Button onClick={() => void documents.restart()}>Restart overrides</Button>
+        </div>
+      )}
       {documents.isLoading && (
-        <p className="text-muted-foreground text-sm">
-          Loading policy documents...
-        </p>
+        <p className="text-muted-foreground text-sm">Loading policy documents...</p>
       )}
       {!documents.isLoading &&
         domains.map((domain) => (
           <PolicyDomainCard
             key={domain}
             domain={domain}
-            documents={(documents.data ?? []).filter(
-              (document) => document.domain === domain,
-            )}
+            documents={(documents.data ?? []).filter((document) => document.domain === domain)}
             onSelect={selectDocument}
           />
         ))}
+      {documents.hasNextPage && (
+        <Button
+          onClick={() => void documents.fetchNextPage()}
+          disabled={documents.isFetchingNextPage}
+        >
+          Load more overrides
+        </Button>
+      )}
     </div>
   );
 }
@@ -95,20 +89,15 @@ export function PolicyDocumentList({ domains }: PolicyDocumentListProps) {
 interface PolicyDomainCardProps {
   domain: string;
   documents: PolicyDocument[];
-  onSelect: (id: number) => void;
+  onSelect: (id: string) => void;
 }
 
-function PolicyDomainCard({
-  domain,
-  documents,
-  onSelect,
-}: PolicyDomainCardProps) {
+function PolicyDomainCard({ domain, documents, onSelect }: PolicyDomainCardProps) {
   const meta = policyDomainMeta(domain);
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const createDocument = useCreatePolicyDocument();
-  const setEnabled = useSetPolicyDocumentEnabled();
 
   async function create() {
     setError("");
@@ -130,15 +119,6 @@ function PolicyDomainCard({
     }
   }
 
-  async function toggleDocument(documentId: number, enabled: boolean) {
-    setError("");
-    try {
-      await setEnabled.mutateAsync({ documentId, enabled });
-    } catch (err) {
-      setError(messageFromError(err, "Failed to update policy document."));
-    }
-  }
-
   return (
     <section className="surface-panel rounded-2xl border-0 p-5">
       <div className="flex flex-wrap items-start justify-between gap-4">
@@ -147,21 +127,12 @@ function PolicyDomainCard({
             <meta.icon aria-hidden className="size-5" />
           </div>
           <div className="min-w-0 space-y-1">
-            <h2 className="text-base font-semibold tracking-tight">
-              {meta.title}
-            </h2>
-            <p className="text-muted-foreground max-w-prose text-sm">
-              {meta.governs}
-            </p>
+            <h2 className="text-base font-semibold tracking-tight">{meta.title}</h2>
+            <p className="text-muted-foreground max-w-prose text-sm">{meta.governs}</p>
           </div>
         </div>
         {!creating && (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            onClick={() => setCreating(true)}
-          >
+          <Button type="button" variant="outline" size="sm" onClick={() => setCreating(true)}>
             <Plus className="size-4" />
             New override
           </Button>
@@ -177,20 +148,13 @@ function PolicyDomainCard({
               if (event.key === "Enter") void create();
             }}
             placeholder={
-              meta.example
-                ? `e.g. ${meta.example.replace(/[“”]/g, "")}`
-                : "Override name"
+              meta.example ? `e.g. ${meta.example.replace(/[“”]/g, "")}` : "Override name"
             }
             aria-label={`New ${meta.title} override name`}
             className="max-w-sm"
             autoFocus
           />
-          <Button
-            type="button"
-            size="sm"
-            onClick={create}
-            disabled={createDocument.isPending}
-          >
+          <Button type="button" size="sm" onClick={create} disabled={createDocument.isPending}>
             <Plus />
             Create
           </Button>
@@ -222,13 +186,10 @@ function PolicyDomainCard({
                 className="hover:bg-secondary/40 focus-visible:ring-ring/60 -mx-2 flex cursor-pointer flex-wrap items-center gap-3 rounded-lg px-2 py-3 outline-none focus-visible:ring-2"
                 onClick={() => onSelect(document.id)}
                 onKeyDown={(event) => {
-                  if (event.key === "Enter" || event.key === " ")
-                    onSelect(document.id);
+                  if (event.key === "Enter" || event.key === " ") onSelect(document.id);
                 }}
               >
-                <span className="min-w-0 flex-1 truncate text-sm font-medium">
-                  {document.name}
-                </span>
+                <span className="min-w-0 flex-1 truncate text-sm font-medium">{document.name}</span>
                 <PolicyStatusPill status={policyDocumentStatus(document)} />
                 <span className="text-muted-foreground hidden text-xs sm:block">
                   Updated {formatPolicyDate(document.updated_at)}
@@ -237,14 +198,7 @@ function PolicyDomainCard({
                   onClick={(event) => event.stopPropagation()}
                   onKeyDown={(event) => event.stopPropagation()}
                 >
-                  <Switch
-                    checked={document.enabled}
-                    onCheckedChange={(checked) => {
-                      void toggleDocument(document.id, checked);
-                    }}
-                    disabled={setEnabled.isPending}
-                    aria-label={`Set ${document.name} enabled`}
-                  />
+                  <PolicyEnabledControl document={document} />
                 </span>
               </div>
             </li>
@@ -253,7 +207,7 @@ function PolicyDomainCard({
       ) : (
         !creating && (
           <p className="text-muted-foreground border-border mt-4 border-t pt-4 text-sm">
-            The Prairie baseline applies unchanged.
+            No overrides for this domain are shown on the loaded pages.
             {meta.example && (
               <span className="text-muted-foreground/80">
                 {" "}

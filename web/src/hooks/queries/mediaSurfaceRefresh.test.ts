@@ -29,9 +29,7 @@ describe("invalidateMediaSurfaceQueries", () => {
 
   it("cancels every detail cache shape, letting the default revert apply", async () => {
     const queryClient = new QueryClient();
-    const cancel = vi
-      .spyOn(queryClient, "cancelQueries")
-      .mockResolvedValue(undefined);
+    const cancel = vi.spyOn(queryClient, "cancelQueries").mockResolvedValue(undefined);
 
     await cancelItemDetailQueries(queryClient, "item-1");
 
@@ -41,9 +39,7 @@ describe("invalidateMediaSurfaceQueries", () => {
         queryKey: catalogKeys.itemDetail("item-1"),
       } as never),
     ).toBe(true);
-    expect(
-      filters?.predicate?.({ queryKey: itemKeys.detail("item-1") } as never),
-    ).toBe(true);
+    expect(filters?.predicate?.({ queryKey: itemKeys.detail("item-1") } as never)).toBe(true);
     expect(
       filters?.predicate?.({
         queryKey: catalogKeys.itemDetail("item-2"),
@@ -81,15 +77,12 @@ describe("invalidateMediaSurfaceQueries", () => {
     );
     queryClient.setQueryData(recKeys.forYouMain(), { row: null });
     queryClient.setQueryData(recKeys.forYouRows(), { rows: [] });
-    queryClient.setQueryData(
-      personKeys.catalog("person-1", { limit: 24, offset: 0 }),
-      {
-        total: 0,
-        has_more: false,
-        items: [],
-      },
-    );
-    queryClient.setQueryData(progressKeys.list(), { progress: [] });
+    queryClient.setQueryData(personKeys.catalog("person-1", { limit: 24, offset: 0 }), {
+      total: 0,
+      has_more: false,
+      items: [],
+    });
+    queryClient.setQueryData(progressKeys.list(), { items: [] });
     queryClient.setQueryData(historyKeys.list(), { items: [] });
     queryClient.setQueryData(favoriteKeys.list(), { items: [] });
     queryClient.setQueryData(watchlistKeys.list(), { items: [] });
@@ -100,12 +93,8 @@ describe("invalidateMediaSurfaceQueries", () => {
     await invalidateMediaSurfaceQueries(queryClient);
 
     expect(queryClient.getQueryState(browseKey)?.isInvalidated).toBe(true);
-    expect(
-      queryClient.getQueryState(sectionKeys.homeItems("hero"))?.isInvalidated,
-    ).toBe(true);
-    expect(
-      queryClient.getQueryState(sectionKeys.library(1))?.isInvalidated,
-    ).toBe(true);
+    expect(queryClient.getQueryState(sectionKeys.homeItems("hero"))?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(sectionKeys.library(1))?.isInvalidated).toBe(true);
     expect(
       queryClient.getQueryState(
         catalogKeys.list({
@@ -116,32 +105,18 @@ describe("invalidateMediaSurfaceQueries", () => {
         }),
       )?.isInvalidated,
     ).toBe(true);
-    expect(queryClient.getQueryState(recKeys.forYouMain())?.isInvalidated).toBe(
-      true,
-    );
-    expect(queryClient.getQueryState(recKeys.forYouRows())?.isInvalidated).toBe(
-      true,
-    );
+    expect(queryClient.getQueryState(recKeys.forYouMain())?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(recKeys.forYouRows())?.isInvalidated).toBe(true);
     expect(
-      queryClient.getQueryState(
-        personKeys.catalog("person-1", { limit: 24, offset: 0 }),
-      )?.isInvalidated,
-    ).toBe(true);
-    expect(queryClient.getQueryState(progressKeys.list())?.isInvalidated).toBe(
-      true,
-    );
-    expect(queryClient.getQueryState(historyKeys.list())?.isInvalidated).toBe(
-      true,
-    );
-    expect(queryClient.getQueryState(favoriteKeys.list())?.isInvalidated).toBe(
-      true,
-    );
-    expect(queryClient.getQueryState(watchlistKeys.list())?.isInvalidated).toBe(
-      true,
-    );
-    expect(
-      queryClient.getQueryState(libraryCollectionKeys.items(7, "favorites"))
+      queryClient.getQueryState(personKeys.catalog("person-1", { limit: 24, offset: 0 }))
         ?.isInvalidated,
+    ).toBe(true);
+    expect(queryClient.getQueryState(progressKeys.list())?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(historyKeys.list())?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(favoriteKeys.list())?.isInvalidated).toBe(true);
+    expect(queryClient.getQueryState(watchlistKeys.list())?.isInvalidated).toBe(true);
+    expect(
+      queryClient.getQueryState(libraryCollectionKeys.items(7, "favorites"))?.isInvalidated,
     ).toBe(true);
   });
 
@@ -154,10 +129,7 @@ describe("invalidateMediaSurfaceQueries", () => {
 
     await invalidateMediaSurfaceQueries(queryClient, { itemId: "item-1" });
 
-    expect(
-      queryClient.getQueryState(catalogKeys.itemDetail("item-1"))
-        ?.isInvalidated,
-    ).toBe(true);
+    expect(queryClient.getQueryState(catalogKeys.itemDetail("item-1"))?.isInvalidated).toBe(true);
   });
 
   it("deduplicates overlapping surface matches into one invalidation pass", async () => {
@@ -210,9 +182,7 @@ describe("invalidateMediaSurfaceQueries", () => {
     });
 
     expect(queryClient.getQueryState(similarKey)?.isInvalidated).toBe(false);
-    expect(queryClient.getQueryState(personalizedKey)?.isInvalidated).toBe(
-      true,
-    );
+    expect(queryClient.getQueryState(personalizedKey)?.isInvalidated).toBe(true);
   });
 
   it("refreshes similar items for content-changing invalidations", async () => {
@@ -278,9 +248,7 @@ describe("invalidateMediaSurfaceQueries", () => {
 
     scheduleMediaSurfaceInvalidation(queryClient, { itemId: "item-1" });
 
-    expect(
-      queryClient.getQueryData(mediaSurfaceKeys.refreshSignal()),
-    ).toBeUndefined();
+    expect(queryClient.getQueryData(mediaSurfaceKeys.refreshSignal())).toBeUndefined();
     await vi.advanceTimersByTimeAsync(600);
 
     // Home re-reads its sections through one-shot `fetchQuery` calls, so the
@@ -292,9 +260,7 @@ describe("invalidateMediaSurfaceQueries", () => {
   it("bumps the home refresh signal when invalidation fails", async () => {
     vi.useFakeTimers();
     const queryClient = new QueryClient();
-    vi.spyOn(queryClient, "invalidateQueries").mockRejectedValue(
-      new Error("refresh failed"),
-    );
+    vi.spyOn(queryClient, "invalidateQueries").mockRejectedValue(new Error("refresh failed"));
 
     scheduleMediaSurfaceInvalidation(queryClient, { itemId: "item-1" });
     await vi.advanceTimersByTimeAsync(600);
@@ -341,9 +307,7 @@ describe("invalidateMediaSurfaceQueries", () => {
     await invalidateMediaSurfaceQueries(queryClient, { libraryId: 3 });
 
     expect(queryClient.getQueryState(moviesKey)?.isInvalidated).toBe(false);
-    expect(queryClient.getQueryState(internationalKey)?.isInvalidated).toBe(
-      true,
-    );
+    expect(queryClient.getQueryState(internationalKey)?.isInvalidated).toBe(true);
   });
 
   it("does not invalidate library section queries for a different library scope", async () => {
@@ -360,15 +324,9 @@ describe("invalidateMediaSurfaceQueries", () => {
 
     await invalidateMediaSurfaceQueries(queryClient, { libraryId: 3 });
 
-    expect(queryClient.getQueryState(moviesLayoutKey)?.isInvalidated).toBe(
-      false,
-    );
-    expect(queryClient.getQueryState(moviesSectionKey)?.isInvalidated).toBe(
-      false,
-    );
-    expect(
-      queryClient.getQueryState(internationalLayoutKey)?.isInvalidated,
-    ).toBe(true);
+    expect(queryClient.getQueryState(moviesLayoutKey)?.isInvalidated).toBe(false);
+    expect(queryClient.getQueryState(moviesSectionKey)?.isInvalidated).toBe(false);
+    expect(queryClient.getQueryState(internationalLayoutKey)?.isInvalidated).toBe(true);
   });
 
   it("leaves home section queries alone for a library-scoped change", async () => {
@@ -404,9 +362,7 @@ describe("invalidateMediaSurfaceQueries", () => {
     await invalidateMediaSurfaceQueries(queryClient, { libraryId: 3 });
 
     expect(queryClient.getQueryState(moviesKey)?.isInvalidated).toBe(false);
-    expect(queryClient.getQueryState(internationalKey)?.isInvalidated).toBe(
-      true,
-    );
+    expect(queryClient.getQueryState(internationalKey)?.isInvalidated).toBe(true);
   });
 
   it("sets all cached detail keys for the mutated item", () => {
@@ -427,14 +383,11 @@ describe("invalidateMediaSurfaceQueries", () => {
     } as ItemDetail);
 
     expect(
-      queryClient.getQueryData<{ title: string }>(
-        catalogKeys.itemDetail("item-1"),
-      )?.title,
+      queryClient.getQueryData<{ title: string }>(catalogKeys.itemDetail("item-1"))?.title,
     ).toBe("New");
-    expect(
-      queryClient.getQueryData<{ title: string }>(itemKeys.detail("item-1"))
-        ?.title,
-    ).toBe("New");
+    expect(queryClient.getQueryData<{ title: string }>(itemKeys.detail("item-1"))?.title).toBe(
+      "New",
+    );
   });
 
   it("removes dismissed items from cached home section rows", () => {
@@ -458,11 +411,7 @@ describe("invalidateMediaSurfaceQueries", () => {
       };
     };
 
-    expect(
-      queryClient.getQueryData<CachedHomeSection>(
-        sectionKeys.homeItems("continue"),
-      ),
-    ).toEqual({
+    expect(queryClient.getQueryData<CachedHomeSection>(sectionKeys.homeItems("continue"))).toEqual({
       section: {
         id: "continue",
         section_type: "continue_watching",

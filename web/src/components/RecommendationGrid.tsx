@@ -1,36 +1,38 @@
 import ViewTransitionLink from "@/components/ViewTransitionLink";
+import MediaCarousel from "@/components/MediaCarousel";
 import { useCatalogItemDetail } from "@/hooks/queries/catalogRead";
 import { useUICustomization } from "@/hooks/useUICustomization";
-import { cardGridClasses } from "@/lib/uiCustomization";
+import { carouselCardWidthClasses } from "@/lib/uiCustomization";
 import CardPlayOverlay from "@/components/CardPlayOverlay";
 
+const MAX_MORE_LIKE_THIS_ITEMS = 12;
+
 interface RecommendationGridProps {
-  items: Array<{ media_item_id: string }>;
+  items: Array<{ content_id: string }>;
   maxItems?: number;
 }
 
 interface RecommendationItemCardProps {
   itemId: string;
+  showCaption: boolean;
 }
 
-function RecommendationItemCard({ itemId }: RecommendationItemCardProps) {
+function RecommendationItemCard({ itemId, showCaption }: RecommendationItemCardProps) {
   const { data: item } = useCatalogItemDetail(itemId);
-  const { cardPresentation } = useUICustomization();
   if (!item) {
     return <div className="bg-surface aspect-[2/3] animate-pulse rounded-lg" />;
   }
   return (
     <div className="group/card">
       <div className="group/media relative">
-        <ViewTransitionLink
-          to={`/item/${encodeURIComponent(itemId)}`}
-          className="group block"
-        >
+        <ViewTransitionLink to={`/item/${encodeURIComponent(itemId)}`} className="group block">
           <div className="aspect-[2/3] overflow-hidden rounded-lg">
             {item.poster_url ? (
               <img
                 src={item.poster_url}
                 alt={item.title}
+                loading="lazy"
+                decoding="async"
                 className="h-full w-full object-cover transition-transform group-hover:scale-105"
               />
             ) : (
@@ -48,7 +50,7 @@ function RecommendationItemCard({ itemId }: RecommendationItemCardProps) {
           />
         ) : null}
       </div>
-      {cardPresentation.caption !== "artwork" ? (
+      {showCaption ? (
         <ViewTransitionLink
           to={`/item/${encodeURIComponent(itemId)}`}
           className="mt-1.5 block truncate text-sm font-medium hover:underline"
@@ -60,19 +62,21 @@ function RecommendationItemCard({ itemId }: RecommendationItemCardProps) {
   );
 }
 
-export default function RecommendationGrid({
-  items,
-  maxItems = 12,
-}: RecommendationGridProps) {
+export default function RecommendationGrid({ items, maxItems = 12 }: RecommendationGridProps) {
   const { cardPresentation } = useUICustomization();
+  const itemLimit = Math.max(0, Math.min(maxItems, MAX_MORE_LIKE_THIS_ITEMS));
+  const posterWidthClasses = carouselCardWidthClasses(cardPresentation.poster_size);
+
   return (
-    <div className={cardGridClasses(cardPresentation.poster_size)}>
-      {items.slice(0, maxItems).map((si) => (
-        <RecommendationItemCard
-          key={si.media_item_id}
-          itemId={si.media_item_id}
-        />
+    <MediaCarousel title="More Like This" edgePadding={false}>
+      {items.slice(0, itemLimit).map((si) => (
+        <div key={si.content_id} className={posterWidthClasses}>
+          <RecommendationItemCard
+            itemId={si.content_id}
+            showCaption={cardPresentation.caption !== "artwork"}
+          />
+        </div>
       ))}
-    </div>
+    </MediaCarousel>
   );
 }

@@ -15,18 +15,17 @@ import { FieldGroup } from "./FieldGroup";
 // public signups on the Invite Codes tab; both are plain server-wide switches an
 // admin looks for under General, so they save with everything else on this page.
 const IDENTITY_KEYS = ["branding.server_name", "branding.login_subtitle"];
-const ACCESS_KEYS = ["signup.enabled"];
+const ACCESS_KEYS = ["signup.enabled", "password_reset.self_service_enabled"];
 const LOGGING_ADVANCED_KEYS = ["server.log_quiet"];
 const LOGGING_KEYS = ["server.log_level", ...LOGGING_ADVANCED_KEYS];
 
-const KEYS = [...IDENTITY_KEYS, ...ACCESS_KEYS, ...LOGGING_KEYS];
+const KEYS = ["server.public_url", ...IDENTITY_KEYS, ...ACCESS_KEYS, ...LOGGING_KEYS];
 
 export default function GeneralSettings() {
   const form = useSettingsForm({ keys: useMemo(() => KEYS, []) });
   const restartKeys = useRestartKeys();
 
-  const allRestart = (keys: string[]) =>
-    keys.every((key) => restartKeys.has(key));
+  const allRestart = (keys: string[]) => keys.every((key) => restartKeys.has(key));
   const anyDirty = (keys: string[]) => keys.some((key) => form.isDirty(key));
 
   if (form.isLoading)
@@ -59,7 +58,7 @@ export default function GeneralSettings() {
             label="Server name"
             settingKey="branding.server_name"
             dirty={form.isDirty("branding.server_name")}
-            hint="Silo"
+            hint="Prairie"
             value={form.getValue("branding.server_name")}
             onChange={(v) => form.setValue("branding.server_name", v)}
             restartRequired={restartKeys.has("branding.server_name")}
@@ -73,6 +72,19 @@ export default function GeneralSettings() {
             value={form.getValue("branding.login_subtitle")}
             onChange={(v) => form.setValue("branding.login_subtitle", v)}
             restartRequired={restartKeys.has("branding.login_subtitle")}
+          />
+        </FieldGroup>
+
+        <FieldGroup label="Network">
+          <SettingField
+            label="Prairie public URL"
+            settingKey="server.public_url"
+            dirty={form.isDirty("server.public_url")}
+            description="The HTTPS address users open. Used for websocket origins and links in email notifications."
+            hint="https://silo.example.com"
+            value={form.getValue("server.public_url")}
+            onChange={(v) => form.setValue("server.public_url", v)}
+            restartRequired={restartKeys.has("server.public_url")}
           />
         </FieldGroup>
 
@@ -99,6 +111,16 @@ export default function GeneralSettings() {
             value={form.getValue("signup.enabled")}
             onChange={(v) => form.setValue("signup.enabled", v)}
             restartRequired={restartKeys.has("signup.enabled")}
+          />
+          <SettingField
+            label="Self-service password reset"
+            settingKey="password_reset.self_service_enabled"
+            dirty={form.isDirty("password_reset.self_service_enabled")}
+            type="toggle"
+            description="Adds “Forgot password?” to the sign-in page, so people can get a reset link by email. Needs email and the public URL."
+            value={form.getValue("password_reset.self_service_enabled")}
+            onChange={(v) => form.setValue("password_reset.self_service_enabled", v)}
+            restartRequired={restartKeys.has("password_reset.self_service_enabled")}
           />
         </FieldGroup>
 

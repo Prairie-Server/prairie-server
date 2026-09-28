@@ -11,8 +11,8 @@ func TestJellycompatServerNameDefaultsToSilo(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read initial schema: %v", err)
 	}
-	if !strings.Contains(string(initialSchema), "('jellyfin_compat.server_name', 'Silo')") {
-		t.Fatal("initial schema does not seed the Jellyfin compat server name to Silo")
+	if !strings.Contains(string(initialSchema), "('jellyfin_compat.server_name', 'Prairie')") {
+		t.Fatal("initial schema does not seed the Jellyfin compat server name to Prairie")
 	}
 
 	migration, err := os.ReadFile("../../migrations/sql/20260806224241_rename_default_jellycompat_server_to_silo.sql")
@@ -21,7 +21,7 @@ func TestJellycompatServerNameDefaultsToSilo(t *testing.T) {
 	}
 	normalized := strings.Join(strings.Fields(string(migration)), " ")
 	for _, fragment := range []string{
-		"SET value = 'Silo'",
+		"SET value = 'Prairie'",
 		"WHERE key = 'jellyfin_compat.server_name' AND value = 'StreamApp'",
 	} {
 		if !strings.Contains(normalized, fragment) {

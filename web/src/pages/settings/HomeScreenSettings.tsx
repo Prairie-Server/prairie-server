@@ -14,6 +14,7 @@ import type { SettingsSectionEntry, SectionOverride } from "@/api/types";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -44,13 +45,20 @@ import {
   useSensors,
 } from "@dnd-kit/core";
 import type { DragStartEvent, DragEndEvent } from "@dnd-kit/core";
-import {
-  SortableContext,
-  verticalListSortingStrategy,
-  arrayMove,
-} from "@dnd-kit/sortable";
+import { SortableContext, verticalListSortingStrategy, arrayMove } from "@dnd-kit/sortable";
 import { sortableKeyboardCoordinates } from "@dnd-kit/sortable";
 import { toast } from "sonner";
+import { v2, V2ProblemError } from "@/api/v2/request";
+import { useOptionalAuth } from "@/hooks/useAuth";
+import {
+  useEffectiveSettings,
+  useSetSettingValue,
+  type SettingIdentity,
+} from "@/hooks/queries/settingValues";
+import { SETTING_KEYS } from "@/lib/settingsContract";
+
+const PROFILE_SCOPE: SettingIdentity = { scope: "profile" };
+const HOME_PREFERENCE_KEYS = [SETTING_KEYS.HOME_HIDE_WATCHED_ITEMS] as const;
 
 interface RemovedSystemOverride {
   id: string;
@@ -155,9 +163,7 @@ export function shouldRestoreLatestSaveFailure(
   );
 }
 
-function toEditableSection(
-  section: SettingsSectionEntry,
-): EditableSectionViewModel {
+function toEditableSection(section: SettingsSectionEntry): EditableSectionViewModel {
   return {
     id: section.id,
     title: section.title,
@@ -188,6 +194,30 @@ export function buildProfileGallerySection(
   };
 }
 
+/**
+ * Mirrors the save gate: the server refuses admin-only recipes from a
+ * non-admin account unless profiles may build custom sections. An unloaded
+ * flag counts as not allowed.
+ */
+export function canAddAdminOnlyRecipes(
+  role: string | undefined,
+  allowProfileCustomSections: boolean | undefined,
+): boolean {
+  return role === "admin" || allowProfileCustomSections === true;
+}
+
+/**
+ * A permission denial carries its cause in the detail: the custom-sections
+ * refusal and the demo-mode gate both answer 403 permission_denied.
+ */
+export function sectionSaveErrorMessage(error: unknown): string {
+  const detail =
+    error instanceof V2ProblemError && error.problemType === "permission_denied"
+      ? error.problem.detail?.trim()
+      : undefined;
+  return detail ? `Failed to save section changes: ${detail}` : "Failed to save section changes";
+}
+
 export default function HomeScreenSettings() {
   const { data: libraries } = useUserLibraries();
   const { data: recipeCatalog } = useQuery({
@@ -195,6 +225,16 @@ export default function HomeScreenSettings() {
     queryFn: fetchRecipeCatalog,
     staleTime: 5 * 60 * 1000,
   });
+  const role = useOptionalAuth()?.user?.role;
+  const { data: sectionFlags } = useQuery({
+    queryKey: ["profile-section-flags"],
+    queryFn: () => v2("GET /api/v2/profile/sections/flags"),
+    staleTime: 5 * 60 * 1000,
+  });
+  const allowAdminOnlyRecipes = canAddAdminOnlyRecipes(
+    role,
+    sectionFlags?.allow_profile_custom_sections,
+  );
 
   // Scope state
   const [scopeValue, setScopeValue] = useState("home");
@@ -208,27 +248,23 @@ export default function HomeScreenSettings() {
   const rawOverridesQuery = useProfileSectionOverrides(scope, libraryId);
   const saveMutation = useSaveProfileOverrides();
   const resetMutation = useResetProfileOverrides();
-  const canEditSections = canMutateSectionSettings(
-    settingsQuery,
-    rawOverridesQuery,
-  );
+  const canEditSections = canMutateSectionSettings(settingsQuery, rawOverridesQuery);
+  const homePreferences = useEffectiveSettings({ keys: HOME_PREFERENCE_KEYS });
+  const saveHomePreference = useSetSettingValue();
+  const hideWatchedItems =
+    homePreferences.data?.[SETTING_KEYS.HOME_HIDE_WATCHED_ITEMS]?.value === true;
   const activeSelectionValue = scopeValue;
   const activeSelectionRef = useRef(activeSelectionValue);
   const latestSaveAttemptRef = useRef(0);
 
   // DnD state
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [orderedSections, setOrderedSections] = useState<
-    SettingsSectionEntry[]
-  >([]);
-  const [removedSystemSections, setRemovedSystemSections] = useState<
-    RemovedSystemOverride[]
-  >([]);
+  const [orderedSections, setOrderedSections] = useState<SettingsSectionEntry[]>([]);
+  const [removedSystemSections, setRemovedSystemSections] = useState<RemovedSystemOverride[]>([]);
 
   // Drawer state
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [drawerSection, setDrawerSection] =
-    useState<SettingsSectionEntry | null>(null);
+  const [drawerSection, setDrawerSection] = useState<SettingsSectionEntry | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const [pickedRecipe, setPickedRecipe] = useState<{
     def: RecipeDefinition;
@@ -238,8 +274,9 @@ export default function HomeScreenSettings() {
   // Reset confirm state
   const [confirmResetOpen, setConfirmResetOpen] = useState(false);
   const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
-  const [pendingDeleteSection, setPendingDeleteSection] =
-    useState<SettingsSectionEntry | null>(null);
+  const [pendingDeleteSection, setPendingDeleteSection] = useState<SettingsSectionEntry | null>(
+    null,
+  );
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 5 } }),
@@ -262,9 +299,7 @@ export default function HomeScreenSettings() {
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setRemovedSystemSections(
-      hydrateRemovedSystemSections(rawOverridesQuery.data?.overrides),
-    );
+    setRemovedSystemSections(hydrateRemovedSystemSections(rawOverridesQuery.data?.overrides));
   }, [rawOverridesQuery.data?.overrides]);
 
   // Save helper
@@ -287,8 +322,8 @@ export default function HomeScreenSettings() {
         overrides,
       },
       {
-        onError: () => {
-          toast.error("Failed to save section changes");
+        onError: (error) => {
+          toast.error(sectionSaveErrorMessage(error));
           if (
             !shouldRestoreLatestSaveFailure(
               activeSelectionRef.current,
@@ -300,11 +335,8 @@ export default function HomeScreenSettings() {
             return;
           }
 
-          if (settingsQuery.data?.sections)
-            setOrderedSections(settingsQuery.data.sections);
-          setRemovedSystemSections(
-            hydrateRemovedSystemSections(rawOverridesQuery.data?.overrides),
-          );
+          if (settingsQuery.data?.sections) setOrderedSections(settingsQuery.data.sections);
+          setRemovedSystemSections(hydrateRemovedSystemSections(rawOverridesQuery.data?.overrides));
         },
       },
     );
@@ -338,18 +370,14 @@ export default function HomeScreenSettings() {
     setActiveId(null);
   }
 
-  const activeSection = activeId
-    ? (orderedSections.find((s) => s.id === activeId) ?? null)
-    : null;
+  const activeSection = activeId ? (orderedSections.find((s) => s.id === activeId) ?? null) : null;
 
   // Toggle visibility
   function handleToggleHidden(id: string) {
     if (!canEditSections) {
       return;
     }
-    const next = orderedSections.map((s) =>
-      s.id === id ? { ...s, hidden: !s.hidden } : s,
-    );
+    const next = orderedSections.map((s) => (s.id === id ? { ...s, hidden: !s.hidden } : s));
     setOrderedSections(next);
     saveOverrides(next);
   }
@@ -414,10 +442,7 @@ export default function HomeScreenSettings() {
     if (existing) {
       next = orderedSections.map((s) => (s.id === updated.id ? updated : s));
     } else {
-      next = [
-        ...orderedSections,
-        { ...updated, position: orderedSections.length },
-      ];
+      next = [...orderedSections, { ...updated, position: orderedSections.length }];
     }
     setOrderedSections(next);
     saveOverrides(next);
@@ -449,21 +474,27 @@ export default function HomeScreenSettings() {
     if (!canEditSections) {
       return;
     }
-    const next = [
-      ...orderedSections,
-      buildProfileGallerySection(payload, orderedSections.length),
-    ];
+    const next = [...orderedSections, buildProfileGallerySection(payload, orderedSections.length)];
     setOrderedSections(next);
     setPickedRecipe(null);
     saveOverrides(next);
   }
 
+  function handleHideWatchedItemsChange(enabled: boolean) {
+    saveHomePreference.mutate(
+      {
+        key: SETTING_KEYS.HOME_HIDE_WATCHED_ITEMS,
+        value: enabled,
+        identity: PROFILE_SCOPE,
+      },
+      { onError: () => toast.error("Failed to save Home preference") },
+    );
+  }
+
   return (
     <div className="space-y-6">
       <div className="space-y-3">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Home screen
-        </h2>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Home screen</h2>
         <p className="text-muted-foreground max-w-2xl text-sm leading-relaxed">
           Choose a scope, then arrange the sections that appear on that screen.
         </p>
@@ -490,11 +521,7 @@ export default function HomeScreenSettings() {
       <ConfirmDialog
         open={confirmDeleteOpen}
         onOpenChange={handleDeleteDialogChange}
-        title={
-          pendingDeleteSection?.is_custom
-            ? "Delete custom section?"
-            : "Remove section?"
-        }
+        title={pendingDeleteSection?.is_custom ? "Delete custom section?" : "Remove section?"}
         description={
           pendingDeleteSection?.is_custom
             ? "Delete this custom section?"
@@ -504,6 +531,29 @@ export default function HomeScreenSettings() {
         variant="destructive"
         onConfirm={handleConfirmDelete}
       />
+
+      <SettingsGroup
+        title="Home preferences"
+        description="Choose how this profile's Home screen handles completed media."
+      >
+        <div className="flex items-center justify-between gap-4">
+          <div className="space-y-0.5">
+            <Label htmlFor="hide-watched-home" className="text-sm font-medium">
+              Hide watched items
+            </Label>
+            <p className="text-muted-foreground text-[13px] leading-relaxed">
+              Remove watched items from ordinary Home sections. Featured and watch-history sections
+              keep them.
+            </p>
+          </div>
+          <Switch
+            id="hide-watched-home"
+            checked={hideWatchedItems}
+            disabled={homePreferences.isLoading || saveHomePreference.isPending}
+            onCheckedChange={handleHideWatchedItemsChange}
+          />
+        </div>
+      </SettingsGroup>
 
       <SettingsGroup
         title="Scope"
@@ -548,12 +598,7 @@ export default function HomeScreenSettings() {
           <Button size="sm" onClick={handleOpenAdd} disabled={!canEditSections}>
             <Plus className="mr-1 h-4 w-4" /> Add Section
           </Button>
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={handleReset}
-            disabled={!canEditSections}
-          >
+          <Button size="sm" variant="outline" onClick={handleReset} disabled={!canEditSections}>
             <RotateCcw />
             Reset to Default
           </Button>
@@ -617,6 +662,8 @@ export default function HomeScreenSettings() {
         section={drawerSection}
         libraries={libraries ?? []}
         recipeCatalog={recipeCatalog}
+        libraryScoped={scope === "library"}
+        allowAdminOnlyRecipes={allowAdminOnlyRecipes}
         onSave={handleDrawerSave}
       />
 
@@ -637,6 +684,7 @@ export default function HomeScreenSettings() {
             preset={pickedRecipe.preset}
             showBulkApply={false}
             showEnabled={false}
+            libraryScoped={scope === "library"}
             onCancel={() => setPickedRecipe(null)}
             onBackToGallery={() => {
               setPickedRecipe(null);

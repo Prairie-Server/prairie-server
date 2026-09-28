@@ -20,13 +20,14 @@ import (
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/downloads"
 	"github.com/prairie-server/prairie-server/internal/httpstream"
+	"github.com/prairie-server/prairie-server/internal/netaccess"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
 	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/prairie-server/prairie-server/internal/streamtoken"
 )
 
 // DownloadService is the interface that the download handler depends on. A
-// non-empty deviceID (from the X-Silo-Device-Id header) selects the managed
+// non-empty deviceID (from the X-Prairie-Device-Id header) selects the managed
 // device-library lifecycle; empty is the ephemeral/account-level path.
 type DownloadService interface {
 	Capability(ctx context.Context, userID int) (downloads.Capability, error)
@@ -192,7 +193,7 @@ func toDownloadResponse(d *downloads.Download) downloadResponse {
 }
 
 // managedIdentity returns the (profileID, deviceID) the request is acting as.
-// deviceID comes ONLY from the X-Silo-Device-Id header (never the body/query);
+// deviceID comes ONLY from the X-Prairie-Device-Id header (never the body/query);
 // profileID is resolved by the viewer-access middleware from X-Profile-Id.
 func managedIdentity(r *http.Request) (profileID, deviceID, deviceName, devicePlatform string) {
 	device := deviceMetadataFromRequest(r)
@@ -232,7 +233,7 @@ func (h *DownloadHandler) HandleCapability(w http.ResponseWriter, r *http.Reques
 	})
 }
 
-// HandleCreateDownload handles POST /downloads. The X-Silo-Device-Id header
+// HandleCreateDownload handles POST /downloads. The X-Prairie-Device-Id header
 // (if present) makes this a managed device entry; otherwise it is ephemeral.
 func (h *DownloadHandler) HandleCreateDownload(w http.ResponseWriter, r *http.Request) {
 	userID := apimw.GetUserID(r.Context())
@@ -446,28 +447,7 @@ func (h *DownloadHandler) handleDownloadFile(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
-	profileID, deviceID, _, _ := managedIdentity(r)
-	filter := requestAccessFilter(r)
-	serveCtx := downloads.WithServeAuthorized(r.Context(), func(target downloads.FileTarget) {
-		attachTransfer(r.Context(), userID, profileID, target.MediaFileID)
-	})
-	if delegate && deviceID != "" {
-		handled, err := h.redirectManagedDownload(r.Context(), w, r, userID, profileID, deviceID, id, filter)
-		if err != nil {
-			h.writeDownloadFileError(w, r, id, err)
-			return
-		}
-		if handled {
-			return
-		}
-	}
-	// Full media downloads outlive the server's absolute WriteTimeout; roll
-	// the write deadline with progress instead.
-	sw := httpstream.NewRollingDeadlineWriter(w)
-	if err := h.svc.ServeFile(serveCtx, sw, r, userID, profileID, deviceID, id, filter); err != nil {
-		if errors.Is(err, downloads.ErrResponseCommitted) {
-			return
-		}
+	if err := h.ServeDownloadFile(w, r, id, delegate); err != nil {
 		h.writeDownloadFileError(w, r, id, err)
 	}
 }
@@ -605,11 +585,19 @@ func (h *DownloadHandler) redirectToProxy(w http.ResponseWriter, r *http.Request
 		reservationKey = fmt.Sprintf("direct-%d-%d", userID, target.MediaFileID)
 	}
 	sessionID := fmt.Sprintf("download-%s-%d", reservationKey, time.Now().UnixNano())
-	plan := h.nodePlanner.PlanDownload(sessionID, target.OriginNodeGroup)
+	accessPath := netaccess.PathFromContext(r.Context())
+	plan := h.nodePlanner.PlanDownloadWith(sessionID, func(node *nodepool.Node) bool {
+		return node.ClientURLFor(accessPath) != ""
+	}, target.OriginNodeGroup)
 	if plan.ProxyNode == nil {
 		return false, nil
 	}
 	releaseReservation := func() { h.nodePlanner.ReleaseSession(sessionID) }
+	clientBase := plan.ProxyNode.ClientURLFor(accessPath)
+	if clientBase == "" {
+		releaseReservation()
+		return false, nil
+	}
 	mediaPath := target.Path
 	downloadFilename := ""
 	if target.OriginArtifactID != "" {
@@ -644,13 +632,23 @@ func (h *DownloadHandler) redirectToProxy(w http.ResponseWriter, r *http.Request
 		releaseReservation()
 		return false, fmt.Errorf("sign proxy download token: %w", err)
 	}
-	location := strings.TrimRight(plan.ProxyNode.URL, "/") + "/downloads/file/" + url.PathEscape(token)
+	// The location is what the client downloads from, so it uses the proxy's
+	// client-facing URL for this access path. The preflight below dials the
+	// proxy's backend URL instead: that is the address this server reaches the
+	// node on (health sweeps, force-reload), while a client-facing origin may
+	// be unreachable from here — a tailnet origin resolves only on tailnet
+	// members, and this process need not be one. The verdict is about the
+	// proxy's ability to read the file, not about any one access path, so the
+	// cache key is the backend URL plus the target and is shared by every path.
+	tokenPath := "/downloads/file/" + url.PathEscape(token)
+	location := clientBase + tokenPath
 	targetKey := target.Path
 	if target.OriginArtifactID != "" {
 		targetKey = target.OriginNodeURL + "\x00" + target.OriginArtifactID
 	}
-	cacheKey := strings.TrimRight(plan.ProxyNode.URL, "/") + "\x00" + targetKey
-	if !h.proxyCanServe(r.Context(), cacheKey, location) {
+	backendBase := strings.TrimRight(plan.ProxyNode.URL, "/")
+	cacheKey := backendBase + "\x00" + targetKey
+	if !h.proxyCanServe(r.Context(), cacheKey, backendBase+tokenPath) {
 		releaseReservation()
 		return false, nil
 	}
@@ -665,7 +663,9 @@ func (h *DownloadHandler) redirectToProxy(w http.ResponseWriter, r *http.Request
 	return true, nil
 }
 
-func (h *DownloadHandler) proxyCanServe(ctx context.Context, cacheKey, location string) bool {
+// proxyCanServe reports whether the proxy answers a HEAD for the signed token
+// at probeURL, its backend address. Verdicts are cached briefly per cacheKey.
+func (h *DownloadHandler) proxyCanServe(ctx context.Context, cacheKey, probeURL string) bool {
 	now := time.Now()
 	h.preflightMu.Lock()
 	for key, cached := range h.preflightCache {
@@ -679,7 +679,7 @@ func (h *DownloadHandler) proxyCanServe(ctx context.Context, cacheKey, location 
 	}
 	h.preflightMu.Unlock()
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodHead, location, nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodHead, probeURL, nil)
 	if err != nil {
 		return false
 	}
@@ -709,7 +709,7 @@ func (h *DownloadHandler) proxyCanServe(ctx context.Context, cacheKey, location 
 
 // requireManaged validates a managed (device-scoped) request: authentication, a
 // configured service, and the device + profile identity (device_id from the
-// X-Silo-Device-Id header only, never the body). On failure it writes the error
+// X-Prairie-Device-Id header only, never the body). On failure it writes the error
 // response and returns ok=false. Shared by every managed-only endpoint — the
 // offline assets and the series-monitoring subscriptions.
 func (h *DownloadHandler) requireManaged(w http.ResponseWriter, r *http.Request) (userID int, profileID, deviceID, deviceName, devicePlatform string, ok bool) {
@@ -724,7 +724,7 @@ func (h *DownloadHandler) requireManaged(w http.ResponseWriter, r *http.Request)
 	}
 	profileID, deviceID, deviceName, devicePlatform = managedIdentity(r)
 	if deviceID == "" {
-		writeError(w, http.StatusBadRequest, "device_id_required", "X-Silo-Device-Id header is required")
+		writeError(w, http.StatusBadRequest, "device_id_required", "X-Prairie-Device-Id header is required")
 		return
 	}
 	if profileID == "" {

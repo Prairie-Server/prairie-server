@@ -1,10 +1,5 @@
 import type { ComponentProps } from "react";
-import {
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  ChevronUp,
-} from "lucide-react";
+import { ChevronDown, ChevronLeft, ChevronRight, ChevronUp } from "lucide-react";
 import { DayPicker } from "react-day-picker";
 
 import { buttonVariants } from "@/components/ui/button";
@@ -61,12 +56,7 @@ function Calendar({
                 : orientation === "up"
                   ? ChevronUp
                   : ChevronDown;
-          return (
-            <Icon
-              className={cn("size-4", chevronClassName)}
-              aria-hidden="true"
-            />
-          );
+          return <Icon className={cn("size-4", chevronClassName)} aria-hidden="true" />;
         },
       }}
       {...props}

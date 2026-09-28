@@ -10,6 +10,7 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/sections/recipes"
 )
@@ -72,9 +73,9 @@ func TestSeasonalThemedFiltersItemsAboveProfileRating(t *testing.T) {
 		}
 	})
 	if _, err := pool.Exec(ctx, `
-		INSERT INTO media_items (content_id, type, title, genres, content_rating)
-		VALUES ($1, 'movie', 'Allowed Seasonal Movie', ARRAY['Action'], 'PG'),
-		       ($2, 'movie', 'Blocked Seasonal Movie', ARRAY['Action'], 'R')`, allowedID, blockedID); err != nil {
+		INSERT INTO media_items (content_id, type, title, genres, content_rating, content_rating_age)
+		VALUES ($1, 'movie', 'Allowed Seasonal Movie', ARRAY['Action'], 'PG', 8),
+		       ($2, 'movie', 'Blocked Seasonal Movie', ARRAY['Action'], 'R', 17)`, allowedID, blockedID); err != nil {
 		t.Fatalf("seed media items: %v", err)
 	}
 	if _, err := pool.Exec(ctx, `
@@ -93,7 +94,7 @@ func TestSeasonalThemedFiltersItemsAboveProfileRating(t *testing.T) {
 		SectionType: SectionSeasonalThemed,
 		ItemLimit:   10,
 		Config:      config,
-	}, &libraryID, nil, catalog.AccessFilter{MaxContentRating: "PG"})
+	}, &libraryID, nil, catalog.AccessFilter{MaturityLimits: access.MaturityLimits{MaxContentRating: "PG"}})
 	if err != nil {
 		t.Fatalf("fetch seasonal section: %v", err)
 	}

@@ -1,18 +1,16 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { Link, useNavigate, useParams, useSearchParams } from "react-router";
 import { ArrowLeft } from "lucide-react";
 
+import { isNotFoundProblem } from "@/api/v2/request";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import PageUnavailable from "@/components/PageUnavailable";
+import ViewTransitionLink from "@/components/ViewTransitionLink";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { CollectionTemplateGallery } from "@/components/CollectionTemplateGallery";
+import { ManualCollectionItemsEditor } from "@/components/collections/ManualCollectionItemsEditor";
 import { useAdminLibraries } from "@/hooks/queries/admin/libraries";
-import { useAdminCollections } from "@/hooks/queries/admin/collections";
+import { useAdminCollections, useAdminCollectionSnapshot } from "@/hooks/queries/admin/collections";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 
 import {
@@ -22,14 +20,11 @@ import {
   MDBListImportForm,
   SourceTypeSelector,
   TMDBPresetForm,
-  TraktPresetForm,
   type CollectionSourceType,
 } from "./adminCollectionsShared";
 import SmartCollectionWizard from "./SmartCollectionWizard";
 
-function inferCollectionSourceType(
-  collectionType?: string,
-): CollectionSourceType {
+function inferCollectionSourceType(collectionType?: string): CollectionSourceType {
   if (collectionType === "mdblist") return "mdblist";
   if (collectionType === "tmdb") return "tmdb";
   if (collectionType === "trakt") return "trakt";
@@ -37,11 +32,7 @@ function inferCollectionSourceType(
 }
 
 function isImportedAdminCollectionType(collectionType?: string): boolean {
-  return (
-    collectionType === "mdblist" ||
-    collectionType === "tmdb" ||
-    collectionType === "trakt"
-  );
+  return collectionType === "mdblist" || collectionType === "tmdb" || collectionType === "trakt";
 }
 
 export default function AdminCollectionEditor() {
@@ -53,13 +44,26 @@ export default function AdminCollectionEditor() {
   const isCreate = !id;
   const { data: libraries = [] } = useAdminLibraries();
   const { data: collections = [], isLoading } = useAdminCollections();
-  const collection = useMemo(
-    () => collections.find((entry) => entry.id === id) ?? null,
-    [collections, id],
-  );
-  const [sourceType, setSourceType] = useState<CollectionSourceType | null>(
-    null,
-  );
+  const snapshot = useAdminCollectionSnapshot(id);
+  const [frozen, setFrozen] = useState<typeof snapshot.data>(undefined);
+  if (snapshot.data && !isLoading && frozen?.collection.id !== id) {
+    const listed = collections.find((entry) => entry.id === id);
+    setFrozen({
+      ...snapshot.data,
+      collection: {
+        ...snapshot.data.collection,
+        poster_url: listed?.poster_url ?? "",
+        backdrop_url: listed?.backdrop_url ?? "",
+      },
+    });
+  }
+  // The frozen copy survives background refetches so an edit is never
+  // clobbered, but a 404 means the collection is gone and outranks it.
+  const collection =
+    frozen && frozen.collection.id === id && !isNotFoundProblem(snapshot.error)
+      ? frozen.collection
+      : null;
+  const [sourceType, setSourceType] = useState<CollectionSourceType | null>(null);
   const [galleryOpen, setGalleryOpen] = useState(false);
 
   const activeSourceType = collection
@@ -74,8 +78,7 @@ export default function AdminCollectionEditor() {
   };
   const title = collection
     ? `Edit ${collection.title}`
-    : (activeSourceType && sourceTypeTitles[activeSourceType]) ||
-      "Add Collection";
+    : (activeSourceType && sourceTypeTitles[activeSourceType]) || "Add Collection";
 
   const description = collection
     ? "Collections now open in a dedicated workspace so rules, artwork, and preview can stay visible."
@@ -83,42 +86,45 @@ export default function AdminCollectionEditor() {
       ? "Choose how this collection should be created."
       : "Build the collection in a full-page editor instead of a cramped dialog.";
 
-  useDocumentTitle(title);
+  useDocumentTitle(!isCreate && isNotFoundProblem(snapshot.error) ? "Not found" : title);
 
-  if (isLoading && libraries.length === 0) {
+  if ((!isCreate && (snapshot.isLoading || isLoading)) || (isLoading && libraries.length === 0)) {
     return <div className="page-shell py-8">Loading collection editor...</div>;
   }
 
   if (!isCreate && !collection && !isLoading) {
+    if (snapshot.error && !isNotFoundProblem(snapshot.error)) {
+      return (
+        <PageUnavailable
+          title="Couldn't load this collection"
+          description="Something went wrong while loading it. Try again in a moment."
+          onRetry={() => void snapshot.refetch()}
+          retrying={snapshot.isFetching}
+        />
+      );
+    }
     return (
-      <div className="page-shell space-y-4 py-4 sm:py-6">
-        <Button asChild variant="ghost" className="w-fit px-0">
-          <Link to={returnPath}>
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Collections
-          </Link>
+      <PageUnavailable
+        title="Collection not found"
+        description="It may have been deleted, or the link may be wrong."
+      >
+        <Button asChild variant="outline">
+          <ViewTransitionLink to={returnPath} up>
+            All collections
+          </ViewTransitionLink>
         </Button>
-        <Card className="surface-panel rounded-2xl border-0 shadow-none">
-          <CardHeader>
-            <CardTitle>Collection not found</CardTitle>
-            <CardDescription>
-              The selected collection could not be loaded.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
+      </PageUnavailable>
     );
   }
 
   // The wizard owns its own page chrome (back button, title, step indicator).
   // Short-circuit the legacy editor shell so we don't render nested headers.
-  const useWizard =
-    (collection && collection.collection_type === "smart") ||
-    (!collection && activeSourceType === "manual");
+  const useWizard = collection && collection.collection_type === "smart";
   if (useWizard) {
     return (
       <SmartCollectionWizard
         mode="admin"
+        etag={frozen?.etag}
         collection={collection}
         libraries={libraries}
         initialLibraryId={initialLibraryId}
@@ -139,9 +145,7 @@ export default function AdminCollectionEditor() {
           </Button>
           <div>
             <h1 className="page-title text-[clamp(2rem,4vw,3rem)]">{title}</h1>
-            <p className="page-subtitle mt-1 text-sm sm:text-base">
-              {description}
-            </p>
+            <p className="page-subtitle mt-1 text-sm sm:text-base">{description}</p>
           </div>
         </div>
 
@@ -157,8 +161,8 @@ export default function AdminCollectionEditor() {
           <CardHeader>
             <CardTitle>Choose a Collection Type</CardTitle>
             <CardDescription>
-              Smart/manual collections open the full query builder. Imports keep
-              their source-specific setup.
+              Smart/manual collections open the full query builder. Imports keep their
+              source-specific setup.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -193,6 +197,7 @@ export default function AdminCollectionEditor() {
           <CollectionEditForm
             libraries={libraries}
             collection={collection}
+            etag={frozen?.etag}
             initialLibraryId={initialLibraryId}
             onClose={() => navigate(returnPath)}
           />
@@ -200,10 +205,27 @@ export default function AdminCollectionEditor() {
           <CollectionForm
             libraries={libraries}
             collection={collection}
+            etag={frozen?.etag}
             initialLibraryId={initialLibraryId}
             onClose={() => navigate(returnPath)}
           />
         )
+      ) : null}
+
+      {collection?.collection_type === "manual" && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold">Items</h2>
+          <ManualCollectionItemsEditor collectionId={collection.id} source="library" />
+        </section>
+      )}
+
+      {!collection && activeSourceType === "manual" ? (
+        <CollectionForm
+          libraries={libraries}
+          collection={null}
+          initialLibraryId={initialLibraryId}
+          onClose={() => navigate(returnPath)}
+        />
       ) : null}
 
       {!collection && activeSourceType === "mdblist" ? (
@@ -216,14 +238,6 @@ export default function AdminCollectionEditor() {
 
       {!collection && activeSourceType === "tmdb" ? (
         <TMDBPresetForm
-          libraries={libraries}
-          initialLibraryId={initialLibraryId}
-          onClose={() => navigate(returnPath)}
-        />
-      ) : null}
-
-      {!collection && activeSourceType === "trakt" ? (
-        <TraktPresetForm
           libraries={libraries}
           initialLibraryId={initialLibraryId}
           onClose={() => navigate(returnPath)}

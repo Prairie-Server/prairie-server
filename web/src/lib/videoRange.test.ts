@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  bestVideoRangeLabel,
-  videoRangeLabel,
-  type VideoRangeSource,
-} from "./videoRange";
+import { bestVideoRangeLabel, videoRangeLabel, type VideoRangeSource } from "./videoRange";
 
 describe("videoRangeLabel", () => {
   it("returns empty for SDR / unprobed", () => {
@@ -27,9 +23,7 @@ describe("videoRangeLabel", () => {
   });
 
   it("detects Dolby Vision from dv_profile alone", () => {
-    expect(
-      videoRangeLabel({ hdr: true, video_tracks: [{ dv_profile: 8 }] }),
-    ).toBe("DV");
+    expect(videoRangeLabel({ hdr: true, video_tracks: [{ dv_profile: 8 }] })).toBe("DV");
   });
 
   it("detects Dolby Vision from a DOVI video_range_type", () => {
@@ -45,17 +39,13 @@ describe("videoRangeLabel", () => {
     expect(
       videoRangeLabel({
         hdr: true,
-        video_tracks: [
-          { dolby_vision: "Profile 8", video_range_type: "DOVIWithHDR10" },
-        ],
+        video_tracks: [{ dolby_vision: "Profile 8", video_range_type: "DOVIWithHDR10" }],
       }),
     ).toBe("DV HDR10");
     expect(
       videoRangeLabel({
         hdr: true,
-        video_tracks: [
-          { dolby_vision: "Profile 7", color_transfer: "smpte2084" },
-        ],
+        video_tracks: [{ dolby_vision: "Profile 7", color_transfer: "smpte2084" }],
       }),
     ).toBe("DV HDR10");
   });
@@ -70,9 +60,7 @@ describe("videoRangeLabel", () => {
   });
 
   it("labels HDR10+ from the flag or range type", () => {
-    expect(
-      videoRangeLabel({ hdr: true, video_tracks: [{ hdr10_plus: true }] }),
-    ).toBe("HDR10+");
+    expect(videoRangeLabel({ hdr: true, video_tracks: [{ hdr10_plus: true }] })).toBe("HDR10+");
     expect(
       videoRangeLabel({
         hdr: true,
@@ -121,9 +109,7 @@ describe("bestVideoRangeLabel", () => {
       { hdr: true },
       {
         hdr: true,
-        video_tracks: [
-          { dolby_vision: "Profile 8", video_range_type: "DOVIWithHDR10" },
-        ],
+        video_tracks: [{ dolby_vision: "Profile 8", video_range_type: "DOVIWithHDR10" }],
       },
     ];
     expect(bestVideoRangeLabel(versions)).toBe("DV HDR10");

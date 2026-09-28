@@ -1,6 +1,12 @@
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
+
+// The restart button's v2 hook needs a query client; these tests are about the
+// banner's own show/defer behaviour, so the hook is mocked idle.
+vi.mock("@/hooks/queries/admin/serverRestart", () => ({
+  useRequestServerRestart: () => ({ mutateAsync: vi.fn(), isPending: false }),
+}));
 
 import { RestartBanner } from "./RestartBanner";
 
@@ -12,20 +18,11 @@ describe("RestartBanner", () => {
   });
 
   it("prompts for a restart and can be deferred", async () => {
-    render(
-      <RestartBanner
-        restartRequired
-        description="FFmpeg path takes effect on restart."
-      />,
-    );
+    render(<RestartBanner restartRequired description="FFmpeg path takes effect on restart." />);
 
     expect(screen.getByText("Restart required")).toBeInTheDocument();
-    expect(
-      screen.getByText("FFmpeg path takes effect on restart."),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Restart server/ }),
-    ).toBeInTheDocument();
+    expect(screen.getByText("FFmpeg path takes effect on restart.")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Restart server/ })).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: "Later" }));
     expect(screen.queryByText("Restart required")).not.toBeInTheDocument();
@@ -46,9 +43,7 @@ describe("RestartBanner", () => {
     // The server's restart_required boolean never clears while the process
     // lives, so a second restart-required save is only visible as a bumped
     // restart_mark_count.
-    const { rerender } = render(
-      <RestartBanner restartRequired restartSignal={1} />,
-    );
+    const { rerender } = render(<RestartBanner restartRequired restartSignal={1} />);
 
     await userEvent.click(screen.getByRole("button", { name: "Later" }));
     expect(screen.queryByText("Restart required")).not.toBeInTheDocument();
@@ -70,8 +65,6 @@ describe("RestartBanner", () => {
     // regression back to `fixed` should fail here.
     const banner = screen.getByRole("status");
     expect(banner.className).not.toMatch(/\bfixed\b/);
-    expect(
-      document.documentElement.style.getPropertyValue("--settings-dock-offset"),
-    ).toBe("");
+    expect(document.documentElement.style.getPropertyValue("--settings-dock-offset")).toBe("");
   });
 });

@@ -3,11 +3,7 @@ import { Link, useNavigate } from "react-router";
 import { toast } from "sonner";
 
 import type { PluginInstallation } from "@/api/types";
-import {
-  ProviderTile,
-  ProviderTileGrid,
-  providerMonogram,
-} from "@/components/settings/ProviderTile";
+import { ProviderTile, ProviderTileGrid } from "@/components/settings/ProviderTile";
 import { RestartBadge } from "@/components/settings/RestartBadge";
 import { SecretField } from "@/components/settings/SecretField";
 import { SettingsPageHeader } from "@/components/settings/SettingsPageHeader";
@@ -32,6 +28,8 @@ import { useRestartKeys, type RestartKeyMatcher } from "@/hooks/useRestartKeys";
 import { useSettingsForm } from "@/hooks/useSettingsForm";
 
 import { FieldGroup } from "./FieldGroup";
+import { providerMonogram } from "@/lib/monogram";
+import { pluginPagePath } from "@/lib/pluginPresentation";
 
 /**
  * App credentials only. A viewer's own Trakt or Simkl account is linked from
@@ -88,17 +86,12 @@ interface PluginWatchProvider {
  * Simkl are built in; every other watch provider arrives as a plugin, so this
  * is what keeps the page honest about what the server can actually sync with.
  */
-function pluginWatchProviders(
-  installations: PluginInstallation[],
-): PluginWatchProvider[] {
+function pluginWatchProviders(installations: PluginInstallation[]): PluginWatchProvider[] {
   const providers: PluginWatchProvider[] = [];
   for (const installation of installations) {
     for (const capability of installation.capabilities ?? []) {
       const type = capability.type ?? "";
-      if (
-        type !== WATCH_SYNC_CAPABILITY &&
-        !type.startsWith(`${WATCH_SYNC_CAPABILITY}.`)
-      ) {
+      if (type !== WATCH_SYNC_CAPABILITY && !type.startsWith(`${WATCH_SYNC_CAPABILITY}.`)) {
         continue;
       }
       providers.push({
@@ -157,8 +150,7 @@ function WatchProviderTile({
   async function save() {
     const updates: Record<string, string> = {};
     for (const field of fields) {
-      if (draftOf(field.key).trim() !== "")
-        updates[field.key] = draftOf(field.key);
+      if (draftOf(field.key).trim() !== "") updates[field.key] = draftOf(field.key);
     }
     if (Object.keys(updates).length === 0) {
       toast.info(`Nothing to save for ${title}.`);
@@ -193,14 +185,8 @@ function WatchProviderTile({
       tagline="Watch history sync"
       monogram={provider.monogram}
       monogramClass={provider.monogramClass}
-      state={
-        expanded ? "editing" : allConfigured ? "connected" : "not_connected"
-      }
-      statePill={
-        !expanded && !allConfigured && anyConfigured
-          ? "Partly set up"
-          : undefined
-      }
+      state={expanded ? "editing" : allConfigured ? "connected" : "not_connected"}
+      statePill={!expanded && !allConfigured && anyConfigured ? "Partly set up" : undefined}
       badge={restartRequired ? <RestartBadge /> : undefined}
       busy={updateSettings.isPending}
       expanded={expanded}
@@ -218,9 +204,7 @@ function WatchProviderTile({
           label={field.label}
           value={draftOf(field.key)}
           configured={configuredKeys.has(field.key)}
-          onChange={(next) =>
-            setDrafts((prev) => ({ ...prev, [field.key]: next }))
-          }
+          onChange={(next) => setDrafts((prev) => ({ ...prev, [field.key]: next }))}
           restartRequired={restartKeys.has(field.key)}
         />
       ))}
@@ -239,12 +223,7 @@ function WatchProviderTile({
           {updateSettings.isPending ? "Saving..." : "Save"}
         </Button>
         {anyConfigured ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            onClick={() => setConfirmClear(true)}
-          >
+          <Button type="button" size="sm" variant="outline" onClick={() => setConfirmClear(true)}>
             Clear credentials
           </Button>
         ) : null}
@@ -254,9 +233,7 @@ function WatchProviderTile({
       </div>
       {needsRestart && (
         <div className="border-warning/30 bg-warning/10 text-warning mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl border px-3 py-2 text-xs">
-          <span>
-            Restart the server to pick up the new {title} credentials.
-          </span>
+          <span>Restart the server to pick up the new {title} credentials.</span>
           <RestartServerButton />
         </div>
       )}
@@ -265,8 +242,8 @@ function WatchProviderTile({
           <AlertDialogHeader>
             <AlertDialogTitle>Clear {title} credentials?</AlertDialogTitle>
             <AlertDialogDescription>
-              Viewers can no longer connect a {title} account, and existing
-              connections stop syncing.
+              Viewers can no longer connect a {title} account, and existing connections stop
+              syncing.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -299,11 +276,7 @@ export default function WatchSyncSettings() {
 
   if (form.isLoading) {
     return (
-      <div
-        className="max-w-5xl space-y-6"
-        role="status"
-        aria-label="Loading watch sync"
-      >
+      <div className="max-w-5xl space-y-6" role="status" aria-label="Loading watch sync">
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-40 w-full" />
@@ -337,24 +310,13 @@ export default function WatchSyncSettings() {
                 tagline="Watch provider plugin"
                 monogram={providerMonogram(provider.name)}
                 monogramClass="bg-violet-500/20 text-violet-700 dark:text-violet-300"
-                state={
-                  provider.enabled && provider.configReady
-                    ? "connected"
-                    : "not_connected"
-                }
+                state={provider.enabled && provider.configReady ? "connected" : "not_connected"}
                 statePill={
-                  !provider.enabled
-                    ? "Disabled"
-                    : provider.configReady
-                      ? "Enabled"
-                      : "Needs setup"
+                  !provider.enabled ? "Disabled" : provider.configReady ? "Enabled" : "Needs setup"
                 }
                 primaryAction={{
                   label: "Configure",
-                  onClick: () =>
-                    navigate(
-                      `/admin/plugins?installed_q=${encodeURIComponent(provider.pluginId)}&configure=${encodeURIComponent(provider.pluginId)}`,
-                    ),
+                  onClick: () => navigate(pluginPagePath(provider.pluginId)),
                 }}
               />
             ))}

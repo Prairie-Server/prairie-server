@@ -1,3 +1,4 @@
+import { policyDomain } from "@/api/adminPolicy";
 import { Play } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
 
@@ -54,25 +55,27 @@ function SimulateVerdict({ decision }: { decision: unknown }) {
       <span className="bg-destructive/10 text-destructive inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium">
         <span aria-hidden className="bg-destructive size-1.5 rounded-full" />
         Denied
-        {typeof record.reason === "string" && record.reason
-          ? ` — ${record.reason}`
-          : ""}
+        {typeof record.reason === "string" && record.reason ? ` — ${record.reason}` : ""}
       </span>
     );
   }
 
   if (typeof record.unrestricted === "boolean") {
-    const rating =
-      typeof record.max_content_rating === "string"
-        ? record.max_content_rating
-        : "";
+    // An override's ceiling is reported beside the base one; the server
+    // enforces whichever admits less, so show both limits.
+    const ratings = [record.max_content_rating, record.max_content_rating_override].filter(
+      (value): value is string => typeof value === "string" && value !== "",
+    );
     const quality =
-      typeof record.max_playback_quality === "string"
-        ? record.max_playback_quality
-        : "";
+      typeof record.max_playback_quality === "string" ? record.max_playback_quality : "";
+    const advisoryAge =
+      typeof record.max_advisory_age === "number" && record.max_advisory_age > 0
+        ? record.max_advisory_age
+        : 0;
     const parts = [
       record.unrestricted ? "All libraries" : "Restricted libraries",
-      rating ? `rating ≤ ${rating}` : "any rating",
+      ratings.length > 0 ? ratings.map((rating) => `rating ≤ ${rating}`).join(" · ") : "any rating",
+      ...(advisoryAge ? [`advisory age ≤ ${advisoryAge}`] : []),
       quality ? `quality ≤ ${quality}` : "any quality",
     ];
     return (
@@ -85,16 +88,10 @@ function SimulateVerdict({ decision }: { decision: unknown }) {
   return null;
 }
 
-export function PolicySimulatePanel({
-  domains,
-  domain,
-  source,
-}: PolicySimulatePanelProps) {
+export function PolicySimulatePanel({ domains, domain, source }: PolicySimulatePanelProps) {
   const fallbackDomain = domain || domains[0] || "scope";
   const [selectedDomain, setSelectedDomain] = useState(fallbackDomain);
-  const [input, setInput] = useState(() =>
-    exampleInputForDomain(fallbackDomain),
-  );
+  const [input, setInput] = useState(() => exampleInputForDomain(fallbackDomain));
   const [error, setError] = useState("");
   const [issues, setIssues] = useState(compileIssuesFromError(null));
   const simulate = useSimulatePolicy();
@@ -123,7 +120,7 @@ export function PolicySimulatePanel({
 
     try {
       await simulate.mutateAsync({
-        domain: selectedDomain,
+        domain: policyDomain(selectedDomain),
         source: source?.trim() ? source : undefined,
         input: parsedInput,
       });
@@ -144,16 +141,10 @@ export function PolicySimulatePanel({
         <div>
           <h3 className="text-sm font-semibold">Test before going live</h3>
           <p className="text-muted-foreground mt-1 text-xs">
-            Runs the current draft against a sample request. Nothing is saved or
-            enforced.
+            Runs the current draft against a sample request. Nothing is saved or enforced.
           </p>
         </div>
-        <Button
-          type="button"
-          size="sm"
-          onClick={runSimulation}
-          disabled={simulate.isPending}
-        >
+        <Button type="button" size="sm" onClick={runSimulation} disabled={simulate.isPending}>
           <Play className="size-4" />
           {simulate.isPending ? "Running..." : "Run"}
         </Button>

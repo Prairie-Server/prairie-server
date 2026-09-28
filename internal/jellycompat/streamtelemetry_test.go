@@ -196,7 +196,7 @@ func TestMountedCompatRouterAttributesDirectStream(t *testing.T) {
 		t.Fatalf("token sources = %+v", session.TokenIssuedAtSources)
 	}
 	// Client identity comes from the MediaBrowser authorization header — the same
-	// parser the negotiation path uses for DeviceId — not X-Silo-Client*.
+	// parser the negotiation path uses for DeviceId — not X-Prairie-Client*.
 	if len(session.DeviceIDs) != 1 || session.DeviceIDs[0] != "device-abc" {
 		t.Fatalf("device ids = %+v", session.DeviceIDs)
 	}
@@ -237,7 +237,7 @@ func TestMountedCompatRouterBitrateTestIsACapExemptTransfer(t *testing.T) {
 
 	got := fixture.get(t, http.MethodGet,
 		fixture.server.URL+"/Playback/BitrateTest?api_key="+compatTelemetryToken, nil)
-	if got.status != http.StatusOK || len(got.body) != 1024*1024 {
+	if got.status != http.StatusOK || len(got.body) != 102400 {
 		t.Fatalf("bitrate probe = %d, %d bytes", got.status, len(got.body))
 	}
 	snapshot := registry.Sweep()
@@ -248,7 +248,7 @@ func TestMountedCompatRouterBitrateTestIsACapExemptTransfer(t *testing.T) {
 		t.Fatalf("bitrate probe subject = %+v", snapshot.Transfers[0].Subject)
 	}
 	// §4.2 "classify but exempt": transfer-observed, never cap-relevant.
-	if snapshot.Transfers[0].BytesAccepted != 1024*1024 {
+	if snapshot.Transfers[0].BytesAccepted != 102400 {
 		t.Fatalf("bitrate probe bytes = %d", snapshot.Transfers[0].BytesAccepted)
 	}
 }

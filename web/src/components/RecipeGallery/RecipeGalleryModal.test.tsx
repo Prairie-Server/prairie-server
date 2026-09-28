@@ -52,23 +52,15 @@ beforeEach(() => {
 describe("RecipeGalleryModal", () => {
   it("renders all category chips and recipe cards", async () => {
     render(<RecipeGalleryModal open onClose={() => {}} onPick={() => {}} />);
-    await waitFor(() =>
-      expect(screen.getByText("Recently Added")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText("Recently Added")).toBeInTheDocument());
     expect(screen.getByText("Hidden Gems")).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Library staples/i }),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Discovery/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Library staples/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /Discovery/i })).toBeInTheDocument();
   });
 
   it("filters by category chip", async () => {
     render(<RecipeGalleryModal open onClose={() => {}} onPick={() => {}} />);
-    await waitFor(() =>
-      expect(screen.getByText("Recently Added")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText("Recently Added")).toBeInTheDocument());
 
     await userEvent.click(screen.getByRole("button", { name: /Discovery/i }));
     expect(screen.queryByText("Recently Added")).not.toBeInTheDocument();
@@ -77,9 +69,7 @@ describe("RecipeGalleryModal", () => {
 
   it("filters by search text", async () => {
     render(<RecipeGalleryModal open onClose={() => {}} onPick={() => {}} />);
-    await waitFor(() =>
-      expect(screen.getByText("Recently Added")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText("Recently Added")).toBeInTheDocument());
 
     await userEvent.type(screen.getByPlaceholderText(/search/i), "Hidden");
     expect(screen.queryByText("Recently Added")).not.toBeInTheDocument();
@@ -89,13 +79,9 @@ describe("RecipeGalleryModal", () => {
   it("invokes onPick when a card is clicked", async () => {
     const onPick = vi.fn();
     render(<RecipeGalleryModal open onClose={() => {}} onPick={onPick} />);
-    await waitFor(() =>
-      expect(screen.getByText("Recently Added")).toBeInTheDocument(),
-    );
+    await waitFor(() => expect(screen.getByText("Recently Added")).toBeInTheDocument());
 
-    await userEvent.click(
-      screen.getByRole("button", { name: /Recently Added/ }),
-    );
+    await userEvent.click(screen.getByRole("button", { name: /Recently Added/ }));
     expect(onPick).toHaveBeenCalledWith(
       expect.objectContaining({ type: "recently_added" }),
       expect.objectContaining({ key: "ra" }),

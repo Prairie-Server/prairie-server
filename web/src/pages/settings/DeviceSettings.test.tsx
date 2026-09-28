@@ -38,16 +38,14 @@ vi.mock("@/hooks/queries/devices", () => ({
 }));
 
 vi.mock("@/hooks/queries/settingValues", async (importOriginal) => {
-  const actual =
-    await importOriginal<typeof import("@/hooks/queries/settingValues")>();
+  const actual = await importOriginal<typeof import("@/hooks/queries/settingValues")>();
   return {
     ...actual,
     useSettingsCapabilities: () => ({
       ...mocks.capabilities,
       refetch: mocks.refetchCapabilities,
     }),
-    useEffectiveSettings: (...args: unknown[]) =>
-      mocks.useEffectiveSettings(...args),
+    useEffectiveSettings: (...args: unknown[]) => mocks.useEffectiveSettings(...args),
     useSetSettingValue: () => ({ mutate: vi.fn(), isPending: false }),
     useClearSettingValue: () => ({ mutate: vi.fn(), isPending: false }),
   };
@@ -81,7 +79,7 @@ import DeviceSettings from "./DeviceSettings";
 describe("DeviceSettings capability discovery", () => {
   const compatibleCapabilities: SettingsCapabilities = {
     api_version: 1,
-    revision: 5,
+    manifest_revision: 5,
     contract_etag: "revision-five",
     supports_batched_effective: true,
     supports_idempotent_writes: true,
@@ -109,32 +107,21 @@ describe("DeviceSettings capability discovery", () => {
       }),
     );
     expect(screen.getByRole("alert")).toHaveTextContent(
-      "Device controls stay unavailable until Silo confirms which settings this server supports.",
+      "Device controls stay unavailable until Prairie confirms which settings this server supports.",
     );
-    expect(
-      screen.queryByText("Editable device defaults"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Editable device defaults")).not.toBeInTheDocument();
 
-    await user.click(
-      screen.getByRole("button", { name: "Retry compatibility check" }),
-    );
+    await user.click(screen.getByRole("button", { name: "Retry compatibility check" }));
     expect(mocks.refetchCapabilities).toHaveBeenCalledTimes(1);
   });
 
   it.each([
-    [
-      "API version is incompatible",
-      { ...compatibleCapabilities, api_version: 2 },
-    ],
+    ["API version is incompatible", { ...compatibleCapabilities, api_version: 2 }],
     [
       "batched effective reads are missing",
       { ...compatibleCapabilities, supports_batched_effective: undefined },
     ],
-    [
-      "idempotent writes are missing",
-      { ...compatibleCapabilities, supports_idempotent_writes: undefined },
-    ],
-    ["revision is missing", { ...compatibleCapabilities, revision: undefined }],
+    ["revision is missing", { ...compatibleCapabilities, manifest_revision: undefined }],
   ])("does not request all settings when the %s", (_case, capabilities) => {
     mocks.capabilities.data = capabilities as SettingsCapabilities;
 
@@ -144,9 +131,23 @@ describe("DeviceSettings capability discovery", () => {
       expect.objectContaining({ keys: [], enabled: false }),
     );
     expect(screen.getByRole("alert")).toBeInTheDocument();
-    expect(
-      screen.queryByText("Editable device defaults"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Editable device defaults")).not.toBeInTheDocument();
+  });
+
+  it("still requests settings when the server reports no idempotent writes", () => {
+    // The v2 write operations carry no mutation id, so replay support is not
+    // a precondition for reading or editing device defaults.
+    mocks.capabilities.data = {
+      ...compatibleCapabilities,
+      supports_idempotent_writes: undefined,
+    } as SettingsCapabilities;
+
+    render(<DeviceSettings />);
+
+    expect(mocks.useEffectiveSettings).toHaveBeenCalledWith(
+      expect.objectContaining({ enabled: true }),
+    );
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("enables only revision-supported keys when the full capability contract matches", () => {
@@ -156,10 +157,7 @@ describe("DeviceSettings capability discovery", () => {
 
     expect(mocks.useEffectiveSettings).toHaveBeenCalledWith(
       expect.objectContaining({
-        keys: expect.arrayContaining([
-          "player.hdr_enabled",
-          "ui.card_presentation",
-        ]),
+        keys: expect.arrayContaining(["player.hdr_enabled", "ui.card_presentation"]),
         enabled: true,
       }),
     );

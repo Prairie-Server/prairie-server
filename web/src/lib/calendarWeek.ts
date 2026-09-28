@@ -66,8 +66,7 @@ export function formatWeekRangeLabel(weekStart: string): string {
   const end = new Date(start);
   end.setDate(end.getDate() + 6);
   const sameMonth =
-    start.getMonth() === end.getMonth() &&
-    start.getFullYear() === end.getFullYear();
+    start.getMonth() === end.getMonth() && start.getFullYear() === end.getFullYear();
   if (sameMonth) {
     const month = start.toLocaleDateString(undefined, { month: "short" });
     return `${month} ${start.getDate()} – ${end.getDate()}, ${start.getFullYear()}`;

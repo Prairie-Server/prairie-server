@@ -13,7 +13,7 @@ const (
 	// ToneMapExecutionErrorHeader carries a machine-readable classification for
 	// execution-time source validation failures. Generic 422/503 node failures
 	// deliberately omit it.
-	ToneMapExecutionErrorHeader = "X-Silo-Tone-Map-Execution-Error"
+	ToneMapExecutionErrorHeader = "X-Prairie-Tone-Map-Execution-Error"
 
 	ToneMapSourceRevisionChangedCode       = "source_revision_changed"
 	ToneMapSourceValidationUnavailableCode = "source_validation_unavailable"

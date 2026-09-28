@@ -1,3 +1,9 @@
+# Node.js for the runtime Jellyfin Web installer, which builds upstream
+# jellyfin-web in the container. Jellyfin Web 12.x requires Node.js >=24,
+# independent of the Prairie frontend toolchain. The installer runs the npm
+# release each Jellyfin Web version declares in engines.npm.
+FROM node:24-slim AS jellyfin_web_node
+
 # Stage 1: Build frontend
 FROM node:22-slim AS frontend
 RUN corepack enable && corepack prepare pnpm@10.32.1 --activate
@@ -7,6 +13,9 @@ COPY web/vendor/foliate-js ./vendor/foliate-js
 RUN --mount=type=cache,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 COPY web/ .
+# The v2 contract fixtures are imported by web tests, which `tsc -b` type-checks
+# as part of the build; they live outside web/ so copy them explicitly.
+COPY contracts/api/v2/fixtures/ /app/contracts/api/v2/fixtures/
 RUN pnpm run build
 
 # Allow CI to inject prebuilt frontend assets via a named `frontend_dist`
@@ -18,8 +27,8 @@ COPY --from=frontend /app/web/dist/. /
 FROM golang:1.26 AS build
 ENV CGO_ENABLED=1
 ENV GOPROXY=https://proxy.golang.org,direct
-ENV GOPRIVATE=github.com/Silo-Server/*
-ENV GONOSUMDB=github.com/Silo-Server/*
+ENV GOPRIVATE=github.com/prairie-server/*
+ENV GONOSUMDB=github.com/prairie-server/*
 RUN apt-get update && apt-get install -y --no-install-recommends libvips-dev && rm -rf /var/lib/apt/lists/*
 WORKDIR /app
 COPY go.mod go.sum ./
@@ -38,13 +47,12 @@ COPY migrations/ migrations/
 COPY contracts/ contracts/
 ARG BUILD_REVISION
 ARG BUILD_DIRTY=false
-ARG BUILD_NUMBER
-ARG BUILD_DATE
+ARG BUILD_VERSION=
 RUN --mount=type=cache,target=/root/.cache/go-build \
     --mount=type=cache,target=/go/pkg/mod \
     go build \
-    -ldflags "-X github.com/Silo-Server/silo-server/internal/buildinfo.revisionOverride=${BUILD_REVISION} -X github.com/Silo-Server/silo-server/internal/buildinfo.dirtyOverride=${BUILD_DIRTY} -X github.com/Silo-Server/silo-server/internal/buildinfo.buildNumberOverride=${BUILD_NUMBER} -X github.com/Silo-Server/silo-server/internal/buildinfo.builtAtOverride=${BUILD_DATE}" \
-    -o /silo ./cmd/silo/
+    -ldflags "-X github.com/prairie-server/prairie-server/internal/buildinfo.revisionOverride=${BUILD_REVISION} -X github.com/prairie-server/prairie-server/internal/buildinfo.dirtyOverride=${BUILD_DIRTY} -X github.com/prairie-server/prairie-server/internal/buildinfo.versionOverride=${BUILD_VERSION}" \
+    -o /prairie ./cmd/prairie/
 
 # Stage 3: Runtime
 FROM debian:trixie-slim
@@ -53,6 +61,7 @@ ARG INTEL_GMMLIB_VERSION=22.10.0
 ARG INTEL_IGC_VERSION=2.34.4
 ARG INTEL_IGC_BUILD=21428
 ARG INTEL_NEO_VERSION=26.18.38308.1
+ARG JELLYFIN_FFMPEG_VERSION=8.1.3-1
 RUN apt-get update && \
     apt-get install -y --no-install-recommends ca-certificates curl gnupg && \
     curl -fsSL https://repo.jellyfin.org/jellyfin_team.gpg.key \
@@ -60,7 +69,7 @@ RUN apt-get update && \
     echo "deb [signed-by=/usr/share/keyrings/jellyfin.gpg arch=${TARGETARCH}] https://repo.jellyfin.org/debian trixie main" \
       > /etc/apt/sources.list.d/jellyfin.list && \
     apt-get update && \
-    apt-get install -y --no-install-recommends jellyfin-ffmpeg7 git libvips42 fonts-noto-core fonts-noto-cjk && \
+    apt-get install -y --no-install-recommends "jellyfin-ffmpeg8=${JELLYFIN_FFMPEG_VERSION}-trixie" ffmpeg git libvips42 fonts-noto-core fonts-noto-cjk && \
     apt-get purge -y gnupg && apt-get autoremove -y && \
     rm -rf /var/lib/apt/lists/*
 # Debian's Intel OpenCL runtime lags the media hardware supported by the
@@ -79,13 +88,14 @@ RUN if [ "${TARGETARCH}" = "amd64" ]; then \
       cd / && \
       rm -rf "${runtime_dir}" /var/lib/apt/lists/*; \
     fi
-RUN mkdir -p /tmp/silo-transcode /var/lib/silo/compat/jellyfin-web
-COPY --from=frontend /usr/local/bin/node /usr/local/bin/node
-COPY --from=frontend /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
+RUN mkdir -p /tmp/silo-transcode /var/lib/prairie/userdb /var/lib/prairie/compat/jellyfin-web \
+    /var/lib/prairie/artwork /var/lib/prairie/dvr
+COPY --from=jellyfin_web_node /usr/local/bin/node /usr/local/bin/node
+COPY --from=jellyfin_web_node /usr/local/lib/node_modules/npm /usr/local/lib/node_modules/npm
 RUN ln -sf ../lib/node_modules/npm/bin/npm-cli.js /usr/local/bin/npm && \
     ln -sf ../lib/node_modules/npm/bin/npx-cli.js /usr/local/bin/npx
-COPY --from=build /silo /usr/local/bin/silo
+COPY --from=build /prairie /usr/local/bin/prairie
 EXPOSE 8080 8096 13378
 HEALTHCHECK --interval=15s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -f http://localhost:${PORT:-8080}/api/v1/health || exit 1
-ENTRYPOINT ["silo"]
+ENTRYPOINT ["prairie"]

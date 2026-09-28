@@ -13,14 +13,10 @@ class ResizeObserverStub {
   disconnect() {}
 }
 if (typeof globalThis.ResizeObserver === "undefined") {
-  (
-    globalThis as unknown as { ResizeObserver: typeof ResizeObserverStub }
-  ).ResizeObserver = ResizeObserverStub;
+  (globalThis as unknown as { ResizeObserver: typeof ResizeObserverStub }).ResizeObserver =
+    ResizeObserverStub;
 }
-if (
-  typeof window !== "undefined" &&
-  !window.HTMLElement.prototype.hasPointerCapture
-) {
+if (typeof window !== "undefined" && !window.HTMLElement.prototype.hasPointerCapture) {
   window.HTMLElement.prototype.hasPointerCapture = () => false;
   window.HTMLElement.prototype.scrollIntoView = () => {};
 }
@@ -66,6 +62,7 @@ const SERVER_CONFIG: RateLimitConfig = {
     login: { requests_per_minute: 20, burst: 10 },
     signup: { requests_per_minute: 10, burst: 6 },
     setup: { requests_per_minute: 10, burst: 6 },
+    password_change: { requests_per_minute: 10, burst: 5 },
     device_start: { requests_per_minute: 20, burst: 10 },
     device_lookup: { requests_per_minute: 60, burst: 20 },
     device_poll: { requests_per_minute: 120, burst: 30 },
@@ -76,13 +73,11 @@ const SERVER_CONFIG: RateLimitConfig = {
   redis_available: true,
 };
 
-const REDIS_HINT = /Configure Redis under Infrastructure first/;
+const REDIS_HINT = /Configure Redis under Storage & Database first/;
 
 async function openBackendSelect() {
   await userEvent.click(screen.getByRole("button", { name: /Advanced/i }));
-  await userEvent.click(
-    screen.getByRole("combobox", { name: /Where counters are kept/i }),
-  );
+  await userEvent.click(screen.getByRole("combobox", { name: /Where counters are kept/i }));
 }
 
 function makeForm(overrides: Record<string, unknown> = {}) {
@@ -122,9 +117,7 @@ describe("SecurityAccessSettings", () => {
     render(<SecurityAccessSettings />);
     expect(reportUnsavedMock).toHaveBeenLastCalledWith(false);
 
-    await userEvent.click(
-      screen.getByRole("switch", { name: /Enable rate limiting/i }),
-    );
+    await userEvent.click(screen.getByRole("switch", { name: /Enable rate limiting/i }));
 
     // The guard and the reload prompt read the registry, not the SaveBar, so
     // the separate rate-limit draft has to announce itself there too.
@@ -142,27 +135,43 @@ describe("SecurityAccessSettings", () => {
   it("renders the tab title", () => {
     render(<SecurityAccessSettings />);
 
-    expect(
-      screen.getByRole("heading", { name: "Security & Access" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Security & Access" })).toBeInTheDocument();
   });
 
-  it("keeps the token and proxy keys on the batched settings form", () => {
+  it("keeps the token, proxy, and local server keys on the batched settings form", () => {
     render(<SecurityAccessSettings />);
 
     expect(useSettingsFormMock.mock.calls[0]?.[0]?.keys).toEqual([
       "auth.access_token_expiry",
       "auth.refresh_token_expiry",
       "clientip.trusted_proxies",
+      "media_servers.allow_private_destinations",
     ]);
+  });
+
+  it("stages the local server switch and warns while it is on", async () => {
+    const setValue = vi.fn();
+    useSettingsFormMock.mockReturnValue(makeForm({ setValue }));
+    const { rerender } = render(<SecurityAccessSettings />);
+
+    expect(screen.queryByText(/Anyone who can sign in/)).not.toBeInTheDocument();
+    await userEvent.click(screen.getByRole("switch", { name: /Local servers for every account/i }));
+    expect(setValue).toHaveBeenCalledWith("media_servers.allow_private_destinations", "true");
+
+    useSettingsFormMock.mockReturnValue(
+      makeForm({
+        getValue: (key: string) =>
+          key === "media_servers.allow_private_destinations" ? "true" : "",
+      }),
+    );
+    rerender(<SecurityAccessSettings />);
+    expect(screen.getByText(/Anyone who can sign in/)).toBeInTheDocument();
   });
 
   it("shows only the rate limiting switch until Advanced is opened", async () => {
     render(<SecurityAccessSettings />);
 
-    expect(
-      screen.getByRole("switch", { name: /Enable rate limiting/i }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("switch", { name: /Enable rate limiting/i })).toBeInTheDocument();
     expect(screen.queryByText("Per client address")).not.toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /Advanced/i }));
@@ -178,9 +187,7 @@ describe("SecurityAccessSettings", () => {
     await userEvent.click(screen.getByRole("button", { name: /Advanced/i }));
 
     // The control rejects empty/zero input, so append rather than clear first.
-    const rpsInput = screen.getByLabelText(
-      "Whole-server limit",
-    ) as HTMLInputElement;
+    const rpsInput = screen.getByLabelText("Whole-server limit") as HTMLInputElement;
     await userEvent.type(rpsInput, "5");
 
     expect(rpsInput.value).toBe("10005");
@@ -204,20 +211,18 @@ describe("SecurityAccessSettings", () => {
 
     render(<SecurityAccessSettings />);
 
-    await userEvent.click(
-      screen.getByRole("switch", { name: /Enable rate limiting/i }),
-    );
+    await userEvent.click(screen.getByRole("switch", { name: /Enable rate limiting/i }));
     expect(screen.getByText("2 unsaved changes")).toBeInTheDocument();
 
     await userEvent.click(screen.getByRole("button", { name: /^Save$/i }));
 
     await waitFor(() =>
       expect(mutateAsync).toHaveBeenCalledWith(
-        expect.objectContaining({ enabled: false }),
+        expect.objectContaining({ config: expect.objectContaining({ enabled: false }) }),
       ),
     );
     expect(save).toHaveBeenCalled();
-    // PUT /admin/rate-limits/config validates `backend: redis` against the
+    // PATCH /api/v2/admin/rate-limits/config validates `backend: redis` against the
     // persisted settings, so running the two writers concurrently lets the
     // limiter be judged against the state this very save is replacing.
     expect(order).toEqual(["settings", "rate-limits"]);
@@ -235,9 +240,7 @@ describe("SecurityAccessSettings", () => {
 
     render(<SecurityAccessSettings />);
 
-    await userEvent.click(
-      screen.getByRole("switch", { name: /Enable rate limiting/i }),
-    );
+    await userEvent.click(screen.getByRole("switch", { name: /Enable rate limiting/i }));
     await userEvent.click(screen.getByRole("button", { name: /^Save$/i }));
 
     await waitFor(() => expect(save).toHaveBeenCalled());
@@ -251,13 +254,14 @@ describe("SecurityAccessSettings", () => {
     render(<SecurityAccessSettings />);
     await openBackendSelect();
 
-    expect(
-      screen.getByRole("option", { name: "Shared via Redis" }),
-    ).not.toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("option", { name: "Shared via Redis" })).not.toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
     expect(screen.queryByText(REDIS_HINT)).not.toBeInTheDocument();
   });
 
-  it("disables the Redis backend and points at Infrastructure when Redis is unconfigured", async () => {
+  it("disables the Redis backend and points at Storage & Database when Redis is unconfigured", async () => {
     rateLimitConfigMock.mockReturnValue({
       data: { ...SERVER_CONFIG, redis_available: false },
       isLoading: false,
@@ -266,12 +270,14 @@ describe("SecurityAccessSettings", () => {
     render(<SecurityAccessSettings />);
     await openBackendSelect();
 
-    expect(
-      screen.getByRole("option", { name: "Shared via Redis" }),
-    ).toHaveAttribute("aria-disabled", "true");
-    expect(
-      screen.getByRole("option", { name: "This server only" }),
-    ).not.toHaveAttribute("aria-disabled", "true");
+    expect(screen.getByRole("option", { name: "Shared via Redis" })).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
+    expect(screen.getByRole("option", { name: "This server only" })).not.toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
     expect(screen.getByText(REDIS_HINT)).toBeInTheDocument();
   });
 
@@ -299,9 +305,7 @@ describe("SecurityAccessSettings", () => {
     await userEvent.click(screen.getByRole("button", { name: /Advanced/i }));
 
     expect(
-      screen.getByText(
-        /running limiter is using in-memory counters, not the saved Redis/i,
-      ),
+      screen.getByText(/running limiter is using in-memory counters, not the saved Redis/i),
     ).toBeInTheDocument();
   });
 
@@ -313,9 +317,7 @@ describe("SecurityAccessSettings", () => {
 
     render(<SecurityAccessSettings />);
 
-    expect(
-      screen.getByText(/no limiter is running in this process/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/no limiter is running in this process/i)).toBeInTheDocument();
   });
 
   it("shows no drift warnings when the running limiter matches the saved config", async () => {
@@ -327,11 +329,71 @@ describe("SecurityAccessSettings", () => {
     render(<SecurityAccessSettings />);
     await userEvent.click(screen.getByRole("button", { name: /Advanced/i }));
 
-    expect(
-      screen.queryByText(/no limiter is running/i),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByText(/running limiter is using/i),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/no limiter is running/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/running limiter is using/i)).not.toBeInTheDocument();
+  });
+  it("drops a draft when identical configuration arrives under different authority", async () => {
+    rateLimitConfigMock.mockReturnValue({
+      data: {
+        ...SERVER_CONFIG,
+        etag: '"a"',
+        profileContext: { profileId: "a", authContextVersion: 1 },
+      },
+      isLoading: false,
+    });
+    const { rerender } = render(<SecurityAccessSettings />);
+    await userEvent.click(screen.getByRole("switch", { name: /Enable rate limiting/i }));
+    expect(screen.getByRole("switch", { name: /Enable rate limiting/i })).not.toBeChecked();
+    rateLimitConfigMock.mockReturnValue({
+      data: {
+        ...SERVER_CONFIG,
+        etag: '"b"',
+        profileContext: { profileId: "b", authContextVersion: 1 },
+      },
+      isLoading: false,
+    });
+    rerender(<SecurityAccessSettings />);
+    expect(screen.getByRole("switch", { name: /Enable rate limiting/i })).toBeChecked();
+    expect(screen.queryByText("1 unsaved change")).not.toBeInTheDocument();
+  });
+  it("captures rate-limit intent before awaiting the preceding settings writer", async () => {
+    let finish!: () => void;
+    const save = vi.fn(
+      () =>
+        new Promise<void>((resolve) => {
+          finish = resolve;
+        }),
+    );
+    const mutateAsync = vi.fn().mockResolvedValue(undefined);
+    const profileContext = { profileId: "a", authContextVersion: 1 };
+    useSettingsFormMock.mockReturnValue(makeForm({ dirtyCount: 1, save }));
+    updateRateLimitMock.mockReturnValue({ mutateAsync, isPending: false });
+    rateLimitConfigMock.mockReturnValue({
+      data: { ...SERVER_CONFIG, etag: '"a"', profileContext },
+      isLoading: false,
+    });
+    const { rerender } = render(<SecurityAccessSettings />);
+    await userEvent.click(screen.getByRole("switch", { name: /Enable rate limiting/i }));
+    await userEvent.click(screen.getByRole("button", { name: /^Save$/i }));
+    expect(save).toHaveBeenCalled();
+    rateLimitConfigMock.mockReturnValue({
+      data: {
+        ...SERVER_CONFIG,
+        etag: '"b"',
+        profileContext: { profileId: "b", authContextVersion: 2 },
+      },
+      isLoading: false,
+    });
+    rerender(<SecurityAccessSettings />);
+    finish();
+    await waitFor(() =>
+      expect(mutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({
+          config: expect.objectContaining({ enabled: false }),
+          etag: '"a"',
+          profileContext,
+        }),
+      ),
+    );
   });
 });

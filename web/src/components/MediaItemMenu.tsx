@@ -1,6 +1,8 @@
 import {
+  lazy,
   type ReactNode,
   type RefObject,
+  Suspense,
   useCallback,
   useEffect,
   useMemo,
@@ -21,25 +23,23 @@ import {
 } from "lucide-react";
 import { useLocation } from "react-router";
 import { useViewTransitionNavigate } from "@/hooks/useViewTransition";
+import { useFinePointer } from "@/hooks/useFinePointer";
 import type { ItemDetail, MediaItemUserState } from "@/api/types";
 import { useOptionalAuth } from "@/hooks/useAuth";
 import { useCurrentProfile } from "@/hooks/useCurrentProfile";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
 import { useCatalogItemDetail } from "@/hooks/queries/catalogRead";
-import {
-  useRefreshItemMetadata,
-  useWatchedStateMutation,
-} from "@/hooks/queries/items";
+import { useRefreshItemMetadata, useWatchedStateMutation } from "@/hooks/queries/items";
 import {
   type DismissHomeItemVariables,
+  dismissalDropsShow,
   useDismissHomeItem,
 } from "@/hooks/queries/homeDismissals";
 import { useToggleFavorite } from "@/hooks/queries/favorites";
 import { useToggleWatchlist } from "@/hooks/queries/watchlist";
 import { getWatchedActionLabel } from "@/pages/ItemDetail/watchedState";
-import EditMetadataDialog from "@/components/EditMetadataDialog";
+import { LocalErrorBoundary } from "@/components/LocalErrorBoundary";
 import MangaFilesDialog from "@/components/MangaFilesDialog";
-import MatchItemDialog from "@/components/MatchItemDialog";
 import RefreshMetadataDialog from "@/components/RefreshMetadataDialog";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,7 +64,6 @@ import {
   SheetTitle,
 } from "@/components/ui/sheet";
 import { useLongPress } from "@/hooks/useLongPress";
-import { useMediaQuery } from "@/hooks/useMediaQuery";
 import { cn } from "@/lib/utils";
 import { useWatchPlaybackController } from "@/playback/watchPlaybackContext";
 import { buildMediaPlayHref } from "@/lib/mediaNavigation";
@@ -82,14 +81,30 @@ import {
   type CardQuickActionMode,
 } from "@/lib/cardQuickActions";
 
+// Edit Metadata and Match Item are curator tools, yet every media card carries
+// this menu, so the dialogs load on demand instead of with the launch bundle.
+// Opening a menu that offers them starts the download.
+const importEditMetadataDialog = () => import("@/components/EditMetadataDialog");
+const importMatchItemDialog = () => import("@/components/MatchItemDialog");
+const EditMetadataDialog = lazy(importEditMetadataDialog);
+const MatchItemDialog = lazy(importMatchItemDialog);
+
+function prefetchMetadataDialogs() {
+  // Nothing to report here: the dialog host imports them again when it
+  // renders, and its error boundary shows a failure.
+  importEditMetadataDialog().catch(() => undefined);
+  importMatchItemDialog().catch(() => undefined);
+}
+
 type MediaItemType = ItemDetail["type"];
 
-const FINE_POINTER_QUERY = "(any-hover: hover) and (any-pointer: fine)";
-
 function useHasFinePointer() {
-  // Preserve the established quick actions in SSR, tests, and older browsers
-  // without matchMedia. Touch-capable modern browsers report this accurately.
-  return useMediaQuery(FINE_POINTER_QUERY, true);
+  // Reads the observed pointer, not the media query: Chromium on some Windows
+  // machines with a touchscreen reports no fine pointer while a mouse is in
+  // use, which withheld these shortcuts from the very devices this gate is
+  // meant to serve. The `true` fallback preserves the established quick
+  // actions in SSR, tests, and browsers where init has not run.
+  return useFinePointer(true);
 }
 
 type MediaItemMenuEntry =
@@ -110,10 +125,7 @@ type MediaItemMenuEntry =
     }
   | { kind: "separator" };
 
-type MediaItemMenuActionKey = Extract<
-  MediaItemMenuEntry,
-  { kind: "action" }
->["key"];
+type MediaItemMenuActionKey = Extract<MediaItemMenuEntry, { kind: "action" }>["key"];
 
 interface BuildMediaItemMenuModelOptions {
   mediaType: MediaItemType;
@@ -160,8 +172,7 @@ export function buildMediaItemMenuModel({
 }: BuildMediaItemMenuModelOptions): MediaItemMenuEntry[] {
   const entries: MediaItemMenuEntry[] = [];
   const isAudiobook = mediaType === "audiobook";
-  const isLeaf =
-    mediaType === "movie" || mediaType === "episode" || isAudiobook;
+  const isLeaf = mediaType === "movie" || mediaType === "episode" || isAudiobook;
 
   if (isLeaf && (hasPartialProgress || userState?.played === true)) {
     entries.push({
@@ -188,16 +199,12 @@ export function buildMediaItemMenuModel({
         {
           kind: "action",
           key: "toggleFavorite",
-          label: userState.is_favorite
-            ? "Remove from Favorites"
-            : "Add to Favorites",
+          label: userState.is_favorite ? "Remove from Favorites" : "Add to Favorites",
         },
         {
           kind: "action",
           key: "toggleWatchlist",
-          label: userState.in_watchlist
-            ? "Remove from Watchlist"
-            : "Add to Watchlist",
+          label: userState.in_watchlist ? "Remove from Watchlist" : "Add to Watchlist",
         },
       );
     }
@@ -259,9 +266,7 @@ export function buildMediaItemMenuModel({
   return entries;
 }
 
-function stopMenuEvent(
-  event: Pick<Event, "preventDefault" | "stopPropagation">,
-) {
+function stopMenuEvent(event: Pick<Event, "preventDefault" | "stopPropagation">) {
   event.preventDefault();
   event.stopPropagation();
 }
@@ -288,10 +293,7 @@ function MediaItemMenuActionIcon({
       return (
         <Heart
           aria-hidden="true"
-          className={cn(
-            "size-4",
-            userState?.is_favorite && "fill-current text-red-400",
-          )}
+          className={cn("size-4", userState?.is_favorite && "fill-current text-red-400")}
         />
       );
     case "toggleWatchlist":
@@ -307,9 +309,7 @@ function MediaItemMenuActionIcon({
     case "viewPlayHistory":
       return <MediaActionIcon action="viewPlayHistory" />;
     case "refreshMetadata":
-      return (
-        <MediaActionIcon action="refreshMetadata" isPending={isRefreshing} />
-      );
+      return <MediaActionIcon action="refreshMetadata" isPending={isRefreshing} />;
     case "editMetadata":
       return <MediaActionIcon action="editMetadata" />;
     case "matchItem":
@@ -369,12 +369,8 @@ function MediaItemActionSheet({
         className="max-h-[80svh] gap-0 overflow-y-auto rounded-t-2xl p-0 pb-[env(safe-area-inset-bottom)]"
       >
         <SheetHeader className="px-5 pt-4 pb-2">
-          <SheetTitle className="truncate text-left text-base">
-            {title ?? "Actions"}
-          </SheetTitle>
-          <SheetDescription className="sr-only">
-            Choose an action for this item.
-          </SheetDescription>
+          <SheetTitle className="truncate text-left text-base">{title ?? "Actions"}</SheetTitle>
+          <SheetDescription className="sr-only">Choose an action for this item.</SheetDescription>
         </SheetHeader>
         <div className="flex flex-col pb-3">
           {entries.map((entry, index) =>
@@ -452,10 +448,7 @@ function CardQuickActionButton({
       aria-pressed={pressed}
       title={label}
       disabled={isPending}
-      className={cn(
-        "relative cursor-pointer overflow-visible disabled:opacity-70",
-        className,
-      )}
+      className={cn("relative cursor-pointer overflow-visible disabled:opacity-70", className)}
       onPointerDown={(event) => {
         if (event.button !== 0) {
           pointerStartRef.current = null;
@@ -640,6 +633,67 @@ function WatchedQuickActionButton({
 
 type MetadataAction = "edit" | "match";
 
+/** What the status dialog stands in for: the item fetch or the dialog's own chunk. */
+type MetadataActionPending = "details" | "dialog";
+
+const PENDING_TEXT: Record<MetadataActionPending, { loading: string; failed: string }> = {
+  details: {
+    loading: "Loading the latest item details…",
+    failed: "The item details could not be loaded.",
+  },
+  dialog: {
+    loading: "Loading the dialog…",
+    failed: "The dialog could not be loaded.",
+  },
+};
+
+function MetadataActionStatusDialog({
+  action,
+  pending,
+  loading,
+  error,
+  retryLabel = "Try Again",
+  onRetry,
+  onClose,
+}: {
+  action: MetadataAction;
+  pending: MetadataActionPending;
+  loading: boolean;
+  error?: unknown;
+  retryLabel?: string;
+  onRetry?: () => void;
+  onClose: () => void;
+}) {
+  const actionLabel = action === "edit" ? "Edit Metadata" : "Match Item";
+  const text = PENDING_TEXT[pending];
+
+  return (
+    <Dialog open onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>{actionLabel}</DialogTitle>
+          <DialogDescription>{loading ? text.loading : text.failed}</DialogDescription>
+        </DialogHeader>
+        {loading ? (
+          <div className="text-muted-foreground flex items-center gap-2 text-sm">
+            <LoaderCircle className="size-4 animate-spin" />
+            Loading…
+          </div>
+        ) : (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-muted-foreground text-sm">
+              {error instanceof Error ? error.message : "Please try again."}
+            </p>
+            <Button type="button" variant="outline" size="sm" onClick={onRetry}>
+              {retryLabel}
+            </Button>
+          </div>
+        )}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export function MetadataActionDialogHost({
   action,
   contentId,
@@ -660,60 +714,56 @@ export function MetadataActionDialogHost({
   } = useCatalogItemDetail(contentId, libraryId);
 
   if (item) {
-    return action === "edit" ? (
-      <EditMetadataDialog
-        item={item}
-        open
-        onOpenChange={(open) => !open && onClose()}
-      />
-    ) : (
-      <MatchItemDialog
-        key={item.content_id}
-        item={
-          libraryId === undefined ? item : { ...item, library_id: libraryId }
-        }
-        open
-        onOpenChange={(open) => !open && onClose()}
-      />
+    return (
+      <LocalErrorBoundary
+        fallback={(dialogError) => (
+          // Browsers remember a failed module import for the life of the page,
+          // so importing the chunk again cannot succeed; a reload can.
+          <MetadataActionStatusDialog
+            action={action}
+            pending="dialog"
+            loading={false}
+            error={dialogError}
+            retryLabel="Reload Page"
+            onRetry={() => window.location.reload()}
+            onClose={onClose}
+          />
+        )}
+      >
+        <Suspense
+          fallback={
+            <MetadataActionStatusDialog
+              action={action}
+              pending="dialog"
+              loading
+              onClose={onClose}
+            />
+          }
+        >
+          {action === "edit" ? (
+            <EditMetadataDialog item={item} open onOpenChange={(open) => !open && onClose()} />
+          ) : (
+            <MatchItemDialog
+              key={item.content_id}
+              item={libraryId === undefined ? item : { ...item, library_id: libraryId }}
+              open
+              onOpenChange={(open) => !open && onClose()}
+            />
+          )}
+        </Suspense>
+      </LocalErrorBoundary>
     );
   }
 
-  const actionLabel = action === "edit" ? "Edit Metadata" : "Match Item";
-  const loading = isLoading || isFetching;
-
   return (
-    <Dialog open onOpenChange={(open) => !open && onClose()}>
-      <DialogContent className="max-w-sm">
-        <DialogHeader>
-          <DialogTitle>{actionLabel}</DialogTitle>
-          <DialogDescription>
-            {loading
-              ? "Loading the latest item details…"
-              : "The item details could not be loaded."}
-          </DialogDescription>
-        </DialogHeader>
-        {loading ? (
-          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-            <LoaderCircle className="size-4 animate-spin" />
-            Loading…
-          </div>
-        ) : (
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-muted-foreground text-sm">
-              {error instanceof Error ? error.message : "Please try again."}
-            </p>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={() => void refetch()}
-            >
-              Try Again
-            </Button>
-          </div>
-        )}
-      </DialogContent>
-    </Dialog>
+    <MetadataActionStatusDialog
+      action={action}
+      pending="details"
+      loading={isLoading || isFetching}
+      error={error}
+      onRetry={() => void refetch()}
+      onClose={onClose}
+    />
   );
 }
 
@@ -740,17 +790,14 @@ export default function MediaItemMenu({
   const { profile: currentProfile, hasSelectedProfile } = useCurrentProfile();
   const profileIsResolved = !hasSelectedProfile || Boolean(currentProfile);
   const isAdmin = useIsActingAdmin();
-  const canCurateMetadata =
-    profileIsResolved && canCurateMetadataForUser(user, currentProfile);
+  const canCurateMetadata = profileIsResolved && canCurateMetadataForUser(user, currentProfile);
   const { cardPresentation } = useUICustomization();
   const hasFinePointer = useHasFinePointer();
   const [currentUserState, setCurrentUserState] = useState(userState);
   const lastSyncedUserStateRef = useRef(userState);
   const [refreshDialogOpen, setRefreshDialogOpen] = useState(false);
   const [filesDialogOpen, setFilesDialogOpen] = useState(false);
-  const [metadataAction, setMetadataAction] = useState<MetadataAction | null>(
-    null,
-  );
+  const [metadataAction, setMetadataAction] = useState<MetadataAction | null>(null);
   const [actionSheetOpen, setActionSheetOpen] = useState(false);
   // A card that has never opened one of these surfaces mounts nothing — a home
   // page holds hundreds of cards. Once opened, the overlay stays mounted so
@@ -778,24 +825,24 @@ export default function MediaItemMenu({
   const watchedMutation = useWatchedStateMutation({
     content_id: contentId,
     type: mediaType,
-    user_data: currentUserState
-      ? { played: currentUserState.played }
-      : undefined,
+    user_data: currentUserState ? { played: currentUserState.played } : undefined,
   });
   const favoriteMutation = useToggleFavorite(contentId);
   const watchlistMutation = useToggleWatchlist(contentId);
   const refreshMetadataMutation = useRefreshItemMetadata();
   const dismissHomeItemMutation = useDismissHomeItem();
   const dismissLabel =
-    dismissAction?.surface === "continue_watching"
-      ? mediaType === "audiobook"
-        ? "Remove from Continue Listening"
-        : mediaType === "ebook"
-          ? "Remove from Continue Reading"
-          : "Remove from Continue Watching"
-      : dismissAction?.surface === "next_up"
-        ? "Remove from Next Up"
-        : undefined;
+    dismissAction && dismissalDropsShow(dismissAction.mediaType ?? mediaType)
+      ? "Drop show"
+      : dismissAction?.surface === "continue_watching"
+        ? mediaType === "audiobook"
+          ? "Remove from Continue Listening"
+          : mediaType === "ebook"
+            ? "Remove from Continue Reading"
+            : "Remove from Continue Watching"
+        : dismissAction?.surface === "next_up"
+          ? "Remove from Next Up"
+          : undefined;
   const currentHref = useMemo(
     () => `${location.pathname}${location.search}`,
     [location.pathname, location.search],
@@ -810,8 +857,13 @@ export default function MediaItemMenu({
     showCollectionActions,
     dismissLabel,
   });
+  const offersMetadataDialogs = model.some(
+    (entry) =>
+      entry.kind === "action" && (entry.key === "editMetadata" || entry.key === "matchItem"),
+  );
   useLongPress(longPressRef, {
     onLongPress: () => {
+      if (offersMetadataDialogs) prefetchMetadataDialogs();
       setActionSheetMounted(true);
       setActionSheetOpen(true);
     },
@@ -822,9 +874,7 @@ export default function MediaItemMenu({
     variant === "poster" &&
     showFavoriteShortcut &&
     showsFavoriteQuickAction(quickActionMode) &&
-    model.some(
-      (entry) => entry.kind === "action" && entry.key === "toggleFavorite",
-    );
+    model.some((entry) => entry.kind === "action" && entry.key === "toggleFavorite");
   const hasWatchedAction = model.some(
     (entry) => entry.kind === "action" && entry.key === "toggleWatched",
   );
@@ -849,10 +899,7 @@ export default function MediaItemMenu({
     refreshMetadataMutation.isPending ||
     dismissHomeItemMutation.isPending;
 
-  const triggerClassName = mediaItemMenuTriggerClassName(
-    variant,
-    posterActionDensity,
-  );
+  const triggerClassName = mediaItemMenuTriggerClassName(variant, posterActionDensity);
 
   async function runOptimisticToggle(
     field: "played" | "is_favorite",
@@ -862,9 +909,7 @@ export default function MediaItemMenu({
     if (!currentUserState || pending) return;
     const previousValue = currentUserState[field];
     const nextValue = !previousValue;
-    setCurrentUserState((previous) =>
-      previous ? { ...previous, [field]: nextValue } : previous,
-    );
+    setCurrentUserState((previous) => (previous ? { ...previous, [field]: nextValue } : previous));
     try {
       await mutate(nextValue, previousValue);
     } catch {
@@ -875,18 +920,14 @@ export default function MediaItemMenu({
   }
 
   async function handleWatchedToggle() {
-    await runOptimisticToggle(
-      "played",
-      watchedMutation.isPending,
-      (nextValue) => watchedMutation.mutateAsync(nextValue),
+    await runOptimisticToggle("played", watchedMutation.isPending, (nextValue) =>
+      watchedMutation.mutateAsync(nextValue),
     );
   }
 
   async function handleFavoriteToggle() {
-    await runOptimisticToggle(
-      "is_favorite",
-      favoriteMutation.isPending,
-      (_, previousValue) => favoriteMutation.mutateAsync(previousValue),
+    await runOptimisticToggle("is_favorite", favoriteMutation.isPending, (_, previousValue) =>
+      favoriteMutation.mutateAsync(previousValue),
     );
   }
 
@@ -904,11 +945,14 @@ export default function MediaItemMenu({
           );
           return;
         }
-        playbackController.startPlayback({
-          contentId,
-          restart: true,
-          returnHref: currentHref,
-        });
+        playbackController.startPlayback(
+          {
+            contentId,
+            restart: true,
+            returnHref: currentHref,
+          },
+          "viewer",
+        );
         return;
       }
       case "toggleWatched": {
@@ -933,9 +977,7 @@ export default function MediaItemMenu({
         return;
       }
       case "viewPlayHistory": {
-        navigate(
-          `/admin/history?media_item_id=${encodeURIComponent(contentId)}`,
-        );
+        navigate(`/admin/history?media_item_id=${encodeURIComponent(contentId)}`);
         return;
       }
       case "dismissFromHome": {
@@ -1023,31 +1065,21 @@ export default function MediaItemMenu({
         onPointerDown={stopMenuEvent}
       >
         {model.length === 0 ? (
-          <button
-            type="button"
-            aria-label="More actions"
-            disabled
-            className={triggerClassName}
-          >
-            <MoreVertical
-              className={mediaItemMenuIconClassName(
-                variant,
-                posterActionDensity,
-              )}
-            />
+          <button type="button" aria-label="More actions" disabled className={triggerClassName}>
+            <MoreVertical className={mediaItemMenuIconClassName(variant, posterActionDensity)} />
           </button>
         ) : (
           <DropdownMenu
             modal={false}
             onOpenChange={(open) => {
               if (open) {
+                if (offersMetadataDialogs) prefetchMetadataDialogs();
                 pointerClosedMenuRef.current = false;
                 lastMenuInteractionRef.current = null;
                 return;
               }
 
-              pointerClosedMenuRef.current =
-                lastMenuInteractionRef.current === "pointer";
+              pointerClosedMenuRef.current = lastMenuInteractionRef.current === "pointer";
               lastMenuInteractionRef.current = null;
             }}
           >
@@ -1065,10 +1097,7 @@ export default function MediaItemMenu({
                 }}
               >
                 <MoreVertical
-                  className={mediaItemMenuIconClassName(
-                    variant,
-                    posterActionDensity,
-                  )}
+                  className={mediaItemMenuIconClassName(variant, posterActionDensity)}
                 />
               </button>
             </DropdownMenuTrigger>

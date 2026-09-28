@@ -6,9 +6,7 @@ import {
   type WatchPlaybackHostState,
 } from "./watchPlaybackReducer";
 
-function makeRequest(
-  overrides: Partial<ReturnType<typeof createWatchRouteRequest>> = {},
-) {
+function makeRequest(overrides: Partial<ReturnType<typeof createWatchRouteRequest>> = {}) {
   return {
     ...createWatchRouteRequest({
       contentId: "movie-1",
@@ -19,9 +17,7 @@ function makeRequest(
   };
 }
 
-function makeState(
-  overrides: Partial<WatchPlaybackHostState> = {},
-): WatchPlaybackHostState {
+function makeState(overrides: Partial<WatchPlaybackHostState> = {}): WatchPlaybackHostState {
   return {
     ...createEmptyPlaybackState(),
     request: makeRequest(),
@@ -35,10 +31,11 @@ describe("watchPlaybackReducer", () => {
     const next = watchPlaybackReducer(
       makeState({
         pictureInPictureActive: true,
-        snapshot: { currentTime: 120, duration: 3600, playing: true },
         transport: {
           playPause: () => {},
           seekBy: () => {},
+          skipBack: () => {},
+          skipForward: () => {},
           seekTo: () => {},
           togglePictureInPicture: () => {},
         },

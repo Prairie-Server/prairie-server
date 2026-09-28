@@ -27,11 +27,7 @@ function formatCountdown(ms: number): string {
   return `${m}:${String(s).padStart(2, "0")}`;
 }
 
-export function SleepTimerMenu({
-  setting,
-  remainingMs,
-  onChange,
-}: SleepTimerMenuProps) {
+export function SleepTimerMenu({ setting, remainingMs, onChange }: SleepTimerMenuProps) {
   const [open, setOpen] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const itemsRef = useRef<(HTMLButtonElement | null)[]>([]);
@@ -48,10 +44,7 @@ export function SleepTimerMenu({
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
-  const label =
-    armed && remainingMs != null
-      ? `Sleep ${formatCountdown(remainingMs)}`
-      : "Sleep";
+  const label = armed && remainingMs != null ? `Sleep ${formatCountdown(remainingMs)}` : "Sleep";
 
   return (
     <div ref={menuRef} className="relative" onBlur={handleBlur}>

@@ -18,7 +18,7 @@ vi.mock("@/hooks/queries/catalog", () => ({
   }),
 }));
 
-vi.mock("@/hooks/queries/people", () => ({
+vi.mock("@/hooks/queries/personSearch", () => ({
   usePersonSearch: () => ({
     data: [],
     isLoading: false,
@@ -451,9 +451,7 @@ describe("CollectionGuidedRulesEditor original language field", () => {
           groups: [
             {
               match: "all",
-              rules: [
-                { field: "original_language", op: "is", value: "English" },
-              ],
+              rules: [{ field: "original_language", op: "is", value: "English" }],
             },
           ],
         }}
@@ -467,10 +465,7 @@ describe("CollectionGuidedRulesEditor original language field", () => {
 
   it("renders the media type control", () => {
     const markup = renderToStaticMarkup(
-      <CollectionGuidedRulesEditor
-        value={createEmptyQueryDefinition()}
-        onChange={() => {}}
-      />,
+      <CollectionGuidedRulesEditor value={createEmptyQueryDefinition()} onChange={() => {}} />,
     );
 
     expect(markup).toContain("Media Type");

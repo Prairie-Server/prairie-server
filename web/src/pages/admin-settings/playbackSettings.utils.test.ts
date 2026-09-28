@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   buildHWDeviceRows,
   chapterThumbnailExecutionOptions,
+  describeDetection,
+  hasHardwareToneMapCapability,
   hasUsableTranscodeNode,
   nodeInventoriesDiverge,
   parseHWDeviceList,
@@ -18,43 +20,31 @@ describe("parseHWDeviceList", () => {
   });
 
   it("splits and trims a comma list", () => {
-    expect(
-      parseHWDeviceList(" /dev/dri/renderD128 ,/dev/dri/renderD129"),
-    ).toEqual(DETECTED);
+    expect(parseHWDeviceList(" /dev/dri/renderD128 ,/dev/dri/renderD129")).toEqual(DETECTED);
   });
 });
 
 describe("toggleHWDevice", () => {
   it("adds a device to an empty selection", () => {
-    expect(toggleHWDevice("", "/dev/dri/renderD129", DETECTED)).toBe(
-      "/dev/dri/renderD129",
-    );
+    expect(toggleHWDevice("", "/dev/dri/renderD129", DETECTED)).toBe("/dev/dri/renderD129");
   });
 
   it("keeps detection order regardless of click order", () => {
     const afterSecond = toggleHWDevice("", "/dev/dri/renderD129", DETECTED);
-    const afterBoth = toggleHWDevice(
-      afterSecond,
-      "/dev/dri/renderD128",
-      DETECTED,
-    );
+    const afterBoth = toggleHWDevice(afterSecond, "/dev/dri/renderD128", DETECTED);
     expect(afterBoth).toBe("/dev/dri/renderD128,/dev/dri/renderD129");
   });
 
   it("removes an already-selected device", () => {
     expect(
-      toggleHWDevice(
-        "/dev/dri/renderD128,/dev/dri/renderD129",
-        "/dev/dri/renderD128",
-        DETECTED,
-      ),
+      toggleHWDevice("/dev/dri/renderD128,/dev/dri/renderD129", "/dev/dri/renderD128", DETECTED),
     ).toBe("/dev/dri/renderD129");
   });
 
   it("preserves selected devices missing from the current detection pass", () => {
-    expect(
-      toggleHWDevice("/dev/dri/renderD200", "/dev/dri/renderD128", DETECTED),
-    ).toBe("/dev/dri/renderD128,/dev/dri/renderD200");
+    expect(toggleHWDevice("/dev/dri/renderD200", "/dev/dri/renderD128", DETECTED)).toBe(
+      "/dev/dri/renderD128,/dev/dri/renderD200",
+    );
   });
 });
 
@@ -95,10 +85,7 @@ describe("buildHWDeviceRows", () => {
   });
 
   it("falls back to render_devices paths when an older node omits details", () => {
-    const rows = buildHWDeviceRows(
-      detection({ render_device_details: undefined }),
-      "",
-    );
+    const rows = buildHWDeviceRows(detection({ render_device_details: undefined }), "");
     expect(rows).toHaveLength(2);
     expect(rows[0]).toMatchObject({
       path: DETECTED[0],
@@ -149,9 +136,7 @@ describe("nodeInventoriesDiverge", () => {
 
   it("is false without nodes or with one node", () => {
     expect(nodeInventoriesDiverge(undefined)).toBe(false);
-    expect(
-      nodeInventoriesDiverge({ ...(base as object), nodes: [] } as never),
-    ).toBe(false);
+    expect(nodeInventoriesDiverge({ ...(base as object), nodes: [] } as never)).toBe(false);
     expect(
       nodeInventoriesDiverge({
         ...(base as object),
@@ -207,9 +192,7 @@ describe("hasUsableTranscodeNode", () => {
     expect(hasUsableTranscodeNode([node({ enabled: false })])).toBe(false);
     expect(hasUsableTranscodeNode([node({ healthy: false })])).toBe(false);
     expect(hasUsableTranscodeNode([node({ type: "streaming" })])).toBe(false);
-    expect(
-      hasUsableTranscodeNode([node({ healthy: false }), node({ id: 2 })]),
-    ).toBe(true);
+    expect(hasUsableTranscodeNode([node({ healthy: false }), node({ id: 2 })])).toBe(true);
   });
 });
 
@@ -231,17 +214,64 @@ describe("chapterThumbnailExecutionOptions", () => {
   });
 
   it("keeps a saved node-backed mode selectable so it can be changed", () => {
-    expect(disabledValues("transcode_nodes_only", false)).toEqual([
-      "prefer_transcode_nodes",
-    ]);
-    expect(disabledValues("prefer_transcode_nodes", false)).toEqual([
-      "transcode_nodes_only",
-    ]);
+    expect(disabledValues("transcode_nodes_only", false)).toEqual(["prefer_transcode_nodes"]);
+    expect(disabledValues("prefer_transcode_nodes", false)).toEqual(["transcode_nodes_only"]);
   });
 
   it("never disables local extraction", () => {
-    expect(disabledValues("transcode_nodes_only", false)).not.toContain(
-      "local",
-    );
+    expect(disabledValues("transcode_nodes_only", false)).not.toContain("local");
+  });
+});
+
+describe("describeDetection", () => {
+  it("returns nothing before a probe has answered", () => {
+    expect(describeDetection(undefined)).toBeUndefined();
+  });
+
+  it("names the backend, first device, and node source", () => {
+    expect(
+      describeDetection({
+        resolved: "vaapi",
+        render_devices: ["/dev/dri/renderD128"],
+        intel_detected: true,
+        source: "transcode_node",
+      }),
+    ).toBe("Detected VA-API on /dev/dri/renderD128 (transcode node)");
+    expect(
+      describeDetection({
+        resolved: "none",
+        render_devices: [],
+        intel_detected: false,
+        source: "local",
+      }),
+    ).toBe("No supported graphics hardware found");
+  });
+});
+
+describe("hasHardwareToneMapCapability", () => {
+  it("is true only when a validated hardware tone mapper is listed", () => {
+    expect(hasHardwareToneMapCapability(undefined)).toBe(false);
+    expect(
+      hasHardwareToneMapCapability({
+        resolved: "nvenc",
+        render_devices: [],
+        intel_detected: false,
+        source: "local",
+        tone_map_capabilities: [
+          { mode: "software", backend: "software", filter: "zscale", source_kinds: ["hdr10"] },
+        ],
+      }),
+    ).toBe(false);
+    expect(
+      hasHardwareToneMapCapability({
+        resolved: "nvenc",
+        render_devices: [],
+        intel_detected: false,
+        source: "local",
+        tone_map_capabilities: [
+          { mode: "hardware", backend: "cuda", filter: "tonemap_cuda", source_kinds: ["hdr10"] },
+        ],
+      }),
+    ).toBe(true);
   });
 });

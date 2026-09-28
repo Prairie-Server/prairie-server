@@ -10,9 +10,7 @@ export function resolveCurrentProfile(
 ): Profile | null {
   const activeProfileId = selectedProfileId ?? cachedProfile?.id ?? null;
   if (activeProfileId) {
-    const freshProfile = profiles.find(
-      (profile) => profile.id === activeProfileId,
-    );
+    const freshProfile = profiles.find((profile) => profile.id === activeProfileId);
     if (freshProfile) {
       return freshProfile;
     }
@@ -23,14 +21,13 @@ export function resolveCurrentProfile(
 export function useCurrentProfile() {
   // Optional so components that can render outside AuthProvider (e.g. via
   // useOptionalAuth) can still call hooks built on top of this one.
-  const cachedProfile = useOptionalAuth()?.profile ?? null;
-  const profilesQuery = useProfiles();
+  const auth = useOptionalAuth();
+  const cachedProfile = auth?.profile ?? null;
+  // The always-mounted shell calls this before a session exists (at boot and
+  // on the login screen), when the account's profile list can only answer 401.
+  const profilesQuery = useProfiles({ enabled: Boolean(auth?.user) });
   const selectedProfileId = storage.get(storage.KEYS.PROFILE_ID);
-  const profile = resolveCurrentProfile(
-    profilesQuery.data ?? [],
-    cachedProfile,
-    selectedProfileId,
-  );
+  const profile = resolveCurrentProfile(profilesQuery.data ?? [], cachedProfile, selectedProfileId);
 
   // Return only the fields callers consume. Spreading the whole query result
   // would mark every query property as tracked, re-rendering every subscriber

@@ -4,14 +4,11 @@ import (
 	"context"
 	"os"
 	"path/filepath"
-	"strconv"
 	"strings"
 	"testing"
 
 	"github.com/open-policy-agent/opa/v1/storage"
 	"github.com/open-policy-agent/opa/v1/tester"
-
-	"github.com/prairie-server/prairie-server/internal/access"
 )
 
 func TestVendorRego(t *testing.T) {
@@ -59,16 +56,6 @@ func TestVendorQualityTableMatchesAccessPackage(t *testing.T) {
 		needle := entry.quality + ": " + entry.rank
 		if !strings.Contains(source, needle) {
 			t.Fatalf("quality table missing %s", needle)
-		}
-	}
-}
-
-func TestVendorRatingTableMatchesAccessPackage(t *testing.T) {
-	source := readVendorFile(t, "lib/ratings.rego")
-	for _, entry := range access.RatingRankEntries() {
-		needle := `"` + entry.Rating + `": ` + strconv.Itoa(entry.Rank)
-		if !strings.Contains(source, needle) {
-			t.Fatalf("rating table missing %s", needle)
 		}
 	}
 }

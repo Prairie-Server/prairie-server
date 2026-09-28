@@ -61,9 +61,7 @@ function Harness() {
         descriptor={rebuilt}
         values={form.values}
         onChange={(values) => setForm((f) => ({ ...f, values }))}
-        onValidityChange={(valid) =>
-          setForm((f) => (f.valid === valid ? f : { ...f, valid }))
-        }
+        onValidityChange={(valid) => setForm((f) => (f.valid === valid ? f : { ...f, valid }))}
       />
     </div>
   );

@@ -87,13 +87,9 @@ async function loadLadder(
   config: ReturnType<typeof usePlayerConfig>,
 ): Promise<QualityLadderRung[]> {
   if (cachedLadder) return cachedLadder;
-  inFlight ??= playerFetch<QualityLadderResponse>(
-    config,
-    "/playback/quality-ladder",
-    {
-      method: "GET",
-    },
-  )
+  inFlight ??= playerFetch<QualityLadderResponse>(config, "/playback/quality-ladder", {
+    method: "GET",
+  })
     .then((resp) => {
       // An empty or malformed ladder is a failure, and failures are not cached:
       // caching the fallback here would make every later mount skip the server
@@ -142,9 +138,7 @@ async function loadLadder(
  */
 export function useQualityLadder(): QualityLadderRung[] {
   const config = usePlayerConfig();
-  const [ladder, setLadder] = useState<QualityLadderRung[]>(
-    cachedLadder ?? FALLBACK_LADDER,
-  );
+  const [ladder, setLadder] = useState<QualityLadderRung[]>(cachedLadder ?? FALLBACK_LADDER);
 
   useEffect(() => {
     if (cachedLadder) {

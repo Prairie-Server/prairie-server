@@ -3,10 +3,7 @@
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import type {
-  EffectiveSetting,
-  EffectiveSettingsMap,
-} from "@/hooks/queries/settingValues";
+import type { EffectiveSetting, EffectiveSettingsMap } from "@/hooks/queries/settingValues";
 import { SETTING_KEYS, type SettingKey } from "@/lib/settingsContract";
 import { DEFAULT_SUBTITLE_APPEARANCE } from "@/lib/subtitleAppearance";
 
@@ -18,24 +15,20 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/hooks/queries/settingValues", async () => {
-  const actual = await vi.importActual<
-    typeof import("@/hooks/queries/settingValues")
-  >("@/hooks/queries/settingValues");
+  const actual = await vi.importActual<typeof import("@/hooks/queries/settingValues")>(
+    "@/hooks/queries/settingValues",
+  );
 
   return {
     ...actual,
-    useEffectiveSettings: (...args: unknown[]) =>
-      mocks.useEffectiveSettings(...args),
-    useSetSettingValue: (...args: unknown[]) =>
-      mocks.useSetSettingValue(...args),
-    useClearSettingValue: (...args: unknown[]) =>
-      mocks.useClearSettingValue(...args),
+    useEffectiveSettings: (...args: unknown[]) => mocks.useEffectiveSettings(...args),
+    useSetSettingValue: (...args: unknown[]) => mocks.useSetSettingValue(...args),
+    useClearSettingValue: (...args: unknown[]) => mocks.useClearSettingValue(...args),
   };
 });
 
 vi.mock("@/hooks/queries/subtitleAppearance", () => ({
-  useSubtitleAppearanceSetting: (...args: unknown[]) =>
-    mocks.useSubtitleAppearanceSetting(...args),
+  useSubtitleAppearanceSetting: (...args: unknown[]) => mocks.useSubtitleAppearanceSetting(...args),
 }));
 
 import SubtitleAppearanceSettings from "./SubtitleAppearanceSettings";
@@ -48,8 +41,7 @@ class NoopResizeObserver {
   unobserve() {}
   disconnect() {}
 }
-globalThis.ResizeObserver ??=
-  NoopResizeObserver as unknown as typeof ResizeObserver;
+globalThis.ResizeObserver ??= NoopResizeObserver as unknown as typeof ResizeObserver;
 
 function resolved(
   key: SettingKey,
@@ -130,28 +122,20 @@ describe("SubtitleAppearanceSettings", () => {
 
   it("reads a stored forced-subtitle choice rather than the default", () => {
     mocks.useEffectiveSettings.mockReturnValue({
-      data: resolved(
-        SETTING_KEYS.PLAYBACK_SHOW_FORCED_SUBTITLES,
-        false,
-        "profile",
-      ),
+      data: resolved(SETTING_KEYS.PLAYBACK_SHOW_FORCED_SUBTITLES, false, "profile"),
       isLoading: false,
     });
 
     render(<SubtitleAppearanceSettings />);
 
-    expect(
-      screen
-        .getByLabelText("Show forced subtitles")
-        .getAttribute("aria-checked"),
-    ).toBe("false");
+    expect(screen.getByLabelText("Show forced subtitles").getAttribute("aria-checked")).toBe(
+      "false",
+    );
   });
 
   it("offers the appearance reset only when this device holds an override", () => {
     render(<SubtitleAppearanceSettings />);
-    expect(
-      screen.queryByRole("button", { name: /Reset Appearance/ }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /Reset Appearance/ })).toBeNull();
 
     cleanup();
     mocks.useSubtitleAppearanceSetting.mockReturnValue({

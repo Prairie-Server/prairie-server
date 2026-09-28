@@ -33,9 +33,7 @@ export function CollectionSearchableSelect({
     if (!search) return options;
     const lower = search.toLowerCase();
     return options.filter(
-      (opt) =>
-        opt.title.toLowerCase().includes(lower) ||
-        opt.group.toLowerCase().includes(lower),
+      (opt) => opt.title.toLowerCase().includes(lower) || opt.group.toLowerCase().includes(lower),
     );
   }, [options, search]);
 
@@ -53,10 +51,7 @@ export function CollectionSearchableSelect({
     return map;
   }, [filtered]);
 
-  const selectedOption = React.useMemo(
-    () => options.find((o) => o.id === value),
-    [options, value],
-  );
+  const selectedOption = React.useMemo(() => options.find((o) => o.id === value), [options, value]);
 
   const displayText = selectedOption
     ? `${selectedOption.title} (${selectedOption.group})`
@@ -74,9 +69,7 @@ export function CollectionSearchableSelect({
             !value && "text-muted-foreground",
           )}
         >
-          <span className="truncate">
-            {isLoading ? "Loading..." : displayText}
-          </span>
+          <span className="truncate">{isLoading ? "Loading..." : displayText}</span>
           <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
         </button>
       </PopoverPrimitive.Trigger>
@@ -100,13 +93,9 @@ export function CollectionSearchableSelect({
 
           <div className="max-h-60 overflow-y-auto p-1">
             {isLoading ? (
-              <p className="text-muted-foreground py-4 text-center text-sm">
-                Loading...
-              </p>
+              <p className="text-muted-foreground py-4 text-center text-sm">Loading...</p>
             ) : filtered.length === 0 ? (
-              <p className="text-muted-foreground py-4 text-center text-sm">
-                No collections found
-              </p>
+              <p className="text-muted-foreground py-4 text-center text-sm">No collections found</p>
             ) : (
               <>
                 {/* Clear / placeholder option */}
@@ -123,14 +112,9 @@ export function CollectionSearchableSelect({
                   }}
                 >
                   <Check
-                    className={cn(
-                      "mr-2 h-4 w-4 shrink-0",
-                      value ? "opacity-0" : "opacity-100",
-                    )}
+                    className={cn("mr-2 h-4 w-4 shrink-0", value ? "opacity-0" : "opacity-100")}
                   />
-                  <span className="text-muted-foreground italic">
-                    Choose collection
-                  </span>
+                  <span className="text-muted-foreground italic">Choose collection</span>
                 </button>
 
                 {Array.from(grouped.entries()).map(([groupName, items]) => (

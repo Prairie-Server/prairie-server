@@ -1,15 +1,8 @@
 import { useSyncExternalStore, useState, type ImgHTMLAttributes } from "react";
-import {
-  artworkCandidates,
-  artworkSrcSet,
-  type ArtworkFormatSources,
-} from "@/lib/artworkUrl";
+import { artworkCandidates, artworkSrcSet, type ArtworkFormatSources } from "@/lib/artworkUrl";
 import { getImageFormats, subscribeImageFormats } from "@/lib/imageFormats";
 
-export type ArtworkImageProps = Omit<
-  ImgHTMLAttributes<HTMLImageElement>,
-  "src" | "srcSet"
-> & {
+export type ArtworkImageProps = Omit<ImgHTMLAttributes<HTMLImageElement>, "src" | "srcSet"> & {
   /** Canonical artwork URL (typically a .webp object key or signed URL). */
   src: string | null | undefined;
   /** Pre-signed AVIF sibling from the API (preferred for signed CDN URLs). */
@@ -68,8 +61,7 @@ export function ArtworkImage({
 
   const index = Math.min(failedCount, candidates.length - 1);
   const current = candidates[index]!;
-  const srcSet =
-    widths && widths.length > 0 ? artworkSrcSet(current, widths) : "";
+  const srcSet = widths && widths.length > 0 ? artworkSrcSet(current, widths) : "";
 
   return (
     <img

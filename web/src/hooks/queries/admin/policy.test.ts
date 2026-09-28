@@ -6,10 +6,7 @@ import { createElement } from "react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import {
-  installPolicyStorageMocks,
-  jsonResponse,
-} from "@/pages/admin-policy/policyTestUtils";
+import { installPolicyStorageMocks, jsonResponse } from "@/pages/admin-policy/policyTestUtils";
 
 import { useSimulatePolicy } from "./policy";
 
@@ -31,7 +28,7 @@ describe("policy admin hooks", () => {
     vi.stubGlobal(
       "fetch",
       vi.fn<typeof fetch>(async (input, init) => {
-        expect(String(input)).toBe("/api/v1/admin/policy/simulate");
+        expect(String(input)).toBe("/api/v2/admin/policy/simulate");
         expect(JSON.parse(String(init?.body))).toMatchObject({
           domain: "scope",
           input: { schema_version: 1 },
@@ -53,8 +50,7 @@ describe("policy admin hooks", () => {
     const { result } = renderHook(() => useSimulatePolicy(), {
       wrapper: createWrapper(),
     });
-    let response:
-      Awaited<ReturnType<typeof result.current.mutateAsync>> | undefined;
+    let response: Awaited<ReturnType<typeof result.current.mutateAsync>> | undefined;
 
     await act(async () => {
       response = await result.current.mutateAsync({

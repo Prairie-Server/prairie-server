@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/prairie-server/prairie-server/internal/blobstore"
 	"github.com/prairie-server/prairie-server/internal/imageutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/nodepool"
@@ -87,10 +88,7 @@ type SettingsReader interface {
 	Get(ctx context.Context, key string) (string, error)
 }
 
-type ObjectStore interface {
-	PutObject(ctx context.Context, bucket, key string, data []byte) error
-	Bucket() string
-}
+type ObjectStore = blobstore.Store
 
 type ThumbnailNotifier interface {
 	ChapterThumbnailReady(ctx context.Context, fileID int, chapterIndex int, thumbnailPath string, thumbnailThumbhash string)
@@ -119,12 +117,18 @@ type Service struct {
 
 	// hwMu guards the resolved-accelerator memo below. Resolving "auto" execs
 	// an FFmpeg capability probe and logs the verdict, so the result is cached
-	// against the configured value that produced it and recomputed only when
-	// that value actually changes.
-	hwMu            sync.Mutex
-	hwResolved      bool
-	hwResolvedFrom  string
-	resolvedHWAccel string
+	// against the configured values that produced it and recomputed only when
+	// they actually change.
+	//
+	// Both values, not just the backend: the walk is over the configured device
+	// set, so a device edit changes which backends have candidates to verify and
+	// therefore what "auto" resolves to. Keying on the backend alone would hold
+	// a verdict taken against the old device list.
+	hwMu             sync.Mutex
+	hwResolved       bool
+	hwResolvedFrom   string
+	hwResolvedDevice string
+	resolvedHWAccel  string
 
 	notifyNormal        chan struct{}
 	notifyPriority      chan struct{}
@@ -694,9 +698,12 @@ func (s *Service) resolveHWConfig(ctx context.Context) (string, string) {
 
 	s.hwMu.Lock()
 	defer s.hwMu.Unlock()
-	if !s.hwResolved || s.hwResolvedFrom != configuredAccel {
-		s.resolvedHWAccel = playback.ResolveHWAccelWithFFmpeg(configuredAccel, s.ffmpegPath)
+	if !s.hwResolved || s.hwResolvedFrom != configuredAccel || s.hwResolvedDevice != configuredDevice {
+		// The device set is an input to the walk, not just to execution: it is
+		// what decides which backends have candidates to probe.
+		s.resolvedHWAccel = playback.ResolveHWAccelWithFFmpeg(configuredAccel, s.ffmpegPath, configuredDevice)
 		s.hwResolvedFrom = configuredAccel
+		s.hwResolvedDevice = configuredDevice
 		s.hwResolved = true
 	}
 	// The configured device value passes through raw: ExtractFrame resolves it
@@ -849,12 +856,11 @@ func (s *Service) uploadChapterThumbnail(ctx context.Context, fileID, chapterInd
 		return "", "", fmt.Errorf("generate variants: %w", err)
 	}
 
-	bucket := s.store.Bucket()
 	var originalKey string
 	var w300Data []byte
 	for _, variant := range result.Variants {
 		key := filepath.ToSlash(fmt.Sprintf("chapter-images/%d/%d/%s%s", fileID, chapterIndex, variant.Key, result.Ext))
-		if err := s.store.PutObject(ctx, bucket, key, variant.Data); err != nil {
+		if err := s.store.Put(ctx, key, variant.Data); err != nil {
 			return "", "", fmt.Errorf("upload %s: %w", key, err)
 		}
 		if variant.Key == "original" {

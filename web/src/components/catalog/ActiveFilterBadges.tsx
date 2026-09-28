@@ -10,10 +10,7 @@ interface ActiveFilterBadgesProps {
   onClear: (patch: Partial<GuidedFormState>) => void;
 }
 
-export default function ActiveFilterBadges({
-  badges,
-  onClear,
-}: ActiveFilterBadgesProps) {
+export default function ActiveFilterBadges({ badges, onClear }: ActiveFilterBadgesProps) {
   if (badges.length === 0) return null;
 
   return (

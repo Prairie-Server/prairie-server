@@ -2,23 +2,18 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { Link, Navigate, useNavigate, useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
-import { api } from "@/api/client";
-import type { Profile, SignupStatusResponse } from "@/api/types";
+import { v2 } from "@/api/v2/request";
+import { listProfiles } from "@/hooks/queries/profiles";
 import { getBootstrapProfile, useAuth } from "@/hooks/useAuth";
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/PasswordInput";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { AuthBackground } from "@/components/auth/AuthBackground";
 import { AuthBrandHero } from "@/components/auth/AuthBrandHero";
 import { sanitizeAuthRedirect } from "@/lib/authRedirect";
+import { INVALID_EMAIL_MESSAGE, isValidEmail } from "@/lib/email";
 import { toast } from "sonner";
 
 import { Loader2, UserPlus } from "lucide-react";
@@ -36,7 +31,7 @@ export default function Signup() {
 
   const statusQuery = useQuery({
     queryKey: ["auth", "signup-status"],
-    queryFn: () => api<SignupStatusResponse>("/auth/signup"),
+    queryFn: () => v2("GET /api/v2/auth/signup"),
   });
 
   if (loading || statusQuery.isPending) {
@@ -48,9 +43,7 @@ export default function Signup() {
   }
 
   if (user) {
-    return (
-      <Navigate to={redirectTarget || (profile ? "/" : "/profiles")} replace />
-    );
+    return <Navigate to={redirectTarget || (profile ? "/" : "/profiles")} replace />;
   }
 
   if (statusQuery.data && !statusQuery.data.enabled) {
@@ -67,6 +60,10 @@ export default function Signup() {
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (!isValidEmail(email)) {
+      toast.error(INVALID_EMAIL_MESSAGE);
+      return;
+    }
     if (password !== confirmPassword) {
       toast.error("Passwords do not match");
       return;
@@ -79,7 +76,7 @@ export default function Signup() {
         return;
       }
       try {
-        const profileList = await api<{ profiles: Profile[] }>("/profiles");
+        const profileList = await listProfiles();
         const soleProfile = getBootstrapProfile(profileList.profiles ?? []);
         if (soleProfile) {
           selectProfile(soleProfile);
@@ -107,9 +104,7 @@ export default function Signup() {
         <Card className="auth-card border-0 bg-transparent shadow-none">
           <CardHeader className="sr-only">
             <CardTitle>Create account</CardTitle>
-            <CardDescription>
-              Create a new account to get started.
-            </CardDescription>
+            <CardDescription>Create a new account to get started.</CardDescription>
           </CardHeader>
           <CardContent className="space-y-5 p-0">
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -137,9 +132,7 @@ export default function Signup() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="signup-password">Password</Label>
-                <p className="text-muted-foreground text-xs">
-                  At least 8 characters
-                </p>
+                <p className="text-muted-foreground text-xs">At least 8 characters</p>
                 <PasswordInput
                   id="signup-password"
                   value={password}
@@ -149,9 +142,7 @@ export default function Signup() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="signup-confirm-password">
-                  Confirm password
-                </Label>
+                <Label htmlFor="signup-confirm-password">Confirm password</Label>
                 <PasswordInput
                   id="signup-confirm-password"
                   value={confirmPassword}
@@ -160,9 +151,7 @@ export default function Signup() {
                   required
                 />
                 {confirmPassword && password !== confirmPassword && (
-                  <p className="text-destructive text-xs">
-                    Passwords do not match
-                  </p>
+                  <p className="text-destructive text-xs">Passwords do not match</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -176,11 +165,7 @@ export default function Signup() {
                 />
               </div>
               <Button type="submit" className="w-full" disabled={submitting}>
-                {submitting ? (
-                  <Loader2 className="animate-spin" />
-                ) : (
-                  <UserPlus />
-                )}
+                {submitting ? <Loader2 className="animate-spin" /> : <UserPlus />}
                 {submitting ? "Creating account..." : "Create account"}
               </Button>
             </form>

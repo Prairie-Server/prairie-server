@@ -4,10 +4,7 @@ import { ImageIcon, Loader2, Trash2, Upload } from "lucide-react";
 import type { Library } from "@/api/types";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import {
-  useDeleteLibraryPoster,
-  useUploadLibraryPoster,
-} from "@/hooks/queries/admin/libraries";
+import { useDeleteLibraryPoster, useUploadLibraryPoster } from "@/hooks/queries/admin/libraries";
 
 export function LibraryPosterSection({ library }: { library: Library }) {
   const uploadMutation = useUploadLibraryPoster();
@@ -55,16 +52,8 @@ export function LibraryPosterSection({ library }: { library: Library }) {
           onClick={() => document.getElementById(fileInputId)?.click()}
           disabled={uploadMutation.isPending}
         >
-          {uploadMutation.isPending ? (
-            <Loader2 className="animate-spin" />
-          ) : (
-            <Upload />
-          )}
-          {uploadMutation.isPending
-            ? "..."
-            : library.poster_url
-              ? "Replace"
-              : "Upload"}
+          {uploadMutation.isPending ? <Loader2 className="animate-spin" /> : <Upload />}
+          {uploadMutation.isPending ? "..." : library.poster_url ? "Replace" : "Upload"}
         </Button>
         {library.poster_url && (
           <Button

@@ -35,6 +35,7 @@ const PER_USER_ADVANCED_KEYS = [
 const GLOBAL_ADVANCED_KEYS = [
   "download.server_bandwidth_mbps",
   "download.transcode_enabled",
+  "download.local_transcode_fallback",
   "download.artifact_dir",
   "download.max_concurrent_prepares",
   "download.artifact_max_bytes",
@@ -49,8 +50,7 @@ export default function DownloadsSettings() {
   const restartKeys = useRestartKeys();
 
   const anyDirty = (keys: string[]) => keys.some((key) => form.isDirty(key));
-  const allRestart = (keys: string[]) =>
-    keys.every((key) => restartKeys.has(key));
+  const allRestart = (keys: string[]) => keys.every((key) => restartKeys.has(key));
 
   // Where a blank prepared-file directory actually resolves to. The transcode
   // directory it derives from belongs to the Playback page, which is its own
@@ -78,11 +78,7 @@ export default function DownloadsSettings() {
       <SettingsPageHeader title="Downloads" className="mb-8" />
 
       <div className="flex-1 space-y-5">
-        <FieldGroup
-          label="Downloads"
-          restartAll={allRestart(KEYS)}
-          dirty={anyDirty(KEYS)}
-        >
+        <FieldGroup label="Downloads" restartAll={allRestart(KEYS)} dirty={anyDirty(KEYS)}>
           <SettingField
             label="Allow downloads"
             type="toggle"
@@ -108,12 +104,8 @@ export default function DownloadsSettings() {
               label="Downloads at once per user"
               hint="Counted per user, alongside the per-user bandwidth cap above."
               value={form.getValue("download.max_concurrent_per_user")}
-              onChange={(v) =>
-                form.setValue("download.max_concurrent_per_user", v)
-              }
-              restartRequired={restartKeys.has(
-                "download.max_concurrent_per_user",
-              )}
+              onChange={(v) => form.setValue("download.max_concurrent_per_user", v)}
+              restartRequired={restartKeys.has("download.max_concurrent_per_user")}
             />
             <LimitField
               label="Downloads per period"
@@ -137,12 +129,8 @@ export default function DownloadsSettings() {
               unit="Mbps"
               hint="All downloads on this server combined."
               value={form.getValue("download.server_bandwidth_mbps")}
-              onChange={(v) =>
-                form.setValue("download.server_bandwidth_mbps", v)
-              }
-              restartRequired={restartKeys.has(
-                "download.server_bandwidth_mbps",
-              )}
+              onChange={(v) => form.setValue("download.server_bandwidth_mbps", v)}
+              restartRequired={restartKeys.has("download.server_bandwidth_mbps")}
             />
             <SettingField
               label="Prepare device-friendly copies"
@@ -151,6 +139,14 @@ export default function DownloadsSettings() {
               value={form.getValue("download.transcode_enabled")}
               onChange={(v) => form.setValue("download.transcode_enabled", v)}
               restartRequired={restartKeys.has("download.transcode_enabled")}
+            />
+            <SettingField
+              label="Prepare locally when workers are unavailable"
+              type="toggle"
+              description="This is separate from live playback routing."
+              value={form.getValue("download.local_transcode_fallback") || "true"}
+              onChange={(v) => form.setValue("download.local_transcode_fallback", v)}
+              restartRequired={restartKeys.has("download.local_transcode_fallback")}
             />
             <PathSettingField
               label="Prepared file directory"
@@ -167,12 +163,8 @@ export default function DownloadsSettings() {
               type="number"
               description="0 uses the built-in default of 2."
               value={form.getValue("download.max_concurrent_prepares")}
-              onChange={(v) =>
-                form.setValue("download.max_concurrent_prepares", v)
-              }
-              restartRequired={restartKeys.has(
-                "download.max_concurrent_prepares",
-              )}
+              onChange={(v) => form.setValue("download.max_concurrent_prepares", v)}
+              restartRequired={restartKeys.has("download.max_concurrent_prepares")}
             />
             {/* Stored as raw bytes (download.artifact_max_bytes); typed in GB
                 because nobody sizes a disk budget in bytes. Unlimited stays

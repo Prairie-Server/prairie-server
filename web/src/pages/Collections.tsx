@@ -1,4 +1,12 @@
-import { useMemo, useState } from "react";
+import {
+  fetchCollectionEditSnapshot,
+  fetchCollectionOrderSnapshot,
+  fetchGroupOrderSnapshot,
+  fetchGroupSnapshot,
+  type CollectionEditSnapshot,
+} from "@/api/personalCollections";
+import { toast } from "sonner";
+import { useMemo, useRef, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import {
   Calendar,
@@ -16,13 +24,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 
 import { CSS } from "@dnd-kit/utilities";
 
-import type {
-  Collection,
-  ServerCollectionsLibrary,
-  UserCollectionType,
-} from "@/api/types";
+import type { Collection, ServerCollectionsLibrary, UserCollectionType } from "@/api/types";
 import {
   useCollectionGroups,
+  useCollectionCapabilities,
   useCollections,
   useCreateCollectionGroup,
   useDeleteCollection,
@@ -55,15 +60,8 @@ import {
   buildUserCollectionEditorPath,
 } from "./userCollectionsShared";
 
-type ImportedCollectionType = Extract<
-  UserCollectionType,
-  "mdblist" | "tmdb" | "trakt"
->;
-const SYNCABLE_TYPES = new Set<ImportedCollectionType>([
-  "mdblist",
-  "tmdb",
-  "trakt",
-]);
+type ImportedCollectionType = Extract<UserCollectionType, "mdblist" | "tmdb" | "trakt">;
+const SYNCABLE_TYPES = new Set<ImportedCollectionType>(["mdblist", "tmdb", "trakt"]);
 
 function isImportedType(t: UserCollectionType): t is ImportedCollectionType {
   return SYNCABLE_TYPES.has(t as ImportedCollectionType);
@@ -76,10 +74,16 @@ export default function Collections() {
 function CollectionList() {
   const { data, isLoading } = useCollections();
   const { data: groupsData } = useCollectionGroups();
+  const { data: capabilities } = useCollectionCapabilities();
   const collections = useMemo(() => data ?? [], [data]);
   const groups = useMemo(() => groupsData ?? [], [groupsData]);
   const [confirmDeleteCollection, setConfirmDeleteCollection] =
-    useState<Collection | null>(null);
+    useState<CollectionEditSnapshot | null>(null);
+  const [confirmDeleteGroup, setConfirmDeleteGroup] = useState<Awaited<
+    ReturnType<typeof fetchGroupSnapshot>
+  > | null>(null);
+  const dragSnapshot =
+    useRef<Promise<{ etag: string; collection?: CollectionEditSnapshot }>>(undefined);
   const [galleryOpen, setGalleryOpen] = useState(false);
   const navigate = useNavigate();
   const deleteMutation = useDeleteCollection();
@@ -90,6 +94,45 @@ function CollectionList() {
   const renameGroupMutation = useUpdateCollectionGroup();
   const deleteGroupMutation = useDeleteCollectionGroup();
   const reorderGroupsMutation = useReorderCollectionGroups();
+
+  function beginDrag(id: string) {
+    const dragged = collections.find((item) => item.id === id);
+    const sameIDs = (left: string[], right: string[]) =>
+      left.length === right.length && left.every((value, index) => value === right[index]);
+    dragSnapshot.current = dragged
+      ? Promise.all([
+          fetchCollectionOrderSnapshot(dragged.group_id ?? null),
+          fetchCollectionEditSnapshot(id),
+        ]).then(([order, collection]) => {
+          const visible = collections
+            .filter((item) => (item.group_id ?? null) === (dragged.group_id ?? null))
+            .map((item) => item.id);
+          if (
+            !sameIDs(order.ordered_ids, visible) ||
+            (collection.collection.group_id ?? null) !== (dragged.group_id ?? null)
+          )
+            throw new Error("Collection order changed. Reload before moving collections.");
+          return { etag: order.etag, collection };
+        })
+      : fetchGroupOrderSnapshot().then((order) => {
+          if (
+            !sameIDs(
+              order.ordered_ids,
+              groups.map((group) => group.id),
+            )
+          )
+            throw new Error("Group order changed. Reload before moving groups.");
+          return { etag: order.etag };
+        });
+    // A cancelled drag may never consume its snapshot.
+    void dragSnapshot.current.catch(() => undefined);
+  }
+  function withDragSnapshot(
+    action: (snapshot: { etag: string; collection?: CollectionEditSnapshot }) => void,
+  ) {
+    if (!dragSnapshot.current) return;
+    void dragSnapshot.current.then(action).catch((error) => toast.error(error.message));
+  }
 
   useDocumentTitle("Collections");
 
@@ -107,76 +150,84 @@ function CollectionList() {
   return (
     <div className="page-shell space-y-6 py-4 sm:py-6">
       <ConfirmDialog
+        open={confirmDeleteGroup !== null}
+        onOpenChange={(open) => {
+          if (!open) setConfirmDeleteGroup(null);
+        }}
+        title="Delete group"
+        description={`Delete group "${confirmDeleteGroup?.group.name}"? Collections will become ungrouped.`}
+        confirmLabel="Delete"
+        variant="destructive"
+        onConfirm={() => {
+          if (confirmDeleteGroup)
+            deleteGroupMutation.mutate({
+              id: confirmDeleteGroup.group.id,
+              etag: confirmDeleteGroup.etag,
+            });
+          setConfirmDeleteGroup(null);
+        }}
+      />
+
+      <ConfirmDialog
         open={confirmDeleteCollection !== null}
         onOpenChange={(open) => {
           if (!open) setConfirmDeleteCollection(null);
         }}
         title="Delete collection"
-        description={`Delete collection "${confirmDeleteCollection?.name}"? This action cannot be undone.`}
+        description={`Delete collection "${confirmDeleteCollection?.collection.name}"? This action cannot be undone.`}
         confirmLabel="Delete"
         variant="destructive"
         onConfirm={() => {
           if (confirmDeleteCollection)
-            deleteMutation.mutate(confirmDeleteCollection.id);
+            deleteMutation.mutate({
+              id: confirmDeleteCollection.collection.id,
+              etag: confirmDeleteCollection.etag,
+            });
           setConfirmDeleteCollection(null);
         }}
       />
 
-      <CollectionTemplateGallery
-        mode="user"
-        open={galleryOpen}
-        onOpenChange={setGalleryOpen}
-      />
+      {capabilities?.imports && (
+        <CollectionTemplateGallery mode="user" open={galleryOpen} onOpenChange={setGalleryOpen} />
+      )}
 
       <div className="page-header">
         <div className="space-y-3">
-          <h1 className="page-title text-[clamp(2rem,5vw,3.25rem)]">
-            Collections
-          </h1>
+          <h1 className="page-title text-[clamp(2rem,5vw,3.25rem)]">Collections</h1>
           <p className="page-subtitle text-sm sm:text-base">
-            Build personal or shared shelves around moods, series arcs, or
-            anything else worth grouping.
+            Build personal or shared shelves around moods, series arcs, or anything else worth
+            grouping.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <Button
-            size="sm"
-            variant="outline"
-            onClick={() => setGalleryOpen(true)}
-          >
-            <Sparkles className="mr-1 h-4 w-4" /> Browse Templates
-          </Button>
-          <Button
-            size="sm"
-            onClick={() => navigate(buildUserCollectionEditorPath("new"))}
-          >
+          {capabilities?.imports && (
+            <Button size="sm" variant="outline" onClick={() => setGalleryOpen(true)}>
+              <Sparkles className="mr-1 h-4 w-4" /> Browse Templates
+            </Button>
+          )}
+          <Button size="sm" onClick={() => navigate(buildUserCollectionEditorPath("new"))}>
             <Plus className="mr-1 h-4 w-4" /> New Collection
           </Button>
         </div>
       </div>
 
       <section className="space-y-4">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Your collections
-        </h2>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Your collections</h2>
         {collections.length === 0 ? (
           <div className="surface-panel flex flex-col items-center justify-center gap-3 rounded-[2rem] py-16 text-center">
             <Library className="text-muted-foreground/50 h-10 w-10" />
             <div className="space-y-1">
               <p className="text-sm font-medium">No collections yet</p>
               <p className="text-muted-foreground max-w-sm text-xs">
-                Start from a curated TMDB, Trakt, or MDBList template — or build
-                your own from scratch.
+                Build your own collection from scratch.
               </p>
             </div>
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setGalleryOpen(true)}
-              >
-                <Sparkles className="mr-1 h-4 w-4" /> Start from a template
-              </Button>
+              {capabilities?.imports && (
+                <Button variant="outline" size="sm" onClick={() => setGalleryOpen(true)}>
+                  <Sparkles className="mr-1 h-4 w-4" /> Start from a template
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="sm"
@@ -188,37 +239,49 @@ function CollectionList() {
           </div>
         ) : (
           <GroupedCollectionsBoard
+            onBeginDrag={beginDrag}
+            readOnly={!capabilities?.groups}
             items={collections}
             groups={groups}
             renderItem={(collection) => {
-              const syncable = isImportedType(collection.collection_type);
-              const isSyncing =
-                syncMutation.isPending &&
-                syncMutation.variables === collection.id;
+              const syncable =
+                capabilities?.imports === true && isImportedType(collection.collection_type);
+              const isSyncing = syncMutation.isPending && syncMutation.variables === collection.id;
               return (
                 <SortableCollectionCard
                   collection={collection}
+                  canReorder={capabilities?.groups === true}
                   syncable={syncable}
                   isSyncing={isSyncing}
                   onSync={() => syncMutation.mutate(collection.id)}
-                  onEdit={() =>
-                    navigate(buildUserCollectionEditorPath(collection.id))
-                  }
-                  onDelete={() => setConfirmDeleteCollection(collection)}
+                  onEdit={() => navigate(buildUserCollectionEditorPath(collection.id))}
+                  onDelete={() => {
+                    void fetchCollectionEditSnapshot(collection.id)
+                      .then(setConfirmDeleteCollection)
+                      .catch((error) => toast.error(error.message));
+                  }}
                 />
               );
             }}
             onReorderInGroup={(groupId, orderedIds) =>
-              reorderMutation.mutate({ orderedIds, groupId })
+              withDragSnapshot((snapshot) =>
+                reorderMutation.mutate({ orderedIds, groupId, etag: snapshot.etag }),
+              )
             }
             onMoveItemAcross={(itemId, toGroupId) =>
-              updateMutation.mutate({
-                id: itemId,
-                body: { group_id: toGroupId },
+              withDragSnapshot((snapshot) => {
+                if (snapshot.collection?.collection.id === itemId)
+                  updateMutation.mutate({
+                    id: itemId,
+                    etag: snapshot.collection.etag,
+                    body: { group_id: toGroupId },
+                  });
               })
             }
             onReorderGroups={(orderedIds) =>
-              reorderGroupsMutation.mutate(orderedIds)
+              withDragSnapshot((snapshot) =>
+                reorderGroupsMutation.mutate({ orderedIds, etag: snapshot.etag }),
+              )
             }
             onAddGroup={(title) =>
               createGroupMutation.mutate({
@@ -226,10 +289,23 @@ function CollectionList() {
                 name: title,
               })
             }
-            onRenameGroup={(id, title) =>
-              renameGroupMutation.mutate({ id, name: title })
-            }
-            onDeleteGroup={(id) => deleteGroupMutation.mutate(id)}
+            onPrepareRenameGroup={async (id) => {
+              try {
+                const snapshot = await fetchGroupSnapshot(id);
+                return {
+                  title: snapshot.group.name,
+                  commit: (name: string) =>
+                    renameGroupMutation.mutate({ id, name, etag: snapshot.etag }),
+                };
+              } catch (error) {
+                toast.error(error instanceof Error ? error.message : "Could not load group");
+              }
+            }}
+            onDeleteGroup={(id) => {
+              void fetchGroupSnapshot(id)
+                .then(setConfirmDeleteGroup)
+                .catch((error) => toast.error(error.message));
+            }}
           />
         )}
       </section>
@@ -246,9 +322,7 @@ function CollectionList() {
 function ServerCollectionsSection() {
   const { data, isLoading } = useServerCollections();
   const { cardPresentation } = useUICustomization();
-  const posterWidthClasses = carouselCardWidthClasses(
-    cardPresentation.poster_size,
-  );
+  const posterWidthClasses = carouselCardWidthClasses(cardPresentation.poster_size);
   const libraries = data ?? [];
 
   if (isLoading) {
@@ -257,9 +331,7 @@ function ServerCollectionsSection() {
     return (
       <section className="space-y-6">
         <div className="space-y-1">
-          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-            Server collections
-          </h2>
+          <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Server collections</h2>
           <p className="text-muted-foreground text-sm">
             Curated shelves from across every library on this server.
           </p>
@@ -288,9 +360,7 @@ function ServerCollectionsSection() {
   return (
     <section className="space-y-6">
       <div className="space-y-1">
-        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-          Server collections
-        </h2>
+        <h2 className="text-2xl font-semibold tracking-tight sm:text-3xl">Server collections</h2>
         <p className="text-muted-foreground text-sm">
           Curated shelves from across every library on this server.
         </p>
@@ -312,9 +382,7 @@ function ServerCollectionsSection() {
 function ServerLibraryRow({ library }: { library: ServerCollectionsLibrary }) {
   const navigate = useNavigate();
   const { cardPresentation } = useUICustomization();
-  const posterWidthClasses = carouselCardWidthClasses(
-    cardPresentation.poster_size,
-  );
+  const posterWidthClasses = carouselCardWidthClasses(cardPresentation.poster_size);
   const collectionsHref = `/library/${library.library_id}?tab=collections`;
   const hasMore = library.total_count > library.collections.length;
   return (
@@ -340,6 +408,7 @@ function ServerLibraryRow({ library }: { library: ServerCollectionsLibrary }) {
 function SortableCollectionCard({
   collection,
   syncable,
+  canReorder,
   isSyncing,
   onSync,
   onEdit,
@@ -347,19 +416,14 @@ function SortableCollectionCard({
 }: {
   collection: Collection;
   syncable: boolean;
+  canReorder: boolean;
   isSyncing: boolean;
   onSync: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const {
-    attributes,
-    listeners,
-    setNodeRef,
-    transform,
-    transition,
-    isDragging,
-  } = useGroupedCollectionCard(collection.id);
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } =
+    useGroupedCollectionCard(collection.id, !canReorder);
   const style: React.CSSProperties = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -374,22 +438,21 @@ function SortableCollectionCard({
     >
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <div className="flex min-w-0 items-center gap-2">
-          <button
-            type="button"
-            aria-label={`Drag ${collection.name}`}
-            className="hover:bg-surface-hover relative z-10 -ml-1 cursor-grab touch-none rounded-md p-1 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100"
-            {...attributes}
-            {...listeners}
-          >
-            <GripVertical className="text-muted-foreground h-4 w-4" />
-          </button>
+          {canReorder && (
+            <button
+              type="button"
+              aria-label={`Drag ${collection.name}`}
+              className="hover:bg-surface-hover relative z-10 -ml-1 cursor-grab touch-none rounded-md p-1 opacity-0 transition group-focus-within:opacity-100 group-hover:opacity-100 [@media(pointer:coarse)]:opacity-100"
+              {...attributes}
+              {...listeners}
+            >
+              <GripVertical className="text-muted-foreground h-4 w-4" />
+            </button>
+          )}
           <div className="min-w-0 space-y-2">
             <CardTitle className="text-base">
               <Link
-                to={buildUserCollectionCatalogHref(
-                  collection.id,
-                  collection.name,
-                )}
+                to={buildUserCollectionCatalogHref(collection.id, collection.name)}
                 className="cursor-pointer after:absolute after:inset-0"
               >
                 {collection.name}
@@ -411,9 +474,7 @@ function SortableCollectionCard({
                 onSync();
               }}
             >
-              <RefreshCw
-                className={`h-3 w-3 ${isSyncing ? "animate-spin" : ""}`}
-              />
+              <RefreshCw className={`h-3 w-3 ${isSyncing ? "animate-spin" : ""}`} />
             </Button>
           ) : null}
           <Button
@@ -474,8 +535,7 @@ const SYNC_STATUS_BADGES: Partial<
 
 function CollectionBadges({ collection }: { collection: Collection }) {
   const TypeIcon = TYPE_ICONS[collection.collection_type] ?? Film;
-  const typeLabel =
-    TYPE_LABELS[collection.collection_type] ?? collection.collection_type;
+  const typeLabel = TYPE_LABELS[collection.collection_type] ?? collection.collection_type;
   const statusBadge = collection.last_sync_status
     ? SYNC_STATUS_BADGES[collection.last_sync_status]
     : undefined;
@@ -493,9 +553,7 @@ function CollectionBadges({ collection }: { collection: Collection }) {
           {collection.sync_schedule}
         </Badge>
       ) : null}
-      {statusBadge ? (
-        <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge>
-      ) : null}
+      {statusBadge ? <Badge variant={statusBadge.variant}>{statusBadge.label}</Badge> : null}
     </div>
   );
 }

@@ -7,16 +7,14 @@ const preconnectedOrigins = new Set<string>();
  * pays all the handshakes after the transcode has already started.
  */
 export function preconnectToStreamOrigin(streamUrl: string): void {
-  if (!streamUrl.startsWith("http://") && !streamUrl.startsWith("https://"))
-    return;
+  if (!streamUrl.startsWith("http://") && !streamUrl.startsWith("https://")) return;
   let origin: string;
   try {
     origin = new URL(streamUrl).origin;
   } catch {
     return;
   }
-  if (typeof document === "undefined" || origin === window.location.origin)
-    return;
+  if (typeof document === "undefined" || origin === window.location.origin) return;
   if (preconnectedOrigins.has(origin)) return;
   preconnectedOrigins.add(origin);
 
@@ -35,10 +33,7 @@ export function preconnectToStreamOrigin(streamUrl: string): void {
  * when `apiBaseUrl` is the relative `/api/v1` mount (legacy responses returned
  * bare `/stream/...` / `/playback/...` and relied on the prefix).
  */
-export function joinApiStreamPath(
-  apiBaseUrl: string,
-  streamPath: string,
-): string {
+export function joinApiStreamPath(apiBaseUrl: string, streamPath: string): string {
   if (streamPath.startsWith("http://") || streamPath.startsWith("https://")) {
     return streamPath;
   }
@@ -67,7 +62,22 @@ export function buildPlayerStreamUrl(
   streamPath: string,
   token: string | null,
 ): string {
-  const base = joinApiStreamPath(apiBaseUrl, streamPath);
+  // Realtime subtitle events carry domain-relative paths; v2 plans may also
+  // replay older local paths. Project only API-local delivery routes, keeping
+  // absolute distributed URLs and their signed routing untouched.
+  streamPath = streamPath.replace(
+    /^(?:\/api\/v1)?\/(stream\/|playback\/transcode\/)/,
+    "/api/v2/$1",
+  );
+  // Versioned server paths are relative to the API installation root; the
+  // player's configured base already includes the bridge API namespace.
+  const apiRoot = /^\/api\/v[12]\//.test(streamPath)
+    ? apiBaseUrl.replace(/\/api\/v[12]\/?$/, "")
+    : apiBaseUrl;
+  const base =
+    streamPath.startsWith("http://") || streamPath.startsWith("https://")
+      ? streamPath
+      : `${apiRoot}${streamPath}`;
   if (!token) {
     return base;
   }

@@ -1,8 +1,4 @@
-import type {
-  FileVersion,
-  LeafItemUserData,
-  PlaybackVariant,
-} from "@/api/types";
+import type { FileVersion, LeafItemUserData, PlaybackVariant } from "@/api/types";
 import { mapAudioLabel } from "@/lib/mediaFormat";
 
 export const RESOLUTION_RANK: Record<string, number> = {
@@ -44,9 +40,7 @@ function normalizeEditionTokens(variant: PlaybackVariant): string[] {
     .filter((value): value is string => Boolean(value));
 }
 
-export function playbackVariantEditionPreference(
-  variant: PlaybackVariant,
-): number {
+export function playbackVariantEditionPreference(variant: PlaybackVariant): number {
   const values = normalizeEditionTokens(variant);
   if (values.length === 0) {
     return 0;
@@ -78,8 +72,8 @@ export function sortPlaybackVariantsByEditionPreference(
     .map((variant, index) => ({ variant, index }))
     .sort(
       (a, b) =>
-        playbackVariantEditionPreference(a.variant) -
-          playbackVariantEditionPreference(b.variant) || a.index - b.index,
+        playbackVariantEditionPreference(a.variant) - playbackVariantEditionPreference(b.variant) ||
+        a.index - b.index,
     )
     .map(({ variant }) => variant);
 }
@@ -99,9 +93,7 @@ export function pickBestAttributes(
   if (qualityPreference && qualityPreference !== "auto") {
     const maxRank = RESOLUTION_RANK[qualityPreference.toLowerCase()] ?? -1;
     if (maxRank >= 0) {
-      const filtered = versions.filter(
-        (v) => resolutionScore(v.resolution) <= maxRank,
-      );
+      const filtered = versions.filter((v) => resolutionScore(v.resolution) <= maxRank);
       if (filtered.length > 0) candidates = filtered;
     }
   }
@@ -164,17 +156,13 @@ export function selectDefaultVersion(
   // Prefer the version they last watched.
   if (userData?.last_file_id != null) {
     const matching = versions.find((v) => v.file_id === userData.last_file_id);
-    if (
-      matching &&
-      (!effectiveEditionKey || matching.edition_key === effectiveEditionKey)
-    ) {
+    if (matching && (!effectiveEditionKey || matching.edition_key === effectiveEditionKey)) {
       return matching;
     }
   }
 
   const candidates =
-    effectiveEditionKey &&
-    versions.some((v) => v.edition_key === effectiveEditionKey)
+    effectiveEditionKey && versions.some((v) => v.edition_key === effectiveEditionKey)
       ? versions.filter((v) => v.edition_key === effectiveEditionKey)
       : versions;
 
@@ -188,8 +176,7 @@ export function selectDefaultVersion(
         v.resolution === preferred.resolution &&
         v.hdr === preferred.hdr &&
         (preferred.audioLabel === "" ||
-          mapAudioLabel(v.codec_audio).toLowerCase() ===
-            preferred.audioLabel.toLowerCase()),
+          mapAudioLabel(v.codec_audio).toLowerCase() === preferred.audioLabel.toLowerCase()),
     );
     if (matching) return matching;
   }
@@ -209,23 +196,15 @@ export function selectDefaultPlaybackVariantVersion(
   preferredEditionKey?: string | null,
 ): FileVersion | null {
   if (!playbackVariants || playbackVariants.length === 0) {
-    return selectDefaultVersion(
-      versions,
-      userData,
-      qualityPreference,
-      preferredEditionKey,
-    );
+    return selectDefaultVersion(versions, userData, qualityPreference, preferredEditionKey);
   }
 
   const effectiveEditionKey = preferredEditionKey ?? userData?.last_edition_key;
-  const rankedVariants =
-    sortPlaybackVariantsByEditionPreference(playbackVariants);
+  const rankedVariants = sortPlaybackVariantsByEditionPreference(playbackVariants);
   let candidateVariants = rankedVariants;
   if (
     effectiveEditionKey &&
-    rankedVariants.some(
-      (variant) => variant.edition_key === effectiveEditionKey,
-    )
+    rankedVariants.some((variant) => variant.edition_key === effectiveEditionKey)
   ) {
     candidateVariants = rankedVariants.filter(
       (variant) => variant.edition_key === effectiveEditionKey,
@@ -233,12 +212,7 @@ export function selectDefaultPlaybackVariantVersion(
   } else {
     const firstRankedVariant = rankedVariants[0];
     if (!firstRankedVariant) {
-      return selectDefaultVersion(
-        versions,
-        userData,
-        qualityPreference,
-        preferredEditionKey,
-      );
+      return selectDefaultVersion(versions, userData, qualityPreference, preferredEditionKey);
     }
     const preferredRank = playbackVariantEditionPreference(firstRankedVariant);
     candidateVariants = rankedVariants.filter(
@@ -249,9 +223,7 @@ export function selectDefaultPlaybackVariantVersion(
   if (userData?.last_file_id != null) {
     for (const variant of candidateVariants) {
       for (const part of variant.parts ?? []) {
-        const matching = part.versions.find(
-          (version) => version.file_id === userData.last_file_id,
-        );
+        const matching = part.versions.find((version) => version.file_id === userData.last_file_id);
         if (matching) {
           return matching;
         }
@@ -260,16 +232,12 @@ export function selectDefaultPlaybackVariantVersion(
   }
 
   for (const variant of candidateVariants) {
-    const firstPart = [...(variant.parts ?? [])].sort(
-      (a, b) => a.part_index - b.part_index,
-    )[0];
+    const firstPart = [...(variant.parts ?? [])].sort((a, b) => a.part_index - b.part_index)[0];
     if (!firstPart) {
       continue;
     }
     if (firstPart.default_file_id != null) {
-      const matching = versions.find(
-        (version) => version.file_id === firstPart.default_file_id,
-      );
+      const matching = versions.find((version) => version.file_id === firstPart.default_file_id);
       if (matching) {
         return matching;
       }
@@ -285,10 +253,5 @@ export function selectDefaultPlaybackVariantVersion(
     }
   }
 
-  return selectDefaultVersion(
-    versions,
-    userData,
-    qualityPreference,
-    preferredEditionKey,
-  );
+  return selectDefaultVersion(versions, userData, qualityPreference, preferredEditionKey);
 }

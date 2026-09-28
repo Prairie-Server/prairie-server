@@ -32,11 +32,7 @@ export function TemplatePosterField({
       <Label>Poster</Label>
       <div className="border-border space-y-3 rounded-md border p-3">
         {hasDefaultPoster ? (
-          <div
-            role="radiogroup"
-            aria-label="Poster source"
-            className="grid gap-2 sm:grid-cols-2"
-          >
+          <div role="radiogroup" aria-label="Poster source" className="grid gap-2 sm:grid-cols-2">
             <PosterChoiceButton
               label="Server default"
               active={mode === "default"}
@@ -60,9 +56,7 @@ export function TemplatePosterField({
             />
             <div className="min-w-0">
               <p className="text-sm font-medium">Server default</p>
-              <p className="text-muted-foreground truncate text-xs">
-                {template.poster_path}
-              </p>
+              <p className="text-muted-foreground truncate text-xs">{template.poster_path}</p>
             </div>
           </div>
         ) : (

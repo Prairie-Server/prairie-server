@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { BookOpen, Check, Download } from "lucide-react";
-import { Link } from "react-router";
+import ViewTransitionLink from "@/components/ViewTransitionLink";
 import type { FileVersion, ItemDetail } from "@/api/types";
 import DownloadVersionPicker from "@/components/DownloadVersionPicker";
 import MediaLocations from "@/components/MediaLocations";
@@ -44,9 +44,7 @@ function ebookVersionSummary(version: ItemDetail["versions"][number]): string {
   ]);
 }
 
-function preferredReadVersion(
-  versions: FileVersion[],
-): FileVersion | undefined {
+function preferredReadVersion(versions: FileVersion[]): FileVersion | undefined {
   return (
     versions.find((version) => readerFileFormat(version) === "epub") ??
     versions.find((version) => isReaderSupportedFile(version))
@@ -58,9 +56,7 @@ function progressReadVersion(
   fileID: number | undefined,
 ): FileVersion | undefined {
   if (typeof fileID !== "number") return undefined;
-  return versions.find(
-    (version) => version.file_id === fileID && isReaderSupportedFile(version),
-  );
+  return versions.find((version) => version.file_id === fileID && isReaderSupportedFile(version));
 }
 
 function genreHref(genre: string, libraryId?: number): string {
@@ -79,9 +75,11 @@ function genreHref(genre: string, libraryId?: number): string {
 export default function EbookContent({
   item,
   libraryId,
+  showAdvisoryAge,
 }: {
   item: ItemDetail & { type: "ebook" };
   libraryId?: number;
+  showAdvisoryAge?: boolean;
 }) {
   useAmbientColor(item.poster_thumbhash);
   const { user } = useAuth();
@@ -95,13 +93,10 @@ export default function EbookContent({
   const progressLabel = formatReaderProgress(readerProgress?.progress);
   const hasSavedProgress = Boolean(readerProgress && progressLabel);
   const readVersion =
-    (hasSavedProgress
-      ? progressReadVersion(item.versions, readerProgress?.file_id)
-      : undefined) ?? preferredReadVersion(item.versions);
+    (hasSavedProgress ? progressReadVersion(item.versions, readerProgress?.file_id) : undefined) ??
+    preferredReadVersion(item.versions);
   const canRead = Boolean(readVersion);
-  const canDownload = Boolean(
-    user?.download_allowed && item.versions.length > 0,
-  );
+  const canDownload = Boolean(user?.download_allowed && item.versions.length > 0);
   const readerParams = new URLSearchParams();
   if (readVersion) {
     readerParams.set("file_id", String(readVersion.file_id));
@@ -133,6 +128,8 @@ export default function EbookContent({
           <MetadataBadges
             year={year || undefined}
             contentRating={item.content_rating || undefined}
+            advisoryAge={showAdvisoryAge ? (item.advisory_age ?? undefined) : undefined}
+            advisorySource={item.advisory_source || undefined}
           />
         }
         scoreRow={
@@ -147,9 +144,7 @@ export default function EbookContent({
           authors.length > 0 ? (
             <div className="text-muted-foreground text-[13px]">
               <span className="text-muted-foreground/60">By </span>
-              <span className="text-foreground/70 font-medium">
-                {authors.join(", ")}
-              </span>
+              <span className="text-foreground/70 font-medium">{authors.join(", ")}</span>
             </div>
           ) : undefined
         }
@@ -162,7 +157,7 @@ export default function EbookContent({
                 asChild
                 className="h-11 gap-2.5 rounded-full px-6 text-[15px] font-bold tracking-wide shadow-md"
               >
-                <Link to={readerHref}>
+                <ViewTransitionLink to={readerHref}>
                   <BookOpen className="size-[18px]" />
                   {hasSavedProgress ? "Continue" : "Read"}
                   {progressLabel && (
@@ -170,7 +165,7 @@ export default function EbookContent({
                       {progressLabel}
                     </span>
                   )}
-                </Link>
+                </ViewTransitionLink>
               </Button>
             )}
             {canDownload && (
@@ -198,23 +193,17 @@ export default function EbookContent({
         }
       />
 
-      <div className="page-shell space-y-12 py-10 sm:space-y-14">
+      <div className="page-shell detail-supporting-content space-y-12 py-10 sm:space-y-14">
         {item.ebook?.series && item.ebook.series.entries.length > 0 && (
           <RelatedRail
-            heading={
-              item.ebook.series.name
-                ? `In ${item.ebook.series.name}`
-                : "In this series"
-            }
+            heading={item.ebook.series.name ? `In ${item.ebook.series.name}` : "In this series"}
             coverAspect="poster"
             items={item.ebook.series.entries.map((entry) => ({
               content_id: entry.content_id,
               title: entry.title,
               poster_url: entry.poster_url,
               subtitle:
-                typeof entry.series_index === "number"
-                  ? `Book ${entry.series_index}`
-                  : undefined,
+                typeof entry.series_index === "number" ? `Book ${entry.series_index}` : undefined,
               highlight: entry.content_id === item.content_id,
             }))}
           />

@@ -4,7 +4,7 @@ import { EditorView, lineNumbers } from "@codemirror/view";
 import CodeMirror from "@uiw/react-codemirror";
 import { useMemo } from "react";
 
-import type { PolicyCompileIssue } from "@/api/types";
+import type { PolicyCompileIssue } from "@/api/adminPolicy";
 import { mapPolicyIssuesToDiagnostics } from "@/lib/policyDiagnostics";
 import { regoLanguage } from "@/lib/regoLanguage";
 import { cn } from "@/lib/utils";
@@ -56,12 +56,7 @@ export function RegoEditor({
   }, [issues, readOnly, value]);
 
   return (
-    <div
-      className={cn(
-        "border-border overflow-hidden rounded-lg border",
-        className,
-      )}
-    >
+    <div className={cn("border-border overflow-hidden rounded-lg border", className)}>
       <CodeMirror
         value={value}
         height={height}

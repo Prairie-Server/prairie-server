@@ -1,19 +1,25 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Pencil, RefreshCw } from "lucide-react";
 
-import { getPerson } from "@/api/client";
+import { getPerson } from "@/api/v2/people";
+import { isNotFoundProblem } from "@/api/v2/request";
 import { createEmptyQueryDefinition, type Person } from "@/api/types";
 import type { CatalogSearchState } from "@/pages/catalogSearchParams";
 import EditPersonDialog from "@/components/EditPersonDialog";
 import ItemGrid from "@/components/ItemGrid";
 import PageBack from "@/components/PageBack";
+import PageUnavailable from "@/components/PageUnavailable";
 import { Button } from "@/components/ui/button";
 import { useCatalogWindow } from "@/hooks/queries/catalog";
 import { personKeys } from "@/hooks/queries/keys";
 import { artworkSrcSet, PROFILE_WIDTHS } from "@/lib/artworkUrl";
-import { useRefreshPerson } from "@/hooks/queries/people";
+import {
+  invalidatePersonItemDetails,
+  observePersonRefresh,
+  useRefreshPerson,
+} from "@/hooks/queries/people";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -25,55 +31,54 @@ type TypeFilter = "all" | "movie" | "series";
 
 export default function PersonDetail() {
   const { id } = useParams<{ id: string }>();
+  const queryClient = useQueryClient();
   const [typeFilter, setTypeFilter] = useState<TypeFilter>("all");
   const [editOpen, setEditOpen] = useState(false);
   // Falls back to initials rather than a broken-image glyph, keyed to the URL
   // that failed so a re-signed URL or a different person recovers instead of
   // inheriting the previous failure.
   const [failedPhotoUrl, setFailedPhotoUrl] = useState<string | null>(null);
-  const autoRefreshWindowRef = useRef<{
-    personId: number;
-    until: number;
-  } | null>(null);
-  const autoRefreshRequestedPersonIdRef = useRef<number | null>(null);
+  const autoRefreshRequestedPersonIdRef = useRef<string | null>(null);
   const { user } = useAuth();
   const isAdmin = useIsActingAdmin();
   const refreshMutation = useRefreshPerson(id, isAdmin);
 
-  const { data: person, isLoading: personLoading } = useQuery({
+  const {
+    data: cachedPerson,
+    isLoading: personLoading,
+    isFetching: personFetching,
+    error: personError,
+    refetch: refetchPerson,
+  } = useQuery({
     queryKey: personKeys.detail(id!),
-    queryFn: () => getPerson(id!),
+    queryFn: ({ signal }) => getPerson(id!, { signal }),
     enabled: !!id,
-    refetchInterval: (query) => {
-      const data = query.state.data;
-      if (!data || !isPersonMetadataIncomplete(data)) {
-        autoRefreshWindowRef.current = null;
-        return false;
-      }
-
-      const current = autoRefreshWindowRef.current;
-      if (!current || current.personId !== data.id) {
-        autoRefreshWindowRef.current = {
-          personId: data.id,
-          until: Date.now() + 30_000,
-        };
-        return 3_000;
-      }
-
-      return Date.now() < current.until ? 3_000 : false;
-    },
+    // Render a prefetched person at once, but still read it as a view so the
+    // server can queue a refresh the prefetch skipped.
+    refetchOnMount: "always",
   });
 
-  useDocumentTitle(person?.name ?? "Person");
+  // A 404 outranks a cached person: the view read runs even over prefetched
+  // data, and a person it finds gone must not keep their old page.
+  const personNotFound = isNotFoundProblem(personError);
+  const person = personNotFound ? undefined : cachedPerson;
+
+  useDocumentTitle(personNotFound ? "Not found" : (person?.name ?? "Person"));
+
+  const hasPerson = !!person;
+  useEffect(() => {
+    // A person read can queue a refresh even when all metadata is already present.
+    if (id && hasPerson) {
+      void invalidatePersonItemDetails(queryClient, id);
+      observePersonRefresh(queryClient, id);
+    }
+  }, [id, hasPerson, queryClient]);
 
   useEffect(() => {
     if (!person || !user || !isPersonMetadataIncomplete(person)) {
       return;
     }
-    if (
-      autoRefreshRequestedPersonIdRef.current === person.id ||
-      refreshMutation.isPending
-    ) {
+    if (autoRefreshRequestedPersonIdRef.current === person.id || refreshMutation.isPending) {
       return;
     }
     autoRefreshRequestedPersonIdRef.current = person.id;
@@ -94,10 +99,7 @@ export default function PersonDetail() {
   );
 
   const limit = 60;
-  const [visibleRange, setVisibleRange] = useState<[number, number]>([
-    0,
-    limit - 1,
-  ]);
+  const [visibleRange, setVisibleRange] = useState<[number, number]>([0, limit - 1]);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(undefined);
   const handleVisibleRangeChange = useCallback((start: number, end: number) => {
     clearTimeout(debounceRef.current);
@@ -113,10 +115,21 @@ export default function PersonDetail() {
   }
 
   if (!person) {
+    if (personError && !isNotFoundProblem(personError)) {
+      return (
+        <PageUnavailable
+          title="Couldn't load this person"
+          description="Something went wrong while loading them. Try again in a moment."
+          onRetry={() => void refetchPerson()}
+          retrying={personFetching}
+        />
+      );
+    }
     return (
-      <div className="page-shell flex min-h-[40vh] items-center justify-center">
-        <p className="text-muted-foreground">Person not found.</p>
-      </div>
+      <PageUnavailable
+        title="This person isn't available"
+        description="They may have been removed from the catalog, or the link may be wrong."
+      />
     );
   }
 
@@ -137,9 +150,7 @@ export default function PersonDetail() {
                 <img
                   src={person.photo_url}
                   srcSet={photoSrcSet || undefined}
-                  sizes={
-                    photoSrcSet ? "(min-width: 640px) 180px, 140px" : undefined
-                  }
+                  sizes={photoSrcSet ? "(min-width: 640px) 180px, 140px" : undefined}
                   alt={person.name}
                   className="h-full w-full object-cover"
                   onError={() => setFailedPhotoUrl(person.photo_url ?? null)}
@@ -155,9 +166,7 @@ export default function PersonDetail() {
           {/* Info */}
           <div className="min-w-0 flex-1 pt-1">
             <div className="mb-3 flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">
-                {person.name}
-              </h1>
+              <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{person.name}</h1>
               {id && user && (
                 <div className="flex flex-wrap gap-2">
                   <Button
@@ -196,14 +205,10 @@ export default function PersonDetail() {
             {/* Metadata badges */}
             <div className="mb-4 flex flex-wrap items-center gap-2">
               {person.birth_date && (
-                <span className="metadata-badge">
-                  Born {formatBirthDate(person.birth_date)}
-                </span>
+                <span className="metadata-badge">Born {formatBirthDate(person.birth_date)}</span>
               )}
               {person.birth_date && !person.death_date && (
-                <span className="metadata-badge">
-                  {computeAge(person.birth_date)} years old
-                </span>
+                <span className="metadata-badge">{computeAge(person.birth_date)} years old</span>
               )}
               {person.death_date && person.birth_date && (
                 <span className="metadata-badge">
@@ -211,9 +216,7 @@ export default function PersonDetail() {
                   {computeAge(person.birth_date, person.death_date)})
                 </span>
               )}
-              {person.birthplace && (
-                <span className="metadata-badge">{person.birthplace}</span>
-              )}
+              {person.birthplace && <span className="metadata-badge">{person.birthplace}</span>}
             </div>
 
             {/* Bio */}

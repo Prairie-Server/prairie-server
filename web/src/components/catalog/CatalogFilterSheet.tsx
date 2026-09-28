@@ -1,3 +1,4 @@
+import type { PersonalizedSorts } from "@/lib/querySortOptions";
 import { useState } from "react";
 
 import { createEmptyQueryDefinition, type QueryDefinition } from "@/api/types";
@@ -59,7 +60,7 @@ interface CatalogFilterSheetProps {
   allowLibrarySelection: boolean;
   showMediaScopeSelector?: boolean;
   allowPersonalizedFilters: boolean;
-  allowPersonalizedSorts: boolean;
+  allowPersonalizedSorts: PersonalizedSorts;
   sortRelevanceScope?: QuerySortRelevanceScope;
   editorMode: "guided" | "advanced";
   onEditorModeChange: (mode: "guided" | "advanced") => void;
@@ -69,7 +70,7 @@ interface CatalogFilterSheetProps {
   filtersLoading?: boolean;
   libraryType?: string;
   // Forwarded into the editor so audiobook-native facet sections can
-  // typeahead-search /api/v1/catalog/filters/search at the same scope.
+  // typeahead-search /api/v2/catalog/filters/search at the same scope.
   catalogState?: CatalogSearchState;
 }
 
@@ -95,17 +96,11 @@ export default function CatalogFilterSheet({
   // Portal container inside the Sheet's DOM so that react-remove-scroll
   // (activated by the Dialog/Sheet) does not block scroll events inside
   // dropdown listboxes opened by filter controls.
-  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(
-    null,
-  );
+  const [portalContainer, setPortalContainer] = useState<HTMLElement | null>(null);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent
-        side="right"
-        className="flex flex-col sm:max-w-md"
-        showCloseButton={false}
-      >
+      <SheetContent side="right" className="flex flex-col sm:max-w-md" showCloseButton={false}>
         {/* Invisible portal mount point — must be inside SheetContent so that
             react-remove-scroll considers popover scroll events as "inside" the
             dialog and does not cancel them. */}
@@ -143,7 +138,7 @@ export default function CatalogFilterSheet({
             </div>
           </SheetHeader>
 
-          <ScrollArea className="flex-1">
+          <ScrollArea className="min-h-0 flex-1">
             <div className="space-y-4 px-4 pb-4">
               {editorMode === "advanced" ? (
                 <CollectionRulesEditor

@@ -18,25 +18,21 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@/hooks/queries/admin/settings", () => ({
-  useAdminServerSettings: (...args: unknown[]) =>
-    mocks.useAdminServerSettings(...args),
+  useAdminServerSettings: (...args: unknown[]) => mocks.useAdminServerSettings(...args),
   useCheckAdminSettingsConnection: () => ({
     isPending: false,
-    mutateAsync: (...args: unknown[]) =>
-      mocks.checkConnectionMutateAsync(...args),
+    mutateAsync: (...args: unknown[]) => mocks.checkConnectionMutateAsync(...args),
   }),
   useUpdateServerSettings: () => ({
     isPending: false,
     mutate: (...args: unknown[]) => mocks.updateMutate(...args),
     mutateAsync: (...args: unknown[]) => mocks.updateMutateAsync(...args),
   }),
-  useAdminSensitiveStatus: (...args: unknown[]) =>
-    mocks.useAdminSensitiveStatus(...args),
+  useAdminSensitiveStatus: (...args: unknown[]) => mocks.useAdminSensitiveStatus(...args),
 }));
 
 vi.mock("@/hooks/queries/admin/recommendations", () => ({
-  useRecommendationsStatus: (...args: unknown[]) =>
-    mocks.useRecommendationsStatus(...args),
+  useRecommendationsStatus: (...args: unknown[]) => mocks.useRecommendationsStatus(...args),
   useTriggerEmbeddings: () => ({
     isPending: false,
     mutate: (...args: unknown[]) => mocks.triggerEmbeddingsMutate(...args),
@@ -78,10 +74,7 @@ async function changeInput(input: HTMLInputElement | null, value: string) {
     throw new Error("input not found");
   }
 
-  const descriptor = Object.getOwnPropertyDescriptor(
-    HTMLInputElement.prototype,
-    "value",
-  );
+  const descriptor = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value");
   if (!descriptor?.set) {
     throw new Error("input value setter not found");
   }
@@ -154,8 +147,7 @@ describe("AdminRecommendations", () => {
   it("applies a provider preset to the embedding settings", async () => {
     mocks.updateMutateAsync.mockResolvedValueOnce({
       values: {
-        "recommendations.embedding_base_url":
-          "https://generativelanguage.googleapis.com/canonical",
+        "recommendations.embedding_base_url": "https://generativelanguage.googleapis.com/canonical",
         "recommendations.embedding_model": "canonical-gemini-model",
       },
       restart_required: true,
@@ -166,8 +158,7 @@ describe("AdminRecommendations", () => {
 
     expect(mocks.updateMutateAsync).toHaveBeenCalledOnce();
     expect(mocks.updateMutateAsync).toHaveBeenCalledWith({
-      "recommendations.embedding_base_url":
-        "https://generativelanguage.googleapis.com",
+      "recommendations.embedding_base_url": "https://generativelanguage.googleapis.com",
       "recommendations.embedding_model": "gemini-embedding-001",
     });
 
@@ -178,9 +169,7 @@ describe("AdminRecommendations", () => {
       'input[id="recommendations.embedding_model"]',
     );
 
-    expect(baseUrlInput?.value).toBe(
-      "https://generativelanguage.googleapis.com/canonical",
-    );
+    expect(baseUrlInput?.value).toBe("https://generativelanguage.googleapis.com/canonical");
     expect(modelInput?.value).toBe("canonical-gemini-model");
   });
 

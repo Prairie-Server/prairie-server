@@ -65,15 +65,9 @@ describe("realtime protocol", () => {
   it("rejects a plan invalidation payload missing the invalidated plan", () => {
     // Without the plan id the client cannot tell whether the plan it is playing
     // is the one that was invalidated, so acting on it is never correct.
-    expect(
-      readPlanInvalidatedPayload({ reason: "video_copy_unsafe" }),
-    ).toBeNull();
-    expect(
-      readPlanInvalidatedPayload({ reason: "", plan_id: "plan:1" }),
-    ).toBeNull();
-    expect(
-      readPlanInvalidatedPayload({ reason: "video_copy_unsafe", plan_id: 42 }),
-    ).toBeNull();
+    expect(readPlanInvalidatedPayload({ reason: "video_copy_unsafe" })).toBeNull();
+    expect(readPlanInvalidatedPayload({ reason: "", plan_id: "plan:1" })).toBeNull();
+    expect(readPlanInvalidatedPayload({ reason: "video_copy_unsafe", plan_id: 42 })).toBeNull();
     expect(readPlanInvalidatedPayload(undefined)).toBeNull();
   });
 
@@ -83,8 +77,7 @@ describe("realtime protocol", () => {
     expect(SUPPORTED_PLAYBACK_COMMANDS).not.toContain("plan_invalidated");
     expect(VIDEO_PLAYBACK_COMMANDS).toContain("plan_invalidated");
     expect(
-      buildPlaybackRealtimeHello("session-1", VIDEO_PLAYBACK_COMMANDS)
-        .capabilities.commands,
+      buildPlaybackRealtimeHello("session-1", VIDEO_PLAYBACK_COMMANDS).capabilities.commands,
     ).toContain("plan_invalidated");
   });
 
@@ -359,14 +352,7 @@ describe("realtime protocol", () => {
       status: "accepted",
     });
 
-    expect(
-      buildPlaybackRealtimeResult(
-        "session-1",
-        "cmd-1",
-        "rejected",
-        "unsupported",
-      ),
-    ).toEqual({
+    expect(buildPlaybackRealtimeResult("session-1", "cmd-1", "rejected", "unsupported")).toEqual({
       type: "result",
       command_id: "cmd-1",
       session_id: "session-1",
@@ -376,10 +362,8 @@ describe("realtime protocol", () => {
   });
 
   it("keeps the supported command subset within the full command set", () => {
-    expect(
-      SUPPORTED_PLAYBACK_COMMANDS.every((name) =>
-        ALL_PLAYBACK_COMMANDS.includes(name),
-      ),
-    ).toBe(true);
+    expect(SUPPORTED_PLAYBACK_COMMANDS.every((name) => ALL_PLAYBACK_COMMANDS.includes(name))).toBe(
+      true,
+    );
   });
 });

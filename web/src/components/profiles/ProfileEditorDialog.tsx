@@ -36,13 +36,12 @@ import {
   resolveProfileAvatarImage,
   resolveProfileAvatarPreset,
 } from "@/lib/profile-avatars";
+import { PLAYBACK_QUALITY_OPTIONS, type PlaybackQualityPreset } from "@/lib/playback-quality";
 import {
-  PLAYBACK_QUALITY_OPTIONS,
-  type PlaybackQualityPreset,
-} from "@/lib/playback-quality";
-import {
+  ADVISORY_AGE_OPTIONS,
   applyKidsPreset,
   buildProfileRequestFromDraft,
+  buildProfileUpdateFromDraft,
   clearKidsPreset,
   CONTENT_RATING_OPTIONS,
   createProfileDraft,
@@ -55,6 +54,10 @@ interface ProfileEditorDialogProps {
   profile?: Profile | null;
   libraries: UserLibrary[];
   avatarUploadEnabled?: boolean;
+  /** The server accepts `max_advisory_age`; hides the control when false. */
+  advisoryAgeSupported?: boolean;
+  /** The server accepts `require_advisory_age`; hides the switch when false. */
+  requireAdvisoryAgeSupported?: boolean;
   onOpenChange: (open: boolean) => void;
   onSaveSuccess?: (
     profile: Profile,
@@ -72,6 +75,7 @@ interface ValidationErrors {
 }
 
 const ANY_CONTENT_RATING_VALUE = "__any_content__";
+const NO_ADVISORY_AGE_VALUE = "__no_advisory_limit__";
 
 function sortLibraryIDs(ids: number[]) {
   return [...new Set(ids)].sort((left, right) => left - right);
@@ -82,13 +86,14 @@ export function ProfileEditorDialog({
   profile = null,
   libraries,
   avatarUploadEnabled = false,
+  advisoryAgeSupported = false,
+  requireAdvisoryAgeSupported = false,
   onOpenChange,
   onSaveSuccess,
 }: ProfileEditorDialogProps) {
   const mode = profile ? "edit" : "create";
   const sortedLibraries = useMemo(
-    () =>
-      [...libraries].sort((left, right) => left.sort_order - right.sort_order),
+    () => [...libraries].sort((left, right) => left.sort_order - right.sort_order),
     [libraries],
   );
 
@@ -96,9 +101,7 @@ export function ProfileEditorDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-3xl">
         <DialogHeader>
-          <DialogTitle>
-            {mode === "edit" ? "Edit profile" : "New profile"}
-          </DialogTitle>
+          <DialogTitle>{mode === "edit" ? "Edit profile" : "New profile"}</DialogTitle>
           <DialogDescription>
             Set the avatar, name, PIN, and access rules for this profile.
           </DialogDescription>
@@ -110,6 +113,8 @@ export function ProfileEditorDialog({
             profile={profile}
             libraries={sortedLibraries}
             avatarUploadEnabled={avatarUploadEnabled}
+            advisoryAgeSupported={advisoryAgeSupported}
+            requireAdvisoryAgeSupported={requireAdvisoryAgeSupported}
             onOpenChange={onOpenChange}
             onSaveSuccess={onSaveSuccess}
           />
@@ -124,6 +129,8 @@ function ProfileEditorForm({
   profile,
   libraries,
   avatarUploadEnabled,
+  advisoryAgeSupported,
+  requireAdvisoryAgeSupported,
   onOpenChange,
   onSaveSuccess,
 }: {
@@ -131,6 +138,8 @@ function ProfileEditorForm({
   profile: Profile | null;
   libraries: UserLibrary[];
   avatarUploadEnabled: boolean;
+  advisoryAgeSupported: boolean;
+  requireAdvisoryAgeSupported: boolean;
   onOpenChange: (open: boolean) => void;
   onSaveSuccess?: (
     profile: Profile,
@@ -150,9 +159,7 @@ function ProfileEditorForm({
     uploadAvatarMutation.isPending ||
     deleteAvatarMutation.isPending;
 
-  const [draft, setDraft] = useState<ProfileDraft>(() =>
-    createProfileDraft(profile),
-  );
+  const [draft, setDraft] = useState<ProfileDraft>(() => createProfileDraft(profile));
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [removeUploadedAvatar, setRemoveUploadedAvatar] = useState(false);
   const [activePresetStyle, setActivePresetStyle] = useState(
@@ -169,12 +176,14 @@ function ProfileEditorForm({
   const nameId = useId();
   const pinId = useId();
   const contentRatingId = useId();
+  const advisoryAgeId = useId();
+  const advisoryAgeHelpId = useId();
+  const requireAdvisoryAgeId = useId();
+  const requireAdvisoryAgeHelpId = useId();
   const playbackQualityId = useId();
   const restrictLibrariesId = useId();
   const selectedContentRatingValue =
-    draft.maxContentRating === ""
-      ? ANY_CONTENT_RATING_VALUE
-      : draft.maxContentRating;
+    draft.maxContentRating === "" ? ANY_CONTENT_RATING_VALUE : draft.maxContentRating;
 
   const selectedPreset = resolveProfileAvatarPreset(draft.avatarPreset);
   const visiblePresets = useMemo(
@@ -189,8 +198,7 @@ function ProfileEditorForm({
     !removeUploadedAvatar && profile?.avatar_source === "upload"
       ? resolveProfileAvatarImage(profile)
       : "";
-  const previewImage =
-    filePreviewURL || selectedPreset?.previewUrl || existingUploadedAvatarURL;
+  const previewImage = filePreviewURL || selectedPreset?.previewUrl || existingUploadedAvatarURL;
 
   useEffect(() => {
     return () => {
@@ -200,10 +208,7 @@ function ProfileEditorForm({
     };
   }, [filePreviewURL]);
 
-  function updateDraft<K extends keyof ProfileDraft>(
-    key: K,
-    value: ProfileDraft[K],
-  ) {
+  function updateDraft<K extends keyof ProfileDraft>(key: K, value: ProfileDraft[K]) {
     setDraft((current) => ({
       ...current,
       [key]: value,
@@ -212,10 +217,7 @@ function ProfileEditorForm({
 
   function selectPreset(presetID: string) {
     setRemoveUploadedAvatar(true);
-    updateDraft(
-      "avatarPreset",
-      draft.avatarPreset === presetID ? "" : presetID,
-    );
+    updateDraft("avatarPreset", draft.avatarPreset === presetID ? "" : presetID);
   }
 
   function toggleLibrary(libraryID: number, checked: boolean) {
@@ -257,10 +259,7 @@ function ProfileEditorForm({
       nextErrors.pin = "PIN must be exactly 4 digits.";
     }
 
-    if (
-      current.libraryRestrictionsEnabled &&
-      current.allowedLibraryIDs.length === 0
-    ) {
+    if (current.libraryRestrictionsEnabled && current.allowedLibraryIDs.length === 0) {
       nextErrors.libraries = "Choose at least one library.";
     }
 
@@ -276,7 +275,6 @@ function ProfileEditorForm({
       return;
     }
 
-    const body = buildProfileRequestFromDraft(draft);
     const pin = draft.pin.trim();
     const preserveExistingUpload =
       mode === "edit" &&
@@ -291,19 +289,24 @@ function ProfileEditorForm({
       !avatarFile &&
       draft.avatarPreset === "";
 
-    if (preserveExistingUpload || deleteExistingUpload) {
-      delete body.avatar;
-    }
-
     let savedProfile: Profile;
     try {
       if (mode === "edit" && profile) {
-        savedProfile = await updateMutation.mutateAsync({
-          id: profile.id,
-          body,
+        const body = buildProfileUpdateFromDraft(draft, {
+          advisoryAgeSupported,
+          requireAdvisoryAgeSupported,
         });
+        if (preserveExistingUpload || deleteExistingUpload) {
+          delete body.avatar;
+        }
+        savedProfile = await updateMutation.mutateAsync({ id: profile.id, body });
       } else {
-        savedProfile = await createMutation.mutateAsync(body);
+        savedProfile = await createMutation.mutateAsync(
+          buildProfileRequestFromDraft(draft, {
+            advisoryAgeSupported,
+            requireAdvisoryAgeSupported,
+          }),
+        );
       }
     } catch {
       return;
@@ -321,7 +324,7 @@ function ProfileEditorForm({
       }
     } else if (deleteExistingUpload) {
       try {
-        finalProfile = await deleteAvatarMutation.mutateAsync(savedProfile.id);
+        finalProfile = await deleteAvatarMutation.mutateAsync(savedProfile);
       } catch {
         finalProfile = savedProfile;
       }
@@ -336,28 +339,21 @@ function ProfileEditorForm({
       <section className="border-border space-y-4 rounded-md border p-4">
         <div className="space-y-1">
           <h3 className="text-sm font-semibold">Profile</h3>
-          <p className="text-muted-foreground text-sm">
-            Choose an avatar and basic details.
-          </p>
+          <p className="text-muted-foreground text-sm">Choose an avatar and basic details.</p>
         </div>
 
         <div className="flex flex-col gap-4 lg:flex-row">
           <div className="flex flex-col items-center gap-3 rounded-xl border px-5 py-4 lg:w-52">
             <Avatar className="ring-border h-24 w-24 ring-2">
               {previewImage ? (
-                <AvatarImage
-                  src={previewImage}
-                  alt={draft.name || "Profile avatar"}
-                />
+                <AvatarImage src={previewImage} alt={draft.name || "Profile avatar"} />
               ) : null}
               <AvatarFallback className="bg-surface text-primary text-3xl font-bold">
                 {(draft.name || profile?.name || "?").charAt(0).toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div className="text-center">
-              <div className="text-sm font-medium">
-                {draft.name.trim() || "Preview"}
-              </div>
+              <div className="text-sm font-medium">{draft.name.trim() || "Preview"}</div>
               <div className="text-muted-foreground text-xs">
                 {avatarFile
                   ? "Custom upload selected"
@@ -382,9 +378,7 @@ function ProfileEditorForm({
                 }}
                 required
               />
-              {errors.name ? (
-                <p className="text-destructive text-sm">{errors.name}</p>
-              ) : null}
+              {errors.name ? <p className="text-destructive text-sm">{errors.name}</p> : null}
             </div>
 
             <div className="space-y-2">
@@ -400,16 +394,11 @@ function ProfileEditorForm({
                 type="password"
                 inputMode="numeric"
                 maxLength={4}
-                placeholder={
-                  draft.clearPin ? "PIN will be removed on save" : "4 digits"
-                }
+                placeholder={draft.clearPin ? "PIN will be removed on save" : "4 digits"}
                 value={draft.clearPin ? "" : draft.pin}
                 disabled={draft.clearPin}
                 onChange={(event) => {
-                  updateDraft(
-                    "pin",
-                    event.target.value.replace(/\D/g, "").slice(0, 4),
-                  );
+                  updateDraft("pin", event.target.value.replace(/\D/g, "").slice(0, 4));
                   setErrors((current) => ({ ...current, pin: undefined }));
                 }}
               />
@@ -429,17 +418,11 @@ function ProfileEditorForm({
                     setErrors((current) => ({ ...current, pin: undefined }));
                   }}
                 >
-                  {draft.clearPin ? (
-                    <Loader2 className="animate-spin" />
-                  ) : (
-                    <Trash2 />
-                  )}
+                  {draft.clearPin ? <Loader2 className="animate-spin" /> : <Trash2 />}
                   {draft.clearPin ? "Keep existing PIN" : "Remove PIN"}
                 </Button>
               ) : null}
-              {errors.pin ? (
-                <p className="text-destructive text-sm">{errors.pin}</p>
-              ) : null}
+              {errors.pin ? <p className="text-destructive text-sm">{errors.pin}</p> : null}
             </div>
           </div>
         </div>
@@ -448,8 +431,8 @@ function ProfileEditorForm({
           <div className="space-y-1">
             <Label>Preset avatars</Label>
             <p className="text-muted-foreground text-xs">
-              Pick a DiceBear style, shuffle fun options, or leave it blank to
-              keep initials. A custom upload overrides presets.
+              Pick a DiceBear style, shuffle fun options, or leave it blank to keep initials. A
+              custom upload overrides presets.
             </p>
           </div>
           <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-4">
@@ -472,21 +455,15 @@ function ProfileEditorForm({
                   )}
                 >
                   <div className="text-sm font-medium">{style.label}</div>
-                  <div className="text-muted-foreground mt-1 text-xs">
-                    {style.summary}
-                  </div>
+                  <div className="text-muted-foreground mt-1 text-xs">{style.summary}</div>
                 </button>
               );
             })}
           </div>
           <div className="flex items-center justify-between gap-3">
             <p className="text-muted-foreground text-xs">
-              {
-                PROFILE_AVATAR_STYLES.find(
-                  (style) => style.id === activePresetStyle,
-                )?.summary
-              }
-              . Showing {visiblePresets.length} options right now.
+              {PROFILE_AVATAR_STYLES.find((style) => style.id === activePresetStyle)?.summary}.
+              Showing {visiblePresets.length} options right now.
             </p>
             <Button
               type="button"
@@ -555,8 +532,7 @@ function ProfileEditorForm({
           <div className="rounded-md border border-dashed px-4 py-3 text-sm">
             <p className="font-medium">Custom uploads are unavailable</p>
             <p className="text-muted-foreground mt-1 text-xs">
-              Configure private S3 avatar storage to enable uploaded profile
-              avatars.
+              Configure private S3 avatar storage to enable uploaded profile avatars.
             </p>
           </div>
         )}
@@ -591,10 +567,7 @@ function ProfileEditorForm({
               value={selectedContentRatingValue}
               onValueChange={(value) => {
                 setContentRatingTouched(true);
-                updateDraft(
-                  "maxContentRating",
-                  value === ANY_CONTENT_RATING_VALUE ? "" : value,
-                );
+                updateDraft("maxContentRating", value === ANY_CONTENT_RATING_VALUE ? "" : value);
               }}
             >
               <SelectTrigger id={contentRatingId} className="w-full">
@@ -604,11 +577,7 @@ function ProfileEditorForm({
                 {CONTENT_RATING_OPTIONS.map((option) => (
                   <SelectItem
                     key={option.value || ANY_CONTENT_RATING_VALUE}
-                    value={
-                      option.value === ""
-                        ? ANY_CONTENT_RATING_VALUE
-                        : option.value
-                    }
+                    value={option.value === "" ? ANY_CONTENT_RATING_VALUE : option.value}
                   >
                     {option.label}
                   </SelectItem>
@@ -617,15 +586,77 @@ function ProfileEditorForm({
             </Select>
           </div>
 
+          {advisoryAgeSupported ? (
+            <div className="space-y-2">
+              <Label htmlFor={advisoryAgeId}>Maximum advisory age</Label>
+              <Select
+                value={
+                  draft.maxAdvisoryAge === null
+                    ? NO_ADVISORY_AGE_VALUE
+                    : String(draft.maxAdvisoryAge)
+                }
+                onValueChange={(value) =>
+                  updateDraft(
+                    "maxAdvisoryAge",
+                    value === NO_ADVISORY_AGE_VALUE ? null : Number(value),
+                  )
+                }
+              >
+                <SelectTrigger
+                  id={advisoryAgeId}
+                  className="w-full"
+                  aria-describedby={advisoryAgeHelpId}
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {ADVISORY_AGE_OPTIONS.map((option) => (
+                    <SelectItem
+                      key={option.value ?? NO_ADVISORY_AGE_VALUE}
+                      value={option.value === null ? NO_ADVISORY_AGE_VALUE : String(option.value)}
+                    >
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <p id={advisoryAgeHelpId} className="text-muted-foreground text-xs">
+                Hides titles an advisory service such as Common Sense Media recommends for older
+                viewers.
+                {requireAdvisoryAgeSupported &&
+                draft.maxAdvisoryAge !== null &&
+                draft.requireAdvisoryAge
+                  ? null
+                  : " Titles without an advisory age are limited by the content rating alone."}
+              </p>
+              {requireAdvisoryAgeSupported && draft.maxAdvisoryAge !== null ? (
+                <div className="flex items-start justify-between gap-3 pt-1">
+                  <div className="space-y-0.5">
+                    <Label htmlFor={requireAdvisoryAgeId}>
+                      Hide titles without an advisory age
+                    </Label>
+                    <p id={requireAdvisoryAgeHelpId} className="text-muted-foreground text-xs">
+                      Shows only titles rated at or under this age. Ages are looked up over time, so
+                      this profile may see few titles at first.
+                    </p>
+                  </div>
+                  <Switch
+                    id={requireAdvisoryAgeId}
+                    aria-describedby={requireAdvisoryAgeHelpId}
+                    checked={draft.requireAdvisoryAge}
+                    onCheckedChange={(checked) => updateDraft("requireAdvisoryAge", checked)}
+                  />
+                </div>
+              ) : null}
+            </div>
+          ) : null}
+
           <div className="space-y-2">
             <Label htmlFor={playbackQualityId}>Maximum playback quality</Label>
             <Select
               value={draft.maxPlaybackQuality}
               onValueChange={(value) =>
-                updateDraft(
-                  "maxPlaybackQuality",
-                  value as PlaybackQualityPreset,
-                )
+                updateDraft("maxPlaybackQuality", value as PlaybackQualityPreset)
               }
             >
               <SelectTrigger id={playbackQualityId} className="w-full">
@@ -665,14 +696,10 @@ function ProfileEditorForm({
             <div className="space-y-2">
               <div className="grid gap-2">
                 {libraries.length === 0 ? (
-                  <p className="text-muted-foreground text-sm">
-                    No libraries available.
-                  </p>
+                  <p className="text-muted-foreground text-sm">No libraries available.</p>
                 ) : (
                   libraries.map((library) => {
-                    const checked = draft.allowedLibraryIDs.includes(
-                      library.id,
-                    );
+                    const checked = draft.allowedLibraryIDs.includes(library.id);
 
                     return (
                       <div
@@ -680,18 +707,14 @@ function ProfileEditorForm({
                         className="border-border flex items-center justify-between rounded-md border px-3 py-2"
                       >
                         <div className="space-y-0.5">
-                          <div className="text-sm font-medium">
-                            {library.name}
-                          </div>
+                          <div className="text-sm font-medium">{library.name}</div>
                           <div className="text-muted-foreground text-xs capitalize">
                             {library.type}
                           </div>
                         </div>
                         <Switch
                           checked={checked}
-                          onCheckedChange={(nextChecked) =>
-                            toggleLibrary(library.id, nextChecked)
-                          }
+                          onCheckedChange={(nextChecked) => toggleLibrary(library.id, nextChecked)}
                         />
                       </div>
                     );
@@ -708,11 +731,7 @@ function ProfileEditorForm({
       </section>
 
       <DialogFooter>
-        <Button
-          type="button"
-          variant="outline"
-          onClick={() => onOpenChange(false)}
-        >
+        <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
           <X />
           Cancel
         </Button>

@@ -26,6 +26,10 @@ func NewBrandingHandler(svc *branding.Service) *BrandingHandler {
 // historical {server_name, login_subtitle} shape — new fields are additive per
 // the v1 API rules. Asset URLs are stable, cache-bustable paths (empty when no
 // custom asset is set).
+//
+// default_theme and the light logo URLs are retired from the web client and
+// from /api/v2, but this frozen v1 response keeps reporting whatever is stored
+// until v1 retires.
 type brandingResponse struct {
 	ServerName       string `json:"server_name"`
 	LoginSubtitle    string `json:"login_subtitle"`
@@ -56,7 +60,7 @@ func (h *BrandingHandler) HandleGetBranding(w http.ResponseWriter, r *http.Reque
 		MarkLightURL:     snap.AssetURL(branding.KindMarkLight),
 		FaviconURL:       snap.AssetURL(branding.KindFavicon),
 		LoginBgURL:       snap.AssetURL(branding.KindLoginBg),
-		StorageAvailable: h.svc.HasStorage(),
+		StorageAvailable: h.svc != nil && h.svc.HasStorage(),
 	})
 }
 
@@ -70,7 +74,7 @@ func (h *BrandingHandler) HandleServeAsset(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	data, contentType, ref, err := h.svc.GetAsset(r.Context(), branding.AssetKind(kind), r.Header.Get("Accept"))
+	data, contentType, ref, err := h.svc.GetAsset(r.Context(), branding.AssetKind(kind))
 	switch {
 	case errors.Is(err, branding.ErrAssetNotConfigured):
 		writeError(w, http.StatusNotFound, "not_found", "No custom asset configured")
@@ -84,15 +88,11 @@ func (h *BrandingHandler) HandleServeAsset(w http.ResponseWriter, r *http.Reques
 	}
 
 	etag := `"` + ref + `"`
-	if contentType == "image/avif" {
-		etag = `"` + ref + `;avif"`
-	}
 	// Uploaded assets (e.g. SVG favicons) are admin-controlled but served from
 	// the app origin. Prevent content-type sniffing and neutralize scripts in a
 	// directly-navigated SVG (stored-XSS defense).
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.Header().Set("Content-Security-Policy", branding.AssetContentSecurityPolicy)
-	w.Header().Set("Vary", "Accept")
 	if r.Header.Get("If-None-Match") == etag {
 		w.WriteHeader(http.StatusNotModified)
 		return
@@ -113,7 +113,7 @@ func (h *BrandingHandler) HandleUploadAsset(w http.ResponseWriter, r *http.Reque
 		return
 	}
 	if !h.svc.HasStorage() {
-		writeError(w, http.StatusServiceUnavailable, "unavailable", "Asset upload storage (S3) is not configured")
+		writeError(w, http.StatusServiceUnavailable, "unavailable", "Asset upload storage is not configured")
 		return
 	}
 
@@ -144,11 +144,11 @@ func (h *BrandingHandler) HandleUploadAsset(w http.ResponseWriter, r *http.Reque
 	case errors.Is(err, branding.ErrUnsupportedImage):
 		writeError(w, http.StatusBadRequest, "bad_request", "Unsupported image type; use PNG, JPEG, WebP (or PNG/ICO/SVG for favicon)")
 		return
-	case errors.Is(err, branding.ErrStorageUnavailable):
-		writeError(w, http.StatusServiceUnavailable, "unavailable", "Asset upload storage (S3) is not configured")
-		return
 	case errors.Is(err, branding.ErrInvalidKind):
 		writeError(w, http.StatusBadRequest, "bad_request", "Unknown branding asset")
+		return
+	case errors.Is(err, branding.ErrStorageUnavailable):
+		writeError(w, http.StatusServiceUnavailable, "unavailable", "Asset storage is not configured")
 		return
 	case err != nil:
 		writeError(w, http.StatusInternalServerError, "internal_error", "Failed to store asset")

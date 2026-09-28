@@ -1,10 +1,4 @@
-import {
-  act,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { MemoryRouter, Route, Routes, useLocation } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
@@ -13,8 +7,7 @@ const mocks = vi.hoisted(() => ({
   ownerKey: "profile-1",
   rememberEnabled: true,
   savedSearch: "tab=library" as string | undefined,
-  saveLibrarySearch:
-    vi.fn<(libraryId: number, search: string) => Promise<void>>(),
+  saveLibrarySearch: vi.fn<(libraryId: number, search: string) => Promise<void>>(),
   renderOnlyActiveTab: false,
   recommendedMounts: 0,
 }));
@@ -27,10 +20,7 @@ vi.mock("@/hooks/queries/libraries", () => ({
 }));
 
 vi.mock("@/hooks/queries/libraryPageState", () => ({
-  libraryPageStateWriteRetryDelay: (
-    error: unknown,
-    fallbackDelayMs: number,
-  ) => {
+  libraryPageStateWriteRetryDelay: (error: unknown, fallbackDelayMs: number) => {
     const status =
       typeof error === "object" && error !== null && "status" in error
         ? (error as { status?: unknown }).status
@@ -52,10 +42,7 @@ vi.mock("@/hooks/queries/libraryPageState", () => ({
     isLoading: false,
     preference: {
       version: 1,
-      libraries:
-        mocks.savedSearch === undefined
-          ? {}
-          : { "7": { search: mocks.savedSearch } },
+      libraries: mocks.savedSearch === undefined ? {} : { "7": { search: mocks.savedSearch } },
     },
     rememberEnabled: mocks.rememberEnabled,
     saveLibrarySearch: mocks.saveLibrarySearch,
@@ -75,17 +62,9 @@ vi.mock("@/components/ui/tabs", async () => {
   const ActiveTabContext = createContext<string | undefined>(undefined);
   return {
     Tabs: ({ value, children }: { value: string; children: ReactNode }) => (
-      <ActiveTabContext.Provider value={value}>
-        {children}
-      </ActiveTabContext.Provider>
+      <ActiveTabContext.Provider value={value}>{children}</ActiveTabContext.Provider>
     ),
-    TabsContent: ({
-      value,
-      children,
-    }: {
-      value: string;
-      children: ReactNode;
-    }) => {
+    TabsContent: ({ value, children }: { value: string; children: ReactNode }) => {
       const activeTab = useContext(ActiveTabContext);
       // Radix only mounts the active panel. Most tests here need to reach into
       // several panels at once, so that behavior is opt-in per test.
@@ -176,9 +155,7 @@ describe("LibraryPage saved state", () => {
   it("submits one save while the cached value remains stale across unrelated rerenders", async () => {
     renderPage();
 
-    await waitFor(() =>
-      expect(mocks.saveLibrarySearch).toHaveBeenCalledTimes(1),
-    );
+    await waitFor(() => expect(mocks.saveLibrarySearch).toHaveBeenCalledTimes(1));
     const firstCall = mocks.saveLibrarySearch.mock.calls[0];
     expect(firstCall).toBeDefined();
     const [, canonicalSearch] = firstCall!;
@@ -212,9 +189,7 @@ describe("LibraryPage saved state", () => {
       });
 
       expect(mocks.saveLibrarySearch).toHaveBeenCalledTimes(2);
-      expect(mocks.saveLibrarySearch.mock.calls[1]).toEqual(
-        mocks.saveLibrarySearch.mock.calls[0],
-      );
+      expect(mocks.saveLibrarySearch.mock.calls[1]).toEqual(mocks.saveLibrarySearch.mock.calls[0]);
       const retryResult = mocks.saveLibrarySearch.mock.results[1]?.value;
       expect(retryResult).toBeDefined();
       await expect(retryResult).resolves.toBeUndefined();
@@ -238,27 +213,21 @@ describe("LibraryPage saved state", () => {
       renderPage();
 
       expect(mocks.saveLibrarySearch).toHaveBeenCalledTimes(1);
-      await mocks.saveLibrarySearch.mock.results[0]?.value.catch(
-        () => undefined,
-      );
+      await mocks.saveLibrarySearch.mock.results[0]?.value.catch(() => undefined);
 
       await act(async () => {
         vi.advanceTimersByTime(2_000);
         await Promise.resolve();
       });
       expect(mocks.saveLibrarySearch).toHaveBeenCalledTimes(2);
-      await mocks.saveLibrarySearch.mock.results[1]?.value.catch(
-        () => undefined,
-      );
+      await mocks.saveLibrarySearch.mock.results[1]?.value.catch(() => undefined);
 
       await act(async () => {
         vi.advanceTimersByTime(5_000);
         await Promise.resolve();
       });
       expect(mocks.saveLibrarySearch).toHaveBeenCalledTimes(3);
-      await mocks.saveLibrarySearch.mock.results[2]?.value.catch(
-        () => undefined,
-      );
+      await mocks.saveLibrarySearch.mock.results[2]?.value.catch(() => undefined);
 
       await act(async () => {
         vi.advanceTimersByTime(60_000);
@@ -272,16 +241,12 @@ describe("LibraryPage saved state", () => {
 
   it("cancels a scheduled retry when the saved value acknowledges the write", async () => {
     vi.useFakeTimers();
-    mocks.saveLibrarySearch.mockRejectedValueOnce(
-      new Error("response connection lost"),
-    );
+    mocks.saveLibrarySearch.mockRejectedValueOnce(new Error("response connection lost"));
     try {
       const view = renderPage();
 
       expect(mocks.saveLibrarySearch).toHaveBeenCalledTimes(1);
-      await mocks.saveLibrarySearch.mock.results[0]?.value.catch(
-        () => undefined,
-      );
+      await mocks.saveLibrarySearch.mock.results[0]?.value.catch(() => undefined);
       const canonicalSearch = mocks.saveLibrarySearch.mock.calls[0]?.[1];
       expect(canonicalSearch).toBeDefined();
 
@@ -309,18 +274,14 @@ describe("LibraryPage saved state", () => {
       renderPage();
 
       expect(mocks.saveLibrarySearch).toHaveBeenCalledTimes(1);
-      await mocks.saveLibrarySearch.mock.results[0]?.value.catch(
-        () => undefined,
-      );
+      await mocks.saveLibrarySearch.mock.results[0]?.value.catch(() => undefined);
 
       await act(async () => {
         vi.advanceTimersByTime(2_000);
         await Promise.resolve();
       });
       expect(mocks.saveLibrarySearch).toHaveBeenCalledTimes(2);
-      await expect(
-        mocks.saveLibrarySearch.mock.results[1]?.value,
-      ).resolves.toBeUndefined();
+      await expect(mocks.saveLibrarySearch.mock.results[1]?.value).resolves.toBeUndefined();
 
       await act(async () => {
         vi.advanceTimersByTime(60_000);
@@ -345,12 +306,8 @@ describe("LibraryPage saved state", () => {
     mocks.ownerKey = "profile-2";
     view.rerender(page());
 
-    await waitFor(() =>
-      expect(mocks.saveLibrarySearch).toHaveBeenCalledTimes(2),
-    );
-    await expect(
-      mocks.saveLibrarySearch.mock.results[1]?.value,
-    ).resolves.toBeUndefined();
+    await waitFor(() => expect(mocks.saveLibrarySearch).toHaveBeenCalledTimes(2));
+    await expect(mocks.saveLibrarySearch.mock.results[1]?.value).resolves.toBeUndefined();
   });
 
   it("does not carry an in-flight submission marker into a different profile", async () => {
@@ -368,16 +325,10 @@ describe("LibraryPage saved state", () => {
     mocks.ownerKey = "profile-2";
     view.rerender(page());
 
-    await waitFor(() =>
-      expect(mocks.saveLibrarySearch).toHaveBeenCalledTimes(2),
-    );
-    await expect(
-      mocks.saveLibrarySearch.mock.results[1]?.value,
-    ).resolves.toBeUndefined();
+    await waitFor(() => expect(mocks.saveLibrarySearch).toHaveBeenCalledTimes(2));
+    await expect(mocks.saveLibrarySearch.mock.results[1]?.value).resolves.toBeUndefined();
     resolveFirst?.();
-    await expect(
-      mocks.saveLibrarySearch.mock.results[0]?.value,
-    ).resolves.toBeUndefined();
+    await expect(mocks.saveLibrarySearch.mock.results[0]?.value).resolves.toBeUndefined();
   });
 
   it("rehydrates URL state instead of copying it into a different profile", async () => {
@@ -385,9 +336,7 @@ describe("LibraryPage saved state", () => {
     const view = renderPage("/libraries/7");
 
     await waitFor(() =>
-      expect(screen.getByTestId("location-search")).toHaveTextContent(
-        "?tab=collections",
-      ),
+      expect(screen.getByTestId("location-search")).toHaveTextContent("?tab=collections"),
     );
     expect(mocks.saveLibrarySearch).not.toHaveBeenCalled();
 
@@ -400,10 +349,7 @@ describe("LibraryPage saved state", () => {
         "?tab=library&sort=year&order=desc",
       ),
     );
-    expect(mocks.saveLibrarySearch).not.toHaveBeenCalledWith(
-      7,
-      "tab=collections",
-    );
+    expect(mocks.saveLibrarySearch).not.toHaveBeenCalledWith(7, "tab=collections");
   });
 
   it("clears inherited URL state when the new profile has no saved value", async () => {
@@ -411,22 +357,15 @@ describe("LibraryPage saved state", () => {
     const view = renderPage("/libraries/7");
 
     await waitFor(() =>
-      expect(screen.getByTestId("location-search")).toHaveTextContent(
-        "?tab=collections",
-      ),
+      expect(screen.getByTestId("location-search")).toHaveTextContent("?tab=collections"),
     );
 
     mocks.ownerKey = "profile-2";
     mocks.savedSearch = undefined;
     view.rerender(page("/libraries/7"));
 
-    await waitFor(() =>
-      expect(screen.getByTestId("location-search")).toBeEmptyDOMElement(),
-    );
-    expect(mocks.saveLibrarySearch).not.toHaveBeenCalledWith(
-      7,
-      "tab=collections",
-    );
+    await waitFor(() => expect(screen.getByTestId("location-search")).toBeEmptyDOMElement());
+    expect(mocks.saveLibrarySearch).not.toHaveBeenCalledWith(7, "tab=collections");
   });
 
   it("clears inherited URL state when the new profile disables remembering", async () => {
@@ -434,9 +373,7 @@ describe("LibraryPage saved state", () => {
     const view = renderPage("/libraries/7");
 
     await waitFor(() =>
-      expect(screen.getByTestId("location-search")).toHaveTextContent(
-        "?tab=collections",
-      ),
+      expect(screen.getByTestId("location-search")).toHaveTextContent("?tab=collections"),
     );
 
     mocks.ownerKey = "profile-2";
@@ -444,12 +381,7 @@ describe("LibraryPage saved state", () => {
     mocks.savedSearch = "tab=library&sort=year&order=desc";
     view.rerender(page("/libraries/7"));
 
-    await waitFor(() =>
-      expect(screen.getByTestId("location-search")).toBeEmptyDOMElement(),
-    );
-    expect(mocks.saveLibrarySearch).not.toHaveBeenCalledWith(
-      7,
-      "tab=collections",
-    );
+    await waitFor(() => expect(screen.getByTestId("location-search")).toBeEmptyDOMElement());
+    expect(mocks.saveLibrarySearch).not.toHaveBeenCalledWith(7, "tab=collections");
   });
 });

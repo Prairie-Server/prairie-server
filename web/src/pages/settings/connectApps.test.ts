@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import {
-  buildJellyfinUsername,
-  isLoopbackURL,
-  jellyfinUsernameIssue,
-} from "./connectApps";
+import { buildJellyfinUsername, isLoopbackURL, jellyfinUsernameIssue } from "./connectApps";
 
 describe("buildJellyfinUsername", () => {
   it("joins the account and profile with the separator the resolver expects", () => {
@@ -12,9 +8,7 @@ describe("buildJellyfinUsername", () => {
   });
 
   it("preserves internal spaces, which the resolver matches verbatim", () => {
-    expect(buildJellyfinUsername(" johndoe ", " Doe Household ")).toBe(
-      "johndoe#Doe Household",
-    );
+    expect(buildJellyfinUsername(" johndoe ", " Doe Household ")).toBe("johndoe#Doe Household");
   });
 
   it("falls back to the bare account when there is no profile to append", () => {
@@ -44,13 +38,12 @@ describe("isLoopbackURL", () => {
     expect(isLoopbackURL(url)).toBe(true);
   });
 
-  it.each([
-    "https://compat.example.test",
-    "http://192.168.1.10:8096",
-    "https://10.0.0.5",
-  ])("treats %s as a real address", (url) => {
-    expect(isLoopbackURL(url)).toBe(false);
-  });
+  it.each(["https://compat.example.test", "http://192.168.1.10:8096", "https://10.0.0.5"])(
+    "treats %s as a real address",
+    (url) => {
+      expect(isLoopbackURL(url)).toBe(false);
+    },
+  );
 
   it("does not flag a hostname that merely contains a loopback substring", () => {
     expect(isLoopbackURL("https://localhost.example.com")).toBe(false);

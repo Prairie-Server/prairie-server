@@ -212,7 +212,7 @@ from IP, rates from bytes and timestamps) can wait.
 | `RequestCount` (per session, per window) | Low-byte, high-work abuse (manifest/seek/replan storms) is invisible to a byte counter. |
 
 Each family supplies its own capture function, because identity lives in a different
-place per protocol: native reads `X-Silo-*` headers, jellycompat parses the
+place per protocol: native reads `X-Prairie-*` headers, jellycompat parses the
 `MediaBrowser` authorization header (the same parser the negotiation path uses, so
 telemetry reads the value the play session was keyed on), ABS carries a numeric account
 id as a string, and the transcode node has none of these.
@@ -438,7 +438,7 @@ profile, no viewer IP, no client. A node cannot know who is watching: its start 
 carries no user, profile or media ownership fields at all. Its capture hook must never
 fall back to the generic capture, which would record the *proxy's* address as a viewer
 IP. The node's URL `{session_id}` is the transcode **transport** id, not the canonical
-session id; the canonical id is resolved from the forwarded `X-Silo-Stream-Token`, and
+session id; the canonical id is resolved from the forwarded `X-Prairie-Stream-Token`, and
 otherwise falls back to `node-transport:<id>` rather than joining a session it cannot
 prove.
 
@@ -713,6 +713,11 @@ reconciliation, cleanup and shutdown. That touches health payloads, admin statis
 realtime invalidation, stop cleanup, and two `/api/v1` endpoints under the
 additive-only rule. Dual-publish, prove parity, migrate each named consumer, retire
 writes last.
+
+> **Superseded on this point:** `/api/v1` is a frozen alpha contract retired after the
+> bridge release, not an additive-only surface — see
+> [the native API contract](../architecture/api-contract.md) for the current `/api/v1`
+> lifecycle.
 
 **What is authoritative for what.** Telemetry is canonical *only* for server-observed
 live activity, viewer bytes, viewer addresses and enforcement. The control stores stay

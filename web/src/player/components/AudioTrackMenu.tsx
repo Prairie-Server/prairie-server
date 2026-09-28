@@ -37,10 +37,7 @@ interface TrackDescriptor {
   isDefault: boolean;
 }
 
-function describeTrack(
-  track: PlayerAudioTrack,
-  index: number,
-): TrackDescriptor {
+function describeTrack(track: PlayerAudioTrack, index: number): TrackDescriptor {
   const title = audioTitle(track) || `Track ${index + 1}`;
   const language = formatLanguageName(track.language ?? "");
   const metaParts = [
@@ -108,9 +105,7 @@ export function AudioTrackMenu({
   const handleMenuKeyDown = useCallback((e: React.KeyboardEvent) => {
     const items = menuItemsRef.current.filter(Boolean) as HTMLButtonElement[];
     if (items.length === 0) return;
-    const currentIndex = items.indexOf(
-      document.activeElement as HTMLButtonElement,
-    );
+    const currentIndex = items.indexOf(document.activeElement as HTMLButtonElement);
     let nextIndex: number | null = null;
 
     switch (e.key) {
@@ -158,6 +153,7 @@ export function AudioTrackMenu({
 
       {open && (
         <PlayerMenuSurface
+          anchorRef={menuRef}
           className="absolute right-0 bottom-full z-30 mb-2 max-w-[min(360px,calc(100vw-1rem))] min-w-[280px] rounded-lg bg-black/90 py-1.5 shadow-xl backdrop-blur-sm"
           onClose={() => setOpen(false)}
           onKeyDown={handleMenuKeyDown}
@@ -186,18 +182,12 @@ export function AudioTrackMenu({
                 </span>
                 <span className="flex min-w-0 flex-1 flex-col gap-1">
                   <span className="flex flex-wrap items-center gap-1.5">
-                    <span className="truncate text-sm font-medium">
-                      {descriptor.title}
-                    </span>
-                    {descriptor.codecLabel && (
-                      <TrackBadge>{descriptor.codecLabel}</TrackBadge>
-                    )}
+                    <span className="truncate text-sm font-medium">{descriptor.title}</span>
+                    {descriptor.codecLabel && <TrackBadge>{descriptor.codecLabel}</TrackBadge>}
                     {descriptor.channelsLabel && (
                       <TrackBadge>{descriptor.channelsLabel}</TrackBadge>
                     )}
-                    {descriptor.isDefault && (
-                      <TrackBadge variant="outline">Default</TrackBadge>
-                    )}
+                    {descriptor.isDefault && <TrackBadge variant="outline">Default</TrackBadge>}
                   </span>
                   {descriptor.meta && (
                     <span className="truncate text-[11px] leading-snug text-white/55">
@@ -227,8 +217,6 @@ function TrackBadge({
   const base =
     "inline-flex items-center rounded px-1.5 py-[1px] text-[9.5px] font-semibold tracking-wide whitespace-nowrap uppercase leading-4";
   const skin =
-    variant === "outline"
-      ? "border border-white/25 text-white/70"
-      : "bg-white/10 text-white/75";
+    variant === "outline" ? "border border-white/25 text-white/70" : "bg-white/10 text-white/75";
   return <span className={`${base} ${skin}`}>{children}</span>;
 }

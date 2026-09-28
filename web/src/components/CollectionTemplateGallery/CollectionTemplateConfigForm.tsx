@@ -1,9 +1,11 @@
+import { useAdminCollectionCapabilities } from "@/hooks/queries/admin/collections";
 import { useState } from "react";
 import type { FormEvent } from "react";
 
 import {
   useImportMDBListCollection,
   useImportTMDBCollection,
+  useImportTMDBListCollection,
   useImportTraktCollection,
 } from "@/hooks/queries/admin/collections";
 import { useProfiles } from "@/hooks/queries/profiles";
@@ -13,14 +15,8 @@ import {
   libraryEligibilityForMediaKind,
   mediaKindLabel,
 } from "@/lib/collectionTemplates";
-import type {
-  CollectionTemplate,
-  LibraryEligibility,
-} from "@/lib/collectionTemplates";
-import {
-  COLLECTION_SOURCE_ORDER,
-  selectValueToSortConfig,
-} from "@/lib/collectionSortConfig";
+import type { CollectionTemplate, LibraryEligibility } from "@/lib/collectionTemplates";
+import { COLLECTION_SOURCE_ORDER, selectValueToSortConfig } from "@/lib/collectionSortConfig";
 import {
   CollectionLibraryPicker,
   parseOptionalPositiveInteger,
@@ -40,12 +36,11 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { CollectionDefaultSortField } from "@/components/collections/CollectionDefaultSortField";
 import { SyncScheduleField } from "@/components/collections/SyncScheduleField";
+import { TMDBListURLField } from "@/components/collections/TMDBListURLField";
+import { isValidTMDBListURL } from "@/lib/tmdbList";
 
 import { MDBListBrowser } from "./MDBListBrowser";
-import {
-  TemplatePosterField,
-  type TemplatePosterMode,
-} from "./TemplatePosterField";
+import { TemplatePosterField, type TemplatePosterMode } from "./TemplatePosterField";
 
 import { Loader2, Plus, X } from "lucide-react";
 interface Props {
@@ -78,9 +73,7 @@ function initialTemplateLibraryIds(
   if (eligibleLibraries.length === 0) return [];
 
   if (initialLibraryId) {
-    const initialLibrary = eligibleLibraries.find(
-      (library) => library.id === initialLibraryId,
-    );
+    const initialLibrary = eligibleLibraries.find((library) => library.id === initialLibraryId);
     if (initialLibrary) return [initialLibrary.id];
   }
 
@@ -95,10 +88,12 @@ export function CollectionTemplateConfigForm({
   onCancel,
   onCreated,
 }: Props) {
+  const { data: capabilities } = useAdminCollectionCapabilities();
   const tmdbMutation = useImportTMDBCollection();
   const traktMutation = useImportTraktCollection();
   const mdblistMutation = useImportMDBListCollection();
-  const { data: profiles } = useProfiles();
+  const tmdbListMutation = useImportTMDBListCollection();
+  const { data: profiles = [] } = useProfiles();
   const eligibility = libraryEligibilityForMediaKind(template.media_kind);
 
   const [libraryIds, setLibraryIds] = useState<number[]>(() =>
@@ -107,25 +102,18 @@ export function CollectionTemplateConfigForm({
 
   const [title, setTitle] = useState(template.title);
   const [description, setDescription] = useState(template.description);
-  const [limit, setLimit] = useState(
-    template.default_limit ? String(template.default_limit) : "",
-  );
-  const [syncSchedule, setSyncSchedule] = useState(
-    template.default_sync_schedule ?? "",
-  );
+  const [limit, setLimit] = useState(template.default_limit ? String(template.default_limit) : "");
+  const [syncSchedule, setSyncSchedule] = useState(template.default_sync_schedule ?? "");
   const [featured, setFeatured] = useState(template.featured ?? true);
-  const defaultProfileId = template.requires_profile
-    ? (profiles[0]?.id ?? "")
-    : "";
+  const defaultProfileId = template.requires_profile ? (profiles[0]?.id ?? "") : "";
   const [profileId, setProfileId] = useState(defaultProfileId);
   const [mdblistUrl, setMdblistUrl] = useState(template.mdblist?.url ?? "");
+  const [tmdbListUrl, setTmdbListUrl] = useState(template.tmdb_list?.url ?? "");
   const [posterMode, setPosterMode] = useState<TemplatePosterMode>(() =>
     template.poster_path ? "default" : "custom",
   );
   const [customPosterUrl, setCustomPosterUrl] = useState("");
-  const [defaultSort, setDefaultSort] = useState<string>(
-    COLLECTION_SOURCE_ORDER,
-  );
+  const [defaultSort, setDefaultSort] = useState<string>(COLLECTION_SOURCE_ORDER);
 
   // Discover- and Collection-source templates are bundle-only: the spec is
   // backend-driven and can't be edited inline. Render a read-only summary so
@@ -134,14 +122,10 @@ export function CollectionTemplateConfigForm({
   // green — the unused state slots are cheap and isolate this branch from
   // the editable-form path.
   if (template.source === "tmdb_collection") {
-    return (
-      <TMDBCollectionTemplateSummary template={template} onCancel={onCancel} />
-    );
+    return <TMDBCollectionTemplateSummary template={template} onCancel={onCancel} />;
   }
   if (template.source === "tmdb_discover") {
-    return (
-      <TMDBDiscoverTemplateSummary template={template} onCancel={onCancel} />
-    );
+    return <TMDBDiscoverTemplateSummary template={template} onCancel={onCancel} />;
   }
 
   // When profiles load after initial render and the template needs one but
@@ -155,17 +139,19 @@ export function CollectionTemplateConfigForm({
   const isPending =
     tmdbMutation.isPending ||
     traktMutation.isPending ||
-    mdblistMutation.isPending;
+    mdblistMutation.isPending ||
+    tmdbListMutation.isPending;
   const missingLibrary = libraryIds.length === 0;
   const missingProfile = template.requires_profile && profileId === "";
-  const missingMDBListURL =
-    template.source === "mdblist" && mdblistUrl.trim().length === 0;
+  const missingMDBListURL = template.source === "mdblist" && mdblistUrl.trim().length === 0;
+  const invalidTMDBListURL = template.source === "tmdb_list" && !isValidTMDBListURL(tmdbListUrl);
 
   const submitDisabled =
     isPending ||
     missingLibrary ||
     missingProfile ||
     missingMDBListURL ||
+    invalidTMDBListURL ||
     limitInvalid;
 
   function handleSubmit(event: FormEvent) {
@@ -180,9 +166,11 @@ export function CollectionTemplateConfigForm({
       sync_schedule: syncSchedule.trim() || undefined,
       limit: parsedLimit,
       sort_config: selectValueToSortConfig(defaultSort),
-      ...(posterMode === "custom"
-        ? { poster_source_url: customPosterUrl.trim() || undefined }
-        : { poster_url: template.poster_path || undefined }),
+      ...(!capabilities?.artwork
+        ? {}
+        : posterMode === "custom"
+          ? { poster_source_url: customPosterUrl.trim() || undefined }
+          : { poster_url: template.poster_path || undefined }),
     };
 
     if (template.source === "tmdb" && template.tmdb) {
@@ -227,6 +215,19 @@ export function CollectionTemplateConfigForm({
       );
       return;
     }
+
+    if (template.source === "tmdb_list") {
+      tmdbListMutation.mutate(
+        {
+          body: {
+            ...sharedFields,
+            url: tmdbListUrl.trim(),
+          },
+        },
+        { onSuccess: onCreated },
+      );
+      return;
+    }
   }
 
   return (
@@ -248,9 +249,7 @@ export function CollectionTemplateConfigForm({
               {mediaKindLabel(template.media_kind)}
             </Badge>
           </div>
-          <p className="text-muted-foreground text-xs">
-            {template.description}
-          </p>
+          <p className="text-muted-foreground text-xs">{template.description}</p>
         </div>
       </div>
 
@@ -305,11 +304,19 @@ export function CollectionTemplateConfigForm({
               required
             />
             <p className="text-muted-foreground text-xs">
-              Pick a list above or paste any public MDBList list URL (with or
-              without <code>/json</code>). Items resolve via TMDB/IMDb/TVDB IDs.
+              Pick a list above or paste any public MDBList list URL (with or without{" "}
+              <code>/json</code>). Items resolve via TMDB/IMDb/TVDB IDs.
             </p>
           </div>
         </div>
+      ) : null}
+
+      {template.source === "tmdb_list" ? (
+        <TMDBListURLField
+          id="template-tmdb-list-url"
+          value={tmdbListUrl}
+          onChange={setTmdbListUrl}
+        />
       ) : null}
 
       {template.requires_profile ? (
@@ -328,20 +335,22 @@ export function CollectionTemplateConfigForm({
             </SelectContent>
           </Select>
           <p className="text-muted-foreground text-xs">
-            This template uses the chosen profile's connected Trakt account from
-            Watch Providers settings.
+            This template uses the chosen profile's connected Trakt account from Watch Providers
+            settings.
           </p>
         </div>
       ) : null}
 
-      <TemplatePosterField
-        template={template}
-        mode={posterMode}
-        onModeChange={setPosterMode}
-        customUrl={customPosterUrl}
-        onCustomUrlChange={setCustomPosterUrl}
-        inputId="template-poster-url"
-      />
+      {capabilities?.artwork && (
+        <TemplatePosterField
+          template={template}
+          mode={posterMode}
+          onModeChange={setPosterMode}
+          customUrl={customPosterUrl}
+          onCustomUrlChange={setCustomPosterUrl}
+          inputId="template-poster-url"
+        />
+      )}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <div className="space-y-2">
@@ -355,19 +364,13 @@ export function CollectionTemplateConfigForm({
             inputMode="numeric"
             value={limit}
             onChange={(event) => setLimit(event.target.value)}
-            placeholder={
-              template.default_limit
-                ? String(template.default_limit)
-                : "No limit"
-            }
+            placeholder={template.default_limit ? String(template.default_limit) : "No limit"}
           />
         </div>
         <div className="space-y-2">
           <Label>Featured</Label>
           <div className="border-border flex h-9 items-center justify-between rounded-md border px-3">
-            <span className="text-muted-foreground text-xs">
-              Surface in hero shelves
-            </span>
+            <span className="text-muted-foreground text-xs">Surface in hero shelves</span>
             <Switch checked={featured} onCheckedChange={setFeatured} />
           </div>
         </div>
@@ -382,12 +385,7 @@ export function CollectionTemplateConfigForm({
       <SyncScheduleField value={syncSchedule} onChange={setSyncSchedule} />
 
       <div className="border-border flex justify-end gap-2 border-t pt-4">
-        <Button
-          type="button"
-          variant="ghost"
-          onClick={onCancel}
-          disabled={isPending}
-        >
+        <Button type="button" variant="ghost" onClick={onCancel} disabled={isPending}>
           <X />
           Cancel
         </Button>
@@ -411,10 +409,7 @@ interface TMDBCollectionTemplateSummaryProps {
 // catalog and isn't user-editable at apply-time — the official flow is to
 // apply via Template Bundles, where bulk creation, dedupe by management key,
 // and featured-section wiring are all handled in one shot.
-function TMDBCollectionTemplateSummary({
-  template,
-  onCancel,
-}: TMDBCollectionTemplateSummaryProps) {
+function TMDBCollectionTemplateSummary({ template, onCancel }: TMDBCollectionTemplateSummaryProps) {
   const collectionId = template.tmdb_collection?.collection_id ?? 0;
   const isPlaceholder = collectionId === 0;
 
@@ -437,43 +432,35 @@ function TMDBCollectionTemplateSummary({
               {mediaKindLabel(template.media_kind)}
             </Badge>
           </div>
-          <p className="text-muted-foreground text-xs">
-            {template.description}
-          </p>
+          <p className="text-muted-foreground text-xs">{template.description}</p>
         </div>
       </div>
 
       <dl className="grid gap-2 text-sm sm:grid-cols-2">
         <div className="space-y-0.5">
-          <dt className="text-muted-foreground text-xs uppercase">
-            TMDB Collection ID
-          </dt>
+          <dt className="text-muted-foreground text-xs uppercase">TMDB Collection ID</dt>
           <dd className="font-mono text-sm">
             {isPlaceholder ? "(unset — admin fills in at apply)" : collectionId}
           </dd>
         </div>
         {typeof template.default_sort_order === "number" ? (
           <div className="space-y-0.5">
-            <dt className="text-muted-foreground text-xs uppercase">
-              Default Sort Order
-            </dt>
+            <dt className="text-muted-foreground text-xs uppercase">Default Sort Order</dt>
             <dd className="font-mono text-sm">{template.default_sort_order}</dd>
           </div>
         ) : null}
       </dl>
 
       <p className="text-muted-foreground border-border bg-muted/30 rounded-md border p-3 text-xs">
-        TMDB franchise templates are bundle-driven. Apply them through Template
-        Bundles so the management key, library scoping, and sync schedule are
-        wired up consistently across libraries.
+        TMDB franchise templates are bundle-driven. Apply them through Template Bundles so the
+        management key, library scoping, and sync schedule are wired up consistently across
+        libraries.
         {isPlaceholder ? (
           <>
             {" "}
-            This template is a placeholder; after applying, edit the
-            collection's source_config and replace <code>
-              collection_id: 0
-            </code>{" "}
-            with the real TMDB collection ID before the first sync.
+            This template is a placeholder; after applying, edit the collection's source_config and
+            replace <code>collection_id: 0</code> with the real TMDB collection ID before the first
+            sync.
           </>
         ) : null}
       </p>
@@ -498,9 +485,7 @@ interface TMDBDiscoverTemplateSummaryProps {
 
 // summarizeDiscoverSpec produces a one-line human description of the discover
 // filter set so admins can see at a glance what the template will fetch.
-function summarizeDiscoverSpec(
-  spec: NonNullable<CollectionTemplate["tmdb_discover"]>,
-): string {
+function summarizeDiscoverSpec(spec: NonNullable<CollectionTemplate["tmdb_discover"]>): string {
   const parts: string[] = [];
   parts.push(spec.media_type === "tv" ? "TV" : "movies");
   parts.push(`sorted by ${spec.sort_by}`);
@@ -533,10 +518,7 @@ function summarizeDiscoverSpec(
 // TMDBDiscoverTemplateSummary mirrors TMDBCollectionTemplateSummary: TMDB
 // discover templates ship as backend-driven blueprints (genre matrices etc.)
 // and apply through Template Bundles, not the per-template create form.
-function TMDBDiscoverTemplateSummary({
-  template,
-  onCancel,
-}: TMDBDiscoverTemplateSummaryProps) {
+function TMDBDiscoverTemplateSummary({ template, onCancel }: TMDBDiscoverTemplateSummaryProps) {
   const spec = template.tmdb_discover;
 
   return (
@@ -558,38 +540,29 @@ function TMDBDiscoverTemplateSummary({
               {mediaKindLabel(template.media_kind)}
             </Badge>
           </div>
-          <p className="text-muted-foreground text-xs">
-            {template.description}
-          </p>
+          <p className="text-muted-foreground text-xs">{template.description}</p>
         </div>
       </div>
 
       {spec ? (
         <dl className="grid gap-2 text-sm sm:grid-cols-2">
           <div className="space-y-0.5">
-            <dt className="text-muted-foreground text-xs uppercase">
-              Filter Summary
-            </dt>
+            <dt className="text-muted-foreground text-xs uppercase">Filter Summary</dt>
             <dd className="text-sm">{summarizeDiscoverSpec(spec)}</dd>
           </div>
           {typeof template.default_sort_order === "number" ? (
             <div className="space-y-0.5">
-              <dt className="text-muted-foreground text-xs uppercase">
-                Default Sort Order
-              </dt>
-              <dd className="font-mono text-sm">
-                {template.default_sort_order}
-              </dd>
+              <dt className="text-muted-foreground text-xs uppercase">Default Sort Order</dt>
+              <dd className="font-mono text-sm">{template.default_sort_order}</dd>
             </div>
           ) : null}
         </dl>
       ) : null}
 
       <p className="text-muted-foreground border-border bg-muted/30 rounded-md border p-3 text-xs">
-        Discover templates are applied via Template Bundles. The filter set
-        ships from the backend catalog; apply through a bundle so the management
-        key, library scoping, and sync schedule are wired up consistently across
-        libraries.
+        Discover templates are applied via Template Bundles. The filter set ships from the backend
+        catalog; apply through a bundle so the management key, library scoping, and sync schedule
+        are wired up consistently across libraries.
       </p>
 
       <div className="border-border flex justify-end gap-2 border-t pt-4">

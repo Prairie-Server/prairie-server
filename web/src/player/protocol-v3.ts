@@ -121,8 +121,7 @@ export type RouteEventNameV3 =
 export const FEATURE_PLAYBACK_PLAN_V3 = "playback_plan_v3";
 
 /** Server-minted attempt keys and intent replans from the neutral v3 contract. */
-export const FEATURE_NEUTRAL_PLAYBACK_V3_CONTRACT =
-  "neutral_playback_v3_contract_v1";
+export const FEATURE_NEUTRAL_PLAYBACK_V3_CONTRACT = "neutral_playback_v3_contract_v1";
 
 /** Server accepts output-capability refreshes without treating the route as failed. */
 export const FEATURE_OUTPUT_CHANGE_V3 = "output_change_v1";
@@ -228,6 +227,13 @@ export interface OutputContextV3 {
 }
 
 export interface DeliverySubtitleCapabilitiesV3 {
+  native_embedded?: Array<{
+    container: string;
+    codecs: string[];
+    track_identity: "ffmpeg_stream_index" | "container_track_id";
+    ass_styling: boolean;
+    font_attachments: boolean;
+  }>;
   embedded_text: boolean;
   sidecar_text: boolean;
   ass_styling: boolean;
@@ -266,7 +272,7 @@ export interface ClientPlaybackContextV3 {
   app_version: string;
   /**
    * Opaque per-platform build identifier and distribution channel — the
-   * body-level fallback for the `X-Silo-Client-Build` / `X-Silo-Client-Channel`
+   * body-level fallback for the `X-Prairie-Client-Build` / `X-Prairie-Client-Channel`
    * headers. The server stores both verbatim and never parses or compares
    * them. The web player has no build concept and omits them.
    */
@@ -292,6 +298,7 @@ export interface StartRequestV3 {
   profile_id: string;
   playback_attempt_id: string;
   quality_preference: string;
+  allow_alternate_versions?: boolean;
   subtitle_fidelity_preference: SubtitleFidelityV3;
   start_position?: number;
   progress_persistence?: ProgressPersistenceV3;
@@ -491,6 +498,7 @@ export interface SubtitleInventoryItemV3 {
 }
 
 export interface SubtitleDecisionV3 {
+  embedded?: { stream_index: number; container_track_id?: string };
   mode: SubtitleModeV3;
   track_id?: string;
   artifact?: SubtitleArtifactV3;
@@ -582,12 +590,8 @@ export interface CapabilityResponseV3 {
 // ---------------------------------------------------------------------------
 
 /** True when both flags make the advertised delivery class eligible. */
-export function deliveryAvailableV3(
-  capability: DeliveryCapabilityV3 | undefined,
-): boolean {
-  return (
-    capability != null && capability.enabled && capability.supported_on_device
-  );
+export function deliveryAvailableV3(capability: DeliveryCapabilityV3 | undefined): boolean {
+  return capability != null && capability.enabled && capability.supported_on_device;
 }
 
 /**

@@ -1,8 +1,9 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ItemDetail } from "@/api/types";
 
 const mocks = vi.hoisted(() => ({
   api: vi.fn(),
+  v2: vi.fn(),
   cancelItemDetailQueries: vi.fn(),
   invalidateMediaSurfaceQueries: vi.fn(),
   scheduleMediaSurfaceInvalidation: vi.fn(),
@@ -16,9 +17,8 @@ const mocks = vi.hoisted(() => ({
 }));
 
 vi.mock("@tanstack/react-query", async () => {
-  const actual = await vi.importActual<typeof import("@tanstack/react-query")>(
-    "@tanstack/react-query",
-  );
+  const actual =
+    await vi.importActual<typeof import("@tanstack/react-query")>("@tanstack/react-query");
 
   return {
     ...actual,
@@ -27,18 +27,24 @@ vi.mock("@tanstack/react-query", async () => {
   };
 });
 
-vi.mock("@/api/client", () => ({
+vi.mock("@/api/client", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/api/client")>()),
   api: mocks.api,
 }));
+
+vi.mock("@/api/v2/request", async () => {
+  const actual = await vi.importActual<typeof import("@/api/v2/request")>("@/api/v2/request");
+  return { ...actual, v2: (...args: unknown[]) => mocks.v2(...args) };
+});
 
 vi.mock("@/components/realtimeEventsContext", () => ({
   useRealtimeEvents: () => ({ awaitAdminJob: vi.fn() }),
 }));
 
 vi.mock("@/pages/ItemDetail/watchedState", async () => {
-  const actual = await vi.importActual<
-    typeof import("@/pages/ItemDetail/watchedState")
-  >("@/pages/ItemDetail/watchedState");
+  const actual = await vi.importActual<typeof import("@/pages/ItemDetail/watchedState")>(
+    "@/pages/ItemDetail/watchedState",
+  );
 
   return {
     ...actual,
@@ -47,14 +53,12 @@ vi.mock("@/pages/ItemDetail/watchedState", async () => {
 });
 
 vi.mock("./mediaSurfaceRefresh", () => ({
-  cancelItemDetailQueries: (...args: unknown[]) =>
-    mocks.cancelItemDetailQueries(...args),
+  cancelItemDetailQueries: (...args: unknown[]) => mocks.cancelItemDetailQueries(...args),
   invalidateMediaSurfaceQueries: (...args: unknown[]) =>
     mocks.invalidateMediaSurfaceQueries(...args),
   scheduleMediaSurfaceInvalidation: (...args: unknown[]) =>
     mocks.scheduleMediaSurfaceInvalidation(...args),
-  updateCatalogItemDetail: (...args: unknown[]) =>
-    mocks.updateCatalogItemDetail(...args),
+  updateCatalogItemDetail: (...args: unknown[]) => mocks.updateCatalogItemDetail(...args),
 }));
 
 vi.mock("@/pages/homeSurfaceRefresh", () => ({
@@ -72,7 +76,7 @@ vi.mock("sonner", () => ({
 
 import {
   fetchWatchDetail,
-  redetectEpisodeIntro,
+  redetectItemMarkers,
   useRefreshItemMetadata,
   useWatchedStateMutation,
 } from "./items";
@@ -106,10 +110,20 @@ type RefreshMetadataMutationOptions = {
   ) => void;
 };
 
+afterEach(() => vi.unstubAllGlobals());
+
 describe("item query helpers", () => {
   beforeEach(() => {
     mocks.api.mockReset();
     mocks.api.mockResolvedValue({});
+    mocks.v2.mockReset();
+    mocks.v2.mockResolvedValue({
+      content_id: "ebook 1/isbn:978",
+      type: "ebook",
+      title: "Book",
+      versions: [],
+      subtitles: [],
+    });
     mocks.cancelItemDetailQueries.mockReset();
     mocks.cancelItemDetailQueries.mockResolvedValue(undefined);
     mocks.invalidateMediaSurfaceQueries.mockReset();
@@ -129,24 +143,41 @@ describe("item query helpers", () => {
     mocks.useQueryClient.mockReturnValue({});
   });
 
-  it("encodes item IDs in watch detail endpoints", async () => {
-    await fetchWatchDetail("ebook 1/isbn:978", 42, 12);
+  it("reads watch detail through the v2 operation with file and library ids", async () => {
+    const detail = await fetchWatchDetail("ebook 1/isbn:978", 42, 12);
 
-    expect(mocks.api).toHaveBeenCalledWith(
-      "/watch/ebook%201%2Fisbn%3A978?fileId=42&library_id=12",
-      undefined,
-    );
+    expect(mocks.v2).toHaveBeenCalledWith("GET /api/v2/watch/{id}", {
+      path: { id: "ebook 1/isbn:978" },
+      query: { file_id: "42", library_id: "12" },
+      signal: undefined,
+    });
+    expect(detail.content_id).toBe("ebook 1/isbn:978");
+    expect(detail.intro).toBeNull();
   });
 
-  it("encodes item IDs in admin item endpoints", async () => {
-    await redetectEpisodeIntro("episode 1/id:abc");
-
-    expect(mocks.api).toHaveBeenCalledWith(
-      "/admin/items/episode%201%2Fid%3Aabc/redetect-intro",
-      {
-        method: "POST",
-      },
+  it("encodes item IDs in v2 admin item endpoints", async () => {
+    const { v2 } = await vi.importActual<typeof import("@/api/v2/request")>("@/api/v2/request");
+    mocks.v2.mockImplementationOnce(v2);
+    const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ status: "started" }), {
+        headers: { "Content-Type": "application/json" },
+      }),
     );
+    vi.stubGlobal("fetch", fetch);
+    await redetectItemMarkers("episode 1/id:abc", "credits");
+
+    expect(mocks.v2).toHaveBeenCalledWith("POST /api/v2/admin/items/{id}/redetect-markers", {
+      path: { id: "episode 1/id:abc" },
+      body: { kind: "credits" },
+      retryAuthentication: false,
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetch.mock.calls[0]?.[0]).toBe(
+      "/api/v2/admin/items/episode%201%2Fid%3Aabc/redetect-markers",
+    );
+    expect(fetch.mock.calls[0]?.[1]?.method).toBe("POST");
+    expect(fetch.mock.calls[0]?.[1]?.body).toBe(JSON.stringify({ kind: "credits" }));
+    expect(mocks.api).not.toHaveBeenCalled();
   });
 
   it("shows one spinning refresh notification and replaces it with success", async () => {
@@ -163,15 +194,9 @@ describe("item query helpers", () => {
     };
 
     const context = options.onMutate?.(variables);
-    expect(mocks.toastLoading).toHaveBeenCalledWith(
-      "Quick metadata refresh running…",
-    );
+    expect(mocks.toastLoading).toHaveBeenCalledWith("Quick metadata refresh running…");
 
-    await options.onSuccess?.(
-      { job: { result_payload: {} } },
-      variables,
-      context,
-    );
+    await options.onSuccess?.({ job: { result_payload: {} } }, variables, context);
     expect(mocks.toastSuccess).toHaveBeenCalledWith("Metadata refreshed", {
       id: "refresh-toast",
     });
@@ -196,8 +221,7 @@ describe("item query helpers", () => {
         job: {
           result_payload: {
             refresh_content_id: "series-1",
-            artwork_cache_warning:
-              "2 refreshed artwork image(s) failed to cache",
+            artwork_cache_warning: "2 refreshed artwork image(s) failed to cache",
           },
         },
       },
@@ -241,14 +265,14 @@ describe("item query helpers", () => {
     ]?.[0] as WatchedMutationOptions;
 
     await options.mutationFn(true);
-    expect(mocks.api).toHaveBeenCalledWith("/watched/ebook%201%2Fisbn%3A978", {
-      method: "POST",
+    expect(mocks.v2).toHaveBeenCalledWith("POST /api/v2/watched/{id}", {
+      path: { id: "ebook 1/isbn:978" },
       keepalive: true,
     });
 
     await options.mutationFn(false);
-    expect(mocks.api).toHaveBeenCalledWith("/watched/ebook%201%2Fisbn%3A978", {
-      method: "DELETE",
+    expect(mocks.v2).toHaveBeenCalledWith("DELETE /api/v2/watched/{id}", {
+      path: { id: "ebook 1/isbn:978" },
       keepalive: true,
     });
   });
@@ -262,8 +286,8 @@ describe("item query helpers", () => {
     // Marking a large series expands to every episode server-side; without
     // keepalive the request dies with the document and nothing is marked.
     await options.mutationFn(true);
-    expect(mocks.api).toHaveBeenCalledWith("/watched/series-1", {
-      method: "POST",
+    expect(mocks.v2).toHaveBeenCalledWith("POST /api/v2/watched/{id}", {
+      path: { id: "series-1" },
       keepalive: true,
     });
   });
@@ -328,14 +352,11 @@ describe("item query helpers", () => {
     options.onSettled?.();
     // The item's own detail is deliberately not skipped: the server also zeroes
     // the resume position, which the optimistic patch cannot reconstruct.
-    expect(mocks.scheduleMediaSurfaceInvalidation).toHaveBeenCalledWith(
-      expect.anything(),
-      {
-        itemId: "ebook-1",
-        watchedKeys: [],
-        skipSimilarItems: true,
-      },
-    );
+    expect(mocks.scheduleMediaSurfaceInvalidation).toHaveBeenCalledWith(expect.anything(), {
+      itemId: "ebook-1",
+      watchedKeys: [],
+      skipSimilarItems: true,
+    });
   });
 
   it("updates watched state optimistically before refreshing derived surfaces", async () => {
@@ -349,10 +370,7 @@ describe("item query helpers", () => {
 
     await options.onMutate?.(true);
 
-    expect(mocks.cancelItemDetailQueries).toHaveBeenCalledWith(
-      queryClient,
-      "movie-1",
-    );
+    expect(mocks.cancelItemDetailQueries).toHaveBeenCalledWith(queryClient, "movie-1");
     expect(mocks.updateCatalogItemDetail).toHaveBeenCalledWith(
       queryClient,
       "movie-1",

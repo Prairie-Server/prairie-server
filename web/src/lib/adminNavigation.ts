@@ -27,10 +27,7 @@ import {
 import type { LucideIcon } from "lucide-react";
 
 import type { PluginInstallation } from "@/api/types";
-import type {
-  SettingsSearchGroup,
-  SettingsSearchItem,
-} from "@/components/settings/settingsSearch";
+import type { SettingsSearchGroup, SettingsSearchItem } from "@/components/settings/settingsSearch";
 import { ADMIN_SETTINGS_NAV } from "@/lib/adminSettingsSearch";
 import { pluginRouteHref } from "@/lib/pluginRouteHref";
 
@@ -76,14 +73,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavGroup[] = [
       },
       {
         label: "Diagnostics",
-        description:
-          "Uploaded client crash reports, device context, and debug bundles.",
-        keywords: [
-          "client diagnostics",
-          "crash reports",
-          "debug bundles",
-          "support",
-        ],
+        description: "Uploaded client crash reports, device context, and debug bundles.",
+        keywords: ["client diagnostics", "crash reports", "debug bundles", "support"],
         icon: FileWarning,
         href: "/admin/diagnostics",
       },
@@ -94,8 +85,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavGroup[] = [
     items: [
       {
         label: "Libraries",
-        description:
-          "Media libraries, paths, scanning, autoscan sources, and catalog import.",
+        description: "Media libraries, paths, scanning, autoscan sources, and catalog import.",
         keywords: [
           "library",
           "paths",
@@ -159,8 +149,7 @@ export const ADMIN_NAV_SECTIONS: AdminNavGroup[] = [
       },
       {
         label: "Recommendations",
-        description:
-          "Recommendation diagnostics, seed data, and ranking controls.",
+        description: "Recommendation diagnostics, seed data, and ranking controls.",
         keywords: ["taste", "ranking", "recommendation seeds"],
         icon: Bot,
         href: "/admin/recommendations",
@@ -179,16 +168,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavGroup[] = [
       },
       {
         label: "Access Groups",
-        description:
-          "Shared access defaults: libraries, downloads, streams, permissions.",
-        keywords: [
-          "groups",
-          "roles",
-          "permissions",
-          "library access",
-          "downloads",
-          "limits",
-        ],
+        description: "Shared access defaults: libraries, downloads, streams, permissions.",
+        keywords: ["groups", "roles", "permissions", "library access", "downloads", "limits"],
         icon: UsersRound,
         href: "/admin/access-groups",
       },
@@ -220,14 +201,8 @@ export const ADMIN_NAV_SECTIONS: AdminNavGroup[] = [
     items: [
       {
         label: "Settings",
-        description:
-          "Server configuration, integrations, playback, storage, and access.",
-        keywords: [
-          "settings",
-          "configuration",
-          "server settings",
-          "preferences",
-        ],
+        description: "Server configuration, integrations, playback, storage, and access.",
+        keywords: ["settings", "configuration", "server settings", "preferences"],
         icon: Settings2,
         href: "/admin/settings",
       },
@@ -238,23 +213,15 @@ export const ADMIN_NAV_SECTIONS: AdminNavGroup[] = [
     items: [
       {
         label: "Plugins",
-        description:
-          "Plugin catalog, repositories, installs, and plugin configuration.",
+        description: "Plugin catalog, repositories, installs, and plugin configuration.",
         keywords: ["extensions", "plugin catalog", "repositories"],
         icon: Blocks,
         href: "/admin/plugins",
       },
       {
         label: "Policy",
-        description:
-          "OPA policy documents, vendor modules, simulations, and decision logs.",
-        keywords: [
-          "opa",
-          "rego",
-          "authorization",
-          "decision log",
-          "access policy",
-        ],
+        description: "OPA policy documents, vendor modules, simulations, and decision logs.",
+        keywords: ["opa", "rego", "authorization", "decision log", "access policy"],
         icon: ShieldCheck,
         href: "/admin/policy",
       },
@@ -283,15 +250,11 @@ export const ADMIN_NAV_SECTIONS: AdminNavGroup[] = [
   },
 ];
 
-export function buildAdminNavSections(
-  visibility: AdminNavVisibility = {},
-): AdminNavGroup[] {
+export function buildAdminNavSections(visibility: AdminNavVisibility = {}): AdminNavGroup[] {
   return ADMIN_NAV_SECTIONS.map((section) => ({
     ...section,
     items: section.items.filter(
-      (item) =>
-        item.href !== "/admin/policy" ||
-        visibility.policyEditorAvailable === true,
+      (item) => item.href !== "/admin/policy" || visibility.policyEditorAvailable === true,
     ),
   }));
 }

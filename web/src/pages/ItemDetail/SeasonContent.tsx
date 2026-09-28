@@ -1,11 +1,8 @@
 import { useState } from "react";
-import { Link, useNavigate } from "react-router";
+import { useNavigate } from "react-router";
 import type { ItemDetail } from "@/api/types";
 import { useItemEpisodes } from "@/hooks/queries/episodes";
-import {
-  useRefreshItemMetadata,
-  useWatchedStateMutation,
-} from "@/hooks/queries/items";
+import { useRefreshItemMetadata } from "@/hooks/queries/items";
 import { useAmbientColor } from "@/hooks/useAmbientColor";
 import { useAuth } from "@/hooks/useAuth";
 import { useIsActingAdmin } from "@/hooks/useIsActingAdmin";
@@ -15,13 +12,14 @@ import CastCarousel from "@/components/CastCarousel";
 import CrewList from "@/components/CrewList";
 import EditMetadataDialog from "@/components/EditMetadataDialog";
 import PageBack from "@/components/PageBack";
+import ViewTransitionLink from "@/components/ViewTransitionLink";
 import DetailHero from "./DetailHero";
+import { useDetailWatchTogether } from "@/pages/watchtogether/DetailWatchTogether";
 import MetadataBadges from "./components/MetadataBadges";
-import ActionBar from "./components/ActionBar";
+import WatchedActionBar from "./components/WatchedActionBar";
 import DetailBreadcrumb from "./components/DetailBreadcrumb";
 import SeasonEpisodeGrid from "./components/SeasonEpisodeGrid";
 import type { EpisodeNavigationState } from "./itemDetailLayout";
-import { getWatchedActionLabel } from "./watchedState";
 import { canCurateMetadata as canCurateMetadataForUser } from "@/lib/permissions";
 
 function seasonLabel(seasonNumber: number, title?: string) {
@@ -30,11 +28,7 @@ function seasonLabel(seasonNumber: number, title?: string) {
   return `Season ${seasonNumber}`;
 }
 
-export default function SeasonContent({
-  item,
-}: {
-  item: ItemDetail & { type: "season" };
-}) {
+export default function SeasonContent({ item }: { item: ItemDetail & { type: "season" } }) {
   const { translating: overviewTranslating, onTranslate: onTranslateOverview } =
     useOnViewTranslation(item);
   const navigate = useNavigate();
@@ -44,7 +38,6 @@ export default function SeasonContent({
   const { profile: currentProfile } = useCurrentProfile();
   const canCurateMetadata = canCurateMetadataForUser(user, currentProfile);
   const [editOpen, setEditOpen] = useState(false);
-  const watchedMutation = useWatchedStateMutation(item);
   const refreshMetadataMutation = useRefreshItemMetadata();
 
   const {
@@ -55,24 +48,40 @@ export default function SeasonContent({
 
   const episodes = episodesData?.episodes ?? [];
   const seasonNumber = item.season_number ?? 0;
-  const label = item.is_specials
-    ? "Specials"
-    : seasonLabel(seasonNumber, item.title);
+  const label = item.is_specials ? "Specials" : seasonLabel(seasonNumber, item.title);
   const seriesTitle = item.series_title ?? "Series";
   const seriesId = item.series_id;
   const firstEpisode = episodes[0];
+  const playableEpisodes = episodes.filter((episode) => (episode.files?.length ?? 0) > 0);
+  const firstUnwatched =
+    playableEpisodes.find((episode) => !episode.user_data?.played) ?? playableEpisodes[0];
+  const watchTogether = useDetailWatchTogether({
+    item,
+    target: firstUnwatched
+      ? {
+          content_id: firstUnwatched.content_id,
+          title: firstUnwatched.title,
+          subtitle: `S${firstUnwatched.season_number} E${firstUnwatched.episode_number}`,
+          poster_url: item.poster_url,
+          poster_thumbhash: item.poster_thumbhash,
+        }
+      : null,
+    seriesId: item.series_id,
+    initialSeasonNumber: item.season_number ?? undefined,
+  });
   const episodeLinkState: EpisodeNavigationState = {
     parentSeasonHref: `/item/${item.content_id}`,
     parentSeasonLabel: label,
   };
 
-  const displayTitle = `${seriesTitle}: ${label}`;
+  const seasonIndicator =
+    item.is_specials || seasonNumber === 0 ? "Specials" : `Season ${seasonNumber}`;
 
   const breadcrumb = (
     <DetailBreadcrumb
       segments={[
         { label: seriesTitle, href: seriesId ? `/item/${seriesId}` : "/" },
-        { label: label },
+        { label: seasonIndicator },
       ]}
     />
   );
@@ -82,16 +91,15 @@ export default function SeasonContent({
   if (episodesError) {
     return (
       <div className="px-4 py-6 sm:px-6 sm:py-10 lg:px-12">
-        <Link
+        <ViewTransitionLink
           to={seriesId ? `/item/${seriesId}` : "/"}
+          up
           className="text-muted-foreground hover:text-foreground text-sm"
         >
           &larr; Back to {seriesTitle}
-        </Link>
+        </ViewTransitionLink>
         <p className="text-muted-foreground mt-6 text-sm">
-          {episodesError instanceof Error
-            ? episodesError.message
-            : "Season not found"}
+          {episodesError instanceof Error ? episodesError.message : "Season not found"}
         </p>
       </div>
     );
@@ -99,96 +107,98 @@ export default function SeasonContent({
 
   return (
     <div>
-      <DetailHero
-        variant="compact"
-        title={displayTitle}
-        topNav={<PageBack />}
-        context={breadcrumb}
-        backdropUrl={item.backdrop_url}
-        backdropAvifUrl={item.backdrop_avif_url}
-        backdropPngUrl={item.backdrop_png_url}
-        backdropThumbhash={item.backdrop_thumbhash}
-        posterUrl={item.poster_url}
-        posterAvifUrl={item.poster_avif_url}
-        posterPngUrl={item.poster_png_url}
-        posterThumbhash={item.poster_thumbhash}
-        logoUrl={item.logo_url}
-        metadata={
-          <MetadataBadges
-            year={yearStr || undefined}
-            episodeCount={item.episode_count ?? episodes.length}
-          />
-        }
-        overview={item.overview}
-        overviewTranslating={overviewTranslating}
-        onTranslateOverview={onTranslateOverview}
-        actions={
-          <ActionBar
-            contentId={item.content_id}
-            playHref={
-              firstEpisode ? `/watch/${firstEpisode.content_id}` : undefined
-            }
-            playLabel="Play First Episode"
-            watchedLabel={getWatchedActionLabel(item)}
-            onToggleWatched={() =>
-              watchedMutation.mutate(!(item.user_data?.played ?? false))
-            }
-            isUpdatingWatched={watchedMutation.isPending}
-            onRefresh={
-              canCurateMetadata
-                ? (mode) =>
-                    refreshMetadataMutation.mutate({
-                      item,
-                      mode,
-                      onReplaced: (contentID) =>
-                        navigate(`/item/${contentID}`, { replace: true }),
-                    })
-                : undefined
-            }
-            isRefreshing={refreshMetadataMutation.isPending}
-            isAdmin={isAdmin}
-            canCurateMetadata={canCurateMetadata}
-            onEditMetadata={
-              canCurateMetadata ? () => setEditOpen(true) : undefined
-            }
-          />
-        }
-      />
-
-      <div className="page-shell py-8 sm:py-10">
-        <div className="mb-5 flex items-center justify-between gap-3">
-          <h2 className="text-xl font-semibold tracking-tight">Episodes</h2>
-          <span className="text-muted-foreground text-sm">
-            {item.episode_count ?? episodes.length} total
-          </span>
-        </div>
-
-        <SeasonEpisodeGrid
-          episodes={episodes}
-          isLoading={episodesLoading}
-          episodeLinkState={episodeLinkState}
+      <div className="episode-detail-viewport series-detail-viewport">
+        <DetailHero
+          variant="season"
+          title={seriesTitle}
+          subtitle={label !== seasonIndicator ? label : undefined}
+          topNav={<PageBack />}
+          context={breadcrumb}
+          backdropUrl={item.backdrop_url}
+          backdropThumbhash={item.backdrop_thumbhash}
+          backdropAvifUrl={item.backdrop_avif_url}
+          backdropPngUrl={item.backdrop_png_url}
+          posterUrl={item.poster_url}
+          posterThumbhash={item.poster_thumbhash}
+          posterAvifUrl={item.poster_avif_url}
+          posterPngUrl={item.poster_png_url}
+          logoUrl={item.logo_url}
+          metadata={
+            <MetadataBadges
+              year={yearStr || undefined}
+              seasonLabel={seasonIndicator}
+              episodeCount={item.episode_count ?? episodes.length}
+            />
+          }
+          overview={item.overview}
+          overviewTranslating={overviewTranslating}
+          onTranslateOverview={onTranslateOverview}
+          actions={
+            <WatchedActionBar
+              compactMobile
+              item={item}
+              contentId={item.content_id}
+              watchTogether={watchTogether.menu}
+              playHref={firstEpisode ? `/watch/${firstEpisode.content_id}` : undefined}
+              playLabel="Play First Episode"
+              onRefresh={
+                canCurateMetadata
+                  ? (mode) =>
+                      refreshMetadataMutation.mutate({
+                        item,
+                        mode,
+                        onReplaced: (contentID) =>
+                          navigate(`/item/${contentID}`, { replace: true }),
+                      })
+                  : undefined
+              }
+              isRefreshing={refreshMetadataMutation.isPending}
+              isAdmin={isAdmin}
+              canCurateMetadata={canCurateMetadata}
+              onEditMetadata={canCurateMetadata ? () => setEditOpen(true) : undefined}
+            />
+          }
         />
 
+        <div
+          className="page-shell series-detail-navigation"
+          role="region"
+          aria-label="Season episodes"
+        >
+          <section>
+            <div className="mb-5 flex items-center justify-between gap-3">
+              <h2 className="text-xl font-semibold tracking-tight">Episodes</h2>
+              <span className="text-muted-foreground text-sm">
+                {item.episode_count ?? episodes.length} total
+              </span>
+            </div>
+
+            <SeasonEpisodeGrid
+              episodes={episodes}
+              isLoading={episodesLoading}
+              episodeLinkState={episodeLinkState}
+            />
+          </section>
+        </div>
+      </div>
+      <div className="page-shell detail-supporting-content space-y-10 py-8 sm:py-10">
         {item.cast && item.cast.length > 0 && (
-          <div className="mt-10">
+          <div>
             <h2 className="mb-4 text-xl font-semibold tracking-tight">Cast</h2>
-            <CastCarousel cast={item.cast} />
+            <CastCarousel cast={item.cast} prefetchPeople />
           </div>
         )}
 
         {item.crew && item.crew.length > 0 && (
-          <div className="mt-10">
+          <div>
             <CrewList crew={item.crew} />
           </div>
         )}
       </div>
       {canCurateMetadata && (
-        <EditMetadataDialog
-          item={item}
-          open={editOpen}
-          onOpenChange={setEditOpen}
-        />
+        <EditMetadataDialog item={item} open={editOpen} onOpenChange={setEditOpen} />
       )}
+      {watchTogether.sheet}
     </div>
   );
 }

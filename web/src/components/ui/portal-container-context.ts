@@ -10,6 +10,4 @@ import * as React from "react";
  *
  * When null (no provider), Popovers fall back to document.body as normal.
  */
-export const PortalContainerContext = React.createContext<HTMLElement | null>(
-  null,
-);
+export const PortalContainerContext = React.createContext<HTMLElement | null>(null);

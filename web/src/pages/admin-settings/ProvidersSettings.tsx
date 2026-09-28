@@ -1,8 +1,16 @@
-import { useState } from "react";
+import {
+  captureProviderEditIntent,
+  getProviderEditor,
+  providerIntentActive,
+  providerSaveMessage,
+  type ProviderEditor,
+} from "@/api/v2/adminSubtitleProviderConfiguration";
+import { useRef, useState } from "react";
 import { Link } from "react-router";
 import { toast } from "sonner";
 
-import type { SubtitleProviderConfig } from "@/api/types";
+import type { components } from "@/api/v2/schema";
+type SubtitleProviderConfig = components["schemas"]["AdminSubtitleProvider"];
 import {
   ProviderPanelActions,
   ProviderTile,
@@ -38,6 +46,7 @@ import {
 } from "@/hooks/queries/admin/subtitles";
 import { useRestartKeys, type RestartKeyMatcher } from "@/hooks/useRestartKeys";
 import { useSettingsForm } from "@/hooks/useSettingsForm";
+import { sortSubtitleProviders } from "@/lib/subtitleProviders";
 
 import { FieldGroup } from "./FieldGroup";
 import { MarkerProviderTiles } from "./MarkerProviderTiles";
@@ -55,9 +64,7 @@ const KEYS = ["mdblist.api_key"];
 // ---------------------------------------------------------------------------
 
 /** Marks the elapsed time of a request without each caller re-deriving it. */
-async function timed<T>(
-  run: () => Promise<T>,
-): Promise<{ result: T; durationMs: number }> {
+async function timed<T>(run: () => Promise<T>): Promise<{ result: T; durationMs: number }> {
   const started = Date.now();
   const result = await run();
   return { result, durationMs: Date.now() - started };
@@ -80,12 +87,7 @@ function DisconnectButton({
 
   return (
     <>
-      <Button
-        type="button"
-        size="sm"
-        variant="outline"
-        onClick={() => setOpen(true)}
-      >
+      <Button type="button" size="sm" variant="outline" onClick={() => setOpen(true)}>
         {label}
       </Button>
       <AlertDialog open={open} onOpenChange={setOpen}>
@@ -144,8 +146,6 @@ const SUBTITLE_PROVIDERS: Record<string, SubtitleProviderPresentation> = {
   },
 };
 
-const SUBTITLE_PROVIDER_ORDER = ["opensubtitles", "subdl", "subsource"];
-
 function presentationFor(providerName: string): SubtitleProviderPresentation {
   return (
     SUBTITLE_PROVIDERS[providerName] ?? {
@@ -159,6 +159,7 @@ function presentationFor(providerName: string): SubtitleProviderPresentation {
 
 function SubtitleProviderTile({
   config,
+  scope,
   expanded,
   onExpand,
   onCollapse,
@@ -166,6 +167,7 @@ function SubtitleProviderTile({
   onTested,
 }: {
   config: SubtitleProviderConfig;
+  scope: string;
   expanded: boolean;
   onExpand: () => void;
   onCollapse: () => void;
@@ -179,24 +181,26 @@ function SubtitleProviderTile({
   const [password, setPassword] = useState("");
   const [apiKey, setApiKey] = useState("");
 
+  const [editor, setEditor] = useState<ProviderEditor | null>(null);
+  const [loadingEditor, setLoadingEditor] = useState(false);
+  const [saveAttempted, setSaveAttempted] = useState(false);
+  const [feedback, setFeedback] = useState("");
+  const loadGeneration = useRef(0);
   const updateProvider = useUpdateSubtitleProvider();
   const testProvider = useTestSubtitleProvider();
 
-  const enabled = enabledDraft ?? config.enabled;
+  const canonical = editor?.body ?? config;
+  const enabled = enabledDraft ?? canonical.enabled;
   const providerName = config.provider_name;
-  const { name, tagline, monogram, monogramClass } =
-    presentationFor(providerName);
+  const { name, tagline, monogram, monogramClass } = presentationFor(providerName);
   const usesAccount = providerName === "opensubtitles";
-  const configured = usesAccount ? config.has_credentials : config.has_api_key;
+  const configured = usesAccount ? canonical.has_credentials : canonical.has_api_key;
 
   const draft = usesAccount ? { username, password } : { api_key: apiKey };
   // Tile drafts live outside useSettingsForm, so the navigation guard and
   // the reload prompt only see them if the tile reports them itself.
   useReportUnsavedChanges(
-    enabledDraft !== null ||
-      username !== "" ||
-      password !== "" ||
-      apiKey !== "",
+    enabledDraft !== null || username !== "" || password !== "" || apiKey !== "",
   );
 
   function resetDrafts() {
@@ -228,11 +232,54 @@ function SubtitleProviderTile({
     setApiKey(next);
   }
 
-  function handleSave() {
+  async function loadEditor() {
+    const generation = ++loadGeneration.current;
+    setLoadingEditor(true);
+    setFeedback("");
+    try {
+      const intent = captureProviderEditIntent(providerName, scope);
+      const loaded = await getProviderEditor(intent);
+      if (generation !== loadGeneration.current || !providerIntentActive(intent)) return;
+      setEditor(loaded);
+      resetDrafts();
+      setSaveAttempted(false);
+    } catch {
+      if (generation === loadGeneration.current) {
+        setEditor(null);
+        setFeedback("Unable to load saved configuration. Reload before editing.");
+      }
+    } finally {
+      if (generation === loadGeneration.current) setLoadingEditor(false);
+    }
+  }
+
+  function save(clear: boolean) {
+    if (!editor || saveAttempted || loadingEditor || updateProvider.isPending) return;
+    setSaveAttempted(true);
     updateProvider.mutate(
-      { provider: providerName, config: { enabled, ...draft } },
-      { onSuccess: resetDrafts },
+      {
+        editor,
+        config: clear ? { enabled: false, clear_credentials: true } : { enabled, ...draft },
+      },
+      {
+        onSuccess: (saved) => {
+          if (!providerIntentActive(editor.intent)) return;
+          resetDrafts();
+          onTested(undefined);
+          setFeedback(providerSaveMessage(saved));
+        },
+        onError: () => {
+          if (!providerIntentActive(editor.intent)) return;
+          setFeedback(
+            "Save not confirmed. Your draft is retained. Reload saved configuration to review it before making another change.",
+          );
+        },
+      },
     );
+  }
+
+  function handleSave() {
+    save(false);
   }
 
   function handleTest() {
@@ -262,24 +309,12 @@ function SubtitleProviderTile({
   }
 
   function handleClear() {
-    updateProvider.mutate(
-      {
-        provider: providerName,
-        config: { enabled: false, clear_credentials: true },
-      },
-      {
-        onSuccess: () => {
-          resetDrafts();
-          onTested(undefined);
-        },
-      },
-    );
+    save(true);
   }
 
   const connected = configured && enabled;
   const state = resolveProviderTileState({ expanded, test, connected });
-  const statePill =
-    !expanded && configured && !enabled ? "Connected · off" : undefined;
+  const statePill = !expanded && configured && !enabled ? "Connected · off" : undefined;
   // Only a failure earns the extra line: "connected" is already in the header.
   const meta = !expanded && test && !test.ok ? test.message : undefined;
 
@@ -296,11 +331,15 @@ function SubtitleProviderTile({
       expanded={expanded}
       primaryAction={{
         label: test && !test.ok ? "Fix" : configured ? "Manage" : "Connect",
-        onClick: onExpand,
+        onClick: () => {
+          onExpand();
+          if (!editor && !loadingEditor) void loadEditor();
+        },
       }}
       headerActions={
         expanded ? (
           <Switch
+            disabled={!editor || loadingEditor || saveAttempted || updateProvider.isPending}
             checked={enabled}
             onCheckedChange={setEnabledDraft}
             aria-label={`Enable ${name}`}
@@ -308,66 +347,70 @@ function SubtitleProviderTile({
         ) : undefined
       }
     >
-      {usesAccount ? (
-        <>
-          <SettingField
-            label="Username"
-            value={username}
-            onChange={handleUsernameChange}
-            description={
-              config.has_credentials
-                ? "Leave blank to keep the saved username."
-                : undefined
-            }
-          />
+      {feedback && <p role="status">{feedback}</p>}
+      {loadingEditor && <p role="status">Loading saved configuration...</p>}
+      <fieldset disabled={!editor || loadingEditor || saveAttempted || updateProvider.isPending}>
+        {usesAccount ? (
+          <>
+            <SettingField
+              label="Username"
+              value={username}
+              onChange={handleUsernameChange}
+              description={
+                canonical.has_credentials ? "Leave blank to keep the saved username." : undefined
+              }
+            />
+            <SecretField
+              label="Password"
+              value={password}
+              configured={canonical.has_credentials}
+              onChange={handlePasswordChange}
+            />
+          </>
+        ) : (
           <SecretField
-            label="Password"
-            value={password}
-            configured={config.has_credentials}
-            onChange={handlePasswordChange}
+            label="API key"
+            value={apiKey}
+            configured={canonical.has_api_key}
+            onChange={handleApiKeyChange}
           />
-        </>
-      ) : (
-        <SecretField
-          label="API key"
-          value={apiKey}
-          configured={config.has_api_key}
-          onChange={handleApiKeyChange}
-        />
-      )}
-      <ProviderPanelActions test={test}>
-        <Button
-          type="button"
-          size="sm"
-          onClick={handleSave}
-          disabled={updateProvider.isPending}
-        >
-          {updateProvider.isPending ? "Saving..." : "Save"}
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="secondary"
-          onClick={handleTest}
-          disabled={testProvider.isPending}
-        >
-          {testProvider.isPending ? "Testing..." : "Test connection"}
-        </Button>
-        {configured ? (
-          <DisconnectButton
-            title={`Clear ${name} credentials?`}
-            description={`${name} is turned off and removed from subtitle searches right away.`}
-            actionLabel="Clear and turn off"
-            onConfirm={handleClear}
-          />
-        ) : null}
-        <Button type="button" size="sm" variant="outline" onClick={onCollapse}>
-          Close
-        </Button>
-      </ProviderPanelActions>
-      <p className="text-muted-foreground mt-2 text-xs">
-        Test uses the values typed here.
-      </p>
+        )}
+        <ProviderPanelActions test={test}>
+          <Button type="button" size="sm" onClick={handleSave} disabled={updateProvider.isPending}>
+            {updateProvider.isPending ? "Saving..." : "Save"}
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={handleTest}
+            disabled={testProvider.isPending}
+          >
+            {testProvider.isPending ? "Testing..." : "Test connection"}
+          </Button>
+          {configured ? (
+            <DisconnectButton
+              title={`Clear ${name} credentials?`}
+              description={`Save ${name} as disabled and clear its stored credentials. Applying this change on this server is reported separately; other servers may still use older settings.`}
+              actionLabel="Clear and turn off"
+              onConfirm={handleClear}
+            />
+          ) : null}
+        </ProviderPanelActions>
+      </fieldset>
+      <Button type="button" size="sm" variant="outline" onClick={onCollapse}>
+        Close
+      </Button>
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        disabled={loadingEditor || updateProvider.isPending}
+        onClick={() => void loadEditor()}
+      >
+        Reload saved configuration (discard draft)
+      </Button>
+      <p className="text-muted-foreground mt-2 text-xs">Test uses the values typed here.</p>
     </ProviderTile>
   );
 }
@@ -449,8 +492,7 @@ function MDBListTile({
     } catch (error) {
       onTested({
         ok: false,
-        message:
-          error instanceof Error ? error.message : "Connection check failed.",
+        message: error instanceof Error ? error.message : "Connection check failed.",
         at: Date.now(),
         durationMs: 0,
       });
@@ -549,45 +591,27 @@ function MDBListTile({
 export default function ProvidersSettings() {
   const form = useSettingsForm({ keys: KEYS });
   const restartKeys = useRestartKeys();
-  const { data, isLoading } = useSubtitleProviders();
+  const { data, isLoading, scope } = useSubtitleProviders();
   // One expanded tile at a time: the panel is the page's focus while it is
   // open, and two open panels lose the list the admin is working through.
   const [expandedTile, setExpandedTile] = useState<string | null>(null);
-  const [tests, setTests] = useState<
-    Record<string, ProviderTestState | undefined>
-  >({});
+  const [tests, setTests] = useState<Record<string, ProviderTestState | undefined>>({});
 
   function recordTest(id: string, test: ProviderTestState | undefined) {
     setTests((current) => ({ ...current, [id]: test }));
   }
 
   // Marker tiles can be perfectly set up and still never run: the detection
-  // mode on Library & Metadata decides whether Silo looks online at all. The
+  // mode on Library & Metadata decides whether Prairie looks online at all. The
   // key is read, not staged — this page never saves it.
-  const markerMode = form.getValue("markers.mode");
-  const offlineMarkerMode =
-    markerMode === "off"
-      ? "Off"
-      : markerMode === "local"
-        ? "Detect on this server"
-        : null;
+  const markerMode = form.getValue("markers.mode") || "both";
+  const onlineMarkerLookupEnabled = markerMode === "online" || markerMode === "both";
 
-  const providers = [...(data?.providers ?? [])].sort((a, b) => {
-    const ai = SUBTITLE_PROVIDER_ORDER.indexOf(a.provider_name);
-    const bi = SUBTITLE_PROVIDER_ORDER.indexOf(b.provider_name);
-    if (ai === -1 && bi === -1) return 0;
-    if (ai === -1) return 1;
-    if (bi === -1) return -1;
-    return ai - bi;
-  });
+  const providers = sortSubtitleProviders(data?.providers ?? []);
 
   if (form.isLoading || isLoading) {
     return (
-      <div
-        className="max-w-5xl space-y-6"
-        role="status"
-        aria-label="Loading providers"
-      >
+      <div className="max-w-5xl space-y-6" role="status" aria-label="Loading providers">
         <Skeleton className="h-9 w-64" />
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-40 w-full" />
@@ -604,14 +628,13 @@ export default function ProvidersSettings() {
       <FieldGroup label="Subtitle providers">
         <div className="py-3.5">
           {providers.length === 0 ? (
-            <p className="text-muted-foreground text-sm">
-              No subtitle providers are available.
-            </p>
+            <p className="text-muted-foreground text-sm">No subtitle providers are available.</p>
           ) : (
             <ProviderTileGrid>
               {providers.map((provider) => (
                 <SubtitleProviderTile
-                  key={provider.provider_name}
+                  scope={scope}
+                  key={`${scope}:${provider.provider_name}`}
                   config={provider}
                   expanded={expandedTile === provider.provider_name}
                   onExpand={() => setExpandedTile(provider.provider_name)}
@@ -649,7 +672,7 @@ export default function ProvidersSettings() {
       </FieldGroup>
 
       {/*
-        Marker providers are the online half of "Find intros and credits". The
+        Marker providers are the online half of "Marker source". The
         detection mode itself stays on Library & Metadata; what each provider
         does — lookup order, whether this server contributes back — is provider
         configuration and belongs beside the other providers.
@@ -662,29 +685,15 @@ export default function ProvidersSettings() {
             onCollapse={() => setExpandedTile(null)}
           />
           <p className="text-muted-foreground text-xs">
-            {offlineMarkerMode ? (
-              <>
-                Nothing here is searched right now:{" "}
-                <Link
-                  to="/admin/settings/library"
-                  className="hover:text-foreground font-medium underline underline-offset-2 transition-colors"
-                >
-                  Find intros and credits
-                </Link>{" "}
-                is set to {offlineMarkerMode}.
-              </>
-            ) : (
-              <>
-                Providers are searched when{" "}
-                <Link
-                  to="/admin/settings/library"
-                  className="hover:text-foreground font-medium underline underline-offset-2 transition-colors"
-                >
-                  Find intros and credits
-                </Link>{" "}
-                looks online.
-              </>
-            )}
+            Online marker lookup is {onlineMarkerLookupEnabled ? "enabled" : "disabled"}. Change
+            this under{" "}
+            <Link
+              to="/admin/settings/library"
+              className="hover:text-foreground font-medium underline underline-offset-2 transition-colors"
+            >
+              Marker source
+            </Link>
+            .
           </p>
         </div>
       </FieldGroup>

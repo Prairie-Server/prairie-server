@@ -4,20 +4,24 @@ import type { ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 import type { ProfileRequestContextSnapshot } from "@/api/client";
-import { useSetCollectionSortPreference } from "./collections";
+import { V2ProblemError } from "@/api/v2/request";
+import { useSetCollectionSortPreference, useUpdateCollection } from "./collections";
 
 const apiMock = vi.hoisted(() => vi.fn());
 const apiWithProfileRequestContextMock = vi.hoisted(() => vi.fn());
+vi.mock("@/api/v2/request", async () => ({
+  ...(await vi.importActual<typeof import("@/api/v2/request")>("@/api/v2/request")),
+  v2: apiWithProfileRequestContextMock,
+}));
+const errorToast = vi.hoisted(() => vi.fn());
+vi.mock("sonner", () => ({ toast: { error: errorToast, success: vi.fn() } }));
 // Both guards are stubbed so these tests exercise the hook's own branching
 // rather than the client module's internal auth-generation counter.
 const isProfileRequestContextCurrentMock = vi.hoisted(() => vi.fn(() => true));
-const isCapturedProfileAuthorityActiveMock = vi.hoisted(() =>
-  vi.fn(() => true),
-);
+const isCapturedProfileAuthorityActiveMock = vi.hoisted(() => vi.fn(() => true));
 
 vi.mock("@/api/client", async () => {
-  const actual =
-    await vi.importActual<typeof import("@/api/client")>("@/api/client");
+  const actual = await vi.importActual<typeof import("@/api/client")>("@/api/client");
   return {
     ...actual,
     api: apiMock,
@@ -91,19 +95,14 @@ describe("useSetCollectionSortPreference", () => {
       });
     });
 
-    await waitFor(() =>
-      expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(1),
-    );
+    await waitFor(() => expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(1));
 
     first.resolve({});
-    await waitFor(() =>
-      expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(2),
-    );
-    expect(
-      JSON.parse(
-        apiWithProfileRequestContextMock.mock.calls[1]?.[2]?.body as string,
-      ),
-    ).toMatchObject({ field: "title", order: "asc" });
+    await waitFor(() => expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(2));
+    expect(apiWithProfileRequestContextMock.mock.calls[1]?.[1]?.body).toMatchObject({
+      field: "title",
+      order: "asc",
+    });
 
     second.resolve({});
   });
@@ -113,9 +112,7 @@ describe("useSetCollectionSortPreference", () => {
   // member happens to be active when it finally sends.
   it("sends a queued write under the profile captured at selection time", async () => {
     const first = deferred<unknown>();
-    apiWithProfileRequestContextMock
-      .mockReturnValueOnce(first.promise)
-      .mockResolvedValue({});
+    apiWithProfileRequestContextMock.mockReturnValueOnce(first.promise).mockResolvedValue({});
 
     const { result } = renderSortPreferenceHook();
     const chooser = profileAuth("profile-1");
@@ -135,21 +132,15 @@ describe("useSetCollectionSortPreference", () => {
       });
     });
 
-    await waitFor(() =>
-      expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(1),
-    );
+    await waitFor(() => expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(1));
     first.resolve({});
-    await waitFor(() =>
-      expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(2),
-    );
+    await waitFor(() => expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(2));
 
     for (const call of apiWithProfileRequestContextMock.mock.calls) {
-      expect(call[0]).toBe("/collections/sort-preference");
-      expect(call[1]).toBe(chooser);
+      expect(call[0]).toBe("PUT /api/v2/collections/sort-preference");
+      expect(call[1].profileContext).toBe(chooser);
       // The snapshot is request authority, not part of the stored preference.
-      expect(JSON.parse(call[2]?.body as string)).not.toHaveProperty(
-        "profileAuth",
-      );
+      expect(call[1]?.body).not.toHaveProperty("profileAuth");
     }
   });
 
@@ -199,5 +190,44 @@ describe("useSetCollectionSortPreference", () => {
 
     expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(1);
     expect(invalidate).not.toHaveBeenCalled();
+  });
+});
+
+describe("guarded collection editing", () => {
+  it("sends the observed version once and keeps a 412 from becoming an automatic overwrite", async () => {
+    const client = new QueryClient({ defaultOptions: { mutations: { retry: false } } });
+    const invalidate = vi.spyOn(client, "invalidateQueries");
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    );
+    const { result } = renderHook(() => useUpdateCollection(), { wrapper });
+    const conflict = new V2ProblemError(
+      "updateCollection",
+      {
+        type: "https://example.invalid/problems/precondition_failed",
+        title: "Precondition failed",
+        status: 412,
+        detail: "Changed",
+        instance: "request-test",
+      },
+      null,
+      '"newer"',
+    );
+    apiWithProfileRequestContextMock.mockReset().mockRejectedValue(conflict);
+    await act(async () => {
+      await expect(
+        result.current.mutateAsync({ id: "c", etag: '"observed"', body: { name: "My draft" } }),
+      ).rejects.toBe(conflict);
+    });
+    expect(apiWithProfileRequestContextMock).toHaveBeenCalledTimes(1);
+    expect(apiWithProfileRequestContextMock).toHaveBeenCalledWith(
+      "PATCH /api/v2/collections/{id}",
+      expect.objectContaining({
+        headers: { "If-Match": '"observed"' },
+        body: expect.objectContaining({ name: "My draft" }),
+      }),
+    );
+    expect(errorToast).toHaveBeenCalledWith(expect.stringContaining("Reload"));
+    expect(invalidate).toHaveBeenCalled();
   });
 });

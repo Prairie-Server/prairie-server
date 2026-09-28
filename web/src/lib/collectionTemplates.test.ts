@@ -59,10 +59,6 @@ describe("collectionTemplates lib", () => {
         mdblist: { url: "https://mdblist.com/lists/x/json" },
       },
     ];
-    expect(templates.map((t) => t.source)).toEqual([
-      "tmdb",
-      "trakt",
-      "mdblist",
-    ]);
+    expect(templates.map((t) => t.source)).toEqual(["tmdb", "trakt", "mdblist"]);
   });
 });

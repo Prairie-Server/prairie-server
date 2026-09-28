@@ -23,10 +23,7 @@ function render(ui: React.ReactElement) {
   return renderDOM(<MemoryRouter>{ui}</MemoryRouter>);
 }
 
-let sensitiveConfigured: string[] = [
-  "watchsync.trakt.client_id",
-  "watchsync.trakt.client_secret",
-];
+let sensitiveConfigured: string[] = ["watchsync.trakt.client_id", "watchsync.trakt.client_secret"];
 
 const useSettingsFormMock = vi.fn((_options?: { keys: string[] }) => ({
   isLoading: false,
@@ -48,8 +45,7 @@ const useSettingsFormMock = vi.fn((_options?: { keys: string[] }) => ({
 }));
 
 vi.mock("@/hooks/useSettingsForm", () => ({
-  useSettingsForm: (options: { keys: string[] }) =>
-    useSettingsFormMock(options),
+  useSettingsForm: (options: { keys: string[] }) => useSettingsFormMock(options),
 }));
 
 vi.mock("@/hooks/useRestartKeys", () => ({
@@ -74,10 +70,7 @@ vi.mock("sonner", () => ({
 describe("WatchSyncSettings", () => {
   beforeEach(() => {
     localStorage.clear();
-    sensitiveConfigured = [
-      "watchsync.trakt.client_id",
-      "watchsync.trakt.client_secret",
-    ];
+    sensitiveConfigured = ["watchsync.trakt.client_id", "watchsync.trakt.client_secret"];
     pluginInstallations = [];
     for (const mock of Object.values(mocks)) mock.mockReset();
     mocks.updateSettings.mockResolvedValue({
@@ -89,9 +82,7 @@ describe("WatchSyncSettings", () => {
   it("heads the page and lists both providers", () => {
     render(<WatchSyncSettings />);
 
-    expect(
-      screen.getByRole("heading", { level: 1, name: "Watch Providers" }),
-    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Watch Providers" })).toBeInTheDocument();
     expect(
       screen.queryByText("Keep watch history in sync with Trakt and Simkl."),
     ).not.toBeInTheDocument();
@@ -115,10 +106,7 @@ describe("WatchSyncSettings", () => {
   it("derives tile state from the stored credentials", () => {
     render(<WatchSyncSettings />);
 
-    expect(screen.getByRole("group", { name: "Trakt" })).toHaveAttribute(
-      "data-state",
-      "connected",
-    );
+    expect(screen.getByRole("group", { name: "Trakt" })).toHaveAttribute("data-state", "connected");
     expect(screen.getByRole("group", { name: "Simkl" })).toHaveAttribute(
       "data-state",
       "not_connected",
@@ -127,9 +115,7 @@ describe("WatchSyncSettings", () => {
     expect(screen.getByText("Not connected")).toBeInTheDocument();
     // The state word is the only signal; the tile no longer repeats it as a
     // "credentials stored" line underneath.
-    expect(
-      screen.queryByText("App credentials stored"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("App credentials stored")).not.toBeInTheDocument();
   });
 
   it("marks a half-configured provider as partly set up", () => {
@@ -156,9 +142,7 @@ describe("WatchSyncSettings", () => {
     expect(simkl).toHaveAttribute("data-expanded", "true");
     expect(within(simkl).getByLabelText("Client ID")).toBeInTheDocument();
     expect(within(simkl).getByLabelText("Client secret")).toBeInTheDocument();
-    expect(screen.getByRole("group", { name: "Trakt" })).not.toHaveAttribute(
-      "data-expanded",
-    );
+    expect(screen.getByRole("group", { name: "Trakt" })).not.toHaveAttribute("data-expanded");
 
     await user.click(within(simkl).getByRole("button", { name: "Close" }));
 
@@ -233,9 +217,7 @@ describe("WatchSyncSettings", () => {
         id: 11,
         plugin_id: "silo-plugin-metadata-tmdb",
         enabled: true,
-        capabilities: [
-          { type: "metadata_provider.v1", id: "tmdb", display_name: "TMDB" },
-        ],
+        capabilities: [{ type: "metadata_provider.v1", id: "tmdb", display_name: "TMDB" }],
       },
     ];
 
@@ -244,20 +226,17 @@ describe("WatchSyncSettings", () => {
     const anilist = screen.getByRole("group", { name: "AniList" });
     expect(anilist).toHaveAttribute("data-state", "connected");
     expect(within(anilist).getByText("Enabled")).toBeInTheDocument();
-    expect(
-      within(anilist).getByRole("button", { name: "Configure" }),
-    ).toBeInTheDocument();
+    expect(within(anilist).getByRole("button", { name: "Configure" })).toBeInTheDocument();
 
     const serializd = screen.getByRole("group", { name: "Serializd" });
     expect(serializd).toHaveAttribute("data-state", "not_connected");
     expect(within(serializd).getByText("Disabled")).toBeInTheDocument();
 
-    expect(
-      screen.queryByRole("group", { name: "TMDB" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.getByRole("link", { name: "plugin catalog" }),
-    ).toHaveAttribute("href", "/admin/plugins?tab=catalog");
+    expect(screen.queryByRole("group", { name: "TMDB" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "plugin catalog" })).toHaveAttribute(
+      "href",
+      "/admin/plugins?tab=catalog",
+    );
   });
 
   it("does not label an enabled plugin as connected until its required config is set", () => {
@@ -266,9 +245,7 @@ describe("WatchSyncSettings", () => {
       id: "anilist",
       display_name: "AniList",
     };
-    const schema = [
-      { key: "account", title: "Account", json_schema: "{}", required: true },
-    ];
+    const schema = [{ key: "account", title: "Account", json_schema: "{}", required: true }];
     pluginInstallations = [
       {
         id: 7,
@@ -290,9 +267,7 @@ describe("WatchSyncSettings", () => {
           },
         ],
         global_config_schema: schema,
-        global_configs: [
-          { key: "account", value: {}, configured_secrets: ["api_key"] },
-        ],
+        global_configs: [{ key: "account", value: {}, configured_secrets: ["api_key"] }],
       },
     ];
 

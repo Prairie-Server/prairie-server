@@ -29,6 +29,7 @@ import {
   FolderFields,
   GeneralFields,
   MetadataFields,
+  RealtimeMonitoringFields,
 } from "./LibraryFormSections";
 import { libraryTypeMeta } from "./libraryTypes";
 import { LibraryPosterSection } from "./LibraryPosterSection";
@@ -56,16 +57,14 @@ const SECTIONS: Array<{
     label: "Folders",
     icon: FolderOpen,
     title: "Folders",
-    description:
-      "Prairie scans these folders for media and watches them for changes.",
+    description: "Prairie scans these folders for media and watches them for changes.",
   },
   {
     id: "metadata",
     label: "Metadata",
     icon: Database,
     title: "Metadata",
-    description:
-      "Control where artwork and descriptions come from, and in which language.",
+    description: "Control where artwork and descriptions come from, and in which language.",
   },
   {
     id: "advanced",
@@ -126,6 +125,14 @@ function LibraryEditorBody({
   const [section, setSection] = useState<SectionId>("general");
   const form = useLibraryForm({ library, onClose });
 
+  const sections = SECTIONS.filter(
+    ({ id }) =>
+      id !== "advanced" ||
+      form.settingSupport.chapterThumbnails ||
+      form.settingSupport.introDetection,
+  );
+  const activeSection = sections.some(({ id }) => id === section) ? section : "general";
+
   const typeMeta = libraryTypeMeta(form.type);
   const folderCount = form.paths.filter((p) => p.trim()).length;
   const errorSections = new Set<SectionId>();
@@ -149,9 +156,7 @@ function LibraryEditorBody({
             <typeMeta.icon className="size-5" />
           </div>
           <div className="min-w-0 space-y-0.5 text-left">
-            <DialogTitle>
-              {library ? "Edit Library" : "Add Library"}
-            </DialogTitle>
+            <DialogTitle>{library ? "Edit Library" : "Add Library"}</DialogTitle>
             <DialogDescription className="truncate text-xs">
               {library
                 ? `Configure how “${library.name}” is scanned and matched.`
@@ -162,14 +167,14 @@ function LibraryEditorBody({
       </DialogHeader>
 
       <Tabs
-        value={section}
+        value={activeSection}
         onValueChange={(value) => setSection(value as SectionId)}
         orientation="vertical"
         className="min-h-0 flex-1 gap-0"
       >
         <div className="border-border shrink-0 overflow-y-auto border-r">
           <TabsList className="w-13 flex-col items-stretch justify-start gap-1 rounded-none bg-transparent p-2 sm:w-44 sm:p-3">
-            {SECTIONS.map(({ id, label, icon: Icon }) => (
+            {sections.map(({ id, label, icon: Icon }) => (
               <TabsTrigger
                 key={id}
                 value={id}
@@ -194,7 +199,7 @@ function LibraryEditorBody({
           </TabsList>
         </div>
         <div className="overlay-scroll min-h-0 flex-1 overflow-y-auto">
-          {SECTIONS.map(({ id, title, description }) => (
+          {sections.map(({ id, title, description }) => (
             <TabsContent
               key={id}
               value={id}
@@ -207,12 +212,15 @@ function LibraryEditorBody({
               {id === "general" && (
                 <GeneralFields
                   form={form}
-                  posterSlot={
-                    library ? <LibraryPosterSection library={library} /> : null
-                  }
+                  posterSlot={library ? <LibraryPosterSection library={library} /> : null}
                 />
               )}
-              {id === "folders" && <FolderFields form={form} />}
+              {id === "folders" && (
+                <div className="space-y-5">
+                  <FolderFields form={form} />
+                  <RealtimeMonitoringFields form={form} />
+                </div>
+              )}
               {id === "metadata" && <MetadataFields form={form} />}
               {id === "advanced" && (
                 <AdvancedFields
@@ -239,13 +247,7 @@ function LibraryEditorBody({
           </Button>
         </DialogClose>
         <Button type="submit" disabled={form.isPending}>
-          {form.isPending ? (
-            <Loader2 className="animate-spin" />
-          ) : library ? (
-            <Save />
-          ) : (
-            <Plus />
-          )}
+          {form.isPending ? <Loader2 className="animate-spin" /> : library ? <Save /> : <Plus />}
           {form.isPending
             ? library
               ? "Saving…"
