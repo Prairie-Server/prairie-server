@@ -608,7 +608,7 @@ function GuideTab() {
           separate grabber or hosted XMLTV file — enter a postal code (for
           example <span className="font-mono">12345</span>), pick a lineup, then
           sync. Artwork uses{" "}
-          <span className="font-mono text-xs">emby.tmsimg.com/assets</span>.
+          <span className="font-mono text-xs">zpmc.tmsimg.com/assets</span>.
         </p>
         <div className="space-y-1.5">
           <Label htmlFor="xml-guide-name">Display name</Label>
