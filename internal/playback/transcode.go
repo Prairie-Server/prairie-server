@@ -19,10 +19,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/mediaprobe"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/processmetrics"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/mediaprobe"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/processmetrics"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 	"github.com/google/uuid"
 )
 
