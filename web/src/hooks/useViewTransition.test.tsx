@@ -25,6 +25,15 @@ function commit(idx: number) {
   window.history.replaceState({ idx }, "");
 }
 
+function Trigger({ to, options }: { to: To | number; options?: ViewTransitionNavigateOptions }) {
+  const navigate = useViewTransitionNavigate();
+  return (
+    <button type="button" onClick={() => navigate(to, options)}>
+      go
+    </button>
+  );
+}
+
 function Harness({
   to,
   options,
@@ -34,18 +43,9 @@ function Harness({
   options?: ViewTransitionNavigateOptions;
   at?: string;
 }) {
-  function Trigger() {
-    const navigate = useViewTransitionNavigate();
-    return (
-      <button type="button" onClick={() => navigate(to, options)}>
-        go
-      </button>
-    );
-  }
-
   return (
     <MemoryRouter initialEntries={[at]}>
-      <Trigger />
+      <Trigger to={to} options={options} />
     </MemoryRouter>
   );
 }
