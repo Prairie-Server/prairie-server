@@ -9509,7 +9509,7 @@
           },
           "source_kind": {
             "enum": [
-              "silo",
+              "prairie",
               "approved_community",
               "external"
             ],
@@ -10013,7 +10013,7 @@
           },
           "source_kind": {
             "enum": [
-              "silo",
+              "prairie",
               "approved_community",
               "external"
             ],
@@ -12159,7 +12159,7 @@
             "type": "string"
           },
           "tmdb_id": {
-            "description": "TMDB identifier (external, not a Silo ID)",
+            "description": "TMDB identifier (external, not a Prairie ID)",
             "examples": [
               129
             ],
@@ -12339,7 +12339,7 @@
             "type": "string"
           },
           "tmdb_id": {
-            "description": "TMDB identifier (external, not a Silo ID)",
+            "description": "TMDB identifier (external, not a Prairie ID)",
             "examples": [
               129
             ],
@@ -17219,7 +17219,7 @@
           "display_name": {
             "description": "Label for the sign-in button",
             "examples": [
-              "Silo account"
+              "Prairie account"
             ],
             "type": "string"
           },
@@ -22206,7 +22206,7 @@
             "type": "string"
           },
           "tmdb_id": {
-            "description": "TMDB identifier (external, not a Silo ID)",
+            "description": "TMDB identifier (external, not a Prairie ID)",
             "examples": [
               420
             ],
@@ -22472,12 +22472,6 @@
           "proxy_delivery": {
             "type": "boolean"
           },
-          "quality_options": {
-            "items": {
-              "$ref": "#/components/schemas/DownloadQualityOption"
-            },
-            "type": "array"
-          },
           "quality_presets": {
             "items": {
               "type": "string"
@@ -22529,7 +22523,6 @@
           "proxy_delivery",
           "ordered_status",
           "quality_presets",
-          "quality_options",
           "transcode_enabled",
           "transcode_user_allowed",
           "season_download",
@@ -23038,26 +23031,6 @@
         "required": [
           "start",
           "end"
-        ],
-        "type": "object"
-      },
-      "DownloadQualityOption": {
-        "additionalProperties": false,
-        "properties": {
-          "bitrate_kbps": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "max_height": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "preset": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "preset"
         ],
         "type": "object"
       },
@@ -26519,6 +26492,20 @@
             },
             "type": "array"
           },
+          "trickplay_enabled": {
+            "description": "Generate seek-bar preview sprite sheets for this library",
+            "examples": [
+              false
+            ],
+            "type": "boolean"
+          },
+          "trickplay_supported": {
+            "description": "Whether the server can store seek-bar previews (artwork storage is configured)",
+            "examples": [
+              true
+            ],
+            "type": "boolean"
+          },
           "type": {
             "description": "Library kind (movies, series, mixed, audiobooks, ebooks, podcasts, manga); free-form until the vocabulary is ratified (#135)",
             "examples": [
@@ -26537,6 +26524,8 @@
           "auto_translate_metadata",
           "chapter_thumbnails_enabled",
           "chapter_thumbnails_supported",
+          "trickplay_enabled",
+          "trickplay_supported",
           "intro_detection_enabled",
           "trailer_kinds",
           "realtime_monitoring",
@@ -26819,6 +26808,13 @@
               "type": "string"
             },
             "type": "array"
+          },
+          "trickplay_enabled": {
+            "description": "Requires artwork storage",
+            "examples": [
+              false
+            ],
+            "type": "boolean"
           },
           "type": {
             "description": "Library kind (movies, series, mixed, audiobooks, ebooks, podcasts, manga)",
@@ -27606,6 +27602,13 @@
             },
             "type": "array"
           },
+          "trickplay_enabled": {
+            "description": "Requires artwork storage",
+            "examples": [
+              false
+            ],
+            "type": "boolean"
+          },
           "type": {
             "examples": [
               "movies"
@@ -27880,7 +27883,7 @@
           "device_name": {
             "description": "User-Agent recorded at login; empty when none was sent",
             "examples": [
-              "Silo/1.0 (tvOS)"
+              "Prairie/1.0 (tvOS)"
             ],
             "type": "string"
           },
@@ -28701,7 +28704,7 @@
             "type": "string"
           },
           "tmdb_id": {
-            "description": "TMDB identifier (external, not a Silo ID)",
+            "description": "TMDB identifier (external, not a Prairie ID)",
             "examples": [
               949
             ],
@@ -28709,7 +28712,7 @@
             "type": "integer"
           },
           "tvdb_id": {
-            "description": "TVDB identifier (external, not a Silo ID)",
+            "description": "TVDB identifier (external, not a Prairie ID)",
             "format": "int64",
             "type": "integer"
           },
@@ -28822,7 +28825,7 @@
             "type": "string"
           },
           "tmdb_id": {
-            "description": "TMDB identifier (external, not a Silo ID)",
+            "description": "TMDB identifier (external, not a Prairie ID)",
             "examples": [
               949
             ],
@@ -28831,7 +28834,7 @@
             "type": "integer"
           },
           "tvdb_id": {
-            "description": "TVDB identifier (external, not a Silo ID)",
+            "description": "TVDB identifier (external, not a Prairie ID)",
             "format": "int64",
             "minimum": 1,
             "type": "integer"
@@ -31510,7 +31513,7 @@
           },
           "server_name": {
             "examples": [
-              "Silo"
+              "Prairie"
             ],
             "type": "string"
           },
@@ -32440,12 +32443,12 @@
           "protocol": {
             "description": "The subprotocol to offer first and the only one the server selects",
             "examples": [
-              "silo.playback-control.v2"
+              "prairie.playback-control.v2"
             ],
             "type": "string"
           },
           "ticket": {
-            "description": "Opaque single-use credential; offer it as silo.ticket.\u003cticket\u003e after the protocol",
+            "description": "Opaque single-use credential; offer it as prairie.ticket.\u003cticket\u003e after the protocol",
             "type": "string"
           }
         },
@@ -32983,21 +32986,21 @@
           "client_label": {
             "description": "Display label derived from the client name and version; empty when unknown",
             "examples": [
-              "Silo for Apple TV 1.4"
+              "Prairie for Apple TV 1.4"
             ],
             "type": "string"
           },
           "client_label_full": {
             "description": "Display label with the exact build; empty when unknown",
             "examples": [
-              "Silo for Apple TV 1.4.0 (1400)"
+              "Prairie for Apple TV 1.4.0 (1400)"
             ],
             "type": "string"
           },
           "client_name": {
             "description": "Empty when unknown",
             "examples": [
-              "Silo for Apple TV"
+              "Prairie for Apple TV"
             ],
             "type": "string"
           },
@@ -36623,7 +36626,7 @@
             "type": "string"
           },
           "tmdb_id": {
-            "description": "TMDB identifier (external, not a Silo ID)",
+            "description": "TMDB identifier (external, not a Prairie ID)",
             "examples": [
               949
             ],
@@ -36631,7 +36634,7 @@
             "type": "integer"
           },
           "tvdb_id": {
-            "description": "TVDB identifier (external, not a Silo ID)",
+            "description": "TVDB identifier (external, not a Prairie ID)",
             "format": "int64",
             "type": "integer"
           },
@@ -36766,7 +36769,7 @@
             "type": "string"
           },
           "tmdb_id": {
-            "description": "TMDB identifier (external, not a Silo ID)",
+            "description": "TMDB identifier (external, not a Prairie ID)",
             "examples": [
               949
             ],
@@ -45051,7 +45054,7 @@
     }
   },
   "info": {
-    "title": "Silo API",
+    "title": "Prairie API",
     "version": "2"
   },
   "openapi": "3.1.0",
@@ -74654,7 +74657,7 @@
         "operationId": "connectAdminLogsSocket",
         "parameters": [
           {
-            "description": "Offer silo.admin-logs.v2 followed by silo.ticket.\u003csingle-use-ticket\u003e.",
+            "description": "Offer prairie.admin-logs.v2 followed by prairie.ticket.\u003csingle-use-ticket\u003e.",
             "in": "header",
             "name": "Sec-WebSocket-Protocol",
             "required": true,
@@ -82691,7 +82694,7 @@
           "204": {
             "description": "No Content",
             "headers": {
-              "X-Silo-Restart-Required": {
+              "X-Prairie-Restart-Required": {
                 "schema": {
                   "description": "Always true: bindings load at server start",
                   "type": "string"
@@ -98746,7 +98749,7 @@
             },
             "description": "Conflict",
             "headers": {
-              "X-Silo-Latest-Sequence": {
+              "X-Prairie-Latest-Sequence": {
                 "description": "On a stale refusal, the session's latest applied sequence as a decimal integer; allocate a new command above it. Absent on other conflicts.",
                 "schema": {
                   "type": "string"
@@ -98968,7 +98971,7 @@
             },
             "description": "Conflict",
             "headers": {
-              "X-Silo-Latest-Sequence": {
+              "X-Prairie-Latest-Sequence": {
                 "description": "On a stale refusal, the session's latest applied sequence as a decimal integer; allocate a new command above it. Absent on other conflicts.",
                 "schema": {
                   "type": "string"
@@ -99190,7 +99193,7 @@
             },
             "description": "Conflict",
             "headers": {
-              "X-Silo-Latest-Sequence": {
+              "X-Prairie-Latest-Sequence": {
                 "description": "On a stale refusal, the session's latest applied sequence as a decimal integer; allocate a new command above it. Absent on other conflicts.",
                 "schema": {
                   "type": "string"
@@ -99412,7 +99415,7 @@
             },
             "description": "Conflict",
             "headers": {
-              "X-Silo-Latest-Sequence": {
+              "X-Prairie-Latest-Sequence": {
                 "description": "On a stale refusal, the session's latest applied sequence as a decimal integer; allocate a new command above it. Absent on other conflicts.",
                 "schema": {
                   "type": "string"
@@ -127044,7 +127047,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "schema": {
               "maxLength": 128,
               "type": "string"
@@ -130844,7 +130847,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "schema": {
               "maxLength": 128,
               "type": "string"
@@ -131013,7 +131016,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "schema": {
               "maxLength": 128,
               "type": "string"
@@ -131021,7 +131024,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Name",
+            "name": "X-Prairie-Device-Name",
             "schema": {
               "maxLength": 120,
               "type": "string"
@@ -131029,7 +131032,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Platform",
+            "name": "X-Prairie-Device-Platform",
             "schema": {
               "maxLength": 40,
               "type": "string"
@@ -131271,7 +131274,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "required": true,
             "schema": {
               "maxLength": 128,
@@ -131444,7 +131447,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "required": true,
             "schema": {
               "maxLength": 128,
@@ -131623,7 +131626,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "required": true,
             "schema": {
               "maxLength": 128,
@@ -131633,7 +131636,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Name",
+            "name": "X-Prairie-Device-Name",
             "schema": {
               "maxLength": 256,
               "type": "string"
@@ -131641,7 +131644,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Platform",
+            "name": "X-Prairie-Device-Platform",
             "schema": {
               "maxLength": 128,
               "type": "string"
@@ -131846,7 +131849,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "required": true,
             "schema": {
               "maxLength": 128,
@@ -132097,7 +132100,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "required": true,
             "schema": {
               "maxLength": 128,
@@ -132281,7 +132284,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "required": true,
             "schema": {
               "maxLength": 128,
@@ -132470,7 +132473,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "required": true,
             "schema": {
               "maxLength": 128,
@@ -132715,7 +132718,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "schema": {
               "maxLength": 128,
               "type": "string"
@@ -132868,7 +132871,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "required": true,
             "schema": {
               "maxLength": 128,
@@ -133067,7 +133070,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "required": true,
             "schema": {
               "maxLength": 128,
@@ -133282,7 +133285,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "schema": {
               "maxLength": 128,
               "type": "string"
@@ -133766,7 +133769,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "schema": {
               "maxLength": 128,
               "type": "string"
@@ -134192,7 +134195,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "schema": {
               "maxLength": 128,
               "type": "string"
@@ -134728,7 +134731,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "schema": {
               "maxLength": 128,
               "type": "string"
@@ -135222,7 +135225,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "required": true,
             "schema": {
               "maxLength": 128,
@@ -135390,7 +135393,7 @@
           },
           {
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "required": true,
             "schema": {
               "maxLength": 128,
@@ -136672,7 +136675,7 @@
                   "type": "string"
                 }
               },
-              "X-Silo-Ebook-Conversion": {
+              "X-Prairie-Ebook-Conversion": {
                 "schema": {
                   "type": "string"
                 }
@@ -136789,7 +136792,7 @@
                   "type": "string"
                 }
               },
-              "X-Silo-Ebook-Conversion": {
+              "X-Prairie-Ebook-Conversion": {
                 "schema": {
                   "type": "string"
                 }
@@ -136834,7 +136837,7 @@
                   "type": "string"
                 }
               },
-              "X-Silo-Ebook-Conversion": {
+              "X-Prairie-Ebook-Conversion": {
                 "schema": {
                   "type": "string"
                 }
@@ -136909,7 +136912,7 @@
                   "type": "string"
                 }
               },
-              "X-Silo-Ebook-Conversion": {
+              "X-Prairie-Ebook-Conversion": {
                 "schema": {
                   "type": "string"
                 }
@@ -136961,7 +136964,7 @@
                   "type": "string"
                 }
               },
-              "X-Silo-Ebook-Conversion": {
+              "X-Prairie-Ebook-Conversion": {
                 "schema": {
                   "type": "string"
                 }
@@ -137149,7 +137152,7 @@
                   "type": "string"
                 }
               },
-              "X-Silo-Ebook-Conversion": {
+              "X-Prairie-Ebook-Conversion": {
                 "schema": {
                   "type": "string"
                 }
@@ -137194,7 +137197,7 @@
                   "type": "string"
                 }
               },
-              "X-Silo-Ebook-Conversion": {
+              "X-Prairie-Ebook-Conversion": {
                 "schema": {
                   "type": "string"
                 }
@@ -137239,7 +137242,7 @@
                   "type": "string"
                 }
               },
-              "X-Silo-Ebook-Conversion": {
+              "X-Prairie-Ebook-Conversion": {
                 "schema": {
                   "type": "string"
                 }
@@ -137314,7 +137317,7 @@
                   "type": "string"
                 }
               },
-              "X-Silo-Ebook-Conversion": {
+              "X-Prairie-Ebook-Conversion": {
                 "schema": {
                   "type": "string"
                 }
@@ -137366,7 +137369,7 @@
                   "type": "string"
                 }
               },
-              "X-Silo-Ebook-Conversion": {
+              "X-Prairie-Ebook-Conversion": {
                 "schema": {
                   "type": "string"
                 }
@@ -138363,7 +138366,7 @@
         "operationId": "connectEventsSocket",
         "parameters": [
           {
-            "description": "Offer silo.events.v2 followed by silo.ticket.\u003csingle-use-ticket\u003e.",
+            "description": "Offer prairie.events.v2 followed by prairie.ticket.\u003csingle-use-ticket\u003e.",
             "in": "header",
             "name": "Sec-WebSocket-Protocol",
             "required": true,
@@ -150787,7 +150790,7 @@
         ],
         "x-silo-class": "public",
         "x-silo-raw-protocol": "redirect",
-        "x-silo-raw-reason": "Discord redirects browsers without Silo login headers; the stored one-time state authenticates the account-link callback.",
+        "x-silo-raw-reason": "Discord redirects browsers without Prairie login headers; the stored one-time state authenticates the account-link callback.",
         "x-silo-service-backed": true
       }
     },
@@ -151915,7 +151918,7 @@
         ],
         "x-silo-class": "public",
         "x-silo-raw-protocol": "html-callback",
-        "x-silo-raw-reason": "Mail clients follow tokenized links without a Silo session; RFC 8058 clients POST form data and consume HTML.",
+        "x-silo-raw-reason": "Mail clients follow tokenized links without a Prairie session; RFC 8058 clients POST form data and consume HTML.",
         "x-silo-service-backed": true
       },
       "post": {
@@ -152032,7 +152035,7 @@
         ],
         "x-silo-class": "public",
         "x-silo-raw-protocol": "html-callback",
-        "x-silo-raw-reason": "Mail clients follow tokenized links without a Silo session; RFC 8058 clients POST form data and consume HTML.",
+        "x-silo-raw-reason": "Mail clients follow tokenized links without a Prairie session; RFC 8058 clients POST form data and consume HTML.",
         "x-silo-retry-safety": "non_retryable",
         "x-silo-service-backed": true
       }
@@ -152180,7 +152183,7 @@
         ],
         "x-silo-class": "public",
         "x-silo-raw-protocol": "html-callback",
-        "x-silo-raw-reason": "Mail clients follow tokenized links without a Silo session; RFC 8058 clients POST form data and consume HTML.",
+        "x-silo-raw-reason": "Mail clients follow tokenized links without a Prairie session; RFC 8058 clients POST form data and consume HTML.",
         "x-silo-service-backed": true
       }
     },
@@ -157777,7 +157780,7 @@
             }
           },
           {
-            "description": "Offer silo.playback-control.v2 followed by silo.ticket.\u003csingle-use-ticket\u003e.",
+            "description": "Offer prairie.playback-control.v2 followed by prairie.ticket.\u003csingle-use-ticket\u003e.",
             "in": "header",
             "name": "Sec-WebSocket-Protocol",
             "required": true,
@@ -165828,12 +165831,12 @@
             }
           },
           {
-            "description": "TMDB identifier (external, not a Silo ID)",
+            "description": "TMDB identifier (external, not a Prairie ID)",
             "in": "path",
             "name": "tmdb_id",
             "required": true,
             "schema": {
-              "description": "TMDB identifier (external, not a Silo ID)",
+              "description": "TMDB identifier (external, not a Prairie ID)",
               "examples": [
                 949
               ],
@@ -167439,12 +167442,12 @@
             }
           },
           {
-            "description": "TMDB identifier (external, not a Silo ID)",
+            "description": "TMDB identifier (external, not a Prairie ID)",
             "in": "path",
             "name": "tmdb_id",
             "required": true,
             "schema": {
-              "description": "TMDB identifier (external, not a Silo ID)",
+              "description": "TMDB identifier (external, not a Prairie ID)",
               "examples": [
                 949
               ],
@@ -167607,12 +167610,12 @@
             }
           },
           {
-            "description": "TMDB identifier (external, not a Silo ID)",
+            "description": "TMDB identifier (external, not a Prairie ID)",
             "in": "path",
             "name": "tmdb_id",
             "required": true,
             "schema": {
-              "description": "TMDB identifier (external, not a Silo ID)",
+              "description": "TMDB identifier (external, not a Prairie ID)",
               "examples": [
                 949
               ],
@@ -170018,7 +170021,7 @@
           {
             "description": "The client's stable device identifier",
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "required": true,
             "schema": {
               "description": "The client's stable device identifier",
@@ -170032,7 +170035,7 @@
           {
             "description": "Optional display name recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Name",
+            "name": "X-Prairie-Device-Name",
             "schema": {
               "description": "Optional display name recorded on the device registry",
               "examples": [
@@ -170045,7 +170048,7 @@
           {
             "description": "Optional platform recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Platform",
+            "name": "X-Prairie-Device-Platform",
             "schema": {
               "description": "Optional platform recorded on the device registry",
               "examples": [
@@ -170194,7 +170197,7 @@
           {
             "description": "The client's stable device identifier",
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "required": true,
             "schema": {
               "description": "The client's stable device identifier",
@@ -170208,7 +170211,7 @@
           {
             "description": "Optional display name recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Name",
+            "name": "X-Prairie-Device-Name",
             "schema": {
               "description": "Optional display name recorded on the device registry",
               "examples": [
@@ -170221,7 +170224,7 @@
           {
             "description": "Optional platform recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Platform",
+            "name": "X-Prairie-Device-Platform",
             "schema": {
               "description": "Optional platform recorded on the device registry",
               "examples": [
@@ -171062,7 +171065,7 @@
           {
             "description": "The client's stable device identifier; absent resolves the profile-wide value",
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "schema": {
               "description": "The client's stable device identifier; absent resolves the profile-wide value",
               "examples": [
@@ -171075,7 +171078,7 @@
           {
             "description": "Optional display name recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Name",
+            "name": "X-Prairie-Device-Name",
             "schema": {
               "description": "Optional display name recorded on the device registry",
               "examples": [
@@ -171088,7 +171091,7 @@
           {
             "description": "Optional platform recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Platform",
+            "name": "X-Prairie-Device-Platform",
             "schema": {
               "description": "Optional platform recorded on the device registry",
               "examples": [
@@ -171343,7 +171346,7 @@
           {
             "description": "The client family a profile_client value belongs to",
             "in": "header",
-            "name": "X-Silo-Client-Family",
+            "name": "X-Prairie-Client-Family",
             "schema": {
               "description": "The client family a profile_client value belongs to",
               "enum": [
@@ -171362,7 +171365,7 @@
           {
             "description": "The client's stable device identifier; the profile_device scope stores against it when device_id is absent",
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "schema": {
               "description": "The client's stable device identifier; the profile_device scope stores against it when device_id is absent",
               "examples": [
@@ -171375,7 +171378,7 @@
           {
             "description": "Optional display name recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Name",
+            "name": "X-Prairie-Device-Name",
             "schema": {
               "description": "Optional display name recorded on the device registry",
               "examples": [
@@ -171388,7 +171391,7 @@
           {
             "description": "Optional platform recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Platform",
+            "name": "X-Prairie-Device-Platform",
             "schema": {
               "description": "Optional platform recorded on the device registry",
               "examples": [
@@ -171634,7 +171637,7 @@
           {
             "description": "The client family whose profile_client values take part; required when a requested key has that scope",
             "in": "header",
-            "name": "X-Silo-Client-Family",
+            "name": "X-Prairie-Client-Family",
             "schema": {
               "description": "The client family whose profile_client values take part; required when a requested key has that scope",
               "enum": [
@@ -171653,7 +171656,7 @@
           {
             "description": "The client's stable device identifier; its profile_device values take part",
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "schema": {
               "description": "The client's stable device identifier; its profile_device values take part",
               "examples": [
@@ -171666,7 +171669,7 @@
           {
             "description": "Optional display name recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Name",
+            "name": "X-Prairie-Device-Name",
             "schema": {
               "description": "Optional display name recorded on the device registry",
               "examples": [
@@ -171679,7 +171682,7 @@
           {
             "description": "Optional platform recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Platform",
+            "name": "X-Prairie-Device-Platform",
             "schema": {
               "description": "Optional platform recorded on the device registry",
               "examples": [
@@ -171833,7 +171836,7 @@
           {
             "description": "The client family whose profile_client values take part; required when a requested key has that scope",
             "in": "header",
-            "name": "X-Silo-Client-Family",
+            "name": "X-Prairie-Client-Family",
             "schema": {
               "description": "The client family whose profile_client values take part; required when a requested key has that scope",
               "enum": [
@@ -171852,7 +171855,7 @@
           {
             "description": "The client's stable device identifier; its profile_device values take part",
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "schema": {
               "description": "The client's stable device identifier; its profile_device values take part",
               "examples": [
@@ -171865,7 +171868,7 @@
           {
             "description": "Optional display name recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Name",
+            "name": "X-Prairie-Device-Name",
             "schema": {
               "description": "Optional display name recorded on the device registry",
               "examples": [
@@ -171878,7 +171881,7 @@
           {
             "description": "Optional platform recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Platform",
+            "name": "X-Prairie-Device-Platform",
             "schema": {
               "description": "Optional platform recorded on the device registry",
               "examples": [
@@ -172363,7 +172366,7 @@
           {
             "description": "The client family a profile_client value belongs to",
             "in": "header",
-            "name": "X-Silo-Client-Family",
+            "name": "X-Prairie-Client-Family",
             "schema": {
               "description": "The client family a profile_client value belongs to",
               "enum": [
@@ -172382,7 +172385,7 @@
           {
             "description": "The client's stable device identifier; the profile_device scope stores against it when device_id is absent",
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "schema": {
               "description": "The client's stable device identifier; the profile_device scope stores against it when device_id is absent",
               "examples": [
@@ -172395,7 +172398,7 @@
           {
             "description": "Optional display name recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Name",
+            "name": "X-Prairie-Device-Name",
             "schema": {
               "description": "Optional display name recorded on the device registry",
               "examples": [
@@ -172408,7 +172411,7 @@
           {
             "description": "Optional platform recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Platform",
+            "name": "X-Prairie-Device-Platform",
             "schema": {
               "description": "Optional platform recorded on the device registry",
               "examples": [
@@ -172650,7 +172653,7 @@
           {
             "description": "The client family a profile_client value belongs to",
             "in": "header",
-            "name": "X-Silo-Client-Family",
+            "name": "X-Prairie-Client-Family",
             "schema": {
               "description": "The client family a profile_client value belongs to",
               "enum": [
@@ -172669,7 +172672,7 @@
           {
             "description": "The client's stable device identifier; the profile_device scope stores against it when device_id is absent",
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "schema": {
               "description": "The client's stable device identifier; the profile_device scope stores against it when device_id is absent",
               "examples": [
@@ -172682,7 +172685,7 @@
           {
             "description": "Optional display name recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Name",
+            "name": "X-Prairie-Device-Name",
             "schema": {
               "description": "Optional display name recorded on the device registry",
               "examples": [
@@ -172695,7 +172698,7 @@
           {
             "description": "Optional platform recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Platform",
+            "name": "X-Prairie-Device-Platform",
             "schema": {
               "description": "Optional platform recorded on the device registry",
               "examples": [
@@ -172942,7 +172945,7 @@
           {
             "description": "The client family a profile_client value belongs to",
             "in": "header",
-            "name": "X-Silo-Client-Family",
+            "name": "X-Prairie-Client-Family",
             "schema": {
               "description": "The client family a profile_client value belongs to",
               "enum": [
@@ -172961,7 +172964,7 @@
           {
             "description": "The client's stable device identifier; the profile_device scope stores against it when device_id is absent",
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "schema": {
               "description": "The client's stable device identifier; the profile_device scope stores against it when device_id is absent",
               "examples": [
@@ -172974,7 +172977,7 @@
           {
             "description": "Optional display name recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Name",
+            "name": "X-Prairie-Device-Name",
             "schema": {
               "description": "Optional display name recorded on the device registry",
               "examples": [
@@ -172987,7 +172990,7 @@
           {
             "description": "Optional platform recorded on the device registry",
             "in": "header",
-            "name": "X-Silo-Device-Platform",
+            "name": "X-Prairie-Device-Platform",
             "schema": {
               "description": "Optional platform recorded on the device registry",
               "examples": [
@@ -185071,7 +185074,7 @@
             }
           },
           {
-            "description": "Offer silo.room.v2 followed by silo.ticket.\u003csingle-use-ticket\u003e.",
+            "description": "Offer prairie.room.v2 followed by prairie.ticket.\u003csingle-use-ticket\u003e.",
             "in": "header",
             "name": "Sec-WebSocket-Protocol",
             "required": true,
@@ -185369,7 +185372,7 @@
           {
             "description": "The stable device identifier used to resolve playback preferences",
             "in": "header",
-            "name": "X-Silo-Device-Id",
+            "name": "X-Prairie-Device-Id",
             "schema": {
               "description": "The stable device identifier used to resolve playback preferences",
               "examples": [
@@ -189639,9 +189642,9 @@
             }
           },
           {
-            "description": "Opaque incarnation/timeline from the completed response; private to Silo hops.",
+            "description": "Opaque incarnation/timeline from the completed response; private to Prairie hops.",
             "in": "header",
-            "name": "X-Silo-Transcode-Segment-Generation",
+            "name": "X-Prairie-Transcode-Segment-Generation",
             "required": true,
             "schema": {
               "type": "string"
@@ -189760,7 +189763,7 @@
             },
             "description": "Unprocessable Entity",
             "headers": {
-              "X-Silo-Tone-Map-Execution-Error": {
+              "X-Prairie-Tone-Map-Execution-Error": {
                 "description": "Bounded tone-map refusal code when available; not present on all failures.",
                 "schema": {
                   "type": "string"
@@ -189788,7 +189791,7 @@
             },
             "description": "Service Unavailable",
             "headers": {
-              "X-Silo-Tone-Map-Execution-Error": {
+              "X-Prairie-Tone-Map-Execution-Error": {
                 "description": "Bounded tone-map refusal code when available; not present on all failures.",
                 "schema": {
                   "type": "string"
@@ -191082,7 +191085,7 @@
             },
             "description": "Unprocessable Entity",
             "headers": {
-              "X-Silo-Tone-Map-Execution-Error": {
+              "X-Prairie-Tone-Map-Execution-Error": {
                 "description": "Existing tone-map refusal code when available.",
                 "schema": {
                   "type": "string"
@@ -191110,7 +191113,7 @@
             },
             "description": "Service Unavailable",
             "headers": {
-              "X-Silo-Tone-Map-Execution-Error": {
+              "X-Prairie-Tone-Map-Execution-Error": {
                 "description": "Existing tone-map refusal code when available.",
                 "schema": {
                   "type": "string"
@@ -193268,7 +193271,7 @@
           {
             "description": "Signed recipe reference for node-side validation and deny-marker lookup; not a native user access token.",
             "in": "header",
-            "name": "X-Silo-Stream-Token",
+            "name": "X-Prairie-Stream-Token",
             "required": true,
             "schema": {
               "type": "string"
@@ -193394,7 +193397,7 @@
           {
             "description": "Signed recipe reference for node-side validation and deny-marker lookup; not a native user access token.",
             "in": "header",
-            "name": "X-Silo-Stream-Token",
+            "name": "X-Prairie-Stream-Token",
             "required": true,
             "schema": {
               "type": "string"
@@ -193455,7 +193458,7 @@
           {
             "description": "Signed recipe reference for node-side validation and deny-marker lookup; not a native user access token.",
             "in": "header",
-            "name": "X-Silo-Stream-Token",
+            "name": "X-Prairie-Stream-Token",
             "schema": {
               "type": "string"
             }
@@ -193526,7 +193529,7 @@
             },
             "description": "Unprocessable Entity",
             "headers": {
-              "X-Silo-Tone-Map-Execution-Error": {
+              "X-Prairie-Tone-Map-Execution-Error": {
                 "description": "Existing tone-map refusal code when available.",
                 "schema": {
                   "type": "string"
@@ -193544,7 +193547,7 @@
             },
             "description": "Service Unavailable",
             "headers": {
-              "X-Silo-Tone-Map-Execution-Error": {
+              "X-Prairie-Tone-Map-Execution-Error": {
                 "description": "Existing tone-map refusal code when available.",
                 "schema": {
                   "type": "string"
@@ -193567,7 +193570,7 @@
           {
             "description": "Signed recipe reference for node-side validation and deny-marker lookup; not a native user access token.",
             "in": "header",
-            "name": "X-Silo-Stream-Token",
+            "name": "X-Prairie-Stream-Token",
             "schema": {
               "type": "string"
             }
@@ -193583,7 +193586,7 @@
           {
             "description": "Value1 defers completion accounting to downstream acknowledgment and returns private generation metadata.",
             "in": "header",
-            "name": "X-Silo-Transcode-Proxy",
+            "name": "X-Prairie-Transcode-Proxy",
             "schema": {
               "type": "string"
             }
@@ -193650,7 +193653,7 @@
             },
             "description": "Leased segment bytes with standard conditions/ranges",
             "headers": {
-              "X-Silo-Transcode-Segment-Generation": {
+              "X-Prairie-Transcode-Segment-Generation": {
                 "description": "Private generation only for marked proxy hops; never client-facing.",
                 "schema": {
                   "type": "string"
@@ -193670,7 +193673,7 @@
             },
             "description": "Leased segment bytes with standard conditions/ranges",
             "headers": {
-              "X-Silo-Transcode-Segment-Generation": {
+              "X-Prairie-Transcode-Segment-Generation": {
                 "description": "Private generation only for marked proxy hops; never client-facing.",
                 "schema": {
                   "type": "string"
@@ -193734,7 +193737,7 @@
             },
             "description": "Unprocessable Entity",
             "headers": {
-              "X-Silo-Tone-Map-Execution-Error": {
+              "X-Prairie-Tone-Map-Execution-Error": {
                 "description": "Existing tone-map refusal code when available.",
                 "schema": {
                   "type": "string"
@@ -193762,7 +193765,7 @@
             },
             "description": "Service Unavailable",
             "headers": {
-              "X-Silo-Tone-Map-Execution-Error": {
+              "X-Prairie-Tone-Map-Execution-Error": {
                 "description": "Existing tone-map refusal code when available.",
                 "schema": {
                   "type": "string"

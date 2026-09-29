@@ -14032,7 +14032,7 @@ export interface components {
       repository_name: string;
       routes: components["schemas"]["PluginRoute"][];
       /** @enum {string} */
-      source_kind: "silo" | "approved_community" | "external";
+      source_kind: "prairie" | "approved_community" | "external";
       user_config_schema: components["schemas"]["AdminPluginConfigSchema"][];
       version: string;
     };
@@ -14170,7 +14170,7 @@ export interface components {
       routes: components["schemas"]["PluginRoute"][];
       runtime: components["schemas"]["AdminPluginRuntime"];
       /** @enum {string} */
-      source_kind: "silo" | "approved_community" | "external";
+      source_kind: "prairie" | "approved_community" | "external";
       task_bindings: components["schemas"]["AdminPluginTaskBinding"][];
       update_policy: string;
       /**
@@ -14974,7 +14974,7 @@ export interface components {
       requester_user_id?: string;
       /**
        * Format: int64
-       * @description TMDB identifier (external, not a Silo ID)
+       * @description TMDB identifier (external, not a Prairie ID)
        * @example 129
        */
       tmdb_id: number;
@@ -15031,7 +15031,7 @@ export interface components {
       title: string;
       /**
        * Format: int64
-       * @description TMDB identifier (external, not a Silo ID)
+       * @description TMDB identifier (external, not a Prairie ID)
        * @example 129
        */
       tmdb_id: number;
@@ -16728,7 +16728,7 @@ export interface components {
       default: boolean;
       /**
        * @description Label for the sign-in button
-       * @example Silo account
+       * @example Prairie account
        */
       display_name: string;
       /**
@@ -18582,7 +18582,7 @@ export interface components {
       slug: string;
       /**
        * Format: int64
-       * @description TMDB identifier (external, not a Silo ID)
+       * @description TMDB identifier (external, not a Prairie ID)
        * @example 420
        */
       tmdb_id?: number;
@@ -18681,7 +18681,6 @@ export interface components {
       monitoring_modes: string[];
       ordered_status: boolean;
       proxy_delivery: boolean;
-      quality_options: components["schemas"]["DownloadQualityOption"][];
       quality_presets: string[];
       /** @description Opaque revision of this document */
       revision: string;
@@ -18881,13 +18880,6 @@ export interface components {
       end: number;
       /** Format: double */
       start: number;
-    };
-    DownloadQualityOption: {
-      /** Format: int64 */
-      bitrate_kbps?: number;
-      /** Format: int64 */
-      max_height?: number;
-      preset: string;
     };
     DownloadStatusBody: {
       /**
@@ -20332,6 +20324,16 @@ export interface components {
        */
       trailer_kinds: string[];
       /**
+       * @description Generate seek-bar preview sprite sheets for this library
+       * @example false
+       */
+      trickplay_enabled: boolean;
+      /**
+       * @description Whether the server can store seek-bar previews (artwork storage is configured)
+       * @example true
+       */
+      trickplay_supported: boolean;
+      /**
        * @description Library kind (movies, series, mixed, audiobooks, ebooks, podcasts, manga); free-form until the vocabulary is ratified (#135)
        * @example movies
        */
@@ -20450,6 +20452,11 @@ export interface components {
        *     ]
        */
       trailer_kinds?: string[];
+      /**
+       * @description Requires artwork storage
+       * @example false
+       */
+      trickplay_enabled?: boolean;
       /**
        * @description Library kind (movies, series, mixed, audiobooks, ebooks, podcasts, manga)
        * @example movies
@@ -20799,6 +20806,11 @@ export interface components {
        *     ]
        */
       trailer_kinds?: string[];
+      /**
+       * @description Requires artwork storage
+       * @example false
+       */
+      trickplay_enabled?: boolean;
       /** @example movies */
       type?: string;
     };
@@ -20907,7 +20919,7 @@ export interface components {
       created_at: string;
       /**
        * @description User-Agent recorded at login; empty when none was sent
-       * @example Silo/1.0 (tvOS)
+       * @example Prairie/1.0 (tvOS)
        */
       device_name: string;
       /**
@@ -21277,13 +21289,13 @@ export interface components {
       title: string;
       /**
        * Format: int64
-       * @description TMDB identifier (external, not a Silo ID)
+       * @description TMDB identifier (external, not a Prairie ID)
        * @example 949
        */
       tmdb_id: number;
       /**
        * Format: int64
-       * @description TVDB identifier (external, not a Silo ID)
+       * @description TVDB identifier (external, not a Prairie ID)
        */
       tvdb_id?: number;
       /**
@@ -21329,13 +21341,13 @@ export interface components {
       title: string;
       /**
        * Format: int64
-       * @description TMDB identifier (external, not a Silo ID)
+       * @description TMDB identifier (external, not a Prairie ID)
        * @example 949
        */
       tmdb_id: number;
       /**
        * Format: int64
-       * @description TVDB identifier (external, not a Silo ID)
+       * @description TVDB identifier (external, not a Prairie ID)
        */
       tvdb_id?: number;
       /**
@@ -22325,7 +22337,7 @@ export interface components {
        * @description RFC 3339 instant in UTC with millisecond precision
        */
       expires_at: string;
-      /** @example Silo */
+      /** @example Prairie */
       server_name: string;
       /**
        * @description The account whose password the link replaces
@@ -22690,10 +22702,10 @@ export interface components {
       max_connection_seconds: number;
       /**
        * @description The subprotocol to offer first and the only one the server selects
-       * @example silo.playback-control.v2
+       * @example prairie.playback-control.v2
        */
       protocol: string;
-      /** @description Opaque single-use credential; offer it as silo.ticket.<ticket> after the protocol */
+      /** @description Opaque single-use credential; offer it as prairie.ticket.<ticket> after the protocol */
       ticket: string;
     };
     PlaybackControlSocketTicketInputBody: {
@@ -22888,17 +22900,17 @@ export interface components {
       client_ip: string;
       /**
        * @description Display label derived from the client name and version; empty when unknown
-       * @example Silo for Apple TV 1.4
+       * @example Prairie for Apple TV 1.4
        */
       client_label: string;
       /**
        * @description Display label with the exact build; empty when unknown
-       * @example Silo for Apple TV 1.4.0 (1400)
+       * @example Prairie for Apple TV 1.4.0 (1400)
        */
       client_label_full: string;
       /**
        * @description Empty when unknown
-       * @example Silo for Apple TV
+       * @example Prairie for Apple TV
        */
       client_name: string;
       /**
@@ -24519,13 +24531,13 @@ export interface components {
       title: string;
       /**
        * Format: int64
-       * @description TMDB identifier (external, not a Silo ID)
+       * @description TMDB identifier (external, not a Prairie ID)
        * @example 949
        */
       tmdb_id: number;
       /**
        * Format: int64
-       * @description TVDB identifier (external, not a Silo ID)
+       * @description TVDB identifier (external, not a Prairie ID)
        */
       tvdb_id?: number;
       /** Format: double */
@@ -24593,7 +24605,7 @@ export interface components {
       title: string;
       /**
        * Format: int64
-       * @description TMDB identifier (external, not a Silo ID)
+       * @description TMDB identifier (external, not a Prairie ID)
        * @example 949
        */
       tmdb_id: number;
@@ -48129,7 +48141,7 @@ export interface operations {
       header: {
         /** @description Browser origin must match the configured public origin, the request origin, or a connected network access overlay origin. */
         Origin?: string;
-        /** @description Offer silo.admin-logs.v2 followed by silo.ticket.<single-use-ticket>. */
+        /** @description Offer prairie.admin-logs.v2 followed by prairie.ticket.<single-use-ticket>. */
         "Sec-WebSocket-Protocol": string;
       };
       path?: never;
@@ -53609,7 +53621,7 @@ export interface operations {
       /** @description No Content */
       204: {
         headers: {
-          "X-Silo-Restart-Required"?: string;
+          "X-Prairie-Restart-Required"?: string;
           [name: string]: unknown;
         };
         content?: never;
@@ -64278,7 +64290,7 @@ export interface operations {
       409: {
         headers: {
           /** @description On a stale refusal, the session's latest applied sequence as a decimal integer; allocate a new command above it. Absent on other conflicts. */
-          "X-Silo-Latest-Sequence"?: string;
+          "X-Prairie-Latest-Sequence"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -64437,7 +64449,7 @@ export interface operations {
       409: {
         headers: {
           /** @description On a stale refusal, the session's latest applied sequence as a decimal integer; allocate a new command above it. Absent on other conflicts. */
-          "X-Silo-Latest-Sequence"?: string;
+          "X-Prairie-Latest-Sequence"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -64596,7 +64608,7 @@ export interface operations {
       409: {
         headers: {
           /** @description On a stale refusal, the session's latest applied sequence as a decimal integer; allocate a new command above it. Absent on other conflicts. */
-          "X-Silo-Latest-Sequence"?: string;
+          "X-Prairie-Latest-Sequence"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -64755,7 +64767,7 @@ export interface operations {
       409: {
         headers: {
           /** @description On a stale refusal, the session's latest applied sequence as a decimal integer; allocate a new command above it. Absent on other conflicts. */
-          "X-Silo-Latest-Sequence"?: string;
+          "X-Prairie-Latest-Sequence"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -83600,11 +83612,11 @@ export interface operations {
         scope?: "profile" | "household";
       };
       header: {
+        "X-Prairie-Device-Id"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id"?: string;
       };
       path?: never;
       cookie?: never;
@@ -85881,11 +85893,11 @@ export interface operations {
         limit?: number;
       };
       header: {
+        "X-Prairie-Device-Id"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id"?: string;
       };
       path?: never;
       cookie?: never;
@@ -85991,13 +86003,13 @@ export interface operations {
         limit?: number;
       };
       header: {
+        "X-Prairie-Device-Id"?: string;
+        "X-Prairie-Device-Name"?: string;
+        "X-Prairie-Device-Platform"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id"?: string;
-        "X-Silo-Device-Name"?: string;
-        "X-Silo-Device-Platform"?: string;
       };
       path?: never;
       cookie?: never;
@@ -86149,11 +86161,11 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        "X-Prairie-Device-Id"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id"?: string;
       };
       path: {
         id: string;
@@ -86256,11 +86268,11 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id": string;
       };
       path: {
         id: string;
@@ -86405,11 +86417,11 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id": string;
       };
       path: {
         id: string;
@@ -86531,11 +86543,11 @@ export interface operations {
         "If-Range"?: string;
         "If-Unmodified-Since"?: string;
         Range?: string;
+        "X-Prairie-Device-Id"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id"?: string;
       };
       path: {
         id: string;
@@ -86724,11 +86736,11 @@ export interface operations {
         "If-Range"?: string;
         "If-Unmodified-Since"?: string;
         Range?: string;
+        "X-Prairie-Device-Id"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id"?: string;
       };
       path: {
         id: string;
@@ -86907,11 +86919,11 @@ export interface operations {
         "If-Range"?: string;
         "If-Unmodified-Since"?: string;
         Range?: string;
+        "X-Prairie-Device-Id"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id"?: string;
       };
       path: {
         id: string;
@@ -87117,11 +87129,11 @@ export interface operations {
         "If-Range"?: string;
         "If-Unmodified-Since"?: string;
         Range?: string;
+        "X-Prairie-Device-Id"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id"?: string;
       };
       path: {
         id: string;
@@ -87309,11 +87321,11 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id": string;
       };
       path: {
         id: string;
@@ -87436,11 +87448,11 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id": string;
       };
       path: {
         id: string;
@@ -87563,11 +87575,11 @@ export interface operations {
         limit?: number;
       };
       header: {
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id": string;
       };
       path: {
         batch_id: string;
@@ -87675,11 +87687,11 @@ export interface operations {
         limit?: number;
       };
       header: {
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id": string;
       };
       path?: never;
       cookie?: never;
@@ -87783,13 +87795,13 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        "X-Prairie-Device-Id": string;
+        "X-Prairie-Device-Name"?: string;
+        "X-Prairie-Device-Platform"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id": string;
-        "X-Silo-Device-Name"?: string;
-        "X-Silo-Device-Platform"?: string;
       };
       path?: never;
       cookie?: never;
@@ -87925,11 +87937,11 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id": string;
       };
       path: {
         id: string;
@@ -88040,11 +88052,11 @@ export interface operations {
         "If-Match": string;
         /** @description Optional second precondition, evaluated after If-Match succeeds: "*" or any tag matching the current representation is 412 precondition_failed with the current ETag. */
         "If-None-Match"?: string;
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id": string;
       };
       path: {
         id: string;
@@ -88171,11 +88183,11 @@ export interface operations {
         "If-Match": string;
         /** @description Optional second precondition, evaluated after If-Match succeeds: "*" or any tag matching the current representation is 412 precondition_failed with the current ETag. */
         "If-None-Match"?: string;
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id": string;
       };
       path: {
         id: string;
@@ -88337,11 +88349,11 @@ export interface operations {
         limit?: number;
       };
       header: {
+        "X-Prairie-Device-Id": string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        "X-Silo-Device-Id": string;
       };
       path?: never;
       cookie?: never;
@@ -89080,7 +89092,7 @@ export interface operations {
           "Content-Range"?: string;
           ETag?: string;
           "Last-Modified"?: string;
-          "X-Silo-Ebook-Conversion"?: string;
+          "X-Prairie-Ebook-Conversion"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -89106,7 +89118,7 @@ export interface operations {
           "Content-Range"?: string;
           ETag?: string;
           "Last-Modified"?: string;
-          "X-Silo-Ebook-Conversion"?: string;
+          "X-Prairie-Ebook-Conversion"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -89132,7 +89144,7 @@ export interface operations {
           "Content-Range"?: string;
           ETag?: string;
           "Last-Modified"?: string;
-          "X-Silo-Ebook-Conversion"?: string;
+          "X-Prairie-Ebook-Conversion"?: string;
           [name: string]: unknown;
         };
         content?: never;
@@ -89174,7 +89186,7 @@ export interface operations {
           "Content-Range"?: string;
           ETag?: string;
           "Last-Modified"?: string;
-          "X-Silo-Ebook-Conversion"?: string;
+          "X-Prairie-Ebook-Conversion"?: string;
           [name: string]: unknown;
         };
         content?: never;
@@ -89189,7 +89201,7 @@ export interface operations {
           "Content-Range"?: string;
           ETag?: string;
           "Last-Modified"?: string;
-          "X-Silo-Ebook-Conversion"?: string;
+          "X-Prairie-Ebook-Conversion"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -89267,7 +89279,7 @@ export interface operations {
           "Content-Range"?: string;
           ETag?: string;
           "Last-Modified"?: string;
-          "X-Silo-Ebook-Conversion"?: string;
+          "X-Prairie-Ebook-Conversion"?: string;
           [name: string]: unknown;
         };
         content?: never;
@@ -89282,7 +89294,7 @@ export interface operations {
           "Content-Range"?: string;
           ETag?: string;
           "Last-Modified"?: string;
-          "X-Silo-Ebook-Conversion"?: string;
+          "X-Prairie-Ebook-Conversion"?: string;
           [name: string]: unknown;
         };
         content?: never;
@@ -89297,7 +89309,7 @@ export interface operations {
           "Content-Range"?: string;
           ETag?: string;
           "Last-Modified"?: string;
-          "X-Silo-Ebook-Conversion"?: string;
+          "X-Prairie-Ebook-Conversion"?: string;
           [name: string]: unknown;
         };
         content?: never;
@@ -89339,7 +89351,7 @@ export interface operations {
           "Content-Range"?: string;
           ETag?: string;
           "Last-Modified"?: string;
-          "X-Silo-Ebook-Conversion"?: string;
+          "X-Prairie-Ebook-Conversion"?: string;
           [name: string]: unknown;
         };
         content?: never;
@@ -89354,7 +89366,7 @@ export interface operations {
           "Content-Range"?: string;
           ETag?: string;
           "Last-Modified"?: string;
-          "X-Silo-Ebook-Conversion"?: string;
+          "X-Prairie-Ebook-Conversion"?: string;
           [name: string]: unknown;
         };
         content: {
@@ -90043,7 +90055,7 @@ export interface operations {
       header: {
         /** @description Browser origin must match the configured public origin, the request origin, or a connected network access overlay origin. */
         Origin?: string;
-        /** @description Offer silo.events.v2 followed by silo.ticket.<single-use-ticket>. */
+        /** @description Offer prairie.events.v2 followed by prairie.ticket.<single-use-ticket>. */
         "Sec-WebSocket-Protocol": string;
       };
       path?: never;
@@ -103727,7 +103739,7 @@ export interface operations {
       header: {
         /** @description Browser origin must match the configured public origin, the request origin, or a connected network access overlay origin. */
         Origin?: string;
-        /** @description Offer silo.playback-control.v2 followed by silo.ticket.<single-use-ticket>. */
+        /** @description Offer prairie.playback-control.v2 followed by prairie.ticket.<single-use-ticket>. */
         "Sec-WebSocket-Protocol": string;
       };
       path: {
@@ -108940,7 +108952,7 @@ export interface operations {
       path: {
         /** @description The media type */
         media_type: "movie" | "series";
-        /** @description TMDB identifier (external, not a Silo ID) */
+        /** @description TMDB identifier (external, not a Prairie ID) */
         tmdb_id: number;
       };
       cookie?: never;
@@ -110018,7 +110030,7 @@ export interface operations {
       path: {
         /** @description The media type */
         media_type: "movie" | "series";
-        /** @description TMDB identifier (external, not a Silo ID) */
+        /** @description TMDB identifier (external, not a Prairie ID) */
         tmdb_id: number;
       };
       cookie?: never;
@@ -110138,7 +110150,7 @@ export interface operations {
       path: {
         /** @description The media type */
         media_type: "movie" | "series";
-        /** @description TMDB identifier (external, not a Silo ID) */
+        /** @description TMDB identifier (external, not a Prairie ID) */
         tmdb_id: number;
       };
       cookie?: never;
@@ -111490,16 +111502,16 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        /** @description The client's stable device identifier */
+        "X-Prairie-Device-Id": string;
+        /** @description Optional display name recorded on the device registry */
+        "X-Prairie-Device-Name"?: string;
+        /** @description Optional platform recorded on the device registry */
+        "X-Prairie-Device-Platform"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        /** @description The client's stable device identifier */
-        "X-Silo-Device-Id": string;
-        /** @description Optional display name recorded on the device registry */
-        "X-Silo-Device-Name"?: string;
-        /** @description Optional platform recorded on the device registry */
-        "X-Silo-Device-Platform"?: string;
       };
       path?: never;
       cookie?: never;
@@ -111633,16 +111645,16 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        /** @description The client's stable device identifier */
+        "X-Prairie-Device-Id": string;
+        /** @description Optional display name recorded on the device registry */
+        "X-Prairie-Device-Name"?: string;
+        /** @description Optional platform recorded on the device registry */
+        "X-Prairie-Device-Platform"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        /** @description The client's stable device identifier */
-        "X-Silo-Device-Id": string;
-        /** @description Optional display name recorded on the device registry */
-        "X-Silo-Device-Name"?: string;
-        /** @description Optional platform recorded on the device registry */
-        "X-Silo-Device-Platform"?: string;
       };
       path?: never;
       cookie?: never;
@@ -112205,16 +112217,16 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        /** @description The client's stable device identifier; absent resolves the profile-wide value */
+        "X-Prairie-Device-Id"?: string;
+        /** @description Optional display name recorded on the device registry */
+        "X-Prairie-Device-Name"?: string;
+        /** @description Optional platform recorded on the device registry */
+        "X-Prairie-Device-Platform"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        /** @description The client's stable device identifier; absent resolves the profile-wide value */
-        "X-Silo-Device-Id"?: string;
-        /** @description Optional display name recorded on the device registry */
-        "X-Silo-Device-Name"?: string;
-        /** @description Optional platform recorded on the device registry */
-        "X-Silo-Device-Platform"?: string;
       };
       path?: never;
       cookie?: never;
@@ -112336,18 +112348,18 @@ export interface operations {
         series_id?: string;
       };
       header: {
+        /** @description The client family a profile_client value belongs to */
+        "X-Prairie-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
+        /** @description The client's stable device identifier; the profile_device scope stores against it when device_id is absent */
+        "X-Prairie-Device-Id"?: string;
+        /** @description Optional display name recorded on the device registry */
+        "X-Prairie-Device-Name"?: string;
+        /** @description Optional platform recorded on the device registry */
+        "X-Prairie-Device-Platform"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        /** @description The client family a profile_client value belongs to */
-        "X-Silo-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
-        /** @description The client's stable device identifier; the profile_device scope stores against it when device_id is absent */
-        "X-Silo-Device-Id"?: string;
-        /** @description Optional display name recorded on the device registry */
-        "X-Silo-Device-Name"?: string;
-        /** @description Optional platform recorded on the device registry */
-        "X-Silo-Device-Platform"?: string;
       };
       path?: never;
       cookie?: never;
@@ -112467,18 +112479,18 @@ export interface operations {
         series_id?: string;
       };
       header: {
+        /** @description The client family a profile_client value belongs to */
+        "X-Prairie-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
+        /** @description The client's stable device identifier; the profile_device scope stores against it when device_id is absent */
+        "X-Prairie-Device-Id"?: string;
+        /** @description Optional display name recorded on the device registry */
+        "X-Prairie-Device-Name"?: string;
+        /** @description Optional platform recorded on the device registry */
+        "X-Prairie-Device-Platform"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        /** @description The client family a profile_client value belongs to */
-        "X-Silo-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
-        /** @description The client's stable device identifier; the profile_device scope stores against it when device_id is absent */
-        "X-Silo-Device-Id"?: string;
-        /** @description Optional display name recorded on the device registry */
-        "X-Silo-Device-Name"?: string;
-        /** @description Optional platform recorded on the device registry */
-        "X-Silo-Device-Platform"?: string;
       };
       path: {
         /** @description The setting key, as defined in the settings contract */
@@ -112601,18 +112613,18 @@ export interface operations {
         series_id?: string;
       };
       header: {
+        /** @description The client family a profile_client value belongs to */
+        "X-Prairie-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
+        /** @description The client's stable device identifier; the profile_device scope stores against it when device_id is absent */
+        "X-Prairie-Device-Id"?: string;
+        /** @description Optional display name recorded on the device registry */
+        "X-Prairie-Device-Name"?: string;
+        /** @description Optional platform recorded on the device registry */
+        "X-Prairie-Device-Platform"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        /** @description The client family a profile_client value belongs to */
-        "X-Silo-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
-        /** @description The client's stable device identifier; the profile_device scope stores against it when device_id is absent */
-        "X-Silo-Device-Id"?: string;
-        /** @description Optional display name recorded on the device registry */
-        "X-Silo-Device-Name"?: string;
-        /** @description Optional platform recorded on the device registry */
-        "X-Silo-Device-Platform"?: string;
       };
       path: {
         /** @description The setting key, as defined in the settings contract */
@@ -112766,18 +112778,18 @@ export interface operations {
         series_id?: string;
       };
       header: {
+        /** @description The client family a profile_client value belongs to */
+        "X-Prairie-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
+        /** @description The client's stable device identifier; the profile_device scope stores against it when device_id is absent */
+        "X-Prairie-Device-Id"?: string;
+        /** @description Optional display name recorded on the device registry */
+        "X-Prairie-Device-Name"?: string;
+        /** @description Optional platform recorded on the device registry */
+        "X-Prairie-Device-Platform"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        /** @description The client family a profile_client value belongs to */
-        "X-Silo-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
-        /** @description The client's stable device identifier; the profile_device scope stores against it when device_id is absent */
-        "X-Silo-Device-Id"?: string;
-        /** @description Optional display name recorded on the device registry */
-        "X-Silo-Device-Name"?: string;
-        /** @description Optional platform recorded on the device registry */
-        "X-Silo-Device-Platform"?: string;
       };
       path: {
         /** @description The setting key, as defined in the settings contract */
@@ -112892,18 +112904,18 @@ export interface operations {
         series_ids?: string[];
       };
       header: {
+        /** @description The client family whose profile_client values take part; required when a requested key has that scope */
+        "X-Prairie-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
+        /** @description The client's stable device identifier; its profile_device values take part */
+        "X-Prairie-Device-Id"?: string;
+        /** @description Optional display name recorded on the device registry */
+        "X-Prairie-Device-Name"?: string;
+        /** @description Optional platform recorded on the device registry */
+        "X-Prairie-Device-Platform"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        /** @description The client family whose profile_client values take part; required when a requested key has that scope */
-        "X-Silo-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
-        /** @description The client's stable device identifier; its profile_device values take part */
-        "X-Silo-Device-Id"?: string;
-        /** @description Optional display name recorded on the device registry */
-        "X-Silo-Device-Name"?: string;
-        /** @description Optional platform recorded on the device registry */
-        "X-Silo-Device-Platform"?: string;
       };
       path?: never;
       cookie?: never;
@@ -113006,18 +113018,18 @@ export interface operations {
     parameters: {
       query?: never;
       header: {
+        /** @description The client family whose profile_client values take part; required when a requested key has that scope */
+        "X-Prairie-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
+        /** @description The client's stable device identifier; its profile_device values take part */
+        "X-Prairie-Device-Id"?: string;
+        /** @description Optional display name recorded on the device registry */
+        "X-Prairie-Device-Name"?: string;
+        /** @description Optional platform recorded on the device registry */
+        "X-Prairie-Device-Platform"?: string;
         /** @description The household profile acting for this request; it must belong to the authenticated account. */
         "X-Profile-Id": string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        /** @description The client family whose profile_client values take part; required when a requested key has that scope */
-        "X-Silo-Client-Family"?: "tv" | "mobile" | "tablet" | "desktop" | "web";
-        /** @description The client's stable device identifier; its profile_device values take part */
-        "X-Silo-Device-Id"?: string;
-        /** @description Optional display name recorded on the device registry */
-        "X-Silo-Device-Name"?: string;
-        /** @description Optional platform recorded on the device registry */
-        "X-Silo-Device-Platform"?: string;
       };
       path?: never;
       cookie?: never;
@@ -121425,7 +121437,7 @@ export interface operations {
       header: {
         /** @description Browser origin must match the configured public origin, the request origin, or a connected network access overlay origin. */
         Origin?: string;
-        /** @description Offer silo.room.v2 followed by silo.ticket.<single-use-ticket>. */
+        /** @description Offer prairie.room.v2 followed by prairie.ticket.<single-use-ticket>. */
         "Sec-WebSocket-Protocol": string;
       };
       path: {
@@ -121617,12 +121629,12 @@ export interface operations {
         library_id?: string;
       };
       header?: {
+        /** @description The stable device identifier used to resolve playback preferences */
+        "X-Prairie-Device-Id"?: string;
         /** @description Optional. When present, it must name a profile of the authenticated account. */
         "X-Profile-Id"?: string;
         /** @description Verification proof for a PIN-locked profile, issued by POST /api/v2/profiles/{id}/verify-pin; required only when the declared profile is locked */
         "X-Profile-Token"?: string;
-        /** @description The stable device identifier used to resolve playback preferences */
-        "X-Silo-Device-Id"?: string;
       };
       path: {
         /** @description A movie, episode, audiobook or ebook; a series is not directly playable */
