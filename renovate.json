@@ -48,6 +48,16 @@
         "prettier"
       ],
       "allowedVersions": "<3.9.0"
+    },
+    {
+      "description": "Skip grpc v1.84.0: govulncheck reports GO-2026-6443 in it (reachable via pluginhost GRPCBroker) and no tagged release fixes it yet. Remove once a fixed v1.84.x/v1.85.x ships.",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "google.golang.org/grpc"
+      ],
+      "allowedVersions": "!/^v?1\\.84\\.0$/"
     }
   ]
 }
