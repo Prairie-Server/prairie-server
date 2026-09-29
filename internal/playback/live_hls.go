@@ -174,9 +174,13 @@ func buildLiveHLSArgs(
 	}
 	// discardcorrupt drops tuner bit errors that would otherwise produce a
 	// segment MSE cannot append (bufferAppendError). genpts still fills gaps.
+	// analyzeduration: FFmpeg's 5s default dominates cold tune time. 1.5s
+	// still sees a broadcast MPEG-2 sequence header (frame size) and every
+	// AC-3 track on the HDHomeRun lineup, measured at ~2.4s vs 5.7s to open.
 	args = append(args,
 		"-fflags", "+genpts+nobuffer+discardcorrupt",
 		"-flags", "low_delay",
+		"-analyzeduration", liveAnalyzeDuration,
 		"-i", opts.InputURL,
 		"-map", "0:v:0",
 	)
@@ -230,6 +234,9 @@ func buildLiveHLSArgs(
 		playlist,
 	), pipeline
 }
+
+// liveAnalyzeDuration bounds input probing for a live tune, in microseconds.
+const liveAnalyzeDuration = "1500000"
 
 // liveEncoderPreset defaults live sessions to low latency: a live encode that
 // drops below realtime never catches up, so speed beats compression.

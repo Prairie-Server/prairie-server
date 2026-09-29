@@ -1,6 +1,7 @@
 package playback
 
 import (
+	"slices"
 	"strings"
 	"testing"
 )
@@ -29,6 +30,12 @@ func TestBuildLiveHLSArgsCopiesByDefault(t *testing.T) {
 	}
 	if !hasFlagValue(args, "-map", "0:a:0?") {
 		t.Fatalf("copy sessions keep optional audio mapping: %s", argsString(args))
+	}
+	if !hasFlagValue(args, "-analyzeduration", liveAnalyzeDuration) {
+		t.Fatalf("live input must bound probing for fast tunes: %v", args)
+	}
+	if ai, ii := slices.Index(args, "-analyzeduration"), slices.Index(args, "-i"); ai < 0 || ai > ii {
+		t.Fatalf("-analyzeduration must be an input option before -i: %v", args)
 	}
 	if !hasFlagValue(args, "-flags", "low_delay") {
 		t.Fatalf("expected the low-latency remux flags: %s", argsString(args))
