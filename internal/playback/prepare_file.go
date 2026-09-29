@@ -456,6 +456,9 @@ func buildPrepareFileArgs(opts TranscodeOpts, outputPath string) []string {
 	opts = normalizeTranscodeOpts(opts)
 	isVideoCopy := opts.TargetCodecVideo == "copy"
 	isAudioCopy := opts.TargetCodecAudio == "copy"
+	if opts.PreparedTracks != nil {
+		isAudioCopy = opts.PreparedTracks.allAudioCopied()
+	}
 
 	args := []string{"-nostdin", "-hide_banner", "-loglevel", "error"}
 
@@ -469,7 +472,11 @@ func buildPrepareFileArgs(opts TranscodeOpts, outputPath string) []string {
 	)
 	args = append(args, "-i", opts.InputPath)
 	args = append(args, "-map_metadata", "-1", "-map_chapters", "-1")
-	args = appendStreamSelectionArgs(args, opts)
+	if opts.PreparedTracks != nil {
+		args = appendPreparedTrackArgs(args, opts)
+	} else {
+		args = appendStreamSelectionArgs(args, opts)
+	}
 
 	if isVideoCopy {
 		args = append(args, "-c:v", "copy")
@@ -485,7 +492,9 @@ func buildPrepareFileArgs(opts TranscodeOpts, outputPath string) []string {
 	if isVideoCopy && !isAudioCopy {
 		args = append(args, "-threads", "1", "-filter_threads", "1", "-filter_complex_threads", "1")
 	}
-	args = appendAudioArgs(args, opts)
+	if opts.PreparedTracks == nil {
+		args = appendAudioArgs(args, opts)
+	}
 
 	if !isVideoCopy {
 		args = appendVideoFilterArgs(args, opts)

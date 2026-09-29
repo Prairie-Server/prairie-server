@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/go-chi/chi/v5/middleware"
+
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/prairie-server/prairie-server/internal/subtitles"
@@ -275,10 +277,15 @@ func (r *storeReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
-// ServeSubtitle streams a subtitle asset (external sidecar or downloaded S3 file)
-// for a managed entry, authorized on (user, profile, device) with a per-profile
-// content-access re-check. ref encodes "external:{index}" or "downloaded:{id}".
-func (s *Service) ServeSubtitle(ctx context.Context, w http.ResponseWriter, _ *http.Request, userID int, profileID, deviceID, downloadID, ref string, filter catalog.AccessFilter) error {
+// subtitleRefEmbedded addresses an embedded ASS/SSA or PGS track by its
+// subtitle ordinal (0:s:N); multi-track prepared MP4s deliver those as sidecars.
+const subtitleRefEmbedded = "embedded"
+
+// ServeSubtitle streams a subtitle asset (external sidecar, embedded ASS or PGS
+// track, or downloaded S3 file) for a managed entry, authorized on (user, profile,
+// device) with a per-profile content-access re-check. ref encodes
+// "external:{index}", "embedded:{ordinal}", or "downloaded:{id}".
+func (s *Service) ServeSubtitle(ctx context.Context, w http.ResponseWriter, r *http.Request, userID int, profileID, deviceID, downloadID, ref string, filter catalog.AccessFilter) error {
 	dl, err := s.authorizeManagedAsset(ctx, userID, profileID, deviceID, downloadID)
 	if err != nil {
 		return err
@@ -309,6 +316,8 @@ func (s *Service) ServeSubtitle(ctx context.Context, w http.ResponseWriter, _ *h
 		}
 		writeSubtitle(w, ext.Format, data)
 		return nil
+	case subtitleRefEmbedded:
+		return s.serveEmbeddedSubtitle(w, r.WithContext(ctx), dl, value)
 	case "downloaded":
 		if s.subtitleSource == nil {
 			return ErrManifestUnavailable
@@ -329,15 +338,52 @@ func (s *Service) ServeSubtitle(ctx context.Context, w http.ResponseWriter, _ *h
 	}
 }
 
-// parseSubtitleRef parses a subtitle reference of the form "external:{index}"
-// or "downloaded:{id}" into its kind and integer value.
+// serveEmbeddedSubtitle serves one complete embedded ASS/SSA script or PGS
+// stream, the sidecar a multi-track prepared download advertises for subtitles
+// its MP4 cannot carry faithfully. It shares the streaming subtitle cache, so a
+// track is demuxed from the source at most once while its cache entry lives.
+func (s *Service) serveEmbeddedSubtitle(w http.ResponseWriter, r *http.Request, dl *Download, ordinal int) error {
+	file, err := s.fileRepo.GetByID(r.Context(), dl.MediaFileID)
+	if err != nil {
+		return fmt.Errorf("loading media file: %w", err)
+	}
+	if file == nil || ordinal < 0 || ordinal >= len(file.SubtitleTracks) {
+		return ErrAssetNotFound
+	}
+	track := file.SubtitleTracks[ordinal]
+	if track.External || playback.PreparedSubtitleSidecarFormat(track.Codec) == "" {
+		return ErrAssetNotFound
+	}
+	ffmpegPath := ""
+	if s.artifacts != nil && s.artifacts.liveCfg != nil {
+		if cfg := s.artifacts.liveCfg(); cfg != nil {
+			ffmpegPath = cfg.Playback.FFmpegPath
+		}
+	}
+	response := middleware.NewWrapResponseWriter(w, r.ProtoMajor)
+	err = s.subtitleCache.ServeExtract(response, r, playback.StreamExtractOpts{
+		InputPath:   file.FilePath,
+		TrackIndex:  ordinal,
+		SourceCodec: track.Codec,
+		FFmpegPath:  playback.ResolveFFmpegPath(ffmpegPath),
+	}, playback.StreamExtractSubtitle)
+	if err == nil || response.Status() == 0 || r.Context().Err() != nil {
+		return err
+	}
+	playback.LogSubtitleStreamError(r.Context(), err, file.ID, ordinal)
+	// A clean EOF would let the client keep a truncated track; abort instead.
+	panic(http.ErrAbortHandler)
+}
+
+// parseSubtitleRef parses a subtitle reference of the form "external:{index}",
+// "embedded:{ordinal}", or "downloaded:{id}" into its kind and integer value.
 func parseSubtitleRef(ref string) (kind string, value int, err error) {
 	k, v, ok := strings.Cut(ref, ":")
 	if !ok {
 		return "", 0, ErrInvalidSubtitleRef
 	}
 	switch k {
-	case "external", "downloaded":
+	case "external", subtitleRefEmbedded, "downloaded":
 		n, perr := strconv.Atoi(v)
 		if perr != nil {
 			return "", 0, ErrInvalidSubtitleRef

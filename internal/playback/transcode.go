@@ -129,7 +129,11 @@ type TranscodeOpts struct {
 	// "hdmv_pgs_subtitle"). Bitmap codecs (PGS/DVD/DVB) select the overlay
 	// filter_complex pipeline; text codecs use the libass subtitles filter.
 	// Empty preserves the legacy text path for callers minted before the field.
-	SubtitleCodec   string
+	SubtitleCodec string
+	// PreparedTracks selects the multi-track stream layout of a prepared
+	// download (PrepareFile only). Nil keeps the legacy single-audio,
+	// subtitle-free layout that older artifacts were encoded with.
+	PreparedTracks  *PreparedTracks
 	AudioTrackIndex int // -1 = default (first track), >= 0 = specific track
 	// SourceAudioCodec is the probed codec of the mapped audio track (e.g.
 	// "truehd", "eac3"). When set to a fragile lossless family (TrueHD/MLP),
