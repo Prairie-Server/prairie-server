@@ -43,6 +43,10 @@ type ArtworkRevisionTracker struct {
 	gracePeriod time.Duration
 }
 
+// LiveTVArtworkPrefix is the storage prefix of Live TV channel logos and
+// programme images, which the Live TV artwork cache owns and reaps.
+const LiveTVArtworkPrefix = "livetv/"
+
 func NewArtworkRevisionTracker(pool *pgxpool.Pool) *ArtworkRevisionTracker {
 	if pool == nil {
 		return nil
@@ -66,6 +70,12 @@ func (t *ArtworkRevisionTracker) TrackArtworkRevision(ctx context.Context, origi
 	imageType = strings.ToLower(strings.TrimSpace(imageType))
 	keys := compactArtworkObjectKeys(objectKeys)
 	if originalPath == "" || strings.Contains(originalPath, "://") || (len(keys) == 0 && imageType == "") {
+		return nil
+	}
+	// Live TV artwork is referenced from livetv_artwork_cache, which no catalog
+	// surface covers, so the collector would read every cached logo and poster
+	// as garbage and delete it. Live TV reaps its own expired artwork.
+	if strings.HasPrefix(originalPath, LiveTVArtworkPrefix) {
 		return nil
 	}
 	notBefore := time.Now().Add(t.gracePeriod)
