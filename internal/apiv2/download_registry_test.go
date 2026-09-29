@@ -62,7 +62,7 @@ func TestDownloadRegistryTransport(t *testing.T) {
 	deps.Downloads = service
 	h := newTestHandler(t, deps)
 	viewer := with(bearer(memberToken), "X-Profile-Id", "p-owner")
-	device := with(viewer, "X-Silo-Device-Id", "device-one")
+	device := with(viewer, "X-Prairie-Device-Id", "device-one")
 	path := Prefix + "/downloads/entry"
 	body := `{"status":"completed","updated_at":"2026-01-02T03:04:05.000Z","revision":2}`
 	rec := do(t, h, "PATCH", path, body, device)
@@ -114,7 +114,7 @@ func TestDownloadRegistryCursorBoundary(t *testing.T) {
 	deps := pilotDeps(nil, nil)
 	deps.Downloads = service
 	h := newTestHandler(t, deps)
-	viewer := with(with(bearer(memberToken), "X-Profile-Id", "p-owner"), "X-Silo-Device-Id", "device-one")
+	viewer := with(with(bearer(memberToken), "X-Profile-Id", "p-owner"), "X-Prairie-Device-Id", "device-one")
 	path := Prefix + "/downloads"
 	rec := do(t, h, "GET", path+"?limit=1", "", viewer)
 	var page Collection[DownloadEntry]
@@ -126,7 +126,7 @@ func TestDownloadRegistryCursorBoundary(t *testing.T) {
 	if rec.Code != 200 || service.after == nil || service.after.ID != "b" || service.limit != 51 {
 		t.Fatalf("%d %+v", rec.Code, service)
 	}
-	rec = do(t, h, "GET", path+"?cursor="+page.Page.NextCursor, "", with(viewer, "X-Silo-Device-Id", "other-device"))
+	rec = do(t, h, "GET", path+"?cursor="+page.Page.NextCursor, "", with(viewer, "X-Prairie-Device-Id", "other-device"))
 	if rec.Code != 400 {
 		t.Fatalf("cursor crossed device: %d", rec.Code)
 	}

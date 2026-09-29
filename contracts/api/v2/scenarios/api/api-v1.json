@@ -43,7 +43,7 @@
           "expect": {
             "status": 200,
             "body": [
-              { "pointer": "/server_name", "op": "equals", "value": "Silo Fixture" },
+              { "pointer": "/server_name", "op": "equals", "value": "Prairie Fixture" },
               { "pointer": "/server_id", "op": "equals", "value": "00000000-0000-4000-8000-0000000000f1" }
             ]
           },
