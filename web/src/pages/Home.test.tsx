@@ -26,6 +26,10 @@ const FIREFOX_USER_AGENT =
 const CHROME_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 Chrome/151.0.0.0 Safari/537.36";
 
+vi.mock("@/components/livetv/LiveTVOnNowRow", () => ({
+  default: () => null,
+}));
+
 vi.mock("@/hooks/queries/sections", () => ({
   useHomeLayout: (...args: unknown[]) => mockUseHomeLayout(...args),
   fetchHomeSectionItems: (...args: unknown[]) => mockFetchHomeSectionItems(...args),

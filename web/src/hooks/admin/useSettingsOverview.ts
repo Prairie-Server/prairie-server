@@ -17,6 +17,7 @@ import { useHWAccelDetection, type HWAccelInfo } from "@/hooks/queries/admin/sys
  * segments and have to match the pages the settings layout mounts.
  */
 export const ADMIN_SETTINGS_PAGE_IDS = [
+  "about",
   "general",
   "infrastructure",
   "appearance",

@@ -25,7 +25,7 @@ describe("buildSettingsOverview health tiles", () => {
     const model = buildSettingsOverview({});
 
     expect(model.tiles).toHaveLength(5);
-    expect(model.cards).toHaveLength(14);
+    expect(model.cards).toHaveLength(15);
     expect(tile({}, "storage").stateText).toBe("Not set up");
     expect(card({}, "general")).toEqual({ id: "general" });
   });
@@ -298,6 +298,7 @@ describe("buildSettingsOverview health tiles", () => {
 describe("buildSettingsOverview groups", () => {
   it("emits one card per settings page id", () => {
     expect(buildSettingsOverview({}).cards.map((entry) => entry.id)).toEqual([
+      "about",
       "general",
       "infrastructure",
       "appearance",

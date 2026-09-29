@@ -17,6 +17,7 @@ import { UnsavedChangesGuard } from "@/components/UnsavedChangesGuard";
 import { settingsPageHref } from "@/hooks/admin/useSettingsOverview";
 import { SettingsPageRail } from "@/components/settings/SettingsPageRail";
 
+import AboutSettings from "./AboutSettings";
 import GeneralSettings from "./GeneralSettings";
 import AppearanceSettings from "./AppearanceSettings";
 import SecurityAccessSettings from "./SecurityAccessSettings";
@@ -39,6 +40,7 @@ interface SettingsNav extends AdminSettingsSearchItem {
 }
 
 const SETTINGS_COMPONENTS: Record<string, ComponentType> = {
+  about: AboutSettings,
   general: GeneralSettings,
   appearance: AppearanceSettings,
   security: SecurityAccessSettings,
