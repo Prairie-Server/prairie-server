@@ -126,6 +126,7 @@ type Service struct {
 	subtitleSource   SubtitleSource
 	artworkSource    ManifestSource
 	httpClient       *http.Client
+	subtitleCache    *playback.SubtitleCache
 
 	// Prepare-to-file pipeline (Phase 3); nil until SetArtifactManager wires it.
 	artifacts *ArtifactManager
@@ -141,6 +142,10 @@ type Service struct {
 	cfg         config.DownloadConfig
 	cfgLoadedAt time.Time
 }
+
+// SetSubtitleCache shares the streaming subtitle cache with embedded subtitle
+// sidecars. Nil disables caching.
+func (s *Service) SetSubtitleCache(cache *playback.SubtitleCache) { s.subtitleCache = cache }
 
 // SetOfflineDeps wires the offline-manifest dependencies (catalog detail for
 // manifest + artwork, subtitle assets, and an HTTP client for streaming

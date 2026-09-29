@@ -105,7 +105,7 @@ func (reg *Registry) serveDownloadDelivery(w http.ResponseWriter, r *http.Reques
 	// written rather than before the first read, so that failure still gets
 	// its problem response. Files keep ReadFrom for sendfile; ServeContent
 	// writes their header before copying anyway.
-	asset := struct{ http.ResponseWriter }{writer}
+	asset := assetResponseWriter{writer}
 	var err error
 	switch kind {
 	case "file":
@@ -125,3 +125,10 @@ func (reg *Registry) serveDownloadDelivery(w http.ResponseWriter, r *http.Reques
 	}
 	writeProblem(w, r, downloadProblem(err))
 }
+
+// assetResponseWriter hides ReadFrom from artwork and subtitle copies (see
+// serveDownloadDelivery) while keeping Unwrap, so response controllers can
+// still reach the connection for rolling write deadlines.
+type assetResponseWriter struct{ http.ResponseWriter }
+
+func (w assetResponseWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }

@@ -1387,7 +1387,14 @@ session updates preserve codec, source/target channels, bitrate, and the
 transcode decision as one recipe. A failed Jellyfin audio switch restores the
 prior durable selection and executor facts so the same client report can retry.
 Prepared downloads persist the audio recipe version and use `audio_v2_*` queue
-states that pre-v2 API workers cannot claim or publish as ready.
+states that pre-v2 API workers cannot claim or publish as ready. The multi-track
+prepared layout (every audio track, plain-text subtitles as MP4 timed text,
+ASS/SSA and PGS as manifest sidecars) is a
+separate `track_recipe_version` with `tracks_v1_*` queue states that outrank the
+audio and tone-map families. Its per-track plan travels in the prepare request
+and execution fingerprint; only transcode nodes advertising the
+`prepared_tracks_v1` transport feature receive it, and an older node's legacy
+receipt is rejected.
 
 They are advertised only if an eligible executor actually has the required
 capability. The ordinary FFmpeg feature probe is cached; the more expensive

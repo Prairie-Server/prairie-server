@@ -31080,6 +31080,9 @@
           },
           "language": {
             "type": "string"
+          },
+          "title": {
+            "type": "string"
           }
         },
         "required": [
@@ -194123,6 +194126,9 @@
           "input_path": {
             "type": "string"
           },
+          "prepared_tracks": {
+            "$ref": "#/x-silo-worker-protocols/schemas/playback_PreparedTracks"
+          },
           "software_video_decode": {
             "type": "boolean"
           },
@@ -194194,6 +194200,9 @@
           "total_duration": {
             "format": "double",
             "type": "number"
+          },
+          "track_recipe_version": {
+            "type": "string"
           }
         },
         "required": [
@@ -194855,6 +194864,85 @@
           "render_device_details",
           "intel_detected",
           "source"
+        ],
+        "type": "object"
+      },
+      "playback_PreparedAudioTrack": {
+        "additionalProperties": false,
+        "properties": {
+          "codec": {
+            "type": "string"
+          },
+          "default": {
+            "type": "boolean"
+          },
+          "language": {
+            "type": "string"
+          },
+          "source_channels": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "source_index": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_index",
+          "codec"
+        ],
+        "type": "object"
+      },
+      "playback_PreparedSubtitleTrack": {
+        "additionalProperties": false,
+        "properties": {
+          "default": {
+            "type": "boolean"
+          },
+          "forced": {
+            "type": "boolean"
+          },
+          "hearing_impaired": {
+            "type": "boolean"
+          },
+          "language": {
+            "type": "string"
+          },
+          "source_index": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "source_index"
+        ],
+        "type": "object"
+      },
+      "playback_PreparedTracks": {
+        "additionalProperties": false,
+        "properties": {
+          "audio": {
+            "items": {
+              "$ref": "#/x-silo-worker-protocols/schemas/playback_PreparedAudioTrack"
+            },
+            "type": "array"
+          },
+          "subtitles": {
+            "items": {
+              "$ref": "#/x-silo-worker-protocols/schemas/playback_PreparedSubtitleTrack"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "audio"
         ],
         "type": "object"
       },

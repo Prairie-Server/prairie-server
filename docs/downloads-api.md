@@ -128,8 +128,27 @@ Yes, manifests include metadata needed to make the offline item feel native:
 - External and downloaded subtitle fetch URLs plus known subtitle file sizes.
 - Container, codecs, resolution, HDR, duration, selected audio track, and audio
   track inventory. For remux/transcode entries these describe the prepared
-  artifact the file endpoint actually delivers (single audio track, target
-  container/codecs), not the catalog source it was prepared from.
+  artifact the file endpoint actually delivers (target container/codecs), not
+  the catalog source it was prepared from.
+
+Prepared remux/transcode files keep every source audio track in source order,
+so `audio_tracks[].index` and `selected_audio_track_index` address positions
+in the delivered MP4. Transcodes encode each track to stereo AAC; remuxes copy
+tracks that share the primary track's codec (or are AAC/MP3) when MP4 can
+store that codec (AAC, MP3, AC-3, E-AC-3, ALAC) and encode the rest to stereo
+AAC. The server records the audio tracks when the file becomes ready, so a
+later rescan of a replaced source does not change `audio_tracks`; a
+`selected_audio_track_index` that no longer names the same-language track
+falls back to the file's default track. Embedded plain-text subtitles (SRT, WebVTT) are carried
+inside the MP4 as timed text, with their language, title, and forced flag.
+MP4 timed text would drop ASS/SSA styling, drawing commands, and overlapping
+events, and MP4 cannot store bitmap subtitles, so each embedded ASS/SSA track is
+listed in `subtitles[]` as an `ass` sidecar and each PGS track as a `sup`
+sidecar, with the track's `title` when it has one; DVD and DVB bitmap subtitles are not carried. MP4 marks the first
+embedded subtitle track as default, so clients choose subtitles from forced
+flags and viewer preference rather than that flag.
+Files prepared before this layout contain only the first audio track and no
+subtitles, and their manifests keep describing them that way.
 - Stable provider identity and integrity metadata for local validation/rescan recovery.
 
 The client still needs to fetch artwork/subtitle bytes once while online and cache
@@ -613,10 +632,14 @@ Other failures, such as `404 not_found`, won't succeed on a retry.
 GET /api/v2/downloads/{id}/subtitles/{ref}
 ```
 
-`ref` comes from `subtitles[].fetch_url` and encodes either `external:{index}` or
-`downloaded:{id}`; `X-Silo-Device-Id` is required. Invalid refs return
-`422 validation_failed`. Current content access is checked before asset delivery,
-and downloaded-subtitle ownership must match the entry's media file.
+`ref` comes from `subtitles[].fetch_url` and encodes `external:{index}`,
+`embedded:{ordinal}`, or `downloaded:{id}`; `X-Silo-Device-Id` is required.
+`embedded` refs name an embedded ASS/SSA or PGS track by subtitle ordinal and
+return the complete track, as an ASS script or a `.sup` elementary stream,
+extracted from the source file.
+Invalid refs return `422 validation_failed`. Current content access is checked
+before asset delivery, and downloaded-subtitle ownership must match the entry's
+media file.
 
 ### 4.10 Direct download
 
@@ -1598,7 +1621,7 @@ unavailable or ineligible proxy targets fall back to existing local delivery.
 `GET /api/v2/downloads/{id}/artwork/{kind}` and
 `GET /api/v2/downloads/{id}/subtitles/{ref}` require the device header.
 Artwork kinds are poster, backdrop and logo; subtitle references retain the
-existing external:index and downloaded:id identity. Current content access is
+external:index, embedded:ordinal, and downloaded:id identity. Current content access is
 checked before asset delivery, and downloaded subtitle ownership must match the
 entry's media file. These two asset routes preserve whole-object delivery and
 private caching; they do not advertise byte ranges.
