@@ -13,15 +13,15 @@ import (
 	"sync"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/access"
-	"github.com/Silo-Server/silo-server/internal/catalog"
-	"github.com/Silo-Server/silo-server/internal/config"
-	"github.com/Silo-Server/silo-server/internal/downloadprepare"
-	"github.com/Silo-Server/silo-server/internal/idgen"
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/playback"
-	"github.com/Silo-Server/silo-server/internal/scanner"
-	"github.com/Silo-Server/silo-server/internal/userstore"
+	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/downloadprepare"
+	"github.com/prairie-server/prairie-server/internal/idgen"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/playback"
+	"github.com/prairie-server/prairie-server/internal/scanner"
+	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 // FileResolver looks up media files by various keys.
