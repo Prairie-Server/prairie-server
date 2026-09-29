@@ -797,7 +797,7 @@ func (s *Service) handleStateReportForConnection(
 	}
 
 	var dispatches []snapshotDispatch
-	var correctionDispatches []commandDispatch
+	var correctionDispatches, hostCommandDispatches []commandDispatch
 
 	s.mu.Lock()
 	member := live.members[reg.memberKey]
@@ -866,6 +866,18 @@ func (s *Service) handleStateReportForConnection(
 	if isHost {
 		live.room.AnchorPositionSeconds = math.Max(0, report.PositionSeconds)
 		live.room.IsPaused = report.IsPaused
+		// A host that pauses or resumes from the system controls reports the
+		// change instead of requesting it. Corrections, re-attaches, and
+		// buffering barriers read PlaybackState and ResumeOnReady, so move them
+		// with IsPaused, as a transport request does; otherwise a paused room
+		// keeps telling members to play.
+		if live.room.Phase == RoomPhasePlaying {
+			live.room.ResumeOnReady = !report.IsPaused
+			live.room.PlaybackState = RoomPlaybackStatePlaying
+			if report.IsPaused {
+				live.room.PlaybackState = RoomPlaybackStatePaused
+			}
+		}
 		live.room.AnchorUpdatedAt = s.now()
 		conflict, updateErr := s.persistAnchorLocked(ctx, live)
 		if updateErr != nil {
@@ -879,6 +891,22 @@ func (s *Service) handleStateReportForConnection(
 			return snapshot, nil
 		}
 		s.clearCorrectionCommandsLocked(live)
+		// The report is the room's transport decision, so issue it as the room
+		// command, as a play or pause request would. Members here get it now,
+		// members on other servers through the reconciler, and an earlier
+		// command can no longer be replayed after a socket renewal.
+		if live.room.Phase == RoomPhasePlaying {
+			action := TransportActionPause
+			if live.room.PlaybackState == RoomPlaybackStatePlaying {
+				action = TransportActionPlay
+			}
+			hostCommandDispatches = s.transportCommandDispatchesLocked(
+				live,
+				action,
+				live.room.AnchorPositionSeconds,
+				now.Add(s.highestPingLocked(live)),
+			)
+		}
 		dispatches = s.prepareSnapshotDispatchesLocked(live)
 	} else if holdCorrection {
 		member.correctionCommand = nil
@@ -912,6 +940,7 @@ func (s *Service) handleStateReportForConnection(
 	s.mu.Unlock()
 	s.sendDispatches(ctx, dispatches)
 	if isHost {
+		s.sendCommandDispatches(ctx, hostCommandDispatches)
 		return snapshot, nil
 	}
 

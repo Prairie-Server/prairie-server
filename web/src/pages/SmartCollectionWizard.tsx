@@ -439,7 +439,7 @@ function Step2UserMetadata({
 
   return (
     <Step2Shell onBack={onBack} onSubmit={handleSave}>
-      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_18rem]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_18rem]">
         <div className="space-y-5">
           <Field
             id="collection-name"
@@ -568,7 +568,7 @@ function Step2AdminMetadata({
 
   return (
     <Step2Shell onBack={onBack} onSubmit={handleSave}>
-      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_22rem]">
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_22rem]">
         <div className="space-y-5">
           <Field
             id="admin-collection-title"

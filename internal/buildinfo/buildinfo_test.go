@@ -171,3 +171,46 @@ func TestResolve(t *testing.T) {
 		})
 	}
 }
+
+func TestParseBuildNumber(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		value string
+		want  uint64
+	}{
+		{value: "411", want: 411},
+		{value: " 411 ", want: 411},
+		{value: ""},
+		{value: "0"},
+		{value: "-1"},
+		{value: "not-a-number"},
+	}
+
+	for _, tc := range tests {
+		if got := parseBuildNumber(tc.value); got != tc.want {
+			t.Fatalf("parseBuildNumber(%q) = %d, want %d", tc.value, got, tc.want)
+		}
+	}
+}
+
+// Go refuses to send a request whose header value holds a control character,
+// so an odd injected revision must not reach the User-Agent verbatim.
+func TestUserAgentForKeepsHeaderTokenCharacters(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		info Info
+		want string
+	}{
+		{info: Info{Available: true, Display: "ce6a0f53+dirty"}, want: "Prairie/ce6a0f53+dirty"},
+		{info: Info{Available: true, Display: "ce6a 0f53\r\n"}, want: "Prairie/ce6a0f53"},
+		{info: Info{Available: true, Display: "\n"}, want: "Prairie/dev"},
+		{info: unavailableInfo(), want: "Prairie/dev"},
+	}
+	for _, tt := range tests {
+		if got := userAgentFor(tt.info); got != tt.want {
+			t.Errorf("userAgentFor(%q) = %q, want %q", tt.info.Display, got, tt.want)
+		}
+	}
+}
