@@ -777,12 +777,16 @@ func (h *LiveTVHandler) PlaybackMediaSource(ctx context.Context, session *Sessio
 		}},
 	}
 	if autoOpen {
+		profile := firstDeviceProfile(profiles)
+		if !profile.HasData() {
+			profile = h.liveTVDeviceProfile(session)
+		}
 		if existingLiveStreamID != "" {
 			if reused, ok := h.mediaSourceForOpenStream(ctx, existingLiveStreamID, ch.ID); ok {
 				return reused, nil
 			}
 		}
-		opened, err := h.openChannelStream(ctx, session, ch.ID, firstDeviceProfile(profiles))
+		opened, err := h.openChannelStream(ctx, session, ch.ID, profile)
 		if err != nil {
 			return mediaSourceDTO{}, err
 		}
@@ -868,6 +872,20 @@ func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session,
 			}, h.jwtSecret, playback.MaxTokenTTL)
 			if signErr == nil {
 				directURL := native.HLSURL + "?" + streamtoken.QueryParam + "=" + url.QueryEscape(token)
+				openerToken := ""
+				if session != nil {
+					openerToken = session.Token
+				}
+				h.mu.Lock()
+				h.streams[liveStreamID] = &openLiveStream{
+					ID:            liveStreamID,
+					ChannelID:     channelID,
+					NativeSession: native.ID,
+					SourceURL:     native.HLSURL,
+					OpenedAt:      h.now(),
+					OpenerToken:   openerToken,
+				}
+				h.mu.Unlock()
 				name := channelID
 				if ch, getErr := h.service.GetChannel(ctx, channelID); getErr == nil && ch != nil {
 					name = channelDisplayName(*ch)
@@ -877,7 +895,7 @@ func (h *LiveTVHandler) openChannelStream(ctx context.Context, session *Session,
 					Path: directURL, Type: "Default", Container: "hls", Name: name,
 					IsRemote: true, SupportsTranscoding: true, SupportsDirectPlay: true,
 					SupportsDirectStream: false, IsInfiniteStream: true,
-					RequiresOpening: false, RequiresClosing: true, LiveStreamID: native.ID,
+					RequiresOpening: false, RequiresClosing: true, LiveStreamID: liveStreamID,
 					DirectStreamURL: directURL, Formats: []string{},
 					RequiredHTTPHeaders: map[string]string{}, MediaAttachments: []map[string]any{},
 					MediaStreams: []mediaStreamDTO{
