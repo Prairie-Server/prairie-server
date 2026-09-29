@@ -833,7 +833,7 @@ func (h *LiveTVHandler) mediaSourceForOpenStream(ctx context.Context, liveStream
 				RequiredHTTPHeaders: map[string]string{}, MediaAttachments: []map[string]any{},
 				MediaStreams: []mediaStreamDTO{
 					{Index: 0, Type: streamTypeVideo, Codec: "h264", IsDefault: true, DisplayTitle: streamTypeVideo},
-					{Index: 1, Type: streamTypeAudio, Codec: "aac", IsDefault: true, DisplayTitle: streamTypeAudio},
+					{Index: 1, Type: "Audio", Codec: "aac", IsDefault: true, DisplayTitle: streamTypeAudio},
 				},
 			}, true
 		}
