@@ -8,8 +8,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Silo-Server/silo-server/internal/models"
-	"github.com/Silo-Server/silo-server/internal/tonemap"
+	"github.com/prairie-server/prairie-server/internal/models"
+	"github.com/prairie-server/prairie-server/internal/tonemap"
 )
 
 func hasDegradationWarningV3(warnings []DegradationWarningV3, code string) bool {

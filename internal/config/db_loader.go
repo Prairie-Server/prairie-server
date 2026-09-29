@@ -10,7 +10,7 @@ import (
 
 	"github.com/google/uuid"
 
-	subtitleai "github.com/Silo-Server/silo-server/internal/subtitles/ai"
+	subtitleai "github.com/prairie-server/prairie-server/internal/subtitles/ai"
 )
 
 // stringOr returns the value from the map for the given key, or the fallback if absent/empty.
