@@ -37,7 +37,6 @@ import (
 	"github.com/prairie-server/prairie-server/internal/catalogseed"
 	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/prairie-server/prairie-server/internal/config"
-	"github.com/prairie-server/prairie-server/internal/deviceclass"
 	"github.com/prairie-server/prairie-server/internal/diagnostics"
 	"github.com/prairie-server/prairie-server/internal/downloads"
 	evt "github.com/prairie-server/prairie-server/internal/events"
@@ -47,7 +46,6 @@ import (
 	"github.com/prairie-server/prairie-server/internal/invitations"
 	"github.com/prairie-server/prairie-server/internal/libraryingest"
 	"github.com/prairie-server/prairie-server/internal/literaryworks"
-	"github.com/prairie-server/prairie-server/internal/livetv"
 	"github.com/prairie-server/prairie-server/internal/logstream"
 	"github.com/prairie-server/prairie-server/internal/mail"
 	"github.com/prairie-server/prairie-server/internal/markers"
@@ -93,7 +91,6 @@ import (
 	"github.com/prairie-server/prairie-server/internal/usercollections"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 	"github.com/prairie-server/prairie-server/internal/watchstate"
-	watchtrakt "github.com/prairie-server/prairie-server/internal/watchsync/providers/trakt"
 	"github.com/prairie-server/prairie-server/internal/watchtogether"
 	"github.com/prairie-server/prairie-server/internal/webhooksync"
 )
@@ -1866,12 +1863,10 @@ func newChiRouter(deps Dependencies) chi.Router {
 				settings: settingsRepo,
 			}
 		}
-		if libraryCollectionService.TraktTokenResolver == nil && deps.DB != nil && settingsRepo != nil {
+		if tokens, ok := deps.WatchProviderService.(watchProviderAccessTokens); ok && libraryCollectionService.TraktTokenResolver == nil && deps.DB != nil {
 			libraryCollectionService.TraktTokenResolver = &traktCollectionTokenResolver{
-				pool:     deps.DB,
-				settings: settingsRepo,
-				cipher:   deps.SecretCipher,
-				provider: watchtrakt.NewProvider(nil, ""),
+				pool:   deps.DB,
+				tokens: tokens,
 			}
 		}
 

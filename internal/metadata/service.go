@@ -1295,10 +1295,12 @@ func (s *MetadataService) ProcessWithProviders(ctx context.Context, req ProcessR
 }
 
 func (s *MetadataService) prepareProcessRequest(ctx context.Context, req ProcessRequest) (ProcessRequest, error) {
+	req.callerProviderIDs = maps.Clone(req.ProviderIDs)
 	durableIDs, err := s.loadDurableProviderIDs(ctx, req.ContentID)
 	if err != nil {
 		return req, err
 	}
+	req.durableProviderIDs = maps.Clone(durableIDs)
 	req.recordedStaleProviderIDs, err = s.loadRecordedStaleProviderIDs(ctx, req.ContentID)
 	if err != nil {
 		return req, err
@@ -1378,6 +1380,7 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 	var providerMatchErrors []error
 	quarantinedProviderIDKeys := make(map[string]struct{})
 	replacedProviderIDKeys := make(map[string]struct{})
+	rejectedIdentityIDs := make(providerIDValueSet)
 
 	switch req.Mode {
 	case ModeInitialMatch:
@@ -1565,14 +1568,40 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 		// Use user-provided IDs directly.
 		maps.Copy(accumulatedIDs, req.ProviderIDs)
 		sanitizeCanonicalProviderIDsInPlace(accumulatedIDs)
-		if contentType == "" && req.ContentID != "" {
-			if existing, err := s.itemRepo.GetByID(ctx, req.ContentID); err == nil {
-				contentType = existing.Type
-				itemLevel = providerChainContentLevel(contentType)
-				itemChain, err = resolveChain(itemLevel)
-				if err != nil {
-					return nil, err
+		var existing *models.MediaItem
+		if req.ContentID != "" {
+			var err error
+			existing, err = s.itemRepo.GetByID(ctx, req.ContentID)
+			switch {
+			case errors.Is(err, catalog.ErrItemNotFound):
+				existing = nil
+			case err != nil:
+				// The correction below compares the choice with the stored
+				// columns; guessing them missing would restore the wrong match.
+				return nil, fmt.Errorf("loading item to identify: %w", err)
+			}
+		}
+		// An admin whose choice corrects the item's match (see
+		// identityChoiceCorrects) sets its identity: the stored identity IDs
+		// they didn't name came from the previous match, so they're dropped
+		// rather than fetched and kept, and the providers re-supply the right
+		// ones. A choice that confirms or extends the match keeps them.
+		chosen := canonicalIdentityProviderIDs(req.callerProviderIDs)
+		if stored := storedItemIdentity(existing, req.durableProviderIDs); identityChoiceCorrects(chosen, stored) {
+			for _, key := range trustedSearchIDKeys {
+				if chosen[key] == "" {
+					delete(accumulatedIDs, key)
 				}
+			}
+			rejectIdentityProviderIDs(rejectedIdentityIDs, chosen, storedIdentityProviderIDs(existing), req.durableProviderIDs)
+		}
+		if existing != nil && contentType == "" {
+			contentType = existing.Type
+			itemLevel = providerChainContentLevel(contentType)
+			var err error
+			itemChain, err = resolveChain(itemLevel)
+			if err != nil {
+				return nil, err
 			}
 		}
 
@@ -1631,6 +1660,18 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 			}
 		}
 		wonHints := applyBuiltinIdentityHints(ctx, itemChain, searchQuery, accumulatedIDs, protectedKeys)
+		stored, hinted := storedItemIdentity(existing, req.durableProviderIDs), canonicalIdentityProviderIDs(wonHints)
+		if req.Mode == ModeManualRefresh && identityChoiceCorrects(hinted, stored) {
+			// The stored IDs came from the match the corrected NFO overrides,
+			// so any the NFO doesn't restate are dropped, not re-fetched.
+			for _, key := range trustedSearchIDKeys {
+				if wonHints[key] == "" {
+					delete(accumulatedIDs, key)
+				}
+			}
+			searchQuery.ProviderIDs = accumulatedIDs
+			rejectIdentityProviderIDs(rejectedIdentityIDs, hinted, storedIdentityProviderIDs(existing), req.durableProviderIDs)
+		}
 		searchQuery = suppressTitleYearFallbackForTrustedIDs(searchQuery)
 		allResults := make([]SearchResult, 0)
 		for _, p := range itemChain {
@@ -1778,6 +1819,9 @@ func (s *MetadataService) processInternal(ctx context.Context, req ProcessReques
 	accumulatedIDs = accumulator.ProviderIDs
 	if len(replacedProviderIDKeys) > 0 {
 		accumulator.replacedProviderIDKeys = maps.Clone(replacedProviderIDKeys)
+	}
+	if len(rejectedIdentityIDs) > 0 {
+		accumulator.rejectedIdentityProviderIDs = rejectedIdentityIDs
 	}
 	// Phase 3: Images — all ImageProviders run, collect all available images.
 	var allImages []RemoteImage
@@ -2375,6 +2419,7 @@ func (s *MetadataService) mergeAndPersist(
 
 	suppressProviderIDValues(durableIDs, accumulator.recordedStaleProviderIDs)
 	suppressProviderIDValues(durableIDs, accumulator.sameRunStaleProviderIDs)
+	suppressProviderIDValues(durableIDs, accumulator.rejectedIdentityProviderIDs)
 	if len(durableIDs) > 0 {
 		if accumulator.ProviderIDs == nil {
 			accumulator.ProviderIDs = make(map[string]string, len(durableIDs))
@@ -2415,6 +2460,7 @@ func (s *MetadataService) mergeAndPersist(
 		existingResult := itemToMetadataResult(existingItem)
 		suppressProviderIDValues(existingResult.ProviderIDs, accumulator.recordedStaleProviderIDs)
 		suppressProviderIDValues(existingResult.ProviderIDs, accumulator.sameRunStaleProviderIDs)
+		suppressProviderIDValues(existingResult.ProviderIDs, accumulator.rejectedIdentityProviderIDs)
 		for key := range accumulator.replacedProviderIDKeys {
 			delete(existingResult.ProviderIDs, key)
 		}
@@ -2435,6 +2481,7 @@ func (s *MetadataService) mergeAndPersist(
 		existingResult.replacedProviderIDKeys = accumulator.replacedProviderIDKeys
 		existingResult.recordedStaleProviderIDs = accumulator.recordedStaleProviderIDs
 		existingResult.sameRunStaleProviderIDs = accumulator.sameRunStaleProviderIDs
+		existingResult.rejectedIdentityProviderIDs = accumulator.rejectedIdentityProviderIDs
 		accumulator = existingResult
 	}
 
@@ -8319,6 +8366,91 @@ func applyCandidateProviderIDConsensus(accumulatedIDs map[string]string, winner 
 		accumulatedIDs[key] = value
 	}
 	return replaced
+}
+
+// storedIdentityProviderIDs returns an item's stored TMDB, TVDB and IMDb IDs.
+func storedIdentityProviderIDs(item *models.MediaItem) map[string]string {
+	if item == nil {
+		return nil
+	}
+	return map[string]string{"tmdb": item.TmdbID, "tvdb": item.TvdbID, "imdb": item.ImdbID}
+}
+
+// canonicalIdentityProviderIDs returns the valid TMDB, TVDB and IMDb IDs in ids.
+func canonicalIdentityProviderIDs(ids map[string]string) map[string]string {
+	chosen := make(map[string]string, len(trustedSearchIDKeys))
+	for key, value := range ids {
+		key = strings.ToLower(strings.TrimSpace(key))
+		if !slices.Contains(trustedSearchIDKeys, key) {
+			continue
+		}
+		if value, valid := sanitizeProviderIDValue(key, value); valid {
+			chosen[key] = value
+		}
+	}
+	return chosen
+}
+
+// storedItemIdentity returns the TMDB, TVDB and IMDb IDs an item
+// already has: its columns, then its durable provider-ID rows for any key the
+// columns leave empty.
+func storedItemIdentity(item *models.MediaItem, durable map[string]string) map[string]string {
+	stored := storedIdentityProviderIDs(item)
+	if stored == nil {
+		stored = map[string]string{}
+	}
+	for key, value := range canonicalIdentityProviderIDs(durable) {
+		if strings.TrimSpace(stored[key]) == "" {
+			stored[key] = value
+		}
+	}
+	return stored
+}
+
+// identityChoiceCorrects reports whether chosen identity IDs (an Identify's,
+// or an NFO's on a manual refresh) correct the item's stored match: a chosen
+// ID differs from the stored value for its key, or the item stores identity
+// IDs and none of the chosen ones agrees with them. Restating a stored ID,
+// with or without adding one the item lacks, confirms or extends the match.
+func identityChoiceCorrects(chosen, stored map[string]string) bool {
+	agrees, hasStored := false, false
+	for _, key := range trustedSearchIDKeys {
+		old := strings.TrimSpace(stored[key])
+		hasStored = hasStored || old != ""
+		next := chosen[key]
+		if old == "" || next == "" {
+			continue
+		}
+		if old != next {
+			return true
+		}
+		agrees = true
+	}
+	return hasStored && !agrees && len(chosen) > 0
+}
+
+// rejectIdentityProviderIDs records the stored identity values a correction
+// rejects: each TMDB, TVDB or IMDb ID in any of the item's stored sources (its
+// columns and its durable rows, which can disagree) that the chosen IDs don't
+// restate. They came from the wrong match. Recording values rather than keys
+// leaves a different value for the same key alone, such as the IDs of an
+// existing item that a re-anchor merges into.
+//
+// Stored values are taken as they are, not validated: a malformed legacy ID
+// from the wrong match must be rejected too, or the merge would restore it.
+func rejectIdentityProviderIDs(rejected providerIDValueSet, chosen map[string]string, sources ...map[string]string) {
+	for _, source := range sources {
+		for rawKey, rawValue := range source {
+			key := strings.ToLower(strings.TrimSpace(rawKey))
+			value := strings.TrimSpace(rawValue)
+			if value == "" || !slices.Contains(trustedSearchIDKeys, key) {
+				continue
+			}
+			if normalizeProviderIDComparisonValue(key, value) != normalizeProviderIDComparisonValue(key, chosen[key]) {
+				rejected.add(key, value)
+			}
+		}
+	}
 }
 
 func mediaItemWithProviderIDs(item *models.MediaItem, providerIDs map[string]string) *models.MediaItem {
