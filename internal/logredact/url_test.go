@@ -225,3 +225,40 @@ func TestSanitizeURLFailsClosedForMalformedInput(t *testing.T) {
 		t.Fatalf("malformed URL leaked credentials: %q", got)
 	}
 }
+
+// A wrapper can carry the raw URL outside the url.Error's own text: formatted
+// by the caller, in a joined sibling, or repeated by the transport cause.
+// Replacing only the url.Error text left those copies in the message.
+func TestSanitizeURLErrorScrubsRawURLOutsideTheURLErrorText(t *testing.T) {
+	const raw = "https://operator:node-password@node.example/segment?access_token=query-secret"
+	const safe = "https://node.example/segment"
+	cause := errors.New("connection refused")
+	urlErr := &url.Error{Op: "Get", URL: raw, Err: cause}
+	for name, err := range map[string]error{
+		"caller formats the URL":   fmt.Errorf("fetch %s: %w", raw, urlErr),
+		"nested wrappers":          fmt.Errorf("outer %s: %w", raw, fmt.Errorf("inner: %w", urlErr)),
+		"multi-%w wrapper":         fmt.Errorf("a %s: %w; %w", raw, urlErr, errors.New("second")),
+		"joined sibling":           errors.Join(urlErr, fmt.Errorf("see %s", raw)),
+		"quoted by the caller":     fmt.Errorf("fetch %q: %w", raw, urlErr),
+		"cause repeats the URL":    &url.Error{Op: "Get", URL: raw, Err: fmt.Errorf("redirect to %s refused: %w", raw, cause)},
+		"prefix URL in same chain": errors.Join(urlErr, &url.Error{Op: "Get", URL: raw + "&page=2", Err: cause}),
+	} {
+		t.Run(name, func(t *testing.T) {
+			sanitized := SanitizeURLError(err)
+			message := sanitized.Error()
+			if strings.Contains(message, "node-password") || strings.Contains(message, "query-secret") || strings.Contains(message, "page=2") {
+				t.Fatalf("sanitized error leaked the raw URL: %q", message)
+			}
+			if !strings.Contains(message, safe) {
+				t.Fatalf("sanitized error lost the safe URL: %q", message)
+			}
+			if !errors.Is(sanitized, cause) {
+				t.Fatalf("sanitized error does not preserve its cause: %v", sanitized)
+			}
+			var got *url.Error
+			if !errors.As(sanitized, &got) || got.URL != safe {
+				t.Fatalf("errors.As url.Error = %+v, want URL %q", got, safe)
+			}
+		})
+	}
+}
