@@ -17,5 +17,47 @@
     "**/node_modules/**",
     "web/vendor/**",
     "internal/compat/**"
+  ],
+  "packageRules": [
+    {
+      "description": "Hold chi below v5.3: chi v5.3 changes the route tree that the upstream route tooling (route inventory, offline-routes, jellycompat route manifest) reads, failing TestOfflineRouteSet and TestMediaRouteManifest. Lift together with the huma rule once upstream silo-server moves to chi v5.3.",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "github.com/go-chi/chi/v5"
+      ],
+      "allowedVersions": "<5.3.0"
+    },
+    {
+      "description": "Hold huma below v2.39: huma v2.39+ requires chi >= v5.3, which is held above.",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "github.com/danielgtaylor/huma/v2"
+      ],
+      "allowedVersions": "<2.39.0"
+    },
+    {
+      "description": "Hold prettier below 3.9: prettier 3.9 reflows TypeScript union types across dozens of files inherited from upstream silo-server, failing format:check and adding sync conflicts. Lift once upstream moves to prettier 3.9.",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchPackageNames": [
+        "prettier"
+      ],
+      "allowedVersions": "<3.9.0"
+    },
+    {
+      "description": "Skip grpc v1.84.0: govulncheck reports GO-2026-6443 in it (reachable via pluginhost GRPCBroker) and no tagged release fixes it yet. Remove once a fixed v1.84.x/v1.85.x ships.",
+      "matchManagers": [
+        "gomod"
+      ],
+      "matchPackageNames": [
+        "google.golang.org/grpc"
+      ],
+      "allowedVersions": "!/^v?1\\.84\\.0$/"
+    }
   ]
 }
