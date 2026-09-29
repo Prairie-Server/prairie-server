@@ -9,7 +9,7 @@
  */
 
 export const SETTINGS_API_VERSION = 1;
-export const SETTINGS_REVISION = 12;
+export const SETTINGS_REVISION = 13;
 
 export interface SettingSuggestedOption {
   value: string;
@@ -706,10 +706,7 @@ export const SETTING_DEFINITIONS: Record<SettingKey, SettingDefinition> = {
       { value: "original", label: "Original quality", introducedIn: 1 },
     ],
     ordered: true,
-    constrainedBy: {
-      policyInput: "max_playback_quality",
-      constraint: "ceiling",
-    },
+    constrainedBy: { policyInput: "max_playback_quality", constraint: "ceiling" },
   },
   "playback.show_forced_subtitles": {
     key: "playback.show_forced_subtitles",

@@ -83952,6 +83952,8 @@ export interface operations {
       /** @description Service Unavailable */
       503: {
         headers: {
+          /** @description Seconds to wait before retrying when the artwork store failed or could not be reached. */
+          "Retry-After"?: string;
           [name: string]: unknown;
         };
         content: {

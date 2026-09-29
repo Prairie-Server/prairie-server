@@ -924,6 +924,7 @@ function WatchPlaybackHostContent() {
     },
     [requestKeyValue, setPictureInPictureActive],
   );
+  const inRoom = Boolean(activeRequest?.roomId && activeRequest.roomToken);
   const handlePlaybackStateChange = useCallback(
     (snapshot: WatchPlaybackSnapshot) => {
       if (!requestKeyValue) return;
@@ -936,8 +937,13 @@ function WatchPlaybackHostContent() {
       // Enter post-roll early when approaching end of a series episode.
       // Fires regardless of whether a next episode exists so the end-of-
       // series case still gets a graceful overlay instead of an HLS tail loop.
+      // A Watch Together room decides what follows for everyone: it returns to
+      // its lobby when the item finishes. The player's room exit only goes
+      // back to the room from the foreground, so post-roll would leave the
+      // member on an empty player page.
       if (
         !postRollEnteredRef.current &&
+        !inRoom &&
         seriesIdRef.current &&
         modeRef.current === "foreground" &&
         snapshot.duration > 0 &&
@@ -949,7 +955,7 @@ function WatchPlaybackHostContent() {
         controller.enterPostRoll(requestKeyValue);
       }
     },
-    [requestKeyValue, updatePlaybackSnapshot, controller],
+    [requestKeyValue, updatePlaybackSnapshot, controller, inRoom],
   );
   const handlePlaybackTransportReady = useCallback(
     (controls: WatchPlaybackTransportControls | null) => {
