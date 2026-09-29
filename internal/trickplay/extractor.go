@@ -21,6 +21,11 @@ const (
 	// so a short window stands in for the sheet without reading all of it.
 	keyframeProbeWindow  = 60.0
 	keyframeProbeTimeout = 30 * time.Second
+
+	// sheetVideoStream is the stream both the keyframe probe and the sheet
+	// extract read: the first video stream that is not an attached picture
+	// (cover art), so the probe judges the stream that is tiled.
+	sheetVideoStream = "V:0"
 )
 
 type SheetExtractOptions struct {
@@ -115,6 +120,7 @@ func buildSheetExtractArgs(
 	return append(args,
 		"-ss", fmt.Sprintf("%.3f", sheetStart),
 		"-i", inputPath,
+		"-map", "0:"+sheetVideoStream,
 		"-vf", vf,
 		"-frames:v", "1",
 		"-f", "image2pipe",
@@ -140,18 +146,21 @@ func keyframesDenseEnough(keyframes []float64, interval float64) bool {
 	return true
 }
 
-// probeKeyframeTimes lists the video keyframe timestamps in a window by
-// demuxing packets; nothing is decoded.
-func probeKeyframeTimes(ctx context.Context, ffprobePath, inputPath string, start, window float64) ([]float64, error) {
-	cmd := exec.CommandContext(ctx, ffprobePath,
+func buildKeyframeProbeArgs(inputPath string, start, window float64) []string {
+	return []string{
 		"-v", "error",
-		"-select_streams", "v:0",
+		"-select_streams", sheetVideoStream,
 		"-read_intervals", fmt.Sprintf("%.3f%%+%.3f", start, window),
 		"-show_entries", "packet=pts_time,flags",
 		"-of", "csv=p=0",
 		inputPath,
-	)
-	out, err := cmd.Output()
+	}
+}
+
+// probeKeyframeTimes lists the video keyframe timestamps in a window by
+// demuxing packets; nothing is decoded.
+func probeKeyframeTimes(ctx context.Context, ffprobePath, inputPath string, start, window float64) ([]float64, error) {
+	out, err := exec.CommandContext(ctx, ffprobePath, buildKeyframeProbeArgs(inputPath, start, window)...).Output()
 	if err != nil {
 		return nil, fmt.Errorf("ffprobe keyframes: %w", err)
 	}
