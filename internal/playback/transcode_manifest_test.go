@@ -476,6 +476,27 @@ func TestGenerateFullManifest_ResumeAtEndListsLastSegment(t *testing.T) {
 	}
 }
 
+func TestSegmentRecoveryDecision_StoppedSessionBelowWindowDoesNotRestart(t *testing.T) {
+	// A stopped encode (finished or killed) must not be revived at seg 0 by a
+	// head probe either; that would re-encode from the start of the title.
+	session := &TranscodeSession{
+		outputDir: t.TempDir(),
+		running:   false,
+		opts: TranscodeOpts{
+			TargetCodecVideo:   "h264",
+			SegmentDuration:    2,
+			SeekSeconds:        100,
+			StartSegmentNumber: 50,
+		},
+	}
+	if decision := session.SegmentRecoveryDecision(0, time.Now()); decision.RestartOnTimeout {
+		t.Fatalf("stopped below-window decision = %+v, want no restart", decision)
+	}
+	if decision := session.SegmentRecoveryDecision(60, time.Now()); decision.Reason != "transcode_not_running" || !decision.RestartOnTimeout {
+		t.Fatalf("stopped in-window decision = %+v, want restartable transcode_not_running", decision)
+	}
+}
+
 func TestSegmentRecoveryDecision_CopyBeforeStartStillRestarts(t *testing.T) {
 	// Copy sessions keep upstream's recovery: their real playlist has its own
 	// anchor semantics, and the windowing rule only applies to encodes.

@@ -2791,21 +2791,22 @@ func (s *TranscodeSession) SegmentRecoveryDecision(segNum int, now time.Time) Se
 		decision.WaitTimeout = activeSegmentWait
 		decision.RestartOnTimeout = false
 		decision.Reason = "transcode_restarting"
-	case !progress.Running:
-		decision.Reason = "transcode_not_running"
 	case segNum < encodedWindowStart:
 		// Below an encoded session's window. Players that ignore playlist
 		// start tags (notably Tizen AVPlay) probe the playlist head, and a
 		// seek restart from here would discard the resume offset and
 		// re-encode from the beginning. Encoded timelines publish the window
 		// start as seek_window_start_seconds, so a real seek before it
-		// re-plans a new window instead of arriving here.
+		// re-plans a new window instead of arriving here. This is checked before
+		// the stopped-session case, which would otherwise restart from here.
 		decision.RestartOnTimeout = false
 		if progress.ProducedHead < progress.StartSegmentNumber {
 			decision.Reason = "before_start_segment_startup"
 		} else {
 			decision.Reason = "before_start_segment"
 		}
+	case !progress.Running:
+		decision.Reason = "transcode_not_running"
 	case segNum < progress.StartSegmentNumber:
 		// Inside the manifest window but behind the current generation (a
 		// backward seek after a forward seek restart): restart there.
