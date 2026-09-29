@@ -29,11 +29,15 @@ type ArtworkAvailabilityReader interface {
 
 // These types gained their widest rung in the current ladder version. Legacy
 // artwork without a manifest can safely use only an established lower rung.
-var ladderTypesWithAddedRung = map[string]bool{
-	ImageCacheImagePoster: true,
-	ImageCacheImageStill:  true,
-	ImageCacheImageLogo:   true,
-}
+//
+// Prairie keeps its TV-tuned ladder (artworkkey.VariantWidths): posters top
+// out at w500, stills at w500 and logos at w500, all rungs every cached item
+// has always carried. Upstream's w780/w1280 rungs do not exist here, so no
+// widest rung is new, and stepping an unverified w500 down to w300 would only
+// serve every default-size poster smaller than it needs to be. Prairie's own
+// added rung (the w200 TV poster) sits at the bottom of the ladder, which this
+// step-down never concerns.
+var ladderTypesWithAddedRung = map[string]bool{}
 
 // keyVariant extracts the variant name from a cached artwork key, e.g.
 // "tmdb/movies/550/poster/w780.abc123.webp" -> "w780".

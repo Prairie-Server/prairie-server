@@ -202,7 +202,7 @@ func TestHandleGetCalendar_GroupsEventsAndBatchResolvesCardPosters(t *testing.T)
 	}
 	resolver := &stubCalendarImageResolver{
 		urls: map[string]string{
-			"images/poster/w300.jpg": "https://cdn.example/poster-card.jpg",
+			"images/poster/w200.jpg": "https://cdn.example/poster-card.jpg",
 		},
 	}
 	detailSvc := &catalog.DetailService{}
@@ -224,8 +224,8 @@ func TestHandleGetCalendar_GroupsEventsAndBatchResolvesCardPosters(t *testing.T)
 	if resolver.resolveURLCalls != 0 {
 		t.Fatalf("ResolveImageURL calls = %d, want 0", resolver.resolveURLCalls)
 	}
-	if len(resolver.lastPaths) != 1 || resolver.lastPaths[0] != "images/poster/w300.jpg" {
-		t.Fatalf("lastPaths = %#v, want [images/poster/w300.jpg]", resolver.lastPaths)
+	if len(resolver.lastPaths) != 1 || resolver.lastPaths[0] != "images/poster/w200.jpg" {
+		t.Fatalf("lastPaths = %#v, want [images/poster/w200.jpg]", resolver.lastPaths)
 	}
 	if resolver.lastVariant != "card" {
 		t.Fatalf("variant = %q, want card", resolver.lastVariant)

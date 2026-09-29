@@ -173,7 +173,7 @@ func TestPersonalListsEpisodeStillHonorsImageSize(t *testing.T) {
 	}{
 		{"", "/still/w300."},
 		{"small", "/still/w300."},
-		{"large", "/still/w780."},
+		{"large", "/still/w500."}, // Prairie: stills top out at w500
 	} {
 		name := tt.size
 		if name == "" {

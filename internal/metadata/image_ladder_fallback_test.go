@@ -45,10 +45,12 @@ func TestCatalogArtworkColdReadsNeverProbe(t *testing.T) {
 		manifest := manifestReader{}
 		var paths []string
 		for i := range 37 {
-			key := fmt.Sprintf("tmdb/series/1/seasons/%d/poster/w780.rev.webp", i)
+			// Prairie's widest poster rung is the long-established w500, so an
+			// unverified external manifest still serves it (no step-down).
+			key := fmt.Sprintf("tmdb/series/1/seasons/%d/poster/w500.rev.webp", i)
 			paths = append(paths, key)
 			original := variantKey(key, "original")
-			manifest[original] = ArtworkAvailability{Published: []string{key, variantKey(key, "w500"), original}, External: true}
+			manifest[original] = ArtworkAvailability{Published: []string{key, variantKey(key, "w300"), original}, External: true}
 		}
 		resolver.SetArtworkAvailabilityReader(manifest)
 		urls := resolver.ResolveImageURLs(t.Context(), paths, "large")
@@ -56,23 +58,25 @@ func TestCatalogArtworkColdReadsNeverProbe(t *testing.T) {
 			t.Fatalf("got %d URLs", len(urls))
 		}
 		for _, key := range paths {
-			if !strings.HasSuffix(urls[key], variantKey(key, "w500")) {
-				t.Fatalf("unverified variant advertised: %s", urls[key])
+			if !strings.HasSuffix(urls[key], key) {
+				t.Fatalf("published established rung not served: %s", urls[key])
 			}
 		}
 	}
 }
 
 func TestSelectPublishedVariant(t *testing.T) {
-	const key = "tmdb/series/1/poster/w780.rev.webp"
-	medium, small, original := variantKey(key, "w500"), variantKey(key, "w300"), variantKey(key, "original")
+	// Prairie's poster ladder is w500/w300/w200; w500 is the widest rung and
+	// has always been generated, so legacy artwork keeps the requested key.
+	const key = "tmdb/series/1/poster/w500.rev.webp"
+	medium, small, original := variantKey(key, "w300"), variantKey(key, "w200"), variantKey(key, "original")
 	for _, tc := range []struct {
 		name  string
 		state ArtworkAvailability
 		known bool
 		want  string
 	}{
-		{"legacy", ArtworkAvailability{}, false, medium},
+		{"legacy", ArtworkAvailability{}, false, key},
 		{"published", ArtworkAvailability{Published: []string{key, original}}, true, key},
 		{"missing large", ArtworkAvailability{Published: []string{small, original}}, true, small},
 		{"original only", ArtworkAvailability{Published: []string{original}}, true, original},
@@ -122,7 +126,8 @@ func TestKeyVariant(t *testing.T) {
 
 func TestOriginalArtworkFallsBackToResizedVariant(t *testing.T) {
 	original := "tmdb/movies/550/poster/original.abc123.webp"
-	large, medium := variantKey(original, "w780"), variantKey(original, "w500")
+	// Prairie's widest poster rung is w500.
+	large, medium := variantKey(original, "w500"), variantKey(original, "w300")
 	for _, tc := range []struct {
 		name string
 		keys []string
