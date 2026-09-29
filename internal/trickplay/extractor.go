@@ -76,13 +76,20 @@ func buildSheetExtractArgs(
 	width, columns, rows int,
 	toneMap bool,
 ) []string {
-	vf := fmt.Sprintf("fps=1/%g,scale=%d:-2,tile=%dx%d", interval, width, columns, rows)
+	// bt2390 exists only in jellyfin-ffmpeg's tonemapx; stock ffmpeg's tonemap
+	// rejects it. Tone mapping after fps and scale keeps it to one small frame
+	// per tile instead of every decoded 4K frame.
+	toneMapChain := ""
 	if toneMap {
-		vf = "zscale=t=linear:npl=100,format=gbrpf32le,tonemap=bt2390,zscale=p=bt709:t=bt709:m=bt709:r=tv,format=yuv420p," + vf
+		toneMapChain = "tonemapx=tonemap=bt2390,zscale=p=bt709:t=bt709:m=bt709:r=tv,format=yuv420p,"
 	}
+	vf := fmt.Sprintf("fps=1/%g,scale=%d:-2,%stile=%dx%d", interval, width, toneMapChain, columns, rows)
 	return []string{
 		"-hide_banner",
 		"-loglevel", "error",
+		// Decode keyframes only. Tiles are seconds apart, and decoding every
+		// frame of a 4K HEVC source in software overruns the sheet timeout.
+		"-skip_frame", "nokey",
 		"-ss", fmt.Sprintf("%.3f", sheetStart),
 		"-i", inputPath,
 		"-vf", vf,

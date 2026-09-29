@@ -193,10 +193,25 @@ func TestProcessRequestGeneratesPrioritySheet(t *testing.T) {
 func TestBuildSheetExtractArgsIncludesTonemap(t *testing.T) {
 	args := buildSheetExtractArgs("/media/a.mkv", 1000, 10, 320, 10, 10, true)
 	joined := strings.Join(args, " ")
-	if !strings.Contains(joined, "tonemap=bt2390") {
-		t.Fatalf("missing tonemap in args: %v", args)
+	// Plain tonemap has no bt2390; only jellyfin-ffmpeg's tonemapx does.
+	if !strings.Contains(joined, "fps=1/10,scale=320:-2,tonemapx=tonemap=bt2390,") {
+		t.Fatalf("missing tonemapx after fps/scale in args: %v", args)
 	}
-	if !strings.Contains(joined, "fps=1/10,scale=320:-2,tile=10x10") {
+	if !strings.HasSuffix(strings.Split(joined, " -vf ")[1], "format=yuv420p,tile=10x10 -frames:v 1 -f image2pipe -vcodec mjpeg -") {
+		t.Fatalf("tile must follow tone mapping: %v", args)
+	}
+	if !strings.Contains(joined, "-skip_frame nokey -ss") {
+		t.Fatalf("missing keyframe-only decode in args: %v", args)
+	}
+}
+
+func TestBuildSheetExtractArgsSDRSkipsTonemap(t *testing.T) {
+	args := buildSheetExtractArgs("/media/a.mkv", 0, 10, 320, 10, 10, false)
+	joined := strings.Join(args, " ")
+	if strings.Contains(joined, "tonemap") {
+		t.Fatalf("SDR args must not tone map: %v", args)
+	}
+	if !strings.Contains(joined, "-vf fps=1/10,scale=320:-2,tile=10x10 ") {
 		t.Fatalf("missing tile filter in args: %v", args)
 	}
 }
