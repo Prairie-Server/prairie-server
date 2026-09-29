@@ -140,7 +140,7 @@ require (
 	github.com/mmcdole/goxpp/v2 v2.0.0 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/ncruces/go-strftime v1.0.0 // indirect
-	github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20260928152428-c2f90523e166
+	github.com/prairie-server/prairie-plugin-sdk v0.12.1-0.20260929031109-03e128a895be
 	github.com/prometheus/common v0.70.1 // indirect
 	github.com/prometheus/procfs v0.21.1
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
