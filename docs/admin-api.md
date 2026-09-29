@@ -879,7 +879,7 @@ several admins polling this route pay at most one rebuild per TTL.
 
 Stream telemetry runs by default, so this route reports on an unconfigured
 server. An `enabled: false` body means this process was switched off with
-`SILO_STREAM_TELEMETRY_ENABLED=false`, or that a bad core setting disabled it —
+`PRAIRIE_STREAM_TELEMETRY_ENABLED=false`, or that a bad core setting disabled it —
 the startup log names the variable in that case.
 
 ### Response

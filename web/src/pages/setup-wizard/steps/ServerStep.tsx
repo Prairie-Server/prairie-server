@@ -76,7 +76,7 @@ export function ServerStep() {
             label="Trusted proxies"
             description={
               proxiesManaged
-                ? "Set by SILO_TRUSTED_PROXIES in the environment."
+                ? "Set by PRAIRIE_TRUSTED_PROXIES in the environment."
                 : "Prairie reads the real client address from these proxy ranges. Leave blank to trust private networks only."
             }
             hint="172.16.0.0/12, 203.0.113.7/32"

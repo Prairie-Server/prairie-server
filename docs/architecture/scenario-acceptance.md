@@ -26,12 +26,12 @@ empty arrays and strings; refusals use Problem Details. Assertions omit volatile
 timestamp values and request identifiers. Problem type assertions check the
 semantic path; canonical origin checks remain in the v2 contract fixtures.
 
-Run `make test-scenario-profile-pairing` with `SILO_SCENARIO_DATABASE_URL` pointing
+Run `make test-scenario-profile-pairing` with `PRAIRIE_SCENARIO_DATABASE_URL` pointing
 to a dedicated empty PostgreSQL database. The executor migrates and truncates
 its synthetic fixture tables. Never use a shared integration database. The required
 target fails if the database is missing, a fixed pilot case or pairing disappears,
 an exchange skips, or any expected status/header/body assertion fails.
-`SILO_SCENARIO_REPORT` optionally names the JSON result file.
+`PRAIRIE_SCENARIO_REPORT` optionally names the JSON result file.
 
 Ordinary offline unit runs retain optional database execution. Their skipped
 cases are not acceptance evidence. The catalog coverage gate still checks all
@@ -53,7 +53,7 @@ router by the required targeted packets.
 `make test-scenario-device-pairing` requires the same guarded synthetic PostgreSQL
 fixture database. It runs the fixed 13 `devices_list.*` scenarios as 26 independent
 v1/v2 exchanges. A missing or duplicate case, cleared pairing, skipped exchange or
-failed assertion fails acceptance. `SILO_SCENARIO_REPORT` optionally writes the
+failed assertion fails acceptance. `PRAIRIE_SCENARIO_REPORT` optionally writes the
 per-transport results; use separate report files for the profile and device targets.
 
 The device pairs exercise profile and household visibility, current-device marking,
@@ -153,7 +153,7 @@ creation, avatars and additional profile authorization cases remain separate wor
 profile overrides, resolved section settings, and the custom-section flag. Each
 transport starts from a separate fixture reseed through the real router and
 PostgreSQL provider. The gate requires all 48 transport results without skips;
-`SILO_SCENARIO_REPORT` writes their individual assertions and outcomes.
+`PRAIRIE_SCENARIO_REPORT` writes their individual assertions and outcomes.
 
 The pairs preserve the original v1 exchanges. V2 collections use `items` with
 explicit empty arrays and omit `page` for these bounded, unpaginated results. Authorization failures use Problem Details;
@@ -232,7 +232,7 @@ The cases cover:
   anonymous requests and unknown items, with explicit Problem assertions.
 
 The target issues 16 physical GET requests and writes a separate report through
-`SILO_SCENARIO_REPORT` identifying its new-scenario count, request count and results.
+`PRAIRIE_SCENARIO_REPORT` identifying its new-scenario count, request count and results.
 The report complements the test exit status: setup and teardown must also pass.
 These are metadata reads with synthetic database records; they do not establish
 media-byte delivery, disk-file availability, search-provider behavior, SQLite
@@ -257,7 +257,7 @@ Real authorization cases deny an ordinary account's primary profile, an admin
 account's secondary profile, a foreign profile and an anonymous caller. Missing
 directories and invalid page limits must return the specified Problem status and
 code. The required target asserts 13 unique results and 18 physical GET requests;
-`SILO_SCENARIO_REPORT` writes their separate new-scenario evidence. Setup, teardown
+`PRAIRIE_SCENARIO_REPORT` writes their separate new-scenario evidence. Setup, teardown
 and the existing scratch guard must pass alongside the report. Temporary files
 are removed by the test framework, and the database returns to the ordinary
 synthetic household fixture.
@@ -294,7 +294,7 @@ The cases check:
   then returns an empty terminal continuation.
 - Anonymous and missing-profile requests return their specified Problems.
 
-`SILO_SCENARIO_REPORT` records the unique new cases, HTTP count, effect-read count
+`PRAIRIE_SCENARIO_REPORT` records the unique new cases, HTTP count, effect-read count
 and failures. Setup/teardown and test exit must pass alongside that report. This
 scope does not repeat the independent reversed-commit ordering tests or establish
 websocket/push delivery, retention, concurrent writer behavior, native UI behavior,
@@ -317,7 +317,7 @@ and decision ownership. The fixture refuses pre-existing literary rows before
 household reseeding can cascade to decisions, and removes only its exact items
 and work between cases and on exit.
 
-`SILO_SCENARIO_REPORT` records unique NEW cases, request/effect counts and failures;
+`PRAIRIE_SCENARIO_REPORT` records unique NEW cases, request/effect counts and failures;
 setup, teardown and process exit must pass too. This scope does not establish
 concurrent administration, atomic linking plus decision recording, provider
 matching quality, client UI behavior or full literary migration acceptance.
@@ -337,7 +337,7 @@ or redirect headers, stored bucket/key, or manifest content. Persisted report ro
 must remain unchanged. A preflight guard refuses existing reports before account
 reseeding can cascade through their foreign keys. Each case owns and removes only
 one synthetic report UUID. The required test and its cleanup must pass alongside
-`SILO_SCENARIO_REPORT`; results remain separate from the frozen 598-scenario oracle.
+`PRAIRIE_SCENARIO_REPORT`; results remain separate from the frozen 598-scenario oracle.
 This scope does not test successful archive streaming, object-store behavior,
 capture/upload, retention, browser downloads or complete diagnostics acceptance.
 
@@ -353,7 +353,7 @@ rejected updates must preserve it along with every other stored field.
 
 Each case reseeds the synthetic household and one synthetic person. Existing
 people cause refusal before the fixture takes ownership; cleanup deletes only
-its exact ID. Results and counts in `SILO_SCENARIO_REPORT` remain outside the
+its exact ID. Results and counts in `PRAIRIE_SCENARIO_REPORT` remain outside the
 frozen 598-scenario oracle, and setup/teardown/test exit must pass too. No provider
 refresh, concurrent full-row update, client UI or whole curation migration claim
 follows from this scope.
@@ -370,7 +370,7 @@ all responses omit stored object locations. Remaining reports must stay unchange
 
 The fixture reuses the pre-reseed report occupancy guard and owns only three
 synthetic UUIDs. Each case gets a fresh synthetic household/report set. Required
-DSN, setup/teardown and process exit must pass alongside `SILO_SCENARIO_REPORT`.
+DSN, setup/teardown and process exit must pass alongside `PRAIRIE_SCENARIO_REPORT`.
 These cases are outside the frozen 598-scenario oracle and separate from diagnostic
 download-failure acceptance. Object storage is unconfigured: successful metadata
 deletion does not establish blob cleanup, durable reconciliation, concurrent-list
@@ -388,7 +388,7 @@ the target timestamp, including all-null edits. Title normalization is checked.
 
 The fixture reuses the guarded synthetic catalog, cleans its exact IDs before
 each household reseed and refuses existing media before setup. Required DSN,
-setup/teardown and process exit must pass alongside `SILO_SCENARIO_REPORT`. These
+setup/teardown and process exit must pass alongside `PRAIRIE_SCENARIO_REPORT`. These
 cases remain outside the frozen 598-scenario oracle. No metadata refresh/provider,
 concurrent-update guarantee, season/episode edit or client UI claim follows.
 
@@ -407,7 +407,7 @@ The fixture refuses existing translation jobs before router startup recovery or
 household reseeding. It seeds completed history and one fresh pending row, then
 cleans exact job and catalog IDs before each new case. It never enqueues work or
 calls an AI provider. Required DSN, setup/teardown and process exit must pass with
-`SILO_SCENARIO_REPORT`. These cases are outside the frozen 598-scenario oracle;
+`PRAIRIE_SCENARIO_REPORT`. These cases are outside the frozen 598-scenario oracle;
 they do not establish cross-node runner interruption, cancellation/publication
 races, durable replay, translated output or native/browser acceptance.
 
@@ -424,7 +424,7 @@ is exempt from the full-row comparison, including null-only edits.
 The fixture reuses the catalog occupancy guard. Both child tables require parent
 media-item foreign keys, so existing children cannot evade that guard. Exact child
 and catalog IDs are removed before each household reseed. Required DSN, cleanup
-and process exit must pass alongside `SILO_SCENARIO_REPORT`. These cases remain
+and process exit must pass alongside `PRAIRIE_SCENARIO_REPORT`. These cases remain
 outside the frozen 598-scenario oracle and are distinct from movie-only curation
 acceptance. No metadata refresh/provider, hierarchy renumbering, concurrent-update
 or native/browser behavior is claimed.
@@ -440,7 +440,7 @@ must not leak; reads must leave every stored folder unchanged.
 
 The fixture owns three synthetic folders, reuses the pre-reseed occupancy guard
 and deletes only its exact IDs before each new household. Required DSN, cleanup
-and process exit must pass alongside `SILO_SCENARIO_REPORT`. These scenarios are
+and process exit must pass alongside `PRAIRIE_SCENARIO_REPORT`. These scenarios are
 outside the frozen 598-scenario oracle. No object-store presigning, access-policy
 mutation endpoint, native UI or concurrent policy-change guarantee is claimed.
 
@@ -457,7 +457,7 @@ The fixture refuses existing webhook destinations before setup, cleans only four
 synthetic IDs and reseeds the household per case. The notification system is wired
 without starting dispatch workers. Stored secret fields contain synthetic opaque
 sentinels; this scope tests omission, not encryption or delivery. Required DSN,
-cleanup and process exit must pass alongside `SILO_SCENARIO_REPORT`. These cases
+cleanup and process exit must pass alongside `PRAIRIE_SCENARIO_REPORT`. These cases
 remain outside the frozen 598-scenario oracle. No notification sends, provider,
 creation/update/delete, concurrent snapshot or native/browser claim follows.
 
@@ -474,7 +474,7 @@ watermarks; reads leave the complete stored rows unchanged.
 The fixture refuses existing channels before setup and deletes only its three
 synthetic IDs before each household reseed. No notification workers start. Opaque
 secret sentinels test omission, not encryption or delivery. Required DSN, cleanup
-and process exit must pass alongside `SILO_SCENARIO_REPORT`. These cases remain
+and process exit must pass alongside `PRAIRIE_SCENARIO_REPORT`. These cases remain
 outside the frozen 598-scenario oracle. No sends, mutation, concurrent snapshot,
 native or browser behavior is claimed.
 
@@ -493,7 +493,7 @@ stored row.
 Before setup, the fixture refuses existing override rows and registrations outside
 its known household seed. Each case reseeds that household and adds one synthetic
 registration plus four override rows. Required DSN, cleanup and process exit must
-pass alongside `SILO_SCENARIO_REPORT`. These cases remain outside the frozen
+pass alongside `PRAIRIE_SCENARIO_REPORT`. These cases remain outside the frozen
 598-scenario oracle. No device enrollment endpoint, preference mutation endpoint,
 playback command, concurrent snapshot, native or browser behavior is exercised.
 
@@ -515,7 +515,7 @@ metadata is exempted because that separate scenario is outside this cohort.
 
 The pre-setup guard refuses non-fixture keys before migrations/reseed. Required
 DSN, fixed result inventory, assertions, cleanup and process exit must all pass;
-`SILO_SCENARIO_REPORT` records each transport. These are pairs from the frozen
+`PRAIRIE_SCENARIO_REPORT` records each transport. These are pairs from the frozen
 598-scenario oracle, not NEW scenarios. No creation, SQLite, concurrent revocation,
 in-flight credential drain or native/browser behavior is claimed.
 
@@ -621,7 +621,7 @@ No successful account read, login or provider operation is part of this cohort.
 Prerequisites are the accepted current-user contract, the paired executor and
 its synthetic household/auth wiring, PostgreSQL with the migration-required
 `vector` extension available, and an exclusively reserved **new** scratch
-database supplied through `SILO_SCENARIO_DATABASE_URL`. Missing DSN fails before
+database supplied through `PRAIRIE_SCENARIO_DATABASE_URL`. Missing DSN fails before
 construction; scratch-data and API-key guards run before `New`, migrations or
 reseeding. Never point this destructive fixture executor at an existing database.
 The exact selector refuses missing, duplicate or unpaired IDs, altered authority,

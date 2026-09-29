@@ -15,7 +15,7 @@ Telemetry turns on when **either** `PRAIRIE_OTEL_ENABLED` is truthy **or**
 
 | Variable | Purpose | Default |
 | --- | --- | --- |
-| `SILO_OTEL_ENABLED` | Master gate (`1`/`true`/`yes`/`on`). | off |
+| `PRAIRIE_OTEL_ENABLED` | Master gate (`1`/`true`/`yes`/`on`). | off |
 | `OTEL_EXPORTER_OTLP_ENDPOINT` | Collector endpoint; also implicitly enables telemetry. | — |
 | `OTEL_EXPORTER_OTLP_PROTOCOL` | `grpc` (default) or `http/protobuf`. | `grpc` |
 | `OTEL_SERVICE_NAME` | `service.name` resource attribute. | `silo-server` |

@@ -34,7 +34,7 @@ Use the maintenance window required by stage 1, with old API replicas and
 background jobs stopped and a verified database/configuration backup. FK
 validation scans child tables and blocks writes while holding table locks.
 Account `NOT NULL` checks also scan and lock `users`. Allow sufficient time with
-`SILO_MIGRATE_TIMEOUT`; the default migration budget is 20 minutes.
+`PRAIRIE_MIGRATE_TIMEOUT`; the default migration budget is 20 minutes.
 
 No automatic cleanup occurs. An orphan reference stops the FK migration with
 the table, column, count, and a repair hint. All constraints in that migration

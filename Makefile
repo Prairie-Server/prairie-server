@@ -86,7 +86,7 @@ test-go: embed-stub
 	go test ./...
 
 # Run the DB-backed query-budget pins listed in $(DB_PINS) against the
-# migrated, disposable database named by SILO_TEST_DATABASE_URL. Unlike
+# migrated, disposable database named by PRAIRIE_TEST_DATABASE_URL. Unlike
 # test-go, a listed test that skips (no URL, unmigrated schema) or is missing
 # fails the run. Migrate a fresh database first with
 # DATABASE_URL=<url> SECRET_KEY=<32+ chars> go run ./cmd/prairie/ --migrate-only.
@@ -234,8 +234,8 @@ SCENARIO_CATALOG_DIR := contracts/api/v2/scenarios
 # group's catalog, or leaves a tier-1 row of a declared wave without a scenario
 # per applicable category. The executor that runs the scenarios against the
 # router is a separate go test (./internal/scenariocatalog/executor); only its
-# public subset runs in CI. The rest runs when SILO_SCENARIO_DATABASE_URL names
-# an empty database the executor owns (not SILO_TEST_DATABASE_URL: it
+# public subset runs in CI. The rest runs when PRAIRIE_SCENARIO_DATABASE_URL names
+# an empty database the executor owns (not PRAIRIE_TEST_DATABASE_URL: it
 # truncates).
 verify-scenario-catalogs:
 	@go test -count=1 -run '^TestCatalogsPassGate$$' ./internal/scenariocatalog/ \
@@ -437,468 +437,468 @@ endif
 # Required paired profile-list acceptance owns a dedicated, empty scenario DB.
 .PHONY: test-scenario-profile-pairing
 test-scenario-profile-pairing:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredProfileListAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredProfileListAcceptance$$' ./internal/scenariocatalog/executor
 
 # Required paired device-list acceptance uses the same guarded scratch DB.
 .PHONY: test-scenario-device-pairing
 test-scenario-device-pairing:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceListAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceListAcceptance$$' ./internal/scenariocatalog/executor
 
 # Required mutation effects and sibling preservation on the guarded scratch DB.
 .PHONY: test-scenario-device-mutations
 test-scenario-device-mutations:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceMutationAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceMutationAcceptance$$' ./internal/scenariocatalog/executor
 
 # Required profile mutation effects on the guarded scratch database.
 .PHONY: test-scenario-profile-mutations
 test-scenario-profile-mutations:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredProfileMutationAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredProfileMutationAcceptance$$' ./internal/scenariocatalog/executor
 
 # Required paired reads of the acting profile's page customization.
 .PHONY: test-scenario-section-reads
 test-scenario-section-reads:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSectionReadAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSectionReadAcceptance$$' ./internal/scenariocatalog/executor
 
 # Required paired resets preserve sibling profiles and other page scopes.
 .PHONY: test-scenario-section-resets
 test-scenario-section-resets:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSectionResetAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSectionResetAcceptance$$' ./internal/scenariocatalog/executor
 
 # Required paired replacements verify stored effects and household isolation.
 .PHONY: test-scenario-section-replacements
 test-scenario-section-replacements:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSectionReplaceAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSectionReplaceAcceptance$$' ./internal/scenariocatalog/executor
 
 # NEW admin source browsing through the real router and filesystem provider.
 .PHONY: test-scenario-new-catalog-sources
 test-scenario-new-catalog-sources:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewCatalogSourceBrowse$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewCatalogSourceBrowse$$' ./internal/scenariocatalog/executor
 
 # NEW real-router catalog reads; these are outside the frozen scenario oracle.
 .PHONY: test-scenario-new-catalog-reads
 test-scenario-new-catalog-reads:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewCatalogMediaReads$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewCatalogMediaReads$$' ./internal/scenariocatalog/executor
 
 # NEW real notification inbox and persisted read effects; outside frozen oracle.
 .PHONY: test-scenario-new-notification-inbox
 test-scenario-new-notification-inbox:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewNotificationInbox$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewNotificationInbox$$' ./internal/scenariocatalog/executor
 
 # NEW real literary administration and persisted decisions; outside frozen oracle.
 .PHONY: test-scenario-new-literary-admin
 test-scenario-new-literary-admin:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewLiteraryAdmin$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewLiteraryAdmin$$' ./internal/scenariocatalog/executor
 
 # NEW persisted diagnostic download failure paths; outside frozen oracle.
 .PHONY: test-scenario-new-diagnostic-download
 test-scenario-new-diagnostic-download:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewDiagnosticDownloadFailures$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewDiagnosticDownloadFailures$$' ./internal/scenariocatalog/executor
 
 # NEW real person metadata updates; outside frozen oracle.
 .PHONY: test-scenario-new-person-curation
 test-scenario-new-person-curation:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewPersonCuration$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewPersonCuration$$' ./internal/scenariocatalog/executor
 
 # NEW real diagnostic history and metadata deletion; outside frozen oracle.
 .PHONY: test-scenario-new-diagnostic-history
 test-scenario-new-diagnostic-history:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewDiagnosticHistory$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewDiagnosticHistory$$' ./internal/scenariocatalog/executor
 
 # NEW real catalog item metadata updates; outside frozen oracle.
 .PHONY: test-scenario-new-item-curation
 test-scenario-new-item-curation:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewItemCuration$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewItemCuration$$' ./internal/scenariocatalog/executor
 
 # NEW persisted translation-job reads/cancellation; outside frozen oracle.
 .PHONY: test-scenario-new-translation-jobs
 test-scenario-new-translation-jobs:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewTranslationJobs$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewTranslationJobs$$' ./internal/scenariocatalog/executor
 
 # NEW real season/episode metadata updates; outside frozen oracle.
 .PHONY: test-scenario-new-child-curation
 test-scenario-new-child-curation:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewChildCuration$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewChildCuration$$' ./internal/scenariocatalog/executor
 
 # NEW current viewer-library discovery; outside frozen oracle.
 .PHONY: test-scenario-new-viewer-libraries
 test-scenario-new-viewer-libraries:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewViewerLibraries$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewViewerLibraries$$' ./internal/scenariocatalog/executor
 
 # NEW notification webhook destination reads; outside frozen oracle.
 .PHONY: test-scenario-new-webhook-destinations
 test-scenario-new-webhook-destinations:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewWebhookDestinations$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewWebhookDestinations$$' ./internal/scenariocatalog/executor
 
 # NEW administrator notification channel reads; outside frozen oracle.
 .PHONY: test-scenario-new-server-channels
 test-scenario-new-server-channels:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewServerChannels$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewServerChannels$$' ./internal/scenariocatalog/executor
 
 # NEW administrator device metadata reads; outside frozen oracle.
 .PHONY: test-scenario-new-admin-device-reads
 test-scenario-new-admin-device-reads:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewAdminDeviceReads$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredNewAdminDeviceReads$$' ./internal/scenariocatalog/executor
 
 # Seven outstanding frozen API-key deletion scenarios, paired with real effects.
 .PHONY: test-scenario-api-key-deletions
 test-scenario-api-key-deletions:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAPIKeyDeleteAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAPIKeyDeleteAcceptance$$' ./internal/scenariocatalog/executor
 
 # Six frozen API-key list scenarios with full-table preservation and v2 secret absence.
 .PHONY: test-scenario-api-key-lists
 test-scenario-api-key-lists:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAPIKeyListAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAPIKeyListAcceptance$$' ./internal/scenariocatalog/executor
 
 # Six outstanding frozen API-key scope discovery scenarios.
 .PHONY: test-scenario-api-key-scopes
 test-scenario-api-key-scopes:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAPIKeyScopesAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAPIKeyScopesAcceptance$$' ./internal/scenariocatalog/executor
 
 # Six outstanding frozen API-key creation refusals with unchanged rows.
 .PHONY: test-scenario-api-key-create-refusals
 test-scenario-api-key-create-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAPIKeyCreateRefusalAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAPIKeyCreateRefusalAcceptance$$' ./internal/scenariocatalog/executor
 
 # Four outstanding frozen API-key creations with exact persisted effects.
 .PHONY: test-scenario-api-key-creations
 test-scenario-api-key-creations:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAPIKeyCreateAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAPIKeyCreateAcceptance$$' ./internal/scenariocatalog/executor
 
 # Seven outstanding frozen account password capability scenarios.
 .PHONY: test-scenario-account-capability
 test-scenario-account-capability:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAccountCapabilityAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAccountCapabilityAcceptance$$' ./internal/scenariocatalog/executor
 
 # Five outstanding frozen sign-in provider discovery scenarios.
 .PHONY: test-scenario-auth-providers
 test-scenario-auth-providers:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAuthProvidersAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAuthProvidersAcceptance$$' ./internal/scenariocatalog/executor
 
 # Two frozen account authentication refusals with complete table preservation.
 .PHONY: test-scenario-account-me-refusals
 test-scenario-account-me-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -v -run '^TestRequiredAccountMeRefusalAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -v -run '^TestRequiredAccountMeRefusalAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-signup-status
 test-scenario-signup-status:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSignupStatusAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSignupStatusAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-setup-status
 test-scenario-setup-status:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSetupStatusAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSetupStatusAcceptance$$' ./internal/scenariocatalog/executor
 
 # Four frozen administrator build metadata reads.
 .PHONY: test-scenario-build-info
 test-scenario-build-info:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredBuildInfoAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredBuildInfoAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-login-sessions
 test-scenario-login-sessions:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredLoginSessionsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredLoginSessionsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-device-capability
 test-scenario-device-capability:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceCapabilityAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceCapabilityAcceptance$$' ./internal/scenariocatalog/executor
 
 # Seven frozen liveness/readiness originals against the retained unversioned probes (v1 only).
 .PHONY: test-scenario-probes
 test-scenario-probes:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredRetainedProbeAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredRetainedProbeAcceptance$$' ./internal/scenariocatalog/executor
 
 # Three frozen public reads recorded under an unreachable database.
 .PHONY: test-scenario-outage
 test-scenario-outage:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredOutageAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredOutageAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-device-lookup
 test-scenario-device-lookup:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceLookupAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceLookupAcceptance$$' ./internal/scenariocatalog/executor
 
 # Three remaining frozen administrator build authority refusals.
 .PHONY: test-scenario-build-authority
 test-scenario-build-authority:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredBuildAuthorityAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredBuildAuthorityAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-device-lookup-errors
 test-scenario-device-lookup-errors:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceLookupErrorsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceLookupErrorsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-setup-refusals
 test-scenario-setup-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSetupRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSetupRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-session-delete-refusals
 test-scenario-session-delete-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSessionDeleteRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSessionDeleteRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 # Three frozen administrator resource authorization refusals only.
 .PHONY: test-scenario-resource-refusals
 test-scenario-resource-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredResourceRefusalAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredResourceRefusalAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-device-start-refusals
 test-scenario-device-start-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceStartRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceStartRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-refresh-refusals
 test-scenario-refresh-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredRefreshRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredRefreshRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-admin-invitation-refusals
 test-scenario-admin-invitation-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-admin-invitation-revoke-refusals
 test-scenario-admin-invitation-revoke-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationRevokeRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationRevokeRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-password-refusals
 test-scenario-password-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredPasswordRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredPasswordRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-password-authority
 test-scenario-password-authority:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredPasswordAuthorityAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredPasswordAuthorityAcceptance$$' ./internal/scenariocatalog/executor
 
 # Three frozen hardware inventory authorization refusals; no probes.
 .PHONY: test-scenario-hardware-refusals
 test-scenario-hardware-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredHardwareRefusalAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredHardwareRefusalAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-logout-refusals
 test-scenario-logout-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredLogoutRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredLogoutRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-refusals
 test-scenario-invite-code-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-create-refusals
 test-scenario-invite-code-create-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeCreateRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeCreateRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-device-deny-refusals
 test-scenario-device-deny-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceDenyRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceDenyRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-device-approve-refusals
 test-scenario-device-approve-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceApproveRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceApproveRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-handoff-refusals
 test-scenario-handoff-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredHandoffRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredHandoffRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-delete-refusals
 test-scenario-invite-code-delete-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeDeleteRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeDeleteRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-update-refusals
 test-scenario-invite-code-update-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeUpdateRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeUpdateRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-approval-state-refusals
 test-scenario-approval-state-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredApprovalStateRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredApprovalStateRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-topup-refusals
 test-scenario-invite-code-topup-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeTopUpRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeTopUpRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-impersonation-refusals
 test-scenario-impersonation-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredImpersonationRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredImpersonationRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-create-input
 test-scenario-invite-code-create-input:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeCreateInputAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeCreateInputAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-update-input
 test-scenario-invite-code-update-input:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeUpdateInputAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeUpdateInputAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-topup-input
 test-scenario-invite-code-topup-input:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeTopUpInputAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeTopUpInputAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-login-input
 test-scenario-login-input:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredLoginInputAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredLoginInputAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-delete-input
 test-scenario-invite-code-delete-input:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeDeleteInputAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeDeleteInputAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-admin-invitation-resend-refusals
 test-scenario-admin-invitation-resend-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationResendRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationResendRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-login-credentials
 test-scenario-login-credentials:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredLoginCredentialsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredLoginCredentialsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-list-error
 test-scenario-invite-code-list-error:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeListErrorAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeListErrorAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-list-reads
 test-scenario-invite-code-list-reads:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeListReadsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeListReadsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-device-poll-refusals
 test-scenario-device-poll-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDevicePollRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDevicePollRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-admin-invitation-create-refusals
 test-scenario-admin-invitation-create-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationCreateRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationCreateRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-device-poll-states
 test-scenario-device-poll-states:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDevicePollStatesAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDevicePollStatesAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-missing
 test-scenario-invite-code-missing:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeMissingAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeMissingAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-admin-invitation-input-refusals
 test-scenario-admin-invitation-input-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationInputRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationInputRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-signup-refusals
 test-scenario-signup-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSignupRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSignupRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-admin-invitation-resend-targets
 test-scenario-admin-invitation-resend-targets:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationResendTargetsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationResendTargetsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-duplicate
 test-scenario-invite-code-duplicate:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeDuplicateAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeDuplicateAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-signup-codes
 test-scenario-signup-codes:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSignupCodesAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredSignupCodesAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-admin-invitation-role-refusals
 test-scenario-admin-invitation-role-refusals:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationRoleRefusalsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationRoleRefusalsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-empty-update
 test-scenario-invite-code-empty-update:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeEmptyUpdateAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeEmptyUpdateAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-field-updates
 test-scenario-invite-code-field-updates:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeFieldUpdatesAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeFieldUpdatesAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-me-impersonation
 test-scenario-me-impersonation:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredMeImpersonationAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredMeImpersonationAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-topups
 test-scenario-invite-code-topups:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeTopUpsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeTopUpsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-admin-invitation-revoke-targets
 test-scenario-admin-invitation-revoke-targets:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationRevokeTargetsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationRevokeTargetsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-account-reads
 test-scenario-account-reads:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAccountReadsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAccountReadsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-logout-success
 test-scenario-logout-success:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredLogoutSuccessAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredLogoutSuccessAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-deletions
 test-scenario-invite-code-deletions:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeDeletionsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeDeletionsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-admin-invitation-email-conflicts
 test-scenario-admin-invitation-email-conflicts:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationEmailConflictsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationEmailConflictsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-auth-lifecycle
 test-scenario-auth-lifecycle:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAuthLifecycleAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAuthLifecycleAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-household-delete-pin
 test-scenario-household-delete-pin:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredHouseholdDeletePINAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredHouseholdDeletePINAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-admin-invitation-lifecycle
 test-scenario-admin-invitation-lifecycle:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationLifecycleAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAdminInvitationLifecycleAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-household-update
 test-scenario-household-update:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredHouseholdUpdateAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredHouseholdUpdateAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-password-sessions
 test-scenario-password-sessions:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredPasswordSessionsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredPasswordSessionsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invitation-token-lifecycle
 test-scenario-invitation-token-lifecycle:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInvitationTokenLifecycleAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInvitationTokenLifecycleAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-household-create
 test-scenario-household-create:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredHouseholdCreateAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredHouseholdCreateAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-device-decisions
 test-scenario-device-decisions:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceDecisionsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceDecisionsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-onboarding-reads
 test-scenario-onboarding-reads:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredOnboardingReadsAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredOnboardingReadsAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-device-removal
 test-scenario-device-removal:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceRemovalAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDeviceRemovalAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-onboarding-progress
 test-scenario-onboarding-progress:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredOnboardingProgressAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredOnboardingProgressAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-avatar
 test-scenario-avatar:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAvatarAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredAvatarAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invite-code-creation
 test-scenario-invite-code-creation:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeCreationAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInviteCodeCreationAcceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-login-r1
 test-scenario-login-r1:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredLoginR1Acceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredLoginR1Acceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-signup-family
 test-scenario-signup-family:
-	SILO_SCENARIO_REQUIRED=1 go test ./internal/scenariocatalog/executor -run '^TestRequiredSignupFamilyAcceptance$$' -count=1 -v
+	PRAIRIE_SCENARIO_REQUIRED=1 go test ./internal/scenariocatalog/executor -run '^TestRequiredSignupFamilyAcceptance$$' -count=1 -v
 
 .PHONY: test-scenario-device-poll-r1
 test-scenario-device-poll-r1:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDevicePollR1Acceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredDevicePollR1Acceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-invitation-r1
 test-scenario-invitation-r1:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInvitationR1Acceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredInvitationR1Acceptance$$' ./internal/scenariocatalog/executor
 
 .PHONY: test-scenario-resources-handoff-impersonation
 test-scenario-resources-handoff-impersonation:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredResourcesHandoffImpersonationAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredResourcesHandoffImpersonationAcceptance$$' ./internal/scenariocatalog/executor
 
 # Three frozen local hardware inventory reads and the non-admin refusal shape; probes host ffmpeg.
 .PHONY: test-scenario-hardware-inventory
 test-scenario-hardware-inventory:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredHardwareInventoryAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredHardwareInventoryAcceptance$$' ./internal/scenariocatalog/executor
 
 # Eight frozen plugin launch cases: four cookie issuances and four refusals; no plugin is served.
 .PHONY: test-scenario-plugin-launch
 test-scenario-plugin-launch:
-	SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredPluginLaunchAcceptance$$' ./internal/scenariocatalog/executor
+	PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredPluginLaunchAcceptance$$' ./internal/scenariocatalog/executor

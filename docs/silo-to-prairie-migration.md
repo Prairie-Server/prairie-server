@@ -17,7 +17,7 @@ For Docker installs, set `PRAIRIE_DATA_ROOT=/opt/prairie` and update bind mounts
 
 ## Environment variables
 
-Rename `SILO_*` variables to `PRAIRIE_*`. Runtime code accepts legacy `SILO_*` fallbacks for direct env reads where this phase touched the reader, but new configuration should use Prairie names. Common examples:
+Rename `SILO_*` variables to `PRAIRIE_*`. Every setting accepts both spellings: the server resolves them through one lookup (`internal/envutil.LookupEnv`), where a non-empty `PRAIRIE_X` wins and `SILO_X` is the fallback, so an existing `.env` keeps working while you rename it. An empty `PRAIRIE_X` does not mask `SILO_X`, so a compose file that passes `PRAIRIE_X=${PRAIRIE_X:-}` through cannot erase an older value. The same applies to the test-harness variables (`PRAIRIE_TEST_DATABASE_URL`, `PRAIRIE_SCENARIO_DATABASE_URL`, ...). Common examples:
 
 | Old | New |
 | --- | --- |

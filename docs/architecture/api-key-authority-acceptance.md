@@ -3,11 +3,11 @@
 Run the bounded frozen packet with:
 
 ```sh
-SILO_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredKeyAuthorityUsageAcceptance$' ./internal/scenariocatalog/executor
+PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1 -run '^TestRequiredKeyAuthorityUsageAcceptance$' ./internal/scenariocatalog/executor
 ```
 
-`SILO_SCENARIO_DATABASE_URL` must identify an exclusively owned disposable
-PostgreSQL database with the project's extensions. `SILO_SCENARIO_REPORT` can
+`PRAIRIE_SCENARIO_DATABASE_URL` must identify an exclusively owned disposable
+PostgreSQL database with the project's extensions. `PRAIRIE_SCENARIO_REPORT` can
 capture the per-transport report. The runner refuses missing configuration,
 non-fixture data and foreign API keys before constructing the environment.
 Never point this destructive fixture runner at a shared or deployed database.

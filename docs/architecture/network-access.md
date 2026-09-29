@@ -140,7 +140,7 @@ to them.
 - A proxy never reads the install path the API server recorded on the row:
   that names a directory on the API server's machine. The archive cache
   (`plugins.NewArchiveCacheAt`) rehydrates each release from
-  `plugin_archives` into the proxy's own cache root, `SILO_PLUGIN_CACHE_DIR`
+  `plugin_archives` into the proxy's own cache root, `PRAIRIE_PLUGIN_CACHE_DIR`
   (default `<tmp>/silo-plugins`), under
   `<root>/<plugin id>/<version>/<release>/plugin`, where `<release>` is the
   unique install directory name the API's installer chose. Only that root

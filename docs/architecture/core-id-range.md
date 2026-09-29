@@ -70,7 +70,7 @@ before widening children.
 Each parent ALTER rewrites the table and rebuilds its indexes. Referencing
 foreign keys are revalidated and their tables also take exclusive locks. Plan a
 maintenance window and space for table/index copies; the catalog determines the
-cost. Configure `SILO_MIGRATE_TIMEOUT` for the expected window.
+cost. Configure `PRAIRIE_MIGRATE_TIMEOUT` for the expected window.
 
 The Up and Down each run in one transaction. Down takes parent locks before
 checking every parent ID and sequence position against both integer bounds. A

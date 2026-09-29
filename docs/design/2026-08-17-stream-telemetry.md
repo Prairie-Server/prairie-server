@@ -579,12 +579,12 @@ time, benchmarked before the next widening (see the soak notes below); the stage
 default has since been removed by owner decision, and all five families are now
 observed as soon as telemetry is enabled.
 
-**The family gate.** `SILO_STREAM_TELEMETRY_FAMILIES` defaults to every declared
+**The family gate.** `PRAIRIE_STREAM_TELEMETRY_FAMILIES` defaults to every declared
 family — `native`, `proxy`, `transcode_node`, `jellycompat`, `abs`. The variable exists
 to narrow observation or drop one misbehaving family without losing the rest, not to
 stage a rollout: naming it takes away families rather than adding them.
 
-Since `SILO_STREAM_TELEMETRY_ENABLED` now defaults on, that master switch decides
+Since `PRAIRIE_STREAM_TELEMETRY_ENABLED` now defaults on, that master switch decides
 whether a process observes at all, and the family list — left unset by default — no
 longer restricts how far that observation reaches within a process.
 
@@ -902,8 +902,8 @@ log the offending variable as an error; invalid **distributed-only** settings di
 distributed mode while leaving local observation running.
 
 Telemetry runs unless it is switched off, and distributed mode follows the deployment:
-`SILO_STREAM_TELEMETRY_ENABLED=false` is the per-process kill switch,
-`SILO_STREAM_TELEMETRY_FAMILIES` narrows or kills individual families, and the merge is
+`PRAIRIE_STREAM_TELEMETRY_ENABLED=false` is the per-process kill switch,
+`PRAIRIE_STREAM_TELEMETRY_FAMILIES` narrows or kills individual families, and the merge is
 used whenever Redis is configured. Both switches fail towards off — a value that is set
 but cannot be parsed is treated as `false`, not as the default, because an operator who
 mistypes a kill switch was reaching for "stop", and a mistyped disable that quietly left
@@ -911,22 +911,22 @@ the feature running is the failure that costs them.
 
 | Variable | Default | Scope | Meaning |
 |---|---:|---|---|
-| `SILO_STREAM_TELEMETRY_ENABLED` | `true` | core | Master switch, per process. Set it to `false` to stop observing; a value that cannot be parsed also reads as off. |
-| `SILO_STREAM_TELEMETRY_FAMILIES` | all five (`native,proxy,transcode_node,jellycompat,abs`) | core | Which route families are wrapped. Narrows or kills observation; naming it takes families away rather than staging them in. |
-| `SILO_STREAM_TELEMETRY_SWEEP_INTERVAL` | `1s` | core | Collector period. |
-| `SILO_STREAM_TELEMETRY_RETENTION` | `5m` | core | How long a session survives its last observation. |
-| `SILO_STREAM_TELEMETRY_MAX_SESSIONS` | `10000` | core | Local session cap. |
-| `SILO_STREAM_TELEMETRY_MAX_TRANSFERS` | `10000` | core | Local transfer cap. |
-| `SILO_STREAM_TELEMETRY_MAX_OBSERVATIONS` | `50000` | core | Local in-flight observation cap. |
-| `SILO_STREAM_TELEMETRY_DISTRIBUTED` | auto (on when Redis is configured) | distributed | Publish and read snapshots through Redis. Setting it pins the mode either way and stops the derivation; a rejected distributed configuration also pins it off. |
-| `SILO_STREAM_TELEMETRY_FRESHNESS` | `5s` | distributed | Maximum usable snapshot age; at least three sweep intervals. |
-| `SILO_STREAM_TELEMETRY_MEMBERSHIP_TTL` | `60s` | distributed | Heartbeat age after which a publisher has departed; must exceed freshness. |
-| `SILO_STREAM_TELEMETRY_KEY_PREFIX` | `silo:stelem` | distributed | Non-empty, whitespace-free Redis namespace. |
-| `SILO_STREAM_TELEMETRY_FULL_RESYNC_EVERY` | `60` | distributed | Successful publishes between full hash replacements. |
-| `SILO_STREAM_TELEMETRY_MAX_PUBLISHERS` | `256` | distributed | Roster entries considered by a read. |
-| `SILO_STREAM_TELEMETRY_MAX_MERGED_SESSIONS` | `50000` | distributed | Reader-side session cap across publishers. |
-| `SILO_STREAM_TELEMETRY_MAX_MERGED_TRANSFERS` | `50000` | distributed | Reader-side transfer cap across publishers. |
-| `SILO_STREAM_TELEMETRY_VIEW_TTL` | `5s` | distributed | How stale a served merged view may be before a read rebuilds it. |
+| `PRAIRIE_STREAM_TELEMETRY_ENABLED` | `true` | core | Master switch, per process. Set it to `false` to stop observing; a value that cannot be parsed also reads as off. |
+| `PRAIRIE_STREAM_TELEMETRY_FAMILIES` | all five (`native,proxy,transcode_node,jellycompat,abs`) | core | Which route families are wrapped. Narrows or kills observation; naming it takes families away rather than staging them in. |
+| `PRAIRIE_STREAM_TELEMETRY_SWEEP_INTERVAL` | `1s` | core | Collector period. |
+| `PRAIRIE_STREAM_TELEMETRY_RETENTION` | `5m` | core | How long a session survives its last observation. |
+| `PRAIRIE_STREAM_TELEMETRY_MAX_SESSIONS` | `10000` | core | Local session cap. |
+| `PRAIRIE_STREAM_TELEMETRY_MAX_TRANSFERS` | `10000` | core | Local transfer cap. |
+| `PRAIRIE_STREAM_TELEMETRY_MAX_OBSERVATIONS` | `50000` | core | Local in-flight observation cap. |
+| `PRAIRIE_STREAM_TELEMETRY_DISTRIBUTED` | auto (on when Redis is configured) | distributed | Publish and read snapshots through Redis. Setting it pins the mode either way and stops the derivation; a rejected distributed configuration also pins it off. |
+| `PRAIRIE_STREAM_TELEMETRY_FRESHNESS` | `5s` | distributed | Maximum usable snapshot age; at least three sweep intervals. |
+| `PRAIRIE_STREAM_TELEMETRY_MEMBERSHIP_TTL` | `60s` | distributed | Heartbeat age after which a publisher has departed; must exceed freshness. |
+| `PRAIRIE_STREAM_TELEMETRY_KEY_PREFIX` | `silo:stelem` | distributed | Non-empty, whitespace-free Redis namespace. |
+| `PRAIRIE_STREAM_TELEMETRY_FULL_RESYNC_EVERY` | `60` | distributed | Successful publishes between full hash replacements. |
+| `PRAIRIE_STREAM_TELEMETRY_MAX_PUBLISHERS` | `256` | distributed | Roster entries considered by a read. |
+| `PRAIRIE_STREAM_TELEMETRY_MAX_MERGED_SESSIONS` | `50000` | distributed | Reader-side session cap across publishers. |
+| `PRAIRIE_STREAM_TELEMETRY_MAX_MERGED_TRANSFERS` | `50000` | distributed | Reader-side transfer cap across publishers. |
+| `PRAIRIE_STREAM_TELEMETRY_VIEW_TTL` | `5s` | distributed | How stale a served merged view may be before a read rebuilds it. |
 
 Startup performs a two-second Redis ping for diagnostics only; a failure does not stop
 the process or fall back to the local store — the publisher retries each sweep and
@@ -951,11 +951,11 @@ curl -fsS localhost:8091/api/v1/admin/stream-telemetry/parity
 # 2. read repeatedly, over days — one report is a sample, not proof
 
 # 3. narrow to specific families, or drop one that is misbehaving
-SILO_STREAM_TELEMETRY_FAMILIES=native,proxy,transcode_node
+PRAIRIE_STREAM_TELEMETRY_FAMILIES=native,proxy,transcode_node
 
 # 4. back out further, or kill the whole process's observation
-SILO_STREAM_TELEMETRY_FAMILIES=native,transcode_node
-SILO_STREAM_TELEMETRY_ENABLED=false
+PRAIRIE_STREAM_TELEMETRY_FAMILIES=native,transcode_node
+PRAIRIE_STREAM_TELEMETRY_ENABLED=false
 ```
 
 What to watch:

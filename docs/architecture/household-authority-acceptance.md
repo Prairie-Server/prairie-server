@@ -1,8 +1,8 @@
 # Household authority acceptance
 
-Run the nine-case packet with `SILO_SCENARIO_REQUIRED=1 go test -count=1
+Run the nine-case packet with `PRAIRIE_SCENARIO_REQUIRED=1 go test -count=1
 -run '^TestRequiredHouseholdAuthorityAcceptance$' ./internal/scenariocatalog/executor`.
-Set `SILO_SCENARIO_DATABASE_URL` to an exclusively owned disposable PostgreSQL
+Set `PRAIRIE_SCENARIO_DATABASE_URL` to an exclusively owned disposable PostgreSQL
 instance with project extensions. Missing configuration, foreign fixtures/API keys,
 and occupied playback state refuse before environment construction. This runner
 reseeds application fixtures; never use a shared or deployed database.
@@ -26,7 +26,7 @@ onboarding, library restrictions and playback-session rows remain unchanged.
 The embedded packet locks complete originals and explicit v2 expectations.
 
 For a recorded collection-expectation correction only,
-`SILO_HOUSEHOLD_READBACK_FOLLOWUP=1` executes exactly the four successful v2
+`PRAIRIE_HOUSEHOLD_READBACK_FOLLOWUP=1` executes exactly the four successful v2
 household reads with strict four-result/eight-snapshot checks. It is not standalone
 nine-case acceptance: combine its report with the unchanged fourteen successful
 exchanges from the full run, retaining the initial failures and both reports.
