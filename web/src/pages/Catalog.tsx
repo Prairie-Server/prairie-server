@@ -23,6 +23,7 @@ import { useRequestSearch } from "@/hooks/queries/useRequests";
 import { useCanRequest } from "@/hooks/useCanRequest";
 import { useDebounce } from "@/hooks/useDebounce";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
+import { requestSearchTypeForScope } from "@/lib/mediaRequests";
 import SearchBar from "@/components/SearchBar";
 import { ConfirmDialog } from "@/components/ConfirmDialog";
 import {
@@ -36,6 +37,8 @@ import {
   buildCatalogQueryUpdateHref,
   catalogSourceAllowsOverlay,
   parseCatalogSearchParams,
+  readCatalogRequestPage,
+  withCatalogRequestPage,
 } from "./catalogSearchParams";
 import type { CatalogSearchState } from "./catalogSearchParams";
 
@@ -100,7 +103,9 @@ function CatalogResults({
   state: ReturnType<typeof parseCatalogSearchParams>;
 }) {
   const limit = 60;
-  const searchKey = searchParams.toString();
+  // Paging the Request to add grid is not a new search: it keeps the library
+  // results' loaded range and selection.
+  const searchKey = withCatalogRequestPage(searchParams, 1).toString();
   const [visibleRangeState, setVisibleRangeState] = useState<{
     key: string;
     range: [number, number];
@@ -166,7 +171,8 @@ function CatalogResults({
   const handleChipScopeChange = useCallback(
     (scope: SearchMediaScope) => {
       setPreferredScope(scope);
-      const next = new URLSearchParams(searchParams);
+      // Another scope searches other TMDB types, so its grid starts at page 1.
+      const next = withCatalogRequestPage(searchParams, 1);
       next.set("type", scope);
       setSearchParams(next);
     },
@@ -244,15 +250,19 @@ function CatalogResults({
   // Add a short TMDB debounce on top of SearchBar's input debounce so the
   // TMDB plugin isn't hit at the same cadence as the local library query.
   const tmdbDebouncedQ = useDebounce(state.q ?? "", REQUEST_SEARCH_DEBOUNCE_MS);
-  const tmdbQuery = useRequestSearch("all", tmdbDebouncedQ, 1, {
-    enabled: canRequest.discoveryEnabled && isQuerySource,
+  // TMDB follows the search scope: movies, series, or both; nothing for books.
+  const requestSearchType = requestSearchTypeForScope(mediaScope);
+  const tmdbQuery = useRequestSearch(requestSearchType ?? "all", tmdbDebouncedQ, 1, {
+    enabled: canRequest.discoveryEnabled && isQuerySource && requestSearchType !== null,
     requireProfile: true,
     staleTime: 5 * 60 * 1000,
     gcTime: INTERACTIVE_SEARCH_GC_TIME_MS,
     retry: false,
   });
-  const tmdbMissingCount =
-    tmdbQuery.data?.results?.filter((result) => result.availability !== "available").length ?? 0;
+  // A disabled query still reads its cache, so a book scope counts nothing.
+  const tmdbMissingCount = requestSearchType
+    ? (tmdbQuery.data?.results?.filter((result) => result.availability !== "available").length ?? 0)
+    : 0;
   const libraryResultsKnown =
     !catalogQuery.isLoading && !catalogQuery.isPlaceholderData && !catalogQuery.isError;
   const libraryHasResults = libraryResultsKnown && (catalogQuery.data?.totalItems ?? 0) > 0;
@@ -526,12 +536,15 @@ function CatalogResults({
         />
       )}
 
-      {isQuerySource && canRequest.discoveryEnabled ? (
+      {isQuerySource && canRequest.discoveryEnabled && requestSearchType ? (
         <RequestToAddSection
           variant="grid"
           query={tmdbDebouncedQ}
+          mediaType={requestSearchType}
           libraryHadHits={libraryHasResults}
           libraryResultsKnown={libraryResultsKnown}
+          page={readCatalogRequestPage(searchParams)}
+          onPageChange={(page) => setSearchParams(withCatalogRequestPage(searchParams, page))}
         />
       ) : null}
 
