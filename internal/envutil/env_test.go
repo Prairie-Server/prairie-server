@@ -64,7 +64,7 @@ func TestParsersReadThroughTheAlias(t *testing.T) {
 	unset(t, testEnv)
 	t.Setenv("PRAIRIE_ENVUTIL_TEST_FLAG", "on")
 	if !Bool(testEnv) || !IsSet(testEnv) || !BoolDefault(testEnv, false) {
-		t.Fatal("PRAIRIE_ spelling not honoured for a SILO_ flag")
+		t.Fatal("PRAIRIE_ spelling not honored for a SILO_ flag")
 	}
 	if got := FirstNonEmpty("SILO_ENVUTIL_TEST_MISSING", testEnv); got != "on" {
 		t.Fatalf("FirstNonEmpty = %q, want on", got)
