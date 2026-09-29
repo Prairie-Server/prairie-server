@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"maps"
 	"net/url"
-	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -18,6 +17,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/ratelimit"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
@@ -132,8 +132,8 @@ func selectDevicePollR1(catalogs []*scenariocatalog.Catalog) ([]devicePollR1Case
 // Reject wrong resources and unknown keys before New can migrate or reseed.
 func guardDevicePollR1(t *testing.T) {
 	t.Helper()
-	u, err := url.Parse(os.Getenv(DatabaseEnv))
-	if err != nil || u == nil || u.Scheme != "postgres" || u.Hostname() != "127.0.0.1" || u.Port() == "" || slices.Contains([]string{"55443", "55445", "55446"}, u.Port()) || !strings.HasPrefix(u.Path, "/silo_catalog_device_poll_") || os.Getenv("SILO_CATALOG_DEVICE_POLL_OWNED") != "1" {
+	u, err := url.Parse(envutil.Getenv(DatabaseEnv))
+	if err != nil || u == nil || u.Scheme != "postgres" || u.Hostname() != "127.0.0.1" || u.Port() == "" || slices.Contains([]string{"55443", "55445", "55446"}, u.Port()) || !strings.HasPrefix(u.Path, "/silo_catalog_device_poll_") || envutil.Getenv("SILO_CATALOG_DEVICE_POLL_OWNED") != "1" {
 		t.Fatal("device poll r1 requires its explicitly owned loopback scratch database")
 	}
 	pool, err := pgxpool.New(t.Context(), u.String())
@@ -157,7 +157,7 @@ func devicePollR1SnapshotQuery() string {
 }
 
 func TestRequiredDevicePollR1Acceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("requires owned device poll r1 resource")
 	}
 	catalogs, err := scenariocatalog.Load()

@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -14,10 +13,11 @@ import (
 	"github.com/prairie-server/prairie-server/internal/adminjob"
 	"github.com/prairie-server/prairie-server/internal/blobstore"
 	"github.com/prairie-server/prairie-server/internal/database/pglock"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func TestQueuedStorageTransitionRejectsNodeThatJoinedAfterStart(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -62,7 +62,7 @@ func TestQueuedStorageTransitionRejectsNodeThatJoinedAfterStart(t *testing.T) {
 }
 
 func TestStorageTransitionExcludesNodeJoinThroughCopyAndCommit(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -145,7 +145,7 @@ func TestStorageTransitionExcludesNodeJoinThroughCopyAndCommit(t *testing.T) {
 // before the node's admission monitor has rejoined. Execute waits for the
 // rejoin instead of failing the job.
 func TestExclusiveAdmissionWaitsForRejoin(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -195,7 +195,7 @@ func (s *terminatingCommitSettings) UpdateAtomic(ctx context.Context, update fun
 }
 
 func TestCommitRequiresLiveExclusiveAdmission(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

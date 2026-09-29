@@ -4,11 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // TestTryClaimTrailersRefresh exercises the cooldown gate against a real
@@ -16,7 +17,7 @@ import (
 // viewers cannot both win it, and that guarantee lives entirely in SQL — a
 // fake cannot verify it.
 func TestTryClaimTrailersRefresh(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -98,7 +99,7 @@ func TestTryClaimTrailersRefresh(t *testing.T) {
 // late release from clearing a slot someone else has since claimed. Both live
 // in SQL, so a fake cannot verify them.
 func TestReleaseTrailersRefreshClaim(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -175,7 +176,7 @@ func TestReleaseTrailersRefreshClaim(t *testing.T) {
 // TestTryClaimTrailersRefreshIsAtomic runs concurrent claims against one item;
 // exactly one may win.
 func TestTryClaimTrailersRefreshIsAtomic(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -240,7 +241,7 @@ func TestTryClaimTrailersRefreshIsAtomic(t *testing.T) {
 // report one with no next-allowed time while the slot is in fact free, so the
 // claim is retried and this caller takes it.
 func TestTryClaimTrailersRefreshRetriesWhenSlotIsFreedMidClassification(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -308,7 +309,7 @@ func TestTryClaimTrailersRefreshRetriesWhenSlotIsFreedMidClassification(t *testi
 // saw the claim, so it reads back the stored timestamp and releases on that
 // exact key, keeping ReleaseTrailersRefreshClaim's equality guard meaningful.
 func TestTrailersRefreshRequestedAt(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

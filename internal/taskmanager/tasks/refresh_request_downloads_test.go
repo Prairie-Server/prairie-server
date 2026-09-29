@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"os"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -12,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/database/pglock"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/requests"
 )
 
@@ -206,7 +206,7 @@ func TestReconcileRequestsTaskFailsWhenTheWaitRunsOut(t *testing.T) {
 
 func requestLockTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

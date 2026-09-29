@@ -2,11 +2,12 @@ package pglock
 
 import (
 	"context"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // pglockTestKey is outside the ranges any product code uses, so these tests
@@ -15,7 +16,7 @@ const pglockTestKey int64 = 0x70676C6F636B01
 
 func testPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

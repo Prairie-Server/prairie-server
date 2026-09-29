@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -13,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // fakeObjectChecker treats every key as present unless listed in missing or
@@ -110,7 +110,7 @@ func TestBuildSweepBatchQueryUsesNativeNumericKeys(t *testing.T) {
 }
 
 func TestArtworkReconcileVerifySweep(t *testing.T) {
-	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
@@ -515,7 +515,7 @@ func TestArtworkReconcileWithoutSaverContinuesAfterUnsafeBatches(t *testing.T) {
 }
 
 func TestArtworkReconcileLeavesRowsAloneOnStorageErrors(t *testing.T) {
-	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
@@ -575,7 +575,7 @@ func TestArtworkReconcileLeavesRowsAloneOnStorageErrors(t *testing.T) {
 }
 
 func TestArtworkReconcileAbortsWhenStorageUnreachable(t *testing.T) {
-	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}

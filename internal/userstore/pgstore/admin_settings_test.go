@@ -2,17 +2,17 @@ package pgstore
 
 import (
 	"encoding/json"
-	"os"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/settingscontract"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
 func TestAdminSettingsPaginationAccountIsolation(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

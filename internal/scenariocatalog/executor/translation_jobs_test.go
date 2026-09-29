@@ -11,13 +11,14 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 // Router startup recovery can change stale jobs. Refuse existing jobs before New.
 func guardNewTranslationFixture(t *testing.T) {
 	t.Helper()
-	pool, err := pgxpool.New(t.Context(), os.Getenv(DatabaseEnv))
+	pool, err := pgxpool.New(t.Context(), envutil.Getenv(DatabaseEnv))
 	if err != nil {
 		t.Fatal("connect translation fixture database")
 	}
@@ -39,10 +40,10 @@ func guardNewTranslationFixture(t *testing.T) {
 }
 
 func TestRequiredNewTranslationJobs(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-new-translation-jobs for required NEW acceptance")
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; NEW acceptance cannot skip")
 	}
 	guardNewTranslationFixture(t)
@@ -164,7 +165,7 @@ func TestRequiredNewTranslationJobs(t *testing.T) {
 		}
 		seen[r.ID] = true
 	}
-	if path := os.Getenv("SILO_SCENARIO_REPORT"); path != "" {
+	if path := envutil.Getenv("SILO_SCENARIO_REPORT"); path != "" {
 		report := struct {
 			Scope                                       string
 			NewScenarios, PhysicalRequests, EffectReads int

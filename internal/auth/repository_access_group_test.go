@@ -3,12 +3,12 @@ package auth
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
@@ -251,7 +251,7 @@ func TestUserRepositoryCreateAssignsDefaultAccessGroupDB(t *testing.T) {
 
 func newAccessGroupUserRepoDBTest(t *testing.T) (context.Context, *pgxpool.Pool, string) {
 	t.Helper()
-	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}

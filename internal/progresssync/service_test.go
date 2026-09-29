@@ -3,7 +3,6 @@ package progresssync
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 
 	"github.com/google/uuid"
@@ -12,6 +11,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/notifications"
 	"github.com/prairie-server/prairie-server/internal/policy"
@@ -22,7 +22,7 @@ import (
 
 func serviceFixture(t *testing.T) (*Service, Actor, *pgxpool.Pool, userstore.UserStoreProvider) {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("requires migrated isolated PostgreSQL")
 	}

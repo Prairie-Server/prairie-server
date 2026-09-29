@@ -95,7 +95,7 @@ type Config struct {
 // attribute.
 func LoadConfig(nodeID string) Config {
 	endpoint := strings.TrimSpace(os.Getenv("OTEL_EXPORTER_OTLP_ENDPOINT"))
-	enabled := envutil.Truthy(envutil.FirstNonEmpty("PRAIRIE_OTEL_ENABLED", "SILO_OTEL_ENABLED")) || endpoint != ""
+	enabled := envutil.Truthy(envutil.FirstNonEmpty("PRAIRIE_OTEL_ENABLED")) || endpoint != ""
 
 	serviceName := strings.TrimSpace(os.Getenv("OTEL_SERVICE_NAME"))
 	if serviceName == "" {

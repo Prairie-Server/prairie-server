@@ -3,11 +3,12 @@ package adminjob
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // TestQuickRefreshListsLanguageMismatchedItems covers the listing half of
@@ -17,7 +18,7 @@ import (
 // backdrop all present) — otherwise a library language change never revisits
 // already-complete items.
 func TestQuickRefreshListsLanguageMismatchedItems(t *testing.T) {
-	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}
@@ -93,7 +94,7 @@ func TestQuickRefreshListsLanguageMismatchedItems(t *testing.T) {
 }
 
 func TestQuickRefreshIgnoresHistoricalSecondaryStaleIDs(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

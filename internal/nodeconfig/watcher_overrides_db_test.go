@@ -3,11 +3,12 @@ package nodeconfig
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // newOverrideTestPool follows the repository-wide convention for tests that
@@ -15,7 +16,7 @@ import (
 // predates the migration under test rather than failing on a missing column.
 func newOverrideTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"sync"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func referenceWriterInsert(ctx context.Context, tx pgx.Tx, sectionID, collectionID string, libraryID int) error {
@@ -19,7 +20,7 @@ func referenceWriterInsert(ctx context.Context, tx pgx.Tx, sectionID, collection
 }
 func namedReferencePool(t *testing.T, ctx context.Context, name string) *pgxpool.Pool {
 	t.Helper()
-	cfg, err := pgxpool.ParseConfig(os.Getenv("SILO_TEST_DATABASE_URL"))
+	cfg, err := pgxpool.ParseConfig(envutil.Getenv("SILO_TEST_DATABASE_URL"))
 	if err != nil {
 		t.Fatal(err)
 	}

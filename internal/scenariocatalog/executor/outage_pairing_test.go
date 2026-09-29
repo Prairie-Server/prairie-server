@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"net"
-	"os"
 	"testing"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
@@ -23,10 +23,10 @@ import (
 // stored row. Each transport reseeds independently, as the sibling runners
 // do, even though the outage router cannot touch the seeded household.
 func TestRequiredOutageAcceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-outage for required paired acceptance")
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; acceptance cannot skip its database")
 	}
 	catalogs, err := scenariocatalog.Load()

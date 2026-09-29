@@ -7,11 +7,12 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // TestHandleListUnmatchedItemsExcludesMangaChapters verifies that manga
@@ -19,7 +20,7 @@ import (
 // do not appear in the admin Unmatched queue, while genuinely pending items
 // still do. Regression test for issue #204.
 func TestHandleListUnmatchedItemsExcludesMangaChapters(t *testing.T) {
-	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("set PRAIRIE_TEST_DATABASE_URL to run DB-backed unmatched items handler test")
 	}

@@ -4,13 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
@@ -20,7 +20,7 @@ import (
 // aborted one request with 40P01. A valid mixed sequence completes the legacy
 // write and refuses the guarded write as stale, without a deadlock retry.
 func TestCollectionMixedWriterLockOrderPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

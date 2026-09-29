@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 	"slices"
 	"testing"
 	"time"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/userdb"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 	"github.com/prairie-server/prairie-server/internal/userstore/pgstore"
@@ -432,7 +432,7 @@ func (allLibrariesScope) Resolve(_ context.Context, input access.ResolveInput) (
 // per-card Continue Watching and Next Up dismissals, then a series drop made
 // through the tracker the dismissal handler uses.
 func TestRecomputeSeriesFollowsHomeRemovalsPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -669,7 +669,7 @@ func TestRecomputeSeriesFollowsHomeRemovalsPostgres(t *testing.T) {
 // lives outside Postgres: episodes their store reports as started are skipped
 // as well.
 func TestNextUpEpisodeSkipsStoreStartedEpisodes(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

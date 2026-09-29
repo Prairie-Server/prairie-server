@@ -3,7 +3,6 @@ package themesongs
 import (
 	"context"
 	"errors"
-	"os"
 	"path/filepath"
 	"slices"
 	"testing"
@@ -13,11 +12,12 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/naming"
 )
 
 func TestRepositoryDirectoriesCanonicalRootBoundaries(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -89,7 +89,7 @@ func TestRepositoryDirectoriesCanonicalRootBoundaries(t *testing.T) {
 }
 
 func TestRepositoryPruneOrphansIncludesAncestorOfSubtree(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -143,7 +143,7 @@ func TestRepositoryPruneOrphansIncludesAncestorOfSubtree(t *testing.T) {
 }
 
 func TestRepositoryInheritanceRematchingAndAccess(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -344,7 +344,7 @@ func TestRepositoryInheritanceRematchingAndAccess(t *testing.T) {
 }
 
 func TestRepositoryIsActiveTheme(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

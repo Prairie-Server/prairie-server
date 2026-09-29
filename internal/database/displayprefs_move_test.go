@@ -4,13 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/jellycompat/displayprefs"
 	"github.com/prairie-server/prairie-server/migrations"
 )
@@ -22,7 +22,7 @@ import (
 // shows: registration, the table's constraints, verbatim copy through real
 // text columns, and that re-running or rolling back behaves.
 func TestPostgresDisplayPrefsMove(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -185,7 +185,7 @@ SELECT value FROM user_settings
 // legacy row commits during the stall, and releasing the blocker lets the
 // move finish.
 func TestPostgresDisplayPrefsMoveDoesNotDeleteConcurrentWrites(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -375,7 +375,7 @@ SELECT COUNT(*) FROM jellycompat_displayprefs
 // the newer canonical value in place rather than deleting a value it never
 // restored.
 func TestPostgresDisplayPrefsRollbackDoesNotDeleteConcurrentUpdates(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

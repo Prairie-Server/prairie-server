@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -19,6 +18,7 @@ import (
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/policy"
 	"github.com/prairie-server/prairie-server/internal/sections"
 	"github.com/prairie-server/prairie-server/internal/settingscontract"
@@ -78,7 +78,7 @@ func (c *nextUpReadTracer) disarm() []string {
 // The response checks confirm the scope's mode is the one applied: only the
 // "separate" profile gets the synthetic Next Up row.
 func TestHomeSectionItemsNextUpReadsDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

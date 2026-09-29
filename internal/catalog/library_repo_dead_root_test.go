@@ -3,11 +3,12 @@ package catalog
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // TestReconcileFolderMembershipProtectsUnreachableRoots verifies the
@@ -18,7 +19,7 @@ import (
 // survive so user collections, metadata edits, and artwork are not destroyed
 // by a temporary outage. An orphan with no protected files is still purged.
 func TestReconcileFolderMembershipProtectsUnreachableRoots(t *testing.T) {
-	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}

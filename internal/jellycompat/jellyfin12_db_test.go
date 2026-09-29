@@ -3,7 +3,6 @@ package jellycompat
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -11,11 +10,12 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/catalog"
 	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func jellyfin12CompatPool(t *testing.T) (*pgxpool.Pool, int64) {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

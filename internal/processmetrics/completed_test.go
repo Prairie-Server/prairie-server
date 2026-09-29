@@ -12,10 +12,12 @@ import (
 
 	"github.com/prometheus/client_golang/prometheus/testutil"
 	dto "github.com/prometheus/client_model/go"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func TestProcessMetricsChild(t *testing.T) {
-	switch os.Getenv("SILO_PROCESS_METRICS_CHILD") {
+	switch envutil.Getenv("SILO_PROCESS_METRICS_CHILD") {
 	case "allocate":
 		memory := make([]byte, 64<<20)
 		for i := range memory {

@@ -13,12 +13,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 func providerConfigRevisionDatabase(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("SILO_PROVIDER_CONFIG_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_PROVIDER_CONFIG_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_PROVIDER_CONFIG_TEST_DATABASE_URL must name an isolated test database")
 	}

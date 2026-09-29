@@ -373,7 +373,7 @@ The foundation is `internal/apiv2`. These facts about it are not derivable from 
   committed artifact plus the closed plugin-content mount inventory, in both directions. The
   retained `/api/v1/health` and `/api/v1/ready` probes and the opt-in, dedicated `/metrics`
   listener are operator-facing and deliberately absent from the artifact and from generated
-  native clients; the listener is disabled unless `SILO_METRICS_LISTEN` is set and must bind to
+  native clients; the listener is disabled unless `PRAIRIE_METRICS_LISTEN` is set and must bind to
   a private monitoring address.
 - **The fixtures.** `contracts/api/v2/fixtures/` is generated through the assembled v2 router
   by `TestContractFixtures` in `internal/apiv2` (`make apiv2-fixtures`), never edited: each
@@ -1142,7 +1142,7 @@ probes, the node pool's health sweep, and the Apple/Android reachability monitor
 identity fields (those clients additionally have `GET /api/v2/system/info` for discovery). No
 root `/health` or `/ready` route is added and no probe is redirected. The API process's `/metrics`
 endpoint is a dedicated opt-in listener outside the native client contract. It is disabled unless
-`SILO_METRICS_LISTEN` is set and is inventoried separately from the public application listener.
+`PRAIRIE_METRICS_LISTEN` is set and is inventoried separately from the public application listener.
 Proxy and transcode-node metrics remain on their worker listeners and must stay on private
 monitoring networks. The administrator
 upgrade guide must name every external integration and persisted URL class affected by the hard
@@ -1696,9 +1696,9 @@ it, and pins the result; `make verify-offline-routes` fails in CI when the file 
 `make offline-routes` regenerates it. The file records the `api.Dependencies` fields it was
 generated with, and the executor refuses it if its own offline wiring sets a different field
 set. Anything that sends a credential, applies a server setting, or
-declares `requires: [database]` runs only when `SILO_SCENARIO_DATABASE_URL` points at an empty
+declares `requires: [database]` runs only when `PRAIRIE_SCENARIO_DATABASE_URL` points at an empty
 database the executor owns, and skips otherwise. The variable is deliberately not
-`SILO_TEST_DATABASE_URL`: the executor truncates accounts, access groups, invite codes, and
+`PRAIRIE_TEST_DATABASE_URL`: the executor truncates accounts, access groups, invite codes, and
 invitations on every reseed, which would break the other DB-gated packages sharing the test
 database. Before migrating or reseeding, the executor inspects the database and refuses one
 that holds any media item, media file, or library folder; any account whose email is missing or

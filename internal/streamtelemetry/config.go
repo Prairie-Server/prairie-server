@@ -2,7 +2,6 @@ package streamtelemetry
 
 import (
 	"log/slog"
-	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -122,7 +121,7 @@ func ConfigFromEnv(nodeID string) Config {
 	cfg.Distributed = envutil.Bool(distributedEnv)
 	cfg.DistributedExplicit = envutil.IsSet(distributedEnv)
 	parseDuration := func(name string, dst *time.Duration) {
-		value := strings.TrimSpace(os.Getenv(name))
+		value := strings.TrimSpace(envutil.Getenv(name))
 		if value == "" {
 			return
 		}
@@ -135,7 +134,7 @@ func ConfigFromEnv(nodeID string) Config {
 		*dst = parsed
 	}
 	parseDistributedDuration := func(name string, dst *time.Duration) {
-		value := strings.TrimSpace(os.Getenv(name))
+		value := strings.TrimSpace(envutil.Getenv(name))
 		if value == "" {
 			return
 		}
@@ -148,7 +147,7 @@ func ConfigFromEnv(nodeID string) Config {
 		*dst = parsed
 	}
 	parsePositive := func(name string, dst *int64) {
-		value := strings.TrimSpace(os.Getenv(name))
+		value := strings.TrimSpace(envutil.Getenv(name))
 		if value == "" {
 			return
 		}
@@ -160,7 +159,7 @@ func ConfigFromEnv(nodeID string) Config {
 		*dst = parsed
 	}
 	parseDistributedPositive := func(name string, dst *int) {
-		value := strings.TrimSpace(os.Getenv(name))
+		value := strings.TrimSpace(envutil.Getenv(name))
 		if value == "" {
 			return
 		}
@@ -183,14 +182,14 @@ func ConfigFromEnv(nodeID string) Config {
 	parseDistributedPositive(maxPublishersEnv, &cfg.MaxPublishers)
 	parseDistributedPositive(maxMergedSessionsEnv, &cfg.MaxMergedSessions)
 	parseDistributedPositive(maxMergedTransfersEnv, &cfg.MaxMergedTransfers)
-	if value := strings.TrimSpace(os.Getenv(familiesEnv)); value != "" {
+	if value := strings.TrimSpace(envutil.Getenv(familiesEnv)); value != "" {
 		if families, ok := parseFamilies(value); ok {
 			cfg.Families = families
 		} else {
 			coreInvalid = append(coreInvalid, familiesEnv)
 		}
 	}
-	if value := os.Getenv(keyPrefixEnv); value != "" {
+	if value := envutil.Getenv(keyPrefixEnv); value != "" {
 		if strings.TrimSpace(value) == "" || strings.IndexFunc(value, unicode.IsSpace) >= 0 {
 			distributedInvalid = append(distributedInvalid, keyPrefixEnv)
 		} else {

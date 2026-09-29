@@ -2,24 +2,25 @@ package s3client
 
 import (
 	"context"
-	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // TestAWSStyleSmoke exercises the same SDK client used by Silo against an
 // opt-in endpoint. It is intentionally skipped in normal test runs; QA can use
 // it for AWS or a TLS-enabled, virtual-host-style compatible endpoint.
 func TestAWSStyleSmoke(t *testing.T) {
-	endpoint := os.Getenv("SILO_AWS_STYLE_SMOKE_ENDPOINT")
+	endpoint := envutil.Getenv("SILO_AWS_STYLE_SMOKE_ENDPOINT")
 	if endpoint == "" {
 		t.Skip("SILO_AWS_STYLE_SMOKE_ENDPOINT is not set")
 	}
-	bucket := os.Getenv("SILO_AWS_STYLE_SMOKE_BUCKET")
-	accessKey := os.Getenv("SILO_AWS_STYLE_SMOKE_ACCESS_KEY")
-	secretKey := os.Getenv("SILO_AWS_STYLE_SMOKE_SECRET_KEY")
-	region := os.Getenv("SILO_AWS_STYLE_SMOKE_REGION")
+	bucket := envutil.Getenv("SILO_AWS_STYLE_SMOKE_BUCKET")
+	accessKey := envutil.Getenv("SILO_AWS_STYLE_SMOKE_ACCESS_KEY")
+	secretKey := envutil.Getenv("SILO_AWS_STYLE_SMOKE_SECRET_KEY")
+	region := envutil.Getenv("SILO_AWS_STYLE_SMOKE_REGION")
 	if bucket == "" || accessKey == "" || secretKey == "" {
 		t.Fatal("bucket and credentials are required")
 	}
@@ -38,7 +39,7 @@ func TestAWSStyleSmoke(t *testing.T) {
 	key := "qa/aws-style-smoke.txt"
 	want := []byte("silo aws-style smoke")
 	putErr := client.PutObject(ctx, bucket, key, want)
-	if os.Getenv("SILO_AWS_STYLE_SMOKE_EXPECT_PUT_DENIED") == "true" {
+	if envutil.Getenv("SILO_AWS_STYLE_SMOKE_EXPECT_PUT_DENIED") == "true" {
 		if putErr == nil {
 			t.Fatal("IAM smoke expected PutObject to be denied")
 		}

@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"net"
-	"os"
 	"testing"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
@@ -21,10 +21,10 @@ import (
 // API-key and settings tables are snapshotted and must be unchanged: a probe
 // reads, it never writes.
 func TestRequiredRetainedProbeAcceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-probes for required acceptance")
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; acceptance cannot skip its database")
 	}
 	catalogs, err := scenariocatalog.Load()

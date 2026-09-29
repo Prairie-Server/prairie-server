@@ -61,7 +61,7 @@ func mangaContentType() string {
 
 func mangaEnrichWorkers() int {
 	n := defaultEnrichWorkers
-	if v := envutil.FirstNonEmpty("PRAIRIE_MANGA_ENRICH_WORKERS", "SILO_MANGA_ENRICH_WORKERS"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_MANGA_ENRICH_WORKERS"); v != "" {
 		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
 			n = parsed
 		}
@@ -73,7 +73,7 @@ func mangaEnrichWorkers() int {
 }
 
 func mangaEnrichBatchSize() int {
-	if v := envutil.FirstNonEmpty("PRAIRIE_MANGA_ENRICH_BATCH", "SILO_MANGA_ENRICH_BATCH"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_MANGA_ENRICH_BATCH"); v != "" {
 		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
 			return parsed
 		}

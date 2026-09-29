@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"net/http"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/plugins"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
@@ -19,10 +19,10 @@ import (
 // runner additionally proves the v2 cookie carries the same plugin access
 // claims as the v1 cookie for the same principal and differs only in path.
 func TestRequiredPluginLaunchAcceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-plugin-launch for required paired acceptance")
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; acceptance cannot skip its database")
 	}
 	catalogs, err := scenariocatalog.Load()

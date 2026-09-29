@@ -34,7 +34,6 @@ import (
 	"fmt"
 	"log/slog"
 	"net/http/httptest"
-	"os"
 	"slices"
 	"strconv"
 	"strings"
@@ -52,6 +51,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/config"
 	"github.com/prairie-server/prairie-server/internal/contractledger"
 	"github.com/prairie-server/prairie-server/internal/database"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/policy"
 	"github.com/prairie-server/prairie-server/internal/ratelimit"
@@ -256,7 +256,7 @@ func New(t testing.TB) *Env {
 			apiv2.OfflineRoutesPath, e.offlineRoutes.Wiring, got)
 	}
 
-	dsn := os.Getenv(DatabaseEnv)
+	dsn := envutil.Getenv(DatabaseEnv)
 	if dsn == "" {
 		return e
 	}

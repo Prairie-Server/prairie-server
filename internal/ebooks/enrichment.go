@@ -63,7 +63,7 @@ func ebookContentType() string {
 
 func ebookEnrichWorkers() int {
 	n := defaultEnrichWorkers
-	if v := envutil.FirstNonEmpty("PRAIRIE_EBOOK_ENRICH_WORKERS", "SILO_EBOOK_ENRICH_WORKERS"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_EBOOK_ENRICH_WORKERS"); v != "" {
 		if parsed, err := strconv.Atoi(v); err == nil && parsed > 0 {
 			n = parsed
 		}

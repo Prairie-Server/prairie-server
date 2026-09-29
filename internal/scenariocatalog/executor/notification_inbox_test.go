@@ -10,16 +10,17 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/api"
 	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/notifications"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 func TestRequiredNewNotificationInbox(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-new-notification-inbox for required NEW acceptance")
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; NEW acceptance cannot skip")
 	}
 	e := New(t)
@@ -211,7 +212,7 @@ func TestRequiredNewNotificationInbox(t *testing.T) {
 			t.Errorf("required NEW case %s failed: %v", r.ID, r.Failures)
 		}
 	}
-	if path := os.Getenv("SILO_SCENARIO_REPORT"); path != "" {
+	if path := envutil.Getenv("SILO_SCENARIO_REPORT"); path != "" {
 		report := struct {
 			Scope                                       string
 			NewScenarios, PhysicalRequests, EffectReads int

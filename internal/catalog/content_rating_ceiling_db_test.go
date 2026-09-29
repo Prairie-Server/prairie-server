@@ -3,7 +3,6 @@ package catalog
 import (
 	"context"
 	"fmt"
-	"os"
 	"strings"
 	"testing"
 	"time"
@@ -11,6 +10,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // TestContentRatingCeilingSQLShape pins the two predicate forms the
@@ -92,7 +92,7 @@ func TestApplyMaturityLimitsBindsTheCeilingAge(t *testing.T) {
 // rating carries no age is hidden by default and shown when the setting allows
 // it — against a real database rather than a rendered string.
 func TestContentRatingCeilingAcrossSystemsDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

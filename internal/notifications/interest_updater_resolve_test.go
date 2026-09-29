@@ -2,10 +2,11 @@ package notifications
 
 import (
 	"context"
-	"os"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // TestResolveSeriesIDsBatchesLookups pins the batched item→series resolution
@@ -17,7 +18,7 @@ import (
 // Uses temp tables shadowing episodes/seasons/media_items, with the pool
 // pinned to one connection so every query sees them.
 func TestResolveSeriesIDsBatchesLookups(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("set SILO_TEST_DATABASE_URL to run the DB-backed series resolution test")
 	}

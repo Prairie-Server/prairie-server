@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"slices"
 	"strings"
 	"sync"
@@ -17,6 +16,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/artworkkey"
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 type blockingArtworkRevisionDeleter struct {
@@ -45,7 +45,7 @@ func (d *blockingArtworkRevisionDeleter) Delete(ctx context.Context, keys []stri
 
 func artworkRevisionGCTestPool(t *testing.T) *pgxpool.Pool {
 	t.Helper()
-	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}

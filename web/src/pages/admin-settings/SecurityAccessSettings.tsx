@@ -379,7 +379,7 @@ export default function SecurityAccessSettings() {
             label="Trusted proxies"
             description={
               trustedProxiesManaged
-                ? "Managed by SILO_TRUSTED_PROXIES."
+                ? "Managed by PRAIRIE_TRUSTED_PROXIES."
                 : "Comma-separated proxy ranges; empty keeps the private defaults."
             }
             hint="172.16.0.0/12, 203.0.113.7/32"

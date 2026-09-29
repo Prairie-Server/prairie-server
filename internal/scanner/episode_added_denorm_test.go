@@ -3,11 +3,12 @@ package scanner
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // TestEpisodeLinkMaintainsLatestEpisodeAdded covers the maintenance half of the
@@ -16,7 +17,7 @@ import (
 // single-file and bulk link paths, while re-linking away from an episode must
 // fully recompute the old and new parent series.
 func TestEpisodeLinkMaintainsLatestEpisodeAdded(t *testing.T) {
-	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}

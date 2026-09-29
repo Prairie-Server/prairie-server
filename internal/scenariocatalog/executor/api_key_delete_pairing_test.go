@@ -3,17 +3,17 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 func guardFrozenAPIKeyFixture(t *testing.T) {
 	t.Helper()
-	pool, err := pgxpool.New(t.Context(), os.Getenv(DatabaseEnv))
+	pool, err := pgxpool.New(t.Context(), envutil.Getenv(DatabaseEnv))
 	if err != nil {
 		t.Fatal("connect frozen API-key fixture")
 	}
@@ -35,10 +35,10 @@ func guardFrozenAPIKeyFixture(t *testing.T) {
 }
 
 func TestRequiredAPIKeyDeleteAcceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-api-key-deletions for required paired acceptance")
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; acceptance cannot skip its database")
 	}
 	catalogs, err := scenariocatalog.Load()

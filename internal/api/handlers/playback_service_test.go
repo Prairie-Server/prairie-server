@@ -17,6 +17,7 @@ import (
 
 	apimw "github.com/prairie-server/prairie-server/internal/api/middleware"
 	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/playback"
 	"github.com/prairie-server/prairie-server/internal/userstore"
@@ -288,7 +289,7 @@ func TestReplayedStartOfStoppedAttemptIsSessionExpired(t *testing.T) {
 // skips when none is reachable; the session's key is removed on cleanup.
 func newStreamDenyForTest(t *testing.T, sessionID string) *playback.StreamDeny {
 	t.Helper()
-	addr := os.Getenv("SILO_TEST_REDIS_ADDR")
+	addr := envutil.Getenv("SILO_TEST_REDIS_ADDR")
 	if addr == "" {
 		addr = "localhost:6379"
 	}

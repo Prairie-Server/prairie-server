@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
 	"slices"
 	"sync/atomic"
 	"testing"
@@ -15,6 +14,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/access"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/settingscontract"
 	"github.com/prairie-server/prairie-server/internal/settingskeys"
@@ -73,7 +73,7 @@ type versionsFixture struct {
 // rich probe data can exercise the shared builder without the scanner import cycle.
 func newVersionsFixture(t testing.TB) *versionsFixture {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -262,7 +262,7 @@ func TestGetItemVersionsSkipsPresentationAndPlaybackSafety(t *testing.T) {
 		t.Fatal("versions triggered playback safety work")
 	}
 	// A broken localization dependency must no longer prevent version selection.
-	cfg, err := pgxpool.ParseConfig(os.Getenv("SILO_TEST_DATABASE_URL"))
+	cfg, err := pgxpool.ParseConfig(envutil.Getenv("SILO_TEST_DATABASE_URL"))
 	if err != nil {
 		t.Fatal(err)
 	}

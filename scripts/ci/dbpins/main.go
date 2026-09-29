@@ -24,6 +24,8 @@ import (
 	"regexp"
 	"slices"
 	"strings"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // pin is one listed test: a package directory such as ./internal/catalog and
@@ -53,7 +55,7 @@ func main() {
 	if err != nil {
 		fail(fmt.Errorf("go list -m: %w", err))
 	}
-	if os.Getenv("SILO_TEST_DATABASE_URL") == "" {
+	if envutil.Getenv("SILO_TEST_DATABASE_URL") == "" {
 		fmt.Println("dbpins: SILO_TEST_DATABASE_URL is not set, so every pin will skip")
 	}
 

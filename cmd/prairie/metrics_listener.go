@@ -5,12 +5,13 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
-	"os"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 const metricsListenEnv = "SILO_METRICS_LISTEN"
@@ -35,7 +36,7 @@ func startMetricsListener(serving bool) (func(), error) {
 	if !serving {
 		return func() {}, nil
 	}
-	addr := strings.TrimSpace(os.Getenv(metricsListenEnv))
+	addr := strings.TrimSpace(envutil.Getenv(metricsListenEnv))
 	if addr == "" {
 		return func() {}, nil
 	}

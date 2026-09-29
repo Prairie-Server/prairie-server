@@ -8,6 +8,8 @@ import (
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // backfillMigrationPath is the migration whose frozen CASE resolved
@@ -27,7 +29,7 @@ const backfillMigrationPath = "../../migrations/sql/20260923234321_content_ratin
 // the statement cannot be corrected after it is applied, this is the only place
 // the two copies are compared.
 func TestBackfillMigrationAgreesWithNormalize(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

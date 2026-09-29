@@ -11,13 +11,14 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 // Inspect before New can migrate or reseed any account-owned settings.
 func guardNewAdminDeviceFixture(t *testing.T) {
 	t.Helper()
-	pool, err := pgxpool.New(t.Context(), os.Getenv(DatabaseEnv))
+	pool, err := pgxpool.New(t.Context(), envutil.Getenv(DatabaseEnv))
 	if err != nil {
 		t.Fatal("connect administrator device fixture")
 	}
@@ -47,10 +48,10 @@ func guardNewAdminDeviceFixture(t *testing.T) {
 }
 
 func TestRequiredNewAdminDeviceReads(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-new-admin-device-reads for required NEW acceptance")
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; NEW acceptance cannot skip")
 	}
 	guardNewAdminDeviceFixture(t)
@@ -154,7 +155,7 @@ func TestRequiredNewAdminDeviceReads(t *testing.T) {
 		}
 		seen[r.ID] = true
 	}
-	if path := os.Getenv("SILO_SCENARIO_REPORT"); path != "" {
+	if path := envutil.Getenv("SILO_SCENARIO_REPORT"); path != "" {
 		report := struct {
 			Scope                                       string
 			NewScenarios, PhysicalRequests, EffectReads int

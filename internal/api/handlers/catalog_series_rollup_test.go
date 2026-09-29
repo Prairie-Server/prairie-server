@@ -3,7 +3,6 @@ package handlers
 import (
 	"context"
 	"fmt"
-	"os"
 	"reflect"
 	"sync"
 	"testing"
@@ -15,6 +14,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/api/middleware"
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/scanner"
 	"github.com/prairie-server/prairie-server/internal/userstore"
@@ -135,7 +135,7 @@ func TestSeriesUserDataUsesEpisodeRollup(t *testing.T) {
 // the SQL rollup matches the per-episode fold value for value, and that the
 // rollup stops the detail and seasons requests from loading every episode row.
 func TestSeriesUserDataRollupParity(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

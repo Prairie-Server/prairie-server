@@ -13,6 +13,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func TestAccessAndFiniteRoutes(t *testing.T) {
@@ -63,7 +65,7 @@ func TestAccessAndFiniteRoutes(t *testing.T) {
 }
 
 func TestMethodEnforcementWithLegacyMux(t *testing.T) {
-	if os.Getenv("SILO_TEST_LEGACY_MUX") == "1" {
+	if envutil.Getenv("SILO_TEST_LEGACY_MUX") == "1" {
 		h := newHandler(Config{}, "test")
 		r := httptest.NewRequest(http.MethodPost, "http://127.0.0.1:6060/debug/pprof/profile", nil)
 		w := httptest.NewRecorder()

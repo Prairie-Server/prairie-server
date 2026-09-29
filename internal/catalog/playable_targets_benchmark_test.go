@@ -3,12 +3,12 @@ package catalog
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 	"github.com/prairie-server/prairie-server/internal/userstore/pgstore"
 )
@@ -29,7 +29,7 @@ func (s *playableTargetBenchmarkProgressStore) ListProgressByMediaItems(ctx cont
 // query counts alongside timings so removed work is visible even when
 // connection latency varies between runs.
 func BenchmarkPlayableTargetReadQueries(b *testing.B) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		b.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

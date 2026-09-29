@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/api"
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 	"github.com/prairie-server/prairie-server/internal/settingscontract"
 	"github.com/prairie-server/prairie-server/internal/settingskeys"
@@ -42,7 +42,7 @@ func (compatDetailUserStores) Close() error { return nil }
 // through it must carry the viewer's stored subtitle defaults, which the
 // Jellyfin item and PlaybackInfo responses select the default subtitle from.
 func TestCompatDetailServiceResolvesViewerSubtitleDefaultsPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

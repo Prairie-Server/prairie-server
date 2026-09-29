@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"testing"
 	"time"
@@ -16,6 +15,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/imagesize"
 	"github.com/prairie-server/prairie-server/internal/metadata"
 	"github.com/prairie-server/prairie-server/internal/models"
@@ -37,7 +37,7 @@ func (s *seasonsNoProbeStore) ResolveURLs(_ context.Context, keys []string) map[
 }
 
 func TestSeasonListArtworkHTTP(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

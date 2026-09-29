@@ -16,12 +16,13 @@ import (
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/mail"
 )
 
 func emailOutboxFixture(t *testing.T) (*EmailPrefsRepository, *pgxpool.Pool, string) {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("set SILO_TEST_DATABASE_URL for isolated email verification tests")
 	}

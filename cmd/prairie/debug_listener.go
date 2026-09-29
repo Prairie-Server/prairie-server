@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"log/slog"
-	"os"
 	"sync"
 	"time"
 
 	"github.com/prairie-server/prairie-server/internal/debugserver"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // startBootstrapDebugListener runs after dotenv loading, before database work.
@@ -16,7 +16,7 @@ func startBootstrapDebugListener(serving bool) (func(), error) {
 	if !serving {
 		return func() {}, nil
 	}
-	cfg, err := debugserver.LoadConfig(os.Getenv)
+	cfg, err := debugserver.LoadConfig(envutil.Getenv)
 	if err != nil {
 		return nil, err
 	}

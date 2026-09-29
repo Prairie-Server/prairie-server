@@ -3,12 +3,13 @@ package policy
 import (
 	"context"
 	"errors"
-	"os"
 	"sort"
 	"sync"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func TestPolicyStoreDocumentVersionCRUD(t *testing.T) {
@@ -278,7 +279,7 @@ func TestPolicyStoreDeleteDocumentGuard(t *testing.T) {
 
 func newPolicyStoreTest(t *testing.T, ctx context.Context) (*pgxpool.Pool, *PolicyStore) {
 	t.Helper()
-	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("PRAIRIE_TEST_DATABASE_URL is not set")
 	}

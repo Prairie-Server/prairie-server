@@ -3,12 +3,12 @@ package database
 import (
 	"context"
 	"encoding/json"
-	"os"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/jackc/pgx/v5/stdlib"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/migrations"
 )
 
@@ -22,7 +22,7 @@ import (
 // composite profile foreign key and the six partial unique indexes, and that
 // jsonb accepts the values the planner encodes.
 func TestPostgresSettingsBackfill(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

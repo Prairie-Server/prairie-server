@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"log/slog"
-	"os"
 	"strings"
 	"testing"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/blobstore"
 	"github.com/prairie-server/prairie-server/internal/blobstore/blobstoretest"
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 type failedPosterStore struct{ blobstore.Store }
@@ -23,7 +23,7 @@ func (failedPosterStore) Put(context.Context, string, []byte) error {
 }
 
 func TestLibraryPosterReplacementAndFailureLog(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

@@ -14,6 +14,7 @@ import (
 	"github.com/pressly/goose/v3"
 	"github.com/pressly/goose/v3/lock"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/migrations"
 )
 
@@ -29,7 +30,7 @@ func TestInvalidateLegacyDolbyVisionProbeMigration(t *testing.T) {
 	if len(matches) != 1 {
 		t.Fatalf("migration matches = %v; want exactly one", matches)
 	}
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

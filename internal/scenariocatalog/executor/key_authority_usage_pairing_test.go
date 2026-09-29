@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"net/http/httptest"
-	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -16,6 +15,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/api"
 	"github.com/prairie-server/prairie-server/internal/auth"
 	"github.com/prairie-server/prairie-server/internal/clientip"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 	"github.com/prairie-server/prairie-server/internal/secret"
 )
@@ -137,10 +137,10 @@ func keyUsageEffects(t *testing.T, before, after map[string]json.RawMessage, tar
 }
 
 func TestRequiredKeyAuthorityUsageAcceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run required key-authority-usage acceptance explicitly")
 	}
-	dsn := os.Getenv(DatabaseEnv)
+	dsn := envutil.Getenv(DatabaseEnv)
 	if dsn == "" {
 		t.Fatal(DatabaseEnv + " required; no skipped database acceptance")
 	}

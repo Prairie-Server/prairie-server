@@ -63,7 +63,7 @@ Details, Docker Desktop limits, and Dispatcharr probing: [docs/livetv-tuner-disc
 
 ## Migrating from Silo
 
-See [docs/silo-to-prairie-migration.md](docs/silo-to-prairie-migration.md) for the Phase 1 path, environment variable, PostgreSQL, and Meilisearch cutover checklist. Legacy `SILO_*` runtime environment variables are accepted as fallbacks where the server reads them directly, but new installs should use `PRAIRIE_*`.
+See [docs/silo-to-prairie-migration.md](docs/silo-to-prairie-migration.md) for the Phase 1 path, environment variable, PostgreSQL, and Meilisearch cutover checklist. Every `SILO_*` environment variable is also readable as `PRAIRIE_*`, and the `PRAIRIE_*` spelling wins when both are set; new installs should use `PRAIRIE_*`.
 
 Existing Continuum-to-Silo migration notes remain in [docs/continuum-to-silo-docker-migration.md](docs/continuum-to-silo-docker-migration.md) for historical installs that need that earlier hop.
 

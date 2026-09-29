@@ -15,6 +15,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/api/handlers"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/secret"
 	"github.com/prairie-server/prairie-server/internal/webhooksync"
 )
@@ -25,7 +26,7 @@ func (b *webhookUnreadBody) Read([]byte) (int, error) { b.reads++; return 0, io.
 func (*webhookUnreadBody) Close() error               { return nil }
 
 func TestWebhookReceiverRealDeliveryDB(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

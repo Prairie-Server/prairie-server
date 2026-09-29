@@ -4,13 +4,13 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/google/uuid"
 
 	"github.com/prairie-server/prairie-server/internal/blobstore"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/s3client"
 )
 
@@ -18,17 +18,17 @@ import (
 // TLS, virtual-host-style S3 endpoint. It covers pagination, a multipart-sized
 // object, the fenced pass, and checkpoint-backed orphan cleanup.
 func TestAWSStyleStorageTransitionSmoke(t *testing.T) {
-	endpoint := os.Getenv("SILO_AWS_STYLE_SMOKE_ENDPOINT")
-	bucket := os.Getenv("SILO_AWS_STYLE_SMOKE_BUCKET")
-	accessKey := os.Getenv("SILO_AWS_STYLE_SMOKE_ACCESS_KEY")
-	secretKey := os.Getenv("SILO_AWS_STYLE_SMOKE_SECRET_KEY")
+	endpoint := envutil.Getenv("SILO_AWS_STYLE_SMOKE_ENDPOINT")
+	bucket := envutil.Getenv("SILO_AWS_STYLE_SMOKE_BUCKET")
+	accessKey := envutil.Getenv("SILO_AWS_STYLE_SMOKE_ACCESS_KEY")
+	secretKey := envutil.Getenv("SILO_AWS_STYLE_SMOKE_SECRET_KEY")
 	if endpoint == "" {
 		t.Skip("SILO_AWS_STYLE_SMOKE_ENDPOINT is not set")
 	}
 	if bucket == "" || accessKey == "" || secretKey == "" {
 		t.Fatal("bucket and credentials are required")
 	}
-	region := os.Getenv("SILO_AWS_STYLE_SMOKE_REGION")
+	region := envutil.Getenv("SILO_AWS_STYLE_SMOKE_REGION")
 	root := "qa/storage-transition-" + uuid.NewString()
 	client := func(role, prefix string) *s3client.Client {
 		return s3client.NewClient(s3client.BucketConfig{Role: role, Endpoint: endpoint, Region: region, Bucket: bucket, KeyPrefix: prefix, AccessKey: accessKey, SecretKey: secretKey, PathStyle: false})

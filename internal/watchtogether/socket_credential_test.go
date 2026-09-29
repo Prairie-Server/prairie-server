@@ -3,7 +3,6 @@ package watchtogether
 import (
 	"encoding/json"
 	"errors"
-	"os"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -11,12 +10,13 @@ import (
 
 	"github.com/redis/go-redis/v9"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/events"
 )
 
 func roomSocketRedis(t *testing.T) (*redis.Client, *redis.Client) {
 	t.Helper()
-	endpoint := os.Getenv("SILO_ROOM_SOCKET_TEST_REDIS_URL")
+	endpoint := envutil.Getenv("SILO_ROOM_SOCKET_TEST_REDIS_URL")
 	if endpoint == "" {
 		t.Skip("requires isolated room socket Redis")
 	}

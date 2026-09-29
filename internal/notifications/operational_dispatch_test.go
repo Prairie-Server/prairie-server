@@ -3,14 +3,15 @@ package notifications
 import (
 	"context"
 	"log/slog"
-	"os"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func TestDispatchOperationalEnqueuesApplePushAttempts(t *testing.T) {
-	dsn := os.Getenv("PRAIRIE_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("PRAIRIE_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("set PRAIRIE_TEST_DATABASE_URL to run DB-backed operational push dispatch test")
 	}

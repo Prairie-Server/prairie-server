@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"net/http/httptest"
-	"os"
 	"reflect"
 	"testing"
 
@@ -11,10 +10,11 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/catalog"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 func TestUserLibrarySharedPolicyProjection(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

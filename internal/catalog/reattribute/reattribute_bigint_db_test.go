@@ -3,8 +3,9 @@ package reattribute
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
+
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 // TestRun_FileSubsetAcceptsBigintFileIDs pins the cast fix that followed the
@@ -20,7 +21,7 @@ import (
 // does own state, and checks that the run succeeds and the int4 rows still
 // move: integer = ANY(bigint[]) compares correctly in both directions.
 func TestRun_FileSubsetAcceptsBigintFileIDs(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

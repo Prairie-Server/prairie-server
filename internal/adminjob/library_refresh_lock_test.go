@@ -3,7 +3,6 @@ package adminjob
 import (
 	"context"
 	"errors"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -12,6 +11,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/database/pglock"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/models"
 )
 
@@ -30,7 +30,7 @@ func TestLibraryRefreshLockKeyIsPerLibrary(t *testing.T) {
 }
 
 func TestLibraryRefreshExcludesAConcurrentRefreshOfTheSameLibrary(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -76,7 +76,7 @@ func TestLibraryRefreshExcludesAConcurrentRefreshOfTheSameLibrary(t *testing.T) 
 }
 
 func TestRecoveredLibraryRefreshWaitsForTheLibraryLock(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

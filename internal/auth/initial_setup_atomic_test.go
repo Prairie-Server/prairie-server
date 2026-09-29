@@ -9,7 +9,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"os"
 	"slices"
 	"strings"
 	"testing"
@@ -24,6 +23,7 @@ import (
 	"github.com/prairie-server/prairie-server/internal/clientip"
 	"github.com/prairie-server/prairie-server/internal/config"
 	"github.com/prairie-server/prairie-server/internal/database"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/secret"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 	"github.com/prairie-server/prairie-server/internal/userstore/pgstore"
@@ -50,7 +50,7 @@ type atomicSetupDB struct {
 // the owned server and drops it on cleanup.
 func atomicSetupDatabase(t *testing.T, name string) *atomicSetupDB {
 	t.Helper()
-	raw := os.Getenv("SILO_INITIAL_SETUP_ATOMIC_DSN")
+	raw := envutil.Getenv("SILO_INITIAL_SETUP_ATOMIC_DSN")
 	if raw == "" {
 		t.Skip("SILO_INITIAL_SETUP_ATOMIC_DSN is not set")
 	}

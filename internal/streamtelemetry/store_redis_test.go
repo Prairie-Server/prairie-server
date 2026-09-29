@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
 	"reflect"
 	"sort"
 	"testing"
@@ -14,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/redis/go-redis/v9"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/httpstream"
 )
 
@@ -172,7 +172,7 @@ func keysOf(values map[string][]byte) []string {
 
 func redisTestClient(t *testing.T) *redis.Client {
 	t.Helper()
-	url := os.Getenv("SILO_TEST_REDIS_URL")
+	url := envutil.Getenv("SILO_TEST_REDIS_URL")
 	if url == "" {
 		url = "redis://127.0.0.1:6380/15"
 	}

@@ -9,7 +9,6 @@
 package envutil
 
 import (
-	"os"
 	"strings"
 )
 
@@ -26,7 +25,7 @@ func Truthy(value string) bool {
 }
 
 // Bool reports whether the named environment variable is set to a truthy value.
-func Bool(name string) bool { return Truthy(os.Getenv(name)) }
+func Bool(name string) bool { return Truthy(Getenv(name)) }
 
 // BoolDefault reports whether the named environment variable is on, falling back
 // to def when the variable is unset or empty — whitespace-only counts as empty,
@@ -41,7 +40,7 @@ func BoolDefault(name string, def bool) bool {
 	if !IsSet(name) {
 		return def
 	}
-	return Truthy(os.Getenv(name))
+	return Truthy(Getenv(name))
 }
 
 // IsSet reports whether the named environment variable carries a non-empty value
@@ -49,4 +48,4 @@ func BoolDefault(name string, def bool) bool {
 // knob?", which a default-on flag has to ask separately from "is it on?" — an
 // unset knob and one explicitly set to false want different behaviour when
 // something else would otherwise derive the value.
-func IsSet(name string) bool { return strings.TrimSpace(os.Getenv(name)) != "" }
+func IsSet(name string) bool { return strings.TrimSpace(Getenv(name)) != "" }

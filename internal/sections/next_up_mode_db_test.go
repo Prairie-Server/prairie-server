@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 	"sync"
 	"testing"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/access"
 	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/policy"
 	"github.com/prairie-server/prairie-server/internal/settingscontract"
 	"github.com/prairie-server/prairie-server/internal/settingskeys"
@@ -51,7 +51,7 @@ func (c *nextUpStatementTracer) take() []string {
 // request that passed viewer access, the mode arrives with the scope and the
 // calls cost nothing.
 func TestNextUpModeStatementBudgetPostgres(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

@@ -3,12 +3,12 @@ package pgstore
 import (
 	"context"
 	"fmt"
-	"os"
 	"testing"
 	"time"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 )
 
@@ -17,7 +17,7 @@ import (
 // profile tokens and cached scopes minted under the old limit stop being
 // honored. The column also refuses a limit outside 1..21.
 func TestUpdateProfileAdvisoryAgeBumpsAccessPolicyRevision(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -83,7 +83,7 @@ func TestUpdateProfileAdvisoryAgeBumpsAccessPolicyRevision(t *testing.T) {
 // off changes what the profile may see, so it must bump the revision, and the
 // column round-trips through create, get, list and update.
 func TestUpdateProfileRequireAdvisoryAgeBumpsAccessPolicyRevision(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

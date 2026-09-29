@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"os"
 	"reflect"
 	"slices"
 	"testing"
@@ -12,13 +11,14 @@ import (
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/userdb"
 	"github.com/prairie-server/prairie-server/internal/userstore"
 	"github.com/prairie-server/prairie-server/internal/userstore/pgstore"
 )
 
 func TestPlayableTargetResolverProfileStateAvailabilityAndAccess(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}
@@ -353,7 +353,7 @@ func TestPlayableTargetResolverProfileStateAvailabilityAndAccess(t *testing.T) {
 // the first episode". The bind-parameter ceiling is handled by batching the
 // progress lookup instead, which costs nothing behaviorally.
 func TestPlayableTargetResolverResumesDeepInsideLongSeries(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

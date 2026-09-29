@@ -19,7 +19,7 @@ per-response; every JSON, image and other ordinary API route keeps it.
 - The deadline is set through `http.NewResponseController(w).SetWriteDeadline`. A
   per-request controller deadline overrides the server-level `WriteTimeout` for that
   response — the mechanism the stdlib provides for exactly this case.
-- `window` defaults to 180s, overridable via `SILO_STREAM_WRITE_STALL_TIMEOUT`
+- `window` defaults to 180s, overridable via `PRAIRIE_STREAM_WRITE_STALL_TIMEOUT`
   (integer seconds).
 - If the transport does not support per-response write deadlines, the wrapper degrades
   to a plain pass-through and the server-level `WriteTimeout` stays in effect.

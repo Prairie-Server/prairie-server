@@ -4,19 +4,19 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 func TestRequiredOnboardingReadsAcceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-onboarding-reads for required paired acceptance")
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required")
 	}
 	catalogs, err := scenariocatalog.Load()
@@ -27,7 +27,7 @@ func TestRequiredOnboardingReadsAcceptance(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	pool, err := pgxpool.New(t.Context(), os.Getenv(DatabaseEnv))
+	pool, err := pgxpool.New(t.Context(), envutil.Getenv(DatabaseEnv))
 	if err != nil {
 		t.Fatal("connect onboarding scratch database")
 	}

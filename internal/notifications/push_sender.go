@@ -167,7 +167,7 @@ func newPushSender(devices *PushDeviceRepository, deliveries *DeliveryRepository
 		settings:            settings,
 		client:              client,
 		logger:              slog.Default().With("component", "notifications.apple_push"),
-		developmentRelayURL: envutil.FirstNonEmpty("PRAIRIE_PUSH_RELAY_DEVELOPMENT_URL", "SILO_PUSH_RELAY_DEVELOPMENT_URL"),
+		developmentRelayURL: envutil.FirstNonEmpty("PRAIRIE_PUSH_RELAY_DEVELOPMENT_URL"),
 		now:                 time.Now,
 	}
 }

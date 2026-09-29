@@ -6,13 +6,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/url"
-	"os"
 	"slices"
 	"strings"
 	"testing"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
@@ -114,8 +114,8 @@ func selectSetupFamily(catalogs []*scenariocatalog.Catalog) ([]setupFamilyCase, 
 // Reject wrong resources and unknown keys before New can migrate or reseed.
 func guardSetupFamily(t *testing.T) {
 	t.Helper()
-	u, err := url.Parse(os.Getenv(DatabaseEnv))
-	if err != nil || u == nil || u.Scheme != "postgres" || u.Hostname() != "127.0.0.1" || u.Port() == "" || slices.Contains([]string{"55443", "55445", "55446"}, u.Port()) || !strings.HasPrefix(u.Path, "/silo_worker_setup_") || os.Getenv("SILO_WORKER_SETUP_OWNED") != "1" {
+	u, err := url.Parse(envutil.Getenv(DatabaseEnv))
+	if err != nil || u == nil || u.Scheme != "postgres" || u.Hostname() != "127.0.0.1" || u.Port() == "" || slices.Contains([]string{"55443", "55445", "55446"}, u.Port()) || !strings.HasPrefix(u.Path, "/silo_worker_setup_") || envutil.Getenv("SILO_WORKER_SETUP_OWNED") != "1" {
 		t.Fatal("setup family requires its explicitly owned ephemeral loopback resource")
 	}
 	pool, err := pgxpool.New(t.Context(), u.String())
@@ -140,7 +140,7 @@ func guardSetupFamily(t *testing.T) {
 }
 
 func TestRequiredSetupFamilyAcceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("requires owned setup family resource")
 	}
 	catalogs, err := scenariocatalog.Load()

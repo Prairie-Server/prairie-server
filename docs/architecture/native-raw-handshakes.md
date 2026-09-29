@@ -72,7 +72,7 @@ without Origin still need that ticket.
 For the request's own origin, the check uses the request Host and its
 transport scheme. A TLS-terminating proxy can supply a single `X-Forwarded-Proto`
 value of `http` or `https` when its transport address is trusted by the existing
-`clientip.trusted_proxies` / `SILO_TRUSTED_PROXIES` configuration. Trust is evaluated
+`clientip.trusted_proxies` / `PRAIRIE_TRUSTED_PROXIES` configuration. Trust is evaluated
 before client-IP middleware replaces RemoteAddr. Repeated, list-valued or invalid
 scheme headers from a trusted proxy refuse the request's own origin; the public URL
 and overlay origins are still accepted.

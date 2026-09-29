@@ -3,20 +3,20 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"slices"
 	"strconv"
 	"testing"
 	"time"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 func TestRequiredAPIKeyCreateAcceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-api-key-creations for required paired acceptance")
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; acceptance cannot skip its database")
 	}
 	catalogs, err := scenariocatalog.Load()

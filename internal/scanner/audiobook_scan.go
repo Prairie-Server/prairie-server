@@ -213,7 +213,7 @@ func (s *Scanner) audiobookFolderShouldSkip(ctx context.Context, folder *models.
 // cores busy on the ffprobe step (which dominates per-book wall time)
 // without overwhelming a small server. Override with SILO_AUDIOBOOK_SCAN_WORKERS.
 func audiobookScanWorkers() int {
-	if v := envutil.FirstNonEmpty("PRAIRIE_AUDIOBOOK_SCAN_WORKERS", "SILO_AUDIOBOOK_SCAN_WORKERS"); v != "" {
+	if v := envutil.FirstNonEmpty("PRAIRIE_AUDIOBOOK_SCAN_WORKERS"); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			return n
 		}

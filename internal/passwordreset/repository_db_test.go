@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"sync"
 	"testing"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/prairie-server/prairie-server/internal/auth"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 )
 
 type resetDB struct {
@@ -24,7 +24,7 @@ type resetDB struct {
 // newResetDB copies the tables a reset touches into a throwaway schema.
 func newResetDB(t *testing.T) resetDB {
 	t.Helper()
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

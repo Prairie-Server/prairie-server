@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
@@ -13,6 +12,7 @@ import (
 	"github.com/jackc/pgx/v5/pgxpool"
 
 	"github.com/prairie-server/prairie-server/internal/apiv2"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/ratelimit"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
@@ -24,10 +24,10 @@ func TestRequiredSignupFamilyAcceptance(t *testing.T) { runSignupFamilyAcceptanc
 func TestRequiredSignupSuccessAcceptance(t *testing.T) { runSignupFamilyAcceptance(t, true) }
 
 func runSignupFamilyAcceptance(t *testing.T, successesOnly bool) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-signup-family for required paired acceptance")
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; acceptance cannot skip its database")
 	}
 	catalogs, err := scenariocatalog.Load()
@@ -39,7 +39,7 @@ func runSignupFamilyAcceptance(t *testing.T, successesOnly bool) {
 		t.Fatal(err)
 	}
 	// Inspect the reserved database before even constructing the offline router.
-	pool, err := pgxpool.New(t.Context(), os.Getenv(DatabaseEnv))
+	pool, err := pgxpool.New(t.Context(), envutil.Getenv(DatabaseEnv))
 	if err != nil {
 		t.Fatal("connect signup family scratch database")
 	}

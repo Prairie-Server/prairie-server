@@ -1,7 +1,6 @@
 package nodeconfig
 
 import (
-	"os"
 	"strings"
 	"testing"
 
@@ -9,11 +8,12 @@ import (
 
 	"github.com/prairie-server/prairie-server/internal/cache"
 	"github.com/prairie-server/prairie-server/internal/config"
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/secret"
 )
 
 func TestWatcherStartsWithUnreadableStagedStorageTransition(t *testing.T) {
-	dsn := os.Getenv("SILO_TEST_DATABASE_URL")
+	dsn := envutil.Getenv("SILO_TEST_DATABASE_URL")
 	if dsn == "" {
 		t.Skip("SILO_TEST_DATABASE_URL is not set")
 	}

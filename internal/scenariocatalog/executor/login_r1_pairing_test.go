@@ -3,21 +3,21 @@ package executor
 import (
 	"bytes"
 	"encoding/json"
-	"os"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/prairie-server/prairie-server/internal/envutil"
 	"github.com/prairie-server/prairie-server/internal/ratelimit"
 	"github.com/prairie-server/prairie-server/internal/scenariocatalog"
 )
 
 func TestRequiredLoginR1Acceptance(t *testing.T) {
-	if os.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
+	if envutil.Getenv("SILO_SCENARIO_REQUIRED") != "1" {
 		t.Skip("run make test-scenario-login-r1 for required paired acceptance")
 	}
-	if os.Getenv(DatabaseEnv) == "" {
+	if envutil.Getenv(DatabaseEnv) == "" {
 		t.Fatal(DatabaseEnv + " is required; acceptance cannot skip its database")
 	}
 	catalogs, err := scenariocatalog.Load()
