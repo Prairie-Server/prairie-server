@@ -38,6 +38,16 @@
         "github.com/danielgtaylor/huma/v2"
       ],
       "allowedVersions": "<2.39.0"
+    },
+    {
+      "description": "Hold prettier below 3.9: prettier 3.9 reflows TypeScript union types across dozens of files inherited from upstream silo-server, failing format:check and adding sync conflicts. Lift once upstream moves to prettier 3.9.",
+      "matchManagers": [
+        "npm"
+      ],
+      "matchPackageNames": [
+        "prettier"
+      ],
+      "allowedVersions": "<3.9.0"
     }
   ]
 }
